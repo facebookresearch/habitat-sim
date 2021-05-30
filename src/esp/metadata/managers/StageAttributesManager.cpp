@@ -31,10 +31,7 @@ StageAttributesManager::StageAttributesManager(
       objectAttributesMgr_(std::move(objectAttributesMgr)),
       physicsAttributesManager_(std::move(physicsAttributesManager)),
       cfgLightSetup_(NO_LIGHT_KEY) {
-  buildCtorFuncPtrMaps();
-}  // StageAttributesManager ctor
-
-void StageAttributesManager::buildCtorFuncPtrMaps() {
+  // build this manager's copy constructor map
   this->copyConstructorMap_["StageAttributes"] =
       &StageAttributesManager::createObjectCopy<attributes::StageAttributes>;
   // create none-type stage attributes and set as undeletable
@@ -42,7 +39,7 @@ void StageAttributesManager::buildCtorFuncPtrMaps() {
   auto tmplt = this->createDefaultObject("NONE", true);
   std::string tmpltHandle = tmplt->getHandle();
   this->undeletableObjectNames_.insert(tmpltHandle);
-}  // StageAttributesManager::buildCtorFuncPtrMaps
+}  // StageAttributesManager::ctor
 
 int StageAttributesManager::registerObjectFinalize(
     StageAttributes::ptr stageAttributes,
