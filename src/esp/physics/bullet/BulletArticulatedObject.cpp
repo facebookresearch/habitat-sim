@@ -223,12 +223,12 @@ bool BulletArticulatedObject::initializeFromURDF(
       settings.maxImpulse = double(link.m_jointDamping);
       if (supportsJointMotor(linkIx)) {
         for (int dof = 0; dof < link.m_dofCount; ++dof) {
-          createJointMotor(linkIx, dof, dofCount, settings);
+          createJointMotorInternal(linkIx, dof, dofCount, settings);
           dofCount++;
         }
       } else if (link.m_jointType == btMultibodyLink::eSpherical) {
         settings.motorType = JointMotorType::Spherical;
-        createJointMotor(linkIx, -1, -1, settings);
+        createJointMotorInternal(linkIx, -1, -1, settings);
         dofCount += link.m_dofCount;
       } else {
         dofCount += link.m_dofCount;
@@ -652,14 +652,14 @@ std::map<int, int> BulletArticulatedObject::createMotorsForAllDofs(
   for (int linkIx = 0; linkIx < btMultiBody_->getNumLinks(); ++linkIx) {
     if (supportsJointMotor(linkIx)) {
       for (int dof = 0; dof < btMultiBody_->getLink(linkIx).m_dofCount; ++dof) {
-        int motorId = createJointMotor(linkIx, dof, dofCount, settings);
+        int motorId = createJointMotorInternal(linkIx, dof, dofCount, settings);
         dofsToMotorIds[dofCount++] = motorId;
       }
     } else if (btMultiBody_->getLink(linkIx).m_jointType ==
                btMultibodyLink::eSpherical) {
       auto sphericalSettings = settings;
       sphericalSettings.motorType = JointMotorType::Spherical;
-      int motorId = createJointMotor(linkIx, -1, -1, sphericalSettings);
+      int motorId = createJointMotorInternal(linkIx, -1, -1, sphericalSettings);
       for (int dof = 0; dof < btMultiBody_->getLink(linkIx).m_dofCount; ++dof) {
         dofsToMotorIds[dofCount++] = motorId;
       }
@@ -677,7 +677,7 @@ float BulletArticulatedObject::getJointMotorMaxImpulse(int motorId) {
   return articulatedJointMotors.at(motorId)->getMaxAppliedImpulse();
 }
 
-int BulletArticulatedObject::createJointMotor(
+int BulletArticulatedObject::createJointMotorInternal(
     const int linkIx,
     const int linkDof,
     const int globalDof,
@@ -718,7 +718,7 @@ int BulletArticulatedObject::createJointMotor(
     return -1;
   }
   return nextJointMotorId_++;
-}
+}  // BulletArticulatedObject::createJointMotorInternal
 
 int BulletArticulatedObject::createJointMotor(
     const int index,
@@ -757,11 +757,11 @@ int BulletArticulatedObject::createJointMotor(
       return ID_UNDEFINED;
     }
 
-    return createJointMotor(linkIx, linkDof, index, settings);
+    return createJointMotorInternal(linkIx, linkDof, index, settings);
   } else if (settings.motorType == JointMotorType::Spherical) {
     CHECK(btMultiBody_->getLink(index).m_jointType ==
           btMultibodyLink::eSpherical);
-    return createJointMotor(index, -1, -1, settings);
+    return createJointMotorInternal(index, -1, -1, settings);
   }
   return -1;
 }

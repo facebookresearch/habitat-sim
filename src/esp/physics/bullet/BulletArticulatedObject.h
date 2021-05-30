@@ -166,13 +166,6 @@ class BulletArticulatedObject : public ArticulatedObject {
   int createJointMotor(const int dof,
                        const JointMotorSettings& settings) override;
 
-  //! internal version specific to Bullet setup to simplify the creation
-  //! process.
-  int createJointMotor(const int linkIx,
-                       const int linkDof,
-                       const int globalDof,
-                       const JointMotorSettings& settings);
-
   void removeJointMotor(const int motorId) override;
   void updateJointMotor(const int motorId,
                         const JointMotorSettings& settings) override;
@@ -181,15 +174,6 @@ class BulletArticulatedObject : public ArticulatedObject {
       JointMotorSettings settings = JointMotorSettings()) override;
 
   float getJointMotorMaxImpulse(int motorId);
-
-  int nextJointMotorId_ = 0;
-
-  std::map<int, std::unique_ptr<btMultiBodyJointMotor>> articulatedJointMotors;
-  std::map<int, std::unique_ptr<btMultiBodySphericalJointMotor>>
-      articulatedSphericalJointMotors;
-
-  //! maps local link id to parent joint's limit constraint
-  std::map<int, JointLimitConstraintInfo> jointLimitConstraints;
 
   //! clamp current pose to joint limits
   void clampJointLimits() override;
@@ -211,9 +195,36 @@ class BulletArticulatedObject : public ArticulatedObject {
       const std::shared_ptr<io::URDF::Link>& link,
       gfx::DrawableGroup* drawables) override;
 
+  /**
+   * @brief Called internally.  Version specific to Bullet setup to simplify the
+   * creation process.
+   * @param linkIx link index to use for link and link's parent bodies, between
+   * which to put joint.
+   * @param linkDof link DOF index corresponding to the current DOF within the
+   * current link being attached to a motor.
+   * @param globalDof index in DOF-based array of motor IDs corresponding to
+   * this motor.
+   * @param settings the @ref esp::physics::JointMotorSettings values that
+   * describe the desired motor's various parameters.
+   * @return index of created joint motor in @p jointMotors_ map.
+   */
+  int createJointMotorInternal(const int linkIx,
+                               const int linkDof,
+                               const int globalDof,
+                               const JointMotorSettings& settings);
+
   //! Performs forward kinematics, updates collision object states and
   //! broadphase aabbs for the object. Do this with manual state setters.
   void updateKinematicState();
+
+  int nextJointMotorId_ = 0;
+
+  std::map<int, std::unique_ptr<btMultiBodyJointMotor>> articulatedJointMotors;
+  std::map<int, std::unique_ptr<btMultiBodySphericalJointMotor>>
+      articulatedSphericalJointMotors;
+
+  //! maps local link id to parent joint's limit constraint
+  std::map<int, JointLimitConstraintInfo> jointLimitConstraints;
 
   // scratch datastrcutures for updateKinematicState
   btAlignedObjectArray<btQuaternion> scratch_q_;
