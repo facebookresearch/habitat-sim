@@ -285,7 +285,7 @@ This feature is built by when Habitat-Sim is compiled with CUDA, i.e. built with
 This is implemented in a way that is reasonably agnostic to the exact GPU-Tensor library being used, but we currently have only implemented support for PyTorch.
 
 
-## Experimental: Emscripten, WebGL,find  and Web Apps
+## Experimental: Emscripten, WebGL, and Web Apps
 
 Build `hsim_bindings.wasm`, our experimental Emscripten-compiled webassembly binary for use in WebGL html/Javascript apps. See the available Javascript bindings at `src/esp/bindings_js/bindings_js.cpp`. Check out our `bindings.html` demo app:
 
