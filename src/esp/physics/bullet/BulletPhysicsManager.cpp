@@ -24,7 +24,7 @@ BulletPhysicsManager::BulletPhysicsManager(
   collisionObjToObjIds_ =
       std::make_shared<std::map<const btCollisionObject*, int>>();
   urdfImporter_ = std::make_unique<BulletURDFImporter>(_resourceManager);
-};
+}
 
 BulletPhysicsManager::~BulletPhysicsManager() {
   LOG(INFO) << "Deconstructing BulletPhysicsManager";
@@ -692,7 +692,7 @@ void BulletPhysicsManager::removeConstraint(int constraintId) {
       }
     }
   }
-};
+}
 
 RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
                                              double maxDistance) {
