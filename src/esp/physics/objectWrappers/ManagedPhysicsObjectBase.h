@@ -27,8 +27,9 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
 
   typedef std::weak_ptr<T> WeakObjRef;
 
-  explicit AbstractManagedPhysicsObject(const std::string& classKey)
-      : classKey_(classKey) {}
+  explicit AbstractManagedPhysicsObject(const std::string& classKey) {
+    AbstractManagedPhysicsObject::setClassKey(classKey);
+  }
 
   void setObjectRef(const std::shared_ptr<T>& objRef) { weakObjRef_ = objRef; }
 
