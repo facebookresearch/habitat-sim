@@ -220,7 +220,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   // for debug info
   debugDirectDiffuseUniform_ = uniformLocation("PbrDebug.directDiffuse");
   debugDirectSpecularUniform_ = uniformLocation("PbrDebug.directSpecular");
-  debugIblDiffuseUniform_ = uniformBlockIndex("PbrDebug.iblDiffuse");
+  debugIblDiffuseUniform_ = uniformLocation("PbrDebug.iblDiffuse");
   debugIblSpecularUniform_ = uniformLocation("PbrDebug.iblSpecular");
   pbrDebugDisplayUniform_ = uniformLocation("PbrDebugDisplay");
 

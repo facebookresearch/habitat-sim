@@ -2120,7 +2120,9 @@ void ResourceManager::createDrawable(Mn::GL::Mesh& mesh,
           shaderManager_,      // shader manager
           lightSetupKey,       // lightSetup key
           materialKey,         // material key
-          group);              // drawable group
+          group,               // drawable group
+          activePbrIbl_ >= 0 ? pbrImageBasedLightings_[activePbrIbl_].get()
+                             : nullptr);  // pbr image based lighting
       break;
   }
 }  // ResourceManager::createDrawable

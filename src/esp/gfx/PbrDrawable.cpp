@@ -51,7 +51,7 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
   if (materialData_->normalTexture) {
     flags_ |= PbrShader::Flag::NormalTexture;
     if (meshAttributeFlags & gfx::Drawable::Flag::HasTangent) {
-      flags_ |= PbrShader::Flag::PrecomputedTangent;  // XXX
+      flags_ |= PbrShader::Flag::PrecomputedTangent;
     }
     if (materialData_->normalTextureScale != 1.0f) {
       flags_ |= PbrShader::Flag::NormalTextureScale;
@@ -133,10 +133,10 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
 
   // XXX
   PbrShader::PbrDebugToggle toggles;
-  // toggles.DisableDirectDiffuse = truee
+  // toggles.DisableDirectDiffuse = true;
   // toggles.DisableDirectSpecular = true;
   // (*shader_).setDebugToggles(toggles);
-  (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::Normal);
+  // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::Normal);
 
   if ((flags_ & PbrShader::Flag::BaseColorTexture) &&
       (materialData_->baseColorTexture != nullptr)) {

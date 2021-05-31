@@ -44,12 +44,12 @@ PbrImageBasedLighting::PbrImageBasedLighting(Flags flags,
 
   // load environment map (cubemap)
   // TODO: load equirectangular image and convert it to cubemap
-  environmentMap_->loadTexture(CubeMap::TextureType::Color, "skybox", "png");
+  LOG(INFO) << " ==== Load environment map for pbr image based lighting. ====";
+  environmentMap_->loadTexture(CubeMap::TextureType::Color, "./data/pbr/skybox",
+                               "png");
 
   // compute the irradiance map
   computeIrradianceMap();
-  irradianceMap_->saveTexture(CubeMap::TextureType::Color, "irradianceMap");
-  exit(0);
 }
 
 void PbrImageBasedLighting::recreateTextures() {

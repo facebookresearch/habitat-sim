@@ -14,7 +14,6 @@ uniform samplerCube EnvironmentMap;
 layout(location = OUTPUT_ATTRIBUTE_LOCATION_COLOR) out highp vec4 fragmentColor;
 
 // -------------- shader ---------------------
-
 // Hacker's Delight, Henry S. Warren, 2001, ISBN:0201914654
  float radicalInverse_VdC(uint bits) {
      bits = (bits << 16u) | (bits >> 16u);

@@ -66,6 +66,7 @@ PbrIrradianceMapShader::PbrIrradianceMapShader() {
 
   frag.addSource(attributeLocationsStream.str())
       .addSource(outputAttributeLocationsStream.str())
+      // .addSource(rs.get("hammersleyPointsOnHemisphere.glsl"))
       .addSource(rs.get("pbrIrradianceMap.frag"));
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, frag}));

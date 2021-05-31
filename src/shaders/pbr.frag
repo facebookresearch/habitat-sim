@@ -91,8 +91,10 @@ uniform highp vec3 CameraWorldPos;
 struct PbrDebugToggle {
   float directDiffuse;
   float directSpecular;
+#if defined(IMAGE_BASED_LIGHTING)
   float iblDiffuse;
   float iblSpecular;
+#endif
 };
 uniform PbrDebugToggle PbrDebug;
 
@@ -356,7 +358,7 @@ void main() {
 
 #if defined(IMAGE_BASED_LIGHTING)
 vec3 iblDiffuseContrib = PbrDebug.iblDiffuse * computeIBLDiffuse(c_diff, n);
-frgmentColor.rgb += iblDiffuseContrib;
+fragmentColor.rgb += iblDiffuseContrib;
 #endif // IMAGE_BASED_LIGHTING
 
 #if defined(OBJECT_ID)
