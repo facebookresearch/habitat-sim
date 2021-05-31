@@ -51,7 +51,7 @@ class PhysicsObjectBaseManager
    * the type managed by this manager.
    *
    * @param objectTypeName Class name of the wrapper to create.  This will be
-   * looked up against
+   * used as a key in @p managedObjTypeConstructorMap_.
    * @param registerObject whether to add this managed object to the
    * library or not. If the user is going to edit this managed object, this
    * should be false. Defaults to true. If specified as true, then this function
@@ -112,28 +112,16 @@ class PhysicsObjectBaseManager
       const std::string& objectTypeName,
       CORRADE_UNUSED bool builtFromConfig) override {
     // construct a new wrapper based on the passed object
+    if (managedObjTypeConstructorMap_.count(objectTypeName) == 0) {
+      LOG(ERROR) << "PhysicsObjectBaseManager::initNewObjectInternal ("
+                 << this->objectType_ << ") Unknown constructor type "
+                 << objectTypeName << ".  Aborting.";
+      return nullptr;
+    }
     auto newWrapper = (*this.*managedObjTypeConstructorMap_[objectTypeName])();
 
     return newWrapper;
   }  // RigidObjectManager::initNewObjectInternal(
-
-  /**
-   * @brief Define a map type referencing function pointers to @ref
-   * createRigidObjectWrapper() keyed by string names of classes being
-   * instanced, as defined in @ref PrimitiveNames3DMap
-   */
-  typedef std::map<std::string,
-                   ObjWrapperPtr (PhysicsObjectBaseManager<T>::*)()>
-      Map_Of_ManagedObjTypeCtors;
-
-  /**
-   * @brief Map of function pointers to instantiate a @ref
-   * esp::physics::AbstractManagedPhysicsObject wrapper object, keyed by the
-   * wrapper's class name. A ManagedRigidObject wrapper of the appropriate type
-   * is instanced by accessing the constructor map with the appropriate
-   * classname.
-   */
-  Map_Of_ManagedObjTypeCtors managedObjTypeConstructorMap_;
 
   /**
    * @brief implementation of managed object type-specific registration
@@ -168,9 +156,27 @@ class PhysicsObjectBaseManager
     return sp;
   }  // getPhysicsManager
 
+  // ====== instance variables =====
+
   /** @brief Weak reference to owning physics manager.
    */
   std::weak_ptr<esp::physics::PhysicsManager> weakPhysManager_{};
+
+  /** @brief Define a map type referencing function pointers to @ref
+   * createRigidObjectWrapper() keyed by string names of classes being
+   * instanced, as defined in @ref PrimitiveNames3DMap
+   */
+  typedef std::map<std::string,
+                   ObjWrapperPtr (PhysicsObjectBaseManager<T>::*)()>
+      Map_Of_ManagedObjTypeCtors;
+
+  /** @brief Map of function pointers to instantiate a @ref
+   * esp::physics::AbstractManagedPhysicsObject wrapper object, keyed by the
+   * wrapper's class name. A ManagedRigidObject wrapper of the appropriate type
+   * is instanced by accessing the constructor map with the appropriate
+   * classname.
+   */
+  Map_Of_ManagedObjTypeCtors managedObjTypeConstructorMap_;
 
  public:
   ESP_SMART_POINTERS(PhysicsObjectBaseManager<T>)
