@@ -166,10 +166,11 @@ void PbrImageBasedLighting::computeIrradianceMap() {
   // TODO: should I use cubeSolid??
   Mn::Trade::MeshData cubeData =
       Mn::MeshTools::owned(Mn::Primitives::cubeSolid());
-  // Mn::MeshTools::flipFaceWindingInPlace(cubeData.mutableIndices());
+  Mn::MeshTools::flipFaceWindingInPlace(cubeData.mutableIndices());
   Magnum::GL::Mesh cube = Magnum::MeshTools::compile(cubeData);
 
   for (unsigned int iSide = 0; iSide < 6; ++iSide) {
+    irradianceMap_->bindFramebuffer(iSide);
     Mn::Matrix4 viewMatrix = CubeMapCamera::getCameraLocalTransform(
                                  CubeMapCamera::cubeMapCoordinate(iSide))
                                  .inverted();

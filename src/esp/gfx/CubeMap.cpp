@@ -257,8 +257,8 @@ void CubeMap::prepareToDraw(unsigned int cubeSideIndex,
   if (flags_ & CubeMap::Flag::ColorTexture &&
       renderCameraFlags & RenderCamera::Flag::ClearColor) {
     frameBuffer_[cubeSideIndex].clearColor(
-        0,                      // color attachment
-        Mn::Color4{0, 0, 0, 1}  // clear color
+        0,                              // color attachment
+        Mn::Color4{0.0, 0.0, 0.0, 1.0}  // clear color
     );
   }
 
@@ -274,6 +274,11 @@ void CubeMap::prepareToDraw(unsigned int cubeSideIndex,
   CORRADE_INTERNAL_ASSERT(frameBuffer_[cubeSideIndex].checkStatus(
                               Mn::GL::FramebufferTarget::Draw) ==
                           Mn::GL::Framebuffer::Status::Complete);
+}
+
+void CubeMap::bindFramebuffer(unsigned int cubeSideIndex) {
+  CORRADE_INTERNAL_ASSERT(cubeSideIndex < 6);
+  frameBuffer_[cubeSideIndex].bind();
 }
 
 void CubeMap::mapForDraw(unsigned int index) {

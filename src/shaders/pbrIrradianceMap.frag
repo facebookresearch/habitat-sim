@@ -11,7 +11,7 @@ in highp vec4 position; // world position
 uniform samplerCube EnvironmentMap;
 
 // -------------- output ---------------------
-out highp vec4 fragmentColor;
+layout(location = OUTPUT_ATTRIBUTE_LOCATION_COLOR) out highp vec4 fragmentColor;
 
 // -------------- shader ---------------------
 

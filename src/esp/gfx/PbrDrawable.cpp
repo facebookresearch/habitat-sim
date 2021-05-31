@@ -133,7 +133,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
 
   // XXX
   PbrShader::PbrDebugToggle toggles;
-  // toggles.DisableDirectDiffuse = true;
+  // toggles.DisableDirectDiffuse = truee
   // toggles.DisableDirectSpecular = true;
   // (*shader_).setDebugToggles(toggles);
   (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::Normal);

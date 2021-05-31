@@ -178,6 +178,12 @@ class CubeMap {
                          RenderCamera::Flag::FrustumCulling |
                          RenderCamera::Flag::ClearColor |
                          RenderCamera::Flag::ClearDepth});
+  /**
+   * @brief bind framebuffer
+   * @param[in] cubeSideIndex, the index of the cube side, can be 0,
+   * 1, 2, 3, 4, or 5
+   */
+  void bindFramebuffer(unsigned int cubeSideIndex);
 
  private:
   Flags flags_;

@@ -85,15 +85,12 @@ PbrIrradianceMapShader::PbrIrradianceMapShader() {
   }  // if
 
   // set texture unit
-  CORRADE_INTERNAL_ASSERT(uniformLocation("EnvironmentMap") >= 0);
   setUniform(uniformLocation("EnvironmentMap"),
              pbrTextureUnitSpace::TextureUnit::EnvironmentMap);
 
   // setup uniforms
   modelviewMatrixUniform_ = uniformLocation("ModelViewMatrix");
-  CORRADE_INTERNAL_ASSERT(modelviewMatrixUniform_ >= 0);
   projMatrixUniform_ = uniformLocation("ProjectionMatrix");
-  CORRADE_INTERNAL_ASSERT(projMatrixUniform_ >= 0);
 }
 
 PbrIrradianceMapShader& PbrIrradianceMapShader::bindEnvironmentMap(
