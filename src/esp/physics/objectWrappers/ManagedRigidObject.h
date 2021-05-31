@@ -28,17 +28,15 @@ class ManagedRigidObject
   getInitializationAttributes() const {
     if (auto sp = this->getObjectReference()) {
       return sp->getInitializationAttributes();
-    } else {
-      return nullptr;
     }
+    return nullptr;
   }  // getInitializationAttributes()
 
   VelocityControl::ptr getVelocityControl() {
     if (auto sp = this->getObjectReference()) {
       return sp->getVelocityControl();
-    } else {
-      return nullptr;
     }
+    return nullptr;
   }  // getVelocityControl()
 
  public:
