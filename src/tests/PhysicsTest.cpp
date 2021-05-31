@@ -332,7 +332,7 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
     objectTemplate->setJoinCollisionMeshes(false);
     objectAttributesManager->registerObject(objectTemplate);
     int objectId0 = physicsManager_->addObject(objectFile, drawables);
-    esp::physics::ManagedBulletRigidObject::ptr objectWrapper0 =
+    auto objectWrapper0 =
         rigidObjectManager_
             ->getObjectCopyByID<esp::physics::ManagedBulletRigidObject>(
                 objectId0);
@@ -342,7 +342,7 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
     objectTemplate->setJoinCollisionMeshes(true);
     objectAttributesManager->registerObject(objectTemplate);
     int objectId1 = physicsManager_->addObject(objectFile, drawables);
-    esp::physics::ManagedBulletRigidObject::ptr objectWrapper1 =
+    auto objectWrapper1 =
         rigidObjectManager_
             ->getObjectCopyByID<esp::physics::ManagedBulletRigidObject>(
                 objectId1);
@@ -352,7 +352,7 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
     objectTemplate->setBoundingBoxCollisions(true);
     objectAttributesManager->registerObject(objectTemplate);
     int objectId2 = physicsManager_->addObject(objectFile, drawables);
-    esp::physics::ManagedBulletRigidObject::ptr objectWrapper2 =
+    auto objectWrapper2 =
         rigidObjectManager_
             ->getObjectCopyByID<esp::physics::ManagedBulletRigidObject>(
                 objectId2);
@@ -419,10 +419,20 @@ TEST_F(PhysicsManagerTest, ConfigurableScaling) {
     Magnum::Range3D boundsGroundTruth(-abs(testScale), abs(testScale));
 
     int objectId = physicsManager_->addObject(objectFile, &drawables);
+#ifdef ESP_BUILD_WITH_BULLET
+    auto objectWrapper =
+        rigidObjectManager_
+            ->getObjectCopyByID<esp::physics::ManagedBulletRigidObject>(
+                objectId);
+#else
+    auto objectWrapper = rigidObjectManager_->getObjectCopyByID(objectId);
+#endif
+    ASSERT_NE(objectWrapper, nullptr);
+
     objectIDs.push_back(objectId);
 
     const Magnum::Range3D& visualBounds =
-        physicsManager_->getObjectSceneNode(objectId).getCumulativeBB();
+        objectWrapper->getSceneNode()->getCumulativeBB();
 
     ASSERT_EQ(visualBounds, boundsGroundTruth);
 
@@ -430,11 +440,7 @@ TEST_F(PhysicsManagerTest, ConfigurableScaling) {
 #ifdef ESP_BUILD_WITH_BULLET
     if (physicsManager_->getPhysicsSimulationLibrary() ==
         PhysicsManager::PhysicsSimulationLibrary::Bullet) {
-      esp::physics::BulletPhysicsManager* bPhysManager =
-          static_cast<esp::physics::BulletPhysicsManager*>(
-              physicsManager_.get());
-
-      Magnum::Range3D aabb = bPhysManager->getCollisionShapeAabb(objectId);
+      Magnum::Range3D aabb = objectWrapper->getCollisionShapeAabb();
 
       ASSERT_EQ(aabb, boundsGroundTruth);
     }
@@ -443,7 +449,8 @@ TEST_F(PhysicsManagerTest, ConfigurableScaling) {
 
   // check that scales are stored and queried correctly
   for (size_t ix = 0; ix < objectIDs.size(); ix++) {
-    ASSERT_EQ(physicsManager_->getScale(objectIDs[ix]), testScales[ix]);
+    ASSERT_EQ(rigidObjectManager_->getObjectCopyByID(objectIDs[ix])->getScale(),
+              testScales[ix]);
   }
 }
 
@@ -469,7 +476,16 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
   auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
 
   int objectId = physicsManager_->addObject(objectFile, &drawables);
-  physicsManager_->setTranslation(objectId, Magnum::Vector3{0, 1.0, 0});
+#ifdef ESP_BUILD_WITH_BULLET
+  auto objectWrapper =
+      rigidObjectManager_
+          ->getObjectCopyByID<esp::physics::ManagedBulletRigidObject>(objectId);
+#else
+  auto objectWrapper = rigidObjectManager_->getObjectCopyByID(objectId);
+#endif
+  ASSERT_NE(objectWrapper, nullptr);
+
+  objectWrapper->setTranslation(Magnum::Vector3{0, 1.0, 0});
 
   Magnum::Vector3 commandLinVel(1.0, 1.0, 1.0);
   Magnum::Vector3 commandAngVel(1.0, 1.0, 1.0);
@@ -477,20 +493,20 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
   // test results of getting/setting
   if (physicsManager_->getPhysicsSimulationLibrary() ==
       PhysicsManager::PhysicsSimulationLibrary::Bullet) {
-    physicsManager_->setLinearVelocity(objectId, commandLinVel);
-    physicsManager_->setAngularVelocity(objectId, commandAngVel);
+    objectWrapper->setLinearVelocity(commandLinVel);
+    objectWrapper->setAngularVelocity(commandAngVel);
 
-    ASSERT_EQ(physicsManager_->getLinearVelocity(objectId), commandLinVel);
-    ASSERT_EQ(physicsManager_->getAngularVelocity(objectId), commandAngVel);
+    ASSERT_EQ(objectWrapper->getLinearVelocity(), commandLinVel);
+    ASSERT_EQ(objectWrapper->getAngularVelocity(), commandAngVel);
 
   } else if (physicsManager_->getPhysicsSimulationLibrary() ==
              PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
-    physicsManager_->setLinearVelocity(objectId, commandLinVel);
-    physicsManager_->setAngularVelocity(objectId, commandAngVel);
+    objectWrapper->setLinearVelocity(commandLinVel);
+    objectWrapper->setAngularVelocity(commandAngVel);
 
     // default kinematics always 0 velocity when queried
-    ASSERT_EQ(physicsManager_->getLinearVelocity(objectId), Magnum::Vector3{});
-    ASSERT_EQ(physicsManager_->getAngularVelocity(objectId), Magnum::Vector3{});
+    ASSERT_EQ(objectWrapper->getLinearVelocity(), Magnum::Vector3{});
+    ASSERT_EQ(objectWrapper->getAngularVelocity(), Magnum::Vector3{});
   }
 
   // test constant velocity control mechanism
@@ -502,9 +518,8 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
   velControl->angVel = Magnum::Vector3{1.0, 0, 0};
 
   // first kinematic
-  physicsManager_->setObjectMotionType(objectId,
-                                       esp::physics::MotionType::KINEMATIC);
-  physicsManager_->setTranslation(objectId, Magnum::Vector3{0, 2.0, 0});
+  objectWrapper->setMotionType(esp::physics::MotionType::KINEMATIC);
+  objectWrapper->setTranslation(Magnum::Vector3{0, 2.0, 0});
 
   float targetTime = 2.0;
   while (physicsManager_->getWorldTime() < targetTime) {
@@ -514,38 +529,34 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
   Magnum::Quaternion qGroundTruth{{0.842602, 0, 0}, 0.538537};
 
   float errorEps = 0.015;  // fairly loose due to discrete timestep
-  ASSERT_LE(
-      (physicsManager_->getTranslation(objectId) - posGroundTruth).length(),
-      errorEps);
+  ASSERT_LE((objectWrapper->getTranslation() - posGroundTruth).length(),
+            errorEps);
   Magnum::Rad angleError =
-      Magnum::Math::angle(physicsManager_->getRotation(objectId), qGroundTruth);
+      Magnum::Math::angle(objectWrapper->getRotation(), qGroundTruth);
 
   ASSERT_LE(float(angleError), errorEps);
 
   if (physicsManager_->getPhysicsSimulationLibrary() ==
       PhysicsManager::PhysicsSimulationLibrary::Bullet) {
-    physicsManager_->setObjectMotionType(objectId,
-                                         esp::physics::MotionType::DYNAMIC);
-    physicsManager_->resetTransformation(objectId);
-    physicsManager_->setTranslation(objectId, Magnum::Vector3{0, 2.0, 0});
+    objectWrapper->setMotionType(esp::physics::MotionType::DYNAMIC);
+    objectWrapper->resetTransformation();
+    objectWrapper->setTranslation(Magnum::Vector3{0, 2.0, 0});
     physicsManager_->setGravity({});  // 0 gravity interference
     physicsManager_->reset();         // reset time to 0
 
     // should closely follow kinematic result while uninhibited in 0 gravity
     float targetTime = 0.5;
-    esp::core::RigidState initialObjectState(
-        physicsManager_->getRotation(objectId),
-        physicsManager_->getTranslation(objectId));
+    esp::core::RigidState initialObjectState(objectWrapper->getRotation(),
+                                             objectWrapper->getTranslation());
     esp::core::RigidState kinematicResult =
         velControl->integrateTransform(targetTime, initialObjectState);
     while (physicsManager_->getWorldTime() < targetTime) {
       physicsManager_->stepPhysics(physicsManager_->getTimestep());
     }
-    ASSERT_LE((physicsManager_->getTranslation(objectId) -
-               kinematicResult.translation)
+    ASSERT_LE((objectWrapper->getTranslation() - kinematicResult.translation)
                   .length(),
               errorEps);
-    angleError = Magnum::Math::angle(physicsManager_->getRotation(objectId),
+    angleError = Magnum::Math::angle(objectWrapper->getRotation(),
                                      kinematicResult.rotation);
     ASSERT_LE(float(angleError), errorEps);
 
@@ -554,14 +565,13 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
     while (physicsManager_->getWorldTime() < targetTime) {
       physicsManager_->stepPhysics(physicsManager_->getTimestep());
     }
-    ASSERT_GE(physicsManager_->getTranslation(objectId)[1], 1.0 - errorEps);
+    ASSERT_GE(objectWrapper->getTranslation()[1], 1.0 - errorEps);
   }
 
   // test local velocity
-  physicsManager_->setObjectMotionType(objectId,
-                                       esp::physics::MotionType::KINEMATIC);
-  physicsManager_->resetTransformation(objectId);
-  physicsManager_->setTranslation(objectId, Magnum::Vector3{0, 2.0, 0});
+  objectWrapper->setMotionType(esp::physics::MotionType::KINEMATIC);
+  objectWrapper->resetTransformation();
+  objectWrapper->setTranslation(Magnum::Vector3{0, 2.0, 0});
 
   velControl->linVel = Magnum::Vector3{0.0, 0.0, -1.0};
   velControl->angVel = Magnum::Vector3{1.0, 0, 0};
@@ -583,11 +593,10 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
   velControl->angVel = Magnum::Vector3{0.0, 0.0, 0.0};
   physicsManager_->stepPhysics(physicsManager_->getTimestep());
 
-  ASSERT_LE((physicsManager_->getTranslation(objectId) - posLocalGroundTruth)
-                .length(),
+  ASSERT_LE((objectWrapper->getTranslation() - posLocalGroundTruth).length(),
             errorEps);
-  Magnum::Rad angleErrorLocal = Magnum::Math::angle(
-      physicsManager_->getRotation(objectId), qLocalGroundTruth);
+  Magnum::Rad angleErrorLocal =
+      Magnum::Math::angle(objectWrapper->getRotation(), qLocalGroundTruth);
 
   ASSERT_LE(float(angleErrorLocal), errorEps);
 }
@@ -619,12 +628,21 @@ TEST_F(PhysicsManagerTest, TestSceneNodeAttachment) {
 
   // Test attaching newNode to a RigidBody
   int objectId = physicsManager_->addObject(objectFile, &drawables, newNode);
-  ASSERT_EQ(&physicsManager_->getObjectSceneNode(objectId), newNode);
+#ifdef ESP_BUILD_WITH_BULLET
+  auto objectWrapper =
+      rigidObjectManager_
+          ->getObjectCopyByID<esp::physics::ManagedBulletRigidObject>(objectId);
+#else
+  auto objectWrapper = rigidObjectManager_->getObjectCopyByID(objectId);
+#endif
+  ASSERT_NE(objectWrapper, nullptr);
+
+  ASSERT_EQ(objectWrapper->getSceneNode(), newNode);
 
   // Test updating newNode position with PhysicsManager
   Magnum::Vector3 newPos{1.0, 3.0, 0.0};
-  physicsManager_->setTranslation(objectId, newPos);
-  ASSERT_EQ(physicsManager_->getTranslation(objectId), newPos);
+  objectWrapper->setTranslation(newPos);
+  ASSERT_EQ(objectWrapper->getTranslation(), newPos);
   ASSERT_EQ(newNode->translation(), newPos);
 
   // Test leaving newNode without visualNode_ after destroying the RigidBody
