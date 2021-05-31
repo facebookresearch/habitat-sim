@@ -15,6 +15,7 @@
 #include "esp/physics/objectManagers/RigidObjectManager.h"
 #ifdef ESP_BUILD_WITH_BULLET
 #include "esp/physics/bullet/BulletPhysicsManager.h"
+#include "esp/physics/bullet/objectWrappers/ManagedBulletRigidObject.h"
 #endif
 
 #include "configure.h"
