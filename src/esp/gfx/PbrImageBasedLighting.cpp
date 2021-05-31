@@ -48,7 +48,6 @@ PbrImageBasedLighting::PbrImageBasedLighting(Flags flags,
 
   // compute the irradiance map
   computeIrradianceMap();
-
   irradianceMap_->saveTexture(CubeMap::TextureType::Color, "irradianceMap");
   exit(0);
 }
@@ -166,6 +165,8 @@ void PbrImageBasedLighting::computeIrradianceMap() {
   // TODO: should I use cubeSolid??
   Mn::Trade::MeshData cubeData =
       Mn::MeshTools::owned(Mn::Primitives::cubeSolid());
+  // camera is now inside the cube, must flip the face winding, otherwise all
+  // the faces are culled
   Mn::MeshTools::flipFaceWindingInPlace(cubeData.mutableIndices());
   Magnum::GL::Mesh cube = Magnum::MeshTools::compile(cubeData);
 
