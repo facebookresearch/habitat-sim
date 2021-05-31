@@ -41,16 +41,15 @@ CameraSensor::CameraSensor(scene::SceneNode& cameraNode,
                            const CameraSensorSpec::ptr& spec)
     : VisualSensor(cameraNode, spec),
       baseProjMatrix_(Magnum::Math::IdentityInit),
-      zoomMatrix_(Magnum::Math::IdentityInit) {
+      zoomMatrix_(Magnum::Math::IdentityInit),
+      renderCamera_(new gfx::RenderCamera(cameraNode)) {
   // Sanity check
   CORRADE_ASSERT(
       cameraSensorSpec_,
       "CameraSensor::CameraSensor(): The input sensorSpec is illegal", );
   cameraSensorSpec_->sanityCheck();
 
-  // Initialize renderCamera_ first to avoid segfaults
-  // NOLINTNEXTLINE(cplusplus.NewDeleteLeaks)
-  renderCamera_ = new gfx::RenderCamera(cameraNode);
+  // RenderCamera initialized in member list
   setProjectionParameters(*spec);
   renderCamera_->setAspectRatioPolicy(
       Mn::SceneGraph::AspectRatioPolicy::Extend);

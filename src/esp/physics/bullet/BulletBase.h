@@ -31,12 +31,12 @@ struct SimulationContactResultCallback
   /**
    * @brief Set when a contact is detected.
    */
-  bool bCollision;
+  bool bCollision{false};
 
   /**
    * @brief Constructor.
    */
-  SimulationContactResultCallback() { bCollision = false; }
+  SimulationContactResultCallback() = default;
 
   /**
    * @brief Called when a contact is detected.
