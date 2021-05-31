@@ -6,7 +6,6 @@
 #define ESP_PHYSICS_RIGIDOBJECTMANAGER_H
 
 #include "RigidBaseManager.h"
-#include "esp/physics/bullet/objectWrappers/ManagedBulletRigidObject.h"
 #include "esp/physics/objectWrappers/ManagedRigidObject.h"
 namespace esp {
 namespace physics {
