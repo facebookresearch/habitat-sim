@@ -297,10 +297,9 @@ void declareRigidBaseWrapper(py::module& m,
 void declareRigidObjectWrapper(py::module& m,
                                const std::string& objType,
                                const std::string& classStrPrefix) {
-  std::string pyclass_name = classStrPrefix;
   // ==== ManagedRigidObject ====
   py::class_<ManagedRigidObject, AbstractManagedRigidBase<RigidObject>,
-             std::shared_ptr<ManagedRigidObject>>(m, pyclass_name.c_str())
+             std::shared_ptr<ManagedRigidObject>>(m, classStrPrefix.c_str())
       .def_property_readonly(
           "creation_attributes",
           &ManagedRigidObject::getInitializationAttributes,
