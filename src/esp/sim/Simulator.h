@@ -60,7 +60,7 @@ class Simulator {
    * is not done correctly, the pattern for @ref `close` then @ref `reconfigure`
    * to create a "fresh" instance of the simulator may not work correctly
    */
-  virtual void close();
+  void close();
 
   virtual void reconfigure(const SimulatorConfiguration& cfg);
 
