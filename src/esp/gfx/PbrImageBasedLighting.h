@@ -10,6 +10,7 @@
 #include <Magnum/GL/Texture.h>
 
 #include "CubeMap.h"
+#include "PbrEquiRectangularToCubeMapShader.h"
 #include "PbrIrradianceMapShader.h"
 #include "esp/core/esp.h"
 #include "esp/gfx/ShaderManager.h"
@@ -52,6 +53,18 @@ class PbrImageBasedLighting {
   explicit PbrImageBasedLighting(Flags flags, ShaderManager& shaderManager);
 
   /**
+   * @brief constructor
+   * @param[in] flags, flags that indicate settings
+   * @param[in] shaderManager, the shader manager that manages all the shaders
+   * @param[in] equirectangularImageFilename, the name (path included) of the
+   * equirectangular image, that will be converted to a environment cube map
+   */
+  explicit PbrImageBasedLighting(
+      Flags flags,
+      ShaderManager& shaderManager,
+      const std::string& equirectangularImageFilename);
+
+  /**
    * @brief get the irradiance cube map
    */
   CubeMap& getIrradianceMap();
@@ -65,6 +78,14 @@ class PbrImageBasedLighting {
    * @brief get the brdf lookup table
    */
   Magnum::GL::Texture2D& getBrdfLookupTable();
+
+  /**
+   * @brief get the brdf lookup table
+   * @param[in] equirectangularImageFilename, the name (path included) of the
+   * equirectangular image, that will be converted to a environment cube map
+   */
+  void convertEquirectangularToCubeMap(
+      const std::string& equirectangularImageFilename);
 
  private:
   Flags flags_;
@@ -104,6 +125,7 @@ class PbrImageBasedLighting {
     IrradianceMap = 0,
     // PrefilteredMap = 1,
     // BrdfLookupTable = 2,
+    EquirectangularToCubeMap = 3,
   };
   template <typename T>
   Mn::Resource<Mn::GL::AbstractShaderProgram, T> getShader(
@@ -118,6 +140,9 @@ class PbrImageBasedLighting {
             key = Mn::ResourceKey{"prefilteredMap"};
             break;
         */
+      case PbrIblShaderType::EquirectangularToCubeMap:
+        key = Mn::ResourceKey{"equirectangularToCubeMap"};
+        break;
 
       default:
         CORRADE_INTERNAL_ASSERT_UNREACHABLE();
@@ -130,6 +155,10 @@ class PbrImageBasedLighting {
       if (type == PbrIblShaderType::IrradianceMap) {
         shaderManager_.set<Mn::GL::AbstractShaderProgram>(
             shader.key(), new PbrIrradianceMapShader(),
+            Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
+      } else if (type == PbrIblShaderType::EquirectangularToCubeMap) {
+        shaderManager_.set<Mn::GL::AbstractShaderProgram>(
+            shader.key(), new PbrEquiRectangularToCubeMapShader(),
             Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
       }
       /*

@@ -2245,7 +2245,7 @@ void ResourceManager::initPbrImageBasedLighting() {
                          gfx::PbrImageBasedLighting::Flags{
                              gfx::PbrImageBasedLighting::Flag::IndirectDiffuse |
                              gfx::PbrImageBasedLighting::Flag::UseLDRImages},
-                         shaderManager_));
+                         shaderManager_, "./data/pbr/Malibu_Overlook_4k.jpg"));
 }
 
 void ResourceManager::initDefaultMaterials() {

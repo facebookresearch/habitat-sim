@@ -4,10 +4,12 @@
 
 #include "PbrImageBasedLighting.h"
 
+#include <Corrade/PluginManager/Manager.h>
 #include <Corrade/Utility/Assert.h>
 #include <Corrade/Utility/Resource.h>
 #include <Magnum/GL/Texture.h>
 #include <Magnum/GL/TextureFormat.h>
+#include <Magnum/Image.h>
 #include <Magnum/ImageView.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Angle.h>
@@ -50,6 +52,80 @@ PbrImageBasedLighting::PbrImageBasedLighting(Flags flags,
 
   // compute the irradiance map
   computeIrradianceMap();
+}
+
+PbrImageBasedLighting::PbrImageBasedLighting(
+    Flags flags,
+    ShaderManager& shaderManager,
+    const std::string& equirectangularImageFilename)
+    : flags_(flags), shaderManager_(shaderManager) {
+  recreateTextures();
+
+  // load the BRDF lookup table
+  // TODO: should have the capability to compute it by the simulator
+  loadBrdfLookUpTable();
+
+  convertEquirectangularToCubeMap(equirectangularImageFilename);
+  // debug:
+  environmentMap_->saveTexture(CubeMap::TextureType::Color, "malibu");
+  exit(0);
+
+  // compute the irradiance map
+  computeIrradianceMap();
+}
+
+void PbrImageBasedLighting::convertEquirectangularToCubeMap(
+    const std::string& equirectangularImageFilename) {
+  // ==== load the equirectangular texture ====
+  // TODO: HDR!!
+  // plugin manager used to instantiate importers which in turn are used
+  // to load image data
+  Cr::PluginManager::Manager<Mn::Trade::AbstractImporter> manager;
+  std::string importerName{"AnyImageImporter"};
+  Cr::Containers::Pointer<Mn::Trade::AbstractImporter> importer =
+      manager.loadAndInstantiate(importerName);
+  CORRADE_INTERNAL_ASSERT(importer);
+
+  importer->openFile(equirectangularImageFilename);
+  Cr::Containers::Optional<Mn::Trade::ImageData2D> imageData =
+      importer->image2D(0);
+  // sanity checks
+  CORRADE_INTERNAL_ASSERT(imageData);
+
+  Mn::Vector2i size = imageData->size();
+  // TODO: HDR!!
+  Mn::GL::Texture2D tex = Mn::GL::Texture2D{};
+  tex.setMinificationFilter(Mn::GL::SamplerFilter::Linear)
+      .setMagnificationFilter(Mn::GL::SamplerFilter::Linear)
+      .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
+      .setStorage(1, Mn::GL::textureFormat(imageData->format()),
+                  size);  // TODO: HDR
+
+  if (!imageData->isCompressed()) {
+    tex.setSubImage(0, {}, *imageData);
+  } else {
+    tex.setCompressedSubImage(0, {}, *imageData);
+  }
+  // prepare a mesh to be displayed
+  Mn::GL::Mesh mesh = Mn::GL::Mesh{};
+  mesh.setCount(3);
+
+  // prepare the shader
+  Mn::Resource<Mn::GL::AbstractShaderProgram, PbrEquiRectangularToCubeMapShader>
+      shader = getShader<PbrEquiRectangularToCubeMapShader>(
+          PbrIblShaderType::EquirectangularToCubeMap);
+
+  // bind the equirectangular texture
+  shader->bindEquirectangularTexture(tex);
+
+  // draw the 6 sides one by one
+  for (unsigned int iSide = 0; iSide < 6; ++iSide) {
+    environmentMap_->bindFramebuffer(iSide);
+    // clear color and depth
+    environmentMap_->prepareToDraw(iSide);
+    shader->setCubeSideIndex(iSide);
+    shader->draw(mesh);
+  }
 }
 
 void PbrImageBasedLighting::recreateTextures() {
@@ -162,7 +238,6 @@ void PbrImageBasedLighting::computeIrradianceMap() {
       1000.0f));  // z-far plane
 
   // prepare a cube
-  // TODO: should I use cubeSolid??
   Mn::Trade::MeshData cubeData =
       Mn::MeshTools::owned(Mn::Primitives::cubeSolid());
   // camera is now inside the cube, must flip the face winding, otherwise all

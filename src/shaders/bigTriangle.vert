@@ -2,6 +2,26 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+// For technical details, see here:
+//https://rauwendaal.net/2014/06/14/rendering-a-screen-covering-triangle-in-opengl/
+
+/*
+v0(-1, 1)  v2(3, 1)
+uv(0, 1)   uv(2, 1)
+__________
+|    |   /
+|    |  /
+|    | /
+|____|/
+|    /
+|   /
+|  /
+| /
+|/
+v1(-1, -3)
+uv(0, -1)
+*/
+
 #ifdef OUTPUT_UV
 out highp vec2 textureCoordinates;
 #endif

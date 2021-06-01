@@ -55,6 +55,8 @@ set(
   PbrImageBasedLighting.h
   PbrIrradianceMapShader.cpp
   PbrIrradianceMapShader.h
+  PbrEquiRectangularToCubeMapShader.cpp
+  PbrEquiRectangularToCubeMapShader.h
   PbrTextureUnit.h
 )
 

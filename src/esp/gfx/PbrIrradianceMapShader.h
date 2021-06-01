@@ -47,20 +47,7 @@ class PbrIrradianceMapShader : public Magnum::GL::AbstractShaderProgram {
   };
 
   /**
-   * @brief Flag
-   *
-   * @see @ref Flags, @ref flags()
-   */
-  enum class Flag : Magnum::UnsignedShort {};
-
-  /**
-   * @brief Flags
-   */
-  typedef Corrade::Containers::EnumSet<Flag> Flags;
-
-  /**
    * @brief Constructor
-   * @param flags         Flags
    */
   explicit PbrIrradianceMapShader();
 
@@ -108,8 +95,6 @@ class PbrIrradianceMapShader : public Magnum::GL::AbstractShaderProgram {
   int modelviewMatrixUniform_ = ID_UNDEFINED;
   int projMatrixUniform_ = ID_UNDEFINED;
 };
-
-CORRADE_ENUMSET_OPERATORS(PbrIrradianceMapShader::Flags)
 
 }  // namespace gfx
 }  // namespace esp
