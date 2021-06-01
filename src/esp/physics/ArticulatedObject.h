@@ -263,7 +263,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * @param linkId The ArticulatedLink ID or -1 for the baseLink.
    * @return Const reference to the SceneNode.
    */
-  virtual const scene::SceneNode& getLinkSceneNode(int linkId = -1) const {
+  const scene::SceneNode& getLinkSceneNode(int linkId = -1) const {
     if (linkId == ID_UNDEFINED) {
       // base link
       return baseLink_->node();

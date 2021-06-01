@@ -89,7 +89,7 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
     }
   }
 
-  bool isActive() {
+  bool isActive() const {
     if (auto sp = this->getObjectReference()) {
       return sp->isActive();
     }
@@ -108,7 +108,7 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
     }
   }  // setLightSetup
 
-  scene::SceneNode* getSceneNode() {
+  scene::SceneNode* getSceneNode() const {
     if (auto sp = this->getObjectReference()) {
       return &const_cast<scene::SceneNode&>(sp->getSceneNode());
     }
