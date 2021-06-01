@@ -320,7 +320,7 @@ class MetadataMediator {
    * @return name of object attributes with handle containing @p artObjModelName
    * or empty string if none.
    */
-  const std::string getArticulatedObjModelFullHandle(
+  std::string getArticulatedObjModelFullHandle(
       const std::string& artObjModelName) {
     attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
     // this should never happen

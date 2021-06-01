@@ -1588,7 +1588,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
     existingArticulatedObjects_.at(objectId)->setRootState(state);
   }
 
-  const Magnum::Matrix4 getArticulatedObjectRootState(int objectId) {
+  Magnum::Matrix4 getArticulatedObjectRootState(int objectId) {
     CHECK(existingArticulatedObjects_.count(objectId));
     return existingArticulatedObjects_.at(objectId)->getRootState();
   }

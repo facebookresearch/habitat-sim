@@ -262,7 +262,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * @return name of AO model with handle containing @p artObjModelName or
    * empty string if none.
    */
-  inline const std::string getArticulatedObjModelFullHandle(
+  inline std::string getArticulatedObjModelFullHandle(
       const std::string& artObjModelName) {
     if (articulatedObjPaths.count(artObjModelName) == 0) {
       LOG(ERROR) << "SceneDatasetAttributes::getArticulatedObjModelFullHandle "

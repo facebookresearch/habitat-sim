@@ -66,7 +66,7 @@ class URDFImporter {
                 bool forceReload = false);
 
   // NOTE: all of these getter/setters act on the current "activeModel_"
-  virtual const std::shared_ptr<io::URDF::Model> getModel() const {
+  virtual std::shared_ptr<io::URDF::Model> getModel() const {
     return activeModel_;
   };
 

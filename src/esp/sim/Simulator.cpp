@@ -1519,7 +1519,7 @@ void Simulator::setArticulatedObjectRootState(int objectId,
   }
 };
 
-const Magnum::Matrix4 Simulator::getArticulatedObjectRootState(int objectId) {
+Magnum::Matrix4 Simulator::getArticulatedObjectRootState(int objectId) {
   if (sceneHasPhysics(0)) {
     return physicsManager_->getArticulatedObjectRootState(objectId);
   }

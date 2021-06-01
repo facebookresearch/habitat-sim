@@ -659,7 +659,7 @@ class Simulator {
   void setArticulatedObjectRootState(int objectId,
                                      const Magnum::Matrix4& state);
 
-  const Magnum::Matrix4 getArticulatedObjectRootState(int objectId);
+  Magnum::Matrix4 getArticulatedObjectRootState(int objectId);
 
   void setArticulatedObjectForces(int objectId,
                                   const std::vector<float>& forces);

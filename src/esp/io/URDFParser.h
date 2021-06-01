@@ -114,7 +114,7 @@ struct CollisionShape : Shape {
 };
 
 struct Inertia {
-  Magnum::Matrix4 m_linkLocalFrame{false};
+  Magnum::Matrix4 m_linkLocalFrame{0.0};
   bool m_hasLinkLocalFrame;
 
   double m_mass{0.0};
@@ -215,13 +215,13 @@ class Model {
   void printKinematicChain() const;
 
   std::shared_ptr<Link> getLink(const std::string& linkName) const {
-    if (m_links.count(linkName)) {
+    if (m_links.count(linkName) != 0u) {
       return m_links.at(linkName);
     }
     return nullptr;
   }
   std::shared_ptr<Link> getLink(int linkIndex) const {
-    if (m_linkIndicesToNames.count(linkIndex)) {
+    if (m_linkIndicesToNames.count(linkIndex) != 0u) {
       return getLink(m_linkIndicesToNames.at(linkIndex));
     }
     return nullptr;
@@ -229,7 +229,7 @@ class Model {
 
   //! get the parent joint of a link
   std::shared_ptr<Joint> getJoint(int linkIndex) const {
-    if (m_linkIndicesToNames.count(linkIndex)) {
+    if (m_linkIndicesToNames.count(linkIndex) != 0u) {
       return getLink(m_linkIndicesToNames.at(linkIndex))->m_parentJoint.lock();
     }
     return nullptr;
@@ -378,9 +378,7 @@ class Parser {
   }
   float getGlobalScaling() const { return m_urdfScaling; }
 
-  const std::shared_ptr<Model> getModel() const { return m_urdfModel; }
-
-  std::shared_ptr<Model> getModel() { return m_urdfModel; }
+  std::shared_ptr<Model> getModel() const { return m_urdfModel; }
 
   bool logMessages = false;
 };

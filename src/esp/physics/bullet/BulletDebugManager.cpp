@@ -68,7 +68,7 @@ void BulletDebugManager::processActiveManifolds(
 
 std::string BulletDebugManager::getDebugStringForCollisionObject(
     const btCollisionObject* colObj) {
-  std::string name = (collisionObjectToDebugName_.count(colObj))
+  std::string name = (collisionObjectToDebugName_.count(colObj) != 0u)
                          ? collisionObjectToDebugName_[colObj]
                          : "unknown";
 
@@ -162,7 +162,7 @@ std::string BulletDebugManager::getCollisionFilteringSummary(bool doVerbose) {
         bool collides = (broadphaseHandle0->m_collisionFilterGroup &
                          broadphaseHandle1->m_collisionFilterMask) != 0;
         collides = collides && (broadphaseHandle1->m_collisionFilterGroup &
-                                broadphaseHandle0->m_collisionFilterMask);
+                                broadphaseHandle0->m_collisionFilterMask) != 0;
 
         if (collides) {
           s << "  " << name1 << std::endl;
