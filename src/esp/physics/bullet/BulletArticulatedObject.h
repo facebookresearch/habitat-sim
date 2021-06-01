@@ -136,22 +136,6 @@ class BulletArticulatedObject : public ArticulatedObject {
   //! dof level
   bool supportsJointMotor(int linkIx) const;
 
-  // TODO: should be stored in the link
-  // compound parent collision shapes for the links
-  std::map<int, std::unique_ptr<btCompoundShape>> linkCompoundShapes_;
-
-  // child mesh convex and primitive shapes for the link compound shapes
-  std::map<int, std::vector<std::unique_ptr<btCollisionShape>>>
-      linkChildShapes_;
-
-  // used to update raycast objectId checks (maps to link ids)
-  std::shared_ptr<std::map<const btCollisionObject*, int>>
-      collisionObjToObjIds_;
-
-  // std::unique_ptr<btMultiBody> btMultiBody_; //TODO:
-  // TODO: also protected? not due to p2p constraint system
-  std::unique_ptr<btMultiBody> btMultiBody_;
-
   //============ Joint Motor Constraints =============
 
   /**
@@ -187,6 +171,10 @@ class BulletArticulatedObject : public ArticulatedObject {
    */
   void resetStateFromSceneInstanceAttr(
       CORRADE_UNUSED bool defaultCOMCorrection = false) override;
+
+  // std::unique_ptr<btMultiBody> btMultiBody_; //TODO:
+  // TODO: also protected? not due to p2p constraint system
+  std::unique_ptr<btMultiBody> btMultiBody_;
 
  protected:
   /**
@@ -240,6 +228,18 @@ class BulletArticulatedObject : public ArticulatedObject {
 
   std::unique_ptr<btCompoundShape> bFixedObjectShape_;
   std::unique_ptr<btRigidBody> bFixedObjectRigidBody_;
+
+  // TODO: should be stored in the link
+  // compound parent collision shapes for the links
+  std::map<int, std::unique_ptr<btCompoundShape>> linkCompoundShapes_;
+
+  // child mesh convex and primitive shapes for the link compound shapes
+  std::map<int, std::vector<std::unique_ptr<btCollisionShape>>>
+      linkChildShapes_;
+
+  // used to update raycast objectId checks (maps to link ids)
+  std::shared_ptr<std::map<const btCollisionObject*, int>>
+      collisionObjToObjIds_;
 
   ESP_SMART_POINTERS(BulletArticulatedObject)
 };

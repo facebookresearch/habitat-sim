@@ -22,6 +22,27 @@ class ManagedBulletArticulatedObject
   ManagedBulletArticulatedObject()
       : ManagedArticulatedObject("ManagedBulletArticulatedObject") {}
 
+  bool contactTest(bool staticAsStage = true) {
+    if (auto sp = getBulletObjectReference()) {
+      return sp->contactTest(staticAsStage);
+    }
+    return false;
+  }
+
+  bool supportsJointMotor(int linkIx) {
+    if (auto sp = getBulletObjectReference()) {
+      return sp->supportsJointMotor(linkIx);
+    }
+    return false;
+  }
+
+  float getJointMotorMaxImpulse(int motorId) {
+    if (auto sp = getBulletObjectReference()) {
+      return sp->getJointMotorMaxImpulse(motorId);
+    }
+    return 0.0;
+  }
+
  protected:
   /**
    * @brief Templated version of obj ref getter. This function accesses the
