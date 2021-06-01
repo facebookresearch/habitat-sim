@@ -50,27 +50,27 @@ enum class CollisionGroup {
   //! Default group for unspecified object (e.g. raycast)
   Default = 1,
   //! STATIC objects should not change state
-  Static = 2,
+  Static = 1 << 1,
   //! KINEMATIC objects are updated manually
-  Kinematic = 4,
+  Kinematic = 1 << 2,
   //! Free (i.e., DYNAMIC) objects are integrated by dynamic simulation
-  FreeObject = 8,
+  FreeObject = 1 << 3,
   //! convenience groups to separate robots from free objects
-  Robot = 16,
+  Robot = 1 << 4,
   //! convenience group for objects which should not collide with anything
-  Noncollidable = 32,
+  Noncollidable = 1 << 5,
 
   // User configurable groups with "CollisionGroup::Default" behavior unless
   // modified
-  UserGroup1 = 64,
-  UserGroup2 = 128,
-  UserGroup3 = 256,
-  UserGroup4 = 512,
-  UserGroup5 = 1024,
-  UserGroup6 = 2048,
-  UserGroup7 = 4096,
-  UserGroup8 = 8192,
-  UserGroup9 = 16384,
+  UserGroup1 = 1 << 6,
+  UserGroup2 = 1 << 7,
+  UserGroup3 = 1 << 8,
+  UserGroup4 = 1 << 9,
+  UserGroup5 = 1 << 10,
+  UserGroup6 = 1 << 11,
+  UserGroup7 = 1 << 12,
+  UserGroup8 = 1 << 13,
+  UserGroup9 = 1 << 14,
 
   //! convenience group for objects which should collide with everything except
   //! Noncollidable
