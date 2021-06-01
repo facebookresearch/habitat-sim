@@ -66,9 +66,9 @@ class ManagedArticulatedObject
     return {};
   }
 
-  ArticulatedLink* getLink(int id) const {
+  ArticulatedLink* getLink(int linkId) const {
     if (auto sp = getObjectReference()) {
-      return &sp->getLink(id);
+      return &sp->getLink(linkId);
     }
     return nullptr;
   }

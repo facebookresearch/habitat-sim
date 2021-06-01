@@ -8,6 +8,7 @@
 #include "esp/physics/RigidObject.h"
 #include "esp/physics/RigidStage.h"
 #ifdef ESP_BUILD_WITH_BULLET
+#include "esp/physics/bullet/objectWrappers/ManagedBulletArticulatedObject.h"
 #include "esp/physics/bullet/objectWrappers/ManagedBulletRigidObject.h"
 #endif
 #include "esp/physics/objectWrappers/ManagedArticulatedObject.h"
@@ -315,6 +316,131 @@ void declareRigidObjectWrapper(py::module& m,
 
 }  // declareRigidObjectTemplateWrapper
 
+void declareArticulatedObjectWrapper(py::module& m,
+                                     const std::string& objType,
+                                     const std::string& classStrPrefix) {
+  // ==== ManagedArticulatedObject ====
+  py::class_<ManagedArticulatedObject,
+             AbstractManagedPhysicsObject<ArticulatedObject>,
+             std::shared_ptr<ManagedArticulatedObject>>(
+      m, "ManagedArticulatedObject")
+      .def("create_joint_motor", &ManagedArticulatedObject::createJointMotor,
+           ("Create a joint motor for the specified DOF on this " + objType +
+            " using the provided JointMotorSettings")
+               .c_str(),
+           "DOF"_a, "settings"_a)
+      .def(
+          "remove_joint_motor", &ManagedArticulatedObject::removeJointMotor,
+          ("Remove the joint motor specified by the given motor_id from this " +
+           objType + ".")
+              .c_str(),
+          "motor_id"_a)
+      .def("get_joint_motor_settings",
+           &ManagedArticulatedObject::getJointMotorSettings,
+           ("Get the JointMotorSettings for the motor with the given "
+            "motor_id in this " +
+            objType + ".")
+               .c_str(),
+           "motor_id"_a)
+      .def("update_joint_motor", &ManagedArticulatedObject::updateJointMotor,
+           ("Update the JointMotorSettings for the motor specified by the "
+            "provided motor_id on this " +
+            objType + ".")
+               .c_str(),
+           "motor_id"_a, "settings"_a)
+      .def("get_link_scene_node", &ManagedArticulatedObject::getLinkSceneNode,
+           ("Get the scene node for this " + objType +
+            "'s articulated link specified by the passed "
+            "link_id. Use link_id==-1 to get the base link.")
+               .c_str(),
+           "link_id"_a)
+      .def("get_link_visual_nodes",
+           &ManagedArticulatedObject::getLinkVisualSceneNodes,
+           ("Get a list of the visual scene nodes from this " + objType +
+            "'s articulated link specified by the passed "
+            "link_id. Use link_id==-1 to get the base link.")
+               .c_str(),
+           "link_id"_a)
+      .def("get_link", &ManagedArticulatedObject::getLink,
+           ("Get this " + objType +
+            "'s articulated link specified by the passed "
+            "link_id. Use link_id==-1 to get the base link.")
+               .c_str(),
+           "link_id"_a)
+      .def(
+          "get_link_ids", &ManagedArticulatedObject::getLinkIds,
+          ("Get a list of this " + objType + "'s individual link ids.").c_str())
+      .def_property_readonly(
+          "num_links", &ManagedArticulatedObject::getNumLinks,
+          ("Get the number of links this " + objType + " holds.").c_str())
+      .def_property(
+          "forces", &ManagedArticulatedObject::getForces,
+          &ManagedArticulatedObject::setForces,
+          ("Get or set the forces acting upon this " + objType + ".").c_str())
+      .def_property("joint_velocities",
+                    &ManagedArticulatedObject::getVelocities,
+                    &ManagedArticulatedObject::setVelocities,
+                    ("Get or set this " + objType +
+                     "'s joint velocities, indexed by DOF id.")
+                        .c_str())
+      .def_property("joint_positions", &ManagedArticulatedObject::getPositions,
+                    &ManagedArticulatedObject::setPositions,
+                    ("Get or set this " + objType +
+                     "'s joint positions, indexed by DOF id.")
+                        .c_str())
+      .def("get_joint_position_limits",
+           &ManagedArticulatedObject::getPositionLimits,
+           ("Get a list of this " + objType +
+            "'s joint limits, either upper limits or lower limits, depending "
+            "on the supplied boolean value for upper_limits.")
+               .c_str(),
+           "upper_limits"_a)
+      .def("add_link_force", &ManagedArticulatedObject::addArticulatedLinkForce,
+           ("Apply the given force to this " + objType +
+            "'s link specified by the given link_id")
+               .c_str(),
+           "link_id"_a, "force"_a)
+      .def("get_link_friction",
+           &ManagedArticulatedObject::getArticulatedLinkFriction,
+           ("Get the link friction from this " + objType +
+            "'s link specified by the provided link_id")
+               .c_str(),
+           "link_id"_a)
+      .def("set_link_friction",
+           &ManagedArticulatedObject::setArticulatedLinkFriction,
+           ("Set the link friction for this " + objType +
+            "'s link specified by the provided link_id to the provided "
+            "friction value.")
+               .c_str(),
+           "link_id"_a, "friction"_a)
+      .def("zero_joint_states", &ManagedArticulatedObject::reset,
+           ("Clear all of this " + objType +
+            "'s joint postions and velocities to 0.")
+               .c_str())
+      .def_property_readonly(
+          "can_sleep", &ManagedArticulatedObject::getCanSleep,
+          ("Whether or not this " + objType + " can be put to sleep").c_str())
+      .def("get_existing_joint_motor_ids",
+           &ManagedArticulatedObject::getExistingJointMotors,
+           ("Get a dictionary holding all of this " + objType +
+            "'s joint motor ids.")
+               .c_str())
+      .def("create_all_motors",
+           &ManagedArticulatedObject::createMotorsForAllDofs,
+           ("Make motors for all of this " + objType + "'s DOFs.").c_str())
+      .def_property(
+          "auto_clamp_joint_limits",
+          &ManagedArticulatedObject::getAutoClampJointLimits,
+          &ManagedArticulatedObject::setAutoClampJointLimits,
+          ("Get or set whether this " + objType +
+           "'s joints should be autoclamped to specified joint limits.")
+              .c_str())
+      .def("clamp_joint_limits", &ManagedArticulatedObject::clampJointLimits,
+           ("Clamp this " + objType +
+            "'s current pose to specified joint limits.")
+               .c_str());
+}  // declareArticulatedObjectWrapper
+
 template <class T>
 void declareBaseObjectWrappers(py::module& m,
                                const std::string& objType,
@@ -348,11 +474,33 @@ void initPhysicsObjectBindings(py::module& m) {
   // physics object base instance for articulated object
   declareBasePhysicsObjectWrapper<ArticulatedObject>(m, "Articulated Object",
                                                      "ArticulatedObject");
-  // articulated object wrapper instance
-  py::class_<ManagedArticulatedObject,
-             AbstractManagedPhysicsObject<ArticulatedObject>,
-             std::shared_ptr<ManagedArticulatedObject>>(
-      m, "ManagedArticulatedObject");
+
+  // ==== ManagedArticulatedObject ====
+  declareArticulatedObjectWrapper(m, "Articulated Object",
+                                  "ManagedArticulatedObject");
+
+#ifdef ESP_BUILD_WITH_BULLET
+  // ==== ManagedBulletArticulatedObject ====
+  py::class_<ManagedBulletArticulatedObject, ManagedArticulatedObject,
+             std::shared_ptr<ManagedBulletArticulatedObject>>(
+      m, "ManagedBulletArticulatedObject")
+      .def(
+          "contact_test", &ManagedBulletArticulatedObject::contactTest,
+          // TODO need to describe what 'static_as_stage' is intended for in
+          // appropriate terms.
+          R"(Returns the result of a discrete collision test between this object and the world.)",
+          "static_as_stage"_a)
+      .def("supports_joint_motor",
+           &ManagedBulletArticulatedObject::supportsJointMotor, R"()",
+           "link_id"_a)
+      .def(
+          "get_joint_motor_max_impulse",
+          &ManagedBulletArticulatedObject::getJointMotorMaxImpulse,
+          R"(Get the maximum impulse for the joint motor specified by the given motor_id)",
+          "motor_id"_a)
+
+      ;
+#endif
 
 }  // initPhysicsObjectBindings
 

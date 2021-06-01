@@ -4,11 +4,13 @@
 
 #include "esp/bindings/bindings.h"
 
+#include "esp/physics/objectManagers/ArticulatedObjectManager.h"
 #include "esp/physics/objectManagers/PhysicsObjectBaseManager.h"
 #include "esp/physics/objectManagers/RigidBaseManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/physics/objectWrappers/ManagedRigidObject.h"
 #ifdef ESP_BUILD_WITH_BULLET
+#include "esp/physics/bullet/objectWrappers/ManagedBulletArticulatedObject.h"
 #include "esp/physics/bullet/objectWrappers/ManagedBulletRigidObject.h"
 #endif
 namespace py = pybind11;
@@ -16,8 +18,10 @@ using py::literals::operator""_a;
 
 namespace PhysWraps = esp::physics;
 #ifdef ESP_BUILD_WITH_BULLET
+using PhysWraps::ManagedBulletArticulatedObject;
 using PhysWraps::ManagedBulletRigidObject;
 #endif
+using PhysWraps::ArticulatedObjectManager;
 using PhysWraps::ManagedRigidObject;
 using PhysWraps::PhysicsObjectBaseManager;
 using PhysWraps::RigidBaseManager;
@@ -216,6 +220,23 @@ void initPhysicsWrapperManagerBindings(pybind11::module& m) {
           R"(This removes the RigidObject referenced by the passed handle from the library, while allowing "
           "for the optional retention of the object's scene node and/or the visual node)");
 
+  // initialize bindings for articulated objects
+
+#ifdef ESP_BUILD_WITH_BULLET
+  declareBaseWrapperManager<ManagedArticulatedObject,
+                            ManagedBulletArticulatedObject>(
+      m, "BulletArticulatedObject", "PhysicsObjectManager");
+
+#else
+  // if dynamics library not being used, just use base rigid object
+  declareBaseWrapperManager<ManagedArticulatedObject>(m, "ArticulatedObject",
+                                                      "PhysicsObjectManager");
+
+#endif
+  py::class_<ArticulatedObjectManager,
+             PhysicsObjectBaseManager<ManagedArticulatedObject>,
+             std::shared_ptr<ArticulatedObjectManager>>(
+      m, "ArticulatedObjectManager");
 }  // initPhysicsWrapperManagerBindings
 
 }  // namespace physics
