@@ -11,6 +11,7 @@
 #include "BulletRigidObject.h"
 #include "BulletURDFImporter.h"
 #include "esp/assets/ResourceManager.h"
+#include "esp/physics/objectManagers/RigidObjectManager.h"
 
 namespace esp {
 namespace physics {
@@ -162,6 +163,12 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
                                       std::move(articulatedObject));
 
   return articulatedObjectID_;
+}
+
+esp::physics::ManagedRigidObject::ptr
+BulletPhysicsManager::getRigidObjectWrapper() {
+  // TODO make sure this is appropriately cast
+  return rigidObjectManager_->createObject("ManagedBulletRigidObject");
 }
 
 //! Check if mesh primitive is compatible with physics

@@ -99,7 +99,7 @@ AssetAttributesManager::AssetAttributesManager()
     if (elem.first == PrimObjTypes::END_PRIM_OBJ_TYPES) {
       continue;
     }
-    auto tmplt = this->createObject(elem.second, true);
+    auto tmplt = AssetAttributesManager::createObject(elem.second, true);
     std::string tmpltHandle = tmplt->getHandle();
     defaultPrimAttributeHandles_[elem.second] = tmpltHandle;
     this->undeletableObjectNames_.insert(tmpltHandle);

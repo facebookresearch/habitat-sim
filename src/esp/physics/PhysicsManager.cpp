@@ -247,9 +247,9 @@ int PhysicsManager::addObject(
                << newObjectHandle;
 
   existingObjects_.at(nextObjectID_)->setObjectName(newObjectHandle);
+
   // 2.0 Get wrapper - name is irrelevant, do not register.
-  ManagedRigidObject::ptr objWrapper =
-      rigidObjectManager_->createObject("No Name Yet");
+  ManagedRigidObject::ptr objWrapper = getRigidObjectWrapper();
 
   // 3.0 Put object in wrapper
   objWrapper->setObjectRef(existingObjects_.at(nextObjectID_));
@@ -259,6 +259,10 @@ int PhysicsManager::addObject(
 
   return nextObjectID_;
 }  // PhysicsManager::addObject
+
+esp::physics::ManagedRigidObject::ptr PhysicsManager::getRigidObjectWrapper() {
+  return rigidObjectManager_->createObject("ManagedRigidObject");
+}
 
 void PhysicsManager::removeObject(const int physObjectID,
                                   bool deleteObjectNode,

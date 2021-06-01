@@ -45,7 +45,7 @@ BulletRigidObject::BulletRigidObject(
       MotionState{*rigidBodyNode} {}
 
 BulletRigidObject::~BulletRigidObject() {
-  if (!isActive()) {
+  if (!BulletRigidObject::isActive()) {
     // This object may be supporting other sleeping objects, so wake them
     // before removing.
     activateCollisionIsland();

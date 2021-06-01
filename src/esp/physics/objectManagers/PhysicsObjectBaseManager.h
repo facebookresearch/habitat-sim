@@ -50,7 +50,8 @@ class PhysicsObjectBaseManager
    * @brief Creates an empty @ref esp::physics::AbstractManagedPhysicsObject of
    * the type managed by this manager.
    *
-   * @param objectHandle Unused.  Object being wrapped will provide its name.
+   * @param objectTypeName Class name of the wrapper to create.  This will be
+   * used as a key in @p managedObjTypeConstructorMap_.
    * @param registerObject whether to add this managed object to the
    * library or not. If the user is going to edit this managed object, this
    * should be false. Defaults to true. If specified as true, then this function
@@ -58,7 +59,7 @@ class PhysicsObjectBaseManager
    * @return a reference to the desired managed object.
    */
   ObjWrapperPtr createObject(
-      const std::string& objectHandle,
+      const std::string& objectTypeName,
       CORRADE_UNUSED bool registerObject = false) override;
 
  protected:
@@ -85,6 +86,42 @@ class PhysicsObjectBaseManager
       }
     }
   }  // updateObjectHandleLists
+  /**
+   * @brief Build a shared pointer to a ManagedRigidObject wrapper around an
+   * appropriately cast @ref esp::physics::RigidObject, either the base
+   * kinematic verison, or one built to support a dynamic library.
+   * @tparam The type of the underlying wrapped object to create
+   */
+  template <typename U>
+  ObjWrapperPtr createPhysicsObjectWrapper() {
+    return U::create();
+  }
+
+  /**
+   * @brief Used Internally.  Create and configure newly-created managed object
+   * with any default values, before any specific values are set.
+   *
+   * @param objectTypeName Used to determine what kind of Rigid Object wrapper
+   * to make (either kinematic or dynamic-library-specific)
+   * @param builtFromConfig Unused for wrapper objects.  All wrappers are
+   * constructed from scratch.
+   * @return Newly created but unregistered ManagedObject pointer, with only
+   * default values set.
+   */
+  ObjWrapperPtr initNewObjectInternal(
+      const std::string& objectTypeName,
+      CORRADE_UNUSED bool builtFromConfig) override {
+    // construct a new wrapper based on the passed object
+    if (managedObjTypeConstructorMap_.count(objectTypeName) == 0) {
+      LOG(ERROR) << "PhysicsObjectBaseManager::initNewObjectInternal ("
+                 << this->objectType_ << ") Unknown constructor type "
+                 << objectTypeName << ".  Aborting.";
+      return nullptr;
+    }
+    auto newWrapper = (*this.*managedObjTypeConstructorMap_[objectTypeName])();
+
+    return newWrapper;
+  }  // RigidObjectManager::initNewObjectInternal(
 
   /**
    * @brief implementation of managed object type-specific registration
@@ -119,9 +156,27 @@ class PhysicsObjectBaseManager
     return sp;
   }  // getPhysicsManager
 
+  // ====== instance variables =====
+
   /** @brief Weak reference to owning physics manager.
    */
   std::weak_ptr<esp::physics::PhysicsManager> weakPhysManager_{};
+
+  /** @brief Define a map type referencing function pointers to @ref
+   * createRigidObjectWrapper() keyed by string names of classes being
+   * instanced, as defined in @ref PrimitiveNames3DMap
+   */
+  typedef std::map<std::string,
+                   ObjWrapperPtr (PhysicsObjectBaseManager<T>::*)()>
+      Map_Of_ManagedObjTypeCtors;
+
+  /** @brief Map of function pointers to instantiate a @ref
+   * esp::physics::AbstractManagedPhysicsObject wrapper object, keyed by the
+   * wrapper's class name. A ManagedRigidObject wrapper of the appropriate type
+   * is instanced by accessing the constructor map with the appropriate
+   * classname.
+   */
+  Map_Of_ManagedObjTypeCtors managedObjTypeConstructorMap_;
 
  public:
   ESP_SMART_POINTERS(PhysicsObjectBaseManager<T>)
@@ -133,7 +188,7 @@ class PhysicsObjectBaseManager
 
 template <class T>
 auto PhysicsObjectBaseManager<T>::createObject(
-    const std::string& objectWrapperHandle,
+    const std::string& objectTypeName,
     CORRADE_UNUSED bool registerTemplate) -> ObjWrapperPtr {
   // This creates and returns an empty object wrapper.  The shared_ptr to the
   // actual @ref esp::physics::PhysicsObjectBase needs to be passed into this
@@ -142,8 +197,7 @@ auto PhysicsObjectBaseManager<T>::createObject(
   // object being wrapped to be set separately.
   // NO default object will exist for wrappers, since they have no independent
   // data outside of the wrapped object.
-  ObjWrapperPtr objWrapper =
-      this->initNewObjectInternal(objectWrapperHandle, false);
+  ObjWrapperPtr objWrapper = this->initNewObjectInternal(objectTypeName, false);
 
   return objWrapper;
 }  // PhysicsObjectBaseManager<T>::createObject

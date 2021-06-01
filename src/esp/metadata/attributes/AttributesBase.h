@@ -24,7 +24,7 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
   AbstractAttributes(const std::string& attributesClassKey,
                      const std::string& handle)
       : Configuration() {
-    setClassKey(attributesClassKey);
+    AbstractAttributes::setClassKey(attributesClassKey);
     AbstractAttributes::setHandle(handle);
   }
 

@@ -405,6 +405,12 @@ class BulletPhysicsManager : public PhysicsManager {
    */
   bool initPhysicsFinalize() override;
 
+  /**
+   * @brief Create an object wrapper appropriate for this physics manager.
+   * Overridden if called by dynamics-library-enabled PhysicsManager
+   */
+  esp::physics::ManagedRigidObject::ptr getRigidObjectWrapper() override;
+
   //============ Object/Stage Instantiation =============
   /**
    * @brief Finalize stage initialization. Checks that the collision
