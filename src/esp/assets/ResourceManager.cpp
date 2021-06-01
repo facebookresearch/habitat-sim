@@ -2241,11 +2241,14 @@ void ResourceManager::initPbrImageBasedLighting() {
   // TODO: Indirect specular
   activePbrIbl_ = 0;
   pbrImageBasedLightings_.emplace(
-      activePbrIbl_, std::make_unique<gfx::PbrImageBasedLighting>(
-                         gfx::PbrImageBasedLighting::Flags{
-                             gfx::PbrImageBasedLighting::Flag::IndirectDiffuse |
-                             gfx::PbrImageBasedLighting::Flag::UseLDRImages},
-                         shaderManager_, "./data/pbr/Malibu_Overlook_4k.jpg"));
+      activePbrIbl_,
+      std::make_unique<gfx::PbrImageBasedLighting>(
+          gfx::PbrImageBasedLighting::Flags{
+              gfx::PbrImageBasedLighting::Flag::IndirectDiffuse |
+              gfx::PbrImageBasedLighting::Flag::UseLDRImages},
+          // shaderManager_, "./data/pbr/Malibu_Overlook_4k.rotated.jpg"));
+          // shaderManager_, "./data/pbr/Alexs_Apt_8k.jpg"));
+          shaderManager_, "./data/pbr/Stadium_Center_8k.jpg"));
 }
 
 void ResourceManager::initDefaultMaterials() {

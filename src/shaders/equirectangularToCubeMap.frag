@@ -24,29 +24,12 @@ out highp vec4 fragmentColor;
 const float INV_PI = 1.0f / 3.14159265359f;
 
 vec3 uvToXYZ(vec2 uv) {
-    // Do NOT add break here!
-    // Otherwise it gives you warning
-    // "Unreachable statement in switch body"
+  // convert range 0 to 1 to -1 to 1
+  uv = 2.0f * uv - 1.0f;
+  // Do NOT add break here!
+  // Otherwise it gives you warning
+  // "Unreachable statement in switch body"
   switch (CubeSideIndex) {
-    /*
-    case 0:
-		return vec3( 1.0f,  uv.y, -uv.x);
-
-    case 1:
-		return vec3(-1.0f,  uv.y,  uv.x);
-
-    case 2:
-		return vec3( uv.x, -1.0f,  uv.y);
-
-    case 3:
-		return vec3( uv.x,  1.0f, -uv.y);
-
-    case 4:
-		return vec3( uv.x,  uv.y,  1.0f);
-
-    case 5:
-    return vec3(-uv.x, +uv.y, -1.0f);
-    */
     case 0:
 		return vec3( 1.0f,  uv.y, -uv.x);
 

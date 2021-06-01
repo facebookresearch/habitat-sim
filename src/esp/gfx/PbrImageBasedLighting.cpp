@@ -66,12 +66,13 @@ PbrImageBasedLighting::PbrImageBasedLighting(
   loadBrdfLookUpTable();
 
   convertEquirectangularToCubeMap(equirectangularImageFilename);
-  // debug:
+  // debug: XXX
   environmentMap_->saveTexture(CubeMap::TextureType::Color, "malibu");
-  exit(0);
 
   // compute the irradiance map
   computeIrradianceMap();
+  // debug: XXX
+  irradianceMap_->saveTexture(CubeMap::TextureType::Color, "irradiance");
 }
 
 void PbrImageBasedLighting::convertEquirectangularToCubeMap(
