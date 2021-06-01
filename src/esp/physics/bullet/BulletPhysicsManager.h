@@ -393,6 +393,13 @@ class BulletPhysicsManager : public PhysicsManager {
    */
   esp::physics::ManagedRigidObject::ptr getRigidObjectWrapper() override;
 
+  /**
+   * @brief Create an articulated object wrapper appropriate for this physics
+   * manager. Overridden if called by dynamics-library-enabled PhysicsManager
+   */
+  esp::physics::ManagedArticulatedObject::ptr getArticulatedObjectWrapper()
+      override;
+
   //============ Object/Stage Instantiation =============
   /**
    * @brief Finalize stage initialization. Checks that the collision

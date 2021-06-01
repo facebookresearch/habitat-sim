@@ -310,6 +310,13 @@ esp::physics::ManagedRigidObject::ptr PhysicsManager::getRigidObjectWrapper() {
   return rigidObjectManager_->createObject("ManagedRigidObject");
 }
 
+esp::physics::ManagedArticulatedObject::ptr
+PhysicsManager::getArticulatedObjectWrapper() {
+  // should never be called unless we support non-dynamic AOs - would only be
+  // called from AO creation occurring from within PM
+  return articulatedObjectManager_->createObject("ManagedArticulatedObject");
+}
+
 void PhysicsManager::removeObject(const int physObjectID,
                                   bool deleteObjectNode,
                                   bool deleteVisualNode) {

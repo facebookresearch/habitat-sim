@@ -11,6 +11,7 @@
 #include "BulletRigidObject.h"
 #include "BulletURDFImporter.h"
 #include "esp/assets/ResourceManager.h"
+#include "esp/physics/objectManagers/ArticulatedObjectManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
 
 namespace esp {
@@ -173,6 +174,7 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
   Magnum::Debug{} << "BulletPhysicsManager::addArticulatedObjectFromURDF: "
                      "simpleObjectHandle : "
                   << simpleArtObjHandle;
+
   std::string newArtObjectHandle =
       articulatedObjectManager_->getUniqueHandleFromCandidate(
           simpleArtObjHandle);
@@ -184,8 +186,7 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
       ->setObjectName(newArtObjectHandle);
 
   // 2.0 Get wrapper - name is irrelevant, do not register on create.
-  ManagedArticulatedObject::ptr AObjWrapper =
-      articulatedObjectManager_->createObject("No Name Yet");
+  ManagedArticulatedObject::ptr AObjWrapper = getArticulatedObjectWrapper();
 
   // 3.0 Put articulated object in wrapper
   AObjWrapper->setObjectRef(
@@ -201,6 +202,12 @@ esp::physics::ManagedRigidObject::ptr
 BulletPhysicsManager::getRigidObjectWrapper() {
   // TODO make sure this is appropriately cast
   return rigidObjectManager_->createObject("ManagedBulletRigidObject");
+}
+
+esp::physics::ManagedArticulatedObject::ptr
+BulletPhysicsManager::getArticulatedObjectWrapper() {
+  // TODO make sure this is appropriately cast
+  return articulatedObjectManager_->createObject("ManagedBulletRigidObject");
 }
 
 //! Check if mesh primitive is compatible with physics
