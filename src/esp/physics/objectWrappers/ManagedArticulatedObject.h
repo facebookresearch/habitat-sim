@@ -23,6 +23,19 @@ class ManagedArticulatedObject
       : AbstractManagedPhysicsObject<esp::physics::ArticulatedObject>(
             "ManagedArticulatedObject") {}
 
+  int createJointMotor(const int dof, const JointMotorSettings& settings) {
+    if (auto sp = getObjectReference()) {
+      return sp->createJointMotor(dof, settings);
+    }
+    return ID_UNDEFINED;
+  }
+
+  void removeJointMotor(const int motorId) {
+    if (auto sp = getObjectReference()) {
+      sp->removeJointMotor(motorId);
+    }
+  }
+
  public:
   ESP_SMART_POINTERS(ManagedArticulatedObject)
 };
