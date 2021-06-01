@@ -163,12 +163,12 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
    * extension(s) with the passed @p fileTypeExt, if it is missing.  NOTE : this
    * does not verify that file exists.
    * @param filename The original file name
-   * @param jsonTypeExt The extension to use for the new filename.
+   * @param fileTypeExt The extension to use for the new filename.
    * @return The file name changed so that it has the correct @p fileTypeExt if
    * it was missing.
    */
   std::string convertFilenameToPassedExt(const std::string& filename,
-                                         const std::string& jsonTypeExt);
+                                         const std::string& fileTypeExt);
 
   /**
    * @brief Get directory component of managed object handle and call @ref
