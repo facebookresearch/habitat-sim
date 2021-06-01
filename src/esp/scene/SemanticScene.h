@@ -145,7 +145,7 @@ class SemanticScene {
  protected:
   /**
    * @brief Verify a requested file exists.
-   * @param houseFile the file to attempt to load
+   * @param filename the file to attempt to load
    * @param srcFunc calling function name to be displayed in failure message
    * @return whether found or not
    */

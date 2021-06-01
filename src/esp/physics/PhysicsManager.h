@@ -178,7 +178,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @brief Initialization: load physical properties and setup the world.
    * @param node  The scene graph node which will act as the parent of all
    * physical scene and object nodes.
-   * @param physMgr Simulator's shared pointer referencing this physics manager.
    */
   bool initPhysics(scene::SceneNode* node);
 
@@ -254,8 +253,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    *
    * @param attributesID The ID of the object's template in @ref
    * esp::metadata::managers::ObjectAttributesManager
-   * @param drawables Reference to the scene graph drawables group to enable
-   * rendering of the newly initialized object.
    * @param attachmentNode If supplied, attach the new physical object to an
    * existing SceneNode.
    * @param lightSetup The string name of the desired lighting setup to use.
@@ -493,7 +490,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * object is not recommended.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
-   * @param trans The desired @ref esp::core::RigidState of the object.
+   * @param rigidState The desired @ref esp::core::RigidState of the object.
    */
   void setRigidState(const int physObjectID,
                      const esp::core::RigidState& rigidState);
@@ -636,7 +633,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * PhysicsManager::existingObjects_.
    * @return The @ref esp::core::RigidState of the object.
    */
-  esp::core::RigidState getRigidState(const int objectID) const;
+  esp::core::RigidState getRigidState(const int physObjectID) const;
 
   /** @brief Get the current 3D position of an object.
    * @param  physObjectID The object ID and key identifying the object in @ref
@@ -808,14 +805,14 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
 
   /** @brief Get the scalar angular damping coefficient of an object.
    * See @ref RigidObject::getAngularDamping.
-   * @param  physObjectID The object ID and key identifying the object in @ref
+   * @param physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @return The scalar angular damping coefficient of the object
    */
   double getAngularDamping(const int physObjectID) const;
 
   /** @brief Gets the VoxelWrapper associated with a rigid object.
-   * @param  physObjectID The object ID and key identifying the object in @ref
+   * @param physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @return A pointer to the object's Voxel Wrapper.
    */
@@ -831,7 +828,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
 
   /** @brief Get the scalar collision margin of an object.
    * See @ref BulletRigidObject::getMargin.
-   * @param  physObjectID The object ID and key identifying the object in @ref
+   * @param physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @return The scalar collision margin of the object.
    */
@@ -842,7 +839,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   /** @brief Set the scalar collision margin of an object.
    * See @ref BulletRigidObject::setMargin. Nothing is set if no implementation
    * using a collision margin is in use.
-   * @param  physObjectID The object ID and key identifying the object in @ref
+   * @param physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @param  margin The desired collision margin for the object.
    */
@@ -1140,7 +1137,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * existingObjects_.
    * @param semanticId The desired semantic id for the object.
    */
-  void setSemanticId(int physObjectID, uint32_t semanticId);
+  void setSemanticId(int objectID, uint32_t semanticId);
 
   /**
    * @brief Get a copy of the template used to initialize an object.
@@ -1268,8 +1265,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   /** @brief Create and initialize a @ref RigidObject, assign it an ID and add
    * it to existingObjects_ map keyed with newObjectID
    * @param newObjectID valid object ID for the new object
-   * @param initAttributes The physical object's template defining its
-   * physical parameters.
+   * @param objectAttributes The physical object's template
    * @param objectNode Valid, existing scene node
    * @return whether the object has been successfully initialized and added to
    * existingObjects_ map
