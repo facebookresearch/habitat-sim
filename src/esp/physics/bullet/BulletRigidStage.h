@@ -36,8 +36,6 @@ class BulletRigidStage : public BulletBase, public RigidStage {
   /**
    * @brief Finalize the initialization of this @ref RigidScene
    * geometry.  This holds bullet-specific functionality for stages.
-   * @param resMgr Reference to resource manager, to access relevant components
-   * pertaining to the stage object
    * @return true if initialized successfully, false otherwise.
    */
   bool initialization_LibSpecific() override;

@@ -61,8 +61,6 @@ class RigidStage : public RigidBase {
    * geometry.  This is overridden by inheriting class specific to certain
    * physics libraries.Necessary to support kinematic objects without any
    * dynamics support.
-   * @param resMgr Reference to resource manager, to access relevant components
-   * pertaining to the stage object
    * @return true if initialized successfully, false otherwise.
    */
   bool initialization_LibSpecific() override { return true; }

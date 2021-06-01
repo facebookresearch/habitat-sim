@@ -19,13 +19,13 @@ class DoubleSphereCameraShader : public CubeMapShaderBase {
 
   /**
    *  @brief Set the focal length of the fisheye camera
-   *  @param focalLength, the focal length x, y directions
+   *  @param focalLength the focal length x, y directions
    *  @return Reference to self (for method chaining)
    */
   DoubleSphereCameraShader& setFocalLength(Magnum::Vector2 focalLength);
   /**
    *  @brief Set the offset of the principal point of the fisheye camera
-   *  @param offset, the offset of the principal point in pixels
+   *  @param offset the offset of the principal point in pixels
    *  @return Reference to self (for method chaining)
    */
   DoubleSphereCameraShader& setPrincipalPointOffset(Magnum::Vector2 offset);
@@ -34,7 +34,7 @@ class DoubleSphereCameraShader : public CubeMapShaderBase {
    * See details in:
    * Vladyslav Usenko, Nikolaus Demmel and Daniel Cremers: The Double Sphere
    * Camera Model, The International Conference on 3D Vision (3DV), 2018
-   *  @param alpha, the alpha value (0.0 <= alpha < 1.0)
+   *  @param alpha the alpha value (0.0 <= alpha < 1.0)
    *  @return Reference to self (for method chaining)
    */
   DoubleSphereCameraShader& setAlpha(float alpha);
@@ -44,7 +44,7 @@ class DoubleSphereCameraShader : public CubeMapShaderBase {
    * See details in:
    * Vladyslav Usenko, Nikolaus Demmel and Daniel Cremers: The Double Sphere
    * Camera Model, The International Conference on 3D Vision (3DV), 2018
-   * @param xi, the Xi value
+   * @param xi the Xi value
    * @return Reference to self (for method chaining)
    */
   DoubleSphereCameraShader& setXi(float xi);

@@ -417,7 +417,7 @@ class BulletPhysicsManager : public PhysicsManager {
    * mesh can be used by Bullet. See @ref BulletRigidObject::initializeStage.
    * Bullet mesh conversion adapted from:
    * https://github.com/mosra/magnum-integration/issues/20
-   * @param handle The handle of the attributes structure defining physical
+   * @param initAttributes The attributes structure defining physical
    * properties of the stage.
    * @return true if successful and false otherwise
    */
@@ -427,9 +427,7 @@ class BulletPhysicsManager : public PhysicsManager {
   /** @brief Create and initialize an @ref RigidObject and add
    * it to existingObjects_ map keyed with newObjectID
    * @param newObjectID valid object ID for the new object
-   * @param meshGroup The object's mesh.
-   * @param handle The handle to the physical object's template defining its
-   * physical parameters.
+   * @param objectAttributes The object's template
    * @param objectNode Valid, existing scene node
    * @return whether the object has been successfully initialized and added to
    * existingObjects_ map

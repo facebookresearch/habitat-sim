@@ -65,15 +65,15 @@ class RenderCamera : public MagnumCamera {
 
   /**
    * @brief Constructor
-   * @param node, the scene node to which the camera is attached
+   * @param node the scene node to which the camera is attached
    */
   explicit RenderCamera(scene::SceneNode& node);
   /**
    * @brief Constructor
-   * @param node, the scene node to which the camera is attached
-   * @param eye, the eye position (in PARENT node space)
-   * @param target, the target position (in PARENT node space)
-   * @param up, the up direction (in PARENT node space)
+   * @param node the scene node to which the camera is attached
+   * @param eye the eye position (in PARENT node space)
+   * @param target the target position (in PARENT node space)
+   * @param up the up direction (in PARENT node space)
    * NOTE: it will override any relative transformation w.r.t its parent node
    */
   RenderCamera(scene::SceneNode& node,
@@ -82,10 +82,10 @@ class RenderCamera : public MagnumCamera {
                const vec3f& up);
   /**
    * @brief Constructor
-   * @param node, the scene node to which the camera is attached
-   * @param eye, the eye position (in PARENT node space)
-   * @param target, the target position (in PARENT node space)
-   * @param up, the up direction (in PARENT node space)
+   * @param node the scene node to which the camera is attached
+   * @param eye the eye position (in PARENT node space)
+   * @param target the target position (in PARENT node space)
+   * @param up the up direction (in PARENT node space)
    * NOTE: it will override any relative transformation w.r.t its parent node
    */
   RenderCamera(scene::SceneNode& node,
@@ -94,9 +94,9 @@ class RenderCamera : public MagnumCamera {
                const Magnum::Vector3& up);
   /**
    * @brief Reset the initial viewing parameters of the camera
-   * @param eye, the eye position (in PARENT node space)
-   * @param target, the target position (in PARENT node space)
-   * @param up, the up direction (in PARENT node space)
+   * @param eye the eye position (in PARENT node space)
+   * @param target the target position (in PARENT node space)
+   * @param up the up direction (in PARENT node space)
    * @return Reference to self (for method chaining)
    * NOTE: it will override any relative transformation w.r.t its parent node
    */
@@ -156,7 +156,7 @@ class RenderCamera : public MagnumCamera {
    * @param height The height of the viewport
    * @param znear The location of the near clipping plane
    * @param zfar The location of the far clipping plane
-   * @param projMat The projection matrix to use.
+   * @param hfov The horizontal field of view.
    * @return A reference to this RenderCamera
    */
   RenderCamera& setProjectionMatrix(int width,

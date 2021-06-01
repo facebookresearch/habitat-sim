@@ -181,8 +181,8 @@ class CameraSensor : public VisualSensor {
 
   /**
    * @brief Draw the scene graph with the specified camera flag
-   * @param[in] sceneGraph, scene graph to be drawn
-   * @param[in] flags, flag for the render camera
+   * @param[in] sceneGraph scene graph to be drawn
+   * @param[in] flags flag for the render camera
    */
   void draw(scene::SceneGraph& sceneGraph, gfx::RenderCamera::Flags flags);
 
