@@ -15,6 +15,7 @@
 #include "BulletBase.h"
 #include "BulletDynamics/Featherstone/btMultiBodyJointMotor.h"
 #include "BulletDynamics/Featherstone/btMultiBodySphericalJointMotor.h"
+#include "BulletURDFImporter.h"
 
 namespace esp {
 
