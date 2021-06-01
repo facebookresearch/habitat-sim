@@ -13,14 +13,15 @@ namespace Mn = Magnum;
 namespace esp {
 namespace scene {
 
-SceneNode::SceneNode() : Mn::SceneGraph::AbstractFeature3D{*this} {
+SceneNode::SceneNode()
+    : Mn::SceneGraph::AbstractFeature3D{*this},
+      nodeSensorSuite_(new esp::sensor::SensorSuite(*this)),
+      subtreeSensorSuite_(new esp::sensor::SensorSuite(*this)) {
   setCachedTransformations(Mn::SceneGraph::CachedTransformation::Absolute);
   absoluteTransformation_ = absoluteTransformation();
   // Once created, nodeSensorSuite_ and subtreeSensorSuite_ are features owned
   // by the SceneNode. No need to release them in the destructor since the
-  // magnum SceneGraph will handle it.
-  nodeSensorSuite_ = new esp::sensor::SensorSuite(*this);
-  subtreeSensorSuite_ = new esp::sensor::SensorSuite(*this);
+  // magnum SceneGraph will handle it. (constructed as member initializers)
 }
 
 SceneNode::SceneNode(SceneNode& parent) : SceneNode() {

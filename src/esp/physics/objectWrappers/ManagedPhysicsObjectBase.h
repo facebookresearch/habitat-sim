@@ -28,7 +28,7 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
   typedef std::weak_ptr<T> WeakObjRef;
 
   explicit AbstractManagedPhysicsObject(const std::string& classKey) {
-    setClassKey(classKey);
+    AbstractManagedPhysicsObject::setClassKey(classKey);
   }
 
   void setObjectRef(const std::shared_ptr<T>& objRef) { weakObjRef_ = objRef; }
@@ -259,9 +259,7 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
  protected:
   /**
    * @brief This function accesses the underlying shared pointer of this
-   * object's
-   * @p weakObjRef_ if it exists; if not, it provides a message and executes
-   * appropriate cleanup code.
+   * object's @p weakObjRef_ if it exists; if not, it provides a message.
    * @return Either a shared pointer of this wrapper's object, or nullptr if
    * dne.
    */

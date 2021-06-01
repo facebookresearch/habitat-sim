@@ -12,7 +12,7 @@
 #include "esp/physics/CollisionGroupHelper.h"
 
 /** @file
- * @brief Class @ref esp::physics::PhysicsObjectBase is the base class for any
+ * @brief Class @ref physics::PhysicsObjectBase is the base class for any
  * physics-based construct, and holds basic accounting info and accessors, along
  * with scene node access.
  */
@@ -82,7 +82,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
         Magnum::SceneGraph::AbstractFeature3D::object());
   }
   /**
-   * @brief Get the @ref esp::physics::MotionType of the object. See @ref
+   * @brief Get the @ref physics::MotionType of the object. See @ref
    * setMotionType.
    * @return The object's current @ref MotionType.
    */
@@ -90,12 +90,12 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
 
   /**
    * @brief Set the @ref MotionType of the object. If the construct is a @ref
-   * esp::physics::RigidStage, it can only be @ref
-   * esp::physics::MotionType::STATIC. If the object is
-   * @ref esp::physics::RigidObject it can also be set to @ref
-   * esp::physics::MotionType::KINEMATIC. Only if a dervied @ref
-   * esp::physics::PhysicsManager implementing dynamics is in use can the object
-   * be set to @ref esp::physics::MotionType::DYNAMIC.
+   * physics::RigidStage, it can only be @ref
+   * physics::MotionType::STATIC. If the object is
+   * @ref physics::RigidObject it can also be set to @ref
+   * physics::MotionType::KINEMATIC. Only if a dervied @ref
+   * physics::PhysicsManager implementing dynamics is in use can the object
+   * be set to @ref physics::MotionType::DYNAMIC.
    * @param mt The desirved @ref MotionType.
    */
   virtual void setMotionType(MotionType mt) = 0;
@@ -163,7 +163,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
   // ==== Transformations ===
 
   /** @brief Set the 4x4 transformation matrix of the object kinematically.
-   * Calling this during simulation of a @ref esp::physics::MotionType::DYNAMIC
+   * Calling this during simulation of a @ref physics::MotionType::DYNAMIC
    * object is not recommended.
    * @param transformation The desired 4x4 transform of the object.
    */
@@ -183,7 +183,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
 
   /**
    * @brief Set the 3D position of the object kinematically.
-   * Calling this during simulation of a @ref esp::physics::MotionType::DYNAMIC
+   * Calling this during simulation of a @ref physics::MotionType::DYNAMIC
    * object is not recommended.
    * @param vector The desired 3D position of the object.
    */
@@ -203,7 +203,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
 
   /**
    * @brief Set the orientation of the object kinematically.
-   * Calling this during simulation of a @ref esp::physics::MotionType::DYNAMIC
+   * Calling this during simulation of a @ref physics::MotionType::DYNAMIC
    * object is not recommended.
    * @param quaternion The desired orientation of the object.
    */
@@ -245,7 +245,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
   }
 
   /** @brief Modify the 3D position of the object kinematically by translation.
-   * Calling this during simulation of a @ref esp::physics::MotionType::DYNAMIC
+   * Calling this during simulation of a @ref physics::MotionType::DYNAMIC
    * object is not recommended.
    * @param vector The desired 3D vector by which to translate the object.
    */
@@ -258,7 +258,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
 
   /** @brief Modify the 3D position of the object kinematically by translation
    * with a vector defined in the object's local coordinate system. Calling this
-   * during simulation of a @ref esp::physics::MotionType::DYNAMIC object is not
+   * during simulation of a @ref physics::MotionType::DYNAMIC object is not
    * recommended.
    * @param vector The desired 3D vector in the object's ocal coordiante system
    * by which to translate the object.
@@ -286,7 +286,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
 
   /** @brief Modify the orientation of the object kinematically by applying an
    * axis-angle rotation to it in the local coordinate system. Calling this
-   * during simulation of a @ref esp::physics::MotionType::DYNAMIC object is not
+   * during simulation of a @ref physics::MotionType::DYNAMIC object is not
    * recommended.
    * @param angleInRad The angle of rotation in radians.
    * @param normalizedAxis The desired unit vector axis of rotation in the local
@@ -302,7 +302,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
 
   /** @brief Modify the orientation of the object kinematically by applying a
    * rotation to it about the global X axis. Calling this during simulation of a
-   * @ref esp::physics::MotionType::DYNAMIC object is not recommended.
+   * @ref physics::MotionType::DYNAMIC object is not recommended.
    * @param angleInRad The angle of rotation in radians.
    */
   virtual void rotateX(const Magnum::Rad angleInRad) {
@@ -314,7 +314,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
 
   /** @brief Modify the orientation of the object kinematically by applying a
    * rotation to it about the global Y axis. Calling this during simulation of a
-   * @ref esp::physics::MotionType::DYNAMIC object is not recommended.
+   * @ref physics::MotionType::DYNAMIC object is not recommended.
    * @param angleInRad The angle of rotation in radians.
    */
   virtual void rotateY(const Magnum::Rad angleInRad) {
@@ -326,7 +326,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
 
   /** @brief Modify the orientation of the object kinematically by applying a
    * rotation to it about the global Z axis. Calling this during simulation of a
-   * @ref esp::physics::MotionType::DYNAMIC object is not recommended.
+   * @ref physics::MotionType::DYNAMIC object is not recommended.
    * @param angleInRad The angle of rotation in radians.
    */
   virtual void rotateZ(const Magnum::Rad angleInRad) {
@@ -338,7 +338,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
 
   /** @brief Modify the orientation of the object kinematically by applying a
    * rotation to it about the local X axis. Calling this during simulation of a
-   * @ref esp::physics::MotionType::DYNAMIC object is not recommended.
+   * @ref physics::MotionType::DYNAMIC object is not recommended.
    * @param angleInRad The angle of rotation in radians.
    */
   virtual void rotateXLocal(const Magnum::Rad angleInRad) {
@@ -350,7 +350,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
 
   /** @brief Modify the orientation of the object kinematically by applying a
    * rotation to it about the local Y axis. Calling this during simulation of a
-   * @ref esp::physics::MotionType::DYNAMIC object is not recommended.
+   * @ref physics::MotionType::DYNAMIC object is not recommended.
    * @param angleInRad The angle of rotation in radians.
    */
   virtual void rotateYLocal(const Magnum::Rad angleInRad) {
@@ -362,7 +362,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
 
   /** @brief Modify the orientation of the object kinematically by applying a
    * rotation to it about the local Z axis. Calling this during simulation of a
-   * @ref esp::physics::MotionType::DYNAMIC object is not recommended.
+   * @ref physics::MotionType::DYNAMIC object is not recommended.
    * @param angleInRad The angle of rotation in radians.
    */
   virtual void rotateZLocal(const Magnum::Rad angleInRad) {
@@ -375,20 +375,30 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
   /**
    * @brief Store whatever object attributes you want here!
    */
-  esp::core::Configuration::ptr attributes_{};
+  core::Configuration::ptr attributes_{};
 
   /**
-   * @brief Set the object's state from a @ref
-   * esp::metadata::attributes::SceneObjectInstanceAttributes
-   * @param objInstAttr The attributes that describe the desired state to set
-   * this object.
+   * @brief Set or reset the object's state using the object's specified @p
+   * sceneInstanceAttributes_.
    * @param defaultCOMCorrection The default value of whether COM-based
    * translation correction needs to occur.
    */
-  virtual void setStateFromAttributes(
-      const esp::metadata::attributes::SceneObjectInstanceAttributes* const
-          objInstAttr,
-      bool defaultCOMCorrection = false) = 0;
+  virtual void resetStateFromSceneInstanceAttr(
+      CORRADE_UNUSED bool defaultCOMCorrection = false) = 0;
+
+  /**
+   * @brief Set this object's @ref
+   * metadata::attributes::SceneObjectInstanceAttributes used to place the
+   * object within the scene.
+   * @param instanceAttr The @ref
+   * metadata::attributes::SceneObjectInstanceAttributes used to place this
+   * object in the scene.
+   */
+
+  template <class U>
+  void setSceneInstanceAttr(std::shared_ptr<U> instanceAttr) {
+    _sceneInstanceAttributes = std::move(instanceAttr);
+  }  // setSceneInstanceAttr
 
  protected:
   /**
@@ -417,6 +427,28 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    * object's asset data.
    */
   const assets::ResourceManager& resMgr_;
+
+  /** @brief Accessed internally. Get an appropriately cast copy of the @ref
+   * metadata::attributes::SceneObjectInstanceAttributes used to place the
+   * object within the scene.
+   * @return A copy of the initialization template used to create this object
+   * instance or nullptr if no template exists.
+   */
+  template <class T>
+  std::shared_ptr<T> getSceneInstanceAttrInternal() const {
+    if (!_sceneInstanceAttributes) {
+      return nullptr;
+    }
+    return T::create(*(static_cast<T*>(_sceneInstanceAttributes.get())));
+  }
+
+ private:
+  /**
+   * @brief This object's instancing attributes, if any were used during its
+   * creation.
+   */
+  std::shared_ptr<metadata::attributes::SceneObjectInstanceAttributes>
+      _sceneInstanceAttributes = nullptr;
 
  public:
   ESP_SMART_POINTERS(PhysicsObjectBase)

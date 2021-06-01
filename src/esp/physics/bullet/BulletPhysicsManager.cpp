@@ -8,6 +8,7 @@
 #include "BulletPhysicsManager.h"
 #include "BulletRigidObject.h"
 #include "esp/assets/ResourceManager.h"
+#include "esp/physics/objectManagers/RigidObjectManager.h"
 
 namespace esp {
 namespace physics {
@@ -67,6 +68,12 @@ bool BulletPhysicsManager::makeAndAddRigidObject(
     existingObjects_.emplace(newObjectID, std::move(ptr));
   }
   return objSuccess;
+}
+
+esp::physics::ManagedRigidObject::ptr
+BulletPhysicsManager::getRigidObjectWrapper() {
+  // TODO make sure this is appropriately cast
+  return rigidObjectManager_->createObject("ManagedBulletRigidObject");
 }
 
 //! Check if mesh primitive is compatible with physics
@@ -222,7 +229,7 @@ RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
                                              double maxDistance) {
   RaycastResults results;
   results.ray = ray;
-  double rayLength = ray.direction.length();
+  double rayLength = static_cast<double>(ray.direction.length());
   if (rayLength == 0) {
     LOG(ERROR) << "BulletPhysicsManager::castRay : Cannot case ray with zero "
                   "length, aborting. ";
@@ -240,7 +247,9 @@ RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
 
     hit.normal = Magnum::Vector3{allResults.m_hitNormalWorld[i]};
     hit.point = Magnum::Vector3{allResults.m_hitPointWorld[i]};
-    hit.rayDistance = (allResults.m_hitFractions[i] * maxDistance) / rayLength;
+    hit.rayDistance =
+        (static_cast<double>(allResults.m_hitFractions[i]) * maxDistance) /
+        rayLength;
     // default to -1 for "scene collision" if we don't know which object was
     // involved
     hit.objectId = -1;
@@ -258,8 +267,8 @@ void BulletPhysicsManager::lookUpObjectIdAndLinkId(
     const btCollisionObject* colObj,
     int* objectId,
     int* linkId) const {
-  ASSERT(objectId);
-  ASSERT(linkId);
+  ASSERT(objectId, );
+  ASSERT(linkId, );
 
   *linkId = -1;
   // If the lookup fails, default to the stage. TODO: better error-handling.
@@ -343,7 +352,7 @@ std::vector<ContactPointData> BulletPhysicsManager::getContactPoints() const {
       pt.objectIdA = objectIdA;
       pt.objectIdB = objectIdB;
       const btManifoldPoint& srcPt = manifold->getContactPoint(p);
-      pt.contactDistance = srcPt.getDistance();
+      pt.contactDistance = static_cast<double>(srcPt.getDistance());
       pt.linkIndexA = linkIndexA;
       pt.linkIndexB = linkIndexB;
       pt.contactNormalOnBInWS = Mn::Vector3(srcPt.m_normalWorldOnB);
@@ -351,12 +360,13 @@ std::vector<ContactPointData> BulletPhysicsManager::getContactPoints() const {
       pt.positionOnBInWS = Mn::Vector3(srcPt.getPositionWorldOnB());
 
       // convert impulses to forces w/ recent physics timstep
-      pt.normalForce = srcPt.getAppliedImpulse() / recentTimeStep_;
+      pt.normalForce =
+          static_cast<double>(srcPt.getAppliedImpulse()) / recentTimeStep_;
 
       pt.linearFrictionForce1 =
-          srcPt.m_appliedImpulseLateral1 / recentTimeStep_;
+          static_cast<double>(srcPt.m_appliedImpulseLateral1) / recentTimeStep_;
       pt.linearFrictionForce2 =
-          srcPt.m_appliedImpulseLateral2 / recentTimeStep_;
+          static_cast<double>(srcPt.m_appliedImpulseLateral2) / recentTimeStep_;
 
       pt.linearFrictionDirection1 = Mn::Vector3(srcPt.m_lateralFrictionDir1);
       pt.linearFrictionDirection2 = Mn::Vector3(srcPt.m_lateralFrictionDir2);

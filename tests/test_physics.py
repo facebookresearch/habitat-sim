@@ -289,6 +289,7 @@ def test_velocity_control():
         object_template.linear_damping = 0.0
         object_template.angular_damping = 0.0
         obj_template_mgr.register_template(object_template)
+        obj_attr_margin = object_template.margin
 
         obj_handle = obj_template_mgr.get_template_handle_by_id(template_ids[0])
 
@@ -303,6 +304,8 @@ def test_velocity_control():
                     # Non-dynamic simulator in use. Skip 1st pass.
                     rigid_obj_mgr.remove_object_by_id(box_object.object_id)
                     continue
+                # verify bullet wrapper is being accessed
+                assert np.allclose(box_object.margin, obj_attr_margin)
             elif iteration == 1:
                 # test KINEMATIC
                 box_object.motion_type = habitat_sim.physics.MotionType.KINEMATIC

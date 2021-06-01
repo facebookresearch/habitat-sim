@@ -110,10 +110,12 @@ int PhysicsManager::addObjectInstance(
     return ID_UNDEFINED;
   }
 
+  // save the scene init attributes used to configure object's initial state
+  this->existingObjects_.at(objID)->setSceneInstanceAttr(objInstAttributes);
   // set object's location, rotation and other pertinent state values based on
-  // scene object instance values
-  this->existingObjects_.at(objID)->setStateFromAttributes(
-      objInstAttributes.get(), defaultCOMCorrection);
+  // scene object instance attributes set in the object above.
+  this->existingObjects_.at(objID)->resetStateFromSceneInstanceAttr(
+      defaultCOMCorrection);
 
   return objID;
 }  // PhysicsManager::addObjectInstance
@@ -245,9 +247,9 @@ int PhysicsManager::addObject(
                << newObjectHandle;
 
   existingObjects_.at(nextObjectID_)->setObjectName(newObjectHandle);
+
   // 2.0 Get wrapper - name is irrelevant, do not register.
-  ManagedRigidObject::ptr objWrapper =
-      rigidObjectManager_->createObject("No Name Yet");
+  ManagedRigidObject::ptr objWrapper = getRigidObjectWrapper();
 
   // 3.0 Put object in wrapper
   objWrapper->setObjectRef(existingObjects_.at(nextObjectID_));
@@ -257,6 +259,10 @@ int PhysicsManager::addObject(
 
   return nextObjectID_;
 }  // PhysicsManager::addObject
+
+esp::physics::ManagedRigidObject::ptr PhysicsManager::getRigidObjectWrapper() {
+  return rigidObjectManager_->createObject("ManagedRigidObject");
+}
 
 void PhysicsManager::removeObject(const int physObjectID,
                                   bool deleteObjectNode,

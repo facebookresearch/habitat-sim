@@ -28,6 +28,7 @@
 #include "esp/assets/MeshMetaData.h"
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/DrawableGroup.h"
+#include "esp/physics/objectWrappers/ManagedRigidObject.h"
 #include "esp/scene/SceneNode.h"
 
 namespace esp {
@@ -343,6 +344,12 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
       DrawableGroup* drawables,
       scene::SceneNode* attachmentNode = nullptr,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
+
+  /**
+   * @brief Create an object wrapper appropriate for this physics manager.
+   * Overridden if called by dynamics-library-enabled PhysicsManager
+   */
+  virtual esp::physics::ManagedRigidObject::ptr getRigidObjectWrapper();
 
   /** @brief Remove an object instance from the pysical scene by ID, destroying
    * its scene graph node and removing it from @ref

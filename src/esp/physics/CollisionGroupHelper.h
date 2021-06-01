@@ -193,7 +193,7 @@ class CollisionGroupHelper {
    * @return List of configured group names
    */
   static std::vector<std::string> getAllGroupNames() {
-    std::vector<std::string> groupNames;
+    std::vector<std::string> groupNames(collisionGroupNames.size());
     for (std::map<std::string, CollisionGroup>::iterator it =
              collisionGroupNames.begin();
          it != collisionGroupNames.end(); ++it) {

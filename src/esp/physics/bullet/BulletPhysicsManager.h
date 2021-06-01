@@ -203,6 +203,13 @@ class BulletPhysicsManager : public PhysicsManager {
     recentNumSubStepsTaken_ = -1;  // TODO: handle this more gracefully
   }
 
+  /**
+   * @brief utilize PhysicsManager's enable shared
+   */
+  BulletPhysicsManager::ptr shared_from_this() {
+    return esp::shared_from(this);
+  }
+
  protected:
   //============ Initialization =============
   /**
@@ -210,6 +217,12 @@ class BulletPhysicsManager : public PhysicsManager {
    * initialize any other physics-related values.
    */
   bool initPhysicsFinalize() override;
+
+  /**
+   * @brief Create an object wrapper appropriate for this physics manager.
+   * Overridden if called by dynamics-library-enabled PhysicsManager
+   */
+  esp::physics::ManagedRigidObject::ptr getRigidObjectWrapper() override;
 
   //============ Object/Stage Instantiation =============
   /**
