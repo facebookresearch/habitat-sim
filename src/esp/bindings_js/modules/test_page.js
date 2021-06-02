@@ -106,8 +106,11 @@ class TestPage {
     // check that castRay returns the object and that the hit location is correct
     let hit = sim.castRay(ray1, 6, 0).hits.get(0);
     this.expect(hit.objectId == banana1id);
+
     this.expect(
-      this.magnitude(hit.point - new Module.Vector3(0.0173, 0.2, 9.0)) < 0.001
+      this.magnitude(
+        Module.Vector3.sub(hit.point, new Module.Vector3(0.0173, 0.2, 9.0))
+      ) < 0.001
     );
 
     // check that castRay doesn't find the object if maxDistance is too small
