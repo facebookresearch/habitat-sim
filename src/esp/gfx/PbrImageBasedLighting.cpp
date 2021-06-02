@@ -35,25 +35,6 @@ namespace Cr = Corrade;
 
 namespace esp {
 namespace gfx {
-PbrImageBasedLighting::PbrImageBasedLighting(Flags flags,
-                                             ShaderManager& shaderManager)
-    : flags_(flags), shaderManager_(shaderManager) {
-  recreateTextures();
-
-  // load the BRDF lookup table
-  // TODO: should have the capability to compute it by the simulator
-  loadBrdfLookUpTable();
-
-  // load environment map (cubemap)
-  // TODO: load equirectangular image and convert it to cubemap
-  LOG(INFO) << " ==== Load environment map for pbr image based lighting. ====";
-  environmentMap_->loadTexture(CubeMap::TextureType::Color, "./data/pbr/skybox",
-                               "png");
-
-  // compute the irradiance map
-  computeIrradianceMap();
-}
-
 PbrImageBasedLighting::PbrImageBasedLighting(
     Flags flags,
     ShaderManager& shaderManager,
@@ -61,18 +42,21 @@ PbrImageBasedLighting::PbrImageBasedLighting(
     : flags_(flags), shaderManager_(shaderManager) {
   recreateTextures();
 
-  // load the BRDF lookup table
-  // TODO: should have the capability to compute it by the simulator
-  loadBrdfLookUpTable();
-
   convertEquirectangularToCubeMap(equirectangularImageFilename);
   // debug: XXX
   environmentMap_->saveTexture(CubeMap::TextureType::Color, "malibu");
 
-  // compute the irradiance map
+  // compute the irradiance map for indirect diffuse part
   computeIrradianceMap();
   // debug: XXX
   irradianceMap_->saveTexture(CubeMap::TextureType::Color, "irradiance");
+
+  // load the BRDF lookup table (indirect specular part)
+  // TODO: should have the capability to compute it by the simulator
+  loadBrdfLookUpTable();
+
+  // compute the prefiltered environment map (indirect specular part)
+  // XXX
 }
 
 void PbrImageBasedLighting::convertEquirectangularToCubeMap(
@@ -140,9 +124,11 @@ void PbrImageBasedLighting::recreateTextures() {
       .setStorage(1, Mn::GL::TextureFormat::RGBA8, size);  // TODO: HDR
 
   // TODO: HDR!!
-  environmentMap_ = CubeMap(1024, {CubeMap::Flag::ColorTexture});
+  environmentMap_ = CubeMap(
+      1024, {CubeMap::Flag::ColorTexture | CubeMap::Flag::AutoBuildMipmap});
   irradianceMap_ = CubeMap(128, {CubeMap::Flag::ColorTexture});
-  prefilteredMap_ = CubeMap(1024, {CubeMap::Flag::ColorTexture});
+  prefilteredMap_ = CubeMap(
+      1024, {CubeMap::Flag::ColorTexture | CubeMap::Flag::ManuallyBuidMipmap});
 }
 
 CubeMap& PbrImageBasedLighting::getIrradianceMap() {
@@ -223,8 +209,8 @@ void PbrImageBasedLighting::computeIrradianceMap() {
       "PbrImageBasedLighting::computeIrradianceMap(): the irradiance map "
       "is empty (not initialized).", );
 
-  Mn::Resource<Mn::GL::AbstractShaderProgram, PbrIrradianceMapShader> shader =
-      getShader<PbrIrradianceMapShader>(PbrIblShaderType::IrradianceMap);
+  Mn::Resource<Mn::GL::AbstractShaderProgram, PbrPrecomputedMapShader> shader =
+      getShader<PbrPrecomputedMapShader>(PbrIblShaderType::IrradianceMap);
 
   // TODO: HDR!!
   shader->bindEnvironmentMap(

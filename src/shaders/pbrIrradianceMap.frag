@@ -24,12 +24,12 @@ layout(location = OUTPUT_ATTRIBUTE_LOCATION_COLOR) out highp vec4 fragmentColor;
    const uint sampleCounts = 4096u;
    for (uint iPoint = 0u; iPoint < sampleCounts; ++iPoint) {
      // sample point on 2D plane
-     // check hammersleyPointsOnHemisphere.glsl for mor details
+     // check pbrCommon.glsl for mor details
      vec2 xi = hammersley2d(iPoint, sampleCounts);
 
      // spherical to cartesian (in tangent space) z-up
      // z-up (not y-up) is fine here
-     // check hammersleyPointsOnHemisphere.glsl for mor details
+     // check pbrCommon.glsl for mor details
      vec3 tangentSample = hemisphereSample_cos(xi.x, xi.y);
 
      // tangent space to world: [R U N][tangentSample] = xR + yU + zN
@@ -41,7 +41,9 @@ layout(location = OUTPUT_ATTRIBUTE_LOCATION_COLOR) out highp vec4 fragmentColor;
      // We generated proportionally fewer rays at the center top of the hemisphere.
      // So there is no need to compensate for the smaller areas
      // by scaling the area by sinTheta
-     irradiance += texture(EnvironmentMap, sampleVec).rgb;
+     irradiance += textureLod(EnvironmentMap, sampleVec, 0.0).rgb;
+     // using the following gives me nothing when the EnvironmentMap has mipmaps! (Unknown reasons)
+     // irradiance += texture(EnvironmentMap, sampleVec).rgb;
    }
 
    fragmentColor = vec4(irradiance / float(sampleCounts), 1.0);

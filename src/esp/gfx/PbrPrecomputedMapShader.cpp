@@ -2,7 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "PbrIrradianceMapShader.h"
+#include "PbrPrecomputedMapShader.h"
 #include "PbrTextureUnit.h"
 
 #include <Corrade/Containers/ArrayView.h>
@@ -34,7 +34,19 @@ namespace Cr = Corrade;
 namespace esp {
 namespace gfx {
 
-PbrIrradianceMapShader::PbrIrradianceMapShader() {
+PbrPrecomputedMapShader::PbrPrecomputedMapShader(Flags flags) : flags_(flags) {
+  int countMutuallyExclusive = 0;
+  if (flags_ & Flag::IrradianceMap) {
+    ++countMutuallyExclusive;
+  }
+  if (flags & Flag::PrefilteredMap) {
+    ++countMutuallyExclusive;
+  }
+  CORRADE_ASSERT(countMutuallyExclusive <= 1,
+                 "PbrPrecomputedMapShader::PbrPrecomputedMapShader: "
+                 "Flag:S:IrradianceMap and "
+                 "Flag::PrefilteredMap are mutually exclusive.", );
+
   if (!Corrade::Utility::Resource::hasGroup("default-shaders")) {
     importShaderResources();
   }
@@ -58,16 +70,20 @@ PbrIrradianceMapShader::PbrIrradianceMapShader() {
 
   // Add macros
   vert.addSource(attributeLocationsStream.str())
-      .addSource(rs.get("pbrIrradianceMap.vert"));
+      .addSource(rs.get("pbrPrecomputedMap.vert"));
 
   std::stringstream outputAttributeLocationsStream;
   outputAttributeLocationsStream << Cr::Utility::formatString(
       "#define OUTPUT_ATTRIBUTE_LOCATION_COLOR {}\n", ColorOutput);
 
-  frag.addSource(attributeLocationsStream.str())
-      .addSource(outputAttributeLocationsStream.str())
-      .addSource(rs.get("hammersleyPointsOnHemisphere.glsl"))
-      .addSource(rs.get("pbrIrradianceMap.frag"));
+  frag.addSource(outputAttributeLocationsStream.str())
+      .addSource(rs.get("pbrCommon.glsl"));
+
+  if (flags & Flag::IrradianceMap) {
+    frag.addSource(rs.get("pbrIrradianceMap.frag"));
+  } else if (flags & Flag::PrefilteredMap) {
+    frag.addSource(rs.get("pbrPrefilteredMap.frag"));
+  }
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, frag}));
 
@@ -94,21 +110,31 @@ PbrIrradianceMapShader::PbrIrradianceMapShader() {
   projMatrixUniform_ = uniformLocation("ProjectionMatrix");
 }
 
-PbrIrradianceMapShader& PbrIrradianceMapShader::bindEnvironmentMap(
+PbrPrecomputedMapShader& PbrPrecomputedMapShader::bindEnvironmentMap(
     Mn::GL::CubeMapTexture& texture) {
   texture.bind(pbrTextureUnitSpace::TextureUnit::EnvironmentMap);
   return *this;
 }
 
-PbrIrradianceMapShader& PbrIrradianceMapShader::setProjectionMatrix(
+PbrPrecomputedMapShader& PbrPrecomputedMapShader::setProjectionMatrix(
     const Mn::Matrix4& matrix) {
   setUniform(projMatrixUniform_, matrix);
   return *this;
 }
 
-PbrIrradianceMapShader& PbrIrradianceMapShader::setTransformationMatrix(
+PbrPrecomputedMapShader& PbrPrecomputedMapShader::setTransformationMatrix(
     const Mn::Matrix4& matrix) {
   setUniform(modelviewMatrixUniform_, matrix);
+  return *this;
+}
+
+PbrPrecomputedMapShader& PbrPrecomputedMapShader::setRoughness(
+    float roughness) {
+  CORRADE_ASSERT(flags_ & Flag::PrefilteredMap,
+                 "PbrPrecomputedMapShader::setRoughness(): shader is NOT "
+                 "created to compute the prefiltered maps.",
+                 *this);
+  setUniform(roughnessUniform_, roughness);
   return *this;
 }
 

@@ -4,6 +4,8 @@
 
 precision highp float;
 
+const float PI = 3.14159265358979;
+
 // Hacker's Delight, Henry S. Warren, 2001, ISBN:0201914654
  float radicalInverse_VdC(uint bits) {
      bits = (bits << 16u) | (bits >> 16u);
@@ -21,8 +23,6 @@ precision highp float;
      return vec2(float(i)/float(N), radicalInverse_VdC(i));
  }
 
- const float PI = 3.14159265358979;
-
  vec3 hemisphereSample_uniform(float u, float v) {
      float phi = v * 2.0 * PI;
      float cosTheta = 1.0 - u;
@@ -36,3 +36,20 @@ precision highp float;
      float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
      return vec3(cos(phi) * sinTheta, sin(phi) * sinTheta, cosTheta);
  }
+
+// Specular D, normal distribution function (NDF),
+// also known as ggxDistribution
+// normal: normal direction
+// light: light source direction
+// viwer: camera direction, aka light outgoing direction
+// n_dot_h: dot product of normal vector and the halfVector (half vector of light and view)
+//          usually n_dot_h = clamp(dot(normal, halfVector), 0.0, 1.0);
+ float normalDistributionGGX(float n_dot_h, float roughness) {
+  float a = roughness * roughness;
+  float a2 = a * a;
+
+  float d = n_dot_h * n_dot_h * (a2 - 1.0) + 1.0;
+  d = PI * d * d;
+
+  return a2 / d;
+}

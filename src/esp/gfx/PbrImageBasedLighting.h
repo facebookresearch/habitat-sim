@@ -11,7 +11,7 @@
 
 #include "CubeMap.h"
 #include "PbrEquiRectangularToCubeMapShader.h"
-#include "PbrIrradianceMapShader.h"
+#include "PbrPrecomputedMapShader.h"
 #include "esp/core/esp.h"
 #include "esp/gfx/ShaderManager.h"
 
@@ -46,11 +46,6 @@ class PbrImageBasedLighting {
    * @brief Flags
    */
   typedef Corrade::Containers::EnumSet<Flag> Flags;
-
-  /**
-   * @brief constructor
-   */
-  explicit PbrImageBasedLighting(Flags flags, ShaderManager& shaderManager);
 
   /**
    * @brief constructor
@@ -114,6 +109,8 @@ class PbrImageBasedLighting {
    * See: Karis, Brian. “Real Shading in Unreal Engine 4” (2013).
    */
   Cr::Containers::Optional<Magnum::GL::Texture2D> brdfLUT_;
+
+  /** @brief load the brdf LUT from the disk */
   void loadBrdfLookUpTable();
 
   ShaderManager& shaderManager_;
@@ -123,7 +120,7 @@ class PbrImageBasedLighting {
 
   enum class PbrIblShaderType : uint8_t {
     IrradianceMap = 0,
-    // PrefilteredMap = 1,
+    PrefilteredMap = 1,
     // BrdfLookupTable = 2,
     EquirectangularToCubeMap = 3,
   };
@@ -154,22 +151,21 @@ class PbrImageBasedLighting {
     if (!shader) {
       if (type == PbrIblShaderType::IrradianceMap) {
         shaderManager_.set<Mn::GL::AbstractShaderProgram>(
-            shader.key(), new PbrIrradianceMapShader(),
+            shader.key(),
+            new PbrPrecomputedMapShader(PbrPrecomputedMapShader::Flags{
+                PbrPrecomputedMapShader::Flag::IrradianceMap}),
             Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
       } else if (type == PbrIblShaderType::EquirectangularToCubeMap) {
         shaderManager_.set<Mn::GL::AbstractShaderProgram>(
             shader.key(), new PbrEquiRectangularToCubeMapShader(),
             Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
+      } else if (type == PbrIblShaderType::PrefilteredMap) {
+        shaderManager_.set<Mn::GL::AbstractShaderProgram>(
+            shader.key(),
+            new PbrPrecomputedMapShader(PbrPrecomputedMapShader::Flags{
+                PbrPrecomputedMapShader::Flag::PrefilteredMap}),
+            Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
       }
-      /*
-    else if (type == PbrIblShaderType::PrefilteredMap) {
-      // TODO: prefilteredMap shader
-      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
-      shaderManager_.set<Mn::GL::AbstractShaderProgram>(
-          shader.key(), new PbrPrefilteredMapShader(),
-          Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
-    }
-      */
     }
     CORRADE_INTERNAL_ASSERT(shader);
 

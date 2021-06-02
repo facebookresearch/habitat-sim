@@ -5,37 +5,22 @@
 #ifndef ESP_GFX_PBR_IRRADIANCEMAP_SHADER_H_
 #define ESP_GFX_PBR_IRRADIANCEMAP_SHADER_H_
 
-#include <initializer_list>
-
 #include <Corrade/Containers/EnumSet.h>
 #include <Magnum/GL/AbstractShaderProgram.h>
 #include <Magnum/GL/CubeMapTexture.h>
 #include <Magnum/Shaders/GenericGL.h>
 
-#include "esp/core/esp.h"
-
 namespace esp {
 
 namespace gfx {
 
-class PbrIrradianceMapShader : public Magnum::GL::AbstractShaderProgram {
+class PbrPrecomputedMapShader : public Magnum::GL::AbstractShaderProgram {
  public:
   // ==== Attribute definitions ====
   /**
    * @brief vertex positions
    */
   typedef Magnum::Shaders::GenericGL3D::Position Position;
-
-  /**
-   * @brief normal direction
-   */
-  typedef Magnum::Shaders::GenericGL3D::Normal Normal;
-
-  /**
-   * @brief 2D texture coordinates
-   *
-   */
-  typedef Magnum::Shaders::GenericGL3D::TextureCoordinates TextureCoordinates;
 
   enum : Magnum::UnsignedInt {
     /**
@@ -47,21 +32,43 @@ class PbrIrradianceMapShader : public Magnum::GL::AbstractShaderProgram {
   };
 
   /**
+   * @brief Flag
+   *
+   * @see @ref Flags, @ref flags()
+   */
+  enum class Flag : Magnum::UnsignedShort {
+    /**
+     * This shader is set to compute the irradiance map
+     */
+    IrradianceMap = 1 << 0,
+
+    /**
+     * This shader is set to compute the prefiltered environment map
+     */
+    PrefilteredMap = 1 << 1,
+  };
+
+  /**
+   * @brief Flags
+   */
+  typedef Corrade::Containers::EnumSet<Flag> Flags;
+
+  /**
    * @brief Constructor
    */
-  explicit PbrIrradianceMapShader();
+  explicit PbrPrecomputedMapShader(Flags flags);
 
   /** @brief Copying is not allowed */
-  PbrIrradianceMapShader(const PbrIrradianceMapShader&) = delete;
+  PbrPrecomputedMapShader(const PbrPrecomputedMapShader&) = delete;
 
   /** @brief Move constructor */
-  PbrIrradianceMapShader(PbrIrradianceMapShader&&) noexcept = default;
+  PbrPrecomputedMapShader(PbrPrecomputedMapShader&&) noexcept = default;
 
   /** @brief Copying is not allowed */
-  PbrIrradianceMapShader& operator=(const PbrIrradianceMapShader&) = delete;
+  PbrPrecomputedMapShader& operator=(const PbrPrecomputedMapShader&) = delete;
 
   /** @brief Move assignment */
-  PbrIrradianceMapShader& operator=(PbrIrradianceMapShader&&) noexcept =
+  PbrPrecomputedMapShader& operator=(PbrPrecomputedMapShader&&) noexcept =
       default;
 
   // ======== set uniforms ===========
@@ -69,32 +76,43 @@ class PbrIrradianceMapShader : public Magnum::GL::AbstractShaderProgram {
    *  @brief Set "projection" matrix to the uniform on GPU
    *  @return Reference to self (for method chaining)
    */
-  PbrIrradianceMapShader& setProjectionMatrix(const Magnum::Matrix4& matrix);
+  PbrPrecomputedMapShader& setProjectionMatrix(const Magnum::Matrix4& matrix);
 
   /**
    *  @brief Set modelview matrix to the uniform on GPU
    *         modelview = view * model
    *  @return Reference to self (for method chaining)
    */
-  PbrIrradianceMapShader& setTransformationMatrix(
+  PbrPrecomputedMapShader& setTransformationMatrix(
       const Magnum::Matrix4& matrix);
+
+  /**
+   * @breif Set roughness to the uniform on GPU
+   * NOTE: Flag::PrefilteredMap MUST be enabled
+   *  @return Reference to self (for method chaining)
+   */
+  PbrPrecomputedMapShader& setRoughness(float roughness);
 
   // ======== texture binding ========
   /**
    * @brief Bind the environment map cubemap texture
    * @return Reference to self (for method chaining)
    */
-  PbrIrradianceMapShader& bindEnvironmentMap(
+  PbrPrecomputedMapShader& bindEnvironmentMap(
       Magnum::GL::CubeMapTexture& texture);
 
  protected:
+  Flags flags_;
   // ======= uniforms =======
   // it hurts the performance to call glGetUniformLocation() every frame due
   // to string operations. therefore, cache the locations in the constructor
   // material uniforms
-  int modelviewMatrixUniform_ = ID_UNDEFINED;
-  int projMatrixUniform_ = ID_UNDEFINED;
+  int modelviewMatrixUniform_ = -1;
+  int projMatrixUniform_ = -1;
+  int roughnessUniform_ = -1;
 };
+
+CORRADE_ENUMSET_OPERATORS(PbrPrecomputedMapShader::Flags)
 
 }  // namespace gfx
 }  // namespace esp

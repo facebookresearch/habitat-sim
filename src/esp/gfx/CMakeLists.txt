@@ -53,8 +53,8 @@ set(
   EquirectangularShader.h
   PbrImageBasedLighting.cpp
   PbrImageBasedLighting.h
-  PbrIrradianceMapShader.cpp
-  PbrIrradianceMapShader.h
+  PbrPrecomputedMapShader.cpp
+  PbrPrecomputedMapShader.h
   PbrEquiRectangularToCubeMapShader.cpp
   PbrEquiRectangularToCubeMapShader.h
   PbrTextureUnit.h

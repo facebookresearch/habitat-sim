@@ -153,7 +153,7 @@ vec3 getNormalFromNormalMap() {
 }
 #endif
 
-const float PI = 3.14159265359;
+// PI is defined in the pbrCommon.glsl
 const float INV_PI = 1.0 / PI;
 const float Epsilon = 0.0001;
 const float DielectricSpecular = 0.04;
@@ -161,18 +161,12 @@ const float DielectricSpecular = 0.04;
 // Specular D, normal distribution function (NDF),
 // also known as ggxDistribution
 // normal: normal direction
-// light: light source direction
-// viwer: camera direction, aka light outgoing direction
-// halfVector: half vector of light and view
+// halfVector: half vector of light (light source direction)
+//             and view (camera direction, aka light outgoing direction)
 float normalDistribution(vec3 normal, vec3 halfVector, float roughness) {
-  float a = roughness * roughness;
-  float a2 = a * a;
   float n_dot_h = clamp(dot(normal, halfVector), 0.0, 1.0);
-
-  float d = n_dot_h * n_dot_h * (a2 - 1.0) + 1.0;
-  d = PI * d * d;
-
-  return a2 / d;
+  // normalDistributionGGX is defined in the pbrCommon.glsl
+  return normalDistributionGGX(n_dot_h, roughness);
 }
 
 // helper function to compute the Specular G

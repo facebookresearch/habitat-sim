@@ -59,11 +59,21 @@ class CubeMap {
     ObjectIdTexture = 1 << 2,
     /**
      * Build mipmap for cubemap color texture
-     * By default, NO mipmap will be built, only 1 level
-     * By turning on this option, it will build the mipmap for the color texture
-     * if any.
+     * By default, NO mipmap will be built, only 1 level (mip 0)
+     * By turning on this option, it will AUTOMATICALLY build the mipmap for the
+     * *color* texture if any (for example, after rendering to texture (mip 0),
+     * or loading the texture to mip 0.)
      */
-    BuildMipmap = 1 << 3,
+    AutoBuildMipmap = 1 << 3,
+    /**
+     * Reserve the space for the mipmaps of the cubemap color texture. System
+     * will NOT automatically build the mipmaps for the user.
+     * By default, NO mipmap will be built, only 1 level (mip 0).
+     * By turning on this option, it will allocates the space for the mipmaps,
+     * but will not fillin the contents. This is useful e.g., in PBR prefiltered
+     * environment map computation.
+     */
+    ManuallyBuidMipmap = 1 << 4,
   };
 
   /**
@@ -89,6 +99,15 @@ class CubeMap {
    * @return Reference to the cubemap texture
    */
   Magnum::GL::CubeMapTexture& getTexture(TextureType type);
+
+  /**
+   * @brief attach the 6 sides of a cubemap texture at the given mip level to
+   * the frame buffer.
+   * NOTE: Flag::ColorTexture and Flag::ManuallyBuildMipmap MUST be set
+   * @param[in] mipLevel, the mipLevel cannot be larger than
+   * Mn::Math::log2( @ref imageSize_) + 1
+   */
+  void attachFramebufferColorRenderbuffer(unsigned int mipLevel);
 
 #ifndef MAGNUM_TARGET_WEBGL
   /**

@@ -2248,7 +2248,11 @@ void ResourceManager::initPbrImageBasedLighting() {
               gfx::PbrImageBasedLighting::Flag::UseLDRImages},
           // shaderManager_, "./data/pbr/Malibu_Overlook_4k.rotated.jpg"));
           // shaderManager_, "./data/pbr/Alexs_Apt_8k.jpg"));
-          shaderManager_, "./data/pbr/Stadium_Center_8k.jpg"));
+          // shaderManager_, "./data/pbr/Stadium_Center_8k.jpg"));
+          // shaderManager_, "./data/pbr/MonValley_G_DirtRoad_8k.jpg")); //keep
+          shaderManager_, "./data/pbr/PaperMill_E_8k.jpg"));  // keep
+  // shaderManager_, "./data/pbr/20_Subway_Lights_8k.jpg"));  // keep
+  // shaderManager_, "./data/pbr/snow_test8_Bg.jpg"));
 }
 
 void ResourceManager::initDefaultMaterials() {

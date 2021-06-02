@@ -124,6 +124,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
                      : "")
       .addSource(
           Cr::Utility::formatString("#define LIGHT_COUNT {}\n", lightCount_))
+      .addSource(rs.get("pbrCommon.glsl"))
       .addSource(rs.get("pbr.frag"));
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, frag}));

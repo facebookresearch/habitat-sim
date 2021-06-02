@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree
 
 // ------------ input ------------------------
+// the input is a cube whose vertices are expressed in world space
 layout(location = ATTRIBUTE_LOCATION_POSITION) in highp vec4 vertexPosition;
 
 // ------------ uniform ----------------------

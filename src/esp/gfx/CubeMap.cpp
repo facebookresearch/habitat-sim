@@ -171,10 +171,12 @@ void CubeMap::recreateTexture() {
                                Mn::GL::SamplerMipmap::Linear)
         .setMagnificationFilter(Mn::GL::SamplerFilter::Linear);
 
-    if (flags_ & Flag::BuildMipmap) {
+    if ((flags_ & Flag::AutoBuildMipmap) ||
+        (flags_ & Flag::ManuallyBuidMipmap)) {
       // RGBA8 is for the LDR. Use RGBA16F for the HDR (TODO)
       colorTexture.setStorage(Mn::Math::log2(imageSize_) + 1,
-                              Mn::GL::TextureFormat::RGBA8, size);
+                              Mn::GL::TextureFormat::RGBA8,
+                              size);  // TODO: HDR!!
     } else {
       colorTexture.setStorage(1, Mn::GL::TextureFormat::RGBA8, size);
     }
@@ -215,6 +217,28 @@ void CubeMap::recreateFramebuffer() {
       optionalDepthBuffer_[index].setStorage(
           Mn::GL::RenderbufferFormat::DepthComponent24, viewportSize);
     }
+  }
+}
+
+void CubeMap::attachFramebufferColorRenderbuffer(unsigned int mipLevel) {
+  CORRADE_ASSERT(flags_ & Flag::ManuallyBuidMipmap,
+                 "CubeMap::attachFramebufferColorRenderbuffer(): CubeMap is "
+                 "not created with Flag::ManuallyBuidMipmap specified. ", );
+  CORRADE_ASSERT(flags_ & Flag::ColorTexture,
+                 "CubeMap::attachFramebufferColorRenderbuffer(): CubeMap is "
+                 "not created with Flag::ColorTexture specified.", );
+
+  CORRADE_ASSERT(mipLevel < Mn::Math::log2(imageSize_) + 1,
+                 "CubeMap::attachFramebufferColorRenderbuffer(): mip level"
+                     << mipLevel << "is illegal. It must smaller than"
+                     << Mn::Math::log2(imageSize_) + 1, );
+
+  for (unsigned int index = 0; index < 6; ++index) {
+    Magnum::GL::CubeMapCoordinate cubeMapCoord =
+        convertFaceIndexToCubeMapCoordinate(index);
+
+    frameBuffer_[index].attachCubeMapTexture(
+        rgbaAttachment, texture(TextureType::Color), cubeMapCoord, mipLevel);
   }
 }
 
@@ -442,7 +466,7 @@ void CubeMap::loadTexture(TextureType type,
     LOG(INFO) << "Loaded image " << iFace << " from " << filename;
   }
   // Color texture ONLY, NOT for depth
-  if ((flags_ & Flag::BuildMipmap) && (flags_ & Flag::ColorTexture)) {
+  if ((flags_ & Flag::AutoBuildMipmap) && (flags_ & Flag::ColorTexture)) {
     tex.generateMipmap();
   }
 }
@@ -497,7 +521,7 @@ void CubeMap::renderToTexture(CubeMapCamera& camera,
   camera.restoreTransformation();
 
   // Color texture ONLY, NOT for depth
-  if ((flags_ & Flag::BuildMipmap) && (flags_ & Flag::ColorTexture)) {
+  if ((flags_ & Flag::AutoBuildMipmap) && (flags_ & Flag::ColorTexture)) {
     texture(TextureType::Color).generateMipmap();
   }
 }
