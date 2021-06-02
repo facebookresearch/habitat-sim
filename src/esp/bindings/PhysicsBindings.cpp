@@ -106,18 +106,25 @@ void initPhysicsBindings(py::module& m) {
                   "group"_a, "name"_a, R"(Assign a name to a CollisionGroup.)")
       .def_static(
           "get_mask_for_group",
-          py::overload_cast<const std::string&>(
-              &CollisionGroupHelper::getMaskForGroup),
-          "group_name"_a,
-          R"(Get the mask for a collision group describing its interaction with other groups.)")
-      .def_static(
-          "get_mask_for_group",
-          py::overload_cast<const CollisionGroup&>(
-              &CollisionGroupHelper::getMaskForGroup),
+          [](CollisionGroup group) {
+            return CollisionGroup(
+                uint32_t(CollisionGroupHelper::getMaskForGroup(group)));
+          },
           "group"_a,
           R"(Get the mask for a collision group describing its interaction with other groups.)")
       .def_static(
-          "set_mask_for_group", &CollisionGroupHelper::setMaskForGroup,
+          "get_mask_for_group",
+          [](const std::string& group_name) {
+            return CollisionGroup(
+                uint32_t(CollisionGroupHelper::getMaskForGroup(group_name)));
+          },
+          "group"_a,
+          R"(Get the mask for a collision group describing its interaction with other groups.)")
+      .def_static(
+          "set_mask_for_group",
+          [](CollisionGroup group, CollisionGroup mask) {
+            CollisionGroupHelper::setMaskForGroup(group, CollisionGroups(mask));
+          },
           "group"_a, "mask"_a,
           R"(Set the mask for a collision group describing its interaction with other groups. It is not recommended to modify the mask for default, non-user groups.)")
       .def_static(
@@ -125,22 +132,6 @@ void initPhysicsBindings(py::module& m) {
           &CollisionGroupHelper::setGroupInteractsWith, "group_a"_a,
           "group_b"_a, "interact"_a,
           R"(Set groupA's collision mask to a specific interaction state with respect to groupB.)")
-      // .def_static(
-      //     "get_split_mask",
-      //     py::overload_cast<const CollisionGroup&>(
-      //         &CollisionGroupHelper::getSplitMask),
-      //     "group"_a,
-      //     R"(Get the mask for a collision group describing its interaction
-      //     with other groups split into a dict of individual booleans keyed by
-      //     each group.)")
-      // .def_static(
-      //     "get_split_mask",
-      //     py::overload_cast<const std::string&>(
-      //         &CollisionGroupHelper::getSplitMask),
-      //     "group_name"_a,
-      //     R"(Get the mask for a collision group describing its interaction
-      //     with other groups split into a dict of individual booleans keyed by
-      //     each group.)")
       .def_static("get_all_group_names",
                   &CollisionGroupHelper::getAllGroupNames,
                   R"(Get a list of all configured collision group names.)");

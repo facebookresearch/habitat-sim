@@ -477,21 +477,8 @@ def test_collision_groups():
                 "my_custom_group_1"
             )
 
-            # check the split masks vs. bitwise comparisons
-            print("Split mask checking: ")
-            for group_name in cgh.get_all_group_names():
-                group_mask = cgh.get_mask_for_group(group_name)
-                group_split_mask = cgh.get_split_mask(group_name)
-                # print(f" group {group_name}:")
-                for group_2_name in cgh.get_all_group_names():
-                    group_2 = cgh.get_group(group_2_name)
-                    # print(f"        mask({group_2}) = {group_split_mask[group_2]} == {int(group_mask)} & {int(group_2)} != 0 ({int(group_mask) & int(group_2) != 0})")
-                    assert (int(group_mask) & int(group_2) != 0) == group_split_mask[
-                        group_2
-                    ]
-
             # create a custom group behavior (STATIC and KINEMATIC only)
-            new_user_group_1_mask = int(cg.Static) | int(cg.Kinematic)
+            new_user_group_1_mask = cg.Static | cg.Kinematic
             cgh.set_mask_for_group(cg.UserGroup1, new_user_group_1_mask)
 
             cube_prim_handle = obj_template_mgr.get_template_handles("cube")[0]
@@ -509,9 +496,7 @@ def test_collision_groups():
             assert not cube_obj1.contact_test()
             assert not cube_obj2.contact_test()
             # override cube2 to a new group and configure custom mask to interact with it
-            cgh.set_mask_for_group(
-                cg.UserGroup1, new_user_group_1_mask | int(cg.UserGroup2)
-            )
+            cgh.set_mask_for_group(cg.UserGroup1, new_user_group_1_mask | cg.UserGroup2)
             # NOTE: changing group settings requires overriding object group again
             cube_obj1.override_collision_group(cg.UserGroup1)
             cube_obj2.override_collision_group(cg.UserGroup2)
@@ -534,12 +519,12 @@ def test_collision_groups():
 
             # test convenience bitwise mask setter
             cgh.set_group_interacts_with(cg.UserGroup1, cg.Kinematic, False)
-            assert not cgh.get_split_mask(cg.UserGroup1)[cg.Kinematic]
+            assert not cgh.get_mask_for_group(cg.UserGroup1) & cg.Kinematic
             cube_obj1.override_collision_group(cg.UserGroup1)
             assert not cube_obj1.contact_test()
             assert not cube_obj2.contact_test()
             cgh.set_group_interacts_with(cg.UserGroup1, cg.Kinematic, True)
-            assert cgh.get_split_mask(cg.UserGroup1)[cg.Kinematic]
+            assert cgh.get_mask_for_group(cg.UserGroup1) & cg.Kinematic
             cube_obj1.override_collision_group(cg.UserGroup1)
             assert cube_obj1.contact_test()
             assert cube_obj2.contact_test()

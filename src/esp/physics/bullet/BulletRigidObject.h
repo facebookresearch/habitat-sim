@@ -425,7 +425,7 @@ class BulletRigidObject : public BulletBase,
    * @brief Manually set the collision group for an object.
    * @param group The desired CollisionGroup for the object.
    */
-  void overrideCollisionGroup(CollisionGroup group);
+  void overrideCollisionGroup(CollisionGroup group) override;
 
   /**
    * @brief Query the Aabb from bullet physics for the root compound shape of
