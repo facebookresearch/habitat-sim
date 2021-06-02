@@ -252,7 +252,6 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::class_<RaycastResults>("RaycastResults")
       .smart_ptr_constructor("RaycastResults", &RaycastResults::create<>)
       .function("hasHits", &RaycastResults::hasHits)
-      .function("sortByDistance", &RaycastResults::sortByDistance)
       .property("hits", &RaycastResults::hits)
       .property("ray", &RaycastResults::ray);
 
