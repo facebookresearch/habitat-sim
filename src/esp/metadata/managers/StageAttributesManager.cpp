@@ -14,7 +14,6 @@
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 
-using std::placeholders::_1;
 namespace esp {
 using assets::AssetType;
 namespace metadata {
@@ -32,18 +31,16 @@ StageAttributesManager::StageAttributesManager(
       objectAttributesMgr_(std::move(objectAttributesMgr)),
       physicsAttributesManager_(std::move(physicsAttributesManager)),
       cfgLightSetup_(NO_LIGHT_KEY) {
-  buildCtorFuncPtrMaps();
-}  // StageAttributesManager ctor
-
-void StageAttributesManager::buildCtorFuncPtrMaps() {
+  // build this manager's copy constructor map
   this->copyConstructorMap_["StageAttributes"] =
       &StageAttributesManager::createObjectCopy<attributes::StageAttributes>;
   // create none-type stage attributes and set as undeletable
   // based on default
-  auto tmplt = this->createDefaultObject("NONE", true);
+  auto tmplt = this->postCreateRegister(
+      StageAttributesManager::initNewObjectInternal("NONE", false), true);
   std::string tmpltHandle = tmplt->getHandle();
   this->undeletableObjectNames_.insert(tmpltHandle);
-}  // StageAttributesManager::buildCtorFuncPtrMaps
+}  // StageAttributesManager::ctor
 
 int StageAttributesManager::registerObjectFinalize(
     StageAttributes::ptr stageAttributes,
@@ -63,7 +60,7 @@ int StageAttributesManager::registerObjectFinalize(
   std::string collisionAssetHandle = stageAttributes->getCollisionAssetHandle();
 
   // verify these represent legitimate assets
-  if (this->isValidPrimitiveAttributes(renderAssetHandle)) {
+  if (StageAttributesManager::isValidPrimitiveAttributes(renderAssetHandle)) {
     // If renderAssetHandle corresponds to valid/existing primitive attributes
     // then setRenderAssetIsPrimitive to true and set map of IDs->Names to
     // physicsSynthObjTmpltLibByID_
@@ -98,7 +95,8 @@ int StageAttributesManager::registerObjectFinalize(
     return ID_UNDEFINED;
   }
 
-  if (this->isValidPrimitiveAttributes(collisionAssetHandle)) {
+  if (StageAttributesManager::isValidPrimitiveAttributes(
+          collisionAssetHandle)) {
     // If collisionAssetHandle corresponds to valid/existing primitive
     // attributes then setCollisionAssetIsPrimitive to true
     stageAttributes->setCollisionAssetIsPrimitive(true);
@@ -141,7 +139,7 @@ StageAttributes::ptr StageAttributesManager::createPrimBasedAttributesTemplate(
     const std::string& primAssetHandle,
     bool registerTemplate) {
   // verify that a primitive asset with the given handle exists
-  if (!this->isValidPrimitiveAttributes(primAssetHandle)) {
+  if (!StageAttributesManager::isValidPrimitiveAttributes(primAssetHandle)) {
     LOG(ERROR)
         << "StageAttributesManager::createPrimBasedAttributesTemplate : No "
            "primitive with handle '"
@@ -223,20 +221,25 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
     // set default origin and orientation values based on file name
     // from AssetInfo::fromPath
     // set defaults for passed render asset handles
-    this->setDefaultAssetNameBasedAttributes(
+    StageAttributesManager::setDefaultAssetNameBasedAttributes(
         newAttributes, true, newAttributes->getRenderAssetHandle(),
-        std::bind(&AbstractObjectAttributes::setRenderAssetType, newAttributes,
-                  _1));
+        [newAttributes](auto&& PH1) {
+          newAttributes->setRenderAssetType(std::forward<decltype(PH1)>(PH1));
+        });
     // set defaults for passed collision asset handles
-    this->setDefaultAssetNameBasedAttributes(
+    StageAttributesManager::setDefaultAssetNameBasedAttributes(
         newAttributes, false, newAttributes->getCollisionAssetHandle(),
-        std::bind(&AbstractObjectAttributes::setCollisionAssetType,
-                  newAttributes, _1));
+        [newAttributes](auto&& PH1) {
+          newAttributes->setCollisionAssetType(
+              std::forward<decltype(PH1)>(PH1));
+        });
 
     // set defaults for passed semantic asset handles
-    this->setDefaultAssetNameBasedAttributes(
+    StageAttributesManager::setDefaultAssetNameBasedAttributes(
         newAttributes, false, newAttributes->getSemanticAssetHandle(),
-        std::bind(&StageAttributes::setSemanticAssetType, newAttributes, _1));
+        [newAttributes](auto&& PH1) {
+          newAttributes->setSemanticAssetType(std::forward<decltype(PH1)>(PH1));
+        });
   }
   // set default physical quantities specified in physics manager attributes
   if (physicsAttributesManager_->getObjectLibHasHandle(
@@ -282,7 +285,7 @@ void StageAttributesManager::setDefaultAssetNameBasedAttributes(
     // coordinate frame to -Z gravity
     up = up2;
     fwd = fwd2;
-  } else if (this->isValidPrimitiveAttributes(fileName)) {
+  } else if (StageAttributesManager::isValidPrimitiveAttributes(fileName)) {
     assetTypeSetter(static_cast<int>(AssetType::PRIMITIVE));
   } else {
     assetTypeSetter(static_cast<int>(AssetType::UNKNOWN));
@@ -304,13 +307,15 @@ void StageAttributesManager::setValsFromJSONDoc(
   // now parse stage-specific fields.
   // load stage specific gravity
   io::jsonIntoConstSetter<Magnum::Vector3>(
-      jsonConfig, "gravity",
-      std::bind(&StageAttributes::setGravity, stageAttributes, _1));
+      jsonConfig, "gravity", [stageAttributes](auto&& PH1) {
+        stageAttributes->setGravity(std::forward<decltype(PH1)>(PH1));
+      });
 
   // load stage specific origin
   io::jsonIntoConstSetter<Magnum::Vector3>(
-      jsonConfig, "origin",
-      std::bind(&StageAttributes::setOrigin, stageAttributes, _1));
+      jsonConfig, "origin", [stageAttributes](auto&& PH1) {
+        stageAttributes->setOrigin(std::forward<decltype(PH1)>(PH1));
+      });
 
   // populate specified semantic file name if specified in json - defaults
   // are overridden only if specified in json.
@@ -323,8 +328,9 @@ void StageAttributesManager::setValsFromJSONDoc(
   std::string semanticFName = stageAttributes->getSemanticAssetHandle();
   semanticFName = this->setJSONAssetHandleAndType(
       stageAttributes, jsonConfig, "semantic_asset_type", "semantic_asset",
-      semanticFName,
-      std::bind(&StageAttributes::setSemanticAssetType, stageAttributes, _1));
+      semanticFName, [stageAttributes](auto&& PH1) {
+        stageAttributes->setSemanticAssetType(std::forward<decltype(PH1)>(PH1));
+      });
   // if "semantic mesh" is specified in stage json to non-empty value, set
   // value (override default).
   stageAttributes->setSemanticAssetHandle(semanticFName);
@@ -346,26 +352,6 @@ void StageAttributesManager::setValsFromJSONDoc(
     stageAttributes->setHouseFilename(houseFName);
   }
 
-  // load the rigid object library metadata (no physics init yet...)
-  if (jsonConfig.HasMember("rigid object paths") &&
-      jsonConfig["rigid object paths"].IsArray()) {
-    std::string configDirectory = stageAttributes->getFileDirectory();
-    const auto& paths = jsonConfig["rigid object paths"];
-    for (rapidjson::SizeType i = 0; i < paths.Size(); ++i) {
-      if (!paths[i].IsString()) {
-        LOG(ERROR)
-            << "StageAttributesManager::setValsFromJSONDoc "
-               ":Invalid value in stage config 'rigid object paths'- array "
-            << i;
-        continue;
-      }
-
-      std::string absolutePath =
-          Cr::Utility::Directory::join(configDirectory, paths[i].GetString());
-      // load all object templates available as configs in absolutePath
-      objectAttributesMgr_->loadAllConfigsFromPath(absolutePath, true);
-    }
-  }  // if load rigid object library metadata
 }  // StageAttributesManager::setValsFromJSONDoc
 
 }  // namespace managers

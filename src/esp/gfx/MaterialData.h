@@ -25,7 +25,8 @@ enum class MaterialDataType {
 };
 
 struct MaterialData {
-  MaterialData(MaterialDataType _type = MaterialDataType::None) : type(_type){};
+  explicit MaterialData(MaterialDataType _type = MaterialDataType::None)
+      : type(_type){};
 
   MaterialDataType type{MaterialDataType::None};
 

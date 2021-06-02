@@ -51,9 +51,17 @@ class ManagedContainer : public ManagedContainerBase {
                 "ManagedContainer :: Managed object type must be derived from "
                 "AbstractManagedObject");
 
+  /**
+   * @brief Alias for shared pointer to the @ref
+   * esp::core::AbstractManagedObject this container manages.
+   */
   typedef std::shared_ptr<T> ManagedPtr;
 
-  ManagedContainer(const std::string& metadataType)
+  /**
+   * @brief Constructor
+   * @param metadataType The name of the managed object type.
+   */
+  explicit ManagedContainer(const std::string& metadataType)
       : ManagedContainerBase(metadataType) {}
 
   /**
@@ -100,75 +108,6 @@ class ManagedContainer : public ManagedContainerBase {
     }
     return this->postCreateRegister(object, registerObject);
   }  // ManagedContainer::createDefault
-
-  /**
-   * @brief Creates an instance of a managed object from a JSON file.
-   *
-   * @param filename the name of the file describing the object managed object.
-   * Assumes it exists and fails if it does not.
-   * @param registerObject whether to add this managed object to the
-   * library. If the user is going to edit this managed object, this should be
-   * false - any subsequent editing will require re-registration. Defaults to
-   * true.
-   * @return a reference to the desired managed object, or nullptr if fails.
-   */
-  ManagedPtr createObjectFromJSONFile(const std::string& filename,
-                                      bool registerObject = true) {
-    io::JsonDocument docConfig;
-    bool success = this->verifyLoadDocument(filename, docConfig);
-    if (!success) {
-      LOG(ERROR) << "ManagedContainer::createObjectFromFile ("
-                 << this->objectType_
-                 << ") : Failure reading document as JSON : " << filename
-                 << ". Aborting.";
-      return nullptr;
-    }
-    // convert doc to const value
-    const io::JsonGenericValue config = docConfig.GetObject();
-    ManagedPtr attr = this->buildManagedObjectFromDoc(filename, config);
-    return this->postCreateRegister(attr, registerObject);
-  }  // ManagedContainer::createObjectFromJSONFile
-
-  /**
-   * @brief Method to load a Managed Object's data from a file.  If the file
-   * type is not supported by specialization of this method, this method
-   * executes and an error is thrown.
-   * @tparam type of document to load.
-   * @param filename name of file document to load from
-   * @param config document to read for data
-   * @return a shared pointer of the created Managed Object
-   */
-  template <typename U>
-  ManagedPtr buildManagedObjectFromDoc(const std::string& filename,
-                                       CORRADE_UNUSED const U& config) {
-    LOG(ERROR)
-        << "ManagedContainer::buildManagedObjectFromDoc (" << this->objectType_
-        << ") : Failure loading attributes from document of unknown type : "
-        << filename << ". Aborting.";
-  }
-  /**
-   * @brief Method to load a Managed Object's data from a file.  This is the
-   * JSON specialization, using type inference.
-   * @param filename name of file document to load from
-   * @param config JSON document to read for data
-   * @return a shared pointer of the created Managed Object
-   */
-  ManagedPtr buildManagedObjectFromDoc(const std::string& filename,
-                                       const io::JsonGenericValue& jsonConfig) {
-    return this->buildObjectFromJSONDoc(filename, jsonConfig);
-  }
-
-  /**
-   * @brief Parse passed JSON Document specifically for @ref ManagedPtr object.
-   * It always returns a @ref ManagedPtr object.
-   * @param filename The name of the file describing the @ref ManagedPtr,
-   * used as managed object handle/name on create.
-   * @param jsonConfig json document to parse - assumed to be legal JSON doc.
-   * @return a reference to the desired managed object.
-   */
-  virtual ManagedPtr buildObjectFromJSONDoc(
-      const std::string& filename,
-      const io::JsonGenericValue& jsonConfig) = 0;
 
   /**
    * @brief Add a copy of @ref esp::core::AbstractManagedObject to the @ref
@@ -285,12 +224,12 @@ class ManagedContainer : public ManagedContainerBase {
                                 "ManagedContainer::removeObjectByID")) {
       return nullptr;
     }
-    return removeObjectInternal(objectHandle,
+    return removeObjectInternal(objectID, objectHandle,
                                 "ManagedContainer::removeObjectByID");
   }
 
   /**
-   * @brief  Remove the managed object referenced by the passed string handle.
+   * @brief Remove the managed object referenced by the passed string handle.
    * Will emplace managed object ID within deque of usable IDs and return the
    * managed object being removed.
    * @param objectHandle the string key of the managed object desired.
@@ -298,7 +237,15 @@ class ManagedContainer : public ManagedContainerBase {
    * exist
    */
   ManagedPtr removeObjectByHandle(const std::string& objectHandle) {
-    return removeObjectInternal(objectHandle,
+    if (!checkExistsWithMessage(objectHandle,
+                                "ManagedContainer::removeObjectByHandle")) {
+      return nullptr;
+    }
+    int objectID = getObjectIDByHandle(objectHandle);
+    if (objectID == ID_UNDEFINED) {
+      return nullptr;
+    }
+    return removeObjectInternal(objectID, objectHandle,
                                 "ManagedContainer::removeObjectByHandle");
   }
 
@@ -343,7 +290,7 @@ class ManagedContainer : public ManagedContainerBase {
 
   /**
    * @brief Get a reference to, or a copy of, the managed object identified by
-   * the @p managedObjectID, depending on @ref Access value.  This is the
+   * the @p managedObjectID, depending on @p Access value.  This is the
    * function that should be be accessed by the user for general object
    * consumption by ID.
    *
@@ -359,7 +306,7 @@ class ManagedContainer : public ManagedContainerBase {
 
   /**
    * @brief Get a reference to, or a copy of, the managed object identified by
-   * the @p objectHandle, depending on @ref Access value.  This is the function
+   * the @p objectHandle, depending on @p Access value.  This is the function
    * that should be be accessed by the user for general object consumption by
    * Handle.
    *
@@ -377,7 +324,7 @@ class ManagedContainer : public ManagedContainerBase {
 
   /**
    * @brief Get a reference to, or a copy of, the managed object identified by
-   * the @p managedObjectID, depending on @ref Access value, and casted to the
+   * the @p managedObjectID, depending on @p Access value, and casted to the
    * appropriate derived managed object class. This is the version that should
    * be accessed by the user for type-casted object consumption by ID.
    *
@@ -394,7 +341,7 @@ class ManagedContainer : public ManagedContainerBase {
 
   /**
    * @brief Get a reference to, or a copy of, the managed object identified by
-   * the @p managedObjectID, depending on @ref Access value, and casted to the
+   * the @p managedObjectID, depending on @p Access value, and casted to the
    * appropriate derived managed object class. This is the version that should
    * be accessed by the user for type-casted object consumption by
    * Handle.
@@ -521,21 +468,6 @@ class ManagedContainer : public ManagedContainerBase {
   }  // postCreateRegister
 
   /**
-   * @brief Get directory component of managed object handle and call @ref
-   * esp::core::AbstractManagedObject::setFileDirectory if a legitimate
-   * directory exists in handle.
-   *
-   * @param object pointer to managed object to set
-   */
-  void setFileDirectoryFromHandle(ManagedPtr object) {
-    std::string handleName = object->getHandle();
-    auto loc = handleName.find_last_of("/");
-    if (loc != std::string::npos) {
-      object->setFileDirectory(handleName.substr(0, loc));
-    }
-  }  // setFileDirectoryFromHandle
-
-  /**
    * @brief Used Internally.  Create and configure newly-created managed object
    * with any default values, before any specific values are set.
    *
@@ -553,12 +485,15 @@ class ManagedContainer : public ManagedContainerBase {
    * @brief Used Internally. Remove the managed object referenced by the passed
    * string handle. Will emplace managed object ID within deque of usable IDs
    * and return the managed object being removed.
+   *
+   * @param objectID the id of the managed object desired.
    * @param objectHandle the string key of the managed object desired.
    * @param src String denoting the source of the remove request.
    * @return the desired managed object being deleted, or nullptr if does not
    * exist
    */
-  ManagedPtr removeObjectInternal(const std::string& objectHandle,
+  ManagedPtr removeObjectInternal(int objectID,
+                                  const std::string& objectHandle,
                                   const std::string& src);
 
   /**
@@ -617,14 +552,6 @@ class ManagedContainer : public ManagedContainerBase {
   }  // ManagedContainer::
 
   /**
-   * @brief This function will build the appropriate @ref copyConstructorMap_
-   * copy constructor function pointer map for this container's managed object,
-   * keyed on the managed object's class type.  This MUST be called in the
-   * constructor of the -instancing- class.
-   */
-  virtual void buildCtorFuncPtrMaps() = 0;
-
-  /**
    * @brief Build an @ref esp::core::AbstractManagedObject object of type
    * associated with passed object.
    * @param origAttr The ptr to the original AbstractManagedObject object to
@@ -636,7 +563,7 @@ class ManagedContainer : public ManagedContainerBase {
   }  // ManagedContainer::copyObject
 
   /**
-   * @brief Create a new object as a copy of @ref defaultObject_  if it exists,
+   * @brief Create a new object as a copy of @p defaultObject_  if it exists,
    * otherwise return nullptr.
    * @param newHandle the name for the copy of the default.
    * @return New object or nullptr
@@ -668,8 +595,11 @@ class ManagedContainer : public ManagedContainerBase {
     object->setHandle(objectHandle);
     // return either the ID of the existing managed object referenced by
     // objectHandle, or the next available ID if not found.
-    int objectID = getObjectIDByHandleOrNew(objectHandle, true);
-    object->setID(objectID);
+    object->setID(getObjectIDByHandleOrNew(objectHandle, true));
+    // use object's ID for ID in container - may not match ID synthesized by
+    // getObjectIDByHandle, for managed objects that control their own IDs
+    int objectID = object->getID();
+
     // make a copy of this managed object so that user can continue to edit
     // original
     ManagedPtr managedObjectCopy = copyObject(object);
@@ -692,7 +622,7 @@ class ManagedContainer : public ManagedContainerBase {
   /**
    * @brief Map of function pointers to instantiate a copy of a managed
    * object. A managed object is instanced by accessing the approrpiate
-   * function pointer.
+   * function pointer.  THIS MUST BE INSTANCED IN SPECIALIZATION CONSTRUCTOR.
    */
   Map_Of_CopyCtors copyConstructorMap_;
 
@@ -703,7 +633,7 @@ class ManagedContainer : public ManagedContainerBase {
   ManagedPtr defaultObj_ = nullptr;
 
  public:
-  ESP_SMART_POINTERS(ManagedContainer<T, Access>);
+  ESP_SMART_POINTERS(ManagedContainer<T, Access>)
 
 };  // class ManagedContainer
 
@@ -718,9 +648,10 @@ auto ManagedContainer<T, Access>::removeObjectsBySubstring(
   // get all handles that match query elements first
   std::vector<std::string> handles =
       getObjectHandlesBySubstring(subStr, contains);
-  for (std::string objectHandle : handles) {
+  for (const std::string& objectHandle : handles) {
+    int objID = getObjectIDByHandle(objectHandle);
     ManagedPtr ptr = removeObjectInternal(
-        objectHandle, "ManagedContainer::removeObjectsBySubstring");
+        objID, objectHandle, "ManagedContainer::removeObjectsBySubstring");
     if (nullptr != ptr) {
       res.push_back(ptr);
     }
@@ -730,6 +661,7 @@ auto ManagedContainer<T, Access>::removeObjectsBySubstring(
 
 template <class T, ManagedObjectAccess Access>
 auto ManagedContainer<T, Access>::removeObjectInternal(
+    int objectID,
     const std::string& objectHandle,
     const std::string& sourceStr) -> ManagedPtr {
   if (!checkExistsWithMessage(objectHandle, sourceStr)) {
@@ -748,12 +680,12 @@ auto ManagedContainer<T, Access>::removeObjectInternal(
               << " managed object " << objectHandle << " : " << msg << ".";
     return nullptr;
   }
-
-  ManagedPtr attribsTemplate = getObjectInternal<T>(objectHandle);
+  ManagedPtr managedObject = getObjectInternal<T>(objectHandle);
   // remove the object and all references to it from the various internal maps
   // holding them.
-  deleteObjectInternal(attribsTemplate->getID(), objectHandle);
-  return attribsTemplate;
+
+  deleteObjectInternal(objectID, objectHandle);
+  return managedObject;
 }  // ManagedContainer::removeObjectInternal
 
 }  // namespace core

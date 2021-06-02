@@ -12,7 +12,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.6.0
+#       jupytext_version: 1.11.2
 #   kernelspec:
 #     display_name: Python 3
 #     name: python3
@@ -73,36 +73,34 @@ def make_configuration():
     # Note: all sensors must have the same resolution
     # setup 2 rgb sensors for 1st and 3rd person views
     camera_resolution = [544, 720]
-    sensors = {
-        "rgba_camera_1stperson": {
-            "sensor_type": habitat_sim.SensorType.COLOR,
-            "resolution": camera_resolution,
-            "position": [0.0, 0.6, 0.0],
-            "orientation": [0.0, 0.0, 0.0],
-        },
-        "depth_camera_1stperson": {
-            "sensor_type": habitat_sim.SensorType.DEPTH,
-            "resolution": camera_resolution,
-            "position": [0.0, 0.6, 0.0],
-            "orientation": [0.0, 0.0, 0.0],
-        },
-        "rgba_camera_3rdperson": {
-            "sensor_type": habitat_sim.SensorType.COLOR,
-            "resolution": camera_resolution,
-            "position": [0.0, 1.0, 0.3],
-            "orientation": [-45, 0.0, 0.0],
-        },
-    }
-
     sensor_specs = []
-    for sensor_uuid, sensor_params in sensors.items():
-        sensor_spec = habitat_sim.SensorSpec()
-        sensor_spec.uuid = sensor_uuid
-        sensor_spec.sensor_type = sensor_params["sensor_type"]
-        sensor_spec.resolution = sensor_params["resolution"]
-        sensor_spec.position = sensor_params["position"]
-        sensor_spec.orientation = sensor_params["orientation"]
-        sensor_specs.append(sensor_spec)
+
+    rgba_camera_1stperson_spec = habitat_sim.CameraSensorSpec()
+    rgba_camera_1stperson_spec.uuid = "rgba_camera_1stperson"
+    rgba_camera_1stperson_spec.sensor_type = habitat_sim.SensorType.COLOR
+    rgba_camera_1stperson_spec.resolution = camera_resolution
+    rgba_camera_1stperson_spec.postition = [0.0, 0.6, 0.0]
+    rgba_camera_1stperson_spec.orientation = [0.0, 0.0, 0.0]
+    rgba_camera_1stperson_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
+    sensor_specs.append(rgba_camera_1stperson_spec)
+
+    depth_camera_1stperson_spec = habitat_sim.CameraSensorSpec()
+    depth_camera_1stperson_spec.uuid = "depth_camera_1stperson"
+    depth_camera_1stperson_spec.sensor_type = habitat_sim.SensorType.DEPTH
+    depth_camera_1stperson_spec.resolution = camera_resolution
+    depth_camera_1stperson_spec.postition = [0.0, 0.6, 0.0]
+    depth_camera_1stperson_spec.orientation = [0.0, 0.0, 0.0]
+    depth_camera_1stperson_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
+    sensor_specs.append(depth_camera_1stperson_spec)
+
+    rgba_camera_3rdperson_spec = habitat_sim.CameraSensorSpec()
+    rgba_camera_3rdperson_spec.uuid = "rgba_camera_3rdperson"
+    rgba_camera_3rdperson_spec.sensor_type = habitat_sim.SensorType.COLOR
+    rgba_camera_3rdperson_spec.resolution = camera_resolution
+    rgba_camera_3rdperson_spec.postition = [0.0, 1.0, 0.3]
+    rgba_camera_3rdperson_spec.orientation = [-45, 0.0, 0.0]
+    rgba_camera_3rdperson_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
+    sensor_specs.append(rgba_camera_3rdperson_spec)
 
     # agent configuration
     agent_cfg = habitat_sim.agent.AgentConfiguration()
@@ -188,10 +186,12 @@ if __name__ == "__main__":
     # [dynamic_control]
 
     observations = []
-    obj_templates_mgr.load_configs(str(os.path.join(data_path, "objects")))
+    obj_templates_mgr.load_configs(
+        str(os.path.join(data_path, "objects/example_objects"))
+    )
     # search for an object template by key sub-string
     cheezit_template_handle = obj_templates_mgr.get_template_handles(
-        "data/objects/cheezit"
+        "data/objects/example_objects/cheezit"
     )[0]
     box_positions = [
         np.array([2.39, -0.37, 0]),
@@ -216,7 +216,7 @@ if __name__ == "__main__":
     anti_grav_force = -1.0 * sim.get_gravity() * object_init_template.mass
 
     # throw a sphere at the boxes from the agent position
-    sphere_template = obj_templates_mgr.get_template_by_ID(sphere_template_id)
+    sphere_template = obj_templates_mgr.get_template_by_id(sphere_template_id)
     sphere_template.scale = np.array([0.5, 0.5, 0.5])
     obj_templates_mgr.register_template(sphere_template)
 
@@ -255,7 +255,7 @@ if __name__ == "__main__":
     # [kinematic_interactions]
 
     chefcan_template_handle = obj_templates_mgr.get_template_handles(
-        "data/objects/chefcan"
+        "data/objects/example_objects/chefcan"
     )[0]
     id_1 = sim.add_object_by_handle(chefcan_template_handle)
     sim.set_translation(np.array([2.4, -0.64, 0]), id_1)
@@ -290,7 +290,7 @@ if __name__ == "__main__":
     observations = []
 
     clamp_template_handle = obj_templates_mgr.get_template_handles(
-        "data/objects/largeclamp"
+        "data/objects/example_objects/largeclamp"
     )[0]
     id_1 = sim.add_object_by_handle(clamp_template_handle)
     sim.set_object_motion_type(habitat_sim.physics.MotionType.KINEMATIC, id_1)

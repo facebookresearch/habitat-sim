@@ -8,6 +8,7 @@
 #include "BulletPhysicsManager.h"
 #include "BulletRigidObject.h"
 #include "esp/assets/ResourceManager.h"
+#include "esp/physics/objectManagers/RigidObjectManager.h"
 
 namespace esp {
 namespace physics {
@@ -16,11 +17,11 @@ BulletPhysicsManager::~BulletPhysicsManager() {
   LOG(INFO) << "Deconstructing BulletPhysicsManager";
 
   existingObjects_.clear();
-  staticStageObject_.reset(nullptr);
+  staticStageObject_.reset();
 }
 
 bool BulletPhysicsManager::initPhysicsFinalize() {
-  activePhysSimLib_ = BULLET;
+  activePhysSimLib_ = PhysicsSimulationLibrary::Bullet;
 
   //! We can potentially use other collision checking algorithms, by
   //! uncommenting the line below
@@ -36,36 +37,43 @@ bool BulletPhysicsManager::initPhysicsFinalize() {
   // currently GLB meshes are y-up
   bWorld_->setGravity(btVector3(physicsManagerAttributes_->getVec3("gravity")));
 
-  Corrade::Utility::Debug() << "creating staticStageObject_";
   //! Create new scene node
-  staticStageObject_ = physics::BulletRigidStage::create_unique(
+  staticStageObject_ = physics::BulletRigidStage::create(
       &physicsNode_->createChild(), resourceManager_, bWorld_,
       collisionObjToObjIds_);
-  Corrade::Utility::Debug() << "creating staticStageObject_ .. done";
 
+  recentNumSubStepsTaken_ = -1;
   return true;
 }
 
 // Bullet Mesh conversion adapted from:
 // https://github.com/mosra/magnum-integration/issues/20
-bool BulletPhysicsManager::addStageFinalize(const std::string& handle) {
+bool BulletPhysicsManager::addStageFinalize(
+    const metadata::attributes::StageAttributes::ptr& initAttributes) {
   //! Initialize scene
-  bool sceneSuccess = staticStageObject_->initialize(handle);
+  bool sceneSuccess = staticStageObject_->initialize(initAttributes);
 
   return sceneSuccess;
 }
 
-bool BulletPhysicsManager::makeAndAddRigidObject(int newObjectID,
-                                                 const std::string& handle,
-                                                 scene::SceneNode* objectNode) {
-  auto ptr = physics::BulletRigidObject::create_unique(
-      objectNode, newObjectID, resourceManager_, bWorld_,
-      collisionObjToObjIds_);
-  bool objSuccess = ptr->initialize(handle);
+bool BulletPhysicsManager::makeAndAddRigidObject(
+    int newObjectID,
+    const esp::metadata::attributes::ObjectAttributes::ptr& objectAttributes,
+    scene::SceneNode* objectNode) {
+  auto ptr = physics::BulletRigidObject::create(objectNode, newObjectID,
+                                                resourceManager_, bWorld_,
+                                                collisionObjToObjIds_);
+  bool objSuccess = ptr->initialize(objectAttributes);
   if (objSuccess) {
     existingObjects_.emplace(newObjectID, std::move(ptr));
   }
   return objSuccess;
+}
+
+esp::physics::ManagedRigidObject::ptr
+BulletPhysicsManager::getRigidObjectWrapper() {
+  // TODO make sure this is appropriately cast
+  return rigidObjectManager_->createObject("ManagedBulletRigidObject");
 }
 
 //! Check if mesh primitive is compatible with physics
@@ -105,10 +113,10 @@ bool BulletPhysicsManager::isMeshPrimitiveValid(
 void BulletPhysicsManager::setGravity(const Magnum::Vector3& gravity) {
   bWorld_->setGravity(btVector3(gravity));
   // After gravity change, need to reactive all bullet objects
-  for (std::map<int, physics::RigidObject::uptr>::iterator it =
+  for (std::map<int, physics::RigidObject::ptr>::iterator it =
            existingObjects_.begin();
        it != existingObjects_.end(); ++it) {
-    it->second->setActive();
+    it->second->setActive(true);
   }
 }
 
@@ -133,26 +141,25 @@ void BulletPhysicsManager::stepPhysics(double dt) {
       if (velControl->controllingAngVel || velControl->controllingLinVel) {
         objectItr.second->setRigidState(velControl->integrateTransform(
             dt, objectItr.second->getRigidState()));
-        objectItr.second->setActive();
+        objectItr.second->setActive(true);
       }
     } else if (objectItr.second->getMotionType() == MotionType::DYNAMIC) {
       if (velControl->controllingLinVel) {
         if (velControl->linVelIsLocal) {
-          setLinearVelocity(objectItr.first,
-                            objectItr.second->node().rotation().transformVector(
-                                velControl->linVel));
+          objectItr.second->setLinearVelocity(
+              objectItr.second->node().rotation().transformVector(
+                  velControl->linVel));
         } else {
-          setLinearVelocity(objectItr.first, velControl->linVel);
+          objectItr.second->setLinearVelocity(velControl->linVel);
         }
       }
       if (velControl->controllingAngVel) {
         if (velControl->angVelIsLocal) {
-          setAngularVelocity(
-              objectItr.first,
+          objectItr.second->setAngularVelocity(
               objectItr.second->node().rotation().transformVector(
                   velControl->angVel));
         } else {
-          setAngularVelocity(objectItr.first, velControl->angVel);
+          objectItr.second->setAngularVelocity(velControl->angVel);
         }
       }
     }
@@ -163,13 +170,8 @@ void BulletPhysicsManager::stepPhysics(double dt) {
   int numSubStepsTaken =
       bWorld_->stepSimulation(dt, /*maxSubSteps*/ 10000, fixedTimeStep_);
   worldTime_ += numSubStepsTaken * fixedTimeStep_;
-}
-
-void BulletPhysicsManager::setMargin(const int physObjectID,
-                                     const double margin) {
-  assertIDValidity(physObjectID);
-  static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID).get())
-      ->setMargin(margin);
+  recentNumSubStepsTaken_ = numSubStepsTaken;
+  recentTimeStep_ = fixedTimeStep_;
 }
 
 void BulletPhysicsManager::setStageFrictionCoefficient(
@@ -182,13 +184,6 @@ void BulletPhysicsManager::setStageRestitutionCoefficient(
   staticStageObject_->setRestitutionCoefficient(restitutionCoefficient);
 }
 
-double BulletPhysicsManager::getMargin(const int physObjectID) const {
-  assertIDValidity(physObjectID);
-  return static_cast<BulletRigidObject*>(
-             existingObjects_.at(physObjectID).get())
-      ->getMargin();
-}
-
 double BulletPhysicsManager::getStageFrictionCoefficient() const {
   return staticStageObject_->getFrictionCoefficient();
 }
@@ -197,7 +192,7 @@ double BulletPhysicsManager::getStageRestitutionCoefficient() const {
   return staticStageObject_->getRestitutionCoefficient();
 }
 
-const Magnum::Range3D BulletPhysicsManager::getCollisionShapeAabb(
+Magnum::Range3D BulletPhysicsManager::getCollisionShapeAabb(
     const int physObjectID) const {
   assertIDValidity(physObjectID);
   return static_cast<BulletRigidObject*>(
@@ -205,7 +200,7 @@ const Magnum::Range3D BulletPhysicsManager::getCollisionShapeAabb(
       ->getCollisionShapeAabb();
 }
 
-const Magnum::Range3D BulletPhysicsManager::getStageCollisionShapeAabb() const {
+Magnum::Range3D BulletPhysicsManager::getStageCollisionShapeAabb() const {
   return static_cast<BulletRigidStage*>(staticStageObject_.get())
       ->getCollisionShapeAabb();
 }
@@ -227,7 +222,7 @@ RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
                                              double maxDistance) {
   RaycastResults results;
   results.ray = ray;
-  double rayLength = ray.direction.length();
+  double rayLength = static_cast<double>(ray.direction.length());
   if (rayLength == 0) {
     LOG(ERROR) << "BulletPhysicsManager::castRay : Cannot case ray with zero "
                   "length, aborting. ";
@@ -245,7 +240,9 @@ RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
 
     hit.normal = Magnum::Vector3{allResults.m_hitNormalWorld[i]};
     hit.point = Magnum::Vector3{allResults.m_hitPointWorld[i]};
-    hit.rayDistance = (allResults.m_hitFractions[i] * maxDistance) / rayLength;
+    hit.rayDistance =
+        (static_cast<double>(allResults.m_hitFractions[i]) * maxDistance) /
+        rayLength;
     // default to -1 for "scene collision" if we don't know which object was
     // involved
     hit.objectId = -1;
@@ -259,8 +256,44 @@ RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
   return results;
 }
 
+void BulletPhysicsManager::lookUpObjectIdAndLinkId(
+    const btCollisionObject* colObj,
+    int* objectId,
+    int* linkId) const {
+  ASSERT(objectId, );
+  ASSERT(linkId, );
+
+  *linkId = -1;
+  // If the lookup fails, default to the stage. TODO: better error-handling.
+  *objectId = -1;
+
+  if (collisionObjToObjIds_->count(colObj) != 0u) {
+    int rawObjectId = collisionObjToObjIds_->at(colObj);
+    if (existingObjects_.count(rawObjectId) != 0u) {
+      *objectId = rawObjectId;
+      return;
+    }
+    // TODO: will come with AO support
+    /* else if (existingArticulatedObjects_.count(rawObjectId)) {
+      *objectId = rawObjectId;
+      return;
+    } else {
+      // search articulated objects to see if this is a link
+      for (const auto& pair : existingArticulatedObjects_) {
+        if (pair.second->objectIdToLinkId_.count(rawObjectId)) {
+          *objectId = pair.first;
+          *linkId = pair.second->objectIdToLinkId_.at(rawObjectId);
+          return;
+        }
+      }
+    }
+    */
+  }
+
+  // lookup failed
+}
 int BulletPhysicsManager::getNumActiveContactPoints() {
-  int pointCount = 0;
+  int count = 0;
   auto* dispatcher = bWorld_->getDispatcher();
   for (int i = 0; i < dispatcher->getNumManifolds(); i++) {
     auto* manifold = dispatcher->getManifoldByIndexInternal(i);
@@ -270,13 +303,74 @@ int BulletPhysicsManager::getNumActiveContactPoints() {
         static_cast<const btCollisionObject*>(manifold->getBody1());
 
     // logic copied from btSimulationIslandManager::buildIslands. We want to
-    // count manifold points only if related to non-sleeping bodies.
+    // count manifolds only if related to non-sleeping bodies.
     if (((colObj0) && colObj0->getActivationState() != ISLAND_SLEEPING) ||
         ((colObj1) && colObj1->getActivationState() != ISLAND_SLEEPING)) {
-      pointCount += manifold->getNumContacts();
+      count += manifold->getNumContacts();
     }
   }
-  return pointCount;
+  return count;
+}
+
+std::vector<ContactPointData> BulletPhysicsManager::getContactPoints() const {
+  std::vector<ContactPointData> contactPoints;
+
+  auto* dispatcher = bWorld_->getDispatcher();
+  int numContactManifolds = dispatcher->getNumManifolds();
+  contactPoints.reserve(numContactManifolds * 4);
+  for (int i = 0; i < numContactManifolds; i++) {
+    const btPersistentManifold* manifold =
+        dispatcher->getInternalManifoldPointer()[i];
+
+    int objectIdA = -2;  // stage is -1
+    int objectIdB = -2;
+    int linkIndexA = -1;  // -1 if not a multibody
+    int linkIndexB = -1;
+
+    const btCollisionObject* colObj0 = manifold->getBody0();
+    const btCollisionObject* colObj1 = manifold->getBody1();
+
+    lookUpObjectIdAndLinkId(colObj0, &objectIdA, &linkIndexA);
+    lookUpObjectIdAndLinkId(colObj1, &objectIdB, &linkIndexB);
+
+    // logic copied from btSimulationIslandManager::buildIslands. We count
+    // manifolds as active only if related to non-sleeping bodies.
+    bool isActive = ((((colObj0) != nullptr) &&
+                      colObj0->getActivationState() != ISLAND_SLEEPING) ||
+                     (((colObj1) != nullptr) &&
+                      colObj1->getActivationState() != ISLAND_SLEEPING));
+
+    for (int p = 0; p < manifold->getNumContacts(); p++) {
+      ContactPointData pt;
+      pt.objectIdA = objectIdA;
+      pt.objectIdB = objectIdB;
+      const btManifoldPoint& srcPt = manifold->getContactPoint(p);
+      pt.contactDistance = static_cast<double>(srcPt.getDistance());
+      pt.linkIndexA = linkIndexA;
+      pt.linkIndexB = linkIndexB;
+      pt.contactNormalOnBInWS = Mn::Vector3(srcPt.m_normalWorldOnB);
+      pt.positionOnAInWS = Mn::Vector3(srcPt.getPositionWorldOnA());
+      pt.positionOnBInWS = Mn::Vector3(srcPt.getPositionWorldOnB());
+
+      // convert impulses to forces w/ recent physics timstep
+      pt.normalForce =
+          static_cast<double>(srcPt.getAppliedImpulse()) / recentTimeStep_;
+
+      pt.linearFrictionForce1 =
+          static_cast<double>(srcPt.m_appliedImpulseLateral1) / recentTimeStep_;
+      pt.linearFrictionForce2 =
+          static_cast<double>(srcPt.m_appliedImpulseLateral2) / recentTimeStep_;
+
+      pt.linearFrictionDirection1 = Mn::Vector3(srcPt.m_lateralFrictionDir1);
+      pt.linearFrictionDirection2 = Mn::Vector3(srcPt.m_lateralFrictionDir2);
+
+      pt.isActive = isActive;
+
+      contactPoints.push_back(pt);
+    }
+  }
+
+  return contactPoints;
 }
 
 }  // namespace physics

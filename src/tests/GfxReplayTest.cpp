@@ -10,7 +10,9 @@
 #include "esp/gfx/WindowlessContext.h"
 #include "esp/gfx/replay/Player.h"
 #include "esp/gfx/replay/Recorder.h"
+#include "esp/gfx/replay/ReplayManager.h"
 #include "esp/scene/SceneManager.h"
+#include "esp/sim/Simulator.h"
 
 #include <Corrade/Containers/Optional.h>
 #include <Corrade/Utility/Directory.h>
@@ -27,6 +29,8 @@ namespace Mn = Magnum;
 using esp::assets::ResourceManager;
 using esp::metadata::MetadataMediator;
 using esp::scene::SceneManager;
+using esp::sim::Simulator;
+using esp::sim::SimulatorConfiguration;
 
 // Helper function to get numberOfChildrenOfRoot
 int getNumberOfChildrenOfRoot(esp::scene::SceneNode& rootNode) {
@@ -74,12 +78,29 @@ TEST(GfxReplayTest, recorder) {
   auto* node = resourceManager.loadAndCreateRenderAssetInstance(
       info, creation, &sceneManager_, tempIDs);
   ASSERT(node);
+
+  // cosntruct an AssetInfo with override color material
+  ASSERT(info.overridePhongMaterial == Cr::Containers::NullOpt);
+  esp::assets::AssetInfo info2(info);
+  info2.overridePhongMaterial = esp::assets::PhongMaterialColor();
+  info2.overridePhongMaterial->ambientColor = Mn::Color4(0.1, 0.2, 0.3, 0.4);
+  info2.overridePhongMaterial->diffuseColor = Mn::Color4(0.2, 0.3, 0.4, 0.5);
+  info2.overridePhongMaterial->specularColor = Mn::Color4(0.3, 0.4, 0.5, 0.6);
+
   esp::gfx::replay::Recorder recorder;
   recorder.onLoadRenderAsset(info);
   recorder.onCreateRenderAssetInstance(node, creation);
   recorder.saveKeyframe();
   node->setTranslation(Mn::Vector3(1.f, 2.f, 3.f));
   node->setSemanticId(7);
+
+  // add the new override AssetInfo after 1st keyframe
+  auto* node2 = resourceManager.loadAndCreateRenderAssetInstance(
+      info2, creation, &sceneManager_, tempIDs);
+  ASSERT(node2);
+  recorder.onLoadRenderAsset(info2);
+  recorder.onCreateRenderAssetInstance(node2, creation);
+
   recorder.saveKeyframe();
   delete node;
   recorder.addUserTransformToKeyframe("my_user_transform",
@@ -103,11 +124,24 @@ TEST(GfxReplayTest, recorder) {
       keyframes[0].creations[0].first;
   ASSERT(keyframes[0].stateUpdates[0].first == instanceKey);
 
+  // verify frame #1 has an updated state for node and state for new node2
+  ASSERT(keyframes[1].stateUpdates.size() == 2);
   // verify frame #1 has our translation and semantic Id
-  ASSERT(keyframes[1].stateUpdates.size() == 1);
   ASSERT(keyframes[1].stateUpdates[0].second.absTransform.translation ==
          Mn::Vector3(1.f, 2.f, 3.f));
   ASSERT(keyframes[1].stateUpdates[0].second.semanticId == 7);
+
+  // verify override material AssetInfo is loaded correctly
+  ASSERT(keyframes[1].loads.size() == 1);
+  ASSERT(keyframes[1].loads[0] == info2);
+  ASSERT(keyframes[1].loads[0].overridePhongMaterial !=
+         Cr::Containers::NullOpt);
+  ASSERT(keyframes[1].loads[0].overridePhongMaterial->ambientColor ==
+         info2.overridePhongMaterial->ambientColor);
+  ASSERT(keyframes[1].loads[0].overridePhongMaterial->diffuseColor ==
+         info2.overridePhongMaterial->diffuseColor);
+  ASSERT(keyframes[1].loads[0].overridePhongMaterial->specularColor ==
+         info2.overridePhongMaterial->specularColor);
 
   // verify frame #2 has our deletion and our user transform
   ASSERT(keyframes[2].deletions.size() == 1);
@@ -306,6 +340,48 @@ TEST(GfxReplayTest, playerReadInvalidFile) {
   bool success = Corrade::Utility::Directory::rm(testFilepath);
   if (!success) {
     LOG(WARNING) << "GfxReplayTest::playerReadInvalidFile : unable to remove "
+                    "temporary test JSON file "
+                 << testFilepath;
+  }
+}
+
+// test recording and playback through the simulator interface
+TEST(GfxReplayTest, simulatorIntegration) {
+  std::string boxFile =
+      Cr::Utility::Directory::join(TEST_ASSETS, "objects/transform_box.glb");
+  auto testFilepath =
+      Corrade::Utility::Directory::join(DATA_DIR, "./gfx_replay_test.json");
+
+  SimulatorConfiguration simConfig{};
+  simConfig.activeSceneName = boxFile;
+  simConfig.enableGfxReplaySave = true;
+
+  auto sim = Simulator::create_unique(simConfig);
+  auto& sceneGraph = sim->getActiveSceneGraph();
+  auto& rootNode = sceneGraph.getRootNode();
+  auto prevNumberOfChildrenOfRoot = getNumberOfChildrenOfRoot(rootNode);
+
+  const auto recorder = sim->getGfxReplayManager()->getRecorder();
+  EXPECT_TRUE(recorder);
+  recorder->saveKeyframe();
+  recorder->writeSavedKeyframesToFile(testFilepath);
+
+  auto player = sim->getGfxReplayManager()->readKeyframesFromFile(testFilepath);
+  EXPECT_TRUE(player);
+  EXPECT_EQ(player->getNumKeyframes(), 1);
+  player->setKeyframeIndex(0);
+  // second copy of box was loaded
+  EXPECT_EQ(getNumberOfChildrenOfRoot(rootNode),
+            prevNumberOfChildrenOfRoot + 1);
+
+  player = nullptr;
+  // second copy of box removed when Player is deleted
+  EXPECT_EQ(getNumberOfChildrenOfRoot(rootNode), prevNumberOfChildrenOfRoot);
+
+  // remove file created for this test
+  bool success = Corrade::Utility::Directory::rm(testFilepath);
+  if (!success) {
+    LOG(WARNING) << "GfxReplayTest::simulatorIntegration : unable to remove "
                     "temporary test JSON file "
                  << testFilepath;
   }

@@ -58,6 +58,7 @@ namespace spimpl {
 namespace details {
 template <class T>
 T* default_copy(T* src) {
+  // NOLINTNEXTLINE(bugprone-sizeof-expression)
   static_assert(sizeof(T) > 0, "default_copy cannot copy incomplete type");
   static_assert(!std::is_void<T>::value,
                 "default_copy cannot copy incomplete type");
@@ -66,6 +67,7 @@ T* default_copy(T* src) {
 
 template <class T>
 void default_delete(T* p) SPIMPL_NOEXCEPT {
+  // NOLINTNEXTLINE(bugprone-sizeof-expression)
   static_assert(sizeof(T) > 0, "default_delete cannot delete incomplete type");
   static_assert(!std::is_void<T>::value,
                 "default_delete cannot delete incomplete type");
@@ -104,7 +106,7 @@ class impl_ptr {
   static_assert(!std::is_array<T>::value,
                 "impl_ptr specialization for arrays is not implemented");
   struct dummy_t_ {
-    int dummy__;
+    int dummy_;
   };
 
  public:
@@ -122,7 +124,8 @@ class impl_ptr {
   SPIMPL_CONSTEXPR impl_ptr() SPIMPL_NOEXCEPT : ptr_(nullptr, deleter_type{}),
                                                 copier_(copier_type{}) {}
 
-  SPIMPL_CONSTEXPR impl_ptr(std::nullptr_t) SPIMPL_NOEXCEPT : impl_ptr() {}
+  SPIMPL_CONSTEXPR explicit impl_ptr(std::nullptr_t) SPIMPL_NOEXCEPT
+      : impl_ptr() {}
 
   template <class D, class C>
   impl_ptr(
@@ -136,10 +139,11 @@ class impl_ptr {
         copier_(std::forward<C>(c)) {}
 
   template <class U>
-  impl_ptr(U* u,
-           typename std::enable_if<std::is_convertible<U*, pointer>::value &&
-                                       is_default_manageable::value,
-                                   dummy_t_>::type = dummy_t_()) SPIMPL_NOEXCEPT
+  explicit impl_ptr(
+      U* u,
+      typename std::enable_if<std::is_convertible<U*, pointer>::value &&
+                                  is_default_manageable::value,
+                              dummy_t_>::type = dummy_t_()) SPIMPL_NOEXCEPT
       : impl_ptr(u, &details::default_delete<T>, &details::default_copy<T>) {}
 
   impl_ptr(const impl_ptr& r) : impl_ptr(r.clone()) {}
@@ -162,10 +166,11 @@ class impl_ptr {
 #endif
 
   template <class U>
-  impl_ptr(std::unique_ptr<U>&& u,
-           typename std::enable_if<std::is_convertible<U*, pointer>::value &&
-                                       is_default_manageable::value,
-                                   dummy_t_>::type = dummy_t_()) SPIMPL_NOEXCEPT
+  explicit impl_ptr(
+      std::unique_ptr<U>&& u,
+      typename std::enable_if<std::is_convertible<U*, pointer>::value &&
+                                  is_default_manageable::value,
+                              dummy_t_>::type = dummy_t_()) SPIMPL_NOEXCEPT
       : ptr_(u.release(), &details::default_delete<T>),
         copier_(&details::default_copy<T>) {}
 
@@ -181,7 +186,7 @@ class impl_ptr {
         copier_(std::forward<C>(c)) {}
 
   template <class U, class D, class C>
-  impl_ptr(
+  explicit impl_ptr(
       impl_ptr<U, D, C>&& u,
       typename std::enable_if<std::is_convertible<U*, pointer>::value &&
                                   std::is_convertible<D, deleter_type>::value &&
@@ -193,7 +198,7 @@ class impl_ptr {
   impl_ptr& operator=(const impl_ptr& r) {
     if (this == &r)
       return *this;
-
+    // NOLINTNEXTLINE(misc-unconventional-assign-operator)
     return operator=(r.clone());
   }
 
@@ -208,6 +213,7 @@ class impl_ptr {
 #endif
 
   template <class U, class D, class C>
+  // NOLINTNEXTLINE(misc-unconventional-assign-operator)
   typename std::enable_if<std::is_convertible<U*, pointer>::value &&
                               std::is_convertible<D, deleter_type>::value &&
                               std::is_convertible<C, copier_type>::value,
@@ -219,6 +225,7 @@ class impl_ptr {
   }
 
   template <class U, class D, class C>
+  // NOLINTNEXTLINE(misc-unconventional-assign-operator)
   typename std::enable_if<std::is_convertible<U*, pointer>::value &&
                               std::is_convertible<D, deleter_type>::value &&
                               std::is_convertible<C, copier_type>::value,
@@ -231,6 +238,7 @@ class impl_ptr {
 
 #ifdef SPIMPL_HAS_AUTO_PTR
   template <class U>
+  // NOLINTNEXTLINE(misc-unconventional-assign-operator)
   typename std::enable_if<std::is_convertible<U*, pointer>::value &&
                               is_default_manageable::value,
                           impl_ptr&>::type
@@ -240,6 +248,7 @@ class impl_ptr {
 #endif
 
   template <class U>
+  // NOLINTNEXTLINE(misc-unconventional-assign-operator)
   typename std::enable_if<std::is_convertible<U*, pointer>::value &&
                               is_default_manageable::value,
                           impl_ptr&>::type

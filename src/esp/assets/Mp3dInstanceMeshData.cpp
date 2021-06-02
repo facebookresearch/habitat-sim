@@ -55,7 +55,7 @@ bool Mp3dInstanceMeshData::loadMp3dPLY(const std::string& plyFile) {
     LOG(ERROR) << "Invalid element vertex header line";
     return false;
   }
-  int nVertex;
+  int nVertex = 0;
   iss >> token >> nVertex;
 
   // we know the header is fixed so skip until face count
@@ -69,7 +69,7 @@ bool Mp3dInstanceMeshData::loadMp3dPLY(const std::string& plyFile) {
     LOG(ERROR) << "Invalid element face header line";
     return false;
   }
-  int nFace;
+  int nFace = 0;
   iss2 >> token >> nFace;
 
   // ignore rest of header
@@ -99,11 +99,11 @@ bool Mp3dInstanceMeshData::loadMp3dPLY(const std::string& plyFile) {
   }
 
   for (int i = 0; i < nFace; ++i) {
-    uint8_t nIndices;
+    uint8_t nIndices = 0;
     vec3ui indices;
-    int32_t materialId;
-    int32_t segmentId;
-    int32_t categoryId;
+    int32_t materialId = 0;
+    int32_t segmentId = 0;
+    int32_t categoryId = 0;
 
     ifs.read(reinterpret_cast<char*>(&nIndices), sizeof(nIndices));
     ASSERT(nIndices == 3);

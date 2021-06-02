@@ -10,13 +10,11 @@
 
 namespace esp {
 
-namespace metadata {
-void initAttributesBindings(pybind11::module& m);
-void initMetadataMediatorBindings(pybind11::module& m);
-namespace managers {
-void initAttributesManagersBindings(pybind11::module& m);
-}  // namespace managers
-}  // namespace metadata
+namespace core {
+
+void initCoreBindings(pybind11::module& m);
+
+}  // namespace core
 
 namespace geo {
 void initGeoBindings(pybind11::module& m);
@@ -26,8 +24,16 @@ namespace gfx {
 void initGfxBindings(pybind11::module& m);
 namespace replay {
 void initGfxReplayBindings(pybind11::module& m);
-}
+}  // namespace replay
 }  // namespace gfx
+
+namespace metadata {
+void initAttributesBindings(pybind11::module& m);
+void initMetadataMediatorBindings(pybind11::module& m);
+namespace managers {
+void initAttributesManagersBindings(pybind11::module& m);
+}  // namespace managers
+}  // namespace metadata
 
 namespace nav {
 void initShortestPathBindings(pybind11::module& m);
@@ -35,7 +41,11 @@ void initShortestPathBindings(pybind11::module& m);
 
 namespace physics {
 void initPhysicsBindings(pybind11::module& m);
-}
+
+void initPhysicsObjectBindings(pybind11::module& m);
+
+void initPhysicsWrapperManagerBindings(pybind11::module& m);
+}  // namespace physics
 
 namespace scene {
 void initSceneBindings(pybind11::module& m);

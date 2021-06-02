@@ -9,7 +9,16 @@
 
 from habitat_sim._ext.habitat_sim_bindings import (
     CameraSensor,
+    CameraSensorSpec,
     ConfigurationGroup,
+    CubeMapSensorBase,
+    CubeMapSensorBaseSpec,
+    EquirectangularSensor,
+    EquirectangularSensorSpec,
+    FisheyeSensor,
+    FisheyeSensorDoubleSphereSpec,
+    FisheyeSensorModelType,
+    FisheyeSensorSpec,
     GreedyFollowerCodes,
     GreedyGeodesicFollowerImpl,
     MultiGoalShortestPath,
@@ -19,10 +28,16 @@ from habitat_sim._ext.habitat_sim_bindings import (
     SceneNode,
     SceneNodeType,
     Sensor,
+    SensorFactory,
     SensorSpec,
     SensorSubType,
     SensorType,
     ShortestPath,
 )
 from habitat_sim._ext.habitat_sim_bindings import Simulator as SimulatorBackend
-from habitat_sim._ext.habitat_sim_bindings import SimulatorConfiguration, cuda_enabled
+from habitat_sim._ext.habitat_sim_bindings import (
+    SimulatorConfiguration,
+    VisualSensorSpec,
+    cuda_enabled,
+    vhacd_enabled,
+)

@@ -2,7 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#pragma once
+#ifndef ESP_GEO_COORDINATEFRAME_H_
+#define ESP_GEO_COORDINATEFRAME_H_
 
 #include "esp/core/esp.h"
 #include "esp/geo/geo.h"
@@ -15,10 +16,11 @@ namespace geo {
 //! equivalently "gravity" and "back"
 class CoordinateFrame {
  public:
-  CoordinateFrame(const vec3f& up = ESP_UP,
-                  const vec3f& front = ESP_FRONT,
-                  const vec3f& origin = vec3f::Zero());
-  CoordinateFrame(const quatf& rotation, const vec3f& origin = vec3f::Zero());
+  explicit CoordinateFrame(const vec3f& up = ESP_UP,
+                           const vec3f& front = ESP_FRONT,
+                           const vec3f& origin = vec3f::Zero());
+  explicit CoordinateFrame(const quatf& rotation,
+                           const vec3f& origin = vec3f::Zero());
   explicit CoordinateFrame(const std::string& json);
 
   //! Returns position of origin of this CoordinateFrame relative to parent
@@ -69,3 +71,5 @@ inline std::ostream& operator<<(std::ostream& os, const CoordinateFrame& c) {
 
 }  // namespace geo
 }  // namespace esp
+
+#endif  // ESP_GEO_COORDINATEFRAME_H_

@@ -27,10 +27,23 @@ class SceneDatasetAttributes : public AbstractAttributes {
       const std::string& datasetName,
       const managers::PhysicsAttributesManager::ptr& physAttrMgr);
 
+  ~SceneDatasetAttributes() override {
+    // These are to clear any external refs persisting after this scene dataset
+    // is deleted.  Accessing these refs should result in errors instead of
+    // leaks/undefined behavior.
+    assetAttributesManager_ = nullptr;
+    lightLayoutAttributesManager_ = nullptr;
+    objectAttributesManager_ = nullptr;
+    sceneAttributesManager_ = nullptr;
+    stageAttributesManager_ = nullptr;
+    navmeshMap_.clear();
+    semanticSceneDescrMap_.clear();
+  }
+
   /**
    * @brief Return manager for construction and access to asset attributes.
    */
-  const managers::AssetAttributesManager::ptr getAssetAttributesManager()
+  const managers::AssetAttributesManager::ptr& getAssetAttributesManager()
       const {
     return assetAttributesManager_;
   }
@@ -38,7 +51,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
   /**
    * @brief Return manager for construction and access to object attributes.
    */
-  const managers::ObjectAttributesManager::ptr getObjectAttributesManager()
+  const managers::ObjectAttributesManager::ptr& getObjectAttributesManager()
       const {
     return objectAttributesManager_;
   }
@@ -46,7 +59,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
   /**
    * @brief Return manager for construction and access to light attributes.
    */
-  const managers::LightLayoutAttributesManager::ptr
+  const managers::LightLayoutAttributesManager::ptr&
   getLightLayoutAttributesManager() const {
     return lightLayoutAttributesManager_;
   }
@@ -54,7 +67,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
   /**
    * @brief Return manager for construction and access to scene attributes.
    */
-  const managers::SceneAttributesManager::ptr getSceneAttributesManager()
+  const managers::SceneAttributesManager::ptr& getSceneAttributesManager()
       const {
     return sceneAttributesManager_;
   }
@@ -62,7 +75,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
   /**
    * @brief Return manager for construction and access to stage attributes.
    */
-  const managers::StageAttributesManager::ptr getStageAttributesManager()
+  const managers::StageAttributesManager::ptr& getStageAttributesManager()
       const {
     return stageAttributesManager_;
   }
@@ -219,8 +232,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * @return name of stage attributes with handle containing @p stageAttrName ,
    * or empty string if none.
    */
-  inline const std::string getStageAttrFullHandle(
-      const std::string& stageAttrName) {
+  inline std::string getStageAttrFullHandle(const std::string& stageAttrName) {
     return getFullAttrNameFromStr(stageAttrName, stageAttributesManager_);
   }  // getStageAttrFullHandle
 
@@ -235,8 +247,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * @return name of object attributes with handle containing @p objAttrName or
    * empty string if none.
    */
-  inline const std::string getObjAttrFullHandle(
-      const std::string& objAttrName) {
+  inline std::string getObjAttrFullHandle(const std::string& objAttrName) {
     return getFullAttrNameFromStr(objAttrName, objectAttributesManager_);
   }  // getObjAttrFullHandle
 
@@ -249,12 +260,12 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * @return the full attributes name corresponding to @p lightSetupName , or
    * the empty string.
    */
-  inline const std::string getLightSetupFullHandle(
+  inline std::string getLightSetupFullHandle(
       const std::string& lightSetupName) {
-    if (lightSetupName.compare(DEFAULT_LIGHTING_KEY) == 0) {
+    if (lightSetupName == DEFAULT_LIGHTING_KEY) {
       return DEFAULT_LIGHTING_KEY;
     }
-    if (lightSetupName.compare(NO_LIGHT_KEY) == 0) {
+    if (lightSetupName == NO_LIGHT_KEY) {
       return NO_LIGHT_KEY;
     }
     return getFullAttrNameFromStr(lightSetupName,
@@ -271,9 +282,9 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * @return actual name of attributes in attrMgr, or empty string if does not
    * exist.
    */
-  inline const std::string getFullAttrNameFromStr(
+  inline std::string getFullAttrNameFromStr(
       const std::string& attrName,
-      const esp::core::ManagedContainerBase::ptr attrMgr) {
+      const esp::core::ManagedContainerBase::ptr& attrMgr) {
     auto handleList = attrMgr->getObjectHandlesBySubstring(attrName);
     if (handleList.size() > 0) {
       return handleList[0];

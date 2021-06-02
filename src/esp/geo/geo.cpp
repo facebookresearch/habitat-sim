@@ -232,7 +232,7 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
       Mn::Primitives::circle3DWireframe(numSegments).positions3DAsArray();
   // normalized verts
   Cr::Containers::Array<Magnum::Vector3> circleNormVerts{
-      Cr::Containers::NoInit, sizeof(Magnum::Vector3) * numSegments};
+      Cr::NoInit, sizeof(Magnum::Vector3) * numSegments};
 
   // transform points to be on circle of given radius, and make copy to
   // normalize points
@@ -250,7 +250,7 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
   };
 
   // Vertex data storage
-  Cr::Containers::Array<char> vertexData{Cr::Containers::NoInit,
+  Cr::Containers::Array<char> vertexData{Cr::NoInit,
                                          sizeof(Vertex) * vertexCount};
   // Cast memory to be a strided array so it can be accessed via slices.
   Cr::Containers::StridedArrayView1D<Vertex> vertices =
@@ -321,8 +321,7 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
 
   // 3. Create polys between all points
   Cr::Containers::Array<char> indexData{
-      Cr::Containers::NoInit,
-      6 * numSegments * trajSize * sizeof(Mn::UnsignedInt)};
+      Cr::NoInit, 6 * numSegments * trajSize * sizeof(Mn::UnsignedInt)};
   Cr::Containers::ArrayView<Mn::UnsignedInt> indices =
       Cr::Containers::arrayCast<Mn::UnsignedInt>(indexData);
 

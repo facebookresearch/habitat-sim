@@ -6,8 +6,8 @@
 #define ESP_METADATA_ATTRIBUTES_ATTRIBUTESBASE_H_
 
 #include <Corrade/Utility/Directory.h>
-#include "esp/core/AbstractManagedObject.h"
 #include "esp/core/Configuration.h"
+#include "esp/core/managedContainers/AbstractManagedObject.h"
 
 namespace esp {
 namespace metadata {
@@ -15,20 +15,20 @@ namespace attributes {
 
 /**
  * @brief Base class for all implemented attributes.  Inherits from @ref
- * esp::core::AbstractManagedObject so the attributes can be managed by a @ref
- * esp::core::ManagedContainer.
+ * esp::core::AbstractFileBasedManagedObject so the attributes can be managed by
+ * a @ref esp::core::ManagedContainer.
  */
-class AbstractAttributes : public esp::core::AbstractManagedObject,
+class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
                            public esp::core::Configuration {
  public:
   AbstractAttributes(const std::string& attributesClassKey,
                      const std::string& handle)
       : Configuration() {
-    setClassKey(attributesClassKey);
+    AbstractAttributes::setClassKey(attributesClassKey);
     AbstractAttributes::setHandle(handle);
   }
 
-  virtual ~AbstractAttributes() = default;
+  ~AbstractAttributes() override = default;
   /**
    * @brief Get this attributes' class.  Should only be set from constructor.
    * Used as key in constructor function pointer maps in AttributesManagers.
@@ -43,7 +43,7 @@ class AbstractAttributes : public esp::core::AbstractManagedObject,
    * such cases this should be overridden with NOP.
    * @param handle the handle to set.
    */
-  virtual void setHandle(const std::string& handle) override {
+  void setHandle(const std::string& handle) override {
     setString("handle", handle);
   }
   std::string getHandle() const override { return getString("handle"); }
@@ -54,7 +54,7 @@ class AbstractAttributes : public esp::core::AbstractManagedObject,
    * this attributes, so this should only be used for logging, and not for
    * attempts to search for attributes.
    */
-  std::string getSimplifiedHandle() {
+  std::string getSimplifiedHandle() const {
     // first parse for file name, and then get rid of extension(s).
     return Corrade::Utility::Directory::splitExtension(
                Corrade::Utility::Directory::splitExtension(
@@ -66,7 +66,7 @@ class AbstractAttributes : public esp::core::AbstractManagedObject,
   /**
    * @brief directory where files used to construct attributes can be found.
    */
-  virtual void setFileDirectory(const std::string& fileDirectory) override {
+  void setFileDirectory(const std::string& fileDirectory) override {
     setString("fileDirectory", fileDirectory);
   }
   std::string getFileDirectory() const override {

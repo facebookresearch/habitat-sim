@@ -22,10 +22,20 @@ class LightInstanceAttributes : public AbstractAttributes {
   /**
    * @brief Constant static map to provide mappings from string tags to @ref
    * esp::gfx::LightType values.  This will be used to map values set in json
-   * for light type to @ref esp::gfx::LightType.  Keys must be lowercase.
+   * for light type to @ref esp::gfx::LightType.  Keys must be lowercase - will
+   * support any case values in JSON.
    */
   static const std::map<std::string, esp::gfx::LightType> LightTypeNamesMap;
-  LightInstanceAttributes(const std::string& handle = "");
+
+  /**
+   * @brief Constant static map to provide mappings from string tags to @ref
+   * esp::gfx::LightPositionModel values.  This will be used to map values set
+   * in json to specify what translations are measured from for a lighting
+   * instance.
+   */
+  static const std::map<std::string, esp::gfx::LightPositionModel>
+      LightPositionNamesMap;
+  explicit LightInstanceAttributes(const std::string& handle = "");
 
   /**
    * @brief Get/Set the position of the light.
@@ -62,6 +72,16 @@ class LightInstanceAttributes : public AbstractAttributes {
   int getType() const { return getInt("type"); }
 
   /**
+   * @brief Get/Set the position model to use when placing the light - whether
+   * the lights translation should be relative to the camera, the global scene
+   * origin, or some object.
+   */
+  void setPositionModel(int position_model) {
+    setInt("position_model", position_model);
+  }
+  int getPositionModel() const { return getInt("position_model"); }
+
+  /**
    * @brief Get/Set inner cone angle for spotlights.  Should be ignored for
    * other lights
    */
@@ -90,12 +110,12 @@ class LightInstanceAttributes : public AbstractAttributes {
  */
 class LightLayoutAttributes : public AbstractAttributes {
  public:
-  LightLayoutAttributes(const std::string& handle = "");
+  explicit LightLayoutAttributes(const std::string& handle = "");
 
   /**
    * @brief Add a light instance to this lighting layout
    */
-  void addLightInstance(LightInstanceAttributes::ptr _lightInstance) {
+  void addLightInstance(const LightInstanceAttributes::ptr& _lightInstance) {
     lightInstances_.emplace(_lightInstance->getHandle(), _lightInstance);
   }
 

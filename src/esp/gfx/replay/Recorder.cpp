@@ -150,8 +150,8 @@ void Recorder::updateInstanceStates() {
   for (auto& instanceRecord : instanceRecords_) {
     auto state = getInstanceState(instanceRecord.node);
     if (!instanceRecord.recentState || state != instanceRecord.recentState) {
-      getKeyframe().stateUpdates.push_back(
-          std::make_pair(instanceRecord.instanceKey, state));
+      getKeyframe().stateUpdates.emplace_back(instanceRecord.instanceKey,
+                                              state);
       instanceRecord.recentState = state;
     }
   }

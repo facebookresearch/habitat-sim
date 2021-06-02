@@ -2,12 +2,23 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-/* global XRWebGLLayer */
+/* global XRWebGLLayer, Module */
 import WebDemo from "./web_demo";
 import { defaultAgentConfig } from "./defaults";
 
 const BUTTON_ID = "vr_button";
+
+const VIEW_SENSORS = ["left_eye", "right_eye"];
 const pointToArray = p => [p.x, p.y, p.z, p.w];
+
+///////////
+// INPUT //
+///////////
+const HANDEDNESS = "right";
+const REPEAT_TIMEOUT = 500;
+const LEFT_RIGHT_AXIS = 2;
+const FWD_AXIS = 3;
+const VIEW_YAW_STEP = Math.PI * 0.1;
 
 class VRDemo extends WebDemo {
   fpsElement;
@@ -18,6 +29,17 @@ class VRDemo extends WebDemo {
   gl = null;
   tex = null;
   inds = null;
+
+  sensorSpecs = null;
+
+  prevFwdHeld = false;
+  prevLeftHeld = false;
+  prevRightHeld = false;
+
+  viewYawOffset = 0;
+  FWD = Module.Vector3.zAxis(1);
+  FWD_ANGLE = Math.atan2(this.FWD.z(), this.FWD.x());
+  DOWN = Module.Vector3.yAxis(-1);
 
   fps = 0;
   skipFrames = 60;
@@ -39,6 +61,17 @@ class VRDemo extends WebDemo {
     button.id = BUTTON_ID;
     this.canvasElement.after(button);
     this.exitVR();
+  }
+
+  initSensors() {
+    const agent = this.simenv.sim.getAgent(this.simenv.selectedAgentId);
+
+    this.sensorSpecs = new Array(VIEW_SENSORS.length);
+    for (var iView = 0; iView < VIEW_SENSORS.length; ++iView) {
+      const sensor = agent.getSubtreeSensors().get(VIEW_SENSORS[iView]);
+
+      this.sensorSpecs[iView] = sensor.specification();
+    }
   }
 
   // Compiles a GLSL shader. Returns null on failure
@@ -147,6 +180,7 @@ class VRDemo extends WebDemo {
       this.gl = document.createElement("canvas").getContext("webgl", {
         xrCompatible: true
       });
+      this.initSensors();
       this.initGL();
     }
     this.webXRSession = await navigator.xr.requestSession("immersive-vr", {
@@ -245,6 +279,95 @@ class VRDemo extends WebDemo {
     );
   }
 
+  handleInput(frame) {
+    for (let inputSource of frame.session.inputSources) {
+      if (inputSource.handedness != HANDEDNESS) {
+        continue;
+      }
+      if (inputSource.gamepad) {
+        const demo = this;
+
+        const fwdHeld = inputSource.gamepad.axes[FWD_AXIS] < -0.5;
+        if (fwdHeld && !this.prevFwdHeld) {
+          this.task.handleAction("moveForward");
+          window.setTimeout(function() {
+            demo.prevFwdHeld = false;
+          }, REPEAT_TIMEOUT);
+        }
+        this.prevFwdHeld = fwdHeld;
+
+        const leftHeld = inputSource.gamepad.axes[LEFT_RIGHT_AXIS] > 0.5;
+        if (leftHeld && !this.prevleftHeld) {
+          this.viewYawOffset += VIEW_YAW_STEP;
+          window.setTimeout(function() {
+            demo.prevLeftHeld = false;
+          }, REPEAT_TIMEOUT);
+        }
+        this.prevLeftHeld = leftHeld;
+
+        const rightHeld = inputSource.gamepad.axes[LEFT_RIGHT_AXIS] < -0.5;
+        if (rightHeld && !this.prevRightHeld) {
+          this.viewYawOffset -= VIEW_YAW_STEP;
+          window.setTimeout(function() {
+            demo.prevRightHeld = false;
+          }, REPEAT_TIMEOUT);
+        }
+        this.prevRightHeld = rightHeld;
+      }
+      /*
+      // 6DoF pose example
+      if (inputSource.gripSpace) {
+        const inputPose = frame.getPose(
+          inputSource.gripSpace,
+          this.xrReferenceSpace
+        );
+      }
+      */
+    }
+  }
+
+  updateHeadPose(pose, agent) {
+    const headRotation = Module.toQuaternion(
+      pointToArray(pose.transform.orientation)
+    );
+    const pointingVec = headRotation.transformVector(this.FWD);
+    const pointingAngle =
+      Math.atan2(pointingVec.z(), pointingVec.x()) - this.FWD_ANGLE;
+
+    const agentQuat = Module.Quaternion.rotation(
+      new Module.Rad(pointingAngle + this.viewYawOffset),
+      this.DOWN
+    );
+    const inverseAgentRot = Module.Quaternion.rotation(
+      new Module.Rad(-pointingAngle),
+      this.DOWN
+    );
+
+    let state = new Module.AgentState();
+    agent.getState(state);
+    state.rotation = Module.toVec4f(agentQuat);
+    agent.setState(state, false);
+
+    for (var iView = 0; iView < pose.views.length; ++iView) {
+      const view = pose.views[iView];
+
+      const sensor = agent.getSubtreeSensors().get(VIEW_SENSORS[iView]);
+
+      const pos = pointToArray(view.transform.position).slice(0, -1); // don't need w for position
+      sensor.setLocalTransform(
+        Module.toVec3f(
+          inverseAgentRot.transformVector(new Module.Vector3(...pos))
+        ),
+        Module.toVec4f(
+          Module.Quaternion.mul(
+            inverseAgentRot,
+            Module.toQuaternion(pointToArray(view.transform.orientation))
+          )
+        )
+      );
+    }
+  }
+
   drawVRScene(t, frame) {
     const session = frame.session;
 
@@ -257,25 +380,21 @@ class VRDemo extends WebDemo {
       return;
     }
 
+    const agent = this.simenv.sim.getAgent(this.simenv.selectedAgentId);
+
+    this.handleInput(frame);
+    this.updateHeadPose(pose, agent);
+
     const layer = session.renderState.baseLayer;
     this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, layer.framebuffer);
 
-    const agent = this.simenv.sim.getAgent(this.simenv.selectedAgentId);
-
-    const VIEW_SENSORS = ["left_eye", "right_eye"];
     for (var iView = 0; iView < pose.views.length; ++iView) {
       const view = pose.views[iView];
       const viewport = layer.getViewport(view);
       this.gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height);
 
-      const sensor = agent.sensorSuite.get(VIEW_SENSORS[iView]);
-
-      sensor.setLocalTransform(
-        pointToArray(view.transform.position).slice(0, -1), // don't need w for position
-        pointToArray(view.transform.orientation)
-      );
-
-      const texRes = sensor.specification().resolution;
+      const sensor = agent.getSubtreeSensors().get(VIEW_SENSORS[iView]);
+      const texRes = this.sensorSpecs[iView].resolution;
       const texData = sensor.getObservation(this.simenv.sim).getData();
       this.drawTextureData(texRes, texData);
     }

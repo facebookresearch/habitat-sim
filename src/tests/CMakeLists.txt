@@ -51,11 +51,26 @@ target_include_directories(DrawableTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 test(PhysicsTest physics)
 target_include_directories(PhysicsTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-test(GfxReplayTest assets gfx)
+test(GfxReplayTest assets gfx sim)
 target_include_directories(GfxReplayTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 test(ResourceManagerTest assets)
 target_include_directories(ResourceManagerTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
+if(BUILD_WITH_VHACD)
+  corrade_add_test(
+    VoxelGridTest
+    VoxelGridTest.cpp
+    LIBRARIES
+    sim
+    assets
+    geo
+    Magnum::DebugTools
+    Magnum::AnyImageConverter
+    MagnumPlugins::StbImageImporter
+  )
+  target_include_directories(VoxelGridTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+endif()
 
 corrade_add_test(CullingTest CullingTest.cpp LIBRARIES gfx)
 target_include_directories(CullingTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})

@@ -3,29 +3,9 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "ManagedContainerBase.h"
-
+#include <Corrade/Utility/FormatStl.h>
 namespace esp {
 namespace core {
-
-std::string ManagedContainerBase::convertFilenameToJSON(
-    const std::string& filename,
-    const std::string& jsonTypeExt) {
-  std::string strHandle = Cr::Utility::String::lowercase(filename);
-  std::string resHandle(filename);
-  if (std::string::npos ==
-      strHandle.find(Cr::Utility::String::lowercase(jsonTypeExt))) {
-    resHandle = Cr::Utility::Directory::splitExtension(filename).first + "." +
-                jsonTypeExt;
-    LOG(INFO) << "ManagedContainerBase::convertFilenameToJSON : Filename : "
-              << filename
-              << " changed to proposed JSON configuration filename : "
-              << resHandle;
-  } else {
-    LOG(INFO) << "ManagedContainerBase::convertFilenameToJSON : Filename : "
-              << filename << " is appropriate JSON configuration filename.";
-  }
-  return resHandle;
-}  // ManagedContainerBase::convertFilenameToJSON
 
 bool ManagedContainerBase::setLock(const std::string& objectHandle, bool lock) {
   // if managed object does not currently exist then do not attempt to modify
@@ -144,27 +124,39 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
   return res;
 }  // ManagedContainerBase::getObjectHandlesBySubStringPerType
 
-bool ManagedContainerBase::verifyLoadDocument(const std::string& filename,
-                                              io::JsonDocument& jsonDoc) {
-  if (isValidFileName(filename)) {
-    try {
-      jsonDoc = io::parseJsonFile(filename);
-    } catch (...) {
-      LOG(ERROR)
-          << objectType_
-          << "ManagedContainerBase::verifyLoadDocument : Failed to parse "
-          << filename << " as JSON.";
-      return false;
+std::string ManagedContainerBase::getUniqueHandleFromCandidatePerType(
+    const std::map<int, std::string>& mapOfHandles,
+    const std::string& name) const {
+  // find all existing values with passed name - this
+  std::vector<std::string> resVals =
+      this->getObjectHandlesBySubStringPerType(mapOfHandles, name, true);
+
+  int incr = 0;
+  // default to illegal apple/windows character
+  char pivotChar = ':';
+#if __linux__
+  pivotChar = '/';
+#endif
+  if (resVals.size() != 0) {
+    // handles exist with passed substring.  Find highest handle increment, add
+    // 1 and use for new name 1, build new handle
+    for (const std::string& s : resVals) {
+      // split string on underscore, last value will be string of highest incr
+      // value existing.
+      std::vector<std::string> vals = Cr::Utility::String::split(s, pivotChar);
+      // if any exist, all are expected to end
+      int new_incr = std::stoi(vals.back());
+
+      if (new_incr >= incr) {
+        incr = new_incr + 1;
+      }
     }
-    return true;
-  } else {
-    // by here always fail
-    LOG(ERROR) << objectType_
-               << "ManagedContainerBase::verifyLoadDocument : File " << filename
-               << " does not exist";
-    return false;
-  }
-}  // ManagedContainerBase::verifyLoadDocument
+  }  // returned results with passed substring
+  // build new name with appropriate handle increment
+  const std::string handleIncrement =
+      Cr::Utility::formatString("_{}{:.04d}", std::string(1, pivotChar), incr);
+  return name + handleIncrement;
+}  // ManagedContainerBase::getUniqueHandleFromCandidatePerType
 
 }  // namespace core
 }  // namespace esp

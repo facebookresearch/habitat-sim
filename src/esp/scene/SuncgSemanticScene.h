@@ -49,7 +49,7 @@ struct SuncgObjectCategory : public SemanticCategory {
 
 struct SuncgRegionCategory : public SemanticCategory {
   SuncgRegionCategory(const std::string& nodeId,
-                      const std::vector<std::string> categories)
+                      const std::vector<std::string>& categories)
       : nodeId_(nodeId), categories_(categories) {}
 
   int index(const std::string& mapping) const override;

@@ -86,12 +86,7 @@ class AssetAttributesManager
    */
   static const std::map<PrimObjTypes, const char*> PrimitiveNames3DMap;
 
-  AssetAttributesManager()
-      : AttributesManager<attributes::AbstractPrimitiveAttributes,
-                          core::ManagedObjectAccess::Copy>::
-            AttributesManager("Primitive Asset", "prim_config.json") {
-    buildCtorFuncPtrMaps();
-  }  // AssetAttributesManager::ctor
+  AssetAttributesManager();
 
   /**
    * @brief Should only be called internally. Creates an instance of a primtive
@@ -418,12 +413,13 @@ class AssetAttributesManager
    * @brief This method will perform any necessary updating that is
    * attributesManager-specific upon template removal, such as removing a
    * specific template handle from the list of file-based template handles in
-   * ObjectAttributesManager.  This should only be called internally.
+   * ObjectAttributesManager.  This should only be called @ref
+   * esp::core::ManagedContainerBase.
    *
    * @param templateID the ID of the template to remove
    * @param templateHandle the string key of the attributes desired.
    */
-  void updateObjectHandleLists(
+  void deleteObjectInternalFinalize(
       CORRADE_UNUSED int templateID,
       CORRADE_UNUSED const std::string& templateHandle) override {}
 
@@ -520,14 +516,6 @@ class AssetAttributesManager
       createObject(elem.second, true);
     }
   }  // AssetAttributesManager::resetFinalize()
-
-  /**
-   * @brief This function will assign the appropriately configured function
-   * pointers for @ref createPrimAttributes calls for each type of
-   * supported primitive to the @ref primTypeConstructorMap_, keyed by type of
-   * primtive
-   */
-  void buildCtorFuncPtrMaps() override;
 
   // ======== Typedefs and Instance Variables ========
 

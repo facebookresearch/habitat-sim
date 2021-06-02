@@ -38,6 +38,10 @@ endif()
 # sophus
 include_directories(SYSTEM "${DEPS_DIR}/Sophus")
 
+# tinyxml2
+include_directories("${DEPS_DIR}/tinyxml2")
+add_subdirectory("${DEPS_DIR}/tinyxml2")
+
 # glog. NOTE: emscripten does not support 32-bit targets, which glog requires.
 # Therefore we do not build glog and use a custom shim instead to emulate glog
 if(CORRADE_TARGET_EMSCRIPTEN)
@@ -73,7 +77,8 @@ if(BUILD_ASSIMP_SUPPORT)
   if(NOT USE_SYSTEM_ASSIMP)
     set(ASSIMP_BUILD_ASSIMP_TOOLS OFF CACHE BOOL "ASSIMP_BUILD_ASSIMP_TOOLS" FORCE)
     set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "ASSIMP_BUILD_TESTS" FORCE)
-    set(BUILD_SHARED_LIBS OFF CACHE BOOL "ASSIMP_BUILD_TESTS" FORCE)
+    set(ASSIMP_NO_EXPORT ON CACHE BOOL "" FORCE)
+    set(BUILD_SHARED_LIBS OFF CACHE BOOL "BUILD_SHARED_LIBS" FORCE)
     # The following is important to avoid Assimp appending `d` to all our
     # binaries. Works only with Assimp >= 5.0.0, and after 5.0.1 this option is
     # prefixed with ASSIMP_, so better set both variants to future-proof this.
@@ -90,13 +95,25 @@ if(BUILD_ASSIMP_SUPPORT)
   find_package(Assimp REQUIRED)
 endif()
 
+# v-hacd
+if(BUILD_WITH_VHACD)
+  set(NO_OPENCL ON CACHE BOOL "NO_OPENCL" FORCE)
+  set(NO_OPENMP ON CACHE BOOL "NO_OPENMP" FORCE)
+  # adding /src/VHACD_Lib instead of /src since /src contains unneccesary test files
+  add_subdirectory("${DEPS_DIR}/v-hacd/src/VHACD_Lib")
+endif()
+
 # recast
 set(RECASTNAVIGATION_DEMO OFF CACHE BOOL "RECASTNAVIGATION_DEMO" FORCE)
 set(RECASTNAVIGATION_TESTS OFF CACHE BOOL "RECASTNAVIGATION_TESTS" FORCE)
 set(RECASTNAVIGATION_EXAMPLES OFF CACHE BOOL "RECASTNAVIGATION_EXAMPLES" FORCE)
-set(RECASTNAVIGATION_STATIC ON CACHE BOOL "RECASTNAVIGATION_STATIC" FORCE)
+# Temp BUILD_SHARED_LIBS override for Recast, has to be reset back after to avoid affecting Bullet (which needs shared) and potentially other submodules
+set(_PREV_BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS})
+set(BUILD_SHARED_LIBS OFF)
+include(GNUInstallDirs)
 add_subdirectory("${DEPS_DIR}/recastnavigation/Recast")
 add_subdirectory("${DEPS_DIR}/recastnavigation/Detour")
+set(BUILD_SHARED_LIBS ${_PREV_BUILD_SHARED_LIBS})
 # Needed so that Detour doesn't hide the implementation of the method on dtQueryFilter
 target_compile_definitions(Detour PUBLIC DT_VIRTUAL_QUERYFILTER)
 
@@ -226,6 +243,8 @@ if(NOT USE_SYSTEM_MAGNUM)
   if(BUILD_WITH_BULLET)
     # Build Magnum's BulletIntegration
     set(WITH_BULLET ON CACHE BOOL "" FORCE)
+  else()
+    set(WITH_BULLET OFF CACHE BOOL "" FORCE)
   endif()
 
   if(BUILD_GUI_VIEWERS)
@@ -233,6 +252,10 @@ if(NOT USE_SYSTEM_MAGNUM)
       set(WITH_EMSCRIPTENAPPLICATION ON CACHE BOOL "WITH_EMSCRIPTENAPPLICATION" FORCE)
     else()
       if(NOT USE_SYSTEM_GLFW)
+        set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+        # These two will be off-by-default when GLFW 3.4 gets released
+        set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+        set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
         add_subdirectory("${DEPS_DIR}/glfw")
       endif()
       set(WITH_GLFWAPPLICATION ON CACHE BOOL "WITH_GLFWAPPLICATION" FORCE)

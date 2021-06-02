@@ -6,7 +6,6 @@
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 
-using std::placeholders::_1;
 namespace Cr = Corrade;
 
 namespace esp {
@@ -98,43 +97,80 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
   // jsonConfig here holds the JSON description for a single light attributes.
   // set position
   bool posIsSet = io::jsonIntoConstSetter<Magnum::Vector3>(
-      jsonConfig, "position",
-      std::bind(&LightInstanceAttributes::setPosition, lightAttribs, _1));
+      jsonConfig, "position", [lightAttribs](const Magnum::Vector3& position) {
+        lightAttribs->setPosition(position);
+      });
 
   // set direction
   bool dirIsSet = io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonConfig, "direction",
-      std::bind(&LightInstanceAttributes::setDirection, lightAttribs, _1));
+      [lightAttribs](const Magnum::Vector3& direction) {
+        lightAttribs->setDirection(direction);
+      });
 
   // set color
   io::jsonIntoConstSetter<Magnum::Vector3>(
-      jsonConfig, "color",
-      std::bind(&LightInstanceAttributes::setColor, lightAttribs, _1));
+      jsonConfig, "color", [lightAttribs](const Magnum::Vector3& color) {
+        lightAttribs->setColor(color);
+      });
 
   // set intensity
-  io::jsonIntoSetter<double>(
-      jsonConfig, "intensity",
-      std::bind(&LightInstanceAttributes::setIntensity, lightAttribs, _1));
+  io::jsonIntoSetter<double>(jsonConfig, "intensity",
+                             [lightAttribs](double intensity) {
+                               lightAttribs->setIntensity(intensity);
+                             });
+
+  // set frame of reference for light transformation
+  int posMdleVal = -1;
+  std::string tmpPosMdleVal = "";
+  if (io::readMember<std::string>(jsonConfig, "position_model",
+                                  tmpPosMdleVal)) {
+    std::string strToLookFor = Cr::Utility::String::lowercase(tmpPosMdleVal);
+    if (LightInstanceAttributes::LightPositionNamesMap.count(strToLookFor) !=
+        0u) {
+      posMdleVal = static_cast<int>(
+          LightInstanceAttributes::LightPositionNamesMap.at(strToLookFor));
+    } else {
+      LOG(WARNING)
+          << "LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc : "
+             "Position Model Value in JSON : `"
+          << posMdleVal
+          << "` does not map to a valid "
+             "LightInstanceAttributes::LightPositionNamesMap value, so "
+             "defaulting LightInfo position model to "
+             "esp::gfx::LightPositionModel::Global.";
+      posMdleVal = static_cast<int>(esp::gfx::LightPositionModel::Global);
+    }
+    lightAttribs->setPositionModel(posMdleVal);
+  }  // position model
 
   // type of light - should map to enum values in esp::gfx::LightType
-  int typeVal = -1;
-  std::string tmpVal = "";
-  if (io::readMember<std::string>(jsonConfig, "type", tmpVal)) {
-    std::string strToLookFor = Cr::Utility::String::lowercase(tmpVal);
-    if (LightInstanceAttributes::LightTypeNamesMap.count(strToLookFor)) {
-      typeVal = static_cast<int>(
+  int specifiedTypeVal = -1;
+  std::string tmpTypeVal = "";
+  if (io::readMember<std::string>(jsonConfig, "type", tmpTypeVal)) {
+    std::string strToLookFor = Cr::Utility::String::lowercase(tmpTypeVal);
+    if (strToLookFor == "spot") {
+      // TODO remove this if block to support spot lights
+      LOG(WARNING)
+          << "LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc : "
+             "Type spotlight specified in JSON not currently supported, so "
+             "defaulting LightInfo type to esp::gfx::LightType::Point.";
+      specifiedTypeVal = static_cast<int>(esp::gfx::LightType::Point);
+    } else if (LightInstanceAttributes::LightTypeNamesMap.count(strToLookFor) !=
+               0u) {
+      specifiedTypeVal = static_cast<int>(
           LightInstanceAttributes::LightTypeNamesMap.at(strToLookFor));
     } else {
       LOG(WARNING)
           << "LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc : "
-             "Type Value in json : `"
-          << tmpVal
+             "Type Value in JSON : `"
+          << tmpTypeVal
           << "` does not map to a valid "
              "LightInstanceAttributes::LightTypeNamesMap value, so "
              "defaulting LightInfo type to esp::gfx::LightType::Point.";
-      typeVal = static_cast<int>(esp::gfx::LightType::Point);
+      specifiedTypeVal = static_cast<int>(esp::gfx::LightType::Point);
     }
-    lightAttribs->setType(typeVal);
+    lightAttribs->setType(specifiedTypeVal);
   } else if (posIsSet) {
     // if no value found in attributes, attempt to infer desired type based on
     // whether position or direction were set from JSON.
@@ -143,28 +179,50 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
     lightAttribs->setType(static_cast<int>(esp::gfx::LightType::Directional));
   }  // if nothing set by here, will default to constructor defaults
 
+  // if the user specifies a type, we will assume that type overrides any
+  // inferred light type based on vector position/direction provided.  If the
+  // vector provided does not match the type specified, we copy the vector into
+  // the appropriate location.
+  if ((specifiedTypeVal ==
+       static_cast<int>(esp::gfx::LightType::Directional)) &&
+      (posIsSet) && !(dirIsSet)) {
+    // position set, direction absent, but directional type explicitly specified
+    lightAttribs->setDirection(lightAttribs->getPosition());
+  } else if ((specifiedTypeVal ==
+              static_cast<int>(esp::gfx::LightType::Point)) &&
+             (dirIsSet) && !(posIsSet)) {
+    // direction set, position absent, but point type explicitly specified
+    lightAttribs->setPosition(lightAttribs->getDirection());
+  }
+
   // read spotlight params
   if (jsonConfig.HasMember("spot")) {
     if (!jsonConfig["spot"].IsObject()) {
+      // TODO prune NOTE: component when spotlights are supported
       LOG(WARNING)
           << "LightLayoutAttributesManager::setValsFromJSONDoc : \"spot\" "
              "cell in JSON config unable to be parsed to set "
-             "spotlight parameters so skipping.";
+             "spotlight parameters so skipping.  NOTE : Spotlights not "
+             "currently supported, so cone anble values are ignored and "
+             "light "
+             "will be created as a point light.";
     } else {
       const auto& spotArea = jsonConfig["spot"];
       // set inner cone angle
       io::jsonIntoSetter<Magnum::Rad>(
           spotArea, "innerConeAngle",
-          std::bind(&LightInstanceAttributes::setInnerConeAngle, lightAttribs,
-                    _1));
+          [lightAttribs](Magnum::Rad innerConeAngle) {
+            lightAttribs->setInnerConeAngle(innerConeAngle);
+          });
 
       // set outer cone angle
       io::jsonIntoSetter<Magnum::Rad>(
           spotArea, "outerConeAngle",
-          std::bind(&LightInstanceAttributes::setOuterConeAngle, lightAttribs,
-                    _1));
+          [lightAttribs](Magnum::Rad outerConeAngle) {
+            lightAttribs->setOuterConeAngle(outerConeAngle);
+          });
     }
-  }  // if member spot present
+  }  // if JSON object 'spot' present
 }  // LightLayoutAttributesManager::setValsFromJSONDoc
 
 LightLayoutAttributes::ptr LightLayoutAttributesManager::initNewObjectInternal(
@@ -202,8 +260,12 @@ gfx::LightSetup LightLayoutAttributesManager::createLightSetupFromAttributes(
     if (numLightInstances == 0) {
       // setup default LightInfo instances - lifted from LightSetup.cpp.
       // TODO create default attributes describing these lights?
-      return gfx::LightSetup{{{1.0, 1.0, 0.0, 0.0}, {0.75, 0.75, 0.75}},
-                             {{-0.5, 0.0, 1.0, 0.0}, {0.4, 0.4, 0.4}}};
+      return gfx::LightSetup{{.vector = {1.0, 1.0, 0.0, 0.0},
+                              .color = {0.75, 0.75, 0.75},
+                              .model = gfx::LightPositionModel::Global},
+                             {.vector = {-0.5, 0.0, 1.0, 0.0},
+                              .color = {0.4, 0.4, 0.4},
+                              .model = gfx::LightPositionModel::Global}};
     } else {
       const std::map<std::string, LightInstanceAttributes::ptr>&
           lightInstances = lightLayoutAttributes->getLightInstances();
@@ -212,6 +274,8 @@ gfx::LightSetup LightLayoutAttributesManager::createLightSetupFromAttributes(
         const LightInstanceAttributes::ptr& lightAttr = elem.second;
         const int type = lightAttr->getType();
         const gfx::LightType typeEnum = static_cast<gfx::LightType>(type);
+        const gfx::LightPositionModel posModelEnum =
+            static_cast<gfx::LightPositionModel>(lightAttr->getPositionModel());
         const Magnum::Color3 color =
             lightAttr->getColor() * lightAttr->getIntensity();
         Magnum::Vector4 lightVector;
@@ -225,16 +289,18 @@ gfx::LightSetup LightLayoutAttributesManager::createLightSetupFromAttributes(
             break;
           }
           default: {
-            LOG(INFO)
-                << "LightLayoutAttributesManager::"
-                   "createLightSetupFromAttributes : Enum gfx::LightType with "
-                   "val "
-                << type
-                << " is not supported, so defaulting to gfx::LightType::Point";
+            LOG(INFO) << "LightLayoutAttributesManager::"
+                         "createLightSetupFromAttributes : Enum "
+                         "gfx::LightType with "
+                         "val "
+                      << type
+                      << " is not supported, so defaulting to "
+                         "gfx::LightType::Point";
             lightVector = {lightAttr->getPosition(), 1.0f};
           }
         }  // switch on type
-        res.push_back({lightVector, color});
+        res.push_back(
+            {.vector = lightVector, .color = color, .model = posModelEnum});
       }  // for each light instance described
     }    // if >0 light instances described
   }      // lightLayoutAttributes of requested name exists

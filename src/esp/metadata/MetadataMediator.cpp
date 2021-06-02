@@ -7,12 +7,11 @@
 namespace esp {
 namespace metadata {
 
-MetadataMediator::MetadataMediator(const sim::SimulatorConfiguration& cfg)
-    : activeSceneDataset_(cfg.sceneDatasetConfigFile),
-      currPhysicsManagerAttributes_(cfg.physicsConfigFile),
-      simConfig_(cfg) {
+MetadataMediator::MetadataMediator(const sim::SimulatorConfiguration& cfg) {
   buildAttributesManagers();
-  setSimulatorConfiguration(simConfig_);
+  // sets simConfig_, activeSceneDataset_ and currPhysicsManagerAttributes_
+  // based on config
+  setSimulatorConfiguration(cfg);
 }  // MetadataMediator ctor (SimulatorConfiguration)
 
 void MetadataMediator::buildAttributesManagers() {
@@ -22,7 +21,9 @@ void MetadataMediator::buildAttributesManagers() {
       managers::SceneDatasetAttributesManager::create(
           physicsAttributesManager_);
 
-  // should always have default dataset
+  // should always have default dataset, but this is managed by MM instead of
+  // made undeletable in SceneDatasetManager, so that it can be easily "reset"
+  // by deleting and remaking.
   createSceneDataset("default");
   // should always have default physicsManagerAttributesPath
   createPhysicsManagerAttributes(ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH);
@@ -69,8 +70,7 @@ bool MetadataMediator::setSimulatorConfiguration(
             << simConfig_.activeSceneName
             << " and dataset : " << simConfig_.sceneDatasetConfigFile
             << " which "
-            << (activeSceneDataset_.compare(
-                    simConfig_.sceneDatasetConfigFile) == 0
+            << (activeSceneDataset_ == simConfig_.sceneDatasetConfigFile
                     ? "is currently active dataset."
                     : "is NOT active dataset (THIS IS PROBABLY AN ERROR.)");
   return true;
@@ -100,8 +100,7 @@ bool MetadataMediator::createPhysicsManagerAttributes(
 bool MetadataMediator::createSceneDataset(const std::string& sceneDatasetName,
                                           bool overwrite) {
   // see if exists
-  bool exists =
-      sceneDatasetAttributesManager_->getObjectLibHasHandle(sceneDatasetName);
+  bool exists = sceneDatasetExists(sceneDatasetName);
   if (exists) {
     // check if not overwrite and exists already
     if (!overwrite) {
@@ -134,17 +133,16 @@ bool MetadataMediator::createSceneDataset(const std::string& sceneDatasetName,
 
 bool MetadataMediator::removeSceneDataset(const std::string& sceneDatasetName) {
   // First check if SceneDatasetAttributes exists
-  if (!sceneDatasetAttributesManager_->getObjectLibHasHandle(
-          sceneDatasetName)) {
+  if (!sceneDatasetExists(sceneDatasetName)) {
     // DNE, do nothing
-    LOG(INFO)
+    LOG(WARNING)
         << "MetadataMediator::removeSceneDataset : SceneDatasetAttributes "
         << sceneDatasetName << " does not exist. Aborting.";
     return false;
   }
 
   // Next check if is current activeSceneDataset_, and if so skip with warning
-  if (sceneDatasetName.compare(activeSceneDataset_)) {
+  if (sceneDatasetName == activeSceneDataset_) {
     LOG(WARNING) << "MetadataMediator::removeSceneDataset : Cannot remove "
                     "active SceneDatasetAttributes "
                  << sceneDatasetName
@@ -165,8 +163,9 @@ bool MetadataMediator::removeSceneDataset(const std::string& sceneDatasetName) {
         << sceneDatasetName << " unable to be deleted. Aborting.";
     return false;
   }
-  // Should always have a default dataset.
-  if (sceneDatasetName.compare("default")) {
+  // Should always have a default dataset. Use this process to remove extraneous
+  // configs in default Scene Dataset
+  if (sceneDatasetName == "default") {
     // removing default dataset should still create another, empty, default
     // dataset.
     createSceneDataset("default");
@@ -182,8 +181,7 @@ bool MetadataMediator::setCurrPhysicsAttributesHandle(
   // first check if physics manager attributes exists, if so then set as current
   if (physicsAttributesManager_->getObjectLibHasHandle(
           _physicsManagerAttributesPath)) {
-    if (currPhysicsManagerAttributes_.compare(_physicsManagerAttributesPath) !=
-        0) {
+    if (currPhysicsManagerAttributes_ != _physicsManagerAttributesPath) {
       LOG(INFO) << "MetadataMediator::setCurrPhysicsAttributesHandle : Old "
                    "physics manager attributes "
                 << currPhysicsManagerAttributes_ << " changed to "
@@ -211,12 +209,12 @@ bool MetadataMediator::setCurrPhysicsAttributesHandle(
 bool MetadataMediator::setActiveSceneDatasetName(
     const std::string& sceneDatasetName) {
   // first check if dataset exists/is loaded, if so then set as default
-  if (sceneDatasetAttributesManager_->getObjectLibHasHandle(sceneDatasetName)) {
-    if (activeSceneDataset_.compare(sceneDatasetName) != 0) {
-      LOG(INFO)
-          << "MetadataMediator::setActiveSceneDatasetName : Old active dataset "
-          << activeSceneDataset_ << " changed to " << sceneDatasetName
-          << " successfully.";
+  if (sceneDatasetExists(sceneDatasetName)) {
+    if (activeSceneDataset_ != sceneDatasetName) {
+      LOG(INFO) << "MetadataMediator::setActiveSceneDatasetName : Previous "
+                   "active dataset "
+                << activeSceneDataset_ << " changed to " << sceneDatasetName
+                << " successfully.";
       activeSceneDataset_ = sceneDatasetName;
     }
     return true;
@@ -233,8 +231,8 @@ bool MetadataMediator::setActiveSceneDatasetName(
   }
   LOG(INFO) << "MetadataMediator::setActiveSceneDatasetName : Attempt to "
                "create new dataset "
-            << sceneDatasetName << " "
-            << (success ? " succeeded." : " failed.");
+            << sceneDatasetName << " " << (success ? " succeeded." : " failed.")
+            << " Currently active dataset : " << activeSceneDataset_;
   return success;
 }  // MetadataMediator::setActiveSceneDatasetName
 

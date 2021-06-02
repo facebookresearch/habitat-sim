@@ -164,7 +164,7 @@ bool SemanticScene::loadSuncgHouse(
 
         for (int jRoomType = 0; jRoomType < node["roomTypes"].Size();
              ++jRoomType) {
-          roomTypes.push_back(node["roomTypes"][jRoomType].GetString());
+          roomTypes.emplace_back(node["roomTypes"][jRoomType].GetString());
         }
         for (int iChildNode = 0; iChildNode < node["nodeIndices"].Size();
              ++iChildNode) {
@@ -219,7 +219,7 @@ bool SemanticScene::loadSuncgHouse(
         }
         ASSERT(objectIndexInLevel >= 0 &&
                objectIndexInLevel < level->objects().size());
-        auto& object = level->objects()[objectIndexInLevel];
+        const auto& object = level->objects()[objectIndexInLevel];
         object->parentIndex_ = jRoom;
         object->region_ = room;
         room->objects_.push_back(object);

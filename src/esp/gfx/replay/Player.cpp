@@ -23,8 +23,7 @@ Player::Player(const LoadAndCreateRenderAssetInstanceCallback& callback)
     : loadAndCreateRenderAssetInstanceCallback(callback) {}
 
 void Player::readKeyframesFromFile(const std::string& filepath) {
-  clearFrame();
-  keyframes_.clear();
+  close();
 
   if (!Corrade::Utility::Directory::exists(filepath)) {
     LOG(ERROR) << "Player::readKeyframesFromFile: file " << filepath
@@ -39,6 +38,10 @@ void Player::readKeyframesFromFile(const std::string& filepath) {
         << "Player::readKeyframesFromFile: failed to parse keyframes from "
         << filepath << ".";
   }
+}
+
+Player::~Player() {
+  clearFrame();
 }
 
 int Player::getKeyframeIndex() const {
@@ -79,8 +82,16 @@ bool Player::getUserTransform(const std::string& name,
   }
 }
 
+void Player::close() {
+  clearFrame();
+  keyframes_.clear();
+}
+
 void Player::clearFrame() {
   for (const auto& pair : createdInstances_) {
+    // TODO: use NodeDeletionHelper to safely delete nodes owned by the Player.
+    // the deletion here is unsafe because a Player may persist beyond the
+    // lifetime of these nodes.
     delete pair.second;
   }
   createdInstances_.clear();
@@ -91,7 +102,7 @@ void Player::clearFrame() {
 void Player::applyKeyframe(const Keyframe& keyframe) {
   for (const auto& assetInfo : keyframe.loads) {
     ASSERT(assetInfos_.count(assetInfo.filepath) == 0);
-    if (failedFilepaths_.count(assetInfo.filepath)) {
+    if (failedFilepaths_.count(assetInfo.filepath) != 0u) {
       continue;
     }
     assetInfos_[assetInfo.filepath] = assetInfo;
@@ -99,8 +110,8 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
 
   for (const auto& pair : keyframe.creations) {
     const auto& creation = pair.second;
-    if (!assetInfos_.count(creation.filepath)) {
-      if (!failedFilepaths_.count(creation.filepath)) {
+    if (assetInfos_.count(creation.filepath) == 0u) {
+      if (failedFilepaths_.count(creation.filepath) == 0u) {
         LOG(WARNING) << "Player: missing asset info for [" << creation.filepath
                      << "]";
         failedFilepaths_.insert(creation.filepath);
@@ -108,10 +119,10 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
       continue;
     }
     ASSERT(assetInfos_.count(creation.filepath));
-    auto node = loadAndCreateRenderAssetInstanceCallback(
+    auto* node = loadAndCreateRenderAssetInstanceCallback(
         assetInfos_[creation.filepath], creation);
     if (!node) {
-      if (!failedFilepaths_.count(creation.filepath)) {
+      if (failedFilepaths_.count(creation.filepath) == 0u) {
         LOG(WARNING) << "Player: load failed for asset [" << creation.filepath
                      << "]";
         failedFilepaths_.insert(creation.filepath);
@@ -132,7 +143,7 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
       continue;
     }
 
-    auto node = it->second;
+    auto* node = it->second;
     delete node;
     createdInstances_.erase(deletionInstanceKey);
   }
@@ -144,7 +155,7 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
       // creation
       continue;
     }
-    auto node = it->second;
+    auto* node = it->second;
     const auto& state = pair.second;
     node->setTranslation(state.absTransform.translation);
     node->setRotation(state.absTransform.rotation);

@@ -16,6 +16,7 @@
 #include <Corrade/Containers/Optional.h>
 
 #include <cstdio>
+// NOLINTNEXTLINE
 #define _USE_MATH_DEFINES
 #include <cmath>
 #include <limits>
@@ -71,7 +72,7 @@ std::tuple<dtStatus, dtPolyRef, vec3f> projectToPoly(
   // there is no polygon inside the bounding box, the status is set to failure
   // and polyRef == 0
   constexpr float polyPickExt[3] = {2, 4, 2};  // [2 * dx, 2 * dy, 2 * dz]
-  dtPolyRef polyRef;
+  dtPolyRef polyRef = 0;
   // Initialize with all NANs at dtStatusSucceed(status) == true does NOT mean
   // that it found a point to project to..........
   vec3f polyXYZ = vec3f::Constant(Mn::Constants::nan());
@@ -260,9 +261,9 @@ struct PathFinder::Impl {
 
   Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> getTopDownView(
       const float metersPerPixel,
-      const float height);
+      const float height) const;
 
-  const assets::MeshData::ptr getNavMeshData();
+  assets::MeshData::ptr getNavMeshData();
 
  private:
   struct NavMeshDeleter {
@@ -632,7 +633,7 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
       return false;
     }
 
-    dtStatus status;
+    dtStatus status = 0;
     status = navMesh_->init(navData, navDataSize, DT_TILE_FREE_DATA);
     if (dtStatusFailed(status)) {
       dtFree(navData);
@@ -643,6 +644,8 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
       return false;
     }
   }
+
+  bounds_ = std::make_pair(vec3f(bmin), vec3f(bmax));
 
   // Added as we also need to remove these on navmesh recomputation
   removeZeroAreaPolys();
@@ -783,7 +786,7 @@ void PathFinder::Impl::removeZeroAreaPolys() {
       float polygonArea = polyArea(poly, tile);
       if (polygonArea < 1e-5) {
         navMesh_->setPolyFlags(polyRef, POLYFLAGS_DISABLED);
-      } else if (poly->flags & POLYFLAGS_WALK) {
+      } else if ((poly->flags & POLYFLAGS_WALK) != 0) {
         navMeshArea_ += polygonArea;
       }
     }
@@ -833,7 +836,7 @@ bool PathFinder::Impl::loadNavMesh(const std::string& path) {
       return false;
     }
 
-    if (!tileHeader.tileRef || !tileHeader.dataSize)
+    if ((tileHeader.tileRef == 0u) || (tileHeader.dataSize == 0))
       break;
 
     unsigned char* data = static_cast<unsigned char*>(
@@ -886,7 +889,7 @@ bool PathFinder::Impl::saveNavMesh(const std::string& path) {
   header.numTiles = 0;
   for (int i = 0; i < navMesh->getMaxTiles(); ++i) {
     const dtMeshTile* tile = navMesh->getTile(i);
-    if (!tile || !tile->header || !tile->dataSize)
+    if (!tile || !tile->header || (tile->dataSize == 0))
       continue;
     header.numTiles++;
   }
@@ -896,7 +899,7 @@ bool PathFinder::Impl::saveNavMesh(const std::string& path) {
   // Store tiles.
   for (int i = 0; i < navMesh->getMaxTiles(); ++i) {
     const dtMeshTile* tile = navMesh->getTile(i);
-    if (!tile || !tile->header || !tile->dataSize)
+    if (!tile || !tile->header || (tile->dataSize == 0))
       continue;
 
     NavMeshTileHeader tileHeader{};
@@ -931,9 +934,9 @@ vec3f PathFinder::Impl::getRandomNavigablePoint(const int maxTries /*= 10*/) {
 
   vec3f pt;
 
-  int i;
+  int i = 0;
   for (i = 0; i < maxTries; ++i) {
-    dtPolyRef ref;
+    dtPolyRef ref = 0;
     dtStatus status =
         navQuery_->findRandomPoint(filter_.get(), frand, &ref, pt.data());
     if (dtStatusSucceed(status))
@@ -1027,7 +1030,7 @@ bool PathFinder::Impl::findPathSetup(MultiGoalShortestPath& path,
   path.points.clear();
 
   // find nearest polys and path
-  dtStatus status;
+  dtStatus status = 0;
   std::tie(status, startRef, pathStart) =
       projectToPoly(path.requestedStart, navQuery_.get(), filter_.get());
 
@@ -1039,7 +1042,7 @@ bool PathFinder::Impl::findPathSetup(MultiGoalShortestPath& path,
     return true;
 
   for (const auto& rqEnd : path.getRequestedEnds()) {
-    dtPolyRef endRef;
+    dtPolyRef endRef = 0;
     vec3f pathEnd;
     std::tie(status, endRef, pathEnd) =
         projectToPoly(rqEnd, navQuery_.get(), filter_.get());
@@ -1056,7 +1059,7 @@ bool PathFinder::Impl::findPathSetup(MultiGoalShortestPath& path,
 }
 
 bool PathFinder::Impl::findPath(MultiGoalShortestPath& path) {
-  dtPolyRef startRef;
+  dtPolyRef startRef = 0;
   vec3f pathStart;
   if (!findPathSetup(path, startRef, pathStart))
     return false;
@@ -1115,8 +1118,8 @@ T PathFinder::Impl::tryStep(const T& start, const T& end, bool allowSliding) {
   static const int MAX_POLYS = 256;
   dtPolyRef polys[MAX_POLYS];
 
-  dtStatus startStatus, endStatus;
-  dtPolyRef startRef, endRef;
+  dtStatus startStatus = 0, endStatus = 0;
+  dtPolyRef startRef = 0, endRef = 0;
   vec3f pathStart;
   std::tie(startStatus, startRef, pathStart) =
       projectToPoly(start, navQuery_.get(), filter_.get());
@@ -1132,7 +1135,7 @@ T PathFinder::Impl::tryStep(const T& start, const T& end, bool allowSliding) {
   }
 
   vec3f endPoint;
-  int numPolys;
+  int numPolys = 0;
   navQuery_->moveAlongSurface(startRef, pathStart.data(), end.data(),
                               filter_.get(), endPoint.data(), polys, &numPolys,
                               MAX_POLYS, allowSliding);
@@ -1187,7 +1190,7 @@ T PathFinder::Impl::tryStep(const T& start, const T& end, bool allowSliding) {
 
 template <typename T>
 T PathFinder::Impl::snapPoint(const T& pt) {
-  dtStatus status;
+  dtStatus status = 0;
   vec3f projectedPt;
   std::tie(status, std::ignore, projectedPt) =
       projectToPoly(pt, navQuery_.get(), filter_.get());
@@ -1200,8 +1203,8 @@ T PathFinder::Impl::snapPoint(const T& pt) {
 }
 
 float PathFinder::Impl::islandRadius(const vec3f& pt) const {
-  dtPolyRef ptRef;
-  dtStatus status;
+  dtPolyRef ptRef = 0;
+  dtStatus status = 0;
   std::tie(status, ptRef, std::ignore) =
       projectToPoly(pt, navQuery_.get(), filter_.get());
   if (status != DT_SUCCESS || ptRef == 0) {
@@ -1220,8 +1223,8 @@ float PathFinder::Impl::distanceToClosestObstacle(
 HitRecord PathFinder::Impl::closestObstacleSurfacePoint(
     const vec3f& pt,
     const float maxSearchRadius /*= 2.0*/) const {
-  dtPolyRef ptRef;
-  dtStatus status;
+  dtPolyRef ptRef = 0;
+  dtStatus status = 0;
   vec3f polyPt;
   std::tie(status, ptRef, polyPt) =
       projectToPoly(pt, navQuery_.get(), filter_.get());
@@ -1230,7 +1233,7 @@ HitRecord PathFinder::Impl::closestObstacleSurfacePoint(
             std::numeric_limits<float>::infinity()};
   } else {
     vec3f hitPos, hitNormal;
-    float hitDist;
+    float hitDist = NAN;
     navQuery_->findDistanceToWall(ptRef, polyPt.data(), maxSearchRadius,
                                   filter_.get(), &hitDist, hitPos.data(),
                                   hitNormal.data());
@@ -1240,8 +1243,8 @@ HitRecord PathFinder::Impl::closestObstacleSurfacePoint(
 
 bool PathFinder::Impl::isNavigable(const vec3f& pt,
                                    const float maxYDelta /*= 0.5*/) const {
-  dtPolyRef ptRef;
-  dtStatus status;
+  dtPolyRef ptRef = 0;
+  dtStatus status = 0;
   vec3f polyPt;
   std::tie(status, ptRef, polyPt) =
       projectToPoly(pt, navQuery_.get(), filter_.get());
@@ -1261,7 +1264,7 @@ typedef Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> MatrixXb;
 
 Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic>
 PathFinder::Impl::getTopDownView(const float metersPerPixel,
-                                 const float height) {
+                                 const float height) const {
   std::pair<vec3f, vec3f> mapBounds = bounds();
   vec3f bound1 = mapBounds.first;
   vec3f bound2 = mapBounds.second;
@@ -1289,7 +1292,7 @@ PathFinder::Impl::getTopDownView(const float metersPerPixel,
   return topdownMap;
 }
 
-const assets::MeshData::ptr PathFinder::Impl::getNavMeshData() {
+assets::MeshData::ptr PathFinder::Impl::getNavMeshData() {
   if (meshData_ == nullptr && isLoaded()) {
     meshData_ = assets::MeshData::create();
     std::vector<esp::vec3f>& vbo = meshData_->vbo;
@@ -1431,7 +1434,7 @@ Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> PathFinder::getTopDownView(
   return pimpl_->getTopDownView(metersPerPixel, height);
 }
 
-const assets::MeshData::ptr PathFinder::getNavMeshData() {
+assets::MeshData::ptr PathFinder::getNavMeshData() {
   return pimpl_->getNavMeshData();
 }
 

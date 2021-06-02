@@ -14,7 +14,7 @@ namespace attributes {
 //! attributes for a single physics manager
 class PhysicsManagerAttributes : public AbstractAttributes {
  public:
-  PhysicsManagerAttributes(const std::string& handle = "");
+  explicit PhysicsManagerAttributes(const std::string& handle = "");
 
   void setSimulator(const std::string& simulator) {
     setString("physics_simulator", simulator);

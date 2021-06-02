@@ -22,6 +22,10 @@ if(BUILD_WITH_BULLET)
   set(ESP_BUILD_WITH_BULLET ON)
 endif()
 
+if(BUILD_WITH_VHACD)
+  set(ESP_BUILD_WITH_VHACD ON)
+endif()
+
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/configure.h
 )
@@ -30,16 +34,19 @@ find_package(Corrade REQUIRED Utility)
 
 add_library(
   core STATIC
-  AbstractManagedObject.h
   Buffer.cpp
   Buffer.h
+  Check.cpp
+  Check.h
   Configuration.h
   esp.cpp
   esp.h
   logging.h
-  ManagedContainer.h
-  ManagedContainerBase.cpp
-  ManagedContainerBase.h
+  managedContainers/AbstractManagedObject.h
+  managedContainers/ManagedContainer.h
+  managedContainers/ManagedContainerBase.cpp
+  managedContainers/ManagedContainerBase.h
+  managedContainers/ManagedFileBasedContainer.h
   random.h
   spimpl.h
   Utility.h

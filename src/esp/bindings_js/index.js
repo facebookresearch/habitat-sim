@@ -7,7 +7,7 @@
 import WebDemo from "./modules/web_demo";
 import VRDemo from "./modules/vr_demo";
 import ViewerDemo from "./modules/viewer_demo";
-import { defaultScene } from "./modules/defaults";
+import { defaultScene, defaultPhysicsConfigFilepath } from "./modules/defaults";
 import "./bindings.css";
 import {
   checkWebAssemblySupport,
@@ -15,6 +15,7 @@ import {
   getInfoSemanticUrl,
   buildConfigFromURLParameters
 } from "./modules/utils";
+import TestPage from "./modules/test_page";
 
 function preload(url) {
   let file_parents_str = "/";
@@ -23,10 +24,11 @@ function preload(url) {
   if (url.indexOf("http") === -1) {
     let file_parents = splits.slice(0, splits.length - 1);
     for (let i = 0; i < splits.length - 1; i += 1) {
-      file_parents_str += file_parents[i] + "/";
+      file_parents_str += file_parents[i];
       if (!FS.analyzePath(file_parents_str).exists) {
         FS.mkdir(file_parents_str, 777);
       }
+      file_parents_str += "/";
     }
   }
   FS.createPreloadedFile(file_parents_str, file, url, true, false);
@@ -34,12 +36,21 @@ function preload(url) {
 }
 
 Module.preRun.push(() => {
+  if (window.isTestPage) {
+    Module.testPage = new TestPage();
+    Module.testPage.preRun(preload);
+    return;
+  }
+
   let config = {};
   config.scene = defaultScene;
   buildConfigFromURLParameters(config);
   window.config = config;
   const scene = config.scene;
   Module.scene = preload(scene);
+
+  Module.physicsConfigFile = preload(defaultPhysicsConfigFilepath);
+
   const fileNoExtension = scene.substr(0, scene.lastIndexOf("."));
 
   preload(fileNoExtension + ".navmesh");
@@ -53,6 +64,12 @@ Module.preRun.push(() => {
 
 Module.onRuntimeInitialized = async function() {
   console.log("hsim_bindings initialized");
+
+  if (window.isTestPage) {
+    Module.testPage.onRuntimeInitialized();
+    return;
+  }
+
   let demo;
   if (window.vrEnabled) {
     const supported = await navigator.xr.isSessionSupported("immersive-vr");

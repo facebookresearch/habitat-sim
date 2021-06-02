@@ -25,8 +25,14 @@ def powerset(iterable):
         ("examples/tutorials/stereo_agent.py", "--no-display"),
         ("examples/tutorials/lighting_tutorial.py", "--no-show-images"),
         ("examples/tutorials/new_actions.py",),
+        # This is deprecated and replaced by the managed_rigid_object_tutorial
+        # (
+        #     "examples/tutorials/nb_python/rigid_object_tutorial.py",
+        #     "--no-show-video",
+        #     "--no-make-video",
+        # ),
         (
-            "examples/tutorials/nb_python/rigid_object_tutorial.py",
+            "examples/tutorials/nb_python/managed_rigid_object_tutorial.py",
             "--no-show-video",
             "--no-make-video",
         ),
@@ -44,6 +50,11 @@ def powerset(iterable):
             "examples/tutorials/nb_python/ECCV_2020_Advanced_Features.py",
             "--no-make-video",
             "--no-display",
+        ),
+        (
+            "examples/tutorials/nb_python/replay_tutorial.py",
+            "--no-show-video",
+            "--no-make-video",
         ),
         ("examples/tutorials/semantic_id_tutorial.py", "--no-show-images"),
     ],
@@ -73,6 +84,7 @@ def test_example_modules(args):
         )
         if not (("--compute_action_shortest_path" in p) and ("--enable_physics" in p))
     ],
+    ids=str,
 )
 def test_example_script(args):
     run_main_subproc(args)

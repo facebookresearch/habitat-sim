@@ -50,7 +50,9 @@ class SceneAttributesManager
       : AttributesManager<attributes::SceneAttributes,
                           core::ManagedObjectAccess::Copy>::
             AttributesManager("Scene Instance", "scene_instance.json") {
-    buildCtorFuncPtrMaps();
+    // build this manager's copy constructor map
+    this->copyConstructorMap_["SceneAttributes"] =
+        &SceneAttributesManager::createObjectCopy<attributes::SceneAttributes>;
   }
 
   /**
@@ -133,13 +135,14 @@ class SceneAttributesManager
    * @brief This method will perform any necessary updating that is
    * attributesManager-specific upon template removal, such as removing a
    * specific template handle from the list of file-based template handles in
-   * ObjectAttributesManager.  This should only be called internally.
+   * ObjectAttributesManager.  This should only be called @ref
+   * esp::core::ManagedContainerBase.
    *
    * @param templateID the ID of the template to remove
    * @param templateHandle the string key of the attributes desired.
    */
 
-  void updateObjectHandleLists(
+  void deleteObjectInternalFinalize(
       CORRADE_UNUSED int templateID,
       CORRADE_UNUSED const std::string& templateHandle) override {}
 
@@ -167,24 +170,11 @@ class SceneAttributesManager
                              CORRADE_UNUSED bool forceRegistration) override;
 
   /**
-   * @brief This function will assign the appropriately configured function
-   * pointer for the copy constructor as required by
-   * AttributesManager<PhysicsSceneAttributes::ptr>
-   *
-   * NOTE : currently this will only perform a shallow copy of the
-   * SceneAttributes.
-   */
-  void buildCtorFuncPtrMaps() override {
-    this->copyConstructorMap_["SceneAttributes"] =
-        &SceneAttributesManager::createObjectCopy<attributes::SceneAttributes>;
-  }  // SceneAttributesManager::buildCtorFuncPtrMaps
-
-  /**
    * @brief This function is meaningless for this manager's ManagedObjects.
    * @param handle Ignored.
    * @return false
    */
-  virtual bool isValidPrimitiveAttributes(
+  bool isValidPrimitiveAttributes(
       CORRADE_UNUSED const std::string& handle) override {
     return false;
   }

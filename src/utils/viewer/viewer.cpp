@@ -22,9 +22,9 @@
 #include <Magnum/Image.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/SceneGraph/Camera.h>
-#include <Magnum/Shaders/Generic.h>
 #include <Magnum/Shaders/Shaders.h>
 #include <Magnum/Timeline.h>
+#include "esp/core/configure.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/replay/Recorder.h"
@@ -51,11 +51,17 @@
 #include "esp/gfx/Drawable.h"
 #include "esp/io/io.h"
 
+#ifdef ESP_BUILD_WITH_VHACD
+#include "esp/geo/VoxelUtils.h"
+#endif
+
+#include "esp/physics/configure.h"
 #include "esp/sensor/CameraSensor.h"
+#include "esp/sensor/EquirectangularSensor.h"
+#include "esp/sensor/FisheyeSensor.h"
 #include "esp/sim/Simulator.h"
 
 #include "ObjectPickingHelper.h"
-#include "esp/physics/configure.h"
 
 constexpr float moveSensitivity = 0.07f;
 constexpr float lookSensitivity = 0.9f;
@@ -143,18 +149,26 @@ class Viewer : public Mn::Platform::Application {
   void removeLastObject();
   void wiggleLastObject();
   void invertGravity();
+
+#ifdef ESP_BUILD_WITH_VHACD
+  void displayStageDistanceGradientField();
+
+  void iterateAndDisplaySignedDistanceField();
+
+  void displayVoxelField(int objectID);
+
+  int objectDisplayed = -1;
+#endif
+
+  bool isInRange(float val);
   /**
    * @brief Toggle between ortho and perspective camera
    */
   void switchCameraType();
   Mn::Vector3 randomDirection();
 
-  void saveCameraTransformToFile();
-  void saveNodeTransformToFile(esp::scene::SceneNode& node,
-                               const std::string& filename);
-  void loadCameraTransformFromFile();
-  void loadNodeTransformFromFile(esp::scene::SceneNode& node,
-                                 const std::string& filename);
+  void saveAgentAndSensorTransformToFile();
+  void loadAgentAndSensorTransformFromFile();
 
   //! string rep of time when viewer application was started
   std::string viewerStartTimeString = getCurrentTimeString();
@@ -162,7 +176,7 @@ class Viewer : public Mn::Platform::Application {
 
   esp::sensor::CameraSensor& getAgentCamera() {
     esp::sensor::Sensor& cameraSensor =
-        *defaultAgent_->getSensorSuite().getSensors()["rgba_camera"];
+        agentBodyNode_->getNodeSensorSuite().get("rgba_camera");
     return static_cast<esp::sensor::CameraSensor&>(cameraSensor);
   }
 
@@ -178,6 +192,8 @@ Mouse Functions:
     (With 'enable-physics') Click a surface to instance a random primitive object at that location.
   SHIFT-RIGHT:
     Click a mesh to highlight it.
+  CTRL-RIGHT:
+    (With 'enable-physics') Click on an object to voxelize it and display the voxelization.
   WHEEL:
     Modify orthographic camera zoom/perspective camera FOV (+SHIFT for fine grained control)
 
@@ -221,6 +237,8 @@ Key Commands:
   'f': (physics) Push the most recently added object.
   't': (physics) Torque the most recently added object.
   'v': (physics) Invert gravity.
+  'g': (physics) Display a stage's signed distance gradient vector field.
+  'l': (physics) Iterate through different ranges of the stage's voxelized signed distance field.
   ==================================================
   )";
 
@@ -254,6 +272,10 @@ Key Commands:
   float agentTrajRad_ = .01f;
   bool agentLocRecordOn_ = false;
 
+#ifdef ESP_BUILD_WITH_VHACD
+  //! The slice of the grid's SDF to visualize.
+  int voxelDistance = 0;
+#endif
   /**
    * @brief Set whether agent locations should be recorded or not. If toggling
    * on then clear old locations
@@ -338,25 +360,152 @@ Key Commands:
   bool drawObjectBBs = false;
   std::string gfxReplayRecordFilepath_;
 
-  std::string cameraLoadPath_;
-  // bool cameraSaved_ = false;
-  // Mn::Matrix4 lastCameraSave_;
-  Cr::Containers::Optional<Mn::Matrix4> lastCameraSave_;
+  std::string agentTransformLoadPath_;
+  Cr::Containers::Optional<Mn::Matrix4> savedAgentTransform_ =
+      Cr::Containers::NullOpt;
+  // there could be a couple of sensors, just save the rgb CameraSensor's
+  // transformation
+  Cr::Containers::Optional<Mn::Matrix4> savedSensorTransform_ =
+      Cr::Containers::NullOpt;
 
   Mn::Timeline timeline_;
 
   Mn::ImGuiIntegration::Context imgui_{Mn::NoCreate};
   bool showFPS_ = true;
-  bool flyingCameraMode_ = false;
 
   // NOTE: Mouse + shift is to select object on the screen!!
   void createPickedObjectVisualizer(unsigned int objectId);
   std::unique_ptr<ObjectPickingHelper> objectPickingHelper_;
-  // returns the number of visible drawables (meshVisualizer drawables are not
-  // included)
 
-  Mn::DebugTools::GLFrameProfiler profiler_{};
+  enum class VisualizeMode : uint8_t {
+    RGBA = 0,
+    Depth,
+    Semantic,
+    VisualizeModeCount,
+  };
+  VisualizeMode visualizeMode_ = VisualizeMode::RGBA;
+
+  Mn::DebugTools::FrameProfilerGL profiler_{};
+
+  enum class VisualSensorMode : uint8_t {
+    Camera = 0,
+    Fisheye,
+    Equirectangular,
+    VisualSensorModeCount,
+  };
+  VisualSensorMode sensorMode_ = VisualSensorMode::Camera;
+
+  void bindRenderTarget();
 };
+
+void addSensors(esp::agent::AgentConfiguration& agentConfig,
+                const Cr::Utility::Arguments& args) {
+  const auto viewportSize = Mn::GL::defaultFramebuffer.viewport().size();
+
+  auto addCameraSensor = [&](const std::string& uuid,
+                             esp::sensor::SensorType sensorType) {
+    agentConfig.sensorSpecifications.emplace_back(
+        esp::sensor::CameraSensorSpec::create());
+    auto spec = static_cast<esp::sensor::CameraSensorSpec*>(
+        agentConfig.sensorSpecifications.back().get());
+
+    spec->uuid = uuid;
+    spec->sensorSubType = args.isSet("orthographic")
+                              ? esp::sensor::SensorSubType::Orthographic
+                              : esp::sensor::SensorSubType::Pinhole;
+    spec->sensorType = sensorType;
+    if (sensorType == esp::sensor::SensorType::Depth ||
+        sensorType == esp::sensor::SensorType::Semantic) {
+      spec->channels = 1;
+    }
+    spec->position = {0.0f, 1.5f, 0.0f};
+    spec->orientation = {0, 0, 0};
+    spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+  };
+  // add the camera color sensor
+  // for historical reasons, we call it "rgba_camera"
+  addCameraSensor("rgba_camera", esp::sensor::SensorType::Color);
+  // add the camera depth sensor
+  addCameraSensor("depth_camera", esp::sensor::SensorType::Depth);
+  // add the camera semantic sensor
+  addCameraSensor("semantic_camera", esp::sensor::SensorType::Semantic);
+
+  auto addFisheyeSensor = [&](const std::string& uuid,
+                              esp::sensor::SensorType sensorType,
+                              esp::sensor::FisheyeSensorModelType modelType) {
+    // TODO: support the other model types in the future.
+    CORRADE_INTERNAL_ASSERT(modelType ==
+                            esp::sensor::FisheyeSensorModelType::DoubleSphere);
+    agentConfig.sensorSpecifications.emplace_back(
+        esp::sensor::FisheyeSensorDoubleSphereSpec::create());
+    auto spec = static_cast<esp::sensor::FisheyeSensorDoubleSphereSpec*>(
+        agentConfig.sensorSpecifications.back().get());
+
+    spec->uuid = uuid;
+    spec->sensorType = sensorType;
+    if (sensorType == esp::sensor::SensorType::Depth ||
+        sensorType == esp::sensor::SensorType::Semantic) {
+      spec->channels = 1;
+    }
+    spec->sensorSubType = esp::sensor::SensorSubType::Fisheye;
+    spec->fisheyeModelType = modelType;
+    spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+    // default viewport size: 1600 x 1200
+    spec->principalPointOffset =
+        Mn::Vector2(viewportSize[0] / 2, viewportSize[1] / 2);
+    if (modelType == esp::sensor::FisheyeSensorModelType::DoubleSphere) {
+      // in this demo, we choose "GoPro":
+      spec->focalLength = {364.84f, 364.86f};
+      spec->xi = -0.27;
+      spec->alpha = 0.57;
+      // Certainly you can try your own lenses.
+      // For your convenience, there are some other lenses, e.g., BF2M2020S23,
+      // BM2820, BF5M13720, BM4018S118, whose parameters can be found at:
+      //   Vladyslav Usenko, Nikolaus Demmel and Daniel Cremers: The Double
+      //   Sphere Camera Model, The International Conference on 3D Vision(3DV),
+      //   2018
+
+      // BF2M2020S23
+      // spec->focalLength = Mn::Vector2(313.21, 313.21);
+      // spec->xi = -0.18;
+      // spec->alpha = 0.59;
+    }
+  };
+  // add the fisheye sensor
+  addFisheyeSensor("rgba_fisheye", esp::sensor::SensorType::Color,
+                   esp::sensor::FisheyeSensorModelType::DoubleSphere);
+  // add the fisheye depth sensor
+  addFisheyeSensor("depth_fisheye", esp::sensor::SensorType::Depth,
+                   esp::sensor::FisheyeSensorModelType::DoubleSphere);
+  // add the fisheye semantic sensor
+  addFisheyeSensor("semantic_fisheye", esp::sensor::SensorType::Semantic,
+                   esp::sensor::FisheyeSensorModelType::DoubleSphere);
+
+  auto addEquirectangularSensor = [&](const std::string& uuid,
+                                      esp::sensor::SensorType sensorType) {
+    agentConfig.sensorSpecifications.emplace_back(
+        esp::sensor::EquirectangularSensorSpec::create());
+    auto spec = static_cast<esp::sensor::EquirectangularSensorSpec*>(
+        agentConfig.sensorSpecifications.back().get());
+    spec->uuid = uuid;
+    spec->sensorType = sensorType;
+    if (sensorType == esp::sensor::SensorType::Depth ||
+        sensorType == esp::sensor::SensorType::Semantic) {
+      spec->channels = 1;
+    }
+    spec->sensorSubType = esp::sensor::SensorSubType::Equirectangular;
+    spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
+  };
+  // add the equirectangular sensor
+  addEquirectangularSensor("rgba_equirectangular",
+                           esp::sensor::SensorType::Color);
+  // add the equirectangular depth sensor
+  addEquirectangularSensor("depth_equirectangular",
+                           esp::sensor::SensorType::Depth);
+  // add the equirectangular semantic sensor
+  addEquirectangularSensor("semantic_equirectangular",
+                           esp::sensor::SensorType::Semantic);
+}
 
 Viewer::Viewer(const Arguments& arguments)
     : Mn::Platform::Application{
@@ -389,7 +538,7 @@ Viewer::Viewer(const Arguments& arguments)
       .addOption("physics-config", ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH)
       .setHelp("physics-config",
                "Provide a non-default PhysicsManager config file.")
-      .addOption("object-dir", "./data/objects")
+      .addOption("object-dir", "data/objects/example_objects")
       .setHelp("object-dir",
                "Provide a directory to search for object config files "
                "(relative to habitat-sim directory).")
@@ -404,8 +553,8 @@ Viewer::Viewer(const Arguments& arguments)
       .addBooleanOption("recompute-navmesh")
       .setHelp("recompute-navmesh",
                "Programmatically re-generate the scene navmesh.")
-      .addOption("camera-transform-filepath")
-      .setHelp("camera-transform-filepath",
+      .addOption("agent-transform-filepath")
+      .setHelp("agent-transform-filepath",
                "Specify path to load camera transform from.")
       .parse(arguments.argc, arguments.argv);
 
@@ -434,7 +583,7 @@ Viewer::Viewer(const Arguments& arguments)
     debugBullet_ = true;
   }
 
-  cameraLoadPath_ = args.value("camera-transform-filepath");
+  agentTransformLoadPath_ = args.value("agent-transform-filepath");
   gfxReplayRecordFilepath_ = args.value("gfx-replay-record-filepath");
 
   // configure and intialize Simulator
@@ -462,8 +611,7 @@ Viewer::Viewer(const Arguments& arguments)
   simulator_ = esp::sim::Simulator::create_unique(simConfig);
 
   objectAttrManager_ = simulator_->getObjectAttributesManager();
-  objectAttrManager_->loadAllConfigsFromPath(Cr::Utility::Directory::join(
-      Corrade::Utility::Directory::current(), args.value("object-dir")));
+  objectAttrManager_->loadAllJSONConfigsFromPath(args.value("object-dir"));
   assetAttrManager_ = simulator_->getAssetAttributesManager();
   stageAttrManager_ = simulator_->getStageAttributesManager();
   physAttrManager_ = simulator_->getPhysicsAttributesManager();
@@ -523,13 +671,8 @@ Viewer::Viewer(const Arguments& arguments)
        esp::agent::ActionSpec::create(
            "lookDown", esp::agent::ActuationMap{{"amount", lookSensitivity}})},
   };
-  agentConfig.sensorSpecifications[0]->resolution =
-      esp::vec2i(viewportSize[1], viewportSize[0]);
 
-  agentConfig.sensorSpecifications[0]->sensorSubType =
-      args.isSet("orthographic") ? esp::sensor::SensorSubType::Orthographic
-                                 : esp::sensor::SensorSubType::Pinhole;
-
+  addSensors(agentConfig, args);
   // add selects a random initial state and sets up the default controls and
   // step filter
   simulator_->addAgent(agentConfig);
@@ -560,10 +703,10 @@ Viewer::Viewer(const Arguments& arguments)
    * measure the amount of time to fully complete a set of GL commands without
    * stalling rendering
    */
-  Mn::DebugTools::GLFrameProfiler::Values profilerValues =
-      Mn::DebugTools::GLFrameProfiler::Value::FrameTime |
-      Mn::DebugTools::GLFrameProfiler::Value::CpuDuration |
-      Mn::DebugTools::GLFrameProfiler::Value::GpuDuration;
+  Mn::DebugTools::FrameProfilerGL::Values profilerValues =
+      Mn::DebugTools::FrameProfilerGL::Value::FrameTime |
+      Mn::DebugTools::FrameProfilerGL::Value::CpuDuration |
+      Mn::DebugTools::FrameProfilerGL::Value::GpuDuration;
 
 // VertexFetchRatio and PrimitiveClipRatio only supported for GL 4.6
 #ifndef MAGNUM_TARGET_GLES
@@ -571,10 +714,10 @@ Viewer::Viewer(const Arguments& arguments)
           .isExtensionSupported<
               Mn::GL::Extensions::ARB::pipeline_statistics_query>()) {
     profilerValues |=
-        Mn::DebugTools::GLFrameProfiler::Value::
+        Mn::DebugTools::FrameProfilerGL::Value::
             VertexFetchRatio |  // Ratio of vertex shader invocations to count
                                 // of vertices submitted
-        Mn::DebugTools::GLFrameProfiler::Value::
+        Mn::DebugTools::FrameProfilerGL::Value::
             PrimitiveClipRatio;  // Ratio of primitives discarded by the
                                  // clipping stage to count of primitives
                                  // submitted
@@ -600,54 +743,22 @@ void Viewer::switchCameraType() {
       cam.setCameraType(esp::sensor::SensorSubType::Pinhole);
       return;
     }
-  }
-}
-
-void Viewer::saveCameraTransformToFile() {
-  const char* saved_transformations_directory = "saved_transformations/";
-  if (!Cr::Utility::Directory::exists(saved_transformations_directory)) {
-    Cr::Utility::Directory::mkpath(saved_transformations_directory);
-  }
-
-  // update temporary save
-  lastCameraSave_ = renderCamera_->node().absoluteTransformation();
-
-  // update save in file system
-  saveNodeTransformToFile(
-      renderCamera_->node(),
-      Cr::Utility::formatString("{}camera.{}.txt",
-                                saved_transformations_directory,
-                                getCurrentTimeString()));
-}
-
-void Viewer::loadCameraTransformFromFile() {
-  if (!cameraLoadPath_.empty()) {
-    // loading from file system
-    loadNodeTransformFromFile(renderCamera_->node(), cameraLoadPath_);
-  } else {
-    // attempting to load from last temporary save
-    LOG(WARNING)
-        << "Camera transform file not specified, attempting to load from "
-           "current instance. Use --camera-transform-filepath to specify file "
-           "to load from.";
-    if (!lastCameraSave_) {
-      LOG(ERROR) << "No transformation saved in current instance.";
+    case esp::sensor::SensorSubType::Fisheye: {
       return;
     }
-
-    renderCamera_->node().setTransformation(*lastCameraSave_);
-    LOG(INFO) << "Transformation matrix loaded from current instance : "
-              << Eigen::Map<esp::mat4f>(lastCameraSave_->data());
-  }
-
-  if (!flyingCameraMode_) {
-    LOG(INFO) << "Note: The flying camera mode is currently OFF. You may not "
-                 "see any view change.";
+    case esp::sensor::SensorSubType::Equirectangular: {
+      return;
+    }
+    case esp::sensor::SensorSubType::None: {
+      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+      return;
+    }
   }
 }
 
-void Viewer::saveNodeTransformToFile(esp::scene::SceneNode& node,
-                                     const std::string& filename) {
+void saveTransformToFile(const std::string& filename,
+                         const Mn::Matrix4 agentTransform,
+                         const Mn::Matrix4 sensorTransform) {
   std::ofstream file(filename);
   if (!file.good()) {
     LOG(ERROR) << "Cannot open " << filename << " to output data.";
@@ -655,45 +766,98 @@ void Viewer::saveNodeTransformToFile(esp::scene::SceneNode& node,
   }
 
   // saving transformation into file system
-  Mn::Matrix4 transform = node.absoluteTransformation();
-  float* t = transform.data();
-  for (int i = 0; i < 16; ++i) {
-    file << t[i] << " ";
-  }
-  file.close();
+  auto save = [&](const Mn::Matrix4 transform) {
+    const float* t = transform.data();
+    for (int i = 0; i < 16; ++i) {
+      file << t[i] << " ";
+    }
+    LOG(INFO) << "Transformation matrix saved to " << filename << " : "
+              << Eigen::Map<const esp::mat4f>(transform.data());
+  };
+  save(agentTransform);
+  save(sensorTransform);
 
-  LOG(INFO) << "Transformation matrix saved to " << filename << " : "
-            << Eigen::Map<esp::mat4f>(transform.data());
+  file.close();
+}
+void Viewer::saveAgentAndSensorTransformToFile() {
+  const char* saved_transformations_directory = "saved_transformations/";
+  if (!Cr::Utility::Directory::exists(saved_transformations_directory)) {
+    Cr::Utility::Directory::mkpath(saved_transformations_directory);
+  }
+
+  // update temporary save
+  savedAgentTransform_ = defaultAgent_->node().transformation();
+  savedSensorTransform_ = getAgentCamera().node().transformation();
+
+  // update save in file system
+  saveTransformToFile(Cr::Utility::formatString("{}camera.{}.txt",
+                                                saved_transformations_directory,
+                                                getCurrentTimeString()),
+                      *savedAgentTransform_, *savedSensorTransform_);
 }
 
-void Viewer::loadNodeTransformFromFile(esp::scene::SceneNode& node,
-                                       const std::string& filename) {
+bool loadTransformFromFile(const std::string& filename,
+                           Mn::Matrix4& agentTransform,
+                           Mn::Matrix4& sensorTransform) {
   std::ifstream file(filename);
   if (!file.good()) {
     LOG(ERROR) << "Cannot open " << filename << " to load data.";
-    return;
+    return false;
   }
 
   // reading file system data into matrix as transformation
-  Mn::Vector4 cols[4];
-  for (int col = 0; col < 4; ++col) {
-    for (int row = 0; row < 4; ++row) {
-      file >> cols[col][row];
+  auto load = [&](Mn::Matrix4& transform) {
+    Mn::Vector4 cols[4];
+    for (int col = 0; col < 4; ++col) {
+      for (int row = 0; row < 4; ++row) {
+        file >> cols[col][row];
+      }
+    }
+    Mn::Matrix4 temp{cols[0], cols[1], cols[2], cols[3]};
+    if (!temp.isRigidTransformation()) {
+      LOG(WARNING) << "Data loaded from " << filename
+                   << " is not a valid rigid transformation.";
+      return false;
+    }
+    transform = temp;
+    LOG(INFO) << "Transformation matrix loaded from " << filename << " : "
+              << Eigen::Map<esp::mat4f>(transform.data());
+    return true;
+  };
+  // NOTE: load Agent first!!
+  bool status = load(agentTransform) && load(sensorTransform);
+  file.close();
+  return status;
+}
+
+void Viewer::loadAgentAndSensorTransformFromFile() {
+  if (!agentTransformLoadPath_.empty()) {
+    // loading from file system
+    Mn::Matrix4 agentMtx;
+    Mn::Matrix4 sensorMtx;
+    if (!loadTransformFromFile(agentTransformLoadPath_, agentMtx, sensorMtx))
+      return;
+    savedAgentTransform_ = agentMtx;
+    savedSensorTransform_ = sensorMtx;
+  } else {
+    // attempting to load from last temporary save
+    LOG(INFO)
+        << "Camera transform file not specified, attempting to load from "
+           "current instance. Use --agent-transform-filepath to specify file "
+           "to load from.";
+    if (!savedAgentTransform_ || !savedSensorTransform_) {
+      LOG(INFO) << "Well, no transformation saved in current instance. nothing "
+                   "is changed.";
+      return;
     }
   }
-  Mn::Matrix4 transform{cols[0], cols[1], cols[2], cols[3]};
-  file.close();
 
-  // checking for corruption
-  if (!transform.isRigidTransformation()) {
-    LOG(WARNING) << "Data loaded from " << filename
-                 << " is not a valid transformation.";
-    return;
+  defaultAgent_->node().setTransformation(*savedAgentTransform_);
+  for (const auto& p : defaultAgent_->node().getNodeSensors()) {
+    p.second.get().object().setTransformation(*savedSensorTransform_);
   }
-
-  node.setTransformation(transform);
-  LOG(INFO) << "Transformation matrix loaded from " << filename << " : "
-            << Eigen::Map<esp::mat4f>(transform.data());
+  LOG(INFO)
+      << "Transformation matrices are loaded to the agent and the sensors.";
 }
 
 int Viewer::addObject(int ID) {
@@ -781,6 +945,115 @@ void Viewer::invertGravity() {
   simulator_->setGravity(invGravity);
 }
 
+#ifdef ESP_BUILD_WITH_VHACD
+
+void Viewer::displayStageDistanceGradientField() {
+  // Temporary key event used for testing & visualizing Voxel Grid framework
+  std::shared_ptr<esp::geo::VoxelWrapper> stageVoxelization;
+  stageVoxelization = simulator_->getStageVoxelization();
+
+  // if the object hasn't been voxelized, do that and generate an SDF as
+  // well
+  !Mn::Debug();
+  if (stageVoxelization == nullptr) {
+    simulator_->createStageVoxelization(2000000);
+    stageVoxelization = simulator_->getStageVoxelization();
+    esp::geo::generateEuclideanDistanceSDF(stageVoxelization,
+                                           "ESignedDistanceField");
+  }
+  !Mn::Debug();
+
+  // generate a vector field for the SDF gradient
+  esp::geo::generateScalarGradientField(
+      stageVoxelization, "ESignedDistanceField", "GradientField");
+  // generate a mesh of the vector field with boolean isVectorField set to
+  // true
+  !Mn::Debug();
+
+  stageVoxelization->generateMesh("GradientField");
+
+  // draw the vector field
+  simulator_->setStageVoxelizationDraw(true, "GradientField");
+}
+
+void Viewer::iterateAndDisplaySignedDistanceField() {
+  // Temporary key event used for testing & visualizing Voxel Grid framework
+  std::shared_ptr<esp::geo::VoxelWrapper> stageVoxelization;
+  stageVoxelization = simulator_->getStageVoxelization();
+
+  // if the object hasn't been voxelized, do that and generate an SDF as
+  // well
+  if (stageVoxelization == nullptr) {
+    simulator_->createStageVoxelization(2000000);
+    stageVoxelization = simulator_->getStageVoxelization();
+    esp::geo::generateEuclideanDistanceSDF(stageVoxelization,
+                                           "ESignedDistanceField");
+  }
+
+  // Set the range of distances to render, and generate a mesh for this (18
+  // is set to be the max distance)
+  Mn::Vector3i dims = stageVoxelization->getVoxelGridDimensions();
+  int curDistanceVisualization = (voxelDistance % dims[0]);
+  /*sceneVoxelization->generateBoolGridFromFloatGrid("ESignedDistanceField",
+     "SDFSubset", curDistanceVisualization, curDistanceVisualization + 1);*/
+  stageVoxelization->generateSliceMesh("ESignedDistanceField",
+                                       curDistanceVisualization, -15.0f, 0.0f);
+  // Draw the voxel grid's slice
+  simulator_->setStageVoxelizationDraw(true, "ESignedDistanceField");
+}
+
+bool isTrue(bool val) {
+  return val;
+}
+
+bool isHorizontal(Mn::Vector3 val) {
+  return abs(val.normalized()[0]) * abs(val.normalized()[0]) +
+             abs(val.normalized()[2]) * abs(val.normalized()[2]) <=
+         0;
+  // return val[0] == 1;
+}
+
+bool Viewer::isInRange(float val) {
+  int curDistanceVisualization = 1 * (voxelDistance % 18);
+  return val >= curDistanceVisualization - 1 && val < curDistanceVisualization;
+}
+
+void Viewer::displayVoxelField(int objectID) {
+  // create a voxelization and get a pointer to the underlying VoxelWrapper
+  // class
+  unsigned int resolution = 2000000;
+  std::shared_ptr<esp::geo::VoxelWrapper> voxelWrapper;
+  if (objectID == -1) {
+    simulator_->createStageVoxelization(resolution);
+    voxelWrapper = simulator_->getStageVoxelization();
+  } else {
+    simulator_->createObjectVoxelization(objectID, resolution);
+    voxelWrapper = simulator_->getObjectVoxelization(objectID);
+  }
+
+  // turn off the voxel grid visualization for the last voxelized object
+  if (objectDisplayed == -1) {
+    simulator_->setStageVoxelizationDraw(false, "Boundary");
+  } else if (objectDisplayed >= 0) {
+    simulator_->setObjectVoxelizationDraw(false, objectDisplayed, "Boundary");
+  }
+
+  // Generate the mesh for the boundary voxel grid
+  voxelWrapper->generateMesh("Boundary");
+
+  esp::geo::generateEuclideanDistanceSDF(voxelWrapper, "ESignedDistanceField");
+
+  // visualizes the Boundary voxel grid
+  if (objectID == -1) {
+    simulator_->setStageVoxelizationDraw(true, "Boundary");
+  } else {
+    simulator_->setObjectVoxelizationDraw(true, objectID, "Boundary");
+  }
+
+  objectDisplayed = objectID;
+}
+#endif
+
 void Viewer::pokeLastObject() {
   auto existingObjectIDs = simulator_->getExistingObjectIDs();
   if (existingObjectIDs.size() == 0)
@@ -848,7 +1121,6 @@ void Viewer::drawEvent() {
   // Wrap profiler measurements around all methods to render images from
   // RenderCamera
   profiler_.beginFrame();
-
   Mn::GL::defaultFramebuffer.clear(Mn::GL::FramebufferClear::Color |
                                    Mn::GL::FramebufferClear::Depth);
 
@@ -873,73 +1145,120 @@ void Viewer::drawEvent() {
     // reset timeSinceLastSimulation, accounting for potential overflow
     timeSinceLastSimulation = fmod(timeSinceLastSimulation, 1.0 / 60.0);
   }
-  uint32_t visibles = 0;
-  if (flyingCameraMode_) {
-    Mn::GL::defaultFramebuffer.bind();
-    for (auto& it : activeSceneGraph_->getDrawableGroups()) {
-      esp::gfx::RenderCamera::Flags flags =
-          esp::gfx::RenderCamera::Flag::FrustumCulling;
-      visibles += renderCamera_->draw(it.second, flags);
-    }
-  } else {
-    // using polygon offset to increase mesh depth to a avoid z-fighting with
-    // debug draw (since lines will not respond to offset).
-    Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
-    Mn::GL::Renderer::setPolygonOffset(1.0f, 0.1f);
 
-    // ONLY draw the content to the frame buffer but not immediately blit the
-    // result to the default main buffer
-    // (this is the reason we do not call displayObservation)
-    simulator_->drawObservation(defaultAgentId_, "rgba_camera");
-    // TODO: enable other sensors to be displayed
+  uint32_t visibles = renderCamera_->getPreviousNumVisibleDrawables();
 
-    Mn::GL::Renderer::setDepthFunction(
-        Mn::GL::Renderer::DepthFunction::LessOrEqual);
-    if (debugBullet_) {
-      Mn::Matrix4 camM(renderCamera_->cameraMatrix());
-      Mn::Matrix4 projM(renderCamera_->projectionMatrix());
-
-      simulator_->physicsDebugDraw(projM * camM);
-    }
-    Mn::GL::Renderer::setDepthFunction(Mn::GL::Renderer::DepthFunction::Less);
-    Mn::GL::Renderer::setPolygonOffset(0.0f, 0.0f);
-    Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
-
-    visibles = renderCamera_->getPreviousNumVisibleDrawables();
-    esp::gfx::RenderTarget* sensorRenderTarget =
-        simulator_->getRenderTarget(defaultAgentId_, "rgba_camera");
-    CORRADE_ASSERT(sensorRenderTarget,
-                   "Error in Viewer::drawEvent: sensor's rendering target "
-                   "cannot be nullptr.", );
-    if (objectPickingHelper_->isObjectPicked()) {
-      // we need to immediately draw picked object to the SAME frame buffer
-      // so bind it first
-      // bind the framebuffer
-      sensorRenderTarget->renderReEnter();
-
-      // setup blending function
-      Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::Blending);
-
-      // render the picked object on top of the existing contents
-      esp::gfx::RenderCamera::Flags flags;
-      if (simulator_->isFrustumCullingEnabled()) {
-        flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
+  if (visualizeMode_ == VisualizeMode::Depth ||
+      visualizeMode_ == VisualizeMode::Semantic) {
+    // ================ Depth Visualization ==================================
+    std::string sensorId = "depth_camera";
+    if (visualizeMode_ == VisualizeMode::Depth) {
+      if (sensorMode_ == VisualSensorMode::Fisheye) {
+        sensorId = "depth_fisheye";
+      } else if (sensorMode_ == VisualSensorMode::Equirectangular) {
+        sensorId = "depth_equirectangular";
       }
-      renderCamera_->draw(objectPickingHelper_->getDrawables(), flags);
-      Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
+    } else if (visualizeMode_ == VisualizeMode::Semantic) {
+      sensorId = "semantic_camera";
+      if (sensorMode_ == VisualSensorMode::Fisheye) {
+        sensorId = "semantic_fisheye";
+      } else if (sensorMode_ == VisualSensorMode::Equirectangular) {
+        sensorId = "semantic_equirectangular";
+      }
+    }
+
+    simulator_->drawObservation(defaultAgentId_, sensorId);
+    esp::gfx::RenderTarget* sensorRenderTarget =
+        simulator_->getRenderTarget(defaultAgentId_, sensorId);
+    if (visualizeMode_ == VisualizeMode::Depth) {
+      simulator_->visualizeObservation(defaultAgentId_, sensorId,
+                                       1.0f / 512.0f,  // colorMapOffset
+                                       1.0f / 12.0f);  // colorMapScale
+    } else if (visualizeMode_ == VisualizeMode::Semantic) {
+      simulator_->visualizeObservation(defaultAgentId_, sensorId,
+                                       1.0f / 512.0f,  // colorMapOffset
+                                       1.0f / 50.0f);  // colorMapScale
     }
     sensorRenderTarget->blitRgbaToDefault();
-    // Immediately bind the main buffer back so that the "imgui" below can work
-    // properly
-    Mn::GL::defaultFramebuffer.bind();
-  }
+  } else {
+    if (sensorMode_ == VisualSensorMode::Camera) {
+      // ============= regular RGB with object picking =================
+      // using polygon offset to increase mesh depth to avoid z-fighting with
+      // debug draw (since lines will not respond to offset).
+      Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
+      Mn::GL::Renderer::setPolygonOffset(1.0f, 0.1f);
 
-  // Do not include ImGui content drawing in per frame profiler measurements
-  profiler_.endFrame();
+      // ONLY draw the content to the frame buffer but not immediately blit the
+      // result to the default main buffer
+      // (this is the reason we do not call displayObservation)
+      simulator_->drawObservation(defaultAgentId_, "rgba_camera");
+      // TODO: enable other sensors to be displayed
+
+      Mn::GL::Renderer::setDepthFunction(
+          Mn::GL::Renderer::DepthFunction::LessOrEqual);
+      if (debugBullet_) {
+        Mn::Matrix4 camM(renderCamera_->cameraMatrix());
+        Mn::Matrix4 projM(renderCamera_->projectionMatrix());
+
+        simulator_->physicsDebugDraw(projM * camM);
+      }
+      Mn::GL::Renderer::setDepthFunction(Mn::GL::Renderer::DepthFunction::Less);
+      Mn::GL::Renderer::setPolygonOffset(0.0f, 0.0f);
+      Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
+
+      visibles = renderCamera_->getPreviousNumVisibleDrawables();
+      esp::gfx::RenderTarget* sensorRenderTarget =
+          simulator_->getRenderTarget(defaultAgentId_, "rgba_camera");
+      CORRADE_ASSERT(sensorRenderTarget,
+                     "Error in Viewer::drawEvent: sensor's rendering target "
+                     "cannot be nullptr.", );
+      if (objectPickingHelper_->isObjectPicked()) {
+        // we need to immediately draw picked object to the SAME frame buffer
+        // so bind it first
+        // bind the framebuffer
+        sensorRenderTarget->renderReEnter();
+
+        // setup blending function
+        Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::Blending);
+
+        // render the picked object on top of the existing contents
+        esp::gfx::RenderCamera::Flags flags;
+        if (simulator_->isFrustumCullingEnabled()) {
+          flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
+        }
+        renderCamera_->draw(objectPickingHelper_->getDrawables(), flags);
+
+        Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
+      }
+      sensorRenderTarget->blitRgbaToDefault();
+    } else {
+      // ================ NON-regular RGB sensor ==================
+      std::string sensorId = "";
+      if (sensorMode_ == VisualSensorMode::Fisheye) {
+        sensorId = "rgba_fisheye";
+      } else if (sensorMode_ == VisualSensorMode::Equirectangular) {
+        sensorId = "rgba_equirectangular";
+      } else {
+        CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+      }
+      CORRADE_INTERNAL_ASSERT(!sensorId.empty());
+
+      simulator_->drawObservation(defaultAgentId_, sensorId);
+      esp::gfx::RenderTarget* sensorRenderTarget =
+          simulator_->getRenderTarget(defaultAgentId_, sensorId);
+      CORRADE_ASSERT(sensorRenderTarget,
+                     "Error in Viewer::drawEvent: sensor's rendering target "
+                     "cannot be nullptr.", );
+      sensorRenderTarget->blitRgbaToDefault();
+    }
+  }
 
   // Immediately bind the main buffer back so that the "imgui" below can work
   // properly
   Mn::GL::defaultFramebuffer.bind();
+
+  // Do not include ImGui content drawing in per frame profiler measurements
+  profiler_.endFrame();
 
   imgui_.newFrame();
   if (showFPS_) {
@@ -951,12 +1270,29 @@ void Viewer::drawEvent() {
     ImGui::Text("%.1f FPS", Mn::Double(ImGui::GetIO().Framerate));
     uint32_t total = activeSceneGraph_->getDrawables().size();
     ImGui::Text("%u drawables", total);
-    ImGui::Text("%u culled", total - visibles);
+    if (sensorMode_ == VisualSensorMode::Camera) {
+      ImGui::Text("%u culled", total - visibles);
+    }
     auto& cam = getAgentCamera();
-    ImGui::Text("%s camera",
-                (cam.getCameraType() == esp::sensor::SensorSubType::Orthographic
-                     ? "Orthographic"
-                     : "Pinhole"));
+
+    switch (sensorMode_) {
+      case VisualSensorMode::Camera:
+        if (cam.getCameraType() == esp::sensor::SensorSubType::Orthographic) {
+          ImGui::Text("Orthographic camera sensor");
+        } else if (cam.getCameraType() == esp::sensor::SensorSubType::Pinhole) {
+          ImGui::Text("Pinhole camera sensor");
+        };
+        break;
+      case VisualSensorMode::Fisheye:
+        ImGui::Text("Fisheye sensor");
+        break;
+      case VisualSensorMode::Equirectangular:
+        ImGui::Text("Equirectangular sensor");
+        break;
+
+      default:
+        break;
+    }
     ImGui::Text("%s", profiler_.statistics().c_str());
     ImGui::End();
   }
@@ -1030,23 +1366,49 @@ void Viewer::moveAndLook(int repetitions) {
   }
 }
 
+void Viewer::bindRenderTarget() {
+  for (auto& it : agentBodyNode_->getSubtreeSensors()) {
+    if (it.second.get().isVisualSensor()) {
+      esp::sensor::VisualSensor& visualSensor =
+          static_cast<esp::sensor::VisualSensor&>(it.second.get());
+      if (visualizeMode_ == VisualizeMode::Depth ||
+          visualizeMode_ == VisualizeMode::Semantic) {
+        simulator_->getRenderer()->bindRenderTarget(
+            visualSensor, {esp::gfx::Renderer::Flag::VisualizeTexture});
+      } else {
+        simulator_->getRenderer()->bindRenderTarget(visualSensor);
+      }
+    }  // if
+  }    // for
+}
+
 void Viewer::viewportEvent(ViewportEvent& event) {
-  auto& sensors = defaultAgent_->getSensorSuite();
-  for (auto entry : sensors.getSensors()) {
-    auto visualSensor =
-        dynamic_cast<esp::sensor::VisualSensor*>(entry.second.get());
-    if (visualSensor != nullptr) {
-      visualSensor->specification()->resolution = {event.framebufferSize()[1],
-                                                   event.framebufferSize()[0]};
-      renderCamera_->setViewport(visualSensor->framebufferSize());
-      simulator_->getRenderer()->bindRenderTarget(*visualSensor);
+  for (auto& it : agentBodyNode_->getSubtreeSensors()) {
+    if (it.second.get().isVisualSensor()) {
+      esp::sensor::VisualSensor& visualSensor =
+          static_cast<esp::sensor::VisualSensor&>(it.second.get());
+      visualSensor.setResolution(event.framebufferSize()[1],
+                                 event.framebufferSize()[0]);
+      renderCamera_->setViewport(visualSensor.framebufferSize());
+      // before, here we will bind the render target, but now we defer it
+      if (visualSensor.specification()->sensorSubType ==
+          esp::sensor::SensorSubType::Fisheye) {
+        auto spec = static_cast<esp::sensor::FisheyeSensorDoubleSphereSpec*>(
+            visualSensor.specification().get());
+
+        // const auto viewportSize =
+        // Mn::GL::defaultFramebuffer.viewport().size();
+        const auto viewportSize = event.framebufferSize();
+        int size = viewportSize[0] < viewportSize[1] ? viewportSize[0]
+                                                     : viewportSize[1];
+        // since the sensor is determined, sensor's focal length is fixed.
+        spec->principalPointOffset =
+            Mn::Vector2(viewportSize[0] / 2, viewportSize[1] / 2);
+      }
     }
   }
+  bindRenderTarget();
   Mn::GL::defaultFramebuffer.setViewport({{}, event.framebufferSize()});
-
-  if (flyingCameraMode_) {
-    renderCamera_->setViewport(event.framebufferSize());
-  }
 
   imgui_.relayout(Mn::Vector2{event.windowSize()} / event.dpiScaling(),
                   event.windowSize(), event.framebufferSize());
@@ -1089,16 +1451,24 @@ void Viewer::mousePressEvent(MouseEvent& event) {
     createPickedObjectVisualizer(pickedObject);
     return;
   }  // drawable selection
-
   // add primitive w/ right click if a collision object is hit by a raycast
   else if (event.button() == MouseEvent::Button::Right) {
     if (simulator_->getPhysicsSimulationLibrary() !=
-        esp::physics::PhysicsManager::PhysicsSimulationLibrary::NONE) {
+        esp::physics::PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
       auto viewportPoint = event.position();
       auto ray = renderCamera_->unproject(viewportPoint);
       esp::physics::RaycastResults raycastResults = simulator_->castRay(ray);
 
       if (raycastResults.hasHits()) {
+        // If VHACD is enabled, and Ctrl + Right Click is used, voxelized the
+        // object clicked on.
+#ifdef ESP_BUILD_WITH_VHACD
+        if (event.modifiers() & MouseEvent::Modifier::Ctrl) {
+          auto objID = raycastResults.hits[0].objectId;
+          displayVoxelField(objID);
+          return;
+        }
+#endif
         addPrimitiveObject();
         auto existingObjectIDs = simulator_->getExistingObjectIDs();
         // use the bounding box to create a safety margin for adding the
@@ -1157,11 +1527,11 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
   auto& controls = *defaultAgent_->getControls().get();
   controls(*agentBodyNode_, "turnRight", delta.x());
   // apply the transformation to all sensors
-  for (auto p : defaultAgent_->getSensorSuite().getSensors()) {
-    controls(p.second->object(),  // SceneNode
-             "lookDown",          // action name
-             delta.y(),           // amount
-             false);              // applyFilter
+  for (auto& p : agentBodyNode_->getSubtreeSensors()) {
+    controls(p.second.get().object(),  // SceneNode
+             "lookDown",               // action name
+             delta.y(),                // amount
+             false);                   // applyFilter
   }
 
   redraw();
@@ -1204,10 +1574,11 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       // agent motion trajectory mesh synthesis with random color
       buildTrajectoryVis();
       break;
-    case KeyEvent::Key::Three:
-      // toggle flying camera mode
-      flyingCameraMode_ = !flyingCameraMode_;
-      LOG(INFO) << "Flying camera mode: " << (flyingCameraMode_ ? "ON" : "OFF");
+    case KeyEvent::Key::Four:
+      sensorMode_ = static_cast<VisualSensorMode>(
+          (uint8_t(sensorMode_) + 1) %
+          uint8_t(VisualSensorMode::VisualSensorModeCount));
+      LOG(INFO) << "Sensor mode is set to " << int(sensorMode_);
       break;
     case KeyEvent::Key::Five:
       // switch camera between ortho and perspective
@@ -1216,6 +1587,26 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::Six:
       // reset camera zoom
       getAgentCamera().resetZoom();
+      break;
+    case KeyEvent::Key::Seven:
+      visualizeMode_ = static_cast<VisualizeMode>(
+          (uint8_t(visualizeMode_) + 1) %
+          uint8_t(VisualizeMode::VisualizeModeCount));
+      bindRenderTarget();
+      switch (visualizeMode_) {
+        case VisualizeMode::RGBA:
+          LOG(INFO) << "Visualizing COLOR sensor observation.";
+          break;
+        case VisualizeMode::Depth:
+          LOG(INFO) << "Visualizing DEPTH sensor observation.";
+          break;
+        case VisualizeMode::Semantic:
+          LOG(INFO) << "Visualizing SEMANTIC sensor observation.";
+          break;
+        default:
+          CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+          break;
+      }
       break;
     case KeyEvent::Key::Eight:
       addPrimitiveObject();
@@ -1228,10 +1619,10 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       }
       break;
     case KeyEvent::Key::LeftBracket:
-      saveCameraTransformToFile();
+      saveAgentAndSensorTransformToFile();
       break;
     case KeyEvent::Key::RightBracket:
-      loadCameraTransformFromFile();
+      loadAgentAndSensorTransformFromFile();
       break;
 
     case KeyEvent::Key::Equal: {
@@ -1297,6 +1688,19 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::V:
       invertGravity();
       break;
+#ifdef ESP_BUILD_WITH_VHACD
+    case KeyEvent::Key::L: {
+      iterateAndDisplaySignedDistanceField();
+      // Increase the distance visualized for next time (Pressing L repeatedly
+      // will visualize different distances)
+      voxelDistance++;
+      break;
+    }
+    case KeyEvent::Key::G: {
+      displayStageDistanceGradientField();
+      break;
+    }
+#endif
     default:
       break;
   }

@@ -1,8 +1,10 @@
 import pytest
 
 import utils
+from habitat_sim import vhacd_enabled
 
 
+@pytest.mark.skipif(not vhacd_enabled, reason="Test requires vhacd")
 @pytest.mark.parametrize(
     "args",
     [
@@ -12,6 +14,7 @@ import utils
             "--no-show-video",
         ),
     ],
+    ids=str,
 )
 def test_example_modules(args):
     utils.run_main_subproc(args)

@@ -5,6 +5,8 @@
 #ifndef ESP_METADATA_MANAGERS_SCENEDATASETATTRIBUTEMANAGER_H_
 #define ESP_METADATA_MANAGERS_SCENEDATASETATTRIBUTEMANAGER_H_
 
+#include <utility>
+
 #include "PhysicsAttributesManager.h"
 
 #include "AttributesManagerBase.h"
@@ -17,15 +19,8 @@ class SceneDatasetAttributesManager
     : public AttributesManager<attributes::SceneDatasetAttributes,
                                core::ManagedObjectAccess::Share> {
  public:
-  SceneDatasetAttributesManager(
-      PhysicsAttributesManager::ptr physicsAttributesMgr)
-      : AttributesManager<attributes::SceneDatasetAttributes,
-                          core::ManagedObjectAccess::Share>::
-            AttributesManager("Dataset", "scene_dataset_config.json"),
-        physicsAttributesManager_(physicsAttributesMgr) {
-    buildCtorFuncPtrMaps();
-  }
-
+  explicit SceneDatasetAttributesManager(
+      PhysicsAttributesManager::ptr physicsAttributesMgr);
   /**
    * @brief Creates an instance of a dataset template described by passed
    * string. For dataset templates, this a file name.
@@ -157,13 +152,14 @@ class SceneDatasetAttributesManager
    * @brief This method will perform any necessary updating that is
    * attributesManager-specific upon template removal, such as removing a
    * specific template handle from the list of file-based template handles in
-   * ObjectAttributesManager.  This should only be called internally.
+   * ObjectAttributesManager.  This should only be called @ref
+   * esp::core::ManagedContainerBase.
    *
    * @param templateID the ID of the template to remove
    * @param templateHandle the string key of the attributes desired.
    */
 
-  void updateObjectHandleLists(
+  void deleteObjectInternalFinalize(
       CORRADE_UNUSED int templateID,
       CORRADE_UNUSED const std::string& templateHandle) override {}
 
@@ -192,22 +188,11 @@ class SceneDatasetAttributesManager
       CORRADE_UNUSED bool forceRegistration) override;
 
   /**
-   * @brief This function will assign the appropriately configured function
-   * pointer for the copy constructor as required by
-   * AttributesManager<PhysicsSceneAttributes::ptr>
-   */
-  void buildCtorFuncPtrMaps() override {
-    this->copyConstructorMap_["SceneDatasetAttributes"] =
-        &SceneDatasetAttributesManager::createObjectCopy<
-            attributes::SceneDatasetAttributes>;
-  }  // SceneDatasetAttributesManager::buildCtorFuncPtrMaps
-
-  /**
    * @brief This function is meaningless for this manager's ManagedObjects.
    * @param handle Ignored.
    * @return false
    */
-  virtual bool isValidPrimitiveAttributes(
+  bool isValidPrimitiveAttributes(
       CORRADE_UNUSED const std::string& handle) override {
     return false;
   }

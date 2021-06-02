@@ -30,14 +30,12 @@ class BulletRigidStage : public BulletBase, public RigidStage {
   /**
    * @brief Destructor cleans up simulation structures for the stage object.
    */
-  virtual ~BulletRigidStage();
+  ~BulletRigidStage() override;
 
  private:
   /**
    * @brief Finalize the initialization of this @ref RigidScene
    * geometry.  This holds bullet-specific functionality for stages.
-   * @param resMgr Reference to resource manager, to access relevant components
-   * pertaining to the stage object
    * @return true if initialized successfully, false otherwise.
    */
   bool initialization_LibSpecific() override;
@@ -66,7 +64,7 @@ class BulletRigidStage : public BulletBase, public RigidStage {
    * @brief Set the stage to collidable or not by adding/removing the static
    * collision shapes from the simulation world.
    */
-  bool setCollidable(bool collidable) override;
+  void setCollidable(bool collidable) override;
 
  public:
   /**
@@ -74,19 +72,19 @@ class BulletRigidStage : public BulletBase, public RigidStage {
    * the rigid body in its local space. See @ref btCompoundShape::getAabb.
    * @return The Aabb.
    */
-  virtual const Magnum::Range3D getCollisionShapeAabb() const override;
+  Magnum::Range3D getCollisionShapeAabb() const override;
 
   /** @brief Get the scalar friction coefficient of the stage object. Only
    * used for dervied dynamic implementations of @ref RigidStage.
    * @return The scalar friction coefficient of the stage object.
    */
-  virtual double getFrictionCoefficient() const override;
+  double getFrictionCoefficient() const override;
 
   /** @brief Get the scalar coefficient of restitution  of the stage object.
    * Only used for dervied dynamic implementations of @ref RigidStage.
    * @return The scalar coefficient of restitution  of the stage object.
    */
-  virtual double getRestitutionCoefficient() const override;
+  double getRestitutionCoefficient() const override;
 
   /** @brief Set the scalar friction coefficient of the stage object.
    * See @ref btCollisionObject::setFriction.

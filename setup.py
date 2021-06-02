@@ -60,6 +60,12 @@ Use "HEADLESS=True pip install ." to build in headless mode with pip""",
         help="""Build with Bullet simulation engine.""",
     )
     parser.add_argument(
+        "--vhacd",
+        dest="with_vhacd",
+        action="store_true",
+        help="""Build with VHACD convex hull decomposition and voxelization engine.""",
+    )
+    parser.add_argument(
         "--cmake",
         "--force-cmake",
         dest="force_cmake",
@@ -92,7 +98,17 @@ Use "CMAKE_ARGS="..." pip install ." to set cmake args with pip""",
         action="store_true",
         help="Don't update git submodules",
     )
-
+    parser.add_argument(
+        "--build-type",
+        dest="build_type",
+        default=None,
+        help="CMake configuration to build with (Release, Debug, etc...)",
+    )
+    parser.add_argument(
+        "--no-lto",
+        action="store_true",
+        help="Disables Link Time Optimization for faster compile times at the expense of performance.",
+    )
     parser.add_argument(
         "--cache-args",
         dest="cache_args",
@@ -240,10 +256,18 @@ class CMakeBuild(build_ext):
         ]
         cmake_args += shlex.split(args.cmake_args)
 
-        cfg = "Debug" if self.debug else "RelWithDebInfo"
-        build_args = ["--config", cfg]
+        build_type = args.build_type
+        assert not (
+            build_type is not None and self.debug
+        ), f"Debug and Build-Type flags conflict: {self.debug}, {build_type}"
+        if build_type is None:
+            build_type = "Debug" if self.debug else "RelWithDebInfo"
+        build_args = ["--config", build_type]
 
-        cmake_args += ["-DCMAKE_BUILD_TYPE=" + cfg]
+        cmake_args += ["-DCMAKE_BUILD_TYPE=" + build_type]
+
+        if args.no_lto:
+            cmake_args += ["-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF"]
         build_args += ["--"]
 
         if has_ninja():
@@ -271,6 +295,9 @@ class CMakeBuild(build_ext):
         cmake_args += ["-DBUILD_TEST={}".format("ON" if args.build_tests else "OFF")]
         cmake_args += [
             "-DBUILD_WITH_BULLET={}".format("ON" if args.with_bullet else "OFF")
+        ]
+        cmake_args += [
+            "-DBUILD_WITH_VHACD={}".format("ON" if args.with_vhacd else "OFF")
         ]
         cmake_args += [
             "-DBUILD_DATATOOL={}".format("ON" if args.build_datatool else "OFF")

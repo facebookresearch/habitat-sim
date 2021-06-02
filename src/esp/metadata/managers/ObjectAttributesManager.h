@@ -7,6 +7,8 @@
 
 #include <Corrade/Utility/Assert.h>
 
+#include <utility>
+
 #include "AbstractObjectAttributesManagerBase.h"
 #include "AssetAttributesManager.h"
 
@@ -23,15 +25,16 @@ class ObjectAttributesManager
   ObjectAttributesManager()
       : AbstractObjectAttributesManager<attributes::ObjectAttributes,
                                         core::ManagedObjectAccess::Copy>::
-            AbstractObjectAttributesManager(
-                "Object",
-                "object_config.json") {  // was phys_properties.json
-    buildCtorFuncPtrMaps();
+            AbstractObjectAttributesManager("Object", "object_config.json") {
+    // build this manager's copy constructor map
+    this->copyConstructorMap_["ObjectAttributes"] =
+        &ObjectAttributesManager::createObjectCopy<
+            attributes::ObjectAttributes>;
   }
 
   void setAssetAttributesManager(
       AssetAttributesManager::cptr assetAttributesMgr) {
-    assetAttributesMgr_ = assetAttributesMgr;
+    assetAttributesMgr_ = std::move(assetAttributesMgr);
     // Create default primitive-based object attributess
     createDefaultPrimBasedAttributesTemplates();
   }
@@ -201,12 +204,13 @@ class ObjectAttributesManager
    * @brief This method will perform any necessary updating that is
    * attributesManager-specific upon template removal, such as removing a
    * specific template handle from the list of file-based template handles in
-   * ObjectAttributesManager.  This should only be called internally.
+   * ObjectAttributesManager.  This should only be called @ref
+   * esp::core::ManagedContainerBase.
    *
    * @param templateID the ID of the template to remove
    * @param templateHandle the string key of the attributes desired.
    */
-  void updateObjectHandleLists(
+  void deleteObjectInternalFinalize(
       int templateID,
       CORRADE_UNUSED const std::string& templateHandle) override {
     physicsFileObjTmpltLibByID_.erase(templateID);
@@ -240,17 +244,6 @@ class ObjectAttributesManager
     physicsFileObjTmpltLibByID_.clear();
     physicsSynthObjTmpltLibByID_.clear();
   }
-
-  /**
-   * @brief This function will assign the appropriately configured function
-   * pointer for the copy constructor as defined in
-   * AttributesManager<ObjectAttributes::ptr>
-   */
-  void buildCtorFuncPtrMaps() override {
-    this->copyConstructorMap_["ObjectAttributes"] =
-        &ObjectAttributesManager::createObjectCopy<
-            attributes::ObjectAttributes>;
-  }  // ObjectAttributesManager::buildCtorFuncPtrMaps()
 
   // ======== Typedefs and Instance Variables ========
 

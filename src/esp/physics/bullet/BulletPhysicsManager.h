@@ -51,7 +51,7 @@ class BulletPhysicsManager : public PhysicsManager {
    */
   explicit BulletPhysicsManager(
       assets::ResourceManager& _resourceManager,
-      const metadata::attributes::PhysicsManagerAttributes::cptr
+      const metadata::attributes::PhysicsManagerAttributes::cptr&
           _physicsManagerAttributes)
       : PhysicsManager(_resourceManager, _physicsManagerAttributes) {
     collisionObjToObjIds_ =
@@ -59,7 +59,7 @@ class BulletPhysicsManager : public PhysicsManager {
   };
 
   /** @brief Destructor which destructs necessary Bullet physics structures.*/
-  virtual ~BulletPhysicsManager();
+  ~BulletPhysicsManager() override;
 
   //============ Simulator functions =============
 
@@ -86,14 +86,6 @@ class BulletPhysicsManager : public PhysicsManager {
 
   //============ Bullet-specific Object Setter functions =============
 
-  /** @brief Set the scalar collision margin of an object.
-   * See @ref BulletRigidObject::setMargin.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param  margin The desired collision margin for the object.
-   */
-  void setMargin(const int physObjectID, const double margin) override;
-
   /** @brief Set the friction coefficient of the stage collision geometry. See
    * @ref staticStageObject_. See @ref
    * BulletRigidObject::setFrictionCoefficient.
@@ -111,16 +103,6 @@ class BulletPhysicsManager : public PhysicsManager {
       const double restitutionCoefficient) override;
 
   //============ Bullet-specific Object Getter functions =============
-
-  /** @brief Get the scalar collision margin of an object.
-   * See @ref BulletRigidObject::getMargin.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @return The scalar collision margin of the object or @ref
-   * esp::PHYSICS_ATTR_UNDEFINED if failed..
-   */
-  double getMargin(const int physObjectID) const override;
-
   /** @brief Get the current friction coefficient of the stage collision
    * geometry. See @ref staticStageObject_ and @ref
    * BulletRigidObject::getFrictionCoefficient.
@@ -143,14 +125,14 @@ class BulletPhysicsManager : public PhysicsManager {
    * PhysicsManager::existingObjects_.
    * @return The Aabb.
    */
-  const Magnum::Range3D getCollisionShapeAabb(const int physObjectID) const;
+  Magnum::Range3D getCollisionShapeAabb(const int physObjectID) const;
 
   /**
    * @brief Query the Aabb from bullet physics for the root compound shape of
    * the static stage in its local space. See @ref btCompoundShape::getAabb.
    * @return The stage collision Aabb.
    */
-  const Magnum::Range3D getStageCollisionShapeAabb() const;
+  Magnum::Range3D getStageCollisionShapeAabb() const;
 
   /** @brief Render the debugging visualizations provided by @ref
    * Magnum::BulletIntegration::DebugDraw. This draws wireframes for all
@@ -158,7 +140,7 @@ class BulletPhysicsManager : public PhysicsManager {
    * @param projTrans The composed projection and transformation matrix for the
    * render camera.
    */
-  virtual void debugDraw(const Magnum::Matrix4& projTrans) const override;
+  void debugDraw(const Magnum::Matrix4& projTrans) const override;
 
   /**
    * @brief Check whether an object is in contact with any other objects or the
@@ -181,15 +163,45 @@ class BulletPhysicsManager : public PhysicsManager {
    * In units of ray length.
    * @return The raycast results sorted by distance.
    */
-  virtual RaycastResults castRay(const esp::geo::Ray& ray,
-                                 double maxDistance = 100.0) override;
+  RaycastResults castRay(const esp::geo::Ray& ray,
+                         double maxDistance = 100.0) override;
 
-  // The number of contact points that were active during the last step. An
-  // object resting on another object will involve several active contact
-  // points. Once both objects are asleep, the contact points are inactive. This
-  // count can be used as a metric for the complexity/cost of collision-handling
-  // in the current scene.
+  /**
+   * @brief Query the number of contact points that were active during the
+   * collision detection check.
+   *
+   * An object resting on another object will involve several active contact
+   * points. Once both objects are asleep, the contact points are inactive. This
+   * count can be used as a metric for the complexity/cost of collision-handling
+   * in the current scene.
+   *
+   * @return the number of active contact points.
+   */
   int getNumActiveContactPoints() override;
+
+  /**
+   * @brief Return ContactPointData objects describing the contacts from the
+   * most recent physics substep.
+   *
+   * This implementation is roughly identical to PyBullet's getContactPoints.
+   * @return a vector with each entry corresponding to a single contact point.
+   */
+  std::vector<ContactPointData> getContactPoints() const override;
+
+  /**
+   * @brief Perform discrete collision detection for the scene.
+   */
+  void performDiscreteCollisionDetection() override {
+    bWorld_->getCollisionWorld()->performDiscreteCollisionDetection();
+    recentNumSubStepsTaken_ = -1;  // TODO: handle this more gracefully
+  }
+
+  /**
+   * @brief utilize PhysicsManager's enable shared
+   */
+  BulletPhysicsManager::ptr shared_from_this() {
+    return esp::shared_from(this);
+  }
 
  protected:
   //============ Initialization =============
@@ -199,31 +211,37 @@ class BulletPhysicsManager : public PhysicsManager {
    */
   bool initPhysicsFinalize() override;
 
+  /**
+   * @brief Create an object wrapper appropriate for this physics manager.
+   * Overridden if called by dynamics-library-enabled PhysicsManager
+   */
+  esp::physics::ManagedRigidObject::ptr getRigidObjectWrapper() override;
+
   //============ Object/Stage Instantiation =============
   /**
    * @brief Finalize stage initialization. Checks that the collision
    * mesh can be used by Bullet. See @ref BulletRigidObject::initializeStage.
    * Bullet mesh conversion adapted from:
    * https://github.com/mosra/magnum-integration/issues/20
-   * @param handle The handle of the attributes structure defining physical
+   * @param initAttributes The attributes structure defining physical
    * properties of the stage.
    * @return true if successful and false otherwise
    */
-  bool addStageFinalize(const std::string& handle) override;
+  bool addStageFinalize(const metadata::attributes::StageAttributes::ptr&
+                            initAttributes) override;
 
   /** @brief Create and initialize an @ref RigidObject and add
    * it to existingObjects_ map keyed with newObjectID
    * @param newObjectID valid object ID for the new object
-   * @param meshGroup The object's mesh.
-   * @param handle The handle to the physical object's template defining its
-   * physical parameters.
+   * @param objectAttributes The object's template
    * @param objectNode Valid, existing scene node
    * @return whether the object has been successfully initialized and added to
    * existingObjects_ map
    */
-  bool makeAndAddRigidObject(int newObjectID,
-                             const std::string& handle,
-                             scene::SceneNode* objectNode) override;
+  bool makeAndAddRigidObject(
+      int newObjectID,
+      const esp::metadata::attributes::ObjectAttributes::ptr& objectAttributes,
+      scene::SceneNode* objectNode) override;
 
   btDbvtBroadphase bBroadphase_;
   btDefaultCollisionConfiguration bCollisionConfig_;
@@ -241,6 +259,11 @@ class BulletPhysicsManager : public PhysicsManager {
   std::shared_ptr<std::map<const btCollisionObject*, int>>
       collisionObjToObjIds_;
 
+  //! necessary to acquire forces from impulses
+  double recentTimeStep_ = fixedTimeStep_;
+  //! for recent call to stepPhysics
+  int recentNumSubStepsTaken_ = -1;
+
  private:
   /** @brief Check if a particular mesh can be used as a collision mesh for
    * Bullet.
@@ -251,6 +274,21 @@ class BulletPhysicsManager : public PhysicsManager {
    */
   bool isMeshPrimitiveValid(const assets::CollisionMeshData& meshData) override;
 
+  /**
+   * @brief Helper function for getting object and link unique ids from
+   * btCollisionObject cache
+   *
+   * @param colObj The query collision object for which a corresponding id is
+   * desired.
+   * @param objectId write found RigidObject or ArticulatedObject id or -1 if
+   * failed.
+   * @param linkId write found linkId or -1 if failed or not an ArticulatedLink.
+   */
+  void lookUpObjectIdAndLinkId(const btCollisionObject* colObj,
+                               int* objectId,
+                               int* linkId) const;
+
+ public:
   ESP_SMART_POINTERS(BulletPhysicsManager)
 
 };  // end class BulletPhysicsManager

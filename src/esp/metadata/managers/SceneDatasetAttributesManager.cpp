@@ -12,6 +12,19 @@ namespace metadata {
 
 using attributes::SceneDatasetAttributes;
 namespace managers {
+
+SceneDatasetAttributesManager::SceneDatasetAttributesManager(
+    PhysicsAttributesManager::ptr physicsAttributesMgr)
+    : AttributesManager<attributes::SceneDatasetAttributes,
+                        core::ManagedObjectAccess::Share>::
+          AttributesManager("Dataset", "scene_dataset_config.json"),
+      physicsAttributesManager_(std::move(physicsAttributesMgr)) {
+  // build this manager's copy ctor map
+  this->copyConstructorMap_["SceneDatasetAttributes"] =
+      &SceneDatasetAttributesManager::createObjectCopy<
+          attributes::SceneDatasetAttributes>;
+}  // SceneDatasetAttributesManager ctor
+
 SceneDatasetAttributes::ptr SceneDatasetAttributesManager::createObject(
     const std::string& datasetHandle,
     bool registerTemplate) {
@@ -156,26 +169,39 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
               << "SceneDatasetAttributesManager::readDatasetJSONCell : \""
               << tag
               << ".paths\" cell in JSON config unable to be parsed as "
-                 "an array to determine search paths so skipping.";
+                 "a JSON object to determine search paths so skipping.";
         } else {
           const auto& pathsObj = jCell["paths"];
+          bool pathsWarn = false;
+          std::string pathsWarnType = "";
           if (pathsObj.HasMember(".json")) {
             if (!pathsObj[".json"].IsArray()) {
-              LOG(WARNING)
-                  << "SceneDatasetAttributesManager::readDatasetJSONCell : \""
-                  << tag
-                  << ".paths.\".json\"\" cell in JSON config unable to be "
-                     "parsed as "
-                     "an array to determine search paths for json config so "
-                     "skipping.";
+              pathsWarn = true;
+              pathsWarnType = ".json";
             } else {
               const auto& paths = pathsObj[".json"];
-              attrMgr->buildCfgPathsFromJSONAndLoad(dsDir, paths);
+              attrMgr->buildJSONCfgPathsFromJSONAndLoad(dsDir, paths);
             }
-          }  // if has member ".json"
-             // TODO support other extention tags
-        }    // if paths cell is an object
-      }      // if has paths cell
+          }
+          if (pathsObj.HasMember(".glb")) {
+            if (!pathsObj[".glb"].IsArray()) {
+              pathsWarn = true;
+              pathsWarnType = ".glb";
+            } else {
+              const auto& paths = pathsObj[".glb"];
+              attrMgr->buildAttrSrcPathsFromJSONAndLoad(dsDir, ".glb", paths);
+            }
+          }
+          // TODO support other extention tags
+          if (pathsWarn) {
+            LOG(WARNING)
+                << "SceneDatasetAttributesManager::readDatasetJSONCell : \""
+                << tag << ".paths[" << pathsWarnType
+                << "] cell in JSON config unable to be parsed as an array to "
+                   "determine search paths for json configs so skipping.";
+          }
+        }  // if paths cell is an object
+      }    // if has paths cell
       // 3. "configs" : an array of json cells defining customizations to
       // existing attributes.
       if (jCell.HasMember("configs")) {

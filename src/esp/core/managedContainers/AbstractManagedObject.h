@@ -5,7 +5,7 @@
 #ifndef ESP_CORE_ABSTRACTMANAGEDOBJECT_H_
 #define ESP_CORE_ABSTRACTMANAGEDOBJECT_H_
 
-#include "Configuration.h"
+#include "esp/core/esp.h"
 
 namespace esp {
 namespace core {
@@ -34,18 +34,22 @@ class AbstractManagedObject {
    * @param handle the handle to set.
    */
   virtual void setHandle(const std::string& handle) = 0;
+
+  /**
+   * @brief Retrieve this object's unique handle
+   * @return The handle of the object
+   */
   virtual std::string getHandle() const = 0;
 
   /**
-   * @brief directory where files used to construct ManagedObject can be found.
-   */
-  virtual void setFileDirectory(const std::string& fileDirectory) = 0;
-  virtual std::string getFileDirectory() const = 0;
-
-  /**
-   *  @brief Unique ID referencing ManagedObject
+   * @brief Set the unique ID referencing ManagedObject
+   * @param ID the ID for this object.
    */
   virtual void setID(int ID) = 0;
+  /**
+   * @brief Retrieve this object's unique ID.
+   * @return Unique ID for this object.
+   */
   virtual int getID() const = 0;
 
  protected:
@@ -54,6 +58,19 @@ class AbstractManagedObject {
  public:
   ESP_SMART_POINTERS(AbstractManagedObject)
 };  // class AbstractManagedObject
+
+class AbstractFileBasedManagedObject : public AbstractManagedObject {
+ public:
+  /**
+   * @brief directory where files used to construct ManagedObject can be found.
+   */
+  virtual void setFileDirectory(const std::string& fileDirectory) = 0;
+  virtual std::string getFileDirectory() const = 0;
+
+ public:
+  ESP_SMART_POINTERS(AbstractFileBasedManagedObject)
+};  // class AbstractFileBasedManagedObject
+
 }  // namespace core
 }  // namespace esp
 #endif  // ESP_CORE_ABSTRACTMANAGEDOBJECT_H_

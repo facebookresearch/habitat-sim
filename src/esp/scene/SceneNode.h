@@ -19,6 +19,12 @@
 // parent node; get global rigid body transformation
 
 namespace esp {
+
+namespace sensor {
+class SensorSuite;
+class Sensor;
+}  // namespace sensor
+
 namespace scene {
 
 class SceneGraph;
@@ -32,14 +38,24 @@ enum class SceneNodeType {
   OBJECT = 4,  // objects added via physics api
 };
 
-class SceneNode : public MagnumObject {
+// Enumeration of SceneNodeTags
+enum class SceneNodeTag : Magnum::UnsignedShort {
+  /**
+   * Set node as Leaf node, so no children nodes are allowed
+   */
+  Leaf = 1 << 0,
+};
+
+/**
+ * @brief SceneNodeTags
+ */
+typedef Corrade::Containers::EnumSet<SceneNodeTag> SceneNodeTags;
+
+class SceneNode : public MagnumObject,
+                  public Magnum::SceneGraph::AbstractFeature3D {
  public:
-  // creating a scene node "in the air" is not allowed.
-  // it must set an existing node as its parent node.
-  // this is to prevent any sub-tree that is "floating in the air", without a
-  // terminate node (e.g., "MagnumScene" defined in SceneGraph) as its ancestor
-  SceneNode() = delete;
   SceneNode(SceneNode& parent);
+  ~SceneNode() override;
 
   // get the type of the attached object
   SceneNodeType getType() const { return type_; }
@@ -52,10 +68,50 @@ class SceneNode : public MagnumObject {
     new U{*this, std::forward<Args>(args)...};
   }
 
+  // Returns sceneNodeTags of SceneNode
+  SceneNodeTags getSceneNodeTags() const { return sceneNodeTags_; }
+
+  /**
+   * @brief Sets sceneNodeTags_ of SceneNode
+   *
+   * @param[in] sceneNodeTags SceneNodeTags to set enumset sceneNodeTags_ to
+   */
+  void setSceneNodeTags(SceneNodeTags sceneNodeTags) {
+    sceneNodeTags_ = sceneNodeTags;
+  }
+
+  /**
+   * @brief Add SceneNodeTag to sceneNodeTags_ of SceneNode
+   *
+   * @param[in] sceneNodeTag SceneNodeTag to add to enumset sceneNodeTags_
+   */
+  void addSceneNodeTag(SceneNodeTag sceneNodeTag) {
+    sceneNodeTags_ |= sceneNodeTag;
+  }
+
+  /**
+   * @brief Remove SceneNodeTag from sceneNodeTags_ of SceneNode
+   *
+   * @param[in] sceneNodeTag SceneNodeTag to remove from enumset sceneNodeTags_
+   */
+  void removeSceneNodeTag(SceneNodeTag sceneNodeTag) {
+    sceneNodeTags_ &= ~SceneNodeTags{sceneNodeTag};
+  }
+
   //! Create a new child SceneNode and return it. NOTE: this SceneNode owns and
   //! is responsible for deallocating created child
   //! NOTE: child node inherits parent id by default
-  SceneNode& createChild();
+  SceneNode& createChild(SceneNodeTags childNodeTag = {});
+
+  /**
+   * @brief Sets parent SceneNode of this SceneNode, updates parent's
+   * nodeSensorSuite and ancestors' subtreeSensorSuites NOTE: Overloads
+   * MagnumObject::setParent
+   * @param[in] newParent pointer to SceneNode of new parent SceneNode of this
+   * SceneNode
+   * @return reference to self
+   */
+  SceneNode& setParent(SceneNode* newParent);
 
   //! Returns node id
   virtual int getId() const { return id_; }
@@ -69,9 +125,9 @@ class SceneNode : public MagnumObject {
   //! Sets node semanticId
   virtual void setSemanticId(int semanticId) { semanticId_ = semanticId; }
 
-  Magnum::Vector3 absoluteTranslation() const {
-    return this->absoluteTransformation().translation();
-  }
+  Magnum::Vector3 absoluteTranslation() const;
+
+  Magnum::Vector3 absoluteTranslation();
 
   //! recursively compute the cumulative bounding box of the full scene graph
   //! tree for which this node is the root
@@ -81,19 +137,68 @@ class SceneNode : public MagnumObject {
   const Magnum::Range3D& getMeshBB() const { return meshBB_; };
 
   //! return the global bounding box for the mesh stored at this node
-  Corrade::Containers::Optional<Magnum::Range3D> getAbsoluteAABB() const {
-    return aabb_;
-  };
+  const Magnum::Range3D& getAbsoluteAABB() const;
 
   //! return the cumulative bounding box of the full scene graph tree for which
   //! this node is the root
   const Magnum::Range3D& getCumulativeBB() const { return cumulativeBB_; };
 
+  /**
+   * @brief Return SensorSuite containing references to Sensors this SceneNode
+   * holds
+   */
+  esp::sensor::SensorSuite& getNodeSensorSuite() { return *nodeSensorSuite_; }
+
+  /**
+   * @brief Return map containing references to Sensors this SceneNode holds.
+   * Keys are uuid strings, values are references to Sensors with that uuid
+   */
+  std::map<std::string, std::reference_wrapper<esp::sensor::Sensor>>&
+  getNodeSensors();
+
+  /**
+   * @brief Return SensorSuite containing references to superset of all Sensors
+   * held by this SceneNode and its children
+   */
+  esp::sensor::SensorSuite& getSubtreeSensorSuite() {
+    return *subtreeSensorSuite_;
+  }
+
+  /**
+   * @brief Return map containing references to superset of all Sensors held by
+   * this SceneNode and its children values. Keys are uuid strings, values are
+   * references to Sensors with that uuid
+   */
+  std::map<std::string, std::reference_wrapper<esp::sensor::Sensor>>&
+  getSubtreeSensors();
+
+  /** @brief Add sensor in this' nodeSensorSuite to parent's
+   * nodeSensorSuite
+   * NOTE: This only adds a sensor if this is a leaf node and sensor exists
+   */
+  void addSensorToParentNodeSensorSuite();
+
+  /** @brief Remove sensor in this' nodeSensorSuite from parent's
+   * nodeSensorSuite
+   * NOTE: This only removes a sensor if this is a leaf node and sensor exists
+   */
+  void removeSensorFromParentNodeSensorSuite();
+
+  /** @brief Go bottom to the top, and erase all subtreeSensors from this'
+   * ancestors' subtreeSensorSuites
+   */
+  void removeSubtreeSensorsFromAncestors();
+
+  /** @brief Go bottom to the top, and add all subtreeSensors to this'
+   * ancestors' subtreeSensorSuites
+   */
+  void addSubtreeSensorsToAncestors();
+
   //! set local bounding box for meshes stored at this node
-  void setMeshBB(Magnum::Range3D meshBB) { meshBB_ = std::move(meshBB); };
+  void setMeshBB(Magnum::Range3D meshBB) { meshBB_ = meshBB; };
 
   //! set the global bounding box for mesh stored in this node
-  void setAbsoluteAABB(Magnum::Range3D aabb) { aabb_ = std::move(aabb); };
+  void setAbsoluteAABB(Magnum::Range3D aabb) { aabb_ = aabb; };
 
   //! return the frustum plane in last frame that culls this node
   int getFrustumPlaneIndex() const { return frustumPlaneIndex; };
@@ -105,11 +210,24 @@ class SceneNode : public MagnumObject {
   // DO not make the following constructor public!
   // it can ONLY be called from SceneGraph class to initialize the scene graph
   friend class SceneGraph;
-  SceneNode(MagnumScene& parentNode);
+  explicit SceneNode(MagnumScene& parentNode);
+
+  // Do not make the following constructor public!
+  // This is only used for constructor delegation
+  // creating a scene node "in the air" is not allowed.
+  // it must set an existing node as its parent node.
+  // this is to prevent any sub-tree that is "floating in the air", without a
+  // terminate node (e.g., "MagnumScene" defined in SceneGraph) as its ancestor
+  SceneNode();
+
+  void clean(const Magnum::Matrix4& absoluteTransformation) override;
 
   // the type of the attached object (e.g., sensor, agent etc.)
   SceneNodeType type_ = SceneNodeType::EMPTY;
   int id_ = ID_UNDEFINED;
+
+  // SceneNodeTags of this node, used to flag attributes such as leaf node
+  SceneNodeTags sceneNodeTags_ = {};
 
   //! The semantic category of this node. Used to render attached Drawables with
   //! Semantic sensor when no perVertexObjectIds are present.
@@ -120,7 +238,16 @@ class SceneNode : public MagnumObject {
 
   //! the cumulative bounding box of the full scene graph tree for which this
   //! node is the root
-  Magnum::Range3D cumulativeBB_;
+  Magnum::Range3D cumulativeBB_ = {{0.0, 0.0, 0.0}, {1e5, 1e5, 1e5}};
+
+  //! The cumulativeBB in world coordinates
+  //! This is returned instead of aabb_ if that doesn't exist
+  //! due to this being a node that is part of a dynamic object
+  mutable Corrade::Containers::Optional<Magnum::Range3D> worldCumulativeBB_ =
+      Corrade::Containers::NullOpt;
+
+  //! The absolute translation of this node, updated in clean
+  Magnum::Matrix4 absoluteTransformation_;
 
   //! the global bounding box for *static* meshes stored at this node
   //  NOTE: this is different from the local bounding box meshBB_ defined above:
@@ -132,6 +259,14 @@ class SceneNode : public MagnumObject {
 
   //! the frustum plane in last frame that culls this node
   int frustumPlaneIndex = 0;
+
+  // Pointer to SensorSuite containing references to Sensors this SceneNode
+  // holds
+  esp::sensor::SensorSuite* nodeSensorSuite_;
+
+  // Pointer to SensorSuite containing references to superset of all Sensors
+  // held by this SceneNode and its children
+  esp::sensor::SensorSuite* subtreeSensorSuite_;
 };
 
 // Traversal Helpers
@@ -180,7 +315,7 @@ void preOrderFeatureTraversalWithCallback(const SceneNode& node,
                                           Callable&& cb) {
   auto featureCb = [&cb](const SceneNode& node) {
     for (const auto& abstractFeature : node.features()) {
-      auto feature = dynamic_cast<const Feature*>(&abstractFeature);
+      const auto* feature = dynamic_cast<const Feature*>(&abstractFeature);
       if (feature)
         std::forward<Callable>(cb)(*feature);
     }
@@ -198,6 +333,7 @@ void preOrderFeatureTraversalWithCallback(SceneNode& node, Callable&& cb) {
       const_cast<const SceneNode&>(node), constFeatureCb);
 }
 
+CORRADE_ENUMSET_OPERATORS(SceneNodeTags)
 }  // namespace scene
 }  // namespace esp
 
