@@ -465,7 +465,7 @@ def test_collision_groups():
             != habitat_sim.physics.PhysicsSimulationLibrary.NoPhysics
         ):
             cgh = habitat_sim.physics.CollisionGroupHelper
-            cg = habitat_sim.physics.CollisionGroup
+            cg = habitat_sim.physics.CollisionGroups
 
             # test group naming
             assert cgh.get_group_name(cg.UserGroup1) == "UserGroup1"

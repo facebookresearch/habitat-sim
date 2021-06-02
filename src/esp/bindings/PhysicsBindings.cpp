@@ -1,6 +1,8 @@
 #include "esp/bindings/bindings.h"
 #include "esp/physics/PhysicsManager.h"
 
+#include "python/corrade/EnumOperators.h"
+
 namespace py = pybind11;
 using py::literals::operator""_a;
 
@@ -72,13 +74,15 @@ void initPhysicsBindings(py::module& m) {
       .def_readwrite("is_active", &ContactPointData::isActive);
 
   // ==== enum object CollisionGroup ====
-  py::enum_<CollisionGroup>(m, "CollisionGroup")
-      .value("Default", CollisionGroup::Default)
+  py::enum_<CollisionGroup> collisionGroups{m, "CollisionGroups",
+                                            "CollisionGroups"};
+  collisionGroups.value("Default", CollisionGroup::Default)
       .value("Static", CollisionGroup::Static)
       .value("Kinematic", CollisionGroup::Kinematic)
       .value("FreeObject", CollisionGroup::FreeObject)
       .value("Robot", CollisionGroup::Robot)
       .value("Noncollidable", CollisionGroup::Noncollidable)
+      .value("UserGroup0", CollisionGroup::UserGroup0)
       .value("UserGroup1", CollisionGroup::UserGroup1)
       .value("UserGroup2", CollisionGroup::UserGroup2)
       .value("UserGroup3", CollisionGroup::UserGroup3)
@@ -88,7 +92,8 @@ void initPhysicsBindings(py::module& m) {
       .value("UserGroup7", CollisionGroup::UserGroup7)
       .value("UserGroup8", CollisionGroup::UserGroup8)
       .value("UserGroup9", CollisionGroup::UserGroup9)
-      .value("AllFilter", CollisionGroup::AllFilter);
+      .value("None", CollisionGroup{});
+  corrade::enumOperators(collisionGroups);
 
   // ==== class object CollisionGroupHelper ====
   py::class_<CollisionGroupHelper, std::shared_ptr<CollisionGroupHelper>>(
@@ -120,18 +125,22 @@ void initPhysicsBindings(py::module& m) {
           &CollisionGroupHelper::setGroupInteractsWith, "group_a"_a,
           "group_b"_a, "interact"_a,
           R"(Set groupA's collision mask to a specific interaction state with respect to groupB.)")
-      .def_static(
-          "get_split_mask",
-          py::overload_cast<const CollisionGroup&>(
-              &CollisionGroupHelper::getSplitMask),
-          "group"_a,
-          R"(Get the mask for a collision group describing its interaction with other groups split into a dict of individual booleans keyed by each group.)")
-      .def_static(
-          "get_split_mask",
-          py::overload_cast<const std::string&>(
-              &CollisionGroupHelper::getSplitMask),
-          "group_name"_a,
-          R"(Get the mask for a collision group describing its interaction with other groups split into a dict of individual booleans keyed by each group.)")
+      // .def_static(
+      //     "get_split_mask",
+      //     py::overload_cast<const CollisionGroup&>(
+      //         &CollisionGroupHelper::getSplitMask),
+      //     "group"_a,
+      //     R"(Get the mask for a collision group describing its interaction
+      //     with other groups split into a dict of individual booleans keyed by
+      //     each group.)")
+      // .def_static(
+      //     "get_split_mask",
+      //     py::overload_cast<const std::string&>(
+      //         &CollisionGroupHelper::getSplitMask),
+      //     "group_name"_a,
+      //     R"(Get the mask for a collision group describing its interaction
+      //     with other groups split into a dict of individual booleans keyed by
+      //     each group.)")
       .def_static("get_all_group_names",
                   &CollisionGroupHelper::getAllGroupNames,
                   R"(Get a list of all configured collision group names.)");

@@ -16,6 +16,7 @@ std::map<std::string, CollisionGroup>
         {"FreeObject", CollisionGroup::FreeObject},
         {"Robot", CollisionGroup::Robot},
         {"Noncollidable", CollisionGroup::Noncollidable},
+        {"UserGroup0", CollisionGroup::UserGroup0},
         {"UserGroup1", CollisionGroup::UserGroup1},
         {"UserGroup2", CollisionGroup::UserGroup2},
         {"UserGroup3", CollisionGroup::UserGroup3},
@@ -25,50 +26,63 @@ std::map<std::string, CollisionGroup>
         {"UserGroup7", CollisionGroup::UserGroup7},
         {"UserGroup8", CollisionGroup::UserGroup8},
         {"UserGroup9", CollisionGroup::UserGroup9},
-        {"AllFilter", CollisionGroup::AllFilter},
 };
 
 // initialize the default collision group masks
-std::map<CollisionGroup, int> CollisionGroupHelper::collisionGroupMasks = {
-    // everything except Noncollidable
-    {CollisionGroup::Default, -1 & ~int(CollisionGroup::Noncollidable)},
-    // all but Static and Kinematic
-    {CollisionGroup::Static, -1 & ~int(CollisionGroup::Kinematic) &
-                                 ~int(CollisionGroup::Static) &
-                                 ~int(CollisionGroup::Noncollidable)},
-    // all but Static and Kinematic
-    {CollisionGroup::Kinematic, -1 & ~int(CollisionGroup::Kinematic) &
-                                    ~int(CollisionGroup::Static) &
-                                    ~int(CollisionGroup::Noncollidable)},
-    // everything except Noncollidable
-    {CollisionGroup::FreeObject, -1 & ~int(CollisionGroup::Noncollidable)},
-    // everything except Noncollidable
-    {CollisionGroup::Robot, -1 & ~int(CollisionGroup::Noncollidable)},
-    // nothing
-    {CollisionGroup::Noncollidable, 0},
+std::map<CollisionGroup, CollisionGroups>
+    CollisionGroupHelper::collisionGroupMasks = {
+        // everything except Noncollidable
+        {CollisionGroup::Default,
+         ~CollisionGroups(CollisionGroup::Noncollidable)},
+        // all but Static and Kinematic
+        {CollisionGroup::Static,
+         ~CollisionGroups(CollisionGroup::Static) &
+             ~CollisionGroups(CollisionGroup::Kinematic) &
+             ~CollisionGroups(CollisionGroup::Noncollidable)},
+        // all but Static and Kinematic
+        {CollisionGroup::Kinematic,
+         ~CollisionGroups(CollisionGroup::Static) &
+             ~CollisionGroups(CollisionGroup::Kinematic) &
+             ~CollisionGroups(CollisionGroup::Noncollidable)},
+        // everything except Noncollidable
+        {CollisionGroup::FreeObject,
+         ~CollisionGroups(CollisionGroup::Noncollidable)},
+        // everything except Noncollidable
+        {CollisionGroup::Robot,
+         ~CollisionGroups(CollisionGroup::Noncollidable)},
+        // nothing
+        {CollisionGroup::Noncollidable, ~CollisionGroups()},
 
-    // everything except Noncollidable
-    {CollisionGroup::UserGroup1, -1 & ~int(CollisionGroup::Noncollidable)},
-    // everything except Noncollidable
-    {CollisionGroup::UserGroup2, -1 & ~int(CollisionGroup::Noncollidable)},
-    // everything except Noncollidable
-    {CollisionGroup::UserGroup3, -1 & ~int(CollisionGroup::Noncollidable)},
-    // everything except Noncollidable
-    {CollisionGroup::UserGroup4, -1 & ~int(CollisionGroup::Noncollidable)},
-    // everything except Noncollidable
-    {CollisionGroup::UserGroup5, -1 & ~int(CollisionGroup::Noncollidable)},
-    // everything except Noncollidable
-    {CollisionGroup::UserGroup6, -1 & ~int(CollisionGroup::Noncollidable)},
-    // everything except Noncollidable
-    {CollisionGroup::UserGroup7, -1 & ~int(CollisionGroup::Noncollidable)},
-    // everything except Noncollidable
-    {CollisionGroup::UserGroup8, -1 & ~int(CollisionGroup::Noncollidable)},
-    // everything except Noncollidable
-    {CollisionGroup::UserGroup9, -1 & ~int(CollisionGroup::Noncollidable)},
-
-    // everything except Noncollidable
-    {CollisionGroup::AllFilter, -1 & ~int(CollisionGroup::Noncollidable)},
-};
+        // everything except Noncollidable
+        {CollisionGroup::UserGroup0,
+         ~CollisionGroups(CollisionGroup::Noncollidable)},
+        // everything except Noncollidable
+        {CollisionGroup::UserGroup1,
+         ~CollisionGroups(CollisionGroup::Noncollidable)},
+        // everything except Noncollidable
+        {CollisionGroup::UserGroup2,
+         ~CollisionGroups(CollisionGroup::Noncollidable)},
+        // everything except Noncollidable
+        {CollisionGroup::UserGroup3,
+         ~CollisionGroups(CollisionGroup::Noncollidable)},
+        // everything except Noncollidable
+        {CollisionGroup::UserGroup4,
+         ~CollisionGroups(CollisionGroup::Noncollidable)},
+        // everything except Noncollidable
+        {CollisionGroup::UserGroup5,
+         ~CollisionGroups(CollisionGroup::Noncollidable)},
+        // everything except Noncollidable
+        {CollisionGroup::UserGroup6,
+         ~CollisionGroups(CollisionGroup::Noncollidable)},
+        // everything except Noncollidable
+        {CollisionGroup::UserGroup7,
+         ~CollisionGroups(CollisionGroup::Noncollidable)},
+        // everything except Noncollidable
+        {CollisionGroup::UserGroup8,
+         ~CollisionGroups(CollisionGroup::Noncollidable)},
+        // everything except Noncollidable
+        {CollisionGroup::UserGroup9,
+         ~CollisionGroups(CollisionGroup::Noncollidable)}};
 
 }  // namespace physics
 }  // namespace esp

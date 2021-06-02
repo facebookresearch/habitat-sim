@@ -5,6 +5,7 @@
 #ifndef ESP_PHYSICS_COLLISIONGROUPHELPER_H_
 #define ESP_PHYSICS_COLLISIONGROUPHELPER_H_
 
+#include <Corrade/Containers/EnumSet.h>
 #include <Corrade/Utility/Assert.h>
 #include <Magnum/Magnum.h>
 #include <map>
@@ -46,7 +47,7 @@ namespace physics {
  * Contains several named default groups used by Habitat-sim and a set of unused
  * user groups for custom behavior.
  */
-enum class CollisionGroup {
+enum class CollisionGroup : unsigned int {
   //! Default group for unspecified object (e.g. raycast)
   Default = 1,
   //! STATIC objects should not change state
@@ -62,20 +63,20 @@ enum class CollisionGroup {
 
   // User configurable groups with "CollisionGroup::Default" behavior unless
   // modified
-  UserGroup1 = 1 << 6,
-  UserGroup2 = 1 << 7,
-  UserGroup3 = 1 << 8,
-  UserGroup4 = 1 << 9,
-  UserGroup5 = 1 << 10,
-  UserGroup6 = 1 << 11,
-  UserGroup7 = 1 << 12,
-  UserGroup8 = 1 << 13,
-  UserGroup9 = 1 << 14,
-
-  //! convenience group for objects which should collide with everything except
-  //! Noncollidable
-  AllFilter = -1
+  UserGroup0 = 1 << 6,
+  UserGroup1 = 1 << 7,
+  UserGroup2 = 1 << 8,
+  UserGroup3 = 1 << 9,
+  UserGroup4 = 1 << 10,
+  UserGroup5 = 1 << 11,
+  UserGroup6 = 1 << 12,
+  UserGroup7 = 1 << 13,
+  UserGroup8 = 1 << 14,
+  UserGroup9 = 1 << 15,
 };
+
+typedef Corrade::Containers::EnumSet<CollisionGroup> CollisionGroups;
+CORRADE_ENUMSET_OPERATORS(CollisionGroups)
 
 /**
  * @brief A convenience class with all static functions providing an interface
@@ -85,7 +86,7 @@ class CollisionGroupHelper {
   //! maps custom names to collision groups
   static std::map<std::string, CollisionGroup> collisionGroupNames;
   //! maps collision groups to collision group filter masks
-  static std::map<CollisionGroup, int> collisionGroupMasks;
+  static std::map<CollisionGroup, CollisionGroups> collisionGroupMasks;
 
  public:
   /**
@@ -95,11 +96,11 @@ class CollisionGroupHelper {
    * @return The integer collision mask where each bit corresponds to the
    * group's interaction with another group.
    */
-  static int getMaskForGroup(const CollisionGroup& group) {
+  static CollisionGroups getMaskForGroup(const CollisionGroup& group) {
     return collisionGroupMasks.at(group);
   }
   //! convenience override allowing the group to be referenced by name.
-  static int getMaskForGroup(const std::string& groupName) {
+  static CollisionGroups getMaskForGroup(const std::string& groupName) {
     return collisionGroupMasks.at(getGroup(groupName));
   }
 
@@ -114,9 +115,8 @@ class CollisionGroupHelper {
   static void setGroupInteractsWith(const CollisionGroup& groupA,
                                     const CollisionGroup& groupB,
                                     bool interacts) {
-    int groupAMask = collisionGroupMasks.at(groupA);
-    groupAMask =
-        interacts ? groupAMask | int(groupB) : groupAMask & ~int(groupB);
+    CollisionGroups groupAMask = collisionGroupMasks.at(groupA);
+    groupAMask = interacts ? groupAMask | groupB : groupAMask & ~groupB;
     collisionGroupMasks.at(groupA) = groupAMask;
   };
 
@@ -131,7 +131,8 @@ class CollisionGroupHelper {
    * @param group The group to modify.
    * @param mask The mask to apply.
    */
-  static void setMaskForGroup(const CollisionGroup& group, int mask) {
+  static void setMaskForGroup(const CollisionGroup& group,
+                              CollisionGroups mask) {
     collisionGroupMasks.at(group) = mask;
   }
 
@@ -213,22 +214,22 @@ class CollisionGroupHelper {
    * @return The group mask split into per-group booleans indicating interaction
    * with each group.
    */
-  static std::map<CollisionGroup, bool> getSplitMask(
-      const CollisionGroup& group) {
-    std::map<CollisionGroup, bool> splitMask;
-    auto groupMask = getMaskForGroup(group);
-    for (std::map<CollisionGroup, int>::iterator it2 =
-             collisionGroupMasks.begin();
-         it2 != collisionGroupMasks.end(); ++it2) {
-      splitMask[it2->first] = (groupMask & int(it2->first)) != 0;
-    }
-    return splitMask;
-  }
-  //! convenience override allowing the group to be referenced by name.
-  static std::map<CollisionGroup, bool> getSplitMask(
-      const std::string& groupName) {
-    return getSplitMask(getGroup(groupName));
-  }
+  // static std::map<CollisionGroup, bool> getSplitMask(
+  //     const CollisionGroup& group) {
+  //   std::map<CollisionGroup, bool> splitMask;
+  //   auto groupMask = getMaskForGroup(group);
+  //   for (std::map<CollisionGroup, CollisionGroups>::iterator it2 =
+  //            collisionGroupMasks.begin();
+  //        it2 != collisionGroupMasks.end(); ++it2) {
+  //     splitMask[it2->first] = groupMask >= it2->first;
+  //   }
+  //   return splitMask;
+  // }
+  // //! convenience override allowing the group to be referenced by name.
+  // static std::map<CollisionGroup, bool> getSplitMask(
+  //     const std::string& groupName) {
+  //   return getSplitMask(getGroup(groupName));
+  // }
 };
 }  // end namespace physics
 }  // end namespace esp
