@@ -322,8 +322,8 @@ void declareArticulatedObjectWrapper(py::module& m,
   // ==== ManagedArticulatedObject ====
   py::class_<ManagedArticulatedObject,
              AbstractManagedPhysicsObject<ArticulatedObject>,
-             std::shared_ptr<ManagedArticulatedObject>>(
-      m, "ManagedArticulatedObject")
+             std::shared_ptr<ManagedArticulatedObject>>(m,
+                                                        classStrPrefix.c_str())
       .def("create_joint_motor", &ManagedArticulatedObject::createJointMotor,
            ("Create a joint motor for the specified DOF on this " + objType +
             " using the provided JointMotorSettings")
