@@ -74,55 +74,53 @@ class BulletArticulatedObject : public ArticulatedObject {
 
   virtual ~BulletArticulatedObject();
 
-  virtual bool initializeFromURDF(URDFImporter& u2b,
-                                  const Magnum::Matrix4& worldTransform,
-                                  gfx::DrawableGroup* drawables,
-                                  scene::SceneNode* physicsNode,
-                                  bool fixedBase = false) override;
+  bool initializeFromURDF(URDFImporter& u2b,
+                          const Magnum::Matrix4& worldTransform,
+                          gfx::DrawableGroup* drawables,
+                          scene::SceneNode* physicsNode,
+                          bool fixedBase = false) override;
 
-  virtual Magnum::Matrix4 getRootState() override;
+  Magnum::Matrix4 getRootState() override;
 
   // update the SceneNode state to match the simulation state
-  virtual void updateNodes(bool force = false) override;
+  void updateNodes(bool force = false) override;
 
-  virtual void setRootState(const Magnum::Matrix4& state) override;
+  void setRootState(const Magnum::Matrix4& state) override;
 
-  virtual void setForces(const std::vector<float>& forces) override;
+  void setForces(const std::vector<float>& forces) override;
 
-  virtual std::vector<float> getForces() override;
+  std::vector<float> getForces() override;
 
-  virtual void setVelocities(const std::vector<float>& vels) override;
+  void setVelocities(const std::vector<float>& vels) override;
 
-  virtual std::vector<float> getVelocities() override;
+  std::vector<float> getVelocities() override;
 
-  virtual void setPositions(const std::vector<float>& positions) override;
+  void setPositions(const std::vector<float>& positions) override;
 
-  virtual std::vector<float> getPositions() override;
+  std::vector<float> getPositions() override;
 
-  virtual std::vector<float> getPositionLimits(
-      bool upperLimits = false) override;
+  std::vector<float> getPositionLimits(bool upperLimits = false) override;
 
-  virtual void addArticulatedLinkForce(int linkId,
-                                       Magnum::Vector3 force) override;
+  void addArticulatedLinkForce(int linkId, Magnum::Vector3 force) override;
 
   //! get the coefficient of friction for a link's collision objects
-  virtual float getArticulatedLinkFriction(int linkId) override;
+  float getArticulatedLinkFriction(int linkId) override;
 
   //! set the coefficient of friction for a link's collision objects
-  virtual void setArticulatedLinkFriction(int linkId, float friction) override;
+  void setArticulatedLinkFriction(int linkId, float friction) override;
 
   /**
    * @brief reset the articulated rigid body to 0 velocities and positions.
    */
-  virtual void reset() override;
+  void reset() override;
 
-  virtual void setActive(bool active) override;
+  void setActive(bool active) override;
 
-  virtual bool isActive() const override;
+  bool isActive() const override;
 
-  virtual bool getCanSleep() override;
+  bool getCanSleep() override;
 
-  virtual void setMotionType(MotionType mt) override;
+  void setMotionType(MotionType mt) override;
 
   /**
    * @brief Return result of a discrete contact test between the object and
@@ -170,8 +168,8 @@ class BulletArticulatedObject : public ArticulatedObject {
    * correctly configured.
    * @return The motorId for the new joint motor or ID_UNDEFINED (-1) if failed.
    */
-  virtual int createJointMotor(const int index,
-                               const JointMotorSettings& settings) override;
+  int createJointMotor(const int index,
+                       const JointMotorSettings& settings) override;
 
   //! internal version specific to Bullet setup to simplify the creation
   //! process.
@@ -180,11 +178,11 @@ class BulletArticulatedObject : public ArticulatedObject {
                        const int globalDof,
                        const JointMotorSettings& settings);
 
-  virtual void removeJointMotor(const int motorId) override;
-  virtual void updateJointMotor(const int motorId,
-                                const JointMotorSettings& settings) override;
+  void removeJointMotor(const int motorId) override;
+  void updateJointMotor(const int motorId,
+                        const JointMotorSettings& settings) override;
 
-  virtual std::map<int, int> createMotorsForAllDofs(
+  std::map<int, int> createMotorsForAllDofs(
       JointMotorSettings settings = JointMotorSettings()) override;
 
   float getJointMotorMaxImpulse(int motorId);
@@ -202,7 +200,7 @@ class BulletArticulatedObject : public ArticulatedObject {
   void clampJointLimits() override;
 
  protected:
-  virtual bool attachGeometry(
+  bool attachGeometry(
       ArticulatedLink* linkObject,
       const std::shared_ptr<io::URDF::Link>& link,
       const std::map<std::string, std::shared_ptr<io::URDF::Material>>&

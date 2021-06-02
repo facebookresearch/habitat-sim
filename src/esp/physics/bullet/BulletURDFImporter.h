@@ -36,7 +36,7 @@ struct JointLimitConstraintInfo {
  * @brief Structure to hold construction time multi-body data.
  */
 struct URDF2BulletCached {
-  URDF2BulletCached() {}
+  URDF2BulletCached() = default;
   // these arrays will be initialized in the 'InitURDF2BulletCache'
 
   std::vector<int> m_urdfLinkParentIndices;

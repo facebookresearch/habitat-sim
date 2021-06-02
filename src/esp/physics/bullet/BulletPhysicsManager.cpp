@@ -131,10 +131,10 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
                                              collisionObjToObjIds_);
 
   // before initializing the URDF, import all necessary assets in advance
-  resourceManager_.importURDFAssets(*urdfImporter_->getModel().get());
+  resourceManager_.importURDFAssets(*urdfImporter_->getModel());
 
   bool objectSuccess = articulatedObject->initializeFromURDF(
-      *urdfImporter_.get(), {}, drawables, physicsNode_, fixedBase);
+      *urdfImporter_, {}, drawables, physicsNode_, fixedBase);
 
   if (!objectSuccess) {
     delete objectNode;
@@ -482,7 +482,7 @@ int BulletPhysicsManager::createArticulatedFixedConstraint(
   } else {
     // hold object at it's current position relative to link
     btVector3 pivotWorld = rb->getCenterOfMassTransform() * pivotInB;
-    btVector3 pivotInA = mb->worldPosToLocal(linkId, pivotWorld);
+    pivotInA = mb->worldPosToLocal(linkId, pivotWorld);
   }
 
   // We constrain the relative orientation of the link and object to match their
@@ -594,7 +594,7 @@ int BulletPhysicsManager::createArticulatedP2PConstraint(
           ->btMultiBody_.get();
   mb->setCanSleep(false);
   btMultiBodyPoint2Point* p2p = new btMultiBodyPoint2Point(
-      mb, linkId, 0, btVector3(linkOffset), btVector3(pickPos));
+      mb, linkId, nullptr, btVector3(linkOffset), btVector3(pickPos));
   p2p->setMaxAppliedImpulse(maxImpulse);
   bWorld_->addMultiBodyConstraint(p2p);
   articulatedP2ps.emplace(nextConstraintId_, p2p);
@@ -624,9 +624,9 @@ int BulletPhysicsManager::createArticulatedP2PConstraint(
 void BulletPhysicsManager::updateP2PConstraintPivot(
     int p2pId,
     const Magnum::Vector3& pivot) {
-  if (articulatedP2ps.count(p2pId)) {
+  if (articulatedP2ps.count(p2pId) != 0u) {
     articulatedP2ps.at(p2pId)->setPivotInB(btVector3(pivot));
-  } else if (rigidP2ps.count(p2pId)) {
+  } else if (rigidP2ps.count(p2pId) != 0u) {
     rigidP2ps.at(p2pId)->setPivotB(btVector3(pivot));
   } else {
     Corrade::Utility::Debug() << "No P2P constraint with ID: " << p2pId;
@@ -634,16 +634,16 @@ void BulletPhysicsManager::updateP2PConstraintPivot(
 }
 
 void BulletPhysicsManager::removeConstraint(int constraintId) {
-  if (articulatedP2ps.count(constraintId)) {
+  if (articulatedP2ps.count(constraintId) != 0u) {
     articulatedP2ps.at(constraintId)->getMultiBodyA()->setCanSleep(true);
     bWorld_->removeMultiBodyConstraint(articulatedP2ps.at(constraintId));
     delete articulatedP2ps.at(constraintId);
     articulatedP2ps.erase(constraintId);
-  } else if (rigidP2ps.count(constraintId)) {
+  } else if (rigidP2ps.count(constraintId) != 0u) {
     bWorld_->removeConstraint(rigidP2ps.at(constraintId));
     delete rigidP2ps.at(constraintId);
     rigidP2ps.erase(constraintId);
-  } else if (articulatedFixedConstraints.count(constraintId)) {
+  } else if (articulatedFixedConstraints.count(constraintId) != 0u) {
     bWorld_->removeMultiBodyConstraint(
         articulatedFixedConstraints.at(constraintId));
     delete articulatedFixedConstraints.at(constraintId);
@@ -728,16 +728,14 @@ void BulletPhysicsManager::lookUpObjectIdAndLinkId(
 
   if (collisionObjToObjIds_->count(colObj) != 0u) {
     int rawObjectId = collisionObjToObjIds_->at(colObj);
-    if (existingObjects_.count(rawObjectId) != 0u) {
-      *objectId = rawObjectId;
-      return;
-    } else if (existingArticulatedObjects_.count(rawObjectId)) {
+    if (existingObjects_.count(rawObjectId) != 0u ||
+        existingArticulatedObjects_.count(rawObjectId) != 0u) {
       *objectId = rawObjectId;
       return;
     } else {
       // search articulated objects to see if this is a link
       for (const auto& pair : existingArticulatedObjects_) {
-        if (pair.second->objectIdToLinkId_.count(rawObjectId)) {
+        if (pair.second->objectIdToLinkId_.count(rawObjectId) != 0u) {
           *objectId = pair.first;
           *linkId = pair.second->objectIdToLinkId_.at(rawObjectId);
           return;
