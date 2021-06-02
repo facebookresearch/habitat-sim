@@ -767,12 +767,21 @@ class Simulator {
                                    float massScale = 1.0,
                                    bool forceReload = false);
 
-  void removeArticulatedObject(int objectId);
+  void removeArticulatedObject(int objectId) {
+    if (sceneHasPhysics(0)) {
+      physicsManager_->removeArticulatedObject(objectId);
+    }
+  }
 
   /** @brief Get a list of existing object IDs for articulated objects (i.e.,
    * existing keys in @ref PhysicsManager::existingArticulatedObjects_.)
    */
-  std::vector<int> getExistingArticulatedObjectIDs(int sceneID = 0);
+  std::vector<int> getExistingArticulatedObjectIDs(int sceneID = 0) {
+    if (sceneHasPhysics(0)) {
+      return physicsManager_->getExistingArticulatedObjectIDs();
+    }
+    return std::vector<int>();
+  }
 
   /**
    * @brief Get a reference to the specified ArticulatedLink SceneNode for info
@@ -781,7 +790,9 @@ class Simulator {
    * @param linkId The ArticulatedLink ID or -1 for the base.
    * @return the object scene node or nullptr if failed.
    */
-  scene::SceneNode* getArticulatedLinkSceneNode(int objectID, int linkId = -1);
+  scene::SceneNode* getArticulatedLinkSceneNode(int objectID, int linkId = -1) {
+    return &physicsManager_->getArticulatedLinkSceneNode(objectID, linkId);
+  }
 
   /**
    * @brief Get references to a link's visual scene nodes or empty if
@@ -790,27 +801,66 @@ class Simulator {
    */
   std::vector<scene::SceneNode*> getArticulatedLinkVisualSceneNodes(
       int objectID,
-      int linkId = -1);
+      int linkId = -1) {
+    return physicsManager_->getArticulatedLinkVisualSceneNodes(objectID,
+                                                               linkId);
+  }
 
   void setArticulatedObjectRootState(int objectId,
-                                     const Magnum::Matrix4& state);
+                                     const Magnum::Matrix4& state) {
+    if (sceneHasPhysics(0)) {
+      physicsManager_->setArticulatedObjectRootState(objectId, state);
+    }
+  }
 
-  Magnum::Matrix4 getArticulatedObjectRootState(int objectId);
+  Magnum::Matrix4 getArticulatedObjectRootState(int objectId) {
+    if (sceneHasPhysics(0)) {
+      return physicsManager_->getArticulatedObjectRootState(objectId);
+    }
+    return Magnum::Matrix4();
+  }
 
   void setArticulatedObjectForces(int objectId,
-                                  const std::vector<float>& forces);
+                                  const std::vector<float>& forces) {
+    if (sceneHasPhysics(0)) {
+      physicsManager_->setArticulatedObjectForces(objectId, forces);
+    }
+  }
 
   void setArticulatedObjectVelocities(int objectId,
-                                      const std::vector<float>& vels);
+                                      const std::vector<float>& vels) {
+    if (sceneHasPhysics(0)) {
+      physicsManager_->setArticulatedObjectVelocities(objectId, vels);
+    }
+  }
 
   void setArticulatedObjectPositions(int objectId,
-                                     const std::vector<float>& positions);
+                                     const std::vector<float>& positions) {
+    if (sceneHasPhysics(0)) {
+      physicsManager_->setArticulatedObjectPositions(objectId, positions);
+    }
+  }
 
-  std::vector<float> getArticulatedObjectPositions(int objectId);
+  std::vector<float> getArticulatedObjectPositions(int objectId) {
+    if (sceneHasPhysics(0)) {
+      return physicsManager_->getArticulatedObjectPositions(objectId);
+    }
+    return std::vector<float>();
+  }
 
-  std::vector<float> getArticulatedObjectVelocities(int objectId);
+  std::vector<float> getArticulatedObjectVelocities(int objectId) {
+    if (sceneHasPhysics(0)) {
+      return physicsManager_->getArticulatedObjectVelocities(objectId);
+    }
+    return std::vector<float>();
+  }
 
-  std::vector<float> getArticulatedObjectForces(int objectId);
+  std::vector<float> getArticulatedObjectForces(int objectId) {
+    if (sceneHasPhysics(0)) {
+      return physicsManager_->getArticulatedObjectForces(objectId);
+    }
+    return std::vector<float>();
+  }
 
   /**
    * @brief Get the joint limits for all dofs of an articulated object.
@@ -826,7 +876,13 @@ class Simulator {
    */
   std::vector<float> getArticulatedObjectPositionLimits(
       int objectId,
-      bool upperLimits = false);
+      bool upperLimits = false) {
+    if (sceneHasPhysics(0)) {
+      return physicsManager_->getArticulatedObjectPositionLimits(objectId,
+                                                                 upperLimits);
+    }
+    return std::vector<float>();
+  }
 
   /**
    * @brief Set whether articulated object state is automatically clamped to
@@ -834,7 +890,11 @@ class Simulator {
    * @param objectID The object ID and key identifying the object in the
    * simulator.
    */
-  void setAutoClampJointLimits(int objectId, bool autoClamp);
+  void setAutoClampJointLimits(int objectId, bool autoClamp) {
+    if (sceneHasPhysics(0)) {
+      physicsManager_->setAutoClampJointLimits(objectId, autoClamp);
+    }
+  }
 
   /**
    * @brief Query whether articulated object state is automatically clamped to
@@ -842,20 +902,52 @@ class Simulator {
    * @param objectID The object ID and key identifying the object in the
    * simulator.
    */
-  bool getAutoClampJointLimits(int objectId);
+  bool getAutoClampJointLimits(int objectId) {
+    if (sceneHasPhysics(0)) {
+      return physicsManager_->getAutoClampJointLimits(objectId);
+    }
+    return false;
+  }
 
-  void resetArticulatedObject(int objectId);
+  void resetArticulatedObject(int objectId) {
+    if (sceneHasPhysics(0)) {
+      physicsManager_->resetArticulatedObject(objectId);
+    }
+  }
 
-  void setArticulatedObjectSleep(int objectId, bool sleep);
+  void setArticulatedObjectSleep(int objectId, bool sleep) {
+    if (sceneHasPhysics(0)) {
+      physicsManager_->setArticulatedObjectSleep(objectId, sleep);
+    }
+  }
 
-  bool getArticulatedObjectSleep(int objectId);
+  bool getArticulatedObjectSleep(int objectId) {
+    if (sceneHasPhysics(0)) {
+      return physicsManager_->getArticulatedObjectSleep(objectId);
+    }
+    return false;
+  }
 
   void setArticulatedObjectMotionType(int objectId,
-                                      esp::physics::MotionType mt);
+                                      esp::physics::MotionType mt) {
+    if (sceneHasPhysics(0)) {
+      physicsManager_->setArticulatedObjectMotionType(objectId, mt);
+    }
+  }
 
-  esp::physics::MotionType getArticulatedObjectMotionType(int objectId);
+  esp::physics::MotionType getArticulatedObjectMotionType(int objectId) {
+    if (sceneHasPhysics(0)) {
+      return physicsManager_->getArticulatedObjectMotionType(objectId);
+    }
+    return esp::physics::MotionType::UNDEFINED;
+  }
 
-  int getNumArticulatedLinks(int objectId);
+  int getNumArticulatedLinks(int objectId) {
+    if (sceneHasPhysics(0)) {
+      return physicsManager_->getNumArticulatedLinks(objectId);
+    }
+    return ID_UNDEFINED;
+  }
 
   //! Get the map of object ids to link ids for a particular articulated rigid
   //! object.
@@ -868,7 +960,12 @@ class Simulator {
     }
     return std::map<int, int>();
   };
-  core::RigidState getArticulatedLinkRigidState(int objectId, int linkId);
+  core::RigidState getArticulatedLinkRigidState(int objectId, int linkId) {
+    if (sceneHasPhysics(0)) {
+      return physicsManager_->getArticulatedLinkRigidState(objectId, linkId);
+    }
+    return core::RigidState();
+  }
 
   float getArticulatedLinkFriction(int objectId, int linkId) {
     return physicsManager_->getArticulatedLinkFriction(objectId, linkId);
@@ -888,32 +985,55 @@ class Simulator {
    */
   int createJointMotor(const int objectId,
                        const int dof,
-                       const esp::physics::JointMotorSettings& settings);
+                       const esp::physics::JointMotorSettings& settings) {
+    if (sceneHasPhysics(0)) {
+      return physicsManager_->createJointMotor(objectId, dof, settings);
+    }
+    return ID_UNDEFINED;
+  }
 
   /**
    * @brief Remove and destroy a JointMotor for an ArticulatedObject.
    */
-  void removeJointMotor(const int objectId, const int motorId);
+  void removeJointMotor(const int objectId, const int motorId) {
+    if (sceneHasPhysics(0)) {
+      return physicsManager_->removeJointMotor(objectId, motorId);
+    }
+  }
 
   /**
    * @brief Get a copy of the JointMotorSettings for an ArticulatedObject's
    * existing JointMotor .
    */
   esp::physics::JointMotorSettings getJointMotorSettings(const int objectId,
-                                                         const int motorId);
+                                                         const int motorId) {
+    if (sceneHasPhysics(0)) {
+      return physicsManager_->getJointMotorSettings(objectId, motorId);
+    }
+    return {};
+  }
 
   /**
    * @brief Update an ArticulatedObject's JointMotor with new settings.
    */
   void updateJointMotor(const int objectId,
                         const int motorId,
-                        const esp::physics::JointMotorSettings& settings);
+                        const esp::physics::JointMotorSettings& settings) {
+    if (sceneHasPhysics(0)) {
+      physicsManager_->updateJointMotor(objectId, motorId, settings);
+    }
+  }
 
   /**
    * @brief Query a map of motorIds -> dofs for all active JointMotors attached
    * to an ArticulatedObject.
    */
-  std::map<int, int> getExistingJointMotors(const int objectId);
+  std::map<int, int> getExistingJointMotors(const int objectId) {
+    if (sceneHasPhysics(0)) {
+      return physicsManager_->getExistingJointMotors(objectId);
+    }
+    return std::map<int, int>();
+  }
 
   /**
    * @brief Create a new set of default JointMotors for all valid dofs in an
@@ -926,7 +1046,12 @@ class Simulator {
   std::map<int, int> createMotorsForAllDofs(
       const int objectId,
       esp::physics::JointMotorSettings settings =
-          esp::physics::JointMotorSettings());
+          esp::physics::JointMotorSettings()) {
+    if (sceneHasPhysics(0)) {
+      return physicsManager_->createMotorsForAllDofs(objectId, settings);
+    }
+    return std::map<int, int>();
+  }
 
   //============= Object Point to Point Constraint API =============
 
