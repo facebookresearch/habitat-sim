@@ -36,14 +36,12 @@ std::map<CollisionGroup, CollisionGroups>
          ~CollisionGroups(CollisionGroup::Noncollidable)},
         // all but Static and Kinematic
         {CollisionGroup::Static,
-         ~CollisionGroups(CollisionGroup::Static) &
-             ~CollisionGroups(CollisionGroup::Kinematic) &
-             ~CollisionGroups(CollisionGroup::Noncollidable)},
+         ~CollisionGroups(CollisionGroup::Static | CollisionGroup::Kinematic |
+                          CollisionGroup::Noncollidable)},
         // all but Static and Kinematic
         {CollisionGroup::Kinematic,
-         ~CollisionGroups(CollisionGroup::Static) &
-             ~CollisionGroups(CollisionGroup::Kinematic) &
-             ~CollisionGroups(CollisionGroup::Noncollidable)},
+         ~CollisionGroups(CollisionGroup::Static | CollisionGroup::Kinematic |
+                          CollisionGroup::Noncollidable)},
         // everything except Noncollidable
         {CollisionGroup::FreeObject,
          ~CollisionGroups(CollisionGroup::Noncollidable)},
