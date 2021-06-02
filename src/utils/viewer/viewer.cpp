@@ -2432,7 +2432,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     } break;
     case KeyEvent::Key::Five: {
       // add the counter in front of the agent with fixed base
-      std::string urdfFilePath = "data/test_assets/URDF/fridge/fridge.urdf";
+      std::string urdfFilePath = "data/test_assets/urdf/fridge/fridge.urdf";
       auto fridgeAOId = addArticulatedObject(urdfFilePath, true);
       simulator_->setAutoClampJointLimits(fridgeAOId, true);
 

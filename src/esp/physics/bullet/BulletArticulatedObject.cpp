@@ -201,10 +201,13 @@ bool BulletArticulatedObject::initializeFromURDF(
       }
 
       linkObject->node().setType(esp::scene::SceneNodeType::OBJECT);
-      ESP_CHECK(attachGeometry(linkObject, link.second, drawables),
-                "BulletArticulatedObject::initializeFromURDF(): Failed to "
-                "instance render asset (attachGeometry) for link "
-                    << urdfLinkIndex << ".");
+      // attach visual geometry for the link if specified
+      if (link.second->m_visualArray.size() > 0) {
+        ESP_CHECK(attachGeometry(linkObject, link.second, drawables),
+                  "BulletArticulatedObject::initializeFromURDF(): Failed to "
+                  "instance render asset (attachGeometry) for link "
+                      << urdfLinkIndex << ".");
+      }
 
       urdfLinkIx++;
     }

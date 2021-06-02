@@ -173,11 +173,11 @@ int BulletURDFImporter::getCollisionGroupAndMask(int linkIndex,
     std::shared_ptr<io::URDF::Link> link = itr->second;
     for (size_t v = 0; v < link->m_collisionArray.size(); ++v) {
       const io::URDF::CollisionShape& col = link->m_collisionArray[v];
-      if (col.m_flags & io::URDF::HAS_COLLISION_GROUP) {
+      if ((col.m_flags & io::URDF::HAS_COLLISION_GROUP) != 0) {
         colGroup = col.m_collisionGroup;
         result |= io::URDF::HAS_COLLISION_GROUP;
       }
-      if (col.m_flags & io::URDF::HAS_COLLISION_MASK) {
+      if ((col.m_flags & io::URDF::HAS_COLLISION_MASK) != 0) {
         colMask = col.m_collisionMask;
         result |= io::URDF::HAS_COLLISION_MASK;
       }
@@ -322,21 +322,21 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
   Mn::Debug{} << "  about to get joint info";
 
   Mn::Matrix4 parent2joint;
-  int jointType;
+  int jointType = 0;
   Mn::Vector3 jointAxisInJointSpace;
-  btScalar jointLowerLimit;
-  btScalar jointUpperLimit;
-  btScalar jointDamping;
-  btScalar jointFriction;
-  btScalar jointMaxForce;
-  btScalar jointMaxVelocity;
+  btScalar jointLowerLimit = NAN;
+  btScalar jointUpperLimit = NAN;
+  btScalar jointDamping = NAN;
+  btScalar jointFriction = NAN;
+  btScalar jointMaxForce = NAN;
+  btScalar jointMaxVelocity = NAN;
 
   bool hasParentJoint = getJointInfo2(
       urdfLinkIndex, parent2joint, linkTransformInWorldSpace,
       jointAxisInJointSpace, jointType, jointLowerLimit, jointUpperLimit,
       jointDamping, jointFriction, jointMaxForce, jointMaxVelocity);
 
-  if (flags & CUF_USE_MJCF) {
+  if ((flags & CUF_USE_MJCF) != 0) {
     linkTransformInWorldSpace =
         parentTransformInWorldSpace * linkTransformInWorldSpace;
   } else {
@@ -351,8 +351,8 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
 
   Mn::Debug{} << "  about to deal with compoundShape";
   if (compoundShape) {
-    if (mass) {
-      if (!(flags & CUF_USE_URDF_INERTIA)) {
+    if (mass != 0) {
+      if ((flags & CUF_USE_URDF_INERTIA) == 0) {
         btVector3 btLocalIntertiaDiagonal;
         compoundShape->calculateLocalInertia(mass, btLocalIntertiaDiagonal);
         localInertiaDiagonal = Mn::Vector3(btLocalIntertiaDiagonal);
@@ -363,13 +363,11 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
       io::URDF::LinkContactInfo contactInfo;
       getLinkContactInfo(urdfLinkIndex, contactInfo);
       // temporary inertia scaling until we load inertia from URDF
-      if (contactInfo.m_flags & io::URDF::CONTACT_HAS_INERTIA_SCALING) {
+      if ((contactInfo.m_flags & io::URDF::CONTACT_HAS_INERTIA_SCALING) != 0) {
         localInertiaDiagonal *= contactInfo.m_inertiaScaling;
       }
     }
 
-    Mn::Matrix4 inertialFrameInWorldSpace =
-        linkTransformInWorldSpace * localInertialFrame;
     bool canSleep = (flags & CUF_ENABLE_SLEEPING) != 0;
 
     if (cache.m_bulletMultiBody == nullptr) {
@@ -378,10 +376,10 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
       cache.m_bulletMultiBody =
           new btMultiBody(totalNumJoints, mass, btVector3(localInertiaDiagonal),
                           isFixedBase, canSleep);
-      if (flags & CUF_GLOBAL_VELOCITIES_MB) {
+      if ((flags & CUF_GLOBAL_VELOCITIES_MB) != 0) {
         cache.m_bulletMultiBody->useGlobalVelocities(true);
       }
-      if (flags & CUF_USE_MJCF) {
+      if ((flags & CUF_USE_MJCF) != 0) {
         cache.m_bulletMultiBody->setBaseWorldTransform(
             btTransform(linkTransformInWorldSpace));
       }
@@ -541,8 +539,7 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
 
       // base and fixed? -> static, otherwise flag as dynamic
       bool isDynamic =
-          (mbLinkIndex < 0 && cache.m_bulletMultiBody->hasFixedBase()) ? false
-                                                                       : true;
+          !(mbLinkIndex < 0 && cache.m_bulletMultiBody->hasFixedBase());
       io::URDF::LinkContactInfo contactInfo;
       getLinkContactInfo(urdfLinkIndex, contactInfo);
 
@@ -572,11 +569,11 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
           }
         }
         cache.m_bulletMultiBody->getLink(mbLinkIndex).m_collider = col;
-        if (flags & CUF_USE_SELF_COLLISION_INCLUDE_PARENT) {
+        if ((flags & CUF_USE_SELF_COLLISION_INCLUDE_PARENT) != 0) {
           cache.m_bulletMultiBody->getLink(mbLinkIndex).m_flags &=
               ~BT_MULTIBODYLINKFLAGS_DISABLE_PARENT_COLLISION;
         }
-        if (flags & CUF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS) {
+        if ((flags & CUF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS) != 0) {
           cache.m_bulletMultiBody->getLink(mbLinkIndex).m_flags |=
               BT_MULTIBODYLINKFLAGS_DISABLE_ALL_PARENT_COLLISION;
         }
@@ -596,7 +593,9 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
         cache.m_bulletMultiBody->setBaseCollider(col);
       }
 
-      ASSERT(isDynamic != col->isStaticOrKinematicObject());
+      ASSERT(isDynamic != col->isStaticOrKinematicObject(),
+             "Static or Kinematic object erroneously marked dynamic. This "
+             "should not happen.");
 
       // This group-selection logic isn't very useful. We can't distinguish
       // between articulated objects here, e.g. cabinets versus robots. Users
@@ -615,7 +614,7 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
       int collisionFlags =
           getCollisionGroupAndMask(urdfLinkIndex, colGroup, colMask);
 
-      if (collisionFlags & io::URDF::HAS_COLLISION_GROUP) {
+      if ((collisionFlags & io::URDF::HAS_COLLISION_GROUP) != 0) {
         collisionFilterGroup = colGroup;
       }
 

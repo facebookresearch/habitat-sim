@@ -519,11 +519,7 @@ bool BulletRigidObject::isMe(const btCollisionObject* collisionObject) {
       return true;
     }
   }
-  if (bObjectRigidBody_.get() == collisionObject) {
-    return true;
-  }
-
-  return false;
+  return (bObjectRigidBody_.get() == collisionObject);
 }
 
 void BulletRigidObject::overrideCollisionGroup(CollisionGroup group) {
