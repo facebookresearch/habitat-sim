@@ -843,7 +843,7 @@ class Simulator {
    * @return Raycast results sorted by distance.
    */
   esp::physics::RaycastResults castRay(const esp::geo::Ray& ray,
-                                       float maxDistance = 100.0,
+                                       double maxDistance = 100.0,
                                        int sceneID = 0) {
     if (sceneHasPhysics(sceneID)) {
       return physicsManager_->castRay(ray, maxDistance);
