@@ -1608,9 +1608,7 @@ gfx::PhongMaterialData::uptr ResourceManager::buildFlatShadedMaterialData(
     finalMaterial->ambientTexture =
         textures_.at(textureBaseIndex + material.diffuseTexture()).get();
   } else {
-    // finalMaterial->ambientColor = material.ambientColor();
     finalMaterial->ambientColor = Mn::Color4(1.f, 1.f, 1.f, 1.f);
-    finalMaterial->vertexColored = true;
   }
   return finalMaterial;
 }
@@ -2039,7 +2037,12 @@ void ResourceManager::addComponent(
           meshAttributeFlags |= gfx::Drawable::Flag::HasSeparateBitangent;
         }
       }
+
+      if (meshData->hasAttribute(Mn::Trade::MeshAttribute::Color)) {
+        meshAttributeFlags |= gfx::Drawable::Flag::HasVertexColor;
+      }
     }
+
     createDrawable(mesh,                // render mesh
                    meshAttributeFlags,  // mesh attribute flags
                    node,                // scene node
@@ -2236,7 +2239,6 @@ void ResourceManager::initDefaultMaterials() {
   shaderManager_.set<gfx::MaterialData>(WHITE_MATERIAL_KEY, whiteMaterialData);
   auto* perVertexObjectId = new gfx::PhongMaterialData{};
   perVertexObjectId->perVertexObjectId = true;
-  perVertexObjectId->vertexColored = true;
   perVertexObjectId->ambientColor = Mn::Color4{1.0};
   shaderManager_.set<gfx::MaterialData>(PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
                                         perVertexObjectId);
