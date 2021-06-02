@@ -37,7 +37,7 @@ BulletArticulatedObject::~BulletArticulatedObject() {
   }
   // remove link collision objects from world
   for (int colIx = 0; colIx < btMultiBody_->getNumLinks(); ++colIx) {
-    auto linkCollider = btMultiBody_->getLinkCollider(colIx);
+    auto* linkCollider = btMultiBody_->getLinkCollider(colIx);
     bWorld_->removeCollisionObject(linkCollider);
     collisionObjToObjIds_->erase(linkCollider);
     delete linkCollider;
@@ -52,7 +52,7 @@ BulletArticulatedObject::~BulletArticulatedObject() {
   }
 
   // remove base collider
-  auto baseCollider = btMultiBody_->getBaseCollider();
+  auto* baseCollider = btMultiBody_->getBaseCollider();
   bWorld_->btCollisionWorld::removeCollisionObject(baseCollider);
   collisionObjToObjIds_->erase(baseCollider);
   delete baseCollider;
@@ -113,7 +113,7 @@ bool BulletArticulatedObject::initializeFromURDF(
         cache.m_urdfLinkLocalInertialFrames[urdfLinkIndex];
 
     //?
-    if (flags & CUF_USE_MJCF) {
+    if ((flags & CUF_USE_MJCF) != 0) {
     } else {
       mb->setBaseWorldTransform(btTransform(rootTransformInWorldSpace) *
                                 localInertialFrameRoot);
@@ -143,8 +143,7 @@ bool BulletArticulatedObject::initializeFromURDF(
         // The collider child is an aligned compound or single shape
         btTransform identity;
         identity.setIdentity();
-        bFixedObjectShape_.get()->addChildShape(identity,
-                                                col->getCollisionShape());
+        bFixedObjectShape_->addChildShape(identity, col->getCollisionShape());
       }
 
       for (int m = 0; m < mb->getNumLinks(); m++) {
@@ -152,13 +151,13 @@ bool BulletArticulatedObject::initializeFromURDF(
         if (col) {
           if (col->getBroadphaseHandle()->m_collisionFilterGroup ==
               int(CollisionGroup::Noncollidable)) {
-            bFixedObjectShape_.get()->addChildShape(col->getWorldTransform(),
-                                                    col->getCollisionShape());
+            bFixedObjectShape_->addChildShape(col->getWorldTransform(),
+                                              col->getCollisionShape());
           }
         }
       }
 
-      if (bFixedObjectShape_.get()->getNumChildShapes()) {
+      if (bFixedObjectShape_->getNumChildShapes() != 0) {
         btRigidBody::btRigidBodyConstructionInfo info =
             btRigidBody::btRigidBodyConstructionInfo(0.f, nullptr,
                                                      bFixedObjectShape_.get());
@@ -202,10 +201,10 @@ bool BulletArticulatedObject::initializeFromURDF(
       }
 
       linkObject->node().setType(esp::scene::SceneNodeType::OBJECT);
-      bool success =
-          attachGeometry(linkObject, link.second,
-                         urdfImporter.getModel()->m_materials, drawables);
-      // Corrade::Utility::Debug() << "geomSuccess: " << success;
+      ESP_CHECK(attachGeometry(linkObject, link.second, drawables),
+                "BulletArticulatedObject::initializeFromURDF(): Failed to "
+                "instance render asset (attachGeometry) for link "
+                    << urdfLinkIndex << ".");
 
       urdfLinkIx++;
     }
@@ -262,7 +261,6 @@ void BulletArticulatedObject::updateNodes(bool force) {
 bool BulletArticulatedObject::attachGeometry(
     ArticulatedLink* linkObject,
     const std::shared_ptr<io::URDF::Link>& link,
-    const std::map<std::string, std::shared_ptr<io::URDF::Material>>& materials,
     gfx::DrawableGroup* drawables) {
   bool geomSuccess = false;
 
@@ -366,8 +364,8 @@ bool BulletArticulatedObject::attachGeometry(
 
       // cache the visual component for later query
       if (geomSuccess) {
-        linkObject->visualAttachments_.push_back(
-            {&visualGeomComponent, visual.m_geometry.m_meshFileName});
+        linkObject->visualAttachments_.emplace_back(
+            &visualGeomComponent, visual.m_geometry.m_meshFileName);
       }
     }
   }
@@ -379,7 +377,7 @@ void BulletArticulatedObject::setRootState(const Magnum::Matrix4& state) {
   btTransform tr{state};
   btMultiBody_->setBaseWorldTransform(tr);
   if (bFixedObjectRigidBody_) {
-    bFixedObjectRigidBody_.get()->setWorldTransform(tr);
+    bFixedObjectRigidBody_->setWorldTransform(tr);
   }
   // update the simulation state
   updateKinematicState();
@@ -572,7 +570,7 @@ void BulletArticulatedObject::setMotionType(MotionType mt) {
   objectMotionType_ = mt;
 }
 
-bool BulletArticulatedObject::supportsJointMotor(int linkIx) {
+bool BulletArticulatedObject::supportsJointMotor(int linkIx) const {
   bool canHaveMotor = (btMultiBody_->getLink(linkIx).m_jointType ==
                            btMultibodyLink::eRevolute ||
                        btMultiBody_->getLink(linkIx).m_jointType ==
@@ -703,11 +701,11 @@ int BulletArticulatedObject::createJointMotor(
 
 void BulletArticulatedObject::removeJointMotor(const int motorId) {
   CHECK(jointMotors_.count(motorId) > 0);
-  if (articulatedJointMotors.count(motorId)) {
+  if (articulatedJointMotors.count(motorId) != 0u) {
     bWorld_->removeMultiBodyConstraint(
         articulatedJointMotors.at(motorId).get());
     articulatedJointMotors.erase(motorId);
-  } else if (articulatedSphericalJointMotors.count(motorId)) {
+  } else if (articulatedSphericalJointMotors.count(motorId) != 0u) {
     bWorld_->removeMultiBodyConstraint(
         articulatedSphericalJointMotors.at(motorId).get());
     articulatedSphericalJointMotors.erase(motorId);
@@ -724,12 +722,12 @@ void BulletArticulatedObject::updateJointMotor(
   CHECK(jointMotors_.count(motorId) > 0);
   CHECK(jointMotors_.at(motorId)->settings.motorType == settings.motorType);
   jointMotors_.at(motorId)->settings = settings;
-  if (articulatedJointMotors.count(motorId)) {
+  if (articulatedJointMotors.count(motorId) != 0u) {
     auto& motor = articulatedJointMotors.at(motorId);
     motor->setPositionTarget(settings.positionTarget, settings.positionGain);
     motor->setVelocityTarget(settings.velocityTarget, settings.velocityGain);
     motor->setMaxAppliedImpulse(settings.maxImpulse);
-  } else if (articulatedSphericalJointMotors.count(motorId)) {
+  } else if (articulatedSphericalJointMotors.count(motorId) != 0u) {
     auto& motor = articulatedSphericalJointMotors.at(motorId);
     motor->setPositionTarget(btQuaternion(settings.sphericalPositionTarget),
                              settings.positionGain);
@@ -779,7 +777,7 @@ void BulletArticulatedObject::updateKinematicState() {
   btMultiBody_->forwardKinematics(scratch_q_, scratch_m_);
   btMultiBody_->updateCollisionObjectWorldTransforms(scratch_q_, scratch_m_);
   // Need to update the aabbs manually also for broadphase collision detection
-  for (size_t linkIx = 0; linkIx < btMultiBody_->getNumLinks(); ++linkIx) {
+  for (int linkIx = 0; linkIx < btMultiBody_->getNumLinks(); ++linkIx) {
     bWorld_->updateSingleAabb(btMultiBody_->getLinkCollider(linkIx));
   }
   bWorld_->updateSingleAabb(btMultiBody_->getBaseCollider());
@@ -817,8 +815,8 @@ struct AOSimulationContactResultCallback
     // check for self-collision
     if (!mb_->hasSelfCollision()) {
       // This should always be a valid conversion to btCollisionObject
-      auto co = static_cast<btCollisionObject*>(proxy0->m_clientObject);
-      auto mblc = dynamic_cast<btMultiBodyLinkCollider*>(co);
+      auto* co = static_cast<btCollisionObject*>(proxy0->m_clientObject);
+      auto* mblc = dynamic_cast<btMultiBodyLinkCollider*>(co);
       if (mblc) {
         if (mblc->m_multiBody == mb_) {
           // screen self-collisions
@@ -837,7 +835,7 @@ bool BulletArticulatedObject::contactTest(bool staticAsStage) {
   AOSimulationContactResultCallback src(btMultiBody_.get(),
                                         bFixedObjectRigidBody_.get());
 
-  auto baseCollider = btMultiBody_->getBaseCollider();
+  auto* baseCollider = btMultiBody_->getBaseCollider();
   // Do a contact test for each piece of the AO and return at soonest contact.
   // Should be cheaper to hit multiple local aabbs than to check the full scene.
   if (bFixedObjectRigidBody_) {
@@ -869,7 +867,7 @@ bool BulletArticulatedObject::contactTest(bool staticAsStage) {
     }
   }
   for (int colIx = 0; colIx < btMultiBody_->getNumLinks(); ++colIx) {
-    auto linkCollider = btMultiBody_->getLinkCollider(colIx);
+    auto* linkCollider = btMultiBody_->getLinkCollider(colIx);
     src.m_collisionFilterGroup =
         linkCollider->getBroadphaseHandle()->m_collisionFilterGroup;
     src.m_collisionFilterMask =

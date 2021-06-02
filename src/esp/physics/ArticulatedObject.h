@@ -498,8 +498,6 @@ class ArticulatedObject : public Magnum::SceneGraph::AbstractFeature3D {
   virtual bool attachGeometry(
       CORRADE_UNUSED ArticulatedLink* linkObject,
       CORRADE_UNUSED const std::shared_ptr<io::URDF::Link>& link,
-      CORRADE_UNUSED const
-          std::map<std::string, std::shared_ptr<io::URDF::Material>>& materials,
       CORRADE_UNUSED gfx::DrawableGroup* drawables) {
     return false;
   }

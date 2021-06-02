@@ -138,7 +138,7 @@ class BulletArticulatedObject : public ArticulatedObject {
   //! Bullet supports vel/pos control joint motors for revolute and prismatic
   //! joints (1 Dof) This is the suggested way to implement friction/damping at
   //! dof level
-  bool supportsJointMotor(int linkIx);
+  bool supportsJointMotor(int linkIx) const;
 
   // TODO: should be stored in the link
   // compound parent collision shapes for the links
@@ -200,12 +200,9 @@ class BulletArticulatedObject : public ArticulatedObject {
   void clampJointLimits() override;
 
  protected:
-  bool attachGeometry(
-      ArticulatedLink* linkObject,
-      const std::shared_ptr<io::URDF::Link>& link,
-      const std::map<std::string, std::shared_ptr<io::URDF::Material>>&
-          materials,
-      gfx::DrawableGroup* drawables) override;
+  bool attachGeometry(ArticulatedLink* linkObject,
+                      const std::shared_ptr<io::URDF::Link>& link,
+                      gfx::DrawableGroup* drawables) override;
 
   //! Performs forward kinematics, updates collision object states and
   //! broadphase aabbs for the object. Do this with manual state setters.
