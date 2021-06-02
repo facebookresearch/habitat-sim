@@ -45,8 +45,9 @@ class Renderer {
 
   /**
    * @brief draw the scene graph with the camera specified by user
-   * @param[in] camera, the render camera to render the scene
-   * @param[in] flags, flags to control the rendering
+   * @param[in] camera the render camera to render the scene
+   * @param[in] sceneGraph the scene to render
+   * @param[in] flags flags to control the rendering
    */
   void draw(RenderCamera& camera,
             scene::SceneGraph& sceneGraph,

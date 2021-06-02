@@ -100,7 +100,7 @@ class AttributesManager
    *
    * @param path A global path to configuration files or a directory containing
    * such files.
-   * @param exttype The extension of files to be attempted to be loaded as
+   * @param extType The extension of files to be attempted to be loaded as
    * templates.
    * @param saveAsDefaults Set the templates loaded as undeleteable default
    * templates.
@@ -131,7 +131,7 @@ class AttributesManager
    * then will load all the configs it finds at each path.
    * @param configDir The directory to use as a root to search in - may be
    * different than the config dir already listed in this manager.
-   * @param saveAsDefaults Set the templates loaded as undeleteable default
+   * @param extType The extension of files to be attempted to be loaded as
    * templates.
    * @param jsonPaths The json array element
    */

@@ -83,7 +83,7 @@ class CubeMap {
 
   /**
    * @brief, Constructor
-   * @param size, the size of the cubemap texture (each face is size x size)
+   * @param imageSize the size of the cubemap texture (each face is size x size)
    */
   explicit CubeMap(int imageSize, Flags flags = Flags{Flag::ColorTexture});
 
@@ -122,8 +122,8 @@ class CubeMap {
    * ```
    * NOTE: +Y is top
    * @brief save the cubemap texture based on the texture type
-   * @param type, texture type
-   * @param imageFilePrefix, the filename prefix
+   * @param type texture type
+   * @param imageFilePrefix the filename prefix
    * The 6 image files then would be:
    * {imageFilePrefix}.{texType}.+X.png
    * {imageFilePrefix}.{texType}.-X.png
@@ -158,8 +158,8 @@ class CubeMap {
    * NOTE: +Y is top
    * @brief load cubemap texture from external images
    * @param type can be "rgba", "depth", or "objectId" (TODO)
-   * @param imageFilePrefix, the prefix of the image filename
-   * @param imageFileExtension, the image filename extension (such as "png",
+   * @param imageFilePrefix the prefix of the image filename
+   * @param imageFileExtension the image filename extension (such as "png",
    * "jpg")
    * @return true if succeeded, otherwise false
    * The 6 image files then would be:
@@ -176,7 +176,7 @@ class CubeMap {
 
   /**
    * @brief Render to cubemap texture using the camera
-   * @param camera, a cubemap camera
+   * @param camera a cubemap camera
    * NOTE: It will NOT automatically generate the mipmap for the user
    */
   void renderToTexture(CubeMapCamera& camera,
@@ -238,7 +238,7 @@ class CubeMap {
 
   /**
    * @brief Map shader output to attachments.
-   * @param cubeSideIndex, the index of the cube side, can be 0,
+   * @param cubeSideIndex the index of the cube side, can be 0,
    * 1, 2, 3, 4, or 5
    */
   void mapForDraw(unsigned int cubeSideIndex);

@@ -60,7 +60,7 @@ class Simulator {
    * is not done correctly, the pattern for @ref `close` then @ref `reconfigure`
    * to create a "fresh" instance of the simulator may not work correctly
    */
-  virtual void close();
+  void close();
 
   virtual void reconfigure(const SimulatorConfiguration& cfg);
 
@@ -103,15 +103,15 @@ class Simulator {
    * @brief Return manager for construction and access to asset attributes for
    * the current dataset.
    */
-  metadata::managers::AssetAttributesManager::ptr getAssetAttributesManager()
-      const {
+  const metadata::managers::AssetAttributesManager::ptr&
+  getAssetAttributesManager() const {
     return metadataMediator_->getAssetAttributesManager();
   }
   /**
    * @brief Return manager for construction and access to light attributes and
    * layouts for the current dataset.
    */
-  metadata::managers::LightLayoutAttributesManager::ptr
+  const metadata::managers::LightLayoutAttributesManager::ptr&
   getLightLayoutAttributesManager() const {
     return metadataMediator_->getLightLayoutAttributesManager();
   }
@@ -120,15 +120,15 @@ class Simulator {
    * @brief Return manager for construction and access to object attributes and
    * layouts for the current dataset.
    */
-  metadata::managers::ObjectAttributesManager::ptr getObjectAttributesManager()
-      const {
+  const metadata::managers::ObjectAttributesManager::ptr&
+  getObjectAttributesManager() const {
     return metadataMediator_->getObjectAttributesManager();
   }
   /**
    * @brief Return manager for construction and access to physics world
    * attributes.
    */
-  metadata::managers::PhysicsAttributesManager::ptr
+  const metadata::managers::PhysicsAttributesManager::ptr&
   getPhysicsAttributesManager() const {
     return metadataMediator_->getPhysicsAttributesManager();
   }
@@ -136,8 +136,8 @@ class Simulator {
    * @brief Return manager for construction and access to scene attributes for
    * the current dataset.
    */
-  metadata::managers::StageAttributesManager::ptr getStageAttributesManager()
-      const {
+  const metadata::managers::StageAttributesManager::ptr&
+  getStageAttributesManager() const {
     return metadataMediator_->getStageAttributesManager();
   }
 
@@ -382,7 +382,7 @@ class Simulator {
 
   /**
    * @brief Set the @ref esp::core::RigidState of an object kinematically.
-   * @param transform The desired @ref esp::core::RigidState of the object.
+   * @param rigidState The desired @ref esp::core::RigidState of the object.
    * @param  objectID The object ID and key identifying the object in @ref
    * esp::physics::PhysicsManager::existingObjects_.
    * @param sceneID !! Not used currently !! Specifies which physical scene of

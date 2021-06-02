@@ -165,13 +165,6 @@ class StageAttributesManager
    */
   void resetFinalize() override {}
 
-  /**
-   * @brief This function will assign the appropriately configured function
-   * pointer for the copy constructor as required by
-   * AttributesManager<StageAttributes::ptr>
-   */
-  void buildCtorFuncPtrMaps() override;
-
   // instance vars
 
   /**

@@ -1,6 +1,6 @@
 
-#include <assert.h>
-#include <limits.h>
+#include <cassert>
+#include <climits>
 #include <cmath>
 
 #include <Corrade/Containers/GrowableArray.h>
@@ -76,10 +76,10 @@ VoxelGrid::VoxelGrid(const assets::MeshData& meshData,
 #endif
 
 VoxelGrid::VoxelGrid(const Mn::Vector3& voxelSize,
-                     const Mn::Vector3i& voxelGridDimensions) {
-  m_voxelSize = voxelSize;
-  m_voxelGridDimensions = voxelGridDimensions;
-  m_offset = Mn::Vector3(0.0, 0.0, 0.0);
+                     const Mn::Vector3i& voxelGridDimensions)
+    : m_voxelSize(voxelSize),
+      m_voxelGridDimensions(voxelGridDimensions),
+      m_offset(Mn::Vector3(0.0, 0.0, 0.0)) {
   addGrid<bool>("Boundary");
 }
 
@@ -146,7 +146,7 @@ void VoxelGrid::fillBoolGridNeighborhood(std::vector<bool>& neighbors,
 void VoxelGrid::addVoxelToMeshPrimitives(
     Cr::Containers::Array<VoxelVertex>& vertexData,
     Cr::Containers::Array<Mn::UnsignedInt>& indexData,
-    const Mn::Vector3i& local_coords,
+    const Mn::Vector3i& localCoords,
     const std::vector<bool>& neighbors,
     const Mn::Color3& color) {
   // Using the data of a cubeSolid to create the voxel cube
@@ -155,7 +155,7 @@ void VoxelGrid::addVoxelToMeshPrimitives(
 
   // add cube to mesh
   // midpoint of a voxel
-  Mn::Vector3 mid = getGlobalCoords(local_coords);
+  Mn::Vector3 mid = getGlobalCoords(localCoords);
   unsigned int sz = vertexData.size();
   Corrade::Containers::StridedArrayView1D<const Magnum::Vector3> cubePositions =
       cubeData.attribute<Mn::Vector3>(Mn::Trade::MeshAttribute::Position);
@@ -183,12 +183,12 @@ void VoxelGrid::addVoxelToMeshPrimitives(
 void VoxelGrid::addVectorToMeshPrimitives(
     Cr::Containers::Array<VoxelVertex>& vertexData,
     Cr::Containers::Array<Mn::UnsignedInt>& indexData,
-    const Mn::Vector3i& local_coords,
+    const Mn::Vector3i& localCoords,
     const Mn::Vector3& vec) {
   Mn::Trade::MeshData coneData = Mn::Primitives::coneSolid(1, 4, 1.0f);
 
   // midpoint of a voxel
-  Mn::Vector3 mid = getGlobalCoords(local_coords);
+  Mn::Vector3 mid = getGlobalCoords(localCoords);
   // add cone to mesh (tip of arrow)
   unsigned int sz = vertexData.size();
   Corrade::Containers::StridedArrayView1D<const Magnum::Vector3> conePositions =

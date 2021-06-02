@@ -336,7 +336,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
   /**
    * @brief Set light positions or directions
-   * @param vectors, an array of the light vectors
+   * @param vectors an array of the light vectors
    * @return Reference to self (for method chaining)
    *
    * when vec.w == 0, it means vec.xyz is the light direction;
@@ -354,9 +354,9 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   /**
    *  @brief Set the position or direction of a specific light See @ref vec for
    *  details
-   *  @param lightIndex, the index of the light, MUST be smaller than
+   *  @param lightIndex the index of the light, MUST be smaller than
    *                     lightCount_
-   *  @param vec, the direction (or position) of the light in *camera* space;
+   *  @param vec the direction (or position) of the light in *camera* space;
    *              when vec.w == 0, it means vec.xyz is the light direction;
    *              when vec.w == 1, it means vec.xyz is the light position;
    *  @return Reference to self (for method chaining)
@@ -369,9 +369,9 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
   /**
    *  @brief Set the position of a specific light.
-   *  @param lightIndex, the index of the light, MUST be smaller than
+   *  @param lightIndex the index of the light, MUST be smaller than
    * lightCount_
-   *  @param pos, the position of the light in *camera* space
+   *  @param pos the position of the light in *camera* space
    *  @return Reference to self (for method chaining)
    *  Note:
    *  If the light was a directional light, it will be overrided as a point
@@ -382,9 +382,9 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
   /**
    *  @brief Set the direction of a specific light.
-   *  @param lightIndex, the index of the light, MUST be smaller than
+   *  @param lightIndex the index of the light, MUST be smaller than
    * lightCount_
-   *  @param dir, the direction of the light in *camera* space
+   *  @param dir the direction of the light in *camera* space
    *  @return Reference to self (for method chaining)
    *  NOTE:
    *  If the light was a point light, it will be overrided as a direction
@@ -395,19 +395,19 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
   /**
    *  @brief Set the range of a specific light.
-   *  @param lightIndex, the index of the light, MUST be smaller than
+   *  @param lightIndex the index of the light, MUST be smaller than
    * lightCount_
-   *  @param range, the range of the light
+   *  @param range the range of the light
    *  @return Reference to self (for method chaining)
    */
   PbrShader& setLightRange(unsigned int lightIndex, float range);
 
   /**
    *  @brief Set the color of a specific light.
-   *  @param lightIndex, the index of the light, MUST be smaller than
+   *  @param lightIndex the index of the light, MUST be smaller than
    * lightCount_
-   *  @param color, the color of the light
-   *  @param intensity, the intensity of the light
+   *  @param color the color of the light
+   *  @param intensity the intensity of the light
    *  @return Reference to self (for method chaining)
    */
   PbrShader& setLightColor(unsigned int lightIndex,
@@ -416,7 +416,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
   /**
    *  @brief Set the colors of the lights
-   *  @param color, the colors of the lights
+   *  @param colors the colors of the lights
    *  NOTE: the intensity MUST be included in the color
    *  @return Reference to self (for method chaining)
    */
@@ -430,7 +430,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
   /**
    *  @brief Set the ranges of the lights
-   *  @param ranges, the ranges of the lights
+   *  @param ranges the ranges of the lights
    *  @return Reference to self (for method chaining)
    */
   PbrShader& setLightRanges(Corrade::Containers::ArrayView<const float> ranges);

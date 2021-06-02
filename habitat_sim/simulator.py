@@ -47,7 +47,8 @@ class Configuration:
 
     :property sim_cfg: The configuration of the backend of the simulator
     :property agents: A list of agent configurations
-    :property metadata_mediator: (optional) The metadata mediator to build the simulator from
+    :property metadata_mediator: (optional) The metadata mediator to build the simulator from.
+
     Ties together a backend config, `sim_cfg` and a list of agent
     configurations `agents`.
     """

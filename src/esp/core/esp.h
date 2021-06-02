@@ -122,6 +122,24 @@ inline std::ostream& operator<<(std::ostream& os, const box3f& bbox) {
     return std::make_unique<__VA_ARGS__>(std::forward<Targs>(args)...); \
   }
 
+/**
+ * shim function helper for derived class of std::enable_shared_from_this<Base>
+ */
+template <typename Base>
+inline std::shared_ptr<Base> shared_from_base(
+    std::enable_shared_from_this<Base>* base) {
+  return base->shared_from_this();
+}
+
+/**
+ * shared_from_this access for inheriting classes of Base classes that inherit
+ * std::enable_shared_from_this<Base>
+ */
+template <typename Derived>
+inline std::shared_ptr<Derived> shared_from(Derived* derived) {
+  return std::static_pointer_cast<Derived>(shared_from_base(derived));
+}
+
 // pimpl macro backed by unique_ptr pointer
 #define ESP_UNIQUE_PTR_PIMPL() \
  protected:                    \

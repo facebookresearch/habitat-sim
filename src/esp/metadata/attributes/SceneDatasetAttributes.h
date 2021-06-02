@@ -27,39 +27,56 @@ class SceneDatasetAttributes : public AbstractAttributes {
       const std::string& datasetName,
       const managers::PhysicsAttributesManager::ptr& physAttrMgr);
 
+  ~SceneDatasetAttributes() override {
+    // These are to clear any external refs persisting after this scene dataset
+    // is deleted.  Accessing these refs should result in errors instead of
+    // leaks/undefined behavior.
+    assetAttributesManager_ = nullptr;
+    lightLayoutAttributesManager_ = nullptr;
+    objectAttributesManager_ = nullptr;
+    sceneAttributesManager_ = nullptr;
+    stageAttributesManager_ = nullptr;
+    navmeshMap_.clear();
+    semanticSceneDescrMap_.clear();
+  }
+
   /**
    * @brief Return manager for construction and access to asset attributes.
    */
-  managers::AssetAttributesManager::ptr getAssetAttributesManager() const {
+  const managers::AssetAttributesManager::ptr& getAssetAttributesManager()
+      const {
     return assetAttributesManager_;
   }
 
   /**
    * @brief Return manager for construction and access to object attributes.
    */
-  managers::ObjectAttributesManager::ptr getObjectAttributesManager() const {
+  const managers::ObjectAttributesManager::ptr& getObjectAttributesManager()
+      const {
     return objectAttributesManager_;
   }
 
   /**
    * @brief Return manager for construction and access to light attributes.
    */
-  managers::LightLayoutAttributesManager::ptr getLightLayoutAttributesManager()
-      const {
+  const managers::LightLayoutAttributesManager::ptr&
+  getLightLayoutAttributesManager() const {
     return lightLayoutAttributesManager_;
   }
 
   /**
    * @brief Return manager for construction and access to scene attributes.
    */
-  managers::SceneAttributesManager::ptr getSceneAttributesManager() const {
+  const managers::SceneAttributesManager::ptr& getSceneAttributesManager()
+      const {
     return sceneAttributesManager_;
   }
 
   /**
    * @brief Return manager for construction and access to stage attributes.
    */
-  managers::StageAttributesManager::ptr getStageAttributesManager() const {
+  const managers::StageAttributesManager::ptr& getStageAttributesManager()
+      const {
     return stageAttributesManager_;
   }
 

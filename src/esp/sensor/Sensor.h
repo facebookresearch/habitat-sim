@@ -198,7 +198,6 @@ class SensorSuite : public Magnum::SceneGraph::AbstractFeature3D {
   /**
    * @brief Return reference to Sensor with key uuid in existing sensors_
    * @param[in] uuid of Sensor to be found in sensors_
-   * @param[out] reference to Sensor with key uuid
    */
   sensor::Sensor& get(const std::string& uuid) const;
 

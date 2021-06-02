@@ -179,8 +179,8 @@ class ResourceManager {
    * @param _physicsManager The currently defined @ref physics::PhysicsManager.
    * @param sceneManagerPtr Pointer to scene manager, to fetch drawables and
    * parent node.
-   * @param [out] Current active scene ID is in idx 0, if semantic scene is
-   * made, its activeID should be pushed onto vector
+   * @param [out] activeSceneIDs active scene ID is in idx 0, if semantic scene
+   * is made, its activeID should be pushed onto vector
    * @param createSemanticMesh If the semantic mesh should be created, based on
    * @ref SimulatorConfiguration
    * @param forceSeparateSemanticSceneGraph Force creation of a separate
@@ -342,8 +342,8 @@ class ResourceManager {
   /**
    * @brief Registers a given VoxelGrid pointer under the given handle in the
    * voxelGridDict_ if no such VoxelGrid has been registered.
-   * @param VoxelGrid The pointer to the VoxelGrid
    * @param voxelGridHandle The key to register the VoxelGrid under.
+   * @param VoxelGridPtr The pointer to the VoxelGrid
    * @return Whether or not the registration succeeded.
    */
   bool registerVoxelGrid(
@@ -359,6 +359,9 @@ class ResourceManager {
 
   /**
    * @brief Get a named @ref LightSetup
+   *
+   * @param key The key identifying the light setup in shaderManager_.
+   * @return The LightSetup object.
    */
   Mn::Resource<gfx::LightSetup> getLightSetup(
       const Mn::ResourceKey& key = Mn::ResourceKey{DEFAULT_LIGHTING_KEY}) {
@@ -705,7 +708,8 @@ class ResourceManager {
    * identifying its mesh, material, transformation, and children.
    * @param[out] visNodeCache Cache for pointers to all nodes created as the
    * result of this recursive process.
-   * @param computeAABBs whether absolute bounding boxes should be computed
+   * @param computeAbsoluteAABBs whether absolute bounding boxes should be
+   * computed
    * @param staticDrawableInfo structure holding the drawable infos for aabbs
    */
   void addComponent(const MeshMetaData& metaData,
@@ -832,8 +836,7 @@ class ResourceManager {
    * @param drawables The @ref DrawableGroup with which the mesh will be
    * rendered. See also creation->isRGBD and creation->isSemantic. nullptr if
    * not instancing.
-   * @param splitSemanticMesh Split the semantic mesh by objectID, used for A/B
-   * testing
+   * @return Whether or not the load was successful.
    */
   bool loadStageInternal(const AssetInfo& info,
                          const RenderAssetInstanceCreationInfo* creation,
@@ -979,12 +982,12 @@ class ResourceManager {
    */
   Mn::Range3D computeMeshBB(BaseMesh* meshDataGL);
 
+#ifdef ESP_BUILD_PTEX_SUPPORT
   /**
    * @brief Compute the absolute AABBs for drawables in PTex mesh in world
    * space
-   * @param baseMesh: ptex mesh
+   * @param baseMesh ptex mesh
    */
-#ifdef ESP_BUILD_PTEX_SUPPORT
   void computePTexMeshAbsoluteAABBs(
       BaseMesh& baseMesh,
       const std::vector<StaticDrawableInfo>& staticDrawableInfo);

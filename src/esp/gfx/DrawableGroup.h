@@ -43,7 +43,7 @@ class DrawableGroup : public Magnum::SceneGraph::DrawableGroup3D {
 
   /**
    * @brief Given drawable id, returns if drawable is in the group
-   * @param id, drawable id
+   * @param id drawable id
    * @return true if the drawable is in the group, otherwise false
    */
   bool hasDrawable(uint64_t id) const;
@@ -52,7 +52,7 @@ class DrawableGroup : public Magnum::SceneGraph::DrawableGroup3D {
    * @brief Given drawable id, returns nullptr if the id is not in this
    * drawable group, otherwise the raw pointer to the object
    *
-   * @param id, drawable id
+   * @param id drawable id
    * @return raw pointer to the drawable, or nullptr
    */
   Drawable* getDrawable(uint64_t id) const;

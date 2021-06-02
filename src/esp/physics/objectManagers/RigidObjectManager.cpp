@@ -3,8 +3,34 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "RigidObjectManager.h"
+
+#ifdef ESP_BUILD_WITH_BULLET
+#include "esp/physics/bullet/objectWrappers/ManagedBulletRigidObject.h"
+#endif
+
 namespace esp {
 namespace physics {
+
+RigidObjectManager::RigidObjectManager()
+    : esp::physics::RigidBaseManager<ManagedRigidObject>::RigidBaseManager(
+          "RigidObject") {
+  // build this manager's copy constructor map, keyed by the type name of the
+  // wrappers it will manage
+  this->copyConstructorMap_["ManagedRigidObject"] =
+      &RigidObjectManager::createObjectCopy<ManagedRigidObject>;
+
+  // build the function pointers to proper wrapper construction methods, keyed
+  // by the wrapper names
+  managedObjTypeConstructorMap_["ManagedRigidObject"] =
+      &RigidObjectManager::createPhysicsObjectWrapper<ManagedRigidObject>;
+
+#ifdef ESP_BUILD_WITH_BULLET
+  this->copyConstructorMap_["ManagedBulletRigidObject"] =
+      &RigidObjectManager::createObjectCopy<ManagedBulletRigidObject>;
+  managedObjTypeConstructorMap_["ManagedBulletRigidObject"] =
+      &RigidObjectManager::createPhysicsObjectWrapper<ManagedBulletRigidObject>;
+#endif
+}
 
 std::shared_ptr<ManagedRigidObject> RigidObjectManager::addObjectByHandle(
     const std::string& attributesHandle,
