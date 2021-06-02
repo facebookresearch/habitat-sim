@@ -59,7 +59,7 @@ BulletArticulatedObject::~BulletArticulatedObject() {
 
   // remove motors from the world
   for (auto& motorId : getExistingJointMotors()) {
-    removeJointMotor(motorId.first);
+    BulletArticulatedObject::removeJointMotor(motorId.first);
   }
 
   std::map<int, JointLimitConstraintInfo>::iterator jlIter;

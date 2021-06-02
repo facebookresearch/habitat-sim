@@ -19,7 +19,7 @@ class ManagedArticulatedObject
     : public esp::physics::AbstractManagedPhysicsObject<
           esp::physics::ArticulatedObject> {
  public:
-  ManagedArticulatedObject(
+  explicit ManagedArticulatedObject(
       const std::string& classKey = "ManagedArticulatedObject")
       : AbstractManagedPhysicsObject<esp::physics::ArticulatedObject>(
             classKey) {}
