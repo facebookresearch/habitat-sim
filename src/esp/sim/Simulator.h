@@ -65,7 +65,7 @@ class Simulator {
    * was used. This is done because the OpenGL driver leaks memory on thread
    * destroy on some systems.
    */
-  virtual void close(bool destroy = false);
+  virtual void close(bool destroy = true);
 
   virtual void reconfigure(const SimulatorConfiguration& cfg);
 

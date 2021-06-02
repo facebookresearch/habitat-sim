@@ -120,7 +120,7 @@ class Simulator(SimulatorBackend):
         self._sanitize_config(self.config)
         self.__set_from_config(self.config)
 
-    def close(self, destroy: bool = False) -> None:
+    def close(self, destroy: bool = True) -> None:
         if self.renderer is not None:
             self.renderer.acquire_gl_context()
 
@@ -145,7 +145,7 @@ class Simulator(SimulatorBackend):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close()
+        self.close(destroy=True)
 
     def seed(self, new_seed: int) -> None:
         super().seed(new_seed)
