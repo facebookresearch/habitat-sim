@@ -174,13 +174,6 @@ void BulletPhysicsManager::stepPhysics(double dt) {
   recentTimeStep_ = fixedTimeStep_;
 }
 
-void BulletPhysicsManager::setMargin(const int physObjectID,
-                                     const double margin) {
-  assertIDValidity(physObjectID);
-  static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID).get())
-      ->setMargin(margin);
-}
-
 void BulletPhysicsManager::setStageFrictionCoefficient(
     const double frictionCoefficient) {
   staticStageObject_->setFrictionCoefficient(frictionCoefficient);
@@ -189,13 +182,6 @@ void BulletPhysicsManager::setStageFrictionCoefficient(
 void BulletPhysicsManager::setStageRestitutionCoefficient(
     const double restitutionCoefficient) {
   staticStageObject_->setRestitutionCoefficient(restitutionCoefficient);
-}
-
-double BulletPhysicsManager::getMargin(const int physObjectID) const {
-  assertIDValidity(physObjectID);
-  return static_cast<BulletRigidObject*>(
-             existingObjects_.at(physObjectID).get())
-      ->getMargin();
 }
 
 double BulletPhysicsManager::getStageFrictionCoefficient() const {
