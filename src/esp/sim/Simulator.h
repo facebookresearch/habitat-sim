@@ -76,9 +76,17 @@ class Simulator {
 
   bool semanticSceneExists() const { return (semanticScene_ != nullptr); }
 
-  scene::SceneGraph& getActiveSceneGraph();
-  scene::SceneGraph& getActiveSemanticSceneGraph();
+  scene::SceneGraph& getActiveSceneGraph() {
+    CORRADE_INTERNAL_ASSERT(std::size_t(activeSceneID_) < sceneID_.size());
+    return sceneManager_->getSceneGraph(activeSceneID_);
+  }
 
+  //! return the semantic scene's SceneGraph for rendering
+  scene::SceneGraph& getActiveSemanticSceneGraph() {
+    CORRADE_INTERNAL_ASSERT(std::size_t(activeSemanticSceneID_) <
+                            sceneID_.size());
+    return sceneManager_->getSceneGraph(activeSemanticSceneID_);
+  }
   std::shared_ptr<gfx::replay::ReplayManager> getGfxReplayManager() {
     return gfxReplayMgr_;
   }
@@ -227,7 +235,12 @@ class Simulator {
    */
   metadata::attributes::ObjectAttributes::cptr getObjectInitializationTemplate(
       int objectId,
-      int sceneID = 0) const;
+      int sceneID = 0) const {
+    if (sceneHasPhysics(sceneID)) {
+      return physicsManager_->getObjectInitAttributes(objectId);
+    }
+    return nullptr;
+  }
 
   /**
    * @brief Get a copy of a stage's template when the stage was instanced.
@@ -235,7 +248,12 @@ class Simulator {
    * Use this to query the stage's properties when it was initialized.
    */
   metadata::attributes::StageAttributes::cptr getStageInitializationTemplate(
-      int sceneID = 0) const;
+      int sceneID = 0) const {
+    if (sceneHasPhysics(sceneID)) {
+      return physicsManager_->getStageInitAttributes();
+    }
+    return nullptr;
+  }
 
   /**
    * @brief Remove an instanced object by ID. See @ref
@@ -258,7 +276,12 @@ class Simulator {
    * @return A vector of ID keys into @ref
    * esp::physics::PhysicsManager::existingObjects_.
    */
-  std::vector<int> getExistingObjectIDs(int sceneID = 0);
+  std::vector<int> getExistingObjectIDs(int sceneID = 0) {
+    if (sceneHasPhysics(sceneID)) {
+      return physicsManager_->getExistingObjectIDs();
+    }
+    return std::vector<int>();  // empty if no simulator exists
+  }
 
   /**
    * @brief Get the @ref esp::physics::MotionType of an object.
@@ -270,7 +293,12 @@ class Simulator {
    * @return The @ref esp::physics::MotionType of the object or @ref
    * esp::physics::MotionType::UNDEFINED if query failed.
    */
-  esp::physics::MotionType getObjectMotionType(int objectID, int sceneID = 0);
+  esp::physics::MotionType getObjectMotionType(int objectID, int sceneID = 0) {
+    if (sceneHasPhysics(sceneID)) {
+      return physicsManager_->getObjectMotionType(objectID);
+    }
+    return esp::physics::MotionType::UNDEFINED;
+  }
 
   /**
    * @brief Set the @ref esp::physics::MotionType of an object.
@@ -283,13 +311,23 @@ class Simulator {
    */
   void setObjectMotionType(const esp::physics::MotionType& motionType,
                            int objectID,
-                           int sceneID = 0);
+                           int sceneID = 0) {
+    if (sceneHasPhysics(sceneID)) {
+      physicsManager_->setObjectMotionType(objectID, motionType);
+    }
+  }
 
   /**@brief Retrieves a shared pointer to the VelocityControl struct for this
    * object.
    */
-  physics::VelocityControl::ptr getObjectVelocityControl(int objectID,
-                                                         int sceneID = 0) const;
+  physics::VelocityControl::ptr getObjectVelocityControl(
+      int objectID,
+      int sceneID = 0) const {
+    if (sceneHasPhysics(sceneID)) {
+      return physicsManager_->getVelocityControl(objectID);
+    }
+    return nullptr;
+  }
 
   /**
    * @brief Apply torque to an object. See @ref
@@ -300,7 +338,11 @@ class Simulator {
    * @param sceneID !! Not used currently !! Specifies which physical scene of
    * the object.
    */
-  void applyTorque(const Magnum::Vector3& tau, int objectID, int sceneID = 0);
+  void applyTorque(const Magnum::Vector3& tau, int objectID, int sceneID = 0) {
+    if (sceneHasPhysics(sceneID)) {
+      physicsManager_->applyTorque(objectID, tau);
+    }
+  }
 
   /**
    * @brief Apply force to an object. See @ref
@@ -316,7 +358,11 @@ class Simulator {
   void applyForce(const Magnum::Vector3& force,
                   const Magnum::Vector3& relPos,
                   int objectID,
-                  int sceneID = 0);
+                  int sceneID = 0) {
+    if (sceneHasPhysics(sceneID)) {
+      physicsManager_->applyForce(objectID, force, relPos);
+    }
+  }
 
   /**
    * @brief Apply an impulse to an object. See @ref
@@ -333,19 +379,33 @@ class Simulator {
   void applyImpulse(const Magnum::Vector3& impulse,
                     const Magnum::Vector3& relPos,
                     int objectID,
-                    int sceneID = 0);
+                    int sceneID = 0) {
+    if (sceneHasPhysics(sceneID)) {
+      physicsManager_->applyImpulse(objectID, impulse, relPos);
+    }
+  }
 
   /**
    * @brief Get a reference to the object's scene node or nullptr if failed.
    */
-  scene::SceneNode* getObjectSceneNode(int objectID, int sceneID = 0);
+  scene::SceneNode* getObjectSceneNode(int objectID, int sceneID = 0) {
+    if (sceneHasPhysics(sceneID)) {
+      return &physicsManager_->getObjectSceneNode(objectID);
+    }
+    return nullptr;
+  }
 
   /**
    * @brief Get references to the object's visual scene nodes or empty if
    * failed.
    */
   std::vector<scene::SceneNode*> getObjectVisualSceneNodes(int objectID,
-                                                           int sceneID = 0);
+                                                           int sceneID = 0) {
+    if (sceneHasPhysics(sceneID)) {
+      return physicsManager_->getObjectVisualSceneNodes(objectID);
+    }
+    return std::vector<scene::SceneNode*>();
+  }
 
   /**
    * @brief Get the current 4x4 transformation matrix of an object.
@@ -356,7 +416,12 @@ class Simulator {
    * the object.
    * @return The 4x4 transform of the object.
    */
-  Magnum::Matrix4 getTransformation(int objectID, int sceneID = 0);
+  Magnum::Matrix4 getTransformation(int objectID, int sceneID = 0) {
+    if (sceneHasPhysics(sceneID)) {
+      return physicsManager_->getTransformation(objectID);
+    }
+    return Magnum::Matrix4::fromDiagonal(Magnum::Vector4(1));
+  }
 
   /**
    * @brief Set the 4x4 transformation matrix of an object kinematically.
@@ -369,7 +434,12 @@ class Simulator {
    */
   void setTransformation(const Magnum::Matrix4& transform,
                          int objectID,
-                         int sceneID = 0);
+                         int sceneID = 0) {
+    if (sceneHasPhysics(sceneID)) {
+      physicsManager_->setTransformation(objectID, transform);
+    }
+  }
+
   /**
    * @brief Get the current @ref esp::core::RigidState of an object.
    * @param objectID The object ID and key identifying the object in @ref
@@ -378,7 +448,12 @@ class Simulator {
    * the object.
    * @return The @ref esp::core::RigidState transform of the object.
    */
-  esp::core::RigidState getRigidState(int objectID, int sceneID = 0) const;
+  esp::core::RigidState getRigidState(int objectID, int sceneID = 0) const {
+    if (sceneHasPhysics(sceneID)) {
+      return physicsManager_->getRigidState(objectID);
+    }
+    return esp::core::RigidState();
+  }
 
   /**
    * @brief Set the @ref esp::core::RigidState of an object kinematically.
@@ -390,7 +465,11 @@ class Simulator {
    */
   void setRigidState(const esp::core::RigidState& rigidState,
                      int objectID,
-                     int sceneID = 0);
+                     int sceneID = 0) {
+    if (sceneHasPhysics(sceneID)) {
+      physicsManager_->setRigidState(objectID, rigidState);
+    }
+  }
 
   /**
    * @brief Set the 3D position of an object kinematically.
@@ -403,7 +482,11 @@ class Simulator {
    */
   void setTranslation(const Magnum::Vector3& translation,
                       int objectID,
-                      int sceneID = 0);
+                      int sceneID = 0) {
+    if (sceneHasPhysics(sceneID)) {
+      physicsManager_->setTranslation(objectID, translation);
+    }
+  }
 
   /**
    * @brief Get the current 3D position of an object.
@@ -414,7 +497,12 @@ class Simulator {
    * the object.
    * @return The 3D position of the object.
    */
-  Magnum::Vector3 getTranslation(int objectID, int sceneID = 0);
+  Magnum::Vector3 getTranslation(int objectID, int sceneID = 0) {
+    if (sceneHasPhysics(sceneID)) {
+      return physicsManager_->getTranslation(objectID);
+    }
+    return Magnum::Vector3();
+  }
 
   /**
    * @brief Set the orientation of an object kinematically.
@@ -427,7 +515,11 @@ class Simulator {
    */
   void setRotation(const Magnum::Quaternion& rotation,
                    int objectID,
-                   int sceneID = 0);
+                   int sceneID = 0) {
+    if (sceneHasPhysics(sceneID)) {
+      physicsManager_->setRotation(objectID, rotation);
+    }
+  }
 
   /**
    * @brief Get the current orientation of an object.
@@ -438,7 +530,12 @@ class Simulator {
    * the object.
    * @return A quaternion representation of the object's orientation.
    */
-  Magnum::Quaternion getRotation(int objectID, int sceneID = 0);
+  Magnum::Quaternion getRotation(int objectID, int sceneID = 0) {
+    if (sceneHasPhysics(sceneID)) {
+      return physicsManager_->getRotation(objectID);
+    }
+    return Magnum::Quaternion();
+  }
 
   /**
    * @brief Set the Linear Velocity of object.
@@ -451,7 +548,11 @@ class Simulator {
    */
   void setLinearVelocity(const Magnum::Vector3& linVel,
                          int objectID,
-                         int sceneID = 0);
+                         int sceneID = 0) {
+    if (sceneHasPhysics(sceneID)) {
+      return physicsManager_->setLinearVelocity(objectID, linVel);
+    }
+  }
 
   /**
    * @brief Get the Linear Velocity of object.
@@ -462,7 +563,12 @@ class Simulator {
    * the object.
    * @return A vector3 representation of the object's linear velocity.
    */
-  Magnum::Vector3 getLinearVelocity(int objectID, int sceneID = 0);
+  Magnum::Vector3 getLinearVelocity(int objectID, int sceneID = 0) {
+    if (sceneHasPhysics(sceneID)) {
+      return physicsManager_->getLinearVelocity(objectID);
+    }
+    return Magnum::Vector3();
+  }
 
   /**
    * @brief Set the Angular Velocity of object.
@@ -475,7 +581,11 @@ class Simulator {
    */
   void setAngularVelocity(const Magnum::Vector3& angVel,
                           int objectID,
-                          int sceneID = 0);
+                          int sceneID = 0) {
+    if (sceneHasPhysics(sceneID)) {
+      return physicsManager_->setAngularVelocity(objectID, angVel);
+    }
+  }
 
   /**
    * @brief Get the Angular Velocity of object.
@@ -486,7 +596,12 @@ class Simulator {
    * the object.
    * @return A vector3 representation of the object's angular velocity.
    */
-  Magnum::Vector3 getAngularVelocity(int objectID, int sceneID = 0);
+  Magnum::Vector3 getAngularVelocity(int objectID, int sceneID = 0) {
+    if (sceneHasPhysics(sceneID)) {
+      return physicsManager_->getAngularVelocity(objectID);
+    }
+    return Magnum::Vector3();
+  }
 
   /**
    * @brief Turn on/off rendering for the bounding box of the object's visual
@@ -605,7 +720,12 @@ class Simulator {
    * @return Whether or not the object is in contact with any other collision
    * enabled objects.
    */
-  bool contactTest(int objectID, int sceneID = 0);
+  bool contactTest(int objectID, int sceneID = 0) {
+    if (sceneHasPhysics(sceneID)) {
+      return physicsManager_->contactTest(objectID);
+    }
+    return false;
+  }
 
   /**
    * @brief Perform discrete collision detection for the scene.
@@ -988,7 +1108,11 @@ class Simulator {
    */
   void setObjectLightSetup(int objectID,
                            const std::string& lightSetupKey,
-                           int sceneID = 0);
+                           int sceneID = 0) {
+    if (sceneHasPhysics(sceneID)) {
+      physicsManager_->setObjectLightSetup(objectID, lightSetupKey);
+    }
+  }
 
   /**
    * @brief Getter for PRNG.
