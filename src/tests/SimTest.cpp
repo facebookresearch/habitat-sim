@@ -76,7 +76,7 @@ struct SimTest : Cr::TestSuite::Tester {
 
     auto sim = Simulator::create_unique(simConfig);
     auto objAttrMgr = sim->getObjectAttributesManager();
-    objAttrMgr->loadAllConfigsFromPath(
+    objAttrMgr->loadAllJSONConfigsFromPath(
         Cr::Utility::Directory::join(TEST_ASSETS, "objects/nested_box"), true);
 
     sim->setLightSetup(self.lightSetup1, "custom_lighting_1");
@@ -99,7 +99,7 @@ struct SimTest : Cr::TestSuite::Tester {
     MetadataMediator::ptr MM = MetadataMediator::create(simConfig);
     auto sim = Simulator::create_unique(simConfig, MM);
     auto objAttrMgr = sim->getObjectAttributesManager();
-    objAttrMgr->loadAllConfigsFromPath(
+    objAttrMgr->loadAllJSONConfigsFromPath(
         Cr::Utility::Directory::join(TEST_ASSETS, "objects/nested_box"), true);
 
     sim->setLightSetup(self.lightSetup1, "custom_lighting_1");
@@ -522,16 +522,18 @@ void SimTest::loadingObjectTemplates() {
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
 
   // test directory of templates
-  std::vector<int> templateIndices = objectAttribsMgr->loadAllConfigsFromPath(
-      Cr::Utility::Directory::join(TEST_ASSETS, "objects"));
+  std::vector<int> templateIndices =
+      objectAttribsMgr->loadAllJSONConfigsFromPath(
+          Cr::Utility::Directory::join(TEST_ASSETS, "objects"));
   CORRADE_VERIFY(!templateIndices.empty());
   for (auto index : templateIndices) {
     CORRADE_VERIFY(index != esp::ID_UNDEFINED);
   }
 
   // reload again and ensure that old loaded indices are returned
-  std::vector<int> templateIndices2 = objectAttribsMgr->loadAllConfigsFromPath(
-      Cr::Utility::Directory::join(TEST_ASSETS, "objects"));
+  std::vector<int> templateIndices2 =
+      objectAttribsMgr->loadAllJSONConfigsFromPath(
+          Cr::Utility::Directory::join(TEST_ASSETS, "objects"));
   CORRADE_VERIFY(templateIndices2 == templateIndices);
 
   // test the loaded assets and accessing them by name

@@ -716,11 +716,11 @@ void PTexMeshData::parsePLY(const std::string& filename,
 
   meshData.vbo.resize(numVertices, vec3f(0, 0, 0));
 
-  if (normalDimensions) {
+  if (normalDimensions != 0u) {
     meshData.nbo.resize(numVertices, vec4f(0, 0, 0, 1));
   }
 
-  if (colorDimensions) {
+  if (colorDimensions != 0u) {
     meshData.cbo.resize(numVertices, vec4uc(0, 0, 0, 255));
   }
 
@@ -771,11 +771,11 @@ void PTexMeshData::parsePLY(const std::string& filename,
     memcpy(meshData.vbo[i].data(), &nextBytes[positionOffsetBytes],
            positionBytes);
 
-    if (normalDimensions)
+    if (normalDimensions != 0u)
       memcpy(meshData.nbo[i].data(), &nextBytes[normalOffsetBytes],
              normalBytes);
 
-    if (colorDimensions)
+    if (colorDimensions != 0u)
       memcpy(meshData.cbo[i].data(), &nextBytes[colorOffsetBytes], colorBytes);
   }
 

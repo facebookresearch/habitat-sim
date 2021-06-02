@@ -120,6 +120,9 @@ def main(show_imgs=True, save_imgs=False):
 
         # get the physics object attributes manager
         obj_templates_mgr = sim.get_object_template_manager()
+        # get the rigid object manager, which provides direct
+        # access to objects
+        rigid_obj_mgr = sim.get_rigid_object_manager()
 
         # load some chair object template from configuration file
         chair_template_id = obj_templates_mgr.load_configs(
@@ -127,25 +130,25 @@ def main(show_imgs=True, save_imgs=False):
         )[0]
 
         # add 2 chairs with default semanticId == 0 and arrange them
-        chair_ids = []
-        chair_ids.append(sim.add_object(chair_template_id))
-        chair_ids.append(sim.add_object(chair_template_id))
+        chairs = []
+        chairs.append(rigid_obj_mgr.add_object_by_template_id(chair_template_id))
+        chairs.append(rigid_obj_mgr.add_object_by_template_id(chair_template_id))
 
-        sim.set_rotation(
-            mn.Quaternion.rotation(mn.Deg(-115), mn.Vector3.y_axis()), chair_ids[0]
-        )
-        sim.set_translation([2.0, 0.47, 0.9], chair_ids[0])
+        chairs[0].rotation = mn.Quaternion.rotation(mn.Deg(-115), mn.Vector3.y_axis())
 
-        sim.set_translation([2.9, 0.47, 0.0], chair_ids[1])
+        chairs[0].translation = [2.0, 0.47, 0.9]
+        chairs[1].translation = [2.9, 0.47, 0.0]
+
         get_obs(sim, show_imgs, save_imgs)
 
         # set the semanticId for both chairs
-        sim.set_object_semantic_id(2, chair_ids[0])
-        sim.set_object_semantic_id(2, chair_ids[1])
+        chairs[0].semantic_id = 2
+        chairs[1].semantic_id = 2
+
         get_obs(sim, show_imgs, save_imgs)
 
         # set the semanticId for one chair
-        sim.set_object_semantic_id(1, chair_ids[1])
+        chairs[1].semantic_id = 1
         get_obs(sim, show_imgs, save_imgs)
 
         # add a box with default semanticId configured in the template
@@ -157,18 +160,17 @@ def main(show_imgs=True, save_imgs=False):
         box_template.scale = np.array([0.2, 0.2, 0.2])
         # set the default semantic id for this object template
         box_template.semantic_id = 10
-        obj_templates_mgr = sim.get_object_template_manager()
+
         box_template_id = obj_templates_mgr.register_template(box_template, "box")
-        box_id = sim.add_object(box_template_id)
-        sim.set_translation([3.5, 0.47, 0.9], box_id)
-        sim.set_rotation(
-            mn.Quaternion.rotation(mn.Deg(-30), mn.Vector3.y_axis()), box_id
-        )
+
+        box_obj = rigid_obj_mgr.add_object_by_template_id(box_template_id)
+        box_obj.translation = [3.5, 0.47, 0.9]
+        box_obj.rotation = mn.Quaternion.rotation(mn.Deg(-30), mn.Vector3.y_axis())
 
         get_obs(sim, show_imgs, save_imgs)
 
         # set semantic id for specific SceneNode components of the box object
-        box_visual_nodes = sim.get_object_visual_scene_nodes(box_id)
+        box_visual_nodes = box_obj.visual_scene_nodes
         box_visual_nodes[6].semantic_id = 3
         box_visual_nodes[7].semantic_id = 4
         get_obs(sim, show_imgs, save_imgs)

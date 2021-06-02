@@ -7,6 +7,9 @@
 #include "esp/physics/RigidBase.h"
 #include "esp/physics/RigidObject.h"
 #include "esp/physics/RigidStage.h"
+#ifdef ESP_BUILD_WITH_BULLET
+#include "esp/physics/bullet/objectWrappers/ManagedBulletRigidObject.h"
+#endif
 #include "esp/physics/objectWrappers/ManagedPhysicsObjectBase.h"
 #include "esp/physics/objectWrappers/ManagedRigidBase.h"
 #include "esp/physics/objectWrappers/ManagedRigidObject.h"
@@ -26,7 +29,7 @@ void declareBasePhysicsObjectWrapper(py::module& m,
                                      const std::string& classStrPrefix) {
   using PhysObjWrapper = AbstractManagedPhysicsObject<T>;
   std::string pyclass_name =
-      classStrPrefix + std::string("PhysicsObjectWrapper");
+      classStrPrefix + std::string("_PhysicsObjectWrapper");
   // ==== AbstractManagedPhysicsObject ====
   py::class_<PhysObjWrapper, std::shared_ptr<PhysObjWrapper>>(
       m, pyclass_name.c_str())
@@ -94,41 +97,80 @@ void declareBasePhysicsObjectWrapper(py::module& m,
       .def(
           "translate", &PhysObjWrapper::translate, "vector"_a,
           ("Move this " + objType + " using passed translation vector").c_str())
-      .def("rotate", &PhysObjWrapper::rotate, "angle_in_rad"_a, "norm_axis"_a,
-           ("Rotate this " + objType +
-            " by passed angle_in_rad around passed 3-element normalized "
-            "norm_axis.")
-               .c_str())
-      .def("rotate_local", &PhysObjWrapper::rotateLocal, "angle_in_rad"_a,
-           "norm_axis"_a,
-           ("Rotate this " + objType +
-            " by passed angle_in_rad around passed 3-element normalized "
-            "norm_axis in the local frame.")
-               .c_str())
-      .def("rotate_x", &PhysObjWrapper::rotateX, "angle_in_rad"_a,
-           ("Rotate this " + objType +
-            " by passed angle_in_rad around the x-axis in global frame.")
-               .c_str())
-      .def("rotate_x_local", &PhysObjWrapper::rotateXLocal, "angle_in_rad"_a,
-           ("Rotate this " + objType +
-            " by passed angle_in_rad around the x-axis in local frame.")
-               .c_str())
-      .def("rotate_y", &PhysObjWrapper::rotateY, "angle_in_rad"_a,
-           ("Rotate this " + objType +
-            " by passed angle_in_rad around the y-axis in global frame.")
-               .c_str())
-      .def("rotate_y_local", &PhysObjWrapper::rotateYLocal, "angle_in_rad"_a,
-           ("Rotate this " + objType +
-            " by passed angle_in_rad around the y-axis in local frame.")
-               .c_str())
-      .def("rotate_z", &PhysObjWrapper::rotateZ, "angle_in_rad"_a,
-           ("Rotate this " + objType +
-            " by passed angle_in_rad around the z-axis in global frame.")
-               .c_str())
-      .def("rotate_z_local", &PhysObjWrapper::rotateZLocal, "angle_in_rad"_a,
-           ("Rotate this " + objType +
-            " by passed angle_in_rad around the z-axis in local frame.")
-               .c_str())
+      .def(
+          "rotate",
+          [](PhysObjWrapper& self, Mn::Radd angle, Mn::Vector3& normAxis) {
+            self.rotate(Mn::Rad(angle), normAxis);
+          },
+          "angle_in_rad"_a, "norm_axis"_a,
+          ("Rotate this " + objType +
+           " by passed angle_in_rad around passed 3-element normalized "
+           "norm_axis.")
+              .c_str())
+      .def(
+          "rotate_local",
+          [](PhysObjWrapper& self, Mn::Radd angle, Mn::Vector3& normAxis) {
+            self.rotateLocal(Mn::Rad(angle), normAxis);
+          },
+          "angle_in_rad"_a, "norm_axis"_a,
+          ("Rotate this " + objType +
+           " by passed angle_in_rad around passed 3-element normalized "
+           "norm_axis in the local frame.")
+              .c_str())
+      .def(
+          "rotate_x",
+          [](PhysObjWrapper& self, Mn::Radd angle) {
+            self.rotateX(Mn::Rad(angle));
+          },
+          "angle_in_rad"_a,
+          ("Rotate this " + objType +
+           " by passed angle_in_rad around the x-axis in global frame.")
+              .c_str())
+      .def(
+          "rotate_x_local",
+          [](PhysObjWrapper& self, Mn::Radd angle) {
+            self.rotateXLocal(Mn::Rad(angle));
+          },
+          "angle_in_rad"_a,
+          ("Rotate this " + objType +
+           " by passed angle_in_rad around the x-axis in local frame.")
+              .c_str())
+      .def(
+          "rotate_y",
+          [](PhysObjWrapper& self, Mn::Radd angle) {
+            self.rotateY(Mn::Rad(angle));
+          },
+          "angle_in_rad"_a,
+          ("Rotate this " + objType +
+           " by passed angle_in_rad around the y-axis in global frame.")
+              .c_str())
+      .def(
+          "rotate_y_local",
+          [](PhysObjWrapper& self, Mn::Radd angle) {
+            self.rotateYLocal(Mn::Rad(angle));
+          },
+          "angle_in_rad"_a,
+          ("Rotate this " + objType +
+           " by passed angle_in_rad around the y-axis in local frame.")
+              .c_str())
+      .def(
+          "rotate_z",
+          [](PhysObjWrapper& self, Mn::Radd angle) {
+            self.rotateZ(Mn::Rad(angle));
+          },
+          "angle_in_rad"_a,
+          ("Rotate this " + objType +
+           " by passed angle_in_rad around the z-axis in global frame.")
+              .c_str())
+      .def(
+          "rotate_z_local",
+          [](PhysObjWrapper& self, Mn::Radd angle) {
+            self.rotateZLocal(Mn::Rad(angle));
+          },
+          "angle_in_rad"_a,
+          ("Rotate this " + objType +
+           " by passed angle_in_rad around the z-axis in local frame.")
+              .c_str())
 
       ;
 }  // declareBasePhysicsObjectWrapper
@@ -138,7 +180,7 @@ void declareRigidBaseWrapper(py::module& m,
                              const std::string& objType,
                              const std::string& classStrPrefix) {
   using RigidBaseWrapper = AbstractManagedRigidBase<T>;
-  std::string pyclass_name = classStrPrefix + std::string("RigidBaseWrapper");
+  std::string pyclass_name = classStrPrefix + std::string("_RigidBaseWrapper");
   // ==== AbstractManagedRigidBase ====
   py::class_<RigidBaseWrapper, AbstractManagedPhysicsObject<T>,
              std::shared_ptr<RigidBaseWrapper>>(m, pyclass_name.c_str())
@@ -254,33 +296,54 @@ void declareRigidBaseWrapper(py::module& m,
 
 }  // declareRigidBaseWrapper
 
-void initPhysicsObjectBindings(py::module& m) {
-  // create bindings for RigidObjects
-  declareBasePhysicsObjectWrapper<RigidObject>(m, "Rigid Object",
-                                               "RigidObject");
-
-  declareRigidBaseWrapper<RigidObject>(m, "Rigid Object", "RigidObject");
-
-  // rigid object instance
-
+void declareRigidObjectWrapper(py::module& m,
+                               const std::string& objType,
+                               const std::string& classStrPrefix) {
+  // ==== ManagedRigidObject ====
   py::class_<ManagedRigidObject, AbstractManagedRigidBase<RigidObject>,
-             std::shared_ptr<ManagedRigidObject>>(m, "ManagedRigidObject")
+             std::shared_ptr<ManagedRigidObject>>(m, classStrPrefix.c_str())
       .def_property_readonly(
           "creation_attributes",
           &ManagedRigidObject::getInitializationAttributes,
-          R"(Get a copy of the attributes used to create this rigid object)")
+          ("Get a copy of the attributes used to create this " + objType + ".")
+              .c_str())
       .def_property_readonly(
           "velocity_control", &ManagedRigidObject::getVelocityControl,
-          R"(Retrieves a reference to the VelocityControl struct for this object.)");
+          ("Retrieves a reference to the VelocityControl struct for this " +
+           objType + ".")
+              .c_str());
 
-  // create bindings for RigidStage
-  // declareBasePhysicsObjectWrapper<RigidStage>(m, "Rigid Stage",
-  // "BaseRigidStage");
+}  // declareRigidObjectTemplateWrapper
 
-  // declareRigidBaseWrapper<RigidStage>(m, "Rigid Stage", "BaseRigidStage");
+template <class T>
+void declareBaseObjectWrappers(py::module& m,
+                               const std::string& objType,
+                               const std::string& classStrPrefix) {
+  declareBasePhysicsObjectWrapper<T>(m, objType, classStrPrefix);
+  declareRigidBaseWrapper<T>(m, objType, classStrPrefix);
+}
 
-  // rigid stage instance
+void initPhysicsObjectBindings(py::module& m) {
+  // create Rigid Object base wrapper bindings
+  declareBaseObjectWrappers<RigidObject>(m, "Rigid Object",
+                                         "ManagedRigidObject");
 
+  // ==== ManagedRigidObject ====
+  declareRigidObjectWrapper(m, "Rigid Object", "ManagedRigidObject");
+
+#ifdef ESP_BUILD_WITH_BULLET
+  // ==== ManagedBulletRigidObject ====
+  py::class_<ManagedBulletRigidObject, ManagedRigidObject,
+             std::shared_ptr<ManagedBulletRigidObject>>(
+      m, "ManagedBulletRigidObject")
+      .def_property("margin", &ManagedBulletRigidObject::getMargin,
+                    &ManagedBulletRigidObject::setMargin,
+                    R"(Get or set this object's collision margin.)")
+      .def_property_readonly(
+          "collision_shape_aabb",
+          &ManagedBulletRigidObject::getCollisionShapeAabb,
+          R"(The bounds of the axis-aligned bounding box from Bullet Physics, in its local coordinate frame.)");
+#endif
 }  // initPhysicsObjectBindings
 
 }  // namespace physics

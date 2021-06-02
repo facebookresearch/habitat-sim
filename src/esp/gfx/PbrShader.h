@@ -10,7 +10,7 @@
 #include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/EnumSet.h>
 #include <Magnum/GL/AbstractShaderProgram.h>
-#include <Magnum/Shaders/Generic.h>
+#include <Magnum/Shaders/GenericGL.h>
 
 #include "esp/core/esp.h"
 
@@ -24,12 +24,12 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   /**
    * @brief vertex positions
    */
-  typedef Magnum::Shaders::Generic3D::Position Position;
+  typedef Magnum::Shaders::GenericGL3D::Position Position;
 
   /**
    * @brief normal direction
    */
-  typedef Magnum::Shaders::Generic3D::Normal Normal;
+  typedef Magnum::Shaders::GenericGL3D::Normal Normal;
 
   /**
    * @brief 2D texture coordinates
@@ -38,7 +38,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    * @ref Flag::BaseColorTexture, @ref Flag::NormalTexture and
    * @ref Flag::RoughnessTexture @ref Flag::MetallicTexture is set.
    */
-  typedef Magnum::Shaders::Generic3D::TextureCoordinates TextureCoordinates;
+  typedef Magnum::Shaders::GenericGL3D::TextureCoordinates TextureCoordinates;
 
   /**
    * @brief Tangent direction with the fourth component indicating the handness.
@@ -50,7 +50,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    *
    * Used only if @ref Flag::NormalTexture is set.
    */
-  typedef Magnum::Shaders::Generic3D::Tangent4 Tangent4;
+  typedef Magnum::Shaders::GenericGL3D::Tangent4 Tangent4;
 
   enum : Magnum::UnsignedInt {
     /**
@@ -58,7 +58,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * present always. Expects three- or four-component floating-point
      * or normalized buffer attachment.
      */
-    ColorOutput = Magnum::Shaders::Generic3D::ColorOutput,
+    ColorOutput = Magnum::Shaders::GenericGL3D::ColorOutput,
 
     /**
      * Object ID shader output. @ref shaders-generic "Generic output",
@@ -66,7 +66,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * single-component unsigned integral attachment. Writes the value
      * set in @ref setObjectId() there.
      */
-    ObjectIdOutput = Magnum::Shaders::Generic3D::ObjectIdOutput,
+    ObjectIdOutput = Magnum::Shaders::GenericGL3D::ObjectIdOutput,
   };
 
   /**
@@ -305,7 +305,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
   /**
    * @brief Set light positions or directions
-   * @param vectors, an array of the light vectors
+   * @param vectors an array of the light vectors
    * @return Reference to self (for method chaining)
    *
    * when vec.w == 0, it means vec.xyz is the light direction;
@@ -323,9 +323,9 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   /**
    *  @brief Set the position or direction of a specific light See @ref vec for
    *  details
-   *  @param lightIndex, the index of the light, MUST be smaller than
+   *  @param lightIndex the index of the light, MUST be smaller than
    *                     lightCount_
-   *  @param vec, the direction (or position) of the light in *camera* space;
+   *  @param vec the direction (or position) of the light in *camera* space;
    *              when vec.w == 0, it means vec.xyz is the light direction;
    *              when vec.w == 1, it means vec.xyz is the light position;
    *  @return Reference to self (for method chaining)
@@ -338,9 +338,9 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
   /**
    *  @brief Set the position of a specific light.
-   *  @param lightIndex, the index of the light, MUST be smaller than
+   *  @param lightIndex the index of the light, MUST be smaller than
    * lightCount_
-   *  @param pos, the position of the light in *camera* space
+   *  @param pos the position of the light in *camera* space
    *  @return Reference to self (for method chaining)
    *  Note:
    *  If the light was a directional light, it will be overrided as a point
@@ -351,9 +351,9 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
   /**
    *  @brief Set the direction of a specific light.
-   *  @param lightIndex, the index of the light, MUST be smaller than
+   *  @param lightIndex the index of the light, MUST be smaller than
    * lightCount_
-   *  @param dir, the direction of the light in *camera* space
+   *  @param dir the direction of the light in *camera* space
    *  @return Reference to self (for method chaining)
    *  NOTE:
    *  If the light was a point light, it will be overrided as a direction
@@ -364,19 +364,19 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
   /**
    *  @brief Set the range of a specific light.
-   *  @param lightIndex, the index of the light, MUST be smaller than
+   *  @param lightIndex the index of the light, MUST be smaller than
    * lightCount_
-   *  @param range, the range of the light
+   *  @param range the range of the light
    *  @return Reference to self (for method chaining)
    */
   PbrShader& setLightRange(unsigned int lightIndex, float range);
 
   /**
    *  @brief Set the color of a specific light.
-   *  @param lightIndex, the index of the light, MUST be smaller than
+   *  @param lightIndex the index of the light, MUST be smaller than
    * lightCount_
-   *  @param color, the color of the light
-   *  @param intensity, the intensity of the light
+   *  @param color the color of the light
+   *  @param intensity the intensity of the light
    *  @return Reference to self (for method chaining)
    */
   PbrShader& setLightColor(unsigned int lightIndex,
@@ -385,7 +385,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
   /**
    *  @brief Set the colors of the lights
-   *  @param color, the colors of the lights
+   *  @param colors the colors of the lights
    *  NOTE: the intensity MUST be included in the color
    *  @return Reference to self (for method chaining)
    */
@@ -399,7 +399,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
   /**
    *  @brief Set the ranges of the lights
-   *  @param ranges, the ranges of the lights
+   *  @param ranges the ranges of the lights
    *  @return Reference to self (for method chaining)
    */
   PbrShader& setLightRanges(Corrade::Containers::ArrayView<const float> ranges);

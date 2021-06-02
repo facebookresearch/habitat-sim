@@ -292,7 +292,8 @@ struct Renderer::Impl {
             RenderCamera::Flags flags) {
     acquireGlContext();
     for (auto& it : sceneGraph.getDrawableGroups()) {
-      // TODO: remove || true
+      // TODO: remove || true and NOLINT below
+      // NOLINTNEXTLINE (readability-simplify-boolean-expr)
       if (it.second.prepareForDraw(camera) || true) {
         camera.draw(it.second, flags);
       }

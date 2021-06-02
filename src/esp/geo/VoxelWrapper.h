@@ -29,12 +29,12 @@ class VoxelWrapper {
    * @param renderAssetHandle The handle for the render asset to which the voxel
    * grid corresponds.
    * @param sceneNode The scene node the voxel wrapper will be pointing to.
-   * @param resourceManager_ Used for retrieving or registering the voxel grid.
+   * @param resourceManager Used for retrieving or registering the voxel grid.
    * @param resolution The approximate number of voxels for the voxelization.
    */
   VoxelWrapper(const std::string& renderAssetHandle,
                esp::scene::SceneNode* sceneNode,
-               esp::assets::ResourceManager& resourceManager_,
+               esp::assets::ResourceManager& resourceManager,
                int resolution);
 #endif
 
@@ -45,13 +45,13 @@ class VoxelWrapper {
    * @param renderAssetHandle The handle for the render asset to which the voxel
    * grid corresponds.
    * @param sceneNode The scene node the voxel wrapper will be pointing to.
-   * @param resourceManager_ Used for registering the voxel grid.
+   * @param resourceManager Used for registering the voxel grid.
    * @param voxelSize The size of an individual voxel cell.
    * @param voxelDimensions The dimensions of the voxel grid.
    */
-  VoxelWrapper(const std::string& handle,
+  VoxelWrapper(const std::string& renderAssetHandle,
                esp::scene::SceneNode* sceneNode,
-               esp::assets::ResourceManager& resourceManager_,
+               esp::assets::ResourceManager& resourceManager,
                Mn::Vector3& voxelSize,
                Mn::Vector3i& voxelDimensions);
 
@@ -98,7 +98,8 @@ class VoxelWrapper {
   // --== FUNCTIONS FROM VOXELGRID ==--
   /**
    * @brief Generates a new empty voxel grid of a specified type.
-   * @param name The key underwhich the grid will be registered and accessed.
+   * @param gridName The key underwhich the grid will be registered and
+   * accessed.
    * @return a StridedArrayView3D for the newly created grid.
    */
   template <typename T>
@@ -108,7 +109,7 @@ class VoxelWrapper {
 
   /**
    * @brief Removes a grid and frees up memory.
-   * @param name The name of the grid to be removed.
+   * @param gridName The name of the grid to be removed.
    */
   void removeGrid(const std::string& gridName) {
     voxelGrid->removeGrid(gridName);

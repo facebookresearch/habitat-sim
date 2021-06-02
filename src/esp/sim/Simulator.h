@@ -61,7 +61,9 @@ class Simulator {
    * to create a "fresh" instance of the simulator may not work correctly
    *
    * @param destroy When set, destroy the background rendering thread and gl
-   * context also. Otherwise these persist.
+   * context also. Otherwise these persist if the background rendering thread
+   * was used. This is done because the OpenGL driver leaks memory on thread
+   * destroy on some systems.
    */
   virtual void close(bool destroy = false);
 
@@ -106,7 +108,7 @@ class Simulator {
    * @brief Return manager for construction and access to asset attributes for
    * the current dataset.
    */
-  const metadata::managers::AssetAttributesManager::ptr
+  const metadata::managers::AssetAttributesManager::ptr&
   getAssetAttributesManager() const {
     return metadataMediator_->getAssetAttributesManager();
   }
@@ -114,7 +116,7 @@ class Simulator {
    * @brief Return manager for construction and access to light attributes and
    * layouts for the current dataset.
    */
-  const metadata::managers::LightLayoutAttributesManager::ptr
+  const metadata::managers::LightLayoutAttributesManager::ptr&
   getLightLayoutAttributesManager() const {
     return metadataMediator_->getLightLayoutAttributesManager();
   }
@@ -123,7 +125,7 @@ class Simulator {
    * @brief Return manager for construction and access to object attributes and
    * layouts for the current dataset.
    */
-  const metadata::managers::ObjectAttributesManager::ptr
+  const metadata::managers::ObjectAttributesManager::ptr&
   getObjectAttributesManager() const {
     return metadataMediator_->getObjectAttributesManager();
   }
@@ -131,7 +133,7 @@ class Simulator {
    * @brief Return manager for construction and access to physics world
    * attributes.
    */
-  const metadata::managers::PhysicsAttributesManager::ptr
+  const metadata::managers::PhysicsAttributesManager::ptr&
   getPhysicsAttributesManager() const {
     return metadataMediator_->getPhysicsAttributesManager();
   }
@@ -139,7 +141,7 @@ class Simulator {
    * @brief Return manager for construction and access to scene attributes for
    * the current dataset.
    */
-  const metadata::managers::StageAttributesManager::ptr
+  const metadata::managers::StageAttributesManager::ptr&
   getStageAttributesManager() const {
     return metadataMediator_->getStageAttributesManager();
   }
@@ -228,16 +230,17 @@ class Simulator {
    * Use this to query the object's properties when it was initialized.
    * Object pointed at by pointer is const, and can not be modified.
    */
-  const metadata::attributes::ObjectAttributes::cptr
-  getObjectInitializationTemplate(int objectId, int sceneID = 0) const;
+  metadata::attributes::ObjectAttributes::cptr getObjectInitializationTemplate(
+      int objectId,
+      int sceneID = 0) const;
 
   /**
    * @brief Get a copy of a stage's template when the stage was instanced.
    *
    * Use this to query the stage's properties when it was initialized.
    */
-  const metadata::attributes::StageAttributes::cptr
-  getStageInitializationTemplate(int sceneID = 0) const;
+  metadata::attributes::StageAttributes::cptr getStageInitializationTemplate(
+      int sceneID = 0) const;
 
   /**
    * @brief Remove an instanced object by ID. See @ref
@@ -384,7 +387,7 @@ class Simulator {
 
   /**
    * @brief Set the @ref esp::core::RigidState of an object kinematically.
-   * @param transform The desired @ref esp::core::RigidState of the object.
+   * @param rigidState The desired @ref esp::core::RigidState of the object.
    * @param  objectID The object ID and key identifying the object in @ref
    * esp::physics::PhysicsManager::existingObjects_.
    * @param sceneID !! Not used currently !! Specifies which physical scene of
@@ -608,6 +611,33 @@ class Simulator {
    * enabled objects.
    */
   bool contactTest(int objectID, int sceneID = 0);
+
+  /**
+   * @brief Perform discrete collision detection for the scene.
+   */
+  void performDiscreteCollisionDetection() {
+    physicsManager_->performDiscreteCollisionDetection();
+  };
+
+  /**
+   * @brief Query physics simulation implementation for contact point data from
+   * the most recent collision detection cache.
+   *
+   * @return a vector with each entry corresponding to a single contact point.
+   */
+  std::vector<esp::physics::ContactPointData> getPhysicsContactPoints() {
+    return physicsManager_->getContactPoints();
+  }
+
+  /**
+   * @brief Query the number of contact points that were active during the
+   * collision detection check.
+   *
+   * @return the number of active contact points.
+   */
+  int getPhysicsNumActiveContactPoints() {
+    return physicsManager_->getNumActiveContactPoints();
+  }
 
   /**
    * @brief Set an object to collidable or not.
@@ -973,14 +1003,10 @@ class Simulator {
    */
   core::Random::ptr random() { return random_; }
 
-  int getNumActiveContactPoints() {
-    return physicsManager_->getNumActiveContactPoints();
-  }
-
   /**
    * @brief Get this simulator's MetadataMediator
    */
-  const metadata::MetadataMediator::ptr getMetadataMediator() const {
+  metadata::MetadataMediator::ptr getMetadataMediator() const {
     return metadataMediator_;
   }
 
@@ -1057,6 +1083,13 @@ class Simulator {
    */
   metadata::attributes::SceneAttributes::cptr setSceneInstanceAttributes(
       const std::string& activeSceneName);
+
+  /**
+   * @brief Instance all the objects in the scene based on the current active
+   * schene's scene instance configuration.
+   * @return whether object creation and placement is completed succesfully
+   */
+  bool instanceObjectsForActiveScene();
 
   /**
    * @brief sample a random valid AgentState in passed agentState

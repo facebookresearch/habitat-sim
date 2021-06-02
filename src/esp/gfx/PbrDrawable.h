@@ -29,10 +29,9 @@ class PbrDrawable : public Drawable {
 
   /**
    *  @brief Set the light info
-   *  @param lightSetupKey, the key value for the light resource
-   *  @param color, the color of the light
+   *  @param lightSetupKey the key value for the light resource
    */
-  void setLightSetup(const Magnum::ResourceKey& lightSetupkey) override;
+  void setLightSetup(const Magnum::ResourceKey& lightSetupKey) override;
 
   static constexpr const char* SHADER_KEY_TEMPLATE = "PBR-lights={}-flags={}";
 
@@ -40,9 +39,9 @@ class PbrDrawable : public Drawable {
   /**
    * @brief overload draw function, see here for more details:
    * https://doc.magnum.graphics/magnum/classMagnum_1_1SceneGraph_1_1Drawable.html#aca0d0a219aa4d7712316de55d67f2134
-   * @param transformationMatrix, the transformation of the object (to which the
+   * @param transformationMatrix the transformation of the object (to which the
    *        drawable is attached) relative to camera
-   * @param camera, the camera that views and renders the world
+   * @param camera the camera that views and renders the world
    */
   void draw(const Magnum::Matrix4& transformationMatrix,
             Magnum::SceneGraph::Camera3D& camera) override;
@@ -63,9 +62,9 @@ class PbrDrawable : public Drawable {
   /**
    *  @brief Update light direction (or position) in *camera* space to the
    * shader
-   *  @param transformationMatrix, describes a tansformation from object (model)
+   *  @param transformationMatrix describes a tansformation from object (model)
    *         space to camera space
-   *  @param camera, the camera, which views and renders the world
+   *  @param camera the camera, which views and renders the world
    *  @return Reference to self (for method chaining)
    */
   PbrDrawable& updateShaderLightDirectionParameters(
@@ -74,8 +73,8 @@ class PbrDrawable : public Drawable {
 
   /**
    * @brief get the key for the shader
-   * @param lightCount, the number of the lights;
-   * @param flags, flags that defines the shader features
+   * @param lightCount the number of the lights;
+   * @param flags flags that defines the shader features
    */
   Magnum::ResourceKey getShaderKey(Magnum::UnsignedInt lightCount,
                                    PbrShader::Flags flags) const;

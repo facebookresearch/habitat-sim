@@ -12,8 +12,10 @@
 #include "esp/scene/SceneManager.h"
 
 #include "esp/physics/PhysicsManager.h"
+#include "esp/physics/objectManagers/RigidObjectManager.h"
 #ifdef ESP_BUILD_WITH_BULLET
 #include "esp/physics/bullet/BulletPhysicsManager.h"
+#include "esp/physics/bullet/objectWrappers/ManagedBulletRigidObject.h"
 #endif
 
 #include "configure.h"
@@ -71,6 +73,8 @@ class PhysicsManagerTest : public testing::Test {
     std::vector<int> tempIDs{sceneID_, esp::ID_UNDEFINED};
     bool result = resourceManager_->loadStage(stageAttributes, physicsManager_,
                                               &sceneManager_, tempIDs, false);
+
+    rigidObjectManager_ = physicsManager_->getRigidObjectManager();
   }
 
   // must declare these in this order due to avoid deallocation errors
@@ -82,6 +86,8 @@ class PhysicsManagerTest : public testing::Test {
   AttrMgrs::PhysicsAttributesManager::ptr physicsAttributesManager_;
   SceneManager sceneManager_;
   PhysicsManager::ptr physicsManager_;
+
+  std::shared_ptr<esp::physics::RigidObjectManager> rigidObjectManager_;
 
   int sceneID_;
 };
@@ -97,7 +103,7 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
   initStage(stageFile);
 
   if (physicsManager_->getPhysicsSimulationLibrary() !=
-      PhysicsManager::PhysicsSimulationLibrary::NONE) {
+      PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
     // if we have a simulation implementation then test a joined vs. unjoined
     // object
     // ObjectAttributes ObjectAttributes;
@@ -121,27 +127,23 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
       objectAttributesManager->registerObject(objectTemplate);
       physicsManager_->reset();
 
-      std::vector<int> objectIds;
-
-      // add and simulate the object
+      // add and simulate objects
       int num_objects = 7;
       for (int o = 0; o < num_objects; o++) {
-        int objectId = physicsManager_->addObject(objectFile);
-        objectIds.push_back(objectId);
+        auto objWrapper = rigidObjectManager_->addObjectByHandle(objectFile);
 
-        const esp::scene::SceneNode& node =
-            physicsManager_->getObjectSceneNode(objectId);
+        esp::scene::SceneNode* node = objWrapper->getSceneNode();
 
         Magnum::Matrix4 R{
             Magnum::Matrix4::rotationX(Magnum::Math::Rad<float>(-1.56)) *
             Magnum::Matrix4::rotationY(Magnum::Math::Rad<float>(-0.25))};
         float boxHeight = 2.0 + (o * 2);
         Magnum::Vector3 initialPosition{0.0, boxHeight + 1.25f, 0.0};
-        physicsManager_->setRotation(
-            objectId, Magnum::Quaternion::fromMatrix(R.rotationNormalized()));
-        physicsManager_->setTranslation(objectId, initialPosition);
+        objWrapper->setRotation(
+            Magnum::Quaternion::fromMatrix(R.rotationNormalized()));
+        objWrapper->setTranslation(initialPosition);
 
-        ASSERT_EQ(node.absoluteTranslation(), initialPosition);
+        ASSERT_EQ(node->absoluteTranslation(), initialPosition);
       }
 
       float timeToSim = 20.0;
@@ -159,10 +161,7 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
         ASSERT_EQ(physicsManager_->getNumActiveContactPoints(), 0);
       }
 
-      for (int o : objectIds) {
-        LOG(INFO) << " ID of obj to remove : " << o;
-        physicsManager_->removeObject(o);
-      }
+      rigidObjectManager_->removeAllObjects();
     }
   }
 }
@@ -179,7 +178,7 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
   initStage(stageFile);
 
   if (physicsManager_->getPhysicsSimulationLibrary() !=
-      PhysicsManager::PhysicsSimulationLibrary::NONE) {
+      PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
     // if we have a simulation implementation then test bounding box vs mesh for
     // sphere object
 
@@ -208,20 +207,22 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
       int objectId = physicsManager_->addObject(
           objectFile, &sceneManager_.getSceneGraph(sceneID_).getDrawables());
 
-      Magnum::Vector3 initialPosition{0.0, 0.25, 0.0};
-      physicsManager_->setTranslation(objectId, initialPosition);
+      auto objectWrapper = rigidObjectManager_->getObjectCopyByID(objectId);
+      ASSERT_NE(objectWrapper, nullptr);
 
-      Magnum::Quaternion prevOrientation =
-          physicsManager_->getRotation(objectId);
-      Magnum::Vector3 prevPosition = physicsManager_->getTranslation(objectId);
+      Magnum::Vector3 initialPosition{0.0, 0.25, 0.0};
+      objectWrapper->setTranslation(initialPosition);
+
+      Magnum::Quaternion prevOrientation = objectWrapper->getRotation();
+      Magnum::Vector3 prevPosition = objectWrapper->getTranslation();
       float timeToSim = 3.0;
       while (physicsManager_->getWorldTime() < timeToSim) {
         Magnum::Vector3 force{2.0, 0.0, 0.0};
-        physicsManager_->applyForce(objectId, force, Magnum::Vector3{});
+        objectWrapper->applyForce(force, Magnum::Vector3{});
         physicsManager_->stepPhysics(0.1);
 
-        Magnum::Quaternion orientation = physicsManager_->getRotation(objectId);
-        Magnum::Vector3 position = physicsManager_->getTranslation(objectId);
+        Magnum::Quaternion orientation = objectWrapper->getRotation();
+        Magnum::Vector3 position = objectWrapper->getTranslation();
 
         // object is being pushed, so should be moving
         ASSERT_NE(position, prevPosition);
@@ -239,7 +240,7 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
         prevPosition = position;
       }
 
-      physicsManager_->removeObject(objectId);
+      rigidObjectManager_->removePhysObjectByID(objectId);
     }
   }
 }
@@ -255,7 +256,7 @@ TEST_F(PhysicsManagerTest, DiscreteContactTest) {
   initStage(stageFile);
 
   if (physicsManager_->getPhysicsSimulationLibrary() !=
-      PhysicsManager::PhysicsSimulationLibrary::NONE) {
+      PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
     ObjectAttributes::ptr ObjectAttributes = ObjectAttributes::create();
     ObjectAttributes->setRenderAssetHandle(objectFile);
     ObjectAttributes->setMargin(0.0);
@@ -264,18 +265,20 @@ TEST_F(PhysicsManagerTest, DiscreteContactTest) {
     objectAttributesManager->registerObject(ObjectAttributes, objectFile);
 
     // generate two centered boxes with dimension 2x2x2
-    int objectId0 = physicsManager_->addObject(objectFile);
-    int objectId1 = physicsManager_->addObject(objectFile);
+    auto objWrapper0 = rigidObjectManager_->addObjectByHandle(objectFile);
+    auto objWrapper1 = rigidObjectManager_->addObjectByHandle(objectFile);
+    int objectId0 = objWrapper0->getID();
+    int objectId1 = objWrapper1->getID();
 
     // place them in collision free location (0.1 about ground plane and 0.2
     // apart)
-    physicsManager_->setTranslation(objectId0, Magnum::Vector3{0, 1.1, 0});
-    physicsManager_->setTranslation(objectId1, Magnum::Vector3{2.2, 1.1, 0});
+    objWrapper0->setTranslation(Magnum::Vector3{0, 1.1, 0});
+    objWrapper1->setTranslation(Magnum::Vector3{2.2, 1.1, 0});
     ASSERT_FALSE(physicsManager_->contactTest(objectId0));
     ASSERT_FALSE(physicsManager_->contactTest(objectId1));
 
     // move box 0 into floor
-    physicsManager_->setTranslation(objectId0, Magnum::Vector3{0, 0.9, 0});
+    objWrapper0->setTranslation(Magnum::Vector3{0, 0.9, 0});
     ASSERT_TRUE(physicsManager_->contactTest(objectId0));
     ASSERT_FALSE(physicsManager_->contactTest(objectId1));
 
@@ -286,14 +289,14 @@ TEST_F(PhysicsManagerTest, DiscreteContactTest) {
     ASSERT_FALSE(physicsManager_->contactTest(objectId0));
 
     // move box 0 into box 1
-    physicsManager_->setTranslation(objectId0, Magnum::Vector3{1.1, 1.1, 0});
+    objWrapper0->setTranslation(Magnum::Vector3{1.1, 1.1, 0});
     ASSERT_TRUE(physicsManager_->contactTest(objectId0));
     ASSERT_TRUE(physicsManager_->contactTest(objectId1));
 
     // set box 0 to non-collidable
-    ASSERT_TRUE(physicsManager_->getObjectIsCollidable(objectId0));
-    physicsManager_->setObjectIsCollidable(objectId0, false);
-    ASSERT_FALSE(physicsManager_->getObjectIsCollidable(objectId0));
+    ASSERT_TRUE(objWrapper0->getCollidable());
+    objWrapper0->setCollidable(false);
+    ASSERT_FALSE(objWrapper0->getCollidable());
     ASSERT_FALSE(physicsManager_->contactTest(objectId0));
     ASSERT_FALSE(physicsManager_->contactTest(objectId1));
   }
@@ -310,7 +313,7 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
   initStage(objectFile);
 
   if (physicsManager_->getPhysicsSimulationLibrary() ==
-      PhysicsManager::PhysicsSimulationLibrary::BULLET) {
+      PhysicsManager::PhysicsSimulationLibrary::Bullet) {
     // test joined vs. unjoined
     ObjectAttributes::ptr ObjectAttributes = ObjectAttributes::create();
     ObjectAttributes->setRenderAssetHandle(objectFile);
@@ -330,16 +333,31 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
     objectTemplate->setJoinCollisionMeshes(false);
     objectAttributesManager->registerObject(objectTemplate);
     int objectId0 = physicsManager_->addObject(objectFile, drawables);
+    auto objectWrapper0 =
+        rigidObjectManager_
+            ->getObjectCopyByID<esp::physics::ManagedBulletRigidObject>(
+                objectId0);
+    ASSERT_NE(objectWrapper0, nullptr);
 
     // add the joined object
     objectTemplate->setJoinCollisionMeshes(true);
     objectAttributesManager->registerObject(objectTemplate);
     int objectId1 = physicsManager_->addObject(objectFile, drawables);
+    auto objectWrapper1 =
+        rigidObjectManager_
+            ->getObjectCopyByID<esp::physics::ManagedBulletRigidObject>(
+                objectId1);
+    ASSERT_NE(objectWrapper1, nullptr);
 
     // add bounding box object
     objectTemplate->setBoundingBoxCollisions(true);
     objectAttributesManager->registerObject(objectTemplate);
     int objectId2 = physicsManager_->addObject(objectFile, drawables);
+    auto objectWrapper2 =
+        rigidObjectManager_
+            ->getObjectCopyByID<esp::physics::ManagedBulletRigidObject>(
+                objectId2);
+    ASSERT_NE(objectWrapper2, nullptr);
 
     esp::physics::BulletPhysicsManager* bPhysManager =
         static_cast<esp::physics::BulletPhysicsManager*>(physicsManager_.get());
@@ -347,12 +365,9 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
     const Magnum::Range3D AabbStage =
         bPhysManager->getStageCollisionShapeAabb();
 
-    const Magnum::Range3D AabbOb0 =
-        bPhysManager->getCollisionShapeAabb(objectId0);
-    const Magnum::Range3D AabbOb1 =
-        bPhysManager->getCollisionShapeAabb(objectId1);
-    const Magnum::Range3D AabbOb2 =
-        bPhysManager->getCollisionShapeAabb(objectId2);
+    const Magnum::Range3D AabbOb0 = objectWrapper0->getCollisionShapeAabb();
+    const Magnum::Range3D AabbOb1 = objectWrapper1->getCollisionShapeAabb();
+    const Magnum::Range3D AabbOb2 = objectWrapper2->getCollisionShapeAabb();
 
     Magnum::Range3D objectGroundTruth({-1.1, -1.1, -1.1}, {1.1, 1.1, 1.1});
     Magnum::Range3D stageGroundTruth({-1.04, -1.04, -1.04}, {1.04, 1.04, 1.04});
@@ -405,22 +420,28 @@ TEST_F(PhysicsManagerTest, ConfigurableScaling) {
     Magnum::Range3D boundsGroundTruth(-abs(testScale), abs(testScale));
 
     int objectId = physicsManager_->addObject(objectFile, &drawables);
+#ifdef ESP_BUILD_WITH_BULLET
+    auto objectWrapper =
+        rigidObjectManager_
+            ->getObjectCopyByID<esp::physics::ManagedBulletRigidObject>(
+                objectId);
+#else
+    auto objectWrapper = rigidObjectManager_->getObjectCopyByID(objectId);
+#endif
+    ASSERT_NE(objectWrapper, nullptr);
+
     objectIDs.push_back(objectId);
 
     const Magnum::Range3D& visualBounds =
-        physicsManager_->getObjectSceneNode(objectId).getCumulativeBB();
+        objectWrapper->getSceneNode()->getCumulativeBB();
 
     ASSERT_EQ(visualBounds, boundsGroundTruth);
 
 // Test Bullet collision shape scaling
 #ifdef ESP_BUILD_WITH_BULLET
     if (physicsManager_->getPhysicsSimulationLibrary() ==
-        PhysicsManager::PhysicsSimulationLibrary::BULLET) {
-      esp::physics::BulletPhysicsManager* bPhysManager =
-          static_cast<esp::physics::BulletPhysicsManager*>(
-              physicsManager_.get());
-
-      Magnum::Range3D aabb = bPhysManager->getCollisionShapeAabb(objectId);
+        PhysicsManager::PhysicsSimulationLibrary::Bullet) {
+      Magnum::Range3D aabb = objectWrapper->getCollisionShapeAabb();
 
       ASSERT_EQ(aabb, boundsGroundTruth);
     }
@@ -429,7 +450,8 @@ TEST_F(PhysicsManagerTest, ConfigurableScaling) {
 
   // check that scales are stored and queried correctly
   for (size_t ix = 0; ix < objectIDs.size(); ix++) {
-    ASSERT_EQ(physicsManager_->getScale(objectIDs[ix]), testScales[ix]);
+    ASSERT_EQ(rigidObjectManager_->getObjectCopyByID(objectIDs[ix])->getScale(),
+              testScales[ix]);
   }
 }
 
@@ -455,28 +477,37 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
   auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
 
   int objectId = physicsManager_->addObject(objectFile, &drawables);
-  physicsManager_->setTranslation(objectId, Magnum::Vector3{0, 1.0, 0});
+#ifdef ESP_BUILD_WITH_BULLET
+  auto objectWrapper =
+      rigidObjectManager_
+          ->getObjectCopyByID<esp::physics::ManagedBulletRigidObject>(objectId);
+#else
+  auto objectWrapper = rigidObjectManager_->getObjectCopyByID(objectId);
+#endif
+  ASSERT_NE(objectWrapper, nullptr);
+
+  objectWrapper->setTranslation(Magnum::Vector3{0, 1.0, 0});
 
   Magnum::Vector3 commandLinVel(1.0, 1.0, 1.0);
   Magnum::Vector3 commandAngVel(1.0, 1.0, 1.0);
 
   // test results of getting/setting
   if (physicsManager_->getPhysicsSimulationLibrary() ==
-      PhysicsManager::PhysicsSimulationLibrary::BULLET) {
-    physicsManager_->setLinearVelocity(objectId, commandLinVel);
-    physicsManager_->setAngularVelocity(objectId, commandAngVel);
+      PhysicsManager::PhysicsSimulationLibrary::Bullet) {
+    objectWrapper->setLinearVelocity(commandLinVel);
+    objectWrapper->setAngularVelocity(commandAngVel);
 
-    ASSERT_EQ(physicsManager_->getLinearVelocity(objectId), commandLinVel);
-    ASSERT_EQ(physicsManager_->getAngularVelocity(objectId), commandAngVel);
+    ASSERT_EQ(objectWrapper->getLinearVelocity(), commandLinVel);
+    ASSERT_EQ(objectWrapper->getAngularVelocity(), commandAngVel);
 
   } else if (physicsManager_->getPhysicsSimulationLibrary() ==
-             PhysicsManager::PhysicsSimulationLibrary::NONE) {
-    physicsManager_->setLinearVelocity(objectId, commandLinVel);
-    physicsManager_->setAngularVelocity(objectId, commandAngVel);
+             PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
+    objectWrapper->setLinearVelocity(commandLinVel);
+    objectWrapper->setAngularVelocity(commandAngVel);
 
     // default kinematics always 0 velocity when queried
-    ASSERT_EQ(physicsManager_->getLinearVelocity(objectId), Magnum::Vector3{});
-    ASSERT_EQ(physicsManager_->getAngularVelocity(objectId), Magnum::Vector3{});
+    ASSERT_EQ(objectWrapper->getLinearVelocity(), Magnum::Vector3{});
+    ASSERT_EQ(objectWrapper->getAngularVelocity(), Magnum::Vector3{});
   }
 
   // test constant velocity control mechanism
@@ -488,9 +519,8 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
   velControl->angVel = Magnum::Vector3{1.0, 0, 0};
 
   // first kinematic
-  physicsManager_->setObjectMotionType(objectId,
-                                       esp::physics::MotionType::KINEMATIC);
-  physicsManager_->setTranslation(objectId, Magnum::Vector3{0, 2.0, 0});
+  objectWrapper->setMotionType(esp::physics::MotionType::KINEMATIC);
+  objectWrapper->setTranslation(Magnum::Vector3{0, 2.0, 0});
 
   float targetTime = 2.0;
   while (physicsManager_->getWorldTime() < targetTime) {
@@ -500,38 +530,34 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
   Magnum::Quaternion qGroundTruth{{0.842602, 0, 0}, 0.538537};
 
   float errorEps = 0.015;  // fairly loose due to discrete timestep
-  ASSERT_LE(
-      (physicsManager_->getTranslation(objectId) - posGroundTruth).length(),
-      errorEps);
+  ASSERT_LE((objectWrapper->getTranslation() - posGroundTruth).length(),
+            errorEps);
   Magnum::Rad angleError =
-      Magnum::Math::angle(physicsManager_->getRotation(objectId), qGroundTruth);
+      Magnum::Math::angle(objectWrapper->getRotation(), qGroundTruth);
 
   ASSERT_LE(float(angleError), errorEps);
 
   if (physicsManager_->getPhysicsSimulationLibrary() ==
-      PhysicsManager::PhysicsSimulationLibrary::BULLET) {
-    physicsManager_->setObjectMotionType(objectId,
-                                         esp::physics::MotionType::DYNAMIC);
-    physicsManager_->resetTransformation(objectId);
-    physicsManager_->setTranslation(objectId, Magnum::Vector3{0, 2.0, 0});
+      PhysicsManager::PhysicsSimulationLibrary::Bullet) {
+    objectWrapper->setMotionType(esp::physics::MotionType::DYNAMIC);
+    objectWrapper->resetTransformation();
+    objectWrapper->setTranslation(Magnum::Vector3{0, 2.0, 0});
     physicsManager_->setGravity({});  // 0 gravity interference
     physicsManager_->reset();         // reset time to 0
 
     // should closely follow kinematic result while uninhibited in 0 gravity
     float targetTime = 0.5;
-    esp::core::RigidState initialObjectState(
-        physicsManager_->getRotation(objectId),
-        physicsManager_->getTranslation(objectId));
+    esp::core::RigidState initialObjectState(objectWrapper->getRotation(),
+                                             objectWrapper->getTranslation());
     esp::core::RigidState kinematicResult =
         velControl->integrateTransform(targetTime, initialObjectState);
     while (physicsManager_->getWorldTime() < targetTime) {
       physicsManager_->stepPhysics(physicsManager_->getTimestep());
     }
-    ASSERT_LE((physicsManager_->getTranslation(objectId) -
-               kinematicResult.translation)
+    ASSERT_LE((objectWrapper->getTranslation() - kinematicResult.translation)
                   .length(),
               errorEps);
-    angleError = Magnum::Math::angle(physicsManager_->getRotation(objectId),
+    angleError = Magnum::Math::angle(objectWrapper->getRotation(),
                                      kinematicResult.rotation);
     ASSERT_LE(float(angleError), errorEps);
 
@@ -540,14 +566,13 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
     while (physicsManager_->getWorldTime() < targetTime) {
       physicsManager_->stepPhysics(physicsManager_->getTimestep());
     }
-    ASSERT_GE(physicsManager_->getTranslation(objectId)[1], 1.0 - errorEps);
+    ASSERT_GE(objectWrapper->getTranslation()[1], 1.0 - errorEps);
   }
 
   // test local velocity
-  physicsManager_->setObjectMotionType(objectId,
-                                       esp::physics::MotionType::KINEMATIC);
-  physicsManager_->resetTransformation(objectId);
-  physicsManager_->setTranslation(objectId, Magnum::Vector3{0, 2.0, 0});
+  objectWrapper->setMotionType(esp::physics::MotionType::KINEMATIC);
+  objectWrapper->resetTransformation();
+  objectWrapper->setTranslation(Magnum::Vector3{0, 2.0, 0});
 
   velControl->linVel = Magnum::Vector3{0.0, 0.0, -1.0};
   velControl->angVel = Magnum::Vector3{1.0, 0, 0};
@@ -569,11 +594,10 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
   velControl->angVel = Magnum::Vector3{0.0, 0.0, 0.0};
   physicsManager_->stepPhysics(physicsManager_->getTimestep());
 
-  ASSERT_LE((physicsManager_->getTranslation(objectId) - posLocalGroundTruth)
-                .length(),
+  ASSERT_LE((objectWrapper->getTranslation() - posLocalGroundTruth).length(),
             errorEps);
-  Magnum::Rad angleErrorLocal = Magnum::Math::angle(
-      physicsManager_->getRotation(objectId), qLocalGroundTruth);
+  Magnum::Rad angleErrorLocal =
+      Magnum::Math::angle(objectWrapper->getRotation(), qLocalGroundTruth);
 
   ASSERT_LE(float(angleErrorLocal), errorEps);
 }
@@ -605,12 +629,21 @@ TEST_F(PhysicsManagerTest, TestSceneNodeAttachment) {
 
   // Test attaching newNode to a RigidBody
   int objectId = physicsManager_->addObject(objectFile, &drawables, newNode);
-  ASSERT_EQ(&physicsManager_->getObjectSceneNode(objectId), newNode);
+#ifdef ESP_BUILD_WITH_BULLET
+  auto objectWrapper =
+      rigidObjectManager_
+          ->getObjectCopyByID<esp::physics::ManagedBulletRigidObject>(objectId);
+#else
+  auto objectWrapper = rigidObjectManager_->getObjectCopyByID(objectId);
+#endif
+  ASSERT_NE(objectWrapper, nullptr);
+
+  ASSERT_EQ(objectWrapper->getSceneNode(), newNode);
 
   // Test updating newNode position with PhysicsManager
   Magnum::Vector3 newPos{1.0, 3.0, 0.0};
-  physicsManager_->setTranslation(objectId, newPos);
-  ASSERT_EQ(physicsManager_->getTranslation(objectId), newPos);
+  objectWrapper->setTranslation(newPos);
+  ASSERT_EQ(objectWrapper->getTranslation(), newPos);
   ASSERT_EQ(newNode->translation(), newPos);
 
   // Test leaving newNode without visualNode_ after destroying the RigidBody
@@ -646,7 +679,7 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
 
   // We need dynamics to test this.
   if (physicsManager_->getPhysicsSimulationLibrary() !=
-      PhysicsManager::PhysicsSimulationLibrary::NONE) {
+      PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
     float boxHalfExtent = 0.2;
 
     ObjectAttributes::ptr ObjectAttributes = ObjectAttributes::create();
@@ -764,7 +797,7 @@ TEST_F(PhysicsManagerTest, TestNumActiveContactPoints) {
 
   // We need dynamics to test this.
   if (physicsManager_->getPhysicsSimulationLibrary() !=
-      PhysicsManager::PhysicsSimulationLibrary::NONE) {
+      PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
     auto objectAttributesManager =
         metadataMediator_->getObjectAttributesManager();
 
@@ -780,16 +813,40 @@ TEST_F(PhysicsManagerTest, TestNumActiveContactPoints) {
     // no active contact points at start
     ASSERT_EQ(physicsManager_->getNumActiveContactPoints(), 0);
 
-    // simulate to let cube fall, stabilize and go to sleep
-    bool didHaveActiveContacts = false;
+    // simulate to let cube fall and hit the ground
+    while (physicsManager_->getWorldTime() < 2.0) {
+      physicsManager_->stepPhysics(0.1);
+    }
+
+    auto allContactPoints = physicsManager_->getContactPoints();
+    // expect 4 active contact points for cube
+    ASSERT_EQ(allContactPoints.size(), 4);
+    ASSERT_EQ(physicsManager_->getNumActiveContactPoints(), 4);
+    float totalNormalForce = 0;
+    for (auto& cp : allContactPoints) {
+      // contacts are still active
+      ASSERT(cp.isActive);
+      // normal direction is unit Y (world up)
+      ASSERT_LE(
+          (cp.contactNormalOnBInWS - Magnum::Vector3{0.0, 1.0, 0.0}).length(),
+          1.0e-4);
+      // one object is the cube (0), other is the stage (-1)
+      ASSERT_EQ(cp.objectIdA, 0);
+      ASSERT_EQ(cp.objectIdB, -1);
+      // accumulate the normal force
+      totalNormalForce += cp.normalForce;
+      // solver should keep the cube at the contact boundary (~0 penetration)
+      ASSERT_LE(cp.contactDistance, 1.0e-4);
+    }
+    // mass 1 cube under gravity should require normal contact force of ~9.8
+    ASSERT_LE(totalNormalForce - 9.8, 3.0e-4);
+
+    // continue simulation until the cube is stable and sleeping
     while (physicsManager_->getWorldTime() < 4.0) {
       physicsManager_->stepPhysics(0.1);
-      if (physicsManager_->getNumActiveContactPoints() > 0) {
-        didHaveActiveContacts = true;
-      }
     }
-    ASSERT(didHaveActiveContacts);
-
+    // 4 inactive contact points at end
+    ASSERT_EQ(physicsManager_->getContactPoints().size(), 4);
     // no active contact points at end
     ASSERT_EQ(physicsManager_->getNumActiveContactPoints(), 0);
   }
@@ -806,7 +863,7 @@ TEST_F(PhysicsManagerTest, TestRemoveSleepingSupport) {
 
   // We need dynamics to test this.
   if (physicsManager_->getPhysicsSimulationLibrary() !=
-      PhysicsManager::PhysicsSimulationLibrary::NONE) {
+      PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
     auto objectAttributesManager =
         metadataMediator_->getObjectAttributesManager();
 

@@ -65,6 +65,61 @@ bool PhysicsManager::addStageFinalize(
   return sceneSuccess;
 }  // PhysicsManager::addStageFinalize
 
+int PhysicsManager::addObjectInstance(
+    const esp::metadata::attributes::SceneObjectInstanceAttributes::ptr&
+        objInstAttributes,
+    const std::string& attributesHandle,
+    bool defaultCOMCorrection,
+    scene::SceneNode* attachmentNode,
+    const std::string& lightSetup) {
+  const std::string errMsgTmplt = "PhysicsManager::addObjectInstance : ";
+  // Get ObjectAttributes
+  auto objAttributes =
+      resourceManager_.getObjectAttributesManager()->getObjectCopyByHandle(
+          attributesHandle);
+  if (!objAttributes) {
+    LOG(ERROR) << errMsgTmplt
+               << "Missing/improperly configured objectAttributes "
+               << attributesHandle << ", whose handle contains "
+               << objInstAttributes->getHandle()
+               << " as specified in object instance attributes.";
+    return 0;
+  }
+  // set shader type to use for stage
+  int objShaderType = objInstAttributes->getShaderType();
+  if (objShaderType !=
+      static_cast<int>(
+          metadata::attributes::ObjectInstanceShaderType::Unknown)) {
+    objAttributes->setShaderType(objShaderType);
+  }
+  int objID = 0;
+  if (simulator_ != nullptr) {
+    auto& drawables = simulator_->getDrawableGroup();
+    objID = addObject(objAttributes, &drawables, attachmentNode, lightSetup);
+  } else {
+    // support creation when simulator DNE
+    objID = addObject(objAttributes, nullptr, attachmentNode, lightSetup);
+  }
+
+  if (objID == ID_UNDEFINED) {
+    // instancing failed for some reason.
+    LOG(ERROR) << errMsgTmplt << "Object create failed for objectAttributes "
+               << attributesHandle << ", whose handle contains "
+               << objInstAttributes->getHandle()
+               << " as specified in object instance attributes.";
+    return ID_UNDEFINED;
+  }
+
+  // save the scene init attributes used to configure object's initial state
+  this->existingObjects_.at(objID)->setSceneInstanceAttr(objInstAttributes);
+  // set object's location, rotation and other pertinent state values based on
+  // scene object instance attributes set in the object above.
+  this->existingObjects_.at(objID)->resetStateFromSceneInstanceAttr(
+      defaultCOMCorrection);
+
+  return objID;
+}  // PhysicsManager::addObjectInstance
+
 int PhysicsManager::addObject(const std::string& attributesHandle,
                               scene::SceneNode* attachmentNode,
                               const std::string& lightSetup) {
@@ -192,9 +247,9 @@ int PhysicsManager::addObject(
                << newObjectHandle;
 
   existingObjects_.at(nextObjectID_)->setObjectName(newObjectHandle);
+
   // 2.0 Get wrapper - name is irrelevant, do not register.
-  ManagedRigidObject::ptr objWrapper =
-      rigidObjectManager_->createObject("No Name Yet");
+  ManagedRigidObject::ptr objWrapper = getRigidObjectWrapper();
 
   // 3.0 Put object in wrapper
   objWrapper->setObjectRef(existingObjects_.at(nextObjectID_));
@@ -204,6 +259,10 @@ int PhysicsManager::addObject(
 
   return nextObjectID_;
 }  // PhysicsManager::addObject
+
+esp::physics::ManagedRigidObject::ptr PhysicsManager::getRigidObjectWrapper() {
+  return rigidObjectManager_->createObject("ManagedRigidObject");
+}
 
 void PhysicsManager::removeObject(const int physObjectID,
                                   bool deleteObjectNode,
@@ -673,10 +732,8 @@ void PhysicsManager::setVoxelizationDraw(const std::string& gridName,
     rigidBase->VoxelNode_ = nullptr;
 
   } else if (drawVoxelization && rigidBase->visualNode_) {
-    if (rigidBase->VoxelNode_) {
-      // if the VoxelNode is already rendering something, destroy it.
-      delete rigidBase->VoxelNode_;
-    }
+    // if the VoxelNode is already rendering something, destroy it.
+    delete rigidBase->VoxelNode_;
 
     // re-create the voxel node
     rigidBase->VoxelNode_ = &rigidBase->visualNode_->createChild();

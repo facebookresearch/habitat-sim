@@ -11,7 +11,6 @@
 #include <Corrade/Utility/Macros.h>
 #include <Magnum/GL/AbstractShaderProgram.h>
 #include <Magnum/GL/CubeMapTexture.h>
-#include <Magnum/Shaders/Generic.h>
 #include "Magnum/GL/Mesh.h"
 #include "esp/core/esp.h"
 #include "esp/gfx/CubeMap.h"
@@ -30,7 +29,7 @@ class EquirectangularShader : public CubeMapShaderBase {
 
   /**
    * @brief Set ViewportSize for calculations in vertex shader
-   * @param[in] Vector2i the size of the viewport
+   * @param[in] viewportSize the size of the viewport
    * @return itself for method chaining
    */
   EquirectangularShader& setViewportSize(esp::vec2i viewportSize);

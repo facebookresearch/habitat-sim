@@ -12,6 +12,12 @@
  */
 namespace esp {
 namespace physics {
+
+/**
+ * @brief A @ref RigidBase representing an individual rigid stage instance
+ * attached to a SceneNode. This construction currently may only be
+ * @ref esp::physics::MotionType::STATIC.
+ */
 class RigidStage : public RigidBase {
  public:
   RigidStage(scene::SceneNode* rigidBodyNode,
@@ -55,8 +61,6 @@ class RigidStage : public RigidBase {
    * geometry.  This is overridden by inheriting class specific to certain
    * physics libraries.Necessary to support kinematic objects without any
    * dynamics support.
-   * @param resMgr Reference to resource manager, to access relevant components
-   * pertaining to the stage object
    * @return true if initialized successfully, false otherwise.
    */
   bool initialization_LibSpecific() override { return true; }
@@ -70,6 +74,15 @@ class RigidStage : public RigidBase {
   bool finalizeObject_LibSpecific() override { return true; }
 
  public:
+  /**
+   * @brief Currently not supported. Set or reset the stages's state using the
+   * object's specified @p sceneInstanceAttributes_.
+   * @param defaultCOMCorrection The default value of whether COM-based
+   * translation correction needs to occur.
+   */
+  void resetStateFromSceneInstanceAttr(
+      CORRADE_UNUSED bool defaultCOMCorrection = false) override {}
+
   /**
    * @brief Currently ignored for stage objects.
    * @param mt The desirved @ref MotionType.

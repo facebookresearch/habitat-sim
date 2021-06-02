@@ -7,7 +7,7 @@
 #include <Magnum/GL/Mesh.h>
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/Primitives/Cube.h>
-#include <Magnum/Shaders/Flat.h>
+#include <Magnum/Shaders/FlatGL.h>
 #include <Magnum/Trade/MeshData.h>
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/GenericDrawable.h"
@@ -76,7 +76,7 @@ DrawableTest::DrawableTest() {
 
 void DrawableTest::addRemoveDrawables() {
   Mn::GL::Mesh box;
-  Mn::Shaders::Flat3D shader;
+  Mn::Shaders::FlatGL3D shader;
 
   Mn::Trade::MeshData cube = Mn::Primitives::cubeSolidStrip();
   box = Mn::MeshTools::compile(cube);

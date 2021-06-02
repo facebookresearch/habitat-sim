@@ -7,8 +7,7 @@
 #include <Magnum/Image.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/PixelFormat.h>
-#include <Magnum/Shaders/Generic.h>
-#include <Magnum/Shaders/MeshVisualizer.h>
+#include <Magnum/Shaders/GenericGL.h>
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
@@ -61,9 +60,9 @@ ObjectPickingHelper& ObjectPickingHelper::prepareToDraw() {
 }
 
 ObjectPickingHelper& ObjectPickingHelper::mapForDraw() {
-  selectionFramebuffer_.mapForDraw({{Mn::Shaders::Generic3D::ColorOutput,
+  selectionFramebuffer_.mapForDraw({{Mn::Shaders::GenericGL3D::ColorOutput,
                                      Mn::GL::Framebuffer::DrawAttachment::None},
-                                    {Mn::Shaders::Generic3D::ObjectIdOutput,
+                                    {Mn::Shaders::GenericGL3D::ObjectIdOutput,
                                      Mn::GL::Framebuffer::ColorAttachment{1}}});
   return *this;
 }

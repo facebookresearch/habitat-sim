@@ -16,13 +16,10 @@ from settings import default_sim_settings, make_cfg
 
 import habitat_sim
 import habitat_sim.agent
+import habitat_sim.utils.datasets_download as data_downloader
 from habitat_sim.nav import ShortestPath
 from habitat_sim.physics import MotionType
-from habitat_sim.utils.common import (
-    d3_40_colors_rgb,
-    download_and_unzip,
-    quat_from_angle_axis,
-)
+from habitat_sim.utils.common import d3_40_colors_rgb, quat_from_angle_axis
 
 _barrier = None
 
@@ -157,8 +154,13 @@ class DemoRunner:
         max_union_bb_dim = np.array([0.125, 0.19, 0.26])
 
         # add some objects in a grid
-        object_library = self._sim.get_object_template_manager()
-        object_lib_size = object_library.get_num_templates()
+        # get the rigid object attributes manager, which manages
+        # templates used to create objects
+        obj_template_mgr = self._sim.get_object_template_manager()
+        # get the rigid object manager, which provides direct
+        # access to objects
+        rigid_obj_mgr = self._sim.get_rigid_object_manager()
+        object_lib_size = obj_template_mgr.get_num_templates()
         object_init_grid_dim = (3, 1, 3)
         object_init_grid = {}
         assert (
@@ -166,8 +168,7 @@ class DemoRunner:
         ), "!!!No objects loaded in library, aborting object instancing example!!!"
 
         # clear the objects if we are re-running this initializer
-        for old_obj_id in self._sim.get_existing_object_ids():
-            self._sim.remove_object(old_obj_id)
+        rigid_obj_mgr.remove_all_objects()
 
         for _obj_id in range(num_objects):
             # rand_obj_index = random.randint(0, object_lib_size - 1)
@@ -186,8 +187,8 @@ class DemoRunner:
                     random.randint(-object_init_grid_dim[1], object_init_grid_dim[1]),
                     random.randint(-object_init_grid_dim[2], object_init_grid_dim[2]),
                 )
-            object_id = self._sim.add_object(rand_obj_index)
-            object_init_grid[object_init_cell] = object_id
+            obj = rigid_obj_mgr.add_object_by_template_id(rand_obj_index)
+            object_init_grid[object_init_cell] = obj.object_id
             object_offset = np.array(
                 [
                     max_union_bb_dim[0] * object_init_cell[0],
@@ -195,10 +196,10 @@ class DemoRunner:
                     max_union_bb_dim[2] * object_init_cell[2],
                 ]
             )
-            self._sim.set_translation(object_position + object_offset, object_id)
+            obj.translation = object_position + object_offset
             print(
                 "added object: "
-                + str(object_id)
+                + str(obj.object_id)
                 + " of type "
                 + str(rand_obj_index)
                 + " at: "
@@ -208,6 +209,9 @@ class DemoRunner:
             )
 
     def do_time_steps(self):
+        # get the rigid object manager, which provides direct
+        # access to objects
+        rigid_obj_mgr = self._sim.get_rigid_object_manager()
 
         total_sim_step_time = 0.0
         total_frames = 0
@@ -221,7 +225,7 @@ class DemoRunner:
             self.init_physics_test_scene(
                 num_objects=self._sim_settings.get("num_objects")
             )
-            print("active object ids: " + str(self._sim.get_existing_object_ids()))
+            print("active object names: " + str(rigid_obj_mgr.get_object_handles()))
 
         time_per_step = []
 
@@ -236,15 +240,14 @@ class DemoRunner:
 
             # apply kinematic or dynamic control to all objects based on their MotionType
             if self._sim_settings["enable_physics"]:
-                obj_ids = self._sim.get_existing_object_ids()
-                for obj_id in obj_ids:
+                obj_names = rigid_obj_mgr.get_object_handles()
+                for obj_name in obj_names:
                     rand_nudge = np.random.uniform(-0.05, 0.05, 3)
-                    if self._sim.get_object_motion_type(obj_id) == MotionType.KINEMATIC:
-                        # TODO: just bind the trnslate function instead of emulating it here.
-                        cur_pos = self._sim.get_translation(obj_id)
-                        self._sim.set_translation(cur_pos + rand_nudge, obj_id)
-                    elif self._sim.get_object_motion_type(obj_id) == MotionType.DYNAMIC:
-                        self._sim.apply_force(rand_nudge, np.zeros(3), obj_id)
+                    obj = rigid_obj_mgr.get_object_by_handle(obj_name)
+                    if obj.motion_type == MotionType.KINEMATIC:
+                        obj.translate(rand_nudge)
+                    elif obj.motion_type == MotionType.DYNAMIC:
+                        obj.apply_force(rand_nudge, np.zeros(3))
 
             # get "interaction" time
             total_sim_step_time += time.time() - start_step_time
@@ -329,7 +332,7 @@ class DemoRunner:
             print(
                 "Test scenes not downloaded locally, downloading and extracting now..."
             )
-            download_and_unzip(default_sim_settings["test_scene_data_url"], ".")
+            data_downloader.main(["--uids", "habitat_test_scenes"])
             print("Downloaded and extracted test scenes data.")
 
         # create a simulator (Simulator python class object, not the backend simulator)

@@ -28,24 +28,24 @@ GenericDrawable::GenericDrawable(scene::SceneNode& node,
       lightSetup_{shaderManager.get<LightSetup>(lightSetupKey)},
       materialData_{
           shaderManager.get<MaterialData, PhongMaterialData>(materialDataKey)} {
-  flags_ = Mn::Shaders::Phong::Flag::ObjectId;
+  flags_ = Mn::Shaders::PhongGL::Flag::ObjectId;
   if (materialData_->textureMatrix != Mn::Matrix3{}) {
-    flags_ |= Mn::Shaders::Phong::Flag::TextureTransformation;
+    flags_ |= Mn::Shaders::PhongGL::Flag::TextureTransformation;
   }
   if (materialData_->ambientTexture) {
-    flags_ |= Mn::Shaders::Phong::Flag::AmbientTexture;
+    flags_ |= Mn::Shaders::PhongGL::Flag::AmbientTexture;
   }
   if (materialData_->diffuseTexture) {
-    flags_ |= Mn::Shaders::Phong::Flag::DiffuseTexture;
+    flags_ |= Mn::Shaders::PhongGL::Flag::DiffuseTexture;
   }
   if (materialData_->specularTexture) {
-    flags_ |= Mn::Shaders::Phong::Flag::SpecularTexture;
+    flags_ |= Mn::Shaders::PhongGL::Flag::SpecularTexture;
   }
   if (materialData_->normalTexture) {
     if (meshAttributeFlags & Drawable::Flag::HasTangent) {
-      flags_ |= Mn::Shaders::Phong::Flag::NormalTexture;
+      flags_ |= Mn::Shaders::PhongGL::Flag::NormalTexture;
       if (meshAttributeFlags & Drawable::Flag::HasSeparateBitangent) {
-        flags_ |= Mn::Shaders::Phong::Flag::Bitangent;
+        flags_ |= Mn::Shaders::PhongGL::Flag::Bitangent;
       }
     } else {
       LOG(WARNING) << "Mesh does not have tangents and Magnum cannot generate "
@@ -53,10 +53,10 @@ GenericDrawable::GenericDrawable(scene::SceneNode& node,
     }
   }
   if (materialData_->perVertexObjectId) {
-    flags_ |= Mn::Shaders::Phong::Flag::InstancedObjectId;
+    flags_ |= Mn::Shaders::PhongGL::Flag::InstancedObjectId;
   }
   if (materialData_->vertexColored) {
-    flags_ |= Mn::Shaders::Phong::Flag::VertexColor;
+    flags_ |= Mn::Shaders::PhongGL::Flag::VertexColor;
   }
 
   // update the shader early here to to avoid doing it during the render loop
@@ -129,21 +129,21 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
       .setProjectionMatrix(camera.projectionMatrix())
       .setNormalMatrix(transformationMatrix.normalMatrix());
 
-  if ((flags_ & Mn::Shaders::Phong::Flag::TextureTransformation) &&
+  if ((flags_ & Mn::Shaders::PhongGL::Flag::TextureTransformation) &&
       materialData_->textureMatrix != Mn::Matrix3{}) {
     shader_->setTextureMatrix(materialData_->textureMatrix);
   }
 
-  if (flags_ & Mn::Shaders::Phong::Flag::AmbientTexture) {
+  if (flags_ & Mn::Shaders::PhongGL::Flag::AmbientTexture) {
     shader_->bindAmbientTexture(*(materialData_->ambientTexture));
   }
-  if (flags_ & Mn::Shaders::Phong::Flag::DiffuseTexture) {
+  if (flags_ & Mn::Shaders::PhongGL::Flag::DiffuseTexture) {
     shader_->bindDiffuseTexture(*(materialData_->diffuseTexture));
   }
-  if (flags_ & Mn::Shaders::Phong::Flag::SpecularTexture) {
+  if (flags_ & Mn::Shaders::PhongGL::Flag::SpecularTexture) {
     shader_->bindSpecularTexture(*(materialData_->specularTexture));
   }
-  if (flags_ & Mn::Shaders::Phong::Flag::NormalTexture) {
+  if (flags_ & Mn::Shaders::PhongGL::Flag::NormalTexture) {
     shader_->bindNormalTexture(*(materialData_->normalTexture));
   }
 
@@ -158,13 +158,13 @@ void GenericDrawable::updateShader() {
     // if the number of lights or flags have changed, we need to fetch a
     // compatible shader
     shader_ =
-        shaderManager_.get<Mn::GL::AbstractShaderProgram, Mn::Shaders::Phong>(
+        shaderManager_.get<Mn::GL::AbstractShaderProgram, Mn::Shaders::PhongGL>(
             getShaderKey(lightCount, flags_));
 
     // if no shader with desired number of lights and flags exists, create one
     if (!shader_) {
       shaderManager_.set<Mn::GL::AbstractShaderProgram>(
-          shader_.key(), new Mn::Shaders::Phong{flags_, lightCount},
+          shader_.key(), new Mn::Shaders::PhongGL{flags_, lightCount},
           Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
     }
 
@@ -175,10 +175,10 @@ void GenericDrawable::updateShader() {
 
 Mn::ResourceKey GenericDrawable::getShaderKey(
     Mn::UnsignedInt lightCount,
-    Mn::Shaders::Phong::Flags flags) const {
+    Mn::Shaders::PhongGL::Flags flags) const {
   return Corrade::Utility::formatString(
       SHADER_KEY_TEMPLATE, lightCount,
-      static_cast<Mn::Shaders::Phong::Flags::UnderlyingType>(flags));
+      static_cast<Mn::Shaders::PhongGL::Flags::UnderlyingType>(flags));
 }
 
 }  // namespace gfx

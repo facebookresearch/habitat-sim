@@ -15,6 +15,7 @@
 
 #include <Corrade/Containers/Optional.h>
 #include <Magnum/Magnum.h>
+#include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix4.h>
 #include <Magnum/Math/Quaternion.h>
 
@@ -46,6 +47,38 @@ inline bool fromJsonValue(const JsonGenericValue& obj, Magnum::Vector3& val) {
         return false;
       }
     }
+    return true;
+  }
+  return false;
+}
+
+inline JsonGenericValue toJsonValue(const Magnum::Color4& color,
+                                    JsonAllocator& allocator) {
+  return toJsonArrayHelper(color.data(), 4, allocator);
+}
+
+/**
+ * @brief Specialization to handle Magnum::Color4 values. Populate passed @p
+ * val with value. Returns whether successfully populated, or not. Logs an error
+ * if inappropriate type.
+ *
+ * @param obj json value to parse
+ * @param val destination value to be populated
+ * @return whether successful or not
+ */
+inline bool fromJsonValue(const JsonGenericValue& obj, Magnum::Color4& val) {
+  if (obj.IsArray() && obj.Size() == 4) {
+    Magnum::Vector4 vec4;
+    for (rapidjson::SizeType i = 0; i < 4; ++i) {
+      if (obj[i].IsNumber()) {
+        vec4[i] = obj[i].GetDouble();
+      } else {
+        LOG(ERROR) << " Invalid numeric value specified in JSON Color4, index :"
+                   << i;
+        return false;
+      }
+    }
+    val = Magnum::Color4(vec4);
     return true;
   }
   return false;

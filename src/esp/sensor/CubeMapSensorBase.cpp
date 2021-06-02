@@ -40,7 +40,9 @@ int computeCubemapSize(const esp::vec2i& resolution,
 
 CubeMapSensorBase::CubeMapSensorBase(scene::SceneNode& cameraNode,
                                      const CubeMapSensorBaseSpec::ptr& spec)
-    : VisualSensor(cameraNode, spec) {
+    : VisualSensor(cameraNode, spec),
+      cubeMapCamera_(new gfx::CubeMapCamera(cameraNode)),
+      mesh_(Mn::GL::Mesh()) {
   // initialize a cubemap
   int size = computeCubemapSize(cubeMapSensorBaseSpec_->resolution,
                                 cubeMapSensorBaseSpec_->cubemapSize);
@@ -52,17 +54,18 @@ CubeMapSensorBase::CubeMapSensorBase(scene::SceneNode& cameraNode,
     case SensorType::Depth:
       cubeMapFlags |= gfx::CubeMap::Flag::DepthTexture;
       break;
-    // TODO: Semantic
+    case SensorType::Semantic:
+      cubeMapFlags |= gfx::CubeMap::Flag::ObjectIdTexture;
+      break;
     default:
       CORRADE_INTERNAL_ASSERT_UNREACHABLE();
       break;
   }
   cubeMap_ = esp::gfx::CubeMap{size, cubeMapFlags};
 
-  // initialize the cubemap camera, it attaches to the same node as the sensor
+  // Sets the cubemap camera, it attaches to the same node as the sensor
   // You do not have to release it in the dtor since magnum scene graph will
-  // handle it
-  cubeMapCamera_ = new gfx::CubeMapCamera(cameraNode);
+  // handle it. The cubemap is initialized in the member list above.
   cubeMapCamera_->setProjectionMatrix(size, cubeMapSensorBaseSpec_->near,
                                       cubeMapSensorBaseSpec_->far);
 
@@ -74,7 +77,9 @@ CubeMapSensorBase::CubeMapSensorBase(scene::SceneNode& cameraNode,
     case SensorType::Depth:
       cubeMapShaderBaseFlags_ |= gfx::CubeMapShaderBase::Flag::DepthTexture;
       break;
-    // TODO: Semantic
+    case SensorType::Semantic:
+      cubeMapShaderBaseFlags_ |= gfx::CubeMapShaderBase::Flag::ObjectIdTexture;
+      break;
     // sensor type list is too long, have to use default
     default:
       CORRADE_INTERNAL_ASSERT_UNREACHABLE();
@@ -82,7 +87,7 @@ CubeMapSensorBase::CubeMapSensorBase(scene::SceneNode& cameraNode,
   }
 
   // prepare a big triangle mesh to cover the screen
-  mesh_ = Mn::GL::Mesh{};
+  // initialied in member initializer list
   mesh_.setCount(3);
 }
 
@@ -106,8 +111,10 @@ bool CubeMapSensorBase::renderToCubemapTexture(sim::Simulator& sim) {
     }
   }
 
-  esp::gfx::RenderCamera::Flags flags = {gfx::RenderCamera::Flag::ClearColor |
-                                         gfx::RenderCamera::Flag::ClearDepth};
+  esp::gfx::RenderCamera::Flags flags = {
+      gfx::RenderCamera::Flag::ClearColor |
+      gfx::RenderCamera::Flag::ClearDepth |
+      gfx::RenderCamera::Flag::ClearObjectId};
   if (sim.isFrustumCullingEnabled()) {
     flags |= gfx::RenderCamera::Flag::FrustumCulling;
   }
@@ -129,10 +136,11 @@ bool CubeMapSensorBase::renderToCubemapTexture(sim::Simulator& sim) {
     if (twoSceneGraphs) {
       flags |= gfx::RenderCamera::Flag::ObjectsOnly;
       // Incremental rendering:
-      // BE AWARE that here "ClearColor" and "ClearDepth" is NOT set!!
-      // Rendering happens on top of whatever existing there.
+      // BE AWARE that here "ClearColor", "ClearDepth" and "ClearObjectId" are
+      // NOT set!! Rendering happens on top of whatever existing there.
       flags &= ~gfx::RenderCamera::Flag::ClearColor;
       flags &= ~gfx::RenderCamera::Flag::ClearDepth;
+      flags &= ~gfx::RenderCamera::Flag::ClearObjectId;
       cubeMap_->renderToTexture(*cubeMapCamera_, sim.getActiveSceneGraph(),
                                 flags);
     }
@@ -153,6 +161,11 @@ void CubeMapSensorBase::drawWith(gfx::CubeMapShaderBase& shader) {
     shader.bindDepthTexture(
         cubeMap_->getTexture(gfx::CubeMap::TextureType::Depth));
   }
+  if (cubeMapSensorBaseSpec_->sensorType == SensorType::Semantic) {
+    shader.bindObjectIdTexture(
+        cubeMap_->getTexture(gfx::CubeMap::TextureType::ObjectId));
+  }
+
   renderTarget().renderEnter();
   shader.draw(mesh_);
   renderTarget().renderExit();

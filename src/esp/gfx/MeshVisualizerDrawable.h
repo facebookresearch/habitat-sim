@@ -5,7 +5,7 @@
 #ifndef ESP_GFX_MESHVISUALIZERDRAWABLE_H_
 #define ESP_GFX_MESHVISUALIZERDRAWABLE_H_
 
-#include <Magnum/Shaders/MeshVisualizer.h>
+#include <Magnum/Shaders/MeshVisualizerGL.h>
 #include "Drawable.h"
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/ShaderManager.h"
@@ -24,7 +24,7 @@ class MeshVisualizerDrawable : public Drawable {
    * @param group  Drawable group this drawable will be added to.
    */
   explicit MeshVisualizerDrawable(scene::SceneNode& node,
-                                  Magnum::Shaders::MeshVisualizer3D& shader,
+                                  Magnum::Shaders::MeshVisualizerGL3D& shader,
                                   Magnum::GL::Mesh& mesh,
                                   gfx::DrawableGroup* group);
 
@@ -38,7 +38,7 @@ class MeshVisualizerDrawable : public Drawable {
    */
   void draw(const Magnum::Matrix4& transformationMatrix,
             Magnum::SceneGraph::Camera3D& camera) override;
-  Magnum::Shaders::MeshVisualizer3D& shader_;
+  Magnum::Shaders::MeshVisualizerGL3D& shader_;
 };
 
 }  // namespace gfx
