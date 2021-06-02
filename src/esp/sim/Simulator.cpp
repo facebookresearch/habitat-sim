@@ -619,15 +619,14 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
   // add STATIC collision objects
   if (includeStaticObjects) {
     for (auto objectID : physicsManager_->getExistingObjectIDs()) {
-      if (physicsManager_->getObjectMotionType(objectID) ==
-          physics::MotionType::STATIC) {
+      auto objWrapper = queryRigidObjWrapper(activeSceneID_, objectID);
+      if (objWrapper->getMotionType() == physics::MotionType::STATIC) {
         auto objectTransform = Magnum::EigenIntegration::cast<
             Eigen::Transform<float, 3, Eigen::Affine> >(
             physicsManager_->getObjectVisualSceneNode(objectID)
                 .absoluteTransformationMatrix());
         const metadata::attributes::ObjectAttributes::cptr
-            initializationTemplate =
-                physicsManager_->getObjectInitAttributes(objectID);
+            initializationTemplate = objWrapper->getInitializationAttributes();
         objectTransform.scale(Magnum::EigenIntegration::cast<vec3f>(
             initializationTemplate->getScale()));
         std::string meshHandle =
@@ -738,11 +737,11 @@ int Simulator::addTrajectoryObject(const std::string& trajVisName,
     // using trajVisName
     return ID_UNDEFINED;
   }
+  auto trajObj = getRigidObjectManager()->getObjectCopyByID(trajVisID);
   LOG(INFO) << "Simulator::showTrajectoryVisualization : Trajectory "
                "visualization object created with ID "
             << trajVisID;
-  physicsManager_->setObjectMotionType(trajVisID,
-                                       esp::physics::MotionType::KINEMATIC);
+  trajObj->setMotionType(esp::physics::MotionType::KINEMATIC);
   // add to internal references of object ID and resourceDict name
   // this is for eventual asset deletion/resource freeing.
   trajVisIDByName[trajVisName] = trajVisID;

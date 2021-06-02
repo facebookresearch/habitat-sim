@@ -729,8 +729,8 @@ class Simulator {
    * the object.
    */
   void setObjectSemanticId(uint32_t semanticId, int objectId, int sceneID = 0) {
-    if (sceneHasPhysics(sceneID)) {
-      physicsManager_->setSemanticId(objectId, semanticId);
+    if (auto obj = queryRigidObjWrapper(sceneID, objectId)) {
+      obj->setSemanticId(semanticId);
     }
   }
 

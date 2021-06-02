@@ -146,21 +146,20 @@ void BulletPhysicsManager::stepPhysics(double dt) {
     } else if (objectItr.second->getMotionType() == MotionType::DYNAMIC) {
       if (velControl->controllingLinVel) {
         if (velControl->linVelIsLocal) {
-          setLinearVelocity(objectItr.first,
-                            objectItr.second->node().rotation().transformVector(
-                                velControl->linVel));
+          objectItr.second->setLinearVelocity(
+              objectItr.second->node().rotation().transformVector(
+                  velControl->linVel));
         } else {
-          setLinearVelocity(objectItr.first, velControl->linVel);
+          objectItr.second->setLinearVelocity(velControl->linVel);
         }
       }
       if (velControl->controllingAngVel) {
         if (velControl->angVelIsLocal) {
-          setAngularVelocity(
-              objectItr.first,
+          objectItr.second->setAngularVelocity(
               objectItr.second->node().rotation().transformVector(
                   velControl->angVel));
         } else {
-          setAngularVelocity(objectItr.first, velControl->angVel);
+          objectItr.second->setAngularVelocity(velControl->angVel);
         }
       }
     }
