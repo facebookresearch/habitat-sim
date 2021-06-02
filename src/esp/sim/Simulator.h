@@ -786,7 +786,7 @@ class Simulator {
   /**
    * @brief Get a reference to the specified ArticulatedLink SceneNode for info
    * query purposes. Default (-1) returns baseLink SceneNode.
-   * @param objectID The object ID and key identifying the object.
+   * @param objectId The object ID and key identifying the object.
    * @param linkId The ArticulatedLink ID or -1 for the base.
    * @return the object scene node or nullptr if failed.
    */
@@ -808,8 +808,8 @@ class Simulator {
 
   void setArticulatedObjectRootState(int objectId,
                                      const Magnum::Matrix4& state) {
-    if (sceneHasPhysics(0)) {
-      physicsManager_->setArticulatedObjectRootState(objectId, state);
+    if (auto obj = queryArticulatedObjWrapper(0, objectId)) {
+      obj->setTransformation(state);
     }
   }
 
@@ -822,22 +822,22 @@ class Simulator {
 
   void setArticulatedObjectForces(int objectId,
                                   const std::vector<float>& forces) {
-    if (sceneHasPhysics(0)) {
-      physicsManager_->setArticulatedObjectForces(objectId, forces);
+    if (auto obj = queryArticulatedObjWrapper(0, objectId)) {
+      obj->setForces(forces);
     }
   }
 
   void setArticulatedObjectVelocities(int objectId,
                                       const std::vector<float>& vels) {
-    if (sceneHasPhysics(0)) {
-      physicsManager_->setArticulatedObjectVelocities(objectId, vels);
+    if (auto obj = queryArticulatedObjWrapper(0, objectId)) {
+      obj->setVelocities(vels);
     }
   }
 
   void setArticulatedObjectPositions(int objectId,
                                      const std::vector<float>& positions) {
-    if (sceneHasPhysics(0)) {
-      physicsManager_->setArticulatedObjectPositions(objectId, positions);
+    if (auto obj = queryArticulatedObjWrapper(0, objectId)) {
+      obj->setPositions(positions);
     }
   }
 
@@ -868,7 +868,7 @@ class Simulator {
    * Note: Dofs with no limits will return inf or -inf for upper and lower
    * limits.
    *
-   * @param objectID The object ID and key identifying the object in the
+   * @param objectId The object ID and key identifying the object in the
    * simulator.
    * @param upperLimits If true, get the upper joints limits, otherwise get
    * lower limits.
@@ -886,51 +886,51 @@ class Simulator {
   /**
    * @brief Set whether articulated object state is automatically clamped to
    * configured joint limits before physics simulation.
-   * @param objectID The object ID and key identifying the object in the
+   * @param objectId The object ID and key identifying the object in the
    * simulator.
    */
   void setAutoClampJointLimits(int objectId, bool autoClamp) {
-    if (sceneHasPhysics(0)) {
-      physicsManager_->setAutoClampJointLimits(objectId, autoClamp);
+    if (auto obj = queryArticulatedObjWrapper(0, objectId)) {
+      obj->setAutoClampJointLimits(autoClamp);
     }
   }
 
   /**
    * @brief Query whether articulated object state is automatically clamped to
    * configured joint limits before physics simulation.
-   * @param objectID The object ID and key identifying the object in the
+   * @param objectId The object ID and key identifying the object in the
    * simulator.
    */
   bool getAutoClampJointLimits(int objectId) {
-    if (sceneHasPhysics(0)) {
-      return physicsManager_->getAutoClampJointLimits(objectId);
+    if (auto obj = queryArticulatedObjWrapper(0, objectId)) {
+      return obj->getAutoClampJointLimits();
     }
     return false;
   }
 
   void resetArticulatedObject(int objectId) {
-    if (sceneHasPhysics(0)) {
-      physicsManager_->resetArticulatedObject(objectId);
+    if (auto obj = queryArticulatedObjWrapper(0, objectId)) {
+      obj->reset();
     }
   }
 
   void setArticulatedObjectSleep(int objectId, bool sleep) {
-    if (sceneHasPhysics(0)) {
-      physicsManager_->setArticulatedObjectSleep(objectId, sleep);
+    if (auto obj = queryArticulatedObjWrapper(0, objectId)) {
+      obj->setActive(!sleep);
     }
   }
 
   bool getArticulatedObjectSleep(int objectId) {
     if (auto obj = queryArticulatedObjWrapper(0, objectId)) {
-      return obj->isActive();
+      return !obj->isActive();
     }
     return false;
   }
 
   void setArticulatedObjectMotionType(int objectId,
                                       esp::physics::MotionType mt) {
-    if (sceneHasPhysics(0)) {
-      physicsManager_->setArticulatedObjectMotionType(objectId, mt);
+    if (auto obj = queryArticulatedObjWrapper(0, objectId)) {
+      obj->setMotionType(mt);
     }
   }
 
@@ -987,8 +987,8 @@ class Simulator {
   int createJointMotor(const int objectId,
                        const int dof,
                        const esp::physics::JointMotorSettings& settings) {
-    if (sceneHasPhysics(0)) {
-      return physicsManager_->createJointMotor(objectId, dof, settings);
+    if (auto obj = queryArticulatedObjWrapper(0, objectId)) {
+      return obj->createJointMotor(dof, settings);
     }
     return ID_UNDEFINED;
   }
@@ -997,8 +997,8 @@ class Simulator {
    * @brief Remove and destroy a JointMotor for an ArticulatedObject.
    */
   void removeJointMotor(const int objectId, const int motorId) {
-    if (sceneHasPhysics(0)) {
-      physicsManager_->removeJointMotor(objectId, motorId);
+    if (auto obj = queryArticulatedObjWrapper(0, objectId)) {
+      obj->removeJointMotor(motorId);
     }
   }
 
@@ -1020,8 +1020,8 @@ class Simulator {
   void updateJointMotor(const int objectId,
                         const int motorId,
                         const esp::physics::JointMotorSettings& settings) {
-    if (sceneHasPhysics(0)) {
-      physicsManager_->updateJointMotor(objectId, motorId, settings);
+    if (auto obj = queryArticulatedObjWrapper(0, objectId)) {
+      obj->updateJointMotor(motorId, settings);
     }
   }
 
@@ -1030,8 +1030,8 @@ class Simulator {
    * to an ArticulatedObject.
    */
   std::map<int, int> getExistingJointMotors(const int objectId) {
-    if (sceneHasPhysics(0)) {
-      return physicsManager_->getExistingJointMotors(objectId);
+    if (auto obj = queryArticulatedObjWrapper(0, objectId)) {
+      return obj->getExistingJointMotors();
     }
     return std::map<int, int>();
   }
@@ -1048,8 +1048,8 @@ class Simulator {
       const int objectId,
       esp::physics::JointMotorSettings settings =
           esp::physics::JointMotorSettings()) {
-    if (sceneHasPhysics(0)) {
-      return physicsManager_->createMotorsForAllDofs(objectId, settings);
+    if (auto obj = queryArticulatedObjWrapper(0, objectId)) {
+      return obj->createMotorsForAllDofs(settings);
     }
     return std::map<int, int>();
   }

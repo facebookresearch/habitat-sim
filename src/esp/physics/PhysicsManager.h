@@ -494,17 +494,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   }
 
   /**
-   * @brief Get a copy of the JointMotorSettings for an ArticulatedObject's
-   * existing JointMotor .
-   */
-  JointMotorSettings getJointMotorSettings(const int objectId,
-                                           const int motorId) {
-    CHECK(existingArticulatedObjects_.count(objectId));
-    return existingArticulatedObjects_.at(objectId)->getJointMotorSettings(
-        motorId);
-  }
-
-  /**
    * @brief Update an ArticulatedObject's JointMotor with new settings.
    */
   void updateJointMotor(const int objectId,

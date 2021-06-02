@@ -171,9 +171,9 @@ class ManagedArticulatedObject
     return {};
   }
 
-  std::map<int, int> createMotorsForAllDofs() {
+  std::map<int, int> createMotorsForAllDofs(JointMotorSettings settings) {
     if (auto sp = getObjectReference()) {
-      return sp->createMotorsForAllDofs();
+      return sp->createMotorsForAllDofs(settings);
     }
     return {};
   }
