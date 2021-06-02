@@ -1085,27 +1085,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   virtual std::vector<ContactPointData> getContactPoints() const { return {}; }
 
   /**
-   * @brief Set an object to collidable or not.
-   *
-   * @param physObjectID The object ID and key identifying the object
-   */
-  void setObjectIsCollidable(const int physObjectID, bool collidable) {
-    assertIDValidity(physObjectID);
-    existingObjects_.at(physObjectID)->setCollidable(collidable);
-  }
-
-  /**
-   * @brief Get whether or not an object is collision active.
-   *
-   * @param physObjectID The object ID and key identifying the object
-   * @return Whether or not the object is set to be collision active
-   */
-  bool getObjectIsCollidable(const int physObjectID) {
-    assertIDValidity(physObjectID);
-    return existingObjects_.at(physObjectID)->getCollidable();
-  }
-
-  /**
    * @brief Set the stage to collidable or not.
    *
    * @param collidable Whether or not the object should be collision active
@@ -1196,7 +1175,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @brief returns the wrapper manager for the currently created rigid objects.
    * @return RigidObject wrapper manager.
    */
-  std::shared_ptr<RigidObjectManager> getRigidObjectManager() {
+  std::shared_ptr<RigidObjectManager> getRigidObjectManager() const {
     return rigidObjectManager_;
   }
 

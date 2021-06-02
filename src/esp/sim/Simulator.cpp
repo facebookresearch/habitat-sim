@@ -583,67 +583,6 @@ void Simulator::removeObject(const int objectID,
   }
 }
 
-esp::physics::RaycastResults Simulator::castRay(const esp::geo::Ray& ray,
-                                                float maxDistance,
-                                                const int sceneID) {
-  if (sceneHasPhysics(sceneID)) {
-    return physicsManager_->castRay(ray, maxDistance);
-  }
-  return esp::physics::RaycastResults();
-}
-
-void Simulator::setObjectBBDraw(bool drawBB,
-                                const int objectID,
-                                const int sceneID) {
-  if (sceneHasPhysics(sceneID)) {
-    auto& drawables = getDrawableGroup(sceneID);
-    physicsManager_->setObjectBBDraw(objectID, &drawables, drawBB);
-  }
-}
-
-#ifdef ESP_BUILD_WITH_VHACD
-void Simulator::createObjectVoxelization(int objectID, int resolution) {
-  physicsManager_->generateVoxelization(objectID, resolution);
-}
-#endif
-
-void Simulator::setObjectVoxelizationDraw(bool drawV,
-                                          int objectID,
-                                          const std::string& gridName) {
-  auto& drawables = getDrawableGroup();
-  physicsManager_->setObjectVoxelizationDraw(objectID, gridName, &drawables,
-                                             drawV);
-}
-
-std::shared_ptr<esp::geo::VoxelWrapper> Simulator::getObjectVoxelization(
-    int objectID) {
-  return physicsManager_->getObjectVoxelization(objectID);
-}
-
-#ifdef ESP_BUILD_WITH_VHACD
-void Simulator::createStageVoxelization(int resolution) {
-  physicsManager_->generateStageVoxelization(resolution);
-}
-#endif
-
-void Simulator::setStageVoxelizationDraw(bool drawV,
-                                         const std::string& gridName) {
-  auto& drawables = getDrawableGroup();
-  physicsManager_->setStageVoxelizationDraw(gridName, &drawables, drawV);
-}
-
-std::shared_ptr<esp::geo::VoxelWrapper> Simulator::getStageVoxelization() {
-  return physicsManager_->getStageVoxelization();
-}
-
-void Simulator::setObjectSemanticId(uint32_t semanticId,
-                                    const int objectID,
-                                    const int sceneID) {
-  if (sceneHasPhysics(sceneID)) {
-    physicsManager_->setSemanticId(objectID, semanticId);
-  }
-}
-
 double Simulator::stepWorld(const double dt) {
   if (physicsManager_ != nullptr) {
     physicsManager_->stepPhysics(dt);
@@ -657,19 +596,6 @@ double Simulator::getWorldTime() {
     return physicsManager_->getWorldTime();
   }
   return NO_TIME;
-}
-
-void Simulator::setGravity(const Magnum::Vector3& gravity, const int sceneID) {
-  if (sceneHasPhysics(sceneID)) {
-    physicsManager_->setGravity(gravity);
-  }
-}
-
-Magnum::Vector3 Simulator::getGravity(const int sceneID) const {
-  if (sceneHasPhysics(sceneID)) {
-    return physicsManager_->getGravity();
-  }
-  return Magnum::Vector3();
 }
 
 bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
@@ -961,10 +887,6 @@ esp::sensor::Sensor& Simulator::addSensorToObject(
   return objectNode.getNodeSensorSuite().get(sensorSpec->uuid);
 }
 
-nav::PathFinder::ptr Simulator::getPathFinder() {
-  return pathfinder_;
-}
-
 void Simulator::setPathFinder(nav::PathFinder::ptr pathfinder) {
   pathfinder_ = std::move(pathfinder);
 }
@@ -1073,14 +995,6 @@ int Simulator::getAgentObservationSpaces(
     }
   }
   return spaces.size();
-}
-
-void Simulator::setLightSetup(gfx::LightSetup setup, const std::string& key) {
-  resourceManager_->setLightSetup(std::move(setup), key);
-}
-
-gfx::LightSetup Simulator::getLightSetup(const std::string& key) {
-  return *resourceManager_->getLightSetup(key);
 }
 
 }  // namespace sim
