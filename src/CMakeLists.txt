@@ -9,6 +9,10 @@ option(
 )
 
 if(BUILD_BASIS_COMPRESSOR)
+  if(CMAKE_VERSION VERSION_LESS "3.13")
+    message("Building the basis compressor requires a newer version of cmake.")
+    message("You can get one with pip install cmake")
+  endif()
   cmake_minimum_required(VERSION 3.13)
   cmake_policy(SET CMP0079 NEW)
 else()
@@ -150,7 +154,6 @@ endif()
 if(BUILD_BASIS_COMPRESSOR)
   add_subdirectory(utils/imageconverter)
 endif()
-add_subdirectory(utils/sceneconverter)
 
 if(BUILD_TEST)
   add_subdirectory(tests)
