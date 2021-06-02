@@ -61,12 +61,13 @@ bool Parser::parseURDF(const std::string& filename) {
   for (XMLElement* material_xml = robot_xml->FirstChildElement("material");
        material_xml;
        material_xml = material_xml->NextSiblingElement("material")) {
-    std::shared_ptr<Material> material = std::make_shared<Material>();
+    Material material;
 
-    parseMaterial(*material.get(), material_xml);
+    parseMaterial(material, material_xml);
 
-    if (newURDFModel->m_materials.count(material->m_name) == 0) {
-      newURDFModel->m_materials[material->m_name] = material;
+    if (newURDFModel->m_materials.count(material.m_name) == 0) {
+      newURDFModel->m_materials[material.m_name] =
+          std::make_shared<Material>(material);
     } else {
       Mn::Debug{} << "W - Duplicate material";
     }
