@@ -341,22 +341,22 @@ __ABI void __cxx_atomic_wait(_Tp const* ptr, _Tp const val, int order) {
 
 #include <atomic>
 
-namespace std {
+namespace cpp20 {
 
     template <class _Tp, class _Tv>
-    __ABI void atomic_wait_explicit(atomic<_Tp> const* a, _Tv val, std::memory_order order) {
+    __ABI void atomic_wait_explicit(std::atomic<_Tp> const* a, _Tv val, std::memory_order order) {
         __cxx_atomic_wait((const _Tp*)a, (_Tp)val, (int)order);
     }
     template <class _Tp, class _Tv>
-    __ABI void atomic_wait(atomic<_Tp> const* a, _Tv val) {
+    __ABI void atomic_wait(std::atomic<_Tp> const* a, _Tv val) {
         atomic_wait_explicit(a, val, std::memory_order_seq_cst);
     }
     template <class _Tp>
-    __ABI void atomic_notify_one(atomic<_Tp> const* a) {
+    __ABI void atomic_notify_one(std::atomic<_Tp> const* a) {
         __cxx_atomic_notify_one((const _Tp*)a);
     }
     template <class _Tp>
-    __ABI void atomic_notify_all(atomic<_Tp> const* a) {
+    __ABI void atomic_notify_all(std::atomic<_Tp> const* a) {
         __cxx_atomic_notify_all((const _Tp*)a);
     }
 }

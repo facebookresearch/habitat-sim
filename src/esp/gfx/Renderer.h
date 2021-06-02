@@ -28,21 +28,35 @@ class Renderer {
     NoTextures = 1 << 0,
 
     /**
-     * Use a background thread to overlap rendering with physics simulation.
-     */
-    BackgroundThread = 1 << 1,
-
-    /**
      * When binding the render target to a depth or a sementic sensor,
      * setting this flag will give the render target the ability to visualize
      * the depth, or sementic info
      * see bindRenderTarget for more info.
      */
-    VisualizeTexture = 1 << 2,
+    VisualizeTexture = 1 << 1,
+
+    /**
+     * Use a background renderer to overlap rendering with physics simulation.
+     */
+    BackgroundRenderer = 1 << 2,
+
+    /**
+     * Leave the OpenGL context with the background renderer thread
+     * after @ref waitDrawJobs.  Otherwise the context will be reacquired by the
+     * main thread. Enabling this improves performance slightly but makes OpenGL
+     * context management more challenging.
+     *
+     * This flag only has effect if habitat-sim was built with the
+     * BackgroundRenderer and the BackgroundRenderer flag is true.
+     */
+    LeaveContextWithBackgroundRenderer = 1 << 3,
+
   };
 
   typedef Corrade::Containers::EnumSet<Flag> Flags;
   CORRADE_ENUMSET_FRIEND_OPERATORS(Flags)
+
+  static void setupMagnumFeatures();
 
   /**
    * @brief Constructor
@@ -80,22 +94,56 @@ class Renderer {
                  float colorMapOffset = 1.0f / 512.0f,
                  float colorMapScale = 1.0f / 256.0f);
 
-#if !defined(CORRADE_TARGET_EMSCRIPTEN)
-  // draw the scene graph with the visual sensor provided by user
-  // async
-  void drawAsync(sensor::VisualSensor& visualSensor,
-                 scene::SceneGraph& sceneGraph,
-                 const Mn::MutableImageView2D& view,
-                 RenderCamera::Flags flags = {
-                     RenderCamera::Flag::FrustumCulling});
+#ifdef ESP_BUILD_WITH_BACKGROUND_RENDERER
+  /**
+   * @brief Enqueue a async draw job.
+   *
+   * Jobs are started by a call to @ref startDrawJobs.  Note that after calling
+   * @ref startDrawJobs, you must call @ref waitSceneGraph before doing anything
+   * that changes the scene graph.
+   */
+  void enqueueAsyncDrawJob(sensor::VisualSensor& visualSensor,
+                           scene::SceneGraph& sceneGraph,
+                           const Mn::MutableImageView2D& view,
+                           RenderCamera::Flags flags = {
+                               RenderCamera::Flag::FrustumCulling});
 
-  void drawWait();
-  void waitSG();
-
+  /**
+   * @brief Begins all the draw jobs enqueued by @ref enqueueAsyncDrawJob.
+   *
+   * This method implicitly transfers ownership of the OpenGL context and scene
+   * graphs to the thread, use @ref waitSceneGraph and @ref acquireGlContext to
+   * transfer ownership back
+   */
   void startDrawJobs();
+  /**
+   * @brief Waits on all started
+   */
+  void waitDrawJobs();
 #endif
 
+  /**
+   * @brief Acquires ownership of the scene graph from the background render
+   * thread. Will block if needed.
+   *
+   * The blocking waiting is guarded by an atomic, so if the main thread already
+   * has ownership of the scene graph, this method is lock-free and very cheap.
+   */
+  void waitSceneGraph();
+  /**
+   * @brief Acquires the OpenGL context from the background render thread.  Will
+   * block if needed.
+   *
+   * This method is lock-free if the main thread already has ownership of the
+   * OpenGL context.
+   */
   void acquireGlContext();
+
+  /**
+   * @brief Was the background rendering thread ever initialized. Initialization
+   * is lazy and done the first time async render jobs are started.
+   */
+  bool wasBackgroundRendererInitialized() const;
 
   /**
    * @brief Binds a @ref RenderTarget to the sensor

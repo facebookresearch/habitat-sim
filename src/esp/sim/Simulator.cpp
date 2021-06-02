@@ -71,7 +71,9 @@ void Simulator::close(const bool destroy) {
 
   resourceManager_ = nullptr;
 
-  if (destroy) {
+  // Keeping the renderer and the context only matters when the
+  // background renderer was initialized.
+  if (destroy || !renderer_->wasBackgroundRendererInitialized()) {
     renderer_ = nullptr;
     context_ = nullptr;
   }
@@ -145,9 +147,9 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
       if (!(*requiresTextures_))
         flags |= gfx::Renderer::Flag::NoTextures;
 
-#if !defined(CORRADE_TARGET_EMSCRIPTEN)
+#ifdef ESP_BUILD_WITH_BACKGROUND_RENDERER
       if (context_)
-        flags |= gfx::Renderer::Flag::BackgroundThread;
+        flags |= gfx::Renderer::Flag::BackgroundRenderer;
 #endif
 
       renderer_ = gfx::Renderer::create(context_.get(), flags);
@@ -883,10 +885,8 @@ double Simulator::stepWorld(const double dt) {
   if (physicsManager_ != nullptr) {
     physicsManager_->deferNodesUpdate();
     physicsManager_->stepPhysics(dt);
-#if !defined(CORRADE_TARGET_EMSCRIPTEN)
     if (renderer_)
-      renderer_->waitSG();
-#endif
+      renderer_->waitSceneGraph();
     physicsManager_->updateNodes();
   }
   return getWorldTime();

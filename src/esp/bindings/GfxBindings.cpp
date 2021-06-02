@@ -103,20 +103,22 @@ void initGfxBindings(py::module& m) {
              sim::Simulator& sim) { self.draw(visualSensor, sim); },
           R"(Draw the active scene in current simulator using the visual sensor)",
           "visualSensor"_a, "sim"_a)
+#ifdef ESP_BUILD_WITH_BACKGROUND_RENDERER
       .def(
-          "draw_async",
+          "enqueue_async_draw_job",
           [](Renderer& self, sensor::VisualSensor& visualSensor,
              scene::SceneGraph& sceneGraph, const Mn::MutableImageView2D& view,
              RenderCamera::Flag flags) {
-            self.drawAsync(visualSensor, sceneGraph, view,
-                           RenderCamera::Flags{flags});
+            self.enqueueAsyncDrawJob(visualSensor, sceneGraph, view,
+                                     RenderCamera::Flags{flags});
           },
           R"(Draw given scene using the visual sensor)", "visualSensor"_a,
           "scene"_a, "view"_a,
           "flags"_a = RenderCamera::Flag{RenderCamera::Flag::FrustumCulling})
-      .def("draw_wait", &Renderer::drawWait)
-      .def("wait_scene_graph", &Renderer::waitSG)
+      .def("wait_draw_jobs", &Renderer::waitDrawJobs)
       .def("start_draw_jobs", &Renderer::startDrawJobs)
+#endif
+      .def("wait_scene_graph", &Renderer::waitSceneGraph)
       .def("acquire_gl_context", &Renderer::acquireGlContext)
       .def(
           "bind_render_target",
