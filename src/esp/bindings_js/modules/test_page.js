@@ -80,6 +80,17 @@ class TestPage {
     }
 
     console.log("Testing raycast");
+    this.testRaycast(sim);
+
+    console.log("The test page has loaded successfully.");
+    window.didTestPageLoad = true;
+  }
+
+  magnitude(vec) {
+    return Math.sqrt(vec.x() * vec.x() + vec.y() * vec.y() + vec.z() * vec.z());
+  }
+
+  testRaycast(sim) {
     // add an object
     let banana1id = sim.addObjectByHandle(this.bananaHandle, null, "", 0);
     sim.setTranslation(new Module.Vector3(0, 0.2, 9), banana1id, 0);
@@ -95,9 +106,9 @@ class TestPage {
     // check that castRay returns the object and that the hit location is correct
     let hit = sim.castRay(ray1, 6, 0).hits.get(0);
     this.expect(hit.objectId == banana1id);
-    this.expect(Math.abs(hit.point.x() - 0.0172938) < 0.001);
-    this.expect(Math.abs(hit.point.y() - 0.2) < 0.001);
-    this.expect(Math.abs(hit.point.z() - 9.0) < 0.001);
+    this.expect(
+      this.magnitude(hit.point - new Module.Vector3(0.0173, 0.2, 9.0)) < 0.001
+    );
 
     // check that castRay doesn't find the object if maxDistance is too small
     this.expect(!sim.castRay(ray1, 1, 0).hasHits());
@@ -113,9 +124,6 @@ class TestPage {
     let res2 = sim.castRay(ray2, 5, 0);
     this.expect(res2.hits.get(0).objectId == banana2id);
     this.expect(res2.hits.get(1).objectId == banana1id);
-
-    console.log("The test page has loaded successfully.");
-    window.didTestPageLoad = true;
   }
 }
 
