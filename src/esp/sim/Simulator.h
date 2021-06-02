@@ -624,6 +624,8 @@ class Simulator {
    */
   void setObjectBBDraw(bool drawBB, int objectId, int sceneID = 0) {
     if (sceneHasPhysics(sceneID)) {
+      if (renderer_)
+        renderer_->acquireGlContext();
       auto& drawables = getDrawableGroup(sceneID);
       physicsManager_->setObjectBBDraw(objectId, &drawables, drawBB);
     }
