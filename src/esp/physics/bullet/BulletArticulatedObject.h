@@ -184,10 +184,9 @@ class BulletArticulatedObject : public ArticulatedObject {
    */
   void setRootState(const Magnum::Matrix4& state) override;
 
-  bool attachGeometry(
-      ArticulatedLink* linkObject,
-      const std::shared_ptr<io::URDF::Link>& link,
-      gfx::DrawableGroup* drawables) override;
+  bool attachGeometry(ArticulatedLink* linkObject,
+                      const std::shared_ptr<io::URDF::Link>& link,
+                      gfx::DrawableGroup* drawables) override;
 
   /**
    * @brief Called internally.  Version specific to Bullet setup to simplify the
