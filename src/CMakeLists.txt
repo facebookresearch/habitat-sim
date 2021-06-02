@@ -38,6 +38,11 @@ option(BUILD_WITH_BULLET
        "Build Habitat-Sim with Bullet physics enabled -- Requires Bullet" OFF
 )
 option(
+  BUILD_WEB_APPS
+  "(Emscripten-build-only) build and bundle our html/Javascript demo web apps including test_page.html and bindings.html"
+  ON
+)
+option(
   BUILD_WITH_VHACD
   "Build Habitat-Sim with VHACD convex hull decomposition and voxelization engine enabled -- Requires VHACD"
   OFF
