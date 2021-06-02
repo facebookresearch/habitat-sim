@@ -72,26 +72,26 @@ class BulletPhysicsManager : public PhysicsManager {
    * @return A unique id for the @ref BulletArticulatedObject, allocated from
    * the same id set as rigid objects.
    */
-  virtual int addArticulatedObjectFromURDF(const std::string& filepath,
-                                           DrawableGroup* drawables,
-                                           bool fixedBase = false,
-                                           float globalScale = 1.0,
-                                           float massScale = 1.0,
-                                           bool forceReload = false) override;
+  int addArticulatedObjectFromURDF(const std::string& filepath,
+                                   DrawableGroup* drawables,
+                                   bool fixedBase = false,
+                                   float globalScale = 1.0,
+                                   float massScale = 1.0,
+                                   bool forceReload = false) override;
 
   /**
    * @brief Override of @ref PhysicsManager::removeObject to also remove any
    * active Bullet physics constraints for the object.
    */
-  virtual void removeObject(const int physObjectID,
-                            bool deleteObjectNode = true,
-                            bool deleteVisualNode = true) override;
+  void removeObject(const int physObjectID,
+                    bool deleteObjectNode = true,
+                    bool deleteVisualNode = true) override;
 
   /**
    * @brief Override of @ref PhysicsManager::removeArticulatedObject to also
    * remove any active Bullet physics constraints for the object.
    */
-  virtual void removeArticulatedObject(int id) override;
+  void removeArticulatedObject(int id) override;
 
   /** @brief Step the physical world forward in time. Time may only advance in
    * increments of @ref fixedTimeStep_. See @ref
@@ -277,13 +277,13 @@ class BulletPhysicsManager : public PhysicsManager {
    * B local space.
    * @return The unique id of the new constraint.
    */
-  virtual int createArticulatedP2PConstraint(int articulatedObjectIdA,
-                                             int linkIdA,
-                                             const Magnum::Vector3& linkOffsetA,
-                                             int articulatedObjectIdB,
-                                             int linkIdB,
-                                             const Magnum::Vector3& linkOffsetB,
-                                             float maxImpulse = 2.0) override;
+  int createArticulatedP2PConstraint(int articulatedObjectIdA,
+                                     int linkIdA,
+                                     const Magnum::Vector3& linkOffsetA,
+                                     int articulatedObjectIdB,
+                                     int linkIdB,
+                                     const Magnum::Vector3& linkOffsetB,
+                                     float maxImpulse = 2.0) override;
 
   /**
    * @brief Create a ball&socket joint to constrain two links of two
@@ -298,7 +298,7 @@ class BulletPhysicsManager : public PhysicsManager {
    * pivot in global space.
    * @return The unique id of the new constraint.
    */
-  virtual int createArticulatedP2PConstraint(
+  int createArticulatedP2PConstraint(
       int articulatedObjectIdA,
       int linkIdA,
       int articulatedObjectIdB,

@@ -78,8 +78,8 @@ bool Parser::parseURDF(const std::string& filename) {
        link_xml = link_xml->NextSiblingElement("link")) {
     std::shared_ptr<Link> link = std::make_shared<Link>();
 
-    if (parseLink(newURDFModel, *link.get(), link_xml)) {
-      if (newURDFModel->m_links.count(link->m_name)) {
+    if (parseLink(newURDFModel, *link, link_xml)) {
+      if (newURDFModel->m_links.count(link->m_name) != 0u) {
         Mn::Debug{} << "E - Link name is not unique, link names "
                        "in the same model have to be unique";
         Mn::Debug{} << "E - " << link->m_name;
@@ -118,8 +118,8 @@ bool Parser::parseURDF(const std::string& filename) {
        joint_xml = joint_xml->NextSiblingElement("joint")) {
     std::shared_ptr<Joint> joint = std::make_shared<Joint>();
 
-    if (parseJoint(*joint.get(), joint_xml)) {
-      if (newURDFModel->m_joints.count(joint->m_name)) {
+    if (parseJoint(*joint, joint_xml)) {
+      if (newURDFModel->m_joints.count(joint->m_name) != 0u) {
         Mn::Debug{} << "E - joint " << joint->m_name << " is not unique";
         return false;
       } else {
@@ -497,7 +497,7 @@ bool Parser::parseVisual(std::shared_ptr<Model>& model,
         // create a new material
         visual.m_geometry.m_localMaterial = std::make_shared<Material>();
       }
-      if (parseMaterial(*visual.m_geometry.m_localMaterial.get(), mat)) {
+      if (parseMaterial(*visual.m_geometry.m_localMaterial, mat)) {
         // override if not new
         model->m_materials[visual.m_materialName] =
             visual.m_geometry.m_localMaterial;
@@ -591,7 +591,6 @@ bool Parser::parseGeometry(Geometry& geom, XMLElement* g) {
     }
   } else if (type_name == "cylinder") {
     geom.m_type = GEOM_CYLINDER;
-    geom.m_hasFromTo = false;
     geom.m_capsuleRadius = 0.1;
     geom.m_capsuleHeight = 0.1;
 
@@ -607,7 +606,6 @@ bool Parser::parseGeometry(Geometry& geom, XMLElement* g) {
 
   } else if (type_name == "capsule") {
     geom.m_type = GEOM_CAPSULE;
-    geom.m_hasFromTo = false;
 
     if (!shape->Attribute("length") || !shape->Attribute("radius")) {
       Mn::Debug{}
@@ -633,7 +631,7 @@ bool Parser::parseGeometry(Geometry& geom, XMLElement* g) {
                        "single scalar. Workaround activated.";
         std::string scalar_str = shape->Attribute("scale");
         double scaleFactor = std::stod(scalar_str);
-        if (scaleFactor) {
+        if (scaleFactor != 0.0) {
           geom.m_meshScale = Mn::Vector3(scaleFactor);
         }
       }
@@ -779,14 +777,14 @@ bool Parser::initTreeAndRoot(std::shared_ptr<Model>& model) const {
       return false;
     }
 
-    if (!model->m_links.count(joint->m_childLinkName)) {
+    if (model->m_links.count(joint->m_childLinkName) == 0u) {
       Mn::Debug{} << "E - Cannot find child link for joint: " << joint->m_name
                   << ", child: " << joint->m_childLinkName;
       return false;
     }
     auto childLink = model->m_links.at(joint->m_childLinkName);
 
-    if (!model->m_links.count(joint->m_parentLinkName)) {
+    if (model->m_links.count(joint->m_parentLinkName) == 0u) {
       Mn::Debug{} << "E - Cannot find parent link for joint: " << joint->m_name
                   << ", parent: " << joint->m_parentLinkName;
       return false;

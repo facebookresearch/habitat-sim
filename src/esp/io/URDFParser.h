@@ -72,9 +72,6 @@ struct Geometry {
 
   double m_capsuleRadius{1};
   double m_capsuleHeight{1};
-  int m_hasFromTo{0};
-  Magnum::Vector3 m_capsuleFrom{0, 1, 0};
-  Magnum::Vector3 m_capsuleTo{1, 0, 0};
 
   Magnum::Vector3 m_planeNormal{0, 0, 1};
 
