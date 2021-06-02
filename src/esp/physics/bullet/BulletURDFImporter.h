@@ -36,24 +36,21 @@ struct JointLimitConstraintInfo {
  * @brief Structure to hold construction time multi-body data.
  */
 struct URDF2BulletCached {
-  URDF2BulletCached()
-      : m_currentMultiBodyLinkIndex(-1),
-        m_bulletMultiBody(0),
-        m_totalNumJoints1(0) {}
+  URDF2BulletCached() {}
   // these arrays will be initialized in the 'InitURDF2BulletCache'
 
   std::vector<int> m_urdfLinkParentIndices;
   std::vector<int> m_urdfLinkIndices2BulletLinkIndices;
   std::vector<btTransform> m_urdfLinkLocalInertialFrames;
 
-  int m_currentMultiBodyLinkIndex;
+  int m_currentMultiBodyLinkIndex{-1};
 
-  class btMultiBody* m_bulletMultiBody;
+  class btMultiBody* m_bulletMultiBody{nullptr};
 
   std::map<int, JointLimitConstraintInfo> m_jointLimitConstraints;
 
   // this will be initialized in the constructor
-  int m_totalNumJoints1;
+  int m_totalNumJoints1{0};
   int getParentUrdfIndex(int linkIndex) const {
     return m_urdfLinkParentIndices[linkIndex];
   }
@@ -63,16 +60,6 @@ struct URDF2BulletCached {
       return -2;
     return m_urdfLinkIndices2BulletLinkIndices[urdfIndex];
   }
-
-  void registerMultiBody(int urdfLinkIndex,
-                         class btMultiBody* body,
-                         const btTransform& worldTransform,
-                         btScalar mass,
-                         const btVector3& localInertiaDiagonal,
-                         const class btCollisionShape* compound,
-                         const btTransform& localInertialFrame) {
-    m_urdfLinkLocalInertialFrames[urdfLinkIndex] = localInertialFrame;
-  }
 };
 
 /**
@@ -80,7 +67,7 @@ struct URDF2BulletCached {
  */
 class BulletURDFImporter : public URDFImporter {
  public:
-  BulletURDFImporter(esp::assets::ResourceManager& resourceManager)
+  explicit BulletURDFImporter(esp::assets::ResourceManager& resourceManager)
       : URDFImporter(resourceManager) {}
 
   ~BulletURDFImporter() override = default;

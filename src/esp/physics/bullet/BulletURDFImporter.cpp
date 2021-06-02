@@ -386,10 +386,9 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
             btTransform(linkTransformInWorldSpace));
       }
 
-      cache.registerMultiBody(urdfLinkIndex, cache.m_bulletMultiBody,
-                              btTransform(inertialFrameInWorldSpace), mass,
-                              btVector3(localInertiaDiagonal), compoundShape,
-                              btTransform(localInertialFrame));
+      // registerMultiBody
+      cache.m_urdfLinkLocalInertialFrames[urdfLinkIndex] =
+          btTransform(localInertialFrame);
     }
 
     // create a joint if necessary
