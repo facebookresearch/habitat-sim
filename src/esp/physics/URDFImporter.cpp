@@ -19,7 +19,7 @@ bool URDFImporter::loadURDF(const std::string& filename,
                             float globalScale,
                             float massScale,
                             bool forceReload) {
-  if (!modelCache_.count(filename) || forceReload) {
+  if ((modelCache_.count(filename) == 0u) || forceReload) {
     if (!Corrade::Utility::Directory::exists(filename) ||
         Corrade::Utility::Directory::isDirectory(filename)) {
       Mn::Debug{} << "File does not exist: " << filename
@@ -41,7 +41,7 @@ bool URDFImporter::loadURDF(const std::string& filename,
     }
 
     // if reloading, clear the old model
-    if (modelCache_.count(filename)) {
+    if (modelCache_.count(filename) != 0u) {
       modelCache_.erase(filename);
     }
 
@@ -142,7 +142,7 @@ void URDFImporter::getMassAndInertia2(int linkIndex,
                                       Mn::Vector3& localInertiaDiagonal,
                                       Mn::Matrix4& inertialFrame,
                                       int flags) const {
-  if (flags & CUF_USE_URDF_INERTIA) {
+  if ((flags & CUF_USE_URDF_INERTIA) != 0) {
     getMassAndInertia(linkIndex, mass, localInertiaDiagonal, inertialFrame);
   } else {
     // the link->m_inertia is NOT necessarily aligned with the inertial frame
