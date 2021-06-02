@@ -786,12 +786,12 @@ class Simulator {
   /**
    * @brief Get a reference to the specified ArticulatedLink SceneNode for info
    * query purposes. Default (-1) returns baseLink SceneNode.
-   * @param physObjectID The object ID and key identifying the object.
+   * @param objectID The object ID and key identifying the object.
    * @param linkId The ArticulatedLink ID or -1 for the base.
    * @return the object scene node or nullptr if failed.
    */
-  scene::SceneNode* getArticulatedLinkSceneNode(int objectID, int linkId = -1) {
-    return &physicsManager_->getArticulatedLinkSceneNode(objectID, linkId);
+  scene::SceneNode* getArticulatedLinkSceneNode(int objectId, int linkId = -1) {
+    return &physicsManager_->getArticulatedLinkSceneNode(objectId, linkId);
   }
 
   /**
@@ -800,9 +800,9 @@ class Simulator {
    * @param linkId The ArticulatedLink ID or -1 for the base.
    */
   std::vector<scene::SceneNode*> getArticulatedLinkVisualSceneNodes(
-      int objectID,
+      int objectId,
       int linkId = -1) {
-    return physicsManager_->getArticulatedLinkVisualSceneNodes(objectID,
+    return physicsManager_->getArticulatedLinkVisualSceneNodes(objectId,
                                                                linkId);
   }
 
@@ -814,8 +814,8 @@ class Simulator {
   }
 
   Magnum::Matrix4 getArticulatedObjectRootState(int objectId) {
-    if (sceneHasPhysics(0)) {
-      return physicsManager_->getArticulatedObjectRootState(objectId);
+    if (auto obj = queryArticulatedObjWrapper(0, objectId)) {
+      return obj->getTransformation();
     }
     return Magnum::Matrix4();
   }
@@ -842,22 +842,22 @@ class Simulator {
   }
 
   std::vector<float> getArticulatedObjectPositions(int objectId) {
-    if (sceneHasPhysics(0)) {
-      return physicsManager_->getArticulatedObjectPositions(objectId);
+    if (auto obj = queryArticulatedObjWrapper(0, objectId)) {
+      return obj->getPositions();
     }
     return std::vector<float>();
   }
 
   std::vector<float> getArticulatedObjectVelocities(int objectId) {
-    if (sceneHasPhysics(0)) {
-      return physicsManager_->getArticulatedObjectVelocities(objectId);
+    if (auto obj = queryArticulatedObjWrapper(0, objectId)) {
+      return obj->getVelocities();
     }
     return std::vector<float>();
   }
 
   std::vector<float> getArticulatedObjectForces(int objectId) {
-    if (sceneHasPhysics(0)) {
-      return physicsManager_->getArticulatedObjectForces(objectId);
+    if (auto obj = queryArticulatedObjWrapper(0, objectId)) {
+      return obj->getForces();
     }
     return std::vector<float>();
   }
@@ -877,9 +877,8 @@ class Simulator {
   std::vector<float> getArticulatedObjectPositionLimits(
       int objectId,
       bool upperLimits = false) {
-    if (sceneHasPhysics(0)) {
-      return physicsManager_->getArticulatedObjectPositionLimits(objectId,
-                                                                 upperLimits);
+    if (auto obj = queryArticulatedObjWrapper(0, objectId)) {
+      return obj->getPositionLimits(upperLimits);
     }
     return std::vector<float>();
   }
@@ -922,8 +921,8 @@ class Simulator {
   }
 
   bool getArticulatedObjectSleep(int objectId) {
-    if (sceneHasPhysics(0)) {
-      return physicsManager_->getArticulatedObjectSleep(objectId);
+    if (auto obj = queryArticulatedObjWrapper(0, objectId)) {
+      return obj->isActive();
     }
     return false;
   }
@@ -936,15 +935,15 @@ class Simulator {
   }
 
   esp::physics::MotionType getArticulatedObjectMotionType(int objectId) {
-    if (sceneHasPhysics(0)) {
-      return physicsManager_->getArticulatedObjectMotionType(objectId);
+    if (auto obj = queryArticulatedObjWrapper(0, objectId)) {
+      return obj->getMotionType();
     }
     return esp::physics::MotionType::UNDEFINED;
   }
 
   int getNumArticulatedLinks(int objectId) {
-    if (sceneHasPhysics(0)) {
-      return physicsManager_->getNumArticulatedLinks(objectId);
+    if (auto obj = queryArticulatedObjWrapper(0, objectId)) {
+      return obj->getNumLinks();
     }
     return ID_UNDEFINED;
   }
@@ -961,14 +960,16 @@ class Simulator {
     return std::map<int, int>();
   };
   core::RigidState getArticulatedLinkRigidState(int objectId, int linkId) {
-    if (sceneHasPhysics(0)) {
-      return physicsManager_->getArticulatedLinkRigidState(objectId, linkId);
+    if (auto obj = queryArticulatedObjWrapper(0, objectId)) {
+      return obj->getLink(linkId)->getRigidState();
     }
     return core::RigidState();
   }
 
   float getArticulatedLinkFriction(int objectId, int linkId) {
-    return physicsManager_->getArticulatedLinkFriction(objectId, linkId);
+    return getArticulatedObjectManager()
+        ->getObjectCopyByID(objectId)
+        ->getArticulatedLinkFriction(linkId);
   }
 
   void setArticulatedLinkFriction(int objectId, int linkId, float friction) {
@@ -997,7 +998,7 @@ class Simulator {
    */
   void removeJointMotor(const int objectId, const int motorId) {
     if (sceneHasPhysics(0)) {
-      return physicsManager_->removeJointMotor(objectId, motorId);
+      physicsManager_->removeJointMotor(objectId, motorId);
     }
   }
 
@@ -1007,8 +1008,8 @@ class Simulator {
    */
   esp::physics::JointMotorSettings getJointMotorSettings(const int objectId,
                                                          const int motorId) {
-    if (sceneHasPhysics(0)) {
-      return physicsManager_->getJointMotorSettings(objectId, motorId);
+    if (auto obj = queryArticulatedObjWrapper(0, objectId)) {
+      return obj->getJointMotorSettings(motorId);
     }
     return {};
   }
@@ -1267,10 +1268,10 @@ class Simulator {
   };
 
   // TODO: document
-  void overrideCollisionGroup(int objectID, int group) {
+  void overrideCollisionGroup(int objectId, int group) {
     // todo: find a safe way to convert int to enum
     physicsManager_->overrideCollisionGroup(
-        objectID, esp::physics::CollisionGroup(group));
+        objectId, esp::physics::CollisionGroup(group));
   }
 
   /**
@@ -1349,7 +1350,7 @@ class Simulator {
    * @return ArticulatedObject wrapper manager
    */
   std::shared_ptr<esp::physics::ArticulatedObjectManager>
-  getArticulatedObjectManager() {
+  getArticulatedObjectManager() const {
     if (sceneHasPhysics(activeSceneID_)) {
       return physicsManager_->getArticulatedObjectManager();
     }
@@ -1826,6 +1827,25 @@ class Simulator {
       return nullptr;
     }
     return getRigidObjectManager()->getObjectCopyByID(objID);
+  }
+
+  /**
+   * @brief TEMPORARY until sim access to objects is completely removed.  This
+   * method will return an object's wrapper if the passsed @p sceneID and @p
+   * objID are both valid.  This wrapper will then be used by the calling
+   * function to access components of the object.
+   * @param sceneID The ID of the scene to query
+   * @param objID The ID of the desired object
+   * @return A smart pointer to the wrapper referencing the desired object, or
+   * nullptr if DNE.
+   */
+  esp::physics::ManagedArticulatedObject::ptr queryArticulatedObjWrapper(
+      int sceneID,
+      int objID) const {
+    if (!sceneHasPhysics(sceneID)) {
+      return nullptr;
+    }
+    return getArticulatedObjectManager()->getObjectCopyByID(objID);
   }
 
   void reconfigureReplayManager(bool enableGfxReplaySave);
