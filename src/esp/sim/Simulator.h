@@ -777,7 +777,7 @@ class Simulator {
    * existing keys in @ref PhysicsManager::existingArticulatedObjects_.)
    */
   std::vector<int> getExistingArticulatedObjectIDs(int sceneID = 0) {
-    if (sceneHasPhysics(0)) {
+    if (sceneHasPhysics(sceneID)) {
       return physicsManager_->getExistingArticulatedObjectIDs();
     }
     return std::vector<int>();
@@ -966,7 +966,7 @@ class Simulator {
     return core::RigidState();
   }
 
-  float getArticulatedLinkFriction(int objectId, int linkId) {
+  float getArticulatedLinkFriction(int objectId, int linkId) const {
     return getArticulatedObjectManager()
         ->getObjectCopyByID(objectId)
         ->getArticulatedLinkFriction(linkId);
