@@ -38,13 +38,13 @@ class BulletArticulatedLink : public ArticulatedLink, public BulletBase {
       : ArticulatedLink(bodyNode, index, resMgr),
         BulletBase(std::move(bWorld), std::move(collisionObjToObjIds)) {}
 
-  virtual Magnum::Range3D getCollisionShapeAabb() const override {
+  Magnum::Range3D getCollisionShapeAabb() const override {
     // TODO: collision object should be linked here
     return Magnum::Range3D();
   }
 
   //! link can't do this.
-  virtual void setMotionType(CORRADE_UNUSED MotionType mt) override {}
+  void setMotionType(CORRADE_UNUSED MotionType mt) override {}
 
  protected:
   int mbIndex_;
@@ -72,7 +72,7 @@ class BulletArticulatedObject : public ArticulatedObject {
     collisionObjToObjIds_ = std::move(collisionObjToObjIds);
   }
 
-  virtual ~BulletArticulatedObject();
+  ~BulletArticulatedObject() override;
 
   bool initializeFromURDF(URDFImporter& u2b,
                           const Magnum::Matrix4& worldTransform,
