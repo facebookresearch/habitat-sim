@@ -386,9 +386,9 @@ void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
   // add the object to the world
   if (mt == MotionType::STATIC) {
     CORRADE_INTERNAL_ASSERT(bObjectRigidBody_->isStaticObject());
-    bWorld_->addRigidBody(
-        bObjectRigidBody_.get(), int(CollisionGroup::Static),
-        uint(CollisionGroupHelper::getMaskForGroup(CollisionGroup::Static)));
+    bWorld_->addRigidBody(bObjectRigidBody_.get(), int(CollisionGroup::Static),
+                          uint32_t(CollisionGroupHelper::getMaskForGroup(
+                              CollisionGroup::Static)));
   } else if (mt == MotionType::KINEMATIC) {
     bObjectRigidBody_->setCollisionFlags(
         bObjectRigidBody_->getCollisionFlags() |
@@ -397,11 +397,12 @@ void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
     CORRADE_INTERNAL_ASSERT(!bObjectRigidBody_->isStaticObject());
     bWorld_->addRigidBody(
         bObjectRigidBody_.get(), int(CollisionGroup::Kinematic),
-        uint(CollisionGroupHelper::getMaskForGroup(CollisionGroup::Kinematic)));
+        uint32_t(
+            CollisionGroupHelper::getMaskForGroup(CollisionGroup::Kinematic)));
   } else {
     bWorld_->addRigidBody(
         bObjectRigidBody_.get(), int(CollisionGroup::FreeObject),
-        uint(
+        uint32_t(
             CollisionGroupHelper::getMaskForGroup(CollisionGroup::FreeObject)));
     setActive(true);
     CORRADE_INTERNAL_ASSERT(!bObjectRigidBody_->isStaticObject());
@@ -493,7 +494,7 @@ void BulletRigidObject::overrideCollisionGroup(CollisionGroup group) {
 
   bWorld_->removeRigidBody(bObjectRigidBody_.get());
   bWorld_->addRigidBody(bObjectRigidBody_.get(), int(group),
-                        uint(CollisionGroupHelper::getMaskForGroup(group)));
+                        uint32_t(CollisionGroupHelper::getMaskForGroup(group)));
 }
 
 Magnum::Range3D BulletRigidObject::getCollisionShapeAabb() const {

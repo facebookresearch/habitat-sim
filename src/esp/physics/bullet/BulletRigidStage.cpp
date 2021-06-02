@@ -87,9 +87,9 @@ void BulletRigidStage::constructAndAddCollisionObjects() {
 
   // add the objects to the world
   for (auto& object : bStaticCollisionObjects_) {
-    bWorld_->addRigidBody(
-        object.get(), int(CollisionGroup::Static),
-        uint(CollisionGroupHelper::getMaskForGroup(CollisionGroup::Static)));
+    bWorld_->addRigidBody(object.get(), int(CollisionGroup::Static),
+                          uint32_t(CollisionGroupHelper::getMaskForGroup(
+                              CollisionGroup::Static)));
   }
 }
 
