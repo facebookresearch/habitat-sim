@@ -32,55 +32,107 @@ std::map<std::string, CollisionGroup>
 std::map<CollisionGroup, CollisionGroups>
     CollisionGroupHelper::collisionGroupMasks = {
         // everything except Noncollidable
-        {CollisionGroup::Default,
-         ~CollisionGroups(CollisionGroup::Noncollidable)},
+        {CollisionGroup::Default, ~CollisionGroup::Noncollidable},
         // all but Static and Kinematic
         {CollisionGroup::Static,
-         ~CollisionGroups(CollisionGroup::Static | CollisionGroup::Kinematic |
-                          CollisionGroup::Noncollidable)},
+         ~(CollisionGroup::Static | CollisionGroup::Kinematic |
+           CollisionGroup::Noncollidable)},
         // all but Static and Kinematic
         {CollisionGroup::Kinematic,
-         ~CollisionGroups(CollisionGroup::Static | CollisionGroup::Kinematic |
-                          CollisionGroup::Noncollidable)},
+         ~(CollisionGroup::Static | CollisionGroup::Kinematic |
+           CollisionGroup::Noncollidable)},
         // everything except Noncollidable
-        {CollisionGroup::FreeObject,
-         ~CollisionGroups(CollisionGroup::Noncollidable)},
+        {CollisionGroup::FreeObject, ~CollisionGroup::Noncollidable},
         // everything except Noncollidable
-        {CollisionGroup::Robot,
-         ~CollisionGroups(CollisionGroup::Noncollidable)},
+        {CollisionGroup::Robot, ~CollisionGroup::Noncollidable},
         // nothing
         {CollisionGroup::Noncollidable, ~CollisionGroups()},
 
         // everything except Noncollidable
-        {CollisionGroup::UserGroup0,
-         ~CollisionGroups(CollisionGroup::Noncollidable)},
+        {CollisionGroup::UserGroup0, ~CollisionGroup::Noncollidable},
         // everything except Noncollidable
-        {CollisionGroup::UserGroup1,
-         ~CollisionGroups(CollisionGroup::Noncollidable)},
+        {CollisionGroup::UserGroup1, ~CollisionGroup::Noncollidable},
         // everything except Noncollidable
-        {CollisionGroup::UserGroup2,
-         ~CollisionGroups(CollisionGroup::Noncollidable)},
+        {CollisionGroup::UserGroup2, ~CollisionGroup::Noncollidable},
         // everything except Noncollidable
-        {CollisionGroup::UserGroup3,
-         ~CollisionGroups(CollisionGroup::Noncollidable)},
+        {CollisionGroup::UserGroup3, ~CollisionGroup::Noncollidable},
         // everything except Noncollidable
-        {CollisionGroup::UserGroup4,
-         ~CollisionGroups(CollisionGroup::Noncollidable)},
+        {CollisionGroup::UserGroup4, ~CollisionGroup::Noncollidable},
         // everything except Noncollidable
-        {CollisionGroup::UserGroup5,
-         ~CollisionGroups(CollisionGroup::Noncollidable)},
+        {CollisionGroup::UserGroup5, ~CollisionGroup::Noncollidable},
         // everything except Noncollidable
-        {CollisionGroup::UserGroup6,
-         ~CollisionGroups(CollisionGroup::Noncollidable)},
+        {CollisionGroup::UserGroup6, ~CollisionGroup::Noncollidable},
         // everything except Noncollidable
-        {CollisionGroup::UserGroup7,
-         ~CollisionGroups(CollisionGroup::Noncollidable)},
+        {CollisionGroup::UserGroup7, ~CollisionGroup::Noncollidable},
         // everything except Noncollidable
-        {CollisionGroup::UserGroup8,
-         ~CollisionGroups(CollisionGroup::Noncollidable)},
+        {CollisionGroup::UserGroup8, ~CollisionGroup::Noncollidable},
         // everything except Noncollidable
-        {CollisionGroup::UserGroup9,
-         ~CollisionGroups(CollisionGroup::Noncollidable)}};
+        {CollisionGroup::UserGroup9, ~CollisionGroup::Noncollidable}};
+
+CollisionGroups CollisionGroupHelper::getMaskForGroup(CollisionGroup group) {
+  return collisionGroupMasks.at(group);
+}
+
+CollisionGroups CollisionGroupHelper::getMaskForGroup(
+    const std::string& groupName) {
+  return collisionGroupMasks.at(getGroup(groupName));
+}
+
+void CollisionGroupHelper::setGroupInteractsWith(CollisionGroup groupA,
+                                                 CollisionGroup groupB,
+                                                 bool interacts) {
+  CollisionGroups groupAMask = collisionGroupMasks.at(groupA);
+  groupAMask = interacts ? groupAMask | groupB : groupAMask & ~groupB;
+  collisionGroupMasks.at(groupA) = groupAMask;
+};
+
+void CollisionGroupHelper::setMaskForGroup(CollisionGroup group,
+                                           CollisionGroups mask) {
+  collisionGroupMasks.at(group) = mask;
+}
+
+CollisionGroup CollisionGroupHelper::getGroup(const std::string& groupName) {
+  ESP_CHECK(collisionGroupNames.count(groupName) != 0,
+            "Invalid groupName provided. Matches no CollisionGroup.");
+  return collisionGroupNames.at(groupName);
+}
+
+std::string CollisionGroupHelper::getGroupName(CollisionGroup group) {
+  for (std::map<std::string, CollisionGroup>::iterator it =
+           collisionGroupNames.begin();
+       it != collisionGroupNames.end(); ++it) {
+    if (group == it->second) {
+      return it->first;
+    }
+  }
+  // enum input, so should not get here unless the map is corrupted
+  CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+  return "";
+}
+
+bool CollisionGroupHelper::setGroupName(CollisionGroup group,
+                                        const std::string& newName) {
+  auto currentName = getGroupName(group);
+  if (collisionGroupNames.count(newName) != 0) {
+    LOG(WARNING) << "CollisionGroupHelper::setGroupName - requested group "
+                    "name is already in use, aborting.";
+    return false;
+  }
+  collisionGroupNames[newName] = collisionGroupNames.at(currentName);
+  collisionGroupNames.erase(currentName);
+  return true;
+}
+
+std::vector<std::string> CollisionGroupHelper::getAllGroupNames() {
+  std::vector<std::string> groupNames;
+  groupNames.reserve(collisionGroupNames.size());
+  for (std::map<std::string, CollisionGroup>::iterator it =
+           collisionGroupNames.begin();
+       it != collisionGroupNames.end(); ++it) {
+    groupNames.push_back(it->first);
+  }
+  return groupNames;
+}
 
 }  // namespace physics
 }  // namespace esp

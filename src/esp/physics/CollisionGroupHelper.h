@@ -96,13 +96,9 @@ class CollisionGroupHelper {
    * @return The integer collision mask where each bit corresponds to the
    * group's interaction with another group.
    */
-  static CollisionGroups getMaskForGroup(CollisionGroup group) {
-    return collisionGroupMasks.at(group);
-  }
+  static CollisionGroups getMaskForGroup(CollisionGroup group);
   //! convenience override allowing the group to be referenced by name.
-  static CollisionGroups getMaskForGroup(const std::string& groupName) {
-    return collisionGroupMasks.at(getGroup(groupName));
-  }
+  static CollisionGroups getMaskForGroup(const std::string& groupName);
 
   /**
    * @brief Set groupA's collision mask to a specific interaction state with
@@ -114,11 +110,7 @@ class CollisionGroupHelper {
    */
   static void setGroupInteractsWith(CollisionGroup groupA,
                                     CollisionGroup groupB,
-                                    bool interacts) {
-    CollisionGroups groupAMask = collisionGroupMasks.at(groupA);
-    groupAMask = interacts ? groupAMask | groupB : groupAMask & ~groupB;
-    collisionGroupMasks.at(groupA) = groupAMask;
-  };
+                                    bool interacts);
 
   /**
    * @brief Set the mask for a group defining which other groups it will
@@ -131,20 +123,14 @@ class CollisionGroupHelper {
    * @param group The group to modify.
    * @param mask The mask to apply.
    */
-  static void setMaskForGroup(CollisionGroup group, CollisionGroups mask) {
-    collisionGroupMasks.at(group) = mask;
-  }
+  static void setMaskForGroup(CollisionGroup group, CollisionGroups mask);
 
   /**
    * @brief Get the collision group by its name. Must pass a valid name.
    *
    * @param groupName The collision group's configured name.
    */
-  static CollisionGroup getGroup(const std::string& groupName) {
-    ESP_CHECK(collisionGroupNames.count(groupName) != 0,
-              "Invalid groupName provided. Matches no CollisionGroup.");
-    return collisionGroupNames.at(groupName);
-  }
+  static CollisionGroup getGroup(const std::string& groupName);
 
   /**
    * @brief Get a collision group's configured name.
@@ -152,18 +138,7 @@ class CollisionGroupHelper {
    * @param group The collision group.
    * @return The group's configured name.
    */
-  static std::string getGroupName(CollisionGroup group) {
-    for (std::map<std::string, CollisionGroup>::iterator it =
-             collisionGroupNames.begin();
-         it != collisionGroupNames.end(); ++it) {
-      if (group == it->second) {
-        return it->first;
-      }
-    }
-    // enum input, so should not get here unless the map is corrupted
-    CORRADE_INTERNAL_ASSERT_UNREACHABLE();
-    return "";
-  }
+  static std::string getGroupName(CollisionGroup group);
 
   /**
    * @brief Set a custom name for a collision group.
@@ -173,17 +148,7 @@ class CollisionGroupHelper {
    * @param group The collision group.
    * @return Whether or not the set was successful.
    */
-  static bool setGroupName(CollisionGroup group, const std::string& newName) {
-    auto currentName = getGroupName(group);
-    if (collisionGroupNames.count(newName) != 0) {
-      LOG(WARNING) << "CollisionGroupHelper::setGroupName - requested group "
-                      "name is already in use, aborting.";
-      return false;
-    }
-    collisionGroupNames[newName] = collisionGroupNames.at(currentName);
-    collisionGroupNames.erase(currentName);
-    return true;
-  }
+  static bool setGroupName(CollisionGroup group, const std::string& newName);
 
   /**
    * @brief Get a list of all configured collision group names for easy
@@ -191,16 +156,10 @@ class CollisionGroupHelper {
    *
    * @return List of configured group names
    */
-  static std::vector<std::string> getAllGroupNames() {
-    std::vector<std::string> groupNames(collisionGroupNames.size());
-    for (std::map<std::string, CollisionGroup>::iterator it =
-             collisionGroupNames.begin();
-         it != collisionGroupNames.end(); ++it) {
-      groupNames.push_back(it->first);
-    }
-    return groupNames;
-  }
-};
+  static std::vector<std::string> getAllGroupNames();
+
+};  // end CollisionGroupHelper
+
 }  // end namespace physics
 }  // end namespace esp
 
