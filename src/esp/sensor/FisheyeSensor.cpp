@@ -5,7 +5,6 @@
 #include "esp/core/Check.h"
 #include "esp/gfx/DoubleSphereCameraShader.h"
 
-#include <Corrade/Containers/Containers.h>
 #include <Corrade/Utility/Assert.h>
 #include <Corrade/Utility/FormatStl.h>
 
@@ -50,7 +49,7 @@ void specSanityCheck(FisheyeSensorSpec* spec) {
 }
 
 Magnum::Vector2 computePrincipalPointOffset(const FisheyeSensorSpec& spec) {
-  if (spec.principalPointOffset != Corrade::Containers::NullOpt) {
+  if (bool(spec.principalPointOffset)) {
     return *spec.principalPointOffset;
   }
   auto res = spec.resolution;
