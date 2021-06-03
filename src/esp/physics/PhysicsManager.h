@@ -31,6 +31,7 @@
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/DrawableGroup.h"
 #include "esp/io/URDFParser.h"
+#include "esp/physics/objectWrappers/ManagedArticulatedObject.h"
 #include "esp/physics/objectWrappers/ManagedRigidObject.h"
 #include "esp/scene/SceneNode.h"
 
@@ -105,6 +106,7 @@ struct ContactPointData {
 };
 
 class RigidObjectManager;
+class ArticulatedObjectManager;
 
 /**
 @brief Kinematic and dynamic scene and object manager.
@@ -351,6 +353,13 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    */
   virtual esp::physics::ManagedRigidObject::ptr getRigidObjectWrapper();
 
+  /**
+   * @brief Create an articulated object wrapper appropriate for this physics
+   * manager. Overridden if called by dynamics-library-enabled PhysicsManager
+   */
+  virtual esp::physics::ManagedArticulatedObject::ptr
+  getArticulatedObjectWrapper();
+
   /** @brief Remove an object instance from the pysical scene by ID, destroying
    * its scene graph node and removing it from @ref
    * PhysicsManager::existingObjects_.
@@ -402,11 +411,72 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   //============= ArticulatedObject functions =============
   // TODO: think more about how these should be incorporated into the existing
   // framework
+
+  /**
+   * @brief Add an instance of an  @ref ArticulatedObject in the world.
+   *
+   * @param filepath the file location for the articulated object's model
+   * @param aObjInstAttributes the relevant instancing values for the
+   * articulated object
+   * @return A unique id for the @ref ArticulatedObject, allocated from the same
+   * id set as rigid objects.
+   */
+
+  int addArticulatedObjectInstance(
+      const std::string& filepath,
+      const std::shared_ptr<
+          esp::metadata::attributes::SceneAOInstanceAttributes>&
+          aObjInstAttributes);
+
+  /**
+   * @brief Load, parse, and import a URDF file instantiating an @ref
+   * ArticulatedObject in the world.  This version will query an existing
+   * simulator for drawables and therefore does not require drawables to be
+   * specified.
+   *
+   * Not implemented in base PhysicsManager.
+   * @param filepath The fully-qualified filename for the URDF file describing
+   * the model the articulated object is to be built from.
+   * @param fixedBase Whether the base of the @ref ArticulatedObject should be
+   * fixed.
+   * @param globalScale A scale multiplier to be applied uniformly in 3
+   * dimensions to the entire @ref ArticulatedObject.
+   * @param massScale A scale multiplier to be applied to the mass of the all
+   * the components of the @ref ArticulatedObject.
+   * @param forceReload If true, reload the source URDF from file, replacing the
+   * cached model.
+   *
+   * @return A unique id for the @ref BulletArticulatedObject, allocated from
+   * the same id set as rigid objects.
+   */
+  virtual int addArticulatedObjectFromURDF(
+      CORRADE_UNUSED const std::string& filepath,
+      CORRADE_UNUSED bool fixedBase = false,
+      CORRADE_UNUSED float globalScale = 1.0,
+      CORRADE_UNUSED float massScale = 1.0,
+      CORRADE_UNUSED bool forceReload = false) {
+    Magnum::Debug{} << "addArticulatedObjectFromURDF not implemented in base "
+                       "PhysicsManager.";
+    return ID_UNDEFINED;
+  }
+
   /**
    * @brief Load, parse, and import a URDF file instantiating an @ref
    * ArticulatedObject in the world.
    *
    * Not implemented in base PhysicsManager.
+   * @param filepath The fully-qualified filename for the URDF file describing
+   * the model the articulated object is to be built from.
+   * @param drawables Reference to the scene graph drawables group to enable
+   * rendering of the newly initialized @ref ArticulatedObject.
+   * @param fixedBase Whether the base of the @ref ArticulatedObject should be
+   * fixed.
+   * @param globalScale A scale multiplier to be applied uniformly in 3
+   * dimensions to the entire @ref ArticulatedObject.
+   * @param massScale A scale multiplier to be applied to the mass of the all
+   * the components of the @ref ArticulatedObject.
+   * @param forceReload If true, reload the source URDF from file, replacing the
+   * cached model.
    *
    * @return A unique id for the @ref ArticulatedObject, allocated from the same
    * id set as rigid objects.
@@ -465,17 +535,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   void removeJointMotor(const int objectId, const int motorId) {
     CHECK(existingArticulatedObjects_.count(objectId));
     existingArticulatedObjects_.at(objectId)->removeJointMotor(motorId);
-  }
-
-  /**
-   * @brief Get a copy of the JointMotorSettings for an ArticulatedObject's
-   * existing JointMotor .
-   */
-  JointMotorSettings getJointMotorSettings(const int objectId,
-                                           const int motorId) {
-    CHECK(existingArticulatedObjects_.count(objectId));
-    return existingArticulatedObjects_.at(objectId)->getJointMotorSettings(
-        motorId);
   }
 
   /**
@@ -1056,12 +1115,12 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   void setArticulatedObjectRootState(int objectId,
                                      const Magnum::Matrix4& state) {
     CHECK(existingArticulatedObjects_.count(objectId));
-    existingArticulatedObjects_.at(objectId)->setRootState(state);
+    existingArticulatedObjects_.at(objectId)->setTransformation(state);
   }
 
   Magnum::Matrix4 getArticulatedObjectRootState(int objectId) {
     CHECK(existingArticulatedObjects_.count(objectId));
-    return existingArticulatedObjects_.at(objectId)->getRootState();
+    return existingArticulatedObjects_.at(objectId)->getTransformation();
   }
 
   void setArticulatedObjectForces(int objectId,
@@ -1150,6 +1209,15 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    */
   std::shared_ptr<RigidObjectManager> getRigidObjectManager() const {
     return rigidObjectManager_;
+  }
+
+  /**
+   * @brief returns the wrapper manager for the currently created articulated
+   * objects.
+   * @return ArticulatedObject wrapper manager
+   */
+  std::shared_ptr<ArticulatedObjectManager> getArticulatedObjectManager() {
+    return articulatedObjectManager_;
   }
 
   /**
@@ -1290,6 +1358,11 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    */
   std::shared_ptr<RigidObjectManager> rigidObjectManager_;
 
+  /** @brief This manager manages the wrapper objects used to provide safe,
+   * direct user access to all existing physics objects.
+   */
+  std::shared_ptr<ArticulatedObjectManager> articulatedObjectManager_;
+
   /** @brief Maps object IDs to all existing physical object instances in
    * the world.
    */
@@ -1300,7 +1373,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   /** @brief Maps articulated object IDs to all existing physical object
    * instances in the world.
    */
-  std::map<int, ArticulatedObject::uptr> existingArticulatedObjects_;
+  std::map<int, ArticulatedObject::ptr> existingArticulatedObjects_;
 
   /** @brief A counter of unique object ID's allocated thus far. Used to
    * allocate new IDs when  @ref recycledObjectIDs_ is empty without needing

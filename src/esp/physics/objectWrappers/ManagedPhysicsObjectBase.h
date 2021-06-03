@@ -89,7 +89,7 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
     }
   }
 
-  bool isActive() {
+  bool isActive() const {
     if (auto sp = this->getObjectReference()) {
       return sp->isActive();
     }
@@ -108,7 +108,7 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
     }
   }  // setLightSetup
 
-  scene::SceneNode* getSceneNode() {
+  scene::SceneNode* getSceneNode() const {
     if (auto sp = this->getObjectReference()) {
       return &const_cast<scene::SceneNode&>(sp->getSceneNode());
     }
@@ -242,6 +242,13 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
       sp->rotateZLocal(angleInRad);
     }
   }  // rotateZLocal
+
+  std::vector<scene::SceneNode*> getVisualSceneNodes() const {
+    if (auto sp = this->getObjectReference()) {
+      return sp->getVisualSceneNodes();
+    }
+    return std::vector<scene::SceneNode*>();
+  }  // getVisualSceneNodes
 
  protected:
   /**

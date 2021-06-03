@@ -386,7 +386,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    * translation correction needs to occur.
    */
   virtual void resetStateFromSceneInstanceAttr(
-      CORRADE_UNUSED bool defaultCOMCorrection = false){};
+      CORRADE_UNUSED bool defaultCOMCorrection = false) = 0;
 
   /**
    * @brief Set this object's @ref
@@ -401,6 +401,12 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
   void setSceneInstanceAttr(std::shared_ptr<U> instanceAttr) {
     _sceneInstanceAttributes = std::move(instanceAttr);
   }  // setSceneInstanceAttr
+
+  /**
+   * @brief Get pointers to this physics object's visual scene nodes
+   * @return vector of pointers to the object's visual scene nodes.
+   */
+  virtual std::vector<scene::SceneNode*> getVisualSceneNodes() const = 0;
 
  protected:
   /**

@@ -4,11 +4,13 @@
 
 #include "esp/bindings/bindings.h"
 
+#include "esp/physics/objectManagers/ArticulatedObjectManager.h"
 #include "esp/physics/objectManagers/PhysicsObjectBaseManager.h"
 #include "esp/physics/objectManagers/RigidBaseManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/physics/objectWrappers/ManagedRigidObject.h"
 #ifdef ESP_BUILD_WITH_BULLET
+#include "esp/physics/bullet/objectWrappers/ManagedBulletArticulatedObject.h"
 #include "esp/physics/bullet/objectWrappers/ManagedBulletRigidObject.h"
 #endif
 namespace py = pybind11;
@@ -16,8 +18,10 @@ using py::literals::operator""_a;
 
 namespace PhysWraps = esp::physics;
 #ifdef ESP_BUILD_WITH_BULLET
+using PhysWraps::ManagedBulletArticulatedObject;
 using PhysWraps::ManagedBulletRigidObject;
 #endif
+using PhysWraps::ArticulatedObjectManager;
 using PhysWraps::ManagedRigidObject;
 using PhysWraps::PhysicsObjectBaseManager;
 using PhysWraps::RigidBaseManager;
@@ -44,7 +48,8 @@ void declareBaseWrapperManager(py::module& m,
   // template.  However, we use PHysicsObjectBaseManager as the base class
   // because we wish to have appropriate (wrapper-related) access, argument
   // nomenclature and documentation.
-  std::string pyclass_name = classStrPrefix + std::string("PhysWrapperManager");
+  std::string pyclass_name =
+      classStrPrefix + std::string("_PhysWrapperManager");
   py::class_<MgrClass, std::shared_ptr<MgrClass>>(m, pyclass_name.c_str())
       .def("get_object_handle_by_id", &MgrClass::getObjectHandleByID,
            ("Returns string handle for the " + objType +
@@ -162,7 +167,7 @@ void declareRigidBaseWrapperManager(py::module& m,
                                     const std::string& classStrPrefix) {
   using MgrClass = RigidBaseManager<T>;
   std::string pyclass_name =
-      classStrPrefix + std::string("RigidBaseWrapperManager");
+      classStrPrefix + std::string("_RigidBaseWrapperManager");
 
   py::class_<MgrClass, PhysicsObjectBaseManager<T>, std::shared_ptr<MgrClass>>(
       m, pyclass_name.c_str());
@@ -172,18 +177,18 @@ void declareRigidBaseWrapperManager(py::module& m,
 void initPhysicsWrapperManagerBindings(pybind11::module& m) {
 #ifdef ESP_BUILD_WITH_BULLET
   declareBaseWrapperManager<ManagedRigidObject, ManagedBulletRigidObject>(
-      m, "BulletRigidObject", "PhysicsObjectManager");
+      m, "BulletRigidObject", "BulletRigidObject");
 
   declareRigidBaseWrapperManager<ManagedRigidObject, ManagedBulletRigidObject>(
-      m, "BulletRigidObject", "RigidBaseManager");
+      m, "BulletRigidObject", "BulletRigidObject");
 
 #else
   // if dynamics library not being used, just use base rigid object
   declareBaseWrapperManager<ManagedRigidObject>(m, "RigidObject",
-                                                "PhysicsObjectManager");
+                                                "RigidObject");
 
   declareRigidBaseWrapperManager<ManagedRigidObject>(m, "RigidObject",
-                                                     "RigidBaseManager");
+                                                     "RigidObject");
 #endif
   // RigidObject wrapper manager
   py::class_<RigidObjectManager, RigidBaseManager<ManagedRigidObject>,
@@ -216,6 +221,32 @@ void initPhysicsWrapperManagerBindings(pybind11::module& m) {
           R"(This removes the RigidObject referenced by the passed handle from the library, while allowing "
           "for the optional retention of the object's scene node and/or the visual node)");
 
+  // initialize bindings for articulated objects
+
+#ifdef ESP_BUILD_WITH_BULLET
+  declareBaseWrapperManager<ManagedArticulatedObject,
+                            ManagedBulletArticulatedObject>(
+      m, "BulletArticulatedObject", "BulletArticulatedObject");
+
+#else
+  // if dynamics library not being used, just use base rigid object
+  declareBaseWrapperManager<ManagedArticulatedObject>(m, "ArticulatedObject",
+                                                      "ArticulatedObject");
+
+#endif
+  py::class_<ArticulatedObjectManager,
+             PhysicsObjectBaseManager<ManagedArticulatedObject>,
+             std::shared_ptr<ArticulatedObjectManager>>(
+      m, "ArticulatedObjectManager")
+
+      .def(
+          "add_articulated_object_from_URDF",
+          &ArticulatedObjectManager::addArticulatedObjectFromURDF, "filepath"_a,
+          "fixed_base"_a = false, "global_scale"_a = 1.0, "mass_scale"_a = 1.0,
+          "froce_reload"_a = false,
+          R"(Load and parse a URDF file using the given 'filepath' into a model,
+          then use this model to instantiate an Articulated Object in the world.
+          Returns a reference to the created object.)");
 }  // initPhysicsWrapperManagerBindings
 
 }  // namespace physics

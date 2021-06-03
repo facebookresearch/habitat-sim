@@ -67,10 +67,46 @@ class BulletPhysicsManager : public PhysicsManager {
 
   /**
    * @brief Load, parse, and import a URDF file instantiating an @ref
-   * BulletArticulatedObject in the world.
+   * BulletArticulatedObject in the world.  This version does not require
+   * drawables to be specified.
+   * @param filepath The fully-qualified filename for the URDF file describing
+   * the model the articulated object is to be built from.
+   * @param fixedBase Whether the base of the @ref ArticulatedObject should be
+   * fixed.
+   * @param globalScale A scale multiplier to be applied uniformly in 3
+   * dimensions to the entire @ref ArticulatedObject.
+   * @param massScale A scale multiplier to be applied to the mass of the all
+   * the components of the @ref ArticulatedObject.
+   * @param forceReload If true, reload the source URDF from file, replacing the
+   * cached model.
    *
-   * @return A unique id for the @ref BulletArticulatedObject, allocated from
-   * the same id set as rigid objects.
+   * @return A unique id for the @ref ArticulatedObject, allocated from the same
+   * id set as rigid objects.
+   */
+  int addArticulatedObjectFromURDF(const std::string& filepath,
+                                   bool fixedBase = false,
+                                   float globalScale = 1.0,
+                                   float massScale = 1.0,
+                                   bool forceReload = false) override;
+
+  /**
+   * @brief Load, parse, and import a URDF file instantiating an @ref
+   * BulletArticulatedObject in the world.
+   * @param filepath The fully-qualified filename for the URDF file describing
+   * the model the articulated object is to be built from.
+   * @param drawables Reference to the scene graph drawables group to enable
+   * rendering of the newly initialized @ref ArticulatedObject.
+   * @param fixedBase Whether the base of the @ref ArticulatedObject should be
+   * fixed.
+   * @param globalScale A scale multiplier to be applied uniformly in 3
+   * dimensions to the entire @ref ArticulatedObject.
+   * @param massScale A scale multiplier to be applied to the mass of the all
+   * the components of the @ref ArticulatedObject.
+   * @param forceReload If true, reload the source URDF from file, replacing the
+   * cached model.
+   *
+   * @return A unique id for the @ref ArticulatedObject, allocated from the same
+   * id set as rigid objects.
    */
   int addArticulatedObjectFromURDF(const std::string& filepath,
                                    DrawableGroup* drawables,
@@ -392,6 +428,13 @@ class BulletPhysicsManager : public PhysicsManager {
    * Overridden if called by dynamics-library-enabled PhysicsManager
    */
   esp::physics::ManagedRigidObject::ptr getRigidObjectWrapper() override;
+
+  /**
+   * @brief Create an articulated object wrapper appropriate for this physics
+   * manager. Overridden if called by dynamics-library-enabled PhysicsManager
+   */
+  esp::physics::ManagedArticulatedObject::ptr getArticulatedObjectWrapper()
+      override;
 
   //============ Object/Stage Instantiation =============
   /**

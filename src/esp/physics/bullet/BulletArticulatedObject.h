@@ -15,6 +15,7 @@
 #include "BulletBase.h"
 #include "BulletDynamics/Featherstone/btMultiBodyJointMotor.h"
 #include "BulletDynamics/Featherstone/btMultiBodySphericalJointMotor.h"
+#include "BulletURDFImporter.h"
 
 namespace esp {
 
@@ -80,13 +81,8 @@ class BulletArticulatedObject : public ArticulatedObject {
                           scene::SceneNode* physicsNode,
                           bool fixedBase = false) override;
 
-  Magnum::Matrix4 getRootState() override;
-
   // update the SceneNode state to match the simulation state
   void updateNodes(bool force = false) override;
-
-  void setRootState(const Magnum::Matrix4& state) override;
-
   void setForces(const std::vector<float>& forces) override;
 
   std::vector<float> getForces() override;
@@ -140,22 +136,6 @@ class BulletArticulatedObject : public ArticulatedObject {
   //! dof level
   bool supportsJointMotor(int linkIx) const;
 
-  // TODO: should be stored in the link
-  // compound parent collision shapes for the links
-  std::map<int, std::unique_ptr<btCompoundShape>> linkCompoundShapes_;
-
-  // child mesh convex and primitive shapes for the link compound shapes
-  std::map<int, std::vector<std::unique_ptr<btCollisionShape>>>
-      linkChildShapes_;
-
-  // used to update raycast objectId checks (maps to link ids)
-  std::shared_ptr<std::map<const btCollisionObject*, int>>
-      collisionObjToObjIds_;
-
-  // std::unique_ptr<btMultiBody> btMultiBody_; //TODO:
-  // TODO: also protected? not due to p2p constraint system
-  std::unique_ptr<btMultiBody> btMultiBody_;
-
   //============ Joint Motor Constraints =============
 
   /**
@@ -168,15 +148,8 @@ class BulletArticulatedObject : public ArticulatedObject {
    * correctly configured.
    * @return The motorId for the new joint motor or ID_UNDEFINED (-1) if failed.
    */
-  int createJointMotor(const int index,
+  int createJointMotor(const int dof,
                        const JointMotorSettings& settings) override;
-
-  //! internal version specific to Bullet setup to simplify the creation
-  //! process.
-  int createJointMotor(const int linkIx,
-                       const int linkDof,
-                       const int globalDof,
-                       const JointMotorSettings& settings);
 
   void removeJointMotor(const int motorId) override;
   void updateJointMotor(const int motorId,
@@ -187,6 +160,56 @@ class BulletArticulatedObject : public ArticulatedObject {
 
   float getJointMotorMaxImpulse(int motorId);
 
+  //! clamp current pose to joint limits
+  void clampJointLimits() override;
+
+  /**
+   * @brief Set or reset the articulated object's state using the object's
+   * specified @p sceneAOInstanceAttributes_ (down cast in method).
+   * @param defaultCOMCorrection Not used in AO currently. The default value of
+   * whether COM-based translation correction needs to occur.
+   */
+  void resetStateFromSceneInstanceAttr(
+      CORRADE_UNUSED bool defaultCOMCorrection = false) override;
+
+  // std::unique_ptr<btMultiBody> btMultiBody_; //TODO:
+  // TODO: also protected? not due to p2p constraint system
+  std::unique_ptr<btMultiBody> btMultiBody_;
+
+ protected:
+  /**
+   * @brief Called internally from syncPose()  Used to update physics
+   * constructs when kinematic transformations are performed manually.  See @ref
+   * esp::physics::PhysicsObjectBase for the transformations.
+   */
+  void setRootState(const Magnum::Matrix4& state) override;
+
+  bool attachGeometry(ArticulatedLink* linkObject,
+                      const std::shared_ptr<io::URDF::Link>& link,
+                      gfx::DrawableGroup* drawables) override;
+
+  /**
+   * @brief Called internally.  Version specific to Bullet setup to simplify the
+   * creation process.
+   * @param linkIx link index to use for link and link's parent bodies, between
+   * which to put joint.
+   * @param linkDof link DOF index corresponding to the current DOF within the
+   * current link being attached to a motor.
+   * @param globalDof index in DOF-based array of motor IDs corresponding to
+   * this motor.
+   * @param settings the @ref esp::physics::JointMotorSettings values that
+   * describe the desired motor's various parameters.
+   * @return index of created joint motor in @p jointMotors_ map.
+   */
+  int createJointMotorInternal(const int linkIx,
+                               const int linkDof,
+                               const int globalDof,
+                               const JointMotorSettings& settings);
+
+  //! Performs forward kinematics, updates collision object states and
+  //! broadphase aabbs for the object. Do this with manual state setters.
+  void updateKinematicState();
+
   int nextJointMotorId_ = 0;
 
   std::map<int, std::unique_ptr<btMultiBodyJointMotor>> articulatedJointMotors;
@@ -196,18 +219,6 @@ class BulletArticulatedObject : public ArticulatedObject {
   //! maps local link id to parent joint's limit constraint
   std::map<int, JointLimitConstraintInfo> jointLimitConstraints;
 
-  //! clamp current pose to joint limits
-  void clampJointLimits() override;
-
- protected:
-  bool attachGeometry(ArticulatedLink* linkObject,
-                      const std::shared_ptr<io::URDF::Link>& link,
-                      gfx::DrawableGroup* drawables) override;
-
-  //! Performs forward kinematics, updates collision object states and
-  //! broadphase aabbs for the object. Do this with manual state setters.
-  void updateKinematicState();
-
   // scratch datastrcutures for updateKinematicState
   btAlignedObjectArray<btQuaternion> scratch_q_;
   btAlignedObjectArray<btVector3> scratch_m_;
@@ -216,6 +227,18 @@ class BulletArticulatedObject : public ArticulatedObject {
 
   std::unique_ptr<btCompoundShape> bFixedObjectShape_;
   std::unique_ptr<btRigidBody> bFixedObjectRigidBody_;
+
+  // TODO: should be stored in the link
+  // compound parent collision shapes for the links
+  std::map<int, std::unique_ptr<btCompoundShape>> linkCompoundShapes_;
+
+  // child mesh convex and primitive shapes for the link compound shapes
+  std::map<int, std::vector<std::unique_ptr<btCollisionShape>>>
+      linkChildShapes_;
+
+  // used to update raycast objectId checks (maps to link ids)
+  std::shared_ptr<std::map<const btCollisionObject*, int>>
+      collisionObjToObjIds_;
 
   ESP_SMART_POINTERS(BulletArticulatedObject)
 };

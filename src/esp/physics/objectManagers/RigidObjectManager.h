@@ -95,6 +95,24 @@ class RigidObjectManager
       bool deleteVisualNode = true);
 
  protected:
+  /**
+   * @brief This method will remove rigid objects from physics manager.  The
+   * wrapper has already been removed by the time this method is called (this is
+   * called from @ref esp::core::ManagedContainerBase::deleteObjectInternal)
+   *
+   * @param objectID the ID of the managed object to remove
+   * @param objectHandle the string key of the managed object to remove.
+   */
+  void deleteObjectInternalFinalize(
+      int objectID,
+      CORRADE_UNUSED const std::string& objectHandle) override {
+    if (auto physMgr = this->getPhysicsManager()) {
+      if (physMgr->isValidObjectID(objectID)) {
+        physMgr->removeObject(objectID);
+      }
+    }
+  }  // deleteObjectInternalFinalize
+
  public:
   ESP_SMART_POINTERS(RigidObjectManager)
 };
