@@ -92,8 +92,8 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
   // assign MM to RM on create or reconfigure
   if (!resourceManager_) {
-    resourceManager_ = std::make_unique<assets::ResourceManager>(
-        metadataMediator_, assets::ResourceManager::Flag::BuildPhongFromPbr);
+    resourceManager_ =
+        std::make_unique<assets::ResourceManager>(metadataMediator_);
     if (cfg.createRenderer) {
       // needs to be called after ResourceManager exists but before any assets
       // have been loaded
