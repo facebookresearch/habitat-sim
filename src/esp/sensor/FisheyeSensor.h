@@ -49,8 +49,7 @@ struct FisheyeSensorSpec : public CubeMapSensorBaseSpec {
    * point relative to the image plane's origin. None will place it in the
    * middle of the image (height/2, width/2).
    */
-  Corrade::Containers::Optional<Magnum::Vector2> principalPointOffset =
-      Corrade::Containers::NullOpt;
+  Corrade::Containers::Optional<Magnum::Vector2> principalPointOffset;
 
   /**
    * @brief Constructor
