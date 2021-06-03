@@ -179,7 +179,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @brief Initialization: load physical properties and setup the world.
    * @param node  The scene graph node which will act as the parent of all
    * physical scene and object nodes.
-   * @param physMgr Simulator's shared pointer referencing this physics manager.
    */
   bool initPhysics(scene::SceneNode* node);
 
@@ -255,8 +254,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    *
    * @param attributesID The ID of the object's template in @ref
    * esp::metadata::managers::ObjectAttributesManager
-   * @param drawables Reference to the scene graph drawables group to enable
-   * rendering of the newly initialized object.
    * @param attachmentNode If supplied, attach the new physical object to an
    * existing SceneNode.
    * @param lightSetup The string name of the desired lighting setup to use.
@@ -385,21 +382,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
     return v;
   }
 
-  /** @brief Set the @ref MotionType of an object, allowing or disallowing its
-   * manipulation by dynamic processes or kinematic control.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param  mt The desired @ref MotionType of the object to set.
-   */
-  void setObjectMotionType(const int physObjectID, MotionType mt);
-
-  /** @brief Get the @ref MotionType of an object.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @return The object's @ref MotionType
-   */
-  MotionType getObjectMotionType(const int physObjectID) const;
-
   //============ Simulator functions =============
 
   /** @brief Step the physical world forward in time. Time may only advance in
@@ -478,250 +460,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   virtual void setStageRestitutionCoefficient(
       CORRADE_UNUSED const double restitutionCoefficient) {}
 
-  // ============ Object Transformation functions =============
-
-  /** @brief Set the 4x4 transformation matrix of an object kinematically.
-   * Calling this during simulation of a @ref esp::physics::MotionType::DYNAMIC
-   * object is not recommended.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param trans The desired 4x4 transform of the object.
-   */
-  void setTransformation(const int physObjectID, const Magnum::Matrix4& trans);
-
-  /** @brief Set the @ref esp::core::RigidState of an object kinematically.
-   * Calling this during simulation of a @ref esp::physics::MotionType::DYNAMIC
-   * object is not recommended.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param trans The desired @ref esp::core::RigidState of the object.
-   */
-  void setRigidState(const int physObjectID,
-                     const esp::core::RigidState& rigidState);
-
-  /** @brief Set the 3D position of an object kinematically.
-   * Calling this during simulation of a @ref esp::physics::MotionType::DYNAMIC
-   * object is not recommended.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param vector The desired 3D position of the object.
-   */
-  void setTranslation(const int physObjectID, const Magnum::Vector3& vector);
-
-  /** @brief Set the orientation of an object kinematically.
-   * Calling this during simulation of a @ref esp::physics::MotionType::DYNAMIC
-   * object is not recommended.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param quaternion The desired orientation of the object.
-   */
-  void setRotation(const int physObjectID,
-                   const Magnum::Quaternion& quaternion);
-
-  /** @brief Reset the transformation of the object.
-   * !!NOT IMPLEMENTED!!
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   */
-  void resetTransformation(const int physObjectID);
-
-  /** @brief Modify the 3D position of an object kinematically by translation.
-   * Calling this during simulation of a @ref esp::physics::MotionType::DYNAMIC
-   * object is not recommended.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param vector The desired 3D vector by which to translate the object.
-   */
-  void translate(const int physObjectID, const Magnum::Vector3& vector);
-
-  /** @brief Modify the 3D position of an object kinematically by translation
-   * with a vector defined in the object's local coordinate system. Calling this
-   * during simulation of a @ref esp::physics::MotionType::DYNAMIC object is not
-   * recommended.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param vector The desired 3D vector in the object's ocal coordiante system
-   * by which to translate the object.
-   */
-  void translateLocal(const int physObjectID, const Magnum::Vector3& vector);
-
-  /** @brief Modify the orientation of an object kinematically by applying an
-   * axis-angle rotation to it. Calling this during simulation of a @ref
-   * MotionType::DYNAMIC object is not recommended.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param angleInRad The angle of rotation in radians.
-   * @param normalizedAxis The desired unit vector axis of rotation.
-   */
-  void rotate(const int physObjectID,
-              const Magnum::Rad angleInRad,
-              const Magnum::Vector3& normalizedAxis);
-
-  /** @brief Modify the orientation of an object kinematically by applying an
-   * axis-angle rotation to it in the local coordinate system. Calling this
-   * during simulation of a @ref esp::physics::MotionType::DYNAMIC object is not
-   * recommended.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param angleInRad The angle of rotation in radians.
-   * @param normalizedAxis The desired unit vector axis of rotation in the local
-   * coordinate system.
-   */
-  void rotateLocal(const int physObjectID,
-                   const Magnum::Rad angleInRad,
-                   const Magnum::Vector3& normalizedAxis);
-
-  /** @brief Modify the orientation of an object kinematically by applying a
-   * rotation to it about the global X axis. Calling this during simulation of a
-   * @ref esp::physics::MotionType::DYNAMIC object is not recommended.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param angleInRad The angle of rotation in radians.
-   */
-  void rotateX(const int physObjectID, const Magnum::Rad angleInRad);
-
-  /** @brief Modify the orientation of an object kinematically by applying a
-   * rotation to it about the global Y axis. Calling this during simulation of a
-   * @ref esp::physics::MotionType::DYNAMIC object is not recommended.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param angleInRad The angle of rotation in radians.
-   */
-  void rotateY(const int physObjectID, const Magnum::Rad angleInRad);
-
-  /** @brief Modify the orientation of an object kinematically by applying a
-   * rotation to it about the global Z axis. Calling this during simulation of a
-   * @ref esp::physics::MotionType::DYNAMIC object is not recommended.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param angleInRad The angle of rotation in radians.
-   */
-  void rotateZ(const int physObjectID, const Magnum::Rad angleInRad);
-
-  /** @brief Modify the orientation of an object kinematically by applying a
-   * rotation to it about the local X axis. Calling this during simulation of a
-   * @ref esp::physics::MotionType::DYNAMIC object is not recommended.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param angleInRad The angle of rotation in radians.
-   */
-  void rotateXLocal(const int physObjectID, const Magnum::Rad angleInRad);
-
-  /** @brief Modify the orientation of an object kinematically by applying a
-   * rotation to it about the local Y axis. Calling this during simulation of a
-   * @ref esp::physics::MotionType::DYNAMIC object is not recommended.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param angleInRad The angle of rotation in radians.
-   */
-  void rotateYLocal(const int physObjectID, const Magnum::Rad angleInRad);
-
-  /** @brief Modify the orientation of an object kinematically by applying a
-   * rotation to it about the local Z axis. Calling this during simulation of a
-   * @ref esp::physics::MotionType::DYNAMIC object is not recommended.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param angleInRad The angle of rotation in radians.
-   */
-  void rotateZLocal(const int physObjectID, const Magnum::Rad angleInRad);
-
-  /** @brief Get the current 4x4 transformation matrix of an object.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @return The 4x4 transform of the object.
-   */
-  Magnum::Matrix4 getTransformation(const int physObjectID) const;
-
-  /** @brief Get the current @ref esp::core::RigidState of an object.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @return The @ref esp::core::RigidState of the object.
-   */
-  esp::core::RigidState getRigidState(const int objectID) const;
-
-  /** @brief Get the current 3D position of an object.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @return The 3D position of the object.
-   */
-  Magnum::Vector3 getTranslation(const int physObjectID) const;
-
-  /** @brief Get the current orientation of an object.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @return A quaternion representation of the object's orientation.
-   */
-  Magnum::Quaternion getRotation(const int physObjectID) const;
-
-  // ============ Object Setter functions =============
-  // Setters that interface with physics need to take
-
-  /** @brief Set the mass of an object.
-   * See @ref RigidObject::setMass.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param mass The new mass of the object.
-   */
-  void setMass(const int physObjectID, const double mass);
-
-  /** @brief Set the center of mass (COM) of an object.
-   * Warning: some physics implementations require that object origins coincide
-   * with thier COM. See @ref BulletRigidObject. Therefore, be careful modifying
-   * this value. See @ref RigidObject::setCOM.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param COM The new 3D center of mass for the object in the local coordinate
-   * system.
-   */
-  void setCOM(const int physObjectID, const Magnum::Vector3& COM);
-
-  /** @brief Set the diagonal of the inertia matrix for an object.
-   * If an object is aligned with its principle axii of inertia, the 3x3 inertia
-   * matrix can be reduced to a diagonal. See @ref
-   * RigidObject::setInertiaVector.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param inertia The new diagonal for the object's inertia matrix.
-   */
-  void setInertiaVector(const int physObjectID, const Magnum::Vector3& inertia);
-
-  /** @brief Set the scalar friction coefficient for an object.
-   * See @ref RigidObject::setFrictionCoefficient.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param frictionCoefficient The new scalar coefficient of friction for the
-   * object.
-   */
-  void setFrictionCoefficient(const int physObjectID,
-                              const double frictionCoefficient);
-
-  /** @brief Set the scalar coefficient of restitution for an object.
-   * See @ref RigidObject::setRestitutionCoefficient.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param restitutionCoefficient The new scalar coefficient of restitution for
-   * the object.
-   */
-  void setRestitutionCoefficient(const int physObjectID,
-                                 const double restitutionCoefficient);
-
-  /** @brief Set the scalar linear damping coefficient for an object.
-   * See @ref RigidObject::setLinearDamping.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param linDamping The new scalar linear damping coefficient for the object.
-   */
-  void setLinearDamping(const int physObjectID, const double linDamping);
-
-  /** @brief Set the scalar angular damping coefficient for an object.
-   * See @ref RigidObject::setAngularDamping.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param angDamping The new scalar angular damping coefficient for the
-   * object.
-   */
-  void setAngularDamping(const int physObjectID, const double angDamping);
-
 #ifdef ESP_BUILD_WITH_VHACD
   /** @brief Initializes a new VoxelWrapper with a boundary voxelization using
    * VHACD's voxelization libary and assigns it to a rigid body.
@@ -741,82 +479,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   void generateStageVoxelization(const int resolution = 1000000);
 #endif
 
-  // ============ Object Getter functions =============
-
-  /** @brief Get the mass of an object.
-   * See @ref RigidObject::getMass.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @return Object mass or @ref esp::PHYSICS_ATTR_UNDEFINED if failed.
-   */
-  double getMass(const int physObjectID) const;
-
-  /** @brief Get the center of mass (COM) of an object.
-   * See @ref RigidObject::getCOM.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @return Object 3D center of mass in the local coordinate system.
-   */
-  Magnum::Vector3 getCOM(const int physObjectID) const;
-
-  /** @brief Get the diagnoal vector of the inertia matrix of an object.
-   * See @ref RigidObject::getInertiaVector.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @return The diagnoal vector of the inertia matrix of the object.
-   */
-  Magnum::Vector3 getInertiaVector(const int physObjectID) const;
-
-  /** @brief Get the 3x3 inertia matrix of an object.
-   * See @ref RigidObject::getInertiaMatrix.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @return The 3x3 inertia matrix of the object.
-   */
-  Magnum::Matrix3 getInertiaMatrix(const int physObjectID) const;
-
-  /** @brief Get the scale of an object set during initialization.
-   * See @ref RigidObject::getScale.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @return The scaling of the object relative to its initialy loaded meshes.
-   */
-  Magnum::Vector3 getScale(const int physObjectID) const;
-
-  /** @brief Get the scalar coefficient of friction of an object.
-   * See @ref RigidObject::getFrictionCoefficient.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @return The scalar coefficient of friction of the object.
-   */
-  double getFrictionCoefficient(const int physObjectID) const;
-
-  /** @brief Get the scalar coefficient of restitution of an object.
-   * See @ref RigidObject::getRestitutionCoefficient.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @return The scalar coefficient of restitution of the object.
-   */
-  double getRestitutionCoefficient(const int physObjectID) const;
-
-  /** @brief Get the scalar linear damping coefficient of an object.
-   * See @ref RigidObject::getLinearDamping.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @return The scalar linear damping coefficient of the object.
-   */
-  double getLinearDamping(const int physObjectID) const;
-
-  /** @brief Get the scalar angular damping coefficient of an object.
-   * See @ref RigidObject::getAngularDamping.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @return The scalar angular damping coefficient of the object
-   */
-  double getAngularDamping(const int physObjectID) const;
-
   /** @brief Gets the VoxelWrapper associated with a rigid object.
-   * @param  physObjectID The object ID and key identifying the object in @ref
+   * @param physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @return A pointer to the object's Voxel Wrapper.
    */
@@ -828,28 +492,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    */
   std::shared_ptr<esp::geo::VoxelWrapper> getStageVoxelization() const;
 
-  // ============= Platform dependent function =============
-
-  /** @brief Get the scalar collision margin of an object.
-   * See @ref BulletRigidObject::getMargin.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @return The scalar collision margin of the object.
-   */
-  virtual double getMargin(CORRADE_UNUSED const int physObjectID) const {
-    return 0.0;
-  }
-
-  /** @brief Set the scalar collision margin of an object.
-   * See @ref BulletRigidObject::setMargin. Nothing is set if no implementation
-   * using a collision margin is in use.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param  margin The desired collision margin for the object.
-   */
-  virtual void setMargin(CORRADE_UNUSED const int physObjectID,
-                         CORRADE_UNUSED const double margin) {}
-
   // =========== Debug functions ===========
 
   /** @brief Get the number of objects in @ref PhysicsManager::existingObjects_
@@ -858,114 +500,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @return  The number of active @ref RigidObject instances.
    */
   int checkActiveObjects();
-
-  /** @brief True if the object is considered active by the simulator physics
-   * simulator currently in use. See @ref RigidObject::isActive.
-   * @param physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @return  Whether or not the object is active.
-   */
-  bool isActive(const int physObjectID) const;
-
-  //============ Interact with objects =============
-  // NOTE: engine specifics handled by objects themselves...
-
-  /** @brief Apply a linear 3D force defined in global coordinates to an object.
-   * See @ref RigidObject::applyForce.
-   * @param physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param force The linear 3D force to apply to the object.
-   * @param relPos The global 3D location relative to the object COM at which to
-   * apply the force.
-   */
-  void applyForce(const int physObjectID,
-                  const Magnum::Vector3& force,
-                  const Magnum::Vector3& relPos);
-
-  /** @brief Apply a linear 3D impulse defined in global coordinates to an
-   * object. See @ref RigidObject::applyImpulse. Impulse is applied instantly to
-   * modify object velocity (i.e., not integrated through dynamic equations).
-   * @param physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param impulse The linear 3D impulse to apply to the object.
-   * @param relPos The global 3D location relative to the object COM at which to
-   * apply the impulse.
-   */
-  void applyImpulse(const int physObjectID,
-                    const Magnum::Vector3& impulse,
-                    const Magnum::Vector3& relPos);
-
-  /** @brief Apply an internal angular 3D torque to an object.
-   * See @ref RigidObject::applyTorque.
-   * @param physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param torque The angular torque to apply to the object.
-   */
-  void applyTorque(const int physObjectID, const Magnum::Vector3& torque);
-
-  /** @brief Apply an internal angular 3D impulse torque to an object.
-   * See @ref RigidObject::applyImpulseTorque.
-   * @param physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param impulse The angular impulse torque to apply to the object.
-   */
-  void applyImpulseTorque(const int physObjectID,
-                          const Magnum::Vector3& impulse);
-
-  /**
-   * @brief Set linear velocity for an object with @ref
-   * esp::physics::MotionType::DYNAMIC.
-   *
-   * Does nothing for @ref esp::physics::MotionType::KINEMATIC or @ref
-   * esp::physics::MotionType::STATIC objects.
-   * @param physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param linVel Linear velocity to set.
-   */
-  void setLinearVelocity(const int physObjectID, const Magnum::Vector3& linVel);
-
-  /**
-   * @brief Set angular velocity for an object with @ref
-   * esp::physics::MotionType::DYNAMIC.
-   *
-   * Does nothing for @ref esp::physics::MotionType::KINEMATIC or @ref
-   * esp::physics::MotionType::STATIC objects.
-   * @param physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param angVel Angular velocity vector corresponding to world unit axis
-   * angles.
-   */
-  void setAngularVelocity(const int physObjectID,
-                          const Magnum::Vector3& angVel);
-
-  /**
-   * @brief Get linear velocity of an object with @ref
-   * esp::physics::MotionType::DYNAMIC.
-   *
-   * Always zero for @ref esp::physics::MotionType::KINEMATIC or @ref
-   * esp::physics::MotionType::STATIC objects.
-   * @param physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @return Linear velocity of the object.
-   */
-  Magnum::Vector3 getLinearVelocity(const int physObjectID) const;
-
-  /**
-   * @brief Get angular velocity of an object with @ref
-   * esp::physics::MotionType::DYNAMIC.
-   *
-   * Always zero for @ref esp::physics::MotionType::KINEMATIC or @ref
-   * esp::physics::MotionType::STATIC objects.
-   * @param physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @return Angular velocity vector corresponding to world unit axis angles.
-   */
-  Magnum::Vector3 getAngularVelocity(const int physObjectID) const;
-
-  /**@brief Retrieves a shared pointer to the VelocityControl struct for this
-   * object.
-   */
-  VelocityControl::ptr getVelocityControl(const int physObjectID);
 
   /** @brief Set bounding box rendering for the object true or false.
    * @param physObjectID The object ID and key identifying the object in @ref
@@ -997,28 +531,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
                                 bool drawVoxelization);
 
   /**
-   * @brief Get a const reference to the specified object's SceneNode for info
-   * query purposes.
-   * @param physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @return Const reference to the object scene node.
-   */
-  const scene::SceneNode& getObjectSceneNode(int physObjectID) const;
-
-  /** @overload */
-  scene::SceneNode& getObjectSceneNode(int physObjectID);
-
-  /**
-   * @brief Set the desired light setup by name for the passed object
-   * @param objectID The id of the object to set
-   * @param lightSetupKey The string name of the desired lighting setup to use.
-   */
-  void setObjectLightSetup(const int objectID,
-                           const std::string& lightSetupKey) {
-    existingObjects_.at(objectID)->setLightSetup(lightSetupKey);
-  }
-
-  /**
    * @brief Get a const reference to the specified object's visual SceneNode for
    * info query purposes.
    * @param physObjectID The object ID and key identifying the object in @ref
@@ -1026,16 +538,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @return Const reference to the object's visual scene node.
    */
   const scene::SceneNode& getObjectVisualSceneNode(int physObjectID) const;
-
-  /**
-   * @brief Get pointers to an object's visual SceneNodes.
-   *
-   * @param objectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @return pointers to the object's visual scene nodes.
-   */
-  std::vector<scene::SceneNode*> getObjectVisualSceneNodes(
-      const int objectID) const;
 
   /** @brief Render any debugging visualizations provided by the underlying
    * physics simulator implementation. By default does nothing. See @ref
@@ -1090,27 +592,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   virtual std::vector<ContactPointData> getContactPoints() const { return {}; }
 
   /**
-   * @brief Set an object to collidable or not.
-   *
-   * @param physObjectID The object ID and key identifying the object
-   */
-  void setObjectIsCollidable(const int physObjectID, bool collidable) {
-    assertIDValidity(physObjectID);
-    existingObjects_.at(physObjectID)->setCollidable(collidable);
-  }
-
-  /**
-   * @brief Get whether or not an object is collision active.
-   *
-   * @param physObjectID The object ID and key identifying the object
-   * @return Whether or not the object is set to be collision active
-   */
-  bool getObjectIsCollidable(const int physObjectID) {
-    assertIDValidity(physObjectID);
-    return existingObjects_.at(physObjectID)->getCollidable();
-  }
-
-  /**
    * @brief Set the stage to collidable or not.
    *
    * @param collidable Whether or not the object should be collision active
@@ -1132,28 +613,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    */
   const PhysicsSimulationLibrary& getPhysicsSimulationLibrary() const {
     return activePhysSimLib_;
-  }
-
-  /**
-   * @brief Set the @ref esp::scene::SceneNode::semanticId_ for all visual nodes
-   * belonging to an object.
-   *
-   * @param objectID The object ID and key identifying the object in @ref
-   * existingObjects_.
-   * @param semanticId The desired semantic id for the object.
-   */
-  void setSemanticId(int physObjectID, uint32_t semanticId);
-
-  /**
-   * @brief Get a copy of the template used to initialize an object.
-   *
-   * @param physObjectID Object ID to query
-   * @return The initialization settings of the specified object instance.
-   */
-  metadata::attributes::ObjectAttributes::ptr getObjectInitAttributes(
-      const int physObjectID) const {
-    assertIDValidity(physObjectID);
-    return existingObjects_.at(physObjectID)->getInitializationAttributes();
   }
 
   /**
@@ -1201,7 +660,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @brief returns the wrapper manager for the currently created rigid objects.
    * @return RigidObject wrapper manager.
    */
-  std::shared_ptr<RigidObjectManager> getRigidObjectManager() {
+  std::shared_ptr<RigidObjectManager> getRigidObjectManager() const {
     return rigidObjectManager_;
   }
 
@@ -1270,8 +729,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   /** @brief Create and initialize a @ref RigidObject, assign it an ID and add
    * it to existingObjects_ map keyed with newObjectID
    * @param newObjectID valid object ID for the new object
-   * @param initAttributes The physical object's template defining its
-   * physical parameters.
+   * @param objectAttributes The physical object's template
    * @param objectNode Valid, existing scene node
    * @return whether the object has been successfully initialized and added to
    * existingObjects_ map

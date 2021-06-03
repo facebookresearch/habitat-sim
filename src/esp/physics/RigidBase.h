@@ -40,7 +40,7 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
   /**
    * @brief Constructor for a @ref RigidBase.
    * @param rigidBodyNode Pointer to the node to be used for this rigid.
-   * @param objectID the desired ID for this rigid construct.
+   * @param objectId the desired ID for this rigid construct.
    * @param resMgr a reference to @ref esp::assets::ResourceManager
    */
   RigidBase(scene::SceneNode* rigidBodyNode,

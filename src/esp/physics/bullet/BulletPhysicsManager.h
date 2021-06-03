@@ -86,14 +86,6 @@ class BulletPhysicsManager : public PhysicsManager {
 
   //============ Bullet-specific Object Setter functions =============
 
-  /** @brief Set the scalar collision margin of an object.
-   * See @ref BulletRigidObject::setMargin.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @param  margin The desired collision margin for the object.
-   */
-  void setMargin(const int physObjectID, const double margin) override;
-
   /** @brief Set the friction coefficient of the stage collision geometry. See
    * @ref staticStageObject_. See @ref
    * BulletRigidObject::setFrictionCoefficient.
@@ -111,16 +103,6 @@ class BulletPhysicsManager : public PhysicsManager {
       const double restitutionCoefficient) override;
 
   //============ Bullet-specific Object Getter functions =============
-
-  /** @brief Get the scalar collision margin of an object.
-   * See @ref BulletRigidObject::getMargin.
-   * @param  physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @return The scalar collision margin of the object or @ref
-   * esp::PHYSICS_ATTR_UNDEFINED if failed..
-   */
-  double getMargin(const int physObjectID) const override;
-
   /** @brief Get the current friction coefficient of the stage collision
    * geometry. See @ref staticStageObject_ and @ref
    * BulletRigidObject::getFrictionCoefficient.
@@ -230,7 +212,7 @@ class BulletPhysicsManager : public PhysicsManager {
    * mesh can be used by Bullet. See @ref BulletRigidObject::initializeStage.
    * Bullet mesh conversion adapted from:
    * https://github.com/mosra/magnum-integration/issues/20
-   * @param handle The handle of the attributes structure defining physical
+   * @param initAttributes The attributes structure defining physical
    * properties of the stage.
    * @return true if successful and false otherwise
    */
@@ -240,9 +222,7 @@ class BulletPhysicsManager : public PhysicsManager {
   /** @brief Create and initialize an @ref RigidObject and add
    * it to existingObjects_ map keyed with newObjectID
    * @param newObjectID valid object ID for the new object
-   * @param meshGroup The object's mesh.
-   * @param handle The handle to the physical object's template defining its
-   * physical parameters.
+   * @param objectAttributes The object's template
    * @param objectNode Valid, existing scene node
    * @return whether the object has been successfully initialized and added to
    * existingObjects_ map

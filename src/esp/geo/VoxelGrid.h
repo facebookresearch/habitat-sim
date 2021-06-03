@@ -52,7 +52,7 @@ class VoxelGrid {
   /**
    * @brief Generates a Boundary voxel grid using VHACD's voxelization
    * framework.
-   * @param MeshData The mesh that will be voxelized
+   * @param meshData The mesh that will be voxelized
    * @param renderAssetHandle The handle for the render asset.
    * @param resolution The approximate number of voxels in the voxel grid.
    */
@@ -65,7 +65,7 @@ class VoxelGrid {
    * @brief Generates an empty voxel grid given some voxel size and voxel
    * dimensions..
    * @param voxelSize The size of a single voxel
-   * @param VoxelGridDimensions The dimensions of the voxel grid.
+   * @param voxelGridDimensions The dimensions of the voxel grid.
    */
   VoxelGrid(const Magnum::Vector3& voxelSize,
             const Magnum::Vector3i& voxelGridDimensions);
@@ -151,7 +151,7 @@ class VoxelGrid {
 
   /**
    * @brief Removes a grid and frees up memory.
-   * @param name The name of the grid to be removed.
+   * @param gridName The name of the grid to be removed.
    */
   void removeGrid(const std::string& gridName) {
     assert(grids_.find(gridName) != grids_.end());
@@ -362,8 +362,8 @@ class VoxelGrid {
    * @param vertexData A Corrade Array of VoxelVertex which each contain a
    * vertex's position, normal, and color
    * @param indexData A Corrade Array of indicies for the faces on the mesh.
-   * @param local_coords A voxel index specifying the location of the voxel.
-   * @param voxel_neighbors A boolean with 6 booleans representing whether the
+   * @param localCoords A voxel index specifying the location of the voxel.
+   * @param neighbors A boolean with 6 booleans representing whether the
    * voxel on the top (y+1), bottom (x+1), right (y+1), left (y-1), back (z-1)
    * and front (x-1) are filled.
    * @param color A Magnum::Color3 object specifying the color for a particular
@@ -372,8 +372,8 @@ class VoxelGrid {
   void addVoxelToMeshPrimitives(
       Corrade::Containers::Array<VoxelVertex>& vertexData,
       Corrade::Containers::Array<Mn::UnsignedInt>& indexData,
-      const Magnum::Vector3i& local_coords,
-      const std::vector<bool>& voxel_neighbors,
+      const Magnum::Vector3i& localCoords,
+      const std::vector<bool>& neighbors,
       const Magnum::Color3& color = Magnum::Color3(.4, .8, 1));
 
   /**
@@ -382,13 +382,13 @@ class VoxelGrid {
    * @param vertexData A Corrade Array of VoxelVertex which each contain a
    * vertex's position, normal, and color
    * @param indexData A Corrade Array of indicies for the faces on the mesh.
-   * @param local_coords A voxel index specifying the location of the voxel.
+   * @param localCoords A voxel index specifying the location of the voxel.
    * @param vec The vector to be converted into a mesh.
    */
   void addVectorToMeshPrimitives(
       Corrade::Containers::Array<VoxelVertex>& vertexData,
       Corrade::Containers::Array<Mn::UnsignedInt>& indexData,
-      const Magnum::Vector3i& local_coords,
+      const Magnum::Vector3i& localCoords,
       const Magnum::Vector3& vec);
 
  private:
