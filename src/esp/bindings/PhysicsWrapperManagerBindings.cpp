@@ -48,7 +48,8 @@ void declareBaseWrapperManager(py::module& m,
   // template.  However, we use PHysicsObjectBaseManager as the base class
   // because we wish to have appropriate (wrapper-related) access, argument
   // nomenclature and documentation.
-  std::string pyclass_name = classStrPrefix + std::string("PhysWrapperManager");
+  std::string pyclass_name =
+      classStrPrefix + std::string("_PhysWrapperManager");
   py::class_<MgrClass, std::shared_ptr<MgrClass>>(m, pyclass_name.c_str())
       .def("get_object_handle_by_id", &MgrClass::getObjectHandleByID,
            ("Returns string handle for the " + objType +
@@ -166,7 +167,7 @@ void declareRigidBaseWrapperManager(py::module& m,
                                     const std::string& classStrPrefix) {
   using MgrClass = RigidBaseManager<T>;
   std::string pyclass_name =
-      classStrPrefix + std::string("RigidBaseWrapperManager");
+      classStrPrefix + std::string("_RigidBaseWrapperManager");
 
   py::class_<MgrClass, PhysicsObjectBaseManager<T>, std::shared_ptr<MgrClass>>(
       m, pyclass_name.c_str());
@@ -176,22 +177,23 @@ void declareRigidBaseWrapperManager(py::module& m,
 void initPhysicsWrapperManagerBindings(pybind11::module& m) {
 #ifdef ESP_BUILD_WITH_BULLET
   declareBaseWrapperManager<ManagedRigidObject, ManagedBulletRigidObject>(
-      m, "BulletRigidObject", "PhysicsObjectManager");
+      m, "BulletRigidObject", "BulletRigidObject");
 
   declareRigidBaseWrapperManager<ManagedRigidObject, ManagedBulletRigidObject>(
-      m, "BulletRigidObject", "RigidBaseManager");
+      m, "BulletRigidObject", "BulletRigidObject");
 
 #else
   // if dynamics library not being used, just use base rigid object
   declareBaseWrapperManager<ManagedRigidObject>(m, "RigidObject",
-                                                "PhysicsObjectManager");
+                                                "RigidObject");
 
   declareRigidBaseWrapperManager<ManagedRigidObject>(m, "RigidObject",
-                                                     "RigidBaseManager");
+                                                     "RigidObject");
 #endif
   // RigidObject wrapper manager
   py::class_<RigidObjectManager, RigidBaseManager<ManagedRigidObject>,
-             std::shared_ptr<RigidObjectManager>>(m, "RigidObjectManager")
+             std::shared_ptr<RigidObjectManager>>(m,
+                                                  "RigidObjectWrapperManager")
       .def(
           "add_object_by_template_id", &RigidObjectManager::addObjectByID,
           "object_lib_id"_a, "attachment_node"_a = nullptr,
@@ -225,18 +227,18 @@ void initPhysicsWrapperManagerBindings(pybind11::module& m) {
 #ifdef ESP_BUILD_WITH_BULLET
   declareBaseWrapperManager<ManagedArticulatedObject,
                             ManagedBulletArticulatedObject>(
-      m, "BulletArticulatedObject", "PhysicsObjectManager");
+      m, "BulletArticulatedObject", "BulletArticulatedObject");
 
 #else
   // if dynamics library not being used, just use base rigid object
   declareBaseWrapperManager<ManagedArticulatedObject>(m, "ArticulatedObject",
-                                                      "PhysicsObjectManager");
+                                                      "ArticulatedObject");
 
 #endif
   py::class_<ArticulatedObjectManager,
              PhysicsObjectBaseManager<ManagedArticulatedObject>,
              std::shared_ptr<ArticulatedObjectManager>>(
-      m, "ArticulatedObjectManager")
+      m, "ArticulatedObjectWrapperManager")
 
       .def(
           "add_articulated_object_from_URDF",
