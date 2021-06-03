@@ -79,7 +79,7 @@ void initPhysicsBindings(py::module& m) {
   collisionGroups.value("Default", CollisionGroup::Default)
       .value("Static", CollisionGroup::Static)
       .value("Kinematic", CollisionGroup::Kinematic)
-      .value("FreeObject", CollisionGroup::FreeObject)
+      .value("Dynamic", CollisionGroup::Dynamic)
       .value("Robot", CollisionGroup::Robot)
       .value("Noncollidable", CollisionGroup::Noncollidable)
       .value("UserGroup0", CollisionGroup::UserGroup0)

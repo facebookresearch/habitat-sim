@@ -400,10 +400,9 @@ void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
         uint32_t(
             CollisionGroupHelper::getMaskForGroup(CollisionGroup::Kinematic)));
   } else {
-    bWorld_->addRigidBody(
-        bObjectRigidBody_.get(), int(CollisionGroup::FreeObject),
-        uint32_t(
-            CollisionGroupHelper::getMaskForGroup(CollisionGroup::FreeObject)));
+    bWorld_->addRigidBody(bObjectRigidBody_.get(), int(CollisionGroup::Dynamic),
+                          uint32_t(CollisionGroupHelper::getMaskForGroup(
+                              CollisionGroup::Dynamic)));
     setActive(true);
     CORRADE_INTERNAL_ASSERT(!bObjectRigidBody_->isStaticObject());
     CORRADE_INTERNAL_ASSERT(!bObjectRigidBody_->isKinematicObject());
@@ -474,14 +473,6 @@ bool BulletRigidObject::contactTest() {
       bObjectRigidBody_->getBroadphaseHandle()->m_collisionFilterGroup;
   src.m_collisionFilterMask =
       bObjectRigidBody_->getBroadphaseHandle()->m_collisionFilterMask;
-  // TODO: custom collision group/mask override support
-  // if (!staticAsStage && objectMotionType_ == MotionType::STATIC) {
-  // override collision filter for STATIC object to include other STATICs such
-  // as the stage
-  //  src.m_collisionFilterGroup = int(CollisionGroup::FreeObject);
-  //  src.m_collisionFilterMask =
-  //      CollisionGroupHelper::getMaskForGroup(CollisionGroup::FreeObject);
-  //}
   bWorld_->getCollisionWorld()->contactTest(bObjectRigidBody_.get(), src);
   return src.bCollision;
 }  // contactTest

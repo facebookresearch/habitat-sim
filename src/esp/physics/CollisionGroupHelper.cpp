@@ -13,7 +13,7 @@ std::map<std::string, CollisionGroup>
         {"Default", CollisionGroup::Default},
         {"Static", CollisionGroup::Static},
         {"Kinematic", CollisionGroup::Kinematic},
-        {"FreeObject", CollisionGroup::FreeObject},
+        {"Dynamic", CollisionGroup::Dynamic},
         {"Robot", CollisionGroup::Robot},
         {"Noncollidable", CollisionGroup::Noncollidable},
         {"UserGroup0", CollisionGroup::UserGroup0},
@@ -42,7 +42,7 @@ std::map<CollisionGroup, CollisionGroups>
          ~(CollisionGroup::Static | CollisionGroup::Kinematic |
            CollisionGroup::Noncollidable)},
         // everything except Noncollidable
-        {CollisionGroup::FreeObject, ~CollisionGroup::Noncollidable},
+        {CollisionGroup::Dynamic, ~CollisionGroup::Noncollidable},
         // everything except Noncollidable
         {CollisionGroup::Robot, ~CollisionGroup::Noncollidable},
         // nothing

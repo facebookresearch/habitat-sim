@@ -50,12 +50,12 @@ namespace physics {
 enum class CollisionGroup : unsigned int {
   //! Default group for unspecified object (e.g. raycast)
   Default = 1,
-  //! STATIC objects should not change state
+  //! Static objects should not change state
   Static = 1 << 1,
-  //! KINEMATIC objects are updated manually
+  //! Kinematic objects are updated manually
   Kinematic = 1 << 2,
-  //! Free (i.e., DYNAMIC) objects are integrated by dynamic simulation
-  FreeObject = 1 << 3,
+  //! Dynamic objects are integrated by dynamic simulation
+  Dynamic = 1 << 3,
   //! convenience groups to separate robots from free objects
   Robot = 1 << 4,
   //! convenience group for objects which should not collide with anything
@@ -118,7 +118,7 @@ class CollisionGroupHelper {
    *
    * Mask check logic is two ways: AandBCollide = (GroupA & MaskB) && (GroupB &
    * MaskA) Note: Editing default engine group (Default, Static, Kinematic,
-   * FreeObject, Robot, Noncollidable, AllFilter) behavior is discouraged.
+   * Dynamic, Robot, Noncollidable, AllFilter) behavior is discouraged.
    *
    * @param group The group to modify.
    * @param mask The mask to apply.
