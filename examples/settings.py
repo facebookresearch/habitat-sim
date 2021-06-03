@@ -1,7 +1,6 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-import magnum as mn
 
 import habitat_sim
 import habitat_sim.agent
@@ -153,10 +152,8 @@ def make_cfg(settings):
 
         fisheye_sensor_spec.resolution = [settings["height"], settings["width"]]
         # The default principal_point_offset is the middle of the image
-        fisheye_sensor_spec.principal_point_offset = mn.Vector2(
-            settings["height"] // 2,
-            settings["width"] // 2,
-        )
+        fisheye_sensor_spec.principal_point_offset = None
+        # default: fisheye_sensor_spec.principal_point_offset = [i/2 for i in fisheye_sensor_spec.resolution]
         fisheye_sensor_spec.position = [0, settings["sensor_height"], 0]
         for k in kw_args:
             setattr(fisheye_sensor_spec, k, kw_args[k])
