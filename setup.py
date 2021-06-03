@@ -315,11 +315,13 @@ class CMakeBuild(build_ext):
         )
 
         if self.run_cmake(cmake_args):
+            os.makedirs(self.build_temp, exist_ok=True)
             subprocess.check_call(
                 [osp.join(CMAKE_BIN_DIR, "cmake")]
                 + cmake_args
-                + [f"-S{ext.sourcedir}", f"-B{self.build_temp}"],
+                + [osp.realpath(ext.sourcedir)],
                 env=env,
+                cwd=self.build_temp,
             )
 
         if not is_pip():

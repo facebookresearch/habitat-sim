@@ -110,7 +110,7 @@ def _gltf2unlit(gltf_name: str):
 
         # Drop everything except base color and base color texture
         pbrMetallicRoughness = material["pbrMetallicRoughness"]
-        for key in list(pbrMetallicRoughness.keys()):
+        for key in pbrMetallicRoughness.keys():
             if key not in ["baseColorFactor", "baseColorTexture"]:
                 del pbrMetallicRoughness[key]
         for key in [
