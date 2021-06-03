@@ -192,8 +192,7 @@ void initPhysicsWrapperManagerBindings(pybind11::module& m) {
 #endif
   // RigidObject wrapper manager
   py::class_<RigidObjectManager, RigidBaseManager<ManagedRigidObject>,
-             std::shared_ptr<RigidObjectManager>>(m,
-                                                  "RigidObjectWrapperManager")
+             std::shared_ptr<RigidObjectManager>>(m, "RigidObjectManager")
       .def(
           "add_object_by_template_id", &RigidObjectManager::addObjectByID,
           "object_lib_id"_a, "attachment_node"_a = nullptr,
@@ -238,7 +237,7 @@ void initPhysicsWrapperManagerBindings(pybind11::module& m) {
   py::class_<ArticulatedObjectManager,
              PhysicsObjectBaseManager<ManagedArticulatedObject>,
              std::shared_ptr<ArticulatedObjectManager>>(
-      m, "ArticulatedObjectWrapperManager")
+      m, "ArticulatedObjectManager")
 
       .def(
           "add_articulated_object_from_URDF",
