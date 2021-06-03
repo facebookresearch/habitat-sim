@@ -308,7 +308,6 @@ TEST_F(PhysicsManagerTest, DiscreteContactTest) {
     // set box 0 to STATIC
     objWrapper0->setMotionType(esp::physics::MotionType::STATIC);
     ASSERT_FALSE(physicsManager_->contactTest(objectId0));
-    ASSERT_TRUE(physicsManager_->contactTest(objectId0, false));
     ASSERT_FALSE(physicsManager_->contactTest(objectId1));
     // reset MotionType
     objWrapper0->setMotionType(esp::physics::MotionType::DYNAMIC);
