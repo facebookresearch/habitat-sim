@@ -345,9 +345,15 @@ void PhysicsManager::removeArticulatedObject(int physObjectID) {
        existingArticulatedObjects_.at(physObjectID)->objectIdToLinkId_) {
     deallocateObjectID(linkObjId.first);
   }
+  std::string artObjName =
+      existingArticulatedObjects_.at(physObjectID)->getObjectName();
   existingArticulatedObjects_.erase(physObjectID);
   deallocateObjectID(physObjectID);
   delete objectNode;
+  // remove wrapper if one is present
+  if (articulatedObjectManager_->getObjectLibHasHandle(artObjName)) {
+    articulatedObjectManager_->removeObjectByID(physObjectID);
+  }
 }
 
 int PhysicsManager::allocateObjectID() {
