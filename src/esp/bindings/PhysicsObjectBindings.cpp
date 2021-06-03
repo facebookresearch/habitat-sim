@@ -7,6 +7,9 @@
 #include "esp/physics/RigidBase.h"
 #include "esp/physics/RigidObject.h"
 #include "esp/physics/RigidStage.h"
+#ifdef ESP_BUILD_WITH_BULLET
+#include "esp/physics/bullet/objectWrappers/ManagedBulletRigidObject.h"
+#endif
 #include "esp/physics/objectWrappers/ManagedPhysicsObjectBase.h"
 #include "esp/physics/objectWrappers/ManagedRigidBase.h"
 #include "esp/physics/objectWrappers/ManagedRigidObject.h"
@@ -26,7 +29,7 @@ void declareBasePhysicsObjectWrapper(py::module& m,
                                      const std::string& classStrPrefix) {
   using PhysObjWrapper = AbstractManagedPhysicsObject<T>;
   std::string pyclass_name =
-      classStrPrefix + std::string("PhysicsObjectWrapper");
+      classStrPrefix + std::string("_PhysicsObjectWrapper");
   // ==== AbstractManagedPhysicsObject ====
   py::class_<PhysObjWrapper, std::shared_ptr<PhysObjWrapper>>(
       m, pyclass_name.c_str())
@@ -35,7 +38,9 @@ void declareBasePhysicsObjectWrapper(py::module& m,
       .def_property(
           "motion_type", &PhysObjWrapper::getMotionType,
           &PhysObjWrapper::setMotionType,
-          ("Get or set the MotionType of this " + objType + ".").c_str())
+          ("Get or set the MotionType of this " + objType +
+           ". Changing MotionType will override any custom collision group.")
+              .c_str())
       .def_property_readonly(
           "object_id", &PhysObjWrapper::getID,
           ("System-generated ID for this " + objType +
@@ -91,6 +96,12 @@ void declareBasePhysicsObjectWrapper(py::module& m,
                     ("Get or set whether this " + objType +
                      " is actively being simulated, or is sleeping.")
                         .c_str())
+      .def("contact_test", &PhysObjWrapper::contactTest,
+           ("Discrete collision check for contact between an object and the "
+            "collision world."))
+      .def("override_collision_group", &PhysObjWrapper::overrideCollisionGroup,
+           ("Manually set the collision group for an object. Setting a new "
+            "MotionType will override this change."))
       .def(
           "translate", &PhysObjWrapper::translate, "vector"_a,
           ("Move this " + objType + " using passed translation vector").c_str())
@@ -177,7 +188,7 @@ void declareRigidBaseWrapper(py::module& m,
                              const std::string& objType,
                              const std::string& classStrPrefix) {
   using RigidBaseWrapper = AbstractManagedRigidBase<T>;
-  std::string pyclass_name = classStrPrefix + std::string("RigidBaseWrapper");
+  std::string pyclass_name = classStrPrefix + std::string("_RigidBaseWrapper");
   // ==== AbstractManagedRigidBase ====
   py::class_<RigidBaseWrapper, AbstractManagedPhysicsObject<T>,
              std::shared_ptr<RigidBaseWrapper>>(m, pyclass_name.c_str())
@@ -293,33 +304,54 @@ void declareRigidBaseWrapper(py::module& m,
 
 }  // declareRigidBaseWrapper
 
-void initPhysicsObjectBindings(py::module& m) {
-  // create bindings for RigidObjects
-  declareBasePhysicsObjectWrapper<RigidObject>(m, "Rigid Object",
-                                               "RigidObject");
-
-  declareRigidBaseWrapper<RigidObject>(m, "Rigid Object", "RigidObject");
-
-  // rigid object instance
-
+void declareRigidObjectWrapper(py::module& m,
+                               const std::string& objType,
+                               const std::string& classStrPrefix) {
+  // ==== ManagedRigidObject ====
   py::class_<ManagedRigidObject, AbstractManagedRigidBase<RigidObject>,
-             std::shared_ptr<ManagedRigidObject>>(m, "ManagedRigidObject")
+             std::shared_ptr<ManagedRigidObject>>(m, classStrPrefix.c_str())
       .def_property_readonly(
           "creation_attributes",
           &ManagedRigidObject::getInitializationAttributes,
-          R"(Get a copy of the attributes used to create this rigid object)")
+          ("Get a copy of the attributes used to create this " + objType + ".")
+              .c_str())
       .def_property_readonly(
           "velocity_control", &ManagedRigidObject::getVelocityControl,
-          R"(Retrieves a reference to the VelocityControl struct for this object.)");
+          ("Retrieves a reference to the VelocityControl struct for this " +
+           objType + ".")
+              .c_str());
 
-  // create bindings for RigidStage
-  // declareBasePhysicsObjectWrapper<RigidStage>(m, "Rigid Stage",
-  // "BaseRigidStage");
+}  // declareRigidObjectTemplateWrapper
 
-  // declareRigidBaseWrapper<RigidStage>(m, "Rigid Stage", "BaseRigidStage");
+template <class T>
+void declareBaseObjectWrappers(py::module& m,
+                               const std::string& objType,
+                               const std::string& classStrPrefix) {
+  declareBasePhysicsObjectWrapper<T>(m, objType, classStrPrefix);
+  declareRigidBaseWrapper<T>(m, objType, classStrPrefix);
+}
 
-  // rigid stage instance
+void initPhysicsObjectBindings(py::module& m) {
+  // create Rigid Object base wrapper bindings
+  declareBaseObjectWrappers<RigidObject>(m, "Rigid Object",
+                                         "ManagedRigidObject");
 
+  // ==== ManagedRigidObject ====
+  declareRigidObjectWrapper(m, "Rigid Object", "ManagedRigidObject");
+
+#ifdef ESP_BUILD_WITH_BULLET
+  // ==== ManagedBulletRigidObject ====
+  py::class_<ManagedBulletRigidObject, ManagedRigidObject,
+             std::shared_ptr<ManagedBulletRigidObject>>(
+      m, "ManagedBulletRigidObject")
+      .def_property("margin", &ManagedBulletRigidObject::getMargin,
+                    &ManagedBulletRigidObject::setMargin,
+                    R"(Get or set this object's collision margin.)")
+      .def_property_readonly(
+          "collision_shape_aabb",
+          &ManagedBulletRigidObject::getCollisionShapeAabb,
+          R"(The bounds of the axis-aligned bounding box from Bullet Physics, in its local coordinate frame.)");
+#endif
 }  // initPhysicsObjectBindings
 
 }  // namespace physics

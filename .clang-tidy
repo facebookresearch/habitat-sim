@@ -14,6 +14,7 @@ modernize-avoid-bind,
 modernize-deprecated-headers,
 modernize-make-shared,
 modernize-make-unique,
+modernize-pass-by-value,
 modernize-redundant-void-arg,
 modernize-replace-disallow-copy-and-assign-macro,
 modernize-replace-random-shuffle,
@@ -64,6 +65,10 @@ readability-uniqueptr-delete-release,
 
 CheckOptions:
 - key:             cppcoreguidelines-pro-type-member-init.IgnoreArrays
+  value:           true
+- key:             modernize-pass-by-value.ValuesOnly
+  value:           true
+- key:             performance-for-range-copy.WarnOnAllAutoCopies
   value:           true
 - key:             readability-implicit-bool-conversion.AllowPointerConditions
   value:           true
