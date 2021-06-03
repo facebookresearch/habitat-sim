@@ -220,7 +220,7 @@ bool BulletArticulatedObject::initializeFromURDF(
     for (int linkIx = 0; linkIx < btMultiBody_->getNumLinks(); ++linkIx) {
       btMultibodyLink& link = btMultiBody_->getLink(linkIx);
       JointMotorSettings settings;
-      settings.maxImpulse = link.m_jointDamping;
+      settings.maxImpulse = double(link.m_jointDamping);
       if (supportsJointMotor(linkIx)) {
         for (int dof = 0; dof < link.m_dofCount; ++dof) {
           createJointMotor(linkIx, dof, dofCount, settings);
