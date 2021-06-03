@@ -493,7 +493,7 @@ bool Parser::parseVisual(std::shared_ptr<Model>& model,
     XMLElement* c = mat->FirstChildElement("color");
     XMLElement* s = mat->FirstChildElement("specular");
     if (t || c || s) {
-      if (!visual.m_geometry.m_localMaterial.get()) {
+      if (!visual.m_geometry.m_localMaterial) {
         // create a new material
         visual.m_geometry.m_localMaterial = std::make_shared<Material>();
       }
