@@ -44,7 +44,7 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
     /**
      * indicates whether the mesh is vertex colored
      */
-     HasVertexColor = 1 << 2
+    HasVertexColor = 1 << 2
 
   };
   /** @brief Flags */
