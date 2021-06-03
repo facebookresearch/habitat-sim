@@ -80,7 +80,7 @@ struct FisheyeSensorDoubleSphereSpec : public FisheyeSensorSpec {
   /**
    * @brief constructor
    */
-  FisheyeSensorDoubleSphereSpec() : FisheyeSensorSpec(){};
+  FisheyeSensorDoubleSphereSpec() : FisheyeSensorSpec() {}
   /**
    * @brief check if the specification is legal
    */
