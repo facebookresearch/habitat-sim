@@ -55,3 +55,6 @@
 [submodule "src/deps/v-hacd"]
 	path = src/deps/v-hacd
 	url = https://github.com/ScottCSteinhauser/v-hacd.git
+[submodule "src/deps/basis_universal"]
+	path = src/deps/basis_universal
+	url = https://github.com/BinomialLLC/basis_universal.git
