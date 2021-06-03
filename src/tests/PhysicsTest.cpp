@@ -150,7 +150,7 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
       // add and simulate objects
       int num_objects = 7;
       for (int o = 0; o < num_objects; o++) {
-        auto objWrapper = makeObjectGetWrapper(objectFile);
+        auto objWrapper = rigidObjectManager_->addObjectByHandle(objectFile);
 
         esp::scene::SceneNode* node = objWrapper->getSceneNode();
 
