@@ -196,27 +196,17 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
 
   existingArticulatedObjects_.at(articulatedObjectID)
       ->setObjectName(newArtObjectHandle);
-  Magnum::Debug{} << "BulletPhysicsManager::addArticulatedObjectFromURDF: "
-                     "set objename newArtObjectHandle : "
-                  << newArtObjectHandle;
 
   // 2.0 Get wrapper - name is irrelevant, do not register on create.
   ManagedArticulatedObject::ptr AObjWrapper = getArticulatedObjectWrapper();
-  Magnum::Debug{} << "BulletPhysicsManager::addArticulatedObjectFromURDF: "
-                     "get wrapper";
 
   // 3.0 Put articulated object in wrapper
   AObjWrapper->setObjectRef(
       existingArticulatedObjects_.at(articulatedObjectID));
 
-  Magnum::Debug{} << "BulletPhysicsManager::addArticulatedObjectFromURDF: "
-                     "set obj ref wrapper";
-
   // 4.0 register wrapper in manager
   articulatedObjectManager_->registerObject(AObjWrapper, newArtObjectHandle);
 
-  Magnum::Debug{} << "BulletPhysicsManager::addArticulatedObjectFromURDF: "
-                     "register";
   return articulatedObjectID;
 }  // BulletPhysicsManager::addArticulatedObjectFromURDF
 
