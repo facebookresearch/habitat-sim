@@ -25,10 +25,10 @@ ArticulatedObjectManager::ArticulatedObjectManager()
           ManagedArticulatedObject>;
 
 #ifdef ESP_BUILD_WITH_BULLET
-  this->copyConstructorMap_["ManagedBulletRigidObject"] =
+  this->copyConstructorMap_["ManagedBulletArticulatedObject"] =
       &ArticulatedObjectManager::createObjectCopy<
           ManagedBulletArticulatedObject>;
-  managedObjTypeConstructorMap_["ManagedBulletRigidObject"] =
+  managedObjTypeConstructorMap_["ManagedBulletArticulatedObject"] =
       &ArticulatedObjectManager::createPhysicsObjectWrapper<
           ManagedBulletArticulatedObject>;
 #endif
