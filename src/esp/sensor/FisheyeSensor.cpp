@@ -49,7 +49,7 @@ void specSanityCheck(FisheyeSensorSpec* spec) {
   actualSpec->sanityCheck();
 }
 
-Magnum::Vector2 computePrincipalPointOffset(const FisheyeSensorSpec spec) {
+Magnum::Vector2 computePrincipalPointOffset(const FisheyeSensorSpec& spec) {
   if (spec.principalPointOffset != Corrade::Containers::NullOpt) {
     return *spec.principalPointOffset;
   }
