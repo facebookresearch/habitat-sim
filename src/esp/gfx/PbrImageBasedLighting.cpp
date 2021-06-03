@@ -35,6 +35,12 @@ namespace Cr = Corrade;
 
 namespace esp {
 namespace gfx {
+
+const unsigned int environmentMapSize = 1024;
+const unsigned int prefilteredMapSize = 1024;
+const unsigned int irradianceMapSize = 128;
+const unsigned int brdfLUTSize = 512;
+
 PbrImageBasedLighting::PbrImageBasedLighting(
     Flags flags,
     ShaderManager& shaderManager,
@@ -44,19 +50,32 @@ PbrImageBasedLighting::PbrImageBasedLighting(
 
   convertEquirectangularToCubeMap(equirectangularImageFilename);
   // debug: XXX
-  environmentMap_->saveTexture(CubeMap::TextureType::Color, "malibu");
+  environmentMap_->saveTexture(CubeMap::TextureType::Color, "environment", 2);
 
   // compute the irradiance map for indirect diffuse part
-  computeIrradianceMap();
+  computePrecomputedMap(PrecomputedMapType::IrradianceMap);
   // debug: XXX
-  irradianceMap_->saveTexture(CubeMap::TextureType::Color, "irradiance");
+  // irradianceMap_->saveTexture(CubeMap::TextureType::Color, "irradiance");
 
   // load the BRDF lookup table (indirect specular part)
   // TODO: should have the capability to compute it by the simulator
   loadBrdfLookUpTable();
 
-  // compute the prefiltered environment map (indirect specular part)
   // XXX
+  LOG(INFO) << "==== Compute prefiltered map ====";
+  // compute the prefiltered environment map (indirect specular part)
+  computePrecomputedMap(PrecomputedMapType::PrefilteredMap);
+
+  // debug
+  prefilteredMap_->saveTexture(CubeMap::TextureType::Color, "prefilteredMap",
+                               2);
+  /*
+  for (int iMip = 0; iMip < prefilteredMap_->getMipmapLevels(); ++iMip) {
+    prefilteredMap_->saveTexture(CubeMap::TextureType::Color, "prefilteredMap",
+                                 iMip);
+  }
+  */
+  exit(0);
 }
 
 void PbrImageBasedLighting::convertEquirectangularToCubeMap(
@@ -105,17 +124,18 @@ void PbrImageBasedLighting::convertEquirectangularToCubeMap(
 
   // draw the 6 sides one by one
   for (unsigned int iSide = 0; iSide < 6; ++iSide) {
-    environmentMap_->bindFramebuffer(iSide);
-    // clear color and depth
+    // bind frambuffer, clear color and depth
     environmentMap_->prepareToDraw(iSide);
     shader->setCubeSideIndex(iSide);
     shader->draw(mesh);
   }
+  // do NOT forget to populate to all the mip levels!
+  environmentMap_->getTexture(CubeMap::TextureType::Color).generateMipmap();
 }
 
 void PbrImageBasedLighting::recreateTextures() {
   // TODO: HDR!!
-  Mn::Vector2i size{512, 512};
+  Mn::Vector2i size{brdfLUTSize, brdfLUTSize};
   brdfLUT_ = Mn::GL::Texture2D{};
   (*brdfLUT_)
       .setMinificationFilter(Mn::GL::SamplerFilter::Linear)
@@ -124,11 +144,15 @@ void PbrImageBasedLighting::recreateTextures() {
       .setStorage(1, Mn::GL::TextureFormat::RGBA8, size);  // TODO: HDR
 
   // TODO: HDR!!
+  // we do not use build-in function `renderToTexture`. So we will have to
+  // populate the mipmaps by ourselves in this class.
   environmentMap_ = CubeMap(
-      1024, {CubeMap::Flag::ColorTexture | CubeMap::Flag::AutoBuildMipmap});
-  irradianceMap_ = CubeMap(128, {CubeMap::Flag::ColorTexture});
+      environmentMapSize,
+      {CubeMap::Flag::ColorTexture | CubeMap::Flag::ManuallyBuidMipmap});
+  irradianceMap_ = CubeMap(irradianceMapSize, {CubeMap::Flag::ColorTexture});
   prefilteredMap_ = CubeMap(
-      1024, {CubeMap::Flag::ColorTexture | CubeMap::Flag::ManuallyBuidMipmap});
+      prefilteredMapSize,
+      {CubeMap::Flag::ColorTexture | CubeMap::Flag::ManuallyBuidMipmap});
 }
 
 CubeMap& PbrImageBasedLighting::getIrradianceMap() {
@@ -198,19 +222,29 @@ void PbrImageBasedLighting::loadBrdfLookUpTable() {
   brdfLUT_->setSubImage(0, {}, *imageData);
 }
 
-void PbrImageBasedLighting::computeIrradianceMap() {
+void PbrImageBasedLighting::computePrecomputedMap(PrecomputedMapType type) {
   CORRADE_ASSERT(
       environmentMap_ != Cr::Containers::NullOpt,
-      "PbrImageBasedLighting::computeIrradianceMap(): the environment "
+      "PbrImageBasedLighting::computePrecomputedMap(): the environment "
       "map cannot be found. Have you loaded it? ", );
 
-  CORRADE_ASSERT(
-      irradianceMap_ != Cr::Containers::NullOpt,
-      "PbrImageBasedLighting::computeIrradianceMap(): the irradiance map "
-      "is empty (not initialized).", );
+  if (type == PrecomputedMapType::IrradianceMap) {
+    CORRADE_ASSERT(
+        irradianceMap_ != Cr::Containers::NullOpt,
+        "PbrImageBasedLighting::computePrecomputedMap(): the irradiance map "
+        "is empty (not initialized).", );
+  } else {
+    CORRADE_ASSERT(
+        prefilteredMap_ != Cr::Containers::NullOpt,
+        "PbrImageBasedLighting::computePrecomputedMap(): the prefiltered map "
+        "is empty (not initialized).", );
+  }
 
   Mn::Resource<Mn::GL::AbstractShaderProgram, PbrPrecomputedMapShader> shader =
-      getShader<PbrPrecomputedMapShader>(PbrIblShaderType::IrradianceMap);
+      type == PrecomputedMapType::IrradianceMap
+          ? getShader<PbrPrecomputedMapShader>(PbrIblShaderType::IrradianceMap)
+          : getShader<PbrPrecomputedMapShader>(
+                PbrIblShaderType::PrefilteredMap);
 
   // TODO: HDR!!
   shader->bindEnvironmentMap(
@@ -232,16 +266,41 @@ void PbrImageBasedLighting::computeIrradianceMap() {
   Mn::MeshTools::flipFaceWindingInPlace(cubeData.mutableIndices());
   Magnum::GL::Mesh cube = Magnum::MeshTools::compile(cubeData);
 
-  for (unsigned int iSide = 0; iSide < 6; ++iSide) {
-    irradianceMap_->bindFramebuffer(iSide);
-    Mn::Matrix4 viewMatrix = CubeMapCamera::getCameraLocalTransform(
-                                 CubeMapCamera::cubeMapCoordinate(iSide))
-                                 .inverted();
-    shader->setTransformationMatrix(viewMatrix);
-    // clear color and depth
-    irradianceMap_->prepareToDraw(iSide);
-    shader->draw(cube);
-  }
+  if (type == PrecomputedMapType::IrradianceMap) {
+    // compute irradiance map
+    for (unsigned int iSide = 0; iSide < 6; ++iSide) {
+      Mn::Matrix4 viewMatrix = CubeMapCamera::getCameraLocalTransform(
+                                   CubeMapCamera::cubeMapCoordinate(iSide))
+                                   .inverted();
+      shader->setTransformationMatrix(viewMatrix);
+      // bind framebuffer, clear color and depth
+      irradianceMap_->prepareToDraw(iSide);
+      shader->draw(cube);
+    }
+  } else {
+    // compute prefiltered map
+    unsigned int maxMipLevels = prefilteredMap_->getMipmapLevels();
+    CORRADE_INTERNAL_ASSERT(maxMipLevels ==
+                            Mn::Math::log2(prefilteredMapSize) + 1);
+    for (unsigned int iMip = 0; iMip < maxMipLevels; ++iMip) {
+      float roughness = float(iMip) / float(maxMipLevels - 1);
+
+      shader->setRoughness(roughness);
+
+      for (unsigned int jSide = 0; jSide < 6; ++jSide) {
+        Mn::Matrix4 viewMatrix = CubeMapCamera::getCameraLocalTransform(
+                                     CubeMapCamera::cubeMapCoordinate(jSide))
+                                     .inverted();
+        shader->setTransformationMatrix(viewMatrix);
+        // bind framebuffer, clear color and depth
+        prefilteredMap_->prepareToDraw(
+            jSide,
+            {RenderCamera::Flag::ClearColor | RenderCamera::Flag::ClearDepth},
+            iMip);
+        shader->draw(cube);
+      }  // for jSide
+    }    // for iMip
+  }      // else
 }
 
 }  // namespace gfx

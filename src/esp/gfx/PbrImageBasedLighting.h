@@ -110,13 +110,18 @@ class PbrImageBasedLighting {
    */
   Cr::Containers::Optional<Magnum::GL::Texture2D> brdfLUT_;
 
-  /** @brief load the brdf LUT from the disk */
-  void loadBrdfLookUpTable();
-
   ShaderManager& shaderManager_;
 
   void recreateTextures();
-  void computeIrradianceMap();
+
+  /** @brief load the brdf LUT from the disk */
+  void loadBrdfLookUpTable();
+
+  enum class PrecomputedMapType : uint8_t {
+    IrradianceMap = 0,
+    PrefilteredMap = 1,
+  };
+  void computePrecomputedMap(PrecomputedMapType type);
 
   enum class PbrIblShaderType : uint8_t {
     IrradianceMap = 0,
@@ -132,11 +137,11 @@ class PbrImageBasedLighting {
       case PbrIblShaderType::IrradianceMap:
         key = Mn::ResourceKey{"irradianceMap"};
         break;
-        /*
-          case PbrIblShaderType::PrefilteredMap:
-            key = Mn::ResourceKey{"prefilteredMap"};
-            break;
-        */
+
+      case PbrIblShaderType::PrefilteredMap:
+        key = Mn::ResourceKey{"prefilteredMap"};
+        break;
+
       case PbrIblShaderType::EquirectangularToCubeMap:
         key = Mn::ResourceKey{"equirectangularToCubeMap"};
         break;

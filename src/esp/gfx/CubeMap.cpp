@@ -39,9 +39,9 @@ const Mn::GL::Framebuffer::ColorAttachment objectIdAttachment =
  * @brief check if the class instance is created with corresponding texture
  * enabled
  */
-void textureTypeSanityCheck(CubeMap::Flags& flag,
-                            CubeMap::TextureType type,
-                            const std::string& functionNameStr) {
+void textureTypeSanityCheck(const std::string& functionNameStr,
+                            CubeMap::Flags& flag,
+                            CubeMap::TextureType type) {
   switch (type) {
     case CubeMap::TextureType::Color:
       CORRADE_ASSERT(flag & CubeMap::Flag::ColorTexture,
@@ -68,6 +68,29 @@ void textureTypeSanityCheck(CubeMap::Flags& flag,
       break;
   }
   CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+}
+
+/** @brief do a couple of sanity checks based on mipLevel value */
+void mipLevelSanityCheck(const std::string& msgPrefix,
+                         unsigned int mipLevel,
+                         CubeMap::Flags& flags,
+                         unsigned int imageSizeMip0) {
+  if (mipLevel > 0) {
+    // sanity check
+    CORRADE_ASSERT(flags & CubeMap::Flag::ManuallyBuidMipmap,
+                   msgPrefix << "CubeMap is not created with "
+                                "Flag::ManuallyBuidMipmap specified. ", );
+    // TODO: HDR!!
+    CORRADE_ASSERT(
+        flags & CubeMap::Flag::ColorTexture,
+        msgPrefix
+            << "CubeMap is not created with Flag::ColorTexture specified.", );
+
+    CORRADE_ASSERT(mipLevel < Mn::Math::log2(imageSizeMip0) + 1,
+                   msgPrefix << "mip level" << mipLevel
+                             << "is illegal. It must smaller than"
+                             << Mn::Math::log2(imageSizeMip0) + 1, );
+  }
 }
 
 /**
@@ -151,10 +174,11 @@ bool CubeMap::reset(int imageSize) {
   recreateTexture();
 
   // prepare frame buffer and render buffer
-  recreateFramebuffer();
-
-  // attach render buffer to frame buffer
-  attachFramebufferRenderbuffer();
+  for (unsigned int iSide = 0; iSide < 6; ++iSide) {
+    recreateFramebuffer(iSide, imageSize_);
+    // attach render buffer to frame buffer
+    attachFramebufferRenderbuffer(iSide, 0);
+  }
 
   return true;
 }
@@ -203,74 +227,65 @@ void CubeMap::recreateTexture() {
   }
 }
 
-void CubeMap::recreateFramebuffer() {
-  Mn::Vector2i viewportSize{imageSize_, imageSize_};
-  for (int iFbo = 0; iFbo < 6; ++iFbo) {
-    frameBuffer_[iFbo] = Mn::GL::Framebuffer{{{}, viewportSize}};
-  }
+void CubeMap::recreateFramebuffer(unsigned int cubeSideIndex,
+                                  unsigned int framebufferSize) {
+  Mn::Vector2i viewportSize{int(framebufferSize),
+                            int(framebufferSize)};  // at mip level 0
+  frameBuffer_[cubeSideIndex] = Mn::GL::Framebuffer{{{}, viewportSize}};
 
   // optional depth buffer is 24-bit integer pixel, which is different from the
   // depth texture (32-bit float)
   if (!(flags_ & CubeMap::Flag::DepthTexture)) {
-    for (int index = 0; index < 6; ++index) {
-      optionalDepthBuffer_[index] = Mn::GL::Renderbuffer{};
-      optionalDepthBuffer_[index].setStorage(
-          Mn::GL::RenderbufferFormat::DepthComponent24, viewportSize);
-    }
+    optionalDepthBuffer_[cubeSideIndex] = Mn::GL::Renderbuffer{};
+    optionalDepthBuffer_[cubeSideIndex].setStorage(
+        Mn::GL::RenderbufferFormat::DepthComponent24, viewportSize);
   }
 }
 
-void CubeMap::attachFramebufferColorRenderbuffer(unsigned int mipLevel) {
-  CORRADE_ASSERT(flags_ & Flag::ManuallyBuidMipmap,
-                 "CubeMap::attachFramebufferColorRenderbuffer(): CubeMap is "
-                 "not created with Flag::ManuallyBuidMipmap specified. ", );
-  CORRADE_ASSERT(flags_ & Flag::ColorTexture,
-                 "CubeMap::attachFramebufferColorRenderbuffer(): CubeMap is "
-                 "not created with Flag::ColorTexture specified.", );
+void CubeMap::attachFramebufferRenderbuffer(unsigned int cubeSideIndex,
+                                            unsigned int mipLevel) {
+  Magnum::GL::CubeMapCoordinate cubeMapCoord =
+      convertFaceIndexToCubeMapCoordinate(cubeSideIndex);
 
-  CORRADE_ASSERT(mipLevel < Mn::Math::log2(imageSize_) + 1,
-                 "CubeMap::attachFramebufferColorRenderbuffer(): mip level"
-                     << mipLevel << "is illegal. It must smaller than"
-                     << Mn::Math::log2(imageSize_) + 1, );
-
-  for (unsigned int index = 0; index < 6; ++index) {
-    Magnum::GL::CubeMapCoordinate cubeMapCoord =
-        convertFaceIndexToCubeMapCoordinate(index);
-
-    frameBuffer_[index].attachCubeMapTexture(
-        rgbaAttachment, texture(TextureType::Color), cubeMapCoord, mipLevel);
+  if (flags_ & Flag::ColorTexture) {
+    frameBuffer_[cubeSideIndex].attachCubeMapTexture(
+        rgbaAttachment, texture(TextureType::Color), cubeMapCoord,
+        int(mipLevel));
   }
-}
 
-void CubeMap::attachFramebufferRenderbuffer() {
-  for (unsigned int index = 0; index < 6; ++index) {
-    Magnum::GL::CubeMapCoordinate cubeMapCoord =
-        convertFaceIndexToCubeMapCoordinate(index);
+  // does NOT make any sense to talk about mip level for depth or object id
+  // texture. so the mipLevel is always 0 for both.
+  if (flags_ & Flag::DepthTexture) {
+    frameBuffer_[cubeSideIndex].attachCubeMapTexture(
+        Mn::GL::Framebuffer::BufferAttachment::Depth,
+        texture(TextureType::Depth), cubeMapCoord, 0);
+  } else {
+    frameBuffer_[cubeSideIndex].attachRenderbuffer(
+        Mn::GL::Framebuffer::BufferAttachment::Depth,
+        optionalDepthBuffer_[cubeSideIndex]);
+  }
 
-    if (flags_ & Flag::ColorTexture) {
-      frameBuffer_[index].attachCubeMapTexture(
-          rgbaAttachment, texture(TextureType::Color), cubeMapCoord, 0);
-    }
-
-    if (flags_ & Flag::DepthTexture) {
-      frameBuffer_[index].attachCubeMapTexture(
-          Mn::GL::Framebuffer::BufferAttachment::Depth,
-          texture(TextureType::Depth), cubeMapCoord, 0);
-    } else {
-      frameBuffer_[index].attachRenderbuffer(
-          Mn::GL::Framebuffer::BufferAttachment::Depth,
-          optionalDepthBuffer_[index]);
-    }
-
-    if (flags_ & Flag::ObjectIdTexture) {
-      frameBuffer_[index].attachCubeMapTexture(
-          objectIdAttachment, texture(TextureType::ObjectId), cubeMapCoord, 0);
-    }
+  if (flags_ & Flag::ObjectIdTexture) {
+    frameBuffer_[cubeSideIndex].attachCubeMapTexture(
+        objectIdAttachment, texture(TextureType::ObjectId), cubeMapCoord, 0);
   }
 }
 
 void CubeMap::prepareToDraw(unsigned int cubeSideIndex,
-                            RenderCamera::Flags renderCameraFlags) {
+                            RenderCamera::Flags renderCameraFlags,
+                            unsigned int mipLevel) {
+  mipLevelSanityCheck("CubeMap::prepareToDraw():", mipLevel, flags_,
+                      imageSize_);
+
+  if ((flags_ & Flag::ManuallyBuidMipmap) && (flags_ & Flag::ColorTexture)) {
+    int size = imageSize_ / pow(2, mipLevel);
+    frameBuffer_[cubeSideIndex].setViewport({{}, {size, size}});
+    recreateFramebuffer(cubeSideIndex, size);
+    attachFramebufferRenderbuffer(cubeSideIndex, mipLevel);
+  }
+
+  bindFramebuffer(cubeSideIndex);
+
   // Note: we ONLY need to map shader output to color attachment when necessary,
   // which means in depth texture mode, we do NOT need to do this
   if (flags_ & CubeMap::Flag::ColorTexture ||
@@ -300,6 +315,19 @@ void CubeMap::prepareToDraw(unsigned int cubeSideIndex,
                           Mn::GL::Framebuffer::Status::Complete);
 }
 
+unsigned int CubeMap::getMipmapLevels() {
+  if (flags_ & Flag::ColorTexture) {
+    if ((flags_ & Flag::AutoBuildMipmap) ||
+        (flags_ & Flag::ManuallyBuidMipmap)) {
+      return Mn::Math::log2(imageSize_) + 1;
+    } else {
+      return 1;
+    }
+  }
+  // non color cubemap
+  return 1;
+}
+
 void CubeMap::bindFramebuffer(unsigned int cubeSideIndex) {
   CORRADE_INTERNAL_ASSERT(cubeSideIndex < 6);
   frameBuffer_[cubeSideIndex].bind();
@@ -318,7 +346,7 @@ void CubeMap::mapForDraw(unsigned int index) {
 }
 
 Mn::GL::CubeMapTexture& CubeMap::getTexture(TextureType type) {
-  textureTypeSanityCheck(flags_, type, "CubeMap::getTexture():");
+  textureTypeSanityCheck("CubeMap::getTexture():", flags_, type);
   return textures_[static_cast<uint8_t>(type)];
 }
 
@@ -326,8 +354,10 @@ Mn::GL::CubeMapTexture& CubeMap::getTexture(TextureType type) {
 // because Mn::Image2D image = textures_[type]->image(...)
 // requires desktop OpenGL
 bool CubeMap::saveTexture(TextureType type,
-                          const std::string& imageFilePrefix) {
-  textureTypeSanityCheck(flags_, type, "CubeMap::saveTexture():");
+                          const std::string& imageFilePrefix,
+                          unsigned int mipLevel) {
+  textureTypeSanityCheck("CubeMap::saveTexture():", flags_, type);
+  mipLevelSanityCheck("CubeMap::saveTexture():", mipLevel, flags_, imageSize_);
 
   Cr::PluginManager::Manager<Mn::Trade::AbstractImageConverter> manager;
   Cr::Containers::Pointer<Mn::Trade::AbstractImageConverter> converter;
@@ -342,11 +372,11 @@ bool CubeMap::saveTexture(TextureType type,
     switch (type) {
       case TextureType::Color: {
         Mn::Image2D image =
-            tex.image(convertFaceIndexToCubeMapCoordinate(iFace), 0,
+            tex.image(convertFaceIndexToCubeMapCoordinate(iFace), mipLevel,
                       {getPixelFormat(type)});
-        filename = Cr::Utility::formatString("{}.{}.{}.png", imageFilePrefix,
-                                             getTextureTypeFilenameString(type),
-                                             coordStrings[iFace]);
+        filename = Cr::Utility::formatString(
+            "{}.{}.mip_{}.{}.png", imageFilePrefix,
+            getTextureTypeFilenameString(type), mipLevel, coordStrings[iFace]);
         if (!converter->convertToFile(image, filename)) {
           return false;
         }
@@ -390,7 +420,7 @@ bool CubeMap::saveTexture(TextureType type,
 void CubeMap::loadTexture(TextureType type,
                           const std::string& imageFilePrefix,
                           const std::string& imageFileExtension) {
-  textureTypeSanityCheck(flags_, type, "CubeMap::loadTexture():");
+  textureTypeSanityCheck("CubeMap::loadTexture():", flags_, type);
 
   // set the alias of the texture
   Mn::GL::CubeMapTexture& tex = texture(type);

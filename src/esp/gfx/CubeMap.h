@@ -100,15 +100,6 @@ class CubeMap {
    */
   Magnum::GL::CubeMapTexture& getTexture(TextureType type);
 
-  /**
-   * @brief attach the 6 sides of a cubemap texture at the given mip level to
-   * the frame buffer.
-   * NOTE: Flag::ColorTexture and Flag::ManuallyBuildMipmap MUST be set
-   * @param[in] mipLevel, the mipLevel cannot be larger than
-   * Mn::Math::log2( @ref imageSize_) + 1
-   */
-  void attachFramebufferColorRenderbuffer(unsigned int mipLevel);
-
 #ifndef MAGNUM_TARGET_WEBGL
   /**
    * ```
@@ -142,7 +133,9 @@ class CubeMap {
    * twice).
    */
   // TODO: save HDR textures in EXR format
-  bool saveTexture(TextureType type, const std::string& imageFilePrefix);
+  bool saveTexture(TextureType type,
+                   const std::string& imageFilePrefix,
+                   unsigned int mipLevel = 0);
 #endif
 
   /**
@@ -187,22 +180,33 @@ class CubeMap {
                            RenderCamera::Flag::ClearDepth});
 
   /**
-   * @brief Prepare to draw to the texture
+   * @brief Prepare to draw to the texture. It will bind the framebuffer, clear
+   * color, depth etc.
    * @param[in] cubeSideIndex, the index of the cube side, can be 0,
    * 1, 2, 3, 4, or 5
    * @param[in] flags, the flags to control the rendering
+   * @param[in] mipLevel, the mip level of the texture. default value is 0. This
+   * is an advanced feature. In most cases user do not have to set it.
+   * NOTE:
+   * If a non-zero miplevel is specified, it requires:
+   * - The cubemap is color texture; (does not make sense to talk about mip
+   * level for depth or object ids)
+   * - Flag::ManuallyBuildMipmap is set;
+   * - value is smaller than the max mip level, which is log2(mip0_size) + 1;
    */
-  void prepareToDraw(unsigned int cubeSideIndex,
-                     RenderCamera::Flags flags = {
-                         RenderCamera::Flag::FrustumCulling |
-                         RenderCamera::Flag::ClearColor |
-                         RenderCamera::Flag::ClearDepth});
+  void prepareToDraw(
+      unsigned int cubeSideIndex,
+      RenderCamera::Flags flags = {RenderCamera::Flag::FrustumCulling |
+                                   RenderCamera::Flag::ClearColor |
+                                   RenderCamera::Flag::ClearDepth},
+      unsigned int mipLevel = 0);
+
   /**
-   * @brief bind framebuffer
-   * @param[in] cubeSideIndex, the index of the cube side, can be 0,
-   * 1, 2, 3, 4, or 5
+   * @brief Get the mipmap levels
+   * NOTE: returns 1 if this is non-colored cubemap, or it is colored cubemap
+   * but without mipmap enabled.
    */
-  void bindFramebuffer(unsigned int cubeSideIndex);
+  unsigned int getMipmapLevels();
 
  private:
   Flags flags_;
@@ -227,14 +231,23 @@ class CubeMap {
 
   /**
    * @brief recreate the frame buffer
+   * @param cubeSideIndex the index of the cube side, can be 0,
+   * 1, 2, 3, 4, or 5
+   * @param[in] framebufferSize, the size of the framebuffer
    */
-  void recreateFramebuffer();
+  void recreateFramebuffer(unsigned int cubeSideIndex,
+                           unsigned int framebufferSize);
 
   /**
    * @brief attach renderbuffers (color etc.) as logical buffers of the
    * framebuffer object
+   * @param cubeSideIndex the index of the cube side, can be 0,
+   * 1, 2, 3, 4, or 5
+   * @param[in] mipLevel, the level of the mipmap. See more details at @ref
+   * prepareToDraw
    */
-  void attachFramebufferRenderbuffer();
+  void attachFramebufferRenderbuffer(unsigned int cubeSideIndex,
+                                     unsigned int mipLevel = 0);
 
   /**
    * @brief Map shader output to attachments.
@@ -242,7 +255,15 @@ class CubeMap {
    * 1, 2, 3, 4, or 5
    */
   void mapForDraw(unsigned int cubeSideIndex);
-};  // namespace gfx
+
+  /**
+   * @brief bind framebuffer
+   * @param[in] cubeSideIndex, the index of the cube side, can be 0,
+   * 1, 2, 3, 4, or 5
+   */
+  void bindFramebuffer(unsigned int cubeSideIndex);
+};
+
 CORRADE_ENUMSET_OPERATORS(CubeMap::Flags)
 
 }  // namespace gfx

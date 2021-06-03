@@ -41,9 +41,11 @@ layout(location = OUTPUT_ATTRIBUTE_LOCATION_COLOR) out highp vec4 fragmentColor;
      // We generated proportionally fewer rays at the center top of the hemisphere.
      // So there is no need to compensate for the smaller areas
      // by scaling the area by sinTheta
-     irradiance += textureLod(EnvironmentMap, sampleVec, 0.0).rgb;
-     // using the following gives me nothing when the EnvironmentMap has mipmaps! (Unknown reasons)
-     // irradiance += texture(EnvironmentMap, sampleVec).rgb;
+     // irradiance += textureLod(EnvironmentMap, sampleVec, 0.0).rgb;
+     // Dev note:
+     // if the irradianceMap is full black,
+     // check if Environment enables mipmaps and you do populate them correctly.
+     irradiance += texture(EnvironmentMap, sampleVec).rgb;
    }
 
    fragmentColor = vec4(irradiance / float(sampleCounts), 1.0);

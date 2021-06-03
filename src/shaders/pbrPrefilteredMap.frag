@@ -74,19 +74,19 @@ void main() {
 	const uint sampleCounts = 4096u;
   float invSampleCounts = 1.0f / float(sampleCounts);
 
-	for(uint iPoint = 0u; i < sampleCounts; ++iPoint) {
+	for(uint iPoint = 0u; iPoint < sampleCounts; ++iPoint) {
 		// sample point on 2D plane
 		vec2 xi = hammersley2d(iPoint, sampleCounts);
-		vec3 h = importanceSamplingGGX(xi, roughness, normal);
+		vec3 h = importanceSamplingGGX(xi, Roughness, normal);
 		vec3 l = normalize(2.0 * dot(v, h) * h - v);
 
 		float n_dot_l = clamp(dot(normal, l), 0.0, 1.0);
 		if(n_dot_l > 0.0) {
-			float n_dot_h = clamp(dot(N, H), 0.0, 1.0);
-			float v_dot_h = clamp(dot(V, H), 0.0, 1.0);
+			float n_dot_h = clamp(dot(normal, h), 0.0, 1.0);
+			float v_dot_h = clamp(dot(v, h), 0.0, 1.0);
 
 			// Probability Distribution Function
-			float pdf = normalDistributionGGX(n_dot_h, roughness) *
+			float pdf = normalDistributionGGX(n_dot_h, Roughness) *
 					n_dot_h / (4.0 * v_dot_h) + 0.0001;
 
 			// Solid angle for the current sample point
@@ -96,7 +96,7 @@ void main() {
 			// see:
       // https://github.com/SaschaWillems/Vulkan-glTF-PBR/
 			float mipLevel =
-			  roughness == 0.0 ? 0.0 : max(0.5 * log2(solidAngle / solidAnglePixel) + 1.0, 0.0);
+			  Roughness == 0.0 ? 0.0 : max(0.5 * log2(solidAngle / solidAnglePixel) + 1.0, 0.0);
 
 			prefilteredColor += textureLod(EnvironmentMap, l, mipLevel).rgb * n_dot_l;
 			totalWeight += n_dot_l;
