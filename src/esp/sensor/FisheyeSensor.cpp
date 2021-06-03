@@ -53,7 +53,8 @@ Magnum::Vector2 computePrincipalPointOffset(const FisheyeSensorSpec& spec) {
     return *spec.principalPointOffset;
   }
   auto res = spec.resolution;
-  return Mn::Vector2(res[0], res[1]) * 0.5f;
+  return Mn::Vector2(static_cast<float>(res[0]), static_cast<float>(res[1])) *
+         0.5f;
 }
 
 FisheyeSensor::FisheyeSensor(scene::SceneNode& cameraNode,
