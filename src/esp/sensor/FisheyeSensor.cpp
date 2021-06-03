@@ -8,6 +8,7 @@
 #include <Corrade/Containers/Containers.h>
 #include <Corrade/Utility/Assert.h>
 #include <Corrade/Utility/FormatStl.h>
+#include <Magnum/EigenIntegration/Integration.h>
 
 namespace Mn = Magnum;
 namespace Cr = Corrade;
@@ -54,7 +55,7 @@ Magnum::Vector2 computePrincipalPointOffset(const FisheyeSensorSpec& spec) {
     return *spec.principalPointOffset;
   }
   auto res = spec.resolution;
-  return Magnum::Vector2(res[0] * 0.5f, res[1] * 0.5f);
+  return Mn::Vector2{Mn::Vector2i{res}} * 0.5f;
 }
 
 FisheyeSensor::FisheyeSensor(scene::SceneNode& cameraNode,
