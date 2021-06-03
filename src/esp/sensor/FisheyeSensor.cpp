@@ -2,6 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 #include "FisheyeSensor.h"
+#include "Corrade/Containers/Containers.h"
 #include "esp/core/Check.h"
 #include "esp/gfx/DoubleSphereCameraShader.h"
 
@@ -48,6 +49,14 @@ void specSanityCheck(FisheyeSensorSpec* spec) {
   actualSpec->sanityCheck();
 }
 
+Magnum::Vector2 computePrincipalPointOffset(const FisheyeSensorSpec spec) {
+  if (spec.principalPointOffset != Corrade::Containers::NullOpt) {
+    return *spec.principalPointOffset;
+  }
+  auto res = spec.resolution;
+  return Magnum::Vector2(res[0] * 0.5f, res[1] * 0.5f);
+}
+
 FisheyeSensor::FisheyeSensor(scene::SceneNode& cameraNode,
                              const FisheyeSensorSpec::ptr& spec)
     : CubeMapSensorBase(cameraNode, spec) {
@@ -88,7 +97,7 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
           static_cast<FisheyeSensorDoubleSphereSpec&>(*fisheyeSensorSpec_);
       (*shader)
           .setFocalLength(actualSpec.focalLength)
-          .setPrincipalPointOffset(actualSpec.principalPointOffset)
+          .setPrincipalPointOffset(computePrincipalPointOffset(actualSpec))
           .setAlpha(actualSpec.alpha)
           .setXi(actualSpec.xi);
       drawWith(*shader);

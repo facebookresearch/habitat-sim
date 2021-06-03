@@ -4,6 +4,7 @@
 
 #include "esp/bindings/bindings.h"
 
+#include <Corrade/Containers/OptionalPythonBindings.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/SceneGraph/SceneGraph.h>
 

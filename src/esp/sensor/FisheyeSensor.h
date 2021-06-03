@@ -48,7 +48,8 @@ struct FisheyeSensorSpec : public CubeMapSensorBaseSpec {
    * @brief Principal Point Offset in pixel, cx, cy, location of the principal
    * point relative to the image plane's origin.
    */
-  Magnum::Vector2 principalPointOffset;
+  Corrade::Containers::Optional<Magnum::Vector2> principalPointOffset =
+      Corrade::Containers::NullOpt;
 
   /**
    * @brief Constructor
@@ -79,7 +80,7 @@ struct FisheyeSensorDoubleSphereSpec : public FisheyeSensorSpec {
   /**
    * @brief constructor
    */
-  FisheyeSensorDoubleSphereSpec() : FisheyeSensorSpec() {}
+  FisheyeSensorDoubleSphereSpec() : FisheyeSensorSpec(){};
   /**
    * @brief check if the specification is legal
    */
