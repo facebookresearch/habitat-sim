@@ -46,7 +46,8 @@ struct FisheyeSensorSpec : public CubeMapSensorBaseSpec {
   Magnum::Vector2 focalLength;
   /**
    * @brief Principal Point Offset in pixel, cx, cy, location of the principal
-   * point relative to the image plane's origin.
+   * point relative to the image plane's origin. None will place it in the
+   * middle of the image (height/2, width/2).
    */
   Corrade::Containers::Optional<Magnum::Vector2> principalPointOffset =
       Corrade::Containers::NullOpt;
