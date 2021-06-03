@@ -430,9 +430,53 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
 
   /**
    * @brief Load, parse, and import a URDF file instantiating an @ref
+   * ArticulatedObject in the world.  This version will query an existing
+   * simulator for drawables and therefore does not require drawables to be
+   * specified.
+   *
+   * Not implemented in base PhysicsManager.
+   * @param filepath The fully-qualified filename for the URDF file describing
+   * the model the articulated object is to be built from.
+   * @param fixedBase Whether the base of the @ref ArticulatedObject should be
+   * fixed.
+   * @param globalScale A scale multiplier to be applied uniformly in 3
+   * dimensions to the entire @ref ArticulatedObject.
+   * @param massScale A scale multiplier to be applied to the mass of the all
+   * the components of the @ref ArticulatedObject.
+   * @param forceReload If true, reload the source URDF from file, replacing the
+   * cached model.
+   *
+   * @return A unique id for the @ref BulletArticulatedObject, allocated from
+   * the same id set as rigid objects.
+   */
+  virtual int addArticulatedObjectFromURDF(
+      CORRADE_UNUSED const std::string& filepath,
+      CORRADE_UNUSED bool fixedBase = false,
+      CORRADE_UNUSED float globalScale = 1.0,
+      CORRADE_UNUSED float massScale = 1.0,
+      CORRADE_UNUSED bool forceReload = false) {
+    Magnum::Debug{} << "addArticulatedObjectFromURDF not implemented in base "
+                       "PhysicsManager.";
+    return ID_UNDEFINED;
+  }
+
+  /**
+   * @brief Load, parse, and import a URDF file instantiating an @ref
    * ArticulatedObject in the world.
    *
    * Not implemented in base PhysicsManager.
+   * @param filepath The fully-qualified filename for the URDF file describing
+   * the model the articulated object is to be built from.
+   * @param drawables Reference to the scene graph drawables group to enable
+   * rendering of the newly initialized @ref ArticulatedObject.
+   * @param fixedBase Whether the base of the @ref ArticulatedObject should be
+   * fixed.
+   * @param globalScale A scale multiplier to be applied uniformly in 3
+   * dimensions to the entire @ref ArticulatedObject.
+   * @param massScale A scale multiplier to be applied to the mass of the all
+   * the components of the @ref ArticulatedObject.
+   * @param forceReload If true, reload the source URDF from file, replacing the
+   * cached model.
    *
    * @return A unique id for the @ref ArticulatedObject, allocated from the same
    * id set as rigid objects.

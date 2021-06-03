@@ -236,7 +236,16 @@ void initPhysicsWrapperManagerBindings(pybind11::module& m) {
   py::class_<ArticulatedObjectManager,
              PhysicsObjectBaseManager<ManagedArticulatedObject>,
              std::shared_ptr<ArticulatedObjectManager>>(
-      m, "ArticulatedObjectManager");
+      m, "ArticulatedObjectManager")
+
+      .def(
+          "add_articulated_object_from_URDF",
+          &ArticulatedObjectManager::addArticulatedObjectFromURDF, "filepath"_a,
+          "fixed_base"_a = false, "global_scale"_a = 1.0, "mass_scale"_a = 1.0,
+          "froce_reload"_a = false,
+          R"(Load and parse a URDF file using the given 'filepath' into a model,
+          then use this model to instantiate an Articulated Object in the world.
+          Returns a reference to the created object.)");
 }  // initPhysicsWrapperManagerBindings
 
 }  // namespace physics

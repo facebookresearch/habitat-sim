@@ -32,6 +32,37 @@ ArticulatedObjectManager::ArticulatedObjectManager()
       &ArticulatedObjectManager::createPhysicsObjectWrapper<
           ManagedBulletArticulatedObject>;
 #endif
+}  // ctor
+
+std::shared_ptr<ManagedArticulatedObject>
+ArticulatedObjectManager::addArticulatedObjectFromURDF(
+    const std::string& filepath,
+    bool fixedBase,
+    float globalScale,
+    float massScale,
+    bool forceReload) {
+  if (auto physMgr = this->getPhysicsManager()) {
+    int newAObjID = physMgr->addArticulatedObjectFromURDF(
+        filepath, fixedBase, globalScale, massScale, forceReload);
+    return this->getObjectCopyByID(newAObjID);
+  }
+  return nullptr;
+}
+
+std::shared_ptr<ManagedArticulatedObject>
+ArticulatedObjectManager::addArticulatedObjectFromURDFWithDrawables(
+    const std::string& filepath,
+    gfx::DrawableGroup* drawables,
+    bool fixedBase,
+    float globalScale,
+    float massScale,
+    bool forceReload) {
+  if (auto physMgr = this->getPhysicsManager()) {
+    int newAObjID = physMgr->addArticulatedObjectFromURDF(
+        filepath, drawables, fixedBase, globalScale, massScale, forceReload);
+    return this->getObjectCopyByID(newAObjID);
+  }
+  return nullptr;
 }
 
 }  // namespace physics

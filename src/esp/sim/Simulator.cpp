@@ -1106,10 +1106,8 @@ int Simulator::addArticulatedObjectFromURDF(const std::string& filepath,
                                             float massScale,
                                             bool forceReload) {
   if (sceneHasPhysics(0)) {
-    auto& sceneGraph_ = sceneManager_->getSceneGraph(activeSceneID_);
-    auto& drawables = sceneGraph_.getDrawables();
     return physicsManager_->addArticulatedObjectFromURDF(
-        filepath, &drawables, fixedBase, globalScale, massScale, forceReload);
+        filepath, fixedBase, globalScale, massScale, forceReload);
   }
   Corrade::Utility::Debug()
       << "Simulator::loadURDF : failed - physics not enabled.";
