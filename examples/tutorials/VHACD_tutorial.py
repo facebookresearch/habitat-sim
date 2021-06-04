@@ -25,7 +25,7 @@ def make_configuration():
 
     # sensor configurations
     sensor_specs = []
-    sensor_spec = habitat_sim.SensorSpec()
+    sensor_spec = habitat_sim.CameraSensorSpec()
     sensor_spec.uuid = "rgba_camera_1stperson"
     sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
     sensor_spec.resolution = [544, 720]
@@ -99,7 +99,7 @@ def runVHACDSimulation(obj_path):
         obj_id_1 = obj_templates_mgr.load_configs(
             str(os.path.join(data_path, obj_path))
         )[0]
-        obj_template = obj_templates_mgr.get_template_by_ID(obj_id_1)
+        obj_template = obj_templates_mgr.get_template_by_id(obj_id_1)
         obj_handle = obj_template.render_asset_handle
         obj_templates_mgr.register_template(obj_template, force_registration=True)
         obj_ids += [obj_id_1]
@@ -120,7 +120,7 @@ def runVHACDSimulation(obj_path):
         new_obj_template_1 = obj_templates_mgr.get_template_by_handle(new_handle_1)
 
         obj_templates_mgr.register_template(new_obj_template_1, force_registration=True)
-        obj_ids += [new_obj_template_1.ID]
+        obj_ids += [new_obj_template_1.template_id]
 
         # Medium resolution
         params = habitat_sim.VHACDParameters()
@@ -134,7 +134,7 @@ def runVHACDSimulation(obj_path):
         new_obj_template_2 = obj_templates_mgr.get_template_by_handle(new_handle_2)
 
         obj_templates_mgr.register_template(new_obj_template_2, force_registration=True)
-        obj_ids += [new_obj_template_2.ID]
+        obj_ids += [new_obj_template_2.template_id]
 
         # Low resolution
         params = habitat_sim.VHACDParameters()
@@ -148,7 +148,7 @@ def runVHACDSimulation(obj_path):
         new_obj_template_3 = obj_templates_mgr.get_template_by_handle(new_handle_3)
 
         obj_templates_mgr.register_template(new_obj_template_3, force_registration=True)
-        obj_ids += [new_obj_template_3.ID]
+        obj_ids += [new_obj_template_3.template_id]
 
         # now display objects
         cur_objs = []
