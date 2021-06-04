@@ -211,6 +211,7 @@ class CubeMap {
  private:
   Flags flags_;
   int imageSize_ = 0;
+  unsigned int mipmapLevels_ = 1;
 
   Magnum::GL::CubeMapTexture textures_[uint8_t(TextureType::Count)];
 

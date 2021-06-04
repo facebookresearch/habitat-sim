@@ -183,6 +183,10 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   if (flags_ & Flag::ImageBasedLighting) {
     setUniform(uniformLocation("IrradianceMap"),
                pbrTextureUnitSpace::TextureUnit::IrradianceMap);
+    setUniform(uniformLocation("BrdfLUT"),
+               pbrTextureUnitSpace::TextureUnit::BrdfLUT);
+    setUniform(uniformLocation("PrefilteredMap"),
+               pbrTextureUnitSpace::TextureUnit::PrefilteredMap);
   }
 
   // cache the uniform locations
@@ -217,6 +221,12 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   }
 
   cameraWorldPosUniform_ = uniformLocation("CameraWorldPos");
+
+  // IBL related uniform
+  if (flags_ & Flag::ImageBasedLighting) {
+    prefilteredMapMipLevelsUniform_ =
+        uniformLocation("PrefilteredMapMipLevels");
+  }
 
   // for debug info
   debugDirectDiffuseUniform_ = uniformLocation("PbrDebug.directDiffuse");
@@ -291,7 +301,7 @@ PbrShader& PbrShader::bindNormalTexture(Mn::GL::Texture2D& texture) {
   return *this;
 }
 
-PbrShader& PbrShader::bindEmissiveTexture(Magnum::GL::Texture2D& texture) {
+PbrShader& PbrShader::bindEmissiveTexture(Mn::GL::Texture2D& texture) {
   CORRADE_ASSERT(flags_ & Flag::EmissiveTexture,
                  "PbrShader::bindEmissiveTexture(): the shader was not "
                  "created with emissive texture enabled",
@@ -307,6 +317,24 @@ PbrShader& PbrShader::bindIrradianceCubeMap(Mn::GL::CubeMapTexture& texture) {
                  "created with image based lighting enabled",
                  *this);
   texture.bind(pbrTextureUnitSpace::TextureUnit::IrradianceMap);
+  return *this;
+}
+
+PbrShader& PbrShader::bindBrdfLUT(Mn::GL::Texture2D& texture) {
+  CORRADE_ASSERT(flags_ & Flag::ImageBasedLighting,
+                 "PbrShader::bindBrdfLUT(): the shader was not "
+                 "created with image based lighting enabled",
+                 *this);
+  texture.bind(pbrTextureUnitSpace::TextureUnit::BrdfLUT);
+  return *this;
+}
+
+PbrShader& PbrShader::bindPrefilteredMap(Magnum::GL::CubeMapTexture& texture) {
+  CORRADE_ASSERT(flags_ & Flag::ImageBasedLighting,
+                 "PbrShader::bindPrefilteredMap(): the shader was not "
+                 "created with image based lighting enabled",
+                 *this);
+  texture.bind(pbrTextureUnitSpace::TextureUnit::PrefilteredMap);
   return *this;
 }
 
@@ -334,6 +362,15 @@ PbrShader& PbrShader::setObjectId(unsigned int objectId) {
   if (flags_ & Flag::ObjectId) {
     setUniform(objectIdUniform_, objectId);
   }
+  return *this;
+}
+
+PbrShader& PbrShader::setPrefilteredMapMipLevels(unsigned int mipLevels) {
+  CORRADE_ASSERT(flags_ & Flag::ImageBasedLighting,
+                 "PbrShader::setPrefilteredMapMipLevels(): the shader was not "
+                 "created with image based lighting enabled",
+                 *this);
+  setUniform(prefilteredMapMipLevelsUniform_, mipLevels);
   return *this;
 }
 
@@ -378,11 +415,19 @@ PbrShader& PbrShader::setDebugToggles(const PbrDebugToggle& toggles) {
 PbrShader& PbrShader::setDebugDisplay(PbrDebugDisplay index) {
   switch (index) {
     case PbrDebugDisplay::None:
-      setUniform(pbrDebugDisplayUniform_, 0);
+      setUniform(pbrDebugDisplayUniform_, int(PbrDebugDisplay::None));
+      break;
+
+    case PbrDebugDisplay::IblDiffuse:
+      setUniform(pbrDebugDisplayUniform_, int(PbrDebugDisplay::IblDiffuse));
+      break;
+
+    case PbrDebugDisplay::IblSpecular:
+      setUniform(pbrDebugDisplayUniform_, int(PbrDebugDisplay::IblSpecular));
       break;
 
     case PbrDebugDisplay::Normal:
-      setUniform(pbrDebugDisplayUniform_, 1);
+      setUniform(pbrDebugDisplayUniform_, int(PbrDebugDisplay::Normal));
       break;
 
     default:

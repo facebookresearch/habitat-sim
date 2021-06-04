@@ -19,6 +19,8 @@ enum TextureUnit : uint8_t {
   Emissive = 3,
   EnvironmentMap = 4,
   IrradianceMap = 5,
+  BrdfLUT = 6,
+  PrefilteredMap = 7,
 };
 }  // namespace pbrTextureUnitSpace
 }  // namespace gfx

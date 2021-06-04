@@ -50,7 +50,8 @@ PbrImageBasedLighting::PbrImageBasedLighting(
 
   convertEquirectangularToCubeMap(equirectangularImageFilename);
   // debug: XXX
-  environmentMap_->saveTexture(CubeMap::TextureType::Color, "environment", 2);
+  // environmentMap_->saveTexture(CubeMap::TextureType::Color, "environment",
+  // 2);
 
   // compute the irradiance map for indirect diffuse part
   computePrecomputedMap(PrecomputedMapType::IrradianceMap);
@@ -61,21 +62,20 @@ PbrImageBasedLighting::PbrImageBasedLighting(
   // TODO: should have the capability to compute it by the simulator
   loadBrdfLookUpTable();
 
-  // XXX
-  LOG(INFO) << "==== Compute prefiltered map ====";
   // compute the prefiltered environment map (indirect specular part)
   computePrecomputedMap(PrecomputedMapType::PrefilteredMap);
 
   // debug
+  /*
   prefilteredMap_->saveTexture(CubeMap::TextureType::Color, "prefilteredMap",
                                2);
+  */
   /*
   for (int iMip = 0; iMip < prefilteredMap_->getMipmapLevels(); ++iMip) {
     prefilteredMap_->saveTexture(CubeMap::TextureType::Color, "prefilteredMap",
                                  iMip);
   }
   */
-  exit(0);
 }
 
 void PbrImageBasedLighting::convertEquirectangularToCubeMap(

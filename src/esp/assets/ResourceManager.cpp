@@ -2245,6 +2245,7 @@ void ResourceManager::initPbrImageBasedLighting() {
       std::make_unique<gfx::PbrImageBasedLighting>(
           gfx::PbrImageBasedLighting::Flags{
               gfx::PbrImageBasedLighting::Flag::IndirectDiffuse |
+              gfx::PbrImageBasedLighting::Flag::IndirectSpecular |
               gfx::PbrImageBasedLighting::Flag::UseLDRImages},
           // shaderManager_, "./data/pbr/Malibu_Overlook_4k.rotated.jpg"));
           // shaderManager_, "./data/pbr/Alexs_Apt_8k.jpg"));

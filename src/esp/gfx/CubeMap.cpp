@@ -72,9 +72,9 @@ void textureTypeSanityCheck(const std::string& functionNameStr,
 
 /** @brief do a couple of sanity checks based on mipLevel value */
 void mipLevelSanityCheck(const std::string& msgPrefix,
-                         unsigned int mipLevel,
                          CubeMap::Flags& flags,
-                         unsigned int imageSizeMip0) {
+                         unsigned int mipLevel,
+                         unsigned int mipmapLevels) {
   if (mipLevel > 0) {
     // sanity check
     CORRADE_ASSERT(flags & CubeMap::Flag::ManuallyBuidMipmap,
@@ -86,10 +86,10 @@ void mipLevelSanityCheck(const std::string& msgPrefix,
         msgPrefix
             << "CubeMap is not created with Flag::ColorTexture specified.", );
 
-    CORRADE_ASSERT(mipLevel < Mn::Math::log2(imageSizeMip0) + 1,
+    CORRADE_ASSERT(mipLevel < mipmapLevels,
                    msgPrefix << "mip level" << mipLevel
                              << "is illegal. It must smaller than"
-                             << Mn::Math::log2(imageSizeMip0) + 1, );
+                             << mipmapLevels, );
   }
 }
 
@@ -198,8 +198,8 @@ void CubeMap::recreateTexture() {
     if ((flags_ & Flag::AutoBuildMipmap) ||
         (flags_ & Flag::ManuallyBuidMipmap)) {
       // RGBA8 is for the LDR. Use RGBA16F for the HDR (TODO)
-      colorTexture.setStorage(Mn::Math::log2(imageSize_) + 1,
-                              Mn::GL::TextureFormat::RGBA8,
+      mipmapLevels_ = Mn::Math::log2(imageSize_) + 1;
+      colorTexture.setStorage(mipmapLevels_, Mn::GL::TextureFormat::RGBA8,
                               size);  // TODO: HDR!!
     } else {
       colorTexture.setStorage(1, Mn::GL::TextureFormat::RGBA8, size);
@@ -274,8 +274,8 @@ void CubeMap::attachFramebufferRenderbuffer(unsigned int cubeSideIndex,
 void CubeMap::prepareToDraw(unsigned int cubeSideIndex,
                             RenderCamera::Flags renderCameraFlags,
                             unsigned int mipLevel) {
-  mipLevelSanityCheck("CubeMap::prepareToDraw():", mipLevel, flags_,
-                      imageSize_);
+  mipLevelSanityCheck("CubeMap::prepareToDraw():", flags_, mipLevel,
+                      mipmapLevels_);
 
   if ((flags_ & Flag::ManuallyBuidMipmap) && (flags_ & Flag::ColorTexture)) {
     int size = imageSize_ / pow(2, mipLevel);
@@ -316,16 +316,7 @@ void CubeMap::prepareToDraw(unsigned int cubeSideIndex,
 }
 
 unsigned int CubeMap::getMipmapLevels() {
-  if (flags_ & Flag::ColorTexture) {
-    if ((flags_ & Flag::AutoBuildMipmap) ||
-        (flags_ & Flag::ManuallyBuidMipmap)) {
-      return Mn::Math::log2(imageSize_) + 1;
-    } else {
-      return 1;
-    }
-  }
-  // non color cubemap
-  return 1;
+  return mipmapLevels_;
 }
 
 void CubeMap::bindFramebuffer(unsigned int cubeSideIndex) {
@@ -357,7 +348,8 @@ bool CubeMap::saveTexture(TextureType type,
                           const std::string& imageFilePrefix,
                           unsigned int mipLevel) {
   textureTypeSanityCheck("CubeMap::saveTexture():", flags_, type);
-  mipLevelSanityCheck("CubeMap::saveTexture():", mipLevel, flags_, imageSize_);
+  mipLevelSanityCheck("CubeMap::saveTexture():", flags_, mipLevel,
+                      mipmapLevels_);
 
   Cr::PluginManager::Manager<Mn::Trade::AbstractImageConverter> manager;
   Cr::Containers::Pointer<Mn::Trade::AbstractImageConverter> converter;

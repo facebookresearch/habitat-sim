@@ -70,6 +70,8 @@ uniform sampler2D EmissiveTexture;
 
 #if defined(IMAGE_BASED_LIGHTING)
 uniform samplerCube IrradianceMap;
+uniform sampler2D BrdfLUT;
+uniform samplerCube PrefilteredMap;
 #endif
 
 // -------------- uniforms ----------------
@@ -88,12 +90,16 @@ uniform mediump float NormalTextureScale
 // camera position in world space
 uniform highp vec3 CameraWorldPos;
 
+#if defined(IMAGE_BASED_LIGHTING)
+uniform uint PrefilteredMapMipLevels;
+#endif
+
 struct PbrDebugToggle {
   float directDiffuse;
   float directSpecular;
 #if defined(IMAGE_BASED_LIGHTING)
-  float iblDiffuse;
-  float iblSpecular;
+  float iblDiffuse;  // 0.0 ~ 1.0
+  float iblSpecular; // 0.0 ~ 1.0
 #endif
 };
 uniform PbrDebugToggle PbrDebug;
@@ -258,7 +264,18 @@ vec3 microfacetModel(vec3 specularReflectance,
 vec3 computeIBLDiffuse(vec3 c_diff, vec3 n) {
   // diffuse part = c_diff * irradiance
   // TODO: SRGB to Linear, and tone mapping
-  return c_diff * texture(IrradianceMap, n).rgb;
+  return c_diff * texture(IrradianceMap, n).rgb * PbrDebug.iblDiffuse;
+}
+
+vec3 computeIBLSpecular(float roughness,
+                        float n_dot_v,
+                        vec3 specularReflectance,
+                        vec3 reflectionDir) {
+  vec3 brdf = texture(BrdfLUT, vec2(max(n_dot_v, 0.0), 1.0 - roughness)).rgb;
+  float lod = roughness * float(PrefilteredMapMipLevels);
+  vec3 prefilteredColor = textureLod(PrefilteredMap, reflectionDir, lod).rgb;
+
+  return prefilteredColor * (specularReflectance * brdf.x + brdf.y) * PbrDebug.iblSpecular;
 }
 #endif
 
@@ -308,6 +325,9 @@ void main() {
   // c_diff = lerp(baseColor.rgb * (1 - dielectricSpecular), black, metallic)
   vec3 c_diff = baseColor.rgb * (1.0 - DielectricSpecular) * (1.0 - metallic);
 
+
+  float n_dot_v = clamp(dot(n, view), 0.001, 1.0);
+
   vec3 finalColor = vec3(0.0);
   // compute contribution of each light using the microfacet model
   // the following part of the code is inspired by the Phong.frag in Magnum
@@ -351,8 +371,13 @@ void main() {
 #endif  // if LIGHT_COUNT > 0
 
 #if defined(IMAGE_BASED_LIGHTING)
-vec3 iblDiffuseContrib = PbrDebug.iblDiffuse * computeIBLDiffuse(c_diff, n);
+vec3 iblDiffuseContrib = computeIBLDiffuse(c_diff, n);
 fragmentColor.rgb += iblDiffuseContrib;
+
+vec3 reflection = normalize(reflect(-view, n));
+vec3 iblSpecularContrib =
+  computeIBLSpecular(roughness, n_dot_v, specularReflectance, reflection);
+fragmentColor.rgb += iblSpecularContrib;
 #endif // IMAGE_BASED_LIGHTING
 
 #if defined(OBJECT_ID)
@@ -365,9 +390,16 @@ fragmentColor.rgb += iblDiffuseContrib;
 	// "none", "Diff (l,n)", "F (l,h)", "G (l,v,h)", "D (h)", "Specular"
 	if (PbrDebugDisplay > 0) {
 		switch (PbrDebugDisplay) {
-			case 1:
-				fragmentColor.rgb = n;
+      case 1:
+        fragmentColor.rgb = iblDiffuseContrib; // ibl diffuse
+        break;
+      case 2:
+        fragmentColor.rgb = iblSpecularContrib; // ibl specular
+        break;
+			case 3:
+				fragmentColor.rgb = n; // normal
 				break;
+
     /*
 			case 2:
 				outColor.rgb = F;

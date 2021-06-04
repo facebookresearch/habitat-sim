@@ -268,12 +268,26 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   PbrShader& bindIrradianceCubeMap(Magnum::GL::CubeMapTexture& texture);
 
   /**
+   * @brief Bind the BRDF LUT texture
+   * NOTE: requires Flag::ImageBasedLighting is set
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& bindBrdfLUT(Magnum::GL::Texture2D& texture);
+
+  /**
+   * @brief Bind the prefiltered environment map (cubemap texture)
+   * NOTE: requires Flag::ImageBasedLighting is set
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& bindPrefilteredMap(Magnum::GL::CubeMapTexture& texture);
+
+  // ======== set uniforms ===========
+  /**
    * @brief set the texture transformation matrix
    * @return Reference to self (for method chaining)
    */
   PbrShader& setTextureMatrix(const Magnum::Matrix3& matrix);
 
-  // ======== set uniforms ===========
   /**
    *  @brief Set "projection" matrix to the uniform on GPU
    *  @return Reference to self (for method chaining)
@@ -333,6 +347,13 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    *  @return Reference to self (for method chaining)
    */
   PbrShader& setCameraWorldPosition(const Magnum::Vector3& cameraWorldPos);
+
+  /**
+   *  @brief Set total mipmap levels of the prefiltered environment map to the
+   * uniform on GPU
+   *  @return Reference to self (for method chaining)
+   */
+  PbrShader& setPrefilteredMapMipLevels(unsigned int mipLevels);
 
   /**
    * @brief Set light positions or directions
@@ -466,7 +487,9 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
   enum class PbrDebugDisplay : uint8_t {
     None = 0,
-    Normal,
+    IblDiffuse = 1,
+    IblSpecular = 2,
+    Normal = 3,
   };
   /**
    *@brief debug display visualization
@@ -501,6 +524,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   int lightDirectionsUniform_ = ID_UNDEFINED;
 
   int cameraWorldPosUniform_ = ID_UNDEFINED;
+  int prefilteredMapMipLevelsUniform_ = ID_UNDEFINED;
 
   // pbr debug info
   int debugDirectDiffuseUniform_ = ID_UNDEFINED;

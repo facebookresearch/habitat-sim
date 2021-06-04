@@ -136,7 +136,8 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   // toggles.DisableDirectDiffuse = true;
   // toggles.DisableDirectSpecular = true;
   // (*shader_).setDebugToggles(toggles);
-  // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::Normal);
+  // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::IblSpecular);
+  // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::IblDiffuse);
 
   if ((flags_ & PbrShader::Flag::BaseColorTexture) &&
       (materialData_->baseColorTexture != nullptr)) {
@@ -177,7 +178,12 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
     shader_->bindIrradianceCubeMap(
         // TODO: HDR Color
         pbrIbl_->getIrradianceMap().getTexture(CubeMap::TextureType::Color));
-    // TODO: IBL specular related textures
+    shader_->bindBrdfLUT(pbrIbl_->getBrdfLookupTable());
+    shader_->bindPrefilteredMap(
+        // TODO: HDR Color
+        pbrIbl_->getPrefilteredMap().getTexture(CubeMap::TextureType::Color));
+    shader_->setPrefilteredMapMipLevels(
+        pbrIbl_->getPrefilteredMap().getMipmapLevels());
   }
 
   shader_->draw(mesh_);
