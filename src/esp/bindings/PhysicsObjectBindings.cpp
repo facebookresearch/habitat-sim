@@ -465,13 +465,27 @@ void initPhysicsObjectBindings(py::module& m) {
   py::class_<ManagedBulletRigidObject, ManagedRigidObject,
              std::shared_ptr<ManagedBulletRigidObject>>(
       m, "ManagedBulletRigidObject")
-      .def_property("margin", &ManagedBulletRigidObject::getMargin,
-                    &ManagedBulletRigidObject::setMargin,
-                    R"(Get or set this object's collision margin.)")
+      .def_property(
+          "margin", &ManagedBulletRigidObject::getMargin,
+          &ManagedBulletRigidObject::setMargin,
+          R"(REQUIRES BULLET TO BE INSTALLED. Get or set this object's collision margin.)")
       .def_property_readonly(
           "collision_shape_aabb",
           &ManagedBulletRigidObject::getCollisionShapeAabb,
-          R"(The bounds of the axis-aligned bounding box from Bullet Physics, in its local coordinate frame.)");
+          R"(REQUIRES BULLET TO BE INSTALLED. The bounds of the axis-aligned bounding box from Bullet Physics, in its local coordinate frame.)");
+
+#else
+  // ==== non-bullet dummy ManagedBulletRigidObject ====
+  py::class_<ManagedRigidObject, AbstractManagedRigidBase<RigidObject>,
+             std::shared_ptr<ManagedRigidObject>>(m, "ManagedBulletRigidObject")
+      .def_property(
+          "margin", [](ManagedRigidObject& self) { return 0.0; },
+          [](ManagedRigidObject& self, double margin) {},
+          R"(REQUIRES BULLET TO BE INSTALLED. Get or set this object's collision margin.)")
+      .def_property_readonly(
+          "collision_shape_aabb",
+          [](ManagedRigidObject& self) { return Magnum::Range3D{}; },
+          R"(REQUIRES BULLET TO BE INSTALLED. The bounds of the axis-aligned bounding box from Bullet Physics, in its local coordinate frame.)");
 #endif
   // create bindings for ArticulatedObjects
   // physics object base instance for articulated object
@@ -491,18 +505,42 @@ void initPhysicsObjectBindings(py::module& m) {
           "contact_test", &ManagedBulletArticulatedObject::contactTest,
           // TODO need to describe what 'static_as_stage' is intended for in
           // appropriate terms.
-          R"(Returns the result of a discrete collision test between this object and the world.)",
+          R"(REQUIRES BULLET TO BE INSTALLED. Returns the result of a discrete collision test between this object and the world.)",
           "static_as_stage"_a)
       .def("supports_joint_motor",
-           &ManagedBulletArticulatedObject::supportsJointMotor, R"()",
-           "link_id"_a)
+           &ManagedBulletArticulatedObject::supportsJointMotor,
+           R"(REQUIRES BULLET TO BE INSTALLED. )", "link_id"_a)
       .def(
           "get_joint_motor_max_impulse",
           &ManagedBulletArticulatedObject::getJointMotorMaxImpulse,
-          R"(Get the maximum impulse for the joint motor specified by the given motor_id)",
-          "motor_id"_a)
+          R"(REQUIRES BULLET TO BE INSTALLED. Get the maximum impulse for the joint motor specified by the given motor_id)",
+          "motor_id"_a);
 
-      ;
+#else
+  // ==== non-bullet dummy ManagedBulletArticulatedObject ====
+  py::class_<ManagedArticulatedObject,
+             AbstractManagedPhysicsObject<ArticulatedObject>,
+             std::shared_ptr<ManagedArticulatedObject>>(
+      m, "ManagedBulletArticulatedObject")
+      .def(
+          "contact_test",
+          [](ManagedArticulatedObject& self, bool staticAsStage) {
+            return false;
+          },
+          // TODO need to describe what 'static_as_stage' is intended for in
+          // appropriate terms.
+          R"(REQUIRES BULLET TO BE INSTALLED. Returns the result of a discrete collision test between this object and the world.)",
+          "static_as_stage"_a)
+      .def(
+          "supports_joint_motor",
+          [](ManagedArticulatedObject& self, int linkIx) { return false; },
+          R"(REQUIRES BULLET TO BE INSTALLED. )", "link_id"_a)
+      .def(
+          "get_joint_motor_max_impulse",
+          [](ManagedArticulatedObject& self, int motorId) { return 0.0; },
+          R"(REQUIRES BULLET TO BE INSTALLED. Get the maximum impulse for the joint motor specified by the given motor_id)",
+          "motor_id"_a);
+
 #endif
 
 }  // initPhysicsObjectBindings
