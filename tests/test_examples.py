@@ -57,6 +57,7 @@ def powerset(iterable):
             "--no-make-video",
         ),
         ("examples/tutorials/semantic_id_tutorial.py", "--no-show-images"),
+        ("examples/tutorials/VHACD_tutorial.py", "--no-show-video", "--no-make-video"),
     ],
 )
 def test_example_modules(args):

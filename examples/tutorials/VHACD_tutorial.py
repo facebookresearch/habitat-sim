@@ -193,6 +193,18 @@ def runVHACDSimulation(obj_path):
 
 
 if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--no-show-video", dest="show_video", action="store_false")
+    parser.add_argument("--no-make-video", dest="make_video", action="store_false")
+    parser.set_defaults(show_video=True, make_video=True)
+    args, _ = parser.parse_known_args()
+    show_video = args.show_video
+    make_video = args.make_video
+    if make_video and not os.path.exists(output_path):
+        os.mkdir(output_path)
+
     # List of objects you want to execute the VHACD tests on.
     obj_paths = [
         "test_assets/objects/chair.glb",
@@ -202,10 +214,11 @@ if __name__ == "__main__":
     observations = []
     for obj_path in obj_paths:
         observations += runVHACDSimulation(obj_path)["observations"]
-    vut.make_video(
-        observations,
-        "rgba_camera_1stperson",
-        "color",
-        output_path + "VHACD_vid_1",
-        open_vid=True,
-    )
+    if make_video:
+        vut.make_video(
+            observations,
+            "rgba_camera_1stperson",
+            "color",
+            output_path + "VHACD_vid_1",
+            open_vid=show_video,
+        )
