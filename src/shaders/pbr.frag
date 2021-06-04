@@ -122,8 +122,15 @@ vec3 getNormalFromNormalMap() {
   vec3 B = normalize(biTangent);
   vec3 N = normalize(normal);
 #else
+/*
+  vec3 T = vec3(1.0, 0.0, 0.0);
+  vec3 B = vec3(0.0, 1.0, 0.0);
+  vec3 N = vec3(0.0, 0.0, 1.0);
+*/
+  // #error can only accept precomputed TBN
 	// Perturb normal, see http://www.thetenthplanet.de/archives/1180
   // material_info.glsl from https://github.com/KhronosGroup/glTF-Sample-Viewer
+  /*
 	vec3 pos_dx = dFdx(position);
 	vec3 pos_dy = dFdy(position);
 	vec3 uv_dx = dFdx(vec3(texCoord, 0.0));
@@ -135,7 +142,7 @@ vec3 getNormalFromNormalMap() {
   // vec3 N = normalize(cross(pos_dx, pos_dy));
   vec3 T = normalize(T_ - N * dot(N, T_));
 	vec3 B = normalize(cross(N, T));
-  /*
+  */
   vec3 q1 = dFdx(position);
 	vec3 q2 = dFdy(position);
 	vec2 st1 = dFdx(texCoord);
@@ -144,7 +151,6 @@ vec3 getNormalFromNormalMap() {
 	vec3 N = normalize(normal);
 	vec3 T = normalize(q1 * st2.t - q2 * st1.t);
 	vec3 B = -normalize(cross(N, T));
-  */
 #endif
   // negate the TBN matrix for back-facing primitives
   if (gl_FrontFacing == false) {

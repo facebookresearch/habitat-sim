@@ -138,6 +138,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   // (*shader_).setDebugToggles(toggles);
   // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::IblSpecular);
   // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::IblDiffuse);
+  // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::Normal);
 
   if ((flags_ & PbrShader::Flag::BaseColorTexture) &&
       (materialData_->baseColorTexture != nullptr)) {
