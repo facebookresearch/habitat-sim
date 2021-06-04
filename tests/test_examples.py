@@ -68,10 +68,12 @@ def test_example_modules(args):
     not habitat_sim.vhacd_enabled,
     reason="Requires Habitat-sim to be built with VHACD (--vhacd)",
 )
-def test_vhacd_example():
-    run_main_subproc(
-        ("examples/tutorials/VHACD_tutorial.py", "--no-show-video", "--no-make-video")
-    )
+@pytest.mark.parametrize(
+    "args",
+    [("examples/tutorials/VHACD_tutorial.py", "--no-show-video", "--no-make-video")],
+)
+def test_vhacd_example(args):
+    run_main_subproc(args)
 
 
 @pytest.mark.gfxtest
