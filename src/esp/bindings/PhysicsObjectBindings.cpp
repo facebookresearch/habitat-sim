@@ -324,6 +324,14 @@ void declareArticulatedObjectWrapper(py::module& m,
              AbstractManagedPhysicsObject<ArticulatedObject>,
              std::shared_ptr<ManagedArticulatedObject>>(m,
                                                         classStrPrefix.c_str())
+      .def("get_existing_joint_motor_ids",
+           &ManagedArticulatedObject::getExistingJointMotors,
+           ("Get a dictionary holding all of this " + objType +
+            "'s joint motor ids.")
+               .c_str())
+      .def("create_all_motors",
+           &ManagedArticulatedObject::createMotorsForAllDofs,
+           ("Make motors for all of this " + objType + "'s DOFs.").c_str())
       .def("create_joint_motor", &ManagedArticulatedObject::createJointMotor,
            ("Create a joint motor for the specified DOF on this " + objType +
             " using the provided JointMotorSettings")
@@ -373,10 +381,12 @@ void declareArticulatedObjectWrapper(py::module& m,
       .def_property_readonly(
           "num_links", &ManagedArticulatedObject::getNumLinks,
           ("Get the number of links this " + objType + " holds.").c_str())
-      .def_property(
-          "forces", &ManagedArticulatedObject::getForces,
-          &ManagedArticulatedObject::setForces,
-          ("Get or set the forces acting upon this " + objType + ".").c_str())
+      .def_property("joint_forces", &ManagedArticulatedObject::getForces,
+                    &ManagedArticulatedObject::setForces,
+                    ("Get or set the joint forces/torques (indexed by DoF id) "
+                     "currently acting on this " +
+                     objType + ".")
+                        .c_str())
       .def_property("joint_velocities",
                     &ManagedArticulatedObject::getVelocities,
                     &ManagedArticulatedObject::setVelocities,
@@ -413,21 +423,14 @@ void declareArticulatedObjectWrapper(py::module& m,
             "friction value.")
                .c_str(),
            "link_id"_a, "friction"_a)
-      .def("zero_joint_states", &ManagedArticulatedObject::reset,
-           ("Clear all of this " + objType +
-            "'s joint postions and velocities to 0.")
+      .def("clear_joint_states", &ManagedArticulatedObject::reset,
+           ("Clear this " + objType +
+            "'s joint state by zeroing forces, torques, positions and "
+            "velocities. Does not change root state.")
                .c_str())
       .def_property_readonly(
           "can_sleep", &ManagedArticulatedObject::getCanSleep,
           ("Whether or not this " + objType + " can be put to sleep").c_str())
-      .def("get_existing_joint_motor_ids",
-           &ManagedArticulatedObject::getExistingJointMotors,
-           ("Get a dictionary holding all of this " + objType +
-            "'s joint motor ids.")
-               .c_str())
-      .def("create_all_motors",
-           &ManagedArticulatedObject::createMotorsForAllDofs,
-           ("Make motors for all of this " + objType + "'s DOFs.").c_str())
       .def_property(
           "auto_clamp_joint_limits",
           &ManagedArticulatedObject::getAutoClampJointLimits,

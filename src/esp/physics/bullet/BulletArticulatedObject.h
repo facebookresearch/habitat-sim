@@ -106,7 +106,8 @@ class BulletArticulatedObject : public ArticulatedObject {
   void setArticulatedLinkFriction(int linkId, float friction) override;
 
   /**
-   * @brief reset the articulated rigid body to 0 velocities and positions.
+   * @brief reset the articulated object state by clearing forces and zeroing
+   * positions and velocities.
    */
   void reset() override;
 
