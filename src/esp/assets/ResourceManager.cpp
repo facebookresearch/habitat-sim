@@ -1168,9 +1168,8 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceIMesh(
 
     // Instance mesh does NOT have normal texture, so do not bother to
     // query if the mesh data contain tangent or bitangent.
-    gfx::Drawable::Flags meshAttributeFlags {
-      gfx::Drawable::Flag::HasVertexColor
-    };
+    gfx::Drawable::Flags meshAttributeFlags{
+      gfx::Drawable::Flag::HasVertexColor};
     // WARNING:
     // This is to initiate drawables for instance mesh, and the instance mesh
     // data is NOT stored in the meshData_ in the BaseMesh.
@@ -1611,8 +1610,7 @@ gfx::PhongMaterialData::uptr ResourceManager::buildFlatShadedMaterialData(
         textures_.at(textureBaseIndex + material.diffuseTexture()).get();
   }
 
-  if (material.hasAttribute(
-                 Mn::Trade::MaterialAttribute::DiffuseColor)) {
+  if (material.hasAttribute(Mn::Trade::MaterialAttribute::DiffuseColor)) {
     finalMaterial->ambientColor = material.diffuseColor();
   } else if (material.hasAttribute(
                  Mn::Trade::MaterialAttribute::AmbientColor)) {
