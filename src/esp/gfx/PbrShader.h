@@ -471,19 +471,19 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   /**
    * Toggles that control contributions from different components
    */
-  struct PbrDebugToggle {
-    bool DisableDirectDiffuse = false;
-    bool DisableDirectSpecular = false;
-    bool DisableIblDiffuse = false;
-    bool DisableIblSpecular = false;
+  struct PbrEquationScales {
+    float DirectDiffuse = 1.0f;
+    float DirectSpecular = 1.0f;
+    float IblDiffuse = 1.0f;
+    float IblSpecular = 1.0f;
   };
 
   /**
    *  @brief Set the debug toggles
-   *  @param scale
+   *  @param scales
    *  @return Reference to self (for method chaining)
    */
-  PbrShader& setDebugToggles(const PbrDebugToggle& toggles);
+  PbrShader& setPbrEquationScales(const PbrEquationScales& scales);
 
   enum class PbrDebugDisplay : uint8_t {
     None = 0,
@@ -526,11 +526,13 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   int cameraWorldPosUniform_ = ID_UNDEFINED;
   int prefilteredMapMipLevelsUniform_ = ID_UNDEFINED;
 
+  // scales
+  int scaleDirectDiffuseUniform_ = ID_UNDEFINED;
+  int scaleDirectSpecularUniform_ = ID_UNDEFINED;
+  int scaleIblDiffuseUniform_ = ID_UNDEFINED;
+  int scaleIblSpecularUniform_ = ID_UNDEFINED;
+
   // pbr debug info
-  int debugDirectDiffuseUniform_ = ID_UNDEFINED;
-  int debugDirectSpecularUniform_ = ID_UNDEFINED;
-  int debugIblDiffuseUniform_ = ID_UNDEFINED;
-  int debugIblSpecularUniform_ = ID_UNDEFINED;
   int pbrDebugDisplayUniform_ = ID_UNDEFINED;
 };
 

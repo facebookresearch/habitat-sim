@@ -94,7 +94,7 @@ uniform highp vec3 CameraWorldPos;
 uniform uint PrefilteredMapMipLevels;
 #endif
 
-struct PbrDebugToggle {
+struct PbrEquationScales{
   float directDiffuse;
   float directSpecular;
 #if defined(IMAGE_BASED_LIGHTING)
@@ -102,7 +102,7 @@ struct PbrDebugToggle {
   float iblSpecular; // 0.0 ~ 1.0
 #endif
 };
-uniform PbrDebugToggle PbrDebug;
+uniform PbrEquationScales Scales;
 
 uniform int PbrDebugDisplay;
 
@@ -122,11 +122,6 @@ vec3 getNormalFromNormalMap() {
   vec3 B = normalize(biTangent);
   vec3 N = normalize(normal);
 #else
-/*
-  vec3 T = vec3(1.0, 0.0, 0.0);
-  vec3 B = vec3(0.0, 1.0, 0.0);
-  vec3 N = vec3(0.0, 0.0, 1.0);
-*/
   // #error can only accept precomputed TBN
 	// Perturb normal, see http://www.thetenthplanet.de/archives/1180
   // material_info.glsl from https://github.com/KhronosGroup/glTF-Sample-Viewer
@@ -172,11 +167,11 @@ const float DielectricSpecular = 0.04;
 
 // Specular D, normal distribution function (NDF),
 // also known as ggxDistribution
-// normal: normal direction
-// halfVector: half vector of light (light source direction)
-//             and view (camera direction, aka light outgoing direction)
-float normalDistribution(vec3 normal, vec3 halfVector, float roughness) {
-  float n_dot_h = clamp(dot(normal, halfVector), 0.0, 1.0);
+// n_dot_h: <normal, halfVector>
+//     normal: normal direction
+//     halfVector: half vector of light (light source direction)
+//                 and view (camera direction, aka light outgoing direction)
+float normalDistribution(float n_dot_h, float roughness) {
   // normalDistributionGGX is defined in the pbrCommon.glsl
   return normalDistributionGGX(n_dot_h, roughness);
 }
@@ -191,15 +186,14 @@ float geometrySchlickGGX(float dotProd, float roughness) {
 }
 
 // Specular G, specular geometric attenuation
-// normal: normal direction
-// light: light source direction
-// view: camera direction, aka light outgoing direction
-float specularGeometricAttenuation(vec3 normal,
-                                   vec3 light,
-                                   vec3 view,
+// n_dot_l: <normal, light>
+// n_dot_v: <normal, view>
+//     normal: normal direction
+//     light: light source direction
+//     view: camera direction, aka light outgoing direction
+float specularGeometricAttenuation(float n_dot_l,
+                                   float n_dot_v,
                                    float roughness) {
-  float n_dot_l = clamp(dot(normal, light), 0.001, 1.0);
-  float n_dot_v = clamp(dot(normal, view), 0.001, 1.0);
   float ggx1 = geometrySchlickGGX(n_dot_l, roughness);
   float ggx2 = geometrySchlickGGX(n_dot_v, roughness);
 
@@ -208,13 +202,11 @@ float specularGeometricAttenuation(vec3 normal,
 
 // Specular F, aka Fresnel, use Schlick's approximation
 // specularReflectance: specular reflectance at normal incidence
-// view: camera direction, aka light outgoing direction
-// halfVector: half vector of light and view
+// v_dot_h: <view, halfVector>
+//          view: camera direction, aka light outgoing direction
+//          halfVector: half vector of light and view
 vec3 fresnelSchlick(vec3 specularReflectance,
-                    vec3 view,
-                    vec3 halfVector) {
-  float v_dot_h = clamp(dot(view, halfVector), 0.0, 1.0);
-
+                    float v_dot_h) {
   // https://github.com/SaschaWillems/Vulkan-glTF-PBR
   // For typical incident reflectance range (between 4% to 100%)
   // set the grazing reflectance to 100% for typical fresnel effect.
@@ -232,36 +224,38 @@ vec3 fresnelSchlick(vec3 specularReflectance,
 // c_diff: diffuse color
 // metallic: metalness of the surface
 // roughness: roughness of the surface
-// normal: normal direction
-// light: light source direction
-// view: camera direction, aka light outgoing direction
-// lightRadiance: the radiance of the light,
-//                which equals to intensity * attenuation
+// v_dot_h: <view, halfVector>
+// n_dot_l: <normal, light>
+// n_dot_v: <normal, view>
+// n_dot_h: <normal, halfVector>
+//     normal: normal direction
+//     light: light source direction
+//     view: camera direction, aka light outgoing direction
+//     halfVector: half vector of light and view
+//lightRadiance: the radiance of the light,
+//               which equals to intensity * attenuation
 vec3 microfacetModel(vec3 specularReflectance,
                      vec3 c_diff,
                      float metallic,
                      float roughness,
-                     vec3 normal,
-                     vec3 light,
-                     vec3 view,
+                     float v_dot_h,
+                     float n_dot_l,
+                     float n_dot_v,
+                     float n_dot_h,
                      vec3 lightRadiance) {
-  vec3 halfVector = normalize(light + view);
-  vec3 Fresnel = fresnelSchlick(specularReflectance, view, halfVector);
-
+  vec3 Fresnel = fresnelSchlick(specularReflectance, v_dot_h);
   // Diffuse BRDF
   // NOTE: energy conservation requires
   // diffuse + specular <= 1.0, where specular = Fresnel
   vec3 diffuse = (vec3(1.0) - Fresnel) * c_diff * INV_PI;
 
   // Specular BRDF
-  float n_dot_l = clamp(dot(normal, light), 0.001, 1.0);
-  float n_dot_v = clamp(dot(normal, view), 0.001, 1.0);
   float temp = max(4.0 * n_dot_l * n_dot_v, Epsilon);
   vec3 specular = Fresnel *
-                  specularGeometricAttenuation(normal, light, view, roughness) *
-                  normalDistribution(normal, halfVector, roughness) / temp;
-  return (diffuse * PbrDebug.directDiffuse +
-          specular * PbrDebug.directSpecular) * lightRadiance * n_dot_l;
+                  specularGeometricAttenuation(n_dot_l, n_dot_v, roughness) *
+                  normalDistribution(n_dot_h, roughness) / temp;
+  return (diffuse * Scales.directDiffuse +
+          specular * Scales.directSpecular) * lightRadiance * n_dot_l;
 }
 
 #if defined(IMAGE_BASED_LIGHTING)
@@ -270,7 +264,7 @@ vec3 microfacetModel(vec3 specularReflectance,
 vec3 computeIBLDiffuse(vec3 c_diff, vec3 n) {
   // diffuse part = c_diff * irradiance
   // TODO: SRGB to Linear, and tone mapping
-  return c_diff * texture(IrradianceMap, n).rgb * PbrDebug.iblDiffuse;
+  return c_diff * texture(IrradianceMap, n).rgb * Scales.iblDiffuse;
 }
 
 vec3 computeIBLSpecular(float roughness,
@@ -281,7 +275,7 @@ vec3 computeIBLSpecular(float roughness,
   float lod = roughness * float(PrefilteredMapMipLevels);
   vec3 prefilteredColor = textureLod(PrefilteredMap, reflectionDir, lod).rgb;
 
-  return prefilteredColor * (specularReflectance * brdf.x + brdf.y) * PbrDebug.iblSpecular;
+  return prefilteredColor * (specularReflectance * brdf.x + brdf.y) * Scales.iblSpecular;
 }
 #endif
 
@@ -313,8 +307,11 @@ void main() {
   vec3 n = getNormalFromNormalMap();
 #else
   vec3 n = normalize(normal);
+  // This means backface culling is disabled,
+  // which implies it is rendering with the "double sided" material.
+  // Based on glTF 2.0 Spec, the normal must be flipped for back faces
   if (gl_FrontFacing == false) {
-    // n *= -1.0;
+    n *= -1.0;
   }
 #endif
 
@@ -330,8 +327,6 @@ void main() {
   // https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/README.md#metal-brdf-and-dielectric-brdf)
   // c_diff = lerp(baseColor.rgb * (1 - dielectricSpecular), black, metallic)
   vec3 c_diff = baseColor.rgb * (1.0 - DielectricSpecular) * (1.0 - metallic);
-
-
   float n_dot_v = clamp(dot(n, view), 0.001, 1.0);
 
   vec3 finalColor = vec3(0.0);
@@ -363,13 +358,25 @@ void main() {
                          vec3 c_diff,
                          float metallic,
                          float roughness,
-                         vec3 normal,
-                         vec3 light,
-                         vec3 view,
-                         vec3 lightRadiance)
+                         vec3 v_dot_h,
+                         vec3 n_dot_l,
+                         vec3 n_dot_v,
+                         vec3 n_dot_h,
+                         vec3 lightRadiance);
     */
-    finalColor += microfacetModel(specularReflectance, c_diff, metallic, roughness, n, light,
-                                  view, lightRadiance);
+    vec3 halfVector = normalize(light + view);
+    float v_dot_h = clamp(dot(view, halfVector), 0.0, 1.0);
+    float n_dot_l = clamp(dot(n, light), 0.001, 1.0);
+    float n_dot_h = clamp(dot(n, halfVector), 0.0, 1.0);
+    finalColor += microfacetModel(specularReflectance,
+                                  c_diff,
+                                  metallic,
+                                  roughness,
+                                  v_dot_h,
+                                  n_dot_l,
+                                  n_dot_v,
+                                  n_dot_h,
+                                  lightRadiance);
   }  // for lights
 
   // TODO: use ALPHA_MASK to discard fragments

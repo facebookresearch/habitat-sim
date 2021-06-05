@@ -132,10 +132,14 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
       .setEmissiveColor(materialData_->emissiveColor);
 
   // XXX
-  PbrShader::PbrDebugToggle toggles;
-  // toggles.DisableDirectDiffuse = true;
-  // toggles.DisableDirectSpecular = true;
-  // (*shader_).setDebugToggles(toggles);
+  /*
+  PbrShader::PbrEquationScales scales;
+  scales.DirectDiffuse = 0.5;
+  scales.DirectSpecular = 0.5;
+  scales.IblDiffuse = 1.0;
+  scales.IblDiffuse = 1.0;
+  (*shader_).setPbrEquationScales(scales);
+  */
   // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::IblSpecular);
   // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::IblDiffuse);
   // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::Normal);

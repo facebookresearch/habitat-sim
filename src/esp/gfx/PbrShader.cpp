@@ -228,11 +228,13 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
         uniformLocation("PrefilteredMapMipLevels");
   }
 
+  // pbr equation scales
+  scaleDirectDiffuseUniform_ = uniformLocation("Scales.directDiffuse");
+  scaleDirectSpecularUniform_ = uniformLocation("Scales.directSpecular");
+  scaleIblDiffuseUniform_ = uniformLocation("Scales.iblDiffuse");
+  scaleIblSpecularUniform_ = uniformLocation("Scales.iblSpecular");
+
   // for debug info
-  debugDirectDiffuseUniform_ = uniformLocation("PbrDebug.directDiffuse");
-  debugDirectSpecularUniform_ = uniformLocation("PbrDebug.directSpecular");
-  debugIblDiffuseUniform_ = uniformLocation("PbrDebug.iblDiffuse");
-  debugIblSpecularUniform_ = uniformLocation("PbrDebug.iblSpecular");
   pbrDebugDisplayUniform_ = uniformLocation("PbrDebugDisplay");
 
   // initialize the shader with some "reasonable defaults"
@@ -260,7 +262,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
                                                     Mn::Constants::inf()});
   }
   setEmissiveColor(Magnum::Color3{0.0f});
-  setDebugToggles({});
+  setPbrEquationScales({});
   setDebugDisplay(PbrDebugDisplay::None);
 }
 
@@ -400,15 +402,11 @@ PbrShader& PbrShader::setMetallic(float metallic) {
   return *this;
 }
 
-PbrShader& PbrShader::setDebugToggles(const PbrDebugToggle& toggles) {
-  setUniform(debugDirectDiffuseUniform_,
-             (toggles.DisableDirectDiffuse ? 0.0f : 1.0f));
-  setUniform(debugDirectSpecularUniform_,
-             (toggles.DisableDirectSpecular ? 0.0f : 1.0f));
-  setUniform(debugIblDiffuseUniform_,
-             (toggles.DisableIblDiffuse ? 0.0f : 1.0f));
-  setUniform(debugIblSpecularUniform_,
-             (toggles.DisableIblSpecular ? 0.0f : 1.0f));
+PbrShader& PbrShader::setPbrEquationScales(const PbrEquationScales& scales) {
+  setUniform(scaleDirectDiffuseUniform_, scales.DirectDiffuse);
+  setUniform(scaleDirectSpecularUniform_, scales.DirectSpecular);
+  setUniform(scaleIblDiffuseUniform_, scales.IblDiffuse);
+  setUniform(scaleIblSpecularUniform_, scales.IblSpecular);
   return *this;
 }
 
