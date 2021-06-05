@@ -90,14 +90,18 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
   // assign MM to RM on create or reconfigure
   if (!resourceManager_) {
+    assets::ResourceManager::Flags flags =
+        cfg.allowPbrShader ? assets::ResourceManager::Flags()
+                           : assets::ResourceManager::Flag::BuildPhongFromPbr;
     resourceManager_ =
-        std::make_unique<assets::ResourceManager>(metadataMediator_);
+        std::make_unique<assets::ResourceManager>(metadataMediator_, flags);
     if (cfg.createRenderer) {
       // needs to be called after ResourceManager exists but before any assets
       // have been loaded
       reconfigureReplayManager(cfg.enableGfxReplaySave);
     }
   } else {
+    // todo: update ResourceManager flags
     resourceManager_->setMetadataMediator(metadataMediator_);
   }
 
