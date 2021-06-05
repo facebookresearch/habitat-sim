@@ -383,6 +383,11 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("createRenderer", &SimulatorConfiguration::createRenderer)
       .property("enableGfxReplaySave",
                 &SimulatorConfiguration::enableGfxReplaySave);
+      .property("sceneDatasetConfigFile",
+                &SimulatorConfiguration::sceneDatasetConfigFile)
+      .property("overrideSceneLightDefaults",
+                &SimulatorConfiguration::overrideSceneLightDefaults)
+      .property("sceneLightSetup", &SimulatorConfiguration::sceneLightSetup);
 
   em::class_<AgentState>("AgentState")
       .smart_ptr_constructor("AgentState", &AgentState::create<>)
