@@ -358,8 +358,12 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("gpuDeviceId", &SimulatorConfiguration::gpuDeviceId)
       .property("compressTextures", &SimulatorConfiguration::compressTextures)
       .property("enablePhysics", &SimulatorConfiguration::enablePhysics)
-      .property("physicsConfigFile",
-                &SimulatorConfiguration::physicsConfigFile);
+      .property("physicsConfigFile", &SimulatorConfiguration::physicsConfigFile)
+      .property("sceneDatasetConfigFile",
+                &SimulatorConfiguration::sceneDatasetConfigFile)
+      .property("overrideSceneLightDefaults",
+                &SimulatorConfiguration::overrideSceneLightDefaults)
+      .property("sceneLightSetup", &SimulatorConfiguration::sceneLightSetup);
 
   em::class_<AgentState>("AgentState")
       .smart_ptr_constructor("AgentState", &AgentState::create<>)
