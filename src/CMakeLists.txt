@@ -69,6 +69,9 @@ if(NOT CMAKE_BUILD_TYPE)
   )
 endif()
 if(CMAKE_INTERPROCEDURAL_OPTIMIZATION)
+  # Policy that enables INTERPROCEDURAL_OPTIMIZATION
+  set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
+  cmake_policy(SET CMP0069 NEW)
   if(EMSCRIPTEN)
     # Magnum's Toolchain has issues with INTERPROCEDURAL_OPTIMIZATION
     # There is a bug with Magnum's Emscriptem toolchain.
@@ -77,25 +80,12 @@ if(CMAKE_INTERPROCEDURAL_OPTIMIZATION)
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flto")
-  else()
-    # Policy that enables INTERPROCEDURAL_OPTIMIZATION
-    set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
-    cmake_policy(SET CMP0069 NEW)
-    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-      # Clang has some issues with thinLTO (segfaults on final linking)
-      # This enables full LTO through CMake
-      # FullLTO is slow, but may yield performance improvements.
-      #set(CMAKE_{lang}_COMPILE_OPTIONS_IPO ${CMAKE_CXX_COMPILE_OPTIONS_IPO} -flto)
-      add_compile_options(-flto) # alternate way of setting LTO.
-    elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-      # If we are on GCC, override CMake do parallel LTO.
-      include(ProcessorCount)
-      ProcessorCount(N_LTO_JOBS)
-      # Flag must only be passed to linker to prevent clang-tidy errors
-      string(REPLACE "<LINK_FLAGS>" "<LINK_FLAGS> -flto=${N_LTO_JOBS}"
-                     CMAKE_CXX_LINK_EXECUTABLE "${CMAKE_CXX_LINK_EXECUTABLE}"
-      )
-    endif()
+  elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    # Clang has some issues with thinLTO (segfaults on final linking)
+    # This enables full LTO through CMake
+    # FullLTO is slow, but may yield performance improvements.
+    #set(CMAKE_{lang}_COMPILE_OPTIONS_IPO ${CMAKE_CXX_COMPILE_OPTIONS_IPO} -flto)
+    add_compile_options("-flto=full") # alternate way of forcing FAT LTO.
   endif()
 endif()
 # avoid ld visibility warnings, should be done by CMAKE_CXX_VISIBILITY_PRESET
