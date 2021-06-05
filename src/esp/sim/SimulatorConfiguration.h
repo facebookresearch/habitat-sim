@@ -91,6 +91,9 @@ struct SimulatorConfiguration {
    */
   bool useSemanticTexturesIfFound = true;
 
+  /** @brief If false, PBR assets will fall back to the Phong shader */
+  bool allowPbrShader = true;
+
   ESP_SMART_POINTERS(SimulatorConfiguration)
 };
 bool operator==(const SimulatorConfiguration& a,
