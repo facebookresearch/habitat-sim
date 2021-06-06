@@ -132,16 +132,16 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
       .setEmissiveColor(materialData_->emissiveColor);
 
   // XXX
-  /*
   PbrShader::PbrEquationScales scales;
-  scales.DirectDiffuse = 0.5;
-  scales.DirectSpecular = 0.5;
-  scales.IblDiffuse = 1.0;
-  scales.IblDiffuse = 1.0;
+  scales.DirectDiffuse = 1.0;
+  scales.DirectSpecular = 1.0;
+  scales.IblDiffuse = .5;
+  scales.IblSpecular = 1.0;
   (*shader_).setPbrEquationScales(scales);
-  */
-  // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::IblSpecular);
+  // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::DirectDiffuse);
+  // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::DirectSpecular);
   // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::IblDiffuse);
+  // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::IblSpecular);
   // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::Normal);
 
   if ((flags_ & PbrShader::Flag::BaseColorTexture) &&
@@ -248,7 +248,7 @@ PbrDrawable& PbrDrawable::updateShaderLightParameters() {
   return *this;
 }
 
-// update light direction (or position) in *camera* space to the shader
+// update light direction (or position) in *world* space to the shader
 PbrDrawable& PbrDrawable::updateShaderLightDirectionParameters(
     const Magnum::Matrix4& transformationMatrix,
     Magnum::SceneGraph::Camera3D& camera) {
@@ -259,8 +259,9 @@ PbrDrawable& PbrDrawable::updateShaderLightDirectionParameters(
   const Mn::Matrix4 cameraMatrix = camera.cameraMatrix();
   for (unsigned int iLight = 0; iLight < lightSetup_->size(); ++iLight) {
     const auto& lightInfo = (*lightSetup_)[iLight];
-    lightPositions.emplace_back(Mn::Vector4(getLightPositionRelativeToWorld(
-        lightInfo, transformationMatrix, cameraMatrix)));
+    Mn::Vector4 pos = getLightPositionRelativeToWorld(
+        lightInfo, transformationMatrix, cameraMatrix);
+    lightPositions.emplace_back(pos);
   }
 
   shader_->setLightVectors(lightPositions);

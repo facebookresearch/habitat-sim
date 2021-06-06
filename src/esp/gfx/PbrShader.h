@@ -337,6 +337,12 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   PbrShader& setMetallic(float metallic);
 
   /**
+   *  @brief Set ambient occlusion strength to the uniform on GPU
+   *  @return Reference to self (for method chaining)
+   */
+  PbrShader& setOcclusionStrength(float strength);
+
+  /**
    *  @brief Set object id to the uniform on GPU
    *  @return Reference to self (for method chaining)
    */
@@ -487,9 +493,11 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
   enum class PbrDebugDisplay : uint8_t {
     None = 0,
-    IblDiffuse = 1,
-    IblSpecular = 2,
-    Normal = 3,
+    DirectDiffuse = 1,
+    DirectSpecular = 2,
+    IblDiffuse = 3,
+    IblSpecular = 4,
+    Normal = 5,
   };
   /**
    *@brief debug display visualization
@@ -515,6 +523,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   int objectIdUniform_ = ID_UNDEFINED;
   int textureMatrixUniform_ = ID_UNDEFINED;
   int normalTextureScaleUniform_ = ID_UNDEFINED;
+  int occlusionStrengthUniform_ = ID_UNDEFINED;
 
   int lightColorsUniform_ = ID_UNDEFINED;
   int lightRangesUniform_ = ID_UNDEFINED;
@@ -531,6 +540,16 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   int scaleDirectSpecularUniform_ = ID_UNDEFINED;
   int scaleIblDiffuseUniform_ = ID_UNDEFINED;
   int scaleIblSpecularUniform_ = ID_UNDEFINED;
+
+  /*
+  tone mapping
+  currently the following values are hard coded in the pbrCommon.glsl
+  float exposure = 4.5f;
+  float gamma = 2.2f;
+  */
+  // TODO:
+  // int exposureUniform_ = ID_UNDEFINED;
+  // int gammaUniform_ = ID_UNDEFINED;
 
   // pbr debug info
   int pbrDebugDisplayUniform_ = ID_UNDEFINED;

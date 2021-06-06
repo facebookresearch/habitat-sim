@@ -207,6 +207,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   roughnessUniform_ = uniformLocation("Material.roughness");
   metallicUniform_ = uniformLocation("Material.metallic");
   emissiveColorUniform_ = uniformLocation("Material.emissiveColor");
+  occlusionStrengthUniform_ = uniformLocation("Material.occlusionStrength");
 
   // lights
   if (lightCount_ != 0u) {
@@ -395,6 +396,11 @@ PbrShader& PbrShader::setRoughness(float roughness) {
   return *this;
 }
 
+PbrShader& PbrShader::setOcclusionStrength(float strength) {
+  setUniform(occlusionStrengthUniform_, strength);
+  return *this;
+}
+
 PbrShader& PbrShader::setMetallic(float metallic) {
   if (lightCount_ != 0u) {
     setUniform(metallicUniform_, metallic);
@@ -411,27 +417,7 @@ PbrShader& PbrShader::setPbrEquationScales(const PbrEquationScales& scales) {
 }
 
 PbrShader& PbrShader::setDebugDisplay(PbrDebugDisplay index) {
-  switch (index) {
-    case PbrDebugDisplay::None:
-      setUniform(pbrDebugDisplayUniform_, int(PbrDebugDisplay::None));
-      break;
-
-    case PbrDebugDisplay::IblDiffuse:
-      setUniform(pbrDebugDisplayUniform_, int(PbrDebugDisplay::IblDiffuse));
-      break;
-
-    case PbrDebugDisplay::IblSpecular:
-      setUniform(pbrDebugDisplayUniform_, int(PbrDebugDisplay::IblSpecular));
-      break;
-
-    case PbrDebugDisplay::Normal:
-      setUniform(pbrDebugDisplayUniform_, int(PbrDebugDisplay::Normal));
-      break;
-
-    default:
-      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
-      break;
-  }
+  setUniform(pbrDebugDisplayUniform_, int(index));
   return *this;
 }
 
