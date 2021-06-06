@@ -1,9 +1,10 @@
 // Copyright (c) Facebook, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
-// LICENSE file in the root directory of this source tree
+// LICENSE file in the root directory of this source tree.
 
-#include "PbrEquiRectangularToCubeMapShader.h"
+#include "DepthMapShader.h"
 
+#include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/Reference.h>
 #include <Corrade/Utility/Debug.h>
 #include <Corrade/Utility/DebugStl.h>
@@ -13,6 +14,10 @@
 #include <Magnum/GL/Extensions.h>
 #include <Magnum/GL/Shader.h>
 #include <Magnum/GL/Version.h>
+#include <Magnum/Magnum.h>
+#include <Magnum/Math/Matrix4.h>
+
+#include <initializer_list>
 #include <sstream>
 
 // This is to import the "resources" at runtime. When the resource is
@@ -28,11 +33,7 @@ namespace Cr = Corrade;
 namespace esp {
 namespace gfx {
 
-enum {
-  EquirectangularTextureUnit = 1,
-};
-
-PbrEquiRectangularToCubeMapShader::PbrEquiRectangularToCubeMapShader() {
+DepthMapShader::DepthMapShader() {
   if (!Corrade::Utility::Resource::hasGroup("default-shaders")) {
     importShaderResources();
   }
@@ -50,15 +51,15 @@ PbrEquiRectangularToCubeMapShader::PbrEquiRectangularToCubeMapShader() {
   Mn::GL::Shader vert{glVersion, Mn::GL::Shader::Type::Vertex};
   Mn::GL::Shader frag{glVersion, Mn::GL::Shader::Type::Fragment};
 
+  std::stringstream attributeLocationsStream;
+  attributeLocationsStream << Cr::Utility::formatString(
+      "#define ATTRIBUTE_LOCATION_POSITION {}\n", Position::Location);
+
   // Add macros
-  vert.addSource("#define OUTPUT_UV\n").addSource(rs.get("bigTriangle.vert"));
+  vert.addSource(attributeLocationsStream.str())
+      .addSource(rs.get("depthMap.vert"));
 
-  std::stringstream outputAttributeLocationsStream;
-  outputAttributeLocationsStream << Cr::Utility::formatString(
-      "#define OUTPUT_ATTRIBUTE_LOCATION_COLOR {}\n", ColorOutput);
-
-  frag.addSource(outputAttributeLocationsStream.str())
-      .addSource(rs.get("equirectangularToCubeMap.frag"));
+  frag.addSource(rs.get("depthMap.frag"));
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, frag}));
 
@@ -66,24 +67,27 @@ PbrEquiRectangularToCubeMapShader::PbrEquiRectangularToCubeMapShader() {
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(link());
 
-  // setup texture binding point
-  setUniform(uniformLocation("EquirectangularTexture"),
-             EquirectangularTextureUnit);
+  // bind attributes
+#ifndef MAGNUM_TARGET_GLES
+  if (!Mn::GL::Context::current()
+           .isExtensionSupported<
+               Mn::GL::Extensions::ARB::explicit_attrib_location>(glVersion))
+#endif
+  {
+    bindAttributeLocation(Position::Location, "vertexPosition");
+  }  // if
 
   // setup uniforms
-  cubeSideIndexUniform_ = uniformLocation("CubeSideIndex");
+  modelMatrixUniform_ = uniformLocation("ModelMatrix");
+  lightSpaceMatrixUniform_ = uniformLocation("LightSpaceMatrix");
 }
-
-PbrEquiRectangularToCubeMapShader&
-PbrEquiRectangularToCubeMapShader::bindEquirectangularTexture(
-    Magnum::GL::Texture2D& texture) {
-  texture.bind(EquirectangularTextureUnit);
+DepthMapShader& DepthMapShader::setLightSpaceMatrix(const Mn::Matrix4& matrix) {
+  setUniform(lightSpaceMatrixUniform_, matrix);
   return *this;
 }
 
-PbrEquiRectangularToCubeMapShader&
-PbrEquiRectangularToCubeMapShader::setCubeSideIndex(unsigned int index) {
-  setUniform(cubeSideIndexUniform_, index);
+DepthMapShader& DepthMapShader::setModelMatrix(const Mn::Matrix4& matrix) {
+  setUniform(modelMatrixUniform_, matrix);
   return *this;
 }
 

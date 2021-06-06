@@ -75,6 +75,7 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
       CORRADE_UNUSED const Magnum::ResourceKey& lightSetup){};
 
   Magnum::GL::Mesh& getMesh() { return mesh_; }
+  scene::SceneNode& getNode() { return node_; }
 
   /**
    * @brief Get the Magnum GL mesh for visualization, highlighting (e.g., used

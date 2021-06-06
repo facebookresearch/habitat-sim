@@ -2,8 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_GFX_PBR_IRRADIANCEMAP_SHADER_H_
-#define ESP_GFX_PBR_IRRADIANCEMAP_SHADER_H_
+#ifndef ESP_GFX_PBR_PRECOMPUTEDMAP_SHADER_H_
+#define ESP_GFX_PBR_PRECOMPUTEDMAP_SHADER_H_
 
 #include <Corrade/Containers/EnumSet.h>
 #include <Magnum/GL/AbstractShaderProgram.h>
