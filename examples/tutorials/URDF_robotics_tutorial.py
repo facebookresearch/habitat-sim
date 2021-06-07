@@ -3,6 +3,7 @@
 # LICENSE file in the root directory of this source tree.
 # [setup]
 
+import math
 import os
 
 import magnum as mn
@@ -141,7 +142,7 @@ def test_urdf_memory():
 
         robot = art_obj_mgr.add_articulated_object_from_urdf(robot_file)
         process_memory_tracking.append(get_process_memory_usage())
-        sim.remove_articulated_object(robot.object_id)
+        art_obj_mgr.remove_object_by_id(robot.object_id)
         process_memory_tracking.append(get_process_memory_usage())
 
     # graph the results
@@ -149,7 +150,9 @@ def test_urdf_memory():
     plt.title("Memory (MB) at add/remove URDF. (" + str(robot_key) + ")")
     plt.xlabel("Query #")
     plt.ylabel("Process Memory (MB)")
-    plt.show()
+    plt.show(block=False)
+    input("Press ENTER to continue...")
+    sim.close()
 
 
 def demo_contact_profile():
@@ -176,7 +179,7 @@ def demo_contact_profile():
         print(sim.get_physics_step_collision_summary())
 
         # now add two colliding robots and run discrete collision detection
-        sim.remove_articulated_object(robot.object_id)
+        art_obj_mgr.remove_object_by_id(robot.object_id)
         robot1 = art_obj_mgr.add_articulated_object_from_urdf(robot_file)
         robot2 = art_obj_mgr.add_articulated_object_from_urdf(robot_file)
         place_robot_from_agent(sim, robot1)
@@ -321,7 +324,7 @@ def test_constraints(make_video=True, show_video=True):
                 observations += simulate(sim, dt=3.0, get_frames=make_video)
                 sim.remove_constraint(constraint_id)
                 sim.remove_constraint(constraint_id2)
-                sim.remove_articulated_object(robot2.object_id)
+                art_obj_mgr.remove_object_by_id(robot2.object_id)
             elif test_case == 3:
                 # - AO -> AO (global)
                 robot2 = art_obj_mgr.add_articulated_object_from_urdf(
@@ -362,7 +365,7 @@ def test_constraints(make_video=True, show_video=True):
                 observations += simulate(sim, dt=3.0, get_frames=make_video)
                 sim.remove_constraint(constraint_id)
                 sim.remove_constraint(constraint_id2)
-                sim.remove_articulated_object(robot2.object_id)
+                art_obj_mgr.remove_object_by_id(robot2.object_id)
             elif test_case == 4:
                 # - AO -> rigid
 
@@ -404,7 +407,7 @@ def test_constraints(make_video=True, show_video=True):
                 sim.remove_constraint(constraint_id)
                 sim.remove_constraint(constraint_id2)
                 sphere.motion_type = habitat_sim.physics.MotionType.KINEMATIC
-                sim.remove_object(sphere2.object_id)
+                rigid_obj_mgr.remove_object_by_id(sphere2.object_id)
 
                 sim.get_agent(0).scene_node.rotation = prev_state
             elif test_case == 5:
@@ -435,7 +438,7 @@ def test_constraints(make_video=True, show_video=True):
 
                 observations += simulate(sim, dt=3.0, get_frames=make_video)
                 sim.remove_constraint(constraint_id)
-                sim.remove_object(sphere2.object_id)
+                rigid_obj_mgr.remove_object_by_id(sphere2.object_id)
 
                 sim.get_agent(0).scene_node.rotation = prev_state
 
@@ -508,7 +511,7 @@ def test_ao_recompute_navmesh(make_video=True, show_video=True):
         place_robot_from_agent(sim, robot, angle_correction=0)
 
         root_transform = robot.transformation
-        R = mn.Matrix4.rotation(mn.Rad(3.14), mn.Vector3(0, 1.0, 0))
+        R = mn.Matrix4.rotation(mn.Rad(math.pi), mn.Vector3(0, 1.0, 0))
         root_transform = mn.Matrix4.from_(
             R.rotation().__matmul__(root_transform.rotation()),
             root_transform.translation + mn.Vector3(0, 0.45, 0),
@@ -621,7 +624,7 @@ def main(make_video=True, show_video=True):
 
         for iteration in range(1, 4):
             # remove the object
-            sim.remove_articulated_object(robot.object_id)
+            art_obj_mgr.remove_object_by_id(robot.object_id)
 
             # load a URDF file
             robot_file = urdf_files["aliengo"]
@@ -699,7 +702,7 @@ def main(make_video=True, show_video=True):
             )
             # Note: set this with 'sim.set_articulated_link_friction(robot_id, link_id, friction)'
             observations += simulate(sim, dt=0.5, get_frames=make_video)
-        sim.remove_object(cube.object_id)
+        rigid_obj_mgr.remove_object_by_id(cube.object_id)
 
         robot.motion_type = habitat_sim.physics.MotionType.DYNAMIC
         assert robot.motion_type == habitat_sim.physics.MotionType.DYNAMIC
@@ -715,8 +718,6 @@ def main(make_video=True, show_video=True):
 
         # clear all robots
         art_obj_mgr.remove_all_objects()
-        print("~~~~~~~~~~ removal ~~~~~~~~~~~~~")
-        print(art_obj_mgr.get_object_handles())
         # [/basics]
 
         # [joint motors]
@@ -727,7 +728,7 @@ def main(make_video=True, show_video=True):
         robot = art_obj_mgr.add_articulated_object_from_urdf(robot_file, True)
 
         # place the robot root state relative to the agent
-        place_robot_from_agent(sim, robot, -3.14)
+        place_robot_from_agent(sim, robot, -math.pi)
 
         # query any damping motors created by default
         existing_joint_motors = robot.get_existing_joint_motor_ids()
