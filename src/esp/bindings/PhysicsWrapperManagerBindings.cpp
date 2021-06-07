@@ -4,24 +4,21 @@
 
 #include "esp/bindings/bindings.h"
 
+#include "esp/physics/bullet/objectWrappers/ManagedBulletArticulatedObject.h"
+#include "esp/physics/bullet/objectWrappers/ManagedBulletRigidObject.h"
 #include "esp/physics/objectManagers/ArticulatedObjectManager.h"
 #include "esp/physics/objectManagers/PhysicsObjectBaseManager.h"
 #include "esp/physics/objectManagers/RigidBaseManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/physics/objectWrappers/ManagedRigidObject.h"
-#ifdef ESP_BUILD_WITH_BULLET
-#include "esp/physics/bullet/objectWrappers/ManagedBulletArticulatedObject.h"
-#include "esp/physics/bullet/objectWrappers/ManagedBulletRigidObject.h"
-#endif
+
 namespace py = pybind11;
 using py::literals::operator""_a;
 
 namespace PhysWraps = esp::physics;
-#ifdef ESP_BUILD_WITH_BULLET
+using PhysWraps::ArticulatedObjectManager;
 using PhysWraps::ManagedBulletArticulatedObject;
 using PhysWraps::ManagedBulletRigidObject;
-#endif
-using PhysWraps::ArticulatedObjectManager;
 using PhysWraps::ManagedRigidObject;
 using PhysWraps::PhysicsObjectBaseManager;
 using PhysWraps::RigidBaseManager;
@@ -161,7 +158,7 @@ void declareBaseWrapperManager(py::module& m,
            "handle"_a);
 }  // declareBaseWrapperManager
 
-template <typename T, typename U>
+template <typename T>
 void declareRigidBaseWrapperManager(py::module& m,
                                     CORRADE_UNUSED const std::string& objType,
                                     const std::string& classStrPrefix) {
@@ -179,16 +176,16 @@ void initPhysicsWrapperManagerBindings(pybind11::module& m) {
   declareBaseWrapperManager<ManagedRigidObject, ManagedBulletRigidObject>(
       m, "BulletRigidObject", "BulletRigidObject");
 
-  declareRigidBaseWrapperManager<ManagedRigidObject, ManagedBulletRigidObject>(
-      m, "BulletRigidObject", "BulletRigidObject");
+  declareRigidBaseWrapperManager<ManagedRigidObject>(m, "BulletRigidObject",
+                                                     "BulletRigidObject");
 
 #else
   // if dynamics library not being used, just use base rigid object
   declareBaseWrapperManager<ManagedRigidObject, ManagedRigidObject>(
       m, "RigidObject", "RigidObject");
 
-  declareRigidBaseWrapperManager<ManagedRigidObject, ManagedRigidObject>(
-      m, "RigidObject", "RigidObject");
+  declareRigidBaseWrapperManager<ManagedRigidObject>(m, "RigidObject",
+                                                     "RigidObject");
 #endif
   // RigidObject wrapper manager
   py::class_<RigidObjectManager, RigidBaseManager<ManagedRigidObject>,

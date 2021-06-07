@@ -4,9 +4,7 @@
 
 #include "ArticulatedObjectManager.h"
 
-#ifdef ESP_BUILD_WITH_BULLET
 #include "esp/physics/bullet/objectWrappers/ManagedBulletArticulatedObject.h"
-#endif
 
 namespace esp {
 namespace physics {
@@ -24,14 +22,13 @@ ArticulatedObjectManager::ArticulatedObjectManager()
       &ArticulatedObjectManager::createPhysicsObjectWrapper<
           ManagedArticulatedObject>;
 
-#ifdef ESP_BUILD_WITH_BULLET
   this->copyConstructorMap_["ManagedBulletArticulatedObject"] =
       &ArticulatedObjectManager::createObjectCopy<
           ManagedBulletArticulatedObject>;
   managedObjTypeConstructorMap_["ManagedBulletArticulatedObject"] =
       &ArticulatedObjectManager::createPhysicsObjectWrapper<
           ManagedBulletArticulatedObject>;
-#endif
+
 }  // ctor
 
 std::shared_ptr<ManagedArticulatedObject>

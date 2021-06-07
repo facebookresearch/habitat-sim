@@ -7,10 +7,8 @@
 #include "esp/physics/RigidBase.h"
 #include "esp/physics/RigidObject.h"
 #include "esp/physics/RigidStage.h"
-#ifdef ESP_BUILD_WITH_BULLET
 #include "esp/physics/bullet/objectWrappers/ManagedBulletArticulatedObject.h"
 #include "esp/physics/bullet/objectWrappers/ManagedBulletRigidObject.h"
-#endif
 #include "esp/physics/objectWrappers/ManagedArticulatedObject.h"
 #include "esp/physics/objectWrappers/ManagedPhysicsObjectBase.h"
 #include "esp/physics/objectWrappers/ManagedRigidBase.h"
@@ -460,7 +458,6 @@ void initPhysicsObjectBindings(py::module& m) {
   // ==== ManagedRigidObject ====
   declareRigidObjectWrapper(m, "Rigid Object", "ManagedRigidObject");
 
-#ifdef ESP_BUILD_WITH_BULLET
   // ==== ManagedBulletRigidObject ====
   py::class_<ManagedBulletRigidObject, ManagedRigidObject,
              std::shared_ptr<ManagedBulletRigidObject>>(
@@ -474,19 +471,6 @@ void initPhysicsObjectBindings(py::module& m) {
           &ManagedBulletRigidObject::getCollisionShapeAabb,
           R"(REQUIRES BULLET TO BE INSTALLED. The bounds of the axis-aligned bounding box from Bullet Physics, in its local coordinate frame.)");
 
-#else
-  // ==== non-bullet dummy ManagedBulletRigidObject ====
-  py::class_<ManagedRigidObject, AbstractManagedRigidBase<RigidObject>,
-             std::shared_ptr<ManagedRigidObject>>(m, "ManagedBulletRigidObject")
-      .def_property(
-          "margin", [](ManagedRigidObject& self) { return 0.0; },
-          [](ManagedRigidObject& self, double margin) {},
-          R"(REQUIRES BULLET TO BE INSTALLED. Get or set this object's collision margin.)")
-      .def_property_readonly(
-          "collision_shape_aabb",
-          [](ManagedRigidObject& self) { return Magnum::Range3D{}; },
-          R"(REQUIRES BULLET TO BE INSTALLED. The bounds of the axis-aligned bounding box from Bullet Physics, in its local coordinate frame.)");
-#endif
   // create bindings for ArticulatedObjects
   // physics object base instance for articulated object
   declareBasePhysicsObjectWrapper<ArticulatedObject>(m, "Articulated Object",
@@ -496,7 +480,6 @@ void initPhysicsObjectBindings(py::module& m) {
   declareArticulatedObjectWrapper(m, "Articulated Object",
                                   "ManagedArticulatedObject");
 
-#ifdef ESP_BUILD_WITH_BULLET
   // ==== ManagedBulletArticulatedObject ====
   py::class_<ManagedBulletArticulatedObject, ManagedArticulatedObject,
              std::shared_ptr<ManagedBulletArticulatedObject>>(
@@ -515,33 +498,6 @@ void initPhysicsObjectBindings(py::module& m) {
           &ManagedBulletArticulatedObject::getJointMotorMaxImpulse,
           R"(REQUIRES BULLET TO BE INSTALLED. Get the maximum impulse for the joint motor specified by the given motor_id)",
           "motor_id"_a);
-
-#else
-  // ==== non-bullet dummy ManagedBulletArticulatedObject ====
-  py::class_<ManagedArticulatedObject,
-             AbstractManagedPhysicsObject<ArticulatedObject>,
-             std::shared_ptr<ManagedArticulatedObject>>(
-      m, "ManagedBulletArticulatedObject")
-      .def(
-          "contact_test",
-          [](ManagedArticulatedObject& self, bool staticAsStage) {
-            return false;
-          },
-          // TODO need to describe what 'static_as_stage' is intended for in
-          // appropriate terms.
-          R"(REQUIRES BULLET TO BE INSTALLED. Returns the result of a discrete collision test between this object and the world.)",
-          "static_as_stage"_a)
-      .def(
-          "supports_joint_motor",
-          [](ManagedArticulatedObject& self, int linkIx) { return false; },
-          R"(REQUIRES BULLET TO BE INSTALLED. )", "link_id"_a)
-      .def(
-          "get_joint_motor_max_impulse",
-          [](ManagedArticulatedObject& self, int motorId) { return 0.0; },
-          R"(REQUIRES BULLET TO BE INSTALLED. Get the maximum impulse for the joint motor specified by the given motor_id)",
-          "motor_id"_a);
-
-#endif
 
 }  // initPhysicsObjectBindings
 
