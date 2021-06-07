@@ -28,20 +28,30 @@ namespace io {
 
 namespace URDF {
 
+//! Stores basic color properties which can be defined in a URDF file to
+//! override default visual asset material colors.
 struct MaterialColor {
+  //! Diffuse and ambient color
   Magnum::Color4 m_rgbaColor{0.8, 0.8, 0.8, 1};
+  //! Specular color
   Magnum::Color3 m_specularColor{0.4, 0.4, 0.4};
   MaterialColor() = default;
 };
 
+//! Storage for metadata defining override materials for visual shapes
 struct Material {
+  //! Supports named materials
   std::string m_name;
+  //! Store material texture filename. Note: Will be cached, but not currently
+  //! supported in Habitat rendering pipeline.
   std::string m_textureFilename;
+  //! Material color metadata
   MaterialColor m_matColor;
 
   Material() = default;
 };
 
+//! Defines Various types of supported joints.
 enum JointTypes {
   RevoluteJoint = 1,
   PrismaticJoint,
@@ -53,17 +63,21 @@ enum JointTypes {
 
 };
 
+//! Defines various types of supported geometry
 enum GeomTypes {
   GEOM_SPHERE = 2,
   GEOM_BOX,
   GEOM_CYLINDER,
   GEOM_MESH,
   GEOM_PLANE,
-  GEOM_CAPSULE,  // non-standard URDF
+  GEOM_CAPSULE,  // non-standard URDF but supported
   GEOM_UNKNOWN,
 };
 
+//! Stores properties of various types of visual or collision geometry which can
+//! be attached to links
 struct Geometry {
+  //! Type of geometry for pivoting during instancing
   GeomTypes m_type{GEOM_UNKNOWN};
 
   double m_sphereRadius{1};
@@ -75,71 +89,105 @@ struct Geometry {
 
   Magnum::Vector3 m_planeNormal{0, 0, 1};
 
-  //! Note: also used to cache primitive handles for custom visual prims
+  //! If a mesh, store the relative filepath of the asset. Note: also used to
+  //! cache primitive handles for custom visual prims.
   std::string m_meshFileName;
   Magnum::Vector3 m_meshScale{1, 1, 1};
 
+  //! If a custom material is defined, store it with the geometry. Because named
+  //! materials can be overridden at multiple points in the URDF, we store the
+  //! struct as-is when referenced rather than a key.
   std::shared_ptr<Material> m_localMaterial;
   bool m_hasLocalMaterial{false};
 
   Geometry() = default;
 };
 
+//! Stores general properties of any shape
 struct Shape {
+  //! If the shape originates from a file, cache the filepath
   std::string m_sourceFileLocation;
+  //! Transform of this shape relative to its link
   Magnum::Matrix4 m_linkLocalFrame;
+  //! Shape geometry
   Geometry m_geometry;
+  //! Any custom name for this shape
   std::string m_name;
 };
 
+//! Parsed from a URDF link visual shape (<visual>)
 struct VisualShape : Shape {
+  //! If the shape references a named custom material, cache the name. Will also
+  //! cache the material properties internally.
   std::string m_materialName;
 };
 
-// TODO: need this?
+//! Defines some collision shape flags
 enum CollisionFlags {
-  FORCE_CONCAVE_TRIMESH = 1,
-  HAS_COLLISION_GROUP = 2,
-  HAS_COLLISION_MASK = 4,
+  //! The shape has a custom group defined (e.g. <collision group="32">)
+  HAS_COLLISION_GROUP = 1,
+  //! The shape has a custom mask defined (e.g. <collision mask="32">)
+  HAS_COLLISION_MASK = 2,
 };
 
+//! Parsed from a URDF link collision shape (<collision>)
 struct CollisionShape : Shape {
   int m_flags{0};
+  //! custom collision group (e.g. <collision>)
   int m_collisionGroup;
+  //! custom collision mask
   int m_collisionMask;
   CollisionShape() = default;
 };
 
+//! Parsed from a URDF link inertia properties (<inertia>). Stores dynamic
+//! properties of ths link.
 struct Inertia {
+  //! local transform of the link in parent joint space
   Magnum::Matrix4 m_linkLocalFrame{0.0};
   bool m_hasLinkLocalFrame;
 
+  //! mass of the link (0 mass indicates unmovable, static object)
   double m_mass{0.0};
+
+  //! inertia matrix upper triangular entries. Computed automatically if not
+  //! specified.
   double m_ixx, m_ixy, m_ixz, m_iyy, m_iyz, m_izz = 0.0;
 
   Inertia() = default;
 };
 
+//! Parsed from a URDF joint (<joint>), connects two links.
 struct Joint {
+  //! Joint name
   std::string m_name;
+  //! Type of the joint, used to pivot on relevant fields for instancing
   JointTypes m_type;
+  //! Relative transform of the joint from its parent link
   Magnum::Matrix4 m_parentLinkToJointTransform;
+  //! Name of the parent link and key in the link cache
   std::string m_parentLinkName;
+  //! Name of the child link and key in the link cache
   std::string m_childLinkName;
+  //! Some joints (e.g. revolute) have a local axis (e.g. X, Y, Z)
   Magnum::Vector3 m_localJointAxis;
 
+  //! Joint limits if provided
   double m_lowerLimit{0};
   double m_upperLimit{-1};
 
+  //! Joint force/torque limits if provided
   double m_effortLimit{0};
   double m_velocityLimit{0};
 
+  //! Joint damping and friction. Used to generate default JointMotors for
+  //! BulletArticulatedObjects.
   double m_jointDamping{0};
   double m_jointFriction{0};
   Joint() = default;
 };
 
-// TODO: need this?
+//! Contact info cached for links, but not currently used
 enum LinkContactFlags {
   CONTACT_HAS_LATERAL_FRICTION = 1,
   CONTACT_HAS_INERTIA_SCALING = 2,
@@ -152,6 +200,8 @@ enum LinkContactFlags {
   CONTACT_HAS_FRICTION_ANCHOR = 256,
 };
 
+//! Contact info cached for links, but not currently used (parsed from
+//! <contact>)
 struct LinkContactInfo {
   float m_lateralFriction{0.5};
   float m_rollingFriction{0};
@@ -168,29 +218,45 @@ struct LinkContactInfo {
   LinkContactInfo() { m_flags = CONTACT_HAS_LATERAL_FRICTION; }
 };
 
+//! Parsed from a URDF link (<link>). Represents a single rigid segment of the
+//! articulated object.
 struct Link {
+  //! name of the link
   std::string m_name;
+  //! dynamic properties of the link
   Inertia m_inertia;
-  Magnum::Matrix4 m_linkTransformInWorld;
+  //! visual shapes attached to this link
   std::vector<VisualShape> m_visualArray;
+  //! collision shapes attached to this link
   std::vector<CollisionShape> m_collisionArray;
+  //! this link's parent link
   std::weak_ptr<Link> m_parentLink;
+  //! the joint connecting this link to its parent
   std::weak_ptr<Joint> m_parentJoint;
-
+  //! list of all link children of this link
   std::vector<std::weak_ptr<Joint>> m_childJoints;
+  //! joints attaching this link to each of its children (with index
+  //! correspondance to m_childJoints)
   std::vector<std::weak_ptr<Link>> m_childLinks;
 
+  //! the index of this link in the overall articulated object
   int m_linkIndex{-2};
 
+  //! any contact info for this link
   LinkContactInfo m_contactInfo;
 
   Link() = default;
 };
 
+//! Generic structure representing an articulated object parsed from a URDF file
+//! independant from any physics implementation.
 class Model {
  public:
+  //! name of the articulated object or robot
   std::string m_name;
+  //! source file this model was built from (e.g. the .urdf file)
   std::string m_sourceFile;
+  //! world transform of the object root if provided
   Magnum::Matrix4 m_rootTransformInWorld(Magnum::Math::IdentityInitT);
 
   //! map of names to materials
@@ -207,16 +273,33 @@ class Model {
 
   //! list of root links (usually 1)
   std::vector<std::shared_ptr<Link>> m_rootLinks;
+  //! if true, force this model to produce a fixed base instance (e.g. the root
+  //! is not dynamic)
   bool m_overrideFixedBase{false};
 
+  //! output a string to console listing the link|joint hierarchy of this model
+  //! for debugging and investigation purposes
   void printKinematicChain() const;
 
+  /**
+   * @brief Get a link provided its name.
+   *
+   * @param linkName The link's configured name from the URDF file.
+   * @return The link metadata object or nullptr if no link with provided name.
+   */
   std::shared_ptr<Link> getLink(const std::string& linkName) const {
     if (m_links.count(linkName) != 0u) {
       return m_links.at(linkName);
     }
     return nullptr;
   }
+
+  /**
+   * @brief Get a link provided its index.
+   *
+   * @param linkIndex The link's index.
+   * @return The link metadata object or nullptr if no link with provided index.
+   */
   std::shared_ptr<Link> getLink(int linkIndex) const {
     if (m_linkIndicesToNames.count(linkIndex) != 0u) {
       return getLink(m_linkIndicesToNames.at(linkIndex));
@@ -224,7 +307,13 @@ class Model {
     return nullptr;
   }
 
-  //! get the parent joint of a link
+  /**
+   * @brief Get a parent joint of a link provided the link index.
+   *
+   * @param linkIndex The link's index.
+   * @return The parent joint metadata object or nullptr if no link with
+   * provided index.
+   */
   std::shared_ptr<Joint> getJoint(int linkIndex) const {
     if (m_linkIndicesToNames.count(linkIndex) != 0u) {
       return getLink(m_linkIndicesToNames.at(linkIndex))->m_parentJoint.lock();
@@ -234,7 +323,12 @@ class Model {
 
   Model() = default;
 
-  //! Set global scaling and re-scale an existing model if already parsed.
+  /**
+   * @brief Set global scaling and re-scale an existing model. Modifies various
+   * internal parameters.
+   *
+   * @param scaling The new absolute uniform scale.
+   */
   void setGlobalScaling(float scaling) {
     if (scaling == m_globalScaling) {
       // do nothing
@@ -270,10 +364,16 @@ class Model {
 
     m_globalScaling = scaling;
   }
+
+  //! Get the currently configured global model scaling
   float getGlobalScaling() const { return m_globalScaling; }
 
-  //! Set scaling for mass from initial values configured in URDF. Modifies the
-  //! cached model if already parsed.
+  /**
+   * @brief Set scaling for mass from initial values configured in URDF.
+   * Modifies various internal parameters.
+   *
+   * @param massScaling The new absolute uniform mass scale.
+   */
   void setMassScaling(float massScaling) {
     if (massScaling == m_massScaling) {
       // do nothing
@@ -291,6 +391,7 @@ class Model {
     m_massScaling = massScaling;
   }
 
+  //! Get the currently configured mass scaling of the model
   float getMassScaling() const { return m_massScaling; }
 
  protected:

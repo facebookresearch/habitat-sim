@@ -447,10 +447,6 @@ bool Parser::parseCollision(CollisionShape& collision, XMLElement* config) {
   if (name_char)
     collision.m_name = name_char;
 
-  const char* concave_char = config->Attribute("concave");
-  if (concave_char)
-    collision.m_flags |= FORCE_CONCAVE_TRIMESH;
-
   return true;
 }
 
