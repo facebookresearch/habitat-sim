@@ -48,6 +48,14 @@ void specSanityCheck(FisheyeSensorSpec* spec) {
   actualSpec->sanityCheck();
 }
 
+Magnum::Vector2 computePrincipalPointOffset(const FisheyeSensorSpec& spec) {
+  if (bool(spec.principalPointOffset)) {
+    return *spec.principalPointOffset;
+  }
+  auto res = spec.resolution.cast<float>();
+  return Mn::Vector2(res[0], res[1]) * 0.5f;
+}
+
 FisheyeSensor::FisheyeSensor(scene::SceneNode& cameraNode,
                              const FisheyeSensorSpec::ptr& spec)
     : CubeMapSensorBase(cameraNode, spec) {
@@ -88,7 +96,7 @@ bool FisheyeSensor::drawObservation(sim::Simulator& sim) {
           static_cast<FisheyeSensorDoubleSphereSpec&>(*fisheyeSensorSpec_);
       (*shader)
           .setFocalLength(actualSpec.focalLength)
-          .setPrincipalPointOffset(actualSpec.principalPointOffset)
+          .setPrincipalPointOffset(computePrincipalPointOffset(actualSpec))
           .setAlpha(actualSpec.alpha)
           .setXi(actualSpec.xi);
       drawWith(*shader);

@@ -17,6 +17,7 @@
 
 /* Bullet Physics Integration */
 
+#include "CollisionGroupHelper.h"
 #include "RigidObject.h"
 #include "RigidStage.h"
 #include "esp/assets/Asset.h"
@@ -551,14 +552,15 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @brief Check whether an object is in contact with any other objects or the
    * scene.
    *
-   * Not implemented for default @ref PhysicsManager. See @ref
-   * BulletPhysicsManager.
    * @param physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @return Whether or not the object is in contact with any other collision
    * enabled objects.
    */
-  virtual bool contactTest(CORRADE_UNUSED const int physObjectID) {
+  virtual bool contactTest(const int physObjectID) {
+    if (existingObjects_.count(physObjectID) > 0) {
+      return existingObjects_.at(physObjectID)->contactTest();
+    }
     return false;
   };
 

@@ -143,17 +143,6 @@ class BulletPhysicsManager : public PhysicsManager {
   void debugDraw(const Magnum::Matrix4& projTrans) const override;
 
   /**
-   * @brief Check whether an object is in contact with any other objects or the
-   * stage.
-   *
-   * @param physObjectID The object ID and key identifying the object in @ref
-   * PhysicsManager::existingObjects_.
-   * @return Whether or not the object is in contact with any other collision
-   * enabled objects.
-   */
-  bool contactTest(const int physObjectID) override;
-
-  /**
    * @brief Cast a ray into the collision world and return a @ref RaycastResults
    * with hit information.
    *

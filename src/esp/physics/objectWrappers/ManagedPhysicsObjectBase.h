@@ -108,6 +108,19 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
     }
   }  // setLightSetup
 
+  bool contactTest() {
+    if (auto sp = this->getObjectReference()) {
+      return sp->contactTest();
+    }
+    return false;
+  }  // contactTest
+
+  void overrideCollisionGroup(CollisionGroup group) {
+    if (auto sp = this->getObjectReference()) {
+      return sp->overrideCollisionGroup(group);
+    }
+  }  // overrideCollisionGroup
+
   scene::SceneNode* getSceneNode() {
     if (auto sp = this->getObjectReference()) {
       return &const_cast<scene::SceneNode&>(sp->getSceneNode());

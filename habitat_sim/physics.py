@@ -3,6 +3,8 @@
 # LICENSE file in the root directory of this source tree.
 
 from habitat_sim._ext.habitat_sim_bindings import (
+    CollisionGroupHelper,
+    CollisionGroups,
     ManagedRigidObject,
     MotionType,
     PhysicsSimulationLibrary,
@@ -20,4 +22,6 @@ __all__ = [
     "VelocityControl",
     "RayHitInfo",
     "RaycastResults",
+    "CollisionGroups",
+    "CollisionGroupHelper",
 ]
