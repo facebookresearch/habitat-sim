@@ -112,7 +112,53 @@ uniform PbrEquationScales Scales;
 
 uniform int PbrDebugDisplay;
 
+#if defined(SHADOWS)
+// TODO: make it uniform
+const float FarPlane = 200.0f;
+#endif
+
 // -------------- shader ------------------
+
+#if defined(SHADOWS)
+// array of offset direction for sampling
+vec3 gridSamplingDisk[20] = vec3[](
+   vec3(1, 1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1, 1,  1),
+   vec3(1, 1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1, 1, -1),
+   vec3(1, 1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1, 1,  0),
+   vec3(1, 0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1, 0, -1),
+   vec3(0, 1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0, 1, -1)
+);
+
+float shadowCalculation(vec3 fragPos, vec3 lightPos, vec3 viewPos) {
+    // get vector between fragment position and light position
+    vec3 fragToLight = fragPos - lightPos;
+    // use the fragment to light vector to sample from the depth map
+    // float closestDepth = texture(depthMap, fragToLight).r;
+    // it is currently in linear range between [0,1], let's re-transform it back to original depth value
+    // closestDepth *= FarPlane;
+    // now get current linear depth as the length between the fragment and light position
+    float currentDepth = length(fragToLight);
+    float shadow = 0.0;
+    float bias = 0.15;
+    int samples = 20;
+    float viewDistance = length(viewPos - fragPos);
+    float diskRadius = (1.0 + (viewDistance / FarPlane)) / 25.0;
+    for(int i = 0; i < samples; ++i) {
+        float closestDepth = texture(PointShadowMap0, normalize(fragToLight + gridSamplingDisk[i] * diskRadius)).r;
+        closestDepth *= FarPlane;   // undo mapping [0;1]
+        if(currentDepth - bias > closestDepth)
+            shadow += 1.0;
+    }
+    shadow /= float(samples);
+
+    // display closestDepth as debug (to visualize depth cubemap)
+    // FragColor = vec4(vec3(closestDepth / FarPlane), 1.0);
+
+    return shadow;
+}
+
+#endif
+
 // The following function Uncharted2Tonemap is based on:
 // https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/data/shaders/pbr_khr.frag
 vec3 Uncharted2Tonemap(vec3 color) {
@@ -438,8 +484,19 @@ void main() {
                     lightRadiance,
                     currentDiffuseContrib,
                     currentSpecularContrib);
-    diffuseContrib += currentDiffuseContrib;
-    specularContrib += currentSpecularContrib;
+
+    #if defined(SHADOWS)
+    // Temporarily we only support 1 point light shadow map
+    float shadowFactor =
+      (iLight == 0 && LightDirections[iLight].w == 1) ?
+        0.0f : 0.0f;
+        //shadowCalculation(position, LightDirections[iLight].xyz, CameraWorldPos) : 0.0f;
+    #else
+    float shadowFactor = 0.0f;
+    #endif
+    shadowFactor = 1.0 - shadowFactor;
+    diffuseContrib += shadowFactor * currentDiffuseContrib;
+    specularContrib += shadowFactor * currentSpecularContrib;
   }  // for lights
 
   // TODO: use ALPHA_MASK to discard fragments

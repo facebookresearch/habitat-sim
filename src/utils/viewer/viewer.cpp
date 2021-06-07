@@ -556,6 +556,8 @@ Viewer::Viewer(const Arguments& arguments)
       .addOption("agent-transform-filepath")
       .setHelp("agent-transform-filepath",
                "Specify path to load camera transform from.")
+      .addBooleanOption("shadows")
+      .setHelp("shadows", "Rendering shadows.")
       .parse(arguments.argc, arguments.argv);
 
   const auto viewportSize = Mn::GL::defaultFramebuffer.viewport().size();
@@ -727,6 +729,13 @@ Viewer::Viewer(const Arguments& arguments)
 
   // Per frame profiler will average measurements taken over previous 50 frames
   profiler_.setup(profilerValues, 50);
+
+  // shadows
+  simulator_->updateShadowMapDrawableGroup();
+  if (args.isSet("shadows")) {
+    simulator_->computeShadowMaps();
+    simulator_->setShadowMapsToDrawables();
+  }
 
   printHelpText();
 }  // end Viewer::Viewer

@@ -601,9 +601,9 @@ void Simulator::computeShadowMaps() {
     shadowManager.set<gfx::CubeMap>(
         pointShadowMap.key(),
         new gfx::CubeMap{shadowMapSize, {gfx::CubeMap::Flag::DepthTexture}},
-        Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
+        Mn::ResourceDataState::Final, Mn::ResourcePolicy::Resident);
 
-    CORRADE_INTERNAL_ASSERT(pointShadowMap);
+    CORRADE_INTERNAL_ASSERT(pointShadowMap && pointShadowMap.key() == key);
   }
   if (pointShadowMap->getCubeMapSize() != shadowMapSize) {
     pointShadowMap->reset(shadowMapSize);
@@ -620,8 +620,13 @@ void Simulator::computeShadowMaps() {
   gfx::CubeMapCamera camera{node};
   camera.setProjectionMatrix(shadowMapSize,  // width of the square
                              0.01f,          // near plane
-                             1000.0f);       // far plane
+                             200.0f);        // far plane
+  /*
   pointShadowMap->renderToTexture(camera, sg, shadowMapDrawableGroupName,
+                                  {gfx::RenderCamera::Flag::FrustumCulling |
+                                   gfx::RenderCamera::Flag::ClearDepth});
+  */
+  pointShadowMap->renderToTexture(camera, sg, "",
                                   {gfx::RenderCamera::Flag::FrustumCulling |
                                    gfx::RenderCamera::Flag::ClearDepth});
 }

@@ -135,8 +135,8 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   PbrShader::PbrEquationScales scales;
   scales.DirectDiffuse = 1.0;
   scales.DirectSpecular = 1.0;
-  scales.IblDiffuse = .5;
-  scales.IblSpecular = 1.0;
+  scales.IblDiffuse = 0.0;
+  scales.IblSpecular = 0.0;
   (*shader_).setPbrEquationScales(scales);
   // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::DirectDiffuse);
   // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::DirectSpecular);
@@ -188,6 +188,19 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
         pbrIbl_->getPrefilteredMap().getTexture(CubeMap::TextureType::Color));
     shader_->setPrefilteredMapMipLevels(
         pbrIbl_->getPrefilteredMap().getMipmapLevels());
+  }
+
+  if (flags_ & PbrShader::Flag::Shadows) {
+    CORRADE_INTERNAL_ASSERT(shadowMapManger_ && shadowMapKeys_);
+
+    // Currently we only support one shadow map
+    Mn::Resource<CubeMap> shadowMap =
+        (*shadowMapManger_).get<CubeMap>((*shadowMapKeys_)[0]);
+
+    CORRADE_INTERNAL_ASSERT(shadowMap);
+
+    shader_->bindPointShadowMap(
+        shadowMap->getTexture(CubeMap::TextureType::Depth));
   }
 
   shader_->draw(mesh_);

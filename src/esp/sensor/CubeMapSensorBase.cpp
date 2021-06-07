@@ -145,8 +145,13 @@ bool CubeMapSensorBase::renderToCubemapTexture(sim::Simulator& sim) {
                                 flags);
     }
   } else {
-    cubeMap_->renderToTexture(*cubeMapCamera_, sim.getActiveSceneGraph(), "",
-                              flags);
+    // XXX
+    if (cubeMapSensorBaseSpec_->sensorType == SensorType::Depth) {
+      cubeMap_->renderToTexture(*cubeMapCamera_, sim.getActiveSceneGraph(),
+                                "static-shadow-map", flags);
+    } else
+      cubeMap_->renderToTexture(*cubeMapCamera_, sim.getActiveSceneGraph(), "",
+                                flags);
   }
 
   return true;
