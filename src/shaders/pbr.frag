@@ -114,7 +114,7 @@ uniform int PbrDebugDisplay;
 
 #if defined(SHADOWS)
 // TODO: make it uniform
-const float FarPlane = 200.0f;
+const float FarPlane = 10.0f;
 #endif
 
 // -------------- shader ------------------
@@ -129,11 +129,11 @@ vec3 gridSamplingDisk[20] = vec3[](
    vec3(0, 1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0, 1, -1)
 );
 
-float shadowCalculation(vec3 fragPos, vec3 lightPos, vec3 viewPos) {
+float shadowCalculation(vec3 fragPos, vec3 lightPos, vec3 viewPos, out vec3 vizClosestDepth) {
     // get vector between fragment position and light position
     vec3 fragToLight = fragPos - lightPos;
     // use the fragment to light vector to sample from the depth map
-    // float closestDepth = texture(depthMap, fragToLight).r;
+    float closestDepth = texture(PointShadowMap0, normalize(fragToLight)).r; // debug XXX
     // it is currently in linear range between [0,1], let's re-transform it back to original depth value
     // closestDepth *= FarPlane;
     // now get current linear depth as the length between the fragment and light position
@@ -150,6 +150,8 @@ float shadowCalculation(vec3 fragPos, vec3 lightPos, vec3 viewPos) {
             shadow += 1.0;
     }
     shadow /= float(samples);
+
+    vizClosestDepth = vec3(closestDepth / FarPlane);
 
     // display closestDepth as debug (to visualize depth cubemap)
     // FragColor = vec4(vec3(closestDepth / FarPlane), 1.0);
@@ -485,18 +487,23 @@ void main() {
                     currentDiffuseContrib,
                     currentSpecularContrib);
 
+    vec3 vizClosestDepth = vec3(0.0, 0.0, 0.0);
     #if defined(SHADOWS)
     // Temporarily we only support 1 point light shadow map
     float shadowFactor =
       (iLight == 0 && LightDirections[iLight].w == 1) ?
-        0.0f : 0.0f;
-        //shadowCalculation(position, LightDirections[iLight].xyz, CameraWorldPos) : 0.0f;
+        // 0.0f : 0.0f;
+        shadowCalculation(position, LightDirections[iLight].xyz, CameraWorldPos, vizClosestDepth) : 0.0f;
     #else
     float shadowFactor = 0.0f;
     #endif
     shadowFactor = 1.0 - shadowFactor;
+    // XXX
+    diffuseContrib += vizClosestDepth;
+    /*
     diffuseContrib += shadowFactor * currentDiffuseContrib;
     specularContrib += shadowFactor * currentSpecularContrib;
+    */
   }  // for lights
 
   // TODO: use ALPHA_MASK to discard fragments

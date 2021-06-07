@@ -616,11 +616,15 @@ void Simulator::computeShadowMaps() {
 
   // this is the center of the ceiling of the replica cad model
   // this is the light position!!!
-  node.setTranslation(Mn::Vector3{16.1, 7.7, 4.8});
+  // node.setTranslation(Mn::Vector3{16.1, 7.7, 4.8});
+  // XXX
+  const Magnum::Range3D& sceneBB =
+      getActiveSceneGraph().getRootNode().computeCumulativeBB();
+  node.setTranslation(sceneBB.center());
   gfx::CubeMapCamera camera{node};
   camera.setProjectionMatrix(shadowMapSize,  // width of the square
                              0.01f,          // near plane
-                             200.0f);        // far plane
+                             10.0f);         // far plane
   /*
   pointShadowMap->renderToTexture(camera, sg, shadowMapDrawableGroupName,
                                   {gfx::RenderCamera::Flag::FrustumCulling |
