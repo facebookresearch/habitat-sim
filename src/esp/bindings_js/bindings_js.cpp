@@ -387,7 +387,8 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
                 &SimulatorConfiguration::sceneDatasetConfigFile)
       .property("overrideSceneLightDefaults",
                 &SimulatorConfiguration::overrideSceneLightDefaults)
-      .property("sceneLightSetup", &SimulatorConfiguration::sceneLightSetup);
+      .property("sceneLightSetup", &SimulatorConfiguration::sceneLightSetup)
+      .property("allowPbrShader", &SimulatorConfiguration::allowPbrShader);
 
   em::class_<AgentState>("AgentState")
       .smart_ptr_constructor("AgentState", &AgentState::create<>)
