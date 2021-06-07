@@ -25,12 +25,14 @@ namespace esp {
 namespace io {
 namespace URDF {
 
-bool Parser::parseURDF(const std::string& filename) {
+bool Parser::parseURDF(std::shared_ptr<Model>& urdfModel,
+                       const std::string& filename) {
   Mn::Debug silence{logMessages ? &std::cout : nullptr};
 
-  auto newURDFModel = std::make_shared<Model>();
+  // override the previous model with a fresh one
+  urdfModel = std::make_shared<Model>();
   sourceFilePath_ = filename;
-  newURDFModel->m_sourceFile = filename;
+  urdfModel->m_sourceFile = filename;
 
   std::string xmlString = Corrade::Utility::Directory::readString(filename);
 
@@ -55,7 +57,7 @@ bool Parser::parseURDF(const std::string& filename) {
     Mn::Debug{} << "E - expected a name for robot";
     return false;
   }
-  newURDFModel->m_name = name;
+  urdfModel->m_name = name;
 
   // Get all Material elements
   for (XMLElement* material_xml = robot_xml->FirstChildElement("material");
@@ -65,8 +67,8 @@ bool Parser::parseURDF(const std::string& filename) {
 
     parseMaterial(material, material_xml);
 
-    if (newURDFModel->m_materials.count(material.m_name) == 0) {
-      newURDFModel->m_materials[material.m_name] =
+    if (urdfModel->m_materials.count(material.m_name) == 0) {
+      urdfModel->m_materials[material.m_name] =
           std::make_shared<Material>(material);
     } else {
       Mn::Debug{} << "W - Duplicate material";
@@ -78,8 +80,8 @@ bool Parser::parseURDF(const std::string& filename) {
        link_xml = link_xml->NextSiblingElement("link")) {
     std::shared_ptr<Link> link = std::make_shared<Link>();
 
-    if (parseLink(newURDFModel, *link, link_xml)) {
-      if (newURDFModel->m_links.count(link->m_name) != 0u) {
+    if (parseLink(urdfModel, *link, link_xml)) {
+      if (urdfModel->m_links.count(link->m_name) != 0u) {
         Mn::Debug{} << "E - Link name is not unique, link names "
                        "in the same model have to be unique";
         Mn::Debug{} << "E - " << link->m_name;
@@ -90,8 +92,8 @@ bool Parser::parseURDF(const std::string& filename) {
           VisualShape& vis = link->m_visualArray.at(i);
           if (!vis.m_geometry.m_hasLocalMaterial &&
               !vis.m_materialName.empty()) {
-            auto mat_itr = newURDFModel->m_materials.find(vis.m_materialName);
-            if (mat_itr != newURDFModel->m_materials.end()) {
+            auto mat_itr = urdfModel->m_materials.find(vis.m_materialName);
+            if (mat_itr != urdfModel->m_materials.end()) {
               vis.m_geometry.m_localMaterial = mat_itr->second;
             } else {
               Mn::Debug{} << "E - Cannot find material with name: "
@@ -101,14 +103,14 @@ bool Parser::parseURDF(const std::string& filename) {
         }
 
         // register the new link
-        newURDFModel->m_links[link->m_name] = link;
+        urdfModel->m_links[link->m_name] = link;
       }
     } else {
       Mn::Debug{} << "E - failed to parse link";
       return false;
     }
   }
-  if (newURDFModel->m_links.size() == 0) {
+  if (urdfModel->m_links.size() == 0) {
     Mn::Debug{} << "W - No links found in URDF file.";
     return false;
   }
@@ -119,11 +121,11 @@ bool Parser::parseURDF(const std::string& filename) {
     std::shared_ptr<Joint> joint = std::make_shared<Joint>();
 
     if (parseJoint(*joint, joint_xml)) {
-      if (newURDFModel->m_joints.count(joint->m_name) != 0u) {
+      if (urdfModel->m_joints.count(joint->m_name) != 0u) {
         Mn::Debug{} << "E - joint " << joint->m_name << " is not unique";
         return false;
       } else {
-        newURDFModel->m_joints[joint->m_name] = joint;
+        urdfModel->m_joints[joint->m_name] = joint;
       }
     } else {
       Mn::Debug{} << "E - joint xml is not initialized correctly";
@@ -133,10 +135,9 @@ bool Parser::parseURDF(const std::string& filename) {
 
   // TODO: parse sensors here
 
-  if (!initTreeAndRoot(newURDFModel)) {
+  if (!initTreeAndRoot(urdfModel)) {
     return false;
   }
-  m_urdfModel = newURDFModel;
 
   Mn::Debug{} << "Done parsing URDF";
 
@@ -228,7 +229,7 @@ bool Parser::parseMaterial(Material& material, XMLElement* config) const {
   return true;
 }
 
-bool Parser::parseLink(std::shared_ptr<Model>& model,
+bool Parser::parseLink(std::shared_ptr<Model> model,
                        Link& link,
                        XMLElement* config) {
   Mn::Debug silence{logMessages ? &std::cout : nullptr};
@@ -453,7 +454,7 @@ bool Parser::parseCollision(CollisionShape& collision, XMLElement* config) {
   return true;
 }
 
-bool Parser::parseVisual(std::shared_ptr<Model>& model,
+bool Parser::parseVisual(std::shared_ptr<Model> model,
                          VisualShape& visual,
                          XMLElement* config) {
   Mn::Debug silence{logMessages ? &std::cout : nullptr};
@@ -529,7 +530,7 @@ bool Parser::parseTransform(Mn::Matrix4& tr, XMLElement* xml) const {
     parseVector3(vec, std::string(xyz_str));
   }
 
-  tr.translation() = (vec * m_urdfScaling);
+  tr.translation() = vec;
 
   const char* rpy_str = xml->Attribute("rpy");
   if (rpy_str != nullptr) {
@@ -577,8 +578,7 @@ bool Parser::parseGeometry(Geometry& geom, XMLElement* g) {
       Mn::Debug{} << "E - Sphere shape must have a radius attribute";
       return false;
     } else {
-      geom.m_sphereRadius =
-          m_urdfScaling * std::stod(shape->Attribute("radius"));
+      geom.m_sphereRadius = std::stod(shape->Attribute("radius"));
     }
   } else if (type_name == "box") {
     geom.m_type = GEOM_BOX;
@@ -587,7 +587,6 @@ bool Parser::parseGeometry(Geometry& geom, XMLElement* g) {
       return false;
     } else {
       parseVector3(geom.m_boxSize, shape->Attribute("size"));
-      geom.m_boxSize *= m_urdfScaling;
     }
   } else if (type_name == "cylinder") {
     geom.m_type = GEOM_CYLINDER;
@@ -599,10 +598,8 @@ bool Parser::parseGeometry(Geometry& geom, XMLElement* g) {
           << "E - Cylinder shape must have both length and radius attributes";
       return false;
     }
-    geom.m_capsuleRadius =
-        m_urdfScaling * std::stod(shape->Attribute("radius"));
-    geom.m_capsuleHeight =
-        m_urdfScaling * std::stod(shape->Attribute("length"));
+    geom.m_capsuleRadius = std::stod(shape->Attribute("radius"));
+    geom.m_capsuleHeight = std::stod(shape->Attribute("length"));
 
   } else if (type_name == "capsule") {
     geom.m_type = GEOM_CAPSULE;
@@ -612,10 +609,8 @@ bool Parser::parseGeometry(Geometry& geom, XMLElement* g) {
           << "E - Capsule shape must have both length and radius attributes";
       return false;
     }
-    geom.m_capsuleRadius =
-        m_urdfScaling * std::stod(shape->Attribute("radius"));
-    geom.m_capsuleHeight =
-        m_urdfScaling * std::stod(shape->Attribute("length"));
+    geom.m_capsuleRadius = std::stod(shape->Attribute("radius"));
+    geom.m_capsuleHeight = std::stod(shape->Attribute("length"));
 
   } else if (type_name == "mesh") {
     geom.m_type = GEOM_MESH;
@@ -636,8 +631,6 @@ bool Parser::parseGeometry(Geometry& geom, XMLElement* g) {
         }
       }
     }
-
-    geom.m_meshScale *= m_urdfScaling;
 
     if (fn.empty()) {
       Mn::Debug{} << "E - Mesh filename is empty";
@@ -757,7 +750,7 @@ bool Parser::validateMeshFile(std::string& meshFilename) {
   return meshSuccess;
 }
 
-bool Parser::initTreeAndRoot(std::shared_ptr<Model>& model) const {
+bool Parser::initTreeAndRoot(std::shared_ptr<Model> model) const {
   Mn::Debug silence{logMessages ? &std::cout : nullptr};
   // every link has children links and joints, but no parents, so we create a
   // local convenience data structure for keeping child->parent relations
@@ -845,11 +838,6 @@ bool Parser::parseJointLimits(Joint& joint,
   const char* upper_str = config->Attribute("upper");
   if (upper_str) {
     joint.m_upperLimit = std::stod(upper_str);
-  }
-
-  if (joint.m_type == PrismaticJoint) {
-    joint.m_lowerLimit *= m_urdfScaling;
-    joint.m_upperLimit *= m_urdfScaling;
   }
 
   // Get joint effort limit
