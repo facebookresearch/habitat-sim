@@ -41,24 +41,25 @@ class DepthMapShader : public Magnum::GL::AbstractShaderProgram {
 
   // ======== set uniforms ===========
   /**
-   *  @brief Set "lightSpace" matrix to the uniform on GPU
+   *  @brief Set projection matrix of the light to the uniform on GPU
    *  @return Reference to self (for method chaining)
    */
-  DepthMapShader& setLightSpaceMatrix(const Magnum::Matrix4& matrix);
+  DepthMapShader& setLightProjectionMatrix(const Magnum::Matrix4& matrix);
 
   /**
-   *  @brief Set model matrix to the uniform on GPU
+   *  @brief Set modelview matrix of the light to the uniform on GPU
+   *  NOTE: it converts a vertex from model space to light space
    *  @return Reference to self (for method chaining)
    */
-  DepthMapShader& setModelMatrix(const Magnum::Matrix4& matrix);
+  DepthMapShader& setLightModelViewMatrix(const Magnum::Matrix4& matrix);
 
  private:
   // ======= uniforms =======
   // it hurts the performance to call glGetUniformLocation() every frame due
   // to string operations. therefore, cache the locations in the constructor
   // material uniforms
-  int lightSpaceMatrixUniform_ = -1;
-  int modelMatrixUniform_ = -1;
+  int lightProjectionMatrixUniform_ = -1;
+  int lightModelViewMatrixUniform_ = -1;
 };
 
 }  // namespace gfx

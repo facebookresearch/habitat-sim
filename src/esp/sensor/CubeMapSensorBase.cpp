@@ -127,10 +127,10 @@ bool CubeMapSensorBase::renderToCubemapTexture(sim::Simulator& sim) {
     if (twoSceneGraphs) {
       VisualSensor::MoveSemanticSensorNodeHelper helper(*this, sim);
       cubeMap_->renderToTexture(*cubeMapCamera_,
-                                sim.getActiveSemanticSceneGraph(), flags);
+                                sim.getActiveSemanticSceneGraph(), "", flags);
     } else {
       cubeMap_->renderToTexture(*cubeMapCamera_,
-                                sim.getActiveSemanticSceneGraph(), flags);
+                                sim.getActiveSemanticSceneGraph(), "", flags);
     }
 
     if (twoSceneGraphs) {
@@ -141,11 +141,11 @@ bool CubeMapSensorBase::renderToCubemapTexture(sim::Simulator& sim) {
       flags &= ~gfx::RenderCamera::Flag::ClearColor;
       flags &= ~gfx::RenderCamera::Flag::ClearDepth;
       flags &= ~gfx::RenderCamera::Flag::ClearObjectId;
-      cubeMap_->renderToTexture(*cubeMapCamera_, sim.getActiveSceneGraph(),
+      cubeMap_->renderToTexture(*cubeMapCamera_, sim.getActiveSceneGraph(), "",
                                 flags);
     }
   } else {
-    cubeMap_->renderToTexture(*cubeMapCamera_, sim.getActiveSceneGraph(),
+    cubeMap_->renderToTexture(*cubeMapCamera_, sim.getActiveSceneGraph(), "",
                               flags);
   }
 

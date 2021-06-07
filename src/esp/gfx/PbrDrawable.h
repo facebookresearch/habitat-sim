@@ -9,6 +9,7 @@
 #include "esp/gfx/PbrImageBasedLighting.h"
 #include "esp/gfx/PbrShader.h"
 #include "esp/gfx/ShaderManager.h"
+#include "esp/gfx/ShadowMapManager.h"
 
 namespace esp {
 namespace gfx {
@@ -34,6 +35,13 @@ class PbrDrawable : public Drawable {
    *  @param lightSetupKey the key value for the light resource
    */
   void setLightSetup(const Magnum::ResourceKey& lightSetupKey) override;
+
+  /**
+   * @brief Set the shadow map info
+   * @param[in] manager, the shadow map manager
+   * @param[in] keys, the keys to retrieve the shadow maps for this scene graph
+   */
+  void setShadowMaps(ShadowMapManager* manager, ShadowMapKeys* keys);
 
   static constexpr const char* SHADER_KEY_TEMPLATE = "PBR-lights={}-flags={}";
 
@@ -88,6 +96,8 @@ class PbrDrawable : public Drawable {
   Magnum::Resource<MaterialData, PbrMaterialData> materialData_;
   Magnum::Resource<LightSetup> lightSetup_;
   PbrImageBasedLighting* pbrIbl_ = nullptr;
+  ShadowMapManager* shadowMapManger_ = nullptr;
+  ShadowMapKeys* shadowMapKeys_ = nullptr;
 };
 
 }  // namespace gfx

@@ -21,7 +21,7 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
                          const Mn::ResourceKey& materialDataKey,
                          DrawableGroup* group,
                          PbrImageBasedLighting* pbrIbl)
-    : Drawable{node, mesh, group},
+    : Drawable{node, mesh, DrawableType::Pbr, group},
       shaderManager_{shaderManager},
       lightSetup_{shaderManager.get<LightSetup>(lightSetupKey)},
       materialData_{
@@ -180,8 +180,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   // setup image based lighting for the shader
   if (flags_ & PbrShader::Flag::ImageBasedLighting) {
     CORRADE_INTERNAL_ASSERT(pbrIbl_);
-    shader_->bindIrradianceCubeMap(
-        // TODO: HDR Color
+    shader_->bindIrradianceCubeMap(  // TODO: HDR Color
         pbrIbl_->getIrradianceMap().getTexture(CubeMap::TextureType::Color));
     shader_->bindBrdfLUT(pbrIbl_->getBrdfLookupTable());
     shader_->bindPrefilteredMap(
@@ -269,5 +268,16 @@ PbrDrawable& PbrDrawable::updateShaderLightDirectionParameters(
   return *this;
 }
 
+void PbrDrawable::setShadowMaps(ShadowMapManager* manager,
+                                ShadowMapKeys* keys) {
+  shadowMapManger_ = manager;
+  shadowMapKeys_ = keys;
+  if (shadowMapManger_ && shadowMapKeys_) {
+    flags_ |= PbrShader::Flag::Shadows;
+  } else {
+    LOG(ERROR) << "Warning PbrDrawable::setShadowMaps(): failed to enable the "
+                  "shadows. shadow manager or the shadow keys is nullptr.";
+  }
+}
 }  // namespace gfx
 }  // namespace esp

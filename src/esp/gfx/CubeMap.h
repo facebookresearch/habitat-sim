@@ -100,6 +100,9 @@ class CubeMap {
    */
   Magnum::GL::CubeMapTexture& getTexture(TextureType type);
 
+  /** @brief get cube map size */
+  int getCubeMapSize() { return imageSize_; }
+
 #ifndef MAGNUM_TARGET_WEBGL
   /**
    * ```
@@ -174,6 +177,7 @@ class CubeMap {
    */
   void renderToTexture(CubeMapCamera& camera,
                        scene::SceneGraph& sceneGraph,
+                       const char* drawableGroupName = "",
                        RenderCamera::Flags flags = {
                            RenderCamera::Flag::FrustumCulling |
                            RenderCamera::Flag::ClearColor |

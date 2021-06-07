@@ -75,6 +75,11 @@ uniform sampler2D BrdfLUT;
 uniform samplerCube PrefilteredMap;
 #endif
 
+#if defined(SHADOWS)
+// let us try 1 point shadow first
+uniform samplerCube PointShadowMap0;
+#endif
+
 // -------------- uniforms ----------------
 #if defined(OBJECT_ID)
 uniform highp uint ObjectId;

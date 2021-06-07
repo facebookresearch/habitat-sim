@@ -495,6 +495,7 @@ void CubeMap::loadTexture(TextureType type,
 
 void CubeMap::renderToTexture(CubeMapCamera& camera,
                               scene::SceneGraph& sceneGraph,
+                              const char* drawableGroupName,
                               RenderCamera::Flags renderCameraFlags) {
   CORRADE_ASSERT(camera.isInSceneGraph(sceneGraph),
                  "CubeMap::renderToTexture(): camera is NOT attached to the "
@@ -518,7 +519,6 @@ void CubeMap::renderToTexture(CubeMapCamera& camera,
   // the camera MUST be updated as well.
   camera.updateOriginalViewingMatrix();
   for (int iFace = 0; iFace < 6; ++iFace) {
-    frameBuffer_[iFace].bind();
     camera.switchToFace(iFace);
     prepareToDraw(iFace, renderCameraFlags);
 
@@ -526,12 +526,9 @@ void CubeMap::renderToTexture(CubeMapCamera& camera,
     // camera should have renderCameraFlags so that it can do "low quality"
     // rendering, e.g., no normal maps, no specular lighting, low-poly meshes,
     // low-quality textures.
-
-    for (auto& it : sceneGraph.getDrawableGroups()) {
-      if (it.second.prepareForDraw(camera)) {
-        camera.draw(it.second, renderCameraFlags);
-      }
-    }
+    DrawableGroup& group = sceneGraph.getDrawables(drawableGroupName);
+    group.prepareForDraw(camera);
+    camera.draw(group, renderCameraFlags);
   }  // iFace
 
   // CAREFUL!!!

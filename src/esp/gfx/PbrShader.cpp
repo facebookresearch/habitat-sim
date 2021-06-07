@@ -102,6 +102,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
 
   frag.addSource(attributeLocationsStream.str())
       .addSource(outputAttributeLocationsStream.str())
+      .addSource(flags_ & Flag::Shadows ? "#define SHADOWS" : "")
       .addSource(isTextured ? "#define TEXTURED\n" : "")
       .addSource(flags_ & Flag::BaseColorTexture ? "#define BASECOLOR_TEXTURE\n"
                                                  : "")
@@ -187,6 +188,10 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
                pbrTextureUnitSpace::TextureUnit::BrdfLUT);
     setUniform(uniformLocation("PrefilteredMap"),
                pbrTextureUnitSpace::TextureUnit::PrefilteredMap);
+  }
+  if (flags_ & Flag::Shadows) {
+    setUniform(uniformLocation("PointShadowMap0"),
+               pbrTextureUnitSpace::TextureUnit::ShadowMap0);
   }
 
   // cache the uniform locations
@@ -338,6 +343,15 @@ PbrShader& PbrShader::bindPrefilteredMap(Magnum::GL::CubeMapTexture& texture) {
                  "created with image based lighting enabled",
                  *this);
   texture.bind(pbrTextureUnitSpace::TextureUnit::PrefilteredMap);
+  return *this;
+}
+
+PbrShader& PbrShader::bindPointShadowMap(Magnum::GL::CubeMapTexture& texture) {
+  CORRADE_ASSERT(flags_ & Flag::Shadows,
+                 "PbrShader::bindPointShadowMap(): the shader was not "
+                 "created with shadows enabled",
+                 *this);
+  texture.bind(pbrTextureUnitSpace::TextureUnit::ShadowMap0);
   return *this;
 }
 

@@ -66,7 +66,6 @@ class Simulator {
 
   virtual void reset();
 
- public:
   virtual void seed(uint32_t newSeed);
 
   std::shared_ptr<gfx::Renderer> getRenderer() { return renderer_; }
@@ -76,7 +75,13 @@ class Simulator {
 
   bool semanticSceneExists() const { return (semanticScene_ != nullptr); }
 
+  /**
+   * @brief get the current active scene graph
+   */
   scene::SceneGraph& getActiveSceneGraph();
+  /**
+   * @brief get the current active semantic scene graph
+   */
   scene::SceneGraph& getActiveSemanticSceneGraph();
 
   std::shared_ptr<gfx::replay::ReplayManager> getGfxReplayManager() {
@@ -1045,6 +1050,21 @@ class Simulator {
       bool renderChd = false,
       bool saveChdToObj = false);
 #endif
+
+  /**
+   * @brief For the current active scene, update the shaow map drawable group
+   */
+  void updateShadowMapDrawableGroup();
+  /**
+   * @brief compute the shadow maps for the active scene graph, and store the
+   * results in the resource manager
+   */
+  void computeShadowMaps();
+  /**
+   * @brief propergate shadow maps to the drawables
+   * NOTE: so far only pbr drawable and shader support the shadow maps
+   */
+  void setShadowMapsToDrawables();
 
  protected:
   Simulator() = default;

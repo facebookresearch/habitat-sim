@@ -60,6 +60,9 @@ set(
   PbrTextureUnit.h
   DepthMapShader.h
   DepthMapShader.cpp
+  DepthMapDrawable.cpp
+  DepthMapDrawable.h
+  ShadowMapManager.h
 )
 
 # If ptex support is enabled add relevant source files

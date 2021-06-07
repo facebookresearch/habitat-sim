@@ -184,6 +184,11 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      */
     ImageBasedLighting = 1 << 13,
 
+    /**
+     * render shadows
+     */
+    Shadows = 1 << 14,
+
     /*
      * TODO: alphaMask
      */
@@ -280,6 +285,13 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    * @return Reference to self (for method chaining)
    */
   PbrShader& bindPrefilteredMap(Magnum::GL::CubeMapTexture& texture);
+
+  /**
+   * @brief Bind the point shadow map (cubemap texture)
+   * NOTE: requires Flag::Shadows is set
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& bindPointShadowMap(Magnum::GL::CubeMapTexture& texture);
 
   // ======== set uniforms ===========
   /**

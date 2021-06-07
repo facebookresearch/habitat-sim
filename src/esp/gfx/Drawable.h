@@ -6,6 +6,7 @@
 #define ESP_GFX_DRAWABLE_H_
 
 #include <Corrade/Containers/EnumSet.h>
+#include <Corrade/Utility/Assert.h>
 
 #include "esp/core/esp.h"
 #include "magnum.h"
@@ -17,6 +18,15 @@ class SceneNode;
 namespace gfx {
 
 class DrawableGroup;
+
+enum class DrawableType : uint8_t {
+  None = 0,
+  Generic = 1,
+  Pbr = 2,
+  PTexMesh = 3,
+  MeshVisualizer = 4,
+  DepthMap = 5,
+};
 
 /**
  * @brief Drawable for use with @ref DrawableGroup.
@@ -49,14 +59,14 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
    *
    * @param node Node which will be made drawable.
    * @param mesh Mesh to draw when on render.
+   * @param type the type of this drawable
    * @param group Drawable group this drawable will be added to.
    */
   Drawable(scene::SceneNode& node,
            Magnum::GL::Mesh& mesh,
+           DrawableType type,
            DrawableGroup* group = nullptr);
   ~Drawable() override;
-
-  virtual scene::SceneNode& getSceneNode() { return node_; }
 
   /**
    * @brief Get the @ref DrawableGroup this drawable is in.
@@ -71,11 +81,23 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
    */
   uint64_t getDrawableId() const { return drawableId_; }
 
+  /**
+   * @brief setup the lights.
+   * NOTE: sub-class should override this function
+   */
   virtual void setLightSetup(
       CORRADE_UNUSED const Magnum::ResourceKey& lightSetup){};
 
-  Magnum::GL::Mesh& getMesh() { return mesh_; }
-  scene::SceneNode& getNode() { return node_; }
+  /**
+   * @brief the the scene node
+   */
+  virtual scene::SceneNode& getSceneNode() const { return node_; }
+
+  /** @brief get the GL mesh */
+  Magnum::GL::Mesh& getMesh() const { return mesh_; }
+
+  /** @brief get the drawable type */
+  DrawableType getDrawableType() const { return type_; }
 
   /**
    * @brief Get the Magnum GL mesh for visualization, highlighting (e.g., used
@@ -98,14 +120,16 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
    * Each derived drawable class needs to implement this draw() function.
    * It's nothing more than drawing itself with its group's shader.
    */
-  void draw(const Magnum::Matrix4& transformationMatrix,
-            Magnum::SceneGraph::Camera3D& camera) override = 0;
+  void draw(CORRADE_UNUSED const Magnum::Matrix4& transformationMatrix,
+            CORRADE_UNUSED Magnum::SceneGraph::Camera3D& camera) override = 0;
 
-  static uint64_t drawableIdCounter;
-  uint64_t drawableId_;
+  DrawableType type_ = DrawableType::None;
 
   scene::SceneNode& node_;
   Magnum::GL::Mesh& mesh_;
+
+  static uint64_t drawableIdCounter;
+  uint64_t drawableId_;
 };
 
 CORRADE_ENUMSET_OPERATORS(Drawable::Flags)

@@ -9,13 +9,17 @@
 #include <utility>
 
 #include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/FormatStl.h>
 #include <Corrade/Utility/String.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/GL/Context.h>
 #include <Magnum/GL/Renderer.h>
 
 #include "esp/core/esp.h"
+#include "esp/gfx/CubeMapCamera.h"
+#include "esp/gfx/DepthMapDrawable.h"
 #include "esp/gfx/Drawable.h"
+#include "esp/gfx/PbrDrawable.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/replay/Recorder.h"
@@ -37,6 +41,9 @@ namespace sim {
 using metadata::attributes::PhysicsManagerAttributes;
 using metadata::attributes::SceneObjectInstanceAttributes;
 using metadata::attributes::StageAttributes;
+
+const char* shadowMapDrawableGroupName = "static-shadow-map";
+const int shadowMapSize = 1024;
 
 Simulator::Simulator(const SimulatorConfiguration& cfg,
                      metadata::MetadataMediator::ptr _metadataMediator)
@@ -511,7 +518,7 @@ void Simulator::reset() {
   }
   const Magnum::Range3D& sceneBB =
       getActiveSceneGraph().getRootNode().computeCumulativeBB();
-  resourceManager_->setLightSetup(gfx::getDefaultLights());
+  // resourceManager_->setLightSetup(gfx::getDefaultLights());
   resourceManager_->setLightSetup(gfx::getDefaultThreePointLights(),
                                   DEFAULT_THREE_POINTS_LIGHTING_KEY);
 }  // Simulator::reset()
@@ -539,6 +546,106 @@ void Simulator::reconfigureReplayManager(bool enableGfxReplaySave) {
           -> scene::SceneNode* {
         return loadAndCreateRenderAssetInstance(assetInfo, creation);
       });
+}
+
+void Simulator::updateShadowMapDrawableGroup() {
+  scene::SceneGraph& sg = getActiveSceneGraph();
+  // currently the method is naive: destroy the existing group, and recreate one
+  sg.deleteDrawableGroup(shadowMapDrawableGroupName);
+  sg.createDrawableGroup(shadowMapDrawableGroupName);
+  const gfx::DrawableGroup& sourceGroup = sg.getDrawables();
+  gfx::DrawableGroup* shadowMapGroup =
+      sg.getDrawableGroup(shadowMapDrawableGroupName);
+  CORRADE_INTERNAL_ASSERT(shadowMapGroup);
+
+  for (size_t iDrawable = 0; iDrawable < sourceGroup.size(); ++iDrawable) {
+    const gfx::Drawable& currentDrawable =
+        static_cast<const gfx::Drawable&>(sourceGroup[iDrawable]);
+    gfx::DrawableType type = currentDrawable.getDrawableType();
+    // So far no support for the PTex (lighting-baked mesh)
+    // SKIP!!!
+    if ((type != gfx::DrawableType::Generic) &&
+        (type != gfx::DrawableType::Pbr)) {
+      continue;
+    }
+
+    esp::scene::SceneNode& node = currentDrawable.getSceneNode();
+    node.addFeature<gfx::DepthMapDrawable>(currentDrawable.getMesh(),
+                                           resourceManager_->getShaderManager(),
+                                           shadowMapGroup);
+  }
+}
+
+void Simulator::computeShadowMaps() {
+  scene::SceneGraph& sg = getActiveSceneGraph();
+  auto& shadowManager = resourceManager_->getShadowMapManger();
+  auto& shadowMapKeys = resourceManager_->getShadowMapKeys();
+  std::vector<Mn::ResourceKey>& keys = shadowMapKeys[activeSceneID_];
+
+  // In the future, TODO:
+  // should get the light setup for the scene, and compute the shadow map
+  // one by one
+  // Here we just compute 1 point show map in the center of the ceiling
+  int lightId = 0;
+  Mn::ResourceKey key(Corrade::Utility::formatString(
+      assets::ResourceManager::SHADOW_MAP_KEY_TEMPLATE, activeSceneID_,
+      lightId));
+
+  // insert the key to the data base
+  keys.push_back(key);
+
+  // create the resource if there is not one
+  Mn::Resource<gfx::CubeMap> pointShadowMap =
+      shadowManager.get<gfx::CubeMap>(key);
+  if (!pointShadowMap) {
+    shadowManager.set<gfx::CubeMap>(
+        pointShadowMap.key(),
+        new gfx::CubeMap{shadowMapSize, {gfx::CubeMap::Flag::DepthTexture}},
+        Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
+
+    CORRADE_INTERNAL_ASSERT(pointShadowMap);
+  }
+  if (pointShadowMap->getCubeMapSize() != shadowMapSize) {
+    pointShadowMap->reset(shadowMapSize);
+  }
+
+  // setup a CubeMapCamera in the root of scene graph, and set its position to
+  // light global position
+  // XXX: here we hard coded one for the ReplicaCAD model
+  scene::SceneNode& node = sg.getRootNode().createChild();
+
+  // this is the center of the ceiling of the replica cad model
+  // this is the light position!!!
+  node.setTranslation(Mn::Vector3{16.1, 7.7, 4.8});
+  gfx::CubeMapCamera camera{node};
+  camera.setProjectionMatrix(shadowMapSize,  // width of the square
+                             0.01f,          // near plane
+                             1000.0f);       // far plane
+  pointShadowMap->renderToTexture(camera, sg, shadowMapDrawableGroupName,
+                                  {gfx::RenderCamera::Flag::FrustumCulling |
+                                   gfx::RenderCamera::Flag::ClearDepth});
+}
+
+void Simulator::setShadowMapsToDrawables() {
+  scene::SceneGraph& sg = getActiveSceneGraph();
+  gfx::DrawableGroup& defaultRenderingGroup = sg.getDrawables();
+  auto& shadowManager = resourceManager_->getShadowMapManger();
+  auto& shadowMapKeys = resourceManager_->getShadowMapKeys();
+
+  for (size_t iDrawable = 0; iDrawable < defaultRenderingGroup.size();
+       ++iDrawable) {
+    const gfx::Drawable& currentDrawable =
+        static_cast<const gfx::Drawable&>(defaultRenderingGroup[iDrawable]);
+    gfx::DrawableType type = currentDrawable.getDrawableType();
+    // So far only pbr drawables support shadow
+    // SKIP!!!
+    if (type != gfx::DrawableType::Pbr) {
+      continue;
+    }
+    auto& pbrDrawable = const_cast<gfx::PbrDrawable&>(
+        static_cast<const gfx::PbrDrawable&>(currentDrawable));
+    pbrDrawable.setShadowMaps(&shadowManager, &(shadowMapKeys[activeSceneID_]));
+  }
 }
 
 scene::SceneGraph& Simulator::getActiveSceneGraph() {

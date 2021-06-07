@@ -78,16 +78,18 @@ DepthMapShader::DepthMapShader() {
   }  // if
 
   // setup uniforms
-  modelMatrixUniform_ = uniformLocation("ModelMatrix");
-  lightSpaceMatrixUniform_ = uniformLocation("LightSpaceMatrix");
+  lightModelViewMatrixUniform_ = uniformLocation("LightModelViewMatrix");
+  lightProjectionMatrixUniform_ = uniformLocation("LightProjectionMatrix");
 }
-DepthMapShader& DepthMapShader::setLightSpaceMatrix(const Mn::Matrix4& matrix) {
-  setUniform(lightSpaceMatrixUniform_, matrix);
+DepthMapShader& DepthMapShader::setLightProjectionMatrix(
+    const Mn::Matrix4& matrix) {
+  setUniform(lightProjectionMatrixUniform_, matrix);
   return *this;
 }
 
-DepthMapShader& DepthMapShader::setModelMatrix(const Mn::Matrix4& matrix) {
-  setUniform(modelMatrixUniform_, matrix);
+DepthMapShader& DepthMapShader::setLightModelViewMatrix(
+    const Mn::Matrix4& matrix) {
+  setUniform(lightModelViewMatrixUniform_, matrix);
   return *this;
 }
 

@@ -23,7 +23,7 @@ GenericDrawable::GenericDrawable(scene::SceneNode& node,
                                  const Mn::ResourceKey& lightSetupKey,
                                  const Mn::ResourceKey& materialDataKey,
                                  DrawableGroup* group /* = nullptr */)
-    : Drawable{node, mesh, group},
+    : Drawable{node, mesh, DrawableType::Generic, group},
       shaderManager_{shaderManager},
       lightSetup_{shaderManager.get<LightSetup>(lightSetupKey)},
       materialData_{
