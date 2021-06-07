@@ -4,8 +4,6 @@
 
 #include "ArticulatedObjectManager.h"
 
-#include "esp/physics/bullet/objectWrappers/ManagedBulletArticulatedObject.h"
-
 namespace esp {
 namespace physics {
 

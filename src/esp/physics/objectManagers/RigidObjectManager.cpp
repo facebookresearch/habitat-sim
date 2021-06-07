@@ -3,9 +3,6 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "RigidObjectManager.h"
-
-#include "esp/physics/bullet/objectWrappers/ManagedBulletRigidObject.h"
-
 namespace esp {
 namespace physics {
 

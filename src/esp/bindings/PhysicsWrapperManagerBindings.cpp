@@ -191,7 +191,12 @@ void initPhysicsWrapperManagerBindings(pybind11::module& m) {
   py::class_<RigidObjectManager, RigidBaseManager<ManagedRigidObject>,
              std::shared_ptr<RigidObjectManager>>(m, "RigidObjectManager")
       .def(
-          "add_object_by_template_id", &RigidObjectManager::addObjectByID,
+          "add_object_by_template_id",
+#ifdef ESP_BUILD_WITH_BULLET
+          &RigidObjectManager::addBulletObjectByID,
+#else
+          &RigidObjectManager::addObjectByID,
+#endif
           "object_lib_id"_a, "attachment_node"_a = nullptr,
           "light_setup_key"_a = DEFAULT_LIGHTING_KEY,
           R"(Instance an object into the scene via a template referenced by library id.
@@ -199,8 +204,12 @@ void initPhysicsWrapperManagerBindings(pybind11::module& m) {
           LightSetup key. Returns a reference to the created object.)")
       .def(
           "add_object_by_template_handle",
-          &RigidObjectManager::addObjectByHandle, "object_lib_handle"_a,
-          "attachment_node"_a = nullptr,
+#ifdef ESP_BUILD_WITH_BULLET
+          &RigidObjectManager::addBulletObjectByHandle,
+#else
+          &RigidObjectManager::addObjectByHandle,
+#endif
+          "object_lib_handle"_a, "attachment_node"_a = nullptr,
           "light_setup_key"_a = DEFAULT_LIGHTING_KEY,
           R"(Instance an object into the scene via a template referenced by its handle.
           Optionally attach the object to an existing SceneNode and assign its initial
@@ -237,10 +246,15 @@ void initPhysicsWrapperManagerBindings(pybind11::module& m) {
       m, "ArticulatedObjectManager")
 
       .def(
-          "add_articulated_object_from_urdf",
-          &ArticulatedObjectManager::addArticulatedObjectFromURDF, "filepath"_a,
-          "fixed_base"_a = false, "global_scale"_a = 1.0, "mass_scale"_a = 1.0,
-          "froce_reload"_a = false,
+          "add_articulated_object_from_URDF",
+#ifdef ESP_BUILD_WITH_BULLET
+          &ArticulatedObjectManager::addBulletArticulatedObjectFromURDF,
+#else
+          &ArticulatedObjectManager::addArticulatedObjectFromURDF,
+#endif
+
+          "filepath"_a, "fixed_base"_a = false, "global_scale"_a = 1.0,
+          "mass_scale"_a = 1.0, "force_reload"_a = false,
           R"(Load and parse a URDF file using the given 'filepath' into a model,
           then use this model to instantiate an Articulated Object in the world.
           Returns a reference to the created object.)");
