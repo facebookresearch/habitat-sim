@@ -107,7 +107,7 @@ class RigidObjectManager
       int objectID,
       CORRADE_UNUSED const std::string& objectHandle) override {
     if (auto physMgr = this->getPhysicsManager()) {
-      if (physMgr->isValidObjectID(objectID)) {
+      if (physMgr->isValidRigidObjectId(objectID)) {
         physMgr->removeObject(objectID);
       }
     }

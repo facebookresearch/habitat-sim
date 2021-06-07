@@ -363,7 +363,8 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
                                           CORRADE_UNUSED float friction) {}
 
   /**
-   * @brief reset the articulated rigid body to 0 velocities and positions.
+   * @brief reset the articulated object state by clearing forces and zeroing
+   * positions and velocities. Does not change root state.
    */
   virtual void reset() {}
 

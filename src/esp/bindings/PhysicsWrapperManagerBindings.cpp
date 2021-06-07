@@ -240,7 +240,7 @@ void initPhysicsWrapperManagerBindings(pybind11::module& m) {
       m, "ArticulatedObjectManager")
 
       .def(
-          "add_articulated_object_from_URDF",
+          "add_articulated_object_from_urdf",
           &ArticulatedObjectManager::addArticulatedObjectFromURDF, "filepath"_a,
           "fixed_base"_a = false, "global_scale"_a = 1.0, "mass_scale"_a = 1.0,
           "froce_reload"_a = false,

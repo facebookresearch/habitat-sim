@@ -354,7 +354,7 @@ double BulletPhysicsManager::getStageRestitutionCoefficient() const {
 
 Magnum::Range3D BulletPhysicsManager::getCollisionShapeAabb(
     const int physObjectID) const {
-  assertIDValidity(physObjectID);
+  assertRigidIdValidity(physObjectID);
   return static_cast<BulletRigidObject*>(
              existingObjects_.at(physObjectID).get())
       ->getCollisionShapeAabb();
@@ -388,7 +388,7 @@ bool BulletPhysicsManager::contactTest(const int physObjectID,
 
 void BulletPhysicsManager::overrideCollisionGroup(const int physObjectID,
                                                   CollisionGroup group) const {
-  assertIDValidity(physObjectID);
+  assertRigidIdValidity(physObjectID);
   static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID).get())
       ->overrideCollisionGroup(group);
 }

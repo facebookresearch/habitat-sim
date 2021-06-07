@@ -85,7 +85,7 @@ class ArticulatedObjectManager
       int objectID,
       CORRADE_UNUSED const std::string& objectHandle) override {
     if (auto physMgr = this->getPhysicsManager()) {
-      if (physMgr->isValidObjectID(objectID)) {
+      if (physMgr->isValidArticulatedObjectId(objectID)) {
         physMgr->removeArticulatedObject(objectID);
       }
     }

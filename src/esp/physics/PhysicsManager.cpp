@@ -320,7 +320,7 @@ PhysicsManager::getArticulatedObjectWrapper() {
 void PhysicsManager::removeObject(const int physObjectID,
                                   bool deleteObjectNode,
                                   bool deleteVisualNode) {
-  assertIDValidity(physObjectID);
+  assertRigidIdValidity(physObjectID);
   scene::SceneNode* objectNode = &existingObjects_.at(physObjectID)->node();
   scene::SceneNode* visualNode = existingObjects_.at(physObjectID)->visualNode_;
   std::string objName = existingObjects_.at(physObjectID)->getObjectName();
@@ -474,7 +474,7 @@ int PhysicsManager::checkActiveObjects() {
 #ifdef ESP_BUILD_WITH_VHACD
 void PhysicsManager::generateVoxelization(const int physObjectID,
                                           const int resolution) {
-  assertIDValidity(physObjectID);
+  assertRigidIdValidity(physObjectID);
   existingObjects_.at(physObjectID)
       ->generateVoxelization(resourceManager_, resolution);
 }
@@ -486,7 +486,7 @@ void PhysicsManager::generateStageVoxelization(const int resolution) {
 
 std::shared_ptr<esp::geo::VoxelWrapper> PhysicsManager::getObjectVoxelization(
     const int physObjectID) const {
-  assertIDValidity(physObjectID);
+  assertRigidIdValidity(physObjectID);
   return existingObjects_.at(physObjectID)->getVoxelization();
 }
 
@@ -498,7 +498,7 @@ std::shared_ptr<esp::geo::VoxelWrapper> PhysicsManager::getStageVoxelization()
 void PhysicsManager::setObjectBBDraw(int physObjectID,
                                      DrawableGroup* drawables,
                                      bool drawBB) {
-  assertIDValidity(physObjectID);
+  assertRigidIdValidity(physObjectID);
   if (existingObjects_.at(physObjectID)->BBNode_ && !drawBB) {
     // destroy the node
     delete existingObjects_.at(physObjectID)->BBNode_;
@@ -526,7 +526,7 @@ void PhysicsManager::setObjectVoxelizationDraw(int physObjectID,
                                                const std::string& gridName,
                                                DrawableGroup* drawables,
                                                bool drawVoxelization) {
-  assertIDValidity(physObjectID);
+  assertRigidIdValidity(physObjectID);
   setVoxelizationDraw(gridName,
                       static_cast<esp::physics::RigidBase*>(
                           existingObjects_.at(physObjectID).get()),
