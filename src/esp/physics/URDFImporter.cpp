@@ -29,7 +29,8 @@ bool URDFImporter::loadURDF(const std::string& filename,
 
     // parse the URDF from file
     urdfParser_.logMessages = logMessages;
-    bool success = urdfParser_.parseURDF(filename);
+    std::shared_ptr<io::URDF::Model> urdfModel;
+    bool success = urdfParser_.parseURDF(urdfModel, filename);
     if (!success) {
       Mn::Debug{} << "Failed to parse URDF: " << filename << ", aborting.";
       return false;
@@ -37,7 +38,7 @@ bool URDFImporter::loadURDF(const std::string& filename,
 
     if (logMessages) {
       Mn::Debug{} << "Done parsing URDF model: ";
-      urdfParser_.getModel()->printKinematicChain();
+      urdfModel->printKinematicChain();
     }
 
     // if reloading, clear the old model
@@ -46,7 +47,7 @@ bool URDFImporter::loadURDF(const std::string& filename,
     }
 
     // register the new model
-    modelCache_.emplace(filename, urdfParser_.getModel());
+    modelCache_.emplace(filename, urdfModel);
   }
   activeModel_ = modelCache_.at(filename);
 

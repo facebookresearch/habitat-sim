@@ -118,23 +118,51 @@ TEST(IOTest, parseURDF) {
   URDF::Parser parser;
 
   // load the iiwa test asset
-  parser.parseURDF(iiwaURDF);
-  auto model = parser.getModel();
-  Cr::Utility::Debug() << "name: " << model->m_name;
-  EXPECT_EQ(model->m_name, "lbr_iiwa");
-  Cr::Utility::Debug() << "file: " << model->m_sourceFile;
-  EXPECT_EQ(model->m_sourceFile, iiwaURDF);
-  Cr::Utility::Debug() << "links: " << model->m_links;
-  EXPECT_EQ(model->m_links.size(), 8);
-  Cr::Utility::Debug() << "root links: " << model->m_rootLinks;
-  EXPECT_EQ(model->m_rootLinks.size(), 1);
-  Cr::Utility::Debug() << "joints: " << model->m_joints;
-  EXPECT_EQ(model->m_joints.size(), 7);
-  Cr::Utility::Debug() << "materials: " << model->m_materials;
-  EXPECT_EQ(model->m_materials.size(), 3);
+  std::shared_ptr<esp::io::URDF::Model> urdfModel;
+  parser.parseURDF(urdfModel, iiwaURDF);
+  Cr::Utility::Debug() << "name: " << urdfModel->m_name;
+  EXPECT_EQ(urdfModel->m_name, "lbr_iiwa");
+  Cr::Utility::Debug() << "file: " << urdfModel->m_sourceFile;
+  EXPECT_EQ(urdfModel->m_sourceFile, iiwaURDF);
+  Cr::Utility::Debug() << "links: " << urdfModel->m_links;
+  EXPECT_EQ(urdfModel->m_links.size(), 8);
+  Cr::Utility::Debug() << "root links: " << urdfModel->m_rootLinks;
+  EXPECT_EQ(urdfModel->m_rootLinks.size(), 1);
+  Cr::Utility::Debug() << "joints: " << urdfModel->m_joints;
+  EXPECT_EQ(urdfModel->m_joints.size(), 7);
+  Cr::Utility::Debug() << "materials: " << urdfModel->m_materials;
+  EXPECT_EQ(urdfModel->m_materials.size(), 3);
+
+  // check global scaling
+  EXPECT_EQ(urdfModel->getGlobalScaling(), 1.0);
+  // this link is a mesh shape, so check the mesh scale
+  EXPECT_EQ(urdfModel->getLink(1)->m_collisionArray.back().m_geometry.m_type,
+            5);
+  EXPECT_EQ(
+      urdfModel->getLink(1)->m_collisionArray.back().m_geometry.m_meshScale,
+      Mn::Vector3{1.0});
+  urdfModel->setGlobalScaling(2.0);
+  EXPECT_EQ(urdfModel->getGlobalScaling(), 2.0);
+  EXPECT_EQ(
+      urdfModel->getLink(1)->m_collisionArray.back().m_geometry.m_meshScale,
+      Mn::Vector3{2.0});
+
+  // check mass scaling
+  EXPECT_EQ(urdfModel->getMassScaling(), 1.0);
+  EXPECT_EQ(urdfModel->getLink(1)->m_inertia.m_mass, 4.0);
+  urdfModel->setMassScaling(3.0);
+  EXPECT_EQ(urdfModel->getMassScaling(), 3.0);
+  EXPECT_EQ(urdfModel->getLink(1)->m_inertia.m_mass, 12.0);
 
   // test overwrite re-load
-  parser.parseURDF(iiwaURDF);
+  parser.parseURDF(urdfModel, iiwaURDF);
+  // should have default values again
+  EXPECT_EQ(urdfModel->getGlobalScaling(), 1.0);
+  EXPECT_EQ(urdfModel->getMassScaling(), 1.0);
+  EXPECT_EQ(
+      urdfModel->getLink(1)->m_collisionArray.back().m_geometry.m_meshScale,
+      Mn::Vector3{1.0});
+  EXPECT_EQ(urdfModel->getLink(1)->m_inertia.m_mass, 4.0);
 }
 
 /**
