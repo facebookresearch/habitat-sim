@@ -38,7 +38,7 @@ namespace physics {
  * @param classStrPrefix string prefix for python class name specification.
  */
 
-template <typename T, typename U = ManagedRigidObject>
+template <typename T, typename U>
 void declareBaseWrapperManager(py::module& m,
                                const std::string& objType,
                                const std::string& classStrPrefix) {
@@ -161,7 +161,7 @@ void declareBaseWrapperManager(py::module& m,
            "handle"_a);
 }  // declareBaseWrapperManager
 
-template <typename T, typename U = ManagedRigidObject>
+template <typename T, typename U>
 void declareRigidBaseWrapperManager(py::module& m,
                                     CORRADE_UNUSED const std::string& objType,
                                     const std::string& classStrPrefix) {
@@ -184,11 +184,11 @@ void initPhysicsWrapperManagerBindings(pybind11::module& m) {
 
 #else
   // if dynamics library not being used, just use base rigid object
-  declareBaseWrapperManager<ManagedRigidObject>(m, "RigidObject",
-                                                "RigidObject");
+  declareBaseWrapperManager<ManagedRigidObject, ManagedRigidObject>(
+      m, "RigidObject", "RigidObject");
 
-  declareRigidBaseWrapperManager<ManagedRigidObject>(m, "RigidObject",
-                                                     "RigidObject");
+  declareRigidBaseWrapperManager<ManagedRigidObject, ManagedRigidObject>(
+      m, "RigidObject", "RigidObject");
 #endif
   // RigidObject wrapper manager
   py::class_<RigidObjectManager, RigidBaseManager<ManagedRigidObject>,
@@ -230,8 +230,8 @@ void initPhysicsWrapperManagerBindings(pybind11::module& m) {
 
 #else
   // if dynamics library not being used, just use base rigid object
-  declareBaseWrapperManager<ManagedArticulatedObject>(m, "ArticulatedObject",
-                                                      "ArticulatedObject");
+  declareBaseWrapperManager<ManagedArticulatedObject, ManagedArticulatedObject>(
+      m, "ArticulatedObject", "ArticulatedObject");
 
 #endif
   py::class_<ArticulatedObjectManager,
