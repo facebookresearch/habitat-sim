@@ -97,9 +97,18 @@ Use "CMAKE_ARGS="..." pip install ." to set cmake args with pip""",
     )
     parser.add_argument(
         "--no-lto",
-        action="store_true",
-        help="Disables Link Time Optimization for faster compile times at the expense of performance.",
+        dest="lto",
+        default=None,
+        action="store_false",
+        help="Disables Link Time Optimization: faster compile times but worse performance.",
     )
+    parser.add_argument(
+        "--lto",
+        dest="lto",
+        action="store_true",
+        help="Enables Link Time Optimization: better performance but longer compile time",
+    )
+
     parser.add_argument(
         "--cache-args",
         dest="cache_args",
@@ -236,6 +245,12 @@ class CMakeBuild(build_ext):
             "-DPYTHON_EXECUTABLE=" + sys.executable,
             "-DCMAKE_EXPORT_COMPILE_COMMANDS={}".format("OFF" if is_pip() else "ON"),
         ]
+        if args.lto is not None:
+            cmake_args += [
+                "-DCMAKE_INTERPROCEDURAL_OPTIMIZATION={}".format(
+                    "ON" if args.lto else "OFF"
+                )
+            ]
         cmake_args += shlex.split(args.cmake_args)
 
         build_type = args.build_type
@@ -248,8 +263,6 @@ class CMakeBuild(build_ext):
 
         cmake_args += ["-DCMAKE_BUILD_TYPE=" + build_type]
 
-        if args.no_lto:
-            cmake_args += ["-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF"]
         build_args += ["--"]
 
         if has_ninja():

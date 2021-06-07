@@ -68,9 +68,6 @@ if(NOT CMAKE_BUILD_TYPE)
           FORCE
   )
 endif()
-if(NOT DEFINED CMAKE_INTERPROCEDURAL_OPTIMIZATION AND CMAKE_BUILD_TYPE MATCHES "Rel")
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
-endif()
 if(CMAKE_INTERPROCEDURAL_OPTIMIZATION)
   if(EMSCRIPTEN)
     # Magnum's Toolchain has issues with INTERPROCEDURAL_OPTIMIZATION
@@ -84,12 +81,12 @@ if(CMAKE_INTERPROCEDURAL_OPTIMIZATION)
     # Policy that enables INTERPROCEDURAL_OPTIMIZATION
     set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
     cmake_policy(SET CMP0069 NEW)
-    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
       # Clang has some issues with thinLTO (segfaults on final linking)
       # This enables full LTO through CMake
       # FullLTO is slow, but may yield performance improvements.
-      add_compile_options(-flto=full)
+      #set(CMAKE_{lang}_COMPILE_OPTIONS_IPO ${CMAKE_CXX_COMPILE_OPTIONS_IPO} -flto)
+      add_compile_options("-flto=full") # alternate way of forcing FAT LTO.
     endif()
   endif()
 endif()
