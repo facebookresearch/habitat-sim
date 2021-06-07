@@ -77,6 +77,26 @@ class PhysicsManagerTest : public testing::Test {
     rigidObjectManager_ = physicsManager_->getRigidObjectManager();
   }
 
+  auto makeObjectGetWrapper(const std::string& objectFile,
+                            esp::gfx::DrawableGroup* drawables = nullptr,
+                            esp::scene::SceneNode* attachmentNode = nullptr) {
+    if (drawables == nullptr) {
+      drawables = &sceneManager_.getSceneGraph(sceneID_).getDrawables();
+    }
+    int objectId =
+        physicsManager_->addObject(objectFile, drawables, attachmentNode);
+#ifdef ESP_BUILD_WITH_BULLET
+    esp::physics::ManagedBulletRigidObject::ptr objectWrapper =
+        rigidObjectManager_
+            ->getObjectCopyByID<esp::physics::ManagedBulletRigidObject>(
+                objectId);
+#else
+    esp::physics::ManagedRigidObject::ptr objectWrapper =
+        rigidObjectManager_->getObjectCopyByID(objectId);
+#endif
+    return objectWrapper;
+  }
+
   // must declare these in this order due to avoid deallocation errors
   esp::gfx::WindowlessContext::uptr context_;
 
@@ -138,7 +158,7 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
             Magnum::Matrix4::rotationX(Magnum::Math::Rad<float>(-1.56)) *
             Magnum::Matrix4::rotationY(Magnum::Math::Rad<float>(-0.25))};
         float boxHeight = 2.0 + (o * 2);
-        Magnum::Vector3 initialPosition{0.0, boxHeight + 1.25f, 0.0};
+        Magnum::Vector3 initialPosition{0.0, boxHeight + 1.5f, 0.0};
         objWrapper->setRotation(
             Magnum::Quaternion::fromMatrix(R.rotationNormalized()));
         objWrapper->setTranslation(initialPosition);
@@ -204,10 +224,8 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
       objectAttributesManager->registerObject(objectTemplate);
       physicsManager_->reset();
 
-      int objectId = physicsManager_->addObject(
+      auto objectWrapper = makeObjectGetWrapper(
           objectFile, &sceneManager_.getSceneGraph(sceneID_).getDrawables());
-
-      auto objectWrapper = rigidObjectManager_->getObjectCopyByID(objectId);
       ASSERT_NE(objectWrapper, nullptr);
 
       Magnum::Vector3 initialPosition{0.0, 0.25, 0.0};
@@ -240,7 +258,7 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
         prevPosition = position;
       }
 
-      rigidObjectManager_->removePhysObjectByID(objectId);
+      rigidObjectManager_->removePhysObjectByID(objectWrapper->getID());
     }
   }
 }
@@ -267,38 +285,64 @@ TEST_F(PhysicsManagerTest, DiscreteContactTest) {
     // generate two centered boxes with dimension 2x2x2
     auto objWrapper0 = rigidObjectManager_->addObjectByHandle(objectFile);
     auto objWrapper1 = rigidObjectManager_->addObjectByHandle(objectFile);
-    int objectId0 = objWrapper0->getID();
-    int objectId1 = objWrapper1->getID();
 
     // place them in collision free location (0.1 about ground plane and 0.2
     // apart)
     objWrapper0->setTranslation(Magnum::Vector3{0, 1.1, 0});
     objWrapper1->setTranslation(Magnum::Vector3{2.2, 1.1, 0});
-    ASSERT_FALSE(physicsManager_->contactTest(objectId0));
-    ASSERT_FALSE(physicsManager_->contactTest(objectId1));
+    ASSERT_FALSE(objWrapper0->contactTest());
+    ASSERT_FALSE(objWrapper1->contactTest());
 
     // move box 0 into floor
     objWrapper0->setTranslation(Magnum::Vector3{0, 0.9, 0});
-    ASSERT_TRUE(physicsManager_->contactTest(objectId0));
-    ASSERT_FALSE(physicsManager_->contactTest(objectId1));
+    ASSERT_TRUE(objWrapper0->contactTest());
+    ASSERT_FALSE(objWrapper1->contactTest());
+    // set box 0 STATIC (STATIC vs STATIC stage)
+    objWrapper0->setMotionType(esp::physics::MotionType::STATIC);
+    ASSERT_FALSE(objWrapper0->contactTest());
+    // set box 0 KINEMATIC (KINEMATIC vs STATIC stage)
+    objWrapper0->setMotionType(esp::physics::MotionType::KINEMATIC);
+    ASSERT_FALSE(objWrapper0->contactTest());
+    // reset to DYNAMIC
+    objWrapper0->setMotionType(esp::physics::MotionType::DYNAMIC);
 
     // set stage to non-collidable
     ASSERT_TRUE(physicsManager_->getStageIsCollidable());
     physicsManager_->setStageIsCollidable(false);
     ASSERT_FALSE(physicsManager_->getStageIsCollidable());
-    ASSERT_FALSE(physicsManager_->contactTest(objectId0));
+    ASSERT_FALSE(objWrapper0->contactTest());
 
     // move box 0 into box 1
     objWrapper0->setTranslation(Magnum::Vector3{1.1, 1.1, 0});
-    ASSERT_TRUE(physicsManager_->contactTest(objectId0));
-    ASSERT_TRUE(physicsManager_->contactTest(objectId1));
+    ASSERT_TRUE(objWrapper0->contactTest());
+    ASSERT_TRUE(objWrapper1->contactTest());
+    // set box 0 STATIC (STATIC vs DYNAMIC)
+    objWrapper0->setMotionType(esp::physics::MotionType::STATIC);
+    ASSERT_TRUE(objWrapper0->contactTest());
+    ASSERT_TRUE(objWrapper1->contactTest());
+    // set box 1 STATIC (STATIC vs STATIC)
+    objWrapper1->setMotionType(esp::physics::MotionType::STATIC);
+    ASSERT_FALSE(objWrapper0->contactTest());
+    ASSERT_FALSE(objWrapper1->contactTest());
+    // set box 0 KINEMATIC (KINEMATIC vs STATIC)
+    objWrapper0->setMotionType(esp::physics::MotionType::KINEMATIC);
+    ASSERT_FALSE(objWrapper0->contactTest());
+    ASSERT_FALSE(objWrapper1->contactTest());
+    // set box 1 KINEMATIC (KINEMATIC vs KINEMATIC)
+    objWrapper1->setMotionType(esp::physics::MotionType::KINEMATIC);
+    ASSERT_FALSE(objWrapper0->contactTest());
+    ASSERT_FALSE(objWrapper1->contactTest());
+    // reset box 0 DYNAMIC (DYNAMIC vs KINEMATIC)
+    objWrapper0->setMotionType(esp::physics::MotionType::DYNAMIC);
+    ASSERT_TRUE(objWrapper0->contactTest());
+    ASSERT_TRUE(objWrapper1->contactTest());
 
     // set box 0 to non-collidable
     ASSERT_TRUE(objWrapper0->getCollidable());
     objWrapper0->setCollidable(false);
     ASSERT_FALSE(objWrapper0->getCollidable());
-    ASSERT_FALSE(physicsManager_->contactTest(objectId0));
-    ASSERT_FALSE(physicsManager_->contactTest(objectId1));
+    ASSERT_FALSE(objWrapper0->contactTest());
+    ASSERT_FALSE(objWrapper1->contactTest());
   }
 }
 
@@ -332,31 +376,20 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
     // add the unjoined object
     objectTemplate->setJoinCollisionMeshes(false);
     objectAttributesManager->registerObject(objectTemplate);
-    int objectId0 = physicsManager_->addObject(objectFile, drawables);
-    auto objectWrapper0 =
-        rigidObjectManager_
-            ->getObjectCopyByID<esp::physics::ManagedBulletRigidObject>(
-                objectId0);
+    auto objectWrapper0 = makeObjectGetWrapper(objectFile, drawables);
     ASSERT_NE(objectWrapper0, nullptr);
 
     // add the joined object
     objectTemplate->setJoinCollisionMeshes(true);
     objectAttributesManager->registerObject(objectTemplate);
-    int objectId1 = physicsManager_->addObject(objectFile, drawables);
-    auto objectWrapper1 =
-        rigidObjectManager_
-            ->getObjectCopyByID<esp::physics::ManagedBulletRigidObject>(
-                objectId1);
+
+    auto objectWrapper1 = makeObjectGetWrapper(objectFile, drawables);
     ASSERT_NE(objectWrapper1, nullptr);
 
     // add bounding box object
     objectTemplate->setBoundingBoxCollisions(true);
     objectAttributesManager->registerObject(objectTemplate);
-    int objectId2 = physicsManager_->addObject(objectFile, drawables);
-    auto objectWrapper2 =
-        rigidObjectManager_
-            ->getObjectCopyByID<esp::physics::ManagedBulletRigidObject>(
-                objectId2);
+    auto objectWrapper2 = makeObjectGetWrapper(objectFile, drawables);
     ASSERT_NE(objectWrapper2, nullptr);
 
     esp::physics::BulletPhysicsManager* bPhysManager =
@@ -419,18 +452,10 @@ TEST_F(PhysicsManagerTest, ConfigurableScaling) {
 
     Magnum::Range3D boundsGroundTruth(-abs(testScale), abs(testScale));
 
-    int objectId = physicsManager_->addObject(objectFile, &drawables);
-#ifdef ESP_BUILD_WITH_BULLET
-    auto objectWrapper =
-        rigidObjectManager_
-            ->getObjectCopyByID<esp::physics::ManagedBulletRigidObject>(
-                objectId);
-#else
-    auto objectWrapper = rigidObjectManager_->getObjectCopyByID(objectId);
-#endif
+    auto objectWrapper = makeObjectGetWrapper(objectFile, &drawables);
     ASSERT_NE(objectWrapper, nullptr);
 
-    objectIDs.push_back(objectId);
+    objectIDs.push_back(objectWrapper->getID());
 
     const Magnum::Range3D& visualBounds =
         objectWrapper->getSceneNode()->getCumulativeBB();
@@ -476,14 +501,7 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
 
   auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
 
-  int objectId = physicsManager_->addObject(objectFile, &drawables);
-#ifdef ESP_BUILD_WITH_BULLET
-  auto objectWrapper =
-      rigidObjectManager_
-          ->getObjectCopyByID<esp::physics::ManagedBulletRigidObject>(objectId);
-#else
-  auto objectWrapper = rigidObjectManager_->getObjectCopyByID(objectId);
-#endif
+  auto objectWrapper = makeObjectGetWrapper(objectFile, &drawables);
   ASSERT_NE(objectWrapper, nullptr);
 
   objectWrapper->setTranslation(Magnum::Vector3{0, 1.0, 0});
@@ -512,7 +530,7 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
 
   // test constant velocity control mechanism
   esp::physics::VelocityControl::ptr velControl =
-      physicsManager_->getVelocityControl(objectId);
+      objectWrapper->getVelocityControl();
   velControl->controllingAngVel = true;
   velControl->controllingLinVel = true;
   velControl->linVel = Magnum::Vector3{1.0, -1.0, 1.0};
@@ -628,14 +646,8 @@ TEST_F(PhysicsManagerTest, TestSceneNodeAttachment) {
   auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
 
   // Test attaching newNode to a RigidBody
-  int objectId = physicsManager_->addObject(objectFile, &drawables, newNode);
-#ifdef ESP_BUILD_WITH_BULLET
-  auto objectWrapper =
-      rigidObjectManager_
-          ->getObjectCopyByID<esp::physics::ManagedBulletRigidObject>(objectId);
-#else
-  auto objectWrapper = rigidObjectManager_->getObjectCopyByID(objectId);
-#endif
+
+  auto objectWrapper = makeObjectGetWrapper(objectFile, &drawables, newNode);
   ASSERT_NE(objectWrapper, nullptr);
 
   ASSERT_EQ(objectWrapper->getSceneNode(), newNode);
@@ -647,18 +659,20 @@ TEST_F(PhysicsManagerTest, TestSceneNodeAttachment) {
   ASSERT_EQ(newNode->translation(), newPos);
 
   // Test leaving newNode without visualNode_ after destroying the RigidBody
-  physicsManager_->removeObject(objectId, false, true);
+  physicsManager_->removeObject(objectWrapper->getID(), false, true);
   ASSERT(newNode->children().isEmpty());
 
   // Test leaving the visualNode attached to newNode after destroying the
   // RigidBody
-  objectId = physicsManager_->addObject(objectFile, &drawables, newNode);
-  physicsManager_->removeObject(objectId, false, false);
+  objectWrapper = makeObjectGetWrapper(objectFile, &drawables, newNode);
+  ASSERT_NE(objectWrapper, nullptr);
+  physicsManager_->removeObject(objectWrapper->getID(), false, false);
   ASSERT(!newNode->children().isEmpty());
 
   // Test destroying newNode with the RigidBody
-  objectId = physicsManager_->addObject(objectFile, &drawables, newNode);
-  physicsManager_->removeObject(objectId, true, true);
+  objectWrapper = makeObjectGetWrapper(objectFile, &drawables, newNode);
+  ASSERT_NE(objectWrapper, nullptr);
+  physicsManager_->removeObject(objectWrapper->getID(), true, true);
   ASSERT_NE(root.children().last(), newNode);
 }
 
@@ -691,37 +705,37 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
 
     int boxId =
         objectAttributesManager->registerObject(ObjectAttributes, objectFile);
+    auto objTemplate = objectAttributesManager->getObjectByID(boxId);
 
     auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
 
-    std::vector<int> instancedObjects;
     float stageCollisionMargin = 0.04;
 
     for (int testId = 0; testId < 3; testId++) {
-      instancedObjects.push_back(physicsManager_->addObject(boxId, &drawables));
-      instancedObjects.push_back(physicsManager_->addObject(boxId, &drawables));
+      auto objWrapper0 =
+          makeObjectGetWrapper(objTemplate->getHandle(), &drawables);
+      auto objWrapper1 =
+          makeObjectGetWrapper(objTemplate->getHandle(), &drawables);
 
       switch (testId) {
         case 0: {
           // test 0: stacking two DYNAMIC objects
-          physicsManager_->setTranslation(
-              instancedObjects[0],
+          objWrapper0->setTranslation(
               {0, stageCollisionMargin + boxHalfExtent, 0});
-          physicsManager_->setTranslation(
-              instancedObjects[1],
+          objWrapper1->setTranslation(
               {0, stageCollisionMargin + boxHalfExtent * 3, 0});
 
           while (physicsManager_->getWorldTime() < 6.0) {
             physicsManager_->stepPhysics(0.1);
           }
-          ASSERT_FALSE(physicsManager_->isActive(instancedObjects[0]));
-          ASSERT_FALSE(physicsManager_->isActive(instancedObjects[1]));
+          ASSERT_FALSE(objWrapper0->isActive());
+          ASSERT_FALSE(objWrapper1->isActive());
           ASSERT_LE(
-              (physicsManager_->getTranslation(instancedObjects[0]) -
+              (objWrapper0->getTranslation() -
                Magnum::Vector3{0.0, stageCollisionMargin + boxHalfExtent, 0.0})
                   .length(),
               1.0e-3);
-          ASSERT_LE((physicsManager_->getTranslation(instancedObjects[1]) -
+          ASSERT_LE((objWrapper1->getTranslation() -
                      Magnum::Vector3{
                          0.0, stageCollisionMargin + boxHalfExtent * 3, 0.0})
                         .length(),
@@ -729,60 +743,52 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
         } break;
         case 1: {
           // test 1: stacking a DYNAMIC object on a STATIC object
-          physicsManager_->setTranslation(instancedObjects[0],
-                                          {0, boxHalfExtent * 2, 0});
-          physicsManager_->setObjectMotionType(
-              instancedObjects[0], esp::physics::MotionType::STATIC);
-          physicsManager_->setTranslation(instancedObjects[1],
-                                          {0, boxHalfExtent * 5, 0});
+          objWrapper0->setTranslation({0, boxHalfExtent * 2, 0});
+          objWrapper0->setMotionType(esp::physics::MotionType::STATIC);
+          objWrapper1->setTranslation({0, boxHalfExtent * 5, 0});
 
           while (physicsManager_->getWorldTime() < 6.0) {
             physicsManager_->stepPhysics(0.1);
           }
-          ASSERT_FALSE(physicsManager_->isActive(instancedObjects[1]));
-          ASSERT_LE((physicsManager_->getTranslation(instancedObjects[0]) -
+          ASSERT_FALSE(objWrapper1->isActive());
+          ASSERT_LE((objWrapper0->getTranslation() -
                      Magnum::Vector3{0.0, boxHalfExtent * 2, 0.0})
                         .length(),
                     1.0e-4);
-          ASSERT_LE((physicsManager_->getTranslation(instancedObjects[1]) -
+          ASSERT_LE((objWrapper1->getTranslation() -
                      Magnum::Vector3{0.0, boxHalfExtent * 4, 0.0})
                         .length(),
                     2.0e-4);
         } break;
         case 2: {
           // test 2: stacking a DYNAMIC object on a moving KINEMATIC object
-          physicsManager_->setTranslation(instancedObjects[0],
-                                          {0, boxHalfExtent * 2, 0});
-          physicsManager_->setObjectMotionType(
-              instancedObjects[0], esp::physics::MotionType::KINEMATIC);
+          objWrapper0->setTranslation({0, boxHalfExtent * 2, 0});
+          objWrapper0->setMotionType(esp::physics::MotionType::KINEMATIC);
 
           esp::physics::VelocityControl::ptr velCon =
-              physicsManager_->getVelocityControl(instancedObjects[0]);
+              objWrapper0->getVelocityControl();
           velCon->controllingLinVel = true;
           velCon->linVel = {0.2, 0, 0};
 
-          physicsManager_->setTranslation(instancedObjects[1],
-                                          {0, boxHalfExtent * 5, 0});
+          objWrapper1->setTranslation({0, boxHalfExtent * 5, 0});
 
           while (physicsManager_->getWorldTime() < 3.0) {
-            physicsManager_->stepPhysics(0.1);
+            // take single sub-steps for velocity control precision
+            physicsManager_->stepPhysics(-1);
           }
-          ASSERT_LE((physicsManager_->getTranslation(instancedObjects[0]) -
-                     Magnum::Vector3{0.62, boxHalfExtent * 2, 0.0})
+          ASSERT_LE((objWrapper0->getTranslation() -
+                     Magnum::Vector3{0.6, boxHalfExtent * 2, 0.0})
                         .length(),
-                    1.0e-4);
-          ASSERT_LE((physicsManager_->getTranslation(instancedObjects[1]) -
-                     Magnum::Vector3{0.578, boxHalfExtent * 4, 0.0})
+                    1.0e-3);
+          ASSERT_LE((objWrapper1->getTranslation() -
+                     Magnum::Vector3{0.5, boxHalfExtent * 4, 0.0})
                         .length(),
-                    2.0e-2);
+                    2.0e-3);
         } break;
       }
 
       // reset the scene
-      for (auto id : instancedObjects) {
-        physicsManager_->removeObject(id);
-      }
-      instancedObjects.clear();
+      rigidObjectManager_->removeAllObjects();
       physicsManager_->reset();  // time=0
     }
   }
@@ -806,9 +812,8 @@ TEST_F(PhysicsManagerTest, TestNumActiveContactPoints) {
 
     // add a single cube
     Mn::Vector3 stackBase(0.21964, 1.29183, -0.0897472);
-    std::vector<int> cubeIds;
-    cubeIds.push_back(physicsManager_->addObject(cubeHandle, &drawables));
-    physicsManager_->setTranslation(cubeIds.back(), stackBase);
+    auto objWrapper0 = makeObjectGetWrapper(cubeHandle, &drawables);
+    objWrapper0->setTranslation(stackBase);
 
     // no active contact points at start
     ASSERT_EQ(physicsManager_->getNumActiveContactPoints(), 0);
@@ -872,16 +877,15 @@ TEST_F(PhysicsManagerTest, TestRemoveSleepingSupport) {
 
     // create a stack of cubes in free space
     Mn::Vector3 stackBase(0.21964, 1.29183, -0.0897472);
-    std::vector<int> cubeIds;
+    std::vector<esp::physics::ManagedRigidObject::ptr> cubes;
     int stackSize = 4;
     for (int i = 0; i < stackSize; ++i) {
-      cubeIds.push_back(physicsManager_->addObject(cubeHandle, &drawables));
-      physicsManager_->setTranslation(cubeIds.back(),
-                                      (Mn::Vector3(0, 0.2, 0) * i) + stackBase);
+      auto cubeWrapper = makeObjectGetWrapper(cubeHandle, &drawables);
+      cubeWrapper->setTranslation((Mn::Vector3(0, 0.2, 0) * i) + stackBase);
+      cubes.push_back(cubeWrapper);
     }
 
-    physicsManager_->setObjectMotionType(cubeIds.front(),
-                                         esp::physics::MotionType::STATIC);
+    cubes[0]->setMotionType(esp::physics::MotionType::STATIC);
 
     for (int testCase = 0; testCase < 2; ++testCase) {
       // reset time to 0, should not otherwise modify state
@@ -894,8 +898,8 @@ TEST_F(PhysicsManagerTest, TestRemoveSleepingSupport) {
       }
 
       // cubes should be sleeping
-      for (auto id : cubeIds) {
-        ASSERT(!physicsManager_->isActive(id));
+      for (auto cube : cubes) {
+        ASSERT(!cube->isActive());
       }
 
       // no active contact points
@@ -904,22 +908,20 @@ TEST_F(PhysicsManagerTest, TestRemoveSleepingSupport) {
       if (testCase == 0) {
         // first remove the bottom-most DYNAMIC object, expecting those above to
         // fall
-        physicsManager_->removeObject(cubeIds[1]);
-        cubeIds.erase(cubeIds.begin() + 1);
+        rigidObjectManager_->removePhysObjectByID(cubes[1]->getID());
+        cubes.erase(cubes.begin() + 1);
       } else if (testCase == 1) {
         // second remove the STATIC bottom cube
-        physicsManager_->removeObject(cubeIds.front());
-        cubeIds.erase(cubeIds.begin());
+        rigidObjectManager_->removePhysObjectByID(cubes[0]->getID());
+        cubes.erase(cubes.begin());
       }
 
       // remaining cubes should now be awake
-      for (auto id : cubeIds) {
-        if (physicsManager_->getObjectMotionType(id) !=
-            esp::physics::MotionType::STATIC) {
-          ASSERT(physicsManager_->isActive(id));
+      for (auto cube : cubes) {
+        if (cube->getMotionType() != esp::physics::MotionType::STATIC) {
+          ASSERT(cube->isActive());
         }
       }
-
       ASSERT_GT(physicsManager_->getNumActiveContactPoints(), 0);
     }
   }

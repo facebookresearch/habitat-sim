@@ -146,21 +146,20 @@ void BulletPhysicsManager::stepPhysics(double dt) {
     } else if (objectItr.second->getMotionType() == MotionType::DYNAMIC) {
       if (velControl->controllingLinVel) {
         if (velControl->linVelIsLocal) {
-          setLinearVelocity(objectItr.first,
-                            objectItr.second->node().rotation().transformVector(
-                                velControl->linVel));
+          objectItr.second->setLinearVelocity(
+              objectItr.second->node().rotation().transformVector(
+                  velControl->linVel));
         } else {
-          setLinearVelocity(objectItr.first, velControl->linVel);
+          objectItr.second->setLinearVelocity(velControl->linVel);
         }
       }
       if (velControl->controllingAngVel) {
         if (velControl->angVelIsLocal) {
-          setAngularVelocity(
-              objectItr.first,
+          objectItr.second->setAngularVelocity(
               objectItr.second->node().rotation().transformVector(
                   velControl->angVel));
         } else {
-          setAngularVelocity(objectItr.first, velControl->angVel);
+          objectItr.second->setAngularVelocity(velControl->angVel);
         }
       }
     }
@@ -175,13 +174,6 @@ void BulletPhysicsManager::stepPhysics(double dt) {
   recentTimeStep_ = fixedTimeStep_;
 }
 
-void BulletPhysicsManager::setMargin(const int physObjectID,
-                                     const double margin) {
-  assertIDValidity(physObjectID);
-  static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID).get())
-      ->setMargin(margin);
-}
-
 void BulletPhysicsManager::setStageFrictionCoefficient(
     const double frictionCoefficient) {
   staticStageObject_->setFrictionCoefficient(frictionCoefficient);
@@ -190,13 +182,6 @@ void BulletPhysicsManager::setStageFrictionCoefficient(
 void BulletPhysicsManager::setStageRestitutionCoefficient(
     const double restitutionCoefficient) {
   staticStageObject_->setRestitutionCoefficient(restitutionCoefficient);
-}
-
-double BulletPhysicsManager::getMargin(const int physObjectID) const {
-  assertIDValidity(physObjectID);
-  return static_cast<BulletRigidObject*>(
-             existingObjects_.at(physObjectID).get())
-      ->getMargin();
 }
 
 double BulletPhysicsManager::getStageFrictionCoefficient() const {
@@ -223,14 +208,6 @@ Magnum::Range3D BulletPhysicsManager::getStageCollisionShapeAabb() const {
 void BulletPhysicsManager::debugDraw(const Magnum::Matrix4& projTrans) const {
   debugDrawer_.setTransformationProjectionMatrix(projTrans);
   bWorld_->debugDrawWorld();
-}
-
-bool BulletPhysicsManager::contactTest(const int physObjectID) {
-  assertIDValidity(physObjectID);
-  bWorld_->getCollisionWorld()->performDiscreteCollisionDetection();
-  return static_cast<BulletRigidObject*>(
-             existingObjects_.at(physObjectID).get())
-      ->contactTest();
 }
 
 RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
