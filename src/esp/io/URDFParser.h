@@ -334,19 +334,19 @@ class Parser {
   bool parseTransform(Magnum::Matrix4& tr, tinyxml2::XMLElement* xml) const;
   bool parseInertia(Inertia& inertia, tinyxml2::XMLElement* config);
   bool parseGeometry(Geometry& geom, tinyxml2::XMLElement* g);
-  bool parseVisual(std::shared_ptr<Model> model,
+  bool parseVisual(const std::shared_ptr<Model>& model,
                    VisualShape& visual,
                    tinyxml2::XMLElement* config);
   bool parseCollision(CollisionShape& collision, tinyxml2::XMLElement* config);
-  bool initTreeAndRoot(std::shared_ptr<Model> model) const;
+  bool initTreeAndRoot(const std::shared_ptr<Model>& model) const;
   bool parseMaterial(Material& material, tinyxml2::XMLElement* config) const;
   bool parseJointLimits(Joint& joint, tinyxml2::XMLElement* config) const;
   bool parseJointDynamics(Joint& joint, tinyxml2::XMLElement* config) const;
   bool parseJoint(Joint& joint, tinyxml2::XMLElement* config);
-  bool parseLink(std::shared_ptr<Model>,
+  bool parseLink(const std::shared_ptr<Model>&,
                  Link& link,
                  tinyxml2::XMLElement* config);
-  bool parseSensor(CORRADE_UNUSED std::shared_ptr<Model>,
+  bool parseSensor(CORRADE_UNUSED const std::shared_ptr<Model>&,
                    CORRADE_UNUSED Link& link,
                    CORRADE_UNUSED Joint& joint,
                    CORRADE_UNUSED tinyxml2::XMLElement* config) {

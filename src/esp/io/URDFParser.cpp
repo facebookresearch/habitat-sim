@@ -229,7 +229,7 @@ bool Parser::parseMaterial(Material& material, XMLElement* config) const {
   return true;
 }
 
-bool Parser::parseLink(std::shared_ptr<Model> model,
+bool Parser::parseLink(const std::shared_ptr<Model>& model,
                        Link& link,
                        XMLElement* config) {
   Mn::Debug silence{logMessages ? &std::cout : nullptr};
@@ -454,7 +454,7 @@ bool Parser::parseCollision(CollisionShape& collision, XMLElement* config) {
   return true;
 }
 
-bool Parser::parseVisual(std::shared_ptr<Model> model,
+bool Parser::parseVisual(const std::shared_ptr<Model>& model,
                          VisualShape& visual,
                          XMLElement* config) {
   Mn::Debug silence{logMessages ? &std::cout : nullptr};
@@ -750,7 +750,7 @@ bool Parser::validateMeshFile(std::string& meshFilename) {
   return meshSuccess;
 }
 
-bool Parser::initTreeAndRoot(std::shared_ptr<Model> model) const {
+bool Parser::initTreeAndRoot(const std::shared_ptr<Model>& model) const {
   Mn::Debug silence{logMessages ? &std::cout : nullptr};
   // every link has children links and joints, but no parents, so we create a
   // local convenience data structure for keeping child->parent relations
