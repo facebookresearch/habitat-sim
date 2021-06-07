@@ -505,6 +505,7 @@ jobs:
                 --with-cuda \
                 --build-datatool \
                 --run-tests \
+                --no-lto \
                 --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
 
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch

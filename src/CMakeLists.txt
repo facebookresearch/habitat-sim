@@ -77,15 +77,17 @@ if(CMAKE_INTERPROCEDURAL_OPTIMIZATION)
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION OFF)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -flto")
-  elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  else()
     # Policy that enables INTERPROCEDURAL_OPTIMIZATION
     set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
     cmake_policy(SET CMP0069 NEW)
-    # Clang has some issues with thinLTO (segfaults on final linking)
-    # This enables full LTO through CMake
-    # FullLTO is slow, but may yield performance improvements.
-    #set(CMAKE_{lang}_COMPILE_OPTIONS_IPO ${CMAKE_CXX_COMPILE_OPTIONS_IPO} -flto)
-    add_compile_options("-flto=full") # alternate way of forcing FAT LTO.
+    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+      # Clang has some issues with thinLTO (segfaults on final linking)
+      # This enables full LTO through CMake
+      # FullLTO is slow, but may yield performance improvements.
+      #set(CMAKE_{lang}_COMPILE_OPTIONS_IPO ${CMAKE_CXX_COMPILE_OPTIONS_IPO} -flto)
+      add_compile_options("-flto=full") # alternate way of forcing FAT LTO.
+    endif()
   endif()
 endif()
 # avoid ld visibility warnings, should be done by CMAKE_CXX_VISIBILITY_PRESET
