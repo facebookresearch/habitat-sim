@@ -2,22 +2,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-option(
-  BUILD_BASIS_COMPRESSOR
-  "Wether or not to build the basis compressor.  Loading basis compressed meshes does NOT require this."
-  OFF
-)
-
-if(BUILD_BASIS_COMPRESSOR)
-  if(CMAKE_VERSION VERSION_LESS "3.13")
-    message("Building the basis compressor requires a newer version of cmake.")
-    message("You can get one with pip install cmake")
-  endif()
-  cmake_minimum_required(VERSION 3.13)
-  cmake_policy(SET CMP0079 NEW)
-else()
-  cmake_minimum_required(VERSION 3.10)
-endif()
+cmake_minimum_required(VERSION 3.10)
 
 option(BUILD_WITH_CUDA "Build Habitat-Sim with CUDA features enabled -- Requires CUDA"
        OFF
@@ -70,6 +55,11 @@ option(USE_SYSTEM_MAGNUM "Use system Magnum instead of a bundled submodule" OFF)
 option(USE_SYSTEM_PYBIND11 "Use system Pybind11 instead of a bundled submodule" OFF)
 option(USE_SYSTEM_RAPIDJSON "Use system RapidJSON instead of a bundled submodule" OFF)
 option(USE_SYSTEM_BULLET "Use system Bullet instead of a bundled submodule" OFF)
+option(
+  BUILD_BASIS_COMPRESSOR
+  "Wether or not to build the basis compressor.  Loading basis compressed meshes does NOT require this."
+  OFF
+)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
