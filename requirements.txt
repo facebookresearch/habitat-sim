@@ -1,4 +1,4 @@
-attrs>=19.1.0
+attrs>=21.1.0
 gitpython
 imageio
 imageio-ffmpeg
