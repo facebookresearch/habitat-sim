@@ -339,41 +339,7 @@ class Model {
    *
    * @param scaling The new absolute uniform scale.
    */
-  void setGlobalScaling(float scaling) {
-    if (scaling == m_globalScaling) {
-      // do nothing
-      return;
-    }
-
-    // Need to re-scale model, so use the ratio of new to current scale
-    float scaleCorrection = scaling / m_globalScaling;
-
-    // scale all transforms' translations
-    for (const auto& link : m_links) {
-      // scale inertial offsets
-      link.second->m_inertia.m_linkLocalFrame.translation() *= scaleCorrection;
-      // scale visual shape parameters
-      for (auto& visual : link.second->m_visualArray) {
-        scaleShape(visual, scaleCorrection);
-      }
-      // scale collision shapes
-      for (auto& collision : link.second->m_collisionArray) {
-        scaleShape(collision, scaleCorrection);
-      }
-    }
-    for (const auto& joint : m_joints) {
-      // scale joint offsets
-      joint.second->m_parentLinkToJointTransform.translation() *=
-          scaleCorrection;
-      // scale prismatic joint limits
-      if (joint.second->m_type == PrismaticJoint) {
-        joint.second->m_lowerLimit *= double(scaleCorrection);
-        joint.second->m_upperLimit *= double(scaleCorrection);
-      }
-    }
-
-    m_globalScaling = scaling;
-  }
+  void setGlobalScaling(float scaling);
 
   //! Get the currently configured global model scaling
   float getGlobalScaling() const { return m_globalScaling; }
@@ -384,24 +350,11 @@ class Model {
    *
    * @param massScaling The new absolute uniform mass scale.
    */
-  void setMassScaling(float massScaling) {
-    if (massScaling == m_massScaling) {
-      // do nothing
-      return;
-    }
-    float massScaleCorrection = massScaling / m_massScaling;
+  void setMassScaling(float massScaling);
 
-    // Only need to scale the per-link mass values. These will be further
-    // processed during import.
-    for (const auto& link : m_links) {
-      Inertia& linkInertia = link.second->m_inertia;
-      linkInertia.m_mass *= double(massScaleCorrection);
-    }
-
-    m_massScaling = massScaling;
-  }
-
-  //! Get the currently configured mass scaling of the model
+  /**
+   * @brief Get the currently configured mass scaling of the model.
+   */
   float getMassScaling() const { return m_massScaling; }
 
  protected:
@@ -414,27 +367,7 @@ class Model {
   float m_massScaling = 1.0;
 
   //! Scale the transformation and parameters of a Shape
-  void scaleShape(Shape& shape, float scale) {
-    shape.m_linkLocalFrame.translation() *= scale;
-    switch (shape.m_geometry.m_type) {
-      case GEOM_MESH: {
-        shape.m_geometry.m_meshScale *= scale;
-      } break;
-      case GEOM_BOX: {
-        shape.m_geometry.m_boxSize *= scale;
-      } break;
-      case GEOM_SPHERE: {
-        shape.m_geometry.m_sphereRadius *= double(scale);
-      } break;
-      case GEOM_CAPSULE:
-      case GEOM_CYLINDER: {
-        shape.m_geometry.m_capsuleRadius *= double(scale);
-        shape.m_geometry.m_capsuleHeight *= double(scale);
-      } break;
-      default:
-        break;
-    }
-  }
+  void scaleShape(Shape& shape, float scale);
 };
 
 /**
@@ -452,7 +385,8 @@ class Parser {
    * @param xml The source xml element to parse (e.g. <origin>).
    * @return Success or failure.
    */
-  bool parseTransform(Magnum::Matrix4& tr, tinyxml2::XMLElement* xml) const;
+  bool parseTransform(Magnum::Matrix4& tr,
+                      const tinyxml2::XMLElement* xml) const;
 
   /**
    * @brief Parse URDF link dynamic info into a datastructure.
@@ -461,7 +395,7 @@ class Parser {
    * @param config The source xml element to parse (e.g. <inertial>).
    * @return Success or failure.
    */
-  bool parseInertia(Inertia& inertia, tinyxml2::XMLElement* config);
+  bool parseInertia(Inertia& inertia, const tinyxml2::XMLElement* config);
 
   /**
    * @brief Parse URDF shape geometry info into a datastructure.
@@ -470,7 +404,7 @@ class Parser {
    * @param g The source xml element to parse (e.g. <geometry>).
    * @return Success or failure.
    */
-  bool parseGeometry(Geometry& geom, tinyxml2::XMLElement* g);
+  bool parseGeometry(Geometry& geom, const tinyxml2::XMLElement* g);
 
   /**
    * @brief Parse URDF visual shape info into a datastructure.
@@ -482,7 +416,7 @@ class Parser {
    */
   bool parseVisual(const std::shared_ptr<Model>& model,
                    VisualShape& visual,
-                   tinyxml2::XMLElement* config);
+                   const tinyxml2::XMLElement* config);
 
   /**
    * @brief Parse URDF collision shape info into a datastructure.
@@ -491,7 +425,8 @@ class Parser {
    * @param config The source xml element to parse (e.g. <collision>).
    * @return Success or failure.
    */
-  bool parseCollision(CollisionShape& collision, tinyxml2::XMLElement* config);
+  bool parseCollision(CollisionShape& collision,
+                      const tinyxml2::XMLElement* config);
 
   /**
    * @brief Traverse the link->joint kinematic chain to cache parent->child
@@ -509,7 +444,8 @@ class Parser {
    * @param config The source xml element to parse (e.g. <material>).
    * @return Success or failure.
    */
-  bool parseMaterial(Material& material, tinyxml2::XMLElement* config) const;
+  bool parseMaterial(Material& material,
+                     const tinyxml2::XMLElement* config) const;
 
   /**
    * @brief Parse joint limits from a <joint> xml element into a datastructure.
@@ -518,7 +454,7 @@ class Parser {
    * @param config The source xml element to parse (e.g. <joint>).
    * @return Success or failure.
    */
-  bool parseJointLimits(Joint& joint, tinyxml2::XMLElement* config) const;
+  bool parseJointLimits(Joint& joint, const tinyxml2::XMLElement* config) const;
 
   /**
    * @brief Parse joint dynamic info from a <joint> xml element into a
@@ -528,7 +464,8 @@ class Parser {
    * @param config The source xml element to parse (e.g. <joint>).
    * @return Success or failure.
    */
-  bool parseJointDynamics(Joint& joint, tinyxml2::XMLElement* config) const;
+  bool parseJointDynamics(Joint& joint,
+                          const tinyxml2::XMLElement* config) const;
 
   /**
    * @brief Parse joint info from a <joint> xml element into a datastructure.
@@ -537,7 +474,7 @@ class Parser {
    * @param config The source xml element to parse (e.g. <joint>).
    * @return Success or failure.
    */
-  bool parseJoint(Joint& joint, tinyxml2::XMLElement* config);
+  bool parseJoint(Joint& joint, const tinyxml2::XMLElement* config);
 
   /**
    * @brief Parse link info from a <link> xml element into a datastructure.
@@ -548,7 +485,7 @@ class Parser {
    */
   bool parseLink(const std::shared_ptr<Model>&,
                  Link& link,
-                 tinyxml2::XMLElement* config);
+                 const tinyxml2::XMLElement* config);
 
   /**
    * @brief Parse sensor info from a into a datastructure.
@@ -564,7 +501,7 @@ class Parser {
   bool parseSensor(CORRADE_UNUSED const std::shared_ptr<Model>& model,
                    CORRADE_UNUSED Link& link,
                    CORRADE_UNUSED Joint& joint,
-                   CORRADE_UNUSED tinyxml2::XMLElement* config) {
+                   CORRADE_UNUSED const tinyxml2::XMLElement* config) {
     // TODO: this
     return false;
   };
