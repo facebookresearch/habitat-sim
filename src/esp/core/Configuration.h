@@ -43,6 +43,11 @@ class Configuration {
   bool setRad(const std::string& key, Magnum::Rad value) {
     return set(key, value);
   }
+
+  void setConfigAsSubgroup(const std::string& name, Configuration& config) {
+    cfg.addGroup(name, &config.cfg);
+  }
+
   template <typename T>
   T get(const std::string& key) const {
     return cfg.value<T>(key);
@@ -62,6 +67,16 @@ class Configuration {
   }
   Magnum::Rad getRad(const std::string& key) const {
     return get<Magnum::Rad>(key);
+  }
+
+  std::shared_ptr<Configuration> getConfigSubgroupAsPtr(
+      const std::string& name) const {
+    std::shared_ptr<Configuration> configPtr =
+        std::make_shared<Configuration>();
+    if (cfg.hasGroup(name)) {
+      configPtr->cfg = *cfg.group(name);
+    }
+    return configPtr;
   }
 
   /**@brief Add a string to a group and return the resulting group size. */

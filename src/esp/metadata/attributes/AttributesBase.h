@@ -91,6 +91,25 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
     return cfg;
   }
 
+  /**
+   * @brief Sets user-specified configuration data from config file. Habitat
+   * does not parse or process this data, but it will be available to the user
+   * via python bindings for each object.
+   */
+  void setUserConfiguration(core::Configuration& userConfig) {
+    setConfigAsSubgroup("user_defined", userConfig);
+  }
+
+  /**
+   * @brief Gets a smart pointer reference to user-specified configuration data
+   * from config file. Habitat does not parse or process this data, but it will
+   * be available to the user via python bindings for each object.
+   */
+
+  std::shared_ptr<Configuration> getUserConfiguration() const {
+    return getConfigSubgroupAsPtr("user_defined");
+  }
+
  protected:
   /**
    * @brief Set this attributes' class.  Should only be set from constructor.
