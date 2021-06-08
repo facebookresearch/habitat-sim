@@ -246,7 +246,7 @@ void initPhysicsWrapperManagerBindings(pybind11::module& m) {
       m, "ArticulatedObjectManager")
 
       .def(
-          "add_articulated_object_from_URDF",
+          "add_articulated_object_from_urdf",
 #ifdef ESP_BUILD_WITH_BULLET
           &ArticulatedObjectManager::addBulletArticulatedObjectFromURDF,
 #else
