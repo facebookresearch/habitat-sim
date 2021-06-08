@@ -19,6 +19,7 @@ repos:
         exclude: ^(.eslintrc.json|tsconfig.json)
     -   id: check-merge-conflict
     -   id: check-toml
+    -   id: check-xml
     -   id: check-yaml
         exclude: ^conda-build/habitat-sim/meta.yaml
     -   id: debug-statements
@@ -27,7 +28,7 @@ repos:
     -   id: requirements-txt-fixer
 
 -   repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
-    rev: v2.0.0
+    rev: v2.1.0
     hooks:
     -   id: pretty-format-ini
         args: [--autofix]
@@ -39,10 +40,9 @@ repos:
     hooks:
     -   id: isort
         exclude: docs/
-        additional_dependencies: [toml]
 
 -   repo: https://github.com/ambv/black
-    rev: 21.5b1
+    rev: 21.5b2
     hooks:
     - id: black
       exclude: ^examples/tutorials/(nb_python|colabs)
@@ -110,7 +110,7 @@ repos:
         exclude: (^src/(cmake/Find|deps)|configure\.h\.cmake$)
 
 -   repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v7.27.0
+    rev: v7.28.0
     hooks:
     -   id: eslint
         args: [--fix, --ext .html,.js]
