@@ -418,8 +418,32 @@ void AttributesManager<T, Access>::parseUserDefinedJsonVals(
           userConfig->set(key, obj.GetString());
         } else if (obj.IsBool()) {
           userConfig->set(key, obj.GetBool());
+        } else if (obj.IsArray() && obj.Size() > 0 && obj[0].IsNumber()) {
+          // numeric vector or quaternion
+          if (obj.Size() == 3) {
+            Magnum::Vector3 val{};
+            if (io::fromJsonValue(obj, val)) {
+              userConfig->set(key, val);
+            }
+          } else if (obj.Size() == 4) {
+            // assume is quaternion
+            Magnum::Quaternion val{};
+            if (io::fromJsonValue(obj, val)) {
+              userConfig->set(key, val);
+            }
+          } else {
+            // TODO support numeric array in JSON
+            LOG(WARNING)
+                << "AttributesManager::parseUserDefinedJsonVals : For "
+                << attribs->getSimplifiedHandle()
+                << " attributes, user_defined config cell in JSON document "
+                   "contains key "
+                << key
+                << " referencing an unsupported numeric array of length : "
+                << obj.Size() << " so skipping.";
+          }
         } else {
-          // TODO support vectors?
+          // TODO support other types?
           LOG(WARNING)
               << "AttributesManager::parseUserDefinedJsonVals : For "
               << attribs->getSimplifiedHandle()
