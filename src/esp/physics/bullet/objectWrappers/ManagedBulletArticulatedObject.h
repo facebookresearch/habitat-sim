@@ -5,7 +5,9 @@
 #ifndef ESP_PHYSICS_MANAGEDBULLETARTICULATEDOBJECT_H_
 #define ESP_PHYSICS_MANAGEDBULLETARTICULATEDOBJECT_H_
 
+#ifdef ESP_BUILD_WITH_BULLET
 #include "esp/physics/bullet/BulletArticulatedObject.h"
+#endif
 #include "esp/physics/objectWrappers/ManagedArticulatedObject.h"
 
 namespace esp {
@@ -22,6 +24,7 @@ class ManagedBulletArticulatedObject
   ManagedBulletArticulatedObject()
       : ManagedArticulatedObject("ManagedBulletArticulatedObject") {}
 
+#ifdef ESP_BUILD_WITH_BULLET
   bool contactTest(bool staticAsStage = true) {
     if (auto sp = getBulletObjectReference()) {
       return sp->contactTest(staticAsStage);
@@ -52,10 +55,38 @@ class ManagedBulletArticulatedObject
    * @return Either a shared pointer of this wrapper's object, or nullptr if
    * dne.
    */
+
   std::shared_ptr<BulletArticulatedObject> getBulletObjectReference() const {
     return std::static_pointer_cast<BulletArticulatedObject>(
         this->getObjectReference());
   }
+#else
+  //! no bullet version
+  bool contactTest(CORRADE_UNUSED bool staticAsStage = true) {
+    LOG(WARNING) << "This functionaliy requires Habitat-Sim to be compiled "
+                    "with Bullet enabled..";
+    return false;
+  }
+
+  bool supportsJointMotor(CORRADE_UNUSED int linkIx) {
+    LOG(WARNING) << "This functionaliy requires Habitat-Sim to be compiled "
+                    "with Bullet enabled..";
+    return false;
+  }
+
+  float getJointMotorMaxImpulse(CORRADE_UNUSED int motorId) {
+    LOG(WARNING) << "This functionaliy requires Habitat-Sim to be compiled "
+                    "with Bullet enabled..";
+    return 0.0;
+  }
+
+  std::shared_ptr<ArticulatedObject> getBulletObjectReference() const {
+    LOG(WARNING) << "This functionaliy requires Habitat-Sim to be compiled "
+                    "with Bullet enabled..";
+
+    return nullptr;
+  }
+#endif
 
  public:
   ESP_SMART_POINTERS(ManagedBulletArticulatedObject)
