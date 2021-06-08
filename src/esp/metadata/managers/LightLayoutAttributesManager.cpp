@@ -89,6 +89,8 @@ void LightLayoutAttributesManager::setValsFromJSONDoc(
         << " does not contain a \"lights\" object and so no parsing was "
            "done.";
   }
+  // check for user defined attributes
+  this->parseUserDefinedJsonVals(lightAttribs, jsonConfig);
 }  // LightLayoutAttributesManager::setValsFromJSONDoc
 
 void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(

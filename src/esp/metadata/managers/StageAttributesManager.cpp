@@ -352,6 +352,9 @@ void StageAttributesManager::setValsFromJSONDoc(
     stageAttributes->setHouseFilename(houseFName);
   }
 
+  // check for user defined attributes
+  this->parseUserDefinedJsonVals(stageAttributes, jsonConfig);
+
 }  // StageAttributesManager::setValsFromJSONDoc
 
 }  // namespace managers

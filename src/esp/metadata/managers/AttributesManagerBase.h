@@ -184,7 +184,7 @@ class AttributesManager
    * @param attribs (out) an existing attributes to be modified.
    * @param jsonConfig json document to parse
    */
-  void parseUserDefinedJsonVals(AttribsPtr attribs,
+  void parseUserDefinedJsonVals(attributes::AbstractAttributes::ptr attribs,
                                 const io::JsonGenericValue& jsonConfig);
 
   /**
@@ -388,7 +388,7 @@ auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
 
 template <class T, core::ManagedObjectAccess Access>
 void AttributesManager<T, Access>::parseUserDefinedJsonVals(
-    AttribsPtr attribs,
+    attributes::AbstractAttributes::ptr attribs,
     const io::JsonGenericValue& jsonConfig) {
   // check for user defined attributes
   if (jsonConfig.HasMember("user_defined")) {
@@ -396,8 +396,7 @@ void AttributesManager<T, Access>::parseUserDefinedJsonVals(
       LOG(WARNING) << "AttributesManager::parseUserDefinedJsonVals : "
                    << attribs->getSimplifiedHandle()
                    << " attributes specifies user_defined attributes but they "
-                      "are not of "
-                      "the correct format. Skipping.";
+                      "are not of the correct format. Skipping.";
       return;
     } else {
       // get the user_defined configuration from the attribs
@@ -419,6 +418,16 @@ void AttributesManager<T, Access>::parseUserDefinedJsonVals(
           userConfig->set(key, obj.GetString());
         } else if (obj.IsBool()) {
           userConfig->set(key, obj.GetBool());
+        } else {
+          // TODO support vectors?
+          LOG(WARNING)
+              << "AttributesManager::parseUserDefinedJsonVals : For "
+              << attribs->getSimplifiedHandle()
+              << " attributes, user_defined config cell in JSON document "
+                 "contains key "
+              << key
+              << " referencing an unknown/unparsable value, so skipping this "
+                 "key.";
         }
       }
       // set results in attributes

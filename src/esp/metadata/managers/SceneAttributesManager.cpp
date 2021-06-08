@@ -116,6 +116,7 @@ void SceneAttributesManager::setValsFromJSONDoc(
                     "semantic_scene_instance specified for scene "
                  << attribsDispName << ".";
   }
+
 }  // SceneAttributesManager::setValsFromJSONDoc
 
 SceneObjectInstanceAttributes::ptr
@@ -173,6 +174,9 @@ SceneAttributesManager::createInstanceAttributesFromJSON(
       jCell, "rotation", [instanceAttrs](const Magnum::Quaternion& rotation) {
         instanceAttrs->setRotation(rotation);
       });
+
+  // check for user defined attributes
+  this->parseUserDefinedJsonVals(instanceAttrs, jCell);
 
   return instanceAttrs;
 
