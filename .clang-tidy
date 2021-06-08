@@ -5,30 +5,49 @@ cppcoreguidelines-init-variables,
 cppcoreguidelines-pro-type-member-init,
 google-*,
 misc-definitions-in-headers,
+misc-misplaced-const,
 misc-static-assert,
 misc-unconventional-assign-operator,
 misc-uniqueptr-reset-release,
 misc-unused-parameters,
 modernize-avoid-bind,
+modernize-deprecated-headers,
 modernize-make-shared,
 modernize-make-unique,
+modernize-pass-by-value,
 modernize-redundant-void-arg,
 modernize-replace-disallow-copy-and-assign-macro,
+modernize-replace-random-shuffle,
 modernize-shrink-to-fit,
 modernize-unary-static-assert,
 modernize-use-bool-literals,
 modernize-use-default-member-init,
 modernize-use-emplace,
 modernize-use-equals-default,
+modernize-use-equals-delete,
 modernize-use-noexcept,
 modernize-use-nullptr,
 modernize-use-override,
+modernize-use-transparent-functors,
 performance-*,
-readability-qualified-auto,
+readability-const-return-type,
+readability-delete-null-pointer,
+readability-implicit-bool-conversion,
 readability-make-member-function-const,
+readability-misplaced-array-index,
+readability-non-const-parameter,
+readability-qualified-auto,
+readability-redundant-declaration,
+readability-redundant-function-ptr-dereference,
+readability-redundant-preprocessor,
+readability-redundant-smartptr-get,
 readability-redundant-string-cstr,
+readability-simplify-boolean-expr,
+readability-simplify-subscript-expr,
 readability-static-accessed-through-instance,
+readability-static-definition-in-anonymous-namespace,
 readability-string-compare,
+readability-uniqueptr-delete-release,
 -*-objc-*,
 -*.cocoa.*,
 -clang-analyzer-core.NullDereference,
@@ -46,6 +65,12 @@ readability-string-compare,
 
 CheckOptions:
 - key:             cppcoreguidelines-pro-type-member-init.IgnoreArrays
+  value:           true
+- key:             modernize-pass-by-value.ValuesOnly
+  value:           true
+- key:             performance-for-range-copy.WarnOnAllAutoCopies
+  value:           true
+- key:             readability-implicit-bool-conversion.AllowPointerConditions
   value:           true
 
 # Let deprecation warnings through. From time to time, Magnum annotates APIs

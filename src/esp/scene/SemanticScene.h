@@ -145,7 +145,7 @@ class SemanticScene {
  protected:
   /**
    * @brief Verify a requested file exists.
-   * @param houseFile the file to attempt to load
+   * @param filename the file to attempt to load
    * @param srcFunc calling function name to be displayed in failure message
    * @return whether found or not
    */
@@ -257,7 +257,7 @@ class SemanticRegion {
     }
   }
 
-  const SemanticLevel::ptr level() const { return level_; }
+  SemanticLevel::ptr level() const { return level_; }
 
   const std::vector<std::shared_ptr<SemanticObject>>& objects() const {
     return objects_;
@@ -265,7 +265,7 @@ class SemanticRegion {
 
   box3f aabb() const { return bbox_; }
 
-  const SemanticCategory::ptr category() const { return category_; }
+  SemanticCategory::ptr category() const { return category_; }
 
  protected:
   int index_{};
@@ -293,13 +293,13 @@ class SemanticObject {
     }
   }
 
-  const SemanticRegion::ptr region() const { return region_; }
+  SemanticRegion::ptr region() const { return region_; }
 
   box3f aabb() const { return obb_.toAABB(); }
 
   geo::OBB obb() const { return obb_; }
 
-  const SemanticCategory::ptr category() const { return category_; }
+  SemanticCategory::ptr category() const { return category_; }
 
  protected:
   int index_{};

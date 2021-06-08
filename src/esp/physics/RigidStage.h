@@ -61,8 +61,6 @@ class RigidStage : public RigidBase {
    * geometry.  This is overridden by inheriting class specific to certain
    * physics libraries.Necessary to support kinematic objects without any
    * dynamics support.
-   * @param resMgr Reference to resource manager, to access relevant components
-   * pertaining to the stage object
    * @return true if initialized successfully, false otherwise.
    */
   bool initialization_LibSpecific() override { return true; }
@@ -77,17 +75,12 @@ class RigidStage : public RigidBase {
 
  public:
   /**
-   * @brief Currently not supported.  Set the stage's state from a @ref
-   * esp::metadata::attributes::SceneObjectInstanceAttributes
-   * @param stageInstAttr The attributes that describe the desired state to set
-   * this object.
+   * @brief Currently not supported. Set or reset the stages's state using the
+   * object's specified @p sceneInstanceAttributes_.
    * @param defaultCOMCorrection The default value of whether COM-based
    * translation correction needs to occur.
    */
-  void setStateFromAttributes(
-      CORRADE_UNUSED const
-          esp::metadata::attributes::SceneObjectInstanceAttributes* const
-              stageInstAttr,
+  void resetStateFromSceneInstanceAttr(
       CORRADE_UNUSED bool defaultCOMCorrection = false) override {}
 
   /**

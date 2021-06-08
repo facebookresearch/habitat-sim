@@ -39,17 +39,11 @@ Drawable* DrawableGroup::getDrawable(uint64_t id) const {
 
 bool DrawableGroup::registerDrawable(Drawable& drawable) {
   // if it is already registered, emplace will do nothing
-  if (idToDrawable_.emplace(drawable.getDrawableId(), &drawable).second) {
-    return true;
-  }
-  return false;
+  return idToDrawable_.emplace(drawable.getDrawableId(), &drawable).second;
 }
 bool DrawableGroup::unregisterDrawable(Drawable& drawable) {
   // if it is not registered, erase will do nothing
-  if (idToDrawable_.erase(drawable.getDrawableId()) == 0) {
-    return false;
-  }
-  return true;
+  return idToDrawable_.erase(drawable.getDrawableId()) != 0;
 }
 
 }  // namespace gfx

@@ -31,12 +31,12 @@ struct SimulationContactResultCallback
   /**
    * @brief Set when a contact is detected.
    */
-  bool bCollision;
+  bool bCollision{false};
 
   /**
    * @brief Constructor.
    */
-  SimulationContactResultCallback() { bCollision = false; }
+  SimulationContactResultCallback() = default;
 
   /**
    * @brief Called when a contact is detected.
@@ -80,7 +80,7 @@ class BulletBase {
    * RigidObjectType::SCENE. See @ref btCompoundShape::getMargin.
    * @return The scalar collision margin of the object.
    */
-  virtual double getMargin() const { return 0.0; };
+  virtual double getMargin() const { return 0.0; }
 
   /** @brief Set the scalar collision margin of an object. Does not affect @ref
    * RigidObjectType::SCENE. See @ref btCompoundShape::setMargin.
@@ -93,7 +93,44 @@ class BulletBase {
    * the rigid body in its local space. See @ref btCompoundShape::getAabb.
    * @return The Aabb.
    */
-  virtual const Magnum::Range3D getCollisionShapeAabb() const = 0;
+  virtual Magnum::Range3D getCollisionShapeAabb() const = 0;
+
+  /**
+   * @brief Recursively construct a @ref btConvexHullShape for collision by
+   * joining loaded mesh assets.
+   * @param transformFromParentToWorld The cumulative parent-to-world
+   * transformation matrix constructed by composition down the @ref
+   * MeshTransformNode tree to the current node.
+   * @param meshGroup Access structure for collision mesh data.
+   * @param node The current @ref MeshTransformNode in the recursion.
+   * @param bConvexShape The convex we are building. Should be a new, empty
+   * shape when passed into entry point.
+   */
+  static void constructJoinedConvexShapeFromMeshes(
+      const Magnum::Matrix4& transformFromParentToWorld,
+      const std::vector<assets::CollisionMeshData>& meshGroup,
+      const assets::MeshTransformNode& node,
+      btConvexHullShape* bConvexShape);
+
+  /**
+   * @brief Recursively construct a @ref btCompoundShape for collision from
+   * loaded mesh assets. A @ref btConvexHullShape is constructed for each
+   * sub-component, transformed to object-local space and added to the compound
+   * in a flat manner for efficiency.
+   * @param transformFromParentToWorld The cumulative parent-to-world
+   * transformation matrix constructed by composition down the @ref
+   * MeshTransformNode tree to the current node.
+   * @param meshGroup Access structure for collision mesh data.
+   * @param node The current @ref MeshTransformNode in the recursion.
+   * @param bObjectShape The compound shape parent for all generated convexes
+   * @param bObjectConvexShapes Datastructure to cache generated convex shapes
+   */
+  static void constructConvexShapesFromMeshes(
+      const Magnum::Matrix4& transformFromParentToWorld,
+      const std::vector<assets::CollisionMeshData>& meshGroup,
+      const assets::MeshTransformNode& node,
+      btCompoundShape* bObjectShape,
+      std::vector<std::unique_ptr<btConvexHullShape>>& bObjectConvexShapes);
 
  protected:
   /** @brief A pointer to the Bullet world to which this object belongs. See
@@ -104,6 +141,13 @@ class BulletBase {
    * stored here. Also, all objects set to STATIC are stored here.
    */
   std::vector<std::unique_ptr<btRigidBody>> bStaticCollisionObjects_;
+
+  //! Object data: Composite convex collision shape
+  std::vector<std::unique_ptr<btConvexHullShape>> bObjectConvexShapes_;
+
+  //! list of @ref btCollisionShape for storing arbitrary collision shapes
+  //! referenced within the @ref bObjectShape_.
+  std::vector<std::unique_ptr<btCollisionShape>> bGenericShapes_;
 
   //! keep a map of collision objects to object ids for quick lookups from
   //! Bullet collision checking.

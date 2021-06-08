@@ -89,6 +89,25 @@ Use "CMAKE_ARGS="..." pip install ." to set cmake args with pip""",
         action="store_true",
         help="Don't update git submodules",
     )
+    parser.add_argument(
+        "--build-type",
+        dest="build_type",
+        default=None,
+        help="CMake configuration to build with (Release, Debug, etc...)",
+    )
+    parser.add_argument(
+        "--no-lto",
+        dest="lto",
+        default=None,
+        action="store_false",
+        help="Disables Link Time Optimization: faster compile times but worse performance.",
+    )
+    parser.add_argument(
+        "--lto",
+        dest="lto",
+        action="store_true",
+        help="Enables Link Time Optimization: better performance but longer compile time",
+    )
 
     parser.add_argument(
         "--cache-args",
@@ -226,12 +245,24 @@ class CMakeBuild(build_ext):
             "-DPYTHON_EXECUTABLE=" + sys.executable,
             "-DCMAKE_EXPORT_COMPILE_COMMANDS={}".format("OFF" if is_pip() else "ON"),
         ]
+        if args.lto is not None:
+            cmake_args += [
+                "-DCMAKE_INTERPROCEDURAL_OPTIMIZATION={}".format(
+                    "ON" if args.lto else "OFF"
+                )
+            ]
         cmake_args += shlex.split(args.cmake_args)
 
-        cfg = "Debug" if self.debug else "RelWithDebInfo"
-        build_args = ["--config", cfg]
+        build_type = args.build_type
+        assert not (
+            build_type is not None and self.debug
+        ), f"Debug and Build-Type flags conflict: {self.debug}, {build_type}"
+        if build_type is None:
+            build_type = "Debug" if self.debug else "RelWithDebInfo"
+        build_args = ["--config", build_type]
 
-        cmake_args += ["-DCMAKE_BUILD_TYPE=" + cfg]
+        cmake_args += ["-DCMAKE_BUILD_TYPE=" + build_type]
+
         build_args += ["--"]
 
         if has_ninja():

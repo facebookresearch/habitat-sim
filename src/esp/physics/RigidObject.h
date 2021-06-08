@@ -173,14 +173,10 @@ class RigidObject : public RigidBase {
   /**
    * @brief Set the object's state from a @ref
    * esp::metadata::attributes::SceneObjectInstanceAttributes
-   * @param objInstAttr The attributes that describe the desired state to set
-   * this object.
    * @param defaultCOMCorrection The default value of whether COM-based
    * translation correction needs to occur.
    */
-  void setStateFromAttributes(
-      const esp::metadata::attributes::SceneObjectInstanceAttributes* const
-          objInstAttr,
+  void resetStateFromSceneInstanceAttr(
       bool defaultCOMCorrection = false) override;
 
  protected:

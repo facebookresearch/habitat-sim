@@ -25,10 +25,11 @@ class ObjectAttributesManager
   ObjectAttributesManager()
       : AbstractObjectAttributesManager<attributes::ObjectAttributes,
                                         core::ManagedObjectAccess::Copy>::
-            AbstractObjectAttributesManager(
-                "Object",
-                "object_config.json") {  // was phys_properties.json
-    buildCtorFuncPtrMaps();
+            AbstractObjectAttributesManager("Object", "object_config.json") {
+    // build this manager's copy constructor map
+    this->copyConstructorMap_["ObjectAttributes"] =
+        &ObjectAttributesManager::createObjectCopy<
+            attributes::ObjectAttributes>;
   }
 
   void setAssetAttributesManager(
@@ -243,17 +244,6 @@ class ObjectAttributesManager
     physicsFileObjTmpltLibByID_.clear();
     physicsSynthObjTmpltLibByID_.clear();
   }
-
-  /**
-   * @brief This function will assign the appropriately configured function
-   * pointer for the copy constructor as defined in
-   * AttributesManager<ObjectAttributes::ptr>
-   */
-  void buildCtorFuncPtrMaps() override {
-    this->copyConstructorMap_["ObjectAttributes"] =
-        &ObjectAttributesManager::createObjectCopy<
-            attributes::ObjectAttributes>;
-  }  // ObjectAttributesManager::buildCtorFuncPtrMaps()
 
   // ======== Typedefs and Instance Variables ========
 

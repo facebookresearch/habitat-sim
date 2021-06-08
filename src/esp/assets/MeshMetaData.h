@@ -26,13 +26,13 @@ namespace assets {
  */
 struct MeshTransformNode {
   /** @brief Local mesh index within @ref MeshMetaData::meshIndex. */
-  int meshIDLocal;
+  int meshIDLocal{ID_UNDEFINED};
 
   /** @brief Material key within global material manager. */
-  std::string materialID;
+  std::string materialID{};  // initializes to default material;
 
   /** @brief Object index of asset component in the original file. */
-  int componentID;
+  int componentID{ID_UNDEFINED};
 
   /** @brief The component transformation subtrees with this node as the root.
    */
@@ -42,11 +42,7 @@ struct MeshTransformNode {
   Magnum::Matrix4 transformFromLocalToParent;
 
   /** @brief Default constructor. */
-  MeshTransformNode() {
-    meshIDLocal = ID_UNDEFINED;
-    materialID = "";  // default material
-    componentID = ID_UNDEFINED;
-  };
+  MeshTransformNode() = default;
 };
 
 /**

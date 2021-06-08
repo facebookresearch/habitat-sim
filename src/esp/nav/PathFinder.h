@@ -182,7 +182,7 @@ class PathFinder {
   /**
    * @brief Returns a random navigable point
    *
-   * @param maxTries[in] The maximum number of tries sampling will be retried if
+   * @param[in] maxTries The maximum number of tries sampling will be retried if
    * it fails.
    *
    * @return A random navigable point.
@@ -349,7 +349,7 @@ class PathFinder {
    *
    * @return The object containing triangulated NavMesh polys.
    */
-  const std::shared_ptr<assets::MeshData> getNavMeshData();
+  std::shared_ptr<assets::MeshData> getNavMeshData();
 
   ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(PathFinder)
 };

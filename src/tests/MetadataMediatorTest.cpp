@@ -67,7 +67,7 @@ TEST_F(MetadataMediatorTest, testDataset0) {
 
   LOG(INFO) << "Starting "
                "MetadataMediatorTest::testDataset0 : test LoadStages";
-  const auto stageAttributesMgr = MM_->getStageAttributesManager();
+  const auto& stageAttributesMgr = MM_->getStageAttributesManager();
   int numStageHandles = stageAttributesMgr->getNumObjects();
   // should be 7 - one for default NONE stage, one original JSON, one based on
   // original but changed, and one new, and 3 built from .glb files
@@ -151,7 +151,7 @@ TEST_F(MetadataMediatorTest, testDataset0) {
 
   LOG(INFO) << "Starting test LoadObjects";
 
-  const auto objectAttributesMgr = MM_->getObjectAttributesManager();
+  const auto& objectAttributesMgr = MM_->getObjectAttributesManager();
   int numObjHandles = objectAttributesMgr->getNumFileTemplateObjects();
   // should be 6 file-based templates - 4 original, one based on an original
   // but changed, and one new
@@ -231,7 +231,8 @@ TEST_F(MetadataMediatorTest, testDataset0) {
 
   LOG(INFO) << "Starting test LoadLights";
 
-  const auto lightsLayoutAttributesMgr = MM_->getLightLayoutAttributesManager();
+  const auto& lightsLayoutAttributesMgr =
+      MM_->getLightLayoutAttributesManager();
   // get # of loaded light layout attributes.
   int numLightAttrHandles = lightsLayoutAttributesMgr->getNumObjects();
   // Should be 3 : file based, copy and new
@@ -283,7 +284,7 @@ TEST_F(MetadataMediatorTest, testDataset0) {
   // SHOULD NOT BE REFERENCED DIRECTLY IN USER CODE, but rather desired scene
   // instance should be acquired through MM.
   //
-  const auto sceneAttributesMgr = MM_->getSceneAttributesManager();
+  const auto& sceneAttributesMgr = MM_->getSceneAttributesManager();
   // get # of loaded scene attributes.
   int numSceneHandles = sceneAttributesMgr->getNumObjects();
   // should be 1
@@ -403,7 +404,7 @@ TEST_F(MetadataMediatorTest, testDataset1) {
 
   LOG(INFO) << "Starting "
                "MetadataMediatorTest::testDataset1 : test LoadStages";
-  const auto stageAttributesMgr = MM_->getStageAttributesManager();
+  const auto& stageAttributesMgr = MM_->getStageAttributesManager();
   int numStageHandles = stageAttributesMgr->getNumObjects();
   // shoudld be 6 : one for default NONE stage, glob lookup yields 2 stages + 2
   // modified and 1 new stage in scene dataset config
@@ -411,14 +412,15 @@ TEST_F(MetadataMediatorTest, testDataset1) {
   // end test LoadStages
 
   LOG(INFO) << "Starting test LoadObjects";
-  const auto objectAttributesMgr = MM_->getObjectAttributesManager();
+  const auto& objectAttributesMgr = MM_->getObjectAttributesManager();
   int numObjHandles = objectAttributesMgr->getNumFileTemplateObjects();
   // glob lookup yields 4 files + 2 modified in config
   ASSERT_EQ(numObjHandles, 6);
   // end test LoadObjects
 
   LOG(INFO) << "Starting test LoadLights";
-  const auto lightsLayoutAttributesMgr = MM_->getLightLayoutAttributesManager();
+  const auto& lightsLayoutAttributesMgr =
+      MM_->getLightLayoutAttributesManager();
   // get # of loaded light layout attributes.
   int numLightAttrHandles = lightsLayoutAttributesMgr->getNumObjects();
   // Should be 4 : 2 file based, copy and new
@@ -431,7 +433,7 @@ TEST_F(MetadataMediatorTest, testDataset1) {
   // SHOULD NOT BE REFERENCED DIRECTLY IN USER CODE, but rather desired scene
   // instance should be acquired through MM.
   //
-  const auto sceneAttributesMgr = MM_->getSceneAttributesManager();
+  const auto& sceneAttributesMgr = MM_->getSceneAttributesManager();
   // get # of loaded scene attributes.
   int numSceneHandles = sceneAttributesMgr->getNumObjects();
   // should be 2 - 2 file based
@@ -455,4 +457,37 @@ TEST_F(MetadataMediatorTest, testDataset1) {
   ASSERT_EQ(semanticMap.size(), 3);
   // testLoadSemanticScene
 }  // testDataset1
+
+TEST_F(MetadataMediatorTest, testDatasetDelete) {
+  // load dataset 1 and make active
+  initDataset1();
+  const std::string nameDS1 = MM_->getActiveSceneDatasetName();
+  // verify the dataset has been added
+  ASSERT_EQ(MM_->sceneDatasetExists(nameDS1), true);
+  // verify the active dataset is the expected name
+  ASSERT_EQ(nameDS1, sceneDatasetConfigFile_1);
+  // get the stage attributes manager for the scene dataset
+  const auto& stageAttrMgr_DS1 = MM_->getStageAttributesManager();
+  // verify not nullptr
+  ASSERT_NE(stageAttrMgr_DS1, nullptr);
+
+  // load datsaet 0 and make active
+  initDataset0();
+  // get new active dataset
+  const std::string nameDS0 = MM_->getActiveSceneDatasetName();
+  // verify the dataset has been added
+  ASSERT_EQ(MM_->sceneDatasetExists(nameDS0), true);
+  // verify the active dataset is the expected name
+  ASSERT_EQ(nameDS0, sceneDatasetConfigFile_0);
+
+  // delete dataset 1 and verify delete
+  ASSERT_EQ(MM_->removeSceneDataset(nameDS1), true);
+  // verify the dataset does not exist anymore
+  ASSERT_EQ(MM_->sceneDatasetExists(nameDS1), false);
+
+  // verify deleted scene dataset's stage manager is nullptr
+  ASSERT_EQ(stageAttrMgr_DS1, nullptr);
+
+}  // testDatasetDelete
+
 }  // namespace

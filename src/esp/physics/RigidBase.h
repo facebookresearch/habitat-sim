@@ -40,7 +40,7 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
   /**
    * @brief Constructor for a @ref RigidBase.
    * @param rigidBodyNode Pointer to the node to be used for this rigid.
-   * @param objectID the desired ID for this rigid construct.
+   * @param objectId the desired ID for this rigid construct.
    * @param resMgr a reference to @ref esp::assets::ResourceManager
    */
   RigidBase(scene::SceneNode* rigidBodyNode,
@@ -234,6 +234,18 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
    * @param inertia The new diagonal for the object's inertia matrix.
    */
   virtual void setInertiaVector(CORRADE_UNUSED const Magnum::Vector3& inertia) {
+  }
+
+  /**
+   * @brief Returns the @ref metadata::attributes::SceneObjectInstanceAttributes
+   * used to place this rigid object in the scene.
+   * @return a copy of the scene instance attributes used to place this object
+   * in the scene.
+   */
+  std::shared_ptr<metadata::attributes::SceneObjectInstanceAttributes>
+  getSceneInstanceAttributes() const {
+    return PhysicsObjectBase::getSceneInstanceAttrInternal<
+        metadata::attributes::SceneObjectInstanceAttributes>();
   }
 
   /** @brief Get a copy of the template used to initialize this object

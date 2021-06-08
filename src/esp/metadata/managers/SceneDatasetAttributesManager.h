@@ -20,14 +20,7 @@ class SceneDatasetAttributesManager
                                core::ManagedObjectAccess::Share> {
  public:
   explicit SceneDatasetAttributesManager(
-      PhysicsAttributesManager::ptr physicsAttributesMgr)
-      : AttributesManager<attributes::SceneDatasetAttributes,
-                          core::ManagedObjectAccess::Share>::
-            AttributesManager("Dataset", "scene_dataset_config.json"),
-        physicsAttributesManager_(std::move(physicsAttributesMgr)) {
-    buildCtorFuncPtrMaps();
-  }
-
+      PhysicsAttributesManager::ptr physicsAttributesMgr);
   /**
    * @brief Creates an instance of a dataset template described by passed
    * string. For dataset templates, this a file name.
@@ -193,17 +186,6 @@ class SceneDatasetAttributesManager
       attributes::SceneDatasetAttributes::ptr SceneDatasetAttributes,
       const std::string& SceneDatasetAttributesHandle,
       CORRADE_UNUSED bool forceRegistration) override;
-
-  /**
-   * @brief This function will assign the appropriately configured function
-   * pointer for the copy constructor as required by
-   * AttributesManager<PhysicsSceneAttributes::ptr>
-   */
-  void buildCtorFuncPtrMaps() override {
-    this->copyConstructorMap_["SceneDatasetAttributes"] =
-        &SceneDatasetAttributesManager::createObjectCopy<
-            attributes::SceneDatasetAttributes>;
-  }  // SceneDatasetAttributesManager::buildCtorFuncPtrMaps
 
   /**
    * @brief This function is meaningless for this manager's ManagedObjects.

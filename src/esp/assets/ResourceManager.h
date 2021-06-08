@@ -6,8 +6,7 @@
 #define ESP_ASSETS_RESOURCEMANAGER_H_
 
 /** @file
- * @brief Class @ref esp::assets::ResourceManager, enum @ref
- * esp::assets::ResourceManager::ShaderType
+ * @brief Class @ref esp::assets::ResourceManager
  */
 
 #include <map>
@@ -97,7 +96,7 @@ class ResourceManager {
    */
   struct VHACDParameters : VHACD::IVHACD::Parameters {
     VHACDParameters() {
-      m_oclAcceleration = false;  // OCL Acceleration does not work on VHACD
+      m_oclAcceleration = 0u;  // OCL Acceleration does not work on VHACD
     }
     ESP_SMART_POINTERS(VHACDParameters)
   };
@@ -173,8 +172,8 @@ class ResourceManager {
    * @param _physicsManager The currently defined @ref physics::PhysicsManager.
    * @param sceneManagerPtr Pointer to scene manager, to fetch drawables and
    * parent node.
-   * @param [out] Current active scene ID is in idx 0, if semantic scene is
-   * made, its activeID should be pushed onto vector
+   * @param [out] activeSceneIDs active scene ID is in idx 0, if semantic scene
+   * is made, its activeID should be pushed onto vector
    * @param createSemanticMesh If the semantic mesh should be created, based on
    * @ref SimulatorConfiguration
    * @param forceSeparateSemanticSceneGraph Force creation of a separate
@@ -238,15 +237,15 @@ class ResourceManager {
   /**
    * @brief Return manager for construction and access to asset attributes.
    */
-  const metadata::managers::AssetAttributesManager::ptr
-  getAssetAttributesManager() const {
+  metadata::managers::AssetAttributesManager::ptr getAssetAttributesManager()
+      const {
     return metadataMediator_->getAssetAttributesManager();
   }
   /**
    * @brief Return manager for construction and access to light and lighting
    * layout attributes.
    */
-  const metadata::managers::LightLayoutAttributesManager::ptr
+  metadata::managers::LightLayoutAttributesManager::ptr
   getLightLayoutAttributesManager() const {
     return metadataMediator_->getLightLayoutAttributesManager();
   }
@@ -254,23 +253,23 @@ class ResourceManager {
   /**
    * @brief Return manager for construction and access to object attributes.
    */
-  const metadata::managers::ObjectAttributesManager::ptr
-  getObjectAttributesManager() const {
+  metadata::managers::ObjectAttributesManager::ptr getObjectAttributesManager()
+      const {
     return metadataMediator_->getObjectAttributesManager();
   }
   /**
    * @brief Return manager for construction and access to physics world
    * attributes.
    */
-  const metadata::managers::PhysicsAttributesManager::ptr
+  metadata::managers::PhysicsAttributesManager::ptr
   getPhysicsAttributesManager() const {
     return metadataMediator_->getPhysicsAttributesManager();
   }
   /**
    * @brief Return manager for construction and access to scene attributes.
    */
-  const metadata::managers::StageAttributesManager::ptr
-  getStageAttributesManager() const {
+  metadata::managers::StageAttributesManager::ptr getStageAttributesManager()
+      const {
     return metadataMediator_->getStageAttributesManager();
   }
 
@@ -336,8 +335,8 @@ class ResourceManager {
   /**
    * @brief Registers a given VoxelGrid pointer under the given handle in the
    * voxelGridDict_ if no such VoxelGrid has been registered.
-   * @param VoxelGrid The pointer to the VoxelGrid
    * @param voxelGridHandle The key to register the VoxelGrid under.
+   * @param VoxelGridPtr The pointer to the VoxelGrid
    * @return Whether or not the registration succeeded.
    */
   bool registerVoxelGrid(
@@ -353,6 +352,9 @@ class ResourceManager {
 
   /**
    * @brief Get a named @ref LightSetup
+   *
+   * @param key The key identifying the light setup in shaderManager_.
+   * @return The LightSetup object.
    */
   Mn::Resource<gfx::LightSetup> getLightSetup(
       const Mn::ResourceKey& key = Mn::ResourceKey{DEFAULT_LIGHTING_KEY}) {
@@ -466,8 +468,7 @@ class ResourceManager {
                                DrawableGroup* drawables);
 
   /**
-   * @brief Create a @ref gfx::Drawable for the specified mesh, node,
-   * and @ref ShaderType.
+   * @brief Create a @ref gfx::Drawable for the specified mesh, and node.
    *
    * Add this drawable to the @ref DrawableGroup if provided.
    * @param mesh The render mesh.
@@ -563,6 +564,16 @@ class ResourceManager {
   }
 
   /**
+   * @brief Construct and return a unique string key for the color material and
+   * create an entry in the shaderManager_ if new.
+   *
+   * @param materialColor The color parameters.
+   * @return The unique key string identifying the material in shaderManager_.
+   */
+  std::string createColorMaterial(
+      const esp::assets::PhongMaterialColor& materialColor);
+
+  /**
    * @brief Load a render asset (if not already loaded) and create a render
    * asset instance.
    *
@@ -577,6 +588,32 @@ class ResourceManager {
       const RenderAssetInstanceCreationInfo& creation,
       esp::scene::SceneManager* sceneManagerPtr,
       const std::vector<int>& activeSceneIDs);
+
+  /**
+   * @brief Load a render asset (if not already loaded) and create a render
+   * asset instance at a known SceneNode and Drawables.
+   *
+   * @param assetInfo the render asset to load
+   * @param creation How to create the instance
+   * @param parent The parent node under which the visual node hierarchy will be
+   * generated.
+   * @param drawables The DrawableGroup to which new Drawables will be added.
+   * @param visNodeCache A reference to a SceneNode* vector which caches all new
+   * SceneNodes created by the attachment process.
+   * @return the root node of the instance, or nullptr (if the load failed)
+   */
+  scene::SceneNode* loadAndCreateRenderAssetInstance(
+      const AssetInfo& assetInfo,
+      const RenderAssetInstanceCreationInfo& creation,
+      scene::SceneNode* parent = nullptr,
+      DrawableGroup* drawables = nullptr,
+      std::vector<scene::SceneNode*>* visNodeCache = nullptr);
+
+  /**
+   * @brief Load a render asset so it can be instanced. See also
+   * createRenderAssetInstance.
+   */
+  bool loadRenderAsset(const AssetInfo& info);
 
  private:
   /**
@@ -663,7 +700,8 @@ class ResourceManager {
    * identifying its mesh, material, transformation, and children.
    * @param[out] visNodeCache Cache for pointers to all nodes created as the
    * result of this recursive process.
-   * @param computeAABBs whether absolute bounding boxes should be computed
+   * @param computeAbsoluteAABBs whether absolute bounding boxes should be
+   * computed
    * @param staticDrawableInfo structure holding the drawable infos for aabbs
    */
   void addComponent(const MeshMetaData& metaData,
@@ -790,8 +828,7 @@ class ResourceManager {
    * @param drawables The @ref DrawableGroup with which the mesh will be
    * rendered. See also creation->isRGBD and creation->isSemantic. nullptr if
    * not instancing.
-   * @param splitSemanticMesh Split the semantic mesh by objectID, used for A/B
-   * testing
+   * @return Whether or not the load was successful.
    */
   bool loadStageInternal(const AssetInfo& info,
                          const RenderAssetInstanceCreationInfo* creation,
@@ -824,12 +861,6 @@ class ResourceManager {
       const metadata::attributes::StageAttributes::ptr& stageAttributes,
       bool createCollisionInfo,
       bool createSemanticInfo);
-
-  /**
-   * @brief Load a render asset so it can be instanced. See also
-   * createRenderAssetInstance.
-   */
-  bool loadRenderAsset(const AssetInfo& info);
 
   /**
    * @brief PTex Mesh backend for loadRenderAsset
@@ -938,12 +969,12 @@ class ResourceManager {
    */
   Mn::Range3D computeMeshBB(BaseMesh* meshDataGL);
 
+#ifdef ESP_BUILD_PTEX_SUPPORT
   /**
    * @brief Compute the absolute AABBs for drawables in PTex mesh in world
    * space
-   * @param baseMesh: ptex mesh
+   * @param baseMesh ptex mesh
    */
-#ifdef ESP_BUILD_PTEX_SUPPORT
   void computePTexMeshAbsoluteAABBs(
       BaseMesh& baseMesh,
       const std::vector<StaticDrawableInfo>& staticDrawableInfo);

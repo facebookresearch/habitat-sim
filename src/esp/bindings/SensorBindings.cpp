@@ -4,6 +4,7 @@
 
 #include "esp/bindings/bindings.h"
 
+#include <Corrade/Containers/OptionalPythonBindings.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/SceneGraph/SceneGraph.h>
 
@@ -113,6 +114,7 @@ void initSensorBindings(py::module& m) {
       .def_readwrite("ortho_scale", &CameraSensorSpec::orthoScale);
 
   // === CubemapSensorBaseSpec ===
+  // NOLINTNEXTLINE (bugprone-unused-raii)
   py::class_<CubeMapSensorBaseSpec, CubeMapSensorBaseSpec::ptr,
              VisualSensorSpec>(m, "CubeMapSensorBaseSpec");
 
@@ -243,6 +245,7 @@ void initSensorBindings(py::module& m) {
           R"(The distance to the far clipping plane for this CameraSensor uses.)");
 
   // === CubeMapSensorBase ===
+  // NOLINTNEXTLINE (bugprone-unused-raii)
   py::class_<CubeMapSensorBase,
              Magnum::SceneGraph::PyFeature<CubeMapSensorBase>, VisualSensor,
              Magnum::SceneGraph::PyFeatureHolder<CubeMapSensorBase>>(
