@@ -222,9 +222,9 @@ struct LinkContactInfo {
   float m_contactStiffness{1e4};
   float m_contactDamping{1};
 
-  int m_flags;
+  int m_flags{CONTACT_HAS_LATERAL_FRICTION};
 
-  LinkContactInfo() { m_flags = CONTACT_HAS_LATERAL_FRICTION; }
+  LinkContactInfo() = default;
 };
 
 //! Parsed from a URDF link (<link>). Represents a single rigid segment of the
