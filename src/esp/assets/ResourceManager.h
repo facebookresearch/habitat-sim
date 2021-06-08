@@ -6,8 +6,7 @@
 #define ESP_ASSETS_RESOURCEMANAGER_H_
 
 /** @file
- * @brief Class @ref esp::assets::ResourceManager, enum @ref
- * esp::assets::ResourceManager::ShaderType
+ * @brief Class @ref esp::assets::ResourceManager
  */
 
 #include <map>
@@ -469,8 +468,7 @@ class ResourceManager {
                                DrawableGroup* drawables);
 
   /**
-   * @brief Create a @ref gfx::Drawable for the specified mesh, node,
-   * and @ref ShaderType.
+   * @brief Create a @ref gfx::Drawable for the specified mesh, and node.
    *
    * Add this drawable to the @ref DrawableGroup if provided.
    * @param mesh The render mesh.
