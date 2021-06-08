@@ -15,13 +15,22 @@
 #include <string>
 #include <vector>
 
+/** @file
+ * @brief Storage classes for articulated object metadata and URDF file parsing
+ * functionality. Struct @ref esp::io::URDF::MaterialColor, struct @ref
+ * esp::io::URDF::Material, enum @ref esp::io::URDF::JointTypes, enum @ref
+ * esp::io::URDF::GeomTypes, struct @ref esp::io::URDF::Geometry, struct @ref
+ * esp::io::URDF::Shape, struct @ref esp::io::URDF::VisualShape, enum @ref
+ * esp::io::URDF::CollisionFlags, struct @ref esp::io::URDF::CollisionShape,
+ * struct @ref esp::io::URDF::Inertia, struct @ref esp::io::URDF::Joint, enum
+ * @ref esp::io::URDF::LinkContactFlags, struct @ref
+ * esp::io::URDF::LinkContactInfo, struct @ref esp::io::URDF::Link, class @ref
+ * esp::io::URDF::Model, class @ref esp::io::URDF::Parser.
+ */
+
 namespace tinyxml2 {
 class XMLElement;
 }
-
-////////////////////////////////////
-// Utility/storage structs
-////////////////////////////////////
 
 namespace esp {
 namespace io {
@@ -40,7 +49,7 @@ struct MaterialColor {
 
 //! Storage for metadata defining override materials for visual shapes
 struct Material {
-  //! Supports named materials
+  //! custom material name
   std::string m_name;
   //! Store material texture filename. Note: Will be cached, but not currently
   //! supported in Habitat rendering pipeline.
@@ -140,7 +149,7 @@ struct CollisionShape : Shape {
   CollisionShape() = default;
 };
 
-//! Parsed from a URDF link inertia properties (<inertia>). Stores dynamic
+//! Parsed from a URDF link inertia properties (<inertial>). Stores dynamic
 //! properties of ths link.
 struct Inertia {
   //! local transform of the link in parent joint space
@@ -273,6 +282,7 @@ class Model {
 
   //! list of root links (usually 1)
   std::vector<std::shared_ptr<Link>> m_rootLinks;
+
   //! if true, force this model to produce a fixed base instance (e.g. the root
   //! is not dynamic)
   bool m_overrideFixedBase{false};
@@ -427,27 +437,131 @@ class Model {
   }
 };
 
+/**
+ * @brief Functional class for parsing URDF files into a URDF::Model
+ * representation.
+ */
 class Parser {
   // URDF file path of last load call
   std::string sourceFilePath_;
 
-  // parser functions
+  /**
+   * @brief Parse a transform into a Matrix4.
+   *
+   * @param tr The transform to fill.
+   * @param xml The source xml element to parse (e.g. <origin>).
+   * @return Success or failure.
+   */
   bool parseTransform(Magnum::Matrix4& tr, tinyxml2::XMLElement* xml) const;
+
+  /**
+   * @brief Parse URDF link dynamic info into a datastructure.
+   *
+   * @param inertia The inertia datastructure to fill.
+   * @param config The source xml element to parse (e.g. <inertial>).
+   * @return Success or failure.
+   */
   bool parseInertia(Inertia& inertia, tinyxml2::XMLElement* config);
+
+  /**
+   * @brief Parse URDF shape geometry info into a datastructure.
+   *
+   * @param geom The geometry datastructure to fill.
+   * @param g The source xml element to parse (e.g. <geometry>).
+   * @return Success or failure.
+   */
   bool parseGeometry(Geometry& geom, tinyxml2::XMLElement* g);
+
+  /**
+   * @brief Parse URDF visual shape info into a datastructure.
+   *
+   * @param model The URDF::Model datastructure to fill.
+   * @param visual The visual shape datastructure to fill.
+   * @param config The source xml element to parse (e.g. <visual>).
+   * @return Success or failure.
+   */
   bool parseVisual(const std::shared_ptr<Model>& model,
                    VisualShape& visual,
                    tinyxml2::XMLElement* config);
+
+  /**
+   * @brief Parse URDF collision shape info into a datastructure.
+   *
+   * @param collision The collision shape datastructure to fill.
+   * @param config The source xml element to parse (e.g. <collision>).
+   * @return Success or failure.
+   */
   bool parseCollision(CollisionShape& collision, tinyxml2::XMLElement* config);
+
+  /**
+   * @brief Traverse the link->joint kinematic chain to cache parent->child
+   * relationships and detect root/base links.
+   *
+   * @param model The URDF::Model datastructure to manipulate.
+   * @return Success or failure.
+   */
   bool initTreeAndRoot(const std::shared_ptr<Model>& model) const;
+
+  /**
+   * @brief Parse URDF material info into a datastructure.
+   *
+   * @param material The Material datastructure to fill.
+   * @param config The source xml element to parse (e.g. <material>).
+   * @return Success or failure.
+   */
   bool parseMaterial(Material& material, tinyxml2::XMLElement* config) const;
+
+  /**
+   * @brief Parse joint limits from a <joint> xml element into a datastructure.
+   *
+   * @param joint The Joint datastructure to fill.
+   * @param config The source xml element to parse (e.g. <joint>).
+   * @return Success or failure.
+   */
   bool parseJointLimits(Joint& joint, tinyxml2::XMLElement* config) const;
+
+  /**
+   * @brief Parse joint dynamic info from a <joint> xml element into a
+   * datastructure.
+   *
+   * @param joint The Joint datastructure to fill.
+   * @param config The source xml element to parse (e.g. <joint>).
+   * @return Success or failure.
+   */
   bool parseJointDynamics(Joint& joint, tinyxml2::XMLElement* config) const;
+
+  /**
+   * @brief Parse joint info from a <joint> xml element into a datastructure.
+   *
+   * @param joint The Joint datastructure to fill.
+   * @param config The source xml element to parse (e.g. <joint>).
+   * @return Success or failure.
+   */
   bool parseJoint(Joint& joint, tinyxml2::XMLElement* config);
+
+  /**
+   * @brief Parse link info from a <link> xml element into a datastructure.
+   *
+   * @param link The Link datastructure to fill.
+   * @param config The source xml element to parse (e.g. <link>).
+   * @return Success or failure.
+   */
   bool parseLink(const std::shared_ptr<Model>&,
                  Link& link,
                  tinyxml2::XMLElement* config);
-  bool parseSensor(CORRADE_UNUSED const std::shared_ptr<Model>&,
+
+  /**
+   * @brief Parse sensor info from a into a datastructure.
+   *
+   * TODO: Not implemented yet, does nothing.
+   *
+   * @param model The URDF::Model datastructure to fill.
+   * @param link The Link datastructure to fill.
+   * @param joint The Joint datastructure to fill.
+   * @param config The source xml element to parse.
+   * @return Success or failure.
+   */
+  bool parseSensor(CORRADE_UNUSED const std::shared_ptr<Model>& model,
                    CORRADE_UNUSED Link& link,
                    CORRADE_UNUSED Joint& joint,
                    CORRADE_UNUSED tinyxml2::XMLElement* config) {
@@ -455,6 +569,12 @@ class Parser {
     return false;
   };
 
+  /**
+   * @brief Check whether or not a given filepath exists.
+   *
+   * @param filename The filepath to check.
+   * @return Filepath is valid or invalid.
+   */
   bool validateMeshFile(std::string& filename);
 
  public:
@@ -465,6 +585,7 @@ class Parser {
   bool parseURDF(std::shared_ptr<Model>& model,
                  const std::string& meshFilename);
 
+  //! Whether or not to output warnings and debug info to console.
   bool logMessages = false;
 };
 
