@@ -114,12 +114,20 @@ uniform int PbrDebugDisplay;
 
 #if defined(SHADOWS)
 // TODO: make it uniform
-const float FarPlane = 10.0f;
+const float FarPlane = 20.0f;
+const float NearPlane = 0.01f;
 #endif
 
 // -------------- shader ------------------
 
 #if defined(SHADOWS)
+float LinearizeDepth(float depth)
+{
+    float z = depth * 2.0 - 1.0; // back to NDC
+    return (2.0 * NearPlane * FarPlane) /
+      (FarPlane + NearPlane - z * (FarPlane - NearPlane));
+}
+
 // array of offset direction for sampling
 vec3 gridSamplingDisk[20] = vec3[](
    vec3(1, 1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1, 1,  1),
@@ -129,34 +137,71 @@ vec3 gridSamplingDisk[20] = vec3[](
    vec3(0, 1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0, 1, -1)
 );
 
+// see here:
+// https://stackoverflow.com/questions/10786951/omnidirectional-shadow-mapping-with-depth-cubemap/10789527#10789527
+float vecToDepthValue(vec3 vec) {
+  vec3 v = abs(vec);
+  float originalZ = max(v.x, max(v.y, v.z));
+
+  float temp = FarPlane - NearPlane;
+  float z = (FarPlane + NearPlane) / temp - (2 * FarPlane * NearPlane) / (temp * originalZ);
+  return (z + 1.0) * 0.5;
+}
+
 float shadowCalculation(vec3 fragPos, vec3 lightPos, vec3 viewPos, out vec3 vizClosestDepth) {
-    // get vector between fragment position and light position
-    vec3 fragToLight = fragPos - lightPos;
+
+    /*
+    vec3 vizClosestDepth = vec3(0.0, 0.0, 1.0);
+    vec3 lightToFrag = position - LightDirections[0].xyz;
     // use the fragment to light vector to sample from the depth map
-    float closestDepth = texture(PointShadowMap0, normalize(fragToLight)).r; // debug XXX
+    float closestDepth = texture(PointShadowMap0, normalize(lightToFrag)).r;
+    vizClosestDepth = vec3(LinearizeDepth(closestDepth) / FarPlane, 0.0, 0.0);
+    if (length(currentDiffuseContrib) > 0.0) {
+    diffuseContrib += vizClosestDepth / 2.0;
+    specularContrib += vizClosestDepth / 2.0;
+    }
+    */
+
+    // get vector between fragment position and light position
+    vec3 lightToFrag = fragPos - lightPos;
+    // use the fragment to light vector to sample from the depth map
+    float closestDepth = texture(PointShadowMap0, lightToFrag).r; // debug XXX
     // it is currently in linear range between [0,1], let's re-transform it back to original depth value
     // closestDepth *= FarPlane;
     // now get current linear depth as the length between the fragment and light position
-    float currentDepth = length(fragToLight);
-    float shadow = 0.0;
-    float bias = 0.15;
+    float d = vecToDepthValue(lightToFrag);
+    if (closestDepth + 0.0001 > d)
+      return 1.0;
+
+    return 0.0;
+
+
+
+   /*
+    float bias = 0.08; // 0.15
     int samples = 20;
+    float shadow = 0.0;
     float viewDistance = length(viewPos - fragPos);
-    float diskRadius = (1.0 + (viewDistance / FarPlane)) / 25.0;
+    // float diskRadius = (1.0 + (viewDistance / FarPlane)) / 25.0;
+    float diskRadius = (1.0 + (viewDistance / FarPlane)) / 50.0;
     for(int i = 0; i < samples; ++i) {
-        float closestDepth = texture(PointShadowMap0, normalize(fragToLight + gridSamplingDisk[i] * diskRadius)).r;
-        closestDepth *= FarPlane;   // undo mapping [0;1]
+        float closestDepth = texture(PointShadowMap0, normalize(lightToFrag + gridSamplingDisk[i] * diskRadius)).r;
+        // closestDepth *= FarPlane;   // undo mapping [0;1]
+        closestDepth = LinearizeDepth(closestDepth);
+        // shadow += smoothstep(closestDepth, closestDepth + bias, currentDepth);
         if(currentDepth - bias > closestDepth)
             shadow += 1.0;
     }
     shadow /= float(samples);
 
-    vizClosestDepth = vec3(closestDepth / FarPlane);
+    // vizClosestDepth = vec3(LinearizeDepth(closestDepth) / FarPlane);
+    // vizClosestDepth = vec3(closestDepth / FarPlane);
 
     // display closestDepth as debug (to visualize depth cubemap)
     // FragColor = vec4(vec3(closestDepth / FarPlane), 1.0);
 
-    return shadow;
+    return 1.0 - shadow;
+    */
 }
 
 #endif
@@ -486,24 +531,39 @@ void main() {
                     lightRadiance,
                     currentDiffuseContrib,
                     currentSpecularContrib);
-
-    vec3 vizClosestDepth = vec3(0.0, 0.0, 0.0);
-    #if defined(SHADOWS)
-    // Temporarily we only support 1 point light shadow map
-    float shadowFactor =
-      (iLight == 0 && LightDirections[iLight].w == 1) ?
-        // 0.0f : 0.0f;
-        shadowCalculation(position, LightDirections[iLight].xyz, CameraWorldPos, vizClosestDepth) : 0.0f;
-    #else
-    float shadowFactor = 0.0f;
-    #endif
-    shadowFactor = 1.0 - shadowFactor;
-    // XXX
-    diffuseContrib += vizClosestDepth;
     /*
-    diffuseContrib += shadowFactor * currentDiffuseContrib;
-    specularContrib += shadowFactor * currentSpecularContrib;
+    #if defined(SHADOWS)
+    // XXX
+    vec3 vizClosestDepth = vec3(0.0, 0.0, 1.0);
+    vec3 lightToFrag = position - LightDirections[0].xyz;
+    // use the fragment to light vector to sample from the depth map
+    float closestDepth = texture(PointShadowMap0, normalize(lightToFrag)).r;
+    vizClosestDepth = vec3(LinearizeDepth(closestDepth) / FarPlane, 0.0, 0.0);
+    if (length(currentDiffuseContrib) > 0.0) {
+    diffuseContrib += vizClosestDepth / 2.0;
+    specularContrib += vizClosestDepth / 2.0;
+    }
+    #endif
     */
+
+    // Temporarily we only support 1 point light shadow map
+    // XXX
+    //shadowCalculation(position, LightDirections[iLight].xyz, CameraWorldPos, vizClosestDepth) : 1.0f;
+    #if defined(SHADOWS)
+    vec3 vizClosestDepth = vec3(0.0, 0.0, 1.0);
+    float shadowDiscount = shadowCalculation(position, LightDirections[0].xyz, CameraWorldPos, vizClosestDepth);
+    /*
+      (iLight == 0) ?
+        // 0.0f : 0.0f;
+        shadowCalculation(position, LightDirections[iLight].xyz, CameraWorldPos, vizClosestDepth) : 1.0f;
+        */
+    #else
+    float shadowDiscount = 1.0f;
+    #endif
+
+    diffuseContrib += shadowDiscount * currentDiffuseContrib;
+    specularContrib += shadowDiscount * currentSpecularContrib;
+
   }  // for lights
 
   // TODO: use ALPHA_MASK to discard fragments

@@ -192,6 +192,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   if (flags_ & Flag::Shadows) {
     setUniform(uniformLocation("PointShadowMap0"),
                pbrTextureUnitSpace::TextureUnit::ShadowMap0);
+    LOG(INFO) << "PointShadowMap0 " << uniformLocation("PointShadowMap0");
   }
 
   // cache the uniform locations

@@ -135,8 +135,8 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   PbrShader::PbrEquationScales scales;
   scales.DirectDiffuse = 1.0;
   scales.DirectSpecular = 1.0;
-  scales.IblDiffuse = 0.0;
-  scales.IblSpecular = 0.0;
+  scales.IblDiffuse = 0.5;
+  scales.IblSpecular = 1.0;
   (*shader_).setPbrEquationScales(scales);
   // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::DirectDiffuse);
   // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::DirectSpecular);

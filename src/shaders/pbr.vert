@@ -40,6 +40,7 @@ uniform highp mat3 TextureMatrix
     ;
 #endif
 
+// ------------ shader -----------------------
 void main() {
   vec4 vertexWorldPosition = ModelMatrix * vertexPosition;
   position = vertexWorldPosition.xyz;

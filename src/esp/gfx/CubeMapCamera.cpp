@@ -55,22 +55,22 @@ Magnum::Matrix4 CubeMapCamera::getCameraLocalTransform(
   Mn::Vector3 zUp{0.0, 0.0, 1.0};
   switch (cubeSideIndex) {
     case Mn::GL::CubeMapCoordinate::PositiveX:
-      return Mn::Matrix4::lookAt(eye, Mn::Vector3{-1.0, 0.0, 0.0}, -yUp);
-      break;
-    case Mn::GL::CubeMapCoordinate::NegativeX:
       return Mn::Matrix4::lookAt(eye, Mn::Vector3{1.0, 0.0, 0.0}, -yUp);
       break;
+    case Mn::GL::CubeMapCoordinate::NegativeX:
+      return Mn::Matrix4::lookAt(eye, Mn::Vector3{-1.0, 0.0, 0.0}, -yUp);
+      break;
     case Mn::GL::CubeMapCoordinate::PositiveY:
-      return Mn::Matrix4::lookAt(eye, Mn::Vector3{0.0, 1.0, 0.0}, -zUp);
+      return Mn::Matrix4::lookAt(eye, Mn::Vector3{0.0, 1.0, 0.0}, zUp);
       break;
     case Mn::GL::CubeMapCoordinate::NegativeY:
-      return Mn::Matrix4::lookAt(eye, Mn::Vector3{0.0, -1.0, 0.0}, zUp);
+      return Mn::Matrix4::lookAt(eye, Mn::Vector3{0.0, -1.0, 0.0}, -zUp);
       break;
     case Mn::GL::CubeMapCoordinate::PositiveZ:
-      return Mn::Matrix4::lookAt(eye, Mn::Vector3{0.0, 0.0, -1.0}, -yUp);
+      return Mn::Matrix4::lookAt(eye, Mn::Vector3{0.0, 0.0, 1.0}, -yUp);
       break;
     case Mn::GL::CubeMapCoordinate::NegativeZ:
-      return Mn::Matrix4::lookAt(eye, Mn::Vector3{0.0, 0.0, 1.0}, -yUp);
+      return Mn::Matrix4::lookAt(eye, Mn::Vector3{0.0, 0.0, -1.0}, -yUp);
       break;
     default:
       CORRADE_INTERNAL_ASSERT_UNREACHABLE();

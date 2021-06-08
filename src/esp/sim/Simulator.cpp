@@ -600,7 +600,11 @@ void Simulator::computeShadowMaps() {
   if (!pointShadowMap) {
     shadowManager.set<gfx::CubeMap>(
         pointShadowMap.key(),
-        new gfx::CubeMap{shadowMapSize, {gfx::CubeMap::Flag::DepthTexture}},
+        // new gfx::CubeMap{shadowMapSize, {gfx::CubeMap::Flag::DepthTexture}},
+        // XXX
+        new gfx::CubeMap{shadowMapSize,
+                         {gfx::CubeMap::Flag::DepthTexture |
+                          gfx::CubeMap::Flag::ColorTexture}},
         Mn::ResourceDataState::Final, Mn::ResourcePolicy::Resident);
 
     CORRADE_INTERNAL_ASSERT(pointShadowMap && pointShadowMap.key() == key);
@@ -616,15 +620,19 @@ void Simulator::computeShadowMaps() {
 
   // this is the center of the ceiling of the replica cad model
   // this is the light position!!!
-  // node.setTranslation(Mn::Vector3{16.1, 7.7, 4.8});
+  node.setTranslation(Mn::Vector3{16.1, 7.7, 4.8});
   // XXX
+  /*
   const Magnum::Range3D& sceneBB =
       getActiveSceneGraph().getRootNode().computeCumulativeBB();
   node.setTranslation(sceneBB.center());
+  */
   gfx::CubeMapCamera camera{node};
+  float near = 0.01f;
+  float far = 20.0f;
   camera.setProjectionMatrix(shadowMapSize,  // width of the square
-                             0.01f,          // near plane
-                             10.0f);         // far plane
+                             near,           // near plane
+                             far);           // far plane
   /*
   pointShadowMap->renderToTexture(camera, sg, shadowMapDrawableGroupName,
                                   {gfx::RenderCamera::Flag::FrustumCulling |
@@ -633,6 +641,11 @@ void Simulator::computeShadowMaps() {
   pointShadowMap->renderToTexture(camera, sg, "",
                                   {gfx::RenderCamera::Flag::FrustumCulling |
                                    gfx::RenderCamera::Flag::ClearDepth});
+
+  // XXX
+  pointShadowMap->visualizeTexture(gfx::CubeMap::TextureType::Depth, near, far,
+                                   1.0f / 512.0f, 1.0f / far);
+  pointShadowMap->saveTexture(gfx::CubeMap::TextureType::Color, "shadowMap");
 }
 
 void Simulator::setShadowMapsToDrawables() {
@@ -655,18 +668,6 @@ void Simulator::setShadowMapsToDrawables() {
         static_cast<const gfx::PbrDrawable&>(currentDrawable));
     pbrDrawable.setShadowMaps(&shadowManager, &(shadowMapKeys[activeSceneID_]));
   }
-}
-
-scene::SceneGraph& Simulator::getActiveSceneGraph() {
-  CORRADE_INTERNAL_ASSERT(std::size_t(activeSceneID_) < sceneID_.size());
-  return sceneManager_->getSceneGraph(activeSceneID_);
-}
-
-//! return the semantic scene's SceneGraph for rendering
-scene::SceneGraph& Simulator::getActiveSemanticSceneGraph() {
-  CORRADE_INTERNAL_ASSERT(std::size_t(activeSemanticSceneID_) <
-                          sceneID_.size());
-  return sceneManager_->getSceneGraph(activeSemanticSceneID_);
 }
 
 // === Physics Simulator Functions ===

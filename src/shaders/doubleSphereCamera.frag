@@ -35,8 +35,7 @@ out highp uint fragmentObjectId;
 void main(void) {
   vec3 m;
   m.xy = (gl_FragCoord.xy - PrincipalPointOffset) / FocalLength;
-  // MUST flip the x axis
-  m.x = -m.x;
+
   float r2 = dot(m.xy, m.xy);
   float sq1 = 1.0 - (2.0 * Alpha - 1.0) * r2;
   if (sq1 < 0.0)
@@ -47,6 +46,9 @@ void main(void) {
   float sq2 = mz2 + (1.0 - Xi * Xi) * r2;
   if (sq2 < 0.0)
     discard;
+
+  // MUST flip the z axis
+  m.z = -m.z;
 
   // unproject to get the ray direction
   vec3 ray = (m.z * Xi + sqrt(sq2)) / (mz2 + r2) * m - vec3(0.0, 0.0, Xi);

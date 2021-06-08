@@ -8,6 +8,7 @@
 #include <map>
 
 #include <Corrade/Containers/EnumSet.h>
+#include <Corrade/Containers/Optional.h>
 #include <Corrade/Containers/StaticArray.h>
 #include <Magnum/GL/CubeMapTexture.h>
 #include <Magnum/GL/Framebuffer.h>
@@ -18,6 +19,7 @@
 #include <Magnum/Trade/AbstractImporter.h>
 #include "esp/gfx/CubeMapCamera.h"
 #include "esp/gfx/RenderCamera.h"
+#include "esp/gfx/TextureVisualizerShader.h"
 #include "esp/scene/SceneGraph.h"
 #include "esp/scene/SceneNode.h"
 
@@ -102,6 +104,19 @@ class CubeMap {
 
   /** @brief get cube map size */
   int getCubeMapSize() { return imageSize_; }
+
+  /**
+   * @brief advanced function, visualize non-color texture such as depth or
+   * object id. It will visualize such a texture in the color buffer.
+   * Visualized texture can be saved for example.
+   *
+   * NOTE: Flag::color MUST be set as well
+   */
+  void visualizeTexture(TextureType type,
+                        float n,
+                        float f,
+                        float colorMapOffset = 1.0f / 512.0f,
+                        float colorMapScale = 1.0f / 256.0f);
 
 #ifndef MAGNUM_TARGET_WEBGL
   /**
@@ -267,6 +282,11 @@ class CubeMap {
    * 1, 2, 3, 4, or 5
    */
   void bindFramebuffer(unsigned int cubeSideIndex);
+
+  /*
+  Magnum::ResourceManager<Mn::GL::AbstractShaderProgram> shaderManager_;
+  Magnum::Resource<TextureVisualizerShader> shader_;
+  */
 };
 
 CORRADE_ENUMSET_OPERATORS(CubeMap::Flags)
