@@ -99,7 +99,7 @@ bool URDFImporter::getJointInfo2(int linkIndex,
 
   auto link = activeModel_->getLink(linkIndex);
   if (link != nullptr) {
-    linkTransformInWorld = link->m_linkTransformInWorld;
+    linkTransformInWorld = Mn::Matrix4(Mn::Math::IdentityInit);
 
     if (auto pj = link->m_parentJoint.lock()) {
       parent2joint = pj->m_parentLinkToJointTransform;

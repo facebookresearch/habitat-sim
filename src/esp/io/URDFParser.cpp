@@ -25,6 +25,80 @@ namespace esp {
 namespace io {
 namespace URDF {
 
+void Model::scaleShape(Shape& shape, float scale) {
+  shape.m_linkLocalFrame.translation() *= scale;
+  switch (shape.m_geometry.m_type) {
+    case GEOM_MESH: {
+      shape.m_geometry.m_meshScale *= scale;
+    } break;
+    case GEOM_BOX: {
+      shape.m_geometry.m_boxSize *= scale;
+    } break;
+    case GEOM_SPHERE: {
+      shape.m_geometry.m_sphereRadius *= double(scale);
+    } break;
+    case GEOM_CAPSULE:
+    case GEOM_CYLINDER: {
+      shape.m_geometry.m_capsuleRadius *= double(scale);
+      shape.m_geometry.m_capsuleHeight *= double(scale);
+    } break;
+    default:
+      break;
+  }
+}
+
+void Model::setGlobalScaling(float scaling) {
+  if (scaling == m_globalScaling) {
+    // do nothing
+    return;
+  }
+
+  // Need to re-scale model, so use the ratio of new to current scale
+  float scaleCorrection = scaling / m_globalScaling;
+
+  // scale all transforms' translations
+  for (const auto& link : m_links) {
+    // scale inertial offsets
+    link.second->m_inertia.m_linkLocalFrame.translation() *= scaleCorrection;
+    // scale visual shape parameters
+    for (auto& visual : link.second->m_visualArray) {
+      scaleShape(visual, scaleCorrection);
+    }
+    // scale collision shapes
+    for (auto& collision : link.second->m_collisionArray) {
+      scaleShape(collision, scaleCorrection);
+    }
+  }
+  for (const auto& joint : m_joints) {
+    // scale joint offsets
+    joint.second->m_parentLinkToJointTransform.translation() *= scaleCorrection;
+    // scale prismatic joint limits
+    if (joint.second->m_type == PrismaticJoint) {
+      joint.second->m_lowerLimit *= double(scaleCorrection);
+      joint.second->m_upperLimit *= double(scaleCorrection);
+    }
+  }
+
+  m_globalScaling = scaling;
+}
+
+void Model::setMassScaling(float massScaling) {
+  if (massScaling == m_massScaling) {
+    // do nothing
+    return;
+  }
+  float massScaleCorrection = massScaling / m_massScaling;
+
+  // Only need to scale the per-link mass values. These will be further
+  // processed during import.
+  for (const auto& link : m_links) {
+    Inertia& linkInertia = link.second->m_inertia;
+    linkInertia.m_mass *= double(massScaleCorrection);
+  }
+
+  m_massScaling = massScaling;
+}
+
 bool Parser::parseURDF(std::shared_ptr<Model>& urdfModel,
                        const std::string& filename) {
   Mn::Debug silence{logMessages ? &std::cout : nullptr};
@@ -39,28 +113,34 @@ bool Parser::parseURDF(std::shared_ptr<Model>& urdfModel,
   XMLDocument xml_doc;
   xml_doc.Parse(xmlString.c_str());
   if (xml_doc.Error()) {
-    Mn::Debug{}
-        << "Parser::parseURDF - XML parse error, aborting URDF parse/load.";
+    Mn::Error{}
+        << "Parser::parseURDF - XML parse error, aborting URDF parse/load for "
+        << filename;
     return false;
   }
   Mn::Debug{} << "Parser::parseURDF - XML parsed starting URDF parse/load.";
 
-  XMLElement* robot_xml = xml_doc.FirstChildElement("robot");
+  const XMLElement* robot_xml = xml_doc.FirstChildElement("robot");
   if (!robot_xml) {
-    Mn::Debug{} << "E - expected a robot element";
+    Mn::Error{}
+        << "E - expected a <robot> element. Aborting URDF parse/load for "
+        << filename;
     return false;
   }
 
   // Get robot name
   const char* name = robot_xml->Attribute("name");
   if (!name) {
-    Mn::Debug{} << "E - expected a name for robot";
+    Mn::Error{}
+        << "E - expected a name for robot. Aborting URDF parse/load for "
+        << filename;
     return false;
   }
   urdfModel->m_name = name;
 
   // Get all Material elements
-  for (XMLElement* material_xml = robot_xml->FirstChildElement("material");
+  for (const XMLElement* material_xml =
+           robot_xml->FirstChildElement("material");
        material_xml;
        material_xml = material_xml->NextSiblingElement("material")) {
     Material material;
@@ -76,15 +156,17 @@ bool Parser::parseURDF(std::shared_ptr<Model>& urdfModel,
   }
 
   // Get all link elements including shapes
-  for (XMLElement* link_xml = robot_xml->FirstChildElement("link"); link_xml;
-       link_xml = link_xml->NextSiblingElement("link")) {
+  for (const XMLElement* link_xml = robot_xml->FirstChildElement("link");
+       link_xml; link_xml = link_xml->NextSiblingElement("link")) {
     std::shared_ptr<Link> link = std::make_shared<Link>();
 
     if (parseLink(urdfModel, *link, link_xml)) {
       if (urdfModel->m_links.count(link->m_name) != 0u) {
-        Mn::Debug{} << "E - Link name is not unique, link names "
-                       "in the same model have to be unique";
-        Mn::Debug{} << "E - " << link->m_name;
+        Mn::Error{}
+            << "E - Link name  (" << link->m_name
+            << ") is not unique, link names "
+               "in the same model have to be unique. Aborting parse/load for "
+            << filename;
         return false;
       } else {
         // copy model material into link material, if link has no local material
@@ -96,8 +178,9 @@ bool Parser::parseURDF(std::shared_ptr<Model>& urdfModel,
             if (mat_itr != urdfModel->m_materials.end()) {
               vis.m_geometry.m_localMaterial = mat_itr->second;
             } else {
-              Mn::Debug{} << "E - Cannot find material with name: "
-                          << vis.m_materialName;
+              Mn::Error{} << "E - Cannot find material with name: "
+                          << vis.m_materialName << ". Aborting parse/load for "
+                          << filename;
             }
           }
         }
@@ -106,29 +189,34 @@ bool Parser::parseURDF(std::shared_ptr<Model>& urdfModel,
         urdfModel->m_links[link->m_name] = link;
       }
     } else {
-      Mn::Debug{} << "E - failed to parse link";
+      Mn::Error{} << "E - failed to parse link. Aborting parse/load for "
+                  << filename;
       return false;
     }
   }
   if (urdfModel->m_links.size() == 0) {
-    Mn::Debug{} << "W - No links found in URDF file.";
+    Mn::Error{} << "W - No links found in URDF file. Aborting parse/load for "
+                << filename;
     return false;
   }
 
   // Get all Joint elements
-  for (XMLElement* joint_xml = robot_xml->FirstChildElement("joint"); joint_xml;
-       joint_xml = joint_xml->NextSiblingElement("joint")) {
+  for (const XMLElement* joint_xml = robot_xml->FirstChildElement("joint");
+       joint_xml; joint_xml = joint_xml->NextSiblingElement("joint")) {
     std::shared_ptr<Joint> joint = std::make_shared<Joint>();
 
     if (parseJoint(*joint, joint_xml)) {
       if (urdfModel->m_joints.count(joint->m_name) != 0u) {
-        Mn::Debug{} << "E - joint " << joint->m_name << " is not unique";
+        Mn::Error{} << "E - joint " << joint->m_name
+                    << " is not unique. Aborting parse/load for " << filename;
         return false;
       } else {
         urdfModel->m_joints[joint->m_name] = joint;
       }
     } else {
-      Mn::Debug{} << "E - joint xml is not initialized correctly";
+      Mn::Error{} << "E - joint xml is not initialized correctly. Aborting "
+                     "parse/load for "
+                  << filename;
       return false;
     }
   }
@@ -186,7 +274,7 @@ static bool parseVector3(Mn::Vector3& vec3,
   return true;
 }
 
-bool Parser::parseMaterial(Material& material, XMLElement* config) const {
+bool Parser::parseMaterial(Material& material, const XMLElement* config) const {
   Mn::Debug silence{logMessages ? &std::cout : nullptr};
   if (!config->Attribute("name")) {
     Mn::Debug{} << "E - Material must contain a name attribute";
@@ -195,7 +283,7 @@ bool Parser::parseMaterial(Material& material, XMLElement* config) const {
   material.m_name = config->Attribute("name");
 
   // texture
-  XMLElement* t = config->FirstChildElement("texture");
+  const XMLElement* t = config->FirstChildElement("texture");
   if (t) {
     if (t->Attribute("filename")) {
       material.m_textureFilename = t->Attribute("filename");
@@ -204,7 +292,7 @@ bool Parser::parseMaterial(Material& material, XMLElement* config) const {
 
   // color
   {
-    XMLElement* c = config->FirstChildElement("color");
+    const XMLElement* c = config->FirstChildElement("color");
     if (c) {
       if (c->Attribute("rgba")) {
         if (!parseColor4(material.m_matColor.m_rgbaColor,
@@ -217,7 +305,7 @@ bool Parser::parseMaterial(Material& material, XMLElement* config) const {
 
   {
     // specular (non-standard)
-    XMLElement* s = config->FirstChildElement("specular");
+    const XMLElement* s = config->FirstChildElement("specular");
     if (s) {
       if (s->Attribute("rgb")) {
         if (!parseVector3(material.m_matColor.m_specularColor,
@@ -231,7 +319,7 @@ bool Parser::parseMaterial(Material& material, XMLElement* config) const {
 
 bool Parser::parseLink(const std::shared_ptr<Model>& model,
                        Link& link,
-                       XMLElement* config) {
+                       const XMLElement* config) {
   Mn::Debug silence{logMessages ? &std::cout : nullptr};
   const char* linkName = config->Attribute("name");
   if (!linkName) {
@@ -244,9 +332,9 @@ bool Parser::parseLink(const std::shared_ptr<Model>& model,
 
   {
     // optional 'contact' parameters
-    XMLElement* ci = config->FirstChildElement("contact");
+    const XMLElement* ci = config->FirstChildElement("contact");
     if (ci) {
-      XMLElement* damping_xml = ci->FirstChildElement("inertia_scaling");
+      const XMLElement* damping_xml = ci->FirstChildElement("inertia_scaling");
       if (damping_xml) {
         if (!damping_xml->Attribute("value")) {
           Mn::Debug{}
@@ -259,7 +347,8 @@ bool Parser::parseLink(const std::shared_ptr<Model>& model,
         link.m_contactInfo.m_flags |= CONTACT_HAS_INERTIA_SCALING;
       }
       {
-        XMLElement* friction_xml = ci->FirstChildElement("lateral_friction");
+        const XMLElement* friction_xml =
+            ci->FirstChildElement("lateral_friction");
         if (friction_xml) {
           if (!friction_xml->Attribute("value")) {
             Mn::Debug{} << "E - Link/contact: lateral_friction "
@@ -273,7 +362,8 @@ bool Parser::parseLink(const std::shared_ptr<Model>& model,
       }
 
       {
-        XMLElement* rolling_xml = ci->FirstChildElement("rolling_friction");
+        const XMLElement* rolling_xml =
+            ci->FirstChildElement("rolling_friction");
         if (rolling_xml) {
           if (!rolling_xml->Attribute("value")) {
             Mn::Debug{} << "E - Link/contact: rolling friction "
@@ -288,7 +378,8 @@ bool Parser::parseLink(const std::shared_ptr<Model>& model,
       }
 
       {
-        XMLElement* restitution_xml = ci->FirstChildElement("restitution");
+        const XMLElement* restitution_xml =
+            ci->FirstChildElement("restitution");
         if (restitution_xml) {
           if (!restitution_xml->Attribute("value")) {
             Mn::Debug{} << "E - Link/contact: restitution "
@@ -303,7 +394,8 @@ bool Parser::parseLink(const std::shared_ptr<Model>& model,
       }
 
       {
-        XMLElement* spinning_xml = ci->FirstChildElement("spinning_friction");
+        const XMLElement* spinning_xml =
+            ci->FirstChildElement("spinning_friction");
         if (spinning_xml) {
           if (!spinning_xml->Attribute("value")) {
             Mn::Debug{} << "E - Link/contact: spinning friction "
@@ -317,13 +409,14 @@ bool Parser::parseLink(const std::shared_ptr<Model>& model,
         }
       }
       {
-        XMLElement* friction_anchor = ci->FirstChildElement("friction_anchor");
+        const XMLElement* friction_anchor =
+            ci->FirstChildElement("friction_anchor");
         if (friction_anchor) {
           link.m_contactInfo.m_flags |= CONTACT_HAS_FRICTION_ANCHOR;
         }
       }
       {
-        XMLElement* stiffness_xml = ci->FirstChildElement("stiffness");
+        const XMLElement* stiffness_xml = ci->FirstChildElement("stiffness");
         if (stiffness_xml) {
           if (!stiffness_xml->Attribute("value")) {
             Mn::Debug{} << "E - Link/contact: stiffness element "
@@ -337,7 +430,7 @@ bool Parser::parseLink(const std::shared_ptr<Model>& model,
         }
       }
       {
-        XMLElement* damping_xml = ci->FirstChildElement("damping");
+        const XMLElement* damping_xml = ci->FirstChildElement("damping");
         if (damping_xml) {
           if (!damping_xml->Attribute("value")) {
             Mn::Debug{} << "E - Link/contact: damping element "
@@ -354,7 +447,7 @@ bool Parser::parseLink(const std::shared_ptr<Model>& model,
   }
 
   // Inertial (optional)
-  XMLElement* i = config->FirstChildElement("inertial");
+  const XMLElement* i = config->FirstChildElement("inertial");
   if (i) {
     if (!parseInertia(link.m_inertia, i)) {
       Mn::Debug{} << "E - Could not parse inertial element for Link:";
@@ -383,7 +476,7 @@ bool Parser::parseLink(const std::shared_ptr<Model>& model,
   }
 
   // Multiple Visuals (optional)
-  for (XMLElement* vis_xml = config->FirstChildElement("visual"); vis_xml;
+  for (const XMLElement* vis_xml = config->FirstChildElement("visual"); vis_xml;
        vis_xml = vis_xml->NextSiblingElement("visual")) {
     VisualShape visual;
 
@@ -397,8 +490,8 @@ bool Parser::parseLink(const std::shared_ptr<Model>& model,
   }
 
   // Multiple Collisions (optional)
-  for (XMLElement* col_xml = config->FirstChildElement("collision"); col_xml;
-       col_xml = col_xml->NextSiblingElement("collision")) {
+  for (const XMLElement* col_xml = config->FirstChildElement("collision");
+       col_xml; col_xml = col_xml->NextSiblingElement("collision")) {
     CollisionShape col;
 
     if (parseCollision(col, col_xml)) {
@@ -412,17 +505,18 @@ bool Parser::parseLink(const std::shared_ptr<Model>& model,
   return true;
 }
 
-bool Parser::parseCollision(CollisionShape& collision, XMLElement* config) {
+bool Parser::parseCollision(CollisionShape& collision,
+                            const XMLElement* config) {
   collision.m_linkLocalFrame = Mn::Matrix4();  // Identity
 
   // Origin
-  XMLElement* o = config->FirstChildElement("origin");
+  const XMLElement* o = config->FirstChildElement("origin");
   if (o) {
     if (!parseTransform(collision.m_linkLocalFrame, o))
       return false;
   }
   // Geometry
-  XMLElement* geom = config->FirstChildElement("geometry");
+  const XMLElement* geom = config->FirstChildElement("geometry");
   if (!parseGeometry(collision.m_geometry, geom)) {
     return false;
   }
@@ -447,27 +541,23 @@ bool Parser::parseCollision(CollisionShape& collision, XMLElement* config) {
   if (name_char)
     collision.m_name = name_char;
 
-  const char* concave_char = config->Attribute("concave");
-  if (concave_char)
-    collision.m_flags |= FORCE_CONCAVE_TRIMESH;
-
   return true;
 }
 
 bool Parser::parseVisual(const std::shared_ptr<Model>& model,
                          VisualShape& visual,
-                         XMLElement* config) {
+                         const XMLElement* config) {
   Mn::Debug silence{logMessages ? &std::cout : nullptr};
   visual.m_linkLocalFrame = Mn::Matrix4();  // Identity
 
   // Origin
-  XMLElement* o = config->FirstChildElement("origin");
+  const XMLElement* o = config->FirstChildElement("origin");
   if (o) {
     if (!parseTransform(visual.m_linkLocalFrame, o))
       return false;
   }
   // Geometry
-  XMLElement* geom = config->FirstChildElement("geometry");
+  const XMLElement* geom = config->FirstChildElement("geometry");
   if (!parseGeometry(visual.m_geometry, geom)) {
     return false;
   }
@@ -479,7 +569,7 @@ bool Parser::parseVisual(const std::shared_ptr<Model>& model,
   visual.m_geometry.m_hasLocalMaterial = false;
 
   // Material
-  XMLElement* mat = config->FirstChildElement("material");
+  const XMLElement* mat = config->FirstChildElement("material");
   // todo(erwincoumans) skip materials in SDF for now (due to complexity)
   if (mat) {
     // get material name
@@ -490,9 +580,9 @@ bool Parser::parseVisual(const std::shared_ptr<Model>& model,
     visual.m_materialName = mat->Attribute("name");
 
     // try to parse material element in place
-    XMLElement* t = mat->FirstChildElement("texture");
-    XMLElement* c = mat->FirstChildElement("color");
-    XMLElement* s = mat->FirstChildElement("specular");
+    const XMLElement* t = mat->FirstChildElement("texture");
+    const XMLElement* c = mat->FirstChildElement("color");
+    const XMLElement* s = mat->FirstChildElement("specular");
     if (t || c || s) {
       if (!visual.m_geometry.m_localMaterial) {
         // create a new material
@@ -520,7 +610,7 @@ bool Parser::parseVisual(const std::shared_ptr<Model>& model,
   return true;
 }
 
-bool Parser::parseTransform(Mn::Matrix4& tr, XMLElement* xml) const {
+bool Parser::parseTransform(Mn::Matrix4& tr, const XMLElement* xml) const {
   tr = Mn::Matrix4();  // Identity
 
   Mn::Vector3 vec(0, 0, 0);
@@ -558,12 +648,12 @@ bool Parser::parseTransform(Mn::Matrix4& tr, XMLElement* xml) const {
   return true;
 }
 
-bool Parser::parseGeometry(Geometry& geom, XMLElement* g) {
+bool Parser::parseGeometry(Geometry& geom, const XMLElement* g) {
   Mn::Debug silence{logMessages ? &std::cout : nullptr};
   if (g == nullptr)
     return false;
 
-  XMLElement* shape = g->FirstChildElement();
+  const XMLElement* shape = g->FirstChildElement();
   if (!shape) {
     Mn::Debug{} << "E - Geometry tag contains no child element.";
     return false;
@@ -666,13 +756,13 @@ bool Parser::parseGeometry(Geometry& geom, XMLElement* g) {
   return true;
 }
 
-bool Parser::parseInertia(Inertia& inertia, XMLElement* config) {
+bool Parser::parseInertia(Inertia& inertia, const XMLElement* config) {
   Mn::Debug silence{logMessages ? &std::cout : nullptr};
   inertia.m_linkLocalFrame = Mn::Matrix4();  // Identity
   inertia.m_mass = 0.f;
 
   // Origin
-  XMLElement* o = config->FirstChildElement("origin");
+  const XMLElement* o = config->FirstChildElement("origin");
   if (o) {
     if (!parseTransform(inertia.m_linkLocalFrame, o)) {
       return false;
@@ -680,7 +770,7 @@ bool Parser::parseInertia(Inertia& inertia, XMLElement* config) {
     inertia.m_hasLinkLocalFrame = true;
   }
 
-  XMLElement* mass_xml = config->FirstChildElement("mass");
+  const XMLElement* mass_xml = config->FirstChildElement("mass");
   if (!mass_xml) {
     Mn::Debug{} << "E - Inertial element must have a mass element";
     return false;
@@ -693,7 +783,7 @@ bool Parser::parseInertia(Inertia& inertia, XMLElement* config) {
 
   inertia.m_mass = std::stod(mass_xml->Attribute("value"));
 
-  XMLElement* inertia_xml = config->FirstChildElement("inertia");
+  const XMLElement* inertia_xml = config->FirstChildElement("inertia");
   if (!inertia_xml) {
     Mn::Debug{} << "E - Inertial element must have inertia element";
     return false;
@@ -822,7 +912,7 @@ bool Parser::initTreeAndRoot(const std::shared_ptr<Model>& model) const {
 }
 
 bool Parser::parseJointLimits(Joint& joint,
-                              tinyxml2::XMLElement* config) const {
+                              const tinyxml2::XMLElement* config) const {
   joint.m_lowerLimit = 0.f;
   joint.m_upperLimit = -1.f;
   joint.m_effortLimit = 0.f;
@@ -856,7 +946,7 @@ bool Parser::parseJointLimits(Joint& joint,
 }
 
 bool Parser::parseJointDynamics(Joint& joint,
-                                tinyxml2::XMLElement* config) const {
+                                const tinyxml2::XMLElement* config) const {
   Mn::Debug silence{logMessages ? &std::cout : nullptr};
   joint.m_jointDamping = 0;
   joint.m_jointFriction = 0;
@@ -882,7 +972,7 @@ bool Parser::parseJointDynamics(Joint& joint,
   return true;
 }
 
-bool Parser::parseJoint(Joint& joint, tinyxml2::XMLElement* config) {
+bool Parser::parseJoint(Joint& joint, const tinyxml2::XMLElement* config) {
   Mn::Debug silence{logMessages ? &std::cout : nullptr};
   // Get Joint Name
   const char* name = config->Attribute("name");
@@ -894,7 +984,7 @@ bool Parser::parseJoint(Joint& joint, tinyxml2::XMLElement* config) {
   joint.m_parentLinkToJointTransform = Mn::Matrix4();  // Identity
 
   // Get transform from Parent Link to Joint Frame
-  XMLElement* origin_xml = config->FirstChildElement("origin");
+  const XMLElement* origin_xml = config->FirstChildElement("origin");
   if (origin_xml) {
     if (!parseTransform(joint.m_parentLinkToJointTransform, origin_xml)) {
       Mn::Debug{} << "E - Malformed parent origin element for joint: "
@@ -904,7 +994,7 @@ bool Parser::parseJoint(Joint& joint, tinyxml2::XMLElement* config) {
   }
 
   // Get Parent Link
-  XMLElement* parent_xml = config->FirstChildElement("parent");
+  const XMLElement* parent_xml = config->FirstChildElement("parent");
   if (parent_xml) {
     const char* pname = parent_xml->Attribute("link");
     if (!pname) {
@@ -918,7 +1008,7 @@ bool Parser::parseJoint(Joint& joint, tinyxml2::XMLElement* config) {
   }
 
   // Get Child Link
-  XMLElement* child_xml = config->FirstChildElement("child");
+  const XMLElement* child_xml = config->FirstChildElement("child");
   if (child_xml) {
     const char* pname = child_xml->Attribute("link");
     if (!pname) {
@@ -962,7 +1052,7 @@ bool Parser::parseJoint(Joint& joint, tinyxml2::XMLElement* config) {
   // Get Joint Axis
   if (joint.m_type != FloatingJoint && joint.m_type != FixedJoint) {
     // axis
-    XMLElement* axis_xml = config->FirstChildElement("axis");
+    const XMLElement* axis_xml = config->FirstChildElement("axis");
     if (!axis_xml) {
       Mn::Debug{} << "W - urdfdom: no axis elemement for Joint, "
                      "defaulting to (1,0,0) axis "
@@ -981,7 +1071,7 @@ bool Parser::parseJoint(Joint& joint, tinyxml2::XMLElement* config) {
   }
 
   // Get limit
-  XMLElement* limit_xml = config->FirstChildElement("limit");
+  const XMLElement* limit_xml = config->FirstChildElement("limit");
   if (limit_xml) {
     if (!parseJointLimits(joint, limit_xml)) {
       Mn::Debug{} << "E - Could not parse limit element for joint:"
@@ -1003,7 +1093,7 @@ bool Parser::parseJoint(Joint& joint, tinyxml2::XMLElement* config) {
   joint.m_jointFriction = 0;
 
   // Get Dynamics
-  XMLElement* prop_xml = config->FirstChildElement("dynamics");
+  const XMLElement* prop_xml = config->FirstChildElement("dynamics");
   if (prop_xml) {
     // Get joint damping
     const char* damping_str = prop_xml->Attribute("damping");
