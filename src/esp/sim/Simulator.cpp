@@ -600,11 +600,13 @@ void Simulator::computeShadowMaps() {
   if (!pointShadowMap) {
     shadowManager.set<gfx::CubeMap>(
         pointShadowMap.key(),
-        // new gfx::CubeMap{shadowMapSize, {gfx::CubeMap::Flag::DepthTexture}},
+        new gfx::CubeMap{shadowMapSize, {gfx::CubeMap::Flag::DepthTexture}},
         // XXX
+        /*
         new gfx::CubeMap{shadowMapSize,
                          {gfx::CubeMap::Flag::DepthTexture |
                           gfx::CubeMap::Flag::ColorTexture}},
+                          */
         Mn::ResourceDataState::Final, Mn::ResourcePolicy::Resident);
 
     CORRADE_INTERNAL_ASSERT(pointShadowMap && pointShadowMap.key() == key);
@@ -640,12 +642,15 @@ void Simulator::computeShadowMaps() {
   */
   pointShadowMap->renderToTexture(camera, sg, "",
                                   {gfx::RenderCamera::Flag::FrustumCulling |
+                                   // gfx::RenderCamera::Flag::CullFrontFace |
                                    gfx::RenderCamera::Flag::ClearDepth});
 
   // XXX
-  pointShadowMap->visualizeTexture(gfx::CubeMap::TextureType::Depth, near, far,
-                                   1.0f / 512.0f, 1.0f / far);
+  /*
+  pointShadowMap->visualizeTexture(gfx::CubeMap::TextureType::Depth, near,
+  far, 1.0f / 512.0f, 1.0f / far);
   pointShadowMap->saveTexture(gfx::CubeMap::TextureType::Color, "shadowMap");
+  */
 }
 
 void Simulator::setShadowMapsToDrawables() {
@@ -945,8 +950,8 @@ std::string Simulator::convexHullDecomposition(
   chdObjAttr->setCollisionAssetIsPrimitive(false);
   chdObjAttr->setJoinCollisionMeshes(false);
 
-  // if the renderChd flag is set to true, set the convex hull decomposition to
-  // be the render asset (useful for testing)
+  // if the renderChd flag is set to true, set the convex hull decomposition
+  // to be the render asset (useful for testing)
 
   chdObjAttr->setRenderAssetHandle(renderChd ? chdFilename : filename);
 

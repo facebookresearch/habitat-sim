@@ -574,6 +574,11 @@ void CubeMap::renderToTexture(CubeMapCamera& camera,
                               scene::SceneGraph& sceneGraph,
                               const char* drawableGroupName,
                               RenderCamera::Flags renderCameraFlags) {
+  if (renderCameraFlags & RenderCamera::Flag::CullFrontFace) {
+    Mn::GL::Renderer::setFaceCullingMode(
+        Mn::GL::Renderer::PolygonFacing::Front);
+  }
+
   CORRADE_ASSERT(camera.isInSceneGraph(sceneGraph),
                  "CubeMap::renderToTexture(): camera is NOT attached to the "
                  "current scene graph.", );
@@ -619,6 +624,10 @@ void CubeMap::renderToTexture(CubeMapCamera& camera,
   // Color texture ONLY, NOT for depth
   if ((flags_ & Flag::AutoBuildMipmap) && (flags_ & Flag::ColorTexture)) {
     texture(TextureType::Color).generateMipmap();
+  }
+
+  if (renderCameraFlags & RenderCamera::Flag::CullFrontFace) {
+    Mn::GL::Renderer::setFaceCullingMode(Mn::GL::Renderer::PolygonFacing::Back);
   }
 }
 

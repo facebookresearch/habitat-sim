@@ -149,19 +149,7 @@ float vecToDepthValue(vec3 vec) {
 }
 
 float shadowCalculation(vec3 fragPos, vec3 lightPos, vec3 viewPos, out vec3 vizClosestDepth) {
-
-    /*
-    vec3 vizClosestDepth = vec3(0.0, 0.0, 1.0);
-    vec3 lightToFrag = position - LightDirections[0].xyz;
-    // use the fragment to light vector to sample from the depth map
-    float closestDepth = texture(PointShadowMap0, normalize(lightToFrag)).r;
-    vizClosestDepth = vec3(LinearizeDepth(closestDepth) / FarPlane, 0.0, 0.0);
-    if (length(currentDiffuseContrib) > 0.0) {
-    diffuseContrib += vizClosestDepth / 2.0;
-    specularContrib += vizClosestDepth / 2.0;
-    }
-    */
-
+  /*
     // get vector between fragment position and light position
     vec3 lightToFrag = fragPos - lightPos;
     // use the fragment to light vector to sample from the depth map
@@ -170,15 +158,17 @@ float shadowCalculation(vec3 fragPos, vec3 lightPos, vec3 viewPos, out vec3 vizC
     // closestDepth *= FarPlane;
     // now get current linear depth as the length between the fragment and light position
     float d = vecToDepthValue(lightToFrag);
-    if (closestDepth + 0.0001 > d)
+    if (closestDepth + 0.0001 > d) // no shadow
       return 1.0;
 
     return 0.0;
+ */
 
+    // vector from light position to the shading location=
+    vec3 lightToFrag = fragPos - lightPos;
+    float d = vecToDepthValue(lightToFrag);
 
-
-   /*
-    float bias = 0.08; // 0.15
+    float bias = 0.0001; // 0.15
     int samples = 20;
     float shadow = 0.0;
     float viewDistance = length(viewPos - fragPos);
@@ -186,10 +176,7 @@ float shadowCalculation(vec3 fragPos, vec3 lightPos, vec3 viewPos, out vec3 vizC
     float diskRadius = (1.0 + (viewDistance / FarPlane)) / 50.0;
     for(int i = 0; i < samples; ++i) {
         float closestDepth = texture(PointShadowMap0, normalize(lightToFrag + gridSamplingDisk[i] * diskRadius)).r;
-        // closestDepth *= FarPlane;   // undo mapping [0;1]
-        closestDepth = LinearizeDepth(closestDepth);
-        // shadow += smoothstep(closestDepth, closestDepth + bias, currentDepth);
-        if(currentDepth - bias > closestDepth)
+        if(d - bias > closestDepth)
             shadow += 1.0;
     }
     shadow /= float(samples);
@@ -201,7 +188,6 @@ float shadowCalculation(vec3 fragPos, vec3 lightPos, vec3 viewPos, out vec3 vizC
     // FragColor = vec4(vec3(closestDepth / FarPlane), 1.0);
 
     return 1.0 - shadow;
-    */
 }
 
 #endif

@@ -53,6 +53,12 @@ class RenderCamera : public MagnumCamera {
      * Clear object id, used in the sub-class CubeMapCamera
      */
     ClearObjectId = 1 << 5,
+
+    /**
+     * Cull the front face. This is useful when generating the shadow maps
+     * NOTE: Be careful. Do not forget to reset back to back face culling
+     */
+    CullFrontFace = 1 << 6,
   };
 
   typedef Corrade::Containers::EnumSet<Flag> Flags;
