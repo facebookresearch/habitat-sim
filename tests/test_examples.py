@@ -3,6 +3,7 @@ from os import path as osp
 
 import pytest
 
+import habitat_sim
 from utils import run_main_subproc
 
 
@@ -60,6 +61,18 @@ def powerset(iterable):
     ],
 )
 def test_example_modules(args):
+    run_main_subproc(args)
+
+
+@pytest.mark.skipif(
+    not habitat_sim.vhacd_enabled,
+    reason="Requires Habitat-sim to be built with VHACD (--vhacd)",
+)
+@pytest.mark.parametrize(
+    "args",
+    [("examples/tutorials/VHACD_tutorial.py", "--no-show-video", "--no-make-video")],
+)
+def test_vhacd_example(args):
     run_main_subproc(args)
 
 

@@ -370,29 +370,6 @@ void BulletPhysicsManager::debugDraw(const Magnum::Matrix4& projTrans) const {
   bWorld_->debugDrawWorld();
 }
 
-bool BulletPhysicsManager::contactTest(const int physObjectID,
-                                       bool staticAsStage) {
-  CHECK((existingObjects_.count(physObjectID) > 0) ||
-        (existingArticulatedObjects_.count(physObjectID) > 0));
-  if (existingObjects_.count(physObjectID) > 0) {
-    return static_cast<BulletRigidObject*>(
-               existingObjects_.at(physObjectID).get())
-        ->contactTest(staticAsStage);
-  } else {
-    return static_cast<BulletArticulatedObject*>(
-               existingArticulatedObjects_.at(physObjectID).get())
-        ->contactTest(staticAsStage);
-  }
-  return false;
-}
-
-void BulletPhysicsManager::overrideCollisionGroup(const int physObjectID,
-                                                  CollisionGroup group) const {
-  assertRigidIdValidity(physObjectID);
-  static_cast<BulletRigidObject*>(existingObjects_.at(physObjectID).get())
-      ->overrideCollisionGroup(group);
-}
-
 // rigid object -> world
 int BulletPhysicsManager::createRigidP2PConstraint(
     int objectId,

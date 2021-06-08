@@ -37,7 +37,7 @@ When rendering a scene from the Matterport3D dataset, Habitat-Sim achieves sever
    1. [Testing](#testing)
    1. [Documentation](#documentation)
    1. [Rendering to GPU Tensors](#rendering-to-gpu-tensors)
-   1. [WebGL](#webgl)
+   1. [Experimental: Emscripten, WebGL, and Web Apps](##experimental-emscripten-webgl-and-web-apps)
    1. [Datasets](#datasets)
    1. [Examples](#examples)
    1. [Code Style](#code-style)

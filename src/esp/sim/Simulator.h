@@ -1245,17 +1245,14 @@ class Simulator {
    * collision world.
    * @param objectId The object ID and key identifying the object in @ref
    * esp::physics::PhysicsManager::existingObjects_.
-   * @param staticAsStage When false, override configured collision groups|masks
-   * for STATIC objects and articulated fixed base such that contact with other
-   * STATICs such as the stage are considered.
    * @param sceneID !! Not used currently !! Specifies which physical scene of
    * the object.
    * @return Whether or not the object is in contact with any other collision
    * enabled objects.
    */
-  bool contactTest(int objectID, bool staticAsStage = true, int sceneID = 0) {
+  bool contactTest(int objectID, int sceneID = 0) {
     if (sceneHasPhysics(sceneID)) {
-      return physicsManager_->contactTest(objectID, staticAsStage);
+      return physicsManager_->contactTest(objectID);
     }
     return false;
   }
@@ -1266,13 +1263,6 @@ class Simulator {
   void performDiscreteCollisionDetection() {
     physicsManager_->performDiscreteCollisionDetection();
   };
-
-  // TODO: document
-  void overrideCollisionGroup(int objectId, int group) {
-    // todo: find a safe way to convert int to enum
-    physicsManager_->overrideCollisionGroup(
-        objectId, esp::physics::CollisionGroup(group));
-  }
 
   /**
    * @brief Query physics simulation implementation for contact point data from

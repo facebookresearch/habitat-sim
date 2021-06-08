@@ -958,18 +958,19 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @brief Check whether an object is in contact with any other objects or the
    * scene.
    *
-   * Not implemented for default @ref PhysicsManager. See @ref
-   * BulletPhysicsManager.
    * @param physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
-   * @param staticAsStage When false, override configured collision groups|masks
-   * for STATIC objects and articulated fixed base such that contact with other
-   * STATICs such as the stage are considered.
    * @return Whether or not the object is in contact with any other collision
    * enabled objects.
    */
-  virtual bool contactTest(CORRADE_UNUSED const int physObjectID,
-                           CORRADE_UNUSED bool staticAsStage = true) {
+  virtual bool contactTest(const int physObjectID) {
+    CHECK((existingObjects_.count(physObjectID) > 0) ||
+          (existingArticulatedObjects_.count(physObjectID) > 0));
+    if (existingObjects_.count(physObjectID) > 0) {
+      return existingObjects_.at(physObjectID)->contactTest();
+    } else {
+      return existingArticulatedObjects_.at(physObjectID)->contactTest();
+    }
     return false;
   }
 
@@ -981,13 +982,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   virtual void performDiscreteCollisionDetection() {
     /*Does nothing in base PhysicsManager.*/
   }
-
-  /**
-   * @brief Manually set the collision group for an object.
-   */
-  virtual void overrideCollisionGroup(CORRADE_UNUSED const int physObjectID,
-                                      CORRADE_UNUSED CollisionGroup
-                                          group) const {}
 
   /**
    * @brief Query the number of contact points that were active during the

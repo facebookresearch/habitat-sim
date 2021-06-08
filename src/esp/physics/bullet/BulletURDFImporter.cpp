@@ -618,8 +618,8 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
         collisionFilterGroup = colGroup;
       }
 
-      int collisionFilterMask = CollisionGroupHelper::getMaskForGroup(
-          CollisionGroup(collisionFilterGroup));
+      int collisionFilterMask = uint32_t(CollisionGroupHelper::getMaskForGroup(
+          CollisionGroup(collisionFilterGroup)));
 // We don't like overriding the mask in the URDF; we disable support for this.
 // We prefer to only override the group, while still using getMaskForGroup
 // (above) for mask computation.

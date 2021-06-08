@@ -25,9 +25,9 @@ class ManagedBulletArticulatedObject
       : ManagedArticulatedObject("ManagedBulletArticulatedObject") {}
 
 #ifdef ESP_BUILD_WITH_BULLET
-  bool contactTest(bool staticAsStage = true) {
+  bool contactTest() {
     if (auto sp = getBulletObjectReference()) {
-      return sp->contactTest(staticAsStage);
+      return sp->contactTest();
     }
     return false;
   }
@@ -62,7 +62,7 @@ class ManagedBulletArticulatedObject
   }
 #else
   //! no bullet version
-  bool contactTest(CORRADE_UNUSED bool staticAsStage = true) {
+  bool contactTest() {
     LOG(WARNING) << "This functionaliy requires Habitat-Sim to be compiled "
                     "with Bullet enabled..";
     return false;

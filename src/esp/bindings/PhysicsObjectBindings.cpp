@@ -39,7 +39,9 @@ void declareBasePhysicsObjectWrapper(py::module& m,
       .def_property(
           "motion_type", &PhysObjWrapper::getMotionType,
           &PhysObjWrapper::setMotionType,
-          ("Get or set the MotionType of this " + objType + ".").c_str())
+          ("Get or set the MotionType of this " + objType +
+           ". Changing MotionType will override any custom collision group.")
+              .c_str())
       .def_property_readonly(
           "object_id", &PhysObjWrapper::getID,
           ("System-generated ID for this " + objType +
@@ -95,6 +97,13 @@ void declareBasePhysicsObjectWrapper(py::module& m,
                     ("Get or set whether this " + objType +
                      " is actively being simulated, or is sleeping.")
                         .c_str())
+      .def("contact_test", &PhysObjWrapper::contactTest,
+           ("Discrete collision check for contact between an object and the "
+            "collision world."))
+      .def("override_collision_group", &PhysObjWrapper::overrideCollisionGroup,
+           "group"_a,
+           ("Manually set the collision group for an object. Setting a new "
+            "MotionType will override this change."))
       .def(
           "translate", &PhysObjWrapper::translate, "vector"_a,
           ("Move this " + objType + " using passed translation vector").c_str())
@@ -486,10 +495,7 @@ void initPhysicsObjectBindings(py::module& m) {
       m, "ManagedBulletArticulatedObject")
       .def(
           "contact_test", &ManagedBulletArticulatedObject::contactTest,
-          // TODO need to describe what 'static_as_stage' is intended for in
-          // appropriate terms.
-          R"(REQUIRES BULLET TO BE INSTALLED. Returns the result of a discrete collision test between this object and the world.)",
-          "static_as_stage"_a)
+          R"(REQUIRES BULLET TO BE INSTALLED. Returns the result of a discrete collision test between this object and the world.)")
       .def("supports_joint_motor",
            &ManagedBulletArticulatedObject::supportsJointMotor,
            R"(REQUIRES BULLET TO BE INSTALLED. )", "link_id"_a)

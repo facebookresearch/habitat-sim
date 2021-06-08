@@ -39,7 +39,13 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
     /**
      * indicates the mesh data has separate bi-tangent attribute
      */
-    HasSeparateBitangent = 1 << 1
+    HasSeparateBitangent = 1 << 1,
+
+    /**
+     * indicates whether the mesh is vertex colored
+     */
+    HasVertexColor = 1 << 2
+
   };
   /** @brief Flags */
   typedef Corrade::Containers::EnumSet<Flag> Flags;

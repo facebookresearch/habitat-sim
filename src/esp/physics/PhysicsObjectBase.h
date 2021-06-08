@@ -9,6 +9,7 @@
 #include <Corrade/Containers/Reference.h>
 #include "esp/assets/ResourceManager.h"
 #include "esp/core/RigidState.h"
+#include "esp/physics/CollisionGroupHelper.h"
 
 /** @file
  * @brief Class @ref physics::PhysicsObjectBase is the base class for any
@@ -21,10 +22,10 @@ namespace esp {
 namespace physics {
 
 /**
-@brief Motion type of a @ref RigidObject.
-Defines its treatment by the simulator and operations which can be performed on
-it.
-*/
+ * @brief Motion type of a @ref RigidObject.
+ * Defines its treatment by the simulator and operations which can be performed
+ * on it.
+ */
 enum class MotionType {
   /**
    * Refers to an error (such as a query to non-existing object) or an
@@ -134,6 +135,22 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    * @param active Whether to activate or sleep the object
    */
   virtual void setActive(CORRADE_UNUSED bool active) {}
+
+  /**
+   * @brief Return result of a discrete contact test between the object and
+   * collision world.
+   *
+   * See @ref SimulationContactResultCallback
+   * @return Whether or not the object is in contact with any other collision
+   * enabled objects.
+   */
+  virtual bool contactTest() { return false; }
+
+  /**
+   * @brief Manually set the collision group for an object.
+   * @param group The desired CollisionGroup for the object.
+   */
+  virtual void overrideCollisionGroup(CORRADE_UNUSED CollisionGroup group) {}
 
   /**
    * @brief Set the light setup of this rigid.

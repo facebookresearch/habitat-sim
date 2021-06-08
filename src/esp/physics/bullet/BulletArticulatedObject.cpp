@@ -167,7 +167,8 @@ bool BulletArticulatedObject::initializeFromURDF(
             "URDF, " + u2b.getModel()->m_name + ", fixed body");
         bWorld_->addRigidBody(
             bFixedObjectRigidBody_.get(), int(CollisionGroup::Static),
-            CollisionGroupHelper::getMaskForGroup(CollisionGroup::Static));
+            uint32_t(
+                CollisionGroupHelper::getMaskForGroup(CollisionGroup::Static)));
         collisionObjToObjIds_->emplace(bFixedObjectRigidBody_.get(), objectId_);
       } else {
         bFixedObjectShape_ = nullptr;
@@ -898,7 +899,7 @@ struct AOSimulationContactResultCallback
   }
 };
 
-bool BulletArticulatedObject::contactTest(bool staticAsStage) {
+bool BulletArticulatedObject::contactTest() {
   AOSimulationContactResultCallback src(btMultiBody_.get(),
                                         bFixedObjectRigidBody_.get());
 
@@ -910,13 +911,6 @@ bool BulletArticulatedObject::contactTest(bool staticAsStage) {
         bFixedObjectRigidBody_->getBroadphaseHandle()->m_collisionFilterGroup;
     src.m_collisionFilterMask =
         bFixedObjectRigidBody_->getBroadphaseHandle()->m_collisionFilterMask;
-
-    if (!staticAsStage) {
-      // consider the fixed base as "robot" instead of "static"
-      src.m_collisionFilterGroup = int(CollisionGroup::Robot);
-      src.m_collisionFilterMask =
-          CollisionGroupHelper::getMaskForGroup(CollisionGroup::Robot);
-    }
 
     bWorld_->getCollisionWorld()->contactTest(bFixedObjectRigidBody_.get(),
                                               src);

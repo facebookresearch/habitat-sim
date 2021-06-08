@@ -14,6 +14,7 @@
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
 #include "BulletDebugManager.h"
 #include "BulletRigidStage.h"
+#include "esp/physics/CollisionGroupHelper.h"
 
 #include "esp/physics/CollisionGroupHelper.h"
 
@@ -89,9 +90,9 @@ void BulletRigidStage::constructAndAddCollisionObjects() {
 
   // add the objects to the world
   for (auto& object : bStaticCollisionObjects_) {
-    bWorld_->addRigidBody(
-        object.get(), int(CollisionGroup::Static),
-        CollisionGroupHelper::getMaskForGroup(CollisionGroup::Static));
+    bWorld_->addRigidBody(object.get(), int(CollisionGroup::Static),
+                          uint32_t(CollisionGroupHelper::getMaskForGroup(
+                              CollisionGroup::Static)));
   }
 }
 

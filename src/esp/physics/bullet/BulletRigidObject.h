@@ -424,7 +424,13 @@ class BulletRigidObject : public BulletBase,
    * @return Whether or not the object is in contact with any other collision
    * enabled objects.
    */
-  bool contactTest(bool staticAsStage = true);
+  bool contactTest() override;
+
+  /**
+   * @brief Manually set the collision group for an object.
+   * @param group The desired CollisionGroup for the object.
+   */
+  void overrideCollisionGroup(CollisionGroup group) override;
 
   /**
    * @brief Query the Aabb from bullet physics for the root compound shape of
@@ -438,8 +444,6 @@ class BulletRigidObject : public BulletBase,
    * object.
    */
   bool isMe(const btCollisionObject* collisionObject);
-
-  void overrideCollisionGroup(CollisionGroup group);
 
   /** @brief Object data: All components of a @ref RigidObjectType::OBJECT are
    * wrapped into one @ref btRigidBody.

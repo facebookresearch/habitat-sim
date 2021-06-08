@@ -4,6 +4,8 @@
 
 from habitat_sim._ext.habitat_sim_bindings import (
     ArticulatedObjectManager,
+    CollisionGroupHelper,
+    CollisionGroups,
     JointMotorSettings,
     ManagedArticulatedObject,
     ManagedBulletArticulatedObject,
@@ -30,4 +32,6 @@ __all__ = [
     "RayHitInfo",
     "RaycastResults",
     "JointMotorSettings",
+    "CollisionGroups",
+    "CollisionGroupHelper",
 ]
