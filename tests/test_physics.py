@@ -434,3 +434,102 @@ def test_raycast():
             sim.set_stage_is_collidable(False)
             raycast_results = sim.cast_ray(test_ray_1)
             assert not raycast_results.has_hits()
+
+
+@pytest.mark.skipif(
+    not osp.exists("data/scene_datasets/habitat-test-scenes/apartment_1.glb"),
+    reason="Requires the habitat-test-scenes",
+)
+def test_collision_groups():
+    cfg_settings = examples.settings.default_sim_settings.copy()
+
+    # configure some settings in case defaults change
+    cfg_settings["scene"] = "data/scene_datasets/habitat-test-scenes/apartment_1.glb"
+
+    # enable the physics simulator
+    cfg_settings["enable_physics"] = True
+
+    # loading the physical scene
+    hab_cfg = examples.settings.make_cfg(cfg_settings)
+
+    with habitat_sim.Simulator(hab_cfg) as sim:
+        # get the rigid object attributes manager, which manages
+        # templates used to create objects
+        obj_template_mgr = sim.get_object_template_manager()
+        # get the rigid object manager, which provides direct
+        # access to objects
+        rigid_obj_mgr = sim.get_rigid_object_manager()
+
+        if (
+            sim.get_physics_simulation_library()
+            != habitat_sim.physics.PhysicsSimulationLibrary.NoPhysics
+        ):
+            cgh = habitat_sim.physics.CollisionGroupHelper
+            cg = habitat_sim.physics.CollisionGroups
+
+            # test group naming
+            assert cgh.get_group_name(cg.UserGroup1) == "UserGroup1"
+            assert cgh.get_group("UserGroup1") == cg.UserGroup1
+            cgh.set_group_name(cg.UserGroup1, "my_custom_group_1")
+            assert cgh.get_group_name(cg.UserGroup1) == "my_custom_group_1"
+            assert cgh.get_group("my_custom_group_1") == cg.UserGroup1
+            assert cgh.get_mask_for_group(cg.UserGroup1) == cgh.get_mask_for_group(
+                "my_custom_group_1"
+            )
+
+            # create a custom group behavior (STATIC and KINEMATIC only)
+            new_user_group_1_mask = cg.Static | cg.Kinematic
+            cgh.set_mask_for_group(cg.UserGroup1, new_user_group_1_mask)
+
+            cube_prim_handle = obj_template_mgr.get_template_handles("cube")[0]
+            cube_obj1 = rigid_obj_mgr.add_object_by_template_handle(cube_prim_handle)
+            cube_obj2 = rigid_obj_mgr.add_object_by_template_handle(cube_prim_handle)
+            # add a DYNAMIC cube in a contact free state
+            cube_obj1.translation = [1.0, 0.0, 4.5]
+            assert not cube_obj1.contact_test()
+            # add another in contact with the first
+            cube_obj2.translation = [1.1, 0.0, 4.6]
+            assert cube_obj1.contact_test()
+            assert cube_obj2.contact_test()
+            # override cube1 collision group to STATIC|KINEMATIC only
+            cube_obj1.override_collision_group(cg.UserGroup1)
+            assert not cube_obj1.contact_test()
+            assert not cube_obj2.contact_test()
+            # override cube2 to a new group and configure custom mask to interact with it
+            cgh.set_mask_for_group(cg.UserGroup1, new_user_group_1_mask | cg.UserGroup2)
+            # NOTE: changing group settings requires overriding object group again
+            cube_obj1.override_collision_group(cg.UserGroup1)
+            cube_obj2.override_collision_group(cg.UserGroup2)
+            assert cube_obj1.contact_test()
+            assert cube_obj2.contact_test()
+
+            # NOTE: trying to set the object's MotionType to its current type won't change the collision group
+            cube_obj2.motion_type = habitat_sim.physics.MotionType.DYNAMIC
+            assert cube_obj1.contact_test()
+            assert cube_obj2.contact_test()
+            # NOTE: changing the object's MotionType will override the group
+            cube_obj2.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+            cube_obj2.motion_type = habitat_sim.physics.MotionType.DYNAMIC
+            assert not cube_obj1.contact_test()
+            assert not cube_obj2.contact_test()
+            # cube 1 is still using the custom group and will interact with KINEMATIC
+            cube_obj2.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+            assert cube_obj1.contact_test()
+            assert cube_obj2.contact_test()
+
+            # test convenience bitwise mask setter
+            cgh.set_group_interacts_with(cg.UserGroup1, cg.Kinematic, False)
+            assert not cgh.get_mask_for_group(cg.UserGroup1) & cg.Kinematic
+            cube_obj1.override_collision_group(cg.UserGroup1)
+            assert not cube_obj1.contact_test()
+            assert not cube_obj2.contact_test()
+            cgh.set_group_interacts_with(cg.UserGroup1, cg.Kinematic, True)
+            assert cgh.get_mask_for_group(cg.UserGroup1) & cg.Kinematic
+            cube_obj1.override_collision_group(cg.UserGroup1)
+            assert cube_obj1.contact_test()
+            assert cube_obj2.contact_test()
+
+            # test Noncollidable
+            cube_obj2.override_collision_group(cg.Noncollidable)
+            assert not cube_obj1.contact_test()
+            assert not cube_obj2.contact_test()

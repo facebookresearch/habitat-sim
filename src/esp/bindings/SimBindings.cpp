@@ -364,7 +364,7 @@ void initSimBindings(py::module& m) {
       .def(
           "contact_test", &Simulator::contactTest, "object_id"_a,
           "scene_id"_a = 0,
-          R"(Run collision detection and return a binary indicator of penetration between the specified object and any other collision object. Physics must be enabled.)")
+          R"(DEPRECATED AND WILL BE REMOVED IN HABITAT-SIM 2.0. Run collision detection and return a binary indicator of penetration between the specified object and any other collision object. Physics must be enabled.)")
       .def(
           "get_physics_num_active_contact_points",
           &Simulator::getPhysicsNumActiveContactPoints,
