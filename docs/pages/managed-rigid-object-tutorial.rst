@@ -55,6 +55,14 @@ When the simulation is stepped, it falls under the force of gravity and reacts t
 .. image:: images/managed-rigid-object-tutorial-images/sim_basics.gif
     :width: 20em
 
+User-defined configuration values can be set and retrieved for each object independently.  These values can be specified in the files used to build the :ref:`ObjectAttributes` that is used to create this object, or they can
+be modified directly.
+
+.. include:: ../../examples/tutorials/nb_python/managed_rigid_object_tutorial.py
+    :code: py
+    :start-after: # [object_user_configurations]
+    :end-before: # [/object_user_configurations]
+
 Forces and torques can be applied directly to the object using :ref:`habitat_sim.physics.ManagedRigidObject.apply_force` and :ref:`habitat_sim.physics.ManagedRigidObject.apply_torque`.
 Instantanious initial velocities can also be set using the object's properties, :ref:`habitat_sim.physics.ManagedRigidObject.linear_velocity` and :ref:`habitat_sim.physics.ManagedRigidObject.angular_velocity`.
 
@@ -135,7 +143,7 @@ Velocities can also be specified in the local space of the object to easily appl
 Previous stages of this tutorial have covered adding objects to the world and manipulating them by setting positions, velocity, forces, and torques.
 In all of these examples, the agent has been a passive onlooker observing the scene.
 However, the agent can also be attached to a simulated object for embodiement and control.
-This can be done by passing the :ref:`Agent`'s scene node to the :ref:`habitat_sim.physics.RigidObjectManager.add_object_by_handle` or :ref:`habitat_sim.physics.RigidObjectManager.add_object_by_id` functions.
+This can be done by passing the :ref:`Agent`'s scene node to the :ref:`habitat_sim.physics.RigidObjectManager.add_object_by_template_handle` or :ref:`habitat_sim.physics.RigidObjectManager.add_object_by_template_id` functions.
 
 In this example, the agent is embodied by a rigid robot asset and the :ref:`habitat_sim.physics.VelocityControl` structure is used to control the robot's actions.
 
@@ -175,7 +183,7 @@ With NavMesh sliding dis-allowed:
 Adding/Removing Objects
 ***********************
 
-Objects can be instanced from templates (i.e. :ref:`ObjectAttributes`) into the scene by template id with :ref:`habitat_sim.physics.RigidObjectManager.add_object_by_id` or by template string key with :ref:`habitat_sim.physics.RigidObjectManager.add_object_by_handle`.
+Objects can be instanced from templates (i.e. :ref:`ObjectAttributes`) into the scene by template id with :ref:`habitat_sim.physics.RigidObjectManager.add_object_by_template_id` or by template string key with :ref:`habitat_sim.physics.RigidObjectManager.add_object_by_template_handle`.
 These functions return a reference to the added object instance. In the case of errors in construction, an invalid reference is returned.
 
 By default, a new :ref:`SceneNode` will be created when an object is instanced. However, the object can be attached to an existing :ref:`SceneNode` (e.g. that of the :ref:`Agent`) if provided. This is demonstrated in `Embodied Agents`_.
