@@ -18,7 +18,7 @@ import attr
 import magnum as mn
 import numpy as np
 import scipy.stats
-from attr._make import Attribute
+from attr import Attribute
 from numpy import ndarray
 
 from habitat_sim import bindings as hsim
