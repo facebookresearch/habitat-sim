@@ -31,8 +31,6 @@
 
 namespace Cr = Corrade;
 
-bool g_createMagnumRenderer = false;
-
 namespace esp {
 namespace sim {
 
@@ -121,9 +119,6 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   if (!config_.createRenderer) {
     config_.createMagnumRenderer = false;
   }
-
-  // temp hack use a global var to propagate this setting to other code
-  g_createMagnumRenderer = config_.createMagnumRenderer;
 
   if (!config_.createMagnumRenderer) {
     config_.requiresTextures = false;

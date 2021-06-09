@@ -69,7 +69,7 @@
 namespace Cr = Corrade;
 namespace Mn = Magnum;
 
-extern bool g_createMagnumRenderer;
+extern bool getCreateMagnumRenderer();
 
 namespace esp {
 using metadata::attributes::AbstractObjectAttributes;
@@ -125,8 +125,12 @@ void ResourceManager::buildImporters() {
 
 }  // buildImporters
 
+bool ResourceManager::getCreateMagnumRenderer() {
+  return metadataMediator_->getCreateMagnumRenderer();
+}
+
 void ResourceManager::initDefaultPrimAttributes() {
-  if (!g_createMagnumRenderer) {
+  if (!getCreateMagnumRenderer()) {
     return;
   }
 
@@ -973,7 +977,7 @@ void ResourceManager::buildPrimitiveAssetData(
   // compute the mesh bounding box
   primMeshData->BB = computeMeshBB(primMeshData.get());
 
-  if (g_createMagnumRenderer) {
+  if (getCreateMagnumRenderer()) {
     primMeshData->uploadBuffersToGPU(false);
   }
 
@@ -1080,7 +1084,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstancePTex(
   for (int iMesh = start; iMesh <= end; ++iMesh) {
     auto* pTexMeshData = dynamic_cast<PTexMeshData*>(meshes_.at(iMesh).get());
 
-    if (g_createMagnumRenderer) {
+    if (getCreateMagnumRenderer()) {
       pTexMeshData->uploadBuffersToGPU(false);
     }
 
@@ -1142,7 +1146,7 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
 
   for (int meshIDLocal = 0; meshIDLocal < instanceMeshes.size();
        ++meshIDLocal) {
-    if (g_createMagnumRenderer) {
+    if (getCreateMagnumRenderer()) {
       instanceMeshes[meshIDLocal]->uploadBuffersToGPU(false);
     }
     meshes_.emplace(meshStart + meshIDLocal,
@@ -1447,7 +1451,7 @@ bool ResourceManager::buildTrajectoryVisualization(
   // compute the mesh bounding box
   visMeshData->BB = computeMeshBB(visMeshData.get());
 
-  ESP_CHECK(g_createMagnumRenderer,
+  ESP_CHECK(getCreateMagnumRenderer(),
             "buildTrajectoryVisualization requires a renderer");
   visMeshData->uploadBuffersToGPU(false);
 
@@ -1784,7 +1788,7 @@ void ResourceManager::loadMeshes(Importer& importer,
     // compute the mesh bounding box
     gltfMeshData->BB = computeMeshBB(gltfMeshData.get());
 
-    if (g_createMagnumRenderer) {
+    if (getCreateMagnumRenderer()) {
       gltfMeshData->uploadBuffersToGPU(false);
     }
     meshes_.emplace(meshStart + iMesh, std::move(gltfMeshData));
@@ -2125,6 +2129,9 @@ void ResourceManager::createDrawable(Mn::GL::Mesh& mesh,
                                      const Mn::ResourceKey& lightSetupKey,
                                      const Mn::ResourceKey& materialKey,
                                      DrawableGroup* group /* = nullptr */) {
+  if (!getCreateMagnumRenderer()) {
+    return;
+  }
   const auto& materialDataType =
       shaderManager_.get<gfx::MaterialData>(materialKey)->type;
   switch (materialDataType) {
@@ -2499,5 +2506,6 @@ void ResourceManager::createConvexHullDecomposition(
   }
 }
 #endif
+
 }  // namespace assets
 }  // namespace esp

@@ -23,8 +23,6 @@
 #include "esp/physics/PhysicsManager.h"
 #include "esp/physics/bullet/BulletRigidObject.h"
 
-extern bool g_createMagnumRenderer;
-
 namespace esp {
 namespace physics {
 
@@ -58,7 +56,7 @@ class BulletPhysicsManager : public PhysicsManager {
       : PhysicsManager(_resourceManager, _physicsManagerAttributes) {
     collisionObjToObjIds_ =
         std::make_shared<std::map<const btCollisionObject*, int>>();
-    if (g_createMagnumRenderer) {
+    if (_resourceManager.getCreateMagnumRenderer()) {
       debugDrawer_ = std::make_unique<Magnum::BulletIntegration::DebugDraw>();
     }
   };

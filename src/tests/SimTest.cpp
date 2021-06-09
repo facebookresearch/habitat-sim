@@ -127,6 +127,7 @@ struct SimTest : Cr::TestSuite::Tester {
   void buildingPrimAssetObjectTemplates();
   void addObjectByHandle();
   void addSensorToObject();
+  void createMagnumRenderingOff();
 
   // TODO: remove outlier pixels from image and lower maxThreshold
   const Magnum::Float maxThreshold = 255.f;
@@ -166,7 +167,8 @@ SimTest::SimTest() {
             &SimTest::loadingObjectTemplates,
             &SimTest::buildingPrimAssetObjectTemplates,
             &SimTest::addObjectByHandle,
-            &SimTest::addSensorToObject}, Cr::Containers::arraySize(SimulatorBuilder) );
+            &SimTest::addSensorToObject,
+            &SimTest::createMagnumRenderingOff}, Cr::Containers::arraySize(SimulatorBuilder) );
   // clang-format on
 }
 
@@ -797,6 +799,45 @@ void SimTest::addSensorToObject() {
       Cr::Utility::Directory::join(screenshotDir, "SimTestExpectedScene.png"),
       (Mn::DebugTools::CompareImageToFile{maxThreshold, 0.75f}));
 }
+
+void SimTest::createMagnumRenderingOff() {
+  Corrade::Utility::Debug() << "Starting Test : createMagnumRenderingOff ";
+
+  SimulatorConfiguration simConfig{};
+  simConfig.activeSceneName = planeStage;
+  simConfig.enablePhysics = true;
+  simConfig.physicsConfigFile = physicsConfigFile;
+  simConfig.overrideSceneLightDefaults = true;
+  simConfig.createMagnumRenderer = false;
+  simConfig.sceneLightSetup = esp::NO_LIGHT_KEY;
+
+  // check that creating a simulator and adding an object works
+  auto simulator = Simulator::create_unique(simConfig);
+  auto objectAttribsMgr = simulator->getObjectAttributesManager();
+  auto objs = objectAttribsMgr->getObjectHandlesBySubstring("sphere");
+  int objectID = simulator->addObjectByHandle(objs[0]);
+  simulator->setTranslation({1.0f, 1.5f, 1.0f},
+                            objectID);
+
+  CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
+
+  // do some sensor stuff to check that nothing errors
+  esp::scene::SceneNode& objectNode = *simulator->getObjectSceneNode(objectID);
+  auto objectSensorSpec = esp::sensor::CameraSensorSpec::create();
+  objectSensorSpec->uuid = std::to_string(objectID);
+  objectSensorSpec->position = {0, 0, 0};
+  objectSensorSpec->orientation = {0, 0, 0};
+  objectSensorSpec->resolution = {128, 128};
+  simulator->addSensorToObject(objectID, objectSensorSpec);
+  std::string expectedUUID = std::to_string(objectID);
+  CameraSensor& cameraSensor = dynamic_cast<CameraSensor&>(
+      objectNode.getNodeSensorSuite().get(expectedUUID));
+  cameraSensor.setTransformationFromSpec();
+
+  // check that there is no renderer
+  CORRADE_VERIFY(simulator->getRenderer() == nullptr);
+}
+
 }  // namespace
 
 CORRADE_TEST_MAIN(SimTest)

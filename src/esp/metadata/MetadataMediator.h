@@ -343,6 +343,8 @@ class MetadataMediator {
         sceneDatasetName);
   }
 
+  bool getCreateMagnumRenderer();
+
  protected:
   /**
    * @brief Return the file path corresponding to the passed handle in the

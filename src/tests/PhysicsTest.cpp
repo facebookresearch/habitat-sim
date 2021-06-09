@@ -39,10 +39,9 @@ const std::string physicsConfigFile =
 class PhysicsManagerTest : public testing::Test {
  protected:
   void SetUp() override {
-    g_createMagnumRenderer = false;
-
     // set up a default simulation config to initialize MM
     auto cfg = esp::sim::SimulatorConfiguration{};
+    cfg.createMagnumRenderer = false;
     metadataMediator_ = MetadataMediator::create(cfg);
     resourceManager_ = std::make_unique<ResourceManager>(metadataMediator_);
     resourceManager_->setRequiresTextures(false);

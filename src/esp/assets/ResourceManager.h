@@ -83,6 +83,8 @@ namespace assets {
  */
 class ResourceManager {
  public:
+  bool getCreateMagnumRenderer();
+
   /** @brief Stores references to a set of drawable elements */
   using DrawableGroup = gfx::DrawableGroup;
   /** @brief Convenience typedef for Importer class */
