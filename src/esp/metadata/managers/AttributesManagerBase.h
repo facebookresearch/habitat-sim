@@ -183,8 +183,10 @@ class AttributesManager
    * and parses it into the passed existing attributes.
    * @param attribs (out) an existing attributes to be modified.
    * @param jsonConfig json document to parse
+   * @return true if tag is found, of appropriate configuration, and holds
+   * actual values.
    */
-  void parseUserDefinedJsonVals(
+  bool parseUserDefinedJsonVals(
       const attributes::AbstractAttributes::ptr attribs,
       const io::JsonGenericValue& jsonConfig);
 
@@ -388,7 +390,7 @@ auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
 }  // AttributesManager<T, Access>::createFromJsonFileOrDefaultInternal
 
 template <class T, core::ManagedObjectAccess Access>
-void AttributesManager<T, Access>::parseUserDefinedJsonVals(
+bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
     const attributes::AbstractAttributes::ptr attribs,
     const io::JsonGenericValue& jsonConfig) {
   // check for user defined attributes
@@ -398,11 +400,13 @@ void AttributesManager<T, Access>::parseUserDefinedJsonVals(
                    << attribs->getSimplifiedHandle()
                    << " attributes specifies user_defined attributes but they "
                       "are not of the correct format. Skipping.";
-      return;
+      return false;
     } else {
       // get the user_defined configuration from the attribs
       auto userConfig = core::Configuration();
       const auto& userObj = jsonConfig["user_defined"];
+      // count number of valid user config settings found
+      int numConfigSettings = 0;
       // jsonConfig is the json object referenced by the tag "user_defined" in
       // the original config file.  By here it is guaranteed to be a json
       // object.
@@ -411,7 +415,8 @@ void AttributesManager<T, Access>::parseUserDefinedJsonVals(
         // for each key, attempt to parse
         const std::string key = it->name.GetString();
         const auto& obj = it->value;
-
+        // increment, assuming is valid object
+        ++numConfigSettings;
         if (obj.IsFloat()) {
           userConfig.set(key, obj.GetFloat());
         } else if (obj.IsDouble()) {
@@ -436,6 +441,8 @@ void AttributesManager<T, Access>::parseUserDefinedJsonVals(
               userConfig.set(key, val);
             }
           } else {
+            // decrement count for key:obj due to not being handled vector
+            --numConfigSettings;
             // TODO support numeric array in JSON
             LOG(WARNING)
                 << "AttributesManager::parseUserDefinedJsonVals : For "
@@ -448,6 +455,8 @@ void AttributesManager<T, Access>::parseUserDefinedJsonVals(
           }
         } else {
           // TODO support other types?
+          // decrement count for key:obj due to not being handled type
+          --numConfigSettings;
           LOG(WARNING)
               << "AttributesManager::parseUserDefinedJsonVals : For "
               << attribs->getSimplifiedHandle()
@@ -458,10 +467,14 @@ void AttributesManager<T, Access>::parseUserDefinedJsonVals(
                  "key.";
         }
       }
-      // set results in attributes
-      attribs->setUserConfiguration(userConfig);
+      if (numConfigSettings > 0) {
+        // set results in attributes if worthwhile results were found
+        attribs->setUserConfiguration(userConfig);
+        return true;
+      }
     }
   }  // if has user_defined tag
+  return false;
 }  // AttributesManager<T, Access>::parseUserDefinedJsonVals
 
 }  // namespace managers
