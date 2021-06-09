@@ -400,36 +400,39 @@ void AttributesManager<T, Access>::parseUserDefinedJsonVals(
       return;
     } else {
       // get the user_defined configuration from the attribs
-      auto userConfig = attribs->getUserConfiguration();
-
+      auto userConfig = core::Configuration();
+      const auto& userObj = jsonConfig["user_defined"];
       // jsonConfig is the json object referenced by the tag "user_defined" in
       // the original config file.  By here it is guaranteed to be a json
       // object.
-      for (rapidjson::Value::ConstMemberIterator it = jsonConfig.MemberBegin();
-           it != jsonConfig.MemberEnd(); ++it) {
+      for (rapidjson::Value::ConstMemberIterator it = userObj.MemberBegin();
+           it != userObj.MemberEnd(); ++it) {
         // for each key, attempt to parse
         const std::string key = it->name.GetString();
         const auto& obj = it->value;
+
         if (obj.IsFloat()) {
-          userConfig->set(key, obj.GetFloat());
+          userConfig.set(key, obj.GetFloat());
         } else if (obj.IsDouble()) {
-          userConfig->set(key, obj.GetDouble());
+          userConfig.set(key, obj.GetDouble());
+        } else if (obj.IsNumber()) {
+          userConfig.set(key, obj.Get<int>());
         } else if (obj.IsString()) {
-          userConfig->set(key, obj.GetString());
+          userConfig.set(key, obj.GetString());
         } else if (obj.IsBool()) {
-          userConfig->set(key, obj.GetBool());
+          userConfig.set(key, obj.GetBool());
         } else if (obj.IsArray() && obj.Size() > 0 && obj[0].IsNumber()) {
           // numeric vector or quaternion
           if (obj.Size() == 3) {
             Magnum::Vector3 val{};
             if (io::fromJsonValue(obj, val)) {
-              userConfig->set(key, val);
+              userConfig.set(key, val);
             }
           } else if (obj.Size() == 4) {
             // assume is quaternion
             Magnum::Quaternion val{};
             if (io::fromJsonValue(obj, val)) {
-              userConfig->set(key, val);
+              userConfig.set(key, val);
             }
           } else {
             // TODO support numeric array in JSON
@@ -455,7 +458,7 @@ void AttributesManager<T, Access>::parseUserDefinedJsonVals(
         }
       }
       // set results in attributes
-      attribs->setUserConfiguration(*userConfig.get());
+      attribs->setUserConfiguration(userConfig);
     }
   }  // if has user_defined tag
 }  // AttributesManager<T, Access>::parseUserDefinedJsonVals

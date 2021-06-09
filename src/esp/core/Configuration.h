@@ -45,7 +45,9 @@ class Configuration {
   }
 
   void setConfigAsSubgroup(const std::string& name, Configuration& config) {
-    cfg.addGroup(name, &config.cfg);
+    // need to create a copy before adding Config group so that it persists
+    // after config expires
+    cfg.addGroup(name, new Corrade::Utility::ConfigurationGroup{config.cfg});
   }
 
   template <typename T>
