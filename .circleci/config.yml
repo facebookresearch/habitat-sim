@@ -129,7 +129,7 @@ commands:
                 conda create -y -n habitat python=3.6
                 . activate habitat
                 conda install -q -y -c conda-forge ninja numpy pytest pytest-cov ccache hypothesis
-                pip install pytest-sugar pytest-xdist
+                pip install pytest-sugar pytest-xdist pytest-benchmark
               fi
       - run:
           name: Install emscripten
