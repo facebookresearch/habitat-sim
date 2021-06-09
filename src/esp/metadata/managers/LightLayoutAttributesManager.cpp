@@ -70,6 +70,8 @@ void LightLayoutAttributesManager::setValsFromJSONDoc(
       // set attributes values from JSON doc
       this->setLightInstanceValsFromJSONDoc(lightInstanceAttribs, obj);
 
+      // check for user defined attributes
+      this->parseUserDefinedJsonVals(lightInstanceAttribs, obj);
       // add ref to object in appropriate layout
       lightAttribs->addLightInstance(lightInstanceAttribs);
       ++count;
@@ -79,18 +81,11 @@ void LightLayoutAttributesManager::setValsFromJSONDoc(
               << " LightInstanceAttributes created successfully and added to "
                  "LightLayoutAttributes "
               << layoutName << ".";
-
-    // register
-    this->postCreateRegister(lightAttribs, true);
-
-  } else {
-    LOG(WARNING)
-        << "LightLayoutAttributesManager::setValsFromJSONDoc : " << layoutName
-        << " does not contain a \"lights\" object and so no parsing was "
-           "done.";
   }
-  // check for user defined attributes
+  // check for user defined attributes at main attributes level
   this->parseUserDefinedJsonVals(lightAttribs, jsonConfig);
+  // register
+  this->postCreateRegister(lightAttribs, true);
 }  // LightLayoutAttributesManager::setValsFromJSONDoc
 
 void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(

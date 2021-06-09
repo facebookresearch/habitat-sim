@@ -116,6 +116,8 @@ void SceneAttributesManager::setValsFromJSONDoc(
                     "semantic_scene_instance specified for scene "
                  << attribsDispName << ".";
   }
+  // check for user defined attributes
+  this->parseUserDefinedJsonVals(attribs, jsonConfig);
 
 }  // SceneAttributesManager::setValsFromJSONDoc
 
