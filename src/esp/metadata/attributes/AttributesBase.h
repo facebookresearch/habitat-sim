@@ -110,6 +110,14 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
     return getConfigSubgroupAsPtr("user_defined");
   }
 
+  /**
+   * @brief Returns the number of user-defined values (within the "user-defined"
+   * sub-ConfigurationGroup) this attributes has.
+   */
+  int getNumUserDefinedConfigurations() const {
+    return getNumConfigSubgroups("user_defined");
+  }
+
  protected:
   /**
    * @brief Set this attributes' class.  Should only be set from constructor.

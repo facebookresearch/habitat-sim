@@ -65,6 +65,17 @@ void initAttributesBindings(py::module& m) {
           "template_id", &AbstractAttributes::getID,
           R"(System-generated ID for template.  Will be unique among templates
           of same type.)")
+      .def_property_readonly(
+          "user_configs", &AbstractAttributes::getUserConfiguration,
+          R"(A Configuration object holding user-defined and modifiable attributes.  These can
+          be set in JSON configuration files using the "user_defined" tag pointing to a
+          JSON object as the value (which would hold the k-v mappings). They can also be
+          set and modified in python via this property.  Habitat-sim does not process
+          or parse these values. )")
+      .def_property_readonly(
+          "num_user_configs",
+          &AbstractAttributes::getNumUserDefinedConfigurations,
+          R"(The number of currently specified user-defined configuration values.)")
       .def_property_readonly("template_class", &AbstractAttributes::getClassKey,
                              R"(Class name of Attributes template.)");
 

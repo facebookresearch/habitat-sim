@@ -81,6 +81,13 @@ class Configuration {
     return configPtr;
   }
 
+  int getNumConfigSubgroups(const std::string& name) const {
+    if (cfg.hasGroup(name)) {
+      return cfg.group(name)->valueCount();
+    }
+    return 0;
+  }
+
   /**@brief Add a string to a group and return the resulting group size. */
   int addStringToGroup(const std::string& key, const std::string& value) {
     cfg.addValue(key, value);
