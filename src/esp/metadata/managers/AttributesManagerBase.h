@@ -184,8 +184,9 @@ class AttributesManager
    * @param attribs (out) an existing attributes to be modified.
    * @param jsonConfig json document to parse
    */
-  void parseUserDefinedJsonVals(attributes::AbstractAttributes::ptr attribs,
-                                const io::JsonGenericValue& jsonConfig);
+  void parseUserDefinedJsonVals(
+      const attributes::AbstractAttributes::ptr attribs,
+      const io::JsonGenericValue& jsonConfig);
 
   /**
    * @brief Return a properly formated JSON file name for the attributes
@@ -388,7 +389,7 @@ auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
 
 template <class T, core::ManagedObjectAccess Access>
 void AttributesManager<T, Access>::parseUserDefinedJsonVals(
-    attributes::AbstractAttributes::ptr attribs,
+    const attributes::AbstractAttributes::ptr attribs,
     const io::JsonGenericValue& jsonConfig) {
   // check for user defined attributes
   if (jsonConfig.HasMember("user_defined")) {
