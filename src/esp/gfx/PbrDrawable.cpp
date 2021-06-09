@@ -191,11 +191,12 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   }
 
   if (flags_ & PbrShader::Flag::Shadows) {
-    CORRADE_INTERNAL_ASSERT(shadowMapManger_ && shadowMapKeys_);
+    CORRADE_INTERNAL_ASSERT(shadowData_);
 
     // Currently we only support one shadow map
     Mn::Resource<CubeMap> shadowMap =
-        (*shadowMapManger_).get<CubeMap>((*shadowMapKeys_)[0]);
+        (*shadowData_->shadowMapManger)
+            .get<CubeMap>((*shadowData_->shadowMapKeys)[0]);
 
     CORRADE_INTERNAL_ASSERT(shadowMap);
 
@@ -281,16 +282,12 @@ PbrDrawable& PbrDrawable::updateShaderLightDirectionParameters(
   return *this;
 }
 
-void PbrDrawable::setShadowMaps(ShadowMapManager* manager,
-                                ShadowMapKeys* keys) {
-  shadowMapManger_ = manager;
-  shadowMapKeys_ = keys;
-  if (shadowMapManger_ && shadowMapKeys_) {
-    flags_ |= PbrShader::Flag::Shadows;
-  } else {
-    LOG(ERROR) << "Warning PbrDrawable::setShadowMaps(): failed to enable the "
-                  "shadows. shadow manager or the shadow keys is nullptr.";
-  }
+void PbrDrawable::setShadowData(const ShadowData& shadowData) {
+  shadowData_ = shadowData;
+  CORRADE_ASSERT(shadowData_->shadowMapManger && shadowData_->shadowMapKeys,
+                 "Warning PbrDrawable::setShadowMaps(): failed to enable the "
+                 "shadows. shadow manager or the shadow keys is nullptr.", );
+  flags_ |= PbrShader::Flag::Shadows;
 }
 }  // namespace gfx
 }  // namespace esp

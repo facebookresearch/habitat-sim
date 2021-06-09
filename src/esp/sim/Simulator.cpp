@@ -671,7 +671,11 @@ void Simulator::setShadowMapsToDrawables() {
     }
     auto& pbrDrawable = const_cast<gfx::PbrDrawable&>(
         static_cast<const gfx::PbrDrawable&>(currentDrawable));
-    pbrDrawable.setShadowMaps(&shadowManager, &(shadowMapKeys[activeSceneID_]));
+    gfx::PbrDrawable::ShadowData shadowData;
+    shadowData.shadowMapManger = &shadowManager;
+    // Currently we can only do 1 shadow map
+    shadowData.shadowMapKeys = &shadowMapKeys[0];
+    pbrDrawable.setShadowData(shadowData);
   }
 }
 

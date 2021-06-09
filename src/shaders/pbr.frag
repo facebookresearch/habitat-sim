@@ -148,31 +148,15 @@ float vecToDepthValue(vec3 vec) {
   return (z + 1.0) * 0.5;
 }
 
-float shadowCalculation(vec3 fragPos, vec3 lightPos, vec3 viewPos, out vec3 vizClosestDepth) {
-  /*
-    // get vector between fragment position and light position
-    vec3 lightToFrag = fragPos - lightPos;
-    // use the fragment to light vector to sample from the depth map
-    float closestDepth = texture(PointShadowMap0, lightToFrag).r; // debug XXX
-    // it is currently in linear range between [0,1], let's re-transform it back to original depth value
-    // closestDepth *= FarPlane;
-    // now get current linear depth as the length between the fragment and light position
-    float d = vecToDepthValue(lightToFrag);
-    if (closestDepth + 0.0001 > d) // no shadow
-      return 1.0;
-
-    return 0.0;
- */
-
+float computeShadow(vec3 fragPos, vec3 lightPos, vec3 viewPos) {
     // vector from light position to the shading location=
     vec3 lightToFrag = fragPos - lightPos;
     float d = vecToDepthValue(lightToFrag);
 
-    float bias = 0.0001; // 0.15
+    float bias = 0.0001;
     int samples = 20;
     float shadow = 0.0;
     float viewDistance = length(viewPos - fragPos);
-    // float diskRadius = (1.0 + (viewDistance / FarPlane)) / 25.0;
     float diskRadius = (1.0 + (viewDistance / FarPlane)) / 50.0;
     for(int i = 0; i < samples; ++i) {
         float closestDepth = texture(PointShadowMap0, normalize(lightToFrag + gridSamplingDisk[i] * diskRadius)).r;
@@ -181,13 +165,16 @@ float shadowCalculation(vec3 fragPos, vec3 lightPos, vec3 viewPos, out vec3 vizC
     }
     shadow /= float(samples);
 
-    // vizClosestDepth = vec3(LinearizeDepth(closestDepth) / FarPlane);
-    // vizClosestDepth = vec3(closestDepth / FarPlane);
+    return shadow;
+}
 
-    // display closestDepth as debug (to visualize depth cubemap)
-    // FragColor = vec4(vec3(closestDepth / FarPlane), 1.0);
-
-    return 1.0 - shadow;
+vec3 visualizePointShadowMap(vec3 fragPos, vec3 lightPos) {
+    // get vector between fragment position and light position
+    vec3 lightToFrag = fragPos - lightPos;
+    // use the fragment to light vector to sample from the depth map
+    float depth = texture(PointShadowMap0, lightToFrag).r;
+    float d = LinearizeDepth(depth) / FarPlane;
+    return vec3(0.0, 0.0, d);
 }
 
 #endif
@@ -517,38 +504,16 @@ void main() {
                     lightRadiance,
                     currentDiffuseContrib,
                     currentSpecularContrib);
-    /*
-    #if defined(SHADOWS)
-    // XXX
-    vec3 vizClosestDepth = vec3(0.0, 0.0, 1.0);
-    vec3 lightToFrag = position - LightDirections[0].xyz;
-    // use the fragment to light vector to sample from the depth map
-    float closestDepth = texture(PointShadowMap0, normalize(lightToFrag)).r;
-    vizClosestDepth = vec3(LinearizeDepth(closestDepth) / FarPlane, 0.0, 0.0);
-    if (length(currentDiffuseContrib) > 0.0) {
-    diffuseContrib += vizClosestDepth / 2.0;
-    specularContrib += vizClosestDepth / 2.0;
-    }
-    #endif
-    */
-
     // Temporarily we only support 1 point light shadow map
-    // XXX
-    //shadowCalculation(position, LightDirections[iLight].xyz, CameraWorldPos, vizClosestDepth) : 1.0f;
     #if defined(SHADOWS)
-    vec3 vizClosestDepth = vec3(0.0, 0.0, 1.0);
-    float shadowDiscount = shadowCalculation(position, LightDirections[0].xyz, CameraWorldPos, vizClosestDepth);
-    /*
-      (iLight == 0) ?
-        // 0.0f : 0.0f;
-        shadowCalculation(position, LightDirections[iLight].xyz, CameraWorldPos, vizClosestDepth) : 1.0f;
-        */
+    float shadow = (iLight == 0 ? computeShadow(position, LightDirections[0].xyz, CameraWorldPos) : 1.0f);
     #else
-    float shadowDiscount = 1.0f;
+    float shadow = 1.0f;
     #endif
 
-    diffuseContrib += shadowDiscount * currentDiffuseContrib;
-    specularContrib += shadowDiscount * currentSpecularContrib;
+    float scale = 1 - shadow;
+    diffuseContrib += scale * currentDiffuseContrib;
+    specularContrib += scale * currentSpecularContrib;
 
   }  // for lights
 
