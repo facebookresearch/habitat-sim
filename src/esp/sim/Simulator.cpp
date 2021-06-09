@@ -43,6 +43,7 @@ using metadata::attributes::SceneObjectInstanceAttributes;
 using metadata::attributes::StageAttributes;
 
 const char* shadowMapDrawableGroupName = "static-shadow-map";
+const char* defaultRenderingGRoupName = "";
 const int shadowMapSize = 1024;
 
 Simulator::Simulator(const SimulatorConfiguration& cfg,
@@ -576,7 +577,7 @@ void Simulator::updateShadowMapDrawableGroup() {
   }
 }
 
-void Simulator::computeShadowMaps() {
+void Simulator::computeShadowMaps(float lightFarPlane, float lightNearPlane) {
   scene::SceneGraph& sg = getActiveSceneGraph();
   auto& shadowManager = resourceManager_->getShadowMapManger();
   auto& shadowMapKeys = resourceManager_->getShadowMapKeys();
@@ -619,7 +620,6 @@ void Simulator::computeShadowMaps() {
   // light global position
   // XXX: here we hard coded one for the ReplicaCAD model
   scene::SceneNode& node = sg.getRootNode().createChild();
-
   // this is the center of the ceiling of the replica cad model
   // this is the light position!!!
   node.setTranslation(Mn::Vector3{16.1, 7.7, 4.8});
@@ -630,17 +630,11 @@ void Simulator::computeShadowMaps() {
   node.setTranslation(sceneBB.center());
   */
   gfx::CubeMapCamera camera{node};
-  float near = 0.01f;
-  float far = 20.0f;
-  camera.setProjectionMatrix(shadowMapSize,  // width of the square
-                             near,           // near plane
-                             far);           // far plane
-  /*
-  pointShadowMap->renderToTexture(camera, sg, shadowMapDrawableGroupName,
-                                  {gfx::RenderCamera::Flag::FrustumCulling |
-                                   gfx::RenderCamera::Flag::ClearDepth});
-  */
-  pointShadowMap->renderToTexture(camera, sg, "",
+
+  camera.setProjectionMatrix(shadowMapSize,   // width of the square
+                             lightNearPlane,  // near plane
+                             lightFarPlane);  // far plane
+  pointShadowMap->renderToTexture(camera, sg, defaultRenderingGRoupName,
                                   {gfx::RenderCamera::Flag::FrustumCulling |
                                    // gfx::RenderCamera::Flag::CullFrontFace |
                                    gfx::RenderCamera::Flag::ClearDepth});
@@ -653,7 +647,8 @@ void Simulator::computeShadowMaps() {
   */
 }
 
-void Simulator::setShadowMapsToDrawables() {
+void Simulator::setShadowMapsToDrawables(float lightFarPlane,
+                                         float lightNearPlane) {
   scene::SceneGraph& sg = getActiveSceneGraph();
   gfx::DrawableGroup& defaultRenderingGroup = sg.getDrawables();
   auto& shadowManager = resourceManager_->getShadowMapManger();
@@ -675,6 +670,8 @@ void Simulator::setShadowMapsToDrawables() {
     shadowData.shadowMapManger = &shadowManager;
     // Currently we can only do 1 shadow map
     shadowData.shadowMapKeys = &shadowMapKeys[0];
+    shadowData.lightNearPlance = lightNearPlane;
+    shadowData.lightFarPlane = lightFarPlane;
     pbrDrawable.setShadowData(shadowData);
   }
 }

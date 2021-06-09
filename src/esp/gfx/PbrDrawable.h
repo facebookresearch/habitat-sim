@@ -18,8 +18,11 @@ namespace gfx {
 class PbrDrawable : public Drawable {
  public:
   struct ShadowData {
+    // all the terms must be set by the user
     ShadowMapManager* shadowMapManger = nullptr;
     ShadowMapKeys* shadowMapKeys = nullptr;
+    float lightFarPlane = -1.0;
+    float lightNearPlance = -1.0;
   };
   /**
    * @brief Constructor, to create a PbrDrawable for the given object using

@@ -731,10 +731,12 @@ Viewer::Viewer(const Arguments& arguments)
   profiler_.setup(profilerValues, 50);
 
   // shadows
-  simulator_->updateShadowMapDrawableGroup();
   if (args.isSet("shadows")) {
-    simulator_->computeShadowMaps();
-    simulator_->setShadowMapsToDrawables();
+    simulator_->updateShadowMapDrawableGroup();
+    float lightNearPlane = 0.01f;
+    float lightFarPlane = 200.0f;
+    simulator_->computeShadowMaps(lightNearPlane, lightFarPlane);
+    simulator_->setShadowMapsToDrawables(lightNearPlane, lightFarPlane);
   }
 
   printHelpText();

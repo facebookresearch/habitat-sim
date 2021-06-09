@@ -283,11 +283,19 @@ PbrDrawable& PbrDrawable::updateShaderLightDirectionParameters(
 }
 
 void PbrDrawable::setShadowData(const ShadowData& shadowData) {
-  shadowData_ = shadowData;
-  CORRADE_ASSERT(shadowData_->shadowMapManger && shadowData_->shadowMapKeys,
-                 "Warning PbrDrawable::setShadowMaps(): failed to enable the "
+  // sanity check first
+  CORRADE_ASSERT(shadowData.shadowMapManger && shadowData.shadowMapKeys,
+                 "PbrDrawable::setShadowData(): failed to enable the "
                  "shadows. shadow manager or the shadow keys is nullptr.", );
+
+  CORRADE_ASSERT(
+      shadowData.lightFarPlane > shadowData.lightNearPlance &&
+          shadowData.lightNearPlance > 0,
+      "PbrDrawable::setShadowData(): light near or far plane is illegal.", );
+
+  shadowData_ = shadowData;
   flags_ |= PbrShader::Flag::Shadows;
 }
+
 }  // namespace gfx
 }  // namespace esp
