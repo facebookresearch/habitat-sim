@@ -65,13 +65,30 @@ void initAttributesBindings(py::module& m) {
           "template_id", &AbstractAttributes::getID,
           R"(System-generated ID for template.  Will be unique among templates
           of same type.)")
-      .def_property_readonly(
-          "user_configs", &AbstractAttributes::getUserConfiguration,
-          R"(A Configuration object holding user-defined and modifiable attributes.  These can
-          be set in JSON configuration files using the "user_defined" tag pointing to a
-          JSON object as the value (which would hold the k-v mappings). They can also be
-          set and modified in python via this property.  Habitat-sim does not process
-          or parse these values. )")
+      .def("get_user_config_bool",
+           &AbstractAttributes::getUserConfigValue<bool>)
+      .def("get_user_config_string",
+           &AbstractAttributes::getUserConfigValue<std::string>)
+      .def("get_user_config_int", &AbstractAttributes::getUserConfigValue<int>)
+      .def("get_user_config_double",
+           &AbstractAttributes::getUserConfigValue<double>)
+      .def("get_user_config_vec3",
+           &AbstractAttributes::getUserConfigValue<Magnum::Vector3>)
+      .def("get_user_config_quat",
+           &AbstractAttributes::getUserConfigValue<Magnum::Quaternion>)
+      .def("get_user_config_val",
+           &AbstractAttributes::getUserConfigValue<std::string>)
+      .def("set_user_config_val",
+           &AbstractAttributes::setUserConfigValue<std::string>)
+      .def("set_user_config_val", &AbstractAttributes::setUserConfigValue<int>)
+      .def("set_user_config_val",
+           &AbstractAttributes::setUserConfigValue<double>)
+      .def("set_user_config_val", &AbstractAttributes::setUserConfigValue<bool>)
+      .def("set_user_config_val",
+           &AbstractAttributes::setUserConfigValue<Magnum::Vector3>)
+      .def("set_user_config_val",
+           &AbstractAttributes::setUserConfigValue<Magnum::Quaternion>)
+
       .def_property_readonly(
           "num_user_configs",
           &AbstractAttributes::getNumUserDefinedConfigurations,
