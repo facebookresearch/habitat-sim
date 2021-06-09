@@ -55,6 +55,14 @@ When the simulation is stepped, it falls under the force of gravity and reacts t
 .. image:: images/managed-rigid-object-tutorial-images/sim_basics.gif
     :width: 20em
 
+User-defined configuration values can be set and retrieved for each object independently.  These values can be specified in the files used to build the :ref:`ObjectAttributes` that is used to create this object, or they can
+be modified directly.
+
+.. include:: ../../examples/tutorials/nb_python/managed_rigid_object_tutorial.py
+    :code: py
+    :start-after: # [object_user_configurations]
+    :end-before: # [/object_user_configurations]
+
 Forces and torques can be applied directly to the object using :ref:`habitat_sim.physics.ManagedRigidObject.apply_force` and :ref:`habitat_sim.physics.ManagedRigidObject.apply_torque`.
 Instantanious initial velocities can also be set using the object's properties, :ref:`habitat_sim.physics.ManagedRigidObject.linear_velocity` and :ref:`habitat_sim.physics.ManagedRigidObject.angular_velocity`.
 
