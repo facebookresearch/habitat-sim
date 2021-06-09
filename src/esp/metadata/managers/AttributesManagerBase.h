@@ -402,8 +402,6 @@ bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
                       "are not of the correct format. Skipping.";
       return false;
     } else {
-      // get the user_defined configuration from the attribs
-      auto userConfig = core::Configuration();
       const auto& userObj = jsonConfig["user_defined"];
       // count number of valid user config settings found
       int numConfigSettings = 0;
@@ -418,27 +416,27 @@ bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
         // increment, assuming is valid object
         ++numConfigSettings;
         if (obj.IsFloat()) {
-          userConfig.set(key, obj.GetFloat());
+          attribs->setUserConfigValue(key, obj.GetFloat());
         } else if (obj.IsDouble()) {
-          userConfig.set(key, obj.GetDouble());
+          attribs->setUserConfigValue(key, obj.GetDouble());
         } else if (obj.IsNumber()) {
-          userConfig.set(key, obj.Get<int>());
+          attribs->setUserConfigValue(key, obj.Get<int>());
         } else if (obj.IsString()) {
-          userConfig.set(key, obj.GetString());
+          attribs->setUserConfigValue(key, obj.GetString());
         } else if (obj.IsBool()) {
-          userConfig.set(key, obj.GetBool());
+          attribs->setUserConfigValue(key, obj.GetBool());
         } else if (obj.IsArray() && obj.Size() > 0 && obj[0].IsNumber()) {
           // numeric vector or quaternion
           if (obj.Size() == 3) {
             Magnum::Vector3 val{};
             if (io::fromJsonValue(obj, val)) {
-              userConfig.set(key, val);
+              attribs->setUserConfigValue(key, val);
             }
           } else if (obj.Size() == 4) {
             // assume is quaternion
             Magnum::Quaternion val{};
             if (io::fromJsonValue(obj, val)) {
-              userConfig.set(key, val);
+              attribs->setUserConfigValue(key, val);
             }
           } else {
             // decrement count for key:obj due to not being handled vector
@@ -467,11 +465,8 @@ bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
                  "key.";
         }
       }
-      if (numConfigSettings > 0) {
-        // set results in attributes if worthwhile results were found
-        attribs->setUserConfiguration(userConfig);
-        return true;
-      }
+      // whether or not any valid configs were found
+      return (numConfigSettings > 0);
     }
   }  // if has user_defined tag
   return false;

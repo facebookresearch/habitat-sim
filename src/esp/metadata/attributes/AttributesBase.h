@@ -24,6 +24,8 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
   AbstractAttributes(const std::string& attributesClassKey,
                      const std::string& handle)
       : Configuration() {
+    // set up an existing subgroup for user_defined attributes
+    addNewSubgroup("user_defined");
     AbstractAttributes::setClassKey(attributesClassKey);
     AbstractAttributes::setHandle(handle);
   }
@@ -92,15 +94,6 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
   }
 
   /**
-   * @brief Sets user-specified configuration data from config file. Habitat
-   * does not parse or process this data, but it will be available to the user
-   * via python bindings for each object.
-   */
-  void setUserConfiguration(core::Configuration& userConfig) {
-    setConfigAsSubgroup("user_defined", userConfig);
-  }
-
-  /**
    * @brief Gets a smart pointer reference to user-specified configuration data
    * from config file. Habitat does not parse or process this data, but it will
    * be available to the user via python bindings for each object.
@@ -116,6 +109,15 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
    */
   int getNumUserDefinedConfigurations() const {
     return getNumConfigSubgroups("user_defined");
+  }
+
+  template <typename T>
+  void setUserConfigValue(const std::string& key, const T& value) {
+    setSubgroupValue<T>("user_defined", key, value);
+  }
+  template <typename T>
+  T getUserConfigValue(const std::string& key) {
+    return getSubgroupValue<T>("user_defined", key);
   }
 
  protected:

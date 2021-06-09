@@ -25,6 +25,16 @@ class Configuration {
   bool set(const std::string& key, const T& value) {
     return cfg.setValue(key, value);
   }
+
+  // subgroup set
+  template <typename T>
+  bool setSubgroupValue(const std::string& subgroupName,
+                        const std::string& key,
+                        const T& value) {
+    addNewSubgroup(subgroupName);
+    return cfg.group(subgroupName)->setValue(key, value);
+  }
+
   bool setBool(const std::string& key, bool value) { return set(key, value); }
   bool setFloat(const std::string& key, float value) { return set(key, value); }
   bool setDouble(const std::string& key, double value) {
@@ -44,16 +54,18 @@ class Configuration {
     return set(key, value);
   }
 
-  void setConfigAsSubgroup(const std::string& name, Configuration& config) {
-    // need to create a copy before adding Config group so that it persists
-    // after config expires
-    cfg.addGroup(name, new Corrade::Utility::ConfigurationGroup{config.cfg});
-  }
-
   template <typename T>
   T get(const std::string& key) const {
     return cfg.value<T>(key);
   }
+
+  // subgroup get
+  template <typename T>
+  T getSubgroupValue(const std::string& subgroupName, const std::string& key) {
+    addNewSubgroup(subgroupName);
+    return cfg.group(subgroupName)->value<T>(key);
+  }
+
   bool getBool(const std::string& key) const { return get<bool>(key); }
   float getFloat(const std::string& key) const { return get<float>(key); }
   double getDouble(const std::string& key) const { return get<double>(key); }
@@ -108,10 +120,22 @@ class Configuration {
   bool removeValue(const std::string& key) { return cfg.removeValue(key); }
 
  protected:
+  /**
+   * @brief if no subgroup named this will make one, otherwise does nothing.
+   * @return whether a group was made or not
+   */
+  bool addNewSubgroup(const std::string& name) {
+    if (cfg.hasGroup(name)) {
+      return false;
+    }
+    cfg.addGroup(name);
+    return true;
+  }
+
   Corrade::Utility::ConfigurationGroup cfg;
 
   ESP_SMART_POINTERS(Configuration)
-};
+};  // namespace core
 
 // Below uses std::variant; not yet available in clang c++17
 /*
