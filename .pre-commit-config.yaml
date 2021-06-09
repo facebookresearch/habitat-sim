@@ -67,7 +67,7 @@ repos:
         - flake8-simplify==0.14.1
 
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: 'v0.812'
+    rev: 'v0.901'
     hooks:
     -   id: mypy
         pass_filenames: false
