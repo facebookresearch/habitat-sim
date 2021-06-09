@@ -134,11 +134,6 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
     }
     return nullptr;
   }
-  void setUserAttributes(core::Configuration::ptr attr) {
-    if (auto sp = this->getObjectReference()) {
-      sp->setUserAttributes(std::move(attr));
-    }
-  }
   // ==== Transformations ===
 
   Magnum::Matrix4 getTransformation() const {

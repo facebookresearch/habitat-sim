@@ -174,9 +174,8 @@ void declareBasePhysicsObjectWrapper(py::module& m,
           ("Rotate this " + objType +
            " by passed angle_in_rad around the z-axis in local frame.")
               .c_str())
-      .def_property(
+      .def_property_readonly(
           "user_attributes", &PhysObjWrapper::getUserAttributes,
-          &PhysObjWrapper::setUserAttributes,
           ("User-defined " + objType +
            " attributes.  These are not used internally by Habitat in any "
            "capacity, but are available for a user to consume how they wish.")
