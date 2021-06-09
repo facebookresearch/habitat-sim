@@ -125,7 +125,6 @@ repos:
     rev: v0.7.2.1
     hooks:
     -   id: shellcheck
-        exclude: ^conda-build/ #TODO fix these scripts
 
 -   repo: https://github.com/AleksaC/circleci-cli-py
     rev: v0.1.15224
