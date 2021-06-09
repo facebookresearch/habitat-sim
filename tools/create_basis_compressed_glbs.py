@@ -20,11 +20,7 @@ TOOL_PATH = osp.realpath(
     )
 )
 
-IMAGE_CONVERTER_DEFAULT = osp.realpath(
-    osp.join(
-        osp.dirname(__file__), "..", "build/utils/imageconverter/magnum-imageconverter"
-    )
-)
+IMAGE_CONVERTER_DEFAULT = "build/utils/imageconverter/magnum-imageconverter"
 
 
 def build_parser(
@@ -33,18 +29,21 @@ def build_parser(
     if parser is None:
         parser = argparse.ArgumentParser(
             description="Tool to convert all glbs in a given directory to basis compressed glbs."
-            "  This allows them to be loaded faster onto the GPU and use between 4x and 6x less GPU memory.",
+            "  This allows them to be loaded faster onto the GPU and use between 4x and 6x less GPU memory."
+            "  Partial progress of compressing images is supported.  Killing the script half way through"
+            " compressing images and then restarting it will not result in re-compressing any images that"
+            " already compressed.  If you want to change compression settings, use '--pre-clean' to remove"
+            " partial progress.",
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         )
+
+    parser.add_argument("basedir", type=str, help="Base directory to find GLBs in.")
 
     parser.add_argument(
         "--num-workers",
         default=2,
         type=int,
         help="Number of workers to run in parallel. Most of the compression process is multi-threaded and set to use 4 threads.  Budget around ~3 CPU cores per worker.",
-    )
-    parser.add_argument(
-        "--basedir", type=str, required=True, help="Base directory to find GLBs in."
     )
     parser.add_argument(
         "--pre-clean",
@@ -91,9 +90,7 @@ def extract_images(mesh_name: str) -> None:
 
     tool = osp.join(TOOL_PATH, "glb2gltf.py")
     mesh_name = osp.abspath(mesh_name)
-    output_name = (
-        osp.splitext(osp.join(output_dir, osp.basename(mesh_name)))[0] + ".gltf"
-    )
+    output_name = osp.splitext(osp.basename(mesh_name))[0] + ".gltf"
 
     subprocess.check_output(
         shlex.split(f"{tool} {mesh_name} --extract-images --output {output_name}"),
@@ -215,12 +212,12 @@ def main():
     args = build_parser().parse_args()
     # Doing a which first to also suport just passing magnum-imageconverter
     # if that is installed globally
-    args.imageconverter = shutil.which(args.imageconverter)
-    args.imageconverter = osp.realpath(args.imageconverter)
-    if not osp.exists(args.imageconverter):
+    args.magnum_imageconverter = shutil.which(args.magnum_imageconverter)
+    args.magnum_imageconverter = osp.realpath(args.magnum_imageconverter)
+    if not osp.exists(args.magnum_imageconverter):
         raise RuntimeError(
-            "Could not find imageconverter.  "
-            "If you are using a non standard built, specify with the --imageconverter arg."
+            "Could not find magnum-imageconverter.  "
+            "If you are using a non standard built, specify with the --magnum-imageconverter arg."
             "\nNote that habitat needs to be built with '--build-basis-compressor'."
         )
 
@@ -261,7 +258,7 @@ def main():
             list(
                 zip(
                     images,
-                    itertools.repeat(args.imageconverter),
+                    itertools.repeat(args.magnum_imageconverter),
                     itertools.repeat(args.basis_compression_level),
                 )
             ),
