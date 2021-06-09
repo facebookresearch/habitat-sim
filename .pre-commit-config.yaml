@@ -71,6 +71,8 @@ repos:
     hooks:
     -   id: mypy
         pass_filenames: false
+        additional_dependencies:
+        - types-attrs
 
 -   repo: https://github.com/seddonym/import-linter
     rev: v1.2.1
