@@ -20,7 +20,7 @@ TOOL_PATH = osp.realpath(
     )
 )
 
-IMAGE_CONVERTER = osp.realpath(
+IMAGE_CONVERTER_DEFAULT = osp.realpath(
     osp.join(
         osp.dirname(__file__), "..", "build/utils/imageconverter/magnum-imageconverter"
     )
@@ -54,7 +54,8 @@ def build_parser(
     parser.add_argument(
         "--rename-basis",
         action="store_true",
-        help="Rename the basis meshes to *.glb, and original glbs to *.glb.orig.  Otherwise the basis meshes are named *.basis.glb",
+        help="Rename the basis meshes to *.glb, and original glbs to *.glb.orig.  "
+        "Otherwise the basis meshes are named *.basis.glb",
     )
     parser.add_argument(
         "--niceness", type=int, default=10, help="Niceness value for all the workers"
@@ -62,7 +63,23 @@ def build_parser(
     parser.add_argument(
         "--convert-unlit",
         action="store_true",
-        help="Convert meshes to unlit.  This is useful when processing reconstructions of real scenes or objects that have 'baked' lighting as it signifies to habitat that this object should use flat shading.",
+        help="Convert meshes to unlit.  "
+        "This is useful when processing reconstructions of real scenes or objects that have 'baked' lighting as it signifies to habitat that this object should use flat shading.",
+    )
+
+    parser.add_argument(
+        "--magnum-imageconverter",
+        type=str,
+        default=IMAGE_CONVERTER_DEFAULT,
+        help="Path to magnum imageconverter tool.  This must be built with basis encoding support.",
+    )
+
+    parser.add_argument(
+        "--basis-compression-level",
+        type=int,
+        default=2,
+        help="The compression level to pass to the basis compressor.  "
+        "A higher level will result in a (possibly) better compression but will take considerably more time.",
     )
 
     return parser
@@ -88,14 +105,15 @@ def img_name_to_basis(img: str) -> str:
     return osp.splitext(img)[0] + ".basis"
 
 
-def convert_image_to_basis(img: str) -> None:
+def convert_image_to_basis(args: Tuple[str, str, int]) -> None:
+    img, imageconverter, compression_level = args
     basis_img = img_name_to_basis(img)
 
-    settings = "threads=4,mip_gen=true,compression_level=2"
+    settings = f"threads=4,mip_gen=true,compression_level={compression_level}"
 
     _ = subprocess.check_output(
         shlex.split(
-            f"{osp.abspath(IMAGE_CONVERTER)} {img} {basis_img} --converter BasisImageConverter -c {settings}"
+            f"{imageconverter} {img} {basis_img} --converter BasisImageConverter -c {settings}"
         )
     )
 
@@ -195,10 +213,15 @@ def clean_up(folder: str, args) -> None:
 
 def main():
     args = build_parser().parse_args()
-    if not osp.exists(IMAGE_CONVERTER):
+    # Doing a which first to also suport just passing magnum-imageconverter
+    # if that is installed globally
+    args.imageconverter = shutil.which(args.imageconverter)
+    args.imageconverter = osp.realpath(args.imageconverter)
+    if not osp.exists(args.imageconverter):
         raise RuntimeError(
             "Could not find imageconverter.  "
-            "Habitat needs to be built with '--build-basis-compressor' to use this tool."
+            "If you are using a non standard built, specify with the --imageconverter arg."
+            "\nNote that habitat needs to be built with '--build-basis-compressor'."
         )
 
     if not osp.exists(TOOL_PATH):
@@ -232,14 +255,24 @@ def main():
         )
 
         print(f"Compressing {len(images)} images with basis...")
-        _map_all_and_wait(pool, convert_image_to_basis, images)
+        _map_all_and_wait(
+            pool,
+            convert_image_to_basis,
+            list(
+                zip(
+                    images,
+                    itertools.repeat(args.imageconverter),
+                    itertools.repeat(args.basis_compression_level),
+                )
+            ),
+        )
 
         # Make final meshes
         print("Creating basis meshes...")
         _map_all_and_wait(
             pool,
             package_meshes,
-            list(zip(files, itertools.repeat(args.convert_unlit, len(files)))),
+            list(zip(files, itertools.repeat(args.convert_unlit))),
         )
 
     print("Finalizing...")
