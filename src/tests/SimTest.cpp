@@ -815,8 +815,7 @@ void SimTest::createMagnumRenderingOff() {
   auto simulator = Simulator::create_unique(simConfig);
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
   int objectID = simulator->addObjectByHandle("cubeSolid");
-  simulator->setTranslation({10.0f, 10.0f, 10.0f},
-                            objectID);
+  simulator->setTranslation({10.0f, 10.0f, 10.0f}, objectID);
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
 
   auto distanceBetween = [](Mn::Vector3 a, Mn::Vector3 b) {
@@ -825,11 +824,13 @@ void SimTest::createMagnumRenderingOff() {
   };
 
   // cast a ray at the object to check that the object is actually there
-  auto raycastresults = simulator->castRay(esp::geo::Ray({10.0, 9.0, 10.0}, {0.0, 1.0, 0.0}), 100.0, 0);
+  auto raycastresults = simulator->castRay(
+      esp::geo::Ray({10.0, 9.0, 10.0}, {0.0, 1.0, 0.0}), 100.0, 0);
   CORRADE_VERIFY(raycastresults.hits[0].objectId == objectID);
   auto point = raycastresults.hits[0].point;
   CORRADE_VERIFY(distanceBetween(point, {10.0, 9.9, 10.0}) < 0.001);
-  raycastresults = simulator->castRay(esp::geo::Ray({10.0, 11.0, 10.0}, {0.0, -1.0, 0.0}), 100.0, 0);
+  raycastresults = simulator->castRay(
+      esp::geo::Ray({10.0, 11.0, 10.0}, {0.0, -1.0, 0.0}), 100.0, 0);
   CORRADE_VERIFY(raycastresults.hits[0].objectId == objectID);
   point = raycastresults.hits[0].point;
   CORRADE_VERIFY(distanceBetween(point, {10.0, 10.1, 10.0}) < 0.001);
