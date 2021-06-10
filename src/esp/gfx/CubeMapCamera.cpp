@@ -54,6 +54,12 @@ Mn::Matrix4 CubeMapCamera::getCameraLocalTransform(
   Mn::Vector3 eye{0.0, 0.0, 0.0};
   Mn::Vector3 yUp{0.0, 1.0, 0.0};
   Mn::Vector3 zUp{0.0, 0.0, 1.0};
+
+  // Careful: the coordinate system for cubemaps is left-handed.
+  // The following implementation is based on:
+  // https://www.khronos.org/opengl/wiki/Cubemap_Texture
+  // check the diagram which shows how each face in the cubemap is oriented
+  // relative to the cube being defined.
   switch (cubeSideIndex) {
     case Mn::GL::CubeMapCoordinate::PositiveX:
       return Mn::Matrix4::lookAt(eye, Mn::Vector3{1.0, 0.0, 0.0}, -yUp);
