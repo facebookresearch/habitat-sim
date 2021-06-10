@@ -51,6 +51,9 @@ void main(void) {
   // unproject to get the ray direction
   vec3 ray = (m.z * Xi + sqrt(sq2)) / (mz2 + r2) * m - vec3(0.0, 0.0, Xi);
 
+  ray.x = -ray.x;
+  ray.z = -ray.z;
+
 #if defined(COLOR_TEXTURE)
   fragmentColor = texture(ColorTexture, normalize(ray));
 #endif
