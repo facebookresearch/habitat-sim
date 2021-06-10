@@ -56,7 +56,7 @@ class Random {
   std::uniform_int_distribution<uint32_t> uniform_uint32_;
   std::normal_distribution<float> normal_float_01_;
 
-  ESP_SMART_POINTERS(Random);
+  ESP_SMART_POINTERS(Random)
 };
 
 }  // namespace core
