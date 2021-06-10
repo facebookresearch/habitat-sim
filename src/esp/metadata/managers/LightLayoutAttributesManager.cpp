@@ -52,7 +52,10 @@ void LightLayoutAttributesManager::setValsFromJSONDoc(
           Cr::Utility::Directory::splitExtension(filenameExt).first)
           .first;
   LightInstanceAttributes::ptr lightInstanceAttribs = nullptr;
-  if (jsonConfig.HasMember("lights") && jsonConfig["lights"].IsObject()) {
+  bool hasLights =
+      (jsonConfig.HasMember("lights") && jsonConfig["lights"].IsObject());
+
+  if (hasLights) {
     const auto& lightCell = jsonConfig["lights"];
     size_t numLightConfigs = lightCell.Size();
     int count = 0;
@@ -70,6 +73,8 @@ void LightLayoutAttributesManager::setValsFromJSONDoc(
       // set attributes values from JSON doc
       this->setLightInstanceValsFromJSONDoc(lightInstanceAttribs, obj);
 
+      // check for user defined attributes
+      this->parseUserDefinedJsonVals(lightInstanceAttribs, obj);
       // add ref to object in appropriate layout
       lightAttribs->addLightInstance(lightInstanceAttribs);
       ++count;
@@ -79,15 +84,18 @@ void LightLayoutAttributesManager::setValsFromJSONDoc(
               << " LightInstanceAttributes created successfully and added to "
                  "LightLayoutAttributes "
               << layoutName << ".";
-
-    // register
+  }
+  // check for user defined attributes at main attributes level
+  bool hasUserConfig = this->parseUserDefinedJsonVals(lightAttribs, jsonConfig);
+  if (hasLights || hasUserConfig) {
+    // register if anything worth registering was found
     this->postCreateRegister(lightAttribs, true);
-
   } else {
-    LOG(WARNING)
-        << "LightLayoutAttributesManager::setValsFromJSONDoc : " << layoutName
-        << " does not contain a \"lights\" object and so no parsing was "
-           "done.";
+    LOG(WARNING) << "LightLayoutAttributesManager::setValsFromJSONDoc : "
+                 << layoutName
+                 << " does not contain a \"lights\" object or a valid "
+                    "\"user_defined\" object and so no parsing was "
+                    "done and this attributes is not being saved.";
   }
 }  // LightLayoutAttributesManager::setValsFromJSONDoc
 

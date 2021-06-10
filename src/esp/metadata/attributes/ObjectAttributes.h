@@ -92,20 +92,25 @@ class AbstractObjectAttributes : public AbstractAttributes {
    */
   Magnum::Vector3 getOrientUp() const { return getVec3("orient_up"); }
   /**
-   * @brief set default forwardd orientation for object/stage mesh
+   * @brief set default forward orientation for object/stage mesh
    */
   void setOrientFront(const Magnum::Vector3& orientFront) {
     setVec3("orient_front", orientFront);
   }
   /**
-   * @brief get default forwardd orientation for object/stage mesh
+   * @brief get default forward orientation for object/stage mesh
    */
   Magnum::Vector3 getOrientFront() const { return getVec3("orient_front"); }
 
-  // units to meters mapping
+  /**
+   * @brief Sets how many units map to a meter.
+   */
   void setUnitsToMeters(double unitsToMeters) {
     setDouble("units_to_meters", unitsToMeters);
   }
+  /**
+   * @brief Gets how many units map to a meter.
+   */
   double getUnitsToMeters() const { return getDouble("units_to_meters"); }
 
   void setFrictionCoefficient(double frictionCoefficient) {
@@ -175,19 +180,30 @@ class AbstractObjectAttributes : public AbstractAttributes {
   void setCollisionAssetIsPrimitive(bool collisionAssetIsPrimitive) {
     setBool("collisionAssetIsPrimitive", collisionAssetIsPrimitive);
   }
-
+  /**
+   * @brief Gets whether this object uses file-based mesh collision object or
+   * primitive(implicit) collision shapes
+   * @return whether this object's collision asset is a
+   * primitive (implicitly calculated) or a mesh
+   */
   bool getCollisionAssetIsPrimitive() const {
     return getBool("collisionAssetIsPrimitive");
   }
 
   /**
-   * @brief whether this object uses mesh collision or primitive(implicit)
+   * @brief Sets whether this object uses mesh collision or primitive(implicit)
    * collision calculation.
    */
   void setUseMeshCollision(bool useMeshCollision) {
     setBool("use_mesh_collision", useMeshCollision);
   }
 
+  /**
+   * @brief Gets whether this object uses mesh collision or primitive(implicit)
+   * collision calculation.
+   * @return Whether this object uses mesh collision or primitive(implicit)
+   * collision calculation.
+   */
   bool getUseMeshCollision() const { return getBool("use_mesh_collision"); }
 
   /**
@@ -195,6 +211,11 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * overridden by a scene instance specification.
    */
   void setShaderType(int shader_type) { setInt("shader_type", shader_type); }
+
+  /**
+   * @brief Get the default shader to use for an object or stage.  This may be
+   * overridden by a scene instance specification.
+   */
   int getShaderType() const { return getInt("shader_type"); }
 
   // if true use phong illumination model instead of flat shading
