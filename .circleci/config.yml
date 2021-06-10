@@ -222,8 +222,7 @@ jobs:
                 pytest \
                 sphinx \
                 pillow \
-                tqdm \
-                types-attrs
+                tqdm
               pip install -r requirements.txt torch --progress-bar off
       - run:
           name: run black
