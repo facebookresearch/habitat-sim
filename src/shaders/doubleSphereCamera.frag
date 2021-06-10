@@ -47,11 +47,19 @@ void main(void) {
   if (sq2 < 0.0)
     discard;
 
-  // MUST flip the z axis
-  m.z = -m.z;
+  // Careful!
+  // one cannot flip the z at this point,
+  // otherwise a wrong offset would be introducted in the "ray"
+  // based on the following equation.
 
   // unproject to get the ray direction
   vec3 ray = (m.z * Xi + sqrt(sq2)) / (mz2 + r2) * m - vec3(0.0, 0.0, Xi);
+
+  // So far, coordinates are computed in the right-handed Cartesian system.
+  // However, OpenGL cubemap uses a left-handed system with z points inwards,
+  // (https://www.khronos.org/opengl/wiki/Cubemap_Texture)
+  // so flip the z here:
+  ray.z = -ray.z;
 
 #if defined(COLOR_TEXTURE)
   fragmentColor = texture(ColorTexture, normalize(ray));

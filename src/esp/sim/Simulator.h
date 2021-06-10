@@ -1225,7 +1225,7 @@ class Simulator {
    * @brief compute the shadow maps for the active scene graph, and store the
    * results in the resource manager
    */
-  void computeShadowMaps(float lightFarPlane, float lightNearPlane));
+  void computeShadowMaps(float lightFarPlane, float lightNearPlane);
   /**
    * @brief propergate shadow maps to the drawables
    * NOTE: so far only pbr drawable and shader support the shadow maps
