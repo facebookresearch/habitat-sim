@@ -20,6 +20,7 @@ from habitat_sim.utils.common import (
     quat_from_angle_axis,
     quat_from_magnum,
     quat_to_magnum,
+    random_quaternion,
 )
 
 
@@ -578,7 +579,51 @@ def check_articulated_object_root_state(
     ) < mn.Rad(epsilon)
 
 
-def test_articulated_object_kinematics():
+def getRestPositions(articulated_object):
+    r"""Constructs a valid rest pose vector for an ArticulatedObject with all zeros for non-spherical joints which get an identity quaternion instead."""
+    rest_pose = np.zeros(len(articulated_object.joint_positions))
+    for linkIx in range(articulated_object.num_links):
+        if (
+            articulated_object.get_link_joint_type(linkIx)
+            == habitat_sim.physics.JointType.Spherical
+        ):
+            rest_pose[articulated_object.get_link_joint_pos_offset(linkIx) + 3] = 1
+    return rest_pose
+
+
+def getRandomPositions(articulated_object):
+    r"""Constructs a random pose vector for an ArticulatedObject with unit quaternions for spherical joints."""
+    rand_pose = np.random.uniform(-1, 1, len(articulated_object.joint_positions))
+    for linkIx in range(articulated_object.num_links):
+        if (
+            articulated_object.get_link_joint_type(linkIx)
+            == habitat_sim.physics.JointType.Spherical
+        ):
+            # draw a random quaternion
+            rand_quat = random_quaternion()
+            rand_pose[
+                articulated_object.get_link_joint_pos_offset(linkIx) + 3
+            ] = rand_quat.scalar
+            rand_pose[
+                articulated_object.get_link_joint_pos_offset(
+                    linkIx
+                ) : articulated_object.get_link_joint_pos_offset(linkIx)
+                + 3
+            ] = rand_quat.vector
+
+    return rand_pose
+
+
+@pytest.mark.parametrize(
+    "test_asset",
+    [
+        "data/test_assets/urdf/kuka_iiwa/model_free_base.urdf",
+        "data/test_assets/urdf/fridge/fridge.urdf",
+        "data/test_assets/urdf/prim_chain.urdf",
+        "data/test_assets/urdf/amass_male.urdf",
+    ],
+)
+def test_articulated_object_kinematics(test_asset):
     cfg_settings = examples.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "NONE"
     cfg_settings["enable_physics"] = True
@@ -588,9 +633,7 @@ def test_articulated_object_kinematics():
 
     with habitat_sim.Simulator(hab_cfg) as sim:
         art_obj_mgr = sim.get_articulated_object_manager()
-        robot_file = "data/test_assets/urdf/kuka_iiwa/model_free_base.urdf"
-        robot_file = "/Users/alexclegg/Downloads/habitat_spot_urdf/urdf/spot.urdf"
-        robot_file = "data/URDF_demo_assets/aliengo/urdf/aliengo.urdf"
+        robot_file = test_asset
 
         # test loading a non-existant URDF file
         null_robot = art_obj_mgr.add_articulated_object_from_urdf("null_filepath")
@@ -645,16 +688,16 @@ def test_articulated_object_kinematics():
         # TODO: test local transforms? Maybe already tested by Magnum and SceneNode?
 
         # object should have some degrees of freedom
-        num_dofs = len(robot.joint_positions)
+        num_dofs = len(robot.joint_forces)
         assert num_dofs > 0
         # default zero joint states
-        assert np.allclose(robot.joint_positions, np.zeros(num_dofs))
+        assert np.allclose(robot.joint_positions, getRestPositions(robot))
         assert np.allclose(robot.joint_velocities, np.zeros(num_dofs))
         assert np.allclose(robot.joint_forces, np.zeros(num_dofs))
 
         # test joint state get/set
         # generate vectors with num_dofs evenly spaced samples in a range
-        target_pose = np.linspace(0.1, 1.0, num_dofs)
+        target_pose = getRandomPositions(robot)
         # positions
         robot.joint_positions = target_pose
         assert np.allclose(robot.joint_positions, target_pose)
@@ -674,7 +717,7 @@ def test_articulated_object_kinematics():
         assert np.allclose(robot.joint_forces, 2 * target_joint_forces)
         # clear all positions, velocities, forces to zero
         robot.clear_joint_states()
-        assert np.allclose(robot.joint_positions, np.zeros(num_dofs))
+        assert np.allclose(robot.joint_positions, getRestPositions(robot))
         assert np.allclose(robot.joint_velocities, np.zeros(num_dofs))
         assert np.allclose(robot.joint_forces, np.zeros(num_dofs))
 
@@ -683,40 +726,38 @@ def test_articulated_object_kinematics():
         upper_pos_limits = robot.get_joint_position_limits(upper_limits=True)
 
         # setup joint positions outside of the limit range
-        invalid_joint_positions = np.zeros(num_dofs)
-        for dof in range(num_dofs):
-            if not math.isinf(upper_pos_limits[dof]):
-                invalid_joint_positions[dof] = upper_pos_limits[dof] + 0.1
+        invalid_joint_positions = getRestPositions(robot)
+        for pos in range(len(invalid_joint_positions)):
+            if not math.isinf(upper_pos_limits[pos]):
+                invalid_joint_positions[pos] = upper_pos_limits[pos] + 0.1
         robot.joint_positions = invalid_joint_positions
         # allow these to be set
-        assert np.allclose(robot.joint_positions, invalid_joint_positions)
+        assert np.allclose(robot.joint_positions, invalid_joint_positions, atol=1.0e-4)
         # then clamp back into valid range
         robot.clamp_joint_limits()
-        assert np.all(robot.joint_positions < upper_pos_limits)
+        assert np.all(robot.joint_positions <= upper_pos_limits)
         assert np.all(robot.joint_positions <= invalid_joint_positions)
         # repeat with lower limits
-        invalid_joint_positions = np.zeros(num_dofs)
-        for dof in range(num_dofs):
-            if not math.isinf(lower_pos_limits[dof]):
-                invalid_joint_positions[dof] = lower_pos_limits[dof] - 0.1
+        invalid_joint_positions = getRestPositions(robot)
+        for pos in range(len(invalid_joint_positions)):
+            if not math.isinf(lower_pos_limits[pos]):
+                invalid_joint_positions[pos] = lower_pos_limits[pos] - 0.1
         robot.joint_positions = invalid_joint_positions
         # allow these to be set
-        assert np.allclose(robot.joint_positions, invalid_joint_positions)
+        assert np.allclose(robot.joint_positions, invalid_joint_positions, atol=1.0e-4)
         # then clamp back into valid range
         robot.clamp_joint_limits()
-        assert np.all(robot.joint_positions > lower_pos_limits)
-        assert np.all(robot.joint_positions >= invalid_joint_positions)
+        assert np.all(robot.joint_positions >= lower_pos_limits)
 
         # test auto-clamping (only occurs during step function BEFORE integration)
         robot.joint_positions = invalid_joint_positions
-        assert np.allclose(robot.joint_positions, invalid_joint_positions)
+        assert np.allclose(robot.joint_positions, invalid_joint_positions, atol=1.0e-4)
         # taking a single step should not clamp positions by default
         sim.step_physics(-1)
-        assert np.allclose(robot.joint_positions, invalid_joint_positions)
+        assert np.allclose(robot.joint_positions, invalid_joint_positions, atol=1.0e-3)
         assert robot.auto_clamp_joint_limits == False
         robot.auto_clamp_joint_limits = True
         assert robot.auto_clamp_joint_limits == True
         # taking a single step should clamp positions when auto clamp enabled
         sim.step_physics(-1)
-        assert np.all(robot.joint_positions > lower_pos_limits)
-        assert np.all(robot.joint_positions >= invalid_joint_positions)
+        assert np.all(robot.joint_positions >= lower_pos_limits)

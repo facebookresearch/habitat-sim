@@ -7,6 +7,8 @@ from habitat_sim._ext.habitat_sim_bindings import (
     CollisionGroupHelper,
     CollisionGroups,
     JointMotorSettings,
+    JointMotorType,
+    JointType,
     ManagedArticulatedObject,
     ManagedBulletArticulatedObject,
     ManagedBulletRigidObject,
@@ -34,4 +36,6 @@ __all__ = [
     "JointMotorSettings",
     "CollisionGroups",
     "CollisionGroupHelper",
+    "JointType",
+    "JointMotorType",
 ]

@@ -157,6 +157,41 @@ class ManagedArticulatedObject
     }
   }
 
+  JointType getLinkJointType(int linkId) const {
+    if (auto sp = getObjectReference()) {
+      return sp->getLinkJointType(linkId);
+    }
+    return JointType::Invalid;
+  }
+
+  int getLinkDoFOffset(int linkId) const {
+    if (auto sp = getObjectReference()) {
+      return sp->getLinkDoFOffset(linkId);
+    }
+    return -1;
+  }
+
+  int getLinkNumDoFs(int linkId) const {
+    if (auto sp = getObjectReference()) {
+      return sp->getLinkDoFOffset(linkId);
+    }
+    return 0;
+  }
+
+  int getLinkJointPosOffset(int linkId) const {
+    if (auto sp = getObjectReference()) {
+      return sp->getLinkJointPosOffset(linkId);
+    }
+    return -1;
+  }
+
+  int getLinkNumJointPos(int linkId) const {
+    if (auto sp = getObjectReference()) {
+      return sp->getLinkNumJointPos(linkId);
+    }
+    return 0;
+  }
+
   void reset() {
     if (auto sp = getObjectReference()) {
       sp->reset();

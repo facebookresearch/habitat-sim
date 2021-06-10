@@ -35,6 +35,15 @@ void initPhysicsBindings(py::module& m) {
       .def("integrate_transform", &VelocityControl::integrateTransform, "dt"_a,
            "rigid_state"_a);
 
+  // ==== enum articulated JointType ====
+  py::enum_<JointType>(m, "JointType")
+      .value("Revolute", JointType::Revolute)
+      .value("Prismatic", JointType::Prismatic)
+      .value("Spherical", JointType::Spherical)
+      .value("Planar", JointType::Planar)
+      .value("Fixed", JointType::Fixed)
+      .value("Invalid", JointType::Invalid);
+
   // ==== enum object JointMotorType ====
   py::enum_<JointMotorType>(m, "JointMotorType")
       .value("SingleDof", JointMotorType::SingleDof)

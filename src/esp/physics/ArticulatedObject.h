@@ -33,11 +33,23 @@ namespace physics {
 
 class URDFImporter;
 
+//! copy of eFeatherstoneJointType from
+//! bullet3/src/BulletDynamics/Featherstone/btMultiBodyLink.h for access
+//! convenience w/o Bullet install.
+enum class JointType : int {
+  Revolute = 0,
+  Prismatic = 1,
+  Spherical = 2,
+  Planar = 3,
+  Fixed = 4,
+  Invalid
+};
+
 ////////////////////////////////////
 // Joint Motor Interface
 ////////////////////////////////////
 
-enum JointMotorType { SingleDof, Spherical };
+enum class JointMotorType { SingleDof, Spherical };
 
 struct JointMotorSettings {
  public:
@@ -324,9 +336,9 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
     return *links_.at(id).get();
   }
 
-  int getNumLinks() { return links_.size(); }
+  int getNumLinks() const { return links_.size(); }
 
-  std::vector<int> getLinkIds() {
+  std::vector<int> getLinkIds() const {
     std::vector<int> ids;
     for (auto it = links_.begin(); it != links_.end(); ++it) {
       ids.push_back(it->first);
@@ -362,6 +374,20 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
 
   virtual void setArticulatedLinkFriction(CORRADE_UNUSED int linkId,
                                           CORRADE_UNUSED float friction) {}
+
+  virtual JointType getLinkJointType(CORRADE_UNUSED int linkId) const {
+    return JointType::Invalid;
+  }
+
+  virtual int getLinkDoFOffset(CORRADE_UNUSED int linkId) const { return -1; }
+
+  virtual int getLinkNumDoFs(CORRADE_UNUSED int linkId) const { return 0; }
+
+  virtual int getLinkJointPosOffset(CORRADE_UNUSED int linkId) const {
+    return -1;
+  }
+
+  virtual int getLinkNumJointPos(CORRADE_UNUSED int linkId) const { return 0; }
 
   /**
    * @brief reset the articulated object state by clearing forces and zeroing

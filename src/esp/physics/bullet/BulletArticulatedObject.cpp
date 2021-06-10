@@ -532,19 +532,20 @@ std::vector<float> BulletArticulatedObject::getVelocities() {
 
 void BulletArticulatedObject::setPositions(
     const std::vector<float>& positions) {
-  if (positions.size() != size_t(btMultiBody_->getNumDofs())) {
+  if (positions.size() != size_t(btMultiBody_->getNumPosVars())) {
     Corrade::Utility::Debug()
         << "setPositions - Position vector size mis-match (input: "
-        << positions.size() << ", expected: " << btMultiBody_->getNumDofs()
+        << positions.size() << ", expected: " << btMultiBody_->getNumPosVars()
         << "), aborting.";
   }
 
-  int dofCount = 0;
+  int posCount = 0;
   for (int i = 0; i < btMultiBody_->getNumLinks(); ++i) {
-    if (btMultiBody_->getLink(i).m_dofCount > 0) {
+    auto& link = btMultiBody_->getLink(i);
+    if (link.m_posVarCount > 0) {
       btMultiBody_->setJointPosMultiDof(
-          i, const_cast<float*>(&positions[dofCount]));
-      dofCount += btMultiBody_->getLink(i).m_dofCount;
+          i, const_cast<float*>(&positions[posCount]));
+      posCount += link.m_posVarCount;
     }
   }
 
@@ -553,39 +554,40 @@ void BulletArticulatedObject::setPositions(
 }
 
 std::vector<float> BulletArticulatedObject::getPositions() {
-  std::vector<float> pos(btMultiBody_->getNumDofs());
-  int dofCount = 0;
+  std::vector<float> positions(btMultiBody_->getNumPosVars());
+  int posCount = 0;
   for (int i = 0; i < btMultiBody_->getNumLinks(); ++i) {
-    btScalar* dofPos = btMultiBody_->getJointPosMultiDof(i);
-    for (int dof = 0; dof < btMultiBody_->getLink(i).m_dofCount; ++dof) {
-      pos[dofCount] = dofPos[dof];
-      dofCount++;
+    btScalar* linkPos = btMultiBody_->getJointPosMultiDof(i);
+    for (int pos = 0; pos < btMultiBody_->getLink(i).m_posVarCount; ++pos) {
+      positions[posCount] = linkPos[pos];
+      posCount++;
     }
   }
-  return pos;
+  return positions;
 }
 
 std::vector<float> BulletArticulatedObject::getPositionLimits(
     bool upperLimits) {
-  std::vector<float> dofLimits(btMultiBody_->getNumDofs());
-  int dofCount = 0;
+  std::vector<float> posLimits(btMultiBody_->getNumPosVars());
+  int posCount = 0;
   for (int i = 0; i < btMultiBody_->getNumLinks(); ++i) {
     if (jointLimitConstraints.count(i) > 0) {
       // a joint limit constraint exists for this link's parent joint
       auto& jlc = jointLimitConstraints.at(i);
-      dofLimits[dofCount] = upperLimits ? jlc.upperLimit : jlc.lowerLimit;
-      dofCount++;
+      posLimits[posCount] = upperLimits ? jlc.upperLimit : jlc.lowerLimit;
+      posCount++;
     } else {
       // iterate through joint dofs. Note: multi-dof joints cannot be limited,
       // so ok to skip.
-      for (int dof = 0; dof < btMultiBody_->getLink(i).m_dofCount; ++dof) {
-        dofLimits[dofCount] = upperLimits ? INFINITY : -INFINITY;
-        dofCount++;
+      for (int posVar = 0; posVar < btMultiBody_->getLink(i).m_posVarCount;
+           ++posVar) {
+        posLimits[posCount] = upperLimits ? INFINITY : -INFINITY;
+        posCount++;
       }
     }
   }
-  CHECK(dofCount == btMultiBody_->getNumDofs());
-  return dofLimits;
+  CHECK(posCount == btMultiBody_->getNumPosVars());
+  return posLimits;
 }
 
 void BulletArticulatedObject::addArticulatedLinkForce(int linkId,
@@ -605,11 +607,45 @@ void BulletArticulatedObject::setArticulatedLinkFriction(int linkId,
   btMultiBody_->getLinkCollider(linkId)->setFriction(friction);
 }
 
+JointType BulletArticulatedObject::getLinkJointType(int linkId) const {
+  CHECK(getNumLinks() > linkId && linkId >= 0);
+  return JointType(int(btMultiBody_->getLink(linkId).m_jointType));
+}
+
+int BulletArticulatedObject::getLinkDoFOffset(int linkId) const {
+  CHECK(getNumLinks() > linkId && linkId >= 0);
+  return btMultiBody_->getLink(linkId).m_dofOffset;
+}
+
+int BulletArticulatedObject::getLinkNumDoFs(int linkId) const {
+  CHECK(getNumLinks() > linkId && linkId >= 0);
+  return btMultiBody_->getLink(linkId).m_dofCount;
+}
+
+int BulletArticulatedObject::getLinkJointPosOffset(int linkId) const {
+  CHECK(getNumLinks() > linkId && linkId >= 0);
+  return btMultiBody_->getLink(linkId).m_cfgOffset;
+}
+
+int BulletArticulatedObject::getLinkNumJointPos(int linkId) const {
+  CHECK(getNumLinks() > linkId && linkId >= 0);
+  return btMultiBody_->getLink(linkId).m_posVarCount;
+}
+
 void BulletArticulatedObject::reset() {
   // reset positions and velocities to zero
   // clears forces/torques
-  // Note: does not update root state TODO:?
-  std::vector<float> zeros(btMultiBody_->getNumDofs(), 0);
+  // Note: does not update root state
+  std::vector<float> zeros(btMultiBody_->getNumPosVars(), 0.0f);
+  // handle spherical quaternions
+  for (int i = 0; i < btMultiBody_->getNumLinks(); ++i) {
+    auto& link = btMultiBody_->getLink(i);
+    if (link.m_jointType ==
+        btMultibodyLink::eFeatherstoneJointType::eSpherical) {
+      // need a valid identity quaternion [0,0,0,1]
+      zeros[link.m_cfgOffset + 3] = 1;
+    }
+  }
 
   // also updates kinematic state
   setPositions(zeros);

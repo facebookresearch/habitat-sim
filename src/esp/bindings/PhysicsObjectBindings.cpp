@@ -417,6 +417,36 @@ void declareArticulatedObjectWrapper(py::module& m,
             "on the supplied boolean value for upper_limits.")
                .c_str(),
            "upper_limits"_a)
+      .def("get_link_dof_offset", &ManagedArticulatedObject::getLinkDoFOffset,
+           ("Get the index of this " + objType +
+            "'s link's first DoF in the global DoF array. Link specified by "
+            "the given link_id.")
+               .c_str(),
+           "link_id"_a)
+      .def("get_link_num_dofs", &ManagedArticulatedObject::getLinkNumDoFs,
+           ("Get the number of DoFs for the parent joint of this " + objType +
+            "'s link specified by the given link_id.")
+               .c_str(),
+           "link_id"_a)
+      .def("get_link_joint_pos_offset",
+           &ManagedArticulatedObject::getLinkJointPosOffset,
+           ("Get the index of this " + objType +
+            "'s link's first position in the global joint positions array. "
+            "Link specified by the given link_id.")
+               .c_str(),
+           "link_id"_a)
+      .def("get_link_num_joint_pos",
+           &ManagedArticulatedObject::getLinkNumJointPos,
+           ("Get the number of position variables for the parent joint of "
+            "this " +
+            objType + "'s link specified by the given link_id.")
+               .c_str(),
+           "link_id"_a)
+      .def("get_link_joint_type", &ManagedArticulatedObject::getLinkJointType,
+           ("Get the type of the parent joint for this " + objType +
+            "'s link specified by the given link_id.")
+               .c_str(),
+           "link_id"_a)
       .def("add_link_force", &ManagedArticulatedObject::addArticulatedLinkForce,
            ("Apply the given force to this " + objType +
             "'s link specified by the given link_id")

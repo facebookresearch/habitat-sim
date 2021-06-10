@@ -106,6 +106,16 @@ class BulletArticulatedObject : public ArticulatedObject {
   //! set the coefficient of friction for a link's collision objects
   void setArticulatedLinkFriction(int linkId, float friction) override;
 
+  JointType getLinkJointType(CORRADE_UNUSED int linkId) const override;
+
+  int getLinkDoFOffset(CORRADE_UNUSED int linkId) const override;
+
+  int getLinkNumDoFs(CORRADE_UNUSED int linkId) const override;
+
+  int getLinkJointPosOffset(CORRADE_UNUSED int linkId) const override;
+
+  int getLinkNumJointPos(CORRADE_UNUSED int linkId) const override;
+
   /**
    * @brief reset the articulated object state by clearing forces and zeroing
    * positions and velocities.
