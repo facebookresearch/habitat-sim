@@ -35,7 +35,6 @@ out highp uint fragmentObjectId;
 void main(void) {
   vec3 m;
   m.xy = (gl_FragCoord.xy - PrincipalPointOffset) / FocalLength;
-
   float r2 = dot(m.xy, m.xy);
   float sq1 = 1.0 - (2.0 * Alpha - 1.0) * r2;
   if (sq1 < 0.0)

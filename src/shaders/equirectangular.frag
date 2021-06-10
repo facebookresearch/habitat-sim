@@ -37,8 +37,8 @@ void main(void) {
   const float PI = 3.1415926535897932384626433832795;
   float phi = gl_FragCoord.x * 2.0 * PI / float(ViewportWidth);
   float theta = gl_FragCoord.y * PI / float(ViewportHeight);
-  m.x = sin(phi) * sin(theta) * -1.0;
-  m.y = cos(theta) * -1.0;
+  m.x = -sin(phi) * sin(theta);
+  m.y = -cos(theta);
   m.z = cos(phi) * sin(theta);
 
 #if defined(COLOR_TEXTURE)
