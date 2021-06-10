@@ -332,6 +332,38 @@ class AttributesManagersTest : public testing::Test {
   }  // AttributesManagersTest::testCreateAndRemoveDefault
 
   /**
+   * @brief This method will test the user-defined configuration values to see
+   * that they match with expected passed values.  The config is expected to
+   * hold one of each type that it supports.
+   * @param userConfig The configuration object whose contents are to be tested
+   * @param str_val Expected string value
+   * @param bool_val Expected boolean value
+   * @param float_val Exptected float value
+   * @param vec_val Expected Magnum::Vector3 value
+   * @param quat_val Expected Quaternion value - note that the JSON is read with
+   * scalar at idx 0, whereas the quaternion constructor takes the vector
+   * component in the first position and the scalar in the second.
+   */
+  void testUserDefinedConfigVals(
+      std::shared_ptr<esp::core::Configuration> userConfig,
+      const std::string& str_val,
+      bool bool_val,
+      int int_val,
+      float float_val,
+      Magnum::Vector3 vec_val,
+      Magnum::Quaternion quat_val) {
+    // user defined attributes from light instance
+    ASSERT_NE(nullptr, userConfig);
+    ASSERT_EQ(userConfig->getString("user_string"), str_val);
+    ASSERT_EQ(userConfig->getBool("user_bool"), bool_val);
+    ASSERT_EQ(userConfig->getInt("user_int"), int_val);
+    ASSERT_EQ(userConfig->getFloat("user_float"), float_val);
+    ASSERT_EQ(userConfig->getVec3("user_vec3"), vec_val);
+    ASSERT_EQ(userConfig->getQuat("user_quat"), quat_val);
+
+  }  // AttributesManagersTest::testUserDefinedConfigVals
+
+  /**
    * @brief Test creation, copying and removal of templates for primitive
    * assets.
    * @tparam Class of attributes being managed
@@ -422,12 +454,20 @@ TEST_F(AttributesManagersTest, AttributesManagers_PhysicsJSONLoadTest) {
                "AttributesManagersTest::AttributesManagers_PhysicsJSONLoadTest";
   // build JSON sample config
   const std::string& jsonString = R"({
-      "physics_simulator": "bullet_test",
-      "timestep": 1.0,
-      "gravity": [1,2,3],
-      "friction_coefficient": 1.4,
-      "restitution_coefficient": 1.1
-    })";
+  "physics_simulator": "bullet_test",
+  "timestep": 1.0,
+  "gravity": [1,2,3],
+  "friction_coefficient": 1.4,
+  "restitution_coefficient": 1.1,
+  "user_defined" : {
+      "user_string" : "pm defined string",
+      "user_bool" : true,
+      "user_int" : 15,
+      "user_float" : 12.6,
+      "user_vec3" : [215.4, 217.6, 2110.1],
+      "user_quat" : [0.2, 5.2, 6.2, 7.2]
+  }
+})";
   auto physMgrAttr =
       testBuildAttributesFromJSONString<AttrMgrs::PhysicsAttributesManager,
                                         Attrs::PhysicsManagerAttributes>(
@@ -441,6 +481,12 @@ TEST_F(AttributesManagersTest, AttributesManagers_PhysicsJSONLoadTest) {
   ASSERT_EQ(physMgrAttr->getSimulator(), "bullet_test");
   ASSERT_EQ(physMgrAttr->getFrictionCoefficient(), 1.4);
   ASSERT_EQ(physMgrAttr->getRestitutionCoefficient(), 1.1);
+  // test physics manager attributes-level user config vals
+  testUserDefinedConfigVals(physMgrAttr->getUserConfiguration(),
+                            "pm defined string", true, 15, 12.6f,
+                            Magnum::Vector3(215.4, 217.6, 2110.1),
+                            Magnum::Quaternion({5.2f, 6.2f, 7.2f}, 0.2f));
+
 }  // AttributesManagers_PhysicsJSONLoadTest
 
 /**
@@ -463,8 +509,24 @@ TEST_F(AttributesManagersTest, AttributesManagers_LightJSONLoadTest) {
         "spot": {
           "innerConeAngle": -0.75,
           "outerConeAngle": -1.57
+        },
+        "user_defined" : {
+            "user_string" : "light instance defined string",
+            "user_bool" : false,
+            "user_int" : 42,
+            "user_float" : 1.2,
+            "user_vec3" : [0.1, 2.3, 4.5],
+            "user_quat" : [0.1, 0.2, 0.3, 0.4]
         }
       }
+    },
+    "user_defined" : {
+        "user_string" : "light attribs defined string",
+        "user_bool" : true,
+        "user_int" : 23,
+        "user_float" : 2.3,
+        "user_vec3" : [1.1, 3.3, 5.5],
+        "user_quat" : [0.5, 0.6, 0.7, 0.8]
     }
   })";
 
@@ -472,8 +534,14 @@ TEST_F(AttributesManagersTest, AttributesManagers_LightJSONLoadTest) {
       testBuildAttributesFromJSONString<AttrMgrs::LightLayoutAttributesManager,
                                         Attrs::LightLayoutAttributes>(
           lightLayoutAttributesManager_, jsonString);
+
   // verify exists
   ASSERT_NE(nullptr, lightLayoutAttr);
+  // test light layout attributes-level user config vals
+  testUserDefinedConfigVals(lightLayoutAttr->getUserConfiguration(),
+                            "light attribs defined string", true, 23, 2.3f,
+                            Magnum::Vector3(1.1, 3.3, 5.5),
+                            Magnum::Quaternion({0.6f, 0.7f, 0.8f}, 0.5f));
 
   auto lightAttr = lightLayoutAttr->getLightInstance("test");
   // verify that lightAttr exists
@@ -491,43 +559,82 @@ TEST_F(AttributesManagersTest, AttributesManagers_LightJSONLoadTest) {
             static_cast<int>(esp::gfx::LightPositionModel::Camera));
   ASSERT_EQ(lightAttr->getInnerConeAngle(), -0.75_radf);
   ASSERT_EQ(lightAttr->getOuterConeAngle(), -1.57_radf);
+
+  // test user defined attributes from light instance
+  testUserDefinedConfigVals(lightAttr->getUserConfiguration(),
+                            "light instance defined string", false, 42, 1.2f,
+                            Magnum::Vector3(0.1, 2.3, 4.5),
+                            Magnum::Quaternion({0.2f, 0.3f, 0.4f}, 0.1f));
+
 }  // AttributesManagers_LightJSONLoadTest
+
 /**
  * @brief This test will verify that the Scene Instance attributes' managers'
  * JSON loading process is working as expected.
  */
 TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
-  LOG(INFO)
-      << "Starting "
-         "AttributesManagersTest::AttributesManagers_SceneInstanceJSONLoadTest";
+  LOG(INFO) << "Starting "
+               "AttributesManagersTest::AttributesManagers_"
+               "SceneInstanceJSONLoadTest";
   // build JSON sample config
-  const std::string& jsonString =
-      R"({
-      "translation_origin" : "Asset_Local",
-      "stage_instance":{
-          "template_name": "test_stage_template",
-          "translation": [1,2,3],
-          "rotation": [0.1, 0.2, 0.3, 0.4]
-      },
-      "object_instances": [
-          {
-              "template_name": "test_object_template0",
-              "translation_origin": "COM",
-              "translation": [0,1,2],
-              "rotation": [0.2, 0.3, 0.4, 0.5],
-              "motion_type": "KINEMATIC"
-          },
-          {
-              "template_name": "test_object_template1",
-              "translation": [0,-1,-2],
-              "rotation": [0.5, 0.6, 0.7, 0.8],
-              "motion_type": "DYNAMIC"
+  const std::string& jsonString = R"({
+  "translation_origin" : "Asset_Local",
+  "stage_instance":{
+      "template_name": "test_stage_template",
+      "translation": [1,2,3],
+      "rotation": [0.1, 0.2, 0.3, 0.4],
+      "user_defined" : {
+          "user_string" : "stage instance defined string",
+          "user_bool" : true,
+          "user_int" : 11,
+          "user_float" : 2.2,
+          "user_vec3" : [1.2, 3.4, 5.6],
+          "user_quat" : [0.4, 0.5, 0.6, 0.7]
+      }
+  },
+  "object_instances": [
+      {
+          "template_name": "test_object_template0",
+          "translation_origin": "COM",
+          "translation": [0,1,2],
+          "rotation": [0.2, 0.3, 0.4, 0.5],
+          "motion_type": "KINEMATIC",
+          "user_defined" : {
+              "user_string" : "obj0 instance defined string",
+              "user_bool" : false,
+              "user_int" : 12,
+              "user_float" : 2.3,
+              "user_vec3" : [1.3, 3.5, 5.7],
+              "user_quat" : [0.3, 0.2, 0.6, 0.1]
           }
-      ],
-      "default_lighting":  "test_lighting_configuration",
-      "navmesh_instance": "test_navmesh_path1",
-      "semantic_scene_instance": "test_semantic_descriptor_path1"
-     })";
+      },
+      {
+          "template_name": "test_object_template1",
+          "translation": [0,-1,-2],
+          "rotation": [0.5, 0.6, 0.7, 0.8],
+          "motion_type": "DYNAMIC",
+          "user_defined" : {
+              "user_string" : "obj1 instance defined string",
+              "user_bool" : false,
+              "user_int" : 1,
+              "user_float" : 1.1,
+              "user_vec3" : [10.3, 30.5, -5.07],
+              "user_quat" : [1.3, 1.2, 1.6, 1.1]
+          }
+      }
+  ],
+  "default_lighting":  "test_lighting_configuration",
+  "navmesh_instance": "test_navmesh_path1",
+  "semantic_scene_instance": "test_semantic_descriptor_path1",
+  "user_defined" : {
+      "user_string" : "scene instance defined string",
+      "user_bool" : true,
+      "user_int" : 99,
+      "user_float" : 9.1,
+      "user_vec3" : [12.3, 32.5, 25.07],
+      "user_quat" : [0.3, 3.2, 2.6, 5.1]
+  }
+})";
 
   auto sceneAttr =
       testBuildAttributesFromJSONString<AttrMgrs::SceneAttributesManager,
@@ -538,7 +645,6 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
   ASSERT_NE(nullptr, sceneAttr);
 
   // match values set in test JSON
-  // TODO : get these values programmatically?
   ASSERT_EQ(
       sceneAttr->getTranslationOrigin(),
       static_cast<int>(AttrMgrs::SceneInstanceTranslationOrigin::AssetLocal));
@@ -546,10 +652,24 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
   ASSERT_EQ(sceneAttr->getNavmeshHandle(), "test_navmesh_path1");
   ASSERT_EQ(sceneAttr->getSemanticSceneHandle(),
             "test_semantic_descriptor_path1");
+  // test scene instance attributes-level user config vals
+  testUserDefinedConfigVals(sceneAttr->getUserConfiguration(),
+                            "scene instance defined string", true, 99, 9.1f,
+                            Magnum::Vector3(12.3, 32.5, 25.07),
+                            Magnum::Quaternion({3.2f, 2.6f, 5.1f}, 0.3f));
+
   // verify stage populated properly
   auto stageInstance = sceneAttr->getStageInstance();
   ASSERT_EQ(stageInstance->getHandle(), "test_stage_template");
   ASSERT_EQ(stageInstance->getTranslation(), Magnum::Vector3(1, 2, 3));
+  ASSERT_EQ(stageInstance->getRotation(),
+            Magnum::Quaternion({0.2f, 0.3f, 0.4f}, 0.1f));
+  // test stage instance attributes-level user config vals
+  testUserDefinedConfigVals(stageInstance->getUserConfiguration(),
+                            "stage instance defined string", true, 11, 2.2f,
+                            Magnum::Vector3(1.2, 3.4, 5.6),
+                            Magnum::Quaternion({0.5f, 0.6f, 0.7f}, 0.4f));
+
   // verify objects
   auto objectInstanceList = sceneAttr->getObjectInstances();
   ASSERT_EQ(objectInstanceList.size(), 2);
@@ -558,14 +678,30 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
   ASSERT_EQ(objInstance->getTranslationOrigin(),
             static_cast<int>(AttrMgrs::SceneInstanceTranslationOrigin::COM));
   ASSERT_EQ(objInstance->getTranslation(), Magnum::Vector3(0, 1, 2));
+  ASSERT_EQ(objInstance->getRotation(),
+            Magnum::Quaternion({0.3f, 0.4f, 0.5f}, 0.2f));
   ASSERT_EQ(objInstance->getMotionType(),
             static_cast<int>(esp::physics::MotionType::KINEMATIC));
+
+  // test object 0 instance attributes-level user config vals
+  testUserDefinedConfigVals(objInstance->getUserConfiguration(),
+                            "obj0 instance defined string", false, 12, 2.3f,
+                            Magnum::Vector3(1.3, 3.5, 5.7),
+                            Magnum::Quaternion({0.2f, 0.6f, 0.1f}, 0.3f));
 
   objInstance = objectInstanceList[1];
   ASSERT_EQ(objInstance->getHandle(), "test_object_template1");
   ASSERT_EQ(objInstance->getTranslation(), Magnum::Vector3(0, -1, -2));
+  ASSERT_EQ(objInstance->getRotation(),
+            Magnum::Quaternion({0.6f, 0.7f, 0.8f}, 0.5f));
   ASSERT_EQ(objInstance->getMotionType(),
             static_cast<int>(esp::physics::MotionType::DYNAMIC));
+
+  // test object 0 instance attributes-level user config vals
+  testUserDefinedConfigVals(objInstance->getUserConfiguration(),
+                            "obj1 instance defined string", false, 1, 1.1f,
+                            Magnum::Vector3(10.3, 30.5, -5.07),
+                            Magnum::Quaternion({1.2f, 1.6f, 1.1f}, 1.3f));
 
 }  // AttributesManagers_SceneInstanceJSONLoadTest
 
@@ -578,25 +714,32 @@ TEST_F(AttributesManagersTest, AttributesManagers_StageJSONLoadTest) {
                "AttributesManagersTest::AttributesManagers_StageJSONLoadTest";
 
   // build JSON sample config
-  const std::string& jsonString =
-      R"({
-        "scale":[2,3,4],
-        "margin": 0.9,
-        "friction_coefficient": 0.321,
-        "restitution_coefficient": 0.456,
-        "requires_lighting": false,
-        "units_to_meters": 1.1,
-        "up":[2.1,0,0],
-        "front":[0,2.1,0],
-        "render_asset": "testJSONRenderAsset.glb",
-        "collision_asset": "testJSONCollisionAsset.glb",
-        "is_collidable": false,
-        "gravity": [9,8,7],
-        "origin":[1,2,3],
-        "semantic_asset":"testJSONSemanticAsset.glb",
-        "nav_asset":"testJSONNavMeshAsset.glb",
-        "house_filename":"testJSONHouseFileName.glb"
-      })";
+  const std::string& jsonString = R"({
+  "scale":[2,3,4],
+  "margin": 0.9,
+  "friction_coefficient": 0.321,
+  "restitution_coefficient": 0.456,
+  "requires_lighting": false,
+  "units_to_meters": 1.1,
+  "up":[2.1,0,0],
+  "front":[0,2.1,0],
+  "render_asset": "testJSONRenderAsset.glb",
+  "collision_asset": "testJSONCollisionAsset.glb",
+  "is_collidable": false,
+  "gravity": [9,8,7],
+  "origin":[1,2,3],
+  "semantic_asset":"testJSONSemanticAsset.glb",
+  "nav_asset":"testJSONNavMeshAsset.glb",
+  "house_filename":"testJSONHouseFileName.glb",
+  "user_defined" : {
+      "user_string" : "stage defined string",
+      "user_bool" : false,
+      "user_int" : 3,
+      "user_float" : 0.8,
+      "user_vec3" : [5.4, 7.6, 10.1],
+      "user_quat" : [0.1, 1.5, 2.6, 3.7]
+  }
+})";
 
   auto stageAttr =
       testBuildAttributesFromJSONString<AttrMgrs::StageAttributesManager,
@@ -623,6 +766,12 @@ TEST_F(AttributesManagersTest, AttributesManagers_StageJSONLoadTest) {
   ASSERT_EQ(stageAttr->getSemanticAssetHandle(), "testJSONSemanticAsset.glb");
   ASSERT_EQ(stageAttr->getNavmeshAssetHandle(), "testJSONNavMeshAsset.glb");
   ASSERT_EQ(stageAttr->getHouseFilename(), "testJSONHouseFileName.glb");
+  // test stage attributes-level user config vals
+  testUserDefinedConfigVals(stageAttr->getUserConfiguration(),
+                            "stage defined string", false, 3, 0.8f,
+                            Magnum::Vector3(5.4, 7.6, 10.1),
+                            Magnum::Quaternion({1.5f, 2.6f, 3.7f}, 0.1f));
+
 }  // AttributesManagers_StageJSONLoadTest
 
 /**
@@ -633,26 +782,33 @@ TEST_F(AttributesManagersTest, AttributesManagers_ObjectJSONLoadTest) {
   LOG(INFO) << "Starting "
                "AttributesManagersTest::AttributesManagers_ObjectJSONLoadTest";
   // build JSON sample config
-  const std::string& jsonString =
-      R"({
-        "scale":[2,3,4],
-        "margin": 0.9,
-        "friction_coefficient": 0.321,
-        "restitution_coefficient": 0.456,
-        "requires_lighting": false,
-        "units_to_meters": 1.1,
-        "up":[2.1,0,0],
-        "front":[0,2.1,0],
-        "render_asset": "testJSONRenderAsset.glb",
-        "collision_asset": "testJSONCollisionAsset.glb",
-        "is_collidable": false,
-        "mass": 9,
-        "use_bounding_box_for_collision": true,
-        "join_collision_meshes":true,
-        "inertia": [1.1, 0.9, 0.3],
-        "semantic_id" : 7,
-        "COM": [0.1,0.2,0.3]
-      })";
+  const std::string& jsonString = R"({
+  "scale":[2,3,4],
+  "margin": 0.9,
+  "friction_coefficient": 0.321,
+  "restitution_coefficient": 0.456,
+  "requires_lighting": false,
+  "units_to_meters": 1.1,
+  "up":[2.1,0,0],
+  "front":[0,2.1,0],
+  "render_asset": "testJSONRenderAsset.glb",
+  "collision_asset": "testJSONCollisionAsset.glb",
+  "is_collidable": false,
+  "mass": 9,
+  "use_bounding_box_for_collision": true,
+  "join_collision_meshes":true,
+  "inertia": [1.1, 0.9, 0.3],
+  "semantic_id" : 7,
+  "COM": [0.1,0.2,0.3],
+  "user_defined" : {
+      "user_string" : "object defined string",
+      "user_bool" : true,
+      "user_int" : 5,
+      "user_float" : 2.6,
+      "user_vec3" : [15.4, 17.6, 110.1],
+      "user_quat" : [0.7, 5.5, 6.6, 7.7]
+  }
+})";
   auto objAttr =
       testBuildAttributesFromJSONString<AttrMgrs::ObjectAttributesManager,
                                         Attrs::ObjectAttributes>(
@@ -679,6 +835,11 @@ TEST_F(AttributesManagersTest, AttributesManagers_ObjectJSONLoadTest) {
   ASSERT_EQ(objAttr->getJoinCollisionMeshes(), true);
   ASSERT_EQ(objAttr->getInertia(), Magnum::Vector3(1.1, 0.9, 0.3));
   ASSERT_EQ(objAttr->getCOM(), Magnum::Vector3(0.1, 0.2, 0.3));
+  // test object attributes-level user config vals
+  testUserDefinedConfigVals(objAttr->getUserConfiguration(),
+                            "object defined string", true, 5, 2.6f,
+                            Magnum::Vector3(15.4, 17.6, 110.1),
+                            Magnum::Quaternion({5.5f, 6.6f, 7.7f}, 0.7f));
 
 }  // AttributesManagersTest::AttributesManagers_ObjectJSONLoadTest
 
@@ -796,9 +957,9 @@ TEST_F(AttributesManagersTest, LightLayoutAttributesManagerTest) {
 }  // AttributesManagersTest::LightLayoutAttributesManagerTest
 
 /**
- * @brief test primitive asset attributes functionality in attirbutes managers.
- * This includes testing handle auto-gen when relevant fields in asset
- * attributes are changed.
+ * @brief test primitive asset attributes functionality in attirbutes
+ * managers. This includes testing handle auto-gen when relevant fields in
+ * asset attributes are changed.
  */
 TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
   LOG(INFO) << "Starting "
