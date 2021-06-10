@@ -811,15 +811,28 @@ void SimTest::createMagnumRenderingOff() {
   simConfig.createMagnumRenderer = false;
   simConfig.sceneLightSetup = esp::NO_LIGHT_KEY;
 
-  // check that creating a simulator and adding an object works
+  // check that creating a simulator and adding a primitive object works
   auto simulator = Simulator::create_unique(simConfig);
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
-  auto objs = objectAttribsMgr->getObjectHandlesBySubstring("sphere");
-  int objectID = simulator->addObjectByHandle(objs[0]);
-  simulator->setTranslation({1.0f, 1.5f, 1.0f},
+  int objectID = simulator->addObjectByHandle("cubeSolid");
+  simulator->setTranslation({10.0f, 10.0f, 10.0f},
                             objectID);
-
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
+
+  auto distanceBetween = [](Mn::Vector3 a, Mn::Vector3 b) {
+    Mn::Vector3 d = b - a;
+    return Mn::Math::pow(dot(d, d), 0.5f);
+  };
+
+  // cast a ray at the object to check that the object is actually there
+  auto raycastresults = simulator->castRay(esp::geo::Ray({10.0, 9.0, 10.0}, {0.0, 1.0, 0.0}), 100.0, 0);
+  CORRADE_VERIFY(raycastresults.hits[0].objectId == objectID);
+  auto point = raycastresults.hits[0].point;
+  CORRADE_VERIFY(distanceBetween(point, {10.0, 9.9, 10.0}) < 0.001);
+  raycastresults = simulator->castRay(esp::geo::Ray({10.0, 11.0, 10.0}, {0.0, -1.0, 0.0}), 100.0, 0);
+  CORRADE_VERIFY(raycastresults.hits[0].objectId == objectID);
+  point = raycastresults.hits[0].point;
+  CORRADE_VERIFY(distanceBetween(point, {10.0, 10.1, 10.0}) < 0.001);
 
   // do some sensor stuff to check that nothing errors
   esp::scene::SceneNode& objectNode = *simulator->getObjectSceneNode(objectID);
@@ -833,9 +846,11 @@ void SimTest::createMagnumRenderingOff() {
   CameraSensor& cameraSensor = dynamic_cast<CameraSensor&>(
       objectNode.getNodeSensorSuite().get(expectedUUID));
   cameraSensor.setTransformationFromSpec();
+  Observation observation;
 
   // check that there is no renderer
   CORRADE_VERIFY(simulator->getRenderer() == nullptr);
+  CORRADE_VERIFY(cameraSensor.getObservation(*simulator, observation) == false);
 }
 
 }  // namespace
