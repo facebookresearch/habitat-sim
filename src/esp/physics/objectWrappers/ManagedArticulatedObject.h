@@ -92,6 +92,12 @@ class ManagedArticulatedObject
     }
   }
 
+  void addForces(const std::vector<float>& forces) {
+    if (auto sp = getObjectReference()) {
+      sp->addForces(forces);
+    }
+  }
+
   std::vector<float> getForces() {
     if (auto sp = getObjectReference()) {
       return sp->getForces();

@@ -460,9 +460,26 @@ void BulletArticulatedObject::setForces(const std::vector<float>& forces) {
 
   int dofCount = 0;
   for (int i = 0; i < btMultiBody_->getNumLinks(); ++i) {
-    for (int dof = 0; dof < btMultiBody_->getLink(i).m_dofCount; ++dof) {
-      btMultiBody_->addJointTorqueMultiDof(i, dof, forces[dofCount]);
-      // Corrade::Utility::Debug() << "  " << forces[dofCount];
+    btMultibodyLink& link = btMultiBody_->getLink(i);
+    for (int dof = 0; dof < link.m_dofCount; ++dof) {
+      link.m_jointTorque[dof] = forces[dofCount];
+      dofCount++;
+    }
+  }
+}
+
+void BulletArticulatedObject::addForces(const std::vector<float>& forces) {
+  if (forces.size() != size_t(btMultiBody_->getNumDofs())) {
+    Corrade::Utility::Debug()
+        << "setForces - Force vector size mis-match (input: " << forces.size()
+        << ", expected: " << btMultiBody_->getNumDofs() << "), aborting.";
+  }
+
+  int dofCount = 0;
+  for (int i = 0; i < btMultiBody_->getNumLinks(); ++i) {
+    btMultibodyLink& link = btMultiBody_->getLink(i);
+    for (int dof = 0; dof < link.m_dofCount; ++dof) {
+      link.m_jointTorque[dof] += forces[dofCount];
       dofCount++;
     }
   }

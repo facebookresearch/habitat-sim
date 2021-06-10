@@ -394,6 +394,11 @@ void declareArticulatedObjectWrapper(py::module& m,
                      "currently acting on this " +
                      objType + ".")
                         .c_str())
+      .def("add_joint_forces", &ManagedArticulatedObject::addForces,
+           ("Add joint forces/torques (indexed by DoF id) to this " + objType +
+            ".")
+               .c_str(),
+           "forces"_a)
       .def_property("joint_velocities",
                     &ManagedArticulatedObject::getVelocities,
                     &ManagedArticulatedObject::setVelocities,

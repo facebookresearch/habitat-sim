@@ -335,6 +335,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   }
 
   virtual void setForces(CORRADE_UNUSED const std::vector<float>& forces) {}
+  virtual void addForces(CORRADE_UNUSED const std::vector<float>& forces) {}
 
   virtual std::vector<float> getForces() { return {}; }
 

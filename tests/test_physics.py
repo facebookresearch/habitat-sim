@@ -533,3 +533,190 @@ def test_collision_groups():
             cube_obj2.override_collision_group(cg.Noncollidable)
             assert not cube_obj1.contact_test()
             assert not cube_obj2.contact_test()
+
+
+def check_articulated_object_root_state(
+    articulated_object, target_rigid_state, epsilon=1.0e-4
+):
+    r"""Checks the root state of the ArticulatedObject with all query methods against a target RigidState.
+
+    :param articulated_object: The ArticulatedObject to check
+    :param target_rigid_state: A RigidState object separating translation (vector3) rotation (quaternion)
+    :param epsilon: An error threshold for numeric comparisons
+    """
+    # NOTE: basic transform properties refer to the root state
+    # convert target to matrix and check against scene_node transform
+    assert np.allclose(
+        articulated_object.root_scene_node.transformation,
+        mn.Matrix4.from_(
+            target_rigid_state.rotation.to_matrix(), target_rigid_state.translation
+        ),
+        atol=epsilon,
+    )
+    # convert target to matrix and check against transform
+    assert np.allclose(
+        articulated_object.transformation,
+        mn.Matrix4.from_(
+            target_rigid_state.rotation.to_matrix(), target_rigid_state.translation
+        ),
+        atol=epsilon,
+    )
+    assert np.allclose(
+        articulated_object.translation, target_rigid_state.translation, atol=epsilon
+    )
+    assert mn.math.angle(
+        articulated_object.rotation, target_rigid_state.rotation
+    ) < mn.Rad(epsilon)
+    # check against object's rigid_state
+    assert np.allclose(
+        articulated_object.rigid_state.translation,
+        target_rigid_state.translation,
+        atol=epsilon,
+    )
+    assert mn.math.angle(
+        articulated_object.rigid_state.rotation, target_rigid_state.rotation
+    ) < mn.Rad(epsilon)
+
+
+def test_articulated_object_kinematics():
+    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings["scene"] = "NONE"
+    cfg_settings["enable_physics"] = True
+
+    # loading the physical scene
+    hab_cfg = examples.settings.make_cfg(cfg_settings)
+
+    with habitat_sim.Simulator(hab_cfg) as sim:
+        art_obj_mgr = sim.get_articulated_object_manager()
+        robot_file = "data/test_assets/urdf/kuka_iiwa/model_free_base.urdf"
+        robot_file = "/Users/alexclegg/Downloads/habitat_spot_urdf/urdf/spot.urdf"
+        robot_file = "data/URDF_demo_assets/aliengo/urdf/aliengo.urdf"
+
+        # test loading a non-existant URDF file
+        null_robot = art_obj_mgr.add_articulated_object_from_urdf("null_filepath")
+        assert not null_robot
+
+        # parse URDF and add an ArticulatedObject to the world
+        robot = art_obj_mgr.add_articulated_object_from_urdf(filepath=robot_file)
+        assert robot
+        assert robot.is_alive
+        assert robot.object_id == 0  # first robot added
+
+        # NOTE: basic transform properties refer to the root state
+        # root state should be identity by default
+        expected_root_state = habitat_sim.RigidState()
+        check_articulated_object_root_state(robot, expected_root_state)
+        # set the transformation with various methods
+        # translation and rotation properties:
+        robot.translation = expected_root_state.translation = mn.Vector3(1.0, 2.0, 3.0)
+        check_articulated_object_root_state(robot, expected_root_state)
+        robot.rotation = expected_root_state.rotation = mn.Quaternion.rotation(
+            mn.Rad(0.5), mn.Vector3(-5.0, 1.0, 9.0).normalized()
+        )
+        check_articulated_object_root_state(robot, expected_root_state)
+        # transform property:
+        test_matrix_rotation = mn.Quaternion.rotation(
+            mn.Rad(0.75), mn.Vector3(4.0, 3.0, -1.0).normalized()
+        )
+        test_matrix_translation = mn.Vector3(3.0, 2.0, 1.0)
+        transform_test_matrix = mn.Matrix4.from_(
+            test_matrix_rotation.to_matrix(), test_matrix_translation
+        )
+        robot.transformation = transform_test_matrix
+        expected_root_state = habitat_sim.RigidState(
+            test_matrix_rotation, test_matrix_translation
+        )
+        # looser epsilon for quat->matrix conversions
+        check_articulated_object_root_state(robot, expected_root_state, epsilon=1.0e-3)
+        # rigid_state property:
+        expected_root_state = habitat_sim.RigidState()
+        robot.rigid_state = expected_root_state
+        check_articulated_object_root_state(robot, expected_root_state)
+        # state modifying functions:
+        robot.translate(test_matrix_translation)
+        expected_root_state.translation = test_matrix_translation
+        check_articulated_object_root_state(robot, expected_root_state)
+        # rotate the robot 180 degrees
+        robot.rotate(mn.Rad(math.pi), mn.Vector3(0, 1.0, 0.0))
+        expected_root_state.rotation = mn.Quaternion.rotation(
+            mn.Rad(math.pi), mn.Vector3(0, 1.0, 0.0)
+        )
+        check_articulated_object_root_state(robot, expected_root_state)
+        # TODO: test local transforms? Maybe already tested by Magnum and SceneNode?
+
+        # object should have some degrees of freedom
+        num_dofs = len(robot.joint_positions)
+        assert num_dofs > 0
+        # default zero joint states
+        assert np.allclose(robot.joint_positions, np.zeros(num_dofs))
+        assert np.allclose(robot.joint_velocities, np.zeros(num_dofs))
+        assert np.allclose(robot.joint_forces, np.zeros(num_dofs))
+
+        # test joint state get/set
+        # generate vectors with num_dofs evenly spaced samples in a range
+        target_pose = np.linspace(0.1, 1.0, num_dofs)
+        # positions
+        robot.joint_positions = target_pose
+        assert np.allclose(robot.joint_positions, target_pose)
+        # velocities
+        target_joint_vel = np.linspace(1.1, 2.0, num_dofs)
+        robot.joint_velocities = target_joint_vel
+        assert np.allclose(robot.joint_velocities, target_joint_vel)
+        # forces
+        target_joint_forces = np.linspace(2.1, 3.0, num_dofs)
+        robot.joint_forces = target_joint_forces
+        assert np.allclose(robot.joint_forces, target_joint_forces)
+        # absolute, not additive setter
+        robot.joint_forces = target_joint_forces
+        assert np.allclose(robot.joint_forces, target_joint_forces)
+        # test additive method
+        robot.add_joint_forces(target_joint_forces)
+        assert np.allclose(robot.joint_forces, 2 * target_joint_forces)
+        # clear all positions, velocities, forces to zero
+        robot.clear_joint_states()
+        assert np.allclose(robot.joint_positions, np.zeros(num_dofs))
+        assert np.allclose(robot.joint_velocities, np.zeros(num_dofs))
+        assert np.allclose(robot.joint_forces, np.zeros(num_dofs))
+
+        # test joint limits and clamping
+        lower_pos_limits = robot.get_joint_position_limits(upper_limits=False)
+        upper_pos_limits = robot.get_joint_position_limits(upper_limits=True)
+
+        # setup joint positions outside of the limit range
+        invalid_joint_positions = np.zeros(num_dofs)
+        for dof in range(num_dofs):
+            if not math.isinf(upper_pos_limits[dof]):
+                invalid_joint_positions[dof] = upper_pos_limits[dof] + 0.1
+        robot.joint_positions = invalid_joint_positions
+        # allow these to be set
+        assert np.allclose(robot.joint_positions, invalid_joint_positions)
+        # then clamp back into valid range
+        robot.clamp_joint_limits()
+        assert np.all(robot.joint_positions < upper_pos_limits)
+        assert np.all(robot.joint_positions <= invalid_joint_positions)
+        # repeat with lower limits
+        invalid_joint_positions = np.zeros(num_dofs)
+        for dof in range(num_dofs):
+            if not math.isinf(lower_pos_limits[dof]):
+                invalid_joint_positions[dof] = lower_pos_limits[dof] - 0.1
+        robot.joint_positions = invalid_joint_positions
+        # allow these to be set
+        assert np.allclose(robot.joint_positions, invalid_joint_positions)
+        # then clamp back into valid range
+        robot.clamp_joint_limits()
+        assert np.all(robot.joint_positions > lower_pos_limits)
+        assert np.all(robot.joint_positions >= invalid_joint_positions)
+
+        # test auto-clamping (only occurs during step function BEFORE integration)
+        robot.joint_positions = invalid_joint_positions
+        assert np.allclose(robot.joint_positions, invalid_joint_positions)
+        # taking a single step should not clamp positions by default
+        sim.step_physics(-1)
+        assert np.allclose(robot.joint_positions, invalid_joint_positions)
+        assert robot.auto_clamp_joint_limits == False
+        robot.auto_clamp_joint_limits = True
+        assert robot.auto_clamp_joint_limits == True
+        # taking a single step should clamp positions when auto clamp enabled
+        sim.step_physics(-1)
+        assert np.all(robot.joint_positions > lower_pos_limits)
+        assert np.all(robot.joint_positions >= invalid_joint_positions)

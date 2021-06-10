@@ -84,6 +84,7 @@ class BulletArticulatedObject : public ArticulatedObject {
   // update the SceneNode state to match the simulation state
   void updateNodes(bool force = false) override;
   void setForces(const std::vector<float>& forces) override;
+  void addForces(const std::vector<float>& forces) override;
 
   std::vector<float> getForces() override;
 
