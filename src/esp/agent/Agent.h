@@ -44,7 +44,7 @@ struct ActionSpec {
   std::string name;
   // linear, angular forces, joint torques, sensor actuation
   ActuationMap actuation;
-  ESP_SMART_POINTERS(ActionSpec);
+  ESP_SMART_POINTERS(ActionSpec)
 };
 bool operator==(const ActionSpec& a, const ActionSpec& b);
 bool operator!=(const ActionSpec& a, const ActionSpec& b);
