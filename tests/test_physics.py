@@ -614,6 +614,55 @@ def getRandomPositions(articulated_object):
     return rand_pose
 
 
+def test_articulated_object_add_remove():
+    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings["scene"] = "NONE"
+    cfg_settings["enable_physics"] = True
+
+    # loading the physical scene
+    hab_cfg = examples.settings.make_cfg(cfg_settings)
+
+    with habitat_sim.Simulator(hab_cfg) as sim:
+        art_obj_mgr = sim.get_articulated_object_manager()
+        robot_file = "data/test_assets/urdf/kuka_iiwa/model_free_base.urdf"
+
+        # test loading a non-existant URDF file
+        null_robot = art_obj_mgr.add_articulated_object_from_urdf("null_filepath")
+        assert not null_robot
+
+        # parse URDF and add a robot to the world
+        robot = art_obj_mgr.add_articulated_object_from_urdf(filepath=robot_file)
+        assert robot
+        assert robot.is_alive
+        assert robot.object_id == 0  # first robot added
+
+        # add a second robot
+        robot2 = art_obj_mgr.add_articulated_object_from_urdf(filepath=robot_file)
+        assert robot2
+        assert art_obj_mgr.get_num_objects() == 2
+
+        # remove a robot and check that it was removed
+        art_obj_mgr.remove_object_by_handle(robot.handle)
+        assert not robot.is_alive
+        assert art_obj_mgr.get_num_objects() == 1
+        assert robot2.is_alive
+
+        # add some more
+        for _i in range(5):
+            art_obj_mgr.add_articulated_object_from_urdf(filepath=robot_file)
+        assert art_obj_mgr.get_num_objects() == 6
+
+        # remove another
+        art_obj_mgr.remove_object_by_id(robot2.object_id)
+        assert not robot2.is_alive
+        assert art_obj_mgr.get_num_objects() == 5
+
+        # remove all
+        art_obj_mgr.remove_all_objects()
+        assert art_obj_mgr.get_num_objects() == 0
+        assert len(sim.get_existing_articulated_object_ids()) == 0
+
+
 @pytest.mark.parametrize(
     "test_asset",
     [
@@ -635,15 +684,9 @@ def test_articulated_object_kinematics(test_asset):
         art_obj_mgr = sim.get_articulated_object_manager()
         robot_file = test_asset
 
-        # test loading a non-existant URDF file
-        null_robot = art_obj_mgr.add_articulated_object_from_urdf("null_filepath")
-        assert not null_robot
-
         # parse URDF and add an ArticulatedObject to the world
         robot = art_obj_mgr.add_articulated_object_from_urdf(filepath=robot_file)
-        assert robot
         assert robot.is_alive
-        assert robot.object_id == 0  # first robot added
 
         # NOTE: basic transform properties refer to the root state
         # root state should be identity by default
@@ -685,7 +728,7 @@ def test_articulated_object_kinematics(test_asset):
             mn.Rad(math.pi), mn.Vector3(0, 1.0, 0.0)
         )
         check_articulated_object_root_state(robot, expected_root_state)
-        # TODO: test local transforms? Maybe already tested by Magnum and SceneNode?
+        # not testing local transforms at this point since using the same mechanism
 
         # object should have some degrees of freedom
         num_dofs = len(robot.joint_forces)
