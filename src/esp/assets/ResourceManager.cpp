@@ -2129,6 +2129,7 @@ void ResourceManager::createDrawable(Mn::GL::Mesh& mesh,
                                      const Mn::ResourceKey& lightSetupKey,
                                      const Mn::ResourceKey& materialKey,
                                      DrawableGroup* group /* = nullptr */) {
+  // TODO: figure out where to actually block this
   if (!getCreateMagnumRenderer()) {
     return;
   }
