@@ -849,17 +849,47 @@ def test_articulated_object_dynamics(test_asset):
 
         # object should be initialized with dynamics
         assert robot.motion_type == habitat_sim.physics.MotionType.DYNAMIC
-        sim.step_physics(3.0)
+        sim.step_physics(0.2)
+        assert robot.root_linear_velocity[1] < -1.0
+        sim.step_physics(2.8)
         # the robot should fall to the floor under gravity and stop
         assert robot.translation[1] < -0.5
         assert robot.translation[1] > -1.7
 
+        # test linear and angular root velocity
+        robot.translation = mn.Vector3(100)
+        robot.rotation = mn.Quaternion()
+        target_lin_vel = np.linspace(1.1, 2.0, 3)
+        target_ang_vel = np.linspace(2.1, 3.0, 3)
+        robot.root_linear_velocity = target_lin_vel
+        robot.root_angular_velocity = target_ang_vel
+        assert np.allclose(robot.root_linear_velocity, target_lin_vel, atol=1.0e-4)
+        assert np.allclose(robot.root_angular_velocity, target_ang_vel, atol=1.0e-4)
+        # take a single step and expect the velocity to be applied
+        current_time = sim.get_world_time()
+        sim.step_physics(-1)
+        timestep = sim.get_world_time() - current_time
+        lin_finite_diff = (robot.translation - mn.Vector3(100)) / timestep
+        assert np.allclose(robot.root_linear_velocity, lin_finite_diff, atol=1.0e-3)
+        expected_rotation = mn.Quaternion.rotation(
+            mn.Rad(np.linalg.norm(target_ang_vel * timestep)),
+            target_ang_vel / np.linalg.norm(target_ang_vel),
+        )
+        angle_error = mn.math.angle(robot.rotation, expected_rotation)
+        assert angle_error < mn.Rad(0.0005)
+
+        assert not np.allclose(robot.root_linear_velocity, mn.Vector3(0), atol=0.1)
+        assert not np.allclose(robot.root_angular_velocity, mn.Vector3(0), atol=0.1)
+
         # reset root transform and switch to kinematic
         robot.translation = mn.Vector3(0)
+        robot.clear_joint_states()
         robot.motion_type = habitat_sim.physics.MotionType.KINEMATIC
         assert robot.motion_type == habitat_sim.physics.MotionType.KINEMATIC
         sim.step_physics(1.0)
         assert robot.translation == mn.Vector3(0)
+        assert robot.root_linear_velocity == mn.Vector3(0)
+        assert robot.root_angular_velocity == mn.Vector3(0)
         # set forces and velocity and check no simulation result
         current_positions = robot.joint_positions
         robot.joint_velocities = np.linspace(1.1, 2.0, len(robot.joint_velocities))
@@ -884,6 +914,8 @@ def test_articulated_object_dynamics(test_asset):
         sim.step_physics(1.0)
         # root should remain fixed
         assert robot.translation == mn.Vector3(0)
+        assert robot.root_linear_velocity == mn.Vector3(0)
+        assert robot.root_angular_velocity == mn.Vector3(0)
         # positions should be dynamic and perturbed by velocities
         assert not np.allclose(robot.joint_positions, getRestPositions(robot), atol=0.1)
 

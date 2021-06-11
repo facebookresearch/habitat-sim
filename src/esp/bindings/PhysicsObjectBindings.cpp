@@ -388,6 +388,17 @@ void declareArticulatedObjectWrapper(py::module& m,
       .def_property_readonly(
           "num_links", &ManagedArticulatedObject::getNumLinks,
           ("Get the number of links this " + objType + " holds.").c_str())
+      .def_property(
+          "root_linear_velocity",
+          &ManagedArticulatedObject::getRootLinearVelocity,
+          &ManagedArticulatedObject::setRootLinearVelocity,
+          ("The linear velocity of the " + objType + "'s root.").c_str())
+      .def_property(
+          "root_angular_velocity",
+          &ManagedArticulatedObject::getRootAngularVelocity,
+          &ManagedArticulatedObject::setRootAngularVelocity,
+          ("The angular velocity (omega) of the " + objType + "'s root.")
+              .c_str())
       .def_property("joint_forces", &ManagedArticulatedObject::getForces,
                     &ManagedArticulatedObject::setForces,
                     ("Get or set the joint forces/torques (indexed by DoF id) "

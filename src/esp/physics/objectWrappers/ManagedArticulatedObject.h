@@ -86,6 +86,29 @@ class ManagedArticulatedObject
     return {};
   }
 
+  void setRootLinearVelocity(const Mn::Vector3& linVel) {
+    if (auto sp = getObjectReference()) {
+      sp->setRootLinearVelocity(linVel);
+    }
+  }
+  Mn::Vector3 getRootLinearVelocity() const {
+    if (auto sp = getObjectReference()) {
+      return sp->getRootLinearVelocity();
+    }
+    return Mn::Vector3(0);
+  }
+  void setRootAngularVelocity(const Mn::Vector3& angVel) {
+    if (auto sp = getObjectReference()) {
+      sp->setRootAngularVelocity(angVel);
+    }
+  }
+  Mn::Vector3 getRootAngularVelocity() const {
+    if (auto sp = getObjectReference()) {
+      return sp->getRootAngularVelocity();
+    }
+    return Mn::Vector3(0);
+  }
+
   void setForces(const std::vector<float>& forces) {
     if (auto sp = getObjectReference()) {
       sp->setForces(forces);

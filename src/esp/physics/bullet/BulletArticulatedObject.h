@@ -83,6 +83,13 @@ class BulletArticulatedObject : public ArticulatedObject {
 
   // update the SceneNode state to match the simulation state
   void updateNodes(bool force = false) override;
+
+  Mn::Vector3 getRootLinearVelocity() const override;
+  void setRootLinearVelocity(const Mn::Vector3& linVel) override;
+
+  Mn::Vector3 getRootAngularVelocity() const override;
+  void setRootAngularVelocity(const Mn::Vector3& angVel) override;
+
   void setForces(const std::vector<float>& forces) override;
   void addForces(const std::vector<float>& forces) override;
 

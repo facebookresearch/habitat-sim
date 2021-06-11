@@ -454,6 +454,22 @@ void BulletArticulatedObject::setRootState(const Magnum::Matrix4& state) {
   updateKinematicState();
 }
 
+Mn::Vector3 BulletArticulatedObject::getRootLinearVelocity() const {
+  return Mn::Vector3(btMultiBody_->getBaseVel());
+}
+
+void BulletArticulatedObject::setRootLinearVelocity(const Mn::Vector3& linVel) {
+  btMultiBody_->setBaseVel(btVector3(linVel));
+}
+
+Mn::Vector3 BulletArticulatedObject::getRootAngularVelocity() const {
+  return Mn::Vector3(btMultiBody_->getBaseOmega());
+}
+void BulletArticulatedObject::setRootAngularVelocity(
+    const Mn::Vector3& angVel) {
+  btMultiBody_->setBaseOmega(btVector3(angVel));
+}
+
 void BulletArticulatedObject::setForces(const std::vector<float>& forces) {
   if (forces.size() != size_t(btMultiBody_->getNumDofs())) {
     Corrade::Utility::Debug()

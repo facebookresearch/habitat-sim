@@ -365,6 +365,14 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
     return {};
   }
 
+  virtual Mn::Vector3 getRootLinearVelocity() const { return Mn::Vector3(0); }
+  virtual void setRootLinearVelocity(CORRADE_UNUSED const Mn::Vector3& linVel) {
+  }
+
+  virtual Mn::Vector3 getRootAngularVelocity() const { return Mn::Vector3(0); }
+  virtual void setRootAngularVelocity(
+      CORRADE_UNUSED const Mn::Vector3& angVel) {}
+
   virtual void addArticulatedLinkForce(CORRADE_UNUSED int linkId,
                                        CORRADE_UNUSED Magnum::Vector3 force) {}
 
