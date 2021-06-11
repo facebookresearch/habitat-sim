@@ -494,8 +494,8 @@ void CubeMap::loadTexture(TextureType type,
 }
 
 void CubeMap::visualizeTexture(TextureType type,
-                               float n,
-                               float f,
+                               float near,
+                               float far,
                                float colorMapOffset,
                                float colorMapScale) {
   CORRADE_ASSERT(type == TextureType::Depth || type == TextureType::ObjectId,
@@ -530,7 +530,7 @@ void CubeMap::visualizeTexture(TextureType type,
     }
   }
   */
-  auto shader_ =
+  auto shader =
       TextureVisualizerShader{{TextureVisualizerShader::Flag::DepthTexture}};
 
   auto& tex = texture(type);
@@ -554,18 +554,18 @@ void CubeMap::visualizeTexture(TextureType type,
             .setStorage(1, Mn::GL::TextureFormat::R32F, image.size());
       }
       (*visualizedTex).setSubImage(0, {}, image);
-      shader_.bindDepthTexture(*visualizedTex);
+      shader.bindDepthTexture(*visualizedTex);
 
-      float d = f - n;
+      float d = far - near;
       // in projection matrix, two entries related to the depth are:
       // -(f+n)/(f-n), -2fn/(f-n), where f is the far plane, and n is the near
       // plane. depth parameters = 0.5 * vector(proj[2][2] - 1.0f, proj[3][2])
-      Mn::Vector2 unproj{0.5 *
-                         Mn::Vector2{-(f + n) / d - 1.0f, -2.0f * f * n / d}};
-      shader_.setDepthUnprojection(unproj);
+      Mn::Vector2 unproj{
+          0.5 * Mn::Vector2{-(far + near) / d - 1.0f, -2.0f * far * near / d}};
+      shader.setDepthUnprojection(unproj);
     }
-    shader_.setColorMapTransformation(colorMapOffset, colorMapScale);
-    shader_.draw(mesh);
+    shader.setColorMapTransformation(colorMapOffset, colorMapScale);
+    shader.draw(mesh);
   }  // for
 
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
@@ -574,11 +574,6 @@ void CubeMap::renderToTexture(CubeMapCamera& camera,
                               scene::SceneGraph& sceneGraph,
                               const char* drawableGroupName,
                               RenderCamera::Flags renderCameraFlags) {
-  if (renderCameraFlags & RenderCamera::Flag::CullFrontFace) {
-    Mn::GL::Renderer::setFaceCullingMode(
-        Mn::GL::Renderer::PolygonFacing::Front);
-  }
-
   CORRADE_ASSERT(camera.isInSceneGraph(sceneGraph),
                  "CubeMap::renderToTexture(): camera is NOT attached to the "
                  "current scene graph.", );
@@ -600,6 +595,15 @@ void CubeMap::renderToTexture(CubeMapCamera& camera,
   // the camera node before calling this function, original viewing matrix of
   // the camera MUST be updated as well.
   camera.updateOriginalViewingMatrix();
+
+  if (renderCameraFlags & RenderCamera::Flag::CullFrontFace) {
+    /*
+    Mn::GL::Renderer::setFaceCullingMode(
+        Mn::GL::Renderer::PolygonFacing::Front);
+    */
+    // Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::FaceCulling);
+  }
+
   for (int iFace = 0; iFace < 6; ++iFace) {
     camera.switchToFace(iFace);
     prepareToDraw(iFace, renderCameraFlags);
@@ -613,6 +617,11 @@ void CubeMap::renderToTexture(CubeMapCamera& camera,
     camera.draw(group, renderCameraFlags);
   }  // iFace
 
+  if (renderCameraFlags & RenderCamera::Flag::CullFrontFace) {
+    // Mn::GL::Renderer::setFaceCullingMode(Mn::GL::Renderer::PolygonFacing::Back);
+    Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
+  }
+
   // CAREFUL!!!
   // switchToFace() will change the local transformation of this camera node!
   // If you do not do anything, in next rendering cycle, since
@@ -622,13 +631,11 @@ void CubeMap::renderToTexture(CubeMapCamera& camera,
   camera.restoreTransformation();
 
   // Color texture ONLY, NOT for depth
+  /*
   if ((flags_ & Flag::AutoBuildMipmap) && (flags_ & Flag::ColorTexture)) {
     texture(TextureType::Color).generateMipmap();
   }
-
-  if (renderCameraFlags & RenderCamera::Flag::CullFrontFace) {
-    Mn::GL::Renderer::setFaceCullingMode(Mn::GL::Renderer::PolygonFacing::Back);
-  }
+  */
 }
 
 }  // namespace gfx

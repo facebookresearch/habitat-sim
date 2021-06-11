@@ -202,6 +202,9 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
 
     shader_->bindPointShadowMap(
         shadowMap->getTexture(CubeMap::TextureType::Depth));
+
+    shader_->setLightNearFarPlanes(shadowData_->lightNearPlance,
+                                   shadowData_->lightFarPlane);
   }
 
   shader_->draw(mesh_);

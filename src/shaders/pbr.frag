@@ -113,19 +113,20 @@ uniform PbrEquationScales Scales;
 uniform int PbrDebugDisplay;
 
 #if defined(SHADOWS)
-// TODO: make it uniform
-const float FarPlane = 20.0f;
-const float NearPlane = 0.01f;
+uniform float LightNearPlane;
+uniform float LightFarPlane;
 #endif
 
 // -------------- shader ------------------
 
 #if defined(SHADOWS)
+
+// for instant depth visualization purpose
 float LinearizeDepth(float depth)
 {
     float z = depth * 2.0 - 1.0; // back to NDC
-    return (2.0 * NearPlane * FarPlane) /
-      (FarPlane + NearPlane - z * (FarPlane - NearPlane));
+    return (2.0 * LightNearPlane * LightFarPlane) /
+      (LightFarPlane + LightNearPlane - z * (LightFarPlane - LightNearPlane));
 }
 
 // array of offset direction for sampling
@@ -143,8 +144,9 @@ float vecToDepthValue(vec3 vec) {
   vec3 v = abs(vec);
   float originalZ = max(v.x, max(v.y, v.z));
 
-  float temp = FarPlane - NearPlane;
-  float z = (FarPlane + NearPlane) / temp - (2 * FarPlane * NearPlane) / (temp * originalZ);
+  float temp = LightFarPlane - LightNearPlane;
+  float z = (LightFarPlane + LightNearPlane) / temp -
+      (2 * LightFarPlane * LightNearPlane) / (temp * originalZ);
   return (z + 1.0) * 0.5;
 }
 
@@ -153,11 +155,11 @@ float computeShadow(vec3 fragPos, vec3 lightPos, vec3 viewPos) {
     vec3 lightToFrag = fragPos - lightPos;
     float d = vecToDepthValue(lightToFrag);
 
-    float bias = 0.0001;
+    float bias = 0.00001;
     int samples = 20;
     float shadow = 0.0;
     float viewDistance = length(viewPos - fragPos);
-    float diskRadius = (1.0 + (viewDistance / FarPlane)) / 50.0;
+    float diskRadius = (1.0 + (viewDistance / LightFarPlane)) / 50.0;
     for(int i = 0; i < samples; ++i) {
         float closestDepth = texture(PointShadowMap0, normalize(lightToFrag + gridSamplingDisk[i] * diskRadius)).r;
         if(d - bias > closestDepth)
@@ -173,7 +175,7 @@ vec3 visualizePointShadowMap(vec3 fragPos, vec3 lightPos) {
     vec3 lightToFrag = fragPos - lightPos;
     // use the fragment to light vector to sample from the depth map
     float depth = texture(PointShadowMap0, lightToFrag).r;
-    float d = LinearizeDepth(depth) / FarPlane;
+    float d = LinearizeDepth(depth) / LightFarPlane;
     return vec3(0.0, 0.0, d);
 }
 

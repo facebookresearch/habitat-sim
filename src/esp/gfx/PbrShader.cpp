@@ -192,7 +192,6 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   if (flags_ & Flag::Shadows) {
     setUniform(uniformLocation("PointShadowMap0"),
                pbrTextureUnitSpace::TextureUnit::ShadowMap0);
-    LOG(INFO) << "PointShadowMap0 " << uniformLocation("PointShadowMap0");
   }
 
   // cache the uniform locations
@@ -240,6 +239,10 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   scaleDirectSpecularUniform_ = uniformLocation("Scales.directSpecular");
   scaleIblDiffuseUniform_ = uniformLocation("Scales.iblDiffuse");
   scaleIblSpecularUniform_ = uniformLocation("Scales.iblSpecular");
+
+  // shadows
+  lightNearPlaneUniform_ = uniformLocation("LightNearPlane");
+  lightFarPlaneUniform_ = uniformLocation("LightFarPlane");
 
   // for debug info
   pbrDebugDisplayUniform_ = uniformLocation("PbrDebugDisplay");
@@ -450,6 +453,17 @@ PbrShader& PbrShader::setTextureMatrix(const Mn::Matrix3& matrix) {
 
   // since emissive texture may need it, so no if (lightCount_) here
   setUniform(textureMatrixUniform_, matrix);
+  return *this;
+}
+
+PbrShader& PbrShader::setLightNearFarPlanes(float lightNearPlane,
+                                            float lightFarPlane) {
+  CORRADE_ASSERT(flags_ & Flag::Shadows,
+                 "PbrShader::setLightNearFarPlanes(): the shader was not "
+                 "created with shadows enabled",
+                 *this);
+  setUniform(lightNearPlaneUniform_, lightNearPlane);
+  setUniform(lightFarPlaneUniform_, lightFarPlane);
   return *this;
 }
 

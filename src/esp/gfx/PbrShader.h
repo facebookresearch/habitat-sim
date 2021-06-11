@@ -497,11 +497,20 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   };
 
   /**
-   *  @brief Set the debug toggles
+   *  @brief Set the scales for differenct components in the pbr equation
    *  @param scales
    *  @return Reference to self (for method chaining)
    */
   PbrShader& setPbrEquationScales(const PbrEquationScales& scales);
+
+  /**
+   *  @brief Set the near and far plane of the light space
+   *  @param[in] lightNearPlane, the near plane
+   *  @param[in] lightFarPlane, the far plane
+   *  @return Reference to self (for method chaining)
+   *  NOTE: requires Flag::Shadows is set
+   */
+  PbrShader& setLightNearFarPlanes(float lightNearPlane, float lightFarPlane);
 
   enum class PbrDebugDisplay : uint8_t {
     None = 0,
@@ -552,6 +561,10 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   int scaleDirectSpecularUniform_ = ID_UNDEFINED;
   int scaleIblDiffuseUniform_ = ID_UNDEFINED;
   int scaleIblSpecularUniform_ = ID_UNDEFINED;
+
+  // shadows
+  int lightNearPlaneUniform_ = ID_UNDEFINED;
+  int lightFarPlaneUniform_ = ID_UNDEFINED;
 
   /*
   tone mapping

@@ -43,7 +43,7 @@ using metadata::attributes::SceneObjectInstanceAttributes;
 using metadata::attributes::StageAttributes;
 
 const char* shadowMapDrawableGroupName = "static-shadow-map";
-const char* defaultRenderingGRoupName = "";
+const char* defaultRenderingGroupName = "";
 const int shadowMapSize = 1024;
 
 Simulator::Simulator(const SimulatorConfiguration& cfg,
@@ -577,7 +577,7 @@ void Simulator::updateShadowMapDrawableGroup() {
   }
 }
 
-void Simulator::computeShadowMaps(float lightFarPlane, float lightNearPlane) {
+void Simulator::computeShadowMaps(float lightNearPlane, float lightFarPlane) {
   scene::SceneGraph& sg = getActiveSceneGraph();
   auto& shadowManager = resourceManager_->getShadowMapManger();
   auto& shadowMapKeys = resourceManager_->getShadowMapKeys();
@@ -601,13 +601,11 @@ void Simulator::computeShadowMaps(float lightFarPlane, float lightNearPlane) {
   if (!pointShadowMap) {
     shadowManager.set<gfx::CubeMap>(
         pointShadowMap.key(),
-        new gfx::CubeMap{shadowMapSize, {gfx::CubeMap::Flag::DepthTexture}},
         // XXX
-        /*
+        // new gfx::CubeMap{shadowMapSize, {gfx::CubeMap::Flag::DepthTexture}},
         new gfx::CubeMap{shadowMapSize,
                          {gfx::CubeMap::Flag::DepthTexture |
                           gfx::CubeMap::Flag::ColorTexture}},
-                          */
         Mn::ResourceDataState::Final, Mn::ResourcePolicy::Resident);
 
     CORRADE_INTERNAL_ASSERT(pointShadowMap && pointShadowMap.key() == key);
@@ -622,33 +620,34 @@ void Simulator::computeShadowMaps(float lightFarPlane, float lightNearPlane) {
   scene::SceneNode& node = sg.getRootNode().createChild();
   // this is the center of the ceiling of the replica cad model
   // this is the light position!!!
-  node.setTranslation(Mn::Vector3{16.1, 7.7, 4.8});
   // XXX
+  // MUST BE THE SAME AS the one in the scene dataset config!!!!!!!!!
+  // node.setTranslation(Mn::Vector3{16.1, 7.0, 4.8});
+  node.setTranslation(Mn::Vector3{16.1, 7.7, 4.8});
   /*
   const Magnum::Range3D& sceneBB =
       getActiveSceneGraph().getRootNode().computeCumulativeBB();
   node.setTranslation(sceneBB.center());
   */
+
   gfx::CubeMapCamera camera{node};
 
   camera.setProjectionMatrix(shadowMapSize,   // width of the square
                              lightNearPlane,  // near plane
                              lightFarPlane);  // far plane
-  pointShadowMap->renderToTexture(camera, sg, defaultRenderingGRoupName,
+  pointShadowMap->renderToTexture(camera, sg, shadowMapDrawableGroupName,
                                   {gfx::RenderCamera::Flag::FrustumCulling |
                                    // gfx::RenderCamera::Flag::CullFrontFace |
                                    gfx::RenderCamera::Flag::ClearDepth});
 
-  // XXX
-  /*
-  pointShadowMap->visualizeTexture(gfx::CubeMap::TextureType::Depth, near,
-  far, 1.0f / 512.0f, 1.0f / far);
+  pointShadowMap->visualizeTexture(gfx::CubeMap::TextureType::Depth,
+                                   lightNearPlane, lightFarPlane, 1.0f / 512.0f,
+                                   1.0f / 20.0f);
   pointShadowMap->saveTexture(gfx::CubeMap::TextureType::Color, "shadowMap");
-  */
 }
 
-void Simulator::setShadowMapsToDrawables(float lightFarPlane,
-                                         float lightNearPlane) {
+void Simulator::setShadowMapsToDrawables(float lightNearPlane,
+                                         float lightFarPlane) {
   scene::SceneGraph& sg = getActiveSceneGraph();
   gfx::DrawableGroup& defaultRenderingGroup = sg.getDrawables();
   auto& shadowManager = resourceManager_->getShadowMapManger();
