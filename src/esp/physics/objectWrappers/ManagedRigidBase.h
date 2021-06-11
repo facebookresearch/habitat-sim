@@ -210,13 +210,6 @@ class AbstractManagedRigidBase
     }
   }  // setSemanticId
 
-  std::vector<scene::SceneNode*> getVisualSceneNodes() const {
-    if (auto sp = this->getObjectReference()) {
-      return sp->getVisualSceneNodes();
-    }
-    return std::vector<scene::SceneNode*>();
-  }  // getVisualSceneNodes
-
  public:
   ESP_SMART_POINTERS(AbstractManagedRigidBase<T>)
 };

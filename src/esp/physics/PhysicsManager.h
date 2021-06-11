@@ -665,23 +665,23 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   }
 
   /**
-   * @brief Check if @p physObjectID represents an existing object.
+   * @brief Check if @p physObjectID represents an existing rigid object.
    * @param physObjectID Object ID to check
-   * @return Whether object exists or not.
+   * @return Whether rigid object exists with this id or not.
    */
-  inline bool isValidObjectID(const int physObjectID) const {
+  inline bool isValidRigidObjectId(const int physObjectID) const {
     return (existingObjects_.count(physObjectID) > 0);
   }
 
  protected:
   /** @brief Check that a given object ID is valid (i.e. it refers to an
-   * existing object). Terminate the program and report an error if not. This
-   * function is intended to unify object ID checking for @ref PhysicsManager
-   * functions.
+   * existing rigid object). Terminate the program and report an error if not.
+   * This function is intended to unify object ID checking for @ref
+   * PhysicsManager functions.
    * @param physObjectID The object ID to validate.
    */
-  virtual void assertIDValidity(const int physObjectID) const {
-    CHECK(isValidObjectID(physObjectID));
+  virtual void assertRigidIdValidity(const int physObjectID) const {
+    CHECK(isValidRigidObjectId(physObjectID));
   }
 
   /** @brief Check if a particular mesh can be used as a collision mesh for a

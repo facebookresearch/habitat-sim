@@ -347,7 +347,7 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
    * @brief Get pointers to this rigid's visual SceneNodes.
    * @return vector of pointers to the rigid's visual scene nodes.
    */
-  std::vector<scene::SceneNode*> getVisualSceneNodes() const {
+  std::vector<scene::SceneNode*> getVisualSceneNodes() const override {
     return visualNodes_;
   }
 

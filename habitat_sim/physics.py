@@ -5,6 +5,7 @@
 from habitat_sim._ext.habitat_sim_bindings import (
     CollisionGroupHelper,
     CollisionGroups,
+    ManagedBulletRigidObject,
     ManagedRigidObject,
     MotionType,
     PhysicsSimulationLibrary,
@@ -16,6 +17,7 @@ from habitat_sim._ext.habitat_sim_bindings import (
 
 __all__ = [
     "ManagedRigidObject",
+    "ManagedBulletRigidObject",
     "RigidObjectManager",
     "PhysicsSimulationLibrary",
     "MotionType",

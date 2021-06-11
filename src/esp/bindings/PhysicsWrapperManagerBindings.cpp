@@ -4,20 +4,17 @@
 
 #include "esp/bindings/bindings.h"
 
+#include "esp/physics/bullet/objectWrappers/ManagedBulletRigidObject.h"
 #include "esp/physics/objectManagers/PhysicsObjectBaseManager.h"
 #include "esp/physics/objectManagers/RigidBaseManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/physics/objectWrappers/ManagedRigidObject.h"
-#ifdef ESP_BUILD_WITH_BULLET
-#include "esp/physics/bullet/objectWrappers/ManagedBulletRigidObject.h"
-#endif
+
 namespace py = pybind11;
 using py::literals::operator""_a;
 
 namespace PhysWraps = esp::physics;
-#ifdef ESP_BUILD_WITH_BULLET
 using PhysWraps::ManagedBulletRigidObject;
-#endif
 using PhysWraps::ManagedRigidObject;
 using PhysWraps::PhysicsObjectBaseManager;
 using PhysWraps::RigidBaseManager;
@@ -34,7 +31,7 @@ namespace physics {
  * @param classStrPrefix string prefix for python class name specification.
  */
 
-template <typename T, typename U = ManagedRigidObject>
+template <typename T, typename U>
 void declareBaseWrapperManager(py::module& m,
                                const std::string& objType,
                                const std::string& classStrPrefix) {
@@ -44,7 +41,8 @@ void declareBaseWrapperManager(py::module& m,
   // template.  However, we use PHysicsObjectBaseManager as the base class
   // because we wish to have appropriate (wrapper-related) access, argument
   // nomenclature and documentation.
-  std::string pyclass_name = classStrPrefix + std::string("PhysWrapperManager");
+  std::string pyclass_name =
+      classStrPrefix + std::string("_PhysWrapperManager");
   py::class_<MgrClass, std::shared_ptr<MgrClass>>(m, pyclass_name.c_str())
       .def("get_object_handle_by_id", &MgrClass::getObjectHandleByID,
            ("Returns string handle for the " + objType +
@@ -156,13 +154,13 @@ void declareBaseWrapperManager(py::module& m,
            "handle"_a);
 }  // declareBaseWrapperManager
 
-template <typename T, typename U = ManagedRigidObject>
+template <typename T, typename U>
 void declareRigidBaseWrapperManager(py::module& m,
                                     CORRADE_UNUSED const std::string& objType,
                                     const std::string& classStrPrefix) {
   using MgrClass = RigidBaseManager<T>;
   std::string pyclass_name =
-      classStrPrefix + std::string("RigidBaseWrapperManager");
+      classStrPrefix + std::string("_RigidBaseWrapperManager");
 
   py::class_<MgrClass, PhysicsObjectBaseManager<T>, std::shared_ptr<MgrClass>>(
       m, pyclass_name.c_str());
@@ -172,24 +170,29 @@ void declareRigidBaseWrapperManager(py::module& m,
 void initPhysicsWrapperManagerBindings(pybind11::module& m) {
 #ifdef ESP_BUILD_WITH_BULLET
   declareBaseWrapperManager<ManagedRigidObject, ManagedBulletRigidObject>(
-      m, "BulletRigidObject", "PhysicsObjectManager");
+      m, "BulletRigidObject", "BulletRigidObject");
 
   declareRigidBaseWrapperManager<ManagedRigidObject, ManagedBulletRigidObject>(
-      m, "BulletRigidObject", "RigidBaseManager");
+      m, "BulletRigidObject", "BulletRigidObject");
 
 #else
   // if dynamics library not being used, just use base rigid object
   declareBaseWrapperManager<ManagedRigidObject>(m, "RigidObject",
-                                                "PhysicsObjectManager");
+                                                "RigidObject");
 
   declareRigidBaseWrapperManager<ManagedRigidObject>(m, "RigidObject",
-                                                     "RigidBaseManager");
+                                                     "RigidObject");
 #endif
   // RigidObject wrapper manager
   py::class_<RigidObjectManager, RigidBaseManager<ManagedRigidObject>,
              std::shared_ptr<RigidObjectManager>>(m, "RigidObjectManager")
       .def(
-          "add_object_by_template_id", &RigidObjectManager::addObjectByID,
+          "add_object_by_template_id",
+#ifdef ESP_BUILD_WITH_BULLET
+          &RigidObjectManager::addBulletObjectByID,
+#else
+          &RigidObjectManager::addObjectByID,
+#endif
           "object_lib_id"_a, "attachment_node"_a = nullptr,
           "light_setup_key"_a = DEFAULT_LIGHTING_KEY,
           R"(Instance an object into the scene via a template referenced by library id.
@@ -197,8 +200,12 @@ void initPhysicsWrapperManagerBindings(pybind11::module& m) {
           LightSetup key. Returns a reference to the created object.)")
       .def(
           "add_object_by_template_handle",
-          &RigidObjectManager::addObjectByHandle, "object_lib_handle"_a,
-          "attachment_node"_a = nullptr,
+#ifdef ESP_BUILD_WITH_BULLET
+          &RigidObjectManager::addBulletObjectByHandle,
+#else
+          &RigidObjectManager::addObjectByHandle,
+#endif
+          "object_lib_handle"_a, "attachment_node"_a = nullptr,
           "light_setup_key"_a = DEFAULT_LIGHTING_KEY,
           R"(Instance an object into the scene via a template referenced by its handle.
           Optionally attach the object to an existing SceneNode and assign its initial
