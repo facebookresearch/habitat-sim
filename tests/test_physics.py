@@ -812,3 +812,95 @@ def test_articulated_object_kinematics(test_asset):
         # taking a single step should clamp positions when auto clamp enabled
         sim.step_physics(-1)
         assert np.all(robot.joint_positions >= lower_pos_limits)
+
+
+@pytest.mark.skipif(
+    not osp.exists("data/scene_datasets/habitat-test-scenes/apartment_1.glb"),
+    reason="Requires the habitat-test-scenes",
+)
+@pytest.mark.skipif(
+    not habitat_sim.built_with_bullet,
+    reason="ArticulatedObject API requires Bullet physics.",
+)
+@pytest.mark.parametrize(
+    "test_asset",
+    [
+        "data/test_assets/urdf/kuka_iiwa/model_free_base.urdf",
+        # "data/test_assets/urdf/fridge/fridge.urdf",
+        # "data/test_assets/urdf/prim_chain.urdf",
+        # "data/test_assets/urdf/amass_male.urdf",
+    ],
+)
+def test_articulated_object_dynamics(test_asset):
+    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings["scene"] = "data/scene_datasets/habitat-test-scenes/apartment_1.glb"
+    cfg_settings["enable_physics"] = True
+
+    # loading the physical scene
+    hab_cfg = examples.settings.make_cfg(cfg_settings)
+
+    with habitat_sim.Simulator(hab_cfg) as sim:
+        art_obj_mgr = sim.get_articulated_object_manager()
+        robot_file = test_asset
+
+        # parse URDF and add an ArticulatedObject to the world
+        robot = art_obj_mgr.add_articulated_object_from_urdf(filepath=robot_file)
+        assert robot.is_alive
+
+        # object should be initialized with dynamics
+        assert robot.motion_type == habitat_sim.physics.MotionType.DYNAMIC
+        sim.step_physics(3.0)
+        # the robot should fall to the floor under gravity and stop
+        assert robot.translation[1] < -0.5
+        assert robot.translation[1] > -1.7
+
+        # reset root transform and switch to kinematic
+        robot.translation = mn.Vector3(0)
+        robot.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+        assert robot.motion_type == habitat_sim.physics.MotionType.KINEMATIC
+        sim.step_physics(1.0)
+        assert robot.translation == mn.Vector3(0)
+        # set forces and velocity and check no simulation result
+        current_positions = robot.joint_positions
+        robot.joint_velocities = np.linspace(1.1, 2.0, len(robot.joint_velocities))
+        robot.joint_forces = np.linspace(2.1, 3.0, len(robot.joint_forces))
+        sim.step_physics(1.0)
+        assert np.allclose(robot.joint_positions, current_positions, atol=1.0e-4)
+        assert robot.translation == mn.Vector3(0)
+        # positions can be manually changed
+        target_joint_positions = getRandomPositions(robot)
+        robot.joint_positions = target_joint_positions
+        assert np.allclose(robot.joint_positions, target_joint_positions, atol=1.0e-4)
+
+        # instance fresh robot with fixed base
+        art_obj_mgr.remove_object_by_id(robot.object_id)
+        robot = art_obj_mgr.add_articulated_object_from_urdf(
+            filepath=robot_file, fixed_base=True
+        )
+        assert robot.translation == mn.Vector3(0)
+        assert robot.motion_type == habitat_sim.physics.MotionType.DYNAMIC
+        # perturb the system dynamically
+        robot.joint_velocities = np.linspace(5.1, 8.0, len(robot.joint_velocities))
+        sim.step_physics(1.0)
+        # root should remain fixed
+        assert robot.translation == mn.Vector3(0)
+        # positions should be dynamic and perturbed by velocities
+        assert not np.allclose(robot.joint_positions, getRestPositions(robot), atol=0.1)
+
+        # instance fresh robot with free base
+        art_obj_mgr.remove_object_by_id(robot.object_id)
+        robot = art_obj_mgr.add_articulated_object_from_urdf(filepath=robot_file)
+        # put object to sleep
+        assert robot.can_sleep
+        assert robot.awake
+        robot.awake = False
+        assert not robot.awake
+        sim.step_physics(1.0)
+        assert not robot.awake
+        assert robot.translation == mn.Vector3(0)
+
+        # add a new object to drop onto the first, waking it up
+        robot2 = art_obj_mgr.add_articulated_object_from_urdf(filepath=robot_file)
+        sim.step_physics(0.5)
+        assert robot.awake
+        assert robot2.awake

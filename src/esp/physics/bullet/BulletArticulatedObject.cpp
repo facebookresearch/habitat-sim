@@ -236,6 +236,9 @@ bool BulletArticulatedObject::initializeFromURDF(
       }
     }
   }
+
+  // in case the base transform is not zero by default
+  syncPose();
   return true;
 }
 
