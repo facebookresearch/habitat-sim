@@ -146,6 +146,9 @@ void SceneAttributesManager::setValsFromJSONDoc(
                     "semantic_scene_instance specified for scene "
                  << attribsDispName << ".";
   }
+  // check for user defined attributes
+  this->parseUserDefinedJsonVals(attribs, jsonConfig);
+
 }  // SceneAttributesManager::setValsFromJSONDoc
 
 SceneObjectInstanceAttributes::ptr
@@ -154,7 +157,7 @@ SceneAttributesManager::createInstanceAttributesFromJSON(
   SceneObjectInstanceAttributes::ptr instanceAttrs =
       createEmptyInstanceAttributes("");
   // populate attributes
-  this->loadAbstractObjectAttributesFromJson(instanceAttrs.get(), jCell);
+  this->loadAbstractObjectAttributesFromJson(instanceAttrs, jCell);
   return instanceAttrs;
 }  // SceneAttributesManager::createInstanceAttributesFromJSON
 
@@ -164,7 +167,7 @@ SceneAttributesManager::createAOInstanceAttributesFromJSON(
   SceneAOInstanceAttributes::ptr instanceAttrs =
       createEmptyAOInstanceAttributes("");
   // populate attributes
-  this->loadAbstractObjectAttributesFromJson(instanceAttrs.get(), jCell);
+  this->loadAbstractObjectAttributesFromJson(instanceAttrs, jCell);
 
   // only used for articulated objects
   // fixed base
@@ -229,7 +232,7 @@ SceneAttributesManager::createAOInstanceAttributesFromJSON(
 }  // SceneAttributesManager::createAOInstanceAttributesFromJSON
 
 void SceneAttributesManager::loadAbstractObjectAttributesFromJson(
-    attributes::SceneObjectInstanceAttributes* const instanceAttrs,
+    attributes::SceneObjectInstanceAttributes::ptr instanceAttrs,
     const io::JsonGenericValue& jCell) const {
   // template handle describing stage/object instance
   io::jsonIntoConstSetter<std::string>(
@@ -290,6 +293,9 @@ void SceneAttributesManager::loadAbstractObjectAttributesFromJson(
                             [instanceAttrs](float mass_scale) {
                               instanceAttrs->setMassScale(mass_scale);
                             });
+
+  // check for user defined attributes
+  this->parseUserDefinedJsonVals(instanceAttrs, jCell);
 
 }  // SceneAttributesManager::loadAbstractObjectAttributesFromJson
 

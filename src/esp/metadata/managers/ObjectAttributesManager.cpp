@@ -125,6 +125,10 @@ void ObjectAttributesManager::setValsFromJSONDoc(
       });
   // if com is set from json, don't compute from shape, and vice versa
   objAttributes->setComputeCOMFromShape(!comIsSet);
+
+  // check for user defined attributes
+  this->parseUserDefinedJsonVals(objAttributes, jsonConfig);
+
 }  // ObjectAttributesManager::setValsFromJSONDoc
 
 ObjectAttributes::ptr ObjectAttributesManager::initNewObjectInternal(

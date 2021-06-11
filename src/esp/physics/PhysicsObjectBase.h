@@ -392,11 +392,6 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
   }
 
   /**
-   * @brief Store whatever object attributes you want here!
-   */
-  core::Configuration::ptr attributes_{};
-
-  /**
    * @brief Set or reset the object's state using the object's specified @p
    * sceneInstanceAttributes_.
    * @param defaultCOMCorrection The default value of whether COM-based
@@ -425,7 +420,26 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    */
   virtual std::vector<scene::SceneNode*> getVisualSceneNodes() const = 0;
 
+  core::Configuration::ptr getUserAttributes() const { return userAttributes_; }
+  void setUserAttributes(core::Configuration::ptr attr) {
+    userAttributes_ = std::move(attr);
+  }
+
  protected:
+  /** @brief Accessed internally. Get an appropriately cast copy of the @ref
+   * metadata::attributes::SceneObjectInstanceAttributes used to place the
+   * object within the scene.
+   * @return A copy of the initialization template used to create this object
+   * instance or nullptr if no template exists.
+   */
+  template <class T>
+  std::shared_ptr<T> getSceneInstanceAttrInternal() const {
+    if (!_sceneInstanceAttributes) {
+      return nullptr;
+    }
+    return T::create(*(static_cast<T*>(_sceneInstanceAttributes.get())));
+  }
+
   /**
    * @brief Used to synchronize other simulator's notion of the object state
    * after it was changed kinematically. Must be called automatically on
@@ -460,19 +474,13 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    */
   const assets::ResourceManager& resMgr_;
 
-  /** @brief Accessed internally. Get an appropriately cast copy of the @ref
-   * metadata::attributes::SceneObjectInstanceAttributes used to place the
-   * object within the scene.
-   * @return A copy of the initialization template used to create this object
-   * instance or nullptr if no template exists.
+  /**
+   * @brief Stores user-defined attributes for this object, held as a smart
+   * pointer to a @ref esp::core::Configuration. These attributes are not
+   * internally processed by habitat, but provide a "scratch pad" for the user
+   * to access and save important information and metadata.
    */
-  template <class T>
-  std::shared_ptr<T> getSceneInstanceAttrInternal() const {
-    if (!_sceneInstanceAttributes) {
-      return nullptr;
-    }
-    return T::create(*(static_cast<T*>(_sceneInstanceAttributes.get())));
-  }
+  core::Configuration::ptr userAttributes_{};
 
  private:
   /**

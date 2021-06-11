@@ -53,11 +53,6 @@ void declareBasePhysicsObjectWrapper(py::module& m,
               .c_str())
       .def_property_readonly("template_class", &PhysObjWrapper::getClassKey,
                              ("Class name of this " + objType).c_str())
-      .def("user_attributes", &PhysObjWrapper::userAttributes,
-           ("User-defined " + objType +
-            " attributes.  These are not used internally by Habitat in any "
-            "capacity, but are available for a user to consume how they wish.")
-               .c_str())
       .def_property(
           "transformation", &PhysObjWrapper::getTransformation,
           &PhysObjWrapper::setTransformation,
@@ -187,6 +182,12 @@ void declareBasePhysicsObjectWrapper(py::module& m,
            "' render assets attached. Use this to manipulate this " + objType +
            "'s visual state. Changes to these nodes will not affect physics "
            "simulation.")
+              .c_str())
+      .def_property_readonly(
+          "user_attributes", &PhysObjWrapper::getUserAttributes,
+          ("User-defined " + objType +
+           " attributes.  These are not used internally by Habitat in any "
+           "capacity, but are available for a user to consume how they wish.")
               .c_str());
 }  // declareBasePhysicsObjectWrapper
 

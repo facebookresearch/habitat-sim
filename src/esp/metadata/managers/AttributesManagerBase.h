@@ -167,7 +167,7 @@ class AttributesManager
     // set the values for this attributes from the json config.
     this->setValsFromJSONDoc(attributes, jsonConfig);
     return attributes;
-  }  // AttributesManager<T>::buildObjectFromJSONDoc
+  }  // AttributesManager<T, Access>::buildObjectFromJSONDoc
 
   /**
    * @brief Method to take an existing attributes and set its values from passed
@@ -177,10 +177,23 @@ class AttributesManager
    */
   virtual void setValsFromJSONDoc(AttribsPtr attribs,
                                   const io::JsonGenericValue& jsonConfig) = 0;
+
   /**
-   * @brief Return a properly formated JSON file name for the attributes managed
-   * by this manager.  This will change the extension to the appropriate json
-   * extension.
+   * @brief This function takes the json block specifying user-defined values
+   * and parses it into the passed existing attributes.
+   * @param attribs (out) an existing attributes to be modified.
+   * @param jsonConfig json document to parse
+   * @return true if tag is found, of appropriate configuration, and holds
+   * actual values.
+   */
+  bool parseUserDefinedJsonVals(
+      const attributes::AbstractAttributes::ptr& attribs,
+      const io::JsonGenericValue& jsonConfig) const;
+
+  /**
+   * @brief Return a properly formated JSON file name for the attributes
+   * managed by this manager.  This will change the extension to the
+   * appropriate json extension.
    * @param filename The original filename
    * @return a candidate JSON file name for the attributes managed by this
    * manager.
@@ -251,7 +264,7 @@ std::vector<int> AttributesManager<T, Access>::loadAllFileBasedTemplates(
       << "AttributesManager::loadAllFileBasedTemplates : Loaded file-based "
       << this->objectType_ << " templates: " << std::to_string(paths.size());
   return templateIndices;
-}  // AttributesManager<T>::loadAllObjectTemplates
+}  // AttributesManager<T, Access>::loadAllObjectTemplates
 
 template <class T, core::ManagedObjectAccess Access>
 std::vector<int> AttributesManager<T, Access>::loadAllTemplatesFromPathAndExt(
@@ -297,7 +310,7 @@ std::vector<int> AttributesManager<T, Access>::loadAllTemplatesFromPathAndExt(
   templateIndices = this->loadAllFileBasedTemplates(paths, saveAsDefaults);
 
   return templateIndices;
-}  // AttributesManager<T>::loadAllTemplatesFromPathAndExt
+}  // AttributesManager<T, Access>::loadAllTemplatesFromPathAndExt
 
 template <class T, core::ManagedObjectAccess Access>
 void AttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad(
@@ -330,7 +343,7 @@ void AttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad(
             << std::to_string(filePaths.Size())
             << " paths specified in JSON doc for " << this->objectType_
             << " templates.";
-}  // AttributesManager<T>::buildAttrSrcPathsFromJSONAndLoad
+}  // AttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad
 
 template <class T, core::ManagedObjectAccess Access>
 auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
@@ -347,7 +360,7 @@ auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
   // Check if this configuration file exists and if so use it to build
   // attributes
   bool jsonFileExists = (this->isValidFileName(jsonAttrFileName));
-  LOG(INFO) << "AttributesManager<T>::createFromJsonOrDefaultInternal  ("
+  LOG(INFO) << "AttributesManager::createFromJsonOrDefaultInternal  ("
             << this->objectType_
             << ") : Proposing JSON name : " << jsonAttrFileName
             << " from original name : " << filename << " | This file "
@@ -374,7 +387,90 @@ auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
     }
   }
   return attrs;
-}  // AttributesManager<T>::createFromJsonFileOrDefaultInternal
+}  // AttributesManager<T, Access>::createFromJsonFileOrDefaultInternal
+
+template <class T, core::ManagedObjectAccess Access>
+bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
+    const attributes::AbstractAttributes::ptr& attribs,
+    const io::JsonGenericValue& jsonConfig) const {
+  // check for user defined attributes
+  if (jsonConfig.HasMember("user_defined")) {
+    if (!jsonConfig["user_defined"].IsObject()) {
+      LOG(WARNING) << "AttributesManager::parseUserDefinedJsonVals : "
+                   << attribs->getSimplifiedHandle()
+                   << " attributes specifies user_defined attributes but they "
+                      "are not of the correct format. Skipping.";
+      return false;
+    } else {
+      const auto& userObj = jsonConfig["user_defined"];
+      // count number of valid user config settings found
+      int numConfigSettings = 0;
+      // jsonConfig is the json object referenced by the tag "user_defined" in
+      // the original config file.  By here it is guaranteed to be a json
+      // object.
+      for (rapidjson::Value::ConstMemberIterator it = userObj.MemberBegin();
+           it != userObj.MemberEnd(); ++it) {
+        // for each key, attempt to parse
+        const std::string key = it->name.GetString();
+        const auto& obj = it->value;
+        // increment, assuming is valid object
+        ++numConfigSettings;
+        if (obj.IsFloat()) {
+          attribs->setUserConfigValue(key, obj.GetFloat());
+        } else if (obj.IsDouble()) {
+          attribs->setUserConfigValue(key, obj.GetDouble());
+        } else if (obj.IsNumber()) {
+          attribs->setUserConfigValue(key, obj.Get<int>());
+        } else if (obj.IsString()) {
+          attribs->setUserConfigValue(key, obj.GetString());
+        } else if (obj.IsBool()) {
+          attribs->setUserConfigValue(key, obj.GetBool());
+        } else if (obj.IsArray() && obj.Size() > 0 && obj[0].IsNumber()) {
+          // numeric vector or quaternion
+          if (obj.Size() == 3) {
+            Magnum::Vector3 val{};
+            if (io::fromJsonValue(obj, val)) {
+              attribs->setUserConfigValue(key, val);
+            }
+          } else if (obj.Size() == 4) {
+            // assume is quaternion
+            Magnum::Quaternion val{};
+            if (io::fromJsonValue(obj, val)) {
+              attribs->setUserConfigValue(key, val);
+            }
+          } else {
+            // decrement count for key:obj due to not being handled vector
+            --numConfigSettings;
+            // TODO support numeric array in JSON
+            LOG(WARNING)
+                << "AttributesManager::parseUserDefinedJsonVals : For "
+                << attribs->getSimplifiedHandle()
+                << " attributes, user_defined config cell in JSON document "
+                   "contains key "
+                << key
+                << " referencing an unsupported numeric array of length : "
+                << obj.Size() << " so skipping.";
+          }
+        } else {
+          // TODO support other types?
+          // decrement count for key:obj due to not being handled type
+          --numConfigSettings;
+          LOG(WARNING)
+              << "AttributesManager::parseUserDefinedJsonVals : For "
+              << attribs->getSimplifiedHandle()
+              << " attributes, user_defined config cell in JSON document "
+                 "contains key "
+              << key
+              << " referencing an unknown/unparsable value, so skipping this "
+                 "key.";
+        }
+      }
+      // whether or not any valid configs were found
+      return (numConfigSettings > 0);
+    }
+  }  // if has user_defined tag
+  return false;
+}  // AttributesManager<T, Access>::parseUserDefinedJsonVals
 
 }  // namespace managers
 }  // namespace metadata

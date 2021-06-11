@@ -65,6 +65,34 @@ void initAttributesBindings(py::module& m) {
           "template_id", &AbstractAttributes::getID,
           R"(System-generated ID for template.  Will be unique among templates
           of same type.)")
+      .def("get_user_config_bool",
+           &AbstractAttributes::getUserConfigValue<bool>)
+      .def("get_user_config_string",
+           &AbstractAttributes::getUserConfigValue<std::string>)
+      .def("get_user_config_int", &AbstractAttributes::getUserConfigValue<int>)
+      .def("get_user_config_double",
+           &AbstractAttributes::getUserConfigValue<double>)
+      .def("get_user_config_vec3",
+           &AbstractAttributes::getUserConfigValue<Magnum::Vector3>)
+      .def("get_user_config_quat",
+           &AbstractAttributes::getUserConfigValue<Magnum::Quaternion>)
+      .def("get_user_config_val",
+           &AbstractAttributes::getUserConfigValue<std::string>)
+      .def("set_user_config_val",
+           &AbstractAttributes::setUserConfigValue<std::string>)
+      .def("set_user_config_val", &AbstractAttributes::setUserConfigValue<int>)
+      .def("set_user_config_val",
+           &AbstractAttributes::setUserConfigValue<double>)
+      .def("set_user_config_val", &AbstractAttributes::setUserConfigValue<bool>)
+      .def("set_user_config_val",
+           &AbstractAttributes::setUserConfigValue<Magnum::Vector3>)
+      .def("set_user_config_val",
+           &AbstractAttributes::setUserConfigValue<Magnum::Quaternion>)
+
+      .def_property_readonly(
+          "num_user_configs",
+          &AbstractAttributes::getNumUserDefinedConfigurations,
+          R"(The number of currently specified user-defined configuration values.)")
       .def_property_readonly("template_class", &AbstractAttributes::getClassKey,
                              R"(Class name of Attributes template.)");
 
