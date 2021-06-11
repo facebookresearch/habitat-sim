@@ -96,7 +96,7 @@ void initGfxBindings(py::module& m) {
             self.draw(camera, sceneGraph, RenderCamera::Flags{flags});
           },
           R"(Draw given scene using the camera)", "camera"_a, "scene"_a,
-          "flags"_a = RenderCamera::Flag{RenderCamera::Flag::FrustumCulling})
+          "flag"_a = RenderCamera::Flag{RenderCamera::Flag::FrustumCulling})
       .def(
           "draw",
           [](Renderer& self, sensor::VisualSensor& visualSensor,
