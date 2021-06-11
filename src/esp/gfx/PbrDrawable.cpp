@@ -84,17 +84,24 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
       .updateShaderLightParameters()
       .updateShaderLightDirectionParameters(transformationMatrix, camera);
 
-  // Assume that in a model, double-sided meshes are significantly less than
-  // single-sided meshes.
-  // To reduce the usage of glIsEnabled, once a double-sided mesh is
-  // encountered, the FaceCulling is disabled, and will not be enabled again at
-  // least in this function.
-  // TODO:
-  // it should have a global GL state tracker in Magnum to track it.
+  // ABOUT PbrShader::Flag::DoubleSided:
+  //
+  // "Specifies whether the material is double sided. When this value is false,
+  // back-face culling is enabled. When this value is true, back-face culling is
+  // disabled and double sided lighting is enabled. The back-face must have its
+  // normals reversed before the lighting equation is evaluated."
+  // See here:
+  // https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/schema/material.schema.json
 
+  // HOWEVER, WE CANNOT DISABLE BACK FACE CULLING (that is why the following
+  // code is commented out) since it causes lighting artifacts ("dashed lines")
+  // on hard edges. (maybe due to potential numerical issues? we do not know
+  // yet.)
+  /*
   if ((flags_ & PbrShader::Flag::DoubleSided) && glIsEnabled(GL_CULL_FACE)) {
     Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::FaceCulling);
   }
+  */
 
   (*shader_)
       // e.g., semantic mesh has its own per vertex annotation, which has been
@@ -146,6 +153,14 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   }
 
   shader_->draw(mesh_);
+
+  // WE stopped supporting doubleSided material due to lighting artifacts on
+  // hard edges. See comments at the beginning of this function.
+  /*
+  if ((flags_ & PbrShader::Flag::DoubleSided) && !glIsEnabled(GL_CULL_FACE)) {
+    Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
+  }
+  */
 }
 
 Mn::ResourceKey PbrDrawable::getShaderKey(Mn::UnsignedInt lightCount,

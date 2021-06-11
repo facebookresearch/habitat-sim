@@ -172,6 +172,8 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
     ObjectId = 1 << 11,
     /**
      * Enable double-sided rendering.
+     * (Temporarily STOP supporting this functionality. See comments in
+     * the PbrDrawable::draw() function)
      */
     DoubleSided = 1 << 12,
 
