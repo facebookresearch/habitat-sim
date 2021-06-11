@@ -542,9 +542,6 @@ class Viewer : public Mn::Platform::Application {
 
   void toggleArticulatedMotionType(int objectId);
 
-  // DEMO setup functions
-  void setupDemoFurniture();
-
   void pokeLastObject();
   void pushLastObject();
   void torqueLastObject();
@@ -2431,7 +2428,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       locobotControllers.push_back(std::move(locobotController));
     } break;
     case KeyEvent::Key::Five: {
-      // add the counter in front of the agent with fixed base
+      // add the fridge in front of the agent with fixed base
       std::string urdfFilePath = "data/test_assets/urdf/fridge/fridge.urdf";
       auto fridgeAOId = addArticulatedObject(urdfFilePath, true);
       simulator_->setAutoClampJointLimits(fridgeAOId, true);
@@ -2543,121 +2540,6 @@ void Viewer::screenshot() {
       Mn::GL::defaultFramebuffer,
       screenshot_directory + std::to_string(savedFrames++) + ".png");
 }  // Viewer::screenshot
-
-void Viewer::setupDemoFurniture() {
-  Magnum::Matrix4 T;
-  // add the articualted objects
-  {
-    std::vector<Mn::Vector3> objectPositions = {
-        {1.68198, -1.5831, 5.50846},     // door1 (kitchen)
-        {1.08896, 0.856144, -1.20688},   // door2 (1st hall closet)
-        {1.08632, 0.527348, -1.87166},   // door3 (hall stairway closet)
-        {-0.550399, 0.478112, -2.6035},  // doubledoor
-        {-0.533, -0.5, 4.7},             // fridge
-        {2.93748, -1.52348, 3.11267},    // cabinet
-        {-0.4, -1.53703, 2.7}            // kitchen_counter
-    };
-    std::vector<std::string> objectFilenames = {
-        "data/test_assets/URDF/doors/door1.urdf",
-        "data/test_assets/URDF/doors/door2.urdf",
-        "data/test_assets/URDF/doors/door3.urdf",
-        "data/test_assets/URDF/doors/doubledoor.urdf",
-        "data/test_assets/URDF/fridge/fridge.urdf",
-        "data/test_assets/URDF/cabinet/cabinet.urdf",
-        "data/test_assets/URDF/kitchen_counter/kitchen_counter.urdf",
-    };
-
-    int initialArticulatedObjectCount =
-        simulator_->getExistingArticulatedObjectIDs().size();
-    for (size_t i = 0; i < objectFilenames.size(); ++i) {
-      addArticulatedObject(objectFilenames[i], true);
-      T = simulator_->getArticulatedObjectRootState(
-          simulator_->getExistingArticulatedObjectIDs().back());
-      T.translation() = objectPositions[i];
-      simulator_->setArticulatedObjectRootState(
-          simulator_->getExistingArticulatedObjectIDs().back(), T);
-      simulator_->resetArticulatedObject(
-          simulator_->getExistingArticulatedObjectIDs().back());
-      simulator_->setArticulatedObjectSleep(
-          simulator_->getExistingArticulatedObjectIDs().back(), true);
-    }
-
-    for (auto objectId : simulator_->getExistingArticulatedObjectIDs()) {
-      simulator_->resetArticulatedObject(
-          simulator_->getExistingArticulatedObjectIDs().back());
-      simulator_->setArticulatedObjectSleep(
-          simulator_->getExistingArticulatedObjectIDs().back(), true);
-    }
-
-    // setup the openable entries
-    openableObjects = {
-        Openable(simulator_.get(),
-                 simulator_->getExistingArticulatedObjectIDs()
-                     [initialArticulatedObjectCount++],
-                 0, 0, 2.5, 0),
-        Openable(simulator_.get(),
-                 simulator_->getExistingArticulatedObjectIDs()
-                     [initialArticulatedObjectCount++],
-                 0, 0, -1.5, 0),
-        Openable(simulator_.get(),
-                 simulator_->getExistingArticulatedObjectIDs()
-                     [initialArticulatedObjectCount++],
-                 0, 0, 2.4, 0),
-        Openable(simulator_.get(),
-                 simulator_->getExistingArticulatedObjectIDs()
-                     [initialArticulatedObjectCount],
-                 1, 0, -1.2, 0),  // doubledoor
-        Openable(simulator_.get(),
-                 simulator_->getExistingArticulatedObjectIDs()
-                     [initialArticulatedObjectCount++],
-                 2, 1, 1.0, 0),
-        Openable(simulator_.get(),
-                 simulator_->getExistingArticulatedObjectIDs()
-                     [initialArticulatedObjectCount],
-                 1, 0, 2.3, 0),  // fridge
-        Openable(simulator_.get(),
-                 simulator_->getExistingArticulatedObjectIDs()
-                     [initialArticulatedObjectCount++],
-                 2, 1, 2.3, 0),
-        Openable(simulator_.get(),
-                 simulator_->getExistingArticulatedObjectIDs()
-                     [initialArticulatedObjectCount],
-                 1, 0, 0.8, 0),  // cabinet
-        Openable(simulator_.get(),
-                 simulator_->getExistingArticulatedObjectIDs()
-                     [initialArticulatedObjectCount++],
-                 2, 1, -0.76, 0),
-        Openable(simulator_.get(),
-                 simulator_->getExistingArticulatedObjectIDs()
-                     [initialArticulatedObjectCount],
-                 1, 0, 0.5, 0),  // kitchen counter
-        Openable(simulator_.get(),
-                 simulator_->getExistingArticulatedObjectIDs()
-                     [initialArticulatedObjectCount],
-                 2, 1, 0.5, 0),
-        Openable(simulator_.get(),
-                 simulator_->getExistingArticulatedObjectIDs()
-                     [initialArticulatedObjectCount],
-                 3, 2, 0.5, 0),
-        Openable(simulator_.get(),
-                 simulator_->getExistingArticulatedObjectIDs()
-                     [initialArticulatedObjectCount],
-                 4, 3, 0.5, 0),
-        Openable(simulator_.get(),
-                 simulator_->getExistingArticulatedObjectIDs()
-                     [initialArticulatedObjectCount],
-                 5, 4, 0.5, 0),
-        Openable(simulator_.get(),
-                 simulator_->getExistingArticulatedObjectIDs()
-                     [initialArticulatedObjectCount],
-                 6, 5, 0.5, 0),
-        Openable(simulator_.get(),
-                 simulator_->getExistingArticulatedObjectIDs()
-                     [initialArticulatedObjectCount++],
-                 7, 6, 0.5, 0),
-    };
-  }
-}
 
 }  // namespace
 
