@@ -826,9 +826,9 @@ def test_articulated_object_kinematics(test_asset):
     "test_asset",
     [
         "data/test_assets/urdf/kuka_iiwa/model_free_base.urdf",
-        # "data/test_assets/urdf/fridge/fridge.urdf",
-        # "data/test_assets/urdf/prim_chain.urdf",
-        # "data/test_assets/urdf/amass_male.urdf",
+        "data/test_assets/urdf/fridge/fridge.urdf",
+        "data/test_assets/urdf/prim_chain.urdf",
+        "data/test_assets/urdf/amass_male.urdf",
     ],
 )
 def test_articulated_object_dynamics(test_asset):
