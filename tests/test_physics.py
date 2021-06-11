@@ -614,6 +614,10 @@ def getRandomPositions(articulated_object):
     return rand_pose
 
 
+@pytest.mark.skipif(
+    not habitat_sim.built_with_bullet,
+    reason="ArticulatedObject API requires Bullet physics.",
+)
 def test_articulated_object_add_remove():
     cfg_settings = examples.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "NONE"
@@ -663,6 +667,10 @@ def test_articulated_object_add_remove():
         assert len(sim.get_existing_articulated_object_ids()) == 0
 
 
+@pytest.mark.skipif(
+    not habitat_sim.built_with_bullet,
+    reason="ArticulatedObject API requires Bullet physics.",
+)
 @pytest.mark.parametrize(
     "test_asset",
     [
