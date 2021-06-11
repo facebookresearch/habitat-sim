@@ -232,7 +232,7 @@ SceneAttributesManager::createAOInstanceAttributesFromJSON(
 }  // SceneAttributesManager::createAOInstanceAttributesFromJSON
 
 void SceneAttributesManager::loadAbstractObjectAttributesFromJson(
-    attributes::SceneObjectInstanceAttributes::ptr instanceAttrs,
+    const attributes::SceneObjectInstanceAttributes::ptr& instanceAttrs,
     const io::JsonGenericValue& jCell) const {
   // template handle describing stage/object instance
   io::jsonIntoConstSetter<std::string>(
