@@ -106,7 +106,7 @@
     },
   "articulated_objects":{
       "paths": {
-        ".urdf" : ["articulated_objects/*"]
+        ".urdf" : ["../../urdf/*"]
       }
     },
   "scene_instances":{
