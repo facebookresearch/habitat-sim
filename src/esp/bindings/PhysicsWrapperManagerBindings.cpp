@@ -172,8 +172,8 @@ void initPhysicsWrapperManagerBindings(pybind11::module& m) {
   declareBaseWrapperManager<ManagedRigidObject, ManagedBulletRigidObject>(
       m, "BulletRigidObject", "BulletRigidObject");
 
-  declareRigidBaseWrapperManager<ManagedRigidObject, ManagedBulletRigidObject>(
-      m, "BulletRigidObject", "BulletRigidObject");
+  declareRigidBaseWrapperManager<ManagedRigidObject>(m, "BulletRigidObject",
+                                                     "BulletRigidObject");
 
 #else
   // if dynamics library not being used, just use base rigid object
