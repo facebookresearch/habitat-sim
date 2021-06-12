@@ -209,12 +209,13 @@ std::string ManagedFileBasedContainer<T, Access>::convertFilenameToPassedExt(
                 fileTypeExt;
     LOG(INFO) << "<" << this->objectType_
               << ">::convertFilenameToPassedExt : Filename : " << filename
-              << " changed to proposed JSON configuration filename : "
-              << resHandle;
+              << " changed to proposed " << fileTypeExt
+              << " filename : " << resHandle;
   } else {
     LOG(INFO) << "<" << this->objectType_
               << ">::convertFilenameToPassedExt : Filename : " << filename
-              << " is appropriate JSON configuration filename.";
+              << " contains requested file extension " << fileTypeExt
+              << " already.";
   }
   return resHandle;
 }  // ManagedFileBasedContainer<T, Access>::convertFilenameToPassedExt
