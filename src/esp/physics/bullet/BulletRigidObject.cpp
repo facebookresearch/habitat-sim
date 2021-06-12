@@ -500,5 +500,33 @@ Magnum::Range3D BulletRigidObject::getCollisionShapeAabb() const {
                          Magnum::Vector3{localAabbMax}};
 }  // getCollisionShapeAabb
 
+void BulletRigidObject::updateNodes(bool force) {
+  isDeferringUpdate_ = false;
+
+  if (force) {
+    setWorldTransform(bObjectRigidBody_->getWorldTransform());
+  } else if (deferredUpdate_) {
+    setWorldTransform(*deferredUpdate_);
+  }
+
+  deferredUpdate_ = Corrade::Containers::NullOpt;
+}
+
+void BulletRigidObject::setWorldTransform(const btTransform& worldTrans) {
+  if (isDeferringUpdate_) {
+    deferredUpdate_ = {worldTrans};
+  } else {
+    MotionState::setWorldTransform(worldTrans);
+  }
+}
+
+void BulletRigidObject::getWorldTransform(btTransform& worldTrans) const {
+  if (deferredUpdate_) {
+    worldTrans = *deferredUpdate_;
+  } else {
+    MotionState::getWorldTransform(worldTrans);
+  }
+}
+
 }  // namespace physics
 }  // namespace esp
