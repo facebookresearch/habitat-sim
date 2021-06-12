@@ -152,7 +152,7 @@ class SemanticScene {
   static bool checkFileExists(const std::string& filename,
                               const std::string& srcFunc) {
     if (!Cr::Utility::Directory::exists(filename)) {
-      LOG(ERROR) << "SemanticScene::" << srcFunc << " : File " << filename
+      LOG(ERROR) << "::" << srcFunc << " : File " << filename
                  << " does not exist.  Aborting load.";
       return false;
     }

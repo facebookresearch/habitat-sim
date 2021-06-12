@@ -966,8 +966,8 @@ class Simulator {
    */
   bool removeTrajVisByName(const std::string& trajVisName) {
     if (trajVisIDByName.count(trajVisName) == 0) {
-      LOG(INFO) << "Simulator::removeTrajVisByName : No trajectory named "
-                << trajVisName << " exists.  Ignoring.";
+      LOG(INFO) << "::removeTrajVisByName : No trajectory named " << trajVisName
+                << " exists.  Ignoring.";
       return false;
     }
     return removeTrajVisObjectAndAssets(trajVisIDByName.at(trajVisName),
@@ -982,9 +982,8 @@ class Simulator {
    */
   bool removeTrajVisByID(int trajVisObjID) {
     if (trajVisNameByID.count(trajVisObjID) == 0) {
-      LOG(INFO)
-          << "Simulator::removeTrajVisByName : No trajectory object with ID: "
-          << trajVisObjID << " exists.  Ignoring.";
+      LOG(INFO) << "::removeTrajVisByName : No trajectory object with ID: "
+                << trajVisObjID << " exists.  Ignoring.";
       return false;
     }
     return removeTrajVisObjectAndAssets(trajVisObjID,

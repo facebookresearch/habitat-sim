@@ -124,7 +124,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
       const std::string& path,
       bool overwrite = false) {
     return addNewValToMap(key, path, overwrite, navmeshMap_,
-                          "SceneDatasetAttributes::addNavmeshPathEntry");
+                          "::addNavmeshPathEntry");
   }  // addNavmeshPathEntry
 
   /**
@@ -140,9 +140,8 @@ class SceneDatasetAttributes : public AbstractAttributes {
       const std::string& key,
       const std::string& path,
       bool overwrite = false) {
-    return addNewValToMap(
-        key, path, overwrite, semanticSceneDescrMap_,
-        "SceneDatasetAttributes::addSemanticSceneDescrPathEntry");
+    return addNewValToMap(key, path, overwrite, semanticSceneDescrMap_,
+                          "::addSemanticSceneDescrPathEntry");
   }  // addNavmeshPathEntry
 
   /**

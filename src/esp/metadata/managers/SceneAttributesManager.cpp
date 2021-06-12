@@ -59,8 +59,7 @@ void SceneAttributesManager::setValsFromJSONDoc(
     attribs->setStageInstance(
         createInstanceAttributesFromJSON(jsonConfig["stage_instance"]));
   } else {
-    LOG(WARNING) << "SceneAttributesManager::setValsFromJSONDoc : No Stage "
-                    "specified for scene "
+    LOG(WARNING) << "::setValsFromJSONDoc : No Stage specified for scene "
                  << attribsDispName << ", or specification error.";
   }
   // Check for object instances existance
@@ -72,14 +71,13 @@ void SceneAttributesManager::setValsFromJSONDoc(
       if (objCell.IsObject()) {
         attribs->addObjectInstance(createInstanceAttributesFromJSON(objCell));
       } else {
-        LOG(WARNING) << "SceneAttributesManager::setValsFromJSONDoc : Object "
-                        "specification error in scene "
-                     << attribsDispName << " at idx : " << i << ".";
+        LOG(WARNING)
+            << "::setValsFromJSONDoc : Object specification error in scene "
+            << attribsDispName << " at idx : " << i << ".";
       }
     }
   } else {
-    LOG(WARNING) << "SceneAttributesManager::setValsFromJSONDoc : No Objects "
-                    "specified for scene "
+    LOG(WARNING) << "::setValsFromJSONDoc : No Objects specified for scene "
                  << attribsDispName << ", or specification error.";
   }
   std::string dfltLighting = "";
@@ -88,10 +86,9 @@ void SceneAttributesManager::setValsFromJSONDoc(
     // if "default lighting" is specified in scene json set value.
     attribs->setLightingHandle(dfltLighting);
   } else {
-    LOG(WARNING)
-        << "SceneAttributesManager::setValsFromJSONDoc : No default_lighting "
-           "specified for scene "
-        << attribsDispName << ".";
+    LOG(WARNING) << "::setValsFromJSONDoc : No default_lighting "
+                    "specified for scene "
+                 << attribsDispName << ".";
   }
 
   std::string navmeshName = "";
@@ -100,10 +97,9 @@ void SceneAttributesManager::setValsFromJSONDoc(
     // if "navmesh_instance" is specified in scene json set value.
     attribs->setNavmeshHandle(navmeshName);
   } else {
-    LOG(WARNING)
-        << "SceneAttributesManager::setValsFromJSONDoc : No navmesh_instance "
-           "specified for scene "
-        << attribsDispName << ".";
+    LOG(WARNING) << "::setValsFromJSONDoc : No navmesh_instance "
+                    "specified for scene "
+                 << attribsDispName << ".";
   }
 
   std::string semanticDesc = "";
@@ -112,8 +108,8 @@ void SceneAttributesManager::setValsFromJSONDoc(
     // if "semantic scene instance" is specified in scene json set value.
     attribs->setSemanticSceneHandle(semanticDesc);
   } else {
-    LOG(WARNING) << "SceneAttributesManager::setValsFromJSONDoc : No "
-                    "semantic_scene_instance specified for scene "
+    LOG(WARNING) << "::setValsFromJSONDoc : No semantic_scene_instance "
+                    "specified for scene "
                  << attribsDispName << ".";
   }
   // check for user defined attributes
@@ -154,12 +150,11 @@ SceneAttributesManager::createInstanceAttributesFromJSON(
     if (found != SceneObjectInstanceAttributes::MotionTypeNamesMap.end()) {
       motionTypeVal = static_cast<int>(found->second);
     } else {
-      LOG(WARNING)
-          << "SceneAttributesManager::createInstanceAttributesFromJSON : "
-             "motion_type value in json  : `"
-          << tmpVal << "|" << strToLookFor
-          << "` does not map to a valid physics::MotionType value, so "
-             "defaulting motion type to MotionType::UNDEFINED.";
+      LOG(WARNING) << "::createInstanceAttributesFromJSON : motion_type value "
+                      "in json  : `"
+                   << tmpVal << "|" << strToLookFor
+                   << "` does not map to a valid physics::MotionType value, so "
+                      "defaulting motion type to MotionType::UNDEFINED.";
     }
   }
   instanceAttrs->setMotionType(motionTypeVal);
@@ -200,12 +195,12 @@ int SceneAttributesManager::getTranslationOriginVal(
     if (found != SceneAttributes::InstanceTranslationOriginMap.end()) {
       transOrigin = static_cast<int>(found->second);
     } else {
-      LOG(WARNING) << "SceneAttributesManager::getTranslationOriginVal : "
-                      "motion_type value in json  : `"
-                   << tmpTransOriginVal << "|" << strToLookFor
-                   << "` does not map to a valid "
-                      "SceneInstanceTranslationOrigin value, so defaulting "
-                      "motion type to SceneInstanceTranslationOrigin::Unknown.";
+      LOG(WARNING)
+          << "::getTranslationOriginVal : motion_type value in json  : `"
+          << tmpTransOriginVal << "|" << strToLookFor
+          << "` does not map to a valid "
+             "SceneInstanceTranslationOrigin value, so defaulting "
+             "motion type to SceneInstanceTranslationOrigin::Unknown.";
     }
   }
   return transOrigin;

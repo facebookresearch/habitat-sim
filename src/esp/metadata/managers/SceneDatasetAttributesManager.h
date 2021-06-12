@@ -123,17 +123,6 @@ class SceneDatasetAttributesManager
                                   const U& attrMgr);
 
   /**
-   * @brief Internally used warning message if a cell in the dataset
-   * configuration is present but improperly configred.
-   * @param tag the name of the cell
-   */
-  void dispCellConfigError(const std::string& tag) {
-    LOG(WARNING)
-        << "SceneDatasetAttributesManager::readDatasetJSONCell : \"" << tag
-        << "\" cell in JSON config not appropriately configured. Skipping.";
-  }
-
-  /**
    * @brief Used Internally.  Create and configure newly-created dataset
    * attributes with any default values, before any specific values are set.
    *
