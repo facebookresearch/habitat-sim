@@ -331,7 +331,7 @@ void SceneDatasetAttributesManager::readDatasetConfigsJSONCell(
     // assets will be named relative to this.
     attr->setFileDirectory(dsDir);
 
-    // object is available now. Modify it using json tag data
+    // default object is available now. Modify it using json tag data
     attrMgr->setValsFromJSONDoc(attr, jCell["attributes"]);
     // register object
     attrMgr->registerObject(attr, regHandle);

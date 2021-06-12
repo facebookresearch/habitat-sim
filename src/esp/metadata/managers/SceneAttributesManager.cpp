@@ -63,22 +63,23 @@ void SceneAttributesManager::setValsFromJSONDoc(
                  << attribsDispName << ", or specification error.";
   }
   // Check for object instances existance
-  if ((jsonConfig.HasMember("object_instances")) &&
-      (jsonConfig["object_instances"].IsArray())) {
-    const auto& objectArray = jsonConfig["object_instances"];
-    for (rapidjson::SizeType i = 0; i < objectArray.Size(); i++) {
-      const auto& objCell = objectArray[i];
-      if (objCell.IsObject()) {
-        attribs->addObjectInstance(createInstanceAttributesFromJSON(objCell));
-      } else {
-        LOG(WARNING)
-            << "::setValsFromJSONDoc : Object specification error in scene "
-            << attribsDispName << " at idx : " << i << ".";
+  if (jsonConfig.HasMember("object_instances")) {
+    if (jsonConfig["object_instances"].IsArray()) {
+      const auto& objectArray = jsonConfig["object_instances"];
+      for (rapidjson::SizeType i = 0; i < objectArray.Size(); i++) {
+        const auto& objCell = objectArray[i];
+        if (objCell.IsObject()) {
+          attribs->addObjectInstance(createInstanceAttributesFromJSON(objCell));
+        } else {
+          LOG(WARNING)
+              << "::setValsFromJSONDoc : Object specification error in scene "
+              << attribsDispName << " at idx : " << i << ".";
+        }
       }
+    } else {
+      LOG(WARNING) << "::setValsFromJSONDoc : No Objects specified for scene "
+                   << attribsDispName << ", or specification error.";
     }
-  } else {
-    LOG(WARNING) << "::setValsFromJSONDoc : No Objects specified for scene "
-                 << attribsDispName << ", or specification error.";
   }
   std::string dfltLighting = "";
   if (io::readMember<std::string>(jsonConfig, "default_lighting",
