@@ -116,6 +116,13 @@ class CubeMapCamera : public RenderCamera {
    */
   CubeMapCamera& restoreTransformation();
 
+  /**
+   * @brief return the camera local transformation matrix when it is about to
+   * render a specific cube face.
+   */
+  static Magnum::Matrix4 getCameraLocalTransform(
+      Mn::GL::CubeMapCoordinate cubeSideIndex);
+
  protected:
   // viewing matrix (in parent node space) computed by Mn::Matrix4::lookAt(eye,
   // target, up)

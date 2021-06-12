@@ -75,7 +75,7 @@ StageAttributes::StageAttributes(const std::string& handle)
   setGravity({0, -9.8, 0});
   setOrigin({0, 0, 0});
   // default to unknown for stages
-  setShaderType(static_cast<int>(ObjectInstanceShaderType::Unknown));
+  setShaderType(static_cast<int>(ObjectInstanceShaderType::Flat));
   // TODO remove this once ShaderType support is complete
   setRequiresLighting(false);
   // 0 corresponds to esp::assets::AssetType::UNKNOWN->treated as general mesh
