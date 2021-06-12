@@ -597,7 +597,7 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
                                  const nav::NavMeshSettings& navMeshSettings,
                                  bool includeStaticObjects) {
   CORRADE_ASSERT(config_.createRenderer,
-                 "Simulator::recomputeNavMesh: "
+                 "::recomputeNavMesh: "
                  "SimulatorConfiguration::createRenderer is "
                  "false. Scene geometry is required to recompute navmesh. No "
                  "geometry is "

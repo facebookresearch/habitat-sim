@@ -783,7 +783,7 @@ void ResourceManager::computePTexMeshAbsoluteAABBs(
 
   CORRADE_ASSERT(
       absTransforms.size() == staticDrawableInfo.size(),
-      "ResourceManager::computePTexMeshAbsoluteAABBs: number of "
+      "::computePTexMeshAbsoluteAABBs: number of "
       "transformations does not match number of drawables. Aborting.", );
 
   // obtain the sub-meshes within the ptex mesh
@@ -811,7 +811,7 @@ void ResourceManager::computeGeneralMeshAbsoluteAABBs(
       computeAbsoluteTransformations(staticDrawableInfo);
 
   CORRADE_ASSERT(absTransforms.size() == staticDrawableInfo.size(),
-                 "ResourceManager::computeGeneralMeshAbsoluteAABBs: number of "
+                 "::computeGeneralMeshAbsoluteAABBs: number of "
                  "transforms does not match number of drawables.", );
 
   for (uint32_t iEntry = 0; iEntry < absTransforms.size(); ++iEntry) {
@@ -820,7 +820,7 @@ void ResourceManager::computeGeneralMeshAbsoluteAABBs(
     Cr::Containers::Optional<Magnum::Trade::MeshData>& meshData =
         meshes_.at(meshID)->getMeshData();
     CORRADE_ASSERT(meshData,
-                   "ResourceManager::computeGeneralMeshAbsoluteAABBs: The mesh "
+                   "::computeGeneralMeshAbsoluteAABBs: The mesh "
                    "data specified at ID:"
                        << meshID << "is empty/undefined. Aborting", );
 
@@ -855,10 +855,9 @@ void ResourceManager::computeInstanceMeshAbsoluteAABBs(
   std::vector<Mn::Matrix4> absTransforms =
       computeAbsoluteTransformations(staticDrawableInfo);
 
-  CORRADE_ASSERT(
-      absTransforms.size() == staticDrawableInfo.size(),
-      "ResourceManager::computeInstancelMeshAbsoluteAABBs: Number of "
-      "transforms does not match number of drawables. Aborting.", );
+  CORRADE_ASSERT(absTransforms.size() == staticDrawableInfo.size(),
+                 "::computeInstancelMeshAbsoluteAABBs: Number of "
+                 "transforms does not match number of drawables. Aborting.", );
 
   for (size_t iEntry = 0; iEntry < absTransforms.size(); ++iEntry) {
     const int meshID = staticDrawableInfo[iEntry].meshID;
@@ -890,7 +889,7 @@ std::vector<Mn::Matrix4> ResourceManager::computeAbsoluteTransformations(
   auto* scene = dynamic_cast<MagnumScene*>(staticDrawableInfo[0].node.scene());
 
   CORRADE_ASSERT(scene != nullptr,
-                 "ResourceManager::computeAbsoluteTransformations: The node is "
+                 "::computeAbsoluteTransformations: The node is "
                  "not attached to any scene graph. Aborting.",
                  {});
 
@@ -1031,11 +1030,10 @@ bool ResourceManager::loadRenderAssetPTex(const AssetInfo& info) {
   meshMetaData.root.transformFromLocalToParent =
       R * meshMetaData.root.transformFromLocalToParent;
 
-  CORRADE_ASSERT(
-      meshMetaData.meshIndex.first == meshMetaData.meshIndex.second,
-      "ResourceManager::loadRenderAssetPTex: ptex mesh is not loaded "
-      "correctly. Aborting.",
-      false);
+  CORRADE_ASSERT(meshMetaData.meshIndex.first == meshMetaData.meshIndex.second,
+                 "::loadRenderAssetPTex: ptex mesh is not loaded "
+                 "correctly. Aborting.",
+                 false);
 
   return true;
 #else
@@ -1727,7 +1725,7 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
     */
     CORRADE_ASSERT(
         material.hasNoneRoughnessMetallicTexture(),
-        "ResourceManager::buildPbrShadedMaterialData(): if both the metallic "
+        "::buildPbrShadedMaterialData(): if both the metallic "
         "and roughness texture exist, they must be packed in the same texture "
         "based on glTF 2.0 Spec.",
         finalMaterial);
@@ -1736,7 +1734,7 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
   // TODO:
   // Support NormalRoughnessMetallicTexture packing
   CORRADE_ASSERT(!material.hasNormalRoughnessMetallicTexture(),
-                 "ResourceManager::buildPbrShadedMaterialData(): "
+                 "::buildPbrShadedMaterialData(): "
                  "Sorry. NormalRoughnessMetallicTexture is not supported in "
                  "the current version. We will work on it.",
                  finalMaterial);
@@ -1907,7 +1905,7 @@ bool ResourceManager::instantiateAssetsOnDemand(
     CORRADE_ASSERT(
         (ID_UNDEFINED != getObjectAttributesManager()->registerObject(
                              objectAttributes, objectTemplateHandle)),
-        "ResourceManager::instantiateAssetsOnDemand : Unknown failure "
+        "::instantiateAssetsOnDemand : Unknown failure "
         "attempting to register modified template :"
             << objectTemplateHandle
             << "before asset instantiation.  Aborting. ",
