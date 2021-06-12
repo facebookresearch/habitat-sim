@@ -188,7 +188,7 @@ class AttributesManager
    */
   bool parseUserDefinedJsonVals(
       const attributes::AbstractAttributes::ptr& attribs,
-      const io::JsonGenericValue& jsonConfig);
+      const io::JsonGenericValue& jsonConfig) const;
 
   /**
    * @brief Return a properly formated JSON file name for the attributes
@@ -392,7 +392,7 @@ auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
 template <class T, core::ManagedObjectAccess Access>
 bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
     const attributes::AbstractAttributes::ptr& attribs,
-    const io::JsonGenericValue& jsonConfig) {
+    const io::JsonGenericValue& jsonConfig) const {
   // check for user defined attributes
   if (jsonConfig.HasMember("user_defined")) {
     if (!jsonConfig["user_defined"].IsObject()) {

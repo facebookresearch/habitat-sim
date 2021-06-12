@@ -74,6 +74,11 @@ class RigidObject;
 namespace nav {
 class PathFinder;
 }
+namespace io {
+namespace URDF {
+class Model;
+}
+}  // namespace io
 namespace assets {
 
 /**
@@ -216,6 +221,16 @@ class ResourceManager {
    */
   bool instantiateAssetsOnDemand(
       const metadata::attributes::ObjectAttributes::ptr& ObjectAttributes);
+
+  /**
+   * @brief Load/import any required render and collision assets for an
+   * ArticulatedObject before instantiating it.
+   *
+   * @param model The URDF::Model describing the ArticulatedObject and
+   * referencing its assets.
+   * @return Whether or not the import was successful.
+   */
+  bool importURDFAssets(io::URDF::Model& model);
 
   //======== Accessor functions ========
   /**

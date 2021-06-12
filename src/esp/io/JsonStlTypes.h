@@ -119,7 +119,47 @@ inline bool readMember(const JsonGenericValue& d,
     }
   }  // if has tag
   return false;
-}  // readMember<Magnum::Vector3>
+}  //  readMember<std::map<std::string, std::string>>
+
+/**
+ * @brief Specialization to handle reading a JSON object into an
+ * std::map<std::string, float>.  Check passed json doc for existence of
+ * passed @p tag and verify it is an object. If present, populate passed @p val
+ * with key-value pairs in cell. Returns whether tag is found and successfully
+ * populated, or not. Logs an error if tag is found but is inappropriately
+ * configured
+ *
+ * @param d json document to parse
+ * @param tag string tag to look for in json doc
+ * @param val destination std::map to be populated
+ * @return whether successful or not
+ */
+
+template <>
+inline bool readMember(const JsonGenericValue& d,
+                       const char* tag,
+                       std::map<std::string, float>& val) {
+  if (d.HasMember(tag)) {
+    if (d[tag].IsObject()) {
+      const auto& jCell = d[tag];
+      for (rapidjson::Value::ConstMemberIterator it = jCell.MemberBegin();
+           it != jCell.MemberEnd(); ++it) {
+        const std::string key = it->name.GetString();
+        if (it->value.IsFloat()) {
+          val.emplace(key, it->value.GetFloat());
+        } else {
+          LOG(ERROR) << "Invalid float value specified in JSON config " << tag
+                     << " at " << key << ". Skipping.";
+        }
+      }  // for each value
+      return true;
+    } else {  // if member is object
+      LOG(ERROR) << "Invalid JSON Object value specified in JSON config at "
+                 << tag << "; Unable to populate std::map.";
+    }
+  }  // if has tag
+  return false;
+}  //  readMember<std::map<std::string, float>>
 
 }  // namespace io
 }  // namespace esp

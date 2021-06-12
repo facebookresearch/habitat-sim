@@ -15,9 +15,15 @@
 #include <Magnum/BulletIntegration/MotionState.h>
 #include <btBulletDynamicsCommon.h>
 
+#include "BulletDynamics/ConstraintSolver/btPoint2PointConstraint.h"
 #include "BulletDynamics/Featherstone/btMultiBodyConstraintSolver.h"
+#include "BulletDynamics/Featherstone/btMultiBodyFixedConstraint.h"
+#include "BulletDynamics/Featherstone/btMultiBodyJointMotor.h"
+#include "BulletDynamics/Featherstone/btMultiBodyPoint2Point.h"
+
 #include "BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h"
 
+#include "BulletDebugManager.h"
 #include "BulletRigidObject.h"
 #include "BulletRigidStage.h"
 #include "esp/physics/PhysicsManager.h"
@@ -52,16 +58,76 @@ class BulletPhysicsManager : public PhysicsManager {
   explicit BulletPhysicsManager(
       assets::ResourceManager& _resourceManager,
       const metadata::attributes::PhysicsManagerAttributes::cptr&
-          _physicsManagerAttributes)
-      : PhysicsManager(_resourceManager, _physicsManagerAttributes) {
-    collisionObjToObjIds_ =
-        std::make_shared<std::map<const btCollisionObject*, int>>();
-  };
+          _physicsManagerAttributes);
 
   /** @brief Destructor which destructs necessary Bullet physics structures.*/
   ~BulletPhysicsManager() override;
 
   //============ Simulator functions =============
+
+  /**
+   * @brief Load, parse, and import a URDF file instantiating an @ref
+   * BulletArticulatedObject in the world.  This version does not require
+   * drawables to be specified.
+   * @param filepath The fully-qualified filename for the URDF file describing
+   * the model the articulated object is to be built from.
+   * @param fixedBase Whether the base of the @ref ArticulatedObject should be
+   * fixed.
+   * @param globalScale A scale multiplier to be applied uniformly in 3
+   * dimensions to the entire @ref ArticulatedObject.
+   * @param massScale A scale multiplier to be applied to the mass of the all
+   * the components of the @ref ArticulatedObject.
+   * @param forceReload If true, reload the source URDF from file, replacing the
+   * cached model.
+   *
+   * @return A unique id for the @ref ArticulatedObject, allocated from the same
+   * id set as rigid objects.
+   */
+  int addArticulatedObjectFromURDF(const std::string& filepath,
+                                   bool fixedBase = false,
+                                   float globalScale = 1.0,
+                                   float massScale = 1.0,
+                                   bool forceReload = false) override;
+
+  /**
+   * @brief Load, parse, and import a URDF file instantiating an @ref
+   * BulletArticulatedObject in the world.
+   * @param filepath The fully-qualified filename for the URDF file describing
+   * the model the articulated object is to be built from.
+   * @param drawables Reference to the scene graph drawables group to enable
+   * rendering of the newly initialized @ref ArticulatedObject.
+   * @param fixedBase Whether the base of the @ref ArticulatedObject should be
+   * fixed.
+   * @param globalScale A scale multiplier to be applied uniformly in 3
+   * dimensions to the entire @ref ArticulatedObject.
+   * @param massScale A scale multiplier to be applied to the mass of the all
+   * the components of the @ref ArticulatedObject.
+   * @param forceReload If true, reload the source URDF from file, replacing the
+   * cached model.
+   *
+   * @return A unique id for the @ref ArticulatedObject, allocated from the same
+   * id set as rigid objects.
+   */
+  int addArticulatedObjectFromURDF(const std::string& filepath,
+                                   DrawableGroup* drawables,
+                                   bool fixedBase = false,
+                                   float globalScale = 1.0,
+                                   float massScale = 1.0,
+                                   bool forceReload = false) override;
+
+  /**
+   * @brief Override of @ref PhysicsManager::removeObject to also remove any
+   * active Bullet physics constraints for the object.
+   */
+  void removeObject(const int physObjectID,
+                    bool deleteObjectNode = true,
+                    bool deleteVisualNode = true) override;
+
+  /**
+   * @brief Override of @ref PhysicsManager::removeArticulatedObject to also
+   * remove any active Bullet physics constraints for the object.
+   */
+  void removeArticulatedObject(int id) override;
 
   /** @brief Step the physical world forward in time. Time may only advance in
    * increments of @ref fixedTimeStep_. See @ref
@@ -143,6 +209,15 @@ class BulletPhysicsManager : public PhysicsManager {
   void debugDraw(const Magnum::Matrix4& projTrans) const override;
 
   /**
+   * @brief Return ContactPointData objects describing the contacts from the
+   * most recent physics substep.
+   *
+   * This implementation is roughly identical to PyBullet's getContactPoints.
+   * @return a vector with each entry corresponding to a single contact point.
+   */
+  std::vector<ContactPointData> getContactPoints() const override;
+
+  /**
    * @brief Cast a ray into the collision world and return a @ref RaycastResults
    * with hit information.
    *
@@ -154,6 +229,137 @@ class BulletPhysicsManager : public PhysicsManager {
    */
   RaycastResults castRay(const esp::geo::Ray& ray,
                          double maxDistance = 100.0) override;
+
+  //============ Point To Point Constraints =============
+
+  /**
+   * @brief Create a ball&socket joint to constrain a DYNAMIC RigidObject
+   * provided a position in local or global coordinates.
+   * @param objectId The id of the RigidObject to constrain.
+   * @param position The position of the ball and socket joint pivot.
+   * @param positionLocal Indicates whether the position is provided in global
+   * or object local coordinates.
+   * @return The unique id of the new constraint.
+   */
+  int createRigidP2PConstraint(int objectId,
+                               const Magnum::Vector3& position,
+                               bool positionLocal = true) override;
+
+  // point2point constraint between multibody and rigid body
+  int createArticulatedP2PConstraint(
+      int articulatedObjectId,
+      int linkId,
+      int objectId,
+      float maxImpulse,
+      const Corrade::Containers::Optional<Magnum::Vector3>& pivotA,
+      const Corrade::Containers::Optional<Magnum::Vector3>& pivotB) override;
+
+  int createArticulatedFixedConstraint(
+      int articulatedObjectId,
+      int linkId,
+      int objectId,
+      float maxImpulse,
+      const Corrade::Containers::Optional<Magnum::Vector3>& pivotA,
+      const Corrade::Containers::Optional<Magnum::Vector3>& pivotB) override;
+
+  /**
+   * @brief Create a ball&socket joint to constrain two links of two
+   * ArticulatedObjects to one another with local offsets for each.
+   * @param articulatedObjectIdA The id of the first ArticulatedObject to
+   * constrain.
+   * @param linkIdA The local id of the first ArticulatedLink to constrain.
+   * @param linkOffsetA The position of the first ball and socket joint pivot in
+   * link A local space.
+   * @param articulatedObjectIdB The id of the second ArticulatedObject to
+   * constrain.
+   * @param linkIdB The local id of the second ArticulatedLink to constrain.
+   * @param linkOffsetB The position of the ball and socket joint pivot in link
+   * B local space.
+   * @return The unique id of the new constraint.
+   */
+  int createArticulatedP2PConstraint(int articulatedObjectIdA,
+                                     int linkIdA,
+                                     const Magnum::Vector3& linkOffsetA,
+                                     int articulatedObjectIdB,
+                                     int linkIdB,
+                                     const Magnum::Vector3& linkOffsetB,
+                                     float maxImpulse = 2.0) override;
+
+  /**
+   * @brief Create a ball&socket joint to constrain two links of two
+   * ArticulatedObjects to one another at some global point.
+   * @param articulatedObjectIdA The id of the first ArticulatedObject to
+   * constrain.
+   * @param linkIdA The local id of the first ArticulatedLink to constrain.
+   * @param articulatedObjectIdB The id of the second ArticulatedObject to
+   * constrain.
+   * @param linkIdB The local id of the second ArticulatedLink to constrain.
+   * @param globalConstraintPoint The position of the ball and socket joint
+   * pivot in global space.
+   * @return The unique id of the new constraint.
+   */
+  int createArticulatedP2PConstraint(
+      int articulatedObjectIdA,
+      int linkIdA,
+      int articulatedObjectIdB,
+      int linkIdB,
+      const Magnum::Vector3& globalConstraintPoint,
+      float maxImpulse = 2.0) override;
+
+  /**
+   * @brief Create a ball&socket joint to constrain a single link of an
+   * ArticulatedObject provided a position in global coordinates and a local
+   * offset.
+   * @param articulatedObjectId The id of the ArticulatedObject to constrain.
+   * @param linkId The local id of the ArticulatedLink to constrain.
+   * @param linkOffset The position of the ball and socket joint pivot in link
+   * local coordinates.
+   * @param pickPos The global position of the ball and socket joint pivot.
+   * @return The unique id of the new constraint.
+   */
+  int createArticulatedP2PConstraint(int articulatedObjectId,
+                                     int linkId,
+                                     const Magnum::Vector3& linkOffset,
+                                     const Magnum::Vector3& pickPos,
+                                     float maxImpulse = 2.0) override;
+
+  /**
+   * @brief Create a ball&socket joint to constrain a single link of an
+   * ArticulatedObject provided a position in global coordinates.
+   * @param articulatedObjectId The id of the ArticulatedObject to constrain.
+   * @param linkId The local id of the ArticulatedLink to constrain.
+   * @param pickPos The global position of the ball and socket joint pivot.
+   * @return The unique id of the new constraint.
+   */
+  int createArticulatedP2PConstraint(int articulatedObjectId,
+                                     int linkId,
+                                     const Magnum::Vector3& pickPos,
+                                     float maxImpulse = 2.0) override;
+
+  /**
+   * @brief Update the position target (pivot) of a constraint. Note: intended
+   * only for use with (object -> world) constraints, rather than (object <->
+   * object) constraints.
+   * @param p2pId The id of the constraint to update.
+   * @param pivot The new position target of the constraint.
+   */
+  void updateP2PConstraintPivot(int p2pId,
+                                const Magnum::Vector3& pivot) override;
+
+  /**
+   * @brief Remove a constraint by id.
+   * @param constraintId The id of the constraint to remove.
+   */
+  void removeConstraint(int constraintId) override;
+
+  int nextConstraintId_ = 0;
+  std::map<int, btMultiBodyPoint2Point*> articulatedP2ps;
+  std::map<int, btMultiBodyFixedConstraint*> articulatedFixedConstraints;
+  std::map<int, btPoint2PointConstraint*> rigidP2ps;
+
+  //! Maps object ids to a list of active constraints referencing the object for
+  //! use in constraint clean-up and object sleep state management.
+  std::map<int, std::vector<int>> objectConstraints_;
 
   /**
    * @brief Query the number of contact points that were active during the
@@ -168,14 +374,13 @@ class BulletPhysicsManager : public PhysicsManager {
    */
   int getNumActiveContactPoints() override;
 
-  /**
-   * @brief Return ContactPointData objects describing the contacts from the
-   * most recent physics substep.
-   *
-   * This implementation is roughly identical to PyBullet's getContactPoints.
-   * @return a vector with each entry corresponding to a single contact point.
-   */
-  std::vector<ContactPointData> getContactPoints() const override;
+  int getNumActiveOverlappingPairs() override {
+    return BulletDebugManager::get().getNumActiveOverlappingPairs(
+        bWorld_.get());
+  }
+  std::string getStepCollisionSummary() override {
+    return BulletDebugManager::get().getStepCollisionSummary(bWorld_.get());
+  }
 
   /**
    * @brief Perform discrete collision detection for the scene.
@@ -205,6 +410,13 @@ class BulletPhysicsManager : public PhysicsManager {
    * Overridden if called by dynamics-library-enabled PhysicsManager
    */
   esp::physics::ManagedRigidObject::ptr getRigidObjectWrapper() override;
+
+  /**
+   * @brief Create an articulated object wrapper appropriate for this physics
+   * manager. Overridden if called by dynamics-library-enabled PhysicsManager
+   */
+  esp::physics::ManagedArticulatedObject::ptr getArticulatedObjectWrapper()
+      override;
 
   //============ Object/Stage Instantiation =============
   /**

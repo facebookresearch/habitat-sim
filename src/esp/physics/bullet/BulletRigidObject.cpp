@@ -14,6 +14,7 @@
 #include "BulletCollision/CollisionShapes/btConvexTriangleMeshShape.h"
 #include "BulletCollision/Gimpact/btGImpactShape.h"
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
+#include "BulletDebugManager.h"
 #include "BulletRigidObject.h"
 
 //!  A Few considerations in construction
@@ -322,6 +323,25 @@ void BulletRigidObject::syncPose() {
   bWorld_->updateSingleAabb(bObjectRigidBody_.get());
 }  // syncPose
 
+std::string BulletRigidObject::getCollisionDebugName() {
+  // extract a concise name from the handle by trimming directories and file
+  // extensions
+  // TODO: test this for missing '/' or '.'
+  const auto& handle = initializationAttributes_->getHandle();
+  auto start = handle.rfind('/');
+  if (start == std::string::npos) {
+    start = 0;
+  } else {
+    start++;
+  }
+  auto end = handle.find('.', start);
+  if (end == std::string::npos) {
+    end = handle.length();
+  }
+  auto adjustedHandle = handle.substr(start, end - start);
+  return "RigidObject, " + adjustedHandle + ", id " + std::to_string(objectId_);
+}
+
 void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
   // get this object's creation template, appropriately cast
   auto tmpAttr = getInitializationAttributes();
@@ -382,6 +402,8 @@ void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
   }
   bObjectRigidBody_ = std::make_unique<btRigidBody>(info);
   collisionObjToObjIds_->emplace(bObjectRigidBody_.get(), objectId_);
+  BulletDebugManager::get().mapCollisionObjectTo(bObjectRigidBody_.get(),
+                                                 getCollisionDebugName());
 
   // add the object to the world
   if (mt == MotionType::STATIC) {
@@ -499,6 +521,15 @@ Magnum::Range3D BulletRigidObject::getCollisionShapeAabb() const {
   return Magnum::Range3D{Magnum::Vector3{localAabbMin},
                          Magnum::Vector3{localAabbMax}};
 }  // getCollisionShapeAabb
+
+bool BulletRigidObject::isMe(const btCollisionObject* collisionObject) {
+  for (auto& sceneObj : bStaticCollisionObjects_) {
+    if (sceneObj.get() == collisionObject) {
+      return true;
+    }
+  }
+  return (bObjectRigidBody_.get() == collisionObject);
+}
 
 void BulletRigidObject::updateNodes(bool force) {
   isDeferringUpdate_ = false;

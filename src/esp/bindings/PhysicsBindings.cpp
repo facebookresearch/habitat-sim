@@ -35,6 +35,37 @@ void initPhysicsBindings(py::module& m) {
       .def("integrate_transform", &VelocityControl::integrateTransform, "dt"_a,
            "rigid_state"_a);
 
+  // ==== enum articulated JointType ====
+  py::enum_<JointType>(m, "JointType")
+      .value("Revolute", JointType::Revolute)
+      .value("Prismatic", JointType::Prismatic)
+      .value("Spherical", JointType::Spherical)
+      .value("Planar", JointType::Planar)
+      .value("Fixed", JointType::Fixed)
+      .value("Invalid", JointType::Invalid);
+
+  // ==== enum object JointMotorType ====
+  py::enum_<JointMotorType>(m, "JointMotorType")
+      .value("SingleDof", JointMotorType::SingleDof)
+      .value("Spherical", JointMotorType::Spherical);
+
+  // ==== struct object JointMotorSettings ====
+  py::class_<JointMotorSettings, JointMotorSettings::ptr>(m,
+                                                          "JointMotorSettings")
+      .def(py::init(&JointMotorSettings::create<>))
+      .def(py::init(
+          &JointMotorSettings::create<double, double, double, double, double>))
+      .def_readwrite("position_target", &JointMotorSettings::positionTarget)
+      .def_readwrite("spherical_position_target",
+                     &JointMotorSettings::sphericalPositionTarget)
+      .def_readwrite("position_gain", &JointMotorSettings::positionGain)
+      .def_readwrite("velocity_target", &JointMotorSettings::velocityTarget)
+      .def_readwrite("spherical_velocity_target",
+                     &JointMotorSettings::sphericalVelocityTarget)
+      .def_readwrite("velocity_gain", &JointMotorSettings::velocityGain)
+      .def_readwrite("max_impulse", &JointMotorSettings::maxImpulse)
+      .def_readwrite("motor_type", &JointMotorSettings::motorType);
+
   // ==== struct object RayHitInfo ====
   py::class_<RayHitInfo, RayHitInfo::ptr>(m, "RayHitInfo")
       .def(py::init(&RayHitInfo::create<>))

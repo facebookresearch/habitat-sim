@@ -44,6 +44,7 @@
 #include "esp/gfx/MaterialUtil.h"
 #include "esp/gfx/PbrDrawable.h"
 #include "esp/gfx/replay/Recorder.h"
+#include "esp/io/URDFParser.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 #include "esp/physics/PhysicsManager.h"
@@ -560,7 +561,10 @@ bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
     AssetInfo defaultInfo(info);
     defaultInfo.overridePhongMaterial = Cr::Containers::NullOpt;
 
-    if (info.type == AssetType::FRL_PTEX_MESH) {
+    if (info.type == AssetType::PRIMITIVE) {
+      buildPrimitiveAssetData(info.filepath);
+      meshSuccess = true;
+    } else if (info.type == AssetType::FRL_PTEX_MESH) {
       meshSuccess = loadRenderAssetPTex(defaultInfo);
     } else if (info.type == AssetType::INSTANCE_MESH) {
       meshSuccess = loadRenderAssetIMesh(defaultInfo);
@@ -573,8 +577,10 @@ bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
 
     if (meshSuccess) {
       // create and register the collisionMeshGroups
-      std::vector<CollisionMeshData> meshGroup;
-      ASSERT(buildMeshGroups(defaultInfo, meshGroup));
+      if (info.type != AssetType::PRIMITIVE) {
+        std::vector<CollisionMeshData> meshGroup;
+        ASSERT(buildMeshGroups(defaultInfo, meshGroup));
+      }
 
       if (gfxReplayRecorder_) {
         gfxReplayRecorder_->onLoadRenderAsset(defaultInfo);
@@ -611,9 +617,11 @@ bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
           node->materialID = materialId;
         }
       }
-      // clone the collision data
-      collisionMeshGroups_.emplace(modifiedAssetName,
-                                   collisionMeshGroups_.at(info.filepath));
+      if (info.type != AssetType::PRIMITIVE) {
+        // clone the collision data
+        collisionMeshGroups_.emplace(modifiedAssetName,
+                                     collisionMeshGroups_.at(info.filepath));
+      }
 
       if (gfxReplayRecorder_) {
         gfxReplayRecorder_->onLoadRenderAsset(info);
@@ -1985,6 +1993,81 @@ bool ResourceManager::instantiateAssetsOnDemand(
 
   return true;
 }  // ResourceManager::instantiateAssetsOnDemand
+
+bool ResourceManager::importURDFAssets(io::URDF::Model& model) {
+  bool importSuccess = true;
+  for (size_t linkIx = 0; linkIx < model.m_links.size(); ++linkIx) {
+    auto link = model.getLink(linkIx);
+    // load collision shapes
+    for (auto& collision : link->m_collisionArray) {
+      if (collision.m_geometry.m_type == io::URDF::GEOM_MESH) {
+        // pre-load the mesh asset for its collision shape
+        assets::AssetInfo meshAsset{assets::AssetType::UNKNOWN,
+                                    collision.m_geometry.m_meshFileName};
+        importSuccess = loadRenderAsset(meshAsset);
+      }
+      if (!importSuccess) {
+        break;
+      }
+    }
+    if (!importSuccess) {
+      break;
+    }
+    // pre-load visual meshes and primitive asset variations and cache the
+    // handle
+    for (auto& visual : link->m_visualArray) {
+      assets::AssetInfo visualMeshInfo{assets::AssetType::UNKNOWN};
+      visualMeshInfo.requiresLighting = true;
+
+      std::shared_ptr<io::URDF::Material> material =
+          visual.m_geometry.m_localMaterial;
+      if (material) {
+        visualMeshInfo.overridePhongMaterial = assets::PhongMaterialColor();
+        visualMeshInfo.overridePhongMaterial->ambientColor =
+            material->m_matColor.m_rgbaColor;
+        visualMeshInfo.overridePhongMaterial->diffuseColor =
+            material->m_matColor.m_rgbaColor;
+        visualMeshInfo.overridePhongMaterial->specularColor =
+            Mn::Color4(material->m_matColor.m_specularColor);
+      }
+      switch (visual.m_geometry.m_type) {
+        case io::URDF::GEOM_CAPSULE: {
+          visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
+          auto assetMgr = getAssetAttributesManager();
+          auto capTemplate = assetMgr->getDefaultCapsuleTemplate(false);
+          // proportions as suggested on magnum docs
+          capTemplate->setHalfLength(0.5 * visual.m_geometry.m_capsuleHeight /
+                                     visual.m_geometry.m_capsuleRadius);
+          assetMgr->registerObject(capTemplate);
+          // cache the new capsule asset handle for later instancing
+          visual.m_geometry.m_meshFileName = capTemplate->getHandle();
+        } break;
+        case io::URDF::GEOM_CYLINDER:
+          visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
+          visualMeshInfo.filepath =
+              "cylinderSolid_rings_1_segments_12_halfLen_1_useTexCoords_false_"
+              "useTangents_false_capEnds_true";
+          break;
+        case io::URDF::GEOM_BOX:
+          visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
+          visualMeshInfo.filepath = "cubeSolid";
+          break;
+        case io::URDF::GEOM_SPHERE:
+          visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
+          visualMeshInfo.filepath = "icosphereSolid_subdivs_1";
+          break;
+        case io::URDF::GEOM_MESH:
+          visualMeshInfo.filepath = visual.m_geometry.m_meshFileName;
+          break;
+        default:
+          Mn::Debug{} << "ResourceManager::importURDFAssets - unsupported "
+                         "visual geometry type.";
+          break;
+      }
+    }
+  }
+  return importSuccess;
+}
 
 void ResourceManager::addObjectToDrawables(
     const ObjectAttributes::ptr& ObjectAttributes,

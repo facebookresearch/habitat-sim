@@ -51,7 +51,7 @@ class PhysicsManagerTest : public testing::Test {
         metadataMediator_->getPhysicsAttributesManager();
   };
 
-  void initStage(const std::string stageFile) {
+  void initStage(const std::string& stageFile) {
     auto& sceneGraph = sceneManager_.getSceneGraph(sceneID_);
     auto& rootNode = sceneGraph.getRootNode();
 
@@ -71,8 +71,8 @@ class PhysicsManagerTest : public testing::Test {
 
     // load scene
     std::vector<int> tempIDs{sceneID_, esp::ID_UNDEFINED};
-    bool result = resourceManager_->loadStage(stageAttributes, physicsManager_,
-                                              &sceneManager_, tempIDs, false);
+    resourceManager_->loadStage(stageAttributes, physicsManager_,
+                                &sceneManager_, tempIDs, false);
 
     rigidObjectManager_ = physicsManager_->getRigidObjectManager();
   }
@@ -791,6 +791,30 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
       rigidObjectManager_->removeAllObjects();
       physicsManager_->reset();  // time=0
     }
+  }
+}
+
+TEST_F(PhysicsManagerTest, TestURDF) {
+  // test loading URDF and simulating an ArticulatedObject
+  LOG(INFO) << "Starting physics test: TestURDF";
+
+  std::string robotFile = Cr::Utility::Directory::join(
+      TEST_ASSETS, "urdf/kuka_iiwa/model_free_base.urdf");
+
+  std::string stageFile = Cr::Utility::Directory::join(
+      dataDir, "test_assets/scenes/simple_room.glb");
+
+  initStage(stageFile);
+
+  // need a library to try loading a URDF
+  if (physicsManager_->getPhysicsSimulationLibrary() !=
+      PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
+    int robotId = physicsManager_->addArticulatedObjectFromURDF(
+        robotFile, &sceneManager_.getSceneGraph(sceneID_).getDrawables());
+
+    ASSERT_NE(robotId, esp::ID_UNDEFINED);
+
+    physicsManager_->stepPhysics(1.0 / 60.0);
   }
 }
 

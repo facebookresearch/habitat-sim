@@ -12,7 +12,10 @@
 #include "BulletCollision/CollisionShapes/btConvexTriangleMeshShape.h"
 #include "BulletCollision/Gimpact/btGImpactShape.h"
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
+#include "BulletDebugManager.h"
 #include "BulletRigidStage.h"
+#include "esp/physics/CollisionGroupHelper.h"
+
 #include "esp/physics/CollisionGroupHelper.h"
 
 namespace esp {
@@ -148,6 +151,9 @@ void BulletRigidStage::constructBulletSceneFromMeshes(
     std::unique_ptr<btRigidBody> sceneCollisionObject =
         std::make_unique<btRigidBody>(cInfo);
     CORRADE_INTERNAL_ASSERT(sceneCollisionObject->isStaticObject());
+    BulletDebugManager::get().mapCollisionObjectTo(
+        sceneCollisionObject.get(),
+        getCollisionDebugName(bStaticCollisionObjects_.size()));
     bStageArrays_.emplace_back(std::move(indexedVertexArray));
     bStageShapes_.emplace_back(std::move(meshShape));
     bStaticCollisionObjects_.emplace_back(std::move(sceneCollisionObject));
@@ -210,6 +216,13 @@ Magnum::Range3D BulletRigidStage::getCollisionShapeAabb() const {
   }
   return combinedAABB;
 }  // getCollisionShapeAabb
+
+std::string BulletRigidStage::getCollisionDebugName(int subpartId) {
+  return "Stage, subpart " + std::to_string(subpartId);
+  // this is reference code to print the full stage handle (filename)
+  // return "Stage, " + initializationAttributes_->getHandle() + ", subpart " +
+  //        std::to_string(subpartId);
+}
 
 }  // namespace physics
 }  // namespace esp

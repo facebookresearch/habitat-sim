@@ -6,18 +6,59 @@
 //#include "BulletCollision/Gimpact/btGImpactShape.h"
 
 #include "BulletPhysicsManager.h"
+#include "BulletArticulatedObject.h"
+#include "BulletDynamics/Featherstone/btMultiBodyLinkCollider.h"
 #include "BulletRigidObject.h"
+#include "BulletURDFImporter.h"
 #include "esp/assets/ResourceManager.h"
+#include "esp/physics/objectManagers/ArticulatedObjectManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
+#include "esp/sim/Simulator.h"
 
 namespace esp {
 namespace physics {
+
+BulletPhysicsManager::BulletPhysicsManager(
+    assets::ResourceManager& _resourceManager,
+    const metadata::attributes::PhysicsManagerAttributes::cptr&
+        _physicsManagerAttributes)
+    : PhysicsManager(_resourceManager, _physicsManagerAttributes) {
+  collisionObjToObjIds_ =
+      std::make_shared<std::map<const btCollisionObject*, int>>();
+  urdfImporter_ = std::make_unique<BulletURDFImporter>(_resourceManager);
+}
 
 BulletPhysicsManager::~BulletPhysicsManager() {
   LOG(INFO) << "Deconstructing BulletPhysicsManager";
 
   existingObjects_.clear();
+  existingArticulatedObjects_.clear();
   staticStageObject_.reset();
+}
+
+void BulletPhysicsManager::removeObject(const int physObjectID,
+                                        bool deleteObjectNode,
+                                        bool deleteVisualNode) {
+  // remove constraints referencing this object
+  if (objectConstraints_.count(physObjectID) > 0) {
+    for (auto c_id : objectConstraints_.at(physObjectID)) {
+      removeConstraint(c_id);
+    }
+    objectConstraints_.erase(physObjectID);
+  }
+  PhysicsManager::removeObject(physObjectID, deleteObjectNode,
+                               deleteVisualNode);
+}
+
+void BulletPhysicsManager::removeArticulatedObject(int id) {
+  // remove constraints referencing this object
+  if (objectConstraints_.count(id) > 0) {
+    for (auto c_id : objectConstraints_.at(id)) {
+      removeConstraint(c_id);
+    }
+    objectConstraints_.erase(id);
+  }
+  PhysicsManager::removeArticulatedObject(id);
 }
 
 bool BulletPhysicsManager::initPhysicsFinalize() {
@@ -70,10 +111,116 @@ bool BulletPhysicsManager::makeAndAddRigidObject(
   return objSuccess;
 }
 
+int BulletPhysicsManager::addArticulatedObjectFromURDF(
+    const std::string& filepath,
+    bool fixedBase,
+    float globalScale,
+    float massScale,
+    bool forceReload) {
+  auto& drawables = simulator_->getDrawableGroup();
+  return addArticulatedObjectFromURDF(filepath, &drawables, fixedBase,
+                                      globalScale, massScale, forceReload);
+}
+
+int BulletPhysicsManager::addArticulatedObjectFromURDF(
+    const std::string& filepath,
+    DrawableGroup* drawables,
+    bool fixedBase,
+    float globalScale,
+    float massScale,
+    bool forceReload) {
+  if (!urdfImporter_->loadURDF(filepath, globalScale, massScale, forceReload)) {
+    Corrade::Utility::Debug() << "E - failed to parse/load URDF file";
+    return ID_UNDEFINED;
+  }
+
+  int articulatedObjectID = allocateObjectID();
+
+  // parse succeeded, attempt to create the articulated object
+  scene::SceneNode* objectNode = &staticStageObject_->node().createChild();
+  BulletArticulatedObject::ptr articulatedObject =
+      BulletArticulatedObject::create(objectNode, resourceManager_,
+                                      articulatedObjectID, bWorld_,
+                                      collisionObjToObjIds_);
+
+  // before initializing the URDF, import all necessary assets in advance
+  resourceManager_.importURDFAssets(*urdfImporter_->getModel());
+
+  bool objectSuccess = articulatedObject->initializeFromURDF(
+      *urdfImporter_, {}, drawables, physicsNode_, fixedBase);
+
+  if (!objectSuccess) {
+    delete objectNode;
+    deallocateObjectID(articulatedObjectID);
+    Magnum::Debug{} << "BulletPhysicsManager::addArticulatedObjectFromURDF: "
+                       "initialization failed, aborting.";
+    return ID_UNDEFINED;
+  }
+
+  // Cr::Utility::Debug() << "Articulated Link Indices: "
+  //                     << articulatedObject->getLinkIds();
+
+  // allocate ids for links
+  for (int linkIx = 0; linkIx < articulatedObject->btMultiBody_->getNumLinks();
+       ++linkIx) {
+    int linkObjectId = allocateObjectID();
+    articulatedObject->objectIdToLinkId_[linkObjectId] = linkIx;
+    collisionObjToObjIds_->emplace(
+        articulatedObject->btMultiBody_->getLinkCollider(linkIx), linkObjectId);
+  }
+  // base collider refers to the articulated object's id
+  collisionObjToObjIds_->emplace(
+      articulatedObject->btMultiBody_->getBaseCollider(), articulatedObjectID);
+
+  existingArticulatedObjects_.emplace(articulatedObjectID,
+                                      std::move(articulatedObject));
+
+  // get a simplified name of the handle for the object
+  std::string simpleArtObjHandle =
+      Corrade::Utility::Directory::splitExtension(
+          Corrade::Utility::Directory::splitExtension(
+              Corrade::Utility::Directory::filename(filepath))
+              .first)
+          .first;
+
+  Magnum::Debug{} << "BulletPhysicsManager::addArticulatedObjectFromURDF: "
+                     "simpleObjectHandle : "
+                  << simpleArtObjHandle;
+
+  std::string newArtObjectHandle =
+      articulatedObjectManager_->getUniqueHandleFromCandidate(
+          simpleArtObjHandle);
+  Magnum::Debug{} << "BulletPhysicsManager::addArticulatedObjectFromURDF: "
+                     "newArtObjectHandle : "
+                  << newArtObjectHandle;
+
+  existingArticulatedObjects_.at(articulatedObjectID)
+      ->setObjectName(newArtObjectHandle);
+
+  // 2.0 Get wrapper - name is irrelevant, do not register on create.
+  ManagedArticulatedObject::ptr AObjWrapper = getArticulatedObjectWrapper();
+
+  // 3.0 Put articulated object in wrapper
+  AObjWrapper->setObjectRef(
+      existingArticulatedObjects_.at(articulatedObjectID));
+
+  // 4.0 register wrapper in manager
+  articulatedObjectManager_->registerObject(AObjWrapper, newArtObjectHandle);
+
+  return articulatedObjectID;
+}  // BulletPhysicsManager::addArticulatedObjectFromURDF
+
 esp::physics::ManagedRigidObject::ptr
 BulletPhysicsManager::getRigidObjectWrapper() {
   // TODO make sure this is appropriately cast
   return rigidObjectManager_->createObject("ManagedBulletRigidObject");
+}
+
+esp::physics::ManagedArticulatedObject::ptr
+BulletPhysicsManager::getArticulatedObjectWrapper() {
+  // TODO make sure this is appropriately cast
+  return articulatedObjectManager_->createObject(
+      "ManagedBulletArticulatedObject");
 }
 
 //! Check if mesh primitive is compatible with physics
@@ -116,6 +263,11 @@ void BulletPhysicsManager::setGravity(const Magnum::Vector3& gravity) {
   for (std::map<int, physics::RigidObject::ptr>::iterator it =
            existingObjects_.begin();
        it != existingObjects_.end(); ++it) {
+    it->second->setActive(true);
+  }
+  for (std::map<int, physics::ArticulatedObject::ptr>::iterator it =
+           existingArticulatedObjects_.begin();
+       it != existingArticulatedObjects_.end(); ++it) {
     it->second->setActive(true);
   }
 }
@@ -165,6 +317,14 @@ void BulletPhysicsManager::stepPhysics(double dt) {
     }
   }
 
+  // extra step to validate joint states against limits for corrective clamping
+  for (auto& objectItr : existingArticulatedObjects_) {
+    if (objectItr.second->getAutoClampJointLimits()) {
+      static_cast<BulletArticulatedObject*>(objectItr.second.get())
+          ->clampJointLimits();
+    }
+  }
+
   // ==== Physics stepforward ======
   // NOTE: worldTime_ will always be a multiple of sceneMetaData_.timestep
   int numSubStepsTaken =
@@ -208,6 +368,327 @@ Magnum::Range3D BulletPhysicsManager::getStageCollisionShapeAabb() const {
 void BulletPhysicsManager::debugDraw(const Magnum::Matrix4& projTrans) const {
   debugDrawer_.setTransformationProjectionMatrix(projTrans);
   bWorld_->debugDrawWorld();
+}
+
+// rigid object -> world
+int BulletPhysicsManager::createRigidP2PConstraint(
+    int objectId,
+    const Magnum::Vector3& position,
+    bool positionLocal) {
+  CHECK(existingObjects_.count(objectId));
+  if (existingObjects_.at(objectId)->getMotionType() == MotionType::DYNAMIC) {
+    btRigidBody* rb =
+        static_cast<BulletRigidObject*>(existingObjects_.at(objectId).get())
+            ->bObjectRigidBody_.get();
+    rb->setActivationState(DISABLE_DEACTIVATION);
+
+    Magnum::Vector3 localOffset = position;
+    if (!positionLocal) {
+      btVector3 localPivot =
+          rb->getCenterOfMassTransform().inverse() * btVector3(position);
+      localOffset = Magnum::Vector3(localPivot);
+    }
+
+    btPoint2PointConstraint* p2p =
+        new btPoint2PointConstraint(*rb, btVector3(localOffset));
+    bWorld_->addConstraint(p2p);
+    rigidP2ps.emplace(nextConstraintId_, p2p);
+    objectConstraints_[objectId].push_back(nextConstraintId_);
+    return nextConstraintId_++;
+  } else {
+    Corrade::Utility::Debug()
+        << "Cannot create a dynamic point-2-point constraint for object with "
+           "MotionType != DYNAMIC";
+    return ID_UNDEFINED;
+  }
+}
+
+// rigid object -> articulated object
+int BulletPhysicsManager::createArticulatedP2PConstraint(
+    int articulatedObjectId,
+    int linkId,
+    int objectId,
+    float maxImpulse,
+    const Corrade::Containers::Optional<Magnum::Vector3>& pivotA,
+    const Corrade::Containers::Optional<Magnum::Vector3>& pivotB) {
+  CHECK(existingArticulatedObjects_.count(articulatedObjectId));
+  CHECK(existingArticulatedObjects_.at(articulatedObjectId)->getNumLinks() >
+        linkId);
+  CHECK(existingObjects_.count(objectId));
+
+  btRigidBody* rb = nullptr;
+  if (existingObjects_.at(objectId)->getMotionType() == MotionType::DYNAMIC) {
+    rb = static_cast<BulletRigidObject*>(existingObjects_.at(objectId).get())
+             ->bObjectRigidBody_.get();
+    rb->setActivationState(DISABLE_DEACTIVATION);
+  } else {
+    Corrade::Utility::Debug()
+        << "Cannot create a dynamic P2P constraint for object with "
+           "MotionType != DYNAMIC";
+    return ID_UNDEFINED;
+  }
+
+  btMultiBody* mb =
+      static_cast<BulletArticulatedObject*>(
+          existingArticulatedObjects_.at(articulatedObjectId).get())
+          ->btMultiBody_.get();
+  mb->setCanSleep(false);
+
+  // use origin if not specified
+  btVector3 pivotInB = pivotB ? btVector3(*pivotB) : btVector3(0.f, 0.f, 0.f);
+
+  btVector3 pivotInA;
+  if (pivotA) {
+    pivotInA = btVector3(*pivotA);
+  } else {
+    // hold object at it's current position relative to link
+    btVector3 pivotWorld = rb->getCenterOfMassTransform() * pivotInB;
+    pivotInA = mb->worldPosToLocal(linkId, pivotWorld);
+  }
+
+  btMultiBodyPoint2Point* p2p =
+      new btMultiBodyPoint2Point(mb, linkId, rb, pivotInA, pivotInB);
+  p2p->setMaxAppliedImpulse(maxImpulse);
+  bWorld_->addMultiBodyConstraint(p2p);
+  articulatedP2ps.emplace(nextConstraintId_, p2p);
+  objectConstraints_[articulatedObjectId].push_back(nextConstraintId_);
+  objectConstraints_[objectId].push_back(nextConstraintId_);
+  return nextConstraintId_++;
+}
+
+// rigid object -> articulated object (fixed)
+int BulletPhysicsManager::createArticulatedFixedConstraint(
+    int articulatedObjectId,
+    int linkId,
+    int objectId,
+    float maxImpulse,
+    const Corrade::Containers::Optional<Magnum::Vector3>& pivotA,
+    const Corrade::Containers::Optional<Magnum::Vector3>& pivotB) {
+  CHECK(existingArticulatedObjects_.count(articulatedObjectId));
+  CHECK(existingArticulatedObjects_.at(articulatedObjectId)->getNumLinks() >
+        linkId);
+  CHECK(existingObjects_.count(objectId));
+
+  btRigidBody* rb = nullptr;
+  if (existingObjects_.at(objectId)->getMotionType() == MotionType::DYNAMIC) {
+    rb = static_cast<BulletRigidObject*>(existingObjects_.at(objectId).get())
+             ->bObjectRigidBody_.get();
+    rb->setActivationState(DISABLE_DEACTIVATION);
+  } else {
+    Corrade::Utility::Debug()
+        << "Cannot create a dynamic fixed constraint for object with "
+           "MotionType != DYNAMIC";
+    return ID_UNDEFINED;
+  }
+
+  btMultiBody* mb =
+      static_cast<BulletArticulatedObject*>(
+          existingArticulatedObjects_.at(articulatedObjectId).get())
+          ->btMultiBody_.get();
+  mb->setCanSleep(false);
+
+  // use origin if not specified
+  // todo: avoid code duplication here and in createArticulatedP2PConstraint
+  btVector3 pivotInB = pivotB ? btVector3(*pivotB) : btVector3(0.f, 0.f, 0.f);
+  btVector3 pivotInA;
+  if (pivotA) {
+    pivotInA = btVector3(*pivotA);
+  } else {
+    // hold object at it's current position relative to link
+    btVector3 pivotWorld = rb->getCenterOfMassTransform() * pivotInB;
+    pivotInA = mb->worldPosToLocal(linkId, pivotWorld);
+  }
+
+  // We constrain the relative orientation of the link and object to match their
+  // current relative orientation.
+  btMatrix3x3 frameInA = btMatrix3x3::getIdentity();
+  btMatrix3x3 frameWorld = mb->localFrameToWorld(linkId, frameInA);
+  // note btMatrix3x3 tranpose() equivalent to inverse because mat is
+  // orthonormal
+  btMatrix3x3 frameInB =
+      (frameWorld * rb->getCenterOfMassTransform().getBasis().transpose())
+          .transpose();
+
+  auto* constraint = new btMultiBodyFixedConstraint(
+      mb, linkId, rb, pivotInA, pivotInB, frameInA, frameInB);
+  constraint->setMaxAppliedImpulse(maxImpulse);
+  bWorld_->addMultiBodyConstraint(constraint);
+  articulatedFixedConstraints.emplace(nextConstraintId_, constraint);
+  objectConstraints_[objectId].push_back(nextConstraintId_);
+  objectConstraints_[articulatedObjectId].push_back(nextConstraintId_);
+  return nextConstraintId_++;
+}
+
+// articulated object -> articulated object (general)
+int BulletPhysicsManager::createArticulatedP2PConstraint(
+    int articulatedObjectIdA,
+    int linkIdA,
+    const Magnum::Vector3& linkOffsetA,
+    int articulatedObjectIdB,
+    int linkIdB,
+    const Magnum::Vector3& linkOffsetB,
+    float maxImpulse) {
+  CHECK(existingArticulatedObjects_.count(articulatedObjectIdA));
+  CHECK(existingArticulatedObjects_.at(articulatedObjectIdA)->getNumLinks() >
+        linkIdA);
+  CHECK(existingArticulatedObjects_.count(articulatedObjectIdB));
+  CHECK(existingArticulatedObjects_.at(articulatedObjectIdB)->getNumLinks() >
+        linkIdB);
+
+  btMultiBody* mbA =
+      static_cast<BulletArticulatedObject*>(
+          existingArticulatedObjects_.at(articulatedObjectIdA).get())
+          ->btMultiBody_.get();
+  btMultiBody* mbB =
+      static_cast<BulletArticulatedObject*>(
+          existingArticulatedObjects_.at(articulatedObjectIdB).get())
+          ->btMultiBody_.get();
+
+  mbA->setCanSleep(false);
+  mbB->setCanSleep(false);
+
+  btMultiBodyPoint2Point* p2p = new btMultiBodyPoint2Point(
+      mbA, linkIdA, mbB, linkIdB, btVector3(linkOffsetA),
+      btVector3(linkOffsetB));
+  p2p->setMaxAppliedImpulse(maxImpulse);
+  bWorld_->addMultiBodyConstraint(p2p);
+  articulatedP2ps.emplace(nextConstraintId_, p2p);
+  objectConstraints_[articulatedObjectIdA].push_back(nextConstraintId_);
+  objectConstraints_[articulatedObjectIdB].push_back(nextConstraintId_);
+  return nextConstraintId_++;
+}
+
+// articulated object -> articulated object (global)
+int BulletPhysicsManager::createArticulatedP2PConstraint(
+    int articulatedObjectIdA,
+    int linkIdA,
+    int articulatedObjectIdB,
+    int linkIdB,
+    const Magnum::Vector3& globalConstraintPoint,
+    float maxImpulse) {
+  CHECK(existingArticulatedObjects_.count(articulatedObjectIdA));
+  CHECK(existingArticulatedObjects_.at(articulatedObjectIdA)->getNumLinks() >
+        linkIdA);
+  CHECK(existingArticulatedObjects_.count(articulatedObjectIdB));
+  CHECK(existingArticulatedObjects_.at(articulatedObjectIdB)->getNumLinks() >
+        linkIdB);
+
+  // convert the global point in to local pivots
+  Mn::Vector3 pivotA = existingArticulatedObjects_.at(articulatedObjectIdA)
+                           ->getLink(linkIdA)
+                           .node()
+                           .transformation()
+                           .inverted()
+                           .transformPoint(globalConstraintPoint);
+  Mn::Vector3 pivotB = existingArticulatedObjects_.at(articulatedObjectIdB)
+                           ->getLink(linkIdB)
+                           .node()
+                           .transformation()
+                           .inverted()
+                           .transformPoint(globalConstraintPoint);
+
+  return createArticulatedP2PConstraint(articulatedObjectIdA, linkIdA, pivotA,
+                                        articulatedObjectIdB, linkIdB, pivotB,
+                                        maxImpulse);
+}
+
+// articulated object -> world (w/ offset)
+int BulletPhysicsManager::createArticulatedP2PConstraint(
+    int articulatedObjectId,
+    int linkId,
+    const Magnum::Vector3& linkOffset,
+    const Magnum::Vector3& pickPos,
+    float maxImpulse) {
+  CHECK(existingArticulatedObjects_.count(articulatedObjectId));
+  CHECK(existingArticulatedObjects_.at(articulatedObjectId)->getNumLinks() >
+        linkId);
+  btMultiBody* mb =
+      static_cast<BulletArticulatedObject*>(
+          existingArticulatedObjects_.at(articulatedObjectId).get())
+          ->btMultiBody_.get();
+  mb->setCanSleep(false);
+  btMultiBodyPoint2Point* p2p = new btMultiBodyPoint2Point(
+      mb, linkId, nullptr, btVector3(linkOffset), btVector3(pickPos));
+  p2p->setMaxAppliedImpulse(maxImpulse);
+  bWorld_->addMultiBodyConstraint(p2p);
+  articulatedP2ps.emplace(nextConstraintId_, p2p);
+  objectConstraints_[articulatedObjectId].push_back(nextConstraintId_);
+  return nextConstraintId_++;
+}
+
+// articulated object -> world (global)
+int BulletPhysicsManager::createArticulatedP2PConstraint(
+    int articulatedObjectId,
+    int linkId,
+    const Magnum::Vector3& pickPos,
+    float maxImpulse) {
+  CHECK(existingArticulatedObjects_.count(articulatedObjectId));
+  CHECK(existingArticulatedObjects_.at(articulatedObjectId)->getNumLinks() >
+        linkId);
+  btMultiBody* mb =
+      static_cast<BulletArticulatedObject*>(
+          existingArticulatedObjects_.at(articulatedObjectId).get())
+          ->btMultiBody_.get();
+  btVector3 pivotInA = mb->worldPosToLocal(linkId, btVector3(pickPos));
+  return createArticulatedP2PConstraint(articulatedObjectId, linkId,
+                                        Magnum::Vector3(pivotInA), pickPos,
+                                        maxImpulse);
+}
+
+void BulletPhysicsManager::updateP2PConstraintPivot(
+    int p2pId,
+    const Magnum::Vector3& pivot) {
+  if (articulatedP2ps.count(p2pId) != 0u) {
+    articulatedP2ps.at(p2pId)->setPivotInB(btVector3(pivot));
+  } else if (rigidP2ps.count(p2pId) != 0u) {
+    rigidP2ps.at(p2pId)->setPivotB(btVector3(pivot));
+  } else {
+    Corrade::Utility::Debug() << "No P2P constraint with ID: " << p2pId;
+  }
+}
+
+void BulletPhysicsManager::removeConstraint(int constraintId) {
+  if (articulatedP2ps.count(constraintId) != 0u) {
+    articulatedP2ps.at(constraintId)->getMultiBodyA()->setCanSleep(true);
+    bWorld_->removeMultiBodyConstraint(articulatedP2ps.at(constraintId));
+    delete articulatedP2ps.at(constraintId);
+    articulatedP2ps.erase(constraintId);
+  } else if (rigidP2ps.count(constraintId) != 0u) {
+    bWorld_->removeConstraint(rigidP2ps.at(constraintId));
+    delete rigidP2ps.at(constraintId);
+    rigidP2ps.erase(constraintId);
+  } else if (articulatedFixedConstraints.count(constraintId) != 0u) {
+    bWorld_->removeMultiBodyConstraint(
+        articulatedFixedConstraints.at(constraintId));
+    delete articulatedFixedConstraints.at(constraintId);
+    articulatedFixedConstraints.erase(constraintId);
+  } else {
+    Corrade::Utility::Debug() << "No constraint with ID: " << constraintId;
+    return;
+  }
+  // remove the constraint from any referencing object maps
+  for (auto& itr : objectConstraints_) {
+    auto conIdItr =
+        std::find(itr.second.begin(), itr.second.end(), constraintId);
+    if (conIdItr != itr.second.end()) {
+      itr.second.erase(conIdItr);
+      // when no constraints active for the object, allow it to sleep again
+      if (itr.second.empty()) {
+        if (existingArticulatedObjects_.count(itr.first) > 0) {
+          btMultiBody* mb = static_cast<BulletArticulatedObject*>(
+                                existingArticulatedObjects_.at(itr.first).get())
+                                ->btMultiBody_.get();
+          mb->setCanSleep(true);
+        } else if (existingObjects_.count(itr.first) > 0) {
+          btRigidBody* rb = static_cast<BulletRigidObject*>(
+                                existingObjects_.at(itr.first).get())
+                                ->bObjectRigidBody_.get();
+          rb->forceActivationState(ACTIVE_TAG);
+          rb->activate(true);
+        }
+      }
+    }
+  }
 }
 
 RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
@@ -261,25 +742,20 @@ void BulletPhysicsManager::lookUpObjectIdAndLinkId(
 
   if (collisionObjToObjIds_->count(colObj) != 0u) {
     int rawObjectId = collisionObjToObjIds_->at(colObj);
-    if (existingObjects_.count(rawObjectId) != 0u) {
-      *objectId = rawObjectId;
-      return;
-    }
-    // TODO: will come with AO support
-    /* else if (existingArticulatedObjects_.count(rawObjectId)) {
+    if (existingObjects_.count(rawObjectId) != 0u ||
+        existingArticulatedObjects_.count(rawObjectId) != 0u) {
       *objectId = rawObjectId;
       return;
     } else {
       // search articulated objects to see if this is a link
       for (const auto& pair : existingArticulatedObjects_) {
-        if (pair.second->objectIdToLinkId_.count(rawObjectId)) {
+        if (pair.second->objectIdToLinkId_.count(rawObjectId) != 0u) {
           *objectId = pair.first;
           *linkId = pair.second->objectIdToLinkId_.at(rawObjectId);
           return;
         }
       }
     }
-    */
   }
 
   // lookup failed
