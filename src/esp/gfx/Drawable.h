@@ -25,7 +25,8 @@ enum class DrawableType : uint8_t {
   Pbr = 2,
   PTexMesh = 3,
   MeshVisualizer = 4,
-  DepthMap = 5,
+  DepthMap = 5,  // traditional depth map, can be used for depth sensor
+  VarianceShadowMap = 6,
 };
 
 /**

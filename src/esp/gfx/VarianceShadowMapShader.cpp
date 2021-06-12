@@ -2,8 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "PbrPrecomputedMapShader.h"
-#include "PbrTextureUnit.h"
+#include "VarianceShadowMapShader.h"
 
 #include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/Reference.h>
@@ -34,19 +33,7 @@ namespace Cr = Corrade;
 namespace esp {
 namespace gfx {
 
-PbrPrecomputedMapShader::PbrPrecomputedMapShader(Flags flags) : flags_(flags) {
-  int countMutuallyExclusive = 0;
-  if (flags_ & Flag::IrradianceMap) {
-    ++countMutuallyExclusive;
-  }
-  if (flags & Flag::PrefilteredMap) {
-    ++countMutuallyExclusive;
-  }
-  CORRADE_ASSERT(countMutuallyExclusive <= 1,
-                 "PbrPrecomputedMapShader::PbrPrecomputedMapShader: "
-                 "Flag:S:IrradianceMap and "
-                 "Flag::PrefilteredMap are mutually exclusive.", );
-
+VarianceShadowMapShader::VarianceShadowMapShader() {
   if (!Corrade::Utility::Resource::hasGroup("default-shaders")) {
     importShaderResources();
   }
@@ -70,20 +57,9 @@ PbrPrecomputedMapShader::PbrPrecomputedMapShader(Flags flags) : flags_(flags) {
 
   // Add macros
   vert.addSource(attributeLocationsStream.str())
-      .addSource(rs.get("pbrPrecomputedMap.vert"));
+      .addSource(rs.get("varianceShadowMap.vert"));
 
-  std::stringstream outputAttributeLocationsStream;
-  outputAttributeLocationsStream << Cr::Utility::formatString(
-      "#define OUTPUT_ATTRIBUTE_LOCATION_COLOR {}\n", ColorOutput);
-
-  frag.addSource(outputAttributeLocationsStream.str())
-      .addSource(rs.get("pbrCommon.glsl") + "\n");
-
-  if (flags & Flag::IrradianceMap) {
-    frag.addSource(rs.get("pbrIrradianceMap.frag"));
-  } else if (flags & Flag::PrefilteredMap) {
-    frag.addSource(rs.get("pbrPrefilteredMap.frag"));
-  }
+  frag.addSource(rs.get("varianceShadowMap.frag"));
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, frag}));
 
@@ -101,40 +77,19 @@ PbrPrecomputedMapShader::PbrPrecomputedMapShader(Flags flags) : flags_(flags) {
     bindAttributeLocation(Position::Location, "vertexPosition");
   }  // if
 
-  // set texture unit
-  setUniform(uniformLocation("EnvironmentMap"),
-             pbrTextureUnitSpace::TextureUnit::EnvironmentMap);
-
   // setup uniforms
-  modelviewMatrixUniform_ = uniformLocation("ModelViewMatrix");
-  projMatrixUniform_ = uniformLocation("ProjectionMatrix");
+  lightModelViewMatrixUniform_ = uniformLocation("LightModelViewMatrix");
+  lightProjectionMatrixUniform_ = uniformLocation("LightProjectionMatrix");
 }
-
-PbrPrecomputedMapShader& PbrPrecomputedMapShader::bindEnvironmentMap(
-    Mn::GL::CubeMapTexture& texture) {
-  texture.bind(pbrTextureUnitSpace::TextureUnit::EnvironmentMap);
-  return *this;
-}
-
-PbrPrecomputedMapShader& PbrPrecomputedMapShader::setProjectionMatrix(
+VarianceShadowMapShader& VarianceShadowMapShader::setLightProjectionMatrix(
     const Mn::Matrix4& matrix) {
-  setUniform(projMatrixUniform_, matrix);
+  setUniform(lightProjectionMatrixUniform_, matrix);
   return *this;
 }
 
-PbrPrecomputedMapShader& PbrPrecomputedMapShader::setTransformationMatrix(
+VarianceShadowMapShader& VarianceShadowMapShader::setLightModelViewMatrix(
     const Mn::Matrix4& matrix) {
-  setUniform(modelviewMatrixUniform_, matrix);
-  return *this;
-}
-
-PbrPrecomputedMapShader& PbrPrecomputedMapShader::setRoughness(
-    float roughness) {
-  CORRADE_ASSERT(flags_ & Flag::PrefilteredMap,
-                 "PbrPrecomputedMapShader::setRoughness(): shader is NOT "
-                 "created to compute the prefiltered maps.",
-                 *this);
-  setUniform(roughnessUniform_, roughness);
+  setUniform(lightModelViewMatrixUniform_, matrix);
   return *this;
 }
 

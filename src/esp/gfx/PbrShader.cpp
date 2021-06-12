@@ -102,7 +102,8 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
 
   frag.addSource(attributeLocationsStream.str())
       .addSource(outputAttributeLocationsStream.str())
-      .addSource(flags_ & Flag::Shadows ? "#define SHADOWS" : "")
+      .addSource(flags_ & Flag::Shadows ? "#define SHADOWS\n" : "")
+      .addSource(flags_ & Flag::Shadows ? "#define SHADOWS_PCF\n" : "")  // XXX
       .addSource(isTextured ? "#define TEXTURED\n" : "")
       .addSource(flags_ & Flag::BaseColorTexture ? "#define BASECOLOR_TEXTURE\n"
                                                  : "")
@@ -125,7 +126,9 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
                      : "")
       .addSource(
           Cr::Utility::formatString("#define LIGHT_COUNT {}\n", lightCount_))
-      .addSource(rs.get("pbrCommon.glsl"))
+      .addSource(flags_ & Flag::Shadows ? rs.get("shadowsPCF.glsl") + "\n"
+                                        : "")  // XXX
+      .addSource(rs.get("pbrCommon.glsl") + "\n")
       .addSource(rs.get("pbr.frag"));
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, frag}));

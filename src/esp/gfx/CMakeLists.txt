@@ -58,11 +58,17 @@ set(
   PbrEquiRectangularToCubeMapShader.cpp
   PbrEquiRectangularToCubeMapShader.h
   PbrTextureUnit.h
-  DepthMapShader.h
   DepthMapShader.cpp
+  DepthMapShader.h
+  DepthMapDrawableBase.cpp
+  DepthMapDrawableBase.h
   DepthMapDrawable.cpp
   DepthMapDrawable.h
   ShadowMapManager.h
+  VarianceShadowMapShader.h
+  VarianceShadowMapShader.cpp
+  VarianceShadowMapDrawable.h
+  VarianceShadowMapDrawable.cpp
 )
 
 # If ptex support is enabled add relevant source files

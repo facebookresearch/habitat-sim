@@ -41,9 +41,37 @@ class CubeMap {
      */
     ObjectId,
 
+    /**
+     * Variance shadow map texture
+     */
+    VarianceShadowMap,
+
     // TODO: HDR color
 
     Count,
+  };
+
+  enum : Magnum::UnsignedInt {
+    /**
+     * Color shader output. @ref shaders-generic "Generic output",
+     * present always. Expects three- or four-component floating-point
+     * or normalized buffer attachment.
+     */
+    ColorOutput = Magnum::Shaders::GenericGL3D::ColorOutput,
+
+    /**
+     * Object ID shader output. @ref shaders-generic "Generic output",
+     * present only if @ref Flag::ObjectId is set. Expects a
+     * single-component unsigned integral attachment. Writes the value
+     * set in @ref setObjectId() there.
+     */
+    ObjectIdOutput = Magnum::Shaders::GenericGL3D::ObjectIdOutput,
+
+    /**
+     * Variance shadow map shader output
+     * Expects a two-component floating point (32F) attachment
+     */
+    VarianceShadowMapOutput = ObjectIdOutput + 1u,
   };
 
   enum class Flag : Magnum::UnsignedShort {
@@ -75,7 +103,12 @@ class CubeMap {
      * but will not fillin the contents. This is useful e.g., in PBR prefiltered
      * environment map computation.
      */
-    ManuallyBuidMipmap = 1 << 4,
+    ManuallyBuildMipmap = 1 << 4,
+
+    /**
+     * create variance shadow map
+     */
+    VarianceShadowMapTexture = 1 << 5,
   };
 
   /**

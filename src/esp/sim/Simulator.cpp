@@ -17,11 +17,12 @@
 
 #include "esp/core/esp.h"
 #include "esp/gfx/CubeMapCamera.h"
-#include "esp/gfx/DepthMapDrawable.h"
+#include "esp/gfx/DepthMapDrawable.h"  // XXX
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/PbrDrawable.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
+#include "esp/gfx/VarianceShadowMapDrawable.h"
 #include "esp/gfx/replay/Recorder.h"
 #include "esp/gfx/replay/ReplayManager.h"
 #include "esp/metadata/attributes/AttributesBase.h"
@@ -571,9 +572,15 @@ void Simulator::updateShadowMapDrawableGroup() {
     }
 
     esp::scene::SceneNode& node = currentDrawable.getSceneNode();
+    // XXX
     node.addFeature<gfx::DepthMapDrawable>(currentDrawable.getMesh(),
                                            resourceManager_->getShaderManager(),
                                            shadowMapGroup);
+    /*
+    node.addFeature<gfx::VarianceShadowMapDrawable>(
+        currentDrawable.getMesh(), resourceManager_->getShaderManager(),
+        shadowMapGroup);
+    */
   }
 }
 
@@ -637,7 +644,6 @@ void Simulator::computeShadowMaps(float lightNearPlane, float lightFarPlane) {
                              lightFarPlane);  // far plane
   pointShadowMap->renderToTexture(camera, sg, shadowMapDrawableGroupName,
                                   {gfx::RenderCamera::Flag::FrustumCulling |
-                                   // gfx::RenderCamera::Flag::CullFrontFace |
                                    gfx::RenderCamera::Flag::ClearDepth});
 
   pointShadowMap->visualizeTexture(gfx::CubeMap::TextureType::Depth,
