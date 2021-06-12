@@ -88,7 +88,7 @@ class RigidStage : public RigidBase {
    * @param mt The desirved @ref MotionType.
    */
   void setMotionType(CORRADE_UNUSED MotionType mt) override {
-    LOG(WARNING) << "RigidStage::setMotionType : Stages cannot have their "
+    LOG(WARNING) << "::setMotionType : Stages cannot have their "
                     "motion type changed from MotionType::STATIC.  Aborting.";
   }
 

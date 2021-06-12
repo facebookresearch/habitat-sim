@@ -96,7 +96,7 @@ class PhysicsObjectBaseManager
       CORRADE_UNUSED bool builtFromConfig) override {
     // construct a new wrapper based on the passed object
     if (managedObjTypeConstructorMap_.count(objectTypeName) == 0) {
-      LOG(ERROR) << "PhysicsObjectBaseManager::initNewObjectInternal ("
+      LOG(ERROR) << "<" << this->objectType_ << ">::initNewObjectInternal ("
                  << this->objectType_ << ") Unknown constructor type "
                  << objectTypeName << ".  Aborting.";
       return nullptr;
