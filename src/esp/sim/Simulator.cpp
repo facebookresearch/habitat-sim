@@ -329,15 +329,15 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
       metadataMediator_->getStageAttributesManager()->getObjectCopyByHandle(
           stageAttributesHandle);
 
-  // constant representing unknown shader type
-  const int unknownShaderType =
-      static_cast<int>(metadata::attributes::ObjectInstanceShaderType::Unknown);
-
   // set defaults for stage creation
 
-  // set shader type to use for stage
+  // set shader type to use for stage - if no valid value is specified in
+  // instance attributes, this field will be whatever was specified in the stage
+  // attributes.
   int stageShaderType = stageInstanceAttributes->getShaderType();
-  if (stageShaderType != unknownShaderType) {
+  if (stageShaderType !=
+      static_cast<int>(
+          metadata::attributes::ObjectInstanceShaderType::Unknown)) {
     stageAttributes->setShaderType(stageShaderType);
   }
   // set lighting key
