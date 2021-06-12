@@ -621,6 +621,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
               "user_vec3" : [10.3, 30.5, -5.07],
               "user_quat" : [1.3, 1.2, 1.6, 1.1]
           }
+      }
       ],
       "articulated_object_instances": [
           {
@@ -643,7 +644,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
       ],
       "default_lighting":  "test_lighting_configuration",
       "navmesh_instance": "test_navmesh_path1",
-      "semantic_scene_instance": "test_semantic_descriptor_path1"
+      "semantic_scene_instance": "test_semantic_descriptor_path1",
       "user_defined" : {
           "user_string" : "scene instance defined string",
           "user_bool" : true,
@@ -786,7 +787,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_StageJSONLoadTest) {
         "origin":[1,2,3],
         "semantic_asset":"testJSONSemanticAsset.glb",
         "nav_asset":"testJSONNavMeshAsset.glb",
-        "house_filename":"testJSONHouseFileName.glb"
+        "house_filename":"testJSONHouseFileName.glb",
         "user_defined" : {
             "user_string" : "stage defined string",
             "user_bool" : false,
