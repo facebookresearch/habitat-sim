@@ -139,7 +139,7 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
       if (jCell.HasMember("default_attributes")) {
         if (!jCell["default_attributes"].IsObject()) {
           LOG(WARNING) << "::readDatasetJSONCell : \"" << tag
-                       << ".default attributes\" cell in JSON config unable to "
+                       << ".default_attributes\" cell in JSON config unable to "
                           "be parsed to set default attributes so skipping.";
         } else {
           // load attributes as default from file, do not register
@@ -147,17 +147,17 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
               "default_attributes", jCell["default_attributes"]);
           if (nullptr == attr) {
             LOG(WARNING) << "::readDatasetJSONCell : \"" << tag
-                         << ".default attributes\" cell failed to successfully "
+                         << ".default_attributes\" cell failed to successfully "
                             "create an attributes, so skipping.";
           } else {
             // set attributes as defaultObject_ in attrMgr.
             attrMgr->setDefaultObject(attr);
             LOG(INFO)
                 << "::readDatasetJSONCell : \"" << tag
-                << ".default attributes\" set in Attributes Manager from JSON.";
+                << ".default_attributes\" set in Attributes Manager from JSON.";
           }
         }  // if is an object
-      }    // if has default attributes cell
+      }    // if has default_attributes cell
 
       // 2. "paths" an array of paths to search for appropriately typed config
       // files.
