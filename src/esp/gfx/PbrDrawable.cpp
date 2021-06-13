@@ -201,11 +201,14 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
 
     CORRADE_INTERNAL_ASSERT(shadowMap);
 
-    shader_->bindPointShadowMap(
-        shadowMap->getTexture(CubeMap::TextureType::Depth));
     if (flags_ & PbrShader::Flag::ShadowsPCF) {
+      shader_->bindPointShadowMap(
+          shadowMap->getTexture(CubeMap::TextureType::Depth));
       shader_->setLightNearFarPlanes(shadowData_->lightNearPlane,
                                      shadowData_->lightFarPlane);
+    } else if (flags_ & PbrShader::Flag::ShadowsVSM) {
+      shader_->bindPointShadowMap(
+          shadowMap->getTexture(CubeMap::TextureType::VarianceShadowMap));
     }
   }
 
@@ -299,11 +302,12 @@ void PbrDrawable::setShadowData(const ShadowData& shadowData,
                  "PbrDrawable::setShadowData(): failed to enable the "
                  "shadows. shadow manager or the shadow keys is nullptr.", );
 
-  CORRADE_ASSERT(
-      shadowFlag == PbrShader::Flag::ShadowsPCF &&
-          shadowData.lightFarPlane > shadowData.lightNearPlane &&
-          shadowData.lightNearPlane > 0,
-      "PbrDrawable::setShadowData(): light near or far plane is illegal.", );
+  if (shadowFlag == PbrShader::Flag::ShadowsPCF) {
+    CORRADE_ASSERT(
+        shadowData.lightFarPlane > shadowData.lightNearPlane &&
+            shadowData.lightNearPlane > 0,
+        "PbrDrawable::setShadowData(): light near or far plane is illegal.", );
+  }
 
   shadowData_ = shadowData;
   flags_ |= shadowFlag;

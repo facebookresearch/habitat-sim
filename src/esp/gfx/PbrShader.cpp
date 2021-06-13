@@ -112,8 +112,8 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   outputAttributeLocationsStream << Cr::Utility::formatString(
       "#define OUTPUT_ATTRIBUTE_LOCATION_OBJECT_ID {}\n", ObjectIdOutput);
 
-  frag.addSource(attributeLocationsStream.str())
-      .addSource(outputAttributeLocationsStream.str())
+  // frag.addSource(attributeLocationsStream.str())
+  frag.addSource(outputAttributeLocationsStream.str())
       .addSource(flags_ & Flag::ShadowsPCF ? "#define SHADOWS_PCF\n" : "")
       .addSource(flags_ & Flag::ShadowsVSM ? "#define SHADOWS_VSM\n" : "")
       .addSource(isTextured ? "#define TEXTURED\n" : "")
@@ -261,8 +261,10 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   scaleIblSpecularUniform_ = uniformLocation("Scales.iblSpecular");
 
   // shadows
-  lightNearPlaneUniform_ = uniformLocation("LightNearPlane");
-  lightFarPlaneUniform_ = uniformLocation("LightFarPlane");
+  if (flags_ & Flag::ShadowsPCF) {
+    lightNearPlaneUniform_ = uniformLocation("LightNearPlane");
+    lightFarPlaneUniform_ = uniformLocation("LightFarPlane");
+  }
 
   // for debug info
   pbrDebugDisplayUniform_ = uniformLocation("PbrDebugDisplay");

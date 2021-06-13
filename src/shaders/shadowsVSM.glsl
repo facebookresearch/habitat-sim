@@ -4,7 +4,7 @@
 
 #if defined(SHADOWS_VSM)
 precision highp float;
-uniform samplerCube shadowMap0;
+uniform samplerCube ShadowMap0;
 const float vsmBias = 0.16f;
 
 float computeShadowUpperBound(vec2 moments, float fragLinearDepth) {
@@ -26,9 +26,9 @@ float computeShadowVSM(vec3 fragPos, vec3 lightPos) {
   vec3 lightToFrag = fragPos - lightPos;
   float d = length(lightToFrag);
 
-  vec2 moments = texture(shadowMap0, normalize(lightToFrag)).xy;
+  vec2 moments = texture(ShadowMap0, normalize(lightToFrag)).xy;
     // moments.x is the mean value while moments.y equals to depth * depth
-    return computeShadowUpperBound(moments, d);
+    return 1.0 - computeShadowUpperBound(moments, d);
 }
 
 #endif

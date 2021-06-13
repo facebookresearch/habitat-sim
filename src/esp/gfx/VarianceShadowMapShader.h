@@ -22,6 +22,15 @@ class VarianceShadowMapShader : public Magnum::GL::AbstractShaderProgram {
    */
   typedef Magnum::Shaders::GenericGL3D::Position Position;
 
+  enum : Magnum::UnsignedInt {
+    /**
+     * Color shader output. @ref shaders-generic "Generic output",
+     * present always. Expects three- or four-component floating-point
+     * or normalized buffer attachment.
+     */
+    ColorOutput = Magnum::Shaders::GenericGL3D::ColorOutput,
+  };
+
   /**
    * @brief Constructor
    */
