@@ -22,7 +22,7 @@ class PbrDrawable : public Drawable {
     ShadowMapManager* shadowMapManger = nullptr;
     ShadowMapKeys* shadowMapKeys = nullptr;
     float lightFarPlane = -1.0;
-    float lightNearPlance = -1.0;
+    float lightNearPlane = -1.0;
   };
   /**
    * @brief Constructor, to create a PbrDrawable for the given object using
@@ -47,8 +47,9 @@ class PbrDrawable : public Drawable {
   /**
    * @brief Set the shadow map info
    * @param[in] shadowData, contains all the data needed in the shadow mapping
+   * @param[in] shadowFlag, can only be either ShadowsPCF or ShadowsVSM
    */
-  void setShadowData(const ShadowData& data);
+  void setShadowData(const ShadowData& data, PbrShader::Flag shadowFlag);
 
   static constexpr const char* SHADER_KEY_TEMPLATE = "PBR-lights={}-flags={}";
 

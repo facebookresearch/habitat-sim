@@ -190,7 +190,8 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
         pbrIbl_->getPrefilteredMap().getMipmapLevels());
   }
 
-  if (flags_ & PbrShader::Flag::Shadows) {
+  if ((flags_ & PbrShader::Flag::ShadowsPCF) ||
+      (flags_ & PbrShader::Flag::ShadowsVSM)) {
     CORRADE_INTERNAL_ASSERT(shadowData_);
 
     // Currently we only support one shadow map
@@ -202,9 +203,10 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
 
     shader_->bindPointShadowMap(
         shadowMap->getTexture(CubeMap::TextureType::Depth));
-
-    shader_->setLightNearFarPlanes(shadowData_->lightNearPlance,
-                                   shadowData_->lightFarPlane);
+    if (flags_ & PbrShader::Flag::ShadowsPCF) {
+      shader_->setLightNearFarPlanes(shadowData_->lightNearPlane,
+                                     shadowData_->lightFarPlane);
+    }
   }
 
   shader_->draw(mesh_);
@@ -285,19 +287,26 @@ PbrDrawable& PbrDrawable::updateShaderLightDirectionParameters(
   return *this;
 }
 
-void PbrDrawable::setShadowData(const ShadowData& shadowData) {
+void PbrDrawable::setShadowData(const ShadowData& shadowData,
+                                PbrShader::Flag shadowFlag) {
   // sanity check first
+  CORRADE_ASSERT(shadowFlag == PbrShader::Flag::ShadowsPCF ||
+                     shadowFlag == PbrShader::Flag::ShadowsVSM,
+                 "PbrDrawable::setShadowData(): the shadow flag can only be "
+                 "ShadowsPCF or ShadowsVSM.", );
+
   CORRADE_ASSERT(shadowData.shadowMapManger && shadowData.shadowMapKeys,
                  "PbrDrawable::setShadowData(): failed to enable the "
                  "shadows. shadow manager or the shadow keys is nullptr.", );
 
   CORRADE_ASSERT(
-      shadowData.lightFarPlane > shadowData.lightNearPlance &&
-          shadowData.lightNearPlance > 0,
+      shadowFlag == PbrShader::Flag::ShadowsPCF &&
+          shadowData.lightFarPlane > shadowData.lightNearPlane &&
+          shadowData.lightNearPlane > 0,
       "PbrDrawable::setShadowData(): light near or far plane is illegal.", );
 
   shadowData_ = shadowData;
-  flags_ |= PbrShader::Flag::Shadows;
+  flags_ |= shadowFlag;
 }
 
 }  // namespace gfx

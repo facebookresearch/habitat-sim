@@ -185,9 +185,17 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
     ImageBasedLighting = 1 << 13,
 
     /**
-     * render shadows
+     * render point light shadows using traditional shadow cube map +
+     * Percentage Closer Filtering (PCF)
+     * NOTE: it is exclusive to @ref ShadowsVSM
      */
-    Shadows = 1 << 14,
+    ShadowsPCF = 1 << 14,
+
+    /**
+     * render point light shadows using variance shadow map (VSM)
+     * NOTE: it is exclusive to @ref ShadowsPCF
+     */
+    ShadowsVSM = 1 << 15,
 
     /*
      * TODO: alphaMask
@@ -288,7 +296,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
   /**
    * @brief Bind the point shadow map (cubemap texture)
-   * NOTE: requires Flag::Shadows is set
+   * NOTE: requires Flag::ShadowsPCF is set
    * @return Reference to self (for method chaining)
    */
   PbrShader& bindPointShadowMap(Magnum::GL::CubeMapTexture& texture);
@@ -508,7 +516,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    *  @param[in] lightNearPlane, the near plane
    *  @param[in] lightFarPlane, the far plane
    *  @return Reference to self (for method chaining)
-   *  NOTE: requires Flag::Shadows is set
+   *  NOTE: requires Flag::ShadowsPCF is set
    */
   PbrShader& setLightNearFarPlanes(float lightNearPlane, float lightFarPlane);
 

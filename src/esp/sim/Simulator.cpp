@@ -17,7 +17,7 @@
 
 #include "esp/core/esp.h"
 #include "esp/gfx/CubeMapCamera.h"
-#include "esp/gfx/DepthMapDrawable.h"  // XXX
+// #include "esp/gfx/DepthMapDrawable.h"  // XXX
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/PbrDrawable.h"
 #include "esp/gfx/RenderCamera.h"
@@ -573,14 +573,14 @@ void Simulator::updateShadowMapDrawableGroup() {
 
     esp::scene::SceneNode& node = currentDrawable.getSceneNode();
     // XXX
+    /*
     node.addFeature<gfx::DepthMapDrawable>(currentDrawable.getMesh(),
                                            resourceManager_->getShaderManager(),
                                            shadowMapGroup);
-    /*
+    */
     node.addFeature<gfx::VarianceShadowMapDrawable>(
         currentDrawable.getMesh(), resourceManager_->getShaderManager(),
         shadowMapGroup);
-    */
   }
 }
 
@@ -608,11 +608,15 @@ void Simulator::computeShadowMaps(float lightNearPlane, float lightFarPlane) {
   if (!pointShadowMap) {
     shadowManager.set<gfx::CubeMap>(
         pointShadowMap.key(),
-        // XXX
+        // For shadowsPCF
         // new gfx::CubeMap{shadowMapSize, {gfx::CubeMap::Flag::DepthTexture}},
+        // For shadowsPCF + visual depths
+        // new gfx::CubeMap{shadowMapSize,
+        //                 {gfx::CubeMap::Flag::DepthTexture |
+        //                  gfx::CubeMap::Flag::ColorTexture}},
         new gfx::CubeMap{shadowMapSize,
-                         {gfx::CubeMap::Flag::DepthTexture |
-                          gfx::CubeMap::Flag::ColorTexture}},
+                         {gfx::CubeMap::Flag::VarianceShadowMapTexture |
+                          gfx::CubeMap::Flag::AutoBuildMipmap}},
         Mn::ResourceDataState::Final, Mn::ResourcePolicy::Resident);
 
     CORRADE_INTERNAL_ASSERT(pointShadowMap && pointShadowMap.key() == key);
@@ -646,10 +650,12 @@ void Simulator::computeShadowMaps(float lightNearPlane, float lightFarPlane) {
                                   {gfx::RenderCamera::Flag::FrustumCulling |
                                    gfx::RenderCamera::Flag::ClearDepth});
 
+  /*
   pointShadowMap->visualizeTexture(gfx::CubeMap::TextureType::Depth,
                                    lightNearPlane, lightFarPlane, 1.0f / 512.0f,
                                    1.0f / 20.0f);
   pointShadowMap->saveTexture(gfx::CubeMap::TextureType::Color, "shadowMap");
+  */
 }
 
 void Simulator::setShadowMapsToDrawables(float lightNearPlane,
@@ -675,9 +681,15 @@ void Simulator::setShadowMapsToDrawables(float lightNearPlane,
     shadowData.shadowMapManger = &shadowManager;
     // Currently we can only do 1 shadow map
     shadowData.shadowMapKeys = &shadowMapKeys[0];
-    shadowData.lightNearPlance = lightNearPlane;
+    // the following two only needs to be set for shadowsPCF
+    /*
+    shadowData.lightNearPlane = lightNearPlane;
     shadowData.lightFarPlane = lightFarPlane;
-    pbrDrawable.setShadowData(shadowData);
+    pbrDrawable.setShadowData(shadowData,
+                              esp::gfx::PbrShader::Flag::ShadowsPCF);
+    */
+    pbrDrawable.setShadowData(shadowData,
+                              esp::gfx::PbrShader::Flag::ShadowsVSM);
   }
 }
 

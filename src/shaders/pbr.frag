@@ -435,8 +435,10 @@ void main() {
                     currentDiffuseContrib,
                     currentSpecularContrib);
     // Temporarily we only support 1 point light shadow map
-    #if defined(SHADOWS) && defined(SHADOWS_PCF)
-    float shadow = (iLight == 0 ? computeShadow(position, LightDirections[0].xyz, CameraWorldPos) : 1.0f);
+    #if defined(SHADOWS_PCF)
+    float shadow = (iLight == 0 ? computeShadowPCF(position, LightDirections[0].xyz, CameraWorldPos) : 1.0f);
+    #elif defined(SHADOWS_VSM)
+    float shadow = (iLight == 0 ? computeShadowVSM(position, LightDirections[0].xyz) : 1.0f);
     #else
     float shadow = 1.0f;
     #endif

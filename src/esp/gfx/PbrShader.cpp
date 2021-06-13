@@ -43,6 +43,18 @@ namespace gfx {
 
 PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     : flags_(originalFlags), lightCount_(lightCount) {
+  int countMutuallyExclusive = 0;
+  if (flags_ & Flag::ShadowsPCF) {
+    ++countMutuallyExclusive;
+  }
+  if (flags_ & Flag::ShadowsVSM) {
+    ++countMutuallyExclusive;
+  }
+  CORRADE_ASSERT(countMutuallyExclusive <= 1,
+                 "PbrShader::PbrShader(): "
+                 "Flag::ShadowsPCF and "
+                 "Flag::ShadowsVSM are mutually exclusive.", );
+
   if (!Cr::Utility::Resource::hasGroup("default-shaders")) {
     importShaderResources();
   }
@@ -102,8 +114,8 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
 
   frag.addSource(attributeLocationsStream.str())
       .addSource(outputAttributeLocationsStream.str())
-      .addSource(flags_ & Flag::Shadows ? "#define SHADOWS\n" : "")
-      .addSource(flags_ & Flag::Shadows ? "#define SHADOWS_PCF\n" : "")  // XXX
+      .addSource(flags_ & Flag::ShadowsPCF ? "#define SHADOWS_PCF\n" : "")
+      .addSource(flags_ & Flag::ShadowsVSM ? "#define SHADOWS_VSM\n" : "")
       .addSource(isTextured ? "#define TEXTURED\n" : "")
       .addSource(flags_ & Flag::BaseColorTexture ? "#define BASECOLOR_TEXTURE\n"
                                                  : "")
@@ -126,8 +138,10 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
                      : "")
       .addSource(
           Cr::Utility::formatString("#define LIGHT_COUNT {}\n", lightCount_))
-      .addSource(flags_ & Flag::Shadows ? rs.get("shadowsPCF.glsl") + "\n"
-                                        : "")  // XXX
+      .addSource(flags_ & Flag::ShadowsPCF ? rs.get("shadowsPCF.glsl") + "\n"
+                                           : "")
+      .addSource(flags_ & Flag::ShadowsVSM ? rs.get("shadowsVSM.glsl") + "\n"
+                                           : "")
       .addSource(rs.get("pbrCommon.glsl") + "\n")
       .addSource(rs.get("pbr.frag"));
 
@@ -192,8 +206,11 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     setUniform(uniformLocation("PrefilteredMap"),
                pbrTextureUnitSpace::TextureUnit::PrefilteredMap);
   }
-  if (flags_ & Flag::Shadows) {
+  if (flags_ & Flag::ShadowsPCF) {
     setUniform(uniformLocation("PointShadowMap0"),
+               pbrTextureUnitSpace::TextureUnit::ShadowMap0);
+  } else if (flags_ & Flag::ShadowsVSM) {
+    setUniform(uniformLocation("ShadowMap0"),
                pbrTextureUnitSpace::TextureUnit::ShadowMap0);
   }
 
@@ -354,7 +371,7 @@ PbrShader& PbrShader::bindPrefilteredMap(Magnum::GL::CubeMapTexture& texture) {
 }
 
 PbrShader& PbrShader::bindPointShadowMap(Magnum::GL::CubeMapTexture& texture) {
-  CORRADE_ASSERT(flags_ & Flag::Shadows,
+  CORRADE_ASSERT((flags_ & Flag::ShadowsPCF) || (flags_ & Flag::ShadowsVSM),
                  "PbrShader::bindPointShadowMap(): the shader was not "
                  "created with shadows enabled",
                  *this);
@@ -461,7 +478,7 @@ PbrShader& PbrShader::setTextureMatrix(const Mn::Matrix3& matrix) {
 
 PbrShader& PbrShader::setLightNearFarPlanes(float lightNearPlane,
                                             float lightFarPlane) {
-  CORRADE_ASSERT(flags_ & Flag::Shadows,
+  CORRADE_ASSERT(flags_ & Flag::ShadowsPCF,
                  "PbrShader::setLightNearFarPlanes(): the shader was not "
                  "created with shadows enabled",
                  *this);

@@ -2,9 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#if defined(SHADOWS_PCF)
 precision highp float;
-
-#if defined(SHADOWS) && defined(SHADOWS_PCF)
 // ------------ uniform ----------------------
 // let us try 1 point shadow first
 uniform samplerCube PointShadowMap0;
@@ -40,7 +39,7 @@ float vecToDepthValue(vec3 vec) {
   return (z + 1.0) * 0.5;
 }
 
-float computeShadow(vec3 fragPos, vec3 lightPos, vec3 viewPos) {
+float computeShadowPCF(vec3 fragPos, vec3 lightPos, vec3 viewPos) {
     // vector from light position to the shading location=
     vec3 lightToFrag = fragPos - lightPos;
     float d = vecToDepthValue(lightToFrag);
@@ -51,7 +50,8 @@ float computeShadow(vec3 fragPos, vec3 lightPos, vec3 viewPos) {
     float viewDistance = length(viewPos - fragPos);
     float diskRadius = (1.0 + (viewDistance / LightFarPlane)) / 50.0;
     for(int i = 0; i < samples; ++i) {
-        float closestDepth = texture(PointShadowMap0, normalize(lightToFrag + gridSamplingDisk[i] * diskRadius)).r;
+        float closestDepth = texture(PointShadowMap0,
+                                     normalize(lightToFrag + gridSamplingDisk[i] * diskRadius)).r;
         if(d - bias > closestDepth)
             shadow += 1.0;
     }
