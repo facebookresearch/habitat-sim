@@ -152,23 +152,23 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
   std::string getValueForConfigKey(const std::string& key,
                                    const std::string& configStr) {
     std::size_t keyLoc = configStr.find(key);
-    if (keyLoc == configStr.npos) {
+    if (keyLoc == std::string::npos) {
       LOG(WARNING) << "Key " << key << " not found in configStr " << configStr
                    << ". Aborting.";
       return "";
     }
     std::size_t keyLen = key.length(), keyEnd = keyLoc + keyLen;
-    return configStr.substr(keyEnd, configStr.find("_", keyEnd) - keyEnd);
+    return configStr.substr(keyEnd, configStr.find('_', keyEnd) - keyEnd);
   }
   bool getBoolForConfigKey(const std::string& key,
                            const std::string& configStr) {
     std::string res = getValueForConfigKey(key, configStr);
-    return (res.find("true") != res.npos);
+    return (res.find("true") != std::string::npos);
   }
 
   bool setIntFromConfigKey(const std::string& key,
                            const std::string& configStr,
-                           std::function<void(int)> setter) {
+                           const std::function<void(int)>& setter) {
     const std::string conv = getValueForConfigKey(key, configStr);
     try {
       setter(stoi(conv));
@@ -183,7 +183,7 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
 
   bool setDoubleFromConfigKey(const std::string& key,
                               const std::string& configStr,
-                              std::function<void(double)> setter) {
+                              const std::function<void(double)>& setter) {
     const std::string conv = getValueForConfigKey(key, configStr);
     try {
       setter(stod(conv));
