@@ -15,8 +15,6 @@
 #include "BulletRigidStage.h"
 #include "esp/physics/CollisionGroupHelper.h"
 
-#include "esp/physics/CollisionGroupHelper.h"
-
 namespace esp {
 namespace physics {
 
