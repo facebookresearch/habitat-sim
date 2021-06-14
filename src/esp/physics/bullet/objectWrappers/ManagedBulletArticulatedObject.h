@@ -32,20 +32,6 @@ class ManagedBulletArticulatedObject
     return false;
   }
 
-  bool supportsJointMotor(int linkIx) {
-    if (auto sp = getBulletObjectReference()) {
-      return sp->supportsJointMotor(linkIx);
-    }
-    return false;
-  }
-
-  float getJointMotorMaxImpulse(int motorId) {
-    if (auto sp = getBulletObjectReference()) {
-      return sp->getJointMotorMaxImpulse(motorId);
-    }
-    return 0.0;
-  }
-
  protected:
   /**
    * @brief Templated version of obj ref getter. This function accesses the
@@ -66,18 +52,6 @@ class ManagedBulletArticulatedObject
     LOG(WARNING) << "This functionaliy requires Habitat-Sim to be compiled "
                     "with Bullet enabled..";
     return false;
-  }
-
-  bool supportsJointMotor(CORRADE_UNUSED int linkIx) {
-    LOG(WARNING) << "This functionaliy requires Habitat-Sim to be compiled "
-                    "with Bullet enabled..";
-    return false;
-  }
-
-  float getJointMotorMaxImpulse(CORRADE_UNUSED int motorId) {
-    LOG(WARNING) << "This functionaliy requires Habitat-Sim to be compiled "
-                    "with Bullet enabled..";
-    return 0.0;
   }
 
   std::shared_ptr<ArticulatedObject> getBulletObjectReference() const {

@@ -707,10 +707,10 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
 
     // collect ArticulatedObject mesh components
     for (auto& objectID : physicsManager_->getExistingArticulatedObjectIds()) {
-      if (physicsManager_->getArticulatedObjectMotionType(objectID) ==
-          physics::MotionType::STATIC) {
-        for (int linkIx = -1;
-             linkIx < physicsManager_->getNumArticulatedLinks(objectID);
+      auto articulatedObject =
+          getArticulatedObjectManager()->getObjectByID(objectID);
+      if (articulatedObject->getMotionType() == physics::MotionType::STATIC) {
+        for (int linkIx = -1; linkIx < articulatedObject->getNumLinks();
              ++linkIx) {
           //-1 is baseLink_
           std::vector<std::pair<esp::scene::SceneNode*, std::string>>
