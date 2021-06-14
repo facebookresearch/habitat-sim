@@ -228,9 +228,8 @@ class ResourceManager {
    *
    * @param model The URDF::Model describing the ArticulatedObject and
    * referencing its assets.
-   * @return Whether or not the import was successful.
    */
-  bool importURDFAssets(io::URDF::Model& model);
+  void importURDFAssets(io::URDF::Model& model);
 
   //======== Accessor functions ========
   /**

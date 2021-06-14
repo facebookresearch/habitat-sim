@@ -578,7 +578,10 @@ bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
       // create and register the collisionMeshGroups
       if (info.type != AssetType::PRIMITIVE) {
         std::vector<CollisionMeshData> meshGroup;
-        ASSERT(buildMeshGroups(defaultInfo, meshGroup));
+        CORRADE_ASSERT(buildMeshGroups(defaultInfo, meshGroup),
+                       "Failed to construct collisionMeshGroups for asset "
+                           << info.filepath,
+                       false);
       }
 
       if (gfxReplayRecorder_) {
@@ -1988,8 +1991,7 @@ bool ResourceManager::instantiateAssetsOnDemand(
   return true;
 }  // ResourceManager::instantiateAssetsOnDemand
 
-bool ResourceManager::importURDFAssets(io::URDF::Model& model) {
-  bool importSuccess = true;
+void ResourceManager::importURDFAssets(io::URDF::Model& model) {
   for (size_t linkIx = 0; linkIx < model.m_links.size(); ++linkIx) {
     auto link = model.getLink(linkIx);
     // load collision shapes
@@ -1998,14 +2000,11 @@ bool ResourceManager::importURDFAssets(io::URDF::Model& model) {
         // pre-load the mesh asset for its collision shape
         assets::AssetInfo meshAsset{assets::AssetType::UNKNOWN,
                                     collision.m_geometry.m_meshFileName};
-        importSuccess = loadRenderAsset(meshAsset);
+        CORRADE_ASSERT(loadRenderAsset(meshAsset),
+                       "Failed to load URDF ("
+                           << model.m_name << ") collision asset "
+                           << collision.m_geometry.m_meshFileName, );
       }
-      if (!importSuccess) {
-        break;
-      }
-    }
-    if (!importSuccess) {
-      break;
     }
     // pre-load visual meshes and primitive asset variations and cache the
     // handle
@@ -2060,7 +2059,6 @@ bool ResourceManager::importURDFAssets(io::URDF::Model& model) {
       }
     }
   }
-  return importSuccess;
 }
 
 void ResourceManager::addObjectToDrawables(
