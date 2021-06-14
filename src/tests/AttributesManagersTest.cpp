@@ -787,6 +787,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_StageJSONLoadTest) {
         "semantic_asset":"testJSONSemanticAsset.glb",
         "nav_asset":"testJSONNavMeshAsset.glb",
         "house_filename":"testJSONHouseFileName.glb",
+        "shader_type" : "material",
         "user_defined" : {
             "user_string" : "stage defined string",
             "user_bool" : false,
