@@ -450,8 +450,7 @@ class AttributesManagersTest : public testing::Test {
  * loading process is working as expected.
  */
 TEST_F(AttributesManagersTest, AttributesManagers_PhysicsJSONLoadTest) {
-  LOG(INFO) << "Starting "
-               "AttributesManagersTest::AttributesManagers_PhysicsJSONLoadTest";
+  LOG(INFO) << "Starting AttributesManagers_PhysicsJSONLoadTest";
   // build JSON sample config
   const std::string& jsonString = R"({
   "physics_simulator": "bullet_test",
@@ -494,8 +493,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_PhysicsJSONLoadTest) {
  * loading process is working as expected.
  */
 TEST_F(AttributesManagersTest, AttributesManagers_LightJSONLoadTest) {
-  LOG(INFO) << "Starting "
-               "AttributesManagersTest::AttributesManagers_LightJSONLoadTest";
+  LOG(INFO) << "Starting AttributesManagers_LightJSONLoadTest";
   // build JSON sample config
   const std::string& jsonString = R"({
   "lights":{
@@ -573,9 +571,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_LightJSONLoadTest) {
  * JSON loading process is working as expected.
  */
 TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
-  LOG(INFO) << "Starting "
-               "AttributesManagersTest::AttributesManagers_"
-               "SceneInstanceJSONLoadTest";
+  LOG(INFO) << "Starting AttributesManagers_SceneInstanceJSONLoadTest";
   // build JSON sample config
   const std::string& jsonString = R"({
   "translation_origin" : "Asset_Local",
@@ -766,8 +762,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
  * loading process is working as expected.
  */
 TEST_F(AttributesManagersTest, AttributesManagers_StageJSONLoadTest) {
-  LOG(INFO) << "Starting "
-               "AttributesManagersTest::AttributesManagers_StageJSONLoadTest";
+  LOG(INFO) << "Starting AttributesManagers_StageJSONLoadTest";
 
   // build JSON sample config
   const std::string& jsonString =
@@ -836,8 +831,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_StageJSONLoadTest) {
  * loading process is working as expected.
  */
 TEST_F(AttributesManagersTest, AttributesManagers_ObjectJSONLoadTest) {
-  LOG(INFO) << "Starting "
-               "AttributesManagersTest::AttributesManagers_ObjectJSONLoadTest";
+  LOG(INFO) << "Starting AttributesManagers_ObjectJSONLoadTest";
   // build JSON sample config
   const std::string& jsonString = R"({
   "scale":[2,3,4],
@@ -910,8 +904,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_ObjectJSONLoadTest) {
  * own tests.
  */
 TEST_F(AttributesManagersTest, PhysicsAttributesManagersCreate) {
-  LOG(INFO)
-      << "Starting AttributesManagersTest::PhysicsAttributesManagersCreate";
+  LOG(INFO) << "Starting PhysicsAttributesManagersCreate";
 
   LOG(INFO) << "Start Test : Create, Edit, Remove Attributes for "
                "PhysicsAttributesManager @ "
@@ -999,8 +992,7 @@ TEST_F(AttributesManagersTest, ObjectAttributesManagersCreate) {
 }  // AttributesManagersTest::ObjectAttributesManagersCreate test
 
 TEST_F(AttributesManagersTest, LightLayoutAttributesManagerTest) {
-  LOG(INFO) << "Starting "
-               "AttributesManagersTest::LightLayoutAttributesManagerTest";
+  LOG(INFO) << "Starting LightLayoutAttributesManagerTest";
 
   std::string lightConfigFile = Cr::Utility::Directory::join(
       DATA_DIR, "test_assets/lights/test_lights.lighting_config.json");
@@ -1019,8 +1011,7 @@ TEST_F(AttributesManagersTest, LightLayoutAttributesManagerTest) {
  * asset attributes are changed.
  */
 TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
-  LOG(INFO) << "Starting "
-               "AttributesManagersTest::PrimitiveAssetAttributesTest";
+  LOG(INFO) << "Starting PrimitiveAssetAttributesTest";
   /**
    * Primitive asset attributes require slightly different testing since a
    * default set of attributes (matching the default Magnum::Primitive
@@ -1037,8 +1028,7 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
   //////////////////////////
   // get default template for solid capsule
   {
-    LOG(INFO) << "Starting "
-                 "AttributesManagersTest::CapsulePrimitiveAttributes";
+    LOG(INFO) << "Starting CapsulePrimitiveAttributes";
     CapsulePrimitiveAttributes::ptr dfltCapsAttribs =
         assetAttributesManager_->getDefaultCapsuleTemplate(false);
     // verify it exists
@@ -1059,8 +1049,7 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
   //////////////////////////
   // get default template for solid cone
   {
-    LOG(INFO) << "Starting "
-                 "AttributesManagersTest::ConePrimitiveAttributes";
+    LOG(INFO) << "Starting ConePrimitiveAttributes";
 
     ConePrimitiveAttributes::ptr dfltConeAttribs =
         assetAttributesManager_->getDefaultConeTemplate(false);
@@ -1082,8 +1071,7 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
   //////////////////////////
   // get default template for solid cylinder
   {
-    LOG(INFO) << "Starting "
-                 "AttributesManagersTest::CylinderPrimitiveAttributes";
+    LOG(INFO) << "Starting CylinderPrimitiveAttributes";
 
     CylinderPrimitiveAttributes::ptr dfltCylAttribs =
         assetAttributesManager_->getDefaultCylinderTemplate(false);
@@ -1105,8 +1093,7 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
   //////////////////////////
   // get default template for solid UV Sphere
   {
-    LOG(INFO) << "Starting "
-                 "AttributesManagersTest::UVSpherePrimitiveAttributes";
+    LOG(INFO) << "Starting UVSpherePrimitiveAttributes";
 
     UVSpherePrimitiveAttributes::ptr dfltUVSphereAttribs =
         assetAttributesManager_->getDefaultUVSphereTemplate(false);

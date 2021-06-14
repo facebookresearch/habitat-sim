@@ -290,9 +290,9 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
         resourceManager_.getObjectAttributesManager()->getObjectCopyByHandle(
             attributesHandle);
     if (!attributes) {
-      LOG(ERROR) << "PhysicsManager::addObject : "
-                    "Object creation failed due to unknown attributes "
-                 << attributesHandle;
+      LOG(ERROR)
+          << "::addObject : Object creation failed due to unknown attributes "
+          << attributesHandle;
       return ID_UNDEFINED;
     }
 
@@ -320,8 +320,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
         resourceManager_.getObjectAttributesManager()->getObjectCopyByID(
             attributesID);
     if (!attributes) {
-      LOG(ERROR) << "PhysicsManager::addObject : "
-                    "Object creation failed due to unknown attributes ID "
+      LOG(ERROR) << "::addObject : Object creation failed due to unknown "
+                    "attributes ID "
                  << attributesID;
       return ID_UNDEFINED;
     }

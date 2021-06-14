@@ -239,13 +239,13 @@ std::vector<int> AttributesManager<T, Access>::loadAllFileBasedTemplates(
   std::vector<int> templateIndices(paths.size(), ID_UNDEFINED);
   if (paths.size() > 0) {
     std::string dir = Cr::Utility::Directory::path(paths[0]);
-    LOG(INFO) << "AttributesManager::loadAllFileBasedTemplates : Loading "
-              << paths.size() << " " << this->objectType_
-              << " templates found in " << dir;
+    LOG(INFO) << "<" << this->objectType_
+              << ">::loadAllFileBasedTemplates : Loading " << paths.size()
+              << " " << this->objectType_ << " templates found in " << dir;
     for (int i = 0; i < paths.size(); ++i) {
       auto attributesFilename = paths[i];
-      LOG(INFO) << "AttributesManager::loadAllFileBasedTemplates : Load "
-                << this->objectType_ << " template: "
+      LOG(INFO) << "::loadAllFileBasedTemplates : Load " << this->objectType_
+                << " template: "
                 << Cr::Utility::Directory::filename(attributesFilename);
       auto tmplt = this->createObject(attributesFilename, true);
       // If failed to load, do not attempt to modify further
@@ -260,9 +260,9 @@ std::vector<int> AttributesManager<T, Access>::loadAllFileBasedTemplates(
       templateIndices[i] = tmplt->getID();
     }
   }
-  LOG(INFO)
-      << "AttributesManager::loadAllFileBasedTemplates : Loaded file-based "
-      << this->objectType_ << " templates: " << std::to_string(paths.size());
+  LOG(INFO) << "<" << this->objectType_
+            << ">::loadAllFileBasedTemplates : Loaded file-based templates: "
+            << std::to_string(paths.size());
   return templateIndices;
 }  // AttributesManager<T, Access>::loadAllObjectTemplates
 
@@ -278,8 +278,9 @@ std::vector<int> AttributesManager<T, Access>::loadAllTemplatesFromPathAndExt(
   // Check if directory
   const bool dirExists = Dir::isDirectory(path);
   if (dirExists) {
-    LOG(INFO) << "AttributesManager::loadAllTemplatesFromPathAndExt <"
-              << extType << "> : Parsing " << this->objectType_
+    LOG(INFO) << "<" << this->objectType_
+              << ">::loadAllTemplatesFromPathAndExt <" << extType
+              << "> : Parsing " << this->objectType_
               << " library directory: " + path + " for \'" + extType +
                      "\' files";
     for (auto& file : Dir::list(path, Dir::Flag::SortAscending)) {
@@ -297,11 +298,11 @@ std::vector<int> AttributesManager<T, Access>::loadAllTemplatesFromPathAndExt(
     if (fileExists) {
       paths.push_back(attributesFilepath);
     } else {  // neither a directory or a file
-      LOG(WARNING)
-          << "AttributesManager::loadAllTemplatesFromPathAndExt : Parsing "
-          << this->objectType_ << " : Cannot find " << path
-          << " as directory or " << attributesFilepath
-          << " as config file. Aborting parse.";
+      LOG(WARNING) << "<" << this->objectType_
+                   << ">::loadAllTemplatesFromPathAndExt : Parsing "
+                   << this->objectType_ << " : Cannot find " << path
+                   << " as directory or " << attributesFilepath
+                   << " as config file. Aborting parse.";
       return templateIndices;
     }  // if fileExists else
   }    // if dirExists else
@@ -319,7 +320,7 @@ void AttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad(
     const io::JsonGenericValue& filePaths) {
   for (rapidjson::SizeType i = 0; i < filePaths.Size(); ++i) {
     if (!filePaths[i].IsString()) {
-      LOG(ERROR) << "AttributesManager::buildAttrSrcPathsFromJSONAndLoad : "
+      LOG(ERROR) << "::buildAttrSrcPathsFromJSONAndLoad : "
                     "Invalid path "
                     "value in file path array element @ idx "
                  << i << ". Skipping.";
@@ -339,7 +340,8 @@ void AttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad(
       LOG(WARNING) << "No Glob path result for " << absolutePath;
     }
   }
-  LOG(INFO) << "AttributesManager::buildAttrSrcPathsFromJSONAndLoad : "
+  LOG(INFO) << "<" << this->objectType_
+            << ">::buildAttrSrcPathsFromJSONAndLoad : "
             << std::to_string(filePaths.Size())
             << " paths specified in JSON doc for " << this->objectType_
             << " templates.";
@@ -360,10 +362,10 @@ auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
   // Check if this configuration file exists and if so use it to build
   // attributes
   bool jsonFileExists = (this->isValidFileName(jsonAttrFileName));
-  LOG(INFO) << "AttributesManager::createFromJsonOrDefaultInternal  ("
-            << this->objectType_
-            << ") : Proposing JSON name : " << jsonAttrFileName
-            << " from original name : " << filename << " | This file "
+  LOG(INFO) << "<" << this->objectType_
+            << ">::createFromJsonOrDefaultInternal : Proposing JSON name : "
+            << jsonAttrFileName << " from original name : " << filename
+            << " | This file "
             << (jsonFileExists ? " exists." : " does not exist.");
   if (jsonFileExists) {
     // configuration file exists with requested name, use to build Attributes
@@ -396,7 +398,8 @@ bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
   // check for user defined attributes
   if (jsonConfig.HasMember("user_defined")) {
     if (!jsonConfig["user_defined"].IsObject()) {
-      LOG(WARNING) << "AttributesManager::parseUserDefinedJsonVals : "
+      LOG(WARNING) << "<" << this->objectType_
+                   << ">::parseUserDefinedJsonVals : "
                    << attribs->getSimplifiedHandle()
                    << " attributes specifies user_defined attributes but they "
                       "are not of the correct format. Skipping.";
@@ -443,7 +446,8 @@ bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
             --numConfigSettings;
             // TODO support numeric array in JSON
             LOG(WARNING)
-                << "AttributesManager::parseUserDefinedJsonVals : For "
+                << "<" << this->objectType_
+                << ">::parseUserDefinedJsonVals : For "
                 << attribs->getSimplifiedHandle()
                 << " attributes, user_defined config cell in JSON document "
                    "contains key "
@@ -456,7 +460,8 @@ bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
           // decrement count for key:obj due to not being handled type
           --numConfigSettings;
           LOG(WARNING)
-              << "AttributesManager::parseUserDefinedJsonVals : For "
+              << "<" << this->objectType_
+              << ">::parseUserDefinedJsonVals : For "
               << attribs->getSimplifiedHandle()
               << " attributes, user_defined config cell in JSON document "
                  "contains key "

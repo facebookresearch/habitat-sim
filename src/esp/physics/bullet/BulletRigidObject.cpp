@@ -166,7 +166,7 @@ BulletRigidObject::buildPrimitiveCollisionObject(int primTypeVal,
       (primTypeVal >= 0) &&
           (primTypeVal <
            static_cast<int>(metadata::PrimObjTypes::END_PRIM_OBJ_TYPES)),
-      "BulletRigidObject::buildPrimitiveCollisionObject : Illegal primitive "
+      "::buildPrimitiveCollisionObject : Illegal primitive "
       "value requested : "
           << primTypeVal,
       nullptr);
@@ -259,7 +259,7 @@ void BulletRigidObject::setCollisionFromBB() {
 
 void BulletRigidObject::setMotionType(MotionType mt) {
   if (mt == MotionType::UNDEFINED) {
-    LOG(WARNING) << "BulletRigidObject::setMotionType : Cannot set motion type "
+    LOG(WARNING) << "::setMotionType : Cannot set motion type "
                     "to MotionType::UNDEFINED.  Aborting.";
     return;
   }
@@ -479,7 +479,7 @@ bool BulletRigidObject::contactTest() {
 
 void BulletRigidObject::overrideCollisionGroup(CollisionGroup group) {
   if (!bObjectRigidBody_->isInWorld()) {
-    LOG(ERROR) << "BulletRigidObject::overrideCollisionGroup failed because "
+    LOG(ERROR) << "::overrideCollisionGroup failed because "
                   "the Bullet body hasn't yet been added to the Bullet world.";
   }
 

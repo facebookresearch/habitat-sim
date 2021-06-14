@@ -105,7 +105,7 @@ AssetAttributesManager::AssetAttributesManager()
     this->undeletableObjectNames_.insert(tmpltHandle);
   }
 
-  LOG(INFO) << "AssetAttributesManager::constructor : Built default "
+  LOG(INFO) << "::constructor : Built default "
                "primitive asset templates : "
             << std::to_string(defaultPrimAttributeHandles_.size());
 }  // AssetAttributesManager::ctor
@@ -131,7 +131,7 @@ int AssetAttributesManager::registerObjectFinalize(
   std::string primAttributesHandle = primAttributesTemplate->getHandle();
   // verify that attributes has been edited in a legal manner
   if (!primAttributesTemplate->isValidTemplate()) {
-    LOG(ERROR) << "AssetAttributesManager::registerObjectFinalize "
+    LOG(ERROR) << "::registerObjectFinalize "
                   ": Primitive asset attributes template named"
                << primAttributesHandle
                << "is not configured properly for specified prmitive"
@@ -161,7 +161,7 @@ AbstractPrimitiveAttributes::ptr AssetAttributesManager::buildObjectFromJSONDoc(
   // if not legal primitive asset attributes file name, have message and return
   // default sphere attributes.
   if (defaultPrimAttributeHandles_.count(primClassName) == 0) {
-    LOG(ERROR) << "AssetAttributesManager::buildObjectFromJSONDoc :Unknown "
+    LOG(ERROR) << "::buildObjectFromJSONDoc :Unknown "
                   "primitive class type : "
                << primClassName
                << " so returning default attributes for solid uvSphere.";
@@ -173,7 +173,7 @@ AbstractPrimitiveAttributes::ptr AssetAttributesManager::buildObjectFromJSONDoc(
   auto primAssetAttributes = this->initNewObjectInternal(primClassName, true);
   if (nullptr == primAssetAttributes) {
     LOG(ERROR)
-        << "AssetAttributesManager::buildObjectFromJSONDoc : unable to "
+        << "::buildObjectFromJSONDoc : unable to "
            "create default primitive asset attributes from primClassName "
         << primClassName
         << " so returning default attributes for solid uvSphere.";

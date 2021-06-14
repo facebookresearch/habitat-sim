@@ -79,8 +79,7 @@ void LightLayoutAttributesManager::setValsFromJSONDoc(
       lightAttribs->addLightInstance(lightInstanceAttribs);
       ++count;
     }
-    LOG(INFO) << "LightLayoutAttributesManager::setValsFromJSONDoc : " << count
-              << " of " << numLightConfigs
+    LOG(INFO) << "::setValsFromJSONDoc : " << count << " of " << numLightConfigs
               << " LightInstanceAttributes created successfully and added to "
                  "LightLayoutAttributes "
               << layoutName << ".";
@@ -91,8 +90,7 @@ void LightLayoutAttributesManager::setValsFromJSONDoc(
     // register if anything worth registering was found
     this->postCreateRegister(lightAttribs, true);
   } else {
-    LOG(WARNING) << "LightLayoutAttributesManager::setValsFromJSONDoc : "
-                 << layoutName
+    LOG(WARNING) << "::setValsFromJSONDoc : " << layoutName
                  << " does not contain a \"lights\" object or a valid "
                     "\"user_defined\" object and so no parsing was "
                     "done and this attributes is not being saved.";
@@ -140,8 +138,8 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
           LightInstanceAttributes::LightPositionNamesMap.at(strToLookFor));
     } else {
       LOG(WARNING)
-          << "LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc : "
-             "Position Model Value in JSON : `"
+          << "::setLightInstanceValsFromJSONDoc : 'position_model' Value in "
+             "JSON : `"
           << posMdleVal
           << "` does not map to a valid "
              "LightInstanceAttributes::LightPositionNamesMap value, so "
@@ -160,7 +158,7 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
     if (strToLookFor == "spot") {
       // TODO remove this if block to support spot lights
       LOG(WARNING)
-          << "LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc : "
+          << "::setLightInstanceValsFromJSONDoc : "
              "Type spotlight specified in JSON not currently supported, so "
              "defaulting LightInfo type to esp::gfx::LightType::Point.";
       specifiedTypeVal = static_cast<int>(esp::gfx::LightType::Point);
@@ -170,7 +168,7 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
           LightInstanceAttributes::LightTypeNamesMap.at(strToLookFor));
     } else {
       LOG(WARNING)
-          << "LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc : "
+          << "::setLightInstanceValsFromJSONDoc : "
              "Type Value in JSON : `"
           << tmpTypeVal
           << "` does not map to a valid "
@@ -208,12 +206,10 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
     if (!jsonConfig["spot"].IsObject()) {
       // TODO prune NOTE: component when spotlights are supported
       LOG(WARNING)
-          << "LightLayoutAttributesManager::setValsFromJSONDoc : \"spot\" "
-             "cell in JSON config unable to be parsed to set "
-             "spotlight parameters so skipping.  NOTE : Spotlights not "
-             "currently supported, so cone anble values are ignored and "
-             "light "
-             "will be created as a point light.";
+          << "::setValsFromJSONDoc : \"spot\" cell in JSON config unable to be "
+             "parsed to set spotlight parameters so skipping.  NOTE : "
+             "Spotlights not currently supported, so cone angle values are "
+             "ignored and light will be created as a point light.";
     } else {
       const auto& spotArea = jsonConfig["spot"];
       // set inner cone angle
@@ -297,10 +293,8 @@ gfx::LightSetup LightLayoutAttributesManager::createLightSetupFromAttributes(
             break;
           }
           default: {
-            LOG(INFO) << "LightLayoutAttributesManager::"
-                         "createLightSetupFromAttributes : Enum "
-                         "gfx::LightType with "
-                         "val "
+            LOG(INFO) << "::createLightSetupFromAttributes : Enum "
+                         "gfx::LightType with val "
                       << type
                       << " is not supported, so defaulting to "
                          "gfx::LightType::Point";
