@@ -389,7 +389,8 @@ void declareArticulatedObjectWrapper(py::module& m,
                     &ManagedArticulatedObject::getJointPositions,
                     &ManagedArticulatedObject::setJointPositions,
                     ("Get or set this " + objType +
-                     "'s joint positions, indexed by DOF id.")
+                     "'s joint positions. For link to index mapping see "
+                     "get_link_joint_pos_offset and get_link_num_joint_pos.")
                         .c_str())
       .def("get_joint_position_limits",
            &ManagedArticulatedObject::getJointPositionLimits,
