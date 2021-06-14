@@ -20,6 +20,7 @@ const std::map<std::string, esp::assets::AssetType>
 // All keys must be lowercase
 const std::map<std::string, ObjectInstanceShaderType>
     AbstractObjectAttributes::ShaderTypeNamesMap = {
+        {"material", ObjectInstanceShaderType::Material},
         {"flat", ObjectInstanceShaderType::Flat},
         {"phong", ObjectInstanceShaderType::Phong},
         {"pbr", ObjectInstanceShaderType::PBR},
@@ -62,7 +63,8 @@ ObjectAttributes::ObjectAttributes(const std::string& handle)
 
   setBoundingBoxCollisions(false);
   setJoinCollisionMeshes(true);
-  // default to unknown for objects
+  // default to unknown for objects - will use material-derived shader unless
+  // otherwise specified in config
   setShaderType(static_cast<int>(ObjectInstanceShaderType::Unknown));
   // TODO remove this once ShaderType support is complete
   setRequiresLighting(true);
@@ -74,8 +76,9 @@ StageAttributes::StageAttributes(const std::string& handle)
     : AbstractObjectAttributes("StageAttributes", handle) {
   setGravity({0, -9.8, 0});
   setOrigin({0, 0, 0});
-  // default to unknown for stages
-  setShaderType(static_cast<int>(ObjectInstanceShaderType::Flat));
+  // default to unknown for stages - will use material-derived shader unless
+  // otherwise specified in config
+  setShaderType(static_cast<int>(ObjectInstanceShaderType::Unknown));
   // TODO remove this once ShaderType support is complete
   setRequiresLighting(false);
   // 0 corresponds to esp::assets::AssetType::UNKNOWN->treated as general mesh
