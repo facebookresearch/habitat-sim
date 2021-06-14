@@ -190,8 +190,8 @@ struct Renderer::Impl {
         visualizedTex_->imageSize(0) != Mn::Vector2i{imageSize, imageSize}) {
       visualizedTex_ = Mn::GL::Texture2D{};
       (*visualizedTex_)
-          .setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
-          .setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
+          .setMinificationFilter(Mn::GL::SamplerFilter::Linear)
+          .setMagnificationFilter(Mn::GL::SamplerFilter::Linear)
           .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
           .setStorage(1, Mn::GL::TextureFormat::RG32F, {imageSize, imageSize});
     }

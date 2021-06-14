@@ -21,43 +21,31 @@ layout(location = OUTPUT_ATTRIBUTE_LOCATION_COLOR) out highp vec4 fragmentColor;
 //
 void main(void) {
   ivec2 dims = textureSize(SourceTexture, 0);  // lod = 0
-  float scale = dims.x;
+  float scale = 1.0 / dims.x;
   if (!FilterHorizontally) {
-    scale = dims.y;
+    scale = 1.0 / dims.y;
   }
 
   const int samples = 3;
-  float offset[samples] = float[]( 0.0, 1.0, 2.0);
-  float weight[samples] = float[]( 0.2270270270, 0.3162162162, 0.0702702703 );
+  float weight[samples] = float[](0.2270270270, 0.3162162162, 0.0702702703);
 
   // If you see artifact, then tune the vsmBias in the shadowsVSM.glsl
-  /*
-  const int samples = 5;
-  float offset[samples] = float[]( 0.0, 1.0, 2.0, 3.0, 4.0 );
-  float weight[samples] = float[]( 0.2270270270, 0.1945945946, 0.1216216216, 0.0540540541, 0.0162162162 );
-  */
+  // const int samples = 5;
+  // float weight[samples] = float[](0.2270270270, 0.1945945946, 0.1216216216, 0.0540540541, 0.0162162162);
 
-  // fragmentColor = texture2D(SourceTexture, vec2(gl_FragCoord) / scale) * weight[0];
-  fragmentColor = texture2D(SourceTexture, textureCoordinates) * weight[0];
+  vec3 result = texture(SourceTexture, textureCoordinates).rgb * weight[0];
   for (int i = 1; i < samples; ++i) {
     if (FilterHorizontally) {
       // x axis
-      /*
-      fragmentColor += texture2D(SourceTexture, (vec2(gl_FragCoord) + vec2(offset[i], 0.0)) / scale) * weight[i];
-      fragmentColor += texture2D(SourceTexture, (vec2(gl_FragCoord) - vec2(offset[i], 0.0)) / scale) * weight[i];
-      */
-      fragmentColor += texture2D(SourceTexture, textureCoordinates + vec2(offset[i], 0.0) / scale) * weight[i];
-      fragmentColor += texture2D(SourceTexture, textureCoordinates - vec2(offset[i], 0.0) / scale) * weight[i];
+      result += texture(SourceTexture, textureCoordinates + vec2(scale * i, 0.0)).rgb * weight[i];
+      result += texture(SourceTexture, textureCoordinates - vec2(scale * i, 0.0)).rgb * weight[i];
     } else {
       // y axis
-      /*
-      fragmentColor += texture2D(SourceTexture, (vec2(gl_FragCoord) + vec2(0.0, offset[i])) / scale) * weight[i];
-      fragmentColor += texture2D(SourceTexture, (vec2(gl_FragCoord) - vec2(0.0, offset[i])) / scale) * weight[i];
-      */
-      fragmentColor += texture2D(SourceTexture, textureCoordinates + vec2(0.0, offset[i]) / scale) * weight[i];
-      fragmentColor += texture2D(SourceTexture, textureCoordinates - vec2(0.0, offset[i]) / scale) * weight[i];
+      result += texture(SourceTexture, textureCoordinates + vec2(0.0, scale * i)).rgb * weight[i];
+      result += texture(SourceTexture, textureCoordinates - vec2(0.0, scale * i)).rgb * weight[i];
     }
   } // for
+  fragmentColor = vec4(result, 1.0);
 
   /*
   // box filter
