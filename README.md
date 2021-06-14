@@ -28,7 +28,6 @@ When rendering a scene from the Matterport3D dataset, Habitat-Sim achieves sever
 ---
 
 ## Table of contents
-   1. [URDF Prototype Details](#urdf-prototype-details)
    1. [Motivation](#motivation)
    1. [Citing Habitat](#citing-habitat)
    1. [Details](#details)
@@ -47,57 +46,7 @@ When rendering a scene from the Matterport3D dataset, Habitat-Sim achieves sever
    1. [License](#license)
    1. [References](#references)
 
-## URDF Prototype Details ##
-URDF support and articulated objects are coming soon to Habitat! This branch is an unstable prototype for this feature.
-
-Want to play with robots? Try the demo in viewer.
-- To get started:
-  - Download and extract the [URDF demo assets](https://dl.fbaipublicfiles.com/habitat/URDF_demo_assets.zip)  into `path-to-habitat-sim/data/`.
-  - Download and extract the [examples scenes](http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip) into `path-to-habitat-sim/data/`.
-  - (optionally) Download and extract the [example rigid objects](http://dl.fbaipublicfiles.com/habitat/objects_v0.2.zip) into `path-to-habitat-sim/data/objects/` (structure should be e.g.: `path-to-habitat-sim/data/objects/banana.glb`).
-  - Install the simulator for interactivity (with bullet) as described in [Installation](#installation).
-- Now run the viewer with physics as described in [Testing](#testing).
-   ```
-   ./build/viewer --enable-physics -- "data/scene_datasets/habitat-test-scenes/apartment_1.glb"
-   ```
-- Use keys to add robots from URDF (you can add multiple):
-  - `0` - aliengo
-  - `1` - kuka iiwa (fixed base)
-  - `3` - locobot (no arm)
-  - `4` - locobot (with arm)
-- Other useful key commands:
-  - `-` - remove last added robot
-  - `m` - toggle kinematic/dynamic for last robot added
-  - `v` - invert gravity
-  - `o` - add random rigid object
-  - `8` - add random rigid primitive
-  - `u` - remove last rigid object added
-  - `wasd` - move agent on navmesh
-  - `n` - toggle navmesh visualization
-  - `9` - place agent at random point from navmesh
-  - `esc` - exit
-- Useful mouse interactions:
-  - `mouse_wheel` selects an interaction mode (current mode displayed in GUI)
-    - `GRAB` - click to raycast on collision objects (box displays contact point).
-      - `LEFT` - Create a ball joint constraint at the contact point until mouse released (also sets the objct to DYNAMIC). Drag to move the constraint point in the camera plane.
-      - `RIGHT` - Sets objects to KINEMATIC (not robots). Drag to move the object or robot root in the camera plane.
-    - `THROW` - Toss a sphere! (tip: clean up the last one with `u`).
-    - `OPEN|CLOSE` - Experimental activation mode. On click activates scripted states. See `src/utils/viewer/viewer.cpp` for implementation details.
-    - `DOF(#)` - Kinematically set dof position of last robot added.
-      - `LEFT` - Click/drag horizontally to manually set the state of a dof.
-      - `RIGHT` - Click/drag horizontally to select the controlled dof.
-
-
-
-
-Also try the python API via the tutorial script (after download/install as above):
-```
-python path-to-habitat-sim/examples/tutorials/URDF_robotics_tutorial.py
-```
-**Note: this script will save and open a video file. On OSX you must close QuickTime Player between runs to see the updated video.**
-
-
-## Motivation ##
+## Motivation
 AI Habitat enables training of embodied AI agents (virtual robots) in a highly photorealistic & efficient 3D simulator, before transferring the learned skills to reality.
 This empowers a paradigm shift from 'internet AI' based on static datasets (e.g. ImageNet, COCO, VQA) to embodied AI where agents act within realistic environments, bringing to the fore active perception, long-term planning, learning from interaction, and holding a dialog grounded in an environment.
 

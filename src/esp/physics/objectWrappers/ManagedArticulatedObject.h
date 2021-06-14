@@ -24,33 +24,6 @@ class ManagedArticulatedObject
       : AbstractManagedPhysicsObject<esp::physics::ArticulatedObject>(
             classKey) {}
 
-  int createJointMotor(const int dof,
-                       const JointMotorSettings& settings) const {
-    if (auto sp = getObjectReference()) {
-      return sp->createJointMotor(dof, settings);
-    }
-    return ID_UNDEFINED;
-  }
-
-  void removeJointMotor(const int motorId) {
-    if (auto sp = getObjectReference()) {
-      sp->removeJointMotor(motorId);
-    }
-  }
-
-  JointMotorSettings getJointMotorSettings(const int motorId) const {
-    if (auto sp = getObjectReference()) {
-      return sp->getJointMotorSettings(motorId);
-    }
-    return {};
-  }
-
-  void updateJointMotor(const int motorId, const JointMotorSettings& settings) {
-    if (auto sp = getObjectReference()) {
-      sp->updateJointMotor(motorId, settings);
-    }
-  }
-
   scene::SceneNode* getLinkSceneNode(int linkId = -1) const {
     if (auto sp = getObjectReference()) {
       return &const_cast<scene::SceneNode&>(sp->getLinkSceneNode(linkId));
@@ -226,20 +199,6 @@ class ManagedArticulatedObject
       return sp->getCanSleep();
     }
     return false;
-  }
-
-  std::map<int, int> getExistingJointMotors() const {
-    if (auto sp = getObjectReference()) {
-      return sp->getExistingJointMotors();
-    }
-    return {};
-  }
-
-  std::map<int, int> createMotorsForAllDofs(JointMotorSettings settings) {
-    if (auto sp = getObjectReference()) {
-      return sp->createMotorsForAllDofs(settings);
-    }
-    return {};
   }
 
   void setAutoClampJointLimits(bool autoClamp) {

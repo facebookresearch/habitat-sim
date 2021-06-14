@@ -439,12 +439,6 @@ class BulletRigidObject : public BulletBase,
    */
   Magnum::Range3D getCollisionShapeAabb() const override;
 
-  /**
-   * @brief Check whether a specific @ref btCollisionObject belongs to this
-   * object.
-   */
-  bool isMe(const btCollisionObject* collisionObject);
-
   /** @brief Object data: All components of a @ref RigidObjectType::OBJECT are
    * wrapped into one @ref btRigidBody.
    */
@@ -465,8 +459,6 @@ class BulletRigidObject : public BulletBase,
    * after it was changed kinematically. Called automatically on kinematic
    * updates. See @ref btRigidBody::setWorldTransform. */
   void syncPose() override;
-
-  std::string getCollisionDebugName();
 
   /**
    * @brief construct a @ref btRigidBody for this object configured by

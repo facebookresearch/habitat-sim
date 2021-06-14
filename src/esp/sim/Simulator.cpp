@@ -23,7 +23,6 @@
 #include "esp/metadata/attributes/AttributesBase.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/physics/PhysicsManager.h"
-#include "esp/physics/bullet/BulletDebugManager.h"
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SemanticScene.h"
 #include "esp/sensor/CameraSensor.h"
@@ -142,7 +141,6 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
       gfx::Renderer::Flags flags;
       if (!(*requiresTextures_))
         flags |= gfx::Renderer::Flag::NoTextures;
-
       renderer_ = gfx::Renderer::create(flags);
     }
 
@@ -490,7 +488,6 @@ bool Simulator::instanceObjectsForActiveScene() {
     objectsAdded.push_back(objID);
   }  // for each object attributes
   // objectsAdded holds all ids of added objects.
-
   return true;
 }  // Simulator::instanceObjectsForActiveScene()
 
@@ -709,7 +706,7 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
     }
 
     // collect ArticulatedObject mesh components
-    for (auto& objectID : physicsManager_->getExistingArticulatedObjectIDs()) {
+    for (auto& objectID : physicsManager_->getExistingArticulatedObjectIds()) {
       if (physicsManager_->getArticulatedObjectMotionType(objectID) ==
           physics::MotionType::STATIC) {
         for (int linkIx = -1;
@@ -1096,23 +1093,5 @@ int Simulator::getAgentObservationSpaces(
   }
   return spaces.size();
 }
-
-//===============================================================================//
-// Articulated Object API (UNSTABLE!)
-
-int Simulator::addArticulatedObjectFromURDF(const std::string& filepath,
-                                            bool fixedBase,
-                                            float globalScale,
-                                            float massScale,
-                                            bool forceReload) {
-  if (sceneHasPhysics(0)) {
-    return physicsManager_->addArticulatedObjectFromURDF(
-        filepath, fixedBase, globalScale, massScale, forceReload);
-  }
-  Corrade::Utility::Debug()
-      << "Simulator::loadURDF : failed - physics not enabled.";
-  return esp::ID_UNDEFINED;
-}
-
 }  // namespace sim
 }  // namespace esp

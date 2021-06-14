@@ -332,38 +332,6 @@ void declareArticulatedObjectWrapper(py::module& m,
              AbstractManagedPhysicsObject<ArticulatedObject>,
              std::shared_ptr<ManagedArticulatedObject>>(m,
                                                         classStrPrefix.c_str())
-      .def("get_existing_joint_motor_ids",
-           &ManagedArticulatedObject::getExistingJointMotors,
-           ("Get a dictionary holding all of this " + objType +
-            "'s joint motor ids.")
-               .c_str())
-      .def("create_all_motors",
-           &ManagedArticulatedObject::createMotorsForAllDofs,
-           ("Make motors for all of this " + objType + "'s DOFs.").c_str())
-      .def("create_joint_motor", &ManagedArticulatedObject::createJointMotor,
-           ("Create a joint motor for the specified DOF on this " + objType +
-            " using the provided JointMotorSettings")
-               .c_str(),
-           "DOF"_a, "settings"_a)
-      .def(
-          "remove_joint_motor", &ManagedArticulatedObject::removeJointMotor,
-          ("Remove the joint motor specified by the given motor_id from this " +
-           objType + ".")
-              .c_str(),
-          "motor_id"_a)
-      .def("get_joint_motor_settings",
-           &ManagedArticulatedObject::getJointMotorSettings,
-           ("Get the JointMotorSettings for the motor with the given "
-            "motor_id in this " +
-            objType + ".")
-               .c_str(),
-           "motor_id"_a)
-      .def("update_joint_motor", &ManagedArticulatedObject::updateJointMotor,
-           ("Update the JointMotorSettings for the motor specified by the "
-            "provided motor_id on this " +
-            objType + ".")
-               .c_str(),
-           "motor_id"_a, "settings"_a)
       .def("get_link_scene_node", &ManagedArticulatedObject::getLinkSceneNode,
            ("Get the scene node for this " + objType +
             "'s articulated link specified by the passed "
@@ -542,15 +510,7 @@ void initPhysicsObjectBindings(py::module& m) {
       m, "ManagedBulletArticulatedObject")
       .def(
           "contact_test", &ManagedBulletArticulatedObject::contactTest,
-          R"(REQUIRES BULLET TO BE INSTALLED. Returns the result of a discrete collision test between this object and the world.)")
-      .def("supports_joint_motor",
-           &ManagedBulletArticulatedObject::supportsJointMotor,
-           R"(REQUIRES BULLET TO BE INSTALLED. )", "link_id"_a)
-      .def(
-          "get_joint_motor_max_impulse",
-          &ManagedBulletArticulatedObject::getJointMotorMaxImpulse,
-          R"(REQUIRES BULLET TO BE INSTALLED. Get the maximum impulse for the joint motor specified by the given motor_id)",
-          "motor_id"_a);
+          R"(REQUIRES BULLET TO BE INSTALLED. Returns the result of a discrete collision test between this object and the world.)");
 
 }  // initPhysicsObjectBindings
 

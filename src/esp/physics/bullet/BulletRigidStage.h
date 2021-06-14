@@ -54,8 +54,6 @@ class BulletRigidStage : public BulletBase, public RigidStage {
       const std::vector<assets::CollisionMeshData>& meshGroup,
       const assets::MeshTransformNode& node);
 
-  std::string getCollisionDebugName(int subpartId);
-
   /**
    * @brief Adds static stage collision objects to the simulation world after
    * contructing them if necessary.

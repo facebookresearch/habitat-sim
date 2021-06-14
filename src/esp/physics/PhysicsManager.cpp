@@ -575,39 +575,5 @@ void PhysicsManager::setVoxelizationDraw(const std::string& gridName,
     }
   }
 }
-
-const scene::SceneNode& PhysicsManager::getArticulatedObjectSceneNode(
-    int physObjectID) const {
-  CHECK(existingArticulatedObjects_.count(physObjectID) > 0);
-  return existingArticulatedObjects_.at(physObjectID)->node();
-}
-
-scene::SceneNode& PhysicsManager::getArticulatedObjectSceneNode(
-    int physObjectID) {
-  CHECK(existingArticulatedObjects_.count(physObjectID) > 0);
-  return existingArticulatedObjects_.at(physObjectID)->node();
-}
-
-const scene::SceneNode& PhysicsManager::getArticulatedLinkSceneNode(
-    int physObjectID,
-    int linkId) const {
-  CHECK(existingArticulatedObjects_.count(physObjectID) > 0);
-  return existingArticulatedObjects_.at(physObjectID)->getLinkSceneNode(linkId);
-}
-
-scene::SceneNode& PhysicsManager::getArticulatedLinkSceneNode(int physObjectID,
-                                                              int linkId) {
-  CHECK(existingArticulatedObjects_.count(physObjectID) > 0);
-  return const_cast<scene::SceneNode&>(
-      existingArticulatedObjects_.at(physObjectID)->getLinkSceneNode(linkId));
-}
-
-std::vector<scene::SceneNode*>
-PhysicsManager::getArticulatedLinkVisualSceneNodes(const int objectID,
-                                                   const int linkID) const {
-  CHECK(existingArticulatedObjects_.count(objectID) > 0);
-  return existingArticulatedObjects_.at(objectID)->getLinkVisualSceneNodes(
-      linkID);
-}
 }  // namespace physics
 }  // namespace esp

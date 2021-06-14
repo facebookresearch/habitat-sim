@@ -50,7 +50,6 @@
 #include "esp/core/esp.h"
 #include "esp/gfx/Drawable.h"
 #include "esp/io/io.h"
-#include "esp/sensor/FisheyeSensor.h"
 
 #ifdef ESP_BUILD_WITH_VHACD
 #include "esp/geo/VoxelUtils.h"
@@ -63,389 +62,15 @@
 #include "esp/sim/Simulator.h"
 
 #include "ObjectPickingHelper.h"
-#include "esp/physics/configure.h"
-
-// for ease of access
-namespace Cr = Corrade;
-namespace Mn = Magnum;
 
 constexpr float moveSensitivity = 0.07f;
 constexpr float lookSensitivity = 0.9f;
 constexpr float rgbSensorHeight = 1.5f;
 constexpr float agentActionsPerSecond = 60.0f;
 
-struct Openable {
-  int articulatedObjectId, linkId, dofIx;
-  float dofOpen, dofClosed;
-
-  esp::sim::Simulator* sim_;
-
-  Openable(esp::sim::Simulator* sim,
-           int _articulatedObjectId,
-           int _linkId,
-           int _dofIx,
-           float _dofOpen,
-           float _dofClosed)
-      : articulatedObjectId(_articulatedObjectId),
-        linkId(_linkId),
-        dofIx(_dofIx),
-        dofOpen(_dofOpen),
-        dofClosed(_dofClosed),
-        sim_(sim) {}
-
-  // copy constructor
-  Openable(const Openable&) = default;
-
-  virtual void openClose() {
-    std::vector<float> pose =
-        sim_->getArticulatedObjectPositions(articulatedObjectId);
-    Corrade::Utility::Debug() << "openClose: " << pose;
-
-    if (abs(pose[dofIx] - dofClosed) > 0.1) {
-      Corrade::Utility::Debug() << "close = " << dofClosed;
-      // count this as open and close it
-      pose[dofIx] = dofClosed;
-    } else {
-      Corrade::Utility::Debug() << "open = " << dofOpen;
-      pose[dofIx] = dofOpen;
-    }
-    sim_->setArticulatedObjectPositions(articulatedObjectId, pose);
-  }
-};
-
-// locobot demo
-enum LocobotControlMode {
-  NO_OP,
-  FORWARD,
-  BACK,
-  RIGHT,
-  LEFT,
-  RANDOM,
-};
-
-std::string getEnumName(LocobotControlMode mode) {
-  switch (mode) {
-    case (NO_OP):
-      return "NO_OP";
-      break;
-    case (FORWARD):
-      return "FORWARD";
-      break;
-    case (BACK):
-      return "BACK";
-      break;
-    case (RIGHT):
-      return "RIGHT";
-      break;
-    case (RANDOM):
-      return "RANDOM";
-      break;
-  }
-  return "NONE";
-}
-
-// controls a locobot
-struct LocobotController {
-  std::map<int, int> dofsToMotorIds;
-  LocobotControlMode mode = NO_OP;
-  esp::sim::Simulator& sim_;
-  int objectId;
-  int lWheelDof;
-  int rWheelDof;
-
-  int lWheelMotorId, rWheelMotorId;
-
-  LocobotController(esp::sim::Simulator& sim,
-                    int _articulatedObjectId,
-                    int _lWheelDof = 2,
-                    int _rWheelDof = 3)
-      : sim_(sim), objectId(_articulatedObjectId) {
-    Corrade::Utility::Debug() << "LocobotController constructor.";
-    dofsToMotorIds = sim_.createMotorsForAllDofs(objectId);
-    Corrade::Utility::Debug() << "dofsToMotorIds = " << dofsToMotorIds;
-    std::vector<float> pose = sim_.getArticulatedObjectPositions(objectId);
-    for (auto id : dofsToMotorIds) {
-      sim_.updateJointMotor(objectId, id.second,
-                            {pose[id.first], 1.0, 0, 0, 1.0});
-    }
-    lWheelDof = _lWheelDof;
-    rWheelDof = _rWheelDof;
-    lWheelMotorId = dofsToMotorIds.at(lWheelDof);
-    rWheelMotorId = dofsToMotorIds.at(rWheelDof);
-    sim_.updateJointMotor(objectId, lWheelMotorId, {0, 0, 0, 0, 10.0});
-    sim_.updateJointMotor(objectId, rWheelMotorId, {0, 0, 0, 0, 10.0});
-  }
-
-  ~LocobotController() {
-    for (auto id : dofsToMotorIds) {
-      sim_.removeJointMotor(objectId, id.second);
-    }
-  }
-
-  void toggle() {
-    // toggle the mode
-    mode = LocobotControlMode(int(mode + 1) % 6);
-    Corrade::Utility::Debug() << "Set Locobot mode: " << mode;
-
-    float wheelVel = 10.0;
-    float maxImpulse = 10.0;
-    switch (mode) {
-      case NO_OP: {
-        sim_.updateJointMotor(objectId, lWheelMotorId,
-                              {0, 0, 0, 0, maxImpulse});
-        sim_.updateJointMotor(objectId, rWheelMotorId,
-                              {0, 0, 0, 0, maxImpulse});
-        return;
-      } break;
-      case FORWARD: {
-        sim_.updateJointMotor(objectId, lWheelMotorId,
-                              {0, 0, wheelVel * 2, 1.0, maxImpulse});
-        sim_.updateJointMotor(objectId, rWheelMotorId,
-                              {0, 0, wheelVel * 2, 1.0, maxImpulse});
-      } break;
-      case BACK: {
-        sim_.updateJointMotor(objectId, lWheelMotorId,
-                              {0, 0, -wheelVel * 2, 1.0, maxImpulse});
-        sim_.updateJointMotor(objectId, rWheelMotorId,
-                              {0, 0, -wheelVel * 2, 1.0, maxImpulse});
-      } break;
-      case LEFT: {
-        sim_.updateJointMotor(objectId, lWheelMotorId,
-                              {0, 0, -wheelVel, 1.0, maxImpulse});
-        sim_.updateJointMotor(objectId, rWheelMotorId,
-                              {0, 0, wheelVel, 1.0, maxImpulse});
-      } break;
-      case RIGHT: {
-        sim_.updateJointMotor(objectId, lWheelMotorId,
-                              {0, 0, wheelVel, 1.0, maxImpulse});
-        sim_.updateJointMotor(objectId, rWheelMotorId,
-                              {0, 0, -wheelVel, 1.0, maxImpulse});
-      } break;
-      case RANDOM: {
-        float randL = (float)((rand() % 2000 - 1000) / 1000.0);
-        float randR = (float)((rand() % 2000 - 1000) / 1000.0);
-        sim_.updateJointMotor(objectId, lWheelMotorId,
-                              {0, 0, wheelVel * randL, 1.0, 1.0});
-        sim_.updateJointMotor(objectId, rWheelMotorId,
-                              {0, 0, wheelVel * randR, 1.0, 1.0});
-      } break;
-
-      default:
-        break;
-    }
-  }
-};
-
-struct AliengoController {
-  std::map<int, int> dofsToMotorIds;
-  esp::sim::Simulator& sim_;
-  int objectId;
-
-  std::vector<float> initialPose;
-  std::vector<float> cyclePose;
-
-  int mode = 0;
-  float cycleTime = 0;
-  float maxImpulse = 0.45;
-
-  AliengoController(esp::sim::Simulator& sim, int _articulatedObjectId)
-      : sim_(sim), objectId(_articulatedObjectId) {
-    dofsToMotorIds = sim_.createMotorsForAllDofs(objectId);
-    initialPose = sim_.getArticulatedObjectPositions(objectId);
-    cyclePose = sim_.getArticulatedObjectPositions(objectId);
-  }
-
-  ~AliengoController() {
-    for (auto id : dofsToMotorIds) {
-      sim_.removeJointMotor(objectId, id.second);
-    }
-  }
-
-  void toggle() {
-    mode = (mode + 1) % 3;
-    Corrade::Utility::Debug() << "AliengoController toggle mode = " << mode;
-    float positionGain = 0.0;
-    if (mode != 0) {
-      positionGain = 1.0;
-    }
-    for (auto id : dofsToMotorIds) {
-      if (mode != 2) {
-        sim_.updateJointMotor(objectId, id.second,
-                              {initialPose[id.first], positionGain, 0,
-                               maxImpulse / 2.0, maxImpulse});
-      } else {
-        sim_.updateJointMotor(objectId, id.second,
-                              {cyclePose[id.first], positionGain, 0,
-                               maxImpulse / 2.0, maxImpulse});
-      }
-    }
-  }
-
-  void cycleUpdate(float dt) {
-    if (mode == 2) {
-      cycleTime += dt / 2.0;
-      float sinDof = sin(cycleTime);
-      std::vector<int> shoulderDofs = {1, 4, 7, 10};
-      for (auto dof : shoulderDofs) {
-        cyclePose[dof] = sinDof;
-      }
-      for (auto id : dofsToMotorIds) {
-        sim_.updateJointMotor(
-            objectId, id.second,
-            {cyclePose[id.first], 1.0, 0, maxImpulse / 2.0, maxImpulse});
-      }
-    }
-  }
-};
-
-enum MouseInteractionMode {
-  LOOK,
-  OPENCLOSE,
-  GRAB,
-  THROW,
-  DOF,
-
-  NUM_MODES
-};
-
-// dof controlled by the mouse
-int mouseControlDof = 0;
-
-std::string getEnumName(MouseInteractionMode mode) {
-  switch (mode) {
-    case (LOOK):
-      return "LOOK";
-      break;
-    case (OPENCLOSE):
-      return "OPEN|CLOSE";
-      break;
-    case (GRAB):
-      return "GRAB";
-      break;
-    case (THROW):
-      return "THROW";
-      break;
-    case (DOF):
-      return "DOF (" + std::to_string(mouseControlDof) + ")";
-      break;
-  }
-  return "NONE";
-}
-
-struct MouseGrabber {
-  Magnum::Vector3 target;
-  int p2pId;
-  esp::sim::Simulator* sim_;
-
-  float gripDepth;
-
-  MouseGrabber(const Magnum::Vector3& clickPos,
-               float _gripDepth,
-               esp::sim::Simulator* sim) {
-    sim_ = sim;
-    target = clickPos;
-    gripDepth = _gripDepth;
-  }
-
-  virtual ~MouseGrabber() { sim_->removeConstraint(p2pId); }
-
-  virtual void updatePivotB(Magnum::Vector3 pos) {
-    sim_->updateP2PConstraintPivot(p2pId, pos);
-  }
-};
-
-struct MouseLinkGrabber : public MouseGrabber {
-  int articulatedObjectId, linkId;
-
-  MouseLinkGrabber(const Magnum::Vector3& clickPos,
-                   float _gripDepth,
-                   int _articulatedObjectId,
-                   int _linkId,
-                   esp::sim::Simulator* sim)
-      : MouseGrabber(clickPos, _gripDepth, sim) {
-    articulatedObjectId = _articulatedObjectId;
-    linkId = _linkId;
-    Corrade::Utility::Debug()
-        << "MouseLinkGrabber init: articulatedObjectId=" << articulatedObjectId
-        << ", linkId=" << linkId;
-    p2pId = sim_->createArticulatedP2PConstraint(articulatedObjectId, linkId,
-                                                 clickPos);
-  }
-};
-
-//! kinematically transform the root of the selected articulated object
-struct MouseArticulatedBaseGrabber : public MouseGrabber {
-  int articulatedObjectId;
-  Magnum::Vector3 rootClickOffset;
-  MouseArticulatedBaseGrabber(const Magnum::Vector3& clickPos,
-                              float _gripDepth,
-                              int _articulatedObjectId,
-                              esp::sim::Simulator* sim)
-      : MouseGrabber(clickPos, _gripDepth, sim) {
-    articulatedObjectId = _articulatedObjectId;
-    Magnum::Vector3 root =
-        sim_->getArticulatedObjectRootState(articulatedObjectId).translation();
-    rootClickOffset = root - clickPos;
-  }
-
-  virtual ~MouseArticulatedBaseGrabber() override {
-    Corrade::Utility::Debug()
-        << "~MouseArticulatedBaseGrabber final root pos: "
-        << sim_->getArticulatedObjectRootState(articulatedObjectId)
-               .translation();
-  }
-
-  virtual void updatePivotB(Magnum::Vector3 pos) override {
-    Magnum::Matrix4 rootState =
-        sim_->getArticulatedObjectRootState(articulatedObjectId);
-    rootState.translation() = pos + rootClickOffset;
-    Corrade::Utility::Debug() << "newRootState = " << rootState;
-    sim_->setArticulatedObjectSleep(articulatedObjectId, false);
-    sim_->setArticulatedObjectRootState(articulatedObjectId, rootState);
-  }
-};
-
-struct MouseObjectGrabber : public MouseGrabber {
-  int objectId;
-
-  MouseObjectGrabber(const Magnum::Vector3& clickPos,
-                     float _gripDepth,
-                     int _objectId,
-                     esp::sim::Simulator* sim)
-      : MouseGrabber(clickPos, _gripDepth, sim) {
-    objectId = _objectId;
-    sim_->setObjectMotionType(esp::physics::MotionType::DYNAMIC, objectId);
-    Corrade::Utility::Debug()
-        << "MouseObjectGrabber init: objectId=" << objectId;
-    p2pId = sim_->createRigidP2PConstraint(objectId, clickPos, false);
-  }
-};
-
-struct MouseObjectKinematicGrabber : public MouseGrabber {
-  int objectId;
-  Magnum::Vector3 clickOffset;
-  MouseObjectKinematicGrabber(const Magnum::Vector3& clickPos,
-                              float _gripDepth,
-                              int _objectId,
-                              esp::sim::Simulator* sim)
-      : MouseGrabber(clickPos, _gripDepth, sim) {
-    objectId = _objectId;
-    Magnum::Vector3 origin = sim_->getTranslation(objectId);
-    clickOffset = origin - clickPos;
-    sim_->setObjectMotionType(esp::physics::MotionType::KINEMATIC, objectId);
-  }
-
-  virtual ~MouseObjectKinematicGrabber() override {
-    Corrade::Utility::Debug()
-        << "~MouseObjectKinematicGrabber final origin pos: "
-        << sim_->getTranslation(objectId);
-  }
-
-  virtual void updatePivotB(Magnum::Vector3 pos) override {
-    Magnum::Vector3 objectOrigin = sim_->getTranslation(objectId);
-    sim_->setTranslation(clickOffset + pos, objectId);
-  }
-};
+// for ease of access
+namespace Cr = Corrade;
+namespace Mn = Magnum;
 
 namespace {
 
@@ -487,19 +112,6 @@ class Viewer : public Mn::Platform::Application {
   void keyReleaseEvent(KeyEvent& event) override;
   void moveAndLook(int repetitions);
 
-  //! id of render-only object used to visualize the click location
-  int clickVisObjectID_ = esp::ID_UNDEFINED;
-
-  std::unique_ptr<MouseGrabber> mouseGrabber_ = nullptr;
-
-  MouseInteractionMode mouseInteractionMode = LOOK;
-
-  std::vector<Openable> openableObjects;
-  std::vector<std::unique_ptr<LocobotController>> locobotControllers;
-  std::vector<std::unique_ptr<AliengoController>> aliengoControllers;
-
-  int throwSphere(Magnum::Vector3 direction);
-
   /**
    * @brief Instance an object from an ObjectAttributes.
    * @param configHandle The handle referencing the object's template in the
@@ -531,17 +143,6 @@ class Viewer : public Mn::Platform::Application {
    * Simulator API.
    */
   int addPrimitiveObject();
-
-  int addArticulatedObject(std::string urdfFilename,
-                           bool fixedBase = false,
-                           float globalScale = 1.0);
-
-  void clearAllObjects();
-
-  void placeArticulatedObjectAgentFront(int objectId);
-
-  void toggleArticulatedMotionType(int objectId);
-
   void pokeLastObject();
   void pushLastObject();
   void torqueLastObject();
@@ -609,7 +210,13 @@ Key Commands:
   'q': Query the agent's state and print to terminal.
 
   Utilities:
-  '2' switch ortho/perspective camera.
+  '1' toggle recording locations for trajectory visualization.
+  '2' build and display trajectory visualization.
+  '+' increase trajectory diameter
+  '-' decrease trajectory diameter
+  '3' toggle flying camera mode (user can apply camera transformation loaded from disk)
+  '5' switch ortho/perspective camera.
+  '6' reset ortho camera zoom/perspective camera FOV.
   'e' enable/disable frustum culling.
   'c' show/hide FPS overlay.
   'n' show/hide NavMesh wireframe.
@@ -1295,72 +902,9 @@ int Viewer::addPrimitiveObject() {
   }
 }  // addPrimitiveObject
 
-int Viewer::throwSphere(Mn::Vector3 direction) {
-  if (simulator_->getPhysicsSimulationLibrary() ==
-      esp::physics::PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
-    return esp::ID_UNDEFINED;
-  }
-
-  Mn::Matrix4 T =
-      agentBodyNode_
-          ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
-  Mn::Vector3 new_pos = T.transformPoint({0.0f, 1.5f, -0.5f});
-
-  auto icoSphere = esp::metadata::PrimObjTypes::ICOSPHERE_SOLID;
-  auto sphereAttributes = assetAttrManager_->createObject(icoSphere);
-  int sphereObjectTemplateId = objectAttrManager_
-                                   ->createPrimBasedAttributesTemplate(
-                                       sphereAttributes->getHandle(), true)
-                                   ->getID();
-
-  int physObjectID = simulator_->addObject(sphereObjectTemplateId);
-  simulator_->setTranslation(new_pos, physObjectID);
-
-  // throw the object
-  Mn::Vector3 impulse = direction;
-  Mn::Vector3 rel_pos = Mn::Vector3(0.0f, 0.0f, 0.0f);
-  simulator_->applyImpulse(impulse, rel_pos, physObjectID);
-  return physObjectID;
-}
-
-int Viewer::addArticulatedObject(std::string urdfFilename,
-                                 bool fixedBase,
-                                 float globalScale) {
-  int articulatedObjectId = simulator_->addArticulatedObjectFromURDF(
-      urdfFilename, fixedBase, globalScale, 1.0, true);
-  placeArticulatedObjectAgentFront(articulatedObjectId);
-  return articulatedObjectId;
-}
-
-void Viewer::placeArticulatedObjectAgentFront(int objectId) {
-  Mn::Vector3 localBasePos{0.0f, 1.0f, -2.0f};
-  Mn::Matrix4 T =
-      agentBodyNode_
-          ->MagnumObject::transformationMatrix();  // Relative to agent bodynode
-  // rotate the object
-  Mn::Matrix4 initialArticulatedObjectTransform;
-  // = Mn::Matrix4::rotationX(Mn::Rad(-3.14 / 2.0));
-  initialArticulatedObjectTransform.translation() =
-      T.transformPoint(localBasePos);
-  simulator_->setArticulatedObjectRootState(objectId,
-                                            initialArticulatedObjectTransform);
-}
-
-void Viewer::toggleArticulatedMotionType(int objectId) {
-  if (simulator_->getArticulatedObjectMotionType(objectId) ==
-      esp::physics::MotionType::DYNAMIC) {
-    simulator_->setArticulatedObjectMotionType(
-        objectId, esp::physics::MotionType::KINEMATIC);
-    Corrade::Utility::Debug() << "setting MotionType::KINEMATIC";
-  } else {
-    simulator_->setArticulatedObjectMotionType(
-        objectId, esp::physics::MotionType::DYNAMIC);
-    Corrade::Utility::Debug() << "setting MotionType::DYNAMIC";
-  }
-}
 void Viewer::buildTrajectoryVis() {
   if (agentLocs_.size() < 2) {
-    LOG(WARNING) << "Viewer::buildTrajectoryVis : No recorded trajectory "
+    LOG(WARNING) << "::buildTrajectoryVis : No recorded trajectory "
                     "points, so nothing to build. Aborting.";
     return;
   }
@@ -1372,16 +916,16 @@ void Viewer::buildTrajectoryVis() {
           << agentLocs_.size() << "_pts";
   std::string trajObjName(tmpName.str());
 
-  LOG(INFO) << "Viewer::buildTrajectoryVis : Attempting to build trajectory "
+  LOG(INFO) << "::buildTrajectoryVis : Attempting to build trajectory "
                "tube for :"
             << agentLocs_.size() << " points.";
   int trajObjID = simulator_->addTrajectoryObject(
       trajObjName, agentLocs_, 6, agentTrajRad_, color, true, 10);
   if (trajObjID != esp::ID_UNDEFINED) {
-    LOG(INFO) << "Viewer::buildTrajectoryVis : Success!  Traj Obj Name : "
+    LOG(INFO) << "::buildTrajectoryVis : Success!  Traj Obj Name : "
               << trajObjName << " has object ID : " << trajObjID;
   } else {
-    LOG(WARNING) << "Viewer::buildTrajectoryVis : Attempt to build trajectory "
+    LOG(WARNING) << "::buildTrajectoryVis : Attempt to build trajectory "
                     "visualization "
                  << trajObjName << " failed; Returned ID_UNDEFINED.";
   }
@@ -1392,23 +936,7 @@ void Viewer::removeLastObject() {
   if (existingObjectIDs.size() == 0) {
     return;
   }
-  if (clickVisObjectID_ == existingObjectIDs.back()) {
-    clickVisObjectID_ = esp::ID_UNDEFINED;
-  }
   simulator_->removeObject(existingObjectIDs.back());
-}
-
-void Viewer::clearAllObjects() {
-  locobotControllers.clear();
-  aliengoControllers.clear();
-  for (auto id : simulator_->getExistingObjectIDs()) {
-    simulator_->removeObject(id);
-  }
-  for (auto id : simulator_->getExistingArticulatedObjectIDs()) {
-    simulator_->removeArticulatedObject(id);
-  }
-  openableObjects.clear();
-  clickVisObjectID_ = esp::ID_UNDEFINED;
 }
 
 void Viewer::invertGravity() {
@@ -1607,9 +1135,6 @@ void Viewer::drawEvent() {
       // step physics at a fixed rate
       // In the interest of frame rate, only a single step is taken,
       // even if timeSinceLastSimulation is quite large
-      for (auto& aliengoController : aliengoControllers) {
-        aliengoController->cycleUpdate(1.0 / 60.0);
-      }
       simulator_->stepWorld(1.0 / 60.0);
       simulateSingleStep_ = false;
       const auto recorder = simulator_->getGfxReplayManager()->getRecorder();
@@ -1772,16 +1297,6 @@ void Viewer::drawEvent() {
     ImGui::End();
   }
 
-  ImGui::SetNextWindowPos(ImVec2(10, 10));
-  ImGui::Begin("main", NULL,
-               ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
-                   ImGuiWindowFlags_AlwaysAutoResize);
-  ImGui::SetWindowFontScale(2.0);
-  std::string modeText =
-      "Mouse Ineraction Mode: " + getEnumName(mouseInteractionMode);
-  ImGui::Text("%s", modeText.c_str());
-  ImGui::End();
-
   /* Set appropriate states. If you only draw ImGui, it is sufficient to
      just enable blending and scissor test in the constructor. */
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::Blending);
@@ -1936,162 +1451,51 @@ void Viewer::mousePressEvent(MouseEvent& event) {
     createPickedObjectVisualizer(pickedObject);
     return;
   }  // drawable selection
+  // add primitive w/ right click if a collision object is hit by a raycast
+  else if (event.button() == MouseEvent::Button::Right) {
+    if (simulator_->getPhysicsSimulationLibrary() !=
+        esp::physics::PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
+      auto viewportPoint = event.position();
+      auto ray = renderCamera_->unproject(viewportPoint);
+      esp::physics::RaycastResults raycastResults = simulator_->castRay(ray);
 
-  if (event.button() == MouseEvent::Button::Left ||
-      event.button() == MouseEvent::Button::Right) {
-    auto viewportPoint = event.position();
-    auto ray = renderCamera_->unproject(viewportPoint);
-
-    esp::physics::RaycastResults raycastResults = simulator_->castRay(ray);
-
-    // create the clickNode primitive if not present
-    if (clickVisObjectID_ == esp::ID_UNDEFINED) {
-      auto boxTemplateHandle =
-          objectAttrManager_->getSynthTemplateHandlesBySubstring(
-              "cubeWireframe")[0];
-      auto boxTemplate =
-          objectAttrManager_->getObjectByHandle(boxTemplateHandle);
-      boxTemplate->setScale({0.1, 0.1, 0.1});
-      boxTemplate->setIsCollidable(false);
-      objectAttrManager_->registerObject(boxTemplate, "click_vis");
-      clickVisObjectID_ = simulator_->addObjectByHandle("click_vis");
-      simulator_->setObjectMotionType(esp::physics::MotionType::KINEMATIC,
-                                      clickVisObjectID_);
-    }
-
-    // update click visualization
-    simulator_->setTranslation(
-        renderCamera_->node().absoluteTranslation() + ray.direction,
-        clickVisObjectID_);
-
-    // ray hit a collision object, visualize this and determine the hit object
-    if (raycastResults.hasHits()) {
-      auto hitInfo = raycastResults.hits[0];  // first hit
-
-      // update click visualization
-      simulator_->setTranslation(hitInfo.point, clickVisObjectID_);
-
-// voxelize the clicked object/stage
+      if (raycastResults.hasHits()) {
+        // If VHACD is enabled, and Ctrl + Right Click is used, voxelized the
+        // object clicked on.
 #ifdef ESP_BUILD_WITH_VHACD
-      if (event.button() == MouseEvent::Button::Right &&
-          event.modifiers() & MouseEvent::Modifier::Ctrl) {
-        auto objID = raycastResults.hits[0].objectId;
-        displayVoxelField(objID);
-        return;
-      }
+        if (event.modifiers() & MouseEvent::Modifier::Ctrl) {
+          auto objID = raycastResults.hits[0].objectId;
+          displayVoxelField(objID);
+          return;
+        }
 #endif
+        addPrimitiveObject();
+        auto existingObjectIDs = simulator_->getExistingObjectIDs();
+        // use the bounding box to create a safety margin for adding the
+        // object
+        float boundingBuffer =
+            simulator_->getObjectSceneNode(existingObjectIDs.back())
+                    ->computeCumulativeBB()
+                    .size()
+                    .max() /
+                2.0 +
+            0.04;
+        simulator_->setTranslation(
+            raycastResults.hits[0].point +
+                raycastResults.hits[0].normal * boundingBuffer,
+            existingObjectIDs.back());
 
-      if (hitInfo.objectId != esp::ID_UNDEFINED) {
-        // we hit an non-stage collision object
-
-        bool hitArticulatedObject = false;
-        // TODO: determine if this is true (link id?)
-        int hitArticulatedObjectId = esp::ID_UNDEFINED;
-        int hitArticulatedLinkIndex = esp::ID_UNDEFINED;
-        // TODO: get this info from link?
-        for (auto aoId : simulator_->getExistingArticulatedObjectIDs()) {
-          if (aoId == hitInfo.objectId) {
-            // grabbed the base link
-            hitArticulatedObject = true;
-            hitArticulatedObjectId = aoId;
-          } else if (simulator_->getObjectIdsToLinkIds(aoId).count(
-                         hitInfo.objectId) > 0) {
-            hitArticulatedObject = true;
-            hitArticulatedObjectId = aoId;
-            hitArticulatedLinkIndex =
-                simulator_->getObjectIdsToLinkIds(aoId).at(hitInfo.objectId);
-          }
-        }
-
-        if (mouseInteractionMode == GRAB) {
-          if (hitArticulatedObject) {
-            if (event.button() == MouseEvent::Button::Right) {
-              mouseGrabber_ = std::make_unique<MouseArticulatedBaseGrabber>(
-                  hitInfo.point,
-                  (hitInfo.point - renderCamera_->node().absoluteTranslation())
-                      .length(),
-                  hitArticulatedObjectId, simulator_.get());
-            } else if (event.button() == MouseEvent::Button::Left) {
-              if (hitArticulatedLinkIndex != esp::ID_UNDEFINED) {
-                // TODO: handle constraint to base link
-                mouseGrabber_ = std::make_unique<MouseLinkGrabber>(
-                    hitInfo.point,
-                    (hitInfo.point -
-                     renderCamera_->node().absoluteTranslation())
-                        .length(),
-                    hitArticulatedObjectId, hitArticulatedLinkIndex,
-                    simulator_.get());
-              }
-            }
-          } else {
-            if (event.button() == MouseEvent::Button::Right) {
-              mouseGrabber_ = std::make_unique<MouseObjectKinematicGrabber>(
-                  hitInfo.point,
-                  (hitInfo.point - renderCamera_->node().absoluteTranslation())
-                      .length(),
-                  hitInfo.objectId, simulator_.get());
-            } else if (event.button() == MouseEvent::Button::Left) {
-              mouseGrabber_ = std::make_unique<MouseObjectGrabber>(
-                  hitInfo.point,
-                  (hitInfo.point - renderCamera_->node().absoluteTranslation())
-                      .length(),
-                  hitInfo.objectId, simulator_.get());
-            }
-          }
-        } else if (mouseInteractionMode == OPENCLOSE) {
-          if (hitArticulatedObject) {
-            Corrade::Utility::Debug()
-                << "OPENCLOSE: aoid = " << hitArticulatedObjectId
-                << ", linkId = " << hitInfo.objectId;
-            for (auto openable : openableObjects) {
-              if (openable.articulatedObjectId == hitArticulatedObjectId) {
-                if (openable.linkId == hitArticulatedLinkIndex) {
-                  openable.openClose();
-                }
-              }
-            }
-            for (auto& locobotController : locobotControllers) {
-              if (locobotController->objectId == hitArticulatedObjectId) {
-                locobotController->toggle();
-              }
-            }
-            for (auto& aliengoController : aliengoControllers) {
-              if (aliengoController->objectId == hitArticulatedObjectId) {
-                aliengoController->toggle();
-              }
-            }
-          }
-        }
-      }  // end if not hit stage
-    }    // end raycastResults.hasHits()
-    if (mouseInteractionMode == THROW) {
-      throwSphere(ray.direction * 10);
+        simulator_->setRotation(esp::core::randomRotation(),
+                                existingObjectIDs.back());
+      }
     }
-  }  // end MouseEvent::Button::Left || Right
+  }  // end add primitive w/ right click
 
   event.setAccepted();
   redraw();
 }
 
-int mouseDofDelta = 0;
 void Viewer::mouseReleaseEvent(MouseEvent& event) {
-  // reset the mouse delta for dof selection
-  mouseDofDelta = 0;
-  if (event.button() == MouseEvent::Button::Left ||
-      event.button() == MouseEvent::Button::Right) {
-    mouseGrabber_ = nullptr;
-
-    // print the DOF
-    if (mouseInteractionMode == DOF) {
-      if (simulator_->getExistingArticulatedObjectIDs().size()) {
-        std::vector<float> pose = simulator_->getArticulatedObjectPositions(
-            simulator_->getExistingArticulatedObjectIDs().back());
-        Corrade::Utility::Debug()
-            << "DOF(" << mouseControlDof << ") = " << pose[mouseControlDof];
-      }
-    }
-  }
-
   event.setAccepted();
 }
 
@@ -2104,85 +1508,33 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
   if (!(scrollModVal)) {
     return;
   }
-
-  if (mouseGrabber_ != nullptr) {
-    // adjust the depth
-    auto ray = renderCamera_->unproject(event.position());
-    mouseGrabber_->gripDepth += event.offset().y() * 0.01;
-    mouseGrabber_->target = renderCamera_->node().absoluteTranslation() +
-                            ray.direction * mouseGrabber_->gripDepth;
-    mouseGrabber_->updatePivotB(mouseGrabber_->target);
-    // update click visualization
-    simulator_->setTranslation(mouseGrabber_->target, clickVisObjectID_);
-  } else {
-    // change the mouse interaction mode
-    int delta = 1;
-    if (event.offset().y() < 0)
-      delta = -1;
-    mouseInteractionMode = MouseInteractionMode(
-        (int(mouseInteractionMode) + delta) % int(NUM_MODES));
-    if (mouseInteractionMode < 0)
-      mouseInteractionMode = MouseInteractionMode(int(NUM_MODES) - 1);
-  }
+  // Use shift for fine-grained zooming
+  float modVal = (event.modifiers() & MouseEvent::Modifier::Shift) ? 1.01 : 1.1;
+  float mod = scrollModVal > 0 ? modVal : 1.0 / modVal;
+  auto& cam = getAgentCamera();
+  cam.modifyZoom(mod);
+  redraw();
 
   event.setAccepted();
 }  // Viewer::mouseScrollEvent
 
 void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
-  if (mouseInteractionMode == LOOK &&
-      (event.buttons() & MouseMoveEvent::Button::Left)) {
-    const Mn::Vector2i delta = event.relativePosition();
-    auto& controls = *defaultAgent_->getControls().get();
-    controls(*agentBodyNode_, "turnRight", delta.x());
-    // apply the transformation to all sensors
-    for (auto& p : agentBodyNode_->getSubtreeSensors()) {
-      controls(p.second.get().object(),  // SceneNode
-               "lookDown",               // action name
-               delta.y(),                // amount
-               false);                   // applyFilter
-      redraw();
-    }
-  } else if (mouseGrabber_ != nullptr) {
-    auto ray = renderCamera_->unproject(event.position());
-    mouseGrabber_->target = renderCamera_->node().absoluteTranslation() +
-                            ray.direction * mouseGrabber_->gripDepth;
-    mouseGrabber_->updatePivotB(mouseGrabber_->target);
-    // update click visualization
-    simulator_->setTranslation(mouseGrabber_->target, clickVisObjectID_);
-
-  } else if (mouseInteractionMode == DOF) {
-    if (simulator_->getExistingArticulatedObjectIDs().size()) {
-      if (event.buttons() & MouseMoveEvent::Button::Left) {
-        std::vector<float> pose = simulator_->getArticulatedObjectPositions(
-            simulator_->getExistingArticulatedObjectIDs().back());
-        mouseControlDof = mouseControlDof % pose.size();
-        if (mouseControlDof < 0)
-          mouseControlDof = pose.size() - 1;
-        pose[mouseControlDof] += event.relativePosition()[0] * 0.02;
-        simulator_->setArticulatedObjectPositions(
-            simulator_->getExistingArticulatedObjectIDs().back(), pose);
-      } else if (event.buttons() & MouseMoveEvent::Button::Right) {
-        mouseDofDelta += event.relativePosition()[0];
-        if (abs(mouseDofDelta) > 20) {
-          mouseControlDof += mouseDofDelta / abs(mouseDofDelta);
-          mouseDofDelta = 0;
-        }
-        if (mouseControlDof < 0)
-          mouseControlDof =
-              simulator_
-                  ->getArticulatedObjectPositions(
-                      simulator_->getExistingArticulatedObjectIDs().back())
-                  .size() -
-              1;
-        mouseControlDof =
-            mouseControlDof %
-            simulator_
-                ->getArticulatedObjectPositions(
-                    simulator_->getExistingArticulatedObjectIDs().back())
-                .size();
-      }
-    }
+  if (!(event.buttons() & MouseMoveEvent::Button::Left)) {
+    return;
   }
+
+  const Mn::Vector2i delta = event.relativePosition();
+  auto& controls = *defaultAgent_->getControls().get();
+  controls(*agentBodyNode_, "turnRight", delta.x());
+  // apply the transformation to all sensors
+  for (auto& p : agentBodyNode_->getSubtreeSensors()) {
+    controls(p.second.get().object(),  // SceneNode
+             "lookDown",               // action name
+             delta.y(),                // amount
+             false);                   // applyFilter
+  }
+
+  redraw();
 
   event.setAccepted();
 }
@@ -2213,51 +1565,28 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       // also `>` key
       simulateSingleStep_ = true;
       break;
-      // ==== Look direction and Movement ====
-    case KeyEvent::Key::Left:
-      defaultAgent_->act("turnLeft");
+      // ==== Miscellaneous ====
+    case KeyEvent::Key::One:
+      // toggle agent location recording for trajectory
+      setAgentLocationRecord(!agentLocRecordOn_);
       break;
-    case KeyEvent::Key::Right:
-      defaultAgent_->act("turnRight");
+    case KeyEvent::Key::Two:
+      // agent motion trajectory mesh synthesis with random color
+      buildTrajectoryVis();
       break;
-    case KeyEvent::Key::Up:
-      defaultAgent_->act("lookUp");
-      break;
-    case KeyEvent::Key::Down:
-      defaultAgent_->act("lookDown");
-      break;
-    case KeyEvent::Key::A:
-      defaultAgent_->act("moveLeft");
-      recAgentLocation();
-      break;
-    case KeyEvent::Key::D:
-      defaultAgent_->act("moveRight");
-      recAgentLocation();
-    case KeyEvent::Key::S:
-      defaultAgent_->act("moveBackward");
-      recAgentLocation();
-      break;
-    case KeyEvent::Key::W:
-      defaultAgent_->act("moveForward");
-      recAgentLocation();
-      break;
-    case KeyEvent::Key::X:
-      defaultAgent_->act("moveDown");
-      recAgentLocation();
-      break;
-    case KeyEvent::Key::Z:
-      defaultAgent_->act("moveUp");
-      recAgentLocation();
-      break;
-    case KeyEvent::Key::J:
+    case KeyEvent::Key::Four:
       sensorMode_ = static_cast<VisualSensorMode>(
           (uint8_t(sensorMode_) + 1) %
           uint8_t(VisualSensorMode::VisualSensorModeCount));
       LOG(INFO) << "Sensor mode is set to " << int(sensorMode_);
       break;
-    case KeyEvent::Key::Y:
+    case KeyEvent::Key::Five:
       // switch camera between ortho and perspective
       switchCameraType();
+      break;
+    case KeyEvent::Key::Six:
+      // reset camera zoom
+      getAgentCamera().resetZoom();
       break;
     case KeyEvent::Key::Seven:
       visualizeMode_ = static_cast<VisualizeMode>(
@@ -2279,6 +1608,9 @@ void Viewer::keyPressEvent(KeyEvent& event) {
           break;
       }
       break;
+    case KeyEvent::Key::Eight:
+      addPrimitiveObject();
+      break;
     case KeyEvent::Key::Nine:
       if (simulator_->getPathFinder()->isLoaded()) {
         const esp::vec3f position =
@@ -2286,6 +1618,32 @@ void Viewer::keyPressEvent(KeyEvent& event) {
         agentBodyNode_->setTranslation(Mn::Vector3(position));
       }
       break;
+    case KeyEvent::Key::LeftBracket:
+      saveAgentAndSensorTransformToFile();
+      break;
+    case KeyEvent::Key::RightBracket:
+      loadAgentAndSensorTransformFromFile();
+      break;
+
+    case KeyEvent::Key::Equal: {
+      // increase trajectory tube diameter
+      LOG(INFO) << "Bigger";
+      modTrajRad(true);
+      break;
+    }
+    case KeyEvent::Key::Minus: {
+      // decrease trajectory tube diameter
+      LOG(INFO) << "Smaller";
+      modTrajRad(false);
+      break;
+    }
+    case KeyEvent::Key::B: {
+      // toggle bounding box on objects
+      drawObjectBBs = !drawObjectBBs;
+      for (auto id : simulator_->getExistingObjectIDs()) {
+        simulator_->setObjectBBDraw(drawObjectBBs, id);
+      }
+    } break;
     case KeyEvent::Key::C:
       showFPS_ = !showFPS_;
       showFPS_ ? profiler_.enable() : profiler_.disable();
@@ -2297,6 +1655,12 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::F:
       pushLastObject();
       break;
+    case KeyEvent::Key::H:
+      printHelpText();
+      break;
+    case KeyEvent::Key::I:
+      screenshot();
+      break;
     case KeyEvent::Key::K:
       wiggleLastObject();
       break;
@@ -2304,13 +1668,6 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       // toggle navmesh visualization
       simulator_->setNavMeshVisualization(
           !simulator_->isNavMeshVisualizationActive());
-      break;
-    case KeyEvent::Key::M:
-      toggleArticulatedMotionType(
-          simulator_->getExistingArticulatedObjectIDs().back());
-      break;
-    case KeyEvent::Key::I:
-      screenshot();
       break;
     case KeyEvent::Key::O:
       addTemplateObject();
@@ -2322,170 +1679,6 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       // query the agent state
       showAgentStateMsg(true, true);
       break;
-    case KeyEvent::Key::B: {
-      // toggle bounding box on objects
-      drawObjectBBs = !drawObjectBBs;
-      for (auto id : simulator_->getExistingObjectIDs()) {
-        simulator_->setObjectBBDraw(drawObjectBBs, id);
-      }
-    } break;
-    case KeyEvent::Key::Zero: {
-      std::string urdfFilePath =
-          "data/URDF_demo_assets/aliengo/urdf/aliengo.urdf";
-      float URDFScaling = esp::core::Random().uniform_float_01() + 0.5;
-      int objectId = addArticulatedObject(urdfFilePath, false, URDFScaling);
-      Mn::Debug{} << "URDF Randomly scaled to " << URDFScaling;
-      auto R = Magnum::Matrix4::rotationX(Magnum::Rad(-1.56));
-      R.translation() =
-          simulator_->getArticulatedObjectRootState(objectId).translation();
-      simulator_->setArticulatedObjectRootState(objectId, R);
-      // manually set joint damping
-      for (auto motor : simulator_->getExistingJointMotors(objectId)) {
-        simulator_->updateJointMotor(objectId, motor.first,
-                                     {0, 0, 0, 1.0, 0.1});
-      }
-      // modify the pose to account for joint limits
-      std::vector<float> pose =
-          simulator_->getArticulatedObjectPositions(objectId);
-      std::vector<int> calfDofs = {2, 5, 8, 11};
-      for (auto dof : calfDofs) {
-        pose[dof] = -1.0;
-        pose[dof - 1] = 0.45;  // also set a thigh
-      }
-      simulator_->setArticulatedObjectPositions(objectId, pose);
-      auto aliengoController =
-          std::make_unique<AliengoController>(*simulator_.get(), objectId);
-      aliengoControllers.push_back(std::move(aliengoController));
-
-      // edit the friction
-      /*
-      for(int linkId=0; linkId<simulator_->getNumArticulatedLinks(objectId);
-      ++linkId){ simulator_->setArticulatedLinkFriction(objectId, linkId, 1);
-      }
-       */
-    } break;
-    case KeyEvent::Key::One: {
-      std::string urdfFilePath =
-          "data/test_assets/urdf/kuka_iiwa/model_free_base.urdf";
-      int objectId = addArticulatedObject(urdfFilePath, true);
-      // manually adjust joint damping (half impulse)
-      for (auto motor : simulator_->getExistingJointMotors(objectId)) {
-        auto settings =
-            simulator_->getJointMotorSettings(objectId, motor.first);
-        Mn::Debug{} << "motor: " << motor;
-        simulator_->updateJointMotor(objectId, motor.first,
-                                     {0, 0, 0, 1.0, settings.maxImpulse / 2.0});
-      }
-    } break;
-    case KeyEvent::Key::Two: {
-      // switch camera between ortho and perspective
-      switchCameraType();
-    } break;
-    case KeyEvent::Key::Three: {
-      std::string urdfFilePath =
-          "data/URDF_demo_assets/locobot/urdf/"
-          "locobot_description_lite2.urdf";
-      int objectId = addArticulatedObject(urdfFilePath);
-      auto R = Magnum::Matrix4::rotationX(Magnum::Rad(-1.56));
-      R.translation() =
-          simulator_
-              ->getArticulatedObjectRootState(
-                  simulator_->getExistingArticulatedObjectIDs().back())
-              .translation();
-      simulator_->setArticulatedObjectRootState(
-          simulator_->getExistingArticulatedObjectIDs().back(), R);
-      auto locobotController = std::make_unique<LocobotController>(
-          *simulator_.get(),
-          simulator_->getExistingArticulatedObjectIDs().back());
-      locobotControllers.push_back(std::move(locobotController));
-    } break;
-    case KeyEvent::Key::Four: {
-      // Locobot with arm: dynamics don't work very well
-      std::string urdfFilePath =
-          "data/URDF_demo_assets/locobot/urdf/"
-          "locobot_description2.urdf";
-      int objectId = addArticulatedObject(urdfFilePath);
-      auto R = Magnum::Matrix4::rotationX(Magnum::Rad(-1.56));
-      R.translation() =
-          simulator_
-              ->getArticulatedObjectRootState(
-                  simulator_->getExistingArticulatedObjectIDs().back())
-              .translation();
-      simulator_->setArticulatedObjectRootState(
-          simulator_->getExistingArticulatedObjectIDs().back(), R);
-      // manually set joint damping
-      for (auto motor : simulator_->getExistingJointMotors(objectId)) {
-        simulator_->updateJointMotor(objectId, motor.first,
-                                     {0, 0, 0, 1.0, 0.1});
-      }
-      std::vector<float> pose =
-          simulator_->getArticulatedObjectPositions(objectId);
-      pose[4] = -1.7;
-      simulator_->setArticulatedObjectPositions(objectId, pose);
-      auto locobotController = std::make_unique<LocobotController>(
-          *simulator_.get(),
-          simulator_->getExistingArticulatedObjectIDs().back(), 9, 10);
-      locobotControllers.push_back(std::move(locobotController));
-    } break;
-    case KeyEvent::Key::Five: {
-      // add the fridge in front of the agent with fixed base
-      std::string urdfFilePath = "data/test_assets/urdf/fridge/fridge.urdf";
-      auto fridgeAOId = addArticulatedObject(urdfFilePath, true);
-      simulator_->setAutoClampJointLimits(fridgeAOId, true);
-
-      Mn::Vector3 localFridgeBasePos{0.0f, 0.94f, -2.0f};
-      Mn::Matrix4 T = agentBodyNode_->MagnumObject::transformationMatrix();
-      // rotate the object
-      auto R = Magnum::Matrix4::rotationY(Magnum::Rad(-1.56));
-      Mn::Matrix4 initialFridgeTransform = R * T;
-      initialFridgeTransform.translation() =
-          T.transformPoint(localFridgeBasePos);
-      simulator_->setArticulatedObjectRootState(fridgeAOId,
-                                                initialFridgeTransform);
-    } break;
-    case KeyEvent::Key::Six: {
-      // load a humanoid made of primitives
-      std::string urdfFilePath = "data/test_assets/urdf/amass_male.urdf";
-      int objectId = addArticulatedObject(urdfFilePath, false);
-      // spherical joint motors created by default but require tuning for
-      // stability
-      for (auto& motorId : simulator_->getExistingJointMotors(objectId)) {
-        auto motorSettings =
-            simulator_->getJointMotorSettings(objectId, motorId.first);
-        motorSettings.maxImpulse = 50;
-        simulator_->updateJointMotor(objectId, motorId.first, motorSettings);
-      }
-
-    } break;
-    case KeyEvent::Key::Minus: {
-      if (simulator_->getExistingArticulatedObjectIDs().size()) {
-        for (auto& controller : locobotControllers) {
-          if (controller->objectId ==
-              simulator_->getExistingArticulatedObjectIDs().back()) {
-            locobotControllers.pop_back();
-          }
-        }
-        for (auto& controller : aliengoControllers) {
-          if (controller->objectId ==
-              simulator_->getExistingArticulatedObjectIDs().back()) {
-            aliengoControllers.pop_back();
-          }
-        }
-        simulator_->removeArticulatedObject(
-            simulator_->getExistingArticulatedObjectIDs().back());
-      }
-    } break;
-    case KeyEvent::Key::Equal: {
-      if (simulator_->getPhysicsSimulationLibrary() ==
-          esp::physics::PhysicsManager::PhysicsSimulationLibrary::Bullet) {
-        debugBullet_ = !debugBullet_;
-        Mn::Debug{} << "debugBullet_ = " << debugBullet_;
-      } else {
-        Mn::Debug{} << "Bullet not enabled, cannot toggle Bullet debug view.";
-      }
-    } break;
-    case KeyEvent::Key::H:
-      printHelpText();
     case KeyEvent::Key::T:
       torqueLastObject();
       break;
