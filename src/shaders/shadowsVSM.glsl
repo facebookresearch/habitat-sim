@@ -5,7 +5,7 @@
 #if defined(SHADOWS_VSM)
 precision highp float;
 uniform samplerCube ShadowMap0;
-const float vsmBias = 0.1f;
+const float vsmBias = 0.008f;
 
 float computeShadowUpperBound(vec2 moments, float fragLinearDepth) {
   // eliminates cubemap boundary thin line
@@ -13,16 +13,15 @@ float computeShadowUpperBound(vec2 moments, float fragLinearDepth) {
   // p == 1 otherwise
   // reference:
   // https://github.com/sydneyzh/variance_shadow_mapping_vk/
-  // float p = step(fragLinearDepth, moments.x + vsmBias); // correct
-  float p = fragLinearDepth < moments.x ? 1.0 : 0.0;
+  float p = step(fragLinearDepth, moments.x + vsmBias);
 
-  float variance = max(moments.y - moments.x * moments.x, 0.0001);
+  float variance = max(moments.y - moments.x * moments.x, 0.000001);
   float d = fragLinearDepth - moments.x;
   // avoid VSM light-bleeding
   // see here:
   // https://dontnormalize.me/2014/01/19/variance-shadow-maps/
-  // float pMax = smoothstep(0.1, 1.0, variance / (variance + d * d));
-  float pMax = variance / (variance + d * d);
+  float pMax = smoothstep(0.4, 1.0, variance / (variance + d * d));
+  // float pMax = variance / (variance + d * d);
 
   return max(p, pMax);
 }

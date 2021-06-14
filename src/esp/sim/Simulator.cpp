@@ -615,10 +615,8 @@ void Simulator::computeShadowMaps(float lightNearPlane, float lightFarPlane) {
         //                 {gfx::CubeMap::Flag::DepthTexture |
         //                  gfx::CubeMap::Flag::ColorTexture}},
         new gfx::CubeMap{shadowMapSize,
-                         {
-                             gfx::CubeMap::Flag::VarianceShadowMapTexture
-                             // | gfx::CubeMap::Flag::AutoBuildMipmap
-                         }},
+                         {gfx::CubeMap::Flag::VarianceShadowMapTexture |
+                          gfx::CubeMap::Flag::AutoBuildMipmap}},
         Mn::ResourceDataState::Final, Mn::ResourcePolicy::Resident);
 
     CORRADE_INTERNAL_ASSERT(pointShadowMap && pointShadowMap.key() == key);
@@ -659,10 +657,8 @@ void Simulator::computeShadowMaps(float lightNearPlane, float lightFarPlane) {
     shadowManager.set<gfx::CubeMap>(
         helperShadowMap.key(),
         new gfx::CubeMap{shadowMapSize,
-                         {
-                             gfx::CubeMap::Flag::VarianceShadowMapTexture
-                             // | gfx::CubeMap::Flag::AutoBuildMipmap
-                         }},
+                         {gfx::CubeMap::Flag::VarianceShadowMapTexture |
+                          gfx::CubeMap::Flag::AutoBuildMipmap}},
         Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
 
     CORRADE_INTERNAL_ASSERT(helperShadowMap &&
