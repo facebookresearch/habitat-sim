@@ -10,6 +10,10 @@ in highp vec3 position;
 layout(location = OUTPUT_ATTRIBUTE_LOCATION_COLOR) out vec4 fragmentColor;
 // ------------ shader -----------------------
 void main() {
+    // Careful!
+    // abs(position.z) is the depth in the light space.
+    // The following is the depth in the world space!!
+    fragmentColor = vec4(0.0, 0.0, 0.0, 0.0);
     float d = length(position);
     fragmentColor.x = d;
     fragmentColor.y = d * d;

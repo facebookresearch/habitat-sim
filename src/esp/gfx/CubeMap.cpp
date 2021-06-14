@@ -544,8 +544,21 @@ void CubeMap::loadTexture(TextureType type,
     }  // switch
     LOG(INFO) << "Loaded image " << iFace << " from " << filename;
   }
-  // Color texture ONLY, NOT for depth
-  if ((flags_ & Flag::AutoBuildMipmap) && (flags_ & Flag::ColorTexture)) {
+  // sanity check is within the function
+  generateMipmap(type);
+}
+
+void CubeMap::generateMipmap(TextureType type) {
+  CORRADE_INTERNAL_ASSERT(type == TextureType::Color ||
+                          type == TextureType::VarianceShadowMap);
+  if (type == TextureType::Color) {
+    CORRADE_INTERNAL_ASSERT(flags_ & Flag::ColorTexture);
+  } else if (type == TextureType::VarianceShadowMap) {
+    CORRADE_INTERNAL_ASSERT(flags_ & Flag::VarianceShadowMapTexture);
+  }
+  if ((flags_ & Flag::AutoBuildMipmap) ||
+      (flags_ & Flag::ManuallyBuildMipmap)) {
+    Mn::GL::CubeMapTexture& tex = texture(type);
     tex.generateMipmap();
   }
 }
@@ -627,6 +640,48 @@ void CubeMap::visualizeTexture(TextureType type,
 
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
 }
+
+void CubeMap::copySubImage(unsigned int cubeSideIndex,
+                           TextureType type,
+                           Magnum::GL::Texture2D& texture,
+                           unsigned int mipLevel) {
+  CORRADE_INTERNAL_ASSERT(cubeSideIndex < 6);
+
+  if (mipLevel > 0) {
+    mipLevelSanityCheck("CubeMap::CopyToTexture2D():", flags_, mipLevel,
+                        mipmapLevels_);
+  }
+
+  int size = imageSize_ / pow(2, mipLevel);
+  CORRADE_ASSERT(texture.imageSize(0) == Mn::Vector2i(size, size),
+                 "CubeMap::CopyToTexture2D(): the texture size does not match "
+                 "the cubemap size.", );
+  // map for read
+  switch (type) {
+    case TextureType::Color:
+      frameBuffer_[cubeSideIndex].mapForRead(rgbaAttachment);
+      break;
+
+    case TextureType::VarianceShadowMap:
+      frameBuffer_[cubeSideIndex].mapForRead(vsmAttachment);
+      break;
+
+    case TextureType::ObjectId:
+      frameBuffer_[cubeSideIndex].mapForRead(objectIdAttachment);
+      break;
+
+    default:
+      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+      break;
+  }
+
+  frameBuffer_[cubeSideIndex].copySubImage(
+      Mn::Range2Di{{0, 0}, {size, size}},  // rectangle area
+      texture,                             // destination
+      mipLevel,                            // mip level
+      {0, 0});                             // offset
+}
+
 void CubeMap::renderToTexture(CubeMapCamera& camera,
                               scene::SceneGraph& sceneGraph,
                               const char* drawableGroupName,

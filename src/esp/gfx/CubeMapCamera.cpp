@@ -97,10 +97,11 @@ CubeMapCamera& CubeMapCamera::setProjectionMatrix(int width,
   using namespace Mn::Math::Literals;
   MagnumCamera::setProjectionMatrix(
       Mn::Matrix4::perspectiveProjection(
-          90.0_degf,  // horizontal field of view angle
-          1.0,        // aspect ratio (width/height)
-          znear,      // z-near plane
-          zfar))      // z-far plane
+          // 90.0_degf,  // horizontal field of view angle
+          Mn::Rad{2.0 * float(atan(width / (width - 0.5)))},
+          1.0,    // aspect ratio (width/height)
+          znear,  // z-near plane
+          zfar))  // z-far plane
       .setViewport({width, width});
   return *this;
 }

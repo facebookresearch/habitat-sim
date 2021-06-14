@@ -615,8 +615,10 @@ void Simulator::computeShadowMaps(float lightNearPlane, float lightFarPlane) {
         //                 {gfx::CubeMap::Flag::DepthTexture |
         //                  gfx::CubeMap::Flag::ColorTexture}},
         new gfx::CubeMap{shadowMapSize,
-                         {gfx::CubeMap::Flag::VarianceShadowMapTexture |
-                          gfx::CubeMap::Flag::AutoBuildMipmap}},
+                         {
+                             gfx::CubeMap::Flag::VarianceShadowMapTexture
+                             // | gfx::CubeMap::Flag::AutoBuildMipmap
+                         }},
         Mn::ResourceDataState::Final, Mn::ResourcePolicy::Resident);
 
     CORRADE_INTERNAL_ASSERT(pointShadowMap && pointShadowMap.key() == key);
@@ -649,6 +651,27 @@ void Simulator::computeShadowMaps(float lightNearPlane, float lightFarPlane) {
   pointShadowMap->renderToTexture(camera, sg, shadowMapDrawableGroupName,
                                   {gfx::RenderCamera::Flag::FrustumCulling |
                                    gfx::RenderCamera::Flag::ClearDepth});
+
+  Mn::ResourceKey helperKey("helper-shadow-cubemap");
+  Mn::Resource<gfx::CubeMap> helperShadowMap =
+      shadowManager.get<gfx::CubeMap>(helperKey);
+  if (!helperShadowMap) {
+    shadowManager.set<gfx::CubeMap>(
+        helperShadowMap.key(),
+        new gfx::CubeMap{shadowMapSize,
+                         {
+                             gfx::CubeMap::Flag::VarianceShadowMapTexture
+                             // | gfx::CubeMap::Flag::AutoBuildMipmap
+                         }},
+        Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
+
+    CORRADE_INTERNAL_ASSERT(helperShadowMap &&
+                            helperShadowMap.key() == helperKey);
+  }
+
+  renderer_->applyGaussianFiltering(
+      *pointShadowMap, *helperShadowMap,
+      gfx::CubeMap::TextureType::VarianceShadowMap);
 
   /*
   pointShadowMap->visualizeTexture(gfx::CubeMap::TextureType::Depth,

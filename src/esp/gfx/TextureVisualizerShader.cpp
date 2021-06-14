@@ -14,8 +14,6 @@
 #include <Magnum/ImageView.h>
 #include <Magnum/PixelFormat.h>
 
-#include "esp/core/esp.h"
-
 namespace Cr = Corrade;
 namespace Mn = Magnum;
 
@@ -100,7 +98,7 @@ TextureVisualizerShader::TextureVisualizerShader(Flags flags) : flags_(flags) {
   } else if (flags_ & Flag::ObjectIdTexture) {
     colorMapTexture_.setWrapping(Mn::GL::SamplerWrapping::Repeat);
   }
-  colorMapTexture_.bind(ColorMapTextureUnit);
+  rebindColorMapTexture();
 
   // set default offset, scale based on flags
   if (flags_ & Flag::DepthTexture) {
@@ -109,6 +107,11 @@ TextureVisualizerShader::TextureVisualizerShader(Flags flags) : flags_(flags) {
     setColorMapTransformation(1.0f / 512.0f,
                               1.0f / 108.0f);  // initial guess: 108 objects
   }
+}
+
+TextureVisualizerShader& TextureVisualizerShader::rebindColorMapTexture() {
+  colorMapTexture_.bind(ColorMapTextureUnit);
+  return *this;
 }
 
 TextureVisualizerShader& TextureVisualizerShader::setColorMapTransformation(

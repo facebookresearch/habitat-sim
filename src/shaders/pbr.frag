@@ -443,9 +443,8 @@ void main() {
     float shadow = 1.0f;
     #endif
 
-    float scale = 1 - shadow;
-    diffuseContrib += scale * currentDiffuseContrib;
-    specularContrib += scale * currentSpecularContrib;
+    diffuseContrib += shadow * currentDiffuseContrib;
+    specularContrib += shadow * currentSpecularContrib;
 
   }  // for lights
 

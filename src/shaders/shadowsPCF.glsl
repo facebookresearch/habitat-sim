@@ -57,7 +57,7 @@ float computeShadowPCF(vec3 fragPos, vec3 lightPos, vec3 viewPos) {
     }
     shadow /= float(samples);
 
-    return shadow;
+    return 1.0 - shadow;
 }
 
 vec3 visualizePointShadowMap(vec3 fragPos, vec3 lightPos) {

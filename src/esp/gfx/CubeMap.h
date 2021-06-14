@@ -143,7 +143,7 @@ class CubeMap {
    * object id. It will visualize such a texture in the color buffer.
    * Visualized texture can be saved for example.
    *
-   * NOTE: Flag::color MUST be set as well
+   * NOTE: Flag::ColorTexture MUST be set as well
    */
   void visualizeTexture(TextureType type,
                         float n,
@@ -232,6 +232,21 @@ class CubeMap {
                            RenderCamera::Flag::ClearDepth});
 
   /**
+   * @brief copy the texture from a specified cube face to a given texture
+   * (GPU->GPU)
+   * NOTE: can only call this function for the textures attaching to the color
+   * attachments
+   * @param[in] cubeSideIndex, the index of the cube side, can be 0, 1, ..., 5
+   * @param[in] type, the texture type
+   * NOTE: the type CANNOT be the depth texture
+   * @param[in, out] texture, the 2D target texture
+   * @param[in] mipLevel, the mipmap level
+   */
+  void copySubImage(unsigned int cubeSideIndex,
+                    TextureType type,
+                    Magnum::GL::Texture2D& texture,
+                    unsigned int mipLevel = 0);
+  /**
    * @brief Prepare to draw to the texture. It will bind the framebuffer, clear
    * color, depth etc.
    * @param[in] cubeSideIndex, the index of the cube side, can be 0,
@@ -259,6 +274,14 @@ class CubeMap {
    * but without mipmap enabled.
    */
   unsigned int getMipmapLevels();
+
+  /**
+   * @brief generate mipmap
+   */
+  void generateMipmap(TextureType type);
+
+  /** @brief get flags */
+  Flags getFlags() { return flags_; }
 
  private:
   Flags flags_;
@@ -315,11 +338,6 @@ class CubeMap {
    * 1, 2, 3, 4, or 5
    */
   void bindFramebuffer(unsigned int cubeSideIndex);
-
-  /*
-  Magnum::ResourceManager<Mn::GL::AbstractShaderProgram> shaderManager_;
-  Magnum::Resource<TextureVisualizerShader> shader_;
-  */
 };
 
 CORRADE_ENUMSET_OPERATORS(CubeMap::Flags)

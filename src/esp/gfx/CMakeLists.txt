@@ -69,6 +69,8 @@ set(
   VarianceShadowMapShader.cpp
   VarianceShadowMapDrawable.h
   VarianceShadowMapDrawable.cpp
+  GaussianFilterShader.h
+  GaussianFilterShader.cpp
 )
 
 # If ptex support is enabled add relevant source files
