@@ -630,10 +630,6 @@ def test_articulated_object_add_remove():
         art_obj_mgr = sim.get_articulated_object_manager()
         robot_file = "data/test_assets/urdf/kuka_iiwa/model_free_base.urdf"
 
-        # test loading a non-existant URDF file
-        null_robot = art_obj_mgr.add_articulated_object_from_urdf("null_filepath")
-        assert not null_robot
-
         # parse URDF and add a robot to the world
         robot = art_obj_mgr.add_articulated_object_from_urdf(filepath=robot_file)
         assert robot

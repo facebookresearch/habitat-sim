@@ -11,6 +11,7 @@
  */
 
 #include "RigidBase.h"
+#include "esp/core/esp.h"
 #include "esp/io/URDFParser.h"
 #include "esp/scene/SceneNode.h"
 
@@ -288,15 +289,14 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * added.
    * @param physicsNode The parent node of this object.
    * @param fixedBase Whether or not the root link should be fixed or free.
-   * @return Initialization success.
    */
-  virtual bool initializeFromURDF(
+  virtual void initializeFromURDF(
       CORRADE_UNUSED URDFImporter& urdfImporter,
       CORRADE_UNUSED const Magnum::Matrix4& worldTransform,
       CORRADE_UNUSED gfx::DrawableGroup* drawables,
       CORRADE_UNUSED scene::SceneNode* physicsNode,
       CORRADE_UNUSED bool fixedBase = false) {
-    return false;
+    CORRADE_INTERNAL_ASSERT_UNREACHABLE();
   };
 
   /**

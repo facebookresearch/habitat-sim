@@ -63,16 +63,13 @@ BulletArticulatedObject::~BulletArticulatedObject() {
   }
 }
 
-bool BulletArticulatedObject::initializeFromURDF(
+void BulletArticulatedObject::initializeFromURDF(
     URDFImporter& urdfImporter,
     const Mn::Matrix4& worldTransform,
     gfx::DrawableGroup* drawables,
     scene::SceneNode* physicsNode,
     bool fixedBase) {
-  // TODO: should this be included as optional parameter?
-  // btTransform rootTransformInWorldSpace = btTransform::getIdentity();
   Mn::Matrix4 rootTransformInWorldSpace{worldTransform};
-  // rootTransformInWorldSpace.setOrigin(btVector3{0,10.0,0});
 
   BulletURDFImporter& u2b = *(static_cast<BulletURDFImporter*>(&urdfImporter));
   u2b.setFixedBase(fixedBase);
@@ -200,7 +197,6 @@ bool BulletArticulatedObject::initializeFromURDF(
 
   // in case the base transform is not zero by default
   syncPose();
-  return true;
 }
 
 void BulletArticulatedObject::updateNodes(bool force) {

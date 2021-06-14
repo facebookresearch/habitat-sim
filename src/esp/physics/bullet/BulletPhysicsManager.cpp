@@ -117,10 +117,9 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
     float globalScale,
     float massScale,
     bool forceReload) {
-  if (!urdfImporter_->loadURDF(filepath, globalScale, massScale, forceReload)) {
-    Corrade::Utility::Debug() << "E - failed to parse/load URDF file";
-    return ID_UNDEFINED;
-  }
+  CORRADE_ASSERT(
+      urdfImporter_->loadURDF(filepath, globalScale, massScale, forceReload),
+      "E - failed to parse/load URDF file " << filepath, ID_UNDEFINED);
 
   int articulatedObjectID = allocateObjectID();
 
@@ -134,19 +133,8 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
   // before initializing the URDF, import all necessary assets in advance
   resourceManager_.importURDFAssets(*urdfImporter_->getModel());
 
-  bool objectSuccess = articulatedObject->initializeFromURDF(
-      *urdfImporter_, {}, drawables, physicsNode_, fixedBase);
-
-  if (!objectSuccess) {
-    delete objectNode;
-    deallocateObjectID(articulatedObjectID);
-    Magnum::Debug{} << "BulletPhysicsManager::addArticulatedObjectFromURDF: "
-                       "initialization failed, aborting.";
-    return ID_UNDEFINED;
-  }
-
-  // Cr::Utility::Debug() << "Articulated Link Indices: "
-  //                     << articulatedObject->getLinkIds();
+  articulatedObject->initializeFromURDF(*urdfImporter_, {}, drawables,
+                                        physicsNode_, fixedBase);
 
   // allocate ids for links
   for (int linkIx = 0; linkIx < articulatedObject->btMultiBody_->getNumLinks();

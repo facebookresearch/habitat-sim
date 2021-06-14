@@ -86,9 +86,8 @@ class BulletArticulatedObject : public ArticulatedObject {
    * added.
    * @param physicsNode The parent node of this object.
    * @param fixedBase Whether or not the root link should be fixed or free.
-   * @return Initialization success.
    */
-  bool initializeFromURDF(URDFImporter& u2b,
+  void initializeFromURDF(URDFImporter& u2b,
                           const Magnum::Matrix4& worldTransform,
                           gfx::DrawableGroup* drawables,
                           scene::SceneNode* physicsNode,
