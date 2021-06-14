@@ -86,4 +86,5 @@ WarningsAsErrors: '
 -clang-diagnostic-deprecated-declarations,
 -clang-analyzer-cplusplus.PlacementNew,
 -cppcoreguidelines-pro-type-member-init,
+-optin.cplusplus.UninitializedObject
 '
