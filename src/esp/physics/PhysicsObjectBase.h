@@ -96,7 +96,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    * physics::MotionType::KINEMATIC. Only if a dervied @ref
    * physics::PhysicsManager implementing dynamics is in use can the object
    * be set to @ref physics::MotionType::DYNAMIC.
-   * @param mt The desirved @ref MotionType.
+   * @param mt The desired @ref MotionType.
    */
   virtual void setMotionType(MotionType mt) = 0;
 

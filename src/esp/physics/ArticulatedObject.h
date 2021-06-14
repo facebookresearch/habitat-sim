@@ -66,6 +66,7 @@ class ArticulatedLink : public RigidBase {
 
   ~ArticulatedLink() override = default;
 
+  //! Get the link's index within its multibody
   int getIndex() const { return mbIndex_; }
 
   //! List of visual components attached to this link. Used for NavMesh
@@ -276,6 +277,19 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
     return allVisualNodes;
   }
 
+  /**
+   * @brief Initialize this ArticulatedObject from a parsed URDF stored in a
+   * URDFImporter.
+   *
+   * @param urdfImporter The URDFImporter which will initialize this object from
+   * a parsed URDF file.
+   * @param worldTransform Desired global root state of the ArticulatedObject.
+   * @param drawables DrawableGroup to which this object's visual shapes will be
+   * added.
+   * @param physicsNode The parent node of this object.
+   * @param fixedBase Whether or not the root link should be fixed or free.
+   * @return Initialization success.
+   */
   virtual bool initializeFromURDF(
       CORRADE_UNUSED URDFImporter& urdfImporter,
       CORRADE_UNUSED const Magnum::Matrix4& worldTransform,
@@ -285,6 +299,12 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
     return false;
   };
 
+  /**
+   * @brief Get a link by index.
+   *
+   * @param id The id of the desired link. -1 for base link.
+   * @return The desired link.
+   */
   ArticulatedLink& getLink(int id) {
     // option to get the baseLink_ with id=-1
     if (id == -1) {
@@ -294,8 +314,18 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
     return *links_.at(id).get();
   }
 
+  /**
+   * @brief Get the number of links for this object (not including the base).
+   *
+   * @return The number of non-base links.
+   */
   int getNumLinks() const { return links_.size(); }
 
+  /**
+   * @brief Get a list of link ids, not including the base (-1).
+   *
+   * @return A list of link ids for this object.
+   */
   std::vector<int> getLinkIds() const {
     std::vector<int> ids;
     for (auto it = links_.begin(); it != links_.end(); ++it) {
@@ -304,55 +334,190 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
     return ids;
   }
 
-  virtual void setForces(CORRADE_UNUSED const std::vector<float>& forces) {}
-  virtual void addForces(CORRADE_UNUSED const std::vector<float>& forces) {}
+  /**
+   * @brief Set forces/torques for all joints indexed by degrees of freedom.
+   *
+   * @param forces The desired joint forces/torques.
+   */
+  virtual void setJointForces(CORRADE_UNUSED const std::vector<float>& forces) {
+  }
 
-  virtual std::vector<float> getForces() { return {}; }
+  /**
+   * @brief Add forces/torques to all joints indexed by degrees of freedom.
+   *
+   * @param forces The desired joint forces/torques to add.
+   */
+  virtual void addJointForces(CORRADE_UNUSED const std::vector<float>& forces) {
+  }
 
-  virtual void setVelocities(CORRADE_UNUSED const std::vector<float>& vels) {}
+  /**
+   * @brief Get current forces/torques for all joints indexed by degrees of
+   * freedom.
+   *
+   * @return The current joint forces/torques.
+   */
+  virtual std::vector<float> getJointForces() { return {}; }
 
-  virtual std::vector<float> getVelocities() { return {}; }
+  /**
+   * @brief Set velocities for all joints indexed by degrees of freedom.
+   *
+   * @param vels The desired joint velocities.
+   */
+  virtual void setJointVelocities(
+      CORRADE_UNUSED const std::vector<float>& vels) {}
 
-  virtual void setPositions(
+  /**
+   * @brief Get current velocities for all joints indexed by degrees of freedom.
+   *
+   * @return The current joint velocities.
+   */
+  virtual std::vector<float> getJointVelocities() { return {}; }
+
+  /**
+   * @brief Set positions for all joints.
+   *
+   * Note that positions are not indexed by DoF because some joints (spherical)
+   * have a different number of DoFs from positions. For spherical joints, a
+   * block of 4 position values should specify the state as a unit quaternion (x
+   * y z w).
+   *
+   * @param positions The desired joint positions.
+   */
+  virtual void setJointPositions(
       CORRADE_UNUSED const std::vector<float>& positions) {}
 
-  virtual std::vector<float> getPositions() { return {}; }
+  /**
+   * @brief Get positions for all joints.
+   *
+   * Note that positions are not indexed by DoF because some joints (spherical)
+   * have a different number of DoFs from positions. For spherical joints, a
+   * block of 4 position values should specify the state as a unit quaternion (x
+   * y z w).
+   *
+   * @return The current joint positions.
+   */
+  virtual std::vector<float> getJointPositions() { return {}; }
 
-  virtual std::vector<float> getPositionLimits(
+  /**
+   * @brief Get position limits for all joints.
+   *
+   * @param upperLimits Whether to get upper or lower limits with this query.
+   * Default upper.
+   *
+   * @return The active joint position limits. Default implementation returns
+   * empty list.
+   */
+  virtual std::vector<float> getJointPositionLimits(
       CORRADE_UNUSED bool upperLimits = false) {
     return {};
   }
 
+  /**
+   * @brief Get the linear velocity of the articulated object's root in the
+   * global frame.
+   *
+   * @return The root linear velocity.
+   */
   virtual Mn::Vector3 getRootLinearVelocity() const { return Mn::Vector3(0); }
+
+  /**
+   * @brief Set the linear velocity of the articulated object's root in the
+   * global frame.
+   *
+   * @param linVel The root linear velocity.
+   */
   virtual void setRootLinearVelocity(CORRADE_UNUSED const Mn::Vector3& linVel) {
   }
 
+  /**
+   * @brief Get the angular velocity (omega) of the articulated object's root in
+   * the global frame.
+   *
+   * @return The root angular velocity (omega).
+   */
   virtual Mn::Vector3 getRootAngularVelocity() const { return Mn::Vector3(0); }
+
+  /**
+   * @brief Set the angular velocity (omega) of the articulated object's root in
+   * the global frame.
+   *
+   * @param angVel The root angular velocity (omega).
+   */
   virtual void setRootAngularVelocity(
       CORRADE_UNUSED const Mn::Vector3& angVel) {}
 
+  /**
+   * @brief Add linear force to a link's COM specified in the global frame.
+   *
+   * @param linkId The link's index.
+   * @param force The desired force to add.
+   */
   virtual void addArticulatedLinkForce(CORRADE_UNUSED int linkId,
                                        CORRADE_UNUSED Magnum::Vector3 force) {}
 
+  /**
+   * @brief Get the friction coefficient for a link.
+   *
+   * @param linkId The link's index.
+   * @return The link's friction coefficient.
+   */
   virtual float getArticulatedLinkFriction(CORRADE_UNUSED int linkId) {
     return 0;
   }
 
+  /**
+   * @brief Set the friction coefficient for a link.
+   *
+   * @param linkId The link's index.
+   * @param friction The link's friction coefficient.
+   */
   virtual void setArticulatedLinkFriction(CORRADE_UNUSED int linkId,
                                           CORRADE_UNUSED float friction) {}
 
+  /**
+   * @brief Get the type of the link's parent joint.
+   *
+   * @param linkId The link's index.
+   * @return The link's parent joint's type.
+   */
   virtual JointType getLinkJointType(CORRADE_UNUSED int linkId) const {
     return JointType::Invalid;
   }
 
+  /**
+   * @brief Get the starting position for this link's parent joint in the global
+   * DoFs array.
+   *
+   * @param linkId The link's index.
+   * @return The link's starting DoF index.
+   */
   virtual int getLinkDoFOffset(CORRADE_UNUSED int linkId) const { return -1; }
 
+  /**
+   * @brief Get the number of DoFs for this link's parent joint.
+   *
+   * @param linkId The link's index.
+   * @return The number of DoFs for this link's parent joint.
+   */
   virtual int getLinkNumDoFs(CORRADE_UNUSED int linkId) const { return 0; }
 
+  /**
+   * @brief Get the starting position for this link's parent joint in the global
+   * positions array.
+   *
+   * @param linkId The link's index.
+   * @return The link's starting position index.
+   */
   virtual int getLinkJointPosOffset(CORRADE_UNUSED int linkId) const {
     return -1;
   }
 
+  /**
+   * @brief Get the number of positions for this link's parent joint.
+   *
+   * @param linkId The link's index.
+   * @return The number of positions for this link's parent joint.
+   */
   virtual int getLinkNumJointPos(CORRADE_UNUSED int linkId) const { return 0; }
 
   /**
@@ -363,6 +528,8 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
 
   /**
    * @brief Check if this object can be de-activated (i.e. sleep).
+   *
+   * @return Whether or not the object is able to deactivate.
    */
   virtual bool getCanSleep() { return false; }
 
@@ -421,6 +588,20 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * esp::physics::PhysicsObjectBase for the transformations.
    */
   virtual void setRootState(CORRADE_UNUSED const Magnum::Matrix4& state) {}
+
+  /**
+   * @brief Use the metadata stored in io::URDF::Link to instance all visual
+   * shapes for a link into the SceneGraph.
+   *
+   * @param linkObject The Habitat-side ArticulatedLink to which visual shapes
+   * will be attached.
+   * @param link The io::URDF::Model's link with visual shape and transform
+   * metadata.
+   * @param drawables The SceneGraph's DrawableGroup with which the visual
+   * shapes will be rendered.
+   *
+   * @return Whether or not the render shape instancing was successful.
+   */
   virtual bool attachGeometry(
       CORRADE_UNUSED ArticulatedLink* linkObject,
       CORRADE_UNUSED const std::shared_ptr<io::URDF::Link>& link,

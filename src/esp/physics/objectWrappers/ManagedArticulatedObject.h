@@ -82,54 +82,54 @@ class ManagedArticulatedObject
     return Mn::Vector3(0);
   }
 
-  void setForces(const std::vector<float>& forces) {
+  void setJointForces(const std::vector<float>& forces) {
     if (auto sp = getObjectReference()) {
-      sp->setForces(forces);
+      sp->setJointForces(forces);
     }
   }
 
-  void addForces(const std::vector<float>& forces) {
+  void addJointForces(const std::vector<float>& forces) {
     if (auto sp = getObjectReference()) {
-      sp->addForces(forces);
+      sp->addJointForces(forces);
     }
   }
 
-  std::vector<float> getForces() {
+  std::vector<float> getJointForces() {
     if (auto sp = getObjectReference()) {
-      return sp->getForces();
-    }
-    return {};
-  }
-
-  void setVelocities(const std::vector<float>& vels) {
-    if (auto sp = getObjectReference()) {
-      sp->setVelocities(vels);
-    }
-  }
-
-  std::vector<float> getVelocities() {
-    if (auto sp = getObjectReference()) {
-      return sp->getVelocities();
+      return sp->getJointForces();
     }
     return {};
   }
 
-  void setPositions(const std::vector<float>& positions) {
+  void setJointVelocities(const std::vector<float>& vels) {
     if (auto sp = getObjectReference()) {
-      sp->setPositions(positions);
+      sp->setJointVelocities(vels);
     }
   }
 
-  std::vector<float> getPositions() {
+  std::vector<float> getJointVelocities() {
     if (auto sp = getObjectReference()) {
-      return sp->getPositions();
+      return sp->getJointVelocities();
     }
     return {};
   }
 
-  std::vector<float> getPositionLimits(bool upperLimits = false) {
+  void setJointPositions(const std::vector<float>& positions) {
     if (auto sp = getObjectReference()) {
-      return sp->getPositionLimits(upperLimits);
+      sp->setJointPositions(positions);
+    }
+  }
+
+  std::vector<float> getJointPositions() {
+    if (auto sp = getObjectReference()) {
+      return sp->getJointPositions();
+    }
+    return {};
+  }
+
+  std::vector<float> getJointPositionLimits(bool upperLimits = false) {
+    if (auto sp = getObjectReference()) {
+      return sp->getJointPositionLimits(upperLimits);
     }
     return {};
   }

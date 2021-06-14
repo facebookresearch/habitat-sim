@@ -367,7 +367,7 @@ void BulletArticulatedObject::resetStateFromSceneInstanceAttr(
   }
   // set initial joint positions
   // get array of existing joint dofs
-  std::vector<float> aoJointPose = getPositions();
+  std::vector<float> aoJointPose = getJointPositions();
   // get instance-specified initial joint positions
   std::map<std::string, float>& initJointPos =
       sceneInstanceAttr->getInitJointPose();
@@ -384,11 +384,11 @@ void BulletArticulatedObject::resetStateFromSceneInstanceAttr(
     }
     aoJointPose[idx++] = elem.second;
   }
-  setPositions(aoJointPose);
+  setJointPositions(aoJointPose);
 
   // set initial joint velocities
   // get array of existing joint vel dofs
-  std::vector<float> aoJointVels = getVelocities();
+  std::vector<float> aoJointVels = getJointVelocities();
   // get instance-specified initial joint velocities
   std::map<std::string, float>& initJointVel =
       sceneInstanceAttr->getInitJointVelocities();
@@ -405,7 +405,7 @@ void BulletArticulatedObject::resetStateFromSceneInstanceAttr(
     aoJointVels[idx++] = elem.second;
   }
 
-  setVelocities(aoJointVels);
+  setJointVelocities(aoJointVels);
 
 }  // BulletArticulatedObject::resetStateFromSceneInstanceAttr
 
@@ -435,11 +435,12 @@ void BulletArticulatedObject::setRootAngularVelocity(
   btMultiBody_->setBaseOmega(btVector3(angVel));
 }
 
-void BulletArticulatedObject::setForces(const std::vector<float>& forces) {
+void BulletArticulatedObject::setJointForces(const std::vector<float>& forces) {
   if (forces.size() != size_t(btMultiBody_->getNumDofs())) {
     Corrade::Utility::Debug()
-        << "setForces - Force vector size mis-match (input: " << forces.size()
-        << ", expected: " << btMultiBody_->getNumDofs() << "), aborting.";
+        << "setJointForces - Force vector size mis-match (input: "
+        << forces.size() << ", expected: " << btMultiBody_->getNumDofs()
+        << "), aborting.";
   }
 
   int dofCount = 0;
@@ -452,11 +453,12 @@ void BulletArticulatedObject::setForces(const std::vector<float>& forces) {
   }
 }
 
-void BulletArticulatedObject::addForces(const std::vector<float>& forces) {
+void BulletArticulatedObject::addJointForces(const std::vector<float>& forces) {
   if (forces.size() != size_t(btMultiBody_->getNumDofs())) {
     Corrade::Utility::Debug()
-        << "setForces - Force vector size mis-match (input: " << forces.size()
-        << ", expected: " << btMultiBody_->getNumDofs() << "), aborting.";
+        << "addJointForces - Force vector size mis-match (input: "
+        << forces.size() << ", expected: " << btMultiBody_->getNumDofs()
+        << "), aborting.";
   }
 
   int dofCount = 0;
@@ -469,7 +471,7 @@ void BulletArticulatedObject::addForces(const std::vector<float>& forces) {
   }
 }
 
-std::vector<float> BulletArticulatedObject::getForces() {
+std::vector<float> BulletArticulatedObject::getJointForces() {
   std::vector<float> forces(btMultiBody_->getNumDofs());
   int dofCount = 0;
   for (int i = 0; i < btMultiBody_->getNumLinks(); ++i) {
@@ -482,10 +484,11 @@ std::vector<float> BulletArticulatedObject::getForces() {
   return forces;
 }
 
-void BulletArticulatedObject::setVelocities(const std::vector<float>& vels) {
+void BulletArticulatedObject::setJointVelocities(
+    const std::vector<float>& vels) {
   if (vels.size() != size_t(btMultiBody_->getNumDofs())) {
     Corrade::Utility::Debug()
-        << "setVelocities - Velocity vector size mis-match (input: "
+        << "setJointVelocities - Velocity vector size mis-match (input: "
         << vels.size() << ", expected: " << btMultiBody_->getNumDofs()
         << "), aborting.";
   }
@@ -501,7 +504,7 @@ void BulletArticulatedObject::setVelocities(const std::vector<float>& vels) {
   }
 }
 
-std::vector<float> BulletArticulatedObject::getVelocities() {
+std::vector<float> BulletArticulatedObject::getJointVelocities() {
   std::vector<float> vels(btMultiBody_->getNumDofs());
   int dofCount = 0;
   for (int i = 0; i < btMultiBody_->getNumLinks(); ++i) {
@@ -514,11 +517,11 @@ std::vector<float> BulletArticulatedObject::getVelocities() {
   return vels;
 }
 
-void BulletArticulatedObject::setPositions(
+void BulletArticulatedObject::setJointPositions(
     const std::vector<float>& positions) {
   if (positions.size() != size_t(btMultiBody_->getNumPosVars())) {
     Corrade::Utility::Debug()
-        << "setPositions - Position vector size mis-match (input: "
+        << "setJointPositions - Position vector size mis-match (input: "
         << positions.size() << ", expected: " << btMultiBody_->getNumPosVars()
         << "), aborting.";
   }
@@ -537,7 +540,7 @@ void BulletArticulatedObject::setPositions(
   updateKinematicState();
 }
 
-std::vector<float> BulletArticulatedObject::getPositions() {
+std::vector<float> BulletArticulatedObject::getJointPositions() {
   std::vector<float> positions(btMultiBody_->getNumPosVars());
   int posCount = 0;
   for (int i = 0; i < btMultiBody_->getNumLinks(); ++i) {
@@ -550,7 +553,7 @@ std::vector<float> BulletArticulatedObject::getPositions() {
   return positions;
 }
 
-std::vector<float> BulletArticulatedObject::getPositionLimits(
+std::vector<float> BulletArticulatedObject::getJointPositionLimits(
     bool upperLimits) {
   std::vector<float> posLimits(btMultiBody_->getNumPosVars());
   int posCount = 0;
@@ -632,7 +635,7 @@ void BulletArticulatedObject::reset() {
   }
 
   // also updates kinematic state
-  setPositions(zeros);
+  setJointPositions(zeros);
 
   btMultiBody_->clearConstraintForces();
   btMultiBody_->clearVelocities();
@@ -676,7 +679,7 @@ void BulletArticulatedObject::setMotionType(MotionType mt) {
 }
 
 void BulletArticulatedObject::clampJointLimits() {
-  auto pose = getPositions();
+  auto pose = getJointPositions();
   bool poseModified = false;
 
   // some small contrived error term for overflow
@@ -705,7 +708,7 @@ void BulletArticulatedObject::clampJointLimits() {
   }
 
   if (poseModified) {
-    setPositions(pose);
+    setJointPositions(pose);
   }
 }
 

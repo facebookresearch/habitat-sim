@@ -34,9 +34,9 @@ class ManagedBulletArticulatedObject
 
  protected:
   /**
-   * @brief Templated version of obj ref getter. This function accesses the
+   * @brief This function accesses the
    * underlying shared pointer of this object's @p weakObjRef_ if it exists,
-   * and casts it to the specified template parameter; if it the ptr does not
+   * and casts it to BulletArticulatedObject; if it the ptr does not
    * exist, it provides a message.
    * @return Either a shared pointer of this wrapper's object, or nullptr if
    * dne.

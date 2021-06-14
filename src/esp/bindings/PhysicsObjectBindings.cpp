@@ -368,30 +368,31 @@ void declareArticulatedObjectWrapper(py::module& m,
           &ManagedArticulatedObject::setRootAngularVelocity,
           ("The angular velocity (omega) of the " + objType + "'s root.")
               .c_str())
-      .def_property("joint_forces", &ManagedArticulatedObject::getForces,
-                    &ManagedArticulatedObject::setForces,
+      .def_property("joint_forces", &ManagedArticulatedObject::getJointForces,
+                    &ManagedArticulatedObject::setJointForces,
                     ("Get or set the joint forces/torques (indexed by DoF id) "
                      "currently acting on this " +
                      objType + ".")
                         .c_str())
-      .def("add_joint_forces", &ManagedArticulatedObject::addForces,
+      .def("add_joint_forces", &ManagedArticulatedObject::addJointForces,
            ("Add joint forces/torques (indexed by DoF id) to this " + objType +
             ".")
                .c_str(),
            "forces"_a)
       .def_property("joint_velocities",
-                    &ManagedArticulatedObject::getVelocities,
-                    &ManagedArticulatedObject::setVelocities,
+                    &ManagedArticulatedObject::getJointVelocities,
+                    &ManagedArticulatedObject::setJointVelocities,
                     ("Get or set this " + objType +
                      "'s joint velocities, indexed by DOF id.")
                         .c_str())
-      .def_property("joint_positions", &ManagedArticulatedObject::getPositions,
-                    &ManagedArticulatedObject::setPositions,
+      .def_property("joint_positions",
+                    &ManagedArticulatedObject::getJointPositions,
+                    &ManagedArticulatedObject::setJointPositions,
                     ("Get or set this " + objType +
                      "'s joint positions, indexed by DOF id.")
                         .c_str())
       .def("get_joint_position_limits",
-           &ManagedArticulatedObject::getPositionLimits,
+           &ManagedArticulatedObject::getJointPositionLimits,
            ("Get a list of this " + objType +
             "'s joint limits, either upper limits or lower limits, depending "
             "on the supplied boolean value for upper_limits.")
