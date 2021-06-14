@@ -21,12 +21,11 @@ struct JointLimitConstraintInfo {
   JointLimitConstraintInfo(int _dof,
                            float _lowerLimit,
                            float _upperLimit,
-                           btMultiBodyConstraint* _con) {
-    dof = _dof;
-    lowerLimit = _lowerLimit;
-    upperLimit = _upperLimit;
-    con = _con;
-  }
+                           btMultiBodyConstraint* _con)
+      : dof(_dof),
+        lowerLimit(_lowerLimit),
+        upperLimit(_upperLimit),
+        con(_con){};
   int dof;
   float lowerLimit, upperLimit;
   btMultiBodyConstraint* con;

@@ -20,8 +20,8 @@ namespace physics {
 // TODO: this should probably be moved
 static void setRotationScalingFromBulletTransform(const btTransform& trans,
                                                   scene::SceneNode* node) {
-  Magnum::Matrix4 converted{trans};
-  node->setRotation(Magnum::Quaternion::fromMatrix(converted.rotation()));
+  Mn::Matrix4 converted{trans};
+  node->setRotation(Mn::Quaternion::fromMatrix(converted.rotation()));
   node->setTranslation(converted.translation());
 }
 
@@ -67,13 +67,13 @@ BulletArticulatedObject::~BulletArticulatedObject() {
 
 bool BulletArticulatedObject::initializeFromURDF(
     URDFImporter& urdfImporter,
-    const Magnum::Matrix4& worldTransform,
+    const Mn::Matrix4& worldTransform,
     gfx::DrawableGroup* drawables,
     scene::SceneNode* physicsNode,
     bool fixedBase) {
   // TODO: should this be included as optional parameter?
   // btTransform rootTransformInWorldSpace = btTransform::getIdentity();
-  Magnum::Matrix4 rootTransformInWorldSpace{worldTransform};
+  Mn::Matrix4 rootTransformInWorldSpace{worldTransform};
   // rootTransformInWorldSpace.setOrigin(btVector3{0,10.0,0});
 
   BulletURDFImporter& u2b = *(static_cast<BulletURDFImporter*>(&urdfImporter));
@@ -106,9 +106,7 @@ bool BulletArticulatedObject::initializeFromURDF(
     btTransform localInertialFrameRoot =
         cache.m_urdfLinkLocalInertialFrames[urdfLinkIndex];
 
-    //?
-    if ((flags & CUF_USE_MJCF) != 0) {
-    } else {
+    {
       mb->setBaseWorldTransform(btTransform(rootTransformInWorldSpace) *
                                 localInertialFrameRoot);
     }
@@ -356,8 +354,8 @@ void BulletArticulatedObject::resetStateFromSceneInstanceAttr(
   auto translate = sceneInstanceAttr->getTranslation();
 
   // construct initial transformation state.
-  Magnum::Matrix4 state = Magnum::Matrix4::from(
-      sceneInstanceAttr->getRotation().toMatrix(), translate);
+  Mn::Matrix4 state =
+      Mn::Matrix4::from(sceneInstanceAttr->getRotation().toMatrix(), translate);
   setTransformation(state);
   // set object's motion type if different than set value
   const physics::MotionType attrObjMotionType =
@@ -409,7 +407,7 @@ void BulletArticulatedObject::resetStateFromSceneInstanceAttr(
 
 }  // BulletArticulatedObject::resetStateFromSceneInstanceAttr
 
-void BulletArticulatedObject::setRootState(const Magnum::Matrix4& state) {
+void BulletArticulatedObject::setRootState(const Mn::Matrix4& state) {
   btTransform tr{state};
   btMultiBody_->setBaseWorldTransform(tr);
   if (bFixedObjectRigidBody_) {
@@ -578,7 +576,7 @@ std::vector<float> BulletArticulatedObject::getJointPositionLimits(
 }
 
 void BulletArticulatedObject::addArticulatedLinkForce(int linkId,
-                                                      Magnum::Vector3 force) {
+                                                      Mn::Vector3 force) {
   CHECK(getNumLinks() > linkId);
   btMultiBody_->addLinkForce(linkId, btVector3{force});
 }

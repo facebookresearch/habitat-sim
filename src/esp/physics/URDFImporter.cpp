@@ -112,10 +112,9 @@ bool URDFImporter::getJointInfo2(int linkIndex,
       jointMaxForce = pj->m_effortLimit;
       jointMaxVelocity = pj->m_velocityLimit;
       return true;
-    } else {
-      parent2joint = Mn::Matrix4();  // Identity
-      return false;
     }
+    parent2joint = Mn::Matrix4();  // Identity
+    return false;
   }
 
   return false;

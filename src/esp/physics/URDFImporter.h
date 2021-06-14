@@ -130,6 +130,7 @@ class URDFImporter {
   //! collect and return a list of cached model keys (filepaths)
   std::vector<std::string> getCachedModelKeys() {
     std::vector<std::string> keys;
+    keys.reserve(modelCache_.size());
     for (std::map<std::string, std::shared_ptr<io::URDF::Model>>::iterator it =
              modelCache_.begin();
          it != modelCache_.end(); ++it) {
