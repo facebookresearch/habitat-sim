@@ -106,8 +106,6 @@ class BulletRigidObject : public BulletBase,
     }
   }
 
-  void updateNodes(bool force = false) override;
-
   /**
    * @brief
    */
