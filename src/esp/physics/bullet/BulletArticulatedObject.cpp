@@ -57,11 +57,9 @@ BulletArticulatedObject::~BulletArticulatedObject() {
   collisionObjToObjIds_->erase(baseCollider);
   delete baseCollider;
 
-  std::map<int, JointLimitConstraintInfo>::iterator jlIter;
-  for (jlIter = jointLimitConstraints.begin();
-       jlIter != jointLimitConstraints.end(); jlIter++) {
-    bWorld_->removeMultiBodyConstraint(jlIter->second.con);
-    delete jlIter->second.con;
+  for (auto& jlIter : jointLimitConstraints) {
+    bWorld_->removeMultiBodyConstraint(jlIter.second.con);
+    delete jlIter.second.con;
   }
 }
 
