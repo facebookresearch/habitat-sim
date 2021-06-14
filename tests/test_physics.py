@@ -664,7 +664,6 @@ def test_articulated_object_add_remove():
         # remove all
         art_obj_mgr.remove_all_objects()
         assert art_obj_mgr.get_num_objects() == 0
-        assert len(sim.get_existing_articulated_object_ids()) == 0
 
 
 @pytest.mark.skipif(
