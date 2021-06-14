@@ -579,6 +579,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
       "template_name": "test_stage_template",
       "translation": [1,2,3],
       "rotation": [0.1, 0.2, 0.3, 0.4],
+      "shader_type" : "pbr",
       "user_defined" : {
           "user_string" : "stage instance defined string",
           "user_bool" : true,
@@ -665,6 +666,9 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
                             "stage instance defined string", true, 11, 2.2f,
                             Magnum::Vector3(1.2, 3.4, 5.6),
                             Magnum::Quaternion({0.5f, 0.6f, 0.7f}, 0.4f));
+  // make sure that is not default value "flat"
+  ASSERT_EQ(stageInstance->getShaderType(),
+            static_cast<int>(Attrs::ObjectInstanceShaderType::PBR));
 
   // verify objects
   auto objectInstanceList = sceneAttr->getObjectInstances();
@@ -726,6 +730,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_StageJSONLoadTest) {
   "semantic_asset":"testJSONSemanticAsset.glb",
   "nav_asset":"testJSONNavMeshAsset.glb",
   "house_filename":"testJSONHouseFileName.glb",
+  "shader_type" : "material",
   "user_defined" : {
       "user_string" : "stage defined string",
       "user_bool" : false,
@@ -757,6 +762,9 @@ TEST_F(AttributesManagersTest, AttributesManagers_StageJSONLoadTest) {
   ASSERT_EQ(stageAttr->getIsCollidable(), false);
   // stage-specific attributes
   ASSERT_EQ(stageAttr->getGravity(), Magnum::Vector3(9, 8, 7));
+  // make sure that is not default value "flat"
+  ASSERT_EQ(stageAttr->getShaderType(),
+            static_cast<int>(Attrs::ObjectInstanceShaderType::Material));
   ASSERT_EQ(stageAttr->getOrigin(), Magnum::Vector3(1, 2, 3));
   ASSERT_EQ(stageAttr->getSemanticAssetHandle(), "testJSONSemanticAsset.glb");
   ASSERT_EQ(stageAttr->getNavmeshAssetHandle(), "testJSONNavMeshAsset.glb");
@@ -794,6 +802,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_ObjectJSONLoadTest) {
   "inertia": [1.1, 0.9, 0.3],
   "semantic_id" : 7,
   "COM": [0.1,0.2,0.3],
+  "shader_type" : "phong",
   "user_defined" : {
       "user_string" : "object defined string",
       "user_bool" : true,
@@ -825,6 +834,8 @@ TEST_F(AttributesManagersTest, AttributesManagers_ObjectJSONLoadTest) {
   ASSERT_EQ(objAttr->getSemanticId(), 7);
   // object-specific attributes
   ASSERT_EQ(objAttr->getMass(), 9);
+  ASSERT_EQ(objAttr->getShaderType(),
+            static_cast<int>(Attrs::ObjectInstanceShaderType::Phong));
   ASSERT_EQ(objAttr->getBoundingBoxCollisions(), true);
   ASSERT_EQ(objAttr->getJoinCollisionMeshes(), true);
   ASSERT_EQ(objAttr->getInertia(), Magnum::Vector3(1.1, 0.9, 0.3));
