@@ -148,7 +148,7 @@ inline bool readMember(const JsonGenericValue& d,
         if (it->value.IsFloat()) {
           val.emplace(key, it->value.GetFloat());
         } else {
-          LOG(ERROR) << "Invalid float value specified in JSON config " << tag
+          LOG(ERROR) << "Invalid float value specified in JSON map " << tag
                      << " at " << key << ". Skipping.";
         }
       }  // for each value

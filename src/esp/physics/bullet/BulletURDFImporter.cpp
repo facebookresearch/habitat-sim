@@ -577,12 +577,8 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
               BT_MULTIBODYLINKFLAGS_DISABLE_ALL_PARENT_COLLISION;
         }
       } else {
-        //					if (canSleep)
         {
-          if (cache.m_bulletMultiBody->getBaseMass() == 0)
-          //&& cache.m_bulletMultiBody->getNumDofs()==0)
-          {
-            // col->setCollisionFlags(btCollisionObject::CF_KINEMATIC_OBJECT);
+          if (cache.m_bulletMultiBody->getBaseMass() == 0) {
             col->setCollisionFlags(col->getCollisionFlags() |
                                    btCollisionObject::CF_STATIC_OBJECT);
             isDynamic = false;
@@ -596,17 +592,10 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
              "Static or Kinematic object erroneously marked dynamic. This "
              "should not happen.");
 
-      // This group-selection logic isn't very useful. We can't distinguish
-      // between articulated objects here, e.g. cabinets versus robots. Users
-      // will generally have to override the group in their URDFs (see
-      // getCollisionGroupAndMask below). Note use of Noncollidable. By
-      // convention, fixed links should be authored in the URDF as
-      // Noncollidable. Then, we will create fixed rigid bodies, separate from
+      // By convention, fixed links should be authored in the URDF as
+      // Noncollidable. Then we will create fixed rigid bodies, separate from
       // the multibody, which will be collidable (CollisionGroup::Static) (see
-      // BulletArticulatedObject.cpp).
-      // int collisionFilterGroup = isDynamic ? int(CollisionGroup::Robot)
-      //                                     :
-      //                                     int(CollisionGroup::Noncollidable);
+      // BulletArticulatedObject.cpp :: "initializeFromURDF()").
       int collisionFilterGroup = int(CollisionGroup::Robot);
 
       int colGroup = 0, colMask = 0;
@@ -628,18 +617,8 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
       }
 #endif
 
-      // Mn::Debug{}
-      //    << "addCollisionObject: " << collisionFilterGroup << " , "
-      //    << collisionFilterMask;
       world1->addCollisionObject(col, collisionFilterGroup,
                                  collisionFilterMask);
-      // world1->addCollisionObject(col, 2, 1+2);
-      // TODO: fix this collision issue
-
-      // TODO: include the articulated object id here
-      const auto& debugModel = getModel();
-      std::string linkDebugName = "URDF, " + debugModel->m_name + ", link " +
-                                  debugModel->getLink(urdfLinkIndex)->m_name;
     }
   }
 
