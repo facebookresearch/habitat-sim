@@ -102,6 +102,8 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
     Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::FaceCulling);
   }
   */
+  Mn::Matrix4 modelMatrix =
+      camera.cameraMatrix().inverted() * transformationMatrix;
 
   (*shader_)
       // e.g., semantic mesh has its own per vertex annotation, which has been
@@ -111,9 +113,12 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
           static_cast<RenderCamera&>(camera).useDrawableIds()
               ? drawableId_
               : (materialData_->perVertexObjectId ? 0 : node_.getSemanticId()))
-      .setTransformationMatrix(transformationMatrix)  // modelview matrix
       .setProjectionMatrix(camera.projectionMatrix())
-      .setNormalMatrix(transformationMatrix.normalMatrix())
+      .setViewMatrix(camera.cameraMatrix())
+      .setModelMatrix(modelMatrix)  // NOT modelview matrix!
+      .setNormalMatrix(modelMatrix.normalMatrix())
+      .setCameraWorldPosition(
+          camera.object().absoluteTransformationMatrix().translation())
       .setBaseColor(materialData_->baseColor)
       .setRoughness(materialData_->roughness)
       .setMetallic(materialData_->metallic)
@@ -209,7 +214,7 @@ PbrDrawable& PbrDrawable::updateShaderLightParameters() {
   return *this;
 }
 
-// update light direction (or position) in *camera* space to the shader
+// update light direction (or position) in *world* space to the shader
 PbrDrawable& PbrDrawable::updateShaderLightDirectionParameters(
     const Magnum::Matrix4& transformationMatrix,
     Magnum::SceneGraph::Camera3D& camera) {
@@ -219,8 +224,9 @@ PbrDrawable& PbrDrawable::updateShaderLightDirectionParameters(
   const Mn::Matrix4 cameraMatrix = camera.cameraMatrix();
   for (unsigned int iLight = 0; iLight < lightSetup_->size(); ++iLight) {
     const auto& lightInfo = (*lightSetup_)[iLight];
-    lightPositions.emplace_back(Mn::Vector4(getLightPositionRelativeToCamera(
-        lightInfo, transformationMatrix, cameraMatrix)));
+    Mn::Vector4 pos = getLightPositionRelativeToWorld(
+        lightInfo, transformationMatrix, cameraMatrix);
+    lightPositions.emplace_back(pos);
   }
 
   shader_->setLightVectors(lightPositions);

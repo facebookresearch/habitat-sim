@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "PbrShader.h"
+#include "PbrTextureUnit.h"
 
 #include <Corrade/Containers/Array.h>
 #include <Corrade/Containers/Reference.h>
@@ -39,15 +40,6 @@ namespace Cr = Corrade;
 
 namespace esp {
 namespace gfx {
-
-namespace {
-enum TextureUnit : uint8_t {
-  BaseColor = 0,
-  MetallicRoughness = 1,
-  Normal = 2,
-  Emissive = 3,
-};
-}  // namespace
 
 PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     : flags_(originalFlags), lightCount_(lightCount) {
@@ -129,6 +121,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
                      : "")
       .addSource(
           Cr::Utility::formatString("#define LIGHT_COUNT {}\n", lightCount_))
+      .addSource(rs.get("pbrCommon.glsl") + "\n")
       .addSource(rs.get("pbr.frag"));
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, frag}));
@@ -160,30 +153,35 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   // see PBR vertex, fragment shader code for details
   if (lightCount_ != 0u) {
     if (flags_ & Flag::BaseColorTexture) {
-      setUniform(uniformLocation("BaseColorTexture"), TextureUnit::BaseColor);
+      setUniform(uniformLocation("BaseColorTexture"),
+                 pbrTextureUnitSpace::TextureUnit::BaseColor);
     }
     if (flags_ & (Flag::RoughnessTexture | Flag::MetallicTexture)) {
       setUniform(uniformLocation("MetallicRoughnessTexture"),
-                 TextureUnit::MetallicRoughness);
+                 pbrTextureUnitSpace::TextureUnit::MetallicRoughness);
     }
     // TODO: explore the normal mapping without the precomputer tangent.
     // see http://www.thetenthplanet.de/archives/1180
     // also:
     // https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/data/shaders/pbr_khr.frag
     if ((flags_ & Flag::NormalTexture) && (flags_ & Flag::PrecomputedTangent)) {
-      setUniform(uniformLocation("NormalTexture"), TextureUnit::Normal);
+      setUniform(uniformLocation("NormalTexture"),
+                 pbrTextureUnitSpace::TextureUnit::Normal);
     }
     // TODO occlusion texture
   }
   // emissive texture does not depend on lights
   if (flags_ & Flag::EmissiveTexture) {
-    setUniform(uniformLocation("EmissiveTexture"), TextureUnit::Emissive);
+    setUniform(uniformLocation("EmissiveTexture"),
+               pbrTextureUnitSpace::TextureUnit::Emissive);
   }
 
   // cache the uniform locations
-  modelviewMatrixUniform_ = uniformLocation("ModelViewMatrix");
+  viewMatrixUniform_ = uniformLocation("ViewMatrix");
+  modelMatrixUniform_ = uniformLocation("ModelMatrix");
   normalMatrixUniform_ = uniformLocation("NormalMatrix");
   projMatrixUniform_ = uniformLocation("ProjectionMatrix");
+
   if (flags_ & Flag::ObjectId) {
     objectIdUniform_ = uniformLocation("ObjectId");
   }
@@ -209,8 +207,11 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     normalTextureScaleUniform_ = uniformLocation("NormalTextureScale");
   }
 
+  cameraWorldPosUniform_ = uniformLocation("CameraWorldPos");
+
   // initialize the shader with some "reasonable defaults"
-  setTransformationMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
+  setViewMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
+  setModelMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
   setProjectionMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
   if (lightCount_ != 0u) {
     setBaseColor(Magnum::Color4{0.7f});
@@ -243,8 +244,8 @@ PbrShader& PbrShader::bindBaseColorTexture(Mn::GL::Texture2D& texture) {
                  "PbrShader::bindBaseColorTexture(): the shader was not "
                  "created with base color texture enabled",
                  *this);
-  if (lightCount_ != 0u) {
-    texture.bind(TextureUnit::BaseColor);
+  if (lightCount_) {
+    texture.bind(pbrTextureUnitSpace::TextureUnit::BaseColor);
   }
   return *this;
 }
@@ -255,8 +256,8 @@ PbrShader& PbrShader::bindMetallicRoughnessTexture(Mn::GL::Texture2D& texture) {
       "PbrShader::bindMetallicRoughnessTexture(): the shader was not "
       "created with metallicRoughness texture enabled.",
       *this);
-  if (lightCount_ != 0u) {
-    texture.bind(TextureUnit::MetallicRoughness);
+  if (lightCount_) {
+    texture.bind(pbrTextureUnitSpace::TextureUnit::MetallicRoughness);
   }
   return *this;
 }
@@ -266,19 +267,19 @@ PbrShader& PbrShader::bindNormalTexture(Mn::GL::Texture2D& texture) {
                  "PbrShader::bindNormalTexture(): the shader was not "
                  "created with normal texture enabled",
                  *this);
-  if (lightCount_ != 0u) {
-    texture.bind(TextureUnit::Normal);
+  if (lightCount_) {
+    texture.bind(pbrTextureUnitSpace::TextureUnit::Normal);
   }
   return *this;
 }
 
-PbrShader& PbrShader::bindEmissiveTexture(Magnum::GL::Texture2D& texture) {
+PbrShader& PbrShader::bindEmissiveTexture(Mn::GL::Texture2D& texture) {
   CORRADE_ASSERT(flags_ & Flag::EmissiveTexture,
                  "PbrShader::bindEmissiveTexture(): the shader was not "
                  "created with emissive texture enabled",
                  *this);
   // emissive texture does not depend on lights
-  texture.bind(TextureUnit::Emissive);
+  texture.bind(pbrTextureUnitSpace::TextureUnit::Emissive);
   return *this;
 }
 
@@ -292,8 +293,13 @@ PbrShader& PbrShader::setNormalMatrix(const Mn::Matrix3x3& matrix) {
   return *this;
 }
 
-PbrShader& PbrShader::setTransformationMatrix(const Mn::Matrix4& matrix) {
-  setUniform(modelviewMatrixUniform_, matrix);
+PbrShader& PbrShader::setViewMatrix(const Mn::Matrix4& matrix) {
+  setUniform(viewMatrixUniform_, matrix);
+  return *this;
+}
+
+PbrShader& PbrShader::setModelMatrix(const Mn::Matrix4& matrix) {
+  setUniform(modelMatrixUniform_, matrix);
   return *this;
 }
 
@@ -327,6 +333,12 @@ PbrShader& PbrShader::setMetallic(float metallic) {
   if (lightCount_ != 0u) {
     setUniform(metallicUniform_, metallic);
   }
+  return *this;
+}
+
+PbrShader& PbrShader::setCameraWorldPosition(
+    const Magnum::Vector3& cameraWorldPos) {
+  setUniform(cameraWorldPosUniform_, cameraWorldPos);
   return *this;
 }
 

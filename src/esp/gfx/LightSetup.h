@@ -64,6 +64,20 @@ Magnum::Vector4 getLightPositionRelativeToCamera(
     const Magnum::Matrix4& cameraMatrix);
 
 /**
+ * @brief Get light position in world space for a @ref LightInfo and a
+ * rendered object. light.position and the return value are Vector4, with
+ * w == 1 for positions and w == 0 for directions
+ *
+ * @param transformationMatrix Describes object position relative to camera
+ * @param cameraMatrix Describes world position relative
+ * @return Magnum::Vector4 Light position in world space
+ */
+Magnum::Vector4 getLightPositionRelativeToWorld(
+    const LightInfo& light,
+    const Magnum::Matrix4& transformationMatrix,
+    const Magnum::Matrix4& cameraMatrix);
+
+/**
  * @brief Get a @ref LightSetup with lights at the corners of a box
  */
 LightSetup getLightsAtBoxCorners(
