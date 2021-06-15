@@ -88,3 +88,5 @@ WarningsAsErrors: '
 -cppcoreguidelines-pro-type-member-init,
 -optin.cplusplus.UninitializedObject
 '
+
+HeaderFilterRegex: "src/esp/"
