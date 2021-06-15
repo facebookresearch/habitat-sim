@@ -25,7 +25,7 @@ class GenericDrawable : public Drawable {
                            const Magnum::ResourceKey& lightSetupKey,
                            const Magnum::ResourceKey& materialDataKey,
                            DrawableGroup* group = nullptr,
-                           bool createMagnumRenderer = true);
+                           bool createRenderer = true);
 
   void setLightSetup(const Magnum::ResourceKey& lightSetupKey) override;
   static constexpr const char* SHADER_KEY_TEMPLATE = "Phong-lights={}-flags={}";
@@ -51,7 +51,7 @@ class GenericDrawable : public Drawable {
 
   Magnum::Shaders::PhongGL::Flags flags_;
 
-  bool createMagnumRenderer_;
+  bool createRenderer_;
 };
 
 }  // namespace gfx

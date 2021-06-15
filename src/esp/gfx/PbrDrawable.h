@@ -26,7 +26,7 @@ class PbrDrawable : public Drawable {
                        const Magnum::ResourceKey& lightSetupKey,
                        const Magnum::ResourceKey& materialDataKey,
                        DrawableGroup* group = nullptr,
-                       bool createMagnumRenderer = true);
+                       bool createRenderer = true);
 
   /**
    *  @brief Set the light info
@@ -87,7 +87,7 @@ class PbrDrawable : public Drawable {
   Magnum::Resource<MaterialData, PbrMaterialData> materialData_;
   Magnum::Resource<LightSetup> lightSetup_;
 
-  bool createMagnumRenderer_;
+  bool createRenderer_;
 };
 
 }  // namespace gfx

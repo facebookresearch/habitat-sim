@@ -92,11 +92,9 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   if (!resourceManager_) {
     resourceManager_ =
         std::make_unique<assets::ResourceManager>(metadataMediator_);
-    if (cfg.createRenderer) {
-      // needs to be called after ResourceManager exists but before any assets
-      // have been loaded
-      reconfigureReplayManager(cfg.enableGfxReplaySave);
-    }
+    // needs to be called after ResourceManager exists but before any assets
+    // have been loaded
+    reconfigureReplayManager(cfg.enableGfxReplaySave);
   } else {
     resourceManager_->setMetadataMediator(metadataMediator_);
   }
@@ -114,13 +112,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   // TODO can optimize to do partial re-initialization instead of from-scratch
   config_ = cfg;
 
-  // createRenderer refers to the magnum renderer plus other things like the
-  // stage and physics manager
   if (!config_.createRenderer) {
-    config_.createMagnumRenderer = false;
-  }
-
-  if (!config_.createMagnumRenderer) {
     config_.requiresTextures = false;
   }
 
@@ -138,7 +130,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
   bool success = false;
 
-  if (config_.createMagnumRenderer) {
+  if (config_.createRenderer) {
     /* When creating a viewer based app, there is no need to create a
     WindowlessContext since a (windowed) context already exists. */
     if (!context_ && !Magnum::GL::Context::hasCurrent()) {
@@ -156,28 +148,18 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     CORRADE_INTERNAL_ASSERT(!Magnum::GL::Context::hasCurrent());
   }
 
-  // (re) create scene instance based on whether or not a renderer is requested.
-  if (config_.createRenderer) {
-    // (re) create scene instance
-    success = createSceneInstance(config_.activeSceneName);
-  } else {
-    // (re) create scene instance without renderer
-    success = createSceneInstanceNoRenderer(config_.activeSceneName);
-  }
+  // (re) create scene instance
+  success = createSceneInstance(config_.activeSceneName);
 
   LOG(INFO) << "Simulator::reconfigure : createSceneInstance success == "
             << (success ? "true" : "false")
-            << " for active scene name : " << config_.activeSceneName
-            << (config_.createRenderer ? " with" : " without") << " renderer.";
+            << " for active scene name : " << config_.activeSceneName;
 
 }  // Simulator::reconfigure
 
 metadata::attributes::SceneAttributes::cptr
 Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
   namespace FileUtil = Cr::Utility::Directory;
-
-  // This should always/only be called by either createSceneInstance or
-  // createSceneInstanceNoRendere.
 
   // Get scene instance attributes corresponding to passed active scene name
   // This will retrieve, or construct, an appropriately configured scene
@@ -497,20 +479,6 @@ bool Simulator::instanceObjectsForActiveScene() {
   return true;
 }  // Simulator::instanceObjectsForActiveScene()
 
-bool Simulator::createSceneInstanceNoRenderer(
-    const std::string& activeSceneName) {
-  // Initial setup for scene instancing without renderer - sets or creates the
-  // current scene instance to correspond to the given name.  Also builds
-  // navmesh and semantic scene descriptor file if appropriate.
-  metadata::attributes::SceneAttributes::cptr curSceneInstanceAttributes =
-      setSceneInstanceAttributes(activeSceneName);
-
-  // TODO : reset may eventually have all the scene instance instantiation
-  // code so that scenes can be reset
-  reset();
-  return true;
-}  // Simulator::createSceneInstanceNoRenderer
-
 void Simulator::reset() {
   if (physicsManager_ != nullptr) {
     // Note: only resets time to 0 by default.
@@ -616,14 +584,6 @@ double Simulator::getWorldTime() {
 bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
                                  const nav::NavMeshSettings& navMeshSettings,
                                  bool includeStaticObjects) {
-  CORRADE_ASSERT(config_.createRenderer,
-                 "Simulator::recomputeNavMesh: "
-                 "SimulatorConfiguration::createRenderer is "
-                 "false. Scene geometry is required to recompute navmesh. No "
-                 "geometry is "
-                 "loaded without renderer initialization.",
-                 false);
-
   assets::MeshData::uptr joinedMesh = assets::MeshData::create_unique();
   auto stageInitAttrs = physicsManager_->getStageInitAttributes();
   if (stageInitAttrs != nullptr) {

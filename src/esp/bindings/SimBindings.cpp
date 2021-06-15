@@ -46,8 +46,6 @@ void initSimBindings(py::module& m) {
       .def_readwrite("gpu_device_id", &SimulatorConfiguration::gpuDeviceId)
       .def_readwrite("allow_sliding", &SimulatorConfiguration::allowSliding)
       .def_readwrite("create_renderer", &SimulatorConfiguration::createRenderer)
-      .def_readwrite("create_magnum_renderer",
-                     &SimulatorConfiguration::createMagnumRenderer)
       .def_readwrite("frustum_culling", &SimulatorConfiguration::frustumCulling)
       .def_readwrite("enable_physics", &SimulatorConfiguration::enablePhysics)
       .def_readwrite(

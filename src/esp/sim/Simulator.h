@@ -100,7 +100,7 @@ class Simulator {
    */
   int gpuDevice() const {
     if (!context_) {  // todo: be more strict and verbose here. test
-                      // g_createMagnumRenderer.
+                      // g_createRenderer.
       return 0;
     }
     return context_->gpuDevice();

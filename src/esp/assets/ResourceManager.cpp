@@ -69,8 +69,6 @@
 namespace Cr = Corrade;
 namespace Mn = Magnum;
 
-extern bool getCreateMagnumRenderer();
-
 namespace esp {
 using metadata::attributes::AbstractObjectAttributes;
 using metadata::attributes::CubePrimitiveAttributes;
@@ -125,12 +123,12 @@ void ResourceManager::buildImporters() {
 
 }  // buildImporters
 
-bool ResourceManager::getCreateMagnumRenderer() {
-  return metadataMediator_->getCreateMagnumRenderer();
+bool ResourceManager::getCreateRenderer() {
+  return metadataMediator_->getCreateRenderer();
 }
 
 void ResourceManager::initDefaultPrimAttributes() {
-  if (!getCreateMagnumRenderer()) {
+  if (!getCreateRenderer()) {
     return;
   }
 
@@ -977,7 +975,7 @@ void ResourceManager::buildPrimitiveAssetData(
   // compute the mesh bounding box
   primMeshData->BB = computeMeshBB(primMeshData.get());
 
-  if (getCreateMagnumRenderer()) {
+  if (getCreateRenderer()) {
     primMeshData->uploadBuffersToGPU(false);
   }
 
@@ -1084,7 +1082,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstancePTex(
   for (int iMesh = start; iMesh <= end; ++iMesh) {
     auto* pTexMeshData = dynamic_cast<PTexMeshData*>(meshes_.at(iMesh).get());
 
-    if (getCreateMagnumRenderer()) {
+    if (getCreateRenderer()) {
       pTexMeshData->uploadBuffersToGPU(false);
     }
 
@@ -1146,7 +1144,7 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
 
   for (int meshIDLocal = 0; meshIDLocal < instanceMeshes.size();
        ++meshIDLocal) {
-    if (getCreateMagnumRenderer()) {
+    if (getCreateRenderer()) {
       instanceMeshes[meshIDLocal]->uploadBuffersToGPU(false);
     }
     meshes_.emplace(meshStart + meshIDLocal,
@@ -1451,7 +1449,7 @@ bool ResourceManager::buildTrajectoryVisualization(
   // compute the mesh bounding box
   visMeshData->BB = computeMeshBB(visMeshData.get());
 
-  ESP_CHECK(getCreateMagnumRenderer(),
+  ESP_CHECK(getCreateRenderer(),
             "buildTrajectoryVisualization requires a renderer");
   visMeshData->uploadBuffersToGPU(false);
 
@@ -1788,7 +1786,7 @@ void ResourceManager::loadMeshes(Importer& importer,
     // compute the mesh bounding box
     gltfMeshData->BB = computeMeshBB(gltfMeshData.get());
 
-    if (getCreateMagnumRenderer()) {
+    if (getCreateRenderer()) {
       gltfMeshData->uploadBuffersToGPU(false);
     }
     meshes_.emplace(meshStart + iMesh, std::move(gltfMeshData));
@@ -2143,7 +2141,7 @@ void ResourceManager::createDrawable(Mn::GL::Mesh& mesh,
           lightSetupKey,                 // lightSetup key
           materialKey,                   // material key
           group,                         // drawable group
-          getCreateMagnumRenderer());    // createMagnumRenderer flag
+          getCreateRenderer());          // createRenderer flag
       break;
     case gfx::MaterialDataType::Pbr:
       node.addFeature<gfx::PbrDrawable>(
@@ -2153,7 +2151,7 @@ void ResourceManager::createDrawable(Mn::GL::Mesh& mesh,
           lightSetupKey,                 // lightSetup key
           materialKey,                   // material key
           group,                         // drawable group
-          getCreateMagnumRenderer());    // createMagnumRenderer flag
+          getCreateRenderer());          // createRenderer flag
       break;
   }
 }  // ResourceManager::createDrawable

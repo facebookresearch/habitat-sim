@@ -23,7 +23,7 @@ GenericDrawable::GenericDrawable(scene::SceneNode& node,
                                  const Mn::ResourceKey& lightSetupKey,
                                  const Mn::ResourceKey& materialDataKey,
                                  DrawableGroup* group /* = nullptr */,
-                                 bool createMagnumRenderer /* = true */)
+                                 bool createRenderer /* = true */)
     : Drawable{node, mesh, group},
       shaderManager_{shaderManager},
       lightSetup_{shaderManager.get<LightSetup>(lightSetupKey)},
@@ -60,9 +60,9 @@ GenericDrawable::GenericDrawable(scene::SceneNode& node,
     flags_ |= Mn::Shaders::PhongGL::Flag::VertexColor;
   }
 
-  createMagnumRenderer_ = createMagnumRenderer;
+  createRenderer_ = createRenderer;
 
-  if (createMagnumRenderer_) {
+  if (createRenderer_) {
     // update the shader early here to to avoid doing it during the render loop
     updateShader();
   }

@@ -343,7 +343,7 @@ class MetadataMediator {
         sceneDatasetName);
   }
 
-  bool getCreateMagnumRenderer();
+  bool getCreateRenderer();
 
  protected:
   /**

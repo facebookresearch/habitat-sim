@@ -808,7 +808,7 @@ void SimTest::createMagnumRenderingOff() {
   simConfig.enablePhysics = true;
   simConfig.physicsConfigFile = physicsConfigFile;
   simConfig.overrideSceneLightDefaults = true;
-  simConfig.createMagnumRenderer = false;
+  simConfig.createRenderer = false;
   simConfig.sceneLightSetup = esp::NO_LIGHT_KEY;
 
   // check that creating a simulator and adding a primitive object works

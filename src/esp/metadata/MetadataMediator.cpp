@@ -386,8 +386,8 @@ attributes::SceneAttributes::ptr MetadataMediator::makeSceneAndReferenceStage(
   return sceneAttributes;
 }  // MetadataMediator::makeSceneAndReferenceStage
 
-bool MetadataMediator::getCreateMagnumRenderer() {
-  return simConfig_.createMagnumRenderer;
+bool MetadataMediator::getCreateRenderer() {
+  return simConfig_.createRenderer;
 }
 
 }  // namespace metadata

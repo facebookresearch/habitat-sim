@@ -20,7 +20,7 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
                          const Mn::ResourceKey& lightSetupKey,
                          const Mn::ResourceKey& materialDataKey,
                          DrawableGroup* group,
-                         bool createMagnumRenderer)
+                         bool createRenderer)
     : Drawable{node, mesh, group},
       shaderManager_{shaderManager},
       lightSetup_{shaderManager.get<LightSetup>(lightSetupKey)},
@@ -69,7 +69,7 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
     flags_ |= PbrShader::Flag::DoubleSided;
   }
 
-  createMagnumRenderer_ = createMagnumRenderer;
+  createRenderer_ = createRenderer;
 
   // Defer the shader initialization because at this point, the lightSetup may
   // not be done in the Simulator. Simulator itself is currently under
