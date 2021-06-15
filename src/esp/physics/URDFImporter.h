@@ -137,6 +137,12 @@ class URDFImporter {
     return keys;
   };
 
+  /**
+   * @brief Load/import any required render and collision assets for the
+   * acrive io::URDF::Model before instantiating it.
+   */
+  void importURDFAssets();
+
  protected:
   // parses the URDF file into general, simulation platform invariant
   // datastructures

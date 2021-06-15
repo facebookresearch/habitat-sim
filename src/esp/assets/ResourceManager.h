@@ -222,15 +222,6 @@ class ResourceManager {
   bool instantiateAssetsOnDemand(
       const metadata::attributes::ObjectAttributes::ptr& ObjectAttributes);
 
-  /**
-   * @brief Load/import any required render and collision assets for an
-   * ArticulatedObject before instantiating it.
-   *
-   * @param model The URDF::Model describing the ArticulatedObject and
-   * referencing its assets.
-   */
-  void importURDFAssets(io::URDF::Model& model);
-
   //======== Accessor functions ========
   /**
    * @brief Getter for all @ref assets::CollisionMeshData associated with the

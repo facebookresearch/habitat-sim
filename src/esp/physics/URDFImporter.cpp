@@ -256,5 +256,80 @@ bool URDFImporter::getLinkContactInfo(
   return true;
 }
 
+void URDFImporter::importURDFAssets() {
+  if (activeModel_ == nullptr) {
+    Mn::Debug{}
+        << "URDFImporter::importURDFAssets - No URDF::Model loaded, aborting.";
+    return;
+  }
+  for (size_t linkIx = 0; linkIx < activeModel_->m_links.size(); ++linkIx) {
+    auto link = activeModel_->getLink(linkIx);
+    // load collision shapes
+    for (auto& collision : link->m_collisionArray) {
+      if (collision.m_geometry.m_type == io::URDF::GEOM_MESH) {
+        // pre-load the mesh asset for its collision shape
+        assets::AssetInfo meshAsset{assets::AssetType::UNKNOWN,
+                                    collision.m_geometry.m_meshFileName};
+        CORRADE_ASSERT(resourceManager_.loadRenderAsset(meshAsset),
+                       "Failed to load URDF ("
+                           << activeModel_->m_name << ") collision asset "
+                           << collision.m_geometry.m_meshFileName, );
+      }
+    }
+    // pre-load visual meshes and primitive asset variations and cache the
+    // handle
+    for (auto& visual : link->m_visualArray) {
+      assets::AssetInfo visualMeshInfo{assets::AssetType::UNKNOWN};
+      visualMeshInfo.requiresLighting = true;
+
+      std::shared_ptr<io::URDF::Material> material =
+          visual.m_geometry.m_localMaterial;
+      if (material) {
+        visualMeshInfo.overridePhongMaterial = assets::PhongMaterialColor();
+        visualMeshInfo.overridePhongMaterial->ambientColor =
+            material->m_matColor.m_rgbaColor;
+        visualMeshInfo.overridePhongMaterial->diffuseColor =
+            material->m_matColor.m_rgbaColor;
+        visualMeshInfo.overridePhongMaterial->specularColor =
+            Mn::Color4(material->m_matColor.m_specularColor);
+      }
+      switch (visual.m_geometry.m_type) {
+        case io::URDF::GEOM_CAPSULE: {
+          visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
+          auto assetMgr = resourceManager_.getAssetAttributesManager();
+          auto capTemplate = assetMgr->getDefaultCapsuleTemplate(false);
+          // proportions as suggested on magnum docs
+          capTemplate->setHalfLength(0.5 * visual.m_geometry.m_capsuleHeight /
+                                     visual.m_geometry.m_capsuleRadius);
+          assetMgr->registerObject(capTemplate);
+          // cache the new capsule asset handle for later instancing
+          visual.m_geometry.m_meshFileName = capTemplate->getHandle();
+        } break;
+        case io::URDF::GEOM_CYLINDER:
+          visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
+          visualMeshInfo.filepath =
+              "cylinderSolid_rings_1_segments_12_halfLen_1_useTexCoords_false_"
+              "useTangents_false_capEnds_true";
+          break;
+        case io::URDF::GEOM_BOX:
+          visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
+          visualMeshInfo.filepath = "cubeSolid";
+          break;
+        case io::URDF::GEOM_SPHERE:
+          visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
+          visualMeshInfo.filepath = "icosphereSolid_subdivs_1";
+          break;
+        case io::URDF::GEOM_MESH:
+          visualMeshInfo.filepath = visual.m_geometry.m_meshFileName;
+          break;
+        default:
+          Mn::Debug{} << "URDFImporter::importURDFAssets - unsupported "
+                         "visual geometry type.";
+          break;
+      }
+    }
+  }
+}
+
 }  // namespace physics
 }  // namespace esp
