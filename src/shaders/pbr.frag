@@ -139,17 +139,6 @@ const float INV_PI = 1.0 / PI;
 const float Epsilon = 0.0001;
 const float DielectricSpecular = 0.04;
 
-// Specular D, normal distribution function (NDF),
-// also known as ggxDistribution
-// n_dot_h: <normal, halfVector>
-//     normal: normal direction
-//     halfVector: half vector of light (light source direction)
-//                 and view (camera direction, aka light outgoing direction)
-float normalDistribution(float n_dot_h, float roughness) {
-  // normalDistributionGGX is defined in the pbrCommon.glsl
-  return normalDistributionGGX(n_dot_h, roughness);
-}
-
 // helper function to compute the Specular G
 float geometrySchlickGGX(float dotProd, float roughness) {
   float r = (roughness + 1.0);
@@ -232,7 +221,10 @@ void microfacetModel(vec3 specularReflectance,
   float temp = max(4.0 * n_dot_l * n_dot_v, Epsilon);
   vec3 specular = Fresnel *
                   specularGeometricAttenuation(n_dot_l, n_dot_v, roughness) *
-                  normalDistribution(n_dot_h, roughness) / temp;
+  // normalDistributionGGX is defined in the pbrCommon.glsl
+  // Specular D, normal distribution function (NDF),
+  // also known as ggxDistribution
+                  normalDistributionGGX(n_dot_h, roughness) / temp;
 
   vec3 tempVec = lightRadiance * n_dot_l;
   diffuseContrib = diffuse * tempVec;
