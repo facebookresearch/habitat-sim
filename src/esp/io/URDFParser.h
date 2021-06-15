@@ -161,7 +161,8 @@ struct Inertia {
 
   //! inertia matrix upper triangular entries. Computed automatically if not
   //! specified.
-  double m_ixx{}, m_ixy{}, m_ixz{}, m_iyy{}, m_iyz{}, m_izz = 0.0;
+  double m_ixx{NAN}, m_ixy{NAN}, m_ixz{NAN}, m_iyy{NAN}, m_iyz{NAN},
+      m_izz = 0.0;
 
   Inertia() = default;
 };
