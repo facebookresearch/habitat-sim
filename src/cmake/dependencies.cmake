@@ -234,6 +234,12 @@ if(NOT USE_SYSTEM_MAGNUM)
   )
   set(WITH_BASISIMPORTER ON CACHE BOOL "" FORCE)
 
+  if(BUILD_BASIS_COMPRESSOR)
+    # ImageConverter tool for basis
+    set(WITH_IMAGECONVERTER ON CACHE BOOL "" FORCE)
+    set(WITH_BASISIMAGECONVERTER ON CACHE BOOL "" FORCE)
+  endif()
+
   if(BUILD_WITH_BULLET)
     # Build Magnum's BulletIntegration
     set(WITH_BULLET ON CACHE BOOL "" FORCE)
@@ -290,6 +296,7 @@ if(NOT USE_SYSTEM_MAGNUM)
   if(BUILD_PYTHON_BINDINGS)
     add_subdirectory("${DEPS_DIR}/magnum-bindings")
   endif()
+
 endif()
 
 # gtest build

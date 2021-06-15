@@ -436,6 +436,35 @@ class AttributesManagersTest : public testing::Test {
 
   }  // AttributesManagersTest::testAssetAttributesModRegRemove
 
+  void testAssetAttributesTemplateCreateFromHandle(
+      const std::string& newTemplateName) {
+    // get starting number of templates
+    int orignNumTemplates = assetAttributesManager_->getNumObjects();
+    // first verify that no template with given name exists
+    bool templateExists =
+        assetAttributesManager_->getObjectLibHasHandle(newTemplateName);
+    ASSERT_EQ(templateExists, false);
+    // create new template based on handle and verify that it is created
+    auto newTemplate = assetAttributesManager_->createTemplateFromHandle(
+        newTemplateName, true);
+    ASSERT_NE(newTemplate, nullptr);
+
+    // now verify that template is in library
+    templateExists =
+        assetAttributesManager_->getObjectLibHasHandle(newTemplateName);
+    ASSERT_EQ(templateExists, true);
+
+    // remove new template via handle
+    auto oldTemplate =
+        assetAttributesManager_->removeObjectByHandle(newTemplateName);
+    // verify deleted template  exists
+    ASSERT_NE(nullptr, oldTemplate);
+
+    // verify there are same number of templates as when we started
+    ASSERT_EQ(orignNumTemplates, assetAttributesManager_->getNumObjects());
+
+  }  // AttributesManagersTest::testAssetAttributesTemplateCreateFromHandle
+
   AttrMgrs::AssetAttributesManager::ptr assetAttributesManager_ = nullptr;
   AttrMgrs::LightLayoutAttributesManager::ptr lightLayoutAttributesManager_ =
       nullptr;
@@ -450,8 +479,7 @@ class AttributesManagersTest : public testing::Test {
  * loading process is working as expected.
  */
 TEST_F(AttributesManagersTest, AttributesManagers_PhysicsJSONLoadTest) {
-  LOG(INFO) << "Starting "
-               "AttributesManagersTest::AttributesManagers_PhysicsJSONLoadTest";
+  LOG(INFO) << "Starting AttributesManagers_PhysicsJSONLoadTest";
   // build JSON sample config
   const std::string& jsonString = R"({
   "physics_simulator": "bullet_test",
@@ -494,8 +522,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_PhysicsJSONLoadTest) {
  * loading process is working as expected.
  */
 TEST_F(AttributesManagersTest, AttributesManagers_LightJSONLoadTest) {
-  LOG(INFO) << "Starting "
-               "AttributesManagersTest::AttributesManagers_LightJSONLoadTest";
+  LOG(INFO) << "Starting AttributesManagers_LightJSONLoadTest";
   // build JSON sample config
   const std::string& jsonString = R"({
   "lights":{
@@ -573,9 +600,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_LightJSONLoadTest) {
  * JSON loading process is working as expected.
  */
 TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
-  LOG(INFO) << "Starting "
-               "AttributesManagersTest::AttributesManagers_"
-               "SceneInstanceJSONLoadTest";
+  LOG(INFO) << "Starting AttributesManagers_SceneInstanceJSONLoadTest";
   // build JSON sample config
   const std::string& jsonString = R"({
   "translation_origin" : "Asset_Local",
@@ -583,6 +608,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
       "template_name": "test_stage_template",
       "translation": [1,2,3],
       "rotation": [0.1, 0.2, 0.3, 0.4],
+      "shader_type" : "pbr",
       "user_defined" : {
           "user_string" : "stage instance defined string",
           "user_bool" : true,
@@ -669,6 +695,9 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
                             "stage instance defined string", true, 11, 2.2f,
                             Magnum::Vector3(1.2, 3.4, 5.6),
                             Magnum::Quaternion({0.5f, 0.6f, 0.7f}, 0.4f));
+  // make sure that is not default value "flat"
+  ASSERT_EQ(stageInstance->getShaderType(),
+            static_cast<int>(Attrs::ObjectInstanceShaderType::PBR));
 
   // verify objects
   auto objectInstanceList = sceneAttr->getObjectInstances();
@@ -710,8 +739,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
  * loading process is working as expected.
  */
 TEST_F(AttributesManagersTest, AttributesManagers_StageJSONLoadTest) {
-  LOG(INFO) << "Starting "
-               "AttributesManagersTest::AttributesManagers_StageJSONLoadTest";
+  LOG(INFO) << "Starting AttributesManagers_StageJSONLoadTest";
 
   // build JSON sample config
   const std::string& jsonString = R"({
@@ -731,6 +759,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_StageJSONLoadTest) {
   "semantic_asset":"testJSONSemanticAsset.glb",
   "nav_asset":"testJSONNavMeshAsset.glb",
   "house_filename":"testJSONHouseFileName.glb",
+  "shader_type" : "material",
   "user_defined" : {
       "user_string" : "stage defined string",
       "user_bool" : false,
@@ -762,6 +791,9 @@ TEST_F(AttributesManagersTest, AttributesManagers_StageJSONLoadTest) {
   ASSERT_EQ(stageAttr->getIsCollidable(), false);
   // stage-specific attributes
   ASSERT_EQ(stageAttr->getGravity(), Magnum::Vector3(9, 8, 7));
+  // make sure that is not default value "flat"
+  ASSERT_EQ(stageAttr->getShaderType(),
+            static_cast<int>(Attrs::ObjectInstanceShaderType::Material));
   ASSERT_EQ(stageAttr->getOrigin(), Magnum::Vector3(1, 2, 3));
   ASSERT_EQ(stageAttr->getSemanticAssetHandle(), "testJSONSemanticAsset.glb");
   ASSERT_EQ(stageAttr->getNavmeshAssetHandle(), "testJSONNavMeshAsset.glb");
@@ -779,8 +811,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_StageJSONLoadTest) {
  * loading process is working as expected.
  */
 TEST_F(AttributesManagersTest, AttributesManagers_ObjectJSONLoadTest) {
-  LOG(INFO) << "Starting "
-               "AttributesManagersTest::AttributesManagers_ObjectJSONLoadTest";
+  LOG(INFO) << "Starting AttributesManagers_ObjectJSONLoadTest";
   // build JSON sample config
   const std::string& jsonString = R"({
   "scale":[2,3,4],
@@ -800,6 +831,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_ObjectJSONLoadTest) {
   "inertia": [1.1, 0.9, 0.3],
   "semantic_id" : 7,
   "COM": [0.1,0.2,0.3],
+  "shader_type" : "phong",
   "user_defined" : {
       "user_string" : "object defined string",
       "user_bool" : true,
@@ -831,6 +863,8 @@ TEST_F(AttributesManagersTest, AttributesManagers_ObjectJSONLoadTest) {
   ASSERT_EQ(objAttr->getSemanticId(), 7);
   // object-specific attributes
   ASSERT_EQ(objAttr->getMass(), 9);
+  ASSERT_EQ(objAttr->getShaderType(),
+            static_cast<int>(Attrs::ObjectInstanceShaderType::Phong));
   ASSERT_EQ(objAttr->getBoundingBoxCollisions(), true);
   ASSERT_EQ(objAttr->getJoinCollisionMeshes(), true);
   ASSERT_EQ(objAttr->getInertia(), Magnum::Vector3(1.1, 0.9, 0.3));
@@ -853,8 +887,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_ObjectJSONLoadTest) {
  * own tests.
  */
 TEST_F(AttributesManagersTest, PhysicsAttributesManagersCreate) {
-  LOG(INFO)
-      << "Starting AttributesManagersTest::PhysicsAttributesManagersCreate";
+  LOG(INFO) << "Starting PhysicsAttributesManagersCreate";
 
   LOG(INFO) << "Start Test : Create, Edit, Remove Attributes for "
                "PhysicsAttributesManager @ "
@@ -942,8 +975,7 @@ TEST_F(AttributesManagersTest, ObjectAttributesManagersCreate) {
 }  // AttributesManagersTest::ObjectAttributesManagersCreate test
 
 TEST_F(AttributesManagersTest, LightLayoutAttributesManagerTest) {
-  LOG(INFO) << "Starting "
-               "AttributesManagersTest::LightLayoutAttributesManagerTest";
+  LOG(INFO) << "Starting LightLayoutAttributesManagerTest";
 
   std::string lightConfigFile = Cr::Utility::Directory::join(
       DATA_DIR, "test_assets/lights/test_lights.lighting_config.json");
@@ -962,8 +994,7 @@ TEST_F(AttributesManagersTest, LightLayoutAttributesManagerTest) {
  * asset attributes are changed.
  */
 TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
-  LOG(INFO) << "Starting "
-               "AttributesManagersTest::PrimitiveAssetAttributesTest";
+  LOG(INFO) << "Starting PrimitiveAssetAttributesTest";
   /**
    * Primitive asset attributes require slightly different testing since a
    * default set of attributes (matching the default Magnum::Primitive
@@ -977,11 +1008,33 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
   int legalModValSolid = 5;
   int illegalModValSolid = 0;
 
+  const std::string capsule3DSolidHandle =
+      "capsule3DSolid_hemiRings_5_cylRings_2_segments_16_halfLen_1.75_"
+      "useTexCoords_true_useTangents_true";
+  const std::string capsule3DWireframeHandle =
+      "capsule3DWireframe_hemiRings_8_cylRings_2_segments_20_halfLen_1.5";
+
+  const std::string coneSolidHandle =
+      "coneSolid_segments_12_halfLen_1.35_rings_1_useTexCoords_true_"
+      "useTangents_true_capEnd_true";
+  const std::string coneWireframeHandle =
+      "coneWireframe_segments_32_halfLen_1.44";
+
+  const std::string cylinderSolidHandle =
+      "cylinderSolid_rings_1_segments_28_halfLen_1.11_useTexCoords_true_"
+      "useTangents_true_capEnds_true";
+  const std::string cylinderWireframeHandle =
+      "cylinderWireframe_rings_1_segments_32_halfLen_1.23";
+
+  const std::string uvSphereSolidHandle =
+      "uvSphereSolid_rings_16_segments_8_useTexCoords_true_useTangents_true";
+  const std::string uvSphereWireframeHandle =
+      "uvSphereWireframe_rings_20_segments_24";
+
   //////////////////////////
   // get default template for solid capsule
   {
-    LOG(INFO) << "Starting "
-                 "AttributesManagersTest::CapsulePrimitiveAttributes";
+    LOG(INFO) << "Starting CapsulePrimitiveAttributes";
     CapsulePrimitiveAttributes::ptr dfltCapsAttribs =
         assetAttributesManager_->getDefaultCapsuleTemplate(false);
     // verify it exists
@@ -991,6 +1044,9 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
     testAssetAttributesModRegRemove<CapsulePrimitiveAttributes>(
         dfltCapsAttribs, "segments", legalModValSolid, &illegalModValSolid);
 
+    // test that a new template can be created from the specified handles
+    testAssetAttributesTemplateCreateFromHandle(capsule3DSolidHandle);
+
     // test wireframe version
     dfltCapsAttribs = assetAttributesManager_->getDefaultCapsuleTemplate(true);
     // verify it exists
@@ -998,12 +1054,13 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
     // segments must be mult of 4 for wireframe primtives
     testAssetAttributesModRegRemove<CapsulePrimitiveAttributes>(
         dfltCapsAttribs, "segments", legalModValWF, &illegalModValWF);
+    // test that a new template can be created from the specified handles
+    testAssetAttributesTemplateCreateFromHandle(capsule3DWireframeHandle);
   }
   //////////////////////////
   // get default template for solid cone
   {
-    LOG(INFO) << "Starting "
-                 "AttributesManagersTest::ConePrimitiveAttributes";
+    LOG(INFO) << "Starting ConePrimitiveAttributes";
 
     ConePrimitiveAttributes::ptr dfltConeAttribs =
         assetAttributesManager_->getDefaultConeTemplate(false);
@@ -1014,6 +1071,9 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
     testAssetAttributesModRegRemove<ConePrimitiveAttributes>(
         dfltConeAttribs, "segments", legalModValSolid, &illegalModValSolid);
 
+    // test that a new template can be created from the specified handles
+    testAssetAttributesTemplateCreateFromHandle(coneSolidHandle);
+
     // test wireframe version
     dfltConeAttribs = assetAttributesManager_->getDefaultConeTemplate(true);
     // verify it exists
@@ -1021,12 +1081,14 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
     // segments must be mult of 4 for wireframe primtives
     testAssetAttributesModRegRemove<ConePrimitiveAttributes>(
         dfltConeAttribs, "segments", legalModValWF, &illegalModValWF);
+
+    // test that a new template can be created from the specified handles
+    testAssetAttributesTemplateCreateFromHandle(coneWireframeHandle);
   }
   //////////////////////////
   // get default template for solid cylinder
   {
-    LOG(INFO) << "Starting "
-                 "AttributesManagersTest::CylinderPrimitiveAttributes";
+    LOG(INFO) << "Starting CylinderPrimitiveAttributes";
 
     CylinderPrimitiveAttributes::ptr dfltCylAttribs =
         assetAttributesManager_->getDefaultCylinderTemplate(false);
@@ -1037,6 +1099,9 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
     testAssetAttributesModRegRemove<CylinderPrimitiveAttributes>(
         dfltCylAttribs, "segments", 5, &illegalModValSolid);
 
+    // test that a new template can be created from the specified handles
+    testAssetAttributesTemplateCreateFromHandle(cylinderSolidHandle);
+
     // test wireframe version
     dfltCylAttribs = assetAttributesManager_->getDefaultCylinderTemplate(true);
     // verify it exists
@@ -1044,12 +1109,13 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
     // segments must be mult of 4 for wireframe primtives
     testAssetAttributesModRegRemove<CylinderPrimitiveAttributes>(
         dfltCylAttribs, "segments", legalModValWF, &illegalModValWF);
+    // test that a new template can be created from the specified handles
+    testAssetAttributesTemplateCreateFromHandle(cylinderWireframeHandle);
   }
   //////////////////////////
   // get default template for solid UV Sphere
   {
-    LOG(INFO) << "Starting "
-                 "AttributesManagersTest::UVSpherePrimitiveAttributes";
+    LOG(INFO) << "Starting UVSpherePrimitiveAttributes";
 
     UVSpherePrimitiveAttributes::ptr dfltUVSphereAttribs =
         assetAttributesManager_->getDefaultUVSphereTemplate(false);
@@ -1060,6 +1126,9 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
     testAssetAttributesModRegRemove<UVSpherePrimitiveAttributes>(
         dfltUVSphereAttribs, "segments", 5, &illegalModValSolid);
 
+    // test that a new template can be created from the specified handles
+    testAssetAttributesTemplateCreateFromHandle(uvSphereSolidHandle);
+
     // test wireframe version
     dfltUVSphereAttribs =
         assetAttributesManager_->getDefaultUVSphereTemplate(true);
@@ -1068,6 +1137,9 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
     // segments must be mult of 4 for wireframe primtives
     testAssetAttributesModRegRemove<UVSpherePrimitiveAttributes>(
         dfltUVSphereAttribs, "segments", legalModValWF, &illegalModValWF);
+
+    // test that a new template can be created from the specified handles
+    testAssetAttributesTemplateCreateFromHandle(uvSphereWireframeHandle);
   }
 }  // AttributesManagersTest::AsssetAttributesManagerGetAndModify test
 

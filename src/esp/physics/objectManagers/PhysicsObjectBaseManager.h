@@ -70,23 +70,6 @@ class PhysicsObjectBaseManager
   void resetFinalize() override {}
 
   /**
-   * @brief This method will remove objects from physics manager.  The wrapper
-   * has already been removed by the time this method is called (this is called
-   * from @ref esp::core::ManagedContainerBase::deleteObjectInternal)
-   *
-   * @param objectID the ID of the managed object to remove
-   * @param objectHandle the string key of the managed object to remove.
-   */
-  void deleteObjectInternalFinalize(
-      int objectID,
-      CORRADE_UNUSED const std::string& objectHandle) override {
-    if (auto physMgr = this->getPhysicsManager()) {
-      if (physMgr->isValidObjectID(objectID)) {
-        physMgr->removeObject(objectID);
-      }
-    }
-  }  // updateObjectHandleLists
-  /**
    * @brief Build a shared pointer to a ManagedRigidObject wrapper around an
    * appropriately cast @ref esp::physics::RigidObject, either the base
    * kinematic verison, or one built to support a dynamic library.
@@ -113,7 +96,7 @@ class PhysicsObjectBaseManager
       CORRADE_UNUSED bool builtFromConfig) override {
     // construct a new wrapper based on the passed object
     if (managedObjTypeConstructorMap_.count(objectTypeName) == 0) {
-      LOG(ERROR) << "PhysicsObjectBaseManager::initNewObjectInternal ("
+      LOG(ERROR) << "<" << this->objectType_ << ">::initNewObjectInternal ("
                  << this->objectType_ << ") Unknown constructor type "
                  << objectTypeName << ".  Aborting.";
       return nullptr;

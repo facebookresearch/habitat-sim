@@ -48,8 +48,7 @@ int StageAttributesManager::registerObjectFinalize(
     bool forceRegistration) {
   if (stageAttributes->getRenderAssetHandle() == "") {
     LOG(ERROR)
-        << "StageAttributesManager::registerObjectFinalize : "
-           "Attributes template named "
+        << "::registerObjectFinalize : Attributes template named "
         << stageAttributesHandle
         << " does not have a valid render asset handle specified. Aborting.";
     return ID_UNDEFINED;
@@ -77,8 +76,7 @@ int StageAttributesManager::registerObjectFinalize(
     stageAttributes->setRenderAssetIsPrimitive(false);
   } else if (forceRegistration) {
     LOG(WARNING)
-        << "StageAttributesManager::registerObjectFinalize "
-           ": Render asset template handle : "
+        << "::registerObjectFinalize : Render asset template handle : "
         << renderAssetHandle << " specified in stage template with handle : "
         << stageAttributesHandle
         << " does not correspond to any existing file or primitive render "
@@ -86,8 +84,7 @@ int StageAttributesManager::registerObjectFinalize(
   } else {
     // If renderAssetHandle is not valid file name needs to  fail
     LOG(ERROR)
-        << "StageAttributesManager::registerObjectFinalize "
-           ": Render asset template handle : "
+        << "::registerObjectFinalize : Render asset template handle : "
         << renderAssetHandle << " specified in stage template with handle : "
         << stageAttributesHandle
         << " does not correspond to any existing file or primitive render "
@@ -112,8 +109,7 @@ int StageAttributesManager::registerObjectFinalize(
   } else {
     // Else, means no collision data specified, use specified render data
     LOG(INFO)
-        << "StageAttributesManager::registerObjectFinalize "
-           ": Collision asset template handle : "
+        << "::registerObjectFinalize : Collision asset template handle : "
         << collisionAssetHandle << " specified in stage template with handle : "
         << stageAttributesHandle
         << " does not correspond to any existing file or primitive render "
@@ -141,8 +137,7 @@ StageAttributes::ptr StageAttributesManager::createPrimBasedAttributesTemplate(
   // verify that a primitive asset with the given handle exists
   if (!StageAttributesManager::isValidPrimitiveAttributes(primAssetHandle)) {
     LOG(ERROR)
-        << "StageAttributesManager::createPrimBasedAttributesTemplate : No "
-           "primitive with handle '"
+        << "::createPrimBasedAttributesTemplate : No primitive with handle '"
         << primAssetHandle
         << "' exists so cannot build physical object.  Aborting.";
     return nullptr;

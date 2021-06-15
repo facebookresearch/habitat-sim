@@ -205,7 +205,7 @@ bool ResourceManager::loadStage(
     AssetInfo semanticInfo = assetInfoMap.at("semantic");
     auto semanticStageFilename = semanticInfo.filepath;
     if (Cr::Utility::Directory::exists(semanticStageFilename)) {
-      LOG(INFO) << "ResourceManager::loadStage : Loading Semantic Stage mesh : "
+      LOG(INFO) << "::loadStage : Loading Semantic Stage mesh : "
                 << semanticStageFilename;
       activeSemanticSceneID = sceneManagerPtr->initSceneGraph();
 
@@ -232,21 +232,20 @@ bool ResourceManager::loadStage(
       // regardless of load failure, original code still changed
       // activeSemanticSceneID_
       if (!semanticStageSuccess) {
-        LOG(ERROR) << " ResourceManager::loadStage : Semantic Stage mesh "
+        LOG(ERROR) << "::loadStage : Semantic Stage mesh "
                       "load failed.";
         return false;
       } else {
-        LOG(INFO) << "ResourceManager::loadStage : Semantic Stage mesh : "
+        LOG(INFO) << "::loadStage : Semantic Stage mesh : "
                   << semanticStageFilename << " loaded.";
       }
     } else {  // semantic file name does not exist but house does
-      LOG(WARNING)
-          << "ResourceManager::loadStage : Not loading semantic mesh - "
-             "File Name : "
-          << semanticStageFilename << " does not exist.";
+      LOG(WARNING) << "::loadStage : Not loading semantic mesh - "
+                      "File Name : "
+                   << semanticStageFilename << " does not exist.";
     }
   } else {  // not wanting to create semantic mesh
-    LOG(INFO) << "ResourceManager::loadStage : Not loading semantic mesh";
+    LOG(INFO) << "::loadStage : Not loading semantic mesh";
   }
 
   if (forceSeparateSemanticSceneGraph &&
@@ -274,8 +273,8 @@ bool ResourceManager::loadStage(
   }
   RenderAssetInstanceCreationInfo renderCreation(
       renderInfo.filepath, Cr::Containers::NullOpt, flags, renderLightSetupKey);
-  LOG(INFO) << "ResourceManager::loadStage : start load render asset "
-            << renderInfo.filepath << ".";
+  LOG(INFO) << "::loadStage : start load render asset " << renderInfo.filepath
+            << ".";
 
   bool renderMeshSuccess = loadStageInternal(renderInfo,  // AssetInfo
                                              &renderCreation,
@@ -293,7 +292,7 @@ bool ResourceManager::loadStage(
   if (assetInfoMap.count("collision") != 0u) {
     AssetInfo colInfo = assetInfoMap.at("collision");
     if (resourceDict_.count(colInfo.filepath) == 0) {
-      LOG(INFO) << "ResourceManager::loadStage : start load collision asset "
+      LOG(INFO) << "::loadStage : start load collision asset "
                 << colInfo.filepath << ".";
       // will not reload if already present
       bool collisionMeshSuccess =
@@ -328,7 +327,7 @@ bool ResourceManager::loadStage(
     // we are using None-type physicsManager.
     bool sceneSuccess = _physicsManager->addStage(stageAttributes, meshGroup);
     if (!sceneSuccess) {
-      LOG(ERROR) << "ResourceManager::loadStage : Adding Stage "
+      LOG(ERROR) << "::loadStage : Adding Stage "
                  << stageAttributes->getHandle()
                  << " to PhysicsManager failed. Aborting scene initialization.";
       return false;
@@ -363,7 +362,7 @@ bool ResourceManager::buildMeshGroups(
 
     // failure during build of collision mesh group
     if (!colMeshGroupSuccess) {
-      LOG(ERROR) << "ResourceManager::loadStage : Stage " << info.filepath
+      LOG(ERROR) << "::loadStage : Stage " << info.filepath
                  << " Collision mesh load failed. Aborting scene "
                     "initialization.";
       return false;
@@ -440,7 +439,7 @@ esp::geo::CoordinateFrame ResourceManager::buildFrameFromAttributes(
     esp::geo::CoordinateFrame frame{upEigen, frontEigen, originEigen};
     return frame;
   } else {
-    LOG(INFO) << "ResourceManager::buildFrameFromAttributes : Specified frame "
+    LOG(INFO) << "::buildFrameFromAttributes : Specified frame "
                  "in Attributes : "
               << attribs->getHandle()
               << " is not orthogonal, so returning default frame.";
@@ -676,14 +675,12 @@ bool ResourceManager::loadStageInternal(
     DrawableGroup* drawables) {
   // scene mesh loading
   const std::string& filename = info.filepath;
-  LOG(INFO) << "ResourceManager::loadStageInternal : Attempting to load stage "
-            << filename << " ";
+  LOG(INFO) << "::loadStageInternal : Attempting to load stage " << filename
+            << " ";
   bool meshSuccess = true;
   if (info.filepath != EMPTY_SCENE) {
     if (!Cr::Utility::Directory::exists(filename)) {
-      LOG(ERROR)
-          << "ResourceManager::loadStageInternal : Cannot find scene file "
-          << filename;
+      LOG(ERROR) << "::loadStageInternal : Cannot find scene file " << filename;
       meshSuccess = false;
     } else {
       if (info.type == AssetType::SUNCG_SCENE) {
@@ -715,8 +712,7 @@ bool ResourceManager::loadStageInternal(
       }
     }
   } else {
-    LOG(INFO) << "ResourceManager::loadStageInternal : Loading empty scene for "
-              << filename;
+    LOG(INFO) << "::loadStageInternal : Loading empty scene for " << filename;
     // EMPTY_SCENE (ie. "NONE") string indicates desire for an empty scene (no
     // scene mesh): welcome to the void
   }
@@ -741,7 +737,7 @@ bool ResourceManager::buildStageCollisionMeshGroup(
     if (rawMeshData == nullptr) {
       // means dynamic cast failed
       Cr::Utility::Debug()
-          << "ResourceManager::buildStageCollisionMeshGroup : "
+          << "::buildStageCollisionMeshGroup : "
              "AssetInfo::AssetType "
              "type error: unsupported mesh type, aborting. Try running "
              "without \"--enable-physics\" and consider logging an issue.";
@@ -787,7 +783,7 @@ void ResourceManager::computePTexMeshAbsoluteAABBs(
 
   CORRADE_ASSERT(
       absTransforms.size() == staticDrawableInfo.size(),
-      "ResourceManager::computePTexMeshAbsoluteAABBs: number of "
+      "::computePTexMeshAbsoluteAABBs: number of "
       "transformations does not match number of drawables. Aborting.", );
 
   // obtain the sub-meshes within the ptex mesh
@@ -815,7 +811,7 @@ void ResourceManager::computeGeneralMeshAbsoluteAABBs(
       computeAbsoluteTransformations(staticDrawableInfo);
 
   CORRADE_ASSERT(absTransforms.size() == staticDrawableInfo.size(),
-                 "ResourceManager::computeGeneralMeshAbsoluteAABBs: number of "
+                 "::computeGeneralMeshAbsoluteAABBs: number of "
                  "transforms does not match number of drawables.", );
 
   for (uint32_t iEntry = 0; iEntry < absTransforms.size(); ++iEntry) {
@@ -824,7 +820,7 @@ void ResourceManager::computeGeneralMeshAbsoluteAABBs(
     Cr::Containers::Optional<Magnum::Trade::MeshData>& meshData =
         meshes_.at(meshID)->getMeshData();
     CORRADE_ASSERT(meshData,
-                   "ResourceManager::computeGeneralMeshAbsoluteAABBs: The mesh "
+                   "::computeGeneralMeshAbsoluteAABBs: The mesh "
                    "data specified at ID:"
                        << meshID << "is empty/undefined. Aborting", );
 
@@ -859,10 +855,9 @@ void ResourceManager::computeInstanceMeshAbsoluteAABBs(
   std::vector<Mn::Matrix4> absTransforms =
       computeAbsoluteTransformations(staticDrawableInfo);
 
-  CORRADE_ASSERT(
-      absTransforms.size() == staticDrawableInfo.size(),
-      "ResourceManager::computeInstancelMeshAbsoluteAABBs: Number of "
-      "transforms does not match number of drawables. Aborting.", );
+  CORRADE_ASSERT(absTransforms.size() == staticDrawableInfo.size(),
+                 "::computeInstancelMeshAbsoluteAABBs: Number of "
+                 "transforms does not match number of drawables. Aborting.", );
 
   for (size_t iEntry = 0; iEntry < absTransforms.size(); ++iEntry) {
     const int meshID = staticDrawableInfo[iEntry].meshID;
@@ -894,7 +889,7 @@ std::vector<Mn::Matrix4> ResourceManager::computeAbsoluteTransformations(
   auto* scene = dynamic_cast<MagnumScene*>(staticDrawableInfo[0].node.scene());
 
   CORRADE_ASSERT(scene != nullptr,
-                 "ResourceManager::computeAbsoluteTransformations: The node is "
+                 "::computeAbsoluteTransformations: The node is "
                  "not attached to any scene graph. Aborting.",
                  {});
 
@@ -930,9 +925,29 @@ void ResourceManager::translateMesh(BaseMesh* meshDataGL,
 void ResourceManager::buildPrimitiveAssetData(
     const std::string& primTemplateHandle) {
   // retrieves -actual- template, not a copy
-  const esp::metadata::attributes::AbstractPrimitiveAttributes::ptr
-      primTemplate =
-          getAssetAttributesManager()->getObjectByHandle(primTemplateHandle);
+  esp::metadata::attributes::AbstractPrimitiveAttributes::ptr primTemplate =
+      getAssetAttributesManager()->getObjectByHandle(primTemplateHandle);
+
+  if (primTemplate == nullptr) {
+    // Template does not yet exist, create it using its name - primitive
+    // template names encode all the pertinent template settings and cannot be
+    // changed by the user, so the template name can be used to recreate the
+    // template itself.
+    auto newTemplate = getAssetAttributesManager()->createTemplateFromHandle(
+        primTemplateHandle);
+    // if still null, fail.
+    if (newTemplate == nullptr) {
+      LOG(ERROR)
+          << "::buildPrimitiveAssetData : Attempting to reference or build a "
+             "primitive template from an unknown/malformed handle : "
+          << primTemplateHandle << ".  Aborting";
+      return;
+    }
+    // we do not want a copy of the newly created template, but the actual
+    // template
+    primTemplate = getAssetAttributesManager()->getObjectByHandle(
+        newTemplate->getHandle());
+  }
   // check if unique name of attributes describing primitive asset is present
   // already - don't remake if so
   auto primAssetHandle = primTemplate->getHandle();
@@ -1035,11 +1050,10 @@ bool ResourceManager::loadRenderAssetPTex(const AssetInfo& info) {
   meshMetaData.root.transformFromLocalToParent =
       R * meshMetaData.root.transformFromLocalToParent;
 
-  CORRADE_ASSERT(
-      meshMetaData.meshIndex.first == meshMetaData.meshIndex.second,
-      "ResourceManager::loadRenderAssetPTex: ptex mesh is not loaded "
-      "correctly. Aborting.",
-      false);
+  CORRADE_ASSERT(meshMetaData.meshIndex.first == meshMetaData.meshIndex.second,
+                 "::loadRenderAssetPTex: ptex mesh is not loaded "
+                 "correctly. Aborting.",
+                 false);
 
   return true;
 #else
@@ -1408,7 +1422,7 @@ bool ResourceManager::buildTrajectoryVisualization(
     radius = .001;
   }
 
-  LOG(INFO) << "ResourceManager::loadTrajectoryVisualization : Calling "
+  LOG(INFO) << "::loadTrajectoryVisualization : Calling "
                "trajectoryTubeSolid to build a tube named :"
             << trajVisName << " with " << pts.size()
             << " points, building a tube of radius :" << radius << " using "
@@ -1419,7 +1433,7 @@ bool ResourceManager::buildTrajectoryVisualization(
   Cr::Containers::Optional<Mn::Trade::MeshData> trajTubeMesh =
       geo::buildTrajectoryTubeSolid(pts, numSegments, radius, smooth,
                                     numInterp);
-  LOG(INFO) << "ResourceManager::loadTrajectoryVisualization : Successfully "
+  LOG(INFO) << "::loadTrajectoryVisualization : Successfully "
                "returned from trajectoryTubeSolid ";
 
   // make assetInfo
@@ -1731,7 +1745,7 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
     */
     CORRADE_ASSERT(
         material.hasNoneRoughnessMetallicTexture(),
-        "ResourceManager::buildPbrShadedMaterialData(): if both the metallic "
+        "::buildPbrShadedMaterialData(): if both the metallic "
         "and roughness texture exist, they must be packed in the same texture "
         "based on glTF 2.0 Spec.",
         finalMaterial);
@@ -1740,7 +1754,7 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
   // TODO:
   // Support NormalRoughnessMetallicTexture packing
   CORRADE_ASSERT(!material.hasNormalRoughnessMetallicTexture(),
-                 "ResourceManager::buildPbrShadedMaterialData(): "
+                 "::buildPbrShadedMaterialData(): "
                  "Sorry. NormalRoughnessMetallicTexture is not supported in "
                  "the current version. We will work on it.",
                  finalMaterial);
@@ -1911,7 +1925,7 @@ bool ResourceManager::instantiateAssetsOnDemand(
     CORRADE_ASSERT(
         (ID_UNDEFINED != getObjectAttributesManager()->registerObject(
                              objectAttributes, objectTemplateHandle)),
-        "ResourceManager::instantiateAssetsOnDemand : Unknown failure "
+        "::instantiateAssetsOnDemand : Unknown failure "
         "attempting to register modified template :"
             << objectTemplateHandle
             << "before asset instantiation.  Aborting. ",
