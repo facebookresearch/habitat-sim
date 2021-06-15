@@ -189,62 +189,61 @@ int BulletURDFImporter::getCollisionGroupAndMask(int linkIndex,
 // Construction helpers
 ///////////////////////////////////
 
-void BulletURDFImporter::ComputeTotalNumberOfJoints(URDF2BulletCached& cache,
-                                                    int linkIndex) {
+void BulletURDFImporter::computeTotalNumberOfJoints(int linkIndex) {
   std::vector<int> childIndices;
   getLinkChildIndices(linkIndex, childIndices);
-  cache.m_totalNumJoints1 += childIndices.size();
+  cache->m_totalNumJoints1 += childIndices.size();
   for (size_t i = 0; i < childIndices.size(); i++) {
     int childIndex = childIndices[i];
-    ComputeTotalNumberOfJoints(cache, childIndex);
+    computeTotalNumberOfJoints(childIndex);
   }
 }
 
-void BulletURDFImporter::ComputeParentIndices(URDF2BulletCached& cache,
+void BulletURDFImporter::computeParentIndices(URDF2BulletCached& bulletCache,
                                               int urdfLinkIndex,
                                               int urdfParentIndex) {
-  cache.m_urdfLinkParentIndices[urdfLinkIndex] = urdfParentIndex;
-  cache.m_urdfLinkIndices2BulletLinkIndices[urdfLinkIndex] =
-      cache.m_currentMultiBodyLinkIndex++;
+  bulletCache.m_urdfLinkParentIndices[urdfLinkIndex] = urdfParentIndex;
+  bulletCache.m_urdfLinkIndices2BulletLinkIndices[urdfLinkIndex] =
+      bulletCache.m_currentMultiBodyLinkIndex++;
 
   std::vector<int> childIndices;
   getLinkChildIndices(urdfLinkIndex, childIndices);
   for (size_t i = 0; i < childIndices.size(); i++) {
-    ComputeParentIndices(cache, childIndices[i], urdfLinkIndex);
+    computeParentIndices(bulletCache, childIndices[i], urdfLinkIndex);
   }
 }
 
-void BulletURDFImporter::InitURDF2BulletCache(URDF2BulletCached& cache,
-                                              int flags) {
+void BulletURDFImporter::initURDF2BulletCache() {
   // compute the number of links, and compute parent indices array (and possibly
   // other cached ?)
-  cache.m_totalNumJoints1 = 0;
+  cache = std::make_shared<URDF2BulletCached>();
+  cache->m_totalNumJoints1 = 0;
 
   int rootLinkIndex = getRootLinkIndex();
   if (rootLinkIndex >= 0) {
-    ComputeTotalNumberOfJoints(cache, rootLinkIndex);
-    int numTotalLinksIncludingBase = 1 + cache.m_totalNumJoints1;
+    computeTotalNumberOfJoints(rootLinkIndex);
+    int numTotalLinksIncludingBase = 1 + cache->m_totalNumJoints1;
 
-    cache.m_urdfLinkParentIndices.resize(numTotalLinksIncludingBase);
-    cache.m_urdfLinkIndices2BulletLinkIndices.resize(
+    cache->m_urdfLinkParentIndices.resize(numTotalLinksIncludingBase);
+    cache->m_urdfLinkIndices2BulletLinkIndices.resize(
         numTotalLinksIncludingBase);
-    cache.m_urdfLinkLocalInertialFrames.resize(numTotalLinksIncludingBase);
+    cache->m_urdfLinkLocalInertialFrames.resize(numTotalLinksIncludingBase);
 
-    cache.m_currentMultiBodyLinkIndex =
+    cache->m_currentMultiBodyLinkIndex =
         -1;  // multi body base has 'link' index -1
 
     bool maintainLinkOrder = (flags & CUF_MAINTAIN_LINK_ORDER) != 0;
     if (maintainLinkOrder) {
-      URDF2BulletCached cache2 = cache;
+      URDF2BulletCached cache2 = *cache;
 
-      ComputeParentIndices(cache2, rootLinkIndex, -2);
+      computeParentIndices(cache2, rootLinkIndex, -2);
 
       for (int j = 0; j < numTotalLinksIncludingBase; j++) {
-        cache.m_urdfLinkParentIndices[j] = cache2.m_urdfLinkParentIndices[j];
-        cache.m_urdfLinkIndices2BulletLinkIndices[j] = j - 1;
+        cache->m_urdfLinkParentIndices[j] = cache2.m_urdfLinkParentIndices[j];
+        cache->m_urdfLinkIndices2BulletLinkIndices[j] = j - 1;
       }
     } else {
-      ComputeParentIndices(cache, rootLinkIndex, -2);
+      computeParentIndices(*cache, rootLinkIndex, -2);
     }
   }
 }
@@ -274,29 +273,27 @@ void processContactParameters(const io::URDF::LinkContactInfo& contactInfo,
   }
 }
 
-Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
-    URDF2BulletCached& cache,
+Mn::Matrix4 BulletURDFImporter::convertURDF2BulletInternal(
     int urdfLinkIndex,
     const Mn::Matrix4& parentTransformInWorldSpace,
     btMultiBodyDynamicsWorld* world1,
-    int flags,
     std::map<int, std::unique_ptr<btCompoundShape>>& linkCompoundShapes,
     std::map<int, std::vector<std::unique_ptr<btCollisionShape>>>&
         linkChildShapes) {
   Mn::Debug silence{logMessages ? &std::cout : nullptr};
   Mn::Debug{} << "++++++++++++++++++++++++++++++++++++++";
-  Mn::Debug{} << "ConvertURDF2BulletInternal...";
+  Mn::Debug{} << "convertURDF2BulletInternal...";
 
   Mn::Matrix4 linkTransformInWorldSpace;
 
   Mn::Debug{} << "  urdfLinkIndex = " << urdfLinkIndex;
 
-  int mbLinkIndex = cache.getMbIndexFromUrdfIndex(urdfLinkIndex);
+  int mbLinkIndex = cache->getMbIndexFromUrdfIndex(urdfLinkIndex);
   Mn::Debug{} << "  mbLinkIndex = " << mbLinkIndex;
 
-  int urdfParentIndex = cache.getParentUrdfIndex(urdfLinkIndex);
+  int urdfParentIndex = cache->getParentUrdfIndex(urdfLinkIndex);
   Mn::Debug{} << "  urdfParentIndex = " << urdfParentIndex;
-  int mbParentIndex = cache.getMbIndexFromUrdfIndex(urdfParentIndex);
+  int mbParentIndex = cache->getMbIndexFromUrdfIndex(urdfParentIndex);
   Mn::Debug{} << "  mbParentIndex = " << mbParentIndex;
 
   Mn::Matrix4 parentLocalInertialFrame;
@@ -307,7 +304,7 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
     Mn::Debug{} << "root link has no parent";
   } else {
     getMassAndInertia2(urdfParentIndex, parentMass, parentLocalInertiaDiagonal,
-                       parentLocalInertialFrame, flags);
+                       parentLocalInertialFrame);
   }
 
   Mn::Debug{} << "  about to get mass/inertia";
@@ -316,7 +313,7 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
   Mn::Matrix4 localInertialFrame;
   Mn::Vector3 localInertiaDiagonal(0);
   getMassAndInertia2(urdfLinkIndex, mass, localInertiaDiagonal,
-                     localInertialFrame, flags);
+                     localInertialFrame);
 
   Mn::Debug{} << "  about to get joint info";
 
@@ -369,22 +366,22 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
 
     bool canSleep = (flags & CUF_ENABLE_SLEEPING) != 0;
 
-    if (cache.m_bulletMultiBody == nullptr) {
+    if (cache->m_bulletMultiBody == nullptr) {
       bool isFixedBase = (mass == 0);
-      int totalNumJoints = cache.m_totalNumJoints1;
-      cache.m_bulletMultiBody =
+      int totalNumJoints = cache->m_totalNumJoints1;
+      cache->m_bulletMultiBody =
           new btMultiBody(totalNumJoints, mass, btVector3(localInertiaDiagonal),
                           isFixedBase, canSleep);
       if ((flags & CUF_GLOBAL_VELOCITIES_MB) != 0) {
-        cache.m_bulletMultiBody->useGlobalVelocities(true);
+        cache->m_bulletMultiBody->useGlobalVelocities(true);
       }
       if ((flags & CUF_USE_MJCF) != 0) {
-        cache.m_bulletMultiBody->setBaseWorldTransform(
+        cache->m_bulletMultiBody->setBaseWorldTransform(
             btTransform(linkTransformInWorldSpace));
       }
 
       // registerMultiBody
-      cache.m_urdfLinkLocalInertialFrames[urdfLinkIndex] =
+      cache->m_urdfLinkLocalInertialFrames[urdfLinkIndex] =
           btTransform(localInertialFrame);
     }
 
@@ -401,18 +398,18 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
 
       bool disableParentCollision = true;
 
-      if (cache.m_bulletMultiBody) {
-        cache.m_bulletMultiBody->getLink(mbLinkIndex).m_jointDamping =
+      if (cache->m_bulletMultiBody) {
+        cache->m_bulletMultiBody->getLink(mbLinkIndex).m_jointDamping =
             jointDamping;
-        cache.m_bulletMultiBody->getLink(mbLinkIndex).m_jointFriction =
+        cache->m_bulletMultiBody->getLink(mbLinkIndex).m_jointFriction =
             jointFriction;
-        cache.m_bulletMultiBody->getLink(mbLinkIndex).m_jointLowerLimit =
+        cache->m_bulletMultiBody->getLink(mbLinkIndex).m_jointLowerLimit =
             jointLowerLimit;
-        cache.m_bulletMultiBody->getLink(mbLinkIndex).m_jointUpperLimit =
+        cache->m_bulletMultiBody->getLink(mbLinkIndex).m_jointUpperLimit =
             jointUpperLimit;
-        cache.m_bulletMultiBody->getLink(mbLinkIndex).m_jointMaxForce =
+        cache->m_bulletMultiBody->getLink(mbLinkIndex).m_jointMaxForce =
             jointMaxForce;
-        cache.m_bulletMultiBody->getLink(mbLinkIndex).m_jointMaxVelocity =
+        cache->m_bulletMultiBody->getLink(mbLinkIndex).m_jointMaxVelocity =
             jointMaxVelocity;
       }
 
@@ -420,7 +417,7 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
         case io::URDF::SphericalJoint: {
           // TODO: link mapping?
           // creation.addLinkMapping(urdfLinkIndex, mbLinkIndex);
-          cache.m_bulletMultiBody->setupSpherical(
+          cache->m_bulletMultiBody->setupSpherical(
               mbLinkIndex, mass, btVector3(localInertiaDiagonal), mbParentIndex,
               btQuaternion(parentRotToThis), btVector3(offsetInA.translation()),
               btVector3(-offsetInB.translation()), disableParentCollision);
@@ -430,7 +427,7 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
         case io::URDF::PlanarJoint: {
           // TODO: link mapping?
           // creation.addLinkMapping(urdfLinkIndex, mbLinkIndex);
-          cache.m_bulletMultiBody->setupPlanar(
+          cache->m_bulletMultiBody->setupPlanar(
               mbLinkIndex, mass, btVector3(localInertiaDiagonal), mbParentIndex,
               btQuaternion(parentRotToThis),
               quatRotate(btQuaternion(
@@ -451,7 +448,7 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
           // creation.addLinkMapping(urdfLinkIndex, mbLinkIndex);
 
           // todo: adjust the center of mass transform and pivot axis properly
-          cache.m_bulletMultiBody->setupFixed(
+          cache->m_bulletMultiBody->setupFixed(
               mbLinkIndex, mass, btVector3(localInertiaDiagonal), mbParentIndex,
               btQuaternion(parentRotToThis), btVector3(offsetInA.translation()),
               btVector3(-offsetInB.translation()));
@@ -462,7 +459,7 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
           // TODO: link mapping?
           // creation.addLinkMapping(urdfLinkIndex, mbLinkIndex);
 
-          cache.m_bulletMultiBody->setupRevolute(
+          cache->m_bulletMultiBody->setupRevolute(
               mbLinkIndex, mass, btVector3(localInertiaDiagonal), mbParentIndex,
               btQuaternion(parentRotToThis),
               quatRotate(btQuaternion(
@@ -474,10 +471,10 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
           if (jointType == io::URDF::RevoluteJoint &&
               jointLowerLimit <= jointUpperLimit) {
             btMultiBodyConstraint* con = new btMultiBodyJointLimitConstraint(
-                cache.m_bulletMultiBody, mbLinkIndex, jointLowerLimit,
+                cache->m_bulletMultiBody, mbLinkIndex, jointLowerLimit,
                 jointUpperLimit);
             world1->addMultiBodyConstraint(con);
-            cache.m_jointLimitConstraints.emplace(
+            cache->m_jointLimitConstraints.emplace(
                 mbLinkIndex,
                 JointLimitConstraintInfo(mbLinkIndex, jointLowerLimit,
                                          jointUpperLimit, con));
@@ -489,7 +486,7 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
           // TODO: link mapping?
           // creation.addLinkMapping(urdfLinkIndex, mbLinkIndex);
 
-          cache.m_bulletMultiBody->setupPrismatic(
+          cache->m_bulletMultiBody->setupPrismatic(
               mbLinkIndex, mass, btVector3(localInertiaDiagonal), mbParentIndex,
               btQuaternion(parentRotToThis),
               quatRotate(btQuaternion(
@@ -500,10 +497,10 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
 
           if (jointLowerLimit <= jointUpperLimit) {
             btMultiBodyConstraint* con = new btMultiBodyJointLimitConstraint(
-                cache.m_bulletMultiBody, mbLinkIndex, jointLowerLimit,
+                cache->m_bulletMultiBody, mbLinkIndex, jointLowerLimit,
                 jointUpperLimit);
             world1->addMultiBodyConstraint(con);
-            cache.m_jointLimitConstraints.emplace(
+            cache->m_jointLimitConstraints.emplace(
                 mbLinkIndex,
                 JointLimitConstraintInfo(mbLinkIndex, jointLowerLimit,
                                          jointUpperLimit, con));
@@ -519,7 +516,7 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
 
     {
       btMultiBodyLinkCollider* col =
-          new btMultiBodyLinkCollider(cache.m_bulletMultiBody, mbLinkIndex);
+          new btMultiBodyLinkCollider(cache->m_bulletMultiBody, mbLinkIndex);
 
       col->setCollisionShape(compoundShape);
 
@@ -538,7 +535,7 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
 
       // base and fixed? -> static, otherwise flag as dynamic
       bool isDynamic =
-          !(mbLinkIndex < 0 && cache.m_bulletMultiBody->hasFixedBase());
+          !(mbLinkIndex < 0 && cache->m_bulletMultiBody->hasFixedBase());
       io::URDF::LinkContactInfo contactInfo;
       getLinkContactInfo(urdfLinkIndex, contactInfo);
 
@@ -549,17 +546,17 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
         // if the base is static and all joints in the chain between this link
         // and the base are fixed, then this link is static too (doesn't merge
         // islands)
-        if (cache.m_bulletMultiBody->getBaseMass() == 0) {
+        if (cache->m_bulletMultiBody->getBaseMass() == 0) {
           bool allJointsFixed = true;
           int testLinkIndex = mbLinkIndex;
           do {
-            if (cache.m_bulletMultiBody->getLink(testLinkIndex).m_jointType !=
+            if (cache->m_bulletMultiBody->getLink(testLinkIndex).m_jointType !=
                 btMultibodyLink::eFixed) {
               allJointsFixed = false;
               break;
             }
             testLinkIndex =
-                cache.m_bulletMultiBody->getLink(testLinkIndex).m_parent;
+                cache->m_bulletMultiBody->getLink(testLinkIndex).m_parent;
           } while (testLinkIndex > 0);
           if (allJointsFixed) {
             col->setCollisionFlags(col->getCollisionFlags() |
@@ -567,25 +564,25 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
             isDynamic = false;
           }
         }
-        cache.m_bulletMultiBody->getLink(mbLinkIndex).m_collider = col;
+        cache->m_bulletMultiBody->getLink(mbLinkIndex).m_collider = col;
         if ((flags & CUF_USE_SELF_COLLISION_INCLUDE_PARENT) != 0) {
-          cache.m_bulletMultiBody->getLink(mbLinkIndex).m_flags &=
+          cache->m_bulletMultiBody->getLink(mbLinkIndex).m_flags &=
               ~BT_MULTIBODYLINKFLAGS_DISABLE_PARENT_COLLISION;
         }
         if ((flags & CUF_USE_SELF_COLLISION_EXCLUDE_ALL_PARENTS) != 0) {
-          cache.m_bulletMultiBody->getLink(mbLinkIndex).m_flags |=
+          cache->m_bulletMultiBody->getLink(mbLinkIndex).m_flags |=
               BT_MULTIBODYLINKFLAGS_DISABLE_ALL_PARENT_COLLISION;
         }
       } else {
         {
-          if (cache.m_bulletMultiBody->getBaseMass() == 0) {
+          if (cache->m_bulletMultiBody->getBaseMass() == 0) {
             col->setCollisionFlags(col->getCollisionFlags() |
                                    btCollisionObject::CF_STATIC_OBJECT);
             isDynamic = false;
           }
         }
 
-        cache.m_bulletMultiBody->setBaseCollider(col);
+        cache->m_bulletMultiBody->setBaseCollider(col);
       }
 
       ASSERT(isDynamic != col->isStaticOrKinematicObject(),
@@ -632,9 +629,8 @@ Mn::Matrix4 BulletURDFImporter::ConvertURDF2BulletInternal(
   for (int i = 0; i < numChildren; i++) {
     int urdfChildLinkIndex = urdfChildIndices[i];
 
-    ConvertURDF2BulletInternal(cache, urdfChildLinkIndex,
-                               linkTransformInWorldSpace, world1, flags,
-                               linkCompoundShapes, linkChildShapes);
+    convertURDF2BulletInternal(urdfChildLinkIndex, linkTransformInWorldSpace,
+                               world1, linkCompoundShapes, linkChildShapes);
   }
   return linkTransformInWorldSpace;
 }

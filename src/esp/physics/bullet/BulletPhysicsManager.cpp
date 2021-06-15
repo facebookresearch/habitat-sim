@@ -133,8 +133,19 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
   // before initializing the URDF, import all necessary assets in advance
   urdfImporter_->importURDFAssets();
 
-  articulatedObject->initializeFromURDF(*urdfImporter_, {}, drawables,
-                                        physicsNode_, fixedBase);
+  BulletURDFImporter* u2b =
+      static_cast<BulletURDFImporter*>(urdfImporter_.get());
+
+  u2b->setFixedBase(fixedBase);
+
+  // TODO: set these flags up better
+  u2b->flags = 0;
+  u2b->initURDF2BulletCache();
+
+  articulatedObject->initializeFromURDF(*urdfImporter_, {}, physicsNode_);
+
+  // top level only valid in initial state, but computes valid sub-part AABBs.
+  articulatedObject->node().computeCumulativeBB();
 
   // allocate ids for links
   for (int linkIx = 0; linkIx < articulatedObject->btMultiBody_->getNumLinks();
@@ -144,6 +155,27 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
     collisionObjToObjIds_->emplace(
         articulatedObject->btMultiBody_->getLinkCollider(linkIx), linkObjectId);
   }
+
+  // attach link visual shapes
+  int urdfLinkIx = 0;
+  for (auto& link : urdfImporter_->getModel()->m_links) {
+    if (link.second->m_visualArray.size() > 0) {
+      int bulletLinkIx =
+          u2b->cache->m_urdfLinkIndices2BulletLinkIndices[urdfLinkIx];
+      ArticulatedLink& linkObject = articulatedObject->getLink(bulletLinkIx);
+
+      ESP_CHECK(
+          attachLinkGeometry(&linkObject, link.second, drawables),
+          "BulletPhysicsManager::addArticulatedObjectFromURDF(): Failed to "
+          "instance render asset (attachGeometry) for link "
+              << urdfLinkIx << ".");
+    }
+    urdfLinkIx++;
+  }
+
+  // clear the cache
+  u2b->cache = nullptr;
+
   // base collider refers to the articulated object's id
   collisionObjToObjIds_->emplace(
       articulatedObject->btMultiBody_->getBaseCollider(), articulatedObjectID);
@@ -231,6 +263,121 @@ bool BulletPhysicsManager::isMeshPrimitiveValid(
     LOG(ERROR) << "Cannot load collision mesh, skipping";
     return false;
   }
+}
+
+bool BulletPhysicsManager::attachLinkGeometry(
+    ArticulatedLink* linkObject,
+    const std::shared_ptr<io::URDF::Link>& link,
+    gfx::DrawableGroup* drawables) {
+  bool geomSuccess = false;
+
+  for (auto& visual : link->m_visualArray) {
+    bool visualSetupSuccess = true;
+    // create a new child for each visual component
+    scene::SceneNode& visualGeomComponent = linkObject->node().createChild();
+    // cache the visual node
+    linkObject->visualNodes_.push_back(&visualGeomComponent);
+    visualGeomComponent.setType(esp::scene::SceneNodeType::OBJECT);
+    visualGeomComponent.setTransformation(
+        link->m_inertia.m_linkLocalFrame.invertedRigid() *
+        visual.m_linkLocalFrame);
+
+    // prep the AssetInfo, overwrite the filepath later
+    assets::AssetInfo visualMeshInfo{assets::AssetType::UNKNOWN};
+    visualMeshInfo.requiresLighting = true;
+
+    // create a modified asset if necessary for material override
+    std::shared_ptr<io::URDF::Material> material =
+        visual.m_geometry.m_localMaterial;
+    if (material) {
+      visualMeshInfo.overridePhongMaterial = assets::PhongMaterialColor();
+      visualMeshInfo.overridePhongMaterial->ambientColor =
+          material->m_matColor.m_rgbaColor;
+      visualMeshInfo.overridePhongMaterial->diffuseColor =
+          material->m_matColor.m_rgbaColor;
+      visualMeshInfo.overridePhongMaterial->specularColor =
+          Mn::Color4(material->m_matColor.m_specularColor);
+    }
+
+    switch (visual.m_geometry.m_type) {
+      case io::URDF::GEOM_CAPSULE:
+        visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
+        // should be registered and cached already
+        visualMeshInfo.filepath = visual.m_geometry.m_meshFileName;
+        // scale by radius as suggested by magnum docs
+        visualGeomComponent.scale(
+            Mn::Vector3(visual.m_geometry.m_capsuleRadius));
+        // Magnum capsule is Y up, URDF is Z up
+        visualGeomComponent.setTransformation(
+            visualGeomComponent.transformation() *
+            Mn::Matrix4::rotationX(Mn::Rad(M_PI_2)));
+        break;
+      case io::URDF::GEOM_CYLINDER:
+        visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
+        // the default created primitive handle for the cylinder with radius 1
+        // and length 2
+        visualMeshInfo.filepath =
+            "cylinderSolid_rings_1_segments_12_halfLen_1_useTexCoords_false_"
+            "useTangents_false_capEnds_true";
+        visualGeomComponent.scale(
+            Mn::Vector3(visual.m_geometry.m_capsuleRadius,
+                        visual.m_geometry.m_capsuleHeight / 2.0,
+                        visual.m_geometry.m_capsuleRadius));
+        // Magnum cylinder is Y up, URDF is Z up
+        visualGeomComponent.setTransformation(
+            visualGeomComponent.transformation() *
+            Mn::Matrix4::rotationX(Mn::Rad(M_PI_2)));
+        break;
+      case io::URDF::GEOM_BOX:
+        visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
+        visualMeshInfo.filepath = "cubeSolid";
+        visualGeomComponent.scale(visual.m_geometry.m_boxSize * 0.5);
+        break;
+      case io::URDF::GEOM_SPHERE: {
+        visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
+        // default sphere prim is already constructed w/ radius 1
+        visualMeshInfo.filepath = "icosphereSolid_subdivs_1";
+        visualGeomComponent.scale(
+            Mn::Vector3(visual.m_geometry.m_sphereRadius));
+      } break;
+      case io::URDF::GEOM_MESH: {
+        visualGeomComponent.scale(visual.m_geometry.m_meshScale);
+        visualMeshInfo.filepath = visual.m_geometry.m_meshFileName;
+      } break;
+      case io::URDF::GEOM_PLANE:
+        Corrade::Utility::Debug()
+            << "Trying to add visual plane, not implemented";
+        // TODO:
+        visualSetupSuccess = false;
+        break;
+      default:
+        Corrade::Utility::Debug() << "BulletPhysicsManager::attachGeometry "
+                                     ": Unsupported visual type.";
+        visualSetupSuccess = false;
+        break;
+    }
+
+    // add the visual shape to the SceneGraph
+    if (visualSetupSuccess) {
+      assets::RenderAssetInstanceCreationInfo::Flags flags;
+      flags |= assets::RenderAssetInstanceCreationInfo::Flag::IsRGBD;
+      flags |= assets::RenderAssetInstanceCreationInfo::Flag::IsSemantic;
+      assets::RenderAssetInstanceCreationInfo creation(
+          visualMeshInfo.filepath, Mn::Vector3{1}, flags, DEFAULT_LIGHTING_KEY);
+
+      geomSuccess = resourceManager_.loadAndCreateRenderAssetInstance(
+                        visualMeshInfo, creation, &visualGeomComponent,
+                        drawables, &linkObject->visualNodes_) != nullptr;
+
+      // cache the visual component for later query
+      if (geomSuccess) {
+        linkObject->visualAttachments_.emplace_back(
+            &visualGeomComponent, visual.m_geometry.m_meshFileName);
+      }
+    }
+  }
+
+  return geomSuccess;
 }
 
 void BulletPhysicsManager::setGravity(const Magnum::Vector3& gravity) {

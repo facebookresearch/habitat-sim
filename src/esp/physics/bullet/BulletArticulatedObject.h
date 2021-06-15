@@ -94,9 +94,7 @@ class BulletArticulatedObject : public ArticulatedObject {
    */
   void initializeFromURDF(URDFImporter& u2b,
                           const Magnum::Matrix4& worldTransform,
-                          gfx::DrawableGroup* drawables,
-                          scene::SceneNode* physicsNode,
-                          bool fixedBase = false) override;
+                          scene::SceneNode* physicsNode) override;
 
   //! update the SceneNode state to match the simulation state
   void updateNodes(bool force = false) override;
@@ -347,23 +345,6 @@ class BulletArticulatedObject : public ArticulatedObject {
    * esp::physics::PhysicsObjectBase for the transformations.
    */
   void setRootState(const Magnum::Matrix4& state) override;
-
-  /**
-   * @brief Use the metadata stored in io::URDF::Link to instance all visual
-   * shapes for a link into the SceneGraph.
-   *
-   * @param linkObject The Habitat-side ArticulatedLink to which visual shapes
-   * will be attached.
-   * @param link The io::URDF::Model's link with visual shape and transform
-   * metadata.
-   * @param drawables The SceneGraph's DrawableGroup with which the visual
-   * shapes will be rendered.
-   *
-   * @return Whether or not the render shape instancing was successful.
-   */
-  bool attachGeometry(ArticulatedLink* linkObject,
-                      const std::shared_ptr<io::URDF::Link>& link,
-                      gfx::DrawableGroup* drawables) override;
 
   //! Performs forward kinematics, updates collision object states and
   //! broadphase aabbs for the object. Do this with manual state setters.

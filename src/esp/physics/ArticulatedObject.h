@@ -293,9 +293,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   virtual void initializeFromURDF(
       CORRADE_UNUSED URDFImporter& urdfImporter,
       CORRADE_UNUSED const Magnum::Matrix4& worldTransform,
-      CORRADE_UNUSED gfx::DrawableGroup* drawables,
-      CORRADE_UNUSED scene::SceneNode* physicsNode,
-      CORRADE_UNUSED bool fixedBase = false) {
+      CORRADE_UNUSED scene::SceneNode* physicsNode) {
     CORRADE_INTERNAL_ASSERT_UNREACHABLE();
   };
 
@@ -588,26 +586,6 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * esp::physics::PhysicsObjectBase for the transformations.
    */
   virtual void setRootState(CORRADE_UNUSED const Magnum::Matrix4& state) {}
-
-  /**
-   * @brief Use the metadata stored in io::URDF::Link to instance all visual
-   * shapes for a link into the SceneGraph.
-   *
-   * @param linkObject The Habitat-side ArticulatedLink to which visual shapes
-   * will be attached.
-   * @param link The io::URDF::Model's link with visual shape and transform
-   * metadata.
-   * @param drawables The SceneGraph's DrawableGroup with which the visual
-   * shapes will be rendered.
-   *
-   * @return Whether or not the render shape instancing was successful.
-   */
-  virtual bool attachGeometry(
-      CORRADE_UNUSED ArticulatedLink* linkObject,
-      CORRADE_UNUSED const std::shared_ptr<io::URDF::Link>& link,
-      CORRADE_UNUSED gfx::DrawableGroup* drawables) {
-    return false;
-  }
 
   //! map linkId to ArticulatedLink
   std::map<int, ArticulatedLink::uptr> links_;

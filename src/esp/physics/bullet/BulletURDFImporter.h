@@ -36,7 +36,7 @@ struct JointLimitConstraintInfo {
  */
 struct URDF2BulletCached {
   URDF2BulletCached() = default;
-  // these arrays will be initialized in the 'InitURDF2BulletCache'
+  // these arrays will be initialized in the 'initURDF2BulletCache'
 
   std::vector<int> m_urdfLinkParentIndices;
   std::vector<int> m_urdfLinkIndices2BulletLinkIndices;
@@ -71,38 +71,50 @@ class BulletURDFImporter : public URDFImporter {
 
   ~BulletURDFImporter() override = default;
 
+  /////////////////////////////////////
+  // multi-body construction functions
+
+  //! Initialize the temporary Bullet cache for multibody construction from the
+  //! active URDF::Model
+  void initURDF2BulletCache();
+
+  //! Traverse the kinematic chain recursively constructing the btMultiBody
+  Magnum::Matrix4 convertURDF2BulletInternal(
+      int urdfLinkIndex,
+      const Magnum::Matrix4& parentTransformInWorldSpace,
+      btMultiBodyDynamicsWorld* world1,
+      std::map<int, std::unique_ptr<btCompoundShape>>& linkCompoundShapes,
+      std::map<int, std::vector<std::unique_ptr<btCollisionShape>>>&
+          linkChildShapes);
+
+  //! The temporary Bullet multibody cache initialized by
+  //! convertURDF2BulletInternal and cleared after instancing the object
+  std::shared_ptr<URDF2BulletCached> cache = nullptr;
+
+ protected:
+  //! Construct a set of Bullet collision shapes from the URDF::CollisionShape
+  //! metadata
   btCollisionShape* convertURDFToCollisionShape(
       const struct io::URDF::CollisionShape* collision,
       std::vector<std::unique_ptr<btCollisionShape>>& linkChildShapes);
 
+  //! Construct all Bullet collision shapes for a link in the active URDF::Model
   btCompoundShape* convertLinkCollisionShapes(
       int linkIndex,
       const btTransform& localInertiaFrame,
       std::vector<std::unique_ptr<btCollisionShape>>& linkChildShapes);
 
+  //! Get configured collision groups and masks for a link's collision shape
   int getCollisionGroupAndMask(int linkIndex,
                                int& colGroup,
                                int& colMask) const;
 
-  /////////////////////////////////////
-  // multi-body construction functions
-  void InitURDF2BulletCache(URDF2BulletCached& cache, int flags);
+  void computeTotalNumberOfJoints(int linkIndex);
 
-  void ComputeTotalNumberOfJoints(URDF2BulletCached& cache, int linkIndex);
-
-  void ComputeParentIndices(URDF2BulletCached& cache,
+  //! Compute the new Bullet link indices from the URDF::Model
+  void computeParentIndices(URDF2BulletCached& bulletCache,
                             int urdfLinkIndex,
                             int urdfParentIndex);
-
-  Magnum::Matrix4 ConvertURDF2BulletInternal(
-      URDF2BulletCached& cache,
-      int urdfLinkIndex,
-      const Magnum::Matrix4& parentTransformInWorldSpace,
-      btMultiBodyDynamicsWorld* world1,
-      int flags,
-      std::map<int, std::unique_ptr<btCompoundShape>>& linkCompoundShapes,
-      std::map<int, std::vector<std::unique_ptr<btCollisionShape>>>&
-          linkChildShapes);
 };
 
 void processContactParameters(const io::URDF::LinkContactInfo& contactInfo,

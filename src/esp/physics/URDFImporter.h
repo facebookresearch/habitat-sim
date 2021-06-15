@@ -122,8 +122,7 @@ class URDFImporter {
   virtual void getMassAndInertia2(int linkIndex,
                                   float& mass,
                                   Magnum::Vector3& localInertiaDiagonal,
-                                  Magnum::Matrix4& inertialFrame,
-                                  int flags) const;
+                                  Magnum::Matrix4& inertialFrame) const;
 
   bool logMessages = false;
 
@@ -142,6 +141,9 @@ class URDFImporter {
    * acrive io::URDF::Model before instantiating it.
    */
   void importURDFAssets();
+
+  //! importer model conversion flags
+  int flags = 0;
 
  protected:
   // parses the URDF file into general, simulation platform invariant

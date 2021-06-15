@@ -140,8 +140,7 @@ bool URDFImporter::getJointInfo(int linkIndex,
 void URDFImporter::getMassAndInertia2(int linkIndex,
                                       float& mass,
                                       Mn::Vector3& localInertiaDiagonal,
-                                      Mn::Matrix4& inertialFrame,
-                                      int flags) const {
+                                      Mn::Matrix4& inertialFrame) const {
   if ((flags & CUF_USE_URDF_INERTIA) != 0) {
     getMassAndInertia(linkIndex, mass, localInertiaDiagonal, inertialFrame);
   } else {

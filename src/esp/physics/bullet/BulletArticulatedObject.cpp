@@ -66,40 +66,32 @@ BulletArticulatedObject::~BulletArticulatedObject() {
 void BulletArticulatedObject::initializeFromURDF(
     URDFImporter& urdfImporter,
     const Mn::Matrix4& worldTransform,
-    gfx::DrawableGroup* drawables,
-    scene::SceneNode* physicsNode,
-    bool fixedBase) {
+    scene::SceneNode* physicsNode) {
   Mn::Matrix4 rootTransformInWorldSpace{worldTransform};
 
   BulletURDFImporter& u2b = *(static_cast<BulletURDFImporter*>(&urdfImporter));
-  u2b.setFixedBase(fixedBase);
 
   auto urdfModel = u2b.getModel();
-
-  int flags = 0;
-
-  URDF2BulletCached cache;
-  u2b.InitURDF2BulletCache(cache, flags);
 
   int urdfLinkIndex = u2b.getRootLinkIndex();
   // int rootIndex = u2b.getRootLinkIndex();
 
   // NOTE: recursive path only
-  u2b.ConvertURDF2BulletInternal(cache, urdfLinkIndex,
-                                 rootTransformInWorldSpace, bWorld_.get(),
-                                 flags, linkCompoundShapes_, linkChildShapes_);
+  u2b.convertURDF2BulletInternal(urdfLinkIndex, rootTransformInWorldSpace,
+                                 bWorld_.get(), linkCompoundShapes_,
+                                 linkChildShapes_);
 
-  if (cache.m_bulletMultiBody) {
-    btMultiBody* mb = cache.m_bulletMultiBody;
-    jointLimitConstraints = cache.m_jointLimitConstraints;
+  if (u2b.cache->m_bulletMultiBody) {
+    btMultiBody* mb = u2b.cache->m_bulletMultiBody;
+    jointLimitConstraints = u2b.cache->m_jointLimitConstraints;
 
-    mb->setHasSelfCollision((flags & CUF_USE_SELF_COLLISION) !=
+    mb->setHasSelfCollision((u2b.flags & CUF_USE_SELF_COLLISION) !=
                             0);  // NOTE: default no
 
     mb->finalizeMultiDof();
 
     btTransform localInertialFrameRoot =
-        cache.m_urdfLinkLocalInertialFrames[urdfLinkIndex];
+        u2b.cache->m_urdfLinkLocalInertialFrames[urdfLinkIndex];
 
     {
       mb->setBaseWorldTransform(btTransform(rootTransformInWorldSpace) *
@@ -126,7 +118,8 @@ void BulletArticulatedObject::initializeFromURDF(
     {
       auto* col = mb->getBaseCollider();
       if (col->getBroadphaseHandle()->m_collisionFilterGroup ==
-          int(CollisionGroup::Noncollidable)) {
+          int(CollisionGroup::Static)) {
+        Mn::Debug{} << "We got a Static collision <base> here...";
         // The collider child is an aligned compound or single shape
         btTransform identity;
         identity.setIdentity();
@@ -137,7 +130,8 @@ void BulletArticulatedObject::initializeFromURDF(
         btMultiBodyLinkCollider* col = mb->getLink(m).m_collider;
         if (col) {
           if (col->getBroadphaseHandle()->m_collisionFilterGroup ==
-              int(CollisionGroup::Noncollidable)) {
+              int(CollisionGroup::Static)) {
+            Mn::Debug{} << "We got a Static collision <link> here...";
             bFixedObjectShape_->addChildShape(col->getWorldTransform(),
                                               col->getCollisionShape());
           }
@@ -159,10 +153,11 @@ void BulletArticulatedObject::initializeFromURDF(
       }
     }
 
-    // Attach SceneNode visual components
-    int urdfLinkIx = 0;
-    for (auto& link : urdfModel->m_links) {
-      int bulletLinkIx = cache.m_urdfLinkIndices2BulletLinkIndices[urdfLinkIx];
+    // create the BulletArticulatedLinks
+    for (size_t urdfLinkIx = 0;
+         urdfLinkIx < urdfImporter.getModel()->m_links.size(); ++urdfLinkIx) {
+      int bulletLinkIx =
+          u2b.cache->m_urdfLinkIndices2BulletLinkIndices[urdfLinkIx];
 
       ArticulatedLink* linkObject = nullptr;
       if (bulletLinkIx >= 0) {
@@ -180,23 +175,11 @@ void BulletArticulatedObject::initializeFromURDF(
       }
 
       linkObject->node().setType(esp::scene::SceneNodeType::OBJECT);
-      // attach visual geometry for the link if specified
-      if (link.second->m_visualArray.size() > 0) {
-        ESP_CHECK(attachGeometry(linkObject, link.second, drawables),
-                  "BulletArticulatedObject::initializeFromURDF(): Failed to "
-                  "instance render asset (attachGeometry) for link "
-                      << urdfLinkIndex << ".");
-      }
-
-      urdfLinkIx++;
     }
 
-    // top level only valid in initial state, but computes valid sub-part AABBs.
-    node().computeCumulativeBB();
+    // in case the base transform is not zero by default
+    syncPose();
   }
-
-  // in case the base transform is not zero by default
-  syncPose();
 }
 
 void BulletArticulatedObject::updateNodes(bool force) {
@@ -217,122 +200,6 @@ void BulletArticulatedObject::updateNodes(bool force) {
 ////////////////////////////
 // BulletArticulatedLink
 ////////////////////////////
-
-bool BulletArticulatedObject::attachGeometry(
-    ArticulatedLink* linkObject,
-    const std::shared_ptr<io::URDF::Link>& link,
-    gfx::DrawableGroup* drawables) {
-  bool geomSuccess = false;
-
-  for (auto& visual : link->m_visualArray) {
-    bool visualSetupSuccess = true;
-    // create a new child for each visual component
-    scene::SceneNode& visualGeomComponent = linkObject->node().createChild();
-    // cache the visual node
-    linkObject->visualNodes_.push_back(&visualGeomComponent);
-    visualGeomComponent.setType(esp::scene::SceneNodeType::OBJECT);
-    visualGeomComponent.setTransformation(
-        link->m_inertia.m_linkLocalFrame.invertedRigid() *
-        visual.m_linkLocalFrame);
-
-    // prep the AssetInfo, overwrite the filepath later
-    assets::AssetInfo visualMeshInfo{assets::AssetType::UNKNOWN};
-    visualMeshInfo.requiresLighting = true;
-
-    // create a modified asset if necessary for material override
-    std::shared_ptr<io::URDF::Material> material =
-        visual.m_geometry.m_localMaterial;
-    if (material) {
-      visualMeshInfo.overridePhongMaterial = assets::PhongMaterialColor();
-      visualMeshInfo.overridePhongMaterial->ambientColor =
-          material->m_matColor.m_rgbaColor;
-      visualMeshInfo.overridePhongMaterial->diffuseColor =
-          material->m_matColor.m_rgbaColor;
-      visualMeshInfo.overridePhongMaterial->specularColor =
-          Mn::Color4(material->m_matColor.m_specularColor);
-    }
-
-    switch (visual.m_geometry.m_type) {
-      case io::URDF::GEOM_CAPSULE:
-        visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
-        // should be registered and cached already
-        visualMeshInfo.filepath = visual.m_geometry.m_meshFileName;
-        // scale by radius as suggested by magnum docs
-        visualGeomComponent.scale(
-            Mn::Vector3(visual.m_geometry.m_capsuleRadius));
-        // Magnum capsule is Y up, URDF is Z up
-        visualGeomComponent.setTransformation(
-            visualGeomComponent.transformation() *
-            Mn::Matrix4::rotationX(Mn::Rad(M_PI_2)));
-        break;
-      case io::URDF::GEOM_CYLINDER:
-        visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
-        // the default created primitive handle for the cylinder with radius 1
-        // and length 2
-        visualMeshInfo.filepath =
-            "cylinderSolid_rings_1_segments_12_halfLen_1_useTexCoords_false_"
-            "useTangents_false_capEnds_true";
-        visualGeomComponent.scale(
-            Mn::Vector3(visual.m_geometry.m_capsuleRadius,
-                        visual.m_geometry.m_capsuleHeight / 2.0,
-                        visual.m_geometry.m_capsuleRadius));
-        // Magnum cylinder is Y up, URDF is Z up
-        visualGeomComponent.setTransformation(
-            visualGeomComponent.transformation() *
-            Mn::Matrix4::rotationX(Mn::Rad(M_PI_2)));
-        break;
-      case io::URDF::GEOM_BOX:
-        visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
-        visualMeshInfo.filepath = "cubeSolid";
-        visualGeomComponent.scale(visual.m_geometry.m_boxSize * 0.5);
-        break;
-      case io::URDF::GEOM_SPHERE: {
-        visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
-        // default sphere prim is already constructed w/ radius 1
-        visualMeshInfo.filepath = "icosphereSolid_subdivs_1";
-        visualGeomComponent.scale(
-            Mn::Vector3(visual.m_geometry.m_sphereRadius));
-      } break;
-      case io::URDF::GEOM_MESH: {
-        visualGeomComponent.scale(visual.m_geometry.m_meshScale);
-        visualMeshInfo.filepath = visual.m_geometry.m_meshFileName;
-      } break;
-      case io::URDF::GEOM_PLANE:
-        Corrade::Utility::Debug()
-            << "Trying to add visual plane, not implemented";
-        // TODO:
-        visualSetupSuccess = false;
-        break;
-      default:
-        Corrade::Utility::Debug() << "BulletArticulatedObject::attachGeometry "
-                                     ": Unsupported visual type.";
-        visualSetupSuccess = false;
-        break;
-    }
-
-    // add the visual shape to the SceneGraph
-    if (visualSetupSuccess) {
-      assets::RenderAssetInstanceCreationInfo::Flags flags;
-      flags |= assets::RenderAssetInstanceCreationInfo::Flag::IsRGBD;
-      flags |= assets::RenderAssetInstanceCreationInfo::Flag::IsSemantic;
-      assets::RenderAssetInstanceCreationInfo creation(
-          visualMeshInfo.filepath, Mn::Vector3{1}, flags, DEFAULT_LIGHTING_KEY);
-
-      geomSuccess = const_cast<esp::assets::ResourceManager&>(resMgr_)
-                        .loadAndCreateRenderAssetInstance(
-                            visualMeshInfo, creation, &visualGeomComponent,
-                            drawables, &linkObject->visualNodes_) != nullptr;
-
-      // cache the visual component for later query
-      if (geomSuccess) {
-        linkObject->visualAttachments_.emplace_back(
-            &visualGeomComponent, visual.m_geometry.m_meshFileName);
-      }
-    }
-  }
-
-  return geomSuccess;
-}
 
 void BulletArticulatedObject::resetStateFromSceneInstanceAttr(
     CORRADE_UNUSED bool defaultCOMCorrection) {

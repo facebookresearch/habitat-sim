@@ -114,6 +114,23 @@ class BulletPhysicsManager : public PhysicsManager {
                                    bool forceReload = false) override;
 
   /**
+   * @brief Use the metadata stored in io::URDF::Link to instance all visual
+   * shapes for a link into the SceneGraph.
+   *
+   * @param linkObject The Habitat-side ArticulatedLink to which visual shapes
+   * will be attached.
+   * @param link The io::URDF::Model's link with visual shape and transform
+   * metadata.
+   * @param drawables The SceneGraph's DrawableGroup with which the visual
+   * shapes will be rendered.
+   *
+   * @return Whether or not the render shape instancing was successful.
+   */
+  bool attachLinkGeometry(ArticulatedLink* linkObject,
+                          const std::shared_ptr<io::URDF::Link>& link,
+                          gfx::DrawableGroup* drawables);
+
+  /**
    * @brief Override of @ref PhysicsManager::removeObject to also remove any
    * active Bullet physics constraints for the object.
    */
