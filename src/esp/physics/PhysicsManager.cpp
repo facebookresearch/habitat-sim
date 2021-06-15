@@ -727,7 +727,7 @@ void PhysicsManager::setVoxelizationDraw(const std::string& gridName,
     esp::geo::VoxelWrapper* voxelWrapper_ = rigidBase->voxelWrapper.get();
     gfx::Drawable::Flags meshAttributeFlags{};
     resourceManager_.createDrawable(
-        voxelWrapper_->getVoxelGrid()->getMeshGL(gridName), meshAttributeFlags,
+        &voxelWrapper_->getVoxelGrid()->getMeshGL(gridName), meshAttributeFlags,
         *rigidBase->VoxelNode_, DEFAULT_LIGHTING_KEY,
         PER_VERTEX_OBJECT_ID_MATERIAL_KEY, drawables);
 

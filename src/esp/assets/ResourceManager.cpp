@@ -1088,7 +1088,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceIMesh(
     // That means One CANNOT query the data like e.g.,
     // meshes_.at(iMesh)->getMeshData()->hasAttribute(Mn::Trade::MeshAttribute::Tangent)
     // It will SEGFAULT!
-    createDrawable(*(meshes_.at(iMesh)->getMagnumGLMesh()),  // render mesh
+    createDrawable(meshes_.at(iMesh)->getMagnumGLMesh(),  // render mesh
                    meshAttributeFlags,                 // mesh attribute flags
                    node,                               // scene node
                    creation.lightSetupKey,             // lightSetup key
@@ -1939,7 +1939,12 @@ void ResourceManager::addComponent(
   // Add a drawable if the object has a mesh and the mesh is loaded
   if (meshIDLocal != ID_UNDEFINED) {
     const int meshID = metaData.meshIndex.first + meshIDLocal;
-    Magnum::GL::Mesh& mesh = *meshes_.at(meshID)->getMagnumGLMesh();
+    Magnum::GL::Mesh* mesh = meshes_.at(meshID)->getMagnumGLMesh();
+    if (g_createMagnumRenderer) {
+      CORRADE_INTERNAL_ASSERT(mesh);
+    } else {
+      CORRADE_INTERNAL_ASSERT(!mesh);
+    }
     Mn::ResourceKey materialKey = meshTransformNode.materialID;
 
     gfx::Drawable::Flags meshAttributeFlags{};
@@ -1991,12 +1996,12 @@ void ResourceManager::addPrimitiveToDrawables(int primitiveID,
   // so do not need to worry about the tangent or bitangent.
   // it might be changed in the future.
   gfx::Drawable::Flags meshAttributeFlags{};
-  createDrawable(*primitive_meshes_.at(primitiveID),  // render mesh
-                 meshAttributeFlags,                  // meshAttributeFlags
-                 node,                                // scene node
-                 NO_LIGHT_KEY,                        // lightSetup key
-                 WHITE_MATERIAL_KEY,                  // material key
-                 drawables);                          // drawable group
+  createDrawable(primitive_meshes_.at(primitiveID).get(),  // render mesh
+                 meshAttributeFlags,                       // meshAttributeFlags
+                 node,                                     // scene node
+                 NO_LIGHT_KEY,                             // lightSetup key
+                 WHITE_MATERIAL_KEY,                       // material key
+                 drawables);                               // drawable group
 }
 
 void ResourceManager::removePrimitiveMesh(int primitiveID) {
@@ -2004,7 +2009,7 @@ void ResourceManager::removePrimitiveMesh(int primitiveID) {
   primitive_meshes_.erase(primitiveID);
 }
 
-void ResourceManager::createDrawable(Mn::GL::Mesh& mesh,
+void ResourceManager::createDrawable(Mn::GL::Mesh* mesh,
                                      gfx::Drawable::Flags& meshAttributeFlags,
                                      scene::SceneNode& node,
                                      const Mn::ResourceKey& lightSetupKey,

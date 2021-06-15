@@ -482,7 +482,7 @@ class ResourceManager {
    * gfx::Drawable.
    */
 
-  void createDrawable(Mn::GL::Mesh& mesh,
+  void createDrawable(Mn::GL::Mesh* mesh,
                       gfx::Drawable::Flags& meshAttributeFlags,
                       scene::SceneNode& node,
                       const Mn::ResourceKey& lightSetupKey,

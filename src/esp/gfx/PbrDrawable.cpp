@@ -14,7 +14,7 @@ namespace esp {
 namespace gfx {
 
 PbrDrawable::PbrDrawable(scene::SceneNode& node,
-                         Mn::GL::Mesh& mesh,
+                         Mn::GL::Mesh* mesh,
                          gfx::Drawable::Flags& meshAttributeFlags,
                          ShaderManager& shaderManager,
                          const Mn::ResourceKey& lightSetupKey,
@@ -145,7 +145,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
     shader_->setTextureMatrix(materialData_->textureMatrix);
   }
 
-  shader_->draw(mesh_);
+  shader_->draw(*mesh_);
 }
 
 Mn::ResourceKey PbrDrawable::getShaderKey(Mn::UnsignedInt lightCount,
