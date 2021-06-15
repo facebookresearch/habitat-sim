@@ -139,6 +139,16 @@ const float INV_PI = 1.0 / PI;
 const float Epsilon = 0.0001;
 const float DielectricSpecular = 0.04;
 
+// Specular D, normal distribution function (NDF),
+// also known as ggxDistribution
+// n_dot_h: <normal, halfVector>
+//     normal: normal direction
+//     halfVector: half vector of light (light source direction)
+//                 and view (camera direction, aka light outgoing direction)
+float normalDistribution(float n_dot_h, float roughness) {
+  return normalDistributionGGX(n_dot_h, roughness);
+}
+
 // helper function to compute the Specular G
 float geometrySchlickGGX(float dotProd, float roughness) {
   float r = (roughness + 1.0);
