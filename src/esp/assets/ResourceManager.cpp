@@ -2129,10 +2129,6 @@ void ResourceManager::createDrawable(Mn::GL::Mesh& mesh,
                                      const Mn::ResourceKey& lightSetupKey,
                                      const Mn::ResourceKey& materialKey,
                                      DrawableGroup* group /* = nullptr */) {
-  // TODO: figure out where to actually block this
-  if (!getCreateMagnumRenderer()) {
-    return;
-  }
   const auto& materialDataType =
       shaderManager_.get<gfx::MaterialData>(materialKey)->type;
   switch (materialDataType) {
@@ -2141,21 +2137,23 @@ void ResourceManager::createDrawable(Mn::GL::Mesh& mesh,
       break;
     case gfx::MaterialDataType::Phong:
       node.addFeature<gfx::GenericDrawable>(
-          mesh,                // render mesh
-          meshAttributeFlags,  // mesh attribute flags
-          shaderManager_,      // shader manager
-          lightSetupKey,       // lightSetup key
-          materialKey,         // material key
-          group);              // drawable group
+          mesh,                          // render mesh
+          meshAttributeFlags,            // mesh attribute flags
+          shaderManager_,                // shader manager
+          lightSetupKey,                 // lightSetup key
+          materialKey,                   // material key
+          group,                         // drawable group
+          getCreateMagnumRenderer());    // createMagnumRenderer flag
       break;
     case gfx::MaterialDataType::Pbr:
       node.addFeature<gfx::PbrDrawable>(
-          mesh,                // render mesh
-          meshAttributeFlags,  // mesh attribute flags
-          shaderManager_,      // shader manager
-          lightSetupKey,       // lightSetup key
-          materialKey,         // material key
-          group);              // drawable group
+          mesh,                          // render mesh
+          meshAttributeFlags,            // mesh attribute flags
+          shaderManager_,                // shader manager
+          lightSetupKey,                 // lightSetup key
+          materialKey,                   // material key
+          group,                         // drawable group
+          getCreateMagnumRenderer());    // createMagnumRenderer flag
       break;
   }
 }  // ResourceManager::createDrawable
