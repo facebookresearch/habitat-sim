@@ -17,7 +17,7 @@ namespace esp {
 namespace gfx {
 
 GenericDrawable::GenericDrawable(scene::SceneNode& node,
-                                 Mn::GL::Mesh& mesh,
+                                 Mn::GL::Mesh* mesh,
                                  Drawable::Flags& meshAttributeFlags,
                                  ShaderManager& shaderManager,
                                  const Mn::ResourceKey& lightSetupKey,
@@ -152,7 +152,7 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
     shader_->bindNormalTexture(*(materialData_->normalTexture));
   }
 
-  shader_->draw(mesh_);
+  shader_->draw(*mesh_);
 }
 
 void GenericDrawable::updateShader() {

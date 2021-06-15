@@ -58,7 +58,7 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
    * @param group Drawable group this drawable will be added to.
    */
   Drawable(scene::SceneNode& node,
-           Magnum::GL::Mesh& mesh,
+           Magnum::GL::Mesh* mesh,
            DrawableGroup* group = nullptr);
   ~Drawable() override;
 
@@ -80,7 +80,7 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
   virtual void setLightSetup(
       CORRADE_UNUSED const Magnum::ResourceKey& lightSetup){};
 
-  Magnum::GL::Mesh& getMesh() { return mesh_; }
+  Magnum::GL::Mesh& getMesh() { return *mesh_; }  // todo: assert non-null
 
   /**
    * @brief Get the Magnum GL mesh for visualization, highlighting (e.g., used
@@ -91,7 +91,7 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
    * NOTE: sub-class should override this function if the "visualizer mesh" is
    * different from mesh_ (check the example in the PTexMeshDrawable class)
    */
-  virtual Magnum::GL::Mesh& getVisualizerMesh() { return mesh_; }
+  virtual Magnum::GL::Mesh& getVisualizerMesh() { return *mesh_; }
 
  protected:
   /**
@@ -110,7 +110,7 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
   uint64_t drawableId_;
 
   scene::SceneNode& node_;
-  Magnum::GL::Mesh& mesh_;
+  Magnum::GL::Mesh* mesh_ = nullptr;
 };
 
 CORRADE_ENUMSET_OPERATORS(Drawable::Flags)

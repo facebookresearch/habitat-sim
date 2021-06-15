@@ -16,7 +16,7 @@ MeshVisualizerDrawable::MeshVisualizerDrawable(
     Magnum::Shaders::MeshVisualizerGL3D& shader,
     Magnum::GL::Mesh& mesh,
     DrawableGroup* group)
-    : Drawable{node, mesh, group}, shader_(shader) {}
+    : Drawable{node, &mesh, group}, shader_(shader) {}
 
 void MeshVisualizerDrawable::draw(const Magnum::Matrix4& transformationMatrix,
                                   Magnum::SceneGraph::Camera3D& camera) {
@@ -26,7 +26,7 @@ void MeshVisualizerDrawable::draw(const Magnum::Matrix4& transformationMatrix,
   shader_.setProjectionMatrix(camera.projectionMatrix())
       .setTransformationMatrix(transformationMatrix);
 
-  shader_.draw(mesh_);
+  shader_.draw(*mesh_);
 
   Mn::GL::Renderer::setPolygonOffset(0.0f, 0.0f);
   Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
