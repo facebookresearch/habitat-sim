@@ -154,14 +154,14 @@ struct CollisionShape : Shape {
 struct Inertia {
   //! local transform of the link in parent joint space
   Magnum::Matrix4 m_linkLocalFrame{0.0};
-  bool m_hasLinkLocalFrame{};
+  bool m_hasLinkLocalFrame{false};
 
   //! mass of the link (0 mass indicates unmovable, static object)
   double m_mass{0.0};
 
   //! inertia matrix upper triangular entries. Computed automatically if not
   //! specified.
-  double m_ixx{}, m_ixy{}, m_ixz{}, m_iyy{}, m_iyz{}, m_izz{};
+  double m_ixx{0.0}, m_ixy{0.0}, m_ixz{0.0}, m_iyy{0.0}, m_iyz{0.0}, m_izz{0.0};
 
   Inertia() = default;
 };
