@@ -38,6 +38,7 @@ from habitat_sim._ext.habitat_sim_bindings import Simulator as SimulatorBackend
 from habitat_sim._ext.habitat_sim_bindings import (
     SimulatorConfiguration,
     VisualSensorSpec,
+    built_with_bullet,
     cuda_enabled,
     vhacd_enabled,
 )

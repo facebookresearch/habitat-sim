@@ -31,12 +31,12 @@ int getShaderTypeFromJsonDoc(const io::JsonGenericValue& jsonDoc) {
         attributes::AbstractObjectAttributes::ShaderTypeNamesMap.end()) {
       shader_type = static_cast<int>(found->second);
     } else {
-      LOG(WARNING) << "getShaderTypeFromJsonDoc : "
-                      "motion_type value in json  : `"
-                   << tmpShaderType << "|" << strToLookFor
-                   << "` does not map to a valid "
-                      "SceneInstanceTranslationOrigin value, so defaulting "
-                      "motion type to SceneInstanceTranslationOrigin::Unknown.";
+      LOG(WARNING)
+          << "getShaderTypeFromJsonDoc : `shader_type` value in json  : `"
+          << tmpShaderType << "` -> `" << strToLookFor
+          << "` does not map to a valid "
+             "ObjectInstanceShaderType value, so defaulting "
+             "shader type to ObjectInstanceShaderType::Unknown.";
     }
   }
   return shader_type;

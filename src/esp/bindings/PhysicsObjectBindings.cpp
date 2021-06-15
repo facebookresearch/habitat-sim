@@ -7,9 +7,7 @@
 #include "esp/physics/RigidBase.h"
 #include "esp/physics/RigidObject.h"
 #include "esp/physics/RigidStage.h"
-#ifdef ESP_BUILD_WITH_BULLET
 #include "esp/physics/bullet/objectWrappers/ManagedBulletRigidObject.h"
-#endif
 #include "esp/physics/objectWrappers/ManagedPhysicsObjectBase.h"
 #include "esp/physics/objectWrappers/ManagedRigidBase.h"
 #include "esp/physics/objectWrappers/ManagedRigidObject.h"
@@ -95,6 +93,7 @@ void declareBasePhysicsObjectWrapper(py::module& m,
            ("Discrete collision check for contact between an object and the "
             "collision world."))
       .def("override_collision_group", &PhysObjWrapper::overrideCollisionGroup,
+           "group"_a,
            ("Manually set the collision group for an object. Setting a new "
             "MotionType will override this change."))
       .def(
@@ -338,19 +337,19 @@ void initPhysicsObjectBindings(py::module& m) {
   // ==== ManagedRigidObject ====
   declareRigidObjectWrapper(m, "Rigid Object", "ManagedRigidObject");
 
-#ifdef ESP_BUILD_WITH_BULLET
   // ==== ManagedBulletRigidObject ====
   py::class_<ManagedBulletRigidObject, ManagedRigidObject,
              std::shared_ptr<ManagedBulletRigidObject>>(
       m, "ManagedBulletRigidObject")
-      .def_property("margin", &ManagedBulletRigidObject::getMargin,
-                    &ManagedBulletRigidObject::setMargin,
-                    R"(Get or set this object's collision margin.)")
+      .def_property(
+          "margin", &ManagedBulletRigidObject::getMargin,
+          &ManagedBulletRigidObject::setMargin,
+          R"(REQUIRES BULLET TO BE INSTALLED. Get or set this object's collision margin.)")
       .def_property_readonly(
           "collision_shape_aabb",
           &ManagedBulletRigidObject::getCollisionShapeAabb,
-          R"(The bounds of the axis-aligned bounding box from Bullet Physics, in its local coordinate frame.)");
-#endif
+          R"(REQUIRES BULLET TO BE INSTALLED. The bounds of the axis-aligned bounding box from Bullet Physics, in its local coordinate frame.)");
+
 }  // initPhysicsObjectBindings
 
 }  // namespace physics

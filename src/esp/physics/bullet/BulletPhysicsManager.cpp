@@ -194,7 +194,7 @@ double BulletPhysicsManager::getStageRestitutionCoefficient() const {
 
 Magnum::Range3D BulletPhysicsManager::getCollisionShapeAabb(
     const int physObjectID) const {
-  assertIDValidity(physObjectID);
+  assertRigidIdValidity(physObjectID);
   return static_cast<BulletRigidObject*>(
              existingObjects_.at(physObjectID).get())
       ->getCollisionShapeAabb();
@@ -216,8 +216,7 @@ RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
   results.ray = ray;
   double rayLength = static_cast<double>(ray.direction.length());
   if (rayLength == 0) {
-    LOG(ERROR) << "BulletPhysicsManager::castRay : Cannot case ray with zero "
-                  "length, aborting. ";
+    LOG(ERROR) << "::castRay : Cannot cast ray with zero length, aborting. ";
     return results;
   }
   btVector3 from(ray.origin);

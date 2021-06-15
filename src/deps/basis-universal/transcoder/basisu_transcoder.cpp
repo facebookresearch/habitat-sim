@@ -146,7 +146,9 @@ namespace basisu
 
 namespace basist
 {
+#if BASISD_SUPPORT_BC7_MODE6_OPAQUE_ONLY
 #include "basisu_transcoder_tables_bc7_m6.inc"
+#endif
 
 #if BASISD_ENABLE_DEBUG_FLAGS
 	static uint32_t g_debug_flags = 0;

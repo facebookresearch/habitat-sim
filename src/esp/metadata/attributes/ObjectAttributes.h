@@ -22,20 +22,25 @@ enum class ObjectInstanceShaderType {
    * Represents an unknown/unspecified value for the shader type to use. Resort
    * to defaults for object type.
    */
-  Unknown = -1,
+  Unknown = ID_UNDEFINED,
+  /**
+   * Override any config-specified or default shader-type values to use the
+   * material-specified shader.
+   */
+  Material,
   /**
    * Refers to flat shading, pure color and no lighting.  This is often used for
    * textured objects
    */
-  Flat = 0,
+  Flat,
   /**
    * Refers to phong shading with pure diffuse color.
    */
-  Phong = 1,
+  Phong,
   /**
    * Refers to using a shader built with physically-based rendering models.
    */
-  PBR = 2,
+  PBR,
 };
 
 /**
@@ -362,8 +367,6 @@ class StageAttributes : public AbstractObjectAttributes {
    */
   void setLightSetup(const std::string& lightSetup) {
     setString("light_setup", lightSetup);
-    // force requires lighting to reflect light setup
-    setRequiresLighting(lightSetup != NO_LIGHT_KEY);
   }
   std::string getLightSetup() { return getString("light_setup"); }
 

@@ -10,7 +10,8 @@ namespace core {
 bool ManagedContainerBase::setLock(const std::string& objectHandle, bool lock) {
   // if managed object does not currently exist then do not attempt to modify
   // its lock state
-  if (!checkExistsWithMessage(objectHandle, "ManagedContainerBase::setLock")) {
+  if (!checkExistsWithMessage(objectHandle,
+                              "<" + this->objectType_ + ">::setLock")) {
     return false;
   }
   // if setting lock else clearing lock
@@ -27,7 +28,8 @@ std::string ManagedContainerBase::getRandomObjectHandlePerType(
     const std::string& type) const {
   std::size_t numVals = mapOfHandles.size();
   if (numVals == 0) {
-    LOG(ERROR) << "Attempting to get a random " << type << objectType_
+    LOG(ERROR) << "::getRandomObjectHandlePerType : Attempting to get a random "
+               << type << objectType_
                << " managed object handle but none are loaded; Aboring";
     return "";
   }

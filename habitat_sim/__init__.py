@@ -58,6 +58,7 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         SceneNode,
         SceneNodeType,
         SimulatorConfiguration,
+        built_with_bullet,
         cuda_enabled,
         vhacd_enabled,
     )
