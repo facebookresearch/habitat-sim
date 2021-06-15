@@ -2135,23 +2135,23 @@ void ResourceManager::createDrawable(Mn::GL::Mesh& mesh,
       break;
     case gfx::MaterialDataType::Phong:
       node.addFeature<gfx::GenericDrawable>(
-          mesh,                          // render mesh
-          meshAttributeFlags,            // mesh attribute flags
-          shaderManager_,                // shader manager
-          lightSetupKey,                 // lightSetup key
-          materialKey,                   // material key
-          group,                         // drawable group
-          getCreateRenderer());          // createRenderer flag
+          mesh,                  // render mesh
+          meshAttributeFlags,    // mesh attribute flags
+          shaderManager_,        // shader manager
+          lightSetupKey,         // lightSetup key
+          materialKey,           // material key
+          group,                 // drawable group
+          getCreateRenderer());  // createRenderer flag
       break;
     case gfx::MaterialDataType::Pbr:
       node.addFeature<gfx::PbrDrawable>(
-          mesh,                          // render mesh
-          meshAttributeFlags,            // mesh attribute flags
-          shaderManager_,                // shader manager
-          lightSetupKey,                 // lightSetup key
-          materialKey,                   // material key
-          group,                         // drawable group
-          getCreateRenderer());          // createRenderer flag
+          mesh,                  // render mesh
+          meshAttributeFlags,    // mesh attribute flags
+          shaderManager_,        // shader manager
+          lightSetupKey,         // lightSetup key
+          materialKey,           // material key
+          group,                 // drawable group
+          getCreateRenderer());  // createRenderer flag
       break;
   }
 }  // ResourceManager::createDrawable
