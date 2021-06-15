@@ -129,8 +129,8 @@ AssetAttributesManager::createTemplateFromHandle(
     const std::string& templateHandle,
     bool registerTemplate) {
   // first determine what base type the attributes is - find first underscore.
-  std::size_t nameEndLoc = templateHandle.find("_");
-  if (nameEndLoc == templateHandle.npos) {
+  std::size_t nameEndLoc = templateHandle.find('_');
+  if (nameEndLoc == std::string::npos) {
     // handle is of incorrect format
     LOG(ERROR) << "::createTemplateFromHandle : Given template handle : "
                << templateHandle
@@ -161,7 +161,7 @@ AssetAttributesManager::createTemplateFromHandle(
                    << primAssetAttributes->getHandle() << ".";
     }
   }
-  return this->postCreateRegister(primAssetAttributes, true);
+  return this->postCreateRegister(primAssetAttributes, registerTemplate);
 }  // AssetAttributesManager::createTemplateFromHandle
 
 int AssetAttributesManager::registerObjectFinalize(

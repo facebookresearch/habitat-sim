@@ -74,14 +74,15 @@ bool ConePrimitiveAttributes::parseStringIntoConfigDetail(
       "_segments_", configString, [this](int val) { setNumSegments(val); });
   auto halflenSet = setDoubleFromConfigKey(
       "_halfLen_", configString, [this](double val) { setHalfLength(val); });
+  bool ringSet = true;
   if (!getIsWireframe()) {
-    bool ringSet = setIntFromConfigKey("_rings_", configString,
-                                       [this](int val) { setNumRings(val); });
+    ringSet = setIntFromConfigKey("_rings_", configString,
+                                  [this](int val) { setNumRings(val); });
     setUseTextureCoords(getBoolForConfigKey("_useTexCoords_", configString));
     setUseTangents(getBoolForConfigKey("_useTangents_", configString));
     setCapEnd(getBoolForConfigKey("_capEnd_", configString));
   }
-  return segmentSet && halflenSet;
+  return segmentSet && halflenSet && ringSet;
 
 }  // ConePrimitiveAttributes::parseStringIntoConfigDetail(
 
