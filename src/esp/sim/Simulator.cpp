@@ -702,7 +702,7 @@ int Simulator::addTrajectoryObject(const std::string& trajVisName,
                                    const Magnum::Color4& color,
                                    bool smooth,
                                    int numInterp) {
-  // 0. Deduplicate points
+  // 0. Deduplicate sequential points
   std::vector<Magnum::Vector3> uniquePts;
   uniquePts.push_back(pts[0]);
   for (const auto& loc : pts) {
