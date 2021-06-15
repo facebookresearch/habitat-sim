@@ -866,10 +866,11 @@ sim_settings["color_sensor_3rd_person"] = True
 make_simulator_from_settings(sim_settings)
 
 # Put the object you would like to view here.
-# object_to_view_path = os.path.join(data_path, "objects/example_objects/chefcan.glb")
-object_to_view_path = os.path.join(
-    data_path, "datasets/replicaCAD/stages/frl_apartment_stage.glb"
-)
+object_to_view_path = os.path.join(data_path, "objects/example_objects/chefcan.glb")
+
+# Can also load and view stages - may have to reorient the stage via the attributes
+# object_to_view_path = os.path.join(data_path, "test_assets/scenes/simple_room.glb")
+
 # stage below is not loading for some reason
 clip_short_name = object_to_view_path.split("/")[-1].split(".")[0]
 
@@ -883,6 +884,7 @@ clip_short_name = object_to_view_path.split("/")[-1].split(".")[0]
 
 # load an object template and instantiate an object to view
 object_template = obj_attr_mgr.create_new_template(str(object_to_view_path), False)
+# if using a stage and it is sideways, you may need to reorient the stage for it to display properly.
 
 # modify template here if desired
 obj_temp_id = obj_attr_mgr.register_template(object_template)
