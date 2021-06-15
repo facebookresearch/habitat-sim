@@ -436,6 +436,35 @@ class AttributesManagersTest : public testing::Test {
 
   }  // AttributesManagersTest::testAssetAttributesModRegRemove
 
+  void testAssetAttributesTemplateCreateFromHandle(
+      const std::string& newTemplateName) {
+    // get starting number of templates
+    int orignNumTemplates = assetAttributesManager_->getNumObjects();
+    // first verify that no template with given name exists
+    bool templateExists =
+        assetAttributesManager_->getObjectLibHasHandle(newTemplateName);
+    ASSERT_EQ(templateExists, false);
+    // create new template based on handle and verify that it is created
+    auto newTemplate = assetAttributesManager_->createTemplateFromHandle(
+        newTemplateName, true);
+    ASSERT_NE(newTemplate, nullptr);
+
+    // now verify that template is in library
+    templateExists =
+        assetAttributesManager_->getObjectLibHasHandle(newTemplateName);
+    ASSERT_EQ(templateExists, true);
+
+    // remove new template via handle
+    auto oldTemplate =
+        assetAttributesManager_->removeObjectByHandle(newTemplateName);
+    // verify deleted template  exists
+    ASSERT_NE(nullptr, oldTemplate);
+
+    // verify there are same number of templates as when we started
+    ASSERT_EQ(orignNumTemplates, assetAttributesManager_->getNumObjects());
+
+  }  // AttributesManagersTest::testAssetAttributesTemplateCreateFromHandle
+
   AttrMgrs::AssetAttributesManager::ptr assetAttributesManager_ = nullptr;
   AttrMgrs::LightLayoutAttributesManager::ptr lightLayoutAttributesManager_ =
       nullptr;
@@ -979,6 +1008,29 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
   int legalModValSolid = 5;
   int illegalModValSolid = 0;
 
+  const std::string capsule3DSolidHandle =
+      "capsule3DSolid_hemiRings_5_cylRings_2_segments_16_halfLen_1.75_"
+      "useTexCoords_true_useTangents_true";
+  const std::string capsule3DWireframeHandle =
+      "capsule3DWireframe_hemiRings_8_cylRings_2_segments_20_halfLen_1.5";
+
+  const std::string coneSolidHandle =
+      "coneSolid_segments_12_halfLen_1.35_rings_1_useTexCoords_true_"
+      "useTangents_true_capEnd_true";
+  const std::string coneWireframeHandle =
+      "coneWireframe_segments_32_halfLen_1.44";
+
+  const std::string cylinderSolidHandle =
+      "cylinderSolid_rings_1_segments_28_halfLen_1.11_useTexCoords_true_"
+      "useTangents_true_capEnds_true";
+  const std::string cylinderWireframeHandle =
+      "cylinderWireframe_rings_1_segments_32_halfLen_1.23";
+
+  const std::string uvSphereSolidHandle =
+      "uvSphereSolid_rings_16_segments_8_useTexCoords_true_useTangents_true";
+  const std::string uvSphereWireframeHandle =
+      "uvSphereWireframe_rings_20_segments_24";
+
   //////////////////////////
   // get default template for solid capsule
   {
@@ -992,6 +1044,9 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
     testAssetAttributesModRegRemove<CapsulePrimitiveAttributes>(
         dfltCapsAttribs, "segments", legalModValSolid, &illegalModValSolid);
 
+    // test that a new template can be created from the specified handles
+    testAssetAttributesTemplateCreateFromHandle(capsule3DSolidHandle);
+
     // test wireframe version
     dfltCapsAttribs = assetAttributesManager_->getDefaultCapsuleTemplate(true);
     // verify it exists
@@ -999,6 +1054,8 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
     // segments must be mult of 4 for wireframe primtives
     testAssetAttributesModRegRemove<CapsulePrimitiveAttributes>(
         dfltCapsAttribs, "segments", legalModValWF, &illegalModValWF);
+    // test that a new template can be created from the specified handles
+    testAssetAttributesTemplateCreateFromHandle(capsule3DWireframeHandle);
   }
   //////////////////////////
   // get default template for solid cone
@@ -1014,6 +1071,9 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
     testAssetAttributesModRegRemove<ConePrimitiveAttributes>(
         dfltConeAttribs, "segments", legalModValSolid, &illegalModValSolid);
 
+    // test that a new template can be created from the specified handles
+    testAssetAttributesTemplateCreateFromHandle(coneSolidHandle);
+
     // test wireframe version
     dfltConeAttribs = assetAttributesManager_->getDefaultConeTemplate(true);
     // verify it exists
@@ -1021,6 +1081,9 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
     // segments must be mult of 4 for wireframe primtives
     testAssetAttributesModRegRemove<ConePrimitiveAttributes>(
         dfltConeAttribs, "segments", legalModValWF, &illegalModValWF);
+
+    // test that a new template can be created from the specified handles
+    testAssetAttributesTemplateCreateFromHandle(coneWireframeHandle);
   }
   //////////////////////////
   // get default template for solid cylinder
@@ -1036,6 +1099,9 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
     testAssetAttributesModRegRemove<CylinderPrimitiveAttributes>(
         dfltCylAttribs, "segments", 5, &illegalModValSolid);
 
+    // test that a new template can be created from the specified handles
+    testAssetAttributesTemplateCreateFromHandle(cylinderSolidHandle);
+
     // test wireframe version
     dfltCylAttribs = assetAttributesManager_->getDefaultCylinderTemplate(true);
     // verify it exists
@@ -1043,6 +1109,8 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
     // segments must be mult of 4 for wireframe primtives
     testAssetAttributesModRegRemove<CylinderPrimitiveAttributes>(
         dfltCylAttribs, "segments", legalModValWF, &illegalModValWF);
+    // test that a new template can be created from the specified handles
+    testAssetAttributesTemplateCreateFromHandle(cylinderWireframeHandle);
   }
   //////////////////////////
   // get default template for solid UV Sphere
@@ -1058,6 +1126,9 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
     testAssetAttributesModRegRemove<UVSpherePrimitiveAttributes>(
         dfltUVSphereAttribs, "segments", 5, &illegalModValSolid);
 
+    // test that a new template can be created from the specified handles
+    testAssetAttributesTemplateCreateFromHandle(uvSphereSolidHandle);
+
     // test wireframe version
     dfltUVSphereAttribs =
         assetAttributesManager_->getDefaultUVSphereTemplate(true);
@@ -1066,6 +1137,9 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
     // segments must be mult of 4 for wireframe primtives
     testAssetAttributesModRegRemove<UVSpherePrimitiveAttributes>(
         dfltUVSphereAttribs, "segments", legalModValWF, &illegalModValWF);
+
+    // test that a new template can be created from the specified handles
+    testAssetAttributesTemplateCreateFromHandle(uvSphereWireframeHandle);
   }
 }  // AttributesManagersTest::AsssetAttributesManagerGetAndModify test
 

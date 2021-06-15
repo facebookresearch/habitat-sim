@@ -925,9 +925,29 @@ void ResourceManager::translateMesh(BaseMesh* meshDataGL,
 void ResourceManager::buildPrimitiveAssetData(
     const std::string& primTemplateHandle) {
   // retrieves -actual- template, not a copy
-  const esp::metadata::attributes::AbstractPrimitiveAttributes::ptr
-      primTemplate =
-          getAssetAttributesManager()->getObjectByHandle(primTemplateHandle);
+  esp::metadata::attributes::AbstractPrimitiveAttributes::ptr primTemplate =
+      getAssetAttributesManager()->getObjectByHandle(primTemplateHandle);
+
+  if (primTemplate == nullptr) {
+    // Template does not yet exist, create it using its name - primitive
+    // template names encode all the pertinent template settings and cannot be
+    // changed by the user, so the template name can be used to recreate the
+    // template itself.
+    auto newTemplate = getAssetAttributesManager()->createTemplateFromHandle(
+        primTemplateHandle);
+    // if still null, fail.
+    if (newTemplate == nullptr) {
+      LOG(ERROR)
+          << "::buildPrimitiveAssetData : Attempting to reference or build a "
+             "primitive template from an unknown/malformed handle : "
+          << primTemplateHandle << ".  Aborting";
+      return;
+    }
+    // we do not want a copy of the newly created template, but the actual
+    // template
+    primTemplate = getAssetAttributesManager()->getObjectByHandle(
+        newTemplate->getHandle());
+  }
   // check if unique name of attributes describing primitive asset is present
   // already - don't remake if so
   auto primAssetHandle = primTemplate->getHandle();
