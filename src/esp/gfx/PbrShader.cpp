@@ -244,7 +244,7 @@ PbrShader& PbrShader::bindBaseColorTexture(Mn::GL::Texture2D& texture) {
                  "PbrShader::bindBaseColorTexture(): the shader was not "
                  "created with base color texture enabled",
                  *this);
-  if (lightCount_) {
+  if (lightCount_ != 0u) {
     texture.bind(pbrTextureUnitSpace::TextureUnit::BaseColor);
   }
   return *this;
@@ -256,7 +256,7 @@ PbrShader& PbrShader::bindMetallicRoughnessTexture(Mn::GL::Texture2D& texture) {
       "PbrShader::bindMetallicRoughnessTexture(): the shader was not "
       "created with metallicRoughness texture enabled.",
       *this);
-  if (lightCount_) {
+  if (lightCount_ != 0u) {
     texture.bind(pbrTextureUnitSpace::TextureUnit::MetallicRoughness);
   }
   return *this;
@@ -267,7 +267,7 @@ PbrShader& PbrShader::bindNormalTexture(Mn::GL::Texture2D& texture) {
                  "PbrShader::bindNormalTexture(): the shader was not "
                  "created with normal texture enabled",
                  *this);
-  if (lightCount_) {
+  if (lightCount_ != 0u) {
     texture.bind(pbrTextureUnitSpace::TextureUnit::Normal);
   }
   return *this;
