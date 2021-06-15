@@ -124,6 +124,46 @@ AbstractPrimitiveAttributes::ptr AssetAttributesManager::createObject(
   return this->postCreateRegister(primAssetAttributes, registerTemplate);
 }  // AssetAttributesManager::createObject
 
+attributes::AbstractPrimitiveAttributes::ptr
+AssetAttributesManager::createTemplateFromHandle(
+    const std::string& templateHandle,
+    bool registerTemplate) {
+  // first determine what base type the attributes is - find first underscore.
+  std::size_t nameEndLoc = templateHandle.find('_');
+  if (nameEndLoc == std::string::npos) {
+    // handle is of incorrect format
+    LOG(ERROR) << "::createTemplateFromHandle : Given template handle : "
+               << templateHandle
+               << " is not the correct format for a primitive.  Aborting.";
+    return nullptr;
+  }
+  std::string primClassName = templateHandle.substr(0, nameEndLoc);
+  if (primTypeConstructorMap_.count(primClassName) == 0) {
+    // handle does not have proper primitive tyep encoded
+    LOG(ERROR) << "::createTemplateFromHandle : Requested primitive type : "
+               << primClassName
+               << " from given template handle : " << templateHandle
+               << " is not a valid Magnum::Primitives class.  Aborting.";
+    return nullptr;
+  }
+  // create but do not register template for this prim class, since it will be
+  // modified based on config string
+  auto primAssetAttributes = this->createObject(primClassName, false);
+  // certain prims such as cubes do not have config settings
+  if (templateHandle.length() > 0) {
+    bool success = primAssetAttributes->parseStringIntoConfig(templateHandle);
+    if (!success) {
+      LOG(WARNING) << "::createTemplateFromHandle : Prim Asset Attributes : "
+                   << primClassName << " failed parsing config string : `"
+                   << templateHandle << "`.  Providing " << primClassName
+                   << " template configured as closely as possible with "
+                      "requested values, named "
+                   << primAssetAttributes->getHandle() << ".";
+    }
+  }
+  return this->postCreateRegister(primAssetAttributes, registerTemplate);
+}  // AssetAttributesManager::createTemplateFromHandle
+
 int AssetAttributesManager::registerObjectFinalize(
     AbstractPrimitiveAttributes::ptr primAttributesTemplate,
     const std::string&,
@@ -158,8 +198,8 @@ AbstractPrimitiveAttributes::ptr AssetAttributesManager::buildObjectFromJSONDoc(
 
   std::string primClassName =
       Cr::Utility::String::partition(primAttrHandle, '_')[0];
-  // if not legal primitive asset attributes file name, have message and return
-  // default sphere attributes.
+  // if not legal primitive asset attributes file name, have message and
+  // return default sphere attributes.
   if (defaultPrimAttributeHandles_.count(primClassName) == 0) {
     LOG(ERROR) << "::buildObjectFromJSONDoc :Unknown "
                   "primitive class type : "
