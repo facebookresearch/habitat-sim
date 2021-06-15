@@ -439,11 +439,6 @@ class BulletRigidObject : public BulletBase,
    */
   Magnum::Range3D getCollisionShapeAabb() const override;
 
-  /** @brief Object data: All components of a @ref RigidObjectType::OBJECT are
-   * wrapped into one @ref btRigidBody.
-   */
-  std::unique_ptr<btRigidBody> bObjectRigidBody_;
-
  private:
   /**
    * @brief Finalize initialization of this @ref BulletRigidObject as a @ref
@@ -477,6 +472,11 @@ class BulletRigidObject : public BulletBase,
    * a collision island tag with this object's collision shape.
    */
   void activateCollisionIsland();
+
+  /** @brief Object data: All components of a @ref RigidObjectType::OBJECT are
+   * wrapped into one @ref btRigidBody.
+   */
+  std::unique_ptr<btRigidBody> bObjectRigidBody_;
 
  private:
   // === Physical object ===
