@@ -866,10 +866,10 @@ sim_settings["color_sensor_3rd_person"] = True
 make_simulator_from_settings(sim_settings)
 
 # Put the object you would like to view here.
-object_to_view_path = os.path.join(data_path, "objects/example_objects/chefcan.glb")
+# object_to_view_path = os.path.join(data_path, "objects/example_objects/chefcan.glb")
 
 # Can also load and view stages - may have to reorient the stage via the attributes
-# object_to_view_path = os.path.join(data_path, "test_assets/scenes/simple_room.glb")
+object_to_view_path = os.path.join(data_path, "test_assets/scenes/simple_room.glb")
 
 # stage below is not loading for some reason
 clip_short_name = object_to_view_path.split("/")[-1].split(".")[0]
@@ -886,9 +886,13 @@ clip_short_name = object_to_view_path.split("/")[-1].split(".")[0]
 object_template = obj_attr_mgr.create_new_template(str(object_to_view_path), False)
 # if using a stage and it is sideways, you may need to reorient the stage for it to display properly.
 
+# To do this, uncomment the code below
+object_template.orient_up = (0.0, 0.0, 1.0)
+object_template.orient_front = (0.0, 1.0, 0.0)
+
 # modify template here if desired
 obj_temp_id = obj_attr_mgr.register_template(object_template)
-
+print("orient up : ", object_template.orient_up)
 # create object
 obj = rigid_obj_mgr.add_object_by_template_id(obj_temp_id)
 # place object in center - must be done before setting to static
