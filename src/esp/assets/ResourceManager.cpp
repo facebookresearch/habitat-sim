@@ -1501,6 +1501,9 @@ int ResourceManager::loadNavMeshVisualization(esp::nav::PathFinder& pathFinder,
   if (!pathFinder.isLoaded())
     return navMeshPrimitiveID;
 
+  if (!getCreateRenderer())
+    return navMeshPrimitiveID;
+
   // create the mesh
   std::vector<Magnum::UnsignedInt> indices;
   std::vector<Magnum::Vector3> positions;
