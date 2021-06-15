@@ -702,11 +702,20 @@ int Simulator::addTrajectoryObject(const std::string& trajVisName,
                                    const Magnum::Color4& color,
                                    bool smooth,
                                    int numInterp) {
+  // 0. Deduplicate sequential points
+  std::vector<Magnum::Vector3> uniquePts;
+  uniquePts.push_back(pts[0]);
+  for (const auto& loc : pts) {
+    if (loc != uniquePts.back()) {
+      uniquePts.push_back(loc);
+    }
+  }
+
   auto& drawables = getDrawableGroup();
 
   // 1. create trajectory tube asset from points and save it
   bool success = resourceManager_->buildTrajectoryVisualization(
-      trajVisName, pts, numSegments, radius, color, smooth, numInterp);
+      trajVisName, uniquePts, numSegments, radius, color, smooth, numInterp);
   if (!success) {
     LOG(ERROR) << "::showTrajectoryVisualization : Failed to create "
                   "Trajectory visualization mesh for "

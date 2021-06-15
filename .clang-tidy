@@ -1,6 +1,7 @@
 Checks: '
 bugprone-*,
 clang-analyzer-cplusplus-*,
+clang-analyzer-optin.performance.*,
 cppcoreguidelines-init-variables,
 cppcoreguidelines-pro-type-member-init,
 google-*,
@@ -51,8 +52,6 @@ readability-uniqueptr-delete-release,
 -*-objc-*,
 -*.cocoa.*,
 -clang-analyzer-core.NullDereference,
--clang-analyzer-optin.cplusplus.UninitializedObject,
--clang-analyzer-optin.cplusplus.VirtualCall,
 -clang-analyzer-security.insecureAPI.rand,
 -google-default-arguments,
 -google-readability-braces-around-statements,
@@ -87,4 +86,7 @@ WarningsAsErrors: '
 -clang-diagnostic-deprecated-declarations,
 -clang-analyzer-cplusplus.PlacementNew,
 -cppcoreguidelines-pro-type-member-init,
+-optin.cplusplus.UninitializedObject
 '
+
+HeaderFilterRegex: "src/esp/"
