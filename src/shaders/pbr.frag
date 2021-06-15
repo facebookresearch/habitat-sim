@@ -235,8 +235,8 @@ void microfacetModel(vec3 specularReflectance,
                   normalDistribution(n_dot_h, roughness) / temp;
 
   vec3 tempVec = lightRadiance * n_dot_l;
-  diffuseContrib = diffuse * Scales.directDiffuse * tempVec;
-  specularContrib = specular * Scales.directSpecular * tempVec;
+  diffuseContrib = diffuse * tempVec;
+  specularContrib = specular * tempVec;
 }
 
 void main() {
