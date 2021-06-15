@@ -143,9 +143,9 @@ enum CollisionFlags {
 struct CollisionShape : Shape {
   int m_flags{0};
   //! custom collision group (e.g. <collision>)
-  int m_collisionGroup{};
+  int m_collisionGroup{0};
   //! custom collision mask
-  int m_collisionMask{};
+  int m_collisionMask{0};
   CollisionShape() = default;
 };
 
