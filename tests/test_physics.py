@@ -20,6 +20,7 @@ from habitat_sim.utils.common import (
     quat_from_angle_axis,
     quat_from_magnum,
     quat_to_magnum,
+    random_quaternion,
 )
 
 
@@ -533,3 +534,449 @@ def test_collision_groups():
             cube_obj2.override_collision_group(cg.Noncollidable)
             assert not cube_obj1.contact_test()
             assert not cube_obj2.contact_test()
+
+
+def check_articulated_object_root_state(
+    articulated_object, target_rigid_state, epsilon=1.0e-4
+):
+    r"""Checks the root state of the ArticulatedObject with all query methods against a target RigidState.
+
+    :param articulated_object: The ArticulatedObject to check
+    :param target_rigid_state: A RigidState object separating translation (vector3) rotation (quaternion)
+    :param epsilon: An error threshold for numeric comparisons
+    """
+    # NOTE: basic transform properties refer to the root state
+    # convert target to matrix and check against scene_node transform
+    assert np.allclose(
+        articulated_object.root_scene_node.transformation,
+        mn.Matrix4.from_(
+            target_rigid_state.rotation.to_matrix(), target_rigid_state.translation
+        ),
+        atol=epsilon,
+    )
+    # convert target to matrix and check against transform
+    assert np.allclose(
+        articulated_object.transformation,
+        mn.Matrix4.from_(
+            target_rigid_state.rotation.to_matrix(), target_rigid_state.translation
+        ),
+        atol=epsilon,
+    )
+    assert np.allclose(
+        articulated_object.translation, target_rigid_state.translation, atol=epsilon
+    )
+    assert mn.math.angle(
+        articulated_object.rotation, target_rigid_state.rotation
+    ) < mn.Rad(epsilon)
+    # check against object's rigid_state
+    assert np.allclose(
+        articulated_object.rigid_state.translation,
+        target_rigid_state.translation,
+        atol=epsilon,
+    )
+    assert mn.math.angle(
+        articulated_object.rigid_state.rotation, target_rigid_state.rotation
+    ) < mn.Rad(epsilon)
+
+
+def getRestPositions(articulated_object):
+    r"""Constructs a valid rest pose vector for an ArticulatedObject with all zeros for non-spherical joints which get an identity quaternion instead."""
+    rest_pose = np.zeros(len(articulated_object.joint_positions))
+    for linkIx in range(articulated_object.num_links):
+        if (
+            articulated_object.get_link_joint_type(linkIx)
+            == habitat_sim.physics.JointType.Spherical
+        ):
+            rest_pose[articulated_object.get_link_joint_pos_offset(linkIx) + 3] = 1
+    return rest_pose
+
+
+def getRandomPositions(articulated_object):
+    r"""Constructs a random pose vector for an ArticulatedObject with unit quaternions for spherical joints."""
+    rand_pose = np.random.uniform(-1, 1, len(articulated_object.joint_positions))
+    for linkIx in range(articulated_object.num_links):
+        if (
+            articulated_object.get_link_joint_type(linkIx)
+            == habitat_sim.physics.JointType.Spherical
+        ):
+            # draw a random quaternion
+            rand_quat = random_quaternion()
+            rand_pose[
+                articulated_object.get_link_joint_pos_offset(linkIx) + 3
+            ] = rand_quat.scalar
+            rand_pose[
+                articulated_object.get_link_joint_pos_offset(
+                    linkIx
+                ) : articulated_object.get_link_joint_pos_offset(linkIx)
+                + 3
+            ] = rand_quat.vector
+
+    return rand_pose
+
+
+@pytest.mark.skipif(
+    not habitat_sim.built_with_bullet,
+    reason="ArticulatedObject API requires Bullet physics.",
+)
+def test_articulated_object_add_remove():
+    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings["scene"] = "NONE"
+    cfg_settings["enable_physics"] = True
+
+    # loading the physical scene
+    hab_cfg = examples.settings.make_cfg(cfg_settings)
+
+    with habitat_sim.Simulator(hab_cfg) as sim:
+        art_obj_mgr = sim.get_articulated_object_manager()
+        robot_file = "data/test_assets/urdf/kuka_iiwa/model_free_base.urdf"
+
+        # parse URDF and add a robot to the world
+        robot = art_obj_mgr.add_articulated_object_from_urdf(filepath=robot_file)
+        assert robot
+        assert robot.is_alive
+        assert robot.object_id == 0  # first robot added
+
+        # add a second robot
+        robot2 = art_obj_mgr.add_articulated_object_from_urdf(filepath=robot_file)
+        assert robot2
+        assert art_obj_mgr.get_num_objects() == 2
+
+        # remove a robot and check that it was removed
+        art_obj_mgr.remove_object_by_handle(robot.handle)
+        assert not robot.is_alive
+        assert art_obj_mgr.get_num_objects() == 1
+        assert robot2.is_alive
+
+        # add some more
+        for _i in range(5):
+            art_obj_mgr.add_articulated_object_from_urdf(filepath=robot_file)
+        assert art_obj_mgr.get_num_objects() == 6
+
+        # remove another
+        art_obj_mgr.remove_object_by_id(robot2.object_id)
+        assert not robot2.is_alive
+        assert art_obj_mgr.get_num_objects() == 5
+
+        # remove all
+        art_obj_mgr.remove_all_objects()
+        assert art_obj_mgr.get_num_objects() == 0
+
+
+@pytest.mark.skipif(
+    not habitat_sim.built_with_bullet,
+    reason="ArticulatedObject API requires Bullet physics.",
+)
+@pytest.mark.parametrize(
+    "test_asset",
+    [
+        "data/test_assets/urdf/kuka_iiwa/model_free_base.urdf",
+        "data/test_assets/urdf/fridge/fridge.urdf",
+        "data/test_assets/urdf/prim_chain.urdf",
+        "data/test_assets/urdf/amass_male.urdf",
+    ],
+)
+def test_articulated_object_kinematics(test_asset):
+    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings["scene"] = "NONE"
+    cfg_settings["enable_physics"] = True
+
+    # loading the physical scene
+    hab_cfg = examples.settings.make_cfg(cfg_settings)
+
+    with habitat_sim.Simulator(hab_cfg) as sim:
+        art_obj_mgr = sim.get_articulated_object_manager()
+        robot_file = test_asset
+
+        # parse URDF and add an ArticulatedObject to the world
+        robot = art_obj_mgr.add_articulated_object_from_urdf(filepath=robot_file)
+        assert robot.is_alive
+
+        # NOTE: basic transform properties refer to the root state
+        # root state should be identity by default
+        expected_root_state = habitat_sim.RigidState()
+        check_articulated_object_root_state(robot, expected_root_state)
+        # set the transformation with various methods
+        # translation and rotation properties:
+        robot.translation = expected_root_state.translation = mn.Vector3(1.0, 2.0, 3.0)
+        check_articulated_object_root_state(robot, expected_root_state)
+        robot.rotation = expected_root_state.rotation = mn.Quaternion.rotation(
+            mn.Rad(0.5), mn.Vector3(-5.0, 1.0, 9.0).normalized()
+        )
+        check_articulated_object_root_state(robot, expected_root_state)
+        # transform property:
+        test_matrix_rotation = mn.Quaternion.rotation(
+            mn.Rad(0.75), mn.Vector3(4.0, 3.0, -1.0).normalized()
+        )
+        test_matrix_translation = mn.Vector3(3.0, 2.0, 1.0)
+        transform_test_matrix = mn.Matrix4.from_(
+            test_matrix_rotation.to_matrix(), test_matrix_translation
+        )
+        robot.transformation = transform_test_matrix
+        expected_root_state = habitat_sim.RigidState(
+            test_matrix_rotation, test_matrix_translation
+        )
+        # looser epsilon for quat->matrix conversions
+        check_articulated_object_root_state(robot, expected_root_state, epsilon=1.0e-3)
+        # rigid_state property:
+        expected_root_state = habitat_sim.RigidState()
+        robot.rigid_state = expected_root_state
+        check_articulated_object_root_state(robot, expected_root_state)
+        # state modifying functions:
+        robot.translate(test_matrix_translation)
+        expected_root_state.translation = test_matrix_translation
+        check_articulated_object_root_state(robot, expected_root_state)
+        # rotate the robot 180 degrees
+        robot.rotate(mn.Rad(math.pi), mn.Vector3(0, 1.0, 0.0))
+        expected_root_state.rotation = mn.Quaternion.rotation(
+            mn.Rad(math.pi), mn.Vector3(0, 1.0, 0.0)
+        )
+        check_articulated_object_root_state(robot, expected_root_state)
+        # not testing local transforms at this point since using the same mechanism
+
+        # object should have some degrees of freedom
+        num_dofs = len(robot.joint_forces)
+        assert num_dofs > 0
+        # default zero joint states
+        assert np.allclose(robot.joint_positions, getRestPositions(robot))
+        assert np.allclose(robot.joint_velocities, np.zeros(num_dofs))
+        assert np.allclose(robot.joint_forces, np.zeros(num_dofs))
+
+        # test joint state get/set
+        # generate vectors with num_dofs evenly spaced samples in a range
+        target_pose = getRandomPositions(robot)
+        # positions
+        robot.joint_positions = target_pose
+        assert np.allclose(robot.joint_positions, target_pose)
+        # velocities
+        target_joint_vel = np.linspace(1.1, 2.0, num_dofs)
+        robot.joint_velocities = target_joint_vel
+        assert np.allclose(robot.joint_velocities, target_joint_vel)
+        # forces
+        target_joint_forces = np.linspace(2.1, 3.0, num_dofs)
+        robot.joint_forces = target_joint_forces
+        assert np.allclose(robot.joint_forces, target_joint_forces)
+        # absolute, not additive setter
+        robot.joint_forces = target_joint_forces
+        assert np.allclose(robot.joint_forces, target_joint_forces)
+        # test additive method
+        robot.add_joint_forces(target_joint_forces)
+        assert np.allclose(robot.joint_forces, 2 * target_joint_forces)
+        # clear all positions, velocities, forces to zero
+        robot.clear_joint_states()
+        assert np.allclose(robot.joint_positions, getRestPositions(robot))
+        assert np.allclose(robot.joint_velocities, np.zeros(num_dofs))
+        assert np.allclose(robot.joint_forces, np.zeros(num_dofs))
+
+        # test joint limits and clamping
+        lower_pos_limits = robot.get_joint_position_limits(upper_limits=False)
+        upper_pos_limits = robot.get_joint_position_limits(upper_limits=True)
+
+        # setup joint positions outside of the limit range
+        invalid_joint_positions = getRestPositions(robot)
+        for pos in range(len(invalid_joint_positions)):
+            if not math.isinf(upper_pos_limits[pos]):
+                invalid_joint_positions[pos] = upper_pos_limits[pos] + 0.1
+        robot.joint_positions = invalid_joint_positions
+        # allow these to be set
+        assert np.allclose(robot.joint_positions, invalid_joint_positions, atol=1.0e-4)
+        # then clamp back into valid range
+        robot.clamp_joint_limits()
+        assert np.all(robot.joint_positions <= upper_pos_limits)
+        assert np.all(robot.joint_positions <= invalid_joint_positions)
+        # repeat with lower limits
+        invalid_joint_positions = getRestPositions(robot)
+        for pos in range(len(invalid_joint_positions)):
+            if not math.isinf(lower_pos_limits[pos]):
+                invalid_joint_positions[pos] = lower_pos_limits[pos] - 0.1
+        robot.joint_positions = invalid_joint_positions
+        # allow these to be set
+        assert np.allclose(robot.joint_positions, invalid_joint_positions, atol=1.0e-4)
+        # then clamp back into valid range
+        robot.clamp_joint_limits()
+        assert np.all(robot.joint_positions >= lower_pos_limits)
+
+        # test auto-clamping (only occurs during step function BEFORE integration)
+        robot.joint_positions = invalid_joint_positions
+        assert np.allclose(robot.joint_positions, invalid_joint_positions, atol=1.0e-4)
+        # taking a single step should not clamp positions by default
+        sim.step_physics(-1)
+        assert np.allclose(robot.joint_positions, invalid_joint_positions, atol=1.0e-3)
+        assert robot.auto_clamp_joint_limits == False
+        robot.auto_clamp_joint_limits = True
+        assert robot.auto_clamp_joint_limits == True
+        # taking a single step should clamp positions when auto clamp enabled
+        sim.step_physics(-1)
+        assert np.all(robot.joint_positions >= lower_pos_limits)
+
+
+@pytest.mark.skipif(
+    not osp.exists("data/scene_datasets/habitat-test-scenes/apartment_1.glb"),
+    reason="Requires the habitat-test-scenes",
+)
+@pytest.mark.skipif(
+    not habitat_sim.built_with_bullet,
+    reason="ArticulatedObject API requires Bullet physics.",
+)
+@pytest.mark.parametrize(
+    "test_asset",
+    [
+        "data/test_assets/urdf/kuka_iiwa/model_free_base.urdf",
+        "data/test_assets/urdf/fridge/fridge.urdf",
+        "data/test_assets/urdf/prim_chain.urdf",
+        "data/test_assets/urdf/amass_male.urdf",
+    ],
+)
+def test_articulated_object_dynamics(test_asset):
+    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings["scene"] = "data/scene_datasets/habitat-test-scenes/apartment_1.glb"
+    cfg_settings["enable_physics"] = True
+
+    # loading the physical scene
+    hab_cfg = examples.settings.make_cfg(cfg_settings)
+
+    with habitat_sim.Simulator(hab_cfg) as sim:
+        art_obj_mgr = sim.get_articulated_object_manager()
+        robot_file = test_asset
+
+        # parse URDF and add an ArticulatedObject to the world
+        robot = art_obj_mgr.add_articulated_object_from_urdf(filepath=robot_file)
+        assert robot.is_alive
+
+        # object should be initialized with dynamics
+        assert robot.motion_type == habitat_sim.physics.MotionType.DYNAMIC
+        sim.step_physics(0.2)
+        assert robot.root_linear_velocity[1] < -1.0
+        sim.step_physics(2.8)
+        # the robot should fall to the floor under gravity and stop
+        assert robot.translation[1] < -0.5
+        assert robot.translation[1] > -1.7
+
+        # test linear and angular root velocity
+        robot.translation = mn.Vector3(100)
+        robot.rotation = mn.Quaternion()
+        target_lin_vel = np.linspace(1.1, 2.0, 3)
+        target_ang_vel = np.linspace(2.1, 3.0, 3)
+        robot.root_linear_velocity = target_lin_vel
+        robot.root_angular_velocity = target_ang_vel
+        assert np.allclose(robot.root_linear_velocity, target_lin_vel, atol=1.0e-4)
+        assert np.allclose(robot.root_angular_velocity, target_ang_vel, atol=1.0e-4)
+        # take a single step and expect the velocity to be applied
+        current_time = sim.get_world_time()
+        sim.step_physics(-1)
+        timestep = sim.get_world_time() - current_time
+        lin_finite_diff = (robot.translation - mn.Vector3(100)) / timestep
+        assert np.allclose(robot.root_linear_velocity, lin_finite_diff, atol=1.0e-3)
+        expected_rotation = mn.Quaternion.rotation(
+            mn.Rad(np.linalg.norm(target_ang_vel * timestep)),
+            target_ang_vel / np.linalg.norm(target_ang_vel),
+        )
+        angle_error = mn.math.angle(robot.rotation, expected_rotation)
+        assert angle_error < mn.Rad(0.0005)
+
+        assert not np.allclose(robot.root_linear_velocity, mn.Vector3(0), atol=0.1)
+        assert not np.allclose(robot.root_angular_velocity, mn.Vector3(0), atol=0.1)
+
+        # reset root transform and switch to kinematic
+        robot.translation = mn.Vector3(0)
+        robot.clear_joint_states()
+        robot.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+        assert robot.motion_type == habitat_sim.physics.MotionType.KINEMATIC
+        sim.step_physics(1.0)
+        assert robot.translation == mn.Vector3(0)
+        assert robot.root_linear_velocity == mn.Vector3(0)
+        assert robot.root_angular_velocity == mn.Vector3(0)
+        # set forces and velocity and check no simulation result
+        current_positions = robot.joint_positions
+        robot.joint_velocities = np.linspace(1.1, 2.0, len(robot.joint_velocities))
+        robot.joint_forces = np.linspace(2.1, 3.0, len(robot.joint_forces))
+        sim.step_physics(1.0)
+        assert np.allclose(robot.joint_positions, current_positions, atol=1.0e-4)
+        assert robot.translation == mn.Vector3(0)
+        # positions can be manually changed
+        target_joint_positions = getRandomPositions(robot)
+        robot.joint_positions = target_joint_positions
+        assert np.allclose(robot.joint_positions, target_joint_positions, atol=1.0e-4)
+
+        # instance fresh robot with fixed base
+        art_obj_mgr.remove_object_by_id(robot.object_id)
+        robot = art_obj_mgr.add_articulated_object_from_urdf(
+            filepath=robot_file, fixed_base=True
+        )
+        assert robot.translation == mn.Vector3(0)
+        assert robot.motion_type == habitat_sim.physics.MotionType.DYNAMIC
+        # perturb the system dynamically
+        robot.joint_velocities = np.linspace(5.1, 8.0, len(robot.joint_velocities))
+        sim.step_physics(1.0)
+        # root should remain fixed
+        assert robot.translation == mn.Vector3(0)
+        assert robot.root_linear_velocity == mn.Vector3(0)
+        assert robot.root_angular_velocity == mn.Vector3(0)
+        # positions should be dynamic and perturbed by velocities
+        assert not np.allclose(robot.joint_positions, getRestPositions(robot), atol=0.1)
+
+        # instance fresh robot with free base
+        art_obj_mgr.remove_object_by_id(robot.object_id)
+        robot = art_obj_mgr.add_articulated_object_from_urdf(filepath=robot_file)
+        # put object to sleep
+        assert robot.can_sleep
+        assert robot.awake
+        robot.awake = False
+        assert not robot.awake
+        sim.step_physics(1.0)
+        assert not robot.awake
+        assert robot.translation == mn.Vector3(0)
+
+        # add a new object to drop onto the first, waking it up
+        robot2 = art_obj_mgr.add_articulated_object_from_urdf(filepath=robot_file)
+        sim.step_physics(0.5)
+        assert robot.awake
+        assert robot2.awake
+
+
+@pytest.mark.skipif(
+    not habitat_sim.built_with_bullet,
+    reason="ArticulatedObject API requires Bullet physics.",
+)
+def test_articulated_object_fixed_base_proxy():
+    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings["scene"] = "NONE"
+    cfg_settings["enable_physics"] = True
+
+    # loading the physical scene
+    hab_cfg = examples.settings.make_cfg(cfg_settings)
+
+    with habitat_sim.Simulator(hab_cfg) as sim:
+        art_obj_mgr = sim.get_articulated_object_manager()
+        rigid_obj_mgr = sim.get_rigid_object_manager()
+        obj_template_mgr = sim.get_object_template_manager()
+
+        robot_file = "data/test_assets/urdf/fixed_base_test.urdf"
+
+        # parse URDF and add an ArticulatedObject to the world with fixed base
+        robot = art_obj_mgr.add_articulated_object_from_urdf(
+            filepath=robot_file, fixed_base=True
+        )
+        assert robot.is_alive
+
+        # add a test object to the world
+        cube_prim_handle = obj_template_mgr.get_template_handles("cube")[0]
+        cube_obj = rigid_obj_mgr.add_object_by_template_handle(cube_prim_handle)
+        for it in range(2):
+            if it == 1:
+                # test updating the fixed base position
+                robot.translation = [0.2, 0.3, 0.4]
+                cube_obj.translation = robot.translation
+            # initial position should be intersecting with all components
+            assert robot.contact_test()
+            # move the Dynamic link out of the way
+            robot.joint_positions = [0.3]
+            # should still report contact because cube_obj is Dynamic
+            assert robot.contact_test()
+            # should not report contact once cube_obj is Static because base link is also Static
+            cube_obj.motion_type = habitat_sim.physics.MotionType.STATIC
+            assert not robot.contact_test()
+            cube_obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+            assert not robot.contact_test()
+            robot.joint_positions = [0.0]
+            assert robot.contact_test()
+            cube_obj.motion_type = habitat_sim.physics.MotionType.DYNAMIC

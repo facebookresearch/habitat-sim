@@ -74,6 +74,11 @@ class RigidObject;
 namespace nav {
 class PathFinder;
 }
+namespace io {
+namespace URDF {
+class Model;
+}
+}  // namespace io
 namespace assets {
 
 /**

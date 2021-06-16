@@ -104,6 +104,11 @@
         }
         ]
     },
+  "articulated_objects":{
+      "paths": {
+        ".urdf" : ["../../urdf/*"]
+      }
+    },
   "scene_instances":{
     "paths": {
       ".json" : ["scenes/*"]

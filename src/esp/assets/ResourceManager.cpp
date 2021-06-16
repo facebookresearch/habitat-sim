@@ -44,6 +44,7 @@
 #include "esp/gfx/MaterialUtil.h"
 #include "esp/gfx/PbrDrawable.h"
 #include "esp/gfx/replay/Recorder.h"
+#include "esp/io/URDFParser.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 #include "esp/physics/PhysicsManager.h"
@@ -559,7 +560,10 @@ bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
     AssetInfo defaultInfo(info);
     defaultInfo.overridePhongMaterial = Cr::Containers::NullOpt;
 
-    if (info.type == AssetType::FRL_PTEX_MESH) {
+    if (info.type == AssetType::PRIMITIVE) {
+      buildPrimitiveAssetData(info.filepath);
+      meshSuccess = true;
+    } else if (info.type == AssetType::FRL_PTEX_MESH) {
       meshSuccess = loadRenderAssetPTex(defaultInfo);
     } else if (info.type == AssetType::INSTANCE_MESH) {
       meshSuccess = loadRenderAssetIMesh(defaultInfo);
@@ -572,8 +576,13 @@ bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
 
     if (meshSuccess) {
       // create and register the collisionMeshGroups
-      std::vector<CollisionMeshData> meshGroup;
-      ASSERT(buildMeshGroups(defaultInfo, meshGroup));
+      if (info.type != AssetType::PRIMITIVE) {
+        std::vector<CollisionMeshData> meshGroup;
+        CORRADE_ASSERT(buildMeshGroups(defaultInfo, meshGroup),
+                       "Failed to construct collisionMeshGroups for asset "
+                           << info.filepath,
+                       false);
+      }
 
       if (gfxReplayRecorder_) {
         gfxReplayRecorder_->onLoadRenderAsset(defaultInfo);
@@ -610,9 +619,11 @@ bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
           node->materialID = materialId;
         }
       }
-      // clone the collision data
-      collisionMeshGroups_.emplace(modifiedAssetName,
-                                   collisionMeshGroups_.at(info.filepath));
+      if (info.type != AssetType::PRIMITIVE) {
+        // clone the collision data
+        collisionMeshGroups_.emplace(modifiedAssetName,
+                                     collisionMeshGroups_.at(info.filepath));
+      }
 
       if (gfxReplayRecorder_) {
         gfxReplayRecorder_->onLoadRenderAsset(info);

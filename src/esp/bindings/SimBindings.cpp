@@ -150,6 +150,11 @@ void initSimBindings(py::module& m) {
            pybind11::return_value_policy::reference,
            R"(Get the manager responsible for organizing and accessing all the
            currently constructed rigid objects.)")
+      .def("get_articulated_object_manager",
+           &Simulator::getArticulatedObjectManager,
+           pybind11::return_value_policy::reference,
+           R"(Get the manager responsible for organizing and accessing all the
+          currently constructed articulated objects.)")
       .def(
           "get_physics_simulation_library",
           &Simulator::getPhysicsSimulationLibrary,

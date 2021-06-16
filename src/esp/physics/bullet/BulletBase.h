@@ -11,6 +11,7 @@
 #include <utility>
 
 #include "BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h"
+#include "BulletDynamics/Featherstone/btMultiBodyLinkCollider.h"
 #include "esp/assets/Asset.h"
 #include "esp/assets/BaseMesh.h"
 #include "esp/assets/MeshMetaData.h"

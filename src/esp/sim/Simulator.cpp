@@ -35,6 +35,7 @@ namespace esp {
 namespace sim {
 
 using metadata::attributes::PhysicsManagerAttributes;
+using metadata::attributes::SceneAOInstanceAttributes;
 using metadata::attributes::SceneObjectInstanceAttributes;
 using metadata::attributes::StageAttributes;
 
@@ -324,7 +325,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   const std::string stageAttributesHandle =
       metadataMediator_->getStageAttrFullHandle(
           stageInstanceAttributes->getHandle());
-  // Get StageAttributes
+  // Get StageAttributes copy
   auto stageAttributes =
       metadataMediator_->getStageAttributesManager()->getObjectCopyByHandle(
           stageAttributesHandle);
@@ -344,6 +345,9 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   stageAttributes->setLightSetup(lightSetupKey);
   // set frustum culling from simulator config
   stageAttributes->setFrustumCulling(frustumCulling_);
+  // set scaling values for this instance of stage attributes
+  stageAttributes->setScale(stageAttributes->getScale() *
+                            stageInstanceAttributes->getUniformScale());
 
   // create a structure to manage active scene and active semantic scene ID
   // passing to and from loadStage
@@ -411,10 +415,15 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   // 5. Load object instances as spceified by Scene Instance Attributes.
   bool success = instanceObjectsForActiveScene();
 
-  // TODO : reset may eventually have all the scene instance instantiation
-  // code so that scenes can be reset
   if (success) {
-    reset();
+    // 6. Load articulated object instances as specified by Scene Instance
+    // Attributes.
+    success = instanceArticulatedObjectsForActiveScene();
+    if (success) {
+      // TODO : reset may eventually have all the scene instance instantiation
+      // code so that scenes can be reset
+      reset();
+    }
   }
 
   return success;
@@ -440,7 +449,7 @@ bool Simulator::instanceObjectsForActiveScene() {
 
   // node to attach object to
   scene::SceneNode* attachmentNode = nullptr;
-  // vector holding all objects added
+  // vector holding all objects added (for informational purposes)
   std::vector<int> objectsAdded;
   int objID = 0;
 
@@ -476,6 +485,52 @@ bool Simulator::instanceObjectsForActiveScene() {
   // objectsAdded holds all ids of added objects.
   return true;
 }  // Simulator::instanceObjectsForActiveScene()
+
+bool Simulator::instanceArticulatedObjectsForActiveScene() {
+  // Get scene instance attributes corresponding to current active scene name
+  // This should always just retrieve an existing, appropriately configured
+  // scene instance attributes, depending on what exists in the Scene Dataset
+  // library for the current dataset.
+  const std::string activeSceneName = config_.activeSceneName;
+  metadata::attributes::SceneAttributes::cptr curSceneInstanceAttributes =
+      metadataMediator_->getSceneAttributesByName(activeSceneName);
+
+  // get lightSetupKey from the value set when stage was created.
+  const std::string lightSetupKey = config_.sceneLightSetup;
+
+  std::string errMsgTmplt =
+      "Simulator::instanceArticulatedObjectsForActiveScene : Error instancing "
+      "articulated objects : " +
+      activeSceneName + " : ";
+
+  // 6. Load all articulated object instances
+  // Get all instances of articulated objects described in scene
+  const std::vector<SceneAOInstanceAttributes::ptr> artObjInstances =
+      curSceneInstanceAttributes->getArticulatedObjectInstances();
+
+  // vector holding all articulated objects added
+  std::vector<int> artObjsAdded;
+  int aoID = 0;
+
+  auto& drawables = getDrawableGroup();
+
+  // Iterate through instances, create object and implement initial
+  // transformation.
+  for (const auto& artObjInst : artObjInstances) {
+    // get model file name
+    const std::string artObjFilePath =
+        metadataMediator_->getArticulatedObjModelFullHandle(
+            artObjInst->getHandle());
+
+    // create articulated object
+    aoID = physicsManager_->addArticulatedObjectInstance(
+        artObjFilePath, artObjInst, lightSetupKey);
+
+    // physicsManager_->setArticulatedObjectVelocities(aoID, aoJointVels);
+    artObjsAdded.push_back(aoID);
+  }  // for each articulated object instance
+  return true;
+}  // Simulator::instanceArticulatedObjectsForActiveScene
 
 bool Simulator::createSceneInstanceNoRenderer(
     const std::string& activeSceneName) {
@@ -581,6 +636,7 @@ void Simulator::removeObject(const int objectID,
 double Simulator::stepWorld(const double dt) {
   if (physicsManager_ != nullptr) {
     physicsManager_->stepPhysics(dt);
+    physicsManager_->updateNodes();
   }
   return getWorldTime();
 }
@@ -613,11 +669,22 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
 
   // add STATIC collision objects
   if (includeStaticObjects) {
+    // update nodes so SceneNode transforms are up-to-date
+    physicsManager_->updateNodes();
+
+    // collect mesh components from all objects and then merge them.
+    // Each mesh component could be duplicated multiple times w/ different
+    // transforms.
+    std::map<std::string,
+             std::vector<Eigen::Transform<float, 3, Eigen::Affine>>>
+        meshComponentStates;
+
+    // collect RigidObject mesh components
     for (auto objectID : physicsManager_->getExistingObjectIDs()) {
       auto objWrapper = queryRigidObjWrapper(activeSceneID_, objectID);
       if (objWrapper->getMotionType() == physics::MotionType::STATIC) {
         auto objectTransform = Magnum::EigenIntegration::cast<
-            Eigen::Transform<float, 3, Eigen::Affine> >(
+            Eigen::Transform<float, 3, Eigen::Affine>>(
             physicsManager_->getObjectVisualSceneNode(objectID)
                 .absoluteTransformationMatrix());
         const metadata::attributes::ObjectAttributes::cptr
@@ -629,8 +696,39 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
         if (meshHandle.empty()) {
           meshHandle = initializationTemplate->getRenderAssetHandle();
         }
-        assets::MeshData::uptr joinedObjectMesh =
-            resourceManager_->createJoinedCollisionMesh(meshHandle);
+        meshComponentStates[meshHandle].push_back(objectTransform);
+      }
+    }
+
+    // collect ArticulatedObject mesh components
+    for (auto& objectID : physicsManager_->getExistingArticulatedObjectIds()) {
+      auto articulatedObject =
+          getArticulatedObjectManager()->getObjectByID(objectID);
+      if (articulatedObject->getMotionType() == physics::MotionType::STATIC) {
+        for (int linkIx = -1; linkIx < articulatedObject->getNumLinks();
+             ++linkIx) {
+          //-1 is baseLink_
+          std::vector<std::pair<esp::scene::SceneNode*, std::string>>
+              visualAttachments =
+                  physicsManager_->getArticulatedObject(objectID)
+                      .getLink(linkIx)
+                      .visualAttachments_;
+          for (auto& visualAttachment : visualAttachments) {
+            auto objectTransform = Magnum::EigenIntegration::cast<
+                Eigen::Transform<float, 3, Eigen::Affine>>(
+                visualAttachment.first->absoluteTransformationMatrix());
+            std::string meshHandle = visualAttachment.second;
+            meshComponentStates[meshHandle].push_back(objectTransform);
+          }
+        }
+      }
+    }
+
+    // merge mesh components into the final mesh
+    for (auto& meshComponent : meshComponentStates) {
+      assets::MeshData::uptr joinedObjectMesh =
+          resourceManager_->createJoinedCollisionMesh(meshComponent.first);
+      for (auto& meshTransform : meshComponent.second) {
         int prevNumIndices = joinedMesh->ibo.size();
         int prevNumVerts = joinedMesh->vbo.size();
         joinedMesh->ibo.resize(prevNumIndices + joinedObjectMesh->ibo.size());
@@ -640,7 +738,7 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
         }
         joinedMesh->vbo.reserve(joinedObjectMesh->vbo.size() + prevNumVerts);
         for (auto& vert : joinedObjectMesh->vbo) {
-          joinedMesh->vbo.push_back(objectTransform * vert);
+          joinedMesh->vbo.push_back(meshTransform * vert);
         }
       }
     }
@@ -814,8 +912,8 @@ std::string Simulator::convexHullDecomposition(
   chdObjAttr->setCollisionAssetIsPrimitive(false);
   chdObjAttr->setJoinCollisionMeshes(false);
 
-  // if the renderChd flag is set to true, set the convex hull decomposition to
-  // be the render asset (useful for testing)
+  // if the renderChd flag is set to true, set the convex hull decomposition
+  // to be the render asset (useful for testing)
 
   chdObjAttr->setRenderAssetHandle(renderChd ? chdFilename : filename);
 
@@ -999,6 +1097,5 @@ int Simulator::getAgentObservationSpaces(
   }
   return spaces.size();
 }
-
 }  // namespace sim
 }  // namespace esp

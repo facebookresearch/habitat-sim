@@ -1,0 +1,607 @@
+// Copyright (c) Facebook, Inc. and its affiliates.
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
+
+#ifndef ESP_PHYSICS_ARTICULATEDOBJECT_H_
+#define ESP_PHYSICS_ARTICULATEDOBJECT_H_
+
+/** @file
+ * @brief Class @ref esp::physics::ArticulatedLink, Class @ref
+ * esp::physics::ArticulatedObject
+ */
+
+#include "RigidBase.h"
+#include "esp/core/esp.h"
+#include "esp/io/URDFParser.h"
+#include "esp/scene/SceneNode.h"
+
+namespace esp {
+
+namespace gfx {
+class DrawableGroup;
+}
+
+namespace assets {
+class ResourceManager;
+}
+
+namespace io {
+struct URDFLinkContactInfo;
+struct UrdfLink;
+}  // namespace io
+
+namespace physics {
+
+class URDFImporter;
+
+//! copy of eFeatherstoneJointType from
+//! bullet3/src/BulletDynamics/Featherstone/btMultiBodyLink.h for access
+//! convenience w/o Bullet install.
+enum class JointType : int {
+  Revolute = 0,
+  Prismatic = 1,
+  Spherical = 2,
+  Planar = 3,
+  Fixed = 4,
+  Invalid
+};
+
+////////////////////////////////////
+// Link
+////////////////////////////////////
+
+/**
+ * @brief A single rigid link in a kinematic chain. Abstract class. Feature
+ * attaches to a SceneNode.
+ */
+class ArticulatedLink : public RigidBase {
+ public:
+  ArticulatedLink(scene::SceneNode* bodyNode,
+                  int index,
+                  const assets::ResourceManager& resMgr)
+      : RigidBase(bodyNode,
+                  0,  // TODO: pass an actual object ID. This is currently
+                      // assigned AFTER creation.
+                  resMgr),
+        mbIndex_(index) {}
+
+  ~ArticulatedLink() override = default;
+
+  //! Get the link's index within its multibody
+  int getIndex() const { return mbIndex_; }
+
+  //! List of visual components attached to this link. Used for NavMesh
+  //! recomputation. Each entry is a child node of this link's node and a string
+  //! key to reference the asset in ResourceManager.
+  std::vector<std::pair<esp::scene::SceneNode*, std::string>>
+      visualAttachments_;
+
+  // RigidBase overrides
+
+  /**
+   * @brief Initializes the link.
+   * @param resMgr a reference to ResourceManager object
+   * @param handle The handle for the template structure defining relevant
+   * phyiscal parameters for this object
+   * @return true if initialized successfully, false otherwise.
+   */
+  bool initialize(
+      CORRADE_UNUSED metadata::attributes::AbstractObjectAttributes::ptr
+          initAttributes) override {
+    return true;
+  }
+
+  /**
+   * @brief Finalize the creation of the link.
+   * @return whether successful finalization.
+   */
+  bool finalizeObject() override { return true; }
+
+  void setTransformation(
+      CORRADE_UNUSED const Magnum::Matrix4& transformation) override {
+    Corrade::Utility::Debug()
+        << "(setTransformation) - ArticulatedLink can't do this.";
+  }
+
+  void setTranslation(CORRADE_UNUSED const Magnum::Vector3& vector) override {
+    Corrade::Utility::Debug()
+        << "(setTranslation) - ArticulatedLink can't do this.";
+  }
+
+  void setRotation(
+      CORRADE_UNUSED const Magnum::Quaternion& quaternion) override {
+    Corrade::Utility::Debug()
+        << "(setRotation) - ArticulatedLink can't do this.";
+  }
+
+  void setRigidState(
+      CORRADE_UNUSED const core::RigidState& rigidState) override {
+    Corrade::Utility::Debug()
+        << "(setRigidState) - ArticulatedLink can't do this.";
+  }
+
+  void resetTransformation() override {
+    Corrade::Utility::Debug()
+        << "(resetTransformation) - ArticulatedLink can't do this.";
+  }
+
+  void translate(CORRADE_UNUSED const Magnum::Vector3& vector) override {
+    Corrade::Utility::Debug() << "(translate) - ArticulatedLink can't do this.";
+  }
+
+  void translateLocal(CORRADE_UNUSED const Magnum::Vector3& vector) override {
+    Corrade::Utility::Debug()
+        << "(translateLocal) - ArticulatedLink can't do this.";
+  }
+
+  void rotate(CORRADE_UNUSED const Magnum::Rad angleInRad,
+              CORRADE_UNUSED const Magnum::Vector3& normalizedAxis) override {
+    Corrade::Utility::Debug() << "(rotate) - ArticulatedLink can't do this.";
+  }
+
+  void rotateLocal(
+      CORRADE_UNUSED const Magnum::Rad angleInRad,
+      CORRADE_UNUSED const Magnum::Vector3& normalizedAxis) override {
+    Corrade::Utility::Debug()
+        << "(rotateLocal) - ArticulatedLink can't do this.";
+  }
+
+  void rotateX(CORRADE_UNUSED const Magnum::Rad angleInRad) override {
+    Corrade::Utility::Debug() << "(rotateX) - ArticulatedLink can't do this.";
+  }
+  void rotateY(CORRADE_UNUSED const Magnum::Rad angleInRad) override {
+    Corrade::Utility::Debug() << "(rotateY) - ArticulatedLink can't do this.";
+  }
+  void rotateZ(CORRADE_UNUSED const Magnum::Rad angleInRad) override {
+    Corrade::Utility::Debug() << "(rotateZ) - ArticulatedLink can't do this.";
+  }
+  void rotateXLocal(CORRADE_UNUSED const Magnum::Rad angleInRad) override {
+    Corrade::Utility::Debug()
+        << "(rotateXLocal) - ArticulatedLink can't do this.";
+  }
+  void rotateYLocal(CORRADE_UNUSED const Magnum::Rad angleInRad) override {
+    Corrade::Utility::Debug()
+        << "(rotateYLocal) - ArticulatedLink can't do this.";
+  }
+  void rotateZLocal(CORRADE_UNUSED const Magnum::Rad angleInRad) override {
+    Corrade::Utility::Debug()
+        << "(rotateZLocal) - ArticulatedLink can't do this.";
+  }
+
+  /**
+   * @brief Not used for articulated links.  Set or reset the object's state
+   * using the object's specified @p sceneInstanceAttributes_.
+   * @param defaultCOMCorrection The default value of whether COM-based
+   * translation correction needs to occur.
+   */
+  void resetStateFromSceneInstanceAttr(
+      CORRADE_UNUSED bool defaultCOMCorrection = false) override {
+    Corrade::Utility::Debug()
+        << "(resetStateFromSceneInstanceAttr) - ArticulatedLink can't do this.";
+  }
+
+ private:
+  /**
+   * @brief Finalize the initialization of this link.
+   * @return true if initialized successfully, false otherwise.
+   */
+  bool initialization_LibSpecific() override { return true; }
+  /**
+   * @brief any physics-lib-specific finalization code that needs to be run
+   * after creation.
+   * @return whether successful finalization.
+   */
+  bool finalizeObject_LibSpecific() override { return true; }
+
+  // end RigidBase overrides
+
+ protected:
+  int mbIndex_;
+
+ public:
+  ESP_SMART_POINTERS(ArticulatedLink)
+};
+
+////////////////////////////////////
+// Articulated Object
+////////////////////////////////////
+
+/**
+ * @brief An articulated rigid object (i.e. kinematic chain). Abstract class to
+ * be derived by physics simulator specific implementations.
+ */
+class ArticulatedObject : public esp::physics::PhysicsObjectBase {
+ public:
+  ArticulatedObject(scene::SceneNode* rootNode,
+                    assets::ResourceManager& resMgr,
+                    int objectId)
+      : PhysicsObjectBase(rootNode, objectId, resMgr){};
+
+  ~ArticulatedObject() override {
+    // clear links and delete their SceneNodes
+    std::vector<scene::SceneNode*> linkNodes;
+    for (auto& link : links_) {
+      linkNodes.push_back(&link.second->node());
+    }
+    links_.clear();
+    for (auto* node : linkNodes) {
+      delete node;
+    }
+  };
+
+  /**
+   * @brief Get a const reference to an ArticulatedLink SceneNode for
+   * info query purposes.
+   * @param linkId The ArticulatedLink ID or -1 for the baseLink.
+   * @return Const reference to the SceneNode.
+   */
+  const scene::SceneNode& getLinkSceneNode(int linkId = -1) const {
+    if (linkId == ID_UNDEFINED) {
+      // base link
+      return baseLink_->node();
+    }
+    CHECK(links_.count(linkId));
+    return links_.at(linkId)->node();
+  }
+
+  /**
+   * @brief Get pointers to a link's visual SceneNodes.
+   * @param linkId The ArticulatedLink ID or -1 for the baseLink.
+   * @return vector of pointers to the link's visual scene nodes.
+   */
+  std::vector<scene::SceneNode*> getLinkVisualSceneNodes(
+      int linkId = -1) const {
+    if (linkId == ID_UNDEFINED) {
+      // base link
+      return baseLink_->visualNodes_;
+    }
+    CHECK(links_.count(linkId));
+    return links_.at(linkId)->visualNodes_;
+  }
+
+  /**
+   * @brief Get pointers to all visual SceneNodes associated to this
+   * ArticulatedObject.
+   * @return vector of pointers to base and all links' visual scene nodes.
+   */
+  std::vector<scene::SceneNode*> getVisualSceneNodes() const override {
+    std::vector<scene::SceneNode*> allVisualNodes;
+    // base link
+    allVisualNodes.insert(allVisualNodes.end(), baseLink_->visualNodes_.begin(),
+                          baseLink_->visualNodes_.end());
+    // other links
+    for (const auto& link : links_) {
+      allVisualNodes.insert(allVisualNodes.end(),
+                            link.second->visualNodes_.begin(),
+                            link.second->visualNodes_.end());
+    }
+    return allVisualNodes;
+  }
+
+  /**
+   * @brief Initialize this ArticulatedObject from a parsed URDF stored in a
+   * URDFImporter.
+   *
+   * @param urdfImporter The URDFImporter which will initialize this object from
+   * a parsed URDF file.
+   * @param worldTransform Desired global root state of the ArticulatedObject.
+   * @param drawables DrawableGroup to which this object's visual shapes will be
+   * added.
+   * @param physicsNode The parent node of this object.
+   * @param fixedBase Whether or not the root link should be fixed or free.
+   */
+  virtual void initializeFromURDF(
+      CORRADE_UNUSED URDFImporter& urdfImporter,
+      CORRADE_UNUSED const Magnum::Matrix4& worldTransform,
+      CORRADE_UNUSED scene::SceneNode* physicsNode) {
+    CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+  };
+
+  /**
+   * @brief Get a link by index.
+   *
+   * @param id The id of the desired link. -1 for base link.
+   * @return The desired link.
+   */
+  ArticulatedLink& getLink(int id) {
+    // option to get the baseLink_ with id=-1
+    if (id == -1) {
+      return *baseLink_.get();
+    }
+    CHECK(links_.count(id));
+    return *links_.at(id).get();
+  }
+
+  /**
+   * @brief Get the number of links for this object (not including the base).
+   *
+   * @return The number of non-base links.
+   */
+  int getNumLinks() const { return links_.size(); }
+
+  /**
+   * @brief Get a list of link ids, not including the base (-1).
+   *
+   * @return A list of link ids for this object.
+   */
+  std::vector<int> getLinkIds() const {
+    std::vector<int> ids;
+    for (auto it = links_.begin(); it != links_.end(); ++it) {
+      ids.push_back(it->first);
+    }
+    return ids;
+  }
+
+  /**
+   * @brief Set forces/torques for all joints indexed by degrees of freedom.
+   *
+   * @param forces The desired joint forces/torques.
+   */
+  virtual void setJointForces(CORRADE_UNUSED const std::vector<float>& forces) {
+  }
+
+  /**
+   * @brief Add forces/torques to all joints indexed by degrees of freedom.
+   *
+   * @param forces The desired joint forces/torques to add.
+   */
+  virtual void addJointForces(CORRADE_UNUSED const std::vector<float>& forces) {
+  }
+
+  /**
+   * @brief Get current forces/torques for all joints indexed by degrees of
+   * freedom.
+   *
+   * @return The current joint forces/torques.
+   */
+  virtual std::vector<float> getJointForces() { return {}; }
+
+  /**
+   * @brief Set velocities for all joints indexed by degrees of freedom.
+   *
+   * @param vels The desired joint velocities.
+   */
+  virtual void setJointVelocities(
+      CORRADE_UNUSED const std::vector<float>& vels) {}
+
+  /**
+   * @brief Get current velocities for all joints indexed by degrees of freedom.
+   *
+   * @return The current joint velocities.
+   */
+  virtual std::vector<float> getJointVelocities() { return {}; }
+
+  /**
+   * @brief Set positions for all joints.
+   *
+   * Note that positions are not indexed by DoF because some joints (spherical)
+   * have a different number of DoFs from positions. For spherical joints, a
+   * block of 4 position values should specify the state as a unit quaternion (x
+   * y z w).
+   *
+   * @param positions The desired joint positions.
+   */
+  virtual void setJointPositions(
+      CORRADE_UNUSED const std::vector<float>& positions) {}
+
+  /**
+   * @brief Get positions for all joints.
+   *
+   * Note that positions are not indexed by DoF because some joints (spherical)
+   * have a different number of DoFs from positions. For spherical joints, a
+   * block of 4 position values should specify the state as a unit quaternion (x
+   * y z w).
+   *
+   * @return The current joint positions.
+   */
+  virtual std::vector<float> getJointPositions() { return {}; }
+
+  /**
+   * @brief Get position limits for all joints.
+   *
+   * @param upperLimits Whether to get upper or lower limits with this query.
+   * Default upper.
+   *
+   * @return The active joint position limits. Default implementation returns
+   * empty list.
+   */
+  virtual std::vector<float> getJointPositionLimits(
+      CORRADE_UNUSED bool upperLimits = false) {
+    return {};
+  }
+
+  /**
+   * @brief Get the linear velocity of the articulated object's root in the
+   * global frame.
+   *
+   * @return The root linear velocity.
+   */
+  virtual Mn::Vector3 getRootLinearVelocity() const { return Mn::Vector3(0); }
+
+  /**
+   * @brief Set the linear velocity of the articulated object's root in the
+   * global frame.
+   *
+   * @param linVel The root linear velocity.
+   */
+  virtual void setRootLinearVelocity(CORRADE_UNUSED const Mn::Vector3& linVel) {
+  }
+
+  /**
+   * @brief Get the angular velocity (omega) of the articulated object's root in
+   * the global frame.
+   *
+   * @return The root angular velocity (omega).
+   */
+  virtual Mn::Vector3 getRootAngularVelocity() const { return Mn::Vector3(0); }
+
+  /**
+   * @brief Set the angular velocity (omega) of the articulated object's root in
+   * the global frame.
+   *
+   * @param angVel The root angular velocity (omega).
+   */
+  virtual void setRootAngularVelocity(
+      CORRADE_UNUSED const Mn::Vector3& angVel) {}
+
+  /**
+   * @brief Add linear force to a link's COM specified in the global frame.
+   *
+   * @param linkId The link's index.
+   * @param force The desired force to add.
+   */
+  virtual void addArticulatedLinkForce(CORRADE_UNUSED int linkId,
+                                       CORRADE_UNUSED Magnum::Vector3 force) {}
+
+  /**
+   * @brief Get the friction coefficient for a link.
+   *
+   * @param linkId The link's index.
+   * @return The link's friction coefficient.
+   */
+  virtual float getArticulatedLinkFriction(CORRADE_UNUSED int linkId) {
+    return 0;
+  }
+
+  /**
+   * @brief Set the friction coefficient for a link.
+   *
+   * @param linkId The link's index.
+   * @param friction The link's friction coefficient.
+   */
+  virtual void setArticulatedLinkFriction(CORRADE_UNUSED int linkId,
+                                          CORRADE_UNUSED float friction) {}
+
+  /**
+   * @brief Get the type of the link's parent joint.
+   *
+   * @param linkId The link's index.
+   * @return The link's parent joint's type.
+   */
+  virtual JointType getLinkJointType(CORRADE_UNUSED int linkId) const {
+    return JointType::Invalid;
+  }
+
+  /**
+   * @brief Get the starting position for this link's parent joint in the global
+   * DoFs array.
+   *
+   * @param linkId The link's index.
+   * @return The link's starting DoF index.
+   */
+  virtual int getLinkDoFOffset(CORRADE_UNUSED int linkId) const { return -1; }
+
+  /**
+   * @brief Get the number of DoFs for this link's parent joint.
+   *
+   * @param linkId The link's index.
+   * @return The number of DoFs for this link's parent joint.
+   */
+  virtual int getLinkNumDoFs(CORRADE_UNUSED int linkId) const { return 0; }
+
+  /**
+   * @brief Get the starting position for this link's parent joint in the global
+   * positions array.
+   *
+   * @param linkId The link's index.
+   * @return The link's starting position index.
+   */
+  virtual int getLinkJointPosOffset(CORRADE_UNUSED int linkId) const {
+    return -1;
+  }
+
+  /**
+   * @brief Get the number of positions for this link's parent joint.
+   *
+   * @param linkId The link's index.
+   * @return The number of positions for this link's parent joint.
+   */
+  virtual int getLinkNumJointPos(CORRADE_UNUSED int linkId) const { return 0; }
+
+  /**
+   * @brief reset the articulated object state by clearing forces and zeroing
+   * positions and velocities. Does not change root state.
+   */
+  virtual void reset() {}
+
+  /**
+   * @brief Check if this object can be de-activated (i.e. sleep).
+   *
+   * @return Whether or not the object is able to deactivate.
+   */
+  virtual bool getCanSleep() { return false; }
+
+  /**
+   * @brief Set whether articulated object state is automatically clamped to
+   * configured joint limits before physics simulation.
+   */
+  void setAutoClampJointLimits(bool autoClamp) {
+    autoClampJointLimits_ = autoClamp;
+  }
+
+  /**
+   * @brief Query whether articulated object state is automatically clamped to
+   * configured joint limits before physics simulation.
+   */
+  bool getAutoClampJointLimits() const { return autoClampJointLimits_; }
+
+  /**
+   * @brief Clamp current pose to joint limits.
+   * See derived implementations.
+   */
+  virtual void clampJointLimits() {
+    Magnum::Debug{} << "No base implementation of \"clampJointLimits\". ";
+  }
+
+  //=========== END - Joint Motor API ===========
+
+  //! map PhysicsManager objectId to local multibody linkId
+  std::map<int, int> objectIdToLinkId_;
+
+  /**
+   * @brief Returns the @ref
+   * metadata::attributes::SceneAOInstanceAttributes used to place this
+   * Articulated object in the scene.
+   * @return a copy of the scene instance attributes used to place this object
+   * in the scene.
+   */
+  std::shared_ptr<metadata::attributes::SceneAOInstanceAttributes>
+  getSceneInstanceAttributes() const {
+    return PhysicsObjectBase::getSceneInstanceAttrInternal<
+        metadata::attributes::SceneAOInstanceAttributes>();
+  }
+
+ protected:
+  /**
+   * @brief Used to synchronize simulator's notion of the object state
+   * after it was changed kinematically. Must be called automatically on
+   * kinematic updates.  For ArticulatedObjects, the transformation of the root
+   * node is used to transform the root physical constructs.
+   */
+  void syncPose() override { this->setRootState(node().transformation()); }
+
+  /**
+   * @brief Called internally from syncPose()  Used to update physics
+   * constructs when kinematic transformations are performed manually.  See @ref
+   * esp::physics::PhysicsObjectBase for the transformations.
+   */
+  virtual void setRootState(CORRADE_UNUSED const Magnum::Matrix4& state) {}
+
+  //! map linkId to ArticulatedLink
+  std::map<int, ArticulatedLink::uptr> links_;
+
+  //! link object for the AO base
+  ArticulatedLink::uptr baseLink_;
+
+  //! if true, automatically clamp dofs to joint limits before physics
+  //! simulation steps
+  bool autoClampJointLimits_ = false;
+
+ public:
+  ESP_SMART_POINTERS(ArticulatedObject)
+};
+
+}  // namespace physics
+}  // namespace esp
+
+#endif  // ESP_PHYSICS_ARTICULATEDOBJECT_H_

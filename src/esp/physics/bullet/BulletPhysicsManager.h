@@ -15,9 +15,13 @@
 #include <Magnum/BulletIntegration/MotionState.h>
 #include <btBulletDynamicsCommon.h>
 
+#include "BulletDynamics/ConstraintSolver/btPoint2PointConstraint.h"
 #include "BulletDynamics/Featherstone/btMultiBodyConstraintSolver.h"
-#include "BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h"
+#include "BulletDynamics/Featherstone/btMultiBodyFixedConstraint.h"
+#include "BulletDynamics/Featherstone/btMultiBodyJointMotor.h"
+#include "BulletDynamics/Featherstone/btMultiBodyPoint2Point.h"
 
+#include "BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h"
 #include "BulletRigidObject.h"
 #include "BulletRigidStage.h"
 #include "esp/physics/PhysicsManager.h"
@@ -52,16 +56,101 @@ class BulletPhysicsManager : public PhysicsManager {
   explicit BulletPhysicsManager(
       assets::ResourceManager& _resourceManager,
       const metadata::attributes::PhysicsManagerAttributes::cptr&
-          _physicsManagerAttributes)
-      : PhysicsManager(_resourceManager, _physicsManagerAttributes) {
-    collisionObjToObjIds_ =
-        std::make_shared<std::map<const btCollisionObject*, int>>();
-  };
+          _physicsManagerAttributes);
 
   /** @brief Destructor which destructs necessary Bullet physics structures.*/
   ~BulletPhysicsManager() override;
 
   //============ Simulator functions =============
+
+  /**
+   * @brief Load, parse, and import a URDF file instantiating an @ref
+   * BulletArticulatedObject in the world.  This version does not require
+   * drawables to be specified.
+   * @param filepath The fully-qualified filename for the URDF file describing
+   * the model the articulated object is to be built from.
+   * @param fixedBase Whether the base of the @ref ArticulatedObject should be
+   * fixed.
+   * @param globalScale A scale multiplier to be applied uniformly in 3
+   * dimensions to the entire @ref ArticulatedObject.
+   * @param massScale A scale multiplier to be applied to the mass of the all
+   * the components of the @ref ArticulatedObject.
+   * @param forceReload If true, reload the source URDF from file, replacing the
+   * cached model.
+   * @param lightSetup The string name of the desired lighting setup to use.
+   *
+   * @return A unique id for the @ref ArticulatedObject, allocated from the same
+   * id set as rigid objects.
+   */
+  int addArticulatedObjectFromURDF(
+      const std::string& filepath,
+      bool fixedBase = false,
+      float globalScale = 1.0,
+      float massScale = 1.0,
+      bool forceReload = false,
+      const std::string& lightSetup = DEFAULT_LIGHTING_KEY) override;
+
+  /**
+   * @brief Load, parse, and import a URDF file instantiating an @ref
+   * BulletArticulatedObject in the world.
+   * @param filepath The fully-qualified filename for the URDF file describing
+   * the model the articulated object is to be built from.
+   * @param drawables Reference to the scene graph drawables group to enable
+   * rendering of the newly initialized @ref ArticulatedObject.
+   * @param fixedBase Whether the base of the @ref ArticulatedObject should be
+   * fixed.
+   * @param globalScale A scale multiplier to be applied uniformly in 3
+   * dimensions to the entire @ref ArticulatedObject.
+   * @param massScale A scale multiplier to be applied to the mass of the all
+   * the components of the @ref ArticulatedObject.
+   * @param forceReload If true, reload the source URDF from file, replacing the
+   * cached model.
+   * @param lightSetup The string name of the desired lighting setup to use.
+   *
+   * @return A unique id for the @ref ArticulatedObject, allocated from the same
+   * id set as rigid objects.
+   */
+  int addArticulatedObjectFromURDF(
+      const std::string& filepath,
+      DrawableGroup* drawables,
+      bool fixedBase = false,
+      float globalScale = 1.0,
+      float massScale = 1.0,
+      bool forceReload = false,
+      const std::string& lightSetup = DEFAULT_LIGHTING_KEY) override;
+
+  /**
+   * @brief Use the metadata stored in io::URDF::Link to instance all visual
+   * shapes for a link into the SceneGraph.
+   *
+   * @param linkObject The Habitat-side ArticulatedLink to which visual shapes
+   * will be attached.
+   * @param link The io::URDF::Model's link with visual shape and transform
+   * metadata.
+   * @param drawables The SceneGraph's DrawableGroup with which the visual
+   * shapes will be rendered.
+   * @param lightSetup The string name of the desired lighting setup to use.
+   *
+   * @return Whether or not the render shape instancing was successful.
+   */
+  bool attachLinkGeometry(ArticulatedLink* linkObject,
+                          const std::shared_ptr<io::URDF::Link>& link,
+                          gfx::DrawableGroup* drawables,
+                          const std::string& lightSetup);
+
+  /**
+   * @brief Override of @ref PhysicsManager::removeObject to also remove any
+   * active Bullet physics constraints for the object.
+   */
+  void removeObject(const int physObjectID,
+                    bool deleteObjectNode = true,
+                    bool deleteVisualNode = true) override;
+
+  /**
+   * @brief Override of @ref PhysicsManager::removeArticulatedObject to also
+   * remove any active Bullet physics constraints for the object.
+   */
+  void removeArticulatedObject(int id) override;
 
   /** @brief Step the physical world forward in time. Time may only advance in
    * increments of @ref fixedTimeStep_. See @ref
@@ -143,6 +232,15 @@ class BulletPhysicsManager : public PhysicsManager {
   void debugDraw(const Magnum::Matrix4& projTrans) const override;
 
   /**
+   * @brief Return ContactPointData objects describing the contacts from the
+   * most recent physics substep.
+   *
+   * This implementation is roughly identical to PyBullet's getContactPoints.
+   * @return a vector with each entry corresponding to a single contact point.
+   */
+  std::vector<ContactPointData> getContactPoints() const override;
+
+  /**
    * @brief Cast a ray into the collision world and return a @ref RaycastResults
    * with hit information.
    *
@@ -167,15 +265,6 @@ class BulletPhysicsManager : public PhysicsManager {
    * @return the number of active contact points.
    */
   int getNumActiveContactPoints() override;
-
-  /**
-   * @brief Return ContactPointData objects describing the contacts from the
-   * most recent physics substep.
-   *
-   * This implementation is roughly identical to PyBullet's getContactPoints.
-   * @return a vector with each entry corresponding to a single contact point.
-   */
-  std::vector<ContactPointData> getContactPoints() const override;
 
   /**
    * @brief Perform discrete collision detection for the scene.
@@ -205,6 +294,13 @@ class BulletPhysicsManager : public PhysicsManager {
    * Overridden if called by dynamics-library-enabled PhysicsManager
    */
   esp::physics::ManagedRigidObject::ptr getRigidObjectWrapper() override;
+
+  /**
+   * @brief Create an articulated object wrapper appropriate for this physics
+   * manager. Overridden if called by dynamics-library-enabled PhysicsManager
+   */
+  esp::physics::ManagedArticulatedObject::ptr getArticulatedObjectWrapper()
+      override;
 
   //============ Object/Stage Instantiation =============
   /**
