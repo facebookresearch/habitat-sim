@@ -269,6 +269,9 @@ class ArticulatedLink : public RigidBase {
         << "(resetStateFromSceneInstanceAttr) - ArticulatedLink can't do this.";
   }
 
+  std::string linkName = "";
+  std::string linkJointName = "";
+
  private:
   /**
    * @brief Finalize the initialization of this link.
@@ -569,6 +572,31 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    */
   virtual JointType getLinkJointType(CORRADE_UNUSED int linkId) const {
     return JointType::Invalid;
+  }
+
+  /**
+   * @brief Get the name of the link's parent joint.
+   *
+   * @param linkId The link's index.
+   * @return The link's parent joint's name.
+   */
+  virtual std::string getLinkJointName(CORRADE_UNUSED int linkId) const {
+    CHECK(links_.count(linkId) != 0);
+    return links_.at(linkId)->linkJointName;
+  }
+
+  /**
+   * @brief Get the name of the link.
+   *
+   * @param linkId The link's index. -1 for base link.
+   * @return The link's name.
+   */
+  virtual std::string getLinkName(CORRADE_UNUSED int linkId) const {
+    if (linkId == -1) {
+      return baseLink_->linkName;
+    }
+    CHECK(links_.count(linkId) != 0);
+    return links_.at(linkId)->linkName;
   }
 
   /**

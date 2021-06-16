@@ -123,6 +123,8 @@ void BulletArticulatedObject::initializeFromURDF(
          urdfLinkIx < urdfImporter.getModel()->m_links.size(); ++urdfLinkIx) {
       int bulletLinkIx =
           u2b.cache->m_urdfLinkIndices2BulletLinkIndices[urdfLinkIx];
+      auto urdfLink = u2b.getModel()->m_links.at(
+          u2b.getModel()->m_linkIndicesToNames[urdfLinkIx]);
 
       ArticulatedLink* linkObject = nullptr;
       if (bulletLinkIx >= 0) {
@@ -130,6 +132,7 @@ void BulletArticulatedObject::initializeFromURDF(
             &physicsNode->createChild(), resMgr_, bWorld_, bulletLinkIx,
             collisionObjToObjIds_);
         linkObject = links_[bulletLinkIx].get();
+        linkObject->linkJointName = urdfLink->m_parentJoint.lock()->m_name;
       } else {
         if (!baseLink_) {
           baseLink_ = std::make_unique<BulletArticulatedLink>(
@@ -138,6 +141,7 @@ void BulletArticulatedObject::initializeFromURDF(
         }
         linkObject = baseLink_.get();
       }
+      linkObject->linkName = urdfLink->m_name;
 
       linkObject->node().setType(esp::scene::SceneNodeType::OBJECT);
     }

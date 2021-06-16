@@ -1064,8 +1064,12 @@ def test_articulated_object_joint_motors(test_asset):
             robot.remove_joint_motor(motor_id)
         assert len(robot.get_existing_joint_motor_ids()) == 0
 
+        print(f" L({-1}): name = {robot.get_link_name(-1)}")
         # iterate through links and setup/test joint motors
         for link_id in robot.get_link_ids():
+            print(
+                f" L({link_id}): name = {robot.get_link_name(link_id)} | joint_name = {robot.get_link_joint_name(link_id)}"
+            )
             if (
                 robot.get_link_joint_type(link_id)
                 == habitat_sim.physics.JointType.Spherical

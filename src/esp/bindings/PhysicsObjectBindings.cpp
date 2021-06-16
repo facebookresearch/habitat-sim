@@ -429,6 +429,16 @@ void declareArticulatedObjectWrapper(py::module& m,
             "'s link specified by the given link_id.")
                .c_str(),
            "link_id"_a)
+      .def("get_link_joint_name", &ManagedArticulatedObject::getLinkJointName,
+           ("Get the name of the parent joint for this " + objType +
+            "'s link specified by the given link_id.")
+               .c_str(),
+           "link_id"_a)
+      .def("get_link_name", &ManagedArticulatedObject::getLinkName,
+           ("Get the name of the this " + objType +
+            "'s link specified by the given link_id.")
+               .c_str(),
+           "link_id"_a)
       .def("add_link_force", &ManagedArticulatedObject::addArticulatedLinkForce,
            ("Apply the given force to this " + objType +
             "'s link specified by the given link_id")

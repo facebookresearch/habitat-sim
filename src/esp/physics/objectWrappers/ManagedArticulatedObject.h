@@ -160,6 +160,20 @@ class ManagedArticulatedObject
     return JointType::Invalid;
   }
 
+  std::string getLinkJointName(int linkId) const {
+    if (auto sp = getObjectReference()) {
+      return sp->getLinkJointName(linkId);
+    }
+    return "";
+  }
+
+  std::string getLinkName(int linkId) const {
+    if (auto sp = getObjectReference()) {
+      return sp->getLinkName(linkId);
+    }
+    return "";
+  }
+
   int getLinkDoFOffset(int linkId) const {
     if (auto sp = getObjectReference()) {
       return sp->getLinkDoFOffset(linkId);
