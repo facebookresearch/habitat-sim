@@ -82,7 +82,7 @@ class ArticulatedLink : public RigidBase {
    * @brief Initializes the link.
    * @param resMgr a reference to ResourceManager object
    * @param handle The handle for the template structure defining relevant
-   * phyiscal parameters for this object
+   * physical parameters for this object
    * @return true if initialized successfully, false otherwise.
    */
   bool initialize(

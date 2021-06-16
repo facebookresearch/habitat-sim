@@ -1266,7 +1266,7 @@ class Simulator {
   /**
    * @brief Instance all the objects in the scene based on the current active
    * schene's scene instance configuration.
-   * @return whether object creation and placement is completed succesfully
+   * @return whether object creation and placement is completed successfully
    */
   bool instanceObjectsForActiveScene();
 
@@ -1274,7 +1274,7 @@ class Simulator {
    * @brief Instance all the articulated objects in the scene based on the
    * current active schene's scene instance configuration.
    * @return whether articulated object creation and placement is completed
-   * succesfully
+   * successfully
    */
   bool instanceArticulatedObjectsForActiveScene();
 

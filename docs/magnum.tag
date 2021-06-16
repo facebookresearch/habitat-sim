@@ -2620,7 +2620,7 @@
       <arglist></arglist>
       <enumvalue file="namespaceMagnum.html" anchor="ad1e6da3c6e20d9bc3d488f0126c5c21da21a5bcd08cdd088335d18f69f74653cb">LoadTemporary</enumvalue>
       <enumvalue file="namespaceMagnum.html" anchor="ad1e6da3c6e20d9bc3d488f0126c5c21da3abc4c0a3801b18b2ac7bd4f661c1f46">LoadPermanent</enumvalue>
-      <enumvalue file="namespaceMagnum.html" anchor="ad1e6da3c6e20d9bc3d488f0126c5c21daec8db16682dce388085f20c20903b0cf">LoadPernament</enumvalue>
+      <enumvalue file="namespaceMagnum.html" anchor="ad1e6da3c6e20d9bc3d488f0126c5c21daec8db16682dce388085f20c20903b0cf">LoadPermanent</enumvalue>
       <enumvalue file="namespaceMagnum.html" anchor="ad1e6da3c6e20d9bc3d488f0126c5c21dad3d2e617335f08df83599665eef8a418">Close</enumvalue>
     </member>
     <member kind="function">
@@ -24919,7 +24919,7 @@
     <docanchor file="classMagnum_1_1GL_1_1Mesh" title="Indexed mesh">GL-Mesh-configuration-indexed</docanchor>
     <docanchor file="classMagnum_1_1GL_1_1Mesh" title="Specific formats of vertex data">GL-Mesh-configuration-formats</docanchor>
     <docanchor file="classMagnum_1_1GL_1_1Mesh" title="Dynamically specified attributes">GL-Mesh-configuration-dynamic</docanchor>
-    <docanchor file="classMagnum_1_1GL_1_1Mesh" title="Transfering buffer ownership">GL-Mesh-buffer-ownership</docanchor>
+    <docanchor file="classMagnum_1_1GL_1_1Mesh" title="Transferring buffer ownership">GL-Mesh-buffer-ownership</docanchor>
     <docanchor file="classMagnum_1_1GL_1_1Mesh" title="Rendering meshes">GL-Mesh-rendering</docanchor>
     <docanchor file="classMagnum_1_1GL_1_1Mesh" title="WebGL restrictions">GL-Mesh-webgl-restrictions</docanchor>
     <docanchor file="classMagnum_1_1GL_1_1Mesh" title="Performance optimizations">GL-Mesh-performance-optimization</docanchor>
@@ -66851,7 +66851,7 @@
       <arglist></arglist>
       <enumvalue file="namespaceMagnum.html" anchor="ad1e6da3c6e20d9bc3d488f0126c5c21da21a5bcd08cdd088335d18f69f74653cb">LoadTemporary</enumvalue>
       <enumvalue file="namespaceMagnum.html" anchor="ad1e6da3c6e20d9bc3d488f0126c5c21da3abc4c0a3801b18b2ac7bd4f661c1f46">LoadPermanent</enumvalue>
-      <enumvalue file="namespaceMagnum.html" anchor="ad1e6da3c6e20d9bc3d488f0126c5c21daec8db16682dce388085f20c20903b0cf">LoadPernament</enumvalue>
+      <enumvalue file="namespaceMagnum.html" anchor="ad1e6da3c6e20d9bc3d488f0126c5c21daec8db16682dce388085f20c20903b0cf">LoadPermanent</enumvalue>
       <enumvalue file="namespaceMagnum.html" anchor="ad1e6da3c6e20d9bc3d488f0126c5c21dad3d2e617335f08df83599665eef8a418">Close</enumvalue>
     </member>
     <member kind="enumeration">

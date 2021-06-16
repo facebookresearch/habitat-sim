@@ -412,7 +412,7 @@ void BulletPhysicsManager::stepPhysics(double dt) {
   for (auto& objectItr : existingObjects_) {
     VelocityControl::ptr velControl = objectItr.second->getVelocityControl();
     if (objectItr.second->getMotionType() == MotionType::KINEMATIC) {
-      // kinematic velocity control intergration
+      // kinematic velocity control integration
       if (velControl->controllingAngVel || velControl->controllingLinVel) {
         objectItr.second->setRigidState(velControl->integrateTransform(
             dt, objectItr.second->getRigidState()));

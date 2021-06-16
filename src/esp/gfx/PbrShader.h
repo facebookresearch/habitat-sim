@@ -160,8 +160,8 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
     /*
      * Precomputed tangent as the vertex attribute
-     * Otherwise, it will be computed in the fragement shader dynamically
-     * see PBR fragement shader code for more details
+     * Otherwise, it will be computed in the fragment shader dynamically
+     * see PBR fragment shader code for more details
      * Requires the @ref Tangent4 attribute to be present.
      */
     PrecomputedTangent = 1 << 10,
@@ -432,7 +432,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
   int lightColorsUniform_ = ID_UNDEFINED;
   int lightRangesUniform_ = ID_UNDEFINED;
-  // In the fragement shader, the "LightDirection" is a vec4.
+  // In the fragment shader, the "LightDirection" is a vec4.
   // when w == 0, it means .xyz is the light direction;
   // when w == 1, it means it is the light position, NOT the direction;
   int lightDirectionsUniform_ = ID_UNDEFINED;

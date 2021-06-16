@@ -24,7 +24,7 @@ enum TextureUnit : uint8_t {
 };
 }
 // Interface class for various cubemap based camera shaders, such as "Double
-// Sphere Camera" (fisheye), "Field-of-View Camera" (fisheye), "equiRectanglar"
+// Sphere Camera" (fisheye), "Field-of-View Camera" (fisheye), "equiRectangular"
 // etc.
 class CubeMapShaderBase : public Magnum::GL::AbstractShaderProgram {
  public:

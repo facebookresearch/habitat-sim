@@ -271,7 +271,7 @@ int PhysicsManager::addArticulatedObjectInstance(
     const std::string& lightSetup) {
   std::string errMsgTmplt = "PhysicsManager::addObjectInstance : ";
 
-  // Get drawables from simulator. TODO: Support non-existant simulator?
+  // Get drawables from simulator. TODO: Support non-existent simulator?
   auto& drawables = simulator_->getDrawableGroup();
 
   // call object creation (resides only in physics library-based derived physics
@@ -420,7 +420,7 @@ void PhysicsManager::stepPhysics(double dt) {
   while (worldTime_ < targetTime) {
     // per fixed-step operations can be added here
 
-    // kinematic velocity control intergration
+    // kinematic velocity control integration
     for (auto& object : existingObjects_) {
       VelocityControl::ptr velControl = object.second->getVelocityControl();
       if (velControl->controllingAngVel || velControl->controllingLinVel) {

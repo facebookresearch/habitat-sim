@@ -202,7 +202,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   /**
    * @brief Initialize static scene collision geometry from loaded mesh data.
    * Only one 'scene' may be initialized per simulated world, but this scene may
-   * contain several components (e.g. GLB heirarchy).
+   * contain several components (e.g. GLB hierarchy).
    *
    * @param initAttributes The attributes structure defining physical
    * properties of the scene.  Must be a copy of the attributes stored in the
@@ -597,7 +597,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
 
 #ifdef ESP_BUILD_WITH_VHACD
   /** @brief Initializes a new VoxelWrapper with a boundary voxelization using
-   * VHACD's voxelization libary and assigns it to a rigid body.
+   * VHACD's voxelization library and assigns it to a rigid body.
    * @param  physObjectID The object ID and key identifying the object in @ref
    * PhysicsManager::existingObjects_.
    * @param resolution Represents the approximate number of voxels in the new
@@ -607,7 +607,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
                             const int resolution = 1000000);
 
   /** @brief Initializes a new VoxelWrapper with a boundary voxelization using
-   * VHACD's voxelization libary and assigns it to the stage's rigid body.
+   * VHACD's voxelization library and assigns it to the stage's rigid body.
    * @param resolution Represents the approximate number of voxels in the new
    * voxelization.
    */

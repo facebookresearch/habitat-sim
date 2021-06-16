@@ -178,7 +178,7 @@ void initAttributesBindings(py::module& m) {
       .def_property_readonly(
           "collision_asset_is_primitive",
           &AbstractObjectAttributes::getCollisionAssetIsPrimitive,
-          R"(Whether collisions invloving constructions built from
+          R"(Whether collisions involving constructions built from
           this template should be solved using an internally sourced
           primitive.)")
       .def_property_readonly(
@@ -194,7 +194,7 @@ void initAttributesBindings(py::module& m) {
       .def_property_readonly(
           "is_dirty", &AbstractObjectAttributes::getIsDirty,
           R"(Whether values in this attributes have been changed requiring
-          re-registartion before they can be used an object can be created. )");
+          re-registration before they can be used an object can be created. )");
 
   // ==== ObjectAttributes ====
   py::class_<ObjectAttributes, AbstractObjectAttributes, ObjectAttributes::ptr>(

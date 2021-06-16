@@ -826,7 +826,7 @@ bool Parser::validateMeshFile(std::string& meshFilename) {
       Corrade::Utility::Directory::join(urdfDirectory, meshFilename);
 
   bool meshSuccess = false;
-  // defer asset loading to instancing time. Check asset file existance here.
+  // defer asset loading to instancing time. Check asset file existence here.
   meshSuccess = Corrade::Utility::Directory::exists(meshFilePath);
 
   if (meshSuccess) {
@@ -1045,7 +1045,7 @@ bool Parser::parseJoint(Joint& joint, const tinyxml2::XMLElement* config) {
     joint.m_type = FixedJoint;
   else {
     Mn::Debug{} << "E - Joint " << joint.m_name
-                << " has unkown type: " << type_str;
+                << " has unknown type: " << type_str;
     return false;
   }
 

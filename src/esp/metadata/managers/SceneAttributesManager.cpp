@@ -56,7 +56,7 @@ void SceneAttributesManager::setValsFromJSONDoc(
   // Check for translation origin.  Default to unknown.
   attribs->setTranslationOrigin(getTranslationOriginVal(jsonConfig));
 
-  // Check for stage instance existance
+  // Check for stage instance existence
   if ((jsonConfig.HasMember("stage_instance")) &&
       (jsonConfig["stage_instance"].IsObject())) {
     attribs->setStageInstance(
@@ -66,7 +66,7 @@ void SceneAttributesManager::setValsFromJSONDoc(
                  << attribsDispName << ", or specification error.";
   }
 
-  // Check for object instances existance
+  // Check for object instances existence
   if (jsonConfig.HasMember("object_instances")) {
     if (jsonConfig["object_instances"].IsArray()) {
       const auto& objectArray = jsonConfig["object_instances"];
@@ -86,7 +86,7 @@ void SceneAttributesManager::setValsFromJSONDoc(
     }
   }
 
-  // Check for articulated object instances existance
+  // Check for articulated object instances existence
   if ((jsonConfig.HasMember("articulated_object_instances")) &&
       (jsonConfig["articulated_object_instances"].IsArray())) {
     const auto& articulatedObjArray =

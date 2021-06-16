@@ -410,7 +410,7 @@ class AssetAttributesManager
       CORRADE_UNUSED attributes::AbstractPrimitiveAttributes::ptr& _defaultObj)
       override {
     LOG(WARNING) << "::setDefaultObject : Overriding "
-                    "defualt objects for PrimitiveAssetAttributes not "
+                    "default objects for PrimitiveAssetAttributes not "
                     "currently supported.  Aborting.";
     this->defaultObj_ = nullptr;
   }  // AssetAttributesManager::setDefaultObject

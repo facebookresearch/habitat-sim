@@ -100,7 +100,7 @@ void declareBaseWrapperManager(py::module& m,
            "handle"_a, "lock"_a)
       .def("set_lock_by_substring", &MgrClass::setLockBySubstring,
            ("This sets the lock state for all  " + objType +
-            "s whose handles either contain or explictly do not contain the "
+            "s whose handles either contain or explicitly do not contain the "
             "passed search_str. Returns a list of handles for  " +
             objType +
             "s locked by this function call. Lock == True makes the  " +
@@ -127,7 +127,7 @@ void declareBaseWrapperManager(py::module& m,
            ("This removes a list of all the  " + objType +
             "s referenced in the library that have not been marked undeletable "
             "by the system or read-only by the user and whose handles either "
-            "contain or explictly do not contain the passed search_str.")
+            "contain or explicitly do not contain the passed search_str.")
                .c_str(),
            "search_str"_a = "", "contains"_a = true)
       .def("remove_object_by_id", &MgrClass::removeObjectByID,

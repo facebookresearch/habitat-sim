@@ -274,7 +274,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
   }
 
   /**
-   * @brief TEMPRARY set discovered fully qualified file name along with
+   * @brief TEMPORARY set discovered fully qualified file name along with
    * simplified key for articulated object model file names. This will be
    * removed when ArticulatedModelManager is complete.
    * @param key Key in map built from simplified file name.

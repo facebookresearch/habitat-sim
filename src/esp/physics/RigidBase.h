@@ -57,7 +57,7 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
   /**
    * @brief Initializes the @ref RigidObject or @ref
    * esp::physics::RigidStage that inherits from this class.  This is overridden
-   * @param initAttributes The template structure defining relevant phyiscal
+   * @param initAttributes The template structure defining relevant physical
    * parameters for this object
    * @return true if initialized successfully, false otherwise.
    */

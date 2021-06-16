@@ -27,7 +27,7 @@
 #include "esp/sensor/VisualSensor.h"
 #include "esp/sim/Simulator.h"
 
-// There is a depth buffer overriden even when the depth test and depth buffer
+// There is a depth buffer overridden even when the depth test and depth buffer
 // writing is diabled. It was observed only on Mac OSX, not on linux. Suspect it
 // is a bug in the GL driver on Mac.
 #ifdef CORRADE_TARGET_APPLE

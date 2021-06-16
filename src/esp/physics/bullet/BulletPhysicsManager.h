@@ -47,7 +47,7 @@ class BulletPhysicsManager : public PhysicsManager {
  public:
   /**
    * @brief Construct a @ref BulletPhysicsManager with access to specific
-   * resourse assets.
+   * resources assets.
    *
    * @param _resourceManager The @ref esp::assets::ResourceManager which
    * tracks the assets this
