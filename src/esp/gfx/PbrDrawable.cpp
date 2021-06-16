@@ -159,6 +159,10 @@ Mn::ResourceKey PbrDrawable::getShaderKey(Mn::UnsignedInt lightCount,
 }
 
 PbrDrawable& PbrDrawable::updateShader() {
+  if (!createRenderer_) {
+    return *this;
+  }
+
   unsigned int lightCount = lightSetup_->size();
   if (!shader_ || shader_->lightCount() != lightCount ||
       shader_->flags() != flags_) {

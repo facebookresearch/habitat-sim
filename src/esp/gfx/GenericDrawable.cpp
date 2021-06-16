@@ -62,10 +62,8 @@ GenericDrawable::GenericDrawable(scene::SceneNode& node,
 
   createRenderer_ = createRenderer;
 
-  if (createRenderer_) {
-    // update the shader early here to to avoid doing it during the render loop
-    updateShader();
-  }
+  // update the shader early here to to avoid doing it during the render loop
+  updateShader();
 }
 
 void GenericDrawable::setLightSetup(const Mn::ResourceKey& resourceKey) {
@@ -156,6 +154,10 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
 }
 
 void GenericDrawable::updateShader() {
+  if (!createRenderer_) {
+    return;
+  }
+
   Mn::UnsignedInt lightCount = lightSetup_->size();
 
   if (!shader_ || shader_->lightCount() != lightCount ||

@@ -2055,7 +2055,7 @@ void ResourceManager::addComponent(
   if (meshIDLocal != ID_UNDEFINED) {
     const int meshID = metaData.meshIndex.first + meshIDLocal;
     Magnum::GL::Mesh* mesh = meshes_.at(meshID)->getMagnumGLMesh();
-    if (g_createMagnumRenderer) {
+    if (getCreateRenderer()) {
       CORRADE_INTERNAL_ASSERT(mesh);
     } else {
       CORRADE_INTERNAL_ASSERT(!mesh);
