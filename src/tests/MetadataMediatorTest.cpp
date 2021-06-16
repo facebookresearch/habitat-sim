@@ -443,10 +443,10 @@ TEST_F(MetadataMediatorTest, testDataset1) {
   LOG(INFO) << "Starting test LoadArticulatedObjects";
 
   namespace Dir = Cr::Utility::Directory;
-  // verify # of urdf filepaths loaded - should be 5;
+  // verify # of urdf filepaths loaded - should be 6;
   const std::map<std::string, std::string>& urdfTestFilenames =
       MM_->getArticulatedObjectModelFilenames();
-  ASSERT_EQ(urdfTestFilenames.size(), 5);
+  ASSERT_EQ(urdfTestFilenames.size(), 6);
   // test that each stub name key corresponds to the actual file name passed
   // through the key making process
   for (std::map<std::string, std::string>::const_iterator iter =
