@@ -258,7 +258,7 @@ struct Link {
 };
 
 //! Generic structure representing an articulated object parsed from a URDF file
-//! independant from any physics implementation.
+//! independent from any physics implementation.
 class Model {
  public:
   //! name of the articulated object or robot

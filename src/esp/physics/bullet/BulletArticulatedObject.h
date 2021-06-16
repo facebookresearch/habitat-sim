@@ -21,7 +21,7 @@ namespace esp {
 
 namespace physics {
 
-// forward delcaration from BulletURDFImporter
+// forward declaration from BulletURDFImporter
 struct JointLimitConstraintInfo;
 
 ////////////////////////////////////

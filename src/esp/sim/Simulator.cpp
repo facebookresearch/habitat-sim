@@ -44,7 +44,7 @@ Simulator::Simulator(const SimulatorConfiguration& cfg,
     : metadataMediator_{std::move(_metadataMediator)},
       random_{core::Random::create(cfg.randomSeed)},
       requiresTextures_{Cr::Containers::NullOpt} {
-  // initalize members according to cfg
+  // initialize members according to cfg
   // NOTE: NOT SO GREAT NOW THAT WE HAVE virtual functions
   //       Maybe better not to do this reconfigure
   reconfigure(cfg);
@@ -136,7 +136,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
       context_ = gfx::WindowlessContext::create_unique(config_.gpuDeviceId);
     }
 
-    // reinitalize members
+    // reinitialize members
     if (!renderer_) {
       gfx::Renderer::Flags flags;
       if (!(*requiresTextures_))
@@ -199,7 +199,7 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
   // before anything else.
   seed(config_.randomSeed);
 
-  // initalize scene graph CAREFUL! previous scene graph is not deleted!
+  // initialize scene graph CAREFUL! previous scene graph is not deleted!
   // TODO:
   // We need to make a design decision here:
   // when instancing a new scene, shall we delete all of the previous scene

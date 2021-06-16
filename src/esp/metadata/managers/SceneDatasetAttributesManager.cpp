@@ -352,7 +352,7 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
               attrMgr->buildAttrSrcPathsFromJSONAndLoad(dsDir, ".glb", paths);
             }
           }
-          // TODO support other extention tags
+          // TODO support other extension tags
           if (pathsWarn) {
             LOG(WARNING)
                 << "::readDatasetJSONCell : \"" << tag << ".paths["

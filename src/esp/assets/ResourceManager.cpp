@@ -2289,7 +2289,7 @@ bool ResourceManager::isLightSetupCompatible(
 
 //! recursively join all sub-components of a mesh into a single unified
 //! MeshData.
-void ResourceManager::joinHeirarchy(
+void ResourceManager::joinHierarchy(
     MeshData& mesh,
     const MeshMetaData& metaData,
     const MeshTransformNode& node,
@@ -2312,7 +2312,7 @@ void ResourceManager::joinHeirarchy(
   }
 
   for (const auto& child : node.children) {
-    joinHeirarchy(mesh, metaData, child, transformFromLocalToWorld);
+    joinHierarchy(mesh, metaData, child, transformFromLocalToWorld);
   }
 }
 
@@ -2325,7 +2325,7 @@ std::unique_ptr<MeshData> ResourceManager::createJoinedCollisionMesh(
   const MeshMetaData& metaData = getMeshMetaData(filename);
 
   Magnum::Matrix4 identity;
-  joinHeirarchy(*mesh, metaData, metaData.root, identity);
+  joinHierarchy(*mesh, metaData, metaData.root, identity);
 
   return mesh;
 }

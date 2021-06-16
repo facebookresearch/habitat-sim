@@ -34,7 +34,7 @@ class GreedyGeodesicFollowerImpl {
    * @brief Ouputs from the greedy follower.
    *
    * Used to specify which action to take next
-   * or that an error occured
+   * or that an error occurred
    */
   enum class CODES : int {
     ERROR = -2,
@@ -115,7 +115,7 @@ class GreedyGeodesicFollowerImpl {
   /**
    * @brief Reset the planner.
    *
-   * Should be called whenever a different goal is choosen or start state
+   * Should be called whenever a different goal is chosen or start state
    * differs by more than action from the last start state
    */
   void reset();

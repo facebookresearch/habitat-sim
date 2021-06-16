@@ -98,7 +98,7 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
    * @brief Set the default shader to use for an object or stage.  Uses values
    * specified in stage or object attributes if not overridden here.  Uses map
    * of string values in json to @ref
-   * esp::metadata::atributes::ObjectInstanceShaderType int values.
+   * esp::metadata::attributes::ObjectInstanceShaderType int values.
    */
   void setShaderType(int shader_type) { setInt("shader_type", shader_type); }
   int getShaderType() const { return getInt("shader_type"); }

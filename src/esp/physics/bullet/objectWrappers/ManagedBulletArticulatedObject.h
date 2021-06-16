@@ -49,13 +49,13 @@ class ManagedBulletArticulatedObject
 #else
   //! no bullet version
   bool contactTest() {
-    LOG(WARNING) << "This functionaliy requires Habitat-Sim to be compiled "
+    LOG(WARNING) << "This functionally requires Habitat-Sim to be compiled "
                     "with Bullet enabled..";
     return false;
   }
 
   std::shared_ptr<ArticulatedObject> getBulletObjectReference() const {
-    LOG(WARNING) << "This functionaliy requires Habitat-Sim to be compiled "
+    LOG(WARNING) << "This functionally requires Habitat-Sim to be compiled "
                     "with Bullet enabled..";
 
     return nullptr;
