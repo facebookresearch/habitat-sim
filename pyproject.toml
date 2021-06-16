@@ -24,8 +24,3 @@ exclude = '''
 skip_glob = ["*/deps/*", "*/build/*", "*/obselete/*"]
 profile = 'black'
 treat_comments_as_code = "# %%"
-
-[tool.pytest.ini_options]
-markers = [
-    "sim_benchmarks: marks tests which use pytest-benchmark for perf tracking of simulator features so they can be easily run together.)",
-]
