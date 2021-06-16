@@ -931,3 +931,52 @@ def test_articulated_object_dynamics(test_asset):
         sim.step_physics(0.5)
         assert robot.awake
         assert robot2.awake
+
+
+@pytest.mark.skipif(
+    not habitat_sim.built_with_bullet,
+    reason="ArticulatedObject API requires Bullet physics.",
+)
+def test_articulated_object_fixed_base_proxy():
+    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings["scene"] = "NONE"
+    cfg_settings["enable_physics"] = True
+
+    # loading the physical scene
+    hab_cfg = examples.settings.make_cfg(cfg_settings)
+
+    with habitat_sim.Simulator(hab_cfg) as sim:
+        art_obj_mgr = sim.get_articulated_object_manager()
+        rigid_obj_mgr = sim.get_rigid_object_manager()
+        obj_template_mgr = sim.get_object_template_manager()
+
+        robot_file = "data/test_assets/urdf/fixed_base_test.urdf"
+
+        # parse URDF and add an ArticulatedObject to the world with fixed base
+        robot = art_obj_mgr.add_articulated_object_from_urdf(
+            filepath=robot_file, fixed_base=True
+        )
+        assert robot.is_alive
+
+        # add a test object to the world
+        cube_prim_handle = obj_template_mgr.get_template_handles("cube")[0]
+        cube_obj = rigid_obj_mgr.add_object_by_template_handle(cube_prim_handle)
+        for it in range(2):
+            if it == 1:
+                # test updating the fixed base position
+                robot.translation = [0.2, 0.3, 0.4]
+                cube_obj.translation = robot.translation
+            # initial position should be intersecting with all components
+            assert robot.contact_test()
+            # move the Dynamic link out of the way
+            robot.joint_positions = [0.3]
+            # should still report contact because cube_obj is Dynamic
+            assert robot.contact_test()
+            # should not report contact once cube_obj is Static because base link is also Static
+            cube_obj.motion_type = habitat_sim.physics.MotionType.STATIC
+            assert not robot.contact_test()
+            cube_obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+            assert not robot.contact_test()
+            robot.joint_positions = [0.0]
+            assert robot.contact_test()
+            cube_obj.motion_type = habitat_sim.physics.MotionType.DYNAMIC

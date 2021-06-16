@@ -96,6 +96,20 @@ class BulletArticulatedObject : public ArticulatedObject {
                           const Magnum::Matrix4& worldTransform,
                           scene::SceneNode* physicsNode) override;
 
+  /**
+   * @brief Cosntruct a Static btRigidObject to act as a proxy collision object
+   * for the fixed base.
+   *
+   * This optimization reduces the collision island size for articulated objects
+   * with heavy branching (e.g. a counter with many drawers) resuling in better
+   * sleeping behavior (e.g. contact with the countertop should not activate all
+   * drawers and contained objects).
+   *
+   * To utilize this feature, the object URDF should mark fixed link collision
+   * shapes as part of the Static collision group (e.g. `<collision group="2">`)
+   */
+  void constructStaticRigidBaseObject();
+
   //! update the SceneNode state to match the simulation state
   void updateNodes(bool force = false) override;
 
