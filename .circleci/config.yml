@@ -478,6 +478,7 @@ jobs:
               python examples/example.py --scene data/scene_datasets/habitat-test-scenes/van-gogh-room.glb --silent --test_fps_regression $FPS_THRESHOLD
 
               #run the marked pytest-benchmark tests and print the results
+              export PYTHONPATH=$(pwd):$PYTHONPATH
               pytest -m sim_benchmarks
       - run:
           name: Run JavaScript tests
