@@ -29,6 +29,7 @@ def test_example_modules(args):
 
 
 # benchmark adding/removing articulated objects from URDF files
+@pytest.mark.sim_benchmarks
 @pytest.mark.skipif(
     not habitat_sim.built_with_bullet,
     reason="ArticulatedObject API requires Bullet physics.",

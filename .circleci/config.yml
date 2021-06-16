@@ -476,6 +476,9 @@ jobs:
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat; cd habitat-sim
               python examples/example.py --scene data/scene_datasets/habitat-test-scenes/van-gogh-room.glb --silent --test_fps_regression $FPS_THRESHOLD
+
+              #run the marked pytest-benchmark tests and print the results
+              pytest -m sim_benchmarks
       - run:
           name: Run JavaScript tests
           command: |
