@@ -23,14 +23,7 @@ This tutorial describes the Asset Viewer tool, which exists as both a `Collab`_,
     $ python path/to/habitat-sim/examples/tutorials/nb_python/asset_viewer.py
 
 
-Import necessary modules, define some convenience functions and initialize the :ref:`Simulator`.  Note that we override default settings to use the internally defined "none" scene (which is empty, and the 3rd person camera.)
-
-.. include:: ../../examples/tutorials/nb_python/asset_viewer.py
-    :code: py
-    :start-after: # [setup]
-    :end-before: # [/setup]
-
-Note that we override default settings to use the internally defined "none" scene (which is empty), and the 3rd person camera, before we initialize the :ref:`Simulator`.
+Here we initialize the :ref:`Simulator`. Note that we override default settings to use the internally defined "none" scene (which is empty), and the 3rd person camera, before we initialize the :ref:`Simulator`.
 
 .. include:: ../../examples/tutorials/nb_python/asset_viewer.py
     :code: py
