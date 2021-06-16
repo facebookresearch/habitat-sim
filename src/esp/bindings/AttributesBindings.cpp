@@ -164,12 +164,11 @@ void initAttributesBindings(py::module& m) {
       .def_property(
           "shader_type", &AbstractObjectAttributes::getShaderType,
           &AbstractObjectAttributes::setShaderType,
-          R"(The shader type [0=flat, 1=phong, 2=pbr] to use for this construction)")
+          R"(The shader type [0=material, 1=flat, 2=phong, 3=pbr] to use for this construction)")
       .def_property(
           "requires_lighting", &AbstractObjectAttributes::getRequiresLighting,
           &AbstractObjectAttributes::setRequiresLighting,
-          R"(Whether constructions built from this template should use phong
-          shading or not.)")
+          R"(If false, this object will be rendered flat, ignoring shader type settings.)")
       .def_property_readonly(
           "render_asset_is_primitive",
           &AbstractObjectAttributes::getRenderAssetIsPrimitive,
