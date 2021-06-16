@@ -58,6 +58,8 @@ class BulletPhysicsManager : public PhysicsManager {
         std::make_shared<std::map<const btCollisionObject*, int>>();
     if (_resourceManager.getCreateRenderer()) {
       debugDrawer_ = std::make_unique<Magnum::BulletIntegration::DebugDraw>();
+    } else {
+      LOG(INFO) << "WTF";
     }
   };
 

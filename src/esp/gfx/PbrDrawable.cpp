@@ -69,7 +69,7 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
     flags_ |= PbrShader::Flag::DoubleSided;
   }
 
-  createRenderer_ = createRenderer;
+  isRendererCreated = createRenderer;
 
   // Defer the shader initialization because at this point, the lightSetup may
   // not be done in the Simulator. Simulator itself is currently under
@@ -148,7 +148,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
     shader_->setTextureMatrix(materialData_->textureMatrix);
   }
 
-  shader_->draw(*mesh_);
+  shader_->draw(getMesh());
 }
 
 Mn::ResourceKey PbrDrawable::getShaderKey(Mn::UnsignedInt lightCount,
@@ -159,7 +159,9 @@ Mn::ResourceKey PbrDrawable::getShaderKey(Mn::UnsignedInt lightCount,
 }
 
 PbrDrawable& PbrDrawable::updateShader() {
-  if (!createRenderer_) {
+  // Block the function if there is no renderer. Otherwise this will segfault.
+  // We don't have use for a shader anyways if we are not rendering anything.
+  if (!isRendererCreated) {
     return *this;
   }
 

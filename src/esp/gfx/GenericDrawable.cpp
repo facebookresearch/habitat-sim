@@ -60,7 +60,7 @@ GenericDrawable::GenericDrawable(scene::SceneNode& node,
     flags_ |= Mn::Shaders::PhongGL::Flag::VertexColor;
   }
 
-  createRenderer_ = createRenderer;
+  isRendererCreated = createRenderer;
 
   // update the shader early here to to avoid doing it during the render loop
   updateShader();
@@ -150,11 +150,13 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
     shader_->bindNormalTexture(*(materialData_->normalTexture));
   }
 
-  shader_->draw(*mesh_);
+  shader_->draw(getMesh());
 }
 
 void GenericDrawable::updateShader() {
-  if (!createRenderer_) {
+  // Block the function if there is no renderer. Otherwise this will segfault.
+  // We don't have use for a shader anyways if we are not rendering anything.
+  if (!isRendererCreated) {
     return;
   }
 

@@ -26,7 +26,7 @@ void MeshVisualizerDrawable::draw(const Magnum::Matrix4& transformationMatrix,
   shader_.setProjectionMatrix(camera.projectionMatrix())
       .setTransformationMatrix(transformationMatrix);
 
-  shader_.draw(*mesh_);
+  shader_.draw(getMesh());
 
   Mn::GL::Renderer::setPolygonOffset(0.0f, 0.0f);
   Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::PolygonOffsetFill);

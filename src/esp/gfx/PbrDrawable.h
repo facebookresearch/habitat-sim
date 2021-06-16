@@ -86,8 +86,6 @@ class PbrDrawable : public Drawable {
   Magnum::Resource<Magnum::GL::AbstractShaderProgram, PbrShader> shader_;
   Magnum::Resource<MaterialData, PbrMaterialData> materialData_;
   Magnum::Resource<LightSetup> lightSetup_;
-
-  bool createRenderer_;
 };
 
 }  // namespace gfx

@@ -81,7 +81,7 @@ def make_configuration(make_video_during_simulation=False):
     # Enable gfx replay save. See also our call to sim.gfx_replay_manager.save_keyframe()
     # below.
     backend_cfg.enable_gfx_replay_save = True
-    backend_cfg.create_magnum_renderer = make_video_during_simulation
+    backend_cfg.create_renderer = make_video_during_simulation
 
     sensor_cfg = habitat_sim.CameraSensorSpec()
     sensor_cfg.resolution = [544, 720]

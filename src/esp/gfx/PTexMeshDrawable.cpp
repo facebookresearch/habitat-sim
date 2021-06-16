@@ -59,7 +59,7 @@ void PTexMeshDrawable::draw(const Magnum::Matrix4& transformationMatrix,
       .bindAdjFacesBufferTexture(adjFacesBufferTexture_)
 #endif
       .setMVPMatrix(camera.projectionMatrix() * transformationMatrix)
-      .draw(*mesh_);
+      .draw(getMesh());
 }
 
 }  // namespace gfx
