@@ -484,7 +484,9 @@ void declareArticulatedObjectWrapper(py::module& m,
                .c_str())
       .def("create_all_motors",
            &ManagedArticulatedObject::createMotorsForAllDofs,
-           ("Make motors for all of this " + objType + "'s DOFs.").c_str())
+           ("Make motors for all of this " + objType +
+            "'s links which support motors (Revolute, Prismatic, Spherical).")
+               .c_str())
       .def("create_joint_motor", &ManagedArticulatedObject::createJointMotor,
            ("Create a joint motor for the specified DOF on this " + objType +
             " using the provided JointMotorSettings")
@@ -555,10 +557,7 @@ void initPhysicsObjectBindings(py::module& m) {
       m, "ManagedBulletArticulatedObject")
       .def(
           "contact_test", &ManagedBulletArticulatedObject::contactTest,
-          R"(REQUIRES BULLET TO BE INSTALLED. Returns the result of a discrete collision test between this object and the world.)")
-      .def("supports_joint_motor",
-           &ManagedBulletArticulatedObject::supportsJointMotor,
-           R"(REQUIRES BULLET TO BE INSTALLED. )", "link_id"_a);
+          R"(REQUIRES BULLET TO BE INSTALLED. Returns the result of a discrete collision test between this object and the world.)");
 
 }  // initPhysicsObjectBindings
 

@@ -737,7 +737,8 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * @return A map of dofs -> motorIds for the new motors.
    */
   virtual std::map<int, int> createMotorsForAllDofs(
-      CORRADE_UNUSED JointMotorSettings settings = JointMotorSettings()) {
+      CORRADE_UNUSED const JointMotorSettings& settings =
+          JointMotorSettings()) {
     Magnum::Debug{} << "ArticulatedObject::createMotorsForAllDofs(): - ERROR, "
                        "SHOULD NOT BE CALLED WITHOUT BULLET ";
     return std::map<int, int>();

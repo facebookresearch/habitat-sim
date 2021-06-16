@@ -1053,6 +1053,7 @@ def test_articulated_object_joint_motors(test_asset):
         obj_template_mgr.register_template(cube_template)
         cube_obj = rigid_obj_mgr.add_object_by_template_handle(cube_prim_handle)
         cube_obj.translation = [0.0, -1.2, 0.0]
+        cube_obj.motion_type = habitat_sim.physics.MotionType.STATIC
 
         # parse URDF and add an ArticulatedObject to the world
         robot = art_obj_mgr.add_articulated_object_from_urdf(filepath=robot_file)
@@ -1064,8 +1065,9 @@ def test_articulated_object_joint_motors(test_asset):
             robot.remove_joint_motor(motor_id)
         assert len(robot.get_existing_joint_motor_ids()) == 0
 
-        print(f" L({-1}): name = {robot.get_link_name(-1)}")
         # iterate through links and setup/test joint motors
+        joint_motor_settings = None
+        print(f" L({-1}): name = {robot.get_link_name(-1)}")
         for link_id in robot.get_link_ids():
             print(
                 f" L({link_id}): name = {robot.get_link_name(link_id)} | joint_name = {robot.get_link_joint_name(link_id)}"
@@ -1074,36 +1076,51 @@ def test_articulated_object_joint_motors(test_asset):
                 robot.get_link_joint_type(link_id)
                 == habitat_sim.physics.JointType.Spherical
             ):
-                # test spherical joint motors
+                # construct a spherical JointMotorSettings
                 joint_motor_settings = habitat_sim.physics.JointMotorSettings(
                     spherical_position_target=mn.Quaternion(),
-                    position_gain=0.0,
+                    position_gain=1.0,
                     spherical_velocity_target=mn.Vector3(),
-                    velocity_gain=0.0,
-                    max_impulse=0.0,
+                    velocity_gain=0.1,
+                    max_impulse=10000.0,
                 )
-
-                # TODO: refactor this to start dof or link?
-                robot.create_joint_motor(link_id, joint_motor_settings)
             elif (
                 robot.get_link_joint_type(link_id)
                 == habitat_sim.physics.JointType.Prismatic
                 or robot.get_link_joint_type(link_id)
                 == habitat_sim.physics.JointType.Revolute
             ):
-                # test single dof joint motors
+                # construct a single dof JointMotorSettings
                 joint_motor_settings = habitat_sim.physics.JointMotorSettings(
                     position_target=0.0,
-                    position_gain=0.0,
+                    position_gain=0.2,
                     velocity_target=0.0,
-                    velocity_gain=0.0,
-                    max_impulse=0.0,
-                )
-                # TODO: setup
-                robot.create_joint_motor(
-                    robot.get_link_dof_offset(link_id), joint_motor_settings
+                    velocity_gain=0.1,
+                    max_impulse=1000.0,
                 )
             else:
                 # planar or fixed joints are not supported
                 continue
-            # TODO: normalize the API and move the creation here?
+            # create the motor from its settings
+            robot.create_joint_motor(link_id, joint_motor_settings)
+
+        # setup the camera for debug video
+        sim.agents[0].scene_node.translation = [0.0, -2.0, 2.0]
+        # output some test video
+        observations = []
+        while sim.get_world_time() < 4.0:
+            sim.step_physics(1.0 / 60.0)
+            observations.append(sim.get_sensor_observations())
+
+        target_positions = getRestPositions(robot)
+        assert np.allclose(target_positions, robot.joint_positions, atol=0.06)
+
+        # produce some test debug video
+        # from habitat_sim.utils import viz_utils as vut
+        # vut.make_video(
+        #     observations,
+        #     "color_sensor",
+        #     "color",
+        #     "test_physics_output"+test_asset.split("/")[-1],
+        #     open_vid=True,
+        # )

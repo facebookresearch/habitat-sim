@@ -32,13 +32,6 @@ class ManagedBulletArticulatedObject
     return false;
   }
 
-  bool supportsJointMotor(int linkIx) {
-    if (auto sp = getBulletObjectReference()) {
-      return sp->supportsJointMotor(linkIx);
-    }
-    return false;
-  }
-
  protected:
   /**
    * @brief This function accesses the
@@ -56,12 +49,6 @@ class ManagedBulletArticulatedObject
 #else
   //! no bullet version
   bool contactTest() {
-    LOG(WARNING) << "This functionaliy requires Habitat-Sim to be compiled "
-                    "with Bullet enabled..";
-    return false;
-  }
-
-  bool supportsJointMotor(int linkIx) {
     LOG(WARNING) << "This functionaliy requires Habitat-Sim to be compiled "
                     "with Bullet enabled..";
     return false;
