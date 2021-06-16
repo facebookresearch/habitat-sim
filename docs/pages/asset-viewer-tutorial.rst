@@ -1,0 +1,58 @@
+View Assets in Habitat-Sim
+##########################
+
+:ref-prefix:
+    habitat_sim.simulator
+    habitat_sim.sim
+
+:summary: This short tutorial demonstrates how to view asssets in Habitat-Sim using the Asset Viewer.
+
+.. contents::
+    :class: m-block m-default
+
+The example code below is available on `Collab`_, or runnable via:
+
+.. _Collab: <https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/master/examples/tutorials/colabs/asset_viewer.ipynb>
+
+.. code:: shell-session
+
+    $ python path/to/habitat-sim/examples/tutorials/nb_python/asset_viewer.py
+
+
+Import necessary modules, define some convenience functions and initialize the :ref:`Simulator`.  Note that we override default settings to use the internally defined "none" scene (which is empty, and the 3rd person camera.)
+
+.. include:: ../../examples/tutorials/nb_python/asset_viewer.py
+    :code: py
+    :start-after: # [setup]
+    :end-before: # [/setup]
+
+.. include:: ../../examples/tutorials/nb_python/asset_viewer.py
+    :code: py
+    :start-after: # [initialize]
+    :end-before: # [/initialize]
+
+`Upload an Asset and Choose it for Display`_
+============================================
+
+To specify the asset to be viewed, set 'object_to_view_path' to be the full path to the asset.  If executing this tool as a Google colab,
+you can upload an asset file to a location in the directory structure to the left of the screen, as is shown in the image below.
+
+.. include:: ../../examples/tutorials/nb_python/asset_viewer.py
+    :code: py
+    :start-after: # [specify_object]
+    :end-before: # [/specify_object]
+
+.. image:: images/asset-viewer-images/asset-viewer-1.png
+    :width: 60em
+
+`View the Asset, and Correct Inappropriate Orientation`_
+========================================================
+
+This code will compose a video of the asset of user-specified length that will show a single revolution around the asset.
+
+.. include:: ../../examples/tutorials/nb_python/asset_viewer.py
+    :code: py
+    :start-after: # [build_carousel_view]
+    :end-before: # [/build_carousel_view]
+
+You may find that the asset is displayed on its side (this will often be the case if the asset is a stage). If this is the case, set orientation_correction to True.
