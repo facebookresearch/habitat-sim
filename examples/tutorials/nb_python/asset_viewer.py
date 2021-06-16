@@ -46,12 +46,7 @@ import os
 import sys
 
 import git
-import magnum as mn
 import numpy as np
-
-# %matplotlib inline
-from matplotlib import pyplot as plt
-from PIL import Image
 
 import habitat_sim
 from habitat_sim.utils import common as ut
@@ -94,6 +89,170 @@ if "sim" not in globals():
     stage_attr_mgr = None
     global rigid_obj_mgr
     rigid_obj_mgr = None
+
+
+# %%
+# @title Define Configuration Utility Functions { display-mode: "form" }
+# @markdown (double click to show code)
+
+# @markdown This cell defines a number of utility functions used throughout the tutorial to make simulator reconstruction easy:
+# @markdown - make_cfg
+# @markdown - make_default_settings
+# @markdown - make_simulator_from_settings
+
+
+def make_cfg(settings):
+    sim_cfg = habitat_sim.SimulatorConfiguration()
+    sim_cfg.gpu_device_id = 0
+    sim_cfg.scene_id = settings["scene"]
+    sim_cfg.enable_physics = settings["enable_physics"]
+    # Optional; Specify the location of an existing scene dataset configuration
+    # that describes the locations and configurations of all the assets to be used
+    if "scene_dataset_config" in settings:
+        sim_cfg.scene_dataset_config_file = settings["scene_dataset_config"]
+    if "override_scene_light_defaults" in settings:
+        sim_cfg.override_scene_light_defaults = settings[
+            "override_scene_light_defaults"
+        ]
+    if "scene_light_setup" in settings:
+        sim_cfg.scene_light_setup = settings["scene_light_setup"]
+
+    # Note: all sensors must have the same resolution
+    sensor_specs = []
+    if settings["color_sensor_1st_person"]:
+        color_sensor_1st_person_spec = habitat_sim.CameraSensorSpec()
+        color_sensor_1st_person_spec.uuid = "color_sensor_1st_person"
+        color_sensor_1st_person_spec.sensor_type = habitat_sim.SensorType.COLOR
+        color_sensor_1st_person_spec.resolution = [
+            settings["height"],
+            settings["width"],
+        ]
+        color_sensor_1st_person_spec.postition = [0.0, settings["sensor_height"], 0.0]
+        color_sensor_1st_person_spec.orientation = [
+            settings["sensor_pitch"],
+            0.0,
+            0.0,
+        ]
+        color_sensor_1st_person_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
+        sensor_specs.append(color_sensor_1st_person_spec)
+    if settings["depth_sensor_1st_person"]:
+        depth_sensor_1st_person_spec = habitat_sim.CameraSensorSpec()
+        depth_sensor_1st_person_spec.uuid = "depth_sensor_1st_person"
+        depth_sensor_1st_person_spec.sensor_type = habitat_sim.SensorType.DEPTH
+        depth_sensor_1st_person_spec.resolution = [
+            settings["height"],
+            settings["width"],
+        ]
+        depth_sensor_1st_person_spec.postition = [0.0, settings["sensor_height"], 0.0]
+        depth_sensor_1st_person_spec.orientation = [
+            settings["sensor_pitch"],
+            0.0,
+            0.0,
+        ]
+        depth_sensor_1st_person_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
+        sensor_specs.append(depth_sensor_1st_person_spec)
+    if settings["semantic_sensor_1st_person"]:
+        semantic_sensor_1st_person_spec = habitat_sim.CameraSensorSpec()
+        semantic_sensor_1st_person_spec.uuid = "semantic_sensor_1st_person"
+        semantic_sensor_1st_person_spec.sensor_type = habitat_sim.SensorType.SEMANTIC
+        semantic_sensor_1st_person_spec.resolution = [
+            settings["height"],
+            settings["width"],
+        ]
+        semantic_sensor_1st_person_spec.postition = [
+            0.0,
+            settings["sensor_height"],
+            0.0,
+        ]
+        semantic_sensor_1st_person_spec.orientation = [
+            settings["sensor_pitch"],
+            0.0,
+            0.0,
+        ]
+        semantic_sensor_1st_person_spec.sensor_subtype = (
+            habitat_sim.SensorSubType.PINHOLE
+        )
+        sensor_specs.append(semantic_sensor_1st_person_spec)
+    if settings["color_sensor_3rd_person"]:
+        color_sensor_3rd_person_spec = habitat_sim.CameraSensorSpec()
+        color_sensor_3rd_person_spec.uuid = "color_sensor_3rd_person"
+        color_sensor_3rd_person_spec.sensor_type = habitat_sim.SensorType.COLOR
+        color_sensor_3rd_person_spec.resolution = [
+            settings["height"],
+            settings["width"],
+        ]
+        color_sensor_3rd_person_spec.postition = [
+            0.0,
+            settings["sensor_height"] + 0.2,
+            0.2,
+        ]
+        color_sensor_3rd_person_spec.orientation = [-math.pi / 4, 0, 0]
+        color_sensor_3rd_person_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
+        sensor_specs.append(color_sensor_3rd_person_spec)
+
+    # Here you can specify the amount of displacement in a forward action and the turn angle
+    agent_cfg = habitat_sim.agent.AgentConfiguration()
+    agent_cfg.sensor_specifications = sensor_specs
+
+    return habitat_sim.Configuration(sim_cfg, [agent_cfg])
+
+
+def make_default_settings():
+    settings = {
+        "width": 1280,  # Spatial resolution of the observations
+        "height": 720,
+        "scene": "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb",  # Scene path
+        "default_agent": 0,
+        "sensor_height": 1.5,  # Height of sensors in meters
+        "sensor_pitch": -math.pi / 8.0,  # sensor pitch (x rotation in rads)
+        "color_sensor_1st_person": True,  # RGB sensor
+        "color_sensor_3rd_person": False,  # RGB sensor 3rd person
+        "depth_sensor_1st_person": False,  # Depth sensor
+        "semantic_sensor_1st_person": False,  # Semantic sensor
+        "seed": 1,
+        "enable_physics": True,  # enable dynamics simulation
+    }
+    return settings
+
+
+def make_simulator_from_settings(sim_settings):
+    cfg = make_cfg(sim_settings)
+    # clean-up the current simulator instance if it exists
+    global sim
+    global obj_attr_mgr
+    global prim_attr_mgr
+    global stage_attr_mgr
+    global rigid_obj_mgr
+    global metadata_mediator
+
+    if sim != None:
+        sim.close()
+    # initialize the simulator
+    sim = habitat_sim.Simulator(cfg)
+    # Managers of various Attributes templates
+    obj_attr_mgr = sim.get_object_template_manager()
+    obj_attr_mgr.load_configs(str(os.path.join(data_path, "objects/example_objects")))
+    prim_attr_mgr = sim.get_asset_template_manager()
+    stage_attr_mgr = sim.get_stage_template_manager()
+    # Manager providing access to rigid objects
+    rigid_obj_mgr = sim.get_rigid_object_manager()
+    # get metadata_mediator
+    metadata_mediator = sim.metadata_mediator
+
+    # UI-populated handles used in various cells.  Need to initialize to valid
+    # value in case IPyWidgets are not available.
+    # Holds the user's desired file-based object template handle
+    global sel_file_obj_handle
+    sel_file_obj_handle = obj_attr_mgr.get_file_template_handles()[0]
+    # Holds the user's desired primitive-based object template handle
+    global sel_prim_obj_handle
+    sel_prim_obj_handle = obj_attr_mgr.get_synth_template_handles()[0]
+    # Holds the user's desired primitive asset template handle
+    global sel_asset_handle
+    sel_asset_handle = prim_attr_mgr.get_template_handles()[0]
+
+
+# [/setup]
 
 
 # %%
@@ -389,180 +548,13 @@ def show_template_properties(template):
         )
 
 
-# %%
-# @title Define Configuration Utility Functions { display-mode: "form" }
-# @markdown (double click to show code)
-
-# @markdown This cell defines a number of utility functions used throughout the tutorial to make simulator reconstruction easy:
-# @markdown - make_cfg
-# @markdown - make_default_settings
-# @markdown - make_simulator_from_settings
-
-
-def make_cfg(settings):
-    sim_cfg = habitat_sim.SimulatorConfiguration()
-    sim_cfg.gpu_device_id = 0
-    sim_cfg.scene_id = settings["scene"]
-    sim_cfg.enable_physics = settings["enable_physics"]
-    # Optional; Specify the location of an existing scene dataset configuration
-    # that describes the locations and configurations of all the assets to be used
-    if "scene_dataset_config" in settings:
-        sim_cfg.scene_dataset_config_file = settings["scene_dataset_config"]
-    if "override_scene_light_defaults" in settings:
-        sim_cfg.override_scene_light_defaults = settings[
-            "override_scene_light_defaults"
-        ]
-    if "scene_light_setup" in settings:
-        sim_cfg.scene_light_setup = settings["scene_light_setup"]
-
-    # Note: all sensors must have the same resolution
-    sensor_specs = []
-    if settings["color_sensor_1st_person"]:
-        color_sensor_1st_person_spec = habitat_sim.CameraSensorSpec()
-        color_sensor_1st_person_spec.uuid = "color_sensor_1st_person"
-        color_sensor_1st_person_spec.sensor_type = habitat_sim.SensorType.COLOR
-        color_sensor_1st_person_spec.resolution = [
-            settings["height"],
-            settings["width"],
-        ]
-        color_sensor_1st_person_spec.postition = [0.0, settings["sensor_height"], 0.0]
-        color_sensor_1st_person_spec.orientation = [
-            settings["sensor_pitch"],
-            0.0,
-            0.0,
-        ]
-        color_sensor_1st_person_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
-        sensor_specs.append(color_sensor_1st_person_spec)
-    if settings["depth_sensor_1st_person"]:
-        depth_sensor_1st_person_spec = habitat_sim.CameraSensorSpec()
-        depth_sensor_1st_person_spec.uuid = "depth_sensor_1st_person"
-        depth_sensor_1st_person_spec.sensor_type = habitat_sim.SensorType.DEPTH
-        depth_sensor_1st_person_spec.resolution = [
-            settings["height"],
-            settings["width"],
-        ]
-        depth_sensor_1st_person_spec.postition = [0.0, settings["sensor_height"], 0.0]
-        depth_sensor_1st_person_spec.orientation = [
-            settings["sensor_pitch"],
-            0.0,
-            0.0,
-        ]
-        depth_sensor_1st_person_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
-        sensor_specs.append(depth_sensor_1st_person_spec)
-    if settings["semantic_sensor_1st_person"]:
-        semantic_sensor_1st_person_spec = habitat_sim.CameraSensorSpec()
-        semantic_sensor_1st_person_spec.uuid = "semantic_sensor_1st_person"
-        semantic_sensor_1st_person_spec.sensor_type = habitat_sim.SensorType.SEMANTIC
-        semantic_sensor_1st_person_spec.resolution = [
-            settings["height"],
-            settings["width"],
-        ]
-        semantic_sensor_1st_person_spec.postition = [
-            0.0,
-            settings["sensor_height"],
-            0.0,
-        ]
-        semantic_sensor_1st_person_spec.orientation = [
-            settings["sensor_pitch"],
-            0.0,
-            0.0,
-        ]
-        semantic_sensor_1st_person_spec.sensor_subtype = (
-            habitat_sim.SensorSubType.PINHOLE
-        )
-        sensor_specs.append(semantic_sensor_1st_person_spec)
-    if settings["color_sensor_3rd_person"]:
-        color_sensor_3rd_person_spec = habitat_sim.CameraSensorSpec()
-        color_sensor_3rd_person_spec.uuid = "color_sensor_3rd_person"
-        color_sensor_3rd_person_spec.sensor_type = habitat_sim.SensorType.COLOR
-        color_sensor_3rd_person_spec.resolution = [
-            settings["height"],
-            settings["width"],
-        ]
-        color_sensor_3rd_person_spec.postition = [
-            0.0,
-            settings["sensor_height"] + 0.2,
-            0.2,
-        ]
-        color_sensor_3rd_person_spec.orientation = [-math.pi / 4, 0, 0]
-        color_sensor_3rd_person_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
-        sensor_specs.append(color_sensor_3rd_person_spec)
-
-    # Here you can specify the amount of displacement in a forward action and the turn angle
-    agent_cfg = habitat_sim.agent.AgentConfiguration()
-    agent_cfg.sensor_specifications = sensor_specs
-
-    return habitat_sim.Configuration(sim_cfg, [agent_cfg])
-
-
-def make_default_settings():
-    settings = {
-        "width": 1280,  # Spatial resolution of the observations
-        "height": 720,
-        "scene": "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb",  # Scene path
-        "default_agent": 0,
-        "sensor_height": 1.5,  # Height of sensors in meters
-        "sensor_pitch": -math.pi / 8.0,  # sensor pitch (x rotation in rads)
-        "color_sensor_1st_person": True,  # RGB sensor
-        "color_sensor_3rd_person": False,  # RGB sensor 3rd person
-        "depth_sensor_1st_person": False,  # Depth sensor
-        "semantic_sensor_1st_person": False,  # Semantic sensor
-        "seed": 1,
-        "enable_physics": True,  # enable dynamics simulation
-    }
-    return settings
-
-
-def make_simulator_from_settings(sim_settings):
-    cfg = make_cfg(sim_settings)
-    # clean-up the current simulator instance if it exists
-    global sim
-    global obj_attr_mgr
-    global prim_attr_mgr
-    global stage_attr_mgr
-    global rigid_obj_mgr
-    global metadata_mediator
-
-    if sim != None:
-        sim.close()
-    # initialize the simulator
-    sim = habitat_sim.Simulator(cfg)
-    # Managers of various Attributes templates
-    obj_attr_mgr = sim.get_object_template_manager()
-    obj_attr_mgr.load_configs(str(os.path.join(data_path, "objects/example_objects")))
-    prim_attr_mgr = sim.get_asset_template_manager()
-    stage_attr_mgr = sim.get_stage_template_manager()
-    # Manager providing access to rigid objects
-    rigid_obj_mgr = sim.get_rigid_object_manager()
-    # get metadata_mediator
-    metadata_mediator = sim.metadata_mediator
-
-    # UI-populated handles used in various cells.  Need to initialize to valid
-    # value in case IPyWidgets are not available.
-    # Holds the user's desired file-based object template handle
-    global sel_file_obj_handle
-    sel_file_obj_handle = obj_attr_mgr.get_file_template_handles()[0]
-    # Holds the user's desired primitive-based object template handle
-    global sel_prim_obj_handle
-    sel_prim_obj_handle = obj_attr_mgr.get_synth_template_handles()[0]
-    # Holds the user's desired primitive asset template handle
-    global sel_asset_handle
-    sel_asset_handle = prim_attr_mgr.get_template_handles()[0]
-
-
-# %%
 # @title Define Simulation Utility Functions { display-mode: "form" }
 # @markdown (double click to show code)
 
 # @markdown - simulate
-# @markdown - init_camera_track_config
-# @markdown - restore_camera_track_config
-# @markdown - camera_track_simulate
-
-
 def simulate(sim, dt=1.0, get_frames=True):
     # simulate dt seconds at 60Hz to the nearest fixed timestep
-    print("Simulating " + str(dt) + " world seconds.")
+    print("Simulating {:.3f} world seconds.".format(dt))
     observations = []
     start_time = sim.get_world_time()
     while sim.get_world_time() < start_time + dt:
@@ -570,144 +562,6 @@ def simulate(sim, dt=1.0, get_frames=True):
         if get_frames:
             observations.append(sim.get_sensor_observations())
     return observations
-
-
-# Save sensor and agent state to a dictionary, so that initial values can be reset
-# Used at beginning of cell that directly modifies camera (i.e. tracking an object)
-def init_camera_track_config(sim, sensor_name="color_sensor_1st_person", agent_ID=0):
-    init_state = {}
-    visual_sensor = sim._sensors[sensor_name]
-    # save ref to sensor being used
-    init_state["visual_sensor"] = visual_sensor
-    init_state["position"] = np.array(visual_sensor._spec.position)
-    init_state["orientation"] = np.array(visual_sensor._spec.orientation)
-    # set the color sensor transform to be the agent transform
-    visual_sensor._spec.position = np.array([0, 0, 0])
-    visual_sensor._spec.orientation = np.array([0, 0, 0])
-    visual_sensor._sensor_object.set_transformation_from_spec()
-    # save ID of agent being modified
-    init_state["agent_ID"] = agent_ID
-    # save agent initial state
-    init_state["agent_state"] = sim.get_agent(agent_ID).get_state()
-    # boost the agent off the floor
-    sim.get_agent(agent_ID).scene_node.translation += np.array([0, 1.5, 0])
-    return init_state
-
-
-# Reset sensor and agent state using dictionary built in init_camera_track_config
-# Used at end of cell that directly modifies camera (i.e. tracking an object)
-def restore_camera_track_config(sim, init_state):
-    visual_sensor = init_state["visual_sensor"]
-    agent_ID = init_state["agent_ID"]
-    # reset the sensor state for other examples
-    visual_sensor._spec.position = init_state["position"]
-    visual_sensor._spec.orientation = init_state["orientation"]
-    visual_sensor._sensor_object.set_transformation_from_spec()
-    # restore the agent's state to what was savedd in init_camera_track_config
-    sim.get_agent(agent_ID).set_state(init_state["agent_state"])
-
-
-# Simulate scene while having camera track COM of objects of interest
-def camera_track_simulate(sim, objects, dt=2.0, get_frames=True, agent_ID=0):
-    start_time = sim.get_world_time()
-    observations = []
-    num_objs = len(objects)
-    if num_objs == 0:
-        print("camera_track_simulate : Aborting, no objects sent to track")
-        return observations
-    agent = sim.get_agent(agent_ID)
-    # define up vector for tracking calc
-    up_vec = np.array([0, 1.0, 0])
-    # partition to speed up
-    time_step = 1.0 / 60.0
-    # process for multiple objects
-    while sim.get_world_time() - start_time < dt:
-        sim.step_physics(time_step)
-        # set agent state to look at object
-        camera_position = agent.scene_node.translation
-        camera_look_at = objects[0].translation
-        for i in range(1, num_objs):
-            camera_look_at += objects[i].translation
-        camera_look_at /= len(objects)
-        agent.scene_node.rotation = mn.Quaternion.from_matrix(
-            mn.Matrix4.look_at(camera_position, camera_look_at, up_vec).rotation()  # up
-        )
-        if get_frames:
-            observations.append(sim.get_sensor_observations())
-
-    return observations
-
-
-# Set an object transform relative to the agent state
-def set_object_state_from_agent(
-    sim,
-    obj,
-    offset=np.array([0, 2.0, -1.5]),
-    orientation=mn.Quaternion(((0, 0, 0), 1)),
-):
-    agent_transform = sim.agents[0].scene_node.transformation_matrix()
-    ob_translation = agent_transform.transform_point(offset)
-    obj.translation = ob_translation
-    obj.rotation = orientation
-
-
-# %%
-# @title Define Visualization Utility Function { display-mode: "form" }
-# @markdown (double click to show code)
-# @markdown - display_sample
-
-# Change to do something like this maybe: https://stackoverflow.com/a/41432704
-def display_sample(
-    rgb_obs, semantic_obs=np.array([]), depth_obs=np.array([]), key_points=None
-):
-    from habitat_sim.utils.common import d3_40_colors_rgb
-
-    rgb_img = Image.fromarray(rgb_obs, mode="RGBA")
-
-    arr = [rgb_img]
-    titles = ["rgb"]
-    if semantic_obs.size != 0:
-        semantic_img = Image.new("P", (semantic_obs.shape[1], semantic_obs.shape[0]))
-        semantic_img.putpalette(d3_40_colors_rgb.flatten())
-        semantic_img.putdata((semantic_obs.flatten() % 40).astype(np.uint8))
-        semantic_img = semantic_img.convert("RGBA")
-        arr.append(semantic_img)
-        titles.append("semantic")
-
-    if depth_obs.size != 0:
-        depth_img = Image.fromarray((depth_obs / 10 * 255).astype(np.uint8), mode="L")
-        arr.append(depth_img)
-        titles.append("depth")
-
-    plt.figure(figsize=(12, 8))
-    for i, data in enumerate(arr):
-        ax = plt.subplot(1, 3, i + 1)
-        ax.axis("off")
-        ax.set_title(titles[i])
-        # plot points on images
-        if key_points is not None:
-            for point in key_points:
-                plt.plot(point[0], point[1], marker="o", markersize=10, alpha=0.8)
-        plt.imshow(data)
-
-    plt.show(block=False)
-
-
-if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--no-display", dest="display", action="store_false")
-    parser.add_argument("--no-make-video", dest="make_video", action="store_false")
-    parser.set_defaults(show_video=True, make_video=True)
-    args, _ = parser.parse_known_args()
-    show_video = args.display
-    display = args.display
-    make_video = args.make_video
-else:
-    show_video = False
-    make_video = False
-    display = False
 
 
 # %%
@@ -844,18 +698,32 @@ def build_widget_ui(obj_attr_mgr, prim_attr_mgr):
     ipydisplay(prim_asset_ddl)
 
 
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--no-display", dest="display", action="store_false")
+    parser.add_argument("--no-make-video", dest="make_video", action="store_false")
+    parser.set_defaults(show_video=True, make_video=True)
+    args, _ = parser.parse_known_args()
+    show_video = args.display
+    display = args.display
+    make_video = args.make_video
+else:
+    show_video = False
+    make_video = False
+    display = False
+
 # %% [markdown]
 # # View Assets in Habitat-sim
 # Use the code in this section to view assets in the Habitat-sim engine.
 
 # %%
+# [initialize]
 # @title Initialize Simulator and Load Objects { display-mode: "form" }
-# @markdown Drag a stage or object asset into a directory at the left, and then load it below, for object_to_view_path
 
 sim_settings = make_default_settings()
-sim_settings[
-    "scene"
-] = "none"  # "/content/habitat-sim/data/test_assets/scenes/stage_floor1.stage_config.json"
+sim_settings["scene"] = "none"
 sim_settings["sensor_pitch"] = 0
 sim_settings["override_scene_light_defaults"] = True
 sim_settings["scene_light_setup"] = ""
@@ -864,63 +732,70 @@ sim_settings["scene_light_setup"] = ""
 sim_settings["color_sensor_3rd_person"] = True
 
 make_simulator_from_settings(sim_settings)
+# [/initialize]
 
-# Put the object you would like to view here.
-# object_to_view_path = os.path.join(data_path, "objects/example_objects/chefcan.glb")
+# [specify_object]
+# @markdown Drag a stage or object asset into a directory at the left,
+# @markdown and then load it below by setting object_to_view_path
+# @markdown Put the full path to the asset you would like to view here :
+object_to_view_path = (
+    "./data/test_assets/scenes/simple_room.glb"  # @param {type:"string"}
+)
 
-# Can also load and view stages - may have to reorient the stage via the attributes
-object_to_view_path = os.path.join(data_path, "test_assets/scenes/simple_room.glb")
-
-# stage below is not loading for some reason
+# this is the name to save the resultant video with
 clip_short_name = object_to_view_path.split("/")[-1].split(".")[0]
 
+# [/specify_object]
 
 # %% [markdown]
 # ## Synthesize Carousel View
 # This cell will make a carousel view of the loaded stage.
 
 # %%
+# [build_carousel_view]
 # @markdown This cell moves the sensor in a circle around the center of the scene, and records a video
+# Acquire the sensor being used
+visual_sensor = sim._sensors["color_sensor_3rd_person"]
+initial_sensor_position = np.array(visual_sensor._spec.position)
+initial_sensor_orientation = np.array(visual_sensor._spec.orientation)
 
 # load an object template and instantiate an object to view
 object_template = obj_attr_mgr.create_new_template(str(object_to_view_path), False)
-# if using a stage and it is sideways, you may need to reorient the stage for it to display properly.
+# if using a stage and it displays sideways, you may need to reorient it via its attributes for it to display properly.
 
-# To do this, uncomment the code below
-object_template.orient_up = (0.0, 0.0, 1.0)
-object_template.orient_front = (0.0, 1.0, 0.0)
+# @markdown If the asset being displayed is on its side, enable orientation_correction below :
+# @markdown NOTE : Until PR 1319 gets merged with master, this will not fix stages being on their sides.
+orientation_correction = False  # @param {type: "boolean"}
+# This will correct the orientation (Dependent on PR : )
+if orientation_correction:
+    object_template.orient_up = (0.0, 0.0, 1.0)
+    object_template.orient_front = (0.0, 1.0, 0.0)
 
-# modify template here if desired
+# modify template here if desired and then register it
 obj_temp_id = obj_attr_mgr.register_template(object_template)
-print("orient up : ", object_template.orient_up)
+
 # create object
 obj = rigid_obj_mgr.add_object_by_template_id(obj_temp_id)
 # place object in center - must be done before setting to static
 # get bb of object
 obj_bbox = obj.root_scene_node.compute_cumulative_bb()
-# find center of bb and move to origin
+# find center of bb and move to scene origin - this centers object
 obj.translation = -obj_bbox.center()
-# get max dim to use as scale
+# get max dim to use as scale for sensor placement
 bb_scale = max(obj_bbox.max)
-# determine sensor position based on size of object
+# determine sensor placement based on size of object
 sensor_pos = bb_scale * np.array([0, 1, 2])
 # set object to be static
 obj.motion_type = habitat_sim.physics.MotionType.STATIC
 
-
-visual_sensor = sim._sensors["color_sensor_3rd_person"]
-initial_sensor_position = np.array(visual_sensor._spec.position)
-initial_sensor_orientation = np.array(visual_sensor._spec.orientation)
-# initialize an agent
+# initialize an agent and set its intial state
 agent = sim.initialize_agent(sim_settings["default_agent"])
-
-# Set agent state
 agent_state = habitat_sim.AgentState()
-# Place agent in center of stage for best image
 agent_state.position = np.array([0.0, 0.0, 0.0])  # in world space
 agent.set_state(agent_state)
 
 # set the sensor to be behind and above the agent's initial loc
+# distance is scaled by size of largest object dimension
 visual_sensor._spec.position = agent_state.position + sensor_pos
 visual_sensor._spec.orientation = np.array([-0.5, 0, 0])
 visual_sensor._sensor_object.set_transformation_from_spec()
@@ -928,22 +803,19 @@ visual_sensor._sensor_object.set_transformation_from_spec()
 # Create observations array
 observations = []
 
-# How long to simulate in seconds
-sim_time = 5.0
+# @markdown Set how long the resutlant video should be, in seconds.  The object will make 1 full revolution during this time.
+video_length = 4.8  # @param {type:"slider", min:1.0, max:20.0, step:0.1}
 # Sim time step
 time_step = 1.0 / 60.0
 # Amount to rotate per frame to make 1 full rotation
-rot_amount = 2 * math.pi / (sim_time / time_step)
+rot_amount = 2 * math.pi / (video_length / time_step)
 
 # simulate with updated camera at each frame
 start_time = sim.get_world_time()
-
-while sim.get_world_time() - start_time < sim_time:
+while sim.get_world_time() - start_time < video_length:
     sim.step_physics(time_step)
     # rotate the agent to rotate the camera
-    agent_state.rotation = agent_state.rotation * ut.quat_from_angle_axis(
-        rot_amount, np.array([0, 1.0, 0])
-    )
+    agent_state.rotation *= ut.quat_from_angle_axis(rot_amount, np.array([0, 1.0, 0]))
     agent.set_state(agent_state)
 
     observations.append(sim.get_sensor_observations())
@@ -965,8 +837,7 @@ visual_sensor._spec.position = initial_sensor_position
 visual_sensor._spec.orientation = initial_sensor_orientation
 visual_sensor._sensor_object.set_transformation_from_spec()
 
-# remove objects
-
+# remove added objects
 rigid_obj_mgr.remove_all_objects()
-
+# [/build_carousel_view]
 # %%
