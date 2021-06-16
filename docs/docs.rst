@@ -104,7 +104,7 @@
     =======
 
     We currently have the following actions added by default. Any action not
-    registered with an explicit name is given the snake case version of the
+    registered with an explict name is given the snake case version of the
     class name, i.e. ``MoveForward`` can be accessed with the name
     ``move_forward``.  See `registry.register_move_fn`, `SceneNodeControl`,
     and `ActuationSpec`
@@ -140,7 +140,7 @@
 
     .. note-warning::
 
-        Not available for all datasets.
+        Not avaliable for all datasets.
 
 .. py:module:: habitat_sim.utils.common
 
