@@ -10,7 +10,11 @@ View Assets in Habitat-Sim
 .. contents::
     :class: m-block m-default
 
-The example code below is available on `Collab`_, or runnable via:
+`View Assets in Habitat-sim engine`_
+====================================
+
+When composing or editing assets for a habitat dataset, it would be helpful to see how they would be rendered in the Habitat-sim engine.  This can be difficult to accomplish without a lot of setup work, and this is made more difficult if Habitat-sim is not installed.
+This tutorial describes the Asset Viewer tool, which exists as both a `Collab`_, and a pure python utility.
 
 .. _Collab: <https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/master/examples/tutorials/colabs/asset_viewer.ipynb>
 
@@ -57,7 +61,23 @@ This code will compose a video of the asset of user-specified length that will s
     :start-after: # [build_carousel_view]
     :end-before: # [/build_carousel_view]
 
-You may find that the asset is displayed on its side (this will often be the case if the asset is a stage). If this is the case, set orientation_correction to True.
+Assets will be displayed enlarged to nearly fill the screen, regardless of their size.
+
+.. image:: images/asset-viewer-images/asset-viewer-chefcan.gif
+    :width: 40em
+
+You may find that the asset is displayed on its side (this will often be the case if the asset is a stage).
+
+.. image:: images/asset-viewer-images/asset-viewer-tilted-simple-room.gif
+    :width: 40em
+
+
+If this is the case, set orientation_correction to True.
 
 .. image:: images/asset-viewer-images/asset-viewer-orient-corr.png
     :width: 60em
+
+This will correct the orientation issues.
+
+.. image:: images/asset-viewer-images/asset-viewer-correct-simple-room.gif
+    :width: 40em
