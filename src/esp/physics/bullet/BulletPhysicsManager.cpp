@@ -104,10 +104,12 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
     bool fixedBase,
     float globalScale,
     float massScale,
-    bool forceReload) {
+    bool forceReload,
+    const std::string& lightSetup) {
   auto& drawables = simulator_->getDrawableGroup();
   return addArticulatedObjectFromURDF(filepath, &drawables, fixedBase,
-                                      globalScale, massScale, forceReload);
+                                      globalScale, massScale, forceReload,
+                                      lightSetup);
 }
 
 int BulletPhysicsManager::addArticulatedObjectFromURDF(
@@ -116,7 +118,8 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
     bool fixedBase,
     float globalScale,
     float massScale,
-    bool forceReload) {
+    bool forceReload,
+    const std::string& lightSetup) {
   CORRADE_ASSERT(
       urdfImporter_->loadURDF(filepath, globalScale, massScale, forceReload),
       "E - failed to parse/load URDF file " << filepath, ID_UNDEFINED);
@@ -165,7 +168,7 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
       ArticulatedLink& linkObject = articulatedObject->getLink(bulletLinkIx);
 
       ESP_CHECK(
-          attachLinkGeometry(&linkObject, link.second, drawables),
+          attachLinkGeometry(&linkObject, link.second, drawables, lightSetup),
           "BulletPhysicsManager::addArticulatedObjectFromURDF(): Failed to "
           "instance render asset (attachGeometry) for link "
               << urdfLinkIx << ".");
@@ -268,7 +271,8 @@ bool BulletPhysicsManager::isMeshPrimitiveValid(
 bool BulletPhysicsManager::attachLinkGeometry(
     ArticulatedLink* linkObject,
     const std::shared_ptr<io::URDF::Link>& link,
-    gfx::DrawableGroup* drawables) {
+    gfx::DrawableGroup* drawables,
+    const std::string& lightSetup) {
   bool geomSuccess = false;
 
   for (auto& visual : link->m_visualArray) {
@@ -363,7 +367,7 @@ bool BulletPhysicsManager::attachLinkGeometry(
       flags |= assets::RenderAssetInstanceCreationInfo::Flag::IsRGBD;
       flags |= assets::RenderAssetInstanceCreationInfo::Flag::IsSemantic;
       assets::RenderAssetInstanceCreationInfo creation(
-          visualMeshInfo.filepath, Mn::Vector3{1}, flags, DEFAULT_LIGHTING_KEY);
+          visualMeshInfo.filepath, Mn::Vector3{1}, flags, lightSetup);
 
       geomSuccess = resourceManager_.loadAndCreateRenderAssetInstance(
                         visualMeshInfo, creation, &visualGeomComponent,

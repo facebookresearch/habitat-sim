@@ -523,8 +523,8 @@ bool Simulator::instanceArticulatedObjectsForActiveScene() {
             artObjInst->getHandle());
 
     // create articulated object
-    aoID = physicsManager_->addArticulatedObjectInstance(artObjFilePath,
-                                                         artObjInst);
+    aoID = physicsManager_->addArticulatedObjectInstance(
+        artObjFilePath, artObjInst, lightSetupKey);
 
     // physicsManager_->setArticulatedObjectVelocities(aoID, aoJointVels);
     artObjsAdded.push_back(aoID);

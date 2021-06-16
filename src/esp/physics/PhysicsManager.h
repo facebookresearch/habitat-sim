@@ -416,6 +416,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @param filepath the file location for the articulated object's model
    * @param aObjInstAttributes the relevant instancing values for the
    * articulated object
+   * @param lightSetup The string name of the desired lighting setup to use.
+   *
    * @return A unique id for the @ref ArticulatedObject, allocated from the same
    * id set as rigid objects.
    */
@@ -424,7 +426,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
       const std::string& filepath,
       const std::shared_ptr<
           esp::metadata::attributes::SceneAOInstanceAttributes>&
-          aObjInstAttributes);
+          aObjInstAttributes,
+      const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
 
   /**
    * @brief Load, parse, and import a URDF file instantiating an @ref
@@ -443,6 +446,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * the components of the @ref ArticulatedObject.
    * @param forceReload If true, reload the source URDF from file, replacing the
    * cached model.
+   * @param lightSetup The string name of the desired lighting setup to use.
    *
    * @return A unique id for the @ref BulletArticulatedObject, allocated from
    * the same id set as rigid objects.
@@ -452,7 +456,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
       CORRADE_UNUSED bool fixedBase = false,
       CORRADE_UNUSED float globalScale = 1.0,
       CORRADE_UNUSED float massScale = 1.0,
-      CORRADE_UNUSED bool forceReload = false) {
+      CORRADE_UNUSED bool forceReload = false,
+      CORRADE_UNUSED const std::string& lightSetup = DEFAULT_LIGHTING_KEY) {
     Magnum::Debug{} << "addArticulatedObjectFromURDF not implemented in base "
                        "PhysicsManager.";
     return ID_UNDEFINED;
@@ -475,6 +480,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * the components of the @ref ArticulatedObject.
    * @param forceReload If true, reload the source URDF from file, replacing the
    * cached model.
+   * @param lightSetup The string name of the desired lighting setup to use.
    *
    * @return A unique id for the @ref ArticulatedObject, allocated from the same
    * id set as rigid objects.
@@ -485,7 +491,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
       CORRADE_UNUSED bool fixedBase = false,
       CORRADE_UNUSED float globalScale = 1.0,
       CORRADE_UNUSED float massScale = 1.0,
-      CORRADE_UNUSED bool forceReload = false) {
+      CORRADE_UNUSED bool forceReload = false,
+      CORRADE_UNUSED const std::string& lightSetup = DEFAULT_LIGHTING_KEY) {
     Magnum::Debug{} << "addArticulatedObjectFromURDF not implemented in base "
                        "PhysicsManager.";
     return ID_UNDEFINED;

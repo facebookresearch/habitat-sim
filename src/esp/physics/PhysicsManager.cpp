@@ -267,7 +267,8 @@ int PhysicsManager::addObject(
 int PhysicsManager::addArticulatedObjectInstance(
     const std::string& filepath,
     const std::shared_ptr<esp::metadata::attributes::SceneAOInstanceAttributes>&
-        aObjInstAttributes) {
+        aObjInstAttributes,
+    const std::string& lightSetup) {
   std::string errMsgTmplt = "PhysicsManager::addObjectInstance : ";
 
   // Get drawables from simulator. TODO: Support non-existant simulator?
@@ -277,8 +278,8 @@ int PhysicsManager::addArticulatedObjectInstance(
   // managers)
   int aObjID = this->addArticulatedObjectFromURDF(
       filepath, &drawables, aObjInstAttributes->getFixedBase(),
-      aObjInstAttributes->getUniformScale(),
-      aObjInstAttributes->getMassScale());
+      aObjInstAttributes->getUniformScale(), aObjInstAttributes->getMassScale(),
+      false, lightSetup);
   if (aObjID == ID_UNDEFINED) {
     // instancing failed for some reason.
     LOG(ERROR) << errMsgTmplt

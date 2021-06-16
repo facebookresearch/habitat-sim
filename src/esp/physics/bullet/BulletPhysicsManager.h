@@ -77,15 +77,18 @@ class BulletPhysicsManager : public PhysicsManager {
    * the components of the @ref ArticulatedObject.
    * @param forceReload If true, reload the source URDF from file, replacing the
    * cached model.
+   * @param lightSetup The string name of the desired lighting setup to use.
    *
    * @return A unique id for the @ref ArticulatedObject, allocated from the same
    * id set as rigid objects.
    */
-  int addArticulatedObjectFromURDF(const std::string& filepath,
-                                   bool fixedBase = false,
-                                   float globalScale = 1.0,
-                                   float massScale = 1.0,
-                                   bool forceReload = false) override;
+  int addArticulatedObjectFromURDF(
+      const std::string& filepath,
+      bool fixedBase = false,
+      float globalScale = 1.0,
+      float massScale = 1.0,
+      bool forceReload = false,
+      const std::string& lightSetup = DEFAULT_LIGHTING_KEY) override;
 
   /**
    * @brief Load, parse, and import a URDF file instantiating an @ref
@@ -102,16 +105,19 @@ class BulletPhysicsManager : public PhysicsManager {
    * the components of the @ref ArticulatedObject.
    * @param forceReload If true, reload the source URDF from file, replacing the
    * cached model.
+   * @param lightSetup The string name of the desired lighting setup to use.
    *
    * @return A unique id for the @ref ArticulatedObject, allocated from the same
    * id set as rigid objects.
    */
-  int addArticulatedObjectFromURDF(const std::string& filepath,
-                                   DrawableGroup* drawables,
-                                   bool fixedBase = false,
-                                   float globalScale = 1.0,
-                                   float massScale = 1.0,
-                                   bool forceReload = false) override;
+  int addArticulatedObjectFromURDF(
+      const std::string& filepath,
+      DrawableGroup* drawables,
+      bool fixedBase = false,
+      float globalScale = 1.0,
+      float massScale = 1.0,
+      bool forceReload = false,
+      const std::string& lightSetup = DEFAULT_LIGHTING_KEY) override;
 
   /**
    * @brief Use the metadata stored in io::URDF::Link to instance all visual
@@ -123,12 +129,14 @@ class BulletPhysicsManager : public PhysicsManager {
    * metadata.
    * @param drawables The SceneGraph's DrawableGroup with which the visual
    * shapes will be rendered.
+   * @param lightSetup The string name of the desired lighting setup to use.
    *
    * @return Whether or not the render shape instancing was successful.
    */
   bool attachLinkGeometry(ArticulatedLink* linkObject,
                           const std::shared_ptr<io::URDF::Link>& link,
-                          gfx::DrawableGroup* drawables);
+                          gfx::DrawableGroup* drawables,
+                          const std::string& lightSetup);
 
   /**
    * @brief Override of @ref PhysicsManager::removeObject to also remove any

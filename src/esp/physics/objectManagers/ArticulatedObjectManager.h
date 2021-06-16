@@ -36,6 +36,7 @@ class ArticulatedObjectManager
    * the components of the @ref ArticulatedObject.
    * @param forceReload If true, reload the source URDF from file, replacing the
    * cached model.
+   * @param lightSetup The string name of the desired lighting setup to use.
    *
    * @return A reference to the created ArticulatedObject
    */
@@ -44,7 +45,8 @@ class ArticulatedObjectManager
       bool fixedBase = false,
       float globalScale = 1.0,
       float massScale = 1.0,
-      bool forceReload = false);
+      bool forceReload = false,
+      const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
 
   /**
    * @brief Cast to BulletArticulatedObject version.  Load, parse, and import a
@@ -60,18 +62,21 @@ class ArticulatedObjectManager
    * the components of the @ref ArticulatedObject.
    * @param forceReload If true, reload the source URDF from file, replacing the
    * cached model.
+   * @param lightSetup The string name of the desired lighting setup to use.
    *
    * @return A reference to the created ArticulatedObject
    */
   std::shared_ptr<ManagedBulletArticulatedObject>
-  addBulletArticulatedObjectFromURDF(const std::string& filepath,
-                                     bool fixedBase = false,
-                                     float globalScale = 1.0,
-                                     float massScale = 1.0,
-                                     bool forceReload = false) {
+  addBulletArticulatedObjectFromURDF(
+      const std::string& filepath,
+      bool fixedBase = false,
+      float globalScale = 1.0,
+      float massScale = 1.0,
+      bool forceReload = false,
+      const std::string& lightSetup = DEFAULT_LIGHTING_KEY) {
     return std::static_pointer_cast<ManagedBulletArticulatedObject>(
         addArticulatedObjectFromURDF(filepath, fixedBase, globalScale,
-                                     massScale, forceReload));
+                                     massScale, forceReload, lightSetup));
   }
 
   /**
@@ -89,16 +94,19 @@ class ArticulatedObjectManager
    * all the components of the @ref ArticulatedObject.
    * @param forceReload If true, reload the source URDF from file, replacing
    * the cached model.
+   * @param lightSetup The string name of the desired lighting setup to use.
    *
    * @return A reference to the created ArticulatedObject
    */
   std::shared_ptr<ManagedArticulatedObject>
-  addArticulatedObjectFromURDFWithDrawables(const std::string& filepath,
-                                            gfx::DrawableGroup* drawables,
-                                            bool fixedBase = false,
-                                            float globalScale = 1.0,
-                                            float massScale = 1.0,
-                                            bool forceReload = false);
+  addArticulatedObjectFromURDFWithDrawables(
+      const std::string& filepath,
+      gfx::DrawableGroup* drawables,
+      bool fixedBase = false,
+      float globalScale = 1.0,
+      float massScale = 1.0,
+      bool forceReload = false,
+      const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
 
  protected:
   /**
