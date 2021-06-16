@@ -476,10 +476,6 @@ jobs:
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat; cd habitat-sim
               python examples/example.py --scene data/scene_datasets/habitat-test-scenes/van-gogh-room.glb --silent --test_fps_regression $FPS_THRESHOLD
-
-              #run the marked pytest-benchmark tests and print the results
-              export PYTHONPATH=$(pwd):$PYTHONPATH
-              pytest -m sim_benchmarks
       - run:
           name: Run JavaScript tests
           command: |
@@ -514,6 +510,9 @@ jobs:
 
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
               pytest -n auto --durations=10 --cov-report=xml --cov=./
+
+              #run the marked pytest-benchmark tests and print the results
+              pytest -m sim_benchmarks
 
               #re-build without bullet and cuda and run physics tests again
               #TODO: instead of reinstall, do this with configuration
