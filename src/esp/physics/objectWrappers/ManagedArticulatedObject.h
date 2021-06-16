@@ -220,6 +220,47 @@ class ManagedArticulatedObject
     }
   }
 
+  int createJointMotor(const int dof,
+                       const JointMotorSettings& settings) const {
+    if (auto sp = getObjectReference()) {
+      return sp->createJointMotor(dof, settings);
+    }
+    return ID_UNDEFINED;
+  }
+
+  void removeJointMotor(const int motorId) {
+    if (auto sp = getObjectReference()) {
+      sp->removeJointMotor(motorId);
+    }
+  }
+
+  JointMotorSettings getJointMotorSettings(const int motorId) const {
+    if (auto sp = getObjectReference()) {
+      return sp->getJointMotorSettings(motorId);
+    }
+    return {};
+  }
+
+  void updateJointMotor(const int motorId, const JointMotorSettings& settings) {
+    if (auto sp = getObjectReference()) {
+      sp->updateJointMotor(motorId, settings);
+    }
+  }
+
+  std::map<int, int> getExistingJointMotors() const {
+    if (auto sp = getObjectReference()) {
+      return sp->getExistingJointMotors();
+    }
+    return {};
+  }
+
+  std::map<int, int> createMotorsForAllDofs(JointMotorSettings settings) {
+    if (auto sp = getObjectReference()) {
+      return sp->createMotorsForAllDofs(settings);
+    }
+    return {};
+  }
+
  public:
   ESP_SMART_POINTERS(ManagedArticulatedObject)
 };  // namespace physics

@@ -6,8 +6,9 @@
 #define ESP_PHYSICS_ARTICULATEDOBJECT_H_
 
 /** @file
- * @brief Class @ref esp::physics::ArticulatedLink, Class @ref
- * esp::physics::ArticulatedObject
+ * @brief Class @ref esp::physics::ArticulatedLink, class @ref
+ * esp::physics::ArticulatedObject, enum class @ref JointType, enum class @ref
+ * JointMotorType, struct @ref JointMotorSettings
  */
 
 #include "RigidBase.h"
@@ -44,6 +45,94 @@ enum class JointType : int {
   Planar = 3,
   Fixed = 4,
   Invalid
+};
+
+////////////////////////////////////
+// Joint Motor Interface
+////////////////////////////////////
+
+//! describes the type of a motor for generality.
+enum class JointMotorType { SingleDof, Spherical };
+
+/**
+ * @brief Stores JointMotor (i.e. per-DoF PD control) parameters for creation
+ * and updates.
+ */
+struct JointMotorSettings {
+ public:
+  JointMotorSettings() = default;
+
+  //! constructor for single dof motor settings
+  JointMotorSettings(double _positionTarget,
+                     double _positionGain,
+                     double _velocityTarget,
+                     double _velocityGain,
+                     double _maxImpulse) {
+    positionTarget = _positionTarget;
+    positionGain = _positionGain;
+    velocityTarget = _velocityTarget;
+    velocityGain = _velocityGain;
+    maxImpulse = _maxImpulse;
+  }
+
+  //! constructor for spherical motor settings
+  JointMotorSettings(const Mn::Quaternion& _sphericalPositionTarget,
+                     double _positionGain,
+                     const Mn::Vector3& _sphericalVelocityTarget,
+                     double _velocityGain,
+                     double _maxImpulse)
+      : sphericalPositionTarget(_sphericalPositionTarget),
+        sphericalVelocityTarget(_sphericalVelocityTarget) {
+    positionGain = _positionGain;
+    velocityGain = _velocityGain;
+    maxImpulse = _maxImpulse;
+    motorType = JointMotorType::Spherical;
+  }
+
+  //! The type of motor parameterized by these settings. Determines which
+  //! parameters to use.
+  JointMotorType motorType = JointMotorType::SingleDof;
+
+  //! Single DoF joint position target.
+  double positionTarget = 0.0;
+
+  //! Spherical joint position target.
+  Mn::Quaternion sphericalPositionTarget = {};
+
+  //! Position (proportional) gain Kp
+  double positionGain = 0.0;
+
+  //! Single DoF joint velocity target. Zero acts like joint damping/friction.
+  double velocityTarget = 0.0;
+
+  //! Spherical joint velocity target.
+  Mn::Vector3 sphericalVelocityTarget = {};
+
+  //! Velocity (derivative) gain Kd
+  double velocityGain = 1.0;
+
+  //! The maximum impulse applied by this motor. Should be tuned relative to
+  //! physics timestep.
+  double maxImpulse = 1000.0;
+
+  ESP_SMART_POINTERS(JointMotorSettings)
+};
+
+/**
+ * @brief A general wrapper class for JointMotor (e.g. PD control)
+ * implementation.
+ */
+struct JointMotor {
+  //! settings parameterizing the motor
+  JointMotorSettings settings;
+
+  //! link/joint index controlled by the motor
+  int index;
+
+  //! identifies the motor in internal datastructures
+  int motorId;
+
+  ESP_SMART_POINTERS(JointMotor)
 };
 
 ////////////////////////////////////
@@ -553,6 +642,79 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
     Magnum::Debug{} << "No base implementation of \"clampJointLimits\". ";
   }
 
+  //=========== Joint Motor API ===========
+
+  /**
+   * @brief Create a new JointMotor from a JointMotorSettings.
+   *
+   * Note: No base implementation. See @ref bullet::BulletArticulatedObject.
+   * @param index DoF (for revolute or prismatic joints) or Link (spherical
+   * joints)
+   * @param settings The settings for the joint motor. Must have JointMotorType
+   * correctly configured.
+   * @return The motorId for the new joint motor or ID_UNDEFINED (-1) if failed.
+   */
+  virtual int createJointMotor(
+      CORRADE_UNUSED const int index,
+      CORRADE_UNUSED const JointMotorSettings& settings) {
+    Magnum::Debug{} << "No base implementation of \"createJointMotor\". "
+                       "Requires a physics simulator implementation.";
+    return ID_UNDEFINED;
+  }
+
+  /**
+   * @brief Remove and destroy a joint motor.
+   */
+  virtual void removeJointMotor(const int motorId) {
+    CHECK(jointMotors_.count(motorId) > 0);
+    jointMotors_.erase(motorId);
+  }
+
+  /**
+   * @brief Get a copy of the JointMotorSettings for an existing motor.
+   */
+  virtual JointMotorSettings getJointMotorSettings(const int motorId) {
+    CHECK(jointMotors_.count(motorId) > 0);
+    return jointMotors_.at(motorId)->settings;
+  }
+
+  /**
+   * @brief Update a JointMotor with new settings.
+   */
+  virtual void updateJointMotor(const int motorId,
+                                const JointMotorSettings& settings) {
+    CHECK(jointMotors_.count(motorId) > 0);
+    CHECK(jointMotors_.at(motorId)->settings.motorType == settings.motorType);
+    jointMotors_.at(motorId)->settings = settings;
+  }
+
+  /**
+   * @brief Query a map of motorIds -> dofs (or links for spherical motors) for
+   * all active JointMotors.
+   */
+  virtual std::map<int, int> getExistingJointMotors() {
+    std::map<int, int> motorIdsToDofIds;
+    for (auto& motor : jointMotors_) {
+      motorIdsToDofIds[motor.first] = motor.second->index;
+    }
+    return motorIdsToDofIds;
+  }
+
+  /**
+   * @brief Create a new set of default JointMotors for all valid dofs in an
+   * ArticulatedObject.
+   *
+   * Note: No base implementation. See @ref bullet::BulletArticulatedObject.
+   *
+   * @return A map of dofs -> motorIds for the new motors.
+   */
+  virtual std::map<int, int> createMotorsForAllDofs(
+      CORRADE_UNUSED JointMotorSettings settings = JointMotorSettings()) {
+    Magnum::Debug{} << "ArticulatedObject::createMotorsForAllDofs(): - ERROR, "
+                       "SHOULD NOT BE CALLED WITHOUT BULLET ";
+    return std::map<int, int>();
+  }
+
   //=========== END - Joint Motor API ===========
 
   //! map PhysicsManager objectId to local multibody linkId
@@ -592,6 +754,9 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
 
   //! link object for the AO base
   ArticulatedLink::uptr baseLink_;
+
+  //! map motorId to JointMotor
+  std::map<int, JointMotor::uptr> jointMotors_;
 
   //! if true, automatically clamp dofs to joint limits before physics
   //! simulation steps
