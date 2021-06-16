@@ -18,7 +18,8 @@ PTexMeshDrawable::PTexMeshDrawable(scene::SceneNode& node,
                                    int submeshID,
                                    ShaderManager& shaderManager,
                                    DrawableGroup* group /* = nullptr */)
-    : Drawable{node, ptexMeshData.getRenderingBuffer(submeshID)->mesh, group},
+    : Drawable{node, ptexMeshData.getRenderingBuffer(submeshID)->mesh,
+               DrawableType::PTexMesh, group},
       atlasTexture_(ptexMeshData.getRenderingBuffer(submeshID)->atlasTexture),
 #ifndef CORRADE_TARGET_APPLE
       adjFacesBufferTexture_(
