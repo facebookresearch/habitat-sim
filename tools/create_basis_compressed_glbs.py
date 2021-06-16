@@ -143,7 +143,7 @@ def _gltf2unlit(gltf_name: str):
         material["extensions"]["KHR_materials_unlit"] = {}
 
     with open(gltf_name, "wb") as f:
-        f.write(json.dump(json_data, indent=2).encode("utf-8"))
+        f.write(json.dumps(json_data, indent=2).encode("utf-8"))
 
 
 def package_meshes(args: Tuple[str, bool]) -> None:
