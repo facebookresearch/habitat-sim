@@ -26,6 +26,8 @@ Import necessary modules, define some convenience functions and initialize the :
     :start-after: # [setup]
     :end-before: # [/setup]
 
+Note that we override default settings to use the internally defined "none" scene (which is empty), and the 3rd person camera, before we initialize the :ref:`Simulator`.
+
 .. include:: ../../examples/tutorials/nb_python/asset_viewer.py
     :code: py
     :start-after: # [initialize]
@@ -56,3 +58,6 @@ This code will compose a video of the asset of user-specified length that will s
     :end-before: # [/build_carousel_view]
 
 You may find that the asset is displayed on its side (this will often be the case if the asset is a stage). If this is the case, set orientation_correction to True.
+
+.. image:: images/asset-viewer-images/asset-viewer-orient-corr.png
+    :width: 60em
