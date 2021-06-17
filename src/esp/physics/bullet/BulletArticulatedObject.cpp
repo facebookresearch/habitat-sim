@@ -706,9 +706,9 @@ bool BulletArticulatedObject::supportsSingleDofJointMotor(int linkIx) const {
   return canHaveMotor;
 }
 
-std::map<int, int> BulletArticulatedObject::createMotorsForAllDofs(
+std::unordered_map<int, int> BulletArticulatedObject::createMotorsForAllDofs(
     const JointMotorSettings& settings) {
-  std::map<int, int> motorIdsToLinks;
+  std::unordered_map<int, int> motorIdsToLinks;
   auto settingsCopy = settings;
   for (int linkIx = 0; linkIx < btMultiBody_->getNumLinks(); ++linkIx) {
     if (supportsSingleDofJointMotor(linkIx)) {
@@ -732,12 +732,21 @@ int BulletArticulatedObject::createJointMotor(
     const int linkIndex,
     const JointMotorSettings& settings) {
   // check for valid configuration
-  CHECK(links_.count(linkIndex) > 0);
+  ESP_CHECK(
+      links_.count(linkIndex) != 0,
+      "BulletArticulatedObject::createJointMotor - no link with linkIndex = "
+          << linkIndex);
   if (settings.motorType == JointMotorType::SingleDof) {
-    CHECK(supportsSingleDofJointMotor(linkIndex));
+    ESP_CHECK(supportsSingleDofJointMotor(linkIndex),
+              "BulletArticulatedObject::createJointMotor - "
+              "JointMotorSettings.motorType==SingleDof incompatible with joint "
+                  << linkIndex);
   } else {
     // JointMotorType::Spherical
-    CHECK(getLinkJointType(linkIndex) == JointType::Spherical);
+    ESP_CHECK(getLinkJointType(linkIndex) == JointType::Spherical,
+              "BulletArticulatedObject::createJointMotor - "
+              "JointMotorSettings.motorType==Spherical incompatible with joint "
+                  << linkIndex);
   }
 
   auto motor = JointMotor::create_unique();
@@ -776,7 +785,10 @@ int BulletArticulatedObject::createJointMotor(
 }  // BulletArticulatedObject::createJointMotor
 
 void BulletArticulatedObject::removeJointMotor(const int motorId) {
-  CHECK(jointMotors_.count(motorId) > 0);
+  ESP_CHECK(jointMotors_.count(motorId) > 0,
+            "BulletArticulatedObject::removeJointMotor - No motor exists with "
+            "motorId = "
+                << motorId);
   if (articulatedJointMotors.count(motorId) != 0u) {
     bWorld_->removeMultiBodyConstraint(
         articulatedJointMotors.at(motorId).get());
@@ -797,8 +809,13 @@ void BulletArticulatedObject::removeJointMotor(const int motorId) {
 void BulletArticulatedObject::updateJointMotor(
     const int motorId,
     const JointMotorSettings& settings) {
-  CHECK(jointMotors_.count(motorId) > 0);
-  CHECK(jointMotors_.at(motorId)->settings.motorType == settings.motorType);
+  ESP_CHECK(jointMotors_.count(motorId) > 0,
+            "BulletArticulatedObject::updateJointMotor - No motor exists with "
+            "motorId = "
+                << motorId);
+  ESP_CHECK(jointMotors_.at(motorId)->settings.motorType == settings.motorType,
+            "BulletArticulatedObject::updateJointMotor - "
+            "JointMotorSettings.motorType does not match joint type.");
   jointMotors_.at(motorId)->settings = settings;
   if (articulatedJointMotors.count(motorId) != 0u) {
     auto& motor = articulatedJointMotors.at(motorId);
@@ -813,7 +830,7 @@ void BulletArticulatedObject::updateJointMotor(
                              settings.velocityGain);
     motor->setMaxAppliedImpulse(settings.maxImpulse);
   } else {
-    Mn::Error{} << "Cannot update JointMotor. Invalid ID (" << motorId << ").";
+    LOG(ERROR) << "Cannot update JointMotor. Invalid ID (" << motorId << ").";
     return;
   }
   // force activation if motors are updated
@@ -823,8 +840,10 @@ void BulletArticulatedObject::updateJointMotor(
 void BulletArticulatedObject::updateAllMotorTargets(
     const std::vector<float>& stateTargets,
     bool velocities) {
-  CHECK(stateTargets.size() == velocities ? btMultiBody_->getNumDofs()
-                                          : btMultiBody_->getNumPosVars());
+  ESP_CHECK(stateTargets.size() == velocities ? btMultiBody_->getNumDofs()
+                                              : btMultiBody_->getNumPosVars(),
+            "BulletArticulatedObject::updateAllMotorTargets - stateTargets "
+            "size does not match object state size.");
 
   for (auto& motor : jointMotors_) {
     btMultibodyLink& btLink = btMultiBody_->getLink(motor.second->index);

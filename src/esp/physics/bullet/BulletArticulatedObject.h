@@ -374,9 +374,9 @@ class BulletArticulatedObject : public ArticulatedObject {
    *
    * Note: No base implementation. See @ref bullet::BulletArticulatedObject.
    *
-   * @return A map of dofs -> motorIds for the new motors.
+   * @return A map of motorIds to link/joint indices for the new motors.
    */
-  std::map<int, int> createMotorsForAllDofs(
+  std::unordered_map<int, int> createMotorsForAllDofs(
       const JointMotorSettings& settings = JointMotorSettings()) override;
 
   /**
@@ -426,12 +426,13 @@ class BulletArticulatedObject : public ArticulatedObject {
 
   int nextJointMotorId_ = 0;
 
-  std::map<int, std::unique_ptr<btMultiBodyJointMotor>> articulatedJointMotors;
-  std::map<int, std::unique_ptr<btMultiBodySphericalJointMotor>>
+  std::unordered_map<int, std::unique_ptr<btMultiBodyJointMotor>>
+      articulatedJointMotors;
+  std::unordered_map<int, std::unique_ptr<btMultiBodySphericalJointMotor>>
       articulatedSphericalJointMotors;
 
   //! maps local link id to parent joint's limit constraint
-  std::map<int, JointLimitConstraintInfo> jointLimitConstraints;
+  std::unordered_map<int, JointLimitConstraintInfo> jointLimitConstraints;
 
   // scratch datastrcutures for updateKinematicState
   btAlignedObjectArray<btQuaternion> scratch_q_;

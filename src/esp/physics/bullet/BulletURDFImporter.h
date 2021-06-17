@@ -46,7 +46,7 @@ struct URDF2BulletCached {
 
   class btMultiBody* m_bulletMultiBody{nullptr};
 
-  std::map<int, JointLimitConstraintInfo> m_jointLimitConstraints;
+  std::unordered_map<int, JointLimitConstraintInfo> m_jointLimitConstraints;
 
   // this will be initialized in the constructor
   int m_totalNumJoints1{0};

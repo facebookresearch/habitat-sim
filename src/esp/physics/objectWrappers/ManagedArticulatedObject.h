@@ -261,14 +261,15 @@ class ManagedArticulatedObject
     }
   }
 
-  std::map<int, int> getExistingJointMotors() const {
+  std::unordered_map<int, int> getExistingJointMotors() const {
     if (auto sp = getObjectReference()) {
       return sp->getExistingJointMotors();
     }
     return {};
   }
 
-  std::map<int, int> createMotorsForAllDofs(JointMotorSettings settings) {
+  std::unordered_map<int, int> createMotorsForAllDofs(
+      JointMotorSettings settings) {
     if (auto sp = getObjectReference()) {
       return sp->createMotorsForAllDofs(settings);
     }

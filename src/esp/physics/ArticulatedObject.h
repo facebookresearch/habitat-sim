@@ -578,7 +578,9 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * @return The link's parent joint's name.
    */
   virtual std::string getLinkJointName(CORRADE_UNUSED int linkId) const {
-    CHECK(links_.count(linkId) != 0);
+    ESP_CHECK(links_.count(linkId) != 0,
+              "ArticulatedObject::getLinkJointName - no link with linkId = "
+                  << linkId);
     return links_.at(linkId)->linkJointName;
   }
 
@@ -592,7 +594,9 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
     if (linkId == -1) {
       return baseLink_->linkName;
     }
-    CHECK(links_.count(linkId) != 0);
+    ESP_CHECK(
+        links_.count(linkId) != 0,
+        "ArticulatedObject::getLinkName - no link with linkId = " << linkId);
     return links_.at(linkId)->linkName;
   }
 
@@ -691,7 +695,10 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * @brief Remove and destroy a joint motor.
    */
   virtual void removeJointMotor(const int motorId) {
-    CHECK(jointMotors_.count(motorId) > 0);
+    ESP_CHECK(
+        jointMotors_.count(motorId) > 0,
+        "ArticulatedObject::removeJointMotor - No motor exists with motorId = "
+            << motorId);
     jointMotors_.erase(motorId);
   }
 
@@ -699,7 +706,10 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * @brief Get a copy of the JointMotorSettings for an existing motor.
    */
   virtual JointMotorSettings getJointMotorSettings(const int motorId) {
-    CHECK(jointMotors_.count(motorId) > 0);
+    ESP_CHECK(jointMotors_.count(motorId) > 0,
+              "ArticulatedObject::getJointMotorSettings - No motor exists with "
+              "motorId = "
+                  << motorId);
     return jointMotors_.at(motorId)->settings;
   }
 
@@ -708,16 +718,22 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    */
   virtual void updateJointMotor(const int motorId,
                                 const JointMotorSettings& settings) {
-    CHECK(jointMotors_.count(motorId) > 0);
-    CHECK(jointMotors_.at(motorId)->settings.motorType == settings.motorType);
+    ESP_CHECK(
+        jointMotors_.count(motorId) > 0,
+        "ArticulatedObject::updateJointMotor - No motor exists with motorId = "
+            << motorId);
+    ESP_CHECK(
+        jointMotors_.at(motorId)->settings.motorType == settings.motorType,
+        "ArticulatedObject::updateJointMotor - JointMotorSettings.motorType "
+        "does not match joint type.");
     jointMotors_.at(motorId)->settings = settings;
   }
 
   /**
    * @brief Query a map of motorIds -> links/joints for all active JointMotors.
    */
-  virtual std::map<int, int> getExistingJointMotors() {
-    std::map<int, int> motorIdsToLinkIds;
+  virtual std::unordered_map<int, int> getExistingJointMotors() {
+    std::unordered_map<int, int> motorIdsToLinkIds;
     for (auto& motor : jointMotors_) {
       motorIdsToLinkIds[motor.first] = motor.second->index;
     }
@@ -730,14 +746,14 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    *
    * Note: No base implementation. See @ref bullet::BulletArticulatedObject.
    *
-   * @return A map of dofs -> motorIds for the new motors.
+   * @return A map motorIds to link/joint indices for the new motors.
    */
-  virtual std::map<int, int> createMotorsForAllDofs(
+  virtual std::unordered_map<int, int> createMotorsForAllDofs(
       CORRADE_UNUSED const JointMotorSettings& settings =
           JointMotorSettings()) {
-    Magnum::Debug{} << "ArticulatedObject::createMotorsForAllDofs(): - ERROR, "
-                       "SHOULD NOT BE CALLED WITHOUT BULLET ";
-    return std::map<int, int>();
+    LOG(ERROR) << "ArticulatedObject::createMotorsForAllDofs(): - ERROR, "
+                  "SHOULD NOT BE CALLED WITHOUT BULLET ";
+    return std::unordered_map<int, int>();
   }
 
   /**
@@ -759,8 +775,8 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   virtual void updateAllMotorTargets(
       CORRADE_UNUSED const std::vector<float>& stateTargets,
       CORRADE_UNUSED bool velocities = false) {
-    Magnum::Debug{} << "ArticulatedObject::updateAllMotorTargets(): - ERROR, "
-                       "SHOULD NOT BE CALLED WITHOUT BULLET ";
+    LOG(ERROR) << "ArticulatedObject::updateAllMotorTargets(): - ERROR, "
+                  "SHOULD NOT BE CALLED WITHOUT BULLET ";
   }
 
   //=========== END - Joint Motor API ===========
@@ -804,7 +820,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   ArticulatedLink::uptr baseLink_;
 
   //! map motorId to JointMotor
-  std::map<int, JointMotor::uptr> jointMotors_;
+  std::unordered_map<int, JointMotor::uptr> jointMotors_;
 
   //! if true, automatically clamp dofs to joint limits before physics
   //! simulation steps
