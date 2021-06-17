@@ -416,6 +416,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    */
   std::vector<int> getLinkIds() const {
     std::vector<int> ids;
+    ids.reserve(ids.size());
     for (auto it = links_.begin(); it != links_.end(); ++it) {
       ids.push_back(it->first);
     }
@@ -718,10 +719,8 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * @brief Query a map of motorIds -> links/joints for all active JointMotors.
    */
   virtual std::map<int, int> getExistingJointMotors() {
-    std::map<int, int> motorIdsToLinkIds;
-    for (auto& motor : jointMotors_) {
-      motorIdsToLinkIds[motor.first] = motor.second->index;
-    }
+    std::map<int, int> motorIdsToLinkIds{jointMotors_.begin(),
+                                         jointMotors_.end()};
     return motorIdsToLinkIds;
   }
 
