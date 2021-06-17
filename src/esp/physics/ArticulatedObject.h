@@ -81,11 +81,11 @@ struct JointMotorSettings {
                      double _velocityGain,
                      double _maxImpulse)
       : sphericalPositionTarget(_sphericalPositionTarget),
+        motorType(JointMotorType::Spherical),
         positionGain(_positionGain),
         sphericalVelocityTarget(_sphericalVelocityTarget),
         velocityGain(_velocityGain),
-        maxImpulse(_maxImpulse),
-        motorType(JointMotorType::Spherical) {}
+        maxImpulse(_maxImpulse) {}
 
   //! The type of motor parameterized by these settings. Determines which
   //! parameters to use.
