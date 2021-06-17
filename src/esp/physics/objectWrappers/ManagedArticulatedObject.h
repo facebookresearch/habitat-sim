@@ -127,9 +127,9 @@ class ManagedArticulatedObject
     return {};
   }
 
-  std::vector<float> getJointPositionLimits(bool upperLimits = false) {
+  std::pair<std::vector<float>, std::vector<float>> getJointPositionLimits() {
     if (auto sp = getObjectReference()) {
-      return sp->getJointPositionLimits(upperLimits);
+      return sp->getJointPositionLimits();
     }
     return {};
   }
@@ -158,6 +158,20 @@ class ManagedArticulatedObject
       return sp->getLinkJointType(linkId);
     }
     return JointType::Invalid;
+  }
+
+  std::string getLinkJointName(int linkId) const {
+    if (auto sp = getObjectReference()) {
+      return sp->getLinkJointName(linkId);
+    }
+    return "";
+  }
+
+  std::string getLinkName(int linkId) const {
+    if (auto sp = getObjectReference()) {
+      return sp->getLinkName(linkId);
+    }
+    return "";
   }
 
   int getLinkDoFOffset(int linkId) const {
@@ -217,6 +231,55 @@ class ManagedArticulatedObject
   void clampJointLimits() {
     if (auto sp = getObjectReference()) {
       sp->clampJointLimits();
+    }
+  }
+
+  int createJointMotor(const int dof,
+                       const JointMotorSettings& settings) const {
+    if (auto sp = getObjectReference()) {
+      return sp->createJointMotor(dof, settings);
+    }
+    return ID_UNDEFINED;
+  }
+
+  void removeJointMotor(const int motorId) {
+    if (auto sp = getObjectReference()) {
+      sp->removeJointMotor(motorId);
+    }
+  }
+
+  JointMotorSettings getJointMotorSettings(const int motorId) const {
+    if (auto sp = getObjectReference()) {
+      return sp->getJointMotorSettings(motorId);
+    }
+    return {};
+  }
+
+  void updateJointMotor(const int motorId, const JointMotorSettings& settings) {
+    if (auto sp = getObjectReference()) {
+      sp->updateJointMotor(motorId, settings);
+    }
+  }
+
+  std::unordered_map<int, int> getExistingJointMotors() const {
+    if (auto sp = getObjectReference()) {
+      return sp->getExistingJointMotors();
+    }
+    return {};
+  }
+
+  std::unordered_map<int, int> createMotorsForAllDofs(
+      JointMotorSettings settings) {
+    if (auto sp = getObjectReference()) {
+      return sp->createMotorsForAllDofs(settings);
+    }
+    return {};
+  }
+
+  void updateAllMotorTargets(const std::vector<float>& stateTargets,
+                             bool velocities) {
+    if (auto sp = getObjectReference()) {
+      sp->updateAllMotorTargets(stateTargets, velocities);
     }
   }
 

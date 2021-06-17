@@ -57,6 +57,12 @@ BulletArticulatedObject::~BulletArticulatedObject() {
   collisionObjToObjIds_->erase(baseCollider);
   delete baseCollider;
 
+  // remove motors from the world
+  for (auto& motorId : getExistingJointMotors()) {
+    BulletArticulatedObject::removeJointMotor(motorId.first);
+  }
+
+  // remove joint limit constraints
   for (auto& jlIter : jointLimitConstraints) {
     bWorld_->removeMultiBodyConstraint(jlIter.second.con);
     delete jlIter.second.con;
@@ -117,6 +123,8 @@ void BulletArticulatedObject::initializeFromURDF(
          urdfLinkIx < urdfImporter.getModel()->m_links.size(); ++urdfLinkIx) {
       int bulletLinkIx =
           u2b.cache->m_urdfLinkIndices2BulletLinkIndices[urdfLinkIx];
+      auto urdfLink = u2b.getModel()->m_links.at(
+          u2b.getModel()->m_linkIndicesToNames[urdfLinkIx]);
 
       ArticulatedLink* linkObject = nullptr;
       if (bulletLinkIx >= 0) {
@@ -124,6 +132,7 @@ void BulletArticulatedObject::initializeFromURDF(
             &physicsNode->createChild(), resMgr_, bWorld_, bulletLinkIx,
             collisionObjToObjIds_);
         linkObject = links_[bulletLinkIx].get();
+        linkObject->linkJointName = urdfLink->m_parentJoint.lock()->m_name;
       } else {
         if (!baseLink_) {
           baseLink_ = std::make_unique<BulletArticulatedLink>(
@@ -132,8 +141,23 @@ void BulletArticulatedObject::initializeFromURDF(
         }
         linkObject = baseLink_.get();
       }
+      linkObject->linkName = urdfLink->m_name;
 
       linkObject->node().setType(esp::scene::SceneNodeType::OBJECT);
+    }
+
+    // Build damping motors
+    for (int linkIx = 0; linkIx < btMultiBody_->getNumLinks(); ++linkIx) {
+      btMultibodyLink& link = btMultiBody_->getLink(linkIx);
+      JointMotorSettings settings;
+      settings.maxImpulse = double(link.m_jointDamping);
+      if (supportsSingleDofJointMotor(linkIx)) {
+        settings.motorType = JointMotorType::SingleDof;
+        createJointMotor(linkIx, settings);
+      } else if (link.m_jointType == btMultibodyLink::eSpherical) {
+        settings.motorType = JointMotorType::Spherical;
+        createJointMotor(linkIx, settings);
+      }
     }
 
     // in case the base transform is not zero by default
@@ -414,28 +438,25 @@ std::vector<float> BulletArticulatedObject::getJointPositions() {
   return positions;
 }
 
-std::vector<float> BulletArticulatedObject::getJointPositionLimits(
-    bool upperLimits) {
-  std::vector<float> posLimits(btMultiBody_->getNumPosVars());
+std::pair<std::vector<float>, std::vector<float>>
+BulletArticulatedObject::getJointPositionLimits() {
+  std::vector<float> lowerLimits(btMultiBody_->getNumPosVars(), -INFINITY);
+  std::vector<float> upperLimits(btMultiBody_->getNumPosVars(), INFINITY);
+
   int posCount = 0;
   for (int i = 0; i < btMultiBody_->getNumLinks(); ++i) {
     if (jointLimitConstraints.count(i) > 0) {
       // a joint limit constraint exists for this link's parent joint
       auto& jlc = jointLimitConstraints.at(i);
-      posLimits[posCount] = upperLimits ? jlc.upperLimit : jlc.lowerLimit;
+      lowerLimits[posCount] = jlc.lowerLimit;
+      upperLimits[posCount] = jlc.upperLimit;
       posCount++;
     } else {
-      // iterate through joint dofs. Note: multi-dof joints cannot be limited,
-      // so ok to skip.
-      for (int posVar = 0; posVar < btMultiBody_->getLink(i).m_posVarCount;
-           ++posVar) {
-        posLimits[posCount] = upperLimits ? INFINITY : -INFINITY;
-        posCount++;
-      }
+      posCount += btMultiBody_->getLink(i).m_posVarCount;
     }
   }
   CHECK(posCount == btMultiBody_->getNumPosVars());
-  return posLimits;
+  return std::make_pair(lowerLimits, upperLimits);
 }
 
 void BulletArticulatedObject::addArticulatedLinkForce(int linkId,
@@ -672,6 +693,200 @@ bool BulletArticulatedObject::contactTest() {
   }
   return false;
 }  // contactTest
+
+// ------------------------
+// Joint Motor API
+// ------------------------
+
+bool BulletArticulatedObject::supportsSingleDofJointMotor(int linkIx) const {
+  bool canHaveMotor = (btMultiBody_->getLink(linkIx).m_jointType ==
+                           btMultibodyLink::eRevolute ||
+                       btMultiBody_->getLink(linkIx).m_jointType ==
+                           btMultibodyLink::ePrismatic);
+  return canHaveMotor;
+}
+
+std::unordered_map<int, int> BulletArticulatedObject::createMotorsForAllDofs(
+    const JointMotorSettings& settings) {
+  std::unordered_map<int, int> motorIdsToLinks;
+  auto settingsCopy = settings;
+  for (int linkIx = 0; linkIx < btMultiBody_->getNumLinks(); ++linkIx) {
+    if (supportsSingleDofJointMotor(linkIx)) {
+      settingsCopy.motorType = JointMotorType::SingleDof;
+    } else if (btMultiBody_->getLink(linkIx).m_jointType ==
+               btMultibodyLink::eSpherical) {
+      settingsCopy.motorType = JointMotorType::Spherical;
+    } else {
+      // skip the creation phase for unsupported joints
+      continue;
+    }
+    int motorId = createJointMotor(linkIx, settingsCopy);
+    motorIdsToLinks[motorId] = linkIx;
+  }
+  Mn::Debug{} << "BulletArticulatedObject::createMotorsForAllDofs(): "
+              << motorIdsToLinks;
+  return motorIdsToLinks;
+}
+
+int BulletArticulatedObject::createJointMotor(
+    const int linkIndex,
+    const JointMotorSettings& settings) {
+  // check for valid configuration
+  ESP_CHECK(
+      links_.count(linkIndex) != 0,
+      "BulletArticulatedObject::createJointMotor - no link with linkIndex = "
+          << linkIndex);
+  if (settings.motorType == JointMotorType::SingleDof) {
+    ESP_CHECK(supportsSingleDofJointMotor(linkIndex),
+              "BulletArticulatedObject::createJointMotor - "
+              "JointMotorSettings.motorType==SingleDof incompatible with joint "
+                  << linkIndex);
+  } else {
+    // JointMotorType::Spherical
+    ESP_CHECK(getLinkJointType(linkIndex) == JointType::Spherical,
+              "BulletArticulatedObject::createJointMotor - "
+              "JointMotorSettings.motorType==Spherical incompatible with joint "
+                  << linkIndex);
+  }
+
+  auto motor = JointMotor::create_unique();
+  motor->settings = settings;
+  motor->index = linkIndex;
+  motor->motorId = nextJointMotorId_;
+  jointMotors_.emplace(nextJointMotorId_,
+                       std::move(motor));  // cache the Habitat structure
+
+  if (settings.motorType == JointMotorType::SingleDof) {
+    auto btMotor = std::make_unique<btMultiBodyJointMotor>(
+        btMultiBody_.get(), linkIndex, settings.velocityTarget,
+        settings.maxImpulse);
+    btMotor->setPositionTarget(settings.positionTarget, settings.positionGain);
+    btMotor->setVelocityTarget(settings.velocityTarget, settings.velocityGain);
+    bWorld_->addMultiBodyConstraint(btMotor.get());
+    btMotor->finalizeMultiDof();
+    articulatedJointMotors.emplace(
+        nextJointMotorId_, std::move(btMotor));  // cache the Bullet structure
+  } else {
+    // JointMotorType::Spherical
+    auto btMotor = std::make_unique<btMultiBodySphericalJointMotor>(
+        btMultiBody_.get(), linkIndex, settings.maxImpulse);
+    btMotor->setPositionTarget(btQuaternion(settings.sphericalPositionTarget),
+                               settings.positionGain);
+    btMotor->setVelocityTarget(btVector3(settings.sphericalVelocityTarget),
+                               settings.velocityGain);
+    bWorld_->addMultiBodyConstraint(btMotor.get());
+    btMotor->finalizeMultiDof();
+    articulatedSphericalJointMotors.emplace(
+        nextJointMotorId_, std::move(btMotor));  // cache the Bullet structure
+  }
+  // force activation if motors are updated
+  setActive(true);
+  return nextJointMotorId_++;
+}  // BulletArticulatedObject::createJointMotor
+
+void BulletArticulatedObject::removeJointMotor(const int motorId) {
+  ESP_CHECK(jointMotors_.count(motorId) > 0,
+            "BulletArticulatedObject::removeJointMotor - No motor exists with "
+            "motorId = "
+                << motorId);
+  if (articulatedJointMotors.count(motorId) != 0u) {
+    bWorld_->removeMultiBodyConstraint(
+        articulatedJointMotors.at(motorId).get());
+    articulatedJointMotors.erase(motorId);
+  } else if (articulatedSphericalJointMotors.count(motorId) != 0u) {
+    bWorld_->removeMultiBodyConstraint(
+        articulatedSphericalJointMotors.at(motorId).get());
+    articulatedSphericalJointMotors.erase(motorId);
+  } else {
+    Mn::Error{} << "Cannot remove JointMotor: invalid ID (" << motorId << ").";
+    return;
+  }
+  jointMotors_.erase(motorId);
+  // force activation if motors are updated
+  btMultiBody_->wakeUp();
+}
+
+void BulletArticulatedObject::updateJointMotor(
+    const int motorId,
+    const JointMotorSettings& settings) {
+  ESP_CHECK(jointMotors_.count(motorId) > 0,
+            "BulletArticulatedObject::updateJointMotor - No motor exists with "
+            "motorId = "
+                << motorId);
+  ESP_CHECK(jointMotors_.at(motorId)->settings.motorType == settings.motorType,
+            "BulletArticulatedObject::updateJointMotor - "
+            "JointMotorSettings.motorType does not match joint type.");
+  jointMotors_.at(motorId)->settings = settings;
+  if (articulatedJointMotors.count(motorId) != 0u) {
+    auto& motor = articulatedJointMotors.at(motorId);
+    motor->setPositionTarget(settings.positionTarget, settings.positionGain);
+    motor->setVelocityTarget(settings.velocityTarget, settings.velocityGain);
+    motor->setMaxAppliedImpulse(settings.maxImpulse);
+  } else if (articulatedSphericalJointMotors.count(motorId) != 0u) {
+    auto& motor = articulatedSphericalJointMotors.at(motorId);
+    motor->setPositionTarget(btQuaternion(settings.sphericalPositionTarget),
+                             settings.positionGain);
+    motor->setVelocityTarget(btVector3(settings.sphericalVelocityTarget),
+                             settings.velocityGain);
+    motor->setMaxAppliedImpulse(settings.maxImpulse);
+  } else {
+    LOG(ERROR) << "Cannot update JointMotor. Invalid ID (" << motorId << ").";
+    return;
+  }
+  // force activation if motors are updated
+  setActive(true);
+}
+
+void BulletArticulatedObject::updateAllMotorTargets(
+    const std::vector<float>& stateTargets,
+    bool velocities) {
+  ESP_CHECK(stateTargets.size() == velocities ? btMultiBody_->getNumDofs()
+                                              : btMultiBody_->getNumPosVars(),
+            "BulletArticulatedObject::updateAllMotorTargets - stateTargets "
+            "size does not match object state size.");
+
+  for (auto& motor : jointMotors_) {
+    btMultibodyLink& btLink = btMultiBody_->getLink(motor.second->index);
+    int startIndex = velocities ? btLink.m_dofOffset : btLink.m_cfgOffset;
+    auto& settings = motor.second->settings;
+    if (settings.motorType == JointMotorType::SingleDof) {
+      auto& btMotor = articulatedJointMotors.at(motor.first);
+      if (velocities) {
+        settings.velocityTarget = double(stateTargets[startIndex]);
+        btMotor->setVelocityTarget(settings.velocityTarget,
+                                   settings.velocityGain);
+      } else {
+        // positions
+        settings.positionTarget = double(stateTargets[startIndex]);
+        btMotor->setPositionTarget(settings.positionTarget,
+                                   settings.positionGain);
+      }
+    } else {
+      // JointMotorType::Spherical
+      if (velocities) {
+        settings.sphericalVelocityTarget = {stateTargets[startIndex],
+                                            stateTargets[startIndex + 1],
+                                            stateTargets[startIndex + 2]};
+        articulatedSphericalJointMotors.at(motor.first)
+            ->setVelocityTarget(btVector3(settings.sphericalVelocityTarget),
+                                settings.velocityGain);
+      } else {
+        // positions
+        settings.sphericalPositionTarget =
+            Mn::Quaternion(Mn::Vector3(stateTargets[startIndex],
+                                       stateTargets[startIndex + 1],
+                                       stateTargets[startIndex + 2]),
+                           stateTargets[startIndex + 3])
+                .normalized();
+        articulatedSphericalJointMotors.at(motor.first)
+            ->setPositionTarget(btQuaternion(settings.sphericalPositionTarget),
+                                settings.positionGain);
+      }
+    }
+  }
+  // force activation when motors are updated
+  setActive(true);
+}
 
 }  // namespace physics
 }  // namespace esp

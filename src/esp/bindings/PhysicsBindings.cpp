@@ -44,6 +44,46 @@ void initPhysicsBindings(py::module& m) {
       .value("Fixed", JointType::Fixed)
       .value("Invalid", JointType::Invalid);
 
+  // ==== enum object JointMotorType ====
+  py::enum_<JointMotorType>(m, "JointMotorType")
+      .value("SingleDof", JointMotorType::SingleDof)
+      .value("Spherical", JointMotorType::Spherical);
+
+  // ==== struct object JointMotorSettings ====
+  py::class_<JointMotorSettings, JointMotorSettings::ptr>(m,
+                                                          "JointMotorSettings")
+      .def(py::init(&JointMotorSettings::create<>))
+      .def(py::init(&JointMotorSettings::create<double, double, double, double,
+                                                double>),
+           "position_target"_a, "position_gain"_a, "velocity_target"_a,
+           "velocity_gain"_a, "max_impulse"_a)
+      .def(py::init(
+               &JointMotorSettings::create<const Mn::Quaternion&, double,
+                                           const Mn::Vector3&, double, double>),
+           "spherical_position_target"_a, "position_gain"_a,
+           "spherical_velocity_target"_a, "velocity_gain"_a, "max_impulse"_a)
+      .def_readwrite("position_target", &JointMotorSettings::positionTarget,
+                     R"(Single DoF joint position target.)")
+      .def_readwrite("spherical_position_target",
+                     &JointMotorSettings::sphericalPositionTarget,
+                     R"(Spherical joint position target (Mn::Quaternion).)")
+      .def_readwrite("position_gain", &JointMotorSettings::positionGain,
+                     R"(Position (proportional) gain Kp.)")
+      .def_readwrite(
+          "velocity_target", &JointMotorSettings::velocityTarget,
+          R"(Single DoF joint velocity target. Zero acts like joint damping/friction.)")
+      .def_readwrite("spherical_velocity_target",
+                     &JointMotorSettings::sphericalVelocityTarget,
+                     R"(Spherical joint velocity target.)")
+      .def_readwrite("velocity_gain", &JointMotorSettings::velocityGain,
+                     R"(Velocity (derivative) gain Kd.)")
+      .def_readwrite(
+          "max_impulse", &JointMotorSettings::maxImpulse,
+          R"(The maximum impulse applied by this motor. Should be tuned relative to physics timestep.)")
+      .def_readwrite(
+          "motor_type", &JointMotorSettings::motorType,
+          R"(The type of motor parameterized by these settings. Determines which parameters to use.)");
+
   // ==== struct object RayHitInfo ====
   py::class_<RayHitInfo, RayHitInfo::ptr>(m, "RayHitInfo")
       .def(py::init(&RayHitInfo::create<>))

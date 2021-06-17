@@ -212,15 +212,13 @@ class BulletArticulatedObject : public ArticulatedObject {
   std::vector<float> getJointPositions() override;
 
   /**
-   * @brief Get position limits for all joints.
+   * @brief Get position limits for all joints. (lower, upper)
    *
-   * @param upperLimits Whether to get upper or lower limits with this query.
-   * Default upper.
-   *
-   * @return The active joint position limits. When no limit is set, entry is
-   * inf or -inf.
+   * @return The active joint position limits as a pair of vectors (lower,
+   * upper). When no limit is set, entry is inf or -inf.
    */
-  std::vector<float> getJointPositionLimits(bool upperLimits = false) override;
+  std::pair<std::vector<float>, std::vector<float>> getJointPositionLimits()
+      override;
 
   /**
    * @brief Add linear force to a link's COM specified in the global frame.
@@ -339,6 +337,69 @@ class BulletArticulatedObject : public ArticulatedObject {
   //! clamp current pose to joint limits
   void clampJointLimits() override;
 
+  //============ Joint Motor Constraints =============
+
+  //! Bullet supports vel/pos control joint motors for revolute and prismatic
+  //! joints (1 Dof) This is the suggested way to implement friction/damping at
+  //! dof level
+  bool supportsSingleDofJointMotor(int linkIx) const;
+
+  /**
+   * @brief Create a new JointMotor from a JointMotorSettings.
+   *
+   * Note: No base implementation. See @ref bullet::BulletArticulatedObject.
+   * @param linkIndex the index of the link for which the parent joint will have
+   * a motor attached
+   * @param settings The settings for the joint motor. Must have JointMotorType
+   * correctly configured for the target joint.
+   * @return The motorId for the new joint motor
+   */
+  int createJointMotor(const int linkIndex,
+                       const JointMotorSettings& settings) override;
+
+  /**
+   * @brief Remove and destroy a joint motor.
+   */
+  void removeJointMotor(const int motorId) override;
+
+  /**
+   * @brief Update a JointMotor with new settings.
+   */
+  void updateJointMotor(const int motorId,
+                        const JointMotorSettings& settings) override;
+
+  /**
+   * @brief Create a new set of default JointMotors for all valid dofs in an
+   * ArticulatedObject.
+   *
+   * Note: No base implementation. See @ref bullet::BulletArticulatedObject.
+   *
+   * @return A map of motorIds to link/joint indices for the new motors.
+   */
+  std::unordered_map<int, int> createMotorsForAllDofs(
+      const JointMotorSettings& settings = JointMotorSettings()) override;
+
+  /**
+   * @brief Update all motors targets for this object's joints which support
+   * motors (Revolute, Prismatic, Spherical) from a state array.
+   *
+   * By default, state is interpreted as position targets unless `velocities` is
+   * specified. Expected input is the full length position or velocity array for
+   * this object. This function will safely skip states for jointa which don't
+   * support JointMotors.
+   *
+   * Note: No base implementation. See @ref bullet::BulletArticulatedObject.
+   *
+   * @param stateTargets Full length joint position or velocity array for this
+   * object.
+   * @param velocities Whether to interpret stateTargets as velocities or
+   * positions.
+   */
+  void updateAllMotorTargets(const std::vector<float>& stateTargets,
+                             bool velocities = false) override;
+
+  //============ END - Joint Motor Constraints =============
+
   /**
    * @brief Set or reset the articulated object's state using the object's
    * specified @p sceneAOInstanceAttributes_ (down cast in method).
@@ -348,8 +409,7 @@ class BulletArticulatedObject : public ArticulatedObject {
   void resetStateFromSceneInstanceAttr(
       CORRADE_UNUSED bool defaultCOMCorrection = false) override;
 
-  // std::unique_ptr<btMultiBody> btMultiBody_; //TODO:
-  // TODO: also protected? not due to p2p constraint system
+  //! The Bullet multibody structure
   std::unique_ptr<btMultiBody> btMultiBody_;
 
  protected:
@@ -364,8 +424,15 @@ class BulletArticulatedObject : public ArticulatedObject {
   //! broadphase aabbs for the object. Do this with manual state setters.
   void updateKinematicState();
 
+  int nextJointMotorId_ = 0;
+
+  std::unordered_map<int, std::unique_ptr<btMultiBodyJointMotor>>
+      articulatedJointMotors;
+  std::unordered_map<int, std::unique_ptr<btMultiBodySphericalJointMotor>>
+      articulatedSphericalJointMotors;
+
   //! maps local link id to parent joint's limit constraint
-  std::map<int, JointLimitConstraintInfo> jointLimitConstraints;
+  std::unordered_map<int, JointLimitConstraintInfo> jointLimitConstraints;
 
   // scratch datastrcutures for updateKinematicState
   btAlignedObjectArray<btQuaternion> scratch_q_;
