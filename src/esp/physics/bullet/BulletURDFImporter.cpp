@@ -140,7 +140,8 @@ btCompoundShape* BulletURDFImporter::convertLinkCollisionShapes(
   if (itr != activeModel_->m_links.end()) {
     std::shared_ptr<io::URDF::Link> link = itr->second;
 
-    for (auto& col : link->m_collisionArray) {
+    for (size_t v = 0; v < link->m_collisionArray.size(); ++v) {
+      const io::URDF::CollisionShape& col = link->m_collisionArray[v];
       btCollisionShape* childShape =
           convertURDFToCollisionShape(&col, linkChildShapes);
       if (childShape) {
@@ -169,7 +170,8 @@ int BulletURDFImporter::getCollisionGroupAndMask(int linkIndex,
   }
   if (itr != activeModel_->m_links.end()) {
     std::shared_ptr<io::URDF::Link> link = itr->second;
-    for (auto& col : link->m_collisionArray) {
+    for (size_t v = 0; v < link->m_collisionArray.size(); ++v) {
+      const io::URDF::CollisionShape& col = link->m_collisionArray[v];
       if ((col.m_flags & io::URDF::HAS_COLLISION_GROUP) != 0) {
         colGroup = col.m_collisionGroup;
         result |= io::URDF::HAS_COLLISION_GROUP;
@@ -191,7 +193,8 @@ void BulletURDFImporter::computeTotalNumberOfJoints(int linkIndex) {
   std::vector<int> childIndices;
   getLinkChildIndices(linkIndex, childIndices);
   cache->m_totalNumJoints1 += childIndices.size();
-  for (int childIndex : childIndices) {
+  for (size_t i = 0; i < childIndices.size(); i++) {
+    int childIndex = childIndices[i];
     computeTotalNumberOfJoints(childIndex);
   }
 }
@@ -205,8 +208,8 @@ void BulletURDFImporter::computeParentIndices(URDF2BulletCached& bulletCache,
 
   std::vector<int> childIndices;
   getLinkChildIndices(urdfLinkIndex, childIndices);
-  for (int childIndice : childIndices) {
-    computeParentIndices(bulletCache, childIndice, urdfLinkIndex);
+  for (size_t i = 0; i < childIndices.size(); i++) {
+    computeParentIndices(bulletCache, childIndices[i], urdfLinkIndex);
   }
 }
 
