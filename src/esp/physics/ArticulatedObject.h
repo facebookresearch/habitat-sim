@@ -416,7 +416,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    */
   std::vector<int> getLinkIds() const {
     std::vector<int> ids;
-    ids.reserve(ids.size());
+    ids.reserve(links_.size());
     for (auto it = links_.begin(); it != links_.end(); ++it) {
       ids.push_back(it->first);
     }
