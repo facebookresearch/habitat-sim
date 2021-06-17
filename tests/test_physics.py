@@ -593,14 +593,9 @@ def getRestPositions(articulated_object):
 
 def getRandomPositions(articulated_object):
     r"""Constructs a random pose vector for an ArticulatedObject with unit quaternions for spherical joints."""
-    lower_limits = articulated_object.get_joint_position_limits(upper_limits=False)
-    upper_limits = articulated_object.get_joint_position_limits(upper_limits=True)
-    for ix, val in enumerate(lower_limits):
-        if val < -1:
-            lower_limits[ix] = -1
-    for ix, val in enumerate(upper_limits):
-        if val > 1:
-            upper_limits[ix] = 1
+    joint_limits = articulated_object.joint_position_limits
+    lower_limits = np.maximum(joint_limits[0], -1)
+    upper_limits = np.minimum(joint_limits[1], 1)
     rand_pose = np.random.uniform(
         lower_limits, upper_limits, len(articulated_object.joint_positions)
     )
@@ -778,8 +773,9 @@ def test_articulated_object_kinematics(test_asset):
         assert np.allclose(robot.joint_forces, np.zeros(num_dofs))
 
         # test joint limits and clamping
-        lower_pos_limits = robot.get_joint_position_limits(upper_limits=False)
-        upper_pos_limits = robot.get_joint_position_limits(upper_limits=True)
+        joint_limits = robot.joint_position_limits
+        lower_pos_limits = joint_limits[0]
+        upper_pos_limits = joint_limits[1]
 
         # setup joint positions outside of the limit range
         invalid_joint_positions = getRestPositions(robot)

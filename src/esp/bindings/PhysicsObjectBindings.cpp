@@ -392,13 +392,11 @@ void declareArticulatedObjectWrapper(py::module& m,
                      "'s joint positions. For link to index mapping see "
                      "get_link_joint_pos_offset and get_link_num_joint_pos.")
                         .c_str())
-      .def("get_joint_position_limits",
-           &ManagedArticulatedObject::getJointPositionLimits,
-           ("Get a list of this " + objType +
-            "'s joint limits, either upper limits or lower limits, depending "
-            "on the supplied boolean value for upper_limits.")
-               .c_str(),
-           "upper_limits"_a)
+      .def_property_readonly("joint_position_limits",
+                             &ManagedArticulatedObject::getJointPositionLimits,
+                             ("Get a tuple of lists of this " + objType +
+                              "'s joint limits (lower, upper).")
+                                 .c_str())
       .def("get_link_dof_offset", &ManagedArticulatedObject::getLinkDoFOffset,
            ("Get the index of this " + objType +
             "'s link's first DoF in the global DoF array. Link specified by "

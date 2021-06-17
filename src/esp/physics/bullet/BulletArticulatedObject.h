@@ -212,15 +212,13 @@ class BulletArticulatedObject : public ArticulatedObject {
   std::vector<float> getJointPositions() override;
 
   /**
-   * @brief Get position limits for all joints.
+   * @brief Get position limits for all joints. (lower, upper)
    *
-   * @param upperLimits Whether to get upper or lower limits with this query.
-   * Default upper.
-   *
-   * @return The active joint position limits. When no limit is set, entry is
-   * inf or -inf.
+   * @return The active joint position limits as a pair of vectors (lower,
+   * upper). When no limit is set, entry is inf or -inf.
    */
-  std::vector<float> getJointPositionLimits(bool upperLimits = false) override;
+  std::pair<std::vector<float>, std::vector<float>> getJointPositionLimits()
+      override;
 
   /**
    * @brief Add linear force to a link's COM specified in the global frame.

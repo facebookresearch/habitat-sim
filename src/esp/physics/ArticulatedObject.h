@@ -489,14 +489,11 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   /**
    * @brief Get position limits for all joints.
    *
-   * @param upperLimits Whether to get upper or lower limits with this query.
-   * Default upper.
-   *
    * @return The active joint position limits. Default implementation returns
    * empty list.
    */
-  virtual std::vector<float> getJointPositionLimits(
-      CORRADE_UNUSED bool upperLimits = false) {
+  virtual std::pair<std::vector<float>, std::vector<float>>
+  getJointPositionLimits() {
     return {};
   }
 

@@ -127,9 +127,9 @@ class ManagedArticulatedObject
     return {};
   }
 
-  std::vector<float> getJointPositionLimits(bool upperLimits = false) {
+  std::pair<std::vector<float>, std::vector<float>> getJointPositionLimits() {
     if (auto sp = getObjectReference()) {
-      return sp->getJointPositionLimits(upperLimits);
+      return sp->getJointPositionLimits();
     }
     return {};
   }

@@ -438,28 +438,25 @@ std::vector<float> BulletArticulatedObject::getJointPositions() {
   return positions;
 }
 
-std::vector<float> BulletArticulatedObject::getJointPositionLimits(
-    bool upperLimits) {
-  std::vector<float> posLimits(btMultiBody_->getNumPosVars());
+std::pair<std::vector<float>, std::vector<float>>
+BulletArticulatedObject::getJointPositionLimits() {
+  std::vector<float> lowerLimits(btMultiBody_->getNumPosVars(), -INFINITY);
+  std::vector<float> upperLimits(btMultiBody_->getNumPosVars(), INFINITY);
+
   int posCount = 0;
   for (int i = 0; i < btMultiBody_->getNumLinks(); ++i) {
     if (jointLimitConstraints.count(i) > 0) {
       // a joint limit constraint exists for this link's parent joint
       auto& jlc = jointLimitConstraints.at(i);
-      posLimits[posCount] = upperLimits ? jlc.upperLimit : jlc.lowerLimit;
+      lowerLimits[posCount] = jlc.lowerLimit;
+      upperLimits[posCount] = jlc.upperLimit;
       posCount++;
     } else {
-      // iterate through joint dofs. Note: multi-dof joints cannot be limited,
-      // so ok to skip.
-      for (int posVar = 0; posVar < btMultiBody_->getLink(i).m_posVarCount;
-           ++posVar) {
-        posLimits[posCount] = upperLimits ? INFINITY : -INFINITY;
-        posCount++;
-      }
+      posCount += btMultiBody_->getLink(i).m_posVarCount;
     }
   }
   CHECK(posCount == btMultiBody_->getNumPosVars());
-  return posLimits;
+  return std::make_pair(lowerLimits, upperLimits);
 }
 
 void BulletArticulatedObject::addArticulatedLinkForce(int linkId,
