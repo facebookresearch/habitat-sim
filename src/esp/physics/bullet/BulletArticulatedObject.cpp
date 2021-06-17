@@ -794,7 +794,7 @@ void BulletArticulatedObject::removeJointMotor(const int motorId) {
   }
   jointMotors_.erase(motorId);
   // force activation if motors are updated
-  setActive(true);
+  btMultiBody_->wakeUp();
 }
 
 void BulletArticulatedObject::updateJointMotor(
@@ -836,12 +836,12 @@ void BulletArticulatedObject::updateAllMotorTargets(
     if (settings.motorType == JointMotorType::SingleDof) {
       auto& btMotor = articulatedJointMotors.at(motor.first);
       if (velocities) {
-        settings.velocityTarget = stateTargets[startIndex];
+        settings.velocityTarget = double(stateTargets[startIndex]);
         btMotor->setVelocityTarget(settings.velocityTarget,
                                    settings.velocityGain);
       } else {
         // positions
-        settings.positionTarget = stateTargets[startIndex];
+        settings.positionTarget = double(stateTargets[startIndex]);
         btMotor->setPositionTarget(settings.positionTarget,
                                    settings.positionGain);
       }
