@@ -486,7 +486,8 @@ void declareArticulatedObjectWrapper(py::module& m,
            &ManagedArticulatedObject::createMotorsForAllDofs,
            ("Make motors for all of this " + objType +
             "'s links which support motors (Revolute, Prismatic, Spherical).")
-               .c_str())
+               .c_str(),
+           "settings"_a)
       .def("update_all_motor_targets",
            &ManagedArticulatedObject::updateAllMotorTargets,
            ("Update all motors targets for this " + objType +
@@ -502,7 +503,7 @@ void declareArticulatedObjectWrapper(py::module& m,
            ("Create a joint motor for the specified DOF on this " + objType +
             " using the provided JointMotorSettings")
                .c_str(),
-           "DOF"_a, "settings"_a)
+           "link"_a, "settings"_a)
       .def(
           "remove_joint_motor", &ManagedArticulatedObject::removeJointMotor,
           ("Remove the joint motor specified by the given motor_id from this " +

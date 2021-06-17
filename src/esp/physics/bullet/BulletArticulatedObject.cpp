@@ -773,6 +773,8 @@ int BulletArticulatedObject::createJointMotor(
     articulatedSphericalJointMotors.emplace(
         nextJointMotorId_, std::move(btMotor));  // cache the Bullet structure
   }
+  // force activation if motors are updated
+  setActive(true);
   return nextJointMotorId_++;
 }  // BulletArticulatedObject::createJointMotor
 
@@ -791,6 +793,8 @@ void BulletArticulatedObject::removeJointMotor(const int motorId) {
     return;
   }
   jointMotors_.erase(motorId);
+  // force activation if motors are updated
+  setActive(true);
 }
 
 void BulletArticulatedObject::updateJointMotor(

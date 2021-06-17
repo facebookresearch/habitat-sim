@@ -1151,6 +1151,23 @@ def test_articulated_object_joint_motors(test_asset):
         target_positions = getRestPositions(robot)
         check_joint_positions(robot, target_positions)
 
+        # check removal and auto-creation
+        joint_motor_settings = habitat_sim.physics.JointMotorSettings(
+            position_target=0.0,
+            position_gain=1.0,
+            velocity_target=0.0,
+            velocity_gain=0.1,
+            max_impulse=10000.0,
+        )
+        num_motors = len(robot.get_existing_joint_motor_ids())
+        existing_motor_ids = robot.get_existing_joint_motor_ids()
+        for motor_id in existing_motor_ids:
+            robot.remove_joint_motor(motor_id)
+        assert len(robot.get_existing_joint_motor_ids()) == 0
+
+        robot.create_all_motors(joint_motor_settings)
+        assert len(robot.get_existing_joint_motor_ids()) == num_motors
+
         # set new random position targets
         random_position_target = getRandomPositions(robot)
         robot.update_all_motor_targets(random_position_target)
