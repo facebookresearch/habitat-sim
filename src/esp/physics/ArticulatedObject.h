@@ -80,12 +80,12 @@ struct JointMotorSettings {
                      const Mn::Vector3& _sphericalVelocityTarget,
                      double _velocityGain,
                      double _maxImpulse)
-      : sphericalPositionTarget(_sphericalPositionTarget),
+      : motorType(JointMotorType::Spherical),
+        sphericalPositionTarget(_sphericalPositionTarget),
         positionGain(_positionGain),
         sphericalVelocityTarget(_sphericalVelocityTarget),
         velocityGain(_velocityGain),
-        maxImpulse(_maxImpulse),
-        motorType(JointMotorType::Spherical) {}
+        maxImpulse(_maxImpulse) {}
 
   //! The type of motor parameterized by these settings. Determines which
   //! parameters to use.
@@ -310,6 +310,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   ~ArticulatedObject() override {
     // clear links and delete their SceneNodes
     std::vector<scene::SceneNode*> linkNodes;
+    linkNodes.reserve(links_.size());
     for (auto& link : links_) {
       linkNodes.push_back(&link.second->node());
     }
@@ -416,6 +417,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    */
   std::vector<int> getLinkIds() const {
     std::vector<int> ids;
+    ids.reserve(links_.size());
     for (auto it = links_.begin(); it != links_.end(); ++it) {
       ids.push_back(it->first);
     }
