@@ -310,6 +310,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   ~ArticulatedObject() override {
     // clear links and delete their SceneNodes
     std::vector<scene::SceneNode*> linkNodes;
+    linkNodes.reserve(links_.size());
     for (auto& link : links_) {
       linkNodes.push_back(&link.second->node());
     }
@@ -719,8 +720,10 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * @brief Query a map of motorIds -> links/joints for all active JointMotors.
    */
   virtual std::map<int, int> getExistingJointMotors() {
-    std::map<int, int> motorIdsToLinkIds{jointMotors_.begin(),
-                                         jointMotors_.end()};
+    std::map<int, int> motorIdsToLinkIds;
+    for (auto& motor : jointMotors_) {
+      motorIdsToLinkIds[motor.first] = motor.second->index;
+    }
     return motorIdsToLinkIds;
   }
 
