@@ -803,40 +803,78 @@ void SimTest::addSensorToObject() {
 void SimTest::createMagnumRenderingOff() {
   Corrade::Utility::Debug() << "Starting Test : createMagnumRenderingOff ";
 
+  // create a simulator
   SimulatorConfiguration simConfig{};
-  simConfig.activeSceneName = planeStage;
+  simConfig.activeSceneName = vangogh;
   simConfig.enablePhysics = true;
   simConfig.physicsConfigFile = physicsConfigFile;
   simConfig.overrideSceneLightDefaults = true;
   simConfig.createRenderer = false;
-  simConfig.sceneLightSetup = esp::NO_LIGHT_KEY;
-
-  // check that creating a simulator and adding a primitive object works
+  simConfig.sceneLightSetup = "custom_lighting_1";
   auto simulator = Simulator::create_unique(simConfig);
+
+  // configure objectAttributesManager
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
-  int objectID = simulator->addObjectByHandle("cubeSolid");
+  objectAttribsMgr->loadAllJSONConfigsFromPath(
+      Cr::Utility::Directory::join(TEST_ASSETS, "objects/nested_box"), true);
+
+  // check that we can load a glb file
+  auto objs = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
+  int objectID = simulator->addObjectByHandle(objs[0]);
+  simulator->setTranslation({-10.0f, -10.0f, -10.0f}, objectID);
+
+  // check that adding a primitive object works
+  objectID = simulator->addObjectByHandle("cubeSolid");
   simulator->setTranslation({10.0f, 10.0f, 10.0f}, objectID);
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
+  esp::scene::SceneNode* objectNode = simulator->getObjectSceneNode(objectID);
 
   auto distanceBetween = [](Mn::Vector3 a, Mn::Vector3 b) {
     Mn::Vector3 d = b - a;
     return Mn::Math::pow(dot(d, d), 0.5f);
   };
 
-  // cast a ray at the object to check that the object is actually there
-  auto raycastresults = simulator->castRay(
-      esp::geo::Ray({10.0, 9.0, 10.0}, {0.0, 1.0, 0.0}), 100.0, 0);
-  CORRADE_VERIFY(raycastresults.hits[0].objectId == objectID);
-  auto point = raycastresults.hits[0].point;
-  CORRADE_VERIFY(distanceBetween(point, {10.0, 9.9, 10.0}) < 0.001);
-  raycastresults = simulator->castRay(
-      esp::geo::Ray({10.0, 11.0, 10.0}, {0.0, -1.0, 0.0}), 100.0, 0);
-  CORRADE_VERIFY(raycastresults.hits[0].objectId == objectID);
-  point = raycastresults.hits[0].point;
-  CORRADE_VERIFY(distanceBetween(point, {10.0, 10.1, 10.0}) < 0.001);
+  auto testRaycast =
+      [&]() {
+        // cast a ray at the object to check that the object is actually there
+        auto raycastresults = simulator->castRay(
+            esp::geo::Ray({10.0, 9.0, 10.0}, {0.0, 1.0, 0.0}), 100.0, 0);
+        CORRADE_VERIFY(raycastresults.hits[0].objectId == objectID);
+        auto point = raycastresults.hits[0].point;
+        CORRADE_VERIFY(distanceBetween(point, {10.0, 9.9, 10.0}) < 0.001);
+        raycastresults = simulator->castRay(
+            esp::geo::Ray({10.0, 11.0, 10.0}, {0.0, -1.0, 0.0}), 100.0, 0);
+        CORRADE_VERIFY(raycastresults.hits[0].objectId == objectID);
+        point = raycastresults.hits[0].point;
+        CORRADE_VERIFY(distanceBetween(point, {10.0, 10.1, 10.0}) < 0.001);
+      };
+
+  auto testBoundingBox =
+      [&]() {
+        // check that we can still compute bounding box of the object
+        Magnum::Range3D meshbb = objectNode->getCumulativeBB();
+        float eps = 0.001;
+        CORRADE_VERIFY(abs(meshbb.left() - -0.1) < eps);
+        CORRADE_VERIFY(abs(meshbb.right() - 0.1) < eps);
+        CORRADE_VERIFY(abs(meshbb.bottom() - -0.1) < eps);
+        CORRADE_VERIFY(abs(meshbb.top() - 0.1) < eps);
+        CORRADE_VERIFY(abs(meshbb.back() - -0.1) < eps);
+        CORRADE_VERIFY(abs(meshbb.front() - 0.1) < eps);
+      };
+  // test raycast and bounding box for cubeSolid
+  testRaycast();
+  testBoundingBox();
+
+  // test raycast and bounding box for cubeWireframe
+  simulator->removeObject(objectID);
+  objectID = simulator->addObjectByHandle("cubeWireframe");
+  simulator->setTranslation({10.0f, 10.0f, 10.0f}, objectID);
+  CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
+  objectNode = simulator->getObjectSceneNode(objectID);
+  testRaycast();
+  testBoundingBox();
 
   // do some sensor stuff to check that nothing errors
-  esp::scene::SceneNode& objectNode = *simulator->getObjectSceneNode(objectID);
   auto objectSensorSpec = esp::sensor::CameraSensorSpec::create();
   objectSensorSpec->uuid = std::to_string(objectID);
   objectSensorSpec->position = {0, 0, 0};
@@ -845,7 +883,7 @@ void SimTest::createMagnumRenderingOff() {
   simulator->addSensorToObject(objectID, objectSensorSpec);
   std::string expectedUUID = std::to_string(objectID);
   CameraSensor& cameraSensor = dynamic_cast<CameraSensor&>(
-      objectNode.getNodeSensorSuite().get(expectedUUID));
+      objectNode->getNodeSensorSuite().get(expectedUUID));
   cameraSensor.setTransformationFromSpec();
   Observation observation;
 

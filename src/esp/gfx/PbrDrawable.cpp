@@ -19,8 +19,7 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
                          ShaderManager& shaderManager,
                          const Mn::ResourceKey& lightSetupKey,
                          const Mn::ResourceKey& materialDataKey,
-                         DrawableGroup* group,
-                         bool createRenderer)
+                         DrawableGroup* group)
     : Drawable{node, mesh, group},
       shaderManager_{shaderManager},
       lightSetup_{shaderManager.get<LightSetup>(lightSetupKey)},
@@ -68,8 +67,6 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
   if (materialData_->doubleSided) {
     flags_ |= PbrShader::Flag::DoubleSided;
   }
-
-  isRendererCreated = createRenderer;
 
   // Defer the shader initialization because at this point, the lightSetup may
   // not be done in the Simulator. Simulator itself is currently under
@@ -159,12 +156,6 @@ Mn::ResourceKey PbrDrawable::getShaderKey(Mn::UnsignedInt lightCount,
 }
 
 PbrDrawable& PbrDrawable::updateShader() {
-  // Block the function if there is no renderer. Otherwise this will segfault.
-  // We don't have use for a shader anyways if we are not rendering anything.
-  if (!isRendererCreated) {
-    return *this;
-  }
-
   unsigned int lightCount = lightSetup_->size();
   if (!shader_ || shader_->lightCount() != lightCount ||
       shader_->flags() != flags_) {

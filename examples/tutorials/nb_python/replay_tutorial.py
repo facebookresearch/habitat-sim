@@ -69,7 +69,7 @@ output_path = os.path.join(dir_path, "examples/tutorials/replay_tutorial_output/
 # %%
 
 
-def make_configuration(make_video_during_simulation=False):
+def make_configuration(make_video_during_sim=False):
     # simulator configuration
     backend_cfg = habitat_sim.SimulatorConfiguration()
     backend_cfg.scene_id = os.path.join(
@@ -81,7 +81,7 @@ def make_configuration(make_video_during_simulation=False):
     # Enable gfx replay save. See also our call to sim.gfx_replay_manager.save_keyframe()
     # below.
     backend_cfg.enable_gfx_replay_save = True
-    backend_cfg.create_renderer = make_video_during_simulation
+    backend_cfg.create_renderer = make_video_during_sim
 
     sensor_cfg = habitat_sim.CameraSensorSpec()
     sensor_cfg.resolution = [544, 720]

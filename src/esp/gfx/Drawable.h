@@ -117,8 +117,6 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
 
   scene::SceneNode& node_;
 
-  bool isRendererCreated;
-
  private:
   Magnum::GL::Mesh* mesh_ = nullptr;
 };

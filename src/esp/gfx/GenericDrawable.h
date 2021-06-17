@@ -50,6 +50,8 @@ class GenericDrawable : public Drawable {
   Magnum::Resource<LightSetup> lightSetup_;
 
   Magnum::Shaders::PhongGL::Flags flags_;
+
+  bool isRendererCreated;
 };
 
 }  // namespace gfx

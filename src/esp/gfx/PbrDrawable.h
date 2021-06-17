@@ -25,8 +25,7 @@ class PbrDrawable : public Drawable {
                        ShaderManager& shaderManager,
                        const Magnum::ResourceKey& lightSetupKey,
                        const Magnum::ResourceKey& materialDataKey,
-                       DrawableGroup* group = nullptr,
-                       bool createRenderer = true);
+                       DrawableGroup* group = nullptr);
 
   /**
    *  @brief Set the light info
