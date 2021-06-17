@@ -80,8 +80,8 @@ struct JointMotorSettings {
                      const Mn::Vector3& _sphericalVelocityTarget,
                      double _velocityGain,
                      double _maxImpulse)
-      : sphericalPositionTarget(_sphericalPositionTarget),
-        motorType(JointMotorType::Spherical),
+      : motorType(JointMotorType::Spherical),
+        sphericalPositionTarget(_sphericalPositionTarget),
         positionGain(_positionGain),
         sphericalVelocityTarget(_sphericalVelocityTarget),
         velocityGain(_velocityGain),
