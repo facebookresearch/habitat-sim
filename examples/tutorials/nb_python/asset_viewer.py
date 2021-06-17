@@ -738,9 +738,9 @@ make_simulator_from_settings(sim_settings)
 # @markdown Drag a stage or object asset into a directory at the left,
 # @markdown and then load it below by setting object_to_view_path
 # @markdown Put the full path to the asset you would like to view here :
-object_to_view_path = (
-    "./data/test_assets/scenes/simple_room.glb"  # @param {type:"string"}
-)
+# fmt: off
+object_to_view_path = "./data/test_assets/scenes/simple_room.glb"  # @param {type:"string"}
+# fmt: on
 
 # this is the name to save the resultant video with
 clip_short_name = object_to_view_path.split("/")[-1].split(".")[0]
