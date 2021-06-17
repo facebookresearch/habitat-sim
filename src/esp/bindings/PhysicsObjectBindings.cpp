@@ -480,13 +480,24 @@ void declareArticulatedObjectWrapper(py::module& m,
       .def("get_existing_joint_motor_ids",
            &ManagedArticulatedObject::getExistingJointMotors,
            ("Get a dictionary mapping all of this " + objType +
-            "'s joint motor ids to their respective start DoFs.")
+            "'s joint motor ids to their respective links/joints.")
                .c_str())
       .def("create_all_motors",
            &ManagedArticulatedObject::createMotorsForAllDofs,
            ("Make motors for all of this " + objType +
             "'s links which support motors (Revolute, Prismatic, Spherical).")
                .c_str())
+      .def("update_all_motor_targets",
+           &ManagedArticulatedObject::updateAllMotorTargets,
+           ("Update all motors targets for this " + objType +
+            "'s joints which support motors (Revolute, Prismatic, Spherical) "
+            "from a state array. By default, state is interpreted as position "
+            "targets unless `velocities` is specified. Expected input is the "
+            "full length position or velocity array for this object. This "
+            "function will safely skip states for joints which don't support "
+            "JointMotors.")
+               .c_str(),
+           "state_targets"_a, "velocities"_a = false)
       .def("create_joint_motor", &ManagedArticulatedObject::createJointMotor,
            ("Create a joint motor for the specified DOF on this " + objType +
             " using the provided JointMotorSettings")
@@ -506,9 +517,8 @@ void declareArticulatedObjectWrapper(py::module& m,
                .c_str(),
            "motor_id"_a)
       .def("update_joint_motor", &ManagedArticulatedObject::updateJointMotor,
-           ("Update the JointMotorSettings for the motor specified by the "
-            "provided motor_id on this " +
-            objType + ".")
+           ("Update the JointMotorSettings for the motor on this " + objType +
+            " specified by the provided motor_id.")
                .c_str(),
            "motor_id"_a, "settings"_a);
 }  // declareArticulatedObjectWrapper

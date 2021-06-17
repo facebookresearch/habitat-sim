@@ -381,6 +381,25 @@ class BulletArticulatedObject : public ArticulatedObject {
   std::map<int, int> createMotorsForAllDofs(
       const JointMotorSettings& settings = JointMotorSettings()) override;
 
+  /**
+   * @brief Update all motors targets for this object's joints which support
+   * motors (Revolute, Prismatic, Spherical) from a state array.
+   *
+   * By default, state is interpreted as position targets unless `velocities` is
+   * specified. Expected input is the full length position or velocity array for
+   * this object. This function will safely skip states for jointa which don't
+   * support JointMotors.
+   *
+   * Note: No base implementation. See @ref bullet::BulletArticulatedObject.
+   *
+   * @param stateTargets Full length joint position or velocity array for this
+   * object.
+   * @param velocities Whether to interpret stateTargets as velocities or
+   * positions.
+   */
+  void updateAllMotorTargets(const std::vector<float>& stateTargets,
+                             bool velocities = false) override;
+
   //============ END - Joint Motor Constraints =============
 
   /**

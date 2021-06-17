@@ -717,15 +717,14 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   }
 
   /**
-   * @brief Query a map of motorIds -> dofs (or links for spherical motors) for
-   * all active JointMotors.
+   * @brief Query a map of motorIds -> links/joints for all active JointMotors.
    */
   virtual std::map<int, int> getExistingJointMotors() {
-    std::map<int, int> motorIdsToDofIds;
+    std::map<int, int> motorIdsToLinkIds;
     for (auto& motor : jointMotors_) {
-      motorIdsToDofIds[motor.first] = motor.second->index;
+      motorIdsToLinkIds[motor.first] = motor.second->index;
     }
-    return motorIdsToDofIds;
+    return motorIdsToLinkIds;
   }
 
   /**
@@ -742,6 +741,29 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
     Magnum::Debug{} << "ArticulatedObject::createMotorsForAllDofs(): - ERROR, "
                        "SHOULD NOT BE CALLED WITHOUT BULLET ";
     return std::map<int, int>();
+  }
+
+  /**
+   * @brief Update all motors targets for this object's joints which support
+   * motors (Revolute, Prismatic, Spherical) from a state array.
+   *
+   * By default, state is interpreted as position targets unless `velocities` is
+   * specified. Expected input is the full length position or velocity array for
+   * this object. This function will safely skip states for jointa which don't
+   * support JointMotors.
+   *
+   * Note: No base implementation. See @ref bullet::BulletArticulatedObject.
+   *
+   * @param stateTargets Full length joint position or velocity array for this
+   * object.
+   * @param velocities Whether to interpret stateTargets as velocities or
+   * positions.
+   */
+  virtual void updateAllMotorTargets(
+      CORRADE_UNUSED const std::vector<float>& stateTargets,
+      CORRADE_UNUSED bool velocities = false) {
+    Magnum::Debug{} << "ArticulatedObject::updateAllMotorTargets(): - ERROR, "
+                       "SHOULD NOT BE CALLED WITHOUT BULLET ";
   }
 
   //=========== END - Joint Motor API ===========

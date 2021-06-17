@@ -593,7 +593,17 @@ def getRestPositions(articulated_object):
 
 def getRandomPositions(articulated_object):
     r"""Constructs a random pose vector for an ArticulatedObject with unit quaternions for spherical joints."""
-    rand_pose = np.random.uniform(-1, 1, len(articulated_object.joint_positions))
+    lower_limits = articulated_object.get_joint_position_limits(upper_limits=False)
+    upper_limits = articulated_object.get_joint_position_limits(upper_limits=True)
+    for ix, val in enumerate(lower_limits):
+        if val < -1:
+            lower_limits[ix] = -1
+    for ix, val in enumerate(upper_limits):
+        if val > 1:
+            upper_limits[ix] = 1
+    rand_pose = np.random.uniform(
+        lower_limits, upper_limits, len(articulated_object.joint_positions)
+    )
     for linkIx in range(articulated_object.num_links):
         if (
             articulated_object.get_link_joint_type(linkIx)
@@ -1019,6 +1029,29 @@ def test_articulated_object_damping_joint_motors():
             assert motor_settings.velocity_target == 0.0
 
 
+def check_joint_positions(robot, target, single_dof_eps=5.0e-3, quat_eps=0.15):
+    positions = robot.joint_positions
+    for link_id in robot.get_link_ids():
+        start_pos = robot.get_link_joint_pos_offset(link_id)
+        joint_type = robot.get_link_joint_type(link_id)
+        if joint_type == habitat_sim.physics.JointType.Spherical:
+            target_q = mn.Quaternion(
+                target[start_pos : start_pos + 3], target[start_pos + 3]
+            )
+            actual_q = mn.Quaternion(
+                positions[start_pos : start_pos + 3], positions[start_pos + 3]
+            )
+            angle_error = mn.math.angle(target_q, actual_q)
+            angle_error2 = mn.math.angle(target_q, -1 * actual_q)
+            # negative quaternion represents the same rotation, but gets a different angle error so check both
+            assert angle_error < mn.Rad(quat_eps) or angle_error2 < mn.Rad(quat_eps)
+        elif joint_type in [
+            habitat_sim.physics.JointType.Revolute,
+            habitat_sim.physics.JointType.Prismatic,
+        ]:
+            assert abs(target[start_pos] - positions[start_pos]) < single_dof_eps
+
+
 @pytest.mark.skipif(
     not habitat_sim.built_with_bullet,
     reason="ArticulatedObject API requires Bullet physics.",
@@ -1042,21 +1075,12 @@ def test_articulated_object_joint_motors(test_asset):
 
     with habitat_sim.Simulator(hab_cfg) as sim:
         art_obj_mgr = sim.get_articulated_object_manager()
-        rigid_obj_mgr = sim.get_rigid_object_manager()
-        obj_template_mgr = sim.get_object_template_manager()
         robot_file = test_asset
 
-        # add a primitive ground plane to the world at y=-1
-        cube_prim_handle = obj_template_mgr.get_template_handles("cube")[0]
-        cube_template = obj_template_mgr.get_template_by_handle(cube_prim_handle)
-        cube_template.scale = [20.0, 0.2, 20.0]
-        obj_template_mgr.register_template(cube_template)
-        cube_obj = rigid_obj_mgr.add_object_by_template_handle(cube_prim_handle)
-        cube_obj.translation = [0.0, -1.2, 0.0]
-        cube_obj.motion_type = habitat_sim.physics.MotionType.STATIC
-
-        # parse URDF and add an ArticulatedObject to the world
-        robot = art_obj_mgr.add_articulated_object_from_urdf(filepath=robot_file)
+        # add an ArticulatedObject to the world with a fixed base
+        robot = art_obj_mgr.add_articulated_object_from_urdf(
+            filepath=robot_file, fixed_base=True
+        )
         assert robot.is_alive
 
         # remove any automatically created motors
@@ -1065,7 +1089,20 @@ def test_articulated_object_joint_motors(test_asset):
             robot.remove_joint_motor(motor_id)
         assert len(robot.get_existing_joint_motor_ids()) == 0
 
-        # iterate through links and setup/test joint motors
+        check_joint_positions(robot, getRestPositions(robot))
+
+        # setup the camera for debug video
+        sim.agents[0].scene_node.translation = [0.0, -1.5, 2.0]
+        observations = []
+        target_time = 0.0
+
+        # let the agent drop
+        target_time += 0.2
+        while sim.get_world_time() < target_time:
+            sim.step_physics(1.0 / 60.0)
+            observations.append(sim.get_sensor_observations())
+
+        # iterate through links and setup joint motors to hold a rest position
         joint_motor_settings = None
         print(f" L({-1}): name = {robot.get_link_name(-1)}")
         for link_id in robot.get_link_ids():
@@ -1093,10 +1130,10 @@ def test_articulated_object_joint_motors(test_asset):
                 # construct a single dof JointMotorSettings
                 joint_motor_settings = habitat_sim.physics.JointMotorSettings(
                     position_target=0.0,
-                    position_gain=0.2,
+                    position_gain=1.0,
                     velocity_target=0.0,
                     velocity_gain=0.1,
-                    max_impulse=1000.0,
+                    max_impulse=10000.0,
                 )
             else:
                 # planar or fixed joints are not supported
@@ -1104,18 +1141,59 @@ def test_articulated_object_joint_motors(test_asset):
             # create the motor from its settings
             robot.create_joint_motor(link_id, joint_motor_settings)
 
-        # setup the camera for debug video
-        sim.agents[0].scene_node.translation = [0.0, -2.0, 2.0]
-        # output some test video
-        observations = []
-        while sim.get_world_time() < 4.0:
+        target_time += 6.0
+        while sim.get_world_time() < target_time:
             sim.step_physics(1.0 / 60.0)
             observations.append(sim.get_sensor_observations())
 
+        # validate that rest pose is maintained
+        # Note: assume all joints for test assets can be actuated
         target_positions = getRestPositions(robot)
-        assert np.allclose(target_positions, robot.joint_positions, atol=0.06)
+        check_joint_positions(robot, target_positions)
+
+        # set new random position targets
+        random_position_target = getRandomPositions(robot)
+        robot.update_all_motor_targets(random_position_target)
+
+        target_time += 4.0
+        while sim.get_world_time() < target_time:
+            sim.step_physics(1.0 / 60.0)
+            observations.append(sim.get_sensor_observations())
+        check_joint_positions(robot, random_position_target)
+
+        # set zero position gains and non-zero velocity target
+        new_vel_target = np.ones(len(robot.joint_velocities)) * 0.5
+        robot.update_all_motor_targets(new_vel_target, velocities=True)
+
+        for motor_id in robot.get_existing_joint_motor_ids():
+            joint_motor_settings = robot.get_joint_motor_settings(motor_id)
+            # first check that velocity target update is reflected in settings
+            if (
+                joint_motor_settings.motor_type
+                == habitat_sim.physics.JointMotorType.SingleDof
+            ):
+                assert joint_motor_settings.velocity_target == 0.5
+            else:
+                # spherical
+                assert joint_motor_settings.spherical_velocity_target == mn.Vector3(0.5)
+            joint_motor_settings.position_gain = 0
+            joint_motor_settings.velocity_gain = 1.0
+            robot.update_joint_motor(motor_id, joint_motor_settings)
+
+        # to ensure joint has enough distance to achieve target velocity, reset positions
+        robot.clear_joint_states()
+
+        target_time += 0.5
+        while sim.get_world_time() < target_time:
+            sim.step_physics(1.0 / 60.0)
+            observations.append(sim.get_sensor_observations())
+
+        # TODO: spherical joint motor velocities are not working correctly
+        if "amass_male" not in test_asset:
+            assert np.allclose(new_vel_target, robot.joint_velocities, atol=0.06)
 
         # produce some test debug video
+
         # from habitat_sim.utils import viz_utils as vut
         # vut.make_video(
         #     observations,

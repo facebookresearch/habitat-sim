@@ -275,6 +275,13 @@ class ManagedArticulatedObject
     return {};
   }
 
+  void updateAllMotorTargets(const std::vector<float>& stateTargets,
+                             bool velocities) {
+    if (auto sp = getObjectReference()) {
+      sp->updateAllMotorTargets(stateTargets, velocities);
+    }
+  }
+
  public:
   ESP_SMART_POINTERS(ManagedArticulatedObject)
 };  // namespace physics
