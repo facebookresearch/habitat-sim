@@ -1029,7 +1029,7 @@ def test_articulated_object_damping_joint_motors():
             assert motor_settings.velocity_target == 0.0
 
 
-def check_joint_positions(robot, target, single_dof_eps=5.0e-3, quat_eps=0.15):
+def check_joint_positions(robot, target, single_dof_eps=5.0e-3, quat_eps=0.2):
     positions = robot.joint_positions
     for link_id in robot.get_link_ids():
         start_pos = robot.get_link_joint_pos_offset(link_id)
@@ -1066,6 +1066,8 @@ def check_joint_positions(robot, target, single_dof_eps=5.0e-3, quat_eps=0.15):
     ],
 )
 def test_articulated_object_joint_motors(test_asset):
+    # set this to output test results as video for easy investigation
+    produce_debug_video = False
     cfg_settings = examples.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "NONE"
     cfg_settings["enable_physics"] = True
@@ -1100,7 +1102,8 @@ def test_articulated_object_joint_motors(test_asset):
         target_time += 0.2
         while sim.get_world_time() < target_time:
             sim.step_physics(1.0 / 60.0)
-            observations.append(sim.get_sensor_observations())
+            if produce_debug_video:
+                observations.append(sim.get_sensor_observations())
 
         # iterate through links and setup joint motors to hold a rest position
         joint_motor_settings = None
@@ -1144,7 +1147,8 @@ def test_articulated_object_joint_motors(test_asset):
         target_time += 6.0
         while sim.get_world_time() < target_time:
             sim.step_physics(1.0 / 60.0)
-            observations.append(sim.get_sensor_observations())
+            if produce_debug_video:
+                observations.append(sim.get_sensor_observations())
 
         # validate that rest pose is maintained
         # Note: assume all joints for test assets can be actuated
@@ -1154,9 +1158,9 @@ def test_articulated_object_joint_motors(test_asset):
         # check removal and auto-creation
         joint_motor_settings = habitat_sim.physics.JointMotorSettings(
             position_target=0.0,
-            position_gain=1.0,
+            position_gain=0.8,
             velocity_target=0.0,
-            velocity_gain=0.1,
+            velocity_gain=0.2,
             max_impulse=10000.0,
         )
         num_motors = len(robot.get_existing_joint_motor_ids())
@@ -1172,10 +1176,12 @@ def test_articulated_object_joint_motors(test_asset):
         random_position_target = getRandomPositions(robot)
         robot.update_all_motor_targets(random_position_target)
 
-        target_time += 4.0
+        target_time += 6.0
         while sim.get_world_time() < target_time:
             sim.step_physics(1.0 / 60.0)
-            observations.append(sim.get_sensor_observations())
+            if produce_debug_video:
+                observations.append(sim.get_sensor_observations())
+        # NOTE: because target is randomly generated, this check can fail probabilistically (try re-running test)
         check_joint_positions(robot, random_position_target)
 
         # set zero position gains and non-zero velocity target
@@ -1203,19 +1209,21 @@ def test_articulated_object_joint_motors(test_asset):
         target_time += 0.5
         while sim.get_world_time() < target_time:
             sim.step_physics(1.0 / 60.0)
-            observations.append(sim.get_sensor_observations())
+            if produce_debug_video:
+                observations.append(sim.get_sensor_observations())
 
         # TODO: spherical joint motor velocities are not working correctly
         if "amass_male" not in test_asset:
             assert np.allclose(new_vel_target, robot.joint_velocities, atol=0.06)
 
         # produce some test debug video
+        if produce_debug_video:
+            from habitat_sim.utils import viz_utils as vut
 
-        # from habitat_sim.utils import viz_utils as vut
-        # vut.make_video(
-        #     observations,
-        #     "color_sensor",
-        #     "color",
-        #     "test_physics_output"+test_asset.split("/")[-1],
-        #     open_vid=True,
-        # )
+            vut.make_video(
+                observations,
+                "color_sensor",
+                "color",
+                "test_articulated_object_joint_motors__" + test_asset.split("/")[-1],
+                open_vid=False,
+            )
