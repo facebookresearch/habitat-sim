@@ -67,13 +67,12 @@ struct JointMotorSettings {
                      double _positionGain,
                      double _velocityTarget,
                      double _velocityGain,
-                     double _maxImpulse) {
-    positionTarget = _positionTarget;
-    positionGain = _positionGain;
-    velocityTarget = _velocityTarget;
-    velocityGain = _velocityGain;
-    maxImpulse = _maxImpulse;
-  }
+                     double _maxImpulse)
+      : positionTarget(_positionTarget),
+        positionGain(_positionGain),
+        velocityTarget(_velocityTarget),
+        velocityGain(_velocityGain),
+        maxImpulse(_maxImpulse) {}
 
   //! constructor for spherical motor settings
   JointMotorSettings(const Mn::Quaternion& _sphericalPositionTarget,
@@ -82,12 +81,11 @@ struct JointMotorSettings {
                      double _velocityGain,
                      double _maxImpulse)
       : sphericalPositionTarget(_sphericalPositionTarget),
-        sphericalVelocityTarget(_sphericalVelocityTarget) {
-    positionGain = _positionGain;
-    velocityGain = _velocityGain;
-    maxImpulse = _maxImpulse;
-    motorType = JointMotorType::Spherical;
-  }
+        positionGain(_positionGain),
+        sphericalVelocityTarget(_sphericalVelocityTarget),
+        velocityGain(_velocityGain),
+        maxImpulse(_maxImpulse),
+        motorType(JointMotorType::Spherical) {}
 
   //! The type of motor parameterized by these settings. Determines which
   //! parameters to use.
