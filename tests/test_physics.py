@@ -1010,7 +1010,7 @@ def test_articulated_object_damping_joint_motors():
         assert robot.is_alive
         # When URDF joint damping is defined, we generate a set of motors automatically
         # get a map of joint motor ids to starting DoF indices
-        existing_joint_motors = robot.get_existing_joint_motor_ids()
+        existing_joint_motors = robot.existing_joint_motor_ids
         assert len(existing_joint_motors) == 7
         for id_to_dof in existing_joint_motors.items():
             # for this model, should be single dof motors for all dofs
@@ -1086,10 +1086,10 @@ def test_articulated_object_joint_motors(test_asset):
         assert robot.is_alive
 
         # remove any automatically created motors
-        existing_motor_ids = robot.get_existing_joint_motor_ids()
+        existing_motor_ids = robot.existing_joint_motor_ids
         for motor_id in existing_motor_ids:
             robot.remove_joint_motor(motor_id)
-        assert len(robot.get_existing_joint_motor_ids()) == 0
+        assert len(robot.existing_joint_motor_ids) == 0
 
         check_joint_positions(robot, getRestPositions(robot))
 
@@ -1163,14 +1163,14 @@ def test_articulated_object_joint_motors(test_asset):
             velocity_gain=0.2,
             max_impulse=10000.0,
         )
-        num_motors = len(robot.get_existing_joint_motor_ids())
-        existing_motor_ids = robot.get_existing_joint_motor_ids()
+        num_motors = len(robot.existing_joint_motor_ids)
+        existing_motor_ids = robot.existing_joint_motor_ids
         for motor_id in existing_motor_ids:
             robot.remove_joint_motor(motor_id)
-        assert len(robot.get_existing_joint_motor_ids()) == 0
+        assert len(robot.existing_joint_motor_ids) == 0
 
         robot.create_all_motors(joint_motor_settings)
-        assert len(robot.get_existing_joint_motor_ids()) == num_motors
+        assert len(robot.existing_joint_motor_ids) == num_motors
 
         # set new random position targets
         random_position_target = getRandomPositions(robot)
@@ -1188,7 +1188,7 @@ def test_articulated_object_joint_motors(test_asset):
         new_vel_target = np.ones(len(robot.joint_velocities)) * 0.5
         robot.update_all_motor_targets(new_vel_target, velocities=True)
 
-        for motor_id in robot.get_existing_joint_motor_ids():
+        for motor_id in robot.existing_joint_motor_ids:
             joint_motor_settings = robot.get_joint_motor_settings(motor_id)
             # first check that velocity target update is reflected in settings
             if (

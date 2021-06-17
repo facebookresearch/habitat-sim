@@ -477,11 +477,12 @@ void declareArticulatedObjectWrapper(py::module& m,
             "'s current pose to specified joint limits.")
                .c_str())
       // Joint Motor API
-      .def("get_existing_joint_motor_ids",
-           &ManagedArticulatedObject::getExistingJointMotors,
-           ("Get a dictionary mapping all of this " + objType +
-            "'s joint motor ids to their respective links/joints.")
-               .c_str())
+      .def_property_readonly(
+          "existing_joint_motor_ids",
+          &ManagedArticulatedObject::getExistingJointMotors,
+          ("A dictionary mapping all of this " + objType +
+           "'s joint motor ids to their respective links/joints.")
+              .c_str())
       .def("create_all_motors",
            &ManagedArticulatedObject::createMotorsForAllDofs,
            ("Make motors for all of this " + objType +
