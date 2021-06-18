@@ -35,11 +35,58 @@ SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
   setMassScale(1.0f);
 }
 
+/**
+ * @brief Used for info purposes.  Return a string name corresponding to the
+ * currently specified shader type value;
+ */
+std::string SceneObjectInstanceAttributes::getCurrShaderTypeName() const {
+  int shaderTypeVal = getShaderType();
+  if (shaderTypeVal <=
+          static_cast<int>(attributes::ObjectInstanceShaderType::Unknown) ||
+      shaderTypeVal >=
+          static_cast<int>(
+              attributes::ObjectInstanceShaderType::_EndShaderType)) {
+    return "unknown shader type";
+  }
+  // Must always be valid value
+  ObjectInstanceShaderType shaderType =
+      static_cast<ObjectInstanceShaderType>(shaderTypeVal);
+  for (const auto& it :
+       attributes::AbstractObjectAttributes::ShaderTypeNamesMap) {
+    if (it.second == shaderType) {
+      return it.first;
+    }
+  }
+  return "unknown shader type";
+}
+
+std::string SceneObjectInstanceAttributes::getObjectInfoInternal() const {
+  return cfg.value("translation") + ", " + cfg.value("rotation") + ", " +
+         getCurrMotionTypeName() + ", " + getCurrShaderTypeName() + ", " +
+         cfg.value("uniform_scale") + ", " + cfg.value("mass_scale") + ", " +
+         getSceneObjInstanceInfoInternal();
+}  // SceneObjectInstanceAttributes::getObjectInfoInternal()
+
 SceneAOInstanceAttributes::SceneAOInstanceAttributes(const std::string& handle)
     : SceneObjectInstanceAttributes(handle, "SceneAOInstanceAttributes") {
   // set default fixed base value (only used for articulated object)
   setFixedBase(false);
 }
+
+std::string SceneAOInstanceAttributes::getSceneObjInstanceInfoInternal() const {
+  std::string initJointPose = "[";
+  for (const auto& it : initJointPose_) {
+    initJointPose += std::to_string(it.second) + ", ";
+  }
+  initJointPose = "]";
+  std::string initJointVels = "[";
+  for (const auto& it : initJointPose_) {
+    initJointVels += std::to_string(it.second) + ", ";
+  }
+  initJointVels = "]";
+  return cfg.value("fixed_base") + ", " + initJointPose + ", " + initJointVels +
+         ", ";
+}  // SceneAOInstanceAttributes::getSceneObjInstanceInfoInternal()
 
 const std::map<std::string, managers::SceneInstanceTranslationOrigin>
     SceneAttributes::InstanceTranslationOriginMap = {
@@ -54,6 +101,23 @@ SceneAttributes::SceneAttributes(const std::string& handle)
   // defaults to asset local
   setTranslationOrigin(
       static_cast<int>(managers::SceneInstanceTranslationOrigin::AssetLocal));
+}
+
+std::string SceneAttributes::getObjectInfoInternal() const {
+  std::string res = "\n";
+  // stage instance info
+  res += stageInstance_->getObjectInfo() + "\n";
+
+  // object instance info
+  for (const auto& objInst : objectInstances_) {
+    res += objInst->getObjectInfo() + "\n";
+  }
+
+  // articulated object instance info
+  for (const auto& artObjInst : articulatedObjectInstances_) {
+    res += artObjInst->getObjectInfo() + "\n";
+  }
+  return res;
 }
 
 }  // namespace attributes

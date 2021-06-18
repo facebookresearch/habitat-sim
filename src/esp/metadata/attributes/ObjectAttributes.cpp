@@ -50,6 +50,16 @@ AbstractObjectAttributes::AbstractObjectAttributes(
   setCollisionAssetHandle("");
 }  // AbstractObjectAttributes ctor
 
+std::string AbstractObjectAttributes::getObjectInfoInternal() const {
+  return cfg.value("scale") + ", " + cfg.value("margin") + ", " +
+         cfg.value("orient_up") + ", " + cfg.value("orient_front") + ", " +
+         cfg.value("units_to_meters") + ", " +
+         cfg.value("friction_coefficient") + ", " +
+         cfg.value("restitution_coefficient") + ", " + getRenderAssetHandle() +
+         ", " + getCollisionAssetHandle() + ", " + getCurrShaderTypeName() +
+         ", " + getAbstractObjectInfoInternal();
+}  // AbstractObjectAttributes::getObjectInfoInternal
+
 ObjectAttributes::ObjectAttributes(const std::string& handle)
     : AbstractObjectAttributes("ObjectAttributes", handle) {
   // fill necessary attribute defaults

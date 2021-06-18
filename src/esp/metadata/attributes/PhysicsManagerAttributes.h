@@ -46,6 +46,20 @@ class PhysicsManagerAttributes : public AbstractAttributes {
     return getDouble("restitution_coefficient");
   }
 
+ protected:
+  /**
+   * @brief Retrieve a comma-separated informational string about the contents
+   * of this managed object.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+  std::string getObjectInfoInternal() const override {
+    return getSimulator() + ", " + cfg.value("timestep") + ", " +
+           cfg.value("max_substeps") + ", " + cfg.value("gravity") + ", " +
+           cfg.value("friction_coefficient") + ", " +
+           cfg.value("restitution_coefficient");
+  }
+
  public:
   ESP_SMART_POINTERS(PhysicsManagerAttributes)
 };  // class PhysicsManagerAttributes

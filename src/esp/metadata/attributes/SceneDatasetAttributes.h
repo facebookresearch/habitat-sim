@@ -322,7 +322,18 @@ class SceneDatasetAttributes : public AbstractAttributes {
                                   lightLayoutAttributesManager_);
   }  // getLightSetupFullHandle
 
+  /**
+   * @brief return a summary of this dataset
+   */
+  std::string getDatasetSummary();
+
  protected:
+  /**
+   * @brief Retrieve a comma-separated informational string about the contents
+   * of this managed object.
+   */
+  std::string getObjectInfoInternal() const override;
+
   /**
    * @brief Returns actual attributes handle containing @p attrName as a
    * substring, or the empty string if none exists, from passed @p attrMgr .

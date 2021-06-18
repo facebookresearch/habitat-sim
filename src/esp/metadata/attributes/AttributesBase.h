@@ -14,6 +14,40 @@ namespace metadata {
 namespace attributes {
 
 /**
+ * @brief This enum class defines the possible shader options for rendering
+ * instances of objects or stages in Habitat-sim.
+ */
+enum class ObjectInstanceShaderType {
+  /**
+   * Represents an unknown/unspecified value for the shader type to use. Resort
+   * to defaults for object type.
+   */
+  Unknown = ID_UNDEFINED,
+  /**
+   * Override any config-specified or default shader-type values to use the
+   * material-specified shader.
+   */
+  Material,
+  /**
+   * Refers to flat shading, pure color and no lighting.  This is often used for
+   * textured objects
+   */
+  Flat,
+  /**
+   * Refers to phong shading with pure diffuse color.
+   */
+  Phong,
+  /**
+   * Refers to using a shader built with physically-based rendering models.
+   */
+  PBR,
+  /**
+   * End cap value - no shader type enums should be defined past this enum.
+   */
+  _EndShaderType,
+};
+
+/**
  * @brief Base class for all implemented attributes.  Inherits from @ref
  * esp::core::AbstractFileBasedManagedObject so the attributes can be managed by
  * a @ref esp::core::ManagedContainer.
@@ -125,12 +159,20 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
    * of this managed object.
    */
   std::string getObjectInfo() const override {
-    // TODO : once Magnum supports retrieving key-values of configurations, use
-    // that to build this
-    return getHandle() + ",";
+    return getSimplifiedHandle() + ", " + std::to_string(getID()) + ", " +
+           getObjectInfoInternal();
   }
 
  protected:
+  /**
+   * @brief Retrieve a comma-separated informational string about the contents
+   * of this managed object.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+  virtual std::string getObjectInfoInternal() const {
+    return "no internal attributes specified,";
+  };
   /**
    * @brief Set this attributes' class.  Should only be set from constructor.
    * Used as key in constructor function pointer maps in AttributesManagers.

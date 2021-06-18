@@ -37,6 +37,14 @@ LightInstanceAttributes::LightInstanceAttributes(const std::string& handle)
 LightLayoutAttributes::LightLayoutAttributes(const std::string& handle)
     : AbstractAttributes("LightLayoutAttributes", handle) {}
 
+std::string LightLayoutAttributes::getObjectInfoInternal() const {
+  std::string res = "\n";
+  for (const auto& lightInst : lightInstances_) {
+    res += lightInst.second->getObjectInfo() + "\n";
+  }
+  return res;
+}
+
 }  // namespace attributes
 }  // namespace metadata
 }  // namespace esp
