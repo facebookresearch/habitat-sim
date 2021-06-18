@@ -71,8 +71,8 @@ output_path = os.path.join(dir_path, "examples/tutorials/replay_tutorial_output/
 
 def make_configuration(settings):
     make_video_during_sim = False
-    if 'make_video_during_sim' in settings:
-        make_video_during_sim = settings['make_video_during_sim']
+    if "make_video_during_sim" in settings:
+        make_video_during_sim = settings["make_video_during_sim"]
 
     # simulator configuration
     backend_cfg = habitat_sim.SimulatorConfiguration()
@@ -167,7 +167,7 @@ else:
 if make_video and not os.path.exists(output_path):
     os.mkdir(output_path)
 
-cfg = make_configuration({'make_video_during_sim':make_video_during_sim})
+cfg = make_configuration({"make_video_during_sim": make_video_during_sim})
 sim = None
 replay_filepath = "./replay.json"
 
