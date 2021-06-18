@@ -878,6 +878,16 @@ class Simulator {
     return esp::physics::RaycastResults();
   }
 
+  esp::physics::RaycastResults castSphere(const esp::geo::Ray& ray,
+                                          float radius,
+                                          double maxDistance = 100.0,
+                                          int sceneID = 0) {
+    if (sceneHasPhysics(sceneID)) {
+      return physicsManager_->castSphere(ray, radius, maxDistance);
+    }
+    return esp::physics::RaycastResults();
+  }
+
   /**
    * @brief the physical world has a notion of time which passes during
    * animation/simulation/action/etc... Step the physical world forward in time

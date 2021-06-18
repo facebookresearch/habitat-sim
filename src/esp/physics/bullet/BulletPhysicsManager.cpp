@@ -541,6 +541,57 @@ RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
   return results;
 }
 
+RaycastResults BulletPhysicsManager::castSphere(const esp::geo::Ray& ray,
+                                                float radius,
+                                                double maxDistance) {
+  RaycastResults results;
+  results.ray = ray;
+  double rayLength = static_cast<double>(ray.direction.length());
+  if (rayLength == 0) {
+    LOG(ERROR)
+        << "::castSphere : Cannot cast sphere with zero length, aborting. ";
+    return results;
+  }
+  btTransform from;
+  from.setIdentity();
+  from.getOrigin() = btVector3(ray.origin);
+  btTransform to;
+  to.setIdentity();
+  to.getOrigin() = btVector3(ray.origin + ray.direction * maxDistance);
+
+  if (!sphereShape_) {
+    sphereShape_ = std::make_unique<btSphereShape>(radius);
+  } else {
+    sphereShape_->setUnscaledRadius(radius);
+  }
+
+  btCollisionWorld::ClosestConvexResultCallback closestResult(from.getOrigin(),
+                                                              to.getOrigin());
+  bWorld_->convexSweepTest(sphereShape_.get(), from, to, closestResult);
+
+  // convert to RaycastResults
+  if (closestResult.hasHit()) {
+    RayHitInfo hit;
+
+    hit.normal = Magnum::Vector3{closestResult.m_hitNormalWorld};
+    hit.point = Magnum::Vector3{closestResult.m_hitPointWorld};
+    hit.rayDistance = (static_cast<double>(closestResult.m_closestHitFraction) *
+                       maxDistance) /
+                      rayLength;
+    // default to -1 for "scene collision" if we don't know which object was
+    // involved
+    hit.objectId = -1;
+    CORRADE_INTERNAL_ASSERT(closestResult.m_hitCollisionObject);
+    if (collisionObjToObjIds_->count(closestResult.m_hitCollisionObject) > 0) {
+      hit.objectId =
+          collisionObjToObjIds_->at(closestResult.m_hitCollisionObject);
+    }
+    results.hits.push_back(hit);
+  }
+
+  return results;
+}
+
 void BulletPhysicsManager::lookUpObjectIdAndLinkId(
     const btCollisionObject* colObj,
     int* objectId,
