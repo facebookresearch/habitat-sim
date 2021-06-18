@@ -149,6 +149,9 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     CORRADE_INTERNAL_ASSERT(!Magnum::GL::Context::hasCurrent());
   }
 
+  // (re) create scene instance
+  success = createSceneInstance(config_.activeSceneName);
+
   LOG(INFO) << "::reconfigure : createSceneInstance success == "
             << (success ? "true" : "false")
             << " for active scene name : " << config_.activeSceneName;

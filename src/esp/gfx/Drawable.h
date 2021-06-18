@@ -139,11 +139,11 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
 
   scene::SceneNode& node_;
 
- private:
-  Magnum::GL::Mesh* mesh_ = nullptr;
-
   static uint64_t drawableIdCounter;
   uint64_t drawableId_;
+
+ private:
+  Magnum::GL::Mesh* mesh_ = nullptr;
 };
 
 CORRADE_ENUMSET_OPERATORS(Drawable::Flags)

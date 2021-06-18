@@ -26,6 +26,9 @@ BulletPhysicsManager::BulletPhysicsManager(
   collisionObjToObjIds_ =
       std::make_shared<std::map<const btCollisionObject*, int>>();
   urdfImporter_ = std::make_unique<BulletURDFImporter>(_resourceManager);
+  if (_resourceManager.getCreateRenderer()) {
+    debugDrawer_ = std::make_unique<Magnum::BulletIntegration::DebugDraw>();
+  }
 }
 
 BulletPhysicsManager::~BulletPhysicsManager() {

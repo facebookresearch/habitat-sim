@@ -56,12 +56,7 @@ class BulletPhysicsManager : public PhysicsManager {
   explicit BulletPhysicsManager(
       assets::ResourceManager& _resourceManager,
       const metadata::attributes::PhysicsManagerAttributes::cptr&
-          _physicsManagerAttributes)
-      : PhysicsManager(_resourceManager, _physicsManagerAttributes) {
-    if (_resourceManager.getCreateRenderer()) {
-      debugDrawer_ = std::make_unique<Magnum::BulletIntegration::DebugDraw>();
-    }
-  };
+          _physicsManagerAttributes);
 
   /** @brief Destructor which destructs necessary Bullet physics structures.*/
   ~BulletPhysicsManager() override;
