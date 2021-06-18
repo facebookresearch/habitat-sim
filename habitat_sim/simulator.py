@@ -530,7 +530,7 @@ class Sensor:
         )
 
     def draw_observation(self) -> None:
-        assert self._sim.renderer
+        assert self._sim.renderer is not None
 
         # sanity check:
 
@@ -545,7 +545,7 @@ class Sensor:
         self._sim.renderer.draw(self._sensor_object, self._sim)
 
     def get_observation(self) -> Union[ndarray, "Tensor"]:
-        assert self._sim.renderer
+        assert self._sim.renderer is not None
 
         tgt = self._sensor_object.render_target
 

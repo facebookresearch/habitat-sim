@@ -155,7 +155,7 @@ if __name__ == "__main__":
     args, _ = parser.parse_known_args()
     show_video = args.show_video
     make_video = args.make_video
-    make_video_during_simulation = False
+    make_video_during_sim = False
 else:
     show_video = False
     make_video = False
@@ -163,7 +163,7 @@ else:
 if make_video and not os.path.exists(output_path):
     os.mkdir(output_path)
 
-cfg = make_configuration(make_video_during_simulation=make_video_during_simulation)
+cfg = make_configuration(make_video_during_sim=make_video_during_sim)
 sim = None
 replay_filepath = "./replay.json"
 
@@ -202,7 +202,7 @@ observations += simulate_with_moving_agent(
     duration=1.0,
     agent_vel=np.array([0.5, 0.0, 0.0]),
     look_rotation_vel=25.0,
-    get_frames=make_video_during_simulation,
+    get_frames=make_video_during_sim,
 )
 
 # %% [markdown]
@@ -232,7 +232,7 @@ observations += simulate_with_moving_agent(
     duration=2.0,
     agent_vel=np.array([0.0, 0.0, -0.4]),
     look_rotation_vel=-5.0,
-    get_frames=make_video_during_simulation,
+    get_frames=make_video_during_sim,
 )
 
 # %% [markdown]
@@ -247,14 +247,14 @@ observations += simulate_with_moving_agent(
     duration=2.0,
     agent_vel=np.array([0.4, 0.0, 0.0]),
     look_rotation_vel=-10.0,
-    get_frames=make_video_during_simulation,
+    get_frames=make_video_during_sim,
 )
 
 # %% [markdown]
 # ## End the episode. Render the episode observations to a video.
 # %%
 
-if make_video_during_simulation:
+if make_video_during_sim:
     vut.make_video(
         observations,
         "rgba_camera",
