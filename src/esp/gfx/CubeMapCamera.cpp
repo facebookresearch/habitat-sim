@@ -49,38 +49,47 @@ CubeMapCamera& CubeMapCamera::switchToFace(unsigned int cubeSideIndex) {
   return *this;
 }
 
-CubeMapCamera& CubeMapCamera::switchToFace(Mn::GL::CubeMapCoordinate cubeSide) {
+Mn::Matrix4 CubeMapCamera::getCameraLocalTransform(
+    Mn::GL::CubeMapCoordinate cubeSideIndex) {
   Mn::Vector3 eye{0.0, 0.0, 0.0};
   Mn::Vector3 yUp{0.0, 1.0, 0.0};
   Mn::Vector3 zUp{0.0, 0.0, 1.0};
 
-  auto cameraLocalTransform = [&]() {
-    switch (cubeSide) {
-      case Mn::GL::CubeMapCoordinate::PositiveX:
-        return Mn::Matrix4::lookAt(eye, Mn::Vector3{-1.0, 0.0, 0.0}, -yUp);
-        break;
-      case Mn::GL::CubeMapCoordinate::NegativeX:
-        return Mn::Matrix4::lookAt(eye, Mn::Vector3{1.0, 0.0, 0.0}, -yUp);
-        break;
-      case Mn::GL::CubeMapCoordinate::PositiveY:
-        return Mn::Matrix4::lookAt(eye, Mn::Vector3{0.0, 1.0, 0.0}, -zUp);
-        break;
-      case Mn::GL::CubeMapCoordinate::NegativeY:
-        return Mn::Matrix4::lookAt(eye, Mn::Vector3{0.0, -1.0, 0.0}, zUp);
-        break;
-      case Mn::GL::CubeMapCoordinate::PositiveZ:
-        return Mn::Matrix4::lookAt(eye, Mn::Vector3{0.0, 0.0, -1.0}, -yUp);
-        break;
-      case Mn::GL::CubeMapCoordinate::NegativeZ:
-        return Mn::Matrix4::lookAt(eye, Mn::Vector3{0.0, 0.0, 1.0}, -yUp);
-        break;
-      default:
-        CORRADE_INTERNAL_ASSERT_UNREACHABLE();
-        break;
-    }
-  };
-  this->node().setTransformation(originalViewingMatrix_ *
-                                 cameraLocalTransform());
+  // Careful: the coordinate system for cubemaps is left-handed.
+  // The following implementation is based on:
+  // https://www.khronos.org/opengl/wiki/Cubemap_Texture
+  // check the diagram which shows how each face in the cubemap is oriented
+  // relative to the cube being defined.
+  switch (cubeSideIndex) {
+    case Mn::GL::CubeMapCoordinate::PositiveX:
+      return Mn::Matrix4::lookAt(eye, Mn::Vector3{1.0, 0.0, 0.0}, -yUp);
+      break;
+    case Mn::GL::CubeMapCoordinate::NegativeX:
+      return Mn::Matrix4::lookAt(eye, Mn::Vector3{-1.0, 0.0, 0.0}, -yUp);
+      break;
+    case Mn::GL::CubeMapCoordinate::PositiveY:
+      return Mn::Matrix4::lookAt(eye, Mn::Vector3{0.0, 1.0, 0.0}, zUp);
+      break;
+    case Mn::GL::CubeMapCoordinate::NegativeY:
+      return Mn::Matrix4::lookAt(eye, Mn::Vector3{0.0, -1.0, 0.0}, -zUp);
+      break;
+    case Mn::GL::CubeMapCoordinate::PositiveZ:
+      return Mn::Matrix4::lookAt(eye, Mn::Vector3{0.0, 0.0, 1.0}, -yUp);
+      break;
+    case Mn::GL::CubeMapCoordinate::NegativeZ:
+      return Mn::Matrix4::lookAt(eye, Mn::Vector3{0.0, 0.0, -1.0}, -yUp);
+      break;
+    default:
+      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+      break;
+  }
+}
+
+CubeMapCamera& CubeMapCamera::switchToFace(Mn::GL::CubeMapCoordinate cubeSide) {
+  this->node().setTransformation(
+      originalViewingMatrix_ *
+      CubeMapCamera::getCameraLocalTransform(cubeSide));
+
   return *this;
 }
 

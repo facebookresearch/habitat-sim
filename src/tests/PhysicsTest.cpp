@@ -52,7 +52,7 @@ class PhysicsManagerTest : public testing::Test {
         metadataMediator_->getPhysicsAttributesManager();
   };
 
-  void initStage(const std::string stageFile) {
+  void initStage(const std::string& stageFile) {
     auto& sceneGraph = sceneManager_.getSceneGraph(sceneID_);
     auto& rootNode = sceneGraph.getRootNode();
 
@@ -72,8 +72,8 @@ class PhysicsManagerTest : public testing::Test {
 
     // load scene
     std::vector<int> tempIDs{sceneID_, esp::ID_UNDEFINED};
-    bool result = resourceManager_->loadStage(stageAttributes, physicsManager_,
-                                              &sceneManager_, tempIDs, false);
+    resourceManager_->loadStage(stageAttributes, physicsManager_,
+                                &sceneManager_, tempIDs, false);
 
     rigidObjectManager_ = physicsManager_->getRigidObjectManager();
   }

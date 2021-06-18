@@ -16,8 +16,10 @@
 #include "esp/gfx/WindowlessContext.h"
 #include "esp/metadata/MetadataMediator.h"
 #include "esp/nav/PathFinder.h"
+#include "esp/physics/ArticulatedObject.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/physics/RigidObject.h"
+#include "esp/physics/objectManagers/ArticulatedObjectManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
@@ -99,7 +101,7 @@ class Simulator {
    * --headless mode on linux
    */
   int gpuDevice() const {
-    if (!context_) {
+    if (context_ == nullptr) {
       CORRADE_ASSERT(
           !config_.createRenderer,
           "Simulator::gpuDevice: no OpenGL context when one is expected", 0);
@@ -628,6 +630,9 @@ class Simulator {
     }
   }
 
+  //===============================================================================//
+  // Voxel Field API
+
 #ifdef ESP_BUILD_WITH_VHACD
   /**
    * @brief Creates a voxelization for a particular object. Initializes the
@@ -723,7 +728,7 @@ class Simulator {
                          const std::string& key);
 
   /**
-   * @brief Set the @ref esp::scene::SceneNode::semanticId_ for all visual nodes
+   * @brief Set the @ref esp::scene:SceneNode::semanticId_ for all visual nodes
    * belonging to an object.
    *
    * @param semanticId The desired semantic id for the object.
@@ -833,6 +838,19 @@ class Simulator {
   }  // getRigidObjectManager
 
   /**
+   * @brief returns the wrapper manager for the currently created articulated
+   * objects.
+   * @return ArticulatedObject wrapper manager
+   */
+  std::shared_ptr<esp::physics::ArticulatedObjectManager>
+  getArticulatedObjectManager() const {
+    if (sceneHasPhysics(activeSceneID_)) {
+      return physicsManager_->getArticulatedObjectManager();
+    }
+    return nullptr;
+  }
+
+  /**
    * @brief Raycast into the collision world of a scene.
    *
    * Note: A default @ref physics::PhysicsManager has no collision world, so
@@ -918,7 +936,8 @@ class Simulator {
   bool setNavMeshVisualization(bool visualize);
 
   /**
-   * @brief Query active state of the current NavMesh visualization.
+   * @brief Query active state of the current NavMesh @ref pathfinder_
+   * visualization.
    */
   bool isNavMeshVisualizationActive();
 
@@ -970,8 +989,8 @@ class Simulator {
    */
   bool removeTrajVisByName(const std::string& trajVisName) {
     if (trajVisIDByName.count(trajVisName) == 0) {
-      LOG(INFO) << "Simulator::removeTrajVisByName : No trajectory named "
-                << trajVisName << " exists.  Ignoring.";
+      LOG(INFO) << "::removeTrajVisByName : No trajectory named " << trajVisName
+                << " exists.  Ignoring.";
       return false;
     }
     return removeTrajVisObjectAndAssets(trajVisIDByName.at(trajVisName),
@@ -986,9 +1005,8 @@ class Simulator {
    */
   bool removeTrajVisByID(int trajVisObjID) {
     if (trajVisNameByID.count(trajVisObjID) == 0) {
-      LOG(INFO)
-          << "Simulator::removeTrajVisByName : No trajectory object with ID: "
-          << trajVisObjID << " exists.  Ignoring.";
+      LOG(INFO) << "::removeTrajVisByName : No trajectory object with ID: "
+                << trajVisObjID << " exists.  Ignoring.";
       return false;
     }
     return removeTrajVisObjectAndAssets(trajVisObjID,
@@ -1253,9 +1271,17 @@ class Simulator {
   /**
    * @brief Instance all the objects in the scene based on the current active
    * schene's scene instance configuration.
-   * @return whether object creation and placement is completed succesfully
+   * @return whether object creation and placement is completed successfully
    */
   bool instanceObjectsForActiveScene();
+
+  /**
+   * @brief Instance all the articulated objects in the scene based on the
+   * current active schene's scene instance configuration.
+   * @return whether articulated object creation and placement is completed
+   * successfully
+   */
+  bool instanceArticulatedObjectsForActiveScene();
 
   /**
    * @brief sample a random valid AgentState in passed agentState
@@ -1287,6 +1313,25 @@ class Simulator {
       return nullptr;
     }
     return getRigidObjectManager()->getObjectCopyByID(objID);
+  }
+
+  /**
+   * @brief TEMPORARY until sim access to objects is completely removed.  This
+   * method will return an object's wrapper if the passsed @p sceneID and @p
+   * objID are both valid.  This wrapper will then be used by the calling
+   * function to access components of the object.
+   * @param sceneID The ID of the scene to query
+   * @param objID The ID of the desired object
+   * @return A smart pointer to the wrapper referencing the desired object, or
+   * nullptr if DNE.
+   */
+  esp::physics::ManagedArticulatedObject::ptr queryArticulatedObjWrapper(
+      int sceneID,
+      int objID) const {
+    if (!sceneHasPhysics(sceneID)) {
+      return nullptr;
+    }
+    return getArticulatedObjectManager()->getObjectCopyByID(objID);
   }
 
   void reconfigureReplayManager(bool enableGfxReplaySave);

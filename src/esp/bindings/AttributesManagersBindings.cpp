@@ -152,7 +152,7 @@ void declareBaseAttributesManager(py::module& m,
            "handle"_a, "lock"_a)
       .def("set_lock_by_substring", &MgrClass::setLockBySubstring,
            ("This sets the lock state for all " + attrType +
-            " templates whose handles either contain or explictly do not "
+            " templates whose handles either contain or explicitly do not "
             "contain the passed search_str. Returns a list of handles for " +
             attrType +
             " templates locked by this function call. Lock == True makes the " +
@@ -181,7 +181,7 @@ void declareBaseAttributesManager(py::module& m,
            ("This removes, and returns, a list of all the " + attrType +
             " templates referenced in the library that have not been marked "
             "undeletable by the system or read-only by the user and whose "
-            "handles either contain or explictly do not contain the passed "
+            "handles either contain or explicitly do not contain the passed "
             "search_str.")
                .c_str(),
            "search_str"_a = "", "contains"_a = true)

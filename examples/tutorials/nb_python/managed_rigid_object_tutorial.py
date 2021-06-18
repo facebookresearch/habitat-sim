@@ -182,6 +182,40 @@ if __name__ == "__main__":
     # [/basics]
     rigid_obj_mgr.remove_all_objects()
     # %%
+    # [object_user_configurations]
+    # modify an object's user-defined configurations
+
+    # load some object templates from configuration files
+    sphere_template_id = obj_templates_mgr.load_configs(
+        str(os.path.join(data_path, "test_assets/objects/sphere"))
+    )[0]
+
+    # add a sphere to the scene, returns the object
+    sphere_obj = rigid_obj_mgr.add_object_by_template_id(sphere_template_id)
+
+    # set user-defined configuration values
+    user_attributes_dict = {
+        "obj_val_0": "This is a sphere object named " + sphere_obj.handle,
+        "obj_val_1": 17,
+        "obj_val_2": False,
+        "obj_val_3": 19.7,
+        "obj_val_4": [2.50, 0.0, 0.2],
+        "obj_val_5": mn.Quaternion.rotation(mn.Deg(90.0), [-1.0, 0.0, 0.0]),
+    }
+    for k, v in user_attributes_dict.items():
+        sphere_obj.user_attributes.set(k, v)
+
+    for k, _ in user_attributes_dict.items():
+        print(
+            "Sphere Object user attribute : {} : {}".format(
+                k, sphere_obj.user_attributes.get(k)
+            )
+        )
+
+    # [/object_user_configurations]
+    rigid_obj_mgr.remove_all_objects()
+
+    # %%
     # [dynamic_control]
 
     observations = []

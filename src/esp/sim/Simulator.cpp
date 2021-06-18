@@ -35,6 +35,7 @@ namespace esp {
 namespace sim {
 
 using metadata::attributes::PhysicsManagerAttributes;
+using metadata::attributes::SceneAOInstanceAttributes;
 using metadata::attributes::SceneObjectInstanceAttributes;
 using metadata::attributes::StageAttributes;
 
@@ -43,7 +44,7 @@ Simulator::Simulator(const SimulatorConfiguration& cfg,
     : metadataMediator_{std::move(_metadataMediator)},
       random_{core::Random::create(cfg.randomSeed)},
       requiresTextures_{Cr::Containers::NullOpt} {
-  // initalize members according to cfg
+  // initialize members according to cfg
   // NOTE: NOT SO GREAT NOW THAT WE HAVE virtual functions
   //       Maybe better not to do this reconfigure
   reconfigure(cfg);
@@ -137,7 +138,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
       context_ = gfx::WindowlessContext::create_unique(config_.gpuDeviceId);
     }
 
-    // reinitalize members
+    // reinitialize members
     if (!renderer_) {
       gfx::Renderer::Flags flags;
       if (!(*requiresTextures_))
@@ -148,10 +149,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     CORRADE_INTERNAL_ASSERT(!Magnum::GL::Context::hasCurrent());
   }
 
-  // (re) create scene instance
-  success = createSceneInstance(config_.activeSceneName);
-
-  LOG(INFO) << "Simulator::reconfigure : createSceneInstance success == "
+  LOG(INFO) << "::reconfigure : createSceneInstance success == "
             << (success ? "true" : "false")
             << " for active scene name : " << config_.activeSceneName;
 
@@ -174,30 +172,28 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
   const std::string& navmeshFileLoc = metadataMediator_->getNavmeshPathByHandle(
       curSceneInstanceAttributes->getNavmeshHandle());
 
-  LOG(INFO)
-      << "Simulator::setSceneInstanceAttributes : Navmesh file location in "
-         "scene instance : "
-      << navmeshFileLoc;
+  LOG(INFO) << "::setSceneInstanceAttributes : Navmesh file location in "
+               "scene instance : "
+            << navmeshFileLoc;
   // Get name of navmesh and use to create pathfinder and load navmesh
   // create pathfinder and load navmesh if available
   pathfinder_ = nav::PathFinder::create();
   if (FileUtil::exists(navmeshFileLoc)) {
-    LOG(INFO) << "Simulator::setSceneInstanceAttributes : Loading navmesh from "
+    LOG(INFO) << "::setSceneInstanceAttributes : Loading navmesh from "
               << navmeshFileLoc;
     bool pfSuccess = pathfinder_->loadNavMesh(navmeshFileLoc);
-    LOG(INFO) << "Simulator::setSceneInstanceAttributes : "
+    LOG(INFO) << "::setSceneInstanceAttributes : "
               << (pfSuccess ? "Navmesh Loaded." : "Navmesh load error.");
   } else {
-    LOG(WARNING)
-        << "Simulator::setSceneInstanceAttributes : Navmesh file not found, "
-           "checked at filename : '"
-        << navmeshFileLoc << "'";
+    LOG(WARNING) << "::setSceneInstanceAttributes : Navmesh file not found, "
+                    "checked at filename : '"
+                 << navmeshFileLoc << "'";
   }
   // Calling to seeding needs to be done after the pathfinder creation but
   // before anything else.
   seed(config_.randomSeed);
 
-  // initalize scene graph CAREFUL! previous scene graph is not deleted!
+  // initialize scene graph CAREFUL! previous scene graph is not deleted!
   // TODO:
   // We need to make a design decision here:
   // when instancing a new scene, shall we delete all of the previous scene
@@ -217,11 +213,11 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
     bool fileExists = false;
     bool success = false;
     const std::string msgPrefix =
-        "Simulator::setSceneInstanceAttributes : Attempt to load ";
+        "::setSceneInstanceAttributes : Attempt to load ";
     // semantic scene descriptor might not exist, so
     semanticScene_ = nullptr;
     semanticScene_ = scene::SemanticScene::create();
-    LOG(INFO) << "Simulator::setSceneInstanceAttributes : SceneInstance : "
+    LOG(INFO) << "::setSceneInstanceAttributes : SceneInstance : "
               << activeSceneName
               << " proposed Semantic Scene Descriptor filename : "
               << semanticSceneDescFilename;
@@ -245,11 +241,10 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
                   << (success ? "" : "not ") << "successful";
       }
     }  // if given SSD file name specifiedd exists
-    LOG(WARNING)
-        << "Simulator::setSceneInstanceAttributes : All attempts to load "
-           "SSD with SceneAttributes-provided name "
-        << semanticSceneDescFilename << " : exist : " << fileExists
-        << " : loaded as expected type : " << success;
+    LOG(WARNING) << "::setSceneInstanceAttributes : All attempts to load "
+                    "SSD with SceneAttributes-provided name "
+                 << semanticSceneDescFilename << " : exist : " << fileExists
+                 << " : loaded as expected type : " << success;
 
   }  // if semantic scene descriptor specified in scene instance
 
@@ -288,16 +283,15 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
 
   if (config_.overrideSceneLightDefaults) {
     lightSetupKey = config_.sceneLightSetup;
-    LOG(INFO) << "Simulator::createSceneInstance : Using config-specified "
+    LOG(INFO) << "::createSceneInstance : Using config-specified "
                  "Light key : -"
               << lightSetupKey << "-";
   } else {
     lightSetupKey = metadataMediator_->getLightSetupFullHandle(
         curSceneInstanceAttributes->getLightingHandle());
-    LOG(INFO)
-        << "Simulator::createSceneInstance : Using scene instance-specified "
-           "Light key : -"
-        << lightSetupKey << "-";
+    LOG(INFO) << "::createSceneInstance : Using scene instance-specified "
+                 "Light key : -"
+              << lightSetupKey << "-";
     if (lightSetupKey != NO_LIGHT_KEY) {
       // lighting attributes corresponding to this key should exist unless it
       // is empty; if empty, the following does nothing.
@@ -325,31 +319,34 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   const std::string stageAttributesHandle =
       metadataMediator_->getStageAttrFullHandle(
           stageInstanceAttributes->getHandle());
-  // Get StageAttributes
+  // Get StageAttributes copy
   auto stageAttributes =
       metadataMediator_->getStageAttributesManager()->getObjectCopyByHandle(
           stageAttributesHandle);
 
-  // constant representing unknown shader type
-  const int unknownShaderType =
-      static_cast<int>(metadata::attributes::ObjectInstanceShaderType::Unknown);
-
   // set defaults for stage creation
 
-  // set shader type to use for stage
+  // set shader type to use for stage - if no valid value is specified in
+  // instance attributes, this field will be whatever was specified in the stage
+  // attributes.
   int stageShaderType = stageInstanceAttributes->getShaderType();
-  if (stageShaderType != unknownShaderType) {
+  if (stageShaderType !=
+      static_cast<int>(
+          metadata::attributes::ObjectInstanceShaderType::Unknown)) {
     stageAttributes->setShaderType(stageShaderType);
   }
   // set lighting key
   stageAttributes->setLightSetup(lightSetupKey);
   // set frustum culling from simulator config
   stageAttributes->setFrustumCulling(frustumCulling_);
+  // set scaling values for this instance of stage attributes
+  stageAttributes->setScale(stageAttributes->getScale() *
+                            stageInstanceAttributes->getUniformScale());
 
   // create a structure to manage active scene and active semantic scene ID
   // passing to and from loadStage
   std::vector<int> tempIDs{activeSceneID_, activeSemanticSceneID_};
-  LOG(INFO) << "Simulator::createSceneInstance : Start to load stage named : "
+  LOG(INFO) << "::createSceneInstance : Start to load stage named : "
             << stageAttributes->getHandle() << " with render asset : "
             << stageAttributes->getRenderAssetHandle()
             << " and collision asset : "
@@ -361,14 +358,13 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
       config_.loadSemanticMesh, config_.forceSeparateSemanticSceneGraph);
 
   if (!loadSuccess) {
-    LOG(ERROR) << "Simulator::createSceneInstance : Cannot load stage : "
+    LOG(ERROR) << "::createSceneInstance : Cannot load stage : "
                << stageAttributesHandle;
     // Pass the error to the python through pybind11 allowing graceful exit
-    throw std::invalid_argument(
-        "Simulator::createSceneInstance : Cannot load: " +
-        stageAttributesHandle);
+    throw std::invalid_argument("::createSceneInstance : Cannot load: " +
+                                stageAttributesHandle);
   } else {
-    LOG(INFO) << "Simulator::createSceneInstance : Successfully loaded stage "
+    LOG(INFO) << "::createSceneInstance : Successfully loaded stage "
                  "named : "
               << stageAttributes->getHandle();
   }
@@ -413,10 +409,15 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   // 5. Load object instances as spceified by Scene Instance Attributes.
   bool success = instanceObjectsForActiveScene();
 
-  // TODO : reset may eventually have all the scene instance instantiation
-  // code so that scenes can be reset
   if (success) {
-    reset();
+    // 6. Load articulated object instances as specified by Scene Instance
+    // Attributes.
+    success = instanceArticulatedObjectsForActiveScene();
+    if (success) {
+      // TODO : reset may eventually have all the scene instance instantiation
+      // code so that scenes can be reset
+      reset();
+    }
   }
 
   return success;
@@ -442,7 +443,7 @@ bool Simulator::instanceObjectsForActiveScene() {
 
   // node to attach object to
   scene::SceneNode* attachmentNode = nullptr;
-  // vector holding all objects added
+  // vector holding all objects added (for informational purposes)
   std::vector<int> objectsAdded;
   int objID = 0;
 
@@ -454,8 +455,8 @@ bool Simulator::instanceObjectsForActiveScene() {
        metadata::managers::SceneInstanceTranslationOrigin::AssetLocal);
 
   std::string errMsgTmplt =
-      "Simulator::createSceneInstance : Error instancing scene : " +
-      activeSceneName + " : ";
+      "::createSceneInstance : Error instancing scene : " + activeSceneName +
+      " : ";
   // Iterate through instances, create object and implement initial
   // transformation.
   for (const auto& objInst : objectInstances) {
@@ -478,6 +479,66 @@ bool Simulator::instanceObjectsForActiveScene() {
   // objectsAdded holds all ids of added objects.
   return true;
 }  // Simulator::instanceObjectsForActiveScene()
+
+bool Simulator::instanceArticulatedObjectsForActiveScene() {
+  // Get scene instance attributes corresponding to current active scene name
+  // This should always just retrieve an existing, appropriately configured
+  // scene instance attributes, depending on what exists in the Scene Dataset
+  // library for the current dataset.
+  const std::string activeSceneName = config_.activeSceneName;
+  metadata::attributes::SceneAttributes::cptr curSceneInstanceAttributes =
+      metadataMediator_->getSceneAttributesByName(activeSceneName);
+
+  // get lightSetupKey from the value set when stage was created.
+  const std::string lightSetupKey = config_.sceneLightSetup;
+
+  std::string errMsgTmplt =
+      "Simulator::instanceArticulatedObjectsForActiveScene : Error instancing "
+      "articulated objects : " +
+      activeSceneName + " : ";
+
+  // 6. Load all articulated object instances
+  // Get all instances of articulated objects described in scene
+  const std::vector<SceneAOInstanceAttributes::ptr> artObjInstances =
+      curSceneInstanceAttributes->getArticulatedObjectInstances();
+
+  // vector holding all articulated objects added
+  std::vector<int> artObjsAdded;
+  int aoID = 0;
+
+  auto& drawables = getDrawableGroup();
+
+  // Iterate through instances, create object and implement initial
+  // transformation.
+  for (const auto& artObjInst : artObjInstances) {
+    // get model file name
+    const std::string artObjFilePath =
+        metadataMediator_->getArticulatedObjModelFullHandle(
+            artObjInst->getHandle());
+
+    // create articulated object
+    aoID = physicsManager_->addArticulatedObjectInstance(
+        artObjFilePath, artObjInst, lightSetupKey);
+
+    // physicsManager_->setArticulatedObjectVelocities(aoID, aoJointVels);
+    artObjsAdded.push_back(aoID);
+  }  // for each articulated object instance
+  return true;
+}  // Simulator::instanceArticulatedObjectsForActiveScene
+
+bool Simulator::createSceneInstanceNoRenderer(
+    const std::string& activeSceneName) {
+  // Initial setup for scene instancing without renderer - sets or creates the
+  // current scene instance to correspond to the given name.  Also builds
+  // navmesh and semantic scene descriptor file if appropriate.
+  metadata::attributes::SceneAttributes::cptr curSceneInstanceAttributes =
+      setSceneInstanceAttributes(activeSceneName);
+
+  // TODO : reset may eventually have all the scene instance instantiation
+  // code so that scenes can be reset
+  reset();
+  return true;
+}  // Simulator::createSceneInstanceNoRenderer
 
 void Simulator::reset() {
   if (physicsManager_ != nullptr) {
@@ -569,6 +630,7 @@ void Simulator::removeObject(const int objectID,
 double Simulator::stepWorld(const double dt) {
   if (physicsManager_ != nullptr) {
     physicsManager_->stepPhysics(dt);
+    physicsManager_->updateNodes();
   }
   return getWorldTime();
 }
@@ -584,6 +646,14 @@ double Simulator::getWorldTime() {
 bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
                                  const nav::NavMeshSettings& navMeshSettings,
                                  bool includeStaticObjects) {
+  CORRADE_ASSERT(config_.createRenderer,
+                 "::recomputeNavMesh: "
+                 "SimulatorConfiguration::createRenderer is "
+                 "false. Scene geometry is required to recompute navmesh. No "
+                 "geometry is "
+                 "loaded without renderer initialization.",
+                 false);
+
   assets::MeshData::uptr joinedMesh = assets::MeshData::create_unique();
   auto stageInitAttrs = physicsManager_->getStageInitAttributes();
   if (stageInitAttrs != nullptr) {
@@ -593,11 +663,22 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
 
   // add STATIC collision objects
   if (includeStaticObjects) {
+    // update nodes so SceneNode transforms are up-to-date
+    physicsManager_->updateNodes();
+
+    // collect mesh components from all objects and then merge them.
+    // Each mesh component could be duplicated multiple times w/ different
+    // transforms.
+    std::map<std::string,
+             std::vector<Eigen::Transform<float, 3, Eigen::Affine>>>
+        meshComponentStates;
+
+    // collect RigidObject mesh components
     for (auto objectID : physicsManager_->getExistingObjectIDs()) {
       auto objWrapper = queryRigidObjWrapper(activeSceneID_, objectID);
       if (objWrapper->getMotionType() == physics::MotionType::STATIC) {
         auto objectTransform = Magnum::EigenIntegration::cast<
-            Eigen::Transform<float, 3, Eigen::Affine> >(
+            Eigen::Transform<float, 3, Eigen::Affine>>(
             physicsManager_->getObjectVisualSceneNode(objectID)
                 .absoluteTransformationMatrix());
         const metadata::attributes::ObjectAttributes::cptr
@@ -609,8 +690,39 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
         if (meshHandle.empty()) {
           meshHandle = initializationTemplate->getRenderAssetHandle();
         }
-        assets::MeshData::uptr joinedObjectMesh =
-            resourceManager_->createJoinedCollisionMesh(meshHandle);
+        meshComponentStates[meshHandle].push_back(objectTransform);
+      }
+    }
+
+    // collect ArticulatedObject mesh components
+    for (auto& objectID : physicsManager_->getExistingArticulatedObjectIds()) {
+      auto articulatedObject =
+          getArticulatedObjectManager()->getObjectByID(objectID);
+      if (articulatedObject->getMotionType() == physics::MotionType::STATIC) {
+        for (int linkIx = -1; linkIx < articulatedObject->getNumLinks();
+             ++linkIx) {
+          //-1 is baseLink_
+          std::vector<std::pair<esp::scene::SceneNode*, std::string>>
+              visualAttachments =
+                  physicsManager_->getArticulatedObject(objectID)
+                      .getLink(linkIx)
+                      .visualAttachments_;
+          for (auto& visualAttachment : visualAttachments) {
+            auto objectTransform = Magnum::EigenIntegration::cast<
+                Eigen::Transform<float, 3, Eigen::Affine>>(
+                visualAttachment.first->absoluteTransformationMatrix());
+            std::string meshHandle = visualAttachment.second;
+            meshComponentStates[meshHandle].push_back(objectTransform);
+          }
+        }
+      }
+    }
+
+    // merge mesh components into the final mesh
+    for (auto& meshComponent : meshComponentStates) {
+      assets::MeshData::uptr joinedObjectMesh =
+          resourceManager_->createJoinedCollisionMesh(meshComponent.first);
+      for (auto& meshTransform : meshComponent.second) {
         int prevNumIndices = joinedMesh->ibo.size();
         int prevNumVerts = joinedMesh->vbo.size();
         joinedMesh->ibo.resize(prevNumIndices + joinedObjectMesh->ibo.size());
@@ -620,7 +732,7 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
         }
         joinedMesh->vbo.reserve(joinedObjectMesh->vbo.size() + prevNumVerts);
         for (auto& vert : joinedObjectMesh->vbo) {
-          joinedMesh->vbo.push_back(objectTransform * vert);
+          joinedMesh->vbo.push_back(meshTransform * vert);
         }
       }
     }
@@ -663,7 +775,7 @@ bool Simulator::setNavMeshVisualization(bool visualize) {
     navMeshVisPrimID_ = resourceManager_->loadNavMeshVisualization(
         *pathfinder_, navMeshVisNode_, &drawables);
     if (navMeshVisPrimID_ == ID_UNDEFINED) {
-      LOG(ERROR) << "Simulator::toggleNavMeshVisualization : Failed to load "
+      LOG(ERROR) << "::toggleNavMeshVisualization : Failed to load "
                     "navmesh visualization.";
       delete navMeshVisNode_;
     }
@@ -682,13 +794,22 @@ int Simulator::addTrajectoryObject(const std::string& trajVisName,
                                    const Magnum::Color4& color,
                                    bool smooth,
                                    int numInterp) {
+  // 0. Deduplicate sequential points
+  std::vector<Magnum::Vector3> uniquePts;
+  uniquePts.push_back(pts[0]);
+  for (const auto& loc : pts) {
+    if (loc != uniquePts.back()) {
+      uniquePts.push_back(loc);
+    }
+  }
+
   auto& drawables = getDrawableGroup();
 
   // 1. create trajectory tube asset from points and save it
   bool success = resourceManager_->buildTrajectoryVisualization(
-      trajVisName, pts, numSegments, radius, color, smooth, numInterp);
+      trajVisName, uniquePts, numSegments, radius, color, smooth, numInterp);
   if (!success) {
-    LOG(ERROR) << "Simulator::showTrajectoryVisualization : Failed to create "
+    LOG(ERROR) << "::showTrajectoryVisualization : Failed to create "
                   "Trajectory visualization mesh for "
                << trajVisName;
     return ID_UNDEFINED;
@@ -705,7 +826,7 @@ int Simulator::addTrajectoryObject(const std::string& trajVisName,
   auto trajVisID = physicsManager_->addObject(trajVisName, &drawables);
   if (trajVisID == ID_UNDEFINED) {
     // failed to add object - need to delete asset from resourceManager.
-    LOG(ERROR) << "Simulator::showTrajectoryVisualization : Failed to create "
+    LOG(ERROR) << "::showTrajectoryVisualization : Failed to create "
                   "Trajectory visualization object for "
                << trajVisName;
     // TODO : support removing asset by removing from resourceDict_ properly
@@ -713,7 +834,7 @@ int Simulator::addTrajectoryObject(const std::string& trajVisName,
     return ID_UNDEFINED;
   }
   auto trajObj = getRigidObjectManager()->getObjectCopyByID(trajVisID);
-  LOG(INFO) << "Simulator::showTrajectoryVisualization : Trajectory "
+  LOG(INFO) << "::showTrajectoryVisualization : Trajectory "
                "visualization object created with ID "
             << trajVisID;
   trajObj->setMotionType(esp::physics::MotionType::KINEMATIC);
@@ -785,8 +906,8 @@ std::string Simulator::convexHullDecomposition(
   chdObjAttr->setCollisionAssetIsPrimitive(false);
   chdObjAttr->setJoinCollisionMeshes(false);
 
-  // if the renderChd flag is set to true, set the convex hull decomposition to
-  // be the render asset (useful for testing)
+  // if the renderChd flag is set to true, set the convex hull decomposition
+  // to be the render asset (useful for testing)
 
   chdObjAttr->setRenderAssetHandle(renderChd ? chdFilename : filename);
 
@@ -970,6 +1091,5 @@ int Simulator::getAgentObservationSpaces(
   }
   return spaces.size();
 }
-
 }  // namespace sim
 }  // namespace esp

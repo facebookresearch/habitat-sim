@@ -20,7 +20,7 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
                          const Mn::ResourceKey& lightSetupKey,
                          const Mn::ResourceKey& materialDataKey,
                          DrawableGroup* group)
-    : Drawable{node, mesh, group},
+    : Drawable{node, mesh, DrawableType::Pbr, group},
       shaderManager_{shaderManager},
       lightSetup_{shaderManager.get<LightSetup>(lightSetupKey)},
       materialData_{

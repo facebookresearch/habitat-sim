@@ -23,6 +23,7 @@
 
 namespace esp {
 namespace gfx {
+// NOLINTNEXTLINE(bugprone-reserved-identifier)
 class CubeMap {
  public:
   enum class TextureType : uint8_t {

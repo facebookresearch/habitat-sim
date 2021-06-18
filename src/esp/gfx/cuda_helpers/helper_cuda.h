@@ -991,7 +991,7 @@ inline int _ConvertSMVer2Cores(int major, int minor) {
   // Defines for GPU Architecture types (using the SM version to determine the #
   // of cores per SM
   typedef struct {
-    int SM;  // 0xMm (hexidecimal notation), M = SM Major version, and m = SM
+    int SM;  // 0xMm (hexadecimal notation), M = SM Major version, and m = SM
              // minor version
     int Cores;
   } sSMtoCores;

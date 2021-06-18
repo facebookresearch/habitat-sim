@@ -88,7 +88,7 @@ GreedyGeodesicFollowerImpl::nextBestPrimAlong(const core::RigidState& state,
     return {CODES::STOP};
   }
 
-  // Intialize bestReward to the minumum acceptable reward -- we are just
+  // Intialize bestReward to the minimum acceptable reward -- we are just
   // constantly colliding
   float bestReward = -collisionCost_;
   std::vector<CODES> bestPrim, leftPrim, rightPrim;

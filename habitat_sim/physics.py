@@ -3,8 +3,15 @@
 # LICENSE file in the root directory of this source tree.
 
 from habitat_sim._ext.habitat_sim_bindings import (
+    ArticulatedObjectManager,
     CollisionGroupHelper,
     CollisionGroups,
+    JointMotorSettings,
+    JointMotorType,
+    JointType,
+    ManagedArticulatedObject,
+    ManagedBulletArticulatedObject,
+    ManagedBulletRigidObject,
     ManagedRigidObject,
     MotionType,
     PhysicsSimulationLibrary,
@@ -16,7 +23,11 @@ from habitat_sim._ext.habitat_sim_bindings import (
 
 __all__ = [
     "ManagedRigidObject",
+    "ManagedBulletRigidObject",
+    "ManagedArticulatedObject",
+    "ManagedBulletArticulatedObject",
     "RigidObjectManager",
+    "ArticulatedObjectManager",
     "PhysicsSimulationLibrary",
     "MotionType",
     "VelocityControl",
@@ -24,4 +35,7 @@ __all__ = [
     "RaycastResults",
     "CollisionGroups",
     "CollisionGroupHelper",
+    "JointType",
+    "JointMotorSettings",
+    "JointMotorType",
 ]

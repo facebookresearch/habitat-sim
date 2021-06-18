@@ -165,9 +165,8 @@ class ManagedContainerBase {
    */
   std::string getObjectHandleByID(const int objectID) const {
     if (objectLibKeyByID_.count(objectID) == 0) {
-      LOG(ERROR) << "ManagedContainerBase::getObjectHandleByID : Unknown "
-                 << objectType_ << " managed object ID:" << objectID
-                 << ". Aborting";
+      LOG(ERROR) << "::getObjectHandleByID : Unknown " << objectType_
+                 << " managed object ID:" << objectID << ". Aborting";
       // never will have registered object with registration handle == ""
       return "";
     }
@@ -300,7 +299,7 @@ class ManagedContainerBase {
    * @param mapOfHandles map containing the desired managed object handles
    * @param subStr substring to search for within existing managed objects
    * @param contains Whether to search for handles containing, or not
-   * containting, substr
+   * containing, substr
    * @return vector of 0 or more managed object handles containing/not
    * containing the passed substring
    */
@@ -318,7 +317,7 @@ class ManagedContainerBase {
    * @param mapOfHandles map containing the desired keys to search.
    * @param subStr substring to search for within existing managed objects
    * @param contains Whether to search for handles containing, or not
-   * containting, substr
+   * containing, substr
    * @return vector of 0 or more managed object handles containing/not
    * containing the passed substring
    */

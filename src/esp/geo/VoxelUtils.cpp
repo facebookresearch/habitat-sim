@@ -205,7 +205,7 @@ void generateEuclideanDistanceSDF(
   v_grid->addGrid<Mn::Vector3>("ClosestBoundaryCell");
   auto closestCellGrid = v_grid->getGrid<Mn::Vector3>("ClosestBoundaryCell");
 
-  // initialize non-boundaries with some far away point which will be overriden
+  // initialize non-boundaries with some far away point which will be overridden
   // by any valid boundary cell
   Mn::Vector3 farAway = Mn::Vector3(m_voxelGridDimensions) * 3;
   Mn::Vector3i bestNeighbor;

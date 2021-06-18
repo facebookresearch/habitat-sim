@@ -5,7 +5,9 @@
 #ifndef ESP_PHYSICS_MANAGEDBULLETRIGIDOBJECT_H_
 #define ESP_PHYSICS_MANAGEDBULLETRIGIDOBJECT_H_
 
+#ifdef ESP_BUILD_WITH_BULLET
 #include "esp/physics/bullet/BulletRigidObject.h"
+#endif
 #include "esp/physics/objectWrappers/ManagedRigidObject.h"
 
 namespace esp {
@@ -19,12 +21,12 @@ class ManagedBulletRigidObject : public esp::physics::ManagedRigidObject {
  public:
   ManagedBulletRigidObject() : ManagedRigidObject("ManagedBulletRigidObject") {}
 
+#ifdef ESP_BUILD_WITH_BULLET
   double getMargin() const {
     if (auto sp = this->getBulletObjectReference()) {
       return sp->getMargin();
-    } else {
-      return 0.0;
     }
+    return 0.0;
   }  // getMargin
 
   void setMargin(const double margin) {
@@ -36,16 +38,15 @@ class ManagedBulletRigidObject : public esp::physics::ManagedRigidObject {
   Magnum::Range3D getCollisionShapeAabb() {
     if (auto sp = this->getBulletObjectReference()) {
       return sp->getCollisionShapeAabb();
-    } else {
-      return {};
     }
+    return {};
   }  // getCollisionShapeAabb
 
  protected:
   /**
-   * @brief Templated version of obj ref getter. This function accesses the
+   * @brief This function accesses the
    * underlying shared pointer of this object's @p weakObjRef_ if it exists,
-   * and casts it to the specified template parameter; if it the ptr does not
+   * and casts it to BulletRigidObject; if it the ptr does not
    * exist, it provides a message.
    * @return Either a shared pointer of this wrapper's object, or nullptr if
    * dne.
@@ -54,6 +55,30 @@ class ManagedBulletRigidObject : public esp::physics::ManagedRigidObject {
     return std::static_pointer_cast<BulletRigidObject>(
         this->getObjectReference());
   }
+
+#else
+  //! no bullet version
+  double getMargin() const {
+    LOG(WARNING) << "This functionally requires Habitat-Sim to be compiled "
+                    "with Bullet enabled..";
+
+    return 0.0;
+  }  // getMargin
+
+  void setMargin(CORRADE_UNUSED const double margin) {
+    LOG(WARNING) << "This functionally requires Habitat-Sim to be compiled "
+                    "with Bullet enabled..";
+
+  }  // setMass
+
+  Magnum::Range3D getCollisionShapeAabb() {
+    LOG(WARNING) << "This functionally requires Habitat-Sim to be compiled "
+                    "with Bullet enabled..";
+
+    return {};
+  }  // getCollisionShapeAabbb
+
+#endif
 
  public:
   ESP_SMART_POINTERS(ManagedBulletRigidObject)

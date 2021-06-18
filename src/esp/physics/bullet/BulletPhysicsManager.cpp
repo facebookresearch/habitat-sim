@@ -6,18 +6,47 @@
 //#include "BulletCollision/Gimpact/btGImpactShape.h"
 
 #include "BulletPhysicsManager.h"
+#include "BulletArticulatedObject.h"
+#include "BulletDynamics/Featherstone/btMultiBodyLinkCollider.h"
 #include "BulletRigidObject.h"
+#include "BulletURDFImporter.h"
 #include "esp/assets/ResourceManager.h"
+#include "esp/physics/objectManagers/ArticulatedObjectManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
+#include "esp/sim/Simulator.h"
 
 namespace esp {
 namespace physics {
+
+BulletPhysicsManager::BulletPhysicsManager(
+    assets::ResourceManager& _resourceManager,
+    const metadata::attributes::PhysicsManagerAttributes::cptr&
+        _physicsManagerAttributes)
+    : PhysicsManager(_resourceManager, _physicsManagerAttributes) {
+  collisionObjToObjIds_ =
+      std::make_shared<std::map<const btCollisionObject*, int>>();
+  urdfImporter_ = std::make_unique<BulletURDFImporter>(_resourceManager);
+}
 
 BulletPhysicsManager::~BulletPhysicsManager() {
   LOG(INFO) << "Deconstructing BulletPhysicsManager";
 
   existingObjects_.clear();
+  existingArticulatedObjects_.clear();
   staticStageObject_.reset();
+}
+
+void BulletPhysicsManager::removeObject(const int physObjectID,
+                                        bool deleteObjectNode,
+                                        bool deleteVisualNode) {
+  // TODO: Will remove active constraints here.
+  PhysicsManager::removeObject(physObjectID, deleteObjectNode,
+                               deleteVisualNode);
+}
+
+void BulletPhysicsManager::removeArticulatedObject(int id) {
+  // TODO: Will remove active constraints here.
+  PhysicsManager::removeArticulatedObject(id);
 }
 
 bool BulletPhysicsManager::initPhysicsFinalize() {
@@ -72,10 +101,139 @@ bool BulletPhysicsManager::makeAndAddRigidObject(
   return objSuccess;
 }
 
+int BulletPhysicsManager::addArticulatedObjectFromURDF(
+    const std::string& filepath,
+    bool fixedBase,
+    float globalScale,
+    float massScale,
+    bool forceReload,
+    const std::string& lightSetup) {
+  auto& drawables = simulator_->getDrawableGroup();
+  return addArticulatedObjectFromURDF(filepath, &drawables, fixedBase,
+                                      globalScale, massScale, forceReload,
+                                      lightSetup);
+}
+
+int BulletPhysicsManager::addArticulatedObjectFromURDF(
+    const std::string& filepath,
+    DrawableGroup* drawables,
+    bool fixedBase,
+    float globalScale,
+    float massScale,
+    bool forceReload,
+    const std::string& lightSetup) {
+  CORRADE_ASSERT(
+      urdfImporter_->loadURDF(filepath, globalScale, massScale, forceReload),
+      "E - failed to parse/load URDF file " << filepath, ID_UNDEFINED);
+
+  int articulatedObjectID = allocateObjectID();
+
+  // parse succeeded, attempt to create the articulated object
+  scene::SceneNode* objectNode = &staticStageObject_->node().createChild();
+  BulletArticulatedObject::ptr articulatedObject =
+      BulletArticulatedObject::create(objectNode, resourceManager_,
+                                      articulatedObjectID, bWorld_,
+                                      collisionObjToObjIds_);
+
+  // before initializing the URDF, import all necessary assets in advance
+  urdfImporter_->importURDFAssets();
+
+  BulletURDFImporter* u2b =
+      static_cast<BulletURDFImporter*>(urdfImporter_.get());
+
+  u2b->setFixedBase(fixedBase);
+
+  // TODO: set these flags up better
+  u2b->flags = 0;
+  u2b->initURDF2BulletCache();
+
+  articulatedObject->initializeFromURDF(*urdfImporter_, {}, physicsNode_);
+
+  // top level only valid in initial state, but computes valid sub-part AABBs.
+  articulatedObject->node().computeCumulativeBB();
+
+  // allocate ids for links
+  for (int linkIx = 0; linkIx < articulatedObject->btMultiBody_->getNumLinks();
+       ++linkIx) {
+    int linkObjectId = allocateObjectID();
+    articulatedObject->objectIdToLinkId_[linkObjectId] = linkIx;
+    collisionObjToObjIds_->emplace(
+        articulatedObject->btMultiBody_->getLinkCollider(linkIx), linkObjectId);
+  }
+
+  // attach link visual shapes
+  int urdfLinkIx = 0;
+  for (auto& link : urdfImporter_->getModel()->m_links) {
+    if (link.second->m_visualArray.size() > 0) {
+      int bulletLinkIx =
+          u2b->cache->m_urdfLinkIndices2BulletLinkIndices[urdfLinkIx];
+      ArticulatedLink& linkObject = articulatedObject->getLink(bulletLinkIx);
+
+      ESP_CHECK(
+          attachLinkGeometry(&linkObject, link.second, drawables, lightSetup),
+          "BulletPhysicsManager::addArticulatedObjectFromURDF(): Failed to "
+          "instance render asset (attachGeometry) for link "
+              << urdfLinkIx << ".");
+    }
+    urdfLinkIx++;
+  }
+
+  // clear the cache
+  u2b->cache = nullptr;
+
+  // base collider refers to the articulated object's id
+  collisionObjToObjIds_->emplace(
+      articulatedObject->btMultiBody_->getBaseCollider(), articulatedObjectID);
+
+  existingArticulatedObjects_.emplace(articulatedObjectID,
+                                      std::move(articulatedObject));
+
+  // get a simplified name of the handle for the object
+  std::string simpleArtObjHandle =
+      Corrade::Utility::Directory::splitExtension(
+          Corrade::Utility::Directory::splitExtension(
+              Corrade::Utility::Directory::filename(filepath))
+              .first)
+          .first;
+
+  Magnum::Debug{} << "BulletPhysicsManager::addArticulatedObjectFromURDF: "
+                     "simpleObjectHandle : "
+                  << simpleArtObjHandle;
+
+  std::string newArtObjectHandle =
+      articulatedObjectManager_->getUniqueHandleFromCandidate(
+          simpleArtObjHandle);
+  Magnum::Debug{} << "BulletPhysicsManager::addArticulatedObjectFromURDF: "
+                     "newArtObjectHandle : "
+                  << newArtObjectHandle;
+
+  existingArticulatedObjects_.at(articulatedObjectID)
+      ->setObjectName(newArtObjectHandle);
+
+  // 2.0 Get wrapper - name is irrelevant, do not register on create.
+  ManagedArticulatedObject::ptr AObjWrapper = getArticulatedObjectWrapper();
+
+  // 3.0 Put articulated object in wrapper
+  AObjWrapper->setObjectRef(
+      existingArticulatedObjects_.at(articulatedObjectID));
+
+  // 4.0 register wrapper in manager
+  articulatedObjectManager_->registerObject(AObjWrapper, newArtObjectHandle);
+
+  return articulatedObjectID;
+}  // BulletPhysicsManager::addArticulatedObjectFromURDF
+
 esp::physics::ManagedRigidObject::ptr
 BulletPhysicsManager::getRigidObjectWrapper() {
   // TODO make sure this is appropriately cast
   return rigidObjectManager_->createObject("ManagedBulletRigidObject");
+}
+
+esp::physics::ManagedArticulatedObject::ptr
+BulletPhysicsManager::getArticulatedObjectWrapper() {
+  // TODO make sure this is appropriately cast
+  return articulatedObjectManager_->createObject(
+      "ManagedBulletArticulatedObject");
 }
 
 //! Check if mesh primitive is compatible with physics
@@ -112,13 +270,130 @@ bool BulletPhysicsManager::isMeshPrimitiveValid(
   }
 }
 
+bool BulletPhysicsManager::attachLinkGeometry(
+    ArticulatedLink* linkObject,
+    const std::shared_ptr<io::URDF::Link>& link,
+    gfx::DrawableGroup* drawables,
+    const std::string& lightSetup) {
+  bool geomSuccess = false;
+
+  for (auto& visual : link->m_visualArray) {
+    bool visualSetupSuccess = true;
+    // create a new child for each visual component
+    scene::SceneNode& visualGeomComponent = linkObject->node().createChild();
+    // cache the visual node
+    linkObject->visualNodes_.push_back(&visualGeomComponent);
+    visualGeomComponent.setType(esp::scene::SceneNodeType::OBJECT);
+    visualGeomComponent.setTransformation(
+        link->m_inertia.m_linkLocalFrame.invertedRigid() *
+        visual.m_linkLocalFrame);
+
+    // prep the AssetInfo, overwrite the filepath later
+    assets::AssetInfo visualMeshInfo{assets::AssetType::UNKNOWN};
+    visualMeshInfo.requiresLighting = true;
+
+    // create a modified asset if necessary for material override
+    std::shared_ptr<io::URDF::Material> material =
+        visual.m_geometry.m_localMaterial;
+    if (material) {
+      visualMeshInfo.overridePhongMaterial = assets::PhongMaterialColor();
+      visualMeshInfo.overridePhongMaterial->ambientColor =
+          material->m_matColor.m_rgbaColor;
+      visualMeshInfo.overridePhongMaterial->diffuseColor =
+          material->m_matColor.m_rgbaColor;
+      visualMeshInfo.overridePhongMaterial->specularColor =
+          Mn::Color4(material->m_matColor.m_specularColor);
+    }
+
+    switch (visual.m_geometry.m_type) {
+      case io::URDF::GEOM_CAPSULE:
+        visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
+        // should be registered and cached already
+        visualMeshInfo.filepath = visual.m_geometry.m_meshFileName;
+        // scale by radius as suggested by magnum docs
+        visualGeomComponent.scale(
+            Mn::Vector3(visual.m_geometry.m_capsuleRadius));
+        // Magnum capsule is Y up, URDF is Z up
+        visualGeomComponent.setTransformation(
+            visualGeomComponent.transformation() *
+            Mn::Matrix4::rotationX(Mn::Rad(M_PI_2)));
+        break;
+      case io::URDF::GEOM_CYLINDER:
+        visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
+        // the default created primitive handle for the cylinder with radius 1
+        // and length 2
+        visualMeshInfo.filepath =
+            "cylinderSolid_rings_1_segments_12_halfLen_1_useTexCoords_false_"
+            "useTangents_false_capEnds_true";
+        visualGeomComponent.scale(
+            Mn::Vector3(visual.m_geometry.m_capsuleRadius,
+                        visual.m_geometry.m_capsuleHeight / 2.0,
+                        visual.m_geometry.m_capsuleRadius));
+        // Magnum cylinder is Y up, URDF is Z up
+        visualGeomComponent.setTransformation(
+            visualGeomComponent.transformation() *
+            Mn::Matrix4::rotationX(Mn::Rad(M_PI_2)));
+        break;
+      case io::URDF::GEOM_BOX:
+        visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
+        visualMeshInfo.filepath = "cubeSolid";
+        visualGeomComponent.scale(visual.m_geometry.m_boxSize * 0.5);
+        break;
+      case io::URDF::GEOM_SPHERE: {
+        visualMeshInfo.type = esp::assets::AssetType::PRIMITIVE;
+        // default sphere prim is already constructed w/ radius 1
+        visualMeshInfo.filepath = "icosphereSolid_subdivs_1";
+        visualGeomComponent.scale(
+            Mn::Vector3(visual.m_geometry.m_sphereRadius));
+      } break;
+      case io::URDF::GEOM_MESH: {
+        visualGeomComponent.scale(visual.m_geometry.m_meshScale);
+        visualMeshInfo.filepath = visual.m_geometry.m_meshFileName;
+      } break;
+      case io::URDF::GEOM_PLANE:
+        Corrade::Utility::Debug()
+            << "Trying to add visual plane, not implemented";
+        // TODO:
+        visualSetupSuccess = false;
+        break;
+      default:
+        Corrade::Utility::Debug() << "BulletPhysicsManager::attachGeometry "
+                                     ": Unsupported visual type.";
+        visualSetupSuccess = false;
+        break;
+    }
+
+    // add the visual shape to the SceneGraph
+    if (visualSetupSuccess) {
+      assets::RenderAssetInstanceCreationInfo::Flags flags;
+      flags |= assets::RenderAssetInstanceCreationInfo::Flag::IsRGBD;
+      flags |= assets::RenderAssetInstanceCreationInfo::Flag::IsSemantic;
+      assets::RenderAssetInstanceCreationInfo creation(
+          visualMeshInfo.filepath, Mn::Vector3{1}, flags, lightSetup);
+
+      geomSuccess = resourceManager_.loadAndCreateRenderAssetInstance(
+                        visualMeshInfo, creation, &visualGeomComponent,
+                        drawables, &linkObject->visualNodes_) != nullptr;
+
+      // cache the visual component for later query
+      if (geomSuccess) {
+        linkObject->visualAttachments_.emplace_back(
+            &visualGeomComponent, visual.m_geometry.m_meshFileName);
+      }
+    }
+  }
+
+  return geomSuccess;
+}
+
 void BulletPhysicsManager::setGravity(const Magnum::Vector3& gravity) {
   bWorld_->setGravity(btVector3(gravity));
-  // After gravity change, need to reactive all bullet objects
-  for (std::map<int, physics::RigidObject::ptr>::iterator it =
-           existingObjects_.begin();
-       it != existingObjects_.end(); ++it) {
-    it->second->setActive(true);
+  // After gravity change, need to reactivate all bullet objects
+  for (auto& it : existingObjects_) {
+    it.second->setActive(true);
+  }
+  for (auto& it : existingArticulatedObjects_) {
+    it.second->setActive(true);
   }
 }
 
@@ -139,7 +414,7 @@ void BulletPhysicsManager::stepPhysics(double dt) {
   for (auto& objectItr : existingObjects_) {
     VelocityControl::ptr velControl = objectItr.second->getVelocityControl();
     if (objectItr.second->getMotionType() == MotionType::KINEMATIC) {
-      // kinematic velocity control intergration
+      // kinematic velocity control integration
       if (velControl->controllingAngVel || velControl->controllingLinVel) {
         objectItr.second->setRigidState(velControl->integrateTransform(
             dt, objectItr.second->getRigidState()));
@@ -164,6 +439,14 @@ void BulletPhysicsManager::stepPhysics(double dt) {
           objectItr.second->setAngularVelocity(velControl->angVel);
         }
       }
+    }
+  }
+
+  // extra step to validate joint states against limits for corrective clamping
+  for (auto& objectItr : existingArticulatedObjects_) {
+    if (objectItr.second->getAutoClampJointLimits()) {
+      static_cast<BulletArticulatedObject*>(objectItr.second.get())
+          ->clampJointLimits();
     }
   }
 
@@ -196,7 +479,7 @@ double BulletPhysicsManager::getStageRestitutionCoefficient() const {
 
 Magnum::Range3D BulletPhysicsManager::getCollisionShapeAabb(
     const int physObjectID) const {
-  assertIDValidity(physObjectID);
+  assertRigidIdValidity(physObjectID);
   return static_cast<BulletRigidObject*>(
              existingObjects_.at(physObjectID).get())
       ->getCollisionShapeAabb();
@@ -220,8 +503,7 @@ RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
   results.ray = ray;
   double rayLength = static_cast<double>(ray.direction.length());
   if (rayLength == 0) {
-    LOG(ERROR) << "BulletPhysicsManager::castRay : Cannot case ray with zero "
-                  "length, aborting. ";
+    LOG(ERROR) << "::castRay : Cannot cast ray with zero length, aborting. ";
     return results;
   }
   btVector3 from(ray.origin);
@@ -265,25 +547,20 @@ void BulletPhysicsManager::lookUpObjectIdAndLinkId(
 
   if (collisionObjToObjIds_->count(colObj) != 0u) {
     int rawObjectId = collisionObjToObjIds_->at(colObj);
-    if (existingObjects_.count(rawObjectId) != 0u) {
-      *objectId = rawObjectId;
-      return;
-    }
-    // TODO: will come with AO support
-    /* else if (existingArticulatedObjects_.count(rawObjectId)) {
+    if (existingObjects_.count(rawObjectId) != 0u ||
+        existingArticulatedObjects_.count(rawObjectId) != 0u) {
       *objectId = rawObjectId;
       return;
     } else {
       // search articulated objects to see if this is a link
       for (const auto& pair : existingArticulatedObjects_) {
-        if (pair.second->objectIdToLinkId_.count(rawObjectId)) {
+        if (pair.second->objectIdToLinkId_.count(rawObjectId) != 0u) {
           *objectId = pair.first;
           *linkId = pair.second->objectIdToLinkId_.at(rawObjectId);
           return;
         }
       }
     }
-    */
   }
 
   // lookup failed

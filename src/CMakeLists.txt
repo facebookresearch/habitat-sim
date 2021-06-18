@@ -55,6 +55,11 @@ option(USE_SYSTEM_MAGNUM "Use system Magnum instead of a bundled submodule" OFF)
 option(USE_SYSTEM_PYBIND11 "Use system Pybind11 instead of a bundled submodule" OFF)
 option(USE_SYSTEM_RAPIDJSON "Use system RapidJSON instead of a bundled submodule" OFF)
 option(USE_SYSTEM_BULLET "Use system Bullet instead of a bundled submodule" OFF)
+option(
+  BUILD_BASIS_COMPRESSOR
+  "Wether or not to build the basis compressor.  Loading basis compressed meshes does NOT require this."
+  OFF
+)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -131,6 +136,10 @@ endif()
 if(BUILD_GUI_VIEWERS)
   message("Building GUI viewer")
   add_subdirectory(utils/viewer)
+endif()
+
+if(BUILD_BASIS_COMPRESSOR)
+  add_subdirectory(utils/imageconverter)
 endif()
 
 if(BUILD_TEST)

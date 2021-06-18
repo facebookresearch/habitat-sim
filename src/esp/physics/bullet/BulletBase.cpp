@@ -34,7 +34,7 @@ void BulletBase::constructConvexShapesFromMeshes(
     }
     bObjectConvexShapes.back()->setMargin(0.0);
     bObjectConvexShapes.back()->recalcLocalAabb();
-    //! Add to compound shape stucture
+    //! Add to compound shape structure
     if (bObjectShape != nullptr) {
       bObjectShape->addChildShape(btTransform::getIdentity(),
                                   bObjectConvexShapes.back().get());

@@ -129,7 +129,7 @@ commands:
                 conda create -y -n habitat python=3.6
                 . activate habitat
                 conda install -q -y -c conda-forge ninja numpy pytest pytest-cov ccache hypothesis
-                pip install pytest-sugar pytest-xdist
+                pip install pytest-sugar pytest-xdist pytest-benchmark
               fi
       - run:
           name: Install emscripten
@@ -207,7 +207,22 @@ jobs:
               sudo rm  llvm-config
               sudo ln -s llvm-config-10 llvm-config
               cd ~/project/
-              pip install -U black flake8 flake8-bugbear flake8-builtins flake8-comprehensions flake8-return flake8-simplify isort mypy numpy pytest sphinx pillow tqdm hypothesis
+              pip install -U \
+                black \
+                flake8 \
+                flake8-bugbear \
+                flake8-builtins \
+                flake8-comprehensions \
+                flake8-return \
+                flake8-simplify \
+                hypothesis \
+                isort \
+                mypy \
+                numpy \
+                pytest \
+                sphinx \
+                pillow \
+                tqdm
               pip install -r requirements.txt torch --progress-bar off
       - run:
           name: run black
@@ -510,6 +525,9 @@ jobs:
 
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
               pytest -n auto --durations=10 --cov-report=xml --cov=./
+
+              #run the marked pytest-benchmark tests and print the results
+              pytest -m sim_benchmarks
 
               #re-build without bullet and cuda and run physics tests again
               #TODO: instead of reinstall, do this with configuration

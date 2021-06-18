@@ -93,6 +93,15 @@ class SceneAttributesManager
     return attributes::SceneObjectInstanceAttributes::create(handle);
   }
 
+  /**
+   * @brief This will return a @ref
+   * attributes::SceneObjectInstanceAttributes object with passed handle.
+   */
+  attributes::SceneAOInstanceAttributes::ptr createEmptyAOInstanceAttributes(
+      const std::string& handle) {
+    return attributes::SceneAOInstanceAttributes::create(handle);
+  }
+
  protected:
   /**
    * @brief Gets the int value of the appropriate enum corresponding to the
@@ -102,7 +111,7 @@ class SceneAttributesManager
    * @param jsonDoc document where value may be specified.
    * @return the int value to set for translation_origin in instance attributes.
    */
-  int getTranslationOriginVal(const io::JsonGenericValue& jsonDoc);
+  int getTranslationOriginVal(const io::JsonGenericValue& jsonDoc) const;
 
   /**
    * @brief Used Internally.  Create a @ref
@@ -115,6 +124,30 @@ class SceneAttributesManager
    */
   attributes::SceneObjectInstanceAttributes::ptr
   createInstanceAttributesFromJSON(const io::JsonGenericValue& jCell);
+
+  /**
+   * @brief Used Internally.  Create a @ref
+   * esp::metadata::attributes::SceneAOInstanceAttributes object from the
+   * passed JSON doc, describing the initial state of an instance of an
+   * articulated object.
+   * @param jCell JSON object containing the description of the articulated
+   * object instance.
+   * @return the constructed @ref
+   * esp::metadata::attributes::SceneAOInstanceAttributes object
+   */
+  attributes::SceneAOInstanceAttributes::ptr createAOInstanceAttributesFromJSON(
+      const io::JsonGenericValue& jCell);
+
+  /**
+   * @brief Populate an existing @ref
+   * metadata::attributes::SceneObjectInstanceAttributes from a JSON config.
+   *
+   * @param attributes the attributes to populate with JSON values
+   * @param jCell JSON document to parse
+   */
+  void loadAbstractObjectAttributesFromJson(
+      const attributes::SceneObjectInstanceAttributes::ptr& attributes,
+      const io::JsonGenericValue& jCell) const;
 
   /**
    * @brief Used Internally.  Create and configure newly-created scene instance
