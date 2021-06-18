@@ -120,6 +120,16 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
     return getSubgroupValue<T>("user_defined", key);
   }
 
+  /**
+   * @brief Retrieve a comma-separated informational string about the contents
+   * of this managed object.
+   */
+  std::string getObjectInfo() const override {
+    // TODO : once Magnum supports retrieving key-values of configurations, use
+    // that to build this
+    return getHandle() + ",";
+  }
+
  protected:
   /**
    * @brief Set this attributes' class.  Should only be set from constructor.

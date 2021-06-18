@@ -52,6 +52,12 @@ class AbstractManagedObject {
    */
   virtual int getID() const = 0;
 
+  /**
+   * @brief Retrieve a comma-separated informational string about the contents
+   * of this managed object.
+   */
+  virtual std::string getObjectInfo() const = 0;
+
  protected:
   virtual void setClassKey(const std::string&) = 0;
 

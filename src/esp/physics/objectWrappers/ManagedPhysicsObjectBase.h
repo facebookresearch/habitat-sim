@@ -262,6 +262,19 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
     return std::vector<scene::SceneNode*>();
   }  // getVisualSceneNodes
 
+  /**
+   * @brief Retrieve a comma-separated informational string about the contents
+   * of this managed object.
+   */
+  std::string getObjectInfo() const override {
+    std::string res;
+    // TODO : support retrieving all informational quantities
+    if (auto sp = this->getObjectReference()) {
+      res = sp->getObjectName() + "," + std::to_string(sp->getObjectID());
+    }
+    return ",";
+  }
+
  protected:
   /**
    * @brief This function accesses the underlying shared pointer of this
