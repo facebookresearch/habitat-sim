@@ -100,7 +100,9 @@ class Simulator {
    */
   int gpuDevice() const {
     if (!context_) {
-      CORRADE_ASSERT(!config_.createRenderer, "Simulator::gpuDevice: no OpenGL context when one is expected", 0);
+      CORRADE_ASSERT(
+          !config_.createRenderer,
+          "Simulator::gpuDevice: no OpenGL context when one is expected", 0);
       return 0;
     }
     return context_->gpuDevice();
