@@ -81,7 +81,7 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
       CORRADE_UNUSED const Magnum::ResourceKey& lightSetup){};
 
   Magnum::GL::Mesh& getMesh() {
-     CORRADE_INTERNAL_ASSERT(mesh_ != nullptr);
+    CORRADE_INTERNAL_ASSERT(mesh_ != nullptr);
     return *mesh_;
   }
 
@@ -95,7 +95,7 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
    * different from mesh_ (check the example in the PTexMeshDrawable class)
    */
   virtual Magnum::GL::Mesh& getVisualizerMesh() {
-     CORRADE_INTERNAL_ASSERT(mesh_ != nullptr);
+    CORRADE_INTERNAL_ASSERT(mesh_ != nullptr);
     return *mesh_;
   }
 
