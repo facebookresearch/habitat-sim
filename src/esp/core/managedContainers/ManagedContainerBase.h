@@ -106,11 +106,11 @@ class ManagedContainerBase {
   }
 
   /**
-   * @brief Get a list of all managed objects whose origin handles contain
-   * subStr, ignoring subStr's case
-   * @param subStr substring to search for within existing managed objects.
+   * @brief Get a list of all managed objects whose keys contain @p subStr,
+   * ignoring subStr's case
+   * @param subStr substring key to search for within existing managed objects.
    * @param contains whether to search for keys containing, or excluding,
-   * passed subStr
+   * passed @p subStr
    * @return vector of 0 or more managed object handles containing the passed
    * substring
    */
@@ -133,6 +133,15 @@ class ManagedContainerBase {
   }  // ManagedContainerBase::getUndeletableObjectHandles
 
   /**
+   * @brief Returns whether the object with the passed @p key is undeletable.
+   * @param key Value to look for to check whether undeletable or not.
+   * @return True if handle exists and is undeletable.
+   */
+  bool getIsUndeletable(const std::string& key) {
+    return (this->undeletableObjectNames_.count(key) > 0);
+  }
+
+  /**
    * @brief returns a vector of managed object handles representing managed
    * objects that have been locked by the user.  These managed objects cannot be
    * deleted until they have been unlocked, although they can be edited while
@@ -145,12 +154,23 @@ class ManagedContainerBase {
   }  // ManagedContainerBase::getUserLockedObjectHandles
 
   /**
+   * @brief Returns whether the object with the passed @p key is user locked.
+   * @param key Value to look for to check whether locked or not.
+   * @return True if handle exists and is user-locked.
+   */
+  bool getIsUserLocked(const std::string& key) {
+    return (this->userLockedObjectNames_.count(key) > 0);
+  }
+
+  /**
    * @brief clears maps of handle-keyed managed object and ID-keyed handles.
    */
   void reset() {
     objectLibKeyByID_.clear();
     objectLibrary_.clear();
     availableObjectIDs_.clear();
+    undeletableObjectNames_.clear();
+    userLockedObjectNames_.clear();
     resetFinalize();
   }  // ManagedContainerBase::reset
 
