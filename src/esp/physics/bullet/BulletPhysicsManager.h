@@ -274,7 +274,33 @@ class BulletPhysicsManager : public PhysicsManager {
     recentNumSubStepsTaken_ = -1;  // TODO: handle this more gracefully
   }
 
-  //============ Point To Point Constraints =============
+  //============ Rigid Constraints =============
+
+  /**
+   * @brief Create a rigid constraint between two objects or an object and the
+   * world.
+   *
+   * @param settings The datastructure defining the constraint parameters.
+   *
+   * @return The id of the newly created constraint or ID_UNDEFINED if failed.
+   */
+  int createRigidConstraint(const RigidConstraintSettings& settings) override;
+
+  /**
+   * @brief Update the settings of a rigid constraint.
+   *
+   * @param constraintId The id of the constraint to update.
+   * @param settings The new settings of the constraint.
+   */
+  void updateRigidConstraint(int constraintId,
+                             const RigidConstraintSettings& settings) override;
+
+  /**
+   * @brief Remove a rigid constraint by id.
+   *
+   * @param constraintId The id of the constraint to remove.
+   */
+  void removeRigidConstraint(int constraintId) override;
 
   /**
    * @brief Create a ball&socket joint to constrain a DYNAMIC RigidObject
@@ -287,7 +313,7 @@ class BulletPhysicsManager : public PhysicsManager {
    */
   int createRigidP2PConstraint(int objectId,
                                const Magnum::Vector3& position,
-                               bool positionLocal = true) override;
+                               bool positionLocal = true);
 
   // point2point constraint between multibody and rigid body
   int createArticulatedP2PConstraint(
@@ -296,7 +322,7 @@ class BulletPhysicsManager : public PhysicsManager {
       int objectId,
       float maxImpulse,
       const Corrade::Containers::Optional<Magnum::Vector3>& pivotA,
-      const Corrade::Containers::Optional<Magnum::Vector3>& pivotB) override;
+      const Corrade::Containers::Optional<Magnum::Vector3>& pivotB);
 
   int createArticulatedFixedConstraint(
       int articulatedObjectId,
@@ -304,7 +330,7 @@ class BulletPhysicsManager : public PhysicsManager {
       int objectId,
       float maxImpulse,
       const Corrade::Containers::Optional<Magnum::Vector3>& pivotA,
-      const Corrade::Containers::Optional<Magnum::Vector3>& pivotB) override;
+      const Corrade::Containers::Optional<Magnum::Vector3>& pivotB);
 
   /**
    * @brief Create a ball&socket joint to constrain two links of two
@@ -327,7 +353,7 @@ class BulletPhysicsManager : public PhysicsManager {
                                      int articulatedObjectIdB,
                                      int linkIdB,
                                      const Magnum::Vector3& linkOffsetB,
-                                     float maxImpulse = 2.0) override;
+                                     float maxImpulse = 2.0);
 
   /**
    * @brief Create a ball&socket joint to constrain two links of two
@@ -348,7 +374,7 @@ class BulletPhysicsManager : public PhysicsManager {
       int articulatedObjectIdB,
       int linkIdB,
       const Magnum::Vector3& globalConstraintPoint,
-      float maxImpulse = 2.0) override;
+      float maxImpulse = 2.0);
 
   /**
    * @brief Create a ball&socket joint to constrain a single link of an
@@ -365,7 +391,7 @@ class BulletPhysicsManager : public PhysicsManager {
                                      int linkId,
                                      const Magnum::Vector3& linkOffset,
                                      const Magnum::Vector3& pickPos,
-                                     float maxImpulse = 2.0) override;
+                                     float maxImpulse = 2.0);
 
   /**
    * @brief Create a ball&socket joint to constrain a single link of an
@@ -378,23 +404,7 @@ class BulletPhysicsManager : public PhysicsManager {
   int createArticulatedP2PConstraint(int articulatedObjectId,
                                      int linkId,
                                      const Magnum::Vector3& pickPos,
-                                     float maxImpulse = 2.0) override;
-
-  /**
-   * @brief Update the position target (pivot) of a constraint. Note: intended
-   * only for use with (object -> world) constraints, rather than (object <->
-   * object) constraints.
-   * @param p2pId The id of the constraint to update.
-   * @param pivot The new position target of the constraint.
-   */
-  void updateP2PConstraintPivot(int p2pId,
-                                const Magnum::Vector3& pivot) override;
-
-  /**
-   * @brief Remove a constraint by id.
-   * @param constraintId The id of the constraint to remove.
-   */
-  void removeConstraint(int constraintId) override;
+                                     float maxImpulse = 2.0);
 
   int nextConstraintId_ = 0;
   std::map<int, btMultiBodyPoint2Point*> articulatedP2ps;

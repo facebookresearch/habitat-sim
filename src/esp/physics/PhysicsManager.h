@@ -105,6 +105,44 @@ struct ContactPointData {
   ESP_SMART_POINTERS(ContactPointData)
 };
 
+//! describes the type of a rigid constraint.
+enum class RigidConstraintType {
+  //! lock a point in one frame to a point in another with no orientation
+  //! constraint
+  PointToPoint,
+  //! fix one frame to another constraining relative position and orientation
+  Fixed
+};
+
+/**
+ * @brief Stores rigid constraint parameters for creation and updates.
+ */
+struct RigidConstraintSettings {
+ public:
+  RigidConstraintSettings() = default;
+
+  //! The type of constraint described by these settings. Determines which
+  //! parameters to use for creation and update.
+  RigidConstraintType constraintType = RigidConstraintType::PointToPoint;
+
+  //! The maximum impulse applied by this constraint. Should be tuned relative
+  //! to physics timestep.
+  double maxImpulse = 1000.0;
+
+  //! object and link ids. objectIdB == ID_UNDEFINED indicates "world".
+  //! objectIdA must always be >= 0.
+  int objectIdA, objectIdB, linkIdA, linkIdB = ID_UNDEFINED;
+
+  //! constraint point in local space of respective objects
+  Mn::Vector3 pivotA, pivotB = {};
+
+  //! constraint orientation frame in local space of respective objects for
+  //! RigidConstraintType::Fixed
+  Mn::Matrix3x3 frameA, frameB = {};
+
+  ESP_SMART_POINTERS(RigidConstraintSettings)
+};
+
 class RigidObjectManager;
 class ArticulatedObjectManager;
 
@@ -835,170 +873,65 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
     return (existingArticulatedObjects_.count(physObjectID) > 0);
   }
 
-  //============= Object Point to Point Constraint API =============
+  //============= Object Rigid Constraint API =============
 
   /**
-   * @brief Create a ball&socket joint to constrain a DYNAMIC RigidObject
-   * provided a position in local or global coordinates. Note: Method not
-   * implemented for base PhysicsManager.
-   * @param objectId The id of the RigidObject to constrain.
-   * @param position The position of the ball and socket joint pivot.
-   * @param positionLocal Indicates whether the position is provided in global
-   * or object local coordinates.
-   * @return The unique id of the new constraint.
-   */
-  virtual int createRigidP2PConstraint(
-      CORRADE_UNUSED int objectId,
-      CORRADE_UNUSED const Magnum::Vector3& position,
-      CORRADE_UNUSED bool positionLocal = true) {
-    Magnum::Debug{}
-        << "createRigidP2PConstraint not implemented in base PhysicsManager.";
-    return ID_UNDEFINED;
-  }
-
-  // TODO: document AO->rigid
-  virtual int createArticulatedP2PConstraint(
-      CORRADE_UNUSED int articulatedObjectId,
-      CORRADE_UNUSED int linkId,
-      CORRADE_UNUSED int objectId,
-      CORRADE_UNUSED float maxImpulse,
-      CORRADE_UNUSED const Corrade::Containers::Optional<Magnum::Vector3>&
-          pivotA,
-      CORRADE_UNUSED const Corrade::Containers::Optional<Magnum::Vector3>&
-          pivotB) {
-    return -1;
-  }
-
-  // TODO: document AO->rigid
-  virtual int createArticulatedFixedConstraint(
-      CORRADE_UNUSED int articulatedObjectId,
-      CORRADE_UNUSED int linkId,
-      CORRADE_UNUSED int objectId,
-      CORRADE_UNUSED float maxImpulse,
-      CORRADE_UNUSED const Corrade::Containers::Optional<Magnum::Vector3>&
-          pivotA,
-      CORRADE_UNUSED const Corrade::Containers::Optional<Magnum::Vector3>&
-          pivotB) {
-    return -1;
-  }
-
-  /**
-   * @brief Create a ball&socket joint to constrain two links of two
-   * ArticulatedObjects to one another with local offsets for each.
+   * @brief Create a rigid constraint between two objects or an object and the
+   * world.
+   *
    * Note: Method not implemented for base PhysicsManager.
-   * @param articulatedObjectIdA The id of the first ArticulatedObject to
-   * constrain.
-   * @param linkIdA The local id of the first ArticulatedLink to constrain.
-   * @param linkOffsetA The position of the first ball and socket joint pivot in
-   * link A local space.
-   * @param articulatedObjectIdB The id of the second ArticulatedObject to
-   * constrain.
-   * @param linkIdB The local id of the second ArticulatedLink to constrain.
-   * @param linkOffsetB The position of the ball and socket joint pivot in link
-   * B local space.
-   * @return The unique id of the new constraint.
+   *
+   * @param settings The datastructure defining the constraint parameters.
+   *
+   * @return The id of the newly created constraint or ID_UNDEFINED if failed.
    */
-  virtual int createArticulatedP2PConstraint(
-      CORRADE_UNUSED int articulatedObjectIdA,
-      CORRADE_UNUSED int linkIdA,
-      CORRADE_UNUSED const Magnum::Vector3& linkOffsetA,
-      CORRADE_UNUSED int articulatedObjectIdB,
-      CORRADE_UNUSED int linkIdB,
-      CORRADE_UNUSED const Magnum::Vector3& linkOffsetB,
-      CORRADE_UNUSED float maxImpulse = 2.0) {
-    Magnum::Debug{} << "createArticulatedP2PConstraint not implemented in base "
-                       "PhysicsManager.";
+  virtual int createRigidConstraint(
+      CORRADE_UNUSED const RigidConstraintSettings& settings) {
+    LOG(ERROR)
+        << "createRigidConstraint not implemented in base PhysicsManager";
     return ID_UNDEFINED;
   }
 
   /**
-   * @brief Create a ball&socket joint to constrain two links of two
-   * ArticulatedObjects to one another at some global point.
+   * @brief Update the settings of a rigid constraint.
+   *
    * Note: Method not implemented for base PhysicsManager.
-   * @param articulatedObjectIdA The id of the first ArticulatedObject to
-   * constrain.
-   * @param linkIdA The local id of the first ArticulatedLink to constrain.
-   * @param articulatedObjectIdB The id of the second ArticulatedObject to
-   * constrain.
-   * @param linkIdB The local id of the second ArticulatedLink to constrain.
-   * @param globalConstraintPoint The position of the ball and socket joint
-   * pivot in global space.
-   * @return The unique id of the new constraint.
+   *
+   * @param constraintId The id of the constraint to update.
+   * @param settings The new settings of the constraint.
    */
-  virtual int createArticulatedP2PConstraint(
-      CORRADE_UNUSED int articulatedObjectIdA,
-      CORRADE_UNUSED int linkIdA,
-      CORRADE_UNUSED int articulatedObjectIdB,
-      CORRADE_UNUSED int linkIdB,
-      CORRADE_UNUSED const Magnum::Vector3& globalConstraintPoint,
-      CORRADE_UNUSED float maxImpulse = 2.0) {
-    Magnum::Debug{} << "createArticulatedP2PConstraint not implemented in base "
-                       "PhysicsManager.";
-    return ID_UNDEFINED;
+  virtual void updateRigidConstraint(
+      CORRADE_UNUSED int constraintId,
+      CORRADE_UNUSED const RigidConstraintSettings& settings) {
+    LOG(ERROR)
+        << "updateRigidConstraint not implemented in base PhysicsManager.";
   }
 
   /**
-   * @brief Create a ball&socket joint to constrain a single link of an
-   * ArticulatedObject provided a position in global coordinates and a local
-   * offset. Note: Method not implemented for base PhysicsManager.
-   * @param articulatedObjectId The id of the ArticulatedObject to constrain.
-   * @param linkId The local id of the ArticulatedLink to constrain.
-   * @param linkOffset The position of the ball and socket joint pivot in link
-   * local coordinates.
-   * @param pickPos The global position of the ball and socket joint pivot.
-   * @return The unique id of the new constraint.
-   */
-  virtual int createArticulatedP2PConstraint(
-      CORRADE_UNUSED int articulatedObjectId,
-      CORRADE_UNUSED int linkId,
-      CORRADE_UNUSED const Magnum::Vector3& linkOffset,
-      CORRADE_UNUSED const Magnum::Vector3& pickPos,
-      CORRADE_UNUSED float maxImpulse = 2.0) {
-    Magnum::Debug{} << "createArticulatedP2PConstraint not implemented in base "
-                       "PhysicsManager.";
-    return ID_UNDEFINED;
-  }
-
-  /**
-   * @brief Create a ball&socket joint to constrain a single link of an
-   * ArticulatedObject provided a position in global coordinates. Note: Method
-   * not implemented for base PhysicsManager.
-   * @param articulatedObjectId The id of the ArticulatedObject to constrain.
-   * @param linkId The local id of the ArticulatedLink to constrain.
-   * @param pickPos The global position of the ball and socket joint pivot.
-   * @return The unique id of the new constraint.
-   */
-  virtual int createArticulatedP2PConstraint(
-      CORRADE_UNUSED int articulatedObjectId,
-      CORRADE_UNUSED int linkId,
-      CORRADE_UNUSED const Magnum::Vector3& pickPos,
-      CORRADE_UNUSED float maxImpulse = 2.0) {
-    Magnum::Debug{} << "createArticulatedP2PConstraint not implemented in base "
-                       "PhysicsManager.";
-    return ID_UNDEFINED;
-  }
-
-  /**
-   * @brief Update the position target (pivot) of a constraint.
+   * @brief Remove a rigid constraint by id.
+   *
    * Note: Method not implemented for base PhysicsManager.
-   * @param p2pId The id of the constraint to update.
-   * @param pivot The new position target of the constraint.
-   */
-  virtual void updateP2PConstraintPivot(
-      CORRADE_UNUSED int p2pId,
-      CORRADE_UNUSED const Magnum::Vector3& pivot) {
-    Magnum::Debug{}
-        << "updateP2PConstraintPivot not implemented in base PhysicsManager.";
-  }
-
-  /**
-   * @brief Remove a constraint by id.
-   * Note: Method not implemented for base PhysicsManager.
+   *
    * @param constraintId The id of the constraint to remove.
    */
-  virtual void removeConstraint(CORRADE_UNUSED int constraintId) {
-    Magnum::Debug{}
-        << "removeConstraint not implemented in base PhysicsManager.";
+  virtual void removeRigidConstraint(CORRADE_UNUSED int constraintId) {
+    LOG(ERROR)
+        << "removeRigidConstraint not implemented in base PhysicsManager.";
+  }
+
+  /**
+   * @brief Get a copy of the settings for an existing rigid constraint.
+   *
+   * @param constraintId The id of the constraint.
+   *
+   * @return The settings of the constraint.
+   */
+  RigidConstraintSettings getRigidConstraintSettings(int constraintId) const {
+    ESP_CHECK(rigidConstraintSettings_.count(constraintId) > 0,
+              "PhysicsManager::getRigidConstraintSettings - No RigidConstraint "
+              "exists with constraintId = "
+                  << constraintId);
+    return *rigidConstraintSettings_.at(constraintId);
   }
 
  protected:
@@ -1159,6 +1092,10 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * allocateObjectID before new IDs are acquired with @ref nextObjectID_.
    */
   std::vector<int> recycledObjectIDs_;
+
+  //! maps constraint ids to their settings
+  std::unordered_map<int, RigidConstraintSettings::uptr>
+      rigidConstraintSettings_;
 
   //! Utilities
 

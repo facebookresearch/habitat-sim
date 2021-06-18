@@ -42,7 +42,7 @@ void BulletPhysicsManager::removeObject(const int physObjectID,
   // remove constraints referencing this object
   if (objectConstraints_.count(physObjectID) > 0) {
     for (auto c_id : objectConstraints_.at(physObjectID)) {
-      removeConstraint(c_id);
+      removeRigidConstraint(c_id);
     }
     objectConstraints_.erase(physObjectID);
   }
@@ -54,7 +54,7 @@ void BulletPhysicsManager::removeArticulatedObject(int id) {
   // remove constraints referencing this object
   if (objectConstraints_.count(id) > 0) {
     for (auto c_id : objectConstraints_.at(id)) {
-      removeConstraint(c_id);
+      removeRigidConstraint(c_id);
     }
     objectConstraints_.erase(id);
   }
@@ -654,7 +654,19 @@ std::vector<ContactPointData> BulletPhysicsManager::getContactPoints() const {
   return contactPoints;
 }
 
-//============ Point To Point Constraints =============
+//============ Rigid Constraints =============
+
+int BulletPhysicsManager::createRigidConstraint(
+    const RigidConstraintSettings& settings) {
+  // TODO: refactor all creation through settings parameters
+  return ID_UNDEFINED;
+}
+
+void BulletPhysicsManager::updateRigidConstraint(
+    int constraintId,
+    const RigidConstraintSettings& settings) {
+  // TODO: update constraint parameters from settings
+}
 
 // rigid object -> world
 int BulletPhysicsManager::createRigidP2PConstraint(
@@ -921,19 +933,7 @@ int BulletPhysicsManager::createArticulatedP2PConstraint(
                                         maxImpulse);
 }
 
-void BulletPhysicsManager::updateP2PConstraintPivot(
-    int p2pId,
-    const Magnum::Vector3& pivot) {
-  if (articulatedP2ps.count(p2pId) != 0u) {
-    articulatedP2ps.at(p2pId)->setPivotInB(btVector3(pivot));
-  } else if (rigidP2ps.count(p2pId) != 0u) {
-    rigidP2ps.at(p2pId)->setPivotB(btVector3(pivot));
-  } else {
-    Corrade::Utility::Debug() << "No P2P constraint with ID: " << p2pId;
-  }
-}
-
-void BulletPhysicsManager::removeConstraint(int constraintId) {
+void BulletPhysicsManager::removeRigidConstraint(int constraintId) {
   if (articulatedP2ps.count(constraintId) != 0u) {
     articulatedP2ps.at(constraintId)->getMultiBodyA()->setCanSleep(true);
     bWorld_->removeMultiBodyConstraint(articulatedP2ps.at(constraintId));
@@ -949,7 +949,8 @@ void BulletPhysicsManager::removeConstraint(int constraintId) {
     delete articulatedFixedConstraints.at(constraintId);
     articulatedFixedConstraints.erase(constraintId);
   } else {
-    Corrade::Utility::Debug() << "No constraint with ID: " << constraintId;
+    LOG(ERROR) << "removeRigidConstraint - No constraint with constraintId = "
+               << constraintId;
     return;
   }
   // remove the constraint from any referencing object maps

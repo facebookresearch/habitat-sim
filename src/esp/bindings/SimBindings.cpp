@@ -435,70 +435,17 @@ void initSimBindings(py::module& m) {
           attached to the object's visual SceneNodes.)")
       /* --- P2P/Fixed Constraints API --- */
       .def(
-          "create_rigid_p2p_constraint", &Simulator::createRigidP2PConstraint,
-          "object_id"_a, "position"_a, "position_is_local"_a = true,
-          R"(add p2p constraint between a rigid object and world point in local coordinates (or global if position_is_local is false)")
-      .def(
-          "create_articulated_p2p_constraint",
-          py::overload_cast<int, int, int, float>(
-              &Simulator::createArticulatedP2PConstraint),
-          "object_id_a"_a, "link_id"_a, "object_id_b"_a, "max_impulse"_a = 2.0,
-          R"(add p2p constraint between articulated object a link and an object; the pivot is at the object's origin)")
-      .def(
-          "create_articulated_p2p_constraint",
-          py::overload_cast<int, int, int, const Magnum::Vector3&,
-                            const Magnum::Vector3&, float>(
-              &Simulator::createArticulatedP2PConstraint),
-          "object_id_a"_a, "link_id"_a, "object_id_b"_a, "pivot_a"_a,
-          "pivot_b"_a, "max_impulse"_a = 2.0,
-          R"(add p2p constraint between articulated object a link and an object providing local pivots for both.)")
-      .def(
-          "create_articulated_p2p_constraint",
-          py::overload_cast<int, int, const Magnum::Vector3&, int, int,
-                            const Magnum::Vector3&, float>(
-              &Simulator::createArticulatedP2PConstraint),
-          "object_id_a"_a, "link_id_a"_a, "offset_a"_a, "object_id_b"_a,
-          "link_id_b"_a, "offset_b"_a, "max_impulse"_a = 2.0,
-          R"(add p2p constraint between two articulated objects at two links with local offsets)")
-      .def(
-          "create_articulated_p2p_constraint",
-          py::overload_cast<int, int, int, int, const Magnum::Vector3&, float>(
-              &Simulator::createArticulatedP2PConstraint),
-          "object_id_a"_a, "link_id_a"_a, "object_id_b"_a, "link_id_b"_a,
-          "global_constraint_point"_a, "max_impulse"_a = 2.0,
-          R"(add p2p constraint between two articulated objects at two links at a global position)")
-      .def(
-          "create_articulated_p2p_constraint",
-          py::overload_cast<int, int, const Magnum::Vector3&,
-                            const Magnum::Vector3&, float>(
-              &Simulator::createArticulatedP2PConstraint),
-          "object_id"_a, "link_id"_a, "link_offset"_a,
-          "global_constraint_point"_a, "max_impulse"_a = 2.0,
-          R"(add p2p constraint between an articulated object link at some local offset and a global point.)")
-      .def(
-          "create_articulated_p2p_constraint",
-          py::overload_cast<int, int, const Magnum::Vector3&, float>(
-              &Simulator::createArticulatedP2PConstraint),
-          "object_id"_a, "link_id"_a, "global_constraint_point"_a,
-          "max_impulse"_a = 2.0,
-          R"(add p2p constraint between an articulated object link and a global point.)")
-
-      .def(
-          "create_articulated_fixed_constraint",
-          py::overload_cast<int, int, int, float>(
-              &Simulator::createArticulatedFixedConstraint),
-          "object_id_a"_a, "link_id"_a, "object_id_b"_a, "max_impulse"_a = 2.0,
-          R"(add fixed constraint between articulated object a link and an object; the pivot is at the object's origin; the current relative orientation of the link and the object will be fixed)")
-      .def(
-          "create_articulated_fixed_constraint",
-          py::overload_cast<int, int, int, const Magnum::Vector3&,
-                            const Magnum::Vector3&, float>(
-              &Simulator::createArticulatedFixedConstraint),
-          "object_id_a"_a, "link_id"_a, "object_id_b"_a, "pivot_a"_a,
-          "pivot_b"_a, "max_impulse"_a = 2.0,
-          R"(add fixed constraint between articulated object link and rigid object; pivots are specified in the link/object's local space; the current relative orientation of the link and the object will be fixed)")
-      .def("remove_constraint", &Simulator::removeConstraint, "constraint_id"_a,
-           R"(Remove a point-2-point or fixed constraint by id.)");
+          "create_rigid_constraint", &Simulator::createRigidConstraint,
+          "settings"_a,
+          R"(Create a rigid constraint between two objects or an object and the world from a RigidConstraintsSettings.)")
+      .def("update_rigid_constraint", &Simulator::updateRigidConstraint,
+           "constraint_id"_a, "settings"_a,
+           R"(Update the settings of a rigid constraint.)")
+      .def("get_rigid_constraint_settings",
+           &Simulator::getRigidConstraintSettings, "constraint_id"_a,
+           R"(Get a copy of the settings for an existing rigid constraint.)")
+      .def("remove_rigid_constraint", &Simulator::removeRigidConstraint,
+           "constraint_id"_a, R"(Remove a rigid constraint by id.)");
 }
 
 }  // namespace sim
