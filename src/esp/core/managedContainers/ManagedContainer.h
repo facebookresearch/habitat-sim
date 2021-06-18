@@ -175,8 +175,9 @@ class ManagedContainer : public ManagedContainerBase {
 
   /**
    * @brief Get a reference to the managed object identified by the
-   * managedObjectID.  Should only be used internally. Users should
-   * only ever access copies of managed objects.
+   * managedObjectID. Should only be used internally - Users should
+   * only ever access copies of managed objects, unless this managed container's
+   * @p Access policy is Share.
    *
    * Can be used to manipulate a managed object before instancing new objects.
    * @param managedObjectID The ID of the managed object. Is mapped to the key
@@ -195,8 +196,9 @@ class ManagedContainer : public ManagedContainerBase {
 
   /**
    * @brief Get a reference to the managed object identified by the passed
-   * objectHandle.  Should only be used internally. Users should only ever
-   * access copies of managed objects.
+   * objectHandle. Should only be used internally - Users should
+   * only ever access copies of managed objects, unless this managed container's
+   * @p Access policy is Share.
    *
    * @param objectHandle The key referencing the managed object in @ref
    * objectLibrary_.
@@ -208,7 +210,6 @@ class ManagedContainer : public ManagedContainerBase {
             objectHandle, "<" + this->objectType_ + ">::getObjectByHandle")) {
       return nullptr;
     }
-
     return getObjectInternal<T>(objectHandle);
   }  // ManagedContainer::getObject
 
@@ -453,6 +454,19 @@ class ManagedContainer : public ManagedContainerBase {
    */
   void clearDefaultObject() { defaultObj_ = nullptr; }
 
+  /**
+   * @brief Get a vector of strings holding the values of each of the objects
+   * this manager manages whose keys match @p subStr, ignoring subStr's case.
+   * Pass an empty string for all objects.
+   * @param subStr substring key to search for within existing managed objects.
+   * @param contains whether to search for keys containing, or excluding,
+   * @p substr
+   * @return A vector containing the managed object handles of managed objects
+   * whose lock state has been set to passed state.
+   */
+  std::vector<std::string> getObjectInfoStrings(const std::string& subStr = "",
+                                                bool contains = true) const;
+
  protected:
   //======== Internally accessed functions ========
   /**
@@ -666,6 +680,27 @@ auto ManagedContainer<T, Access>::removeObjectsBySubstring(
 }  // ManagedContainer<T, Access>::removeObjectsBySubstring
 
 template <class T, ManagedObjectAccess Access>
+auto ManagedContainer<T, Access>::getObjectInfoStrings(
+    const std::string& subStr,
+    bool contains) const -> std::vector<std::string> {
+  // get all handles that match query elements first
+  std::vector<std::string> handles =
+      getObjectHandlesBySubstring(subStr, contains);
+  std::vector<std::string> res(handles.size());
+  int idx = 0;
+  for (const std::string& objectHandle : handles) {
+    // get the object
+    ManagedPtr objPtr = getObjectInternal<T>(objectHandle);
+    res[idx++] =
+        objectHandle + ", " +
+        ((this->getIsUndeletable(objectHandle)) ? "Undeletable, " : ", ") +
+        ((this->getIsUserLocked(objectHandle)) ? "Locked, " : ", ") +
+        objPtr->getObjectInfo();
+  }
+  return res;
+}  //// ManagedContainer<T, Access>::getObjectInfoStrings
+
+template <class T, ManagedObjectAccess Access>
 auto ManagedContainer<T, Access>::removeObjectInternal(
     int objectID,
     const std::string& objectHandle,
@@ -676,9 +711,9 @@ auto ManagedContainer<T, Access>::removeObjectInternal(
     return nullptr;
   }
   std::string msg;
-  if (this->undeletableObjectNames_.count(objectHandle) > 0) {
+  if (this->getIsUndeletable(objectHandle)) {
     msg = "Required Undeletable Managed Object";
-  } else if (this->userLockedObjectNames_.count(objectHandle) > 0) {
+  } else if (this->getIsUserLocked(objectHandle)) {
     msg = "User-locked Object.  To delete managed object, unlock it";
   }
   if (msg.length() != 0) {

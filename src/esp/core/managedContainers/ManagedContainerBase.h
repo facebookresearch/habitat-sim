@@ -137,7 +137,7 @@ class ManagedContainerBase {
    * @param key Value to look for to check whether undeletable or not.
    * @return True if handle exists and is undeletable.
    */
-  bool getIsUndeletable(const std::string& key) {
+  bool getIsUndeletable(const std::string& key) const {
     return (this->undeletableObjectNames_.count(key) > 0);
   }
 
@@ -158,7 +158,7 @@ class ManagedContainerBase {
    * @param key Value to look for to check whether locked or not.
    * @return True if handle exists and is user-locked.
    */
-  bool getIsUserLocked(const std::string& key) {
+  bool getIsUserLocked(const std::string& key) const {
     return (this->userLockedObjectNames_.count(key) > 0);
   }
 
