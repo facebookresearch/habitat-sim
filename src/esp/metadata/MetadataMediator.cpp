@@ -386,7 +386,7 @@ attributes::SceneAttributes::ptr MetadataMediator::makeSceneAndReferenceStage(
   return sceneAttributes;
 }  // MetadataMediator::makeSceneAndReferenceStage
 
-bool MetadataMediator::getCreateRenderer() {
+bool MetadataMediator::getCreateRenderer() const {
   return simConfig_.createRenderer;
 }
 

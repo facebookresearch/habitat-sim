@@ -83,7 +83,7 @@ namespace assets {
  */
 class ResourceManager {
  public:
-  bool getCreateRenderer();
+  bool getCreateRenderer() const;
 
   /** @brief Stores references to a set of drawable elements */
   using DrawableGroup = gfx::DrawableGroup;

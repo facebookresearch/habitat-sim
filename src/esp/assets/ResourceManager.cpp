@@ -123,7 +123,7 @@ void ResourceManager::buildImporters() {
 
 }  // buildImporters
 
-bool ResourceManager::getCreateRenderer() {
+bool ResourceManager::getCreateRenderer() const {
   return metadataMediator_->getCreateRenderer();
 }
 
