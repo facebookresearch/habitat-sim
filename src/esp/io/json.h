@@ -26,7 +26,10 @@ namespace io {
 typedef rapidjson::Document JsonDocument;
 
 //! Write a JsonDocument to file
-bool writeJsonToFile(const JsonDocument& document, const std::string& file);
+bool writeJsonToFile(const JsonDocument& document,
+                     const std::string& file,
+                     bool usePrettyWriter = true,
+                     int maxDecimalPlaces = -1);
 
 //! Parse JSON file and return as JsonDocument object
 JsonDocument parseJsonFile(const std::string& file);
