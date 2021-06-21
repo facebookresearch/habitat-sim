@@ -148,6 +148,13 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
    * that to build this data.
    */
   std::string getObjectInfoInternal() const override;
+  /**
+   * @brief Retrieve a comma-separated string holding the header values for the
+   * info returned for this managed object, type-specific.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+  std::string getObjectInfoHeaderInternal() const override;
 
   /**
    * @brief Retrieve a comma-separated informational string about the contents
@@ -156,6 +163,16 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
    * that to build this data.
    */
   virtual std::string getSceneObjInstanceInfoInternal() const { return ""; }
+
+  /**
+   * @brief Retrieve a comma-separated informational string about the contents
+   * of this managed object.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+  virtual std::string getSceneObjInstanceInfoHeaderInternal() const {
+    return "";
+  }
 
  public:
   ESP_SMART_POINTERS(SceneObjectInstanceAttributes)
@@ -220,6 +237,14 @@ class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
    * of this SceneAOInstanceAttributes object.
    */
   std::string getSceneObjInstanceInfoInternal() const override;
+
+  /**
+   * @brief Retrieve a comma-separated informational string
+   * about the contents of this managed object.
+   * TODO : once Magnum supports retrieving key-values of
+   * configurations, use that to build this data.
+   */
+  std::string getSceneObjInstanceInfoHeaderInternal() const override;
 
   /**
    * @brief Map of joint names/idxs to values for initial pose

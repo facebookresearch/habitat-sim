@@ -39,10 +39,17 @@ std::string SceneObjectInstanceAttributes::getCurrShaderTypeName() const {
   return getShaderTypeName(shaderTypeVal);
 }
 
+std::string SceneObjectInstanceAttributes::getObjectInfoHeaderInternal() const {
+  return "Translation XYZ, Rotation WXYZ, Motion Type, Shader Type, Uniform "
+         "Scale, Mass Scale, Translation Origin, " +
+         getSceneObjInstanceInfoHeaderInternal();
+}
+
 std::string SceneObjectInstanceAttributes::getObjectInfoInternal() const {
   return cfg.value("translation") + ", " + cfg.value("rotation") + ", " +
          getCurrMotionTypeName() + ", " + getCurrShaderTypeName() + ", " +
          cfg.value("uniform_scale") + ", " + cfg.value("mass_scale") + ", " +
+         getTranslationOriginName(getTranslationOrigin()) + ", " +
          getSceneObjInstanceInfoInternal();
 }  // SceneObjectInstanceAttributes::getObjectInfoInternal()
 
@@ -51,6 +58,24 @@ SceneAOInstanceAttributes::SceneAOInstanceAttributes(const std::string& handle)
   // set default fixed base value (only used for articulated object)
   setFixedBase(false);
 }
+
+std::string SceneAOInstanceAttributes::getSceneObjInstanceInfoHeaderInternal()
+    const {
+  const std::string posePrfx = "Init Pose ";
+  std::string initPoseHdr = "";
+  int iter = 0;
+  for (const auto& it : initJointPose_) {
+    initPoseHdr += posePrfx + std::to_string(iter++) + ", ";
+  }
+  const std::string velPrfx = "Init Vel ";
+  std::string initVelHdr = "";
+  iter = 0;
+  for (const auto& it : initJointPose_) {
+    initVelHdr += velPrfx + std::to_string(iter++) + ", ";
+  }
+  std::string res = "Is Fixed Base?, " + initPoseHdr + initVelHdr;
+  return res;
+}  // SceneAOInstanceAttributes::getSceneObjInstanceInfoHeaderInternal
 
 std::string SceneAOInstanceAttributes::getSceneObjInstanceInfoInternal() const {
   std::string initJointPose = "[";
@@ -79,12 +104,18 @@ SceneAttributes::SceneAttributes(const std::string& handle)
 std::string SceneAttributes::getObjectInfoInternal() const {
   std::string res = "\n";
   // scene-specific info constants
-
+  // default translation origin
+  res += "Default Translation Origin : " +
+         getTranslationOriginName(getTranslationOrigin()) + ",\n";
   // specified lighting
+  res += "Default Lighting, " + getLightingHandle() + ",\n";
 
   // specified navmesh(s)
+  res += "Navmesh Handle, " + getNavmeshHandle() + ",\n";
 
   // specified ssd
+  res +=
+      "Semantic Scene Descriptor Handle, " + getSemanticSceneHandle() + ",\n";
 
   // stage instance info
   res += stageInstance_->getObjectInfo() + "\n";
@@ -100,7 +131,7 @@ std::string SceneAttributes::getObjectInfoInternal() const {
   }
 
   return res;
-}
+}  // SceneAttributes::getObjectInfoInternal
 
 }  // namespace attributes
 }  // namespace metadata
