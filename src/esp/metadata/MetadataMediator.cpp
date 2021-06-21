@@ -383,5 +383,36 @@ attributes::SceneAttributes::ptr MetadataMediator::makeSceneAndReferenceStage(
   return sceneAttributes;
 }  // MetadataMediator::makeSceneAndReferenceStage
 
+std::string MetadataMediator::getDatasetsOverview() const {
+  // reserve space for info strings for all scene datasets
+  std::vector<std::string> sceneDatasetHandles =
+      sceneDatasetAttributesManager_->getObjectHandlesBySubstring("");
+  std::string res = "Datasets : \n";
+  for (const std::string& handle : sceneDatasetHandles) {
+    res += sceneDatasetAttributesManager_->getObjectByHandle(handle)
+               ->getDatasetSummary() +
+           "\n";
+  }
+
+  return res;
+}  // MetadataMediator::getDatasetNames
+
+std::string MetadataMediator::createDatasetReport(
+    const std::string& sceneDataset) const {
+  if (sceneDataset == "") {
+    return sceneDatasetAttributesManager_
+        ->getObjectByHandle(activeSceneDataset_)
+        ->getObjectInfo();
+  }
+
+  if (sceneDatasetAttributesManager_->getObjectLibHasHandle(sceneDataset)) {
+    return sceneDatasetAttributesManager_->getObjectByHandle(sceneDataset)
+        ->getObjectInfo();
+  }
+  // unknown dataset
+  return "Requeseted SceneDataset `" + sceneDataset + "` unknown.";
+
+}  // MetadataMediator::const std::string MetadataMediator::createDatasetReport(
+
 }  // namespace metadata
 }  // namespace esp
