@@ -44,9 +44,9 @@ class ManagedBulletRigidObject : public esp::physics::ManagedRigidObject {
 
  protected:
   /**
-   * @brief Templated version of obj ref getter. This function accesses the
+   * @brief This function accesses the
    * underlying shared pointer of this object's @p weakObjRef_ if it exists,
-   * and casts it to the specified template parameter; if it the ptr does not
+   * and casts it to BulletRigidObject; if it the ptr does not
    * exist, it provides a message.
    * @return Either a shared pointer of this wrapper's object, or nullptr if
    * dne.
@@ -59,20 +59,20 @@ class ManagedBulletRigidObject : public esp::physics::ManagedRigidObject {
 #else
   //! no bullet version
   double getMargin() const {
-    LOG(WARNING) << "This functionaliy requires Habitat-Sim to be compiled "
+    LOG(WARNING) << "This functionally requires Habitat-Sim to be compiled "
                     "with Bullet enabled..";
 
     return 0.0;
   }  // getMargin
 
   void setMargin(CORRADE_UNUSED const double margin) {
-    LOG(WARNING) << "This functionaliy requires Habitat-Sim to be compiled "
+    LOG(WARNING) << "This functionally requires Habitat-Sim to be compiled "
                     "with Bullet enabled..";
 
   }  // setMass
 
   Magnum::Range3D getCollisionShapeAabb() {
-    LOG(WARNING) << "This functionaliy requires Habitat-Sim to be compiled "
+    LOG(WARNING) << "This functionally requires Habitat-Sim to be compiled "
                     "with Bullet enabled..";
 
     return {};

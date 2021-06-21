@@ -3,6 +3,8 @@ find_package(Bullet REQUIRED Dynamics)
 
 add_library(
   bulletphysics STATIC
+  BulletArticulatedObject.cpp
+  BulletArticulatedObject.h
   BulletBase.cpp
   BulletBase.h
   BulletPhysicsManager.cpp
@@ -11,6 +13,9 @@ add_library(
   BulletRigidObject.h
   BulletRigidStage.cpp
   BulletRigidStage.h
+  BulletURDFImporter.cpp
+  BulletURDFImporter.h
+  objectWrappers/ManagedBulletArticulatedObject.h
   objectWrappers/ManagedBulletRigidObject.h
 )
 

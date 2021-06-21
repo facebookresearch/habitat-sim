@@ -56,7 +56,7 @@ class BulletRigidStage : public BulletBase, public RigidStage {
 
   /**
    * @brief Adds static stage collision objects to the simulation world after
-   * contructing them if necessary.
+   * contracting them if necessary.
    */
   void constructAndAddCollisionObjects();
 

@@ -41,7 +41,7 @@ parser.add_argument("--seed", type=int, default=1)
 parser.add_argument(
     "--enable_physics",
     action="store_true",
-    help="Whether to enable phyiscs (kinematic by default or dynamics if installed with bullet) during benchmark or not.",
+    help="Whether to enable physics (kinematic by default or dynamics if installed with bullet) during benchmark or not.",
 )
 parser.add_argument(
     "--num_objects",

@@ -30,13 +30,13 @@ namespace assets {
   @brief Enumeration of mesh types supported by the simulator.
 
   Each entry suggests a derived class of @ref BaseMesh implementing the specific
-  storage and processing interface to accomodate differing asset formats.
+  storage and processing interface to accommodate differing asset formats.
   Identifies the derived variant of this object.
   */
 enum SupportedMeshType {
   /**
    * Undefined mesh types are created programmatically without a specific
-   * format or loaded from an unkown format. Support for this type and behavior
+   * format or loaded from an unknown format. Support for this type and behavior
    * is likely limited. Object type is likely @ref BaseMesh.
    */
   NOT_DEFINED = -1,
@@ -160,7 +160,7 @@ class BaseMesh {
   SupportedMeshType type_ = SupportedMeshType::NOT_DEFINED;
 
   /**
-   * @brief Whether or not the mesh data has been transfered to GPU.
+   * @brief Whether or not the mesh data has been transferred to GPU.
    */
   bool buffersOnGPU_ = false;
 

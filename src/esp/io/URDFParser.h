@@ -143,9 +143,9 @@ enum CollisionFlags {
 struct CollisionShape : Shape {
   int m_flags{0};
   //! custom collision group (e.g. <collision>)
-  int m_collisionGroup;
+  int m_collisionGroup{0};
   //! custom collision mask
-  int m_collisionMask;
+  int m_collisionMask{0};
   CollisionShape() = default;
 };
 
@@ -154,14 +154,14 @@ struct CollisionShape : Shape {
 struct Inertia {
   //! local transform of the link in parent joint space
   Magnum::Matrix4 m_linkLocalFrame{0.0};
-  bool m_hasLinkLocalFrame;
+  bool m_hasLinkLocalFrame{false};
 
   //! mass of the link (0 mass indicates unmovable, static object)
   double m_mass{0.0};
 
   //! inertia matrix upper triangular entries. Computed automatically if not
   //! specified.
-  double m_ixx, m_ixy, m_ixz, m_iyy, m_iyz, m_izz = 0.0;
+  double m_ixx{0.0}, m_ixy{0.0}, m_ixz{0.0}, m_iyy{0.0}, m_iyz{0.0}, m_izz{0.0};
 
   Inertia() = default;
 };
@@ -258,7 +258,7 @@ struct Link {
 };
 
 //! Generic structure representing an articulated object parsed from a URDF file
-//! independant from any physics implementation.
+//! independent from any physics implementation.
 class Model {
  public:
   //! name of the articulated object or robot

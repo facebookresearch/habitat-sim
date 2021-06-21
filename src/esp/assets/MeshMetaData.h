@@ -18,7 +18,7 @@ namespace assets {
 
 /**
  * @brief Stores meta data for objects with a multi-component transformation
- * heirarchy.
+ * hierarchy.
  *
  * Some mesh files include a transformation hierarchy. A @ref
  * MeshTransformNode stores this hierarchy and indices for the meshes and
@@ -47,7 +47,7 @@ struct MeshTransformNode {
 
 /**
  * @brief Stores meta data for an asset possibly containing multiple meshes,
- * materials, textures, and a heirarchy of component transform relationships.
+ * materials, textures, and a hierarchy of component transform relationships.
  *
  * As each type of data may contain a few items, we save the start index, and
  * the end index (of each type) as a pair. In current implementation: ptex mesh:
@@ -72,7 +72,7 @@ struct MeshMetaData {
   std::pair<start, end> textureIndex =
       std::make_pair(ID_UNDEFINED, ID_UNDEFINED);
 
-  /** @brief The root of the mesh component transformation heirarchy tree which
+  /** @brief The root of the mesh component transformation hierarchy tree which
    * stores the relationship between components of the asset.*/
   MeshTransformNode root;
 

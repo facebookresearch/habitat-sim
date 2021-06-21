@@ -446,7 +446,7 @@ if __name__ == "__main__":
         packages=find_packages(),
         install_requires=requirements,
         setup_requires=setup_requires,
-        tests_require=["hypothesis", "pytest-cov", "pytest"],
+        tests_require=["hypothesis", "pytest-benchmark", "pytest"],
         python_requires=">=3.6",
         # add extension module
         ext_modules=[CMakeExtension("habitat_sim._ext.habitat_sim_bindings", "src")],

@@ -72,7 +72,7 @@ class PhysicsObjectBaseManager
   /**
    * @brief Build a shared pointer to a ManagedRigidObject wrapper around an
    * appropriately cast @ref esp::physics::RigidObject, either the base
-   * kinematic verison, or one built to support a dynamic library.
+   * kinematic version, or one built to support a dynamic library.
    * @tparam The type of the underlying wrapped object to create
    */
   template <typename U>

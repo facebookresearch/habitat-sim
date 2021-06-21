@@ -1,0 +1,69 @@
+<?xml version="1.0" ?>
+<robot name="fixed_base_test">
+  <material name="red">
+    <color rgba="0.7 0.0 0.0 1.0"/>
+  </material>
+  <material name="green">
+    <color rgba="0.0 0.7 0.0 1.0"/>
+  </material>
+  <material name="blue">
+    <color rgba="0.0 0.0 0.7 1.0"/>
+  </material>
+  <link name="base_box">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.4 0.2 0.4"/>
+      </geometry>
+      <material name="red"/>
+    </visual>
+    <collision group="2">
+      <origin rpy="0 0 0" xyz="0 0 0"/>
+      <geometry>
+        <box size="0.4 0.2 0.4"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="j1" type="prismatic">
+    <origin rpy="0 0 0" xyz="0 0.1 0.0"/>
+    <parent link="base_box" />
+    <child link="link_1" />
+    <axis xyz="0 0 1" />
+    <limit lower="-0.4" upper="0.4" velocity="0.1" />
+  <dynamics damping="100.0" /></joint>
+  <link name="link_1">
+    <visual>
+      <origin rpy="0 0 0" xyz="0.0 0.1 0.0"/>
+      <geometry>
+        <box size="0.2 0.2 0.4"/>
+      </geometry>
+      <material name="green"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.0 0.1 0.1"/>
+      <geometry>
+        <box size="0.2 0.2 0.2"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="j2" type="fixed">
+    <origin rpy="0 0 0" xyz="0 0.4 0"/>
+    <parent link="base_box"/>
+    <child link="link_2"/>
+  </joint>
+  <link name="link_2">
+    <visual>
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="0.4 0.2 0.4"/>
+      </geometry>
+      <material name="blue"/>
+    </visual>
+    <collision group="2">
+      <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+      <geometry>
+        <box size="0.4 0.2 0.4"/>
+      </geometry>
+    </collision>
+  </link>
+</robot>

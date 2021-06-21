@@ -164,12 +164,11 @@ void initAttributesBindings(py::module& m) {
       .def_property(
           "shader_type", &AbstractObjectAttributes::getShaderType,
           &AbstractObjectAttributes::setShaderType,
-          R"(The shader type [0=flat, 1=phong, 2=pbr] to use for this construction)")
+          R"(The shader type [0=material, 1=flat, 2=phong, 3=pbr] to use for this construction)")
       .def_property(
           "requires_lighting", &AbstractObjectAttributes::getRequiresLighting,
           &AbstractObjectAttributes::setRequiresLighting,
-          R"(Whether constructions built from this template should use phong
-          shading or not.)")
+          R"(If false, this object will be rendered flat, ignoring shader type settings.)")
       .def_property_readonly(
           "render_asset_is_primitive",
           &AbstractObjectAttributes::getRenderAssetIsPrimitive,
@@ -178,7 +177,7 @@ void initAttributesBindings(py::module& m) {
       .def_property_readonly(
           "collision_asset_is_primitive",
           &AbstractObjectAttributes::getCollisionAssetIsPrimitive,
-          R"(Whether collisions invloving constructions built from
+          R"(Whether collisions involving constructions built from
           this template should be solved using an internally sourced
           primitive.)")
       .def_property_readonly(
@@ -194,7 +193,7 @@ void initAttributesBindings(py::module& m) {
       .def_property_readonly(
           "is_dirty", &AbstractObjectAttributes::getIsDirty,
           R"(Whether values in this attributes have been changed requiring
-          re-registartion before they can be used an object can be created. )");
+          re-registration before they can be used an object can be created. )");
 
   // ==== ObjectAttributes ====
   py::class_<ObjectAttributes, AbstractObjectAttributes, ObjectAttributes::ptr>(

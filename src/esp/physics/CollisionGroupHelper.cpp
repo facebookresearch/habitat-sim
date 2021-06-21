@@ -98,11 +98,9 @@ CollisionGroup CollisionGroupHelper::getGroup(const std::string& groupName) {
 }
 
 std::string CollisionGroupHelper::getGroupName(CollisionGroup group) {
-  for (std::map<std::string, CollisionGroup>::iterator it =
-           collisionGroupNames.begin();
-       it != collisionGroupNames.end(); ++it) {
-    if (group == it->second) {
-      return it->first;
+  for (auto& it : collisionGroupNames) {
+    if (group == it.second) {
+      return it.first;
     }
   }
   // enum input, so should not get here unless the map is corrupted
@@ -126,10 +124,8 @@ bool CollisionGroupHelper::setGroupName(CollisionGroup group,
 std::vector<std::string> CollisionGroupHelper::getAllGroupNames() {
   std::vector<std::string> groupNames;
   groupNames.reserve(collisionGroupNames.size());
-  for (std::map<std::string, CollisionGroup>::iterator it =
-           collisionGroupNames.begin();
-       it != collisionGroupNames.end(); ++it) {
-    groupNames.push_back(it->first);
+  for (auto& it : collisionGroupNames) {
+    groupNames.push_back(it.first);
   }
   return groupNames;
 }

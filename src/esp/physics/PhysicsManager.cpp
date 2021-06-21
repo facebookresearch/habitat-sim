@@ -5,6 +5,7 @@
 #include "PhysicsManager.h"
 #include <Magnum/Math/Range.h>
 #include "esp/assets/CollisionMeshData.h"
+#include "esp/physics/objectManagers/ArticulatedObjectManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
 #include "esp/sim/Simulator.h"
 namespace esp {
@@ -16,13 +17,18 @@ PhysicsManager::PhysicsManager(
         _physicsManagerAttributes)
     : resourceManager_(_resourceManager),
       physicsManagerAttributes_(_physicsManagerAttributes),
-      rigidObjectManager_(RigidObjectManager::create()) {}
+      rigidObjectManager_(RigidObjectManager::create()),
+      articulatedObjectManager_(ArticulatedObjectManager::create()) {}
 
 bool PhysicsManager::initPhysics(scene::SceneNode* node) {
   physicsNode_ = node;
   // set the rigidObjectManager's weak reference to physics manager to be based
   // on the same shared pointer that Simulator is using.
   rigidObjectManager_->setPhysicsManager(shared_from_this());
+
+  // set articulated object manager here, and in
+  articulatedObjectManager_->setPhysicsManager(shared_from_this());
+
   // Copy over relevant configuration
   fixedTimeStep_ = physicsManagerAttributes_->getTimestep();
 
@@ -36,6 +42,7 @@ bool PhysicsManager::initPhysicsFinalize() {
   //! Create new scene node
   staticStageObject_ = physics::RigidStage::create(&physicsNode_->createChild(),
                                                    resourceManager_);
+
   return true;
 }
 
@@ -257,8 +264,55 @@ int PhysicsManager::addObject(
   return nextObjectID_;
 }  // PhysicsManager::addObject
 
+int PhysicsManager::addArticulatedObjectInstance(
+    const std::string& filepath,
+    const std::shared_ptr<esp::metadata::attributes::SceneAOInstanceAttributes>&
+        aObjInstAttributes,
+    const std::string& lightSetup) {
+  std::string errMsgTmplt = "PhysicsManager::addObjectInstance : ";
+
+  // Get drawables from simulator. TODO: Support non-existent simulator?
+  auto& drawables = simulator_->getDrawableGroup();
+
+  // call object creation (resides only in physics library-based derived physics
+  // managers)
+  int aObjID = this->addArticulatedObjectFromURDF(
+      filepath, &drawables, aObjInstAttributes->getFixedBase(),
+      aObjInstAttributes->getUniformScale(), aObjInstAttributes->getMassScale(),
+      false, lightSetup);
+  if (aObjID == ID_UNDEFINED) {
+    // instancing failed for some reason.
+    LOG(ERROR) << errMsgTmplt
+               << "Articulated Object create failed for model filepath "
+               << filepath << ", whose handle is "
+               << aObjInstAttributes->getHandle()
+               << " as specified in articulated object instance attributes.";
+    return ID_UNDEFINED;
+  }
+
+  // set articulated object up using scene instance
+
+  // set articulated object's scene instancing attributes
+  existingArticulatedObjects_.at(aObjID)->setSceneInstanceAttr(
+      aObjInstAttributes);
+
+  // set articulated object's location, rotation and other pertinent state
+  // values based on
+  // scene object instance attributes set in the object above.
+  existingArticulatedObjects_.at(aObjID)->resetStateFromSceneInstanceAttr();
+
+  return aObjID;
+}  // PhysicsManager::addArticulatedObjectInstance
+
 esp::physics::ManagedRigidObject::ptr PhysicsManager::getRigidObjectWrapper() {
   return rigidObjectManager_->createObject("ManagedRigidObject");
+}
+
+esp::physics::ManagedArticulatedObject::ptr
+PhysicsManager::getArticulatedObjectWrapper() {
+  // should never be called unless we support non-dynamic AOs - would only be
+  // called from AO creation occurring from within PM
+  return articulatedObjectManager_->createObject("ManagedArticulatedObject");
 }
 
 void PhysicsManager::removeObject(const int physObjectID,
@@ -280,6 +334,25 @@ void PhysicsManager::removeObject(const int physObjectID,
     rigidObjectManager_->removeObjectByID(physObjectID);
   }
 }  // PhysicsManager::removeObject
+
+void PhysicsManager::removeArticulatedObject(int physObjectID) {
+  CHECK(existingArticulatedObjects_.count(physObjectID));
+  scene::SceneNode* objectNode =
+      &existingArticulatedObjects_.at(physObjectID)->node();
+  for (auto linkObjId :
+       existingArticulatedObjects_.at(physObjectID)->objectIdToLinkId_) {
+    deallocateObjectID(linkObjId.first);
+  }
+  std::string artObjName =
+      existingArticulatedObjects_.at(physObjectID)->getObjectName();
+  existingArticulatedObjects_.erase(physObjectID);
+  deallocateObjectID(physObjectID);
+  delete objectNode;
+  // remove wrapper if one is present
+  if (articulatedObjectManager_->getObjectLibHasHandle(artObjName)) {
+    articulatedObjectManager_->removeObjectByID(physObjectID);
+  }
+}
 
 int PhysicsManager::allocateObjectID() {
   if (!recycledObjectIDs_.empty()) {
@@ -347,7 +420,7 @@ void PhysicsManager::stepPhysics(double dt) {
   while (worldTime_ < targetTime) {
     // per fixed-step operations can be added here
 
-    // kinematic velocity control intergration
+    // kinematic velocity control integration
     for (auto& object : existingObjects_) {
       VelocityControl::ptr velControl = object.second->getVelocityControl();
       if (velControl->controllingAngVel || velControl->controllingLinVel) {
@@ -357,6 +430,20 @@ void PhysicsManager::stepPhysics(double dt) {
     }
     worldTime_ += fixedTimeStep_;
   }
+}
+void PhysicsManager::deferNodesUpdate() {
+  for (auto& o : existingObjects_)
+    o.second->deferUpdate();
+  for (auto& ao : existingArticulatedObjects_)
+    ao.second->deferUpdate();
+}
+
+void PhysicsManager::updateNodes() {
+  for (auto& o : existingObjects_)
+    o.second->updateNodes();
+
+  for (auto& ao : existingArticulatedObjects_)
+    ao.second->updateNodes();
 }
 
 //! Profile function. In BulletPhysics stationary objects are
@@ -486,11 +573,5 @@ void PhysicsManager::setVoxelizationDraw(const std::string& gridName,
     }
   }
 }
-const scene::SceneNode& PhysicsManager::getObjectVisualSceneNode(
-    int physObjectID) const {
-  assertRigidIdValidity(physObjectID);
-  return *existingObjects_.at(physObjectID)->visualNode_;
-}
-
 }  // namespace physics
 }  // namespace esp
