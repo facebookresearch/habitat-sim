@@ -14,7 +14,6 @@ const std::map<std::string, esp::physics::MotionType>
         {"kinematic", esp::physics::MotionType::KINEMATIC},
         {"dynamic", esp::physics::MotionType::DYNAMIC},
 };
-
 SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
     const std::string& handle,
     const std::string& type)
@@ -29,35 +28,15 @@ SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
   setQuat("rotation", Mn::Quaternion(Mn::Math::IdentityInit));
   // defaults to unknown so that obj instances use scene instance setting
   setTranslationOrigin(
-      static_cast<int>(managers::SceneInstanceTranslationOrigin::Unknown));
+      static_cast<int>(SceneInstanceTranslationOrigin::Unknown));
   // set default multiplicative scaling values
   setUniformScale(1.0f);
   setMassScale(1.0f);
 }
 
-/**
- * @brief Used for info purposes.  Return a string name corresponding to the
- * currently specified shader type value;
- */
 std::string SceneObjectInstanceAttributes::getCurrShaderTypeName() const {
   int shaderTypeVal = getShaderType();
-  if (shaderTypeVal <=
-          static_cast<int>(attributes::ObjectInstanceShaderType::Unknown) ||
-      shaderTypeVal >=
-          static_cast<int>(
-              attributes::ObjectInstanceShaderType::_EndShaderType)) {
-    return "unknown shader type";
-  }
-  // Must always be valid value
-  ObjectInstanceShaderType shaderType =
-      static_cast<ObjectInstanceShaderType>(shaderTypeVal);
-  for (const auto& it :
-       attributes::AbstractObjectAttributes::ShaderTypeNamesMap) {
-    if (it.second == shaderType) {
-      return it.first;
-    }
-  }
-  return "unknown shader type";
+  return getShaderTypeName(shaderTypeVal);
 }
 
 std::string SceneObjectInstanceAttributes::getObjectInfoInternal() const {
@@ -88,23 +67,25 @@ std::string SceneAOInstanceAttributes::getSceneObjInstanceInfoInternal() const {
          ", ";
 }  // SceneAOInstanceAttributes::getSceneObjInstanceInfoInternal()
 
-const std::map<std::string, managers::SceneInstanceTranslationOrigin>
-    SceneAttributes::InstanceTranslationOriginMap = {
-        {"asset_local", managers::SceneInstanceTranslationOrigin::AssetLocal},
-        {"com", managers::SceneInstanceTranslationOrigin::COM},
-};
-
 SceneAttributes::SceneAttributes(const std::string& handle)
     : AbstractAttributes("SceneAttributes", handle) {
   // defaults to no lights
   setLightingHandle(NO_LIGHT_KEY);
   // defaults to asset local
   setTranslationOrigin(
-      static_cast<int>(managers::SceneInstanceTranslationOrigin::AssetLocal));
+      static_cast<int>(SceneInstanceTranslationOrigin::AssetLocal));
 }
 
 std::string SceneAttributes::getObjectInfoInternal() const {
   std::string res = "\n";
+  // scene-specific info constants
+
+  // specified lighting
+
+  // specified navmesh(s)
+
+  // specified ssd
+
   // stage instance info
   res += stageInstance_->getObjectInfo() + "\n";
 
@@ -117,6 +98,7 @@ std::string SceneAttributes::getObjectInfoInternal() const {
   for (const auto& artObjInst : articulatedObjectInstances_) {
     res += artObjInst->getObjectInfo() + "\n";
   }
+
   return res;
 }
 

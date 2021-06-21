@@ -305,9 +305,9 @@ TEST_F(MetadataMediatorTest, testDataset0) {
   ASSERT_NE(sceneAttrs, nullptr);
   // verify default value for translation origin
   ASSERT_EQ(sceneAttrs->getTranslationOrigin(),
-            static_cast<int>(AttrMgrs::SceneInstanceTranslationOrigin::COM));
+            static_cast<int>(Attrs::SceneInstanceTranslationOrigin::COM));
   const int assetLocalInt =
-      static_cast<int>(AttrMgrs::SceneInstanceTranslationOrigin::AssetLocal);
+      static_cast<int>(Attrs::SceneInstanceTranslationOrigin::AssetLocal);
 
   //
   // miscellaneous scene instance attribute values
@@ -405,8 +405,8 @@ TEST_F(MetadataMediatorTest, testDataset1) {
   LOG(INFO) << "Starting testDataset1 : test LoadStages";
   const auto& stageAttributesMgr = MM_->getStageAttributesManager();
   int numStageHandles = stageAttributesMgr->getNumObjects();
-  // shoudld be 6 : one for default NONE stage, glob lookup yields 2 stages + 2
-  // modified and 1 new stage in scene dataset config
+  // shoudld be 6 : one for default NONE stage, glob lookup yields 2 stages +
+  // 2 modified and 1 new stage in scene dataset config
   ASSERT_EQ(numStageHandles, 6);
   // end test LoadStages
 

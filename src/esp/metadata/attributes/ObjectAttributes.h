@@ -29,9 +29,6 @@ class AbstractObjectAttributes : public AbstractAttributes {
    */
   static const std::map<std::string, esp::assets::AssetType> AssetTypeNamesMap;
 
-  static const std::map<std::string, ObjectInstanceShaderType>
-      ShaderTypeNamesMap;
-
   AbstractObjectAttributes(const std::string& classKey,
                            const std::string& handle);
 
@@ -208,22 +205,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
    */
   std::string getCurrShaderTypeName() const {
     int shaderTypeVal = getShaderType();
-    if (shaderTypeVal <=
-            static_cast<int>(attributes::ObjectInstanceShaderType::Unknown) ||
-        shaderTypeVal >=
-            static_cast<int>(
-                attributes::ObjectInstanceShaderType::_EndShaderType)) {
-      return "unknown shader type";
-    }
-    // Must always be valid value
-    attributes::ObjectInstanceShaderType shaderType =
-        static_cast<attributes::ObjectInstanceShaderType>(shaderTypeVal);
-    for (const auto& it : ShaderTypeNamesMap) {
-      if (it.second == shaderType) {
-        return it.first;
-      }
-    }
-    return "unknown shader type";
+    return getShaderTypeName(shaderTypeVal);
   }
 
  protected:

@@ -238,17 +238,6 @@ class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
 
 class SceneAttributes : public AbstractAttributes {
  public:
-  /**
-   * @brief Constant static map to provide mappings from string tags to @ref
-   * metadata::managers::SceneInstanceTranslationOrigin values.  This will be
-   * used to map values set in json for translation origin to @ref
-   * metadata::managers::SceneInstanceTranslationOrigin.  Keys must be
-   * lowercase.
-   */
-  static const std::map<std::string,
-                        metadata::managers::SceneInstanceTranslationOrigin>
-      InstanceTranslationOriginMap;
-
   explicit SceneAttributes(const std::string& handle);
 
   /**

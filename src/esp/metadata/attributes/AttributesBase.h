@@ -47,6 +47,103 @@ enum class ObjectInstanceShaderType {
   _EndShaderType,
 };
 
+static const std::map<std::string, ObjectInstanceShaderType>
+    ShaderTypeNamesMap = {
+        {"material", ObjectInstanceShaderType::Material},
+        {"flat", ObjectInstanceShaderType::Flat},
+        {"phong", ObjectInstanceShaderType::Phong},
+        {"pbr", ObjectInstanceShaderType::PBR},
+};
+
+/**
+ * @brief This method will convert an int value to the string key it maps to in
+ * the ShaderTypeNamesMap
+ */
+static std::string getShaderTypeName(int shaderTypeVal) {
+  if (shaderTypeVal <= static_cast<int>(ObjectInstanceShaderType::Unknown) ||
+      shaderTypeVal >=
+          static_cast<int>(ObjectInstanceShaderType::_EndShaderType)) {
+    return "unknown shader type";
+  }
+  // Must always be valid value
+  ObjectInstanceShaderType shaderType =
+      static_cast<ObjectInstanceShaderType>(shaderTypeVal);
+  for (const auto& it : ShaderTypeNamesMap) {
+    if (it.second == shaderType) {
+      return it.first;
+    }
+  }
+  return "unknown shader type";
+}
+
+/**
+ * @brief This enum class describes whether an object instance position is
+ * relative to its COM or the asset's local origin.  Depending on this value, we
+ * may take certain actions when instantiating a scene described by a scene
+ * instance. For example, scene instances exported from Blender will have no
+ * conception of an object's configured COM, and so will require adjustment to
+ * translations to account for COM location when the object is placed*/
+enum class SceneInstanceTranslationOrigin {
+  /**
+   * @brief Default value - in the case of object instances, this means use the
+   * specified scene instance default; in the case of a scene instance, this
+   * means do not correct for COM.
+   */
+  Unknown = -1,
+  /**
+   * @brief Indicates scene instance objects were placed without knowledge of
+   * their COM location, and so need to be corrected when placed in scene in
+   * Habitat. For example, they were exported from an external editor like
+   * Blender.
+   */
+  AssetLocal,
+  /**
+   * @brief Indicates scene instance objects' location were recorded at their
+   * COM location, and so do not need correction.  For example they were
+   * exported from Habitat-sim.
+   */
+  COM,
+  /**
+   * End cap value - no instance translation origin type enums should be defined
+   * past this enum.
+   */
+  _EndTransOrigin,
+};
+
+/**
+ * @brief Constant static map to provide mappings from string tags to @ref
+ * SceneInstanceTranslationOrigin values.  This will be used to map values set
+ * in json for translation origin to @ref SceneInstanceTranslationOrigin.  Keys
+ * must be lowercase.
+ */
+static const std::map<std::string, SceneInstanceTranslationOrigin>
+    InstanceTranslationOriginMap = {
+        {"asset_local", SceneInstanceTranslationOrigin::AssetLocal},
+        {"com", SceneInstanceTranslationOrigin::COM},
+};
+
+/**
+ * @brief This method will convert an int value to the string key it maps to in
+ * the InstanceTranslationOriginMap
+ */
+static std::string getTranslationOriginName(int translationOrigin) {
+  if (translationOrigin <=
+          static_cast<int>(SceneInstanceTranslationOrigin::Unknown) ||
+      translationOrigin >=
+          static_cast<int>(SceneInstanceTranslationOrigin::_EndTransOrigin)) {
+    return "default";
+  }
+  // Must always be valid value
+  ObjectInstanceShaderType shaderType =
+      static_cast<ObjectInstanceShaderType>(translationOrigin);
+  for (const auto& it : ShaderTypeNamesMap) {
+    if (it.second == shaderType) {
+      return it.first;
+    }
+  }
+  return "default";
+}
+
 /**
  * @brief Base class for all implemented attributes.  Inherits from @ref
  * esp::core::AbstractFileBasedManagedObject so the attributes can be managed by

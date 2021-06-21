@@ -17,15 +17,6 @@ const std::map<std::string, esp::assets::AssetType>
         {"suncg", esp::assets::AssetType::SUNCG_SCENE},
 };
 
-// All keys must be lowercase
-const std::map<std::string, ObjectInstanceShaderType>
-    AbstractObjectAttributes::ShaderTypeNamesMap = {
-        {"material", ObjectInstanceShaderType::Material},
-        {"flat", ObjectInstanceShaderType::Flat},
-        {"phong", ObjectInstanceShaderType::Phong},
-        {"pbr", ObjectInstanceShaderType::PBR},
-};
-
 AbstractObjectAttributes::AbstractObjectAttributes(
     const std::string& attributesClassKey,
     const std::string& handle)
