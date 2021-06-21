@@ -514,6 +514,16 @@ TEST_F(MetadataMediatorTest, testDatasetDelete) {
   // verify deleted scene dataset's stage manager is nullptr
   ASSERT_EQ(stageAttrMgr_DS1, nullptr);
 
+  // attempt to delete dataset 0 and verify fails - cannot delete active dataset
+  ASSERT_EQ(MM_->removeSceneDataset(nameDS0), false);
+
+  // switch to default active dataset
+  MM_->setActiveSceneDatasetName("default");
+  // attempt to delete dataset 0 and verify delete
+  ASSERT_EQ(MM_->removeSceneDataset(nameDS0), true);
+  // verify the dataset does not exist anymore
+  ASSERT_EQ(MM_->sceneDatasetExists(nameDS0), false);
+
 }  // testDatasetDelete
 
 }  // namespace
