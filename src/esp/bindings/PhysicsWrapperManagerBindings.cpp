@@ -68,6 +68,16 @@ void declareBaseWrapperManager(py::module& m,
             "passed search_str, based on the value of boolean contains.")
                .c_str(),
            "search_str"_a = "", "contains"_a = true)
+      .def(
+          "get_objects_info",
+          static_cast<std::vector<std::string> (MgrClass::*)(
+              const std::string&, bool) const>(&MgrClass::getObjectInfoStrings),
+          ("Returns a list of comma-separated strings describing each " +
+           objType +
+           " whose handles either contain or explicitly do not contain the "
+           "passed search_str, based on the value of boolean contains.")
+              .c_str(),
+          "search_str"_a = "", "contains"_a = true)
       .def("get_num_objects", &MgrClass::getNumObjects,
            ("Returns the number of existing " + objType + "s being managed.")
                .c_str())

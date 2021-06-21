@@ -83,6 +83,17 @@ void declareBaseAttributesManager(py::module& m,
                .c_str(),
            "search_str"_a = "", "contains"_a = true)
       .def(
+          "get_templates_info",
+          static_cast<std::vector<std::string> (MgrClass::*)(
+              const std::string&, bool) const>(&MgrClass::getObjectInfoStrings),
+          ("Returns a list of comma-separated strings describing each " +
+           attrType +
+           " template whose handles either contain or explicitly do not "
+           "contain the passed search_str, based on the value of boolean "
+           "contains.")
+              .c_str(),
+          "search_str"_a = "", "contains"_a = true)
+      .def(
           "load_configs",
           static_cast<std::vector<int> (MgrClass::*)(const std::string&, bool)>(
               &MgrClass::loadAllJSONConfigsFromPath),
