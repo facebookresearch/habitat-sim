@@ -130,6 +130,12 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
     return success;
   }
 
+  /**
+   * @brief PrimitiveAssetAttributes handles are already simplified, and embed
+   * no path info.
+   */
+  std::string getSimplifiedHandle() const override { return getHandle(); }
+
  protected:
   /**
    * @brief Retrieve a comma-separated informational string about the contents
