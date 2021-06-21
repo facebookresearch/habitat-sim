@@ -39,8 +39,13 @@ LightLayoutAttributes::LightLayoutAttributes(const std::string& handle)
 
 std::string LightLayoutAttributes::getObjectInfoInternal() const {
   std::string res = "\n";
+  int iter = 0;
   for (const auto& lightInst : lightInstances_) {
-    res += lightInst.second->getObjectInfo() + "\n";
+    if (iter == 0) {
+      iter++;
+      res += "," + lightInst.second->getObjectInfoHeader();
+    }
+    res += "," + lightInst.second->getObjectInfo() + "\n";
   }
   return res;
 }

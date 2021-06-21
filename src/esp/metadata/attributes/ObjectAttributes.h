@@ -228,6 +228,23 @@ class AbstractObjectAttributes : public AbstractAttributes {
 
  protected:
   /**
+   * @brief Retrieve a comma-separated string holding the header values for the
+   * info returned for this managed object, type-specific.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+
+  std::string getObjectInfoHeaderInternal() const override;
+  /**
+   * @brief get AbstractObject specific info header
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+  virtual std::string getAbstractObjectInfoHeaderInternal() const {
+    return "";
+  };
+
+  /**
    * @brief Retrieve a comma-separated informational string about the contents
    * of this managed object.
    * TODO : once Magnum supports retrieving key-values of configurations, use
@@ -315,10 +332,20 @@ class ObjectAttributes : public AbstractObjectAttributes {
   uint32_t getSemanticId() const { return getInt("semantic_id"); }
 
  protected:
+  /**
+   * @brief get AbstractObject specific info header
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+  std::string getAbstractObjectInfoHeaderInternal() const override {
+    return "Mass, COM XYZ, I XX YY ZZ, Angular Damping, "
+           "Linear Damping, Semantic ID";
+  };
+
   std::string getAbstractObjectInfoInternal() const override {
     return cfg.value("mass") + ", " + cfg.value("COM") + ", " +
-           cfg.value("inertia") + ", " + cfg.value("linear_damping") + ", " +
-           cfg.value("angular_damping") + ", " + cfg.value("semantic_id");
+           cfg.value("inertia") + ", " + cfg.value("angular_damping") + ", " +
+           cfg.value("linear_damping") + ", " + cfg.value("semantic_id");
   }
 
  public:
@@ -396,6 +423,15 @@ class StageAttributes : public AbstractObjectAttributes {
   bool getFrustumCulling() const { return getBool("frustum_culling"); }
 
  protected:
+  /**
+   * @brief get AbstractObject specific info header
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+  std::string getAbstractObjectInfoHeaderInternal() const override {
+    return "Navmesh Handle, Gravity XYZ, Origin XYZ, Light Setup,";
+  };
+
   std::string getAbstractObjectInfoInternal() const override {
     return getNavmeshAssetHandle() + ", " + cfg.value("gravity") + ", " +
            cfg.value("origin") + ", " + cfg.value("light_setup");

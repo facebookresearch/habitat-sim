@@ -334,6 +334,16 @@ class SceneDatasetAttributes : public AbstractAttributes {
 
  protected:
   /**
+   * @brief Retrieve a comma-separated string holding the header values for the
+   * info returned for this managed object, type-specific.  Individual
+   * components handle this.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+
+  std::string getObjectInfoHeaderInternal() const override { return ","; }
+
+  /**
    * @brief Retrieve a comma-separated informational string about the contents
    * of this managed object.
    */

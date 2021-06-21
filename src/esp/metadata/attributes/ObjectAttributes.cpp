@@ -50,13 +50,21 @@ AbstractObjectAttributes::AbstractObjectAttributes(
   setCollisionAssetHandle("");
 }  // AbstractObjectAttributes ctor
 
+std::string AbstractObjectAttributes::getObjectInfoHeaderInternal() const {
+  return "Render Asset Handle, Collision Asset Handle, Scale, Margin, Up.x, "
+         "Up.y, Up.z, Front.x, Front.y, Front.z, Units to "
+         "M, Friction Coefficient, Restitution Coefficient, Current Shader "
+         "Type, " +
+         getAbstractObjectInfoHeaderInternal();
+}
+
 std::string AbstractObjectAttributes::getObjectInfoInternal() const {
-  return cfg.value("scale") + ", " + cfg.value("margin") + ", " +
+  return getRenderAssetHandle() + ", " + getCollisionAssetHandle() + ", " +
+         cfg.value("scale") + ", " + cfg.value("margin") + ", " +
          cfg.value("orient_up") + ", " + cfg.value("orient_front") + ", " +
          cfg.value("units_to_meters") + ", " +
          cfg.value("friction_coefficient") + ", " +
-         cfg.value("restitution_coefficient") + ", " + getRenderAssetHandle() +
-         ", " + getCollisionAssetHandle() + ", " + getCurrShaderTypeName() +
+         cfg.value("restitution_coefficient") + ", " + getCurrShaderTypeName() +
          ", " + getAbstractObjectInfoInternal();
 }  // AbstractObjectAttributes::getObjectInfoInternal
 

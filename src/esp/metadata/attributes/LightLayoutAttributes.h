@@ -127,7 +127,17 @@ class LightInstanceAttributes : public AbstractAttributes {
     }
     return "unknown position model";
   }
+  /**
+   * @brief Retrieve a comma-separated string holding the header values for the
+   * info returned for this managed object, type-specific.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
 
+  std::string getObjectInfoHeaderInternal() const override {
+    return "Position XYZ, Direction XYZ, Color RGB, Intensity, Light Type, "
+           "Light Position Model,";
+  }
   /**
    * @brief Retrieve a comma-separated informational string about the
    * contents of this managed object.
@@ -194,6 +204,15 @@ class LightLayoutAttributes : public AbstractAttributes {
   int getNumLightInstances() { return lightInstances_.size(); }
 
  protected:
+  /**
+   * @brief Retrieve a comma-separated string holding the header values for the
+   * info returned for this managed object, type-specific. The individual light
+   * instances return a header for this.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+
+  std::string getObjectInfoHeaderInternal() const override { return ","; };
   /**
    * @brief Retrieve a comma-separated informational string about the contents
    * of this managed object.
