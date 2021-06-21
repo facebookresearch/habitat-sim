@@ -58,6 +58,15 @@ class MetadataMediatorTest : public testing::Test {
     MM_->setSimulatorConfiguration(cfg_1);
   }
 
+  void displayDSReports() {
+    // display info report
+    std::string dsOverView = MM_->getDatasetsOverview();
+    LOG(WARNING) << "\nDataset Overview : \n" << dsOverView << "\n";
+    // display info report
+    std::string dsInfoReport = MM_->createDatasetReport();
+    LOG(WARNING) << "\nActive Dataset Details : \n" << dsInfoReport << "\n";
+  }
+
   MetadataMediator::ptr MM_ = nullptr;
 
 };  // class MetadataMediatorTest
@@ -395,7 +404,10 @@ TEST_F(MetadataMediatorTest, testDataset0) {
             "test_semantic_descriptor_path1");
   ASSERT_EQ(semanticMap.at("semantic_descriptor_path2"),
             "test_semantic_descriptor_path2");
+
   // end test LoadSemanticScene
+  displayDSReports();
+
 }  // testDataset0
 
 TEST_F(MetadataMediatorTest, testDataset1) {
@@ -482,6 +494,9 @@ TEST_F(MetadataMediatorTest, testDataset1) {
   // should have 3
   ASSERT_EQ(semanticMap.size(), 3);
   // testLoadSemanticScene
+  // display info report
+  displayDSReports();
+
 }  // testDataset1
 
 TEST_F(MetadataMediatorTest, testDatasetDelete) {
@@ -523,6 +538,9 @@ TEST_F(MetadataMediatorTest, testDatasetDelete) {
   ASSERT_EQ(MM_->removeSceneDataset(nameDS0), true);
   // verify the dataset does not exist anymore
   ASSERT_EQ(MM_->sceneDatasetExists(nameDS0), false);
+
+  // display info report
+  displayDSReports();
 
 }  // testDatasetDelete
 
