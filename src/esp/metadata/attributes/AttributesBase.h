@@ -155,6 +155,14 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
   }
 
   /**
+   * @brief Retrieve a comma-separated string holding the header values for the
+   * info returned for this managed object.
+   */
+  std::string getObjectInfoHeader() const override {
+    return "Simplified Name, ID, " + getObjectInfoHeaderInternal();
+  }
+
+  /**
    * @brief Retrieve a comma-separated informational string about the contents
    * of this managed object.
    */
@@ -165,8 +173,17 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
 
  protected:
   /**
+   * @brief Retrieve a comma-separated string holding the header values for the
+   * info returned for this managed object, type-specific.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+
+  virtual std::string getObjectInfoHeaderInternal() const { return ","; }
+
+  /**
    * @brief Retrieve a comma-separated informational string about the contents
-   * of this managed object.
+   * of this managed object, type-specific.
    * TODO : once Magnum supports retrieving key-values of configurations, use
    * that to build this data.
    */

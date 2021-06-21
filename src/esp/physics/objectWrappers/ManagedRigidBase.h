@@ -212,8 +212,29 @@ class AbstractManagedRigidBase
 
  protected:
   /**
-   * @brief Specialization-specific extension of getObjectInfo, comma separated
-   * info ideal for saving to csv
+   * @brief Retrieve a comma-separated string holding the header values for the
+   * info returned for this managed object, type-specific.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+
+  std::string getPhyObjInfoHeaderInternal() const override {
+    return "Mass, COM XYZ, I XX YY ZZ, AngVel XYZ, Angular Damping, Velocity "
+           "XYZ, Linear Damping, Is Collidable?, Friction Coeff, Restitution "
+           "Coeff, Scale XYZ, Semantic ID, " +
+           getRigidBaseInfoHeaderInternal();
+  }
+
+  /**
+   * @brief Retrieve a comma-separated string holding the header values for
+   * the info returned for this managed object, rigid-base-specific.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+  virtual std::string getRigidBaseInfoHeaderInternal() const = 0;
+  /**
+   * @brief Specialization-specific extension of getObjectInfo, comma
+   * separated info ideal for saving to csv
    */
   std::string getPhysObjInfoInternal(std::shared_ptr<T>& sp) const override {
     namespace CrUt = Corrade::Utility;

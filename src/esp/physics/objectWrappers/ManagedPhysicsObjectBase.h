@@ -263,6 +263,15 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
   }  // getVisualSceneNodes
 
   /**
+   * @brief Retrieve a comma-separated string holding the header values for the
+   * info returned for this managed object.
+   */
+  std::string getObjectInfoHeader() const override {
+    return "Type, Name, ID, Translation XYZ, Rotation WXYZ, " +
+           getPhyObjInfoHeaderInternal();
+  }
+
+  /**
    * @brief Retrieve a comma-separated informational string about the contents
    * of this managed object.
    */
@@ -284,6 +293,14 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
   }
 
  protected:
+  /**
+   * @brief Retrieve a comma-separated string holding the header values for the
+   * info returned for this managed object, type-specific.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+
+  virtual std::string getPhyObjInfoHeaderInternal() const = 0;
   /**
    * @brief Specialization-specific extension of getObjectInfo, comma
    * separated info ideal for saving to csv
