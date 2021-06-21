@@ -39,6 +39,18 @@ class ManagedRigidObject
     return nullptr;
   }  // getVelocityControl()
 
+ protected:
+  /**
+   * @brief Specialization-specific extension of getPhysObjInfoInternal, comma
+   * separated info ideal for saving to csv information about RigidBase
+   * constructs.
+   */
+  std::string getRigidBaseInfoInternal(
+      std::shared_ptr<esp::physics::RigidObject>& sp) const override {
+    std::string res = sp->getInitializationAttributes()->getHandle() + ", ";
+    return res;
+  }
+
  public:
   ESP_SMART_POINTERS(ManagedRigidObject)
 };

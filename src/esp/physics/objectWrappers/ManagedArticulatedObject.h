@@ -283,6 +283,19 @@ class ManagedArticulatedObject
     }
   }
 
+ protected:
+  /**
+   * @brief Specialization-specific extension of getObjectInfo, comma separated
+   * info ideal for saving to csv
+   */
+  std::string getPhysObjInfoInternal(
+      std::shared_ptr<esp::physics::ArticulatedObject>& sp) const override {
+    // TODO fill out appropriate reporting values
+    std::string res = std::to_string(sp->getNumLinks()) + ", ";
+
+    return res;
+  }
+
  public:
   ESP_SMART_POINTERS(ManagedArticulatedObject)
 };  // namespace physics

@@ -267,15 +267,29 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
    * of this managed object.
    */
   std::string getObjectInfo() const override {
-    std::string res;
-    // TODO : support retrieving all informational quantities
+    std::string res = "unknown " + classKey_;
+    namespace CrUt = Corrade::Utility;
     if (auto sp = this->getObjectReference()) {
-      res = sp->getObjectName() + "," + std::to_string(sp->getObjectID());
+      res = classKey_ + ", " + sp->getObjectName() + ", " +
+            std::to_string(sp->getObjectID()) + ", " +
+            CrUt::ConfigurationValue<Mn::Vector3>::toString(
+                sp->getTranslation(), {}) +
+            ", " +
+            CrUt::ConfigurationValue<Magnum::Quaternion>::toString(
+                sp->getRotation(), {}) +
+            ", " + getPhysObjInfoInternal(sp);
+      ;
     }
-    return ",";
+    return res + ", ";
   }
 
  protected:
+  /**
+   * @brief Specialization-specific extension of getObjectInfo, comma
+   * separated info ideal for saving to csv
+   */
+  virtual std::string getPhysObjInfoInternal(std::shared_ptr<T>& sp) const = 0;
+
   /**
    * @brief This function accesses the underlying shared pointer of this
    * object's @p weakObjRef_ if it exists; if not, it provides a message.
@@ -305,8 +319,8 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
   }
 
   /**
-   * @brief Weak ref to object. If user has copy of this wrapper but object has
-   * been deleted, this will be nullptr.
+   * @brief Weak ref to object. If user has copy of this wrapper but object
+   * has been deleted, this will be nullptr.
    */
   WeakObjRef weakObjRef_{};
 
