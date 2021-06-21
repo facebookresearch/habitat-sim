@@ -81,9 +81,6 @@ bool BulletRigidObject::constructCollisionShape() {
 
   //! Physical parameters
   double margin = tmpAttr->getMargin();
-  // temp hack
-  margin = 0.002;
-  LOG(INFO) << "margin: " << margin;
   bool joinCollisionMeshes = tmpAttr->getJoinCollisionMeshes();
   usingBBCollisionShape_ = tmpAttr->getBoundingBoxCollisions();
 
@@ -126,14 +123,13 @@ bool BulletRigidObject::constructCollisionShape() {
 
     if (!usingBBCollisionShape_) {
       constructBulletCompoundFromMeshes(Magnum::Matrix4{}, meshGroup,
-                                        metaData.root, joinCollisionMeshes,
-                                        margin);
+                                        metaData.root, joinCollisionMeshes);
 
       // add the final object after joining meshes
       if (joinCollisionMeshes) {
         bObjectConvexShapes_.back()->setLocalScaling(
             btVector3(tmpAttr->getCollisionAssetSize()));
-        bObjectConvexShapes_.back()->setMargin(margin);  // temp
+        bObjectConvexShapes_.back()->setMargin(0.0);
         bObjectConvexShapes_.back()->recalcLocalAabb();
         bObjectShape_->addChildShape(btTransform::getIdentity(),
                                      bObjectConvexShapes_.back().get());
@@ -228,8 +224,7 @@ void BulletRigidObject::constructBulletCompoundFromMeshes(
     const Magnum::Matrix4& transformFromParentToWorld,
     const std::vector<assets::CollisionMeshData>& meshGroup,
     const assets::MeshTransformNode& node,
-    bool join,
-    float margin) {
+    bool join) {
   Magnum::Matrix4 transformFromLocalToWorld =
       transformFromParentToWorld * node.transformFromLocalToParent;
   if (node.meshIDLocal != ID_UNDEFINED) {
@@ -264,7 +259,7 @@ void BulletRigidObject::constructBulletCompoundFromMeshes(
       // bObjectConvexShapes_.back()->initializePolyhedralFeatures();
       // Remove local convex margin in favor of margin on the containing
       // compound
-      bObjectConvexShapes_.back()->setMargin(margin);
+      bObjectConvexShapes_.back()->setMargin(0.0);
       bObjectConvexShapes_.back()->recalcLocalAabb();
       //! Add to compound shape stucture
       bObjectShape_->addChildShape(btTransform::getIdentity(),
@@ -274,7 +269,7 @@ void BulletRigidObject::constructBulletCompoundFromMeshes(
 
   for (auto& child : node.children) {
     constructBulletCompoundFromMeshes(transformFromLocalToWorld, meshGroup,
-                                      child, join, margin);
+                                      child, join);
   }
 }  // constructBulletCompoundFromMeshes
 

@@ -97,8 +97,7 @@ class BulletRigidObject : public BulletBase,
       const Magnum::Matrix4& transformFromParentToWorld,
       const std::vector<assets::CollisionMeshData>& meshGroup,
       const assets::MeshTransformNode& node,
-      bool join,
-      float margin);
+      bool join);
 
   /**
    * @brief Construct the @ref bObjectShape_ for this object.
