@@ -454,21 +454,9 @@ class ManagedContainer : public ManagedContainerBase {
    */
   void clearDefaultObject() { defaultObj_ = nullptr; }
 
-  /**
-   * @brief Get a vector of strings holding the values of each of the objects
-   * this manager manages whose keys match @p subStr, ignoring subStr's case.
-   * Pass an empty string for all objects.
-   * @param subStr substring key to search for within existing managed objects.
-   * @param contains whether to search for keys containing, or excluding,
-   * @p substr
-   * @return A vector containing the managed object handles of managed objects
-   * whose lock state has been set to passed state.
-   */
-  std::vector<std::string> getObjectInfoStrings(const std::string& subStr = "",
-                                                bool contains = true) const;
-
  protected:
   //======== Internally accessed functions ========
+
   /**
    * @brief Perform post creation registration if specified.
    *
@@ -678,27 +666,6 @@ auto ManagedContainer<T, Access>::removeObjectsBySubstring(
   }
   return res;
 }  // ManagedContainer<T, Access>::removeObjectsBySubstring
-
-template <class T, ManagedObjectAccess Access>
-auto ManagedContainer<T, Access>::getObjectInfoStrings(
-    const std::string& subStr,
-    bool contains) const -> std::vector<std::string> {
-  // get all handles that match query elements first
-  std::vector<std::string> handles =
-      getObjectHandlesBySubstring(subStr, contains);
-  std::vector<std::string> res(handles.size());
-  int idx = 0;
-  for (const std::string& objectHandle : handles) {
-    // get the object
-    ManagedPtr objPtr = getObjectInternal<T>(objectHandle);
-    res[idx++] =
-        objectHandle + ", " +
-        ((this->getIsUndeletable(objectHandle)) ? "Undeletable, " : ", ") +
-        ((this->getIsUserLocked(objectHandle)) ? "Locked, " : ", ") +
-        objPtr->getObjectInfo();
-  }
-  return res;
-}  //// ManagedContainer<T, Access>::getObjectInfoStrings
 
 template <class T, ManagedObjectAccess Access>
 auto ManagedContainer<T, Access>::removeObjectInternal(

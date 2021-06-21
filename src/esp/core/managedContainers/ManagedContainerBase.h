@@ -215,6 +215,19 @@ class ManagedContainerBase {
    */
   const std::string& getObjectType() const { return objectType_; }
 
+  /**
+   * @brief Get a vector of strings holding the values of each of the objects
+   * this manager manages whose keys match @p subStr, ignoring subStr's case.
+   * Pass an empty string for all objects.
+   * @param subStr substring key to search for within existing managed objects.
+   * @param contains whether to search for keys containing, or excluding,
+   * @p substr
+   * @return A vector containing the managed object handles of managed objects
+   * whose lock state has been set to passed state.
+   */
+  std::vector<std::string> getObjectInfoStrings(const std::string& subStr = "",
+                                                bool contains = true) const;
+
  protected:
   //======== Internally accessed getter/setter/utilities ================
 

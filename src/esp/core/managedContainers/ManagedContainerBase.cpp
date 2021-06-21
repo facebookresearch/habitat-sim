@@ -126,6 +126,34 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
   return res;
 }  // ManagedContainerBase::getObjectHandlesBySubStringPerType
 
+std::vector<std::string> ManagedContainerBase::getObjectInfoStrings(
+    const std::string& subStr,
+    bool contains) const {
+  // get all handles that match query elements first
+  std::vector<std::string> handles =
+      getObjectHandlesBySubstring(subStr, contains);
+  std::vector<std::string> res(handles.size() + 1);
+  if (handles.size() == 0) {
+    res[0] = "No " + objectType_ + " constructs available.";
+    return res;
+  }
+  int idx = 0;
+  for (const std::string& objectHandle : handles) {
+    // get the object
+    auto objPtr = getObjectInternal<AbstractManagedObject>(objectHandle);
+    if (idx == 0) {
+      res[idx++] = objectType_ + " Full name, Can delete?, Is locked?, " +
+                   objPtr->getObjectInfoHeader();
+    }
+    res[idx++] =
+        objectHandle + ", " +
+        ((this->getIsUndeletable(objectHandle)) ? "True, " : "False, ") +
+        ((this->getIsUserLocked(objectHandle)) ? "True, " : "False, ") +
+        objPtr->getObjectInfo();
+  }
+  return res;
+}  // ManagedContainer<T, Access>::getObjectInfoStrings
+
 std::string ManagedContainerBase::getUniqueHandleFromCandidatePerType(
     const std::map<int, std::string>& mapOfHandles,
     const std::string& name) const {
