@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional, Union
 import attr
 import magnum as mn
 import numpy as np
-import quaternion
+import quaternion as qt
 
 import habitat_sim.errors
 from habitat_sim import bindings as hsim
@@ -34,7 +34,7 @@ __all__ = ["ActionSpec", "SixDOFPose", "AgentState", "AgentConfiguration", "Agen
 
 
 @attr.s(auto_attribs=True)
-class ActionSpec(object):
+class ActionSpec:
     r"""Defines how a specific action is implemented
 
     :property name: Name of the function implementing the action in the
@@ -57,12 +57,12 @@ def _triple_zero() -> np.ndarray:
     return np.zeros(3)
 
 
-def _default_quaternion() -> np.quaternion:
-    return quaternion.quaternion(1, 0, 0, 0)
+def _default_quaternion() -> qt.quaternion:
+    return qt.quaternion(1, 0, 0, 0)
 
 
 @attr.s(auto_attribs=True, slots=True)
-class SixDOFPose(object):
+class SixDOFPose:
     r"""Specifies a position with 6 degrees of freedom
 
     :property position: xyz position
@@ -70,15 +70,15 @@ class SixDOFPose(object):
     """
 
     position: np.ndarray = attr.ib(factory=_triple_zero, validator=all_is_finite)
-    rotation: Union[np.quaternion, List] = attr.ib(
+    rotation: Union[qt.quaternion, List] = attr.ib(
         factory=_default_quaternion, validator=is_unit_length
     )
 
 
 @attr.s(auto_attribs=True, slots=True)
-class AgentState(object):
+class AgentState:
     position: np.ndarray = attr.ib(factory=_triple_zero, validator=all_is_finite)
-    rotation: Union[np.quaternion, List, np.ndarray] = attr.ib(
+    rotation: Union[qt.quaternion, List, np.ndarray] = attr.ib(
         factory=_default_quaternion, validator=is_unit_length
     )
     velocity: np.ndarray = attr.ib(factory=_triple_zero, validator=all_is_finite)
@@ -98,7 +98,7 @@ class AgentState(object):
 
 
 @attr.s(auto_attribs=True, slots=True)
-class AgentConfiguration(object):
+class AgentConfiguration:
     height: float = 1.5
     radius: float = 0.1
     mass: float = 32.0
@@ -113,7 +113,7 @@ class AgentConfiguration(object):
 
 
 @attr.s(init=False, auto_attribs=True)
-class Agent(object):
+class Agent:
     r"""Implements an agent with multiple sensors
 
     :property agent_config: The configuration of the agent
@@ -179,18 +179,8 @@ class Agent(object):
         if modify_agent_config:
             assert spec not in self.agent_config.sensor_specifications
             self.agent_config.sensor_specifications.append(spec)
-        if not spec.is_visual_sensor_spec:
-            raise ValueError(
-                f"""{spec.sensor_type} is a sensorType that is not implemented yet"""
-            )
-        CameraSensorSubTypeSet = {
-            habitat_sim.SensorSubType.PINHOLE,
-            habitat_sim.SensorSubType.ORTHOGRAPHIC,
-        }
-        if spec.sensor_subtype not in CameraSensorSubTypeSet:
-            raise ValueError(f"""{spec.sensor_subtype} is an illegal sensorSubType""")
-        # TODO: Add more checks for NonVisualSensorSpec, Other types of sensors
-        self._sensors.add(hsim.CameraSensor(self.scene_node.create_child(), spec))
+        sensor_suite = hsim.SensorFactory.create_sensors(self.scene_node, [spec])
+        self._sensors.add(sensor_suite[spec.uuid])
 
     def act(self, action_id: Any) -> bool:
         r"""Take the action specified by action_id

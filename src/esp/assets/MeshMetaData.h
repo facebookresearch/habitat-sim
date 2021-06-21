@@ -18,7 +18,7 @@ namespace assets {
 
 /**
  * @brief Stores meta data for objects with a multi-component transformation
- * heirarchy.
+ * hierarchy.
  *
  * Some mesh files include a transformation hierarchy. A @ref
  * MeshTransformNode stores this hierarchy and indices for the meshes and
@@ -26,13 +26,13 @@ namespace assets {
  */
 struct MeshTransformNode {
   /** @brief Local mesh index within @ref MeshMetaData::meshIndex. */
-  int meshIDLocal;
+  int meshIDLocal{ID_UNDEFINED};
 
-  /** @brief Local material index within @ref MeshMetaData::materialIndex */
-  int materialIDLocal;
+  /** @brief Material key within global material manager. */
+  std::string materialID{};  // initializes to default material;
 
   /** @brief Object index of asset component in the original file. */
-  int componentID;
+  int componentID{ID_UNDEFINED};
 
   /** @brief The component transformation subtrees with this node as the root.
    */
@@ -42,16 +42,12 @@ struct MeshTransformNode {
   Magnum::Matrix4 transformFromLocalToParent;
 
   /** @brief Default constructor. */
-  MeshTransformNode() {
-    meshIDLocal = ID_UNDEFINED;
-    materialIDLocal = ID_UNDEFINED;
-    componentID = ID_UNDEFINED;
-  };
+  MeshTransformNode() = default;
 };
 
 /**
  * @brief Stores meta data for an asset possibly containing multiple meshes,
- * materials, textures, and a heirarchy of component transform relationships.
+ * materials, textures, and a hierarchy of component transform relationships.
  *
  * As each type of data may contain a few items, we save the start index, and
  * the end index (of each type) as a pair. In current implementation: ptex mesh:
@@ -76,12 +72,7 @@ struct MeshMetaData {
   std::pair<start, end> textureIndex =
       std::make_pair(ID_UNDEFINED, ID_UNDEFINED);
 
-  /** @brief Index range (inclusive) of material data for the asset in the
-   * global asset datastructure. */
-  std::pair<start, end> materialIndex =
-      std::make_pair(ID_UNDEFINED, ID_UNDEFINED);
-
-  /** @brief The root of the mesh component transformation heirarchy tree which
+  /** @brief The root of the mesh component transformation hierarchy tree which
    * stores the relationship between components of the asset.*/
   MeshTransformNode root;
 
@@ -92,12 +83,9 @@ struct MeshMetaData {
   MeshMetaData(int meshStart,
                int meshEnd,
                int textureStart = ID_UNDEFINED,
-               int textureEnd = ID_UNDEFINED,
-               int materialStart = ID_UNDEFINED,
-               int materialEnd = ID_UNDEFINED) {
+               int textureEnd = ID_UNDEFINED) {
     meshIndex = std::make_pair(meshStart, meshEnd);
     textureIndex = std::make_pair(textureStart, textureEnd);
-    materialIndex = std::make_pair(materialStart, materialEnd);
   }
 
   /**
@@ -124,19 +112,6 @@ struct MeshMetaData {
   void setTextureIndices(int textureStart, int textureEnd) {
     textureIndex.first = textureStart;
     textureIndex.second = textureEnd;
-  }
-
-  /**
-   * @brief Sets the material indices for the asset. See @ref
-   * ResourceManager::materials_.
-   * @param materialStart First index for asset material data in the global
-   * material datastructure.
-   * @param materialEnd Final index for asset material data in the global
-   * material datastructure.
-   */
-  void setMaterialIndices(int materialStart, int materialEnd) {
-    materialIndex.first = materialStart;
-    materialIndex.second = materialEnd;
   }
 };
 

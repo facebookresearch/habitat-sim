@@ -17,7 +17,6 @@
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/Primitives/Plane.h>
-#include <Magnum/Shaders/Flat.h>
 #include <Magnum/Trade/MeshData.h>
 
 #include "esp/gfx/DepthUnprojection.h"
@@ -277,7 +276,7 @@ void DepthUnprojectionTest::benchmarkBaseline() {
       Mn::Matrix4::perspectiveProjection(60.0_degf, 1.0f, 0.001f, 100.0f)
           .inverted();
 
-  Cr::Containers::Array<float> depth{Cr::Containers::NoInit,
+  Cr::Containers::Array<float> depth{Cr::NoInit,
                                      std::size_t(BenchmarkSize.product())};
   for (std::size_t i = 0; i != depth.size(); ++i)
     depth[i] = float(2 * (i % 10000)) / float(10000) - 1.0f;
@@ -295,7 +294,7 @@ void DepthUnprojectionTest::benchmarkCpu() {
   Mn::Vector2 unprojection = calculateDepthUnprojection(
       Mn::Matrix4::perspectiveProjection(60.0_degf, 1.0f, 0.001f, 100.0f));
 
-  Cr::Containers::Array<float> depth{Cr::Containers::NoInit,
+  Cr::Containers::Array<float> depth{Cr::NoInit,
                                      std::size_t(BenchmarkSize.product())};
   for (std::size_t i = 0; i != depth.size(); ++i)
     depth[i] = float(i % 10000) / float(10000);

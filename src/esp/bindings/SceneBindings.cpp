@@ -40,7 +40,8 @@ void initSceneBindings(py::module& m) {
       .value("EMPTY", SceneNodeType::EMPTY)
       .value("SENSOR", SceneNodeType::SENSOR)
       .value("AGENT", SceneNodeType::AGENT)
-      .value("CAMERA", SceneNodeType::CAMERA);
+      .value("CAMERA", SceneNodeType::CAMERA)
+      .value("OBJECT", SceneNodeType::OBJECT);
 
   // ==== SceneNode ====
   py::class_<SceneNode, Magnum::SceneGraph::PyObject<SceneNode>, MagnumObject,
@@ -58,6 +59,8 @@ void initSceneBindings(py::module& m) {
       .def(
           "create_child", [](SceneNode& self) { return &self.createChild(); },
           R"(Creates a child node, and sets its parent to the current node.)")
+      .def("set_parent", &SceneNode::setParent,
+           R"(Sets parent to parentNode, and updates ancestors' SensorSuites)")
       .def(
           "compute_cumulative_bb", &SceneNode::computeCumulativeBB,
           R"(Recursively compute the approximate axis aligned bounding boxes of the SceneGraph sub-tree rooted at this node.)")
@@ -72,7 +75,17 @@ void initSceneBindings(py::module& m) {
           py::overload_cast<>(&SceneNode::absoluteTranslation))
       .def_property_readonly(
           "absolute_translation",
-          py::overload_cast<>(&SceneNode::absoluteTranslation, py::const_));
+          py::overload_cast<>(&SceneNode::absoluteTranslation, py::const_))
+      .def_property_readonly("node_sensor_suite",
+                             &SceneNode::getNodeSensorSuite,
+                             R"(Get node SensorSuite of this SceneNode)")
+      .def_property_readonly("subtree_sensor_suite",
+                             &SceneNode::getSubtreeSensorSuite,
+                             R"(Get subtree SensorSuite of this SceneNode)")
+      .def_property_readonly("node_sensors", &SceneNode::getNodeSensors,
+                             R"(Get node sensors of this SceneNode)")
+      .def_property_readonly("subtree_sensors", &SceneNode::getSubtreeSensors,
+                             R"(Get subtree sensors of this SceneNode)");
 
   py::class_<SceneGraph>(m, "SceneGraph")
       .def(py::init())

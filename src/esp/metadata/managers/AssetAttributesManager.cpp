@@ -36,7 +36,10 @@ const std::map<PrimObjTypes, const char*>
         {PrimObjTypes::UVSPHERE_WF, "uvSphereWireframe"},
         {PrimObjTypes::END_PRIM_OBJ_TYPES, "NONE DEFINED"}};
 
-void AssetAttributesManager::buildCtorFuncPtrMaps() {
+AssetAttributesManager::AssetAttributesManager()
+    : AttributesManager<attributes::AbstractPrimitiveAttributes,
+                        core::ManagedObjectAccess::Copy>::
+          AttributesManager("Primitive Asset", "prim_config.json") {
   // function pointers to asset attributes constructors
   primTypeConstructorMap_["capsule3DSolid"] =
       &AssetAttributesManager::createPrimAttributes<
@@ -96,16 +99,16 @@ void AssetAttributesManager::buildCtorFuncPtrMaps() {
     if (elem.first == PrimObjTypes::END_PRIM_OBJ_TYPES) {
       continue;
     }
-    auto tmplt = this->createObject(elem.second, true);
+    auto tmplt = AssetAttributesManager::createObject(elem.second, true);
     std::string tmpltHandle = tmplt->getHandle();
     defaultPrimAttributeHandles_[elem.second] = tmpltHandle;
     this->undeletableObjectNames_.insert(tmpltHandle);
   }
 
-  LOG(INFO) << "AssetAttributesManager::buildCtorFuncPtrMaps : Built default "
+  LOG(INFO) << "::constructor : Built default "
                "primitive asset templates : "
             << std::to_string(defaultPrimAttributeHandles_.size());
-}  // AssetAttributesManager::buildMapOfPrimTypeConstructors
+}  // AssetAttributesManager::ctor
 
 AbstractPrimitiveAttributes::ptr AssetAttributesManager::createObject(
     const std::string& primClassName,
@@ -121,6 +124,46 @@ AbstractPrimitiveAttributes::ptr AssetAttributesManager::createObject(
   return this->postCreateRegister(primAssetAttributes, registerTemplate);
 }  // AssetAttributesManager::createObject
 
+attributes::AbstractPrimitiveAttributes::ptr
+AssetAttributesManager::createTemplateFromHandle(
+    const std::string& templateHandle,
+    bool registerTemplate) {
+  // first determine what base type the attributes is - find first underscore.
+  std::size_t nameEndLoc = templateHandle.find('_');
+  if (nameEndLoc == std::string::npos) {
+    // handle is of incorrect format
+    LOG(ERROR) << "::createTemplateFromHandle : Given template handle : "
+               << templateHandle
+               << " is not the correct format for a primitive.  Aborting.";
+    return nullptr;
+  }
+  std::string primClassName = templateHandle.substr(0, nameEndLoc);
+  if (primTypeConstructorMap_.count(primClassName) == 0) {
+    // handle does not have proper primitive tyep encoded
+    LOG(ERROR) << "::createTemplateFromHandle : Requested primitive type : "
+               << primClassName
+               << " from given template handle : " << templateHandle
+               << " is not a valid Magnum::Primitives class.  Aborting.";
+    return nullptr;
+  }
+  // create but do not register template for this prim class, since it will be
+  // modified based on config string
+  auto primAssetAttributes = this->createObject(primClassName, false);
+  // certain prims such as cubes do not have config settings
+  if (templateHandle.length() > 0) {
+    bool success = primAssetAttributes->parseStringIntoConfig(templateHandle);
+    if (!success) {
+      LOG(WARNING) << "::createTemplateFromHandle : Prim Asset Attributes : "
+                   << primClassName << " failed parsing config string : `"
+                   << templateHandle << "`.  Providing " << primClassName
+                   << " template configured as closely as possible with "
+                      "requested values, named "
+                   << primAssetAttributes->getHandle() << ".";
+    }
+  }
+  return this->postCreateRegister(primAssetAttributes, registerTemplate);
+}  // AssetAttributesManager::createTemplateFromHandle
+
 int AssetAttributesManager::registerObjectFinalize(
     AbstractPrimitiveAttributes::ptr primAttributesTemplate,
     const std::string&,
@@ -128,7 +171,7 @@ int AssetAttributesManager::registerObjectFinalize(
   std::string primAttributesHandle = primAttributesTemplate->getHandle();
   // verify that attributes has been edited in a legal manner
   if (!primAttributesTemplate->isValidTemplate()) {
-    LOG(ERROR) << "AssetAttributesManager::registerObjectFinalize "
+    LOG(ERROR) << "::registerObjectFinalize "
                   ": Primitive asset attributes template named"
                << primAttributesHandle
                << "is not configured properly for specified prmitive"
@@ -155,10 +198,10 @@ AbstractPrimitiveAttributes::ptr AssetAttributesManager::buildObjectFromJSONDoc(
 
   std::string primClassName =
       Cr::Utility::String::partition(primAttrHandle, '_')[0];
-  // if not legal primitive asset attributes file name, have message and return
-  // default sphere attributes.
+  // if not legal primitive asset attributes file name, have message and
+  // return default sphere attributes.
   if (defaultPrimAttributeHandles_.count(primClassName) == 0) {
-    LOG(ERROR) << "AssetAttributesManager::buildObjectFromJSONDoc :Unknown "
+    LOG(ERROR) << "::buildObjectFromJSONDoc :Unknown "
                   "primitive class type : "
                << primClassName
                << " so returning default attributes for solid uvSphere.";
@@ -170,7 +213,7 @@ AbstractPrimitiveAttributes::ptr AssetAttributesManager::buildObjectFromJSONDoc(
   auto primAssetAttributes = this->initNewObjectInternal(primClassName, true);
   if (nullptr == primAssetAttributes) {
     LOG(ERROR)
-        << "AssetAttributesManager::buildObjectFromJSONDoc : unable to "
+        << "::buildObjectFromJSONDoc : unable to "
            "create default primitive asset attributes from primClassName "
         << primClassName
         << " so returning default attributes for solid uvSphere.";
@@ -185,6 +228,8 @@ void AssetAttributesManager::setValsFromJSONDoc(
     AttribsPtr attribs,
     const io::JsonGenericValue& jsonConfig) {
   // TODO support loading values from JSON docs
+  // check for user defined attributes
+  // this->parseUserDefinedJsonVals(attribs, jsonConfig);
 
 }  // AssetAttributesManager::buildObjectFromJSONDoc
 

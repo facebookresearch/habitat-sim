@@ -6,8 +6,8 @@
 #define ESP_METADATA_ATTRIBUTES_ATTRIBUTESBASE_H_
 
 #include <Corrade/Utility/Directory.h>
-#include "esp/core/AbstractManagedObject.h"
 #include "esp/core/Configuration.h"
+#include "esp/core/managedContainers/AbstractManagedObject.h"
 
 namespace esp {
 namespace metadata {
@@ -15,16 +15,18 @@ namespace attributes {
 
 /**
  * @brief Base class for all implemented attributes.  Inherits from @ref
- * esp::core::AbstractManagedObject so the attributes can be managed by a @ref
- * esp::core::ManagedContainer.
+ * esp::core::AbstractFileBasedManagedObject so the attributes can be managed by
+ * a @ref esp::core::ManagedContainer.
  */
-class AbstractAttributes : public esp::core::AbstractManagedObject,
+class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
                            public esp::core::Configuration {
  public:
   AbstractAttributes(const std::string& attributesClassKey,
                      const std::string& handle)
       : Configuration() {
-    setClassKey(attributesClassKey);
+    // set up an existing subgroup for user_defined attributes
+    addNewSubgroup("user_defined");
+    AbstractAttributes::setClassKey(attributesClassKey);
     AbstractAttributes::setHandle(handle);
   }
 
@@ -54,7 +56,7 @@ class AbstractAttributes : public esp::core::AbstractManagedObject,
    * this attributes, so this should only be used for logging, and not for
    * attempts to search for attributes.
    */
-  std::string getSimplifiedHandle() {
+  std::string getSimplifiedHandle() const {
     // first parse for file name, and then get rid of extension(s).
     return Corrade::Utility::Directory::splitExtension(
                Corrade::Utility::Directory::splitExtension(
@@ -89,6 +91,33 @@ class AbstractAttributes : public esp::core::AbstractManagedObject,
    */
   const Corrade::Utility::ConfigurationGroup& getConfigGroup() const {
     return cfg;
+  }
+
+  /**
+   * @brief Gets a smart pointer reference to user-specified configuration data
+   * from config file. Habitat does not parse or process this data, but it will
+   * be available to the user via python bindings for each object.
+   */
+
+  std::shared_ptr<Configuration> getUserConfiguration() const {
+    return getConfigSubgroupAsPtr("user_defined");
+  }
+
+  /**
+   * @brief Returns the number of user-defined values (within the "user-defined"
+   * sub-ConfigurationGroup) this attributes has.
+   */
+  int getNumUserDefinedConfigurations() const {
+    return getNumConfigSubgroups("user_defined");
+  }
+
+  template <typename T>
+  void setUserConfigValue(const std::string& key, const T& value) {
+    setSubgroupValue<T>("user_defined", key, value);
+  }
+  template <typename T>
+  T getUserConfigValue(const std::string& key) {
+    return getSubgroupValue<T>("user_defined", key);
   }
 
  protected:

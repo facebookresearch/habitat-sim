@@ -2,17 +2,20 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/Directory.h>
 #include <gtest/gtest.h>
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
 #include "esp/core/esp.h"
 #include "esp/io/JsonAllTypes.h"
+#include "esp/io/URDFParser.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 #include "esp/metadata/attributes/ObjectAttributes.h"
 
 #include "configure.h"
 
+namespace Cr = Corrade;
 #include <limits>
 
 using namespace esp::io;
@@ -106,6 +109,60 @@ TEST(IOTest, tokenizeTest) {
   EXPECT_EQ((std::vector<std::string>{",a,", ",bb", "c"}), t2);
   const auto& t3 = tokenize(file, ",|", 0, true);
   EXPECT_EQ((std::vector<std::string>{"", "a", "bb", "c"}), t3);
+}
+
+TEST(IOTest, parseURDF) {
+  const std::string iiwaURDF = Cr::Utility::Directory::join(
+      TEST_ASSETS, "urdf/kuka_iiwa/model_free_base.urdf");
+
+  URDF::Parser parser;
+
+  // load the iiwa test asset
+  std::shared_ptr<esp::io::URDF::Model> urdfModel;
+  parser.parseURDF(urdfModel, iiwaURDF);
+  Cr::Utility::Debug() << "name: " << urdfModel->m_name;
+  EXPECT_EQ(urdfModel->m_name, "lbr_iiwa");
+  Cr::Utility::Debug() << "file: " << urdfModel->m_sourceFile;
+  EXPECT_EQ(urdfModel->m_sourceFile, iiwaURDF);
+  Cr::Utility::Debug() << "links: " << urdfModel->m_links;
+  EXPECT_EQ(urdfModel->m_links.size(), 8);
+  Cr::Utility::Debug() << "root links: " << urdfModel->m_rootLinks;
+  EXPECT_EQ(urdfModel->m_rootLinks.size(), 1);
+  Cr::Utility::Debug() << "joints: " << urdfModel->m_joints;
+  EXPECT_EQ(urdfModel->m_joints.size(), 7);
+  Cr::Utility::Debug() << "materials: " << urdfModel->m_materials;
+  EXPECT_EQ(urdfModel->m_materials.size(), 3);
+
+  // check global scaling
+  EXPECT_EQ(urdfModel->getGlobalScaling(), 1.0);
+  // this link is a mesh shape, so check the mesh scale
+  EXPECT_EQ(urdfModel->getLink(1)->m_collisionArray.back().m_geometry.m_type,
+            5);
+  EXPECT_EQ(
+      urdfModel->getLink(1)->m_collisionArray.back().m_geometry.m_meshScale,
+      Mn::Vector3{1.0});
+  urdfModel->setGlobalScaling(2.0);
+  EXPECT_EQ(urdfModel->getGlobalScaling(), 2.0);
+  EXPECT_EQ(
+      urdfModel->getLink(1)->m_collisionArray.back().m_geometry.m_meshScale,
+      Mn::Vector3{2.0});
+
+  // check mass scaling
+  EXPECT_EQ(urdfModel->getMassScaling(), 1.0);
+  EXPECT_EQ(urdfModel->getLink(1)->m_inertia.m_mass, 4.0);
+  urdfModel->setMassScaling(3.0);
+  EXPECT_EQ(urdfModel->getMassScaling(), 3.0);
+  EXPECT_EQ(urdfModel->getLink(1)->m_inertia.m_mass, 12.0);
+
+  // test overwrite re-load
+  parser.parseURDF(urdfModel, iiwaURDF);
+  // should have default values again
+  EXPECT_EQ(urdfModel->getGlobalScaling(), 1.0);
+  EXPECT_EQ(urdfModel->getMassScaling(), 1.0);
+  EXPECT_EQ(
+      urdfModel->getLink(1)->m_collisionArray.back().m_geometry.m_meshScale,
+      Mn::Vector3{1.0});
+  EXPECT_EQ(urdfModel->getLink(1)->m_inertia.m_mass, 4.0);
 }
 
 /**
@@ -375,6 +432,25 @@ TEST(IOTest, JsonEspTypesTest) {
     EXPECT_EQ(assetInfo2.virtualUnitToMeters, assetInfo.virtualUnitToMeters);
     EXPECT_EQ(assetInfo2.requiresLighting, assetInfo.requiresLighting);
     EXPECT_EQ(assetInfo2.splitInstanceMesh, assetInfo.splitInstanceMesh);
+    EXPECT_TRUE(assetInfo2.overridePhongMaterial == Cr::Containers::NullOpt);
+    // now test again with override material
+    assetInfo.overridePhongMaterial = esp::assets::PhongMaterialColor();
+    assetInfo.overridePhongMaterial->ambientColor =
+        Mn::Color4(0.1, 0.2, 0.3, 0.4);
+    assetInfo.overridePhongMaterial->diffuseColor =
+        Mn::Color4(0.2, 0.3, 0.4, 0.5);
+    assetInfo.overridePhongMaterial->specularColor =
+        Mn::Color4(0.3, 0.4, 0.5, 0.6);
+    EXPECT_FALSE(assetInfo.overridePhongMaterial == Cr::Containers::NullOpt);
+    addMember(d, "assetInfoColorOverride", assetInfo, allocator);
+    EXPECT_TRUE(readMember(d, "assetInfoColorOverride", assetInfo2));
+    EXPECT_FALSE(assetInfo2.overridePhongMaterial == Cr::Containers::NullOpt);
+    EXPECT_EQ(assetInfo2.overridePhongMaterial->ambientColor,
+              assetInfo.overridePhongMaterial->ambientColor);
+    EXPECT_EQ(assetInfo2.overridePhongMaterial->diffuseColor,
+              assetInfo.overridePhongMaterial->diffuseColor);
+    EXPECT_EQ(assetInfo2.overridePhongMaterial->specularColor,
+              assetInfo.overridePhongMaterial->specularColor);
   }
 
   {

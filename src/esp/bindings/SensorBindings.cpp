@@ -4,6 +4,7 @@
 
 #include "esp/bindings/bindings.h"
 
+#include <Corrade/Containers/OptionalPythonBindings.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/SceneGraph/SceneGraph.h>
 
@@ -13,11 +14,15 @@
 #include <utility>
 
 #include "esp/sensor/CameraSensor.h"
+#include "esp/sensor/CubeMapSensorBase.h"
+#include "esp/sensor/EquirectangularSensor.h"
+#include "esp/sensor/FisheyeSensor.h"
 #include "esp/sensor/VisualSensor.h"
 #ifdef ESP_BUILD_WITH_CUDA
 #include "esp/sensor/RedwoodNoiseModel.h"
 #endif
 #include "esp/sensor/Sensor.h"
+#include "esp/sensor/SensorFactory.h"
 #include "esp/sim/Simulator.h"
 
 namespace py = pybind11;
@@ -53,7 +58,12 @@ void initSensorBindings(py::module& m) {
   py::enum_<SensorSubType>(m, "SensorSubType")
       .value("NONE", SensorSubType::None)
       .value("PINHOLE", SensorSubType::Pinhole)
-      .value("ORTHOGRAPHIC", SensorSubType::Orthographic);
+      .value("ORTHOGRAPHIC", SensorSubType::Orthographic)
+      .value("FISHEYE", SensorSubType::Fisheye)
+      .value("EQUIRECTANGULAR", SensorSubType::Equirectangular);
+
+  py::enum_<FisheyeSensorModelType>(m, "FisheyeSensorModelType")
+      .value("DOUBLE_SPHERE", FisheyeSensorModelType::DoubleSphere);
 
   // ==== SensorSpec ====
   py::class_<SensorSpec, SensorSpec::ptr>(m, "SensorSpec", py::dynamic_attr())
@@ -88,13 +98,77 @@ void initSensorBindings(py::module& m) {
       .def_readwrite("far", &VisualSensorSpec::far)
       .def_readwrite("resolution", &VisualSensorSpec::resolution)
       .def_readwrite("gpu2gpu_transfer", &VisualSensorSpec::gpu2gpuTransfer)
-      .def_readwrite("channels", &VisualSensorSpec::channels);
+      .def_readwrite("channels", &VisualSensorSpec::channels)
+      .def_readwrite("clear_color", &CameraSensorSpec::clearColor);
 
   // ====CameraSensorSpec ====
-  py::class_<CameraSensorSpec, CameraSensorSpec::ptr, VisualSensorSpec,
-             SensorSpec>(m, "CameraSensorSpec", py::dynamic_attr())
+  py::class_<CameraSensorSpec, CameraSensorSpec::ptr, VisualSensorSpec>(
+      m, "CameraSensorSpec", py::dynamic_attr())
       .def(py::init(&CameraSensorSpec::create<>))
+      .def_property(
+          "hfov", [](CameraSensorSpec& self) { return Mn::Degd(self.hfov); },
+          [](CameraSensorSpec& self, const py::object& angle) {
+            auto PyDeg = py::module_::import("magnum").attr("Deg");
+            self.hfov = Mn::Deg(PyDeg(angle).cast<Mn::Degd>());
+          })
       .def_readwrite("ortho_scale", &CameraSensorSpec::orthoScale);
+
+  // === CubemapSensorBaseSpec ===
+  // NOLINTNEXTLINE (bugprone-unused-raii)
+  py::class_<CubeMapSensorBaseSpec, CubeMapSensorBaseSpec::ptr,
+             VisualSensorSpec>(m, "CubeMapSensorBaseSpec");
+
+  // === EquirectangularSensorSpec ===
+  py::class_<EquirectangularSensorSpec, EquirectangularSensorSpec::ptr,
+             CubeMapSensorBaseSpec>(m, "EquirectangularSensorSpec")
+      .def(py::init(&EquirectangularSensorSpec::create<>));
+
+  // ====FisheyeSensorSpec ====
+  py::class_<FisheyeSensorSpec, FisheyeSensorSpec::ptr, CubeMapSensorBaseSpec>(
+      m, "FisheyeSensorSpec", py::dynamic_attr())
+      .def(py::init(&FisheyeSensorSpec::create<>))
+      .def_readwrite("focal_length", &FisheyeSensorSpec::focalLength)
+      .def_readwrite("principal_point_offset",
+                     &FisheyeSensorSpec::principalPointOffset)
+      .def_readwrite(
+          "cubemap_size", &FisheyeSensorSpec::cubemapSize,
+          R"(If not set, will be the min(height, width) of resolution)")
+      .def_readwrite("sensor_model_type", &FisheyeSensorSpec::fisheyeModelType);
+
+  // ====FisheyeSensorDoubleSphereSpec ====
+  /* alpha and xi are specific to "double sphere" camera model.
+    see details (value ranges) in:
+    Vladyslav Usenko, Nikolaus Demmel and Daniel Cremers: The Double Sphere
+    Camera Model, The International Conference on 3D Vision (3DV), 2018
+  */
+  py::class_<FisheyeSensorDoubleSphereSpec, FisheyeSensorDoubleSphereSpec::ptr,
+             FisheyeSensorSpec>(m, "FisheyeSensorDoubleSphereSpec",
+                                py::dynamic_attr())
+      .def(py::init(&FisheyeSensorDoubleSphereSpec::create<>))
+      .def_readwrite("alpha", &FisheyeSensorDoubleSphereSpec::alpha)
+      .def_readwrite("xi", &FisheyeSensorDoubleSphereSpec::xi);
+
+  // ==== SensorFactory ====
+  py::class_<SensorFactory>(m, "SensorFactory")
+      .def("create_sensors", &SensorFactory::createSensors)
+      .def("delete_sensor", &SensorFactory::deleteSensor)
+      .def("delete_subtree_sensor", &SensorFactory::deleteSubtreeSensor);
+
+  // ==== SensorSuite ====
+  py::class_<SensorSuite, Magnum::SceneGraph::PyFeature<SensorSuite>,
+             Magnum::SceneGraph::AbstractFeature3D,
+             Magnum::SceneGraph::PyFeatureHolder<SensorSuite>>(m, "SensorSuite")
+      .def("add", &SensorSuite::add)
+      .def("remove", py::overload_cast<const Sensor&>(&SensorSuite::remove))
+      .def("remove",
+           py::overload_cast<const std::string&>(&SensorSuite::remove))
+      .def("clear", &SensorSuite::clear)
+      .def("get", &SensorSuite::get)
+      .def("get_sensors",
+           py::overload_cast<>(&SensorSuite::getSensors, py::const_))
+      .def_property_readonly("node", nodeGetter<Sensor>,
+                             "Node this object is attached to")
+      .def_property_readonly("object", nodeGetter<Sensor>, "Alias to node");
 
   // ==== Sensor ====
   py::class_<Sensor, Magnum::SceneGraph::PyFeature<Sensor>,
@@ -122,8 +196,9 @@ void initSensorBindings(py::module& m) {
       .def_property_readonly(
           "far", &VisualSensor::getFar,
           R"(The distance to the far clipping plane this VisualSensor uses.)")
-      .def_property_readonly("hfov", &VisualSensor::getFOV,
-                             R"(The Field of View this VisualSensor uses.)")
+      .def_property_readonly(
+          "hfov", [](VisualSensor& self) { return Mn::Degd(self.getFOV()); },
+          R"(The Field of View this VisualSensor uses.)")
       .def_property_readonly("framebuffer_size", &VisualSensor::framebufferSize)
       .def_property_readonly("render_target", &VisualSensor::renderTarget);
 
@@ -151,9 +226,11 @@ void initSensorBindings(py::module& m) {
           "set_height", &CameraSensor::setHeight,
           R"(Set the height of the resolution in the SensorSpec for this CameraSensor.)")
       .def_property(
-          "fov",
-          static_cast<Mn::Deg (CameraSensor::*)() const>(&CameraSensor::getFOV),
-          static_cast<void (CameraSensor::*)(Mn::Deg)>(&CameraSensor::setFOV),
+          "fov", [](CameraSensor& self) { return Mn::Degd(self.getFOV()); },
+          [](CameraSensor& self, const py::object& angle) {
+            auto PyDeg = py::module_::import("magnum").attr("Deg");
+            self.setFOV(Mn::Deg(PyDeg(angle).cast<Mn::Degd>()));
+          },
           R"(Set the field of view to use for this CameraSensor.  Only applicable to
           Pinhole Camera Types)")
       .def_property(
@@ -166,6 +243,30 @@ void initSensorBindings(py::module& m) {
       .def_property(
           "far_plane_dist", &CameraSensor::getFar, &CameraSensor::setFar,
           R"(The distance to the far clipping plane for this CameraSensor uses.)");
+
+  // === CubeMapSensorBase ===
+  // NOLINTNEXTLINE (bugprone-unused-raii)
+  py::class_<CubeMapSensorBase,
+             Magnum::SceneGraph::PyFeature<CubeMapSensorBase>, VisualSensor,
+             Magnum::SceneGraph::PyFeatureHolder<CubeMapSensorBase>>(
+      m, "CubeMapSensorBase");
+
+  // === EquirectangularSensor ===
+  py::class_<EquirectangularSensor,
+             Magnum::SceneGraph::PyFeature<EquirectangularSensor>,
+             CubeMapSensorBase,
+             Magnum::SceneGraph::PyFeatureHolder<EquirectangularSensor>>(
+      m, "EquirectangularSensor")
+      .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
+                          const EquirectangularSensorSpec::ptr&>());
+
+  // === FisheyeSensor ====
+  py::class_<FisheyeSensor, Magnum::SceneGraph::PyFeature<FisheyeSensor>,
+             CubeMapSensorBase,
+             Magnum::SceneGraph::PyFeatureHolder<FisheyeSensor>>(
+      m, "FisheyeSensor")
+      .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
+                          const FisheyeSensorSpec::ptr&>());
 
 #ifdef ESP_BUILD_WITH_CUDA
   py::class_<RedwoodNoiseModelGPUImpl, RedwoodNoiseModelGPUImpl::uptr>(

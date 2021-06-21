@@ -9,16 +9,19 @@ namespace physics {
 
 RigidStage::RigidStage(scene::SceneNode* rigidBodyNode,
                        const assets::ResourceManager& resMgr)
-    : RigidBase(rigidBodyNode, resMgr) {}
+    : RigidBase(rigidBodyNode, ID_UNDEFINED, resMgr) {}
 
-bool RigidStage::initialize(const std::string& handle) {
+bool RigidStage::initialize(
+    metadata::attributes::AbstractObjectAttributes::ptr initAttributes) {
   if (initializationAttributes_ != nullptr) {
     LOG(ERROR) << "Cannot initialize a RigidStage more than once";
     return false;
   }
   objectMotionType_ = MotionType::STATIC;
-  initializationAttributes_ =
-      resMgr_.getStageAttributesManager()->getObjectCopyByHandle(handle);
+  // save the copy of the template used to create the object at initialization
+  // time
+  setUserAttributes(initAttributes->getUserConfiguration());
+  initializationAttributes_ = std::move(initAttributes);
 
   return initialization_LibSpecific();
 }

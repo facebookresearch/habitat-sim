@@ -52,6 +52,11 @@ const config = {
       hash: true
     }),
     new HtmlWebpackPlugin({
+      template: path.resolve(__dirname, "test_page.html"),
+      filename: path.resolve(buildRootPath, "test_page.html"),
+      hash: true
+    }),
+    new HtmlWebpackPlugin({
       template: path.resolve(__dirname, "webvr.html"),
       filename: path.resolve(buildRootPath, "webvr.html"),
       hash: true

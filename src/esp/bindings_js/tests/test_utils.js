@@ -7,7 +7,7 @@ import finalhandler from "finalhandler";
 import serveStatic from "serve-static";
 import puppeteer from "puppeteer";
 
-export async function createServer() {
+export async function createServer(requestedPort) {
   const serve = serveStatic("./");
   const server = http.createServer(function(req, res) {
     var done = finalhandler(req, res);
@@ -21,9 +21,9 @@ export async function createServer() {
           server.close(startServer);
         }
       });
-      server.listen(4004, "localhost", err => {
+      server.listen(requestedPort, "localhost", err => {
         if (err) {
-          reject("Failed to listen on port 4004");
+          reject("Failed to listen on port " + requestedPort);
         } else {
           const address = server.address();
           console.log(`Listening on http://${address.address}:${address.port}`);
@@ -44,13 +44,15 @@ export async function getBrowserAndPage(url) {
 
   const page = await browser.newPage();
 
-  await page.goto(url, { waitUntil: "load" });
+  if (url) {
+    await page.goto(url, { waitUntil: "load" });
+  }
 
   return { browser, page };
 }
 
-export async function getServerAndURL(path) {
-  const server = await createServer();
+export async function getServerAndURL(path, requestedPort = 4004) {
+  const server = await createServer(requestedPort);
   const address = server.address();
   const port = address.port;
   const url = `http://localhost:${port}/${path}`;

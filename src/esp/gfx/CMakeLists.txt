@@ -1,5 +1,7 @@
 set(
   gfx_SOURCES
+  CubeMap.cpp
+  CubeMap.h
   DepthUnprojection.cpp
   DepthUnprojection.h
   Drawable.cpp
@@ -41,6 +43,14 @@ set(
   PbrShader.h
   PbrDrawable.cpp
   PbrDrawable.h
+  TextureVisualizerShader.cpp
+  TextureVisualizerShader.h
+  CubeMapShaderBase.cpp
+  CubeMapShaderBase.h
+  DoubleSphereCameraShader.cpp
+  DoubleSphereCameraShader.h
+  EquirectangularShader.cpp
+  EquirectangularShader.h
 )
 
 # If ptex support is enabled add relevant source files
@@ -62,6 +72,7 @@ find_package(
   AnySceneImporter
   GL
   MeshTools
+  DebugTools
   SceneGraph
   Shaders
   Trade
@@ -103,6 +114,7 @@ target_link_libraries(
          Magnum::GL
          Magnum::Magnum
          Magnum::MeshTools
+         Magnum::DebugTools
          Magnum::SceneGraph
          Magnum::Shaders
          Magnum::Trade

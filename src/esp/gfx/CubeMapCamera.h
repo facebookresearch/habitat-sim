@@ -17,15 +17,15 @@ class CubeMapCamera : public RenderCamera {
  public:
   /**
    * @brief Constructor
-   * @param node, the scene node to which the camera is attached
+   * @param node the scene node to which the camera is attached
    */
   explicit CubeMapCamera(scene::SceneNode& node);
   /**
    * @brief Constructor
-   * @param node, the scene node to which the camera is attached
-   * @param eye, the eye position (parent node space)
-   * @param target, the target position (parent node space)
-   * @param up, the up direction (parent node space)
+   * @param node the scene node to which the camera is attached
+   * @param eye the eye position (parent node space)
+   * @param target the target position (parent node space)
+   * @param up the up direction (parent node space)
    */
   explicit CubeMapCamera(scene::SceneNode& node,
                          const vec3f& eye,
@@ -33,10 +33,10 @@ class CubeMapCamera : public RenderCamera {
                          const vec3f& up);
   /**
    * @brief Constructor
-   * @param node, the scene node to which the camera is attached
-   * @param eye, the eye position (parent node space)
-   * @param target, the target position (parent node space)
-   * @param up, the up direction (parent node space)
+   * @param node the scene node to which the camera is attached
+   * @param eye the eye position (parent node space)
+   * @param target the target position (parent node space)
+   * @param up the up direction (parent node space)
    */
   explicit CubeMapCamera(scene::SceneNode& node,
                          const Magnum::Vector3& eye,
@@ -54,7 +54,7 @@ class CubeMapCamera : public RenderCamera {
    *           | +Y |
    *           +----+
    * ```
-   * @param cubeSide, the cube map coordinate, see the following pictures
+   * @param cubeSide the cube map coordinate, see the following pictures
    * NOTE: +Y is top
    * CAREFUL! the local transformation of the camera node will be set after
    * calling this function.
@@ -72,7 +72,7 @@ class CubeMapCamera : public RenderCamera {
    *           | +Y |
    *           +----+
    * ```
-   * @param cubSideIndex, the index of the cube map coordinate.
+   * @param cubSideIndex the index of the cube map coordinate.
    * 0: +X
    * 1: -X
    * 2: +Y
@@ -94,7 +94,7 @@ class CubeMapCamera : public RenderCamera {
                                     float hfov) = delete;
   /**
    * @brief Set the projection matrix
-   * @param width, the width of the square image plane
+   * @param width the width of the square image plane
    * @param znear the near clipping plane
    * @param znear the far clipping plane
    */
@@ -115,6 +115,13 @@ class CubeMapCamera : public RenderCamera {
    * @return Reference to self (for method chaining)
    */
   CubeMapCamera& restoreTransformation();
+
+  /**
+   * @brief return the camera local transformation matrix when it is about to
+   * render a specific cube face.
+   */
+  static Magnum::Matrix4 getCameraLocalTransform(
+      Mn::GL::CubeMapCoordinate cubeSideIndex);
 
  protected:
   // viewing matrix (in parent node space) computed by Mn::Matrix4::lookAt(eye,

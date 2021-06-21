@@ -14,8 +14,9 @@ namespace sensor {
 
 struct CameraSensorSpec : public VisualSensorSpec {
   float orthoScale = 0.1f;
+  Mn::Deg hfov = 90.0_degf;
   CameraSensorSpec();
-  void sanityCheck() override;
+  void sanityCheck() const override;
   bool operator==(const CameraSensorSpec& a) const;
   ESP_SMART_POINTERS(CameraSensorSpec)
 };
@@ -27,7 +28,6 @@ class CameraSensor : public VisualSensor {
   // user can use them immediately
   explicit CameraSensor(scene::SceneNode& cameraNode,
                         const CameraSensorSpec::ptr& spec);
-  ~CameraSensor() override { LOG(INFO) << "Deconstructing CameraSensor"; }
 
   /** @brief Updates this sensor's CameraSensorSpec cameraSensorSpec_ to reflect
    * the passed new values
@@ -159,6 +159,11 @@ class CameraSensor : public VisualSensor {
     recomputeBaseProjectionMatrix();
   }
 
+  /**
+   * @brief Return a pointer to this camera sensor's SensorSpec
+   */
+  CameraSensorSpec::ptr specification() const { return cameraSensorSpec_; }
+
  protected:
   /**
    * @brief Recalculate the base projection matrix, based on camera type and
@@ -173,6 +178,13 @@ class CameraSensor : public VisualSensor {
    * change.
    */
   void recomputeProjectionMatrix();
+
+  /**
+   * @brief Draw the scene graph with the specified camera flag
+   * @param[in] sceneGraph scene graph to be drawn
+   * @param[in] flags flag for the render camera
+   */
+  void draw(scene::SceneGraph& sceneGraph, gfx::RenderCamera::Flags flags);
 
   /**
    * @brief This camera's projection matrix. Should be recomputeulated every

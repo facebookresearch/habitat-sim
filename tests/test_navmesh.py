@@ -11,7 +11,7 @@ EPS = 1e-5
 base_dir = osp.abspath(osp.join(osp.dirname(__file__), ".."))
 
 test_scenes = [
-    osp.join(base_dir, "data/scene_datasets/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb"),
+    osp.join(base_dir, "data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"),
     osp.join(base_dir, "data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"),
     osp.join(base_dir, "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"),
 ]

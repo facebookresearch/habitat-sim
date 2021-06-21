@@ -5,7 +5,7 @@ default_language_version:
 
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v3.4.0
+    rev: v4.0.1
     hooks:
     -   id: trailing-whitespace
     -   id: check-added-large-files
@@ -19,6 +19,7 @@ repos:
         exclude: ^(.eslintrc.json|tsconfig.json)
     -   id: check-merge-conflict
     -   id: check-toml
+    -   id: check-xml
     -   id: check-yaml
         exclude: ^conda-build/habitat-sim/meta.yaml
     -   id: debug-statements
@@ -27,7 +28,7 @@ repos:
     -   id: requirements-txt-fixer
 
 -   repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
-    rev: v2.0.0
+    rev: v2.1.0
     hooks:
     -   id: pretty-format-ini
         args: [--autofix]
@@ -35,14 +36,13 @@ repos:
         args: [--autofix]
 
 -   repo: https://github.com/timothycrosley/isort
-    rev: 5.7.0
+    rev: 5.8.0
     hooks:
     -   id: isort
         exclude: docs/
-        additional_dependencies: [toml]
 
 -   repo: https://github.com/ambv/black
-    rev: 20.8b1
+    rev: 21.5b2
     hooks:
     - id: black
       exclude: ^examples/tutorials/(nb_python|colabs)
@@ -54,23 +54,25 @@ repos:
         args: ['--expand-star-imports', '--ignore-init-module-imports', '--in-place']
         exclude: docs/
 
--   repo: https://gitlab.com/pycqa/flake8
-    rev: 3.8.4
+-   repo: https://github.com/pycqa/flake8
+    rev: 3.9.2
     hooks:
     -   id: flake8
         exclude: docs/
         additional_dependencies:
-        - flake8-bugbear==20.1.4
+        - flake8-bugbear==21.4.3
         - flake8-builtins==1.5.3
-        - flake8-comprehensions==3.3.0
+        - flake8-comprehensions==3.4.0
         - flake8-return==1.1.2
-        - flake8-simplify==0.14.0
+        - flake8-simplify==0.14.1
 
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: 'v0.812'
+    rev: 'v0.901'
     hooks:
     -   id: mypy
         pass_filenames: false
+        additional_dependencies:
+        - attrs
 
 -   repo: https://github.com/seddonym/import-linter
     rev: v1.2.1
@@ -78,26 +80,20 @@ repos:
     -   id: import-linter
 
 -   repo: https://github.com/kynan/nbstripout
-    rev: 0.3.9
+    rev: 0.4.0
     hooks:
     -   id: nbstripout
-        files: '.ipynb'
 
--   repo: local
+-   repo: https://github.com/mwouts/jupytext
+    rev: v1.11.2
     hooks:
-    -   id: jupytext-sync
-        name: Sync scripts and notebooks
+    -   id: jupytext
         files: '^examples/tutorials/(colabs|nb_python)/(.*\.py|.*\.ipynb)$'
-        entry: jupytext --update-metadata '{"jupytext":{"notebook_metadata_filter":"all", "cell_metadata_filter":"-all"}, "accelerator":"GPU"}' --set-formats 'nb_python//py:percent,colabs//ipynb' --pipe black --pipe 'isort - --treat-comment-as-code "# %%"' --pipe-fmt 'py:percent' --sync
-        pass_filenames: true
+        args: [--update-metadata, '{"jupytext":{"notebook_metadata_filter":"all", "cell_metadata_filter":"-all"}, "accelerator":"GPU"}', --set-formats, 'nb_python//py:percent,colabs//ipynb,', --pipe, black, --pipe, 'isort - --treat-comment-as-code "# %%"', --pipe-fmt, 'py:percent', --sync]
         additional_dependencies:
-            - 'jupytext==1.6.0'
             - 'nbformat<=5.0.8'
             - black
             - isort
-        always_run: false
-        language: python
-        require_serial: true
 
 -   repo: local
     hooks:
@@ -116,7 +112,7 @@ repos:
         exclude: (^src/(cmake/Find|deps)|configure\.h\.cmake$)
 
 -   repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v7.20.0
+    rev: v7.28.0
     hooks:
     -   id: eslint
         args: [--fix, --ext .html,.js]
@@ -128,7 +124,11 @@ repos:
         - prettier@1.18.2
 
 -   repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.7.1.1
+    rev: v0.7.2.1
     hooks:
     -   id: shellcheck
-        exclude: ^conda-build/ #TODO fix these scripts
+
+-   repo: https://github.com/AleksaC/circleci-cli-py
+    rev: v0.1.15224
+    hooks:
+    -   id: circle-ci-validator

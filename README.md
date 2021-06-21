@@ -36,7 +36,7 @@ When rendering a scene from the Matterport3D dataset, Habitat-Sim achieves sever
    1. [Testing](#testing)
    1. [Documentation](#documentation)
    1. [Rendering to GPU Tensors](#rendering-to-gpu-tensors)
-   1. [WebGL](#webgl)
+   1. [Experimental: Emscripten, WebGL, and Web Apps](##experimental-emscripten-webgl-and-web-apps)
    1. [Datasets](#datasets)
    1. [Examples](#examples)
    1. [Code Style](#code-style)
@@ -173,7 +173,7 @@ pip install -r requirements.txt
 
 Next, pick one of the options below depending on your system/needs:
 
-- To install habitat-sim on machines with an attached display:
+- To install on machines with an attached display:
    ```bash
      conda install habitat-sim -c conda-forge -c aihabitat
    ```
@@ -181,11 +181,17 @@ Next, pick one of the options below depending on your system/needs:
    ```
    conda install habitat-sim headless -c conda-forge -c aihabitat
    ```
-- To install habitat-sim with bullet physics [on a headless system]
+- To install habitat-sim with bullet physics
    ```
-   conda install habitat-sim withbullet [headless] -c conda-forge -c aihabitat
+   conda install habitat-sim withbullet -c conda-forge -c aihabitat
    ```
 
+- Note: Build parameters can be chained together. For instance, to install habitat-sim with physics on headless machines:
+   ```
+   conda install habitat-sim withbullet headless -c conda-forge -c aihabitat
+   ```
+
+Conda packages for older versions can installed by explicitly specifying the version, e.g. `conda install habitat-sim=0.1.6 -c conda-forge -c aihabitat`.
 
 We also provide a [nightly conda build for the master branch](https://anaconda.org/aihabitat-nightly). However, this should only be used if you need a specific feature not yet in the latest release version. To get the nightly build of the latest master, simply swap `-c aihabitat` for `-c aihabitat-nightly`.
 
@@ -200,7 +206,10 @@ Read [build instructions and common build issues](BUILD_FROM_SOURCE.md).
 
 ## Testing
 
-1. Download the test scenes from this [link](http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip) and extract locally.
+1. Run our python data download utility to retrieve the test assets:
+   ```bash
+   python -m habitat_sim.utils.datasets_download --uids habitat_test_scenes --data-path /path/to/data/
+   ```
 
 1. **Interactive testing**: Use the interactive viewer included with Habitat-Sim
    ```bash
@@ -208,21 +217,22 @@ Read [build instructions and common build issues](BUILD_FROM_SOURCE.md).
    habitat-viewer /path/to/data/scene_datasets/habitat-test-scenes/skokloster-castle.glb
    ```
    You should be able to control an agent in this test scene.
-   Use W/A/S/D keys to move forward/left/backward/right and arrow keys to control gaze direction (look up/down/left/right).
+   Use W/A/S/D keys to move forward/left/backward/right and arrow keys or mouse to control gaze direction (look up/down/left/right).
    Try to find the picture of a woman surrounded by a wreath.
    Have fun!
 
-1. **Physical interactions**: If you would like to try out habitat with dynamical objects, first download our pre-processed object data-set from this [link](http://dl.fbaipublicfiles.com/habitat/objects_v0.2.zip) and extract as `habitat-sim/data/objects/`.
+1. **Physical interactions**: If you would like to try out habitat with dynamical objects using the interactive viewer:
+   First setup the test object assets by running the data download utility:
+   ```bash
+   python -m habitat_sim.utils.datasets_download --uids habitat_example_objects --data-path /path/to/data/
+   ```
 
    To run an interactive C++ example GUI application with physics enabled run
    ```bash
    # ./build/viewer if compiling locally
-   habitat-viewer --enable-physics /path/to/data/scene_datasets/habitat-test-scenes/van-gogh-room.glb
+   habitat-viewer --enable-physics --object-dir data/objects/example_objects -- data/scene_datasets/habitat-test-scenes/apartment_1.glb
    ```
-   Use W/A/S/D keys to move forward/left/backward/right and arrow keys to control gaze direction (look up/down/left/right).
-   Press 'o' key to add a random object, press 'p/f/t' to apply impulse/force/torque to the last added object or press 'u' to remove it.
-   Press 'k' to kinematically nudge the last added object in a random direction.
-   Press 'v' key to invert gravity.
+   The viewer application will output user interface help to the console at runtime.
 
 1. **Non-interactive testing**: Run the example script:
    ```bash
@@ -275,7 +285,9 @@ This feature is built by when Habitat-Sim is compiled with CUDA, i.e. built with
 This is implemented in a way that is reasonably agnostic to the exact GPU-Tensor library being used, but we currently have only implemented support for PyTorch.
 
 
-## WebGL
+## Experimental: Emscripten, WebGL, and Web Apps
+
+Build `hsim_bindings.wasm`, our experimental Emscripten-compiled webassembly binary for use in WebGL html/Javascript apps. See the available Javascript bindings at `src/esp/bindings_js/bindings_js.cpp`. Check out our `bindings.html` demo app:
 
 1. Download the [test scenes](http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip) and extract locally to habitat-sim creating habitat-sim/data.
 1. Download and install [emscripten](https://emscripten.org/docs/getting_started/downloads.html) (you need at least version 1.38.48, newer versions such as 2.0.6 work too)
@@ -286,6 +298,9 @@ This is implemented in a way that is reasonably agnostic to the exact GPU-Tensor
    python -m http.server 8000 --bind 127.0.0.1
    ```
 1. Open <http://127.0.0.1:8000/build_js/esp/bindings_js/bindings.html>
+
+You can build `hsim_bindings.wasm` without the demo web apps like so:
+- `./build_js.sh --no-web-apps [--bullet]`
 
 ## Datasets
 
@@ -308,7 +323,7 @@ Load a specific MP3D or Gibson house: `examples/example.py --scene path/to/mp3d/
 
 Additional arguments to `example.py` are provided to change the sensor configuration, print statistics of the semantic annotations in a scene, compute action-space shortest path trajectories, and set other useful functionality. Refer to the `example.py` and `demo_runner.py` source files for an overview.
 
-To reproduce the benchmark table from above run `examples/benchmark.py --scene /path/to/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb`.
+To reproduce the benchmark table from above run `examples/benchmark.py --scene /path/to/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb`.
 
 
 ## Code Style

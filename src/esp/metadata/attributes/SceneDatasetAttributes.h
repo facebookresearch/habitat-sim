@@ -27,10 +27,23 @@ class SceneDatasetAttributes : public AbstractAttributes {
       const std::string& datasetName,
       const managers::PhysicsAttributesManager::ptr& physAttrMgr);
 
+  ~SceneDatasetAttributes() override {
+    // These are to clear any external refs persisting after this scene dataset
+    // is deleted.  Accessing these refs should result in errors instead of
+    // leaks/undefined behavior.
+    assetAttributesManager_ = nullptr;
+    lightLayoutAttributesManager_ = nullptr;
+    objectAttributesManager_ = nullptr;
+    sceneAttributesManager_ = nullptr;
+    stageAttributesManager_ = nullptr;
+    navmeshMap_.clear();
+    semanticSceneDescrMap_.clear();
+  }
+
   /**
    * @brief Return manager for construction and access to asset attributes.
    */
-  const managers::AssetAttributesManager::ptr getAssetAttributesManager()
+  const managers::AssetAttributesManager::ptr& getAssetAttributesManager()
       const {
     return assetAttributesManager_;
   }
@@ -38,7 +51,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
   /**
    * @brief Return manager for construction and access to object attributes.
    */
-  const managers::ObjectAttributesManager::ptr getObjectAttributesManager()
+  const managers::ObjectAttributesManager::ptr& getObjectAttributesManager()
       const {
     return objectAttributesManager_;
   }
@@ -46,7 +59,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
   /**
    * @brief Return manager for construction and access to light attributes.
    */
-  const managers::LightLayoutAttributesManager::ptr
+  const managers::LightLayoutAttributesManager::ptr&
   getLightLayoutAttributesManager() const {
     return lightLayoutAttributesManager_;
   }
@@ -54,7 +67,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
   /**
    * @brief Return manager for construction and access to scene attributes.
    */
-  const managers::SceneAttributesManager::ptr getSceneAttributesManager()
+  const managers::SceneAttributesManager::ptr& getSceneAttributesManager()
       const {
     return sceneAttributesManager_;
   }
@@ -62,7 +75,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
   /**
    * @brief Return manager for construction and access to stage attributes.
    */
-  const managers::StageAttributesManager::ptr getStageAttributesManager()
+  const managers::StageAttributesManager::ptr& getStageAttributesManager()
       const {
     return stageAttributesManager_;
   }
@@ -111,7 +124,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
       const std::string& path,
       bool overwrite = false) {
     return addNewValToMap(key, path, overwrite, navmeshMap_,
-                          "SceneDatasetAttributes::addNavmeshPathEntry");
+                          "::addNavmeshPathEntry");
   }  // addNavmeshPathEntry
 
   /**
@@ -127,9 +140,8 @@ class SceneDatasetAttributes : public AbstractAttributes {
       const std::string& key,
       const std::string& path,
       bool overwrite = false) {
-    return addNewValToMap(
-        key, path, overwrite, semanticSceneDescrMap_,
-        "SceneDatasetAttributes::addSemanticSceneDescrPathEntry");
+    return addNewValToMap(key, path, overwrite, semanticSceneDescrMap_,
+                          "::addSemanticSceneDescrPathEntry");
   }  // addNavmeshPathEntry
 
   /**
@@ -219,8 +231,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * @return name of stage attributes with handle containing @p stageAttrName ,
    * or empty string if none.
    */
-  inline const std::string getStageAttrFullHandle(
-      const std::string& stageAttrName) {
+  inline std::string getStageAttrFullHandle(const std::string& stageAttrName) {
     return getFullAttrNameFromStr(stageAttrName, stageAttributesManager_);
   }  // getStageAttrFullHandle
 
@@ -235,10 +246,60 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * @return name of object attributes with handle containing @p objAttrName or
    * empty string if none.
    */
-  inline const std::string getObjAttrFullHandle(
-      const std::string& objAttrName) {
+  inline std::string getObjAttrFullHandle(const std::string& objAttrName) {
     return getFullAttrNameFromStr(objAttrName, objectAttributesManager_);
   }  // getObjAttrFullHandle
+
+  /**
+   * @brief Returns articulated object model file handle in dataset
+   * corresponding to passed name as substring. Assumes articulated object model
+   * with @p artObjModelName as substring exists in this dataset.
+   * @param artObjModelName substring to handle of AO model that exists in this
+   * dataset. The actual model name will be found via substring search in the
+   * manager, so the name is expected to be sufficiently restrictive to have
+   * exactly 1 match in dataset.
+   * @return name of AO model with handle containing @p artObjModelName or
+   * empty string if none.
+   */
+  inline std::string getArticulatedObjModelFullHandle(
+      const std::string& artObjModelName) {
+    if (articulatedObjPaths.count(artObjModelName) == 0) {
+      LOG(ERROR) << "SceneDatasetAttributes::getArticulatedObjModelFullHandle "
+                    ": No Articulatd Model with name "
+                 << artObjModelName << " could be found.  Aborting.";
+      return "";
+    }
+    return articulatedObjPaths.at(artObjModelName);
+    // std::map<std::string, std::string> articulatedObjPaths;
+  }
+
+  /**
+   * @brief TEMPORARY set discovered fully qualified file name along with
+   * simplified key for articulated object model file names. This will be
+   * removed when ArticulatedModelManager is complete.
+   * @param key Key in map built from simplified file name.
+   * @param value Filename of model
+   */
+  void setArticulatedObjectModelFilename(const std::string& key,
+                                         const std::string& val) {
+    if (articulatedObjPaths.count(key) != 0) {
+      LOG(WARNING)
+          << "SceneDatasetAttributes::setArticulatedObjectModelFilename "
+             ": Articulated model filepath named "
+          << key << " already exists (" << articulatedObjPaths.at(key)
+          << "), so this is being overwritten by " << val << ".";
+    }
+    articulatedObjPaths[key] = val;
+  }
+
+  /**
+   * @brief TEMPORARY get a constant reference to the articulated object model
+   * filenames (.urdf) that have been loaded.
+   */
+  const std::map<std::string, std::string>& getArticulatedObjectModelFilenames()
+      const {
+    return articulatedObjPaths;
+  }
 
   /**
    * @brief Returns the full name of the lightsetup attributes whose
@@ -249,12 +310,12 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * @return the full attributes name corresponding to @p lightSetupName , or
    * the empty string.
    */
-  inline const std::string getLightSetupFullHandle(
+  inline std::string getLightSetupFullHandle(
       const std::string& lightSetupName) {
-    if (lightSetupName.compare(DEFAULT_LIGHTING_KEY) == 0) {
+    if (lightSetupName == DEFAULT_LIGHTING_KEY) {
       return DEFAULT_LIGHTING_KEY;
     }
-    if (lightSetupName.compare(NO_LIGHT_KEY) == 0) {
+    if (lightSetupName == NO_LIGHT_KEY) {
       return NO_LIGHT_KEY;
     }
     return getFullAttrNameFromStr(lightSetupName,
@@ -271,7 +332,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * @return actual name of attributes in attrMgr, or empty string if does not
    * exist.
    */
-  inline const std::string getFullAttrNameFromStr(
+  inline std::string getFullAttrNameFromStr(
       const std::string& attrName,
       const esp::core::ManagedContainerBase::ptr& attrMgr) {
     auto handleList = attrMgr->getObjectHandlesBySubstring(attrName);
@@ -323,6 +384,12 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * dataset.
    */
   managers::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
+
+  /**
+   * @brief A TEMPORARY map construct to hold articulated object path names,
+   * until the ArticulatedModelManager is built.
+   */
+  std::map<std::string, std::string> articulatedObjPaths;
 
   /**
    * @brief Manages all construction and access to scene instance attributes

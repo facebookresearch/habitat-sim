@@ -17,6 +17,7 @@ catch() {
 PYTHON_VERSION="$( python -c 'import sys; print(".".join(map(str, sys.version_info[:2])))' )"
 PIL_VERSION="$(python -c 'import PIL; print(PIL.__version__)')"
 CFFI_VERSION="$(python -c 'import cffi; print(cffi.__version__)')"
+NUMPY_VERSION="$(python -c 'import numpy as np; print(np.__version__)')"
 #Install Miniconda
 cd /content/
 wget -c https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh && bash Miniconda3-latest-Linux-x86_64.sh -bfp /usr/local
@@ -31,7 +32,7 @@ CHANNEL="${CHANNEL:-aihabitat}"
 if ${NIGHTLY}; then
   CHANNEL="${CHANNEL}-nightly"
 fi
-conda install -S -y --prefix /usr/local -c "${CHANNEL}" -c conda-forge habitat-sim headless withbullet "python=${PYTHON_VERSION}" "pillow==${PIL_VERSION}" "cffi==${CFFI_VERSION}"
+conda install -S -y --prefix /usr/local -c "${CHANNEL}" -c conda-forge habitat-sim headless withbullet "python=${PYTHON_VERSION}" "numpy==${NUMPY_VERSION}" "pillow==${PIL_VERSION}" "cffi==${CFFI_VERSION}"
 
 #Shallow GIT clone for speed
 git clone https://github.com/facebookresearch/habitat-lab --depth 1
@@ -47,12 +48,11 @@ set -e
 python setup.py develop --all
 pip install . #Reinstall to trigger sys.path update
 cd /content/habitat-sim/
-rm -rf habitat_sim/ # Deletes the habitat_sim folder so it doesn't interfere with import path
 
 #Download Assets
-wget -c http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip && unzip -o habitat-test-scenes.zip
-wget -c http://dl.fbaipublicfiles.com/habitat/objects_v0.2.zip && unzip -o objects_v0.2.zip -d data/objects/
-wget -c http://dl.fbaipublicfiles.com/habitat/locobot_merged_v0.2.zip && unzip -o locobot_merged_v0.2.zip -d data/objects
+python habitat_sim/utils/datasets_download.py --uids ci_test_assets --replace --data-path data/
+
+rm -rf habitat_sim/ # Deletes the habitat_sim folder so it doesn't interfere with import path
 
 #symlink assets appear in habitat-api folder
 ln -s /content/habitat-sim/data /content/habitat-lab/.

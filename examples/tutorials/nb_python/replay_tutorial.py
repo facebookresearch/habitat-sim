@@ -12,7 +12,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.6.0
+#       jupytext_version: 1.11.2
 #   kernelspec:
 #     display_name: Python 3
 #     name: python3
@@ -61,11 +61,6 @@ dir_path = repo.working_tree_dir
 # %cd $dir_path
 data_path = os.path.join(dir_path, "data")
 output_path = os.path.join(dir_path, "examples/tutorials/replay_tutorial_output/")
-
-
-def remove_all_objects(sim):
-    for id_ in sim.get_existing_object_ids():
-        sim.remove_object(id_)
 
 
 # %% [markdown]
@@ -213,19 +208,22 @@ observations += simulate_with_moving_agent(
 # %%
 
 obj_templates_mgr = sim.get_object_template_manager()
+# get the rigid object manager, which provides direct
+# access to objects
+rigid_obj_mgr = sim.get_rigid_object_manager()
 
-obj_templates_mgr.load_configs(str(os.path.join(data_path, "objects")))
+obj_templates_mgr.load_configs(str(os.path.join(data_path, "objects/example_objects")))
 chefcan_template_handle = obj_templates_mgr.get_template_handles(
-    "data/objects/chefcan"
+    "data/objects/example_objects/chefcan"
 )[0]
 
 # drop some dynamic objects
-id_1 = sim.add_object_by_handle(chefcan_template_handle)
-sim.set_translation(np.array([2.4, -0.64, 0]), id_1)
-id_2 = sim.add_object_by_handle(chefcan_template_handle)
-sim.set_translation(np.array([2.4, -0.64, 0.28]), id_2)
-id_3 = sim.add_object_by_handle(chefcan_template_handle)
-sim.set_translation(np.array([2.4, -0.64, -0.28]), id_3)
+chefcan_1 = rigid_obj_mgr.add_object_by_template_handle(chefcan_template_handle)
+chefcan_1.translation = [2.4, -0.64, 0.0]
+chefcan_2 = rigid_obj_mgr.add_object_by_template_handle(chefcan_template_handle)
+chefcan_2.translation = [2.4, -0.64, 0.28]
+chefcan_3 = rigid_obj_mgr.add_object_by_template_handle(chefcan_template_handle)
+chefcan_3.translation = [2.4, -0.64, -0.28]
 
 observations += simulate_with_moving_agent(
     sim,
@@ -239,8 +237,8 @@ observations += simulate_with_moving_agent(
 # ## Continue the episode, removing some objects
 # %%
 
-sim.remove_object(id_1)
-sim.remove_object(id_2)
+rigid_obj_mgr.remove_object_by_id(chefcan_1.object_id)
+rigid_obj_mgr.remove_object_by_id(chefcan_2.object_id)
 
 observations += simulate_with_moving_agent(
     sim,
@@ -271,7 +269,7 @@ if make_video:
 sim.gfx_replay_manager.write_saved_keyframes_to_file(replay_filepath)
 assert os.path.exists(replay_filepath)
 
-remove_all_objects(sim)
+rigid_obj_mgr.remove_all_objects()
 
 # %% [markdown]
 # ## Reconfigure simulator for replay playback.
@@ -373,29 +371,31 @@ sensor_node.translation = [-1.1, -0.9, -0.2]
 sensor_node.rotation = mn.Quaternion.rotation(mn.Deg(-115), mn.Vector3(0.0, 1.0, 0))
 
 prim_attr_mgr = sim.get_asset_template_manager()
-
+# get the rigid object manager, which provides direct
+# access to objects
+rigid_obj_mgr = sim.get_rigid_object_manager()
 # visualize the recorded agent transform as a cylinder
 agent_viz_handle = prim_attr_mgr.get_template_handles("cylinderSolid")[0]
-agent_viz_id = sim.add_object_by_handle(agent_viz_handle)
-sim.set_object_motion_type(habitat_sim.physics.MotionType.KINEMATIC, agent_viz_id)
-sim.set_object_is_collidable(False, agent_viz_id)
+agent_viz_obj = rigid_obj_mgr.add_object_by_template_handle(agent_viz_handle)
+agent_viz_obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+agent_viz_obj.collidable = False
 
 # visualize the recorded sensor transform as a cube
 sensor_viz_handle = prim_attr_mgr.get_template_handles("cubeSolid")[0]
-sensor_viz_id = sim.add_object_by_handle(sensor_viz_handle)
-sim.set_object_motion_type(habitat_sim.physics.MotionType.KINEMATIC, sensor_viz_id)
-sim.set_object_is_collidable(False, sensor_viz_id)
+sensor_viz_obj = rigid_obj_mgr.add_object_by_template_handle(sensor_viz_handle)
+sensor_viz_obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+sensor_viz_obj.collidable = False
 
 for frame in range(player.get_num_keyframes()):
     player.set_keyframe_index(frame)
 
     (agent_translation, agent_rotation) = player.get_user_transform("agent")
-    sim.set_translation(agent_translation, agent_viz_id)
-    sim.set_rotation(agent_rotation, agent_viz_id)
+    agent_viz_obj.translation = agent_translation
+    agent_viz_obj.rotation = agent_rotation
 
     (sensor_translation, sensor_rotation) = player.get_user_transform("sensor")
-    sim.set_translation(sensor_translation, sensor_viz_id)
-    sim.set_rotation(sensor_rotation, sensor_viz_id)
+    sensor_viz_obj.translation = sensor_translation
+    sensor_viz_obj.rotation = sensor_rotation
 
     observations.append(sim.get_sensor_observations())
 
@@ -408,8 +408,8 @@ if make_video:
         open_vid=show_video,
     )
 
-sim.remove_object(agent_viz_id)
-sim.remove_object(sensor_viz_id)
+rigid_obj_mgr.remove_object_by_id(agent_viz_obj.object_id)
+rigid_obj_mgr.remove_object_by_id(sensor_viz_obj.object_id)
 
 # clean up the player
 player.close()

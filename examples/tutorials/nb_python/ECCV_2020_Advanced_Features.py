@@ -18,7 +18,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.6.0
+#       jupytext_version: 1.11.2
 #   kernelspec:
 #     display_name: Python 3
 #     name: python3
@@ -42,7 +42,6 @@
 # @markdown (double click to show code).
 
 # !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/master/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
-# !wget -c http://dl.fbaipublicfiles.com/habitat/mp3d_example.zip && unzip -o mp3d_example.zip -d /content/habitat-sim/data/scene_datasets/mp3d/
 
 # %%
 # @title Path Setup and Imports { display-mode: "form" }
@@ -102,6 +101,8 @@ if "sim" not in globals():
     obj_attr_mgr = None
     global stage_attr_mgr
     stage_attr_mgr = None
+    global rigid_obj_mgr
+    rigid_obj_mgr = None
 
 
 # %%
@@ -118,7 +119,7 @@ def build_dict_of_Default_attrs(template):
     res_dict = {}
     res_dict["handle"] = (template.handle, True, "string")
     # Read-only values
-    res_dict["ID"] = (template.ID, False, "int")
+    res_dict["template_id"] = (template.template_id, False, "int")
     res_dict["template_class"] = (template.template_class, False, "string")
     res_dict["file_directory"] = (template.file_directory, False, "string")
     return res_dict
@@ -497,7 +498,7 @@ def make_default_settings():
     settings = {
         "width": 720,  # Spatial resolution of the observations
         "height": 544,
-        "scene": "./data/scene_datasets/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb",  # Scene path
+        "scene": "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb",  # Scene path
         "default_agent": 0,
         "sensor_height": 1.5,  # Height of sensors in meters
         "sensor_pitch": -math.pi / 8.0,  # sensor pitch (x rotation in rads)
@@ -518,15 +519,20 @@ def make_simulator_from_settings(sim_settings):
     global obj_attr_mgr
     global prim_attr_mgr
     global stage_attr_mgr
+    global rigid_obj_mgr
+
     if sim != None:
         sim.close()
     # initialize the simulator
     sim = habitat_sim.Simulator(cfg)
     # Managers of various Attributes templates
     obj_attr_mgr = sim.get_object_template_manager()
-    obj_attr_mgr.load_configs(str(os.path.join(data_path, "objects")))
+    obj_attr_mgr.load_configs(str(os.path.join(data_path, "objects/example_objects")))
     prim_attr_mgr = sim.get_asset_template_manager()
     stage_attr_mgr = sim.get_stage_template_manager()
+    # Manager providing access to rigid objects
+    rigid_obj_mgr = sim.get_rigid_object_manager()
+
     # UI-populated handles used in various cells.  Need to initialize to valid
     # value in case IPyWidgets are not available.
     # Holds the user's desired file-based object template handle
@@ -544,16 +550,10 @@ def make_simulator_from_settings(sim_settings):
 # @title Define Simulation Utility Functions { display-mode: "form" }
 # @markdown (double click to show code)
 
-# @markdown - remove_all_objects
 # @markdown - simulate
 # @markdown - init_camera_track_config
 # @markdown - restore_camera_track_config
 # @markdown - camera_track_simulate
-
-
-def remove_all_objects(sim):
-    for obj_id in sim.get_existing_object_ids():
-        sim.remove_object(obj_id)
 
 
 def simulate(sim, dt=1.0, get_frames=True):
@@ -604,10 +604,10 @@ def restore_camera_track_config(sim, init_state):
 
 
 # Simulate scene while having camera track COM of objects of interest
-def camera_track_simulate(sim, obj_ids, dt=2.0, get_frames=True, agent_ID=0):
+def camera_track_simulate(sim, objects, dt=2.0, get_frames=True, agent_ID=0):
     start_time = sim.get_world_time()
     observations = []
-    num_objs = len(obj_ids)
+    num_objs = len(objects)
     if num_objs == 0:
         print("camera_track_simulate : Aborting, no objects sent to track")
         return observations
@@ -621,10 +621,10 @@ def camera_track_simulate(sim, obj_ids, dt=2.0, get_frames=True, agent_ID=0):
         sim.step_physics(time_step)
         # set agent state to look at object
         camera_position = agent.scene_node.translation
-        camera_look_at = sim.get_translation(obj_ids[0])
+        camera_look_at = objects[0].translation
         for i in range(1, num_objs):
-            camera_look_at += sim.get_translation(obj_ids[i])
-        camera_look_at /= len(obj_ids)
+            camera_look_at += objects[i].translation
+        camera_look_at /= len(objects)
         agent.scene_node.rotation = mn.Quaternion.from_matrix(
             mn.Matrix4.look_at(camera_position, camera_look_at, up_vec).rotation()  # up
         )
@@ -637,14 +637,14 @@ def camera_track_simulate(sim, obj_ids, dt=2.0, get_frames=True, agent_ID=0):
 # Set an object transform relative to the agent state
 def set_object_state_from_agent(
     sim,
-    ob_id,
+    obj,
     offset=np.array([0, 2.0, -1.5]),
     orientation=mn.Quaternion(((0, 0, 0), 1)),
 ):
     agent_transform = sim.agents[0].scene_node.transformation_matrix()
     ob_translation = agent_transform.transform_point(offset)
-    sim.set_translation(ob_translation, ob_id)
-    sim.set_rotation(orientation, ob_id)
+    obj.translation = ob_translation
+    obj.rotation = orientation
 
 
 # %%
@@ -783,7 +783,7 @@ def make_clear_all_objects_button():
         return
 
     def on_clear_click(b):
-        remove_all_objects(sim)
+        rigid_obj_mgr.remove_all_objects()
 
     clear_objs_button = set_button_launcher("Clear all objects")
     clear_objs_button.on_click(on_clear_click)
@@ -847,7 +847,7 @@ def build_widget_ui(obj_attr_mgr, prim_attr_mgr):
 # %%
 # @title Initialize Simulator and Load Scene { display-mode: "form" }
 sim_settings = make_default_settings()
-sim_settings["scene"] = "./data/scene_datasets/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb"
+sim_settings["scene"] = "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
 sim_settings["sensor_pitch"] = 0
 
 make_simulator_from_settings(sim_settings)
@@ -865,7 +865,7 @@ build_widget_ui(obj_attr_mgr, prim_attr_mgr)
 # %%
 # @markdown This example demonstrates updating the agent state to follow the motion of an object during simulation.
 
-remove_all_objects(sim)
+rigid_obj_mgr.remove_all_objects()
 visual_sensor = sim._sensors["color_sensor_1st_person"]
 initial_sensor_position = np.array(visual_sensor._spec.position)
 initial_sensor_orientation = np.array(visual_sensor._spec.orientation)
@@ -886,11 +886,11 @@ sim.seed(seed)
 np.random.seed(seed)
 
 # add an object and position the agent
-obj_id_1 = sim.add_object_by_handle(sel_file_obj_handle)
+sel_file_obj = rigid_obj_mgr.add_object_by_template_handle(sel_file_obj_handle)
 rand_position = np.random.uniform(
     np.array([-0.4, -0.3, -1.0]), np.array([0.4, 0.3, -0.5])
 )
-set_object_state_from_agent(sim, obj_id_1, rand_position, ut.random_quaternion())
+set_object_state_from_agent(sim, sel_file_obj, rand_position, ut.random_quaternion())
 
 # simulate with updated camera at each frame
 start_time = sim.get_world_time()
@@ -898,7 +898,7 @@ while sim.get_world_time() - start_time < 2.0:
     sim.step_physics(1.0 / 60.0)
     # set agent state to look at object
     camera_position = sim.get_agent(0).scene_node.translation
-    camera_look_at = sim.get_translation(obj_id_1)
+    camera_look_at = sel_file_obj.translation
     sim.get_agent(0).scene_node.rotation = mn.Quaternion.from_matrix(
         mn.Matrix4.look_at(
             camera_position, camera_look_at, np.array([0, 1.0, 0])  # up
@@ -923,7 +923,7 @@ visual_sensor._spec.orientation = initial_sensor_orientation
 visual_sensor._sensor_object.set_transformation_from_spec()
 # put the agent back
 sim.reset()
-remove_all_objects(sim)
+rigid_obj_mgr.remove_all_objects()
 
 
 # %% [markdown]
@@ -963,23 +963,23 @@ random.seed(seed)
 sim.seed(seed)
 np.random.seed(seed)
 
-remove_all_objects(sim)
+rigid_obj_mgr.remove_all_objects()
 
 # add an object and plot the COM on the image
-obj_id_1 = sim.add_object_by_handle(sel_file_obj_handle)
+sel_file_obj = rigid_obj_mgr.add_object_by_template_handle(sel_file_obj_handle)
 rand_position = np.random.uniform(
     np.array([-0.4, 1.2, -1.0]), np.array([0.4, 1.8, -0.5])
 )
-set_object_state_from_agent(sim, obj_id_1, rand_position, ut.random_quaternion())
+set_object_state_from_agent(sim, sel_file_obj, rand_position, ut.random_quaternion())
 
 obs = sim.get_sensor_observations()
 
 com_2d = get_2d_point(
-    sim, sensor_name="color_sensor_1st_person", point_3d=sim.get_translation(obj_id_1)
+    sim, sensor_name="color_sensor_1st_person", point_3d=sel_file_obj.translation
 )
 if display:
     display_sample(obs["color_sensor_1st_person"], key_points=[com_2d])
-remove_all_objects(sim)
+rigid_obj_mgr.remove_all_objects()
 
 # %% [markdown]
 # ## Advanced Topic: Configurable Semantic IDs
@@ -1002,7 +1002,7 @@ remove_all_objects(sim)
 # @markdown ###Configuring Object Semantic IDs:
 
 sim_settings = make_default_settings()
-sim_settings["scene"] = "./data/scene_datasets/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb"
+sim_settings["scene"] = "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
 sim_settings["sensor_pitch"] = 0
 sim_settings["semantic_sensor_1st_person"] = True
 
@@ -1012,7 +1012,7 @@ make_simulator_from_settings(sim_settings)
 # @markdown In this example, we load a box asset with each face as a separate component with its own SceneNode. We demonstrate the result of modiyfing the associated semantic ids via object templates, the Simulator API, and the SceneNode property.
 # fmt: on
 
-remove_all_objects(sim)
+rigid_obj_mgr.remove_all_objects()
 observations = []
 
 # @markdown Set the initial object orientation via local Euler angle (degrees):
@@ -1043,9 +1043,9 @@ box_template.scale = np.array([0.2, 0.2, 0.2])
 box_template.semantic_id = 10  # @param{type:"integer"}
 box_template_id = obj_attr_mgr.register_template(box_template, "box")
 
-box_id = sim.add_object(box_template_id)
+box_obj = rigid_obj_mgr.add_object_by_template_id(box_template_id)
 set_object_state_from_agent(
-    sim, box_id, mn.Vector3(0.0, 1.5, -0.75), orientation=object_orientation
+    sim, box_obj, mn.Vector3(0.0, 1.5, -0.75), orientation=object_orientation
 )
 observations.append(sim.get_sensor_observations())
 # fmt: off
@@ -1053,12 +1053,12 @@ observations.append(sim.get_sensor_observations())
 # fmt: on
 # override the configured id with a new id
 box_semantic_id_override = 20  # @param{type:"integer"}
-sim.set_object_semantic_id(box_semantic_id_override, box_id)
+box_obj.semantic_id = box_semantic_id_override
 observations.append(sim.get_sensor_observations())
 
 # @markdown We can also set the semantic id for any single SceneNode directly:
 # set semantic id for specific SceneNode components of the box object
-box_visual_nodes = sim.get_object_visual_scene_nodes(box_id)
+box_visual_nodes = box_obj.visual_scene_nodes
 box_visual_nodes[6].semantic_id = 3  # @param{type:"integer"}
 box_visual_nodes[7].semantic_id = 4  # @param{type:"integer"}
 observations.append(sim.get_sensor_observations())
@@ -1070,7 +1070,7 @@ if display:
             obs["color_sensor_1st_person"],
             semantic_obs=obs["semantic_sensor_1st_person"],
         )
-remove_all_objects(sim)
+rigid_obj_mgr.remove_all_objects()
 
 # %% [markdown]
 # ## Advanced Topic : Object and Primitive Asset Customization
@@ -1114,7 +1114,7 @@ build_widget_ui(obj_attr_mgr, prim_attr_mgr)
 # @markdown Running this will demonstrate how to create objects of varying size from a file-based template by iteratively modifying the template's scale value.  This will also demonstrate how to delete unwanted templates from the library.
 
 # clear all objects and observations
-remove_all_objects(sim)
+rigid_obj_mgr.remove_all_objects()
 observations = []
 # save initial camera state
 init_config = init_camera_track_config(sim)
@@ -1126,35 +1126,35 @@ obj_template_handle = sel_file_obj_handle
 obj_template = obj_attr_mgr.get_template_by_handle(obj_template_handle)
 
 # Add object instantiated by desired template using template handle.
-obj_id = sim.add_object_by_handle(obj_template_handle)
+file_obj = rigid_obj_mgr.add_object_by_template_handle(obj_template_handle)
 
 # Set desired offset from agent location to place object
 offset = np.array([-1.2, 0.1, -1.5])
 # Move object to be in front of the agent
-set_object_state_from_agent(sim, obj_id, offset=offset)
+set_object_state_from_agent(sim, file_obj, offset=offset)
 
 # Templates have editable fields that will directly affect the instanced
 # objects built from them.  Here we iteratively modify and re-register the
 # template, instancing a new object each time.
 # Bigger Bananas!
-obj_ids = [obj_id]
+objs = [file_obj]
 for i in range(5):
     # Increase the template scale value (object size)
     obj_template.scale *= 1.5
     # Make a new handle for the modified template, so we don't overwrite
     new_obj_template_handle = obj_template_handle + "_new_" + str(i)
     # Register modified template with new handle, returns template ID
-    new_tmplt_ID = obj_attr_mgr.register_template(obj_template, new_obj_template_handle)
+    new_tmplt_id = obj_attr_mgr.register_template(obj_template, new_obj_template_handle)
     # Object creation can occur using template ID or handle
     if i % 2 == 0:
         # Add another object instantiated by modified template using handle
-        new_obj = sim.add_object(new_tmplt_ID)
+        new_obj = rigid_obj_mgr.add_object_by_template_id(new_tmplt_id)
     else:
         # Add another object instantiated by modified template using handle
-        new_obj = sim.add_object_by_handle(new_obj_template_handle)
+        new_obj = rigid_obj_mgr.add_object_by_template_handle(new_obj_template_handle)
     # Move object to the right of previous object
     offset[0] += 0.4
-    obj_ids.append(new_obj)
+    objs.append(new_obj)
     set_object_state_from_agent(sim, new_obj, offset=offset)
 
 # Clean-up - remove modified templates from template library
@@ -1183,7 +1183,7 @@ print(*mod_template_handles, sep="\n")
 
 example_type = "Adding edited objects"
 # Run camera-tracking simulation displaying modified objects
-observations = camera_track_simulate(sim, obj_ids, dt=3.0)
+observations = camera_track_simulate(sim, objs, dt=3.0)
 
 if make_video:
     vut.make_video(
@@ -1205,7 +1205,7 @@ make_clear_all_objects_button()
 # @markdown Two objects will be created in this cell, one to the left with the original template and one to the right with the edited configuration.
 
 # clear all objects and observations
-remove_all_objects(sim)
+rigid_obj_mgr.remove_all_objects()
 observations = []
 # save initial camera state for tracking
 init_config = init_camera_track_config(sim)
@@ -1282,29 +1282,29 @@ new_template_handle = sel_file_obj_handle + "_new"
 
 
 # register new template and get its new id
-new_template_ID = obj_attr_mgr.register_template(new_template, new_template_handle)
+new_template_id = obj_attr_mgr.register_template(new_template, new_template_handle)
 
 
 # Add object instantiated by original template using template handle
 original_template = obj_attr_mgr.get_template_by_handle(sel_file_obj_handle)
-orig_obj_id = sim.add_object_by_handle(original_template.handle)
+orig_obj = rigid_obj_mgr.add_object_by_template_handle(original_template.handle)
 
 # Set desired offset from agent location to place object
 offset = np.array([-0.5, 0.3, -1.5])
 # Move object to be in front of the agent
-set_object_state_from_agent(sim, orig_obj_id, offset=offset)
+set_object_state_from_agent(sim, orig_obj, offset=offset)
 
 # Add new object instantiated by desired template using template handle
-obj_id = sim.add_object(new_template_ID)
+new_obj = rigid_obj_mgr.add_object_by_template_id(new_template_id)
 
 # Set desired offset from agent location to place object
 offset[0] += 1.0
 # Move object to be in front of the agent
-set_object_state_from_agent(sim, obj_id, offset=offset)
+set_object_state_from_agent(sim, new_obj, offset=offset)
 
 example_type = "Adding customized objects"
 # Run camera-tracking simulation displaying modified objects
-observations = camera_track_simulate(sim, [orig_obj_id, obj_id], dt=2.5)
+observations = camera_track_simulate(sim, [orig_obj, new_obj], dt=2.5)
 
 if make_video:
     vut.make_video(
@@ -1335,7 +1335,7 @@ build_widget_ui(obj_attr_mgr, prim_attr_mgr)
 # @markdown This example shows the primitives that are available.  One of each type is instanced with default values and simulated.
 
 # clear all objects and observations
-remove_all_objects(sim)
+rigid_obj_mgr.remove_all_objects()
 observations = []
 # save initial camera state for tracking
 init_config = init_camera_track_config(sim)
@@ -1350,14 +1350,14 @@ offset_wf = np.array([-1.1, 0.6, -1.0])
 objs_to_sim = []
 for i in range(6):
     # Create object from template handle
-    obj_solid_id = sim.add_object_by_handle(prim_solid_obj_handles[i])
-    obj_wf_id = sim.add_object_by_handle(prim_wf_obj_handles[i])
-    objs_to_sim.append(obj_solid_id)
-    objs_to_sim.append(obj_wf_id)
+    obj_solid = rigid_obj_mgr.add_object_by_template_handle(prim_solid_obj_handles[i])
+    obj_wf = rigid_obj_mgr.add_object_by_template_handle(prim_wf_obj_handles[i])
+    objs_to_sim.append(obj_solid)
+    objs_to_sim.append(obj_wf)
 
     # Place object in scene relative to agent
-    set_object_state_from_agent(sim, obj_solid_id, offset=offset_solid)
-    set_object_state_from_agent(sim, obj_wf_id, offset=offset_wf)
+    set_object_state_from_agent(sim, obj_solid, offset=offset_solid)
+    set_object_state_from_agent(sim, obj_wf, offset=offset_wf)
 
     # Move offset for next object
     offset_solid[0] += 0.4
@@ -1747,7 +1747,7 @@ edit_wireframe_UVSphere(UVSphere_wireframe_template)
 # %%
 # @title ####Using the modifications set in the previous cells, instantiate examples of all available solid and wireframe primitives.{ display-mode: "form" }
 # clear all objects and observations
-remove_all_objects(sim)
+rigid_obj_mgr.remove_all_objects()
 observations = []
 # save initial camera state for tracking
 init_config = init_camera_track_config(sim)
@@ -1762,10 +1762,10 @@ for solidHandle in solid_handles_to_use.values():
     obj_template = obj_attr_mgr.create_template(solidHandle)
     # Create object from object template handle
     print("Solid Object being made using handle :{}".format(solidHandle))
-    obj_solid_id = sim.add_object_by_handle(solidHandle)
-    objs_to_sim.append(obj_solid_id)
+    obj_solid = rigid_obj_mgr.add_object_by_template_handle(solidHandle)
+    objs_to_sim.append(obj_solid)
     # Place object in scene relative to agent
-    set_object_state_from_agent(sim, obj_solid_id, offset=offset_solid)
+    set_object_state_from_agent(sim, obj_solid, offset=offset_solid)
     # Move offset for next object
     offset_solid[0] += 0.4
 
@@ -1776,10 +1776,10 @@ for wireframeHandle in wireframe_handles_to_use.values():
     obj_template = obj_attr_mgr.create_template(wireframeHandle)
     # Create object from object template handle
     print("Wireframe Object being made using handle :{}".format(wireframeHandle))
-    obj_wf_id = sim.add_object_by_handle(wireframeHandle)
-    objs_to_sim.append(obj_wf_id)
+    obj_wf = rigid_obj_mgr.add_object_by_template_handle(wireframeHandle)
+    objs_to_sim.append(obj_wf)
     # Place object in scene relative to agent
-    set_object_state_from_agent(sim, obj_wf_id, offset=offset_wf)
+    set_object_state_from_agent(sim, obj_wf, offset=offset_wf)
     # Move offset for next object
     offset_wf[0] += 0.4
 

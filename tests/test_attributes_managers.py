@@ -19,16 +19,16 @@ def perform_general_tests(attr_mgr, search_string):
 
     template_handle = template_handles[0]
     # get id from handle
-    template_ID = attr_mgr.get_template_ID_by_handle(template_handle)
+    template_id = attr_mgr.get_template_id_by_handle(template_handle)
     assert search_string in template_handle
 
     # verify that access is the same for ID and handle lookup
     template0 = attr_mgr.get_template_by_handle(template_handle)
-    template1 = attr_mgr.get_template_by_ID(template_ID)
+    template1 = attr_mgr.get_template_by_id(template_id)
 
     # verify template 0 and template 1 are copies of the same template
     assert template0.handle == template1.handle
-    assert template0.ID == template1.ID
+    assert template0.template_id == template1.template_id
 
     # modify template, register, then verify that
     # retrieved template is not same as previous template
@@ -42,7 +42,7 @@ def perform_general_tests(attr_mgr, search_string):
 
     # verify templates have the same identifiers
     assert template1.handle == template2.handle
-    assert template1.ID == template2.ID
+    assert template1.template_id == template2.template_id
 
     # verify the templates hold different data and are not the
     # same object
@@ -154,7 +154,7 @@ def perform_add_blank_template_test(attr_mgr, valid_render_handle=None):
 
     # verify template 0 and template 1 are copies of the same template
     assert new_template0.handle == new_template1.handle
-    assert new_template0.ID == new_template1.ID
+    assert new_template0.template_id == new_template1.template_id
     assert new_template0.get_string("test_key") == new_template1.get_string("test_key")
 
     # remove newly added default template
@@ -162,9 +162,67 @@ def perform_add_blank_template_test(attr_mgr, valid_render_handle=None):
 
     # verify added template was one removed
     assert new_template0.handle == new_template2.handle
-    assert new_template0.ID == new_template2.ID
+    assert new_template0.template_id == new_template2.template_id
     assert new_template0.get_string("test_key") == new_template2.get_string("test_key")
 
+    # test addition of user-configurations and verify values
+
+    # create new template, do not register it
+    new_template_usr = attr_mgr.create_new_template(new_template_handle, False)
+    # give new template valid render asset handle, otherwise registration might fail
+    if valid_render_handle is not None:
+        new_template_usr.render_asset_handle = valid_render_handle
+
+    usr_template_handle = "new_usr_cfg_handle"
+    new_template_usr.handle = usr_template_handle
+
+    # get user configs and set key
+    new_template_usr.set_user_config_val("my_custom_key0", "my_custom_string")
+    assert (
+        new_template_usr.get_user_config_string("my_custom_key0") == "my_custom_string"
+    )
+
+    new_template_usr.set_user_config_val("my_custom_key1", True)
+    assert new_template_usr.get_user_config_bool("my_custom_key1") == True
+    new_template_usr.set_user_config_val("my_custom_key2", 10)
+    assert new_template_usr.get_user_config_int("my_custom_key2") == 10
+    new_template_usr.set_user_config_val("my_custom_key3", 5.8)
+    assert new_template_usr.get_user_config_double("my_custom_key3") == 5.8
+    new_template_usr.set_user_config_val("my_custom_key4", mn.Vector3(1.0, -2.8, 3.0))
+    assert new_template_usr.get_user_config_vec3("my_custom_key4") == mn.Vector3(
+        1.0, -2.8, 3.0
+    )
+
+    quat_val = mn.Quaternion.rotation(mn.Deg(-115), mn.Vector3.y_axis())
+    new_template_usr.set_user_config_val("my_custom_key5", quat_val)
+
+    assert new_template_usr.num_user_configs == 6
+
+    # add new template - should use template-specified name as handle
+    usr_tmplt_ID = attr_mgr.register_template(new_template_usr, "")
+    assert usr_tmplt_ID != -1
+    #
+
+    reg_template_usr = attr_mgr.get_template_by_handle(usr_template_handle)
+    assert reg_template_usr != None
+    assert reg_template_usr.num_user_configs == new_template_usr.num_user_configs
+
+    assert (
+        reg_template_usr.get_user_config_string("my_custom_key0") == "my_custom_string"
+    )
+    assert reg_template_usr.get_user_config_bool("my_custom_key1") == True
+    assert reg_template_usr.get_user_config_int("my_custom_key2") == 10
+    assert reg_template_usr.get_user_config_double("my_custom_key3") == 5.8
+    assert reg_template_usr.get_user_config_vec3("my_custom_key4") == mn.Vector3(
+        1.0, -2.8, 3.0
+    )
+    assert reg_template_usr.get_user_config_quat("my_custom_key5") == quat_val
+
+    rmv_template_usr = attr_mgr.remove_template_by_handle(usr_template_handle)
+    assert rmv_template_usr != None
+
+    assert new_template_usr.handle == rmv_template_usr.handle
+    assert new_template_usr.template_id == rmv_template_usr.template_id
     # get new size of library after remove and verify same as original
     curr_num_templates = attr_mgr.get_num_templates()
     assert curr_num_templates == orig_num_templates

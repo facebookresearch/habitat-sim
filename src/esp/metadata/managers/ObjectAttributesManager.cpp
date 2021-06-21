@@ -29,8 +29,7 @@ ObjectAttributesManager::createPrimBasedAttributesTemplate(
   // verify that a primitive asset with the given handle exists
   if (!this->isValidPrimitiveAttributes(primAttrTemplateHandle)) {
     LOG(ERROR)
-        << "ObjectAttributesManager::createPrimBasedAttributesTemplate : No "
-           "primitive with handle '"
+        << "::createPrimBasedAttributesTemplate : No primitive with handle '"
         << primAttrTemplateHandle
         << "' exists so cannot build physical object.  Aborting.";
     return nullptr;
@@ -125,6 +124,10 @@ void ObjectAttributesManager::setValsFromJSONDoc(
       });
   // if com is set from json, don't compute from shape, and vice versa
   objAttributes->setComputeCOMFromShape(!comIsSet);
+
+  // check for user defined attributes
+  this->parseUserDefinedJsonVals(objAttributes, jsonConfig);
+
 }  // ObjectAttributesManager::setValsFromJSONDoc
 
 ObjectAttributes::ptr ObjectAttributesManager::initNewObjectInternal(
@@ -187,8 +190,7 @@ int ObjectAttributesManager::registerObjectFinalize(
     bool forceRegistration) {
   if (objectTemplate->getRenderAssetHandle() == "") {
     LOG(ERROR)
-        << "ObjectAttributesManager::registerObjectFinalize : "
-           "Attributes template named "
+        << "::registerObjectFinalize : Attributes template named "
         << objectTemplateHandle
         << " does not have a valid render asset handle specified. Aborting.";
     return ID_UNDEFINED;
@@ -214,8 +216,7 @@ int ObjectAttributesManager::registerObjectFinalize(
   } else if (forceRegistration) {
     // Forcing registration in case of computationaly generated assets
     LOG(WARNING)
-        << "ObjectAttributesManager::registerObjectFinalize "
-           ": Render asset template handle : "
+        << "::registerObjectFinalize : Render asset template handle : "
         << renderAssetHandle << " specified in object template with handle : "
         << objectTemplateHandle
         << " does not correspond to any existing file or primitive render "
@@ -226,8 +227,7 @@ int ObjectAttributesManager::registerObjectFinalize(
     // attributes template hande, fail
     // by here always fail
     LOG(ERROR)
-        << "ObjectAttributesManager::registerObjectFinalize "
-           ": Render asset template handle : "
+        << "::registerObjectFinalize : Render asset template handle : "
         << renderAssetHandle << " specified in object template with handle : "
         << objectTemplateHandle
         << " does not correspond to any existing file or primitive render "
@@ -246,8 +246,7 @@ int ObjectAttributesManager::registerObjectFinalize(
   } else {
     // Else, means no collision data specified, use specified render data
     LOG(INFO)
-        << "ObjectAttributesManager::registerObjectFinalize "
-           ": Collision asset template handle : "
+        << "::registerObjectFinalize : Collision asset template handle : "
         << collisionAssetHandle
         << " specified in object template with handle : "
         << objectTemplateHandle

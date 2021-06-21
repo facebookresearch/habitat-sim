@@ -50,7 +50,9 @@ class SceneAttributesManager
       : AttributesManager<attributes::SceneAttributes,
                           core::ManagedObjectAccess::Copy>::
             AttributesManager("Scene Instance", "scene_instance.json") {
-    buildCtorFuncPtrMaps();
+    // build this manager's copy constructor map
+    this->copyConstructorMap_["SceneAttributes"] =
+        &SceneAttributesManager::createObjectCopy<attributes::SceneAttributes>;
   }
 
   /**
@@ -91,6 +93,15 @@ class SceneAttributesManager
     return attributes::SceneObjectInstanceAttributes::create(handle);
   }
 
+  /**
+   * @brief This will return a @ref
+   * attributes::SceneObjectInstanceAttributes object with passed handle.
+   */
+  attributes::SceneAOInstanceAttributes::ptr createEmptyAOInstanceAttributes(
+      const std::string& handle) {
+    return attributes::SceneAOInstanceAttributes::create(handle);
+  }
+
  protected:
   /**
    * @brief Gets the int value of the appropriate enum corresponding to the
@@ -100,7 +111,7 @@ class SceneAttributesManager
    * @param jsonDoc document where value may be specified.
    * @return the int value to set for translation_origin in instance attributes.
    */
-  int getTranslationOriginVal(const io::JsonGenericValue& jsonDoc);
+  int getTranslationOriginVal(const io::JsonGenericValue& jsonDoc) const;
 
   /**
    * @brief Used Internally.  Create a @ref
@@ -113,6 +124,30 @@ class SceneAttributesManager
    */
   attributes::SceneObjectInstanceAttributes::ptr
   createInstanceAttributesFromJSON(const io::JsonGenericValue& jCell);
+
+  /**
+   * @brief Used Internally.  Create a @ref
+   * esp::metadata::attributes::SceneAOInstanceAttributes object from the
+   * passed JSON doc, describing the initial state of an instance of an
+   * articulated object.
+   * @param jCell JSON object containing the description of the articulated
+   * object instance.
+   * @return the constructed @ref
+   * esp::metadata::attributes::SceneAOInstanceAttributes object
+   */
+  attributes::SceneAOInstanceAttributes::ptr createAOInstanceAttributesFromJSON(
+      const io::JsonGenericValue& jCell);
+
+  /**
+   * @brief Populate an existing @ref
+   * metadata::attributes::SceneObjectInstanceAttributes from a JSON config.
+   *
+   * @param attributes the attributes to populate with JSON values
+   * @param jCell JSON document to parse
+   */
+  void loadAbstractObjectAttributesFromJson(
+      const attributes::SceneObjectInstanceAttributes::ptr& attributes,
+      const io::JsonGenericValue& jCell) const;
 
   /**
    * @brief Used Internally.  Create and configure newly-created scene instance
@@ -133,13 +168,14 @@ class SceneAttributesManager
    * @brief This method will perform any necessary updating that is
    * attributesManager-specific upon template removal, such as removing a
    * specific template handle from the list of file-based template handles in
-   * ObjectAttributesManager.  This should only be called internally.
+   * ObjectAttributesManager.  This should only be called @ref
+   * esp::core::ManagedContainerBase.
    *
    * @param templateID the ID of the template to remove
    * @param templateHandle the string key of the attributes desired.
    */
 
-  void updateObjectHandleLists(
+  void deleteObjectInternalFinalize(
       CORRADE_UNUSED int templateID,
       CORRADE_UNUSED const std::string& templateHandle) override {}
 
@@ -165,19 +201,6 @@ class SceneAttributesManager
   int registerObjectFinalize(attributes::SceneAttributes::ptr sceneAttributes,
                              const std::string& sceneAttributesHandle,
                              CORRADE_UNUSED bool forceRegistration) override;
-
-  /**
-   * @brief This function will assign the appropriately configured function
-   * pointer for the copy constructor as required by
-   * AttributesManager<PhysicsSceneAttributes::ptr>
-   *
-   * NOTE : currently this will only perform a shallow copy of the
-   * SceneAttributes.
-   */
-  void buildCtorFuncPtrMaps() override {
-    this->copyConstructorMap_["SceneAttributes"] =
-        &SceneAttributesManager::createObjectCopy<attributes::SceneAttributes>;
-  }  // SceneAttributesManager::buildCtorFuncPtrMaps
 
   /**
    * @brief This function is meaningless for this manager's ManagedObjects.

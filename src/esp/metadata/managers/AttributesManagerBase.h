@@ -11,7 +11,7 @@
 
 #include "esp/metadata/attributes/AttributesBase.h"
 
-#include "esp/core/ManagedContainer.h"
+#include "esp/core/managedContainers/ManagedFileBasedContainer.h"
 #include "esp/io/io.h"
 
 namespace Cr = Corrade;
@@ -19,7 +19,7 @@ namespace Cr = Corrade;
 namespace esp {
 namespace core {
 enum class ManagedObjectAccess;
-class ManagedContainerBase;
+class ManagedFileBasedContainerBase;
 }  // namespace core
 namespace metadata {
 namespace managers {
@@ -35,7 +35,8 @@ namespace managers {
  * themselves.
  */
 template <class T, core::ManagedObjectAccess Access>
-class AttributesManager : public esp::core::ManagedContainer<T, Access> {
+class AttributesManager
+    : public esp::core::ManagedFileBasedContainer<T, Access> {
  public:
   static_assert(std::is_base_of<attributes::AbstractAttributes, T>::value,
                 "AttributesManager :: Managed object type must be derived from "
@@ -44,7 +45,8 @@ class AttributesManager : public esp::core::ManagedContainer<T, Access> {
   typedef std::shared_ptr<T> AttribsPtr;
 
   AttributesManager(const std::string& attrType, const std::string& JSONTypeExt)
-      : esp::core::ManagedContainer<T, Access>::ManagedContainer(attrType),
+      : esp::core::ManagedFileBasedContainer<T, Access>::
+            ManagedFileBasedContainer(attrType),
         JSONTypeExt_(JSONTypeExt) {}
   ~AttributesManager() override = default;
 
@@ -79,19 +81,63 @@ class AttributesManager : public esp::core::ManagedContainer<T, Access> {
    * templates.
    * @return A list of template indices for loaded valid configs
    */
-  std::vector<int> loadAllConfigsFromPath(const std::string& path,
-                                          bool saveAsDefaults = false);
+  std::vector<int> loadAllJSONConfigsFromPath(const std::string& path,
+                                              bool saveAsDefaults = false) {
+    return this->loadAllTemplatesFromPathAndExt(path, this->JSONTypeExt_,
+                                                saveAsDefaults);
+  }
 
   /**
-   * @brief This builds a list of paths to this type of attributes's file from a
-   * JSON element.  It then will load all the configs it finds at each path.
+   * @brief Load file-based templates for all @p extType files from the provided
+   * file or directory path.
+   *
+   * This will take the passed @p path string and either treat it as a file
+   * name or a directory, depending on what is found in the filesystem. If @p
+   * path does not end with @p extType, it will append this and check to
+   * see if such a file exists, and load it. It will also check if @p path
+   * exists as a directory, and if so will perform a shallow search to find any
+   * files ending in @p extType and load those that are found.
+   *
+   * @param path A global path to configuration files or a directory containing
+   * such files.
+   * @param extType The extension of files to be attempted to be loaded as
+   * templates.
+   * @param saveAsDefaults Set the templates loaded as undeleteable default
+   * templates.
+   * @return A list of template indices for loaded valid configs
+   */
+  std::vector<int> loadAllTemplatesFromPathAndExt(const std::string& path,
+                                                  const std::string& extType,
+                                                  bool saveAsDefaults = false);
+
+  /**
+   * @brief This builds a list of paths to this type of attributes's JSON Config
+   * files from the passed @p jsonPaths array element.  It then will load all
+   * the configs it finds at each path.
    * @param configDir The directory to use as a root to search in - may be
-   * different than the config already listed in this manager.
+   * different than the config dir already listed in this manager.
    * @param jsonPaths The json array element
    */
 
-  void buildCfgPathsFromJSONAndLoad(const std::string& configDir,
-                                    const io::JsonGenericValue& jsonPaths);
+  void buildJSONCfgPathsFromJSONAndLoad(const std::string& configDir,
+                                        const io::JsonGenericValue& jsonPaths) {
+    this->buildAttrSrcPathsFromJSONAndLoad(configDir, this->JSONTypeExt_,
+                                           jsonPaths);
+  }
+
+  /**
+   * @brief This builds a list of paths to the @p extType files to use to
+   * construct templates derived from the passed @p jsonPaths array element.  It
+   * then will load all the configs it finds at each path.
+   * @param configDir The directory to use as a root to search in - may be
+   * different than the config dir already listed in this manager.
+   * @param extType The extension of files to be attempted to be loaded as
+   * templates.
+   * @param jsonPaths The json array element
+   */
+  void buildAttrSrcPathsFromJSONAndLoad(const std::string& configDir,
+                                        const std::string& extType,
+                                        const io::JsonGenericValue& jsonPaths);
 
   /**
    * @brief Check if currently configured primitive asset template library has
@@ -121,7 +167,7 @@ class AttributesManager : public esp::core::ManagedContainer<T, Access> {
     // set the values for this attributes from the json config.
     this->setValsFromJSONDoc(attributes, jsonConfig);
     return attributes;
-  }  // AttributesManager<T>::buildObjectFromJSONDoc
+  }  // AttributesManager<T, Access>::buildObjectFromJSONDoc
 
   /**
    * @brief Method to take an existing attributes and set its values from passed
@@ -131,16 +177,29 @@ class AttributesManager : public esp::core::ManagedContainer<T, Access> {
    */
   virtual void setValsFromJSONDoc(AttribsPtr attribs,
                                   const io::JsonGenericValue& jsonConfig) = 0;
+
   /**
-   * @brief Return a properly formated JSON file name for the attributes managed
-   * by this manager.  This will change the extension to the appropriate json
-   * extension.
+   * @brief This function takes the json block specifying user-defined values
+   * and parses it into the passed existing attributes.
+   * @param attribs (out) an existing attributes to be modified.
+   * @param jsonConfig json document to parse
+   * @return true if tag is found, of appropriate configuration, and holds
+   * actual values.
+   */
+  bool parseUserDefinedJsonVals(
+      const attributes::AbstractAttributes::ptr& attribs,
+      const io::JsonGenericValue& jsonConfig) const;
+
+  /**
+   * @brief Return a properly formated JSON file name for the attributes
+   * managed by this manager.  This will change the extension to the
+   * appropriate json extension.
    * @param filename The original filename
    * @return a candidate JSON file name for the attributes managed by this
    * manager.
    */
   std::string getFormattedJSONFileName(const std::string& filename) {
-    return this->convertFilenameToJSON(filename, this->JSONTypeExt_);
+    return this->convertFilenameToPassedExt(filename, this->JSONTypeExt_);
   }
 
  protected:
@@ -167,7 +226,7 @@ class AttributesManager : public esp::core::ManagedContainer<T, Access> {
   const std::string JSONTypeExt_;
 
  public:
-  ESP_SMART_POINTERS(AttributesManager<T, Access>);
+  ESP_SMART_POINTERS(AttributesManager<T, Access>)
 
 };  // class AttributesManager
 
@@ -180,16 +239,19 @@ std::vector<int> AttributesManager<T, Access>::loadAllFileBasedTemplates(
   std::vector<int> templateIndices(paths.size(), ID_UNDEFINED);
   if (paths.size() > 0) {
     std::string dir = Cr::Utility::Directory::path(paths[0]);
-    LOG(INFO) << "AttributesManager::loadAllFileBasedTemplates : Loading "
-              << paths.size() << " " << this->objectType_
-              << " templates found in " << dir;
+    LOG(INFO) << "<" << this->objectType_
+              << ">::loadAllFileBasedTemplates : Loading " << paths.size()
+              << " " << this->objectType_ << " templates found in " << dir;
     for (int i = 0; i < paths.size(); ++i) {
       auto attributesFilename = paths[i];
-      LOG(INFO) << "AttributesManager::loadAllFileBasedTemplates : Load "
-                << this->objectType_ << " template: "
+      LOG(INFO) << "::loadAllFileBasedTemplates : Load " << this->objectType_
+                << " template: "
                 << Cr::Utility::Directory::filename(attributesFilename);
-      auto tmplt = this->createObjectFromJSONFile(attributesFilename, true);
-
+      auto tmplt = this->createObject(attributesFilename, true);
+      // If failed to load, do not attempt to modify further
+      if (tmplt == nullptr) {
+        continue;
+      }
       // save handles in list of defaults, so they are not removed, if desired.
       if (saveAsDefaults) {
         std::string tmpltHandle = tmplt->getHandle();
@@ -198,41 +260,46 @@ std::vector<int> AttributesManager<T, Access>::loadAllFileBasedTemplates(
       templateIndices[i] = tmplt->getID();
     }
   }
-  LOG(INFO)
-      << "AttributesManager::loadAllFileBasedTemplates : Loaded file-based "
-      << this->objectType_ << " templates: " << std::to_string(paths.size());
+  LOG(INFO) << "<" << this->objectType_
+            << ">::loadAllFileBasedTemplates : Loaded file-based templates: "
+            << std::to_string(paths.size());
   return templateIndices;
-}  // AttributesManager<T>::loadAllObjectTemplates
+}  // AttributesManager<T, Access>::loadAllObjectTemplates
 
 template <class T, core::ManagedObjectAccess Access>
-std::vector<int> AttributesManager<T, Access>::loadAllConfigsFromPath(
+std::vector<int> AttributesManager<T, Access>::loadAllTemplatesFromPathAndExt(
     const std::string& path,
+    const std::string& extType,
     bool saveAsDefaults) {
+  namespace Dir = Cr::Utility::Directory;
   std::vector<std::string> paths;
   std::vector<int> templateIndices;
-  namespace Dir = Cr::Utility::Directory;
 
   // Check if directory
   const bool dirExists = Dir::isDirectory(path);
   if (dirExists) {
-    LOG(INFO) << "AttributesManager::loadAllConfigsFromPath : Parsing "
-              << this->objectType_ << " library directory: " + path;
+    LOG(INFO) << "<" << this->objectType_
+              << ">::loadAllTemplatesFromPathAndExt <" << extType
+              << "> : Parsing " << this->objectType_
+              << " library directory: " + path + " for \'" + extType +
+                     "\' files";
     for (auto& file : Dir::list(path, Dir::Flag::SortAscending)) {
       std::string absoluteSubfilePath = Dir::join(path, file);
-      if (Cr::Utility::String::endsWith(absoluteSubfilePath,
-                                        this->JSONTypeExt_)) {
+      if (Cr::Utility::String::endsWith(absoluteSubfilePath, extType)) {
         paths.push_back(absoluteSubfilePath);
       }
     }
   } else {
     // not a directory, perhaps a file
-    std::string attributesFilepath = getFormattedJSONFileName(path);
+    std::string attributesFilepath =
+        this->convertFilenameToPassedExt(path, extType);
     const bool fileExists = Dir::exists(attributesFilepath);
 
     if (fileExists) {
       paths.push_back(attributesFilepath);
     } else {  // neither a directory or a file
-      LOG(WARNING) << "AttributesManager::loadAllConfigsFromPath : Parsing "
+      LOG(WARNING) << "<" << this->objectType_
+                   << ">::loadAllTemplatesFromPathAndExt : Parsing "
                    << this->objectType_ << " : Cannot find " << path
                    << " as directory or " << attributesFilepath
                    << " as config file. Aborting parse.";
@@ -244,30 +311,41 @@ std::vector<int> AttributesManager<T, Access>::loadAllConfigsFromPath(
   templateIndices = this->loadAllFileBasedTemplates(paths, saveAsDefaults);
 
   return templateIndices;
-}  // AttributesManager<T>::loadAllConfigsFromPath
+}  // AttributesManager<T, Access>::loadAllTemplatesFromPathAndExt
 
 template <class T, core::ManagedObjectAccess Access>
-void AttributesManager<T, Access>::buildCfgPathsFromJSONAndLoad(
+void AttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad(
     const std::string& configDir,
-    const io::JsonGenericValue& jsonPaths) {
-  for (rapidjson::SizeType i = 0; i < jsonPaths.Size(); ++i) {
-    if (!jsonPaths[i].IsString()) {
-      LOG(ERROR)
-          << "AttributesManager::buildCfgPathsFromJSONAndLoad : Invalid path "
-             "value in configuration array element @ idx "
-          << i << ". Skipping.";
+    const std::string& extType,
+    const io::JsonGenericValue& filePaths) {
+  for (rapidjson::SizeType i = 0; i < filePaths.Size(); ++i) {
+    if (!filePaths[i].IsString()) {
+      LOG(ERROR) << "::buildAttrSrcPathsFromJSONAndLoad : "
+                    "Invalid path "
+                    "value in file path array element @ idx "
+                 << i << ". Skipping.";
       continue;
     }
     std::string absolutePath =
-        Cr::Utility::Directory::join(configDir, jsonPaths[i].GetString());
-    // load all object templates available as configs in absolutePath
-    this->loadAllConfigsFromPath(absolutePath, true);
+        Cr::Utility::Directory::join(configDir, filePaths[i].GetString());
+    std::vector<std::string> globPaths = io::globDirs(absolutePath);
+    if (globPaths.size() > 0) {
+      for (const auto& globPath : globPaths) {
+        // load all object templates available as configs in absolutePath
+        LOG(WARNING) << "Glob path result for " << absolutePath << " : "
+                     << globPath;
+        this->loadAllTemplatesFromPathAndExt(globPath, extType, true);
+      }
+    } else {
+      LOG(WARNING) << "No Glob path result for " << absolutePath;
+    }
   }
-  LOG(INFO) << "AttributesManager::buildCfgPathsFromJSONAndLoad : "
-            << std::to_string(jsonPaths.Size())
+  LOG(INFO) << "<" << this->objectType_
+            << ">::buildAttrSrcPathsFromJSONAndLoad : "
+            << std::to_string(filePaths.Size())
             << " paths specified in JSON doc for " << this->objectType_
             << " templates.";
-}  // AttributesManager<T>::buildCfgPathsFromJSONAndLoad
+}  // AttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad
 
 template <class T, core::ManagedObjectAccess Access>
 auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
@@ -275,8 +353,8 @@ auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
     std::string& msg,
     bool registerObj) -> AttribsPtr {
   AttribsPtr attrs;
-  // Modify the passed filename to have the format of a legitimate configuration
-  // file for this Attributes by changing the extension
+  // Modify the passed filename to have the format of a legitimate
+  // configuration file for this Attributes by changing the extension
   std::string jsonAttrFileName =
       (Cr::Utility::String::endsWith(filename, this->JSONTypeExt_)
            ? filename
@@ -284,23 +362,24 @@ auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
   // Check if this configuration file exists and if so use it to build
   // attributes
   bool jsonFileExists = (this->isValidFileName(jsonAttrFileName));
-  LOG(INFO) << "AttributesManager<T>::createFromJsonOrDefaultInternal  ("
-            << this->objectType_
-            << ") : Proposing JSON name : " << jsonAttrFileName
-            << " from original name : " << filename << " | This file "
+  LOG(INFO) << "<" << this->objectType_
+            << ">::createFromJsonOrDefaultInternal : Proposing JSON name : "
+            << jsonAttrFileName << " from original name : " << filename
+            << " | This file "
             << (jsonFileExists ? " exists." : " does not exist.");
   if (jsonFileExists) {
     // configuration file exists with requested name, use to build Attributes
     attrs = this->createObjectFromJSONFile(jsonAttrFileName, registerObj);
     msg = "JSON Configuration File (" + jsonAttrFileName + ") based";
   } else {
-    // An existing, valid configuration file could not be found using the passed
-    // filename.
-    // Currently non-JSON filenames are used to create new, default attributes.
+    // An existing, valid configuration file could not be found using the
+    // passed filename. Currently non-JSON filenames are used to create new,
+    // default attributes.
     attrs = this->createDefaultObject(filename, registerObj);
     // check if original filename is an actual object
     bool fileExists = (this->isValidFileName(filename));
-    // if filename passed is name of some kind of asset, or if it was not found
+    // if filename passed is name of some kind of asset, or if it was not
+    // found
     if (fileExists) {
       msg = "File (" + filename +
             ") exists but is not a recognized config filename extension, so "
@@ -310,7 +389,93 @@ auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
     }
   }
   return attrs;
-}  // AttributesManager<T>::createFromJsonFileOrDefaultInternal
+}  // AttributesManager<T, Access>::createFromJsonFileOrDefaultInternal
+
+template <class T, core::ManagedObjectAccess Access>
+bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
+    const attributes::AbstractAttributes::ptr& attribs,
+    const io::JsonGenericValue& jsonConfig) const {
+  // check for user defined attributes
+  if (jsonConfig.HasMember("user_defined")) {
+    if (!jsonConfig["user_defined"].IsObject()) {
+      LOG(WARNING) << "<" << this->objectType_
+                   << ">::parseUserDefinedJsonVals : "
+                   << attribs->getSimplifiedHandle()
+                   << " attributes specifies user_defined attributes but they "
+                      "are not of the correct format. Skipping.";
+      return false;
+    } else {
+      const auto& userObj = jsonConfig["user_defined"];
+      // count number of valid user config settings found
+      int numConfigSettings = 0;
+      // jsonConfig is the json object referenced by the tag "user_defined" in
+      // the original config file.  By here it is guaranteed to be a json
+      // object.
+      for (rapidjson::Value::ConstMemberIterator it = userObj.MemberBegin();
+           it != userObj.MemberEnd(); ++it) {
+        // for each key, attempt to parse
+        const std::string key = it->name.GetString();
+        const auto& obj = it->value;
+        // increment, assuming is valid object
+        ++numConfigSettings;
+        if (obj.IsFloat()) {
+          attribs->setUserConfigValue(key, obj.GetFloat());
+        } else if (obj.IsDouble()) {
+          attribs->setUserConfigValue(key, obj.GetDouble());
+        } else if (obj.IsNumber()) {
+          attribs->setUserConfigValue(key, obj.Get<int>());
+        } else if (obj.IsString()) {
+          attribs->setUserConfigValue(key, obj.GetString());
+        } else if (obj.IsBool()) {
+          attribs->setUserConfigValue(key, obj.GetBool());
+        } else if (obj.IsArray() && obj.Size() > 0 && obj[0].IsNumber()) {
+          // numeric vector or quaternion
+          if (obj.Size() == 3) {
+            Magnum::Vector3 val{};
+            if (io::fromJsonValue(obj, val)) {
+              attribs->setUserConfigValue(key, val);
+            }
+          } else if (obj.Size() == 4) {
+            // assume is quaternion
+            Magnum::Quaternion val{};
+            if (io::fromJsonValue(obj, val)) {
+              attribs->setUserConfigValue(key, val);
+            }
+          } else {
+            // decrement count for key:obj due to not being handled vector
+            --numConfigSettings;
+            // TODO support numeric array in JSON
+            LOG(WARNING)
+                << "<" << this->objectType_
+                << ">::parseUserDefinedJsonVals : For "
+                << attribs->getSimplifiedHandle()
+                << " attributes, user_defined config cell in JSON document "
+                   "contains key "
+                << key
+                << " referencing an unsupported numeric array of length : "
+                << obj.Size() << " so skipping.";
+          }
+        } else {
+          // TODO support other types?
+          // decrement count for key:obj due to not being handled type
+          --numConfigSettings;
+          LOG(WARNING)
+              << "<" << this->objectType_
+              << ">::parseUserDefinedJsonVals : For "
+              << attribs->getSimplifiedHandle()
+              << " attributes, user_defined config cell in JSON document "
+                 "contains key "
+              << key
+              << " referencing an unknown/unparsable value, so skipping this "
+                 "key.";
+        }
+      }
+      // whether or not any valid configs were found
+      return (numConfigSettings > 0);
+    }
+  }  // if has user_defined tag
+  return false;
+}  // AttributesManager<T, Access>::parseUserDefinedJsonVals
 
 }  // namespace managers
 }  // namespace metadata

@@ -41,11 +41,6 @@ def get_obs(sim, show, save):
     return obs
 
 
-def remove_all_objects(sim):
-    for id_ in sim.get_existing_object_ids():
-        sim.remove_object(id_)
-
-
 def place_agent(sim):
     # place our agent in the scene
     agent_state = habitat_sim.AgentState()
@@ -99,7 +94,7 @@ def main(show_imgs=True, save_imgs=False):
 
     # create and register new light setup:
     my_scene_lighting_setup = [
-        LightInfo(vector=[0.0, 2.0, 0.6, 0.0], model=LightPositionModel.GLOBAL)
+        LightInfo(vector=[0.0, 2.0, 0.6, 0.0], model=LightPositionModel.Global)
     ]
     sim.set_light_setup(my_scene_lighting_setup, "my_scene_lighting")
 
@@ -120,19 +115,24 @@ def main(show_imgs=True, save_imgs=False):
 
     # [example 2]
 
-    # get the physics object attributes manager
-    obj_templates_mgr = sim.get_object_template_manager()
+    # get the rigid object attributes manager, which manages
+    # templates used to create objects
+    obj_template_mgr = sim.get_object_template_manager()
+    # get the rigid object manager, which provides direct
+    # access to objects
+    rigid_obj_mgr = sim.get_rigid_object_manager()
 
     # load some object templates from configuration files
-    sphere_template_id = obj_templates_mgr.load_configs(
+    sphere_template_id = obj_template_mgr.load_configs(
         str(os.path.join(data_path, "test_assets/objects/sphere"))
     )[0]
-    chair_template_id = obj_templates_mgr.load_configs(
+    chair_template_id = obj_template_mgr.load_configs(
         str(os.path.join(data_path, "test_assets/objects/chair"))
     )[0]
 
-    id_1 = sim.add_object(sphere_template_id)
-    sim.set_translation([3.2, 0.23, 0.03], id_1)
+    # create a sphere and place it at a desired location
+    obj_1 = rigid_obj_mgr.add_object_by_template_id(sphere_template_id)
+    obj_1.translation = [3.2, 0.23, 0.03]
 
     get_obs(sim, show_imgs, save_imgs)
 
@@ -142,7 +142,7 @@ def main(show_imgs=True, save_imgs=False):
 
     # create a custom light setup
     my_default_lighting = [
-        LightInfo(vector=[2.0, 2.0, 1.0, 0.0], model=LightPositionModel.CAMERA)
+        LightInfo(vector=[2.0, 2.0, 1.0, 0.0], model=LightPositionModel.Camera)
     ]
     # overwrite the default DEFAULT_LIGHTING_KEY light setup
     sim.set_light_setup(my_default_lighting)
@@ -152,9 +152,11 @@ def main(show_imgs=True, save_imgs=False):
     # [/example 3]
 
     # [example 4]
-    id_2 = sim.add_object(chair_template_id)
-    sim.set_rotation(mn.Quaternion.rotation(mn.Deg(-115), mn.Vector3.y_axis()), id_2)
-    sim.set_translation([3.06, 0.47, 1.15], id_2)
+
+    # create a chair and place it at a location with a specified orientation
+    obj_2 = rigid_obj_mgr.add_object_by_template_id(chair_template_id)
+    obj_2.rotation = mn.Quaternion.rotation(mn.Deg(-115), mn.Vector3.y_axis())
+    obj_2.translation = [3.06, 0.47, 1.15]
 
     get_obs(sim, show_imgs, save_imgs)
 
@@ -165,24 +167,29 @@ def main(show_imgs=True, save_imgs=False):
         LightInfo(
             vector=[2.0, 1.5, 5.0, 1.0],
             color=[0.0, 100.0, 100.0],
-            model=LightPositionModel.GLOBAL,
+            model=LightPositionModel.Global,
         )
     ]
     sim.set_light_setup(light_setup_2, "my_custom_lighting")
 
     # [/example 5]
 
-    remove_all_objects(sim)
+    rigid_obj_mgr.remove_all_objects()
 
     # [example 6]
 
-    id_1 = sim.add_object(chair_template_id, light_setup_key="my_custom_lighting")
-    sim.set_rotation(mn.Quaternion.rotation(mn.Deg(-115), mn.Vector3.y_axis()), id_1)
-    sim.set_translation([3.06, 0.47, 1.15], id_1)
+    # create and place 2 chairs with custom light setups
+    chair_1 = rigid_obj_mgr.add_object_by_template_id(
+        chair_template_id, light_setup_key="my_custom_lighting"
+    )
+    chair_1.rotation = mn.Quaternion.rotation(mn.Deg(-115), mn.Vector3.y_axis())
+    chair_1.translation = [3.06, 0.47, 1.15]
 
-    id_2 = sim.add_object(chair_template_id, light_setup_key="my_custom_lighting")
-    sim.set_rotation(mn.Quaternion.rotation(mn.Deg(50), mn.Vector3.y_axis()), id_2)
-    sim.set_translation([3.45927, 0.47, -0.624958], id_2)
+    chair_2 = rigid_obj_mgr.add_object_by_template_id(
+        chair_template_id, light_setup_key="my_custom_lighting"
+    )
+    chair_2.rotation = mn.Quaternion.rotation(mn.Deg(50), mn.Vector3.y_axis())
+    chair_2.translation = [3.45927, 0.47, -0.624958]
 
     get_obs(sim, show_imgs, save_imgs)
 
@@ -196,7 +203,7 @@ def main(show_imgs=True, save_imgs=False):
         LightInfo(
             vector=[0.0, 0.0, 1.0, 0.0],
             color=[1.6, 1.6, 1.4],
-            model=LightPositionModel.CAMERA,
+            model=LightPositionModel.Camera,
         )
     ]
 
@@ -215,7 +222,7 @@ def main(show_imgs=True, save_imgs=False):
     # [/example 8]
 
     # [example 9]
-    sim.set_object_light_setup(id_1, habitat_sim.gfx.DEFAULT_LIGHTING_KEY)
+    chair_1.set_light_setup(habitat_sim.gfx.DEFAULT_LIGHTING_KEY)
 
     get_obs(sim, show_imgs, save_imgs)
 

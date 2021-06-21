@@ -31,18 +31,16 @@ StageAttributesManager::StageAttributesManager(
       objectAttributesMgr_(std::move(objectAttributesMgr)),
       physicsAttributesManager_(std::move(physicsAttributesManager)),
       cfgLightSetup_(NO_LIGHT_KEY) {
-  buildCtorFuncPtrMaps();
-}  // StageAttributesManager ctor
-
-void StageAttributesManager::buildCtorFuncPtrMaps() {
+  // build this manager's copy constructor map
   this->copyConstructorMap_["StageAttributes"] =
       &StageAttributesManager::createObjectCopy<attributes::StageAttributes>;
   // create none-type stage attributes and set as undeletable
   // based on default
-  auto tmplt = this->createDefaultObject("NONE", true);
+  auto tmplt = this->postCreateRegister(
+      StageAttributesManager::initNewObjectInternal("NONE", false), true);
   std::string tmpltHandle = tmplt->getHandle();
   this->undeletableObjectNames_.insert(tmpltHandle);
-}  // StageAttributesManager::buildCtorFuncPtrMaps
+}  // StageAttributesManager::ctor
 
 int StageAttributesManager::registerObjectFinalize(
     StageAttributes::ptr stageAttributes,
@@ -50,8 +48,7 @@ int StageAttributesManager::registerObjectFinalize(
     bool forceRegistration) {
   if (stageAttributes->getRenderAssetHandle() == "") {
     LOG(ERROR)
-        << "StageAttributesManager::registerObjectFinalize : "
-           "Attributes template named "
+        << "::registerObjectFinalize : Attributes template named "
         << stageAttributesHandle
         << " does not have a valid render asset handle specified. Aborting.";
     return ID_UNDEFINED;
@@ -62,7 +59,7 @@ int StageAttributesManager::registerObjectFinalize(
   std::string collisionAssetHandle = stageAttributes->getCollisionAssetHandle();
 
   // verify these represent legitimate assets
-  if (this->isValidPrimitiveAttributes(renderAssetHandle)) {
+  if (StageAttributesManager::isValidPrimitiveAttributes(renderAssetHandle)) {
     // If renderAssetHandle corresponds to valid/existing primitive attributes
     // then setRenderAssetIsPrimitive to true and set map of IDs->Names to
     // physicsSynthObjTmpltLibByID_
@@ -79,8 +76,7 @@ int StageAttributesManager::registerObjectFinalize(
     stageAttributes->setRenderAssetIsPrimitive(false);
   } else if (forceRegistration) {
     LOG(WARNING)
-        << "StageAttributesManager::registerObjectFinalize "
-           ": Render asset template handle : "
+        << "::registerObjectFinalize : Render asset template handle : "
         << renderAssetHandle << " specified in stage template with handle : "
         << stageAttributesHandle
         << " does not correspond to any existing file or primitive render "
@@ -88,8 +84,7 @@ int StageAttributesManager::registerObjectFinalize(
   } else {
     // If renderAssetHandle is not valid file name needs to  fail
     LOG(ERROR)
-        << "StageAttributesManager::registerObjectFinalize "
-           ": Render asset template handle : "
+        << "::registerObjectFinalize : Render asset template handle : "
         << renderAssetHandle << " specified in stage template with handle : "
         << stageAttributesHandle
         << " does not correspond to any existing file or primitive render "
@@ -97,7 +92,8 @@ int StageAttributesManager::registerObjectFinalize(
     return ID_UNDEFINED;
   }
 
-  if (this->isValidPrimitiveAttributes(collisionAssetHandle)) {
+  if (StageAttributesManager::isValidPrimitiveAttributes(
+          collisionAssetHandle)) {
     // If collisionAssetHandle corresponds to valid/existing primitive
     // attributes then setCollisionAssetIsPrimitive to true
     stageAttributes->setCollisionAssetIsPrimitive(true);
@@ -113,8 +109,7 @@ int StageAttributesManager::registerObjectFinalize(
   } else {
     // Else, means no collision data specified, use specified render data
     LOG(INFO)
-        << "StageAttributesManager::registerObjectFinalize "
-           ": Collision asset template handle : "
+        << "::registerObjectFinalize : Collision asset template handle : "
         << collisionAssetHandle << " specified in stage template with handle : "
         << stageAttributesHandle
         << " does not correspond to any existing file or primitive render "
@@ -140,10 +135,9 @@ StageAttributes::ptr StageAttributesManager::createPrimBasedAttributesTemplate(
     const std::string& primAssetHandle,
     bool registerTemplate) {
   // verify that a primitive asset with the given handle exists
-  if (!this->isValidPrimitiveAttributes(primAssetHandle)) {
+  if (!StageAttributesManager::isValidPrimitiveAttributes(primAssetHandle)) {
     LOG(ERROR)
-        << "StageAttributesManager::createPrimBasedAttributesTemplate : No "
-           "primitive with handle '"
+        << "::createPrimBasedAttributesTemplate : No primitive with handle '"
         << primAssetHandle
         << "' exists so cannot build physical object.  Aborting.";
     return nullptr;
@@ -222,13 +216,13 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
     // set default origin and orientation values based on file name
     // from AssetInfo::fromPath
     // set defaults for passed render asset handles
-    this->setDefaultAssetNameBasedAttributes(
+    StageAttributesManager::setDefaultAssetNameBasedAttributes(
         newAttributes, true, newAttributes->getRenderAssetHandle(),
         [newAttributes](auto&& PH1) {
           newAttributes->setRenderAssetType(std::forward<decltype(PH1)>(PH1));
         });
     // set defaults for passed collision asset handles
-    this->setDefaultAssetNameBasedAttributes(
+    StageAttributesManager::setDefaultAssetNameBasedAttributes(
         newAttributes, false, newAttributes->getCollisionAssetHandle(),
         [newAttributes](auto&& PH1) {
           newAttributes->setCollisionAssetType(
@@ -236,7 +230,7 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
         });
 
     // set defaults for passed semantic asset handles
-    this->setDefaultAssetNameBasedAttributes(
+    StageAttributesManager::setDefaultAssetNameBasedAttributes(
         newAttributes, false, newAttributes->getSemanticAssetHandle(),
         [newAttributes](auto&& PH1) {
           newAttributes->setSemanticAssetType(std::forward<decltype(PH1)>(PH1));
@@ -286,7 +280,7 @@ void StageAttributesManager::setDefaultAssetNameBasedAttributes(
     // coordinate frame to -Z gravity
     up = up2;
     fwd = fwd2;
-  } else if (this->isValidPrimitiveAttributes(fileName)) {
+  } else if (StageAttributesManager::isValidPrimitiveAttributes(fileName)) {
     assetTypeSetter(static_cast<int>(AssetType::PRIMITIVE));
   } else {
     assetTypeSetter(static_cast<int>(AssetType::UNKNOWN));
@@ -353,26 +347,9 @@ void StageAttributesManager::setValsFromJSONDoc(
     stageAttributes->setHouseFilename(houseFName);
   }
 
-  // load the rigid object library metadata (no physics init yet...)
-  if (jsonConfig.HasMember("rigid object paths") &&
-      jsonConfig["rigid object paths"].IsArray()) {
-    std::string configDirectory = stageAttributes->getFileDirectory();
-    const auto& paths = jsonConfig["rigid object paths"];
-    for (rapidjson::SizeType i = 0; i < paths.Size(); ++i) {
-      if (!paths[i].IsString()) {
-        LOG(ERROR)
-            << "StageAttributesManager::setValsFromJSONDoc "
-               ":Invalid value in stage config 'rigid object paths'- array "
-            << i;
-        continue;
-      }
+  // check for user defined attributes
+  this->parseUserDefinedJsonVals(stageAttributes, jsonConfig);
 
-      std::string absolutePath =
-          Cr::Utility::Directory::join(configDirectory, paths[i].GetString());
-      // load all object templates available as configs in absolutePath
-      objectAttributesMgr_->loadAllConfigsFromPath(absolutePath, true);
-    }
-  }  // if load rigid object library metadata
 }  // StageAttributesManager::setValsFromJSONDoc
 
 }  // namespace managers

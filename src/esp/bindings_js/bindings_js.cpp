@@ -11,6 +11,9 @@ namespace em = emscripten;
 
 #include "esp/scene/SemanticScene.h"
 #include "esp/sensor/CameraSensor.h"
+#include "esp/sensor/EquirectangularSensor.h"
+#include "esp/sensor/FisheyeSensor.h"
+#include "esp/sensor/VisualSensor.h"
 #include "esp/sim/Simulator.h"
 
 using namespace esp;
@@ -53,6 +56,15 @@ std::map<std::string, ObservationSpace> Simulator_getAgentObservationSpaces(
   return spaces;
 }
 
+std::map<std::string, Sensor::ptr> Agent_getSubtreeSensors(Agent& agent) {
+  std::map<std::string, Sensor::ptr> jsSensors =
+      std::map<std::string, Sensor::ptr>();
+  for (auto& entry : agent.node().getSubtreeSensors()) {
+    jsSensors[entry.first] = std::shared_ptr<Sensor>(&entry.second.get());
+  }
+  return jsSensors;
+}
+
 template <class T, typename... Targs>
 static inline auto create(Targs&&... args) {
   return std::make_shared<T>(std::forward<Targs>(args)...);
@@ -79,8 +91,8 @@ Magnum::Vector3 Vector3_sub(const Magnum::Vector3& v1,
 
 Observation Sensor_getObservation(Sensor& sensor, Simulator& sim) {
   Observation ret;
-  if (CameraSensor * camera{dynamic_cast<CameraSensor*>(&sensor)})
-    camera->getObservation(sim, ret);
+  if (VisualSensor * visSensor{dynamic_cast<VisualSensor*>(&sensor)})
+    visSensor->getObservation(sim, ret);
   return ret;
 }
 
@@ -104,12 +116,20 @@ void Sensor_setLocalTransform(Sensor& sensor,
 }
 
 /**
- * @brief Call ObjectAttributesManager loadAllConfigsFromPath to load object
+ * @brief Call ObjectAttributesManager loadAllJSONConfigsFromPath to load object
  * configs. This is required before using Simulator.addObjectByHandle.
  */
 void loadAllObjectConfigsFromPath(Simulator& sim, const std::string& path) {
   auto objectAttrManager = sim.getObjectAttributesManager();
-  objectAttrManager->loadAllConfigsFromPath(path);
+  objectAttrManager->loadAllJSONConfigsFromPath(path);
+}
+
+bool isBuildWithBulletPhysics() {
+#ifdef ESP_BUILD_WITH_BULLET
+  return true;
+#else
+  return false;
+#endif
 }
 
 EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
@@ -117,6 +137,7 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::function("toVec3f", &toVec3f);
   em::function("toVec4f", &toVec4f);
   em::function("loadAllObjectConfigsFromPath", &loadAllObjectConfigsFromPath);
+  em::function("isBuildWithBulletPhysics", &isBuildWithBulletPhysics);
 
   em::register_vector<SensorSpec::ptr>("VectorSensorSpec");
   em::register_vector<size_t>("VectorSizeT");
@@ -125,7 +146,7 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::register_vector<std::shared_ptr<SemanticCategory>>(
       "VectorSemanticCategories");
   em::register_vector<std::shared_ptr<SemanticObject>>("VectorSemanticObjects");
-
+  em::register_vector<RayHitInfo>("VectorRayHitInfo");
   em::register_map<std::string, float>("MapStringFloat");
   em::register_map<std::string, std::string>("MapStringString");
   em::register_map<std::string, Sensor::ptr>("MapStringSensor");
@@ -218,14 +239,26 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("name", &ActionSpec::name)
       .property("actuation", &ActionSpec::actuation);
 
+  em::class_<Ray>("Ray")
+      .constructor<>()
+      .constructor<Magnum::Vector3, Magnum::Vector3>();
+
+  em::class_<RayHitInfo>("RayHitInfo")
+      .property("objectId", &RayHitInfo::objectId)
+      .property("point", &RayHitInfo::point)
+      .property("normal", &RayHitInfo::normal)
+      .property("rayDistance", &RayHitInfo::rayDistance);
+
+  em::class_<RaycastResults>("RaycastResults")
+      .smart_ptr_constructor("RaycastResults", &RaycastResults::create<>)
+      .function("hasHits", &RaycastResults::hasHits)
+      .property("hits", &RaycastResults::hits)
+      .property("ray", &RaycastResults::ray);
+
   em::class_<PathFinder>("PathFinder")
       .smart_ptr<PathFinder::ptr>("PathFinder::ptr")
       .property("bounds", &PathFinder::bounds)
       .function("isNavigable", &PathFinder::isNavigable);
-
-  em::class_<SensorSuite>("SensorSuite")
-      .smart_ptr_constructor("SensorSuite", &SensorSuite::create<>)
-      .function("get", &SensorSuite::get);
 
   em::enum_<SensorType>("SensorType")
       .value("NONE", SensorType::None)
@@ -242,7 +275,13 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::enum_<SensorSubType>("SensorSubType")
       .value("NONE", SensorSubType::None)
       .value("PINHOLE", SensorSubType::Pinhole)
-      .value("ORTHOGRAPHIC", SensorSubType::Orthographic);
+      .value("ORTHOGRAPHIC", SensorSubType::Orthographic)
+      .value("FISHEYE", SensorSubType::Fisheye)
+      .value("EQUIRECTANGULAR", SensorSubType::Equirectangular);
+
+  em::enum_<FisheyeSensorModelType>("FisheyeSensorModelType")
+      .value("DOUBLE_SPHERE", FisheyeSensorModelType::DoubleSphere);
+
   em::class_<SensorSpec>("SensorSpec")
       .smart_ptr_constructor("SensorSpec", &SensorSpec::create<>)
       .property("uuid", &SensorSpec::uuid)
@@ -259,6 +298,29 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("far", &VisualSensorSpec::far)
       .property("gpu2gpu_transfer", &VisualSensorSpec::gpu2gpuTransfer);
 
+  em::class_<CubeMapSensorBaseSpec, em::base<VisualSensorSpec>>(
+      "CubeMapSensorBaseSpec");
+
+  em::class_<EquirectangularSensorSpec, em::base<CubeMapSensorBaseSpec>>(
+      "EquirectangularSensorSpec")
+      .smart_ptr_constructor("EquirectangularSensorSpec",
+                             &EquirectangularSensorSpec::create<>);
+
+  em::class_<FisheyeSensorSpec, em::base<CubeMapSensorBaseSpec>>(
+      "FisheyeSensorSpec")
+      .smart_ptr_constructor("FisheyeSensorSpec", &FisheyeSensorSpec::create<>)
+      .property("focal_length", &FisheyeSensorSpec::focalLength)
+      .property("principal_point_offset",
+                &FisheyeSensorSpec::principalPointOffset)
+      .property("sensor_model_type", &FisheyeSensorSpec::fisheyeModelType);
+
+  em::class_<FisheyeSensorDoubleSphereSpec, em::base<FisheyeSensorSpec>>(
+      "FisheyeSensorDoubleSphereSpec")
+      .smart_ptr_constructor("FisheyeSensorDoubleSphereSpec",
+                             &FisheyeSensorDoubleSphereSpec::create<>)
+      .property("alpha", &FisheyeSensorDoubleSphereSpec::alpha)
+      .property("xi", &FisheyeSensorDoubleSphereSpec::xi);
+
   em::class_<CameraSensorSpec, em::base<VisualSensorSpec>>("CameraSensorSpec")
       .smart_ptr_constructor("CameraSensorSpec", &CameraSensorSpec::create<>)
       .property("ortho_scale", &CameraSensorSpec::orthoScale);
@@ -268,6 +330,24 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("getObservation", &Sensor_getObservation)
       .function("setLocalTransform", &Sensor_setLocalTransform)
       .function("specification", &Sensor::specification);
+
+  em::class_<VisualSensor, em::base<Sensor>>("VisualSensor")
+      .smart_ptr<VisualSensor::ptr>("VisualSensor::ptr")
+      .property("near", &VisualSensor::getNear)
+      .property("far", &VisualSensor::getFar);
+
+  em::class_<CubeMapSensorBase, em::base<VisualSensor>>("CubeMapSensorBase")
+      .smart_ptr<CubeMapSensorBase::ptr>("CubeMapSensorBase::ptr");
+
+  em::class_<EquirectangularSensor, em::base<CubeMapSensorBase>>(
+      "EquirectangularSensor")
+      .smart_ptr<EquirectangularSensor::ptr>("EquirectangularSensor::ptr");
+
+  em::class_<FisheyeSensor, em::base<CubeMapSensorBase>>("FisheyeSensor")
+      .smart_ptr<FisheyeSensor::ptr>("FisheyeSensor::ptr");
+
+  em::class_<CameraSensor, em::base<VisualSensor>>("CameraSensor")
+      .smart_ptr<CameraSensor::ptr>("CameraSensor::ptr");
 
   em::class_<SimulatorConfiguration>("SimulatorConfiguration")
       .smart_ptr_constructor("SimulatorConfiguration",
@@ -295,12 +375,11 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("config",
                 em::select_overload<const AgentConfiguration&() const>(
                     &Agent::getConfig))
-      .property("sensorSuite", em::select_overload<const SensorSuite&() const>(
-                                   &Agent::getSensorSuite))
       .function("getState", &Agent::getState)
       .function("setState", &Agent::setState)
       .function("hasAction", &Agent::hasAction)
-      .function("act", &Agent::act);
+      .function("act", &Agent::act)
+      .function("getSubtreeSensors", &Agent_getSubtreeSensors);
 
   em::class_<Observation>("Observation")
       .smart_ptr_constructor("Observation", &Observation::create<>)
@@ -371,5 +450,6 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("setObjectLightSetup", &Simulator::setObjectLightSetup)
       .function("getLightSetup", &Simulator::getLightSetup)
       .function("setLightSetup", &Simulator::setLightSetup)
-      .function("stepWorld", &Simulator::stepWorld);
+      .function("stepWorld", &Simulator::stepWorld)
+      .function("castRay", &Simulator::castRay);
 }

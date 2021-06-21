@@ -86,12 +86,7 @@ class AssetAttributesManager
    */
   static const std::map<PrimObjTypes, const char*> PrimitiveNames3DMap;
 
-  AssetAttributesManager()
-      : AttributesManager<attributes::AbstractPrimitiveAttributes,
-                          core::ManagedObjectAccess::Copy>::
-            AttributesManager("Primitive Asset", "prim_config.json") {
-    buildCtorFuncPtrMaps();
-  }  // AssetAttributesManager::ctor
+  AssetAttributesManager();
 
   /**
    * @brief Should only be called internally. Creates an instance of a primtive
@@ -140,6 +135,23 @@ class AssetAttributesManager
                           const io::JsonGenericValue& jsonConfig) override;
 
   /**
+   * @brief Creates a template based on the provided template handle. Since the
+   * primitive asset attributes templates encode their structure in their
+   * handles, and these handles are not user editable, a properly configured
+   * handle can be used to build a template.
+   * @param templateHandle The template handle to use to create the attributes.
+   * @param registerTemplate whether to add this template to the library.
+   * If the user is going to edit this template, this should be false - any
+   * subsequent editing will require re-registration. Defaults to true. If
+   * specified as true, then this function returns a copy of the registered
+   * template.
+   * @return The attributes that most closely matches the given handle.
+   */
+  attributes::AbstractPrimitiveAttributes::ptr createTemplateFromHandle(
+      const std::string& templateHandle,
+      bool registerTemplate = true);
+
+  /**
    * @brief Should only be called internally. Creates an instance of a
    * primtive asset attributes template described by passed enum value. For
    * primitive assets this mapes to the Magnum primitive class name
@@ -154,7 +166,7 @@ class AssetAttributesManager
       PrimObjTypes primObjType,
       bool registerTemplate = true) {
     if (primObjType == PrimObjTypes::END_PRIM_OBJ_TYPES) {
-      LOG(ERROR) << "AssetAttributesManager::createObject : Illegal "
+      LOG(ERROR) << "::createObject : Illegal "
                     "primtitive type name PrimObjTypes::END_PRIM_OBJ_TYPES. "
                     "Aborting.";
       return nullptr;
@@ -177,7 +189,7 @@ class AssetAttributesManager
       PrimObjTypes primType,
       bool contains = true) const {
     if (primType == PrimObjTypes::END_PRIM_OBJ_TYPES) {
-      LOG(ERROR) << "AssetAttributesManager::getTemplateHandlesByPrimType : "
+      LOG(ERROR) << "::getTemplateHandlesByPrimType : "
                     "Illegal primtitive type "
                     "name PrimObjTypes::END_PRIM_OBJ_TYPES. Aborting.";
       return {};
@@ -397,8 +409,8 @@ class AssetAttributesManager
   void setDefaultObject(
       CORRADE_UNUSED attributes::AbstractPrimitiveAttributes::ptr& _defaultObj)
       override {
-    LOG(WARNING) << "AssetAttributesManager::setDefaultObject : Overriding "
-                    "defualt objects for PrimitiveAssetAttributes not "
+    LOG(WARNING) << "::setDefaultObject : Overriding "
+                    "default objects for PrimitiveAssetAttributes not "
                     "currently supported.  Aborting.";
     this->defaultObj_ = nullptr;
   }  // AssetAttributesManager::setDefaultObject
@@ -418,12 +430,13 @@ class AssetAttributesManager
    * @brief This method will perform any necessary updating that is
    * attributesManager-specific upon template removal, such as removing a
    * specific template handle from the list of file-based template handles in
-   * ObjectAttributesManager.  This should only be called internally.
+   * ObjectAttributesManager.  This should only be called @ref
+   * esp::core::ManagedContainerBase.
    *
    * @param templateID the ID of the template to remove
    * @param templateHandle the string key of the attributes desired.
    */
-  void updateObjectHandleLists(
+  void deleteObjectInternalFinalize(
       CORRADE_UNUSED int templateID,
       CORRADE_UNUSED const std::string& templateHandle) override {}
 
@@ -439,9 +452,9 @@ class AssetAttributesManager
   bool verifyTemplateHandle(const std::string& templateHandle,
                             const std::string& attrType) {
     if (std::string::npos == templateHandle.find(attrType)) {
-      LOG(ERROR) << "AssetAttributesManager::verifyTemplateHandle : Handle : "
-                 << templateHandle << " is not of appropriate type for desired "
-                 << attrType << " primitives. Aborting.";
+      LOG(ERROR) << "::verifyTemplateHandle : Handle : " << templateHandle
+                 << " is not of appropriate type for desired " << attrType
+                 << " primitives. Aborting.";
       return false;
     }
     return true;
@@ -477,8 +490,7 @@ class AssetAttributesManager
       const std::string& primClassName,
       CORRADE_UNUSED bool builtFromConfig) override {
     if (primTypeConstructorMap_.count(primClassName) == 0) {
-      LOG(ERROR) << "AssetAttributesManager::buildPrimAttributes : No "
-                    "primitive class"
+      LOG(ERROR) << "::initNewObjectInternal : No primitive class"
                  << primClassName << "exists in Magnum::Primitives. Aborting.";
       return nullptr;
     }
@@ -495,10 +507,9 @@ class AssetAttributesManager
   template <typename T, bool isWireFrame, PrimObjTypes primitiveType>
   attributes::AbstractPrimitiveAttributes::ptr createPrimAttributes() {
     if (primitiveType == PrimObjTypes::END_PRIM_OBJ_TYPES) {
-      LOG(ERROR)
-          << "AssetAttributeManager::createPrimAttributes : Cannot instantiate "
-             "attributes::AbstractPrimitiveAttributes object for "
-             "PrimObjTypes::END_PRIM_OBJ_TYPES. Aborting.";
+      LOG(ERROR) << "::createPrimAttributes : Cannot instantiate "
+                    "attributes::AbstractPrimitiveAttributes object for "
+                    "PrimObjTypes::END_PRIM_OBJ_TYPES. Aborting.";
       return nullptr;
     }
     int idx = static_cast<int>(primitiveType);
@@ -520,14 +531,6 @@ class AssetAttributesManager
       createObject(elem.second, true);
     }
   }  // AssetAttributesManager::resetFinalize()
-
-  /**
-   * @brief This function will assign the appropriately configured function
-   * pointers for @ref createPrimAttributes calls for each type of
-   * supported primitive to the @ref primTypeConstructorMap_, keyed by type of
-   * primtive
-   */
-  void buildCtorFuncPtrMaps() override;
 
   // ======== Typedefs and Instance Variables ========
 

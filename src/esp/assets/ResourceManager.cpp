@@ -28,7 +28,6 @@
 #include <Magnum/MeshTools/Reference.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/SceneGraph/Object.h>
-#include <Magnum/Shaders/Flat.h>
 #include <Magnum/Trade/AbstractImporter.h>
 #include <Magnum/Trade/ImageData.h>
 #include <Magnum/Trade/MeshObjectData3D.h>
@@ -38,11 +37,14 @@
 #include <Magnum/Trade/TextureData.h>
 #include <Magnum/VertexFormat.h>
 
+#include <memory>
+
 #include "esp/geo/geo.h"
 #include "esp/gfx/GenericDrawable.h"
 #include "esp/gfx/MaterialUtil.h"
 #include "esp/gfx/PbrDrawable.h"
 #include "esp/gfx/replay/Recorder.h"
+#include "esp/io/URDFParser.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"
 #include "esp/physics/PhysicsManager.h"
@@ -147,10 +149,10 @@ void ResourceManager::initPhysicsManager(
   //! PHYSICS INIT: Use the passed attributes to initialize physics engine
   bool defaultToNoneSimulator = true;
   if (isEnabled) {
-    if (physicsManagerAttributes->getSimulator().compare("bullet") == 0) {
+    if (physicsManagerAttributes->getSimulator() == "bullet") {
 #ifdef ESP_BUILD_WITH_BULLET
-      physicsManager.reset(
-          new physics::BulletPhysicsManager(*this, physicsManagerAttributes));
+      physicsManager = std::make_shared<physics::BulletPhysicsManager>(
+          *this, physicsManagerAttributes);
       defaultToNoneSimulator = false;
 #else
       LOG(WARNING)
@@ -166,8 +168,8 @@ void ResourceManager::initPhysicsManager(
   // if the desired simulator is not supported reset to "none" in metaData
   if (defaultToNoneSimulator) {
     physicsManagerAttributes->setSimulator("none");
-    physicsManager.reset(
-        new physics::PhysicsManager(*this, physicsManagerAttributes));
+    physicsManager = std::make_shared<physics::PhysicsManager>(
+        *this, physicsManagerAttributes);
   }
 
   // build default primitive asset templates, and default primitive object
@@ -179,7 +181,7 @@ void ResourceManager::initPhysicsManager(
 }  // ResourceManager::initPhysicsManager
 
 bool ResourceManager::loadStage(
-    const StageAttributes::ptr& stageAttributes,
+    StageAttributes::ptr& stageAttributes,
     const std::shared_ptr<physics::PhysicsManager>& _physicsManager,
     esp::scene::SceneManager* sceneManagerPtr,
     std::vector<int>& activeSceneIDs,
@@ -189,8 +191,8 @@ bool ResourceManager::loadStage(
   // are unique.
   bool buildCollisionMesh =
       ((_physicsManager != nullptr) &&
-       (_physicsManager->getInitializationAttributes()->getSimulator().compare(
-            "none") != 0));
+       (_physicsManager->getInitializationAttributes()->getSimulator() !=
+        "none"));
   const std::string renderLightSetupKey(stageAttributes->getLightSetup());
   std::map<std::string, AssetInfo> assetInfoMap =
       createStageAssetInfosFromAttributes(stageAttributes, buildCollisionMesh,
@@ -199,12 +201,12 @@ bool ResourceManager::loadStage(
   // set equal to current Simulator::activeSemanticSceneID_ value
   int activeSemanticSceneID = activeSceneIDs[0];
   // if semantic scene load is requested and possible
-  if (assetInfoMap.count("semantic")) {
+  if (assetInfoMap.count("semantic") != 0u) {
     // check if file names exist
     AssetInfo semanticInfo = assetInfoMap.at("semantic");
     auto semanticStageFilename = semanticInfo.filepath;
     if (Cr::Utility::Directory::exists(semanticStageFilename)) {
-      LOG(INFO) << "ResourceManager::loadStage : Loading Semantic Stage mesh : "
+      LOG(INFO) << "::loadStage : Loading Semantic Stage mesh : "
                 << semanticStageFilename;
       activeSemanticSceneID = sceneManagerPtr->initSceneGraph();
 
@@ -231,21 +233,20 @@ bool ResourceManager::loadStage(
       // regardless of load failure, original code still changed
       // activeSemanticSceneID_
       if (!semanticStageSuccess) {
-        LOG(ERROR) << " ResourceManager::loadStage : Semantic Stage mesh "
+        LOG(ERROR) << "::loadStage : Semantic Stage mesh "
                       "load failed.";
         return false;
       } else {
-        LOG(INFO) << "ResourceManager::loadStage : Semantic Stage mesh : "
+        LOG(INFO) << "::loadStage : Semantic Stage mesh : "
                   << semanticStageFilename << " loaded.";
       }
     } else {  // semantic file name does not exist but house does
-      LOG(WARNING)
-          << "ResourceManager::loadStage : Not loading semantic mesh - "
-             "File Name : "
-          << semanticStageFilename << " does not exist.";
+      LOG(WARNING) << "::loadStage : Not loading semantic mesh - "
+                      "File Name : "
+                   << semanticStageFilename << " does not exist.";
     }
   } else {  // not wanting to create semantic mesh
-    LOG(INFO) << "ResourceManager::loadStage : Not loading semantic mesh";
+    LOG(INFO) << "::loadStage : Not loading semantic mesh";
   }
 
   if (forceSeparateSemanticSceneGraph &&
@@ -273,8 +274,8 @@ bool ResourceManager::loadStage(
   }
   RenderAssetInstanceCreationInfo renderCreation(
       renderInfo.filepath, Cr::Containers::NullOpt, flags, renderLightSetupKey);
-  LOG(INFO) << "ResourceManager::loadStage : start load render asset "
-            << renderInfo.filepath << ".";
+  LOG(INFO) << "::loadStage : start load render asset " << renderInfo.filepath
+            << ".";
 
   bool renderMeshSuccess = loadStageInternal(renderInfo,  // AssetInfo
                                              &renderCreation,
@@ -289,10 +290,10 @@ bool ResourceManager::loadStage(
   // declare mesh group variable
   std::vector<CollisionMeshData> meshGroup;
   AssetInfo& infoToUse = renderInfo;
-  if (assetInfoMap.count("collision")) {
+  if (assetInfoMap.count("collision") != 0u) {
     AssetInfo colInfo = assetInfoMap.at("collision");
     if (resourceDict_.count(colInfo.filepath) == 0) {
-      LOG(INFO) << "ResourceManager::loadStage : start load collision asset "
+      LOG(INFO) << "::loadStage : start load collision asset "
                 << colInfo.filepath << ".";
       // will not reload if already present
       bool collisionMeshSuccess =
@@ -309,15 +310,14 @@ bool ResourceManager::loadStage(
     }
     // if we have a collision mesh, and it does not exist already as a
     // collision object, add it
-    if (colInfo.filepath.compare(EMPTY_SCENE) != 0) {
+    if (colInfo.filepath != EMPTY_SCENE) {
       infoToUse = colInfo;
     }  // if not colInfo.filepath.compare(EMPTY_SCENE)
   }    // if collision mesh desired
   // build the appropriate mesh groups, either for the collision mesh, or, if
   // the collision mesh is empty scene
 
-  if ((_physicsManager != nullptr) &&
-      (infoToUse.filepath.compare(EMPTY_SCENE) != 0)) {
+  if ((_physicsManager != nullptr) && (infoToUse.filepath != EMPTY_SCENE)) {
     bool success = buildMeshGroups(infoToUse, meshGroup);
     if (!success) {
       return false;
@@ -326,10 +326,9 @@ bool ResourceManager::loadStage(
     // Either add with pre-built meshGroup if collision assets are loaded
     // or empty vector for mesh group - this should only be the case if
     // we are using None-type physicsManager.
-    bool sceneSuccess =
-        _physicsManager->addStage(stageAttributes->getHandle(), meshGroup);
+    bool sceneSuccess = _physicsManager->addStage(stageAttributes, meshGroup);
     if (!sceneSuccess) {
-      LOG(ERROR) << "ResourceManager::loadStage : Adding Stage "
+      LOG(ERROR) << "::loadStage : Adding Stage "
                  << stageAttributes->getHandle()
                  << " to PhysicsManager failed. Aborting scene initialization.";
       return false;
@@ -364,7 +363,7 @@ bool ResourceManager::buildMeshGroups(
 
     // failure during build of collision mesh group
     if (!colMeshGroupSuccess) {
-      LOG(ERROR) << "ResourceManager::loadStage : Stage " << info.filepath
+      LOG(ERROR) << "::loadStage : Stage " << info.filepath
                  << " Collision mesh load failed. Aborting scene "
                     "initialization.";
       return false;
@@ -441,7 +440,7 @@ esp::geo::CoordinateFrame ResourceManager::buildFrameFromAttributes(
     esp::geo::CoordinateFrame frame{upEigen, frontEigen, originEigen};
     return frame;
   } else {
-    LOG(INFO) << "ResourceManager::buildFrameFromAttributes : Specified frame "
+    LOG(INFO) << "::buildFrameFromAttributes : Specified frame "
                  "in Attributes : "
               << attribs->getHandle()
               << " is not orthogonal, so returning default frame.";
@@ -449,6 +448,27 @@ esp::geo::CoordinateFrame ResourceManager::buildFrameFromAttributes(
     return frame;
   }
 }  // ResourceManager::buildCoordFrameFromAttribVals
+
+std::string ResourceManager::createColorMaterial(
+    const esp::assets::PhongMaterialColor& materialColor) {
+  std::ostringstream matHandleStream;
+  matHandleStream << "phong_amb_" << materialColor.ambientColor.toSrgbAlphaInt()
+                  << "_dif_" << materialColor.diffuseColor.toSrgbAlphaInt()
+                  << "_spec_" << materialColor.specularColor.toSrgbAlphaInt();
+  std::string newMaterialID = matHandleStream.str();
+  auto materialResource = shaderManager_.get<gfx::MaterialData>(newMaterialID);
+  if (materialResource.state() == Mn::ResourceState::NotLoadedFallback) {
+    gfx::PhongMaterialData::uptr phongMaterial =
+        gfx::PhongMaterialData::create_unique();
+    phongMaterial->ambientColor = materialColor.ambientColor;
+    phongMaterial->diffuseColor = materialColor.diffuseColor;
+    phongMaterial->specularColor = materialColor.specularColor;
+
+    std::unique_ptr<gfx::MaterialData> finalMaterial(phongMaterial.release());
+    shaderManager_.set(newMaterialID, finalMaterial.release());
+  }
+  return newMaterialID;
+}  // ResourceManager::createColorMaterial
 
 scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
     const AssetInfo& assetInfo,
@@ -499,32 +519,118 @@ scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
   auto& rootNode = sceneGraph.getRootNode();
   auto& drawables = sceneGraph.getDrawables();
 
-  const bool fileIsLoaded = resourceDict_.count(assetInfo.filepath) > 0;
-  if (!fileIsLoaded) {
-    if (!loadRenderAsset(assetInfo)) {
-      return nullptr;
-    }
+  return loadAndCreateRenderAssetInstance(assetInfo, creation, &rootNode,
+                                          &drawables);
+}  // ResourceManager::loadAndCreateRenderAssetInstance
+
+scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
+    const AssetInfo& assetInfo,
+    const RenderAssetInstanceCreationInfo& creation,
+    scene::SceneNode* parent,
+    DrawableGroup* drawables,
+    std::vector<scene::SceneNode*>* visNodeCache) {
+  if (!loadRenderAsset(assetInfo)) {
+    return nullptr;
+  }
+  ASSERT(assetInfo.filepath == creation.filepath);
+
+  // copy the const creation info to modify the key if necessary
+  RenderAssetInstanceCreationInfo finalCreation(creation);
+  if (assetInfo.overridePhongMaterial != Cr::Containers::NullOpt) {
+    // material override is requested so get the id
+    finalCreation.filepath =
+        assetInfo.filepath + "?" +
+        createColorMaterial(*assetInfo.overridePhongMaterial);
   }
 
-  ASSERT(assetInfo.filepath == creation.filepath);
-  return createRenderAssetInstance(creation, &rootNode, &drawables);
+  return createRenderAssetInstance(finalCreation, parent, drawables,
+                                   visNodeCache);
 }
 
 bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
-  bool meshSuccess = false;
-  if (info.type == AssetType::FRL_PTEX_MESH) {
-    meshSuccess = loadRenderAssetPTex(info);
-  } else if (info.type == AssetType::INSTANCE_MESH) {
-    meshSuccess = loadRenderAssetIMesh(info);
-  } else if (isRenderAssetGeneral(info.type)) {
-    meshSuccess = loadRenderAssetGeneral(info);
-  } else {
-    // loadRenderAsset doesn't yet support the requested asset type
-    CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+  bool registerMaterialOverride =
+      info.overridePhongMaterial != Cr::Containers::NullOpt;
+  bool fileAssetIsLoaded = resourceDict_.count(info.filepath) > 0;
+
+  bool meshSuccess = fileAssetIsLoaded;
+  // first load the file asset as-is if necessary
+  if (!fileAssetIsLoaded) {
+    // clone the AssetInfo and remove the custom material to load a default
+    // AssetInfo first
+    AssetInfo defaultInfo(info);
+    defaultInfo.overridePhongMaterial = Cr::Containers::NullOpt;
+
+    if (info.type == AssetType::PRIMITIVE) {
+      buildPrimitiveAssetData(info.filepath);
+      meshSuccess = true;
+    } else if (info.type == AssetType::FRL_PTEX_MESH) {
+      meshSuccess = loadRenderAssetPTex(defaultInfo);
+    } else if (info.type == AssetType::INSTANCE_MESH) {
+      meshSuccess = loadRenderAssetIMesh(defaultInfo);
+    } else if (isRenderAssetGeneral(info.type)) {
+      meshSuccess = loadRenderAssetGeneral(defaultInfo);
+    } else {
+      // loadRenderAsset doesn't yet support the requested asset type
+      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+    }
+
+    if (meshSuccess) {
+      // create and register the collisionMeshGroups
+      if (info.type != AssetType::PRIMITIVE) {
+        std::vector<CollisionMeshData> meshGroup;
+        CORRADE_ASSERT(buildMeshGroups(defaultInfo, meshGroup),
+                       "Failed to construct collisionMeshGroups for asset "
+                           << info.filepath,
+                       false);
+      }
+
+      if (gfxReplayRecorder_) {
+        gfxReplayRecorder_->onLoadRenderAsset(defaultInfo);
+      }
+    }
   }
-  if (gfxReplayRecorder_) {
-    gfxReplayRecorder_->onLoadRenderAsset(info);
+
+  // now handle loading the material override AssetInfo if configured
+  if (meshSuccess && registerMaterialOverride) {
+    // register or get the override material id
+    std::string materialId = createColorMaterial(*info.overridePhongMaterial);
+
+    // construct the unique id for the material modified asset
+    std::string modifiedAssetName = info.filepath + "?" + materialId;
+    const bool matModAssetIsRegistered =
+        resourceDict_.count(modifiedAssetName) > 0;
+    if (!matModAssetIsRegistered) {
+      // first register the copied metaData
+      resourceDict_.emplace(modifiedAssetName,
+                            LoadedAssetData(resourceDict_.at(info.filepath)));
+      // Replace the AssetInfo
+      resourceDict_.at(modifiedAssetName).assetInfo = info;
+      // Modify the MeshMetaData local material ids for all components
+      std::vector<MeshTransformNode*> nodeQueue;
+      nodeQueue.push_back(
+          &resourceDict_.at(modifiedAssetName).meshMetaData.root);
+      while (!nodeQueue.empty()) {
+        MeshTransformNode* node = nodeQueue.back();
+        nodeQueue.pop_back();
+        for (auto& child : node->children) {
+          nodeQueue.push_back(&child);
+        }
+        if (node->meshIDLocal != ID_UNDEFINED) {
+          node->materialID = materialId;
+        }
+      }
+      if (info.type != AssetType::PRIMITIVE) {
+        // clone the collision data
+        collisionMeshGroups_.emplace(modifiedAssetName,
+                                     collisionMeshGroups_.at(info.filepath));
+      }
+
+      if (gfxReplayRecorder_) {
+        gfxReplayRecorder_->onLoadRenderAsset(info);
+      }
+    }
   }
+
   return meshSuccess;
 }
 
@@ -571,7 +677,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstance(
   }
 
   return newNode;
-}
+}  // ResourceManager::createRenderAssetInstance
 
 bool ResourceManager::loadStageInternal(
     const AssetInfo& info,
@@ -580,26 +686,25 @@ bool ResourceManager::loadStageInternal(
     DrawableGroup* drawables) {
   // scene mesh loading
   const std::string& filename = info.filepath;
-  LOG(INFO) << "ResourceManager::loadStageInternal : Attempting to load stage "
-            << filename << " ";
+  LOG(INFO) << "::loadStageInternal : Attempting to load stage " << filename
+            << " ";
   bool meshSuccess = true;
-  if (info.filepath.compare(EMPTY_SCENE) != 0) {
+  if (info.filepath != EMPTY_SCENE) {
     if (!Cr::Utility::Directory::exists(filename)) {
-      LOG(ERROR)
-          << "ResourceManager::loadStageInternal : Cannot find scene file "
-          << filename;
+      LOG(ERROR) << "::loadStageInternal : Cannot find scene file " << filename;
       meshSuccess = false;
     } else {
       if (info.type == AssetType::SUNCG_SCENE) {
         meshSuccess = loadSUNCGHouseFile(info, parent, drawables);
       } else {
         // load render asset if necessary
-        if (resourceDict_.count(info.filepath) == 0) {
-          if (!loadRenderAsset(info)) {
-            return false;
-          }
+        if (!loadRenderAsset(info)) {
+          return false;
         } else {
           if (resourceDict_[filename].assetInfo != info) {
+            // TODO: support color material modified assets by changing the
+            // "creation" filepath to the modified key
+
             // Right now, we only allow for an asset to be loaded with one
             // configuration, since generated mesh data may be invalid for a new
             // configuration
@@ -618,8 +723,7 @@ bool ResourceManager::loadStageInternal(
       }
     }
   } else {
-    LOG(INFO) << "ResourceManager::loadStageInternal : Loading empty scene for "
-              << filename;
+    LOG(INFO) << "::loadStageInternal : Loading empty scene for " << filename;
     // EMPTY_SCENE (ie. "NONE") string indicates desire for an empty scene (no
     // scene mesh): welcome to the void
   }
@@ -644,7 +748,7 @@ bool ResourceManager::buildStageCollisionMeshGroup(
     if (rawMeshData == nullptr) {
       // means dynamic cast failed
       Cr::Utility::Debug()
-          << "ResourceManager::buildStageCollisionMeshGroup : "
+          << "::buildStageCollisionMeshGroup : "
              "AssetInfo::AssetType "
              "type error: unsupported mesh type, aborting. Try running "
              "without \"--enable-physics\" and consider logging an issue.";
@@ -659,17 +763,19 @@ bool ResourceManager::buildStageCollisionMeshGroup(
 
 bool ResourceManager::loadObjectMeshDataFromFile(
     const std::string& filename,
-    const std::string& objectTemplateHandle,
+    const metadata::attributes::ObjectAttributes::ptr& objectAttributes,
     const std::string& meshType,
     const bool requiresLighting) {
   bool success = false;
   if (!filename.empty()) {
     AssetInfo meshInfo{AssetType::UNKNOWN, filename};
     meshInfo.requiresLighting = requiresLighting;
+    meshInfo.frame = buildFrameFromAttributes(objectAttributes, {0, 0, 0});
     success = loadRenderAsset(meshInfo);
     if (!success) {
-      LOG(ERROR) << "Failed to load a physical object (" << objectTemplateHandle
-                 << ")'s " << meshType << " mesh from file : " << filename;
+      LOG(ERROR) << "Failed to load a physical object ("
+                 << objectAttributes->getHandle() << ")'s " << meshType
+                 << " mesh from file : " << filename;
     }
   }
   return success;
@@ -689,7 +795,7 @@ void ResourceManager::computePTexMeshAbsoluteAABBs(
 
   CORRADE_ASSERT(
       absTransforms.size() == staticDrawableInfo.size(),
-      "ResourceManager::computePTexMeshAbsoluteAABBs: number of "
+      "::computePTexMeshAbsoluteAABBs: number of "
       "transformations does not match number of drawables. Aborting.", );
 
   // obtain the sub-meshes within the ptex mesh
@@ -717,7 +823,7 @@ void ResourceManager::computeGeneralMeshAbsoluteAABBs(
       computeAbsoluteTransformations(staticDrawableInfo);
 
   CORRADE_ASSERT(absTransforms.size() == staticDrawableInfo.size(),
-                 "ResourceManager::computeGeneralMeshAbsoluteAABBs: number of "
+                 "::computeGeneralMeshAbsoluteAABBs: number of "
                  "transforms does not match number of drawables.", );
 
   for (uint32_t iEntry = 0; iEntry < absTransforms.size(); ++iEntry) {
@@ -726,7 +832,7 @@ void ResourceManager::computeGeneralMeshAbsoluteAABBs(
     Cr::Containers::Optional<Magnum::Trade::MeshData>& meshData =
         meshes_.at(meshID)->getMeshData();
     CORRADE_ASSERT(meshData,
-                   "ResourceManager::computeGeneralMeshAbsoluteAABBs: The mesh "
+                   "::computeGeneralMeshAbsoluteAABBs: The mesh "
                    "data specified at ID:"
                        << meshID << "is empty/undefined. Aborting", );
 
@@ -761,10 +867,9 @@ void ResourceManager::computeInstanceMeshAbsoluteAABBs(
   std::vector<Mn::Matrix4> absTransforms =
       computeAbsoluteTransformations(staticDrawableInfo);
 
-  CORRADE_ASSERT(
-      absTransforms.size() == staticDrawableInfo.size(),
-      "ResourceManager::computeInstancelMeshAbsoluteAABBs: Number of "
-      "transforms does not match number of drawables. Aborting.", );
+  CORRADE_ASSERT(absTransforms.size() == staticDrawableInfo.size(),
+                 "::computeInstancelMeshAbsoluteAABBs: Number of "
+                 "transforms does not match number of drawables. Aborting.", );
 
   for (size_t iEntry = 0; iEntry < absTransforms.size(); ++iEntry) {
     const int meshID = staticDrawableInfo[iEntry].meshID;
@@ -796,7 +901,7 @@ std::vector<Mn::Matrix4> ResourceManager::computeAbsoluteTransformations(
   auto* scene = dynamic_cast<MagnumScene*>(staticDrawableInfo[0].node.scene());
 
   CORRADE_ASSERT(scene != nullptr,
-                 "ResourceManager::computeAbsoluteTransformations: The node is "
+                 "::computeAbsoluteTransformations: The node is "
                  "not attached to any scene graph. Aborting.",
                  {});
 
@@ -827,12 +932,34 @@ void ResourceManager::translateMesh(BaseMesh* meshDataGL,
   meshDataGL->meshTransform_ = transform * meshDataGL->meshTransform_;
 
   meshDataGL->BB = meshDataGL->BB.translated(translation);
-}
+}  // ResourceManager::translateMesh
 
 void ResourceManager::buildPrimitiveAssetData(
     const std::string& primTemplateHandle) {
-  auto primTemplate =
+  // retrieves -actual- template, not a copy
+  esp::metadata::attributes::AbstractPrimitiveAttributes::ptr primTemplate =
       getAssetAttributesManager()->getObjectByHandle(primTemplateHandle);
+
+  if (primTemplate == nullptr) {
+    // Template does not yet exist, create it using its name - primitive
+    // template names encode all the pertinent template settings and cannot be
+    // changed by the user, so the template name can be used to recreate the
+    // template itself.
+    auto newTemplate = getAssetAttributesManager()->createTemplateFromHandle(
+        primTemplateHandle);
+    // if still null, fail.
+    if (newTemplate == nullptr) {
+      LOG(ERROR)
+          << "::buildPrimitiveAssetData : Attempting to reference or build a "
+             "primitive template from an unknown/malformed handle : "
+          << primTemplateHandle << ".  Aborting";
+      return;
+    }
+    // we do not want a copy of the newly created template, but the actual
+    // template
+    primTemplate = getAssetAttributesManager()->getObjectByHandle(
+        newTemplate->getHandle());
+  }
   // check if unique name of attributes describing primitive asset is present
   // already - don't remake if so
   auto primAssetHandle = primTemplate->getHandle();
@@ -880,12 +1007,11 @@ void ResourceManager::buildPrimitiveAssetData(
   std::unique_ptr<gfx::MaterialData> phongMaterial =
       gfx::PhongMaterialData::create_unique();
 
-  meshMetaData.setMaterialIndices(nextMaterialID_, nextMaterialID_);
-  shaderManager_.set(std::to_string(nextMaterialID_++),
-                     phongMaterial.release());
+  shaderManager_.set(std::to_string(nextMaterialID_), phongMaterial.release());
 
   meshMetaData.root.meshIDLocal = 0;
   meshMetaData.root.componentID = 0;
+  meshMetaData.root.materialID = std::to_string(nextMaterialID_++);
   // store the rotation to world frame upon load - currently superfluous
   const quatf transform = info.frame.rotationFrameToWorld();
   Magnum::Matrix4 R = Magnum::Matrix4::from(
@@ -904,7 +1030,7 @@ void ResourceManager::buildPrimitiveAssetData(
             << " | Conf has group for this obj type : "
             << conf.hasGroup(primClassName);
 
-}  // buildPrimitiveAssetData
+}  // ResourceManager::buildPrimitiveAssetData
 
 bool ResourceManager::loadRenderAssetPTex(const AssetInfo& info) {
   ASSERT(info.type == AssetType::FRL_PTEX_MESH);
@@ -936,11 +1062,10 @@ bool ResourceManager::loadRenderAssetPTex(const AssetInfo& info) {
   meshMetaData.root.transformFromLocalToParent =
       R * meshMetaData.root.transformFromLocalToParent;
 
-  CORRADE_ASSERT(
-      meshMetaData.meshIndex.first == meshMetaData.meshIndex.second,
-      "ResourceManager::loadRenderAssetPTex: ptex mesh is not loaded "
-      "correctly. Aborting.",
-      false);
+  CORRADE_ASSERT(meshMetaData.meshIndex.first == meshMetaData.meshIndex.second,
+                 "::loadRenderAssetPTex: ptex mesh is not loaded "
+                 "correctly. Aborting.",
+                 false);
 
   return true;
 #else
@@ -948,7 +1073,7 @@ bool ResourceManager::loadRenderAssetPTex(const AssetInfo& info) {
                 "option when building.";
   return false;
 #endif
-}
+}  // ResourceManager::loadRenderAssetPTex
 
 scene::SceneNode* ResourceManager::createRenderAssetInstancePTex(
     const RenderAssetInstanceCreationInfo& creation,
@@ -998,7 +1123,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstancePTex(
                 "option when building.";
   return nullptr;
 #endif
-}
+}  // ResourceManager::createRenderAssetInstancePTex
 
 bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
   ASSERT(info.type == AssetType::INSTANCE_MESH);
@@ -1045,7 +1170,7 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
                         LoadedAssetData{info, std::move(meshMetaData)});
 
   return true;
-}
+}  // ResourceManager::loadRenderAssetIMesh
 
 scene::SceneNode* ResourceManager::createRenderAssetInstanceIMesh(
     const RenderAssetInstanceCreationInfo& creation,
@@ -1069,7 +1194,8 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceIMesh(
 
     // Instance mesh does NOT have normal texture, so do not bother to
     // query if the mesh data contain tangent or bitangent.
-    gfx::Drawable::Flags meshAttributeFlags{};
+    gfx::Drawable::Flags meshAttributeFlags{
+        gfx::Drawable::Flag::HasVertexColor};
     // WARNING:
     // This is to initiate drawables for instance mesh, and the instance mesh
     // data is NOT stored in the meshData_ in the BaseMesh.
@@ -1093,7 +1219,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceIMesh(
   }
 
   return instanceRoot;
-}
+}  // ResourceManager::createRenderAssetInstanceIMesh
 
 bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
   ASSERT(isRenderAssetGeneral(info.type));
@@ -1106,6 +1232,10 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
   importerManager_.setPreferredPlugins("GltfImporter", {"TinyGltfImporter"});
 #ifdef ESP_BUILD_ASSIMP_SUPPORT
   importerManager_.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
+  Cr::PluginManager::PluginMetadata* const assimpmetadata =
+      importerManager_.metadata("AssimpImporter");
+  assimpmetadata->configuration().setValue("ImportColladaIgnoreUpDirection",
+                                           "true");
 #endif
   {
     Cr::PluginManager::PluginMetadata* const metadata =
@@ -1208,7 +1338,7 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
     for (unsigned int sceneDataID : sceneData->children3D()) {
       loadMeshHierarchy(*fileImporter_, meshMetaData.root, sceneDataID);
     }
-  } else if (fileImporter_->meshCount() &&
+  } else if ((fileImporter_->meshCount() != 0u) &&
              meshes_.at(meshMetaData.meshIndex.first)) {
     // no default scene --- standalone OBJ/PLY files, for example
     // take a wild guess and load the first mesh with the first material
@@ -1226,7 +1356,7 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
       R * meshMetaData.root.transformFromLocalToParent;
 
   return true;
-}
+}  // ResourceManager::loadRenderAssetGeneral
 
 scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
     const RenderAssetInstanceCreationInfo& creation,
@@ -1275,13 +1405,13 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
 
   // set the node type for all cached visual nodes
   if (nodeType != scene::SceneNodeType::EMPTY) {
-    for (auto node : visNodeCache) {
+    for (auto* node : visNodeCache) {
       node->setType(nodeType);
     }
   }
 
   return &newNode;
-}
+}  // ResourceManager::createRenderAssetInstanceGeneralPrimitive
 
 bool ResourceManager::buildTrajectoryVisualization(
     const std::string& trajVisName,
@@ -1304,7 +1434,7 @@ bool ResourceManager::buildTrajectoryVisualization(
     radius = .001;
   }
 
-  LOG(INFO) << "ResourceManager::loadTrajectoryVisualization : Calling "
+  LOG(INFO) << "::loadTrajectoryVisualization : Calling "
                "trajectoryTubeSolid to build a tube named :"
             << trajVisName << " with " << pts.size()
             << " points, building a tube of radius :" << radius << " using "
@@ -1315,7 +1445,7 @@ bool ResourceManager::buildTrajectoryVisualization(
   Cr::Containers::Optional<Mn::Trade::MeshData> trajTubeMesh =
       geo::buildTrajectoryTubeSolid(pts, numSegments, radius, smooth,
                                     numInterp);
-  LOG(INFO) << "ResourceManager::loadTrajectoryVisualization : Successfully "
+  LOG(INFO) << "::loadTrajectoryVisualization : Successfully "
                "returned from trajectoryTubeSolid ";
 
   // make assetInfo
@@ -1343,13 +1473,13 @@ bool ResourceManager::buildTrajectoryVisualization(
   phongMaterial->ambientColor = color;
   phongMaterial->diffuseColor = color;
 
-  meshMetaData.setMaterialIndices(nextMaterialID_, nextMaterialID_);
-  shaderManager_.set(std::to_string(nextMaterialID_++),
+  shaderManager_.set(std::to_string(nextMaterialID_),
                      static_cast<gfx::MaterialData*>(phongMaterial.release()));
 
   meshMetaData.root.meshIDLocal = 0;
   meshMetaData.root.componentID = 0;
-  meshMetaData.root.materialIDLocal = 0;
+  meshMetaData.root.materialID = std::to_string(nextMaterialID_++);
+
   // store the rotation to world frame upon load - currently superfluous
   const quatf transform = info.frame.rotationFrameToWorld();
   Magnum::Matrix4 R = Magnum::Matrix4::from(
@@ -1429,10 +1559,6 @@ int ResourceManager::loadNavMeshVisualization(esp::nav::PathFinder& pathFinder,
 
 void ResourceManager::loadMaterials(Importer& importer,
                                     LoadedAssetData& loadedAssetData) {
-  int materialStart = nextMaterialID_;
-  int materialEnd = materialStart + importer.materialCount() - 1;
-  loadedAssetData.meshMetaData.setMaterialIndices(materialStart, materialEnd);
-
   for (int iMaterial = 0; iMaterial < importer.materialCount(); ++iMaterial) {
     int currentMaterialID = nextMaterialID_++;
 
@@ -1486,7 +1612,7 @@ void ResourceManager::loadMaterials(Importer& importer,
     shaderManager_.set(std::to_string(currentMaterialID),
                        finalMaterial.release());
   }
-}
+}  // ResourceManager::loadMaterials
 
 gfx::PhongMaterialData::uptr ResourceManager::buildFlatShadedMaterialData(
     const Mn::Trade::PhongMaterialData& material,
@@ -1508,9 +1634,15 @@ gfx::PhongMaterialData::uptr ResourceManager::buildFlatShadedMaterialData(
     // check for diffuse texture and use that instead
     finalMaterial->ambientTexture =
         textures_.at(textureBaseIndex + material.diffuseTexture()).get();
-  } else {
+  }
+
+  if (material.hasAttribute(Mn::Trade::MaterialAttribute::DiffuseColor)) {
+    finalMaterial->ambientColor = material.diffuseColor();
+  } else if (material.hasAttribute(
+                 Mn::Trade::MaterialAttribute::AmbientColor)) {
     finalMaterial->ambientColor = material.ambientColor();
   }
+
   return finalMaterial;
 }
 
@@ -1625,7 +1757,7 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
     */
     CORRADE_ASSERT(
         material.hasNoneRoughnessMetallicTexture(),
-        "ResourceManager::buildPbrShadedMaterialData(): if both the metallic "
+        "::buildPbrShadedMaterialData(): if both the metallic "
         "and roughness texture exist, they must be packed in the same texture "
         "based on glTF 2.0 Spec.",
         finalMaterial);
@@ -1634,7 +1766,7 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
   // TODO:
   // Support NormalRoughnessMetallicTexture packing
   CORRADE_ASSERT(!material.hasNormalRoughnessMetallicTexture(),
-                 "ResourceManager::buildPbrShadedMaterialData(): "
+                 "::buildPbrShadedMaterialData(): "
                  "Sorry. NormalRoughnessMetallicTexture is not supported in "
                  "the current version. We will work on it.",
                  finalMaterial);
@@ -1664,7 +1796,7 @@ void ResourceManager::loadMeshes(Importer& importer,
     gltfMeshData->uploadBuffersToGPU(false);
     meshes_.emplace(meshStart + iMesh, std::move(gltfMeshData));
   }
-}
+}  // ResourceManager::loadMeshes
 
 //! Recursively load the transformation chain specified by the mesh file
 void ResourceManager::loadMeshHierarchy(Importer& importer,
@@ -1679,7 +1811,7 @@ void ResourceManager::loadMeshHierarchy(Importer& importer,
   }
 
   // Add the new node to the hierarchy and set its transformation
-  parent.children.push_back(MeshTransformNode());
+  parent.children.emplace_back();
   parent.children.back().transformFromLocalToParent =
       objectData->transformation();
   parent.children.back().componentID = componentID;
@@ -1691,11 +1823,14 @@ void ResourceManager::loadMeshHierarchy(Importer& importer,
       meshIDLocal != ID_UNDEFINED) {
     parent.children.back().meshIDLocal = meshIDLocal;
     if (requiresTextures_) {
-      parent.children.back().materialIDLocal =
-          static_cast<Magnum::Trade::MeshObjectData3D*>(objectData.get())
-              ->material();
-    } else {
-      parent.children.back().materialIDLocal = ID_UNDEFINED;
+      auto* mod3D =
+          static_cast<Magnum::Trade::MeshObjectData3D*>(objectData.get());
+      if (mod3D->material() != ID_UNDEFINED) {
+        // we've already loaded the materials, so we can get the global index
+        // from the material count
+        parent.children.back().materialID = std::to_string(
+            mod3D->material() + nextMaterialID_ - importer.materialCount());
+      }
     }
   }
 
@@ -1703,7 +1838,7 @@ void ResourceManager::loadMeshHierarchy(Importer& importer,
   for (auto childObjectID : objectData->children()) {
     loadMeshHierarchy(importer, parent.children.back(), childObjectID);
   }
-}
+}  // ResourceManager::loadMeshHierarchy
 
 void ResourceManager::loadTextures(Importer& importer,
                                    LoadedAssetData& loadedAssetData) {
@@ -1785,10 +1920,11 @@ void ResourceManager::loadTextures(Importer& importer,
 }  // ResourceManager::loadTextures
 
 bool ResourceManager::instantiateAssetsOnDemand(
-    const std::string& objectTemplateHandle) {
-  // Meta data
-  ObjectAttributes::ptr ObjectAttributes =
-      getObjectAttributesManager()->getObjectByHandle(objectTemplateHandle);
+    const metadata::attributes::ObjectAttributes::ptr& objectAttributes) {
+  if (!objectAttributes) {
+    return false;
+  }
+  const std::string& objectTemplateHandle = objectAttributes->getHandle();
 
   // if attributes are "dirty" (important values have changed since last
   // registered) then re-register.  Should never return ID_UNDEFINED - this
@@ -1797,11 +1933,11 @@ bool ResourceManager::instantiateAssetsOnDemand(
   // object has acquired a copy of its parent attributes.  No object should
   // ever have a copy of attributes with isDirty == true - any editing of
   // attributes for objects requires object rebuilding.
-  if (ObjectAttributes->getIsDirty()) {
+  if (objectAttributes->getIsDirty()) {
     CORRADE_ASSERT(
         (ID_UNDEFINED != getObjectAttributesManager()->registerObject(
-                             ObjectAttributes, objectTemplateHandle)),
-        "ResourceManager::instantiateAssetsOnDemand : Unknown failure "
+                             objectAttributes, objectTemplateHandle)),
+        "::instantiateAssetsOnDemand : Unknown failure "
         "attempting to register modified template :"
             << objectTemplateHandle
             << "before asset instantiation.  Aborting. ",
@@ -1809,13 +1945,13 @@ bool ResourceManager::instantiateAssetsOnDemand(
   }
 
   // get render asset handle
-  std::string renderAssetHandle = ObjectAttributes->getRenderAssetHandle();
+  std::string renderAssetHandle = objectAttributes->getRenderAssetHandle();
   // whether attributes requires lighting
-  bool requiresLighting = ObjectAttributes->getRequiresLighting();
+  bool requiresLighting = objectAttributes->getRequiresLighting();
   bool renderMeshSuccess = false;
   // no resource dict entry exists for renderAssetHandle
   if (resourceDict_.count(renderAssetHandle) == 0) {
-    if (ObjectAttributes->getRenderAssetIsPrimitive()) {
+    if (objectAttributes->getRenderAssetIsPrimitive()) {
       // needs to have a primitive asset attributes with same name
       if (!getAssetAttributesManager()->getObjectLibHasHandle(
               renderAssetHandle)) {
@@ -1834,19 +1970,19 @@ bool ResourceManager::instantiateAssetsOnDemand(
     } else {
       // load/check_for render mesh metadata and load assets
       renderMeshSuccess = loadObjectMeshDataFromFile(
-          renderAssetHandle, objectTemplateHandle, "render", requiresLighting);
+          renderAssetHandle, objectAttributes, "render", requiresLighting);
     }
   }  // if no render asset exists
 
   // check if uses collision mesh
   // TODO : handle visualization-only objects lacking collision assets
   //        Probably just need to check attr->isCollidable()
-  if (!ObjectAttributes->getCollisionAssetIsPrimitive()) {
+  if (!objectAttributes->getCollisionAssetIsPrimitive()) {
     const auto collisionAssetHandle =
-        ObjectAttributes->getCollisionAssetHandle();
+        objectAttributes->getCollisionAssetHandle();
     if (resourceDict_.count(collisionAssetHandle) == 0) {
       bool collisionMeshSuccess = loadObjectMeshDataFromFile(
-          collisionAssetHandle, objectTemplateHandle, "collision",
+          collisionAssetHandle, objectAttributes, "collision",
           !renderMeshSuccess && requiresLighting);
 
       if (!collisionMeshSuccess) {
@@ -1919,17 +2055,9 @@ void ResourceManager::addComponent(
 
   // Add a drawable if the object has a mesh and the mesh is loaded
   if (meshIDLocal != ID_UNDEFINED) {
-    const int materialIDLocal = meshTransformNode.materialIDLocal;
     const int meshID = metaData.meshIndex.first + meshIDLocal;
     Magnum::GL::Mesh& mesh = *meshes_.at(meshID)->getMagnumGLMesh();
-    Mn::ResourceKey materialKey;
-    if (materialIDLocal == ID_UNDEFINED ||
-        metaData.materialIndex.second == ID_UNDEFINED) {
-      materialKey = DEFAULT_MATERIAL_KEY;
-    } else {
-      materialKey =
-          std::to_string(metaData.materialIndex.first + materialIDLocal);
-    }
+    Mn::ResourceKey materialKey = meshTransformNode.materialID;
 
     gfx::Drawable::Flags meshAttributeFlags{};
     const auto& meshData = meshes_.at(meshID)->getMeshData();
@@ -1942,7 +2070,12 @@ void ResourceManager::addComponent(
           meshAttributeFlags |= gfx::Drawable::Flag::HasSeparateBitangent;
         }
       }
+
+      if (meshData->hasAttribute(Mn::Trade::MeshAttribute::Color)) {
+        meshAttributeFlags |= gfx::Drawable::Flag::HasVertexColor;
+      }
     }
+
     createDrawable(mesh,                // render mesh
                    meshAttributeFlags,  // mesh attribute flags
                    node,                // scene node
@@ -1959,7 +2092,7 @@ void ResourceManager::addComponent(
   }
 
   // Recursively add children
-  for (auto& child : meshTransformNode.children) {
+  for (const auto& child : meshTransformNode.children) {
     addComponent(metaData,       // mesh metadata
                  node,           // parent scene node
                  lightSetupKey,  // lightSetup key
@@ -2024,7 +2157,7 @@ void ResourceManager::createDrawable(Mn::GL::Mesh& mesh,
           group);              // drawable group
       break;
   }
-}
+}  // ResourceManager::createDrawable
 
 bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
                                          scene::SceneNode* parent,
@@ -2134,12 +2267,11 @@ void ResourceManager::initDefaultLightSetups() {
 void ResourceManager::initDefaultMaterials() {
   shaderManager_.set<gfx::MaterialData>(DEFAULT_MATERIAL_KEY,
                                         new gfx::PhongMaterialData{});
-  auto whiteMaterialData = new gfx::PhongMaterialData;
+  auto* whiteMaterialData = new gfx::PhongMaterialData;
   whiteMaterialData->ambientColor = Magnum::Color4{1.0};
   shaderManager_.set<gfx::MaterialData>(WHITE_MATERIAL_KEY, whiteMaterialData);
-  auto perVertexObjectId = new gfx::PhongMaterialData{};
+  auto* perVertexObjectId = new gfx::PhongMaterialData{};
   perVertexObjectId->perVertexObjectId = true;
-  perVertexObjectId->vertexColored = true;
   perVertexObjectId->ambientColor = Mn::Color4{1.0};
   shaderManager_.set<gfx::MaterialData>(PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
                                         perVertexObjectId);
@@ -2157,7 +2289,7 @@ bool ResourceManager::isLightSetupCompatible(
 
 //! recursively join all sub-components of a mesh into a single unified
 //! MeshData.
-void ResourceManager::joinHeirarchy(
+void ResourceManager::joinHierarchy(
     MeshData& mesh,
     const MeshMetaData& metaData,
     const MeshTransformNode& node,
@@ -2179,8 +2311,8 @@ void ResourceManager::joinHeirarchy(
     }
   }
 
-  for (auto& child : node.children) {
-    joinHeirarchy(mesh, metaData, child, transformFromLocalToWorld);
+  for (const auto& child : node.children) {
+    joinHierarchy(mesh, metaData, child, transformFromLocalToWorld);
   }
 }
 
@@ -2193,11 +2325,12 @@ std::unique_ptr<MeshData> ResourceManager::createJoinedCollisionMesh(
   const MeshMetaData& metaData = getMeshMetaData(filename);
 
   Magnum::Matrix4 identity;
-  joinHeirarchy(*mesh, metaData, metaData.root, identity);
+  joinHierarchy(*mesh, metaData, metaData.root, identity);
 
   return mesh;
 }
 
+#ifdef ESP_BUILD_WITH_VHACD
 bool ResourceManager::outputMeshMetaDataToObj(
     const std::string& MeshMetaDataFile,
     const std::string& new_filename,
@@ -2244,22 +2377,30 @@ bool ResourceManager::outputMeshMetaDataToObj(
   Cr::Utility::Directory::writeString(filepath + "/" + new_filename, out);
 
   return success;
-}
+}  // ResourceManager::outputMeshMetaDataToObj
 
 bool ResourceManager::isAssetDataRegistered(
     const std::string& resourceName) const {
   return (resourceDict_.count(resourceName) > 0);
 }
 
-#ifdef ESP_BUILD_WITH_VHACD
 void ResourceManager::createConvexHullDecomposition(
     const std::string& filename,
     const std::string& chdFilename,
     const VHACDParameters& params,
     const bool saveChdToObj) {
   if (resourceDict_.count(filename) == 0) {
+    // retrieve existing, or create new, object attributes corresponding to
+    // passed filename
+    auto objAttributes =
+        getObjectAttributesManager()->getObjectCopyByHandle(filename);
+    if (objAttributes == nullptr) {
+      objAttributes =
+          getObjectAttributesManager()->createObject(filename, false);
+    }
+
     // load/check for render MeshMetaData and load assets
-    loadObjectMeshDataFromFile(filename, filename, "render", true);
+    loadObjectMeshDataFromFile(filename, objAttributes, "render", true);
 
   }  // if no render asset exists
 
@@ -2338,16 +2479,8 @@ void ResourceManager::createConvexHullDecomposition(
     MeshTransformNode transformNode;
     transformNode.meshIDLocal = p;
     transformNode.componentID = componentID;
-    transformNode.materialIDLocal = 0;
     meshMetaData.root.children.push_back(transformNode);
   }
-
-  // default material for now
-  auto phongMaterial = gfx::PhongMaterialData::create_unique();
-
-  meshMetaData.setMaterialIndices(nextMaterialID_, nextMaterialID_);
-  shaderManager_.set(std::to_string(nextMaterialID_++),
-                     static_cast<gfx::MaterialData*>(phongMaterial.release()));
 
   // make assetInfo
   AssetInfo info{AssetType::PRIMITIVE};

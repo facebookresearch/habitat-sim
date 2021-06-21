@@ -74,6 +74,9 @@ void PhysicsAttributesManager::setValsFromJSONDoc(
         physicsManagerAttributes->setGravity(gravity);
       });
 
+  // check for user defined attributes
+  this->parseUserDefinedJsonVals(physicsManagerAttributes, jsonConfig);
+
 }  // PhysicsAttributesManager::createFileBasedAttributesTemplate
 
 }  // namespace managers

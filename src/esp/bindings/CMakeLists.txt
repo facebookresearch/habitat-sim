@@ -2,15 +2,19 @@ find_package(MagnumBindings REQUIRED Python)
 
 pybind11_add_module(
   habitat_sim_bindings
+  bindings.h
   bindings.cpp
   AttributesBindings.cpp
   AttributesManagersBindings.cpp
+  CoreBindings.cpp
   GeoBindings.cpp
   GfxBindings.cpp
   MetadataMediatorBindings.cpp
   GfxReplayBindings.cpp
   OpaqueTypes.h
   PhysicsBindings.cpp
+  PhysicsObjectBindings.cpp
+  PhysicsWrapperManagerBindings.cpp
   SceneBindings.cpp
   SensorBindings.cpp
   ShortestPathBindings.cpp

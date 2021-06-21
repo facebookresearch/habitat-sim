@@ -76,7 +76,7 @@ struct SimTest : Cr::TestSuite::Tester {
 
     auto sim = Simulator::create_unique(simConfig);
     auto objAttrMgr = sim->getObjectAttributesManager();
-    objAttrMgr->loadAllConfigsFromPath(
+    objAttrMgr->loadAllJSONConfigsFromPath(
         Cr::Utility::Directory::join(TEST_ASSETS, "objects/nested_box"), true);
 
     sim->setLightSetup(self.lightSetup1, "custom_lighting_1");
@@ -99,7 +99,7 @@ struct SimTest : Cr::TestSuite::Tester {
     MetadataMediator::ptr MM = MetadataMediator::create(simConfig);
     auto sim = Simulator::create_unique(simConfig, MM);
     auto objAttrMgr = sim->getObjectAttributesManager();
-    objAttrMgr->loadAllConfigsFromPath(
+    objAttrMgr->loadAllJSONConfigsFromPath(
         Cr::Utility::Directory::join(TEST_ASSETS, "objects/nested_box"), true);
 
     sim->setLightSetup(self.lightSetup1, "custom_lighting_1");
@@ -125,6 +125,7 @@ struct SimTest : Cr::TestSuite::Tester {
   void recomputeNavmeshWithStaticObjects();
   void loadingObjectTemplates();
   void buildingPrimAssetObjectTemplates();
+  void addObjectByHandle();
   void addSensorToObject();
 
   // TODO: remove outlier pixels from image and lower maxThreshold
@@ -132,10 +133,10 @@ struct SimTest : Cr::TestSuite::Tester {
 
   LightSetup lightSetup1{{Magnum::Vector4{1.0f, 1.5f, 0.5f, 0.0f},
                           {5.0, 5.0, 0.0},
-                          LightPositionModel::CAMERA}};
+                          LightPositionModel::Camera}};
   LightSetup lightSetup2{{Magnum::Vector4{0.0f, 0.5f, 1.0f, 0.0f},
                           {0.0, 5.0, 5.0},
-                          LightPositionModel::CAMERA}};
+                          LightPositionModel::Camera}};
 };
 struct {
   // display name for sim being tested
@@ -164,6 +165,7 @@ SimTest::SimTest() {
             &SimTest::recomputeNavmeshWithStaticObjects,
             &SimTest::loadingObjectTemplates,
             &SimTest::buildingPrimAssetObjectTemplates,
+            &SimTest::addObjectByHandle,
             &SimTest::addSensorToObject}, Cr::Containers::arraySize(SimulatorBuilder) );
   // clang-format on
 }
@@ -520,16 +522,18 @@ void SimTest::loadingObjectTemplates() {
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
 
   // test directory of templates
-  std::vector<int> templateIndices = objectAttribsMgr->loadAllConfigsFromPath(
-      Cr::Utility::Directory::join(TEST_ASSETS, "objects"));
+  std::vector<int> templateIndices =
+      objectAttribsMgr->loadAllJSONConfigsFromPath(
+          Cr::Utility::Directory::join(TEST_ASSETS, "objects"));
   CORRADE_VERIFY(!templateIndices.empty());
   for (auto index : templateIndices) {
     CORRADE_VERIFY(index != esp::ID_UNDEFINED);
   }
 
   // reload again and ensure that old loaded indices are returned
-  std::vector<int> templateIndices2 = objectAttribsMgr->loadAllConfigsFromPath(
-      Cr::Utility::Directory::join(TEST_ASSETS, "objects"));
+  std::vector<int> templateIndices2 =
+      objectAttribsMgr->loadAllJSONConfigsFromPath(
+          Cr::Utility::Directory::join(TEST_ASSETS, "objects"));
   CORRADE_VERIFY(templateIndices2 == templateIndices);
 
   // test the loaded assets and accessing them by name
@@ -718,6 +722,22 @@ void SimTest::buildingPrimAssetObjectTemplates() {
 
 }  // SimTest::buildingPrimAssetObjectTemplates
 
+void SimTest::addObjectByHandle() {
+  Corrade::Utility::Debug() << "Starting Test : addObject ";
+  auto&& data = SimulatorBuilder[testCaseInstanceId()];
+  setTestCaseDescription(data.name);
+  auto simulator = data.creator(*this, planeStage, esp::NO_LIGHT_KEY);
+
+  int objectId = simulator->addObjectByHandle("invalid_handle");
+  CORRADE_VERIFY(objectId == esp::ID_UNDEFINED);
+
+  // pass valid object_config.json filepath as handle to addObjectByHandle
+  const auto validHandle = Cr::Utility::Directory::join(
+      TEST_ASSETS, "objects/nested_box.object_config.json");
+  objectId = simulator->addObjectByHandle(validHandle);
+  CORRADE_VERIFY(objectId != esp::ID_UNDEFINED);
+}
+
 void SimTest::addSensorToObject() {
   Corrade::Utility::Debug() << "Starting Test : addSensorToObject ";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
@@ -728,21 +748,19 @@ void SimTest::addSensorToObject() {
   auto objs = objectAttribsMgr->getObjectHandlesBySubstring("sphere");
   int objectID = simulator->addObjectByHandle(objs[0]);
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
+  esp::scene::SceneNode& objectNode = *simulator->getObjectSceneNode(objectID);
 
   // Add sensor to sphere object
-  esp::sensor::SensorSuite sensorSuite;
   auto objectSensorSpec = esp::sensor::CameraSensorSpec::create();
   objectSensorSpec->uuid = std::to_string(objectID);
   objectSensorSpec->position = {0, 0, 0};
   objectSensorSpec->orientation = {0, 0, 0};
   objectSensorSpec->resolution = {128, 128};
-  sensorSuite.add(simulator->addSensorToObject(objectID, objectSensorSpec));
+  simulator->addSensorToObject(objectID, objectSensorSpec);
   std::string expectedUUID = std::to_string(objectID);
-  CORRADE_VERIFY(
-      sensorSuite.get(expectedUUID));  // Verify that Sensor exists with uuid
-  CameraSensor* cameraSensor =
-      dynamic_cast<CameraSensor*>(sensorSuite.get(expectedUUID).get());
-  cameraSensor->setTransformationFromSpec();
+  CameraSensor& cameraSensor = dynamic_cast<CameraSensor&>(
+      objectNode.getNodeSensorSuite().get(expectedUUID));
+  cameraSensor.setTransformationFromSpec();
 
   simulator->setTranslation({1.0f, 1.5f, 1.0f},
                             objectID);  // Move camera to same place as agent
@@ -751,12 +769,14 @@ void SimTest::addSensorToObject() {
   int objectID2 = simulator->addObjectByHandle(objs[0]);
   CORRADE_VERIFY(objectID2 != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID2);
+  esp::scene::SceneNode& objectNode2 =
+      *simulator->getObjectSceneNode(objectID2);
 
   Observation observation;
   ObservationSpace obsSpace;
-  simulator->getRenderer()->bindRenderTarget(*cameraSensor);
-  CORRADE_VERIFY(cameraSensor->getObservation(*simulator, observation));
-  CORRADE_VERIFY(cameraSensor->getObservationSpace(obsSpace));
+  simulator->getRenderer()->bindRenderTarget(cameraSensor);
+  CORRADE_VERIFY(cameraSensor.getObservation(*simulator, observation));
+  CORRADE_VERIFY(cameraSensor.getObservationSpace(obsSpace));
 
   esp::vec2i defaultResolution = {128, 128};
   std::vector<size_t> expectedShape{{static_cast<size_t>(defaultResolution[0]),

@@ -1,0 +1,127 @@
+{
+    "stages": {
+        "default_attributes": {
+            "origin":[1.0,2.0,3.0]
+        },
+        "paths": {
+      ".json" : ["stages/*"]
+    },
+        "configs" : [
+        {
+            "original_file": "stages/stage_0/dataset_test_stage_0.stage_config.json",
+            "template_handle": "modified_test_stage_0",
+            "attributes": {
+                "scale":[1,1,1],
+                "gravity":[0,-9.8,0],
+                "margin":0.041,
+                "friction_coefficient": 0.4,
+                "restitution_coefficient": 0.5,
+                "units_to_meters":1.0
+             }
+        },
+        {
+          "original_file": "stages/stage_1/dataset_test_stage_1.stage_config.json",
+          "template_handle": "modified_test_stage_1",
+          "attributes": {
+                "scale":[1,1,1],
+                "gravity":[0,-9.8,0],
+                "margin":0.041,
+                "friction_coefficient": 0.4,
+                "restitution_coefficient": 0.5,
+                "units_to_meters":1.0
+           }
+      },
+        {
+            "template_handle": "new_test_stage",
+            "attributes": {
+                "render_asset": "stages/stage_0/dataset_test_stage_0.glb",
+                "up":[0,-1,0],
+                "scale":[2,2,2],
+                "gravity":[0,9.8,0],
+                "friction_coefficient": 0.35,
+                "restitution_coefficient": 0.25,
+                "units_to_meters":2.0,
+                "requires_lighting":false
+            }
+        }
+        ]
+    },
+    "objects":{
+        "default_attributes": {
+      "mass" : 10.0,
+      "inertia": [3,2,1]
+        },
+        "paths": {
+      ".json" : ["objects/*"]
+    },
+        "configs" : [
+        {
+            "original_file": "objects/object_0/dataset_test_object1_0.object_config.json",
+            "template_handle": "modified_test_object1_1_slick_heavy",
+            "attributes": {
+                "friction_coefficient": 0.2,
+                "mass": 3.5
+            }
+        },
+    {
+            "template_handle": "new_test_object3",
+            "attributes": {
+                "render_asset": "objects/object_1/dataset_test_object3_1.glb",
+                "friction_coefficient": 0.1,
+                "mass": 1.1
+            }
+        }
+
+        ]
+    },
+    "light_setups":{
+        "default_attributes": {
+        },
+        "paths": {
+      ".json" : ["lights/*"]
+    },
+        "configs" : [
+        {
+            "original_file":"lights/lights_0/dataset_test_lights_0.lighting_config.json",
+            "template_handle": "modified_test_lights_0",
+            "attributes": {
+            "lights":{
+                "0": { "position": [1.5,0.1,1.5], "intensity": 2.4, "color": [0.5,1,0.95], "type": "point"},
+                "1": { "position": [2.5,-0.1,2.5], "intensity": 2.1, "color": [0.5,1,0.95], "type": "point"},
+                "2": { "position": [3.5,-0.7,-3.5], "intensity": -0.5, "color": [1,0.5,1], "type": "point"}
+        }
+           }
+        },
+        {
+            "template_handle": "new_test_lights_0",
+            "attributes": {
+            "lights":{
+                "4": { "position": [12.5,-10.1,12.5], "intensity": 1.1, "color": [0.5,1,0.95], "type": "point"},
+                "5": { "position": [13.5,-10.7,-13.5], "intensity": -1.5, "color": [1,0.5,1], "type": "point"},
+                "3": { "position": [11.5,10.1,11.5], "intensity": 1.4, "color": [0.5,1,0.95], "type": "point"}
+            }
+            }
+        }
+        ]
+    },
+  "articulated_objects":{
+      "paths": {
+        ".urdf" : ["../../urdf/*"]
+      }
+    },
+  "scene_instances":{
+    "paths": {
+      ".json" : ["scenes/*"]
+    }
+  },
+    "navmesh_instances":{
+      "navmesh_path0":"test_navmesh_path0",
+      "navmesh_path1":"test_navmesh_path1",
+      "navmesh_path2":"test_navmesh_path2"
+    },
+    "semantic_scene_descriptor_instances": {
+      "semantic_descriptor_path0":"test_semantic_descriptor_path0",
+      "semantic_descriptor_path1":"test_semantic_descriptor_path1",
+      "semantic_descriptor_path2":"test_semantic_descriptor_path2"
+    }
+}

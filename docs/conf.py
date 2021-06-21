@@ -38,7 +38,7 @@ INPUT_PAGES = [
     "pages/stereo-agent.rst",
     "pages/lighting-setups.rst",
     "pages/image-extractor.rst",
-    "pages/rigid-object-tutorial.rst",
+    "pages/managed-rigid-object-tutorial.rst",
 ]
 
 PLUGINS = [
@@ -78,7 +78,7 @@ LINKS_NAVBAR1 = [
             ("Stereo agent", "stereo-agent"),
             ("Lighting Setups", "lighting-setups"),
             ("Image extraction", "image-extractor"),
-            ("Rigid Object Tutorial", "rigid-object-tutorial"),
+            ("Managed Rigid Object Tutorial", "managed-rigid-object-tutorial"),
         ],
     ),
     ("Classes", "classes", []),

@@ -15,11 +15,6 @@ output_path = os.path.join(dir_path, "VHACD_tutorial_output/")
 if not os.path.exists(output_path):
     os.mkdir(output_path)
 
-# Define Helper Functions
-def remove_all_objects(sim):
-    for id_ in sim.get_existing_object_ids():
-        sim.remove_object(id_)
-
 
 def make_configuration():
     # simulator configuration
@@ -30,7 +25,7 @@ def make_configuration():
 
     # sensor configurations
     sensor_specs = []
-    sensor_spec = habitat_sim.SensorSpec()
+    sensor_spec = habitat_sim.CameraSensorSpec()
     sensor_spec.uuid = "rgba_camera_1stperson"
     sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
     sensor_spec.resolution = [544, 720]
@@ -61,14 +56,14 @@ def_orientation = mn.Quaternion(((0, 0, 0), 1))
 
 def set_object_state_from_agent(
     sim,
-    ob_id,
+    obj,
     offset=def_offset,
     orientation=def_orientation,
 ):
     agent_transform = sim.agents[0].scene_node.transformation_matrix()
     ob_translation = agent_transform.transform_point(offset)
-    sim.set_translation(ob_translation, ob_id)
-    sim.set_rotation(orientation, ob_id)
+    obj.translation = ob_translation
+    obj.rotation = orientation
 
 
 # This tutorial walks through how to use VHACD and the time optimizations it can provide.
@@ -93,6 +88,9 @@ def runVHACDSimulation(obj_path):
 
         # get the physics object attributes manager
         obj_templates_mgr = sim.get_object_template_manager()
+        # get the rigid object manager, which provides direct
+        # access to objects
+        rigid_obj_mgr = sim.get_rigid_object_manager()
 
         # create a list that will store the object ids
         obj_ids = []
@@ -101,7 +99,7 @@ def runVHACDSimulation(obj_path):
         obj_id_1 = obj_templates_mgr.load_configs(
             str(os.path.join(data_path, obj_path))
         )[0]
-        obj_template = obj_templates_mgr.get_template_by_ID(obj_id_1)
+        obj_template = obj_templates_mgr.get_template_by_id(obj_id_1)
         obj_handle = obj_template.render_asset_handle
         obj_templates_mgr.register_template(obj_template, force_registration=True)
         obj_ids += [obj_id_1]
@@ -122,7 +120,7 @@ def runVHACDSimulation(obj_path):
         new_obj_template_1 = obj_templates_mgr.get_template_by_handle(new_handle_1)
 
         obj_templates_mgr.register_template(new_obj_template_1, force_registration=True)
-        obj_ids += [new_obj_template_1.ID]
+        obj_ids += [new_obj_template_1.template_id]
 
         # Medium resolution
         params = habitat_sim.VHACDParameters()
@@ -136,7 +134,7 @@ def runVHACDSimulation(obj_path):
         new_obj_template_2 = obj_templates_mgr.get_template_by_handle(new_handle_2)
 
         obj_templates_mgr.register_template(new_obj_template_2, force_registration=True)
-        obj_ids += [new_obj_template_2.ID]
+        obj_ids += [new_obj_template_2.template_id]
 
         # Low resolution
         params = habitat_sim.VHACDParameters()
@@ -150,15 +148,15 @@ def runVHACDSimulation(obj_path):
         new_obj_template_3 = obj_templates_mgr.get_template_by_handle(new_handle_3)
 
         obj_templates_mgr.register_template(new_obj_template_3, force_registration=True)
-        obj_ids += [new_obj_template_3.ID]
+        obj_ids += [new_obj_template_3.template_id]
 
         # now display objects
-        cur_ids = []
+        cur_objs = []
         for i in range(len(obj_ids)):
-            cur_id = sim.add_object(obj_ids[i])
-            cur_ids.append(cur_id)
+            cur_obj = rigid_obj_mgr.add_object_by_template_id(obj_ids[i])
+            cur_objs.append(cur_obj)
             # get length
-            obj_node = sim.get_object_scene_node(cur_id)
+            obj_node = cur_obj.root_scene_node
             obj_bb = obj_node.cumulative_bb
             length = obj_bb.size().length() * 0.8
 
@@ -167,7 +165,7 @@ def runVHACDSimulation(obj_path):
 
             set_object_state_from_agent(
                 sim,
-                cur_id,
+                cur_obj,
                 offset=np.array(
                     [
                         -total_length / 2 + total_length * i / (len(obj_ids) - 1),
@@ -176,16 +174,16 @@ def runVHACDSimulation(obj_path):
                     ]
                 ),
             )
-            sim.set_object_motion_type(habitat_sim.physics.MotionType.KINEMATIC, cur_id)
-            vel_control = sim.get_object_velocity_control(cur_id)
+            cur_obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+            vel_control = cur_obj.velocity_control
             vel_control.controlling_ang_vel = True
             vel_control.angular_velocity = np.array([0, -1.56, 0])
 
         # simulate for 4 seconds
         simulate(sim, dt=4, get_frames=True, data=data)
 
-        for cur_id in cur_ids:
-            vel_control = sim.get_object_velocity_control(cur_id)
+        for cur_obj in cur_objs:
+            vel_control = cur_obj.velocity_control
             vel_control.controlling_ang_vel = True
             vel_control.angular_velocity = np.array([-1.56, 0, 0])
 
@@ -195,6 +193,18 @@ def runVHACDSimulation(obj_path):
 
 
 if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--no-show-video", dest="show_video", action="store_false")
+    parser.add_argument("--no-make-video", dest="make_video", action="store_false")
+    parser.set_defaults(show_video=True, make_video=True)
+    args, _ = parser.parse_known_args()
+    show_video = args.show_video
+    make_video = args.make_video
+    if make_video and not os.path.exists(output_path):
+        os.mkdir(output_path)
+
     # List of objects you want to execute the VHACD tests on.
     obj_paths = [
         "test_assets/objects/chair.glb",
@@ -204,10 +214,11 @@ if __name__ == "__main__":
     observations = []
     for obj_path in obj_paths:
         observations += runVHACDSimulation(obj_path)["observations"]
-    vut.make_video(
-        observations,
-        "rgba_camera_1stperson",
-        "color",
-        output_path + "VHACD_vid_1",
-        open_vid=True,
-    )
+    if make_video:
+        vut.make_video(
+            observations,
+            "rgba_camera_1stperson",
+            "color",
+            output_path + "VHACD_vid_1",
+            open_vid=show_video,
+        )

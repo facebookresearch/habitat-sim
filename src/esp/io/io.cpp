@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "io.h"
+#include <glob.h>
 #include <fstream>
 #include <set>
 
@@ -107,6 +108,17 @@ std::string removeExtension(const std::string& file) {
 }
 */
 
+std::vector<std::string> globDirs(const std::string& pattern) {
+  glob_t glob_result;
+  glob(pattern.c_str(), GLOB_MARK, nullptr, &glob_result);
+  std::vector<std::string> ret(glob_result.gl_pathc);
+  for (int i = 0; i < glob_result.gl_pathc; ++i) {
+    ret[i] = std::string(glob_result.gl_pathv[i]);
+  }
+  globfree(&glob_result);
+  return ret;
+}
+
 std::vector<std::string> tokenize(const std::string& string,
                                   const std::string& delimiterCharList,
                                   int limit /* = 0 */,
@@ -121,11 +133,11 @@ std::vector<std::string> tokenize(const std::string& string,
   int pos = 0;
   bool done = false;
   for (pos = 0; pos < string.length(); ++pos) {
-    if (delimiterSet.count(string[pos])) {
+    if (delimiterSet.count(string[pos]) != 0u) {
       if (pos > start) {
         tokens.push_back(string.substr(start, pos - start));
       } else if (!mergeAdjDelims || start == 0) {
-        tokens.push_back("");
+        tokens.emplace_back("");
       }
       done = (limit > 1 && tokens.size() == limit - 1);
       start = pos + 1;

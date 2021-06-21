@@ -18,7 +18,7 @@ import attr
 import magnum as mn
 import numpy as np
 import scipy.stats
-from attr._make import Attribute
+from attr import Attribute
 from numpy import ndarray
 
 from habitat_sim import bindings as hsim
@@ -178,13 +178,13 @@ class PyRobotNoisyActuationSpec(ActuationSpec):
     """
     robot: str = attr.ib(default="LoCoBot")
 
-    @robot.validator  # noqa: F811
+    @robot.validator
     def check_robot(self, attribute: Attribute, value: str) -> None:
         assert value in pyrobot_noise_models, f"{value} not a known robot"
 
     controller: str = attr.ib(default="ILQR")
 
-    @controller.validator  # noqa: F811
+    @controller.validator
     def check_controller(self, attribute: Attribute, value: str) -> None:
         assert value in [
             "ILQR",

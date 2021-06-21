@@ -16,8 +16,13 @@ const std::map<std::string, esp::physics::MotionType>
 };
 
 SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
-    const std::string& handle)
-    : AbstractAttributes("SceneObjectInstanceAttributes", handle) {
+    const std::string& handle,
+    const std::string& type)
+    : AbstractAttributes(type, handle) {
+  // default to unknown for object instances, to use attributes-specified
+  // defaults
+  setShaderType(static_cast<int>(ObjectInstanceShaderType::Unknown));
+
   // defaults to unknown/undefined
   setMotionType(static_cast<int>(esp::physics::MotionType::UNDEFINED));
   // set to no rotation
@@ -25,6 +30,15 @@ SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
   // defaults to unknown so that obj instances use scene instance setting
   setTranslationOrigin(
       static_cast<int>(managers::SceneInstanceTranslationOrigin::Unknown));
+  // set default multiplicative scaling values
+  setUniformScale(1.0f);
+  setMassScale(1.0f);
+}
+
+SceneAOInstanceAttributes::SceneAOInstanceAttributes(const std::string& handle)
+    : SceneObjectInstanceAttributes(handle, "SceneAOInstanceAttributes") {
+  // set default fixed base value (only used for articulated object)
+  setFixedBase(false);
 }
 
 const std::map<std::string, managers::SceneInstanceTranslationOrigin>
@@ -32,6 +46,7 @@ const std::map<std::string, managers::SceneInstanceTranslationOrigin>
         {"asset_local", managers::SceneInstanceTranslationOrigin::AssetLocal},
         {"com", managers::SceneInstanceTranslationOrigin::COM},
 };
+
 SceneAttributes::SceneAttributes(const std::string& handle)
     : AbstractAttributes("SceneAttributes", handle) {
   // defaults to no lights

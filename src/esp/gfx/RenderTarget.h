@@ -14,6 +14,11 @@
 #include "esp/gfx/Renderer.h"
 
 namespace esp {
+
+namespace sensor {
+class VisualSensor;
+}
+
 namespace gfx {
 
 /**
@@ -27,23 +32,24 @@ class RenderTarget {
  public:
   enum class Flag {
     /**
-     * create rgba buffer
+     * create a color attachment for the rgba render buffer
      * No need to set it for depth sensor, semantic sensor etc. as it makes
      * the rendering slower
      */
-    RgbaBuffer = 1 << 0,
+    RgbaAttachment = 1 << 0,
     /**
-     * create objectId buffer
+     * create a color attachment for the objectId texture
      * No need to set it for color sensor, depth sensor etc. as it makes the
      * rendering slower
      */
-    ObjectIdBuffer = 1 << 1,
+    ObjectIdAttachment = 1 << 1,
     /**
-     * @brief use depth texture, it must be set for the depth sensor.
+     * @brief create a depth attachment for the depth texture, it MUST be set
+     * for the depth sensor.
      * No need to set it for color sensor, objectId sensor etc. as it makes the
-     * rendering slower
+     * rendering slower (default depth buffer will be used in this case.)
      */
-    DepthTexture = 1 << 2,
+    DepthTextureAttachment = 1 << 2,
   };
 
   typedef Corrade::Containers::EnumSet<Flag> Flags;
@@ -59,31 +65,38 @@ class RenderTarget {
    *                           Must be not nullptr to use @ref
    *                           readFrameDepthGPU()
    * @param flags              The flags of the renderer target
+   * @param visualSensor       (optional) The visual sensor for this render
+   * target
    */
   RenderTarget(const Magnum::Vector2i& size,
                const Magnum::Vector2& depthUnprojection,
                DepthShader* depthShader,
-               Flags flags = {Flag::RgbaBuffer | Flag::ObjectIdBuffer |
-                              Flag::DepthTexture});
+               Flags flags = {Flag::RgbaAttachment | Flag::ObjectIdAttachment |
+                              Flag::DepthTextureAttachment},
+               const sensor::VisualSensor* visualSensor = nullptr);
 
   /**
    * @brief Constructor
    * @param size               The size of the underlying framebuffers in WxH
    * @param depthUnprojection  Depth unrpojection parameters.  See @ref
    *                           calculateDepthUnprojection()
+   * @param visualSensor       (optional) The visual sensor for this render
+   * target
    *
    * Equivalent to calling
    * @ref RenderTarget(size, depthUnprojection, nullptr, {})
    */
   RenderTarget(const Magnum::Vector2i& size,
-               const Magnum::Vector2& depthUnprojection)
-      : RenderTarget{size, depthUnprojection, nullptr, {}} {}
+               const Magnum::Vector2& depthUnprojection,
+               const sensor::VisualSensor* visualSensor = nullptr)
+      : RenderTarget{size, depthUnprojection, nullptr, {}, visualSensor} {}
 
   ~RenderTarget() = default;
 
   /**
    * @brief Called before any draw calls that target this RenderTarget
-   * Clears the framebuffer and binds it
+   * Clears the framebuffer to the color specified by the VisualSensorSpec and
+   * binds it.
    */
   void renderEnter();
 
@@ -137,6 +150,16 @@ class RenderTarget {
    * which in case of EmscriptenApplication will be a canvas element.
    */
   void blitRgbaToDefault();
+
+  /**
+   * @brief get the depth texture
+   */
+  Magnum::GL::Texture2D& getDepthTexture();
+
+  /**
+   * @brief get the object id texture
+   */
+  Magnum::GL::Texture2D& getObjectIdTexture();
 
   // @brief Delete copy Constructor
   RenderTarget(const RenderTarget&) = delete;

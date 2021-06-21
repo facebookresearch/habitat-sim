@@ -14,6 +14,10 @@
 #include "esp/sensor/Sensor.h"
 
 namespace esp {
+
+namespace sensor {
+class SensorSuite;
+}
 namespace agent {
 
 // Represents the physical state of an agent
@@ -40,7 +44,7 @@ struct ActionSpec {
   std::string name;
   // linear, angular forces, joint torques, sensor actuation
   ActuationMap actuation;
-  ESP_SMART_POINTERS(ActionSpec);
+  ESP_SMART_POINTERS(ActionSpec)
 };
 bool operator==(const ActionSpec& a, const ActionSpec& b);
 bool operator!=(const ActionSpec& a, const ActionSpec& b);
@@ -103,18 +107,13 @@ class Agent : public Magnum::SceneGraph::AbstractFeature3D {
 
   bool act(const std::string& actionName);
 
-  bool hasAction(const std::string& actionName);
+  bool hasAction(const std::string& actionName) const;
 
   void reset();
 
   void getState(const AgentState::ptr& state) const;
 
   void setState(const AgentState& state, const bool resetSensors = true);
-
-  // Set Agent's member sensors to sensorSuite
-  void setSensorSuite(sensor::SensorSuite&& sensorSuite) {
-    sensors_ = sensorSuite;
-  }
 
   void setInitialState(const AgentState& state,
                        const bool resetSensors = true) {
@@ -124,8 +123,24 @@ class Agent : public Magnum::SceneGraph::AbstractFeature3D {
 
   scene::ObjectControls::ptr getControls() { return controls_; }
 
-  const sensor::SensorSuite& getSensorSuite() const { return sensors_; }
-  sensor::SensorSuite& getSensorSuite() { return sensors_; }
+  /**
+   * @brief Return SensorSuite containing references to superset of all Sensors
+   * held by this Agent's SceneNode and its children
+   */
+  sensor::SensorSuite& getSubtreeSensorSuite() {
+    return node().getSubtreeSensorSuite();
+  }
+
+  /**
+   * @brief Return map containing references to superset of all Sensors held by
+   * this Agent's SceneNode and its children values.
+   * Keys of map are uuid strings, values are references to Sensors with that
+   * uuid
+   */
+  std::map<std::string, std::reference_wrapper<sensor::Sensor>>&
+  getSubtreeSensors() {
+    return node().getSubtreeSensors();
+  }
 
   const AgentConfiguration& getConfig() const { return configuration_; }
   AgentConfiguration& getConfig() { return configuration_; }
@@ -138,7 +153,6 @@ class Agent : public Magnum::SceneGraph::AbstractFeature3D {
 
  private:
   AgentConfiguration configuration_;
-  sensor::SensorSuite sensors_;
   scene::ObjectControls::ptr controls_;
   AgentState initialState_;
 

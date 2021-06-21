@@ -13,7 +13,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.6.0
+#       jupytext_version: 1.11.2
 #   kernelspec:
 #     display_name: Python 3
 #     name: python3
@@ -39,7 +39,6 @@
 # @title Installation
 
 # !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/master/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
-# !wget -c http://dl.fbaipublicfiles.com/habitat/mp3d_example.zip && unzip -o mp3d_example.zip -d /content/habitat-sim/data/scene_datasets/mp3d/
 
 # %%
 # @title Colab Setup and Imports { display-mode: "form" }
@@ -158,7 +157,7 @@ if display:
 # %%
 # This is the scene we are going to load.
 # we support a variety of mesh formats, such as .glb, .gltf, .obj, .ply
-test_scene = "./data/scene_datasets/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb"
+test_scene = "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
 
 sim_settings = {
     "scene": test_scene,  # Scene path
@@ -282,7 +281,7 @@ navigateAndSee(action)
 # %%
 # @title Configure Sim Settings
 
-test_scene = "./data/scene_datasets/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb"
+test_scene = "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
 
 rgb_sensor = True  # @param {type:"boolean"}
 depth_sensor = True  # @param {type:"boolean"}
@@ -955,7 +954,9 @@ use_current_scene = False  # @param {type:"boolean"}
 sim_settings["seed"] = seed
 if not use_current_scene:
     # reload a default nav scene
-    sim_settings["scene"] = "./data/scene_datasets/mp3d/17DRP5sb8fy/17DRP5sb8fy.glb"
+    sim_settings[
+        "scene"
+    ] = "./data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
     cfg = make_cfg(sim_settings)
     try:  # make initialization Colab cell order proof
         sim.close()
