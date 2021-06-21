@@ -8,6 +8,7 @@ add_library(
   JsonBuiltinTypes.h
   JsonEspTypes.cpp
   JsonEspTypes.h
+  JsonMagnumTypes.cpp
   JsonMagnumTypes.h
   JsonStlTypes.h
   URDFParser.cpp
