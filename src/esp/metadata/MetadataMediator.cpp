@@ -387,7 +387,9 @@ std::string MetadataMediator::getDatasetsOverview() const {
   // reserve space for info strings for all scene datasets
   std::vector<std::string> sceneDatasetHandles =
       sceneDatasetAttributesManager_->getObjectHandlesBySubstring("");
-  std::string res = "Datasets : \n";
+  std::string res =
+      "Datasets : \n" +
+      attributes::SceneDatasetAttributes::getDatasetSummaryHeader() + "\n";
   for (const std::string& handle : sceneDatasetHandles) {
     res += sceneDatasetAttributesManager_->getObjectByHandle(handle)
                ->getDatasetSummary() +

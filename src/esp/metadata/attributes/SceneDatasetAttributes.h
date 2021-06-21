@@ -325,7 +325,12 @@ class SceneDatasetAttributes : public AbstractAttributes {
   /**
    * @brief return a summary of this dataset
    */
-  std::string getDatasetSummary();
+  std::string getDatasetSummary() const;
+
+  /**
+   * @brief returns the header row of the summary string.
+   */
+  static std::string getDatasetSummaryHeader();
 
  protected:
   /**

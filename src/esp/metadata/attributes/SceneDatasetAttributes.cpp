@@ -239,14 +239,20 @@ std::string SceneDatasetAttributes::getObjectInfoInternal() const {
   return res;
 }
 
-std::string SceneDatasetAttributes::getDatasetSummary() {
+std::string SceneDatasetAttributes::getDatasetSummaryHeader() {
+  return "Dataset Name, Scene Instance Templates, Stage Templates, Object "
+         "Templates, Articulated Object Paths, Lighting Templates, Primitive "
+         "Templates, Navmesh Entries, Semantic Scene Descriptor Entries,";
+}
+
+std::string SceneDatasetAttributes::getDatasetSummary() const {
   std::string res =
-      getHandle() + ", " +
+      getSimplifiedHandle() + ", " +
       std::to_string(sceneAttributesManager_->getNumObjects()) + ", " +
       std::to_string(stageAttributesManager_->getNumObjects()) + ", " +
       std::to_string(objectAttributesManager_->getNumObjects()) + ", " +
-      std::to_string(lightLayoutAttributesManager_->getNumObjects()) + ", " +
       std::to_string(articulatedObjPaths.size()) + ", " +
+      std::to_string(lightLayoutAttributesManager_->getNumObjects()) + ", " +
       std::to_string(assetAttributesManager_->getNumObjects()) + ", " +
       std::to_string(navmeshMap_.size()) + ", " +
       std::to_string(semanticSceneDescrMap_.size()) + ", ";
