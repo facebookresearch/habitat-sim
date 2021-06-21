@@ -93,7 +93,7 @@ class PTexMeshData : public BaseMesh {
 
   std::string atlasFolder_;
   std::vector<MeshData> submeshes_;
-  // In the case of splitting the mesh, we need seperate containers
+  // In the case of splitting the mesh, we need separate containers
   // to hold the collsion mesh data as the contiguous meshdata be split up
   // TODO We should use a decimated mesh for collsions here instead
   //! @brief Stores the vertices for the collision mesh when the mesh is split

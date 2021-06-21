@@ -367,6 +367,7 @@ class StageAttributes : public AbstractObjectAttributes {
    */
   void setLightSetup(const std::string& lightSetup) {
     setString("light_setup", lightSetup);
+    setRequiresLighting(lightSetup != NO_LIGHT_KEY);
   }
   std::string getLightSetup() { return getString("light_setup"); }
 

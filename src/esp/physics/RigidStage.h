@@ -32,7 +32,7 @@ class RigidStage : public RigidBase {
    * @brief Initializes the @ref RigidStage that inherits
    * from this class
    * @param initAttributes The template structure defining relevant
-   * phyiscal parameters for this object
+   * physical parameters for this object
    * @return true if initialized successfully, false otherwise.
    */
   bool initialize(metadata::attributes::AbstractObjectAttributes::ptr

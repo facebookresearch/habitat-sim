@@ -10,12 +10,16 @@ configure_file(
 
 add_library(
   physics STATIC
+  ArticulatedObject.h
   CollisionGroupHelper.cpp
   CollisionGroupHelper.h
+  objectManagers/ArticulatedObjectManager.cpp
+  objectManagers/ArticulatedObjectManager.h
   objectManagers/PhysicsObjectBaseManager.h
   objectManagers/RigidBaseManager.h
   objectManagers/RigidObjectManager.cpp
   objectManagers/RigidObjectManager.h
+  objectWrappers/ManagedArticulatedObject.h
   objectWrappers/ManagedPhysicsObjectBase.h
   objectWrappers/ManagedRigidBase.h
   objectWrappers/ManagedRigidObject.h
@@ -27,6 +31,8 @@ add_library(
   RigidObject.h
   RigidStage.cpp
   RigidStage.h
+  URDFImporter.cpp
+  URDFImporter.h
 )
 
 if(BUILD_WITH_BULLET)

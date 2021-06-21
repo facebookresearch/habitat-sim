@@ -96,7 +96,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    * physics::MotionType::KINEMATIC. Only if a dervied @ref
    * physics::PhysicsManager implementing dynamics is in use can the object
    * be set to @ref physics::MotionType::DYNAMIC.
-   * @param mt The desirved @ref MotionType.
+   * @param mt The desired @ref MotionType.
    */
   virtual void setMotionType(MotionType mt) = 0;
 
@@ -106,7 +106,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
   int getObjectID() const { return objectId_; }
 
   /**
-   * @brief Object name, to faciliate access.
+   * @brief Object name, to facilitate access.
    */
   std::string getObjectName() const { return objectName_; }
   void setObjectName(const std::string& name) { objectName_ = name; }
@@ -262,7 +262,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    * with a vector defined in the object's local coordinate system. Calling this
    * during simulation of a @ref physics::MotionType::DYNAMIC object is not
    * recommended.
-   * @param vector The desired 3D vector in the object's ocal coordiante system
+   * @param vector The desired 3D vector in the object's ocal coordinate system
    * by which to translate the object.
    */
   virtual void translateLocal(const Magnum::Vector3& vector) {

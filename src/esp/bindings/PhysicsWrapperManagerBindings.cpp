@@ -4,7 +4,9 @@
 
 #include "esp/bindings/bindings.h"
 
+#include "esp/physics/bullet/objectWrappers/ManagedBulletArticulatedObject.h"
 #include "esp/physics/bullet/objectWrappers/ManagedBulletRigidObject.h"
+#include "esp/physics/objectManagers/ArticulatedObjectManager.h"
 #include "esp/physics/objectManagers/PhysicsObjectBaseManager.h"
 #include "esp/physics/objectManagers/RigidBaseManager.h"
 #include "esp/physics/objectManagers/RigidObjectManager.h"
@@ -14,6 +16,8 @@ namespace py = pybind11;
 using py::literals::operator""_a;
 
 namespace PhysWraps = esp::physics;
+using PhysWraps::ArticulatedObjectManager;
+using PhysWraps::ManagedBulletArticulatedObject;
 using PhysWraps::ManagedBulletRigidObject;
 using PhysWraps::ManagedRigidObject;
 using PhysWraps::PhysicsObjectBaseManager;
@@ -96,7 +100,7 @@ void declareBaseWrapperManager(py::module& m,
            "handle"_a, "lock"_a)
       .def("set_lock_by_substring", &MgrClass::setLockBySubstring,
            ("This sets the lock state for all  " + objType +
-            "s whose handles either contain or explictly do not contain the "
+            "s whose handles either contain or explicitly do not contain the "
             "passed search_str. Returns a list of handles for  " +
             objType +
             "s locked by this function call. Lock == True makes the  " +
@@ -123,7 +127,7 @@ void declareBaseWrapperManager(py::module& m,
            ("This removes a list of all the  " + objType +
             "s referenced in the library that have not been marked undeletable "
             "by the system or read-only by the user and whose handles either "
-            "contain or explictly do not contain the passed search_str.")
+            "contain or explicitly do not contain the passed search_str.")
                .c_str(),
            "search_str"_a = "", "contains"_a = true)
       .def("remove_object_by_id", &MgrClass::removeObjectByID,
@@ -223,6 +227,38 @@ void initPhysicsWrapperManagerBindings(pybind11::module& m) {
           R"(This removes the RigidObject referenced by the passed handle from the library, while allowing "
           "for the optional retention of the object's scene node and/or the visual node)");
 
+  // initialize bindings for articulated objects
+
+#ifdef ESP_BUILD_WITH_BULLET
+  declareBaseWrapperManager<ManagedArticulatedObject,
+                            ManagedBulletArticulatedObject>(
+      m, "BulletArticulatedObject", "BulletArticulatedObject");
+
+#else
+  // if dynamics library not being used, just use base rigid object
+  declareBaseWrapperManager<ManagedArticulatedObject, ManagedArticulatedObject>(
+      m, "ArticulatedObject", "ArticulatedObject");
+
+#endif
+  py::class_<ArticulatedObjectManager,
+             PhysicsObjectBaseManager<ManagedArticulatedObject>,
+             std::shared_ptr<ArticulatedObjectManager>>(
+      m, "ArticulatedObjectManager")
+
+      .def(
+          "add_articulated_object_from_urdf",
+#ifdef ESP_BUILD_WITH_BULLET
+          &ArticulatedObjectManager::addBulletArticulatedObjectFromURDF,
+#else
+          &ArticulatedObjectManager::addArticulatedObjectFromURDF,
+#endif
+
+          "filepath"_a, "fixed_base"_a = false, "global_scale"_a = 1.0,
+          "mass_scale"_a = 1.0, "force_reload"_a = false,
+          "light_setup_key"_a = DEFAULT_LIGHTING_KEY,
+          R"(Load and parse a URDF file using the given 'filepath' into a model,
+          then use this model to instantiate an Articulated Object in the world.
+          Returns a reference to the created object.)");
 }  // initPhysicsWrapperManagerBindings
 
 }  // namespace physics
