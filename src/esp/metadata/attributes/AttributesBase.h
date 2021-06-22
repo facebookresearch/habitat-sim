@@ -44,7 +44,7 @@ enum class ObjectInstanceShaderType {
   /**
    * End cap value - no shader type enums should be defined past this enum.
    */
-  _EndShaderType,
+  EndShaderType,
 };
 
 static const std::map<std::string, ObjectInstanceShaderType>
@@ -59,10 +59,10 @@ static const std::map<std::string, ObjectInstanceShaderType>
  * @brief This method will convert an int value to the string key it maps to in
  * the ShaderTypeNamesMap
  */
-static std::string getShaderTypeName(int shaderTypeVal) {
+std::string inline getShaderTypeName(int shaderTypeVal) {
   if (shaderTypeVal <= static_cast<int>(ObjectInstanceShaderType::Unknown) ||
       shaderTypeVal >=
-          static_cast<int>(ObjectInstanceShaderType::_EndShaderType)) {
+          static_cast<int>(ObjectInstanceShaderType::EndShaderType)) {
     return "unknown shader type";
   }
   // Must always be valid value
@@ -107,7 +107,7 @@ enum class SceneInstanceTranslationOrigin {
    * End cap value - no instance translation origin type enums should be defined
    * past this enum.
    */
-  _EndTransOrigin,
+  EndTransOrigin,
 };
 
 /**
@@ -126,11 +126,11 @@ static const std::map<std::string, SceneInstanceTranslationOrigin>
  * @brief This method will convert an int value to the string key it maps to in
  * the InstanceTranslationOriginMap
  */
-static std::string getTranslationOriginName(int translationOrigin) {
+std::string inline getTranslationOriginName(int translationOrigin) {
   if (translationOrigin <=
           static_cast<int>(SceneInstanceTranslationOrigin::Unknown) ||
       translationOrigin >=
-          static_cast<int>(SceneInstanceTranslationOrigin::_EndTransOrigin)) {
+          static_cast<int>(SceneInstanceTranslationOrigin::EndTransOrigin)) {
     return "default";
   }
   // Must always be valid value
