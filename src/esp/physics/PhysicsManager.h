@@ -138,7 +138,7 @@ struct RigidConstraintSettings {
 
   //! constraint orientation frame in local space of respective objects for
   //! RigidConstraintType::Fixed
-  Mn::Matrix3x3 frameA, frameB = {};
+  Mn::Matrix3x3 frameA{}, frameB{};
 
   ESP_SMART_POINTERS(RigidConstraintSettings)
 };
