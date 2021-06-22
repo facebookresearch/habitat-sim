@@ -690,7 +690,7 @@ int BulletPhysicsManager::createRigidP2PConstraint(
     btPoint2PointConstraint* p2p =
         new btPoint2PointConstraint(*rb, btVector3(localOffset));
     bWorld_->addConstraint(p2p);
-    rigidP2ps.emplace(nextConstraintId_, p2p);
+    rigidP2PConstraints_.emplace(nextConstraintId_, p2p);
     objectConstraints_[objectId].push_back(nextConstraintId_);
     return nextConstraintId_++;
   } else {
@@ -748,7 +748,7 @@ int BulletPhysicsManager::createArticulatedP2PConstraint(
       new btMultiBodyPoint2Point(mb, linkId, rb, pivotInA, pivotInB);
   p2p->setMaxAppliedImpulse(maxImpulse);
   bWorld_->addMultiBodyConstraint(p2p);
-  articulatedP2ps.emplace(nextConstraintId_, p2p);
+  articulatedP2PConstraints_.emplace(nextConstraintId_, p2p);
   objectConstraints_[articulatedObjectId].push_back(nextConstraintId_);
   objectConstraints_[objectId].push_back(nextConstraintId_);
   return nextConstraintId_++;
@@ -811,7 +811,7 @@ int BulletPhysicsManager::createArticulatedFixedConstraint(
       mb, linkId, rb, pivotInA, pivotInB, frameInA, frameInB);
   constraint->setMaxAppliedImpulse(maxImpulse);
   bWorld_->addMultiBodyConstraint(constraint);
-  articulatedFixedConstraints.emplace(nextConstraintId_, constraint);
+  articulatedFixedConstraints_.emplace(nextConstraintId_, constraint);
   objectConstraints_[objectId].push_back(nextConstraintId_);
   objectConstraints_[articulatedObjectId].push_back(nextConstraintId_);
   return nextConstraintId_++;
@@ -850,7 +850,7 @@ int BulletPhysicsManager::createArticulatedP2PConstraint(
       btVector3(linkOffsetB));
   p2p->setMaxAppliedImpulse(maxImpulse);
   bWorld_->addMultiBodyConstraint(p2p);
-  articulatedP2ps.emplace(nextConstraintId_, p2p);
+  articulatedP2PConstraints_.emplace(nextConstraintId_, p2p);
   objectConstraints_[articulatedObjectIdA].push_back(nextConstraintId_);
   objectConstraints_[articulatedObjectIdB].push_back(nextConstraintId_);
   return nextConstraintId_++;
@@ -909,7 +909,7 @@ int BulletPhysicsManager::createArticulatedP2PConstraint(
       mb, linkId, nullptr, btVector3(linkOffset), btVector3(pickPos));
   p2p->setMaxAppliedImpulse(maxImpulse);
   bWorld_->addMultiBodyConstraint(p2p);
-  articulatedP2ps.emplace(nextConstraintId_, p2p);
+  articulatedP2PConstraints_.emplace(nextConstraintId_, p2p);
   objectConstraints_[articulatedObjectId].push_back(nextConstraintId_);
   return nextConstraintId_++;
 }
@@ -934,20 +934,23 @@ int BulletPhysicsManager::createArticulatedP2PConstraint(
 }
 
 void BulletPhysicsManager::removeRigidConstraint(int constraintId) {
-  if (articulatedP2ps.count(constraintId) != 0u) {
-    articulatedP2ps.at(constraintId)->getMultiBodyA()->setCanSleep(true);
-    bWorld_->removeMultiBodyConstraint(articulatedP2ps.at(constraintId));
-    delete articulatedP2ps.at(constraintId);
-    articulatedP2ps.erase(constraintId);
-  } else if (rigidP2ps.count(constraintId) != 0u) {
-    bWorld_->removeConstraint(rigidP2ps.at(constraintId));
-    delete rigidP2ps.at(constraintId);
-    rigidP2ps.erase(constraintId);
-  } else if (articulatedFixedConstraints.count(constraintId) != 0u) {
+  if (articulatedP2PConstraints_.count(constraintId) != 0u) {
+    articulatedP2PConstraints_.at(constraintId)
+        ->getMultiBodyA()
+        ->setCanSleep(true);
     bWorld_->removeMultiBodyConstraint(
-        articulatedFixedConstraints.at(constraintId));
-    delete articulatedFixedConstraints.at(constraintId);
-    articulatedFixedConstraints.erase(constraintId);
+        articulatedP2PConstraints_.at(constraintId));
+    delete articulatedP2PConstraints_.at(constraintId);
+    articulatedP2PConstraints_.erase(constraintId);
+  } else if (rigidP2PConstraints_.count(constraintId) != 0u) {
+    bWorld_->removeConstraint(rigidP2PConstraints_.at(constraintId));
+    delete rigidP2PConstraints_.at(constraintId);
+    rigidP2PConstraints_.erase(constraintId);
+  } else if (articulatedFixedConstraints_.count(constraintId) != 0u) {
+    bWorld_->removeMultiBodyConstraint(
+        articulatedFixedConstraints_.at(constraintId));
+    delete articulatedFixedConstraints_.at(constraintId);
+    articulatedFixedConstraints_.erase(constraintId);
   } else {
     LOG(ERROR) << "removeRigidConstraint - No constraint with constraintId = "
                << constraintId;

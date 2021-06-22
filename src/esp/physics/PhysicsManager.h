@@ -129,9 +129,13 @@ struct RigidConstraintSettings {
   //! to physics timestep.
   double maxImpulse = 1000.0;
 
-  //! object and link ids. objectIdB == ID_UNDEFINED indicates "world".
+  //! object and link ids.
   //! objectIdA must always be >= 0.
-  int objectIdA, objectIdB, linkIdA, linkIdB = ID_UNDEFINED;
+  int objectIdA = ID_UNDEFINED;
+  //! objectIdB == ID_UNDEFINED indicates "world".
+  int objectIdB = ID_UNDEFINED;
+  int linkIdA = ID_UNDEFINED;
+  int linkIdB = ID_UNDEFINED;
 
   //! constraint point in local space of respective objects
   Mn::Vector3 pivotA{}, pivotB{};

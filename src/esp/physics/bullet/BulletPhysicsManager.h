@@ -15,6 +15,7 @@
 #include <Magnum/BulletIntegration/MotionState.h>
 #include <btBulletDynamicsCommon.h>
 
+#include "BulletDynamics/ConstraintSolver/btFixedConstraint.h"
 #include "BulletDynamics/ConstraintSolver/btPoint2PointConstraint.h"
 #include "BulletDynamics/Featherstone/btMultiBodyConstraintSolver.h"
 #include "BulletDynamics/Featherstone/btMultiBodyFixedConstraint.h"
@@ -407,9 +408,11 @@ class BulletPhysicsManager : public PhysicsManager {
                                      float maxImpulse = 2.0);
 
   int nextConstraintId_ = 0;
-  std::map<int, btMultiBodyPoint2Point*> articulatedP2ps;
-  std::map<int, btMultiBodyFixedConstraint*> articulatedFixedConstraints;
-  std::map<int, btPoint2PointConstraint*> rigidP2ps;
+  std::unordered_map<int, btMultiBodyPoint2Point*> articulatedP2PConstraints_;
+  std::unordered_map<int, btMultiBodyFixedConstraint*>
+      articulatedFixedConstraints_;
+  std::unordered_map<int, btPoint2PointConstraint*> rigidP2PConstraints_;
+  std::unordered_map<int, btFixedConstraint*> rigidFixedConstraints_;
 
   //! Maps object ids to a list of active constraints referencing the object for
   //! use in constraint clean-up and object sleep state management.
