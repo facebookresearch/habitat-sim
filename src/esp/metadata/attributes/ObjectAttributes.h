@@ -415,11 +415,11 @@ class StageAttributes : public AbstractObjectAttributes {
    */
   std::string getAbstractObjectInfoInternal() const override {
     return getNavmeshAssetHandle()
-        .append(", ")
+        .append(1, ',')
         .append(cfg.value("gravity"))
-        .append(", ")
+        .append(1, ',')
         .append(cfg.value("origin"))
-        .append(", ")
+        .append(1, ',')
         .append(cfg.value("light_setup"));
   }
 

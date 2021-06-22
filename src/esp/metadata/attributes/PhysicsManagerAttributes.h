@@ -67,15 +67,15 @@ class PhysicsManagerAttributes : public AbstractAttributes {
    */
   std::string getObjectInfoInternal() const override {
     return getSimulator()
-        .append(", ")
+        .append(1, ',')
         .append(cfg.value("timestep"))
-        .append(", ")
+        .append(1, ',')
         .append(cfg.value("max_substeps"))
-        .append(", ")
+        .append(1, ',')
         .append(cfg.value("gravity"))
-        .append(", ")
+        .append(1, ',')
         .append(cfg.value("friction_coefficient"))
-        .append(", ")
+        .append(1, ',')
         .append(cfg.value("restitution_coefficient"));
   }
 

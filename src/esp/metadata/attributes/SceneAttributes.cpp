@@ -47,19 +47,19 @@ std::string SceneObjectInstanceAttributes::getObjectInfoHeaderInternal() const {
 
 std::string SceneObjectInstanceAttributes::getObjectInfoInternal() const {
   return cfg.value("translation")
-      .append(", ")
+      .append(1, ',')
       .append(cfg.value("rotation"))
-      .append(", ")
+      .append(1, ',')
       .append(getCurrMotionTypeName())
-      .append(", ")
+      .append(1, ',')
       .append(getCurrShaderTypeName())
-      .append(", ")
+      .append(1, ',')
       .append(cfg.value("uniform_scale"))
-      .append(", ")
+      .append(1, ',')
       .append(cfg.value("mass_scale"))
-      .append(", ")
+      .append(1, ',')
       .append(getTranslationOriginName(getTranslationOrigin()))
-      .append(", ")
+      .append(1, ',')
       .append(getSceneObjInstanceInfoInternal());
 }  // SceneObjectInstanceAttributes::getObjectInfoInternal()
 
@@ -75,13 +75,13 @@ std::string SceneAOInstanceAttributes::getSceneObjInstanceInfoHeaderInternal()
   std::string initPoseHdr;
   int iter = 0;
   for (const auto& it : initJointPose_) {
-    initPoseHdr.append(posePrfx).append(std::to_string(iter++)).append(", ");
+    initPoseHdr.append(posePrfx).append(std::to_string(iter++)).append(1, ',');
   }
   const std::string velPrfx{"Init Vel "};
   std::string initVelHdr;
   iter = 0;
   for (const auto& it : initJointPose_) {
-    initVelHdr.append(velPrfx).append(std::to_string(iter++)).append(", ");
+    initVelHdr.append(velPrfx).append(std::to_string(iter++)).append(1, ',');
   }
   std::string res{"Is Fixed Base?, "};
   res.append(initPoseHdr).append(initVelHdr);
@@ -91,16 +91,16 @@ std::string SceneAOInstanceAttributes::getSceneObjInstanceInfoHeaderInternal()
 std::string SceneAOInstanceAttributes::getSceneObjInstanceInfoInternal() const {
   std::string initJointPose{"["};
   for (const auto& it : initJointPose_) {
-    initJointPose.append(std::to_string(it.second)).append(", ");
+    initJointPose.append(std::to_string(it.second)).append(1, ',');
   }
   initJointPose.append("]");
   std::string initJointVels{"["};
   for (const auto& it : initJointPose_) {
-    initJointVels.append(std::to_string(it.second)).append(", ");
+    initJointVels.append(std::to_string(it.second)).append(1, ',');
   }
   initJointVels.append("]");
-  return cfg.value("fixed_base").append(", ") + initJointPose.append(", ") +
-         initJointVels.append(", ");
+  return cfg.value("fixed_base").append(1, ',') + initJointPose.append(1, ',') +
+         initJointVels.append(1, ',');
 }  // SceneAOInstanceAttributes::getSceneObjInstanceInfoInternal()
 
 SceneAttributes::SceneAttributes(const std::string& handle)
@@ -118,29 +118,29 @@ std::string SceneAttributes::getObjectInfoInternal() const {
   // default translation origin
   res.append("Default Translation Origin : ")
       .append(getTranslationOriginName(getTranslationOrigin()))
-      .append(",\n");
+      .append(1, '\n');
   // specified lighting
-  res.append("Default Lighting, ").append(getLightingHandle()).append(",\n");
+  res.append("Default Lighting, ").append(getLightingHandle()).append(1, '\n');
 
   // specified navmesh(s)
-  res.append("Navmesh Handle, ").append(getNavmeshHandle() + ",\n");
+  res.append("Navmesh Handle, ").append(getNavmeshHandle()).append(1, '\n');
 
   // specified ssd
   res.append("Semantic Scene Descriptor Handle, ")
       .append(getSemanticSceneHandle())
-      .append(",\n");
+      .append(1, '\n');
 
   // stage instance info
-  res.append(stageInstance_->getObjectInfo()).append("\n");
+  res.append(stageInstance_->getObjectInfo()).append(1, '\n');
 
   // object instance info
   for (const auto& objInst : objectInstances_) {
-    res.append(objInst->getObjectInfo()).append("\n");
+    res.append(objInst->getObjectInfo()).append(1, '\n');
   }
 
   // articulated object instance info
   for (const auto& artObjInst : articulatedObjectInstances_) {
-    res.append(artObjInst->getObjectInfo()).append("\n");
+    res.append(artObjInst->getObjectInfo()).append(1, '\n');
   }
 
   return res;

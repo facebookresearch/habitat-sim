@@ -280,20 +280,20 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
     namespace CrUt = Corrade::Utility;
     if (auto sp = this->getObjectReference()) {
       res.append(classKey_)
-          .append(", ")
+          .append(1, ',')
           .append(sp->getObjectName())
-          .append(", ")
+          .append(1, ',')
           .append(std::to_string(sp->getObjectID()))
-          .append(", ")
+          .append(1, ',')
           .append(CrUt::ConfigurationValue<Mn::Vector3>::toString(
               sp->getTranslation(), {}))
-          .append(", ")
+          .append(1, ',')
           .append(CrUt::ConfigurationValue<Magnum::Quaternion>::toString(
               sp->getRotation(), {}))
-          .append(", ")
+          .append(1, ',')
           .append(getPhysObjInfoInternal(sp));
     }
-    return res.append(", ");
+    return res.append(1, ',');
   }
 
  protected:

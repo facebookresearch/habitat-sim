@@ -51,25 +51,25 @@ std::string AbstractObjectAttributes::getObjectInfoHeaderInternal() const {
 
 std::string AbstractObjectAttributes::getObjectInfoInternal() const {
   return getRenderAssetHandle()
-      .append(", ")
+      .append(1, ',')
       .append(getCollisionAssetHandle())
-      .append(", ")
+      .append(1, ',')
       .append(cfg.value("scale"))
-      .append(", ")
+      .append(1, ',')
       .append(cfg.value("margin"))
-      .append(", ")
+      .append(1, ',')
       .append(cfg.value("orient_up"))
-      .append(", ")
+      .append(1, ',')
       .append(cfg.value("orient_front"))
-      .append(", ")
+      .append(1, ',')
       .append(cfg.value("units_to_meters"))
-      .append(", ")
+      .append(1, ',')
       .append(cfg.value("friction_coefficient"))
-      .append(", ")
+      .append(1, ',')
       .append(cfg.value("restitution_coefficient"))
-      .append(", ")
+      .append(1, ',')
       .append(getCurrShaderTypeName())
-      .append(", ")
+      .append(1, ',')
       .append(getAbstractObjectInfoInternal());
 }  // AbstractObjectAttributes::getObjectInfoInternal
 
@@ -97,15 +97,15 @@ ObjectAttributes::ObjectAttributes(const std::string& handle)
 
 std::string ObjectAttributes::getAbstractObjectInfoInternal() const {
   return cfg.value("mass")
-      .append(", ")
+      .append(1, ',')
       .append(cfg.value("COM"))
-      .append(", ")
+      .append(1, ',')
       .append(cfg.value("inertia"))
-      .append(", ")
+      .append(1, ',')
       .append(cfg.value("angular_damping"))
-      .append(", ")
+      .append(1, ',')
       .append(cfg.value("linear_damping"))
-      .append(", ")
+      .append(1, ',')
       .append(cfg.value("semantic_id"));
 }
 

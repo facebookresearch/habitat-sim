@@ -240,32 +240,32 @@ class AbstractManagedRigidBase
     namespace CrUt = Corrade::Utility;
     std::string res =
         std::to_string(sp->getMass())
-            .append(", ")
+            .append(1, ',')
             .append(CrUt::ConfigurationValue<Mn::Vector3>::toString(
                 sp->getCOM(), {}))
-            .append(", ")
+            .append(1, ',')
             .append(CrUt::ConfigurationValue<Mn::Vector3>::toString(
                 sp->getInertiaVector(), {}))
-            .append(", ")
+            .append(1, ',')
             .append(CrUt::ConfigurationValue<Mn::Vector3>::toString(
                 sp->getAngularVelocity(), {}))
-            .append(", ")
+            .append(1, ',')
             .append(std::to_string(sp->getAngularDamping()))
-            .append(", ")
+            .append(1, ',')
             .append(CrUt::ConfigurationValue<Mn::Vector3>::toString(
                 sp->getLinearVelocity(), {}))
-            .append(", ")
+            .append(1, ',')
             .append(std::to_string(sp->getLinearDamping()))
-            .append(", ")
+            .append(1, ',')
             .append(sp->getCollidable() ? "True" : "False")
-            .append(", ")
+            .append(1, ',')
             .append(std::to_string(sp->getFrictionCoefficient()))
-            .append(", ")
+            .append(1, ',')
             .append(std::to_string(sp->getRestitutionCoefficient()))
-            .append(", ")
+            .append(1, ',')
             .append(CrUt::ConfigurationValue<Mn::Vector3>::toString(
                 sp->getScale(), {}))
-            .append(", ")
+            .append(1, ',')
             .append(std::to_string(sp->getSemanticId()))
             .append(getRigidBaseInfoInternal(sp));
     return res;

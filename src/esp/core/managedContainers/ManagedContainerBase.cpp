@@ -149,7 +149,7 @@ std::vector<std::string> ManagedContainerBase::getObjectInfoStrings(
     }
     res[idx++]
         .append(objectHandle)
-        .append(", ")
+        .append(1, ',')
         .append(((this->getIsUndeletable(objectHandle)) ? "False, " : "True, "))
         .append(((this->getIsUserLocked(objectHandle)) ? "True, " : "False, "))
         .append(objPtr->getObjectInfo());

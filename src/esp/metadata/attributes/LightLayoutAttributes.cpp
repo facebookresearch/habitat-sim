@@ -45,11 +45,13 @@ std::string LightLayoutAttributes::getObjectInfoInternal() const {
   for (const auto& lightInst : lightInstances_) {
     if (iter == 0) {
       iter++;
-      res.append(", ")
+      res.append(1, ',')
           .append(lightInst.second->getObjectInfoHeader())
-          .append("\n");
+          .append(1, '\n');
     }
-    res.append(", ").append(lightInst.second->getObjectInfo()).append("\n");
+    res.append(1, ',')
+        .append(lightInst.second->getObjectInfo())
+        .append(1, '\n');
   }
   return res;
 }

@@ -303,7 +303,7 @@ class ManagedArticulatedObject
   std::string getPhysObjInfoInternal(
       std::shared_ptr<esp::physics::ArticulatedObject>& sp) const override {
     // TODO fill out appropriate reporting values
-    std::string res = std::to_string(sp->getNumLinks()).append(", ");
+    std::string res = std::to_string(sp->getNumLinks()).append(1, ',');
 
     return res;
   }
