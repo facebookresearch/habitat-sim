@@ -129,12 +129,15 @@ struct RigidConstraintSettings {
   //! to physics timestep.
   double maxImpulse = 1000.0;
 
-  //! object and link ids.
-  //! objectIdA must always be >= 0.
+  //! objectIdA must always be >= 0. For mixed type constraints, objectA must be
+  //! the ArticulatedObject.
   int objectIdA = ID_UNDEFINED;
   //! objectIdB == ID_UNDEFINED indicates "world".
   int objectIdB = ID_UNDEFINED;
+
+  //! link of objectA if articulated. ID_UNDEFINED(-1) refers to base.
   int linkIdA = ID_UNDEFINED;
+  //! link of objectB if articulated. ID_UNDEFINED(-1) refers to base.
   int linkIdB = ID_UNDEFINED;
 
   //! constraint point in local space of respective objects
