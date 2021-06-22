@@ -322,7 +322,33 @@ class SceneDatasetAttributes : public AbstractAttributes {
                                   lightLayoutAttributesManager_);
   }  // getLightSetupFullHandle
 
+  /**
+   * @brief return a summary of this dataset
+   */
+  std::string getDatasetSummary() const;
+
+  /**
+   * @brief returns the header row of the summary string.
+   */
+  static std::string getDatasetSummaryHeader();
+
  protected:
+  /**
+   * @brief Retrieve a comma-separated string holding the header values for the
+   * info returned for this managed object, type-specific.  Individual
+   * components handle this.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+
+  std::string getObjectInfoHeaderInternal() const override { return ","; }
+
+  /**
+   * @brief Retrieve a comma-separated informational string about the contents
+   * of this managed object.
+   */
+  std::string getObjectInfoInternal() const override;
+
   /**
    * @brief Returns actual attributes handle containing @p attrName as a
    * substring, or the empty string if none exists, from passed @p attrMgr .

@@ -130,7 +130,35 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
     return success;
   }
 
+  /**
+   * @brief PrimitiveAssetAttributes handles are already simplified, and embed
+   * no path info.
+   */
+  std::string getSimplifiedHandle() const override { return getHandle(); }
+
  protected:
+  /**
+   * @brief Retrieve a comma-separated string holding the header values for the
+   * info returned for this managed object, type-specific.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+  std::string getObjectInfoHeaderInternal() const override {
+    // Handle already encodes all relevant info
+    return ",";
+  }
+
+  /**
+   * @brief Retrieve a comma-separated informational string about the contents
+   * of this managed object.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+  std::string getObjectInfoInternal() const override {
+    // Handle already encodes all relevant info
+    return ", ";
+  }
+
   /**
    * @brief Verifies that val is larger than, and a multiple of, divisor
    * div

@@ -734,6 +734,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    */
   virtual std::unordered_map<int, int> getExistingJointMotors() {
     std::unordered_map<int, int> motorIdsToLinkIds;
+    motorIdsToLinkIds.reserve(jointMotors_.size());
     for (auto& motor : jointMotors_) {
       motorIdsToLinkIds[motor.first] = motor.second->index;
     }

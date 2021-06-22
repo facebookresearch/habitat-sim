@@ -188,6 +188,11 @@ void declareBasePhysicsObjectWrapper(py::module& m,
           ("User-defined " + objType +
            " attributes.  These are not used internally by Habitat in any "
            "capacity, but are available for a user to consume how they wish.")
+              .c_str())
+      .def_property_readonly(
+          "csv_info", &PhysObjWrapper::getObjectInfo,
+          ("Comma-separated informational string describing this " + objType +
+           ".")
               .c_str());
 }  // declareBasePhysicsObjectWrapper
 
