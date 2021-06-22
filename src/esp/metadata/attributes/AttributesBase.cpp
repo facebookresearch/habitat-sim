@@ -45,10 +45,10 @@ std::string getTranslationOriginName(int translationOrigin) {
     return "default";
   }
   // Must always be valid value
-  ObjectInstanceShaderType shaderType =
-      static_cast<ObjectInstanceShaderType>(translationOrigin);
-  for (const auto& it : ShaderTypeNamesMap) {
-    if (it.second == shaderType) {
+  SceneInstanceTranslationOrigin transOrigin =
+      static_cast<SceneInstanceTranslationOrigin>(translationOrigin);
+  for (const auto& it : InstanceTranslationOriginMap) {
+    if (it.second == transOrigin) {
       return it.first;
     }
   }
