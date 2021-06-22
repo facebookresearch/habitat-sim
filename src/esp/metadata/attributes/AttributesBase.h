@@ -47,34 +47,19 @@ enum class ObjectInstanceShaderType {
   EndShaderType,
 };
 
-static const std::map<std::string, ObjectInstanceShaderType>
-    ShaderTypeNamesMap = {
-        {"material", ObjectInstanceShaderType::Material},
-        {"flat", ObjectInstanceShaderType::Flat},
-        {"phong", ObjectInstanceShaderType::Phong},
-        {"pbr", ObjectInstanceShaderType::PBR},
-};
+/**
+ * @brief Constant map to provide mappings from string tags to @ref
+ * ObjectInstanceShaderType values.  This will be used to map values set
+ * in json for translation origin to @ref ObjectInstanceShaderType.  Keys
+ * must be lowercase.
+ */
+const extern std::map<std::string, ObjectInstanceShaderType> ShaderTypeNamesMap;
 
 /**
  * @brief This method will convert an int value to the string key it maps to in
  * the ShaderTypeNamesMap
  */
-std::string inline getShaderTypeName(int shaderTypeVal) {
-  if (shaderTypeVal <= static_cast<int>(ObjectInstanceShaderType::Unknown) ||
-      shaderTypeVal >=
-          static_cast<int>(ObjectInstanceShaderType::EndShaderType)) {
-    return "unknown shader type";
-  }
-  // Must always be valid value
-  ObjectInstanceShaderType shaderType =
-      static_cast<ObjectInstanceShaderType>(shaderTypeVal);
-  for (const auto& it : ShaderTypeNamesMap) {
-    if (it.second == shaderType) {
-      return it.first;
-    }
-  }
-  return "unknown shader type";
-}
+std::string getShaderTypeName(int shaderTypeVal);
 
 /**
  * @brief This enum class describes whether an object instance position is
@@ -111,38 +96,18 @@ enum class SceneInstanceTranslationOrigin {
 };
 
 /**
- * @brief Constant static map to provide mappings from string tags to @ref
+ * @brief Constant map to provide mappings from string tags to @ref
  * SceneInstanceTranslationOrigin values.  This will be used to map values set
  * in json for translation origin to @ref SceneInstanceTranslationOrigin.  Keys
  * must be lowercase.
  */
-static const std::map<std::string, SceneInstanceTranslationOrigin>
-    InstanceTranslationOriginMap = {
-        {"asset_local", SceneInstanceTranslationOrigin::AssetLocal},
-        {"com", SceneInstanceTranslationOrigin::COM},
-};
-
+const extern std::map<std::string, SceneInstanceTranslationOrigin>
+    InstanceTranslationOriginMap;
 /**
  * @brief This method will convert an int value to the string key it maps to in
  * the InstanceTranslationOriginMap
  */
-std::string inline getTranslationOriginName(int translationOrigin) {
-  if (translationOrigin <=
-          static_cast<int>(SceneInstanceTranslationOrigin::Unknown) ||
-      translationOrigin >=
-          static_cast<int>(SceneInstanceTranslationOrigin::EndTransOrigin)) {
-    return "default";
-  }
-  // Must always be valid value
-  ObjectInstanceShaderType shaderType =
-      static_cast<ObjectInstanceShaderType>(translationOrigin);
-  for (const auto& it : ShaderTypeNamesMap) {
-    if (it.second == shaderType) {
-      return it.first;
-    }
-  }
-  return "default";
-}
+std::string getTranslationOriginName(int translationOrigin);
 
 /**
  * @brief Base class for all implemented attributes.  Inherits from @ref
