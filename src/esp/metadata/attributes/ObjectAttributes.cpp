@@ -42,9 +42,9 @@ AbstractObjectAttributes::AbstractObjectAttributes(
 }  // AbstractObjectAttributes ctor
 
 std::string AbstractObjectAttributes::getObjectInfoHeaderInternal() const {
-  return "Render Asset Handle, Collision Asset Handle, Scale, Margin, Up.x, "
-         "Up.y, Up.z, Front.x, Front.y, Front.z, Units to "
-         "M, Friction Coefficient, Restitution Coefficient, Current Shader "
+  return "Render Asset Handle, Collision Asset Handle, Scale, Margin, Up XYZ, "
+         "Front XYZ, Units to M, Friction Coefficient, Restitution "
+         "Coefficient, Current Shader "
          "Type, " +
          getAbstractObjectInfoHeaderInternal();
 }
@@ -86,7 +86,7 @@ ObjectAttributes::ObjectAttributes(const std::string& handle)
 
   setBoundingBoxCollisions(false);
   setJoinCollisionMeshes(true);
-  // default to unknown for objects - will use material-derived shader unless
+  // default to Unknown for objects - will use material-derived shader unless
   // otherwise specified in config
   setShaderType(static_cast<int>(ObjectInstanceShaderType::Unknown));
   // TODO remove this once ShaderType support is complete
@@ -113,7 +113,7 @@ StageAttributes::StageAttributes(const std::string& handle)
     : AbstractObjectAttributes("StageAttributes", handle) {
   setGravity({0, -9.8, 0});
   setOrigin({0, 0, 0});
-  // default to unknown for stages - will use material-derived shader unless
+  // default to Unknown for stages - will use material-derived shader unless
   // otherwise specified in config
   setShaderType(static_cast<int>(ObjectInstanceShaderType::Unknown));
   // TODO remove this once ShaderType support is complete

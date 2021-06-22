@@ -24,7 +24,7 @@ std::string getShaderTypeName(int shaderTypeVal) {
   if (shaderTypeVal <= static_cast<int>(ObjectInstanceShaderType::Unknown) ||
       shaderTypeVal >=
           static_cast<int>(ObjectInstanceShaderType::EndShaderType)) {
-    return "unknown shader type";
+    return "unspecified";
   }
   // Must always be valid value
   ObjectInstanceShaderType shaderType =
@@ -34,7 +34,7 @@ std::string getShaderTypeName(int shaderTypeVal) {
       return it.first;
     }
   }
-  return "unknown shader type";
+  return "unspecified";
 }
 
 std::string getTranslationOriginName(int translationOrigin) {

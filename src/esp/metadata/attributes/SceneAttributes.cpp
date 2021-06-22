@@ -26,6 +26,7 @@ SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
   setMotionType(static_cast<int>(esp::physics::MotionType::UNDEFINED));
   // set to no rotation
   setQuat("rotation", Mn::Quaternion(Mn::Math::IdentityInit));
+  setVec3("translation", Mn::Vector3());
   // defaults to unknown so that obj instances use scene instance setting
   setTranslationOrigin(
       static_cast<int>(SceneInstanceTranslationOrigin::Unknown));
@@ -40,7 +41,7 @@ std::string SceneObjectInstanceAttributes::getCurrShaderTypeName() const {
 }
 
 std::string SceneObjectInstanceAttributes::getObjectInfoHeaderInternal() const {
-  return "Translation XYZ, Rotation WXYZ, Motion Type, Shader Type, Uniform "
+  return "Translation XYZ, Rotation XYZW, Motion Type, Shader Type, Uniform "
          "Scale, Mass Scale, Translation Origin, " +
          getSceneObjInstanceInfoHeaderInternal();
 }
@@ -116,32 +117,49 @@ std::string SceneAttributes::getObjectInfoInternal() const {
   std::string res = "\n";
   // scene-specific info constants
   // default translation origin
-  res.append("Default Translation Origin : ")
-      .append(getTranslationOriginName(getTranslationOrigin()))
-      .append(1, '\n');
-  // specified lighting
-  res.append("Default Lighting, ").append(getLightingHandle()).append(1, '\n');
+  res.append(
+      "Default Translation Origin, Default Lighting,Navmesh Handle,Semantic "
+      "Scene Descriptor Handle,\n");
 
-  // specified navmesh(s)
-  res.append("Navmesh Handle, ").append(getNavmeshHandle()).append(1, '\n');
-
-  // specified ssd
-  res.append("Semantic Scene Descriptor Handle, ")
+  res.append(getTranslationOriginName(getTranslationOrigin()))
+      .append(1, ',')
+      .append(getLightingHandle())
+      .append(1, ',')
+      .append(getNavmeshHandle())
+      .append(1, ',')
       .append(getSemanticSceneHandle())
       .append(1, '\n');
 
   // stage instance info
+  res.append("Stage Instance Info :\n");
+  res.append(stageInstance_->getObjectInfoHeader()).append(1, '\n');
   res.append(stageInstance_->getObjectInfo()).append(1, '\n');
 
+  int iter = 0;
   // object instance info
   for (const auto& objInst : objectInstances_) {
+    if (iter == 0) {
+      iter++;
+      res.append("Object Instance Info :\n");
+      res.append(objInst->getObjectInfoHeader()).append(1, '\n');
+    }
     res.append(objInst->getObjectInfo()).append(1, '\n');
   }
 
   // articulated object instance info
+  iter = 0;
   for (const auto& artObjInst : articulatedObjectInstances_) {
+    if (iter == 0) {
+      iter++;
+      res.append("Articulated Object Instance Info :\n");
+      res.append(artObjInst->getObjectInfoHeader()).append(1, '\n');
+    }
     res.append(artObjInst->getObjectInfo()).append(1, '\n');
   }
+
+  res.append("End of data for Scene Instance ")
+      .append(getSimplifiedHandle())
+      .append(1, '\n');
 
   return res;
 }  // SceneAttributes::getObjectInfoInternal

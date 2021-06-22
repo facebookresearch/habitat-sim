@@ -131,7 +131,7 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
         return it.first;
       }
     }
-    return "unknown motion type";
+    return "unspecified";
   }
 
   /**
