@@ -21,8 +21,10 @@ const std::map<std::string, esp::gfx::LightPositionModel>
         {"camera", esp::gfx::LightPositionModel::Camera},
         {"object", esp::gfx::LightPositionModel::Object}};
 
+int LightInstanceAttributes::_count{0};
 LightInstanceAttributes::LightInstanceAttributes(const std::string& handle)
     : AbstractAttributes("LightInstanceAttributes", handle) {
+  setID(_count++);
   setPosition({0.0, 0.0, 0.0});
   setDirection({0.0, -1.0, 0.0});
   setColor({1.0, 1.0, 1.0});

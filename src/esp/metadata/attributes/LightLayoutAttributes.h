@@ -159,6 +159,9 @@ class LightInstanceAttributes : public AbstractAttributes {
         .append(", ");
   }
 
+ protected:
+  static int _count;
+
  public:
   ESP_SMART_POINTERS(LightInstanceAttributes)
 
