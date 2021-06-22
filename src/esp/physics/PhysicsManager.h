@@ -134,7 +134,7 @@ struct RigidConstraintSettings {
   int objectIdA, objectIdB, linkIdA, linkIdB = ID_UNDEFINED;
 
   //! constraint point in local space of respective objects
-  Mn::Vector3 pivotA, pivotB = {};
+  Mn::Vector3 pivotA{}, pivotB{};
 
   //! constraint orientation frame in local space of respective objects for
   //! RigidConstraintType::Fixed
