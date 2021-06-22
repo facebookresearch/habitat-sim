@@ -66,6 +66,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   attributeLocationsStream << Cr::Utility::formatString(
       "#define ATTRIBUTE_LOCATION_NORMAL {}\n", Normal::Location);
   if (flags_ & (Flag::NormalTexture | Flag::PrecomputedTangent) &&
+      // TODO: remove this constraint after IBL is introduced.
       (lightCount_ != 0u)) {
     attributeLocationsStream << Cr::Utility::formatString(
         "#define ATTRIBUTE_LOCATION_TANGENT4 {}\n", Tangent4::Location);
@@ -138,6 +139,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
 #endif
   {
     bindAttributeLocation(Position::Location, "vertexPosition");
+    // TODO: remove this constraint after IBL is introduced.
     if (lightCount_ != 0u) {
       bindAttributeLocation(Normal::Location, "vertexNormal");
       if (flags_ & (Flag::NormalTexture | Flag::PrecomputedTangent)) {
@@ -151,6 +153,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
 
   // set texture binding points in the shader;
   // see PBR vertex, fragment shader code for details
+  // TODO: remove this constraint after IBL is introduced.
   if (lightCount_ != 0u) {
     if (flags_ & Flag::BaseColorTexture) {
       setUniform(uniformLocation("BaseColorTexture"),
@@ -203,6 +206,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   }
 
   if ((flags_ & Flag::NormalTexture) && (flags_ & Flag::NormalTextureScale) &&
+      // TODO: remove this constraint after IBL is introduced.
       (lightCount_ != 0u)) {
     normalTextureScaleUniform_ = uniformLocation("NormalTextureScale");
   }
@@ -213,6 +217,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   setViewMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
   setModelMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
   setProjectionMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
+  // TODO: remove this constraint after IBL is introduced.
   if (lightCount_ != 0u) {
     setBaseColor(Magnum::Color4{0.7f});
     setRoughness(0.9f);
@@ -244,6 +249,7 @@ PbrShader& PbrShader::bindBaseColorTexture(Mn::GL::Texture2D& texture) {
                  "PbrShader::bindBaseColorTexture(): the shader was not "
                  "created with base color texture enabled",
                  *this);
+  // TODO: remove this constraint after IBL is introduced.
   if (lightCount_ != 0u) {
     texture.bind(pbrTextureUnitSpace::TextureUnit::BaseColor);
   }
@@ -256,6 +262,7 @@ PbrShader& PbrShader::bindMetallicRoughnessTexture(Mn::GL::Texture2D& texture) {
       "PbrShader::bindMetallicRoughnessTexture(): the shader was not "
       "created with metallicRoughness texture enabled.",
       *this);
+  // TODO: remove this constraint after IBL is introduced.
   if (lightCount_ != 0u) {
     texture.bind(pbrTextureUnitSpace::TextureUnit::MetallicRoughness);
   }
@@ -267,6 +274,7 @@ PbrShader& PbrShader::bindNormalTexture(Mn::GL::Texture2D& texture) {
                  "PbrShader::bindNormalTexture(): the shader was not "
                  "created with normal texture enabled",
                  *this);
+  // TODO: remove this constraint after IBL is introduced.
   if (lightCount_ != 0u) {
     texture.bind(pbrTextureUnitSpace::TextureUnit::Normal);
   }
@@ -311,6 +319,7 @@ PbrShader& PbrShader::setObjectId(unsigned int objectId) {
 }
 
 PbrShader& PbrShader::setBaseColor(const Mn::Color4& color) {
+  // TODO: remove this constraint after IBL is introduced.
   if (lightCount_ != 0u) {
     setUniform(baseColorUniform_, color);
   }
@@ -323,6 +332,7 @@ PbrShader& PbrShader::setEmissiveColor(const Magnum::Color3& color) {
 }
 
 PbrShader& PbrShader::setRoughness(float roughness) {
+  // TODO: remove this constraint after IBL is introduced.
   if (lightCount_ != 0u) {
     setUniform(roughnessUniform_, roughness);
   }
@@ -330,6 +340,7 @@ PbrShader& PbrShader::setRoughness(float roughness) {
 }
 
 PbrShader& PbrShader::setMetallic(float metallic) {
+  // TODO: remove this constraint after IBL is introduced.
   if (lightCount_ != 0u) {
     setUniform(metallicUniform_, metallic);
   }
@@ -448,6 +459,7 @@ PbrShader& PbrShader::setNormalTextureScale(float scale) {
                  "PbrShader::setNormalTextureScale(): the shader was not "
                  "created with normal texture enabled",
                  *this);
+  // TODO: remove this constraint after IBL is introduced.
   if ((flags_ & Flag::NormalTextureScale) && (lightCount_ != 0u)) {
     setUniform(normalTextureScaleUniform_, scale);
   }
