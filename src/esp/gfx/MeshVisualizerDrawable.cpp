@@ -21,6 +21,9 @@ MeshVisualizerDrawable::MeshVisualizerDrawable(
 
 void MeshVisualizerDrawable::draw(const Magnum::Matrix4& transformationMatrix,
                                   Magnum::SceneGraph::Camera3D& camera) {
+  // Check that getMesh() doesn't error, i.e. that a mesh exists.
+  getMesh();
+
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
   Mn::GL::Renderer::setPolygonOffset(-5.0f, -5.0f);
 

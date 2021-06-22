@@ -44,6 +44,9 @@ PTexMeshDrawable::PTexMeshDrawable(scene::SceneNode& node,
 
 void PTexMeshDrawable::draw(const Magnum::Matrix4& transformationMatrix,
                             Magnum::SceneGraph::Camera3D& camera) {
+  // Check that getMesh() doesn't error, i.e. that a mesh exists.
+  getMesh();
+
   (*shader_)
       .setExposure(exposure_)
       .setGamma(gamma_)

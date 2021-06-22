@@ -121,6 +121,8 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
   if (!isRendererCreated) {
     return;
   }
+  // Check that getMesh() doesn't error, i.e. that a mesh exists.
+  getMesh();
 
   updateShader();
 
