@@ -2082,9 +2082,11 @@ void ResourceManager::addComponent(
     const int meshID = metaData.meshIndex.first + meshIDLocal;
     Magnum::GL::Mesh* mesh = meshes_.at(meshID)->getMagnumGLMesh();
     if (getCreateRenderer()) {
-      CORRADE_INTERNAL_ASSERT(mesh);
+      CORRADE_ASSERT(mesh, "::addComponent : GL mesh expected but not found", );
     } else {
-      CORRADE_INTERNAL_ASSERT(!mesh);
+      CORRADE_ASSERT(!mesh,
+                     "addComponent : encountered unexpected GL mesh with "
+                     "createRenderer==false", );
     }
     Mn::ResourceKey materialKey = meshTransformNode.materialID;
 

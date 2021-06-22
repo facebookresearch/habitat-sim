@@ -63,7 +63,9 @@ GenericDrawable::GenericDrawable(scene::SceneNode& node,
   isRendererCreated = createRenderer;
 
   // update the shader early here to to avoid doing it during the render loop
-  updateShader();
+  if (isRendererCreated) {
+    updateShader();
+  }
 }
 
 void GenericDrawable::setLightSetup(const Mn::ResourceKey& resourceKey) {
@@ -116,6 +118,10 @@ void GenericDrawable::updateShaderLightingParameters(
 
 void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
                            Mn::SceneGraph::Camera3D& camera) {
+  if (!isRendererCreated) {
+    return;
+  }
+
   updateShader();
 
   updateShaderLightingParameters(transformationMatrix, camera);
@@ -156,9 +162,7 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
 void GenericDrawable::updateShader() {
   // Block the function if there is no renderer. Otherwise this will segfault.
   // We don't have use for a shader anyways if we are not rendering anything.
-  if (!isRendererCreated) {
-    return;
-  }
+  CORRADE_INTERNAL_ASSERT(isRendererCreated);
 
   Mn::UnsignedInt lightCount = lightSetup_->size();
 

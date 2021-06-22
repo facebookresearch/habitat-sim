@@ -475,7 +475,7 @@ class Sensor:
 
         self._spec = self._sensor_object.specification()
 
-        if self._sim.renderer:
+        if self._sim.renderer is not None:
             self._sim.renderer.bind_render_target(self._sensor_object)
 
         if self._spec.gpu2gpu_transfer:
