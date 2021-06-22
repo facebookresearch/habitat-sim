@@ -66,10 +66,17 @@ class PhysicsManagerAttributes : public AbstractAttributes {
    * that to build this data.
    */
   std::string getObjectInfoInternal() const override {
-    return getSimulator() + ", " + cfg.value("timestep") + ", " +
-           cfg.value("max_substeps") + ", " + cfg.value("gravity") + ", " +
-           cfg.value("friction_coefficient") + ", " +
-           cfg.value("restitution_coefficient");
+    return getSimulator()
+        .append(", ")
+        .append(cfg.value("timestep"))
+        .append(", ")
+        .append(cfg.value("max_substeps"))
+        .append(", ")
+        .append(cfg.value("gravity"))
+        .append(", ")
+        .append(cfg.value("friction_coefficient"))
+        .append(", ")
+        .append(cfg.value("restitution_coefficient"));
   }
 
  public:

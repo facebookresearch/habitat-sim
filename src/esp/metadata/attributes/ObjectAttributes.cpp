@@ -50,13 +50,27 @@ std::string AbstractObjectAttributes::getObjectInfoHeaderInternal() const {
 }
 
 std::string AbstractObjectAttributes::getObjectInfoInternal() const {
-  return getRenderAssetHandle() + ", " + getCollisionAssetHandle() + ", " +
-         cfg.value("scale") + ", " + cfg.value("margin") + ", " +
-         cfg.value("orient_up") + ", " + cfg.value("orient_front") + ", " +
-         cfg.value("units_to_meters") + ", " +
-         cfg.value("friction_coefficient") + ", " +
-         cfg.value("restitution_coefficient") + ", " + getCurrShaderTypeName() +
-         ", " + getAbstractObjectInfoInternal();
+  return getRenderAssetHandle()
+      .append(", ")
+      .append(getCollisionAssetHandle())
+      .append(", ")
+      .append(cfg.value("scale"))
+      .append(", ")
+      .append(cfg.value("margin"))
+      .append(", ")
+      .append(cfg.value("orient_up"))
+      .append(", ")
+      .append(cfg.value("orient_front"))
+      .append(", ")
+      .append(cfg.value("units_to_meters"))
+      .append(", ")
+      .append(cfg.value("friction_coefficient"))
+      .append(", ")
+      .append(cfg.value("restitution_coefficient"))
+      .append(", ")
+      .append(getCurrShaderTypeName())
+      .append(", ")
+      .append(getAbstractObjectInfoInternal());
 }  // AbstractObjectAttributes::getObjectInfoInternal
 
 ObjectAttributes::ObjectAttributes(const std::string& handle)
@@ -80,6 +94,20 @@ ObjectAttributes::ObjectAttributes(const std::string& handle)
   setIsVisible(true);
   setSemanticId(0);
 }  // ObjectAttributes ctor
+
+std::string ObjectAttributes::getAbstractObjectInfoInternal() const {
+  return cfg.value("mass")
+      .append(", ")
+      .append(cfg.value("COM"))
+      .append(", ")
+      .append(cfg.value("inertia"))
+      .append(", ")
+      .append(cfg.value("angular_damping"))
+      .append(", ")
+      .append(cfg.value("linear_damping"))
+      .append(", ")
+      .append(cfg.value("semantic_id"));
+}
 
 StageAttributes::StageAttributes(const std::string& handle)
     : AbstractObjectAttributes("StageAttributes", handle) {

@@ -145,10 +145,18 @@ class LightInstanceAttributes : public AbstractAttributes {
    * use that to build this data.
    */
   std::string getObjectInfoInternal() const override {
-    return cfg.value("position") + ", " + cfg.value("direction") + ", " +
-           cfg.value("color") + ", " + cfg.value("intensity") + ", " +
-           getCurrLightTypeName() + ", " + getCurrLightPositionModelName() +
-           ", ";
+    return cfg.value("position")
+        .append(", ")
+        .append(cfg.value("direction"))
+        .append(", ")
+        .append(cfg.value("color"))
+        .append(", ")
+        .append(cfg.value("intensity"))
+        .append(", ")
+        .append(getCurrLightTypeName())
+        .append(", ")
+        .append(getCurrLightPositionModelName())
+        .append(", ");
   }
 
  public:

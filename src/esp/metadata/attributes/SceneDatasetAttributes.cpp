@@ -190,50 +190,50 @@ std::string SceneDatasetAttributes::getObjectInfoInternal() const {
   std::vector<std::string> sceneInstAttrInfoAra =
       sceneAttributesManager_->getObjectInfoStrings();
   for (const std::string& s : sceneInstAttrInfoAra) {
-    res += s + "\n";
+    res.append(s).append("\n");
   }
   res += "Stage Templates : \n";
   // stages
   std::vector<std::string> stageAttrInfoAra =
       stageAttributesManager_->getObjectInfoStrings();
   for (const std::string& s : stageAttrInfoAra) {
-    res += s + "\n";
+    res.append(s).append("\n");
   }
   res += "Object Templates : \n";
   // objects
   std::vector<std::string> objAttrInfoAra =
       objectAttributesManager_->getObjectInfoStrings();
   for (const std::string& s : objAttrInfoAra) {
-    res += s + "\n";
+    res.append(s).append("\n");
   }
   res += "Articulated Object Models : \n";
   // articulated objects
   for (const auto& item : articulatedObjPaths) {
-    res += item.first + ", " + item.second + ",\n";
+    res.append(item.first).append(", ").append(item.second) + ",\n";
   }
   res += "Lighting Configurations : \n";
   // lights
   std::vector<std::string> lightAttrInfoAra =
       lightLayoutAttributesManager_->getObjectInfoStrings();
   for (const std::string& s : lightAttrInfoAra) {
-    res += s + "\n";
+    res.append(s).append("\n");
   }
   res += "Primitives Templates : \n";
   // prims
   std::vector<std::string> primAttrInfoAra =
       assetAttributesManager_->getObjectInfoStrings();
   for (const std::string& s : primAttrInfoAra) {
-    res += s + "\n";
+    res.append(s).append("\n");
   }
   res += "Navmeshes : \n";
   // navmesh
   for (const auto& item : navmeshMap_) {
-    res += item.first + ", " + item.second + ",\n";
+    res.append(item.first).append(", ").append(item.second) + ",\n";
   }
   res += "Semantic Scene Descriptors : \n";
   // SSD entries
   for (const auto& item : semanticSceneDescrMap_) {
-    res += item.first + ", " + item.second + ",\n";
+    res.append(item.first).append(", ").append(item.second) + ",\n";
   }
 
   return res;
@@ -246,16 +246,26 @@ std::string SceneDatasetAttributes::getDatasetSummaryHeader() {
 }
 
 std::string SceneDatasetAttributes::getDatasetSummary() const {
-  std::string res =
-      getSimplifiedHandle() + ", " +
-      std::to_string(sceneAttributesManager_->getNumObjects()) + ", " +
-      std::to_string(stageAttributesManager_->getNumObjects()) + ", " +
-      std::to_string(objectAttributesManager_->getNumObjects()) + ", " +
-      std::to_string(articulatedObjPaths.size()) + ", " +
-      std::to_string(lightLayoutAttributesManager_->getNumObjects()) + ", " +
-      std::to_string(assetAttributesManager_->getNumObjects()) + ", " +
-      std::to_string(navmeshMap_.size()) + ", " +
-      std::to_string(semanticSceneDescrMap_.size()) + ", ";
+  std::string res{
+      getSimplifiedHandle()
+          .append(", ")
+          .append(std::to_string(sceneAttributesManager_->getNumObjects()))
+          .append(", ")
+          .append(std::to_string(stageAttributesManager_->getNumObjects()))
+          .append(", ")
+          .append(std::to_string(objectAttributesManager_->getNumObjects()))
+          .append(", ")
+          .append(std::to_string(articulatedObjPaths.size()))
+          .append(", ")
+          .append(
+              std::to_string(lightLayoutAttributesManager_->getNumObjects()))
+          .append(", ")
+          .append(std::to_string(assetAttributesManager_->getNumObjects()))
+          .append(", ")
+          .append(std::to_string(navmeshMap_.size()))
+          .append(", ")
+          .append(std::to_string(semanticSceneDescrMap_.size()))
+          .append(", ")};
   return res;
 
 }  // SceneDatasetAttributes::getDatasetSummary

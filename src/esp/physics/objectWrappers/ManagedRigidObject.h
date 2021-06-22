@@ -57,7 +57,8 @@ class ManagedRigidObject
    */
   std::string getRigidBaseInfoInternal(
       std::shared_ptr<esp::physics::RigidObject>& sp) const override {
-    std::string res = sp->getInitializationAttributes()->getHandle() + ", ";
+    std::string res =
+        sp->getInitializationAttributes()->getHandle().append(", ");
     return res;
   }
 

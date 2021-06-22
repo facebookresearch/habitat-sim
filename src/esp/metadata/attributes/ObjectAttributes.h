@@ -234,9 +234,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
    */
   std::string getObjectInfoInternal() const override;
   /**
-   * @brief get AbstractObject specific info
-   * TODO : once Magnum supports retrieving key-values of configurations, use
-   * that to build this data.
+   * @brief get AbstractObject specific info for csv string
    */
   virtual std::string getAbstractObjectInfoInternal() const { return ""; };
   void setIsDirty() { setBool("__isDirty", true); }
@@ -322,13 +320,11 @@ class ObjectAttributes : public AbstractObjectAttributes {
   std::string getAbstractObjectInfoHeaderInternal() const override {
     return "Mass, COM XYZ, I XX YY ZZ, Angular Damping, "
            "Linear Damping, Semantic ID";
-  };
-
-  std::string getAbstractObjectInfoInternal() const override {
-    return cfg.value("mass") + ", " + cfg.value("COM") + ", " +
-           cfg.value("inertia") + ", " + cfg.value("angular_damping") + ", " +
-           cfg.value("linear_damping") + ", " + cfg.value("semantic_id");
   }
+  /**
+   * @brief get AbstractObject specific info for csv string
+   */
+  std::string getAbstractObjectInfoInternal() const override;
 
  public:
   ESP_SMART_POINTERS(ObjectAttributes)
@@ -412,11 +408,19 @@ class StageAttributes : public AbstractObjectAttributes {
    */
   std::string getAbstractObjectInfoHeaderInternal() const override {
     return "Navmesh Handle, Gravity XYZ, Origin XYZ, Light Setup,";
-  };
+  }
 
+  /**
+   * @brief get AbstractObject specific info for csv string
+   */
   std::string getAbstractObjectInfoInternal() const override {
-    return getNavmeshAssetHandle() + ", " + cfg.value("gravity") + ", " +
-           cfg.value("origin") + ", " + cfg.value("light_setup");
+    return getNavmeshAssetHandle()
+        .append(", ")
+        .append(cfg.value("gravity"))
+        .append(", ")
+        .append(cfg.value("origin"))
+        .append(", ")
+        .append(cfg.value("light_setup"));
   }
 
  public:

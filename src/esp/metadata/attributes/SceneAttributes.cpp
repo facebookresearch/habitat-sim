@@ -46,11 +46,21 @@ std::string SceneObjectInstanceAttributes::getObjectInfoHeaderInternal() const {
 }
 
 std::string SceneObjectInstanceAttributes::getObjectInfoInternal() const {
-  return cfg.value("translation") + ", " + cfg.value("rotation") + ", " +
-         getCurrMotionTypeName() + ", " + getCurrShaderTypeName() + ", " +
-         cfg.value("uniform_scale") + ", " + cfg.value("mass_scale") + ", " +
-         getTranslationOriginName(getTranslationOrigin()) + ", " +
-         getSceneObjInstanceInfoInternal();
+  return cfg.value("translation")
+      .append(", ")
+      .append(cfg.value("rotation"))
+      .append(", ")
+      .append(getCurrMotionTypeName())
+      .append(", ")
+      .append(getCurrShaderTypeName())
+      .append(", ")
+      .append(cfg.value("uniform_scale"))
+      .append(", ")
+      .append(cfg.value("mass_scale"))
+      .append(", ")
+      .append(getTranslationOriginName(getTranslationOrigin()))
+      .append(", ")
+      .append(getSceneObjInstanceInfoInternal());
 }  // SceneObjectInstanceAttributes::getObjectInfoInternal()
 
 SceneAOInstanceAttributes::SceneAOInstanceAttributes(const std::string& handle)
@@ -61,35 +71,36 @@ SceneAOInstanceAttributes::SceneAOInstanceAttributes(const std::string& handle)
 
 std::string SceneAOInstanceAttributes::getSceneObjInstanceInfoHeaderInternal()
     const {
-  const std::string posePrfx = "Init Pose ";
-  std::string initPoseHdr = "";
+  const std::string posePrfx{"Init Pose "};
+  std::string initPoseHdr;
   int iter = 0;
   for (const auto& it : initJointPose_) {
-    initPoseHdr += posePrfx + std::to_string(iter++) + ", ";
+    initPoseHdr.append(posePrfx).append(std::to_string(iter++)).append(", ");
   }
-  const std::string velPrfx = "Init Vel ";
-  std::string initVelHdr = "";
+  const std::string velPrfx{"Init Vel "};
+  std::string initVelHdr;
   iter = 0;
   for (const auto& it : initJointPose_) {
-    initVelHdr += velPrfx + std::to_string(iter++) + ", ";
+    initVelHdr.append(velPrfx).append(std::to_string(iter++)).append(", ");
   }
-  std::string res = "Is Fixed Base?, " + initPoseHdr + initVelHdr;
+  std::string res{"Is Fixed Base?, "};
+  res.append(initPoseHdr).append(initVelHdr);
   return res;
 }  // SceneAOInstanceAttributes::getSceneObjInstanceInfoHeaderInternal
 
 std::string SceneAOInstanceAttributes::getSceneObjInstanceInfoInternal() const {
-  std::string initJointPose = "[";
+  std::string initJointPose{"["};
   for (const auto& it : initJointPose_) {
-    initJointPose += std::to_string(it.second) + ", ";
+    initJointPose.append(std::to_string(it.second)).append(", ");
   }
-  initJointPose = "]";
-  std::string initJointVels = "[";
+  initJointPose.append("]");
+  std::string initJointVels{"["};
   for (const auto& it : initJointPose_) {
-    initJointVels += std::to_string(it.second) + ", ";
+    initJointVels.append(std::to_string(it.second)).append(", ");
   }
-  initJointVels = "]";
-  return cfg.value("fixed_base") + ", " + initJointPose + ", " + initJointVels +
-         ", ";
+  initJointVels.append("]");
+  return cfg.value("fixed_base").append(", ") + initJointPose.append(", ") +
+         initJointVels.append(", ");
 }  // SceneAOInstanceAttributes::getSceneObjInstanceInfoInternal()
 
 SceneAttributes::SceneAttributes(const std::string& handle)
@@ -105,29 +116,31 @@ std::string SceneAttributes::getObjectInfoInternal() const {
   std::string res = "\n";
   // scene-specific info constants
   // default translation origin
-  res += "Default Translation Origin : " +
-         getTranslationOriginName(getTranslationOrigin()) + ",\n";
+  res.append("Default Translation Origin : ")
+      .append(getTranslationOriginName(getTranslationOrigin()))
+      .append(",\n");
   // specified lighting
-  res += "Default Lighting, " + getLightingHandle() + ",\n";
+  res.append("Default Lighting, ").append(getLightingHandle()).append(",\n");
 
   // specified navmesh(s)
-  res += "Navmesh Handle, " + getNavmeshHandle() + ",\n";
+  res.append("Navmesh Handle, ").append(getNavmeshHandle() + ",\n");
 
   // specified ssd
-  res +=
-      "Semantic Scene Descriptor Handle, " + getSemanticSceneHandle() + ",\n";
+  res.append("Semantic Scene Descriptor Handle, ")
+      .append(getSemanticSceneHandle())
+      .append(",\n");
 
   // stage instance info
-  res += stageInstance_->getObjectInfo() + "\n";
+  res.append(stageInstance_->getObjectInfo()).append("\n");
 
   // object instance info
   for (const auto& objInst : objectInstances_) {
-    res += objInst->getObjectInfo() + "\n";
+    res.append(objInst->getObjectInfo()).append("\n");
   }
 
   // articulated object instance info
   for (const auto& artObjInst : articulatedObjectInstances_) {
-    res += artObjInst->getObjectInfo() + "\n";
+    res.append(artObjInst->getObjectInfo()).append("\n");
   }
 
   return res;

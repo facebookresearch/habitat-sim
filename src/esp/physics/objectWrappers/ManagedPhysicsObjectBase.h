@@ -276,20 +276,24 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
    * of this managed object.
    */
   std::string getObjectInfo() const override {
-    std::string res = "unknown " + classKey_;
+    std::string res{"unknown " + classKey_};
     namespace CrUt = Corrade::Utility;
     if (auto sp = this->getObjectReference()) {
-      res = classKey_ + ", " + sp->getObjectName() + ", " +
-            std::to_string(sp->getObjectID()) + ", " +
-            CrUt::ConfigurationValue<Mn::Vector3>::toString(
-                sp->getTranslation(), {}) +
-            ", " +
-            CrUt::ConfigurationValue<Magnum::Quaternion>::toString(
-                sp->getRotation(), {}) +
-            ", " + getPhysObjInfoInternal(sp);
-      ;
+      res.append(classKey_)
+          .append(", ")
+          .append(sp->getObjectName())
+          .append(", ")
+          .append(std::to_string(sp->getObjectID()))
+          .append(", ")
+          .append(CrUt::ConfigurationValue<Mn::Vector3>::toString(
+              sp->getTranslation(), {}))
+          .append(", ")
+          .append(CrUt::ConfigurationValue<Magnum::Quaternion>::toString(
+              sp->getRotation(), {}))
+          .append(", ")
+          .append(getPhysObjInfoInternal(sp));
     }
-    return res + ", ";
+    return res.append(", ");
   }
 
  protected:

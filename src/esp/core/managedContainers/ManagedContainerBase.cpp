@@ -142,14 +142,17 @@ std::vector<std::string> ManagedContainerBase::getObjectInfoStrings(
     // get the object
     auto objPtr = getObjectInternal<AbstractManagedObject>(objectHandle);
     if (idx == 0) {
-      res[idx++] = objectType_ + " Full name, Can delete?, Is locked?, " +
-                   objPtr->getObjectInfoHeader();
+      res[idx++]
+          .append(objectType_)
+          .append(" Full name, Can delete?, Is locked?, ")
+          .append(objPtr->getObjectInfoHeader());
     }
-    res[idx++] =
-        objectHandle + ", " +
-        ((this->getIsUndeletable(objectHandle)) ? "True, " : "False, ") +
-        ((this->getIsUserLocked(objectHandle)) ? "True, " : "False, ") +
-        objPtr->getObjectInfo();
+    res[idx++]
+        .append(objectHandle)
+        .append(", ")
+        .append(((this->getIsUndeletable(objectHandle)) ? "True, " : "False, "))
+        .append(((this->getIsUserLocked(objectHandle)) ? "True, " : "False, "))
+        .append(objPtr->getObjectInfo());
   }
   return res;
 }  // ManagedContainer<T, Access>::getObjectInfoStrings
