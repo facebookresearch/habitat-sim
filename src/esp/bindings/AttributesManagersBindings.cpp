@@ -82,6 +82,20 @@ void declareBaseAttributesManager(py::module& m,
             "value of boolean contains.")
                .c_str(),
            "search_str"_a = "", "contains"_a = true)
+      .def("get_templates_info", &MgrClass::getObjectInfoStrings,
+           ("Returns a list of CSV strings describing each " + attrType +
+            " template whose handles either contain or explicitly do not "
+            "contain the passed search_str, based on the value of boolean "
+            "contains.")
+               .c_str(),
+           "search_str"_a = "", "contains"_a = true)
+      .def("get_templates_CSV_info", &MgrClass::getObjectInfoCSVString,
+           ("Returns a comma-separated string describing each " + attrType +
+            " template whose handles either contain or explicitly do not "
+            "contain the passed search_str, based on the value of boolean "
+            "contains.  Each template's info is separated by a newline.")
+               .c_str(),
+           "search_str"_a = "", "contains"_a = true)
       .def(
           "load_configs",
           static_cast<std::vector<int> (MgrClass::*)(const std::string&, bool)>(
