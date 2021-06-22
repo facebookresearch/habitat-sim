@@ -155,7 +155,18 @@ std::vector<std::string> ManagedContainerBase::getObjectInfoStrings(
         .append(objPtr->getObjectInfo());
   }
   return res;
-}  // ManagedContainer<T, Access>::getObjectInfoStrings
+}  // ManagedContainerBase::getObjectInfoStrings
+
+std::string ManagedContainerBase::getObjectInfoCSVString(
+    const std::string& subStr,
+    bool contains) const {
+  std::vector<std::string> infoAra = getObjectInfoStrings(subStr, contains);
+  std::string res;
+  for (std::string& s : infoAra) {
+    res += s.append(1, '\n');
+  }
+  return res;
+}  // ManagedContainerBase::getObjectInfoCSVString
 
 std::string ManagedContainerBase::getUniqueHandleFromCandidatePerType(
     const std::map<int, std::string>& mapOfHandles,
