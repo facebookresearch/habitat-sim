@@ -38,6 +38,11 @@ def powerset(iterable):
             "--no-make-video",
         ),
         (
+            "examples/tutorials/nb_python/asset_viewer.py",
+            "--no-show-video",
+            "--no-make-video",
+        ),
+        (
             "examples/tutorials/nb_python/ECCV_2020_Navigation.py",
             "--no-make-video",
             "--no-display",
