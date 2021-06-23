@@ -14,6 +14,7 @@ import glb_mesh_tools as gut
 ###
 # JSON Configuration file for running this application.
 MESH_DECON_CONFIG_JSON = "mesh_decon_AI2Thor.json"
+# MESH_DECON_CONFIG_JSON = "mesh_decon_ReplicaCAD.json"
 
 
 ####
@@ -239,6 +240,32 @@ def load_decon_global_config_values(mesh_decon_config_json):
     if "lighting_tag" in decon_configs:
         global LIGHTING_TAG
         LIGHTING_TAG = decon_configs["lighting_tag"].strip()
+
+    # Load whether all objects should be static
+    if "objects_all_static" in decon_configs:
+        global OBJECTS_ALL_STATIC
+        OBJECTS_ALL_STATIC = decon_configs["objects_all_static"]
+
+    # Load the settings for what configs and/or glbs to construct and save
+    if "build_scene_configs" in decon_configs:
+        global BUILD_SCENE_CONFIGS
+        BUILD_SCENE_CONFIGS = decon_configs["build_scene_configs"]
+    if "build_stage_configs" in decon_configs:
+        global BUILD_STAGE_CONFIGS
+        BUILD_STAGE_CONFIGS = decon_configs["build_stage_configs"]
+    if "build_object_configs" in decon_configs:
+        global BUILD_OBJECT_CONFIGS
+        BUILD_OBJECT_CONFIGS = decon_configs["build_object_configs"]
+    if "build_lighting_configs" in decon_configs:
+        global BUILD_LIGHTING_CONFIGS
+        BUILD_LIGHTING_CONFIGS = decon_configs["build_lighting_configs"]
+
+    if "build_stage_glbs" in decon_configs:
+        global BUILD_STAGE_GLBS
+        BUILD_STAGE_GLBS = decon_configs["build_stage_glbs"]
+    if "build_object_glbs" in decon_configs:
+        global BUILD_OBJECT_GLBS
+        BUILD_OBJECT_GLBS = decon_configs["build_object_glbs"]
 
     # This references nodes from the objects subtree that should be merged into the
     # stage and not treated as individual objects
