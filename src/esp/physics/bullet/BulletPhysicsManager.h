@@ -182,15 +182,14 @@ class BulletPhysicsManager : public PhysicsManager {
    * @param frictionCoefficient The scalar friction coefficient of the stage
    * geometry.
    */
-  void setStageFrictionCoefficient(const double frictionCoefficient) override;
+  void setStageFrictionCoefficient(double frictionCoefficient) override;
 
   /** @brief Set the coefficient of restitution for the stage collision
    * geometry. See @ref staticStageObject_. See @ref
    * BulletRigidObject::setRestitutionCoefficient.
    * @param restitutionCoefficient The scalar coefficient of restitution to set.
    */
-  void setStageRestitutionCoefficient(
-      const double restitutionCoefficient) override;
+  void setStageRestitutionCoefficient(double restitutionCoefficient) override;
 
   //============ Bullet-specific Object Getter functions =============
   /** @brief Get the current friction coefficient of the stage collision
@@ -215,7 +214,7 @@ class BulletPhysicsManager : public PhysicsManager {
    * PhysicsManager::existingObjects_.
    * @return The Aabb.
    */
-  Magnum::Range3D getCollisionShapeAabb(const int physObjectID) const;
+  Magnum::Range3D getCollisionShapeAabb(int physObjectID) const;
 
   /**
    * @brief Query the Aabb from bullet physics for the root compound shape of

@@ -84,7 +84,7 @@ void CollisionGroupHelper::setGroupInteractsWith(CollisionGroup groupA,
   CollisionGroups groupAMask = collisionGroupMasks.at(groupA);
   groupAMask = interacts ? groupAMask | groupB : groupAMask & ~groupB;
   collisionGroupMasks.at(groupA) = groupAMask;
-};
+}
 
 void CollisionGroupHelper::setMaskForGroup(CollisionGroup group,
                                            CollisionGroups mask) {
