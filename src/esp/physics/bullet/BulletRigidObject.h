@@ -100,7 +100,9 @@ class BulletRigidObject : public BulletBase,
    */
   void setActive(bool active) override {
     if (!active) {
-      bObjectRigidBody_->setActivationState(WANTS_DEACTIVATION);
+      if (bObjectRigidBody_->isActive()) {
+        bObjectRigidBody_->setActivationState(WANTS_DEACTIVATION);
+      }
     } else {
       bObjectRigidBody_->activate(true);
     }
