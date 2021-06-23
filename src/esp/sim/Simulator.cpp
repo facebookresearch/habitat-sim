@@ -151,6 +151,9 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 #ifdef ESP_BUILD_WITH_BACKGROUND_RENDERER
       if (context_)
         flags |= gfx::Renderer::Flag::BackgroundRenderer;
+
+      if (context_ && config_.leaveContextWithBackgroundRenderer)
+        flags |= gfx::Renderer::Flag::LeaveContextWithBackgroundRenderer;
 #endif
 
       renderer_ = gfx::Renderer::create(context_.get(), flags);

@@ -121,6 +121,12 @@ class Simulator(SimulatorBackend):
         self.__set_from_config(self.config)
 
     def close(self, destroy: bool = True) -> None:
+        r"""Close the simulator instance.
+
+        :param destroy: Whether or not to force the OpenGL context to be
+        destroyed if async rendering was used.  If async rendering wasn't used,
+        this has no effect.
+        """
         if self.renderer is not None:
             self.renderer.acquire_gl_context()
 
@@ -318,6 +324,13 @@ class Simulator(SimulatorBackend):
     def start_async_render_and_step_physics(
         self, dt: float, agent_ids: Union[int, List[int]] = 0
     ):
+        if self._async_draw_agent_ids is not None:
+            raise RuntimeError(
+                "start_async_render_and_step_physics was already called.  "
+                "Call get_sensor_observations_async_finish before calling this again.  "
+                "Use step_physics to step physics additional times."
+            )
+
         self._async_draw_agent_ids = agent_ids
         if isinstance(agent_ids, int):
             agent_ids = [agent_ids]
@@ -336,7 +349,11 @@ class Simulator(SimulatorBackend):
         Dict[str, Union[ndarray, "Tensor"]],
         Dict[int, Dict[str, Union[ndarray, "Tensor"]]],
     ]:
-        assert self._async_draw_agent_ids is not None
+        if self._async_draw_agent_ids is None:
+            raise RuntimeError(
+                "get_sensor_observations_async_finish was called before calling start_async_render_and_step_physics."
+            )
+
         agent_ids = self._async_draw_agent_ids
         self._async_draw_agent_ids = None
         if isinstance(agent_ids, int):
