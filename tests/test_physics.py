@@ -1578,7 +1578,7 @@ def test_rigid_constraints():
             )
             - mn.Rad(mn.math.pi / 4.0)
         )
-        assert abs(float(angle_error)) < 0.15
+        assert abs(float(angle_error)) < 0.2
 
         # hang the object from its base link
         constraint_settings_2.link_id_a = -1
