@@ -372,6 +372,23 @@ class MetadataMediator {
 
   bool getCreateRenderer() const;
 
+  /**
+   * @brief This function returns a list of all the scene datasets currently
+   * loaded, along with some key statistics for each, formatted as a
+   * comma-separated string.
+   * @return a vector of strings holding scene dataset info.
+   */
+  std::string getDatasetsOverview() const;
+
+  /**
+   * @brief this function will create a report of the contents of the scene
+   * dataset with the passed name. If no name is provided, a report on the
+   * current active dataset will be returned.
+   * @param sceneDataset The name of the scene dataset to perform the report on.
+   * @return Comma-separated string of data describing the desired dataset.
+   */
+  std::string createDatasetReport(const std::string& sceneDataset = "") const;
+
  protected:
   /**
    * @brief Return the file path corresponding to the passed handle in the
@@ -477,7 +494,7 @@ class MetadataMediator {
 
  public:
   ESP_SMART_POINTERS(MetadataMediator)
-};  // class MetadataMediator
+};  // namespace metadata
 
 }  // namespace metadata
 }  // namespace esp

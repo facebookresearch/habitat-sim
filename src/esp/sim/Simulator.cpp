@@ -455,9 +455,9 @@ bool Simulator::instanceObjectsForActiveScene() {
   // whether or not to correct for COM shift - only do for blender-sourced
   // scene attributes
   bool defaultCOMCorrection =
-      (static_cast<metadata::managers::SceneInstanceTranslationOrigin>(
+      (static_cast<metadata::attributes::SceneInstanceTranslationOrigin>(
            curSceneInstanceAttributes->getTranslationOrigin()) ==
-       metadata::managers::SceneInstanceTranslationOrigin::AssetLocal);
+       metadata::attributes::SceneInstanceTranslationOrigin::AssetLocal);
 
   std::string errMsgTmplt =
       "::createSceneInstance : Error instancing scene : " + activeSceneName +

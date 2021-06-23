@@ -709,6 +709,8 @@ bool BulletArticulatedObject::supportsSingleDofJointMotor(int linkIx) const {
 std::unordered_map<int, int> BulletArticulatedObject::createMotorsForAllDofs(
     const JointMotorSettings& settings) {
   std::unordered_map<int, int> motorIdsToLinks;
+  // Reserve space. We have an upperbound on size.
+  motorIdsToLinks.reserve(btMultiBody_->getNumLinks());
   auto settingsCopy = settings;
   for (int linkIx = 0; linkIx < btMultiBody_->getNumLinks(); ++linkIx) {
     if (supportsSingleDofJointMotor(linkIx)) {

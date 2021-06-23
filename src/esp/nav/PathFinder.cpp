@@ -219,9 +219,9 @@ struct PathFinder::Impl {
 
   bool build(const NavMeshSettings& bs,
              const float* verts,
-             const int nverts,
+             int nverts,
              const int* tris,
-             const int ntris,
+             int ntris,
              const float* bmin,
              const float* bmax);
   bool build(const NavMeshSettings& bs, const esp::assets::MeshData& mesh);
@@ -250,18 +250,17 @@ struct PathFinder::Impl {
   float islandRadius(const vec3f& pt) const;
 
   float distanceToClosestObstacle(const vec3f& pt,
-                                  const float maxSearchRadius = 2.0) const;
-  HitRecord closestObstacleSurfacePoint(
-      const vec3f& pt,
-      const float maxSearchRadius = 2.0) const;
+                                  float maxSearchRadius = 2.0) const;
+  HitRecord closestObstacleSurfacePoint(const vec3f& pt,
+                                        float maxSearchRadius = 2.0) const;
 
-  bool isNavigable(const vec3f& pt, const float maxYDelta = 0.5) const;
+  bool isNavigable(const vec3f& pt, float maxYDelta = 0.5) const;
 
   std::pair<vec3f, vec3f> bounds() const { return bounds_; };
 
   Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> getTopDownView(
-      const float metersPerPixel,
-      const float height) const;
+      float metersPerPixel,
+      float height) const;
 
   assets::MeshData::ptr getNavMeshData();
 

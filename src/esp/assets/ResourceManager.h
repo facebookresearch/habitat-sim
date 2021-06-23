@@ -430,7 +430,7 @@ class ResourceManager {
       const std::string& filename,
       const std::string& chdFilename,
       const VHACDParameters& params = VHACDParameters(),
-      const bool saveChdToObj = false);
+      bool saveChdToObj = false);
 #endif
   /**
    * @brief Add an object from a specified object template handle to the
@@ -639,7 +639,7 @@ class ResourceManager {
       const std::string& filename,
       const metadata::attributes::ObjectAttributes::ptr& objectAttributes,
       const std::string& meshType,
-      const bool requiresLighting);
+      bool requiresLighting);
 
   /**
    * @brief Build a primitive asset based on passed template parameters.  If

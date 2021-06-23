@@ -354,18 +354,18 @@ class BulletArticulatedObject : public ArticulatedObject {
    * correctly configured for the target joint.
    * @return The motorId for the new joint motor
    */
-  int createJointMotor(const int linkIndex,
+  int createJointMotor(int linkIndex,
                        const JointMotorSettings& settings) override;
 
   /**
    * @brief Remove and destroy a joint motor.
    */
-  void removeJointMotor(const int motorId) override;
+  void removeJointMotor(int motorId) override;
 
   /**
    * @brief Update a JointMotor with new settings.
    */
-  void updateJointMotor(const int motorId,
+  void updateJointMotor(int motorId,
                         const JointMotorSettings& settings) override;
 
   /**

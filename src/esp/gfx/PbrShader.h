@@ -172,6 +172,8 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
     ObjectId = 1 << 11,
     /**
      * Enable double-sided rendering.
+     * (Temporarily STOP supporting this functionality. See comments in
+     * the PbrDrawable::draw() function)
      */
     DoubleSided = 1 << 12,
 
@@ -252,8 +254,13 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    */
   PbrShader& bindEmissiveTexture(Magnum::GL::Texture2D& texture);
 
-  PbrShader& setTextureMatrix(const Magnum::Matrix3& matrix);
   // ======== set uniforms ===========
+  /**
+   * @brief set the texture transformation matrix
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& setTextureMatrix(const Magnum::Matrix3& matrix);
+
   /**
    *  @brief Set "projection" matrix to the uniform on GPU
    *  @return Reference to self (for method chaining)
@@ -261,11 +268,16 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   PbrShader& setProjectionMatrix(const Magnum::Matrix4& matrix);
 
   /**
-   *  @brief Set modelview matrix to the uniform on GPU
-   *         modelview = view * model
+   *  @brief Set view matrix to the uniform on GPU
    *  @return Reference to self (for method chaining)
    */
-  PbrShader& setTransformationMatrix(const Magnum::Matrix4& matrix);
+  PbrShader& setViewMatrix(const Magnum::Matrix4& matrix);
+
+  /**
+   *  @brief Set model matrix to the uniform on GPU
+   *  @return Reference to self (for method chaining)
+   */
+  PbrShader& setModelMatrix(const Magnum::Matrix4& matrix);
 
   /**
    *  @brief Set normal matrix to the uniform on GPU
@@ -302,6 +314,12 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    *  @return Reference to self (for method chaining)
    */
   PbrShader& setObjectId(unsigned int objectId);
+
+  /**
+   *  @brief Set object id to the uniform on GPU
+   *  @return Reference to self (for method chaining)
+   */
+  PbrShader& setCameraWorldPosition(const Magnum::Vector3& cameraWorldPos);
 
   /**
    * @brief Set light positions or directions
@@ -409,6 +427,11 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    */
   PbrShader& setLightRanges(std::initializer_list<float> ranges);
 
+  /**
+   *  @brief Set the scale of the normal texture
+   *  @param scale
+   *  @return Reference to self (for method chaining)
+   */
   PbrShader& setNormalTextureScale(float scale);
 
  protected:
@@ -419,7 +442,8 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   // it hurts the performance to call glGetUniformLocation() every frame due
   // to string operations. therefore, cache the locations in the constructor
   // material uniforms
-  int modelviewMatrixUniform_ = ID_UNDEFINED;
+  int viewMatrixUniform_ = ID_UNDEFINED;
+  int modelMatrixUniform_ = ID_UNDEFINED;
   int normalMatrixUniform_ = ID_UNDEFINED;
   int projMatrixUniform_ = ID_UNDEFINED;
   int baseColorUniform_ = ID_UNDEFINED;  // diffuse color
@@ -436,6 +460,8 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   // when w == 0, it means .xyz is the light direction;
   // when w == 1, it means it is the light position, NOT the direction;
   int lightDirectionsUniform_ = ID_UNDEFINED;
+
+  int cameraWorldPosUniform_ = ID_UNDEFINED;
 };
 
 CORRADE_ENUMSET_OPERATORS(PbrShader::Flags)

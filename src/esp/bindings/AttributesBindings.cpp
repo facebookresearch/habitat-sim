@@ -88,13 +88,15 @@ void initAttributesBindings(py::module& m) {
            &AbstractAttributes::setUserConfigValue<Magnum::Vector3>)
       .def("set_user_config_val",
            &AbstractAttributes::setUserConfigValue<Magnum::Quaternion>)
-
       .def_property_readonly(
           "num_user_configs",
           &AbstractAttributes::getNumUserDefinedConfigurations,
           R"(The number of currently specified user-defined configuration values.)")
       .def_property_readonly("template_class", &AbstractAttributes::getClassKey,
-                             R"(Class name of Attributes template.)");
+                             R"(Class name of Attributes template.)")
+      .def_property_readonly(
+          "csv_info", &AbstractAttributes::getObjectInfo,
+          R"(Comma-separated informational string describing this Attributes template)");
 
   // ==== AbstractObjectAttributes ====
   py::class_<AbstractObjectAttributes, AbstractAttributes,
