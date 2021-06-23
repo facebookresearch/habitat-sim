@@ -603,15 +603,14 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @param resolution Represents the approximate number of voxels in the new
    * voxelization.
    */
-  void generateVoxelization(const int physObjectID,
-                            const int resolution = 1000000);
+  void generateVoxelization(int physObjectID, int resolution = 1000000);
 
   /** @brief Initializes a new VoxelWrapper with a boundary voxelization using
    * VHACD's voxelization library and assigns it to the stage's rigid body.
    * @param resolution Represents the approximate number of voxels in the new
    * voxelization.
    */
-  void generateStageVoxelization(const int resolution = 1000000);
+  void generateStageVoxelization(int resolution = 1000000);
 #endif
 
   /** @brief Gets the VoxelWrapper associated with a rigid object.

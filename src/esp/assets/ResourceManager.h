@@ -428,7 +428,7 @@ class ResourceManager {
       const std::string& filename,
       const std::string& chdFilename,
       const VHACDParameters& params = VHACDParameters(),
-      const bool saveChdToObj = false);
+      bool saveChdToObj = false);
 #endif
   /**
    * @brief Add an object from a specified object template handle to the
