@@ -36,29 +36,16 @@ BulletPhysicsManager::~BulletPhysicsManager() {
   staticStageObject_.reset();
 }
 
-void BulletPhysicsManager::removeObject(const int physObjectID,
+void BulletPhysicsManager::removeObject(const int objectId,
                                         bool deleteObjectNode,
                                         bool deleteVisualNode) {
-  // remove constraints referencing this object
-  if (objectConstraints_.count(physObjectID) > 0) {
-    for (auto c_id : objectConstraints_.at(physObjectID)) {
-      removeRigidConstraint(c_id);
-    }
-    objectConstraints_.erase(physObjectID);
-  }
-  PhysicsManager::removeObject(physObjectID, deleteObjectNode,
-                               deleteVisualNode);
+  removeObjectRigidConstraints(objectId);
+  PhysicsManager::removeObject(objectId, deleteObjectNode, deleteVisualNode);
 }
 
-void BulletPhysicsManager::removeArticulatedObject(int id) {
-  // remove constraints referencing this object
-  if (objectConstraints_.count(id) > 0) {
-    for (auto c_id : objectConstraints_.at(id)) {
-      removeRigidConstraint(c_id);
-    }
-    objectConstraints_.erase(id);
-  }
-  PhysicsManager::removeArticulatedObject(id);
+void BulletPhysicsManager::removeArticulatedObject(int objectId) {
+  removeObjectRigidConstraints(objectId);
+  PhysicsManager::removeArticulatedObject(objectId);
 }
 
 bool BulletPhysicsManager::initPhysicsFinalize() {

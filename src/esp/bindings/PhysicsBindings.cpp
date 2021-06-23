@@ -99,8 +99,9 @@ void initPhysicsBindings(py::module& m) {
       .def_readwrite(
           "max_impulse", &RigidConstraintSettings::maxImpulse,
           R"(The maximum impulse applied by this constraint. Should be tuned relative to physics timestep.)")
-      .def_readwrite("object_id_a", &RigidConstraintSettings::objectIdA,
-                     R"(The id of the first object. Must be >=0.)")
+      .def_readwrite(
+          "object_id_a", &RigidConstraintSettings::objectIdA,
+          R"(The id of the first object. Must be >=0. For mixed type constraints, objectA must be the ArticulatedObject.)")
       .def_readwrite("object_id_b", &RigidConstraintSettings::objectIdB,
                      R"(The id of the second object. -1 for world/global.)")
       .def_readwrite(
@@ -115,10 +116,10 @@ void initPhysicsBindings(py::module& m) {
                      R"(Constraint point in local space of objectB.)")
       .def_readwrite(
           "frame_a", &RigidConstraintSettings::frameA,
-          R"(Constraint orientation frame in local space of objectA for RigidConstraintType::Fixed.)")
+          R"(Constraint orientation frame in local space of objectA as 3x3 rotation matrix for RigidConstraintType::Fixed.)")
       .def_readwrite(
           "frame_b", &RigidConstraintSettings::frameB,
-          R"(Constraint orientation frame in local space of objectB for RigidConstraintType::Fixed.)");
+          R"(Constraint orientation frame in local space of objectB as 3x3 rotation matrix for RigidConstraintType::Fixed.)");
 
   // ==== struct object RayHitInfo ====
   py::class_<RayHitInfo, RayHitInfo::ptr>(m, "RayHitInfo")

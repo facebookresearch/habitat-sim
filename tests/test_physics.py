@@ -1429,7 +1429,6 @@ def test_rigid_constraints():
         # check global frame change of object 1
         assert mn.math.angle(cube_obj.rotation, global_target_frame) < mn.Rad(0.01)
         # check that relative frames of objects total pi/2
-        # TODO: rotation weirdness, so /2
         angle_error = mn.math.angle(cube_obj.rotation, cube_obj_2.rotation) - mn.Rad(
             mn.math.pi / 4.0
         )
@@ -1457,8 +1456,8 @@ def test_rigid_constraints():
         joint_motor_settings = habitat_sim.physics.JointMotorSettings()
         joint_motor_settings.position_gain = 0.5
         robot.create_all_motors(joint_motor_settings)
-        for link in range(robot.num_links):
-            print(robot.get_link_name(link))
+        # for link in range(robot.num_links):
+        #    print(robot.get_link_name(link))
 
         # hang AO from cube with P2P
         constraint_settings_2 = habitat_sim.physics.RigidConstraintSettings()
@@ -1519,7 +1518,6 @@ def test_rigid_constraints():
 
         observations += simulate(sim, 4.0, produce_debug_video)
         # check frames align
-        # TODO: rotation weirdness, so /2
         angle_error = (
             mn.math.angle(
                 cube_obj.rotation,
@@ -1573,7 +1571,6 @@ def test_rigid_constraints():
         assert np.allclose(global_connect_a, constraint_settings_2.pivot_b, atol=0.08)
 
         # check frames align
-        # TODO: rotation weirdness, so /2
         angle_error = (
             mn.math.angle(
                 local_target_frame_2,
@@ -1588,7 +1585,6 @@ def test_rigid_constraints():
         sim.remove_rigid_constraint(constraint_id_2)
         constraint_id_2 = sim.create_rigid_constraint(constraint_settings_2)
         observations += simulate(sim, 5.0, produce_debug_video)
-        # TODO: rotation weirdness, so /2
         angle_error = mn.math.angle(local_target_frame_2, robot.rotation) - mn.Rad(
             mn.math.pi / 4.0
         )
@@ -1656,7 +1652,6 @@ def test_rigid_constraints():
         assert np.allclose(global_connect_a, global_connect_b, atol=0.08)
 
         # check frames align
-        # TODO: rotation weirdness, so /2
         angle_error = mn.math.angle(
             robot.get_link_scene_node(constraint_settings_2.link_id_a).rotation,
             robot2.get_link_scene_node(constraint_settings_2.link_id_b).rotation,

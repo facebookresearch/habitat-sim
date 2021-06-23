@@ -143,7 +143,7 @@ class BulletPhysicsManager : public PhysicsManager {
    * @brief Override of @ref PhysicsManager::removeObject to also remove any
    * active Bullet physics constraints for the object.
    */
-  void removeObject(const int physObjectID,
+  void removeObject(const int objectId,
                     bool deleteObjectNode = true,
                     bool deleteVisualNode = true) override;
 
@@ -151,7 +151,7 @@ class BulletPhysicsManager : public PhysicsManager {
    * @brief Override of @ref PhysicsManager::removeArticulatedObject to also
    * remove any active Bullet physics constraints for the object.
    */
-  void removeArticulatedObject(int id) override;
+  void removeArticulatedObject(int objectId) override;
 
   /** @brief Step the physical world forward in time. Time may only advance in
    * increments of @ref fixedTimeStep_. See @ref
@@ -420,6 +420,21 @@ class BulletPhysicsManager : public PhysicsManager {
   void lookUpObjectIdAndLinkId(const btCollisionObject* colObj,
                                int* objectId,
                                int* linkId) const;
+
+  /**
+   * @brief Helper function for removing all rigid constraints referencing an
+   * object.
+   *
+   * @param objectId The unique id for the rigid or articulated object.
+   */
+  void removeObjectRigidConstraints(int objectId) {
+    if (objectConstraints_.count(objectId) > 0) {
+      for (auto c_id : objectConstraints_.at(objectId)) {
+        removeRigidConstraint(c_id);
+      }
+      objectConstraints_.erase(objectId);
+    }
+  };
 
  public:
   ESP_SMART_POINTERS(BulletPhysicsManager)

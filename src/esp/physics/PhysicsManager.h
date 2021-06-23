@@ -408,7 +408,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   /** @brief Remove an object instance from the pysical scene by ID, destroying
    * its scene graph node and removing it from @ref
    * PhysicsManager::existingObjects_.
-   *  @param physObjectID The ID (key) of the object instance in @ref
+   *  @param objectId The ID (key) of the object instance in @ref
    * PhysicsManager::existingObjects_.
    * @param deleteObjectNode If true, deletes the object's scene node. Otherwise
    * detaches the object from simulation.
@@ -416,7 +416,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * Otherwise detaches the object from simulation. Is not considered if
    * deleteObjectNode==true.
    */
-  virtual void removeObject(const int physObjectID,
+  virtual void removeObject(const int objectId,
                             bool deleteObjectNode = true,
                             bool deleteVisualNode = true);
 
@@ -544,7 +544,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   }
 
   //! Remove an @ref ArticulatedObject from the world by unique id.
-  virtual void removeArticulatedObject(int id);
+  virtual void removeArticulatedObject(int objectId);
 
   //! Get the current number of instanced articulated objects in the world.
   int getNumArticulatedObjects() { return existingArticulatedObjects_.size(); }
