@@ -1174,6 +1174,62 @@ class Simulator {
     }
   }
 
+  //============= Object Rigid Constraint API =============
+
+  /**
+   * @brief Create a rigid constraint between two objects or an object and the
+   * world.
+   *
+   * Note: requires Bullet physics to be enabled.
+   *
+   * @param settings The datastructure defining the constraint parameters.
+   *
+   * @return The id of the newly created constraint or ID_UNDEFINED if failed.
+   */
+  int createRigidConstraint(const physics::RigidConstraintSettings& settings) {
+    return physicsManager_->createRigidConstraint(settings);
+  }
+
+  /**
+   * @brief Update the settings of a rigid constraint.
+   *
+   * Note: requires Bullet physics to be enabled.
+   *
+   * @param constraintId The id of the constraint to update.
+   * @param settings The new settings of the constraint.
+   */
+  void updateRigidConstraint(int constraintId,
+                             const physics::RigidConstraintSettings& settings) {
+    physicsManager_->updateRigidConstraint(constraintId, settings);
+  }
+
+  /**
+   * @brief Remove a rigid constraint by id.
+   *
+   * Note: requires Bullet physics to be enabled.
+   *
+   * @param constraintId The id of the constraint to remove.
+   */
+  void removeRigidConstraint(int constraintId) {
+    physicsManager_->removeRigidConstraint(constraintId);
+  }
+
+  /**
+   * @brief Get a copy of the settings for an existing rigid constraint.
+   *
+   * Note: requires Bullet physics to be enabled.
+   *
+   * @param constraintId The id of the constraint.
+   *
+   * @return The settings of the constraint.
+   */
+  physics::RigidConstraintSettings getRigidConstraintSettings(
+      int constraintId) const {
+    return physicsManager_->getRigidConstraintSettings(constraintId);
+  }
+
+  //============= END - Object Rigid Constraint API =============
+
   /**
    * @brief Getter for PRNG.
    *

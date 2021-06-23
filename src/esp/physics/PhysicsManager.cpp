@@ -315,15 +315,15 @@ PhysicsManager::getArticulatedObjectWrapper() {
   return articulatedObjectManager_->createObject("ManagedArticulatedObject");
 }
 
-void PhysicsManager::removeObject(const int physObjectID,
+void PhysicsManager::removeObject(const int objectId,
                                   bool deleteObjectNode,
                                   bool deleteVisualNode) {
-  assertRigidIdValidity(physObjectID);
-  scene::SceneNode* objectNode = &existingObjects_.at(physObjectID)->node();
-  scene::SceneNode* visualNode = existingObjects_.at(physObjectID)->visualNode_;
-  std::string objName = existingObjects_.at(physObjectID)->getObjectName();
-  existingObjects_.erase(physObjectID);
-  deallocateObjectID(physObjectID);
+  assertRigidIdValidity(objectId);
+  scene::SceneNode* objectNode = &existingObjects_.at(objectId)->node();
+  scene::SceneNode* visualNode = existingObjects_.at(objectId)->visualNode_;
+  std::string objName = existingObjects_.at(objectId)->getObjectName();
+  existingObjects_.erase(objectId);
+  deallocateObjectID(objectId);
   if (deleteObjectNode) {
     delete objectNode;
   } else if (deleteVisualNode && visualNode) {
@@ -331,26 +331,26 @@ void PhysicsManager::removeObject(const int physObjectID,
   }
   // remove wrapper if one is present
   if (rigidObjectManager_->getObjectLibHasHandle(objName)) {
-    rigidObjectManager_->removeObjectByID(physObjectID);
+    rigidObjectManager_->removeObjectByID(objectId);
   }
 }  // PhysicsManager::removeObject
 
-void PhysicsManager::removeArticulatedObject(int physObjectID) {
-  CHECK(existingArticulatedObjects_.count(physObjectID));
+void PhysicsManager::removeArticulatedObject(int objectId) {
+  CHECK(existingArticulatedObjects_.count(objectId));
   scene::SceneNode* objectNode =
-      &existingArticulatedObjects_.at(physObjectID)->node();
+      &existingArticulatedObjects_.at(objectId)->node();
   for (auto linkObjId :
-       existingArticulatedObjects_.at(physObjectID)->objectIdToLinkId_) {
+       existingArticulatedObjects_.at(objectId)->objectIdToLinkId_) {
     deallocateObjectID(linkObjId.first);
   }
   std::string artObjName =
-      existingArticulatedObjects_.at(physObjectID)->getObjectName();
-  existingArticulatedObjects_.erase(physObjectID);
-  deallocateObjectID(physObjectID);
+      existingArticulatedObjects_.at(objectId)->getObjectName();
+  existingArticulatedObjects_.erase(objectId);
+  deallocateObjectID(objectId);
   delete objectNode;
   // remove wrapper if one is present
   if (articulatedObjectManager_->getObjectLibHasHandle(artObjName)) {
-    articulatedObjectManager_->removeObjectByID(physObjectID);
+    articulatedObjectManager_->removeObjectByID(objectId);
   }
 }
 

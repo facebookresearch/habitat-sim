@@ -105,6 +105,51 @@ struct ContactPointData {
   ESP_SMART_POINTERS(ContactPointData)
 };
 
+//! describes the type of a rigid constraint.
+enum class RigidConstraintType {
+  //! lock a point in one frame to a point in another with no orientation
+  //! constraint
+  PointToPoint,
+  //! fix one frame to another constraining relative position and orientation
+  Fixed
+};
+
+/**
+ * @brief Stores rigid constraint parameters for creation and updates.
+ */
+struct RigidConstraintSettings {
+ public:
+  RigidConstraintSettings() = default;
+
+  //! The type of constraint described by these settings. Determines which
+  //! parameters to use for creation and update.
+  RigidConstraintType constraintType = RigidConstraintType::PointToPoint;
+
+  //! The maximum impulse applied by this constraint. Should be tuned relative
+  //! to physics timestep.
+  double maxImpulse = 1000.0;
+
+  //! objectIdA must always be >= 0. For mixed type constraints, objectA must be
+  //! the ArticulatedObject.
+  int objectIdA = ID_UNDEFINED;
+  //! objectIdB == ID_UNDEFINED indicates "world".
+  int objectIdB = ID_UNDEFINED;
+
+  //! link of objectA if articulated. ID_UNDEFINED(-1) refers to base.
+  int linkIdA = ID_UNDEFINED;
+  //! link of objectB if articulated. ID_UNDEFINED(-1) refers to base.
+  int linkIdB = ID_UNDEFINED;
+
+  //! constraint point in local space of respective objects
+  Mn::Vector3 pivotA{}, pivotB{};
+
+  //! constraint orientation frame in local space of respective objects for
+  //! RigidConstraintType::Fixed
+  Mn::Matrix3x3 frameA{}, frameB{};
+
+  ESP_SMART_POINTERS(RigidConstraintSettings)
+};
+
 class RigidObjectManager;
 class ArticulatedObjectManager;
 
@@ -363,7 +408,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   /** @brief Remove an object instance from the pysical scene by ID, destroying
    * its scene graph node and removing it from @ref
    * PhysicsManager::existingObjects_.
-   *  @param physObjectID The ID (key) of the object instance in @ref
+   *  @param objectId The ID (key) of the object instance in @ref
    * PhysicsManager::existingObjects_.
    * @param deleteObjectNode If true, deletes the object's scene node. Otherwise
    * detaches the object from simulation.
@@ -371,7 +416,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * Otherwise detaches the object from simulation. Is not considered if
    * deleteObjectNode==true.
    */
-  virtual void removeObject(int physObjectID,
+  virtual void removeObject(int objectId,
                             bool deleteObjectNode = true,
                             bool deleteVisualNode = true);
 
@@ -499,7 +544,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   }
 
   //! Remove an @ref ArticulatedObject from the world by unique id.
-  virtual void removeArticulatedObject(int id);
+  virtual void removeArticulatedObject(int objectId);
 
   //! Get the current number of instanced articulated objects in the world.
   int getNumArticulatedObjects() { return existingArticulatedObjects_.size(); }
@@ -834,6 +879,67 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
     return (existingArticulatedObjects_.count(physObjectID) > 0);
   }
 
+  //============= Object Rigid Constraint API =============
+
+  /**
+   * @brief Create a rigid constraint between two objects or an object and the
+   * world.
+   *
+   * Note: Method not implemented for base PhysicsManager.
+   *
+   * @param settings The datastructure defining the constraint parameters.
+   *
+   * @return The id of the newly created constraint or ID_UNDEFINED if failed.
+   */
+  virtual int createRigidConstraint(
+      CORRADE_UNUSED const RigidConstraintSettings& settings) {
+    LOG(ERROR)
+        << "createRigidConstraint not implemented in base PhysicsManager";
+    return ID_UNDEFINED;
+  }
+
+  /**
+   * @brief Update the settings of a rigid constraint.
+   *
+   * Note: Method not implemented for base PhysicsManager.
+   *
+   * @param constraintId The id of the constraint to update.
+   * @param settings The new settings of the constraint.
+   */
+  virtual void updateRigidConstraint(
+      CORRADE_UNUSED int constraintId,
+      CORRADE_UNUSED const RigidConstraintSettings& settings) {
+    LOG(ERROR)
+        << "updateRigidConstraint not implemented in base PhysicsManager.";
+  }
+
+  /**
+   * @brief Remove a rigid constraint by id.
+   *
+   * Note: Method not implemented for base PhysicsManager.
+   *
+   * @param constraintId The id of the constraint to remove.
+   */
+  virtual void removeRigidConstraint(CORRADE_UNUSED int constraintId) {
+    LOG(ERROR)
+        << "removeRigidConstraint not implemented in base PhysicsManager.";
+  }
+
+  /**
+   * @brief Get a copy of the settings for an existing rigid constraint.
+   *
+   * @param constraintId The id of the constraint.
+   *
+   * @return The settings of the constraint.
+   */
+  RigidConstraintSettings getRigidConstraintSettings(int constraintId) const {
+    ESP_CHECK(rigidConstraintSettings_.count(constraintId) > 0,
+              "PhysicsManager::getRigidConstraintSettings - No RigidConstraint "
+              "exists with constraintId = "
+                  << constraintId);
+    return rigidConstraintSettings_.at(constraintId);
+  }
+
  protected:
   /** @brief Check that a given object ID is valid (i.e. it refers to an
    * existing rigid object). Terminate the program and report an error if not.
@@ -973,8 +1079,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    */
   std::map<int, RigidObject::ptr> existingObjects_;
 
-  // TODO: should these be separate maps or somehow combined? What about
-  // ids?
   /** @brief Maps articulated object IDs to all existing physical object
    * instances in the world.
    */
@@ -992,6 +1096,9 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * allocateObjectID before new IDs are acquired with @ref nextObjectID_.
    */
   std::vector<int> recycledObjectIDs_;
+
+  //! maps constraint ids to their settings
+  std::unordered_map<int, RigidConstraintSettings> rigidConstraintSettings_;
 
   //! Utilities
 
