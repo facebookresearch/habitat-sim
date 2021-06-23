@@ -11,6 +11,7 @@ add_library(
   JsonMagnumTypes.cpp
   JsonMagnumTypes.h
   JsonStlTypes.h
+  JsonUtils.h
   URDFParser.cpp
   URDFParser.h
 )
