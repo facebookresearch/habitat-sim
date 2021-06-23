@@ -17,6 +17,8 @@ from habitat_sim._ext.habitat_sim_bindings import (
     PhysicsSimulationLibrary,
     RaycastResults,
     RayHitInfo,
+    RigidConstraintSettings,
+    RigidConstraintType,
     RigidObjectManager,
     VelocityControl,
 )
@@ -38,4 +40,6 @@ __all__ = [
     "JointType",
     "JointMotorSettings",
     "JointMotorType",
+    "RigidConstraintType",
+    "RigidConstraintSettings",
 ]

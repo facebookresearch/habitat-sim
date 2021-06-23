@@ -827,7 +827,7 @@ void BulletPhysicsManager::updateRigidConstraint(
                 << int(settings.constraintType) << " vs. "
                 << int(cachedSettings->constraintType) << ")");
 
-  if (articulatedP2PConstraints_.count(constraintId) >= 0) {
+  if (articulatedP2PConstraints_.count(constraintId) > 0) {
     // NOTE: oddly, pivotA cannot be set through the API for this constraint
     // type.
     ESP_CHECK(cachedSettings->pivotA == settings.pivotA,
@@ -841,14 +841,14 @@ void BulletPhysicsManager::updateRigidConstraint(
         ->setPivotInB(btVector3(settings.pivotB));
     articulatedP2PConstraints_.at(constraintId)
         ->setMaxAppliedImpulse(settings.maxImpulse);
-  } else if (rigidP2PConstraints_.count(constraintId) >= 0) {
+  } else if (rigidP2PConstraints_.count(constraintId) > 0) {
     rigidP2PConstraints_.at(constraintId)->m_setting.m_impulseClamp =
         settings.maxImpulse;
     rigidP2PConstraints_.at(constraintId)
         ->setPivotA(btVector3(settings.pivotA));
     rigidP2PConstraints_.at(constraintId)
         ->setPivotB(btVector3(settings.pivotB));
-  } else if (articulatedFixedConstraints_.count(constraintId) >= 0) {
+  } else if (articulatedFixedConstraints_.count(constraintId) > 0) {
     articulatedFixedConstraints_.at(constraintId)
         ->setPivotInA(btVector3(settings.pivotA));
     articulatedFixedConstraints_.at(constraintId)
@@ -859,7 +859,7 @@ void BulletPhysicsManager::updateRigidConstraint(
         ->setFrameInB(btMatrix3x3(settings.frameB));
     articulatedFixedConstraints_.at(constraintId)
         ->setMaxAppliedImpulse(settings.maxImpulse);
-  } else if (rigidFixedConstraints_.count(constraintId) >= 0) {
+  } else if (rigidFixedConstraints_.count(constraintId) > 0) {
     rigidFixedConstraints_.at(constraintId)
         ->setFrames(btTransform(btMatrix3x3(settings.frameA),
                                 btVector3(settings.pivotA)),
@@ -870,7 +870,12 @@ void BulletPhysicsManager::updateRigidConstraint(
       rigidFixedConstraints_.at(constraintId)
           ->setMaxMotorForce(i, settings.maxImpulse);
     }
+  } else {
+    // one of the maps should have the id if it passed the checks
+    CORRADE_INTERNAL_ASSERT_UNREACHABLE();
   }
+  // cache the new settings
+  cachedSettings = std::make_unique<RigidConstraintSettings>(settings);
 }
 
 void BulletPhysicsManager::removeRigidConstraint(int constraintId) {
@@ -893,6 +898,7 @@ void BulletPhysicsManager::removeRigidConstraint(int constraintId) {
                << constraintId;
     return;
   }
+  rigidConstraintSettings_.erase(constraintId);
   // remove the constraint from any referencing object maps
   for (auto& itr : objectConstraints_) {
     auto conIdItr =
