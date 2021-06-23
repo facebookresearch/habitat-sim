@@ -73,7 +73,7 @@ struct VelocityControl {
    * dt.
    */
   virtual core::RigidState integrateTransform(
-      const float dt,
+      float dt,
       const core::RigidState& rigidState);
 
   ESP_SMART_POINTERS(VelocityControl)

@@ -265,7 +265,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @return the instanced object's ID, mapping to it in @ref
    * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
    */
-  int addObject(const int attributesID,
+  int addObject(int attributesID,
                 scene::SceneNode* attachmentNode = nullptr,
                 const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
 
@@ -371,7 +371,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * Otherwise detaches the object from simulation. Is not considered if
    * deleteObjectNode==true.
    */
-  virtual void removeObject(const int physObjectID,
+  virtual void removeObject(int physObjectID,
                             bool deleteObjectNode = true,
                             bool deleteVisualNode = true);
 
@@ -620,7 +620,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @return A pointer to the object's Voxel Wrapper.
    */
   std::shared_ptr<esp::geo::VoxelWrapper> getObjectVoxelization(
-      const int physObjectID) const;
+      int physObjectID) const;
 
   /** @brief Gets the VoxelWrapper associated with the scene.
    * @return A pointer to the scene's Voxel Wrapper.

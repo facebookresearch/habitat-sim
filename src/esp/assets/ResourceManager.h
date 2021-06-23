@@ -637,7 +637,7 @@ class ResourceManager {
       const std::string& filename,
       const metadata::attributes::ObjectAttributes::ptr& objectAttributes,
       const std::string& meshType,
-      const bool requiresLighting);
+      bool requiresLighting);
 
   /**
    * @brief Build a primitive asset based on passed template parameters.  If
