@@ -23,8 +23,11 @@ ABSOLUTE_ASSET_PATHS = True
 
 # Where ReplicaCAD data is located, relative to this file
 REPLICACAD_DIR = "../../data/datasets/replicaCAD"
-# where modified json configs and semantic lexicon shoudl reside
-CONFIG_OUTPUT_DIR = REPLICACAD_DIR + "_sid_configs/"
+# where modified json configs and semantic lexicon should reside
+CONFIG_OUTPUT_DIR = join(REPLICACAD_DIR, "objects/configs_convex/")
+# CONFIG_OUTPUT_DIR = REPLICACAD_DIR + "_sid_configs/"
+# where to put/search for the ssd lexicon
+SSD_OUTPUT_DIR = join(REPLICACAD_DIR, "ssd")
 os.makedirs(CONFIG_OUTPUT_DIR, exist_ok=True)
 
 # Where original Replica house file is located, relative to this
@@ -33,13 +36,11 @@ SRC_SEMANTIC_FILENAME = (
     "../../data/datasets/replica/apartment_0/habitat/info_semantic.json"
 )
 # where replicaCAD semantic lexicon should reside (either to be written or read)
-REPLICACAD_SEMANTIC_FILENAME = join(
-    CONFIG_OUTPUT_DIR, "replicaCAD_semantic_lexicon.json"
-)
+REPLICACAD_SEMANTIC_FILENAME = join(SSD_OUTPUT_DIR, "replicaCAD_semantic_lexicon.json")
 
 
 # where scene stats will be written
-STATS_OUTPUT_DIR = join(CONFIG_OUTPUT_DIR, "scene_stats")
+STATS_OUTPUT_DIR = join(REPLICACAD_DIR, "scene_stats")
 os.makedirs(STATS_OUTPUT_DIR, exist_ok=True)
 
 # where the object configs live
