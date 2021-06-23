@@ -25,7 +25,18 @@ namespace io {
 
 typedef rapidjson::Document JsonDocument;
 
-//! Write a JsonDocument to file
+/**
+ * @brief Write a Json doc to file
+ *
+ * @param document an already-populated document object
+ * @param file
+ * @param usePrettyWriter The pretty writer does nice indenting and spacing but
+ * leads to larger filesize.
+ * @param maxDecimalPlaces Set this to a positive integer to shorten how
+ * floats/doubles are written. Beware loss of precision in your saved data.
+ *
+ * @return whether successful or not
+ */
 bool writeJsonToFile(const JsonDocument& document,
                      const std::string& file,
                      bool usePrettyWriter = true,
