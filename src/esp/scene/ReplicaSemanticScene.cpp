@@ -68,7 +68,7 @@ bool SemanticScene::buildReplicaHouse(const io::JsonDocument& jsonDoc,
         id, category["name"].GetString());
   }
 
-  // if does not have objects, then this is ReplciaCAD semantic map which lacks
+  // if does not have objects, then this is ReplcaCAD semantic map which lacks
   // object semantic mappings
   if (!objectsExist) {
     return true;
