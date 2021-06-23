@@ -112,11 +112,6 @@ class BulletRigidObject : public BulletBase,
    * internal object physics states.
    * @param force If set, update sleeping objects as well.
    */
-  virtual void updateNodes(bool force = false) override;
-
-  /**
-   * @brief
-   */
   void updateNodes(bool force = false) override;
 
   /**

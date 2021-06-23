@@ -431,6 +431,7 @@ void PhysicsManager::stepPhysics(double dt) {
     worldTime_ += fixedTimeStep_;
   }
 }
+
 void PhysicsManager::deferNodesUpdate() {
   for (auto& o : existingObjects_)
     o.second->deferUpdate();
@@ -444,16 +445,6 @@ void PhysicsManager::updateNodes() {
 
   for (auto& ao : existingArticulatedObjects_)
     ao.second->updateNodes();
-}
-
-void PhysicsManager::deferNodesUpdate() {
-  for (auto& o : existingObjects_)
-    o.second->deferUpdate();
-}
-
-void PhysicsManager::updateNodes() {
-  for (auto& o : existingObjects_)
-    o.second->updateNodes();
 }
 
 //! Profile function. In BulletPhysics stationary objects are

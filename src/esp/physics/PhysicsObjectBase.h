@@ -451,10 +451,6 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    */
   virtual void syncPose() { return; }
 
-  //! if true visual nodes are not updated from physics simulation such that the
-  //! SceneGraph is not polluted during render
-  bool isDeferringUpdate_ = false;
-
   /**
    * @brief if true visual nodes are not updated from physics simulation such
    * that the SceneGraph is not polluted during render
