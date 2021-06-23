@@ -46,8 +46,7 @@ bool SemanticScene::
       if (!success) {
         // if not successful then attempt to load known json files
         const io::JsonDocument& jsonDoc = io::parseJsonFile(houseFilename);
-        // if no error thrown, then we loaded a json file of given name
-        // check if it has the objects d
+        // if no error thrown, then we have loaded a json file of given name
         bool hasCorrectObjects =
             (jsonDoc.HasMember("objects") && jsonDoc["objects"].IsArray());
         // check if also has "classes" tag, otherwise will assume it is a
