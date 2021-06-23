@@ -16,20 +16,21 @@ enum class MotionType;
 namespace metadata {
 namespace managers {
 enum class SceneInstanceTranslationOrigin;
-}
+}  // namespace managers
 namespace attributes {
 
 /**
- * @brief This class describes an instance of a stage or object in a scene -
- * its template name, translation from the origin, rotation, and (if
- * appropriate) motiontype
+ * @brief This class describes an instance of a stage, object or articulated
+ * object in a scene - its template name, translation from the origin, rotation,
+ * motiontype, and other values required to instantiate the construct described.
  */
 class SceneObjectInstanceAttributes : public AbstractAttributes {
  public:
   /**
    * @brief Constant static map to provide mappings from string tags to @ref
-   * esp::assets::AssetType values.  This will be used to map values set in json
-   * for mesh type to @ref esp::assets::AssetType.  Keys must be lowercase.
+   * esp::physics::MotionType values.  This will be used to map values set in
+   * json for mesh type to @ref esp::physics::MotionType.  Keys must be
+   * lowercase.
    */
   static const std::map<std::string, esp::physics::MotionType>
       MotionTypeNamesMap;
@@ -38,7 +39,9 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
    * @brief SceneObjectInstanceAttributes handle is also the handle of the
    * underlying @ref AbstractObjectAttributes for the object being instanced.
    */
-  explicit SceneObjectInstanceAttributes(const std::string& handle);
+  explicit SceneObjectInstanceAttributes(
+      const std::string& handle,
+      const std::string& type = "SceneObjectInstanceAttributes");
 
   /**
    * @brief Set the translation from the origin of the described
@@ -96,28 +99,170 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
    * @brief Set the default shader to use for an object or stage.  Uses values
    * specified in stage or object attributes if not overridden here.  Uses map
    * of string values in json to @ref
-   * esp::metadata::atributes::ObjectInstanceShaderType int values.
+   * esp::metadata::attributes::ObjectInstanceShaderType int values.
    */
   void setShaderType(int shader_type) { setInt("shader_type", shader_type); }
   int getShaderType() const { return getInt("shader_type"); }
+
+  /**
+   * @brief Get or set the uniform scaling of the instanced object.
+   */
+  float getUniformScale() const { return getFloat("uniform_scale"); }
+  void setUniformScale(float uniform_scale) {
+    setFloat("uniform_scale", uniform_scale);
+  }
+
+  /**
+   * @brief Get or set the mass scaling of the instanced object.
+   */
+  float getMassScale() const { return getFloat("mass_scale"); }
+  void setMassScale(float mass_scale) { setFloat("mass_scale", mass_scale); }
+
+  /**
+   * @brief Used for info purposes.  Return a string name corresponding to the
+   * currently specified motion type value;
+   */
+  std::string getCurrMotionTypeName() const {
+    // Must always be valid value
+    esp::physics::MotionType motionType =
+        static_cast<esp::physics::MotionType>(getMotionType());
+    for (const auto& it : MotionTypeNamesMap) {
+      if (it.second == motionType) {
+        return it.first;
+      }
+    }
+    return "unspecified";
+  }
+
+  /**
+   * @brief Used for info purposes.  Return a string name corresponding to the
+   * currently specified shader type value;
+   */
+  std::string getCurrShaderTypeName() const;
+
+ protected:
+  /**
+   * @brief Retrieve a comma-separated informational string about the contents
+   * of this managed object.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+  std::string getObjectInfoInternal() const override;
+  /**
+   * @brief Retrieve a comma-separated string holding the header values for the
+   * info returned for this managed object, type-specific.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+  std::string getObjectInfoHeaderInternal() const override;
+
+  /**
+   * @brief Retrieve a comma-separated informational string about the contents
+   * of this managed object.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+  virtual std::string getSceneObjInstanceInfoInternal() const { return ""; }
+
+  /**
+   * @brief Retrieve a comma-separated informational string about the contents
+   * of this managed object.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+  virtual std::string getSceneObjInstanceInfoHeaderInternal() const {
+    return "";
+  }
 
  public:
   ESP_SMART_POINTERS(SceneObjectInstanceAttributes)
 };  // class SceneObjectInstanceAttributes
 
-class SceneAttributes : public AbstractAttributes {
+/**
+ * @brief This class describes an instance of an articulated object in a scene -
+ * along with its template name, translation from the origin, rotation,
+ * motiontype, and other values inherited from SceneObjectInstanceAttributes, it
+ * also holds initial joint pose and joint velocities.
+ */
+class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
  public:
   /**
-   * @brief Constant static map to provide mappings from string tags to @ref
-   * metadata::managers::SceneInstanceTranslationOrigin values.  This will be
-   * used to map values set in json for translation origin to @ref
-   * metadata::managers::SceneInstanceTranslationOrigin.  Keys must be
-   * lowercase.
+   * @brief SceneObjectInstanceAttributes handle is also the handle of the
+   * underlying @ref AbstractObjectAttributes for the object being instanced.
    */
-  static const std::map<std::string,
-                        metadata::managers::SceneInstanceTranslationOrigin>
-      InstanceTranslationOriginMap;
+  explicit SceneAOInstanceAttributes(const std::string& handle);
 
+  /**
+   * @brief Articulated Object Instance only. Get or set whether or not base is
+   * fixed.
+   */
+  bool getFixedBase() const { return getBool("fixed_base"); }
+  void setFixedBase(bool fixed_base) { setBool("fixed_base", fixed_base); }
+
+  /**
+   * @brief retrieve a mutable reference to this scene attributes joint initial
+   * pose map
+   */
+  std::map<std::string, float>& getInitJointPose() { return initJointPose_; }
+
+  /**
+   * @brief Add a value to this scene attributes joint initial pose map
+   * @param key the location/joint name to place the value
+   * @param val the joint value to set
+   */
+  void addInitJointPoseVal(const std::string& key, float val) {
+    initJointPose_[key] = val;
+  }
+
+  /**
+   * @brief retrieve a mutable reference to this scene attributes joint initial
+   * velocity map
+   */
+  std::map<std::string, float>& getInitJointVelocities() {
+    return initJointVelocities_;
+  }
+
+  /**
+   * @brief Add a value to this scene attributes joint initial velocity map
+   * @param key the location/joint name to place the value
+   * @param val the joint angular velocity value to set
+   */
+  void addInitJointVelocityVal(const std::string& key, float val) {
+    initJointVelocities_[key] = val;
+  }
+
+ protected:
+  /**
+   * @brief Retrieve a comma-separated informational string about the contents
+   * of this SceneAOInstanceAttributes object.
+   */
+  std::string getSceneObjInstanceInfoInternal() const override;
+
+  /**
+   * @brief Retrieve a comma-separated informational string
+   * about the contents of this managed object.
+   * TODO : once Magnum supports retrieving key-values of
+   * configurations, use that to build this data.
+   */
+  std::string getSceneObjInstanceInfoHeaderInternal() const override;
+
+  /**
+   * @brief Map of joint names/idxs to values for initial pose
+   */
+  std::map<std::string, float> initJointPose_;
+
+  /**
+   * @brief Map of joint names/idxs to values for initial velocities
+   */
+  std::map<std::string, float> initJointVelocities_;
+
+ public:
+  ESP_SMART_POINTERS(SceneAOInstanceAttributes)
+
+};  // class SceneAOInstanceAttributes
+
+class SceneAttributes : public AbstractAttributes {
+ public:
   explicit SceneAttributes(const std::string& handle);
 
   /**
@@ -202,7 +347,38 @@ class SceneAttributes : public AbstractAttributes {
     return objectInstances_;
   }
 
+  /**
+   * @brief Add a description of an object instance to this scene instance
+   */
+  void addArticulatedObjectInstance(
+      const SceneAOInstanceAttributes::ptr& _artObjInstance) {
+    articulatedObjectInstances_.push_back(_artObjInstance);
+  }
+  /**
+   * @brief Get the object instance descriptions for this scene
+   */
+  const std::vector<SceneAOInstanceAttributes::ptr>&
+  getArticulatedObjectInstances() const {
+    return articulatedObjectInstances_;
+  }
+
  protected:
+  /**
+   * @brief Retrieve a comma-separated string holding the header values for the
+   * info returned for this managed object, type-specific.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+
+  std::string getObjectInfoHeaderInternal() const override { return ""; }
+
+  /**
+   * @brief Retrieve a comma-separated informational string about the contents
+   * of this managed object.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+  std::string getObjectInfoInternal() const override;
   /**
    * @brief The stage instance used by the scene
    */
@@ -212,6 +388,11 @@ class SceneAttributes : public AbstractAttributes {
    * @brief All the object instance descriptors used by the scene
    */
   std::vector<SceneObjectInstanceAttributes::ptr> objectInstances_;
+
+  /**
+   * @brief All the articulated object instance descriptors used by the scene
+   */
+  std::vector<SceneAOInstanceAttributes::ptr> articulatedObjectInstances_;
 
  public:
   ESP_SMART_POINTERS(SceneAttributes)

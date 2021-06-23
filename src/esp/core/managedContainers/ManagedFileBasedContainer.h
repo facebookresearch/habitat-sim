@@ -35,9 +35,10 @@ namespace core {
 template <class T, ManagedObjectAccess Access>
 class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
  public:
-  static_assert(std::is_base_of<AbstractFileBasedManagedObject, T>::value,
-                "ManagedContainer :: Managed object type must be derived from "
-                "AbstractFileBasedManagedObject");
+  static_assert(
+      std::is_base_of<AbstractFileBasedManagedObject, T>::value,
+      "ManagedFileBasedContainer :: Managed object type must be derived from "
+      "AbstractFileBasedManagedObject");
   typedef std::shared_ptr<T> ManagedFileIOPtr;
 
   explicit ManagedFileBasedContainer(const std::string& metadataType)
@@ -70,7 +71,7 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
     io::JsonDocument docConfig = nullptr;
     bool success = this->verifyLoadDocument(filename, docConfig);
     if (!success) {
-      LOG(ERROR) << "ManagedFileBasedContainer::createObjectFromFile ("
+      LOG(ERROR) << "<" << this->objectType_ << ">::createObjectFromFile ("
                  << this->objectType_
                  << ") : Failure reading document as JSON : " << filename
                  << ". Aborting.";
@@ -95,7 +96,8 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
   ManagedFileIOPtr buildManagedObjectFromDoc(const std::string& filename,
                                              CORRADE_UNUSED const U& config) {
     LOG(ERROR)
-        << "ManagedContainer::buildManagedObjectFromDoc (" << this->objectType_
+        << "<" << this->objectType_ << ">::buildManagedObjectFromDoc ("
+        << this->objectType_
         << ") : Failure loading attributes from document of unknown type : "
         << filename << ". Aborting.";
   }
@@ -142,8 +144,8 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
   bool verifyLoadDocument(const std::string& filename,
                           CORRADE_UNUSED U& resDoc) {
     // by here always fail
-    LOG(ERROR) << this->objectType_
-               << "ManagedContainerBase::verifyLoadDocument : File " << filename
+    LOG(ERROR) << this->objectType_ << "<" << this->objectType_
+               << ">::verifyLoadDocument : File " << filename
                << " failed due to unknown file type.";
     return false;
   }  // ManagedContainerBase::verifyLoadDocument
@@ -205,14 +207,15 @@ std::string ManagedFileBasedContainer<T, Access>::convertFilenameToPassedExt(
       strHandle.find(Cr::Utility::String::lowercase(fileTypeExt))) {
     resHandle = Cr::Utility::Directory::splitExtension(filename).first + "." +
                 fileTypeExt;
-    LOG(INFO) << "ManagedFileBasedContainer<" << this->objectType_
+    LOG(INFO) << "<" << this->objectType_
               << ">::convertFilenameToPassedExt : Filename : " << filename
-              << " changed to proposed JSON configuration filename : "
-              << resHandle;
+              << " changed to proposed " << fileTypeExt
+              << " filename : " << resHandle;
   } else {
-    LOG(INFO) << "ManagedFileBasedContainer<" << this->objectType_
+    LOG(INFO) << "<" << this->objectType_
               << ">::convertFilenameToPassedExt : Filename : " << filename
-              << " is appropriate JSON configuration filename.";
+              << " contains requested file extension " << fileTypeExt
+              << " already.";
   }
   return resHandle;
 }  // ManagedFileBasedContainer<T, Access>::convertFilenameToPassedExt
@@ -225,7 +228,7 @@ bool ManagedFileBasedContainer<T, Access>::verifyLoadDocument(
     try {
       jsonDoc = io::parseJsonFile(filename);
     } catch (...) {
-      LOG(ERROR) << "ManagedFileBasedContainer<" << this->objectType_
+      LOG(ERROR) << "<" << this->objectType_
                  << ">::verifyLoadDocument : Failed to parse " << filename
                  << " as JSON.";
       return false;
@@ -233,9 +236,8 @@ bool ManagedFileBasedContainer<T, Access>::verifyLoadDocument(
     return true;
   } else {
     // by here always fail
-    LOG(ERROR) << "ManagedFileBasedContainer<" << this->objectType_
-               << ">::verifyLoadDocument : File " << filename
-               << " does not exist";
+    LOG(ERROR) << "<" << this->objectType_ << ">::verifyLoadDocument : File "
+               << filename << " does not exist";
     return false;
   }
 }  // ManagedFileBasedContainer<T, Access>::verifyLoadDocument

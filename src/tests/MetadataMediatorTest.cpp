@@ -29,7 +29,8 @@ const std::string sceneDatasetConfigFile_0 = Cr::Utility::Directory::join(
     datasetTestDirs,
     "dataset_0/test_dataset_0.scene_dataset_config.json");
 
-// test dataset contains glob wildcards in scene dataset config
+// test dataset contains glob wildcards in scene config, and articulated object
+// refs
 const std::string sceneDatasetConfigFile_1 = Cr::Utility::Directory::join(
     datasetTestDirs,
     "dataset_1/test_dataset_1.scene_dataset_config.json");
@@ -57,6 +58,15 @@ class MetadataMediatorTest : public testing::Test {
     MM_->setSimulatorConfiguration(cfg_1);
   }
 
+  void displayDSReports() {
+    // display info report
+    std::string dsOverView = MM_->getDatasetsOverview();
+    LOG(WARNING) << "\nDataset Overview : \n" << dsOverView << "\n";
+    // display info report
+    std::string dsInfoReport = MM_->createDatasetReport();
+    LOG(WARNING) << "\nActive Dataset Details : \n" << dsInfoReport << "\n";
+  }
+
   MetadataMediator::ptr MM_ = nullptr;
 
 };  // class MetadataMediatorTest
@@ -65,8 +75,7 @@ TEST_F(MetadataMediatorTest, testDataset0) {
   // setup dataset 0 for test
   initDataset0();
 
-  LOG(INFO) << "Starting "
-               "MetadataMediatorTest::testDataset0 : test LoadStages";
+  LOG(INFO) << "Starting testDataset0 : test LoadStages";
   const auto& stageAttributesMgr = MM_->getStageAttributesManager();
   int numStageHandles = stageAttributesMgr->getNumObjects();
   // should be 7 - one for default NONE stage, one original JSON, one based on
@@ -305,9 +314,9 @@ TEST_F(MetadataMediatorTest, testDataset0) {
   ASSERT_NE(sceneAttrs, nullptr);
   // verify default value for translation origin
   ASSERT_EQ(sceneAttrs->getTranslationOrigin(),
-            static_cast<int>(AttrMgrs::SceneInstanceTranslationOrigin::COM));
+            static_cast<int>(Attrs::SceneInstanceTranslationOrigin::COM));
   const int assetLocalInt =
-      static_cast<int>(AttrMgrs::SceneInstanceTranslationOrigin::AssetLocal);
+      static_cast<int>(Attrs::SceneInstanceTranslationOrigin::AssetLocal);
 
   //
   // miscellaneous scene instance attribute values
@@ -395,19 +404,21 @@ TEST_F(MetadataMediatorTest, testDataset0) {
             "test_semantic_descriptor_path1");
   ASSERT_EQ(semanticMap.at("semantic_descriptor_path2"),
             "test_semantic_descriptor_path2");
+
   // end test LoadSemanticScene
+  displayDSReports();
+
 }  // testDataset0
 
 TEST_F(MetadataMediatorTest, testDataset1) {
   // primarily testing glob file wildcard loading
   initDataset1();
 
-  LOG(INFO) << "Starting "
-               "MetadataMediatorTest::testDataset1 : test LoadStages";
+  LOG(INFO) << "Starting testDataset1 : test LoadStages";
   const auto& stageAttributesMgr = MM_->getStageAttributesManager();
   int numStageHandles = stageAttributesMgr->getNumObjects();
-  // shoudld be 6 : one for default NONE stage, glob lookup yields 2 stages + 2
-  // modified and 1 new stage in scene dataset config
+  // shoudld be 6 : one for default NONE stage, glob lookup yields 2 stages +
+  // 2 modified and 1 new stage in scene dataset config
   ASSERT_EQ(numStageHandles, 6);
   // end test LoadStages
 
@@ -441,6 +452,33 @@ TEST_F(MetadataMediatorTest, testDataset1) {
 
   // end test LoadSceneInstances
 
+  LOG(INFO) << "Starting test LoadArticulatedObjects";
+
+  namespace Dir = Cr::Utility::Directory;
+  // verify # of urdf filepaths loaded - should be 6;
+  const std::map<std::string, std::string>& urdfTestFilenames =
+      MM_->getArticulatedObjectModelFilenames();
+  ASSERT_EQ(urdfTestFilenames.size(), 6);
+  // test that each stub name key corresponds to the actual file name passed
+  // through the key making process
+  for (std::map<std::string, std::string>::const_iterator iter =
+           urdfTestFilenames.begin();
+       iter != urdfTestFilenames.end(); ++iter) {
+    // TODO replace when model intherits from AbstractManagedObject and
+    // instances proper key synth methods.
+    const std::string shortHandle =
+        Dir::splitExtension(
+            Dir::splitExtension(Dir::filename(iter->second)).first)
+            .first;
+    // test that map key constructed as shortened handle.
+    ASSERT_EQ(shortHandle, iter->first);
+    // test that file name ends in ".urdf"
+    ASSERT_EQ(Dir::splitExtension(Dir::filename(iter->second))
+                  .second.compare(".urdf"),
+              0);
+  }
+  // end test LoadArticulatedObjects
+
   LOG(INFO) << "Starting test LoadNavmesh";
   // get map of navmeshes
   const std::map<std::string, std::string> navmeshMap =
@@ -456,6 +494,9 @@ TEST_F(MetadataMediatorTest, testDataset1) {
   // should have 3
   ASSERT_EQ(semanticMap.size(), 3);
   // testLoadSemanticScene
+  // display info report
+  displayDSReports();
+
 }  // testDataset1
 
 TEST_F(MetadataMediatorTest, testDatasetDelete) {
@@ -487,6 +528,19 @@ TEST_F(MetadataMediatorTest, testDatasetDelete) {
 
   // verify deleted scene dataset's stage manager is nullptr
   ASSERT_EQ(stageAttrMgr_DS1, nullptr);
+
+  // attempt to delete dataset 0 and verify fails - cannot delete active dataset
+  ASSERT_EQ(MM_->removeSceneDataset(nameDS0), false);
+
+  // switch to default active dataset
+  MM_->setActiveSceneDatasetName("default");
+  // attempt to delete dataset 0 and verify delete
+  ASSERT_EQ(MM_->removeSceneDataset(nameDS0), true);
+  // verify the dataset does not exist anymore
+  ASSERT_EQ(MM_->sceneDatasetExists(nameDS0), false);
+
+  // display info report
+  displayDSReports();
 
 }  // testDatasetDelete
 

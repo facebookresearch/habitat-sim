@@ -13,35 +13,6 @@ namespace metadata {
 
 namespace managers {
 
-/**
- * @brief This enum class describes whether an object instance position is
- * relative to its COM or the asset's local origin.  Depending on this value, we
- * may take certain actions when instantiating a scene described by a scene
- * instance. For example, scene instances exported from Blender will have no
- * conception of an object's configured COM, and so will require adjustment to
- * translations to account for COM location when the object is placed*/
-enum class SceneInstanceTranslationOrigin {
-  /**
-   * @brief Default value - in the case of object instances, this means use the
-   * specified scene instance default; in the case of a scene instance, this
-   * means do not correct for COM.
-   */
-  Unknown = -1,
-  /**
-   * @brief Indicates scene instance objects were placed without knowledge of
-   * their COM location, and so need to be corrected when placed in scene in
-   * Habitat. For example, they were exported from an external editor like
-   * Blender.
-   */
-  AssetLocal,
-  /**
-   * @brief Indicates scene instance objects' location were recorded at their
-   * COM location, and so do not need correction.  For example they were
-   * exported from Habitat-sim.
-   */
-  COM
-};
-
 class SceneAttributesManager
     : public AttributesManager<attributes::SceneAttributes,
                                core::ManagedObjectAccess::Copy> {
@@ -93,6 +64,15 @@ class SceneAttributesManager
     return attributes::SceneObjectInstanceAttributes::create(handle);
   }
 
+  /**
+   * @brief This will return a @ref
+   * attributes::SceneObjectInstanceAttributes object with passed handle.
+   */
+  attributes::SceneAOInstanceAttributes::ptr createEmptyAOInstanceAttributes(
+      const std::string& handle) {
+    return attributes::SceneAOInstanceAttributes::create(handle);
+  }
+
  protected:
   /**
    * @brief Gets the int value of the appropriate enum corresponding to the
@@ -102,7 +82,7 @@ class SceneAttributesManager
    * @param jsonDoc document where value may be specified.
    * @return the int value to set for translation_origin in instance attributes.
    */
-  int getTranslationOriginVal(const io::JsonGenericValue& jsonDoc);
+  int getTranslationOriginVal(const io::JsonGenericValue& jsonDoc) const;
 
   /**
    * @brief Used Internally.  Create a @ref
@@ -115,6 +95,30 @@ class SceneAttributesManager
    */
   attributes::SceneObjectInstanceAttributes::ptr
   createInstanceAttributesFromJSON(const io::JsonGenericValue& jCell);
+
+  /**
+   * @brief Used Internally.  Create a @ref
+   * esp::metadata::attributes::SceneAOInstanceAttributes object from the
+   * passed JSON doc, describing the initial state of an instance of an
+   * articulated object.
+   * @param jCell JSON object containing the description of the articulated
+   * object instance.
+   * @return the constructed @ref
+   * esp::metadata::attributes::SceneAOInstanceAttributes object
+   */
+  attributes::SceneAOInstanceAttributes::ptr createAOInstanceAttributesFromJSON(
+      const io::JsonGenericValue& jCell);
+
+  /**
+   * @brief Populate an existing @ref
+   * metadata::attributes::SceneObjectInstanceAttributes from a JSON config.
+   *
+   * @param attributes the attributes to populate with JSON values
+   * @param jCell JSON document to parse
+   */
+  void loadAbstractObjectAttributesFromJson(
+      const attributes::SceneObjectInstanceAttributes::ptr& attributes,
+      const io::JsonGenericValue& jCell) const;
 
   /**
    * @brief Used Internally.  Create and configure newly-created scene instance

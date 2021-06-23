@@ -113,7 +113,52 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
     setString("handle", oHndlStrm.str());
   }
 
+  /**
+   * @brief This will parse the passed candidate object template handle, treated
+   * as a configuration string, and populate the appropriate values.
+   * @param configString The configuration string to parse.
+   * @return Whether the parsing has succeeded or not (might fail with
+   * inappropriate formatting for object type.)
+   */
+  bool parseStringIntoConfig(const std::string& configString) {
+    bool success = parseStringIntoConfigDetail(configString);
+    if (success) {
+      // if parsed successfully, make sure the object's handle contains the
+      // original config string
+      return (this->getHandle().find(configString) != std::string::npos);
+    }
+    return success;
+  }
+
+  /**
+   * @brief PrimitiveAssetAttributes handles are already simplified, and embed
+   * no path info.
+   */
+  std::string getSimplifiedHandle() const override { return getHandle(); }
+
  protected:
+  /**
+   * @brief Retrieve a comma-separated string holding the header values for the
+   * info returned for this managed object, type-specific.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+  std::string getObjectInfoHeaderInternal() const override {
+    // Handle already encodes all relevant info
+    return ",";
+  }
+
+  /**
+   * @brief Retrieve a comma-separated informational string about the contents
+   * of this managed object.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+  std::string getObjectInfoInternal() const override {
+    // Handle already encodes all relevant info
+    return ", ";
+  }
+
   /**
    * @brief Verifies that val is larger than, and a multiple of, divisor
    * div
@@ -130,7 +175,58 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
   std::string getBoolDispStr(bool val) const {
     return (val ? "true" : "false");
   }
+
+  // helper for parseStringIntoConfig process
+  std::string getValueForConfigKey(const std::string& key,
+                                   const std::string& configStr) {
+    std::size_t keyLoc = configStr.find(key);
+    if (keyLoc == std::string::npos) {
+      LOG(WARNING) << "Key " << key << " not found in configStr " << configStr
+                   << ". Aborting.";
+      return "";
+    }
+    std::size_t keyLen = key.length(), keyEnd = keyLoc + keyLen;
+    return configStr.substr(keyEnd, configStr.find('_', keyEnd) - keyEnd);
+  }
+  bool getBoolForConfigKey(const std::string& key,
+                           const std::string& configStr) {
+    std::string res = getValueForConfigKey(key, configStr);
+    return (res.find("true") != std::string::npos);
+  }
+
+  bool setIntFromConfigKey(const std::string& key,
+                           const std::string& configStr,
+                           const std::function<void(int)>& setter) {
+    const std::string conv = getValueForConfigKey(key, configStr);
+    try {
+      setter(stoi(conv));
+      return true;
+    } catch (...) {
+      LOG(WARNING) << "Failed due to -" << conv << "- value for key -" << key
+                   << "- in format string -" << configStr
+                   << "- not being recognized as an int.";
+      return false;
+    }
+  }
+
+  bool setDoubleFromConfigKey(const std::string& key,
+                              const std::string& configStr,
+                              const std::function<void(double)>& setter) {
+    const std::string conv = getValueForConfigKey(key, configStr);
+    try {
+      setter(stod(conv));
+      return true;
+    } catch (...) {
+      LOG(WARNING) << "Failed due to -" << conv << "- value for key -" << key
+                   << "- in format string -" << configStr
+                   << "- not being recognized as a double.";
+      return false;
+    }
+  }
+
   virtual std::string buildHandleDetail() = 0;
+
+  virtual bool parseStringIntoConfigDetail(const std::string& configString) = 0;
 
  private:
   // Should never change, only set by ctor
@@ -171,8 +267,8 @@ class CapsulePrimitiveAttributes : public AbstractPrimitiveAttributes {
   /**
    * @brief This will determine if the stated template has the required
    * quantities needed to instantiate a primitive properly of desired type
-   * @return whether or not the template holds valid data for desired primitive
-   * type
+   * @return whether or not the template holds valid data for desired
+   * primitive type
    */
   bool isValidTemplate() override {
     bool wfCheck =
@@ -196,6 +292,8 @@ class CapsulePrimitiveAttributes : public AbstractPrimitiveAttributes {
     return oHndlStrm.str();
   }  // buildHandleDetail
 
+  bool parseStringIntoConfigDetail(const std::string& configString) override;
+
  public:
   ESP_SMART_POINTERS(CapsulePrimitiveAttributes)
 };  // class CapsulePrimitiveAttributes
@@ -216,8 +314,8 @@ class ConePrimitiveAttributes : public AbstractPrimitiveAttributes {
   /**
    * @brief This will determine if the stated template has the required
    * quantities needed to instantiate a primitive properly of desired type
-   * @return whether or not the template holds valid data for desired primitive
-   * type
+   * @return whether or not the template holds valid data for desired
+   * primitive type
    */
   bool isValidTemplate() override {
     bool wfCheck =
@@ -241,6 +339,8 @@ class ConePrimitiveAttributes : public AbstractPrimitiveAttributes {
     return oHndlStrm.str();
   }  // buildHandleDetail
 
+  bool parseStringIntoConfigDetail(const std::string& configString) override;
+
  public:
   ESP_SMART_POINTERS(ConePrimitiveAttributes)
 };  // class ConePrimitiveAttributes
@@ -259,15 +359,20 @@ class CubePrimitiveAttributes : public AbstractPrimitiveAttributes {
 
   /**
    * @brief This will determine if the stated template has the required
-   * quantities needed to instantiate a primitive properly of desired type. Cube
-   * primitives require no values and so this attributes is always valid.
-   * @return whether or not the template holds valid data for desired primitive
-   * type
+   * quantities needed to instantiate a primitive properly of desired type.
+   * Cube primitives require no values and so this attributes is always valid.
+   * @return whether or not the template holds valid data for desired
+   * primitive type
    */
   bool isValidTemplate() override { return true; }
 
  protected:
   std::string buildHandleDetail() override { return ""; }
+
+  bool parseStringIntoConfigDetail(
+      CORRADE_UNUSED const std::string& configString) override {
+    return true;
+  }
 
  public:
   ESP_SMART_POINTERS(CubePrimitiveAttributes)
@@ -289,8 +394,8 @@ class CylinderPrimitiveAttributes : public AbstractPrimitiveAttributes {
   /**
    * @brief This will determine if the stated template has the required
    * quantities needed to instantiate a primitive properly of desired type
-   * @return whether or not the template holds valid data for desired primitive
-   * type
+   * @return whether or not the template holds valid data for desired
+   * primitive type
    */
   bool isValidTemplate() override {
     bool wfCheck =
@@ -311,6 +416,8 @@ class CylinderPrimitiveAttributes : public AbstractPrimitiveAttributes {
     }
     return oHndlStrm.str();
   }  // buildHandleDetail
+
+  bool parseStringIntoConfigDetail(const std::string& configString) override;
 
  public:
   ESP_SMART_POINTERS(CylinderPrimitiveAttributes)
@@ -343,8 +450,8 @@ class IcospherePrimitiveAttributes : public AbstractPrimitiveAttributes {
   /**
    * @brief This will determine if the stated template has the required
    * quantities needed to instantiate a primitive properly of desired type
-   * @return whether or not the template holds valid data for desired primitive
-   * type
+   * @return whether or not the template holds valid data for desired
+   * primitive type
    */
   bool isValidTemplate() override {
     return (getIsWireframe() || (!getIsWireframe() && getSubdivisions() >= 0));
@@ -359,6 +466,13 @@ class IcospherePrimitiveAttributes : public AbstractPrimitiveAttributes {
     return oHndlStrm.str();
   }  // buildHandleDetail
 
+  bool parseStringIntoConfigDetail(const std::string& configString) override {
+    bool subDivsSet = setIntFromConfigKey(
+        "_subdivs_", configString, [this](int val) { setSubdivisions(val); });
+
+    return subDivsSet;
+  }
+
  public:
   ESP_SMART_POINTERS(IcospherePrimitiveAttributes)
 };  // class IcospherePrimitiveAttributes
@@ -372,8 +486,8 @@ class UVSpherePrimitiveAttributes : public AbstractPrimitiveAttributes {
   /**
    * @brief This will determine if the stated template has the required
    * quantities needed to instantiate a primitive properly of desired type
-   * @return whether or not the template holds valid data for desired primitive
-   * type
+   * @return whether or not the template holds valid data for desired
+   * primitive type
    */
   bool isValidTemplate() override {
     return ((getIsWireframe() &&
@@ -392,6 +506,8 @@ class UVSpherePrimitiveAttributes : public AbstractPrimitiveAttributes {
     }
     return oHndlStrm.str();
   }  // buildHandleDetail
+
+  bool parseStringIntoConfigDetail(const std::string& configString) override;
 
  public:
   ESP_SMART_POINTERS(UVSpherePrimitiveAttributes)

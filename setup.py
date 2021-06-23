@@ -13,15 +13,24 @@ import builtins
 import glob
 import json
 import os
+import os.path as osp
 import re
 import shlex
 import subprocess
 import sys
 from distutils.version import StrictVersion
-from os import path as osp
 
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
+
+try:
+    import cmake
+
+    # If the cmake python package is installed, use that exe
+    CMAKE_BIN_DIR = cmake.CMAKE_BIN_DIR
+except ImportError:
+    CMAKE_BIN_DIR = ""
+
 
 ARG_CACHE_BLACKLIST = {"force_cmake", "cache_args", "inplace"}
 
@@ -97,9 +106,18 @@ Use "CMAKE_ARGS="..." pip install ." to set cmake args with pip""",
     )
     parser.add_argument(
         "--no-lto",
-        action="store_true",
-        help="Disables Link Time Optimization for faster compile times at the expense of performance.",
+        dest="lto",
+        default=None,
+        action="store_false",
+        help="Disables Link Time Optimization: faster compile times but worse performance.",
     )
+    parser.add_argument(
+        "--lto",
+        dest="lto",
+        action="store_true",
+        help="Enables Link Time Optimization: better performance but longer compile time",
+    )
+
     parser.add_argument(
         "--cache-args",
         dest="cache_args",
@@ -115,6 +133,15 @@ Use "CMAKE_ARGS="..." pip install ." to set cmake args with pip""",
         help="Don't install magnum.  "
         "This is nice for incrementally building for development but "
         "can cause install magnum bindings to fall out-of-sync",
+    )
+
+    parser.add_argument(
+        "--build-basis-compressor",
+        "--basis-compressor",
+        dest="build_basis_compressor",
+        action="store_true",
+        help="Wether or not to build the basis compressor."
+        "  Loading basis compressed meshes does NOT require this.",
     )
     return parser
 
@@ -209,7 +236,7 @@ class CMakeBuild(build_ext):
 
     def run(self):
         try:
-            subprocess.check_output(["cmake", "--version"])
+            subprocess.check_output([osp.join(CMAKE_BIN_DIR, "cmake"), "--version"])
         except (OSError, subprocess.SubprocessError):
             raise RuntimeError(
                 "CMake must be installed to build the following extensions: "
@@ -236,6 +263,12 @@ class CMakeBuild(build_ext):
             "-DPYTHON_EXECUTABLE=" + sys.executable,
             "-DCMAKE_EXPORT_COMPILE_COMMANDS={}".format("OFF" if is_pip() else "ON"),
         ]
+        if args.lto is not None:
+            cmake_args += [
+                "-DCMAKE_INTERPROCEDURAL_OPTIMIZATION={}".format(
+                    "ON" if args.lto else "OFF"
+                )
+            ]
         cmake_args += shlex.split(args.cmake_args)
 
         build_type = args.build_type
@@ -248,8 +281,6 @@ class CMakeBuild(build_ext):
 
         cmake_args += ["-DCMAKE_BUILD_TYPE=" + build_type]
 
-        if args.no_lto:
-            cmake_args += ["-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=OFF"]
         build_args += ["--"]
 
         if has_ninja():
@@ -285,6 +316,11 @@ class CMakeBuild(build_ext):
             "-DBUILD_DATATOOL={}".format("ON" if args.build_datatool else "OFF")
         ]
         cmake_args += ["-DBUILD_WITH_CUDA={}".format("ON" if args.with_cuda else "OFF")]
+        cmake_args += [
+            "-DBUILD_BASIS_COMPRESSOR={}".format(
+                "ON" if args.build_basis_compressor else "OFF"
+            )
+        ]
 
         env = os.environ.copy()
         env["CXXFLAGS"] = '{} -DVERSION_INFO=\\"{}\\"'.format(
@@ -292,18 +328,21 @@ class CMakeBuild(build_ext):
         )
 
         if self.run_cmake(cmake_args):
+            os.makedirs(self.build_temp, exist_ok=True)
             subprocess.check_call(
-                shlex.split(
-                    'cmake -H"{}" -B"{}"'.format(ext.sourcedir, self.build_temp)
-                )
-                + cmake_args,
+                [osp.join(CMAKE_BIN_DIR, "cmake")]
+                + cmake_args
+                + [osp.realpath(ext.sourcedir)],
                 env=env,
+                cwd=self.build_temp,
             )
 
         if not is_pip():
             self.create_compile_commands()
 
-        subprocess.check_call(["cmake", "--build", self.build_temp] + build_args)
+        subprocess.check_call(
+            [osp.join(CMAKE_BIN_DIR, "cmake"), "--build", self.build_temp] + build_args
+        )
         print()  # Add an empty line for cleaner output
 
         # The things following this don't work with pip
@@ -407,7 +446,7 @@ if __name__ == "__main__":
         packages=find_packages(),
         install_requires=requirements,
         setup_requires=setup_requires,
-        tests_require=["hypothesis", "pytest-cov", "pytest"],
+        tests_require=["hypothesis", "pytest-benchmark", "pytest"],
         python_requires=">=3.6",
         # add extension module
         ext_modules=[CMakeExtension("habitat_sim._ext.habitat_sim_bindings", "src")],

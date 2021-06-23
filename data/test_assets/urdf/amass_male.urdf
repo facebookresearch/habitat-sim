@@ -1,0 +1,691 @@
+<?xml version="1.0"?>
+  <robot name="amass_male">
+    <material name="character_color">
+    <color rgba="0.2 0.5 0.5 1.0"/>
+    </material>
+    <link name="root">
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <mass value="5.0"/>
+        <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      </inertial>
+      <collision name="collision_0_root">
+        <origin xyz="0.00354 0.065 -0.03107" rpy="0 1.5708 0"/>
+        <geometry>
+          <sphere radius="0.05" length="0.115"/>
+        </geometry>
+      </collision>
+      <collision name="collision_1_root">
+        <origin xyz="-0.05769 -0.02577 -0.0174" rpy="0 0 0"/>
+        <geometry>
+          <sphere radius="0.075"/>
+        </geometry>
+      </collision>
+      <collision name="collision_2_root">
+        <origin xyz="0.06735 -0.02415 -0.0174" rpy="0 0 0"/>
+        <geometry>
+          <sphere radius="0.075"/>
+        </geometry>
+      </collision>
+      <visual name="visual_0_root">
+        <origin xyz="0.00354 0.065 -0.03107" rpy="0 1.5708 0"/>
+        <geometry>
+          <sphere radius="0.05" length="0.115"/>
+        </geometry>
+        <material name="character_color"/>
+      </visual>
+      <visual name="visual_1_root">
+        <origin xyz="-0.05769 -0.02577 -0.0174" rpy="0 0 0"/>
+        <geometry>
+          <sphere radius="0.075"/>
+        </geometry>
+        <material name="character_color"/>
+      </visual>
+      <visual name="visual_2_root">
+        <origin xyz="0.06735 -0.02415 -0.0174" rpy="0 0 0"/>
+        <geometry>
+          <sphere radius="0.075"/>
+        </geometry>
+        <material name="character_color"/>
+      </visual>
+    </link>
+
+    <link name="lhip">
+      <inertial>
+        <origin xyz="0.02173 -0.19323 0.00402" rpy="0 0 0"/>
+        <mass value="5.0"/>
+        <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      </inertial>
+      <collision name="collision_0_lhip">
+        <origin xyz="0.02173 -0.19323 0.00402" rpy="1.55 0.11194 0.10964"/>
+        <geometry>
+          <capsule radius="0.05" length="0.3"/>
+        </geometry>
+        <!-- <origin xyz="0.02173 -0.19323 0.00402" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.08 0.3 0.08"/>
+        </geometry> -->
+      </collision>
+      <visual name="visual_0_lhip">
+        <origin xyz="0.02173 -0.19323 0.00402" rpy="1.55 0.11194 0.10964"/>
+        <geometry>
+          <capsule radius="0.05" length="0.3"/>
+        </geometry>
+        <material name="character_color"/>
+        <!-- <origin xyz="0.02173 -0.19323 0.00402" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.08 0.3 0.08"/>
+        </geometry> -->
+      </visual>
+    </link>
+
+    <link name="lknee">
+      <inertial>
+        <origin xyz="-0.00739 -0.21344 -0.01871" rpy="0 0 0"/>
+        <mass value="3.0"/>
+        <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      </inertial>
+      <collision name="collision_0_lknee">
+        <origin xyz="-0.00739 -0.21344 -0.01871" rpy="1.65825 -0.0345 -0.03766"/>
+        <geometry>
+          <capsule radius="0.05" length="0.325"/>
+        </geometry>
+        <!-- <origin xyz="-0.00739 -0.21344 -0.01871" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.08 0.35 0.08"/>
+        </geometry> -->
+      </collision>
+      <visual name="visual_0_lknee">
+        <origin xyz="-0.00739 -0.21344 -0.01871" rpy="1.65825 -0.0345 -0.03766"/>
+        <geometry>
+          <capsule radius="0.05" length="0.325"/>
+        </geometry>
+        <material name="character_color"/>
+        <!-- <origin xyz="-0.00739 -0.21344 -0.01871" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.08 0.35 0.08"/>
+        </geometry> -->
+      </visual>
+    </link>
+
+    <link name="lankle">
+      <inertial>
+        <origin xyz="0.01719 -0.06032 0.02617" rpy="0 0 0"/>
+        <mass value="1.0"/>
+        <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      </inertial>
+      <collision name="collision_0_lankle">
+        <origin xyz="0.01719 -0.06032 0.02617" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.0875 0.06 0.185"/>
+        </geometry>
+      </collision>
+      <visual name="visual_0_lankle">
+        <origin xyz="0.01719 -0.06032 0.02617" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.0875 0.06 0.185"/>
+        </geometry>
+        <material name="character_color"/>
+      </visual>
+    </link>
+
+    <link name="rhip">
+      <inertial>
+        <origin xyz="-0.02163 -0.19184 -0.00242" rpy="0 0 0"/>
+        <mass value="5.0"/>
+        <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      </inertial>
+      <collision name="collision_0_rhip">
+        <origin xyz="-0.02163 -0.19184 -0.00242" rpy="1.58342 -0.11226 -0.11368"/>
+        <geometry>
+          <capsule radius="0.05" length="0.3"/>
+        </geometry>
+        <!-- <origin xyz="-0.02163 -0.19184 -0.00242" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.08 0.3 0.08"/>
+        </geometry> -->
+      </collision>
+      <visual name="visual_0_rhip">
+        <origin xyz="-0.02163 -0.19184 -0.00242" rpy="1.58342 -0.11226 -0.11368"/>
+        <geometry>
+          <capsule radius="0.05" length="0.3"/>
+        </geometry>
+        <material name="character_color"/>
+        <!-- <origin xyz="-0.02163 -0.19184 -0.00242" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.08 0.3 0.08"/>
+        </geometry> -->
+      </visual>
+    </link>
+
+    <link name="rknee">
+      <inertial>
+        <origin xyz="0.00953 -0.21002 -0.01728" rpy="0 0 0"/>
+        <mass value="3.0"/>
+        <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      </inertial>
+      <collision name="collision_0_rknee">
+        <origin xyz="0.00953 -0.21002 -0.01728" rpy="1.65289 0.04518 0.04905"/>
+        <geometry>
+          <capsule radius="0.05" length="0.325"/>
+        </geometry>
+        <!-- <origin xyz="0.00953 -0.21002 -0.01728" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.08 0.35 0.08"/>
+        </geometry> -->
+      </collision>
+      <visual name="visual_0_rknee">
+        <origin xyz="0.00953 -0.21002 -0.01728" rpy="1.65289 0.04518 0.04905"/>
+        <geometry>
+          <capsule radius="0.05" length="0.325"/>
+        </geometry>
+        <material name="character_color"/>
+        <!-- <origin xyz="0.00953 -0.21002 -0.01728" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.08 0.35 0.08"/>
+        </geometry> -->
+      </visual>
+    </link>
+
+    <link name="rankle">
+      <inertial>
+        <origin xyz="-0.01742 -0.06202 0.02969" rpy="0 0 0"/>
+        <mass value="1.0"/>
+        <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      </inertial>
+      <collision name="collision_0_rankle">
+        <origin xyz="-0.01742 -0.06202 0.02969" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.0875 0.06 0.185"/>
+        </geometry>
+      </collision>
+      <visual name="visual_0_rankle">
+        <origin xyz="-0.01742 -0.06202 0.02969" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.0875 0.06 0.185"/>
+        </geometry>
+        <material name="character_color"/>
+      </visual>
+    </link>
+
+    <link name="lowerback">
+      <inertial>
+        <origin xyz="0.0 0.05 0.013" rpy="0 0 0"/>
+        <mass value="5.0"/>
+        <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      </inertial>
+      <collision name="collision_0_lowerback">
+        <origin xyz="0.0 0.06 0.013" rpy="0 1.5708 0"/>
+        <geometry>
+          <sphere radius="0.065"/>
+        </geometry>
+      </collision>
+      <visual name="visual_0_lowerback">
+        <origin xyz="0.0 0.06 0.013" rpy="0 1.5708 0"/>
+        <geometry>
+          <sphere radius="0.065"/>
+        </geometry>
+        <material name="character_color"/>
+      </visual>
+      <!-- <collision name="collision_0_lowerback">
+        <origin xyz="-0.00028 0.0158 0.01" rpy="0 1.5708 0"/>
+        <geometry>
+          <sphere radius="0.0375" length="0.1"/>
+        </geometry>
+      </collision>
+      <collision name="collision_1_lowerback">
+        <origin xyz="-0.00054 0.08624 0.016" rpy="0 1.5708 0"/>
+        <geometry>
+          <sphere radius="0.0375" length="0.1"/>
+        </geometry>
+      </collision> -->
+    </link>
+
+    <link name="upperback">
+      <inertial>
+        <origin xyz="0.0 0.02246 0.00143" rpy="0 0 0"/>
+        <mass value="5.0"/>
+        <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      </inertial>
+      <collision name="collision_0_upperback">
+        <origin xyz="0.0 0.03246 0.00143" rpy="0 1.5708 0"/>
+        <geometry>
+          <sphere radius="0.05" length="0.125"/>
+        </geometry>
+      </collision>
+      <visual name="visual_0_upperback">
+        <origin xyz="0.0 0.03246 0.00143" rpy="0 1.5708 0"/>
+        <geometry>
+          <sphere radius="0.05" length="0.125"/>
+        </geometry>
+        <material name="character_color"/>
+      </visual>
+    </link>
+
+    <link name="chest">
+      <inertial>
+        <origin xyz="0.0 0.057 -0.00687" rpy="0 0 0"/>
+        <mass value="8.0"/>
+        <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      </inertial>
+      <collision name="collision_0_chest">
+        <origin xyz="-0.045 0.057 -0.00687" rpy="0 0 0"/>
+        <geometry>
+          <sphere radius="0.07"/>
+        </geometry>
+      </collision>
+      <collision name="collision_1_chest">
+        <origin xyz="0.045 0.057 -0.00687" rpy="0 0 0"/>
+        <geometry>
+          <sphere radius="0.07"/>
+        </geometry>
+      </collision>
+      <visual name="visual_0_chest">
+        <origin xyz="-0.045 0.057 -0.00687" rpy="0 0 0"/>
+        <geometry>
+          <sphere radius="0.07"/>
+        </geometry>
+        <material name="character_color"/>
+      </visual>
+      <visual name="visual_1_chest">
+        <origin xyz="0.045 0.057 -0.00687" rpy="0 0 0"/>
+        <geometry>
+          <sphere radius="0.07"/>
+        </geometry>
+        <material name="character_color"/>
+      </visual>
+    </link>
+
+    <link name="lowerneck">
+      <inertial>
+        <origin xyz="0.0 -0.01296 0.01" rpy="0 0 0"/>
+        <mass value="0.5"/>
+        <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      </inertial>
+      <collision name="collision_0_lowerneck">
+        <origin xyz="0.0 -0.01296 0.01" rpy="1.5708 0 0"/>
+        <geometry>
+          <capsule radius="0.030" length="0.0273"/>
+        </geometry>
+      </collision>
+      <visual name="visual_0_lowerneck">
+        <origin xyz="0.0 -0.01296 0.01" rpy="1.5708 0 0"/>
+        <geometry>
+          <capsule radius="0.030" length="0.0273"/>
+        </geometry>
+        <material name="character_color"/>
+      </visual>
+    </link>
+
+    <link name="upperneck">
+      <inertial>
+        <origin xyz="0 0.0020 0" rpy="0 0 0"/>
+        <mass value="3.0"/>
+        <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      </inertial>
+      <collision name="collision_0_upperneck">
+        <origin xyz="0 0.0020 0" rpy="1.5708 0 0"/>
+        <geometry>
+          <capsule radius="0.06" length="0.035"/>
+        </geometry>
+      </collision>
+      <visual name="visual_0_upperneck">
+        <origin xyz="0 0.0020 0" rpy="1.5708 0 0"/>
+        <geometry>
+          <capsule radius="0.06" length="0.035"/>
+        </geometry>
+        <material name="character_color"/>
+      </visual>
+    </link>
+
+    <link name="lclavicle">
+      <inertial>
+        <origin xyz="0.06146 0.0226 -0.00952" rpy="0 0 0"/>
+        <mass value="1.0"/>
+        <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      </inertial>
+      <collision name="collision_0_lclavicle">
+        <origin xyz="0.06146 0.0226 -0.00952" rpy="1.17204 1.95049 1.5502"/>
+        <geometry>
+          <capsule radius="0.04" length="0.05"/>
+        </geometry>
+      </collision>
+      <visual name="visual_0_lclavicle">
+        <origin xyz="0.06146 0.0226 -0.00952" rpy="1.17204 1.95049 1.5502"/>
+        <geometry>
+          <capsule radius="0.04" length="0.05"/>
+        </geometry>
+        <material name="character_color"/>
+      </visual>
+    </link>
+
+    <link name="lshoulder">
+      <inertial>
+        <!-- <origin xyz="0.12767 -0.00782 -0.01147" rpy="0 0 0"/> -->
+        <origin xyz="0.12767 0.0 0.0" rpy="0.0 0.0 0.0"/>
+        <mass value="2.0"/>
+        <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      </inertial>
+      <collision name="collision_0_lshoulder">
+        <!-- <origin xyz="0.12767 -0.00782 -0.01147" rpy="-0.59854 1.67914 -0.66249"/>
+        <geometry>
+          <capsule radius="0.032" length="0.2"/>
+        </geometry> -->
+        <!-- <origin xyz="0.12767 -0.00782 -0.01147" rpy="0 0 0"/> -->
+        <origin xyz="0.12767 0.0 0.0" rpy="0.0 0.0 0.0"/>
+        <geometry>
+          <box size="0.25 0.05 0.05"/>
+        </geometry>
+      </collision>
+      <visual name="visual_0_lshoulder">
+        <!-- <origin xyz="0.12767 -0.00782 -0.01147" rpy="-0.59854 1.67914 -0.66249"/>
+        <geometry>
+          <capsule radius="0.032" length="0.2"/>
+        </geometry> -->
+        <!-- <origin xyz="0.12767 -0.00782 -0.01147" rpy="0 0 0"/> -->
+        <origin xyz="0.12767 0.0 0.0" rpy="0.0 0.0 0.0"/>
+        <geometry>
+          <box size="0.25 0.05 0.05"/>
+        </geometry>
+        <material name="character_color"/>
+      </visual>
+    </link>
+
+    <link name="lelbow">
+      <inertial>
+        <!-- <origin xyz="0.12285 0.00635 -0.00369" rpy="0 0 0"/> -->
+        <origin xyz="0.12285 0.0 0.0" rpy="0 0 0"/>
+        <mass value="1.0"/>
+        <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      </inertial>
+      <collision name="collision_0_lelbow">
+        <!-- <origin xyz="0.12285 0.00635 -0.00369" rpy="1.04461 1.626 1.09303"/>
+        <geometry>
+          <capsule radius="0.032" length="0.18"/>
+        </geometry> -->
+        <!-- <origin xyz="0.12285 0.00635 -0.00369" rpy="0 0 0"/> -->
+        <origin xyz="0.12285 0.0 0.0" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.22 0.05 0.05"/>
+        </geometry>
+      </collision>
+      <visual name="visual_0_lelbow">
+        <!-- <origin xyz="0.12285 0.00635 -0.00369" rpy="1.04461 1.626 1.09303"/>
+        <geometry>
+          <capsule radius="0.032" length="0.18"/>
+        </geometry> -->
+        <!-- <origin xyz="0.12285 0.00635 -0.00369" rpy="0 0 0"/> -->
+        <origin xyz="0.12285 0.0 0.0" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.22 0.05 0.05"/>
+        </geometry>
+        <material name="character_color"/>
+      </visual>
+    </link>
+
+    <link name="lwrist">
+      <inertial>
+        <origin xyz="0.02228 0 0" rpy="0 0 0"/>
+        <mass value="0.5"/>
+        <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      </inertial>
+      <collision name="collision_0_lwrist">
+        <origin xyz="0.02228 0 0" rpy="0 0 0"/>
+        <geometry>
+          <sphere radius="0.04"/>
+        </geometry>
+      </collision>
+      <visual name="visual_0_lwrist">
+        <origin xyz="0.02228 0 0" rpy="0 0 0"/>
+        <geometry>
+          <sphere radius="0.04"/>
+        </geometry>
+        <material name="character_color"/>
+      </visual>
+    </link>
+
+    <link name="rclavicle">
+      <inertial>
+        <origin xyz="-0.05661 0.02343 -0.00424" rpy="0 0 0"/>
+        <mass value="1.0"/>
+        <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      </inertial>
+      <collision name="collision_0_rclavicle">
+        <origin xyz="-0.05661 0.02343 -0.00424" rpy="-1.74968 -1.17274 1.34362"/>
+        <geometry>
+          <capsule radius="0.04" length="0.05"/>
+        </geometry>
+      </collision>
+      <visual name="visual_0_rclavicle">
+        <origin xyz="-0.05661 0.02343 -0.00424" rpy="-1.74968 -1.17274 1.34362"/>
+        <geometry>
+          <capsule radius="0.04" length="0.05"/>
+        </geometry>
+        <material name="character_color"/>
+      </visual>
+    </link>
+
+    <link name="rshoulder">
+      <inertial>
+        <!-- <origin xyz="-0.13006 -0.00718 -0.01563" rpy="0 0 0"/> -->
+        <origin xyz="-0.13006 0.0 0.0" rpy="0 0 0"/>
+        <mass value="2.0"/>
+        <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      </inertial>
+      <collision name="collision_0_rshoulder">
+        <!-- <origin xyz="-0.13006 -0.00718 -0.01563" rpy="-0.43075 -1.70232 0.48923"/>
+        <geometry>
+          <capsule radius="0.032" length="0.2"/>
+        </geometry> -->
+        <!-- <origin xyz="-0.13006 -0.00718 -0.01563" rpy="0 0 0"/> -->
+        <origin xyz="-0.13006 0.0 0.0" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.25 0.05 0.05"/>
+        </geometry>
+      </collision>
+      <visual name="visual_0_rshoulder">
+        <!-- <origin xyz="-0.13006 -0.00718 -0.01563" rpy="-0.43075 -1.70232 0.48923"/>
+        <geometry>
+          <capsule radius="0.032" length="0.2"/>
+        </geometry> -->
+        <!-- <origin xyz="-0.13006 -0.00718 -0.01563" rpy="0 0 0"/> -->
+        <origin xyz="-0.13006 0.0 0.0" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.25 0.05 0.05"/>
+        </geometry>
+        <material name="character_color"/>
+      </visual>
+    </link>
+
+    <link name="relbow">
+      <inertial>
+        <!-- <origin xyz="-0.12455 0.0034 -0.00301" rpy="0 0 0"/> -->
+        <origin xyz="-0.12455 0.0 0.0" rpy="0 0 0"/>
+        <mass value="1.0"/>
+        <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      </inertial>
+      <collision name="collision_0_relbow">
+        <!-- <origin xyz="-0.12455 0.0034 -0.00301" rpy="0.84515 -1.60453 -0.87067"/>
+        <geometry>
+          <capsule radius="0.032" length="0.18"/>
+        </geometry> -->
+        <!-- <origin xyz="-0.12455 0.0034 -0.00301" rpy="0 0 0"/> -->
+        <origin xyz="-0.12455 0.0 0.0" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.22 0.05 0.05"/>
+        </geometry>
+      </collision>
+      <visual name="visual_0_relbow">
+        <!-- <origin xyz="-0.12455 0.0034 -0.00301" rpy="0.84515 -1.60453 -0.87067"/>
+        <geometry>
+          <capsule radius="0.032" length="0.18"/>
+        </geometry> -->
+        <!-- <origin xyz="-0.12455 0.0034 -0.00301" rpy="0 0 0"/> -->
+        <origin xyz="-0.12455 0.0 0.0" rpy="0 0 0"/>
+        <geometry>
+          <box size="0.22 0.05 0.05"/>
+        </geometry>
+        <material name="character_color"/>
+      </visual>
+    </link>
+
+    <link name="rwrist">
+      <inertial>
+        <origin xyz="-0.0239 0 0" rpy="0 0 0"/>
+        <mass value="0.5"/>
+        <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      </inertial>
+      <collision name="collision_0_rwrist">
+        <origin xyz="-0.0239 0 0" rpy="0 0 0"/>
+        <geometry>
+          <sphere radius="0.04"/>
+        </geometry>
+      </collision>
+      <visual name="visual_0_rwrist">
+        <origin xyz="-0.0239 0 0" rpy="0 0 0"/>
+        <geometry>
+          <sphere radius="0.04"/>
+        </geometry>
+        <material name="character_color"/>
+      </visual>
+    </link>
+
+    <joint name="lhip" type="spherical">
+      <origin xyz="0.08858 -0.08228 -0.01766" rpy="0 0 0"/>
+      <parent link="root"/>
+      <child link="lhip"/>
+      <axis xyz="1 0 0"/>
+    </joint>
+
+    <joint name="lknee" type="spherical">
+      <origin xyz="0.04345 -0.38647 0.00804" rpy="0 0 0"/>
+      <parent link="lhip"/>
+      <child link="lknee"/>
+      <axis xyz="1 0 0"/>
+    </joint>
+
+    <joint name="lankle" type="spherical">
+      <origin xyz="-0.01479 -0.42687 -0.03743" rpy="0 0 0"/>
+      <parent link="lknee"/>
+      <child link="lankle"/>
+      <axis xyz="1 0 0"/>
+    </joint>
+
+    <joint name="rhip" type="spherical">
+      <origin xyz="-0.09031 -0.09051 -0.01354" rpy="0 0 0"/>
+      <parent link="root"/>
+      <child link="rhip"/>
+      <axis xyz="1 0 0"/>
+    </joint>
+
+    <joint name="rknee" type="spherical">
+      <origin xyz="-0.04326 -0.38369 -0.00484" rpy="0 0 0"/>
+      <parent link="rhip"/>
+      <child link="rknee"/>
+      <axis xyz="1 0 0"/>
+    </joint>
+
+    <joint name="rankle" type="spherical">
+      <origin xyz="0.01906 -0.42005 -0.03456" rpy="0 0 0"/>
+      <parent link="rknee"/>
+      <child link="rankle"/>
+      <axis xyz="1 0 0"/>
+    </joint>
+
+    <joint name="lowerback" type="spherical">
+      <origin xyz="0.0 0.1244 -0.03" rpy="0 0 0"/>
+      <parent link="root"/>
+      <child link="lowerback"/>
+      <axis xyz="1 0 0"/>
+    </joint>
+
+    <joint name="upperback" type="spherical">
+      <origin xyz="0.0 0.13796 0.02682" rpy="0 0 0"/>
+      <parent link="lowerback"/>
+      <child link="upperback"/>
+      <axis xyz="1 0 0"/>
+    </joint>
+
+    <joint name="chest" type="spherical">
+      <origin xyz="0.0 0.05603 0.00285" rpy="0 0 0"/>
+      <parent link="upperback"/>
+      <child link="chest"/>
+      <axis xyz="1 0 0"/>
+    </joint>
+
+    <joint name="lowerneck" type="spherical">
+      <origin xyz="0.0 0.15524 -0.03347" rpy="0 0 0"/>
+      <parent link="chest"/>
+      <child link="lowerneck"/>
+      <axis xyz="1 0 0"/>
+    </joint>
+
+    <joint name="upperneck" type="spherical">
+      <origin xyz="0.0 0.08894 0.02041" rpy="0 0 0"/>
+      <parent link="lowerneck"/>
+      <child link="upperneck"/>
+      <axis xyz="1 0 0"/>
+    </joint>
+
+    <joint name="lclavicle" type="spherical">
+      <origin xyz="0.0717 0.114 -0.0189" rpy="0 0 0"/>
+      <parent link="chest"/>
+      <child link="lclavicle"/>
+      <axis xyz="1 0 0"/>
+    </joint>
+
+    <joint name="lshoulder" type="spherical">
+      <origin xyz="0.12292 0.04521 -0.01905" rpy="0 0 0"/>
+      <!-- <origin xyz="0.12292 0.0 0.0" rpy="0 0 0"/> -->
+      <parent link="lclavicle"/>
+      <child link="lshoulder"/>
+      <axis xyz="1 0 0"/>
+    </joint>
+
+    <joint name="lelbow" type="spherical">
+      <!-- <origin xyz="0.25533 -0.01565 -0.02295" rpy="0 0 0"/> -->
+      <origin xyz="0.25533 0.0 0.0" rpy="0 0 0"/>
+      <parent link="lshoulder"/>
+      <child link="lelbow"/>
+      <axis xyz="1 0 0"/>
+    </joint>
+
+    <joint name="lwrist" type="fixed">
+      <!-- <origin xyz="0.24571 0.0127 -0.00737" rpy="0 0 0"/> -->
+      <origin xyz="0.24571 0.0 0.0" rpy="0 0 0"/>
+      <parent link="lelbow"/>
+      <child link="lwrist"/>
+      <axis xyz="1 0 0"/>
+    </joint>
+
+    <joint name="rclavicle" type="spherical">
+      <origin xyz="-0.08295 0.11247 -0.02371" rpy="0 0 0"/>
+      <parent link="chest"/>
+      <child link="rclavicle"/>
+      <axis xyz="1 0 0"/>
+    </joint>
+
+    <joint name="rshoulder" type="spherical">
+      <origin xyz="-0.11323 0.04685 -0.00847" rpy="0 0 0"/>
+      <parent link="rclavicle"/>
+      <child link="rshoulder"/>
+      <axis xyz="1 0 0"/>
+    </joint>
+
+    <joint name="relbow" type="spherical">
+      <!-- <origin xyz="-0.26013 -0.01437 -0.03127" rpy="0 0 0"/> -->
+      <origin xyz="-0.26013 0.0 0.0" rpy="0 0 0"/>
+      <parent link="rshoulder"/>
+      <child link="relbow"/>
+      <axis xyz="1 0 0"/>
+    </joint>
+
+    <joint name="rwrist" type="fixed">
+      <!-- <origin xyz="-0.24911 0.00679 -0.00603" rpy="0 0 0"/> -->
+      <origin xyz="-0.24911 0.0 0.0" rpy="0 0 0"/>
+      <parent link="relbow"/>
+      <child link="rwrist"/>
+      <axis xyz="1 0 0"/>
+    </joint>
+
+  </robot>

@@ -51,6 +51,7 @@ set(
   DoubleSphereCameraShader.h
   EquirectangularShader.cpp
   EquirectangularShader.h
+  PbrTextureUnit.h
 )
 
 # If ptex support is enabled add relevant source files

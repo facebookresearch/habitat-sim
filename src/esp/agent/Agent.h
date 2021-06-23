@@ -44,7 +44,7 @@ struct ActionSpec {
   std::string name;
   // linear, angular forces, joint torques, sensor actuation
   ActuationMap actuation;
-  ESP_SMART_POINTERS(ActionSpec);
+  ESP_SMART_POINTERS(ActionSpec)
 };
 bool operator==(const ActionSpec& a, const ActionSpec& b);
 bool operator!=(const ActionSpec& a, const ActionSpec& b);
@@ -113,7 +113,7 @@ class Agent : public Magnum::SceneGraph::AbstractFeature3D {
 
   void getState(const AgentState::ptr& state) const;
 
-  void setState(const AgentState& state, const bool resetSensors = true);
+  void setState(const AgentState& state, bool resetSensors = true);
 
   void setInitialState(const AgentState& state,
                        const bool resetSensors = true) {

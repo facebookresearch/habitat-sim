@@ -127,7 +127,8 @@ class ManagedContainer : public ManagedContainerBase {
                      const std::string& objectHandle = "",
                      bool forceRegistration = false) {
     if (nullptr == managedObject) {
-      LOG(ERROR) << "ManagedContainer::registerObject : Invalid "
+      LOG(ERROR) << "<" << this->objectType_
+                 << ">::registerObject : Invalid "
                     "(null) managed object passed to registration. Aborting.";
       return ID_UNDEFINED;
     }
@@ -137,7 +138,8 @@ class ManagedContainer : public ManagedContainerBase {
     }
     std::string handleToSet = managedObject->getHandle();
     if ("" == handleToSet) {
-      LOG(ERROR) << "ManagedContainer::registerObject : No "
+      LOG(ERROR) << "<" << this->objectType_
+                 << ">::registerObject : No "
                     "valid handle specified for "
                  << objectType_ << " managed object to register. Aborting.";
       return ID_UNDEFINED;
@@ -173,8 +175,9 @@ class ManagedContainer : public ManagedContainerBase {
 
   /**
    * @brief Get a reference to the managed object identified by the
-   * managedObjectID.  Should only be used internally. Users should
-   * only ever access copies of managed objects.
+   * managedObjectID. Should only be used internally - Users should
+   * only ever access copies of managed objects, unless this managed container's
+   * @p Access policy is Share.
    *
    * Can be used to manipulate a managed object before instancing new objects.
    * @param managedObjectID The ID of the managed object. Is mapped to the key
@@ -185,7 +188,7 @@ class ManagedContainer : public ManagedContainerBase {
   ManagedPtr getObjectByID(int managedObjectID) const {
     std::string objectHandle = getObjectHandleByID(managedObjectID);
     if (!checkExistsWithMessage(objectHandle,
-                                "ManagedContainer::getObjectByID")) {
+                                "<" + this->objectType_ + ">::getObjectByID")) {
       return nullptr;
     }
     return getObjectInternal<T>(objectHandle);
@@ -193,8 +196,9 @@ class ManagedContainer : public ManagedContainerBase {
 
   /**
    * @brief Get a reference to the managed object identified by the passed
-   * objectHandle.  Should only be used internally. Users should only ever
-   * access copies of managed objects.
+   * objectHandle. Should only be used internally - Users should
+   * only ever access copies of managed objects, unless this managed container's
+   * @p Access policy is Share.
    *
    * @param objectHandle The key referencing the managed object in @ref
    * objectLibrary_.
@@ -202,11 +206,10 @@ class ManagedContainer : public ManagedContainerBase {
    * exist
    */
   ManagedPtr getObjectByHandle(const std::string& objectHandle) const {
-    if (!checkExistsWithMessage(objectHandle,
-                                "ManagedContainer::getObjectByHandle")) {
+    if (!checkExistsWithMessage(
+            objectHandle, "<" + this->objectType_ + ">::getObjectByHandle")) {
       return nullptr;
     }
-
     return getObjectInternal<T>(objectHandle);
   }  // ManagedContainer::getObject
 
@@ -220,12 +223,13 @@ class ManagedContainer : public ManagedContainerBase {
    */
   ManagedPtr removeObjectByID(int objectID) {
     std::string objectHandle = getObjectHandleByID(objectID);
-    if (!checkExistsWithMessage(objectHandle,
-                                "ManagedContainer::removeObjectByID")) {
+    if (!checkExistsWithMessage(
+            objectHandle, "<" + this->objectType_ + ">::removeObjectByID")) {
       return nullptr;
     }
-    return removeObjectInternal(objectID, objectHandle,
-                                "ManagedContainer::removeObjectByID");
+    return removeObjectInternal(
+        objectID, objectHandle,
+        "<" + this->objectType_ + ">::removeObjectByID");
   }
 
   /**
@@ -237,16 +241,17 @@ class ManagedContainer : public ManagedContainerBase {
    * exist
    */
   ManagedPtr removeObjectByHandle(const std::string& objectHandle) {
-    if (!checkExistsWithMessage(objectHandle,
-                                "ManagedContainer::removeObjectByHandle")) {
+    if (!checkExistsWithMessage(objectHandle, "<" + this->objectType_ +
+                                                  ">::removeObjectByHandle")) {
       return nullptr;
     }
     int objectID = getObjectIDByHandle(objectHandle);
     if (objectID == ID_UNDEFINED) {
       return nullptr;
     }
-    return removeObjectInternal(objectID, objectHandle,
-                                "ManagedContainer::removeObjectByHandle");
+    return removeObjectInternal(
+        objectID, objectHandle,
+        "<" + this->objectType_ + ">::removeObjectByHandle");
   }
 
   /**
@@ -371,8 +376,8 @@ class ManagedContainer : public ManagedContainerBase {
    */
   ManagedPtr getObjectCopyByID(int managedObjectID) {
     std::string objectHandle = getObjectHandleByID(managedObjectID);
-    if (!checkExistsWithMessage(objectHandle,
-                                "ManagedContainer::getObjectCopyByID")) {
+    if (!checkExistsWithMessage(
+            objectHandle, "<" + this->objectType_ + ">::getObjectCopyByID")) {
       return nullptr;
     }
     auto orig = getObjectInternal<T>(objectHandle);
@@ -387,8 +392,8 @@ class ManagedContainer : public ManagedContainerBase {
    * does not exist
    */
   ManagedPtr getObjectCopyByHandle(const std::string& objectHandle) {
-    if (!checkExistsWithMessage(objectHandle,
-                                "ManagedContainer::getObjectCopyByHandle")) {
+    if (!checkExistsWithMessage(objectHandle, "<" + this->objectType_ +
+                                                  ">::getObjectCopyByHandle")) {
       return nullptr;
     }
     auto orig = getObjectInternal<T>(objectHandle);
@@ -451,6 +456,7 @@ class ManagedContainer : public ManagedContainerBase {
 
  protected:
   //======== Internally accessed functions ========
+
   /**
    * @brief Perform post creation registration if specified.
    *
@@ -514,9 +520,10 @@ class ManagedContainer : public ManagedContainerBase {
       return getObjectInternal<T>(objectHandle)->getID();
     } else {
       if (!getNext) {
-        LOG(ERROR) << "ManagedContainer::getObjectIDByHandleOrNew : No "
-                   << objectType_ << " managed object with handle "
-                   << objectHandle << "exists. Aborting";
+        LOG(ERROR) << "<" << this->objectType_
+                   << ">::getObjectIDByHandleOrNew : No " << objectType_
+                   << " managed object with handle " << objectHandle
+                   << "exists. Aborting";
         return ID_UNDEFINED;
       } else {
         return getUnusedObjectID();
@@ -651,7 +658,8 @@ auto ManagedContainer<T, Access>::removeObjectsBySubstring(
   for (const std::string& objectHandle : handles) {
     int objID = getObjectIDByHandle(objectHandle);
     ManagedPtr ptr = removeObjectInternal(
-        objID, objectHandle, "ManagedContainer::removeObjectsBySubstring");
+        objID, objectHandle,
+        "<" + this->objectType_ + ">::removeObjectsBySubstring");
     if (nullptr != ptr) {
       res.push_back(ptr);
     }
@@ -670,9 +678,9 @@ auto ManagedContainer<T, Access>::removeObjectInternal(
     return nullptr;
   }
   std::string msg;
-  if (this->undeletableObjectNames_.count(objectHandle) > 0) {
+  if (this->getIsUndeletable(objectHandle)) {
     msg = "Required Undeletable Managed Object";
-  } else if (this->userLockedObjectNames_.count(objectHandle) > 0) {
+  } else if (this->getIsUserLocked(objectHandle)) {
     msg = "User-locked Object.  To delete managed object, unlock it";
   }
   if (msg.length() != 0) {

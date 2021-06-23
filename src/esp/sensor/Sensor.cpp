@@ -24,7 +24,7 @@ bool SensorSpec::operator!=(const SensorSpec& a) const {
 
 void SensorSpec::sanityCheck() const {
   CORRADE_ASSERT(this, "SensorSpec::sanityCheck(): sensorSpec is illegal", );
-  // Check that all parameters are initalized to legal values
+  // Check that all parameters are initialized to legal values
   CORRADE_ASSERT(!uuid.empty(),
                  "SensorSpec::sanityCheck(): uuid cannot be an empty string", );
   CORRADE_ASSERT(

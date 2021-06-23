@@ -124,7 +124,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
       const std::string& path,
       bool overwrite = false) {
     return addNewValToMap(key, path, overwrite, navmeshMap_,
-                          "SceneDatasetAttributes::addNavmeshPathEntry");
+                          "::addNavmeshPathEntry");
   }  // addNavmeshPathEntry
 
   /**
@@ -140,9 +140,8 @@ class SceneDatasetAttributes : public AbstractAttributes {
       const std::string& key,
       const std::string& path,
       bool overwrite = false) {
-    return addNewValToMap(
-        key, path, overwrite, semanticSceneDescrMap_,
-        "SceneDatasetAttributes::addSemanticSceneDescrPathEntry");
+    return addNewValToMap(key, path, overwrite, semanticSceneDescrMap_,
+                          "::addSemanticSceneDescrPathEntry");
   }  // addNavmeshPathEntry
 
   /**
@@ -252,6 +251,57 @@ class SceneDatasetAttributes : public AbstractAttributes {
   }  // getObjAttrFullHandle
 
   /**
+   * @brief Returns articulated object model file handle in dataset
+   * corresponding to passed name as substring. Assumes articulated object model
+   * with @p artObjModelName as substring exists in this dataset.
+   * @param artObjModelName substring to handle of AO model that exists in this
+   * dataset. The actual model name will be found via substring search in the
+   * manager, so the name is expected to be sufficiently restrictive to have
+   * exactly 1 match in dataset.
+   * @return name of AO model with handle containing @p artObjModelName or
+   * empty string if none.
+   */
+  inline std::string getArticulatedObjModelFullHandle(
+      const std::string& artObjModelName) {
+    if (articulatedObjPaths.count(artObjModelName) == 0) {
+      LOG(ERROR) << "SceneDatasetAttributes::getArticulatedObjModelFullHandle "
+                    ": No Articulatd Model with name "
+                 << artObjModelName << " could be found.  Aborting.";
+      return "";
+    }
+    return articulatedObjPaths.at(artObjModelName);
+    // std::map<std::string, std::string> articulatedObjPaths;
+  }
+
+  /**
+   * @brief TEMPORARY set discovered fully qualified file name along with
+   * simplified key for articulated object model file names. This will be
+   * removed when ArticulatedModelManager is complete.
+   * @param key Key in map built from simplified file name.
+   * @param value Filename of model
+   */
+  void setArticulatedObjectModelFilename(const std::string& key,
+                                         const std::string& val) {
+    if (articulatedObjPaths.count(key) != 0) {
+      LOG(WARNING)
+          << "SceneDatasetAttributes::setArticulatedObjectModelFilename "
+             ": Articulated model filepath named "
+          << key << " already exists (" << articulatedObjPaths.at(key)
+          << "), so this is being overwritten by " << val << ".";
+    }
+    articulatedObjPaths[key] = val;
+  }
+
+  /**
+   * @brief TEMPORARY get a constant reference to the articulated object model
+   * filenames (.urdf) that have been loaded.
+   */
+  const std::map<std::string, std::string>& getArticulatedObjectModelFilenames()
+      const {
+    return articulatedObjPaths;
+  }
+
+  /**
    * @brief Returns the full name of the lightsetup attributes whose
    * handle contains the passed @p lightSetupName
    * @param lightSetupName Name of the attributes desired.  The attributes will
@@ -272,7 +322,33 @@ class SceneDatasetAttributes : public AbstractAttributes {
                                   lightLayoutAttributesManager_);
   }  // getLightSetupFullHandle
 
+  /**
+   * @brief return a summary of this dataset
+   */
+  std::string getDatasetSummary() const;
+
+  /**
+   * @brief returns the header row of the summary string.
+   */
+  static std::string getDatasetSummaryHeader();
+
  protected:
+  /**
+   * @brief Retrieve a comma-separated string holding the header values for the
+   * info returned for this managed object, type-specific.  Individual
+   * components handle this.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+
+  std::string getObjectInfoHeaderInternal() const override { return ","; }
+
+  /**
+   * @brief Retrieve a comma-separated informational string about the contents
+   * of this managed object.
+   */
+  std::string getObjectInfoInternal() const override;
+
   /**
    * @brief Returns actual attributes handle containing @p attrName as a
    * substring, or the empty string if none exists, from passed @p attrMgr .
@@ -334,6 +410,12 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * dataset.
    */
   managers::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
+
+  /**
+   * @brief A TEMPORARY map construct to hold articulated object path names,
+   * until the ArticulatedModelManager is built.
+   */
+  std::map<std::string, std::string> articulatedObjPaths;
 
   /**
    * @brief Manages all construction and access to scene instance attributes

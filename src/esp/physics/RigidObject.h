@@ -73,7 +73,7 @@ struct VelocityControl {
    * dt.
    */
   virtual core::RigidState integrateTransform(
-      const float dt,
+      float dt,
       const core::RigidState& rigidState);
 
   ESP_SMART_POINTERS(VelocityControl)
@@ -108,7 +108,7 @@ class RigidObject : public RigidBase {
    * @brief Initializes the @ref esp::physics::RigidObject that inherits from
    * this class
    * @param initAttributes The template structure defining relevant
-   * phyiscal parameters for this object
+   * physical parameters for this object
    * @return true if initialized successfully, false otherwise.
    */
   bool initialize(metadata::attributes::AbstractObjectAttributes::ptr

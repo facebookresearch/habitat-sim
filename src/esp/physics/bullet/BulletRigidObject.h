@@ -20,6 +20,7 @@
 
 #include "esp/core/esp.h"
 
+#include "esp/physics/CollisionGroupHelper.h"
 #include "esp/physics/RigidObject.h"
 #include "esp/physics/bullet/BulletBase.h"
 
@@ -99,7 +100,9 @@ class BulletRigidObject : public BulletBase,
    */
   void setActive(bool active) override {
     if (!active) {
-      bObjectRigidBody_->setActivationState(WANTS_DEACTIVATION);
+      if (bObjectRigidBody_->isActive()) {
+        bObjectRigidBody_->setActivationState(WANTS_DEACTIVATION);
+      }
     } else {
       bObjectRigidBody_->activate(true);
     }
@@ -110,6 +113,11 @@ class BulletRigidObject : public BulletBase,
    * @param force If set, update sleeping objects as well.
    */
   virtual void updateNodes(bool force = false) override;
+
+  /**
+   * @brief
+   */
+  void updateNodes(bool force = false) override;
 
   /**
    * @brief Set the @ref MotionType of the object. The object can be set to @ref
@@ -424,7 +432,13 @@ class BulletRigidObject : public BulletBase,
    * @return Whether or not the object is in contact with any other collision
    * enabled objects.
    */
-  bool contactTest();
+  bool contactTest() override;
+
+  /**
+   * @brief Manually set the collision group for an object.
+   * @param group The desired CollisionGroup for the object.
+   */
+  void overrideCollisionGroup(CollisionGroup group) override;
 
   /**
    * @brief Query the Aabb from bullet physics for the root compound shape of

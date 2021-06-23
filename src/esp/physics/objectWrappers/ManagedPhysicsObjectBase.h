@@ -89,7 +89,7 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
     }
   }
 
-  bool isActive() {
+  bool isActive() const {
     if (auto sp = this->getObjectReference()) {
       return sp->isActive();
     }
@@ -108,6 +108,19 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
     }
   }  // setLightSetup
 
+  bool contactTest() {
+    if (auto sp = this->getObjectReference()) {
+      return sp->contactTest();
+    }
+    return false;
+  }  // contactTest
+
+  void overrideCollisionGroup(CollisionGroup group) {
+    if (auto sp = this->getObjectReference()) {
+      return sp->overrideCollisionGroup(group);
+    }
+  }  // overrideCollisionGroup
+
   scene::SceneNode* getSceneNode() {
     if (auto sp = this->getObjectReference()) {
       return &const_cast<scene::SceneNode&>(sp->getSceneNode());
@@ -115,13 +128,12 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
     return nullptr;
   }  // getSceneNode
 
-  esp::core::Configuration::ptr userAttributes() {
+  core::Configuration::ptr getUserAttributes() const {
     if (auto sp = this->getObjectReference()) {
-      return sp->attributes_;
+      return sp->getUserAttributes();
     }
     return nullptr;
   }
-
   // ==== Transformations ===
 
   Magnum::Matrix4 getTransformation() const {
@@ -243,7 +255,62 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
     }
   }  // rotateZLocal
 
+  std::vector<scene::SceneNode*> getVisualSceneNodes() const {
+    if (auto sp = this->getObjectReference()) {
+      return sp->getVisualSceneNodes();
+    }
+    return std::vector<scene::SceneNode*>();
+  }  // getVisualSceneNodes
+
+  /**
+   * @brief Retrieve a comma-separated string holding the header values for the
+   * info returned for this managed object.
+   */
+  std::string getObjectInfoHeader() const override {
+    return "Type, Name, ID, Translation XYZ, Rotation XYZW, " +
+           getPhyObjInfoHeaderInternal();
+  }
+
+  /**
+   * @brief Retrieve a comma-separated informational string about the contents
+   * of this managed object.
+   */
+  std::string getObjectInfo() const override {
+    std::string res{"unknown " + classKey_};
+    namespace CrUt = Corrade::Utility;
+    if (auto sp = this->getObjectReference()) {
+      res.append(classKey_)
+          .append(1, ',')
+          .append(sp->getObjectName())
+          .append(1, ',')
+          .append(std::to_string(sp->getObjectID()))
+          .append(1, ',')
+          .append(CrUt::ConfigurationValue<Mn::Vector3>::toString(
+              sp->getTranslation(), {}))
+          .append(1, ',')
+          .append(CrUt::ConfigurationValue<Magnum::Quaternion>::toString(
+              sp->getRotation(), {}))
+          .append(1, ',')
+          .append(getPhysObjInfoInternal(sp));
+    }
+    return res.append(1, ',');
+  }
+
  protected:
+  /**
+   * @brief Retrieve a comma-separated string holding the header values for the
+   * info returned for this managed object, type-specific.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+
+  virtual std::string getPhyObjInfoHeaderInternal() const = 0;
+  /**
+   * @brief Specialization-specific extension of getObjectInfo, comma
+   * separated info ideal for saving to csv
+   */
+  virtual std::string getPhysObjInfoInternal(std::shared_ptr<T>& sp) const = 0;
+
   /**
    * @brief This function accesses the underlying shared pointer of this
    * object's @p weakObjRef_ if it exists; if not, it provides a message.
@@ -273,8 +340,8 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
   }
 
   /**
-   * @brief Weak ref to object. If user has copy of this wrapper but object has
-   * been deleted, this will be nullptr.
+   * @brief Weak ref to object. If user has copy of this wrapper but object
+   * has been deleted, this will be nullptr.
    */
   WeakObjRef weakObjRef_{};
 

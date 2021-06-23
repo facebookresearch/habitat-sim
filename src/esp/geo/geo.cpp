@@ -81,7 +81,7 @@ std::vector<vec2f> convexHull2D(const std::vector<vec2f>& points) {
  *
  * Our Goal is to find the x_max and x_min after the transformation.
  *
- * First, determing the x_max:
+ * First, determining the x_max:
  *
  * In eq(1), Rc0 + t is a constant, which means max{x} iff max{Ry0}
  *

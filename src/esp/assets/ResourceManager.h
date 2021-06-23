@@ -6,8 +6,7 @@
 #define ESP_ASSETS_RESOURCEMANAGER_H_
 
 /** @file
- * @brief Class @ref esp::assets::ResourceManager, enum @ref
- * esp::assets::ResourceManager::ShaderType
+ * @brief Class @ref esp::assets::ResourceManager
  */
 
 #include <map>
@@ -75,6 +74,11 @@ class RigidObject;
 namespace nav {
 class PathFinder;
 }
+namespace io {
+namespace URDF {
+class Model;
+}
+}  // namespace io
 namespace assets {
 
 /**
@@ -300,7 +304,7 @@ class ResourceManager {
    * @brief Retrieve the meta data for a particular asset.
    *
    * This includes identifiers for meshes, textures, materials, and a
-   * component heirarchy.
+   * component hierarchy.
    * @param metaDataName The key identifying the asset in @ref resourceDict_.
    * Typically the filepath of file-based assets.
    * @return The asset's @ref MeshMetaData object.
@@ -382,7 +386,7 @@ class ResourceManager {
    * @brief Construct a unified @ref MeshData from a loaded asset's collision
    * meshes.
    *
-   * See @ref joinHeirarchy.
+   * See @ref joinHierarchy.
    * @param filename The identifying string key for the asset. See @ref
    * resourceDict_ and @ref meshes_.
    * @return The unified @ref MeshData object for the asset.
@@ -424,7 +428,7 @@ class ResourceManager {
       const std::string& filename,
       const std::string& chdFilename,
       const VHACDParameters& params = VHACDParameters(),
-      const bool saveChdToObj = false);
+      bool saveChdToObj = false);
 #endif
   /**
    * @brief Add an object from a specified object template handle to the
@@ -469,8 +473,7 @@ class ResourceManager {
                                DrawableGroup* drawables);
 
   /**
-   * @brief Create a @ref gfx::Drawable for the specified mesh, node,
-   * and @ref ShaderType.
+   * @brief Create a @ref gfx::Drawable for the specified mesh, and node.
    *
    * Add this drawable to the @ref DrawableGroup if provided.
    * @param mesh The render mesh.
@@ -634,7 +637,7 @@ class ResourceManager {
       const std::string& filename,
       const metadata::attributes::ObjectAttributes::ptr& objectAttributes,
       const std::string& meshType,
-      const bool requiresLighting);
+      bool requiresLighting);
 
   /**
    * @brief Build a primitive asset based on passed template parameters.  If
@@ -685,13 +688,13 @@ class ResourceManager {
            type == AssetType::SUNCG_OBJECT;
   }
   /**
-   * @brief Recursive contruction of scene nodes for an asset.
+   * @brief Recursive construction of scene nodes for an asset.
    *
    * Creates a drawable for the component of an asset referenced by the @ref
    * MeshTransformNode and adds it to the @ref DrawableGroup as child of
    * parent.
    * @param metaData The @ref MeshMetaData object containing information about
-   * the meshes, textures, materials, and component heirarchy of the asset.
+   * the meshes, textures, materials, and component hierarchy of the asset.
    * @param parent The @ref scene::SceneNode of which the component will be a
    * child.
    * @param lightSetupKey The @ref LightSetup key that will be used
@@ -737,15 +740,15 @@ class ResourceManager {
   void loadMeshes(Importer& importer, LoadedAssetData& loadedAssetData);
 
   /**
-   * @brief Recursively parse the mesh component transformation heirarchy for
+   * @brief Recursively parse the mesh component transformation hierarchy for
    * the imported asset.
    *
    * @param importer The importer already loaded with information for the
    * asset.
-   * @param parent The root of the mesh transform heirarchy for the remaining
+   * @param parent The root of the mesh transform hierarchy for the remaining
    * sub-tree. The generated @ref MeshTransformNode will be added as a child.
    * Typically the @ref MeshMetaData::root to begin recursion.
-   * @param componentID The next component to add to the heirarchy. Identifies
+   * @param componentID The next component to add to the hierarchy. Identifies
    * the component in the @ref Importer.
    */
   void loadMeshHierarchy(Importer& importer,
@@ -757,13 +760,13 @@ class ResourceManager {
    * tree of @ref MeshTransformNode.
    *
    * @param[in,out] mesh The @ref MeshData being constructed.
-   * @param metaData The @ref MeshMetaData for the object heirarchy being
+   * @param metaData The @ref MeshMetaData for the object hierarchy being
    * joined.
    * @param node The current @ref MeshTransformNode in the recursion.
    * @param transformFromParentToWorld The cumulative transformation up to but
    * not including the current @ref MeshTransformNode.
    */
-  void joinHeirarchy(MeshData& mesh,
+  void joinHierarchy(MeshData& mesh,
                      const MeshMetaData& metaData,
                      const MeshTransformNode& node,
                      const Mn::Matrix4& transformFromParentToWorld) const;
@@ -1047,7 +1050,7 @@ class ResourceManager {
 
   /**
    * @brief Asset metadata linking meshes, textures, materials, and the
-   * component transformation heirarchy for loaded assets.
+   * component transformation hierarchy for loaded assets.
    *
    * Maps absolute path keys to metadata.
    */

@@ -14,31 +14,6 @@ namespace metadata {
 namespace attributes {
 
 /**
- * @brief This enum class defines the possible shader options for rendering
- * instances of objects or stages in Habitat-sim.
- */
-enum class ObjectInstanceShaderType {
-  /**
-   * Represents an unknown/unspecified value for the shader type to use. Resort
-   * to defaults for object type.
-   */
-  Unknown = -1,
-  /**
-   * Refers to flat shading, pure color and no lighting.  This is often used for
-   * textured objects
-   */
-  Flat = 0,
-  /**
-   * Refers to phong shading with pure diffuse color.
-   */
-  Phong = 1,
-  /**
-   * Refers to using a shader built with physically-based rendering models.
-   */
-  PBR = 2,
-};
-
-/**
  * @brief base attributes object holding attributes shared by all
  * @ref esp::metadata::attributes::ObjectAttributes and @ref
  * esp::metadata::attributes::StageAttributes objects; Should be treated as
@@ -53,9 +28,6 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * be lowercase.
    */
   static const std::map<std::string, esp::assets::AssetType> AssetTypeNamesMap;
-
-  static const std::map<std::string, ObjectInstanceShaderType>
-      ShaderTypeNamesMap;
 
   AbstractObjectAttributes(const std::string& classKey,
                            const std::string& handle);
@@ -92,20 +64,25 @@ class AbstractObjectAttributes : public AbstractAttributes {
    */
   Magnum::Vector3 getOrientUp() const { return getVec3("orient_up"); }
   /**
-   * @brief set default forwardd orientation for object/stage mesh
+   * @brief set default forward orientation for object/stage mesh
    */
   void setOrientFront(const Magnum::Vector3& orientFront) {
     setVec3("orient_front", orientFront);
   }
   /**
-   * @brief get default forwardd orientation for object/stage mesh
+   * @brief get default forward orientation for object/stage mesh
    */
   Magnum::Vector3 getOrientFront() const { return getVec3("orient_front"); }
 
-  // units to meters mapping
+  /**
+   * @brief Sets how many units map to a meter.
+   */
   void setUnitsToMeters(double unitsToMeters) {
     setDouble("units_to_meters", unitsToMeters);
   }
+  /**
+   * @brief Gets how many units map to a meter.
+   */
   double getUnitsToMeters() const { return getDouble("units_to_meters"); }
 
   void setFrictionCoefficient(double frictionCoefficient) {
@@ -175,19 +152,30 @@ class AbstractObjectAttributes : public AbstractAttributes {
   void setCollisionAssetIsPrimitive(bool collisionAssetIsPrimitive) {
     setBool("collisionAssetIsPrimitive", collisionAssetIsPrimitive);
   }
-
+  /**
+   * @brief Gets whether this object uses file-based mesh collision object or
+   * primitive(implicit) collision shapes
+   * @return whether this object's collision asset is a
+   * primitive (implicitly calculated) or a mesh
+   */
   bool getCollisionAssetIsPrimitive() const {
     return getBool("collisionAssetIsPrimitive");
   }
 
   /**
-   * @brief whether this object uses mesh collision or primitive(implicit)
+   * @brief Sets whether this object uses mesh collision or primitive(implicit)
    * collision calculation.
    */
   void setUseMeshCollision(bool useMeshCollision) {
     setBool("use_mesh_collision", useMeshCollision);
   }
 
+  /**
+   * @brief Gets whether this object uses mesh collision or primitive(implicit)
+   * collision calculation.
+   * @return Whether this object uses mesh collision or primitive(implicit)
+   * collision calculation.
+   */
   bool getUseMeshCollision() const { return getBool("use_mesh_collision"); }
 
   /**
@@ -195,6 +183,11 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * overridden by a scene instance specification.
    */
   void setShaderType(int shader_type) { setInt("shader_type", shader_type); }
+
+  /**
+   * @brief Get the default shader to use for an object or stage.  This may be
+   * overridden by a scene instance specification.
+   */
   int getShaderType() const { return getInt("shader_type"); }
 
   // if true use phong illumination model instead of flat shading
@@ -206,7 +199,44 @@ class AbstractObjectAttributes : public AbstractAttributes {
   bool getIsDirty() const { return getBool("__isDirty"); }
   void setIsClean() { setBool("__isDirty", false); }
 
+  /**
+   * @brief Used for info purposes.  Return a string name corresponding to the
+   * currently specified shader type value;
+   */
+  std::string getCurrShaderTypeName() const {
+    int shaderTypeVal = getShaderType();
+    return getShaderTypeName(shaderTypeVal);
+  }
+
  protected:
+  /**
+   * @brief Retrieve a comma-separated string holding the header values for the
+   * info returned for this managed object, type-specific.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+
+  std::string getObjectInfoHeaderInternal() const override;
+  /**
+   * @brief get AbstractObject specific info header
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+  virtual std::string getAbstractObjectInfoHeaderInternal() const {
+    return "";
+  };
+
+  /**
+   * @brief Retrieve a comma-separated informational string about the contents
+   * of this managed object.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+  std::string getObjectInfoInternal() const override;
+  /**
+   * @brief get AbstractObject specific info for csv string
+   */
+  virtual std::string getAbstractObjectInfoInternal() const { return ""; };
   void setIsDirty() { setBool("__isDirty", true); }
 
  public:
@@ -215,8 +245,8 @@ class AbstractObjectAttributes : public AbstractAttributes {
 };  // class AbstractObjectAttributes
 
 /**
- * @brief Specific Attributes instance describing an object, constructed with a
- * default set of object-specific required attributes
+ * @brief Specific Attributes instance describing an object, constructed with
+ * a default set of object-specific required attributes
  */
 class ObjectAttributes : public AbstractObjectAttributes {
  public:
@@ -281,6 +311,21 @@ class ObjectAttributes : public AbstractObjectAttributes {
 
   uint32_t getSemanticId() const { return getInt("semantic_id"); }
 
+ protected:
+  /**
+   * @brief get AbstractObject specific info header
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+  std::string getAbstractObjectInfoHeaderInternal() const override {
+    return "Mass, COM XYZ, I XX YY ZZ, Angular Damping, "
+           "Linear Damping, Semantic ID";
+  }
+  /**
+   * @brief get AbstractObject specific info for csv string
+   */
+  std::string getAbstractObjectInfoInternal() const override;
+
  public:
   ESP_SMART_POINTERS(ObjectAttributes)
 
@@ -341,7 +386,6 @@ class StageAttributes : public AbstractObjectAttributes {
    */
   void setLightSetup(const std::string& lightSetup) {
     setString("light_setup", lightSetup);
-    // force requires lighting to reflect light setup
     setRequiresLighting(lightSetup != NO_LIGHT_KEY);
   }
   std::string getLightSetup() { return getString("light_setup"); }
@@ -355,6 +399,30 @@ class StageAttributes : public AbstractObjectAttributes {
     setBool("frustum_culling", frustumCulling);
   }
   bool getFrustumCulling() const { return getBool("frustum_culling"); }
+
+ protected:
+  /**
+   * @brief get AbstractObject specific info header
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+  std::string getAbstractObjectInfoHeaderInternal() const override {
+    return "Navmesh Handle, Gravity XYZ, Origin XYZ, Light Setup,";
+  }
+
+  /**
+   * @brief get AbstractObject specific info for csv string
+   */
+  std::string getAbstractObjectInfoInternal() const override {
+    std::string res = getNavmeshAssetHandle();
+    res.append(1, ',')
+        .append(cfg.value("gravity"))
+        .append(1, ',')
+        .append(cfg.value("origin"))
+        .append(1, ',')
+        .append(cfg.value("light_setup"));
+    return res;
+  }
 
  public:
   ESP_SMART_POINTERS(StageAttributes)

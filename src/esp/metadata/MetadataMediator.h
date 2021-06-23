@@ -193,7 +193,7 @@ class MetadataMediator {
   std::string getNavmeshPathByHandle(const std::string& navMeshHandle) {
     return getFilePathForHandle(navMeshHandle,
                                 getActiveDSAttribs()->getNavmeshMap(),
-                                "MetadataMediator::getNavmeshPathByHandle");
+                                "::getNavmeshPathByHandle");
 
   }  // MetadataMediator::getNavmeshPathByHandle
 
@@ -217,7 +217,7 @@ class MetadataMediator {
       const std::string& ssDescrHandle) {
     return getFilePathForHandle(
         ssDescrHandle, getActiveDSAttribs()->getSemanticSceneDescrMap(),
-        "MetadataMediator::getSemanticSceneDescriptorPathByHandle");
+        "::getSemanticSceneDescriptorPathByHandle");
 
   }  // MetadataMediator::getNavMeshPathByHandle
 
@@ -310,13 +310,40 @@ class MetadataMediator {
   }  // getObjAttrFullHandle
 
   /**
+   * @brief Returns articulated object model handle in dataset corresponding to
+   * passed name as substring. Assumes articulated object model with @p
+   * artObjModelName as substring exists in this dataset.
+   * @param artObjModelName substring to handle of AO model that exists in this
+   * dataset. The actual model name will be found via substring search in the
+   * manager, so the name is expected to be sufficiently restrictive to have
+   * exactly 1 match in dataset.
+   * @return name of object attributes with handle containing @p artObjModelName
+   * or empty string if none.
+   */
+  std::string getArticulatedObjModelFullHandle(
+      const std::string& artObjModelName) {
+    return getActiveDSAttribs()->getArticulatedObjModelFullHandle(
+        artObjModelName);
+  }  // getArticulatedObjModelFullHandle
+
+  /**
+   * @brief TEMPORARY get a constant reference to the articulated object model
+   * filenames (.urdf) that have been loaded.  Once ArticulatedModelMangaer is
+   * built, this will be accomplished using Managed Container functionality.
+   */
+  const std::map<std::string, std::string>&
+  getArticulatedObjectModelFilenames() {
+    return getActiveDSAttribs()->getArticulatedObjectModelFilenames();
+  }
+
+  /**
    * @brief Returns the full name of the lightsetup attributes whose
    * handle contains the passed @p lightSetupName
    * @param lightSetupName Name of the attributes desired.  The attributes will
    * be found via substring search, so the name is expected to be sufficiently
    * restrictive to have exactly 1 match in dataset.
-   * @return the full attributes name corresponding to @p lightSetupName , or
-   * the empty string.
+   * @return name of light setup with handle containing @p lightSetupName or
+   * empty string if none.
    */
   std::string getLightSetupFullHandle(const std::string& lightSetupName) {
     return getActiveDSAttribs()->getLightSetupFullHandle(lightSetupName);
@@ -342,6 +369,23 @@ class MetadataMediator {
     return sceneDatasetAttributesManager_->getObjectLibHasHandle(
         sceneDatasetName);
   }
+
+  /**
+   * @brief This function returns a list of all the scene datasets currently
+   * loaded, along with some key statistics for each, formatted as a
+   * comma-separated string.
+   * @return a vector of strings holding scene dataset info.
+   */
+  std::string getDatasetsOverview() const;
+
+  /**
+   * @brief this function will create a report of the contents of the scene
+   * dataset with the passed name. If no name is provided, a report on the
+   * current active dataset will be returned.
+   * @param sceneDataset The name of the scene dataset to perform the report on.
+   * @return Comma-separated string of data describing the desired dataset.
+   */
+  std::string createDatasetReport(const std::string& sceneDataset = "") const;
 
  protected:
   /**
@@ -407,7 +451,7 @@ class MetadataMediator {
     // this should never happen - there will always be a dataset with the name
     // activeSceneDataset_
     if (datasetAttr == nullptr) {
-      LOG(ERROR) << "MetadataMediator::getActiveDSAttribs : Unable to set "
+      LOG(ERROR) << "::getActiveDSAttribs : Unable to set "
                     "active dataset due to Unknown dataset named "
                  << activeSceneDataset_
                  << " so changing dataset to \"default\".";
@@ -448,7 +492,7 @@ class MetadataMediator {
 
  public:
   ESP_SMART_POINTERS(MetadataMediator)
-};  // class MetadataMediator
+};  // namespace metadata
 
 }  // namespace metadata
 }  // namespace esp

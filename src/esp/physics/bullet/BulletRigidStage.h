@@ -56,7 +56,7 @@ class BulletRigidStage : public BulletBase, public RigidStage {
 
   /**
    * @brief Adds static stage collision objects to the simulation world after
-   * contructing them if necessary.
+   * contracting them if necessary.
    */
   void constructAndAddCollisionObjects();
 
@@ -91,14 +91,14 @@ class BulletRigidStage : public BulletBase, public RigidStage {
    * @param frictionCoefficient The new scalar friction coefficient of the
    * stage object.
    */
-  void setFrictionCoefficient(const double frictionCoefficient) override;
+  void setFrictionCoefficient(double frictionCoefficient) override;
 
   /** @brief Set the scalar coefficient of restitution of the stage object.
    * See @ref btCollisionObject::setRestitution.
    * @param restitutionCoefficient The new scalar coefficient of restitution of
    * the stage object.
    */
-  void setRestitutionCoefficient(const double restitutionCoefficient) override;
+  void setRestitutionCoefficient(double restitutionCoefficient) override;
 
  private:
   // === Physical stage ===

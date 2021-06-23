@@ -75,7 +75,7 @@ class CubeMapSensorBase : public VisualSensor {
 
   // cubemap shader resource manager, which manages different shaders such as
   // DoubleSphereCameraShader, FieldOfViewCameraShader (TODO),
-  // EquiRectanglarShader ...
+  // EquiRectangularShader ...
   Magnum::ResourceManager<gfx::CubeMapShaderBase> cubeMapShaderBaseManager_;
 
   gfx::CubeMapShaderBase::Flags cubeMapShaderBaseFlags_{};
@@ -86,7 +86,7 @@ class CubeMapSensorBase : public VisualSensor {
   Magnum::Resource<gfx::CubeMapShaderBase, T> getShader();
 
   /**
-   * @brief render the sence into cubemap textures
+   * @brief render the sense into cubemap textures
    * @param[in] sim th simulator instance
    */
   bool renderToCubemapTexture(sim::Simulator& sim);

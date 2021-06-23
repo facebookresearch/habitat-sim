@@ -60,6 +60,11 @@ option(USE_SYSTEM_MAGNUM "Use system Magnum instead of a bundled submodule" OFF)
 option(USE_SYSTEM_PYBIND11 "Use system Pybind11 instead of a bundled submodule" OFF)
 option(USE_SYSTEM_RAPIDJSON "Use system RapidJSON instead of a bundled submodule" OFF)
 option(USE_SYSTEM_BULLET "Use system Bullet instead of a bundled submodule" OFF)
+option(
+  BUILD_BASIS_COMPRESSOR
+  "Wether or not to build the basis compressor.  Loading basis compressed meshes does NOT require this."
+  OFF
+)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -72,9 +77,6 @@ if(NOT CMAKE_BUILD_TYPE)
           "Choose build, options are: None Debug Release RelWithDebInfo MinSizeRel"
           FORCE
   )
-endif()
-if(NOT DEFINED CMAKE_INTERPROCEDURAL_OPTIMIZATION AND CMAKE_BUILD_TYPE MATCHES "Rel")
-  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
 endif()
 if(CMAKE_INTERPROCEDURAL_OPTIMIZATION)
   if(EMSCRIPTEN)
@@ -89,12 +91,12 @@ if(CMAKE_INTERPROCEDURAL_OPTIMIZATION)
     # Policy that enables INTERPROCEDURAL_OPTIMIZATION
     set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
     cmake_policy(SET CMP0069 NEW)
-    set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
       # Clang has some issues with thinLTO (segfaults on final linking)
       # This enables full LTO through CMake
       # FullLTO is slow, but may yield performance improvements.
-      add_compile_options(-flto=full)
+      #set(CMAKE_{lang}_COMPILE_OPTIONS_IPO ${CMAKE_CXX_COMPILE_OPTIONS_IPO} -flto)
+      add_compile_options("-flto=full") # alternate way of forcing FAT LTO.
     endif()
   endif()
 endif()
@@ -148,6 +150,10 @@ endif()
 if(BUILD_GUI_VIEWERS)
   message("Building GUI viewer")
   add_subdirectory(utils/viewer)
+endif()
+
+if(BUILD_BASIS_COMPRESSOR)
+  add_subdirectory(utils/imageconverter)
 endif()
 
 if(BUILD_TEST)

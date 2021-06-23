@@ -146,6 +146,7 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::register_vector<std::shared_ptr<SemanticCategory>>(
       "VectorSemanticCategories");
   em::register_vector<std::shared_ptr<SemanticObject>>("VectorSemanticObjects");
+  em::register_vector<RayHitInfo>("VectorRayHitInfo");
   em::register_map<std::string, float>("MapStringFloat");
   em::register_map<std::string, std::string>("MapStringString");
   em::register_map<std::string, Sensor::ptr>("MapStringSensor");
@@ -237,6 +238,22 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
           &ActionSpec::create<const std::string&, const ActuationMap&>)
       .property("name", &ActionSpec::name)
       .property("actuation", &ActionSpec::actuation);
+
+  em::class_<Ray>("Ray")
+      .constructor<>()
+      .constructor<Magnum::Vector3, Magnum::Vector3>();
+
+  em::class_<RayHitInfo>("RayHitInfo")
+      .property("objectId", &RayHitInfo::objectId)
+      .property("point", &RayHitInfo::point)
+      .property("normal", &RayHitInfo::normal)
+      .property("rayDistance", &RayHitInfo::rayDistance);
+
+  em::class_<RaycastResults>("RaycastResults")
+      .smart_ptr_constructor("RaycastResults", &RaycastResults::create<>)
+      .function("hasHits", &RaycastResults::hasHits)
+      .property("hits", &RaycastResults::hits)
+      .property("ray", &RaycastResults::ray);
 
   em::class_<PathFinder>("PathFinder")
       .smart_ptr<PathFinder::ptr>("PathFinder::ptr")
@@ -433,5 +450,6 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("setObjectLightSetup", &Simulator::setObjectLightSetup)
       .function("getLightSetup", &Simulator::getLightSetup)
       .function("setLightSetup", &Simulator::setLightSetup)
-      .function("stepWorld", &Simulator::stepWorld);
+      .function("stepWorld", &Simulator::stepWorld)
+      .function("castRay", &Simulator::castRay);
 }

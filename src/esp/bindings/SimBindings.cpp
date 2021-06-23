@@ -150,6 +150,11 @@ void initSimBindings(py::module& m) {
            pybind11::return_value_policy::reference,
            R"(Get the manager responsible for organizing and accessing all the
            currently constructed rigid objects.)")
+      .def("get_articulated_object_manager",
+           &Simulator::getArticulatedObjectManager,
+           pybind11::return_value_policy::reference,
+           R"(Get the manager responsible for organizing and accessing all the
+          currently constructed articulated objects.)")
       .def(
           "get_physics_simulation_library",
           &Simulator::getPhysicsSimulationLibrary,
@@ -224,7 +229,7 @@ void initSimBindings(py::module& m) {
           "step_world", &Simulator::stepWorld, "dt"_a = 1.0 / 60.0,
           R"(Step the physics simulation by a desired timestep (dt). Note that resulting world time after step may not be exactly t+dt. Use get_world_time to query current simulation time.)")
       .def("get_world_time", &Simulator::getWorldTime,
-           R"(Query the current simualtion world time.)")
+           R"(Query the current simulation world time.)")
       .def("get_gravity", &Simulator::getGravity, "scene_id"_a = 0,
            R"(Query the gravity vector for a scene.)")
       .def("set_gravity", &Simulator::setGravity, "gravity"_a, "scene_id"_a = 0,
@@ -364,7 +369,7 @@ void initSimBindings(py::module& m) {
       .def(
           "contact_test", &Simulator::contactTest, "object_id"_a,
           "scene_id"_a = 0,
-          R"(Run collision detection and return a binary indicator of penetration between the specified object and any other collision object. Physics must be enabled.)")
+          R"(DEPRECATED AND WILL BE REMOVED IN HABITAT-SIM 2.0. Run collision detection and return a binary indicator of penetration between the specified object and any other collision object. Physics must be enabled.)")
       .def(
           "get_physics_num_active_contact_points",
           &Simulator::getPhysicsNumActiveContactPoints,
@@ -419,7 +424,7 @@ void initSimBindings(py::module& m) {
       .def(
           "set_light_setup", &Simulator::setLightSetup, "light_setup"_a,
           "key"_a = DEFAULT_LIGHTING_KEY,
-          R"(Register a LightSetup with a specific key. If a LightSetup is already registered with this key, it will be overriden. All Drawables referencing the key will use the newly registered LightSetup.)")
+          R"(Register a LightSetup with a specific key. If a LightSetup is already registered with this key, it will be overridden. All Drawables referencing the key will use the newly registered LightSetup.)")
       .def("set_object_light_setup", &Simulator::setObjectLightSetup,
            "object_id"_a, "light_setup_key"_a, "scene_id"_a = 0,
            R"(

@@ -16,7 +16,8 @@ MeshVisualizerDrawable::MeshVisualizerDrawable(
     Magnum::Shaders::MeshVisualizerGL3D& shader,
     Magnum::GL::Mesh& mesh,
     DrawableGroup* group)
-    : Drawable{node, mesh, group}, shader_(shader) {}
+    : Drawable{node, mesh, DrawableType::MeshVisualizer, group},
+      shader_(shader) {}
 
 void MeshVisualizerDrawable::draw(const Magnum::Matrix4& transformationMatrix,
                                   Magnum::SceneGraph::Camera3D& camera) {

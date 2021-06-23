@@ -41,7 +41,7 @@ class LightLayoutAttributesManager
    * will be overwritten with the newly created one if registerTemplate is true.
    *
    * @param lightConfigName The configuration file to parse, or the name of the
-   * single light's attributs to create.
+   * single light's attributes to create.
    * @param registerTemplate whether to add this template to the library.
    * Defaults to false - overridden if @p lightConfigName is a JSON file.
    * @return a reference to the created light attributes.

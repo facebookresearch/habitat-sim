@@ -51,7 +51,7 @@ class PhysicsManagerTest : public testing::Test {
         metadataMediator_->getPhysicsAttributesManager();
   };
 
-  void initStage(const std::string stageFile) {
+  void initStage(const std::string& stageFile) {
     auto& sceneGraph = sceneManager_.getSceneGraph(sceneID_);
     auto& rootNode = sceneGraph.getRootNode();
 
@@ -71,8 +71,8 @@ class PhysicsManagerTest : public testing::Test {
 
     // load scene
     std::vector<int> tempIDs{sceneID_, esp::ID_UNDEFINED};
-    bool result = resourceManager_->loadStage(stageAttributes, physicsManager_,
-                                              &sceneManager_, tempIDs, false);
+    resourceManager_->loadStage(stageAttributes, physicsManager_,
+                                &sceneManager_, tempIDs, false);
 
     rigidObjectManager_ = physicsManager_->getRigidObjectManager();
   }
@@ -158,7 +158,7 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
             Magnum::Matrix4::rotationX(Magnum::Math::Rad<float>(-1.56)) *
             Magnum::Matrix4::rotationY(Magnum::Math::Rad<float>(-0.25))};
         float boxHeight = 2.0 + (o * 2);
-        Magnum::Vector3 initialPosition{0.0, boxHeight + 1.25f, 0.0};
+        Magnum::Vector3 initialPosition{0.0, boxHeight + 1.5f, 0.0};
         objWrapper->setRotation(
             Magnum::Quaternion::fromMatrix(R.rotationNormalized()));
         objWrapper->setTranslation(initialPosition);
@@ -283,40 +283,66 @@ TEST_F(PhysicsManagerTest, DiscreteContactTest) {
     objectAttributesManager->registerObject(ObjectAttributes, objectFile);
 
     // generate two centered boxes with dimension 2x2x2
-    auto objWrapper0 = makeObjectGetWrapper(objectFile);
-    auto objWrapper1 = makeObjectGetWrapper(objectFile);
-    int objectId0 = objWrapper0->getID();
-    int objectId1 = objWrapper1->getID();
+    auto objWrapper0 = rigidObjectManager_->addObjectByHandle(objectFile);
+    auto objWrapper1 = rigidObjectManager_->addObjectByHandle(objectFile);
 
     // place them in collision free location (0.1 about ground plane and 0.2
     // apart)
     objWrapper0->setTranslation(Magnum::Vector3{0, 1.1, 0});
     objWrapper1->setTranslation(Magnum::Vector3{2.2, 1.1, 0});
-    ASSERT_FALSE(physicsManager_->contactTest(objectId0));
-    ASSERT_FALSE(physicsManager_->contactTest(objectId1));
+    ASSERT_FALSE(objWrapper0->contactTest());
+    ASSERT_FALSE(objWrapper1->contactTest());
 
     // move box 0 into floor
     objWrapper0->setTranslation(Magnum::Vector3{0, 0.9, 0});
-    ASSERT_TRUE(physicsManager_->contactTest(objectId0));
-    ASSERT_FALSE(physicsManager_->contactTest(objectId1));
+    ASSERT_TRUE(objWrapper0->contactTest());
+    ASSERT_FALSE(objWrapper1->contactTest());
+    // set box 0 STATIC (STATIC vs STATIC stage)
+    objWrapper0->setMotionType(esp::physics::MotionType::STATIC);
+    ASSERT_FALSE(objWrapper0->contactTest());
+    // set box 0 KINEMATIC (KINEMATIC vs STATIC stage)
+    objWrapper0->setMotionType(esp::physics::MotionType::KINEMATIC);
+    ASSERT_FALSE(objWrapper0->contactTest());
+    // reset to DYNAMIC
+    objWrapper0->setMotionType(esp::physics::MotionType::DYNAMIC);
 
     // set stage to non-collidable
     ASSERT_TRUE(physicsManager_->getStageIsCollidable());
     physicsManager_->setStageIsCollidable(false);
     ASSERT_FALSE(physicsManager_->getStageIsCollidable());
-    ASSERT_FALSE(physicsManager_->contactTest(objectId0));
+    ASSERT_FALSE(objWrapper0->contactTest());
 
     // move box 0 into box 1
     objWrapper0->setTranslation(Magnum::Vector3{1.1, 1.1, 0});
-    ASSERT_TRUE(physicsManager_->contactTest(objectId0));
-    ASSERT_TRUE(physicsManager_->contactTest(objectId1));
+    ASSERT_TRUE(objWrapper0->contactTest());
+    ASSERT_TRUE(objWrapper1->contactTest());
+    // set box 0 STATIC (STATIC vs DYNAMIC)
+    objWrapper0->setMotionType(esp::physics::MotionType::STATIC);
+    ASSERT_TRUE(objWrapper0->contactTest());
+    ASSERT_TRUE(objWrapper1->contactTest());
+    // set box 1 STATIC (STATIC vs STATIC)
+    objWrapper1->setMotionType(esp::physics::MotionType::STATIC);
+    ASSERT_FALSE(objWrapper0->contactTest());
+    ASSERT_FALSE(objWrapper1->contactTest());
+    // set box 0 KINEMATIC (KINEMATIC vs STATIC)
+    objWrapper0->setMotionType(esp::physics::MotionType::KINEMATIC);
+    ASSERT_FALSE(objWrapper0->contactTest());
+    ASSERT_FALSE(objWrapper1->contactTest());
+    // set box 1 KINEMATIC (KINEMATIC vs KINEMATIC)
+    objWrapper1->setMotionType(esp::physics::MotionType::KINEMATIC);
+    ASSERT_FALSE(objWrapper0->contactTest());
+    ASSERT_FALSE(objWrapper1->contactTest());
+    // reset box 0 DYNAMIC (DYNAMIC vs KINEMATIC)
+    objWrapper0->setMotionType(esp::physics::MotionType::DYNAMIC);
+    ASSERT_TRUE(objWrapper0->contactTest());
+    ASSERT_TRUE(objWrapper1->contactTest());
 
     // set box 0 to non-collidable
     ASSERT_TRUE(objWrapper0->getCollidable());
     objWrapper0->setCollidable(false);
     ASSERT_FALSE(objWrapper0->getCollidable());
-    ASSERT_FALSE(physicsManager_->contactTest(objectId0));
-    ASSERT_FALSE(physicsManager_->contactTest(objectId1));
+    ASSERT_FALSE(objWrapper0->contactTest());
+    ASSERT_FALSE(objWrapper1->contactTest());
   }
 }
 
@@ -747,16 +773,17 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
           objWrapper1->setTranslation({0, boxHalfExtent * 5, 0});
 
           while (physicsManager_->getWorldTime() < 3.0) {
-            physicsManager_->stepPhysics(0.1);
+            // take single sub-steps for velocity control precision
+            physicsManager_->stepPhysics(-1);
           }
           ASSERT_LE((objWrapper0->getTranslation() -
-                     Magnum::Vector3{0.62, boxHalfExtent * 2, 0.0})
+                     Magnum::Vector3{0.6, boxHalfExtent * 2, 0.0})
                         .length(),
-                    1.0e-4);
+                    1.0e-3);
           ASSERT_LE((objWrapper1->getTranslation() -
-                     Magnum::Vector3{0.578, boxHalfExtent * 4, 0.0})
+                     Magnum::Vector3{0.559155, boxHalfExtent * 4, 0.0})
                         .length(),
-                    2.0e-2);
+                    2.0e-3);
         } break;
       }
 

@@ -328,13 +328,12 @@ AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
     if (T::AssetTypeNamesMap.count(strToLookFor)) {
       typeVal = static_cast<int>(T::AssetTypeNamesMap.at(strToLookFor));
     } else {
-      LOG(WARNING)
-          << "AbstractObjectAttributesManager::setJSONAssetHandleAndType : "
-             "Value in json @ tag : "
-          << jsonMeshTypeTag << " : `" << tmpVal
-          << "` does not map to a valid "
-             "AbstractObjectAttributes::AssetTypeNamesMap value, so "
-             "defaulting mesh type to AssetType::UNKNOWN.";
+      LOG(WARNING) << "<" << this->objectType_
+                   << ">::setJSONAssetHandleAndType : Value in json @ tag : "
+                   << jsonMeshTypeTag << " : `" << tmpVal
+                   << "` does not map to a valid "
+                      "AbstractObjectAttributes::AssetTypeNamesMap value, so "
+                      "defaulting mesh type to AssetType::UNKNOWN.";
       typeVal = static_cast<int>(esp::assets::AssetType::UNKNOWN);
     }
     // value found so override current value, otherwise do not.

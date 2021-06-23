@@ -25,18 +25,16 @@ int getShaderTypeFromJsonDoc(const io::JsonGenericValue& jsonDoc) {
     // shader_type tag was found, perform check - first convert to
     // lowercase
     std::string strToLookFor = Cr::Utility::String::lowercase(tmpShaderType);
-    auto found = attributes::AbstractObjectAttributes::ShaderTypeNamesMap.find(
-        strToLookFor);
-    if (found !=
-        attributes::AbstractObjectAttributes::ShaderTypeNamesMap.end()) {
+    auto found = attributes::ShaderTypeNamesMap.find(strToLookFor);
+    if (found != attributes::ShaderTypeNamesMap.end()) {
       shader_type = static_cast<int>(found->second);
     } else {
-      LOG(WARNING) << "getShaderTypeFromJsonDoc : "
-                      "motion_type value in json  : `"
-                   << tmpShaderType << "|" << strToLookFor
-                   << "` does not map to a valid "
-                      "SceneInstanceTranslationOrigin value, so defaulting "
-                      "motion type to SceneInstanceTranslationOrigin::Unknown.";
+      LOG(WARNING)
+          << "getShaderTypeFromJsonDoc : `shader_type` value in json  : `"
+          << tmpShaderType << "` -> `" << strToLookFor
+          << "` does not map to a valid "
+             "ObjectInstanceShaderType value, so defaulting "
+             "shader type to ObjectInstanceShaderType::Unknown.";
     }
   }
   return shader_type;

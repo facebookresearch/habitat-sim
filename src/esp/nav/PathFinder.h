@@ -172,9 +172,9 @@ class PathFinder {
 
   bool build(const NavMeshSettings& bs,
              const float* verts,
-             const int nverts,
+             int nverts,
              const int* tris,
-             const int ntris,
+             int ntris,
              const float* bmin,
              const float* bmax);
   bool build(const NavMeshSettings& bs, const esp::assets::MeshData& mesh);
@@ -302,15 +302,14 @@ class PathFinder {
    * maxSearchRadius if all locations within @ref maxSearchRadius are navigable
    */
   float distanceToClosestObstacle(const vec3f& pt,
-                                  const float maxSearchRadius = 2.0) const;
+                                  float maxSearchRadius = 2.0) const;
 
   /**
    * @brief Same as @ref distanceToClosestObstacle but returns additional
    * information.
    */
-  HitRecord closestObstacleSurfacePoint(
-      const vec3f& pt,
-      const float maxSearchRadius = 2.0) const;
+  HitRecord closestObstacleSurfacePoint(const vec3f& pt,
+                                        float maxSearchRadius = 2.0) const;
 
   /**
    * @brief Query whether or not a given location is navigable
@@ -325,7 +324,7 @@ class PathFinder {
    *
    * @return Whether or not @ref pt is navigable
    */
-  bool isNavigable(const vec3f& pt, const float maxYDelta = 0.5) const;
+  bool isNavigable(const vec3f& pt, float maxYDelta = 0.5) const;
 
   /**
    * Compute and return the total area of all NavMesh polygons
@@ -338,8 +337,8 @@ class PathFinder {
   std::pair<vec3f, vec3f> bounds() const;
 
   Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> getTopDownView(
-      const float metersPerPixel,
-      const float height);
+      float metersPerPixel,
+      float height);
 
   /**
    * @brief Returns a MeshData object containing triangulated NavMesh polys. The

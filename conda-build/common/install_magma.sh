@@ -1,3 +1,4 @@
+#!/bin/bash
 function install_92 {
     # Install MAGMA for CUDA 9.2
     pushd /tmp || exit

@@ -6,6 +6,7 @@
 #define ESP_PHYSICS_RIGIDOBJECTMANAGER_H
 
 #include "RigidBaseManager.h"
+#include "esp/physics/bullet/objectWrappers/ManagedBulletRigidObject.h"
 #include "esp/physics/objectWrappers/ManagedRigidObject.h"
 namespace esp {
 namespace physics {
@@ -27,13 +28,29 @@ class RigidObjectManager
    * to query @ref esp::metadata::managers::ObjectAttributesManager.
    * @param attachmentNode If supplied, attach the new physical object to an
    * existing SceneNode.
-   * @return the instanced object's ID, mapping to it in @ref
-   * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
+   * @return a copy of the instanced object, or nullptr.
    */
   std::shared_ptr<ManagedRigidObject> addObjectByHandle(
       const std::string& attributesHandle,
       scene::SceneNode* attachmentNode = nullptr,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
+
+  /**
+   * @brief Templated version of addObjectByHandle. Will cast result to
+   * appropriate dynamics library wrapper.
+   * @param attributesHandle The handle of the object attributes used as the key
+   * to query @ref esp::metadata::managers::ObjectAttributesManager.
+   * @param attachmentNode If supplied, attach the new physical object to an
+   * existing SceneNode.
+   * @return a copy of the instanced object, appropriately cast, or nullptr.
+   */
+  std::shared_ptr<ManagedBulletRigidObject> addBulletObjectByHandle(
+      const std::string& attributesHandle,
+      scene::SceneNode* attachmentNode = nullptr,
+      const std::string& lightSetup = DEFAULT_LIGHTING_KEY) {
+    return std::static_pointer_cast<ManagedBulletRigidObject>(
+        addObjectByHandle(attributesHandle, attachmentNode, lightSetup));
+  }
 
   /** @brief Instance a physical object from an object properties template in
    * the @ref esp::metadata::managers::ObjectAttributesManager by template
@@ -44,14 +61,29 @@ class RigidObjectManager
    * @param attachmentNode If supplied, attach the new physical object to an
    * existing SceneNode.
    * @param lightSetup An optional custom lightsetup for the object.
-   * @return the instanced object's ID, mapping to it in @ref
-   * PhysicsManager::existingObjects_ if successful, or @ref
-   * esp::ID_UNDEFINED.
+   * @return a copy of the instanced object, or nullptr.
    */
   std::shared_ptr<ManagedRigidObject> addObjectByID(
-      const int attributesID,
+      int attributesID,
       scene::SceneNode* attachmentNode = nullptr,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
+
+  /**
+   * @brief Templated version of addObjectByID. Will cast result to
+   * appropriate dynamics library wrapper.
+   * @param attributesID The ID of the object's template in @ref
+   * esp::metadata::managers::ObjectAttributesManager
+   * @param attachmentNode If supplied, attach the new physical object to an
+   * existing SceneNode.
+   * @return a copy of the instanced object, appropriately cast, or nullptr.
+   */
+  std::shared_ptr<ManagedBulletRigidObject> addBulletObjectByID(
+      const int attributesID,
+      scene::SceneNode* attachmentNode = nullptr,
+      const std::string& lightSetup = DEFAULT_LIGHTING_KEY) {
+    return std::static_pointer_cast<ManagedBulletRigidObject>(
+        addObjectByID(attributesID, attachmentNode, lightSetup));
+  }
 
   /**
    * @brief Overload of standard @ref
@@ -70,7 +102,7 @@ class RigidObjectManager
    */
 
   std::shared_ptr<ManagedRigidObject> removePhysObjectByID(
-      const int objectID,
+      int objectID,
       bool deleteObjectNode = true,
       bool deleteVisualNode = true);
 
@@ -95,6 +127,24 @@ class RigidObjectManager
       bool deleteVisualNode = true);
 
  protected:
+  /**
+   * @brief This method will remove rigid objects from physics manager.  The
+   * wrapper has already been removed by the time this method is called (this is
+   * called from @ref esp::core::ManagedContainerBase::deleteObjectInternal)
+   *
+   * @param objectID the ID of the managed object to remove
+   * @param objectHandle the string key of the managed object to remove.
+   */
+  void deleteObjectInternalFinalize(
+      int objectID,
+      CORRADE_UNUSED const std::string& objectHandle) override {
+    if (auto physMgr = this->getPhysicsManager()) {
+      if (physMgr->isValidRigidObjectId(objectID)) {
+        physMgr->removeObject(objectID);
+      }
+    }
+  }  // deleteObjectInternalFinalize
+
  public:
   ESP_SMART_POINTERS(RigidObjectManager)
 };
