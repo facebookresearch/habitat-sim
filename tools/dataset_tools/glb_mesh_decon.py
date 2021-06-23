@@ -365,6 +365,7 @@ def extract_stage_from_scene(
     stage_dest_dir: str,
     stage_tag: str,
     include_obj_dict: Dict[str, Set[str]],
+    build_glbs: bool,
     build_configs: bool,
 ):
     # Extract the stage mesh and its transform in the world
@@ -380,7 +381,9 @@ def extract_stage_from_scene(
 
     # export stage mesh result to glb file
     stage_dest_filename = stage_dest_filename_base + ".glb"
-    stage_graph.export(stage_dest_filename)
+
+    if build_glbs:
+        stage_graph.export(stage_dest_filename)
 
     if build_configs:
         # get relative path
@@ -411,6 +414,7 @@ def extract_objects_from_scene(
     object_dest_dir: str,
     objects_tag: str,
     exclude_obj_dict,
+    build_glbs: bool,
     build_configs: bool,
 ):
     objects_raw = scene_graph.graph.transforms.children_dict[objects_tag]
@@ -454,7 +458,8 @@ def extract_objects_from_scene(
         obj_dest_filename = obj_dest_filename_base + ".glb"
         # print("Object dest filename : {}".format(obj_dest_filename))
         # save extracted object mesh
-        object_scene.export(obj_dest_filename)
+        if build_glbs:
+            object_scene.export(obj_dest_filename)
 
         if build_configs:
             rel_obj_dest_filename = ut.transform_path_relative(
@@ -650,6 +655,7 @@ def main():
             STAGES_OUTPUT_DIR,
             STAGE_TAG,
             STAGE_INCLUDE_OBJ_DICT,
+            BUILD_STAGE_GLBS,
             BUILD_STAGE_CONFIGS,
         )
 
@@ -660,6 +666,7 @@ def main():
             OBJECTS_OUTPUT_DIR,
             OBJECTS_TAG,
             STAGE_INCLUDE_OBJ_DICT,
+            BUILD_OBJECT_GLBS,
             BUILD_OBJECT_CONFIGS,
         )
         # get counts of object instances
