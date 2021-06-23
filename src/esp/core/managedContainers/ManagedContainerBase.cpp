@@ -126,6 +126,48 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
   return res;
 }  // ManagedContainerBase::getObjectHandlesBySubStringPerType
 
+std::vector<std::string> ManagedContainerBase::getObjectInfoStrings(
+    const std::string& subStr,
+    bool contains) const {
+  // get all handles that match query elements first
+  std::vector<std::string> handles =
+      getObjectHandlesBySubstring(subStr, contains);
+  std::vector<std::string> res(handles.size() + 1);
+  if (handles.size() == 0) {
+    res[0] = "No " + objectType_ + " constructs available.";
+    return res;
+  }
+  int idx = 0;
+  for (const std::string& objectHandle : handles) {
+    // get the object
+    auto objPtr = getObjectInternal<AbstractManagedObject>(objectHandle);
+    if (idx == 0) {
+      res[idx++]
+          .append(objectType_)
+          .append(" Full name, Can delete?, Is locked?, ")
+          .append(objPtr->getObjectInfoHeader());
+    }
+    res[idx++]
+        .append(objectHandle)
+        .append(1, ',')
+        .append(((this->getIsUndeletable(objectHandle)) ? "False, " : "True, "))
+        .append(((this->getIsUserLocked(objectHandle)) ? "True, " : "False, "))
+        .append(objPtr->getObjectInfo());
+  }
+  return res;
+}  // ManagedContainerBase::getObjectInfoStrings
+
+std::string ManagedContainerBase::getObjectInfoCSVString(
+    const std::string& subStr,
+    bool contains) const {
+  std::vector<std::string> infoAra = getObjectInfoStrings(subStr, contains);
+  std::string res;
+  for (std::string& s : infoAra) {
+    res += s.append(1, '\n');
+  }
+  return res;
+}  // ManagedContainerBase::getObjectInfoCSVString
+
 std::string ManagedContainerBase::getUniqueHandleFromCandidatePerType(
     const std::map<int, std::string>& mapOfHandles,
     const std::string& name) const {

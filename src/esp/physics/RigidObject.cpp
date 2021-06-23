@@ -77,13 +77,13 @@ void RigidObject::resetStateFromSceneInstanceAttr(bool defaultCOMCorrection) {
   auto translate = sceneInstanceAttr->getTranslation();
   // get instance override value, if exists
   auto instanceCOMOrigin =
-      static_cast<metadata::managers::SceneInstanceTranslationOrigin>(
+      static_cast<metadata::attributes::SceneInstanceTranslationOrigin>(
           sceneInstanceAttr->getTranslationOrigin());
   if ((defaultCOMCorrection &&
        (instanceCOMOrigin !=
-        metadata::managers::SceneInstanceTranslationOrigin::COM)) ||
+        metadata::attributes::SceneInstanceTranslationOrigin::COM)) ||
       (instanceCOMOrigin ==
-       metadata::managers::SceneInstanceTranslationOrigin::AssetLocal)) {
+       metadata::attributes::SceneInstanceTranslationOrigin::AssetLocal)) {
     // if default COM correction is set and no object-based override, or if
     // Object set to correct for COM.
     translate -= sceneInstanceAttr->getRotation().transformVector(

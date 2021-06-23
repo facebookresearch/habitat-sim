@@ -383,5 +383,46 @@ attributes::SceneAttributes::ptr MetadataMediator::makeSceneAndReferenceStage(
   return sceneAttributes;
 }  // MetadataMediator::makeSceneAndReferenceStage
 
+std::string MetadataMediator::getDatasetsOverview() const {
+  // reserve space for info strings for all scene datasets
+  std::vector<std::string> sceneDatasetHandles =
+      sceneDatasetAttributesManager_->getObjectHandlesBySubstring("");
+  std::string res =
+      "Datasets : \n" +
+      attributes::SceneDatasetAttributes::getDatasetSummaryHeader() + "\n";
+  for (const std::string& handle : sceneDatasetHandles) {
+    res += sceneDatasetAttributesManager_->getObjectByHandle(handle)
+               ->getDatasetSummary();
+    res += '\n';
+  }
+
+  return res;
+}  // MetadataMediator::getDatasetNames
+
+std::string MetadataMediator::createDatasetReport(
+    const std::string& sceneDataset) const {
+  attributes::SceneDatasetAttributes::ptr ds;
+  if (sceneDataset == "") {
+    ds = sceneDatasetAttributesManager_->getObjectByHandle(activeSceneDataset_);
+
+  } else if (sceneDatasetAttributesManager_->getObjectLibHasHandle(
+                 sceneDataset)) {
+    ds = sceneDatasetAttributesManager_->getObjectByHandle(sceneDataset);
+  } else {
+    // unknown dataset
+    LOG(ERROR) << "::createDatasetReport : Dataset " << sceneDataset
+               << " is not found in the MetadataMediator.  Aborting.";
+    return "Requeseted SceneDataset `" + sceneDataset + "` unknown.";
+  }
+  std::string res{"Scene Dataset"};
+
+  res.append(ds->getObjectInfoHeader())
+      .append(1, '\n')
+      .append(ds->getObjectInfo())
+      .append(1, '\n');
+  return res;
+
+}  // MetadataMediator::const std::string MetadataMediator::createDatasetReport(
+
 }  // namespace metadata
 }  // namespace esp

@@ -175,8 +175,9 @@ class ManagedContainer : public ManagedContainerBase {
 
   /**
    * @brief Get a reference to the managed object identified by the
-   * managedObjectID.  Should only be used internally. Users should
-   * only ever access copies of managed objects.
+   * managedObjectID. Should only be used internally - Users should
+   * only ever access copies of managed objects, unless this managed container's
+   * @p Access policy is Share.
    *
    * Can be used to manipulate a managed object before instancing new objects.
    * @param managedObjectID The ID of the managed object. Is mapped to the key
@@ -195,8 +196,9 @@ class ManagedContainer : public ManagedContainerBase {
 
   /**
    * @brief Get a reference to the managed object identified by the passed
-   * objectHandle.  Should only be used internally. Users should only ever
-   * access copies of managed objects.
+   * objectHandle. Should only be used internally - Users should
+   * only ever access copies of managed objects, unless this managed container's
+   * @p Access policy is Share.
    *
    * @param objectHandle The key referencing the managed object in @ref
    * objectLibrary_.
@@ -208,7 +210,6 @@ class ManagedContainer : public ManagedContainerBase {
             objectHandle, "<" + this->objectType_ + ">::getObjectByHandle")) {
       return nullptr;
     }
-
     return getObjectInternal<T>(objectHandle);
   }  // ManagedContainer::getObject
 
@@ -455,6 +456,7 @@ class ManagedContainer : public ManagedContainerBase {
 
  protected:
   //======== Internally accessed functions ========
+
   /**
    * @brief Perform post creation registration if specified.
    *
@@ -676,9 +678,9 @@ auto ManagedContainer<T, Access>::removeObjectInternal(
     return nullptr;
   }
   std::string msg;
-  if (this->undeletableObjectNames_.count(objectHandle) > 0) {
+  if (this->getIsUndeletable(objectHandle)) {
     msg = "Required Undeletable Managed Object";
-  } else if (this->userLockedObjectNames_.count(objectHandle) > 0) {
+  } else if (this->getIsUserLocked(objectHandle)) {
     msg = "User-locked Object.  To delete managed object, unlock it";
   }
   if (msg.length() != 0) {
