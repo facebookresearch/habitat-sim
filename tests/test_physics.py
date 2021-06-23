@@ -1657,7 +1657,7 @@ def test_rigid_constraints():
             robot2.get_link_scene_node(constraint_settings_2.link_id_b).rotation,
         )
         # NOTE: This error is a bit high, but constraint is doing its best
-        assert abs(float(angle_error)) < 0.3
+        assert abs(float(angle_error)) < 0.37
 
         # produce some test debug video
         if produce_debug_video:
