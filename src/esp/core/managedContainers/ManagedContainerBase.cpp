@@ -199,7 +199,7 @@ std::string ManagedContainerBase::getUniqueHandleFromCandidatePerType(
       const std::string digitStr = vals.back();
       if (digitStr.empty() ||
           (std::find_if(digitStr.begin(), digitStr.end(), [](unsigned char c) {
-             return !std::isdigit(c);
+             return std::isdigit(c) == 0;
            }) != digitStr.end())) {
         // if string is not a valid representation of an integer, skip this name
         // candidate
