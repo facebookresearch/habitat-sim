@@ -52,6 +52,21 @@ void LightLayoutAttributesManager::setValsFromJSONDoc(
           Cr::Utility::Directory::splitExtension(filenameExt).first)
           .first;
   LightInstanceAttributes::ptr lightInstanceAttribs = nullptr;
+
+  // check if positive scaling is set
+  bool hasPosScale = io::jsonIntoSetter<double>(
+      jsonConfig, "positive_intensity_scale",
+      [lightAttribs](double positive_intensity_scale) {
+        lightAttribs->setPositiveIntensityScale(positive_intensity_scale);
+      });
+  // check if positive scaling is set
+  bool hasNegScale = io::jsonIntoSetter<double>(
+      jsonConfig, "negative_intensity_scale",
+      [lightAttribs](double negative_intensity_scale) {
+        lightAttribs->setNegativeIntensityScale(negative_intensity_scale);
+      });
+
+  // scaling values are required for light instance processing
   bool hasLights =
       (jsonConfig.HasMember("lights") && jsonConfig["lights"].IsObject());
 
@@ -86,7 +101,8 @@ void LightLayoutAttributesManager::setValsFromJSONDoc(
   }
   // check for user defined attributes at main attributes level
   bool hasUserConfig = this->parseUserDefinedJsonVals(lightAttribs, jsonConfig);
-  if (hasLights || hasUserConfig) {
+
+  if (hasLights || hasUserConfig || hasNegScale || hasPosScale) {
     // register if anything worth registering was found
     this->postCreateRegister(lightAttribs, true);
   } else {
@@ -260,6 +276,10 @@ gfx::LightSetup LightLayoutAttributesManager::createLightSetupFromAttributes(
   attributes::LightLayoutAttributes::ptr lightLayoutAttributes =
       this->getObjectByHandle(lightConfigName);
   if (lightLayoutAttributes != nullptr) {
+    double posIntensityScale =
+        lightLayoutAttributes->getPositiveIntensityScale();
+    double negIntensityScale =
+        lightLayoutAttributes->getNegativeIntensityScale();
     int numLightInstances = lightLayoutAttributes->getNumLightInstances();
     if (numLightInstances == 0) {
       // setup default LightInfo instances - lifted from LightSetup.cpp.
@@ -281,7 +301,10 @@ gfx::LightSetup LightLayoutAttributesManager::createLightSetupFromAttributes(
         const gfx::LightPositionModel posModelEnum =
             static_cast<gfx::LightPositionModel>(lightAttr->getPositionModel());
         const Magnum::Color3 color =
-            lightAttr->getColor() * lightAttr->getIntensity();
+            lightAttr->getColor() *
+            (lightAttr->getIntensity() > 0 ? posIntensityScale
+                                           : negIntensityScale) *
+            lightAttr->getIntensity();
         Magnum::Vector4 lightVector;
         switch (typeEnum) {
           case gfx::LightType::Point: {
