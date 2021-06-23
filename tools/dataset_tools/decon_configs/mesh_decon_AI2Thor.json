@@ -6,6 +6,13 @@
   "stage_tag": "Structure",
   "objects_tag": "Objects",
   "lighting_tag": "Lighting",
+  "build_scene_configs": true,
+  "build_stage_configs": true,
+  "build_object_configs": true,
+  "build_lighting_configs": true,
+  "build_stage_glbs": true,
+  "build_object_glbs": true,
+  "objects_all_static": false,
   "stage_include_obj_substr": [
     "floor_",
     "window",

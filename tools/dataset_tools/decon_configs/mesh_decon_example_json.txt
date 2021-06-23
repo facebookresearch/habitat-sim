@@ -1,0 +1,53 @@
+{
+  "dataset_name": <enter the name of the dataset here>,
+  "dataset_rel_to_home": <boolean : whether user specified paths are relative to home dir or cwd>,
+  "dataset_src_subdir": <source dataset subdirectory, either relative to home dir or cwd>,
+  "scenes_src_subdir": <subdirectory within dataset_src_subdir holding raw aggregate scenes>,
+
+  "stage_tag": <Case sensitive tag within scenegraph of glb denoting subtree of nodes holding stage-based assets>,
+  "objects_tag": <Case sensitive tag within scenegraph of glb denoting subtree of nodes holding object assets>,
+  "lighting_tag": <Case sensitive tag within scenegraph of glb denoting subtree of nodes lighting info/transforms>,
+
+  "build_scene_configs" : <boolean : whether or not to build the scene instance config json files. Defaults to true>,
+  "build_stage_configs" : <boolean : whether or not to build the stage config json files. Defaults to true>,
+  "build_object_configs" : <boolean : whether or not to build the object config json files. Defaults to true>,
+  "build_lighting_configs" : <boolean : whether or not to build the lighting config json files. Defaults to true>,
+
+  "build_stage_glbs" : <boolean : whether or not to build the extracted stage glbs. Defaults to true>,
+  "build_object_glbs" : <boolean : whether or not to build the extracted object glbs. Defaults to true>,
+
+  "objects_all_static" : <boolean : whether or not all objects should be set to be static in scene instance config.
+                          Defaults to false. Ignored if not building scene instance configs.>,
+
+  "stage_include_obj_substr": [
+    <list of node name substrings of constructs found in "objects_tag" subtree that should be added to stage>
+  ],
+  "obj_override_names": [
+    <list of node name substrings of constructs found in "stage_tag" subtree that should be added to objects and
+    not included in stage.  This will override entries swept up by substr search in 'stage_include_obj_substr'>
+  ],
+  "obj_exclude_names": [
+    <list of node name substrings of constructs found in scene graph that we do not want to create either as
+    objects or components of the stage.  This will override entries swept up by substr search in both 'obj_override_names'
+    and 'stage_include_obj_substr'>
+  ],
+  "obj_created_static": [
+    <list of node name substrings of constructs we wish to create as objects but that should be specified as static>
+  ],
+
+  "default_attributes": {
+    <default attributes settings, used to initialize configs before any stage or object-specific values are set>
+    "stages": {
+      <default values for stage configs and stage default section of scene dataset configs>
+    },
+    "objects": {
+      <default values for object configs and object default section of scene dataset configs>
+    },
+    "scene_instances": {
+      <default value for scene instance configs and scene default section of scene dataset configs>
+    },
+    "light_setups": {
+      <default light setup values for scene dataset config>
+    }
+  }
+}
