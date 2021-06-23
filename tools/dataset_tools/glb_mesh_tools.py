@@ -373,8 +373,7 @@ def extract_obj_mesh_from_scenegraph(
     object that might be connected via the scene graph.
     :param recurse_subnodes: Whether or not to recurse through node tree to leafs
     or just use the first level to build edge set.
-    :return: The new Scene object corresponding to scene_object_tag,
-    and the World-space transformation of the object withiin the parent Scene.
+    :return: The new Scene object corresponding to scene_object_tag.
     """
     # world-space transformation of object in scene
     # idx 1 is geometry
@@ -641,12 +640,21 @@ def extract_light_from_json(
 def extract_lighting_from_gltf(scene_filename_glb: str, lights_tag: str):
 
     # Get json from glb file
+    # TODO : translation/rotation information for lights to our format of position/direction
+    print(
+        "glb_mesh_tools.extract_lighting_from_gltf (Still WIP) : {}".format(
+            scene_filename_glb
+        )
+    )
     base_json = extract_json_from_glb(scene_filename_glb)
     # if nothing found, return empty res
     if len(base_json) == 0:
         return {}
     for k, v in base_json.items():
-        print("K: {} : len V : {}".format(k, len(v)))
+        if hasattr(v, "__len__"):
+            print("K: {} : len V : {}".format(k, len(v)))
+        else:
+            print("K: {} : V : {}".format(k, v))
     # list of lights - accessed in scene_graph by idx
     lights_list = base_json["extensions"]["KHR_lights_punctual"]["lights"]
     # print("Number of lights: {}".format(len(lights_list)))
