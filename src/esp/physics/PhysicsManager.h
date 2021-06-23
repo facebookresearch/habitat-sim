@@ -416,7 +416,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * Otherwise detaches the object from simulation. Is not considered if
    * deleteObjectNode==true.
    */
-  virtual void removeObject(const int objectId,
+  virtual void removeObject(int objectId,
                             bool deleteObjectNode = true,
                             bool deleteVisualNode = true);
 

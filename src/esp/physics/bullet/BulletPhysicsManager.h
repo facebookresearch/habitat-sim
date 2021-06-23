@@ -143,7 +143,7 @@ class BulletPhysicsManager : public PhysicsManager {
    * @brief Override of @ref PhysicsManager::removeObject to also remove any
    * active Bullet physics constraints for the object.
    */
-  void removeObject(const int objectId,
+  void removeObject(int objectId,
                     bool deleteObjectNode = true,
                     bool deleteVisualNode = true) override;
 
