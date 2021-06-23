@@ -937,7 +937,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
               "PhysicsManager::getRigidConstraintSettings - No RigidConstraint "
               "exists with constraintId = "
                   << constraintId);
-    return *rigidConstraintSettings_.at(constraintId);
+    return rigidConstraintSettings_.at(constraintId);
   }
 
  protected:
@@ -1098,8 +1098,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   std::vector<int> recycledObjectIDs_;
 
   //! maps constraint ids to their settings
-  std::unordered_map<int, RigidConstraintSettings::uptr>
-      rigidConstraintSettings_;
+  std::unordered_map<int, RigidConstraintSettings> rigidConstraintSettings_;
 
   //! Utilities
 

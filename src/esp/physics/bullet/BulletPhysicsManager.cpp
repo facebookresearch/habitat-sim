@@ -650,8 +650,7 @@ int BulletPhysicsManager::createRigidConstraint(
             "::createRigidConstraint - Must provide a valid id for objectA");
 
   // cache the settings
-  rigidConstraintSettings_.emplace(
-      nextConstraintId_, std::make_unique<RigidConstraintSettings>(settings));
+  rigidConstraintSettings_.emplace(nextConstraintId_, settings);
 
   // setup body B in advance of bifurcation if necessary
   btRigidBody* rbB = nullptr;
@@ -788,40 +787,40 @@ void BulletPhysicsManager::updateRigidConstraint(
             "::updateRigidConstraint - Provided invalid constraintId = "
                 << constraintId);
   auto& cachedSettings = rigidConstraintSettings_.at(constraintId);
-  ESP_CHECK(cachedSettings->objectIdA == settings.objectIdA,
+  ESP_CHECK(cachedSettings.objectIdA == settings.objectIdA,
             "::updateRigidConstraint - RigidConstraintSettings::objectIdA must "
             "match existing settings ("
-                << settings.objectIdA << " vs. " << cachedSettings->objectIdA
+                << settings.objectIdA << " vs. " << cachedSettings.objectIdA
                 << ")");
-  ESP_CHECK(cachedSettings->objectIdB == settings.objectIdB,
+  ESP_CHECK(cachedSettings.objectIdB == settings.objectIdB,
             "::updateRigidConstraint - RigidConstraintSettings::objectIdB must "
             "match existing settings ("
-                << settings.objectIdB << " vs. " << cachedSettings->objectIdB
+                << settings.objectIdB << " vs. " << cachedSettings.objectIdB
                 << ")");
-  ESP_CHECK(cachedSettings->linkIdA == settings.linkIdA,
+  ESP_CHECK(cachedSettings.linkIdA == settings.linkIdA,
             "::updateRigidConstraint - RigidConstraintSettings::linkIdA must "
             "match existing settings ("
-                << settings.linkIdA << " vs. " << cachedSettings->linkIdA
+                << settings.linkIdA << " vs. " << cachedSettings.linkIdA
                 << ")");
-  ESP_CHECK(cachedSettings->linkIdB == settings.linkIdB,
+  ESP_CHECK(cachedSettings.linkIdB == settings.linkIdB,
             "::updateRigidConstraint - RigidConstraintSettings::linkIdB must "
             "match existing settings ("
-                << settings.linkIdB << " vs. " << cachedSettings->linkIdB
+                << settings.linkIdB << " vs. " << cachedSettings.linkIdB
                 << ")");
-  ESP_CHECK(cachedSettings->constraintType == settings.constraintType,
+  ESP_CHECK(cachedSettings.constraintType == settings.constraintType,
             "::updateRigidConstraint - RigidConstraintSettings::constraintType "
             "must match existing settings ("
                 << int(settings.constraintType) << " vs. "
-                << int(cachedSettings->constraintType) << ")");
+                << int(cachedSettings.constraintType) << ")");
 
   if (articulatedP2PConstraints_.count(constraintId) > 0) {
     // NOTE: oddly, pivotA cannot be set through the API for this constraint
     // type.
-    ESP_CHECK(cachedSettings->pivotA == settings.pivotA,
+    ESP_CHECK(cachedSettings.pivotA == settings.pivotA,
               "::updateRigidConstraint - RigidConstraintSettings::pivotA must "
               "match existing settings for multibody P2P constraints. Instead, "
               "remove and create to update this parameter. ("
-                  << settings.pivotA << " vs. " << cachedSettings->pivotA
+                  << settings.pivotA << " vs. " << cachedSettings.pivotA
                   << ")");
     // TODO: Either fix the Bullet API or do the add/remove for the user here.
     articulatedP2PConstraints_.at(constraintId)
@@ -862,7 +861,7 @@ void BulletPhysicsManager::updateRigidConstraint(
     CORRADE_INTERNAL_ASSERT_UNREACHABLE();
   }
   // cache the new settings
-  cachedSettings = std::make_unique<RigidConstraintSettings>(settings);
+  rigidConstraintSettings_[constraintId] = settings;
 }
 
 void BulletPhysicsManager::removeRigidConstraint(int constraintId) {
