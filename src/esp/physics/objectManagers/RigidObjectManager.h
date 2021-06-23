@@ -64,7 +64,7 @@ class RigidObjectManager
    * @return a copy of the instanced object, or nullptr.
    */
   std::shared_ptr<ManagedRigidObject> addObjectByID(
-      const int attributesID,
+      int attributesID,
       scene::SceneNode* attachmentNode = nullptr,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
 
@@ -102,7 +102,7 @@ class RigidObjectManager
    */
 
   std::shared_ptr<ManagedRigidObject> removePhysObjectByID(
-      const int objectID,
+      int objectID,
       bool deleteObjectNode = true,
       bool deleteVisualNode = true);
 
