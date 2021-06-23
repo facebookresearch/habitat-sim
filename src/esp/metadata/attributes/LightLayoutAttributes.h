@@ -176,6 +176,36 @@ class LightLayoutAttributes : public AbstractAttributes {
   explicit LightLayoutAttributes(const std::string& handle = "");
 
   /**
+   * @brief Set a scale of all positive intensities by specified amount.
+   * This is to make simple, sweeping adjustments to scene lighting in habitat.
+   */
+  void setPositiveIntensityScale(double positive_intensity_scale) {
+    setDouble("positive_intensity_scale", positive_intensity_scale);
+  }
+  /**
+   * @brief Get a scale of all positive intensities by specified amount.
+   * This is to make simple, sweeping adjustments to scene lighting in habitat.
+   */
+  double getPositiveIntensityScale() const {
+    return getDouble("positive_intensity_scale");
+  }
+
+  /**
+   * @brief Set a scale of all negative intensities by specified amount.
+   * This is to make simple, sweeping adjustments to scene lighting in habitat.
+   */
+  void setNegativeIntensityScale(double negative_intensity_scale) {
+    setDouble("negative_intensity_scale", negative_intensity_scale);
+  }
+  /**
+   * @brief Get a scale of all negative intensities by specified amount.
+   * This is to make simple, sweeping adjustments to scene lighting in habitat.
+   */
+  double getNegativeIntensityScale() const {
+    return getDouble("negative_intensity_scale");
+  }
+
+  /**
    * @brief Add a light instance to this lighting layout
    */
   void addLightInstance(const LightInstanceAttributes::ptr& _lightInstance) {
