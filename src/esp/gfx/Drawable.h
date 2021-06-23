@@ -143,6 +143,8 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
   static uint64_t drawableIdCounter;
   uint64_t drawableId_;
 
+  bool glMeshExists() const { return mesh_ != nullptr; }
+
  private:
   Magnum::GL::Mesh* mesh_ = nullptr;
 };

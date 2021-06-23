@@ -23,7 +23,7 @@ GenericDrawable::GenericDrawable(scene::SceneNode& node,
                                  const Mn::ResourceKey& lightSetupKey,
                                  const Mn::ResourceKey& materialDataKey,
                                  DrawableGroup* group /* = nullptr */,
-                                 bool createRenderer /* = true */)
+                                 bool isRendererCreated /* = true */)
     : Drawable{node, mesh, DrawableType::Generic, group},
       shaderManager_{shaderManager},
       lightSetup_{shaderManager.get<LightSetup>(lightSetupKey)},
@@ -59,8 +59,6 @@ GenericDrawable::GenericDrawable(scene::SceneNode& node,
   if (meshAttributeFlags & Drawable::Flag::HasVertexColor) {
     flags_ |= Mn::Shaders::PhongGL::Flag::VertexColor;
   }
-
-  isRendererCreated = createRenderer;
 
   // update the shader early here to to avoid doing it during the render loop
   if (isRendererCreated) {
@@ -118,11 +116,8 @@ void GenericDrawable::updateShaderLightingParameters(
 
 void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
                            Mn::SceneGraph::Camera3D& camera) {
-  if (!isRendererCreated) {
-    return;
-  }
-  // Check that getMesh() doesn't error, i.e. that a mesh exists.
-  getMesh();
+  CORRADE_ASSERT(glMeshExists(),
+                 "GenericDrawable::draw : GL mesh doesn't exist", );
 
   updateShader();
 
@@ -162,10 +157,6 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
 }
 
 void GenericDrawable::updateShader() {
-  // Block the function if there is no renderer. Otherwise this will segfault.
-  // We don't have use for a shader anyways if we are not rendering anything.
-  CORRADE_INTERNAL_ASSERT(isRendererCreated);
-
   Mn::UnsignedInt lightCount = lightSetup_->size();
 
   if (!shader_ || shader_->lightCount() != lightCount ||
