@@ -575,6 +575,10 @@ def test_objects():
 
 
 def main():
+    # Load configuration describing the scene meshes we wish to deconstruct into stages and objects
+    load_decon_global_config_values(MESH_DECON_CONFIG_JSON)
+    # whether a successful load occurred or not, we need to make the destination directories
+    build_required_directories()
 
     # get listing of all scene glbs
     file_list = ut.get_files_matching_regex(SCENES_SRC_DIR)
@@ -637,6 +641,7 @@ def main():
         if BUILD_SG_DIAGNOSTIC:
             build_scene_graph_diagnostic(scene_graph, scene_name_base)
 
+        # Empty string corresponds to default lighting within habitat sim
         lighting_setup_config_name = ""
         if BUILD_LIGHTING_CONFIGS:
             # extract all lighting configs in the scene
@@ -673,15 +678,18 @@ def main():
         for elem in obj_instance_config_list:
             object_instance_count_dict[elem["template_name"]] += 1
 
-        # compose the scene instance configuration JSON
-        scene_instance_dict = {
-            "stage_instance": stage_instance_config,
-            "object_instances": obj_instance_config_list,
-            "default_lighting": lighting_setup_config_name,
-        }
+        if BUILD_SCENE_CONFIGS:
+            # compose the scene instance configuration JSON
+            scene_instance_dict = {
+                "stage_instance": stage_instance_config,
+                "object_instances": obj_instance_config_list,
+                "default_lighting": lighting_setup_config_name,
+            }
 
-        # save scene instance configuration
-        ut.mod_json_val_and_save(("", abs_scene_instance_filename, scene_instance_dict))
+            # save scene instance configuration
+            ut.mod_json_val_and_save(
+                ("", abs_scene_instance_filename, scene_instance_dict)
+            )
 
         # resave updated object counts for every scene, in case some scene fails parsing
         # order results in result json
@@ -695,9 +703,4 @@ def main():
 
 
 if __name__ == "__main__":
-    # Load configuration describing the scene meshes we wish to deconstruct into stages and objects
-    load_decon_global_config_values(MESH_DECON_CONFIG_JSON)
-    # whether a successful load occurred or not, we need to make the destination directories
-    build_required_directories()
-
     main()
