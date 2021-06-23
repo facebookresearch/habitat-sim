@@ -1080,8 +1080,6 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    */
   std::map<int, RigidObject::ptr> existingObjects_;
 
-  // TODO: should these be separate maps or somehow combined? What about
-  // ids?
   /** @brief Maps articulated object IDs to all existing physical object
    * instances in the world.
    */

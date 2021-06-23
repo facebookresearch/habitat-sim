@@ -314,11 +314,14 @@ class BulletPhysicsManager : public PhysicsManager {
   //! counter for constraint id generation
   int nextConstraintId_ = 0;
   //! caches for various types of Bullet rigid constraint objects.
-  std::unordered_map<int, btMultiBodyPoint2Point*> articulatedP2PConstraints_;
-  std::unordered_map<int, btMultiBodyFixedConstraint*>
+  std::unordered_map<int, std::unique_ptr<btMultiBodyPoint2Point>>
+      articulatedP2PConstraints_;
+  std::unordered_map<int, std::unique_ptr<btMultiBodyFixedConstraint>>
       articulatedFixedConstraints_;
-  std::unordered_map<int, btPoint2PointConstraint*> rigidP2PConstraints_;
-  std::unordered_map<int, btFixedConstraint*> rigidFixedConstraints_;
+  std::unordered_map<int, std::unique_ptr<btPoint2PointConstraint>>
+      rigidP2PConstraints_;
+  std::unordered_map<int, std::unique_ptr<btFixedConstraint>>
+      rigidFixedConstraints_;
   //! when constraining objects to the global frame, a dummy object with 0 mass
   //! is required.
   std::unique_ptr<btRigidBody> globalFrameObject = nullptr;

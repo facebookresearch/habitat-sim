@@ -31,13 +31,8 @@ BulletPhysicsManager::BulletPhysicsManager(
 BulletPhysicsManager::~BulletPhysicsManager() {
   LOG(INFO) << "Deconstructing BulletPhysicsManager";
 
-  // NOTE: rigid constraints are removed with their objects
-  for (auto& object : existingObjects_) {
-    removeObject(object.first);
-  }
-  for (auto& object : existingArticulatedObjects_) {
-    removeArticulatedObject(object.first);
-  }
+  existingObjects_.clear();
+  existingArticulatedObjects_.clear();
   staticStageObject_.reset();
 }
 
@@ -709,38 +704,39 @@ int BulletPhysicsManager::createRigidConstraint(
     // construct a multibody constraint
     if (settings.constraintType == RigidConstraintType::PointToPoint) {
       // point to point constraint
-      btMultiBodyPoint2Point* p2p = nullptr;
+      std::unique_ptr<btMultiBodyPoint2Point> p2p;
       if (mbB != nullptr) {
         // AO <-> AO constraint
-        p2p = new btMultiBodyPoint2Point(
+        p2p = std::make_unique<btMultiBodyPoint2Point>(
             mbA, settings.linkIdA, mbB, settings.linkIdB,
             btVector3(settings.pivotA), btVector3(settings.pivotB));
       } else {
         // rigid object or global constraint
-        p2p = new btMultiBodyPoint2Point(mbA, settings.linkIdA, rbB,
-                                         btVector3(settings.pivotA),
-                                         btVector3(settings.pivotB));
+        p2p = std::make_unique<btMultiBodyPoint2Point>(
+            mbA, settings.linkIdA, rbB, btVector3(settings.pivotA),
+            btVector3(settings.pivotB));
       }
-      bWorld_->addMultiBodyConstraint(p2p);
-      articulatedP2PConstraints_.emplace(nextConstraintId_, p2p);
+      bWorld_->addMultiBodyConstraint(p2p.get());
+      articulatedP2PConstraints_.emplace(nextConstraintId_, std::move(p2p));
     } else {
       // fixed constraint
-      btMultiBodyFixedConstraint* fixedConstraint = nullptr;
+      std::unique_ptr<btMultiBodyFixedConstraint> fixedConstraint;
       if (mbB != nullptr) {
         // AO <-> AO constraint
-        fixedConstraint = new btMultiBodyFixedConstraint(
+        fixedConstraint = std::make_unique<btMultiBodyFixedConstraint>(
             mbA, settings.linkIdA, mbB, settings.linkIdB,
             btVector3(settings.pivotA), btVector3(settings.pivotB),
             btMatrix3x3(settings.frameA), btMatrix3x3(settings.frameB));
       } else {
         // rigid object or global constraint
-        fixedConstraint = new btMultiBodyFixedConstraint(
+        fixedConstraint = std::make_unique<btMultiBodyFixedConstraint>(
             mbA, settings.linkIdA, rbB, btVector3(settings.pivotA),
             btVector3(settings.pivotB), btMatrix3x3(settings.frameA),
             btMatrix3x3(settings.frameB));
       }
-      bWorld_->addMultiBodyConstraint(fixedConstraint);
-      articulatedFixedConstraints_.emplace(nextConstraintId_, fixedConstraint);
+      bWorld_->addMultiBodyConstraint(fixedConstraint.get());
+      articulatedFixedConstraints_.emplace(nextConstraintId_,
+                                           std::move(fixedConstraint));
     }
   } else {
     ESP_CHECK(
@@ -764,19 +760,24 @@ int BulletPhysicsManager::createRigidConstraint(
     // construct a rigidbody constraint
     if (settings.constraintType == RigidConstraintType::PointToPoint) {
       // point to point
-      btPoint2PointConstraint* p2p = new btPoint2PointConstraint(
-          *rbA, *rbB, btVector3(settings.pivotA), btVector3(settings.pivotB));
-      bWorld_->addConstraint(p2p);
-      rigidP2PConstraints_.emplace(nextConstraintId_, p2p);
+      std::unique_ptr<btPoint2PointConstraint> p2p =
+          std::make_unique<btPoint2PointConstraint>(*rbA, *rbB,
+                                                    btVector3(settings.pivotA),
+                                                    btVector3(settings.pivotB));
+      bWorld_->addConstraint(p2p.get());
+      rigidP2PConstraints_.emplace(nextConstraintId_, std::move(p2p));
     } else {
       // fixed
-      btFixedConstraint* fixedConstraint = new btFixedConstraint(
-          *rbA, *rbB,
-          btTransform(btMatrix3x3(settings.frameA), btVector3(settings.pivotA)),
-          btTransform(btMatrix3x3(settings.frameB),
-                      btVector3(settings.pivotB)));
-      bWorld_->addConstraint(fixedConstraint);
-      rigidFixedConstraints_.emplace(nextConstraintId_, fixedConstraint);
+      std::unique_ptr<btFixedConstraint> fixedConstraint =
+          std::make_unique<btFixedConstraint>(
+              *rbA, *rbB,
+              btTransform(btMatrix3x3(settings.frameA),
+                          btVector3(settings.pivotA)),
+              btTransform(btMatrix3x3(settings.frameB),
+                          btVector3(settings.pivotB)));
+      bWorld_->addConstraint(fixedConstraint.get());
+      rigidFixedConstraints_.emplace(nextConstraintId_,
+                                     std::move(fixedConstraint));
     }
   }
 
@@ -875,21 +876,17 @@ void BulletPhysicsManager::updateRigidConstraint(
 void BulletPhysicsManager::removeRigidConstraint(int constraintId) {
   if (articulatedP2PConstraints_.count(constraintId) != 0u) {
     bWorld_->removeMultiBodyConstraint(
-        articulatedP2PConstraints_.at(constraintId));
-    delete articulatedP2PConstraints_.at(constraintId);
+        articulatedP2PConstraints_.at(constraintId).get());
     articulatedP2PConstraints_.erase(constraintId);
   } else if (rigidP2PConstraints_.count(constraintId) != 0u) {
-    bWorld_->removeConstraint(rigidP2PConstraints_.at(constraintId));
-    delete rigidP2PConstraints_.at(constraintId);
+    bWorld_->removeConstraint(rigidP2PConstraints_.at(constraintId).get());
     rigidP2PConstraints_.erase(constraintId);
   } else if (articulatedFixedConstraints_.count(constraintId) != 0u) {
     bWorld_->removeMultiBodyConstraint(
-        articulatedFixedConstraints_.at(constraintId));
-    delete articulatedFixedConstraints_.at(constraintId);
+        articulatedFixedConstraints_.at(constraintId).get());
     articulatedFixedConstraints_.erase(constraintId);
   } else if (rigidFixedConstraints_.count(constraintId) != 0u) {
-    bWorld_->removeConstraint(rigidFixedConstraints_.at(constraintId));
-    delete rigidFixedConstraints_.at(constraintId);
+    bWorld_->removeConstraint(rigidFixedConstraints_.at(constraintId).get());
     rigidFixedConstraints_.erase(constraintId);
   } else {
     LOG(ERROR) << "removeRigidConstraint - No constraint with constraintId = "
