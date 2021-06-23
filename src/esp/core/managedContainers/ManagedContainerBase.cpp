@@ -171,25 +171,43 @@ std::string ManagedContainerBase::getObjectInfoCSVString(
 std::string ManagedContainerBase::getUniqueHandleFromCandidatePerType(
     const std::map<int, std::string>& mapOfHandles,
     const std::string& name) const {
-  // find all existing values with passed name - this
-  std::vector<std::string> resVals =
+  // find all existing values with passed name - these should be a list
+  // of existing instances of this object name.  We are going to go through
+  // all of these names and find the "last" instance, meaning the highest count.
+  std::vector<std::string> objHandles =
       this->getObjectHandlesBySubStringPerType(mapOfHandles, name, true);
 
   int incr = 0;
-  // default to illegal apple/windows character
+  // use this as pivot character - the last instance of this character in any
+  // object instance name will be the partition between the name and the count.
   char pivotChar = ':';
-#if __linux__
-  pivotChar = '/';
-#endif
-  if (resVals.size() != 0) {
+
+  if (objHandles.size() != 0) {
     // handles exist with passed substring.  Find highest handle increment, add
     // 1 and use for new name 1, build new handle
-    for (const std::string& s : resVals) {
+    for (const std::string& objName : objHandles) {
+      // make sure pivot character is found in name
+      if (objName.find(pivotChar) == std::string::npos) {
+        continue;
+      }
       // split string on underscore, last value will be string of highest incr
       // value existing.
-      std::vector<std::string> vals = Cr::Utility::String::split(s, pivotChar);
-      // if any exist, all are expected to end
-      int new_incr = std::stoi(vals.back());
+      std::vector<std::string> vals =
+          Cr::Utility::String::split(objName, pivotChar);
+      // if any exist, check that the last element in split list is a string rep
+      // of a valid integer count (count is always positive)
+      const std::string digitStr = vals.back();
+      if (digitStr.empty() ||
+          (std::find_if(digitStr.begin(), digitStr.end(), [](unsigned char c) {
+             return !std::isdigit(c);
+           }) != digitStr.end())) {
+        // if string is not a valid representation of an integer, skip this name
+        // candidate
+        continue;
+      }
+      // by here, all are expected to have an integer count as the component
+      // past the final pivot.
+      int new_incr = std::stoi(digitStr);
 
       if (new_incr >= incr) {
         incr = new_incr + 1;
