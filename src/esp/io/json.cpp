@@ -19,7 +19,9 @@ namespace esp {
 namespace io {
 
 bool writeJsonToFile(const JsonDocument& document,
-                     const std::string& filepath) {
+                     const std::string& filepath,
+                     bool usePrettyWriter,
+                     int maxDecimalPlaces) {
   assert(!filepath.empty());
   std::string outFilePath = filepath;
   if (!Cr::Utility::String::endsWith(outFilePath, ".json")) {
@@ -34,8 +36,20 @@ bool writeJsonToFile(const JsonDocument& document,
   char writeBuffer[65536];
   rapidjson::FileWriteStream os(f, writeBuffer, sizeof(writeBuffer));
 
-  rapidjson::PrettyWriter<rapidjson::FileWriteStream> writer(os);
-  bool writeSuccess = document.Accept(writer);
+  bool writeSuccess = false;
+  if (usePrettyWriter) {
+    rapidjson::PrettyWriter<rapidjson::FileWriteStream> writer(os);
+    if (maxDecimalPlaces != -1) {
+      writer.SetMaxDecimalPlaces(maxDecimalPlaces);
+    }
+    writeSuccess = document.Accept(writer);
+  } else {
+    rapidjson::Writer<rapidjson::FileWriteStream> writer(os);
+    if (maxDecimalPlaces != -1) {
+      writer.SetMaxDecimalPlaces(maxDecimalPlaces);
+    }
+    writeSuccess = document.Accept(writer);
+  }
   fclose(f);
 
   return writeSuccess;
