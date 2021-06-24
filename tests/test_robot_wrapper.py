@@ -26,7 +26,7 @@ from utils import simulate
 )
 def test_fetch_robot_wrapper():
     # set this to output test results as video for easy investigation
-    produce_debug_video = True
+    produce_debug_video = False
     observations = []
     cfg_settings = examples.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "NONE"
@@ -58,11 +58,32 @@ def test_fetch_robot_wrapper():
         fetch.reconfigure()
         fetch.update()
 
+        for i in range(fetch._robot.num_links):
+            # if fetch._robot.get_link_joint_type(i) != habitat_sim.physics.JointType.Fixed:
+            print(fetch._robot.get_link_joint_name(i))
+
         observations += simulate(sim, 1.0, produce_debug_video)
 
-        # fetch.reset()
+        # TODO: this isn't working correctly for Fetch yet
+        fetch.reset()
 
         observations += simulate(sim, 1.0, produce_debug_video)
+
+        # TODO: test other functions
+        # fetch.ready_arm()
+        # fetch.retract_arm()
+        # fetch.set_arm_mtr_pos()
+        # fetch.get_arm_vel()
+        # fetch.get_arm_pos()
+        # fetch.set_arm_pos()
+        # fetch.open_gripper()
+        # fetch.close_gripper()
+        # fetch.is_gripper_open()
+        # fetch.set_gripper_state()
+        # fetch.get_end_effector_transform()
+        # fetch.get_arm_joint_lims()
+
+        # TODO: test IK?
 
         # produce some test debug video
         if produce_debug_video:

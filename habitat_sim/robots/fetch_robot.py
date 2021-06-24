@@ -8,6 +8,7 @@ from habitat_sim.robots.mobile_manipulator import (
 )
 
 
+# TODO: using PyBullet for now until we support native IK
 class IkHelper:
     def __init__(self, urdf_path: str):
         self._arm_len = 7
@@ -62,7 +63,9 @@ class IkHelper:
 class FetchRobot(MobileManipulator):
     def __init__(self, urdf_path, sim, limit_robo_joints=True):
         fetch_params = MobileManipulatorParams(
+            # TODO: these joint indices are wrong for new Fetch
             arm_joints=list(range(4, 11)),
+            # TODO: set wheel joints
             wheel_joints=None,
             arm_init_params=[
                 -0.45,
@@ -117,6 +120,7 @@ class FetchRobot(MobileManipulator):
     # ARM RELATED
     #############################################
     def calculate_ee_fk(self, js):
+        # TODO: why using pybullet here? re-implement with robot.joint_positions = state
         self._ik.set_arm_state(js, np.zeros(js.shape))
         ls = p.getLinkState(
             self._ik.robo_id,
@@ -137,21 +141,8 @@ class FetchRobot(MobileManipulator):
         des_joint_pos = list(des_joint_pos)
         return np.array(des_joint_pos)
 
-    def get_arm_joint_lims(self):
-        lower = []
-        upper = []
-        for joint_i in range(self._ik._arm_len):
-            ret = p.getJointInfo(
-                self._ik.robo_id, joint_i, physicsClientId=self._ik.pc_id
-            )
-            lower.append(ret[8])
-            if ret[9] == -1:
-                upper.append(2 * np.pi)
-            else:
-                upper.append(ret[9])
-        return np.array(lower), np.array(upper)
-
     def retract_arm(self):
+        # TODO: not full arm state here
         self._interpolate_arm_control(
             [1.2299035787582397, 2.345386505126953],
             self.params.arm_joints,
@@ -164,4 +155,5 @@ class FetchRobot(MobileManipulator):
         # )
 
     def ready_arm(self):
+        # TODO: not full arm state here
         self._interpolate_arm_control([-0.45, 0.1], self.params.arm_joints, -1)

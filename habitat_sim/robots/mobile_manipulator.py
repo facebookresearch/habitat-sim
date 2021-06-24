@@ -96,7 +96,6 @@ class MobileManipulator(RobotInterface):
         self._gripper_state = 0.0
         self._robot: habitat_sim.physics.ManagedBulletArticulatedObject = None
         self._sim = sim
-        self._model_rot = mn.Matrix4.rotation(mn.Rad(-1.56), mn.Vector3(1.0, 0, 0))
         self._limit_robo_joints = limit_robo_joints
 
         self._arm_sensor_names = [
@@ -114,6 +113,7 @@ class MobileManipulator(RobotInterface):
         """Adds the articulated robot object to the scene."""
         ao_mgr = self._sim.get_articulated_object_manager()
         self._robot = ao_mgr.add_articulated_object_from_urdf(self.urdf_path)
+        # TODO: generate joint motors here for all joints or later in derived class?
 
     def update(self) -> None:
         """Updates the camera transformations and performs necessary checks on
@@ -149,6 +149,7 @@ class MobileManipulator(RobotInterface):
             self.params.arm_mtr_vel_gain,  # velocity_gain
             self.params.arm_mtr_max_impulse,  # max_impulse
         )
+        # TODO: update_joint_motor takes motor id, not joint
         for i in self.params.arm_joints:
             self._robot.update_joint_motor(i, jms)
 
@@ -165,6 +166,7 @@ class MobileManipulator(RobotInterface):
                 self.params.wheel_mtr_max_impulse,  # max_impulse
             )
             # pylint: disable=not-an-iterable
+            # TODO: update_joint_motor takes motor id, not joint
             for i in self.params.wheel_joints:
                 self._robot.update_joint_motor(i, jms)
 
@@ -294,6 +296,7 @@ class MobileManipulator(RobotInterface):
     def _set_mtr_pos(self, joint, ctrl):
         jms = self._robot.get_joint_motor_settings(joint)
         jms.position_target = ctrl
+        # TODO: update_joint_motor takes motor id, not joint
         self._robot.update_joint_motor(joint, jms)
 
     def _get_mtr_pos(self, joint):
