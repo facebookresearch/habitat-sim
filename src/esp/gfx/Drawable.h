@@ -101,8 +101,10 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
 
   /** @brief get the GL mesh */
   Magnum::GL::Mesh& getMesh() const {
-    CORRADE_ASSERT(mesh_ != nullptr,
-                   "Attempting to get the GL mesh when none exists", *mesh_);
+    CORRADE_ASSERT(
+        mesh_ != nullptr,
+        "Drawable::getMesh() : Attempting to get the GL mesh when none exists",
+        *mesh_);
     return *mesh_;
   }
 

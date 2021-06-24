@@ -1252,9 +1252,7 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
                                            "true");
 #endif
 
-  if (!requiresTextures_) {
-    // don't configure texture importer
-  } else {
+  if (requiresTextures_) {
     Cr::PluginManager::PluginMetadata* const metadata =
         importerManager_.metadata("BasisImporter");
     Mn::GL::Context& context = Mn::GL::Context::current();
@@ -1524,11 +1522,13 @@ int ResourceManager::loadNavMeshVisualization(esp::nav::PathFinder& pathFinder,
                                               DrawableGroup* drawables) {
   int navMeshPrimitiveID = ID_UNDEFINED;
 
-  if (!pathFinder.isLoaded())
+  if (!pathFinder.isLoaded()) {
     return navMeshPrimitiveID;
+  }
 
-  if (!getCreateRenderer())
+  if (!getCreateRenderer()) {
     return navMeshPrimitiveID;
+  }
 
   // create the mesh
   std::vector<Magnum::UnsignedInt> indices;
@@ -2082,10 +2082,11 @@ void ResourceManager::addComponent(
     const int meshID = metaData.meshIndex.first + meshIDLocal;
     Magnum::GL::Mesh* mesh = meshes_.at(meshID)->getMagnumGLMesh();
     if (getCreateRenderer()) {
-      CORRADE_ASSERT(mesh, "::addComponent : GL mesh expected but not found", );
+      CORRADE_ASSERT(mesh,
+                     "::addComponent() : GL mesh expected but not found", );
     } else {
       CORRADE_ASSERT(!mesh,
-                     "addComponent : encountered unexpected GL mesh with "
+                     "addComponent() : encountered unexpected GL mesh with "
                      "createRenderer==false", );
     }
     Mn::ResourceKey materialKey = meshTransformNode.materialID;
@@ -2171,13 +2172,12 @@ void ResourceManager::createDrawable(Mn::GL::Mesh* mesh,
       break;
     case gfx::MaterialDataType::Phong:
       node.addFeature<gfx::GenericDrawable>(
-          mesh,                  // render mesh
-          meshAttributeFlags,    // mesh attribute flags
-          shaderManager_,        // shader manager
-          lightSetupKey,         // lightSetup key
-          materialKey,           // material key
-          group,                 // drawable group
-          getCreateRenderer());  // createRenderer flag
+          mesh,                // render mesh
+          meshAttributeFlags,  // mesh attribute flags
+          shaderManager_,      // shader manager
+          lightSetupKey,       // lightSetup key
+          materialKey,         // material key
+          group);              // drawable group
       break;
     case gfx::MaterialDataType::Pbr:
       node.addFeature<gfx::PbrDrawable>(

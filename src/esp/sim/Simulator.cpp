@@ -156,7 +156,8 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
   LOG(INFO) << "::reconfigure : createSceneInstance success == "
             << (success ? "true" : "false")
-            << " for active scene name : " << config_.activeSceneName;
+            << " for active scene name : " << config_.activeSceneName
+            << (config_.createRenderer ? " with" : " without") << " renderer.";
 
 }  // Simulator::reconfigure
 

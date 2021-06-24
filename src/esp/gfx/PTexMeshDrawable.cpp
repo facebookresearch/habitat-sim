@@ -45,7 +45,7 @@ PTexMeshDrawable::PTexMeshDrawable(scene::SceneNode& node,
 void PTexMeshDrawable::draw(const Magnum::Matrix4& transformationMatrix,
                             Magnum::SceneGraph::Camera3D& camera) {
   CORRADE_ASSERT(glMeshExists(),
-                 "PTexMeshDrawable::draw : GL mesh doesn't exist", );
+                 "PTexMeshDrawable::draw() : GL mesh doesn't exist", );
 
   (*shader_)
       .setExposure(exposure_)

@@ -22,8 +22,7 @@ GenericDrawable::GenericDrawable(scene::SceneNode& node,
                                  ShaderManager& shaderManager,
                                  const Mn::ResourceKey& lightSetupKey,
                                  const Mn::ResourceKey& materialDataKey,
-                                 DrawableGroup* group /* = nullptr */,
-                                 bool isRendererCreated /* = true */)
+                                 DrawableGroup* group /* = nullptr */)
     : Drawable{node, mesh, DrawableType::Generic, group},
       shaderManager_{shaderManager},
       lightSetup_{shaderManager.get<LightSetup>(lightSetupKey)},
@@ -61,7 +60,7 @@ GenericDrawable::GenericDrawable(scene::SceneNode& node,
   }
 
   // update the shader early here to to avoid doing it during the render loop
-  if (isRendererCreated) {
+  if (glMeshExists()) {
     updateShader();
   }
 }

@@ -22,7 +22,7 @@ MeshVisualizerDrawable::MeshVisualizerDrawable(
 void MeshVisualizerDrawable::draw(const Magnum::Matrix4& transformationMatrix,
                                   Magnum::SceneGraph::Camera3D& camera) {
   CORRADE_ASSERT(glMeshExists(),
-                 "MeshVisualizerDrawable::draw : GL mesh doesn't exist", );
+                 "MeshVisualizerDrawable::draw() : GL mesh doesn't exist", );
 
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
   Mn::GL::Renderer::setPolygonOffset(-5.0f, -5.0f);

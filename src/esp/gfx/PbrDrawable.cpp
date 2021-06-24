@@ -80,7 +80,8 @@ void PbrDrawable::setLightSetup(const Mn::ResourceKey& lightSetupKey) {
 
 void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
                        Mn::SceneGraph::Camera3D& camera) {
-  CORRADE_ASSERT(glMeshExists(), "PbrDrawable::draw : GL mesh doesn't exist", );
+  CORRADE_ASSERT(glMeshExists(),
+                 "PbrDrawable::draw() : GL mesh doesn't exist", );
 
   updateShader()
       .updateShaderLightParameters()

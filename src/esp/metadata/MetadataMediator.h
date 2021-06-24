@@ -370,6 +370,11 @@ class MetadataMediator {
         sceneDatasetName);
   }
 
+  /**
+   * @brief Returns the createRenderer flag that was set in the associated
+   * SimulatorConfiguration.
+   * @return the boolean flag.
+   */
   bool getCreateRenderer() const;
 
   /**
