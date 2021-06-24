@@ -4,6 +4,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from os import path as osp
+
 # import magnum as mn
 import numpy as np
 import pytest
@@ -13,10 +15,13 @@ import habitat_sim
 from utils import simulate
 
 
-# TODO: skip if not fetch robot
+@pytest.mark.skipif(
+    not osp.exists("data/robots/hab_fetch"),
+    reason="Test requires Fetch robot URDF and assets.",
+)
 @pytest.mark.skipif(
     not habitat_sim.built_with_bullet,
-    reason="ArticulatedObject API requires Bullet physics.",
+    reason="Robot wrapper API requires Bullet physics.",
 )
 def test_fetch_robot_wrapper():
     # set this to output test results as video for easy investigation
