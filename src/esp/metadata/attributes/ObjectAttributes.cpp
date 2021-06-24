@@ -17,15 +17,6 @@ const std::map<std::string, esp::assets::AssetType>
         {"suncg", esp::assets::AssetType::SUNCG_SCENE},
 };
 
-// All keys must be lowercase
-const std::map<std::string, ObjectInstanceShaderType>
-    AbstractObjectAttributes::ShaderTypeNamesMap = {
-        {"material", ObjectInstanceShaderType::Material},
-        {"flat", ObjectInstanceShaderType::Flat},
-        {"phong", ObjectInstanceShaderType::Phong},
-        {"pbr", ObjectInstanceShaderType::PBR},
-};
-
 AbstractObjectAttributes::AbstractObjectAttributes(
     const std::string& attributesClassKey,
     const std::string& handle)
@@ -50,6 +41,38 @@ AbstractObjectAttributes::AbstractObjectAttributes(
   setCollisionAssetHandle("");
 }  // AbstractObjectAttributes ctor
 
+std::string AbstractObjectAttributes::getObjectInfoHeaderInternal() const {
+  return "Render Asset Handle, Collision Asset Handle, Scale, Margin, Up XYZ, "
+         "Front XYZ, Units to M, Friction Coefficient, Restitution "
+         "Coefficient, Current Shader "
+         "Type, " +
+         getAbstractObjectInfoHeaderInternal();
+}
+
+std::string AbstractObjectAttributes::getObjectInfoInternal() const {
+  return getRenderAssetHandle()
+      .append(1, ',')
+      .append(getCollisionAssetHandle())
+      .append(1, ',')
+      .append(cfg.value("scale"))
+      .append(1, ',')
+      .append(cfg.value("margin"))
+      .append(1, ',')
+      .append(cfg.value("orient_up"))
+      .append(1, ',')
+      .append(cfg.value("orient_front"))
+      .append(1, ',')
+      .append(cfg.value("units_to_meters"))
+      .append(1, ',')
+      .append(cfg.value("friction_coefficient"))
+      .append(1, ',')
+      .append(cfg.value("restitution_coefficient"))
+      .append(1, ',')
+      .append(getCurrShaderTypeName())
+      .append(1, ',')
+      .append(getAbstractObjectInfoInternal());
+}  // AbstractObjectAttributes::getObjectInfoInternal
+
 ObjectAttributes::ObjectAttributes(const std::string& handle)
     : AbstractObjectAttributes("ObjectAttributes", handle) {
   // fill necessary attribute defaults
@@ -63,7 +86,7 @@ ObjectAttributes::ObjectAttributes(const std::string& handle)
 
   setBoundingBoxCollisions(false);
   setJoinCollisionMeshes(true);
-  // default to unknown for objects - will use material-derived shader unless
+  // default to Unknown for objects - will use material-derived shader unless
   // otherwise specified in config
   setShaderType(static_cast<int>(ObjectInstanceShaderType::Unknown));
   // TODO remove this once ShaderType support is complete
@@ -72,11 +95,25 @@ ObjectAttributes::ObjectAttributes(const std::string& handle)
   setSemanticId(0);
 }  // ObjectAttributes ctor
 
+std::string ObjectAttributes::getAbstractObjectInfoInternal() const {
+  return cfg.value("mass")
+      .append(1, ',')
+      .append(cfg.value("COM"))
+      .append(1, ',')
+      .append(cfg.value("inertia"))
+      .append(1, ',')
+      .append(cfg.value("angular_damping"))
+      .append(1, ',')
+      .append(cfg.value("linear_damping"))
+      .append(1, ',')
+      .append(cfg.value("semantic_id"));
+}
+
 StageAttributes::StageAttributes(const std::string& handle)
     : AbstractObjectAttributes("StageAttributes", handle) {
   setGravity({0, -9.8, 0});
   setOrigin({0, 0, 0});
-  // default to unknown for stages - will use material-derived shader unless
+  // default to Unknown for stages - will use material-derived shader unless
   // otherwise specified in config
   setShaderType(static_cast<int>(ObjectInstanceShaderType::Unknown));
   // TODO remove this once ShaderType support is complete

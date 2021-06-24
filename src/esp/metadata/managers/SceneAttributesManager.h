@@ -13,35 +13,6 @@ namespace metadata {
 
 namespace managers {
 
-/**
- * @brief This enum class describes whether an object instance position is
- * relative to its COM or the asset's local origin.  Depending on this value, we
- * may take certain actions when instantiating a scene described by a scene
- * instance. For example, scene instances exported from Blender will have no
- * conception of an object's configured COM, and so will require adjustment to
- * translations to account for COM location when the object is placed*/
-enum class SceneInstanceTranslationOrigin {
-  /**
-   * @brief Default value - in the case of object instances, this means use the
-   * specified scene instance default; in the case of a scene instance, this
-   * means do not correct for COM.
-   */
-  Unknown = -1,
-  /**
-   * @brief Indicates scene instance objects were placed without knowledge of
-   * their COM location, and so need to be corrected when placed in scene in
-   * Habitat. For example, they were exported from an external editor like
-   * Blender.
-   */
-  AssetLocal,
-  /**
-   * @brief Indicates scene instance objects' location were recorded at their
-   * COM location, and so do not need correction.  For example they were
-   * exported from Habitat-sim.
-   */
-  COM
-};
-
 class SceneAttributesManager
     : public AttributesManager<attributes::SceneAttributes,
                                core::ManagedObjectAccess::Copy> {

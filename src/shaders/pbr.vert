@@ -3,6 +3,8 @@
 // LICENSE file in the root directory of this source tree.
 precision highp float;
 
+precision highp float;
+
 // ------------ input ------------------------
 // position, normal, tangent in model local space
 layout(location = ATTRIBUTE_LOCATION_POSITION) in highp vec4 vertexPosition;
@@ -61,7 +63,8 @@ void main() {
   tangent = normalize(tangent - dot(tangent, normal) * normal);
   biTangent = normalize(cross(normal, tangent) * vertexTangent.w);
   // later in .frag, TBN will transform the normal perturbation
-  // (read from normal map) from tangent space to world space, NOT camera space
+  // (read from normal map) from tangent space to world space,
+  // NOT camera space
 #endif
 
   gl_Position = ProjectionMatrix * ViewMatrix * vertexWorldPosition;

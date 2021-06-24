@@ -108,7 +108,6 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
     Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::FaceCulling);
   }
   */
-
   Mn::Matrix4 modelMatrix =
       camera.cameraMatrix().inverted() * transformationMatrix;
 

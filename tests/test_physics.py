@@ -24,6 +24,16 @@ from habitat_sim.utils.common import (
 )
 
 
+def simulate(sim, dt, get_observations=False):
+    observations = []
+    target_time = sim.get_world_time() + dt
+    while sim.get_world_time() < target_time:
+        sim.step_physics(1.0 / 60.0)
+        if get_observations:
+            observations.append(sim.get_sensor_observations())
+    return observations
+
+
 @pytest.mark.skipif(
     not osp.exists("data/scene_datasets/habitat-test-scenes/skokloster-castle.glb")
     or not osp.exists("data/objects/example_objects/"),
@@ -1222,4 +1232,441 @@ def test_articulated_object_joint_motors(test_asset):
                 "color",
                 "test_articulated_object_joint_motors__" + test_asset.split("/")[-1],
                 open_vid=False,
+            )
+
+
+@pytest.mark.skipif(
+    not habitat_sim.built_with_bullet,
+    reason="ArticulatedObject API requires Bullet physics.",
+)
+def test_rigid_constraints():
+    # set this to output test results as video for easy investigation
+    produce_debug_video = False
+    observations = []
+    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings["scene"] = "NONE"
+    cfg_settings["enable_physics"] = True
+
+    # loading the physical scene
+    hab_cfg = examples.settings.make_cfg(cfg_settings)
+
+    with habitat_sim.Simulator(hab_cfg) as sim:
+        obj_template_mgr = sim.get_object_template_manager()
+        art_obj_mgr = sim.get_articulated_object_manager()
+        rigid_obj_mgr = sim.get_rigid_object_manager()
+
+        # setup the camera for debug video (looking at 0,0,0)
+        sim.agents[0].scene_node.translation = [0.0, -1.5, 2.0]
+        sim.agents[0]._sensors["color_sensor"].specification().clear_color = [
+            0.5,
+            0.5,
+            0.5,
+        ]
+
+        # add a visualize reference frame
+        cube_prim_viz_handle = obj_template_mgr.get_template_handles("cubeWireframe")[0]
+        cube_viz_obj = rigid_obj_mgr.add_object_by_template_handle(cube_prim_viz_handle)
+        cube_viz_obj.collidable = False
+        cube_viz_obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+        viz_cube_bb = cube_viz_obj.collision_shape_aabb
+
+        # add a test cube object
+        cube_prim_handle = obj_template_mgr.get_template_handles("cubeSolid")[0]
+        cube_obj = rigid_obj_mgr.add_object_by_template_handle(cube_prim_handle)
+
+        # ---------------------------
+        # test rigid P2P constraints
+        # ---------------------------
+
+        # add a constraint to dangle the cube from its corner at the origin
+        constraint_settings = habitat_sim.physics.RigidConstraintSettings()
+        constraint_settings.object_id_a = cube_obj.object_id
+        constraint_settings.pivot_a = cube_obj.collision_shape_aabb.front_top_left
+        constraint_id = sim.create_rigid_constraint(constraint_settings)
+        assert constraint_id >= 0
+        observations += simulate(sim, 1.0, produce_debug_video)
+        global_pivot_pos = cube_obj.root_scene_node.transformation.transform_point(
+            constraint_settings.pivot_a
+        )
+        assert np.allclose(global_pivot_pos, np.zeros(3), atol=1.0e-4)
+
+        # move the cube constraint to a corner of the viz region
+        constraint_settings.pivot_b = viz_cube_bb.back_bottom_right
+        sim.update_rigid_constraint(constraint_id, constraint_settings)
+        observations += simulate(sim, 1.0, produce_debug_video)
+        global_pivot_pos = cube_obj.root_scene_node.transformation.transform_point(
+            constraint_settings.pivot_a
+        )
+        assert np.allclose(global_pivot_pos, constraint_settings.pivot_b, atol=1.0e-4)
+
+        # switch the cube pivot to the opposite corner
+        constraint_settings.pivot_a = cube_obj.collision_shape_aabb.back_bottom_right
+        sim.update_rigid_constraint(constraint_id, constraint_settings)
+        observations += simulate(sim, 2.0, produce_debug_video)
+        global_pivot_pos = cube_obj.root_scene_node.transformation.transform_point(
+            constraint_settings.pivot_a
+        )
+        assert np.allclose(global_pivot_pos, constraint_settings.pivot_b, atol=1.0e-4)
+
+        # add another object and constraint them together
+        cube_obj_2 = rigid_obj_mgr.add_object_by_template_handle(cube_prim_handle)
+        constraint_settings_2 = habitat_sim.physics.RigidConstraintSettings()
+        constraint_settings_2.object_id_a = cube_obj_2.object_id
+        constraint_settings_2.object_id_b = cube_obj.object_id
+        constraint_settings_2.pivot_a = (
+            cube_obj_2.collision_shape_aabb.back_bottom_right
+        )
+        constraint_settings_2.pivot_b = cube_obj.collision_shape_aabb.front_top_left
+        constraint_settings_2.max_impulse = 1000.0
+        constraint_id_2 = sim.create_rigid_constraint(constraint_settings_2)
+        assert constraint_id_2 >= 0
+        observations += simulate(sim, 4.0, produce_debug_video)
+        global_pivot_pos = cube_obj.root_scene_node.transformation.transform_point(
+            constraint_settings.pivot_a
+        )
+        assert np.allclose(global_pivot_pos, constraint_settings.pivot_b, atol=1.0e-3)
+        # both pivot corners should be at the same global position
+        global_connect_a = cube_obj_2.root_scene_node.transformation.transform_point(
+            constraint_settings_2.pivot_a
+        )
+        global_connect_b = cube_obj.root_scene_node.transformation.transform_point(
+            constraint_settings_2.pivot_b
+        )
+        assert np.allclose(global_connect_a, global_connect_b, atol=5.0e-3)
+
+        # weaken the world constraint
+        constraint_settings.max_impulse = 0.2
+        sim.update_rigid_constraint(constraint_id, constraint_settings)
+        observations += simulate(sim, 2.0, produce_debug_video)
+        global_pivot_pos = cube_obj.root_scene_node.transformation.transform_point(
+            constraint_settings.pivot_a
+        )
+        assert not np.allclose(
+            global_pivot_pos, constraint_settings.pivot_b, atol=1.0e-4
+        )
+
+        # check that the queried settings are reflecting updates
+        queried_settings = sim.get_rigid_constraint_settings(constraint_id)
+        assert queried_settings.object_id_a == constraint_settings.object_id_a
+        assert queried_settings.object_id_b == constraint_settings.object_id_b
+        assert queried_settings.pivot_a == constraint_settings.pivot_a
+        assert queried_settings.pivot_b == constraint_settings.pivot_b
+        assert queried_settings.max_impulse == constraint_settings.max_impulse
+        queried_settings = sim.get_rigid_constraint_settings(constraint_id_2)
+        assert queried_settings.object_id_a == constraint_settings_2.object_id_a
+        assert queried_settings.object_id_b == constraint_settings_2.object_id_b
+        assert queried_settings.pivot_a == constraint_settings_2.pivot_a
+        assert queried_settings.pivot_b == constraint_settings_2.pivot_b
+        assert queried_settings.max_impulse == constraint_settings_2.max_impulse
+
+        assert cube_obj.translation[1] > -1.0
+        assert cube_obj_2.translation[1] > -1.0
+        # remove the constraint
+        sim.remove_rigid_constraint(constraint_id)
+        sim.remove_rigid_constraint(constraint_id_2)
+        observations += simulate(sim, 2.0, produce_debug_video)
+        # cubes should fall and separate
+        assert cube_obj.translation[1] < -1.0
+        assert cube_obj_2.translation[1] < -1.0
+        global_connect_a = cube_obj_2.root_scene_node.transformation.transform_point(
+            constraint_settings_2.pivot_a
+        )
+        global_connect_b = cube_obj.root_scene_node.transformation.transform_point(
+            constraint_settings_2.pivot_b
+        )
+        assert not np.allclose(global_connect_a, global_connect_b, atol=0.5)
+
+        # -----------------------------
+        # test rigid fixed constraints
+        # -----------------------------
+
+        # use the same settings, but change the type
+        constraint_settings.constraint_type = (
+            habitat_sim.physics.RigidConstraintType.Fixed
+        )
+        constraint_settings_2.constraint_type = (
+            habitat_sim.physics.RigidConstraintType.Fixed
+        )
+        constraint_id = sim.create_rigid_constraint(constraint_settings)
+        constraint_id_2 = sim.create_rigid_constraint(constraint_settings_2)
+        observations += simulate(sim, 2.0, produce_debug_video)
+
+        # pivot relationship should be the same
+        global_connect_a = cube_obj_2.root_scene_node.transformation.transform_point(
+            constraint_settings_2.pivot_a
+        )
+        global_connect_b = cube_obj.root_scene_node.transformation.transform_point(
+            constraint_settings_2.pivot_b
+        )
+        assert np.allclose(global_connect_a, global_connect_b, atol=5.0e-3)
+        global_pivot_pos = cube_obj.root_scene_node.transformation.transform_point(
+            constraint_settings.pivot_a
+        )
+        assert np.allclose(global_pivot_pos, constraint_settings.pivot_b, atol=1.0e-3)
+        # default frames lock identity orientation
+        assert mn.math.angle(cube_obj.rotation, mn.Quaternion()) < mn.Rad(0.01)
+        assert mn.math.angle(cube_obj_2.rotation, mn.Quaternion()) < mn.Rad(0.01)
+
+        # change the global frame rotation
+        global_target_frame = mn.Quaternion.rotation(
+            mn.Rad(mn.math.pi / 4.0), mn.Vector3(1.0, 0, 0)
+        )
+        constraint_settings.frame_b = global_target_frame.to_matrix()
+        sim.update_rigid_constraint(constraint_id, constraint_settings)
+
+        # counter rotate object frames pi/4
+        local_target_frame_1 = mn.Quaternion.rotation(
+            mn.Rad(mn.math.pi / 4.0), mn.Vector3(0.0, 1.0, 0)
+        )
+        local_target_frame_2 = mn.Quaternion.rotation(
+            -mn.Rad(mn.math.pi / 4.0), mn.Vector3(0.0, 1.0, 0)
+        )
+        constraint_settings_2.frame_a = local_target_frame_1.to_matrix()
+        constraint_settings_2.frame_b = local_target_frame_2.to_matrix()
+        sim.update_rigid_constraint(constraint_id_2, constraint_settings_2)
+
+        observations += simulate(sim, 2.0, produce_debug_video)
+        # check global frame change of object 1
+        assert mn.math.angle(cube_obj.rotation, global_target_frame) < mn.Rad(0.01)
+        # check that relative frames of objects total pi/2
+        angle_error = mn.math.angle(cube_obj.rotation, cube_obj_2.rotation) - mn.Rad(
+            mn.math.pi / 4.0
+        )
+        assert abs(float(angle_error)) < 0.01
+
+        # removing objects will clear constraints
+        rigid_obj_mgr.remove_object_by_id(cube_obj_2.object_id)
+
+        # object should not be moving or in contact, but should not be allowed to sleep with an active constraint
+        assert cube_obj.awake
+        simulate(sim, 6.0, False)
+        assert cube_obj.awake
+
+        # -----------------------------------------
+        # test articulated|rigid mixed constraints
+        # -----------------------------------------
+
+        # add a humanoid to the world
+        robot_file = "data/test_assets/urdf/amass_male.urdf"
+        robot = art_obj_mgr.add_articulated_object_from_urdf(
+            filepath=robot_file, fixed_base=False
+        )
+        assert robot.is_alive
+        # need motors to stabalize the humanoid
+        joint_motor_settings = habitat_sim.physics.JointMotorSettings()
+        joint_motor_settings.position_gain = 0.5
+        robot.create_all_motors(joint_motor_settings)
+        # for link in range(robot.num_links):
+        #    print(robot.get_link_name(link))
+
+        # hang AO from cube with P2P
+        constraint_settings_2 = habitat_sim.physics.RigidConstraintSettings()
+        constraint_settings_2.object_id_a = robot.object_id
+        constraint_settings_2.link_id_a = 9  # lwrist
+        constraint_settings_2.object_id_b = cube_obj.object_id
+        constraint_settings_2.pivot_b = cube_obj.collision_shape_aabb.front_top_left
+        constraint_settings_2.max_impulse = 10000000
+        constraint_id_2 = sim.create_rigid_constraint(constraint_settings_2)
+        constraint_settings.max_impulse = 10000000
+        sim.update_rigid_constraint(constraint_id, constraint_settings)
+
+        observations += simulate(sim, 4.0, produce_debug_video)
+        global_connect_a = robot.get_link_scene_node(
+            constraint_settings_2.link_id_a
+        ).transformation.transform_point(constraint_settings_2.pivot_a)
+        global_connect_b = cube_obj.root_scene_node.transformation.transform_point(
+            constraint_settings_2.pivot_b
+        )
+        assert np.allclose(global_connect_a, global_connect_b, atol=0.04)
+
+        # hang AO from cube with Fixed constraint
+        sim.remove_rigid_constraint(constraint_id_2)
+        constraint_settings_2.constraint_type = (
+            habitat_sim.physics.RigidConstraintType.Fixed
+        )
+        constraint_id_2 = sim.create_rigid_constraint(constraint_settings_2)
+        observations += simulate(sim, 4.0, produce_debug_video)
+
+        # check pivots are aligned
+        global_connect_a = robot.get_link_scene_node(
+            constraint_settings_2.link_id_a
+        ).transformation.transform_point(constraint_settings_2.pivot_a)
+        global_connect_b = cube_obj.root_scene_node.transformation.transform_point(
+            constraint_settings_2.pivot_b
+        )
+        assert np.allclose(global_connect_a, global_connect_b, atol=0.08)
+
+        # check that relative frames of objects near 0
+        assert (
+            mn.math.angle(
+                cube_obj.rotation,
+                robot.get_link_scene_node(constraint_settings_2.link_id_a).rotation,
+            )
+            < mn.Rad(0.1)
+        )
+
+        # counter rotate object frames pi/4
+        local_target_frame_1 = mn.Quaternion.rotation(
+            mn.Rad(mn.math.pi / 4.0), mn.Vector3(0.0, 0, 1.0)
+        )
+        local_target_frame_2 = mn.Quaternion.rotation(
+            -mn.Rad(mn.math.pi / 4.0), mn.Vector3(0.0, 0, 1.0)
+        )
+        constraint_settings_2.frame_a = local_target_frame_1.to_matrix()
+        constraint_settings_2.frame_b = local_target_frame_2.to_matrix()
+        sim.update_rigid_constraint(constraint_id_2, constraint_settings_2)
+
+        observations += simulate(sim, 4.0, produce_debug_video)
+        # check frames align
+        angle_error = (
+            mn.math.angle(
+                cube_obj.rotation,
+                robot.get_link_scene_node(constraint_settings_2.link_id_a).rotation,
+            )
+            - mn.Rad(mn.math.pi / 4.0)
+        )
+        assert abs(float(angle_error)) < 0.05
+
+        # remove cube and AO should fall
+        assert robot.translation[1] > -2
+        rigid_obj_mgr.remove_object_by_id(cube_obj.object_id)
+        observations += simulate(sim, 1.0, produce_debug_video)
+        assert robot.translation[1] < -3
+
+        # hang AO from the world with P2P
+        constraint_settings_2.object_id_b = -1
+        constraint_settings_2.constraint_type = (
+            habitat_sim.physics.RigidConstraintType.PointToPoint
+        )
+        constraint_id_2 = sim.create_rigid_constraint(constraint_settings_2)
+        observations += simulate(sim, 5.0, produce_debug_video)
+
+        # check pivots are aligned
+        global_connect_a = robot.get_link_scene_node(
+            constraint_settings_2.link_id_a
+        ).transformation.transform_point(constraint_settings_2.pivot_a)
+        assert np.allclose(global_connect_a, constraint_settings_2.pivot_b, atol=0.04)
+
+        # hang AO from world Fixed
+        sim.remove_rigid_constraint(constraint_id_2)
+        constraint_settings_2.constraint_type = (
+            habitat_sim.physics.RigidConstraintType.Fixed
+        )
+        # counter rotate object frames pi/4
+        local_target_frame_1 = mn.Quaternion.rotation(
+            mn.Rad(mn.math.pi / 4.0), mn.Vector3(0, 1.0, 0)
+        )
+        local_target_frame_2 = mn.Quaternion.rotation(
+            -mn.Rad(mn.math.pi / 4.0), mn.Vector3(0, 1.0, 0)
+        )
+        constraint_settings_2.frame_a = local_target_frame_1.to_matrix()
+        constraint_settings_2.frame_b = local_target_frame_2.to_matrix()
+        constraint_id_2 = sim.create_rigid_constraint(constraint_settings_2)
+        observations += simulate(sim, 5.0, produce_debug_video)
+
+        # check pivots are aligned
+        global_connect_a = robot.get_link_scene_node(
+            constraint_settings_2.link_id_a
+        ).transformation.transform_point(constraint_settings_2.pivot_a)
+        assert np.allclose(global_connect_a, constraint_settings_2.pivot_b, atol=0.08)
+
+        # check frames align
+        angle_error = (
+            mn.math.angle(
+                local_target_frame_2,
+                robot.get_link_scene_node(constraint_settings_2.link_id_a).rotation,
+            )
+            - mn.Rad(mn.math.pi / 4.0)
+        )
+        assert abs(float(angle_error)) < 0.2
+
+        # hang the object from its base link
+        constraint_settings_2.link_id_a = -1
+        sim.remove_rigid_constraint(constraint_id_2)
+        constraint_id_2 = sim.create_rigid_constraint(constraint_settings_2)
+        observations += simulate(sim, 5.0, produce_debug_video)
+        angle_error = mn.math.angle(local_target_frame_2, robot.rotation) - mn.Rad(
+            mn.math.pi / 4.0
+        )
+        # NOTE: This error is a bit high, but constraint is doing its best
+        assert abs(float(angle_error)) < 0.4
+        # check pivots are aligned
+        global_connect_a = robot.get_link_scene_node(
+            constraint_settings_2.link_id_a
+        ).transformation.transform_point(constraint_settings_2.pivot_a)
+        assert np.allclose(robot.translation, constraint_settings_2.pivot_b, atol=0.08)
+        sim.remove_rigid_constraint(constraint_id_2)
+
+        # -----------------------------------------
+        # test articulated constraints
+        # -----------------------------------------
+
+        # AO - AO P2P
+        robot.clear_joint_states()
+        robot.translation = [0.775, 0.0, 0.0]
+        robot.rotation = mn.Quaternion()
+        # add a new robot with a fixed base
+        robot2 = art_obj_mgr.add_articulated_object_from_urdf(
+            filepath=robot_file, fixed_base=True
+        )
+        robot2.translation = [-0.775, 0.0, 0.0]
+        robot2.create_all_motors(joint_motor_settings)
+
+        constraint_settings_2 = habitat_sim.physics.RigidConstraintSettings()
+        constraint_settings_2.object_id_a = robot.object_id
+        constraint_settings_2.link_id_a = 15  # rwrist
+        constraint_settings_2.pivot_a = [-0.04, 0.0, 0.0]
+        constraint_settings_2.object_id_b = robot2.object_id
+        constraint_settings_2.link_id_b = 9  # lwrist
+        constraint_settings_2.pivot_b = [0.04, 0.0, 0.0]
+        constraint_settings_2.max_impulse = 10000000
+        constraint_id_2 = sim.create_rigid_constraint(constraint_settings_2)
+
+        observations += simulate(sim, 5.0, produce_debug_video)
+
+        # check pivots are aligned
+        global_connect_a = robot.get_link_scene_node(
+            constraint_settings_2.link_id_a
+        ).transformation.transform_point(constraint_settings_2.pivot_a)
+        global_connect_b = robot2.get_link_scene_node(
+            constraint_settings_2.link_id_b
+        ).transformation.transform_point(constraint_settings_2.pivot_b)
+        assert np.allclose(global_connect_a, global_connect_b, atol=0.08)
+
+        # switch to fixed constraint
+        sim.remove_rigid_constraint(constraint_id_2)
+        constraint_settings_2.constraint_type = (
+            habitat_sim.physics.RigidConstraintType.Fixed
+        )
+        constraint_id_2 = sim.create_rigid_constraint(constraint_settings_2)
+
+        observations += simulate(sim, 5.0, produce_debug_video)
+
+        # check pivots are aligned
+        global_connect_a = robot.get_link_scene_node(
+            constraint_settings_2.link_id_a
+        ).transformation.transform_point(constraint_settings_2.pivot_a)
+        global_connect_b = robot2.get_link_scene_node(
+            constraint_settings_2.link_id_b
+        ).transformation.transform_point(constraint_settings_2.pivot_b)
+        assert np.allclose(global_connect_a, global_connect_b, atol=0.08)
+
+        # check frames align
+        angle_error = mn.math.angle(
+            robot.get_link_scene_node(constraint_settings_2.link_id_a).rotation,
+            robot2.get_link_scene_node(constraint_settings_2.link_id_b).rotation,
+        )
+        # NOTE: This error is a bit high, but constraint is doing its best
+        assert abs(float(angle_error)) < 0.37
+
+        # produce some test debug video
+        if produce_debug_video:
+            from habitat_sim.utils import viz_utils as vut
+
+            vut.make_video(
+                observations,
+                "color_sensor",
+                "color",
+                "test_rigid_constraints",
+                open_vid=True,
             )

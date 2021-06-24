@@ -432,8 +432,20 @@ void initSimBindings(py::module& m) {
           to directly access objects instead.
           Modify the LightSetup used to the render all components of an
           object by setting the LightSetup key referenced by all Drawables
-          attached to the object's visual SceneNodes.)");
-  ;
+          attached to the object's visual SceneNodes.)")
+      /* --- P2P/Fixed Constraints API --- */
+      .def(
+          "create_rigid_constraint", &Simulator::createRigidConstraint,
+          "settings"_a,
+          R"(Create a rigid constraint between two objects or an object and the world from a RigidConstraintsSettings.)")
+      .def("update_rigid_constraint", &Simulator::updateRigidConstraint,
+           "constraint_id"_a, "settings"_a,
+           R"(Update the settings of a rigid constraint.)")
+      .def("get_rigid_constraint_settings",
+           &Simulator::getRigidConstraintSettings, "constraint_id"_a,
+           R"(Get a copy of the settings for an existing rigid constraint.)")
+      .def("remove_rigid_constraint", &Simulator::removeRigidConstraint,
+           "constraint_id"_a, R"(Remove a rigid constraint by id.)");
 }
 
 }  // namespace sim

@@ -3,12 +3,13 @@
 // LICENSE file in the root directory of this source tree.
 
 // This is an implementation of
-// Karis, Brian. “Real Shading in Unreal Engine 4” (2013).
+// Karis, Brian. “Real Shading in Unreal Engine 4.” (2013).
 
 precision highp float;
 
 // -------------- input ---------------------
-// position, normal, tangent, biTangent in world space, NOT camera space
+// position, normal, tangent, biTangent in world space,
+// NOT camera space
 in highp vec3 position;
 in highp vec3 normal;
 #if defined(TEXTURED)
@@ -150,7 +151,7 @@ vec4 SRGBtoLINEAR(vec4 srgbIn) {
 	#endif //MANUAL_SRGB
 }
 
-#if defined(NORMAL_TEXTURE)
+#if defined(NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENT)
 vec3 getNormalFromNormalMap() {
   vec3 tangentNormal =
 #if defined(NORMAL_TEXTURE_SCALE)
@@ -207,17 +208,6 @@ vec3 getNormalFromNormalMap() {
 const float INV_PI = 1.0 / PI;
 const float Epsilon = 0.0001;
 const float DielectricSpecular = 0.04;
-
-// Specular D, normal distribution function (NDF),
-// also known as ggxDistribution
-// n_dot_h: <normal, halfVector>
-//     normal: normal direction
-//     halfVector: half vector of light (light source direction)
-//                 and view (camera direction, aka light outgoing direction)
-float normalDistribution(float n_dot_h, float roughness) {
-  // normalDistributionGGX is defined in the pbrCommon.glsl
-  return normalDistributionGGX(n_dot_h, roughness);
-}
 
 // helper function to compute the Specular G
 float geometrySchlickGGX(float dotProd, float roughness) {
@@ -301,11 +291,14 @@ void microfacetModel(vec3 specularReflectance,
   float temp = max(4.0 * n_dot_l * n_dot_v, Epsilon);
   vec3 specular = Fresnel *
                   specularGeometricAttenuation(n_dot_l, n_dot_v, roughness) *
-                  normalDistribution(n_dot_h, roughness) / temp;
+  // normalDistributionGGX is defined in the pbrCommon.glsl
+  // Specular D, normal distribution function (NDF),
+  // also known as ggxDistribution
+                  normalDistributionGGX(n_dot_h, roughness) / temp;
 
   vec3 tempVec = lightRadiance * n_dot_l;
-  diffuseContrib = diffuse * Scales.directDiffuse * tempVec;
-  specularContrib = specular * Scales.directSpecular * tempVec;
+  diffuseContrib = diffuse * tempVec;
+  specularContrib = specular * tempVec;
 }
 
 #if defined(IMAGE_BASED_LIGHTING)
@@ -352,8 +345,11 @@ void main() {
   metallic *= texture(MetallicRoughnessTexture, texCoord).b;
 #endif
 
+// normal map will only work if both normal texture and the tangents exist.
+// if only normal texture is set, normal mapping will be safely ignored.
 // n is the normal in *world* space, NOT camera space
-#if defined(NORMAL_TEXTURE)
+#if defined(NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENT)
+  // normal is now in the camera space
   vec3 n = getNormalFromNormalMap();
 #else
   vec3 n = normalize(normal);
@@ -445,7 +441,6 @@ void main() {
 
     diffuseContrib += shadow * currentDiffuseContrib;
     specularContrib += shadow * currentSpecularContrib;
-
   }  // for lights
 
   // TODO: use ALPHA_MASK to discard fragments

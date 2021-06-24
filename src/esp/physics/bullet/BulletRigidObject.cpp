@@ -332,7 +332,7 @@ void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
 
   double mass = 0;
   btVector3 bInertia = {0, 0, 0};
-  if (mt != MotionType::STATIC) {
+  if (mt == MotionType::DYNAMIC) {
     mass = tmpAttr->getMass();
     bInertia = btVector3(tmpAttr->getInertia());
     if (bInertia == btVector3{0, 0, 0}) {
@@ -394,7 +394,7 @@ void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
         bObjectRigidBody_->getCollisionFlags() |
         btCollisionObject::CF_KINEMATIC_OBJECT);
     CORRADE_INTERNAL_ASSERT(bObjectRigidBody_->isKinematicObject());
-    CORRADE_INTERNAL_ASSERT(!bObjectRigidBody_->isStaticObject());
+    CORRADE_INTERNAL_ASSERT(bObjectRigidBody_->isStaticObject());
     bWorld_->addRigidBody(
         bObjectRigidBody_.get(), int(CollisionGroup::Kinematic),
         uint32_t(

@@ -554,7 +554,9 @@ TEST_F(AttributesManagersTest, AttributesManagers_LightJSONLoadTest) {
         "user_float" : 2.3,
         "user_vec3" : [1.1, 3.3, 5.5],
         "user_quat" : [0.5, 0.6, 0.7, 0.8]
-    }
+    },
+    "positive_intensity_scale" : 2.0,
+    "negative_intensity_scale" : 1.5
   })";
 
   auto lightLayoutAttr =
@@ -569,7 +571,8 @@ TEST_F(AttributesManagersTest, AttributesManagers_LightJSONLoadTest) {
                             "light attribs defined string", true, 23, 2.3f,
                             Magnum::Vector3(1.1, 3.3, 5.5),
                             Magnum::Quaternion({0.6f, 0.7f, 0.8f}, 0.5f));
-
+  ASSERT_EQ(lightLayoutAttr->getPositiveIntensityScale(), 2.0);
+  ASSERT_EQ(lightLayoutAttr->getNegativeIntensityScale(), 1.5);
   auto lightAttr = lightLayoutAttr->getLightInstance("test");
   // verify that lightAttr exists
   ASSERT_NE(nullptr, lightAttr);
@@ -579,6 +582,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_LightJSONLoadTest) {
   ASSERT_EQ(lightAttr->getPosition(), Magnum::Vector3(2.5, 0.1, 3.8));
   ASSERT_EQ(lightAttr->getDirection(), Magnum::Vector3(1.0, -1.0, 1.0));
   ASSERT_EQ(lightAttr->getColor(), Magnum::Vector3(2, 1, -1));
+
   ASSERT_EQ(lightAttr->getIntensity(), -0.1);
   ASSERT_EQ(lightAttr->getType(),
             static_cast<int>(esp::gfx::LightType::Directional));
@@ -692,7 +696,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
   // match values set in test JSON
   ASSERT_EQ(
       sceneAttr->getTranslationOrigin(),
-      static_cast<int>(AttrMgrs::SceneInstanceTranslationOrigin::AssetLocal));
+      static_cast<int>(Attrs::SceneInstanceTranslationOrigin::AssetLocal));
   ASSERT_EQ(sceneAttr->getLightingHandle(), "test_lighting_configuration");
   ASSERT_EQ(sceneAttr->getNavmeshHandle(), "test_navmesh_path1");
   ASSERT_EQ(sceneAttr->getSemanticSceneHandle(),
@@ -724,7 +728,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
   auto objInstance = objectInstanceList[0];
   ASSERT_EQ(objInstance->getHandle(), "test_object_template0");
   ASSERT_EQ(objInstance->getTranslationOrigin(),
-            static_cast<int>(AttrMgrs::SceneInstanceTranslationOrigin::COM));
+            static_cast<int>(Attrs::SceneInstanceTranslationOrigin::COM));
   ASSERT_EQ(objInstance->getTranslation(), Magnum::Vector3(0, 1, 2));
   ASSERT_EQ(objInstance->getRotation(),
             Magnum::Quaternion({0.3f, 0.4f, 0.5f}, 0.2f));
@@ -757,7 +761,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
   auto artObjInstance = artObjInstances[0];
   ASSERT_EQ(artObjInstance->getHandle(), "test_urdf_template0");
   ASSERT_EQ(artObjInstance->getTranslationOrigin(),
-            static_cast<int>(AttrMgrs::SceneInstanceTranslationOrigin::COM));
+            static_cast<int>(Attrs::SceneInstanceTranslationOrigin::COM));
   ASSERT_EQ(artObjInstance->getFixedBase(), false);
   ASSERT_EQ(artObjInstance->getTranslation(), Magnum::Vector3(5, 4, 5));
   ASSERT_EQ(artObjInstance->getMotionType(),

@@ -16,7 +16,7 @@ enum class MotionType;
 namespace metadata {
 namespace managers {
 enum class SceneInstanceTranslationOrigin;
-}
+}  // namespace managers
 namespace attributes {
 
 /**
@@ -28,8 +28,9 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
  public:
   /**
    * @brief Constant static map to provide mappings from string tags to @ref
-   * esp::assets::AssetType values.  This will be used to map values set in json
-   * for mesh type to @ref esp::assets::AssetType.  Keys must be lowercase.
+   * esp::physics::MotionType values.  This will be used to map values set in
+   * json for mesh type to @ref esp::physics::MotionType.  Keys must be
+   * lowercase.
    */
   static const std::map<std::string, esp::physics::MotionType>
       MotionTypeNamesMap;
@@ -117,6 +118,62 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
   float getMassScale() const { return getFloat("mass_scale"); }
   void setMassScale(float mass_scale) { setFloat("mass_scale", mass_scale); }
 
+  /**
+   * @brief Used for info purposes.  Return a string name corresponding to the
+   * currently specified motion type value;
+   */
+  std::string getCurrMotionTypeName() const {
+    // Must always be valid value
+    esp::physics::MotionType motionType =
+        static_cast<esp::physics::MotionType>(getMotionType());
+    for (const auto& it : MotionTypeNamesMap) {
+      if (it.second == motionType) {
+        return it.first;
+      }
+    }
+    return "unspecified";
+  }
+
+  /**
+   * @brief Used for info purposes.  Return a string name corresponding to the
+   * currently specified shader type value;
+   */
+  std::string getCurrShaderTypeName() const;
+
+ protected:
+  /**
+   * @brief Retrieve a comma-separated informational string about the contents
+   * of this managed object.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+  std::string getObjectInfoInternal() const override;
+  /**
+   * @brief Retrieve a comma-separated string holding the header values for the
+   * info returned for this managed object, type-specific.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+  std::string getObjectInfoHeaderInternal() const override;
+
+  /**
+   * @brief Retrieve a comma-separated informational string about the contents
+   * of this managed object.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+  virtual std::string getSceneObjInstanceInfoInternal() const { return ""; }
+
+  /**
+   * @brief Retrieve a comma-separated informational string about the contents
+   * of this managed object.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+  virtual std::string getSceneObjInstanceInfoHeaderInternal() const {
+    return "";
+  }
+
  public:
   ESP_SMART_POINTERS(SceneObjectInstanceAttributes)
 };  // class SceneObjectInstanceAttributes
@@ -176,6 +233,20 @@ class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
 
  protected:
   /**
+   * @brief Retrieve a comma-separated informational string about the contents
+   * of this SceneAOInstanceAttributes object.
+   */
+  std::string getSceneObjInstanceInfoInternal() const override;
+
+  /**
+   * @brief Retrieve a comma-separated informational string
+   * about the contents of this managed object.
+   * TODO : once Magnum supports retrieving key-values of
+   * configurations, use that to build this data.
+   */
+  std::string getSceneObjInstanceInfoHeaderInternal() const override;
+
+  /**
    * @brief Map of joint names/idxs to values for initial pose
    */
   std::map<std::string, float> initJointPose_;
@@ -192,17 +263,6 @@ class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
 
 class SceneAttributes : public AbstractAttributes {
  public:
-  /**
-   * @brief Constant static map to provide mappings from string tags to @ref
-   * metadata::managers::SceneInstanceTranslationOrigin values.  This will be
-   * used to map values set in json for translation origin to @ref
-   * metadata::managers::SceneInstanceTranslationOrigin.  Keys must be
-   * lowercase.
-   */
-  static const std::map<std::string,
-                        metadata::managers::SceneInstanceTranslationOrigin>
-      InstanceTranslationOriginMap;
-
   explicit SceneAttributes(const std::string& handle);
 
   /**
@@ -303,6 +363,22 @@ class SceneAttributes : public AbstractAttributes {
   }
 
  protected:
+  /**
+   * @brief Retrieve a comma-separated string holding the header values for the
+   * info returned for this managed object, type-specific.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+
+  std::string getObjectInfoHeaderInternal() const override { return ""; }
+
+  /**
+   * @brief Retrieve a comma-separated informational string about the contents
+   * of this managed object.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+  std::string getObjectInfoInternal() const override;
   /**
    * @brief The stage instance used by the scene
    */
