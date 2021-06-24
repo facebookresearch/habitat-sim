@@ -12,6 +12,7 @@ import pytest
 
 import examples.settings
 import habitat_sim
+import habitat_sim.robots.fetch_robot as fetch
 from utils import simulate
 
 
@@ -50,6 +51,10 @@ def test_fetch_robot_wrapper():
         ground_plane = rigid_obj_mgr.add_object_by_template_handle(cube_handle)
         ground_plane.motion_type = habitat_sim.physics.MotionType.KINEMATIC
         ground_plane.translation = [0.0, -0.2, 0.0]
+
+        robot_path = "data/robots/hab_fetch/robots/hab_fetch.urdf"
+        robot = fetch.FetchRobot(robot_path, sim)
+        robot.update()
 
         # TODO: the testing here
         observations += simulate(sim, 1.0, produce_debug_video)
