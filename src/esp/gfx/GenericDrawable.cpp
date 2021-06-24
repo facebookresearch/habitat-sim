@@ -116,7 +116,7 @@ void GenericDrawable::updateShaderLightingParameters(
 void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
                            Mn::SceneGraph::Camera3D& camera) {
   CORRADE_ASSERT(glMeshExists(),
-                 "GenericDrawable::draw : GL mesh doesn't exist", );
+                 "GenericDrawable::draw() : GL mesh doesn't exist", );
 
   updateShader();
 

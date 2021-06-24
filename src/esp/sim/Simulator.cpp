@@ -146,15 +146,16 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
       renderer_ = gfx::Renderer::create(flags);
     }
   } else {
-    CORRADE_ASSERT(!Magnum::GL::Context::hasCurrent(),
-                   "::reconfigure : Unexpected existing context when "
-                   "createRenderer==false", );
+    CORRADE_ASSERT(
+        !Magnum::GL::Context::hasCurrent(),
+        "Simulator::reconfigure() : Unexpected existing context when "
+        "createRenderer==false", );
   }
 
   // (re) create scene instance
   success = createSceneInstance(config_.activeSceneName);
 
-  LOG(INFO) << "::reconfigure : createSceneInstance success == "
+  LOG(INFO) << "Simulator::reconfigure() : createSceneInstance success == "
             << (success ? "true" : "false")
             << " for active scene name : " << config_.activeSceneName
             << (config_.createRenderer ? " with" : " without") << " renderer.";

@@ -101,12 +101,9 @@ class Simulator {
    * --headless mode on linux
    */
   int gpuDevice() const {
-    if (context_ == nullptr) {
-      CORRADE_ASSERT(
-          !config_.createRenderer,
-          "Simulator::gpuDevice: no OpenGL context when one is expected", 0);
-      return 0;
-    }
+    CORRADE_ASSERT(
+        config_.createRenderer,
+        "Simulator::gpuDevice() : no OpenGL context when one is expected", 0);
     return context_->gpuDevice();
   }
 
