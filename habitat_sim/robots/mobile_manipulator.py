@@ -4,10 +4,10 @@ import attr
 import magnum as mn
 import numpy as np
 
-# from habitat.core.simulator import Simulator
-from robot_interface import RobotInterface
-
 import habitat_sim
+
+# from habitat.core.simulator import Simulator
+from habitat_sim.robots.robot_interface import RobotInterface
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -85,7 +85,7 @@ class MobileManipulator(RobotInterface):
         self,
         params: MobileManipulatorParams,
         urdf_path: str,
-        sim: habitat_sim.Simulator,
+        sim: habitat_sim.simulator.Simulator,
         limit_robo_joints: bool = True,
     ):
         """Constructor
@@ -95,8 +95,8 @@ class MobileManipulator(RobotInterface):
         self.urdf_path = urdf_path
         self.params = params
 
-        self._gripper_state = [0.0]
-        self._robot_id = None
+        self._gripper_state = 0.0
+        self._robot: habitat_sim.physics.ManagedBulletArticulatedObject = None
         self._sim = sim
         self._model_rot = mn.Matrix4.rotation(mn.Rad(-1.56), mn.Vector3(1.0, 0, 0))
         self._limit_robo_joints = limit_robo_joints
@@ -110,15 +110,12 @@ class MobileManipulator(RobotInterface):
 
     def get_robot_sim_id(self) -> int:
         """Gets the underlying simulator ID of the robot."""
-        return self._robot_id
+        return self._robot.object_id
 
-    def reset(self) -> None:
+    def reconfigure(self) -> None:
         """Adds the articulated robot object to the scene."""
-        self._robot_id = self._sim.add_articulated_object_from_urdf(
-            self.urdf_path, True
-        )
-        if self._robot_id == -1:
-            raise ValueError("Could not load " + self.urdf_path)
+        ao_mgr = self._sim.get_articulated_object_manager()
+        self._robot = ao_mgr.add_articulated_object_from_urdf(self.urdf_path)
 
     def update(self) -> None:
         """Updates the camera transformations and performs necessary checks on
@@ -139,23 +136,13 @@ class MobileManipulator(RobotInterface):
             sens_obj.node.transformation = inv_T @ arm_T
 
         # Guard against out of limit joints
+        # TODO: should auto clamping be enabled instead? How often should we clamp?
         if self._limit_robo_joints:
-            upper_lims = self._sim.get_articulated_object_position_limits(
-                self._robot_id, True
-            )
-            lower_lims = self._sim.get_articulated_object_position_limits(
-                self._robot_id, False
-            )
-            robot_joint_pos = self._sim.get_articulated_object_positions(self._robot_id)
-            new_robot_joint_pos = np.clip(robot_joint_pos, lower_lims, upper_lims)
-            if (new_robot_joint_pos != robot_joint_pos).any():
-                self._sim.set_articulated_object_positions(
-                    self._robot_id, new_robot_joint_pos
-                )
+            self._robot.clamp_joint_limits()
 
-        self._sim.set_articulated_object_sleep(self._robot_id, False)
+        self._robot.awake = True
 
-    def reconfigure(self) -> None:
+    def reset(self) -> None:
         """Reset the joints on the existing robot."""
         jms = habitat_sim.physics.JointMotorSettings(
             0,  # position_target
@@ -165,7 +152,7 @@ class MobileManipulator(RobotInterface):
             self.params.arm_mtr_max_impulse,  # max_impulse
         )
         for i in self.params.arm_joints:
-            self._sim.update_joint_motor(self._robot_id, i, jms)
+            self._robot.update_joint_motor(i, jms)
 
         # Init the fetch starting joint positions.
         if self.params.arm_init_params is not None:
@@ -181,20 +168,14 @@ class MobileManipulator(RobotInterface):
             )
             # pylint: disable=not-an-iterable
             for i in self.params.wheel_joints:
-                self._sim.update_joint_motor(self._robot_id, i, jms)
+                self._robot.update_joint_motor(i, jms)
 
     #############################################
     # ARM RELATED
     #############################################
     def get_arm_joint_lims(self) -> Tuple[np.ndarray, np.ndarray]:
         """Get the arm joint limits in radians"""
-        upper_lims = self._sim.get_articulated_object_position_limits(
-            self._robot_id, True
-        )
-        lower_lims = self._sim.get_articulated_object_position_limits(
-            self._robot_id, False
-        )
-        lower_lims, upper_lims = np.array(lower_lims), np.array(upper_lims)
+        lower_lims, upper_lims = self._robot.joint_position_limits
         lower_lims = lower_lims[self.params.arm_joints]
         upper_lims = upper_lims[self.params.arm_joints]
         return lower_lims, upper_lims
@@ -223,47 +204,44 @@ class MobileManipulator(RobotInterface):
         """Gets the transformation of the end-effector location. This is offset
         from the end-effector link location.
         """
-        link_rigid_state = self._sim.get_articulated_link_rigid_state(
-            self._robot_id, self.params.ee_link
+        return (
+            self._robot.get_link_scene_node(self.params.ee_link)
+            .transformation()
+            .transform_point(self.get_ee_local_offset())
         )
-        # Move the end effector up a bit so it is in the middle of the gripper
-        mat = mn.Matrix4.from_(
-            link_rigid_state.rotation.to_matrix(), link_rigid_state.translation
-        )
-        mat = mat @ mn.Matrix4.translation(self.get_ee_local_offset())
-        return mat
 
-    def set_gripper_state(self, gripper_state: List[float]) -> None:
+    def set_gripper_state(self, gripper_state: float) -> None:
         """Set the desired state of the gripper"""
         self._gripper_state = gripper_state
 
     def close_gripper(self) -> None:
         """Set gripper to the close state"""
-        self.set_gripper_state([self.params.gripper_closed_state])
+        self.set_gripper_state(self.params.gripper_closed_state)
 
     def open_gripper(self) -> None:
         """Set gripper to the open state"""
-        self.set_gripper_state([self.params.gripper_open_state])
+        self.set_gripper_state(self.params.gripper_open_state)
 
     def is_gripper_open(self) -> bool:
-        # Give some threshold for the open state, but give some threshold.
-        grip_dist = np.abs(self._gripper_state[0] - self.params.gripper_open_state)
+        # Give some threshold for the open state.
+        grip_dist = np.abs(self._gripper_state - self.params.gripper_open_state)
         return grip_dist < 0.001
 
     def set_arm_pos(self, ctrl: List[float]):
         """Kinematically sets the arm joints and sets the motors to target."""
+        # TODO: pretty inefficent way to do this, better to modify the full pose iteratively and set once
         for i, jidx in enumerate(self.params.arm_joints):
             self._set_mtr_pos(jidx, ctrl[i])
             self._set_joint_pos(jidx, ctrl[i])
 
     def get_arm_pos(self) -> np.ndarray:
         """Get the current arm joint positions in radians."""
-        js = self._sim.get_articulated_object_positions(self._robot_id)
+        js = self._robot.joint_positions
         return np.array(js)[self.params.arm_joints]
 
     def get_arm_vel(self) -> np.ndarray:
         """Get the velocity of the arm joints."""
-        js_vel = self._sim.get_articulated_object_velocities(self._robot_id)
+        js_vel = self._robot.joint_velocities
         return np.array(js_vel)[self.params.arm_joints]
 
     def set_arm_mtr_pos(self, ctrl: List[float]) -> None:
@@ -290,61 +268,13 @@ class MobileManipulator(RobotInterface):
         )
 
     #############################################
-    # BASE RELATED
-    #############################################
-    def set_base_transform(self, T: mn.Matrix4):
-        """Sets the transform of the robot base."""
-        self._sim.set_articulated_object_root_state(self._robot_id, T)
-
-    def set_base_position_2d(self, new_pos: np.ndarray):
-        """Sets the robot base to a 2D location.
-        :param new_pos: 2D coordinates of where the robot will be placed. The height
-          will be same as current position.
-        """
-        base_transform = self._sim.get_articulated_object_root_state(self._robot_id)
-        pos = base_transform.translation
-        base_transform.translation = mn.Vector3(new_pos[0], pos[1], new_pos[1])
-        self._sim.set_articulated_object_root_state(self._robot_id, base_transform)
-
-    def set_base_position_3d(self, new_pos: np.ndarray):
-        """Sets the robot base to a 3D location
-        :param new_pos: 3D coordinates of where the robot will be placed.
-        """
-        base_transform = self._sim.get_articulated_object_root_state(self._robot_id)
-        pos = base_transform.translation
-        base_transform.translation = mn.Vector3(new_pos[0], pos[1], new_pos[1])
-        self._sim.set_articulated_object_root_state(self._robot_id, base_transform)
-
-    def set_base_rotation(self, rot_rad: float):
-        """Set the rotation of the robot along the y-axis. The position will
-        remain the same.
-        """
-        cur_trans = self._sim.get_articulated_object_root_state(self._robot_id)
-        pos = cur_trans.translation
-
-        add_rot_mat = mn.Matrix4.rotation(mn.Rad(rot_rad), mn.Vector3(0.0, 0, 1))
-        new_trans = self._model_rot @ add_rot_mat
-        new_trans.translation = pos
-        self._sim.set_articulated_object_root_state(self._robot_id, new_trans)
-
-    def get_base_transform(self) -> mn.Matrix4:
-        """Get the base transformation"""
-        return self._sim.get_articulated_object_root_state(self._robot_id)
-
-    #############################################
     # HIDDEN
     #############################################
     def _get_arm_cam_transform(self):
         """Helper function to get the transformation of where the arm camera
         should be placed.
         """
-        link_rigid_state = self._sim.get_articulated_link_rigid_state(
-            self._robot_id, self.params.ee_link
-        )
-        ee_trans = mn.Matrix4.from_(
-            link_rigid_state.rotation.to_matrix(), link_rigid_state.translation
-        )
-
+        ee_trans = self._robot.get_link_scene_node(self.params.ee_link).transformation()
         offset_trans = mn.Matrix4.translation(self.params.arm_cam_offset_pos)
         rot_trans = mn.Matrix4.rotation_y(mn.Deg(-90))
         spin_trans = mn.Matrix4.rotation_z(mn.Deg(90))
@@ -355,26 +285,28 @@ class MobileManipulator(RobotInterface):
         """Helper function to get the transformation of where the head camera
         should be placed.
         """
-        robot_state = self._sim.get_articulated_object_root_state(self._robot_id)
-
-        look_at = robot_state.transform_point(self.params.head_cam_look_pos)
-        cam_pos = robot_state.transform_point(self.params.head_cam_offset_pos)
-
+        look_at = self._robot.transformation().transform_point(
+            self.params.head_cam_look_pos
+        )
+        cam_pos = self._robot.transformation().transform_point(
+            self.params.head_cam_offset_pos
+        )
         return mn.Matrix4.look_at(cam_pos, look_at, mn.Vector3(0, -1, 0))
 
     def _set_mtr_pos(self, joint, ctrl):
-        jms = self._sim.get_joint_motor_settings(self._robot_id, joint)
+        jms = self._robot.get_joint_motor_settings(joint)
         jms.position_target = ctrl
-        self._sim.update_joint_motor(self._robot_id, joint, jms)
+        self._robot.update_joint_motor(joint, jms)
 
     def _get_mtr_pos(self, joint):
-        jms = self._sim.get_joint_motor_settings(self._robot_id, joint)
+        jms = self._robot.get_joint_motor_settings(joint)
         return jms.position_target
 
     def _set_joint_pos(self, joint_idx, angle):
-        set_pos = np.array(self._sim.get_articulated_object_positions(self._robot_id))
+        # TODO: This is pretty inefficient and should not be used iteratively
+        set_pos = self._robot.joint_positions
         set_pos[joint_idx] = angle
-        self._sim.set_articulated_object_positions(self._robot_id, set_pos)
+        self._robot.joint_positions = set_pos
 
     def _interpolate_arm_control(self, targs, idxs, seconds):
         curs = np.array([self._get_mtr_pos(i) for i in idxs])

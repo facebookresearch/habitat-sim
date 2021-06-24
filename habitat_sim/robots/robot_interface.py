@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 class RobotInterface(ABC):
     def __init__(self):
-        self.robot = None
+        pass
 
     @abstractmethod
     def get_robot_sim_id(self) -> int:

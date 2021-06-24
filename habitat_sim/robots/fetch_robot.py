@@ -1,22 +1,23 @@
 import magnum as mn
 import numpy as np
-from mobile_manipulator import MobileManipulator, MobileManipulatorParams
+import pybullet as p
 
-try:
-    import pybullet as p
-except Exception:
-    pass
+from habitat_sim.robots.mobile_manipulator import (
+    MobileManipulator,
+    MobileManipulatorParams,
+)
 
 
 class IkHelper:
-    def __init__(self):
+    def __init__(self, urdf_path: str):
         self._arm_len = 7
+        self.urdf_path = urdf_path
 
     def setup_sim(self):
         self.pc_id = p.connect(p.DIRECT)
 
         self.robo_id = p.loadURDF(
-            "./orp/robots/opt_fetch/robots/fetch_onlyarm.urdf",
+            self.urdf_path,
             basePosition=[0, 0, 0],
             useFixedBase=True,
             flags=p.URDF_USE_INERTIA_FROM_FILE,
@@ -96,7 +97,7 @@ class FetchRobot(MobileManipulator):
         self.head_rot_jid = 3
         self.head_tilt_jid = 2
 
-        self._ik = IkHelper()
+        self._ik = IkHelper(self.urdf_path)
         self._ik.setup_sim()
 
     def update(self):

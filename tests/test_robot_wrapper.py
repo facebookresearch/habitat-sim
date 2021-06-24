@@ -12,7 +12,7 @@ import pytest
 
 import examples.settings
 import habitat_sim
-import habitat_sim.robots.fetch_robot as fetch
+import habitat_sim.robots.fetch_robot as fetch_robot
 from utils import simulate
 
 
@@ -41,7 +41,7 @@ def test_fetch_robot_wrapper():
         rigid_obj_mgr = sim.get_rigid_object_manager()
 
         # setup the camera for debug video (looking at 0,0,0)
-        sim.agents[0].scene_node.translation = [0.0, -1.4, 2.0]
+        sim.agents[0].scene_node.translation = [0.0, -1.0, 2.0]
 
         # add a ground plane
         cube_handle = obj_template_mgr.get_template_handles("cubeSolid")[0]
@@ -53,8 +53,9 @@ def test_fetch_robot_wrapper():
         ground_plane.translation = [0.0, -0.2, 0.0]
 
         robot_path = "data/robots/hab_fetch/robots/hab_fetch.urdf"
-        robot = fetch.FetchRobot(robot_path, sim)
-        robot.update()
+        fetch = fetch_robot.FetchRobot(robot_path, sim)
+        fetch.reconfigure()
+        fetch.update()
 
         # TODO: the testing here
         observations += simulate(sim, 1.0, produce_debug_video)
