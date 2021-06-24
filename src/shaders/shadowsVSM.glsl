@@ -35,4 +35,14 @@ float computeShadowVSM(vec3 fragPos, vec3 lightPos) {
     return computeShadowUpperBound(moments, d);
 }
 
+vec3 visualizePointShadowMap(vec3 fragPos, vec3 lightPos) {
+    // get vector between fragment position and light position
+    vec3 lightToFrag = fragPos - lightPos;
+    // use the fragment to light vector to sample from the depth map
+    float depth = texture(ShadowMap0, normalize(lightToFrag)).r;
+    const float lightFar = 20.0f;  // can be a uniform in the future
+    float d = depth / lightFar;
+    return vec3(0.0, 0.0, d);
+}
+
 #endif

@@ -482,9 +482,7 @@ fragmentColor.rgb += iblSpecularContrib;
 				fragmentColor.rgb = n; // normal
 				break;
       case 6:
-      #ifdef SHADOWS_PCF
         fragmentColor.rgb = visualizePointShadowMap(position, LightDirections[0].xyz);
-      #endif
         break;
 
     /*
