@@ -86,6 +86,7 @@ def initialize_test_data_sources(data_path):
             "locobot_merged",
             "mp3d_example_scene",
             "coda_scene",
+            "hab_fetch",
         ]
     }
 
