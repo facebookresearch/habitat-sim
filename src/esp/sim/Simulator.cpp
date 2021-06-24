@@ -254,8 +254,7 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
 
   }  // if semantic scene descriptor specified in scene instance
 
-  // 3. Specify frustumCulling based on value either from config (if override
-  // is specified) or from scene instance attributes.
+  // 3. Specify frustumCulling based on value from config
   frustumCulling_ = config_.frustumCulling;
 
   // return a const ptr to the cur scene instance attributes
@@ -309,6 +308,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
                                       Mn::ResourceKey{lightSetupKey});
     }
   }
+  // set config's sceneLightSetup to track currently specified light setup key
   config_.sceneLightSetup = lightSetupKey;
   metadataMediator_->setSimulatorConfiguration(config_);
 

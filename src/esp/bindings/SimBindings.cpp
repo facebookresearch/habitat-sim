@@ -421,6 +421,8 @@ void initSimBindings(py::module& m) {
       .def("get_light_setup", &Simulator::getLightSetup,
            "key"_a = DEFAULT_LIGHTING_KEY,
            R"(Get a copy of the LightSetup registered with a specific key.)")
+      .def("get_current_light_setup", &Simulator::getCurrentLightSetup,
+           R"(Get a copy of the LightSetup used to create the current scene.)")
       .def(
           "set_light_setup", &Simulator::setLightSetup, "light_setup"_a,
           "key"_a = DEFAULT_LIGHTING_KEY,
