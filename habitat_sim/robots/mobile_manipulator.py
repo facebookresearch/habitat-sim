@@ -5,8 +5,6 @@ import magnum as mn
 import numpy as np
 
 import habitat_sim
-
-# from habitat.core.simulator import Simulator
 from habitat_sim.robots.robot_interface import RobotInterface
 
 

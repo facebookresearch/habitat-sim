@@ -52,12 +52,16 @@ def test_fetch_robot_wrapper():
         ground_plane.motion_type = habitat_sim.physics.MotionType.KINEMATIC
         ground_plane.translation = [0.0, -0.2, 0.0]
 
+        # add the robot to the world via the wrapper
         robot_path = "data/robots/hab_fetch/robots/hab_fetch.urdf"
         fetch = fetch_robot.FetchRobot(robot_path, sim)
         fetch.reconfigure()
         fetch.update()
 
-        # TODO: the testing here
+        observations += simulate(sim, 1.0, produce_debug_video)
+
+        # fetch.reset()
+
         observations += simulate(sim, 1.0, produce_debug_video)
 
         # produce some test debug video
