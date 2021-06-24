@@ -527,6 +527,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
     IblDiffuse = 3,
     IblSpecular = 4,
     Normal = 5,
+    Shadow0 = 6,
   };
   /**
    *@brief debug display visualization

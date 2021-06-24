@@ -643,6 +643,8 @@ void Simulator::computeShadowMaps(float lightNearPlane, float lightFarPlane) {
   // In the future, TODO:
   // should get the light setup for the scene, and compute the shadow map
   // one by one
+
+  // Mn::Vector3 lightPos[] = {Mn::Vector3{16.1, 7.7, 4.8}, Mn::Vector3{}};
   // Here we just compute 1 point show map in the center of the ceiling
   int lightId = 0;
   Mn::ResourceKey key(Corrade::Utility::formatString(
@@ -661,12 +663,17 @@ void Simulator::computeShadowMaps(float lightNearPlane, float lightFarPlane) {
         // For shadowsPCF
         // new gfx::CubeMap{shadowMapSize, {gfx::CubeMap::Flag::DepthTexture}},
         // For shadowsPCF + visual depths
-        // new gfx::CubeMap{shadowMapSize,
-        //                 {gfx::CubeMap::Flag::DepthTexture |
-        //                  gfx::CubeMap::Flag::ColorTexture}},
+        /*
         new gfx::CubeMap{shadowMapSize,
-                         {gfx::CubeMap::Flag::VarianceShadowMapTexture |
-                          gfx::CubeMap::Flag::AutoBuildMipmap}},
+                         {gfx::CubeMap::Flag::DepthTexture |
+                          gfx::CubeMap::Flag::ColorTexture}},
+        */
+
+        new gfx::CubeMap{
+            shadowMapSize,
+            {gfx::CubeMap::Flag::VarianceShadowMapTexture |
+             // gfx::CubeMap::Flag::ColorTexture | // for future visualization
+             gfx::CubeMap::Flag::AutoBuildMipmap}},
         Mn::ResourceDataState::Final, Mn::ResourcePolicy::Resident);
 
     CORRADE_INTERNAL_ASSERT(pointShadowMap && pointShadowMap.key() == key);
@@ -715,6 +722,7 @@ void Simulator::computeShadowMaps(float lightNearPlane, float lightFarPlane) {
                             helperShadowMap.key() == helperKey);
   }
 
+  // for VSM only !!!
   renderer_->applyGaussianFiltering(
       *pointShadowMap, *helperShadowMap,
       gfx::CubeMap::TextureType::VarianceShadowMap);

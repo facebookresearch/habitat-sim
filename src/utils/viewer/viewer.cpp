@@ -734,7 +734,7 @@ Viewer::Viewer(const Arguments& arguments)
   if (args.isSet("shadows")) {
     simulator_->updateShadowMapDrawableGroup();
     float lightNearPlane = 0.01f;
-    float lightFarPlane = 200.0f;
+    float lightFarPlane = 20.0f;
     simulator_->computeShadowMaps(lightNearPlane, lightFarPlane);
     simulator_->setShadowMapsToDrawables(lightNearPlane, lightFarPlane);
   }

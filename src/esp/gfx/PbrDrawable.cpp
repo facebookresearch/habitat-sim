@@ -134,14 +134,15 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   PbrShader::PbrEquationScales scales;
   scales.DirectDiffuse = 0.8;
   scales.DirectSpecular = 0.8;
-  scales.IblDiffuse = 0.7;
-  scales.IblSpecular = 0.5;
+  scales.IblDiffuse = 0.8;
+  scales.IblSpecular = 0.8;
   (*shader_).setPbrEquationScales(scales);
   // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::DirectDiffuse);
   // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::DirectSpecular);
   // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::IblDiffuse);
   // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::IblSpecular);
   // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::Normal);
+  // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::Shadow0);
 
   if ((flags_ & PbrShader::Flag::BaseColorTexture) &&
       (materialData_->baseColorTexture != nullptr)) {

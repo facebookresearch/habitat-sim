@@ -2291,7 +2291,8 @@ void ResourceManager::initPbrImageBasedLighting() {
           // shaderManager_, "./data/pbr/MonValley_G_DirtRoad_8k.jpg"));  //
           // keep
           // shaderManager_, "./data/pbr/PaperMill_E_8k.jpg"));  // keep
-          shaderManager_, "./data/pbr/20_Subway_Lights_8k.jpg"));  // keep
+          // shaderManager_, "./data/pbr/20_Subway_Lights_8k.jpg"));  // keep
+          shaderManager_, "./data/pbr/lythwood_room_4k.png"));  // keep
   // shaderManager_, "./data/pbr/snow_test8_Bg.jpg"));
 }
 
