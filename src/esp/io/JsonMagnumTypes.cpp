@@ -12,9 +12,9 @@ JsonGenericValue toJsonValue(const Magnum::Quaternion& quat,
                              JsonAllocator& allocator) {
   JsonGenericValue arr(rapidjson::kArrayType);
   // note squashing
-  arr.PushBack(squashTinyFloats(quat.scalar()), allocator);
+  arr.PushBack(squashTinyDecimals(quat.scalar()), allocator);
   for (int i = 0; i < 3; i++) {
-    arr.PushBack(squashTinyFloats(quat.vector()[i]), allocator);
+    arr.PushBack(squashTinyDecimals(quat.vector()[i]), allocator);
   }
   return arr;
 }

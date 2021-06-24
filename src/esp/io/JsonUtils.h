@@ -11,7 +11,7 @@ namespace io {
 // when writing to json, we often want to clamp tiny floats to 0.0 so they can
 // be serialized concisely as "0.0"
 template <typename T>
-T squashTinyFloats(T x) {
+T squashTinyDecimals(T x) {
   const T eps = 1e-6f;
   return (x < eps && x > -eps) ? T(0.0) : x;
 }
