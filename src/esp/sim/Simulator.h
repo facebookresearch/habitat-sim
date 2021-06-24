@@ -1144,6 +1144,15 @@ class Simulator {
   }
 
   /**
+   * @brief Get a copy of the currently set existing @ref gfx::LightSetup.
+   *
+   * @param key The string key of the @ref gfx::LightSetup.
+   */
+  gfx::LightSetup getCurrentLightSetup() {
+    return *resourceManager_->getLightSetup(config_.sceneLightSetup);
+  }
+
+  /**
    * @brief Register a @ref gfx::LightSetup with a key name.
    *
    * If this name already exists, the @ref gfx::LightSetup is updated and all
