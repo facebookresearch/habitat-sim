@@ -691,7 +691,10 @@ void Simulator::computeShadowMaps(float lightNearPlane, float lightFarPlane) {
   // XXX
   // MUST BE THE SAME AS the one in the scene dataset config!!!!!!!!!
   // node.setTranslation(Mn::Vector3{16.1, 7.0, 4.8});
-  node.setTranslation(Mn::Vector3{16.1, 7.7, 4.8});
+  // node.setTranslation(Mn::Vector3{16.1, 7.7, 4.8});
+
+  // node.setTranslation(Mn::Vector3{2.77, 3.0, 5.16});
+  node.setTranslation(Mn::Vector3{2.77, 2.8, 5.16});
   /*
   const Magnum::Range3D& sceneBB =
       getActiveSceneGraph().getRootNode().computeCumulativeBB();
