@@ -1,63 +1,10 @@
 import magnum as mn
 import numpy as np
-import pybullet as p
 
 from habitat_sim.robots.mobile_manipulator import (
     MobileManipulator,
     MobileManipulatorParams,
 )
-
-
-# TODO: using PyBullet for now until we support native IK
-class IkHelper:
-    def __init__(self, urdf_path: str):
-        self._arm_len = 7
-        self.urdf_path = urdf_path
-
-    def setup_sim(self):
-        self.pc_id = p.connect(p.DIRECT)
-
-        self.robo_id = p.loadURDF(
-            self.urdf_path,
-            basePosition=[0, 0, 0],
-            useFixedBase=True,
-            flags=p.URDF_USE_INERTIA_FROM_FILE,
-            physicsClientId=self.pc_id,
-        )
-
-        p.setGravity(0, 0, -9.81, physicsClientId=self.pc_id)
-        JOINT_DAMPING = 0.5
-        self.pb_link_idx = 7
-
-        for link_idx in range(15):
-            p.changeDynamics(
-                self.robo_id,
-                link_idx,
-                linearDamping=0.0,
-                angularDamping=0.0,
-                jointDamping=JOINT_DAMPING,
-                physicsClientId=self.pc_id,
-            )
-            p.changeDynamics(
-                self.robo_id, link_idx, maxJointVelocity=200, physicsClientId=self.pc_id
-            )
-
-    def set_arm_state(self, joint_pos, joint_vel=None):
-        if joint_vel is None:
-            joint_vel = np.zeros((len(joint_pos),))
-        for i in range(7):
-            p.resetJointState(
-                self.robo_id, i, joint_pos[i], joint_vel[i], physicsClientId=self.pc_id
-            )
-
-    def calc_ik(self, targ_ee):
-        """
-        targ_ee is in ROBOT COORDINATE FRAME NOT IN EE COORDINATE FRAME
-        """
-        js = p.calculateInverseKinematics(
-            self.robo_id, self.pb_link_idx, targ_ee, physicsClientId=self.pc_id
-        )
-        return js[: self._arm_len]
 
 
 class FetchRobot(MobileManipulator):
@@ -100,9 +47,6 @@ class FetchRobot(MobileManipulator):
         self.head_rot_jid = 3
         self.head_tilt_jid = 2
 
-        self._ik = IkHelper(self.urdf_path)
-        self._ik.setup_sim()
-
     def update(self):
         super().update()
         # Fix the head.
@@ -119,27 +63,6 @@ class FetchRobot(MobileManipulator):
     #############################################
     # ARM RELATED
     #############################################
-    def calculate_ee_fk(self, js):
-        # TODO: why using pybullet here? re-implement with robot.joint_positions = state
-        self._ik.set_arm_state(js, np.zeros(js.shape))
-        ls = p.getLinkState(
-            self._ik.robo_id,
-            self._ik.pb_link_idx,
-            computeForwardKinematics=1,
-            physicsClientId=self._ik.pc_id,
-        )
-        world_ee = ls[4]
-        return np.array(world_ee)
-
-    def calculate_ee_ik(self, ee_targ):
-        joint_pos = self.get_arm_pos()
-        joint_vel = self.get_arm_vel()
-
-        self._ik.set_arm_state(joint_pos, joint_vel)
-
-        des_joint_pos = self._ik.calc_ik(ee_targ)
-        des_joint_pos = list(des_joint_pos)
-        return np.array(des_joint_pos)
 
     def retract_arm(self):
         # TODO: not full arm state here

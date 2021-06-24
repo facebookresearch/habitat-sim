@@ -60,7 +60,9 @@ def test_fetch_robot_wrapper():
 
         for i in range(fetch._robot.num_links):
             # if fetch._robot.get_link_joint_type(i) != habitat_sim.physics.JointType.Fixed:
-            print(fetch._robot.get_link_joint_name(i))
+            print(
+                f"{i} = {fetch._robot.get_link_joint_name(i)} | type = {fetch._robot.get_link_joint_type(i)}"
+            )
 
         observations += simulate(sim, 1.0, produce_debug_video)
 
@@ -82,8 +84,6 @@ def test_fetch_robot_wrapper():
         # fetch.set_gripper_state()
         # fetch.get_end_effector_transform()
         # fetch.get_arm_joint_lims()
-
-        # TODO: test IK?
 
         # produce some test debug video
         if produce_debug_video:

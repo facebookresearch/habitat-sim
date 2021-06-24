@@ -4,8 +4,9 @@ import attr
 import magnum as mn
 import numpy as np
 
-import habitat_sim
+from habitat_sim.physics import JointMotorSettings, ManagedBulletArticulatedObject
 from habitat_sim.robots.robot_interface import RobotInterface
+from habitat_sim.simulator import Simulator
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -83,7 +84,7 @@ class MobileManipulator(RobotInterface):
         self,
         params: MobileManipulatorParams,
         urdf_path: str,
-        sim: habitat_sim.simulator.Simulator,
+        sim: Simulator,
         limit_robo_joints: bool = True,
     ):
         """Constructor
@@ -94,7 +95,7 @@ class MobileManipulator(RobotInterface):
         self.params = params
 
         self._gripper_state = 0.0
-        self._robot: habitat_sim.physics.ManagedBulletArticulatedObject = None
+        self._robot: ManagedBulletArticulatedObject = None
         self._sim = sim
         self._limit_robo_joints = limit_robo_joints
 
@@ -142,7 +143,7 @@ class MobileManipulator(RobotInterface):
 
     def reset(self) -> None:
         """Reset the joints on the existing robot."""
-        jms = habitat_sim.physics.JointMotorSettings(
+        jms = JointMotorSettings(
             0,  # position_target
             self.params.arm_mtr_pos_gain,  # position_gain
             0,  # velocity_target
@@ -158,7 +159,7 @@ class MobileManipulator(RobotInterface):
             self.set_arm_pos(self.params.arm_init_params)
 
         if self.params.wheel_joints is not None:
-            jms = habitat_sim.physics.JointMotorSettings(
+            jms = JointMotorSettings(
                 0,  # position_target
                 self.params.wheel_mtr_pos_gain,  # position_gain
                 0,  # velocity_target
@@ -192,7 +193,8 @@ class MobileManipulator(RobotInterface):
 
     def calculate_ee_fk(self, js: np.ndarray) -> np.ndarray:
         """Gets the end-effector position for the given joint state."""
-        raise NotImplementedError("Currently no implementation for generic FK.")
+        self._robot.joint_positions = js
+        return self.get_end_effector_transform().translation
 
     def calculate_ee_ik(self, ee_targ: np.ndarray) -> np.ndarray:
         """Gets the joint states necessary to achieve the desired end-effector
@@ -204,11 +206,13 @@ class MobileManipulator(RobotInterface):
         """Gets the transformation of the end-effector location. This is offset
         from the end-effector link location.
         """
-        return (
-            self._robot.get_link_scene_node(self.params.ee_link)
-            .transformation()
-            .transform_point(self.get_ee_local_offset())
+        ef_link_transform = self._robot.get_link_scene_node(
+            self.params.ee_link
+        ).transformation()
+        ef_link_transform.translation = ef_link_transform.transform_point(
+            self.get_ee_local_offset()
         )
+        return ef_link_transform
 
     def set_gripper_state(self, gripper_state: float) -> None:
         """Set the desired state of the gripper"""

@@ -20,6 +20,7 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         metadata,
         nav,
         physics,
+        robots,
         scene,
         sensor,
         sensors,
@@ -28,12 +29,6 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         utils,
     )
     from habitat_sim._ext.habitat_sim_bindings import MapStringString
-
-    # NOTE: must come after simulator module so using try/catch to keep black from sorting
-    try:
-        from habitat_sim import robots
-    except Exception:
-        pass
 
     try:
         from habitat_sim._ext.habitat_sim_bindings import VHACDParameters  # noqa: F401
