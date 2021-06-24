@@ -22,16 +22,7 @@ from habitat_sim.utils.common import (
     quat_to_magnum,
     random_quaternion,
 )
-
-
-def simulate(sim, dt, get_observations=False):
-    observations = []
-    target_time = sim.get_world_time() + dt
-    while sim.get_world_time() < target_time:
-        sim.step_physics(1.0 / 60.0)
-        if get_observations:
-            observations.append(sim.get_sensor_observations())
-    return observations
+from utils import simulate
 
 
 @pytest.mark.skipif(
