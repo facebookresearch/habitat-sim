@@ -3,7 +3,7 @@
   "dataset_rel_to_home": true,
   "dataset_src_subdir": "Facebook/habitat-sim/data/scene_datasets/replicaCAD/",
   "scenes_src_subdir": "replicaCAD_105",
-  "dataset_dest_subdir": ".",
+  "dataset_dest_subdir": "tempTestOut/",
   "dataset_glb_dest_subdir": ".",
   "stage_glb_dest_subdir": "stages/",
   "obj_glb_dest_subdir": "objects/",

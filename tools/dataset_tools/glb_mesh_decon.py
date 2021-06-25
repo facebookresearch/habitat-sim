@@ -13,8 +13,8 @@ import glb_mesh_tools as gut
 
 ###
 # JSON Configuration file for running this application.
-MESH_DECON_CONFIG_JSON = "mesh_decon_AI2Thor.json"
-# MESH_DECON_CONFIG_JSON = "mesh_decon_ReplicaCAD.json"
+# MESH_DECON_CONFIG_JSON = "mesh_decon_AI2Thor.json"
+MESH_DECON_CONFIG_JSON = "mesh_decon_ReplicaCAD.json"
 
 
 ####
@@ -712,13 +712,13 @@ def main():
     build_scene_dataset_config(SCENE_DATASET_NAME, DEFAULT_ATTRIBUTES_TEMPLATE)
 
     ###for testing - 17_physics has stove w/burner and knobs
-    file_list = [
-        ("", "", "FloorPlan320_physics.glb"),
-        ("", "", "FloorPlan_Train8_3.glb"),
-        ("", "", "FloorPlan430_physics.glb"),
-        ("", "", "FloorPlan17_physics.glb"),
-        ("", "", "FloorPlan_Val2_4.glb"),
-    ]
+    # file_list = [
+    #     ("", "", "FloorPlan320_physics.glb"),
+    #     ("", "", "FloorPlan_Train8_3.glb"),
+    #     ("", "", "FloorPlan430_physics.glb"),
+    #     ("", "", "FloorPlan17_physics.glb"),
+    #     ("", "", "FloorPlan_Val2_4.glb"),
+    # ]
 
     # count the instances of objects by name
     object_instance_count_dict = defaultdict(int)
