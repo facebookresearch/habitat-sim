@@ -3,6 +3,8 @@
 import json
 import os
 import re
+from glob import glob
+from os.path import basename, join
 from typing import Any, Dict, Optional, Tuple
 
 # sub-extensions used with json config files to denote the type
@@ -40,6 +42,38 @@ def transform_path_relative(
         return abs_src_file_path
 
 
+def build_config_src_dest_dict(
+    config_src_dir: str,
+    config_dest_dir: str,
+    predicate: Optional[Any] = lambda x: True,
+    debug: Optional[bool] = False,
+) -> Dict[str, Tuple[str, str]]:
+    """Build a dictionary keyed by config file name where value is a tuple holding the fully
+    qualified source path to the file and the fully qualified dest path for the file.
+    :param config_src_dir: Source directory where the configs can be found
+    :param config_dest_dir: Destination directory where the configs should be written to
+    :param predicate: lambda function to use to filter results based on basename values
+    :param debug: Whether to display the results of the mapping.
+    :return: Dictionary holding the requested mappings for all files found in config_src_dir
+    """
+    # key is file name, value is tuple of (srcfile, destfile)
+    config_json_dict = {
+        basename(x): (x, join(config_dest_dir, basename(x)))
+        for x in glob(join(config_src_dir, "*.json"))
+        if predicate(x)
+    }
+    if (len(config_json_dict)) == 0:
+        print(
+            "build_config_src_dest_dict( config_src_dir : {}, config_dest_dir : {}) : No files found/mapped!".format(
+                config_src_dir, config_dest_dir
+            )
+        )
+    if debug:
+        for k, v in config_json_dict.items():
+            print("Basename : {} : value : {}".format(k, v))
+    return config_json_dict
+
+
 def mod_config_paths_rel_dest(
     file_tuple: Tuple[str, str],
     json_data: Dict[str, Any],
@@ -57,8 +91,8 @@ def mod_config_paths_rel_dest(
 
     src_file = os.path.abspath(file_tuple[0])
     dest_dir = os.path.dirname(os.path.abspath(file_tuple[1]))
-    # all possible tags that might have file paths
-    # only modifies if tag is present in file
+    # all possible object or stage config tags that might have file paths
+    # only modifies if tag is present in json_data
     filename_tag_list = [
         "render_asset",
         "collision_asset",
@@ -133,10 +167,10 @@ def mod_json_val_and_save(
     dry_run: Optional[bool] = False,
 ):
     """This function will either load an existing config file, add/modify the specified field
-    using the given tag, and save the file to the specified location/file name, or, if the given src_name is empty,
-    it will save the passed dictionary as json using the provided dest_file naem
-    If dry_run is specified, nothing will be written but rather the expected output
-    will be displayed.
+    using the given tag, and save the file to the specified location/file name, or,
+    if the given src_name is empty, it will save the passed dictionary as json using the provided
+    dest_file name.
+    If dry_run is specified, nothing will be written but rather the expected output will be displayed.
 
     :param file_tuple: A 3-4 element tuple that contains the following information
         file_tuple[0] is config json src file loc - if empty, create dest_file
@@ -151,27 +185,22 @@ def mod_json_val_and_save(
     src_file = file_tuple[0]
     dest_file = file_tuple[1]
     json_mod_vals = file_tuple[2]
+    # whether paths in resultant configs should be changed to be relative to new destination
+    set_paths_rel_dest = False
+    if len(file_tuple) > 3:
+        set_paths_rel_dest = file_tuple[3]
 
     if src_file == "":
         # if no src_file then creating a new json config
         json_data = json_mod_vals
     else:
-        # whether paths in resultant configs should stay relative to old
-        # config location or should be changed to be relative to new destination
-        set_paths_rel_dest = False
-        if len(file_tuple) > 3:
-            set_paths_rel_dest = file_tuple[3]
-
         json_data = load_json_into_dict(src_file)
-
-        # with open(src_file, "r") as src:
-        #     json_data = json.load(src)
-
-        if set_paths_rel_dest:
-            mod_config_paths_rel_dest(file_tuple, json_data)
-
         # Update loaded json with passed modified values
         json_data = update_dict_recurse(json_data, json_mod_vals)
+
+    # if specified, make all embedded paths in json_data
+    if set_paths_rel_dest:
+        mod_config_paths_rel_dest(file_tuple, json_data)
 
     if not dry_run:
         with open(dest_file, "w") as dest:
