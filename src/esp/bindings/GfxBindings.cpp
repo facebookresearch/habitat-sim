@@ -112,13 +112,17 @@ void initGfxBindings(py::module& m) {
             self.enqueueAsyncDrawJob(visualSensor, sceneGraph, view,
                                      RenderCamera::Flags{flags});
           },
-          R"(Draw given scene using the visual sensor)", "visualSensor"_a,
-          "scene"_a, "view"_a,
+          R"(Draw given scene using the visual sensor. See tutorials/async_rendering.py)",
+          "visualSensor"_a, "scene"_a, "view"_a,
           "flags"_a = RenderCamera::Flag{RenderCamera::Flag::FrustumCulling})
-      .def("wait_draw_jobs", &Renderer::waitDrawJobs)
-      .def("start_draw_jobs", &Renderer::startDrawJobs)
+      .def("wait_draw_jobs", &Renderer::waitDrawJobs,
+           R"(See tutorials/async_rendering.py)")
+      .def("start_draw_jobs", &Renderer::startDrawJobs,
+           R"(See tutorials/async_rendering.py)")
 #endif
-      .def("acquire_gl_context", &Renderer::acquireGlContext)
+      .def(
+          "acquire_gl_context", &Renderer::acquireGlContext,
+          R"(See tutorials/async_rendering.py. This is a noop if the main-thread already has the context.)")
       .def(
           "bind_render_target",
           [](Renderer& self, sensor::VisualSensor& visualSensor,
