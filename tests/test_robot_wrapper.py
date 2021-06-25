@@ -26,7 +26,7 @@ from utils import simulate
 )
 def test_fetch_robot_wrapper():
     # set this to output test results as video for easy investigation
-    produce_debug_video = True
+    produce_debug_video = False
     observations = []
     cfg_settings = examples.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "NONE"
