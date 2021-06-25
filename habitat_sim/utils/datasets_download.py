@@ -69,6 +69,18 @@ def initialize_test_data_sources(data_path):
             "link": data_path + "scene_datasets/coda",
             "version": "1.0",
         },
+        "replica_cad_dataset": {
+            "source": "https://dl.fbaipublicfiles.com/habitat/ReplicaCAD/ReplicaCAD_dataset_v1.0.zip",
+            "package_name": "ReplicaCAD_dataset_v1.0.zip",
+            "link": data_path + "ReplicaCAD",
+            "version": "1.0",
+        },
+        "replica_cad_baked_lighting": {
+            "source": "https://dl.fbaipublicfiles.com/habitat/ReplicaCAD/ReplicaCAD_baked_lighting_v1.0.zip",
+            "package_name": "ReplicaCAD_baked_lighting_v1.0.zip",
+            "link": data_path + "ReplicaCAD_baked_lighting",
+            "version": "1.0",
+        },
     }
 
     # data sources can be grouped for batch commands with a new uid
