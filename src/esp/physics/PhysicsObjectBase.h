@@ -382,10 +382,14 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
     }
   }
 
+  /** @brief Activate deferred updates, preventing SceneNode state changes until
+   * updateNodes is called to prevent SceneGraph pollution during render.
+   */
   virtual void deferUpdate() { isDeferringUpdate_ = true; }
 
-  /**
-   * @brief update the SceneNode state to match the simulation state
+  /** @brief Disable deferred updates if active and sets SceneNode states from
+   * internal object physics states.
+   * @param force If set, update sleeping nodes as well as active nodes.
    */
   virtual void updateNodes(CORRADE_UNUSED bool force = false) {
     isDeferringUpdate_ = false;

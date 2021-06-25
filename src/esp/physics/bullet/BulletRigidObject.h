@@ -108,8 +108,9 @@ class BulletRigidObject : public BulletBase,
     }
   }
 
-  /**
-   * @brief
+  /** @brief Disable deferred updates if active and sets SceneNode states from
+   * internal object physics states.
+   * @param force If set, update sleeping objects as well.
    */
   void updateNodes(bool force = false) override;
 

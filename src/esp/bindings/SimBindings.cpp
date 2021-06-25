@@ -46,6 +46,10 @@ void initSimBindings(py::module& m) {
       .def_readwrite("gpu_device_id", &SimulatorConfiguration::gpuDeviceId)
       .def_readwrite("allow_sliding", &SimulatorConfiguration::allowSliding)
       .def_readwrite("create_renderer", &SimulatorConfiguration::createRenderer)
+      .def_readwrite(
+          "leave_context_with_background_renderer",
+          &SimulatorConfiguration::leaveContextWithBackgroundRenderer,
+          R"(See tutorials/async_rendering.py)")
       .def_readwrite("frustum_culling", &SimulatorConfiguration::frustumCulling)
       .def_readwrite("enable_physics", &SimulatorConfiguration::enablePhysics)
       .def_readwrite(
@@ -98,7 +102,9 @@ void initSimBindings(py::module& m) {
       .def("seed", &Simulator::seed, "new_seed"_a)
       .def("reconfigure", &Simulator::reconfigure, "configuration"_a)
       .def("reset", &Simulator::reset)
-      .def("close", &Simulator::close)
+      .def(
+          "close", &Simulator::close, "destroy"_a = true,
+          R"(Free all loaded assets and GPU contexts. Use destroy=true except where noted in tutorials/async_rendering.py.)")
       .def_property("pathfinder", &Simulator::getPathFinder,
                     &Simulator::setPathFinder)
       .def_property(

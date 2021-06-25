@@ -61,14 +61,18 @@ class Simulator {
    * set back to nullptr, any members set to their default values, etc.  If this
    * is not done correctly, the pattern for @ref `close` then @ref `reconfigure`
    * to create a "fresh" instance of the simulator may not work correctly
+   *
+   * @param destroy When set, destroy the background rendering thread and gl
+   * context also. Otherwise these persist if the background rendering thread
+   * was used. This is done because the OpenGL driver leaks memory on thread
+   * destroy on some systems.
    */
-  void close();
+  void close(bool destroy = true);
 
   virtual void reconfigure(const SimulatorConfiguration& cfg);
 
   virtual void reset();
 
- public:
   virtual void seed(uint32_t newSeed);
 
   std::shared_ptr<gfx::Renderer> getRenderer() { return renderer_; }
@@ -620,6 +624,8 @@ class Simulator {
    */
   void setObjectBBDraw(bool drawBB, int objectId, int sceneID = 0) {
     if (sceneHasPhysics(sceneID)) {
+      if (renderer_)
+        renderer_->acquireGlContext();
       auto& drawables = getDrawableGroup(sceneID);
       physicsManager_->setObjectBBDraw(objectId, &drawables, drawBB);
     }
