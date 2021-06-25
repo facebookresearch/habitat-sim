@@ -46,6 +46,7 @@ class MobileManipulatorParams:
         there are wheels).
     :property wheel_mtr_max_impulse: The maximum impulse of the wheel motor (if
         there are wheels).
+    :property base_height: The offset of the root transform from the center ground point for navmesh kinematic control.
     :property ctrl_freq: The number of control actions per second.
     """
 
@@ -73,6 +74,8 @@ class MobileManipulatorParams:
     wheel_mtr_pos_gain: float
     wheel_mtr_vel_gain: float
     wheel_mtr_max_impulse: float
+
+    base_offset: mn.Vector3
 
     ctrl_freq: int
 
@@ -211,8 +214,9 @@ class MobileManipulator(RobotInterface):
         arm_pos_indices = list(
             map(lambda x: self.joint_pos_indices[x], self.params.arm_joints)
         )
-        lower_lims = self.joint_limits[0][arm_pos_indices]
-        upper_lims = self.joint_limits[1][arm_pos_indices]
+
+        lower_lims = [self.joint_limits[0][i] for i in arm_pos_indices]
+        upper_lims = [self.joint_limits[1][i] for i in arm_pos_indices]
         return lower_lims, upper_lims
 
     def get_ee_link_id(self) -> int:
@@ -242,7 +246,7 @@ class MobileManipulator(RobotInterface):
         """
         ef_link_transform = self._robot.get_link_scene_node(
             self.params.ee_link
-        ).transformation()
+        ).transformation
         ef_link_transform.translation = ef_link_transform.transform_point(
             self.get_ee_local_offset()
         )
@@ -279,14 +283,14 @@ class MobileManipulator(RobotInterface):
         arm_pos_indices = list(
             map(lambda x: self.joint_pos_indices[x], self.params.arm_joints)
         )
-        return self._robot.joint_positions[arm_pos_indices]
+        return [self._robot.joint_positions[i] for i in arm_pos_indices]
 
     def get_arm_vel(self) -> np.ndarray:
         """Get the velocity of the arm joints."""
         arm_dof_indices = list(
             map(lambda x: self.joint_dof_indices[x], self.params.arm_joints)
         )
-        return self._robot.joint_velocities[arm_dof_indices]
+        return [self._robot.joint_velocities[i] for i in arm_dof_indices]
 
     def set_arm_mtr_pos(self, ctrl: List[float]) -> None:
         """Set the desired target of the arm joints for the controller to
@@ -312,13 +316,27 @@ class MobileManipulator(RobotInterface):
         )
 
     #############################################
+    # WHEEL RELATED
+    #############################################
+
+    # TODO: add some functions for easy wheel control
+
+    #############################################
+    # BASE RELATED
+    #############################################
+
+    def set_base_position(self, position):
+        """Set the robot base to a desired ground position (e.g. NavMesh point)."""
+        self._robot.translation = position + self.params.base_offset
+
+    #############################################
     # HIDDEN
     #############################################
     def _get_arm_cam_transform(self):
         """Helper function to get the transformation of where the arm camera
         should be placed.
         """
-        ee_trans = self._robot.get_link_scene_node(self.params.ee_link).transformation()
+        ee_trans = self._robot.get_link_scene_node(self.params.ee_link).transformation
         offset_trans = mn.Matrix4.translation(self.params.arm_cam_offset_pos)
         rot_trans = mn.Matrix4.rotation_y(mn.Deg(-90))
         spin_trans = mn.Matrix4.rotation_z(mn.Deg(90))
@@ -329,10 +347,10 @@ class MobileManipulator(RobotInterface):
         """Helper function to get the transformation of where the head camera
         should be placed.
         """
-        look_at = self._robot.transformation().transform_point(
+        look_at = self._robot.transformation.transform_point(
             self.params.head_cam_look_pos
         )
-        cam_pos = self._robot.transformation().transform_point(
+        cam_pos = self._robot.transformation.transform_point(
             self.params.head_cam_offset_pos
         )
         return mn.Matrix4.look_at(cam_pos, look_at, mn.Vector3(0, -1, 0))
@@ -352,12 +370,13 @@ class MobileManipulator(RobotInterface):
         set_pos[self.joint_pos_indices[joint_idx]] = angle
         self._robot.joint_positions = set_pos
 
-    def _interpolate_arm_control(self, targs, idxs, seconds):
+    def _interpolate_arm_control(self, targs, idxs, seconds, get_observations=False):
         curs = np.array([self._get_mtr_pos(i) for i in idxs])
         diff = targs - curs
         T = int(seconds * self.params.ctrl_freq)
         delta = diff / T
 
+        observations = []
         for i in range(T):
             joint_positions = self._robot.joint_positions
             for j, jidx in enumerate(idxs):
@@ -367,3 +386,6 @@ class MobileManipulator(RobotInterface):
                 )
             self._robot.joint_positions = joint_positions
             self._sim.step_world(1 / self.params.ctrl_freq)
+            if get_observations:
+                observations.append(self._sim.get_sensor_observations())
+        return observations

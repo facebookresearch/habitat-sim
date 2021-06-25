@@ -39,6 +39,7 @@ class FetchRobot(MobileManipulator):
             wheel_mtr_pos_gain=0.0,
             wheel_mtr_vel_gain=1.3,
             wheel_mtr_max_impulse=10.0,
+            base_offset=mn.Vector3(0.0, 0.0, 0.0),
             ctrl_freq=30,
         )
         super().__init__(fetch_params, urdf_path, sim, limit_robo_joints)
@@ -73,8 +74,9 @@ class FetchRobot(MobileManipulator):
     def update(self):
         super().update()
         # Fix the head.
-        self._set_joint_pos(self.head_rot_jid, np.pi / 2)
-        self._set_joint_pos(self.head_tilt_jid, 0)
+        self._set_joint_pos(self.head_rot_jid, 0)
+        self._set_joint_pos(self.head_tilt_jid, np.pi / 2)
+        self._set_mtr_pos(self.head_tilt_jid, np.pi / 2)
         # Fix the back
         fix_back_val = 0.15
         self._set_joint_pos(self.back_joint_id, fix_back_val)
@@ -87,19 +89,21 @@ class FetchRobot(MobileManipulator):
     # ARM RELATED
     #############################################
 
-    def retract_arm(self):
-        # TODO: not full arm state here
-        self._interpolate_arm_control(
+    def retract_arm(self, get_observations=False):
+        # TODO: this works, but seems like the wrong state?
+        observations = self._interpolate_arm_control(
             [1.2299035787582397, 2.345386505126953],
-            self.params.arm_joints,
-            -1,
+            [self.params.arm_joints[1], self.params.arm_joints[3]],
+            1,
+            get_observations,
         )
-        # self._interpolate_arm_control(
-        #     [1.2299035787582397, 2.345386505126953],
-        #     [self.arm_start + 1, self.arm_start + 3],
-        #     -1,
-        # )
+        return observations
 
-    def ready_arm(self):
-        # TODO: not full arm state here
-        self._interpolate_arm_control([-0.45, 0.1], self.params.arm_joints, -1)
+    def ready_arm(self, get_observations=False):
+        observations = self._interpolate_arm_control(
+            [-0.45, 0.1],
+            [self.params.arm_joints[1], self.params.arm_joints[3]],
+            1,
+            get_observations,
+        )
+        return observations
