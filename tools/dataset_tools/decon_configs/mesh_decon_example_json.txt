@@ -2,7 +2,19 @@
   "dataset_name": <enter the name of the dataset here>,
   "dataset_rel_to_home": <boolean : whether user specified paths are relative to home dir or cwd>,
   "dataset_src_subdir": <source dataset subdirectory, either relative to home dir or cwd>,
-  "scenes_src_subdir": <subdirectory within dataset_src_subdir holding raw aggregate scenes>,
+  "scenes_src_subdir": <subdirectory within dataset_src_subdir holding raw aggregate scenes to be queried for glbs and/or configs>,
+
+  "dataset_dest_subdir": <base directory of writing destination, subdirectory of dataset_src_subdir>,
+  "dataset_glb_dest_subdir": <destination subdirectory, within dataset_dest_subdir, where to write extracted glbs outputs>,
+  "stage_glb_dest_subdir" : <subdirectory within dataset_glb_dest_subdir to write extracted stage glb files>,
+  "obj_glb_dest_subdir":  <subdirectory within dataset_glb_dest_subdir to write extracted object glb files>,
+
+  "dataset_config_dest_subdir": <destination subdirectory, within dataset_dest_subdir, where to write config outputs>,
+  "scene_instance_dest_subdir" : <subdirectory within dataset_config_dest_subdir to write scene instance files>,
+  "stage_config_dest_subdir" : <subdirectory within dataset_config_dest_subdir to write stage configuration files>,
+  "obj_config_dest_subdir":  <subdirectory within dataset_config_dest_subdir to write object configuration files>,
+  "light_config_dest_subdir": <subdirectory within dataset_config_dest_subdir to write lighting configuration files>,
+
 
   "stage_tag": <Case sensitive tag within scenegraph of glb denoting subtree of nodes holding stage-based assets>,
   "objects_tag": <Case sensitive tag within scenegraph of glb denoting subtree of nodes holding object assets>,

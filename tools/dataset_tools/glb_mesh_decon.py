@@ -118,24 +118,39 @@ OBJECTS_CREATED_STATIC = {
 
 ####
 # Output directories for deconned objects
-# Base destination directory
-DEST_DIR = DATASET_SRC_DIR + "scene_dataset/"
+# Base destination directories for glbs and configs, relative to DATASET_SRC_DIR
+DEST_SUBDIR = "scene_dataset/"
+DEST_GLB_SUBDIR = "."
+DEST_CONFIG_SUBDIR = "scene_dataset/"
+
+DEST_CONFIG_DIR = os.path.join(DATASET_SRC_DIR, DEST_SUBDIR, DEST_CONFIG_SUBDIR)
+
+DEST_GLB_DIR = os.path.join(DATASET_SRC_DIR, DEST_SUBDIR, DEST_GLB_SUBDIR)
+
 
 ###
 # Scene instance
 # Whether or not to build the scene instance configuration files
 BUILD_SCENE_CONFIGS = True
+SCENE_INSTANCE_OUTPUT_SUBDIR = "scenes/"
+
 # Directory to save synthesized scene instance configuration JSONs
-SCENE_INSTANCE_OUTPUT_DIR = os.path.join(DEST_DIR, "scenes/")
+SCENE_INSTANCE_OUTPUT_DIR = os.path.join(DEST_CONFIG_DIR, SCENE_INSTANCE_OUTPUT_SUBDIR)
 
 ###
 # STAGE
 # Whether or not to build the JSON config files for stages
 BUILD_STAGE_CONFIGS = True
+STAGE_CONFIG_OUTPUT_SUBDIR = "stages/"
+
 # Whether or not to save the stage GLB file
 BUILD_STAGE_GLBS = True
+STAGE_GLB_OUTPUT_SUBDIR = "stages/"
+
 # Directory to save stage GLB files and stage configs (if used)
-STAGES_OUTPUT_DIR = os.path.join(DEST_DIR, "stages/")
+STAGE_GLB_OUTPUT_DIR = os.path.join(DEST_GLB_DIR, STAGE_GLB_OUTPUT_SUBDIR)
+# Directory to save stage GLB files and stage configs (if used)
+STAGE_CONFIG_OUTPUT_DIR = os.path.join(DEST_CONFIG_DIR, STAGE_CONFIG_OUTPUT_SUBDIR)
 
 ###
 # OBJECTS
@@ -144,10 +159,16 @@ STAGES_OUTPUT_DIR = os.path.join(DEST_DIR, "stages/")
 OBJECTS_ALL_STATIC = False
 # Whether or not to build the JSON config files for objects
 BUILD_OBJECT_CONFIGS = True
+OBJECT_CONFIG_OUTPUT_SUBDIR = "objects/"
 # Whether or not to build the object GLB files
 BUILD_OBJECT_GLBS = True
-# Directory to save object files and configs
-OBJECTS_OUTPUT_DIR = os.path.join(DEST_DIR, "objects/")
+OBJECT_GLB_OUTPUT_SUBDIR = "objects/"
+
+# Directory to save object files
+OBJ_GLB_OUTPUT_DIR = os.path.join(DEST_GLB_DIR, OBJECT_GLB_OUTPUT_SUBDIR)
+
+# Directory to save object configs
+OBJ_CONFIG_OUTPUT_DIR = os.path.join(DEST_CONFIG_DIR, OBJECT_CONFIG_OUTPUT_SUBDIR)
 
 ###
 # Lighting
@@ -155,8 +176,9 @@ OBJECTS_OUTPUT_DIR = os.path.join(DEST_DIR, "objects/")
 # Lighting requires pygltflib to be installed, so if not present
 # will not succeed
 BUILD_LIGHTING_CONFIGS = False
+LIGHT_CONFIG_OUTPUT_SUBDIR = "lighting/"
 # Directory to save lighting configuration JSONs
-LIGHTING_CONFIG_OUTPUT_DIR = os.path.join(DEST_DIR, "lighting/")
+LIGHTING_CONFIG_OUTPUT_DIR = os.path.join(DEST_CONFIG_DIR, LIGHT_CONFIG_OUTPUT_SUBDIR)
 
 
 # Export source glb scenes as gltf scenes.  This
@@ -211,14 +233,11 @@ def load_decon_global_config_values(mesh_decon_config_json):
         SCENE_DATASET_NAME = decon_configs["dataset_name"]
     if "dataset_src_subdir" in decon_configs:
         global DATASET_SRC_DIR
-        if (
-            "dataset_rel_to_home" in decon_configs
-            and decon_configs["dataset_rel_to_home"]
-        ):
+        if "dataset_rel_to_home" in decon_configs:
             home = os.path.expanduser("~")
         else:
             home = ""
-        DATASET_SRC_DIR = os.path.join(home, "Documents/AI2Thor/")
+        DATASET_SRC_DIR = os.path.join(home, decon_configs["dataset_src_subdir"])
 
     if "scenes_src_subdir" in decon_configs:
         scene_subdir = decon_configs["scenes_src_subdir"]
@@ -228,6 +247,45 @@ def load_decon_global_config_values(mesh_decon_config_json):
     # Aggregate Scene GLBS source directory
     global SCENES_SRC_DIR
     SCENES_SRC_DIR = os.path.join(DATASET_SRC_DIR, scene_subdir)
+
+    if "dataset_dest_subdir" in decon_configs:
+        global DEST_SUBDIR
+        DEST_SUBDIR = decon_configs["dataset_dest_subdir"].strip()
+
+    # build various glb and config output directories
+    if "dataset_glb_dest_subdir" in decon_configs:
+        global DEST_GLB_SUBDIR
+        DEST_GLB_SUBDIR = decon_configs["dataset_glb_dest_subdir"].strip()
+
+    if "stage_glb_dest_subdir" in decon_configs:
+        global STAGE_GLB_OUTPUT_SUBDIR
+        STAGE_GLB_OUTPUT_SUBDIR = decon_configs["stage_glb_dest_subdir"].strip()
+
+    if "obj_glb_dest_subdir" in decon_configs:
+        global OBJECT_GLB_OUTPUT_SUBDIR
+        OBJECT_GLB_OUTPUT_SUBDIR = decon_configs["obj_glb_dest_subdir"].strip()
+
+    if "dataset_config_dest_subdir" in decon_configs:
+        global DEST_CONFIG_SUBDIR
+        DEST_CONFIG_SUBDIR = decon_configs["dataset_config_dest_subdir"].strip()
+
+    if "scene_instance_dest_subdir" in decon_configs:
+        global SCENE_INSTANCE_OUTPUT_SUBDIR
+        SCENE_INSTANCE_OUTPUT_SUBDIR = decon_configs[
+            "scene_instance_dest_subdir"
+        ].strip()
+
+    if "stage_config_dest_subdir" in decon_configs:
+        global STAGE_CONFIG_OUTPUT_SUBDIR
+        STAGE_CONFIG_OUTPUT_SUBDIR = decon_configs["stage_config_dest_subdir"].strip()
+
+    if "obj_config_dest_subdir" in decon_configs:
+        global OBJECT_CONFIG_OUTPUT_SUBDIR
+        OBJECT_CONFIG_OUTPUT_SUBDIR = decon_configs["obj_config_dest_subdir"].strip()
+
+    if "light_config_dest_subdir" in decon_configs:
+        global LIGHT_CONFIG_OUTPUT_SUBDIR
+        LIGHT_CONFIG_OUTPUT_SUBDIR = decon_configs["light_config_dest_subdir"].strip()
 
     # Load the tags referencing the node names in the scene graph corresponding to the branches containing
     # stage, object, and lighting information
@@ -317,33 +375,57 @@ def build_required_directories():
     ####
     # Output directories for deconned objects
     # Base destination directory
-    global DEST_DIR
-    DEST_DIR = DATASET_SRC_DIR + "scene_dataset/"
-    os.makedirs(DEST_DIR, exist_ok=True)
 
-    global STAGES_OUTPUT_DIR
-    # Directory to save stage GLB files and stage configs (if used)
-    STAGES_OUTPUT_DIR = os.path.join(DEST_DIR, "stages/")
-    if BUILD_STAGE_CONFIGS or BUILD_STAGE_GLBS:
-        os.makedirs(STAGES_OUTPUT_DIR, exist_ok=True)
+    # Build output directories for glb creation, if needed
 
-    global OBJECTS_OUTPUT_DIR
-    # Directory to save object files and configs
-    OBJECTS_OUTPUT_DIR = os.path.join(DEST_DIR, "objects/")
-    if BUILD_OBJECT_CONFIGS or BUILD_OBJECT_GLBS:
-        os.makedirs(OBJECTS_OUTPUT_DIR, exist_ok=True)
+    dest_abs_dir = os.path.join(DATASET_SRC_DIR, DEST_SUBDIR)
+    os.makedirs(dest_abs_dir, exist_ok=True)
+    global DEST_CONFIG_DIR
+    DEST_CONFIG_DIR = os.path.join(dest_abs_dir, DEST_CONFIG_SUBDIR)
+    os.makedirs(DEST_CONFIG_DIR, exist_ok=True)
+    global DEST_GLB_DIR
+    DEST_GLB_DIR = os.path.join(dest_abs_dir, DEST_GLB_SUBDIR)
+    os.makedirs(DEST_GLB_DIR, exist_ok=True)
 
-    # Directory to save lighting configuration JSONs
-    global LIGHTING_CONFIG_OUTPUT_DIR
-    LIGHTING_CONFIG_OUTPUT_DIR = os.path.join(DEST_DIR, "lighting/")
-    if BUILD_LIGHTING_CONFIGS:
-        os.makedirs(LIGHTING_CONFIG_OUTPUT_DIR, exist_ok=True)
+    # Directory to save stage GLB files (if created)
+    global STAGE_GLB_OUTPUT_DIR
+    STAGE_GLB_OUTPUT_DIR = os.path.join(DEST_GLB_DIR, STAGE_GLB_OUTPUT_SUBDIR)
+    if BUILD_STAGE_GLBS:
+        os.makedirs(STAGE_GLB_OUTPUT_DIR, exist_ok=True)
+
+    # Directory to save object GLB files
+    global OBJ_GLB_OUTPUT_DIR
+    OBJ_GLB_OUTPUT_DIR = os.path.join(DEST_GLB_DIR, OBJECT_GLB_OUTPUT_SUBDIR)
+    if BUILD_OBJECT_GLBS:
+        os.makedirs(OBJ_GLB_OUTPUT_DIR, exist_ok=True)
 
     # Directory to save synthesized scene instance configuration JSONs
     global SCENE_INSTANCE_OUTPUT_DIR
-    SCENE_INSTANCE_OUTPUT_DIR = os.path.join(DEST_DIR, "scenes/")
+    SCENE_INSTANCE_OUTPUT_DIR = os.path.join(
+        DEST_CONFIG_DIR, SCENE_INSTANCE_OUTPUT_SUBDIR
+    )
     if BUILD_SCENE_CONFIGS:
         os.makedirs(SCENE_INSTANCE_OUTPUT_DIR, exist_ok=True)
+
+    # Directory to save stage config files (if used)
+    global STAGE_CONFIG_OUTPUT_DIR
+    STAGE_CONFIG_OUTPUT_DIR = os.path.join(DEST_CONFIG_DIR, STAGE_CONFIG_OUTPUT_SUBDIR)
+    if BUILD_STAGE_CONFIGS:
+        os.makedirs(STAGE_CONFIG_OUTPUT_DIR, exist_ok=True)
+
+    # Directory to save object config files
+    global OBJ_CONFIG_OUTPUT_DIR
+    OBJ_CONFIG_OUTPUT_DIR = os.path.join(DEST_CONFIG_DIR, OBJECT_CONFIG_OUTPUT_SUBDIR)
+    if BUILD_OBJECT_CONFIGS:
+        os.makedirs(OBJ_CONFIG_OUTPUT_DIR, exist_ok=True)
+
+    # Directory to save lighting configuration JSONs
+    global LIGHTING_CONFIG_OUTPUT_DIR
+    LIGHTING_CONFIG_OUTPUT_DIR = os.path.join(
+        DEST_CONFIG_DIR, LIGHT_CONFIG_OUTPUT_SUBDIR
+    )
+    if BUILD_LIGHTING_CONFIGS:
+        os.makedirs(LIGHTING_CONFIG_OUTPUT_DIR, exist_ok=True)
 
     # Export glb scenes as gltf scenes
     global GLTF_EXPORT_DIR
@@ -362,7 +444,6 @@ def build_required_directories():
 def extract_stage_from_scene(
     scene_graph,
     scene_name_base: str,
-    stage_dest_dir: str,
     stage_tag: str,
     include_obj_dict: Dict[str, Set[str]],
     build_glbs: bool,
@@ -375,10 +456,11 @@ def extract_stage_from_scene(
     # print("Stage global transform \n{}".format(stage_transform))
     # base stage name - fully qualified directories + stub
     stage_name_base = scene_name_base + "_stage"
-    stage_dest_filename_base = os.path.join(stage_dest_dir, stage_name_base)
+
+    stage_glb_dest_filename_base = os.path.join(STAGE_GLB_OUTPUT_DIR, stage_name_base)
 
     # export stage mesh result to glb file
-    stage_dest_filename = stage_dest_filename_base + ".glb"
+    stage_glb_dest_filename = stage_glb_dest_filename_base + ".glb"
 
     if build_glbs:
         # Extract the stage mesh and its transform in the world
@@ -393,16 +475,19 @@ def extract_stage_from_scene(
         # display stage
         # stage_graph.show(viewer="gl")
 
-        stage_graph.export(stage_dest_filename)
+        stage_graph.export(stage_glb_dest_filename)
 
     if build_configs:
         # get relative path
         rel_stage_asset_filename = ut.transform_path_relative(
-            stage_dest_filename, stage_dest_dir
+            stage_glb_dest_filename, STAGE_CONFIG_OUTPUT_DIR
+        )
+        stage_config_dest_filename_base = os.path.join(
+            STAGE_CONFIG_OUTPUT_DIR, stage_name_base
         )
         # set up stage configuration file
         stage_config_filename = (
-            stage_dest_filename_base + ut.CONFIG_EXTENSIONS["stage"] + ".json"
+            stage_config_dest_filename_base + ut.CONFIG_EXTENSIONS["stage"] + ".json"
         )
         # print("Relative stage path :{}".format(rel_stage_asset_filename))
         stage_config_json_dict = {
@@ -420,8 +505,6 @@ def extract_stage_from_scene(
 
 def extract_objects_from_scene(
     scene_graph,
-    scene_name_base: str,
-    object_dest_dir: str,
     objects_tag: str,
     exclude_obj_dict,
     build_glbs: bool,
@@ -454,9 +537,9 @@ def extract_objects_from_scene(
 
         # TODO  isolate and extract collision mesh if present?
         obj_name_base = obj_name
-        obj_dest_filename_base = os.path.join(object_dest_dir, obj_name_base)
+        obj_glb_dest_filename_base = os.path.join(OBJ_GLB_OUTPUT_DIR, obj_name_base)
         # build file names for output
-        obj_dest_filename = obj_dest_filename_base + ".glb"
+        obj_glb_dest_filename = obj_glb_dest_filename_base + ".glb"
         # print("Object dest filename : {}".format(obj_dest_filename))
         # save extracted object mesh
         if build_glbs:
@@ -470,22 +553,25 @@ def extract_objects_from_scene(
             if object_scene is None:
                 continue
 
-            object_scene.export(obj_dest_filename)
+            object_scene.export(obj_glb_dest_filename)
 
         # world-space transformation of stage node
         obj_transform = scene_graph.graph.get(obj_name)[0]
 
         if build_configs:
+            # build a config stub for this object with derived render and collision asset names
             rel_obj_dest_filename = ut.transform_path_relative(
-                obj_dest_filename, object_dest_dir
+                obj_glb_dest_filename, OBJ_CONFIG_OUTPUT_DIR
             )
             obj_config_json_dict = {
                 "render_asset": rel_obj_dest_filename,
                 "collision_asset": rel_obj_dest_filename,
             }
-
+            obj_config_filename_base = os.path.join(
+                OBJ_CONFIG_OUTPUT_DIR, obj_name_base
+            )
             obj_config_filename = (
-                obj_dest_filename_base + ut.CONFIG_EXTENSIONS["object"] + ".json"
+                obj_config_filename_base + ut.CONFIG_EXTENSIONS["object"] + ".json"
             )
             # save object config
             ut.mod_json_val_and_save(("", obj_config_filename, obj_config_json_dict))
@@ -500,7 +586,6 @@ def extract_lighting_from_scene(
     scene_filename_glb,
     scene_graph,
     scene_name_base: str,
-    lights_dest_dir: str,
     lights_tag: str,
     debug: Optional[bool] = False,
 ):
@@ -522,7 +607,9 @@ def extract_lighting_from_scene(
 
     # base stage name - fully qualified directories + stub
     lighting_name_base = scene_name_base + "_lighting"
-    lighting_dest_filename_base = os.path.join(lights_dest_dir, lighting_name_base)
+    lighting_dest_filename_base = os.path.join(
+        LIGHTING_CONFIG_OUTPUT_DIR, lighting_name_base
+    )
     # set up lighting configuration file
     lighting_config_filename = (
         lighting_dest_filename_base + ut.CONFIG_EXTENSIONS["lighting"] + ".json"
@@ -554,7 +641,8 @@ def build_scene_dataset_config(scene_dataset_filename, default_attrs):
         (
             "",
             os.path.join(
-                DEST_DIR,
+                DATASET_SRC_DIR,
+                DEST_SUBDIR,
                 scene_dataset_filename + ut.CONFIG_EXTENSIONS["dataset"] + ".json",
             ),
             scene_dataset_config,
@@ -612,7 +700,8 @@ def main():
     object_instance_count_dict = defaultdict(int)
     # file name to save object counts
     object_instance_count_filename = os.path.join(
-        DEST_DIR, SCENE_DATASET_NAME + "_object_counts.json"
+        DEST_CONFIG_DIR,
+        SCENE_DATASET_NAME + "_object_counts.json",
     )
 
     # Go through every scene glb file
@@ -663,7 +752,6 @@ def main():
                 src_scene_filename,
                 scene_graph,
                 scene_name_base,
-                LIGHTING_CONFIG_OUTPUT_DIR,
                 LIGHTING_TAG,
             )
 
@@ -671,7 +759,6 @@ def main():
         stage_instance_config = extract_stage_from_scene(
             scene_graph,
             scene_name_base,
-            STAGES_OUTPUT_DIR,
             STAGE_TAG,
             STAGE_INCLUDE_OBJ_DICT,
             BUILD_STAGE_GLBS,
@@ -681,8 +768,6 @@ def main():
         # extract all the object instances within the scene
         obj_instance_config_list = extract_objects_from_scene(
             scene_graph,
-            scene_name_base,
-            OBJECTS_OUTPUT_DIR,
             OBJECTS_TAG,
             STAGE_INCLUDE_OBJ_DICT,
             BUILD_OBJECT_GLBS,
