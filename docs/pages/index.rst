@@ -40,6 +40,8 @@ View Assets in Habitat-Sim                          :ref:`Page <std:doc:asset-vi
 Interactive Rigid Objects 2.0                       :ref:`Page <std:doc:managed-rigid-object-tutorial>`                                                                                                            `Interactive Colab <https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/master/examples/tutorials/colabs/managed_rigid_object_tutorial.ipynb>`__
 
 Gfx Replay                                          `Interactive Colab <https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/master/examples/tutorials/colabs/replay_tutorial.ipynb>`__
+
+Editing in Blender                                  `Page <https://aihabitat.org/tutorial/editing_in_blender/>`_
 =================================================== ========================================================================================================================================================== ======================
 
 Python Classes
