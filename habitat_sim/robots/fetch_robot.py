@@ -84,26 +84,3 @@ class FetchRobot(MobileManipulator):
         for grip_idx in self.params.gripper_joints:
             self._set_mtr_pos(grip_idx, self._gripper_state)
             self._set_joint_pos(grip_idx, self._gripper_state)
-
-    #############################################
-    # ARM RELATED
-    #############################################
-
-    def retract_arm(self, get_observations=False):
-        # TODO: this works, but seems like the wrong state?
-        observations = self._interpolate_arm_control(
-            [1.2299035787582397, 2.345386505126953],
-            [self.params.arm_joints[1], self.params.arm_joints[3]],
-            1,
-            get_observations,
-        )
-        return observations
-
-    def ready_arm(self, get_observations=False):
-        observations = self._interpolate_arm_control(
-            [-0.45, 0.1],
-            [self.params.arm_joints[1], self.params.arm_joints[3]],
-            1,
-            get_observations,
-        )
-        return observations

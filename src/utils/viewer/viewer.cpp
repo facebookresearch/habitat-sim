@@ -1611,16 +1611,9 @@ void Viewer::keyPressEvent(KeyEvent& event) {
           break;
       }
       break;
-    case KeyEvent::Key::Eight: {
-      // add a fetch robot
-      auto ao_mgr = simulator_->getArticulatedObjectManager();
-      std::string robot_file = "data/robots/hab_fetch/robots/hab_fetch.urdf";
-      auto fetch = ao_mgr->addBulletArticulatedObjectFromURDF(robot_file, false,
-                                                              1, 1, true);
-      fetch->setTranslation(
-          defaultAgent_->node().transformation().transformPoint(
-              {0, 1.0, -2.0}));
-    } break;
+    case KeyEvent::Key::Eight:
+      addPrimitiveObject();
+      break;
     case KeyEvent::Key::Nine:
       if (simulator_->getPathFinder()->isLoaded()) {
         const esp::vec3f position =
@@ -1642,10 +1635,11 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
     }
     case KeyEvent::Key::Minus: {
-      // clear all AOs
-      auto ao_mgr = simulator_->getArticulatedObjectManager();
-      ao_mgr->removeObjectsBySubstring("");
-    } break;
+      // decrease trajectory tube diameter
+      LOG(INFO) << "Smaller";
+      modTrajRad(false);
+      break;
+    }
     case KeyEvent::Key::B: {
       // toggle bounding box on objects
       drawObjectBBs = !drawObjectBBs;

@@ -26,7 +26,7 @@ from utils import simulate
 )
 def test_fetch_robot_wrapper():
     # set this to output test results as video for easy investigation
-    produce_debug_video = False
+    produce_debug_video = True
     observations = []
     cfg_settings = examples.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "NONE"
@@ -65,9 +65,21 @@ def test_fetch_robot_wrapper():
         assert fetch.get_robot_sim_id() == 1  # 0 is the groun plane
         observations += simulate(sim, 1.0, produce_debug_video)
 
-        # retract and ready the arm
-        observations += fetch.retract_arm(produce_debug_video)
-        observations += fetch.ready_arm(produce_debug_video)
+        # retract the arm
+        observations += fetch._interpolate_arm_control(
+            [1.2299035787582397, 2.345386505126953],
+            [fetch.params.arm_joints[1], fetch.params.arm_joints[3]],
+            1,
+            produce_debug_video,
+        )
+
+        # ready the arm
+        observations += fetch._interpolate_arm_control(
+            [-0.45, 0.1],
+            [fetch.params.arm_joints[1], fetch.params.arm_joints[3]],
+            1,
+            produce_debug_video,
+        )
 
         # setting arm motor positions
         fetch.set_arm_mtr_pos(np.zeros(len(fetch.params.arm_joints)))
