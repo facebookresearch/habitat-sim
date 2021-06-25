@@ -368,12 +368,10 @@ def extract_stage_from_scene(
     build_glbs: bool,
     build_configs: bool,
 ):
-    # Extract the stage mesh and its transform in the world
-    stage_graph, stage_transform = gut.extract_obj_mesh_from_scenegraph(
-        scene_graph, stage_tag, "world", include_obj_dict, STAGE_EXCLUDE_SUBNODES, True
-    )
-    # display stage
-    # stage_graph.show(viewer="gl")
+
+    # world-space transformation of stage node
+    stage_transform = scene_graph.graph.get(stage_tag)[0]
+
     # print("Stage global transform \n{}".format(stage_transform))
     # base stage name - fully qualified directories + stub
     stage_name_base = scene_name_base + "_stage"
@@ -383,6 +381,18 @@ def extract_stage_from_scene(
     stage_dest_filename = stage_dest_filename_base + ".glb"
 
     if build_glbs:
+        # Extract the stage mesh and its transform in the world
+        stage_graph = gut.extract_obj_mesh_from_scenegraph(
+            scene_graph,
+            stage_tag,
+            "world",
+            include_obj_dict,
+            STAGE_EXCLUDE_SUBNODES,
+            True,
+        )
+        # display stage
+        # stage_graph.show(viewer="gl")
+
         stage_graph.export(stage_dest_filename)
 
     if build_configs:
@@ -441,15 +451,6 @@ def extract_objects_from_scene(
     #
     for obj_name in objects:
         obj_exclude_dict = {}  # dict(exclude_obj_dict)
-        # exclude elements in objects that do not correspond to geometry
-        # obj_exclude_dict[obj_name] = OBJECT_EXCLUDE_SUBNODES
-        # extract the object "scene" and its global transform
-        # (scene is the mesh + other assets to save for object glb)
-        object_scene, obj_transform = gut.extract_obj_mesh_from_scenegraph(
-            scene_graph, obj_name, objects_tag, {}, obj_exclude_dict, False
-        )
-        if object_scene is None:
-            continue
 
         # TODO  isolate and extract collision mesh if present?
         obj_name_base = obj_name
@@ -459,7 +460,20 @@ def extract_objects_from_scene(
         # print("Object dest filename : {}".format(obj_dest_filename))
         # save extracted object mesh
         if build_glbs:
+            # exclude elements in objects that do not correspond to geometry
+            # obj_exclude_dict[obj_name] = OBJECT_EXCLUDE_SUBNODES
+            # extract the object "scene" and its global transform
+            # (scene is the mesh + other assets to save for object glb)
+            object_scene = gut.extract_obj_mesh_from_scenegraph(
+                scene_graph, obj_name, objects_tag, {}, obj_exclude_dict, False
+            )
+            if object_scene is None:
+                continue
+
             object_scene.export(obj_dest_filename)
+
+        # world-space transformation of stage node
+        obj_transform = scene_graph.graph.get(obj_name)[0]
 
         if build_configs:
             rel_obj_dest_filename = ut.transform_path_relative(
@@ -490,7 +504,7 @@ def extract_lighting_from_scene(
     lights_tag: str,
     debug: Optional[bool] = False,
 ):
-
+    # Still TODO
     lighting_res_dict = gut.extract_lighting_from_gltf(scene_filename_glb, lights_tag)
     if len(lighting_res_dict) == 0:
         return ""
