@@ -177,6 +177,16 @@ class MetadataMediator {
   }  // getCurrentPhysicsManagerAttributes
 
   /**
+   * @brief Get a list of all scene instances available in the currently active
+   * dataset
+   */
+  std::vector<std::string> getAllSceneInstanceHandles() {
+    return getActiveDSAttribs()
+        ->getSceneAttributesManager()
+        ->getObjectHandlesBySubstring();
+  }
+
+  /**
    * @brief Return copy of map of current active dataset's navmesh handles.
    */
   std::map<std::string, std::string> getActiveNavmeshMap() {
