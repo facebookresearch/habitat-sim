@@ -180,7 +180,7 @@ class MetadataMediator {
    * @brief Get a list of all scene instances available in the currently active
    * dataset
    */
-  const std::vector<std::string> getAllSceneInstanceHandles() {
+  std::vector<std::string> getAllSceneInstanceHandles() {
     return getActiveDSAttribs()
         ->getSceneAttributesManager()
         ->getObjectHandlesBySubstring();
