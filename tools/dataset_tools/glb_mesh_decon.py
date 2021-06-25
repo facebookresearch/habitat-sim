@@ -627,10 +627,34 @@ def extract_lighting_from_scene(
 
 def build_scene_dataset_config(scene_dataset_filename, default_attrs):
     scene_dataset_config = {
-        "stages": {"paths": {".json": ["stages/*"]}},
-        "objects": {"paths": {".json": ["objects/*"]}},
-        "light_setups": {"paths": {".json": ["lighting/*"]}},
-        "scene_instances": {"paths": {".json": ["scenes/*"]}},
+        "stages": {
+            "paths": {
+                ".json": [
+                    os.path.join(DEST_CONFIG_SUBDIR, STAGE_CONFIG_OUTPUT_SUBDIR, "*")
+                ]
+            }
+        },
+        "objects": {
+            "paths": {
+                ".json": [
+                    os.path.join(DEST_CONFIG_SUBDIR, OBJECT_CONFIG_OUTPUT_SUBDIR, "*")
+                ]
+            }
+        },
+        "light_setups": {
+            "paths": {
+                ".json": [
+                    os.path.join(DEST_CONFIG_SUBDIR, LIGHT_CONFIG_OUTPUT_SUBDIR, "*")
+                ]
+            }
+        },
+        "scene_instances": {
+            "paths": {
+                ".json": [
+                    os.path.join(DEST_CONFIG_SUBDIR, SCENE_INSTANCE_OUTPUT_SUBDIR, "*")
+                ]
+            }
+        },
     }
     # add default attributes specs if any exist
     for k, v in default_attrs.items():
