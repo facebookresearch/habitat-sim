@@ -15,6 +15,10 @@ Known limitations/issues:
     The workaround is to use sim.close(destroy=False) then sim.reconfigure(new_cfg) instead of
     sim = habitat_sim.Simulator(new_cfg) as this will keep the background thread alive.
 
+    * Segfaults with headed Linux builds.  We've seen this segfault for headed builds.  There
+    isn't any reason why the headed Linux build should segfault so we've left it enabled
+    under that this is a driver bug and it may work with other driver/OS combinations.
+
     * Semantic Sensor rendering does not work when there is an RGB mesh and a semantic mesh, like
     in MP3D and Gibson.  When there is a single mesh for RGB and semantics, a semantic sensor works.
 
@@ -25,7 +29,7 @@ Known limitations/issues:
     an assert checking that the main process owns the OpenGL failing.  You can wait on the
     async render to finish and transfer the context back to the main thread by calling
     sim.renderer.acquire_gl_context().  Note that by default the OpenGL context is transferred
-    back to the main thread by calling sim.get_sensor_observations_async_finish()
+    back to the main thread by calling sim.get_sensor_observations_async_finish() by default.
 """
 
 import habitat_sim
@@ -76,6 +80,7 @@ def main():
     # if backend_cfg.leave_context_with_background_renderer was left as False, it that as
     # true, you'd need to call
     #     sim.renderer.acquire_gl_context()
+    # Calling acquire_gl_context() is a noop if the main thread already has the OpenGL context
 
     backend_cfg = habitat_sim.SimulatorConfiguration()
     backend_cfg.scene_id = "data/scene_datasets/habitat-test-scenes/apartment_1.glb"

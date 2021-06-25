@@ -113,7 +113,7 @@ int BackgroundRenderer::threadRender() {
   if (!threadOwnsContext_) {
     VLOG(1) << "BackgroundRenderer:: Background thread acquired GL Context";
     context_->makeCurrentPlatform();
-    Mn::GL::Context::makeCurrent(threadContext_);
+    Mn::GL::Context::makeCurrent(threadContext_.get());
     threadOwnsContext_ = true;
   }
 
@@ -190,11 +190,12 @@ void BackgroundRenderer::threadReleaseContext() {
 
 void BackgroundRenderer::runLoopThread() {
   context_->makeCurrentPlatform();
-  threadContext_ = new Mn::Platform::GLContext{Mn::NoCreate};
+  threadContext_ =
+      Cr::Containers::pointer<Mn::Platform::GLContext>(Mn::NoCreate);
   if (!threadContext_->tryCreate())
     Mn::Fatal{} << "BackgroundRenderer: Failed to create OpenGL context";
 
-  Mn::GL::Context::makeCurrent(threadContext_);
+  Mn::GL::Context::makeCurrent(threadContext_.get());
   threadOwnsContext_ = true;
 
   Renderer::setupMagnumFeatures();
@@ -214,7 +215,7 @@ void BackgroundRenderer::runLoopThread() {
     switch (task_) {
       case Task::Exit:
         threadReleaseContext();
-        delete threadContext_;
+        threadContext_ = nullptr;
         done = true;
         break;
       case Task::ReleaseContext:

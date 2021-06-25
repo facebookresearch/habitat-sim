@@ -101,7 +101,7 @@ void initSimBindings(py::module& m) {
       .def("seed", &Simulator::seed, "new_seed"_a)
       .def("reconfigure", &Simulator::reconfigure, "configuration"_a)
       .def("reset", &Simulator::reset)
-      .def("close", &Simulator::close, "destroy"_a = false)
+      .def("close", &Simulator::close, "destroy"_a = true)
       .def_property("pathfinder", &Simulator::getPathFinder,
                     &Simulator::setPathFinder)
       .def_property(

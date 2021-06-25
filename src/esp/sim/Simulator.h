@@ -73,7 +73,6 @@ class Simulator {
 
   virtual void reset();
 
- public:
   virtual void seed(uint32_t newSeed);
 
   std::shared_ptr<gfx::Renderer> getRenderer() { return renderer_; }

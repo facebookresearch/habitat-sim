@@ -118,7 +118,6 @@ void initGfxBindings(py::module& m) {
       .def("wait_draw_jobs", &Renderer::waitDrawJobs)
       .def("start_draw_jobs", &Renderer::startDrawJobs)
 #endif
-      .def("wait_scene_graph", &Renderer::waitSceneGraph)
       .def("acquire_gl_context", &Renderer::acquireGlContext)
       .def(
           "bind_render_target",
