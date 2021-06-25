@@ -1,4 +1,4 @@
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import attr
 import magnum as mn
@@ -91,6 +91,7 @@ class MobileManipulator(RobotInterface):
         :param limit_robo_joints: If true, joint limits of robot are always
             enforced.
         """
+        super().__init__()
         self.urdf_path = urdf_path
         self.params = params
 
@@ -106,6 +107,15 @@ class MobileManipulator(RobotInterface):
             s for s in self._sim._sensors if s.startswith("robot_head_")
         ]
 
+        # NOTE: the follow members cache static info for improved efficiency over querying the API
+        # maps joint ids to motor settings for convenience
+        self.joint_motors: Dict[int, Tuple[int, JointMotorSettings]] = {}
+        # maps joint ids to position index
+        self.joint_pos_indices: Dict[int, int] = {}
+        # maps joint ids to velocity index
+        self.joint_dof_indices: Dict[int, int] = {}
+        self.joint_limits: Tuple[np.ndarray, np.ndarray] = None
+
     def get_robot_sim_id(self) -> int:
         """Gets the underlying simulator ID of the robot."""
         return self._robot.object_id
@@ -114,7 +124,18 @@ class MobileManipulator(RobotInterface):
         """Adds the articulated robot object to the scene."""
         ao_mgr = self._sim.get_articulated_object_manager()
         self._robot = ao_mgr.add_articulated_object_from_urdf(self.urdf_path)
-        # TODO: generate joint motors here for all joints or later in derived class?
+        for link_id in self._robot.get_link_ids():
+            self.joint_pos_indices[link_id] = self._robot.get_link_joint_pos_offset(
+                link_id
+            )
+            self.joint_dof_indices[link_id] = self._robot.get_link_dof_offset(link_id)
+        self.joint_limits = self._robot.joint_position_limits
+
+        # print relevant joint/link info for debugging
+        for link_id in self._robot.get_link_ids():
+            print(
+                f"{link_id} = {self._robot.get_link_name(link_id)} | {self._robot.get_link_joint_name(link_id)} :: type = {self._robot.get_link_joint_type(link_id)}"
+            )
 
     def update(self) -> None:
         """Updates the camera transformations and performs necessary checks on
@@ -142,7 +163,14 @@ class MobileManipulator(RobotInterface):
         self._robot.awake = True
 
     def reset(self) -> None:
-        """Reset the joints on the existing robot."""
+        """Reset the joints on the existing robot.
+        NOTE: only arm and wheel joint motors are reset by default, derived class should handle any other motors."""
+
+        # Init the fetch starting joint positions.
+        if self.params.arm_init_params is not None:
+            self.set_arm_pos(self.params.arm_init_params)
+
+        # TODO: should all arm joints have the same gain/impulse settings?
         jms = JointMotorSettings(
             0,  # position_target
             self.params.arm_mtr_pos_gain,  # position_gain
@@ -150,13 +178,10 @@ class MobileManipulator(RobotInterface):
             self.params.arm_mtr_vel_gain,  # velocity_gain
             self.params.arm_mtr_max_impulse,  # max_impulse
         )
-        # TODO: update_joint_motor takes motor id, not joint
-        for i in self.params.arm_joints:
-            self._robot.update_joint_motor(i, jms)
-
-        # Init the fetch starting joint positions.
-        if self.params.arm_init_params is not None:
-            self.set_arm_pos(self.params.arm_init_params)
+        # set initial pose for arm motors
+        for ix, joint_id in enumerate(self.params.arm_joints):
+            jms.position_target = self.params.arm_init_params[ix]
+            self._robot.update_joint_motor(self.joint_motors[joint_id][0], jms)
 
         if self.params.wheel_joints is not None:
             jms = JointMotorSettings(
@@ -167,22 +192,31 @@ class MobileManipulator(RobotInterface):
                 self.params.wheel_mtr_max_impulse,  # max_impulse
             )
             # pylint: disable=not-an-iterable
-            # TODO: update_joint_motor takes motor id, not joint
             for i in self.params.wheel_joints:
-                self._robot.update_joint_motor(i, jms)
+                self._robot.update_joint_motor(self.joint_motors[i][0], jms)
+
+        # update motor settings dict
+        self.joint_motors = {}
+        for motor_id, joint_id in self._robot.existing_joint_motor_ids.items():
+            self.joint_motors[joint_id] = (
+                motor_id,
+                self._robot.get_joint_motor_settings(motor_id),
+            )
 
     #############################################
     # ARM RELATED
     #############################################
     def get_arm_joint_lims(self) -> Tuple[np.ndarray, np.ndarray]:
         """Get the arm joint limits in radians"""
-        lower_lims, upper_lims = self._robot.joint_position_limits
-        lower_lims = lower_lims[self.params.arm_joints]
-        upper_lims = upper_lims[self.params.arm_joints]
+        arm_pos_indices = list(
+            map(lambda x: self.joint_pos_indices[x], self.params.arm_joints)
+        )
+        lower_lims = self.joint_limits[0][arm_pos_indices]
+        upper_lims = self.joint_limits[1][arm_pos_indices]
         return lower_lims, upper_lims
 
     def get_ee_link_id(self) -> int:
-        """Gets the Habitat Sim link ID of the end-effector."""
+        """Gets the Habitat Sim link id of the end-effector."""
         return self.params.ee_link
 
     def get_ee_local_offset(self) -> mn.Vector3:
@@ -200,7 +234,7 @@ class MobileManipulator(RobotInterface):
         """Gets the joint states necessary to achieve the desired end-effector
         configuration.
         """
-        raise NotImplementedError("Currently no implementation for generic KK.")
+        raise NotImplementedError("Currently no implementation for generic IK.")
 
     def get_end_effector_transform(self) -> mn.Matrix4:
         """Gets the transformation of the end-effector location. This is offset
@@ -216,6 +250,7 @@ class MobileManipulator(RobotInterface):
 
     def set_gripper_state(self, gripper_state: float) -> None:
         """Set the desired state of the gripper"""
+        # TODO: should this apply the change to motors or joints?
         self._gripper_state = gripper_state
 
     def close_gripper(self) -> None:
@@ -233,20 +268,25 @@ class MobileManipulator(RobotInterface):
 
     def set_arm_pos(self, ctrl: List[float]):
         """Kinematically sets the arm joints and sets the motors to target."""
-        # TODO: pretty inefficent way to do this, better to modify the full pose iteratively and set once
+        joint_positions = self._robot.joint_positions
         for i, jidx in enumerate(self.params.arm_joints):
             self._set_mtr_pos(jidx, ctrl[i])
-            self._set_joint_pos(jidx, ctrl[i])
+            joint_positions[self.joint_pos_indices[jidx]] = ctrl[i]
+        self._robot.joint_positions = joint_positions
 
     def get_arm_pos(self) -> np.ndarray:
         """Get the current arm joint positions in radians."""
-        js = self._robot.joint_positions
-        return np.array(js)[self.params.arm_joints]
+        arm_pos_indices = list(
+            map(lambda x: self.joint_pos_indices[x], self.params.arm_joints)
+        )
+        return self._robot.joint_positions[arm_pos_indices]
 
     def get_arm_vel(self) -> np.ndarray:
         """Get the velocity of the arm joints."""
-        js_vel = self._robot.joint_velocities
-        return np.array(js_vel)[self.params.arm_joints]
+        arm_dof_indices = list(
+            map(lambda x: self.joint_dof_indices[x], self.params.arm_joints)
+        )
+        return self._robot.joint_velocities[arm_dof_indices]
 
     def set_arm_mtr_pos(self, ctrl: List[float]) -> None:
         """Set the desired target of the arm joints for the controller to
@@ -298,19 +338,18 @@ class MobileManipulator(RobotInterface):
         return mn.Matrix4.look_at(cam_pos, look_at, mn.Vector3(0, -1, 0))
 
     def _set_mtr_pos(self, joint, ctrl):
-        jms = self._robot.get_joint_motor_settings(joint)
-        jms.position_target = ctrl
-        # TODO: update_joint_motor takes motor id, not joint
-        self._robot.update_joint_motor(joint, jms)
+        self.joint_motors[joint][1].position_target = ctrl
+        self._robot.update_joint_motor(
+            self.joint_motors[joint][0], self.joint_motors[joint][1]
+        )
 
     def _get_mtr_pos(self, joint):
-        jms = self._robot.get_joint_motor_settings(joint)
-        return jms.position_target
+        return self.joint_motors[joint][1].position_target
 
     def _set_joint_pos(self, joint_idx, angle):
-        # TODO: This is pretty inefficient and should not be used iteratively
+        # NOTE: This is pretty inefficient and should not be used iteratively
         set_pos = self._robot.joint_positions
-        set_pos[joint_idx] = angle
+        set_pos[self.joint_pos_indices[joint_idx]] = angle
         self._robot.joint_positions = set_pos
 
     def _interpolate_arm_control(self, targs, idxs, seconds):
@@ -320,7 +359,11 @@ class MobileManipulator(RobotInterface):
         delta = diff / T
 
         for i in range(T):
+            joint_positions = self._robot.joint_positions
             for j, jidx in enumerate(idxs):
                 self._set_mtr_pos(jidx, delta[j] * (i + 1) + curs[j])
-                self._set_joint_pos(jidx, delta[j] * (i + 1) + curs[j])
+                joint_positions[self.joint_pos_indices[jidx]] = (
+                    delta[j] * (i + 1) + curs[j]
+                )
+            self._robot.joint_positions = joint_positions
             self._sim.step_world(1 / self.params.ctrl_freq)

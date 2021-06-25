@@ -26,7 +26,7 @@ from utils import simulate
 )
 def test_fetch_robot_wrapper():
     # set this to output test results as video for easy investigation
-    produce_debug_video = False
+    produce_debug_video = True
     observations = []
     cfg_settings = examples.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "NONE"
@@ -56,18 +56,6 @@ def test_fetch_robot_wrapper():
         robot_path = "data/robots/hab_fetch/robots/hab_fetch.urdf"
         fetch = fetch_robot.FetchRobot(robot_path, sim)
         fetch.reconfigure()
-        fetch.update()
-
-        for i in range(fetch._robot.num_links):
-            # if fetch._robot.get_link_joint_type(i) != habitat_sim.physics.JointType.Fixed:
-            print(
-                f"{i} = {fetch._robot.get_link_joint_name(i)} | type = {fetch._robot.get_link_joint_type(i)}"
-            )
-
-        observations += simulate(sim, 1.0, produce_debug_video)
-
-        # TODO: this isn't working correctly for Fetch yet
-        fetch.reset()
 
         observations += simulate(sim, 1.0, produce_debug_video)
 
