@@ -134,8 +134,12 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   PbrShader::PbrEquationScales scales;
   scales.DirectDiffuse = 0.8;
   scales.DirectSpecular = 0.8;
+  /*
   scales.IblDiffuse = 0.8;
   scales.IblSpecular = 0.8;
+  */
+  scales.IblDiffuse = 0.0;
+  scales.IblSpecular = 0.0;
   (*shader_).setPbrEquationScales(scales);
   // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::DirectDiffuse);
   // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::DirectSpecular);
@@ -195,20 +199,25 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
     CORRADE_INTERNAL_ASSERT(shadowData_);
 
     // Currently we only support one shadow map
-    Mn::Resource<CubeMap> shadowMap =
-        (*shadowData_->shadowMapManger)
-            .get<CubeMap>((*shadowData_->shadowMapKeys)[0]);
 
-    CORRADE_INTERNAL_ASSERT(shadowMap);
+    for (int iShadow = 0; iShadow < shadowData_->shadowMapKeys->size();
+         ++iShadow) {
+      Mn::Resource<CubeMap> shadowMap =
+          (*shadowData_->shadowMapManger)
+              .get<CubeMap>((*shadowData_->shadowMapKeys)[iShadow]);
 
-    if (flags_ & PbrShader::Flag::ShadowsPCF) {
-      shader_->bindPointShadowMap(
-          shadowMap->getTexture(CubeMap::TextureType::Depth));
-      shader_->setLightNearFarPlanes(shadowData_->lightNearPlane,
-                                     shadowData_->lightFarPlane);
-    } else if (flags_ & PbrShader::Flag::ShadowsVSM) {
-      shader_->bindPointShadowMap(
-          shadowMap->getTexture(CubeMap::TextureType::VarianceShadowMap));
+      CORRADE_INTERNAL_ASSERT(shadowMap);
+
+      if (flags_ & PbrShader::Flag::ShadowsPCF) {
+        shader_->bindPointShadowMap(
+            iShadow, shadowMap->getTexture(CubeMap::TextureType::Depth));
+        shader_->setLightNearFarPlanes(shadowData_->lightNearPlane,
+                                       shadowData_->lightFarPlane);
+      } else if (flags_ & PbrShader::Flag::ShadowsVSM) {
+        shader_->bindPointShadowMap(
+            iShadow,
+            shadowMap->getTexture(CubeMap::TextureType::VarianceShadowMap));
+      }
     }
   }
 

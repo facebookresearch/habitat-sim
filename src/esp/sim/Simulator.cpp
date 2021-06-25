@@ -644,92 +644,94 @@ void Simulator::computeShadowMaps(float lightNearPlane, float lightFarPlane) {
   // should get the light setup for the scene, and compute the shadow map
   // one by one
 
-  // Mn::Vector3 lightPos[] = {Mn::Vector3{16.1, 7.7, 4.8}, Mn::Vector3{}};
-  // Here we just compute 1 point show map in the center of the ceiling
-  int lightId = 0;
-  Mn::ResourceKey key(Corrade::Utility::formatString(
-      assets::ResourceManager::SHADOW_MAP_KEY_TEMPLATE, activeSceneID_,
-      lightId));
+  Mn::Vector3 lightPos[3] = {Mn::Vector3{2.77, 2.86, 5.16},
+                             Mn::Vector3{-0.69, 2.86, 1.46},
+                             Mn::Vector3{2.77, 2.86, -3.73}};
 
-  // insert the key to the data base
-  keys.push_back(key);
+  for (int iLight = 0; iLight < 3; ++iLight) {
+    Mn::ResourceKey key(Corrade::Utility::formatString(
+        assets::ResourceManager::SHADOW_MAP_KEY_TEMPLATE, activeSceneID_,
+        iLight));
 
-  // create the resource if there is not one
-  Mn::Resource<gfx::CubeMap> pointShadowMap =
-      shadowManager.get<gfx::CubeMap>(key);
-  if (!pointShadowMap) {
-    shadowManager.set<gfx::CubeMap>(
-        pointShadowMap.key(),
-        // For shadowsPCF
-        // new gfx::CubeMap{shadowMapSize, {gfx::CubeMap::Flag::DepthTexture}},
-        // For shadowsPCF + visual depths
-        /*
-        new gfx::CubeMap{shadowMapSize,
-                         {gfx::CubeMap::Flag::DepthTexture |
-                          gfx::CubeMap::Flag::ColorTexture}},
-        */
+    // insert the key to the data base
+    keys.push_back(key);
 
-        new gfx::CubeMap{
-            shadowMapSize,
-            {gfx::CubeMap::Flag::VarianceShadowMapTexture |
-             // gfx::CubeMap::Flag::ColorTexture | // for future visualization
-             gfx::CubeMap::Flag::AutoBuildMipmap}},
-        Mn::ResourceDataState::Final, Mn::ResourcePolicy::Resident);
+    // create the resource if there is not one
+    Mn::Resource<gfx::CubeMap> pointShadowMap =
+        shadowManager.get<gfx::CubeMap>(key);
+    if (!pointShadowMap) {
+      shadowManager.set<gfx::CubeMap>(
+          pointShadowMap.key(),
+          // For shadowsPCF
+          // new gfx::CubeMap{shadowMapSize,
+          // {gfx::CubeMap::Flag::DepthTexture}}, For shadowsPCF + visual depths
+          /*
+          new gfx::CubeMap{shadowMapSize,
+                           {gfx::CubeMap::Flag::DepthTexture |
+                            gfx::CubeMap::Flag::ColorTexture}},
+          */
 
-    CORRADE_INTERNAL_ASSERT(pointShadowMap && pointShadowMap.key() == key);
+          new gfx::CubeMap{
+              shadowMapSize,
+              {gfx::CubeMap::Flag::VarianceShadowMapTexture |
+               // gfx::CubeMap::Flag::ColorTexture | // for future visualization
+               gfx::CubeMap::Flag::AutoBuildMipmap}},
+          Mn::ResourceDataState::Final, Mn::ResourcePolicy::Resident);
+
+      CORRADE_INTERNAL_ASSERT(pointShadowMap && pointShadowMap.key() == key);
+    }
+    if (pointShadowMap->getCubeMapSize() != shadowMapSize) {
+      pointShadowMap->reset(shadowMapSize);
+    }
+
+    // setup a CubeMapCamera in the root of scene graph, and set its position to
+    // light global position
+    // XXX: here we hard coded one for the ReplicaCAD model
+    scene::SceneNode& node = sg.getRootNode().createChild();
+    // this is the center of the ceiling of the replica cad model
+    // this is the light position!!!
+    // XXX
+    // MUST BE THE SAME AS the one in the scene dataset config!!!!!!!!!
+    // node.setTranslation(Mn::Vector3{16.1, 7.0, 4.8});
+    // node.setTranslation(Mn::Vector3{16.1, 7.7, 4.8});
+
+    // node.setTranslation(Mn::Vector3{2.77, 3.0, 5.16});
+    node.setTranslation(lightPos[iLight]);
+    /*
+    const Magnum::Range3D& sceneBB =
+        getActiveSceneGraph().getRootNode().computeCumulativeBB();
+    node.setTranslation(sceneBB.center());
+    */
+
+    gfx::CubeMapCamera camera{node};
+
+    camera.setProjectionMatrix(shadowMapSize,   // width of the square
+                               lightNearPlane,  // near plane
+                               lightFarPlane);  // far plane
+    pointShadowMap->renderToTexture(camera, sg, shadowMapDrawableGroupName,
+                                    {gfx::RenderCamera::Flag::FrustumCulling |
+                                     gfx::RenderCamera::Flag::ClearDepth});
+
+    Mn::ResourceKey helperKey("helper-shadow-cubemap");
+    Mn::Resource<gfx::CubeMap> helperShadowMap =
+        shadowManager.get<gfx::CubeMap>(helperKey);
+    if (!helperShadowMap) {
+      shadowManager.set<gfx::CubeMap>(
+          helperShadowMap.key(),
+          new gfx::CubeMap{shadowMapSize,
+                           {gfx::CubeMap::Flag::VarianceShadowMapTexture |
+                            gfx::CubeMap::Flag::AutoBuildMipmap}},
+          Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
+
+      CORRADE_INTERNAL_ASSERT(helperShadowMap &&
+                              helperShadowMap.key() == helperKey);
+    }
+
+    // for VSM only !!!
+    renderer_->applyGaussianFiltering(
+        *pointShadowMap, *helperShadowMap,
+        gfx::CubeMap::TextureType::VarianceShadowMap);
   }
-  if (pointShadowMap->getCubeMapSize() != shadowMapSize) {
-    pointShadowMap->reset(shadowMapSize);
-  }
-
-  // setup a CubeMapCamera in the root of scene graph, and set its position to
-  // light global position
-  // XXX: here we hard coded one for the ReplicaCAD model
-  scene::SceneNode& node = sg.getRootNode().createChild();
-  // this is the center of the ceiling of the replica cad model
-  // this is the light position!!!
-  // XXX
-  // MUST BE THE SAME AS the one in the scene dataset config!!!!!!!!!
-  // node.setTranslation(Mn::Vector3{16.1, 7.0, 4.8});
-  // node.setTranslation(Mn::Vector3{16.1, 7.7, 4.8});
-
-  // node.setTranslation(Mn::Vector3{2.77, 3.0, 5.16});
-  node.setTranslation(Mn::Vector3{2.77, 2.8, 5.16});
-  /*
-  const Magnum::Range3D& sceneBB =
-      getActiveSceneGraph().getRootNode().computeCumulativeBB();
-  node.setTranslation(sceneBB.center());
-  */
-
-  gfx::CubeMapCamera camera{node};
-
-  camera.setProjectionMatrix(shadowMapSize,   // width of the square
-                             lightNearPlane,  // near plane
-                             lightFarPlane);  // far plane
-  pointShadowMap->renderToTexture(camera, sg, shadowMapDrawableGroupName,
-                                  {gfx::RenderCamera::Flag::FrustumCulling |
-                                   gfx::RenderCamera::Flag::ClearDepth});
-
-  Mn::ResourceKey helperKey("helper-shadow-cubemap");
-  Mn::Resource<gfx::CubeMap> helperShadowMap =
-      shadowManager.get<gfx::CubeMap>(helperKey);
-  if (!helperShadowMap) {
-    shadowManager.set<gfx::CubeMap>(
-        helperShadowMap.key(),
-        new gfx::CubeMap{shadowMapSize,
-                         {gfx::CubeMap::Flag::VarianceShadowMapTexture |
-                          gfx::CubeMap::Flag::AutoBuildMipmap}},
-        Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
-
-    CORRADE_INTERNAL_ASSERT(helperShadowMap &&
-                            helperShadowMap.key() == helperKey);
-  }
-
-  // for VSM only !!!
-  renderer_->applyGaussianFiltering(
-      *pointShadowMap, *helperShadowMap,
-      gfx::CubeMap::TextureType::VarianceShadowMap);
-
   /*
   pointShadowMap->visualizeTexture(gfx::CubeMap::TextureType::Depth,
                                    lightNearPlane, lightFarPlane, 1.0f / 512.0f,

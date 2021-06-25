@@ -296,10 +296,12 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
 
   /**
    * @brief Bind the point shadow map (cubemap texture)
-   * NOTE: requires Flag::ShadowsPCF is set
+   * @param[in] idx, the index of the shadow map, can be 0, 1, or 2. (We allow
+   * at most 3 shadow maps.)
+   * NOTE: requires Flag::ShadowsPCF or Flag::ShadowsVSM is set
    * @return Reference to self (for method chaining)
    */
-  PbrShader& bindPointShadowMap(Magnum::GL::CubeMapTexture& texture);
+  PbrShader& bindPointShadowMap(int idx, Magnum::GL::CubeMapTexture& texture);
 
   // ======== set uniforms ===========
   /**
