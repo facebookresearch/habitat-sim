@@ -375,9 +375,6 @@ def extract_obj_mesh_from_scenegraph(
     or just use the first level to build edge set.
     :return: The new Scene object corresponding to scene_object_tag.
     """
-    # world-space transformation of object in scene
-    # idx 1 is geometry
-    global_transform = scene_graph.graph.get(scene_object_tag)[0]
     # get scene_graph transformations hierarchy
     transforms_tree = scene_graph.graph.transforms
     # build set of nodes that should be excluded
@@ -485,7 +482,7 @@ def extract_obj_mesh_from_scenegraph(
     assert new_scene.is_valid, "Constructed {} scene object is not valid!".format(
         scene_object_tag
     )
-    return new_scene, global_transform
+    return new_scene
 
 
 def get_node_set_recurse(transforms_tree, exclude_nodes, root_node):
