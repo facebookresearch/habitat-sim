@@ -17,6 +17,10 @@ class WindowlessContext {
   ~WindowlessContext() { LOG(INFO) << "Deconstructing WindowlessContext"; }
 
   void makeCurrent();
+  void makeCurrentPlatform();
+
+  void release();
+  void releasePlatform();
 
   int gpuDevice() const;
 

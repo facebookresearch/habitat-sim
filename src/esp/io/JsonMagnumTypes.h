@@ -84,15 +84,8 @@ inline bool fromJsonValue(const JsonGenericValue& obj, Magnum::Color4& val) {
   return false;
 }
 
-inline JsonGenericValue toJsonValue(const Magnum::Quaternion& quat,
-                                    JsonAllocator& allocator) {
-  JsonGenericValue arr(rapidjson::kArrayType);
-  arr.PushBack(quat.scalar(), allocator);
-  for (int i = 0; i < 3; i++) {
-    arr.PushBack(quat.vector()[i], allocator);
-  }
-  return arr;
-}
+JsonGenericValue toJsonValue(const Magnum::Quaternion& quat,
+                             JsonAllocator& allocator);
 
 /**
  * @brief Specialization to handle Magnum::Quaternion values. Populate passed @p
@@ -103,27 +96,7 @@ inline JsonGenericValue toJsonValue(const Magnum::Quaternion& quat,
  * @param val destination value to be populated
  * @return whether successful or not
  */
-inline bool fromJsonValue(const JsonGenericValue& obj,
-                          Magnum::Quaternion& val) {
-  if (obj.IsArray() && obj.Size() == 4) {
-    for (rapidjson::SizeType i = 0; i < 4; ++i) {
-      if (obj[i].IsNumber()) {
-        if (i == 0) {
-          val.scalar() = obj[0].GetFloat();
-        } else {
-          val.vector()[i - 1] = obj[i].GetFloat();
-        }
-      } else {
-        LOG(ERROR)
-            << " Invalid numeric value specified in JSON Quaternion, index :"
-            << i;
-        return false;
-      }
-    }
-    return true;
-  }
-  return false;
-}
+bool fromJsonValue(const JsonGenericValue& obj, Magnum::Quaternion& val);
 
 // Containers::Optional is handled differently than ordinary structs. Instead of
 // offering toJsonValue/fromJsonValue, we offer addMember/readMember, which

@@ -24,6 +24,8 @@ namespace {
 const std::string replicaRoom0 =
     Cr::Utility::Directory::join(SCENE_DATASETS,
                                  "replica_dataset/room_0/habitat");
+const std::string replicaCAD =
+    Cr::Utility::Directory::join(SCENE_DATASETS, "replicaCAD");
 
 struct ReplicaSceneTest : Cr::TestSuite::Tester {
   explicit ReplicaSceneTest();
@@ -31,11 +33,14 @@ struct ReplicaSceneTest : Cr::TestSuite::Tester {
   void testSemanticSceneOBB();
 
   void testSemanticSceneLoading();
+
+  void testSemanticSceneDescriptorReplicaCAD();
 };
 
 ReplicaSceneTest::ReplicaSceneTest() {
   addTests({&ReplicaSceneTest::testSemanticSceneOBB,
-            &ReplicaSceneTest::testSemanticSceneLoading});
+            &ReplicaSceneTest::testSemanticSceneLoading,
+            &ReplicaSceneTest::testSemanticSceneDescriptorReplicaCAD});
 }
 
 void ReplicaSceneTest::testSemanticSceneOBB() {
@@ -117,6 +122,28 @@ void ReplicaSceneTest::testSemanticSceneLoading() {
   CORRADE_COMPARE(scene->objects()[12]->category()->name(), "book");
 }
 
+void ReplicaSceneTest::testSemanticSceneDescriptorReplicaCAD() {
+  if (!Cr::Utility::Directory::exists(replicaCAD)) {
+    CORRADE_SKIP("ReplicaCAD dataset not found at '" + replicaCAD +
+                 "'\nSkipping test");
+  }
+  esp::sim::SimulatorConfiguration cfg;
+  cfg.sceneDatasetConfigFile = Cr::Utility::Directory::join(
+      replicaCAD, "replicaCAD.scene_dataset_config.json");
+
+  cfg.activeSceneName = "apt_0.scene_instance";
+
+  esp::sim::Simulator sim{cfg};
+  // semantic scene descriptor is specified in scene dataset config
+  const auto& scene = sim.getSemanticScene();
+  CORRADE_VERIFY(scene != nullptr);
+  // ReplicaCAD only populates categories - 101 specified + cat 0
+  CORRADE_COMPARE(scene->categories().size(), 102);
+
+  // verify name id and name
+  CORRADE_COMPARE(scene->categories()[13]->index(), 13);
+  CORRADE_COMPARE(scene->categories()[13]->name(), "book");
+}
 }  // namespace
 
 CORRADE_TEST_MAIN(ReplicaSceneTest)

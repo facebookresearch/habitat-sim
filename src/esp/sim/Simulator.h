@@ -61,14 +61,18 @@ class Simulator {
    * set back to nullptr, any members set to their default values, etc.  If this
    * is not done correctly, the pattern for @ref `close` then @ref `reconfigure`
    * to create a "fresh" instance of the simulator may not work correctly
+   *
+   * @param destroy When set, destroy the background rendering thread and gl
+   * context also. Otherwise these persist if the background rendering thread
+   * was used. This is done because the OpenGL driver leaks memory on thread
+   * destroy on some systems.
    */
-  void close();
+  void close(bool destroy = true);
 
   virtual void reconfigure(const SimulatorConfiguration& cfg);
 
   virtual void reset();
 
- public:
   virtual void seed(uint32_t newSeed);
 
   std::shared_ptr<gfx::Renderer> getRenderer() { return renderer_; }
@@ -623,6 +627,8 @@ class Simulator {
    */
   void setObjectBBDraw(bool drawBB, int objectId, int sceneID = 0) {
     if (sceneHasPhysics(sceneID)) {
+      if (renderer_)
+        renderer_->acquireGlContext();
       auto& drawables = getDrawableGroup(sceneID);
       physicsManager_->setObjectBBDraw(objectId, &drawables, drawBB);
     }
@@ -1147,6 +1153,15 @@ class Simulator {
   }
 
   /**
+   * @brief Get a copy of the currently set existing @ref gfx::LightSetup.
+   *
+   * @param key The string key of the @ref gfx::LightSetup.
+   */
+  gfx::LightSetup getCurrentLightSetup() {
+    return *resourceManager_->getLightSetup(config_.sceneLightSetup);
+  }
+
+  /**
    * @brief Register a @ref gfx::LightSetup with a key name.
    *
    * If this name already exists, the @ref gfx::LightSetup is updated and all
@@ -1176,6 +1191,62 @@ class Simulator {
       obj->setLightSetup(lightSetupKey);
     }
   }
+
+  //============= Object Rigid Constraint API =============
+
+  /**
+   * @brief Create a rigid constraint between two objects or an object and the
+   * world.
+   *
+   * Note: requires Bullet physics to be enabled.
+   *
+   * @param settings The datastructure defining the constraint parameters.
+   *
+   * @return The id of the newly created constraint or ID_UNDEFINED if failed.
+   */
+  int createRigidConstraint(const physics::RigidConstraintSettings& settings) {
+    return physicsManager_->createRigidConstraint(settings);
+  }
+
+  /**
+   * @brief Update the settings of a rigid constraint.
+   *
+   * Note: requires Bullet physics to be enabled.
+   *
+   * @param constraintId The id of the constraint to update.
+   * @param settings The new settings of the constraint.
+   */
+  void updateRigidConstraint(int constraintId,
+                             const physics::RigidConstraintSettings& settings) {
+    physicsManager_->updateRigidConstraint(constraintId, settings);
+  }
+
+  /**
+   * @brief Remove a rigid constraint by id.
+   *
+   * Note: requires Bullet physics to be enabled.
+   *
+   * @param constraintId The id of the constraint to remove.
+   */
+  void removeRigidConstraint(int constraintId) {
+    physicsManager_->removeRigidConstraint(constraintId);
+  }
+
+  /**
+   * @brief Get a copy of the settings for an existing rigid constraint.
+   *
+   * Note: requires Bullet physics to be enabled.
+   *
+   * @param constraintId The id of the constraint.
+   *
+   * @return The settings of the constraint.
+   */
+  physics::RigidConstraintSettings getRigidConstraintSettings(
+      int constraintId) const {
+    return physicsManager_->getRigidConstraintSettings(constraintId);
+  }
+
+  //============= END - Object Rigid Constraint API =============
 
   /**
    * @brief Getter for PRNG.

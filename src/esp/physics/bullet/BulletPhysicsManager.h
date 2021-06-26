@@ -15,6 +15,7 @@
 #include <Magnum/BulletIntegration/MotionState.h>
 #include <btBulletDynamicsCommon.h>
 
+#include "BulletDynamics/ConstraintSolver/btFixedConstraint.h"
 #include "BulletDynamics/ConstraintSolver/btPoint2PointConstraint.h"
 #include "BulletDynamics/Featherstone/btMultiBodyConstraintSolver.h"
 #include "BulletDynamics/Featherstone/btMultiBodyFixedConstraint.h"
@@ -142,7 +143,7 @@ class BulletPhysicsManager : public PhysicsManager {
    * @brief Override of @ref PhysicsManager::removeObject to also remove any
    * active Bullet physics constraints for the object.
    */
-  void removeObject(int physObjectID,
+  void removeObject(int objectId,
                     bool deleteObjectNode = true,
                     bool deleteVisualNode = true) override;
 
@@ -150,7 +151,7 @@ class BulletPhysicsManager : public PhysicsManager {
    * @brief Override of @ref PhysicsManager::removeArticulatedObject to also
    * remove any active Bullet physics constraints for the object.
    */
-  void removeArticulatedObject(int id) override;
+  void removeArticulatedObject(int objectId) override;
 
   /** @brief Step the physical world forward in time. Time may only advance in
    * increments of @ref fixedTimeStep_. See @ref
@@ -273,6 +274,34 @@ class BulletPhysicsManager : public PhysicsManager {
     recentNumSubStepsTaken_ = -1;  // TODO: handle this more gracefully
   }
 
+  //============ Rigid Constraints =============
+
+  /**
+   * @brief Create a rigid constraint between two objects or an object and the
+   * world.
+   *
+   * @param settings The datastructure defining the constraint parameters.
+   *
+   * @return The id of the newly created constraint or ID_UNDEFINED if failed.
+   */
+  int createRigidConstraint(const RigidConstraintSettings& settings) override;
+
+  /**
+   * @brief Update the settings of a rigid constraint.
+   *
+   * @param constraintId The id of the constraint to update.
+   * @param settings The new settings of the constraint.
+   */
+  void updateRigidConstraint(int constraintId,
+                             const RigidConstraintSettings& settings) override;
+
+  /**
+   * @brief Remove a rigid constraint by id.
+   *
+   * @param constraintId The id of the constraint to remove.
+   */
+  void removeRigidConstraint(int constraintId) override;
+
   /**
    * @brief utilize PhysicsManager's enable shared
    */
@@ -281,6 +310,25 @@ class BulletPhysicsManager : public PhysicsManager {
   }
 
  protected:
+  //! counter for constraint id generation
+  int nextConstraintId_ = 0;
+  //! caches for various types of Bullet rigid constraint objects.
+  std::unordered_map<int, std::unique_ptr<btMultiBodyPoint2Point>>
+      articulatedP2PConstraints_;
+  std::unordered_map<int, std::unique_ptr<btMultiBodyFixedConstraint>>
+      articulatedFixedConstraints_;
+  std::unordered_map<int, std::unique_ptr<btPoint2PointConstraint>>
+      rigidP2PConstraints_;
+  std::unordered_map<int, std::unique_ptr<btFixedConstraint>>
+      rigidFixedConstraints_;
+  //! when constraining objects to the global frame, a dummy object with 0 mass
+  //! is required.
+  std::unique_ptr<btRigidBody> globalFrameObject = nullptr;
+
+  //! Maps object ids to a list of active constraints referencing the object for
+  //! use in constraint clean-up and object sleep state management.
+  std::unordered_map<int, std::vector<int>> objectConstraints_;
+
   //============ Initialization =============
   /**
    * @brief Finalize physics initialization: Setup staticStageObject_ and
@@ -371,6 +419,21 @@ class BulletPhysicsManager : public PhysicsManager {
   void lookUpObjectIdAndLinkId(const btCollisionObject* colObj,
                                int* objectId,
                                int* linkId) const;
+
+  /**
+   * @brief Helper function for removing all rigid constraints referencing an
+   * object.
+   *
+   * @param objectId The unique id for the rigid or articulated object.
+   */
+  void removeObjectRigidConstraints(int objectId) {
+    if (objectConstraints_.count(objectId) > 0) {
+      for (auto c_id : objectConstraints_.at(objectId)) {
+        removeRigidConstraint(c_id);
+      }
+      objectConstraints_.erase(objectId);
+    }
+  };
 
  public:
   ESP_SMART_POINTERS(BulletPhysicsManager)

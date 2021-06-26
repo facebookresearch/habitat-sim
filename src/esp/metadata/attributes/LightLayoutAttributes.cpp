@@ -37,7 +37,11 @@ LightInstanceAttributes::LightInstanceAttributes(const std::string& handle)
 }  // ctor
 
 LightLayoutAttributes::LightLayoutAttributes(const std::string& handle)
-    : AbstractAttributes("LightLayoutAttributes", handle) {}
+    : AbstractAttributes("LightLayoutAttributes", handle) {
+  // set default scaling for positive and negative intensities to 1.0
+  setPositiveIntensityScale(1.0);
+  setNegativeIntensityScale(1.0);
+}
 
 std::string LightLayoutAttributes::getObjectInfoInternal() const {
   std::string res = "\n";

@@ -96,13 +96,33 @@ void initGfxBindings(py::module& m) {
             self.draw(camera, sceneGraph, RenderCamera::Flags{flags});
           },
           R"(Draw given scene using the camera)", "camera"_a, "scene"_a,
-          "flag"_a = RenderCamera::Flag{RenderCamera::Flag::FrustumCulling})
+          "flags"_a = RenderCamera::Flag{RenderCamera::Flag::FrustumCulling})
       .def(
           "draw",
           [](Renderer& self, sensor::VisualSensor& visualSensor,
              sim::Simulator& sim) { self.draw(visualSensor, sim); },
           R"(Draw the active scene in current simulator using the visual sensor)",
           "visualSensor"_a, "sim"_a)
+#ifdef ESP_BUILD_WITH_BACKGROUND_RENDERER
+      .def(
+          "enqueue_async_draw_job",
+          [](Renderer& self, sensor::VisualSensor& visualSensor,
+             scene::SceneGraph& sceneGraph, const Mn::MutableImageView2D& view,
+             RenderCamera::Flag flags) {
+            self.enqueueAsyncDrawJob(visualSensor, sceneGraph, view,
+                                     RenderCamera::Flags{flags});
+          },
+          R"(Draw given scene using the visual sensor. See tutorials/async_rendering.py)",
+          "visualSensor"_a, "scene"_a, "view"_a,
+          "flags"_a = RenderCamera::Flag{RenderCamera::Flag::FrustumCulling})
+      .def("wait_draw_jobs", &Renderer::waitDrawJobs,
+           R"(See tutorials/async_rendering.py)")
+      .def("start_draw_jobs", &Renderer::startDrawJobs,
+           R"(See tutorials/async_rendering.py)")
+#endif
+      .def(
+          "acquire_gl_context", &Renderer::acquireGlContext,
+          R"(See tutorials/async_rendering.py. This is a noop if the main-thread already has the context.)")
       .def(
           "bind_render_target",
           [](Renderer& self, sensor::VisualSensor& visualSensor,
