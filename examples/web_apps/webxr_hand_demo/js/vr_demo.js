@@ -129,7 +129,6 @@ class VRDemo {
     preloadFunc(dataUrlBase + "/objects/hand_l_open.object_config.json");
     preloadFunc(dataUrlBase + "/objects/hand_l_closed.glb");
 
-    console.log("PRELOADING!!!!!!!!!!!");
     for (const name of replicaCadObjectNames) {
       let renderGlbFilepath = replicaCadObjectBaseFilepath + name + ".glb";
       let collisionGlbFilepath =
@@ -138,14 +137,10 @@ class VRDemo {
         name +
         "_cv_decomp.glb";
       let configFilepath = VRDemo.getReplicaCadObjectConfigFilepath(name);
-      console.log(renderGlbFilepath);
-      console.log(collisionGlbFilepath);
-      console.log(configFilepath);
       preloadFunc(renderGlbFilepath);
       preloadFunc(collisionGlbFilepath);
       preloadFunc(configFilepath);
     }
-    console.log("END PRELOADING!!!!!!!!!!!");
     preloadFunc(dataUrlBase + "/objects/hand_l_closed.object_config.json");
   }
 
@@ -158,10 +153,6 @@ class VRDemo {
   }
 
   setUpVR() {
-    /*const button = document.createElement("button");
-    button.id = BUTTON_ID;
-    this.canvasElement.after(button);
-    this.exitVR();*/
     const elem = document.getElementById("enter-vr");
     elem.style.visibility = "visible";
     elem.addEventListener("click", this.enterVR.bind(this));
@@ -179,8 +170,6 @@ class VRDemo {
 
     const episode = {};
     this.sim = new Module.Simulator(this.config);
-
-    console.log("BULLET PHYSICS?", Module.isBuildWithBulletPhysics());
 
     const agentConfigOrig = new Module.AgentConfiguration();
 
@@ -375,14 +364,16 @@ class VRDemo {
     this.renderDisplay();
 
     this.physicsStepFunction = setInterval(() => {
-      console.log("PHYSICS STEP");
       this.sim.stepWorld(1.0 / 60);
     }, 1000.0 / 60);
+
+    this.fpsElement.style.visibility = "visible";
   }
 
   exitVR() {
     if (this.webXRSession !== null) {
       this.webXRSession.end();
+      this.fpsElement.style.visibility = "hidden";
     }
   }
 
@@ -513,7 +504,7 @@ class VRDemo {
           let hitObjId = raycastResults.hasHits()
             ? raycastResults.hits.get(0).objectId
             : -1;
-          console.log("try grab", hitObjId);
+          console.log("Try grab", hitObjId);
 
           if (hitObjId != -1) {
             handRecord.heldObjId = hitObjId;
@@ -606,13 +597,6 @@ class VRDemo {
             if (objId != -1) {
               this.sim.setTranslation(spawnPos, objId, 0);
             }
-            console.log("adding object", objId);
-            let trans1 = this.sim.getTranslation(objId, 0);
-            this.sim.stepWorld(0.1);
-            let trans2 = this.sim.getTranslation(objId, 0);
-            console.log(trans1.x(), trans2.x());
-            console.log(trans1.y(), trans2.y());
-            console.log(trans1.z(), trans2.z());
           }
         }
 
