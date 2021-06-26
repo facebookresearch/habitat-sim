@@ -36,21 +36,25 @@ const std::string physicsConfigFile =
     Cr::Utility::Directory::join(SCENE_DATASETS,
                                  "../default.physics_config.json");
 
-class PhysicsManagerTest : public testing::Test {
+class PhysicsManagerTest : public testing::TestWithParam<bool> {
  protected:
-  void SetUp() override {
-    // set up a default simulation config to initialize MM
+  void SetUp() override{};
+
+  void resetCreateRendererFlag(bool createRenderer) {
     auto cfg = esp::sim::SimulatorConfiguration{};
-    cfg.createRenderer = false;
+    cfg.createRenderer = createRenderer;
     metadataMediator_ = MetadataMediator::create(cfg);
     resourceManager_ = std::make_unique<ResourceManager>(metadataMediator_);
-    resourceManager_->setRequiresTextures(false);
+    if (createRenderer) {
+      context_ = esp::gfx::WindowlessContext::create_unique(0);
+    }
+    resourceManager_->setRequiresTextures(createRenderer);
 
     sceneID_ = sceneManager_.initSceneGraph();
     // get attributes manager for physics world attributes
     physicsAttributesManager_ =
         metadataMediator_->getPhysicsAttributesManager();
-  };
+  }
 
   void initStage(const std::string& stageFile) {
     auto& sceneGraph = sceneManager_.getSceneGraph(sceneID_);
@@ -98,6 +102,9 @@ class PhysicsManagerTest : public testing::Test {
     return objectWrapper;
   }
 
+  // must declare these in this order due to avoid deallocation errors
+  esp::gfx::WindowlessContext::uptr context_;
+
   std::shared_ptr<MetadataMediator> metadataMediator_ = nullptr;
   std::unique_ptr<ResourceManager> resourceManager_ = nullptr;
 
@@ -110,8 +117,16 @@ class PhysicsManagerTest : public testing::Test {
   int sceneID_;
 };
 
-TEST_F(PhysicsManagerTest, JoinCompound) {
+// Parameterized tests: for each TEST_P, we run it once with GetParam()==false
+// and again with GetParam()==true.
+INSTANTIATE_TEST_CASE_P(CreateRendererToggle,
+                        PhysicsManagerTest,
+                        testing::Values(false, true));
+
+TEST_P(PhysicsManagerTest, JoinCompound) {
   LOG(INFO) << "Starting physics test: JoinCompound";
+
+  resetCreateRendererFlag(GetParam());
 
   std::string stageFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/scenes/simple_room.glb");
@@ -185,8 +200,10 @@ TEST_F(PhysicsManagerTest, JoinCompound) {
 }
 
 #ifdef ESP_BUILD_WITH_BULLET
-TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
+TEST_P(PhysicsManagerTest, CollisionBoundingBox) {
   LOG(INFO) << "Starting physics test: CollisionBoundingBox";
+
+  resetCreateRendererFlag(GetParam());
 
   std::string stageFile =
       Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
@@ -261,8 +278,10 @@ TEST_F(PhysicsManagerTest, CollisionBoundingBox) {
   }
 }
 
-TEST_F(PhysicsManagerTest, DiscreteContactTest) {
+TEST_P(PhysicsManagerTest, DiscreteContactTest) {
   LOG(INFO) << "Starting physics test: DiscreteContactTest";
+
+  resetCreateRendererFlag(GetParam());
 
   std::string stageFile =
       Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
@@ -344,10 +363,12 @@ TEST_F(PhysicsManagerTest, DiscreteContactTest) {
   }
 }
 
-TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
+TEST_P(PhysicsManagerTest, BulletCompoundShapeMargins) {
   // test that all different construction methods for a simple shape result in
   // the same Aabb for the given margin
   LOG(INFO) << "Starting physics test: BulletCompoundShapeMargins";
+
+  resetCreateRendererFlag(GetParam());
 
   std::string objectFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/objects/transform_box.glb");
@@ -411,9 +432,11 @@ TEST_F(PhysicsManagerTest, BulletCompoundShapeMargins) {
 }
 #endif
 
-TEST_F(PhysicsManagerTest, ConfigurableScaling) {
+TEST_P(PhysicsManagerTest, ConfigurableScaling) {
   // test scaling of objects via template configuration (visual and collision)
   LOG(INFO) << "Starting physics test: ConfigurableScaling";
+
+  resetCreateRendererFlag(GetParam());
 
   std::string stageFile =
       Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
@@ -478,9 +501,11 @@ TEST_F(PhysicsManagerTest, ConfigurableScaling) {
   }
 }
 
-TEST_F(PhysicsManagerTest, TestVelocityControl) {
+TEST_P(PhysicsManagerTest, TestVelocityControl) {
   // test scaling of objects via template configuration (visual and collision)
   LOG(INFO) << "Starting physics test: TestVelocityControl";
+
+  resetCreateRendererFlag(GetParam());
 
   std::string objectFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/objects/transform_box.glb");
@@ -618,9 +643,11 @@ TEST_F(PhysicsManagerTest, TestVelocityControl) {
   ASSERT_LE(float(angleErrorLocal), errorEps);
 }
 
-TEST_F(PhysicsManagerTest, TestSceneNodeAttachment) {
+TEST_P(PhysicsManagerTest, TestSceneNodeAttachment) {
   // test attaching/detaching existing SceneNode to/from physical simulation
   LOG(INFO) << "Starting physics test: TestSceneNodeAttachment";
+
+  resetCreateRendererFlag(GetParam());
 
   std::string objectFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/objects/transform_box.glb");
@@ -674,9 +701,11 @@ TEST_F(PhysicsManagerTest, TestSceneNodeAttachment) {
   ASSERT_NE(root.children().last(), newNode);
 }
 
-TEST_F(PhysicsManagerTest, TestMotionTypes) {
+TEST_P(PhysicsManagerTest, TestMotionTypes) {
   // test setting motion types and expected simulation behaviors
   LOG(INFO) << "Starting physics test: TestMotionTypes";
+
+  resetCreateRendererFlag(GetParam());
 
   std::string objectFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/objects/transform_box.glb");
@@ -792,7 +821,11 @@ TEST_F(PhysicsManagerTest, TestMotionTypes) {
   }
 }
 
-TEST_F(PhysicsManagerTest, TestNumActiveContactPoints) {
+TEST_P(PhysicsManagerTest, TestNumActiveContactPoints) {
+  LOG(INFO) << "Starting physics test: TestNumActiveContactPoints";
+
+  resetCreateRendererFlag(GetParam());
+
   std::string stageFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/scenes/simple_room.glb");
 
@@ -855,9 +888,11 @@ TEST_F(PhysicsManagerTest, TestNumActiveContactPoints) {
   }
 }
 
-TEST_F(PhysicsManagerTest, TestRemoveSleepingSupport) {
+TEST_P(PhysicsManagerTest, TestRemoveSleepingSupport) {
   // test that removing a sleeping support object wakes its collision island
   LOG(INFO) << "Starting physics test: TestRemoveSleepingSupport";
+
+  resetCreateRendererFlag(GetParam());
 
   std::string stageFile = "NONE";
 
