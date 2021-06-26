@@ -46,17 +46,19 @@ bool SemanticScene::
       if (!success) {
         // if not successful then attempt to load known json files
         const io::JsonDocument& jsonDoc = io::parseJsonFile(houseFilename);
-        // if no error thrown, then we loaded a json file of given name
-        if (jsonDoc.HasMember("objects") && jsonDoc["objects"].IsArray()) {
-          // check if also has "classes" tag, otherwise will assume it is a
-          // gibson file
-          if (jsonDoc.HasMember("classes") && jsonDoc["classes"].IsArray()) {
-            // load replica
-            success = buildReplicaHouse(jsonDoc, scene, rotation);
-          } else {
-            // load gibson
-            success = buildGibsonHouse(jsonDoc, scene, rotation);
-          }
+        // if no error thrown, then we have loaded a json file of given name
+        bool hasCorrectObjects =
+            (jsonDoc.HasMember("objects") && jsonDoc["objects"].IsArray());
+        // check if also has "classes" tag, otherwise will assume it is a
+        // gibson file
+        if (jsonDoc.HasMember("classes") && jsonDoc["classes"].IsArray()) {
+          // attempt to load replica or replicaCAD if has classes (replicaCAD
+          // does not have objects in SSDescriptor)
+          success =
+              buildReplicaHouse(jsonDoc, scene, hasCorrectObjects, rotation);
+        } else if (hasCorrectObjects) {
+          // attempt to load gibson if has objects but not classes
+          success = buildGibsonHouse(jsonDoc, scene, rotation);
         }
       }
       if (success) {

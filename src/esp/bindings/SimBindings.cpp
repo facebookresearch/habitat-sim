@@ -46,6 +46,10 @@ void initSimBindings(py::module& m) {
       .def_readwrite("gpu_device_id", &SimulatorConfiguration::gpuDeviceId)
       .def_readwrite("allow_sliding", &SimulatorConfiguration::allowSliding)
       .def_readwrite("create_renderer", &SimulatorConfiguration::createRenderer)
+      .def_readwrite(
+          "leave_context_with_background_renderer",
+          &SimulatorConfiguration::leaveContextWithBackgroundRenderer,
+          R"(See tutorials/async_rendering.py)")
       .def_readwrite("frustum_culling", &SimulatorConfiguration::frustumCulling)
       .def_readwrite("enable_physics", &SimulatorConfiguration::enablePhysics)
       .def_readwrite(
@@ -98,7 +102,9 @@ void initSimBindings(py::module& m) {
       .def("seed", &Simulator::seed, "new_seed"_a)
       .def("reconfigure", &Simulator::reconfigure, "configuration"_a)
       .def("reset", &Simulator::reset)
-      .def("close", &Simulator::close)
+      .def(
+          "close", &Simulator::close, "destroy"_a = true,
+          R"(Free all loaded assets and GPU contexts. Use destroy=true except where noted in tutorials/async_rendering.py.)")
       .def_property("pathfinder", &Simulator::getPathFinder,
                     &Simulator::setPathFinder)
       .def_property(
@@ -421,6 +427,8 @@ void initSimBindings(py::module& m) {
       .def("get_light_setup", &Simulator::getLightSetup,
            "key"_a = DEFAULT_LIGHTING_KEY,
            R"(Get a copy of the LightSetup registered with a specific key.)")
+      .def("get_current_light_setup", &Simulator::getCurrentLightSetup,
+           R"(Get a copy of the LightSetup used to create the current scene.)")
       .def(
           "set_light_setup", &Simulator::setLightSetup, "light_setup"_a,
           "key"_a = DEFAULT_LIGHTING_KEY,
@@ -432,8 +440,20 @@ void initSimBindings(py::module& m) {
           to directly access objects instead.
           Modify the LightSetup used to the render all components of an
           object by setting the LightSetup key referenced by all Drawables
-          attached to the object's visual SceneNodes.)");
-  ;
+          attached to the object's visual SceneNodes.)")
+      /* --- P2P/Fixed Constraints API --- */
+      .def(
+          "create_rigid_constraint", &Simulator::createRigidConstraint,
+          "settings"_a,
+          R"(Create a rigid constraint between two objects or an object and the world from a RigidConstraintsSettings.)")
+      .def("update_rigid_constraint", &Simulator::updateRigidConstraint,
+           "constraint_id"_a, "settings"_a,
+           R"(Update the settings of a rigid constraint.)")
+      .def("get_rigid_constraint_settings",
+           &Simulator::getRigidConstraintSettings, "constraint_id"_a,
+           R"(Get a copy of the settings for an existing rigid constraint.)")
+      .def("remove_rigid_constraint", &Simulator::removeRigidConstraint,
+           "constraint_id"_a, R"(Remove a rigid constraint by id.)");
 }
 
 }  // namespace sim

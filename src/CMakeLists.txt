@@ -47,6 +47,11 @@ option(
   "Build Habitat-Sim with VHACD convex hull decomposition and voxelization engine enabled -- Requires VHACD"
   OFF
 )
+option(
+  BUILD_WITH_BACKGROUND_RENDERER
+  "Build Habitat-Sim with async rendering support.  This will be forced to OFF when building emscripten"
+  ON
+)
 option(BUILD_TEST "Build test binaries" OFF)
 option(USE_SYSTEM_ASSIMP "Use system Assimp instead of a bundled submodule" OFF)
 option(USE_SYSTEM_EIGEN "Use system Eigen instead of a bundled submodule" OFF)
@@ -123,6 +128,15 @@ add_definitions(-DBT_ENABLE_PROFILE)
 # compiler define for enabling ptex support
 if(BUILD_PTEX_SUPPORT)
   message("Building with ptex support")
+endif()
+
+if(CORRADE_TARGET_EMSCRIPTEN)
+  if(BUILD_WITH_BACKGROUND_RENDERER)
+    message("Emscriptem build, disabling background rendering")
+  endif()
+  set(BUILD_WITH_BACKGROUND_RENDERER OFF CACHE BOOL "BUILD_WITH_BACKGROUND_RENDERER"
+                                               FORCE
+  )
 endif()
 
 # add subdirectories

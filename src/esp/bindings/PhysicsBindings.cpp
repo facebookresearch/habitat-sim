@@ -84,6 +84,43 @@ void initPhysicsBindings(py::module& m) {
           "motor_type", &JointMotorSettings::motorType,
           R"(The type of motor parameterized by these settings. Determines which parameters to use.)");
 
+  // ==== enum RigidConstraintType ====
+  py::enum_<RigidConstraintType>(m, "RigidConstraintType")
+      .value("PointToPoint", RigidConstraintType::PointToPoint)
+      .value("Fixed", RigidConstraintType::Fixed);
+
+  // ==== struct object RigidConstraintSettings ====
+  py::class_<RigidConstraintSettings, RigidConstraintSettings::ptr>(
+      m, "RigidConstraintSettings")
+      .def(py::init(&RigidConstraintSettings::create<>))
+      .def_readwrite("constraint_type",
+                     &RigidConstraintSettings::constraintType,
+                     R"(The type of constraint described by these settings.)")
+      .def_readwrite(
+          "max_impulse", &RigidConstraintSettings::maxImpulse,
+          R"(The maximum impulse applied by this constraint. Should be tuned relative to physics timestep.)")
+      .def_readwrite(
+          "object_id_a", &RigidConstraintSettings::objectIdA,
+          R"(The id of the first object. Must be >=0. For mixed type constraints, objectA must be the ArticulatedObject.)")
+      .def_readwrite("object_id_b", &RigidConstraintSettings::objectIdB,
+                     R"(The id of the second object. -1 for world/global.)")
+      .def_readwrite(
+          "link_id_a", &RigidConstraintSettings::linkIdA,
+          R"(The id of the link for objectA if articulated, otherwise ignored. -1 for base link.)")
+      .def_readwrite(
+          "link_id_b", &RigidConstraintSettings::linkIdB,
+          R"(The id of the link for objectB if articulated, otherwise ignored. -1 for base link.)")
+      .def_readwrite("pivot_a", &RigidConstraintSettings::pivotA,
+                     R"(Constraint point in local space of objectA.)")
+      .def_readwrite("pivot_b", &RigidConstraintSettings::pivotB,
+                     R"(Constraint point in local space of objectB.)")
+      .def_readwrite(
+          "frame_a", &RigidConstraintSettings::frameA,
+          R"(Constraint orientation frame in local space of objectA as 3x3 rotation matrix for RigidConstraintType::Fixed.)")
+      .def_readwrite(
+          "frame_b", &RigidConstraintSettings::frameB,
+          R"(Constraint orientation frame in local space of objectB as 3x3 rotation matrix for RigidConstraintType::Fixed.)");
+
   // ==== struct object RayHitInfo ====
   py::class_<RayHitInfo, RayHitInfo::ptr>(m, "RayHitInfo")
       .def(py::init(&RayHitInfo::create<>))

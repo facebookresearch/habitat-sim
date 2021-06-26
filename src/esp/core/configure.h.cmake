@@ -19,4 +19,6 @@
 
 #cmakedefine ESP_BUILD_WITH_VHACD
 
+#cmakedefine ESP_BUILD_WITH_BACKGROUND_RENDERER
+
 #endif //  ESP_CORE_CONFIGURE_H_

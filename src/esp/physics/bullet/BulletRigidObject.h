@@ -100,14 +100,17 @@ class BulletRigidObject : public BulletBase,
    */
   void setActive(bool active) override {
     if (!active) {
-      bObjectRigidBody_->setActivationState(WANTS_DEACTIVATION);
+      if (bObjectRigidBody_->isActive()) {
+        bObjectRigidBody_->setActivationState(WANTS_DEACTIVATION);
+      }
     } else {
       bObjectRigidBody_->activate(true);
     }
   }
 
-  /**
-   * @brief
+  /** @brief Disable deferred updates if active and sets SceneNode states from
+   * internal object physics states.
+   * @param force If set, update sleeping objects as well.
    */
   void updateNodes(bool force = false) override;
 
@@ -439,6 +442,11 @@ class BulletRigidObject : public BulletBase,
    */
   Magnum::Range3D getCollisionShapeAabb() const override;
 
+  /** @brief Object data: All components of a @ref RigidObjectType::OBJECT are
+   * wrapped into one @ref btRigidBody.
+   */
+  std::unique_ptr<btRigidBody> bObjectRigidBody_;
+
  private:
   /**
    * @brief Finalize initialization of this @ref BulletRigidObject as a @ref
@@ -472,11 +480,6 @@ class BulletRigidObject : public BulletBase,
    * a collision island tag with this object's collision shape.
    */
   void activateCollisionIsland();
-
-  /** @brief Object data: All components of a @ref RigidObjectType::OBJECT are
-   * wrapped into one @ref btRigidBody.
-   */
-  std::unique_ptr<btRigidBody> bObjectRigidBody_;
 
  private:
   // === Physical object ===

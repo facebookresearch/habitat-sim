@@ -96,6 +96,11 @@ class Player {
     keyframes_ = std::move(keyframes);
   }
 
+  /**
+   * @brief Reserved for unit-testing.
+   */
+  const std::vector<Keyframe>& debugGetKeyframes() const { return keyframes_; }
+
  private:
   void readKeyframesFromJsonDocument(const rapidjson::Document& d);
   void clearFrame();

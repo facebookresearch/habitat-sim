@@ -66,6 +66,10 @@ if(BUILD_PTEX_SUPPORT)
   )
 endif()
 
+if(BUILD_WITH_BACKGROUND_RENDERER)
+  list(APPEND gfx_SOURCES BackgroundRenderer.h BackgroundRenderer.cpp)
+endif()
+
 find_package(
   Magnum
   REQUIRED
@@ -126,6 +130,10 @@ target_link_libraries(
          Corrade::Utility
          Magnum::AnyImageConverter
 )
+
+if(BUILD_WITH_BACKGROUND_RENDERER)
+  target_link_libraries(gfx PUBLIC atomic_wait)
+endif()
 
 # Link windowed application library if needed
 if(BUILD_GUI_VIEWERS)

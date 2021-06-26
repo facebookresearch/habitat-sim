@@ -98,7 +98,8 @@ class ManagedContainerBase {
    * then the passed value will be returned; Otherwise, an incremented handle
    * will be returned, based on the names present.
    * @param name Candidate name for object.  If DNE then this string is
-   * returned; if does exist, then an incrementing scheme will be followed.
+   * returned with a count component of 0000; if does exist, then an
+   * incrementing scheme will be followed.
    * @return A valid, unique name to use for a potential managed object.
    */
   std::string getUniqueHandleFromCandidate(const std::string& name) const {

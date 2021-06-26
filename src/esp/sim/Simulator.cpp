@@ -52,10 +52,12 @@ Simulator::Simulator(const SimulatorConfiguration& cfg,
 
 Simulator::~Simulator() {
   LOG(INFO) << "Deconstructing Simulator";
-  close();
+  close(true);
 }
 
-void Simulator::close() {
+void Simulator::close(const bool destroy) {
+  if (renderer_)
+    renderer_->acquireGlContext();
   pathfinder_ = nullptr;
   navMeshVisPrimID_ = esp::ID_UNDEFINED;
   navMeshVisNode_ = nullptr;
@@ -70,8 +72,12 @@ void Simulator::close() {
 
   resourceManager_ = nullptr;
 
-  renderer_ = nullptr;
-  context_ = nullptr;
+  // Keeping the renderer and the context only matters when the
+  // background renderer was initialized.
+  if (destroy || !renderer_->wasBackgroundRendererInitialized()) {
+    renderer_ = nullptr;
+    context_ = nullptr;
+  }
 
   activeSceneID_ = ID_UNDEFINED;
   activeSemanticSceneID_ = ID_UNDEFINED;
@@ -141,8 +147,19 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
       gfx::Renderer::Flags flags;
       if (!(*requiresTextures_))
         flags |= gfx::Renderer::Flag::NoTextures;
-      renderer_ = gfx::Renderer::create(flags);
+
+#ifdef ESP_BUILD_WITH_BACKGROUND_RENDERER
+      if (context_)
+        flags |= gfx::Renderer::Flag::BackgroundRenderer;
+
+      if (context_ && config_.leaveContextWithBackgroundRenderer)
+        flags |= gfx::Renderer::Flag::LeaveContextWithBackgroundRenderer;
+#endif
+
+      renderer_ = gfx::Renderer::create(context_.get(), flags);
     }
+
+    renderer_->acquireGlContext();
 
     // (re) create scene instance
     success = createSceneInstance(config_.activeSceneName);
@@ -254,8 +271,7 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
 
   }  // if semantic scene descriptor specified in scene instance
 
-  // 3. Specify frustumCulling based on value either from config (if override
-  // is specified) or from scene instance attributes.
+  // 3. Specify frustumCulling based on value from config
   frustumCulling_ = config_.frustumCulling;
 
   // return a const ptr to the cur scene instance attributes
@@ -264,6 +280,8 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
 }  // Simulator::setSceneInstanceAttributes
 
 bool Simulator::createSceneInstance(const std::string& activeSceneName) {
+  if (renderer_)
+    renderer_->acquireGlContext();
   // 1. initial setup for scene instancing - sets or creates the
   // current scene instance to correspond to the given name.
   metadata::attributes::SceneAttributes::cptr curSceneInstanceAttributes =
@@ -309,6 +327,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
                                       Mn::ResourceKey{lightSetupKey});
     }
   }
+  // set config's sceneLightSetup to track currently specified light setup key
   config_.sceneLightSetup = lightSetupKey;
   metadataMediator_->setSimulatorConfiguration(config_);
 
@@ -592,6 +611,8 @@ int Simulator::addObject(const int objectLibId,
                          const std::string& lightSetupKey,
                          const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
+    if (renderer_)
+      renderer_->acquireGlContext();
     // TODO: change implementation to support multi-world and physics worlds
     // to own reference to a sceneGraph to avoid this.
     auto& drawables = getDrawableGroup(sceneID);
@@ -606,6 +627,8 @@ int Simulator::addObjectByHandle(const std::string& objectLibHandle,
                                  const std::string& lightSetupKey,
                                  const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
+    if (renderer_)
+      renderer_->acquireGlContext();
     // TODO: change implementation to support multi-world and physics worlds
     // to own reference to a sceneGraph to avoid this.
     auto& drawables = getDrawableGroup(sceneID);
@@ -635,7 +658,11 @@ void Simulator::removeObject(const int objectID,
 
 double Simulator::stepWorld(const double dt) {
   if (physicsManager_ != nullptr) {
+    physicsManager_->deferNodesUpdate();
     physicsManager_->stepPhysics(dt);
+    if (renderer_)
+      renderer_->waitSceneGraph();
+
     physicsManager_->updateNodes();
   }
   return getWorldTime();
@@ -670,6 +697,9 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
   // add STATIC collision objects
   if (includeStaticObjects) {
     // update nodes so SceneNode transforms are up-to-date
+    if (renderer_)
+      renderer_->waitSceneGraph();
+
     physicsManager_->updateNodes();
 
     // collect mesh components from all objects and then merge them.
@@ -762,6 +792,8 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
 }
 
 bool Simulator::setNavMeshVisualization(bool visualize) {
+  if (renderer_)
+    renderer_->acquireGlContext();
   // clean-up the NavMesh visualization if necessary
   if (!visualize && navMeshVisNode_ != nullptr) {
     delete navMeshVisNode_;
@@ -800,6 +832,9 @@ int Simulator::addTrajectoryObject(const std::string& trajVisName,
                                    const Magnum::Color4& color,
                                    bool smooth,
                                    int numInterp) {
+  if (renderer_)
+    renderer_->acquireGlContext();
+
   // 0. Deduplicate sequential points
   std::vector<Magnum::Vector3> uniquePts;
   uniquePts.push_back(pts[0]);
@@ -868,6 +903,8 @@ void Simulator::sampleRandomAgentState(agent::AgentState& agentState) {
 scene::SceneNode* Simulator::loadAndCreateRenderAssetInstance(
     const assets::AssetInfo& assetInfo,
     const assets::RenderAssetInstanceCreationInfo& creation) {
+  if (renderer_)
+    renderer_->acquireGlContext();
   // Note this pattern of passing the scene manager and two scene ids to
   // resource manager. This is similar to ResourceManager::loadStage.
   std::vector<int> tempIDs{activeSceneID_, activeSemanticSceneID_};
@@ -982,6 +1019,8 @@ agent::Agent::ptr Simulator::getAgent(const int agentId) {
 esp::sensor::Sensor& Simulator::addSensorToObject(
     const int objectId,
     const esp::sensor::SensorSpec::ptr& sensorSpec) {
+  if (renderer_)
+    renderer_->acquireGlContext();
   esp::sensor::SensorSetup sensorSpecifications = {sensorSpec};
   esp::scene::SceneNode& objectNode = *getObjectSceneNode(objectId);
   esp::sensor::SensorFactory::createSensors(objectNode, sensorSpecifications);

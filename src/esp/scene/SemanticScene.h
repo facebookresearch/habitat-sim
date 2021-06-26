@@ -194,6 +194,8 @@ class SemanticScene {
    * expected to have been verified already.
    * @param jsonDoc the JSON document describing the semantic annotations.
    * @param scene reference to sceneNode to assign semantic scene to
+   * @param objectsExist whether objects cell exists in json. This cell will not
+   * exist in ReplicaCAD semantic lexicon.
    * @param rotation rotation to apply to semantic scene upon load.
    * @return successfully built. Currently only returns true, but retaining
    * return value for future support.
@@ -201,6 +203,7 @@ class SemanticScene {
   static bool buildReplicaHouse(
       const io::JsonDocument& jsonDoc,
       SemanticScene& scene,
+      bool objectsExist,
       const quatf& rotation = quatf::FromTwoVectors(-vec3f::UnitZ(),
                                                     geo::ESP_GRAVITY));
 
