@@ -25,3 +25,14 @@ def run_main_subproc(args):
     proc.start()
     proc.join()
     assert proc.exitcode == 0
+
+
+def simulate(sim, dt, get_observations=False):
+    r"""Runs physics simulation at 60FPS for a given duration (dt) optionally collecting and returning sensor observations."""
+    observations = []
+    target_time = sim.get_world_time() + dt
+    while sim.get_world_time() < target_time:
+        sim.step_physics(1.0 / 60.0)
+        if get_observations:
+            observations.append(sim.get_sensor_observations())
+    return observations
