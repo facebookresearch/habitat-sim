@@ -330,9 +330,20 @@ class MobileManipulator(RobotInterface):
     # BASE RELATED
     #############################################
 
-    def set_base_pos(self, position):
-        """Set the robot base to a desired ground position (e.g. NavMesh point)."""
-        self._robot.translation = position + self.params.base_offset
+    @property
+    def base_pos(self):
+        """Get the robot base ground position via configured local offset from origin."""
+        return self._robot.translation + self._robot.transformation.transform_vector(
+            self.params.base_offset
+        )
+
+    @base_pos.setter
+    def base_pos(self, position):
+        """Set the robot base to a desired ground position (e.g. NavMesh point) via configured local offset from origin."""
+        self._robot.translation = (
+            position
+            - self._robot.transformation.transform_vector(self.params.base_offset)
+        )
 
     #############################################
     # HIDDEN

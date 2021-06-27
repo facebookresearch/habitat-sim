@@ -86,7 +86,9 @@ def test_fetch_robot_wrapper():
 
         # set base ground position from navmesh
         # NOTE: because the navmesh floats above the collision geometry we should see a pop/settle with dynamics
-        fetch.set_base_pos(sim.pathfinder.snap_point(fetch._robot.translation))
+        target_base_pos = sim.pathfinder.snap_point(fetch._robot.translation)
+        fetch.base_pos = target_base_pos
+        assert fetch.base_pos == target_base_pos
         observations += simulate(sim, 1.0, produce_debug_video)
 
         # arm joint queries and setters

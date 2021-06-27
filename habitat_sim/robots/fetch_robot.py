@@ -40,7 +40,7 @@ class FetchRobot(MobileManipulator):
             wheel_mtr_pos_gain=0.0,
             wheel_mtr_vel_gain=1.3,
             wheel_mtr_max_impulse=10.0,
-            base_offset=mn.Vector3(0.0, 0.0, 0.0),
+            base_offset=mn.Vector3(0, 0, 0),
             ctrl_freq=30,
         )
         super().__init__(fetch_params, urdf_path, sim, limit_robo_joints)
