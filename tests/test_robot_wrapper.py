@@ -60,7 +60,8 @@ def test_fetch_robot_wrapper():
         robot_path = "data/robots/hab_fetch/robots/hab_fetch.urdf"
         fetch = fetch_robot.FetchRobot(robot_path, sim)
         fetch.reconfigure()
-        assert fetch.get_robot_sim_id() == 1  # 0 is the groun plane
+        assert fetch.get_robot_sim_id() == 1  # 0 is the ground plane
+        print(fetch.get_link_and_joint_names())
         observations += simulate(sim, 1.0, produce_debug_video)
 
         # retract the arm
@@ -93,20 +94,20 @@ def test_fetch_robot_wrapper():
         fetch.set_arm_pos(np.ones(len(fetch.params.arm_joints)))
         fetch.set_arm_motor_pos(np.ones(len(fetch.params.arm_joints)))
         print(f" Arm joint positions (should be ones) = {fetch.get_arm_pos()}")
-        print(f" Arm joint limits = {fetch.get_arm_joint_lims()}")
+        print(f" Arm joint limits = {fetch.arm_joint_limits}")
 
         # test gripper state
         fetch.open_gripper()
-        assert fetch.is_gripper_open()
+        assert fetch.is_gripper_open
         fetch.close_gripper()
-        assert not fetch.is_gripper_open()
+        assert not fetch.is_gripper_open
 
         # end effector queries
-        print(f" End effector link id = {fetch.get_ee_link_id()}")
-        print(f" End effector local offset = {fetch.get_ee_local_offset()}")
-        print(f" End effector transform = {fetch.get_end_effector_transform()}")
+        print(f" End effector link id = {fetch.ee_link_id}")
+        print(f" End effector local offset = {fetch.ee_local_offset}")
+        print(f" End effector transform = {fetch.get_ee_transform()}")
         print(
-            f" End effector translation (at current state) = {fetch.calculate_ee_fk(fetch._robot.joint_positions)}"
+            f" End effector translation (at current state) = {fetch.calculate_ee_forward_kinematics(fetch._robot.joint_positions)}"
         )
         invalid_ef_target = np.array([100.0, 200.0, 300.0])
         print(

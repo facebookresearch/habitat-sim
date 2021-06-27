@@ -21,8 +21,8 @@ class MobileManipulatorParams:
     :property ee_offset: The 3D offset from the end-effector link to the true
         end-effector position.
     :property ee_link: The Habitat Sim link ID of the end-effector.
-    :property ee_constraint: A (2,N) shaped array specifying the upper and
-        lower limits for each joint where N is the arm DOF.
+    :property ee_constraint: A (2, N) shaped array specifying the upper and
+        lower limits for each end-effector joint where N is the arm DOF.
 
     :property arm_cam_offset_pos: The 3D offset of the arm camera from the
         end-effector position.
@@ -32,9 +32,10 @@ class MobileManipulatorParams:
         relative to the head camera.
 
     :property gripper_joints: The habitat sim joint ids of any grippers.
-    :property gripper_closed_state: All gripper joints need to achieve this
+    :property gripper_closed_state: All gripper joints must achieve this
         value for the gripper to be considered closed.
-    :property gripper_open_state: See gripper_closed_state.
+    :property gripper_open_state: All gripper joints must achieve this
+        value for the gripper to be considered open.
     :property gripper_closed_eps: Error margin for detecting whether gripper is closed.
 
     :property arm_mtr_pos_gain: The position gain of the arm motor.
@@ -131,12 +132,6 @@ class MobileManipulator(RobotInterface):
             self.joint_dof_indices[link_id] = self._robot.get_link_dof_offset(link_id)
         self.joint_limits = self._robot.joint_position_limits
 
-        # print relevant joint/link info for debugging
-        for link_id in self._robot.get_link_ids():
-            print(
-                f"{link_id} = {self._robot.get_link_name(link_id)} | {self._robot.get_link_joint_name(link_id)} :: type = {self._robot.get_link_joint_type(link_id)}"
-            )
-
     def update(self) -> None:
         """Updates the camera transformations and performs necessary checks on
         joint limits and sleep states.
@@ -206,7 +201,8 @@ class MobileManipulator(RobotInterface):
     #############################################
     # ARM RELATED
     #############################################
-    def get_arm_joint_lims(self) -> Tuple[np.ndarray, np.ndarray]:
+    @property
+    def arm_joint_limits(self) -> Tuple[np.ndarray, np.ndarray]:
         """Get the arm joint limits in radians"""
         arm_pos_indices = list(
             map(lambda x: self.joint_pos_indices[x], self.params.arm_joints)
@@ -216,28 +212,32 @@ class MobileManipulator(RobotInterface):
         upper_lims = [self.joint_limits[1][i] for i in arm_pos_indices]
         return lower_lims, upper_lims
 
-    def get_ee_link_id(self) -> int:
+    @property
+    def ee_link_id(self) -> int:
         """Gets the Habitat Sim link id of the end-effector."""
         return self.params.ee_link
 
-    def get_ee_local_offset(self) -> mn.Vector3:
+    @property
+    def ee_local_offset(self) -> mn.Vector3:
         """Gets the relative offset of the end-effector center from the
         end-effector link.
         """
         return self.params.ee_offset
 
-    def calculate_ee_fk(self, js: np.ndarray) -> np.ndarray:
+    def calculate_ee_forward_kinematics(self, joint_state: np.ndarray) -> np.ndarray:
         """Gets the end-effector position for the given joint state."""
-        self._robot.joint_positions = js
-        return self.get_end_effector_transform().translation
+        self._robot.joint_positions = joint_state
+        return self.get_ee_transform().translation
 
-    def calculate_ee_ik(self, ee_targ: np.ndarray) -> np.ndarray:
+    def calculate_ee_inverse_kinematics(
+        self, ee_target_position: np.ndarray
+    ) -> np.ndarray:
         """Gets the joint states necessary to achieve the desired end-effector
         configuration.
         """
         raise NotImplementedError("Currently no implementation for generic IK.")
 
-    def get_end_effector_transform(self) -> mn.Matrix4:
+    def get_ee_transform(self) -> mn.Matrix4:
         """Gets the transformation of the end-effector location. This is offset
         from the end-effector link location.
         """
@@ -245,23 +245,29 @@ class MobileManipulator(RobotInterface):
             self.params.ee_link
         ).transformation
         ef_link_transform.translation = ef_link_transform.transform_point(
-            self.get_ee_local_offset()
+            self.ee_local_offset
         )
         return ef_link_transform
 
-    def set_gripper_state(self, gripper_state: float) -> None:
+    @property
+    def gripper_state(self) -> float:
+        return self._gripper_state
+
+    @gripper_state.setter
+    def gripper_state(self, gripper_state: float) -> None:
         """Set the desired state of the gripper"""
         # TODO: should this apply the change to motors or joints?
         self._gripper_state = gripper_state
 
     def close_gripper(self) -> None:
         """Set gripper to the close state"""
-        self.set_gripper_state(self.params.gripper_closed_state)
+        self.gripper_state = self.params.gripper_closed_state
 
     def open_gripper(self) -> None:
         """Set gripper to the open state"""
-        self.set_gripper_state(self.params.gripper_open_state)
+        self.gripper_state = self.params.gripper_open_state
 
+    @property
     def is_gripper_open(self) -> bool:
         # Give some threshold for the open state.
         grip_dist = np.abs(self._gripper_state - self.params.gripper_open_state)

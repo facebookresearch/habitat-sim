@@ -25,3 +25,11 @@ class RobotInterface(ABC):
     @abstractmethod
     def reconfigure(self):
         """Instantiates the robot the scene. Loads the URDF, sets initial state of parameters, joints, motors, etc..."""
+
+    def get_link_and_joint_names(self) -> str:
+        """Get a string listing all robot link and joint names for debugging purposes."""
+        link_joint_names = ""
+        # print relevant joint/link info for debugging
+        for link_id in self._robot.get_link_ids():
+            link_joint_names += f"{link_id} = {self._robot.get_link_name(link_id)} | {self._robot.get_link_joint_name(link_id)} :: type = {self._robot.get_link_joint_type(link_id)} \n"
+        return link_joint_names
