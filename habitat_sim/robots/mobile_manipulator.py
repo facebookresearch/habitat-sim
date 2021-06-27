@@ -9,6 +9,7 @@ from habitat_sim.robots.robot_interface import RobotInterface
 from habitat_sim.simulator import Simulator
 
 
+# TODO: refactor this class to support spherical joints: multiple dofs per link and #dofs != #positions.
 @attr.s(auto_attribs=True, slots=True)
 class MobileManipulatorParams:
     """Data to configure a mobile manipulator.
@@ -227,7 +228,7 @@ class MobileManipulator(RobotInterface):
     def calculate_ee_forward_kinematics(self, joint_state: np.ndarray) -> np.ndarray:
         """Gets the end-effector position for the given joint state."""
         self._robot.joint_positions = joint_state
-        return self.get_ee_transform().translation
+        return self.ee_transform.translation
 
     def calculate_ee_inverse_kinematics(
         self, ee_target_position: np.ndarray
@@ -237,7 +238,8 @@ class MobileManipulator(RobotInterface):
         """
         raise NotImplementedError("Currently no implementation for generic IK.")
 
-    def get_ee_transform(self) -> mn.Matrix4:
+    @property
+    def ee_transform(self) -> mn.Matrix4:
         """Gets the transformation of the end-effector location. This is offset
         from the end-effector link location.
         """
@@ -286,23 +288,31 @@ class MobileManipulator(RobotInterface):
         """Kinematically sets the arm joints and sets the motors to target."""
         joint_positions = self._robot.joint_positions
         for i, jidx in enumerate(self.params.arm_joints):
-            self._set_mtr_pos(jidx, ctrl[i])
+            self._set_motor_pos(jidx, ctrl[i])
             joint_positions[self.joint_pos_indices[jidx]] = ctrl[i]
         self._robot.joint_positions = joint_positions
 
-    def get_arm_velocity(self) -> np.ndarray:
+    @property
+    def arm_velocity(self) -> np.ndarray:
         """Get the velocity of the arm joints."""
         arm_dof_indices = list(
             map(lambda x: self.joint_dof_indices[x], self.params.arm_joints)
         )
         return [self._robot.joint_velocities[i] for i in arm_dof_indices]
 
-    def set_arm_motor_pos(self, ctrl: List[float]) -> None:
-        """Set the desired target of the arm joints for the controller to
-        achieve.
-        """
+    @property
+    def arm_motor_pos(self) -> np.ndarray:
+        """Get the current target of the arm joints motors."""
+        motor_targets = np.zeros(len(self.params.arm_init_params))
         for i, jidx in enumerate(self.params.arm_joints):
-            self._set_mtr_pos(jidx, ctrl[i])
+            motor_targets[i] = self._get_motor_pos(jidx)
+        return motor_targets
+
+    @arm_motor_pos.setter
+    def arm_motor_pos(self, ctrl: List[float]) -> None:
+        """Set the desired target of the arm joint motors."""
+        for i, jidx in enumerate(self.params.arm_joints):
+            self._set_motor_pos(jidx, ctrl[i])
 
     def retract_arm(self) -> None:
         """Moves the arm to a pre-specified retracted state out of the way of
@@ -371,13 +381,13 @@ class MobileManipulator(RobotInterface):
         )
         return mn.Matrix4.look_at(cam_pos, look_at, mn.Vector3(0, -1, 0))
 
-    def _set_mtr_pos(self, joint, ctrl):
+    def _set_motor_pos(self, joint, ctrl):
         self.joint_motors[joint][1].position_target = ctrl
         self._robot.update_joint_motor(
             self.joint_motors[joint][0], self.joint_motors[joint][1]
         )
 
-    def _get_mtr_pos(self, joint):
+    def _get_motor_pos(self, joint):
         return self.joint_motors[joint][1].position_target
 
     def _set_joint_pos(self, joint_idx, angle):
@@ -387,7 +397,7 @@ class MobileManipulator(RobotInterface):
         self._robot.joint_positions = set_pos
 
     def _interpolate_arm_control(self, targs, idxs, seconds, get_observations=False):
-        curs = np.array([self._get_mtr_pos(i) for i in idxs])
+        curs = np.array([self._get_motor_pos(i) for i in idxs])
         diff = targs - curs
         T = int(seconds * self.params.ctrl_freq)
         delta = diff / T
@@ -396,7 +406,7 @@ class MobileManipulator(RobotInterface):
         for i in range(T):
             joint_positions = self._robot.joint_positions
             for j, jidx in enumerate(idxs):
-                self._set_mtr_pos(jidx, delta[j] * (i + 1) + curs[j])
+                self._set_motor_pos(jidx, delta[j] * (i + 1) + curs[j])
                 joint_positions[self.joint_pos_indices[jidx]] = (
                     delta[j] * (i + 1) + curs[j]
                 )

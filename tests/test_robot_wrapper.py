@@ -81,7 +81,7 @@ def test_fetch_robot_wrapper():
         )
 
         # setting arm motor positions
-        fetch.set_arm_motor_pos(np.zeros(len(fetch.params.arm_joints)))
+        fetch.arm_motor_pos = np.zeros(len(fetch.params.arm_joints))
         observations += simulate(sim, 1.0, produce_debug_video)
 
         # set base ground position from navmesh
@@ -92,9 +92,9 @@ def test_fetch_robot_wrapper():
         observations += simulate(sim, 1.0, produce_debug_video)
 
         # arm joint queries and setters
-        print(f" Arm joint velocities = {fetch.get_arm_velocity()}")
+        print(f" Arm joint velocities = {fetch.arm_velocity}")
         fetch.arm_pos = np.ones(len(fetch.params.arm_joints))
-        fetch.set_arm_motor_pos(np.ones(len(fetch.params.arm_joints)))
+        fetch.arm_motor_pos = np.ones(len(fetch.params.arm_joints))
         print(f" Arm joint positions (should be ones) = {fetch.arm_pos}")
         print(f" Arm joint limits = {fetch.arm_joint_limits}")
 
@@ -107,7 +107,7 @@ def test_fetch_robot_wrapper():
         # end effector queries
         print(f" End effector link id = {fetch.ee_link_id}")
         print(f" End effector local offset = {fetch.ee_local_offset}")
-        print(f" End effector transform = {fetch.get_ee_transform()}")
+        print(f" End effector transform = {fetch.ee_transform}")
         print(
             f" End effector translation (at current state) = {fetch.calculate_ee_forward_kinematics(fetch._robot.joint_positions)}"
         )
