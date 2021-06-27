@@ -91,9 +91,9 @@ def test_fetch_robot_wrapper():
 
         # arm joint queries and setters
         print(f" Arm joint velocities = {fetch.get_arm_velocity()}")
-        fetch.set_arm_pos(np.ones(len(fetch.params.arm_joints)))
+        fetch.arm_pos = np.ones(len(fetch.params.arm_joints))
         fetch.set_arm_motor_pos(np.ones(len(fetch.params.arm_joints)))
-        print(f" Arm joint positions (should be ones) = {fetch.get_arm_pos()}")
+        print(f" Arm joint positions (should be ones) = {fetch.arm_pos}")
         print(f" Arm joint limits = {fetch.arm_joint_limits}")
 
         # test gripper state

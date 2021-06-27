@@ -163,7 +163,7 @@ class MobileManipulator(RobotInterface):
 
         # Init the fetch starting joint positions.
         if self.params.arm_init_params is not None:
-            self.set_arm_pos(self.params.arm_init_params)
+            self.arm_pos = self.params.arm_init_params
 
         # TODO: should all arm joints have the same gain/impulse settings?
         jms = JointMotorSettings(
@@ -273,20 +273,22 @@ class MobileManipulator(RobotInterface):
         grip_dist = np.abs(self._gripper_state - self.params.gripper_open_state)
         return grip_dist < self.params.gripper_closed_eps
 
-    def set_arm_pos(self, ctrl: List[float]):
+    @property
+    def arm_joint_pos(self) -> np.ndarray:
+        """Get the current arm joint positions in radians."""
+        arm_pos_indices = list(
+            map(lambda x: self.joint_pos_indices[x], self.params.arm_joints)
+        )
+        return [self._robot.joint_positions[i] for i in arm_pos_indices]
+
+    @arm_joint_pos.setter
+    def arm_joint_pos(self, ctrl: List[float]):
         """Kinematically sets the arm joints and sets the motors to target."""
         joint_positions = self._robot.joint_positions
         for i, jidx in enumerate(self.params.arm_joints):
             self._set_mtr_pos(jidx, ctrl[i])
             joint_positions[self.joint_pos_indices[jidx]] = ctrl[i]
         self._robot.joint_positions = joint_positions
-
-    def get_arm_pos(self) -> np.ndarray:
-        """Get the current arm joint positions in radians."""
-        arm_pos_indices = list(
-            map(lambda x: self.joint_pos_indices[x], self.params.arm_joints)
-        )
-        return [self._robot.joint_positions[i] for i in arm_pos_indices]
 
     def get_arm_velocity(self) -> np.ndarray:
         """Get the velocity of the arm joints."""
