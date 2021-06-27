@@ -86,7 +86,7 @@ def test_fetch_robot_wrapper():
 
         # set base ground position from navmesh
         # NOTE: because the navmesh floats above the collision geometry we should see a pop/settle with dynamics
-        target_base_pos = sim.pathfinder.snap_point(fetch._robot.translation)
+        target_base_pos = sim.pathfinder.snap_point(fetch.sim_obj.translation)
         fetch.base_pos = target_base_pos
         assert fetch.base_pos == target_base_pos
         observations += simulate(sim, 1.0, produce_debug_video)
@@ -109,7 +109,7 @@ def test_fetch_robot_wrapper():
         print(f" End effector local offset = {fetch.ee_local_offset}")
         print(f" End effector transform = {fetch.ee_transform}")
         print(
-            f" End effector translation (at current state) = {fetch.calculate_ee_forward_kinematics(fetch._robot.joint_positions)}"
+            f" End effector translation (at current state) = {fetch.calculate_ee_forward_kinematics(fetch.sim_obj.joint_positions)}"
         )
         invalid_ef_target = np.array([100.0, 200.0, 300.0])
         print(

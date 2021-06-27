@@ -125,13 +125,13 @@ class MobileManipulator(RobotInterface):
     def reconfigure(self) -> None:
         """Instantiates the robot the scene. Loads the URDF, sets initial state of parameters, joints, motors, etc..."""
         ao_mgr = self._sim.get_articulated_object_manager()
-        self._robot = ao_mgr.add_articulated_object_from_urdf(self.urdf_path)
-        for link_id in self._robot.get_link_ids():
-            self.joint_pos_indices[link_id] = self._robot.get_link_joint_pos_offset(
+        self.sim_obj = ao_mgr.add_articulated_object_from_urdf(self.urdf_path)
+        for link_id in self.sim_obj.get_link_ids():
+            self.joint_pos_indices[link_id] = self.sim_obj.get_link_joint_pos_offset(
                 link_id
             )
-            self.joint_dof_indices[link_id] = self._robot.get_link_dof_offset(link_id)
-        self.joint_limits = self._robot.joint_position_limits
+            self.joint_dof_indices[link_id] = self.sim_obj.get_link_dof_offset(link_id)
+        self.joint_limits = self.sim_obj.joint_position_limits
 
     def update(self) -> None:
         """Updates the camera transformations and performs necessary checks on
@@ -154,9 +154,9 @@ class MobileManipulator(RobotInterface):
         # Guard against out of limit joints
         # TODO: should auto clamping be enabled instead? How often should we clamp?
         if self._limit_robo_joints:
-            self._robot.clamp_joint_limits()
+            self.sim_obj.clamp_joint_limits()
 
-        self._robot.awake = True
+        self.sim_obj.awake = True
 
     def reset(self) -> None:
         """Reset the joints on the existing robot.
@@ -177,7 +177,7 @@ class MobileManipulator(RobotInterface):
         # set initial pose for arm motors
         for ix, joint_id in enumerate(self.params.arm_joints):
             jms.position_target = self.params.arm_init_params[ix]
-            self._robot.update_joint_motor(self.joint_motors[joint_id][0], jms)
+            self.sim_obj.update_joint_motor(self.joint_motors[joint_id][0], jms)
 
         if self.params.wheel_joints is not None:
             jms = JointMotorSettings(
@@ -189,14 +189,14 @@ class MobileManipulator(RobotInterface):
             )
             # pylint: disable=not-an-iterable
             for i in self.params.wheel_joints:
-                self._robot.update_joint_motor(self.joint_motors[i][0], jms)
+                self.sim_obj.update_joint_motor(self.joint_motors[i][0], jms)
 
         # update motor settings dict
         self.joint_motors = {}
-        for motor_id, joint_id in self._robot.existing_joint_motor_ids.items():
+        for motor_id, joint_id in self.sim_obj.existing_joint_motor_ids.items():
             self.joint_motors[joint_id] = (
                 motor_id,
-                self._robot.get_joint_motor_settings(motor_id),
+                self.sim_obj.get_joint_motor_settings(motor_id),
             )
 
     #############################################
@@ -227,7 +227,7 @@ class MobileManipulator(RobotInterface):
 
     def calculate_ee_forward_kinematics(self, joint_state: np.ndarray) -> np.ndarray:
         """Gets the end-effector position for the given joint state."""
-        self._robot.joint_positions = joint_state
+        self.sim_obj.joint_positions = joint_state
         return self.ee_transform.translation
 
     def calculate_ee_inverse_kinematics(
@@ -243,7 +243,7 @@ class MobileManipulator(RobotInterface):
         """Gets the transformation of the end-effector location. This is offset
         from the end-effector link location.
         """
-        ef_link_transform = self._robot.get_link_scene_node(
+        ef_link_transform = self.sim_obj.get_link_scene_node(
             self.params.ee_link
         ).transformation
         ef_link_transform.translation = ef_link_transform.transform_point(
@@ -281,16 +281,16 @@ class MobileManipulator(RobotInterface):
         arm_pos_indices = list(
             map(lambda x: self.joint_pos_indices[x], self.params.arm_joints)
         )
-        return [self._robot.joint_positions[i] for i in arm_pos_indices]
+        return [self.sim_obj.joint_positions[i] for i in arm_pos_indices]
 
     @arm_joint_pos.setter
     def arm_joint_pos(self, ctrl: List[float]):
         """Kinematically sets the arm joints and sets the motors to target."""
-        joint_positions = self._robot.joint_positions
+        joint_positions = self.sim_obj.joint_positions
         for i, jidx in enumerate(self.params.arm_joints):
             self._set_motor_pos(jidx, ctrl[i])
             joint_positions[self.joint_pos_indices[jidx]] = ctrl[i]
-        self._robot.joint_positions = joint_positions
+        self.sim_obj.joint_positions = joint_positions
 
     @property
     def arm_velocity(self) -> np.ndarray:
@@ -298,7 +298,7 @@ class MobileManipulator(RobotInterface):
         arm_dof_indices = list(
             map(lambda x: self.joint_dof_indices[x], self.params.arm_joints)
         )
-        return [self._robot.joint_velocities[i] for i in arm_dof_indices]
+        return [self.sim_obj.joint_velocities[i] for i in arm_dof_indices]
 
     @property
     def arm_motor_pos(self) -> np.ndarray:
@@ -343,16 +343,16 @@ class MobileManipulator(RobotInterface):
     @property
     def base_pos(self):
         """Get the robot base ground position via configured local offset from origin."""
-        return self._robot.translation + self._robot.transformation.transform_vector(
+        return self.sim_obj.translation + self.sim_obj.transformation.transform_vector(
             self.params.base_offset
         )
 
     @base_pos.setter
     def base_pos(self, position):
         """Set the robot base to a desired ground position (e.g. NavMesh point) via configured local offset from origin."""
-        self._robot.translation = (
+        self.sim_obj.translation = (
             position
-            - self._robot.transformation.transform_vector(self.params.base_offset)
+            - self.sim_obj.transformation.transform_vector(self.params.base_offset)
         )
 
     #############################################
@@ -362,7 +362,7 @@ class MobileManipulator(RobotInterface):
         """Helper function to get the transformation of where the arm camera
         should be placed.
         """
-        ee_trans = self._robot.get_link_scene_node(self.params.ee_link).transformation
+        ee_trans = self.sim_obj.get_link_scene_node(self.params.ee_link).transformation
         offset_trans = mn.Matrix4.translation(self.params.arm_cam_offset_pos)
         rot_trans = mn.Matrix4.rotation_y(mn.Deg(-90))
         spin_trans = mn.Matrix4.rotation_z(mn.Deg(90))
@@ -373,17 +373,17 @@ class MobileManipulator(RobotInterface):
         """Helper function to get the transformation of where the head camera
         should be placed.
         """
-        look_at = self._robot.transformation.transform_point(
+        look_at = self.sim_obj.transformation.transform_point(
             self.params.head_cam_look_pos
         )
-        cam_pos = self._robot.transformation.transform_point(
+        cam_pos = self.sim_obj.transformation.transform_point(
             self.params.head_cam_offset_pos
         )
         return mn.Matrix4.look_at(cam_pos, look_at, mn.Vector3(0, -1, 0))
 
     def _set_motor_pos(self, joint, ctrl):
         self.joint_motors[joint][1].position_target = ctrl
-        self._robot.update_joint_motor(
+        self.sim_obj.update_joint_motor(
             self.joint_motors[joint][0], self.joint_motors[joint][1]
         )
 
@@ -392,9 +392,9 @@ class MobileManipulator(RobotInterface):
 
     def _set_joint_pos(self, joint_idx, angle):
         # NOTE: This is pretty inefficient and should not be used iteratively
-        set_pos = self._robot.joint_positions
+        set_pos = self.sim_obj.joint_positions
         set_pos[self.joint_pos_indices[joint_idx]] = angle
-        self._robot.joint_positions = set_pos
+        self.sim_obj.joint_positions = set_pos
 
     def _interpolate_arm_control(self, targs, idxs, seconds, get_observations=False):
         curs = np.array([self._get_motor_pos(i) for i in idxs])
@@ -404,13 +404,13 @@ class MobileManipulator(RobotInterface):
 
         observations = []
         for i in range(T):
-            joint_positions = self._robot.joint_positions
+            joint_positions = self.sim_obj.joint_positions
             for j, jidx in enumerate(idxs):
                 self._set_motor_pos(jidx, delta[j] * (i + 1) + curs[j])
                 joint_positions[self.joint_pos_indices[jidx]] = (
                     delta[j] * (i + 1) + curs[j]
                 )
-            self._robot.joint_positions = joint_positions
+            self.sim_obj.joint_positions = joint_positions
             self._sim.step_world(1 / self.params.ctrl_freq)
             if get_observations:
                 observations.append(self._sim.get_sensor_observations())

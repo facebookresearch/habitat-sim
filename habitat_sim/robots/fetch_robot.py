@@ -51,8 +51,8 @@ class FetchRobot(MobileManipulator):
     def reconfigure(self) -> None:
         super().reconfigure()
         # remove any default damping motors
-        for motor_id in self._robot.existing_joint_motor_ids:
-            self._robot.remove_joint_motor(motor_id)
+        for motor_id in self.sim_obj.existing_joint_motor_ids:
+            self.sim_obj.remove_joint_motor(motor_id)
         # re-generate all joint motors.
         jms = JointMotorSettings(
             0,  # position_target
@@ -61,11 +61,11 @@ class FetchRobot(MobileManipulator):
             self.params.arm_mtr_vel_gain,  # velocity_gain
             self.params.arm_mtr_max_impulse,  # max_impulse
         )
-        self._robot.create_all_motors(jms)
-        for motor_id, joint_id in self._robot.existing_joint_motor_ids.items():
+        self.sim_obj.create_all_motors(jms)
+        for motor_id, joint_id in self.sim_obj.existing_joint_motor_ids.items():
             self.joint_motors[joint_id] = (
                 motor_id,
-                self._robot.get_joint_motor_settings(motor_id),
+                self.sim_obj.get_joint_motor_settings(motor_id),
             )
         # NOTE: this is necessary to set the initial joint positions and configure joint motors from params
         self.reset()
