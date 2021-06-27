@@ -1,7 +1,6 @@
 import magnum as mn
 import numpy as np
 
-from habitat_sim.physics import JointMotorSettings
 from habitat_sim.robots.mobile_manipulator import (
     MobileManipulator,
     MobileManipulatorParams,
@@ -12,6 +11,7 @@ class FetchRobot(MobileManipulator):
     def __init__(self, urdf_path, sim, limit_robo_joints=True):
         fetch_params = MobileManipulatorParams(
             arm_joints=list(range(15, 22)),
+            gripper_joints=[23, 24],
             wheel_joints=[2, 4],
             arm_init_params=[-0.45, -1.08, 0.1, 0.935, -0.001, 1.573, 0.005],
             gripper_init_params=[0.00, 0.00],
@@ -21,10 +21,9 @@ class FetchRobot(MobileManipulator):
             arm_cam_offset_pos=mn.Vector3(0, 0.0, 0.1),
             head_cam_offset_pos=mn.Vector3(0.17, 0.0, 1.2),
             head_cam_look_pos=mn.Vector3(1, 0.0, 0.75),
-            gripper_joints=[23, 24],
-            gripper_closed_state=0.04,
-            gripper_open_state=0.0,
-            gripper_closed_eps=0.001,
+            gripper_closed_state=[0.0, 0.0],
+            gripper_open_state=[0.04, 0.04],
+            gripper_state_eps=0.001,
             arm_mtr_pos_gain=0.3,
             arm_mtr_vel_gain=0.3,
             arm_mtr_max_impulse=10.0,
@@ -41,25 +40,13 @@ class FetchRobot(MobileManipulator):
 
     def reconfigure(self) -> None:
         super().reconfigure()
-        # remove any default damping motors
-        for motor_id in self.sim_obj.existing_joint_motor_ids:
-            self.sim_obj.remove_joint_motor(motor_id)
-        # re-generate all joint motors.
-        jms = JointMotorSettings(
-            0,  # position_target
-            self.params.arm_mtr_pos_gain,  # position_gain
-            0,  # velocity_target
-            self.params.arm_mtr_vel_gain,  # velocity_gain
-            self.params.arm_mtr_max_impulse,  # max_impulse
-        )
-        self.sim_obj.create_all_motors(jms)
-        for motor_id, joint_id in self.sim_obj.existing_joint_motor_ids.items():
-            self.joint_motors[joint_id] = (
-                motor_id,
-                self.sim_obj.get_joint_motor_settings(motor_id),
-            )
-        # NOTE: this is necessary to set the initial joint positions and configure joint motors from params
-        self.reset()
+
+        # NOTE: this is necessary to set locked head and back positions
+        self.update()
+
+    def reset(self) -> None:
+        super().reset()
+
         # NOTE: this is necessary to set locked head and back positions
         self.update()
 
@@ -73,6 +60,3 @@ class FetchRobot(MobileManipulator):
         fix_back_val = 0.15
         self._set_joint_pos(self.back_joint_id, fix_back_val)
         self._set_motor_pos(self.back_joint_id, fix_back_val)
-        for grip_idx in self.params.gripper_joints:
-            self._set_motor_pos(grip_idx, self._gripper_state)
-            self._set_joint_pos(grip_idx, self._gripper_state)

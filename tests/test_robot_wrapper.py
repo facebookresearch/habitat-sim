@@ -98,12 +98,32 @@ def test_fetch_robot_wrapper():
         print(f" Arm joint positions (should be ones) = {fetch.arm_joint_pos}")
         print(f" Arm joint limits = {fetch.arm_joint_limits}")
         fetch.arm_motor_pos = fetch.arm_motor_pos
+        observations += simulate(sim, 1.0, produce_debug_video)
 
         # test gripper state
         fetch.open_gripper()
+        observations += simulate(sim, 1.0, produce_debug_video)
         assert fetch.is_gripper_open
+        assert not fetch.is_gripper_closed
         fetch.close_gripper()
+        observations += simulate(sim, 1.0, produce_debug_video)
+        assert fetch.is_gripper_closed
         assert not fetch.is_gripper_open
+
+        # halfway open
+        fetch.set_gripper_target_state(0.5)
+        observations += simulate(sim, 0.5, produce_debug_video)
+        assert not fetch.is_gripper_open
+        assert not fetch.is_gripper_closed
+
+        # kinematic open/close (checked before simulation)
+        fetch.gripper_joint_pos = fetch.params.gripper_open_state
+        assert np.allclose(fetch.gripper_joint_pos, fetch.params.gripper_open_state)
+        assert fetch.is_gripper_open
+        observations += simulate(sim, 0.2, produce_debug_video)
+        fetch.gripper_joint_pos = fetch.params.gripper_closed_state
+        assert fetch.is_gripper_closed
+        observations += simulate(sim, 0.2, produce_debug_video)
 
         # end effector queries
         print(f" End effector link id = {fetch.ee_link_id}")

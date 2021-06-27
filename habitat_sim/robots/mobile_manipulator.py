@@ -14,12 +14,13 @@ from habitat_sim.simulator import Simulator
 class MobileManipulatorParams:
     """Data to configure a mobile manipulator.
     :property arm_joints: The joint ids of the arm joints.
+    :property gripper_joints: The habitat sim joint ids of any grippers.
     :property wheel_joints: The joint ids of the wheels. If the wheels are not controlled, then this should be None
 
     :property arm_init_params: The starting joint angles of the arm. If None,
-        nothing is set.
+        resets to 0.
     :property gripper_init_params: The starting joint positions of the gripper. If None,
-        nothing is set.
+        resets to 0.
 
     :property ee_offset: The 3D offset from the end-effector link to the true
         end-effector position.
@@ -34,12 +35,11 @@ class MobileManipulatorParams:
     :property head_cam_look_pos: The 3D offset of where the head should face,
         relative to the head camera.
 
-    :property gripper_joints: The habitat sim joint ids of any grippers.
     :property gripper_closed_state: All gripper joints must achieve this
-        value for the gripper to be considered closed.
+        state for the gripper to be considered closed.
     :property gripper_open_state: All gripper joints must achieve this
-        value for the gripper to be considered open.
-    :property gripper_closed_eps: Error margin for detecting whether gripper is closed.
+        state for the gripper to be considered open.
+    :property gripper_state_eps: Error margin for detecting whether gripper is closed.
 
     :property arm_mtr_pos_gain: The position gain of the arm motor.
     :property arm_mtr_vel_gain: The velocity gain of the arm motor.
@@ -56,6 +56,7 @@ class MobileManipulatorParams:
     """
 
     arm_joints: List[int]
+    gripper_joints: List[int]
     wheel_joints: Optional[List[int]]
 
     arm_init_params: Optional[List[float]]
@@ -69,10 +70,9 @@ class MobileManipulatorParams:
     head_cam_offset_pos: mn.Vector3
     head_cam_look_pos: mn.Vector3
 
-    gripper_joints: List[int]
-    gripper_closed_state: float
-    gripper_open_state: float
-    gripper_closed_eps: float
+    gripper_closed_state: List[float]
+    gripper_open_state: List[float]
+    gripper_state_eps: float
 
     arm_mtr_pos_gain: float
     arm_mtr_vel_gain: float
@@ -105,7 +105,6 @@ class MobileManipulator(RobotInterface):
         self.urdf_path = urdf_path
         self.params = params
 
-        self._gripper_state = 0.0
         self._sim = sim
         self._limit_robo_joints = limit_robo_joints
 
@@ -125,6 +124,16 @@ class MobileManipulator(RobotInterface):
         self.joint_dof_indices: Dict[int, int] = {}
         self.joint_limits: Tuple[np.ndarray, np.ndarray] = None
 
+        # defaults for optional params
+        if self.params.gripper_init_params is None:
+            self.params.gripper_init_params = [
+                0 for i in range(len(self.params.gripper_joints))
+            ]
+        if self.params.arm_init_params is None:
+            self.params.arm_init_params = [
+                0 for i in range(len(self.params.arm_joints))
+            ]
+
     def reconfigure(self) -> None:
         """Instantiates the robot the scene. Loads the URDF, sets initial state of parameters, joints, motors, etc..."""
         ao_mgr = self._sim.get_articulated_object_manager()
@@ -135,6 +144,39 @@ class MobileManipulator(RobotInterface):
             )
             self.joint_dof_indices[link_id] = self.sim_obj.get_link_dof_offset(link_id)
         self.joint_limits = self.sim_obj.joint_position_limits
+
+        # remove any default damping motors
+        for motor_id in self.sim_obj.existing_joint_motor_ids:
+            self.sim_obj.remove_joint_motor(motor_id)
+        # re-generate all joint motors with arm gains.
+        jms = JointMotorSettings(
+            0,  # position_target
+            self.params.arm_mtr_pos_gain,  # position_gain
+            0,  # velocity_target
+            self.params.arm_mtr_vel_gain,  # velocity_gain
+            self.params.arm_mtr_max_impulse,  # max_impulse
+        )
+        self.sim_obj.create_all_motors(jms)
+        self._update_motor_settings_cache()
+
+        # set correct gains for wheels
+        if self.params.wheel_joints is not None:
+            jms = JointMotorSettings(
+                0,  # position_target
+                self.params.wheel_mtr_pos_gain,  # position_gain
+                0,  # velocity_target
+                self.params.wheel_mtr_vel_gain,  # velocity_gain
+                self.params.wheel_mtr_max_impulse,  # max_impulse
+            )
+            # pylint: disable=not-an-iterable
+            for i in self.params.wheel_joints:
+                self.sim_obj.update_joint_motor(self.joint_motors[i][0], jms)
+
+        # set initial states and targets
+        self.arm_joint_pos = self.params.arm_init_params
+        self.gripper_joint_pos = self.params.gripper_init_params
+
+        self._update_motor_settings_cache()
 
     def update(self) -> None:
         """Updates the camera transformations and performs necessary checks on
@@ -163,50 +205,13 @@ class MobileManipulator(RobotInterface):
 
     def reset(self) -> None:
         """Reset the joints on the existing robot.
-        NOTE: only arm and wheel joint motors are reset by default, derived class should handle any other motors."""
+        NOTE: only arm and gripper joint motors (not gains) are reset by default, derived class should handle any other changes."""
 
-        # Init the fetch starting joint positions.
-        if self.params.arm_init_params is not None:
-            self.arm_joint_pos = self.params.arm_init_params
+        # reset the initial joint positions
+        self.arm_joint_pos = self.params.arm_init_params
+        self.gripper_joint_pos = self.params.gripper_init_params
 
-        # TODO: should all arm joints have the same gain/impulse settings?
-        jms = JointMotorSettings(
-            0,  # position_target
-            self.params.arm_mtr_pos_gain,  # position_gain
-            0,  # velocity_target
-            self.params.arm_mtr_vel_gain,  # velocity_gain
-            self.params.arm_mtr_max_impulse,  # max_impulse
-        )
-        # set initial pose for arm motors
-        for ix, joint_id in enumerate(self.params.arm_joints):
-            jms.position_target = self.params.arm_init_params[ix]
-            self.sim_obj.update_joint_motor(self.joint_motors[joint_id][0], jms)
-
-        # TODO: gripper joint positions should be set. Should this be done with "gripper_state"?
-        if self.params.gripper_joints is not None:
-            for ix, joint_id in enumerate(self.params.gripper_joints):
-                jms.position_target = self.params.gripper_init_params[ix]
-                self.sim_obj.update_joint_motor(self.joint_motors[joint_id][0], jms)
-
-        if self.params.wheel_joints is not None:
-            jms = JointMotorSettings(
-                0,  # position_target
-                self.params.wheel_mtr_pos_gain,  # position_gain
-                0,  # velocity_target
-                self.params.wheel_mtr_vel_gain,  # velocity_gain
-                self.params.wheel_mtr_max_impulse,  # max_impulse
-            )
-            # pylint: disable=not-an-iterable
-            for i in self.params.wheel_joints:
-                self.sim_obj.update_joint_motor(self.joint_motors[i][0], jms)
-
-        # update motor settings dict
-        self.joint_motors = {}
-        for motor_id, joint_id in self.sim_obj.existing_joint_motor_ids.items():
-            self.joint_motors[joint_id] = (
-                motor_id,
-                self.sim_obj.get_joint_motor_settings(motor_id),
-            )
+        self._update_motor_settings_cache()
 
     #############################################
     # ARM RELATED
@@ -261,32 +266,66 @@ class MobileManipulator(RobotInterface):
         return ef_link_transform
 
     @property
-    def gripper_state(self) -> float:
-        return self._gripper_state
+    def gripper_joint_pos(self) -> np.ndarray:
+        """Get the current gripper joint positions."""
+        gripper_pos_indices = list(
+            map(lambda x: self.joint_pos_indices[x], self.params.gripper_joints)
+        )
+        return [self.sim_obj.joint_positions[i] for i in gripper_pos_indices]
 
-    @gripper_state.setter
-    def gripper_state(self, gripper_state: float) -> None:
-        """Set the desired state of the gripper"""
-        # TODO: should this apply the change to motors or joints?
-        self._gripper_state = gripper_state
+    @gripper_joint_pos.setter
+    def gripper_joint_pos(self, ctrl: List[float]):
+        """Kinematically sets the gripper joints and sets the motors to target."""
+        joint_positions = self.sim_obj.joint_positions
+        for i, jidx in enumerate(self.params.gripper_joints):
+            self._set_motor_pos(jidx, ctrl[i])
+            joint_positions[self.joint_pos_indices[jidx]] = ctrl[i]
+        self.sim_obj.joint_positions = joint_positions
+
+    def set_gripper_target_state(self, gripper_state: float) -> None:
+        """Set the gripper motors to a desired symmetric state of the gripper [0,1] -> [open, closed]"""
+        for i, jidx in enumerate(self.params.gripper_joints):
+            delta = (
+                self.params.gripper_closed_state[i] - self.params.gripper_open_state[i]
+            )
+            target = self.params.gripper_open_state[i] + delta * gripper_state
+            self._set_motor_pos(jidx, target)
 
     def close_gripper(self) -> None:
         """Set gripper to the close state"""
-        self.gripper_state = self.params.gripper_closed_state
+        self.set_gripper_target_state(1)
 
     def open_gripper(self) -> None:
         """Set gripper to the open state"""
-        self.gripper_state = self.params.gripper_open_state
+        self.set_gripper_target_state(0)
 
     @property
     def is_gripper_open(self) -> bool:
-        # Give some threshold for the open state.
-        grip_dist = np.abs(self._gripper_state - self.params.gripper_open_state)
-        return grip_dist < self.params.gripper_closed_eps
+        """True if all gripper joints are within eps of the open state."""
+        return (
+            np.amax(
+                np.abs(
+                    self.gripper_joint_pos - np.array(self.params.gripper_open_state)
+                )
+            )
+            < self.params.gripper_state_eps
+        )
+
+    @property
+    def is_gripper_closed(self) -> bool:
+        """True if all gripper joints are within eps of the closed state."""
+        return (
+            np.amax(
+                np.abs(
+                    self.gripper_joint_pos - np.array(self.params.gripper_closed_state)
+                )
+            )
+            < self.params.gripper_state_eps
+        )
 
     @property
     def arm_joint_pos(self) -> np.ndarray:
-        """Get the current arm joint positions in radians."""
+        """Get the current arm joint positions."""
         arm_pos_indices = list(
             map(lambda x: self.joint_pos_indices[x], self.params.arm_joints)
         )
@@ -322,16 +361,6 @@ class MobileManipulator(RobotInterface):
         """Set the desired target of the arm joint motors."""
         for i, jidx in enumerate(self.params.arm_joints):
             self._set_motor_pos(jidx, ctrl[i])
-
-    def retract_arm(self) -> None:
-        """Moves the arm to a pre-specified retracted state out of the way of
-        the head camera.
-        """
-        raise NotImplementedError("Robot does not implement retract arm")
-
-    def ready_arm(self) -> None:
-        """Moves the arm back to the resting position."""
-        raise NotImplementedError("Robot does not implement ready arm")
 
     def clip_ee_to_workspace(self, pos: np.ndarray) -> np.ndarray:
         """Clips a 3D end-effector position within region the robot can reach."""
@@ -424,3 +453,12 @@ class MobileManipulator(RobotInterface):
             if get_observations:
                 observations.append(self._sim.get_sensor_observations())
         return observations
+
+    def _update_motor_settings_cache(self):
+        """Updates the JointMotorSettings cache for cheaper future updates"""
+        self.joint_motors = {}
+        for motor_id, joint_id in self.sim_obj.existing_joint_motor_ids.items():
+            self.joint_motors[joint_id] = (
+                motor_id,
+                self.sim_obj.get_joint_motor_settings(motor_id),
+            )
