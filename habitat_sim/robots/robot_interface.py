@@ -1,22 +1,27 @@
 from abc import ABC, abstractmethod
 
+from habitat_sim.physics import ManagedBulletArticulatedObject
+
 
 class RobotInterface(ABC):
-    def __init__(self):
-        pass
+    """Generic robot interface defines standard API functions."""
 
-    @abstractmethod
+    def __init__(self):
+        """Initializes this wrapper, but does not instantiate the robot."""
+        self._robot: ManagedBulletArticulatedObject = None
+
     def get_robot_sim_id(self) -> int:
-        pass
+        """Get the unique id for referencing the robot."""
+        return self._robot.object_id
 
     @abstractmethod
     def update(self):
-        pass
+        """Updates any properties or internal systems for the robot such as camera transformations, joint limits, and sleep states."""
 
     @abstractmethod
     def reset(self):
-        pass
+        """Reset the joint and motor states of an existing robot."""
 
     @abstractmethod
     def reconfigure(self):
-        pass
+        """Instantiates the robot the scene. Loads the URDF, sets initial state of parameters, joints, motors, etc..."""

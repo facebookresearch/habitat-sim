@@ -6,7 +6,6 @@
 
 from os import path as osp
 
-# import magnum as mn
 import numpy as np
 import pytest
 
@@ -37,7 +36,6 @@ def test_fetch_robot_wrapper():
 
     with habitat_sim.Simulator(hab_cfg) as sim:
         obj_template_mgr = sim.get_object_template_manager()
-        # art_obj_mgr = sim.get_articulated_object_manager()
         rigid_obj_mgr = sim.get_rigid_object_manager()
 
         # setup the camera for debug video (looking at 0,0,0)
@@ -82,18 +80,18 @@ def test_fetch_robot_wrapper():
         )
 
         # setting arm motor positions
-        fetch.set_arm_mtr_pos(np.zeros(len(fetch.params.arm_joints)))
+        fetch.set_arm_motor_pos(np.zeros(len(fetch.params.arm_joints)))
         observations += simulate(sim, 1.0, produce_debug_video)
 
         # set base ground position from navmesh
         # NOTE: because the navmesh floats above the collision geometry we should see a pop/settle with dynamics
-        fetch.set_base_position(sim.pathfinder.snap_point(fetch._robot.translation))
+        fetch.set_base_pos(sim.pathfinder.snap_point(fetch._robot.translation))
         observations += simulate(sim, 1.0, produce_debug_video)
 
         # arm joint queries and setters
-        print(f" Arm joint velocities = {fetch.get_arm_vel()}")
+        print(f" Arm joint velocities = {fetch.get_arm_velocity()}")
         fetch.set_arm_pos(np.ones(len(fetch.params.arm_joints)))
-        fetch.set_arm_mtr_pos(np.ones(len(fetch.params.arm_joints)))
+        fetch.set_arm_motor_pos(np.ones(len(fetch.params.arm_joints)))
         print(f" Arm joint positions (should be ones) = {fetch.get_arm_pos()}")
         print(f" Arm joint limits = {fetch.get_arm_joint_lims()}")
 

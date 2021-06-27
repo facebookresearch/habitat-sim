@@ -4,7 +4,7 @@ import attr
 import magnum as mn
 import numpy as np
 
-from habitat_sim.physics import JointMotorSettings, ManagedBulletArticulatedObject
+from habitat_sim.physics import JointMotorSettings
 from habitat_sim.robots.robot_interface import RobotInterface
 from habitat_sim.simulator import Simulator
 
@@ -35,6 +35,7 @@ class MobileManipulatorParams:
     :property gripper_closed_state: All gripper joints need to achieve this
         value for the gripper to be considered closed.
     :property gripper_open_state: See gripper_closed_state.
+    :property gripper_closed_eps: Error margin for detecting whether gripper is closed.
 
     :property arm_mtr_pos_gain: The position gain of the arm motor.
     :property arm_mtr_vel_gain: The velocity gain of the arm motor.
@@ -46,7 +47,7 @@ class MobileManipulatorParams:
         there are wheels).
     :property wheel_mtr_max_impulse: The maximum impulse of the wheel motor (if
         there are wheels).
-    :property base_height: The offset of the root transform from the center ground point for navmesh kinematic control.
+    :property base_offset: The offset of the root transform from the center ground point for navmesh kinematic control.
     :property ctrl_freq: The number of control actions per second.
     """
 
@@ -66,6 +67,7 @@ class MobileManipulatorParams:
     gripper_joints: List[int]
     gripper_closed_state: float
     gripper_open_state: float
+    gripper_closed_eps: float
 
     arm_mtr_pos_gain: float
     arm_mtr_vel_gain: float
@@ -99,7 +101,6 @@ class MobileManipulator(RobotInterface):
         self.params = params
 
         self._gripper_state = 0.0
-        self._robot: ManagedBulletArticulatedObject = None
         self._sim = sim
         self._limit_robo_joints = limit_robo_joints
 
@@ -119,12 +120,8 @@ class MobileManipulator(RobotInterface):
         self.joint_dof_indices: Dict[int, int] = {}
         self.joint_limits: Tuple[np.ndarray, np.ndarray] = None
 
-    def get_robot_sim_id(self) -> int:
-        """Gets the underlying simulator ID of the robot."""
-        return self._robot.object_id
-
     def reconfigure(self) -> None:
-        """Adds the articulated robot object to the scene."""
+        """Instantiates the robot the scene. Loads the URDF, sets initial state of parameters, joints, motors, etc..."""
         ao_mgr = self._sim.get_articulated_object_manager()
         self._robot = ao_mgr.add_articulated_object_from_urdf(self.urdf_path)
         for link_id in self._robot.get_link_ids():
@@ -268,7 +265,7 @@ class MobileManipulator(RobotInterface):
     def is_gripper_open(self) -> bool:
         # Give some threshold for the open state.
         grip_dist = np.abs(self._gripper_state - self.params.gripper_open_state)
-        return grip_dist < 0.001
+        return grip_dist < self.params.gripper_closed_eps
 
     def set_arm_pos(self, ctrl: List[float]):
         """Kinematically sets the arm joints and sets the motors to target."""
@@ -285,14 +282,14 @@ class MobileManipulator(RobotInterface):
         )
         return [self._robot.joint_positions[i] for i in arm_pos_indices]
 
-    def get_arm_vel(self) -> np.ndarray:
+    def get_arm_velocity(self) -> np.ndarray:
         """Get the velocity of the arm joints."""
         arm_dof_indices = list(
             map(lambda x: self.joint_dof_indices[x], self.params.arm_joints)
         )
         return [self._robot.joint_velocities[i] for i in arm_dof_indices]
 
-    def set_arm_mtr_pos(self, ctrl: List[float]) -> None:
+    def set_arm_motor_pos(self, ctrl: List[float]) -> None:
         """Set the desired target of the arm joints for the controller to
         achieve.
         """
@@ -325,7 +322,7 @@ class MobileManipulator(RobotInterface):
     # BASE RELATED
     #############################################
 
-    def set_base_position(self, position):
+    def set_base_pos(self, position):
         """Set the robot base to a desired ground position (e.g. NavMesh point)."""
         self._robot.translation = position + self.params.base_offset
 

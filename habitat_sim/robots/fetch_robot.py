@@ -33,6 +33,7 @@ class FetchRobot(MobileManipulator):
             gripper_joints=[23, 24],
             gripper_closed_state=0.04,
             gripper_open_state=0.0,
+            gripper_closed_eps=0.001,
             arm_mtr_pos_gain=0.3,
             arm_mtr_vel_gain=0.3,
             arm_mtr_max_impulse=10.0,
