@@ -25,7 +25,7 @@ from utils import simulate
 )
 def test_fetch_robot_wrapper():
     # set this to output test results as video for easy investigation
-    produce_debug_video = False
+    produce_debug_video = True
     observations = []
     cfg_settings = examples.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "NONE"
@@ -93,10 +93,11 @@ def test_fetch_robot_wrapper():
 
         # arm joint queries and setters
         print(f" Arm joint velocities = {fetch.arm_velocity}")
-        fetch.arm_pos = np.ones(len(fetch.params.arm_joints))
+        fetch.arm_joint_pos = np.ones(len(fetch.params.arm_joints))
         fetch.arm_motor_pos = np.ones(len(fetch.params.arm_joints))
-        print(f" Arm joint positions (should be ones) = {fetch.arm_pos}")
+        print(f" Arm joint positions (should be ones) = {fetch.arm_joint_pos}")
         print(f" Arm joint limits = {fetch.arm_joint_limits}")
+        fetch.arm_motor_pos = fetch.arm_motor_pos
 
         # test gripper state
         fetch.open_gripper()

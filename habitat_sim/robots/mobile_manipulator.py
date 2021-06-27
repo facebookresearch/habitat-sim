@@ -18,6 +18,8 @@ class MobileManipulatorParams:
 
     :property arm_init_params: The starting joint angles of the arm. If None,
         nothing is set.
+    :property gripper_init_params: The starting joint positions of the gripper. If None,
+        nothing is set.
 
     :property ee_offset: The 3D offset from the end-effector link to the true
         end-effector position.
@@ -57,6 +59,7 @@ class MobileManipulatorParams:
     wheel_joints: Optional[List[int]]
 
     arm_init_params: Optional[List[float]]
+    gripper_init_params: Optional[List[float]]
 
     ee_offset: mn.Vector3
     ee_link: int
@@ -164,7 +167,7 @@ class MobileManipulator(RobotInterface):
 
         # Init the fetch starting joint positions.
         if self.params.arm_init_params is not None:
-            self.arm_pos = self.params.arm_init_params
+            self.arm_joint_pos = self.params.arm_init_params
 
         # TODO: should all arm joints have the same gain/impulse settings?
         jms = JointMotorSettings(
@@ -178,6 +181,12 @@ class MobileManipulator(RobotInterface):
         for ix, joint_id in enumerate(self.params.arm_joints):
             jms.position_target = self.params.arm_init_params[ix]
             self.sim_obj.update_joint_motor(self.joint_motors[joint_id][0], jms)
+
+        # TODO: gripper joint positions should be set. Should this be done with "gripper_state"?
+        if self.params.gripper_joints is not None:
+            for ix, joint_id in enumerate(self.params.gripper_joints):
+                jms.position_target = self.params.gripper_init_params[ix]
+                self.sim_obj.update_joint_motor(self.joint_motors[joint_id][0], jms)
 
         if self.params.wheel_joints is not None:
             jms = JointMotorSettings(
