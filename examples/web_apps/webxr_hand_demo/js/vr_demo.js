@@ -7,7 +7,10 @@ const BUTTON_ID = "vr_button";
 const VIEW_SENSORS = ["left_eye", "right_eye"];
 const pointToArray = p => [p.x, p.y, p.z, p.w];
 
-const replicaCadObjectBaseFilepath = "data/replica/objects/";
+const physicsConfigFilepath = "data/default.physics_config.json";
+const objectBaseFilepath = "data/objects/";
+const sceneBaseFilepath = "data/scenes/";
+
 const replicaCadObjectNames = [
   "frl_apartment_vase_02", // gray
   "frl_apartment_plate_02", // double-layer
@@ -38,7 +41,6 @@ const replicaCadObjectNames = [
   // "frl_apartment_kitchen_utensil_08", // cylindrical storage container
   // "frl_apartment_kitchen_utensil_09", // gray thermos
   // "frl_apartment_vase_01", // white
-  // "frl_apartment_choppingboard_02",
 ];
 
 const replicaCadObjectInstanceNames = [
@@ -97,51 +99,49 @@ class VRDemo {
     this.fpsElement = document.getElementById("fps");
   }
 
-  static getReplicaCadObjectConfigFilepath(name) {
-    let configFilepath =
-      replicaCadObjectBaseFilepath +
-      "configs_convex/" +
-      name +
-      ".object_config.json";
-    return configFilepath;
+  static getObjectFilepath(name) {
+    return objectBaseFilepath + name + ".glb";
+  }
+
+  static getObjectConfigFilepath(name) {
+    return objectBaseFilepath + name + ".object_config.json";
+  }
+
+  static getObjectCollisionGlbFilepath(name) {
+    return objectBaseFilepath + name + "_cv_decomp.glb";
+  }
+
+  static getSceneFilepath(name) {
+    return sceneBaseFilepath + name + ".glb";
+  }
+
+  static getSceneConfigFilepath(name) {
+    return sceneBaseFilepath + name + ".stage_config.json";
   }
 
   static preloadFiles(preloadFunc) {
     let dataUrlBase = "data";
 
-    preloadFunc(dataUrlBase + "/default.physics_config.json");
+    preloadFunc(physicsConfigFilepath);
 
-    preloadFunc(
-      dataUrlBase +
-        "/scene_datasets/habitat-test-scenes/remake_v0_JustBigStuff_00.glb"
-    );
-    preloadFunc(
-      dataUrlBase +
-        "/scene_datasets/habitat-test-scenes/remake_v0_JustBigStuff_00.stage_config.json"
-    );
+    preloadFunc(VRDemo.getSceneFilepath("remake_v0_JustBigStuff_00"));
+    preloadFunc(VRDemo.getSceneConfigFilepath("remake_v0_JustBigStuff_00"));
 
-    preloadFunc(dataUrlBase + "/objects/hand_r_open.glb");
-    preloadFunc(dataUrlBase + "/objects/hand_r_open.object_config.json");
-    preloadFunc(dataUrlBase + "/objects/hand_r_closed.glb");
-    preloadFunc(dataUrlBase + "/objects/hand_r_closed.object_config.json");
+    preloadFunc(VRDemo.getObjectFilepath("hand_r_open"));
+    preloadFunc(VRDemo.getObjectConfigFilepath("hand_r_open"));
+    preloadFunc(VRDemo.getObjectFilepath("hand_r_closed"));
+    preloadFunc(VRDemo.getObjectConfigFilepath("hand_r_closed"));
 
-    preloadFunc(dataUrlBase + "/objects/hand_l_open.glb");
-    preloadFunc(dataUrlBase + "/objects/hand_l_open.object_config.json");
-    preloadFunc(dataUrlBase + "/objects/hand_l_closed.glb");
+    preloadFunc(VRDemo.getObjectFilepath("hand_l_open"));
+    preloadFunc(VRDemo.getObjectConfigFilepath("hand_l_open"));
+    preloadFunc(VRDemo.getObjectFilepath("hand_l_closed"));
+    preloadFunc(VRDemo.getObjectConfigFilepath("hand_l_closed"));
 
     for (const name of replicaCadObjectNames) {
-      let renderGlbFilepath = replicaCadObjectBaseFilepath + name + ".glb";
-      let collisionGlbFilepath =
-        replicaCadObjectBaseFilepath +
-        "configs_convex/" +
-        name +
-        "_cv_decomp.glb";
-      let configFilepath = VRDemo.getReplicaCadObjectConfigFilepath(name);
-      preloadFunc(renderGlbFilepath);
-      preloadFunc(collisionGlbFilepath);
-      preloadFunc(configFilepath);
+      preloadFunc(VRDemo.getObjectFilepath(name));
+      preloadFunc(VRDemo.getObjectCollisionGlbFilepath(name));
+      preloadFunc(VRDemo.getObjectConfigFilepath(name));
     }
-    preloadFunc(dataUrlBase + "/objects/hand_l_closed.object_config.json");
   }
 
   display() {
@@ -160,10 +160,9 @@ class VRDemo {
 
   initSimAndSensors() {
     this.config = new Module.SimulatorConfiguration();
-    this.config.scene_id =
-      "data/scene_datasets/habitat-test-scenes/remake_v0_JustBigStuff_00.glb";
+    this.config.scene_id = VRDemo.getSceneFilepath("remake_v0_JustBigStuff_00");
     this.config.enablePhysics = true;
-    this.config.physicsConfigFile = "data/default.physics_config.json";
+    this.config.physicsConfigFile = physicsConfigFilepath;
     this.config.sceneLightSetup = ""; // this empty string means "use lighting"
     this.config.overrideSceneLightDefaults = true; // always set this to true
     this.config.allowPbrShader = false; // Pbr shader isn't robust on WebGL yet
@@ -207,22 +206,18 @@ class VRDemo {
     state.rotation = [0.0, 0.0, 0.0, 1.0];
     agent.setState(state, false);
 
-    Module.loadAllObjectConfigsFromPath(this.sim, "/data/objects");
-    Module.loadAllObjectConfigsFromPath(
-      this.sim,
-      replicaCadObjectBaseFilepath + "configs_convex"
-    );
+    Module.loadAllObjectConfigsFromPath(this.sim, objectBaseFilepath);
 
     this.handRecords = [new HandRecord(), new HandRecord()];
 
     const handFilepathsByHandIndex = [
       [
-        "/data/objects/hand_l_open.object_config.json",
-        "/data/objects/hand_l_closed.object_config.json"
+        VRDemo.getObjectConfigFilepath("hand_l_open"),
+        VRDemo.getObjectConfigFilepath("hand_l_closed")
       ],
       [
-        "/data/objects/hand_r_open.object_config.json",
-        "/data/objects/hand_r_closed.object_config.json"
+        VRDemo.getObjectConfigFilepath("hand_r_open"),
+        VRDemo.getObjectConfigFilepath("hand_r_closed")
       ]
     ];
 
@@ -590,7 +585,7 @@ class VRDemo {
               )
             );
 
-            let filepath = VRDemo.getReplicaCadObjectConfigFilepath(
+            let filepath = VRDemo.getObjectConfigFilepath(
               replicaCadObjectInstanceNames[nextIndex]
             );
             let objId = this.sim.addObjectByHandle(filepath, null, "", 0);
