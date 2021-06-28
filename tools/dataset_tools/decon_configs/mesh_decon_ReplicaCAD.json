@@ -3,7 +3,8 @@
   "dataset_rel_to_home": true,
   "dataset_src_subdir": "Facebook/habitat-sim/data/scene_datasets/replicaCAD/",
   "scenes_src_subdir": "replicaCAD_105",
-  "dataset_dest_subdir": "tempTestOut/",
+  "objects_src_subdir": "objects/",
+  "dataset_dest_subdir": ".",
   "dataset_glb_dest_subdir": ".",
   "stage_glb_dest_subdir": "stages/",
   "obj_glb_dest_subdir": "objects/",
@@ -17,15 +18,47 @@
   "lighting_tag": "world",
   "build_scene_configs": true,
   "build_stage_configs": false,
-  "build_object_configs": true,
+  "build_object_configs": false,
   "build_lighting_configs": false,
   "build_stage_glbs": false,
   "build_object_glbs": false,
-  "objects_all_static": false,
-  "stage_include_obj_substr": [],
-  "obj_override_names": [],
-  "obj_exclude_names": [],
+  "override_stage_instance_handle": "frl_apartment_stage_new",
+  "objects_all_static": true,
+  "match_object_names": true,
+  "stage_include_obj_substr": [
+    "frl_apartment_blinds",
+    "frl_apartment_ceiling",
+    "frl_apartment_door_",
+    "frl_apartment_door_part_",
+    "frl_apartment_floor",
+    "frl_apartment_pipe",
+    "frl_apartment_stair",
+    "frl_apartment_wall"
+  ],
+  "obj_override_names": [
+    "frl_apartment_wall_cabinet_01",
+    "frl_apartment_wall_cabinet_02",
+    "frl_apartment_wall_cabinet_03"
+  ],
+  "obj_exclude_names": [
+    "frl_apartment_switch",
+    "frl_apartment_panel",
+    "frl_apartment_camera1",
+    "top_shelf_02_door",
+    "Empty_CabinetCounter_",
+    "Empty_Fridge_"
+  ],
   "obj_created_static": [],
+  "obj_created_dynamic": [],
+  "stage_instance_file_tag": {
+    "v3_sc0_staging": "Stage_v3_sc0_staging",
+    "v3_sc1_staging": "Stage_v3_sc1_staging",
+    "v3_sc2_staging": "Stage_v3_sc2_staging",
+    "v3_sc3_staging": "Stage_v3_sc3_staging",
+    "v3_sc4_staging": "Stage_v3_sc4_staging"
+  },
+  "default_lighting_tag": "lighting/frl_apartment_stage",
+  "apply_object_transform": true,
   "default_attributes": {
     "stages": {
       "up": [

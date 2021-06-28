@@ -125,31 +125,61 @@ def build_glb_scene_graph_dict(scene_graph, root_tag: str):
     return build_dict_from_children(transforms_tree, root_tag)
 
 
-def build_instance_config_json(template_name: str, transform: np.ndarray):
+def build_instance_config_json(
+    template_name: str,
+    transform: np.ndarray,
+    reframe_transform: Optional[bool] = False,
+    calc_scale: Optional[bool] = True,
+):
     """This function builds a dictionary holding json configuration data
     for a instance of either the stage or an object for scene instance configuration
     data.
     :param template_name: Th  name of the template representing the stage or object
     in the scene dataset.
     :param transform: 4x4 matrix transformation of the object in the scene instance
+    :param reframe_transform: Whether we need to
+    :param calc_scale: Whether or not to calculate and save the scale found in the transformation.
     :return dictionary holding json values to add to scene instance configuration.
     """
+
     translation = list(trimesh.transformations.translation_from_matrix(transform))
-    rotation = list(trimesh.transformations.quaternion_from_matrix(transform))
+    rotation_quat = trimesh.transformations.quaternion_from_matrix(transform)
+    if reframe_transform:
+        # 90 degree rotation around x axis
+        x_rot = np.zeros(4)
+        x_rot[0] = 0.707
+        x_rot[1] = -0.707
+        x_rot /= np.linalg.norm(x_rot)
+        # not a reql quat, just a numpy array
+        rq_vec = rotation_quat[1:]
+        xrot_vec = x_rot[1:]
+        w = rotation_quat[0] * x_rot[0] - (np.dot(rq_vec, xrot_vec))
+        vec = (
+            (rotation_quat[0] * xrot_vec)
+            + (x_rot[0] * rq_vec)
+            + (np.cross(rq_vec, xrot_vec))
+        )
+
+        rotation_quat[0] = w
+        rotation_quat[1:] = vec
+
+    rotation = list(rotation_quat)
+
     json_dict = {
         "template_name": template_name,
         "translation": translation,
         "rotation": rotation,
         "translation_origin": "asset_local",
     }
-    scale = [
-        np.linalg.norm(transform[:3, 0]),
-        np.linalg.norm(transform[:3, 1]),
-        np.linalg.norm(transform[:3, 2]),
-    ]
-    # do not save near unit scale
-    if not np.allclose(scale, np.ones(3)):
-        json_dict["scale"] = scale
+    if calc_scale:
+        scale = [
+            np.linalg.norm(transform[:3, 0]),
+            np.linalg.norm(transform[:3, 1]),
+            np.linalg.norm(transform[:3, 2]),
+        ]
+        # do not save near unit scale
+        if not np.allclose(scale, np.ones(3)):
+            json_dict["scale"] = scale
     return json_dict
 
 

@@ -6,15 +6,15 @@
 
 import os
 from collections import OrderedDict, defaultdict
-from typing import Dict, Optional, Set
+from typing import Any, Dict, Optional, Set, Tuple
 
 import config_utils as ut
 import glb_mesh_tools as gut
 
 ###
 # JSON Configuration file for running this application.
-# MESH_DECON_CONFIG_JSON = "mesh_decon_AI2Thor.json"
-MESH_DECON_CONFIG_JSON = "mesh_decon_ReplicaCAD.json"
+# MESH_DECON_CONFIG_JSON_FILENAME = "mesh_decon_AI2Thor.json"
+MESH_DECON_CONFIG_JSON_FILENAME = "mesh_decon_ReplicaCAD.json"
 
 
 ####
@@ -22,6 +22,10 @@ MESH_DECON_CONFIG_JSON = "mesh_decon_ReplicaCAD.json"
 DATASET_SRC_DIR = os.path.join(os.path.expanduser("~"), "Documents/AI2Thor/")
 # Scene Source directory
 SCENES_SRC_DIR = DATASET_SRC_DIR + "scenes/"
+# Source of existing objects, to be used for obj instance name matching
+# in scene instance config.  Only used if we wish to match instance names
+# to existing object names
+OBJECTS_SRC_DIR = DATASET_SRC_DIR + "objects/"
 
 ####
 # Dataset specs
@@ -114,6 +118,11 @@ OBJECTS_CREATED_STATIC = {
     "television",
     "table",
 }
+# This is a set of lowercase substrings of names of objects that
+# should be specified as dynamic in the scene instance upon creation
+# when a dynamic scene is being instantiated.  This is intended to provide
+# an easy override for when all objects are specified to be static
+OBJECTS_CREATED_DYNAMIC = {}
 
 
 ####
@@ -216,13 +225,13 @@ DEFAULT_ATTRIBUTES_TEMPLATE = {
 }
 
 
-def load_decon_global_config_values(mesh_decon_config_json):
+def load_decon_global_config_values(decon_config_json: str):
     """This function will load values for the configuration globals used by this application to
     deconstruct the scene glbs into constituent stages and objects and synthesize the appropriate
     JSON configuration files for the results.
     """
     # Load configuration describing the scene meshes we wish to deconstruct into stages and objects
-    decon_configs = ut.load_json_into_dict(mesh_decon_config_json)
+    decon_configs = ut.load_json_into_dict(decon_config_json)
     if len(decon_configs) == 0:
         return decon_configs
     # If nothing loaded, proceed through decon with already specified global values
@@ -247,6 +256,13 @@ def load_decon_global_config_values(mesh_decon_config_json):
     # Aggregate Scene GLBS source directory
     global SCENES_SRC_DIR
     SCENES_SRC_DIR = os.path.join(DATASET_SRC_DIR, scene_subdir)
+
+    if "objects_src_subdir" in decon_configs:
+        obj_src_subdir = decon_configs["objects_src_subdir"]
+    else:
+        obj_src_subdir = "objects/"
+    global OBJECTS_SRC_DIR
+    OBJECTS_SRC_DIR = os.path.join(DATASET_SRC_DIR, obj_src_subdir)
 
     if "dataset_dest_subdir" in decon_configs:
         global DEST_SUBDIR
@@ -304,6 +320,23 @@ def load_decon_global_config_values(mesh_decon_config_json):
         global OBJECTS_ALL_STATIC
         OBJECTS_ALL_STATIC = decon_configs["objects_all_static"]
 
+    # if not specified in config file, set empty element in dict
+    if "override_stage_instance_handle" not in decon_configs:
+        decon_configs["override_stage_instance_handle"] = ""
+
+    # if not specified in config, set default value to false
+    if "match_object_names" not in decon_configs:
+        decon_configs["match_object_names"] = False
+
+    if "stage_instance_file_tag" not in decon_configs:
+        decon_configs["stage_instance_file_tag"] = {}
+
+    if "default_lighting_tag" not in decon_configs:
+        decon_configs["default_lighting_tag"] = ""
+
+    if "apply_object_transform" not in decon_configs:
+        decon_configs["apply_object_transform"] = False
+
     # Load the settings for what configs and/or glbs to construct and save
     if "build_scene_configs" in decon_configs:
         global BUILD_SCENE_CONFIGS
@@ -355,6 +388,11 @@ def load_decon_global_config_values(mesh_decon_config_json):
         global OBJECTS_CREATED_STATIC
         OBJECTS_CREATED_STATIC = decon_configs["obj_created_static"]
 
+    # if we specify all objects to be static, this will override it using the same process as "obj_created_static"
+    if "obj_created_dynamic" in decon_configs:
+        global OBJECTS_CREATED_DYNAMIC
+        OBJECTS_CREATED_DYNAMIC = decon_configs["obj_created_dynamic"]
+
     # Default attribute values for the loaded dataset.  These will be used to intialize all
     # configs as they are created, before any stage or object-specific config values are read in
     # from disk
@@ -368,7 +406,7 @@ def load_decon_global_config_values(mesh_decon_config_json):
     return decon_configs
 
 
-def build_required_directories():
+def build_required_directories(decon_configs):
     """This function will re-make, and create if appropriate, the destination directories
     used by the application to save the various results.
     """
@@ -448,6 +486,7 @@ def extract_stage_from_scene(
     include_obj_dict: Dict[str, Set[str]],
     build_glbs: bool,
     build_configs: bool,
+    decon_configs: Dict[str, Any],
 ):
 
     # world-space transformation of stage node
@@ -500,6 +539,14 @@ def extract_stage_from_scene(
     stage_instance_dict = gut.build_instance_config_json(
         stage_name_base, stage_transform
     )
+
+    if len(decon_configs["stage_instance_file_tag"]) != 9:
+        # mapping is provided to map scene name to prebuilt/predefined stage names
+        replace_stage_dict = decon_configs["stage_instance_file_tag"]
+        for k, v in replace_stage_dict.items():
+            if k.lower() in stage_name_base.lower():
+                stage_instance_dict["template_name"] = v
+                break
     return stage_instance_dict
 
 
@@ -509,43 +556,79 @@ def extract_objects_from_scene(
     exclude_obj_dict,
     build_glbs: bool,
     build_configs: bool,
+    decon_configs: Dict[str, Any],
+    match_names_dict: Dict[str, Tuple[str, str, str]],
 ):
     objects_raw = scene_graph.graph.transforms.children_dict[objects_tag]
     object_instance_configs = []
     objects = []
 
     # exclude object names that have been added to stage already
-    # get set of object names that are ref'ed by objects tag
+    # get set of object names that are ref'ed by objects tag -
+    # these were included in stage already
+
     excl_str_set = exclude_obj_dict[objects_tag]
+    # get set of object names that we wish to exclude -
+    # these are neither objects nor stage components
+    obj_excl_str_set = OBJECT_EXCLUDE_SUBNODES
     for obj_name in objects_raw:
         obj_is_valid = True
         for substr in excl_str_set:
             if substr.lower() in obj_name.lower():
                 obj_is_valid = False
                 break
-        # check if invalid object should be overridden
+        # check if invalid object specification should be overridden
         if not obj_is_valid:
             for substr in OBJECT_OVERRIDE_SUBNODES:
                 if substr.lower() in obj_name.lower():
                     obj_is_valid = True
                     break
+        # if specified as valid by here, check if not explicitly excluded
+        if obj_is_valid:
+            for substr in obj_excl_str_set:
+                if substr.lower() in obj_name.lower():
+                    obj_is_valid = False
+                    break
+
         if obj_is_valid:
             objects.append(obj_name)
+    from collections import defaultdict
+
+    # set objects motion type
+    default_str = "STATIC" if OBJECTS_ALL_STATIC else "DYNAMIC"
+    # override motion type
+    obj_motion_type_dict = defaultdict(lambda: default_str)
+    for obj_name in objects:
+        for obj_substr in OBJECTS_CREATED_STATIC:
+            if obj_substr.lower() in obj_name.lower():
+                obj_motion_type_dict[obj_name] = "STATIC"
+    # override now for objects in OBJECTS_CREATED_DYNAMIC if all static specified
+    if OBJECTS_ALL_STATIC:
+        for obj_name in objects:
+            for obj_substr in OBJECTS_CREATED_DYNAMIC:
+                if obj_substr.lower() in obj_name.lower():
+                    obj_motion_type_dict[obj_name] = "DYNAMIC"
     #
     for obj_name in objects:
         obj_exclude_dict = {}  # dict(exclude_obj_dict)
 
-        # TODO  isolate and extract collision mesh if present?
+        # make the file name base to reference the object from the mesh instance name
         obj_name_base = obj_name
+        # ReplicaCAD only (so far) - match instance object mesh name with existing object names instead
+        # so that scene_instance references actual object correctly
+        if len(match_names_dict) > 0:
+            for k, _ in match_names_dict.items():
+                if k.lower() in obj_name_base.lower():
+                    obj_name_base = k
+                    break
+
         obj_glb_dest_filename_base = os.path.join(OBJ_GLB_OUTPUT_DIR, obj_name_base)
         # build file names for output
         obj_glb_dest_filename = obj_glb_dest_filename_base + ".glb"
         # print("Object dest filename : {}".format(obj_dest_filename))
-        # save extracted object mesh
+
         if build_glbs:
-            # exclude elements in objects that do not correspond to geometry
-            # obj_exclude_dict[obj_name] = OBJECT_EXCLUDE_SUBNODES
-            # extract the object "scene" and its global transform
+            # extract the object "scene" for obj_name object instance in mesh
             # (scene is the mesh + other assets to save for object glb)
             object_scene = gut.extract_obj_mesh_from_scenegraph(
                 scene_graph, obj_name, objects_tag, {}, obj_exclude_dict, False
@@ -557,6 +640,35 @@ def extract_objects_from_scene(
 
         # world-space transformation of stage node
         obj_transform = scene_graph.graph.get(obj_name)[0]
+
+        # ReplicaCAD Only - improperly named object
+        # build object instance info to be used in scene instance config to place object
+        obj_instance_dict = gut.build_instance_config_json(
+            obj_name_base,
+            obj_transform,
+            reframe_transform=decon_configs["apply_object_transform"],
+            calc_scale=False,
+        )
+        obj_instance_dict["motion_type"] = obj_motion_type_dict[obj_name]
+
+        # ReplicaCAD Only - improperly named object in scene.
+        # Named 'frl_apartment_wall_cabinet_02' but represents
+        # all walls; Has z transformation of 5.411645889282227
+        if (
+            "frl_apartment_wall_cabinet_02" not in obj_name_base
+            or "translation" not in obj_instance_dict
+            or 5.411645889282227 != obj_instance_dict["translation"][2]
+        ) and ("frl_apartment_wall_cabinet_03" not in obj_name_base):
+            object_instance_configs.append(obj_instance_dict)
+        else:
+            # print(
+            #     "\tNo obj instance made for : {} : translation : {} ".format(
+            #         obj_name_base, obj_instance_dict["translation"]
+            #     )
+            # )
+            continue
+
+        # set object instance motion type
 
         if build_configs:
             # build a config stub for this object with derived render and collision asset names
@@ -575,9 +687,6 @@ def extract_objects_from_scene(
             )
             # save object config
             ut.mod_json_val_and_save(("", obj_config_filename, obj_config_json_dict))
-        # build object instance info to be used in scene instance config to place object
-        obj_instance_dict = gut.build_instance_config_json(obj_name_base, obj_transform)
-        object_instance_configs.append(obj_instance_dict)
 
     return object_instance_configs
 
@@ -702,14 +811,23 @@ def test_objects():
 
 def main():
     # Load configuration describing the scene meshes we wish to deconstruct into stages and objects
-    load_decon_global_config_values(MESH_DECON_CONFIG_JSON)
+    decon_configs = load_decon_global_config_values(MESH_DECON_CONFIG_JSON_FILENAME)
     # whether a successful load occurred or not, we need to make the destination directories
-    build_required_directories()
+    build_required_directories(decon_configs)
 
     # get listing of all scene glbs
     file_list = ut.get_files_matching_regex(SCENES_SRC_DIR)
+    # if we wish to match mesh object instance names with existing object files, get a
+    # listing of all the existing object files from the specified object source dir
+    existing_obj_dict = {}
+    if decon_configs["match_object_names"]:
+        existing_obj_list = ut.get_files_matching_regex(OBJECTS_SRC_DIR)
+        for tup in existing_obj_list:
+            obj_name = tup[2].split(".")[0]
+            existing_obj_dict[obj_name] = tup
 
-    build_scene_dataset_config(SCENE_DATASET_NAME, DEFAULT_ATTRIBUTES_TEMPLATE)
+    # Don't build this for replicaCAD
+    # build_scene_dataset_config(SCENE_DATASET_NAME, DEFAULT_ATTRIBUTES_TEMPLATE)
 
     ###for testing - 17_physics has stove w/burner and knobs
     # file_list = [
@@ -769,7 +887,7 @@ def main():
             build_scene_graph_diagnostic(scene_graph, scene_name_base)
 
         # Empty string corresponds to default lighting within habitat sim
-        lighting_setup_config_name = ""
+        lighting_setup_config_name = decon_configs["default_lighting_tag"]
         if BUILD_LIGHTING_CONFIGS:
             # extract all lighting configs in the scene
             lighting_setup_config_name = extract_lighting_from_scene(
@@ -784,18 +902,21 @@ def main():
             scene_graph,
             scene_name_base,
             STAGE_TAG,
-            STAGE_INCLUDE_OBJ_DICT,
+            STAGE_INCLUDE_OBJ_DICT,  # included in stage, excluded as objects
             BUILD_STAGE_GLBS,
             BUILD_STAGE_CONFIGS,
+            decon_configs,
         )
 
         # extract all the object instances within the scene
         obj_instance_config_list = extract_objects_from_scene(
             scene_graph,
             OBJECTS_TAG,
-            STAGE_INCLUDE_OBJ_DICT,
+            STAGE_INCLUDE_OBJ_DICT,  # included in stage, excluded as objects
             BUILD_OBJECT_GLBS,
             BUILD_OBJECT_CONFIGS,
+            decon_configs,
+            existing_obj_dict,
         )
         # get counts of object instances
         for elem in obj_instance_config_list:
