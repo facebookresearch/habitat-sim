@@ -208,8 +208,9 @@ void initGfxBindings(py::module& m) {
 
   py::class_<DebugLineRender, std::shared_ptr<DebugLineRender>>(
       m, "DebugLineRender")
-      .def("set_line_width", &DebugLineRender::setLineWidth,
-           R"(See push_transform.)")
+      .def(
+          "set_line_width", &DebugLineRender::setLineWidth,
+          R"(Set global line width for all lines rendered by DebugLineRender.)")
       .def(
           "push_transform", &DebugLineRender::pushTransform,
           R"(Push (multiply) a transform onto the transform stack, affecting all line-drawing until popped. Must be paired with popTransform().)")
@@ -228,7 +229,7 @@ void initGfxBindings(py::module& m) {
                             const Magnum::Color4&, const Magnum::Color4&>(
               &DebugLineRender::drawTransformedLine),
           "from"_a, "to"_a, "from_color"_a, "to_color"_a,
-          R"(Draw a line segment in world-space or local-space (see pushTransform).)")
+          R"(Draw a line segment in world-space or local-space (see pushTransform) with interpolated color.)")
       .def(
           "draw_transformed_line",
           py::overload_cast<const Magnum::Vector3&, const Magnum::Vector3&,

@@ -72,7 +72,7 @@ class DebugLineRender {
   /**
    * @brief Submit lines to the GL renderer. Call this once per frame.
    * Because this uses transparency, you should ideally call this *after*
-   * submitting opaque scene geomtry.
+   * submitting opaque scene geometry.
    */
   void flushLines(const Magnum::Matrix4& camMatrix,
                   const Magnum::Matrix4& projMatrix,
