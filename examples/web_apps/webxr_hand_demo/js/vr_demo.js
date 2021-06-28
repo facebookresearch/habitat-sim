@@ -9,7 +9,7 @@ const pointToArray = p => [p.x, p.y, p.z, p.w];
 
 const physicsConfigFilepath = "data/default.physics_config.json";
 const objectBaseFilepath = "data/objects/";
-const sceneBaseFilepath = "data/scenes/";
+const stageBaseFilepath = "data/stages/";
 
 const replicaCadObjectNames = [
   "frl_apartment_vase_02", // gray
@@ -111,12 +111,12 @@ class VRDemo {
     return objectBaseFilepath + name + "_cv_decomp.glb";
   }
 
-  static getSceneFilepath(name) {
-    return sceneBaseFilepath + name + ".glb";
+  static getStageFilepath(name) {
+    return stageBaseFilepath + name + ".glb";
   }
 
-  static getSceneConfigFilepath(name) {
-    return sceneBaseFilepath + name + ".stage_config.json";
+  static getStageConfigFilepath(name) {
+    return stageBaseFilepath + name + ".stage_config.json";
   }
 
   static preloadFiles(preloadFunc) {
@@ -124,8 +124,8 @@ class VRDemo {
 
     preloadFunc(physicsConfigFilepath);
 
-    preloadFunc(VRDemo.getSceneFilepath("remake_v0_JustBigStuff_00"));
-    preloadFunc(VRDemo.getSceneConfigFilepath("remake_v0_JustBigStuff_00"));
+    preloadFunc(VRDemo.getStageFilepath(Module.stageName));
+    preloadFunc(VRDemo.getStageConfigFilepath(Module.stageName));
 
     preloadFunc(VRDemo.getObjectFilepath("hand_r_open"));
     preloadFunc(VRDemo.getObjectConfigFilepath("hand_r_open"));
@@ -160,7 +160,7 @@ class VRDemo {
 
   initSimAndSensors() {
     this.config = new Module.SimulatorConfiguration();
-    this.config.scene_id = VRDemo.getSceneFilepath("remake_v0_JustBigStuff_00");
+    this.config.scene_id = VRDemo.getStageFilepath(Module.stageName);
     this.config.enablePhysics = true;
     this.config.physicsConfigFile = physicsConfigFilepath;
     this.config.sceneLightSetup = ""; // this empty string means "use lighting"

@@ -66,6 +66,9 @@ function doPreloading() {
 
 Module.preRun.push(() => {
   console.log("preRun");
+  let config = {};
+  buildConfigFromURLParameters(config);
+  Module.stageName = (config.stage === undefined) ? "remake_v0_JustBigStuff_00" : config.stage;
   doPreloading();
 });
 
