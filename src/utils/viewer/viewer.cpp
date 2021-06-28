@@ -143,11 +143,7 @@ class Viewer : public Mn::Platform::Application {
    * Simulator API.
    */
   int addPrimitiveObject();
-  void pokeLastObject();
-  void pushLastObject();
-  void torqueLastObject();
   void removeLastObject();
-  void wiggleLastObject();
   void invertGravity();
 
 #ifdef ESP_BUILD_WITH_VHACD
@@ -160,7 +156,6 @@ class Viewer : public Mn::Platform::Application {
   int objectDisplayed = -1;
 #endif
 
-  bool isInRange(float val);
   /**
    * @brief Toggle between ortho and perspective camera
    */
@@ -232,10 +227,6 @@ Key Commands:
   'o': Instance a random file-based object in front of the agent.
   'u': Remove most recently instanced object.
   'b': Toggle display of object bounding boxes.
-  'k': Kinematically wiggle the most recently added object.
-  'p': (physics) Poke the most recently added object.
-  'f': (physics) Push the most recently added object.
-  't': (physics) Torque the most recently added object.
   'v': (physics) Invert gravity.
   'g': (physics) Display a stage's signed distance gradient vector field.
   'l': (physics) Iterate through different ranges of the stage's voxelized signed distance field.
@@ -1002,22 +993,6 @@ void Viewer::iterateAndDisplaySignedDistanceField() {
   simulator_->setStageVoxelizationDraw(true, "ESignedDistanceField");
 }
 
-bool isTrue(bool val) {
-  return val;
-}
-
-bool isHorizontal(Mn::Vector3 val) {
-  return abs(val.normalized()[0]) * abs(val.normalized()[0]) +
-             abs(val.normalized()[2]) * abs(val.normalized()[2]) <=
-         0;
-  // return val[0] == 1;
-}
-
-bool Viewer::isInRange(float val) {
-  int curDistanceVisualization = 1 * (voxelDistance % 18);
-  return val >= curDistanceVisualization - 1 && val < curDistanceVisualization;
-}
-
 void Viewer::displayVoxelField(int objectID) {
   // create a voxelization and get a pointer to the underlying VoxelWrapper
   // class
@@ -1054,39 +1029,6 @@ void Viewer::displayVoxelField(int objectID) {
 }
 #endif
 
-void Viewer::pokeLastObject() {
-  auto existingObjectIDs = simulator_->getExistingObjectIDs();
-  if (existingObjectIDs.size() == 0)
-    return;
-  Mn::Matrix4 T =
-      agentBodyNode_->MagnumObject::transformationMatrix();  // Relative to
-                                                             // agent bodynode
-  Mn::Vector3 impulse = T.transformVector({0.0f, 0.0f, -3.0f});
-  Mn::Vector3 rel_pos = Mn::Vector3(0.0f, 0.0f, 0.0f);
-
-  simulator_->applyImpulse(impulse, rel_pos, existingObjectIDs.back());
-}
-
-void Viewer::pushLastObject() {
-  auto existingObjectIDs = simulator_->getExistingObjectIDs();
-  if (existingObjectIDs.size() == 0)
-    return;
-  Mn::Matrix4 T =
-      agentBodyNode_->MagnumObject::transformationMatrix();  // Relative to
-                                                             // agent bodynode
-  Mn::Vector3 force = T.transformVector({0.0f, 0.0f, -40.0f});
-  Mn::Vector3 rel_pos = Mn::Vector3(0.0f, 0.0f, 0.0f);
-  simulator_->applyForce(force, rel_pos, existingObjectIDs.back());
-}
-
-void Viewer::torqueLastObject() {
-  auto existingObjectIDs = simulator_->getExistingObjectIDs();
-  if (existingObjectIDs.size() == 0)
-    return;
-  Mn::Vector3 torque = randomDirection() * 30;
-  simulator_->applyTorque(torque, existingObjectIDs.back());
-}
-
 // generate random direction vectors:
 Mn::Vector3 Viewer::randomDirection() {
   Mn::Vector3 dir(1.0f, 1.0f, 1.0f);
@@ -1097,23 +1039,6 @@ Mn::Vector3 Viewer::randomDirection() {
   }
   dir = dir / sqrt(dir.dot());
   return dir;
-}
-
-void Viewer::wiggleLastObject() {
-  // demo of kinematic motion capability
-  // randomly translate last added object
-  auto existingObjectIDs = simulator_->getExistingObjectIDs();
-  if (existingObjectIDs.size() == 0)
-    return;
-
-  Mn::Vector3 randDir = randomDirection();
-  // Only allow +Y so dynamic objects don't push through the floor.
-  randDir[1] = abs(randDir[1]);
-
-  auto translation = simulator_->getTranslation(existingObjectIDs.back());
-
-  simulator_->setTranslation(translation + randDir * 0.1,
-                             existingObjectIDs.back());
 }
 
 float timeSinceLastSimulation = 0.0;
@@ -1655,17 +1580,11 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       simulator_->setFrustumCullingEnabled(
           !simulator_->isFrustumCullingEnabled());
       break;
-    case KeyEvent::Key::F:
-      pushLastObject();
-      break;
     case KeyEvent::Key::H:
       printHelpText();
       break;
     case KeyEvent::Key::I:
       screenshot();
-      break;
-    case KeyEvent::Key::K:
-      wiggleLastObject();
       break;
     case KeyEvent::Key::N:
       // toggle navmesh visualization
@@ -1675,15 +1594,9 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::O:
       addTemplateObject();
       break;
-    case KeyEvent::Key::P:
-      pokeLastObject();
-      break;
     case KeyEvent::Key::Q:
       // query the agent state
       showAgentStateMsg(true, true);
-      break;
-    case KeyEvent::Key::T:
-      torqueLastObject();
       break;
     case KeyEvent::Key::U:
       removeLastObject();
