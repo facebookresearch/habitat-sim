@@ -26,7 +26,7 @@ wget -c https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh &&
 ln -s "/usr/local/lib/python${PYTHON_VERSION}/dist-packages" "/usr/local/lib/python${PYTHON_VERSION}/site-packages"
 
 ##Install Habitat-Sim and Magnum binaries
-conda config --set pip_interop_enabled False
+conda config --set pip_interop_enabled True
 NIGHTLY="${NIGHTLY:-false}" #setting the ENV $NIGHTLY to true will install the nightly version from conda
 CHANNEL="${CHANNEL:-aihabitat}"
 if ${NIGHTLY}; then

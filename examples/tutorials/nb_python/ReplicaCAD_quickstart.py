@@ -33,7 +33,7 @@
 # @title Installation { display-mode: "form" }
 # @markdown (double click to show code).
 
-# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/replica-cad/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
+# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/master/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
 # Note: for now we need to pull this branch to get the data downloader
 # %cd habitat-sim
 # !git fetch --unshallow
