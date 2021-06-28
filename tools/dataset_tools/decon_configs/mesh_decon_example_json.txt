@@ -3,22 +3,22 @@
   "dataset_rel_to_home": <boolean : whether user specified paths are relative to home dir or cwd>,
   "dataset_src_subdir": <source dataset subdirectory, either relative to home dir or cwd>,
   "scenes_src_subdir": <subdirectory within dataset_src_subdir holding raw aggregate scenes to be queried for glbs and/or configs>,
-
+  "objects_src_subdir":  <subdirectory within dataset_src_subdir holding existing objets to be used as sources for scene instance naming. Ignored if "match_object_names" is False>,
   "dataset_dest_subdir": <base directory of writing destination, subdirectory of dataset_src_subdir>,
+
   "dataset_glb_dest_subdir": <destination subdirectory, within dataset_dest_subdir, where to write extracted glbs outputs>,
   "stage_glb_dest_subdir" : <subdirectory within dataset_glb_dest_subdir to write extracted stage glb files>,
   "obj_glb_dest_subdir":  <subdirectory within dataset_glb_dest_subdir to write extracted object glb files>,
 
-  "dataset_config_dest_subdir": <destination subdirectory, within dataset_dest_subdir, where to write config outputs>,
+  "dataset_config_dest_subdir": <destination subdirectory, within dataset_dest_subdir, where to write config outputs, including scene dataset>,
   "scene_instance_dest_subdir" : <subdirectory within dataset_config_dest_subdir to write scene instance files>,
   "stage_config_dest_subdir" : <subdirectory within dataset_config_dest_subdir to write stage configuration files>,
   "obj_config_dest_subdir":  <subdirectory within dataset_config_dest_subdir to write object configuration files>,
   "light_config_dest_subdir": <subdirectory within dataset_config_dest_subdir to write lighting configuration files>,
 
-
-  "stage_tag": <Case sensitive tag within scenegraph of glb denoting subtree of nodes holding stage-based assets>,
-  "objects_tag": <Case sensitive tag within scenegraph of glb denoting subtree of nodes holding object assets>,
-  "lighting_tag": <Case sensitive tag within scenegraph of glb denoting subtree of nodes lighting info/transforms>,
+  "stage_tag": <Case sensitive tag within scenegraph of src glb denoting subtree of nodes holding stage-based assets>,
+  "objects_tag": <Case sensitive tag within scenegraph of src glb denoting subtree of nodes holding object assets>,
+  "lighting_tag": <Case sensitive tag within scenegraph of src glb denoting subtree of nodes lighting info/transforms>,
 
   "build_scene_configs" : <boolean : whether or not to build the scene instance config json files. Defaults to true>,
   "build_stage_configs" : <boolean : whether or not to build the stage config json files. Defaults to true>,
@@ -28,12 +28,22 @@
   "build_stage_glbs" : <boolean : whether or not to build the extracted stage glbs. Defaults to true>,
   "build_object_glbs" : <boolean : whether or not to build the extracted object glbs. Defaults to true>,
 
+  "override_stage_instance_handle" : <string : if not empty string, provides stage handle to use in scene instance
+                                      configs instead of dervied handle from source scene glb name.>,
+
+
   "objects_all_static" : <boolean : whether or not all objects should be set to be static in scene instance config.
                           Defaults to false. Ignored if not building scene instance configs.>,
+  "obj_created_static": [
+    <list of node name substrings of constructs we wish to create as objects but that should be specified as static>
+  ],
+  "obj_created_dynamic": [<list of node name substrings of constructs we wish to create as objects and enforce dynamic behavior (to override static default)],
 
   "stage_include_obj_substr": [
     <list of node name substrings of constructs found in "objects_tag" subtree that should be added to stage>
   ],
+  "match_object_names": <boolean : whether to match object name refs in object config synth to objects found in obj_glb_dest_subdir.
+                            Used when synthesizing scene instances for scenes with existing object glb files>,
   "obj_override_names": [
     <list of node name substrings of constructs found in "stage_tag" subtree that should be added to objects and
     not included in stage.  This will override entries swept up by substr search in 'stage_include_obj_substr'>
@@ -43,12 +53,11 @@
     objects or components of the stage.  This will override entries swept up by substr search in both 'obj_override_names'
     and 'stage_include_obj_substr'>
   ],
-  "obj_created_static": [
-    <list of node name substrings of constructs we wish to create as objects but that should be specified as static>
-  ],
-
+  "stage_instance_file_tag": <stage names to use for stage instance refs in scene instance files. Search for the keys within scene name, and use the values as the stage to ref>,
+  "default_lighting_tag":<tag to insert in every scene instance attributes to reference the default lighting>
+  "apply_object_transform":<boolean : if provided, apply a transformation to the object's transformation before calculating translation and rotation>,
   "default_attributes": {
-    <default attributes settings, used to initialize configs before any stage or object-specific values are set>
+    <default attributes settings, used to initialize scene dataset configs before any stage or object-specific values are set>
     "stages": {
       <default values for stage configs and stage default section of scene dataset configs>
     },
