@@ -7,9 +7,9 @@
 #include <Corrade/Containers/GrowableArray.h>
 #include <Magnum/GL/Renderer.h>
 #include <Magnum/Math/Color.h>
-#include "glog/logging.h"
 
 #include "esp/core/Check.h"
+#include "esp/core/logging.h"
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
