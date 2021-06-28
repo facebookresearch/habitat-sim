@@ -60,8 +60,8 @@ bool scissorSegmentToOutsideCircle(Mn::Vector3* pt0,
 DebugLineRender::DebugLineRender()
     : _glResources{std::make_unique<GLResourceSet>()} {
   _glResources->mesh.addVertexBuffer(_glResources->buffer, 0,
-                                     Mn::Shaders::VertexColor3D::Position{},
-                                     Mn::Shaders::VertexColor3D::Color4{});
+                                     Mn::Shaders::VertexColorGL3D::Position{},
+                                     Mn::Shaders::VertexColorGL3D::Color4{});
 }
 
 void DebugLineRender::releaseGLResources() {
@@ -114,7 +114,10 @@ void DebugLineRender::flushLines(const Magnum::Matrix4& camMatrix,
   // Update shader
   _glResources->mesh.setCount(_verts.size());
 
+  // GL_LINE_SMOOTH is undefined in Emscripten build; I'm not sure why
+#ifndef CORRADE_TARGET_EMSCRIPTEN
   glDisable(GL_LINE_SMOOTH);  // anti-aliased lines cause artifacts
+#endif
 
   glLineWidth(_internalLineWidth);
 
