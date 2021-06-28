@@ -72,6 +72,13 @@ void Simulator::close(const bool destroy) {
 
   resourceManager_ = nullptr;
 
+  if (debugLineRender_) {
+    // Python may keep around other shared_ptrs to this object, but we need
+    // to release GL resources here.
+    debugLineRender_->releaseGLResources();
+    debugLineRender_ = nullptr;
+  }
+
   // Keeping the renderer and the context only matters when the
   // background renderer was initialized.
   if (destroy || !renderer_->wasBackgroundRendererInitialized()) {
