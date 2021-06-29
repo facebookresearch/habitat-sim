@@ -644,9 +644,9 @@ void Simulator::computeShadowMaps(float lightNearPlane, float lightFarPlane) {
   // should get the light setup for the scene, and compute the shadow map
   // one by one
 
-  Mn::Vector3 lightPos[3] = {Mn::Vector3{2.77, 2.86, 5.16},
-                             Mn::Vector3{-0.69, 2.86, 1.46},
-                             Mn::Vector3{2.77, 2.86, -3.73}};
+  Mn::Vector3 lightPos[3] = {Mn::Vector3{2.77, 2.77, 5.16},
+                             Mn::Vector3{-0.69, 2.77, 1.46},
+                             Mn::Vector3{2.77, 2.77, -3.73}};
 
   for (int iLight = 0; iLight < 3; ++iLight) {
     Mn::ResourceKey key(Corrade::Utility::formatString(
