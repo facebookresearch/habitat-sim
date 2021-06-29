@@ -229,24 +229,26 @@ void BulletArticulatedObject::updateNodes(bool force) {
 
 void BulletArticulatedObject::resetStateFromSceneInstanceAttr(
     CORRADE_UNUSED bool defaultCOMCorrection) {
-  auto sceneInstanceAttr = getSceneInstanceAttributes();
-  if (!sceneInstanceAttr) {
+  auto sceneObjInstanceAttr = getSceneInstanceAttributes();
+  if (!sceneObjInstanceAttr) {
     // if no scene instance attributes specified, no initial state is set
     return;
   }
+  // Set whether dofs should be clamped to limits before phys step
+  autoClampJointLimits_ = sceneObjInstanceAttr->getAutoClampJointLimits();
 
   // now move objects
   // set object's location and rotation based on translation and rotation
   // params specified in instance attributes
-  auto translate = sceneInstanceAttr->getTranslation();
+  auto translate = sceneObjInstanceAttr->getTranslation();
 
   // construct initial transformation state.
-  Mn::Matrix4 state =
-      Mn::Matrix4::from(sceneInstanceAttr->getRotation().toMatrix(), translate);
+  Mn::Matrix4 state = Mn::Matrix4::from(
+      sceneObjInstanceAttr->getRotation().toMatrix(), translate);
   setTransformation(state);
   // set object's motion type if different than set value
   const physics::MotionType attrObjMotionType =
-      static_cast<physics::MotionType>(sceneInstanceAttr->getMotionType());
+      static_cast<physics::MotionType>(sceneObjInstanceAttr->getMotionType());
   if (attrObjMotionType != physics::MotionType::UNDEFINED) {
     setMotionType(attrObjMotionType);
   }
@@ -255,7 +257,7 @@ void BulletArticulatedObject::resetStateFromSceneInstanceAttr(
   std::vector<float> aoJointPose = getJointPositions();
   // get instance-specified initial joint positions
   std::map<std::string, float>& initJointPos =
-      sceneInstanceAttr->getInitJointPose();
+      sceneObjInstanceAttr->getInitJointPose();
   // map instance vals into
   size_t idx = 0;
   for (const auto& elem : initJointPos) {
@@ -264,7 +266,7 @@ void BulletArticulatedObject::resetStateFromSceneInstanceAttr(
           << "BulletArticulatedObject::resetStateFromSceneInstanceAttr : "
           << "Attempting to specify more initial joint poses than "
              "exist in articulated object "
-          << sceneInstanceAttr->getHandle() << ", so skipping";
+          << sceneObjInstanceAttr->getHandle() << ", so skipping";
       break;
     }
     aoJointPose[idx++] = elem.second;
@@ -276,7 +278,7 @@ void BulletArticulatedObject::resetStateFromSceneInstanceAttr(
   std::vector<float> aoJointVels = getJointVelocities();
   // get instance-specified initial joint velocities
   std::map<std::string, float>& initJointVel =
-      sceneInstanceAttr->getInitJointVelocities();
+      sceneObjInstanceAttr->getInitJointVelocities();
   idx = 0;
   for (const auto& elem : initJointVel) {
     if (idx >= aoJointVels.size()) {
@@ -284,7 +286,7 @@ void BulletArticulatedObject::resetStateFromSceneInstanceAttr(
           << "BulletArticulatedObject::resetStateFromSceneInstanceAttr : "
           << "Attempting to specify more initial joint velocities than "
              "exist in articulated object "
-          << sceneInstanceAttr->getHandle() << ", so skipping";
+          << sceneObjInstanceAttr->getHandle() << ", so skipping";
       break;
     }
     aoJointVels[idx++] = elem.second;

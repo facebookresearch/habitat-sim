@@ -192,6 +192,18 @@ class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
   void setFixedBase(bool fixed_base) { setBool("fixed_base", fixed_base); }
 
   /**
+   * @brief Articulated Object Instance only. Get or set whether or not dofs
+   * should be automatically clamped to specified joint limits before physics
+   * simulation step.
+   */
+  bool getAutoClampJointLimits() const {
+    return getBool("auto_clamp_joint_limits");
+  }
+  void setAutoClampJointLimits(bool auto_clamp_joint_limits) {
+    setBool("auto_clamp_joint_limits", auto_clamp_joint_limits);
+  }
+
+  /**
    * @brief retrieve a mutable reference to this scene attributes joint initial
    * pose map
    */
