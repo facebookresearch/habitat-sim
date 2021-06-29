@@ -28,9 +28,7 @@
   "build_stage_glbs" : <boolean : whether or not to build the extracted stage glbs. Defaults to true>,
   "build_object_glbs" : <boolean : whether or not to build the extracted object glbs. Defaults to true>,
 
-  "override_stage_instance_handle" : <string : if not empty string, provides stage handle to use in scene instance
-                                      configs instead of dervied handle from source scene glb name.>,
-
+  "ignore_object_instances" : <boolean : if true, do not save any object instance data>,
 
   "objects_all_static" : <boolean : whether or not all objects should be set to be static in scene instance config.
                           Defaults to false. Ignored if not building scene instance configs.>,

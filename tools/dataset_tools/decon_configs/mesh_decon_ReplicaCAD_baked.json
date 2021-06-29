@@ -1,8 +1,8 @@
 {
-  "dataset_name": "ReplicaCAD",
+  "dataset_name": "ReplicaCAD_baked",
   "dataset_rel_to_home": true,
-  "dataset_src_subdir": "Facebook/habitat-sim/data/scene_datasets/replicaCAD/",
-  "scenes_src_subdir": "replicaCAD_105",
+  "dataset_src_subdir": "Facebook/habitat-sim/data/scene_datasets/replicaCAD_baked/",
+  "scenes_src_subdir": "stages/",
   "objects_src_subdir": "objects/",
   "dataset_dest_subdir": ".",
   "dataset_glb_dest_subdir": ".",
@@ -17,11 +17,12 @@
   "objects_tag": "world",
   "lighting_tag": "world",
   "build_scene_configs": true,
-  "build_stage_configs": false,
+  "build_stage_configs": true,
   "build_object_configs": false,
   "build_lighting_configs": false,
   "build_stage_glbs": false,
   "build_object_glbs": false,
+  "ignore_object_instances": true,
   "objects_all_static": true,
   "match_object_names": true,
   "stage_include_obj_substr": [
@@ -56,7 +57,7 @@
     "v3_sc3_staging": "Stage_v3_sc3_staging",
     "v3_sc4_staging": "Stage_v3_sc4_staging"
   },
-  "default_lighting_tag": "lighting/frl_apartment_stage",
+  "default_lighting_tag": "no_lights",
   "apply_object_transform": true,
   "default_attributes": {
     "stages": {
