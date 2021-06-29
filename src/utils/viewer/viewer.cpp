@@ -100,6 +100,38 @@ std::map<MouseInteractionMode, std::string> mouseModeNames = {
     {MouseInteractionMode::LOOK, "LOOK"},
     {MouseInteractionMode::GRAB, "GRAB"}};
 
+struct MouseGrabber {
+  esp::physics::RigidConstraintSettings settings_;
+  int constraintId = esp::ID_UNDEFINED;
+  esp::sim::Simulator& sim_;
+
+  float gripDepth = 0;
+
+  MouseGrabber(const esp::physics::RigidConstraintSettings& settings,
+               float _gripDepth,
+               esp::sim::Simulator& sim)
+      : sim_(sim), settings_(settings) {
+    gripDepth = _gripDepth;
+    constraintId = sim_.createRigidConstraint(settings_);
+  }
+
+  virtual ~MouseGrabber() { sim_.removeRigidConstraint(constraintId); }
+
+  virtual void updatePivot(const Magnum::Vector3& pos) {
+    settings_.pivotB = pos;
+    sim_.updateRigidConstraint(constraintId, settings_);
+  }
+  virtual void updateFrame(const Magnum::Matrix3x3& frame) {
+    settings_.frameB = frame;
+    sim_.updateRigidConstraint(constraintId, settings_);
+  }
+  virtual void updateTransform(const Magnum::Matrix4& transform) {
+    settings_.frameB = transform.rotation();
+    settings_.pivotB = transform.translation();
+    sim_.updateRigidConstraint(constraintId, settings_);
+  }
+};
+
 class Viewer : public Mn::Platform::Application {
  public:
   explicit Viewer(const Arguments& arguments);
@@ -116,6 +148,8 @@ class Viewer : public Mn::Platform::Application {
 
   MouseInteractionMode mouseInteractionMode = LOOK;
 
+  Mn::Vector2i previousMousePoint{};
+
   void drawEvent() override;
   void viewportEvent(ViewportEvent& event) override;
   void mousePressEvent(MouseEvent& event) override;
@@ -125,6 +159,9 @@ class Viewer : public Mn::Platform::Application {
   void keyPressEvent(KeyEvent& event) override;
   void keyReleaseEvent(KeyEvent& event) override;
   void moveAndLook(int repetitions);
+
+  // exists if a mouse grabbing constraint is active, destroyed on release
+  std::unique_ptr<MouseGrabber> mouseGrabber_ = nullptr;
 
   /**
    * @brief Instance an object from an ObjectAttributes.
@@ -1306,6 +1343,16 @@ void Viewer::moveAndLook(int repetitions) {
       recAgentLocation();
     }
   }
+
+  // update the grabber transform when agent is moved
+  if (mouseGrabber_ != nullptr) {
+    // GRAB mode, move the constraint
+    auto ray = renderCamera_->unproject(previousMousePoint);
+    mouseGrabber_->updateTransform(
+        Mn::Matrix4::from(defaultAgent_->node().rotation().toMatrix(),
+                          renderCamera_->node().absoluteTranslation() +
+                              ray.direction * mouseGrabber_->gripDepth));
+  }
 }
 
 void Viewer::bindRenderTarget() {
@@ -1433,15 +1480,95 @@ void Viewer::mousePressEvent(MouseEvent& event) {
         }
       }
     }  // end add primitive w/ right click
-  } else {
-    // TODO: GRAB
-  }
+  } else if (mouseInteractionMode == MouseInteractionMode::GRAB) {
+    // GRAB mode
+    if (simulator_->getPhysicsSimulationLibrary() !=
+        esp::physics::PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
+      auto viewportPoint = event.position();
+      auto ray = renderCamera_->unproject(viewportPoint);
+      esp::physics::RaycastResults raycastResults = simulator_->castRay(ray);
 
+      if (raycastResults.hasHits()) {
+        int hitObject = esp::ID_UNDEFINED;
+        Mn::Quaternion objectFrame;
+        Mn::Vector3 objectPivot;
+        int aoLink = esp::ID_UNDEFINED;
+        auto hitInfo = raycastResults.hits[0];  // first hit
+        // check if ao
+        if (hitInfo.objectId != esp::ID_UNDEFINED) {
+          // we hit an non-stage collision object
+          auto roMngr = simulator_->getRigidObjectManager();
+          auto aoMngr = simulator_->getArticulatedObjectManager();
+          auto ro = roMngr->getObjectByID(hitInfo.objectId);
+          auto ao = aoMngr->getObjectByID(hitInfo.objectId);
+          if (ro != nullptr) {
+            // grabbed an object
+            hitObject = hitInfo.objectId;
+            objectPivot = ro->getTransformation().inverted().transformPoint(
+                hitInfo.point);
+            objectFrame = ro->getRotation().inverted();
+          } else if (ao != nullptr) {
+            // grabbed the base link
+            hitObject = hitInfo.objectId;
+            objectPivot = ao->getTransformation().inverted().transformPoint(
+                hitInfo.point);
+            objectFrame = ao->getRotation().inverted();
+          } else {
+            for (auto aoHandle : aoMngr->getObjectHandlesBySubstring()) {
+              auto ao = aoMngr->getObjectByHandle(aoHandle);
+              auto linkToObjIds = ao->getLinkObjectIds();
+              if (linkToObjIds.count(hitInfo.objectId) > 0) {
+                // got a link
+                aoLink = linkToObjIds.at(hitInfo.objectId);
+                objectPivot = ao->getLinkSceneNode(aoLink)
+                                  ->transformation()
+                                  .inverted()
+                                  .transformPoint(hitInfo.point);
+                objectFrame =
+                    ao->getLinkSceneNode(aoLink)->rotation().inverted();
+                hitObject = ao->getID();
+                break;
+              }
+            }
+          }  // done checking for AO
+
+          if (hitObject >= 0) {
+            esp::physics::RigidConstraintSettings constraintSettings;
+            constraintSettings.objectIdA = hitObject;
+            constraintSettings.linkIdA = aoLink;
+            constraintSettings.pivotA = objectPivot;
+            constraintSettings.frameA =
+                objectFrame.toMatrix() *
+                defaultAgent_->node().rotation().toMatrix();
+            constraintSettings.frameB =
+                defaultAgent_->node().rotation().toMatrix();
+            constraintSettings.pivotB = hitInfo.point;
+            // by default use a point 2 point constraint
+            if (event.button() == MouseEvent::Button::Right) {
+              constraintSettings.constraintType =
+                  esp::physics::RigidConstraintType::Fixed;
+            }
+            mouseGrabber_ = std::make_unique<MouseGrabber>(
+                constraintSettings,
+                (hitInfo.point - renderCamera_->node().absoluteTranslation())
+                    .length(),
+                *simulator_);
+          } else {
+            Mn::Debug{} << "Oops, couldn't find the hit object. That's odd.";
+          }
+        }  // end didn't hit the scene
+      }    // end has raycast hit
+    }      // end has physics enabled
+  }        // end GRAB
+
+  previousMousePoint = event.position();
   event.setAccepted();
   redraw();
 }
 
 void Viewer::mouseReleaseEvent(MouseEvent& event) {
+  // release any existing mouse constraint
+  mouseGrabber_ = nullptr;
   event.setAccepted();
 }
 
@@ -1462,8 +1589,15 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
     auto& cam = getAgentCamera();
     cam.modifyZoom(mod);
     redraw();
-  } else {
-    // TODO: GRAB scrolling
+  } else if (mouseInteractionMode == MouseInteractionMode::GRAB &&
+             mouseGrabber_ != nullptr) {
+    // adjust the depth
+    auto ray = renderCamera_->unproject(event.position());
+    mouseGrabber_->gripDepth += scrollModVal * 0.01;
+    mouseGrabber_->updateTransform(
+        Mn::Matrix4::from(defaultAgent_->node().rotation().toMatrix(),
+                          renderCamera_->node().absoluteTranslation() +
+                              ray.direction * mouseGrabber_->gripDepth));
   }
 
   event.setAccepted();
@@ -1485,12 +1619,18 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
                delta.y(),                // amount
                false);                   // applyFilter
     }
-  } else {
-    // TODO: GRAB
+  } else if (mouseInteractionMode == MouseInteractionMode::GRAB &&
+             mouseGrabber_ != nullptr) {
+    // GRAB mode, move the constraint
+    auto ray = renderCamera_->unproject(event.position());
+    mouseGrabber_->updateTransform(
+        Mn::Matrix4::from(defaultAgent_->node().rotation().toMatrix(),
+                          renderCamera_->node().absoluteTranslation() +
+                              ray.direction * mouseGrabber_->gripDepth));
   }
 
   redraw();
-
+  previousMousePoint = event.position();
   event.setAccepted();
 }
 
