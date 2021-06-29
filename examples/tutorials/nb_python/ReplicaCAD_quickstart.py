@@ -34,14 +34,6 @@
 # @markdown (double click to show code).
 
 # !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/master/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
-# Note: for now we need to pull this branch to get the data downloader
-# %cd habitat-sim
-# !git fetch --unshallow
-# !git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
-# !git config --get remote.origin.fetch
-# !git fetch --all
-# !git checkout --track origin/replica-cad
-# !python habitat_sim/utils/datasets_download.py --uids replica_cad_dataset --replace
 
 # %%
 # @title Path Setup and Imports { display-mode: "form" }
