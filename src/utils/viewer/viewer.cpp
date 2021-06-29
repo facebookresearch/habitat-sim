@@ -110,8 +110,7 @@ struct MouseGrabber {
   MouseGrabber(const esp::physics::RigidConstraintSettings& settings,
                float _gripDepth,
                esp::sim::Simulator& sim)
-      : sim_(sim), settings_(settings) {
-    gripDepth = _gripDepth;
+      : constraintId(), sim_(sim), settings_(settings), gripDepth(_gripDepth) {
     constraintId = sim_.createRigidConstraint(settings_);
   }
 
