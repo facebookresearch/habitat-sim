@@ -230,8 +230,9 @@ class Viewer : public Mn::Platform::Application {
 ==================================================
 Welcome to the Habitat-sim C++ Viewer application!
 ==================================================
-Mouse Functions:
+Mouse Functions ('m' to toggle mode):
 ----------------
+In LOOK mode (default):
   LEFT:
     Click and drag to rotate the agent and look up/down.
   RIGHT:
@@ -242,11 +243,19 @@ Mouse Functions:
     (With 'enable-physics') Click on an object to voxelize it and display the voxelization.
   WHEEL:
     Modify orthographic camera zoom/perspective camera FOV (+SHIFT for fine grained control)
+In GRAB mode (with 'enable-physics'):
+  LEFT:
+    Click and drag to pickup and move an object with a point-to-point constraint (e.g. ball joint).
+  RIGHT:
+    Click and drag to pickup and move an object with a fixed frame constraint.
+  WHEEL (with picked object):
+    Pull gripped object closer or push it away.
 
 Key Commands:
 -------------
   esc: Exit the application.
   'H': Display this help message.
+  'm': Toggle mouse mode.
 
   Agent Controls:
   'wasd': Move the agent's body forward/backward, left/right.
@@ -256,31 +265,33 @@ Key Commands:
   'q': Query the agent's state and print to terminal.
 
   Utilities:
-  '1' toggle recording locations for trajectory visualization.
-  '2' build and display trajectory visualization.
-  '+' increase trajectory diameter
-  '-' decrease trajectory diameter
-  '3' toggle flying camera mode (user can apply camera transformation loaded from disk)
-  '5' switch ortho/perspective camera.
-  '6' reset ortho camera zoom/perspective camera FOV.
-  'e' enable/disable frustum culling.
-  'c' show/hide FPS overlay.
-  'n' show/hide NavMesh wireframe.
-  'i' Save a screenshot to "./screenshots/year_month_day_hour-minute-second/#.png"
-  'r' Write a replay of the recent simulated frames to a file specified by --gfx-replay-record-filepath.
-  '[' save camera position/orientation to "./saved_transformations/camera.year_month_day_hour-minute-second.txt"
-  ']' load camera position/orientation from file system (useful when flying camera mode is enabled), or else from last save in current instance
+  '1': Toggle recording locations for trajectory visualization.
+  '2': Build and display trajectory visualization.
+  '+': Increase trajectory diameter.
+  '-': Decrease trajectory diameter.
+  '3': Toggle flying camera mode (user can apply camera transformation loaded from disk).
+  '5': Switch ortho/perspective camera.
+  '6': Reset ortho camera zoom/perspective camera FOV.
+  'l': Override the default lighting setup with configured settings in `default_light_override.lighting_config.json`.
+  'e': Enable/disable frustum culling.
+  'c': Show/hide FPS overlay.
+  'n': Show/hide NavMesh wireframe.
+  'i': Save a screenshot to "./screenshots/year_month_day_hour-minute-second/#.png".
+  'r': Write a replay of the recent simulated frames to a file specified by --gfx-replay-record-filepath.
+  '[': Save camera position/orientation to "./saved_transformations/camera.year_month_day_hour-minute-second.txt".
+  ']'; Load camera position/orientation from file system (useful when flying camera mode is enabled), or else from last save in current instance.
 
   Object Interactions:
   SPACE: Toggle physics simulation on/off
   '.': Take a single simulation step if not simulating continuously.
   '8': Instance a random primitive object in front of the agent.
   'o': Instance a random file-based object in front of the agent.
-  'u': Remove most recently instanced object.
+  't': Instance an ArticulatedObject in front of the camera from a URDF file by entering the filepath when prompted.
+  'u': Remove most recently instanced rigid object.
   'b': Toggle display of object bounding boxes.
   'v': (physics) Invert gravity.
   'g': (physics) Display a stage's signed distance gradient vector field.
-  'l': (physics) Iterate through different ranges of the stage's voxelized signed distance field.
+  'k': (physics) Iterate through different ranges of the stage's voxelized signed distance field.
   ==================================================
   )";
 
@@ -1807,14 +1818,13 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       invertGravity();
       break;
 #ifdef ESP_BUILD_WITH_VHACD
-    // case KeyEvent::Key::L: {
-    //   iterateAndDisplaySignedDistanceField();
-    //   // Increase the distance visualized for next time (Pressing L
-    //   repeatedly
-    //   // will visualize different distances)
-    //   voxelDistance++;
-    //   break;
-    // }
+    case KeyEvent::Key::K: {
+      iterateAndDisplaySignedDistanceField();
+      // Increase the distance visualized for next time (Pressing L repeatedly
+      // will visualize different distances)
+      voxelDistance++;
+      break;
+    }
     case KeyEvent::Key::G: {
       displayStageDistanceGradientField();
       break;
