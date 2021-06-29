@@ -245,7 +245,7 @@ class ManagedContainer : public ManagedContainerBase {
                                                   ">::removeObjectByHandle")) {
       return nullptr;
     }
-    int objectID = getObjectIDByHandle(objectHandle);
+    int objectID = this->getObjectIDByHandle(objectHandle);
     if (objectID == ID_UNDEFINED) {
       return nullptr;
     }
@@ -278,20 +278,6 @@ class ManagedContainer : public ManagedContainerBase {
   std::vector<ManagedPtr> removeObjectsBySubstring(
       const std::string& subStr = "",
       bool contains = true);
-
-  /**
-   * @brief Get the ID of the managed object in @ref
-   * ManagedContainerBase::objectLibrary_ for the given managed object Handle,
-   * if exists.
-   *
-   * @param objectHandle The string key referencing the managed object in
-   * @ref ManagedContainerBase::objectLibrary_. Usually the origin handle.
-   * @return The object ID for the managed object with the passed handle, or
-   * ID_UNDEFINED if none exists.
-   */
-  int getObjectIDByHandle(const std::string& objectHandle) {
-    return getObjectIDByHandleOrNew(objectHandle, false);
-  }  // ManagedContainer::getObjectIDByHandle
 
   /**
    * @brief Get a reference to, or a copy of, the managed object identified by
@@ -503,35 +489,6 @@ class ManagedContainer : public ManagedContainerBase {
                                   const std::string& src);
 
   /**
-   * @brief Used Internally. Get the ID of the managed object in @ref
-   * objectLibrary_ for the given managed object Handle, if exists. If
-   * the managed object is not in the library and getNext is true then returns
-   * next available id, otherwise throws assertion and returns ID_UNDEFINED
-   *
-   * @param objectHandle The string key referencing the managed object in
-   * @ref ManagedContainerBase::objectLibrary_. Usually the origin handle.
-   * @param getNext Whether to get the next available ID if not found, or to
-   * throw an assertion. Defaults to false
-   * @return The managed object's ID if found. The next available ID if not
-   * found and getNext is true. Otherwise ID_UNDEFINED.
-   */
-  int getObjectIDByHandleOrNew(const std::string& objectHandle, bool getNext) {
-    if (getObjectLibHasHandle(objectHandle)) {
-      return getObjectInternal<T>(objectHandle)->getID();
-    } else {
-      if (!getNext) {
-        LOG(ERROR) << "<" << this->objectType_
-                   << ">::getObjectIDByHandleOrNew : No " << objectType_
-                   << " managed object with handle " << objectHandle
-                   << "exists. Aborting";
-        return ID_UNDEFINED;
-      } else {
-        return getUnusedObjectID();
-      }
-    }
-  }  // ManagedContainer::getObjectIDByHandle
-
-  /**
    * @brief implementation of managed object type-specific registration
    * @param object the managed object to be registered
    * @param objectHandle the name to register the managed object with.
@@ -656,7 +613,7 @@ auto ManagedContainer<T, Access>::removeObjectsBySubstring(
   std::vector<std::string> handles =
       getObjectHandlesBySubstring(subStr, contains);
   for (const std::string& objectHandle : handles) {
-    int objID = getObjectIDByHandle(objectHandle);
+    int objID = this->getObjectIDByHandle(objectHandle);
     ManagedPtr ptr = removeObjectInternal(
         objID, objectHandle,
         "<" + this->objectType_ + ">::removeObjectsBySubstring");
