@@ -212,15 +212,11 @@ class AbstractObjectAttributes : public AbstractAttributes {
   /**
    * @brief Retrieve a comma-separated string holding the header values for the
    * info returned for this managed object, type-specific.
-   * TODO : once Magnum supports retrieving key-values of configurations, use
-   * that to build this data.
    */
 
   std::string getObjectInfoHeaderInternal() const override;
   /**
    * @brief get AbstractObject specific info header
-   * TODO : once Magnum supports retrieving key-values of configurations, use
-   * that to build this data.
    */
   virtual std::string getAbstractObjectInfoHeaderInternal() const {
     return "";
@@ -229,8 +225,6 @@ class AbstractObjectAttributes : public AbstractAttributes {
   /**
    * @brief Retrieve a comma-separated informational string about the contents
    * of this managed object.
-   * TODO : once Magnum supports retrieving key-values of configurations, use
-   * that to build this data.
    */
   std::string getObjectInfoInternal() const override;
   /**
@@ -314,8 +308,6 @@ class ObjectAttributes : public AbstractObjectAttributes {
  protected:
   /**
    * @brief get AbstractObject specific info header
-   * TODO : once Magnum supports retrieving key-values of configurations, use
-   * that to build this data.
    */
   std::string getAbstractObjectInfoHeaderInternal() const override {
     return "Mass, COM XYZ, I XX YY ZZ, Angular Damping, "
@@ -403,8 +395,6 @@ class StageAttributes : public AbstractObjectAttributes {
  protected:
   /**
    * @brief get AbstractObject specific info header
-   * TODO : once Magnum supports retrieving key-values of configurations, use
-   * that to build this data.
    */
   std::string getAbstractObjectInfoHeaderInternal() const override {
     return "Navmesh Handle, Gravity XYZ, Origin XYZ, Light Setup,";
