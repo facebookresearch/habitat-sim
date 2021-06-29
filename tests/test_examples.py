@@ -83,7 +83,7 @@ def test_vhacd_example(args):
 
 
 @pytest.mark.skipif(
-    not osp.exists("data/ReplicaCAD/"),
+    not osp.exists("data/replica_cad/"),
     reason="Requires ReplicaCAD dataset.",
 )
 @pytest.mark.parametrize(
