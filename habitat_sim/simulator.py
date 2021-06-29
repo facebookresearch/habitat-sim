@@ -124,8 +124,8 @@ class Simulator(SimulatorBackend):
         r"""Close the simulator instance.
 
         :param destroy: Whether or not to force the OpenGL context to be
-        destroyed if async rendering was used.  If async rendering wasn't used,
-        this has no effect.
+            destroyed if async rendering was used.  If async rendering wasn't used,
+            this has no effect.
         """
         if self.renderer is not None:
             self.renderer.acquire_gl_context()

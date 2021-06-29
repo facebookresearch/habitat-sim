@@ -97,7 +97,8 @@ class MobileManipulator(RobotInterface):
         sim: Simulator,
         limit_robo_joints: bool = True,
     ):
-        """Constructor
+        r"""Constructor
+
         :param limit_robo_joints: If true, joint limits of robot are always
             enforced.
         """
