@@ -162,17 +162,15 @@ int ManagedContainerBase::getObjectIDByHandleOrNew(
     bool getNext) {
   if (getObjectLibHasHandle(objectHandle)) {
     return getObjectInternal<AbstractManagedObject>(objectHandle)->getID();
-  } else {
-    if (!getNext) {
-      LOG(ERROR) << "<" << this->objectType_
-                 << ">::getObjectIDByHandleOrNew : No " << objectType_
-                 << " managed object with handle " << objectHandle
-                 << "exists. Aborting";
-      return ID_UNDEFINED;
-    } else {
-      return getUnusedObjectID();
-    }
   }
+  if (!getNext) {
+    LOG(ERROR) << "<" << this->objectType_
+               << ">::getObjectIDByHandleOrNew : No " << objectType_
+               << " managed object with handle " << objectHandle
+               << "exists. Aborting";
+    return ID_UNDEFINED;
+  }
+  return getUnusedObjectID();
 }  // ManagedContainerBase::getObjectIDByHandle
 
 std::string ManagedContainerBase::getObjectInfoCSVString(
