@@ -81,6 +81,12 @@ def initialize_test_data_sources(data_path):
             "link": data_path + "ReplicaCAD_baked_lighting",
             "version": "1.0",
         },
+        "hab_fetch": {
+            "source": "http://dl.fbaipublicfiles.com/habitat/hab_fetch_v1.0.zip",
+            "package_name": "hab_fetch_v1.0.zip",
+            "link": data_path + "robots/hab_fetch",
+            "version": "1.0",
+        },
     }
 
     # data sources can be grouped for batch commands with a new uid
@@ -93,6 +99,7 @@ def initialize_test_data_sources(data_path):
             "mp3d_example_scene",
             "coda_scene",
             "replica_cad_dataset",
+            "hab_fetch",
         ]
     }
 

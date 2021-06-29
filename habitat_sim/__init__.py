@@ -6,7 +6,7 @@
 
 import builtins
 
-__version__ = "0.1.7"
+__version__ = "0.2.0"
 
 if not getattr(builtins, "__HSIM_SETUP__", False):
     # TODO: kept only for compatibiliy with existing code. Please gradually remove
@@ -20,6 +20,7 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         metadata,
         nav,
         physics,
+        robots,
         scene,
         sensor,
         sensors,
@@ -109,4 +110,5 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         "utils",
         "MapStringString",
         "registry",
+        "robots",
     ]
