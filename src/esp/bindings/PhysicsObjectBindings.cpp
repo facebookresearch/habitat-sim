@@ -359,6 +359,11 @@ void declareArticulatedObjectWrapper(py::module& m,
       .def(
           "get_link_ids", &ManagedArticulatedObject::getLinkIds,
           ("Get a list of this " + objType + "'s individual link ids.").c_str())
+      .def_property_readonly("link_object_ids",
+                             &ManagedArticulatedObject::getLinkObjectIds,
+                             ("Get a dict mapping Habitat object ids to this " +
+                              objType + "'s link ids.")
+                                 .c_str())
       .def_property_readonly(
           "num_links", &ManagedArticulatedObject::getNumLinks,
           ("Get the number of links this " + objType + " holds.").c_str())

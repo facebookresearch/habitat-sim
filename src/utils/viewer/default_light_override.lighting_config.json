@@ -1,0 +1,35 @@
+{
+  "lights": {
+    "forward": {
+      "type": "directional",
+      "direction": [0, 0.5, 1],
+      "intensity": 2.4,
+      "color": [0.93, 0.98, 1]
+    },
+    "backward": {
+      "type": "directional",
+      "direction": [0, 0.5, -1],
+      "intensity": 2.4,
+      "color": [0.93, 0.98, 1]
+    },
+    "top_left": {
+      "type": "directional",
+      "direction": [
+        -1, 1, 0],
+      "intensity": 2.0,
+      "color": [0.93, 0.98, 1]
+    },
+    "top_right": {
+      "type": "directional",
+      "direction": [1, 1, 0],
+      "intensity": 2.0,
+      "color": [0.93, 0.98, 1]
+    },
+    "bottom": {
+      "type": "directional",
+      "direction": [0, -1, 0],
+      "intensity": 0.64,
+      "color": [0.93, 0.98, 1]
+    }
+  }
+}
