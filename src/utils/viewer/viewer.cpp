@@ -88,6 +88,18 @@ std::string getCurrentTimeString() {
 using namespace Mn::Math::Literals;
 using Magnum::Math::Literals::operator""_degf;
 
+//! Define different UI roles for the mouse
+enum MouseInteractionMode {
+  LOOK,
+  GRAB,
+
+  NUM_MODES
+};
+
+std::map<MouseInteractionMode, std::string> mouseModeNames = {
+    {MouseInteractionMode::LOOK, "LOOK"},
+    {MouseInteractionMode::GRAB, "GRAB"}};
+
 class Viewer : public Mn::Platform::Application {
  public:
   explicit Viewer(const Arguments& arguments);
@@ -101,6 +113,8 @@ class Viewer : public Mn::Platform::Application {
       {KeyEvent::Key::A, false},    {KeyEvent::Key::D, false},
       {KeyEvent::Key::S, false},    {KeyEvent::Key::W, false},
       {KeyEvent::Key::X, false},    {KeyEvent::Key::Z, false}};
+
+  MouseInteractionMode mouseInteractionMode = LOOK;
 
   void drawEvent() override;
   void viewportEvent(ViewportEvent& event) override;
@@ -1186,8 +1200,8 @@ void Viewer::drawEvent() {
   profiler_.endFrame();
 
   imgui_.newFrame();
+  ImGui::SetNextWindowPos(ImVec2(10, 10));
   if (showFPS_) {
-    ImGui::SetNextWindowPos(ImVec2(10, 10));
     ImGui::Begin("main", NULL,
                  ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
                      ImGuiWindowFlags_AlwaysAutoResize);
@@ -1219,8 +1233,11 @@ void Viewer::drawEvent() {
         break;
     }
     ImGui::Text("%s", profiler_.statistics().c_str());
-    ImGui::End();
   }
+  std::string modeText =
+      "Mouse Ineraction Mode: " + mouseModeNames.at(mouseInteractionMode);
+  ImGui::Text("%s", modeText.c_str());
+  ImGui::End();
 
   /* Set appropriate states. If you only draw ImGui, it is sufficient to
      just enable blending and scissor test in the constructor. */
@@ -1352,69 +1369,73 @@ void Viewer::createPickedObjectVisualizer(unsigned int objectId) {
 }
 
 void Viewer::mousePressEvent(MouseEvent& event) {
-  if (event.button() == MouseEvent::Button::Right &&
-      (event.modifiers() & MouseEvent::Modifier::Shift)) {
-    // cannot use the default framebuffer, so setup another framebuffer,
-    // also, setup the color attachment for rendering, and remove the
-    // visualizer for the previously picked object
-    objectPickingHelper_->prepareToDraw();
+  if (mouseInteractionMode == MouseInteractionMode::LOOK) {
+    if (event.button() == MouseEvent::Button::Right &&
+        (event.modifiers() & MouseEvent::Modifier::Shift)) {
+      // cannot use the default framebuffer, so setup another framebuffer,
+      // also, setup the color attachment for rendering, and remove the
+      // visualizer for the previously picked object
+      objectPickingHelper_->prepareToDraw();
 
-    // redraw the scene on the object picking framebuffer
-    esp::gfx::RenderCamera::Flags flags =
-        esp::gfx::RenderCamera::Flag::UseDrawableIdAsObjectId;
-    if (simulator_->isFrustumCullingEnabled())
-      flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
-    for (auto& it : activeSceneGraph_->getDrawableGroups()) {
-      renderCamera_->draw(it.second, flags);
-    }
-
-    // Read the object Id
-    unsigned int pickedObject =
-        objectPickingHelper_->getObjectId(event.position(), windowSize());
-
-    // if an object is selected, create a visualizer
-    createPickedObjectVisualizer(pickedObject);
-    return;
-  }  // drawable selection
-  // add primitive w/ right click if a collision object is hit by a raycast
-  else if (event.button() == MouseEvent::Button::Right) {
-    if (simulator_->getPhysicsSimulationLibrary() !=
-        esp::physics::PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
-      auto viewportPoint = event.position();
-      auto ray = renderCamera_->unproject(viewportPoint);
-      esp::physics::RaycastResults raycastResults = simulator_->castRay(ray);
-
-      if (raycastResults.hasHits()) {
-        // If VHACD is enabled, and Ctrl + Right Click is used, voxelized the
-        // object clicked on.
-#ifdef ESP_BUILD_WITH_VHACD
-        if (event.modifiers() & MouseEvent::Modifier::Ctrl) {
-          auto objID = raycastResults.hits[0].objectId;
-          displayVoxelField(objID);
-          return;
-        }
-#endif
-        addPrimitiveObject();
-        auto existingObjectIDs = simulator_->getExistingObjectIDs();
-        // use the bounding box to create a safety margin for adding the
-        // object
-        float boundingBuffer =
-            simulator_->getObjectSceneNode(existingObjectIDs.back())
-                    ->computeCumulativeBB()
-                    .size()
-                    .max() /
-                2.0 +
-            0.04;
-        simulator_->setTranslation(
-            raycastResults.hits[0].point +
-                raycastResults.hits[0].normal * boundingBuffer,
-            existingObjectIDs.back());
-
-        simulator_->setRotation(esp::core::randomRotation(),
-                                existingObjectIDs.back());
+      // redraw the scene on the object picking framebuffer
+      esp::gfx::RenderCamera::Flags flags =
+          esp::gfx::RenderCamera::Flag::UseDrawableIdAsObjectId;
+      if (simulator_->isFrustumCullingEnabled())
+        flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
+      for (auto& it : activeSceneGraph_->getDrawableGroups()) {
+        renderCamera_->draw(it.second, flags);
       }
-    }
-  }  // end add primitive w/ right click
+
+      // Read the object Id
+      unsigned int pickedObject =
+          objectPickingHelper_->getObjectId(event.position(), windowSize());
+
+      // if an object is selected, create a visualizer
+      createPickedObjectVisualizer(pickedObject);
+      return;
+    }  // drawable selection
+    // add primitive w/ right click if a collision object is hit by a raycast
+    else if (event.button() == MouseEvent::Button::Right) {
+      if (simulator_->getPhysicsSimulationLibrary() !=
+          esp::physics::PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
+        auto viewportPoint = event.position();
+        auto ray = renderCamera_->unproject(viewportPoint);
+        esp::physics::RaycastResults raycastResults = simulator_->castRay(ray);
+
+        if (raycastResults.hasHits()) {
+          // If VHACD is enabled, and Ctrl + Right Click is used, voxelized the
+          // object clicked on.
+#ifdef ESP_BUILD_WITH_VHACD
+          if (event.modifiers() & MouseEvent::Modifier::Ctrl) {
+            auto objID = raycastResults.hits[0].objectId;
+            displayVoxelField(objID);
+            return;
+          }
+#endif
+          addPrimitiveObject();
+          auto existingObjectIDs = simulator_->getExistingObjectIDs();
+          // use the bounding box to create a safety margin for adding the
+          // object
+          float boundingBuffer =
+              simulator_->getObjectSceneNode(existingObjectIDs.back())
+                      ->computeCumulativeBB()
+                      .size()
+                      .max() /
+                  2.0 +
+              0.04;
+          simulator_->setTranslation(
+              raycastResults.hits[0].point +
+                  raycastResults.hits[0].normal * boundingBuffer,
+              existingObjectIDs.back());
+
+          simulator_->setRotation(esp::core::randomRotation(),
+                                  existingObjectIDs.back());
+        }
+      }
+    }  // end add primitive w/ right click
+  } else {
+    // TODO: GRAB
+  }
 
   event.setAccepted();
   redraw();
@@ -1433,30 +1454,39 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
   if (!(scrollModVal)) {
     return;
   }
-  // Use shift for fine-grained zooming
-  float modVal = (event.modifiers() & MouseEvent::Modifier::Shift) ? 1.01 : 1.1;
-  float mod = scrollModVal > 0 ? modVal : 1.0 / modVal;
-  auto& cam = getAgentCamera();
-  cam.modifyZoom(mod);
-  redraw();
+  if (mouseInteractionMode == MouseInteractionMode::LOOK) {
+    // Use shift for fine-grained zooming
+    float modVal =
+        (event.modifiers() & MouseEvent::Modifier::Shift) ? 1.01 : 1.1;
+    float mod = scrollModVal > 0 ? modVal : 1.0 / modVal;
+    auto& cam = getAgentCamera();
+    cam.modifyZoom(mod);
+    redraw();
+  } else {
+    // TODO: GRAB scrolling
+  }
 
   event.setAccepted();
 }  // Viewer::mouseScrollEvent
 
 void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
-  if (!(event.buttons() & MouseMoveEvent::Button::Left)) {
-    return;
-  }
+  if (mouseInteractionMode == MouseInteractionMode::LOOK) {
+    if (!(event.buttons() & MouseMoveEvent::Button::Left)) {
+      return;
+    }
 
-  const Mn::Vector2i delta = event.relativePosition();
-  auto& controls = *defaultAgent_->getControls().get();
-  controls(*agentBodyNode_, "turnRight", delta.x());
-  // apply the transformation to all sensors
-  for (auto& p : agentBodyNode_->getSubtreeSensors()) {
-    controls(p.second.get().object(),  // SceneNode
-             "lookDown",               // action name
-             delta.y(),                // amount
-             false);                   // applyFilter
+    const Mn::Vector2i delta = event.relativePosition();
+    auto& controls = *defaultAgent_->getControls().get();
+    controls(*agentBodyNode_, "turnRight", delta.x());
+    // apply the transformation to all sensors
+    for (auto& p : agentBodyNode_->getSubtreeSensors()) {
+      controls(p.second.get().object(),  // SceneNode
+               "lookDown",               // action name
+               delta.y(),                // amount
+               false);                   // applyFilter
+    }
+  } else {
+    // TODO: GRAB
   }
 
   redraw();
@@ -1552,7 +1582,6 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::RightBracket:
       loadAgentAndSensorTransformFromFile();
       break;
-
     case KeyEvent::Key::Equal: {
       // increase trajectory tube diameter
       LOG(INFO) << "Bigger";
@@ -1586,6 +1615,11 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::I:
       screenshot();
       break;
+    case KeyEvent::Key::M: {
+      // toggle the mouse interaction mode
+      mouseInteractionMode = MouseInteractionMode(
+          (int(mouseInteractionMode) + 1) % int(NUM_MODES));
+    } break;
     case KeyEvent::Key::N:
       // toggle navmesh visualization
       simulator_->setNavMeshVisualization(
@@ -1598,6 +1632,34 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       // query the agent state
       showAgentStateMsg(true, true);
       break;
+    case KeyEvent::Key::T: {
+      // add an ArticulatedObject from provided filepath
+      Mn::Debug{} << "Load URDF: provide a URDF filepath.";
+      std::string urdfFilepath;
+      std::cin >> urdfFilepath;
+
+      if (urdfFilepath.empty()) {
+        Mn::Debug{} << "... no input provided. Aborting.";
+      } else if (!Cr::Utility::String::endsWith(urdfFilepath, ".urdf") &&
+                 !Cr::Utility::String::endsWith(urdfFilepath, ".URDF")) {
+        Mn::Debug{} << "... input is not a URDF. Aborting.";
+      } else if (Cr::Utility::Directory::exists(urdfFilepath)) {
+        auto aom = simulator_->getArticulatedObjectManager();
+        auto ao = aom->addArticulatedObjectFromURDF(urdfFilepath);
+        ao->setTranslation(
+            defaultAgent_->node().transformation().transformPoint(
+                {0, 1.0, -1.5}));
+      }
+    } break;
+    case KeyEvent::Key::L: {
+      // override the default light setup with the config in this directory
+      auto& lightLayoutMgr = simulator_->getLightLayoutAttributesManager();
+      auto loadedLayout = lightLayoutMgr->createObjectFromJSONFile(
+          "src/utils/viewer/default_light_override.lighting_config.json");
+      lightLayoutMgr->registerObject(loadedLayout, "default_override");
+      simulator_->setLightSetup(
+          lightLayoutMgr->createLightSetupFromAttributes("default_override"));
+    } break;
     case KeyEvent::Key::U:
       removeLastObject();
       break;
@@ -1605,13 +1667,14 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       invertGravity();
       break;
 #ifdef ESP_BUILD_WITH_VHACD
-    case KeyEvent::Key::L: {
-      iterateAndDisplaySignedDistanceField();
-      // Increase the distance visualized for next time (Pressing L repeatedly
-      // will visualize different distances)
-      voxelDistance++;
-      break;
-    }
+    // case KeyEvent::Key::L: {
+    //   iterateAndDisplaySignedDistanceField();
+    //   // Increase the distance visualized for next time (Pressing L
+    //   repeatedly
+    //   // will visualize different distances)
+    //   voxelDistance++;
+    //   break;
+    // }
     case KeyEvent::Key::G: {
       displayStageDistanceGradientField();
       break;
