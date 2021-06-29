@@ -476,6 +476,9 @@ TEST_F(MetadataMediatorTest, testDataset1) {
     ASSERT_EQ(Dir::splitExtension(Dir::filename(iter->second))
                   .second.compare(".urdf"),
               0);
+    // test that file actually exists
+    const std::string filename = iter->second;
+    ASSERT_EQ(Dir::exists(filename), true);
   }
   // end test LoadArticulatedObjects
 

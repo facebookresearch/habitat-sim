@@ -144,31 +144,23 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
   /**
    * @brief Retrieve a comma-separated informational string about the contents
    * of this managed object.
-   * TODO : once Magnum supports retrieving key-values of configurations, use
-   * that to build this data.
    */
   std::string getObjectInfoInternal() const override;
   /**
    * @brief Retrieve a comma-separated string holding the header values for the
    * info returned for this managed object, type-specific.
-   * TODO : once Magnum supports retrieving key-values of configurations, use
-   * that to build this data.
    */
   std::string getObjectInfoHeaderInternal() const override;
 
   /**
    * @brief Retrieve a comma-separated informational string about the contents
    * of this managed object.
-   * TODO : once Magnum supports retrieving key-values of configurations, use
-   * that to build this data.
    */
   virtual std::string getSceneObjInstanceInfoInternal() const { return ""; }
 
   /**
    * @brief Retrieve a comma-separated informational string about the contents
    * of this managed object.
-   * TODO : once Magnum supports retrieving key-values of configurations, use
-   * that to build this data.
    */
   virtual std::string getSceneObjInstanceInfoHeaderInternal() const {
     return "";
@@ -198,6 +190,18 @@ class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
    */
   bool getFixedBase() const { return getBool("fixed_base"); }
   void setFixedBase(bool fixed_base) { setBool("fixed_base", fixed_base); }
+
+  /**
+   * @brief Articulated Object Instance only. Get or set whether or not dofs
+   * should be automatically clamped to specified joint limits before physics
+   * simulation step.
+   */
+  bool getAutoClampJointLimits() const {
+    return getBool("auto_clamp_joint_limits");
+  }
+  void setAutoClampJointLimits(bool auto_clamp_joint_limits) {
+    setBool("auto_clamp_joint_limits", auto_clamp_joint_limits);
+  }
 
   /**
    * @brief retrieve a mutable reference to this scene attributes joint initial
@@ -241,8 +245,6 @@ class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
   /**
    * @brief Retrieve a comma-separated informational string
    * about the contents of this managed object.
-   * TODO : once Magnum supports retrieving key-values of
-   * configurations, use that to build this data.
    */
   std::string getSceneObjInstanceInfoHeaderInternal() const override;
 
@@ -366,8 +368,6 @@ class SceneAttributes : public AbstractAttributes {
   /**
    * @brief Retrieve a comma-separated string holding the header values for the
    * info returned for this managed object, type-specific.
-   * TODO : once Magnum supports retrieving key-values of configurations, use
-   * that to build this data.
    */
 
   std::string getObjectInfoHeaderInternal() const override { return ""; }
@@ -375,8 +375,6 @@ class SceneAttributes : public AbstractAttributes {
   /**
    * @brief Retrieve a comma-separated informational string about the contents
    * of this managed object.
-   * TODO : once Magnum supports retrieving key-values of configurations, use
-   * that to build this data.
    */
   std::string getObjectInfoInternal() const override;
   /**
