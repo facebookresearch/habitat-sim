@@ -239,8 +239,10 @@ void initGfxBindings(py::module& m) {
           R"(Draw a line segment in world-space or local-space (see pushTransform).)")
       .def(
           "draw_path_with_endpoint_circles",
-          &DebugLineRender::drawPathWithEndpointCircles, "points"_a, "radius"_a,
-          "color"_a, "num_segments"_a = 24,
+          py::overload_cast<const std::vector<Magnum::Vector3>&, float,
+                            const Magnum::Color4&, int, const Magnum::Vector3&>(
+              &DebugLineRender::drawPathWithEndpointCircles),
+          "points"_a, "radius"_a, "color"_a, "num_segments"_a = 24,
           "normal"_a = Magnum::Vector3{0.0, 1.0, 0.0},
           R"(Draw a sequence of line segments with circles at the two endpoints. In world-space or local-space (see pushTransform).)");
 

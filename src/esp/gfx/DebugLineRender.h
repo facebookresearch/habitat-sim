@@ -133,6 +133,21 @@ class DebugLineRender {
   /**
    * @brief Draw a sequence of line segments with circles at the two endpoints.
    * In world-space or local-space (see pushTransform).
+   */
+  void drawPathWithEndpointCircles(
+      const std::vector<Magnum::Vector3>& points,
+      float radius,
+      const Magnum::Color4& color,
+      int numSegments = 24,
+      const Magnum::Vector3& normal = Magnum::Vector3(0.0, 1.0, 0.0)) {
+    drawPathWithEndpointCircles(
+        Magnum::Containers::ArrayView<const Magnum::Vector3>(points), radius,
+        color, numSegments, normal);
+  }
+
+  /**
+   * @brief Draw a sequence of line segments with circles at the two endpoints.
+   * In world-space or local-space (see pushTransform).
    *
    * @param points Note that std::vector, std::array, or c-style array can be
    * passed here.
