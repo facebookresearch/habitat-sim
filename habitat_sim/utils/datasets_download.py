@@ -69,6 +69,12 @@ def initialize_test_data_sources(data_path):
             "link": data_path + "scene_datasets/coda",
             "version": "1.0",
         },
+        "ycb": {
+            "source": "https://dl.fbaipublicfiles.com/habitat/ycb/hab_ycb_v1.0.zip",
+            "package_name": "hab_ycb_v1.0.zip",
+            "link": data_path + "objects/ycb",
+            "version": "1.0",
+        },
         "hab_fetch": {
             "source": "http://dl.fbaipublicfiles.com/habitat/hab_fetch_v1.0.zip",
             "package_name": "hab_fetch_v1.0.zip",
