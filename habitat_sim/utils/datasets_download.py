@@ -80,6 +80,7 @@ def initialize_test_data_sources(data_path):
             "package_name": "ReplicaCAD_baked_lighting_v1.0.zip",
             "link": data_path + "replica_cad_baked_lighting",
             "version": "1.0",
+        },
         "ycb": {
             "source": "https://dl.fbaipublicfiles.com/habitat/ycb/hab_ycb_v1.0.zip",
             "package_name": "hab_ycb_v1.0.zip",
