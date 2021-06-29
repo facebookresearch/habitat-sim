@@ -106,7 +106,8 @@ def initialize_test_data_sources(data_path):
             "coda_scene",
             "replica_cad_dataset",
             "hab_fetch",
-        ]
+        ],
+        "rearrange_task_assets": ["replica_cad_dataset", "hab_fetch", "ycb"],
     }
 
 
