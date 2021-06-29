@@ -1565,6 +1565,9 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       // also `>` key
       simulateSingleStep_ = true;
       break;
+    case KeyEvent::Key::Comma:
+      debugBullet_ = !debugBullet_;
+      break;
       // ==== Miscellaneous ====
     case KeyEvent::Key::One:
       // toggle agent location recording for trajectory

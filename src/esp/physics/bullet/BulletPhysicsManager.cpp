@@ -151,9 +151,6 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
 
   articulatedObject->initializeFromURDF(*urdfImporter_, {}, physicsNode_);
 
-  // top level only valid in initial state, but computes valid sub-part AABBs.
-  articulatedObject->node().computeCumulativeBB();
-
   // allocate ids for links
   for (int linkIx = 0; linkIx < articulatedObject->btMultiBody_->getNumLinks();
        ++linkIx) {
@@ -170,12 +167,12 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
       int bulletLinkIx =
           u2b->cache->m_urdfLinkIndices2BulletLinkIndices[urdfLinkIx];
       ArticulatedLink& linkObject = articulatedObject->getLink(bulletLinkIx);
-
       ESP_CHECK(
           attachLinkGeometry(&linkObject, link.second, drawables, lightSetup),
           "BulletPhysicsManager::addArticulatedObjectFromURDF(): Failed to "
           "instance render asset (attachGeometry) for link "
               << urdfLinkIx << ".");
+      linkObject.node().computeCumulativeBB();
     }
     urdfLinkIx++;
   }
