@@ -9,7 +9,16 @@ This is a webapp that allows the user to enter a scene in VR. The user can then 
 python -m habitat_sim.utils.datasets_download --uids webxr_hand_demo_data --data-path examples/web_apps/webxr_hand_demo
 ```
 2. Follow [instructions](https://github.com/facebookresearch/habitat-sim#experimental-emscripten-webgl-and-web-apps) for installing and activating Emscripten, including `source path/to/emsdk_env.sh` or similar to configure env variables.
-1. `chmod +x build_and_install_habitat_sim_js.sh` and run `build_and_install_habitat_sim_js.sh`
+1. Create the directory to store the JS transpiled version of Habitat:
+```bash
+mkdir examples/web_apps/webxr_hand_demo/lib
+```
+4. Transpile Habitat into JS and copy the resulting files over:
+```bash
+chmod +x build_and_install_habitat_sim_js.sh
+./build_and_install_habitat_sim_js.sh
+```
+To get an updated version of the Habitat library into the hand demo, you just need to rerun the second command.
 
 # Testing
 ## VR emulation in your desktop browser, standalone
