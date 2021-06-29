@@ -6,12 +6,13 @@
 #define ESP_GFX_DEBUGLINERENDER_H_
 
 #include <Corrade/Containers/Array.h>
+#include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/Utility/Macros.h>
 #include <Magnum/GL/Buffer.h>
 #include <Magnum/GL/Mesh.h>
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix4.h>
-#include <Magnum/Shaders/VertexColorGL.h>
+#include <Magnum/Shaders/FlatGL.h>
 
 #include <memory>
 #include <vector>
@@ -132,9 +133,13 @@ class DebugLineRender {
   /**
    * @brief Draw a sequence of line segments with circles at the two endpoints.
    * In world-space or local-space (see pushTransform).
+   *
+   * @param points Note that std::vector, std::array, or c-style array can be
+   * passed here.
+   *
    */
   void drawPathWithEndpointCircles(
-      const std::vector<Magnum::Vector3>& points,
+      Magnum::Containers::ArrayView<const Magnum::Vector3> points,
       float radius,
       const Magnum::Color4& color,
       int numSegments = 24,
@@ -151,7 +156,8 @@ class DebugLineRender {
   struct GLResourceSet {
     Magnum::GL::Buffer buffer;
     Magnum::GL::Mesh mesh{Magnum::GL::MeshPrimitive::Lines};
-    Magnum::Shaders::VertexColorGL3D shader;
+    Magnum::Shaders::FlatGL3D shader{
+        Magnum::Shaders::FlatGL3D::Flag::VertexColor};
   };
 
   std::vector<Magnum::Matrix4> _inputTransformStack;

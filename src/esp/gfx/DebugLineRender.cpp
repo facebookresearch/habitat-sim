@@ -23,7 +23,7 @@ Mn::Color4 remapAlpha(const Mn::Color4& src) {
   // Because we render lines multiple times additively in flushLines, we need to
   // remap alpha (opacity). This is an approximation.
   constexpr float exponent = 2.f;
-  return Mn::Color4(src.r(), src.g(), src.b(), std::pow(src.a(), exponent));
+  return {src.rgb(), std::pow(src.a(), exponent)};
 }
 
 // return false if segment is entirely clipped
@@ -37,7 +37,7 @@ bool scissorSegmentToOutsideCircle(Mn::Vector3* pt0,
     if (dist1 < radius) {
       return false;
     }
-    const float lerpFraction = (radius - dist0) / (dist1 - dist0);
+    const float lerpFraction = Mn::Math::lerpInverted(dist0, dist1, radius);
     CORRADE_INTERNAL_ASSERT(lerpFraction >= 0.f && lerpFraction <= 1.f);
     Mn::Vector3 clippedPt = Mn::Math::lerp(*pt0, *pt1, lerpFraction);
     *pt0 = clippedPt;
@@ -45,7 +45,7 @@ bool scissorSegmentToOutsideCircle(Mn::Vector3* pt0,
   }
 
   if (dist1 < radius) {
-    const float lerpFraction = (radius - dist1) / (dist0 - dist1);
+    const float lerpFraction = Mn::Math::lerpInverted(dist1, dist0, radius);
     CORRADE_INTERNAL_ASSERT(lerpFraction >= 0.f && lerpFraction <= 1.f);
     Mn::Vector3 clippedPt = Mn::Math::lerp(*pt1, *pt0, lerpFraction);
     *pt1 = clippedPt;
@@ -60,8 +60,8 @@ bool scissorSegmentToOutsideCircle(Mn::Vector3* pt0,
 DebugLineRender::DebugLineRender()
     : _glResources{std::make_unique<GLResourceSet>()} {
   _glResources->mesh.addVertexBuffer(_glResources->buffer, 0,
-                                     Mn::Shaders::VertexColorGL3D::Position{},
-                                     Mn::Shaders::VertexColorGL3D::Color4{});
+                                     Mn::Shaders::FlatGL3D::Position{},
+                                     Mn::Shaders::FlatGL3D::Color4{});
 }
 
 void DebugLineRender::releaseGLResources() {
@@ -114,12 +114,7 @@ void DebugLineRender::flushLines(const Magnum::Matrix4& camMatrix,
   // Update shader
   _glResources->mesh.setCount(_verts.size());
 
-  // GL_LINE_SMOOTH is undefined in Emscripten build; I'm not sure why
-#ifndef CORRADE_TARGET_EMSCRIPTEN
-  glDisable(GL_LINE_SMOOTH);  // anti-aliased lines cause artifacts
-#endif
-
-  glLineWidth(_internalLineWidth);
+  Mn::GL::Renderer::setLineWidth(_internalLineWidth);
 
   // We draw lines multiple times, with pixel offsets, to produce a single
   // thick, visually-appealing line. Todo: implement thick lines using
@@ -127,16 +122,16 @@ void DebugLineRender::flushLines(const Magnum::Matrix4& camMatrix,
   // 1.2 is hand-tuned for Nvidia hardware to be just small enough so we don't
   // see gaps between the individual offset lines.
   const float x = _internalLineWidth * 1.2f;
-  constexpr float sqrtOfTwo = 1.4142f;
+  constexpr float sqrtOfTwo = Mn::Constants::sqrt2();
   // hard-coding 8 points around a circle
-  const std::vector<Mn::Vector3> offsets = {Mn::Vector3(x, x, 0),
-                                            Mn::Vector3(-x, x, 0),
-                                            Mn::Vector3(x, -x, 0),
-                                            Mn::Vector3(-x, -x, 0),
-                                            Mn::Vector3(x * sqrtOfTwo, 0, 0),
-                                            Mn::Vector3(-x * sqrtOfTwo, 0, 0),
-                                            Mn::Vector3(0, x * sqrtOfTwo, 0),
-                                            Mn::Vector3(0, -x * sqrtOfTwo, 0)};
+  const Mn::Vector3 offsets[] = {Mn::Vector3(x, x, 0),
+                                 Mn::Vector3(-x, x, 0),
+                                 Mn::Vector3(x, -x, 0),
+                                 Mn::Vector3(-x, -x, 0),
+                                 Mn::Vector3(x * sqrtOfTwo, 0, 0),
+                                 Mn::Vector3(-x * sqrtOfTwo, 0, 0),
+                                 Mn::Vector3(0, x * sqrtOfTwo, 0),
+                                 Mn::Vector3(0, -x * sqrtOfTwo, 0)};
 
   Mn::Matrix4 projCam = projMatrix * camMatrix;
 
@@ -152,16 +147,13 @@ void DebugLineRender::flushLines(const Magnum::Matrix4& camMatrix,
     }
   };
 
+  _glResources->shader.setColor({1.0f, 1.0f, 1.0f, 1.0});
+
   submitLinesWithOffsets();
 
   // modify all colors to be semi-transparent
-  // perf todo: do a custom shader constant for opacity instead so we don't have
-  // to touch all the verts
   static float opacity = 0.1;
-  for (int v = 0; v < _verts.size(); v++) {
-    _verts[v].color.w() *= opacity;
-  }
-  _glResources->buffer.setData(_verts, Mn::GL::BufferUsage::DynamicDraw);
+  _glResources->shader.setColor({1.0f, 1.0f, 1.0f, opacity});
 
   // Here, we re-draw lines with a reversed depth function. This causes
   // occluded lines to be visualized as semi-transparent, which is useful for
@@ -183,7 +175,7 @@ void DebugLineRender::flushLines(const Magnum::Matrix4& camMatrix,
   }
 
   // restore to a reasonable default
-  glLineWidth(1.0);
+  Mn::GL::Renderer::setLineWidth(1.0);
 }
 
 void DebugLineRender::pushTransform(const Magnum::Matrix4& transform) {
@@ -267,7 +259,7 @@ void DebugLineRender::drawCircle(const Magnum::Vector3& pos,
 }
 
 void DebugLineRender::drawPathWithEndpointCircles(
-    const std::vector<Mn::Vector3>& points,
+    Mn::Containers::ArrayView<const Mn::Vector3> points,
     float radius,
     const Magnum::Color4& color,
     int numSegments,
