@@ -14,7 +14,8 @@ import glb_mesh_tools as gut
 ###
 # JSON Configuration file for running this application.
 # MESH_DECON_CONFIG_JSON_FILENAME = "mesh_decon_AI2Thor.json"
-MESH_DECON_CONFIG_JSON_FILENAME = "mesh_decon_ReplicaCAD.json"
+# MESH_DECON_CONFIG_JSON_FILENAME = "mesh_decon_ReplicaCAD.json"
+MESH_DECON_CONFIG_JSON_FILENAME = "mesh_decon_ReplicaCAD_baked.json"
 
 
 ####
@@ -320,9 +321,9 @@ def load_decon_global_config_values(decon_config_json: str):
         global OBJECTS_ALL_STATIC
         OBJECTS_ALL_STATIC = decon_configs["objects_all_static"]
 
-    # if not specified in config file, set empty element in dict
-    if "override_stage_instance_handle" not in decon_configs:
-        decon_configs["override_stage_instance_handle"] = ""
+    # if not specified in config file, set to be false
+    if "ignore_object_instances" not in decon_configs:
+        decon_configs["ignore_object_instances"] = False
 
     # if not specified in config, set default value to false
     if "match_object_names" not in decon_configs:
@@ -494,7 +495,7 @@ def extract_stage_from_scene(
 
     # print("Stage global transform \n{}".format(stage_transform))
     # base stage name - fully qualified directories + stub
-    stage_name_base = scene_name_base + "_stage"
+    stage_name_base = scene_name_base  # + "_stage"
 
     stage_glb_dest_filename_base = os.path.join(STAGE_GLB_OUTPUT_DIR, stage_name_base)
 
@@ -926,9 +927,11 @@ def main():
             # compose the scene instance configuration JSON
             scene_instance_dict = {
                 "stage_instance": stage_instance_config,
-                "object_instances": obj_instance_config_list,
                 "default_lighting": lighting_setup_config_name,
             }
+
+            if not decon_configs["ignore_object_instances"]:
+                scene_instance_dict["object_instances"] = obj_instance_config_list
 
             # save scene instance configuration
             ut.mod_json_val_and_save(
