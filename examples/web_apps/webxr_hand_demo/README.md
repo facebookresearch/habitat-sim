@@ -4,8 +4,11 @@ This is a webapp that allows the user to enter a scene in VR. The user can then 
 
 # Installation
 
-1. Download data [todo: explain]
-1. Follow [instructions](https://github.com/facebookresearch/habitat-sim#experimental-emscripten-webgl-and-web-apps) for installing and activating Emscripten, including `source path/to/emsdk_env.sh` or similar to configure env variables.
+1. Download the hand demo data:
+```bash
+python -m habitat_sim.utils.datasets_download --uids webxr_hand_demo_data --data-path examples/web_apps/webxr_hand_demo
+```
+2. Follow [instructions](https://github.com/facebookresearch/habitat-sim#experimental-emscripten-webgl-and-web-apps) for installing and activating Emscripten, including `source path/to/emsdk_env.sh` or similar to configure env variables.
 1. `chmod +x build_and_install_habitat_sim_js.sh` and run `build_and_install_habitat_sim_js.sh`
 
 # Testing
@@ -13,11 +16,10 @@ This is a webapp that allows the user to enter a scene in VR. The user can then 
 
 1. Http-serve the VR app folder:
 ```bash
-cd examples/web_apps/webxr_hand_demo
-python3 -m http.server
+cd examples/web_apps/webxr_hand_demo && python3 -m http.server
 ```
 2. Install the [WebXR emulator](https://blog.mozvr.com/webxr-emulator-extension/) and then restart your browser.
-1. Browse to `http://0.0.0.0:8000/standalone.html`
+1. Navigate to `http://0.0.0.0:8000/standalone.html`
     - You can also add a URL parameter to choose the stage to spawn in. For instance, appending `?stage=remake_v0_JustBigStuff_00` at the end of the URL means that stage will be loaded. By default, if this parameter is not given, `remake_v0_JustBigStuff_00` will be the scene that is loaded. See the Project folder structure section for instructions on how to add stages.
 1. Recommended: watch the dev console as the page loads.
 1. Once loading is complete, click "Enter VR". You should see a stereo 3D view of a kitchen scene.
