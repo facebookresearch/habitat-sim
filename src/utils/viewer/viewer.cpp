@@ -100,19 +100,23 @@ std::map<MouseInteractionMode, std::string> mouseModeNames = {
     {MouseInteractionMode::LOOK, "LOOK"},
     {MouseInteractionMode::GRAB, "GRAB"}};
 
+//! Create a MouseGrabber from RigidConstraintSettings to manipulate objects
 struct MouseGrabber {
   esp::physics::RigidConstraintSettings settings_;
-  int constraintId = esp::ID_UNDEFINED;
   esp::sim::Simulator& sim_;
 
+  // defines the distance of the grip point from the camera/eye for pivot
+  // updates
   float gripDepth = 0;
+  int constraintId = esp::ID_UNDEFINED;
 
   MouseGrabber(const esp::physics::RigidConstraintSettings& settings,
                float _gripDepth,
                esp::sim::Simulator& sim)
-      : constraintId(), sim_(sim), settings_(settings), gripDepth(_gripDepth) {
-    constraintId = sim_.createRigidConstraint(settings_);
-  }
+      : sim_(sim),
+        settings_(settings),
+        gripDepth(_gripDepth),
+        constraintId(sim_.createRigidConstraint(settings_)) {}
 
   virtual ~MouseGrabber() { sim_.removeRigidConstraint(constraintId); }
 
