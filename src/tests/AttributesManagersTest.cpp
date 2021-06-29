@@ -112,6 +112,9 @@ class AttributesManagersTest : public testing::Test {
     auto attrTemplate1 = mgr->createObject(handle, true);
     // verify it exists
     ASSERT_NE(nullptr, attrTemplate1);
+    // verify ID exists
+    bool idIsPresent = mgr->getObjectLibHasID(attrTemplate1->getID());
+    ASSERT_EQ(idIsPresent, true);
     // retrieve a copy of the named attributes template
     auto attrTemplate2 = mgr->getObjectOrCopyByHandle(handle);
     // verify copy has same quantities and values as original
@@ -169,6 +172,9 @@ class AttributesManagersTest : public testing::Test {
     auto oldTemplate3 = mgr->removeObjectByHandle(handle);
     // verify deleted template  exists
     ASSERT_NE(nullptr, oldTemplate3);
+    // verify ID does not exist in library now
+    idIsPresent = mgr->getObjectLibHasID(oldTemplate3->getID());
+    ASSERT_EQ(idIsPresent, false);
     // verify there are same number of templates as when we started
     ASSERT_EQ(orignNumTemplates, mgr->getNumObjects());
 
@@ -414,7 +420,6 @@ class AttributesManagersTest : public testing::Test {
     assetAttributesManager_->registerObject(defaultAttribs);
 
     // verify new handle is in template library
-    // get template by handle
     ASSERT(assetAttributesManager_->getObjectLibHasHandle(newHandle));
     // verify old template is still present as well
     ASSERT(assetAttributesManager_->getObjectLibHasHandle(oldHandle));
@@ -658,6 +663,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
               "template_name": "test_urdf_template0",
               "translation_origin": "COM",
               "fixed_base": false,
+              "auto_clamp_joint_limits" : true,
               "translation": [5,4,5],
               "rotation": [0.2, 0.3, 0.4, 0.5],
               "initial_joint_pose": [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6],
@@ -667,6 +673,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
           {
               "template_name": "test_urdf_template1",
               "fixed_base" : true,
+              "auto_clamp_joint_limits" : true,
               "translation": [3, 2, 1],
               "rotation": [0.5, 0.6, 0.7, 0.8],
               "motion_type": "KINEMATIC"
@@ -763,6 +770,8 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
   ASSERT_EQ(artObjInstance->getTranslationOrigin(),
             static_cast<int>(Attrs::SceneInstanceTranslationOrigin::COM));
   ASSERT_EQ(artObjInstance->getFixedBase(), false);
+  ASSERT_EQ(artObjInstance->getAutoClampJointLimits(), true);
+
   ASSERT_EQ(artObjInstance->getTranslation(), Magnum::Vector3(5, 4, 5));
   ASSERT_EQ(artObjInstance->getMotionType(),
             static_cast<int>(esp::physics::MotionType::DYNAMIC));
@@ -788,6 +797,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
   artObjInstance = artObjInstances[1];
   ASSERT_EQ(artObjInstance->getHandle(), "test_urdf_template1");
   ASSERT_EQ(artObjInstance->getFixedBase(), true);
+  ASSERT_EQ(artObjInstance->getAutoClampJointLimits(), true);
   ASSERT_EQ(artObjInstance->getTranslation(), Magnum::Vector3(3, 2, 1));
   ASSERT_EQ(artObjInstance->getMotionType(),
             static_cast<int>(esp::physics::MotionType::KINEMATIC));
