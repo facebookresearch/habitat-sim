@@ -162,9 +162,6 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     }
 
     renderer_->acquireGlContext();
-
-    // (re) create scene instance
-    success = createSceneInstance(config_.activeSceneName);
   } else {
     CORRADE_ASSERT(
         !Magnum::GL::Context::hasCurrent(),
