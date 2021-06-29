@@ -21,15 +21,14 @@ namespace esp {
 namespace gfx {
 
 /**
- * @brief Singleton class responsible for
- * loading and managing common simulator assets such as meshes, textures, and
- * materials.
- */
-
-/**
  * @brief Singleton utility class for on-the-fly rendering of lines (e.g. every
  * frame). This is intended for debugging or simple UX for prototype apps. The
  * API prioritizes ease-of-use over maximum runtime performance.
+ *
+ * It's easy to add new primitives here; see drawCircle as a reference. In
+ * addition, if you're interested to integrate Magnum's line-based primitives,
+ * see src/deps/magnum/doc/generated/primitives.cpp and also this discussion:
+ * https://github.com/facebookresearch/habitat-sim/pull/1349#discussion_r660092144
  */
 class DebugLineRender {
  public:
