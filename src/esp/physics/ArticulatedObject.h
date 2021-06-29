@@ -425,6 +425,15 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   }
 
   /**
+   * @brief Get a map of object ids to link ids.
+   *
+   * @return A a map of Habitat object ids to link ids for this AO's links.
+   */
+  std::unordered_map<int, int> getLinkObjectIds() const {
+    return objectIdToLinkId_;
+  }
+
+  /**
    * @brief Set forces/torques for all joints indexed by degrees of freedom.
    *
    * @param forces The desired joint forces/torques.
@@ -783,7 +792,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   //=========== END - Joint Motor API ===========
 
   //! map PhysicsManager objectId to local multibody linkId
-  std::map<int, int> objectIdToLinkId_;
+  std::unordered_map<int, int> objectIdToLinkId_;
 
   /**
    * @brief Returns the @ref
