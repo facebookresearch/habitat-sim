@@ -93,6 +93,12 @@ def initialize_test_data_sources(data_path):
             "link": data_path + "robots/hab_fetch",
             "version": "1.0",
         },
+        "rearrange_pick_dataset_v0": {
+            "source": "https://dl.fbaipublicfiles.com/habitat/data/datasets/rearrange_pick/replica_cad/v0/rearrange_pick_replica_cad_v0.zip",
+            "package_name": "rearrange_pick_replica_cad_v0.zip",
+            "link": data_path + "datasets/rearrange_pick/replica_cad/v0",
+            "version": "1.0",
+        },
     }
 
     # data sources can be grouped for batch commands with a new uid
@@ -106,7 +112,13 @@ def initialize_test_data_sources(data_path):
             "coda_scene",
             "replica_cad_dataset",
             "hab_fetch",
-        ]
+        ],
+        "rearrange_task_assets": [
+            "replica_cad_dataset",
+            "hab_fetch",
+            "ycb",
+            "rearrange_pick_dataset_v0",
+        ],
     }
 
 
