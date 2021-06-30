@@ -11,7 +11,7 @@ python -m habitat_sim.utils.datasets_download --uids webxr_hand_demo_data --data
 2. Follow [instructions](https://github.com/facebookresearch/habitat-sim#experimental-emscripten-webgl-and-web-apps) for installing and activating Emscripten, including `source path/to/emsdk_env.sh` or similar to configure env variables.
 1. Create the directory to store the JS transpiled version of Habitat:
 ```bash
-mkdir examples/web_apps/webxr_hand_demo/lib
+mkdir -p examples/web_apps/webxr_hand_demo/lib/habitat-sim-js
 ```
 4. Transpile Habitat into JS and copy the resulting files over:
 ```bash

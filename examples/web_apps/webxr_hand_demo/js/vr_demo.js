@@ -7,9 +7,10 @@ const BUTTON_ID = "vr_button";
 const VIEW_SENSORS = ["left_eye", "right_eye"];
 const pointToArray = p => [p.x, p.y, p.z, p.w];
 
-const physicsConfigFilepath = "data/default.physics_config.json";
-const objectBaseFilepath = "data/objects/";
-const stageBaseFilepath = "data/stages/";
+const dataDir = "data/"
+const physicsConfigFilepath = dataDir + "default.physics_config.json";
+const objectBaseFilepath = dataDir + "objects/";
+const stageBaseFilepath = dataDir + "stages/";
 
 const replicaCadObjectNames = [
   "frl_apartment_vase_02", // gray
