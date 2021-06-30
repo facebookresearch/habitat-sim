@@ -8,7 +8,7 @@ from habitat_sim.robots.mobile_manipulator import (
 
 
 class FetchRobot(MobileManipulator):
-    def __init__(self, urdf_path, sim, limit_robo_joints=True):
+    def __init__(self, urdf_path, sim, limit_robo_joints=True, fixed_base=True):
         fetch_params = MobileManipulatorParams(
             arm_joints=list(range(15, 22)),
             gripper_joints=[23, 24],
@@ -33,7 +33,7 @@ class FetchRobot(MobileManipulator):
             base_offset=mn.Vector3(0, 0, 0),
             ctrl_freq=30,
         )
-        super().__init__(fetch_params, urdf_path, sim, limit_robo_joints)
+        super().__init__(fetch_params, urdf_path, sim, limit_robo_joints, fixed_base)
         self.back_joint_id = 6
         self.head_rot_jid = 8
         self.head_tilt_jid = 9
