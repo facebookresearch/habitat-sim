@@ -23,7 +23,8 @@ from utils import simulate
     not habitat_sim.built_with_bullet,
     reason="Robot wrapper API requires Bullet physics.",
 )
-def test_fetch_robot_wrapper():
+@pytest.mark.parametrize("fixed_base", [True, False])
+def test_fetch_robot_wrapper(fixed_base):
     # set this to output test results as video for easy investigation
     produce_debug_video = False
     observations = []
@@ -58,7 +59,7 @@ def test_fetch_robot_wrapper():
 
         # add the robot to the world via the wrapper
         robot_path = "data/robots/hab_fetch/robots/hab_fetch.urdf"
-        fetch = fetch_robot.FetchRobot(robot_path, sim)
+        fetch = fetch_robot.FetchRobot(robot_path, sim, fixed_base=fixed_base)
         fetch.reconfigure()
         assert fetch.get_robot_sim_id() == 1  # 0 is the ground plane
         print(fetch.get_link_and_joint_names())
@@ -85,11 +86,15 @@ def test_fetch_robot_wrapper():
         observations += simulate(sim, 1.0, produce_debug_video)
 
         # set base ground position from navmesh
-        # NOTE: because the navmesh floats above the collision geometry we should see a pop/settle with dynamics
+        # NOTE: because the navmesh floats above the collision geometry we should see a pop/settle with dynamics and no fixed base
         target_base_pos = sim.pathfinder.snap_point(fetch.sim_obj.translation)
         fetch.base_pos = target_base_pos
         assert fetch.base_pos == target_base_pos
         observations += simulate(sim, 1.0, produce_debug_video)
+        if fixed_base:
+            assert np.allclose(fetch.base_pos, target_base_pos)
+        else:
+            assert not np.allclose(fetch.base_pos, target_base_pos)
 
         # arm joint queries and setters
         print(f" Arm joint velocities = {fetch.arm_velocity}")
@@ -145,6 +150,6 @@ def test_fetch_robot_wrapper():
                 observations,
                 "color_sensor",
                 "color",
-                "test_fetch_robot_wrapper",
+                "test_fetch_robot_wrapper__fixed_base=" + str(fixed_base),
                 open_vid=True,
             )
