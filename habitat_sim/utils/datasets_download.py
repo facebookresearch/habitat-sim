@@ -327,7 +327,7 @@ def download_and_place(
             f"Existing data source ({uid}) version ({version_tag}) is current. Data located: '{version_dir}'. Symblink: '{link_path}'."
         )
         replace_existing = (
-            replace if replace != None else prompt_yes_no("Replace versioned data?")
+            replace if replace is not None else prompt_yes_no("Replace versioned data?")
         )
 
         if replace_existing:
