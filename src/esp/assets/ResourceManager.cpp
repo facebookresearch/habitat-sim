@@ -461,8 +461,10 @@ std::string ResourceManager::createColorMaterial(
     gfx::PhongMaterialData::uptr phongMaterial =
         gfx::PhongMaterialData::create_unique();
     phongMaterial->ambientColor = materialColor.ambientColor;
-    phongMaterial->diffuseColor = materialColor.diffuseColor;
-    phongMaterial->specularColor = materialColor.specularColor;
+    // NOTE: This multiplication is a hack to roughly balance the Phong and PBR
+    // light intensity reactions.
+    phongMaterial->diffuseColor = materialColor.diffuseColor * 0.175;
+    phongMaterial->specularColor = materialColor.specularColor * 0.175;
 
     std::unique_ptr<gfx::MaterialData> finalMaterial(phongMaterial.release());
     shaderManager_.set(newMaterialID, finalMaterial.release());
