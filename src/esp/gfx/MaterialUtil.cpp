@@ -69,6 +69,11 @@ gfx::PhongMaterialData::uptr buildPhongFromPbrMetallicRoughness(
   finalMaterial->ambientColor = material.baseColor();
   finalMaterial->ambientTexture = finalMaterial->diffuseTexture;
 
+  // NOTE: This multiplication is a hack to roughly balance the Phong and PBR
+  // light intensity reactions.
+  finalMaterial->diffuseColor *= 0.15;
+  finalMaterial->specularColor *= 0.15;
+
   // normal mapping
   if (material.hasAttribute(Mn::Trade::MaterialAttribute::NormalTexture)) {
     finalMaterial->normalTexture =
