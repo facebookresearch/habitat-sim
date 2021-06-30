@@ -323,7 +323,7 @@ def download_and_place(
             + data_path
             + download_post_args
         )
-    print(download_command)
+    #  print(download_command)
     subprocess.check_call(shlex.split(download_command))
     assert os.path.exists(
         os.path.join(data_path, data_sources[uid]["package_name"])
