@@ -17,10 +17,22 @@ import sys
 import tarfile
 import traceback
 import zipfile
-from typing import Optional
+from typing import List, Optional
 
 data_sources = {}
 data_groups = {}
+
+
+def hm3d_train_configs_post(extract_dir: str) -> List[str]:
+    all_scene_dataset_cfg = os.path.join(
+        extract_dir, "hm3d_basis.scene_dataset_config.json"
+    )
+    assert os.path.exists(all_scene_dataset_cfg)
+
+    link_name = os.path.join(extract_dir, "..", "hm3d_basis.scene_dataset_config.json")
+    os.symlink(all_scene_dataset_cfg, link_name)
+
+    return [link_name]
 
 
 def initialize_test_data_sources(data_path):
@@ -105,6 +117,9 @@ def initialize_test_data_sources(data_path):
                 "downloaded_file_list": f"hm3d-{{version}}/{split}-{data_format}-files.json.gz",
                 "requires_auth": True,
                 "use_curl": True,
+                "post_extract_fn": hm3d_train_configs_post
+                if split == "train" and data_format == "configs"
+                else None,
             }
             for split, data_format in itertools.product(
                 ["minival", "train", "val"],
@@ -116,7 +131,7 @@ def initialize_test_data_sources(data_path):
     data_sources.update(
         {
             f"hm3d_example_{data_format}": {
-                "source": f"https://raw.githubusercontent.com/matterport/habitat-matterport-3dresearch/master/example/hm3d-example-{data_format}.tar",
+                "source": f"https://github.com/matterport/habitat-matterport-3dresearch/raw/main/example/hm3d-example-{data_format}.tar",
                 "package_name": f"hm3d-example-{data_format}.tar",
                 "link": data_path + "scene_datasets/hm3d",
                 "version": "1.0",
@@ -152,7 +167,7 @@ def initialize_test_data_sources(data_path):
         + data_groups["hm3d_minival"]
     )
 
-    #  data_groups["ci_test_assets"].extend(data_groups["hm3d_example"])
+    data_groups["ci_test_assets"].extend(data_groups["hm3d_example"])
 
 
 def prompt_yes_no(message):
@@ -222,8 +237,10 @@ def clean_data(uid, data_path):
         for package_file in reversed(package_files):
             if os.path.isdir(package_file) and len(os.listdir(package_file)) == 0:
                 os.rmdir(package_file)
-            else:
+            elif not os.path.isdir(package_file) and os.path.exists(package_file):
                 os.remove(package_file)
+            elif os.path.islink(package_file):
+                os.unlink(package_file)
 
         os.remove(downloaded_file_list)
 
@@ -347,14 +364,18 @@ def download_and_place(
         return
 
     assert os.path.exists(version_dir), "Unpacking failed, no version directory."
+    package_files = [os.path.join(extract_dir, fname) for fname in package_files]
 
+    post_extract_fn = data_sources[uid].get("post_extract_fn", None)
+    if post_extract_fn is not None:
+        result = post_extract_fn(extract_dir)
+        if result is not None:
+            package_files = result + package_files
+
+    print(package_files)
     if downloaded_file_list is not None:
         with gzip.open(downloaded_file_list, "wt") as f:
-            json.dump(
-                [extract_dir]
-                + [os.path.join(extract_dir, fname) for fname in package_files],
-                f,
-            )
+            json.dump([extract_dir] + package_files, f)
 
     # create a symlink to the new versioned data
     if link_path.exists():
