@@ -306,7 +306,7 @@ def download_and_place(
     data_path,
     username: Optional[str] = None,
     password: Optional[str] = None,
-    replace=None,
+    replace: Optional[bool] = None,
 ):
     r"""Data-source download function. Validates uid, handles existing data version, downloads data, unpacks, writes version, cleans up."""
     if not data_sources.get(uid):
