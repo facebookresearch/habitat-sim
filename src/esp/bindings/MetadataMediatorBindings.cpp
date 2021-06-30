@@ -63,7 +63,18 @@ void initMetadataMediatorBindings(py::module& m) {
           &MetadataMediator::getStageAttributesManager,
           pybind11::return_value_policy::reference,
           R"(The current dataset's StageAttributesManager instance
-            for configuring simulation stage templates.)");
+            for configuring simulation stage templates.)")
+      .def(
+          "get_scene_handles", &MetadataMediator::getAllSceneInstanceHandles,
+          R"(Returns a list the names of all the available scene instances in the currently active dataset.)")
+      .def_property_readonly(
+          "summary", &MetadataMediator::getDatasetsOverview,
+          R"(This provides a summary of the datasets currently loaded.)")
+      .def(
+          "dataset_report", &MetadataMediator::createDatasetReport,
+          R"(This provides an indepth report of the loaded templates for the specified dataset.
+          If no dataset_name is specified, returns a report on the currently active dataset)",
+          "dataset_name"_a = "");
 
 }  // initMetadataMediatorBindings
 

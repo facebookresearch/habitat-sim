@@ -64,6 +64,20 @@ class ManagedContainerBase {
   }  // ManagedContainerBase::setLockByHandles
 
   /**
+   * @brief Get the ID of the managed object in @ref
+   * ManagedContainerBase::objectLibrary_ for the given managed object Handle,
+   * if exists.
+   *
+   * @param objectHandle The string key referencing the managed object in
+   * @ref ManagedContainerBase::objectLibrary_. Usually the origin handle.
+   * @return The object ID for the managed object with the passed handle, or
+   * ID_UNDEFINED if none exists.
+   */
+  int getObjectIDByHandle(const std::string& objectHandle) {
+    return getObjectIDByHandleOrNew(objectHandle, false);
+  }  // ManagedContainerBase::getObjectIDByHandle
+
+  /**
    * @brief set lock state on all managed objects that contain passed substring.
    * @param lock boolean to set or clear lock on managed objects
    * @param subStr substring to search for within existing primitive object
@@ -98,7 +112,8 @@ class ManagedContainerBase {
    * then the passed value will be returned; Otherwise, an incremented handle
    * will be returned, based on the names present.
    * @param name Candidate name for object.  If DNE then this string is
-   * returned; if does exist, then an incrementing scheme will be followed.
+   * returned with a count component of 0000; if does exist, then an
+   * incrementing scheme will be followed.
    * @return A valid, unique name to use for a potential managed object.
    */
   std::string getUniqueHandleFromCandidate(const std::string& name) const {
@@ -106,11 +121,11 @@ class ManagedContainerBase {
   }
 
   /**
-   * @brief Get a list of all managed objects whose origin handles contain
-   * subStr, ignoring subStr's case
-   * @param subStr substring to search for within existing managed objects.
+   * @brief Get a list of all managed objects whose keys contain @p subStr,
+   * ignoring subStr's case
+   * @param subStr substring key to search for within existing managed objects.
    * @param contains whether to search for keys containing, or excluding,
-   * passed subStr
+   * passed @p subStr
    * @return vector of 0 or more managed object handles containing the passed
    * substring
    */
@@ -133,6 +148,15 @@ class ManagedContainerBase {
   }  // ManagedContainerBase::getUndeletableObjectHandles
 
   /**
+   * @brief Returns whether the object with the passed @p key is undeletable.
+   * @param key Value to look for to check whether undeletable or not.
+   * @return True if handle exists and is undeletable.
+   */
+  bool getIsUndeletable(const std::string& key) const {
+    return (this->undeletableObjectNames_.count(key) > 0);
+  }
+
+  /**
    * @brief returns a vector of managed object handles representing managed
    * objects that have been locked by the user.  These managed objects cannot be
    * deleted until they have been unlocked, although they can be edited while
@@ -145,12 +169,23 @@ class ManagedContainerBase {
   }  // ManagedContainerBase::getUserLockedObjectHandles
 
   /**
+   * @brief Returns whether the object with the passed @p key is user locked.
+   * @param key Value to look for to check whether locked or not.
+   * @return True if handle exists and is user-locked.
+   */
+  bool getIsUserLocked(const std::string& key) const {
+    return (this->userLockedObjectNames_.count(key) > 0);
+  }
+
+  /**
    * @brief clears maps of handle-keyed managed object and ID-keyed handles.
    */
   void reset() {
     objectLibKeyByID_.clear();
     objectLibrary_.clear();
     availableObjectIDs_.clear();
+    undeletableObjectNames_.clear();
+    userLockedObjectNames_.clear();
     resetFinalize();
   }  // ManagedContainerBase::reset
 
@@ -171,7 +206,7 @@ class ManagedContainerBase {
       return "";
     }
     return objectLibKeyByID_.at(objectID);
-  }  // ManagedContainer::getObjectHandleByID
+  }  // ManagedContainerBase::getObjectHandleByID
 
   /**
    * @brief Gets the number of object managed objects stored in the @ref
@@ -191,12 +226,66 @@ class ManagedContainerBase {
   }  // ManagedContainerBase::getObjectLibHasHandle
 
   /**
+   * @brief Checks whether managed object library has an object with passed
+   * integer as ID.
+   * @param ID the ID to look for
+   */
+  bool getObjectLibHasID(int ID) const {
+    const std::string handle = getObjectHandleByID(ID);
+    if (handle == "") {
+      return false;
+    }
+    return objectLibrary_.count(handle) > 0;
+  }  // ManagedContainerBase::getObjectLibHasHandle
+
+  /**
    * @brief Get the type of object this ManagedContainer manages.
    */
   const std::string& getObjectType() const { return objectType_; }
 
+  /**
+   * @brief Get a vector of strings holding the values of each of the objects
+   * this manager manages whose keys match @p subStr, ignoring subStr's case.
+   * Pass an empty string for all objects.
+   * @param subStr substring key to search for within existing managed objects.
+   * @param contains whether to search for keys containing, or excluding,
+   * @p substr
+   * @return A vector containing the string info of all the objects in this
+   * manager.
+   */
+  std::vector<std::string> getObjectInfoStrings(const std::string& subStr = "",
+                                                bool contains = true) const;
+
+  /***
+   * @brief Use @ref getObjectInfoStrings resultant array to build a single
+   * string, with nulls separating each line. This stirng holds the values of
+   * each of the objects this manager manages whose keys match @p subStr,
+   * ignoring subStr's case. Pass an empty string for all objects.
+   * @param subStr substring key to search for within existing managed objects.
+   * @param contains whether to search for keys containing, or excluding,
+   * @p substr
+   * @return A string containing the string info of all the objects in this
+   * manager, separated by newlines for each object.
+   */
+  std::string getObjectInfoCSVString(const std::string& subStr,
+                                     bool contains) const;
+
  protected:
   //======== Internally accessed getter/setter/utilities ================
+  /**
+   * @brief Used Internally. Get the ID of the managed object in @ref
+   * objectLibrary_ for the given managed object Handle, if exists. If
+   * the managed object is not in the library and getNext is true then returns
+   * next available id, otherwise throws assertion and returns ID_UNDEFINED
+   *
+   * @param objectHandle The string key referencing the managed object in
+   * @ref ManagedContainerBase::objectLibrary_. Usually the origin handle.
+   * @param getNext Whether to get the next available ID if not found, or to
+   * throw an assertion. Defaults to false
+   * @return The managed object's ID if found. The next available ID if not
+   * found and getNext is true. Otherwise ID_UNDEFINED.
+   */
+  int getObjectIDByHandleOrNew(const std::string& objectHandle, bool getNext);
 
   /**
    * @brief Retrieve shared pointer to object held in library, NOT a copy.
@@ -262,7 +351,7 @@ class ManagedContainerBase {
     }
     return objectLibrary_.size();
 
-  }  // ManagedContainerBase::getObjectIDByHandle
+  }  // ManagedContainerBase::getUnusedObjectID
 
   /**
    * @brief Return a random handle selected from the passed map

@@ -46,6 +46,35 @@ class PhysicsManagerAttributes : public AbstractAttributes {
     return getDouble("restitution_coefficient");
   }
 
+ protected:
+  /**
+   * @brief Retrieve a comma-separated string holding the header values for the
+   * info returned for this managed object, type-specific.
+   */
+
+  std::string getObjectInfoHeaderInternal() const override {
+    return "Simulator Type, Timestep, Max Substeps, Gravity XYZ, Friction "
+           "Coefficient, Restitution Coefficient,";
+  }
+
+  /**
+   * @brief Retrieve a comma-separated informational string about the contents
+   * of this managed object.
+   */
+  std::string getObjectInfoInternal() const override {
+    return getSimulator()
+        .append(1, ',')
+        .append(cfg.value("timestep"))
+        .append(1, ',')
+        .append(cfg.value("max_substeps"))
+        .append(1, ',')
+        .append(cfg.value("gravity"))
+        .append(1, ',')
+        .append(cfg.value("friction_coefficient"))
+        .append(1, ',')
+        .append(cfg.value("restitution_coefficient"));
+  }
+
  public:
   ESP_SMART_POINTERS(PhysicsManagerAttributes)
 };  // class PhysicsManagerAttributes

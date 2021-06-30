@@ -35,6 +35,7 @@ class LightInstanceAttributes : public AbstractAttributes {
    */
   static const std::map<std::string, esp::gfx::LightPositionModel>
       LightPositionNamesMap;
+
   explicit LightInstanceAttributes(const std::string& handle = "");
 
   /**
@@ -99,10 +100,70 @@ class LightInstanceAttributes : public AbstractAttributes {
   }
   Magnum::Rad getOuterConeAngle() const { return getRad("outerConeAngle"); }
 
+ protected:
+  /**
+   * @brief Used for info purposes.  Return a string name corresponding to the
+   * currently specified light type value;
+   */
+  std::string getCurrLightTypeName() const {
+    // Must always be valid value
+    esp::gfx::LightType type = static_cast<esp::gfx::LightType>(getType());
+    for (const auto& it : LightTypeNamesMap) {
+      if (it.second == type) {
+        return it.first;
+      }
+    }
+    return "unknown light type";
+  }
+
+  std::string getCurrLightPositionModelName() const {
+    // Must always be valid value
+    esp::gfx::LightPositionModel type =
+        static_cast<esp::gfx::LightPositionModel>(getPositionModel());
+    for (const auto& it : LightPositionNamesMap) {
+      if (it.second == type) {
+        return it.first;
+      }
+    }
+    return "unknown position model";
+  }
+  /**
+   * @brief Retrieve a comma-separated string holding the header values for the
+   * info returned for this managed object, type-specific.
+   */
+
+  std::string getObjectInfoHeaderInternal() const override {
+    return "Position XYZ, Direction XYZ, Color RGB, Intensity, Light Type, "
+           "Light Position Model,";
+  }
+  /**
+   * @brief Retrieve a comma-separated informational string about the
+   * contents of this managed object.
+   * TODO : once Magnum supports retrieving key-values of configurations,
+   * use that to build this data.
+   */
+  std::string getObjectInfoInternal() const override {
+    return cfg.value("position")
+        .append(1, ',')
+        .append(cfg.value("direction"))
+        .append(1, ',')
+        .append(cfg.value("color"))
+        .append(1, ',')
+        .append(cfg.value("intensity"))
+        .append(1, ',')
+        .append(getCurrLightTypeName())
+        .append(1, ',')
+        .append(getCurrLightPositionModelName())
+        .append(1, ',');
+  }
+
+ protected:
+  static int _count;
+
  public:
   ESP_SMART_POINTERS(LightInstanceAttributes)
 
-};  // class LightInstanceAttributes
+};  // namespace attributes
 
 /**
  * @brief This class describes a lighting layout, consisting of a series of
@@ -111,6 +172,36 @@ class LightInstanceAttributes : public AbstractAttributes {
 class LightLayoutAttributes : public AbstractAttributes {
  public:
   explicit LightLayoutAttributes(const std::string& handle = "");
+
+  /**
+   * @brief Set a scale of all positive intensities by specified amount.
+   * This is to make simple, sweeping adjustments to scene lighting in habitat.
+   */
+  void setPositiveIntensityScale(double positive_intensity_scale) {
+    setDouble("positive_intensity_scale", positive_intensity_scale);
+  }
+  /**
+   * @brief Get a scale of all positive intensities by specified amount.
+   * This is to make simple, sweeping adjustments to scene lighting in habitat.
+   */
+  double getPositiveIntensityScale() const {
+    return getDouble("positive_intensity_scale");
+  }
+
+  /**
+   * @brief Set a scale of all negative intensities by specified amount.
+   * This is to make simple, sweeping adjustments to scene lighting in habitat.
+   */
+  void setNegativeIntensityScale(double negative_intensity_scale) {
+    setDouble("negative_intensity_scale", negative_intensity_scale);
+  }
+  /**
+   * @brief Get a scale of all negative intensities by specified amount.
+   * This is to make simple, sweeping adjustments to scene lighting in habitat.
+   */
+  double getNegativeIntensityScale() const {
+    return getDouble("negative_intensity_scale");
+  }
 
   /**
    * @brief Add a light instance to this lighting layout
@@ -152,6 +243,19 @@ class LightLayoutAttributes : public AbstractAttributes {
   int getNumLightInstances() { return lightInstances_.size(); }
 
  protected:
+  /**
+   * @brief Retrieve a comma-separated string holding the header values for the
+   * info returned for this managed object, type-specific. The individual light
+   * instances return a header for this.
+   */
+
+  std::string getObjectInfoHeaderInternal() const override { return ","; };
+  /**
+   * @brief Retrieve a comma-separated informational string about the contents
+   * of this managed object.
+   */
+  std::string getObjectInfoInternal() const override;
+
   /**
    * @brief The light instances used by this lighting layout
    */

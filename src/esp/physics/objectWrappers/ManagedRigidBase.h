@@ -210,6 +210,75 @@ class AbstractManagedRigidBase
     }
   }  // setSemanticId
 
+ protected:
+  /**
+   * @brief Retrieve a comma-separated string holding the header values for the
+   * info returned for this managed object, type-specific.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+
+  std::string getPhyObjInfoHeaderInternal() const override {
+    return "Mass, COM XYZ, I XX YY ZZ, AngVel XYZ, Angular Damping, Velocity "
+           "XYZ, Linear Damping, Is Collidable?, Friction Coeff, Restitution "
+           "Coeff, Scale XYZ, Semantic ID, " +
+           getRigidBaseInfoHeaderInternal();
+  }
+
+  /**
+   * @brief Retrieve a comma-separated string holding the header values for
+   * the info returned for this managed object, rigid-base-specific.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+  virtual std::string getRigidBaseInfoHeaderInternal() const = 0;
+  /**
+   * @brief Specialization-specific extension of getObjectInfo, comma
+   * separated info ideal for saving to csv
+   */
+  std::string getPhysObjInfoInternal(std::shared_ptr<T>& sp) const override {
+    namespace CrUt = Corrade::Utility;
+    std::string res =
+        std::to_string(sp->getMass())
+            .append(1, ',')
+            .append(CrUt::ConfigurationValue<Mn::Vector3>::toString(
+                sp->getCOM(), {}))
+            .append(1, ',')
+            .append(CrUt::ConfigurationValue<Mn::Vector3>::toString(
+                sp->getInertiaVector(), {}))
+            .append(1, ',')
+            .append(CrUt::ConfigurationValue<Mn::Vector3>::toString(
+                sp->getAngularVelocity(), {}))
+            .append(1, ',')
+            .append(std::to_string(sp->getAngularDamping()))
+            .append(1, ',')
+            .append(CrUt::ConfigurationValue<Mn::Vector3>::toString(
+                sp->getLinearVelocity(), {}))
+            .append(1, ',')
+            .append(std::to_string(sp->getLinearDamping()))
+            .append(1, ',')
+            .append(sp->getCollidable() ? "True" : "False")
+            .append(1, ',')
+            .append(std::to_string(sp->getFrictionCoefficient()))
+            .append(1, ',')
+            .append(std::to_string(sp->getRestitutionCoefficient()))
+            .append(1, ',')
+            .append(CrUt::ConfigurationValue<Mn::Vector3>::toString(
+                sp->getScale(), {}))
+            .append(1, ',')
+            .append(std::to_string(sp->getSemanticId()))
+            .append(getRigidBaseInfoInternal(sp));
+    return res;
+  }
+
+  /**
+   * @brief Specialization-specific extension of getPhysObjInfoInternal, comma
+   * separated info ideal for saving to csv information about RigidBase
+   * constructs.
+   */
+  virtual std::string getRigidBaseInfoInternal(
+      std::shared_ptr<T>& sp) const = 0;
+
  public:
   ESP_SMART_POINTERS(AbstractManagedRigidBase<T>)
 };

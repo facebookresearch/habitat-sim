@@ -162,9 +162,13 @@ void Recorder::advanceKeyframe() {
   currKeyframe_ = Keyframe{};
 }
 
-void Recorder::writeSavedKeyframesToFile(const std::string& filepath) {
+void Recorder::writeSavedKeyframesToFile(const std::string& filepath,
+                                         bool usePrettyWriter) {
   auto document = writeKeyframesToJsonDocument();
-  esp::io::writeJsonToFile(document, filepath);
+  // replay::Keyframes use floats (not doubles) so this is plenty of precision
+  const float maxDecimalPlaces = 7;
+  esp::io::writeJsonToFile(document, filepath, usePrettyWriter,
+                           maxDecimalPlaces);
 
   consolidateSavedKeyframes();
 }

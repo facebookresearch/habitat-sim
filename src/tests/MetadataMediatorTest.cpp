@@ -58,6 +58,15 @@ class MetadataMediatorTest : public testing::Test {
     MM_->setSimulatorConfiguration(cfg_1);
   }
 
+  void displayDSReports() {
+    // display info report
+    std::string dsOverView = MM_->getDatasetsOverview();
+    LOG(WARNING) << "\nDataset Overview : \n" << dsOverView << "\n";
+    // display info report
+    std::string dsInfoReport = MM_->createDatasetReport();
+    LOG(WARNING) << "\nActive Dataset Details : \n" << dsInfoReport << "\n";
+  }
+
   MetadataMediator::ptr MM_ = nullptr;
 
 };  // class MetadataMediatorTest
@@ -305,9 +314,9 @@ TEST_F(MetadataMediatorTest, testDataset0) {
   ASSERT_NE(sceneAttrs, nullptr);
   // verify default value for translation origin
   ASSERT_EQ(sceneAttrs->getTranslationOrigin(),
-            static_cast<int>(AttrMgrs::SceneInstanceTranslationOrigin::COM));
+            static_cast<int>(Attrs::SceneInstanceTranslationOrigin::COM));
   const int assetLocalInt =
-      static_cast<int>(AttrMgrs::SceneInstanceTranslationOrigin::AssetLocal);
+      static_cast<int>(Attrs::SceneInstanceTranslationOrigin::AssetLocal);
 
   //
   // miscellaneous scene instance attribute values
@@ -395,7 +404,10 @@ TEST_F(MetadataMediatorTest, testDataset0) {
             "test_semantic_descriptor_path1");
   ASSERT_EQ(semanticMap.at("semantic_descriptor_path2"),
             "test_semantic_descriptor_path2");
+
   // end test LoadSemanticScene
+  displayDSReports();
+
 }  // testDataset0
 
 TEST_F(MetadataMediatorTest, testDataset1) {
@@ -405,8 +417,8 @@ TEST_F(MetadataMediatorTest, testDataset1) {
   LOG(INFO) << "Starting testDataset1 : test LoadStages";
   const auto& stageAttributesMgr = MM_->getStageAttributesManager();
   int numStageHandles = stageAttributesMgr->getNumObjects();
-  // shoudld be 6 : one for default NONE stage, glob lookup yields 2 stages + 2
-  // modified and 1 new stage in scene dataset config
+  // shoudld be 6 : one for default NONE stage, glob lookup yields 2 stages +
+  // 2 modified and 1 new stage in scene dataset config
   ASSERT_EQ(numStageHandles, 6);
   // end test LoadStages
 
@@ -464,6 +476,9 @@ TEST_F(MetadataMediatorTest, testDataset1) {
     ASSERT_EQ(Dir::splitExtension(Dir::filename(iter->second))
                   .second.compare(".urdf"),
               0);
+    // test that file actually exists
+    const std::string filename = iter->second;
+    ASSERT_EQ(Dir::exists(filename), true);
   }
   // end test LoadArticulatedObjects
 
@@ -482,6 +497,9 @@ TEST_F(MetadataMediatorTest, testDataset1) {
   // should have 3
   ASSERT_EQ(semanticMap.size(), 3);
   // testLoadSemanticScene
+  // display info report
+  displayDSReports();
+
 }  // testDataset1
 
 TEST_F(MetadataMediatorTest, testDatasetDelete) {
@@ -513,6 +531,19 @@ TEST_F(MetadataMediatorTest, testDatasetDelete) {
 
   // verify deleted scene dataset's stage manager is nullptr
   ASSERT_EQ(stageAttrMgr_DS1, nullptr);
+
+  // attempt to delete dataset 0 and verify fails - cannot delete active dataset
+  ASSERT_EQ(MM_->removeSceneDataset(nameDS0), false);
+
+  // switch to default active dataset
+  MM_->setActiveSceneDatasetName("default");
+  // attempt to delete dataset 0 and verify delete
+  ASSERT_EQ(MM_->removeSceneDataset(nameDS0), true);
+  // verify the dataset does not exist anymore
+  ASSERT_EQ(MM_->sceneDatasetExists(nameDS0), false);
+
+  // display info report
+  displayDSReports();
 
 }  // testDatasetDelete
 

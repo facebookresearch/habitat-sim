@@ -22,7 +22,7 @@ bool ManagedContainerBase::setLock(const std::string& objectHandle, bool lock) {
     userLockedObjectNames_.erase(objectHandle);
   }
   return true;
-}  // ManagedContainer::setLock
+}  // ManagedContainerBase::setLock
 std::string ManagedContainerBase::getRandomObjectHandlePerType(
     const std::map<int, std::string>& mapOfHandles,
     const std::string& type) const {
@@ -43,7 +43,7 @@ std::string ManagedContainerBase::getRandomObjectHandlePerType(
     res = iter.first->second;
   }
   return res;
-}  // ManagedContainer::getRandomObjectHandlePerType
+}  // ManagedContainerBase::getRandomObjectHandlePerType
 
 std::vector<std::string>
 ManagedContainerBase::getObjectHandlesBySubStringPerType(
@@ -126,28 +126,104 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
   return res;
 }  // ManagedContainerBase::getObjectHandlesBySubStringPerType
 
+std::vector<std::string> ManagedContainerBase::getObjectInfoStrings(
+    const std::string& subStr,
+    bool contains) const {
+  // get all handles that match query elements first
+  std::vector<std::string> handles =
+      getObjectHandlesBySubstring(subStr, contains);
+  std::vector<std::string> res(handles.size() + 1);
+  if (handles.size() == 0) {
+    res[0] = "No " + objectType_ + " constructs available.";
+    return res;
+  }
+  int idx = 0;
+  for (const std::string& objectHandle : handles) {
+    // get the object
+    auto objPtr = getObjectInternal<AbstractManagedObject>(objectHandle);
+    if (idx == 0) {
+      res[idx++]
+          .append(objectType_)
+          .append(" Full name, Can delete?, Is locked?, ")
+          .append(objPtr->getObjectInfoHeader());
+    }
+    res[idx++]
+        .append(objectHandle)
+        .append(1, ',')
+        .append(((this->getIsUndeletable(objectHandle)) ? "False, " : "True, "))
+        .append(((this->getIsUserLocked(objectHandle)) ? "True, " : "False, "))
+        .append(objPtr->getObjectInfo());
+  }
+  return res;
+}  // ManagedContainerBase::getObjectInfoStrings
+
+int ManagedContainerBase::getObjectIDByHandleOrNew(
+    const std::string& objectHandle,
+    bool getNext) {
+  if (getObjectLibHasHandle(objectHandle)) {
+    return getObjectInternal<AbstractManagedObject>(objectHandle)->getID();
+  }
+  if (!getNext) {
+    LOG(ERROR) << "<" << this->objectType_
+               << ">::getObjectIDByHandleOrNew : No " << objectType_
+               << " managed object with handle " << objectHandle
+               << "exists. Aborting";
+    return ID_UNDEFINED;
+  }
+  return getUnusedObjectID();
+}  // ManagedContainerBase::getObjectIDByHandle
+
+std::string ManagedContainerBase::getObjectInfoCSVString(
+    const std::string& subStr,
+    bool contains) const {
+  std::vector<std::string> infoAra = getObjectInfoStrings(subStr, contains);
+  std::string res;
+  for (std::string& s : infoAra) {
+    res += s.append(1, '\n');
+  }
+  return res;
+}  // ManagedContainerBase::getObjectInfoCSVString
+
 std::string ManagedContainerBase::getUniqueHandleFromCandidatePerType(
     const std::map<int, std::string>& mapOfHandles,
     const std::string& name) const {
-  // find all existing values with passed name - this
-  std::vector<std::string> resVals =
+  // find all existing values with passed name - these should be a list
+  // of existing instances of this object name.  We are going to go through
+  // all of these names and find the "last" instance, meaning the highest count.
+  std::vector<std::string> objHandles =
       this->getObjectHandlesBySubStringPerType(mapOfHandles, name, true);
 
   int incr = 0;
-  // default to illegal apple/windows character
+  // use this as pivot character - the last instance of this character in any
+  // object instance name will be the partition between the name and the count.
   char pivotChar = ':';
-#if __linux__
-  pivotChar = '/';
-#endif
-  if (resVals.size() != 0) {
+
+  if (objHandles.size() != 0) {
     // handles exist with passed substring.  Find highest handle increment, add
     // 1 and use for new name 1, build new handle
-    for (const std::string& s : resVals) {
+    for (const std::string& objName : objHandles) {
+      // make sure pivot character is found in name
+      if (objName.find(pivotChar) == std::string::npos) {
+        continue;
+      }
       // split string on underscore, last value will be string of highest incr
       // value existing.
-      std::vector<std::string> vals = Cr::Utility::String::split(s, pivotChar);
-      // if any exist, all are expected to end
-      int new_incr = std::stoi(vals.back());
+      std::vector<std::string> vals =
+          Cr::Utility::String::split(objName, pivotChar);
+      // if any exist, check that the last element in split list is a string rep
+      // of a valid integer count (count is always positive)
+      const std::string digitStr = vals.back();
+      if (digitStr.empty() ||
+          (std::find_if(digitStr.begin(), digitStr.end(), [](unsigned char c) {
+             return std::isdigit(c) == 0;
+           }) != digitStr.end())) {
+        // if string is not a valid representation of an integer, skip this name
+        // candidate
+        continue;
+      }
+      // by here, all are expected to have an integer count as the component
+      // past the final pivot.
+      int new_incr = std::stoi(digitStr);
 
       if (new_incr >= incr) {
         incr = new_incr + 1;

@@ -59,6 +59,13 @@ class ManagedArticulatedObject
     return {};
   }
 
+  std::unordered_map<int, int> getLinkObjectIds() const {
+    if (auto sp = getObjectReference()) {
+      return sp->getLinkObjectIds();
+    }
+    return {};
+  }
+
   void setRootLinearVelocity(const Mn::Vector3& linVel) {
     if (auto sp = getObjectReference()) {
       sp->setRootLinearVelocity(linVel);
@@ -281,6 +288,31 @@ class ManagedArticulatedObject
     if (auto sp = getObjectReference()) {
       sp->updateAllMotorTargets(stateTargets, velocities);
     }
+  }
+
+ protected:
+  /**
+   * @brief Retrieve a comma-separated string holding the header values for the
+   * info returned for this managed object, type-specific.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+
+  std::string getPhyObjInfoHeaderInternal() const override {
+    // TODO fill out appropriate reporting values
+    return "# links, ";
+  }
+
+  /**
+   * @brief Specialization-specific extension of getObjectInfo, comma separated
+   * info ideal for saving to csv
+   */
+  std::string getPhysObjInfoInternal(
+      std::shared_ptr<esp::physics::ArticulatedObject>& sp) const override {
+    // TODO fill out appropriate reporting values
+    std::string res = std::to_string(sp->getNumLinks()).append(1, ',');
+
+    return res;
   }
 
  public:

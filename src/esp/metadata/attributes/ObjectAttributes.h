@@ -14,36 +14,6 @@ namespace metadata {
 namespace attributes {
 
 /**
- * @brief This enum class defines the possible shader options for rendering
- * instances of objects or stages in Habitat-sim.
- */
-enum class ObjectInstanceShaderType {
-  /**
-   * Represents an unknown/unspecified value for the shader type to use. Resort
-   * to defaults for object type.
-   */
-  Unknown = ID_UNDEFINED,
-  /**
-   * Override any config-specified or default shader-type values to use the
-   * material-specified shader.
-   */
-  Material,
-  /**
-   * Refers to flat shading, pure color and no lighting.  This is often used for
-   * textured objects
-   */
-  Flat,
-  /**
-   * Refers to phong shading with pure diffuse color.
-   */
-  Phong,
-  /**
-   * Refers to using a shader built with physically-based rendering models.
-   */
-  PBR,
-};
-
-/**
  * @brief base attributes object holding attributes shared by all
  * @ref esp::metadata::attributes::ObjectAttributes and @ref
  * esp::metadata::attributes::StageAttributes objects; Should be treated as
@@ -58,9 +28,6 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * be lowercase.
    */
   static const std::map<std::string, esp::assets::AssetType> AssetTypeNamesMap;
-
-  static const std::map<std::string, ObjectInstanceShaderType>
-      ShaderTypeNamesMap;
 
   AbstractObjectAttributes(const std::string& classKey,
                            const std::string& handle);
@@ -232,7 +199,38 @@ class AbstractObjectAttributes : public AbstractAttributes {
   bool getIsDirty() const { return getBool("__isDirty"); }
   void setIsClean() { setBool("__isDirty", false); }
 
+  /**
+   * @brief Used for info purposes.  Return a string name corresponding to the
+   * currently specified shader type value;
+   */
+  std::string getCurrShaderTypeName() const {
+    int shaderTypeVal = getShaderType();
+    return getShaderTypeName(shaderTypeVal);
+  }
+
  protected:
+  /**
+   * @brief Retrieve a comma-separated string holding the header values for the
+   * info returned for this managed object, type-specific.
+   */
+
+  std::string getObjectInfoHeaderInternal() const override;
+  /**
+   * @brief get AbstractObject specific info header
+   */
+  virtual std::string getAbstractObjectInfoHeaderInternal() const {
+    return "";
+  };
+
+  /**
+   * @brief Retrieve a comma-separated informational string about the contents
+   * of this managed object.
+   */
+  std::string getObjectInfoInternal() const override;
+  /**
+   * @brief get AbstractObject specific info for csv string
+   */
+  virtual std::string getAbstractObjectInfoInternal() const { return ""; };
   void setIsDirty() { setBool("__isDirty", true); }
 
  public:
@@ -241,8 +239,8 @@ class AbstractObjectAttributes : public AbstractAttributes {
 };  // class AbstractObjectAttributes
 
 /**
- * @brief Specific Attributes instance describing an object, constructed with a
- * default set of object-specific required attributes
+ * @brief Specific Attributes instance describing an object, constructed with
+ * a default set of object-specific required attributes
  */
 class ObjectAttributes : public AbstractObjectAttributes {
  public:
@@ -306,6 +304,19 @@ class ObjectAttributes : public AbstractObjectAttributes {
   void setSemanticId(uint32_t semanticId) { setInt("semantic_id", semanticId); }
 
   uint32_t getSemanticId() const { return getInt("semantic_id"); }
+
+ protected:
+  /**
+   * @brief get AbstractObject specific info header
+   */
+  std::string getAbstractObjectInfoHeaderInternal() const override {
+    return "Mass, COM XYZ, I XX YY ZZ, Angular Damping, "
+           "Linear Damping, Semantic ID";
+  }
+  /**
+   * @brief get AbstractObject specific info for csv string
+   */
+  std::string getAbstractObjectInfoInternal() const override;
 
  public:
   ESP_SMART_POINTERS(ObjectAttributes)
@@ -380,6 +391,28 @@ class StageAttributes : public AbstractObjectAttributes {
     setBool("frustum_culling", frustumCulling);
   }
   bool getFrustumCulling() const { return getBool("frustum_culling"); }
+
+ protected:
+  /**
+   * @brief get AbstractObject specific info header
+   */
+  std::string getAbstractObjectInfoHeaderInternal() const override {
+    return "Navmesh Handle, Gravity XYZ, Origin XYZ, Light Setup,";
+  }
+
+  /**
+   * @brief get AbstractObject specific info for csv string
+   */
+  std::string getAbstractObjectInfoInternal() const override {
+    std::string res = getNavmeshAssetHandle();
+    res.append(1, ',')
+        .append(cfg.value("gravity"))
+        .append(1, ',')
+        .append(cfg.value("origin"))
+        .append(1, ',')
+        .append(cfg.value("light_setup"));
+    return res;
+  }
 
  public:
   ESP_SMART_POINTERS(StageAttributes)

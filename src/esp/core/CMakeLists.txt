@@ -26,6 +26,10 @@ if(BUILD_WITH_VHACD)
   set(ESP_BUILD_WITH_VHACD ON)
 endif()
 
+if(BUILD_WITH_BACKGROUND_RENDERER)
+  set(ESP_BUILD_WITH_BACKGROUND_RENDERER ON)
+endif()
+
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/configure.h
 )

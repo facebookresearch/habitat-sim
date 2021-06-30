@@ -113,7 +113,7 @@ class Agent : public Magnum::SceneGraph::AbstractFeature3D {
 
   void getState(const AgentState::ptr& state) const;
 
-  void setState(const AgentState& state, const bool resetSensors = true);
+  void setState(const AgentState& state, bool resetSensors = true);
 
   void setInitialState(const AgentState& state,
                        const bool resetSensors = true) {

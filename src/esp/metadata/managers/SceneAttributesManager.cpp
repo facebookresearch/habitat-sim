@@ -174,6 +174,14 @@ SceneAttributesManager::createAOInstanceAttributesFromJSON(
                            });
 
   // only used for articulated objects
+  // auto clamp joint limits
+  io::jsonIntoSetter<bool>(
+      jCell, "auto_clamp_joint_limits",
+      [instanceAttrs](bool auto_clamp_joint_limits) {
+        instanceAttrs->setAutoClampJointLimits(auto_clamp_joint_limits);
+      });
+
+  // only used for articulated objects
   // initial joint pose
   if (jCell.HasMember("initial_joint_pose")) {
     if (jCell["initial_joint_pose"].IsArray()) {
@@ -298,7 +306,8 @@ void SceneAttributesManager::loadAbstractObjectAttributesFromJson(
 int SceneAttributesManager::getTranslationOriginVal(
     const io::JsonGenericValue& jsonDoc) const {
   // Check for translation origin.  Default to unknown.
-  int transOrigin = static_cast<int>(SceneInstanceTranslationOrigin::Unknown);
+  int transOrigin =
+      static_cast<int>(attributes::SceneInstanceTranslationOrigin::Unknown);
   std::string tmpTransOriginVal = "";
   if (io::readMember<std::string>(jsonDoc, "translation_origin",
                                   tmpTransOriginVal)) {
@@ -306,9 +315,8 @@ int SceneAttributesManager::getTranslationOriginVal(
     // lowercase
     std::string strToLookFor =
         Cr::Utility::String::lowercase(tmpTransOriginVal);
-    auto found =
-        SceneAttributes::InstanceTranslationOriginMap.find(strToLookFor);
-    if (found != SceneAttributes::InstanceTranslationOriginMap.end()) {
+    auto found = attributes::InstanceTranslationOriginMap.find(strToLookFor);
+    if (found != attributes::InstanceTranslationOriginMap.end()) {
       transOrigin = static_cast<int>(found->second);
     } else {
       LOG(WARNING)

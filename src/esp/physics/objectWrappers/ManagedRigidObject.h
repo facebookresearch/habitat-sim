@@ -39,6 +39,29 @@ class ManagedRigidObject
     return nullptr;
   }  // getVelocityControl()
 
+ protected:
+  /**
+   * @brief Retrieve a comma-separated string holding the header values for
+   * the info returned for this managed object, rigid-base-specific.
+   * TODO : once Magnum supports retrieving key-values of configurations, use
+   * that to build this data.
+   */
+  std::string getRigidBaseInfoHeaderInternal() const override {
+    return "Creation Attributes Name,";
+  }
+
+  /**
+   * @brief Specialization-specific extension of getPhysObjInfoInternal, comma
+   * separated info ideal for saving to csv information about RigidBase
+   * constructs.
+   */
+  std::string getRigidBaseInfoInternal(
+      std::shared_ptr<esp::physics::RigidObject>& sp) const override {
+    std::string res =
+        sp->getInitializationAttributes()->getHandle().append(1, ',');
+    return res;
+  }
+
  public:
   ESP_SMART_POINTERS(ManagedRigidObject)
 };

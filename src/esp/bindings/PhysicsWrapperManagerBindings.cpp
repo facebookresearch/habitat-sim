@@ -68,6 +68,22 @@ void declareBaseWrapperManager(py::module& m,
             "passed search_str, based on the value of boolean contains.")
                .c_str(),
            "search_str"_a = "", "contains"_a = true)
+      .def("get_objects_info", &MgrClass::getObjectInfoStrings,
+           ("Returns a list of CSV strings describing each " + objType +
+            " whose handles either contain or explicitly do not contain the "
+            "passed search_str, based on the value of boolean contains.")
+               .c_str(),
+           "search_str"_a = "", "contains"_a = true)
+
+      .def("get_objects_CSV_info", &MgrClass::getObjectInfoCSVString,
+           ("Returns a comma-separated string describing each " + objType +
+            " whose handles either contain or explicitly do not "
+            "contain the passed search_str, based on the value of boolean "
+            "contains.  Each " +
+            objType + "'s info is separated by a newline.")
+               .c_str(),
+           "search_str"_a = "", "contains"_a = true)
+
       .def("get_num_objects", &MgrClass::getNumObjects,
            ("Returns the number of existing " + objType + "s being managed.")
                .c_str())
@@ -91,6 +107,11 @@ void declareBaseWrapperManager(py::module& m,
             objType + " in the library.")
                .c_str(),
            "handle"_a)
+      .def("get_library_has_id", &MgrClass::getObjectLibHasID,
+           ("Returns whether the passed object ID describes an existing " +
+            objType + " in the library.")
+               .c_str(),
+           "object_id"_a)
       .def("set_object_lock", &MgrClass::setLock,
            ("This sets the lock state for the  " + objType +
             " that has the passed name. Lock == True makes the  " + objType +
