@@ -14,8 +14,8 @@ import glb_mesh_tools as gut
 ###
 # JSON Configuration file for running this application.
 # MESH_DECON_CONFIG_JSON_FILENAME = "mesh_decon_AI2Thor.json"
-# MESH_DECON_CONFIG_JSON_FILENAME = "mesh_decon_ReplicaCAD.json"
-MESH_DECON_CONFIG_JSON_FILENAME = "mesh_decon_ReplicaCAD_baked.json"
+MESH_DECON_CONFIG_JSON_FILENAME = "mesh_decon_ReplicaCAD.json"
+# MESH_DECON_CONFIG_JSON_FILENAME = "mesh_decon_ReplicaCAD_baked.json"
 
 
 ####
@@ -321,9 +321,13 @@ def load_decon_global_config_values(decon_config_json: str):
         global OBJECTS_ALL_STATIC
         OBJECTS_ALL_STATIC = decon_configs["objects_all_static"]
 
-    # if not specified in config file, set to be false
-    if "ignore_object_instances" not in decon_configs:
-        decon_configs["ignore_object_instances"] = False
+    # if not specified in config file, set to be true
+    if "save_object_instances" not in decon_configs:
+        decon_configs["save_object_instances"] = True
+
+        # if not specified in config file, set to be false
+    if "save_articulated_object_instances" not in decon_configs:
+        decon_configs["save_articulated_object_instances"] = False
 
     # if not specified in config, set default value to false
     if "match_object_names" not in decon_configs:
@@ -540,8 +544,9 @@ def extract_stage_from_scene(
     stage_instance_dict = gut.build_instance_config_json(
         stage_name_base, stage_transform
     )
+    stage_instance_dict["translation_origin"] = "COM"
 
-    if len(decon_configs["stage_instance_file_tag"]) != 9:
+    if len(decon_configs["stage_instance_file_tag"]) != 0:
         # mapping is provided to map scene name to prebuilt/predefined stage names
         replace_stage_dict = decon_configs["stage_instance_file_tag"]
         for k, v in replace_stage_dict.items():
@@ -590,7 +595,6 @@ def extract_objects_from_scene(
                 if substr.lower() in obj_name.lower():
                     obj_is_valid = False
                     break
-
         if obj_is_valid:
             objects.append(obj_name)
     from collections import defaultdict
@@ -623,6 +627,10 @@ def extract_objects_from_scene(
                     obj_name_base = k
                     break
 
+        # correct for improper naming in scenes
+        if "frl_apartment_box" in obj_name:
+            obj_name_base = "frl_apartment_wall_cabinet_01"
+
         obj_glb_dest_filename_base = os.path.join(OBJ_GLB_OUTPUT_DIR, obj_name_base)
         # build file names for output
         obj_glb_dest_filename = obj_glb_dest_filename_base + ".glb"
@@ -651,6 +659,7 @@ def extract_objects_from_scene(
             calc_scale=False,
         )
         obj_instance_dict["motion_type"] = obj_motion_type_dict[obj_name]
+        obj_instance_dict["translation_origin"] = "COM"
 
         # ReplicaCAD Only - improperly named object in scene.
         # Named 'frl_apartment_wall_cabinet_02' but represents
@@ -690,6 +699,51 @@ def extract_objects_from_scene(
             ut.mod_json_val_and_save(("", obj_config_filename, obj_config_json_dict))
 
     return object_instance_configs
+
+
+def extract_articulated_objects_from_scene(
+    scene_name_base: str, decon_configs: Dict[str, Any]
+):
+    # Build articulated object instances
+    # currently supported only for ReplicaCAD - use name tags to copy default settings from decon config
+    art_obj_fridge_instance_dict = {}
+    art_obj_fridge_instance_dict["template_name"] = "fridge"
+    art_obj_fridge_instance_dict["fixed_base"] = True
+    art_obj_fridge_instance_dict["auto_clamp_joint_limits"] = True
+    art_obj_fridge_instance_dict["translation_origin"] = "COM"
+    art_obj_fridge_instance_dict["motion_type"] = "DYNAMIC"
+
+    art_obj_counter_instance_dict = {}
+    art_obj_counter_instance_dict["template_name"] = "kitchen_counter"
+    art_obj_counter_instance_dict["fixed_base"] = True
+    art_obj_counter_instance_dict["auto_clamp_joint_limits"] = True
+    art_obj_counter_instance_dict["translation_origin"] = "COM"
+    art_obj_counter_instance_dict["motion_type"] = "DYNAMIC"
+
+    if len(decon_configs["ao_instance_mappings"]) != 0:
+        # mapping is provided to map scene name to prebuilt/predefined stage names
+        ao_instance_dict = decon_configs["ao_instance_mappings"]
+        for k, v in ao_instance_dict.items():
+            if k.lower() in scene_name_base.lower():
+                mapping_dict = v
+                # print("Mapping for : {} is {} ".format(scene_name_base, mapping_dict))
+                art_obj_fridge_instance_dict["translation"] = mapping_dict["fridge"][
+                    "translation"
+                ]
+                art_obj_fridge_instance_dict["rotation"] = mapping_dict["fridge"][
+                    "rotation"
+                ]
+
+                art_obj_counter_instance_dict["translation"] = mapping_dict[
+                    "kitchen_counter"
+                ]["translation"]
+
+                art_obj_counter_instance_dict["rotation"] = mapping_dict[
+                    "kitchen_counter"
+                ]["rotation"]
+                break
+
+    return [art_obj_fridge_instance_dict, art_obj_counter_instance_dict]
 
 
 def extract_lighting_from_scene(
@@ -919,6 +973,7 @@ def main():
             decon_configs,
             existing_obj_dict,
         )
+
         # get counts of object instances
         for elem in obj_instance_config_list:
             object_instance_count_dict[elem["template_name"]] += 1
@@ -930,8 +985,16 @@ def main():
                 "default_lighting": lighting_setup_config_name,
             }
 
-            if not decon_configs["ignore_object_instances"]:
+            if decon_configs["save_object_instances"]:
                 scene_instance_dict["object_instances"] = obj_instance_config_list
+
+            if decon_configs["save_articulated_object_instances"]:
+                art_obj_instance_config_list = extract_articulated_objects_from_scene(
+                    scene_name_base, decon_configs
+                )
+                scene_instance_dict[
+                    "articulated_object_instances"
+                ] = art_obj_instance_config_list
 
             # save scene instance configuration
             ut.mod_json_val_and_save(

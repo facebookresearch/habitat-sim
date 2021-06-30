@@ -125,6 +125,37 @@ def build_glb_scene_graph_dict(scene_graph, root_tag: str):
     return build_dict_from_children(transforms_tree, root_tag)
 
 
+def rotate_quat_by_quat(target_quat: np.ndarray, rot_quat: np.ndarray):
+    """Rotate target_quat by rot_quat"""
+
+    res_quat = np.zeros(4)
+    # not a real quat, just a numpy array
+    rq_vec = target_quat[1:]
+    rot_vec = rot_quat[1:]
+    w = target_quat[0] * rot_quat[0] - (np.dot(rq_vec, rot_vec))
+    vec = (
+        (target_quat[0] * rot_vec)
+        + (rot_quat[0] * rq_vec)
+        + (np.cross(rq_vec, rot_vec))
+    )
+
+    res_quat[0] = w
+    res_quat[1:] = vec
+    return res_quat
+
+
+def rotate_quat_by_halfpi(target_quat: np.ndarray):
+    """Rotate target_quat by pi/2 around x - correct blender gltf export issues."""
+
+    # pi/2 rotation around x axis
+    x_rot = np.zeros(4)
+    x_rot[0] = 0.707
+    x_rot[1] = -0.707
+    x_rot /= np.linalg.norm(x_rot)
+    # rotate roation quat by pi/2 around x axis
+    return rotate_quat_by_quat(target_quat, x_rot)
+
+
 def build_instance_config_json(
     template_name: str,
     transform: np.ndarray,
@@ -145,23 +176,7 @@ def build_instance_config_json(
     translation = list(trimesh.transformations.translation_from_matrix(transform))
     rotation_quat = trimesh.transformations.quaternion_from_matrix(transform)
     if reframe_transform:
-        # 90 degree rotation around x axis
-        x_rot = np.zeros(4)
-        x_rot[0] = 0.707
-        x_rot[1] = -0.707
-        x_rot /= np.linalg.norm(x_rot)
-        # not a reql quat, just a numpy array
-        rq_vec = rotation_quat[1:]
-        xrot_vec = x_rot[1:]
-        w = rotation_quat[0] * x_rot[0] - (np.dot(rq_vec, xrot_vec))
-        vec = (
-            (rotation_quat[0] * xrot_vec)
-            + (x_rot[0] * rq_vec)
-            + (np.cross(rq_vec, xrot_vec))
-        )
-
-        rotation_quat[0] = w
-        rotation_quat[1:] = vec
+        rotation_quat = rotate_quat_by_halfpi(rotation_quat)
 
     rotation = list(rotation_quat)
 
@@ -169,7 +184,6 @@ def build_instance_config_json(
         "template_name": template_name,
         "translation": translation,
         "rotation": rotation,
-        "translation_origin": "asset_local",
     }
     if calc_scale:
         scale = [
