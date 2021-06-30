@@ -174,6 +174,14 @@ SceneAttributesManager::createAOInstanceAttributesFromJSON(
                            });
 
   // only used for articulated objects
+  // auto clamp joint limits
+  io::jsonIntoSetter<bool>(
+      jCell, "auto_clamp_joint_limits",
+      [instanceAttrs](bool auto_clamp_joint_limits) {
+        instanceAttrs->setAutoClampJointLimits(auto_clamp_joint_limits);
+      });
+
+  // only used for articulated objects
   // initial joint pose
   if (jCell.HasMember("initial_joint_pose")) {
     if (jCell["initial_joint_pose"].IsArray()) {

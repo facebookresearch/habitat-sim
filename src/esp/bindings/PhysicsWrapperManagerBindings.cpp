@@ -107,6 +107,11 @@ void declareBaseWrapperManager(py::module& m,
             objType + " in the library.")
                .c_str(),
            "handle"_a)
+      .def("get_library_has_id", &MgrClass::getObjectLibHasID,
+           ("Returns whether the passed object ID describes an existing " +
+            objType + " in the library.")
+               .c_str(),
+           "object_id"_a)
       .def("set_object_lock", &MgrClass::setLock,
            ("This sets the lock state for the  " + objType +
             " that has the passed name. Lock == True makes the  " + objType +

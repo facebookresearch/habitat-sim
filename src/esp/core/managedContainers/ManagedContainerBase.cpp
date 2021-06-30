@@ -22,7 +22,7 @@ bool ManagedContainerBase::setLock(const std::string& objectHandle, bool lock) {
     userLockedObjectNames_.erase(objectHandle);
   }
   return true;
-}  // ManagedContainer::setLock
+}  // ManagedContainerBase::setLock
 std::string ManagedContainerBase::getRandomObjectHandlePerType(
     const std::map<int, std::string>& mapOfHandles,
     const std::string& type) const {
@@ -43,7 +43,7 @@ std::string ManagedContainerBase::getRandomObjectHandlePerType(
     res = iter.first->second;
   }
   return res;
-}  // ManagedContainer::getRandomObjectHandlePerType
+}  // ManagedContainerBase::getRandomObjectHandlePerType
 
 std::vector<std::string>
 ManagedContainerBase::getObjectHandlesBySubStringPerType(
@@ -156,6 +156,22 @@ std::vector<std::string> ManagedContainerBase::getObjectInfoStrings(
   }
   return res;
 }  // ManagedContainerBase::getObjectInfoStrings
+
+int ManagedContainerBase::getObjectIDByHandleOrNew(
+    const std::string& objectHandle,
+    bool getNext) {
+  if (getObjectLibHasHandle(objectHandle)) {
+    return getObjectInternal<AbstractManagedObject>(objectHandle)->getID();
+  }
+  if (!getNext) {
+    LOG(ERROR) << "<" << this->objectType_
+               << ">::getObjectIDByHandleOrNew : No " << objectType_
+               << " managed object with handle " << objectHandle
+               << "exists. Aborting";
+    return ID_UNDEFINED;
+  }
+  return getUnusedObjectID();
+}  // ManagedContainerBase::getObjectIDByHandle
 
 std::string ManagedContainerBase::getObjectInfoCSVString(
     const std::string& subStr,

@@ -241,8 +241,6 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
   /**
    * @brief Retrieve a comma-separated string holding the header values for
    * the info returned for this managed object, type-specific.
-   * TODO : once Magnum supports retrieving key-values of configurations, use
-   * that to build this data.
    */
 
   virtual std::string getObjectInfoHeaderInternal() const { return ","; }
@@ -250,8 +248,6 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
   /**
    * @brief Retrieve a comma-separated informational string about the contents
    * of this managed object, type-specific.
-   * TODO : once Magnum supports retrieving key-values of configurations, use
-   * that to build this data.
    */
   virtual std::string getObjectInfoInternal() const {
     return "no internal attributes specified,";

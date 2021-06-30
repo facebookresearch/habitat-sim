@@ -66,8 +66,10 @@ std::string SceneObjectInstanceAttributes::getObjectInfoInternal() const {
 
 SceneAOInstanceAttributes::SceneAOInstanceAttributes(const std::string& handle)
     : SceneObjectInstanceAttributes(handle, "SceneAOInstanceAttributes") {
-  // set default fixed base value (only used for articulated object)
+  // set default fixed base and auto clamp values (only used for articulated
+  // object)
   setFixedBase(false);
+  setAutoClampJointLimits(false);
 }
 
 std::string SceneAOInstanceAttributes::getSceneObjInstanceInfoHeaderInternal()

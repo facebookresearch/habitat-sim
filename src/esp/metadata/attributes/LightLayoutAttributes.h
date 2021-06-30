@@ -130,8 +130,6 @@ class LightInstanceAttributes : public AbstractAttributes {
   /**
    * @brief Retrieve a comma-separated string holding the header values for the
    * info returned for this managed object, type-specific.
-   * TODO : once Magnum supports retrieving key-values of configurations, use
-   * that to build this data.
    */
 
   std::string getObjectInfoHeaderInternal() const override {
@@ -249,16 +247,12 @@ class LightLayoutAttributes : public AbstractAttributes {
    * @brief Retrieve a comma-separated string holding the header values for the
    * info returned for this managed object, type-specific. The individual light
    * instances return a header for this.
-   * TODO : once Magnum supports retrieving key-values of configurations, use
-   * that to build this data.
    */
 
   std::string getObjectInfoHeaderInternal() const override { return ","; };
   /**
    * @brief Retrieve a comma-separated informational string about the contents
    * of this managed object.
-   * TODO : once Magnum supports retrieving key-values of configurations, use
-   * that to build this data.
    */
   std::string getObjectInfoInternal() const override;
 
