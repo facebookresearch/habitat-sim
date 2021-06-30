@@ -4,7 +4,6 @@
 
 const BUTTON_ID = "vr_button";
 
-const VIEW_SENSORS = ["left_eye", "right_eye"];
 const pointToArray = p => [p.x, p.y, p.z, p.w];
 
 const dataDir = "data/"
@@ -12,39 +11,7 @@ const physicsConfigFilepath = dataDir + "default.physics_config.json";
 const objectBaseFilepath = dataDir + "objects/";
 const stageBaseFilepath = dataDir + "stages/";
 
-const replicaCadObjectNames = [
-  "frl_apartment_vase_02", // gray
-  "frl_apartment_plate_02", // double-layer
-  "frl_apartment_pan_01", // blue, with handle
-
-  "frl_apartment_kitchen_utensil_05", // serving tray
-  "banana_fixed",
-
-  "frl_apartment_plate_01",
-
-  "frl_apartment_kitchen_utensil_06", // white handleless cup
-
-  "frl_apartment_bowl_06", // small white
-
-  "frl_apartment_kitchen_utensil_02", // green spice shaker
-  "frl_apartment_kitchen_utensil_03" // orange spice shaker
-
-  // "frl_apartment_bowl_01", // orange/white
-  //"frl_apartment_bowl_02", // red
-  //"frl_apartment_bowl_03", // silver
-  // "frl_apartment_bowl_07", // large white with base
-  // "frl_apartment_cup_01", // latte mug
-  // "frl_apartment_cup_02", // coffee mug
-  // "frl_apartment_cup_03", // wider latte mug
-  // "frl_apartment_cup_05", // blacl latte mug
-  // "frl_apartment_kitchen_utensil_01", // cooking pot with lid
-  // "frl_apartment_kitchen_utensil_04", // three-tier drawer
-  // "frl_apartment_kitchen_utensil_08", // cylindrical storage container
-  // "frl_apartment_kitchen_utensil_09", // gray thermos
-  // "frl_apartment_vase_01", // white
-];
-
-const replicaCadObjectInstanceNames = [
+const objectSpawnOrder = [
   "frl_apartment_vase_02", // gray
   "frl_apartment_plate_02", // double-layer
   "frl_apartment_pan_01", // blue, with handle
@@ -86,11 +53,6 @@ class VRDemo {
   prevFwdHeld = false;
   prevLeftHeld = false;
   prevRightHeld = false;
-
-  viewYawOffset = 0;
-  FWD = Module.Vector3.zAxis(1);
-  FWD_ANGLE = Math.atan2(this.FWD.z(), this.FWD.x());
-  DOWN = Module.Vector3.yAxis(-1);
 
   fps = 0;
   skipFrames = 60;
@@ -138,7 +100,14 @@ class VRDemo {
     preloadFunc(VRDemo.getObjectFilepath("hand_l_closed"));
     preloadFunc(VRDemo.getObjectConfigFilepath("hand_l_closed"));
 
+    console.log("YOOOOOOOOOOOOO");
+    const replicaCadObjectNames = new Set();
+    for (const object of objectSpawnOrder) {
+      replicaCadObjectNames.add(object);
+    }
+
     for (const name of replicaCadObjectNames) {
+      console.log(name);
       preloadFunc(VRDemo.getObjectFilepath(name));
       preloadFunc(VRDemo.getObjectCollisionGlbFilepath(name));
       preloadFunc(VRDemo.getObjectConfigFilepath(name));
@@ -172,25 +141,7 @@ class VRDemo {
     this.sim = new Module.Simulator(this.config);
 
     const agentConfigOrig = new Module.AgentConfiguration();
-
-    const specs = new Module.VectorSensorSpec();
-    {
-      const spec = new Module.CameraSensorSpec();
-      spec.uuid = "left_eye";
-      spec.sensorType = Module.SensorType.COLOR;
-      spec.sensorSubType = Module.SensorSubType.PINHOLE;
-      spec.resolution = [1024, 1024];
-      specs.push_back(spec);
-    }
-    {
-      let spec = new Module.CameraSensorSpec();
-      spec.uuid = "right_eye";
-      spec.sensorType = Module.SensorType.COLOR;
-      spec.sensorSubType = Module.SensorSubType.PINHOLE;
-      spec.resolution = [1024, 1024];
-      specs.push_back(spec);
-    }
-    agentConfigOrig.sensorSpecifications = specs;
+    agentConfigOrig.sensorSpecifications = getEyeSensorSpecs();
 
     this.sim.addAgent(agentConfigOrig);
     this.agentId = 0;
@@ -433,6 +384,7 @@ class VRDemo {
 
   handleInput(frame) {
     for (let inputSource of frame.session.inputSources) {
+      if (!inputSource.gripSpace) continue;
       let handIndex = inputSource.handedness == "left" ? 0 : 1;
       let otherHandIndex = handIndex == 0 ? 1 : 0;
       let handRecord = this.handRecords[handIndex];
@@ -444,202 +396,156 @@ class VRDemo {
       let agentPos = new Module.Vector3(...state.position);
 
       // 6DoF pose example
-      if (inputSource.gripSpace) {
-        const inputPose = frame.getPose(
-          inputSource.gripSpace,
-          this.xrReferenceSpace
-        );
+      const inputPose = frame.getPose(
+        inputSource.gripSpace,
+        this.xrReferenceSpace
+      );
 
-        let gp = inputSource.gamepad;
-        let buttonStates = [false, false];
-        for (let i = 0; i < gp.buttons.length; i++) {
-          // Not sure what all these buttons are. Let's just use two.
-          let remappedIndex = i == 0 ? 0 : 1;
-          buttonStates[remappedIndex] ||=
-            gp.buttons[i].value > 0 || gp.buttons[i].pressed == true;
+      let gp = inputSource.gamepad;
+      let buttonStates = [false, false];
+      for (let i = 0; i < gp.buttons.length; i++) {
+        // Not sure what all these buttons are. Let's just use two.
+        let remappedIndex = i == 0 ? 0 : 1;
+        buttonStates[remappedIndex] ||=
+          gp.buttons[i].value > 0 || gp.buttons[i].pressed == true;
+      }
+      let closed = buttonStates[0];
+      let handObjId = closed ? handRecord.objIds[1] : handRecord.objIds[0];
+      let hiddenHandObjId = closed
+        ? handRecord.objIds[0]
+        : handRecord.objIds[1];
+
+      // update hand obj pose
+      let poseTransform = inputPose.transform;
+      const handPos = Module.Vector3.add(
+        new Module.Vector3(
+          ...pointToArray(poseTransform.position).slice(0, -1)
+        ),
+        agentPos
+      );
+
+      let handRot = Module.toQuaternion(
+        pointToArray(poseTransform.orientation)
+      );
+      this.sim.setTranslation(handPos, handObjId, 0);
+      this.sim.setRotation(handRot, handObjId, 0);
+
+      // hack hide other hand by translating far away
+      this.sim.setTranslation(
+        new Module.Vector3(-1000.0, -1000.0, -1000.0),
+        hiddenHandObjId,
+        0
+      );
+
+      let palmFacingSign = handIndex == 0 ? 1.0 : -1.0;
+      let palmFacingDir = handRot.transformVector(
+        new Module.Vector3(palmFacingSign, 0.0, 0.0)
+      );
+      let grabRay = new Module.Ray(handPos, palmFacingDir);
+
+      // try grab
+      if (buttonStates[0] && !handRecord.prevButtonStates[0]) {
+        let maxDistance = 0.15;
+
+        let raycastResults = this.sim.castRay(grabRay, maxDistance, 0);
+        let hitObjId = raycastResults.hasHits()
+          ? raycastResults.hits.get(0).objectId
+          : -1;
+        console.log("Try grab", hitObjId);
+
+        if (hitObjId != -1) {
+          handRecord.heldObjId = hitObjId;
+
+          if (otherHandRecord.heldObjId == hitObjId) {
+            // release from other hand
+            otherHandRecord.heldObjId = -1;
+          }
+
+          let currTrans = this.sim.getTranslation(handRecord.heldObjId, 0);
+          let currRot = this.sim.getRotation(handRecord.heldObjId, 0);
+
+          let handRotInverted = handRot.inverted();
+          handRecord.heldRelRot = Module.Quaternion.mul(
+            handRotInverted,
+            currRot
+          );
+          handRecord.heldRelTrans = handRotInverted.transformVector(
+            Module.Vector3.sub(currTrans, handPos)
+          );
+
+          // set held obj to kinematic
+          this.sim.setObjectMotionType(
+            Module.MotionType.KINEMATIC,
+            handRecord.heldObjId,
+            0
+          );
         }
-        let closed = buttonStates[0];
-        let handObjId = closed ? handRecord.objIds[1] : handRecord.objIds[0];
-        let hiddenHandObjId = closed
-          ? handRecord.objIds[0]
-          : handRecord.objIds[1];
+      }
 
-        // update hand obj pose
-        let poseTransform = inputPose.transform;
-        const handPos = Module.Vector3.add(
-          new Module.Vector3(
-            ...pointToArray(poseTransform.position).slice(0, -1)
-          ),
-          agentPos
+      // update held object pose
+      if (handRecord.heldObjId != -1) {
+        let pad =
+          Math.min(0.5, Math.max(0.3, palmFacingDir.y())) *
+          0.05 *
+          palmFacingSign;
+        let adjustedRelTrans = Module.Vector3.add(
+          handRecord.heldRelTrans,
+          new Module.Vector3(pad, 0.0, 0.0)
         );
 
-        let handRot = Module.toQuaternion(
-          pointToArray(poseTransform.orientation)
-        );
-        this.sim.setTranslation(handPos, handObjId, 0);
-        this.sim.setRotation(handRot, handObjId, 0);
-
-        // hack hide other hand by translating far away
         this.sim.setTranslation(
-          new Module.Vector3(-1000.0, -1000.0, -1000.0),
-          hiddenHandObjId,
+          Module.Vector3.add(
+            handPos,
+            handRot.transformVector(adjustedRelTrans)
+          ),
+          handRecord.heldObjId,
           0
         );
-
-        let palmFacingSign = handIndex == 0 ? 1.0 : -1.0;
-        let palmFacingDir = handRot.transformVector(
-          new Module.Vector3(palmFacingSign, 0.0, 0.0)
+        this.sim.setRotation(
+          Module.Quaternion.mul(handRot, handRecord.heldRelRot),
+          handRecord.heldObjId,
+          0
         );
-        let grabRay = new Module.Ray(handPos, palmFacingDir);
-
-        // try grab
-        if (buttonStates[0] && !handRecord.prevButtonStates[0]) {
-          let maxDistance = 0.15;
-
-          let raycastResults = this.sim.castRay(grabRay, maxDistance, 0);
-          let hitObjId = raycastResults.hasHits()
-            ? raycastResults.hits.get(0).objectId
-            : -1;
-          console.log("Try grab", hitObjId);
-
-          if (hitObjId != -1) {
-            handRecord.heldObjId = hitObjId;
-
-            if (otherHandRecord.heldObjId == hitObjId) {
-              // release from other hand
-              otherHandRecord.heldObjId = -1;
-            }
-
-            let currTrans = this.sim.getTranslation(handRecord.heldObjId, 0);
-            let currRot = this.sim.getRotation(handRecord.heldObjId, 0);
-
-            let handRotInverted = handRot.inverted();
-            handRecord.heldRelRot = Module.Quaternion.mul(
-              handRotInverted,
-              currRot
-            );
-            handRecord.heldRelTrans = handRotInverted.transformVector(
-              Module.Vector3.sub(currTrans, handPos)
-            );
-
-            // set held obj to kinematic
-            this.sim.setObjectMotionType(
-              Module.MotionType.KINEMATIC,
-              handRecord.heldObjId,
-              0
-            );
-          }
-        }
-
-        // update held object pose
-        if (handRecord.heldObjId != -1) {
-          let pad =
-            Math.min(0.5, Math.max(0.3, palmFacingDir.y())) *
-            0.05 *
-            palmFacingSign;
-          let adjustedRelTrans = Module.Vector3.add(
-            handRecord.heldRelTrans,
-            new Module.Vector3(pad, 0.0, 0.0)
-          );
-
-          this.sim.setTranslation(
-            Module.Vector3.add(
-              handPos,
-              handRot.transformVector(adjustedRelTrans)
-            ),
-            handRecord.heldObjId,
-            0
-          );
-          this.sim.setRotation(
-            Module.Quaternion.mul(handRot, handRecord.heldRelRot),
-            handRecord.heldObjId,
-            0
-          );
-        }
-
-        // handle release
-        if (handRecord.heldObjId != -1 && !buttonStates[0]) {
-          // set held object to dynamic
-          this.sim.setObjectMotionType(
-            Module.MotionType.DYNAMIC,
-            handRecord.heldObjId,
-            0
-          );
-          handRecord.heldObjId = -1;
-        }
-
-        if (buttonStates[1] && !handRecord.prevButtonStates[1]) {
-          // cylinderSolid_rings_1_segments_12_halfLen_1_useTexCoords_false_useTangents_false_capEnds_true
-          //let filepath = "cubeSolid";
-
-          if (this.objectCounter < replicaCadObjectInstanceNames.length) {
-            let nextIndex = this.objectCounter;
-            this.objectCounter++;
-
-            const offsetDist = 0.25;
-            let spawnPos = Module.Vector3.add(
-              handPos,
-              new Module.Vector3(
-                palmFacingDir.x() * offsetDist,
-                palmFacingDir.y() * offsetDist,
-                palmFacingDir.z() * offsetDist
-              )
-            );
-
-            let filepath = VRDemo.getObjectConfigFilepath(
-              replicaCadObjectInstanceNames[nextIndex]
-            );
-            let objId = this.sim.addObjectByHandle(filepath, null, "", 0);
-            if (objId != -1) {
-              this.sim.setTranslation(spawnPos, objId, 0);
-            }
-          }
-        }
-
-        handRecord.prevButtonStates = buttonStates;
       }
-    }
-  }
 
-  updateHeadPose(pose, agent) {
-    const headRotation = Module.toQuaternion(
-      pointToArray(pose.transform.orientation)
-    );
-    const pointingVec = headRotation.transformVector(this.FWD);
-    const pointingAngle =
-      Math.atan2(pointingVec.z(), pointingVec.x()) - this.FWD_ANGLE;
+      // handle release
+      if (handRecord.heldObjId != -1 && !buttonStates[0]) {
+        // set held object to dynamic
+        this.sim.setObjectMotionType(
+          Module.MotionType.DYNAMIC,
+          handRecord.heldObjId,
+          0
+        );
+        handRecord.heldObjId = -1;
+      }
 
-    const agentQuat = Module.Quaternion.rotation(
-      new Module.Rad(pointingAngle + this.viewYawOffset),
-      this.DOWN
-    );
-    const inverseAgentRot = Module.Quaternion.rotation(
-      new Module.Rad(-pointingAngle),
-      this.DOWN
-    );
+      if (buttonStates[1] && !handRecord.prevButtonStates[1]) {
+        // cylinderSolid_rings_1_segments_12_halfLen_1_useTexCoords_false_useTangents_false_capEnds_true
 
-    let state = new Module.AgentState();
-    agent.getState(state);
-    state.rotation = Module.toVec4f(agentQuat);
-    agent.setState(state, false);
-
-    for (var iView = 0; iView < pose.views.length; ++iView) {
-      const view = pose.views[iView];
-
-      const sensor = agent.getSubtreeSensors().get(VIEW_SENSORS[iView]);
-
-      const pos = pointToArray(view.transform.position).slice(0, -1); // don't need w for position
-      sensor.setLocalTransform(
-        Module.toVec3f(
-          inverseAgentRot.transformVector(new Module.Vector3(...pos))
-        ),
-        Module.toVec4f(
-          Module.Quaternion.mul(
-            inverseAgentRot,
-            Module.toQuaternion(pointToArray(view.transform.orientation))
+        const offsetDist = 0.25;
+        let spawnPos = Module.Vector3.add(
+          handPos,
+          new Module.Vector3(
+            palmFacingDir.x() * offsetDist,
+            palmFacingDir.y() * offsetDist,
+            palmFacingDir.z() * offsetDist
           )
-        )
-      );
+        );
+        let filepath = "cubeSolid";
+        if (this.objectCounter < objectSpawnOrder.length) {
+          let nextIndex = this.objectCounter;
+          this.objectCounter++;
+          filepath = VRDemo.getObjectConfigFilepath(
+            objectSpawnOrder[nextIndex]
+          );
+        }
+        let objId = this.sim.addObjectByHandle(filepath, null, "", 0);
+        if (objId != -1) {
+          this.sim.setTranslation(spawnPos, objId, 0);
+        }
+      }
+
+      handRecord.prevButtonStates = buttonStates;
     }
   }
 
@@ -658,7 +564,7 @@ class VRDemo {
     const agent = this.sim.getAgent(this.agentId);
 
     this.handleInput(frame);
-    this.updateHeadPose(pose, agent);
+    updateHeadPose(pose, agent);
 
     const layer = session.renderState.baseLayer;
     this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, layer.framebuffer);

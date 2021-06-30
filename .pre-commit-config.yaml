@@ -122,7 +122,7 @@ repos:
         - eslint-plugin-prettier@3.1.0
         - eslint-plugin-html@6.0.0
         - prettier@1.18.2
-        exclude: examples/web_apps
+        exclude: examples/web_apps|src/esp/bindings_js/modules/vr_utils.js
 
 -   repo: https://github.com/shellcheck-py/shellcheck-py
     rev: v0.7.2.1
