@@ -22,43 +22,160 @@
   "build_lighting_configs": false,
   "build_stage_glbs": false,
   "build_object_glbs": false,
-  "ignore_object_instances": true,
+  "save_object_instances": false,
   "objects_all_static": true,
   "match_object_names": true,
-  "stage_include_obj_substr": [
-    "frl_apartment_blinds",
-    "frl_apartment_ceiling",
-    "frl_apartment_door_",
-    "frl_apartment_door_part_",
-    "frl_apartment_floor",
-    "frl_apartment_pipe",
-    "frl_apartment_stair",
-    "frl_apartment_wall"
-  ],
-  "obj_override_names": [
-    "frl_apartment_wall_cabinet_01",
-    "frl_apartment_wall_cabinet_02",
-    "frl_apartment_wall_cabinet_03"
-  ],
-  "obj_exclude_names": [
-    "frl_apartment_switch",
-    "frl_apartment_panel",
-    "frl_apartment_camera1",
-    "top_shelf_02_door",
-    "Empty_CabinetCounter_",
-    "Empty_Fridge_"
-  ],
+  "stage_include_obj_substr": [],
+  "obj_override_names": [],
+  "obj_exclude_names": [],
   "obj_created_static": [],
   "obj_created_dynamic": [],
-  "stage_instance_file_tag": {
-    "v3_sc0_staging": "Stage_v3_sc0_staging",
-    "v3_sc1_staging": "Stage_v3_sc1_staging",
-    "v3_sc2_staging": "Stage_v3_sc2_staging",
-    "v3_sc3_staging": "Stage_v3_sc3_staging",
-    "v3_sc4_staging": "Stage_v3_sc4_staging"
-  },
+  "stage_instance_file_tag": {},
   "default_lighting_tag": "no_lights",
   "apply_object_transform": true,
+  "save_articulated_object_instances": true,
+  "ao_instance_mappings": {
+    "sc0_staging": {
+      "fridge": {
+        "translation": [
+          0.6818168997764587,
+          0.9755649566650391,
+          4.4597649574279785
+        ],
+        "rotation": [
+          1,
+          0,
+          0,
+          0
+        ]
+      },
+      "kitchen_counter": {
+        "translation": [
+          0.880730934143066,
+          0.03,
+          6.373764820098877
+        ],
+        "rotation": [
+          1,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "sc1_staging": {
+      "fridge": {
+        "translation": [
+          -2.1782121658325195,
+          0.9755649566650391,
+          -0.24
+        ],
+        "rotation": [
+          1,
+          0,
+          0,
+          0
+        ]
+      },
+      "kitchen_counter": {
+        "translation": [
+          -2,
+          0.03,
+          1.6446
+        ],
+        "rotation": [
+          1,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "sc2_staging": {
+      "fridge": {
+        "translation": [
+          -2.1782121658325195,
+          0.9755649566650391,
+          -0.24
+        ],
+        "rotation": [
+          1,
+          0,
+          0,
+          0
+        ]
+      },
+      "kitchen_counter": {
+        "translation": [
+          -2,
+          0.03,
+          1.6446
+        ],
+        "rotation": [
+          1,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "sc3_staging": {
+      "fridge": {
+        "translation": [
+          -2.1782121658325195,
+          0.9755649566650391,
+          3.6299728393554688
+        ],
+        "rotation": [
+          1,
+          0,
+          0,
+          0
+        ]
+      },
+      "kitchen_counter": {
+        "translation": [
+          -2,
+          0.03,
+          1.6346
+        ],
+        "rotation": [
+          1,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "sc4_staging": {
+      "fridge": {
+        "translation": [
+          0.8183235287666321,
+          0.9755649566650391,
+          7.551066970825195
+        ],
+        "rotation": [
+          0.7071067390396977,
+          0.0,
+          0.7071068233333898,
+          0.0
+        ]
+      },
+      "kitchen_counter": {
+        "translation": [
+          2.74135208129882812,
+          0.03,
+          7.432462692260742
+        ],
+        "rotation": [
+          0.7071067390396977,
+          0.0,
+          0.7071068233333898,
+          0.0
+        ]
+      }
+    }
+  },
   "default_attributes": {
     "stages": {
       "up": [
