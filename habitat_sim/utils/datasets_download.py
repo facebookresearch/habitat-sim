@@ -5,15 +5,34 @@
 # LICENSE file in the root directory of this source tree.
 
 import argparse
+import gzip
+import itertools
+import json
 import os
 import pathlib
+import shlex
 import shutil
+import subprocess
 import sys
+import tarfile
 import traceback
 import zipfile
+from typing import List, Optional
 
 data_sources = {}
 data_groups = {}
+
+
+def hm3d_train_configs_post(extract_dir: str) -> List[str]:
+    all_scene_dataset_cfg = os.path.join(
+        extract_dir, "hm3d_basis.scene_dataset_config.json"
+    )
+    assert os.path.exists(all_scene_dataset_cfg)
+
+    link_name = os.path.join(extract_dir, "..", "hm3d_basis.scene_dataset_config.json")
+    os.symlink(all_scene_dataset_cfg, link_name)
+
+    return [link_name]
 
 
 def initialize_test_data_sources(data_path):
@@ -101,6 +120,59 @@ def initialize_test_data_sources(data_path):
         },
     }
 
+    data_sources.update(
+        {
+            f"hm3d_{split}_{data_format}": {
+                "source": "https://api.matterport.com/resources/habitat/hm3d-{split}-{data_format}.tar{ext}".format(
+                    ext=".gz" if data_format == "obj+mtl" else "",
+                    split=split,
+                    data_format=data_format,
+                ),
+                "download_pre_args": "--location",
+                "package_name": "hm3d-{split}-{data_format}.tar{ext}".format(
+                    ext=".gz" if data_format == "obj+mtl" else "",
+                    split=split,
+                    data_format=data_format,
+                ),
+                "link": data_path + "scene_datasets/hm3d",
+                "version": "1.0",
+                "version_dir": "hm3d-{version}/hm3d",
+                "extract_postfix": f"{split}",
+                "downloaded_file_list": f"hm3d-{{version}}/{split}-{data_format}-files.json.gz",
+                "requires_auth": True,
+                "use_curl": True,
+                "post_extract_fn": hm3d_train_configs_post
+                if split == "train" and data_format == "configs"
+                else None,
+            }
+            for split, data_format in itertools.product(
+                ["minival", "train", "val"],
+                ["glb", "obj+mtl", "habitat", "configs"],
+            )
+        }
+    )
+
+    data_sources.update(
+        {
+            f"hm3d_example_{data_format}": {
+                "source": "https://github.com/matterport/habitat-matterport-3dresearch/raw/main/example/hm3d-example-{data_format}.tar{ext}".format(
+                    ext=".gz" if data_format == "obj+mtl" else "",
+                    data_format=data_format,
+                ),
+                "package_name": "hm3d-example-{data_format}.tar{ext}".format(
+                    ext=".gz" if data_format == "obj+mtl" else "",
+                    data_format=data_format,
+                ),
+                "link": data_path + "scene_datasets/hm3d",
+                "version": "1.0",
+                "version_dir": "hm3d-{version}/hm3d",
+                "extract_postfix": "example",
+                "downloaded_file_list": f"hm3d-{{version}}/example-{data_format}-files.json.gz",
+            }
+            for data_format in ["glb", "obj+mtl", "habitat", "configs"]
+        }
+    )
+
     # data sources can be grouped for batch commands with a new uid
     data_groups = {
         "ci_test_assets": [
@@ -119,7 +191,29 @@ def initialize_test_data_sources(data_path):
             "ycb",
             "rearrange_pick_dataset_v0",
         ],
+        "hm3d_example": ["hm3d_example_habitat", "hm3d_example_configs"],
+        "hm3d_val": ["hm3d_val_habitat", "hm3d_val_configs"],
+        "hm3d_train": ["hm3d_train_habitat", "hm3d_train_configs"],
+        "hm3d_minival": ["hm3d_minival_habitat", "hm3d_minival_configs"],
+        "hm3d_full": list(filter(lambda k: k.startswith("hm3d_"), data_sources.keys())),
     }
+
+    data_groups.update(
+        {
+            f"hm3d_{split}_full": list(
+                filter(lambda k: k.startswith(f"hm3d_{split}"), data_sources.keys())
+            )
+            for split in ["train", "val", "minival", "example"]
+        }
+    )
+
+    data_groups["hm3d"] = (
+        data_groups["hm3d_val"]
+        + data_groups["hm3d_train"]
+        + data_groups["hm3d_minival"]
+    )
+
+    data_groups["ci_test_assets"].extend(data_groups["hm3d_example"])
 
 
 def prompt_yes_no(message):
@@ -136,27 +230,84 @@ def prompt_yes_no(message):
             print("Invalid answer...")
 
 
+def get_version_dir(uid, data_path):
+    version_tag = data_sources[uid]["version"]
+    if "version_dir" in data_sources[uid]:
+        version_dir = os.path.join(
+            data_path,
+            "versioned_data",
+            data_sources[uid]["version_dir"].format(version=version_tag),
+        )
+    else:
+        version_dir = os.path.join(
+            data_path, "versioned_data/" + uid + "_" + version_tag
+        )
+    return version_dir
+
+
+def get_downloaded_file_list(uid, data_path):
+    version_tag = data_sources[uid]["version"]
+    downloaded_file_list = None
+    if "downloaded_file_list" in data_sources[uid]:
+        downloaded_file_list = os.path.join(
+            data_path,
+            "versioned_data",
+            data_sources[uid]["downloaded_file_list"].format(version=version_tag),
+        )
+    return downloaded_file_list
+
+
 def clean_data(uid, data_path):
     r"""Deletes the "root" directory for the named data-source."""
     if not data_sources.get(uid):
         print(f"Data clean failed, no datasource named {uid}")
         return
     link_path = os.path.join(data_path, data_sources[uid]["link"])
-    version_tag = data_sources[uid]["version"]
-    version_dir = os.path.join(data_path, "versioned_data/" + uid + "_" + version_tag)
+    version_dir = get_version_dir(uid, data_path)
+    downloaded_file_list = get_downloaded_file_list(uid, data_path)
     print(
         f"Cleaning datasource ({uid}). Directory: '{version_dir}'. Symlink: '{link_path}'."
     )
-    try:
-        shutil.rmtree(version_dir)
-        os.unlink(link_path)
-    except OSError:
-        print("Removal error:")
-        traceback.print_exc(file=sys.stdout)
-        print("--------------------")
+    if downloaded_file_list is None:
+        try:
+            shutil.rmtree(version_dir)
+            os.unlink(link_path)
+        except OSError:
+            print("Removal error:")
+            traceback.print_exc(file=sys.stdout)
+            print("--------------------")
+    elif os.path.exists(downloaded_file_list):
+        with gzip.open(downloaded_file_list, "rt") as f:
+            package_files = json.load(f)
+
+        for package_file in reversed(package_files):
+            if os.path.isdir(package_file) and len(os.listdir(package_file)) == 0:
+                os.rmdir(package_file)
+            elif not os.path.isdir(package_file) and os.path.exists(package_file):
+                os.remove(package_file)
+            elif os.path.islink(package_file):
+                os.unlink(package_file)
+
+        os.remove(downloaded_file_list)
+
+        if os.path.exists(version_dir) and len(os.listdir(version_dir)) == 0:
+            os.rmdir(version_dir)
+
+        if not os.path.exists(version_dir):
+            os.unlink(link_path)
+
+        meta_dir = os.path.dirname(downloaded_file_list)
+        if os.path.exists(meta_dir) and len(os.listdir(meta_dir)) == 0:
+            os.rmdir(meta_dir)
 
 
-def download_and_place(uid, data_path, replace=False):
+def download_and_place(
+    uid,
+    data_path,
+    username: Optional[str] = None,
+    password: Optional[str] = None,
+    replace=False,
+):
     r"""Data-source download function. Validates uid, handles existing data version, downloads data, unpacks, writes version, cleans up."""
     if not data_sources.get(uid):
         print(f"Data download failed, no datasource named {uid}")
@@ -165,10 +316,13 @@ def download_and_place(uid, data_path, replace=False):
     # link_path = os.path.join(data_path, data_sources[uid]["link"])
     link_path = pathlib.Path(data_sources[uid]["link"])
     version_tag = data_sources[uid]["version"]
-    version_dir = os.path.join(data_path, "versioned_data/" + uid + "_" + version_tag)
+    version_dir = get_version_dir(uid, data_path)
+    downloaded_file_list = get_downloaded_file_list(uid, data_path)
 
     # check for current version
-    if os.path.exists(version_dir):
+    if os.path.exists(version_dir) and (
+        downloaded_file_list is None or os.path.exists(downloaded_file_list)
+    ):
         print(
             f"Existing data source ({uid}) version ({version_tag}) is current. Data located: '{version_dir}'. Symblink: '{link_path}'."
         )
@@ -184,44 +338,89 @@ def download_and_place(uid, data_path, replace=False):
                 f"Not replacing data, generating symlink ({link_path}) and aborting download."
             )
             print("=======================================================")
-            # create a symlink to the versioned data
+
             if link_path.exists():
                 os.unlink(link_path)
             elif not link_path.parent.exists():
                 link_path.parent.mkdir(parents=True, exist_ok=True)
             os.symlink(src=version_dir, dst=link_path, target_is_directory=True)
             assert link_path.exists(), "Failed, no symlink generated."
+
             return
 
     # download new version
     download_pre_args = data_sources[uid].get("download_pre_args", "")
     download_post_args = data_sources[uid].get("download_post_args", "")
+    requires_auth = data_sources[uid].get("requires_auth", False)
+    if requires_auth:
+        assert username is not None, "Usename required, please enter with --username"
+        assert (
+            password is not None
+        ), "Password is required, please enter with --password"
 
-    download_command = (
-        "wget --continue "
-        + download_pre_args
-        + data_sources[uid]["source"]
-        + " -P "
-        + data_path
-        + download_post_args
-    )
-    # print(download_command)
-    os.system(download_command)
+    use_curl = data_sources[uid].get("use_curl", False)
+    if use_curl:
+        if requires_auth:
+            download_pre_args = f"{download_pre_args} --user {username}:{password}"
+
+        download_command = (
+            "curl --continue-at - "
+            + download_pre_args
+            + " "
+            + data_sources[uid]["source"]
+            + " -o "
+            + os.path.join(data_path, data_sources[uid]["package_name"])
+            + download_post_args
+        )
+    else:
+        if requires_auth:
+            download_pre_args = (
+                f"{download_pre_args} --user {username} --password {password}"
+            )
+
+        download_command = (
+            "wget --continue "
+            + download_pre_args
+            + data_sources[uid]["source"]
+            + " -P "
+            + data_path
+            + download_post_args
+        )
+    #  print(download_command)
+    subprocess.check_call(shlex.split(download_command))
     assert os.path.exists(
         os.path.join(data_path, data_sources[uid]["package_name"])
     ), "Download failed, no package found."
 
     # unpack
     package_name = data_sources[uid]["package_name"]
+    extract_postfix = data_sources[uid].get("extract_postfix", "")
+    extract_dir = os.path.join(version_dir, extract_postfix)
     if package_name.endswith(".zip"):
         with zipfile.ZipFile(data_path + package_name, "r") as zip_ref:
-            zip_ref.extractall(version_dir)
+            zip_ref.extractall(extract_dir)
+            package_files = zip_ref.namelist()
+    elif package_name.count(".tar") == 1:
+        with tarfile.open(data_path + package_name, "r:*") as tar_ref:
+            tar_ref.extractall(extract_dir)
+            package_files = tar_ref.getnames()
     else:
         # TODO: support more compression types as necessary
         print(f"Data unpack failed for {uid}. Unsupported filetype: {package_name}")
         return
 
     assert os.path.exists(version_dir), "Unpacking failed, no version directory."
+    package_files = [os.path.join(extract_dir, fname) for fname in package_files]
+
+    post_extract_fn = data_sources[uid].get("post_extract_fn", None)
+    if post_extract_fn is not None:
+        result = post_extract_fn(extract_dir)
+        if result is not None:
+            package_files = result + package_files
+
+    if downloaded_file_list is not None:
+        with gzip.open(downloaded_file_list, "wt") as f:
+            json.dump([extract_dir] + package_files, f)
 
     # create a symlink to the new versioned data
     if link_path.exists():
@@ -280,6 +479,19 @@ def main(args):
         "--replace",
         action="store_true",
         help="If set, existing equivalent versions of any dataset found during download will be deleted automatically. Otherwise user will be prompted before overriding existing data.",
+    )
+
+    parser.add_argument(
+        "--username",
+        type=str,
+        default=None,
+        help="Username to use for downloads that require authentication",
+    )
+    parser.add_argument(
+        "--password",
+        type=str,
+        default=None,
+        help="Password to use for downloads that require authentication",
     )
 
     args = parser.parse_args(args)
@@ -344,7 +556,9 @@ def main(args):
             if args.clean:
                 clean_data(uid, data_path)
             else:
-                download_and_place(uid, data_path, replace)
+                download_and_place(
+                    uid, data_path, args.username, args.password, replace
+                )
 
 
 if __name__ == "__main__":
