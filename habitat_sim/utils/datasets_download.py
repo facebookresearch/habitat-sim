@@ -155,8 +155,14 @@ def initialize_test_data_sources(data_path):
     data_sources.update(
         {
             f"hm3d_example_{data_format}": {
-                "source": f"https://github.com/matterport/habitat-matterport-3dresearch/raw/main/example/hm3d-example-{data_format}.tar",
-                "package_name": f"hm3d-example-{data_format}.tar",
+                "source": "https://github.com/matterport/habitat-matterport-3dresearch/raw/main/example/hm3d-example-{data_format}.tar{ext}".format(
+                    ext=".gz" if data_format == "obj+mtl" else "",
+                    data_format=data_format,
+                ),
+                "package_name": "hm3d-example-{data_format}.tar{ext}".format(
+                    ext=".gz" if data_format == "obj+mtl" else "",
+                    data_format=data_format,
+                ),
                 "link": data_path + "scene_datasets/hm3d",
                 "version": "1.0",
                 "version_dir": "hm3d-{version}/hm3d",
@@ -191,6 +197,15 @@ def initialize_test_data_sources(data_path):
         "hm3d_minival": ["hm3d_minival_habitat", "hm3d_minival_configs"],
         "hm3d_full": list(filter(lambda k: k.startswith("hm3d_"), data_sources.keys())),
     }
+
+    data_groups.update(
+        {
+            f"hm3d_{split}_full": list(
+                filter(lambda k: k.startswith(f"hm3d_{split}"), data_sources.keys())
+            )
+            for split in ["train", "val", "minival", "example"]
+        }
+    )
 
     data_groups["hm3d"] = (
         data_groups["hm3d_val"]
@@ -403,7 +418,6 @@ def download_and_place(
         if result is not None:
             package_files = result + package_files
 
-    print(package_files)
     if downloaded_file_list is not None:
         with gzip.open(downloaded_file_list, "wt") as f:
             json.dump([extract_dir] + package_files, f)
