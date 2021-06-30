@@ -13,7 +13,7 @@ python -m habitat_sim.utils.datasets_download --uids webxr_hand_demo_data --data
 ```bash
 mkdir -p examples/web_apps/webxr_hand_demo/lib/habitat-sim-js
 ```
-4. Transpile Habitat into JS and copy the resulting files over:
+4. Transpile Habitat into JS and copy the resulting files over. Also copy over the utils files.
 ```bash
 chmod +x build_and_install_habitat_sim_js.sh
 ./build_and_install_habitat_sim_js.sh
@@ -53,7 +53,7 @@ If the VR app fails to load in your desktop browser, look for errors in the brow
     - `data/stages` contain the scene `.glb` files and their corresponding `.stage_config.json` files. In order to choose a scene other than `remake_v0_JustBigStuff_00`, you need to add its 2 files here.
     - `data/objects` contains the hand models as well as the ReplicaCAD objects that can be spawned. It also contains some extra objects you may use.
 - `js` contains the JS source code of the hand demo site.
-- `lib` contains the JS transpiled version of Habitat-sim. This folder is what gets modified when you run `build_and_install_habitat_sim_js.sh`.
+- `lib` contains the JS transpiled version of Habitat-sim, as well as some general use utils JS files. This folder is what gets modified when you run `build_and_install_habitat_sim_js.sh`.
 - `standalone.html` is the hosted site, and `style.css` is its stylesheet.
 
 # Habitat-sim JS build
@@ -62,4 +62,4 @@ The Habitat-sim JS build is a webassembly build of the Habitat simulator. It's b
 
 The Habitat-sim JS build doesn't currently have an installer, so we can't get it from npm, conda, pip, or similar. We've added habitat-sim as a git submodule at `habitat-sim` and build it locally to produce `hsim_bindings.js` and `hsim_bindings.wasm`. We copy those files to `examples/web_apps/webxr_hand_demo/lib` as a post-build step in `build_and_install_habitat_sim_js.sh`.
 
-In the future, we may also utilize some JS utilities provided as .js files inside Habitat-sim; those can be symlinked or copied from the Habitat-sim source folders to `examples/web_apps/webxr_hand_demo/lib`.
+We also utilize some JS utilities provided as .js files inside Habitat-sim. These are also copied from the Habitat-sim source folders to `examples/web_apps/webxr_hand_demo/lib` as part of the build script.
