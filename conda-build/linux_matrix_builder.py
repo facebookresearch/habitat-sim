@@ -60,7 +60,7 @@ def main():
     # For CI test only one package build for test speed interest
     if args.ci_test:
         bullet_modes = [True]
-        headless_modes = [False]
+        headless_modes = [True]
         py_vers = ["3.6"]
 
     for py_ver, use_bullet, headless, cuda_ver in itertools.product(
