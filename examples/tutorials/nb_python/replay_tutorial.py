@@ -50,6 +50,7 @@ import magnum as mn
 import numpy as np
 
 import habitat_sim
+from habitat_sim.gfx import LightInfo, LightPositionModel
 from habitat_sim.utils import gfx_replay_utils
 from habitat_sim.utils import viz_utils as vut
 
@@ -144,6 +145,28 @@ def simulate_with_moving_agent(
 # ## More tutorial setup
 # %%
 
+
+def configure_lighting(sim):
+    light_setup = [
+        LightInfo(
+            vector=[1.0, 1.0, 0.0, 1.0],
+            color=[18.0, 18.0, 18.0],
+            model=LightPositionModel.Global,
+        ),
+        LightInfo(
+            vector=[0.0, -1.0, 0.0, 1.0],
+            color=[5.0, 5.0, 5.0],
+            model=LightPositionModel.Global,
+        ),
+        LightInfo(
+            vector=[-1.0, 1.0, 1.0, 1.0],
+            color=[18.0, 18.0, 18.0],
+            model=LightPositionModel.Global,
+        ),
+    ]
+    sim.set_light_setup(light_setup)
+
+
 if __name__ == "__main__":
     import argparse
 
@@ -169,6 +192,8 @@ if not sim:
     sim = habitat_sim.Simulator(cfg)
 else:
     sim.reconfigure(cfg)
+
+configure_lighting(sim)
 
 agent_state = habitat_sim.AgentState()
 agent = sim.initialize_agent(0, agent_state)
@@ -276,6 +301,8 @@ rigid_obj_mgr.remove_all_objects()
 # Note call to gfx_replay_utils.make_backend_configuration_for_playback. Note that we don't specify a scene or stage when reconfiguring for replay playback. need_separate_semantic_scene_graph is generally set to False. If you're using a semantic sensor and replaying a scene that uses a separate semantic mesh (like an MP3D scene), set this to True. If in doubt, be aware there's a Habitat runtime warning that will always catch incorrect usage of this flag.
 # %%
 
+sim.close()
+
 # use same agents/sensors from earlier, with different backend config
 playback_cfg = habitat_sim.Configuration(
     gfx_replay_utils.make_backend_configuration_for_playback(
@@ -284,12 +311,12 @@ playback_cfg = habitat_sim.Configuration(
     cfg.agents,
 )
 
-sim.close()
-
 if not sim:
     sim = habitat_sim.Simulator(playback_cfg)
 else:
     sim.reconfigure(playback_cfg)
+
+configure_lighting(sim)
 
 agent_state = habitat_sim.AgentState()
 sim.initialize_agent(0, agent_state)
@@ -370,32 +397,59 @@ print("play from a different camera view, with agent/sensor visualization...")
 sensor_node.translation = [-1.1, -0.9, -0.2]
 sensor_node.rotation = mn.Quaternion.rotation(mn.Deg(-115), mn.Vector3(0.0, 1.0, 0))
 
-prim_attr_mgr = sim.get_asset_template_manager()
-# get the rigid object manager, which provides direct
-# access to objects
-rigid_obj_mgr = sim.get_rigid_object_manager()
-# visualize the recorded agent transform as a cylinder
-agent_viz_handle = prim_attr_mgr.get_template_handles("cylinderSolid")[0]
-agent_viz_obj = rigid_obj_mgr.add_object_by_template_handle(agent_viz_handle)
-agent_viz_obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
-agent_viz_obj.collidable = False
+# gather the agent trajectory for later visualization
+agent_trajectory_points = []
+for frame in range(player.get_num_keyframes()):
+    player.set_keyframe_index(frame)
+    (agent_translation, _) = player.get_user_transform("agent")
+    agent_trajectory_points.append(agent_translation)
 
-# visualize the recorded sensor transform as a cube
-sensor_viz_handle = prim_attr_mgr.get_template_handles("cubeSolid")[0]
-sensor_viz_obj = rigid_obj_mgr.add_object_by_template_handle(sensor_viz_handle)
-sensor_viz_obj.motion_type = habitat_sim.physics.MotionType.KINEMATIC
-sensor_viz_obj.collidable = False
+debug_line_render = sim.get_debug_line_render()
+debug_line_render.set_line_width(2.0)
+agent_viz_box = mn.Range3D(mn.Vector3(-0.1, 0.0, -0.1), mn.Vector3(0.1, 0.4, 0.1))
+sensor_viz_box = mn.Range3D(mn.Vector3(-0.1, -0.1, -0.1), mn.Vector3(0.1, 0.1, 0.1))
 
 for frame in range(player.get_num_keyframes()):
     player.set_keyframe_index(frame)
 
     (agent_translation, agent_rotation) = player.get_user_transform("agent")
-    agent_viz_obj.translation = agent_translation
-    agent_viz_obj.rotation = agent_rotation
 
+    rot_mat = agent_rotation.to_matrix()
+    full_mat = mn.Matrix4.from_(rot_mat, agent_translation)
+
+    # draw a box in the agent body's local space
+    debug_line_render.push_transform(full_mat)
+    debug_line_render.draw_box(
+        agent_viz_box.min, agent_viz_box.max, mn.Color4(1.0, 0.0, 0.0, 1.0)
+    )
+    debug_line_render.pop_transform()
+
+    for (radius, opacity) in [(0.2, 0.6), (0.25, 0.4), (0.3, 0.2)]:
+        debug_line_render.draw_circle(
+            agent_translation, radius, mn.Color4(0.0, 1.0, 1.0, opacity)
+        )
+
+    # draw a box in the sensor's local space
     (sensor_translation, sensor_rotation) = player.get_user_transform("sensor")
-    sensor_viz_obj.translation = sensor_translation
-    sensor_viz_obj.rotation = sensor_rotation
+    debug_line_render.push_transform(
+        mn.Matrix4.from_(sensor_rotation.to_matrix(), sensor_translation)
+    )
+    debug_line_render.draw_box(
+        sensor_viz_box.min, sensor_viz_box.max, mn.Color4(1.0, 0.0, 0.0, 1.0)
+    )
+    # draw a line in the sensor look direction (-z in local space)
+    debug_line_render.draw_transformed_line(
+        mn.Vector3.zero_init(),
+        mn.Vector3(0.0, 0.0, -0.5),
+        mn.Color4(1.0, 0.0, 0.0, 1.0),
+        mn.Color4(1.0, 1.0, 1.0, 1.0),
+    )
+    debug_line_render.pop_transform()
+
+    # draw the agent trajectory
+    debug_line_render.draw_path_with_endpoint_circles(
+        agent_trajectory_points, 0.07, mn.Color4(1.0, 1.0, 1.0, 1.0)
+    )
 
     observations.append(sim.get_sensor_observations())
 
@@ -408,8 +462,6 @@ if make_video:
         open_vid=show_video,
     )
 
-rigid_obj_mgr.remove_object_by_id(agent_viz_obj.object_id)
-rigid_obj_mgr.remove_object_by_id(sensor_viz_obj.object_id)
 
 # clean up the player
 player.close()

@@ -14,6 +14,7 @@
 #include "python/corrade/EnumOperators.h"
 
 #include "esp/assets/ResourceManager.h"
+#include "esp/gfx/DebugLineRender.h"
 #include "esp/gfx/LightSetup.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/RenderTarget.h"
@@ -204,6 +205,46 @@ void initGfxBindings(py::module& m) {
       .def_readwrite("model", &LightInfo::model)
       .def(py::self == py::self)
       .def(py::self != py::self);
+
+  py::class_<DebugLineRender, std::shared_ptr<DebugLineRender>>(
+      m, "DebugLineRender")
+      .def(
+          "set_line_width", &DebugLineRender::setLineWidth,
+          R"(Set global line width for all lines rendered by DebugLineRender.)")
+      .def(
+          "push_transform", &DebugLineRender::pushTransform,
+          R"(Push (multiply) a transform onto the transform stack, affecting all line-drawing until popped. Must be paired with popTransform().)")
+      .def("pop_transform", &DebugLineRender::popTransform,
+           R"(See push_transform.)")
+      .def("draw_box", &DebugLineRender::drawBox,
+           R"(Draw a box in world-space or local-space (see pushTransform).)")
+      .def(
+          "draw_circle", &DebugLineRender::drawCircle, "translation"_a,
+          "radius"_a, "color"_a, "num_segments"_a = 24,
+          "normal"_a = Magnum::Vector3{0.0, 1.0, 0.0},
+          R"(Draw a circle in world-space or local-space (see pushTransform). The circle is an approximation; see numSegments.)")
+      .def(
+          "draw_transformed_line",
+          py::overload_cast<const Magnum::Vector3&, const Magnum::Vector3&,
+                            const Magnum::Color4&, const Magnum::Color4&>(
+              &DebugLineRender::drawTransformedLine),
+          "from"_a, "to"_a, "from_color"_a, "to_color"_a,
+          R"(Draw a line segment in world-space or local-space (see pushTransform) with interpolated color.)")
+      .def(
+          "draw_transformed_line",
+          py::overload_cast<const Magnum::Vector3&, const Magnum::Vector3&,
+                            const Magnum::Color4&>(
+              &DebugLineRender::drawTransformedLine),
+          "from"_a, "to"_a, "color"_a,
+          R"(Draw a line segment in world-space or local-space (see pushTransform).)")
+      .def(
+          "draw_path_with_endpoint_circles",
+          py::overload_cast<const std::vector<Magnum::Vector3>&, float,
+                            const Magnum::Color4&, int, const Magnum::Vector3&>(
+              &DebugLineRender::drawPathWithEndpointCircles),
+          "points"_a, "radius"_a, "color"_a, "num_segments"_a = 24,
+          "normal"_a = Magnum::Vector3{0.0, 1.0, 0.0},
+          R"(Draw a sequence of line segments with circles at the two endpoints. In world-space or local-space (see pushTransform).)");
 
   m.attr("DEFAULT_LIGHTING_KEY") = DEFAULT_LIGHTING_KEY;
   m.attr("NO_LIGHT_KEY") = NO_LIGHT_KEY;
