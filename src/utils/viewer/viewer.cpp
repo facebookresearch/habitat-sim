@@ -264,7 +264,7 @@ Key Commands:
   esc: Exit the application.
   'H': Display this help message.
   'm': Toggle mouse mode.
-  TAB/Shift-TAB : Cycle to next/previous scene in scene datsaet (if --cycle-scenes argument specified)
+  TAB/Shift-TAB : Cycle to next/previous scene in scene datsaet
 
   Agent Controls:
   'wasd': Move the agent's body forward/backward, left/right.
@@ -387,10 +387,6 @@ Key Commands:
   // Configuration to use to set up simulator_
   esp::sim::SimulatorConfiguration simConfig_;
 
-  // whether we should cycle through all scene instances specified in the loaded
-  // dataset, or just load invidiaul scene specified by command line
-  bool cycleSceneInstances_ = false;
-
   // NavMesh customization options, from args
   bool disableNavmesh_ = false;
   bool recomputeNavmesh_ = false;
@@ -400,12 +396,12 @@ Key Commands:
   // SceneInstances available
   std::vector<std::string> curSceneInstances_;
   // current index in SceneInstance array, if cycling through scenes
-  int curSceneInstanceIDX_ = -1;
+  int curSceneInstanceIDX_ = 0;
 
   // increment/decrement currently displayed scene instance
   int getNextSceneInstanceIDX(int incr) {
     if (curSceneInstances_.size() == 0) {
-      return -1;
+      return 0;
     }
     return (curSceneInstanceIDX_ + incr) % curSceneInstances_.size();
   }
@@ -621,10 +617,6 @@ Viewer::Viewer(const Arguments& arguments)
       .setGlobalHelp("Displays a 3D scene file provided on command line")
       .addOption("dataset", "default")
       .setHelp("dataset", "dataset configuration file to use")
-      .addBooleanOption("cycle-scenes")
-      .setHelp("cycle-scenes",
-               "Cycle through each available SceneInstance in "
-               "specified SceneDataset by hitting Shift-Esc.")
       .addBooleanOption("enable-physics")
       .addBooleanOption("stage-requires-lighting")
       .setHelp("stage-requires-lighting",
@@ -675,9 +667,6 @@ Viewer::Viewer(const Arguments& arguments)
   // Setup renderer and shader defaults
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
-
-  // whether to cycle scene instances
-  cycleSceneInstances_ = args.isSet("cycle-scenes");
 
   if (args.isSet("enable-physics") && (args.isSet("debug-bullet"))) {
     debugBullet_ = true;
@@ -758,21 +747,27 @@ Viewer::Viewer(const Arguments& arguments)
   MM_->setSimulatorConfiguration(simConfig_);
   objectAttrManager_ = MM_->getObjectAttributesManager();
   objectAttrManager_->loadAllJSONConfigsFromPath(args.value("object-dir"));
-  // if cycling through scene instances, set first scene to be first in list of
-  // current scene dataset's scene instances
-  if (cycleSceneInstances_) {
-    curSceneInstances_ = MM_->getAllSceneInstanceHandles();
-    curSceneInstanceIDX_ = 0;
-    simConfig_.activeSceneName = curSceneInstances_[curSceneInstanceIDX_];
-    // update MM's simconfig with new active scene name
-    MM_->setSimulatorConfiguration(simConfig_);
-  }
+
   LOG(INFO) << "Scene Dataset Configuration file location : "
             << simConfig_.sceneDatasetConfigFile
             << " | Loading Scene : " << simConfig_.activeSceneName;
 
   // create simulator instance
   simulator_ = esp::sim::Simulator::create_unique(simConfig_, MM_);
+
+  // get list of all scenes
+  curSceneInstances_ = MM_->getAllSceneInstanceHandles();
+  // To handle cycling through scene instances, set first scene to be first in
+  // list of current scene dataset's scene instances
+  // Set this to index in curSceneInstances where args.value("scene") can be
+  // found.
+  curSceneInstanceIDX_ = 0;
+  for (int i = 0; i < curSceneInstances_.size(); ++i) {
+    if (curSceneInstances_[i].find(simConfig_.activeSceneName)) {
+      curSceneInstanceIDX_ = i;
+      break;
+    }
+  }
 
   // initialize sim navmesh, agent, sensors after creation/reconfigure
   initSimPostReconfigure();
@@ -1173,12 +1168,6 @@ Mn::Vector3 Viewer::randomDirection() {
 
 void Viewer::setSceneInstanceFromListAndShow(int nextSceneInstanceIDX) {
   // set current to be passed idx, making sure it is in bounds of scene list
-  if (this->curSceneInstances_.size() == 0) {
-    // no scene instances, disasble cycling
-    cycleSceneInstances_ = false;
-    curSceneInstanceIDX_ = -1;
-    return;
-  }
   curSceneInstanceIDX_ =
       (nextSceneInstanceIDX % this->curSceneInstances_.size());
   // Set scene instance in SimConfig
@@ -1765,11 +1754,13 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       exit(0);
       break;
     case KeyEvent::Key::Tab:
-      if (cycleSceneInstances_) {
-        Mn::Debug{} << "Cycling to Next SceneInstance";
-        setSceneInstanceFromListAndShow(getNextSceneInstanceIDX(
-            (event.modifiers() & MouseEvent::Modifier::Shift) ? -1 : 1));
-      }
+      Mn::Debug{} << "Cycling to "
+                  << ((event.modifiers() & MouseEvent::Modifier::Shift)
+                          ? "previous"
+                          : "next")
+                  << " SceneInstance";
+      setSceneInstanceFromListAndShow(getNextSceneInstanceIDX(
+          (event.modifiers() & MouseEvent::Modifier::Shift) ? -1 : 1));
       break;
     case KeyEvent::Key::Space:
       simulating_ = !simulating_;
