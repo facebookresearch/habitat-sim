@@ -264,6 +264,7 @@ Key Commands:
   esc: Exit the application.
   'H': Display this help message.
   'm': Toggle mouse mode.
+  TAB/Shift-TAB : Cycle to next/previous scene in scene datsaet (if --cycle-scenes argument specified)
 
   Agent Controls:
   'wasd': Move the agent's body forward/backward, left/right.
@@ -425,28 +426,9 @@ Key Commands:
   // The simulator object backend for this viewer instance
   std::unique_ptr<esp::sim::Simulator> simulator_;
 
-  // Process navmesh based on args specified in command line
-  void processNavmeshSettings() {
-    // NavMesh customization options
-    if (disableNavmesh_) {
-      if (simulator_->getPathFinder()->isLoaded()) {
-        simulator_->setPathFinder(esp::nav::PathFinder::create());
-      }
-    } else if (recomputeNavmesh_) {
-      esp::nav::NavMeshSettings navMeshSettings;
-      simulator_->recomputeNavMesh(*simulator_->getPathFinder().get(),
-                                   navMeshSettings, true);
-    } else if (!navmeshFilename_.empty()) {
-      std::string navmeshFile = Cr::Utility::Directory::join(
-          Corrade::Utility::Directory::current(), navmeshFilename_);
-      if (Cr::Utility::Directory::exists(navmeshFile)) {
-        simulator_->getPathFinder()->loadNavMesh(navmeshFile);
-      }
-    }
-  }  // processNavmesh
-
-  // Initialize simulator after a scene has been loaded
-  void initSimPostReconfigure() {}
+  // Initialize simulator after a scene has been loaded - handle navmesh, agent
+  // and sensor configs
+  void initSimPostReconfigure();
 
   // Toggle physics simulation on/off
   bool simulating_ = true;
@@ -639,9 +621,9 @@ Viewer::Viewer(const Arguments& arguments)
       .setGlobalHelp("Displays a 3D scene file provided on command line")
       .addOption("dataset", "default")
       .setHelp("dataset", "dataset configuration file to use")
-      .addBooleanOption("cycle-SceneInstances")
-      .setHelp("cycle-SceneInstances",
-               "Cycle alphabetically through each available SceneInstance in "
+      .addBooleanOption("cycle-scenes")
+      .setHelp("cycle-scenes",
+               "Cycle through each available SceneInstance in "
                "specified SceneDataset by hitting Shift-Esc.")
       .addBooleanOption("enable-physics")
       .addBooleanOption("stage-requires-lighting")
@@ -695,7 +677,7 @@ Viewer::Viewer(const Arguments& arguments)
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
 
   // whether to cycle scene instances
-  cycleSceneInstances_ = args.isSet("cycle-SceneInstances");
+  cycleSceneInstances_ = args.isSet("cycle-scenes");
 
   if (args.isSet("enable-physics") && (args.isSet("debug-bullet"))) {
     debugBullet_ = true;
@@ -772,9 +754,6 @@ Viewer::Viewer(const Arguments& arguments)
     simConfig_.physicsConfigFile = physicsConfig;
   }
 
-  LOG(INFO) << "Scene Dataset Configuration file location : "
-            << simConfig_.sceneDatasetConfigFile;
-
   // will set simulator configuration in MM - sets ActiveDataset as well
   MM_->setSimulatorConfiguration(simConfig_);
   objectAttrManager_ = MM_->getObjectAttributesManager();
@@ -788,25 +767,17 @@ Viewer::Viewer(const Arguments& arguments)
     // update MM's simconfig with new active scene name
     MM_->setSimulatorConfiguration(simConfig_);
   }
+  LOG(INFO) << "Scene Dataset Configuration file location : "
+            << simConfig_.sceneDatasetConfigFile
+            << " | Loading Scene : " << simConfig_.activeSceneName;
 
   // create simulator instance
   simulator_ = esp::sim::Simulator::create_unique(simConfig_, MM_);
 
-  // handle command-line navmesh specs
-  processNavmeshSettings();
-
-  // add selects a random initial state and sets up the default controls and
-  // step filter
-  simulator_->addAgent(agentConfig_);
-
-  // Set up camera
-  activeSceneGraph_ = &simulator_->getActiveSceneGraph();
-  defaultAgent_ = simulator_->getAgent(defaultAgentId_);
-  agentBodyNode_ = &defaultAgent_->node();
-  renderCamera_ = getAgentCamera().getRenderCamera();
+  // initialize sim navmesh, agent, sensors after creation/reconfigure
+  initSimPostReconfigure();
 
   objectPickingHelper_ = std::make_unique<ObjectPickingHelper>(viewportSize);
-  timeline_.start();
 
   /**
    * Set up per frame profiler to be aware of bottlenecking in processing data
@@ -851,6 +822,35 @@ Viewer::Viewer(const Arguments& arguments)
 
   printHelpText();
 }  // end Viewer::Viewer
+
+void Viewer::initSimPostReconfigure() {
+  // NavMesh customization options
+  if (disableNavmesh_) {
+    if (simulator_->getPathFinder()->isLoaded()) {
+      simulator_->setPathFinder(esp::nav::PathFinder::create());
+    }
+  } else if (recomputeNavmesh_) {
+    esp::nav::NavMeshSettings navMeshSettings;
+    simulator_->recomputeNavMesh(*simulator_->getPathFinder().get(),
+                                 navMeshSettings, true);
+  } else if (!navmeshFilename_.empty()) {
+    std::string navmeshFile = Cr::Utility::Directory::join(
+        Corrade::Utility::Directory::current(), navmeshFilename_);
+    if (Cr::Utility::Directory::exists(navmeshFile)) {
+      simulator_->getPathFinder()->loadNavMesh(navmeshFile);
+    }
+  }
+  // add selects a random initial state and sets up the default controls and
+  // step filter
+  simulator_->addAgent(agentConfig_);
+
+  // Set up camera
+  activeSceneGraph_ = &simulator_->getActiveSceneGraph();
+  defaultAgent_ = simulator_->getAgent(defaultAgentId_);
+  agentBodyNode_ = &defaultAgent_->node();
+  renderCamera_ = getAgentCamera().getRenderCamera();
+  timeline_.start();
+}  // processNavmesh}
 
 void Viewer::switchCameraType() {
   auto& cam = getAgentCamera();
@@ -1183,10 +1183,25 @@ void Viewer::setSceneInstanceFromListAndShow(int nextSceneInstanceIDX) {
       (nextSceneInstanceIDX % this->curSceneInstances_.size());
   // Set scene instance in SimConfig
   simConfig_.activeSceneName = curSceneInstances_[curSceneInstanceIDX_];
+
   // update MM's config with new active scene name
   MM_->setSimulatorConfiguration(simConfig_);
   // close and reconfigure simulator - is this really necessary?
+  LOG(INFO) << "Active Scene Dataset : " << MM_->getActiveSceneDatasetName()
+            << " | Loading Scene : " << simConfig_.activeSceneName;
 
+  renderCamera_ = nullptr;
+  agentBodyNode_ = nullptr;
+  defaultAgent_ = nullptr;
+  activeSceneGraph_ = nullptr;
+
+  // close and reconfigure
+  simulator_->close();
+  simulator_ = esp::sim::Simulator::create_unique(simConfig_, MM_);
+  // simulator_->reconfigure(simConfig_);
+
+  // initialize sim navmesh, agent, sensors after creation/reconfigure
+  initSimPostReconfigure();
 }  // Viewer::setSceneInstanceFromListAndShow
 
 float timeSinceLastSimulation = 0.0;
