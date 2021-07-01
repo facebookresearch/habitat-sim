@@ -36,17 +36,23 @@
   ],
   "obj_override_names": [
     "frl_apartment_wall_cabinet_01",
-    "frl_apartment_wall_cabinet_02",
-    "frl_apartment_wall_cabinet_03"
+    "frl_apartment_wall_cabinet_02"
   ],
   "obj_exclude_names": [
     "frl_apartment_switch",
     "frl_apartment_panel",
     "frl_apartment_camera1",
     "top_shelf_02_door",
+    "frl_apartment_lower_shelf_01_part_01",
+    "frl_apartment_cabinet",
     "Empty_CabinetCounter_",
-    "Empty_Fridge_"
+    "Empty_Fridge_",
+    "Empty_Unknown"
   ],
+  "ao_include_obj_names": {
+    "cabinet": "frl_apartment_cabinet",
+    "chestOfDrawers_01": "frl_apartment_wall_cabinet_03"
+  },
   "obj_created_static": [],
   "obj_created_dynamic": [],
   "stage_instance_file_tag": {

@@ -28,6 +28,10 @@
   "stage_include_obj_substr": [],
   "obj_override_names": [],
   "obj_exclude_names": [],
+  "ao_include_obj_names": {
+    "cabinet": "frl_apartment_cabinet",
+    "chestOfDrawers_01": "frl_apartment_wall_cabinet_03"
+  },
   "obj_created_static": [],
   "obj_created_dynamic": [],
   "stage_instance_file_tag": {},
