@@ -208,6 +208,9 @@ class Viewer : public Mn::Platform::Application {
   void displayVoxelField(int objectID);
 
   int objectDisplayed = -1;
+
+  //! The slice of the grid's SDF to visualize.
+  int voxelDistance = 0;
 #endif
 
   /**
@@ -215,6 +218,8 @@ class Viewer : public Mn::Platform::Application {
    */
   void switchCameraType();
   Mn::Vector3 randomDirection();
+
+  esp::agent::AgentConfiguration agentConfig_;
 
   void saveAgentAndSensorTransformToFile();
   void loadAgentAndSensorTransformFromFile();
@@ -328,10 +333,6 @@ Key Commands:
   float agentTrajRad_ = .01f;
   bool agentLocRecordOn_ = false;
 
-#ifdef ESP_BUILD_WITH_VHACD
-  //! The slice of the grid's SDF to visualize.
-  int voxelDistance = 0;
-#endif
   /**
    * @brief Set whether agent locations should be recorded or not. If toggling
    * on then clear old locations
@@ -382,8 +383,70 @@ Key Commands:
     LOG(INFO) << "Agent Trajectory Radius " << mod << ": " << agentTrajRad_;
   }
 
+  // Configuration to use to set up simulator_
+  esp::sim::SimulatorConfiguration simConfig_;
+
+  // whether we should cycle through all scene instances specified in the loaded
+  // dataset, or just load invidiaul scene specified by command line
+  bool cycleSceneInstances_ = false;
+
+  // NavMesh customization options, from args
+  bool disableNavmesh_ = false;
+  bool recomputeNavmesh_ = false;
+  std::string navmeshFilename_{};
+
+  // if currently cycling through available SceneInstances, this is the list of
+  // SceneInstances available
+  std::vector<std::string> curSceneInstances_;
+  // current index in SceneInstance array, if cycling through scenes
+  int curSceneInstanceIDX_ = -1;
+
+  // increment/decrement currently displayed scene instance
+  int getNextSceneInstanceIDX(int incr) {
+    if (curSceneInstances_.size() == 0) {
+      return -1;
+    }
+    return (curSceneInstanceIDX_ + incr) % curSceneInstances_.size();
+  }
+
+  /**
+   * @brief Set the scene instance to use to build the scene.
+   */
+  void setSceneInstanceFromListAndShow(int nextSceneInstanceIDX);
+
+  // The MetadataMediator can exist independent of simulator
+  // and provides access to all managers for currently active scene dataset
+  std::shared_ptr<esp::metadata::MetadataMediator> MM_;
+
+  // The managers belonging to MetadataMediator
+  std::shared_ptr<esp::metadata::managers::ObjectAttributesManager>
+      objectAttrManager_ = nullptr;
+
   // The simulator object backend for this viewer instance
   std::unique_ptr<esp::sim::Simulator> simulator_;
+
+  // Process navmesh based on args specified in command line
+  void processNavmeshSettings() {
+    // NavMesh customization options
+    if (disableNavmesh_) {
+      if (simulator_->getPathFinder()->isLoaded()) {
+        simulator_->setPathFinder(esp::nav::PathFinder::create());
+      }
+    } else if (recomputeNavmesh_) {
+      esp::nav::NavMeshSettings navMeshSettings;
+      simulator_->recomputeNavMesh(*simulator_->getPathFinder().get(),
+                                   navMeshSettings, true);
+    } else if (!navmeshFilename_.empty()) {
+      std::string navmeshFile = Cr::Utility::Directory::join(
+          Corrade::Utility::Directory::current(), navmeshFilename_);
+      if (Cr::Utility::Directory::exists(navmeshFile)) {
+        simulator_->getPathFinder()->loadNavMesh(navmeshFile);
+      }
+    }
+  }  // processNavmesh
+
+  // Initialize simulator after a scene has been loaded
+  void initSimPostReconfigure() {}
 
   // Toggle physics simulation on/off
   bool simulating_ = true;
@@ -392,16 +455,6 @@ Key Commands:
   // continuously.
   bool simulateSingleStep_ = false;
 
-  // The managers belonging to the simulator
-  std::shared_ptr<esp::metadata::managers::ObjectAttributesManager>
-      objectAttrManager_ = nullptr;
-  std::shared_ptr<esp::metadata::managers::AssetAttributesManager>
-      assetAttrManager_ = nullptr;
-  std::shared_ptr<esp::metadata::managers::StageAttributesManager>
-      stageAttrManager_ = nullptr;
-  std::shared_ptr<esp::metadata::managers::PhysicsAttributesManager>
-      physAttrManager_ = nullptr;
-
   bool debugBullet_ = false;
 
   esp::scene::SceneNode* agentBodyNode_ = nullptr;
@@ -409,8 +462,9 @@ Key Commands:
   const int defaultAgentId_ = 0;
   esp::agent::Agent::ptr defaultAgent_ = nullptr;
 
-  // Scene or stage file to load
-  std::string sceneFileName;
+  // if currently orthographic
+  bool isOrtho_ = false;
+
   esp::gfx::RenderCamera* renderCamera_ = nullptr;
   esp::scene::SceneGraph* activeSceneGraph_ = nullptr;
   bool drawObjectBBs = false;
@@ -454,8 +508,7 @@ Key Commands:
   void bindRenderTarget();
 };
 
-void addSensors(esp::agent::AgentConfiguration& agentConfig,
-                const Cr::Utility::Arguments& args) {
+void addSensors(esp::agent::AgentConfiguration& agentConfig, bool isOrtho) {
   const auto viewportSize = Mn::GL::defaultFramebuffer.viewport().size();
 
   auto addCameraSensor = [&](const std::string& uuid,
@@ -466,9 +519,8 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig,
         agentConfig.sensorSpecifications.back().get());
 
     spec->uuid = uuid;
-    spec->sensorSubType = args.isSet("orthographic")
-                              ? esp::sensor::SensorSubType::Orthographic
-                              : esp::sensor::SensorSubType::Pinhole;
+    spec->sensorSubType = isOrtho ? esp::sensor::SensorSubType::Orthographic
+                                  : esp::sensor::SensorSubType::Pinhole;
     spec->sensorType = sensorType;
     if (sensorType == esp::sensor::SensorType::Depth ||
         sensorType == esp::sensor::SensorType::Semantic) {
@@ -561,16 +613,21 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig,
   // add the equirectangular semantic sensor
   addEquirectangularSensor("semantic_equirectangular",
                            esp::sensor::SensorType::Semantic);
-}
+}  // addSensors
 
 Viewer::Viewer(const Arguments& arguments)
-    : Mn::Platform::Application{
-          arguments,
-          Configuration{}.setTitle("Viewer").setWindowFlags(
-              Configuration::WindowFlag::Resizable),
-          GLConfiguration{}
-              .setColorBufferSize(Mn::Vector4i(8, 8, 8, 8))
-              .setSampleCount(4)} {
+    : Mn::Platform::Application{arguments,
+                                Configuration{}
+                                    .setTitle("Viewer")
+                                    .setWindowFlags(
+                                        Configuration::WindowFlag::Resizable),
+                                GLConfiguration{}
+                                    .setColorBufferSize(
+                                        Mn::Vector4i(8, 8, 8, 8))
+                                    .setSampleCount(4)},
+      simConfig_(),
+      MM_(std::make_shared<esp::metadata::MetadataMediator>(simConfig_)),
+      curSceneInstances_{} {
   Cr::Utility::Arguments args;
 #ifdef CORRADE_TARGET_EMSCRIPTEN
   args.addNamedArgument("scene")
@@ -582,6 +639,10 @@ Viewer::Viewer(const Arguments& arguments)
       .setGlobalHelp("Displays a 3D scene file provided on command line")
       .addOption("dataset", "default")
       .setHelp("dataset", "dataset configuration file to use")
+      .addBooleanOption("cycle-SceneInstances")
+      .setHelp("cycle-SceneInstances",
+               "Cycle alphabetically through each available SceneInstance in "
+               "specified SceneDataset by hitting Shift-Esc.")
       .addBooleanOption("enable-physics")
       .addBooleanOption("stage-requires-lighting")
       .setHelp("stage-requires-lighting",
@@ -633,66 +694,27 @@ Viewer::Viewer(const Arguments& arguments)
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
 
-  sceneFileName = args.value("scene");
-  bool useBullet = args.isSet("enable-physics");
-  if (useBullet && (args.isSet("debug-bullet"))) {
+  // whether to cycle scene instances
+  cycleSceneInstances_ = args.isSet("cycle-SceneInstances");
+
+  if (args.isSet("enable-physics") && (args.isSet("debug-bullet"))) {
     debugBullet_ = true;
   }
 
+  isOrtho_ = args.isSet("orthographic");
   agentTransformLoadPath_ = args.value("agent-transform-filepath");
   gfxReplayRecordFilepath_ = args.value("gfx-replay-record-filepath");
 
-  // configure and intialize Simulator
-  auto simConfig = esp::sim::SimulatorConfiguration();
-  simConfig.activeSceneName = sceneFileName;
-  simConfig.sceneDatasetConfigFile = args.value("dataset");
-  LOG(INFO) << "Dataset : " << simConfig.sceneDatasetConfigFile;
-  simConfig.enablePhysics = useBullet;
-  simConfig.frustumCulling = true;
-  simConfig.requiresTextures = true;
-  simConfig.enableGfxReplaySave = !gfxReplayRecordFilepath_.empty();
-  if (args.isSet("stage-requires-lighting")) {
-    Mn::Debug{} << "Stage using DEFAULT_LIGHTING_KEY";
-    simConfig.sceneLightSetup = esp::DEFAULT_LIGHTING_KEY;
-  }
-
-  // setup the PhysicsManager config file
-  std::string physicsConfig = Cr::Utility::Directory::join(
-      Corrade::Utility::Directory::current(), args.value("physics-config"));
-  if (Cr::Utility::Directory::exists(physicsConfig)) {
-    Mn::Debug{} << "Using PhysicsManager config: " << physicsConfig;
-    simConfig.physicsConfigFile = physicsConfig;
-  }
-
-  simulator_ = esp::sim::Simulator::create_unique(simConfig);
-
-  objectAttrManager_ = simulator_->getObjectAttributesManager();
-  objectAttrManager_->loadAllJSONConfigsFromPath(args.value("object-dir"));
-  assetAttrManager_ = simulator_->getAssetAttributesManager();
-  stageAttrManager_ = simulator_->getStageAttributesManager();
-  physAttrManager_ = simulator_->getPhysicsAttributesManager();
-
   // NavMesh customization options
-  if (args.isSet("disable-navmesh")) {
-    if (simulator_->getPathFinder()->isLoaded()) {
-      simulator_->setPathFinder(esp::nav::PathFinder::create());
-    }
-  } else if (args.isSet("recompute-navmesh")) {
-    esp::nav::NavMeshSettings navMeshSettings;
-    simulator_->recomputeNavMesh(*simulator_->getPathFinder().get(),
-                                 navMeshSettings, true);
-  } else if (!args.value("navmesh-file").empty()) {
-    std::string navmeshFile = Cr::Utility::Directory::join(
-        Corrade::Utility::Directory::current(), args.value("navmesh-file"));
-    if (Cr::Utility::Directory::exists(navmeshFile)) {
-      simulator_->getPathFinder()->loadNavMesh(navmeshFile);
-    }
-  }
 
-  // configure and initialize default Agent and Sensor
-  auto agentConfig = esp::agent::AgentConfiguration();
-  agentConfig.height = rgbSensorHeight;
-  agentConfig.actionSpace = {
+  disableNavmesh_ = args.isSet("disable-navmesh");
+  recomputeNavmesh_ = args.isSet("recompute-navmesh");
+  navmeshFilename_ = args.value("navmesh-file").empty();
+
+  // configure default Agent Config for actions and sensors
+  agentConfig_ = esp::agent::AgentConfiguration();
+  agentConfig_.height = rgbSensorHeight;
+  agentConfig_.actionSpace = {
       // setup viewer action space
       {"moveForward",
        esp::agent::ActionSpec::create(
@@ -727,11 +749,55 @@ Viewer::Viewer(const Arguments& arguments)
        esp::agent::ActionSpec::create(
            "lookDown", esp::agent::ActuationMap{{"amount", lookSensitivity}})},
   };
+  // add sensor specifications to agent config
+  addSensors(agentConfig_, isOrtho_);
 
-  addSensors(agentConfig, args);
+  // setup SimulatorConfig from args.
+  simConfig_.activeSceneName = args.value("scene");
+  simConfig_.sceneDatasetConfigFile = args.value("dataset");
+  simConfig_.enablePhysics = args.isSet("enable-physics");
+  simConfig_.frustumCulling = true;
+  simConfig_.requiresTextures = true;
+  simConfig_.enableGfxReplaySave = !gfxReplayRecordFilepath_.empty();
+  if (args.isSet("stage-requires-lighting")) {
+    Mn::Debug{} << "Stage using DEFAULT_LIGHTING_KEY";
+    simConfig_.sceneLightSetup = esp::DEFAULT_LIGHTING_KEY;
+  }
+
+  // setup the PhysicsManager config file
+  std::string physicsConfig = Cr::Utility::Directory::join(
+      Corrade::Utility::Directory::current(), args.value("physics-config"));
+  if (Cr::Utility::Directory::exists(physicsConfig)) {
+    Mn::Debug{} << "Using PhysicsManager config: " << physicsConfig;
+    simConfig_.physicsConfigFile = physicsConfig;
+  }
+
+  LOG(INFO) << "Scene Dataset Configuration file location : "
+            << simConfig_.sceneDatasetConfigFile;
+
+  // will set simulator configuration in MM - sets ActiveDataset as well
+  MM_->setSimulatorConfiguration(simConfig_);
+  objectAttrManager_ = MM_->getObjectAttributesManager();
+  objectAttrManager_->loadAllJSONConfigsFromPath(args.value("object-dir"));
+  // if cycling through scene instances, set first scene to be first in list of
+  // current scene dataset's scene instances
+  if (cycleSceneInstances_) {
+    curSceneInstances_ = MM_->getAllSceneInstanceHandles();
+    curSceneInstanceIDX_ = 0;
+    simConfig_.activeSceneName = curSceneInstances_[curSceneInstanceIDX_];
+    // update MM's simconfig with new active scene name
+    MM_->setSimulatorConfiguration(simConfig_);
+  }
+
+  // create simulator instance
+  simulator_ = esp::sim::Simulator::create_unique(simConfig_, MM_);
+
+  // handle command-line navmesh specs
+  processNavmeshSettings();
+
   // add selects a random initial state and sets up the default controls and
   // step filter
-  simulator_->addAgent(agentConfig);
+  simulator_->addAgent(agentConfig_);
 
   // Set up camera
   activeSceneGraph_ = &simulator_->getActiveSceneGraph();
@@ -788,14 +854,15 @@ Viewer::Viewer(const Arguments& arguments)
 
 void Viewer::switchCameraType() {
   auto& cam = getAgentCamera();
-
   auto oldCameraType = cam.getCameraType();
   switch (oldCameraType) {
     case esp::sensor::SensorSubType::Pinhole: {
+      isOrtho_ = true;
       cam.setCameraType(esp::sensor::SensorSubType::Orthographic);
       return;
     }
     case esp::sensor::SensorSubType::Orthographic: {
+      isOrtho_ = false;
       cam.setCameraType(esp::sensor::SensorSubType::Pinhole);
       return;
     }
@@ -947,8 +1014,6 @@ int Viewer::addTemplateObject() {
 
 // add synthesized primiitive object from keypress
 int Viewer::addPrimitiveObject() {
-  // TODO : use this to implement synthesizing rendered physical objects
-
   int numObjPrims = objectAttrManager_->getNumSynthTemplateObjects();
   if (numObjPrims > 0) {
     return addObject(objectAttrManager_->getRandomSynthTemplateHandle());
@@ -1105,6 +1170,24 @@ Mn::Vector3 Viewer::randomDirection() {
   dir = dir / sqrt(dir.dot());
   return dir;
 }
+
+void Viewer::setSceneInstanceFromListAndShow(int nextSceneInstanceIDX) {
+  // set current to be passed idx, making sure it is in bounds of scene list
+  if (this->curSceneInstances_.size() == 0) {
+    // no scene instances, disasble cycling
+    cycleSceneInstances_ = false;
+    curSceneInstanceIDX_ = -1;
+    return;
+  }
+  curSceneInstanceIDX_ =
+      (nextSceneInstanceIDX % this->curSceneInstances_.size());
+  // Set scene instance in SimConfig
+  simConfig_.activeSceneName = curSceneInstances_[curSceneInstanceIDX_];
+  // update MM's config with new active scene name
+  MM_->setSimulatorConfiguration(simConfig_);
+  // close and reconfigure simulator - is this really necessary?
+
+}  // Viewer::setSceneInstanceFromListAndShow
 
 float timeSinceLastSimulation = 0.0;
 void Viewer::drawEvent() {
@@ -1666,9 +1749,17 @@ void Viewer::keyPressEvent(KeyEvent& event) {
          crashes at exit. We don't want that. */
       exit(0);
       break;
+    case KeyEvent::Key::Tab:
+      if (cycleSceneInstances_) {
+        Mn::Debug{} << "Cycling to Next SceneInstance";
+        setSceneInstanceFromListAndShow(getNextSceneInstanceIDX(
+            (event.modifiers() & MouseEvent::Modifier::Shift) ? -1 : 1));
+      }
+      break;
     case KeyEvent::Key::Space:
       simulating_ = !simulating_;
-      Mn::Debug{} << " Physics Simulation: " << simulating_;
+      Mn::Debug{} << "Physics Simulation cycling from " << !simulating_
+                  << " to " << simulating_;
       break;
     case KeyEvent::Key::Period:
       // also `>` key
