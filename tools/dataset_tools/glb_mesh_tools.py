@@ -141,6 +141,8 @@ def rotate_quat_by_quat(target_quat: np.ndarray, rot_quat: np.ndarray):
 
     res_quat[0] = w
     res_quat[1:] = vec
+    # normalize
+    res_quat /= np.linalg.norm(res_quat)
     return res_quat
 
 

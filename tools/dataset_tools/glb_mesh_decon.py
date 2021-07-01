@@ -342,6 +342,10 @@ def load_decon_global_config_values(decon_config_json: str):
     if "apply_object_transform" not in decon_configs:
         decon_configs["apply_object_transform"] = False
 
+    # if no mappings present, make empty map of object node names to AO files
+    if "ao_include_obj_names" not in decon_configs:
+        decon_configs["ao_include_obj_names"] = {}
+
     # Load the settings for what configs and/or glbs to construct and save
     if "build_scene_configs" in decon_configs:
         global BUILD_SCENE_CONFIGS
@@ -627,10 +631,6 @@ def extract_objects_from_scene(
                     obj_name_base = k
                     break
 
-        # correct for improper naming in scenes
-        if "frl_apartment_box" in obj_name:
-            obj_name_base = "frl_apartment_wall_cabinet_01"
-
         obj_glb_dest_filename_base = os.path.join(OBJ_GLB_OUTPUT_DIR, obj_name_base)
         # build file names for output
         obj_glb_dest_filename = obj_glb_dest_filename_base + ".glb"
@@ -661,22 +661,7 @@ def extract_objects_from_scene(
         obj_instance_dict["motion_type"] = obj_motion_type_dict[obj_name]
         obj_instance_dict["translation_origin"] = "COM"
 
-        # ReplicaCAD Only - improperly named object in scene.
-        # Named 'frl_apartment_wall_cabinet_02' but represents
-        # all walls; Has z transformation of 5.411645889282227
-        if (
-            "frl_apartment_wall_cabinet_02" not in obj_name_base
-            or "translation" not in obj_instance_dict
-            or 5.411645889282227 != obj_instance_dict["translation"][2]
-        ) and ("frl_apartment_wall_cabinet_03" not in obj_name_base):
-            object_instance_configs.append(obj_instance_dict)
-        else:
-            # print(
-            #     "\tNo obj instance made for : {} : translation : {} ".format(
-            #         obj_name_base, obj_instance_dict["translation"]
-            #     )
-            # )
-            continue
+        object_instance_configs.append(obj_instance_dict)
 
         # set object instance motion type
 
@@ -702,48 +687,114 @@ def extract_objects_from_scene(
 
 
 def extract_articulated_objects_from_scene(
-    scene_name_base: str, decon_configs: Dict[str, Any]
+    scene_graph, objects_tag: str, scene_name_base: str, decon_configs: Dict[str, Any]
 ):
     # Build articulated object instances
     # currently supported only for ReplicaCAD - use name tags to copy default settings from decon config
-    art_obj_fridge_instance_dict = {}
-    art_obj_fridge_instance_dict["template_name"] = "fridge"
-    art_obj_fridge_instance_dict["fixed_base"] = True
-    art_obj_fridge_instance_dict["auto_clamp_joint_limits"] = True
-    art_obj_fridge_instance_dict["translation_origin"] = "COM"
-    art_obj_fridge_instance_dict["motion_type"] = "DYNAMIC"
-
-    art_obj_counter_instance_dict = {}
-    art_obj_counter_instance_dict["template_name"] = "kitchen_counter"
-    art_obj_counter_instance_dict["fixed_base"] = True
-    art_obj_counter_instance_dict["auto_clamp_joint_limits"] = True
-    art_obj_counter_instance_dict["translation_origin"] = "COM"
-    art_obj_counter_instance_dict["motion_type"] = "DYNAMIC"
-
+    ao_res_list = []
     if len(decon_configs["ao_instance_mappings"]) != 0:
+        import numpy as np
+
         # mapping is provided to map scene name to prebuilt/predefined stage names
         ao_instance_dict = decon_configs["ao_instance_mappings"]
+        # mapping of scene object names to AO model names, to use the locations in the scene to place the AOs
+        ao_objects_dict = decon_configs["ao_include_obj_names"]
+        # list of desired AOs to include
+        art_obj_template_names = [
+            "fridge",
+            "kitchen_counter",
+            "kitchenCupboard_01",
+            "door2",
+        ]
+        art_src_object_names = {}
+        if len(ao_objects_dict) != 0:
+            # get all the objects in the scene so we can find the appropriate objects to use for AO placement, if any do this
+            objects_raw = scene_graph.graph.transforms.children_dict[objects_tag]
+            for ao_model_name, obj_name_substr in ao_objects_dict.items():
+                for obj_name in objects_raw:
+                    # get actual object name within scene graph
+                    if obj_name_substr.lower() in obj_name.lower():
+                        art_src_object_names[ao_model_name] = obj_name
+                        art_obj_template_names.append(ao_model_name)
+
         for k, v in ao_instance_dict.items():
             if k.lower() in scene_name_base.lower():
                 mapping_dict = v
-                # print("Mapping for : {} is {} ".format(scene_name_base, mapping_dict))
-                art_obj_fridge_instance_dict["translation"] = mapping_dict["fridge"][
-                    "translation"
-                ]
-                art_obj_fridge_instance_dict["rotation"] = mapping_dict["fridge"][
-                    "rotation"
-                ]
-
-                art_obj_counter_instance_dict["translation"] = mapping_dict[
-                    "kitchen_counter"
-                ]["translation"]
-
-                art_obj_counter_instance_dict["rotation"] = mapping_dict[
-                    "kitchen_counter"
-                ]["rotation"]
                 break
 
-    return [art_obj_fridge_instance_dict, art_obj_counter_instance_dict]
+        for ao_name in art_obj_template_names:
+
+            art_obj_instance_dict = {}
+            art_obj_instance_dict["template_name"] = ao_name
+            art_obj_instance_dict["fixed_base"] = True
+            art_obj_instance_dict["auto_clamp_joint_limits"] = True
+            art_obj_instance_dict["translation_origin"] = "COM"
+            art_obj_instance_dict["motion_type"] = "DYNAMIC"
+
+            if ao_name in mapping_dict:
+                # print("Mapping for : {} is {} ".format(scene_name_base, mapping_dict))
+                art_obj_instance_dict["translation"] = mapping_dict[ao_name][
+                    "translation"
+                ]
+                art_obj_instance_dict["rotation"] = mapping_dict[ao_name]["rotation"]
+            elif "kitchenCupboard_01" in ao_name:
+                # kitchen cupboard is always at a specific offset from counter
+                counter_trans = np.array(mapping_dict["kitchen_counter"]["translation"])
+                counter_rotation = np.array(mapping_dict["kitchen_counter"]["rotation"])
+                new_trans = counter_trans + np.array([-0.3, 1.5, 0])
+                new_rot = gut.rotate_quat_by_quat(
+                    counter_rotation, np.array([-0.707, 0.707, 0, 0])
+                )
+                art_obj_instance_dict["uniform_scale"] = 0.38
+                art_obj_instance_dict["translation"] = list(new_trans)
+                new_rot /= np.linalg.norm(new_rot)
+                art_obj_instance_dict["rotation"] = list(new_rot)
+            elif "door2" in ao_name:
+                art_obj_instance_dict["translation"] = [-0.35, 2.40, -2.65]
+                art_obj_instance_dict["rotation"] = [1, 0, 0, 0]
+            elif ao_name in ao_objects_dict:
+                # get transform from scene graph
+                obj_name = art_src_object_names[ao_name]
+                obj_transform = scene_graph.graph.get(obj_name)[0]
+                # temporary instance, just to provide transformations in dictionary form
+                tmp_instance_dict = gut.build_instance_config_json(
+                    "not_to_be_used",
+                    obj_transform,
+                    True,
+                    calc_scale=False,
+                )
+                new_trans = np.array(tmp_instance_dict["translation"])
+                new_rot = np.array(tmp_instance_dict["rotation"])
+                if "chestOfDrawers" in ao_name:
+                    new_trans[1] = 0.0
+                    art_obj_instance_dict["uniform_scale"] = 0.4
+                    new_rot = gut.rotate_quat_by_quat(
+                        new_rot, np.array([0.707, 0.707, 0, 0])
+                    )
+                    # global around y
+                    new_rot = gut.rotate_quat_by_quat(
+                        np.array([0.707, 0.0, 0.707, 0]), new_rot
+                    )
+                elif "cabinet" in ao_name:
+                    new_trans[1] = 0.05
+                    new_trans[2] += 0.1
+                    new_rot = gut.rotate_quat_by_quat(
+                        new_rot, np.array([0.0, 0.0, 1.0, 0.0])
+                    )
+                art_obj_instance_dict["translation"] = list(new_trans)
+                art_obj_instance_dict["rotation"] = list(new_rot)
+                print(
+                    "\tArticulated Object {} made from existing object transformation.".format(
+                        ao_name
+                    )
+                )
+            else:
+                print("Articulated Object {} not yet supported".format(ao_name))
+                break
+
+            ao_res_list.append(art_obj_instance_dict)
+
+    return ao_res_list
 
 
 def extract_lighting_from_scene(
@@ -990,7 +1041,7 @@ def main():
 
             if decon_configs["save_articulated_object_instances"]:
                 art_obj_instance_config_list = extract_articulated_objects_from_scene(
-                    scene_name_base, decon_configs
+                    scene_graph, OBJECTS_TAG, scene_name_base, decon_configs
                 )
                 scene_instance_dict[
                     "articulated_object_instances"
