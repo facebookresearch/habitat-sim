@@ -6,7 +6,7 @@
  * Check whether web assembly is supported on the current browser or not.
  * Returns false if not otherwise true.
  */
-function checkWebAssemblySupport() {
+ export function checkWebAssemblySupport() {
   try {
     if (
       typeof WebAssembly === "object" &&
@@ -29,7 +29,7 @@ function checkWebAssemblySupport() {
  * Checks for WebGL2 support in current browser.
  * Returns 0 if there is no support, 1 if support is there but disabled otherwise 2.
  */
-function checkWebgl2Support() {
+export function checkWebgl2Support() {
   let canvas;
   let ctx;
   let hasWebgl = false;
@@ -57,7 +57,7 @@ function checkWebgl2Support() {
   }
 }
 
-function buildConfigFromURLParameters(config = {}) {
+export function buildConfigFromURLParameters(config = {}) {
   for (let arg of window.location.search.substr(1).split("&")) {
     let [key, value] = arg.split("=");
     if (key && value) {

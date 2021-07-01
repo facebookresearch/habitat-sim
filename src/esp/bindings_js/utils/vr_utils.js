@@ -1,6 +1,7 @@
-const VIEW_SENSORS = ["left_eye", "right_eye"];
+export const VIEW_SENSORS = ["left_eye", "right_eye"];
+const pointToArray = p => [p.x, p.y, p.z, p.w];
 
-function getEyeSensorSpecs() {
+export function getEyeSensorSpecs() {
   const specs = new Module.VectorSensorSpec();
   {
     const spec = new Module.CameraSensorSpec();
@@ -23,7 +24,7 @@ function getEyeSensorSpecs() {
 
 // Given the WebXR viewer pose, update the positions/orientations of the view
 // sensors
-function updateHeadPose(pose, agent) {
+export function updateHeadPose(pose, agent) {
   const FWD = Module.Vector3.zAxis(1);
   const FWD_ANGLE = Math.atan2(FWD.z(), FWD.x());
   const DOWN = Module.Vector3.yAxis(-1);

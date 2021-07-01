@@ -2,6 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+import { getEyeSensorSpecs, updateHeadPose, VIEW_SENSORS } from '../lib/utils/vr_utils.js';
+
 const BUTTON_ID = "vr_button";
 
 const pointToArray = p => [p.x, p.y, p.z, p.w];
@@ -40,7 +42,7 @@ class HandRecord {
   heldObjId = -1;
 }
 
-class VRDemo {
+export class VRDemo {
   fpsElement;
   lastPaintTime;
 

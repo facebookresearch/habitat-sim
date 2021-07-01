@@ -4,14 +4,12 @@
 
 /* global FS, Module */
 
-// import VRDemo from "./modules/vr_demo.js";
-// import { defaultScene, defaultPhysicsConfigFilepath } from "./modules/defaults.js";
-// import {
-//   checkWebAssemblySupport,
-//   checkWebgl2Support,
-//   getInfoSemanticUrl,
-//   buildConfigFromURLParameters
-// } from "./modules/utils.js";
+import {
+  checkWebAssemblySupport,
+  checkWebgl2Support,
+  buildConfigFromURLParameters
+} from "../lib/utils/utils.js";
+import { VRDemo } from "./vr_demo.js";
 
 console.log("index.js loading...");
 
