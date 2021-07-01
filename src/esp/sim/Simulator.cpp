@@ -106,11 +106,9 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   if (!resourceManager_) {
     resourceManager_ =
         std::make_unique<assets::ResourceManager>(metadataMediator_);
-    if (cfg.createRenderer) {
-      // needs to be called after ResourceManager exists but before any assets
-      // have been loaded
-      reconfigureReplayManager(cfg.enableGfxReplaySave);
-    }
+    // needs to be called after ResourceManager exists but before any assets
+    // have been loaded
+    reconfigureReplayManager(cfg.enableGfxReplaySave);
   } else {
     resourceManager_->setMetadataMediator(metadataMediator_);
   }
@@ -128,6 +126,10 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   // TODO can optimize to do partial re-initialization instead of from-scratch
   config_ = cfg;
 
+  if (!config_.createRenderer) {
+    config_.requiresTextures = false;
+  }
+
   if (requiresTextures_ == Cr::Containers::NullOpt) {
     requiresTextures_ = config_.requiresTextures;
     resourceManager_->setRequiresTextures(config_.requiresTextures);
@@ -141,7 +143,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   }
 
   bool success = false;
-  // (re) create scene instance based on whether or not a renderer is requested.
+
   if (config_.createRenderer) {
     /* When creating a viewer based app, there is no need to create a
     WindowlessContext since a (windowed) context already exists. */
@@ -167,15 +169,17 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     }
 
     renderer_->acquireGlContext();
-
-    // (re) create scene instance
-    success = createSceneInstance(config_.activeSceneName);
   } else {
-    // (re) create scene instance without renderer
-    success = createSceneInstanceNoRenderer(config_.activeSceneName);
+    CORRADE_ASSERT(
+        !Magnum::GL::Context::hasCurrent(),
+        "Simulator::reconfigure() : Unexpected existing context when "
+        "createRenderer==false", );
   }
 
-  LOG(INFO) << "::reconfigure : createSceneInstance success == "
+  // (re) create scene instance
+  success = createSceneInstance(config_.activeSceneName);
+
+  LOG(INFO) << "Simulator::reconfigure() : createSceneInstance success == "
             << (success ? "true" : "false")
             << " for active scene name : " << config_.activeSceneName
             << (config_.createRenderer ? " with" : " without") << " renderer.";
@@ -185,9 +189,6 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 metadata::attributes::SceneAttributes::cptr
 Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
   namespace FileUtil = Cr::Utility::Directory;
-
-  // This should always/only be called by either createSceneInstance or
-  // createSceneInstanceNoRendere.
 
   // Get scene instance attributes corresponding to passed active scene name
   // This will retrieve, or construct, an appropriately configured scene

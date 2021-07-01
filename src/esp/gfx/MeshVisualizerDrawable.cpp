@@ -16,18 +16,21 @@ MeshVisualizerDrawable::MeshVisualizerDrawable(
     Magnum::Shaders::MeshVisualizerGL3D& shader,
     Magnum::GL::Mesh& mesh,
     DrawableGroup* group)
-    : Drawable{node, mesh, DrawableType::MeshVisualizer, group},
+    : Drawable{node, &mesh, DrawableType::MeshVisualizer, group},
       shader_(shader) {}
 
 void MeshVisualizerDrawable::draw(const Magnum::Matrix4& transformationMatrix,
                                   Magnum::SceneGraph::Camera3D& camera) {
+  CORRADE_ASSERT(glMeshExists(),
+                 "MeshVisualizerDrawable::draw() : GL mesh doesn't exist", );
+
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
   Mn::GL::Renderer::setPolygonOffset(-5.0f, -5.0f);
 
   shader_.setProjectionMatrix(camera.projectionMatrix())
       .setTransformationMatrix(transformationMatrix);
 
-  shader_.draw(mesh_);
+  shader_.draw(getMesh());
 
   Mn::GL::Renderer::setPolygonOffset(0.0f, 0.0f);
   Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::PolygonOffsetFill);

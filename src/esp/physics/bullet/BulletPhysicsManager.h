@@ -384,7 +384,7 @@ class BulletPhysicsManager : public PhysicsManager {
   /** @brief A pointer to the Bullet world. See @ref btMultiBodyDynamicsWorld.*/
   std::shared_ptr<btMultiBodyDynamicsWorld> bWorld_;
 
-  mutable Magnum::BulletIntegration::DebugDraw debugDrawer_;
+  mutable std::unique_ptr<Magnum::BulletIntegration::DebugDraw> debugDrawer_;
 
   //! keep a map of collision objects to object ids for quick lookups from
   //! Bullet collision checking.
