@@ -1,0 +1,6 @@
+#fps {
+    visibility: hidden;
+    position: absolute;
+    top: 10px;
+    z-index: 10000;
+}
