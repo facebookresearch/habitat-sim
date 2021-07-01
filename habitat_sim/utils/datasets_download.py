@@ -505,21 +505,21 @@ def main(args):
     args = parser.parse_args(args)
     replace = args.replace
 
-    # get a default data_path from git
+    # get a default data_path "./data/"
     data_path = args.data_path
     if not data_path:
         try:
-            import git
-
-            repo = git.Repo(".", search_parent_directories=True)
-            dir_path = repo.working_tree_dir
-            # Root data directory. Optionaly overridden by input argument "--data-path".
-            data_path = os.path.join(dir_path, "data")
+            data_path = os.path.abspath("./data/")
+            print(
+                f"No data-path provided, default to: {data_path}. Use '--data-path' to specify another location."
+            )
+            if not os.path.exists(data_path):
+                os.makedirs(data_path)
         except Exception:
             traceback.print_exc(file=sys.stdout)
             print("----------------------------------------------------------------")
             print(
-                "Aborting download, failed to get default data_path from git repo and none provided."
+                "Aborting download, failed to create default data_path and none provided."
             )
             print("Try providing --data-path (e.g. '/path/to/habitat-sim/data/')")
             print("----------------------------------------------------------------")
