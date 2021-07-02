@@ -69,6 +69,8 @@ class MobileManipulatorParams:
     arm_cam_offset_pos: mn.Vector3
     head_cam_offset_pos: mn.Vector3
     head_cam_look_pos: mn.Vector3
+    third_cam_offset_pos: mn.Vector3
+    third_cam_look_pos: mn.Vector3
 
     gripper_closed_state: List[float]
     gripper_open_state: List[float]
@@ -116,6 +118,9 @@ class MobileManipulator(RobotInterface):
         ]
         self._head_sensor_names = [
             s for s in self._sim._sensors if s.startswith("robot_head_")
+        ]
+        self._third_sensor_names = [
+            s for s in self._sim._sensors if s.startswith("robot_third_")
         ]
 
         # NOTE: the follow members cache static info for improved efficiency over querying the API
@@ -193,8 +198,29 @@ class MobileManipulator(RobotInterface):
         # Update the cameras
         for sensor_name in self._head_sensor_names:
             sens_obj = self._sim._sensors[sensor_name]._sensor_object
-            head_T = self._get_head_cam_transform()
+
+            look_at = self.sim_obj.transformation.transform_point(
+                self.params.head_cam_look_pos
+            )
+            cam_pos = self.sim_obj.transformation.transform_point(
+                self.params.head_cam_offset_pos
+            )
+            head_T = mn.Matrix4.look_at(cam_pos, look_at, mn.Vector3(0, -1, 0))
+
             sens_obj.node.transformation = inv_T @ head_T
+
+        for sensor_name in self._third_sensor_names:
+            sens_obj = self._sim._sensors[sensor_name]._sensor_object
+
+            look_at = self.sim_obj.transformation.transform_point(
+                self.params.third_cam_look_pos
+            )
+            cam_pos = self.sim_obj.transformation.transform_point(
+                self.params.third_cam_offset_pos
+            )
+            third_T = mn.Matrix4.look_at(cam_pos, look_at, mn.Vector3(0, -1, 0))
+
+            sens_obj.node.transformation = inv_T @ third_T
 
         for sensor_name in self._arm_sensor_names:
             sens_obj = self._sim._sensors[sensor_name]._sensor_object
@@ -411,18 +437,6 @@ class MobileManipulator(RobotInterface):
         spin_trans = mn.Matrix4.rotation_z(mn.Deg(90))
         arm_T = ee_trans @ offset_trans @ rot_trans @ spin_trans
         return arm_T
-
-    def _get_head_cam_transform(self):
-        """Helper function to get the transformation of where the head camera
-        should be placed.
-        """
-        look_at = self.sim_obj.transformation.transform_point(
-            self.params.head_cam_look_pos
-        )
-        cam_pos = self.sim_obj.transformation.transform_point(
-            self.params.head_cam_offset_pos
-        )
-        return mn.Matrix4.look_at(cam_pos, look_at, mn.Vector3(0, -1, 0))
 
     def _set_motor_pos(self, joint, ctrl):
         self.joint_motors[joint][1].position_target = ctrl

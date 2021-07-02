@@ -21,6 +21,8 @@ class FetchRobot(MobileManipulator):
             arm_cam_offset_pos=mn.Vector3(0, 0.0, 0.1),
             head_cam_offset_pos=mn.Vector3(0.17, 0.0, 1.2),
             head_cam_look_pos=mn.Vector3(1, 0.0, 0.75),
+            third_cam_offset_pos=mn.Vector3(-0.5, 1.7, -0.5),
+            third_cam_look_pos=mn.Vector3(1, 0.0, 0.75),
             gripper_closed_state=[0.0, 0.0],
             gripper_open_state=[0.04, 0.04],
             gripper_state_eps=0.001,
