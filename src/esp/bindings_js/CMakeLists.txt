@@ -61,6 +61,7 @@ if(BUILD_WEB_APPS)
     bundle_files
     bindings.html
     test_page.html
+    webvr.html
     viewer.html
     bindings.css
     viewer.css
@@ -74,6 +75,7 @@ if(BUILD_WEB_APPS)
     modules/viewer_demo.js
     modules/defaults.js
     modules/test_page.js
+    modules/vr_demo.js
     modules/utils.js
     modules/vr_utils.js
   )

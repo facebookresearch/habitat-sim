@@ -5,6 +5,7 @@
 /* global FS, Module */
 
 import WebDemo from "./modules/web_demo";
+import VRDemo from "./modules/vr_demo";
 import ViewerDemo from "./modules/viewer_demo";
 import {
   defaultScene,
@@ -74,15 +75,21 @@ Module.onRuntimeInitialized = async function() {
   }
 
   let demo;
-  if (window.viewerEnabled) {
+  if (window.vrEnabled) {
+    const supported = await navigator.xr.isSessionSupported("immersive-vr");
+    if (supported) {
+      console.log("WebXR is supported");
+      demo = new VRDemo();
+    }
+  } else if (window.viewerEnabled) {
     demo = new ViewerDemo();
-  } else {
+  }
+
+  if (!demo) {
     demo = new WebDemo();
   }
 
-  if (demo) {
-    demo.display();
-  }
+  demo.display();
 };
 
 function checkSupport() {
