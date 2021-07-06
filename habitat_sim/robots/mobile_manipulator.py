@@ -96,6 +96,7 @@ class MobileManipulator(RobotInterface):
         urdf_path: str,
         sim: Simulator,
         limit_robo_joints: bool = True,
+        fixed_base: bool = True,
     ):
         r"""Constructor
 
@@ -108,6 +109,7 @@ class MobileManipulator(RobotInterface):
 
         self._sim = sim
         self._limit_robo_joints = limit_robo_joints
+        self._fixed_base = fixed_base
 
         self._arm_sensor_names = [
             s for s in self._sim._sensors if s.startswith("robot_arm_")
@@ -138,7 +140,9 @@ class MobileManipulator(RobotInterface):
     def reconfigure(self) -> None:
         """Instantiates the robot the scene. Loads the URDF, sets initial state of parameters, joints, motors, etc..."""
         ao_mgr = self._sim.get_articulated_object_manager()
-        self.sim_obj = ao_mgr.add_articulated_object_from_urdf(self.urdf_path)
+        self.sim_obj = ao_mgr.add_articulated_object_from_urdf(
+            self.urdf_path, fixed_base=self._fixed_base
+        )
         for link_id in self.sim_obj.get_link_ids():
             self.joint_pos_indices[link_id] = self.sim_obj.get_link_joint_pos_offset(
                 link_id

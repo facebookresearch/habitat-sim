@@ -63,13 +63,8 @@ def main():
         headless_modes = [True]
         py_vers = ["3.6"]
 
-    # TODO: Remove filter bullet_modes = True, headless_modes = False as failing
-    filter_bullet_with_display = lambda product: itertools.filterfalse(
-        lambda op: op[1:3] == (True, False), product
-    )
-
-    for py_ver, use_bullet, headless, cuda_ver in filter_bullet_with_display(
-        itertools.product(py_vers, bullet_modes, headless_modes, cuda_vers)
+    for py_ver, use_bullet, headless, cuda_ver in itertools.product(
+        py_vers, bullet_modes, headless_modes, cuda_vers
     ):
         env = os.environ.copy()
 

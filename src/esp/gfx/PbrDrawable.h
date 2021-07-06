@@ -20,7 +20,7 @@ class PbrDrawable : public Drawable {
    * and color for textured buffer and color shader output respectively
    */
   explicit PbrDrawable(scene::SceneNode& node,
-                       Magnum::GL::Mesh& mesh,
+                       Magnum::GL::Mesh* mesh,
                        gfx::Drawable::Flags& meshAttributeFlags,
                        ShaderManager& shaderManager,
                        const Magnum::ResourceKey& lightSetupKey,
