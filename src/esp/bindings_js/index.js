@@ -5,9 +5,12 @@
 /* global FS, Module */
 
 import WebDemo from "./modules/web_demo";
-import VRDemo from "./modules/vr_demo";
 import ViewerDemo from "./modules/viewer_demo";
-import { defaultScene, defaultPhysicsConfigFilepath } from "./modules/defaults";
+import {
+  defaultScene,
+  defaultPhysicsConfigFilepath,
+  infoSemanticFileName
+} from "./modules/defaults";
 import "./bindings.css";
 import {
   checkWebAssemblySupport,
@@ -58,7 +61,7 @@ Module.preRun.push(() => {
     preload(fileNoExtension + ".house");
     preload(fileNoExtension + "_semantic.ply");
   } else if (config.semantic === "replica") {
-    preload(getInfoSemanticUrl(config.scene));
+    preload(getInfoSemanticUrl(config.scene, infoSemanticFileName));
   }
 });
 
@@ -71,21 +74,15 @@ Module.onRuntimeInitialized = async function() {
   }
 
   let demo;
-  if (window.vrEnabled) {
-    const supported = await navigator.xr.isSessionSupported("immersive-vr");
-    if (supported) {
-      console.log("WebXR is supported");
-      demo = new VRDemo();
-    }
-  } else if (window.viewerEnabled) {
+  if (window.viewerEnabled) {
     demo = new ViewerDemo();
-  }
-
-  if (!demo) {
+  } else {
     demo = new WebDemo();
   }
 
-  demo.display();
+  if (demo) {
+    demo.display();
+  }
 };
 
 function checkSupport() {

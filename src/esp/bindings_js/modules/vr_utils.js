@@ -1,13 +1,22 @@
-const VIEW_SENSORS = ["left_eye", "right_eye"];
+// Copyright (c) Facebook, Inc. and its affiliates.
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
 
-function getEyeSensorSpecs() {
+/* global Module */
+
+export const VIEW_SENSORS = ["left_eye", "right_eye"];
+export const pointToArray = p => [p.x, p.y, p.z, p.w];
+
+export function getEyeSensorSpecs() {
+  const resWidth = 1024;
+  const resHeight = 1024;
   const specs = new Module.VectorSensorSpec();
   {
     const spec = new Module.CameraSensorSpec();
     spec.uuid = "left_eye";
     spec.sensorType = Module.SensorType.COLOR;
     spec.sensorSubType = Module.SensorSubType.PINHOLE;
-    spec.resolution = [1024, 1024];
+    spec.resolution = [resWidth, resHeight];
     specs.push_back(spec);
   }
   {
@@ -15,7 +24,7 @@ function getEyeSensorSpecs() {
     spec.uuid = "right_eye";
     spec.sensorType = Module.SensorType.COLOR;
     spec.sensorSubType = Module.SensorSubType.PINHOLE;
-    spec.resolution = [1024, 1024];
+    spec.resolution = [resWidth, resHeight];
     specs.push_back(spec);
   }
   return specs;
@@ -23,7 +32,7 @@ function getEyeSensorSpecs() {
 
 // Given the WebXR viewer pose, update the positions/orientations of the view
 // sensors
-function updateHeadPose(pose, agent) {
+export function updateHeadPose(pose, agent) {
   const FWD = Module.Vector3.zAxis(1);
   const FWD_ANGLE = Math.atan2(FWD.z(), FWD.x());
   const DOWN = Module.Vector3.yAxis(-1);
