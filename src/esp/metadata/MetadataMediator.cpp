@@ -383,6 +383,10 @@ attributes::SceneAttributes::ptr MetadataMediator::makeSceneAndReferenceStage(
   return sceneAttributes;
 }  // MetadataMediator::makeSceneAndReferenceStage
 
+bool MetadataMediator::getCreateRenderer() const {
+  return simConfig_.createRenderer;
+}
+
 std::string MetadataMediator::getDatasetsOverview() const {
   // reserve space for info strings for all scene datasets
   std::vector<std::string> sceneDatasetHandles =

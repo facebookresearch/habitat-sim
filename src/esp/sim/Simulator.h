@@ -12,6 +12,7 @@
 #include "esp/assets/ResourceManager.h"
 #include "esp/core/esp.h"
 #include "esp/core/random.h"
+#include "esp/gfx/DebugLineRender.h"
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/WindowlessContext.h"
 #include "esp/metadata/MetadataMediator.h"
@@ -105,7 +106,10 @@ class Simulator {
    * --headless mode on linux
    */
   int gpuDevice() const {
-    CORRADE_ASSERT(context_ != nullptr, "::gpuDevice: no OpenGL context.", 0);
+    CORRADE_ASSERT(config_.createRenderer,
+                   "Simulator::gpuDevice() : cannot get gpu device when "
+                   "createRenderer flag is false",
+                   0);
     return context_->gpuDevice();
   }
 
@@ -915,6 +919,14 @@ class Simulator {
     return Magnum::Vector3();
   }
 
+  std::shared_ptr<esp::gfx::DebugLineRender> getDebugLineRender() {
+    // We only create this if/when used (lazy creation)
+    if (!debugLineRender_) {
+      debugLineRender_ = std::make_shared<esp::gfx::DebugLineRender>();
+    }
+    return debugLineRender_;
+  }
+
   /**
    * @brief Compute the navmesh for the simulator's current active scene and
    * assign it to the referenced @ref nav::PathFinder.
@@ -1459,6 +1471,8 @@ class Simulator {
    * *not* be changed without calling close() first
    */
   Corrade::Containers::Optional<bool> requiresTextures_;
+
+  std::shared_ptr<esp::gfx::DebugLineRender> debugLineRender_;
 
   ESP_SMART_POINTERS(Simulator)
 };

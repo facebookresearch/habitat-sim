@@ -19,7 +19,7 @@ class GenericDrawable : public Drawable {
   //! Adds drawable to given group and uses provided texture, and
   //! color for textured buffer and color shader output respectively
   explicit GenericDrawable(scene::SceneNode& node,
-                           Magnum::GL::Mesh& mesh,
+                           Magnum::GL::Mesh* mesh,
                            Drawable::Flags& meshAttributeFlags,
                            ShaderManager& shaderManager,
                            const Magnum::ResourceKey& lightSetupKey,

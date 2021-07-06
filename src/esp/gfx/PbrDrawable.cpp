@@ -14,7 +14,7 @@ namespace esp {
 namespace gfx {
 
 PbrDrawable::PbrDrawable(scene::SceneNode& node,
-                         Mn::GL::Mesh& mesh,
+                         Mn::GL::Mesh* mesh,
                          gfx::Drawable::Flags& meshAttributeFlags,
                          ShaderManager& shaderManager,
                          const Mn::ResourceKey& lightSetupKey,
@@ -80,6 +80,9 @@ void PbrDrawable::setLightSetup(const Mn::ResourceKey& lightSetupKey) {
 
 void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
                        Mn::SceneGraph::Camera3D& camera) {
+  CORRADE_ASSERT(glMeshExists(),
+                 "PbrDrawable::draw() : GL mesh doesn't exist", );
+
   updateShader()
       .updateShaderLightParameters()
       .updateShaderLightDirectionParameters(transformationMatrix, camera);
@@ -157,7 +160,7 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
     shader_->setTextureMatrix(materialData_->textureMatrix);
   }
 
-  shader_->draw(mesh_);
+  shader_->draw(getMesh());
 
   // WE stopped supporting doubleSided material due to lighting artifacts on
   // hard edges. See comments at the beginning of this function.

@@ -17,7 +17,7 @@ namespace esp {
 namespace gfx {
 
 GenericDrawable::GenericDrawable(scene::SceneNode& node,
-                                 Mn::GL::Mesh& mesh,
+                                 Mn::GL::Mesh* mesh,
                                  Drawable::Flags& meshAttributeFlags,
                                  ShaderManager& shaderManager,
                                  const Mn::ResourceKey& lightSetupKey,
@@ -60,7 +60,9 @@ GenericDrawable::GenericDrawable(scene::SceneNode& node,
   }
 
   // update the shader early here to to avoid doing it during the render loop
-  updateShader();
+  if (glMeshExists()) {
+    updateShader();
+  }
 }
 
 void GenericDrawable::setLightSetup(const Mn::ResourceKey& resourceKey) {
@@ -113,6 +115,9 @@ void GenericDrawable::updateShaderLightingParameters(
 
 void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
                            Mn::SceneGraph::Camera3D& camera) {
+  CORRADE_ASSERT(glMeshExists(),
+                 "GenericDrawable::draw() : GL mesh doesn't exist", );
+
   updateShader();
 
   updateShaderLightingParameters(transformationMatrix, camera);
@@ -147,7 +152,7 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
     shader_->bindNormalTexture(*(materialData_->normalTexture));
   }
 
-  shader_->draw(mesh_);
+  shader_->draw(getMesh());
 }
 
 void GenericDrawable::updateShader() {
