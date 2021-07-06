@@ -1,5 +1,3 @@
-import { infoSemanticFileName } from "./defaults";
-
 // Copyright (c) Facebook, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
@@ -81,7 +79,7 @@ export function checkWebgl2Support() {
   }
 }
 
-export function getInfoSemanticUrl(mainUrl) {
+export function getInfoSemanticUrl(mainUrl, infoSemanticFileName) {
   const splits = mainUrl.split("/");
   const moreThanOne = splits.length > 1;
   splits.pop();

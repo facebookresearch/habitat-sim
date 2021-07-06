@@ -1,5 +1,11 @@
+// Copyright (c) Facebook, Inc. and its affiliates.
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
+
+/* global Module */
+
 export const VIEW_SENSORS = ["left_eye", "right_eye"];
-const pointToArray = p => [p.x, p.y, p.z, p.w];
+export const pointToArray = p => [p.x, p.y, p.z, p.w];
 
 export function getEyeSensorSpecs() {
   const specs = new Module.VectorSensorSpec();

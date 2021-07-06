@@ -2,13 +2,17 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-import { getEyeSensorSpecs, updateHeadPose, VIEW_SENSORS } from '../lib/utils/vr_utils.js';
+/* global Module, XRWebGLLayer */
 
-const BUTTON_ID = "vr_button";
+import {
+  getEyeSensorSpecs,
+  updateHeadPose,
+  VIEW_SENSORS
+} from "../lib/habitat-sim-js/vr_utils.js";
 
 const pointToArray = p => [p.x, p.y, p.z, p.w];
 
-const dataDir = "data/"
+const dataDir = "data/";
 const physicsConfigFilepath = dataDir + "default.physics_config.json";
 const objectBaseFilepath = dataDir + "objects/";
 const stageBaseFilepath = dataDir + "stages/";
@@ -85,8 +89,6 @@ export class VRDemo {
   }
 
   static preloadFiles(preloadFunc) {
-    let dataUrlBase = "data";
-
     preloadFunc(physicsConfigFilepath);
 
     preloadFunc(VRDemo.getStageFilepath(Module.stageName));
@@ -102,14 +104,12 @@ export class VRDemo {
     preloadFunc(VRDemo.getObjectFilepath("hand_l_closed"));
     preloadFunc(VRDemo.getObjectConfigFilepath("hand_l_closed"));
 
-    console.log("YOOOOOOOOOOOOO");
     const replicaCadObjectNames = new Set();
     for (const object of objectSpawnOrder) {
       replicaCadObjectNames.add(object);
     }
 
     for (const name of replicaCadObjectNames) {
-      console.log(name);
       preloadFunc(VRDemo.getObjectFilepath(name));
       preloadFunc(VRDemo.getObjectCollisionGlbFilepath(name));
       preloadFunc(VRDemo.getObjectConfigFilepath(name));
@@ -139,7 +139,6 @@ export class VRDemo {
     this.config.overrideSceneLightDefaults = true; // always set this to true
     this.config.allowPbrShader = false; // Pbr shader isn't robust on WebGL yet
 
-    const episode = {};
     this.sim = new Module.Simulator(this.config);
 
     const agentConfigOrig = new Module.AgentConfiguration();
@@ -386,7 +385,9 @@ export class VRDemo {
 
   handleInput(frame) {
     for (let inputSource of frame.session.inputSources) {
-      if (!inputSource.gripSpace) continue;
+      if (!inputSource.gripSpace) {
+        continue;
+      }
       let handIndex = inputSource.handedness == "left" ? 0 : 1;
       let otherHandIndex = handIndex == 0 ? 1 : 0;
       let handRecord = this.handRecords[handIndex];

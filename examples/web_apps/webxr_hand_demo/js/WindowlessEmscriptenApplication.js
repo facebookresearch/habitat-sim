@@ -23,6 +23,8 @@
     DEALINGS IN THE SOFTWARE.
 */
 
+/* global define */
+
 function createMagnumModule(init) {
   const offscreen = new OffscreenCanvas(256, 256);
 

@@ -2,13 +2,13 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-/* global FS, Module */
+/* global Module, FS */
 
 import {
   checkWebAssemblySupport,
   checkWebgl2Support,
   buildConfigFromURLParameters
-} from "../lib/utils/utils.js";
+} from "../lib/habitat-sim-js/utils.js";
 import { VRDemo } from "./vr_demo.js";
 
 console.log("index.js loading...");
@@ -66,7 +66,8 @@ Module.preRun.push(() => {
   console.log("preRun");
   let config = {};
   buildConfigFromURLParameters(config);
-  Module.stageName = (config.stage === undefined) ? "remake_v0_JustBigStuff_00" : config.stage;
+  Module.stageName =
+    config.stage === undefined ? "remake_v0_JustBigStuff_00" : config.stage;
   doPreloading();
 });
 
