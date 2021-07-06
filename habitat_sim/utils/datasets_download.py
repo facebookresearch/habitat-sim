@@ -527,8 +527,7 @@ def main(args):
             exit(2)
 
     # initialize data_sources and data_groups with test and example assets
-    if not os.path.exists(data_path):
-        os.mkdir(data_path)
+    os.makedirs(data_path, exist_ok=True)
     data_path = os.path.abspath(data_path) + "/"
     initialize_test_data_sources(data_path=data_path)
 
