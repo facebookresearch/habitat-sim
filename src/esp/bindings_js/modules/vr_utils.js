@@ -8,13 +8,15 @@ export const VIEW_SENSORS = ["left_eye", "right_eye"];
 export const pointToArray = p => [p.x, p.y, p.z, p.w];
 
 export function getEyeSensorSpecs() {
+  const resWidth = 1024;
+  const resHeight = 1024;
   const specs = new Module.VectorSensorSpec();
   {
     const spec = new Module.CameraSensorSpec();
     spec.uuid = "left_eye";
     spec.sensorType = Module.SensorType.COLOR;
     spec.sensorSubType = Module.SensorSubType.PINHOLE;
-    spec.resolution = [1024, 1024];
+    spec.resolution = [resWidth, resHeight];
     specs.push_back(spec);
   }
   {
@@ -22,7 +24,7 @@ export function getEyeSensorSpecs() {
     spec.uuid = "right_eye";
     spec.sensorType = Module.SensorType.COLOR;
     spec.sensorSubType = Module.SensorSubType.PINHOLE;
-    spec.resolution = [1024, 1024];
+    spec.resolution = [resWidth, resHeight];
     specs.push_back(spec);
   }
   return specs;
