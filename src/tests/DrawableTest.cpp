@@ -89,7 +89,7 @@ void DrawableTest::addRemoveDrawables() {
 
   // add a toy box here!
   node.addFeature<esp::gfx::GenericDrawable>(
-      box, meshAttributeFlags, resourceManager_->getShaderManager(),
+      &box, meshAttributeFlags, resourceManager_->getShaderManager(),
       esp::NO_LIGHT_KEY, esp::PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
       drawableGroup_);
   // we already had 5 boxes in the scene, so the id for the above toy box must
@@ -99,7 +99,7 @@ void DrawableTest::addRemoveDrawables() {
   // step 1: basic tests
   esp::gfx::GenericDrawable* dr =
       new esp::gfx::GenericDrawable{node,
-                                    box,
+                                    &box,
                                     meshAttributeFlags,
                                     resourceManager_->getShaderManager(),
                                     esp::NO_LIGHT_KEY,
@@ -114,7 +114,7 @@ void DrawableTest::addRemoveDrawables() {
 
   // step 2: add a single drawable to a group
   dr = new esp::gfx::GenericDrawable{node,
-                                     box,
+                                     &box,
                                      meshAttributeFlags,
                                      resourceManager_->getShaderManager(),
                                      esp::NO_LIGHT_KEY,
@@ -140,7 +140,7 @@ void DrawableTest::addRemoveDrawables() {
 
   // step 5: remove a drawable, that is NOT in the group! should be fine!!
   dr = new esp::gfx::GenericDrawable{node,
-                                     box,
+                                     &box,
                                      meshAttributeFlags,
                                      resourceManager_->getShaderManager(),
                                      esp::NO_LIGHT_KEY,

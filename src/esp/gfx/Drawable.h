@@ -68,7 +68,7 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
    * @param group Drawable group this drawable will be added to.
    */
   Drawable(scene::SceneNode& node,
-           Magnum::GL::Mesh& mesh,
+           Magnum::GL::Mesh* mesh,
            DrawableType type,
            DrawableGroup* group = nullptr);
   ~Drawable() override;
@@ -94,14 +94,19 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
    */
   virtual void setLightSetup(
       CORRADE_UNUSED const Magnum::ResourceKey& lightSetup){};
-
   /**
    * @brief the the scene node
    */
   virtual scene::SceneNode& getSceneNode() const { return node_; }
 
   /** @brief get the GL mesh */
-  Magnum::GL::Mesh& getMesh() const { return mesh_; }
+  Magnum::GL::Mesh& getMesh() const {
+    CORRADE_ASSERT(
+        mesh_ != nullptr,
+        "Drawable::getMesh() : Attempting to get the GL mesh when none exists",
+        *mesh_);
+    return *mesh_;
+  }
 
   /** @brief get the drawable type */
   DrawableType getDrawableType() const { return type_; }
@@ -115,7 +120,10 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
    * NOTE: sub-class should override this function if the "visualizer mesh" is
    * different from mesh_ (check the example in the PTexMeshDrawable class)
    */
-  virtual Magnum::GL::Mesh& getVisualizerMesh() { return mesh_; }
+  virtual Magnum::GL::Mesh& getVisualizerMesh() {
+    CORRADE_INTERNAL_ASSERT(mesh_ != nullptr);
+    return *mesh_;
+  }
 
  protected:
   /**
@@ -133,10 +141,14 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
   DrawableType type_ = DrawableType::None;
 
   scene::SceneNode& node_;
-  Magnum::GL::Mesh& mesh_;
 
   static uint64_t drawableIdCounter;
   uint64_t drawableId_;
+
+  bool glMeshExists() const { return mesh_ != nullptr; }
+
+ private:
+  Magnum::GL::Mesh* mesh_ = nullptr;
 };
 
 CORRADE_ENUMSET_OPERATORS(Drawable::Flags)
