@@ -27,6 +27,7 @@
   "stage_include_obj_substr": [
     "frl_apartment_blinds",
     "frl_apartment_ceiling",
+    "frl_apartment_camera",
     "frl_apartment_door_",
     "frl_apartment_door_part_",
     "frl_apartment_floor",
@@ -41,7 +42,6 @@
   "obj_exclude_names": [
     "frl_apartment_switch",
     "frl_apartment_panel",
-    "frl_apartment_camera1",
     "top_shelf_02_door",
     "frl_apartment_lower_shelf_01_part_01",
     "frl_apartment_cabinet",
