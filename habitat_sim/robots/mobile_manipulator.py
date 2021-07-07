@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Set
 
 import attr
 import magnum as mn
@@ -84,7 +84,7 @@ class MobileManipulatorParams:
     wheel_mtr_max_impulse: float
 
     base_offset: mn.Vector3
-    base_link_names: List[str]
+    base_link_names: Set[str]
 
 
 class MobileManipulator(RobotInterface):
