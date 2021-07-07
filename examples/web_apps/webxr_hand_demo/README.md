@@ -4,31 +4,27 @@ This is a webapp that allows the user to enter a scene in VR. The user can then 
 
 # Installation
 
-1. Download the hand demo data:
+1. `cd` to the main `habitat_sim` directory, then download the hand demo data:
 ```bash
 python -m habitat_sim.utils.datasets_download --uids webxr_hand_demo_data --data-path examples/web_apps/webxr_hand_demo
 ```
 2. Follow [instructions](https://github.com/facebookresearch/habitat-sim#experimental-emscripten-webgl-and-web-apps) for installing and activating Emscripten, including `source path/to/emsdk_env.sh` or similar to configure env variables.
-1. Create the directory to store the JS transpiled version of Habitat:
-```bash
-mkdir -p examples/web_apps/webxr_hand_demo/lib/habitat-sim-js
-```
-4. Transpile Habitat into JS and copy the resulting files over. Also copy over the utils files.
+1. `cd` to `examples/web_apps/webxr_hand_demo` (this directory). Then run a script to transpile Habitat into JS, copy the resulting files over, and also copy over the JS utils files.
 ```bash
 chmod +x build_and_install_habitat_sim_js.sh
 ./build_and_install_habitat_sim_js.sh
 ```
-To get an updated version of the Habitat library into the hand demo, you just need to rerun the second command.
+To update the Habitat-sim library for the hand demo, you just need to rerun the second command.
 
 # Testing
 ## VR emulation in your desktop browser, standalone
 
-1. Http-serve the VR app folder:
+1. `cd` to `examples/web_apps/webxr_hand_demo` and http-serve the VR app folder:
 ```bash
-cd examples/web_apps/webxr_hand_demo && python3 -m http.server
+python3 -m http.server
 ```
 2. Install the [WebXR emulator](https://blog.mozvr.com/webxr-emulator-extension/) and then restart your browser.
-1. Navigate to `http://0.0.0.0:8000/index.html`
+1. Navigate to `http://0.0.0.0:8000`
     - You can also add a URL parameter to choose the stage to spawn in. For instance, appending `?stage=remake_v0_JustBigStuff_00` at the end of the URL means that stage will be loaded. By default, if this parameter is not given, `remake_v0_JustBigStuff_00` will be the scene that is loaded. See the Project folder structure section for instructions on how to add stages.
 1. Recommended: watch the dev console as the page loads.
 1. Once loading is complete, click "Enter VR". You should see a stereo 3D view of a kitchen scene.
