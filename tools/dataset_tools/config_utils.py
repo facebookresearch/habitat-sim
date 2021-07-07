@@ -252,6 +252,49 @@ def get_files_matching_regex(
     return res_list
 
 
+def build_disp_string_elem(k: str, v: Any, tab: str, new_tab: str):
+    """This function is a utility to build a reasonably formatted
+    display string for dictionaries or lists
+    """
+    res = ""
+    k_disp_str = ""
+    if len(k) > 0:
+        k_disp_str = "{} : ".format(k)
+    if isinstance(v, dict):
+        res += tab + "{}({}\n{}{}),\n".format(
+            k_disp_str, tab, dict_to_disp_string(v, new_tab), tab
+        )
+    elif isinstance(v, list):
+        res += tab + "{}[\n{}{}],\n".format(
+            k_disp_str, list_to_disp_string(v, new_tab), tab
+        )
+    else:
+        res += tab + "{}{},\n".format(k_disp_str, v)
+    return res
+
+
+def list_to_disp_string(ara: list, tab):
+    """This function is a utility to build a reasonably formatted
+    display string for a list variable's contents
+    """
+    res = ""
+    new_tab = tab + "\t"
+    for elem in ara:
+        res += build_disp_string_elem("", elem, tab, new_tab)
+    return res
+
+
+def dict_to_disp_string(dictionary, tab):
+    """This function is a utility to build a reasonably formatted
+    display string for a dictionary variable's contents
+    """
+    res = ""
+    new_tab = tab + "\t"
+    for k, v in dictionary.items():
+        res += build_disp_string_elem(k, v, tab, new_tab)
+    return res
+
+
 # takes a source directory, returns a list of tuples of paths amd dirnames
 # list of filenames if no regex_str is specified, returns all directories
 def get_directories_matching_regex(

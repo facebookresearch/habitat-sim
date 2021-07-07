@@ -44,32 +44,7 @@ LIGHTING_TAG = "Lighting"
 # successor node names that should be included in the stage construction.
 # The nodes whose names contain these substrings (And their subtrees) will
 # be added to the stage and not spun off as individual objects.
-STAGE_INCLUDE_OBJ_DICT = {
-    OBJECTS_TAG: {
-        "floor_",
-        "window",
-        "a-frameshelf",
-        "blinds",
-        "burner",
-        "cabinet",
-        "counter",
-        "curtains",
-        "faucet",
-        "lightfixture",
-        "lightswitch",
-        "shelf",
-        "shelfve",
-        "showercurtain",
-        "showerdoor",
-        "showerglass",
-        "showerhead",
-        "sink",
-        "stoveknob",
-        "toilet_",
-        "toiletpaperhanger",
-        "towelholder",
-    }
-}
+STAGE_INCLUDE_OBJ_DICT = {OBJECTS_TAG: {}}
 
 # Objects specified in the STAGE_INCLUDE_OBJ_DICT are, by default, ignored
 # when objects are extracted from the scene graph.  This dict will provide
@@ -81,13 +56,8 @@ OBJECT_OVERRIDE_SUBNODES = {"floor_lamp"}
 # This is a set of substrings (case-insensitive) of node names for
 # nodes that should be excluded from object synthesis
 # Make OBJECT_EXCLUDE_SUBNODES an empty set to not ignore anything
-OBJECT_EXCLUDE_SUBNODES = {
-    "boundingbox",
-    "colliders",
-    "visibilitypoints",
-    "hideandseek",
-    "trigger",
-}
+OBJECT_EXCLUDE_SUBNODES = {}
+
 STAGE_EXCLUDE_SUBNODES = {STAGE_TAG: OBJECT_EXCLUDE_SUBNODES}
 STAGE_EXCLUDE_SUBNODES[OBJECTS_TAG] = OBJECT_OVERRIDE_SUBNODES
 
@@ -96,29 +66,8 @@ STAGE_EXCLUDE_SUBNODES[OBJECTS_TAG] = OBJECT_OVERRIDE_SUBNODES
 # when an otherwise dynamic scene is being instantiated.
 # This should include large furnishings and other obstacles that we
 # do not wish to simulate dynamically
-OBJECTS_CREATED_STATIC = {
-    "bed",
-    "bench",
-    "chair",
-    "cloth",
-    "decor",
-    "decorative",
-    "desk",
-    "dresser",
-    "fridge",
-    "lamp",
-    "microwave",
-    "mirror",
-    "nightstand",
-    "ottoman",
-    "painting",
-    "poster",
-    "safe",
-    "sofa",
-    "tvstand",
-    "television",
-    "table",
-}
+OBJECTS_CREATED_STATIC = {}
+
 # This is a set of lowercase substrings of names of objects that
 # should be specified as dynamic in the scene instance upon creation
 # when a dynamic scene is being instantiated.  This is intended to provide
