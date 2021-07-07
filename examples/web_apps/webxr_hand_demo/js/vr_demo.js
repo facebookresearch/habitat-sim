@@ -142,7 +142,7 @@ export class VRDemo {
     this.sim = new Module.Simulator(this.config);
 
     const agentConfigOrig = new Module.AgentConfiguration();
-    agentConfigOrig.sensorSpecifications = getEyeSensorSpecs();
+    agentConfigOrig.sensorSpecifications = getEyeSensorSpecs(1024, 1024);
 
     this.sim.addAgent(agentConfigOrig);
     this.agentId = 0;
