@@ -64,41 +64,21 @@ export class VRDemo {
     this.fpsElement = document.getElementById("fps");
   }
 
-  static getObjectFilepath(name) {
-    return DataUtils.getObjectBaseFilepath() + name + ".glb";
-  }
-
-  static getObjectConfigFilepath(name) {
-    return DataUtils.getObjectBaseFilepath() + name + ".object_config.json";
-  }
-
-  static getObjectCollisionGlbFilepath(name) {
-    return DataUtils.getObjectBaseFilepath() + name + "_cv_decomp.glb";
-  }
-
-  static getStageFilepath(name) {
-    return DataUtils.getStageBaseFilepath() + name + ".glb";
-  }
-
-  static getStageConfigFilepath(name) {
-    return DataUtils.getStageBaseFilepath() + name + ".stage_config.json";
-  }
-
   static preloadFiles(preloadFunc) {
     preloadFunc(DataUtils.getPhysicsConfigFilepath());
 
-    preloadFunc(VRDemo.getStageFilepath(Module.stageName));
-    preloadFunc(VRDemo.getStageConfigFilepath(Module.stageName));
+    preloadFunc(DataUtils.getStageFilepath(Module.stageName));
+    preloadFunc(DataUtils.getStageConfigFilepath(Module.stageName));
 
-    preloadFunc(VRDemo.getObjectFilepath("hand_r_open"));
-    preloadFunc(VRDemo.getObjectConfigFilepath("hand_r_open"));
-    preloadFunc(VRDemo.getObjectFilepath("hand_r_closed"));
-    preloadFunc(VRDemo.getObjectConfigFilepath("hand_r_closed"));
+    preloadFunc(DataUtils.getObjectFilepath("hand_r_open"));
+    preloadFunc(DataUtils.getObjectConfigFilepath("hand_r_open"));
+    preloadFunc(DataUtils.getObjectFilepath("hand_r_closed"));
+    preloadFunc(DataUtils.getObjectConfigFilepath("hand_r_closed"));
 
-    preloadFunc(VRDemo.getObjectFilepath("hand_l_open"));
-    preloadFunc(VRDemo.getObjectConfigFilepath("hand_l_open"));
-    preloadFunc(VRDemo.getObjectFilepath("hand_l_closed"));
-    preloadFunc(VRDemo.getObjectConfigFilepath("hand_l_closed"));
+    preloadFunc(DataUtils.getObjectFilepath("hand_l_open"));
+    preloadFunc(DataUtils.getObjectConfigFilepath("hand_l_open"));
+    preloadFunc(DataUtils.getObjectFilepath("hand_l_closed"));
+    preloadFunc(DataUtils.getObjectConfigFilepath("hand_l_closed"));
 
     const replicaCadObjectNames = new Set();
     for (const object of objectSpawnOrder) {
@@ -106,9 +86,9 @@ export class VRDemo {
     }
 
     for (const name of replicaCadObjectNames) {
-      preloadFunc(VRDemo.getObjectFilepath(name));
-      preloadFunc(VRDemo.getObjectCollisionGlbFilepath(name));
-      preloadFunc(VRDemo.getObjectConfigFilepath(name));
+      preloadFunc(DataUtils.getObjectFilepath(name));
+      preloadFunc(DataUtils.getObjectCollisionGlbFilepath(name));
+      preloadFunc(DataUtils.getObjectConfigFilepath(name));
     }
   }
 
@@ -128,7 +108,7 @@ export class VRDemo {
 
   initSimAndSensors() {
     this.config = new Module.SimulatorConfiguration();
-    this.config.scene_id = VRDemo.getStageFilepath(Module.stageName);
+    this.config.scene_id = DataUtils.getStageFilepath(Module.stageName);
     this.config.enablePhysics = true;
     this.config.physicsConfigFile = DataUtils.getPhysicsConfigFilepath();
     this.config.sceneLightSetup = ""; // this empty string means "use lighting"
@@ -164,12 +144,12 @@ export class VRDemo {
 
     const handFilepathsByHandIndex = [
       [
-        VRDemo.getObjectConfigFilepath("hand_l_open"),
-        VRDemo.getObjectConfigFilepath("hand_l_closed")
+        DataUtils.getObjectConfigFilepath("hand_l_open"),
+        DataUtils.getObjectConfigFilepath("hand_l_closed")
       ],
       [
-        VRDemo.getObjectConfigFilepath("hand_r_open"),
-        VRDemo.getObjectConfigFilepath("hand_r_closed")
+        DataUtils.getObjectConfigFilepath("hand_r_open"),
+        DataUtils.getObjectConfigFilepath("hand_r_closed")
       ]
     ];
 
@@ -537,7 +517,7 @@ export class VRDemo {
         if (this.objectCounter < objectSpawnOrder.length) {
           let nextIndex = this.objectCounter;
           this.objectCounter++;
-          filepath = VRDemo.getObjectConfigFilepath(
+          filepath = DataUtils.getObjectConfigFilepath(
             objectSpawnOrder[nextIndex]
           );
         }
