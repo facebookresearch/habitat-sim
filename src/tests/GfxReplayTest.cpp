@@ -355,6 +355,7 @@ TEST(GfxReplayTest, simulatorIntegration) {
   SimulatorConfiguration simConfig{};
   simConfig.activeSceneName = boxFile;
   simConfig.enableGfxReplaySave = true;
+  simConfig.createRenderer = false;
 
   auto sim = Simulator::create_unique(simConfig);
   auto objAttrMgr = sim->getObjectAttributesManager();

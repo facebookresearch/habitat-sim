@@ -539,7 +539,8 @@ class Sensor:
 
         self._spec = self._sensor_object.specification()
 
-        self._sim.renderer.bind_render_target(self._sensor_object)
+        if self._sim.renderer is not None:
+            self._sim.renderer.bind_render_target(self._sensor_object)
 
         if self._spec.gpu2gpu_transfer:
             assert cuda_enabled, "Must build habitat sim with cuda for gpu2gpu-transfer"
@@ -605,6 +606,7 @@ class Sensor:
         )
 
     def draw_observation(self) -> None:
+        assert self._sim.renderer is not None
         # see if the sensor is attached to a scene graph, otherwise it is invalid,
         # and cannot make any observation
         if not self._sensor_object.object:
@@ -615,6 +617,7 @@ class Sensor:
         self._sim.renderer.draw(self._sensor_object, self._sim)
 
     def _draw_observation_async(self) -> None:
+        assert self._sim.renderer is not None
         if (
             self._spec.sensor_type == SensorType.SEMANTIC
             and self._sim.get_active_scene_graph()
@@ -669,6 +672,7 @@ class Sensor:
         )
 
     def get_observation(self) -> Union[ndarray, "Tensor"]:
+        assert self._sim.renderer is not None
         tgt = self._sensor_object.render_target
 
         if self._spec.gpu2gpu_transfer:
@@ -682,7 +686,6 @@ class Sensor:
 
                 obs = self._buffer.flip(0)  # type: ignore[union-attr]
         else:
-
             if self._spec.sensor_type == SensorType.SEMANTIC:
                 tgt.read_frame_object_id(self.view)
             elif self._spec.sensor_type == SensorType.DEPTH:

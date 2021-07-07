@@ -306,7 +306,7 @@ def download_and_place(
     data_path,
     username: Optional[str] = None,
     password: Optional[str] = None,
-    replace=False,
+    replace: Optional[bool] = None,
 ):
     r"""Data-source download function. Validates uid, handles existing data version, downloads data, unpacks, writes version, cleans up."""
     if not data_sources.get(uid):
@@ -327,7 +327,7 @@ def download_and_place(
             f"Existing data source ({uid}) version ({version_tag}) is current. Data located: '{version_dir}'. Symblink: '{link_path}'."
         )
         replace_existing = (
-            replace if replace else prompt_yes_no("Replace versioned data?")
+            replace if replace is not None else prompt_yes_no("Replace versioned data?")
         )
 
         if replace_existing:
@@ -477,8 +477,16 @@ def main(args):
     )
     arg_group2.add_argument(
         "--replace",
+        dest="replace",
+        default=None,
         action="store_true",
         help="If set, existing equivalent versions of any dataset found during download will be deleted automatically. Otherwise user will be prompted before overriding existing data.",
+    )
+    arg_group2.add_argument(
+        "--no-replace",
+        dest="replace",
+        action="store_false",
+        help="If set, existing equivalent versions of any dataset found during download will be skipped automatically. Otherwise user will be prompted before overriding existing data.",
     )
 
     parser.add_argument(
@@ -497,21 +505,21 @@ def main(args):
     args = parser.parse_args(args)
     replace = args.replace
 
-    # get a default data_path from git
+    # get a default data_path "./data/"
     data_path = args.data_path
     if not data_path:
         try:
-            import git
-
-            repo = git.Repo(".", search_parent_directories=True)
-            dir_path = repo.working_tree_dir
-            # Root data directory. Optionaly overridden by input argument "--data-path".
-            data_path = os.path.join(dir_path, "data")
+            data_path = os.path.abspath("./data/")
+            print(
+                f"No data-path provided, default to: {data_path}. Use '--data-path' to specify another location."
+            )
+            if not os.path.exists(data_path):
+                os.makedirs(data_path)
         except Exception:
             traceback.print_exc(file=sys.stdout)
             print("----------------------------------------------------------------")
             print(
-                "Aborting download, failed to get default data_path from git repo and none provided."
+                "Aborting download, failed to create default data_path and none provided."
             )
             print("Try providing --data-path (e.g. '/path/to/habitat-sim/data/')")
             print("----------------------------------------------------------------")
@@ -519,8 +527,7 @@ def main(args):
             exit(2)
 
     # initialize data_sources and data_groups with test and example assets
-    if not os.path.exists(data_path):
-        os.mkdir(data_path)
+    os.makedirs(data_path, exist_ok=True)
     data_path = os.path.abspath(data_path) + "/"
     initialize_test_data_sources(data_path=data_path)
 

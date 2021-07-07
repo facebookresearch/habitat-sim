@@ -381,6 +381,13 @@ class MetadataMediator {
   }
 
   /**
+   * @brief Returns the createRenderer flag that was set in the associated
+   * SimulatorConfiguration.
+   * @return the boolean flag.
+   */
+  bool getCreateRenderer() const;
+
+  /**
    * @brief This function returns a list of all the scene datasets currently
    * loaded, along with some key statistics for each, formatted as a
    * comma-separated string.
