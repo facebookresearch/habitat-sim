@@ -2,6 +2,10 @@
 
 This is a webapp that allows the user to enter a scene in VR. The user can then spawn various objects and interact with them by picking them up or touching them. Use the index trigger buttons to grab and the secondary trigger buttons to spawn.
 
+# Known Issues
+
+You may encounter memory access errors on Quest 2 or possibly other VR devices. Desktop browser VR emulation is unaffected. We speculate this is due to a recent Oculus browser update and a previously-hidden memory-alignment issue related to Emscripten and/or Magnum's TinyGLTF importer. We have a workaround for testing on Quest 2: strangely, you need to load the page while tethered to a desktop via ADB debugging (this avoids the crash). For a fix, we have some leads which we'll pursue as this project gets closer to deploying on Quest 2.
+
 # Installation
 
 1. `cd` to the main `habitat_sim` directory, then download the hand demo data:
