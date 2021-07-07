@@ -33,7 +33,9 @@ class FetchRobot(MobileManipulator):
             wheel_mtr_vel_gain=1.3,
             wheel_mtr_max_impulse=10.0,
             base_offset=mn.Vector3(0, 0, 0),
-            ctrl_freq=30,
+            base_link_names=['base_link', 'r_wheel_link', 'l_wheel_link',
+                'r_wheel_link', 'bellows_link', 'bellows_link2', 'estop_link',
+                'laser_link', 'torso_fixed_link'],
         )
         super().__init__(fetch_params, urdf_path, sim, limit_robo_joints, fixed_base)
         self.back_joint_id = 6

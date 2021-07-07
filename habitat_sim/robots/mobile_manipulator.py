@@ -52,7 +52,6 @@ class MobileManipulatorParams:
     :property wheel_mtr_max_impulse: The maximum impulse of the wheel motor (if
         there are wheels).
     :property base_offset: The offset of the root transform from the center ground point for navmesh kinematic control.
-    :property ctrl_freq: The number of control actions per second.
     """
 
     arm_joints: List[int]
@@ -85,8 +84,7 @@ class MobileManipulatorParams:
     wheel_mtr_max_impulse: float
 
     base_offset: mn.Vector3
-
-    ctrl_freq: int
+    base_link_names: List[str]
 
 
 class MobileManipulator(RobotInterface):
@@ -365,6 +363,9 @@ class MobileManipulator(RobotInterface):
     @arm_joint_pos.setter
     def arm_joint_pos(self, ctrl: List[float]):
         """Kinematically sets the arm joints and sets the motors to target."""
+        if len(ctrl) != len(self.params.arm_joints):
+            raise ValueError("Control dimension does not match joint dimension")
+
         joint_positions = self.sim_obj.joint_positions
         for i, jidx in enumerate(self.params.arm_joints):
             self._set_motor_pos(jidx, ctrl[i])
@@ -390,6 +391,9 @@ class MobileManipulator(RobotInterface):
     @arm_motor_pos.setter
     def arm_motor_pos(self, ctrl: List[float]) -> None:
         """Set the desired target of the arm joint motors."""
+        if len(ctrl) != len(self.params.arm_joints):
+            raise ValueError("Control dimension does not match joint dimension")
+
         for i, jidx in enumerate(self.params.arm_joints):
             self._set_motor_pos(jidx, ctrl[i])
 
@@ -424,6 +428,18 @@ class MobileManipulator(RobotInterface):
             - self.sim_obj.transformation.transform_vector(self.params.base_offset)
         )
 
+    @property
+    def base_rot(self):
+        return self.sim_obj.rotation.angle()
+
+    @base_rot.setter
+    def base_rot(self, rotation_y_rad: float):
+        self.sim_obj.rotation = mn.Quaternion.rotation(
+                mn.Rad(rotation_y_rad), mn.Vector3(0, 1, 0))
+
+    def is_base_link(self, link_id: int) -> bool:
+        return self.sim_obj.get_link_name(link_id) in self.params.base_link_names
+
     #############################################
     # HIDDEN
     #############################################
@@ -453,10 +469,10 @@ class MobileManipulator(RobotInterface):
         set_pos[self.joint_pos_indices[joint_idx]] = angle
         self.sim_obj.joint_positions = set_pos
 
-    def _interpolate_arm_control(self, targs, idxs, seconds, get_observations=False):
+    def _interpolate_arm_control(self, targs, idxs, seconds, ctrl_freq, get_observations=False):
         curs = np.array([self._get_motor_pos(i) for i in idxs])
         diff = targs - curs
-        T = int(seconds * self.params.ctrl_freq)
+        T = int(seconds * ctrl_freq)
         delta = diff / T
 
         observations = []
@@ -468,7 +484,7 @@ class MobileManipulator(RobotInterface):
                     delta[j] * (i + 1) + curs[j]
                 )
             self.sim_obj.joint_positions = joint_positions
-            self._sim.step_world(1 / self.params.ctrl_freq)
+            self._sim.step_world(1 / ctrl_freq)
             if get_observations:
                 observations.append(self._sim.get_sensor_observations())
         return observations
