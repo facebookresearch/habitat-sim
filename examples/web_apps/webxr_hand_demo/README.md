@@ -28,7 +28,7 @@ To get an updated version of the Habitat library into the hand demo, you just ne
 cd examples/web_apps/webxr_hand_demo && python3 -m http.server
 ```
 2. Install the [WebXR emulator](https://blog.mozvr.com/webxr-emulator-extension/) and then restart your browser.
-1. Navigate to `http://0.0.0.0:8000/standalone.html`
+1. Navigate to `http://0.0.0.0:8000/index.html`
     - You can also add a URL parameter to choose the stage to spawn in. For instance, appending `?stage=remake_v0_JustBigStuff_00` at the end of the URL means that stage will be loaded. By default, if this parameter is not given, `remake_v0_JustBigStuff_00` will be the scene that is loaded. See the Project folder structure section for instructions on how to add stages.
 1. Recommended: watch the dev console as the page loads.
 1. Once loading is complete, click "Enter VR". You should see a stereo 3D view of a kitchen scene.
@@ -54,12 +54,10 @@ If the VR app fails to load in your desktop browser, look for errors in the brow
     - `data/objects` contains the hand models as well as the ReplicaCAD objects that can be spawned. It also contains some extra objects you may use.
 - `js` contains the JS source code of the hand demo site.
 - `lib` contains the JS transpiled version of Habitat-sim, as well as some general use utils JS files. This folder is what gets modified when you run `build_and_install_habitat_sim_js.sh`.
-- `standalone.html` is the hosted site, and `style.css` is its stylesheet.
+- `index.html` is the hosted site, and `style.css` is its stylesheet.
 
 # Habitat-sim JS build
 
 The Habitat-sim JS build is a webassembly build of the Habitat simulator. It's built by compiling Habitat-sim C++ code to webassembly using the Emscripten compiler. The build outputs are `hsim_bindings.js` and `hsim_bindings.wasm`. `hsim_bindings.js` can be included from Javascript and you can call into the simulator via the bindings defined in `habitat-sim/src/esp/bindings_js/bindings_js.cpp`.
-
-The Habitat-sim JS build doesn't currently have an installer, so we can't get it from npm, conda, pip, or similar. We've added habitat-sim as a git submodule at `habitat-sim` and build it locally to produce `hsim_bindings.js` and `hsim_bindings.wasm`. We copy those files to `examples/web_apps/webxr_hand_demo/lib` as a post-build step in `build_and_install_habitat_sim_js.sh`.
 
 We also utilize some JS utilities provided as .js files inside Habitat-sim. These are also copied from the Habitat-sim source folders to `examples/web_apps/webxr_hand_demo/lib` as part of the build script.
