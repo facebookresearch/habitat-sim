@@ -9,13 +9,9 @@ import {
   updateHeadPose,
   VIEW_SENSORS
 } from "../lib/habitat-sim-js/vr_utils.js";
+import { DataUtils } from "./data_utils.js";
 
 const pointToArray = p => [p.x, p.y, p.z, p.w];
-
-const dataDir = "data/";
-const physicsConfigFilepath = dataDir + "default.physics_config.json";
-const objectBaseFilepath = dataDir + "objects/";
-const stageBaseFilepath = dataDir + "stages/";
 
 const objectSpawnOrder = [
   "frl_apartment_vase_02", // gray
@@ -69,27 +65,27 @@ export class VRDemo {
   }
 
   static getObjectFilepath(name) {
-    return objectBaseFilepath + name + ".glb";
+    return DataUtils.getObjectBaseFilepath() + name + ".glb";
   }
 
   static getObjectConfigFilepath(name) {
-    return objectBaseFilepath + name + ".object_config.json";
+    return DataUtils.getObjectBaseFilepath() + name + ".object_config.json";
   }
 
   static getObjectCollisionGlbFilepath(name) {
-    return objectBaseFilepath + name + "_cv_decomp.glb";
+    return DataUtils.getObjectBaseFilepath() + name + "_cv_decomp.glb";
   }
 
   static getStageFilepath(name) {
-    return stageBaseFilepath + name + ".glb";
+    return DataUtils.getStageBaseFilepath() + name + ".glb";
   }
 
   static getStageConfigFilepath(name) {
-    return stageBaseFilepath + name + ".stage_config.json";
+    return DataUtils.getStageBaseFilepath() + name + ".stage_config.json";
   }
 
   static preloadFiles(preloadFunc) {
-    preloadFunc(physicsConfigFilepath);
+    preloadFunc(DataUtils.getPhysicsConfigFilepath());
 
     preloadFunc(VRDemo.getStageFilepath(Module.stageName));
     preloadFunc(VRDemo.getStageConfigFilepath(Module.stageName));
@@ -134,7 +130,7 @@ export class VRDemo {
     this.config = new Module.SimulatorConfiguration();
     this.config.scene_id = VRDemo.getStageFilepath(Module.stageName);
     this.config.enablePhysics = true;
-    this.config.physicsConfigFile = physicsConfigFilepath;
+    this.config.physicsConfigFile = DataUtils.getPhysicsConfigFilepath();
     this.config.sceneLightSetup = ""; // this empty string means "use lighting"
     this.config.overrideSceneLightDefaults = true; // always set this to true
     this.config.allowPbrShader = false; // Pbr shader isn't robust on WebGL yet
@@ -159,7 +155,10 @@ export class VRDemo {
     state.rotation = [0.0, 0.0, 0.0, 1.0];
     agent.setState(state, false);
 
-    Module.loadAllObjectConfigsFromPath(this.sim, objectBaseFilepath);
+    Module.loadAllObjectConfigsFromPath(
+      this.sim,
+      DataUtils.getObjectBaseFilepath()
+    );
 
     this.handRecords = [new HandRecord(), new HandRecord()];
 
