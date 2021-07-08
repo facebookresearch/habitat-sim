@@ -97,6 +97,20 @@
           0,
           0
         ]
+      },
+      "kitchenCupboard_01": {
+        "uniform_scale": 0.38,
+        "translation": [
+          0.580730934143066,
+          1.53,
+          6.373764820098877
+        ],
+        "rotation": [
+          -0.707,
+          0.707,
+          0,
+          0
+        ]
       }
     },
     "sc1_staging": {
@@ -122,6 +136,20 @@
         "rotation": [
           1,
           0,
+          0,
+          0
+        ]
+      },
+      "kitchenCupboard_01": {
+        "uniform_scale": 0.38,
+        "translation": [
+          -2.3,
+          1.53,
+          0.87
+        ],
+        "rotation": [
+          -0.707,
+          0.707,
           0,
           0
         ]
@@ -153,6 +181,20 @@
           0,
           0
         ]
+      },
+      "kitchenCupboard_01": {
+        "uniform_scale": 0.38,
+        "translation": [
+          -2.3,
+          1.53,
+          1.6446
+        ],
+        "rotation": [
+          -0.707,
+          0.707,
+          0,
+          0
+        ]
       }
     },
     "sc3_staging": {
@@ -178,6 +220,20 @@
         "rotation": [
           1,
           0,
+          0,
+          0
+        ]
+      },
+      "kitchenCupboard_01": {
+        "uniform_scale": 0.38,
+        "translation": [
+          -2.3,
+          1.53,
+          1.6346
+        ],
+        "rotation": [
+          -0.707,
+          0.707,
           0,
           0
         ]
@@ -208,6 +264,20 @@
           0.0,
           0.7071068233333898,
           0.0
+        ]
+      },
+      "kitchenCupboard_01": {
+        "uniform_scale": 0.38,
+        "translation": [
+          2.74135208129882812,
+          1.53,
+          7.732462692260742
+        ],
+        "rotation": [
+          -0.5,
+          0.5,
+          -0.5,
+          -0.5
         ]
       }
     }

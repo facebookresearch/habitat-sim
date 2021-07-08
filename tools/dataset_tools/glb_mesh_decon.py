@@ -603,23 +603,19 @@ def extract_articulated_objects_from_scene(
             art_obj_instance_dict["motion_type"] = "DYNAMIC"
 
             if ao_name in mapping_dict:
+                # fridge, counter and cupboard provided by json config currently
                 # print("Mapping for : {} is {} ".format(scene_name_base, mapping_dict))
+                # specific mappings for fridge and kitchen counter based on scene
                 art_obj_instance_dict["translation"] = mapping_dict[ao_name][
                     "translation"
                 ]
                 art_obj_instance_dict["rotation"] = mapping_dict[ao_name]["rotation"]
-            elif "kitchenCupboard_01" in ao_name:
-                # kitchen cupboard is always at a specific offset from counter
-                counter_trans = np.array(mapping_dict["kitchen_counter"]["translation"])
-                counter_rotation = np.array(mapping_dict["kitchen_counter"]["rotation"])
-                new_trans = counter_trans + np.array([-0.3, 1.5, 0])
-                new_rot = gut.rotate_quat_by_quat(
-                    counter_rotation, np.array([-0.707, 0.707, 0, 0])
-                )
-                art_obj_instance_dict["uniform_scale"] = 0.38
-                art_obj_instance_dict["translation"] = list(new_trans)
-                new_rot /= np.linalg.norm(new_rot)
-                art_obj_instance_dict["rotation"] = list(new_rot)
+
+                if "uniform_scale" in mapping_dict[ao_name]:
+                    art_obj_instance_dict["uniform_scale"] = mapping_dict[ao_name][
+                        "uniform_scale"
+                    ]
+
             elif "door2" in ao_name:
                 art_obj_instance_dict["translation"] = [-0.35, 2.40, -2.65]
                 art_obj_instance_dict["rotation"] = [1, 0, 0, 0]
