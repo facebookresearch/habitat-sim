@@ -36,7 +36,7 @@ cd build_js
 EXE_LINKER_FLAGS="-s USE_WEBGL2=1"
 HAB_C_FLAGS="-s FORCE_FILESYSTEM=1 -s ALLOW_MEMORY_GROWTH=1 -s ASSERTIONS=0"
 if ${USE_SIMD} ;
-    then HAB_C_FLAGS="${HAB_CXX_FLAGS} -msimd128"
+    then HAB_C_FLAGS="${HAB_C_FLAGS} -msimd128"
 fi
 cmake ../src \
     -DCORRADE_RC_EXECUTABLE=../build_corrade-rc/RelWithDebInfo/bin/corrade-rc \
@@ -71,4 +71,3 @@ if [ -o ${WEB_APPS} ]
     echo "Or open in a VR-capable browser:"
     echo "http://0.0.0.0:8000/build_js/esp/bindings_js/webvr.html?scene=skokloster-castle.glb"
 fi
-
