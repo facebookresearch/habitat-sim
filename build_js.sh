@@ -11,8 +11,8 @@ while [[ "$#" -gt 0 ]]; do
     case $1 in
         --bullet) BULLET=true ;;
         --no-web-apps) WEB_APPS=false ;;
-	--simd) USE_SIMD=true ;;
-	*) echo "Unknown parameter passed: $1"; exit 1 ;;
+        --simd) USE_SIMD=true ;;
+        *) echo "Unknown parameter passed: $1"; exit 1 ;;
     esac
     shift
 done
