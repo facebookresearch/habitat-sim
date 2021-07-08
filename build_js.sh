@@ -4,8 +4,8 @@
 set -e
 
 BULLET=false
-WEB_APPS=true
 USE_SIMD=false
+WEB_APPS=true
 
 while [[ "$#" -gt 0 ]]; do
     case $1 in
