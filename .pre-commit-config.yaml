@@ -1,4 +1,4 @@
-exclude: '^(build(js)$|data/datasets|data/scene_datasets|node_modules/|src/deps|src/obsolete)'
+exclude: '^(build(_js)/|data/datasets|data/scene_datasets|node_modules/|src/deps|src/obsolete)'
 
 default_language_version:
     python: python3
