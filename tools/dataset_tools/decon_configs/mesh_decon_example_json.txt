@@ -1,10 +1,12 @@
 {
   "dataset_name": <enter the name of the dataset here>,
-  "dataset_rel_to_home": <boolean : whether user specified paths are relative to home dir or cwd>,
-  "dataset_src_subdir": <source dataset subdirectory, either relative to home dir or cwd>,
+  "dataset_src_rel_to_home": <boolean : whether user specified paths are relative to home dir or cwd for the source data used by the script>,
+  "dataset_src_subdir": <source dataset directory, either relative to home dir or cwd>,
   "scenes_src_subdir": <subdirectory within dataset_src_subdir holding raw aggregate scenes to be queried for glbs and/or configs>,
   "objects_src_subdir":  <subdirectory within dataset_src_subdir holding existing objets to be used as sources for scene instance naming. Ignored if "match_object_names" is False>,
-  "dataset_dest_subdir": <base directory of writing destination, subdirectory of dataset_src_subdir>,
+
+  "dataset_dest_rel_to_home":<boolean : whether user specified paths are relative to home dir or cwd for the source data used by the script>,
+  "dataset_dest_subdir": <destination dataset directory for writing output, either relative to home dir or cwd>,
 
   "dataset_glb_dest_subdir": <destination subdirectory, within dataset_dest_subdir, where to write extracted glbs outputs>,
   "stage_glb_dest_subdir" : <subdirectory within dataset_glb_dest_subdir to write extracted stage glb files>,
@@ -28,7 +30,7 @@
   "build_stage_glbs" : <boolean : whether or not to build the extracted stage glbs. Defaults to true>,
   "build_object_glbs" : <boolean : whether or not to build the extracted object glbs. Defaults to true>,
 
-  "save_object_instances" : <boolean : if false, do not save any object instance data>,
+  "save_object_instances" : <boolean : if false, do not save any object instance data> within the scene instance configs being written,
 
   "objects_all_static" : <boolean : whether or not all objects should be set to be static in scene instance config.
                           Defaults to false. Ignored if not building scene instance configs.>,
@@ -36,6 +38,11 @@
     <list of node name substrings of constructs we wish to create as objects but that should be specified as static>
   ],
   "obj_created_dynamic": [<list of node name substrings of constructs we wish to create as objects and enforce dynamic behavior (to override static default)],
+
+  "export_glbs_as_gltf" : <boolean : whether or not to export and save the source scene glbs as gltfs>
+  "gltf_export_subdir" : <subdirectory, relative to dataset_config_dest_dir, to save gltf exported scenes, converted from glbs, if functionality is enabled>
+  "save_scenegraph_hierarchy" : <boolean : whether or not we wish to save a json file holding the hierarchy of the scene graph of each scene">
+  "scenegraph_diagnostics_subdir" : <subdirectory, relative to dataset_config_dest_dir, where to save output from scene hieararchy diagnostics>
 
   "stage_include_obj_substr": [
     <list of node name substrings of constructs found in "objects_tag" subtree that should be added to stage>
