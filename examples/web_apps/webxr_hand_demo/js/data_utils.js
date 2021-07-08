@@ -3,17 +3,39 @@
 // LICENSE file in the root directory of this source tree.
 
 export class DataUtils {
-  static dataDir = "data/";
+  static getDataDir() {
+    return "data/";
+  }
 
   static getPhysicsConfigFilepath() {
-    return this.dataDir + "default.physics_config.json";
+    return this.getDataDir() + "default.physics_config.json";
   }
 
   static getObjectBaseFilepath() {
-    return this.dataDir + "objects/";
+    return this.getDataDir() + "objects/";
   }
 
   static getStageBaseFilepath() {
-    return this.dataDir + "stages/";
+    return this.getDataDir() + "stages/";
+  }
+
+  static getObjectFilepath(name) {
+    return this.getObjectBaseFilepath() + name + ".glb";
+  }
+
+  static getObjectConfigFilepath(name) {
+    return this.getObjectBaseFilepath() + name + ".object_config.json";
+  }
+
+  static getObjectCollisionGlbFilepath(name) {
+    return this.getObjectBaseFilepath() + name + "_cv_decomp.glb";
+  }
+
+  static getStageFilepath(name) {
+    return this.getStageBaseFilepath() + name + ".glb";
+  }
+
+  static getStageConfigFilepath(name) {
+    return this.getStageBaseFilepath() + name + ".stage_config.json";
   }
 }
