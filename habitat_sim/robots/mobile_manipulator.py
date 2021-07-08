@@ -429,7 +429,7 @@ class MobileManipulator(RobotInterface):
         )
 
     @property
-    def base_rot(self):
+    def base_rot(self) -> float:
         return self.sim_obj.rotation.angle()
 
     @base_rot.setter
