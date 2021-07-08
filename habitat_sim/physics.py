@@ -44,5 +44,4 @@ __all__ = [
     "JointMotorType",
     "RigidConstraintType",
     "RigidConstraintSettings",
-    "ContactPointData",
 ]
