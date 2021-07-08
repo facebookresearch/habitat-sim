@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Tuple, Set
+from typing import Dict, List, Optional, Set, Tuple
 
 import attr
 import magnum as mn
@@ -9,7 +9,7 @@ from habitat_sim.robots.robot_interface import RobotInterface
 from habitat_sim.simulator import Simulator
 
 
-# TODO: refactor this class to support spherical joints: multiple dofs per link and #dofs != #positions.
+# TODO: refactor this class to support spherical joints: multiple dofs per link and #dofs != #positions
 @attr.s(auto_attribs=True, slots=True)
 class MobileManipulatorParams:
     """Data to configure a mobile manipulator.
@@ -435,7 +435,8 @@ class MobileManipulator(RobotInterface):
     @base_rot.setter
     def base_rot(self, rotation_y_rad: float):
         self.sim_obj.rotation = mn.Quaternion.rotation(
-                mn.Rad(rotation_y_rad), mn.Vector3(0, 1, 0))
+            mn.Rad(rotation_y_rad), mn.Vector3(0, 1, 0)
+        )
 
     def is_base_link(self, link_id: int) -> bool:
         return self.sim_obj.get_link_name(link_id) in self.params.base_link_names
@@ -469,7 +470,9 @@ class MobileManipulator(RobotInterface):
         set_pos[self.joint_pos_indices[joint_idx]] = angle
         self.sim_obj.joint_positions = set_pos
 
-    def _interpolate_arm_control(self, targs, idxs, seconds, ctrl_freq, get_observations=False):
+    def _interpolate_arm_control(
+        self, targs, idxs, seconds, ctrl_freq, get_observations=False
+    ):
         curs = np.array([self._get_motor_pos(i) for i in idxs])
         diff = targs - curs
         T = int(seconds * ctrl_freq)

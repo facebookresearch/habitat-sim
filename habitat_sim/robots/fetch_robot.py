@@ -33,9 +33,17 @@ class FetchRobot(MobileManipulator):
             wheel_mtr_vel_gain=1.3,
             wheel_mtr_max_impulse=10.0,
             base_offset=mn.Vector3(0, 0, 0),
-            base_link_names=set(['base_link', 'r_wheel_link', 'l_wheel_link',
-                'r_wheel_link', 'bellows_link', 'bellows_link2', 'estop_link',
-                'laser_link', 'torso_fixed_link']),
+            base_link_names={
+                "base_link",
+                "r_wheel_link",
+                "l_wheel_link",
+                "r_wheel_link",
+                "bellows_link",
+                "bellows_link2",
+                "estop_link",
+                "laser_link",
+                "torso_fixed_link",
+            },
         )
         super().__init__(fetch_params, urdf_path, sim, limit_robo_joints, fixed_base)
         self.back_joint_id = 6
@@ -58,6 +66,7 @@ class FetchRobot(MobileManipulator):
         super().update()
         # Fix the head.
         self._set_joint_pos(self.head_rot_jid, 0)
+        self._set_motor_pos(self.head_rot_jid, 0)
         self._set_joint_pos(self.head_tilt_jid, np.pi / 2)
         self._set_motor_pos(self.head_tilt_jid, np.pi / 2)
         # Fix the back

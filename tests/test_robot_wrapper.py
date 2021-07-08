@@ -69,7 +69,8 @@ def test_fetch_robot_wrapper(fixed_base):
         observations += fetch._interpolate_arm_control(
             [1.2299035787582397, 2.345386505126953],
             [fetch.params.arm_joints[1], fetch.params.arm_joints[3]],
-            1, 30,
+            1,
+            30,
             produce_debug_video,
         )
 
@@ -77,7 +78,8 @@ def test_fetch_robot_wrapper(fixed_base):
         observations += fetch._interpolate_arm_control(
             [-0.45, 0.1],
             [fetch.params.arm_joints[1], fetch.params.arm_joints[3]],
-            1, 30,
+            1,
+            30,
             produce_debug_video,
         )
 
