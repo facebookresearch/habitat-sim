@@ -7,7 +7,9 @@
 import {
   getEyeSensorSpecs,
   updateHeadPose,
-  VIEW_SENSORS
+  VIEW_SENSORS,
+  initGL,
+  drawTextureData
 } from "../lib/habitat-sim-js/vr_utils.js";
 import { DataUtils } from "./data_utils.js";
 
@@ -92,20 +94,6 @@ export class VRDemo {
     }
   }
 
-  display() {
-    this.initSimAndSensors();
-    this.initScene();
-    this.setUpVR();
-
-    this.headPosesInputElement = document.getElementById("head_poses_input");
-  }
-
-  setUpVR() {
-    const elem = document.getElementById("enter-vr");
-    elem.style.visibility = "visible";
-    elem.addEventListener("click", this.enterVR.bind(this));
-  }
-
   initSimAndSensors() {
     this.config = new Module.SimulatorConfiguration();
     this.config.scene_id = DataUtils.getStageFilepath(Module.stageName);
@@ -165,105 +153,18 @@ export class VRDemo {
     this.objectCounter = 0;
   }
 
-  // Compiles a GLSL shader. Returns null on failure
-  compileShader(src, type) {
-    const shader = this.gl.createShader(type);
-    this.gl.shaderSource(shader, src);
-    this.gl.compileShader(shader);
-
-    if (this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
-      return shader;
-    } else {
-      console.error("GLSL shader error: " + this.gl.getShaderInfoLog(shader));
-      return null;
-    }
+  setUpVR() {
+    const elem = document.getElementById("enter-vr");
+    elem.style.visibility = "visible";
+    elem.addEventListener("click", this.enterVR.bind(this));
   }
 
-  initGL() {
-    if (this.gl === null) {
-      return null;
-    }
-    const vertSrc =
-      "attribute vec3 p;attribute vec2 u;varying highp vec2 v;void main(){gl_Position=vec4(p,1);v=u;}";
-    const fragSrc =
-      "uniform sampler2D t;varying highp vec2 v;void main(){gl_FragColor=texture2D(t,v);}";
-    const vert = this.compileShader(vertSrc, this.gl.VERTEX_SHADER);
-    const frag = this.compileShader(fragSrc, this.gl.FRAGMENT_SHADER);
-    if (vert === null || frag === null) {
-      console.log("Failed to compile shaders");
-      return null;
-    }
+  display() {
+    this.initSimAndSensors();
+    this.initScene();
+    this.setUpVR();
 
-    const program = this.gl.createProgram();
-
-    this.gl.attachShader(program, vert);
-    this.gl.attachShader(program, frag);
-
-    this.gl.linkProgram(program);
-
-    if (!this.gl.getProgramParameter(program, this.gl.LINK_STATUS)) {
-      console.error("GLSL program error:" + this.gl.getProgramInfoLog(program));
-      return null;
-    }
-
-    this.gl.useProgram(program);
-
-    // Vertices
-    const verts = [
-      -1.0,
-      1.0,
-      0.0,
-      -1.0,
-      -1.0,
-      0.0,
-      1.0,
-      -1.0,
-      0.0,
-      1.0,
-      1.0,
-      0.0
-    ];
-    const vertBuf = this.gl.createBuffer();
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertBuf);
-    this.gl.bufferData(
-      this.gl.ARRAY_BUFFER,
-      new Float32Array(verts),
-      this.gl.STATIC_DRAW
-    );
-    // Position attribute
-    const posAttrib = this.gl.getAttribLocation(program, "p");
-    this.gl.vertexAttribPointer(posAttrib, 3, this.gl.FLOAT, false, 0, 0);
-    this.gl.enableVertexAttribArray(posAttrib);
-
-    // UVs
-    const UVs = [0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0];
-    const uvBuf = this.gl.createBuffer();
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, uvBuf);
-    this.gl.bufferData(
-      this.gl.ARRAY_BUFFER,
-      new Float32Array(UVs),
-      this.gl.STATIC_DRAW
-    );
-    // UV attribute
-    const uvAttrib = this.gl.getAttribLocation(program, "u");
-    this.gl.vertexAttribPointer(uvAttrib, 2, this.gl.FLOAT, false, 0, 0);
-    this.gl.enableVertexAttribArray(uvAttrib);
-
-    // Indices
-    this.inds = [3, 2, 1, 3, 1, 0];
-    const indBuf = this.gl.createBuffer();
-    this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, indBuf);
-    this.gl.bufferData(
-      this.gl.ELEMENT_ARRAY_BUFFER,
-      new Uint16Array(this.inds),
-      this.gl.STATIC_DRAW
-    );
-
-    // Texture uniform
-    const texUni = this.gl.getUniformLocation(program, "t");
-    this.gl.uniform1i(texUni, 0);
-
-    console.log("Initialized WebXR GL state");
+    this.headPosesInputElement = document.getElementById("head_poses_input");
   }
 
   async enterVR() {
@@ -271,7 +172,8 @@ export class VRDemo {
       this.gl = document.createElement("canvas").getContext("webgl", {
         xrCompatible: true
       });
-      this.initGL();
+      initGL(this.gl);
+      console.log("Initialized WebXR GL state");
     }
     this.webXRSession = await navigator.xr.requestSession("immersive-vr", {
       requiredFeatures: ["local-floor"]
@@ -310,56 +212,6 @@ export class VRDemo {
     } else {
       window.setTimeout(this.renderDisplay.bind(this), 1000);
     }
-  }
-
-  drawTextureData(texRes, texData) {
-    if (this.tex === null) {
-      this.tex = this.gl.createTexture();
-      this.gl.bindTexture(this.gl.TEXTURE_2D, this.tex);
-
-      this.gl.texParameteri(
-        this.gl.TEXTURE_2D,
-        this.gl.TEXTURE_WRAP_S,
-        this.gl.CLAMP_TO_EDGE
-      );
-      this.gl.texParameteri(
-        this.gl.TEXTURE_2D,
-        this.gl.TEXTURE_WRAP_T,
-        this.gl.CLAMP_TO_EDGE
-      );
-      this.gl.texParameteri(
-        this.gl.TEXTURE_2D,
-        this.gl.TEXTURE_MIN_FILTER,
-        this.gl.NEAREST
-      );
-      this.gl.texParameteri(
-        this.gl.TEXTURE_2D,
-        this.gl.TEXTURE_MAG_FILTER,
-        this.gl.NEAREST
-      );
-    }
-
-    this.gl.bindTexture(this.gl.TEXTURE_2D, this.tex);
-    this.gl.texImage2D(
-      this.gl.TEXTURE_2D,
-      0, // level
-      this.gl.RGBA, // internal format
-      texRes[1], // width
-      texRes[0], // height
-      0, // border
-      this.gl.RGBA, // format
-      this.gl.UNSIGNED_BYTE, // type
-      new Uint8Array(texData) // data
-    );
-
-    this.gl.activeTexture(this.gl.TEXTURE0);
-
-    this.gl.drawElements(
-      this.gl.TRIANGLES,
-      this.inds.length,
-      this.gl.UNSIGNED_SHORT,
-      0
-    );
   }
 
   handleInput(frame) {
@@ -559,7 +411,7 @@ export class VRDemo {
       const sensor = agent.getSubtreeSensors().get(VIEW_SENSORS[iView]);
       const texRes = sensor.specification().resolution;
       const texData = sensor.getObservation(this.sim).getData();
-      this.drawTextureData(texRes, texData);
+      drawTextureData(this.gl, texRes, texData);
     }
 
     this.updateFPS();
