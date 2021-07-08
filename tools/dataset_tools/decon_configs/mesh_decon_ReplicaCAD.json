@@ -1,10 +1,11 @@
 {
   "dataset_name": "ReplicaCAD",
-  "dataset_rel_to_home": true,
+  "dataset_src_rel_to_home": true,
   "dataset_src_subdir": "Facebook/habitat-sim/data/scene_datasets/replicaCAD/",
-  "scenes_src_subdir": "replicaCAD_105",
+  "scenes_src_subdir": "../replicaCAD_working/replicaCAD_105",
   "objects_src_subdir": "objects/",
-  "dataset_dest_subdir": ".",
+  "dataset_dest_rel_to_home": true,
+  "dataset_dest_subdir": "Facebook/habitat-sim/data/scene_datasets/replicaCAD/",
   "dataset_glb_dest_subdir": ".",
   "stage_glb_dest_subdir": "stages/",
   "obj_glb_dest_subdir": "objects/",
@@ -58,6 +59,7 @@
   },
   "obj_created_static": [],
   "obj_created_dynamic": [],
+  "save_scenegraph_hierarchy": false,
   "stage_instance_file_tag": {
     "v3_sc0_staging": "Stage_v3_sc0_staging",
     "v3_sc1_staging": "Stage_v3_sc1_staging",
