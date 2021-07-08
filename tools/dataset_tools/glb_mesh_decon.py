@@ -648,10 +648,11 @@ def extract_articulated_objects_from_scene(
                     )
                 elif "cabinet" in ao_name:
                     new_trans[1] = 0.05
-                    new_trans[2] += 0.1
+                    new_trans[2] -= 0.18
                     new_rot = gut.rotate_quat_by_quat(
                         new_rot, np.array([0.0, 0.0, 1.0, 0.0])
                     )
+                new_rot /= np.linalg.norm(new_rot)
                 art_obj_instance_dict["translation"] = list(new_trans)
                 art_obj_instance_dict["rotation"] = list(new_rot)
                 print(
