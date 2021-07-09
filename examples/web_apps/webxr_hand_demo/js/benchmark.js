@@ -1,39 +1,6 @@
-let framecnt = 0.0;
-let delta = 100.0;
-
-function logFrame() {
-  framecnt += 1.0;
-}
-
-function spawnObject(objectName) {
-  postMessage(["spawn", objectName]);
-}
-
-function deleteAllObjects() {
-  postMessage(["delete"]);
-}
-
-function stepPhysics(dt) {
-  postMessage(["step", dt]);
-}
-
-onmessage = function(s) {
-  if (s.data == "frame") {
-    logFrame();
-  } else if (s.data == "run") {
-    console.log("RUNNING BENCHMARK");
-    runBenchmark();
-  }
-};
-
-let curFPS = 0;
-
-setInterval(function() {
-  let thisFPS = framecnt / (delta / 1000.0);
-  curFPS = 0.9 * curFPS + 0.1 * thisFPS;
-  console.log("curFPS", curFPS.toFixed(2));
-  framecnt = 0;
-}, delta);
+// Copyright (c) Facebook, Inc. and its affiliates.
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
 
 const objectNames = [
   "frl_apartment_vase_02", // gray
@@ -52,18 +19,52 @@ function randomObject() {
   return objectNames[Math.floor(Math.random() * objectNames.length)];
 }
 
-let n = 10;
-let k = 30000;
-function runBenchmark() {
-  for (let i = 0; i < n; i++) {
-    for (let t = 0; t < k; t++) {
-      if (t % 2000 == 0) {
-        // spawn a random object
-        let objectName = randomObject();
-        spawnObject(objectName);
-      }
-      stepPhysics(0.001);
+let numIterations = 10;
+let objectsPerIteration = 50;
+
+/* Gets a list of objects to spawn/delete for physics benchmarking */
+export function getBenchmarkTasks() {
+  let res = [];
+  for (let i = 0; i < numIterations; i++) {
+    for (let j = 0; j < objectsPerIteration; j++) {
+      // spawn a random object
+      let objectName = randomObject();
+      res.push(["spawn", objectName]);
     }
-    deleteAllObjects();
+    res.push(["delete"]);
   }
+  return res;
+}
+
+export function getResults(benchmarkLog) {
+  console.assert(benchmarkLog[0][0] == "start");
+  let startTime = benchmarkLog[0][1];
+
+  let numFrames = 0;
+  let numSteps = 0;
+
+  let avgFPS = 0;
+  let avgSPS = 0;
+  for (const entry of benchmarkLog) {
+    if (entry[0] == "start") {
+      continue;
+    } else if (entry[0] == "renderFrame") {
+      numFrames++;
+    } else if (entry[0] == "stepWorld") {
+      numSteps++;
+    } else if (entry[0] == "delete") {
+      let totalTime = (entry[1] - startTime) / 1000.0;
+      startTime = entry[1];
+      let FPS = numFrames / totalTime;
+      let SPS = numSteps / totalTime;
+      console.log(FPS, SPS);
+      numFrames = 0;
+      numSteps = 0;
+      avgFPS += FPS;
+      avgSPS += SPS;
+    }
+  }
+  avgFPS /= numIterations;
+  avgSPS /= numIterations;
+  return [avgFPS, avgSPS];
 }

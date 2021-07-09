@@ -451,5 +451,6 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("getLightSetup", &Simulator::getLightSetup)
       .function("setLightSetup", &Simulator::setLightSetup)
       .function("stepWorld", &Simulator::stepWorld)
-      .function("castRay", &Simulator::castRay);
+      .function("castRay", &Simulator::castRay)
+      .function("setLinearVelocity", &Simulator::setLinearVelocity);
 }

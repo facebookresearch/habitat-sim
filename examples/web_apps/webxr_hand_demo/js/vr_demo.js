@@ -12,10 +12,9 @@ import {
   drawTextureData
 } from "../lib/habitat-sim-js/vr_utils.js";
 import { DataUtils } from "./data_utils.js";
+import { getBenchmarkTasks, getResults } from "./benchmark.js";
 
 const pointToArray = p => [p.x, p.y, p.z, p.w];
-let sim;
-let benchmarkObjects = [];
 
 const objectSpawnOrder = [
   "frl_apartment_vase_02", // gray
@@ -61,10 +60,7 @@ export class VRDemo {
   prevRightHeld = false;
 
   fps = 0;
-  skipFrames = 60;
   currentFramesSkipped = 0;
-
-  benchmarkWorker = null;
 
   constructor() {
     this.fpsElement = document.getElementById("fps");
@@ -107,19 +103,19 @@ export class VRDemo {
     this.config.overrideSceneLightDefaults = true; // always set this to true
     this.config.allowPbrShader = false; // Pbr shader isn't robust on WebGL yet
 
-    sim = new Module.Simulator(this.config);
+    this.sim = new Module.Simulator(this.config);
 
     const agentConfigOrig = new Module.AgentConfiguration();
     agentConfigOrig.sensorSpecifications = getEyeSensorSpecs(1024, 1024);
 
-    sim.addAgent(agentConfigOrig);
+    this.sim.addAgent(agentConfigOrig);
     this.agentId = 0;
   }
 
   // place agent and add objects
   initScene() {
     // Set agent to identity transform.
-    const agent = sim.getAgent(this.agentId);
+    const agent = this.sim.getAgent(this.agentId);
     let state = new Module.AgentState();
     agent.getState(state);
     // todo: specify start position/orientation via URL param (or react?)
@@ -127,7 +123,10 @@ export class VRDemo {
     state.rotation = [0.0, 0.0, 0.0, 1.0];
     agent.setState(state, false);
 
-    Module.loadAllObjectConfigsFromPath(sim, DataUtils.getObjectBaseFilepath());
+    Module.loadAllObjectConfigsFromPath(
+      this.sim,
+      DataUtils.getObjectBaseFilepath()
+    );
 
     this.handRecords = [new HandRecord(), new HandRecord()];
 
@@ -144,9 +143,9 @@ export class VRDemo {
 
     for (const handIndex of [0, 1]) {
       for (const filepath of handFilepathsByHandIndex[handIndex]) {
-        let objId = sim.addObjectByHandle(filepath, null, "", 0);
-        sim.setObjectMotionType(Module.MotionType.KINEMATIC, objId, 0);
-        sim.setTranslation(new Module.Vector3(0.0, 0.0, 0.0), objId, 0);
+        let objId = this.sim.addObjectByHandle(filepath, null, "", 0);
+        this.sim.setObjectMotionType(Module.MotionType.KINEMATIC, objId, 0);
+        this.sim.setTranslation(new Module.Vector3(0.0, 0.0, 0.0), objId, 0);
         this.handRecords[handIndex].objIds.push(objId);
       }
     }
@@ -160,42 +159,77 @@ export class VRDemo {
     elem.addEventListener("click", this.enterVR.bind(this));
   }
 
-  initBenchmark() {
-    if (window.Worker) {
-      this.benchmarkWorker = new Worker("js/benchmark.js");
-      this.benchmarkWorker.onmessage = function(s) {
-        if (s.data[0] == "spawn") {
-          let objId = sim.addObjectByHandle(
-            DataUtils.getObjectConfigFilepath(s.data[1]),
-            null,
-            "",
-            0
-          );
-          benchmarkObjects.push(objId);
-          let spawnPos = new Module.Vector3(2.0, 2.0, 2.0);
-          sim.setTranslation(spawnPos, objId, 0);
-        } else if (s.data[0] == "delete") {
-          for (const objId of benchmarkObjects) {
-            sim.removeObject(objId, true, true, 0);
-          }
-        } else if (s.data[0] == "step") {
-          sim.stepWorld(s.data[1]);
-        }
-      };
-    } else {
-      console.log(
-        "Can't benchmark because web workers are not supported in your browser"
-      );
-    }
-  }
-
   display() {
     this.initSimAndSensors();
     this.initScene();
     this.setUpVR();
-    this.initBenchmark();
 
     this.headPosesInputElement = document.getElementById("head_poses_input");
+  }
+
+  stepWorldIndex = 0;
+  stepsBeforeSpawn = 1;
+  stepsBeforeDelete = 20;
+  lastStepWorldIndex = 0;
+  benchmarkLog = [];
+  currentlyBenchmarking = false;
+
+  runBenchmark() {
+    let tasks = getBenchmarkTasks().reverse();
+
+    let curSpawnedObjects = [];
+    this.benchmarkLog.push(["start", performance.now()]);
+    this.currentlyBenchmarking = true;
+    let benchmarkRunner = setInterval(() => {
+      if (tasks.length == 0) {
+        this.currentlyBenchmarking = false;
+        console.log(getResults(this.benchmarkLog));
+        clearInterval(benchmarkRunner);
+        return;
+      }
+
+      let curTask = tasks[tasks.length - 1];
+      if (curTask[0] == "spawn") {
+        if (
+          this.stepWorldIndex - this.lastStepWorldIndex <
+          this.stepsBeforeSpawn
+        ) {
+          return;
+        }
+        this.lastStepWorldIndex = this.stepWorldIndex;
+        tasks.pop();
+
+        let objId = this.sim.addObjectByHandle(
+          DataUtils.getObjectConfigFilepath(curTask[1]),
+          null,
+          "",
+          0
+        );
+        let location = new Module.Vector3(
+          2 + (Math.random() - 0.5) * 0.3,
+          2,
+          2 + (Math.random() - 0.5) * 0.3
+        );
+        this.sim.setTranslation(location, objId, 0);
+        this.sim.setLinearVelocity(new Module.Vector3(0, -20, 0), objId, 0);
+        curSpawnedObjects.push(objId);
+      } else if (curTask[0] == "delete") {
+        if (
+          this.stepWorldIndex - this.lastStepWorldIndex <
+          this.stepsBeforeDelete
+        ) {
+          return;
+        }
+        this.lastStepWorldIndex = this.stepWorldIndex;
+        tasks.pop();
+
+        for (const objId of curSpawnedObjects) {
+          this.sim.removeObject(objId, true, true, 0);
+        }
+        curSpawnedObjects = [];
+        this.benchmarkLog.push(["delete", performance.now()]);
+      }
+    }, 50);
   }
 
   async enterVR() {
@@ -224,13 +258,20 @@ export class VRDemo {
     this.renderDisplay();
 
     this.physicsStepFunction = setInterval(() => {
-      if (!this.benchmarkWorker) {
-        sim.stepWorld(1.0 / 60);
+      this.sim.stepWorld(1.0 / 60);
+      if (this.currentlyBenchmarking) {
+        this.stepWorldIndex++;
+        this.benchmarkLog.push(["stepWorld", performance.now()]);
       }
     }, 1000.0 / 60);
-    this.benchmarkWorker.postMessage("run");
+
+    this.fpsUpdateFunction = setInterval(() => {
+      this.updateFPS();
+    }, 100.0);
 
     this.fpsElement.style.visibility = "visible";
+
+    this.runBenchmark();
   }
 
   exitVR() {
@@ -258,7 +299,7 @@ export class VRDemo {
       let handRecord = this.handRecords[handIndex];
       let otherHandRecord = this.handRecords[otherHandIndex];
 
-      const agent = sim.getAgent(this.agentId);
+      const agent = this.sim.getAgent(this.agentId);
       let state = new Module.AgentState();
       agent.getState(state);
       let agentPos = new Module.Vector3(...state.position);
@@ -295,11 +336,11 @@ export class VRDemo {
       let handRot = Module.toQuaternion(
         pointToArray(poseTransform.orientation)
       );
-      sim.setTranslation(handPos, handObjId, 0);
-      sim.setRotation(handRot, handObjId, 0);
+      this.sim.setTranslation(handPos, handObjId, 0);
+      this.sim.setRotation(handRot, handObjId, 0);
 
       // hack hide other hand by translating far away
-      sim.setTranslation(
+      this.sim.setTranslation(
         new Module.Vector3(-1000.0, -1000.0, -1000.0),
         hiddenHandObjId,
         0
@@ -315,7 +356,7 @@ export class VRDemo {
       if (buttonStates[0] && !handRecord.prevButtonStates[0]) {
         let maxDistance = 0.15;
 
-        let raycastResults = sim.castRay(grabRay, maxDistance, 0);
+        let raycastResults = this.sim.castRay(grabRay, maxDistance, 0);
         let hitObjId = raycastResults.hasHits()
           ? raycastResults.hits.get(0).objectId
           : -1;
@@ -329,8 +370,8 @@ export class VRDemo {
             otherHandRecord.heldObjId = -1;
           }
 
-          let currTrans = sim.getTranslation(handRecord.heldObjId, 0);
-          let currRot = sim.getRotation(handRecord.heldObjId, 0);
+          let currTrans = this.sim.getTranslation(handRecord.heldObjId, 0);
+          let currRot = this.sim.getRotation(handRecord.heldObjId, 0);
 
           let handRotInverted = handRot.inverted();
           handRecord.heldRelRot = Module.Quaternion.mul(
@@ -342,7 +383,7 @@ export class VRDemo {
           );
 
           // set held obj to kinematic
-          sim.setObjectMotionType(
+          this.sim.setObjectMotionType(
             Module.MotionType.KINEMATIC,
             handRecord.heldObjId,
             0
@@ -361,7 +402,7 @@ export class VRDemo {
           new Module.Vector3(pad, 0.0, 0.0)
         );
 
-        sim.setTranslation(
+        this.sim.setTranslation(
           Module.Vector3.add(
             handPos,
             handRot.transformVector(adjustedRelTrans)
@@ -369,7 +410,7 @@ export class VRDemo {
           handRecord.heldObjId,
           0
         );
-        sim.setRotation(
+        this.sim.setRotation(
           Module.Quaternion.mul(handRot, handRecord.heldRelRot),
           handRecord.heldObjId,
           0
@@ -379,7 +420,7 @@ export class VRDemo {
       // handle release
       if (handRecord.heldObjId != -1 && !buttonStates[0]) {
         // set held object to dynamic
-        sim.setObjectMotionType(
+        this.sim.setObjectMotionType(
           Module.MotionType.DYNAMIC,
           handRecord.heldObjId,
           0
@@ -407,9 +448,9 @@ export class VRDemo {
             objectSpawnOrder[nextIndex]
           );
         }
-        let objId = sim.addObjectByHandle(filepath, null, "", 0);
+        let objId = this.sim.addObjectByHandle(filepath, null, "", 0);
         if (objId != -1) {
-          sim.setTranslation(spawnPos, objId, 0);
+          this.sim.setTranslation(spawnPos, objId, 0);
         }
       }
 
@@ -429,7 +470,7 @@ export class VRDemo {
       return;
     }
 
-    const agent = sim.getAgent(this.agentId);
+    const agent = this.sim.getAgent(this.agentId);
 
     this.handleInput(frame);
     updateHeadPose(pose, agent);
@@ -444,12 +485,14 @@ export class VRDemo {
 
       const sensor = agent.getSubtreeSensors().get(VIEW_SENSORS[iView]);
       const texRes = sensor.specification().resolution;
-      const texData = sensor.getObservation(sim).getData();
+      const texData = sensor.getObservation(this.sim).getData();
       drawTextureData(this.gl, texRes, texData);
     }
 
-    this.updateFPS();
-
+    this.currentFramesSkipped++;
+    if (this.currentlyBenchmarking) {
+      this.benchmarkLog.push(["renderFrame", performance.now()]);
+    }
     const posAsArray = pointToArray(pose.transform.position).slice(0, -1);
     const orientationAsArray = pointToArray(pose.transform.orientation);
     this.tryLogHeadPose(posAsArray, orientationAsArray);
@@ -504,29 +547,21 @@ export class VRDemo {
   }
 
   updateFPS() {
-    if (this.benchmarkWorker) {
-      this.benchmarkWorker.postMessage("frame");
-    }
-
     if (!this.fpsElement) {
       return;
     }
-
-    if (this.currentFramesSkipped != this.skipFrames) {
-      this.currentFramesSkipped++;
-      return;
-    }
-
-    this.currentFramesSkipped = 0;
 
     if (!this.lastPaintTime) {
       this.lastPaintTime = performance.now();
     } else {
       const current = performance.now();
       const secondsElapsed = (current - this.lastPaintTime) / 1000;
-      this.fps = this.skipFrames / secondsElapsed;
+      this.fps =
+        0.7 * this.fps + (0.3 * this.currentFramesSkipped) / secondsElapsed;
       this.lastPaintTime = current;
       this.fpsElement.innerHTML = `FPS: ${this.fps.toFixed(2)}`;
     }
+
+    this.currentFramesSkipped = 0;
   }
 }
