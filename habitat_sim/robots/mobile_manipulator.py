@@ -203,7 +203,7 @@ class MobileManipulator(RobotInterface):
             cam_pos = self.sim_obj.transformation.transform_point(
                 self.params.head_cam_offset_pos
             )
-            head_T = mn.Matrix4.look_at(cam_pos, look_at, mn.Vector3(0, -1, 0))
+            head_T = mn.Matrix4.look_at(cam_pos, look_at, mn.Vector3(0, 1, 0))
 
             sens_obj.node.transformation = inv_T @ head_T
 
@@ -216,7 +216,7 @@ class MobileManipulator(RobotInterface):
             cam_pos = self.sim_obj.transformation.transform_point(
                 self.params.third_cam_offset_pos
             )
-            third_T = mn.Matrix4.look_at(cam_pos, look_at, mn.Vector3(0, -1, 0))
+            third_T = mn.Matrix4.look_at(cam_pos, look_at, mn.Vector3(0, 1, 0))
 
             sens_obj.node.transformation = inv_T @ third_T
 
@@ -241,6 +241,7 @@ class MobileManipulator(RobotInterface):
         self.gripper_joint_pos = self.params.gripper_init_params
 
         self._update_motor_settings_cache()
+        self.update()
 
     #############################################
     # ARM RELATED
