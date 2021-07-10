@@ -438,6 +438,10 @@ class MobileManipulator(RobotInterface):
             mn.Rad(rotation_y_rad), mn.Vector3(0, 1, 0)
         )
 
+    @property
+    def base_transformation(self):
+        return self.sim_obj.transformation
+
     def is_base_link(self, link_id: int) -> bool:
         return self.sim_obj.get_link_name(link_id) in self.params.base_link_names
 

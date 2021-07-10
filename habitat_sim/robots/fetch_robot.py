@@ -62,6 +62,11 @@ class FetchRobot(MobileManipulator):
         # NOTE: this is necessary to set locked head and back positions
         self.update()
 
+    @property
+    def base_transformation(self):
+        add_rot = mn.Matrix4.rotation(mn.Rad(-np.pi / 2), mn.Vector3(1.0, 0, 0))
+        return self.sim_obj.transformation @ add_rot
+
     def update(self):
         super().update()
         # Fix the head.
