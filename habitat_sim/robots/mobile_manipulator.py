@@ -364,7 +364,7 @@ class MobileManipulator(RobotInterface):
     @arm_joint_pos.setter
     def arm_joint_pos(self, ctrl: List[float]):
         """Kinematically sets the arm joints and sets the motors to target."""
-        # Has to be added back in after the Habitat Lab commit goes through.
+        # TODO: Has to be added back in after the Habitat Lab commit goes through.
         # if len(ctrl) != len(self.params.arm_joints):
         #    raise ValueError("Control dimension does not match joint dimension")
 
