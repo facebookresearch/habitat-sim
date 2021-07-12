@@ -21,6 +21,8 @@ class FetchRobot(MobileManipulator):
             arm_cam_offset_pos=mn.Vector3(0, 0.0, 0.1),
             head_cam_offset_pos=mn.Vector3(0.17, 0.0, 1.2),
             head_cam_look_pos=mn.Vector3(1, 0.0, 0.75),
+            third_cam_offset_pos=mn.Vector3(-0.5, 1.7, -0.5),
+            third_cam_look_pos=mn.Vector3(1, 0.0, 0.75),
             gripper_closed_state=[0.0, 0.0],
             gripper_open_state=[0.04, 0.04],
             gripper_state_eps=0.001,
@@ -31,7 +33,17 @@ class FetchRobot(MobileManipulator):
             wheel_mtr_vel_gain=1.3,
             wheel_mtr_max_impulse=10.0,
             base_offset=mn.Vector3(0, 0, 0),
-            ctrl_freq=30,
+            base_link_names={
+                "base_link",
+                "r_wheel_link",
+                "l_wheel_link",
+                "r_wheel_link",
+                "bellows_link",
+                "bellows_link2",
+                "estop_link",
+                "laser_link",
+                "torso_fixed_link",
+            },
         )
         super().__init__(fetch_params, urdf_path, sim, limit_robo_joints, fixed_base)
         self.back_joint_id = 6
@@ -50,10 +62,16 @@ class FetchRobot(MobileManipulator):
         # NOTE: this is necessary to set locked head and back positions
         self.update()
 
+    @property
+    def base_transformation(self):
+        add_rot = mn.Matrix4.rotation(mn.Rad(-np.pi / 2), mn.Vector3(1.0, 0, 0))
+        return self.sim_obj.transformation @ add_rot
+
     def update(self):
         super().update()
         # Fix the head.
         self._set_joint_pos(self.head_rot_jid, 0)
+        self._set_motor_pos(self.head_rot_jid, 0)
         self._set_joint_pos(self.head_tilt_jid, np.pi / 2)
         self._set_motor_pos(self.head_tilt_jid, np.pi / 2)
         # Fix the back
