@@ -43,11 +43,10 @@
   "obj_exclude_names": [
     "frl_apartment_switch",
     "frl_apartment_panel",
-    "top_shelf_02_door",
-    "frl_apartment_kitechen_cabinet",
+    "top_shelf_02",
+    "frl_apartment_kitchen_cabinet",
     "frl_apartment_lower_shelf_01_part_01",
     "frl_apartment_cabinet",
-    "frl_apartment_kitechen_cabinet",
     "Empty_",
     "Empty_CabinetCounter_",
     "Empty_Fridge_",
