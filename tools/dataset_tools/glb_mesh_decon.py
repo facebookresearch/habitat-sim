@@ -633,6 +633,7 @@ def extract_articulated_objects_from_scene(
                 new_trans = np.array(tmp_instance_dict["translation"])
                 new_rot = np.array(tmp_instance_dict["rotation"])
                 if "chestOfDrawers" in ao_name:
+                    new_trans[0] += 0.07
                     new_trans[1] = 0.0
                     art_obj_instance_dict["uniform_scale"] = 0.4
                     new_rot = gut.rotate_quat_by_quat(
