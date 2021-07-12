@@ -7,6 +7,7 @@ import {
   getInfoSemanticUrl,
   buildConfigFromURLParameters
 } from "../modules/utils";
+import { infoSemanticFileName } from "../modules/defaults";
 
 test("throttle should work properly", () => {
   let count = 0;
@@ -48,7 +49,9 @@ test("info semantic.json should have correct path", () => {
   ];
 
   scenePaths.forEach((item, index) => {
-    expect(getInfoSemanticUrl(item)).toEqual(expectedInfoPaths[index]);
+    expect(getInfoSemanticUrl(item, infoSemanticFileName)).toEqual(
+      expectedInfoPaths[index]
+    );
   });
 });
 

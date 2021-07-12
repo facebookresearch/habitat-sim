@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Set, Tuple
 
 import attr
 import magnum as mn
@@ -9,7 +9,7 @@ from habitat_sim.robots.robot_interface import RobotInterface
 from habitat_sim.simulator import Simulator
 
 
-# TODO: refactor this class to support spherical joints: multiple dofs per link and #dofs != #positions.
+# TODO: refactor this class to support spherical joints: multiple dofs per link and #dofs != #positions
 @attr.s(auto_attribs=True, slots=True)
 class MobileManipulatorParams:
     """Data to configure a mobile manipulator.
@@ -52,7 +52,6 @@ class MobileManipulatorParams:
     :property wheel_mtr_max_impulse: The maximum impulse of the wheel motor (if
         there are wheels).
     :property base_offset: The offset of the root transform from the center ground point for navmesh kinematic control.
-    :property ctrl_freq: The number of control actions per second.
     """
 
     arm_joints: List[int]
@@ -69,6 +68,8 @@ class MobileManipulatorParams:
     arm_cam_offset_pos: mn.Vector3
     head_cam_offset_pos: mn.Vector3
     head_cam_look_pos: mn.Vector3
+    third_cam_offset_pos: mn.Vector3
+    third_cam_look_pos: mn.Vector3
 
     gripper_closed_state: List[float]
     gripper_open_state: List[float]
@@ -83,8 +84,7 @@ class MobileManipulatorParams:
     wheel_mtr_max_impulse: float
 
     base_offset: mn.Vector3
-
-    ctrl_freq: int
+    base_link_names: Set[str]
 
 
 class MobileManipulator(RobotInterface):
@@ -116,6 +116,9 @@ class MobileManipulator(RobotInterface):
         ]
         self._head_sensor_names = [
             s for s in self._sim._sensors if s.startswith("robot_head_")
+        ]
+        self._third_sensor_names = [
+            s for s in self._sim._sensors if s.startswith("robot_third_")
         ]
 
         # NOTE: the follow members cache static info for improved efficiency over querying the API
@@ -193,8 +196,29 @@ class MobileManipulator(RobotInterface):
         # Update the cameras
         for sensor_name in self._head_sensor_names:
             sens_obj = self._sim._sensors[sensor_name]._sensor_object
-            head_T = self._get_head_cam_transform()
+
+            look_at = self.sim_obj.transformation.transform_point(
+                self.params.head_cam_look_pos
+            )
+            cam_pos = self.sim_obj.transformation.transform_point(
+                self.params.head_cam_offset_pos
+            )
+            head_T = mn.Matrix4.look_at(cam_pos, look_at, mn.Vector3(0, 1, 0))
+
             sens_obj.node.transformation = inv_T @ head_T
+
+        for sensor_name in self._third_sensor_names:
+            sens_obj = self._sim._sensors[sensor_name]._sensor_object
+
+            look_at = self.sim_obj.transformation.transform_point(
+                self.params.third_cam_look_pos
+            )
+            cam_pos = self.sim_obj.transformation.transform_point(
+                self.params.third_cam_offset_pos
+            )
+            third_T = mn.Matrix4.look_at(cam_pos, look_at, mn.Vector3(0, 1, 0))
+
+            sens_obj.node.transformation = inv_T @ third_T
 
         for sensor_name in self._arm_sensor_names:
             sens_obj = self._sim._sensors[sensor_name]._sensor_object
@@ -217,6 +241,7 @@ class MobileManipulator(RobotInterface):
         self.gripper_joint_pos = self.params.gripper_init_params
 
         self._update_motor_settings_cache()
+        self.update()
 
     #############################################
     # ARM RELATED
@@ -339,6 +364,10 @@ class MobileManipulator(RobotInterface):
     @arm_joint_pos.setter
     def arm_joint_pos(self, ctrl: List[float]):
         """Kinematically sets the arm joints and sets the motors to target."""
+        # TODO: Has to be added back in after the Habitat Lab commit goes through.
+        # if len(ctrl) != len(self.params.arm_joints):
+        #    raise ValueError("Control dimension does not match joint dimension")
+
         joint_positions = self.sim_obj.joint_positions
         for i, jidx in enumerate(self.params.arm_joints):
             self._set_motor_pos(jidx, ctrl[i])
@@ -364,6 +393,9 @@ class MobileManipulator(RobotInterface):
     @arm_motor_pos.setter
     def arm_motor_pos(self, ctrl: List[float]) -> None:
         """Set the desired target of the arm joint motors."""
+        if len(ctrl) != len(self.params.arm_joints):
+            raise ValueError("Control dimension does not match joint dimension")
+
         for i, jidx in enumerate(self.params.arm_joints):
             self._set_motor_pos(jidx, ctrl[i])
 
@@ -398,6 +430,23 @@ class MobileManipulator(RobotInterface):
             - self.sim_obj.transformation.transform_vector(self.params.base_offset)
         )
 
+    @property
+    def base_rot(self) -> float:
+        return self.sim_obj.rotation.angle()
+
+    @base_rot.setter
+    def base_rot(self, rotation_y_rad: float):
+        self.sim_obj.rotation = mn.Quaternion.rotation(
+            mn.Rad(rotation_y_rad), mn.Vector3(0, 1, 0)
+        )
+
+    @property
+    def base_transformation(self):
+        return self.sim_obj.transformation
+
+    def is_base_link(self, link_id: int) -> bool:
+        return self.sim_obj.get_link_name(link_id) in self.params.base_link_names
+
     #############################################
     # HIDDEN
     #############################################
@@ -411,18 +460,6 @@ class MobileManipulator(RobotInterface):
         spin_trans = mn.Matrix4.rotation_z(mn.Deg(90))
         arm_T = ee_trans @ offset_trans @ rot_trans @ spin_trans
         return arm_T
-
-    def _get_head_cam_transform(self):
-        """Helper function to get the transformation of where the head camera
-        should be placed.
-        """
-        look_at = self.sim_obj.transformation.transform_point(
-            self.params.head_cam_look_pos
-        )
-        cam_pos = self.sim_obj.transformation.transform_point(
-            self.params.head_cam_offset_pos
-        )
-        return mn.Matrix4.look_at(cam_pos, look_at, mn.Vector3(0, -1, 0))
 
     def _set_motor_pos(self, joint, ctrl):
         self.joint_motors[joint][1].position_target = ctrl
@@ -439,10 +476,12 @@ class MobileManipulator(RobotInterface):
         set_pos[self.joint_pos_indices[joint_idx]] = angle
         self.sim_obj.joint_positions = set_pos
 
-    def _interpolate_arm_control(self, targs, idxs, seconds, get_observations=False):
+    def _interpolate_arm_control(
+        self, targs, idxs, seconds, ctrl_freq, get_observations=False
+    ):
         curs = np.array([self._get_motor_pos(i) for i in idxs])
         diff = targs - curs
-        T = int(seconds * self.params.ctrl_freq)
+        T = int(seconds * ctrl_freq)
         delta = diff / T
 
         observations = []
@@ -454,7 +493,7 @@ class MobileManipulator(RobotInterface):
                     delta[j] * (i + 1) + curs[j]
                 )
             self.sim_obj.joint_positions = joint_positions
-            self._sim.step_world(1 / self.params.ctrl_freq)
+            self._sim.step_world(1 / ctrl_freq)
             if get_observations:
                 observations.append(self._sim.get_sensor_observations())
         return observations

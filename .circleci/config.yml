@@ -324,7 +324,7 @@ jobs:
               . activate habitat;
               cd habitat-sim
               pip install gitpython
-              conda install -y anaconda-client git ninja conda-build=3.18.9 # last version that works with our setup
+              conda install -y anaconda-client git ninja conda-build
               rm -rf build
               cd conda-build
               python linux_matrix_builder.py --ci_test
