@@ -77,6 +77,7 @@ if(BUILD_WEB_APPS)
     modules/test_page.js
     modules/vr_demo.js
     modules/utils.js
+    modules/vr_utils.js
   )
 
   add_custom_command(
