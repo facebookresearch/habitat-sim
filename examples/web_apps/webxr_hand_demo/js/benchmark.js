@@ -5,20 +5,22 @@
 /* global Module */
 
 export class Benchmark {
-  objectNames = null;
-  spawnFn = null;
-  deleteFn = null;
+  // PUBLIC VARIABLES
+  numObjects = 0; // number of types of objects that can be spawned
+  spawnFn = null; // callback function to spawn objects
+  deleteFn = null; // callback function to delete objects
 
-  spawnPos = new Module.Vector3(0, 0, 0);
-  spawnPosJitter = 0.0;
-  spawnVel = new Module.Vector3(0, -10, 0);
+  spawnPos = new Module.Vector3(0, 0, 0); // where to spawn objects
+  spawnPosJitter = 0.0; // x and z coordinates can be shifted by +/- this
+  spawnVel = new Module.Vector3(0, -10, 0); // initial velocity
 
-  numIterations = 10;
-  objectsPerIteration = 50;
+  numIterations = 10; // number of times to repeat the test
+  objectsPerIteration = 50; // number of objects to spawn on each test
 
-  stepsBetweenSpawn = 2;
-  stepsBeforeDelete = 20;
+  stepsBetweenSpawn = 2; // number of stepWorld() calls between spawning
+  stepsBeforeDelete = 20; // number of stepWorld() calls before deleting
 
+  // PRIVATE VARIABLES
   #iterationIdx = 0;
   #objectIdx = 0;
   #stepIdx = 0;
@@ -27,18 +29,33 @@ export class Benchmark {
 
   #log = [];
 
-  constructor(objectNames, spawnFn, deleteFn) {
+  /*
+   * objectNames: The number of possible objects that can be spawned.
+   * spawnFn: A function of type (objectIdx, pos, vel) -> objId.
+   *   When called by stepBenchmark(), this function should spawn the object
+   *   corresponding to objectIdx at position pos with velocity vel. It should
+   *   then return the id of the spawned object.
+   * deleteFn: A function of type objIds list -> (). When called by
+   *   stepBenchmark(), this function should go through the object ids in the
+   *   list and delete all of those objects.
+   */
+  constructor(numObjects, spawnFn, deleteFn) {
     this.spawnFn = spawnFn;
     this.deleteFn = deleteFn;
-    this.objectNames = objectNames;
+    this.numObjects = numObjects;
 
     this.#log.push(["start", performance.now()]);
   }
 
+  /* Returns true if the benchmark hasn't finished running. */
   active() {
     return this.#iterationIdx < this.numIterations;
   }
 
+  /*
+   * Call this every time stepWorld() is called in the main program. This is
+   * the code that spawns and deletes objects to execute the benchmark.
+   */
   stepBenchmark() {
     console.assert(this.active());
     this.#log.push(["stepWorld", performance.now()]);
@@ -59,9 +76,7 @@ export class Benchmark {
         this.#stepIdx = 0;
         this.#objectIdx++;
 
-        const objectName = this.objectNames[
-          Math.floor(Math.random() * this.objectNames.length)
-        ];
+        const obj = Math.floor(Math.random() * this.numObjects);
         const jitterX =
           Math.random() * 2 * this.spawnPosJitter - this.spawnPosJitter;
         const jitterZ =
@@ -71,19 +86,23 @@ export class Benchmark {
           this.spawnPos.y(),
           this.spawnPos.z() + jitterZ
         );
-        this.#currentlySpawned.push(
-          this.spawnFn(objectName, pos, this.spawnVel)
-        );
+        this.#currentlySpawned.push(this.spawnFn(obj, pos, this.spawnVel));
       }
     }
     return true;
   }
 
+  /* Call this every time a frame is rendered in the main program. */
   logFrame() {
     console.assert(this.active());
     this.#log.push(["renderFrame", performance.now()]);
   }
 
+  /*
+   * When the benchmark execution is finished, call this to compute the
+   * results. Returns the average time between frames as well as the average
+   * time between calls to stepWorld().
+   */
   getResults() {
     console.assert(!this.active());
     console.assert(this.#log[0][0] == "start");
@@ -93,8 +112,8 @@ export class Benchmark {
     let numFrames = 0;
     let numSteps = 0;
 
-    let avgFPS = 0;
-    let avgSPS = 0;
+    let avgFrameTime = 0;
+    let avgStepTime = 0;
     for (const entry of this.#log) {
       if (entry[0] == "start") {
         continue;
@@ -105,17 +124,16 @@ export class Benchmark {
       } else if (entry[0] == "delete") {
         const totalTime = (entry[1] - startTime) / 1000.0;
         startTime = entry[1];
-        const FPS = numFrames / totalTime;
-        const SPS = numSteps / totalTime;
-        console.log(FPS, SPS);
+        const frameTime = totalTime / numFrames;
+        const stepTime = totalTime / numSteps;
         numFrames = 0;
         numSteps = 0;
-        avgFPS += FPS;
-        avgSPS += SPS;
+        avgFrameTime += frameTime;
+        avgStepTime += stepTime;
       }
     }
-    avgFPS /= this.numIterations;
-    avgSPS /= this.numIterations;
-    return [avgFPS, avgSPS];
+    avgFrameTime /= this.numIterations;
+    avgStepTime /= this.numIterations;
+    return [avgFrameTime, avgStepTime];
   }
 }

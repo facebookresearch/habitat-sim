@@ -39,6 +39,19 @@ const objectSpawnOrder = [
   "frl_apartment_kitchen_utensil_03" // orange spice shaker
 ];
 
+const benchmarkObjects = [
+  "frl_apartment_vase_02", // gray
+  "frl_apartment_plate_02", // double-layer
+  "frl_apartment_pan_01", // blue, with handle
+  "frl_apartment_kitchen_utensil_05", // serving tray
+  "banana_fixed",
+  "frl_apartment_plate_01",
+  "frl_apartment_kitchen_utensil_06", // white handleless cup
+  "frl_apartment_bowl_06", // small white
+  "frl_apartment_kitchen_utensil_02", // green spice shaker
+  "frl_apartment_kitchen_utensil_03" // orange spice shaker
+];
+
 class HandRecord {
   objIds = [];
   prevButtonStates = [false, false];
@@ -168,20 +181,10 @@ export class VRDemo {
   }
 
   initBenchmark() {
-    const objectNames = [
-      "frl_apartment_vase_02", // gray
-      "frl_apartment_plate_02", // double-layer
-      "frl_apartment_pan_01", // blue, with handle
-      "frl_apartment_kitchen_utensil_05", // serving tray
-      "banana_fixed",
-      "frl_apartment_plate_01",
-      "frl_apartment_kitchen_utensil_06", // white handleless cup
-      "frl_apartment_bowl_06", // small white
-      "frl_apartment_kitchen_utensil_02", // green spice shaker
-      "frl_apartment_kitchen_utensil_03" // orange spice shaker
-    ];
-    const spawnFn = (objectName, pos, vel) => {
-      const handle = DataUtils.getObjectConfigFilepath(objectName);
+    const spawnFn = (objectIdx, pos, vel) => {
+      const handle = DataUtils.getObjectConfigFilepath(
+        benchmarkObjects[objectIdx]
+      );
       const objId = this.sim.addObjectByHandle(handle, null, "", 0);
       this.sim.setTranslation(pos, objId, 0);
       this.sim.setLinearVelocity(vel, objId, 0);
@@ -192,9 +195,13 @@ export class VRDemo {
         this.sim.removeObject(objId, true, true, 0);
       }
     };
-    this.benchmarker = new Benchmark(objectNames, spawnFn, deleteFn);
+    this.benchmarker = new Benchmark(
+      benchmarkObjects.length,
+      spawnFn,
+      deleteFn
+    );
     this.benchmarker.spawnPos = new Module.Vector3(2, 2, 2);
-    this.benchmarker.spawnPosJitter = 0.1;
+    this.benchmarker.spawnPosJitter = 0.2;
   }
 
   async enterVR() {
@@ -229,7 +236,9 @@ export class VRDemo {
         if (this.benchmarker.active()) {
           this.benchmarker.stepBenchmark();
         } else if (!printedBenchmarkResults) {
-          console.log(this.benchmarker.getResults());
+          const res = this.benchmarker.getResults();
+          console.log("Average frame time:", res[0]);
+          console.log("Average step time:", res[1]);
           printedBenchmarkResults = true;
         }
       }
