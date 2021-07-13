@@ -36,6 +36,10 @@ function createMagnumModule(init) {
 
     arguments: [],
 
+    // The below two functions are for handling print statements by the
+    // habitat-sim code. Since they are not set, the messages are by default
+    // printed to the console.
+
     // printErr: function(_message) {
     //     if(module.log) {
     //         module.log.innerHTML += Array.prototype.slice.call(arguments).join(' ')
