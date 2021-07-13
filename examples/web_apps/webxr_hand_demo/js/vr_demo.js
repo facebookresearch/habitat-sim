@@ -173,7 +173,7 @@ export class VRDemo {
       "local-floor"
     );
 
-    this.renderDisplay();
+    this.webXRSession.requestAnimationFrame(this.drawVRScene.bind(this));
 
     this.physicsStepFunction = setInterval(() => {
       this.sim.stepWorld(1.0 / 60);
@@ -200,14 +200,6 @@ export class VRDemo {
     if (this.webXRSession !== null) {
       this.webXRSession.end();
       this.fpsElement.style.visibility = "hidden";
-    }
-  }
-
-  renderDisplay() {
-    if (this.webXRSession !== null) {
-      this.webXRSession.requestAnimationFrame(this.drawVRScene.bind(this));
-    } else {
-      window.setTimeout(this.renderDisplay.bind(this), 1000);
     }
   }
 
