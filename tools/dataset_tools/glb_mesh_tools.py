@@ -125,23 +125,51 @@ def build_glb_scene_graph_dict(scene_graph, root_tag: str):
     return build_dict_from_children(transforms_tree, root_tag)
 
 
-def rotate_quat_by_quat(target_quat: np.ndarray, rot_quat: np.ndarray):
-    """Rotate target_quat by rot_quat"""
+def rotate_vector_by_quat_list(target_vector: List[float], rot_quat: List[float]):
+    return rotate_vector_by_quat(np.array(target_vector), np.array(rot_quat))
 
+
+def rotate_vector_by_quat(target_vector: np.ndarray, rot_quat: np.ndarray):
+    """Rotate target_quat by rot_quat.  Quats are assumed to be np arrays with scalar
+    component in idx 0.
+    """
+    # normalize source rotation quat
+    rot_quat_norm = rot_quat / np.linalg.norm(rot_quat)
+
+    # precalc
+    rot_vec = rot_quat_norm[1:]
+    rot_w = rot_quat_norm[0]
+    u_cross_p = np.cross(rot_vec, target_vector)
+
+    # calculate simplified nested hamitlonian prods
+    res_vector1 = target_vector + 2 * (
+        (rot_w * u_cross_p) + np.cross(rot_vec, u_cross_p)
+    )
+
+    return res_vector1
+
+
+def hamilton_prod_two_quats(quat_a: np.ndarray, quat_b: np.ndarray):
+    """Multiply two quaternions via hamilton product."""
     res_quat = np.zeros(4)
     # not a real quat, just a numpy array
-    rq_vec = target_quat[1:]
-    rot_vec = rot_quat[1:]
-    w = target_quat[0] * rot_quat[0] - (np.dot(rq_vec, rot_vec))
-    vec = (
-        (target_quat[0] * rot_vec)
-        + (rot_quat[0] * rq_vec)
-        + (np.cross(rq_vec, rot_vec))
-    )
+    vec_a = quat_a[1:]
+    vec_b = quat_b[1:]
+    w = quat_a[0] * quat_b[0] - (np.dot(vec_a, vec_b))
+    vec = (quat_a[0] * vec_b) + (quat_b[0] * vec_a) + (np.cross(vec_a, vec_b))
 
     res_quat[0] = w
     res_quat[1:] = vec
-    # normalize
+    return res_quat
+
+
+def rotate_quat_by_quat(target_quat: np.ndarray, rot_quat: np.ndarray):
+    """Rotate target_quat by rot_quat.  Quats are assumed to be np arrays with scalar
+    component in idx 0.
+    """
+
+    res_quat = hamilton_prod_two_quats(target_quat, rot_quat)
+    # normalize to return non-scaling rotation quat
     res_quat /= np.linalg.norm(res_quat)
     return res_quat
 
@@ -151,8 +179,9 @@ def rotate_quat_by_halfpi(target_quat: np.ndarray):
 
     # pi/2 rotation around x axis
     x_rot = np.zeros(4)
-    x_rot[0] = 0.707
-    x_rot[1] = -0.707
+    rot_val = 0.5 * np.sqrt(2.0)
+    x_rot[0] = rot_val
+    x_rot[1] = -rot_val
     x_rot /= np.linalg.norm(x_rot)
     # rotate roation quat by pi/2 around x axis
     return rotate_quat_by_quat(target_quat, x_rot)
@@ -726,3 +755,28 @@ def extract_lighting_from_gltf(scene_filename_glb: str, lights_tag: str):
     )
 
     return lighting_dict_res
+
+
+def set_gltf_as_unlit(scene_filename_glb: str):
+    base_json = extract_json_from_glb(scene_filename_glb)
+    for material in base_json["materials"]:
+        assert "pbrMetallicRoughness" in material
+
+        # Drop everything except base color and base color texture
+        pbrMetallicRoughness = material["pbrMetallicRoughness"]
+        for key in list(pbrMetallicRoughness.keys()):
+            if key not in ["baseColorFactor", "baseColorTexture"]:
+                del pbrMetallicRoughness[key]
+        for key in [
+            "normalTexture",
+            "occlusionTexture",
+            "emissiveFactor",
+            "emissiveTexture",
+        ]:
+            if key in material:
+                del material[key]
+
+        # Add the extension
+        if "extensions" not in material:
+            material["extensions"] = {}
+        material["extensions"]["KHR_materials_unlit"] = {}

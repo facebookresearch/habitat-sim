@@ -17,6 +17,7 @@
   "stage_tag": "world",
   "objects_tag": "world",
   "lighting_tag": "world",
+  "build_dataset_config": false,
   "build_scene_configs": true,
   "build_stage_configs": false,
   "build_object_configs": false,

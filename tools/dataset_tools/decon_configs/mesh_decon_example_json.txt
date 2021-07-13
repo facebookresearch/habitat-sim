@@ -22,6 +22,7 @@
   "objects_tag": <Case sensitive tag within scenegraph of src glb denoting subtree of nodes holding object assets>,
   "lighting_tag": <Case sensitive tag within scenegraph of src glb denoting subtree of nodes lighting info/transforms>,
 
+  "build_dataset_config" : <boolean : whether or not to build the base scene dataset configuration json file. Defaults to true>,
   "build_scene_configs" : <boolean : whether or not to build the scene instance config json files. Defaults to true>,
   "build_stage_configs" : <boolean : whether or not to build the stage config json files. Defaults to true>,
   "build_object_configs" : <boolean : whether or not to build the object config json files. Defaults to true>,

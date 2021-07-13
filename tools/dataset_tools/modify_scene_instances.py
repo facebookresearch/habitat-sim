@@ -8,21 +8,27 @@ import os
 from os.path import join
 
 import config_utils as ut
+import glb_mesh_tools as gut
 
-# specify directory where scene instance configs can be found. Will crawl all
-# directories under specified directory looking for json configs whose names
-# match given regex search parameters.
-SCENE_INSTANCE_DIR = os.path.join(
-    os.path.expanduser("~"),
-    "Facebook/habitat-sim/data/scene_datasets/replicaCAD/configs/",
+# directory where datasets are found
+DATASET_DIR = os.path.join(
+    os.path.expanduser("~"), "Facebook/habitat-sim/data/scene_datasets/"
 )
 
-MOD_OBJS_OUTPUT = SCENE_INSTANCE_DIR + "scenes_mod/"
+# specify directory where original scene instance configs can be found. Will crawl all
+# directories under specified directory looking for json configs whose names
+# match given regex search paramet-ers.
+
+SCENE_INSTANCE_SRC_DIR = DATASET_DIR + "replicaCAD_working/configs_v1.0/scenes/"
+
+# specify directory where to place modified scene instances
+MOD_OBJS_OUTPUT = DATASET_DIR + "replicaCAD/configs/scenes_mod/"
 os.makedirs(MOD_OBJS_OUTPUT, exist_ok=True)
 
 # file holding object modifications - name of object, transform, and magnitude of transform
-OBJECT_MOD_FILENAME = (
-    SCENE_INSTANCE_DIR + "origin_transforms_origin_center_of_mass_median.txt"
+OBJECT_MOD_FILENAME = os.path.join(
+    os.path.expanduser("~"),
+    "Facebook/habitat-sim/data/scene_datasets/replicaCAD_working/object_tests/origin_transforms_origin_center_of_mass_median.txt",
 )
 
 # desired  scene instance config filename regex, not including '.json'
@@ -34,12 +40,12 @@ def main():
     # get all files in specified directory whose names match passed regex string
     # returns list of tuples of path,dirnames, file names
     file_list = ut.get_files_matching_regex(
-        SCENE_INSTANCE_DIR, "{}.json".format(SCENE_INSTANCE_FILE_RE)
+        SCENE_INSTANCE_SRC_DIR, "{}.json".format(SCENE_INSTANCE_FILE_RE)
     )
 
     with open(OBJECT_MOD_FILENAME, "r") as f:
         file_lines = f.readlines()
-
+    # build a dictionary keyed by object name that
     mod_dict = {
         line.split(":")[0].strip(): [
             float(v.strip()) for v in line.split("[")[-1].split("]")[0].split(",")
@@ -57,9 +63,14 @@ def main():
         for obj_instance in orig_scene_instance["object_instances"]:
             obj_name = obj_instance["template_name"].split("/")[-1].strip()
             if obj_name not in mod_dict:
+                print("Unable to find {} in modification dictionary".format(obj_name))
                 continue
             orig_trans = list(obj_instance["translation"])
-            mod_val = mod_dict[obj_name]
+            orig_rotation = list(obj_instance["rotation"])
+            # modification needs to be mod vector rotated by object's rotation to account for change in origin
+            pivot_displacement = mod_dict[obj_name]
+
+            mod_val = gut.rotate_vector_by_quat_list(pivot_displacement, orig_rotation)
             for i in range(len(orig_trans)):
                 obj_instance["translation"][i] += mod_val[i]
 

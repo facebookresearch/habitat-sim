@@ -58,6 +58,9 @@ def build_default_configs():
     # subdirectory within dataset_glb_dest_subdir for object glbs
     default_configs["obj_glb_dest_subdir"] = "objects/"
 
+    # whether or not to build the scene dataset config
+    default_configs["build_dataset_config"] = True
+
     # whether or not to save stage configs for each scene
     default_configs["build_stage_configs"] = True
     # subdirectory within dataset_config_dest_subdir for stage configs to be written
@@ -773,17 +776,8 @@ def main():
             obj_name = tup[2].split(".")[0]
             existing_obj_dict[obj_name] = tup
 
-    # Don't build this for replicaCAD
-    # build_scene_dataset_config(decon_configs)
-
-    ###for testing - 17_physics has stove w/burner and knobs
-    # file_list = [
-    #     ("", "", "FloorPlan320_physics.glb"),
-    #     ("", "", "FloorPlan_Train8_3.glb"),
-    #     ("", "", "FloorPlan430_physics.glb"),
-    #     ("", "", "FloorPlan17_physics.glb"),
-    #     ("", "", "FloorPlan_Val2_4.glb"),
-    # ]
+    if decon_configs["build_dataset_config"]:
+        build_scene_dataset_config(decon_configs)
 
     # count the instances of objects by name
     object_instance_count_dict = defaultdict(int)

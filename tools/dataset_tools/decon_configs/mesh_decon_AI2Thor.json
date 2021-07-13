@@ -17,6 +17,7 @@
   "stage_tag": "Structure",
   "objects_tag": "Objects",
   "lighting_tag": "Lighting",
+  "build_dataset_config": true,
   "build_scene_configs": true,
   "build_stage_configs": true,
   "build_object_configs": true,
