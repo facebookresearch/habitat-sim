@@ -56,8 +56,6 @@ export class VRDemo {
   prevLeftHeld = false;
   prevRightHeld = false;
 
-  fps = 0;
-  skipFrames = 60;
   currentFramesSkipped = 0;
 
   objectCounter = 0;
@@ -180,6 +178,20 @@ export class VRDemo {
     this.physicsStepFunction = setInterval(() => {
       this.sim.stepWorld(1.0 / 60);
     }, 1000.0 / 60);
+
+    let lastFPSUpdateTime = performance.now();
+    let overallFPS = 20;
+    setInterval(() => {
+      let curTime = performance.now();
+      let timeElapsed = (curTime - lastFPSUpdateTime) / 1000.0;
+      let curFPS = this.currentFramesSkipped / timeElapsed;
+      overallFPS = 0.8 * overallFPS + 0.2 * curFPS;
+
+      this.fpsElement.innerHTML = `FPS: ${overallFPS.toFixed(2)}`;
+
+      lastFPSUpdateTime = curTime;
+      this.currentFramesSkipped = 0;
+    }, 100.0);
 
     this.fpsElement.style.visibility = "visible";
   }
@@ -398,27 +410,6 @@ export class VRDemo {
       drawTextureData(this.gl, texRes, texData);
     }
 
-    this.updateFPS();
-  }
-
-  updateFPS() {
-    console.assert(this.fpsElement);
-
-    if (this.currentFramesSkipped != this.skipFrames) {
-      this.currentFramesSkipped++;
-      return;
-    }
-
-    this.currentFramesSkipped = 0;
-
-    if (!this.lastPaintTime) {
-      this.lastPaintTime = performance.now();
-    } else {
-      const current = performance.now();
-      const secondsElapsed = (current - this.lastPaintTime) / 1000;
-      this.fps = this.skipFrames / secondsElapsed;
-      this.lastPaintTime = current;
-      this.fpsElement.innerHTML = `FPS: ${this.fps.toFixed(2)}`;
-    }
+    this.currentFramesSkipped++;
   }
 }
