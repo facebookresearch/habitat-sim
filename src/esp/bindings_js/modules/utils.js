@@ -8,7 +8,7 @@
  * Given a path to a file, load it into the file system for the page.
  */
 export function preload(url) {
-  let file_parents_str = "";
+  let file_parents_str = "/";
   const splits = url.split("/");
   let file = splits[splits.length - 1];
   if (url.indexOf("http") === -1) {

@@ -9,15 +9,15 @@ import ViewerDemo from "./modules/viewer_demo";
 import {
   defaultScene,
   defaultPhysicsConfigFilepath,
-  infoSemanticFileName,
-  preload
+  infoSemanticFileName
 } from "./modules/defaults";
 import "./bindings.css";
 import {
   checkWebAssemblySupport,
   checkWebgl2Support,
   getInfoSemanticUrl,
-  buildConfigFromURLParameters
+  buildConfigFromURLParameters,
+  preload
 } from "./modules/utils";
 import TestPage from "./modules/test_page";
 
