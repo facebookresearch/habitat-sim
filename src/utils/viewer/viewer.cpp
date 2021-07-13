@@ -403,7 +403,8 @@ Key Commands:
     if (curSceneInstances_.size() == 0) {
       return 0;
     }
-    return (curSceneInstanceIDX_ + incr) % curSceneInstances_.size();
+    return (curSceneInstanceIDX_ + curSceneInstances_.size() + incr) %
+           curSceneInstances_.size();
   }
 
   /**
@@ -763,7 +764,8 @@ Viewer::Viewer(const Arguments& arguments)
   // found.
   curSceneInstanceIDX_ = 0;
   for (int i = 0; i < curSceneInstances_.size(); ++i) {
-    if (curSceneInstances_[i].find(simConfig_.activeSceneName)) {
+    if (curSceneInstances_[i].find(simConfig_.activeSceneName) !=
+        std::string::npos) {
       curSceneInstanceIDX_ = i;
       break;
     }
