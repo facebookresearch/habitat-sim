@@ -13,8 +13,6 @@ import {
 } from "../lib/habitat-sim-js/vr_utils.js";
 import { DataUtils } from "./data_utils.js";
 
-const pointToArray = p => [p.x, p.y, p.z, p.w];
-
 const objectSpawnOrder = [
   "frl_apartment_vase_02", // gray
   "frl_apartment_plate_02", // double-layer
@@ -62,6 +60,8 @@ export class VRDemo {
   skipFrames = 60;
   currentFramesSkipped = 0;
 
+  objectCounter = 0;
+
   constructor() {
     this.fpsElement = document.getElementById("fps");
   }
@@ -94,7 +94,8 @@ export class VRDemo {
     }
   }
 
-  initSimAndSensors() {
+  display() {
+    // init sim
     this.config = new Module.SimulatorConfiguration();
     this.config.scene_id = DataUtils.getStageFilepath(Module.stageName);
     this.config.enablePhysics = true;
@@ -102,34 +103,30 @@ export class VRDemo {
     this.config.sceneLightSetup = ""; // this empty string means "use lighting"
     this.config.overrideSceneLightDefaults = true; // always set this to true
     this.config.allowPbrShader = false; // Pbr shader isn't robust on WebGL yet
-
     this.sim = new Module.Simulator(this.config);
 
+    // init agent
     const agentConfigOrig = new Module.AgentConfiguration();
     agentConfigOrig.sensorSpecifications = getEyeSensorSpecs(1024, 1024);
-
     this.sim.addAgent(agentConfigOrig);
     this.agentId = 0;
-  }
 
-  // place agent and add objects
-  initScene() {
-    // Set agent to identity transform.
+    // place agent
     const agent = this.sim.getAgent(this.agentId);
     let state = new Module.AgentState();
     agent.getState(state);
-    // todo: specify start position/orientation via URL param (or react?)
-    state.position = [2.0, 0.1, 5.8];
+    state.position = [2.0, 0.1, 5.8]; // todo: specify start position/orientation via URL param (or react?)
     state.rotation = [0.0, 0.0, 0.0, 1.0];
     agent.setState(state, false);
 
+    // load objects from data
     Module.loadAllObjectConfigsFromPath(
       this.sim,
       DataUtils.getObjectBaseFilepath()
     );
 
+    // add hands
     this.handRecords = [new HandRecord(), new HandRecord()];
-
     const handFilepathsByHandIndex = [
       [
         DataUtils.getObjectConfigFilepath("hand_l_open"),
@@ -140,7 +137,6 @@ export class VRDemo {
         DataUtils.getObjectConfigFilepath("hand_r_closed")
       ]
     ];
-
     for (const handIndex of [0, 1]) {
       for (const filepath of handFilepathsByHandIndex[handIndex]) {
         let objId = this.sim.addObjectByHandle(filepath, null, "", 0);
@@ -150,19 +146,10 @@ export class VRDemo {
       }
     }
 
-    this.objectCounter = 0;
-  }
-
-  setUpVR() {
+    // set up "Enter VR" button
     const elem = document.getElementById("enter-vr");
     elem.style.visibility = "visible";
     elem.addEventListener("click", this.enterVR.bind(this));
-  }
-
-  display() {
-    this.initSimAndSensors();
-    this.initScene();
-    this.setUpVR();
   }
 
   async enterVR() {
@@ -247,6 +234,8 @@ export class VRDemo {
         ? handRecord.objIds[0]
         : handRecord.objIds[1];
 
+      const pointToArray = p => [p.x, p.y, p.z, p.w];
+
       // update hand obj pose
       let poseTransform = inputPose.transform;
       const handPos = Module.Vector3.add(
@@ -262,28 +251,26 @@ export class VRDemo {
       this.sim.setTranslation(handPos, handObjId, 0);
       this.sim.setRotation(handRot, handObjId, 0);
 
-      // hack hide other hand by translating far away
+      // hack hide ungripped hand by translating far away
       this.sim.setTranslation(
         new Module.Vector3(-1000.0, -1000.0, -1000.0),
         hiddenHandObjId,
         0
       );
-
       let palmFacingSign = handIndex == 0 ? 1.0 : -1.0;
       let palmFacingDir = handRot.transformVector(
         new Module.Vector3(palmFacingSign, 0.0, 0.0)
       );
-      let grabRay = new Module.Ray(handPos, palmFacingDir);
 
       // try grab
       if (buttonStates[0] && !handRecord.prevButtonStates[0]) {
+        let grabRay = new Module.Ray(handPos, palmFacingDir);
         let maxDistance = 0.15;
 
         let raycastResults = this.sim.castRay(grabRay, maxDistance, 0);
         let hitObjId = raycastResults.hasHits()
           ? raycastResults.hits.get(0).objectId
           : -1;
-        console.log("Try grab", hitObjId);
 
         if (hitObjId != -1) {
           handRecord.heldObjId = hitObjId;
@@ -351,9 +338,8 @@ export class VRDemo {
         handRecord.heldObjId = -1;
       }
 
+      // spawn object
       if (buttonStates[1] && !handRecord.prevButtonStates[1]) {
-        // cylinderSolid_rings_1_segments_12_halfLen_1_useTexCoords_false_useTangents_false_capEnds_true
-
         const offsetDist = 0.25;
         let spawnPos = Module.Vector3.add(
           handPos,
@@ -416,9 +402,7 @@ export class VRDemo {
   }
 
   updateFPS() {
-    if (!this.fpsElement) {
-      return;
-    }
+    console.assert(this.fpsElement);
 
     if (this.currentFramesSkipped != this.skipFrames) {
       this.currentFramesSkipped++;
