@@ -11,6 +11,7 @@ import {
   preload
 } from "../lib/habitat-sim-js/utils.js";
 import { VRDemo } from "./vr_demo.js";
+import { isWebXRSupported } from "../lib/habitat-sim-js/vr_utils.js";
 
 function checkSupport() {
   const webgl2Support = checkWebgl2Support();
@@ -43,7 +44,6 @@ function doPreloading() {
 }
 
 Module.preRun.push(() => {
-  console.log("preRun");
   let config = {};
   buildConfigFromURLParameters(config);
   Module.stageName =
@@ -52,21 +52,16 @@ Module.preRun.push(() => {
 });
 
 async function doRun() {
-  console.log("hsim_bindings initialized");
-  let demo;
-  // todo: move this vr-specific logic out of here
-  const supported = await navigator.xr.isSessionSupported("immersive-vr");
-  if (supported) {
-    console.log("WebXR is supported");
-    demo = new VRDemo();
+  if (isWebXRSupported()) {
+    let demo = new VRDemo();
     demo.display();
   } else {
-    // todo: better error message
-    console.log("WebXR not supported");
+    console.log(
+      "WebXR not supported. Make sure you have the WebXR API Emulator chrome extension if you are not on a headset."
+    );
   }
 }
 
 Module.onRuntimeInitialized = async function() {
-  console.log("onRuntimeInitialized");
   doRun();
 };

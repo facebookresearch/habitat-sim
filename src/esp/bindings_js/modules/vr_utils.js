@@ -4,6 +4,10 @@
 
 /* global Module */
 
+export async function isWebXRSupported() {
+  return await navigator.xr.isSessionSupported("immersive-vr");
+}
+
 export const VIEW_SENSORS = ["left_eye", "right_eye"];
 const pointToArray = p => [p.x, p.y, p.z, p.w];
 
