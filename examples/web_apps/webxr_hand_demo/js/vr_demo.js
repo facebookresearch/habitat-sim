@@ -163,8 +163,6 @@ export class VRDemo {
     this.initSimAndSensors();
     this.initScene();
     this.setUpVR();
-
-    this.headPosesInputElement = document.getElementById("head_poses_input");
   }
 
   async enterVR() {
@@ -415,58 +413,6 @@ export class VRDemo {
     }
 
     this.updateFPS();
-
-    const posAsArray = pointToArray(pose.transform.position).slice(0, -1);
-    const orientationAsArray = pointToArray(pose.transform.orientation);
-    this.tryLogHeadPose(posAsArray, orientationAsArray);
-  }
-
-  tryLogHeadPose(position, orientation) {
-    if (!this.headPosesInputElement) {
-      return;
-    }
-
-    const currDate = new Date();
-    const currMs = currDate.getTime();
-
-    const logHeadPosePeriodMs = 1000; // log every 1000 ms
-    if (
-      this.recentLogHeadPoseTimeMs &&
-      currMs - this.recentLogHeadPoseTimeMs < logHeadPosePeriodMs
-    ) {
-      return;
-    }
-
-    if (!this.recentLogHeadPoseTimeMs) {
-      this.recentLogHeadPoseTimeMs = currMs;
-    } else {
-      this.recentLogHeadPoseTimeMs += logHeadPosePeriodMs;
-    }
-
-    this.logHeadPose(position, orientation);
-  }
-
-  logHeadPose(positionFloatArray, orientationFloatArray) {
-    const orientationPrecision = 7;
-    const positionPrecision = 3;
-    let s = "{{";
-    for (let i = 0; i < positionFloatArray.length; i++) {
-      const elem = positionFloatArray[i];
-      s += elem.toFixed(positionPrecision);
-      if (i < positionFloatArray.length - 1) {
-        s += ",";
-      }
-    }
-    s += "},{";
-    for (let i = 0; i < orientationFloatArray.length; i++) {
-      const elem = orientationFloatArray[i];
-      s += elem.toFixed(orientationPrecision);
-      if (i < orientationFloatArray.length - 1) {
-        s += ",";
-      }
-    }
-    s += "}},";
-    this.headPosesInputElement.value += s;
   }
 
   updateFPS() {
