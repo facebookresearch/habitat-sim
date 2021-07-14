@@ -349,7 +349,9 @@ jobs:
             brew install --cask miniconda
             conda init "$(basename "${SHELL}")"
             source ~/.bash_profile
-            conda install -y anaconda-client git ninja conda-build
+            conda activate
+            conda install -y anaconda-client git ninja conda-build pip
+            echo $(which -a python)
             pip install gitpython
             cd habitat-sim/conda-build
             python mac_matrix_builder.py --ci_test
