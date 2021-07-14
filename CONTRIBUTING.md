@@ -40,12 +40,12 @@ clear and has sufficient instructions to be able to reproduce the issue.
 
 - C++
   - In general, we follow [C++ Core Guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines) and [Google C++ guidelines](https://google.github.io/styleguide/cppguide.html)
-  - Use `clang-format-12` for style enforcement and linting. 
-  Install `clang-format-12` through `brew install clang-format` on macOS. For other systems, `clang-format-12` can be installed via `conda install clangdev -c conda-forge` or by downloading binaries or sources from [releases.llvm.org/download](http://releases.llvm.org/download.html). 
+  - Use `clang-format-12` for style enforcement and linting.
+  Install `clang-format-12` through `brew install clang-format` on macOS. For other systems, `clang-format-12` can be installed via `conda install clangdev -c conda-forge` or by downloading binaries or sources from [releases.llvm.org/download](http://releases.llvm.org/download.html).
   For vim integration add to your .vimrc file `map <C-K> :%!clang-format<cr>` and use Ctrl+K to format entire file. Integration plugin for [vscode](https://marketplace.visualstudio.com/items?itemName=xaver.clang-format)..
 - Python
   - We follow PEP8 and use [typing](https://docs.python.org/3/library/typing.html).
-  - We use `black` and `isort` for linting and code style of python code. 
+  - We use `black` and `isort` for linting and code style of python code.
   Install `black` and `isort` through `pip install -U black isort`. They can then be ran via `black .` and `isort`.
 - JS
   - We use `eslint` with `prettier` plugin for linting, formatting and code style of JS code.
@@ -64,5 +64,3 @@ We also use pre-commit hooks to ensure linting and style enforcement. Install th
 1. Install `ccache` (`sudo apt install ccache` on Linux, or `brew install ccache` on macOS) for significantly faster clean re-builds and builds with slightly different settings
 1. You can skip reinstalling magnum every time by adding the argument of `--skip-install-magnum` to either `build.sh` or `setup.py`.  Note that you will still need to install magnum bindings once.
 1. Arguments to `build.sh` and `setup.py` can be cached between subsequent invocations with the flag `--cache-args` on the _first_ invocation.
-
-
