@@ -354,7 +354,7 @@ jobs:
             echo $(which -a python)
             pip install gitpython
             cd habitat-sim/conda-build
-            python mac_matrix_builder.py --ci_test
+            python macos_matrix_builder.py --ci_test
 
   lab_build_habitat:
     <<: *gpu
