@@ -334,23 +334,16 @@ jobs:
     steps:
       - checkout:
           path: ./habitat-sim
-      - run:
-          name: Brew Install
-          command: |
-            git -C /usr/local/Homebrew/Library/Taps/homebrew/homebrew-core fetch --unshallow & \
-            git -C /usr/local/Homebrew/Library/Taps/homebrew/homebrew-cask fetch --unshallow &
-            wait
-      - run:
-          name: Install Brew Dependencies
-          command: brew install ccache cmake ninja
-      - run:
           name: Conda Install
           command: |
-            brew install --cask miniconda
+            curl -o ~/miniconda.sh -O https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
+            chmod +x ~/miniconda.sh
+            ~/miniconda.sh -b -p $HOME/miniconda
+            rm ~/miniconda.sh
             conda init "$(basename "${SHELL}")"
             source ~/.bash_profile
             conda activate
-            conda install -y anaconda-client git ninja conda-build pip
+            conda install -y anaconda-client ccache cmake git ninja conda-build pip
             echo $(which -a python)
             pip install gitpython
             cd habitat-sim/conda-build
