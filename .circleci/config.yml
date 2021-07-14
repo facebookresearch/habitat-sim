@@ -341,6 +341,7 @@ jobs:
             chmod +x ~/miniconda.sh
             ~/miniconda.sh -b -p $HOME/miniconda
             rm ~/miniconda.sh
+            export PATH=$HOME/miniconda/bin:$PATH
             source ~/.bash_profile
             conda init "$(basename "${SHELL}")"
             conda activate
