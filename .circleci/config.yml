@@ -341,8 +341,8 @@ jobs:
             chmod +x ~/miniconda.sh
             ~/miniconda.sh -b -p $HOME/miniconda
             rm ~/miniconda.sh
-            conda init "$(basename "${SHELL}")"
             source ~/.bash_profile
+            conda init "$(basename "${SHELL}")"
             conda activate
             conda install -y anaconda-client ccache cmake git ninja conda-build pip
             echo $(which -a python)
