@@ -54,7 +54,7 @@ Module.preRun.push(() => {
 async function doRun() {
   if (isWebXRSupported()) {
     let demo = new VRDemo();
-    demo.display();
+    demo.start();
   } else {
     console.log(
       "WebXR not supported. Make sure you have the WebXR API Emulator chrome extension if you are not on a headset."

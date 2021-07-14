@@ -92,7 +92,7 @@ export class VRDemo {
     }
   }
 
-  display() {
+  start() {
     // init sim
     this.config = new Module.SimulatorConfiguration();
     this.config.scene_id = DataUtils.getStageFilepath(Module.stageName);
