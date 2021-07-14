@@ -89,7 +89,6 @@ export class Benchmark {
         this.#currentlySpawned.push(this.spawnFn(obj, pos, this.spawnVel));
       }
     }
-    return true;
   }
 
   /* Call this every time a frame is rendered in the main program. */
