@@ -328,6 +328,27 @@ jobs:
               rm -rf build
               cd conda-build
               python linux_matrix_builder.py --ci_test
+  test_conda_build_osx:
+    macos:
+      xcode: 10.9.0
+    steps:
+      - checkout:
+          path: ./habitat-sim
+      - run:
+          name: Brew Install
+          command: |
+            /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+            brew install ccache cmake ninja
+      - run:
+          name: Conda Install
+          command: |
+            brew install --cask anaconda
+            export PATH="/usr/local/anaconda3/bin:$PATH"
+            conda install -y anaconda-client git ninja conda-build
+            pip install gitpython
+            cd conda-build
+            python mac_matrix_builder.py --ci_test
+
   lab_build_habitat:
     <<: *gpu
     steps:
@@ -667,6 +688,7 @@ workflows:
       - js_lint
       - lab_build_habitat
       - test_conda_build
+      - test_conda_build_osx
       - install_and_test_ubuntu
       - pre-commit
   nightly:
