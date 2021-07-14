@@ -57,6 +57,7 @@ def main():
         bullet_modes = [True]
         py_vers = ["3.6"]
     else:
+
         py_vers = ["3.6", "3.7", "3.8"]
         bullet_modes = [False, True]
 
@@ -70,6 +71,7 @@ def main():
         env["WITH_BULLET"] = "0"
         env["WITH_CUDA"] = "0"
         env["HEADLESS"] = "0"
+        env["LTO"] = "0" if args.ci_test else "1"
         env["HSIM_SOURCE_PATH"] = osp.abspath(osp.join(osp.dirname(__file__), ".."))
 
         build_string = f"py{py_ver}_"

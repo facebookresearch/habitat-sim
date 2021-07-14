@@ -355,6 +355,7 @@ jobs:
             pip install gitpython
             cd habitat-sim/conda-build
             git submodule update --init --recursive --jobs 16
+            export PYTHONIOENCODING="utf-8"
             python macos_matrix_builder.py --ci_test
 
   lab_build_habitat:
