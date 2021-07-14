@@ -346,6 +346,7 @@ jobs:
           command: |
             brew install --cask miniconda
             conda init "$(basename "${SHELL}")"
+            eval "$(command conda 'shell.bash' 'hook' 2> /dev/null)"
             export PATH="/usr/local/miniconda/bin:$PATH"
             conda install -y anaconda-client git ninja conda-build
             pip install gitpython
