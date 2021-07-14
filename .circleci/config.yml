@@ -345,6 +345,7 @@ jobs:
           name: Conda Install
           command: |
             brew install --cask miniconda
+            conda init "$(basename "${SHELL}")"
             export PATH="/usr/local/miniconda/bin:$PATH"
             conda install -y anaconda-client git ninja conda-build
             pip install gitpython
