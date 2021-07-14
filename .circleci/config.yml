@@ -340,14 +340,15 @@ jobs:
             git -C /usr/local/Homebrew/Library/Taps/homebrew/homebrew-core fetch --unshallow & \
             git -C /usr/local/Homebrew/Library/Taps/homebrew/homebrew-cask fetch --unshallow &
             wait
-            brew install ccache cmake ninja
+      - run:
+          name: Install Brew Dependencies
+          command: brew install ccache cmake ninja
       - run:
           name: Conda Install
           command: |
             brew install --cask miniconda
             conda init "$(basename "${SHELL}")"
-            eval "$(command conda 'shell.bash' 'hook' 2> /dev/null)"
-            export PATH="/usr/local/miniconda/bin:$PATH"
+            source ~/.bash_profile
             conda install -y anaconda-client git ninja conda-build
             pip install gitpython
             cd habitat-sim/conda-build
