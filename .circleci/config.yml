@@ -342,8 +342,8 @@ jobs:
             ~/miniconda.sh -b -p $HOME/miniconda
             rm ~/miniconda.sh
             export PATH=$HOME/miniconda/bin:$PATH
-            source ~/.bash_profile
             conda init "$(basename "${SHELL}")"
+            source ~/.bash_profile
             conda activate
             conda install -y anaconda-client ccache cmake git ninja conda-build pip
             echo $(which -a python)
