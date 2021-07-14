@@ -12,17 +12,17 @@
 
 # Habitat-Sim
 
-A high-performance physics-enabled 3D simulator with support for:  
+A high-performance physics-enabled 3D simulator with support for:
 - 3D scans of indoor/outdoor spaces (with built-in support for [HM3D](https://aihabitat.org/datasets/hm3d/), [MatterPort3D](https://niessner.github.io/Matterport/), [Gibson](http://gibsonenv.stanford.edu/database/), [Replica](https://github.com/facebookresearch/Replica-Dataset), and other datasets)
-- CAD models of spaces and piecewise-rigid objects (e.g. [ReplicaCAD](https://aihabitat.org/datasets/replica_cad/), [YCB](https://www.ycbbenchmarks.com/), [Google Scanned Objects](https://app.ignitionrobotics.org/GoogleResearch/fuel/collections/Google%20Scanned%20Objects)), 
+- CAD models of spaces and piecewise-rigid objects (e.g. [ReplicaCAD](https://aihabitat.org/datasets/replica_cad/), [YCB](https://www.ycbbenchmarks.com/), [Google Scanned Objects](https://app.ignitionrobotics.org/GoogleResearch/fuel/collections/Google%20Scanned%20Objects)),
 - Configurable sensors (RGB-D cameras, egomotion sensing)
-- Robots described via URDF (mobile manipulators like [Fetch](http://docs.fetchrobotics.com/), fixed-base arms like [Franka](https://www.franka.de/),quadrupeds like [AlienGo](https://www.unitree.com/products/aliengo/)), 
-- Rigid-body mechanics (via [Bullet](https://github.com/bulletphysics/bullet3)). 
+- Robots described via URDF (mobile manipulators like [Fetch](http://docs.fetchrobotics.com/), fixed-base arms like [Franka](https://www.franka.de/),quadrupeds like [AlienGo](https://www.unitree.com/products/aliengo/)),
+- Rigid-body mechanics (via [Bullet](https://github.com/bulletphysics/bullet3)).
 
-The design philosophy of Habitat is to prioritize simulation speed over the breadth of simulation capabilities. When rendering a scene from the Matterport3D dataset, Habitat-Sim achieves several thousand frames per second (FPS) running single-threaded and reaches over 10,000 FPS multi-process on a single GPU. Habitat-Sim simulates a Fetch robot interacting in ReplicaCAD scenes at over 8,000 steps per second (SPS), where each ‘step’ involves rendering 1 RGBD observation (128×128 pixels) and rigid-body dynamics for 1/30sec. 
+The design philosophy of Habitat is to prioritize simulation speed over the breadth of simulation capabilities. When rendering a scene from the Matterport3D dataset, Habitat-Sim achieves several thousand frames per second (FPS) running single-threaded and reaches over 10,000 FPS multi-process on a single GPU. Habitat-Sim simulates a Fetch robot interacting in ReplicaCAD scenes at over 8,000 steps per second (SPS), where each ‘step’ involves rendering 1 RGBD observation (128×128 pixels) and rigid-body dynamics for 1/30sec.
 
 
-Habitat-Sim is typically used with 
+Habitat-Sim is typically used with
 [Habitat-Lab](https://github.com/facebookresearch/habitat-lab), a modular high-level library for end-to-end experiments in embodied AI -- defining embodied AI tasks (e.g. navigation, instruction following, question answering), training agents (via imitation or reinforcement learning, or no learning at all as in classical SensePlanAct pipelines), and benchmarking their performance on the defined tasks using standard metrics.
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/facebookresearch/habitat-sim/)
@@ -77,7 +77,7 @@ Habitat-Sim can be installed in 3 ways:
 
 ### [Recommended] Conda Packages
 
-Habitat is under active development, and we advise users to restrict themselves to [stable releases](https://github.com/facebookresearch/habitat-sim/releases). Starting with v0.1.4, we provide [conda packages for each release](https://anaconda.org/aihabitat). 
+Habitat is under active development, and we advise users to restrict themselves to [stable releases](https://github.com/facebookresearch/habitat-sim/releases). Starting with v0.1.4, we provide [conda packages for each release](https://anaconda.org/aihabitat).
 
 #### Preparing conda env
 Assuming you have [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/) installed, let's prepare a conda env:
@@ -184,8 +184,8 @@ Browse the online [Habitat-Sim documentation](https://aihabitat.org/docs/habitat
 
 To get you started, see the [Lighting Setup tutorial](https://aihabitat.org/docs/habitat-sim/lighting-setups.html) for adding new objects to existing scenes and relighting the scene & objects. The [Image Extractor tutorial](https://aihabitat.org/docs/habitat-sim/image-extractor.html) shows how to get images from scenes loaded in Habitat-Sim.
 
-### Questions? 
-Join the Slack channel. 
+### Questions?
+Join the Slack channel.
 [![Slack Join](http://img.shields.io/static/v1?label=Join%20us%20on&message=%23habitat-dev&labelColor=%234A154B&logo=slack)](https://join.slack.com/t/ai-habitat/shared_invite/enQtNjY1MzM1NDE4MTk2LTZhMzdmYWMwODZlNjg5MjZiZjExOTBjOTg5MmRiZTVhOWQyNzk0OTMyN2E1ZTEzZTNjMWM0MjBkN2VhMjQxMDI)
 
 ## Datasets
@@ -228,4 +228,3 @@ To reproduce the benchmark table from above run `examples/benchmark.py --scene /
 ## License
 
 Habitat-Sim is MIT licensed. See the [LICENSE](LICENSE) for details.
-
