@@ -12,43 +12,38 @@
 
 # Habitat-Sim
 
-A flexible, high-performance 3D simulator with configurable agents, multiple sensors, and generic 3D dataset handling (with built-in support for [MatterPort3D](https://niessner.github.io/Matterport/), [Gibson](http://gibsonenv.stanford.edu/database/), [Replica](https://github.com/facebookresearch/Replica-Dataset), and other datasets).
-When rendering a scene from the Matterport3D dataset, Habitat-Sim achieves several thousand frames per second (FPS) running single-threaded, and reaches <a href="#fps_table"><b>over 10,000 FPS multi-process</b></a> on a single GPU!
+A high-performance physics-enabled 3D simulator with support for:  
+- 3D scans of indoor/outdoor spaces (with built-in support for [HM3D](https://aihabitat.org/datasets/hm3d/), [MatterPort3D](https://niessner.github.io/Matterport/), [Gibson](http://gibsonenv.stanford.edu/database/), [Replica](https://github.com/facebookresearch/Replica-Dataset), and other datasets)
+- CAD models of spaces and piecewise-rigid objects (e.g. [ReplicaCAD](https://aihabitat.org/datasets/replica_cad/), [YCB](https://www.ycbbenchmarks.com/), [Google Scanned Objects](https://app.ignitionrobotics.org/GoogleResearch/fuel/collections/Google%20Scanned%20Objects)), 
+- Configurable sensors (RGB-D cameras, egomotion sensing)
+- Robots described via URDF (mobile manipulators like [Fetch](http://docs.fetchrobotics.com/), fixed-base arms like [Franka](https://www.franka.de/),quadrupeds like [AlienGo](https://www.unitree.com/products/aliengo/)), 
+- Rigid-body mechanics (via [Bullet](https://github.com/bulletphysics/bullet3)). 
+
+The design philosophy of Habitat is to prioritize simulation speed over the breadth of simulation capabilities. When rendering a scene from the Matterport3D dataset, Habitat-Sim achieves several thousand frames per second (FPS) running single-threaded and reaches over 10,000 FPS multi-process on a single GPU. Habitat-Sim simulates a Fetch robot interacting in ReplicaCAD scenes at over 8,000 steps per second (SPS), where each ‘step’ involves rendering 1 RGBD observation (128×128 pixels) and rigid-body dynamics for 1/30sec. 
 
 
-[Habitat-Lab](https://github.com/facebookresearch/habitat-lab) uses [Habitat-Sim](https://github.com/facebookresearch/habitat-sim) as the core simulator and is a modular high-level library for end-to-end experiments in embodied AI -- defining embodied AI tasks (e.g. navigation, instruction following, question answering), training agents (via imitation or reinforcement learning, or no learning at all as in classical SLAM), and benchmarking their performance on the defined tasks using standard metrics.
+Habitat-Sim is typically used with 
+[Habitat-Lab](https://github.com/facebookresearch/habitat-lab), a modular high-level library for end-to-end experiments in embodied AI -- defining embodied AI tasks (e.g. navigation, instruction following, question answering), training agents (via imitation or reinforcement learning, or no learning at all as in classical SensePlanAct pipelines), and benchmarking their performance on the defined tasks using standard metrics.
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/facebookresearch/habitat-sim/)
 
 [![Habitat Demo](https://img.shields.io/static/v1?label=WebGL&message=Try%20AI%20Habitat%20In%20Your%20Browser%20&color=blue&logo=webgl&labelColor=%23990000&style=for-the-badge&link=https://aihabitat.org/demo)](https://aihabitat.org/demo)
 <p align="center">
-  <img src="docs/images/habitat_compressed.gif" height="400">
+  <img src="docs/images/habitat2_small.mp4" height="400">
 </p>
 
 ---
 
 ## Table of contents
-   1. [Motivation](#motivation)
    1. [Citing Habitat](#citing-habitat)
-   1. [Details](#details)
-   1. [Performance](#performance)
    1. [Installation](#installation)
    1. [Testing](#testing)
    1. [Documentation](#documentation)
-   1. [Rendering to GPU Tensors](#rendering-to-gpu-tensors)
-   1. [Experimental: Emscripten, WebGL, and Web Apps](##experimental-emscripten-webgl-and-web-apps)
    1. [Datasets](#datasets)
    1. [Examples](#examples)
-   1. [Code Style](#code-style)
-   1. [Development Tips](#development-tips)
-   1. [Acknowledgments](#acknowledgments)
    1. [External Contributions](#external-contributions)
    1. [License](#license)
-   1. [References](#references)
 
-## Motivation
-AI Habitat enables training of embodied AI agents (virtual robots) in a highly photorealistic & efficient 3D simulator, before transferring the learned skills to reality.
-This empowers a paradigm shift from 'internet AI' based on static datasets (e.g. ImageNet, COCO, VQA) to embodied AI where agents act within realistic environments, bringing to the fore active perception, long-term planning, learning from interaction, and holding a dialog grounded in an environment.
 
 ## Citing Habitat
 If you use the Habitat platform in your research, please cite the [Habitat](https://arxiv.org/abs/1904.01201) and [Habitat 2.0](https://arxiv.org/abs/2106.14405) papers:
@@ -72,104 +67,19 @@ If you use the Habitat platform in your research, please cite the [Habitat](http
 Habitat-Sim also builds on work contributed by others.  If you use contributed methods/models, please cite their works.  See the [External Contributions](#external-contributions) section
 for a list of what was externally contributed and the corresponding work/citation.
 
-## Details
-
-The Habitat-Sim backend module is implemented in C++ and leverages the [magnum](https://github.com/mosra/magnum) graphics middleware library to support cross-platform deployment on a broad variety of hardware configurations. The architecture of the main abstraction classes is shown below. The design of this module ensures a few key properties:
-* Memory-efficient management of 3D environment resources (triangle mesh geometry, textures, shaders) ensuring shared resources are cached and re-used
-* Flexible, structured representation of 3D environments using SceneGraphs, allowing for programmatic manipulation of object state, and combination of objects from different environments
-* High-efficiency rendering engine with multi-attachment render passes for reduced overhead when multiple sensors are active
-* Arbitrary numbers of Agents and corresponding Sensors that can be linked to a 3D environment by attachment to a SceneGraph.
-
-<p align="center">
- <img src='docs/images/habitat_architecture.png' width="800" />
- <p align="center"><i>Architecture of <code>Habitat-Sim</code> main classes</i></p>
-</p>
-
-The Simulator delegates management of all resources related to 3D environments to a ResourceManager that is responsible for loading and caching 3D environment data from a variety of on-disk formats. These resources are used within SceneGraphs at the level of individual SceneNodes that represent distinct objects or regions in a particular Scene. Agents and their Sensors are instantiated by being attached to SceneNodes in a particular SceneGraph.
-
-<p align="center">
- <img src='docs/images/sensor-data.png' width="600" />
- <p align="center"><i>Example rendered sensor observations</i></p>
-</p>
-
-
-## Performance
-The table below reports performance statistics for a test scene from the Matterport3D dataset (id `17DRP5sb8fy`) on a `Xeon E5-2690 v4 CPU` and `Nvidia Titan Xp`. Single-thread performance reaches several thousand frames per second, while multi-process operation with several independent simulation backends can reach more than 10,000 frames per second on a single GPU!
-<table class="table" id="fps_table">
- <tr>
-   <td></td>
-   <th colspan="3"> 1 proc </th>
-   <th colspan="3"> 3 procs </th>
-   <th colspan="3"> 5 procs </th>
- </tr>
- <tr>
-   <th>Sensors / Resolution</th>
-   <th>128</th>
-   <th>256</th>
-   <th>512</th>
-   <th>128</th>
-   <th>256</th>
-   <th>512</th>
-   <th>128</th>
-   <th>256</th>
-   <th>512</th>
- </tr>
- <tr>
-   <td>RGB</td>
-   <td>4093</td>
-   <td>1987</td>
-   <td>848</td>
-   <td>10638</td>
-   <td>3428</td>
-   <td>2068</td>
-   <td>10592</td>
-   <td>3574</td>
-   <td>2629</td>
- </tr>
- <tr>
-   <td>RGB + depth</td>
-   <td>2050</td>
-   <td>1042</td>
-   <td>423</td>
-   <td>5024</td>
-   <td>1715</td>
-   <td>1042</td>
-   <td>5223</td>
-   <td>1774</td>
-   <td>1348</td>
- </tr>
- <tr>
-   <td>RGB + depth + semantics*</td>
-   <td>709</td>
-   <td>596</td>
-   <td>394</td>
-   <td>1312</td>
-   <td>1219</td>
-   <td>979</td>
-   <td>1521</td>
-   <td>1429</td>
-   <td>1291</td>
- </tr>
-</table>
-
-Previous simulation platforms that have operated on similar datasets typically produce on the order of a couple hundred frames per second. For example [Gibson](https://github.com/StanfordVL/GibsonEnv#gibson-framerate) reports up to about 150 fps with 8 processes, and [MINOS](https://github.com/minosworld/minos#benchmarking) reports up to about 167 fps with 4 threads.
-
-*Note: The semantic sensor in MP3D houses currently requires the use of additional house 3D meshes with orders of magnitude more geometric complexity leading to reduced performance. We expect this to be addressed in future versions leading to speeds comparable to RGB + depth; stay tuned.
-
-To run the above benchmarks on your machine, see instructions in the [examples](#examples) section.
 
 ## Installation
 
 Habitat-Sim can be installed in 3 ways:
 1. Via Conda - Recommended method for most users. Stable release and nightly builds.
-2. Via Docker - Updated approximately once per year for [Habitat Challenge](https://aihabitat.org/challenge/).
-3. Via Source - For active development.
+2. Via Docker - Updated approximately once per year for [Habitat Challenge](https://aihabitat.org/challenge/):  [habitat-docker-setup](https://github.com/facebookresearch/habitat-lab#docker-setup).
+3. Via Source - For active development. Read [build instructions and common build issues](BUILD_FROM_SOURCE.md).
 
 ### [Recommended] Conda Packages
 
-Habitat is under active development, and we advise users to restrict themselves to [stable releases](https://github.com/facebookresearch/habitat-sim/releases).
-Starting with v0.1.4, we provide [conda packages for each release](https://anaconda.org/aihabitat). This is the recommended and easiest way to install Habitat-Sim.
+Habitat is under active development, and we advise users to restrict themselves to [stable releases](https://github.com/facebookresearch/habitat-sim/releases). Starting with v0.1.4, we provide [conda packages for each release](https://anaconda.org/aihabitat). 
 
+#### Preparing conda env
 Assuming you have [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/) installed, let's prepare a conda env:
 ```bash
 # We require python>=3.6 and cmake>=3.10
@@ -178,7 +88,8 @@ conda activate habitat
 pip install -r requirements.txt
 ```
 
-Next, pick one of the options below depending on your system/needs:
+#### conda install habitat-sim
+Pick one of the options below depending on your system/needs:
 
 - To install on machines with an attached display:
    ```bash
@@ -188,7 +99,7 @@ Next, pick one of the options below depending on your system/needs:
    ```
    conda install habitat-sim headless -c conda-forge -c aihabitat
    ```
-- To install habitat-sim with bullet physics
+- [**Most common scenario**] To install habitat-sim with bullet physics
    ```
    conda install habitat-sim withbullet -c conda-forge -c aihabitat
    ```
@@ -202,14 +113,12 @@ Conda packages for older versions can installed by explicitly specifying the ver
 
 We also provide a [nightly conda build for the master branch](https://anaconda.org/aihabitat-nightly). However, this should only be used if you need a specific feature not yet in the latest release version. To get the nightly build of the latest master, simply swap `-c aihabitat` for `-c aihabitat-nightly`.
 
-
-### Docker Image
-
-We provide a pre-built docker container for [habitat-lab](https://github.com/facebookresearch/habitat-lab) and habitat-sim, refer to [habitat-docker-setup](https://github.com/facebookresearch/habitat-lab#docker-setup).
-
-### From Source
-
-Read [build instructions and common build issues](BUILD_FROM_SOURCE.md).
+#### Cloning repository for testing
+   ```bash
+   # Checkout the latest stable release
+   git clone --branch stable https://github.com/facebookresearch/habitat-sim.git
+   cd habitat-sim
+   ```
 
 ## Testing
 
@@ -283,31 +192,6 @@ Browse the online [Habitat-Sim documentation](https://aihabitat.org/docs/habitat
 
 To get you started, see the [Lighting Setup tutorial](https://aihabitat.org/docs/habitat-sim/lighting-setups.html) for adding new objects to existing scenes and relighting the scene & objects. The [Image Extractor tutorial](https://aihabitat.org/docs/habitat-sim/image-extractor.html) shows how to get images from scenes loaded in Habitat-Sim.
 
-## Rendering to GPU Tensors
-
-We support transfering rendering results directly to a [PyTorch](https://pytorch.org/) tensor via CUDA-GL Interop.
-This feature is built by when Habitat-Sim is compiled with CUDA, i.e. built with `--with-cuda`.  To enable it, set the
-`gpu2gpu_transfer` flag of the sensor specification(s) to `True`
-
-This is implemented in a way that is reasonably agnostic to the exact GPU-Tensor library being used, but we currently have only implemented support for PyTorch.
-
-
-## Experimental: Emscripten, WebGL, and Web Apps
-
-Build `hsim_bindings.wasm`, our experimental Emscripten-compiled webassembly binary for use in WebGL html/Javascript apps. See the available Javascript bindings at `src/esp/bindings_js/bindings_js.cpp`. Check out our `bindings.html` demo app:
-
-1. Download the [test scenes](http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip) and extract locally to habitat-sim creating habitat-sim/data.
-1. Download and install [emscripten](https://emscripten.org/docs/getting_started/downloads.html) (you need at least version 1.38.48, newer versions such as 2.0.6 work too)
-1. Activate your emsdk environment
-1. Build using `./build_js.sh [--bullet]`
-1. Run webserver
-   ```bash
-   python -m http.server 8000 --bind 127.0.0.1
-   ```
-1. Open <http://127.0.0.1:8000/build_js/esp/bindings_js/bindings.html>
-
-You can build `hsim_bindings.wasm` without the demo web apps like so:
-- `./build_js.sh --no-web-apps [--bullet]`
 
 ## Datasets
 
@@ -333,35 +217,6 @@ Additional arguments to `example.py` are provided to change the sensor configura
 To reproduce the benchmark table from above run `examples/benchmark.py --scene /path/to/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb`.
 
 
-## Code Style
-
-We use `clang-format-12` for linting and code style enforcement of c++ code.
-Code style follows the [Google C++ guidelines](https://google.github.io/styleguide/cppguide.html).
-Install `clang-format-12` through `brew install clang-format` on macOS.  For other systems, `clang-format-12` can be installed via `conda install clangdev -c conda-forge` or by downloading binaries or sources from [releases.llvm.org/download](http://releases.llvm.org/download.html).
-For vim integration add to your .vimrc file `map <C-K> :%!clang-format<cr>` and use Ctrl+K to format entire file.
-Integration plugin for [vscode](https://marketplace.visualstudio.com/items?itemName=xaver.clang-format).
-
-We use `black` and `isort` for linting and code style of python code.
-Install `black` and `isort` through `pip install -U black isort`.
-They can then be ran via `black .` and `isort`.
-
-We use `eslint` with `prettier` plugin for linting, formatting and code style of JS code.
-Install these dependencies through `npm install`. Then, for fixing linting/formatting errors run `npm run lint-fix`. Make sure you have a node version > 8 for this.
-
-We also offer pre-commit hooks to help with automatically formatting code.
-Install the pre-commit hooks with `pip install pre-commit && pre-commit install`.
-
-## Development Tips
-
-1. Install `ninja` (`sudo apt install ninja-build` on Linux, or `brew install ninja` on macOS) for significantly faster incremental builds
-1. Install `ccache` (`sudo apt install ccache` on Linux, or `brew install ccache` on macOS) for significantly faster clean re-builds and builds with slightly different settings
-1. You can skip reinstalling magnum every time by adding the argument of `--skip-install-magnum` to either `build.sh` or `setup.py`.  Note that you will still need to install magnum bindings once.
-1. Arguments to `build.sh` and `setup.py` can be cached between subsequent invocations with the flag `--cache-args` on the _first_ invocation.
-
-## Acknowledgments
-The Habitat project would not have been possible without the support and contributions of many individuals. We would like to thank Xinlei Chen, Georgia Gkioxari, Daniel Gordon, Leonidas Guibas, Saurabh Gupta, Or Litany, Marcus Rohrbach, Amanpreet Singh, Devendra Singh Chaplot, Yuandong Tian, and Yuxin Wu for many helpful conversations and guidance on the design and development of the Habitat platform.
-
-
 ## External Contributions
 
 * If you use the noise model from PyRobot, please cite the their [technical report](https://github.com/facebookresearch/pyrobot#citation).
@@ -379,6 +234,3 @@ The Habitat project would not have been possible without the support and contrib
 
 Habitat-Sim is MIT licensed. See the [LICENSE](LICENSE) for details.
 
-## References
-1. [Habitat 2.0: Training Home Assistants to Rearrange their Habitat](https://arxiv.org/abs/2106.14405) Andrew Szot, Alex Clegg, Eric Undersander, Erik Wijmans, Yili Zhao, John Turner, Noah Maestre, Mustafa Mukadam, Devendra Chaplot, Oleksandr Maksymets, Aaron Gokaslan, Vladimir Vondrus, Sameer Dharur, Franziska Meier, Wojciech Galuba, Angel Chang, Zsolt Kira, Vladlen Koltun, Jitendra Malik, Manolis Savva, Dhruv Batra. arXiv preprint arXiv:2106.14405, 2021.
-2. [Habitat: A Platform for Embodied AI Research](https://arxiv.org/abs/1904.01201). Manolis Savva, Abhishek Kadian, Oleksandr Maksymets, Yili Zhao, Erik Wijmans, Bhavana Jain, Julian Straub, Jia Liu, Vladlen Koltun, Jitendra Malik, Devi Parikh, Dhruv Batra. IEEE/CVF International Conference on Computer Vision (ICCV), 2019.
