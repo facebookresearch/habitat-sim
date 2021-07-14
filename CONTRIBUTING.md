@@ -58,10 +58,6 @@ We also use pre-commit hooks to ensure linting and style enforcement. Install th
 - A good example of the documentation style is in esp::gfx::DepthUnprojection (DepthUnprojection.h).
 - Documentation of PRs is highly encouraged!
 
-## Developer tips
-- Install **ninja** (`sudo apt install ninja-build` on Linux, or `brew install ninja` on MacOS) for significantly faster incremental builds.
-- Install **ccache** (`sudo apt install ccache` on Linux, or `brew install ccache` on MacOS) for significantly faster clean re-builds and builds with slightly different settings
-
 ## Development Tips
 
 1. Install `ninja` (`sudo apt install ninja-build` on Linux, or `brew install ninja` on macOS) for significantly faster incremental builds
@@ -69,48 +65,4 @@ We also use pre-commit hooks to ensure linting and style enforcement. Install th
 1. You can skip reinstalling magnum every time by adding the argument of `--skip-install-magnum` to either `build.sh` or `setup.py`.  Note that you will still need to install magnum bindings once.
 1. Arguments to `build.sh` and `setup.py` can be cached between subsequent invocations with the flag `--cache-args` on the _first_ invocation.
 
-## Details
 
-The Habitat-Sim backend module is implemented in C++ and leverages the [magnum](https://github.com/mosra/magnum) graphics middleware library to support cross-platform deployment on a broad variety of hardware configurations. The architecture of the main abstraction classes is shown below. The design of this module ensures a few key properties:
-* Memory-efficient management of 3D environment resources (triangle mesh geometry, textures, shaders) ensuring shared resources are cached and re-used
-* Flexible, structured representation of 3D environments using SceneGraphs, allowing for programmatic manipulation of object state, and combination of objects from different environments
-* High-efficiency rendering engine with multi-attachment render passes for reduced overhead when multiple sensors are active
-* Arbitrary numbers of Agents and corresponding Sensors that can be linked to a 3D environment by attachment to a SceneGraph.
-
-<p align="center">
- <img src='docs/images/habitat_architecture.png' width="800" />
- <p align="center"><i>Architecture of <code>Habitat-Sim</code> main classes</i></p>
-</p>
-
-The Simulator delegates management of all resources related to 3D environments to a ResourceManager that is responsible for loading and caching 3D environment data from a variety of on-disk formats. These resources are used within SceneGraphs at the level of individual SceneNodes that represent distinct objects or regions in a particular Scene. Agents and their Sensors are instantiated by being attached to SceneNodes in a particular SceneGraph.
-
-<p align="center">
- <img src='docs/images/sensor-data.png' width="600" />
- <p align="center"><i>Example rendered sensor observations</i></p>
-</p>
-
-## Rendering to GPU Tensors
-
-We support transfering rendering results directly to a [PyTorch](https://pytorch.org/) tensor via CUDA-GL Interop.
-This feature is built by when Habitat-Sim is compiled with CUDA, i.e. built with `--with-cuda`.  To enable it, set the
-`gpu2gpu_transfer` flag of the sensor specification(s) to `True`
-
-This is implemented in a way that is reasonably agnostic to the exact GPU-Tensor library being used, but we currently have only implemented support for PyTorch.
-
-
-## Experimental: Emscripten, WebGL, and Web Apps
-
-Build `hsim_bindings.wasm`, our experimental Emscripten-compiled webassembly binary for use in WebGL html/Javascript apps. See the available Javascript bindings at `src/esp/bindings_js/bindings_js.cpp`. Check out our `bindings.html` demo app:
-
-1. Download the [test scenes](http://dl.fbaipublicfiles.com/habitat/habitat-test-scenes.zip) and extract locally to habitat-sim creating habitat-sim/data.
-1. Download and install [emscripten](https://emscripten.org/docs/getting_started/downloads.html) (you need at least version 1.38.48, newer versions such as 2.0.6 work too)
-1. Activate your emsdk environment
-1. Build using `./build_js.sh [--bullet]`
-1. Run webserver
-   ```bash
-   python -m http.server 8000 --bind 127.0.0.1
-   ```
-1. Open <http://127.0.0.1:8000/build_js/esp/bindings_js/bindings.html>
-
-You can build `hsim_bindings.wasm` without the demo web apps like so:
-- `./build_js.sh --no-web-apps [--bullet]`

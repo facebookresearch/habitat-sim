@@ -85,7 +85,6 @@ Assuming you have [conda](https://docs.conda.io/projects/conda/en/latest/user-gu
 # We require python>=3.6 and cmake>=3.10
 conda create -n habitat python=3.6 cmake=3.14.0
 conda activate habitat
-pip install -r requirements.txt
 ```
 
 #### conda install habitat-sim
@@ -112,13 +111,6 @@ Pick one of the options below depending on your system/needs:
 Conda packages for older versions can installed by explicitly specifying the version, e.g. `conda install habitat-sim=0.1.6 -c conda-forge -c aihabitat`.
 
 We also provide a [nightly conda build for the master branch](https://anaconda.org/aihabitat-nightly). However, this should only be used if you need a specific feature not yet in the latest release version. To get the nightly build of the latest master, simply swap `-c aihabitat` for `-c aihabitat-nightly`.
-
-#### Cloning repository for testing
-   ```bash
-   # Checkout the latest stable release
-   git clone --branch stable https://github.com/facebookresearch/habitat-sim.git
-   cd habitat-sim
-   ```
 
 ## Testing
 
