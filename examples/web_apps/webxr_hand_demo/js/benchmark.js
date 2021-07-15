@@ -49,13 +49,13 @@ export class Benchmark {
 
   /* Starts the timer */
   start() {
-    this.active = true;
+    this.#active = true;
     this.#log.push(["start", performance.now()]);
   }
 
   /* Returns true if the benchmark hasn't finished running. */
   active() {
-    return this.active;
+    return this.#active;
   }
 
   /*
@@ -73,7 +73,7 @@ export class Benchmark {
         this.#objectIdx = 0;
         this.#iterationIdx++;
         if (this.#iterationIdx == this.numIterations) {
-          this.active = false;
+          this.#active = false;
         }
 
         this.deleteFn(this.#currentlySpawned);

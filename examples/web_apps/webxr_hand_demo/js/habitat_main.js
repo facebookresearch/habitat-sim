@@ -2,35 +2,16 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-/* global Module, FS */
+/* global Module */
 
 import {
   checkWebAssemblySupport,
   checkWebgl2Support,
-  buildConfigFromURLParameters
+  buildConfigFromURLParameters,
+  preload
 } from "../lib/habitat-sim-js/utils.js";
 import { VRDemo } from "./vr_demo.js";
-
-console.log("index.js loading...");
-
-// todo: move to habitat utils.js
-function preload(url) {
-  let file_parents_str = "";
-  const splits = url.split("/");
-  let file = splits[splits.length - 1];
-  if (url.indexOf("http") === -1) {
-    let file_parents = splits.slice(0, splits.length - 1);
-    for (let i = 0; i < splits.length - 1; i += 1) {
-      file_parents_str += file_parents[i];
-      if (!FS.analyzePath(file_parents_str).exists) {
-        FS.mkdir(file_parents_str, 777);
-      }
-      file_parents_str += "/";
-    }
-  }
-  FS.createPreloadedFile(file_parents_str, file, url, true, false);
-  return file_parents_str + file;
-}
+import { isWebXRSupported } from "../lib/habitat-sim-js/vr_utils.js";
 
 function checkSupport() {
   const webgl2Support = checkWebgl2Support();
@@ -63,7 +44,6 @@ function doPreloading() {
 }
 
 Module.preRun.push(() => {
-  console.log("preRun");
   let config = {};
   buildConfigFromURLParameters(config);
   Module.stageName =
@@ -72,21 +52,16 @@ Module.preRun.push(() => {
 });
 
 async function doRun() {
-  console.log("hsim_bindings initialized");
-  let demo;
-  // todo: move this vr-specific logic out of here
-  const supported = await navigator.xr.isSessionSupported("immersive-vr");
-  if (supported) {
-    console.log("WebXR is supported");
-    demo = new VRDemo();
-    demo.display();
+  if (isWebXRSupported()) {
+    let demo = new VRDemo();
+    demo.start();
   } else {
-    // todo: better error message
-    console.log("WebXR not supported");
+    console.log(
+      "WebXR not supported. Make sure you have the WebXR API Emulator chrome extension if you are not on a headset."
+    );
   }
 }
 
 Module.onRuntimeInitialized = async function() {
-  console.log("onRuntimeInitialized");
   doRun();
 };

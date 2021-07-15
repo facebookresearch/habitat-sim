@@ -36,6 +36,7 @@ __all__ = [
     "VelocityControl",
     "RayHitInfo",
     "RaycastResults",
+    "ContactPointData",
     "CollisionGroups",
     "CollisionGroupHelper",
     "JointType",
@@ -43,5 +44,4 @@ __all__ = [
     "JointMotorType",
     "RigidConstraintType",
     "RigidConstraintSettings",
-    "ContactPointData",
 ]
