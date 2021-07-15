@@ -557,7 +557,7 @@ jobs:
               #re-build without bullet and cuda and run physics tests again
               #TODO: instead of reinstall, do this with configuration
               ./build.sh --headless --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
-              pytest -n auto --durations=10 --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
+              pytest -n 8 --durations=10 --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
 
               . ~/.bashrc
               . ~/emsdk/emsdk_env.sh
