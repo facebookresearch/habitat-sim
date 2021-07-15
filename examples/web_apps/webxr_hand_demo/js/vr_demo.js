@@ -202,6 +202,7 @@ export class VRDemo {
     );
     this.benchmarker.spawnPos = new Module.Vector3(2, 2, 2);
     this.benchmarker.spawnPosJitter = 0.2;
+    this.benchmarker.start();
   }
 
   async enterVR() {

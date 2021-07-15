@@ -29,6 +29,8 @@ export class Benchmark {
 
   #log = [];
 
+  #active = false;
+
   /*
    * objectNames: The number of possible objects that can be spawned.
    * spawnFn: A function of type (objectIdx, pos, vel) -> objId.
@@ -43,13 +45,17 @@ export class Benchmark {
     this.spawnFn = spawnFn;
     this.deleteFn = deleteFn;
     this.numObjects = numObjects;
+  }
 
+  /* Starts the timer */
+  start() {
+    this.active = true;
     this.#log.push(["start", performance.now()]);
   }
 
   /* Returns true if the benchmark hasn't finished running. */
   active() {
-    return this.#iterationIdx < this.numIterations;
+    return this.active;
   }
 
   /*
@@ -66,6 +72,9 @@ export class Benchmark {
         this.#stepIdx = 0;
         this.#objectIdx = 0;
         this.#iterationIdx++;
+        if (this.#iterationIdx == this.numIterations) {
+          this.active = false;
+        }
 
         this.deleteFn(this.#currentlySpawned);
         this.#currentlySpawned = [];
