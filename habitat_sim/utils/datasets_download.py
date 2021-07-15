@@ -88,10 +88,10 @@ def initialize_test_data_sources(data_path):
             "link": data_path + "scene_datasets/coda",
             "version": "1.0",
         },
-        "webxr_hand_demo_data": {
+        "webxr_hand_demo": {
             "source": "https://dl.fbaipublicfiles.com/habitat/data/scene_datasets/webxr_hand_demo_data.zip",
             "package_name": "webxr_hand_demo_data.zip",
-            "link": data_path + "data",
+            "link": data_path + "webxr_hand_demo_dataset",
             "version": "1.0",
         },
         "replica_cad_dataset": {
