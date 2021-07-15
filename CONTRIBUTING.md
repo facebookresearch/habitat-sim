@@ -1,4 +1,4 @@
-# Contributing to habitat-sim
+# Contributing to Habitat-Sim
 We want to make contributing to this project as easy and transparent as
 possible.
 
@@ -14,11 +14,13 @@ possible.
 - We expect PR ready for final review only if Continuous Integration tests are passing.
 - Recommended: after getting a PR through reviews/feedback and is merged into master, delete the branch to de-clutter noise.
 - Reach out to us with questions or suggestions on our Slack channel.
-- If you haven't already, complete [the Contributor License Agreement ("CLA")](https://code.facebook.com/cla).
 
 ## Contributor License Agreement ("CLA")
 In order to accept your pull request, we need you to submit a CLA. You only need
 to do this once to work on any of Facebook's open source projects. Complete your CLA [here](https://code.facebook.com/cla).
+
+By contributing to habitat-sim, you agree that your contributions will be licensed
+under [the LICENSE file](https://github.com/facebookresearch/habitat-sim/blob/master/LICENSE).
 
 ## Versioning / release workflow
 We use [semantic versioning](https://semver.org/). To prepare a release:
@@ -38,10 +40,16 @@ clear and has sufficient instructions to be able to reproduce the issue.
 
 - C++
   - In general, we follow [C++ Core Guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines) and [Google C++ guidelines](https://google.github.io/styleguide/cppguide.html)
-  - Use `clang-format`(clang-format-8) for style enforcement and linting. Install clang-format through `brew install clang-format` on MacOS, or using `apt-get install -y clang-format-8` as we do for [the testing environment setup](https://github.com/facebookresearch/habitat-sim/blob/master/.circleci/config.yml) or by downloading [binaries or sources](http://releases.llvm.org/download.html) for Ubuntu etc.
+  - Use `clang-format-12` for style enforcement and linting.
+  Install `clang-format-12` through `brew install clang-format` on macOS. For other systems, `clang-format-12` can be installed via `conda install clangdev -c conda-forge` or by downloading binaries or sources from [releases.llvm.org/download](http://releases.llvm.org/download.html).
+  For vim integration add to your .vimrc file `map <C-K> :%!clang-format<cr>` and use Ctrl+K to format entire file. Integration plugin for [vscode](https://marketplace.visualstudio.com/items?itemName=xaver.clang-format)..
 - Python
   - We follow PEP8 and use [typing](https://docs.python.org/3/library/typing.html).
-  - Use `black` for style enforcement and linting. Install black through `pip install black`.
+  - We use `black` and `isort` for linting and code style of python code.
+  Install `black` and `isort` through `pip install -U black isort`. They can then be ran via `black .` and `isort`.
+- JS
+  - We use `eslint` with `prettier` plugin for linting, formatting and code style of JS code.
+  Install these dependencies through `npm install`. Then, for fixing linting/formatting errors run `npm run lint-fix`. Make sure you have a node version > 8 for this.
 
 We also use pre-commit hooks to ensure linting and style enforcement. Install the pre-commit hooks with `pip install pre-commit && pre-commit install`.
 
@@ -50,11 +58,9 @@ We also use pre-commit hooks to ensure linting and style enforcement. Install th
 - A good example of the documentation style is in esp::gfx::DepthUnprojection (DepthUnprojection.h).
 - Documentation of PRs is highly encouraged!
 
-## Developer tips
-- Install **ninja** (`sudo apt install ninja-build` on Linux, or `brew install ninja` on MacOS) for significantly faster incremental builds.
-- Install **ccache** (`sudo apt install ccache` on Linux, or `brew install ccache` on MacOS) for significantly faster clean re-builds and builds with slightly different settings
+## Development Tips
 
-
-## License
-By contributing to habitat-sim, you agree that your contributions will be licensed
-under [the LICENSE file](https://github.com/facebookresearch/habitat-sim/blob/master/LICENSE).
+1. Install `ninja` (`sudo apt install ninja-build` on Linux, or `brew install ninja` on macOS) for significantly faster incremental builds
+1. Install `ccache` (`sudo apt install ccache` on Linux, or `brew install ccache` on macOS) for significantly faster clean re-builds and builds with slightly different settings
+1. You can skip reinstalling magnum every time by adding the argument of `--skip-install-magnum` to either `build.sh` or `setup.py`.  Note that you will still need to install magnum bindings once.
+1. Arguments to `build.sh` and `setup.py` can be cached between subsequent invocations with the flag `--cache-args` on the _first_ invocation.
