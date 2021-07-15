@@ -245,7 +245,9 @@ export class VRDemo {
 
     this.fpsElement.style.visibility = "visible";
 
-    this.initBenchmark();
+    if (Module.doBenchmarking) {
+      this.initBenchmark();
+    }
   }
 
   exitVR() {
