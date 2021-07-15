@@ -3,12 +3,14 @@
 
 build_args=(--skip-install-magnum)
 build_args+=("--vhacd")
-build_args+=("--lto")
+if [ "${LTO}" == "1" ]; then
+  build_args+=("--lto")
+fi
 if [ "${HEADLESS}" == "1" ]; then
   build_args+=("--headless")
 fi
 
-if [ "${WITH_CUDA}" = "1" ]; then
+if [ "${WITH_CUDA}" == "1" ]; then
   build_args+=("--with-cuda")
   export CUDA_HOME=/public/apps/cuda/${CUDA_VER}
   export PATH=/public/apps/cuda/${CUDA_VER}/bin:${PATH}

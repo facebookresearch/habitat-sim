@@ -466,7 +466,7 @@ if __name__ == "__main__":
         )
     else:
         print(
-            "Assuming magnum bindings are already installed (or we're inside pip and ¯\\_('-')_/¯)"
+            "Assuming magnum bindings are already installed (or we're inside pip and *\\_('-')_/*)"
         )
         print(
             f"Run '{sys.executable} -m pip install {pymagnum_build_dir}' if this assumption is incorrect"
