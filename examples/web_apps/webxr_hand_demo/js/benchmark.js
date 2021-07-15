@@ -130,7 +130,7 @@ export class Benchmark {
       } else if (entry[0] == "stepWorld") {
         numSteps++;
       } else if (entry[0] == "delete") {
-        const totalTime = (entry[1] - startTime) / 1000.0;
+        const totalTime = entry[1] - startTime;
         startTime = entry[1];
         const frameTime = totalTime / numFrames;
         const stepTime = totalTime / numSteps;
