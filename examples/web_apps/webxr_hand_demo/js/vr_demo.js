@@ -222,8 +222,16 @@ export class VRDemo {
           this.benchmarker.stepBenchmark();
         } else if (!printedBenchmarkResults) {
           const res = this.benchmarker.getResults();
-          console.log("Average frame time:", res[0].toFixed(2) + "ms");
-          console.log("Average step time:", res[1].toFixed(2) + "ms");
+          console.log(
+            `Frame time: ${res["meanFrameTime"].toFixed(2)} +/- ${res[
+              "errorFrameTime"
+            ].toFixed(2)} ms`
+          );
+          console.log(
+            `Step time: ${res["meanStepTime"].toFixed(2)} +/- ${res[
+              "errorStepTime"
+            ].toFixed(2)} ms`
+          );
           printedBenchmarkResults = true;
         }
       }

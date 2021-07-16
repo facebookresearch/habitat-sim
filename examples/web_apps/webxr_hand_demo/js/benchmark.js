@@ -120,8 +120,8 @@ export class Benchmark {
     let numFrames = 0;
     let numSteps = 0;
 
-    let avgFrameTime = 0;
-    let avgStepTime = 0;
+    let frameTimes = [];
+    let stepTimes = [];
     for (const entry of this.#log) {
       if (entry[0] == "start") {
         continue;
@@ -136,12 +136,36 @@ export class Benchmark {
         const stepTime = totalTime / numSteps;
         numFrames = 0;
         numSteps = 0;
-        avgFrameTime += frameTime;
-        avgStepTime += stepTime;
+        frameTimes.push(frameTime);
+        stepTimes.push(stepTime);
       }
     }
-    avgFrameTime /= this.numIterations;
-    avgStepTime /= this.numIterations;
-    return [avgFrameTime, avgStepTime];
+    return {
+      meanFrameTime: mean(frameTimes),
+      errorFrameTime: std(frameTimes),
+      meanStepTime: mean(stepTimes),
+      errorStepTime: std(stepTimes)
+    };
   }
+}
+
+function mean(L) {
+  let res = 0.0;
+  for (const ele of L) {
+    res += ele;
+  }
+  return res / L.length;
+}
+
+function std(L) {
+  if (L.length < 2) {
+    return Infinity;
+  }
+  let u = mean(L);
+  let res = 0;
+  for (const ele of L) {
+    res += (ele - u) * (ele - u);
+  }
+  res /= L.length - 1;
+  return Math.sqrt(res);
 }
