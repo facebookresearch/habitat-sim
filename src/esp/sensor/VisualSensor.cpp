@@ -10,7 +10,6 @@
 #include <utility>
 
 #include "esp/gfx/RenderTarget.h"
-#include "esp/gfx/TextureVisualizerShader.h"
 #include "esp/sim/Simulator.h"
 
 namespace esp {

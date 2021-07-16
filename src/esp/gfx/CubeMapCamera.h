@@ -43,6 +43,12 @@ class CubeMapCamera : public RenderCamera {
                          const Magnum::Vector3& target,
                          const Magnum::Vector3& up);
   ~CubeMapCamera() override = default;
+
+  static Magnum::GL::CubeMapCoordinate cubeMapCoordinate(
+      unsigned int cubeSideIndex) {
+    return Mn::GL::CubeMapCoordinate(int(Mn::GL::CubeMapCoordinate::PositiveX) +
+                                     cubeSideIndex);
+  }
   /**
    * @brief Move the camera towards a specified cube face
    * ```
@@ -124,10 +130,9 @@ class CubeMapCamera : public RenderCamera {
       Mn::GL::CubeMapCoordinate cubeSideIndex);
 
  protected:
-  // viewing matrix (in parent node space) computed by Mn::Matrix4::lookAt(eye,
-  // target, up)
-  // this is exactly the matrix set to the node in the constructor
-  // default value: identity matrix
+  // viewing matrix (in parent node space) computed by
+  // Mn::Matrix4::lookAt(eye, target, up) this is exactly the matrix set to
+  // the node in the constructor default value: identity matrix
   Magnum::Matrix4 originalViewingMatrix_ =
       Magnum::Matrix4{Magnum::Math::IdentityInit};
   ESP_SMART_POINTERS(CubeMapCamera)

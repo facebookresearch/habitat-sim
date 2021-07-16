@@ -648,6 +648,8 @@ Viewer::Viewer(const Arguments& arguments)
       .addOption("agent-transform-filepath")
       .setHelp("agent-transform-filepath",
                "Specify path to load camera transform from.")
+      .addBooleanOption("shadows")
+      .setHelp("shadows", "Rendering shadows.")
       .parse(arguments.argc, arguments.argv);
 
   const auto viewportSize = Mn::GL::defaultFramebuffer.viewport().size();
@@ -754,6 +756,7 @@ Viewer::Viewer(const Arguments& arguments)
             << " | Loading Scene : " << simConfig_.activeSceneName;
 
   // create simulator instance
+  simConfig_.pbrImageBasedLighting = true;
   simulator_ = esp::sim::Simulator::create_unique(simConfig_, MM_);
 
   // get list of all scenes
@@ -816,6 +819,15 @@ Viewer::Viewer(const Arguments& arguments)
 
   // Per frame profiler will average measurements taken over previous 50 frames
   profiler_.setup(profilerValues, 50);
+
+  // shadows
+  if (args.isSet("shadows")) {
+    simulator_->updateShadowMapDrawableGroup();
+    float lightNearPlane = 0.01f;
+    float lightFarPlane = 20.0f;
+    simulator_->computeShadowMaps(lightNearPlane, lightFarPlane);
+    simulator_->setShadowMapsToDrawables(lightNearPlane, lightFarPlane);
+  }
 
   printHelpText();
 }  // end Viewer::Viewer

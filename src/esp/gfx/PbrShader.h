@@ -10,6 +10,7 @@
 #include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/EnumSet.h>
 #include <Magnum/GL/AbstractShaderProgram.h>
+#include <Magnum/GL/CubeMapTexture.h>
 #include <Magnum/Shaders/GenericGL.h>
 
 #include "esp/core/esp.h"
@@ -170,12 +171,31 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * Enable object ID output.
      */
     ObjectId = 1 << 11,
+
     /**
      * Enable double-sided rendering.
      * (Temporarily STOP supporting this functionality. See comments in
      * the PbrDrawable::draw() function)
      */
     DoubleSided = 1 << 12,
+
+    /**
+     * Enable image based lighting
+     */
+    ImageBasedLighting = 1 << 13,
+
+    /**
+     * render point light shadows using traditional shadow cube map +
+     * Percentage Closer Filtering (PCF)
+     * NOTE: it is exclusive to @ref ShadowsVSM
+     */
+    ShadowsPCF = 1 << 14,
+
+    /**
+     * render point light shadows using variance shadow map (VSM)
+     * NOTE: it is exclusive to @ref ShadowsPCF
+     */
+    ShadowsVSM = 1 << 15,
 
     /*
      * TODO: alphaMask
@@ -254,6 +274,35 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    */
   PbrShader& bindEmissiveTexture(Magnum::GL::Texture2D& texture);
 
+  /**
+   * @brief Bind the irradiance cubemap texture
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& bindIrradianceCubeMap(Magnum::GL::CubeMapTexture& texture);
+
+  /**
+   * @brief Bind the BRDF LUT texture
+   * NOTE: requires Flag::ImageBasedLighting is set
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& bindBrdfLUT(Magnum::GL::Texture2D& texture);
+
+  /**
+   * @brief Bind the prefiltered environment map (cubemap texture)
+   * NOTE: requires Flag::ImageBasedLighting is set
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& bindPrefilteredMap(Magnum::GL::CubeMapTexture& texture);
+
+  /**
+   * @brief Bind the point shadow map (cubemap texture)
+   * @param[in] idx, the index of the shadow map, can be 0, 1, or 2. (We allow
+   * at most 3 shadow maps.)
+   * NOTE: requires Flag::ShadowsPCF or Flag::ShadowsVSM is set
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& bindPointShadowMap(int idx, Magnum::GL::CubeMapTexture& texture);
+
   // ======== set uniforms ===========
   /**
    * @brief set the texture transformation matrix
@@ -310,6 +359,12 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   PbrShader& setMetallic(float metallic);
 
   /**
+   *  @brief Set ambient occlusion strength to the uniform on GPU
+   *  @return Reference to self (for method chaining)
+   */
+  PbrShader& setOcclusionStrength(float strength);
+
+  /**
    *  @brief Set object id to the uniform on GPU
    *  @return Reference to self (for method chaining)
    */
@@ -320,6 +375,13 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    *  @return Reference to self (for method chaining)
    */
   PbrShader& setCameraWorldPosition(const Magnum::Vector3& cameraWorldPos);
+
+  /**
+   *  @brief Set total mipmap levels of the prefiltered environment map to the
+   * uniform on GPU
+   *  @return Reference to self (for method chaining)
+   */
+  PbrShader& setPrefilteredMapMipLevels(unsigned int mipLevels);
 
   /**
    * @brief Set light positions or directions
@@ -434,6 +496,46 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    */
   PbrShader& setNormalTextureScale(float scale);
 
+  /**
+   * Toggles that control contributions from different components
+   */
+  struct PbrEquationScales {
+    float DirectDiffuse = 1.0f;
+    float DirectSpecular = 1.0f;
+    float IblDiffuse = 1.0f;
+    float IblSpecular = 1.0f;
+  };
+
+  /**
+   *  @brief Set the scales for differenct components in the pbr equation
+   *  @param scales
+   *  @return Reference to self (for method chaining)
+   */
+  PbrShader& setPbrEquationScales(const PbrEquationScales& scales);
+
+  /**
+   *  @brief Set the near and far plane of the light space
+   *  @param[in] lightNearPlane, the near plane
+   *  @param[in] lightFarPlane, the far plane
+   *  @return Reference to self (for method chaining)
+   *  NOTE: requires Flag::ShadowsPCF is set
+   */
+  PbrShader& setLightNearFarPlanes(float lightNearPlane, float lightFarPlane);
+
+  enum class PbrDebugDisplay : uint8_t {
+    None = 0,
+    DirectDiffuse = 1,
+    DirectSpecular = 2,
+    IblDiffuse = 3,
+    IblSpecular = 4,
+    Normal = 5,
+    Shadow0 = 6,
+  };
+  /**
+   *@brief debug display visualization
+   */
+  PbrShader& setDebugDisplay(PbrDebugDisplay index);
+
  protected:
   Flags flags_;
   unsigned int lightCount_;
@@ -453,6 +555,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   int objectIdUniform_ = ID_UNDEFINED;
   int textureMatrixUniform_ = ID_UNDEFINED;
   int normalTextureScaleUniform_ = ID_UNDEFINED;
+  int occlusionStrengthUniform_ = ID_UNDEFINED;
 
   int lightColorsUniform_ = ID_UNDEFINED;
   int lightRangesUniform_ = ID_UNDEFINED;
@@ -462,6 +565,30 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   int lightDirectionsUniform_ = ID_UNDEFINED;
 
   int cameraWorldPosUniform_ = ID_UNDEFINED;
+  int prefilteredMapMipLevelsUniform_ = ID_UNDEFINED;
+
+  // scales
+  int scaleDirectDiffuseUniform_ = ID_UNDEFINED;
+  int scaleDirectSpecularUniform_ = ID_UNDEFINED;
+  int scaleIblDiffuseUniform_ = ID_UNDEFINED;
+  int scaleIblSpecularUniform_ = ID_UNDEFINED;
+
+  // shadows
+  int lightNearPlaneUniform_ = ID_UNDEFINED;
+  int lightFarPlaneUniform_ = ID_UNDEFINED;
+
+  /*
+  tone mapping
+  currently the following values are hard coded in the pbrCommon.glsl
+  float exposure = 4.5f;
+  float gamma = 2.2f;
+  */
+  // TODO:
+  // int exposureUniform_ = ID_UNDEFINED;
+  // int gammaUniform_ = ID_UNDEFINED;
+
+  // pbr debug info
+  int pbrDebugDisplayUniform_ = ID_UNDEFINED;
 };
 
 CORRADE_ENUMSET_OPERATORS(PbrShader::Flags)

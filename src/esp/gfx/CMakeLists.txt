@@ -53,7 +53,26 @@ set(
   DoubleSphereCameraShader.h
   EquirectangularShader.cpp
   EquirectangularShader.h
+  PbrImageBasedLighting.cpp
+  PbrImageBasedLighting.h
+  PbrPrecomputedMapShader.cpp
+  PbrPrecomputedMapShader.h
+  PbrEquiRectangularToCubeMapShader.cpp
+  PbrEquiRectangularToCubeMapShader.h
   PbrTextureUnit.h
+  DepthMapShader.cpp
+  DepthMapShader.h
+  DepthMapDrawableBase.cpp
+  DepthMapDrawableBase.h
+  DepthMapDrawable.cpp
+  DepthMapDrawable.h
+  ShadowMapManager.h
+  VarianceShadowMapShader.h
+  VarianceShadowMapShader.cpp
+  VarianceShadowMapDrawable.h
+  VarianceShadowMapDrawable.cpp
+  GaussianFilterShader.h
+  GaussianFilterShader.cpp
 )
 
 # If ptex support is enabled add relevant source files

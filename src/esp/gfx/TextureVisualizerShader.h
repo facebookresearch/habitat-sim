@@ -8,7 +8,6 @@
 #include <Magnum/GL/AbstractShaderProgram.h>
 #include <Magnum/GL/Texture.h>
 #include <Magnum/Shaders/GenericGL.h>
-#include "esp/core/esp.h"
 
 namespace esp {
 namespace gfx {
@@ -93,6 +92,13 @@ class TextureVisualizerShader : public Magnum::GL::AbstractShaderProgram {
    */
   TextureVisualizerShader& setDepthUnprojection(
       const Magnum::Vector2& depthUnprojection);
+
+  /**
+   * @brief rebind internal color map texture.
+   * NOTE: this must be called when shaders have been switched.
+   * @return Reference to self (for method chaining)
+   */
+  TextureVisualizerShader& rebindColorMapTexture();
 
  protected:
   Flags flags_;

@@ -19,12 +19,14 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
                          ShaderManager& shaderManager,
                          const Mn::ResourceKey& lightSetupKey,
                          const Mn::ResourceKey& materialDataKey,
-                         DrawableGroup* group)
+                         DrawableGroup* group,
+                         PbrImageBasedLighting* pbrIbl)
     : Drawable{node, mesh, DrawableType::Pbr, group},
       shaderManager_{shaderManager},
       lightSetup_{shaderManager.get<LightSetup>(lightSetupKey)},
       materialData_{
-          shaderManager.get<MaterialData, PbrMaterialData>(materialDataKey)} {
+          shaderManager.get<MaterialData, PbrMaterialData>(materialDataKey)},
+      pbrIbl_(pbrIbl) {
   if (materialData_->metallicTexture && materialData_->roughnessTexture) {
     CORRADE_ASSERT(
         materialData_->metallicTexture == materialData_->roughnessTexture,
@@ -66,6 +68,10 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
   }
   if (materialData_->doubleSided) {
     flags_ |= PbrShader::Flag::DoubleSided;
+  }
+
+  if (pbrIbl_) {
+    flags_ |= PbrShader::Flag::ImageBasedLighting;
   }
 
   // Defer the shader initialization because at this point, the lightSetup may
@@ -127,6 +133,24 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
       .setMetallic(materialData_->metallic)
       .setEmissiveColor(materialData_->emissiveColor);
 
+  // XXX
+  PbrShader::PbrEquationScales scales;
+  // scales.DirectDiffuse = 0.8;
+  // scales.DirectSpecular = 0.8;
+  scales.IblDiffuse = 0.8;
+  scales.IblSpecular = 0.3;
+  /*
+  scales.IblDiffuse = 0.0;
+  scales.IblSpecular = 0.0;
+  */
+  (*shader_).setPbrEquationScales(scales);
+  // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::DirectDiffuse);
+  // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::DirectSpecular);
+  // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::IblDiffuse);
+  // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::IblSpecular);
+  // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::Normal);
+  // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::Shadow0);
+
   if ((flags_ & PbrShader::Flag::BaseColorTexture) &&
       (materialData_->baseColorTexture != nullptr)) {
     shader_->bindBaseColorTexture(*materialData_->baseColorTexture);
@@ -158,6 +182,46 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   if ((flags_ & PbrShader::Flag::TextureTransformation) &&
       (materialData_->textureMatrix != Mn::Matrix3{})) {
     shader_->setTextureMatrix(materialData_->textureMatrix);
+  }
+
+  // setup image based lighting for the shader
+  if (flags_ & PbrShader::Flag::ImageBasedLighting) {
+    CORRADE_INTERNAL_ASSERT(pbrIbl_);
+    shader_->bindIrradianceCubeMap(  // TODO: HDR Color
+        pbrIbl_->getIrradianceMap().getTexture(CubeMap::TextureType::Color));
+    shader_->bindBrdfLUT(pbrIbl_->getBrdfLookupTable());
+    shader_->bindPrefilteredMap(
+        // TODO: HDR Color
+        pbrIbl_->getPrefilteredMap().getTexture(CubeMap::TextureType::Color));
+    shader_->setPrefilteredMapMipLevels(
+        pbrIbl_->getPrefilteredMap().getMipmapLevels());
+  }
+
+  if ((flags_ & PbrShader::Flag::ShadowsPCF) ||
+      (flags_ & PbrShader::Flag::ShadowsVSM)) {
+    CORRADE_INTERNAL_ASSERT(shadowData_);
+
+    // Currently we only support one shadow map
+
+    for (int iShadow = 0; iShadow < shadowData_->shadowMapKeys->size();
+         ++iShadow) {
+      Mn::Resource<CubeMap> shadowMap =
+          (*shadowData_->shadowMapManger)
+              .get<CubeMap>((*shadowData_->shadowMapKeys)[iShadow]);
+
+      CORRADE_INTERNAL_ASSERT(shadowMap);
+
+      if (flags_ & PbrShader::Flag::ShadowsPCF) {
+        shader_->bindPointShadowMap(
+            iShadow, shadowMap->getTexture(CubeMap::TextureType::Depth));
+        shader_->setLightNearFarPlanes(shadowData_->lightNearPlane,
+                                       shadowData_->lightFarPlane);
+      } else if (flags_ & PbrShader::Flag::ShadowsVSM) {
+        shader_->bindPointShadowMap(
+            iShadow,
+            shadowMap->getTexture(CubeMap::TextureType::VarianceShadowMap));
+      }
+    }
   }
 
   shader_->draw(getMesh());
@@ -223,6 +287,7 @@ PbrDrawable& PbrDrawable::updateShaderLightDirectionParameters(
     Magnum::SceneGraph::Camera3D& camera) {
   std::vector<Mn::Vector4> lightPositions;
   lightPositions.reserve(lightSetup_->size());
+  // printOutLightSetup(*lightSetup_);
 
   const Mn::Matrix4 cameraMatrix = camera.cameraMatrix();
   for (unsigned int iLight = 0; iLight < lightSetup_->size(); ++iLight) {
@@ -235,6 +300,29 @@ PbrDrawable& PbrDrawable::updateShaderLightDirectionParameters(
   shader_->setLightVectors(lightPositions);
 
   return *this;
+}
+
+void PbrDrawable::setShadowData(const ShadowData& shadowData,
+                                PbrShader::Flag shadowFlag) {
+  // sanity check first
+  CORRADE_ASSERT(shadowFlag == PbrShader::Flag::ShadowsPCF ||
+                     shadowFlag == PbrShader::Flag::ShadowsVSM,
+                 "PbrDrawable::setShadowData(): the shadow flag can only be "
+                 "ShadowsPCF or ShadowsVSM.", );
+
+  CORRADE_ASSERT(shadowData.shadowMapManger && shadowData.shadowMapKeys,
+                 "PbrDrawable::setShadowData(): failed to enable the "
+                 "shadows. shadow manager or the shadow keys is nullptr.", );
+
+  if (shadowFlag == PbrShader::Flag::ShadowsPCF) {
+    CORRADE_ASSERT(
+        shadowData.lightFarPlane > shadowData.lightNearPlane &&
+            shadowData.lightNearPlane > 0,
+        "PbrDrawable::setShadowData(): light near or far plane is illegal.", );
+  }
+
+  shadowData_ = shadowData;
+  flags_ |= shadowFlag;
 }
 
 }  // namespace gfx

@@ -83,12 +83,17 @@ class Simulator {
 
   bool semanticSceneExists() const { return (semanticScene_ != nullptr); }
 
+  /**
+   * @brief get the current active scene graph
+   */
   scene::SceneGraph& getActiveSceneGraph() {
     CORRADE_INTERNAL_ASSERT(std::size_t(activeSceneID_) < sceneID_.size());
     return sceneManager_->getSceneGraph(activeSceneID_);
   }
 
-  //! return the semantic scene's SceneGraph for rendering
+  /**
+   * @brief get the semantic scene's SceneGraph for rendering
+   */
   scene::SceneGraph& getActiveSemanticSceneGraph() {
     CORRADE_INTERNAL_ASSERT(std::size_t(activeSemanticSceneID_) <
                             sceneID_.size());
@@ -1312,6 +1317,21 @@ class Simulator {
       bool renderChd = false,
       bool saveChdToObj = false);
 #endif
+
+  /**
+   * @brief For the current active scene, update the shaow map drawable group
+   */
+  void updateShadowMapDrawableGroup();
+  /**
+   * @brief compute the shadow maps for the active scene graph, and store the
+   * results in the resource manager
+   */
+  void computeShadowMaps(float lightNearPlane, float lightFarPlane);
+  /**
+   * @brief propergate shadow maps to the drawables
+   * NOTE: so far only pbr drawable and shader support the shadow maps
+   */
+  void setShadowMapsToDrawables(float lightNearPlane, float lightFarPlane);
 
  protected:
   Simulator() = default;

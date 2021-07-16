@@ -34,7 +34,7 @@ uniform vec3 LightColors[LIGHT_COUNT];
 uniform float LightRanges[LIGHT_COUNT];
 
 // lights in world space!
-// if .w == 0, it means it is a dirctional light, .xyz is the direction;
+// if .w == 0, it means it is a directional light, .xyz is the direction;
 // if .w == 1, it means it is a point light, .xyz is the light position;
 // it is NOT put in the Light Structure, simply because we may modify the code
 // so it is computed in the vertex shader.
@@ -51,6 +51,7 @@ struct MaterialData {
                       // multiply it the MetallicRoughnessTexture
   vec3 emissiveColor; // emissiveColor, if emissive texture exists,
                       // multiply it the EmissiveTexture
+  float occlusionStrength;
 };
 uniform MaterialData Material;
 
@@ -69,6 +70,12 @@ uniform sampler2D NormalTexture;
 uniform sampler2D EmissiveTexture;
 #endif
 
+#if defined(IMAGE_BASED_LIGHTING)
+uniform samplerCube IrradianceMap;
+uniform sampler2D BrdfLUT;
+uniform samplerCube PrefilteredMap;
+#endif
+
 // -------------- uniforms ----------------
 #if defined(OBJECT_ID)
 uniform highp uint ObjectId;
@@ -85,7 +92,49 @@ uniform mediump float NormalTextureScale
 // camera position in world space
 uniform highp vec3 CameraWorldPos;
 
+#if defined(IMAGE_BASED_LIGHTING)
+uniform uint PrefilteredMapMipLevels;
+#endif
+
+struct PbrEquationScales{
+  float directDiffuse;
+  float directSpecular;
+#if defined(IMAGE_BASED_LIGHTING)
+  float iblDiffuse;  // 0.0 ~ 1.0
+  float iblSpecular; // 0.0 ~ 1.0
+#endif
+};
+uniform PbrEquationScales Scales;
+
+uniform int PbrDebugDisplay;
+
 // -------------- shader ------------------
+
+// The following function Uncharted2Tonemap is based on:
+// https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/data/shaders/pbr_khr.frag
+vec3 Uncharted2Tonemap(vec3 color) {
+	float A = 0.15;
+	float B = 0.50;
+	float C = 0.10;
+	float D = 0.20;
+	float E = 0.02;
+	float F = 0.30;
+	float W = 11.2;
+	return ((color*(A*color+C*B)+D*E)/(color*(A*color+B)+D*F))-E/F;
+}
+
+// TODO: make them uniform variables
+const float exposure = 4.5f;
+const float gamma = 2.2f;
+
+// The following function tonemap is based on:
+// https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/data/shaders/pbr_khr.frag
+vec4 tonemap(vec4 color) {
+	vec3 outcol = Uncharted2Tonemap(color.rgb * exposure);
+	outcol = outcol * (1.0f / Uncharted2Tonemap(vec3(11.2f)));
+	return vec4(pow(outcol, vec3(1.0f / gamma)), color.a);
+}
+
 // The following function SRGBtoLINEAR is based on:
 // https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/data/shaders/pbr_khr.frag
 vec4 SRGBtoLINEAR(vec4 srgbIn) {
@@ -117,9 +166,30 @@ vec3 getNormalFromNormalMap() {
   vec3 B = normalize(biTangent);
   vec3 N = normalize(normal);
 #else
-// TODO:
-// explore robust screen-space normal mapping withOUT precomputed tangents
-#error Normal mapping requires precomputed tangents.
+  // #error can only accept precomputed TBN
+	// Perturb normal, see http://www.thetenthplanet.de/archives/1180
+  // material_info.glsl from https://github.com/KhronosGroup/glTF-Sample-Viewer
+  /*
+	vec3 pos_dx = dFdx(position);
+	vec3 pos_dy = dFdy(position);
+	vec3 uv_dx = dFdx(vec3(texCoord, 0.0));
+	vec3 uv_dy = dFdy(vec3(texCoord, 0.0));
+	vec3 T_ = (uv_dy.t * pos_dx - uv_dx.t * pos_dy) /
+            (uv_dx.s * uv_dy.t - uv_dy.s * uv_dx.t);
+	vec3 N = normalize(normal);
+  // othewise one can approximate the N using:
+  // vec3 N = normalize(cross(pos_dx, pos_dy));
+  vec3 T = normalize(T_ - N * dot(N, T_));
+	vec3 B = normalize(cross(N, T));
+  */
+  vec3 q1 = dFdx(position);
+	vec3 q2 = dFdy(position);
+	vec2 st1 = dFdx(texCoord);
+	vec2 st2 = dFdy(texCoord);
+
+	vec3 N = normalize(normal);
+	vec3 T = normalize(q1 * st2.t - q2 * st1.t);
+	vec3 B = -normalize(cross(N, T));
 #endif
   // negate the TBN matrix for back-facing primitives
   if (gl_FrontFacing == false) {
@@ -231,6 +301,27 @@ void microfacetModel(vec3 specularReflectance,
   specularContrib = specular * tempVec;
 }
 
+#if defined(IMAGE_BASED_LIGHTING)
+// c_diff: diffuse color
+// n: normal on shading location in world space
+vec3 computeIBLDiffuse(vec3 c_diff, vec3 n) {
+  // diffuse part = c_diff * irradiance
+  // return c_diff * texture(IrradianceMap, n).rgb * Scales.iblDiffuse;
+  return c_diff *
+      SRGBtoLINEAR(tonemap(texture(IrradianceMap, n))).rgb * Scales.iblDiffuse;
+}
+
+vec3 computeIBLSpecular(float roughness,
+                        float n_dot_v,
+                        vec3 specularReflectance,
+                        vec3 reflectionDir) {
+  vec3 brdf = texture(BrdfLUT, vec2(max(n_dot_v, 0.0), 1.0 - roughness)).rgb;
+  float lod = roughness * float(PrefilteredMapMipLevels);
+  vec3 prefilteredColor = SRGBtoLINEAR(tonemap(textureLod(PrefilteredMap, reflectionDir, lod))).rgb;
+
+  return prefilteredColor * (specularReflectance * brdf.x + brdf.y) * Scales.iblSpecular;
+}
+#endif
 void main() {
   vec3 emissiveColor = Material.emissiveColor;
 #if defined(EMISSIVE_TEXTURE)
@@ -286,6 +377,9 @@ void main() {
 
   vec3 diffuseContrib = vec3(0.0, 0.0, 0.0);
   vec3 specularContrib = vec3(0.0, 0.0, 0.0);
+
+  const int maxShadowNum = 3;
+
   // compute contribution of each light using the microfacet model
   // the following part of the code is inspired by the Phong.frag in Magnum
   // library (https://magnum.graphics/)
@@ -339,15 +433,81 @@ void main() {
                     lightRadiance,
                     currentDiffuseContrib,
                     currentSpecularContrib);
-    diffuseContrib += currentDiffuseContrib;
-    specularContrib += currentSpecularContrib;
+    // Temporarily we only support 1 point light shadow map
+    #if defined(SHADOWS_PCF)
+    float shadow = (iLight == 0 ? computeShadowPCF(position, LightDirections[0].xyz, CameraWorldPos) : 1.0f);
+    #elif defined(SHADOWS_VSM)
+    float shadow = (iLight < maxShadowNum ? computeShadowVSM(iLight, position, LightDirections[iLight].xyz) : 1.0f);
+    #else
+    float shadow = 1.0f;
+    #endif
+
+    diffuseContrib += shadow * currentDiffuseContrib;
+    specularContrib += shadow * currentSpecularContrib;
   }  // for lights
 
   // TODO: use ALPHA_MASK to discard fragments
   fragmentColor += vec4(diffuseContrib + specularContrib, baseColor.a);
 #endif  // if LIGHT_COUNT > 0
 
+#if defined(IMAGE_BASED_LIGHTING)
+vec3 iblDiffuseContrib = computeIBLDiffuse(c_diff, n);
+fragmentColor.rgb += iblDiffuseContrib;
+
+vec3 reflection = normalize(reflect(-view, n));
+vec3 iblSpecularContrib =
+  computeIBLSpecular(roughness, n_dot_v, specularReflectance, reflection);
+fragmentColor.rgb += iblSpecularContrib;
+#endif // IMAGE_BASED_LIGHTING
+
 #if defined(OBJECT_ID)
   fragmentObjectId = ObjectId;
 #endif
+
+
+// PBR equation debug
+	// "none", "Diff (l,n)", "F (l,h)", "G (l,v,h)", "D (h)", "Specular"
+	if (PbrDebugDisplay > 0) {
+		switch (PbrDebugDisplay) {
+      case 1:
+        fragmentColor.rgb = diffuseContrib; // direct diffuse
+        break;
+      case 2:
+        fragmentColor.rgb = specularContrib; // direct specular
+        break;
+      case 3:
+        #if defined(IMAGE_BASED_LIGHTING)
+          fragmentColor.rgb = iblDiffuseContrib; // ibl diffuse
+        #endif
+        break;
+      case 4:
+        #if defined(IMAGE_BASED_LIGHTING)
+          fragmentColor.rgb = iblSpecularContrib; // ibl specular
+        #endif
+        break;
+			case 5:
+				fragmentColor.rgb = n; // normal
+				break;
+      case 6:
+      #if defined(SHADOWS_PCF) || defined(SHADOWS_VSM)
+        fragmentColor.rgb = visualizePointShadowMap(1, position, LightDirections[1].xyz);
+      #endif
+        break;
+
+    /*
+			case 2:
+				outColor.rgb = F;
+				break;
+			case 3:
+				outColor.rgb = vec3(G);
+				break;
+			case 4:
+				outColor.rgb = vec3(D);
+				break;
+			case 5:
+				outColor.rgb = specContrib;
+				break;
+    */
+		}
+	}
 }

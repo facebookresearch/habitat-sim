@@ -91,10 +91,20 @@ LightSetup getLightsAtBoxCorners(
 LightSetup getDefaultLights();
 
 /**
+ * @brief Get a @ref LightSetup with 3 point lights *relative to camera*
+ */
+LightSetup getDefaultThreePointLights();
+
+/**
  * @brief Get get a single, combined ambient light color for use with the Phong
  * lighting model.
  */
 Magnum::Color3 getAmbientLightColor(const LightSetup& lightSetup);
+
+/**
+ * @brief print out the light info
+ */
+void printOutLightSetup(const LightSetup& lightSetup);
 
 }  // namespace gfx
 }  // namespace esp

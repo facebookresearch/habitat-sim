@@ -6,6 +6,7 @@
 #define ESP_GFX_DRAWABLE_H_
 
 #include <Corrade/Containers/EnumSet.h>
+#include <Corrade/Utility/Assert.h>
 
 #include "esp/core/esp.h"
 #include "magnum.h"
@@ -24,6 +25,7 @@ enum class DrawableType : uint8_t {
   Pbr = 2,
   PTexMesh = 3,
   MeshVisualizer = 4,
+  DepthMap = 5,  // traditional depth map, can be used for depth sensor
   VarianceShadowMap = 6,
 };
 
@@ -72,8 +74,6 @@ class Drawable : public Magnum::SceneGraph::Drawable3D {
            DrawableType type,
            DrawableGroup* group = nullptr);
   ~Drawable() override;
-
-  virtual scene::SceneNode& getSceneNode() { return node_; }
 
   /**
    * @brief Get the @ref DrawableGroup this drawable is in.

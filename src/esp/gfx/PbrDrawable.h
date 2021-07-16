@@ -5,15 +5,25 @@
 #ifndef ESP_GFX_PBRDRAWABLE_H_
 #define ESP_GFX_PBRDRAWABLE_H_
 
+#include <Corrade/Containers/Optional.h>
+
 #include "esp/gfx/Drawable.h"
+#include "esp/gfx/PbrImageBasedLighting.h"
 #include "esp/gfx/PbrShader.h"
 #include "esp/gfx/ShaderManager.h"
-
+#include "esp/gfx/ShadowMapManager.h"
 namespace esp {
 namespace gfx {
 
 class PbrDrawable : public Drawable {
  public:
+  struct ShadowData {
+    // all the terms must be set by the user
+    ShadowMapManager* shadowMapManger = nullptr;
+    ShadowMapKeys* shadowMapKeys = nullptr;
+    float lightFarPlane = -1.0;
+    float lightNearPlane = -1.0;
+  };
   /**
    * @brief Constructor, to create a PbrDrawable for the given object using
    * shader and mesh. Adds drawable to given group and uses provided texture,
@@ -25,7 +35,8 @@ class PbrDrawable : public Drawable {
                        ShaderManager& shaderManager,
                        const Magnum::ResourceKey& lightSetupKey,
                        const Magnum::ResourceKey& materialDataKey,
-                       DrawableGroup* group = nullptr);
+                       DrawableGroup* group = nullptr,
+                       PbrImageBasedLighting* pbrIbl = nullptr);
 
   /**
    *  @brief Set the light info
@@ -33,14 +44,21 @@ class PbrDrawable : public Drawable {
    */
   void setLightSetup(const Magnum::ResourceKey& lightSetupKey) override;
 
+  /**
+   * @brief Set the shadow map info
+   * @param[in] shadowData, contains all the data needed in the shadow mapping
+   * @param[in] shadowFlag, can only be either ShadowsPCF or ShadowsVSM
+   */
+  void setShadowData(const ShadowData& data, PbrShader::Flag shadowFlag);
+
   static constexpr const char* SHADER_KEY_TEMPLATE = "PBR-lights={}-flags={}";
 
  protected:
   /**
    * @brief overload draw function, see here for more details:
    * https://doc.magnum.graphics/magnum/classMagnum_1_1SceneGraph_1_1Drawable.html#aca0d0a219aa4d7712316de55d67f2134
-   * @param transformationMatrix the transformation of the object (to which the
-   *        drawable is attached) relative to camera
+   * @param transformationMatrix the transformation of the object (to which
+   * the drawable is attached) relative to camera
    * @param camera the camera that views and renders the world
    */
   void draw(const Magnum::Matrix4& transformationMatrix,
@@ -62,8 +80,8 @@ class PbrDrawable : public Drawable {
   /**
    *  @brief Update light direction (or position) in *camera* space to the
    * shader
-   *  @param transformationMatrix describes a tansformation from object (model)
-   *         space to camera space
+   *  @param transformationMatrix describes a tansformation from object
+   * (model) space to camera space
    *  @param camera the camera, which views and renders the world
    *  @return Reference to self (for method chaining)
    */
@@ -85,6 +103,8 @@ class PbrDrawable : public Drawable {
   Magnum::Resource<Magnum::GL::AbstractShaderProgram, PbrShader> shader_;
   Magnum::Resource<MaterialData, PbrMaterialData> materialData_;
   Magnum::Resource<LightSetup> lightSetup_;
+  PbrImageBasedLighting* pbrIbl_ = nullptr;
+  Corrade::Containers::Optional<ShadowData> shadowData_;
 };
 
 }  // namespace gfx

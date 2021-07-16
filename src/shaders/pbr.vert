@@ -1,6 +1,7 @@
 // Copyright (c) Facebook, Inc. and its affiliates.
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
+precision highp float;
 
 precision highp float;
 
@@ -46,6 +47,7 @@ void main() {
   vec4 vertexWorldPosition = ModelMatrix * vertexPosition;
   position = vertexWorldPosition.xyz;
   normal = normalize(NormalMatrix * vertexNormal);
+  // normal = normalize(transpose(inverse(mat3(ModelMatrix))) * vertexNormal);
 #if defined(TEXTURED)
   texCoord =
 #if defined(TEXTURE_TRANSFORMATION)
