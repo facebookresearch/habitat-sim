@@ -92,6 +92,8 @@ namespace assets {
  */
 class ResourceManager {
  public:
+  bool getCreateRenderer() const;
+
   /** @brief Stores references to a set of drawable elements */
   using DrawableGroup = gfx::DrawableGroup;
   /** @brief Convenience typedef for Importer class */
@@ -497,7 +499,7 @@ class ResourceManager {
    * gfx::Drawable.
    */
 
-  void createDrawable(Mn::GL::Mesh& mesh,
+  void createDrawable(Mn::GL::Mesh* mesh,
                       gfx::Drawable::Flags& meshAttributeFlags,
                       scene::SceneNode& node,
                       const Mn::ResourceKey& lightSetupKey,

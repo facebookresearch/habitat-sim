@@ -44,8 +44,10 @@ struct PhongMaterialData : public MaterialData {
 
   Magnum::Float shininess = 80.f;
   Magnum::Color4 ambientColor{0.1};
-  Magnum::Color4 diffuseColor{0.7};
-  Magnum::Color4 specularColor{0.2};
+  // NOTE: This multiplication is a hack to roughly balance the Phong and PBR
+  // light intensity reactions.
+  Magnum::Color4 diffuseColor{0.7 * 0.175};
+  Magnum::Color4 specularColor{0.2 * 0.175};
   Magnum::GL::Texture2D *ambientTexture = nullptr, *diffuseTexture = nullptr,
                         *specularTexture = nullptr, *normalTexture = nullptr;
 

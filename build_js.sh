@@ -61,7 +61,5 @@ if [ -o ${WEB_APPS} ]
     echo "python3 -m http.server"
     echo "Then open in a browser:"
     echo "http://0.0.0.0:8000/build_js/esp/bindings_js/bindings.html?scene=skokloster-castle.glb"
-    echo "Or open in a VR-capable browser:"
-    echo "http://0.0.0.0:8000/build_js/esp/bindings_js/webvr.html?scene=skokloster-castle.glb"
 fi
 

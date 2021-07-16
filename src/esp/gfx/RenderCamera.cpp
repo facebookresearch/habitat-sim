@@ -107,9 +107,7 @@ RenderCamera& RenderCamera::setOrthoProjectionMatrix(int width,
   return setProjectionMatrix(width, height, orthoMat);
 }
 
-size_t RenderCamera::cull(
-    std::vector<std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
-                          Mn::Matrix4>>& drawableTransforms) {
+size_t RenderCamera::cull(DrawableTransforms& drawableTransforms) {
   // camera frustum relative to world origin
   const Mn::Frustum frustum =
       Mn::Frustum::fromMatrix(projectionMatrix() * cameraMatrix());
@@ -136,9 +134,7 @@ size_t RenderCamera::cull(
   return (newEndIter - drawableTransforms.begin());
 }
 
-size_t RenderCamera::removeNonObjects(
-    std::vector<std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
-                          Mn::Matrix4>>& drawableTransforms) {
+size_t RenderCamera::removeNonObjects(DrawableTransforms& drawableTransforms) {
   auto newEndIter = std::remove_if(
       drawableTransforms.begin(), drawableTransforms.end(),
       [&](const std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
@@ -150,20 +146,34 @@ size_t RenderCamera::removeNonObjects(
   return (newEndIter - drawableTransforms.begin());
 }
 
-uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables, Flags flags) {
-  previousNumVisibleDrawables_ = drawables.size();
-  if (flags == Flags()) {  // empty set
-    MagnumCamera::draw(drawables);
-    return drawables.size();
-  }
+uint32_t RenderCamera::draw(DrawableTransforms& drawableTransforms,
+                            Flags flags) {
+  previousNumVisibleDrawables_ = drawableTransforms.size();
 
   if (flags & Flag::UseDrawableIdAsObjectId) {
     useDrawableIds_ = true;
   }
 
-  std::vector<std::pair<std::reference_wrapper<Mn::SceneGraph::Drawable3D>,
-                        Mn::Matrix4>>
-      drawableTransforms = drawableTransformations(drawables);
+  MagnumCamera::draw(drawableTransforms);
+
+  if (useDrawableIds_) {
+    useDrawableIds_ = false;
+  }
+
+  return drawableTransforms.size();
+}
+
+uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables, Flags flags) {
+  auto drawableTransforms = drawableTransformations(drawables);
+  filterTransforms(drawableTransforms, flags);
+  return draw(drawableTransforms, flags);
+}
+
+size_t RenderCamera::filterTransforms(DrawableTransforms& drawableTransforms,
+                                      Flags flags) {
+  if (flags & Flag::UseDrawableIdAsObjectId) {
+    useDrawableIds_ = true;
+  }
 
   if (flags & Flag::ObjectsOnly) {
     // draw just the OBJECTS
@@ -181,9 +191,6 @@ uint32_t RenderCamera::draw(MagnumDrawableGroup& drawables, Flags flags) {
         drawableTransforms.end());
   }
 
-  MagnumCamera::draw(drawableTransforms);
-
-  // reset
   if (useDrawableIds_) {
     useDrawableIds_ = false;
   }

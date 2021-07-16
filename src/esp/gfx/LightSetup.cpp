@@ -136,6 +136,14 @@ LightSetup getDefaultThreePointLights() {
       {{0.0f, 10.0f, -10.0f, 0.0},
        {0.2, 0.2, 0.2},
        LightPositionModel::Camera},  // Rim light
+                                     /*
+                                     return LightSetup{
+                                         {{0.0, 0.5, 1.0, 0.0}, {2.4, 2.4, 2.4}},     // forward
+                                         {{0.0, 0.5, -1.0, 0.0}, {2.4, 2.4, 2.4}},    // backward
+                                         {{-1.0, 1.0, 0.0, 0.0}, {2.0, 2.0, 2.0}},    // top left
+                                         {{1.0, 1.0, 1.0, 0.0}, {2.0, 2.0, 2.0}},     // top right
+                                         {{0.0, -1.0, 0.0, 0.0}, {0.64, 0.64, 0.64}}  // bottom
+                                     */
   };
 }
 

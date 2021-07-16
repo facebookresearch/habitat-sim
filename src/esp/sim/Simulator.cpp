@@ -61,10 +61,12 @@ Simulator::Simulator(const SimulatorConfiguration& cfg,
 
 Simulator::~Simulator() {
   LOG(INFO) << "Deconstructing Simulator";
-  close();
+  close(true);
 }
 
-void Simulator::close() {
+void Simulator::close(const bool destroy) {
+  if (renderer_)
+    renderer_->acquireGlContext();
   pathfinder_ = nullptr;
   navMeshVisPrimID_ = esp::ID_UNDEFINED;
   navMeshVisNode_ = nullptr;
@@ -79,8 +81,19 @@ void Simulator::close() {
 
   resourceManager_ = nullptr;
 
-  renderer_ = nullptr;
-  context_ = nullptr;
+  if (debugLineRender_) {
+    // Python may keep around other shared_ptrs to this object, but we need
+    // to release GL resources here.
+    debugLineRender_->releaseGLResources();
+    debugLineRender_ = nullptr;
+  }
+
+  // Keeping the renderer and the context only matters when the
+  // background renderer was initialized.
+  if (destroy || !renderer_->wasBackgroundRendererInitialized()) {
+    renderer_ = nullptr;
+    context_ = nullptr;
+  }
 
   activeSceneID_ = ID_UNDEFINED;
   activeSemanticSceneID_ = ID_UNDEFINED;
@@ -106,11 +119,9 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     }
     resourceManager_ =
         std::make_unique<assets::ResourceManager>(metadataMediator_, flags);
-    if (cfg.createRenderer) {
-      // needs to be called after ResourceManager exists but before any assets
-      // have been loaded
-      reconfigureReplayManager(cfg.enableGfxReplaySave);
-    }
+    // needs to be called after ResourceManager exists but before any assets
+    // have been loaded
+    reconfigureReplayManager(cfg.enableGfxReplaySave);
   } else {
     resourceManager_->setMetadataMediator(metadataMediator_);
   }
@@ -128,6 +139,10 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   // TODO can optimize to do partial re-initialization instead of from-scratch
   config_ = cfg;
 
+  if (!config_.createRenderer) {
+    config_.requiresTextures = false;
+  }
+
   if (requiresTextures_ == Cr::Containers::NullOpt) {
     requiresTextures_ = config_.requiresTextures;
     resourceManager_->setRequiresTextures(config_.requiresTextures);
@@ -141,7 +156,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   }
 
   bool success = false;
-  // (re) create scene instance based on whether or not a renderer is requested.
+
   if (config_.createRenderer) {
     /* When creating a viewer based app, there is no need to create a
     WindowlessContext since a (windowed) context already exists. */
@@ -154,17 +169,30 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
       gfx::Renderer::Flags flags;
       if (!(*requiresTextures_))
         flags |= gfx::Renderer::Flag::NoTextures;
-      renderer_ = gfx::Renderer::create(flags);
+
+#ifdef ESP_BUILD_WITH_BACKGROUND_RENDERER
+      if (context_)
+        flags |= gfx::Renderer::Flag::BackgroundRenderer;
+
+      if (context_ && config_.leaveContextWithBackgroundRenderer)
+        flags |= gfx::Renderer::Flag::LeaveContextWithBackgroundRenderer;
+#endif
+
+      renderer_ = gfx::Renderer::create(context_.get(), flags);
     }
 
-    // (re) create scene instance
-    success = createSceneInstance(config_.activeSceneName);
+    renderer_->acquireGlContext();
   } else {
-    // (re) create scene instance without renderer
-    success = createSceneInstanceNoRenderer(config_.activeSceneName);
+    CORRADE_ASSERT(
+        !Magnum::GL::Context::hasCurrent(),
+        "Simulator::reconfigure() : Unexpected existing context when "
+        "createRenderer==false", );
   }
 
-  LOG(INFO) << "::reconfigure : createSceneInstance success == "
+  // (re) create scene instance
+  success = createSceneInstance(config_.activeSceneName);
+
+  LOG(INFO) << "Simulator::reconfigure() : createSceneInstance success == "
             << (success ? "true" : "false")
             << " for active scene name : " << config_.activeSceneName
             << (config_.createRenderer ? " with" : " without") << " renderer.";
@@ -174,9 +202,6 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 metadata::attributes::SceneAttributes::cptr
 Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
   namespace FileUtil = Cr::Utility::Directory;
-
-  // This should always/only be called by either createSceneInstance or
-  // createSceneInstanceNoRendere.
 
   // Get scene instance attributes corresponding to passed active scene name
   // This will retrieve, or construct, an appropriately configured scene
@@ -267,8 +292,7 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
 
   }  // if semantic scene descriptor specified in scene instance
 
-  // 3. Specify frustumCulling based on value either from config (if override
-  // is specified) or from scene instance attributes.
+  // 3. Specify frustumCulling based on value from config
   frustumCulling_ = config_.frustumCulling;
 
   // return a const ptr to the cur scene instance attributes
@@ -277,6 +301,8 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
 }  // Simulator::setSceneInstanceAttributes
 
 bool Simulator::createSceneInstance(const std::string& activeSceneName) {
+  if (renderer_)
+    renderer_->acquireGlContext();
   // 1. initial setup for scene instancing - sets or creates the
   // current scene instance to correspond to the given name.
   metadata::attributes::SceneAttributes::cptr curSceneInstanceAttributes =
@@ -322,6 +348,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
                                       Mn::ResourceKey{lightSetupKey});
     }
   }
+  // set config's sceneLightSetup to track currently specified light setup key
   config_.sceneLightSetup = lightSetupKey;
   metadataMediator_->setSimulatorConfiguration(config_);
 
@@ -624,12 +651,12 @@ void Simulator::updateShadowMapDrawableGroup() {
     esp::scene::SceneNode& node = currentDrawable.getSceneNode();
     // XXX
     /*
-    node.addFeature<gfx::DepthMapDrawable>(currentDrawable.getMesh(),
+    node.addFeature<gfx::DepthMapDrawable>(&currentDrawable.getMesh(),
                                            resourceManager_->getShaderManager(),
                                            shadowMapGroup);
     */
     node.addFeature<gfx::VarianceShadowMapDrawable>(
-        currentDrawable.getMesh(), resourceManager_->getShaderManager(),
+        &currentDrawable.getMesh(), resourceManager_->getShaderManager(),
         shadowMapGroup);
   }
 }
@@ -782,6 +809,8 @@ int Simulator::addObject(const int objectLibId,
                          const std::string& lightSetupKey,
                          const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
+    if (renderer_)
+      renderer_->acquireGlContext();
     // TODO: change implementation to support multi-world and physics worlds
     // to own reference to a sceneGraph to avoid this.
     auto& drawables = getDrawableGroup(sceneID);
@@ -796,6 +825,8 @@ int Simulator::addObjectByHandle(const std::string& objectLibHandle,
                                  const std::string& lightSetupKey,
                                  const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
+    if (renderer_)
+      renderer_->acquireGlContext();
     // TODO: change implementation to support multi-world and physics worlds
     // to own reference to a sceneGraph to avoid this.
     auto& drawables = getDrawableGroup(sceneID);
@@ -825,7 +856,11 @@ void Simulator::removeObject(const int objectID,
 
 double Simulator::stepWorld(const double dt) {
   if (physicsManager_ != nullptr) {
+    physicsManager_->deferNodesUpdate();
     physicsManager_->stepPhysics(dt);
+    if (renderer_)
+      renderer_->waitSceneGraph();
+
     physicsManager_->updateNodes();
   }
   return getWorldTime();
@@ -860,6 +895,9 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
   // add STATIC collision objects
   if (includeStaticObjects) {
     // update nodes so SceneNode transforms are up-to-date
+    if (renderer_)
+      renderer_->waitSceneGraph();
+
     physicsManager_->updateNodes();
 
     // collect mesh components from all objects and then merge them.
@@ -952,6 +990,8 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
 }
 
 bool Simulator::setNavMeshVisualization(bool visualize) {
+  if (renderer_)
+    renderer_->acquireGlContext();
   // clean-up the NavMesh visualization if necessary
   if (!visualize && navMeshVisNode_ != nullptr) {
     delete navMeshVisNode_;
@@ -990,6 +1030,9 @@ int Simulator::addTrajectoryObject(const std::string& trajVisName,
                                    const Magnum::Color4& color,
                                    bool smooth,
                                    int numInterp) {
+  if (renderer_)
+    renderer_->acquireGlContext();
+
   // 0. Deduplicate sequential points
   std::vector<Magnum::Vector3> uniquePts;
   uniquePts.push_back(pts[0]);
@@ -1058,6 +1101,8 @@ void Simulator::sampleRandomAgentState(agent::AgentState& agentState) {
 scene::SceneNode* Simulator::loadAndCreateRenderAssetInstance(
     const assets::AssetInfo& assetInfo,
     const assets::RenderAssetInstanceCreationInfo& creation) {
+  if (renderer_)
+    renderer_->acquireGlContext();
   // Note this pattern of passing the scene manager and two scene ids to
   // resource manager. This is similar to ResourceManager::loadStage.
   std::vector<int> tempIDs{activeSceneID_, activeSemanticSceneID_};
@@ -1172,6 +1217,8 @@ agent::Agent::ptr Simulator::getAgent(const int agentId) {
 esp::sensor::Sensor& Simulator::addSensorToObject(
     const int objectId,
     const esp::sensor::SensorSpec::ptr& sensorSpec) {
+  if (renderer_)
+    renderer_->acquireGlContext();
   esp::sensor::SensorSetup sensorSpecifications = {sensorSpec};
   esp::scene::SceneNode& objectNode = *getObjectSceneNode(objectId);
   esp::sensor::SensorFactory::createSensors(objectNode, sensorSpecifications);

@@ -19,7 +19,7 @@ class VarianceShadowMapDrawable : public DepthMapDrawableBase {
    * object using shader and mesh. Adds drawable to given group
    */
   explicit VarianceShadowMapDrawable(scene::SceneNode& node,
-                                     Magnum::GL::Mesh& mesh,
+                                     Magnum::GL::Mesh* mesh,
                                      ShaderManager& shaderManager,
                                      DrawableGroup* group);
 

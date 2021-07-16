@@ -11,7 +11,7 @@ namespace gfx {
 
 VarianceShadowMapDrawable::VarianceShadowMapDrawable(
     scene::SceneNode& node,
-    Magnum::GL::Mesh& mesh,
+    Magnum::GL::Mesh* mesh,
     ShaderManager& shaderManager,
     DrawableGroup* group)
     : DepthMapDrawableBase{node, mesh, shaderManager,
@@ -36,7 +36,7 @@ void VarianceShadowMapDrawable::draw(const Mn::Matrix4& transformationMatrix,
   // orientation
   shader_->setLightProjectionMatrix(camera.projectionMatrix());
   shader_->setLightModelViewMatrix(transformationMatrix);
-  shader_->draw(mesh_);
+  shader_->draw(getMesh());
 }
 
 }  // namespace gfx

@@ -128,7 +128,15 @@ void ResourceManager::buildImporters() {
 
 }  // buildImporters
 
+bool ResourceManager::getCreateRenderer() const {
+  return metadataMediator_->getCreateRenderer();
+}
+
 void ResourceManager::initDefaultPrimAttributes() {
+  if (!getCreateRenderer()) {
+    return;
+  }
+
   // by this point, we should have a GL::Context so load the bb primitive.
   // TODO: replace this completely with standard mesh (i.e. treat the bb
   // wireframe cube no differently than other primivite-based rendered
@@ -465,8 +473,10 @@ std::string ResourceManager::createColorMaterial(
     gfx::PhongMaterialData::uptr phongMaterial =
         gfx::PhongMaterialData::create_unique();
     phongMaterial->ambientColor = materialColor.ambientColor;
-    phongMaterial->diffuseColor = materialColor.diffuseColor;
-    phongMaterial->specularColor = materialColor.specularColor;
+    // NOTE: This multiplication is a hack to roughly balance the Phong and PBR
+    // light intensity reactions.
+    phongMaterial->diffuseColor = materialColor.diffuseColor * 0.175;
+    phongMaterial->specularColor = materialColor.specularColor * 0.175;
 
     std::unique_ptr<gfx::MaterialData> finalMaterial(phongMaterial.release());
     shaderManager_.set(newMaterialID, finalMaterial.release());
@@ -998,7 +1008,9 @@ void ResourceManager::buildPrimitiveAssetData(
   // compute the mesh bounding box
   primMeshData->BB = computeMeshBB(primMeshData.get());
 
-  primMeshData->uploadBuffersToGPU(false);
+  if (getCreateRenderer()) {
+    primMeshData->uploadBuffersToGPU(false);
+  }
 
   // make MeshMetaData
   int meshStart = nextMeshID_++;
@@ -1102,7 +1114,9 @@ scene::SceneNode* ResourceManager::createRenderAssetInstancePTex(
   for (int iMesh = start; iMesh <= end; ++iMesh) {
     auto* pTexMeshData = dynamic_cast<PTexMeshData*>(meshes_.at(iMesh).get());
 
-    pTexMeshData->uploadBuffersToGPU(false);
+    if (getCreateRenderer()) {
+      pTexMeshData->uploadBuffersToGPU(false);
+    }
 
     for (int jSubmesh = 0; jSubmesh < pTexMeshData->getSize(); ++jSubmesh) {
       scene::SceneNode& node = instanceRoot->createChild();
@@ -1162,7 +1176,9 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
 
   for (int meshIDLocal = 0; meshIDLocal < instanceMeshes.size();
        ++meshIDLocal) {
-    instanceMeshes[meshIDLocal]->uploadBuffersToGPU(false);
+    if (getCreateRenderer()) {
+      instanceMeshes[meshIDLocal]->uploadBuffersToGPU(false);
+    }
     meshes_.emplace(meshStart + meshIDLocal,
                     std::move(instanceMeshes[meshIDLocal]));
 
@@ -1206,7 +1222,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceIMesh(
     // That means One CANNOT query the data like e.g.,
     // meshes_.at(iMesh)->getMeshData()->hasAttribute(Mn::Trade::MeshAttribute::Tangent)
     // It will SEGFAULT!
-    createDrawable(*(meshes_.at(iMesh)->getMagnumGLMesh()),  // render mesh
+    createDrawable(meshes_.at(iMesh)->getMagnumGLMesh(),  // render mesh
                    meshAttributeFlags,                 // mesh attribute flags
                    node,                               // scene node
                    creation.lightSetupKey,             // lightSetup key
@@ -1241,7 +1257,8 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
   assimpmetadata->configuration().setValue("ImportColladaIgnoreUpDirection",
                                            "true");
 #endif
-  {
+
+  if (requiresTextures_) {
     Cr::PluginManager::PluginMetadata* const metadata =
         importerManager_.metadata("BasisImporter");
     Mn::GL::Context& context = Mn::GL::Context::current();
@@ -1462,6 +1479,8 @@ bool ResourceManager::buildTrajectoryVisualization(
   // compute the mesh bounding box
   visMeshData->BB = computeMeshBB(visMeshData.get());
 
+  ESP_CHECK(getCreateRenderer(),
+            "buildTrajectoryVisualization requires a renderer");
   visMeshData->uploadBuffersToGPU(false);
 
   // make MeshMetaData
@@ -1509,8 +1528,13 @@ int ResourceManager::loadNavMeshVisualization(esp::nav::PathFinder& pathFinder,
                                               DrawableGroup* drawables) {
   int navMeshPrimitiveID = ID_UNDEFINED;
 
-  if (!pathFinder.isLoaded())
+  if (!pathFinder.isLoaded()) {
     return navMeshPrimitiveID;
+  }
+
+  if (!getCreateRenderer()) {
+    return navMeshPrimitiveID;
+  }
 
   // create the mesh
   std::vector<Magnum::UnsignedInt> indices;
@@ -1797,7 +1821,9 @@ void ResourceManager::loadMeshes(Importer& importer,
     // compute the mesh bounding box
     gltfMeshData->BB = computeMeshBB(gltfMeshData.get());
 
-    gltfMeshData->uploadBuffersToGPU(false);
+    if (getCreateRenderer()) {
+      gltfMeshData->uploadBuffersToGPU(false);
+    }
     meshes_.emplace(meshStart + iMesh, std::move(gltfMeshData));
   }
 }  // ResourceManager::loadMeshes
@@ -2060,7 +2086,15 @@ void ResourceManager::addComponent(
   // Add a drawable if the object has a mesh and the mesh is loaded
   if (meshIDLocal != ID_UNDEFINED) {
     const int meshID = metaData.meshIndex.first + meshIDLocal;
-    Magnum::GL::Mesh& mesh = *meshes_.at(meshID)->getMagnumGLMesh();
+    Magnum::GL::Mesh* mesh = meshes_.at(meshID)->getMagnumGLMesh();
+    if (getCreateRenderer()) {
+      CORRADE_ASSERT(mesh,
+                     "::addComponent() : GL mesh expected but not found", );
+    } else {
+      CORRADE_ASSERT(!mesh,
+                     "addComponent() : encountered unexpected GL mesh with "
+                     "createRenderer==false", );
+    }
     Mn::ResourceKey materialKey = meshTransformNode.materialID;
 
     gfx::Drawable::Flags meshAttributeFlags{};
@@ -2117,12 +2151,12 @@ void ResourceManager::addPrimitiveToDrawables(int primitiveID,
   // so do not need to worry about the tangent or bitangent.
   // it might be changed in the future.
   gfx::Drawable::Flags meshAttributeFlags{};
-  createDrawable(*primitive_meshes_.at(primitiveID),  // render mesh
-                 meshAttributeFlags,                  // meshAttributeFlags
-                 node,                                // scene node
-                 NO_LIGHT_KEY,                        // lightSetup key
-                 WHITE_MATERIAL_KEY,                  // material key
-                 drawables);                          // drawable group
+  createDrawable(primitive_meshes_.at(primitiveID).get(),  // render mesh
+                 meshAttributeFlags,                       // meshAttributeFlags
+                 node,                                     // scene node
+                 NO_LIGHT_KEY,                             // lightSetup key
+                 WHITE_MATERIAL_KEY,                       // material key
+                 drawables);                               // drawable group
 }
 
 void ResourceManager::removePrimitiveMesh(int primitiveID) {
@@ -2130,7 +2164,7 @@ void ResourceManager::removePrimitiveMesh(int primitiveID) {
   primitive_meshes_.erase(primitiveID);
 }
 
-void ResourceManager::createDrawable(Mn::GL::Mesh& mesh,
+void ResourceManager::createDrawable(Mn::GL::Mesh* mesh,
                                      gfx::Drawable::Flags& meshAttributeFlags,
                                      scene::SceneNode& node,
                                      const Mn::ResourceKey& lightSetupKey,
@@ -2538,5 +2572,6 @@ void ResourceManager::createConvexHullDecomposition(
   }
 }
 #endif
+
 }  // namespace assets
 }  // namespace esp

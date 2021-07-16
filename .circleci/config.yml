@@ -324,10 +324,35 @@ jobs:
               . activate habitat;
               cd habitat-sim
               pip install gitpython
-              conda install -y anaconda-client git ninja conda-build=3.18.9 # last version that works with our setup
+              conda install -y anaconda-client git ninja conda-build
               rm -rf build
               cd conda-build
               python linux_matrix_builder.py --ci_test
+  test_conda_build_osx:
+    macos:
+      xcode: 11.3.0
+    steps:
+      - checkout:
+          path: ./habitat-sim
+      - run:
+          name: Conda Install
+          command: |
+            curl -o ~/miniconda.sh -O https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
+            chmod +x ~/miniconda.sh
+            ~/miniconda.sh -b -p $HOME/miniconda
+            rm ~/miniconda.sh
+            export PATH=$HOME/miniconda/bin:$PATH
+            conda init "$(basename "${SHELL}")"
+            source ~/.bash_profile
+            conda activate
+            conda install -y anaconda-client ccache cmake git ninja conda-build pip
+            echo $(which -a python)
+            pip install gitpython
+            cd habitat-sim/conda-build
+            git submodule update --init --recursive --jobs 16
+            export PYTHONIOENCODING="utf-8"
+            python macos_matrix_builder.py --ci_test
+
   lab_build_habitat:
     <<: *gpu
     steps:
@@ -532,7 +557,7 @@ jobs:
               #re-build without bullet and cuda and run physics tests again
               #TODO: instead of reinstall, do this with configuration
               ./build.sh --headless --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
-              pytest -n auto --durations=10 --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
+              pytest -n 8 --durations=10 --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
 
               . ~/.bashrc
               . ~/emsdk/emsdk_env.sh
@@ -667,6 +692,7 @@ workflows:
       - js_lint
       - lab_build_habitat
       - test_conda_build
+      - test_conda_build_osx
       - install_and_test_ubuntu
       - pre-commit
   nightly:

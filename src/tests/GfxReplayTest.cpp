@@ -355,8 +355,23 @@ TEST(GfxReplayTest, simulatorIntegration) {
   SimulatorConfiguration simConfig{};
   simConfig.activeSceneName = boxFile;
   simConfig.enableGfxReplaySave = true;
+  simConfig.createRenderer = false;
 
   auto sim = Simulator::create_unique(simConfig);
+  auto objAttrMgr = sim->getObjectAttributesManager();
+  objAttrMgr->loadAllJSONConfigsFromPath(
+      Cr::Utility::Directory::join(TEST_ASSETS, "objects/nested_box"), true);
+
+  auto handles = objAttrMgr->getObjectHandlesBySubstring("nested_box");
+  EXPECT_FALSE(handles.empty());
+  auto rigidObj =
+      sim->getRigidObjectManager()->addBulletObjectByHandle(handles[0]);
+  auto rigidObjTranslation = Mn::Vector3(1.f, 2.f, 3.f);
+  auto rigidObjRotation = Mn::Quaternion::rotation(
+      Mn::Deg(45.f), Mn::Vector3(1.f, 1.f, 0.f).normalized());
+  rigidObj->setTranslation(rigidObjTranslation);
+  rigidObj->setRotation(rigidObjRotation);
+
   auto& sceneGraph = sim->getActiveSceneGraph();
   auto& rootNode = sceneGraph.getRootNode();
   auto prevNumberOfChildrenOfRoot = getNumberOfChildrenOfRoot(rootNode);
@@ -370,12 +385,23 @@ TEST(GfxReplayTest, simulatorIntegration) {
   EXPECT_TRUE(player);
   EXPECT_EQ(player->getNumKeyframes(), 1);
   player->setKeyframeIndex(0);
-  // second copy of box was loaded
+  // second copies of transform_box and nested_box were loaded
   EXPECT_EQ(getNumberOfChildrenOfRoot(rootNode),
-            prevNumberOfChildrenOfRoot + 1);
+            prevNumberOfChildrenOfRoot + 2);
+
+  const auto& keyframes = player->debugGetKeyframes();
+  // we expect state updates for the state and the object instance
+  EXPECT_EQ(keyframes[0].stateUpdates.size(), 2);
+  // check the pose for nested_box
+  const auto& stateUpdate = keyframes[0].stateUpdates[1];
+  const auto transform = stateUpdate.second.absTransform;
+  EXPECT_LE((transform.translation - rigidObjTranslation).length(), 1.0e-5);
+  EXPECT_LE((transform.rotation.vector() - rigidObjRotation.vector()).length(),
+            1.0e-5);
 
   player = nullptr;
-  // second copy of box removed when Player is deleted
+  // second copies of transform_box and nested_box are removed when Player is
+  // deleted
   EXPECT_EQ(getNumberOfChildrenOfRoot(rootNode), prevNumberOfChildrenOfRoot);
 
   // remove file created for this test

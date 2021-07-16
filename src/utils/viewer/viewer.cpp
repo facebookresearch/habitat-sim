@@ -88,6 +88,53 @@ std::string getCurrentTimeString() {
 using namespace Mn::Math::Literals;
 using Magnum::Math::Literals::operator""_degf;
 
+//! Define different UI roles for the mouse
+enum MouseInteractionMode {
+  LOOK,
+  GRAB,
+
+  NUM_MODES
+};
+
+std::map<MouseInteractionMode, std::string> mouseModeNames = {
+    {MouseInteractionMode::LOOK, "LOOK"},
+    {MouseInteractionMode::GRAB, "GRAB"}};
+
+//! Create a MouseGrabber from RigidConstraintSettings to manipulate objects
+struct MouseGrabber {
+  esp::physics::RigidConstraintSettings settings_;
+  esp::sim::Simulator& sim_;
+
+  // defines the distance of the grip point from the camera/eye for pivot
+  // updates
+  float gripDepth = 0;
+  int constraintId = esp::ID_UNDEFINED;
+
+  MouseGrabber(const esp::physics::RigidConstraintSettings& settings,
+               float _gripDepth,
+               esp::sim::Simulator& sim)
+      : sim_(sim),
+        settings_(settings),
+        gripDepth(_gripDepth),
+        constraintId(sim_.createRigidConstraint(settings_)) {}
+
+  virtual ~MouseGrabber() { sim_.removeRigidConstraint(constraintId); }
+
+  virtual void updatePivot(const Magnum::Vector3& pos) {
+    settings_.pivotB = pos;
+    sim_.updateRigidConstraint(constraintId, settings_);
+  }
+  virtual void updateFrame(const Magnum::Matrix3x3& frame) {
+    settings_.frameB = frame;
+    sim_.updateRigidConstraint(constraintId, settings_);
+  }
+  virtual void updateTransform(const Magnum::Matrix4& transform) {
+    settings_.frameB = transform.rotation();
+    settings_.pivotB = transform.translation();
+    sim_.updateRigidConstraint(constraintId, settings_);
+  }
+};
+
 class Viewer : public Mn::Platform::Application {
  public:
   explicit Viewer(const Arguments& arguments);
@@ -102,6 +149,10 @@ class Viewer : public Mn::Platform::Application {
       {KeyEvent::Key::S, false},    {KeyEvent::Key::W, false},
       {KeyEvent::Key::X, false},    {KeyEvent::Key::Z, false}};
 
+  MouseInteractionMode mouseInteractionMode = LOOK;
+
+  Mn::Vector2i previousMousePoint{};
+
   void drawEvent() override;
   void viewportEvent(ViewportEvent& event) override;
   void mousePressEvent(MouseEvent& event) override;
@@ -111,6 +162,9 @@ class Viewer : public Mn::Platform::Application {
   void keyPressEvent(KeyEvent& event) override;
   void keyReleaseEvent(KeyEvent& event) override;
   void moveAndLook(int repetitions);
+
+  // exists if a mouse grabbing constraint is active, destroyed on release
+  std::unique_ptr<MouseGrabber> mouseGrabber_ = nullptr;
 
   /**
    * @brief Instance an object from an ObjectAttributes.
@@ -143,11 +197,7 @@ class Viewer : public Mn::Platform::Application {
    * Simulator API.
    */
   int addPrimitiveObject();
-  void pokeLastObject();
-  void pushLastObject();
-  void torqueLastObject();
   void removeLastObject();
-  void wiggleLastObject();
   void invertGravity();
 
 #ifdef ESP_BUILD_WITH_VHACD
@@ -158,14 +208,18 @@ class Viewer : public Mn::Platform::Application {
   void displayVoxelField(int objectID);
 
   int objectDisplayed = -1;
+
+  //! The slice of the grid's SDF to visualize.
+  int voxelDistance = 0;
 #endif
 
-  bool isInRange(float val);
   /**
    * @brief Toggle between ortho and perspective camera
    */
   void switchCameraType();
   Mn::Vector3 randomDirection();
+
+  esp::agent::AgentConfiguration agentConfig_;
 
   void saveAgentAndSensorTransformToFile();
   void loadAgentAndSensorTransformFromFile();
@@ -184,8 +238,9 @@ class Viewer : public Mn::Platform::Application {
 ==================================================
 Welcome to the Habitat-sim C++ Viewer application!
 ==================================================
-Mouse Functions:
+Mouse Functions ('m' to toggle mode):
 ----------------
+In LOOK mode (default):
   LEFT:
     Click and drag to rotate the agent and look up/down.
   RIGHT:
@@ -196,11 +251,20 @@ Mouse Functions:
     (With 'enable-physics') Click on an object to voxelize it and display the voxelization.
   WHEEL:
     Modify orthographic camera zoom/perspective camera FOV (+SHIFT for fine grained control)
+In GRAB mode (with 'enable-physics'):
+  LEFT:
+    Click and drag to pickup and move an object with a point-to-point constraint (e.g. ball joint).
+  RIGHT:
+    Click and drag to pickup and move an object with a fixed frame constraint.
+  WHEEL (with picked object):
+    Pull gripped object closer or push it away.
 
 Key Commands:
 -------------
   esc: Exit the application.
   'H': Display this help message.
+  'm': Toggle mouse mode.
+  TAB/Shift-TAB : Cycle to next/previous scene in scene datsaet
 
   Agent Controls:
   'wasd': Move the agent's body forward/backward, left/right.
@@ -210,35 +274,33 @@ Key Commands:
   'q': Query the agent's state and print to terminal.
 
   Utilities:
-  '1' toggle recording locations for trajectory visualization.
-  '2' build and display trajectory visualization.
-  '+' increase trajectory diameter
-  '-' decrease trajectory diameter
-  '3' toggle flying camera mode (user can apply camera transformation loaded from disk)
-  '5' switch ortho/perspective camera.
-  '6' reset ortho camera zoom/perspective camera FOV.
-  'e' enable/disable frustum culling.
-  'c' show/hide FPS overlay.
-  'n' show/hide NavMesh wireframe.
-  'i' Save a screenshot to "./screenshots/year_month_day_hour-minute-second/#.png"
-  'r' Write a replay of the recent simulated frames to a file specified by --gfx-replay-record-filepath.
-  '[' save camera position/orientation to "./saved_transformations/camera.year_month_day_hour-minute-second.txt"
-  ']' load camera position/orientation from file system (useful when flying camera mode is enabled), or else from last save in current instance
+  '1': Toggle recording locations for trajectory visualization.
+  '2': Build and display trajectory visualization.
+  '+': Increase trajectory diameter.
+  '-': Decrease trajectory diameter.
+  '3': Toggle flying camera mode (user can apply camera transformation loaded from disk).
+  '5': Switch ortho/perspective camera.
+  '6': Reset ortho camera zoom/perspective camera FOV.
+  'l': Override the default lighting setup with configured settings in `default_light_override.lighting_config.json`.
+  'e': Enable/disable frustum culling.
+  'c': Show/hide FPS overlay.
+  'n': Show/hide NavMesh wireframe.
+  'i': Save a screenshot to "./screenshots/year_month_day_hour-minute-second/#.png".
+  'r': Write a replay of the recent simulated frames to a file specified by --gfx-replay-record-filepath.
+  '[': Save camera position/orientation to "./saved_transformations/camera.year_month_day_hour-minute-second.txt".
+  ']'; Load camera position/orientation from file system (useful when flying camera mode is enabled), or else from last save in current instance.
 
   Object Interactions:
   SPACE: Toggle physics simulation on/off
   '.': Take a single simulation step if not simulating continuously.
   '8': Instance a random primitive object in front of the agent.
   'o': Instance a random file-based object in front of the agent.
-  'u': Remove most recently instanced object.
+  't': Instance an ArticulatedObject in front of the camera from a URDF file by entering the filepath when prompted.
+  'u': Remove most recently instanced rigid object.
   'b': Toggle display of object bounding boxes.
-  'k': Kinematically wiggle the most recently added object.
-  'p': (physics) Poke the most recently added object.
-  'f': (physics) Push the most recently added object.
-  't': (physics) Torque the most recently added object.
   'v': (physics) Invert gravity.
   'g': (physics) Display a stage's signed distance gradient vector field.
-  'l': (physics) Iterate through different ranges of the stage's voxelized signed distance field.
+  'k': (physics) Iterate through different ranges of the stage's voxelized signed distance field.
   ==================================================
   )";
 
@@ -272,10 +334,6 @@ Key Commands:
   float agentTrajRad_ = .01f;
   bool agentLocRecordOn_ = false;
 
-#ifdef ESP_BUILD_WITH_VHACD
-  //! The slice of the grid's SDF to visualize.
-  int voxelDistance = 0;
-#endif
   /**
    * @brief Set whether agent locations should be recorded or not. If toggling
    * on then clear old locations
@@ -326,8 +384,48 @@ Key Commands:
     LOG(INFO) << "Agent Trajectory Radius " << mod << ": " << agentTrajRad_;
   }
 
+  // Configuration to use to set up simulator_
+  esp::sim::SimulatorConfiguration simConfig_;
+
+  // NavMesh customization options, from args
+  bool disableNavmesh_ = false;
+  bool recomputeNavmesh_ = false;
+  std::string navmeshFilename_{};
+
+  // if currently cycling through available SceneInstances, this is the list of
+  // SceneInstances available
+  std::vector<std::string> curSceneInstances_;
+  // current index in SceneInstance array, if cycling through scenes
+  int curSceneInstanceIDX_ = 0;
+
+  // increment/decrement currently displayed scene instance
+  int getNextSceneInstanceIDX(int incr) {
+    if (curSceneInstances_.size() == 0) {
+      return 0;
+    }
+    return (curSceneInstanceIDX_ + curSceneInstances_.size() + incr) %
+           curSceneInstances_.size();
+  }
+
+  /**
+   * @brief Set the scene instance to use to build the scene.
+   */
+  void setSceneInstanceFromListAndShow(int nextSceneInstanceIDX);
+
+  // The MetadataMediator can exist independent of simulator
+  // and provides access to all managers for currently active scene dataset
+  std::shared_ptr<esp::metadata::MetadataMediator> MM_;
+
+  // The managers belonging to MetadataMediator
+  std::shared_ptr<esp::metadata::managers::ObjectAttributesManager>
+      objectAttrManager_ = nullptr;
+
   // The simulator object backend for this viewer instance
   std::unique_ptr<esp::sim::Simulator> simulator_;
+
+  // Initialize simulator after a scene has been loaded - handle navmesh, agent
+  // and sensor configs
+  void initSimPostReconfigure();
 
   // Toggle physics simulation on/off
   bool simulating_ = true;
@@ -336,16 +434,6 @@ Key Commands:
   // continuously.
   bool simulateSingleStep_ = false;
 
-  // The managers belonging to the simulator
-  std::shared_ptr<esp::metadata::managers::ObjectAttributesManager>
-      objectAttrManager_ = nullptr;
-  std::shared_ptr<esp::metadata::managers::AssetAttributesManager>
-      assetAttrManager_ = nullptr;
-  std::shared_ptr<esp::metadata::managers::StageAttributesManager>
-      stageAttrManager_ = nullptr;
-  std::shared_ptr<esp::metadata::managers::PhysicsAttributesManager>
-      physAttrManager_ = nullptr;
-
   bool debugBullet_ = false;
 
   esp::scene::SceneNode* agentBodyNode_ = nullptr;
@@ -353,8 +441,9 @@ Key Commands:
   const int defaultAgentId_ = 0;
   esp::agent::Agent::ptr defaultAgent_ = nullptr;
 
-  // Scene or stage file to load
-  std::string sceneFileName;
+  // if currently orthographic
+  bool isOrtho_ = false;
+
   esp::gfx::RenderCamera* renderCamera_ = nullptr;
   esp::scene::SceneGraph* activeSceneGraph_ = nullptr;
   bool drawObjectBBs = false;
@@ -398,8 +487,7 @@ Key Commands:
   void bindRenderTarget();
 };
 
-void addSensors(esp::agent::AgentConfiguration& agentConfig,
-                const Cr::Utility::Arguments& args) {
+void addSensors(esp::agent::AgentConfiguration& agentConfig, bool isOrtho) {
   const auto viewportSize = Mn::GL::defaultFramebuffer.viewport().size();
 
   auto addCameraSensor = [&](const std::string& uuid,
@@ -410,9 +498,8 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig,
         agentConfig.sensorSpecifications.back().get());
 
     spec->uuid = uuid;
-    spec->sensorSubType = args.isSet("orthographic")
-                              ? esp::sensor::SensorSubType::Orthographic
-                              : esp::sensor::SensorSubType::Pinhole;
+    spec->sensorSubType = isOrtho ? esp::sensor::SensorSubType::Orthographic
+                                  : esp::sensor::SensorSubType::Pinhole;
     spec->sensorType = sensorType;
     if (sensorType == esp::sensor::SensorType::Depth ||
         sensorType == esp::sensor::SensorType::Semantic) {
@@ -505,16 +592,21 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig,
   // add the equirectangular semantic sensor
   addEquirectangularSensor("semantic_equirectangular",
                            esp::sensor::SensorType::Semantic);
-}
+}  // addSensors
 
 Viewer::Viewer(const Arguments& arguments)
-    : Mn::Platform::Application{
-          arguments,
-          Configuration{}.setTitle("Viewer").setWindowFlags(
-              Configuration::WindowFlag::Resizable),
-          GLConfiguration{}
-              .setColorBufferSize(Mn::Vector4i(8, 8, 8, 8))
-              .setSampleCount(4)} {
+    : Mn::Platform::Application{arguments,
+                                Configuration{}
+                                    .setTitle("Viewer")
+                                    .setWindowFlags(
+                                        Configuration::WindowFlag::Resizable),
+                                GLConfiguration{}
+                                    .setColorBufferSize(
+                                        Mn::Vector4i(8, 8, 8, 8))
+                                    .setSampleCount(4)},
+      simConfig_(),
+      MM_(std::make_shared<esp::metadata::MetadataMediator>(simConfig_)),
+      curSceneInstances_{} {
   Cr::Utility::Arguments args;
 #ifdef CORRADE_TARGET_EMSCRIPTEN
   args.addNamedArgument("scene")
@@ -579,67 +671,24 @@ Viewer::Viewer(const Arguments& arguments)
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
   Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::FaceCulling);
 
-  sceneFileName = args.value("scene");
-  bool useBullet = args.isSet("enable-physics");
-  if (useBullet && (args.isSet("debug-bullet"))) {
+  if (args.isSet("enable-physics") && (args.isSet("debug-bullet"))) {
     debugBullet_ = true;
   }
 
+  isOrtho_ = args.isSet("orthographic");
   agentTransformLoadPath_ = args.value("agent-transform-filepath");
   gfxReplayRecordFilepath_ = args.value("gfx-replay-record-filepath");
 
-  // configure and intialize Simulator
-  auto simConfig = esp::sim::SimulatorConfiguration();
-  simConfig.activeSceneName = sceneFileName;
-  simConfig.sceneDatasetConfigFile = args.value("dataset");
-  LOG(INFO) << "Dataset : " << simConfig.sceneDatasetConfigFile;
-  simConfig.enablePhysics = useBullet;
-  simConfig.frustumCulling = true;
-  simConfig.requiresTextures = true;
-  simConfig.enableGfxReplaySave = !gfxReplayRecordFilepath_.empty();
-  if (args.isSet("stage-requires-lighting")) {
-    Mn::Debug{} << "Stage using DEFAULT_LIGHTING_KEY";
-    simConfig.sceneLightSetup = esp::DEFAULT_LIGHTING_KEY;
-  }
-
-  // setup the PhysicsManager config file
-  std::string physicsConfig = Cr::Utility::Directory::join(
-      Corrade::Utility::Directory::current(), args.value("physics-config"));
-  if (Cr::Utility::Directory::exists(physicsConfig)) {
-    Mn::Debug{} << "Using PhysicsManager config: " << physicsConfig;
-    simConfig.physicsConfigFile = physicsConfig;
-  }
-  simConfig.pbrImageBasedLighting = true;
-
-  simulator_ = esp::sim::Simulator::create_unique(simConfig);
-
-  objectAttrManager_ = simulator_->getObjectAttributesManager();
-  objectAttrManager_->loadAllJSONConfigsFromPath(args.value("object-dir"));
-  assetAttrManager_ = simulator_->getAssetAttributesManager();
-  stageAttrManager_ = simulator_->getStageAttributesManager();
-  physAttrManager_ = simulator_->getPhysicsAttributesManager();
-
   // NavMesh customization options
-  if (args.isSet("disable-navmesh")) {
-    if (simulator_->getPathFinder()->isLoaded()) {
-      simulator_->setPathFinder(esp::nav::PathFinder::create());
-    }
-  } else if (args.isSet("recompute-navmesh")) {
-    esp::nav::NavMeshSettings navMeshSettings;
-    simulator_->recomputeNavMesh(*simulator_->getPathFinder().get(),
-                                 navMeshSettings, true);
-  } else if (!args.value("navmesh-file").empty()) {
-    std::string navmeshFile = Cr::Utility::Directory::join(
-        Corrade::Utility::Directory::current(), args.value("navmesh-file"));
-    if (Cr::Utility::Directory::exists(navmeshFile)) {
-      simulator_->getPathFinder()->loadNavMesh(navmeshFile);
-    }
-  }
 
-  // configure and initialize default Agent and Sensor
-  auto agentConfig = esp::agent::AgentConfiguration();
-  agentConfig.height = rgbSensorHeight;
-  agentConfig.actionSpace = {
+  disableNavmesh_ = args.isSet("disable-navmesh");
+  recomputeNavmesh_ = args.isSet("recompute-navmesh");
+  navmeshFilename_ = args.value("navmesh-file").empty();
+
+  // configure default Agent Config for actions and sensors
+  agentConfig_ = esp::agent::AgentConfiguration();
+  agentConfig_.height = rgbSensorHeight;
+  agentConfig_.actionSpace = {
       // setup viewer action space
       {"moveForward",
        esp::agent::ActionSpec::create(
@@ -674,20 +723,61 @@ Viewer::Viewer(const Arguments& arguments)
        esp::agent::ActionSpec::create(
            "lookDown", esp::agent::ActuationMap{{"amount", lookSensitivity}})},
   };
+  // add sensor specifications to agent config
+  addSensors(agentConfig_, isOrtho_);
 
-  addSensors(agentConfig, args);
-  // add selects a random initial state and sets up the default controls and
-  // step filter
-  simulator_->addAgent(agentConfig);
+  // setup SimulatorConfig from args.
+  simConfig_.activeSceneName = args.value("scene");
+  simConfig_.sceneDatasetConfigFile = args.value("dataset");
+  simConfig_.enablePhysics = args.isSet("enable-physics");
+  simConfig_.frustumCulling = true;
+  simConfig_.requiresTextures = true;
+  simConfig_.enableGfxReplaySave = !gfxReplayRecordFilepath_.empty();
+  if (args.isSet("stage-requires-lighting")) {
+    Mn::Debug{} << "Stage using DEFAULT_LIGHTING_KEY";
+    simConfig_.sceneLightSetup = esp::DEFAULT_LIGHTING_KEY;
+  }
 
-  // Set up camera
-  activeSceneGraph_ = &simulator_->getActiveSceneGraph();
-  defaultAgent_ = simulator_->getAgent(defaultAgentId_);
-  agentBodyNode_ = &defaultAgent_->node();
-  renderCamera_ = getAgentCamera().getRenderCamera();
+  // setup the PhysicsManager config file
+  std::string physicsConfig = Cr::Utility::Directory::join(
+      Corrade::Utility::Directory::current(), args.value("physics-config"));
+  if (Cr::Utility::Directory::exists(physicsConfig)) {
+    Mn::Debug{} << "Using PhysicsManager config: " << physicsConfig;
+    simConfig_.physicsConfigFile = physicsConfig;
+  }
+
+  // will set simulator configuration in MM - sets ActiveDataset as well
+  MM_->setSimulatorConfiguration(simConfig_);
+  objectAttrManager_ = MM_->getObjectAttributesManager();
+  objectAttrManager_->loadAllJSONConfigsFromPath(args.value("object-dir"));
+
+  LOG(INFO) << "Scene Dataset Configuration file location : "
+            << simConfig_.sceneDatasetConfigFile
+            << " | Loading Scene : " << simConfig_.activeSceneName;
+
+  // create simulator instance
+  simConfig_.pbrImageBasedLighting = true;
+  simulator_ = esp::sim::Simulator::create_unique(simConfig_, MM_);
+
+  // get list of all scenes
+  curSceneInstances_ = MM_->getAllSceneInstanceHandles();
+  // To handle cycling through scene instances, set first scene to be first in
+  // list of current scene dataset's scene instances
+  // Set this to index in curSceneInstances where args.value("scene") can be
+  // found.
+  curSceneInstanceIDX_ = 0;
+  for (int i = 0; i < curSceneInstances_.size(); ++i) {
+    if (curSceneInstances_[i].find(simConfig_.activeSceneName) !=
+        std::string::npos) {
+      curSceneInstanceIDX_ = i;
+      break;
+    }
+  }
+
+  // initialize sim navmesh, agent, sensors after creation/reconfigure
+  initSimPostReconfigure();
 
   objectPickingHelper_ = std::make_unique<ObjectPickingHelper>(viewportSize);
-  timeline_.start();
 
   /**
    * Set up per frame profiler to be aware of bottlenecking in processing data
@@ -742,16 +832,46 @@ Viewer::Viewer(const Arguments& arguments)
   printHelpText();
 }  // end Viewer::Viewer
 
+void Viewer::initSimPostReconfigure() {
+  // NavMesh customization options
+  if (disableNavmesh_) {
+    if (simulator_->getPathFinder()->isLoaded()) {
+      simulator_->setPathFinder(esp::nav::PathFinder::create());
+    }
+  } else if (recomputeNavmesh_) {
+    esp::nav::NavMeshSettings navMeshSettings;
+    simulator_->recomputeNavMesh(*simulator_->getPathFinder().get(),
+                                 navMeshSettings, true);
+  } else if (!navmeshFilename_.empty()) {
+    std::string navmeshFile = Cr::Utility::Directory::join(
+        Corrade::Utility::Directory::current(), navmeshFilename_);
+    if (Cr::Utility::Directory::exists(navmeshFile)) {
+      simulator_->getPathFinder()->loadNavMesh(navmeshFile);
+    }
+  }
+  // add selects a random initial state and sets up the default controls and
+  // step filter
+  simulator_->addAgent(agentConfig_);
+
+  // Set up camera
+  activeSceneGraph_ = &simulator_->getActiveSceneGraph();
+  defaultAgent_ = simulator_->getAgent(defaultAgentId_);
+  agentBodyNode_ = &defaultAgent_->node();
+  renderCamera_ = getAgentCamera().getRenderCamera();
+  timeline_.start();
+}  // processNavmesh}
+
 void Viewer::switchCameraType() {
   auto& cam = getAgentCamera();
-
   auto oldCameraType = cam.getCameraType();
   switch (oldCameraType) {
     case esp::sensor::SensorSubType::Pinhole: {
+      isOrtho_ = true;
       cam.setCameraType(esp::sensor::SensorSubType::Orthographic);
       return;
     }
     case esp::sensor::SensorSubType::Orthographic: {
+      isOrtho_ = false;
       cam.setCameraType(esp::sensor::SensorSubType::Pinhole);
       return;
     }
@@ -903,8 +1023,6 @@ int Viewer::addTemplateObject() {
 
 // add synthesized primiitive object from keypress
 int Viewer::addPrimitiveObject() {
-  // TODO : use this to implement synthesizing rendered physical objects
-
   int numObjPrims = objectAttrManager_->getNumSynthTemplateObjects();
   if (numObjPrims > 0) {
     return addObject(objectAttrManager_->getRandomSynthTemplateHandle());
@@ -1014,22 +1132,6 @@ void Viewer::iterateAndDisplaySignedDistanceField() {
   simulator_->setStageVoxelizationDraw(true, "ESignedDistanceField");
 }
 
-bool isTrue(bool val) {
-  return val;
-}
-
-bool isHorizontal(Mn::Vector3 val) {
-  return abs(val.normalized()[0]) * abs(val.normalized()[0]) +
-             abs(val.normalized()[2]) * abs(val.normalized()[2]) <=
-         0;
-  // return val[0] == 1;
-}
-
-bool Viewer::isInRange(float val) {
-  int curDistanceVisualization = 1 * (voxelDistance % 18);
-  return val >= curDistanceVisualization - 1 && val < curDistanceVisualization;
-}
-
 void Viewer::displayVoxelField(int objectID) {
   // create a voxelization and get a pointer to the underlying VoxelWrapper
   // class
@@ -1066,39 +1168,6 @@ void Viewer::displayVoxelField(int objectID) {
 }
 #endif
 
-void Viewer::pokeLastObject() {
-  auto existingObjectIDs = simulator_->getExistingObjectIDs();
-  if (existingObjectIDs.size() == 0)
-    return;
-  Mn::Matrix4 T =
-      agentBodyNode_->MagnumObject::transformationMatrix();  // Relative to
-                                                             // agent bodynode
-  Mn::Vector3 impulse = T.transformVector({0.0f, 0.0f, -3.0f});
-  Mn::Vector3 rel_pos = Mn::Vector3(0.0f, 0.0f, 0.0f);
-
-  simulator_->applyImpulse(impulse, rel_pos, existingObjectIDs.back());
-}
-
-void Viewer::pushLastObject() {
-  auto existingObjectIDs = simulator_->getExistingObjectIDs();
-  if (existingObjectIDs.size() == 0)
-    return;
-  Mn::Matrix4 T =
-      agentBodyNode_->MagnumObject::transformationMatrix();  // Relative to
-                                                             // agent bodynode
-  Mn::Vector3 force = T.transformVector({0.0f, 0.0f, -40.0f});
-  Mn::Vector3 rel_pos = Mn::Vector3(0.0f, 0.0f, 0.0f);
-  simulator_->applyForce(force, rel_pos, existingObjectIDs.back());
-}
-
-void Viewer::torqueLastObject() {
-  auto existingObjectIDs = simulator_->getExistingObjectIDs();
-  if (existingObjectIDs.size() == 0)
-    return;
-  Mn::Vector3 torque = randomDirection() * 30;
-  simulator_->applyTorque(torque, existingObjectIDs.back());
-}
-
 // generate random direction vectors:
 Mn::Vector3 Viewer::randomDirection() {
   Mn::Vector3 dir(1.0f, 1.0f, 1.0f);
@@ -1111,22 +1180,32 @@ Mn::Vector3 Viewer::randomDirection() {
   return dir;
 }
 
-void Viewer::wiggleLastObject() {
-  // demo of kinematic motion capability
-  // randomly translate last added object
-  auto existingObjectIDs = simulator_->getExistingObjectIDs();
-  if (existingObjectIDs.size() == 0)
-    return;
+void Viewer::setSceneInstanceFromListAndShow(int nextSceneInstanceIDX) {
+  // set current to be passed idx, making sure it is in bounds of scene list
+  curSceneInstanceIDX_ =
+      (nextSceneInstanceIDX % this->curSceneInstances_.size());
+  // Set scene instance in SimConfig
+  simConfig_.activeSceneName = curSceneInstances_[curSceneInstanceIDX_];
 
-  Mn::Vector3 randDir = randomDirection();
-  // Only allow +Y so dynamic objects don't push through the floor.
-  randDir[1] = abs(randDir[1]);
+  // update MM's config with new active scene name
+  MM_->setSimulatorConfiguration(simConfig_);
+  // close and reconfigure simulator - is this really necessary?
+  LOG(INFO) << "Active Scene Dataset : " << MM_->getActiveSceneDatasetName()
+            << " | Loading Scene : " << simConfig_.activeSceneName;
 
-  auto translation = simulator_->getTranslation(existingObjectIDs.back());
+  renderCamera_ = nullptr;
+  agentBodyNode_ = nullptr;
+  defaultAgent_ = nullptr;
+  activeSceneGraph_ = nullptr;
 
-  simulator_->setTranslation(translation + randDir * 0.1,
-                             existingObjectIDs.back());
-}
+  // close and reconfigure
+  simulator_->close();
+  simulator_ = esp::sim::Simulator::create_unique(simConfig_, MM_);
+  // simulator_->reconfigure(simConfig_);
+
+  // initialize sim navmesh, agent, sensors after creation/reconfigure
+  initSimPostReconfigure();
+}  // Viewer::setSceneInstanceFromListAndShow
 
 float timeSinceLastSimulation = 0.0;
 void Viewer::drawEvent() {
@@ -1273,8 +1352,8 @@ void Viewer::drawEvent() {
   profiler_.endFrame();
 
   imgui_.newFrame();
+  ImGui::SetNextWindowPos(ImVec2(10, 10));
   if (showFPS_) {
-    ImGui::SetNextWindowPos(ImVec2(10, 10));
     ImGui::Begin("main", NULL,
                  ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground |
                      ImGuiWindowFlags_AlwaysAutoResize);
@@ -1306,8 +1385,11 @@ void Viewer::drawEvent() {
         break;
     }
     ImGui::Text("%s", profiler_.statistics().c_str());
-    ImGui::End();
   }
+  std::string modeText =
+      "Mouse Ineraction Mode: " + mouseModeNames.at(mouseInteractionMode);
+  ImGui::Text("%s", modeText.c_str());
+  ImGui::End();
 
   /* Set appropriate states. If you only draw ImGui, it is sufficient to
      just enable blending and scissor test in the constructor. */
@@ -1376,6 +1458,16 @@ void Viewer::moveAndLook(int repetitions) {
       recAgentLocation();
     }
   }
+
+  // update the grabber transform when agent is moved
+  if (mouseGrabber_ != nullptr) {
+    // GRAB mode, move the constraint
+    auto ray = renderCamera_->unproject(previousMousePoint);
+    mouseGrabber_->updateTransform(
+        Mn::Matrix4::from(defaultAgent_->node().rotation().toMatrix(),
+                          renderCamera_->node().absoluteTranslation() +
+                              ray.direction * mouseGrabber_->gripDepth));
+  }
 }
 
 void Viewer::bindRenderTarget() {
@@ -1439,32 +1531,72 @@ void Viewer::createPickedObjectVisualizer(unsigned int objectId) {
 }
 
 void Viewer::mousePressEvent(MouseEvent& event) {
-  if (event.button() == MouseEvent::Button::Right &&
-      (event.modifiers() & MouseEvent::Modifier::Shift)) {
-    // cannot use the default framebuffer, so setup another framebuffer,
-    // also, setup the color attachment for rendering, and remove the
-    // visualizer for the previously picked object
-    objectPickingHelper_->prepareToDraw();
+  if (mouseInteractionMode == MouseInteractionMode::LOOK) {
+    if (event.button() == MouseEvent::Button::Right &&
+        (event.modifiers() & MouseEvent::Modifier::Shift)) {
+      // cannot use the default framebuffer, so setup another framebuffer,
+      // also, setup the color attachment for rendering, and remove the
+      // visualizer for the previously picked object
+      objectPickingHelper_->prepareToDraw();
 
-    // redraw the scene on the object picking framebuffer
-    esp::gfx::RenderCamera::Flags flags =
-        esp::gfx::RenderCamera::Flag::UseDrawableIdAsObjectId;
-    if (simulator_->isFrustumCullingEnabled())
-      flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
-    for (auto& it : activeSceneGraph_->getDrawableGroups()) {
-      renderCamera_->draw(it.second, flags);
-    }
+      // redraw the scene on the object picking framebuffer
+      esp::gfx::RenderCamera::Flags flags =
+          esp::gfx::RenderCamera::Flag::UseDrawableIdAsObjectId;
+      if (simulator_->isFrustumCullingEnabled())
+        flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
+      for (auto& it : activeSceneGraph_->getDrawableGroups()) {
+        renderCamera_->draw(it.second, flags);
+      }
 
-    // Read the object Id
-    unsigned int pickedObject =
-        objectPickingHelper_->getObjectId(event.position(), windowSize());
+      // Read the object Id
+      unsigned int pickedObject =
+          objectPickingHelper_->getObjectId(event.position(), windowSize());
 
-    // if an object is selected, create a visualizer
-    createPickedObjectVisualizer(pickedObject);
-    return;
-  }  // drawable selection
-  // add primitive w/ right click if a collision object is hit by a raycast
-  else if (event.button() == MouseEvent::Button::Right) {
+      // if an object is selected, create a visualizer
+      createPickedObjectVisualizer(pickedObject);
+      return;
+    }  // drawable selection
+    // add primitive w/ right click if a collision object is hit by a raycast
+    else if (event.button() == MouseEvent::Button::Right) {
+      if (simulator_->getPhysicsSimulationLibrary() !=
+          esp::physics::PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
+        auto viewportPoint = event.position();
+        auto ray = renderCamera_->unproject(viewportPoint);
+        esp::physics::RaycastResults raycastResults = simulator_->castRay(ray);
+
+        if (raycastResults.hasHits()) {
+          // If VHACD is enabled, and Ctrl + Right Click is used, voxelized the
+          // object clicked on.
+#ifdef ESP_BUILD_WITH_VHACD
+          if (event.modifiers() & MouseEvent::Modifier::Ctrl) {
+            auto objID = raycastResults.hits[0].objectId;
+            displayVoxelField(objID);
+            return;
+          }
+#endif
+          addPrimitiveObject();
+          auto existingObjectIDs = simulator_->getExistingObjectIDs();
+          // use the bounding box to create a safety margin for adding the
+          // object
+          float boundingBuffer =
+              simulator_->getObjectSceneNode(existingObjectIDs.back())
+                      ->computeCumulativeBB()
+                      .size()
+                      .max() /
+                  2.0 +
+              0.04;
+          simulator_->setTranslation(
+              raycastResults.hits[0].point +
+                  raycastResults.hits[0].normal * boundingBuffer,
+              existingObjectIDs.back());
+
+          simulator_->setRotation(esp::core::randomRotation(),
+                                  existingObjectIDs.back());
+        }
+      }
+    }  // end add primitive w/ right click
+  } else if (mouseInteractionMode == MouseInteractionMode::GRAB) {
+    // GRAB mode
     if (simulator_->getPhysicsSimulationLibrary() !=
         esp::physics::PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
       auto viewportPoint = event.position();
@@ -1472,42 +1604,86 @@ void Viewer::mousePressEvent(MouseEvent& event) {
       esp::physics::RaycastResults raycastResults = simulator_->castRay(ray);
 
       if (raycastResults.hasHits()) {
-        // If VHACD is enabled, and Ctrl + Right Click is used, voxelized the
-        // object clicked on.
-#ifdef ESP_BUILD_WITH_VHACD
-        if (event.modifiers() & MouseEvent::Modifier::Ctrl) {
-          auto objID = raycastResults.hits[0].objectId;
-          displayVoxelField(objID);
-          return;
-        }
-#endif
-        addPrimitiveObject();
-        auto existingObjectIDs = simulator_->getExistingObjectIDs();
-        // use the bounding box to create a safety margin for adding the
-        // object
-        float boundingBuffer =
-            simulator_->getObjectSceneNode(existingObjectIDs.back())
-                    ->computeCumulativeBB()
-                    .size()
-                    .max() /
-                2.0 +
-            0.04;
-        simulator_->setTranslation(
-            raycastResults.hits[0].point +
-                raycastResults.hits[0].normal * boundingBuffer,
-            existingObjectIDs.back());
+        int hitObject = esp::ID_UNDEFINED;
+        Mn::Quaternion objectFrame;
+        Mn::Vector3 objectPivot;
+        int aoLink = esp::ID_UNDEFINED;
+        auto hitInfo = raycastResults.hits[0];  // first hit
+        // check if ao
+        if (hitInfo.objectId != esp::ID_UNDEFINED) {
+          // we hit an non-stage collision object
+          auto roMngr = simulator_->getRigidObjectManager();
+          auto aoMngr = simulator_->getArticulatedObjectManager();
+          auto ro = roMngr->getObjectByID(hitInfo.objectId);
+          auto ao = aoMngr->getObjectByID(hitInfo.objectId);
+          if (ro != nullptr) {
+            // grabbed an object
+            hitObject = hitInfo.objectId;
+            objectPivot = ro->getTransformation().inverted().transformPoint(
+                hitInfo.point);
+            objectFrame = ro->getRotation().inverted();
+          } else if (ao != nullptr) {
+            // grabbed the base link
+            hitObject = hitInfo.objectId;
+            objectPivot = ao->getTransformation().inverted().transformPoint(
+                hitInfo.point);
+            objectFrame = ao->getRotation().inverted();
+          } else {
+            for (auto aoHandle : aoMngr->getObjectHandlesBySubstring()) {
+              auto ao = aoMngr->getObjectByHandle(aoHandle);
+              auto linkToObjIds = ao->getLinkObjectIds();
+              if (linkToObjIds.count(hitInfo.objectId) > 0) {
+                // got a link
+                aoLink = linkToObjIds.at(hitInfo.objectId);
+                objectPivot = ao->getLinkSceneNode(aoLink)
+                                  ->transformation()
+                                  .inverted()
+                                  .transformPoint(hitInfo.point);
+                objectFrame =
+                    ao->getLinkSceneNode(aoLink)->rotation().inverted();
+                hitObject = ao->getID();
+                break;
+              }
+            }
+          }  // done checking for AO
 
-        simulator_->setRotation(esp::core::randomRotation(),
-                                existingObjectIDs.back());
-      }
-    }
-  }  // end add primitive w/ right click
+          if (hitObject >= 0) {
+            esp::physics::RigidConstraintSettings constraintSettings;
+            constraintSettings.objectIdA = hitObject;
+            constraintSettings.linkIdA = aoLink;
+            constraintSettings.pivotA = objectPivot;
+            constraintSettings.frameA =
+                objectFrame.toMatrix() *
+                defaultAgent_->node().rotation().toMatrix();
+            constraintSettings.frameB =
+                defaultAgent_->node().rotation().toMatrix();
+            constraintSettings.pivotB = hitInfo.point;
+            // by default use a point 2 point constraint
+            if (event.button() == MouseEvent::Button::Right) {
+              constraintSettings.constraintType =
+                  esp::physics::RigidConstraintType::Fixed;
+            }
+            mouseGrabber_ = std::make_unique<MouseGrabber>(
+                constraintSettings,
+                (hitInfo.point - renderCamera_->node().absoluteTranslation())
+                    .length(),
+                *simulator_);
+          } else {
+            Mn::Debug{} << "Oops, couldn't find the hit object. That's odd.";
+          }
+        }  // end didn't hit the scene
+      }    // end has raycast hit
+    }      // end has physics enabled
+  }        // end GRAB
 
+  previousMousePoint = event.position();
   event.setAccepted();
   redraw();
 }
 
 void Viewer::mouseReleaseEvent(MouseEvent& event) {
+  // release any existing mouse constraint
+  mouseGrabber_ = nullptr;
   event.setAccepted();
 }
 
@@ -1520,34 +1696,56 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
   if (!(scrollModVal)) {
     return;
   }
-  // Use shift for fine-grained zooming
-  float modVal = (event.modifiers() & MouseEvent::Modifier::Shift) ? 1.01 : 1.1;
-  float mod = scrollModVal > 0 ? modVal : 1.0 / modVal;
-  auto& cam = getAgentCamera();
-  cam.modifyZoom(mod);
-  redraw();
+  if (mouseInteractionMode == MouseInteractionMode::LOOK) {
+    // Use shift for fine-grained zooming
+    float modVal =
+        (event.modifiers() & MouseEvent::Modifier::Shift) ? 1.01 : 1.1;
+    float mod = scrollModVal > 0 ? modVal : 1.0 / modVal;
+    auto& cam = getAgentCamera();
+    cam.modifyZoom(mod);
+    redraw();
+  } else if (mouseInteractionMode == MouseInteractionMode::GRAB &&
+             mouseGrabber_ != nullptr) {
+    // adjust the depth
+    auto ray = renderCamera_->unproject(event.position());
+    mouseGrabber_->gripDepth += scrollModVal * 0.01;
+    mouseGrabber_->updateTransform(
+        Mn::Matrix4::from(defaultAgent_->node().rotation().toMatrix(),
+                          renderCamera_->node().absoluteTranslation() +
+                              ray.direction * mouseGrabber_->gripDepth));
+  }
 
   event.setAccepted();
 }  // Viewer::mouseScrollEvent
 
 void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
-  if (!(event.buttons() & MouseMoveEvent::Button::Left)) {
-    return;
-  }
+  if (mouseInteractionMode == MouseInteractionMode::LOOK) {
+    if (!(event.buttons() & MouseMoveEvent::Button::Left)) {
+      return;
+    }
 
-  const Mn::Vector2i delta = event.relativePosition();
-  auto& controls = *defaultAgent_->getControls().get();
-  controls(*agentBodyNode_, "turnRight", delta.x());
-  // apply the transformation to all sensors
-  for (auto& p : agentBodyNode_->getSubtreeSensors()) {
-    controls(p.second.get().object(),  // SceneNode
-             "lookDown",               // action name
-             delta.y(),                // amount
-             false);                   // applyFilter
+    const Mn::Vector2i delta = event.relativePosition();
+    auto& controls = *defaultAgent_->getControls().get();
+    controls(*agentBodyNode_, "turnRight", delta.x());
+    // apply the transformation to all sensors
+    for (auto& p : agentBodyNode_->getSubtreeSensors()) {
+      controls(p.second.get().object(),  // SceneNode
+               "lookDown",               // action name
+               delta.y(),                // amount
+               false);                   // applyFilter
+    }
+  } else if (mouseInteractionMode == MouseInteractionMode::GRAB &&
+             mouseGrabber_ != nullptr) {
+    // GRAB mode, move the constraint
+    auto ray = renderCamera_->unproject(event.position());
+    mouseGrabber_->updateTransform(
+        Mn::Matrix4::from(defaultAgent_->node().rotation().toMatrix(),
+                          renderCamera_->node().absoluteTranslation() +
+                              ray.direction * mouseGrabber_->gripDepth));
   }
 
   redraw();
-
+  previousMousePoint = event.position();
   event.setAccepted();
 }
 
@@ -1569,13 +1767,26 @@ void Viewer::keyPressEvent(KeyEvent& event) {
          crashes at exit. We don't want that. */
       exit(0);
       break;
+    case KeyEvent::Key::Tab:
+      Mn::Debug{} << "Cycling to "
+                  << ((event.modifiers() & MouseEvent::Modifier::Shift)
+                          ? "previous"
+                          : "next")
+                  << " SceneInstance";
+      setSceneInstanceFromListAndShow(getNextSceneInstanceIDX(
+          (event.modifiers() & MouseEvent::Modifier::Shift) ? -1 : 1));
+      break;
     case KeyEvent::Key::Space:
       simulating_ = !simulating_;
-      Mn::Debug{} << " Physics Simulation: " << simulating_;
+      Mn::Debug{} << "Physics Simulation cycling from " << !simulating_
+                  << " to " << simulating_;
       break;
     case KeyEvent::Key::Period:
       // also `>` key
       simulateSingleStep_ = true;
+      break;
+    case KeyEvent::Key::Comma:
+      debugBullet_ = !debugBullet_;
       break;
       // ==== Miscellaneous ====
     case KeyEvent::Key::One:
@@ -1636,7 +1847,6 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::RightBracket:
       loadAgentAndSensorTransformFromFile();
       break;
-
     case KeyEvent::Key::Equal: {
       // increase trajectory tube diameter
       LOG(INFO) << "Bigger";
@@ -1664,18 +1874,17 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       simulator_->setFrustumCullingEnabled(
           !simulator_->isFrustumCullingEnabled());
       break;
-    case KeyEvent::Key::F:
-      pushLastObject();
-      break;
     case KeyEvent::Key::H:
       printHelpText();
       break;
     case KeyEvent::Key::I:
       screenshot();
       break;
-    case KeyEvent::Key::K:
-      wiggleLastObject();
-      break;
+    case KeyEvent::Key::M: {
+      // toggle the mouse interaction mode
+      mouseInteractionMode = MouseInteractionMode(
+          (int(mouseInteractionMode) + 1) % int(NUM_MODES));
+    } break;
     case KeyEvent::Key::N:
       // toggle navmesh visualization
       simulator_->setNavMeshVisualization(
@@ -1684,16 +1893,38 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::O:
       addTemplateObject();
       break;
-    case KeyEvent::Key::P:
-      pokeLastObject();
-      break;
     case KeyEvent::Key::Q:
       // query the agent state
       showAgentStateMsg(true, true);
       break;
-    case KeyEvent::Key::T:
-      torqueLastObject();
-      break;
+    case KeyEvent::Key::T: {
+      // add an ArticulatedObject from provided filepath
+      Mn::Debug{} << "Load URDF: provide a URDF filepath.";
+      std::string urdfFilepath;
+      std::cin >> urdfFilepath;
+
+      if (urdfFilepath.empty()) {
+        Mn::Debug{} << "... no input provided. Aborting.";
+      } else if (!Cr::Utility::String::endsWith(urdfFilepath, ".urdf") &&
+                 !Cr::Utility::String::endsWith(urdfFilepath, ".URDF")) {
+        Mn::Debug{} << "... input is not a URDF. Aborting.";
+      } else if (Cr::Utility::Directory::exists(urdfFilepath)) {
+        auto aom = simulator_->getArticulatedObjectManager();
+        auto ao = aom->addArticulatedObjectFromURDF(urdfFilepath);
+        ao->setTranslation(
+            defaultAgent_->node().transformation().transformPoint(
+                {0, 1.0, -1.5}));
+      }
+    } break;
+    case KeyEvent::Key::L: {
+      // override the default light setup with the config in this directory
+      auto& lightLayoutMgr = simulator_->getLightLayoutAttributesManager();
+      auto loadedLayout = lightLayoutMgr->createObjectFromJSONFile(
+          "src/utils/viewer/default_light_override.lighting_config.json");
+      lightLayoutMgr->registerObject(loadedLayout, "default_override");
+      simulator_->setLightSetup(
+          lightLayoutMgr->createLightSetupFromAttributes("default_override"));
+    } break;
     case KeyEvent::Key::U:
       removeLastObject();
       break;
@@ -1701,7 +1932,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       invertGravity();
       break;
 #ifdef ESP_BUILD_WITH_VHACD
-    case KeyEvent::Key::L: {
+    case KeyEvent::Key::K: {
       iterateAndDisplaySignedDistanceField();
       // Increase the distance visualized for next time (Pressing L repeatedly
       // will visualize different distances)

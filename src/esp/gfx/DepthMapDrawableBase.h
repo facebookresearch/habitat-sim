@@ -18,7 +18,7 @@ class DepthMapDrawableBase : public Drawable {
    * using shader and mesh. Adds drawable to given group
    */
   explicit DepthMapDrawableBase(scene::SceneNode& node,
-                                Magnum::GL::Mesh& mesh,
+                                Magnum::GL::Mesh* mesh,
                                 ShaderManager& shaderManager,
                                 DrawableType type,
                                 DrawableGroup* group);

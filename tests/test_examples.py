@@ -63,6 +63,7 @@ def powerset(iterable):
             "--no-make-video",
         ),
         ("examples/tutorials/semantic_id_tutorial.py", "--no-show-images"),
+        ("examples/tutorials/async_rendering.py",),
     ],
 )
 def test_example_modules(args):
@@ -78,6 +79,24 @@ def test_example_modules(args):
     [("examples/tutorials/VHACD_tutorial.py", "--no-show-video", "--no-make-video")],
 )
 def test_vhacd_example(args):
+    run_main_subproc(args)
+
+
+@pytest.mark.skipif(
+    not osp.exists("data/replica_cad/"),
+    reason="Requires ReplicaCAD dataset.",
+)
+@pytest.mark.parametrize(
+    "args",
+    [
+        (
+            "examples/tutorials/nb_python/ReplicaCAD_quickstart.py",
+            "--no-show-video",
+            "--no-make-video",
+        )
+    ],
+)
+def test_replica_cad_quickstart(args):
     run_main_subproc(args)
 
 

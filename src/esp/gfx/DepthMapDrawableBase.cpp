@@ -10,7 +10,7 @@ namespace esp {
 namespace gfx {
 
 DepthMapDrawableBase::DepthMapDrawableBase(scene::SceneNode& node,
-                                           Magnum::GL::Mesh& mesh,
+                                           Magnum::GL::Mesh* mesh,
                                            ShaderManager& shaderManager,
                                            DrawableType type,
                                            DrawableGroup* group)

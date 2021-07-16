@@ -476,10 +476,14 @@ fragmentColor.rgb += iblSpecularContrib;
         fragmentColor.rgb = specularContrib; // direct specular
         break;
       case 3:
-        fragmentColor.rgb = iblDiffuseContrib; // ibl diffuse
+        #if defined(IMAGE_BASED_LIGHTING)
+          fragmentColor.rgb = iblDiffuseContrib; // ibl diffuse
+        #endif
         break;
       case 4:
-        fragmentColor.rgb = iblSpecularContrib; // ibl specular
+        #if defined(IMAGE_BASED_LIGHTING)
+          fragmentColor.rgb = iblSpecularContrib; // ibl specular
+        #endif
         break;
 			case 5:
 				fragmentColor.rgb = n; // normal

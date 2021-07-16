@@ -12,6 +12,7 @@
 #include "esp/assets/ResourceManager.h"
 #include "esp/core/esp.h"
 #include "esp/core/random.h"
+#include "esp/gfx/DebugLineRender.h"
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/WindowlessContext.h"
 #include "esp/metadata/MetadataMediator.h"
@@ -61,8 +62,13 @@ class Simulator {
    * set back to nullptr, any members set to their default values, etc.  If this
    * is not done correctly, the pattern for @ref `close` then @ref `reconfigure`
    * to create a "fresh" instance of the simulator may not work correctly
+   *
+   * @param destroy When set, destroy the background rendering thread and gl
+   * context also. Otherwise these persist if the background rendering thread
+   * was used. This is done because the OpenGL driver leaks memory on thread
+   * destroy on some systems.
    */
-  void close();
+  void close(bool destroy = true);
 
   virtual void reconfigure(const SimulatorConfiguration& cfg);
 
@@ -105,7 +111,10 @@ class Simulator {
    * --headless mode on linux
    */
   int gpuDevice() const {
-    CORRADE_ASSERT(context_ != nullptr, "::gpuDevice: no OpenGL context.", 0);
+    CORRADE_ASSERT(config_.createRenderer,
+                   "Simulator::gpuDevice() : cannot get gpu device when "
+                   "createRenderer flag is false",
+                   0);
     return context_->gpuDevice();
   }
 
@@ -624,6 +633,8 @@ class Simulator {
    */
   void setObjectBBDraw(bool drawBB, int objectId, int sceneID = 0) {
     if (sceneHasPhysics(sceneID)) {
+      if (renderer_)
+        renderer_->acquireGlContext();
       auto& drawables = getDrawableGroup(sceneID);
       physicsManager_->setObjectBBDraw(objectId, &drawables, drawBB);
     }
@@ -913,6 +924,14 @@ class Simulator {
     return Magnum::Vector3();
   }
 
+  std::shared_ptr<esp::gfx::DebugLineRender> getDebugLineRender() {
+    // We only create this if/when used (lazy creation)
+    if (!debugLineRender_) {
+      debugLineRender_ = std::make_shared<esp::gfx::DebugLineRender>();
+    }
+    return debugLineRender_;
+  }
+
   /**
    * @brief Compute the navmesh for the simulator's current active scene and
    * assign it to the referenced @ref nav::PathFinder.
@@ -1145,6 +1164,15 @@ class Simulator {
    */
   gfx::LightSetup getLightSetup(const std::string& key = DEFAULT_LIGHTING_KEY) {
     return *resourceManager_->getLightSetup(key);
+  }
+
+  /**
+   * @brief Get a copy of the currently set existing @ref gfx::LightSetup.
+   *
+   * @param key The string key of the @ref gfx::LightSetup.
+   */
+  gfx::LightSetup getCurrentLightSetup() {
+    return *resourceManager_->getLightSetup(config_.sceneLightSetup);
   }
 
   /**
@@ -1463,6 +1491,8 @@ class Simulator {
    * *not* be changed without calling close() first
    */
   Corrade::Containers::Optional<bool> requiresTextures_;
+
+  std::shared_ptr<esp::gfx::DebugLineRender> debugLineRender_;
 
   ESP_SMART_POINTERS(Simulator)
 };

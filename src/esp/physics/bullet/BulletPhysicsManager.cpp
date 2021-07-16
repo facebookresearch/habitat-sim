@@ -26,6 +26,9 @@ BulletPhysicsManager::BulletPhysicsManager(
   collisionObjToObjIds_ =
       std::make_shared<std::map<const btCollisionObject*, int>>();
   urdfImporter_ = std::make_unique<BulletURDFImporter>(_resourceManager);
+  if (_resourceManager.getCreateRenderer()) {
+    debugDrawer_ = std::make_unique<Magnum::BulletIntegration::DebugDraw>();
+  }
 }
 
 BulletPhysicsManager::~BulletPhysicsManager() {
@@ -57,10 +60,12 @@ bool BulletPhysicsManager::initPhysicsFinalize() {
   bWorld_ = std::make_shared<btMultiBodyDynamicsWorld>(
       &bDispatcher_, &bBroadphase_, &bSolver_, &bCollisionConfig_);
 
-  debugDrawer_.setMode(
-      Magnum::BulletIntegration::DebugDraw::Mode::DrawWireframe |
-      Magnum::BulletIntegration::DebugDraw::Mode::DrawConstraints);
-  bWorld_->setDebugDrawer(&debugDrawer_);
+  if (debugDrawer_) {
+    debugDrawer_->setMode(
+        Magnum::BulletIntegration::DebugDraw::Mode::DrawWireframe |
+        Magnum::BulletIntegration::DebugDraw::Mode::DrawConstraints);
+    bWorld_->setDebugDrawer(debugDrawer_.get());
+  }
 
   // currently GLB meshes are y-up
   bWorld_->setGravity(btVector3(physicsManagerAttributes_->getVec3("gravity")));
@@ -146,9 +151,6 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
 
   articulatedObject->initializeFromURDF(*urdfImporter_, {}, physicsNode_);
 
-  // top level only valid in initial state, but computes valid sub-part AABBs.
-  articulatedObject->node().computeCumulativeBB();
-
   // allocate ids for links
   for (int linkIx = 0; linkIx < articulatedObject->btMultiBody_->getNumLinks();
        ++linkIx) {
@@ -165,12 +167,12 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
       int bulletLinkIx =
           u2b->cache->m_urdfLinkIndices2BulletLinkIndices[urdfLinkIx];
       ArticulatedLink& linkObject = articulatedObject->getLink(bulletLinkIx);
-
       ESP_CHECK(
           attachLinkGeometry(&linkObject, link.second, drawables, lightSetup),
           "BulletPhysicsManager::addArticulatedObjectFromURDF(): Failed to "
           "instance render asset (attachGeometry) for link "
               << urdfLinkIx << ".");
+      linkObject.node().computeCumulativeBB();
     }
     urdfLinkIx++;
   }
@@ -488,8 +490,10 @@ Magnum::Range3D BulletPhysicsManager::getStageCollisionShapeAabb() const {
 }
 
 void BulletPhysicsManager::debugDraw(const Magnum::Matrix4& projTrans) const {
-  debugDrawer_.setTransformationProjectionMatrix(projTrans);
-  bWorld_->debugDrawWorld();
+  if (debugDrawer_) {
+    debugDrawer_->setTransformationProjectionMatrix(projTrans);
+    bWorld_->debugDrawWorld();
+  }
 }
 
 RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,

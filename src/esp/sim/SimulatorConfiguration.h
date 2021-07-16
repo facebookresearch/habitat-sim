@@ -53,6 +53,15 @@ struct SimulatorConfiguration {
    * for RGB rendering
    */
   bool requiresTextures = true;
+
+  /**
+   * @brief Leave the context with the background thread after finishing draw
+   * jobs. This will improve performance as transfering the OpenGL context back
+   * and forth takes time but will require the user to manually transfer the
+   * context back to the main thread before adding or removing objects.
+   */
+  bool leaveContextWithBackgroundRenderer = false;
+
   std::string physicsConfigFile = ESP_DEFAULT_PHYSICS_CONFIG_REL_PATH;
 
   /**

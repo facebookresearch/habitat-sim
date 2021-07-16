@@ -138,10 +138,10 @@ void SceneDatasetAttributesManager::setValsFromJSONDoc(
                     // Check if directory
                     const bool dirExists = Dir::isDirectory(globPath);
                     if (dirExists) {
-                      LOG(INFO) << "::setValsFromJSONDoc(Articulated Object) : "
-                                   "Parsing "
-                                   "articulated object library directory: " +
-                                       globPath;
+                      LOG(INFO)
+                          << "::setValsFromJSONDoc(Articulated Object) : "
+                             "Parsing articulated object library directory: " +
+                                 globPath;
                       for (auto& file :
                            Dir::list(globPath, Dir::Flag::SortAscending)) {
                         std::string absoluteSubfilePath =
@@ -175,23 +175,22 @@ void SceneDatasetAttributesManager::setValsFromJSONDoc(
                         << aoFilePaths.size() << " " << this->objectType_
                         << " templates found in " << ao_dir;
                     for (int i = 0; i < aoFilePaths.size(); ++i) {
-                      auto aoModelName = aoFilePaths[i];
-                      auto aoFullFileName = Dir::filename(aoModelName);
+                      auto aoModelFileName = aoFilePaths[i];
                       LOG(INFO) << "::setValsFromJSONDoc(Articulated Object) : "
                                    "Found Articulated Object Model file : "
-                                << aoFullFileName;
+                                << aoModelFileName;
 
                       // set k-v pairs here.
                       auto key =
                           Corrade::Utility::Directory::splitExtension(
                               Corrade::Utility::Directory::splitExtension(
                                   Corrade::Utility::Directory::filename(
-                                      aoFullFileName))
+                                      aoModelFileName))
                                   .first)
                               .first;
 
                       dsAttribs->setArticulatedObjectModelFilename(
-                          key, aoFullFileName);
+                          key, aoModelFileName);
                     }
                   }
                   LOG(INFO) << "::loadAllFileBasedTemplates : Specified "
