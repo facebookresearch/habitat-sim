@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import Dict, List, Optional, Set, Tuple
 
 import attr
@@ -7,6 +8,14 @@ import numpy as np
 from habitat_sim.physics import JointMotorSettings
 from habitat_sim.robots.robot_interface import RobotInterface
 from habitat_sim.simulator import Simulator
+
+
+@attr.s(auto_attribs=True, slots=True)
+class RobotCameraParams:
+    cam_offset_pos: mn.Vector3
+    cam_look_at_pos: mn.Vector3
+    attached_link_id: int
+    relative_transform: mn.Matrix4 = mn.Matrix4.identity_init()
 
 
 # TODO: refactor this class to support spherical joints: multiple dofs per link and #dofs != #positions
@@ -65,11 +74,7 @@ class MobileManipulatorParams:
     ee_link: int
     ee_constraint: np.ndarray
 
-    arm_cam_offset_pos: mn.Vector3
-    head_cam_offset_pos: mn.Vector3
-    head_cam_look_pos: mn.Vector3
-    third_cam_offset_pos: mn.Vector3
-    third_cam_look_pos: mn.Vector3
+    cameras: Dict[str, RobotCameraParams]
 
     gripper_closed_state: List[float]
     gripper_open_state: List[float]
@@ -111,15 +116,11 @@ class MobileManipulator(RobotInterface):
         self._limit_robo_joints = limit_robo_joints
         self._fixed_base = fixed_base
 
-        self._arm_sensor_names = [
-            s for s in self._sim._sensors if s.startswith("robot_arm_")
-        ]
-        self._head_sensor_names = [
-            s for s in self._sim._sensors if s.startswith("robot_head_")
-        ]
-        self._third_sensor_names = [
-            s for s in self._sim._sensors if s.startswith("robot_third_")
-        ]
+        self._cameras = defaultdict(list)
+        for camera_prefix in self.params.cameras:
+            for s in self._sim._sensors:
+                if s.startswith(camera_prefix):
+                    self._cameras[camera_prefix].append(s)
 
         # NOTE: the follow members cache static info for improved efficiency over querying the API
         # maps joint ids to motor settings for convenience
@@ -193,37 +194,27 @@ class MobileManipulator(RobotInterface):
         agent_node = self._sim._default_agent.scene_node
         inv_T = agent_node.transformation.inverted()
 
-        # Update the cameras
-        for sensor_name in self._head_sensor_names:
-            sens_obj = self._sim._sensors[sensor_name]._sensor_object
+        for cam_prefix, sensor_names in self._cameras.items():
+            for sensor_name in sensor_names:
+                sens_obj = self._sim._sensors[sensor_name]._sensor_object
+                cam_info = self.params.cameras[cam_prefix]
 
-            look_at = self.sim_obj.transformation.transform_point(
-                self.params.head_cam_look_pos
-            )
-            cam_pos = self.sim_obj.transformation.transform_point(
-                self.params.head_cam_offset_pos
-            )
-            head_T = mn.Matrix4.look_at(cam_pos, look_at, mn.Vector3(0, 1, 0))
+                if cam_info.attached_link_id == -1:
+                    link_trans = self.sim_obj.transformation
+                else:
+                    link_trans = self.sim_obj.get_link_scene_node(
+                        self.params.ee_link
+                    ).transformation
 
-            sens_obj.node.transformation = inv_T @ head_T
+                cam_transform = mn.Matrix4.look_at(
+                    cam_info.cam_offset_pos,
+                    cam_info.cam_look_at_pos,
+                    mn.Vector3(0, 1, 0),
+                )
+                cam_transform = link_trans @ cam_transform @ cam_info.relative_transform
+                cam_transform = inv_T @ cam_transform
 
-        for sensor_name in self._third_sensor_names:
-            sens_obj = self._sim._sensors[sensor_name]._sensor_object
-
-            look_at = self.sim_obj.transformation.transform_point(
-                self.params.third_cam_look_pos
-            )
-            cam_pos = self.sim_obj.transformation.transform_point(
-                self.params.third_cam_offset_pos
-            )
-            third_T = mn.Matrix4.look_at(cam_pos, look_at, mn.Vector3(0, 1, 0))
-
-            sens_obj.node.transformation = inv_T @ third_T
-
-        for sensor_name in self._arm_sensor_names:
-            sens_obj = self._sim._sensors[sensor_name]._sensor_object
-            arm_T = self._get_arm_cam_transform()
-            sens_obj.node.transformation = inv_T @ arm_T
+                sens_obj.node.transformation = cam_transform
 
         # Guard against out of limit joints
         # TODO: should auto clamping be enabled instead? How often should we clamp?
@@ -450,16 +441,6 @@ class MobileManipulator(RobotInterface):
     #############################################
     # HIDDEN
     #############################################
-    def _get_arm_cam_transform(self):
-        """Helper function to get the transformation of where the arm camera
-        should be placed.
-        """
-        ee_trans = self.sim_obj.get_link_scene_node(self.params.ee_link).transformation
-        offset_trans = mn.Matrix4.translation(self.params.arm_cam_offset_pos)
-        rot_trans = mn.Matrix4.rotation_y(mn.Deg(-90))
-        spin_trans = mn.Matrix4.rotation_z(mn.Deg(90))
-        arm_T = ee_trans @ offset_trans @ rot_trans @ spin_trans
-        return arm_T
 
     def _set_motor_pos(self, joint, ctrl):
         self.joint_motors[joint][1].position_target = ctrl
