@@ -12,9 +12,19 @@ from habitat_sim.simulator import Simulator
 
 @attr.s(auto_attribs=True, slots=True)
 class RobotCameraParams:
+    """Data to configure a camera placement on the robot.
+    :property attached_link_id: Which link ID this camera is attached to, -1
+        for the base link.
+    :property cam_offset_pos: The 3D position of the camera relative to the
+        transformation of the attached link.
+    :property cam_look_at_pos: The 3D of where the camera should face relative
+        to the transformation of the attached link.
+    :property relative_transform: An added local transform for the camera.
+    """
+
+    attached_link_id: int
     cam_offset_pos: mn.Vector3
     cam_look_at_pos: mn.Vector3
-    attached_link_id: int
     relative_transform: mn.Matrix4 = mn.Matrix4.identity_init()
 
 
@@ -37,12 +47,9 @@ class MobileManipulatorParams:
     :property ee_constraint: A (2, N) shaped array specifying the upper and
         lower limits for each end-effector joint where N is the arm DOF.
 
-    :property arm_cam_offset_pos: The 3D offset of the arm camera from the
-        end-effector position.
-    :property head_cam_offset_pos: The 3D offset of the head camera from the
-        base of the robot.
-    :property head_cam_look_pos: The 3D offset of where the head should face,
-        relative to the head camera.
+    :property cameras: The cameras and where they should go. The key is the
+        prefix to match in the sensor names. For example, a key of `"robot_head"`
+        will match sensors `"robot_head_rgb"` and `"robot_head_depth"`
 
     :property gripper_closed_state: All gripper joints must achieve this
         state for the gripper to be considered closed.
