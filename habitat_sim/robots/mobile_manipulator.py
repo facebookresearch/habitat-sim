@@ -125,9 +125,9 @@ class MobileManipulator(RobotInterface):
 
         self._cameras = defaultdict(list)
         for camera_prefix in self.params.cameras:
-            for s in self._sim._sensors:
-                if s.startswith(camera_prefix):
-                    self._cameras[camera_prefix].append(s)
+            for sensor_name in self._sim._sensors:
+                if sensor_name.startswith(camera_prefix):
+                    self._cameras[camera_prefix].append(sensor_name)
 
         # NOTE: the follow members cache static info for improved efficiency over querying the API
         # maps joint ids to motor settings for convenience
