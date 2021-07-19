@@ -35,17 +35,11 @@ namespace esp {
 namespace gfx {
 
 PbrPrecomputedMapShader::PbrPrecomputedMapShader(Flags flags) : flags_(flags) {
-  int countMutuallyExclusive = 0;
-  if (flags_ & Flag::IrradianceMap) {
-    ++countMutuallyExclusive;
-  }
-  if (flags & Flag::PrefilteredMap) {
-    ++countMutuallyExclusive;
-  }
-  CORRADE_ASSERT(countMutuallyExclusive <= 1,
-                 "PbrPrecomputedMapShader::PbrPrecomputedMapShader: "
-                 "Flag:S:IrradianceMap and "
-                 "Flag::PrefilteredMap are mutually exclusive.", );
+  CORRADE_ASSERT(
+      !((flags_ & Flag::IrradianceMap) && (flags_ & Flag::PrefilteredMap)),
+      "PbrPrecomputedMapShader::PbrPrecomputedMapShader: "
+      "Flag:S:IrradianceMap and "
+      "Flag::PrefilteredMap are mutually exclusive.", );
 
   if (!Corrade::Utility::Resource::hasGroup("default-shaders")) {
     importShaderResources();
@@ -65,12 +59,14 @@ PbrPrecomputedMapShader::PbrPrecomputedMapShader(Flags flags) : flags_(flags) {
   Mn::GL::Shader frag{glVersion, Mn::GL::Shader::Type::Fragment};
 
   // Add macros
-  vert.addSource(Cr::Utility::formatString(
-      "#define ATTRIBUTE_LOCATION_POSITION {}\n", Position::Location))
+  vert
+      .addSource(Cr::Utility::formatString(
+          "#define ATTRIBUTE_LOCATION_POSITION {}\n", Position::Location))
       .addSource(rs.get("pbrPrecomputedMap.vert"));
 
-  frag.addSource(Cr::Utility::formatString(
-      "#define OUTPUT_ATTRIBUTE_LOCATION_COLOR {}\n", ColorOutput))
+  frag
+      .addSource(Cr::Utility::formatString(
+          "#define OUTPUT_ATTRIBUTE_LOCATION_COLOR {}\n", ColorOutput))
       .addSource(rs.get("pbrCommon.glsl") + "\n");
 
   if (flags & Flag::IrradianceMap) {
@@ -84,16 +80,6 @@ PbrPrecomputedMapShader::PbrPrecomputedMapShader(Flags flags) : flags_(flags) {
   attachShaders({vert, frag});
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(link());
-
-  // bind attributes
-#ifndef MAGNUM_TARGET_GLES
-  if (!Mn::GL::Context::current()
-           .isExtensionSupported<
-               Mn::GL::Extensions::ARB::explicit_attrib_location>(glVersion))
-#endif
-  {
-    bindAttributeLocation(Position::Location, "vertexPosition");
-  }  // if
 
   // set texture unit
   setUniform(uniformLocation("EnvironmentMap"),

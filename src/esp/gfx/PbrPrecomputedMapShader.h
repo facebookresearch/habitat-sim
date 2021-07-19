@@ -14,6 +14,12 @@ namespace esp {
 
 namespace gfx {
 
+/**
+ * @brief A shader to output the irradiance map, applied in the IBL diffuse
+ * part, or the prefiltered environment map, applied in the IBL specular part,
+ * based on the user setting.
+ */
+
 class PbrPrecomputedMapShader : public Magnum::GL::AbstractShaderProgram {
  public:
   // ==== Attribute definitions ====
