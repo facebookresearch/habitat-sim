@@ -11,11 +11,10 @@ uniform highp mat4 ModelViewMatrix;
 uniform highp mat4 ProjectionMatrix;
 
 // -------------- output ---------------------
-out highp vec4 position; // world position
+out highp vec4 position;  // world position
 
 // -------------- shader ---------------------
-void main()
-{
-    position = vertexPosition;
-    gl_Position =  ProjectionMatrix * ModelViewMatrix * vertexPosition;
+void main() {
+  position = vertexPosition;
+  gl_Position = ProjectionMatrix * ModelViewMatrix * vertexPosition;
 }
