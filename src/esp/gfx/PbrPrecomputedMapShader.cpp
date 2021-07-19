@@ -64,12 +64,9 @@ PbrPrecomputedMapShader::PbrPrecomputedMapShader(Flags flags) : flags_(flags) {
   Mn::GL::Shader vert{glVersion, Mn::GL::Shader::Type::Vertex};
   Mn::GL::Shader frag{glVersion, Mn::GL::Shader::Type::Fragment};
 
-  std::stringstream attributeLocationsStream;
-  attributeLocationsStream << Cr::Utility::formatString(
-      "#define ATTRIBUTE_LOCATION_POSITION {}\n", Position::Location);
-
   // Add macros
-  vert.addSource(attributeLocationsStream.str())
+  vert.addSource(Cr::Utility::formatString(
+      "#define ATTRIBUTE_LOCATION_POSITION {}\n", Position::Location))
       .addSource(rs.get("pbrPrecomputedMap.vert"));
 
   std::stringstream outputAttributeLocationsStream;
