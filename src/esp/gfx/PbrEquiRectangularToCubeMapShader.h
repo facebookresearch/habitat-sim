@@ -14,6 +14,10 @@
 
 namespace esp {
 namespace gfx {
+/**
+ * @brief a shader to convert a HDRi image (the environment map in
+ * equirectangular form) to a cubemap
+ */
 class PbrEquiRectangularToCubeMapShader
     : public Magnum::GL::AbstractShaderProgram {
  public:
