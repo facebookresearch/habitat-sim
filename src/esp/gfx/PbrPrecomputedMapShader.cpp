@@ -69,11 +69,8 @@ PbrPrecomputedMapShader::PbrPrecomputedMapShader(Flags flags) : flags_(flags) {
       "#define ATTRIBUTE_LOCATION_POSITION {}\n", Position::Location))
       .addSource(rs.get("pbrPrecomputedMap.vert"));
 
-  std::stringstream outputAttributeLocationsStream;
-  outputAttributeLocationsStream << Cr::Utility::formatString(
-      "#define OUTPUT_ATTRIBUTE_LOCATION_COLOR {}\n", ColorOutput);
-
-  frag.addSource(outputAttributeLocationsStream.str())
+  frag.addSource(Cr::Utility::formatString(
+      "#define OUTPUT_ATTRIBUTE_LOCATION_COLOR {}\n", ColorOutput))
       .addSource(rs.get("pbrCommon.glsl") + "\n");
 
   if (flags & Flag::IrradianceMap) {
