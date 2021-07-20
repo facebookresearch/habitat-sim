@@ -4,6 +4,7 @@ import numpy as np
 from habitat_sim.robots.mobile_manipulator import (
     MobileManipulator,
     MobileManipulatorParams,
+    RobotCameraParams,
 )
 
 
@@ -18,11 +19,25 @@ class FetchRobot(MobileManipulator):
             ee_offset=mn.Vector3(0.08, 0, 0),
             ee_link=22,
             ee_constraint=np.array([[0.4, 1.2], [-0.7, 0.7], [0.25, 1.5]]),
-            arm_cam_offset_pos=mn.Vector3(0, 0.0, 0.1),
-            head_cam_offset_pos=mn.Vector3(0.17, 0.0, 1.2),
-            head_cam_look_pos=mn.Vector3(1, 0.0, 0.75),
-            third_cam_offset_pos=mn.Vector3(-0.5, 1.7, -0.5),
-            third_cam_look_pos=mn.Vector3(1, 0.0, 0.75),
+            cameras={
+                "robot_arm": RobotCameraParams(
+                    cam_offset_pos=mn.Vector3(0, 0.0, 0.1),
+                    cam_look_at_pos=mn.Vector3(0.1, 0.0, 0.0),
+                    attached_link_id=22,
+                    relative_transform=mn.Matrix4.rotation_y(mn.Deg(-90))
+                    @ mn.Matrix4.rotation_z(mn.Deg(90)),
+                ),
+                "robot_head": RobotCameraParams(
+                    cam_offset_pos=mn.Vector3(0.17, 1.2, 0.0),
+                    cam_look_at_pos=mn.Vector3(0.75, 1.0, 0.0),
+                    attached_link_id=-1,
+                ),
+                "robot_third": RobotCameraParams(
+                    cam_offset_pos=mn.Vector3(-0.5, 1.7, -0.5),
+                    cam_look_at_pos=mn.Vector3(1, 0.0, 0.75),
+                    attached_link_id=-1,
+                ),
+            },
             gripper_closed_state=[0.0, 0.0],
             gripper_open_state=[0.04, 0.04],
             gripper_state_eps=0.001,
