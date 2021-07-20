@@ -58,7 +58,7 @@ bool SemanticScene::buildReplicaHouse(const io::JsonDocument& jsonDoc,
      * indexing easy.
      */
     if (id > kMaxIds) {
-      LOG(ERROR) << "Exceeded max number of ids";
+      ESP_ERROR() << "Exceeded max number of ids";
       continue;
     }
     if (scene.categories_.size() < id + 1) {
@@ -86,7 +86,7 @@ bool SemanticScene::buildReplicaHouse(const io::JsonDocument& jsonDoc,
      * indexing easy.
      */
     if (id > kMaxIds) {
-      LOG(ERROR) << "Exceeded max number of ids";
+      ESP_ERROR() << "Exceeded max number of ids";
       continue;
     }
     if (scene.objects_.size() < id + 1) {

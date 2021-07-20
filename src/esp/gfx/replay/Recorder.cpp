@@ -195,8 +195,8 @@ void Recorder::consolidateSavedKeyframes() {
 
 rapidjson::Document Recorder::writeKeyframesToJsonDocument() {
   if (savedKeyframes_.empty()) {
-    LOG(WARNING) << "Recorder::writeKeyframesToJsonDocument: no saved "
-                    "keyframes to write";
+    ESP_WARNING() << "Recorder::writeKeyframesToJsonDocument: no saved "
+                     "keyframes to write";
     return rapidjson::Document();
   }
 

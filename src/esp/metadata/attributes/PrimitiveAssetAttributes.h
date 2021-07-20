@@ -177,8 +177,8 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
                                    const std::string& configStr) {
     std::size_t keyLoc = configStr.find(key);
     if (keyLoc == std::string::npos) {
-      LOG(WARNING) << "Key " << key << " not found in configStr " << configStr
-                   << ". Aborting.";
+      ESP_WARNING() << "Key" << key << "not found in configStr" << configStr
+                    << ". Aborting.";
       return "";
     }
     std::size_t keyLen = key.length(), keyEnd = keyLoc + keyLen;
@@ -198,9 +198,9 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
       setter(stoi(conv));
       return true;
     } catch (...) {
-      LOG(WARNING) << "Failed due to -" << conv << "- value for key -" << key
-                   << "- in format string -" << configStr
-                   << "- not being recognized as an int.";
+      ESP_WARNING() << "Failed due to -" << conv << "- value for key -" << key
+                    << "- in format string -" << configStr
+                    << "- not being recognized as an int.";
       return false;
     }
   }
@@ -213,9 +213,9 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
       setter(stod(conv));
       return true;
     } catch (...) {
-      LOG(WARNING) << "Failed due to -" << conv << "- value for key -" << key
-                   << "- in format string -" << configStr
-                   << "- not being recognized as a double.";
+      ESP_WARNING() << "Failed due to -" << conv << "- value for key -" << key
+                    << "- in format string -" << configStr
+                    << "- not being recognized as a double.";
       return false;
     }
   }

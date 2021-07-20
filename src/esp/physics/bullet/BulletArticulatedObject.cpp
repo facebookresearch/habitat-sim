@@ -30,7 +30,7 @@ static void setRotationScalingFromBulletTransform(const btTransform& trans,
 ///////////////////////////////////
 
 BulletArticulatedObject::~BulletArticulatedObject() {
-  // Corrade::Utility::Debug() << "deconstructing ~BulletArticulatedObject";
+  // ESP_DEBUG() << "deconstructing ~BulletArticulatedObject";
   if (objectMotionType_ == MotionType::DYNAMIC) {
     // KINEMATIC and STATIC objects have already been removed from the world.
     bWorld_->removeMultiBody(btMultiBody_.get());
@@ -262,8 +262,8 @@ void BulletArticulatedObject::resetStateFromSceneInstanceAttr(
   size_t idx = 0;
   for (const auto& elem : initJointPos) {
     if (idx >= aoJointPose.size()) {
-      LOG(WARNING)
-          << "BulletArticulatedObject::resetStateFromSceneInstanceAttr : "
+      ESP_WARNING()
+          << "BulletArticulatedObject::resetStateFromSceneInstanceAttr :"
           << "Attempting to specify more initial joint poses than "
              "exist in articulated object "
           << sceneObjInstanceAttr->getHandle() << ", so skipping";
@@ -282,8 +282,8 @@ void BulletArticulatedObject::resetStateFromSceneInstanceAttr(
   idx = 0;
   for (const auto& elem : initJointVel) {
     if (idx >= aoJointVels.size()) {
-      LOG(WARNING)
-          << "BulletArticulatedObject::resetStateFromSceneInstanceAttr : "
+      ESP_WARNING()
+          << "BulletArticulatedObject::resetStateFromSceneInstanceAttr :"
           << "Attempting to specify more initial joint velocities than "
              "exist in articulated object "
           << sceneObjInstanceAttr->getHandle() << ", so skipping";
@@ -324,10 +324,9 @@ void BulletArticulatedObject::setRootAngularVelocity(
 
 void BulletArticulatedObject::setJointForces(const std::vector<float>& forces) {
   if (forces.size() != size_t(btMultiBody_->getNumDofs())) {
-    Corrade::Utility::Debug()
-        << "setJointForces - Force vector size mis-match (input: "
-        << forces.size() << ", expected: " << btMultiBody_->getNumDofs()
-        << "), aborting.";
+    ESP_DEBUG() << "setJointForces - Force vector size mis-match (input:"
+                << forces.size() << ", expected:" << btMultiBody_->getNumDofs()
+                << "), aborting.";
   }
 
   int dofCount = 0;
@@ -342,10 +341,9 @@ void BulletArticulatedObject::setJointForces(const std::vector<float>& forces) {
 
 void BulletArticulatedObject::addJointForces(const std::vector<float>& forces) {
   if (forces.size() != size_t(btMultiBody_->getNumDofs())) {
-    Corrade::Utility::Debug()
-        << "addJointForces - Force vector size mis-match (input: "
-        << forces.size() << ", expected: " << btMultiBody_->getNumDofs()
-        << "), aborting.";
+    ESP_DEBUG() << "addJointForces - Force vector size mis-match (input:"
+                << forces.size() << ", expected:" << btMultiBody_->getNumDofs()
+                << "), aborting.";
   }
 
   int dofCount = 0;
@@ -374,10 +372,9 @@ std::vector<float> BulletArticulatedObject::getJointForces() {
 void BulletArticulatedObject::setJointVelocities(
     const std::vector<float>& vels) {
   if (vels.size() != size_t(btMultiBody_->getNumDofs())) {
-    Corrade::Utility::Debug()
-        << "setJointVelocities - Velocity vector size mis-match (input: "
-        << vels.size() << ", expected: " << btMultiBody_->getNumDofs()
-        << "), aborting.";
+    ESP_DEBUG() << "setJointVelocities - Velocity vector size mis-match (input:"
+                << vels.size() << ", expected:" << btMultiBody_->getNumDofs()
+                << "), aborting.";
   }
 
   int dofCount = 0;
@@ -407,10 +404,10 @@ std::vector<float> BulletArticulatedObject::getJointVelocities() {
 void BulletArticulatedObject::setJointPositions(
     const std::vector<float>& positions) {
   if (positions.size() != size_t(btMultiBody_->getNumPosVars())) {
-    Corrade::Utility::Debug()
-        << "setJointPositions - Position vector size mis-match (input: "
-        << positions.size() << ", expected: " << btMultiBody_->getNumPosVars()
-        << "), aborting.";
+    ESP_DEBUG() << "setJointPositions - Position vector size mis-match (input:"
+                << positions.size()
+                << ", expected:" << btMultiBody_->getNumPosVars()
+                << "), aborting.";
   }
 
   int posCount = 0;
@@ -727,7 +724,7 @@ std::unordered_map<int, int> BulletArticulatedObject::createMotorsForAllDofs(
     int motorId = createJointMotor(linkIx, settingsCopy);
     motorIdsToLinks[motorId] = linkIx;
   }
-  Mn::Debug{} << "BulletArticulatedObject::createMotorsForAllDofs(): "
+  ESP_DEBUG() << "BulletArticulatedObject::createMotorsForAllDofs():"
               << motorIdsToLinks;
   return motorIdsToLinks;
 }
@@ -802,7 +799,7 @@ void BulletArticulatedObject::removeJointMotor(const int motorId) {
         articulatedSphericalJointMotors.at(motorId).get());
     articulatedSphericalJointMotors.erase(motorId);
   } else {
-    Mn::Error{} << "Cannot remove JointMotor: invalid ID (" << motorId << ").";
+    ESP_ERROR() << "Cannot remove JointMotor: invalid ID (" << motorId << ").";
     return;
   }
   jointMotors_.erase(motorId);
@@ -834,7 +831,7 @@ void BulletArticulatedObject::updateJointMotor(
                              settings.velocityGain);
     motor->setMaxAppliedImpulse(settings.maxImpulse);
   } else {
-    LOG(ERROR) << "Cannot update JointMotor. Invalid ID (" << motorId << ").";
+    ESP_ERROR() << "Cannot update JointMotor. Invalid ID (" << motorId << ").";
     return;
   }
   // force activation if motors are updated

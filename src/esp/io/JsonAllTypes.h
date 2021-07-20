@@ -62,7 +62,7 @@ bool readMember(const rapidjson::Value& value, const char* tag, T& x) {
     return false;
   }
   if (!fromJsonValue(value[tag], x)) {
-    LOG(ERROR) << "Failed to parse JSON tag \"" << tag << "\"";
+    ESP_ERROR() << "Failed to parse JSON tag \"" << tag << "\"";
     return false;
   }
   return true;

@@ -36,14 +36,16 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
   const std::string fullStageName =
       getFullAttrNameFromStr(stageHandle, stageAttributesManager_);
   if (fullStageName == "") {
-    LOG(INFO)
-        << infoPrefix << "Stage Attributes '" << stageHandle
+    ESP_DEBUG()
+        << infoPrefix << "Stage Attributes '" << Mn::Debug::nospace
+        << stageHandle << Mn::Debug::nospace
         << "' specified in Scene Attributes but does not exist in dataset, so "
            "creating.";
     stageAttributesManager_->createObject(stageHandle, true);
   } else {
-    LOG(INFO) << infoPrefix << "Stage Attributes '" << stageHandle
-              << "' specified in Scene Attributes exists in dataset library.";
+    ESP_DEBUG() << infoPrefix << "Stage Attributes '" << Mn::Debug::nospace
+                << stageHandle << Mn::Debug::nospace
+                << "' specified in Scene Attributes exists in dataset library.";
   }
 
   // verify each object in sceneInstance exists in SceneDatasetAttributes
@@ -53,13 +55,16 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
     const std::string fullObjHandle =
         getFullAttrNameFromStr(objHandle, objectAttributesManager_);
     if (fullObjHandle == "") {
-      LOG(INFO) << infoPrefix << "Object Attributes '" << objHandle
-                << "' specified in Scene Attributes but does not exist in "
-                   "dataset, so creating.";
+      ESP_DEBUG() << infoPrefix << "Object Attributes '" << Mn::Debug::nospace
+                  << objHandle << Mn::Debug::nospace
+                  << "' specified in Scene Attributes but does not exist in "
+                     "dataset, so creating.";
       objectAttributesManager_->createObject(objHandle, true);
     } else {
-      LOG(INFO) << infoPrefix << "Object Attributes '" << objHandle
-                << "' specified in Scene Attributes exists in dataset library.";
+      ESP_DEBUG()
+          << infoPrefix << "Object Attributes '" << Mn::Debug::nospace
+          << objHandle << Mn::Debug::nospace
+          << "' specified in Scene Attributes exists in dataset library.";
     }
   }
 
@@ -76,14 +81,15 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
   const std::string fullLightLayoutAttrName =
       getFullAttrNameFromStr(lightHandle, lightLayoutAttributesManager_);
   if (fullLightLayoutAttrName == "") {
-    LOG(INFO)
-        << infoPrefix << "Lighting Layout Attributes '" << lightHandle
+    ESP_DEBUG()
+        << infoPrefix << "Lighting Layout Attributes '" << Mn::Debug::nospace
+        << lightHandle << Mn::Debug::nospace
         << "' specified in Scene Attributes but does not exist in dataset, so "
            "creating.";
     lightLayoutAttributesManager_->createObject(lightHandle, true);
   } else {
-    LOG(INFO) << infoPrefix << "Lighting Layout Attributes " << lightHandle
-              << " specified in Scene Attributes exists in dataset library.";
+    ESP_DEBUG() << infoPrefix << "Lighting Layout Attributes" << lightHandle
+                << "specified in Scene Attributes exists in dataset library.";
   }
 
   const std::string fullSceneInstanceName =
@@ -91,8 +97,8 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
 
   // add scene attributes to scene attributes manager
   if (fullSceneInstanceName == "") {
-    LOG(INFO) << infoPrefix << "Scene Attributes " << sceneInstanceName
-              << " does not exist in dataset so adding.";
+    ESP_DEBUG() << infoPrefix << "Scene Attributes" << sceneInstanceName
+                << "does not exist in dataset so adding.";
     sceneAttributesManager_->registerObject(sceneInstance);
   }
   return true;
@@ -125,17 +131,18 @@ std::pair<std::string, std::string> SceneDatasetAttributes::addNewValToMap(
           ss << key << "_" << iter++;
           newKey = ss.str();
         } while (map.count(newKey) > 0);
-        LOG(WARNING)
-            << descString << " : Provided key '" << key
+        ESP_WARNING()
+            << descString << ": Provided key '" << Mn::Debug::nospace << key
+            << Mn::Debug::nospace
             << "' already references a different value in "
                "map. Modifying key to be "
             << newKey
             << ". Set overwrite to true to overwrite existing entries.";
       } else {  // overwrite entry
-        LOG(WARNING) << descString
-                     << " : Warning : Overwriting existing map entry "
-                     << map.at(newKey) << " at key " << newKey << " with value "
-                     << path << ".";
+        ESP_WARNING() << descString
+                      << ": Warning : Overwriting existing map entry"
+                      << map.at(newKey) << "at key" << newKey << "with value"
+                      << path << ".";
       }  // overwrite or not
     }    // found entry is desired or not
   }      // key is found

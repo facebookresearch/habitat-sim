@@ -50,6 +50,7 @@ int getNumberOfChildrenOfRoot(esp::scene::SceneNode& rootNode) {
 
 // Manipulate the scene and save some keyframes using replay::Recorder
 TEST(GfxReplayTest, recorder) {
+  esp::logging::LoggingContext loggingContext;
   esp::gfx::WindowlessContext::uptr context_ =
       esp::gfx::WindowlessContext::create_unique(0);
 
@@ -154,6 +155,7 @@ TEST(GfxReplayTest, recorder) {
 
 // construct some render keyframes and play them using replay::Player
 TEST(GfxReplayTest, player) {
+  esp::logging::LoggingContext loggingContext;
   esp::gfx::WindowlessContext::uptr context_ =
       esp::gfx::WindowlessContext::create_unique(0);
 
@@ -307,6 +309,7 @@ TEST(GfxReplayTest, player) {
 }
 
 TEST(GfxReplayTest, playerReadMissingFile) {
+  esp::logging::LoggingContext loggingContext;
   auto dummyCallback =
       [&](const esp::assets::AssetInfo& assetInfo,
           const esp::assets::RenderAssetInstanceCreationInfo& creation) {
@@ -319,6 +322,7 @@ TEST(GfxReplayTest, playerReadMissingFile) {
 }
 
 TEST(GfxReplayTest, playerReadInvalidFile) {
+  esp::logging::LoggingContext loggingContext;
   auto testFilepath =
       Corrade::Utility::Directory::join(DATA_DIR, "./gfx_replay_test.json");
 
@@ -339,14 +343,15 @@ TEST(GfxReplayTest, playerReadInvalidFile) {
   // remove bogus file created for this test
   bool success = Corrade::Utility::Directory::rm(testFilepath);
   if (!success) {
-    LOG(WARNING) << "GfxReplayTest::playerReadInvalidFile : unable to remove "
-                    "temporary test JSON file "
-                 << testFilepath;
+    ESP_WARNING() << "GfxReplayTest::playerReadInvalidFile : unable to remove "
+                     "temporary test JSON file "
+                  << testFilepath;
   }
 }
 
 // test recording and playback through the simulator interface
 TEST(GfxReplayTest, simulatorIntegration) {
+  esp::logging::LoggingContext loggingContext;
   std::string boxFile =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/transform_box.glb");
   auto testFilepath =
@@ -407,8 +412,8 @@ TEST(GfxReplayTest, simulatorIntegration) {
   // remove file created for this test
   bool success = Corrade::Utility::Directory::rm(testFilepath);
   if (!success) {
-    LOG(WARNING) << "GfxReplayTest::simulatorIntegration : unable to remove "
-                    "temporary test JSON file "
-                 << testFilepath;
+    ESP_WARNING() << "GfxReplayTest::simulatorIntegration : unable to remove "
+                     "temporary test JSON file "
+                  << testFilepath;
   }
 }

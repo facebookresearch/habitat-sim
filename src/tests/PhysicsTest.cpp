@@ -103,6 +103,7 @@ class PhysicsManagerTest : public testing::TestWithParam<bool> {
   }
 
   // must declare these in this order due to avoid deallocation errors
+  esp::logging::LoggingContext loggingContext_;
   esp::gfx::WindowlessContext::uptr context_;
 
   std::shared_ptr<MetadataMediator> metadataMediator_ = nullptr;
@@ -124,7 +125,7 @@ INSTANTIATE_TEST_CASE_P(CreateRendererToggle,
                         testing::Values(false, true));
 
 TEST_P(PhysicsManagerTest, JoinCompound) {
-  LOG(INFO) << "Starting physics test: JoinCompound";
+  ESP_DEBUG() << "Starting physics test: JoinCompound";
 
   resetCreateRendererFlag(GetParam());
 
@@ -184,9 +185,9 @@ TEST_P(PhysicsManagerTest, JoinCompound) {
         physicsManager_->stepPhysics(0.1);
       }
       int numActiveObjects = physicsManager_->checkActiveObjects();
-      LOG(INFO) << " Number of active objects: " << numActiveObjects
-                << " | Num Total Objects : "
-                << physicsManager_->getNumRigidObjects();
+      ESP_DEBUG() << "Number of active objects:" << numActiveObjects
+                  << "| Num Total Objects :"
+                  << physicsManager_->getNumRigidObjects();
 
       if (i == 1) {
         // when collision meshes are joined, objects should be stable
@@ -201,7 +202,7 @@ TEST_P(PhysicsManagerTest, JoinCompound) {
 
 #ifdef ESP_BUILD_WITH_BULLET
 TEST_P(PhysicsManagerTest, CollisionBoundingBox) {
-  LOG(INFO) << "Starting physics test: CollisionBoundingBox";
+  ESP_DEBUG() << "Starting physics test: CollisionBoundingBox";
 
   resetCreateRendererFlag(GetParam());
 
@@ -279,7 +280,7 @@ TEST_P(PhysicsManagerTest, CollisionBoundingBox) {
 }
 
 TEST_P(PhysicsManagerTest, DiscreteContactTest) {
-  LOG(INFO) << "Starting physics test: DiscreteContactTest";
+  ESP_DEBUG() << "Starting physics test: DiscreteContactTest";
 
   resetCreateRendererFlag(GetParam());
 
@@ -366,7 +367,7 @@ TEST_P(PhysicsManagerTest, DiscreteContactTest) {
 TEST_P(PhysicsManagerTest, BulletCompoundShapeMargins) {
   // test that all different construction methods for a simple shape result in
   // the same Aabb for the given margin
-  LOG(INFO) << "Starting physics test: BulletCompoundShapeMargins";
+  ESP_DEBUG() << "Starting physics test: BulletCompoundShapeMargins";
 
   resetCreateRendererFlag(GetParam());
 
@@ -434,7 +435,7 @@ TEST_P(PhysicsManagerTest, BulletCompoundShapeMargins) {
 
 TEST_P(PhysicsManagerTest, ConfigurableScaling) {
   // test scaling of objects via template configuration (visual and collision)
-  LOG(INFO) << "Starting physics test: ConfigurableScaling";
+  ESP_DEBUG() << "Starting physics test: ConfigurableScaling";
 
   resetCreateRendererFlag(GetParam());
 
@@ -503,7 +504,7 @@ TEST_P(PhysicsManagerTest, ConfigurableScaling) {
 
 TEST_P(PhysicsManagerTest, TestVelocityControl) {
   // test scaling of objects via template configuration (visual and collision)
-  LOG(INFO) << "Starting physics test: TestVelocityControl";
+  ESP_DEBUG() << "Starting physics test: TestVelocityControl";
 
   resetCreateRendererFlag(GetParam());
 
@@ -645,7 +646,7 @@ TEST_P(PhysicsManagerTest, TestVelocityControl) {
 
 TEST_P(PhysicsManagerTest, TestSceneNodeAttachment) {
   // test attaching/detaching existing SceneNode to/from physical simulation
-  LOG(INFO) << "Starting physics test: TestSceneNodeAttachment";
+  ESP_DEBUG() << "Starting physics test: TestSceneNodeAttachment";
 
   resetCreateRendererFlag(GetParam());
 
@@ -703,7 +704,7 @@ TEST_P(PhysicsManagerTest, TestSceneNodeAttachment) {
 
 TEST_P(PhysicsManagerTest, TestMotionTypes) {
   // test setting motion types and expected simulation behaviors
-  LOG(INFO) << "Starting physics test: TestMotionTypes";
+  ESP_DEBUG() << "Starting physics test: TestMotionTypes";
 
   resetCreateRendererFlag(GetParam());
 
@@ -822,7 +823,7 @@ TEST_P(PhysicsManagerTest, TestMotionTypes) {
 }
 
 TEST_P(PhysicsManagerTest, TestNumActiveContactPoints) {
-  LOG(INFO) << "Starting physics test: TestNumActiveContactPoints";
+  ESP_DEBUG() << "Starting physics test: TestNumActiveContactPoints";
 
   resetCreateRendererFlag(GetParam());
 
@@ -890,7 +891,7 @@ TEST_P(PhysicsManagerTest, TestNumActiveContactPoints) {
 
 TEST_P(PhysicsManagerTest, TestRemoveSleepingSupport) {
   // test that removing a sleeping support object wakes its collision island
-  LOG(INFO) << "Starting physics test: TestRemoveSleepingSupport";
+  ESP_DEBUG() << "Starting physics test: TestRemoveSleepingSupport";
 
   resetCreateRendererFlag(GetParam());
 

@@ -68,7 +68,7 @@ struct Renderer::Impl {
 
   ~Impl() {
     acquireGlContext();
-    LOG(INFO) << "Deconstructing Renderer";
+    ESP_DEBUG() << "Deconstructing Renderer";
   }
 
   void draw(RenderCamera& camera,

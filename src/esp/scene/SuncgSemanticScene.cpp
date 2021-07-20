@@ -42,7 +42,7 @@ std::string SuncgObjectCategory::name(const std::string& mapping) const {
       return modelId_;
     }
   } else {
-    LOG(ERROR) << "Unknown mapping type: " << mapping;
+    ESP_ERROR() << "Unknown mapping type:" << mapping;
     return "UNKNOWN";
   }
 }
@@ -57,7 +57,7 @@ std::string SuncgRegionCategory::name(const std::string& mapping) const {
   } else if (mapping == "" || mapping == "category") {
     return Corrade::Utility::String::join(categories_, ',');
   } else {
-    LOG(ERROR) << "Unknown mapping type: " << mapping;
+    ESP_ERROR() << "Unknown mapping type:" << mapping;
     return "UNKNOWN";
   }
 }
@@ -67,7 +67,7 @@ bool SemanticScene::loadSuncgHouse(
     SemanticScene& scene,
     const quatf& worldRotation /* = quatf::Identity() */) {
   if (!io::exists(houseFilename)) {
-    LOG(ERROR) << "Could not load file " << houseFilename;
+    ESP_ERROR() << "Could not load file" << houseFilename;
     return false;
   }
 
@@ -199,7 +199,7 @@ bool SemanticScene::loadSuncgHouse(
       } else if (nodeType == "Ground") {
         createObjectFunc(nodeId, "Ground");
       } else {
-        LOG(ERROR) << "Unrecognized SUNCG house node type " << nodeType;
+        ESP_ERROR() << "Unrecognized SUNCG house node type" << nodeType;
       }
     }  // for node
 

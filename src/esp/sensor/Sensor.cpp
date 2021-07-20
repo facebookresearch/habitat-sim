@@ -66,7 +66,7 @@ Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
 
 Sensor::~Sensor() {
   // Updating of info in SensorSuites will be handled by SceneNode
-  LOG(INFO) << "Deconstructing Sensor";
+  ESP_DEBUG() << "Deconstructing Sensor";
 }
 
 void Sensor::setTransformationFromSpec() {

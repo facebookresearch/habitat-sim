@@ -90,5 +90,6 @@ set_tests_properties(
   NavTest Mp3dTest SuncgTest PROPERTIES ENVIRONMENT GLOG_minloglevel=1
 )
 set_tests_properties(
-  SimTest PROPERTIES ENVIRONMENT "GLOG_minloglevel=1;MAGNUM_LOG=QUIET"
+  SimTest PROPERTIES ENVIRONMENT
+                     "GLOG_minloglevel=1;MAGNUM_LOG=QUIET;HABITAT_SIM_LOG=quiet"
 )

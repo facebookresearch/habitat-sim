@@ -322,7 +322,7 @@ Key Commands:
 
     auto str = strDat.str();
     if (str.size() > 0) {
-      LOG(INFO) << str;
+      ESP_DEBUG() << str;
     }
   }
 
@@ -346,8 +346,8 @@ Key Commands:
         recAgentLocation();
       }
     }
-    LOG(INFO) << "Agent location recording "
-              << (agentLocRecordOn_ ? "on" : "off");
+    ESP_DEBUG() << "Agent location recording"
+                << (agentLocRecordOn_ ? "on" : "off");
   }  // setAgentLocationRecord
 
   /**
@@ -358,8 +358,7 @@ Key Commands:
       auto pt = agentBodyNode_->translation() +
                 Magnum::Vector3{0, (2.0f * agentTrajRad_), 0};
       agentLocs_.push_back(pt);
-      LOG(INFO) << "Recording agent location : {" << pt.x() << "," << pt.y()
-                << "," << pt.z() << "}";
+      ESP_DEBUG() << "Recording agent location :" << pt;
     }
   }
 
@@ -381,7 +380,7 @@ Key Commands:
       }
     }
     esp::geo::clamp(agentTrajRad_, 0.001f, 1.0f);
-    LOG(INFO) << "Agent Trajectory Radius " << mod << ": " << agentTrajRad_;
+    ESP_DEBUG() << "Agent Trajectory Radius" << mod << ":" << agentTrajRad_;
   }
 
   // Configuration to use to set up simulator_
@@ -411,6 +410,8 @@ Key Commands:
    * @brief Set the scene instance to use to build the scene.
    */
   void setSceneInstanceFromListAndShow(int nextSceneInstanceIDX);
+
+  esp::logging::LoggingContext loggingContext_;
 
   // The MetadataMediator can exist independent of simulator
   // and provides access to all managers for currently active scene dataset
@@ -604,6 +605,7 @@ Viewer::Viewer(const Arguments& arguments)
                                     .setColorBufferSize(
                                         Mn::Vector4i(8, 8, 8, 8))
                                     .setSampleCount(4)},
+      loggingContext_(),
       simConfig_(),
       MM_(std::make_shared<esp::metadata::MetadataMediator>(simConfig_)),
       curSceneInstances_{} {
@@ -732,7 +734,7 @@ Viewer::Viewer(const Arguments& arguments)
   simConfig_.requiresTextures = true;
   simConfig_.enableGfxReplaySave = !gfxReplayRecordFilepath_.empty();
   if (args.isSet("stage-requires-lighting")) {
-    Mn::Debug{} << "Stage using DEFAULT_LIGHTING_KEY";
+    ESP_DEBUG() << "Stage using DEFAULT_LIGHTING_KEY";
     simConfig_.sceneLightSetup = esp::DEFAULT_LIGHTING_KEY;
   }
 
@@ -740,7 +742,7 @@ Viewer::Viewer(const Arguments& arguments)
   std::string physicsConfig = Cr::Utility::Directory::join(
       Corrade::Utility::Directory::current(), args.value("physics-config"));
   if (Cr::Utility::Directory::exists(physicsConfig)) {
-    Mn::Debug{} << "Using PhysicsManager config: " << physicsConfig;
+    ESP_DEBUG() << "Using PhysicsManager config:" << physicsConfig;
     simConfig_.physicsConfigFile = physicsConfig;
   }
 
@@ -749,9 +751,9 @@ Viewer::Viewer(const Arguments& arguments)
   objectAttrManager_ = MM_->getObjectAttributesManager();
   objectAttrManager_->loadAllJSONConfigsFromPath(args.value("object-dir"));
 
-  LOG(INFO) << "Scene Dataset Configuration file location : "
-            << simConfig_.sceneDatasetConfigFile
-            << " | Loading Scene : " << simConfig_.activeSceneName;
+  ESP_DEBUG() << "Scene Dataset Configuration file location :"
+              << simConfig_.sceneDatasetConfigFile
+              << "| Loading Scene :" << simConfig_.activeSceneName;
 
   // create simulator instance
   simulator_ = esp::sim::Simulator::create_unique(simConfig_, MM_);
@@ -891,8 +893,8 @@ void saveTransformToFile(const std::string& filename,
     for (int i = 0; i < 16; ++i) {
       file << t[i] << " ";
     }
-    LOG(INFO) << "Transformation matrix saved to " << filename << " : "
-              << Eigen::Map<const esp::mat4f>(transform.data());
+    ESP_DEBUG() << "Transformation matrix saved to" << filename << ":"
+                << Eigen::Map<const esp::mat4f>(transform.data());
   };
   save(agentTransform);
   save(sensorTransform);
@@ -940,8 +942,8 @@ bool loadTransformFromFile(const std::string& filename,
       return false;
     }
     transform = temp;
-    LOG(INFO) << "Transformation matrix loaded from " << filename << " : "
-              << Eigen::Map<esp::mat4f>(transform.data());
+    ESP_DEBUG() << "Transformation matrix loaded from" << filename << ":"
+                << Eigen::Map<esp::mat4f>(transform.data());
     return true;
   };
   // NOTE: load Agent first!!
@@ -961,13 +963,14 @@ void Viewer::loadAgentAndSensorTransformFromFile() {
     savedSensorTransform_ = sensorMtx;
   } else {
     // attempting to load from last temporary save
-    LOG(INFO)
+    ESP_DEBUG()
         << "Camera transform file not specified, attempting to load from "
            "current instance. Use --agent-transform-filepath to specify file "
            "to load from.";
     if (!savedAgentTransform_ || !savedSensorTransform_) {
-      LOG(INFO) << "Well, no transformation saved in current instance. nothing "
-                   "is changed.";
+      ESP_DEBUG()
+          << "Well, no transformation saved in current instance. nothing "
+             "is changed.";
       return;
     }
   }
@@ -976,7 +979,7 @@ void Viewer::loadAgentAndSensorTransformFromFile() {
   for (const auto& p : defaultAgent_->node().getNodeSensors()) {
     p.second.get().object().setTransformation(*savedSensorTransform_);
   }
-  LOG(INFO)
+  ESP_DEBUG()
       << "Transformation matrices are loaded to the agent and the sensors.";
 }
 
@@ -1034,18 +1037,18 @@ void Viewer::buildTrajectoryVis() {
           << agentLocs_.size() << "_pts";
   std::string trajObjName(tmpName.str());
 
-  LOG(INFO) << "::buildTrajectoryVis : Attempting to build trajectory "
-               "tube for :"
-            << agentLocs_.size() << " points.";
+  ESP_DEBUG() << "::buildTrajectoryVis : Attempting to build trajectory "
+                 "tube for :"
+              << agentLocs_.size() << "points.";
   int trajObjID = simulator_->addTrajectoryObject(
       trajObjName, agentLocs_, 6, agentTrajRad_, color, true, 10);
   if (trajObjID != esp::ID_UNDEFINED) {
-    LOG(INFO) << "::buildTrajectoryVis : Success!  Traj Obj Name : "
-              << trajObjName << " has object ID : " << trajObjID;
+    ESP_DEBUG() << "::buildTrajectoryVis : Success!  Traj Obj Name :"
+                << trajObjName << "has object ID :" << trajObjID;
   } else {
-    LOG(WARNING) << "::buildTrajectoryVis : Attempt to build trajectory "
-                    "visualization "
-                 << trajObjName << " failed; Returned ID_UNDEFINED.";
+    ESP_WARNING() << "::buildTrajectoryVis : Attempt to build trajectory "
+                     "visualization"
+                  << trajObjName << "failed; Returned ID_UNDEFINED.";
   }
 }  // buildTrajectoryVis
 
@@ -1178,8 +1181,8 @@ void Viewer::setSceneInstanceFromListAndShow(int nextSceneInstanceIDX) {
   // update MM's config with new active scene name
   MM_->setSimulatorConfiguration(simConfig_);
   // close and reconfigure simulator - is this really necessary?
-  LOG(INFO) << "Active Scene Dataset : " << MM_->getActiveSceneDatasetName()
-            << " | Loading Scene : " << simConfig_.activeSceneName;
+  ESP_DEBUG() << "Active Scene Dataset :" << MM_->getActiveSceneDatasetName()
+              << "| Loading Scene :" << simConfig_.activeSceneName;
 
   renderCamera_ = nullptr;
   agentBodyNode_ = nullptr;
@@ -1789,7 +1792,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       sensorMode_ = static_cast<VisualSensorMode>(
           (uint8_t(sensorMode_) + 1) %
           uint8_t(VisualSensorMode::VisualSensorModeCount));
-      LOG(INFO) << "Sensor mode is set to " << int(sensorMode_);
+      ESP_DEBUG() << "Sensor mode is set to" << int(sensorMode_);
       break;
     case KeyEvent::Key::Five:
       // switch camera between ortho and perspective
@@ -1806,13 +1809,13 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       bindRenderTarget();
       switch (visualizeMode_) {
         case VisualizeMode::RGBA:
-          LOG(INFO) << "Visualizing COLOR sensor observation.";
+          ESP_DEBUG() << "Visualizing COLOR sensor observation.";
           break;
         case VisualizeMode::Depth:
-          LOG(INFO) << "Visualizing DEPTH sensor observation.";
+          ESP_DEBUG() << "Visualizing DEPTH sensor observation.";
           break;
         case VisualizeMode::Semantic:
-          LOG(INFO) << "Visualizing SEMANTIC sensor observation.";
+          ESP_DEBUG() << "Visualizing SEMANTIC sensor observation.";
           break;
         default:
           CORRADE_INTERNAL_ASSERT_UNREACHABLE();
@@ -1837,13 +1840,13 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
     case KeyEvent::Key::Equal: {
       // increase trajectory tube diameter
-      LOG(INFO) << "Bigger";
+      ESP_DEBUG() << "Bigger";
       modTrajRad(true);
       break;
     }
     case KeyEvent::Key::Minus: {
       // decrease trajectory tube diameter
-      LOG(INFO) << "Smaller";
+      ESP_DEBUG() << "Smaller";
       modTrajRad(false);
       break;
     }

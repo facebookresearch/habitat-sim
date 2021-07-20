@@ -25,6 +25,7 @@ using esp::metadata::MetadataMediator;
 using esp::scene::SceneManager;
 
 TEST(ResourceManagerTest, createJoinedCollisionMesh) {
+  esp::logging::LoggingContext loggingContext;
   esp::gfx::WindowlessContext::uptr context_ =
       esp::gfx::WindowlessContext::create_unique(0);
 
@@ -74,13 +75,13 @@ TEST(ResourceManagerTest, createJoinedCollisionMesh) {
       12, 13, 14, 12, 15, 13, 16, 17, 18, 16, 18, 19, 20, 21, 22, 20, 22, 23};
 
   for (size_t vix = 0; vix < joinedBox->vbo.size(); vix++) {
-    // Cr::Utility::Debug() << joinedBox->vbo[vix] << " vs " <<
+    // ESP_DEBUG() << joinedBox->vbo[vix]  << "vs" <<
     // vertGroundTruth[vix];
     ASSERT_EQ(vertGroundTruth[vix], Magnum::Vector3(joinedBox->vbo[vix]));
   }
 
   for (size_t iix = 0; iix < joinedBox->ibo.size(); iix++) {
-    // Cr::Utility::Debug() << joinedBox->ibo[iix] << " vs " <<
+    // ESP_DEBUG() << joinedBox->ibo[iix]  << "vs" <<
     // indexGroundTruth[iix];
     ASSERT_EQ(indexGroundTruth[iix], joinedBox->ibo[iix]);
   }
@@ -88,6 +89,7 @@ TEST(ResourceManagerTest, createJoinedCollisionMesh) {
 
 #ifdef ESP_BUILD_WITH_VHACD
 TEST(ResourceManagerTest, VHACDUsageTest) {
+  esp::logging::LoggingContext loggingContext;
   esp::gfx::WindowlessContext::uptr context_ =
       esp::gfx::WindowlessContext::create_unique(0);
 
@@ -131,6 +133,7 @@ TEST(ResourceManagerTest, VHACDUsageTest) {
 
 // Load and create a render asset instance and assert success
 TEST(ResourceManagerTest, loadAndCreateRenderAssetInstance) {
+  esp::logging::LoggingContext loggingContext;
   esp::gfx::WindowlessContext::uptr context_ =
       esp::gfx::WindowlessContext::create_unique(0);
 

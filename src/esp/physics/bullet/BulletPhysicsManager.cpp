@@ -32,7 +32,7 @@ BulletPhysicsManager::BulletPhysicsManager(
 }
 
 BulletPhysicsManager::~BulletPhysicsManager() {
-  LOG(INFO) << "Deconstructing BulletPhysicsManager";
+  ESP_DEBUG() << "Deconstructing BulletPhysicsManager";
 
   existingObjects_.clear();
   existingArticulatedObjects_.clear();
@@ -195,16 +195,16 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
               .first)
           .first;
 
-  Magnum::Debug{} << "BulletPhysicsManager::addArticulatedObjectFromURDF: "
-                     "simpleObjectHandle : "
-                  << simpleArtObjHandle;
+  ESP_DEBUG() << "BulletPhysicsManager::addArticulatedObjectFromURDF:"
+                 "simpleObjectHandle :"
+              << simpleArtObjHandle;
 
   std::string newArtObjectHandle =
       articulatedObjectManager_->getUniqueHandleFromCandidate(
           simpleArtObjHandle);
-  Magnum::Debug{} << "BulletPhysicsManager::addArticulatedObjectFromURDF: "
-                     "newArtObjectHandle : "
-                  << newArtObjectHandle;
+  ESP_DEBUG() << "BulletPhysicsManager::addArticulatedObjectFromURDF:"
+                 "newArtObjectHandle :"
+              << newArtObjectHandle;
 
   existingArticulatedObjects_.at(articulatedObjectID)
       ->setObjectName(newArtObjectHandle);
@@ -244,27 +244,27 @@ bool BulletPhysicsManager::isMeshPrimitiveValid(
   } else {
     switch (meshData.primitive) {
       case Magnum::MeshPrimitive::Lines:
-        LOG(ERROR) << "Invalid primitive: Lines";
+        ESP_ERROR() << "Invalid primitive: Lines";
         break;
       case Magnum::MeshPrimitive::Points:
-        LOG(ERROR) << "Invalid primitive: Points";
+        ESP_ERROR() << "Invalid primitive: Points";
         break;
       case Magnum::MeshPrimitive::LineLoop:
-        LOG(ERROR) << "Invalid primitive Line loop";
+        ESP_ERROR() << "Invalid primitive Line loop";
         break;
       case Magnum::MeshPrimitive::LineStrip:
-        LOG(ERROR) << "Invalid primitive Line Strip";
+        ESP_ERROR() << "Invalid primitive Line Strip";
         break;
       case Magnum::MeshPrimitive::TriangleStrip:
-        LOG(ERROR) << "Invalid primitive Triangle Strip";
+        ESP_ERROR() << "Invalid primitive Triangle Strip";
         break;
       case Magnum::MeshPrimitive::TriangleFan:
-        LOG(ERROR) << "Invalid primitive Triangle Fan";
+        ESP_ERROR() << "Invalid primitive Triangle Fan";
         break;
       default:
-        LOG(ERROR) << "Invalid primitive " << int(meshData.primitive);
+        ESP_ERROR() << "Invalid primitive" << int(meshData.primitive);
     }
-    LOG(ERROR) << "Cannot load collision mesh, skipping";
+    ESP_ERROR() << "Cannot load collision mesh, skipping";
     return false;
   }
 }
@@ -350,14 +350,13 @@ bool BulletPhysicsManager::attachLinkGeometry(
         visualMeshInfo.filepath = visual.m_geometry.m_meshFileName;
       } break;
       case io::URDF::GEOM_PLANE:
-        Corrade::Utility::Debug()
-            << "Trying to add visual plane, not implemented";
+        ESP_DEBUG() << "Trying to add visual plane, not implemented";
         // TODO:
         visualSetupSuccess = false;
         break;
       default:
-        Corrade::Utility::Debug() << "BulletPhysicsManager::attachGeometry "
-                                     ": Unsupported visual type.";
+        ESP_DEBUG() << "BulletPhysicsManager::attachGeometry "
+                       ": Unsupported visual type.";
         visualSetupSuccess = false;
         break;
     }
@@ -502,7 +501,7 @@ RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
   results.ray = ray;
   double rayLength = static_cast<double>(ray.direction.length());
   if (rayLength == 0) {
-    LOG(ERROR) << "::castRay : Cannot cast ray with zero length, aborting. ";
+    ESP_ERROR() << "::castRay : Cannot cast ray with zero length, aborting. ";
     return results;
   }
   btVector3 from(ray.origin);
@@ -884,8 +883,8 @@ void BulletPhysicsManager::removeRigidConstraint(int constraintId) {
     bWorld_->removeConstraint(rigidFixedConstraints_.at(constraintId).get());
     rigidFixedConstraints_.erase(constraintId);
   } else {
-    LOG(ERROR) << "removeRigidConstraint - No constraint with constraintId = "
-               << constraintId;
+    ESP_ERROR() << "removeRigidConstraint - No constraint with constraintId ="
+                << constraintId;
     return;
   }
   rigidConstraintSettings_.erase(constraintId);

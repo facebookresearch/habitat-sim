@@ -419,8 +419,8 @@ class MetadataMediator {
       const std::map<std::string, std::string>& assetMapping,
       const std::string& msgString) {
     if (assetMapping.count(assetHandle) == 0) {
-      LOG(WARNING) << msgString << " (getAsset) : Unable to find file path for "
-                   << assetHandle << ".  Aborting.";
+      ESP_WARNING() << msgString << "(getAsset) : Unable to find file path for"
+                    << assetHandle << ".  Aborting.";
       return "";
     }
     return assetMapping.at(assetHandle);
@@ -468,10 +468,10 @@ class MetadataMediator {
     // this should never happen - there will always be a dataset with the name
     // activeSceneDataset_
     if (datasetAttr == nullptr) {
-      LOG(ERROR) << "::getActiveDSAttribs : Unable to set "
-                    "active dataset due to Unknown dataset named "
-                 << activeSceneDataset_
-                 << " so changing dataset to \"default\".";
+      ESP_ERROR() << "::getActiveDSAttribs : Unable to set "
+                     "active dataset due to Unknown dataset named "
+                  << activeSceneDataset_
+                  << "so changing dataset to \"default\".";
       activeSceneDataset_ = "default";
 
       datasetAttr = sceneDatasetAttributesManager_->getObjectByHandle(

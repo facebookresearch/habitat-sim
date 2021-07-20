@@ -21,6 +21,7 @@ using esp::sim::SimulatorConfiguration;
 const std::string houseFilename = SCENE_DIR "/GibsonSceneTest/test.scn";
 
 TEST(GibsonSceneTest, Basic) {
+  esp::logging::LoggingContext loggingContext;
   SemanticScene semanticScene;
   ASSERT_EQ(semanticScene.objects().size(), 0);
   SemanticScene::loadGibsonHouse(houseFilename, semanticScene);
@@ -41,6 +42,7 @@ const std::string gibsonSemanticFilename =
     Cr::Utility::Directory::join(SCENE_DATASETS, "gibson/Allensville.scn");
 
 TEST(GibsonSemanticSimTest, Basic) {
+  esp::logging::LoggingContext loggingContext;
   if (!esp::io::exists(gibsonSemanticFilename)) {
     std::string skip_message = "Gibson's semantic scene file \"" +
                                gibsonSemanticFilename + "\" wasn't found.";

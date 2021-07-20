@@ -43,6 +43,7 @@ struct DrawableTest : Cr::TestSuite::Tester {
   void addRemoveDrawables();
 
  protected:
+  esp::logging::LoggingContext loggingContext_;
   esp::gfx::WindowlessContext::uptr context_ =
       esp::gfx::WindowlessContext::create_unique(0);
   // must declare these in this order due to avoid deallocation errors

@@ -9,6 +9,7 @@
 
 namespace em = emscripten;
 
+#include "esp/core/logging.h"
 #include "esp/scene/SemanticScene.h"
 #include "esp/sensor/CameraSensor.h"
 #include "esp/sensor/EquirectangularSensor.h"
@@ -138,6 +139,9 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::function("toVec4f", &toVec4f);
   em::function("loadAllObjectConfigsFromPath", &loadAllObjectConfigsFromPath);
   em::function("isBuildWithBulletPhysics", &isBuildWithBulletPhysics);
+
+  em::constant("_loggingContext",
+               std::make_unique<esp::logging::LoggingContext>());
 
   em::register_vector<SensorSpec::ptr>("VectorSensorSpec");
   em::register_vector<size_t>("VectorSizeT");

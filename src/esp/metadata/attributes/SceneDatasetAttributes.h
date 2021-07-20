@@ -264,9 +264,9 @@ class SceneDatasetAttributes : public AbstractAttributes {
   inline std::string getArticulatedObjModelFullHandle(
       const std::string& artObjModelName) {
     if (articulatedObjPaths.count(artObjModelName) == 0) {
-      LOG(ERROR) << "SceneDatasetAttributes::getArticulatedObjModelFullHandle "
-                    ": No Articulatd Model with name "
-                 << artObjModelName << " could be found.  Aborting.";
+      ESP_ERROR() << "SceneDatasetAttributes::getArticulatedObjModelFullHandle "
+                     ": No Articulatd Model with name "
+                  << artObjModelName << "could be found.  Aborting.";
       return "";
     }
     return articulatedObjPaths.at(artObjModelName);
@@ -283,11 +283,11 @@ class SceneDatasetAttributes : public AbstractAttributes {
   void setArticulatedObjectModelFilename(const std::string& key,
                                          const std::string& val) {
     if (articulatedObjPaths.count(key) != 0) {
-      LOG(WARNING)
+      ESP_WARNING()
           << "SceneDatasetAttributes::setArticulatedObjectModelFilename "
              ": Articulated model filepath named "
-          << key << " already exists (" << articulatedObjPaths.at(key)
-          << "), so this is being overwritten by " << val << ".";
+          << key << "already exists (" << articulatedObjPaths.at(key)
+          << "), so this is being overwritten by" << val << ".";
     }
     articulatedObjPaths[key] = val;
   }

@@ -20,8 +20,6 @@
 
 #include "esp/core/managedContainers/AbstractManagedObject.h"
 
-namespace Cr = Corrade;
-
 namespace esp {
 namespace core {
 
@@ -200,8 +198,8 @@ class ManagedContainerBase {
    */
   std::string getObjectHandleByID(const int objectID) const {
     if (objectLibKeyByID_.count(objectID) == 0) {
-      LOG(ERROR) << "::getObjectHandleByID : Unknown " << objectType_
-                 << " managed object ID:" << objectID << ". Aborting";
+      ESP_ERROR() << "::getObjectHandleByID : Unknown" << objectType_
+                  << "managed object ID:" << objectID << ". Aborting";
       // never will have registered object with registration handle == ""
       return "";
     }
@@ -328,8 +326,8 @@ class ManagedContainerBase {
   bool checkExistsWithMessage(const std::string& objectHandle,
                               const std::string& src) const {
     if (!getObjectLibHasHandle(objectHandle)) {
-      LOG(ERROR) << src << " : Unknown " << objectType_
-                 << " managed object handle :" << objectHandle << ". Aborting";
+      ESP_ERROR() << src << ": Unknown" << objectType_
+                  << "managed object handle :" << objectHandle << ". Aborting";
       return false;
     }
     return true;

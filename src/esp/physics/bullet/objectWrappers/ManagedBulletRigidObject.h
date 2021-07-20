@@ -59,21 +59,21 @@ class ManagedBulletRigidObject : public esp::physics::ManagedRigidObject {
 #else
   //! no bullet version
   double getMargin() const {
-    LOG(WARNING) << "This functionally requires Habitat-Sim to be compiled "
-                    "with Bullet enabled..";
+    ESP_WARNING() << "This functionally requires Habitat-Sim to be compiled "
+                     "with Bullet enabled..";
 
     return 0.0;
   }  // getMargin
 
   void setMargin(CORRADE_UNUSED const double margin) {
-    LOG(WARNING) << "This functionally requires Habitat-Sim to be compiled "
-                    "with Bullet enabled..";
+    ESP_WARNING() << "This functionally requires Habitat-Sim to be compiled "
+                     "with Bullet enabled..";
 
   }  // setMass
 
   Magnum::Range3D getCollisionShapeAabb() {
-    LOG(WARNING) << "This functionally requires Habitat-Sim to be compiled "
-                    "with Bullet enabled..";
+    ESP_WARNING() << "This functionally requires Habitat-Sim to be compiled "
+                     "with Bullet enabled..";
 
     return {};
   }  // getCollisionShapeAabbb

@@ -34,7 +34,7 @@ inline bool fromJsonValue(const JsonGenericValue& obj, std::string& val) {
     val = obj.GetString();
     return true;
   }
-  LOG(ERROR) << "Invalid string value";
+  ESP_ERROR() << "Invalid string value";
   return false;
 }
 
@@ -61,7 +61,7 @@ bool readMember(const JsonGenericValue& value,
   if (itr != value.MemberEnd()) {
     const JsonGenericValue& arr = itr->value;
     if (!arr.IsArray()) {
-      LOG(ERROR) << "JSON tag " << tag << " is not an array";
+      ESP_ERROR() << "JSON tag" << tag << "is not an array";
       return false;
     }
     vec.reserve(arr.Size());
@@ -70,8 +70,8 @@ bool readMember(const JsonGenericValue& value,
       T item;
       if (!fromJsonValue(itemObj, item)) {
         vec.clear();  // return an empty container on failure
-        LOG(ERROR) << "Failed to parse array element " << i << " in JSON tag "
-                   << tag;
+        ESP_ERROR() << "Failed to parse array element" << i << "in JSON tag"
+                    << tag;
         return false;
       }
       vec.emplace_back(std::move(item));
@@ -108,14 +108,14 @@ inline bool readMember(const JsonGenericValue& d,
         if (it->value.IsString()) {
           val.emplace(key, it->value.GetString());
         } else {
-          LOG(ERROR) << "Invalid string value specified in JSON config " << tag
-                     << " at " << key << ". Skipping.";
+          ESP_ERROR() << "Invalid string value specified in JSON config" << tag
+                      << "at" << key << ". Skipping.";
         }
       }  // for each value
       return true;
     } else {  // if member is object
-      LOG(ERROR) << "Invalid JSON Object value specified in JSON config at "
-                 << tag << "; Unable to populate std::map.";
+      ESP_ERROR() << "Invalid JSON Object value specified in JSON config at"
+                  << tag << "; Unable to populate std::map.";
     }
   }  // if has tag
   return false;
@@ -148,14 +148,14 @@ inline bool readMember(const JsonGenericValue& d,
         if (it->value.IsFloat()) {
           val.emplace(key, it->value.GetFloat());
         } else {
-          LOG(ERROR) << "Invalid float value specified in JSON map " << tag
-                     << " at " << key << ". Skipping.";
+          ESP_ERROR() << "Invalid float value specified in JSON map" << tag
+                      << "at" << key << ". Skipping.";
         }
       }  // for each value
       return true;
     } else {  // if member is object
-      LOG(ERROR) << "Invalid JSON Object value specified in JSON config at "
-                 << tag << "; Unable to populate std::map.";
+      ESP_ERROR() << "Invalid JSON Object value specified in JSON config at"
+                  << tag << "; Unable to populate std::map.";
     }
   }  // if has tag
   return false;

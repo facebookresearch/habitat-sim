@@ -47,7 +47,7 @@ bool PhysicsManager::initPhysicsFinalize() {
 }
 
 PhysicsManager::~PhysicsManager() {
-  LOG(INFO) << "Deconstructing PhysicsManager";
+  ESP_DEBUG() << "Deconstructing PhysicsManager";
 }
 
 bool PhysicsManager::addStage(
@@ -85,11 +85,11 @@ int PhysicsManager::addObjectInstance(
       resourceManager_.getObjectAttributesManager()->getObjectCopyByHandle(
           attributesHandle);
   if (!objAttributes) {
-    LOG(ERROR) << errMsgTmplt
-               << "Missing/improperly configured objectAttributes "
-               << attributesHandle << ", whose handle contains "
-               << objInstAttributes->getHandle()
-               << " as specified in object instance attributes.";
+    ESP_ERROR() << errMsgTmplt
+                << "Missing/improperly configured objectAttributes"
+                << attributesHandle << ", whose handle contains"
+                << objInstAttributes->getHandle()
+                << "as specified in object instance attributes.";
     return 0;
   }
   // set shader type to use for stage
@@ -110,10 +110,10 @@ int PhysicsManager::addObjectInstance(
 
   if (objID == ID_UNDEFINED) {
     // instancing failed for some reason.
-    LOG(ERROR) << errMsgTmplt << "Object create failed for objectAttributes "
-               << attributesHandle << ", whose handle contains "
-               << objInstAttributes->getHandle()
-               << " as specified in object instance attributes.";
+    ESP_ERROR() << errMsgTmplt << "Object create failed for objectAttributes"
+                << attributesHandle << ", whose handle contains"
+                << objInstAttributes->getHandle()
+                << "as specified in object instance attributes.";
     return ID_UNDEFINED;
   }
 
@@ -134,8 +134,8 @@ int PhysicsManager::addObject(const std::string& attributesHandle,
       resourceManager_.getObjectAttributesManager()->getObjectCopyByHandle(
           attributesHandle);
   if (!attributes) {
-    LOG(ERROR)
-        << "::addObject : Object creation failed due to unknown attributes "
+    ESP_ERROR()
+        << "::addObject : Object creation failed due to unknown attributes"
         << attributesHandle;
     return ID_UNDEFINED;
   } else {
@@ -157,9 +157,9 @@ int PhysicsManager::addObject(const int attributesID,
       resourceManager_.getObjectAttributesManager()->getObjectCopyByID(
           attributesID);
   if (!attributes) {
-    LOG(ERROR) << "::addObject : "
-                  "Object creation failed due to unknown attributes ID "
-               << attributesID;
+    ESP_ERROR() << "::addObject : "
+                   "Object creation failed due to unknown attributes ID "
+                << attributesID;
     return ID_UNDEFINED;
   } else {
     // attributes exist, get drawables if valid simulator accessible
@@ -181,8 +181,8 @@ int PhysicsManager::addObject(
   //! Make rigid object and add it to existingObjects
   if (!objectAttributes) {
     // should never run, but just in case
-    LOG(ERROR) << "::addObject : Object creation failed due to nonexistant "
-                  "objectAttributes";
+    ESP_ERROR() << "::addObject : Object creation failed due to nonexistant "
+                   "objectAttributes";
     return ID_UNDEFINED;
   }
   // verify whether necessary assets exist, and if not, instantiate them
@@ -190,9 +190,9 @@ int PhysicsManager::addObject(
   bool objectSuccess =
       resourceManager_.instantiateAssetsOnDemand(objectAttributes);
   if (!objectSuccess) {
-    LOG(ERROR) << "::addObject : ResourceManager::instantiateAssetsOnDemand "
-                  "unsuccessful. "
-                  "Aborting.";
+    ESP_ERROR() << "::addObject : ResourceManager::instantiateAssetsOnDemand "
+                   "unsuccessful. "
+                   "Aborting.";
     return ID_UNDEFINED;
   }
 
@@ -211,8 +211,9 @@ int PhysicsManager::addObject(
     if (attachmentNode == nullptr) {
       delete objectNode;
     }
-    LOG(ERROR) << "::addObject : PhysicsManager::makeRigidObject unsuccessful. "
-                  " Aborting.";
+    ESP_ERROR()
+        << "::addObject : PhysicsManager::makeRigidObject unsuccessful. "
+           " Aborting.";
     return ID_UNDEFINED;
   }
 
@@ -236,8 +237,8 @@ int PhysicsManager::addObject(
   if (!objectSuccess) {
     // if failed for some reason, remove and return
     removeObject(nextObjectID_, true, true);
-    LOG(ERROR) << "::addObject : PhysicsManager::finalizeObject "
-                  "unsuccessful.  Aborting.";
+    ESP_ERROR() << "::addObject : PhysicsManager::finalizeObject "
+                   "unsuccessful.  Aborting.";
     return ID_UNDEFINED;
   }
   // Valid object exists by here.
@@ -245,10 +246,10 @@ int PhysicsManager::addObject(
   // and register wrapper with wrapper manager
   // 1.0 Get unique name for object using simplified attributes name.
   std::string simpleObjectHandle = objectAttributes->getSimplifiedHandle();
-  LOG(WARNING) << "::addObject : simpleObjectHandle : " << simpleObjectHandle;
+  ESP_WARNING() << "::addObject : simpleObjectHandle :" << simpleObjectHandle;
   std::string newObjectHandle =
       rigidObjectManager_->getUniqueHandleFromCandidate(simpleObjectHandle);
-  LOG(WARNING) << "::addObject : newObjectHandle : " << newObjectHandle;
+  ESP_WARNING() << "::addObject : newObjectHandle :" << newObjectHandle;
 
   existingObjects_.at(nextObjectID_)->setObjectName(newObjectHandle);
 
@@ -282,11 +283,11 @@ int PhysicsManager::addArticulatedObjectInstance(
       false, lightSetup);
   if (aObjID == ID_UNDEFINED) {
     // instancing failed for some reason.
-    LOG(ERROR) << errMsgTmplt
-               << "Articulated Object create failed for model filepath "
-               << filepath << ", whose handle is "
-               << aObjInstAttributes->getHandle()
-               << " as specified in articulated object instance attributes.";
+    ESP_ERROR() << errMsgTmplt
+                << "Articulated Object create failed for model filepath"
+                << filepath << ", whose handle is"
+                << aObjInstAttributes->getHandle()
+                << "as specified in articulated object instance attributes.";
     return ID_UNDEFINED;
   }
 

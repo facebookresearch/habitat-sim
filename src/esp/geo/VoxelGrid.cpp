@@ -29,7 +29,7 @@ VoxelGrid::VoxelGrid(const assets::MeshData& meshData,
     : m_renderAssetHandle(renderAssetHandle) {
   VHACD::IVHACD* interfaceVHACD = VHACD::CreateVHACD();
 
-  Mn::Debug() << "Voxelizing mesh..";
+  ESP_DEBUG() << "Voxelizing mesh..";
 
   // run VHACD
   interfaceVHACD->computeVoxelField(&meshData.vbo[0][0], meshData.vbo.size(),
@@ -70,7 +70,7 @@ VoxelGrid::VoxelGrid(const assets::MeshData& meshData,
   }
   if (num_filled == dims[0] * dims[1] * dims[2]) {
     // When VHACD is given too low of a resolution
-    Mn::Debug() << "VOXELIZATION FAILED";
+    ESP_DEBUG() << "VOXELIZATION FAILED";
   }
 }
 #endif

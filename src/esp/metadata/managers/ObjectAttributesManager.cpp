@@ -28,9 +28,9 @@ ObjectAttributesManager::createPrimBasedAttributesTemplate(
     bool registerTemplate) {
   // verify that a primitive asset with the given handle exists
   if (!this->isValidPrimitiveAttributes(primAttrTemplateHandle)) {
-    LOG(ERROR)
+    ESP_ERROR()
         << "::createPrimBasedAttributesTemplate : No primitive with handle '"
-        << primAttrTemplateHandle
+        << Mn::Debug::nospace << primAttrTemplateHandle << Mn::Debug::nospace
         << "' exists so cannot build physical object.  Aborting.";
     return nullptr;
   }
@@ -189,10 +189,10 @@ int ObjectAttributesManager::registerObjectFinalize(
     const std::string& objectTemplateHandle,
     bool forceRegistration) {
   if (objectTemplate->getRenderAssetHandle() == "") {
-    LOG(ERROR)
-        << "::registerObjectFinalize : Attributes template named "
+    ESP_ERROR()
+        << "::registerObjectFinalize : Attributes template named"
         << objectTemplateHandle
-        << " does not have a valid render asset handle specified. Aborting.";
+        << "does not have a valid render asset handle specified. Aborting.";
     return ID_UNDEFINED;
   }
 
@@ -215,23 +215,23 @@ int ObjectAttributesManager::registerObjectFinalize(
     mapToUse = &physicsFileObjTmpltLibByID_;
   } else if (forceRegistration) {
     // Forcing registration in case of computationaly generated assets
-    LOG(WARNING)
-        << "::registerObjectFinalize : Render asset template handle : "
-        << renderAssetHandle << " specified in object template with handle : "
-        << objectTemplateHandle
-        << " does not correspond to any existing file or primitive render "
-           "asset.  Objects created from this template may fail. ";
+    ESP_WARNING()
+        << "::registerObjectFinalize : Render asset template handle :"
+        << renderAssetHandle
+        << "specified in object template with handle :" << objectTemplateHandle
+        << "does not correspond to any existing file or primitive render"
+        << "asset.  Objects created from this template may fail. ";
     objectTemplate->setRenderAssetIsPrimitive(false);
   } else {
     // If renderAssetHandle is neither valid file name nor existing primitive
     // attributes template hande, fail
     // by here always fail
-    LOG(ERROR)
-        << "::registerObjectFinalize : Render asset template handle : "
-        << renderAssetHandle << " specified in object template with handle : "
-        << objectTemplateHandle
-        << " does not correspond to any existing file or primitive render "
-           "asset.  Aborting. ";
+    ESP_ERROR()
+        << "::registerObjectFinalize : Render asset template handle :"
+        << renderAssetHandle
+        << "specified in object template with handle :" << objectTemplateHandle
+        << "does not correspond to any existing file or primitive render"
+        << "asset.  Aborting. ";
     return ID_UNDEFINED;
   }
 
@@ -245,13 +245,12 @@ int ObjectAttributesManager::registerObjectFinalize(
     objectTemplate->setCollisionAssetIsPrimitive(false);
   } else {
     // Else, means no collision data specified, use specified render data
-    LOG(INFO)
-        << "::registerObjectFinalize : Collision asset template handle : "
+    ESP_DEBUG()
+        << "::registerObjectFinalize : Collision asset template handle :"
         << collisionAssetHandle
-        << " specified in object template with handle : "
-        << objectTemplateHandle
-        << " does not correspond to any existing file or primitive render "
-           "asset.  Overriding with given render asset handle : "
+        << "specified in object template with handle :" << objectTemplateHandle
+        << "does not correspond to any existing file or primitive render"
+        << "asset.  Overriding with given render asset handle :"
         << renderAssetHandle << ". ";
 
     objectTemplate->setCollisionAssetHandle(renderAssetHandle);

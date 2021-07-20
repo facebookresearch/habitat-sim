@@ -22,7 +22,7 @@ bool URDFImporter::loadURDF(const std::string& filename,
   if ((modelCache_.count(filename) == 0u) || forceReload) {
     if (!Corrade::Utility::Directory::exists(filename) ||
         Corrade::Utility::Directory::isDirectory(filename)) {
-      Mn::Debug{} << "File does not exist: " << filename
+      ESP_DEBUG() << "File does not exist:" << filename
                   << ". Aborting URDF parse/load.";
       return false;
     }
@@ -32,12 +32,12 @@ bool URDFImporter::loadURDF(const std::string& filename,
     std::shared_ptr<io::URDF::Model> urdfModel;
     bool success = urdfParser_.parseURDF(urdfModel, filename);
     if (!success) {
-      Mn::Debug{} << "Failed to parse URDF: " << filename << ", aborting.";
+      ESP_DEBUG() << "Failed to parse URDF:" << filename << ", aborting.";
       return false;
     }
 
     if (logMessages) {
-      Mn::Debug{} << "Done parsing URDF model: ";
+      ESP_DEBUG() << "Done parsing URDF model: ";
       urdfModel->printKinematicChain();
     }
 
@@ -201,7 +201,7 @@ void URDFImporter::getMassAndInertia(int linkIndex,
                         link->m_inertia.m_izz));
 
         // TODO: diagonalization of inertia matrix:
-        Mn::Debug{} << "WARNING: getMassAndInertia: intertia not diagonal. "
+        ESP_DEBUG() << "WARNING: getMassAndInertia: intertia not diagonal. "
                        "TODO: diagonalize?";
         /*
         float threshold = 1.0e-6;
@@ -221,7 +221,7 @@ void URDFImporter::getMassAndInertia(int linkIndex,
         principalInertiaY > (principalInertiaX + principalInertiaZ) ||
         principalInertiaZ < 0 ||
         principalInertiaZ > (principalInertiaX + principalInertiaY)) {
-      Mn::Debug{} << "W - Bad inertia tensor properties, setting "
+      ESP_DEBUG() << "W - Bad inertia tensor properties, setting "
                      "inertia to zero for link: "
                   << link->m_name;
       principalInertiaX = 0.f;
@@ -247,7 +247,7 @@ bool URDFImporter::getLinkContactInfo(
     io::URDF::LinkContactInfo& contactInfo) const {
   auto link = activeModel_->getLink(linkIndex);
   if (link == nullptr) {
-    Mn::Debug{} << "E - No link with index = " << linkIndex;
+    ESP_DEBUG() << "E - No link with index =" << linkIndex;
     return false;
   }
 
@@ -257,7 +257,7 @@ bool URDFImporter::getLinkContactInfo(
 
 void URDFImporter::importURDFAssets() {
   if (activeModel_ == nullptr) {
-    Mn::Debug{}
+    ESP_DEBUG()
         << "URDFImporter::importURDFAssets - No URDF::Model loaded, aborting.";
     return;
   }
@@ -322,7 +322,7 @@ void URDFImporter::importURDFAssets() {
           visualMeshInfo.filepath = visual.m_geometry.m_meshFileName;
           break;
         default:
-          Mn::Debug{} << "URDFImporter::importURDFAssets - unsupported "
+          ESP_DEBUG() << "URDFImporter::importURDFAssets - unsupported "
                          "visual geometry type.";
           break;
       }

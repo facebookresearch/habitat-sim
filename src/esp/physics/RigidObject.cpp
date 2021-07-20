@@ -16,7 +16,7 @@ RigidObject::RigidObject(scene::SceneNode* rigidBodyNode,
 bool RigidObject::initialize(
     metadata::attributes::AbstractObjectAttributes::ptr initAttributes) {
   if (initializationAttributes_ != nullptr) {
-    LOG(ERROR) << "Cannot initialize a RigidObject more than once";
+    ESP_ERROR() << "Cannot initialize a RigidObject more than once";
     return false;
   }
 

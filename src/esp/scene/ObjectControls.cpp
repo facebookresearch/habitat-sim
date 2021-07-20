@@ -103,7 +103,7 @@ ObjectControls& ObjectControls::action(SceneNode& object,
       moveFuncMap_[actName](object, distance);
     }
   } else {
-    LOG(ERROR) << "Tried to perform unknown action with name " << actName;
+    ESP_ERROR() << "Tried to perform unknown action with name" << actName;
   }
 
   return *this;

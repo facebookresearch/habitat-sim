@@ -71,10 +71,11 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
     io::JsonDocument docConfig = nullptr;
     bool success = this->verifyLoadDocument(filename, docConfig);
     if (!success) {
-      LOG(ERROR) << "<" << this->objectType_ << ">::createObjectFromFile ("
-                 << this->objectType_
-                 << ") : Failure reading document as JSON : " << filename
-                 << ". Aborting.";
+      ESP_ERROR() << "<" << Magnum::Debug::nospace << this->objectType_
+                  << Magnum::Debug::nospace << ">::createObjectFromFile ("
+                  << this->objectType_
+                  << ") : Failure reading document as JSON :" << filename
+                  << ". Aborting.";
       return nullptr;
     }
     // convert doc to const value
@@ -95,10 +96,11 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
   template <typename U>
   ManagedFileIOPtr buildManagedObjectFromDoc(const std::string& filename,
                                              CORRADE_UNUSED const U& config) {
-    LOG(ERROR)
-        << "<" << this->objectType_ << ">::buildManagedObjectFromDoc ("
+    ESP_ERROR()
+        << "<" << Magnum::Debug::nospace << this->objectType_
+        << Magnum::Debug::nospace << ">::buildManagedObjectFromDoc ("
         << this->objectType_
-        << ") : Failure loading attributes from document of unknown type : "
+        << ") : Failure loading attributes from document of unknown type :"
         << filename << ". Aborting.";
   }
   /**
@@ -144,9 +146,10 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
   bool verifyLoadDocument(const std::string& filename,
                           CORRADE_UNUSED U& resDoc) {
     // by here always fail
-    LOG(ERROR) << this->objectType_ << "<" << this->objectType_
-               << ">::verifyLoadDocument : File " << filename
-               << " failed due to unknown file type.";
+    ESP_ERROR() << this->objectType_ << "<" << Magnum::Debug::nospace
+                << this->objectType_ << Magnum::Debug::nospace
+                << ">::verifyLoadDocument : File" << filename
+                << "failed due to unknown file type.";
     return false;
   }  // ManagedContainerBase::verifyLoadDocument
   /**
@@ -207,15 +210,17 @@ std::string ManagedFileBasedContainer<T, Access>::convertFilenameToPassedExt(
       strHandle.find(Cr::Utility::String::lowercase(fileTypeExt))) {
     resHandle = Cr::Utility::Directory::splitExtension(filename).first + "." +
                 fileTypeExt;
-    LOG(INFO) << "<" << this->objectType_
-              << ">::convertFilenameToPassedExt : Filename : " << filename
-              << " changed to proposed " << fileTypeExt
-              << " filename : " << resHandle;
+    ESP_DEBUG() << "<" << Magnum::Debug::nospace << this->objectType_
+                << Magnum::Debug::nospace
+                << ">::convertFilenameToPassedExt : Filename :" << filename
+                << "changed to proposed" << fileTypeExt
+                << "filename :" << resHandle;
   } else {
-    LOG(INFO) << "<" << this->objectType_
-              << ">::convertFilenameToPassedExt : Filename : " << filename
-              << " contains requested file extension " << fileTypeExt
-              << " already.";
+    ESP_DEBUG() << "<" << Magnum::Debug::nospace << this->objectType_
+                << Magnum::Debug::nospace
+                << ">::convertFilenameToPassedExt : Filename :" << filename
+                << "contains requested file extension" << fileTypeExt
+                << "already.";
   }
   return resHandle;
 }  // ManagedFileBasedContainer<T, Access>::convertFilenameToPassedExt
@@ -228,16 +233,18 @@ bool ManagedFileBasedContainer<T, Access>::verifyLoadDocument(
     try {
       jsonDoc = io::parseJsonFile(filename);
     } catch (...) {
-      LOG(ERROR) << "<" << this->objectType_
-                 << ">::verifyLoadDocument : Failed to parse " << filename
-                 << " as JSON.";
+      ESP_ERROR() << "<" << Magnum::Debug::nospace << this->objectType_
+                  << Magnum::Debug::nospace
+                  << ">::verifyLoadDocument : Failed to parse" << filename
+                  << "as JSON.";
       return false;
     }
     return true;
   } else {
     // by here always fail
-    LOG(ERROR) << "<" << this->objectType_ << ">::verifyLoadDocument : File "
-               << filename << " does not exist";
+    ESP_ERROR() << "<" << Magnum::Debug::nospace << this->objectType_
+                << Magnum::Debug::nospace << ">::verifyLoadDocument : File"
+                << filename << "does not exist";
     return false;
   }
 }  // ManagedFileBasedContainer<T, Access>::verifyLoadDocument

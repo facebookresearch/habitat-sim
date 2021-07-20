@@ -26,16 +26,16 @@ void Player::readKeyframesFromFile(const std::string& filepath) {
   close();
 
   if (!Corrade::Utility::Directory::exists(filepath)) {
-    LOG(ERROR) << "Player::readKeyframesFromFile: file " << filepath
-               << " not found.";
+    ESP_ERROR() << "Player::readKeyframesFromFile: file" << filepath
+                << "not found.";
     return;
   }
   try {
     auto newDoc = esp::io::parseJsonFile(filepath);
     readKeyframesFromJsonDocument(newDoc);
   } catch (...) {
-    LOG(ERROR)
-        << "Player::readKeyframesFromFile: failed to parse keyframes from "
+    ESP_ERROR()
+        << "Player::readKeyframesFromFile: failed to parse keyframes from"
         << filepath << ".";
   }
 }
@@ -112,8 +112,9 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     const auto& creation = pair.second;
     if (assetInfos_.count(creation.filepath) == 0u) {
       if (failedFilepaths_.count(creation.filepath) == 0u) {
-        LOG(WARNING) << "Player: missing asset info for [" << creation.filepath
-                     << "]";
+        ESP_WARNING() << "Player: missing asset info for ["
+                      << Mn::Debug::nospace << creation.filepath
+                      << Mn::Debug::nospace << "]";
         failedFilepaths_.insert(creation.filepath);
       }
       continue;
@@ -123,8 +124,8 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
         assetInfos_[creation.filepath], creation);
     if (!node) {
       if (failedFilepaths_.count(creation.filepath) == 0u) {
-        LOG(WARNING) << "Player: load failed for asset [" << creation.filepath
-                     << "]";
+        ESP_WARNING() << "Player: load failed for asset [" << Mn::Debug::nospace
+                      << creation.filepath << Mn::Debug::nospace << "]";
         failedFilepaths_.insert(creation.filepath);
       }
       continue;

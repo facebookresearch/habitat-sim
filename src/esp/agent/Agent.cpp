@@ -27,7 +27,7 @@ Agent::Agent(scene::SceneNode& agentNode, const AgentConfiguration& cfg)
 }  // Agent::Agent
 
 Agent::~Agent() {
-  LOG(INFO) << "Deconstructing Agent";
+  ESP_DEBUG() << "Deconstructing Agent";
 }
 
 bool Agent::act(const std::string& actionName) {

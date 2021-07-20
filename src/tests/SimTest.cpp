@@ -129,6 +129,8 @@ struct SimTest : Cr::TestSuite::Tester {
   void addSensorToObject();
   void createMagnumRenderingOff();
 
+  esp::logging::LoggingContext loggingContext_;
+
   // TODO: remove outlier pixels from image and lower maxThreshold
   const Magnum::Float maxThreshold = 255.f;
 
@@ -296,20 +298,19 @@ void SimTest::checkPinholeCameraRGBAObservation(
 }
 
 void SimTest::getSceneRGBAObservation() {
-  Corrade::Utility::Debug() << "Starting Test : getSceneRGBAObservation ";
+  ESP_DEBUG() << "Starting Test : getSceneRGBAObservation ";
   setTestCaseName(CORRADE_FUNCTION);
-  Corrade::Utility::Debug() << "About to build simulator";
+  ESP_DEBUG() << "About to build simulator";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
-  Corrade::Utility::Debug() << "Built simulator";
+  ESP_DEBUG() << "Built simulator";
   checkPinholeCameraRGBAObservation(*simulator, "SimTestExpectedScene.png",
                                     maxThreshold, 0.75f);
 }
 
 void SimTest::getSceneWithLightingRGBAObservation() {
-  Corrade::Utility::Debug()
-      << "Starting Test : getSceneWithLightingRGBAObservation ";
+  ESP_DEBUG() << "Starting Test : getSceneWithLightingRGBAObservation ";
   setTestCaseName(CORRADE_FUNCTION);
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
@@ -319,8 +320,7 @@ void SimTest::getSceneWithLightingRGBAObservation() {
 }
 
 void SimTest::getDefaultLightingRGBAObservation() {
-  Corrade::Utility::Debug()
-      << "Starting Test : getDefaultLightingRGBAObservation ";
+  ESP_DEBUG() << "Starting Test : getDefaultLightingRGBAObservation ";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
@@ -336,8 +336,7 @@ void SimTest::getDefaultLightingRGBAObservation() {
 }
 
 void SimTest::getCustomLightingRGBAObservation() {
-  Corrade::Utility::Debug()
-      << "Starting Test : getCustomLightingRGBAObservation ";
+  ESP_DEBUG() << "Starting Test : getCustomLightingRGBAObservation ";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
@@ -354,8 +353,7 @@ void SimTest::getCustomLightingRGBAObservation() {
 }
 
 void SimTest::updateLightSetupRGBAObservation() {
-  Corrade::Utility::Debug()
-      << "Starting Test : updateLightSetupRGBAObservation ";
+  ESP_DEBUG() << "Starting Test : updateLightSetupRGBAObservation ";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
@@ -390,8 +388,7 @@ void SimTest::updateLightSetupRGBAObservation() {
 }
 
 void SimTest::updateObjectLightSetupRGBAObservation() {
-  Corrade::Utility::Debug()
-      << "Starting Test : updateObjectLightSetupRGBAObservation ";
+  ESP_DEBUG() << "Starting Test : updateObjectLightSetupRGBAObservation ";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
@@ -416,8 +413,7 @@ void SimTest::updateObjectLightSetupRGBAObservation() {
 }
 
 void SimTest::multipleLightingSetupsRGBAObservation() {
-  Corrade::Utility::Debug()
-      << "Starting Test : multipleLightingSetupsRGBAObservation ";
+  ESP_DEBUG() << "Starting Test : multipleLightingSetupsRGBAObservation ";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, planeStage, esp::NO_LIGHT_KEY);
@@ -450,8 +446,7 @@ void SimTest::multipleLightingSetupsRGBAObservation() {
 }
 
 void SimTest::recomputeNavmeshWithStaticObjects() {
-  Corrade::Utility::Debug()
-      << "Starting Test : recomputeNavmeshWithStaticObjects ";
+  ESP_DEBUG() << "Starting Test : recomputeNavmeshWithStaticObjects ";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, skokloster, esp::NO_LIGHT_KEY);
@@ -516,7 +511,7 @@ void SimTest::recomputeNavmeshWithStaticObjects() {
 }
 
 void SimTest::loadingObjectTemplates() {
-  Corrade::Utility::Debug() << "Starting Test : loadingObjectTemplates ";
+  ESP_DEBUG() << "Starting Test : loadingObjectTemplates ";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, planeStage, esp::NO_LIGHT_KEY);
@@ -581,8 +576,7 @@ void SimTest::loadingObjectTemplates() {
 }
 
 void SimTest::buildingPrimAssetObjectTemplates() {
-  Corrade::Utility::Debug()
-      << "Starting Test : buildingPrimAssetObjectTemplates ";
+  ESP_DEBUG() << "Starting Test : buildingPrimAssetObjectTemplates ";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, planeStage, esp::NO_LIGHT_KEY);
@@ -725,7 +719,7 @@ void SimTest::buildingPrimAssetObjectTemplates() {
 }  // SimTest::buildingPrimAssetObjectTemplates
 
 void SimTest::addObjectByHandle() {
-  Corrade::Utility::Debug() << "Starting Test : addObject ";
+  ESP_DEBUG() << "Starting Test : addObject ";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, planeStage, esp::NO_LIGHT_KEY);
@@ -741,7 +735,7 @@ void SimTest::addObjectByHandle() {
 }
 
 void SimTest::addSensorToObject() {
-  Corrade::Utility::Debug() << "Starting Test : addSensorToObject ";
+  ESP_DEBUG() << "Starting Test : addSensorToObject ";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
@@ -801,7 +795,7 @@ void SimTest::addSensorToObject() {
 }
 
 void SimTest::createMagnumRenderingOff() {
-  Corrade::Utility::Debug() << "Starting Test : createMagnumRenderingOff ";
+  ESP_DEBUG() << "Starting Test : createMagnumRenderingOff ";
 
   // create a simulator
   SimulatorConfiguration simConfig{};

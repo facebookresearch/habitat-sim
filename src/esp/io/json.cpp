@@ -64,8 +64,8 @@ JsonDocument parseJsonFile(const std::string& file) {
   fclose(pFile);
 
   if (d.HasParseError()) {
-    LOG(ERROR) << "Parse error reading " << file << " Error code "
-               << d.GetParseError() << " at " << d.GetErrorOffset();
+    ESP_ERROR() << "Parse error reading" << file << "Error code"
+                << d.GetParseError() << "at" << d.GetErrorOffset();
     throw std::runtime_error("JSON parse error");
   }
   return d;
@@ -76,8 +76,8 @@ JsonDocument parseJsonString(const std::string& jsonString) {
   d.Parse(jsonString.c_str());
 
   if (d.HasParseError()) {
-    LOG(ERROR) << "Parse error parsing json string. Error code "
-               << d.GetParseError() << " at " << d.GetErrorOffset();
+    ESP_ERROR() << "Parse error parsing json string. Error code"
+                << d.GetParseError() << "at" << d.GetErrorOffset();
     throw std::runtime_error("JSON parse error");
   }
   return d;

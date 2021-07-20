@@ -109,7 +109,7 @@ class VoxelGrid {
 
     if (grids_.find(gridName) != grids_.end()) {
       // grid exists, simply overwrite
-      Magnum::Debug() << gridName << "exists, overwriting.";
+      ESP_DEBUG() << gridName << "exists, overwriting.";
 
       grids_[gridName].data = Corrade::Containers::Array<char>(
           Corrade::ValueInit, gridSize() * sizeof(T));

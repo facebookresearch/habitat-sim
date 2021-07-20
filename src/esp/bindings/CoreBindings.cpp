@@ -50,6 +50,13 @@ void initCoreBindings(py::module& m) {
       .def("uniform_int", py::overload_cast<int, int>(&Random::uniform_int))
       .def("uniform_uint", &Random::uniform_uint)
       .def("normal_float_01", &Random::normal_float_01);
+
+  py::class_<logging::LoggingContext>(m, "LoggingContext")
+      .def(py::init())
+      .def(py::init<Corrade::Containers::StringView>());
+
+  auto core = m.def_submodule("core");
+  core.attr("_logging_context") = new logging::LoggingContext{};
 }
 
 }  // namespace core

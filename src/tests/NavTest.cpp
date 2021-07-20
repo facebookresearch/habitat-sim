@@ -16,12 +16,11 @@
 
 namespace Cr = Corrade;
 
-using namespace esp;
-using namespace esp::nav;
+namespace esp {
+namespace nav {
 
 void printPathPoint(int run, int step, const vec3f& p, float distance) {
-  LOG(INFO) << run << "," << step << "," << p[0] << "," << p[1] << "," << p[2]
-            << "," << distance;
+  ESP_DEBUG() << run << "," << step << "," << p << "," << distance;
 }
 
 void testPathFinder(PathFinder& pf) {
@@ -41,14 +40,14 @@ void testPathFinder(PathFinder& pf) {
       const vec3f& pathStart = path.points.front();
       const vec3f& pathEnd = path.points.back();
       const vec3f end = pf.tryStep(pathStart, pathEnd);
-      LOG(INFO) << "tryStep initial end=" << pathEnd.transpose()
-                << ", final end=" << end.transpose();
+      ESP_DEBUG() << "tryStep initial end=" << pathEnd << ", final end=" << end;
       CHECK(path.geodesicDistance < std::numeric_limits<float>::infinity());
     }
   }
 }
 
 TEST(NavTest, PathFinderLoadTest) {
+  logging::LoggingContext ctx;
   PathFinder pf;
   pf.loadNavMesh(Cr::Utility::Directory::join(
       SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.navmesh"));
@@ -60,7 +59,7 @@ void printRandomizedPathSet(PathFinder& pf) {
   ShortestPath path;
   path.requestedStart = pf.getRandomNavigablePoint();
   path.requestedEnd = pf.getRandomNavigablePoint();
-  std::cout << "run,step,x,y,z,geodesicDistance" << std::endl;
+  ESP_DEBUG() << "run,step,pt,geodesicDistance";
   for (int i = 0; i < 100; i++) {
     const float r = 0.1;
     vec3f rv(random.uniform_float(-r, r), 0, random.uniform_float(-r, r));
@@ -77,21 +76,21 @@ void printRandomizedPathSet(PathFinder& pf) {
       printPathPoint(i, path.points.size() + 1, path.requestedEnd,
                      path.geodesicDistance);
     } else {
-      LOG(WARNING) << "Failed to find shortest path between start="
-                   << path.requestedStart.transpose()
-                   << " and end=" << path.requestedEnd.transpose();
+      ESP_WARNING() << "Failed to find shortest path between start="
+                    << path.requestedStart << "and end=" << path.requestedEnd;
     }
   }
 }
 
 TEST(NavTest, PathFinderTestCases) {
+  logging::LoggingContext ctx;
   PathFinder pf;
   pf.loadNavMesh(Cr::Utility::Directory::join(
       SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.navmesh"));
   ShortestPath testPath;
   testPath.requestedStart = vec3f(-6.493, 0.072, -3.292);
   testPath.requestedEnd = vec3f(-8.98, 0.072, -0.62);
-  LOG(INFO) << "TEST";
+  ESP_DEBUG() << "TEST";
   pf.findPath(testPath);
   CHECK(testPath.points.size() == 0);
   CHECK_EQ(testPath.geodesicDistance, std::numeric_limits<float>::infinity());
@@ -109,6 +108,7 @@ TEST(NavTest, PathFinderTestCases) {
 }
 
 TEST(NavTest, PathFinderTestNonNavigable) {
+  logging::LoggingContext ctx;
   PathFinder pf;
   pf.loadNavMesh(Cr::Utility::Directory::join(
       SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.navmesh"));
@@ -122,6 +122,7 @@ TEST(NavTest, PathFinderTestNonNavigable) {
 }
 
 TEST(NavTest, PathFinderTestSeed) {
+  logging::LoggingContext ctx;
   PathFinder pf;
   pf.loadNavMesh(Cr::Utility::Directory::join(
       SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.navmesh"));
@@ -148,6 +149,7 @@ TEST(NavTest, PathFinderTestSeed) {
 }
 
 TEST(NavTest, PathFinderTestMeshData) {
+  logging::LoggingContext ctx;
   PathFinder pf;
   pf.loadNavMesh(Cr::Utility::Directory::join(
       SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.navmesh"));
@@ -167,3 +169,5 @@ TEST(NavTest, PathFinderTestMeshData) {
   ASSERT_EQ(meshData->vbo.size(), 63);
   ASSERT_EQ(meshData->ibo.size(), 63);
 }
+}  // namespace nav
+}  // namespace esp

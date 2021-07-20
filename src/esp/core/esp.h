@@ -57,6 +57,37 @@ std::ostream& operator<<(std::ostream& os, const Map<T>& m) {
   return os << m.format(kJsonFormat);
 }
 
+//! Write Eigen matrix types into ostream in JSON string format
+template <typename T, int numRows, int numCols>
+typename std::enable_if<numRows != 1 && numCols != 1,
+                        Corrade::Utility::Debug&>::type
+operator<<(Corrade::Utility::Debug& out,
+           const Matrix<T, numRows, numCols>& matrix) {
+  return out << matrix.format(kJsonFormat);
+}
+
+//! Write Eigen map into ostream in JSON string format
+template <typename T>
+Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug& out,
+                                    const Map<T>& m) {
+  return out << m.format(kJsonFormat);
+}
+
+template <class T, int numRows, int numCols>
+typename std::enable_if<numRows == 1 || numCols == 1,
+                        Corrade::Utility::Debug&>::type
+operator<<(Corrade::Utility::Debug& out,
+           const Matrix<T, numRows, numCols>& vec) {
+  using Corrade::Utility::Debug;
+  out << "[" << Debug::nospace;
+  for (int i = 0; i < std::max(numRows, numCols); ++i) {
+    if (i != 0)
+      out << Debug::nospace << ",";
+    out << vec[i];
+  }
+  return out << Debug::nospace << "]";
+}
+
 }  // namespace Eigen
 
 // EIGEN_DEFINE_STL_VECTOR_SPECIALIZATION(Eigen::Vector2f)
@@ -104,6 +135,14 @@ typedef Eigen::AlignedBox3f box3f;
 //! Write box3f into ostream in JSON string format
 inline std::ostream& operator<<(std::ostream& os, const box3f& bbox) {
   return os << "{min:" << bbox.min() << ",max:" << bbox.max() << "}";
+}
+
+inline Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug& out,
+                                           const box3f& bbox) {
+  using Corrade::Utility::Debug;
+  return out << "{min:" << Debug::nospace << bbox.min() << Debug::nospace
+             << ",max:" << Debug::nospace << bbox.max() << Debug::nospace
+             << "}";
 }
 
 // smart pointers macro

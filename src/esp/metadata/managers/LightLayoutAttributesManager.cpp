@@ -31,8 +31,8 @@ LightLayoutAttributes::ptr LightLayoutAttributesManager::createObject(
       this->createFromJsonOrDefaultInternal(lightConfigName, msg, doRegister);
 
   if (nullptr != attrs) {
-    LOG(INFO) << msg << " light layout attributes created"
-              << (doRegister ? " and registered." : ".");
+    ESP_DEBUG() << msg << "light layout attributes created"
+                << (doRegister ? " and registered." : ".");
   }
   return attrs;
 }  // PhysicsAttributesManager::createObject
@@ -94,10 +94,9 @@ void LightLayoutAttributesManager::setValsFromJSONDoc(
       lightAttribs->addLightInstance(lightInstanceAttribs);
       ++count;
     }
-    LOG(INFO) << "::setValsFromJSONDoc : " << count << " of " << numLightConfigs
-              << " LightInstanceAttributes created successfully and added to "
-                 "LightLayoutAttributes "
-              << layoutName << ".";
+    ESP_DEBUG() << "::setValsFromJSONDoc :" << count << "of" << numLightConfigs
+                << "LightInstanceAttributes created successfully and added to"
+                << "LightLayoutAttributes" << layoutName << ".";
   }
   // check for user defined attributes at main attributes level
   bool hasUserConfig = this->parseUserDefinedJsonVals(lightAttribs, jsonConfig);
@@ -106,10 +105,10 @@ void LightLayoutAttributesManager::setValsFromJSONDoc(
     // register if anything worth registering was found
     this->postCreateRegister(lightAttribs, true);
   } else {
-    LOG(WARNING) << "::setValsFromJSONDoc : " << layoutName
-                 << " does not contain a \"lights\" object or a valid "
-                    "\"user_defined\" object and so no parsing was "
-                    "done and this attributes is not being saved.";
+    ESP_WARNING() << "::setValsFromJSONDoc :" << layoutName
+                  << "does not contain a \"lights\" <<object or a valid "
+                     "\"user_defined\" object and so no parsing was "
+                     "done and this attributes is not being saved.";
   }
 }  // LightLayoutAttributesManager::setValsFromJSONDoc
 
@@ -153,7 +152,7 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
       posMdleVal = static_cast<int>(
           LightInstanceAttributes::LightPositionNamesMap.at(strToLookFor));
     } else {
-      LOG(WARNING)
+      ESP_WARNING()
           << "::setLightInstanceValsFromJSONDoc : 'position_model' Value in "
              "JSON : `"
           << posMdleVal
@@ -173,7 +172,7 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
     std::string strToLookFor = Cr::Utility::String::lowercase(tmpTypeVal);
     if (strToLookFor == "spot") {
       // TODO remove this if block to support spot lights
-      LOG(WARNING)
+      ESP_WARNING()
           << "::setLightInstanceValsFromJSONDoc : "
              "Type spotlight specified in JSON not currently supported, so "
              "defaulting LightInfo type to esp::gfx::LightType::Point.";
@@ -183,7 +182,7 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
       specifiedTypeVal = static_cast<int>(
           LightInstanceAttributes::LightTypeNamesMap.at(strToLookFor));
     } else {
-      LOG(WARNING)
+      ESP_WARNING()
           << "::setLightInstanceValsFromJSONDoc : "
              "Type Value in JSON : `"
           << tmpTypeVal
@@ -221,7 +220,7 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
   if (jsonConfig.HasMember("spot")) {
     if (!jsonConfig["spot"].IsObject()) {
       // TODO prune NOTE: component when spotlights are supported
-      LOG(WARNING)
+      ESP_WARNING()
           << "::setValsFromJSONDoc : \"spot\" cell in JSON config unable to be "
              "parsed to set spotlight parameters so skipping.  NOTE : "
              "Spotlights not currently supported, so cone angle values are "
@@ -316,11 +315,10 @@ gfx::LightSetup LightLayoutAttributesManager::createLightSetupFromAttributes(
             break;
           }
           default: {
-            LOG(INFO) << "::createLightSetupFromAttributes : Enum "
-                         "gfx::LightType with val "
-                      << type
-                      << " is not supported, so defaulting to "
-                         "gfx::LightType::Point";
+            ESP_DEBUG() << "::createLightSetupFromAttributes : Enum "
+                           "gfx::LightType with val "
+                        << type << "is not supported, so defaulting to"
+                        << "gfx::LightType::Point";
             lightVector = {lightAttr->getPosition(), 1.0f};
           }
         }  // switch on type
