@@ -40,7 +40,6 @@ Habitat-Sim is typically used with
    1. [Testing](#testing)
    1. [Documentation](#documentation)
    1. [Datasets](#datasets)
-   1. [Examples](#examples)
    1. [External Contributions](#external-contributions)
    1. [License](#license)
 
@@ -72,7 +71,7 @@ for a list of what was externally contributed and the corresponding work/citatio
 
 Habitat-Sim can be installed in 3 ways:
 1. Via Conda - Recommended method for most users. Stable release and nightly builds.
-2. Via Docker - Updated approximately once per year for [Habitat Challenge](https://aihabitat.org/challenge/):  [habitat-docker-setup](https://github.com/facebookresearch/habitat-lab#docker-setup).
+2. Via Docker - Updated approximately once per year for [Habitat Challenge](https://aihabitat.org/challenge/).  Read [habitat-docker-setup](https://github.com/facebookresearch/habitat-lab#docker-setup).
 3. Via Source - For active development. Read [build instructions and common build issues](BUILD_FROM_SOURCE.md).
 
 ### [Recommended] Conda Packages
@@ -114,9 +113,17 @@ We also provide a [nightly conda build for the master branch](https://anaconda.o
 
 ## Testing
 
-1. Run our python data download utility to retrieve the test assets:
+1. Let's download some 3D assets using our python data download utility:
+   - Download (testing) 3D scenes
    ```bash
    python -m habitat_sim.utils.datasets_download --uids habitat_test_scenes --data-path /path/to/data/
+   ```
+   Note that these testing scenes do not provide semantic annotations.
+   If you would like to test the semantic sensors via `example.py`, please use the data from the Matterport3D dataset (see [Datasets](DATASETS.md)).
+
+   - Download objects
+   ```bash
+   python -m habitat_sim.utils.datasets_download --uids habitat_example_objects --data-path /path/to/data/
    ```
 
 1. **Interactive testing**: Use the interactive viewer included with Habitat-Sim
@@ -129,34 +136,35 @@ We also provide a [nightly conda build for the master branch](https://anaconda.o
    Try to find the picture of a woman surrounded by a wreath.
    Have fun!
 
-1. **Physical interactions**: If you would like to try out habitat with dynamical objects using the interactive viewer:
-   First setup the test object assets by running the data download utility:
-   ```bash
-   python -m habitat_sim.utils.datasets_download --uids habitat_example_objects --data-path /path/to/data/
-   ```
-
-   To run an interactive C++ example GUI application with physics enabled run
+1. **Physical interactions**: Use the interactive viewer with physics enabled:
    ```bash
    # ./build/viewer if compiling locally
    habitat-viewer --enable-physics --object-dir data/objects/example_objects -- data/scene_datasets/habitat-test-scenes/apartment_1.glb
    ```
-   The viewer application will output user interface help to the console at runtime.
+
+   You should be able to insert objects into the scene by pressing 'o'. The viewer application outputs the full list of keyboard shortcuts to the console at runtime.
 
 1. **Non-interactive testing**: Run the example script:
    ```bash
-   python examples/example.py --scene /path/to/data/scene_datasets/habitat-test-scenes/skokloster-castle.glb
+   python /path/to/habitat-sim/examples/example.py --scene /path/to/data/scene_datasets/habitat-test-scenes/skokloster-castle.glb
    ```
    The agent will traverse a particular path and you should see the performance stats at the very end, something like this:
   `640 x 480, total time: 3.208 sec. FPS: 311.7`.
-  Note that the test scenes do not provide semantic meshes.
-  If you would like to test the semantic sensors via `example.py`, please use the data from the Matterport3D dataset (see [Datasets](#Datasets)).
-  We have also provided an [example demo](https://aihabitat.org/docs/habitat-lab/habitat-lab-demo.html) for reference.
 
-    To run a physics example in python (after building with "Physics simulation via Bullet"):
-    ```bash
-    python examples/example.py --scene /path/to/data/scene_datasets/habitat-test-scenes/skokloster-castle.glb --enable_physics
-    ```
-    Note that in this mode the agent will be frozen and oriented toward the spawned physical objects. Additionally, `--save_png` can be used to output agent visual observation frames of the physical scene to the current directory.
+   To reproduce the benchmark table from [Habitat ICCV'19](https://arxiv.org/abs/1904.01201) run `examples/benchmark.py --scene /path/to/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb`.
+
+   Additional arguments to `example.py` are provided to change the sensor configuration, print statistics of the semantic annotations in a scene, compute action-space shortest path trajectories, and set other useful functionality. Refer to the `example.py` and `demo_runner.py` source files for an overview.
+
+   Load a specific MP3D or Gibson house: `examples/example.py --scene path/to/mp3d/house_id.glb`.
+
+
+   We have also provided an [example demo](https://aihabitat.org/docs/habitat-lab/habitat-lab-demo.html) for reference.
+
+   To run a physics example in python (after building with "Physics simulation via Bullet"):
+   ```bash
+   python examples/example.py --scene /path/to/data/scene_datasets/habitat-test-scenes/skokloster-castle.glb --enable_physics
+   ```
+   Note that in this mode the agent will be frozen and oriented toward the spawned physical objects. Additionally, `--save_png` can be used to output agent visual observation frames of the physical scene to the current directory.
 
 
 ### Common testing issues
@@ -185,31 +193,11 @@ Browse the online [Habitat-Sim documentation](https://aihabitat.org/docs/habitat
 To get you started, see the [Lighting Setup tutorial](https://aihabitat.org/docs/habitat-sim/lighting-setups.html) for adding new objects to existing scenes and relighting the scene & objects. The [Image Extractor tutorial](https://aihabitat.org/docs/habitat-sim/image-extractor.html) shows how to get images from scenes loaded in Habitat-Sim.
 
 ### Questions?
-Join the Slack channel.
 [![Slack Join](http://img.shields.io/static/v1?label=Join%20us%20on&message=%23habitat-dev&labelColor=%234A154B&logo=slack)](https://join.slack.com/t/ai-habitat/shared_invite/enQtNjY1MzM1NDE4MTk2LTZhMzdmYWMwODZlNjg5MjZiZjExOTBjOTg5MmRiZTVhOWQyNzk0OTMyN2E1ZTEzZTNjMWM0MjBkN2VhMjQxMDI)
 
 ## Datasets
 
-- The full Matterport3D (MP3D) dataset for use with Habitat can be downloaded using the official [Matterport3D](https://niessner.github.io/Matterport/) download script as follows: `python download_mp.py --task habitat -o path/to/download/`. You only need the habitat zip archive and not the entire Matterport3D dataset. Note that this download script requires python 2.7 to run.
-- The Gibson dataset for use with Habitat can be downloaded by agreeing to the terms of use in the [Gibson](https://github.com/StanfordVL/GibsonEnv#database) repository.
-- Semantic information for Gibson is available from the [3DSceneGraph](https://3dscenegraph.stanford.edu/) dataset. The semantic data will need to be converted before it can be used within Habitat:
-   ```bash
-   tools/gen_gibson_semantics.sh /path/to/3DSceneGraph_medium/automated_graph /path/to/GibsonDataset /path/to/output
-   ```
-   To use semantics, you will need to enable the semantic sensor.
-- To work with the Replica dataset, you need a file called ```sorted_faces.bin``` for each model. Such files (1 file per model), along with a convenient setup script can be downloaded from here: [sorted_faces.zip](http://dl.fbaipublicfiles.com/habitat/sorted_faces.zip). You need:
-```
-  - Download the file from the above link;
-  - Unzip it;
-  - Use the script within to copy each data file to its corresponding folder (You will have to provide the path to the folder containing all replica models. For example, ~/models/replica/);
-```
-## Examples
-
-Load a specific MP3D or Gibson house: `examples/example.py --scene path/to/mp3d/house_id.glb`.
-
-Additional arguments to `example.py` are provided to change the sensor configuration, print statistics of the semantic annotations in a scene, compute action-space shortest path trajectories, and set other useful functionality. Refer to the `example.py` and `demo_runner.py` source files for an overview.
-
-To reproduce the benchmark table from above run `examples/benchmark.py --scene /path/to/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb`.
+[Common datasets used with Habitat](DATASETS.md).
 
 
 ## External Contributions
