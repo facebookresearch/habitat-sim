@@ -95,10 +95,10 @@ def initialize_test_data_sources(data_path):
             "version": "1.0",
         },
         "replica_cad_dataset": {
-            "source": "https://dl.fbaipublicfiles.com/habitat/ReplicaCAD/ReplicaCAD_dataset_v1.0.zip",
-            "package_name": "ReplicaCAD_dataset_v1.0.zip",
+            "source": "https://dl.fbaipublicfiles.com/habitat/ReplicaCAD/ReplicaCAD_dataset_v1.1.zip",
+            "package_name": "ReplicaCAD_dataset_v1.1.zip",
             "link": data_path + "replica_cad",
-            "version": "1.0",
+            "version": "1.1",
         },
         "replica_cad_baked_lighting": {
             "source": "https://dl.fbaipublicfiles.com/habitat/ReplicaCAD/ReplicaCAD_baked_lighting_v1.0.zip",
