@@ -46,8 +46,7 @@ class AttributesManager
 
   AttributesManager(const std::string& attrType, const std::string& JSONTypeExt)
       : esp::core::ManagedFileBasedContainer<T, Access>::
-            ManagedFileBasedContainer(attrType),
-        JSONTypeExt_(JSONTypeExt) {}
+            ManagedFileBasedContainer(attrType, JSONTypeExt) {}
   ~AttributesManager() override = default;
 
   /**
@@ -190,18 +189,6 @@ class AttributesManager
       const attributes::AbstractAttributes::ptr& attribs,
       const io::JsonGenericValue& jsonConfig) const;
 
-  /**
-   * @brief Return a properly formated JSON file name for the attributes
-   * managed by this manager.  This will change the extension to the
-   * appropriate json extension.
-   * @param filename The original filename
-   * @return a candidate JSON file name for the attributes managed by this
-   * manager.
-   */
-  std::string getFormattedJSONFileName(const std::string& filename) {
-    return this->convertFilenameToPassedExt(filename, this->JSONTypeExt_);
-  }
-
  protected:
   /**
    * @brief Called intenrally from createObject.  This will create either a
@@ -217,13 +204,6 @@ class AttributesManager
   AttribsPtr createFromJsonOrDefaultInternal(const std::string& filename,
                                              std::string& msg,
                                              bool registerObj);
-
-  // ======== Typedefs and Instance Variables ========
-  /**
-   * @brief The string extension for json files for this manager's attributes
-   * types
-   */
-  const std::string JSONTypeExt_;
 
  public:
   ESP_SMART_POINTERS(AttributesManager<T, Access>)
@@ -353,7 +333,7 @@ auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
   std::string jsonAttrFileName =
       (Cr::Utility::String::endsWith(filename, this->JSONTypeExt_)
            ? filename
-           : getFormattedJSONFileName(filename));
+           : this->getFormattedJSONFileName(filename));
   // Check if this configuration file exists and if so use it to build
   // attributes
   bool jsonFileExists = (this->isValidFileName(jsonAttrFileName));

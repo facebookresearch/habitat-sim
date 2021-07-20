@@ -71,18 +71,6 @@ class AbstractManagedObject {
   ESP_SMART_POINTERS(AbstractManagedObject)
 };  // class AbstractManagedObject
 
-class AbstractFileBasedManagedObject : public AbstractManagedObject {
- public:
-  /**
-   * @brief directory where files used to construct ManagedObject can be found.
-   */
-  virtual void setFileDirectory(const std::string& fileDirectory) = 0;
-  virtual std::string getFileDirectory() const = 0;
-
- public:
-  ESP_SMART_POINTERS(AbstractFileBasedManagedObject)
-};  // class AbstractFileBasedManagedObject
-
 }  // namespace core
 }  // namespace esp
 #endif  // ESP_CORE_ABSTRACTMANAGEDOBJECT_H_
