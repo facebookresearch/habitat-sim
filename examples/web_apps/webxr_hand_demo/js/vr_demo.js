@@ -93,6 +93,16 @@ export class VRDemo {
   }
 
   start() {
+    let bindedSetup = this.setup.bind(this);
+    this.workerThread = new Worker("js/physics_worker.js");
+    this.workerThread.onmessage = function(e) {
+      if (e.data.type == "ready") {
+        bindedSetup();
+      }
+    };
+  }
+
+  setup() {
     // init sim
     this.config = new Module.SimulatorConfiguration();
     this.config.scene_id = DataUtils.getStageFilepath(Module.stageName);

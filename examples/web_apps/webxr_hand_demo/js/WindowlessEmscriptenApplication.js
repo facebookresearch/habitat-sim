@@ -40,23 +40,9 @@ function createMagnumModule(init) {
     // habitat-sim code. Since they are not set, the messages are by default
     // printed to the console.
 
-    // printErr: function(_message) {
-    //     if(module.log) {
-    //         module.log.innerHTML += Array.prototype.slice.call(arguments).join(' ')
-    //             .replace(/[\"&<>]/g, function (a) {
-    //                 return { '"': '&quot;', '&': '&amp;', '<': '&lt;', '>': '&gt;' }[a];
-    //             }) + '\n';
-    //     }
-    // },
+    // printErr: function() {},
 
-    // print: function(_message) {
-    //     if(module.log) {
-    //         module.log.innerHTML += Array.prototype.slice.call(arguments).join(' ')
-    //             .replace(/[\"&<>]/g, function (a) {
-    //                 return { '"': '&quot;', '&': '&amp;', '<': '&lt;', '>': '&gt;' }[a];
-    //             }) + '\n';
-    //     }
-    // },
+    // print: function() {},
 
     /* onAbort not handled here, as the output is printed directly on the page */
 
