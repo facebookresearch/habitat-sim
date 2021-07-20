@@ -115,16 +115,16 @@ We also provide a [nightly conda build for the master branch](https://anaconda.o
 
 1. Let's download some 3D assets using our python data download utility:
    - Download (testing) 3D scenes
-   ```bash
-   python -m habitat_sim.utils.datasets_download --uids habitat_test_scenes --data-path /path/to/data/
-   ```
-   Note that these testing scenes do not provide semantic annotations.
-   If you would like to test the semantic sensors via `example.py`, please use the data from the Matterport3D dataset (see [Datasets](DATASETS.md)).
+      ```bash
+      python -m habitat_sim.utils.datasets_download --uids habitat_test_scenes --data-path /path/to/data/
+      ```
+      Note that these testing scenes do not provide semantic annotations.
+      If you would like to test the semantic sensors via `example.py`, please use the data from the Matterport3D dataset (see [Datasets](DATASETS.md)).
 
-   - Download objects
-   ```bash
-   python -m habitat_sim.utils.datasets_download --uids habitat_example_objects --data-path /path/to/data/
-   ```
+   - Download example objects
+      ```bash
+      python -m habitat_sim.utils.datasets_download --uids habitat_example_objects --data-path /path/to/data/
+      ```
 
 1. **Interactive testing**: Use the interactive viewer included with Habitat-Sim
    ```bash
