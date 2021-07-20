@@ -125,6 +125,49 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
       const std::string& filename,
       const io::JsonGenericValue& jsonConfig) = 0;
 
+  /**
+   * @brief Saves the @ref esp::core::AbstractFileBasedManagedObject with handle
+   * @p objectHandle to a JSON file using a noncolliding version of the object's
+   * handle, with appropriate extension denoting type of JSON, as file name, to
+   * the specified file directory. esp::core::AbstractFileBasedManagedObject's
+   * specified file directory.
+   * @param objectHandle The name of the object to save. If not found, returns
+   * false.
+   * @param fileDirectory The directory within which to save the file. If not
+   * given, will use the @ref esp::core::AbstractFileBasedManagedObject's
+   * specified file directory.
+   * @return whether successful
+   */
+  bool saveManagedObjectToFile(const std::string& objectHandle,
+                               const std::string& filedirectory = "");
+
+  /**
+   * @brief Saves the @ref esp::core::AbstractFileBasedManagedObject with handle
+   * @p objectHandle to a JSON file using the @p filename given.
+   * @param objectHandle The name of the object to save. If not found, returns
+   * false.
+   * @param filename The name of the file to save to. If not provided, will use
+   * objectHandle. Will append appropriate extension type
+   * @return whether successful
+   */
+  bool saveManagedObjectToFile(const std::string& objectHandle,
+                               const std::string& filename
+
+  /**
+   * @brief Saves the @ref esp::core::AbstractFileBasedManagedObject with handle
+   * @p objectHandle to a JSON file using the @p filename given. If none
+   * provided, will use a noncolliding version of the object's handle, with
+   * appropriate extension denoting type of JSON.
+   * @param objectHandle The name of the object to save. If not found, returns
+   * false.
+   * @param filename The name of the file to save to. If not provided, will use
+   * objectHandle. Will append appropriate extension type
+   * @return whether successful
+   */
+  bool saveManagedObjectToFile(const std::string& objectHandle,
+                               const std::string& filename,
+                               const std::string& filedirectory);
+
  protected:
   //======== Common File-based import and utility functions ========
 
