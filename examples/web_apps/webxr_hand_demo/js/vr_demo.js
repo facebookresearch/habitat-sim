@@ -74,6 +74,8 @@ export class VRDemo {
 
   objectCounter = 0;
 
+  lastStepTime = 0;
+
   constructor() {
     this.fpsElement = document.getElementById("fps");
   }
@@ -213,29 +215,6 @@ export class VRDemo {
     );
 
     this.webXRSession.requestAnimationFrame(this.drawVRScene.bind(this));
-
-    let printedBenchmarkResults = false;
-    this.physicsStepFunction = setInterval(() => {
-      this.sim.stepWorld(1.0 / 60);
-      if (this.benchmarker) {
-        if (this.benchmarker.active()) {
-          this.benchmarker.stepBenchmark();
-        } else if (!printedBenchmarkResults) {
-          const res = this.benchmarker.getResults();
-          console.log(
-            `Frame time: ${res["meanFrameTime"].toFixed(2)} +/- ${res[
-              "errorFrameTime"
-            ].toFixed(2)} ms`
-          );
-          console.log(
-            `Step time: ${res["meanStepTime"].toFixed(2)} +/- ${res[
-              "errorStepTime"
-            ].toFixed(2)} ms`
-          );
-          printedBenchmarkResults = true;
-        }
-      }
-    }, 1000.0 / 60);
 
     let lastFPSUpdateTime = performance.now();
     let overallFPS = 20;
@@ -433,7 +412,34 @@ export class VRDemo {
     }
   }
 
+  printedBenchmarkResults = false;
+
   drawVRScene(t, frame) {
+    let curTime = performance.now();
+    let timeDiff = curTime - this.lastStepTime;
+    if (timeDiff >= 1000.0 / 60) {
+      this.lastStepTime = curTime;
+      this.sim.stepWorld(timeDiff / 1000.0);
+      if (this.benchmarker) {
+        if (this.benchmarker.active()) {
+          this.benchmarker.stepBenchmark();
+        } else if (!this.printedBenchmarkResults) {
+          const res = this.benchmarker.getResults();
+          console.log(
+            `Frame time: ${res["meanFrameTime"].toFixed(2)} +/- ${res[
+              "errorFrameTime"
+            ].toFixed(2)} ms`
+          );
+          console.log(
+            `Step time: ${res["meanStepTime"].toFixed(2)} +/- ${res[
+              "errorStepTime"
+            ].toFixed(2)} ms`
+          );
+          this.printedBenchmarkResults = true;
+        }
+      }
+    }
+
     const session = frame.session;
 
     session.requestAnimationFrame(this.drawVRScene.bind(this));
