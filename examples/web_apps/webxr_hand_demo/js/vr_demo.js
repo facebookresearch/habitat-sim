@@ -281,6 +281,10 @@ export class VRDemo {
 
       const pointToArray = p => [p.x, p.y, p.z, p.w];
 
+      // if we are currently benchmarking, don't do any computation with hands
+      if (this.benchmarker && this.benchmarker.active()) {
+        continue;
+      }
       // update hand obj pose
       let poseTransform = inputPose.transform;
       const handPos = Module.Vector3.add(
@@ -419,7 +423,7 @@ export class VRDemo {
     let timeDiff = curTime - this.lastStepTime;
     if (timeDiff >= 1000.0 / 60) {
       this.lastStepTime = curTime;
-      this.sim.stepWorld(timeDiff / 1000.0);
+      this.sim.stepWorld(1.0 / 60);
       if (this.benchmarker) {
         if (this.benchmarker.active()) {
           this.benchmarker.stepBenchmark();
@@ -454,7 +458,9 @@ export class VRDemo {
     const agent = this.sim.getAgent(this.agentId);
 
     this.handleInput(frame);
-    updateHeadPose(pose, agent);
+    if (!this.benchmarker || !this.benchmarker.active()) {
+      updateHeadPose(pose, agent);
+    }
 
     const layer = session.renderState.baseLayer;
     this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, layer.framebuffer);
