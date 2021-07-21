@@ -70,6 +70,14 @@ void Recorder::saveKeyframe() {
   advanceKeyframe();
 }
 
+Keyframe Recorder::getLatestKeyframe() {
+  CORRADE_ASSERT(!savedKeyframes_.empty(),
+                 "Recorder::getLatestKeyframe() : Trying to access latest "
+                 "keyframe when there are none",
+                 savedKeyframes_.back());
+  return savedKeyframes_.back();
+}
+
 void Recorder::addUserTransformToKeyframe(const std::string& name,
                                           const Magnum::Vector3& translation,
                                           const Magnum::Quaternion& rotation) {

@@ -162,11 +162,9 @@ function doPreloading() {
   }
 }
 
-importScripts("data_utils_temp.js");
-
 var Module = createMagnumModule();
 Module.preRun.push(() => {
-  // get the stage name
+  // todo: get the stage name from onmessage
   stageName = "remake_v0_JustBigStuff_00";
   doPreloading();
 });
@@ -182,7 +180,8 @@ function start() {
   physicsWorker = new PhysicsWorker();
   postMessage({ type: "ready", value: null });
   onmessage = function(e) {
-    // get a bunch of data here
+    // todo: get a bunch of variables here rather than hard code into this file
+    // also need to make physicsWorker get initialized and started inside here
     console.log(e);
   };
   physicsWorker.start();
@@ -195,11 +194,10 @@ class PhysicsWorker {
     this.config.scene_id = DataUtils.getStageFilepath(stageName);
     this.config.enablePhysics = true;
     this.config.physicsConfigFile = DataUtils.getPhysicsConfigFilepath();
-    this.config.sceneLightSetup = ""; // this empty string means "use lighting"
-    this.config.overrideSceneLightDefaults = true; // always set this to true
-    this.config.allowPbrShader = false; // Pbr shader isn't robust on WebGL yet
     this.config.createRenderer = false;
+    this.config.enableGfxReplaySave = true;
     this.sim = new Module.Simulator(this.config);
+    workerlog("initiated simulator");
   }
 
   start() {
@@ -207,6 +205,10 @@ class PhysicsWorker {
     this.physicsStepFunction = setInterval(() => {
       workerlog("stepping world");
       this.sim.stepWorld(1.0 / 60);
+      const recorder = this.sim.getGfxReplayManager().getRecorder();
+      recorder.saveKeyframe();
+      let keyframe = recorder.getLatestKeyframe();
+      postMessage({ type: "keyframe", value: keyframe });
     }, 1000.0 / 60);
   }
 }

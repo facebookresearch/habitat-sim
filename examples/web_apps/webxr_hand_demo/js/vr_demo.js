@@ -92,12 +92,21 @@ export class VRDemo {
     }
   }
 
+  latestKeyframe = null;
+  updateLatestKeyframe(keyframe) {
+    this.latestKeyframe = keyframe;
+    console.log("updated latest keyframe to", this.latestKeyframe);
+  }
+
   start() {
     let bindedSetup = this.setup.bind(this);
+    let updateLatestKeyframe = this.updateLatestKeyframe.bind(this);
     this.workerThread = new Worker("js/physics_worker.js");
     this.workerThread.onmessage = function(e) {
       if (e.data.type == "ready") {
         bindedSetup();
+      } else if (e.data.type == "keyframe") {
+        updateLatestKeyframe(e.data.value);
       }
     };
   }

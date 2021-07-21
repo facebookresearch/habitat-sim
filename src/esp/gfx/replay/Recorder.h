@@ -67,6 +67,11 @@ class Recorder {
   void saveKeyframe();
 
   /**
+   * @brief Returns the last saved keyframe
+   */
+  Keyframe getLatestKeyframe();
+
+  /**
    * @brief Add a named "user transform" which can be used to store cameras,
    * agents, or other application-specific objects
    *
@@ -140,6 +145,8 @@ class Recorder {
   Keyframe currKeyframe_;
   std::vector<Keyframe> savedKeyframes_;
   RenderAssetInstanceKey nextInstanceKey_ = 0;
+
+  ESP_SMART_POINTERS(Recorder)
 };
 
 }  // namespace replay
