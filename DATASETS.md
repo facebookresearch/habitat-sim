@@ -59,3 +59,7 @@ To work with the Replica dataset, you need a file called ```sorted_faces.bin``` 
   - Unzip it;
   - Use the script within to copy each data file to its corresponding folder (You will have to provide the path to the folder containing all replica models. For example, ~/models/replica/);
 ```
+
+## ReplicaCAD
+
+Details and download instructions: [https://aihabitat.org/datasets/replica_cad/](https://aihabitat.org/datasets/replica_cad/).
