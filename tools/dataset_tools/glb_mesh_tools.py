@@ -6,6 +6,7 @@ import contextlib
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Set, Tuple
 
+import config_utils as ut
 import numpy as np
 import trimesh
 
@@ -13,13 +14,15 @@ import trimesh
 # conda install -c conda-forge trimesh networkx scikit-image shapely rtree pyembree
 
 
-def convert_glb_to_gltf(glb_file_name: str, gltf_file_name: str, override: bool):
+def convert_glb_to_gltf(
+    src_glb_file_name: str, dest_gltf_file_name: str, overwrite: bool
+):
     """Convert the passed glb file to a gltf and save. Uses pygltflib to perform conversion,
-    since trimesh's support for this function is incomplete.  The output of this process is
+    since trimesh's support for this function is incomplete/questionable.  The output of this process is
     a JSON and a bin file holding assets.
-    :param glb_file_name: The glb file to convert. Extension must be .glb or .bin
-    :param gltf_file_name: The name of the gltf file tow write
-    :param override: Override existing file?
+    :param src_glb_file_name: The glb file to read and convert. Extension must be .glb or .bin
+    :param dest_gltf_file_name: The name of the gltf file to write
+    :param overwrite: Overwrite existing file?
     :return: Whether successful or not
     """
     try:
@@ -32,18 +35,18 @@ def convert_glb_to_gltf(glb_file_name: str, gltf_file_name: str, override: bool)
 
     # function writes garbage to console so redirect stdout
     with contextlib.redirect_stdout(None):
-        success = glb2gltf(glb_file_name, gltf_file_name, override)
+        success = glb2gltf(src_glb_file_name, dest_gltf_file_name, overwrite)
 
     return success
 
 
-def extract_json_from_glb(glb_file_name: str):
+def load_glb_as_gltf(glb_file_name: str):
     """Extract the JSON data from the glb file specified.
     :param glb_file_name: the file to acquire the json from.  Must be .glb or .bin
     :return: dict of JSON
     """
     try:
-        from pygltflib import GLTF2, delete_empty_keys, gltf_asdict
+        from pygltflib import GLTF2
     except ImportError:
         print(
             "pygltflib must be installed to access the JSON in the glb file {}. Aborting".format(
@@ -52,14 +55,34 @@ def extract_json_from_glb(glb_file_name: str):
         )
         return {}
 
-    import json
+    return GLTF2().load(glb_file_name)
+
+
+def extract_json_from_glb(glb_file_name: str):
+    """Extract the JSON data from the glb file specified.
+    :param glb_file_name: the file to acquire the json from.  Must be .glb or .bin
+    :return: dict of JSON
+    """
+    try:
+        from pygltflib import GLTF2  # , delete_empty_keys, gltf_asdict
+    except ImportError:
+        print(
+            "pygltflib must be installed to access the JSON in the glb file {}. Aborting".format(
+                glb_file_name
+            )
+        )
+        return {}
 
     gltf_obj = GLTF2().load(glb_file_name)
+    if gltf_obj == {}:
+        return gltf_obj
+
+    import json
 
     # function writes garbage to console so redirect stdout
     with contextlib.redirect_stdout(None):
         # want dictionary representation
-        res = delete_empty_keys(gltf_asdict(gltf_obj))
+        # res = delete_empty_keys(gltf_asdict(gltf_obj))
         res = json.loads(gltf_obj.gltf_to_json())
     return res
 
@@ -757,9 +780,41 @@ def extract_lighting_from_gltf(scene_filename_glb: str, lights_tag: str):
     return lighting_dict_res
 
 
-def set_gltf_as_unlit(scene_filename_glb: str):
-    base_json = extract_json_from_glb(scene_filename_glb)
-    for material in base_json["materials"]:
+def convert_file_to_unlit(src_glb_file: str, dest_glb_file: str):
+    import os
+
+    # first convert glb to gltf in dest dir
+    dest_json_file = os.path.splitext(dest_glb_file)[0] + ".json"
+    dest_bin_file = os.path.splitext(dest_json_file)[0] + ".bin"
+
+    # convert glb to gltf
+    conv_glb_to_gltf(src_glb_file, dest_json_file, dest_bin_file)
+
+    # modify json
+    convert_to_unlit(dest_json_file, dest_json_file)
+
+    # convert modified glt back to glb file
+    conv_gltf_to_glb(dest_json_file, dest_glb_file)
+
+    # remove json and bin files
+    os.remove(dest_json_file)
+    os.remove(dest_bin_file)
+
+    # remove
+
+
+def convert_to_unlit(input_file, output_file):
+    """Load and convert a gltf (as json) to be unlit."""
+    import json
+
+    with open(input_file) as f:
+        json_data = json.load(f)
+    if "extensionsUsed" in json_data:
+        json_data["extensionsUsed"].append("KHR_materials_unlit")
+    else:
+        json_data["extensionsUsed"] = ["KHR_materials_unlit"]
+
+    for material in json_data["materials"]:
         assert "pbrMetallicRoughness" in material
 
         # Drop everything except base color and base color texture
@@ -780,3 +835,330 @@ def set_gltf_as_unlit(scene_filename_glb: str):
         if "extensions" not in material:
             material["extensions"] = {}
         material["extensions"]["KHR_materials_unlit"] = {}
+
+    with open(output_file, "wb") as of:
+        of.write(json.dumps(json_data, indent=2).encode("utf-8"))
+
+
+def conv_glb_to_gltf(src_glb_file, dest_json_file, dest_bin_file):
+    import json
+    import os
+    import struct
+
+    CHUNK_TYPE_JSON = 0x4E4F534A
+    CHUNK_TYPE_BIN = 0x004E4942
+
+    glb_header = struct.Struct("<4sII")
+    chunk_header = struct.Struct("<II")
+    dest_path = os.path.dirname(dest_json_file)
+
+    def pad_size_32b(size):
+        return (4 - size % 4) % 4
+
+    print(
+        "Converting {} to {} and {}".format(src_glb_file, dest_json_file, dest_bin_file)
+    )
+
+    with open(src_glb_file, "rb") as f:
+        data: bytes = f.read()
+
+    # Get header
+    header, version, length = glb_header.unpack_from(data)
+    assert header == b"glTF", "glTF signature invalid: %s" % data[:4]
+    assert version == 2, "glTF version invalid: %d" % version
+
+    # Go through chunks. Assume JSON chunk first, BIN chunk next
+    data = data[glb_header.size :]
+    chunk_length, chunk_type = chunk_header.unpack_from(data)
+    assert chunk_type == CHUNK_TYPE_JSON
+
+    data = data[chunk_header.size :]
+    json_data = json.loads(data[:chunk_length].decode("utf-8"))
+
+    data = data[chunk_length:]
+    chunk_length, chunk_type = chunk_header.unpack_from(data)
+    assert chunk_type == CHUNK_TYPE_BIN
+    bin_data = data[chunk_header.size :]
+
+    assert len(json_data["buffers"]) == 1
+    json_data["buffers"][0]["uri"] = dest_bin_file
+
+    # Separate images. To make this easy, we expect the images to be stored in
+    # a continuous suffix of buffer views.
+
+    image_buffer_views = set()
+    earliest_image_buffer_offset = json_data["buffers"][0]["byteLength"]
+    for image in json_data["images"]:
+        assert "bufferView" in image
+        assert "uri" not in image
+
+        # Figure out an extension
+        ext = None
+        if image["mimeType"] == "image/jpeg":
+            ext = ".jpg"
+        elif image["mimeType"] == "image/png":
+            ext = ".png"
+        elif image["mimeType"] == "image/x-basis":
+            ext = ".basis"
+        elif image["mimeType"] == "image/unknown" and "name" in image:
+            ext = os.path.splitext(image["name"])[1]
+        assert ext, "Unknown MIME type %s" % image["mimeType"]
+
+        # Err, if an extension is already present in the name, strip it
+        if "name" in image and image["name"].endswith(ext):
+            ext = ""
+
+        # Remember the earliest buffer view used
+        buffer_view_id = image["bufferView"]
+        image_buffer_views.add(buffer_view_id)
+
+        # Expect there's just one buffer, containing everything. Remember the
+        # earliest offset in that buffer
+        buffer_view = json_data["bufferViews"][buffer_view_id]
+        assert buffer_view["buffer"] == 0
+        earliest_image_buffer_offset = min(
+            buffer_view["byteOffset"], earliest_image_buffer_offset
+        )
+
+        # Save the image data. If the image doesn't have a name, pick the glb
+        # filename (and assume there's just one image)
+        if "name" not in image:
+            assert len(json_data["images"]) == 1
+            image_out = os.path.splitext(os.path.basename(src_glb_file))[0] + ext
+        else:
+            image_out = image["name"] + ext
+        image_out = os.path.join(dest_path, image_out)
+        # print("Extracting", image_out)
+        with open(image_out, "wb") as imf:
+            imf.write(
+                bin_data[
+                    buffer_view["byteOffset"] : buffer_view["byteOffset"]
+                    + buffer_view["byteLength"]
+                ]
+            )
+
+        # Replace the buffer view reference with a file URI
+        del image["bufferView"]
+        image["uri"] = image_out
+
+    # Check that all buffer views before the first image one are before the
+    # first offset as well. I doubt the views will overlap
+    for i in range(list(image_buffer_views)[0]):
+        assert (
+            json_data["bufferViews"][i]["byteOffset"]
+            + json_data["bufferViews"][i]["byteLength"]
+            <= earliest_image_buffer_offset
+        )
+
+    # Remove image-related buffer views, move back everything after
+    original_offset = 0
+    current_id = 0
+    original_bin_data = bin_data
+    bin_data = bytearray()
+    for i, view in enumerate(json_data["bufferViews"]):
+        # A view that we keep, put it to the new bin data
+        if i not in image_buffer_views:
+            # TODO: This will probably mess up with alignment when there are
+            #   data that are not multiples of 4 bytes
+            original_offset = view["byteOffset"]
+            view["byteOffset"] = len(bin_data)
+            bin_data += original_bin_data[
+                original_offset : original_offset + view["byteLength"]
+            ]
+
+            current_id += 1
+
+        # A view that we remove, update subsequent IDs in all accessors
+        else:
+            for a in json_data["accessors"]:
+                if a["bufferView"] > current_id:
+                    a["bufferView"] -= 1
+
+    # Remove now unused views
+    json_data["bufferViews"] = [
+        view
+        for i, view in enumerate(json_data["bufferViews"])
+        if i not in image_buffer_views
+    ]
+
+    # Update with new bin data size
+    json_data["buffers"][0]["byteLength"] = len(bin_data)
+
+    with open(dest_json_file, "wb") as of:
+        of.write(json.dumps(json_data, indent=2).encode("utf-8"))
+
+    with open(dest_bin_file, "wb") as bf:
+        bf.write(bin_data)
+
+
+def conv_gltf_to_glb(src_gltf_file, dest_glb_file):
+    import base64
+    import json
+    import os
+    import struct
+
+    CHUNK_TYPE_JSON = 0x4E4F534A
+    CHUNK_TYPE_BIN = 0x004E4942
+
+    glb_header = struct.Struct("<4sII")
+    chunk_header = struct.Struct("<II")
+
+    def pad_size_32b(size):
+        return (4 - size % 4) % 4
+
+    print("Converting {} to {}".format(src_gltf_file, dest_glb_file))
+
+    with open(src_gltf_file) as f:
+        data = json.load(f)
+
+    bin_data = bytearray()
+
+    if "buffers" in data:
+        assert len(data["buffers"]) <= 1
+        if data["buffers"]:
+            uri = data["buffers"][0]["uri"]
+            if uri[:5] == "data:":
+                d = base64.b64decode(uri.split("base64,")[1])
+            else:
+                with open(uri, "rb") as bf:
+                    d = bf.read()
+            bin_data.extend(d)
+
+    assert "buffers" in data
+
+    for image in data["images"]:
+        assert "bufferView" not in image
+        assert "uri" in image
+
+        # Set image name and mime type if not already present, so we have
+        # something to extract the file name / extension from in glb2gltf
+        basename, ext = os.path.splitext(image["uri"])
+        if "mimeType" not in image:
+            if ext == ".jpg":
+                image["mimeType"] = "image/jpeg"
+            elif ext == ".png":
+                image["mimeType"] = "image/png"
+            elif ext == ".basis":  # noqa: SIM106
+                image["mimeType"] = "image/x-basis"
+            else:
+                raise AssertionError("Unknown image file extension %s" % ext)
+        if "name" not in image:
+            image["name"] = basename
+
+        # Load the image data, put it into a new buffer view
+        # print("Bundling", image["uri"])
+        with open(image["uri"], "rb") as imf:
+            image_data = imf.read()
+        data["bufferViews"] += [
+            {
+                "buffer": 0,
+                "byteOffset": len(bin_data),
+                "byteLength": len(image_data),
+            }
+        ]
+        bin_data += image_data
+        del image["uri"]
+        image["bufferView"] = len(data["bufferViews"]) - 1
+
+    # Pad the buffer, update its length
+    if "buffers" in data and data["buffers"]:
+        bin_data.extend(b" " * pad_size_32b(len(bin_data)))
+
+        del data["buffers"][0]["uri"]
+        data["buffers"][0]["byteLength"] = len(bin_data)
+
+    json_data = json.dumps(data, separators=(",", ":")).encode("utf-8")
+    # Append padding bytes so that BIN chunk is aligned to 4 bytes
+    json_chunk_align = pad_size_32b(len(json_data))
+    json_chunk_length = len(json_data) + json_chunk_align
+
+    with open(dest_glb_file, "wb") as outfile:
+        length = glb_header.size + chunk_header.size + json_chunk_length
+        if bin_data:
+            length += chunk_header.size + len(bin_data)
+
+        # Write header
+        outfile.write(glb_header.pack(b"glTF", 2, length))
+
+        # Write JSON chunk
+        outfile.write(chunk_header.pack(json_chunk_length, CHUNK_TYPE_JSON))
+        outfile.write(json_data)
+        outfile.write(b" " * json_chunk_align)
+
+        # Write BIN chunk
+        if bin_data:
+            outfile.write(chunk_header.pack(len(bin_data), CHUNK_TYPE_BIN))
+            outfile.write(bin_data)
+
+
+def save_glb_as_unlit_old(src_filename_glb: str, dest_filename_glb: str):
+    """This will modify the passed glb file so that it will be considered unlit,
+    and return the modified json.  Assumes object has a PBR material"""
+    try:
+        from pygltflib.utils import GLTF2, BufferFormat
+    except ImportError:
+        print(
+            "set_glb_as_unlit : pygltflib must be installed to set glbs to unlit. Aborting"
+        )
+        return False
+    # Need to process json
+    import json
+
+    # load GLB, save as gltf
+    glb_file = GLTF2().load_binary(src_filename_glb)
+    tmp_gltf_filename = dest_filename_glb + ".gltf"
+    glb_file.convert_buffers(BufferFormat.BINARYBLOB)
+    glb_file.save(tmp_gltf_filename)
+
+    # load gltf JSON file
+    gltf = GLTF2().load(tmp_gltf_filename)
+    # convert buffers to be able to save
+    gltf.convert_buffers(BufferFormat.BINARYBLOB)
+
+    # get JSON data as dict
+    base_data_dict = json.loads(gltf.gltf_to_json())
+
+    print("Json from glb source {} : \n{}".format(src_filename_glb, base_data_dict))
+
+    for material in base_data_dict["materials"]:
+        if "pbrMetallicRoughness" in material:
+            # Drop everything except base color and base color texture
+            pbrMetallicRoughness = material["pbrMetallicRoughness"]
+            for key in list(pbrMetallicRoughness.keys()):
+                print("Key : {}".format(key))
+                if key not in ["baseColorFactor", "baseColorTexture"]:
+                    del pbrMetallicRoughness[key]
+            for k, v in pbrMetallicRoughness.items():
+                print("Key {} : Val {}".format(k, v))
+
+        for key in [
+            "normalTexture",
+            "occlusionTexture",
+            "emissiveFactor",
+            "emissiveTexture",
+        ]:
+            if key in material:
+                del material[key]
+
+        # Add the extension
+        if "extensions" not in material:
+            material["extensions"] = {}
+        material["extensions"]["KHR_materials_unlit"] = {}
+
+    print(
+        "New data dict {} :\n{}".format(
+            type(base_data_dict), ut.dict_to_disp_string(base_data_dict, "")
+        )
+    )
+
+    gltf = gltf.from_json(json.dumps(base_data_dict), infer_missing=False)
+
+    print(
+        "After editing JSON info for glb to be saved at {} : \n{}".format(
+            dest_filename_glb, gltf.gltf_to_json()
+        )
+    )
+
+    success = gltf.save_binary(dest_filename_glb)
+
+    return success
