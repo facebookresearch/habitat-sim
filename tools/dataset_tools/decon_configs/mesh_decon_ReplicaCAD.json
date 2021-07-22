@@ -1,0 +1,326 @@
+{
+  "dataset_name": "ReplicaCAD",
+  "dataset_src_rel_to_home": true,
+  "dataset_src_subdir": "Facebook/habitat-sim/data/scene_datasets/replicaCAD/",
+  "scenes_src_subdir": "../replicaCAD_working/replicaCAD_105",
+  "objects_src_subdir": "objects/",
+  "dataset_dest_rel_to_home": true,
+  "dataset_dest_subdir": "Facebook/habitat-sim/data/scene_datasets/replicaCAD/",
+  "dataset_glb_dest_subdir": ".",
+  "stage_glb_dest_subdir": "stages/",
+  "obj_glb_dest_subdir": "objects/",
+  "dataset_config_dest_subdir": "configs/",
+  "scene_instance_dest_subdir": "scenes/",
+  "stage_config_dest_subdir": "stages/",
+  "obj_config_dest_subdir": "objects/",
+  "light_config_dest_subdir": "lighting/",
+  "stage_tag": "world",
+  "objects_tag": "world",
+  "lighting_tag": "world",
+  "build_dataset_config": false,
+  "build_scene_configs": true,
+  "build_stage_configs": false,
+  "build_object_configs": false,
+  "build_lighting_configs": false,
+  "build_stage_glbs": false,
+  "build_object_glbs": false,
+  "objects_all_static": true,
+  "match_object_names": true,
+  "stage_include_obj_substr": [
+    "frl_apartment_blinds",
+    "frl_apartment_ceiling",
+    "frl_apartment_camera",
+    "frl_apartment_door_",
+    "frl_apartment_door_part_",
+    "frl_apartment_floor",
+    "frl_apartment_pipe",
+    "frl_apartment_stair",
+    "frl_apartment_wall"
+  ],
+  "obj_override_names": [
+    "frl_apartment_wall_cabinet_01",
+    "frl_apartment_wall_cabinet_02"
+  ],
+  "obj_exclude_names": [
+    "frl_apartment_switch",
+    "frl_apartment_panel",
+    "top_shelf_02",
+    "frl_apartment_kitchen_cabinet",
+    "frl_apartment_lower_shelf_01_part_01",
+    "frl_apartment_cabinet",
+    "Empty_",
+    "Empty_CabinetCounter_",
+    "Empty_Fridge_",
+    "Empty_Unknown"
+  ],
+  "ao_include_obj_names": {
+    "cabinet": "frl_apartment_cabinet",
+    "chestOfDrawers_01": "frl_apartment_wall_cabinet_03"
+  },
+  "obj_created_static": [],
+  "obj_created_dynamic": [],
+  "save_scenegraph_hierarchy": false,
+  "stage_instance_file_tag": {
+    "v3_sc0_staging": "Stage_v3_sc0_staging",
+    "v3_sc1_staging": "Stage_v3_sc1_staging",
+    "v3_sc2_staging": "Stage_v3_sc2_staging",
+    "v3_sc3_staging": "Stage_v3_sc3_staging",
+    "v3_sc4_staging": "Stage_v3_sc4_staging"
+  },
+  "default_lighting_tag": "lighting/frl_apartment_stage",
+  "apply_object_transform": true,
+  "save_articulated_object_instances": true,
+  "ao_instance_mappings": {
+    "sc0_staging": {
+      "fridge": {
+        "translation": [
+          0.6818168997764587,
+          0.9755649566650391,
+          4.4597649574279785
+        ],
+        "rotation": [
+          1,
+          0,
+          0,
+          0
+        ]
+      },
+      "kitchen_counter": {
+        "translation": [
+          0.880730934143066,
+          0.03,
+          6.373764820098877
+        ],
+        "rotation": [
+          1,
+          0,
+          0,
+          0
+        ]
+      },
+      "kitchenCupboard_01": {
+        "uniform_scale": 0.38,
+        "translation": [
+          0.580730934143066,
+          1.53,
+          6.373764820098877
+        ],
+        "rotation": [
+          -0.707,
+          0.707,
+          0,
+          0
+        ]
+      }
+    },
+    "sc1_staging": {
+      "fridge": {
+        "translation": [
+          -2.1782121658325195,
+          0.9755649566650391,
+          -1.04
+        ],
+        "rotation": [
+          1,
+          0,
+          0,
+          0
+        ]
+      },
+      "kitchen_counter": {
+        "translation": [
+          -2,
+          0.03,
+          0.87
+        ],
+        "rotation": [
+          1,
+          0,
+          0,
+          0
+        ]
+      },
+      "kitchenCupboard_01": {
+        "uniform_scale": 0.38,
+        "translation": [
+          -2.3,
+          1.53,
+          0.87
+        ],
+        "rotation": [
+          -0.707,
+          0.707,
+          0,
+          0
+        ]
+      }
+    },
+    "sc2_staging": {
+      "fridge": {
+        "translation": [
+          -2.1782121658325195,
+          0.9755649566650391,
+          -0.24
+        ],
+        "rotation": [
+          1,
+          0,
+          0,
+          0
+        ]
+      },
+      "kitchen_counter": {
+        "translation": [
+          -2,
+          0.03,
+          1.6446
+        ],
+        "rotation": [
+          1,
+          0,
+          0,
+          0
+        ]
+      },
+      "kitchenCupboard_01": {
+        "uniform_scale": 0.38,
+        "translation": [
+          -2.3,
+          1.53,
+          1.6446
+        ],
+        "rotation": [
+          -0.707,
+          0.707,
+          0,
+          0
+        ]
+      }
+    },
+    "sc3_staging": {
+      "fridge": {
+        "translation": [
+          -2.1782121658325195,
+          0.9755649566650391,
+          3.6299728393554688
+        ],
+        "rotation": [
+          1,
+          0,
+          0,
+          0
+        ]
+      },
+      "kitchen_counter": {
+        "translation": [
+          -2,
+          0.03,
+          1.6346
+        ],
+        "rotation": [
+          1,
+          0,
+          0,
+          0
+        ]
+      },
+      "kitchenCupboard_01": {
+        "uniform_scale": 0.38,
+        "translation": [
+          -2.3,
+          1.53,
+          1.6346
+        ],
+        "rotation": [
+          -0.707,
+          0.707,
+          0,
+          0
+        ]
+      }
+    },
+    "sc4_staging": {
+      "fridge": {
+        "translation": [
+          0.8183235287666321,
+          0.9755649566650391,
+          7.551066970825195
+        ],
+        "rotation": [
+          0.7071067390396977,
+          0.0,
+          0.7071068233333898,
+          0.0
+        ]
+      },
+      "kitchen_counter": {
+        "translation": [
+          2.74135208129882812,
+          0.03,
+          7.432462692260742
+        ],
+        "rotation": [
+          0.7071067390396977,
+          0.0,
+          0.7071068233333898,
+          0.0
+        ]
+      },
+      "kitchenCupboard_01": {
+        "uniform_scale": 0.38,
+        "translation": [
+          2.74135208129882812,
+          1.53,
+          7.732462692260742
+        ],
+        "rotation": [
+          -0.5,
+          0.5,
+          -0.5,
+          -0.5
+        ]
+      }
+    }
+  },
+  "default_attributes": {
+    "stages": {
+      "up": [
+        0,
+        1,
+        0
+      ],
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ]
+    },
+    "objects": {
+      "up": [
+        0,
+        1,
+        0
+      ],
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ]
+    },
+    "scene_instances": {
+      "translation_origin": "asset_local",
+      "default_lighting": ""
+    },
+    "light_setups": {}
+  }
+}

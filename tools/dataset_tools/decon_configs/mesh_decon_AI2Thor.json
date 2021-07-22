@@ -1,0 +1,134 @@
+{
+  "dataset_name": "AI2Thor",
+  "dataset_src_rel_to_home": true,
+  "dataset_src_subdir": "Documents/AI2Thor/",
+  "scenes_src_subdir": "scenes/",
+  "objects_src_subdir": "objects/",
+  "dataset_dest_rel_to_home": true,
+  "dataset_dest_subdir": "Documents/AI2Thor/scene_dataset/",
+  "dataset_glb_dest_subdir": ".",
+  "stage_glb_dest_subdir": "stages/",
+  "obj_glb_dest_subdir": "objects/",
+  "dataset_config_dest_subdir": "configs/",
+  "scene_instance_dest_subdir": "scenes/",
+  "stage_config_dest_subdir": "stages/",
+  "obj_config_dest_subdir": "objects/",
+  "light_config_dest_subdir": "lighting/",
+  "stage_tag": "Structure",
+  "objects_tag": "Objects",
+  "lighting_tag": "Lighting",
+  "build_dataset_config": true,
+  "build_scene_configs": true,
+  "build_stage_configs": true,
+  "build_object_configs": true,
+  "build_lighting_configs": true,
+  "build_stage_glbs": true,
+  "build_object_glbs": true,
+  "objects_all_static": false,
+  "match_object_names": false,
+  "stage_include_obj_substr": [
+    "floor_",
+    "window",
+    "a-frameshelf",
+    "blinds",
+    "burner",
+    "cabinet",
+    "counter",
+    "curtains",
+    "faucet",
+    "lightfixture",
+    "lightswitch",
+    "shelf",
+    "shelfve",
+    "showercurtain",
+    "showerdoor",
+    "showerglass",
+    "showerhead",
+    "sink",
+    "stoveknob",
+    "toilet_",
+    "toiletpaperhanger",
+    "towelholder"
+  ],
+  "obj_override_names": [
+    "floor_lamp"
+  ],
+  "obj_exclude_names": [
+    "boundingbox",
+    "colliders",
+    "hideandseek",
+    "trigger",
+    "visibilitypoints"
+  ],
+  "obj_created_static": [
+    "bed",
+    "bench",
+    "chair",
+    "cloth",
+    "decor",
+    "decorative",
+    "desk",
+    "dresser",
+    "fridge",
+    "lamp",
+    "microwave",
+    "mirror",
+    "nightstand",
+    "ottoman",
+    "painting",
+    "poster",
+    "safe",
+    "sofa",
+    "tvstand",
+    "television",
+    "table"
+  ],
+  "obj_created_dynamic": [],
+  "save_scenegraph_hierarchy": true,
+  "stage_instance_file_tag": {},
+  "default_lighting_tag": "",
+  "apply_object_transform": false,
+  "default_attributes": {
+    "stages": {
+      "requires_lighting": "true",
+      "up": [
+        0,
+        1,
+        0
+      ],
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ]
+    },
+    "objects": {
+      "requires_lighting": "true",
+      "up": [
+        0,
+        1,
+        0
+      ],
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ]
+    },
+    "scene_instances": {
+      "translation_origin": "asset_local",
+      "default_lighting": ""
+    },
+    "light_setups": {}
+  }
+}
