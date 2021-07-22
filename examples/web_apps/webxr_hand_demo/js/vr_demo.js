@@ -12,6 +12,7 @@ import {
   drawTextureData
 } from "../lib/habitat-sim-js/vr_utils.js";
 import { DataUtils } from "./data_utils.js";
+import { Benchmark } from "./benchmark.js";
 
 const objectSpawnOrder = [
   "frl_apartment_vase_02", // gray
@@ -32,6 +33,19 @@ const objectSpawnOrder = [
   "frl_apartment_bowl_06", // small white
   "frl_apartment_bowl_06", // small white
 
+  "frl_apartment_kitchen_utensil_02", // green spice shaker
+  "frl_apartment_kitchen_utensil_03" // orange spice shaker
+];
+
+const benchmarkObjects = [
+  "frl_apartment_vase_02", // gray
+  "frl_apartment_plate_02", // double-layer
+  "frl_apartment_pan_01", // blue, with handle
+  "frl_apartment_kitchen_utensil_05", // serving tray
+  "banana_fixed",
+  "frl_apartment_plate_01",
+  "frl_apartment_kitchen_utensil_06", // white handleless cup
+  "frl_apartment_bowl_06", // small white
   "frl_apartment_kitchen_utensil_02", // green spice shaker
   "frl_apartment_kitchen_utensil_03" // orange spice shaker
 ];
@@ -150,6 +164,31 @@ export class VRDemo {
     elem.addEventListener("click", this.enterVR.bind(this));
   }
 
+  initBenchmark() {
+    const spawnFn = (objectIdx, pos, vel) => {
+      const handle = DataUtils.getObjectConfigFilepath(
+        benchmarkObjects[objectIdx]
+      );
+      const objId = this.sim.addObjectByHandle(handle, null, "", 0);
+      this.sim.setTranslation(pos, objId, 0);
+      this.sim.setLinearVelocity(vel, objId, 0);
+      return objId;
+    };
+    const deleteFn = objIds => {
+      for (const objId of objIds) {
+        this.sim.removeObject(objId, true, true, 0);
+      }
+    };
+    this.benchmarker = new Benchmark(
+      benchmarkObjects.length,
+      spawnFn,
+      deleteFn
+    );
+    this.benchmarker.spawnPos = new Module.Vector3(2, 2, 2);
+    this.benchmarker.spawnPosJitter = 0.2;
+    this.benchmarker.start();
+  }
+
   async enterVR() {
     if (this.gl === null) {
       this.gl = document.createElement("canvas").getContext("webgl", {
@@ -175,8 +214,27 @@ export class VRDemo {
 
     this.webXRSession.requestAnimationFrame(this.drawVRScene.bind(this));
 
+    let printedBenchmarkResults = false;
     this.physicsStepFunction = setInterval(() => {
       this.sim.stepWorld(1.0 / 60);
+      if (this.benchmarker) {
+        if (this.benchmarker.active()) {
+          this.benchmarker.stepBenchmark();
+        } else if (!printedBenchmarkResults) {
+          const res = this.benchmarker.getResults();
+          console.log(
+            `Frame time: ${res["meanFrameTime"].toFixed(2)} +/- ${res[
+              "errorFrameTime"
+            ].toFixed(2)} ms`
+          );
+          console.log(
+            `Step time: ${res["meanStepTime"].toFixed(2)} +/- ${res[
+              "errorStepTime"
+            ].toFixed(2)} ms`
+          );
+          printedBenchmarkResults = true;
+        }
+      }
     }, 1000.0 / 60);
 
     let lastFPSUpdateTime = performance.now();
@@ -194,6 +252,10 @@ export class VRDemo {
     }, 100.0);
 
     this.fpsElement.style.visibility = "visible";
+
+    if (Module.doBenchmarking) {
+      this.initBenchmark();
+    }
   }
 
   exitVR() {
@@ -403,5 +465,8 @@ export class VRDemo {
     }
 
     this.currentFramesSkipped++;
+    if (this.benchmarker && this.benchmarker.active()) {
+      this.benchmarker.logFrame();
+    }
   }
 }
