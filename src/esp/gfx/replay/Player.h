@@ -60,6 +60,8 @@ class Player {
    */
   void readKeyframesFromFile(const std::string& filepath);
 
+  Keyframe keyframeFromString(std::string keyframe);
+
   /**
    * @brief Get the currently-set keyframe, or -1 if no keyframe is set.
    */
@@ -101,10 +103,11 @@ class Player {
    */
   const std::vector<Keyframe>& debugGetKeyframes() const { return keyframes_; }
 
+  void applyKeyframe(const Keyframe& keyframe);
+
  private:
   void readKeyframesFromJsonDocument(const rapidjson::Document& d);
   void clearFrame();
-  void applyKeyframe(const Keyframe& keyframe);
   static void setSemanticIdForSubtree(esp::scene::SceneNode* rootNode,
                                       int semanticId);
 

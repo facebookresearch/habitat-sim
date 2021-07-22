@@ -105,6 +105,8 @@ class Recorder {
    */
   std::string writeSavedKeyframesToString();
 
+  std::string keyframeToString(Keyframe keyframe);
+
   /**
    * @brief Reserved for unit-testing.
    */

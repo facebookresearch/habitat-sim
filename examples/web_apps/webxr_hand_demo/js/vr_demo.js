@@ -36,11 +36,11 @@ const objectSpawnOrder = [
   "frl_apartment_kitchen_utensil_03" // orange spice shaker
 ];
 
-class HandRecord {
+/*class HandRecord {
   objIds = [];
   prevButtonStates = [false, false];
   heldObjId = -1;
-}
+}*/
 
 export class VRDemo {
   fpsElement;
@@ -92,21 +92,22 @@ export class VRDemo {
     }
   }
 
-  latestKeyframe = null;
-  updateLatestKeyframe(keyframe) {
-    this.latestKeyframe = keyframe;
-    console.log("updated latest keyframe to", this.latestKeyframe);
+  applyKeyframe(jsonKeyframe) {
+    let keyframe = this.player.keyframeFromString(jsonKeyframe);
+    this.player.applyKeyframe(keyframe);
   }
 
   start() {
-    let bindedSetup = this.setup.bind(this);
-    let updateLatestKeyframe = this.updateLatestKeyframe.bind(this);
+    let setup = this.setup.bind(this);
+    let applyKeyframe = this.applyKeyframe.bind(this);
     this.workerThread = new Worker("js/physics_worker.js");
     this.workerThread.onmessage = function(e) {
       if (e.data.type == "ready") {
-        bindedSetup();
+        setup();
       } else if (e.data.type == "keyframe") {
-        updateLatestKeyframe(e.data.value);
+        applyKeyframe(e.data.value);
+      } else if (e.data.type == "vec") {
+        //console.log(e.data.value);
       }
     };
   }
@@ -114,9 +115,7 @@ export class VRDemo {
   setup() {
     // init sim
     this.config = new Module.SimulatorConfiguration();
-    this.config.scene_id = DataUtils.getStageFilepath(Module.stageName);
-    this.config.enablePhysics = true;
-    this.config.physicsConfigFile = DataUtils.getPhysicsConfigFilepath();
+    this.config.scene_id = "NONE";
     this.config.sceneLightSetup = ""; // this empty string means "use lighting"
     this.config.overrideSceneLightDefaults = true; // always set this to true
     this.config.allowPbrShader = false; // Pbr shader isn't robust on WebGL yet
@@ -143,7 +142,7 @@ export class VRDemo {
     );
 
     // add hands
-    this.handRecords = [new HandRecord(), new HandRecord()];
+    /*this.handRecords = [new HandRecord(), new HandRecord()];
     const handFilepathsByHandIndex = [
       [
         DataUtils.getObjectConfigFilepath("hand_l_open"),
@@ -161,12 +160,16 @@ export class VRDemo {
         this.sim.setTranslation(new Module.Vector3(0.0, 0.0, 0.0), objId, 0);
         this.handRecords[handIndex].objIds.push(objId);
       }
-    }
+    }*/
 
     // set up "Enter VR" button
     const elem = document.getElementById("enter-vr");
     elem.style.visibility = "visible";
     elem.addEventListener("click", this.enterVR.bind(this));
+
+    // create player
+    this.player = this.sim.getGfxReplayManager().createEmptyPlayer();
+    console.log(this.player);
   }
 
   async enterVR() {
@@ -194,9 +197,9 @@ export class VRDemo {
 
     this.webXRSession.requestAnimationFrame(this.drawVRScene.bind(this));
 
-    this.physicsStepFunction = setInterval(() => {
+    /*this.physicsStepFunction = setInterval(() => {
       this.sim.stepWorld(1.0 / 60);
-    }, 1000.0 / 60);
+    }, 1000.0 / 60);*/
 
     let lastFPSUpdateTime = performance.now();
     let overallFPS = 20;
@@ -404,7 +407,7 @@ export class VRDemo {
 
     const agent = this.sim.getAgent(this.agentId);
 
-    this.handleInput(frame);
+    //this.handleInput(frame);
     updateHeadPose(pose, agent);
 
     const layer = session.renderState.baseLayer;

@@ -47,6 +47,8 @@ class ReplayManager {
    */
   std::shared_ptr<Player> readKeyframesFromFile(const std::string& filepath);
 
+  std::shared_ptr<Player> createEmptyPlayer();
+
  private:
   std::shared_ptr<Recorder> recorder_;
   Player::LoadAndCreateRenderAssetInstanceCallback playerCallback_;

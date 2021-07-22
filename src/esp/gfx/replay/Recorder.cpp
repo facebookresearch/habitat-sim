@@ -189,6 +189,13 @@ std::string Recorder::writeSavedKeyframesToString() {
   return esp::io::jsonToString(document);
 }
 
+std::string Recorder::keyframeToString(Keyframe keyframe) {
+  rapidjson::Document d(rapidjson::kObjectType);
+  rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
+  esp::io::addMember(d, "keyframe", keyframe, allocator);
+  return esp::io::jsonToString(d);
+}
+
 void Recorder::consolidateSavedKeyframes() {
   // consolidate saved keyframes into current keyframe
   addLoadsCreationsDeletions(savedKeyframes_.begin(), savedKeyframes_.end(),

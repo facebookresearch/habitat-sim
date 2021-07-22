@@ -2,7 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-/* global FS, importScripts*/
+/* global FS, importScripts */
 
 class DataUtils {
   static getDataDir() {
@@ -182,7 +182,7 @@ function start() {
   onmessage = function(e) {
     // todo: get a bunch of variables here rather than hard code into this file
     // also need to make physicsWorker get initialized and started inside here
-    console.log(e);
+    workerlog(e);
   };
   physicsWorker.start();
 }
@@ -197,18 +197,39 @@ class PhysicsWorker {
     this.config.createRenderer = false;
     this.config.enableGfxReplaySave = true;
     this.sim = new Module.Simulator(this.config);
+    Module.loadAllObjectConfigsFromPath(
+      this.sim,
+      DataUtils.getObjectBaseFilepath()
+    );
+    console.log(this.sim);
     workerlog("initiated simulator");
   }
 
   start() {
     // physics step
+    let cnt = 0;
     this.physicsStepFunction = setInterval(() => {
-      workerlog("stepping world");
+      cnt++;
+      if (cnt % 10 == 0) {
+        let objId = this.sim.addObjectByHandle(
+          DataUtils.getObjectConfigFilepath("banana_fixed"),
+          null,
+          "",
+          0
+        );
+        let spawnPos = new Module.Vector3(2, 2, 2);
+        this.sim.setTranslation(spawnPos, objId, 0);
+      }
+      //workerlog("stepping world");
       this.sim.stepWorld(1.0 / 60);
       const recorder = this.sim.getGfxReplayManager().getRecorder();
       recorder.saveKeyframe();
       let keyframe = recorder.getLatestKeyframe();
-      postMessage({ type: "keyframe", value: keyframe });
+      let jsonKeyframe = recorder.keyframeToString(keyframe);
+      if (cnt % 50 == 0) {
+        console.log(jsonKeyframe);
+      }
+      postMessage({ type: "keyframe", value: jsonKeyframe });
     }, 1000.0 / 60);
   }
 }

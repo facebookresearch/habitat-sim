@@ -19,6 +19,14 @@ void Player::readKeyframesFromJsonDocument(const rapidjson::Document& d) {
   esp::io::readMember(d, "keyframes", keyframes_);
 }
 
+Keyframe Player::keyframeFromString(std::string keyframe) {
+  Keyframe res;
+  rapidjson::Document d;
+  d.Parse<0>(keyframe.c_str());
+  esp::io::readMember(d, "keyframe", res);
+  return res;
+}
+
 Player::Player(const LoadAndCreateRenderAssetInstanceCallback& callback)
     : loadAndCreateRenderAssetInstanceCallback(callback) {}
 

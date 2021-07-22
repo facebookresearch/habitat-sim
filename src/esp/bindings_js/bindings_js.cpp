@@ -150,6 +150,12 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       "VectorSemanticCategories");
   em::register_vector<std::shared_ptr<SemanticObject>>("VectorSemanticObjects");
   em::register_vector<RayHitInfo>("VectorRayHitInfo");
+  /*em::register_vector<AssetInfo>("VectorAssetInfo");
+  em::register_vector<std::pair<RenderAssetInstanceKey,
+  RenderAssetInstanceCreationInfo>>("VectorPairRenderAssetInstanceCreationInfo");
+  em::register_vector<RenderAssetInstanceKey>("VectorRenderAssetInstanceKey");
+  em::register_vector<std::pair<RenderAssetInstanceKey,
+  RenderAssetInstanceState>>("VectorPairRenderAssetInstanceState");*/
   em::register_map<std::string, float>("MapStringFloat");
   em::register_map<std::string, std::string>("MapStringString");
   em::register_map<std::string, Sensor::ptr>("MapStringSensor");
@@ -260,14 +266,26 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
 
   em::class_<ReplayManager>("ReplayManager")
       .smart_ptr<ReplayManager::ptr>("ReplayManager::ptr")
-      .function("getRecorder", &ReplayManager::getRecorder);
+      .function("getRecorder", &ReplayManager::getRecorder)
+      .function("createEmptyPlayer", &ReplayManager::createEmptyPlayer);
+
+  em::class_<Player>("Player")
+      .smart_ptr<Player::ptr>("Player::ptr")
+      .function("applyKeyframe", &Player::applyKeyframe)
+      .function("keyframeFromString", &Player::keyframeFromString);
 
   em::class_<Recorder>("Recorder")
       .smart_ptr<Recorder::ptr>("Recorder::ptr")
       .function("saveKeyframe", &Recorder::saveKeyframe)
-      .function("getLatestKeyframe", &Recorder::getLatestKeyframe);
+      .function("getLatestKeyframe", &Recorder::getLatestKeyframe)
+      .function("keyframeToString", &Recorder::keyframeToString);
 
   em::class_<Keyframe>("Keyframe").smart_ptr<Keyframe::ptr>("Keyframe::ptr");
+  /*.property("loads", &Keyframe::loads)
+  .property("creations", &Keyframe::creations)
+  .property("deletions", &Keyframe::deletions)
+  .property("stageUpdates", &Keyframe::stateUpdates)
+  .property("userTransforms", &Keyframe::userTransforms);*/
 
   em::class_<PathFinder>("PathFinder")
       .smart_ptr<PathFinder::ptr>("PathFinder::ptr")

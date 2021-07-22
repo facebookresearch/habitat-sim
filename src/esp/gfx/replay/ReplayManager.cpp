@@ -21,6 +21,11 @@ std::shared_ptr<Player> ReplayManager::readKeyframesFromFile(
   return player;
 }
 
+std::shared_ptr<Player> ReplayManager::createEmptyPlayer() {
+  auto player = std::make_shared<Player>(playerCallback_);
+  return player;
+}
+
 }  // namespace replay
 }  // namespace gfx
 }  // namespace esp
