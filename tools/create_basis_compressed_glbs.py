@@ -120,6 +120,11 @@ def _gltf2unlit(gltf_name: str):
     with open(gltf_name, "r") as f:
         json_data = json.load(f)
 
+    if "extensionsUsed" in json_data:
+        json_data["extensionsUsed"].append("KHR_materials_unlit")
+    else:
+        json_data["extensionsUsed"] = ["KHR_materials_unlit"]
+
     for material in json_data["materials"]:
         assert "pbrMetallicRoughness" in material
 
