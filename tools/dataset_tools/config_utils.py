@@ -144,8 +144,6 @@ def load_json_into_dict(filename: str) -> Dict[str, Any]:
     will search for file and use first matching path found.
     :return: Dictionary containing JSON values read from file
     """
-    from glob import glob
-
     file_list = glob(os.path.join("**", filename), recursive=True)
     if len(file_list) == 0:
         print(
@@ -159,6 +157,16 @@ def load_json_into_dict(filename: str) -> Dict[str, Any]:
     with open(src_file, "r") as src:
         json_data = json.load(src)
     return json_data
+
+
+def save_json_to_file(
+    json_data: Dict[str, Any],
+    filename: str,
+    indent: Optional[int] = 2,
+):
+    """Save passed dictionary as json file, using optional indent for formatting."""
+    with open(filename, "w") as dest:
+        json.dump(json_data, dest, indent=indent)
 
 
 def mod_json_val_and_save(
@@ -203,8 +211,7 @@ def mod_json_val_and_save(
         mod_config_paths_rel_dest(file_tuple, json_data)
 
     if not dry_run:
-        with open(dest_file, "w") as dest:
-            json.dump(json_data, dest, indent=indent)
+        save_json_to_file(json_data, dest_file, indent)
     else:
         print(
             "mod_json_val_and_save (dry run) : JSON data to be written :"

@@ -20,9 +20,11 @@ MESH_DECON_CONFIG_JSON_FILENAME = "mesh_decon_ReplicaCAD_baked.json"
 
 def build_default_configs():
     """This function builds a dictionary with default settings for the
-    various functionalitys this script supports.  These are overridden
+    various functionalities this script supports.  These are overridden
     by any values specified in JSON file pointed to by
     MESH_DECON_CONFIG_JSON_FILENAME.
+
+    See mesh_decon_example_json.txt file for more information.
     """
 
     default_configs = {}
