@@ -20,10 +20,17 @@ export class Benchmark {
   stepsBetweenSpawn = 2; // number of stepWorld() calls between spawning
   stepsBeforeDelete = 20; // number of stepWorld() calls before deleting
 
+  moveFn = null; // optional: callback function to move the viewing location/orientation
+  viewOffsetY = -2.0;
+  moveRadius = 1.0;
+  rotationRate = 0.05;
+
   // PRIVATE VARIABLES
   #iterationIdx = 0;
   #objectIdx = 0;
   #stepIdx = 0;
+
+  #curAngle = 0;
 
   #currentlySpawned = [];
 
@@ -103,6 +110,20 @@ export class Benchmark {
   /* Call this every time a frame is rendered in the main program. */
   logFrame() {
     console.assert(this.active());
+    if (this.moveFn != null) {
+      this.#curAngle += this.rotationRate;
+      const pos = [
+        this.spawnPos.x() + this.moveRadius * Math.cos(this.#curAngle),
+        this.spawnPos.y() + this.viewOffsetY,
+        this.spawnPos.z() + this.moveRadius * Math.sin(this.#curAngle)
+      ];
+      this.moveFn(pos, [
+        0,
+        Math.cos(this.#curAngle / 2 + Math.PI / 4),
+        0,
+        Math.sin(this.#curAngle / 2 + Math.PI / 4)
+      ]);
+    }
     this.#log.push(["renderFrame", performance.now()]);
   }
 

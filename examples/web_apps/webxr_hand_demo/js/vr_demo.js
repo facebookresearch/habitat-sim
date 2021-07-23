@@ -179,6 +179,14 @@ export class VRDemo {
         this.sim.removeObject(objId, true, true, 0);
       }
     };
+    const moveFn = (pos, rot) => {
+      const agent = this.sim.getAgent(this.agentId);
+      let state = new Module.AgentState();
+      agent.getState(state);
+      state.position = pos;
+      state.rotation = rot;
+      agent.setState(state, false);
+    };
     this.benchmarker = new Benchmark(
       benchmarkObjects.length,
       spawnFn,
@@ -186,6 +194,8 @@ export class VRDemo {
     );
     this.benchmarker.spawnPos = new Module.Vector3(2, 2, 2);
     this.benchmarker.spawnPosJitter = 0.2;
+    this.benchmarker.moveFn = moveFn;
+    this.benchmarker.moveRadius = 2.0;
     this.benchmarker.start();
   }
 
@@ -448,7 +458,9 @@ export class VRDemo {
     const agent = this.sim.getAgent(this.agentId);
 
     this.handleInput(frame);
-    updateHeadPose(pose, agent);
+    if (!this.benchmarker || !this.benchmarker.active()) {
+      updateHeadPose(pose, agent);
+    }
 
     const layer = session.renderState.baseLayer;
     this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, layer.framebuffer);
