@@ -165,6 +165,7 @@ export class VRDemo {
   }
 
   initBenchmark() {
+    let curSpawned = [];
     const spawnFn = (objectIdx, pos, vel) => {
       const handle = DataUtils.getObjectConfigFilepath(
         benchmarkObjects[objectIdx]
@@ -172,12 +173,13 @@ export class VRDemo {
       const objId = this.sim.addObjectByHandle(handle, null, "", 0);
       this.sim.setTranslation(pos, objId, 0);
       this.sim.setLinearVelocity(vel, objId, 0);
-      return objId;
+      curSpawned.push(objId);
     };
-    const deleteFn = objIds => {
-      for (const objId of objIds) {
+    const deleteFn = () => {
+      for (const objId of curSpawned) {
         this.sim.removeObject(objId, true, true, 0);
       }
+      curSpawned = [];
     };
     const moveFn = (pos, rot) => {
       const agent = this.sim.getAgent(this.agentId);
