@@ -106,9 +106,29 @@ export class VRDemo {
     }
   }
 
+  printedBenchmarkResults = false;
+
   applyKeyframe(jsonKeyframe) {
     let keyframe = this.player.keyframeFromString(jsonKeyframe);
     this.player.applyKeyframe(keyframe);
+    if (this.benchmarker) {
+      if (this.benchmarker.active()) {
+        this.benchmarker.stepBenchmark();
+      } else if (!this.printedBenchmarkResults) {
+        const res = this.benchmarker.getResults();
+        console.log(
+          `Frame time: ${res["meanFrameTime"].toFixed(2)} +/- ${res[
+            "errorFrameTime"
+          ].toFixed(2)} ms`
+        );
+        console.log(
+          `Step time: ${res["meanStepTime"].toFixed(2)} +/- ${res[
+            "errorStepTime"
+          ].toFixed(2)} ms`
+        );
+        this.printedBenchmarkResults = true;
+      }
+    }
   }
 
   start() {
@@ -188,15 +208,13 @@ export class VRDemo {
       const handle = DataUtils.getObjectConfigFilepath(
         benchmarkObjects[objectIdx]
       );
-      const objId = this.sim.addObjectByHandle(handle, null, "", 0);
-      this.sim.setTranslation(pos, objId, 0);
-      this.sim.setLinearVelocity(vel, objId, 0);
-      return objId;
+      let arrpos = [pos.x(), pos.y(), pos.z()];
+      let arrvel = [vel.x(), vel.y(), vel.z()];
+      let spawnInfo = { handle: handle, pos: arrpos, vel: arrvel };
+      this.workerThread.postMessage({ type: "spawn", value: spawnInfo });
     };
-    const deleteFn = objIds => {
-      for (const objId of objIds) {
-        this.sim.removeObject(objId, true, true, 0);
-      }
+    const deleteFn = () => {
+      this.workerThread.postMessage({ type: "delete", value: null });
     };
     const moveFn = (pos, rot) => {
       const agent = this.sim.getAgent(this.agentId);
@@ -215,6 +233,7 @@ export class VRDemo {
     this.benchmarker.spawnPosJitter = 0.2;
     this.benchmarker.moveFn = moveFn;
     this.benchmarker.moveRadius = 2.0;
+    this.benchmarker.objectsPerIteration = 200;
     this.benchmarker.start();
   }
 

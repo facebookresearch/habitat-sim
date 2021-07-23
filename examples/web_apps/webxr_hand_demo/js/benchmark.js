@@ -21,7 +21,7 @@ export class Benchmark {
   stepsBeforeDelete = 20; // number of stepWorld() calls before deleting
 
   moveFn = null; // optional: callback function to move the viewing location/orientation
-  viewOffsetY = -2.0;
+  viewOffsetY = -2.5;
   moveRadius = 1.0;
   rotationRate = 0.05;
 
@@ -31,8 +31,6 @@ export class Benchmark {
   #stepIdx = 0;
 
   #curAngle = 0;
-
-  #currentlySpawned = [];
 
   #log = [];
 
@@ -83,8 +81,7 @@ export class Benchmark {
           this.#active = false;
         }
 
-        this.deleteFn(this.#currentlySpawned);
-        this.#currentlySpawned = [];
+        this.deleteFn();
         this.#log.push(["delete", performance.now()]);
       }
     } else {
@@ -102,7 +99,7 @@ export class Benchmark {
           this.spawnPos.y(),
           this.spawnPos.z() + jitterZ
         );
-        this.#currentlySpawned.push(this.spawnFn(obj, pos, this.spawnVel));
+        this.spawnFn(obj, pos, this.spawnVel);
       }
     }
   }

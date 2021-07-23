@@ -206,9 +206,17 @@ class PhysicsWorker {
   }
 
   start() {
+    let spawn = this.spawn.bind(this);
+    let deleteAllObjects = this.deleteAllObjects.bind(this);
     onmessage = function(e) {
       if (e.data.type == "spawn") {
-        console.log("spawn");
+        let spawnInfo = e.data.value;
+        let handle = spawnInfo.handle;
+        let pos = new Module.Vector3(...spawnInfo.pos);
+        let vel = new Module.Vector3(...spawnInfo.vel);
+        spawn(handle, pos, vel);
+      } else if (e.data.type == "delete") {
+        deleteAllObjects();
       }
     };
 
@@ -221,5 +229,21 @@ class PhysicsWorker {
       let jsonKeyframe = this.recorder.keyframeToString(keyframe);
       postMessage({ type: "keyframe", value: jsonKeyframe });
     }, 1000.0 / 60);
+  }
+
+  curSpawned = [];
+
+  spawn(handle, pos, vel) {
+    const objId = this.sim.addObjectByHandle(handle, null, "", 0);
+    this.sim.setTranslation(pos, objId, 0);
+    this.sim.setLinearVelocity(vel, objId, 0);
+    this.curSpawned.push(objId);
+  }
+
+  deleteAllObjects() {
+    for (const objId of this.curSpawned) {
+      this.sim.removeObject(objId, true, true, 0);
+    }
+    this.curSpawned = [];
   }
 }
