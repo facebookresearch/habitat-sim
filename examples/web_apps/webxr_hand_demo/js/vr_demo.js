@@ -12,6 +12,7 @@ import {
   drawTextureData
 } from "../lib/habitat-sim-js/vr_utils.js";
 import { DataUtils } from "./data_utils.js";
+import { Benchmark } from "./benchmark.js";
 
 const objectSpawnOrder = [
   "frl_apartment_vase_02", // gray
@@ -32,6 +33,19 @@ const objectSpawnOrder = [
   "frl_apartment_bowl_06", // small white
   "frl_apartment_bowl_06", // small white
 
+  "frl_apartment_kitchen_utensil_02", // green spice shaker
+  "frl_apartment_kitchen_utensil_03" // orange spice shaker
+];
+
+const benchmarkObjects = [
+  "frl_apartment_vase_02", // gray
+  "frl_apartment_plate_02", // double-layer
+  "frl_apartment_pan_01", // blue, with handle
+  "frl_apartment_kitchen_utensil_05", // serving tray
+  "banana_fixed",
+  "frl_apartment_plate_01",
+  "frl_apartment_kitchen_utensil_06", // white handleless cup
+  "frl_apartment_bowl_06", // small white
   "frl_apartment_kitchen_utensil_02", // green spice shaker
   "frl_apartment_kitchen_utensil_03" // orange spice shaker
 ];
@@ -167,7 +181,41 @@ export class VRDemo {
 
     // create player
     this.player = this.sim.getGfxReplayManager().createEmptyPlayer();
-    console.log(this.player);
+  }
+
+  initBenchmark() {
+    const spawnFn = (objectIdx, pos, vel) => {
+      const handle = DataUtils.getObjectConfigFilepath(
+        benchmarkObjects[objectIdx]
+      );
+      const objId = this.sim.addObjectByHandle(handle, null, "", 0);
+      this.sim.setTranslation(pos, objId, 0);
+      this.sim.setLinearVelocity(vel, objId, 0);
+      return objId;
+    };
+    const deleteFn = objIds => {
+      for (const objId of objIds) {
+        this.sim.removeObject(objId, true, true, 0);
+      }
+    };
+    const moveFn = (pos, rot) => {
+      const agent = this.sim.getAgent(this.agentId);
+      let state = new Module.AgentState();
+      agent.getState(state);
+      state.position = pos;
+      state.rotation = rot;
+      agent.setState(state, false);
+    };
+    this.benchmarker = new Benchmark(
+      benchmarkObjects.length,
+      spawnFn,
+      deleteFn
+    );
+    this.benchmarker.spawnPos = new Module.Vector3(2, 2, 2);
+    this.benchmarker.spawnPosJitter = 0.2;
+    this.benchmarker.moveFn = moveFn;
+    this.benchmarker.moveRadius = 2.0;
+    this.benchmarker.start();
   }
 
   async enterVR() {
@@ -216,6 +264,10 @@ export class VRDemo {
     }, 100.0);
 
     this.fpsElement.style.visibility = "visible";
+
+    if (Module.doBenchmarking) {
+      this.initBenchmark();
+    }
   }
 
   exitVR() {
@@ -408,7 +460,9 @@ export class VRDemo {
     const agent = this.sim.getAgent(this.agentId);
 
     //this.handleInput(frame);
-    updateHeadPose(pose, agent);
+    if (!this.benchmarker || !this.benchmarker.active()) {
+      updateHeadPose(pose, agent);
+    }
 
     const layer = session.renderState.baseLayer;
     this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, layer.framebuffer);
@@ -425,5 +479,8 @@ export class VRDemo {
     }
 
     this.currentFramesSkipped++;
+    if (this.benchmarker && this.benchmarker.active()) {
+      this.benchmarker.logFrame();
+    }
   }
 }

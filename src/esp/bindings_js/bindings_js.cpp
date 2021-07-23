@@ -486,5 +486,6 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("setLightSetup", &Simulator::setLightSetup)
       .function("stepWorld", &Simulator::stepWorld)
       .function("castRay", &Simulator::castRay)
-      .function("getGfxReplayManager", &Simulator::getGfxReplayManager);
+      .function("getGfxReplayManager", &Simulator::getGfxReplayManager)
+      .function("setLinearVelocity", &Simulator::setLinearVelocity);
 }
