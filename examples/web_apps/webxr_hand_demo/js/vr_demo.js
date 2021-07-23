@@ -106,8 +106,6 @@ export class VRDemo {
         setup();
       } else if (e.data.type == "keyframe") {
         applyKeyframe(e.data.value);
-      } else if (e.data.type == "vec") {
-        //console.log(e.data.value);
       }
     };
   }
@@ -196,6 +194,8 @@ export class VRDemo {
     );
 
     this.webXRSession.requestAnimationFrame(this.drawVRScene.bind(this));
+
+    this.workerThread.postMessage({ type: "start", data: null });
 
     /*this.physicsStepFunction = setInterval(() => {
       this.sim.stepWorld(1.0 / 60);

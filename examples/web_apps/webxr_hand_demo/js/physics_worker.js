@@ -175,16 +175,15 @@ importScripts("hsim_bindings.js");
 
 // ----------------------------------
 
-let physicsWorker = null;
 function start() {
-  physicsWorker = new PhysicsWorker();
   postMessage({ type: "ready", value: null });
   onmessage = function(e) {
     // todo: get a bunch of variables here rather than hard code into this file
-    // also need to make physicsWorker get initialized and started inside here
-    workerlog(e);
+    if (e.data.type == "start") {
+      let physicsWorker = new PhysicsWorker();
+      physicsWorker.start();
+    }
   };
-  physicsWorker.start();
 }
 
 class PhysicsWorker {
@@ -197,38 +196,29 @@ class PhysicsWorker {
     this.config.createRenderer = false;
     this.config.enableGfxReplaySave = true;
     this.sim = new Module.Simulator(this.config);
+
     Module.loadAllObjectConfigsFromPath(
       this.sim,
       DataUtils.getObjectBaseFilepath()
     );
-    console.log(this.sim);
-    workerlog("initiated simulator");
+
+    this.recorder = this.sim.getGfxReplayManager().getRecorder();
   }
 
   start() {
+    onmessage = function(e) {
+      if (e.data.type == "spawn") {
+        console.log("spawn");
+      }
+    };
+
     // physics step
-    let cnt = 0;
     this.physicsStepFunction = setInterval(() => {
-      cnt++;
-      if (cnt % 10 == 0) {
-        let objId = this.sim.addObjectByHandle(
-          DataUtils.getObjectConfigFilepath("banana_fixed"),
-          null,
-          "",
-          0
-        );
-        let spawnPos = new Module.Vector3(2, 2, 2);
-        this.sim.setTranslation(spawnPos, objId, 0);
-      }
-      //workerlog("stepping world");
       this.sim.stepWorld(1.0 / 60);
-      const recorder = this.sim.getGfxReplayManager().getRecorder();
-      recorder.saveKeyframe();
-      let keyframe = recorder.getLatestKeyframe();
-      let jsonKeyframe = recorder.keyframeToString(keyframe);
-      if (cnt % 50 == 0) {
-        console.log(jsonKeyframe);
-      }
+
+      this.recorder.saveKeyframe();
+      let keyframe = this.recorder.getLatestKeyframe();
+      let jsonKeyframe = this.recorder.keyframeToString(keyframe);
       postMessage({ type: "keyframe", value: jsonKeyframe });
     }, 1000.0 / 60);
   }
