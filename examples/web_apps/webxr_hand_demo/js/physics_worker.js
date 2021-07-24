@@ -4,67 +4,6 @@
 
 /* global FS, importScripts */
 
-class DataUtils {
-  static getDataDir() {
-    return "data/webxr_hand_demo_dataset/";
-  }
-
-  static getPhysicsConfigFilepath() {
-    return this.getDataDir() + "default.physics_config.json";
-  }
-
-  static getObjectBaseFilepath() {
-    return this.getDataDir() + "objects/";
-  }
-
-  static getStageBaseFilepath() {
-    return this.getDataDir() + "stages/";
-  }
-
-  static getObjectFilepath(name) {
-    return this.getObjectBaseFilepath() + name + ".glb";
-  }
-
-  static getObjectConfigFilepath(name) {
-    return this.getObjectBaseFilepath() + name + ".object_config.json";
-  }
-
-  static getObjectCollisionGlbFilepath(name) {
-    return this.getObjectBaseFilepath() + name + "_cv_decomp.glb";
-  }
-
-  static getStageFilepath(name) {
-    return this.getStageBaseFilepath() + name + ".glb";
-  }
-
-  static getStageConfigFilepath(name) {
-    return this.getStageBaseFilepath() + name + ".stage_config.json";
-  }
-}
-
-const objectSpawnOrder = [
-  "frl_apartment_vase_02", // gray
-  "frl_apartment_plate_02", // double-layer
-  "frl_apartment_pan_01", // blue, with handle
-
-  "frl_apartment_kitchen_utensil_05", // serving tray
-  "banana_fixed",
-  "banana_fixed",
-  "banana_fixed",
-
-  "frl_apartment_plate_01",
-  "frl_apartment_plate_01",
-
-  "frl_apartment_kitchen_utensil_06", // white handleless cup
-  "frl_apartment_kitchen_utensil_06", // white handleless cup
-
-  "frl_apartment_bowl_06", // small white
-  "frl_apartment_bowl_06", // small white
-
-  "frl_apartment_kitchen_utensil_02", // green spice shaker
-  "frl_apartment_kitchen_utensil_03" // orange spice shaker
-];
-
 function workerlog(message) {
   console.log("WORKER:\n" + message);
 }
@@ -132,46 +71,31 @@ function createMagnumModule(init) {
   return module;
 }
 
-let stageName;
+let stageFilepath, physicsConfigFilepath, objectBaseFilepath;
+var Module;
 
-function doPreloading() {
-  preloadFunc(DataUtils.getPhysicsConfigFilepath());
+onmessage = function(e) {
+  console.assert(e.data.type == "preloadInfo");
+  console.log(e.data);
+  let preloadInfo = e.data.value;
 
-  preloadFunc(DataUtils.getStageFilepath(stageName));
-  preloadFunc(DataUtils.getStageConfigFilepath(stageName));
+  Module = createMagnumModule();
 
-  preloadFunc(DataUtils.getObjectFilepath("hand_r_open"));
-  preloadFunc(DataUtils.getObjectConfigFilepath("hand_r_open"));
-  preloadFunc(DataUtils.getObjectFilepath("hand_r_closed"));
-  preloadFunc(DataUtils.getObjectConfigFilepath("hand_r_closed"));
+  Module.preRun.push(() => {
+    stageFilepath = preloadInfo.stageFilepath;
+    physicsConfigFilepath = preloadInfo.physicsConfigFilepath;
+    objectBaseFilepath = preloadInfo.objectBaseFilepath;
+    for (const file of preloadInfo.preloadedFiles) {
+      preloadFunc(file);
+    }
+  });
 
-  preloadFunc(DataUtils.getObjectFilepath("hand_l_open"));
-  preloadFunc(DataUtils.getObjectConfigFilepath("hand_l_open"));
-  preloadFunc(DataUtils.getObjectFilepath("hand_l_closed"));
-  preloadFunc(DataUtils.getObjectConfigFilepath("hand_l_closed"));
+  Module.onRuntimeInitialized = async function() {
+    start();
+  };
 
-  const replicaCadObjectNames = new Set();
-  for (const object of objectSpawnOrder) {
-    replicaCadObjectNames.add(object);
-  }
-
-  for (const name of replicaCadObjectNames) {
-    preloadFunc(DataUtils.getObjectFilepath(name));
-    preloadFunc(DataUtils.getObjectCollisionGlbFilepath(name));
-    preloadFunc(DataUtils.getObjectConfigFilepath(name));
-  }
-}
-
-var Module = createMagnumModule();
-Module.preRun.push(() => {
-  // todo: get the stage name from onmessage
-  stageName = "remake_v0_JustBigStuff_00";
-  doPreloading();
-});
-Module.onRuntimeInitialized = async function() {
-  start();
+  importScripts("hsim_bindings.js");
 };
-importScripts("hsim_bindings.js");
 
 // ----------------------------------
 
@@ -190,17 +114,14 @@ class PhysicsWorker {
   constructor() {
     // initialize stuff
     this.config = new Module.SimulatorConfiguration();
-    this.config.scene_id = DataUtils.getStageFilepath(stageName);
+    this.config.scene_id = stageFilepath;
     this.config.enablePhysics = true;
-    this.config.physicsConfigFile = DataUtils.getPhysicsConfigFilepath();
+    this.config.physicsConfigFile = physicsConfigFilepath;
     this.config.createRenderer = false;
     this.config.enableGfxReplaySave = true;
     this.sim = new Module.Simulator(this.config);
 
-    Module.loadAllObjectConfigsFromPath(
-      this.sim,
-      DataUtils.getObjectBaseFilepath()
-    );
+    Module.loadAllObjectConfigsFromPath(this.sim, objectBaseFilepath);
 
     this.recorder = this.sim.getGfxReplayManager().getRecorder();
   }
@@ -222,7 +143,7 @@ class PhysicsWorker {
 
     // physics step
     this.physicsStepFunction = setInterval(() => {
-      this.sim.stepWorld(1.0 / 60);
+      this.sim.stepWorld(0.003);
 
       this.recorder.saveKeyframe();
       let keyframe = this.recorder.getLatestKeyframe();

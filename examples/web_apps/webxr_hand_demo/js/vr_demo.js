@@ -56,6 +56,8 @@ const benchmarkObjects = [
   heldObjId = -1;
 }*/
 
+let preloadedFiles = [];
+
 export class VRDemo {
   fpsElement;
   lastPaintTime;
@@ -79,20 +81,25 @@ export class VRDemo {
   }
 
   static preloadFiles(preloadFunc) {
-    preloadFunc(DataUtils.getPhysicsConfigFilepath());
+    function doPreload(file) {
+      preloadedFiles.push(file);
+      preloadFunc(file);
+    }
 
-    preloadFunc(DataUtils.getStageFilepath(Module.stageName));
-    preloadFunc(DataUtils.getStageConfigFilepath(Module.stageName));
+    doPreload(DataUtils.getPhysicsConfigFilepath());
 
-    preloadFunc(DataUtils.getObjectFilepath("hand_r_open"));
-    preloadFunc(DataUtils.getObjectConfigFilepath("hand_r_open"));
-    preloadFunc(DataUtils.getObjectFilepath("hand_r_closed"));
-    preloadFunc(DataUtils.getObjectConfigFilepath("hand_r_closed"));
+    doPreload(DataUtils.getStageFilepath(Module.stageName));
+    doPreload(DataUtils.getStageConfigFilepath(Module.stageName));
 
-    preloadFunc(DataUtils.getObjectFilepath("hand_l_open"));
-    preloadFunc(DataUtils.getObjectConfigFilepath("hand_l_open"));
-    preloadFunc(DataUtils.getObjectFilepath("hand_l_closed"));
-    preloadFunc(DataUtils.getObjectConfigFilepath("hand_l_closed"));
+    doPreload(DataUtils.getObjectFilepath("hand_r_open"));
+    doPreload(DataUtils.getObjectConfigFilepath("hand_r_open"));
+    doPreload(DataUtils.getObjectFilepath("hand_r_closed"));
+    doPreload(DataUtils.getObjectConfigFilepath("hand_r_closed"));
+
+    doPreload(DataUtils.getObjectFilepath("hand_l_open"));
+    doPreload(DataUtils.getObjectConfigFilepath("hand_l_open"));
+    doPreload(DataUtils.getObjectFilepath("hand_l_closed"));
+    doPreload(DataUtils.getObjectConfigFilepath("hand_l_closed"));
 
     const replicaCadObjectNames = new Set();
     for (const object of objectSpawnOrder) {
@@ -100,9 +107,9 @@ export class VRDemo {
     }
 
     for (const name of replicaCadObjectNames) {
-      preloadFunc(DataUtils.getObjectFilepath(name));
-      preloadFunc(DataUtils.getObjectCollisionGlbFilepath(name));
-      preloadFunc(DataUtils.getObjectConfigFilepath(name));
+      doPreload(DataUtils.getObjectFilepath(name));
+      doPreload(DataUtils.getObjectCollisionGlbFilepath(name));
+      doPreload(DataUtils.getObjectConfigFilepath(name));
     }
   }
 
@@ -135,6 +142,13 @@ export class VRDemo {
     let setup = this.setup.bind(this);
     let applyKeyframe = this.applyKeyframe.bind(this);
     this.workerThread = new Worker("js/physics_worker.js");
+    let preloadInfo = {
+      stageFilepath: DataUtils.getStageFilepath(Module.stageName),
+      physicsConfigFilepath: DataUtils.getPhysicsConfigFilepath(),
+      objectBaseFilepath: DataUtils.getObjectBaseFilepath(),
+      preloadedFiles: preloadedFiles
+    };
+    this.workerThread.postMessage({ type: "preloadInfo", value: preloadInfo });
     this.workerThread.onmessage = function(e) {
       if (e.data.type == "ready") {
         setup();
@@ -234,6 +248,8 @@ export class VRDemo {
     this.benchmarker.moveFn = moveFn;
     this.benchmarker.moveRadius = 2.0;
     this.benchmarker.objectsPerIteration = 200;
+    this.benchmarker.stepsBetweenSpawn = 8;
+    this.benchmarker.stepsBeforeDelete = 100;
     this.benchmarker.start();
   }
 
