@@ -38,7 +38,7 @@ PbrPrecomputedMapShader::PbrPrecomputedMapShader(Flags flags) : flags_(flags) {
   CORRADE_ASSERT(
       !((flags_ & Flag::IrradianceMap) && (flags_ & Flag::PrefilteredMap)),
       "PbrPrecomputedMapShader::PbrPrecomputedMapShader: "
-      "Flag:S:IrradianceMap and "
+      "Flag::IrradianceMap and "
       "Flag::PrefilteredMap are mutually exclusive.", );
 
   if (!Corrade::Utility::Resource::hasGroup("default-shaders")) {
