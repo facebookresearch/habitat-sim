@@ -59,6 +59,7 @@ To work with the Replica dataset, you need a file called ```sorted_faces.bin``` 
   - Unzip it;
   - Use the script within to copy each data file to its corresponding folder (You will have to provide the path to the folder containing all replica models. For example, ~/models/replica/);
 ```
+Note: To obtain the best rendering results, use the `<path to replica>/<scene_name>/mesh.ply` to load the PTex mesh.
 
 ## ReplicaCAD
 
