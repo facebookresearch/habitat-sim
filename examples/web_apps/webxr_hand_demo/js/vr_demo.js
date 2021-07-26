@@ -245,11 +245,19 @@ export class VRDemo {
     );
     this.benchmarker.spawnPos = new Module.Vector3(2, 2, 2);
     this.benchmarker.spawnPosJitter = 0.2;
-    this.benchmarker.moveFn = moveFn;
-    this.benchmarker.moveRadius = 2.0;
-    this.benchmarker.objectsPerIteration = 200;
+    this.benchmarker.spawnVel = new Module.Vector3(0, -10, 0);
+
+    this.benchmarker.numIterations = 5;
+    this.benchmarker.objectsPerIteration = 5;
+
     this.benchmarker.stepsBetweenSpawn = 8;
     this.benchmarker.stepsBeforeDelete = 100;
+
+    this.benchmarker.moveFn = moveFn;
+    this.benchmarker.viewOffsetY = -2.5;
+    this.benchmarker.moveRadius = 2.0;
+    this.benchmarker.rotationRate = 0.05;
+
     this.benchmarker.start();
   }
 

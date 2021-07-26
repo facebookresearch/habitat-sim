@@ -21,7 +21,7 @@ export class Benchmark {
   stepsBeforeDelete = 20; // number of stepWorld() calls before deleting
 
   moveFn = null; // optional: callback function to move the viewing location/orientation
-  viewOffsetY = -2.5;
+  viewOffsetY = -3.0;
   moveRadius = 1.0;
   rotationRate = 0.05;
 
