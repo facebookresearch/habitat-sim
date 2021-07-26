@@ -256,7 +256,8 @@ class LogMessageVoidify {
   Corrade::Utility::Fatal {}
 #define LOG(severity) GLOG_##severity
 #define LOG_IF(severity, condition) \
-  !(condition) ? (void)0 : LogMessageVoidify() & LOG(severity)
+  !(condition) ? (void)0            \
+               : esp::logging::impl::LogMessageVoidify{} & LOG(severity)
 
 #define VLOG_LEVEL 0
 
