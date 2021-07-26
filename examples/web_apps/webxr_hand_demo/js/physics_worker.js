@@ -80,7 +80,7 @@ onmessage = function(e) {
     start();
   };
 
-  importScripts("../lib/habitat-sim-js/hsim_bindings.js");
+  importScripts("hsim_bindings.js");
 };
 
 // ----------------------------------
