@@ -170,7 +170,6 @@ Corrade::Containers::String subsystemPrefix(Subsystem subsystem);
 namespace impl {
 class LogMessageVoidify {
  public:
-  LogMessageVoidify() {}
   // This has to be an operator with a precedence lower than << but
   // higher than ?:
   void operator&(Corrade::Utility::Debug&) {}
@@ -209,35 +208,35 @@ class LogMessageVoidify {
  * would work for this overload.  That way the logging statements get evaluated
  * first, then the voidify, then the ternary.
  */
-#define _ESP_LOG_IF(condition, output) \
-  !(condition) ? static_cast<void>(0)  \
-               : esp::logging::impl::LogMessageVoidify{} & output
+#define ESP_LOG_IF(condition, output) \
+  !(condition) ? static_cast<void>(0) \
+               : esp::logging::impl::LogMessageVoidify{} & (output)
 
 // This ends with a nospace since the space is baked in to subsystemPrefix for
 // the case that the logger was created with a nospace flag.
-#define _ESP_SUBSYS_LOG_IF(subsystem, level, output)                  \
-  _ESP_LOG_IF(esp::logging::isLevelEnabled(subsystem, level), output) \
-      << esp::logging::subsystemPrefix(subsystem)                     \
+#define ESP_SUBSYS_LOG_IF(subsystem, level, output)                  \
+  ESP_LOG_IF(esp::logging::isLevelEnabled(subsystem, level), output) \
+      << esp::logging::subsystemPrefix(subsystem)                    \
       << Corrade::Utility::Debug::nospace
 
 #define ESP_LOG_LEVEL_ENABLED(level) \
   esp::logging::isLevelEnabled(espLoggingSubsystem(), level)
 
 #define ESP_VERBOSE_1(...)                                              \
-  _ESP_SUBSYS_LOG_IF(                                                   \
+  ESP_SUBSYS_LOG_IF(                                                    \
       espLoggingSubsystem(), esp::logging::LoggingLevel::Verbose1,      \
       Corrade::Utility::Debug{Corrade::Utility::Debug::defaultOutput(), \
                               __VA_ARGS__})
-#define ESP_DEBUG(...)                                                         \
-  _ESP_SUBSYS_LOG_IF(espLoggingSubsystem(), esp::logging::LoggingLevel::Debug, \
-                     Corrade::Utility::Debug{__VA_ARGS__})
-#define ESP_WARNING(...)                                  \
-  _ESP_SUBSYS_LOG_IF(espLoggingSubsystem(),               \
-                     esp::logging::LoggingLevel::Warning, \
-                     Corrade::Utility::Warning{__VA_ARGS__})
-#define ESP_ERROR(...)                                                         \
-  _ESP_SUBSYS_LOG_IF(espLoggingSubsystem(), esp::logging::LoggingLevel::Error, \
-                     Corrade::Utility::Error{__VA_ARGS__})
+#define ESP_DEBUG(...)                                                        \
+  ESP_SUBSYS_LOG_IF(espLoggingSubsystem(), esp::logging::LoggingLevel::Debug, \
+                    Corrade::Utility::Debug{__VA_ARGS__})
+#define ESP_WARNING(...)                                 \
+  ESP_SUBSYS_LOG_IF(espLoggingSubsystem(),               \
+                    esp::logging::LoggingLevel::Warning, \
+                    Corrade::Utility::Warning{__VA_ARGS__})
+#define ESP_ERROR(...)                                                        \
+  ESP_SUBSYS_LOG_IF(espLoggingSubsystem(), esp::logging::LoggingLevel::Error, \
+                    Corrade::Utility::Error{__VA_ARGS__})
 
 #if defined(ESP_BUILD_GLOG_SHIM)
 
