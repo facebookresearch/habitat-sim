@@ -281,13 +281,13 @@ class LogMessageVoidify {
 #include <glog/stl_logging.h>
 #endif
 
-#define ASSERT(x, ...)                                              \
-  do {                                                              \
-    if (!(x)) {                                                     \
-      ESP_ERROR() << "Assert failed: " #x << "," << __FILE__ << ":" \
-                  << __LINE__;                                      \
-      exit(-1);                                                     \
-    }                                                               \
+#define ASSERT(x, ...)                                                   \
+  do {                                                                   \
+    if (!(x)) {                                                          \
+      ESP_ERROR(Corrade::Utility::Debug::Flag::NoSpace)                  \
+          << "Assert failed: " #x << "," << __FILE__ << ":" << __LINE__; \
+      exit(-1);                                                          \
+    }                                                                    \
   } while (false)
 
 #endif  // ESP_CORE_LOGGING_H_
