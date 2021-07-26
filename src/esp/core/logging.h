@@ -208,19 +208,21 @@ class LogMessageVoidify {
  * would work for this overload.  That way the logging statements get evaluated
  * first, then the voidify, then the ternary.
  */
-#define ESP_LOG_IF(condition, output) \
-  !(condition) ? static_cast<void>(0) \
-               : esp::logging::impl::LogMessageVoidify{} & (output)
+
+#define ESP_LOG_IF(condition, output)                      \
+  !(condition) ? static_cast<void>(0)                      \
+               : esp::logging::impl::LogMessageVoidify{} & \
+                     (output) /* NOLINT(bugprone-macro-parentheses) */
 
 // This ends with a nospace since the space is baked in to subsystemPrefix for
 // the case that the logger was created with a nospace flag.
-#define ESP_SUBSYS_LOG_IF(subsystem, level, output)                  \
-  ESP_LOG_IF(esp::logging::isLevelEnabled(subsystem, level), output) \
-      << esp::logging::subsystemPrefix(subsystem)                    \
+#define ESP_SUBSYS_LOG_IF(subsystem, level, output)                        \
+  ESP_LOG_IF(esp::logging::isLevelEnabled((subsystem), (level)), (output)) \
+      << esp::logging::subsystemPrefix((subsystem))                        \
       << Corrade::Utility::Debug::nospace
 
 #define ESP_LOG_LEVEL_ENABLED(level) \
-  esp::logging::isLevelEnabled(espLoggingSubsystem(), level)
+  esp::logging::isLevelEnabled(espLoggingSubsystem(), (level))
 
 #define ESP_VERBOSE_1(...)                                              \
   ESP_SUBSYS_LOG_IF(                                                    \
@@ -283,7 +285,7 @@ class LogMessageVoidify {
 #define ASSERT(x, ...)                                                   \
   do {                                                                   \
     if (!(x)) {                                                          \
-      ESP_ERROR(Corrade::Utility::Debug::Flag::NoSpace)                  \
+      Corrade::Utility::Error{Corrade::Utility::Debug::Flag::NoSpace}    \
           << "Assert failed: " #x << "," << __FILE__ << ":" << __LINE__; \
       exit(-1);                                                          \
     }                                                                    \
