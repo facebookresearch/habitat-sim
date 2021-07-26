@@ -82,7 +82,7 @@ export class VRDemo {
 
   static preloadFiles(preloadFunc) {
     function doPreload(file) {
-      preloadedFiles.push(file);
+      preloadedFiles.push("../" + file);
       preloadFunc(file);
     }
 
@@ -259,7 +259,6 @@ export class VRDemo {
         xrCompatible: true
       });
       initGL(this.gl);
-      console.log("Initialized WebXR GL state");
     }
     this.webXRSession = await navigator.xr.requestSession("immersive-vr", {
       requiredFeatures: ["local-floor"]

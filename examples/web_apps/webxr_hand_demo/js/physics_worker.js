@@ -4,10 +4,6 @@
 
 /* global FS, importScripts */
 
-function workerlog(message) {
-  console.log("WORKER:\n" + message);
-}
-
 function preloadFunc(url) {
   let file_parents_str = "/";
   const splits = url.split("/");
@@ -32,22 +28,14 @@ function createMagnumModule(init) {
     preRun: [],
     postRun: [],
     arguments: [],
-    canvas: null, // document.getElementById('canvas'),
-    status: null, // document.getElementById('status'),
-    statusDescription: null, // document.getElementById('status-description'),
-    log: null, // document.getElementById('log'),
-    printErr: function(_message) {
-      workerlog(_message);
-    },
-    print: function(_message) {
-      workerlog(_message);
-    },
-    setStatus: function(message) {
-      workerlog("setStatus: " + message);
-    },
-    setStatusDescription: function(message) {
-      workerlog("setStatusDescription: " + message);
-    },
+    canvas: null,
+    status: null,
+    statusDescription: null,
+    log: null,
+    printErr: function() {},
+    print: function() {},
+    setStatus: function() {},
+    setStatusDescription: function() {},
     totalDependencies: 0,
     monitorRunDependencies: function(left) {
       this.totalDependencies = Math.max(this.totalDependencies, left);
@@ -59,7 +47,6 @@ function createMagnumModule(init) {
       } else {
         module.setStatus("Download complete");
         module.setStatusDescription("");
-        // module.log.style.display = 'block';
       }
     }
   });
@@ -76,7 +63,6 @@ var Module;
 
 onmessage = function(e) {
   console.assert(e.data.type == "preloadInfo");
-  console.log(e.data);
   let preloadInfo = e.data.value;
 
   Module = createMagnumModule();
@@ -94,7 +80,7 @@ onmessage = function(e) {
     start();
   };
 
-  importScripts("hsim_bindings.js");
+  importScripts("../lib/habitat-sim-js/hsim_bindings.js");
 };
 
 // ----------------------------------
