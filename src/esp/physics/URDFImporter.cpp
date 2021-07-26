@@ -118,7 +118,7 @@ bool URDFImporter::getJointInfo2(int linkIndex,
   }
 
   return false;
-};
+}
 
 bool URDFImporter::getJointInfo(int linkIndex,
                                 Mn::Matrix4& parent2joint,

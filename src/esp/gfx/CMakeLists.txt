@@ -53,6 +53,8 @@ set(
   DoubleSphereCameraShader.h
   EquirectangularShader.cpp
   EquirectangularShader.h
+  PbrPrecomputedMapShader.cpp
+  PbrPrecomputedMapShader.h
   PbrTextureUnit.h
 )
 
