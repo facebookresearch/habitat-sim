@@ -60,7 +60,7 @@ class Player {
    */
   void readKeyframesFromFile(const std::string& filepath);
 
-  Keyframe keyframeFromString(std::string keyframe);
+  Keyframe keyframeFromString(const std::string& keyframe);
 
   /**
    * @brief Get the currently-set keyframe, or -1 if no keyframe is set.
