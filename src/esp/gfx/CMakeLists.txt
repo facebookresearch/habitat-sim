@@ -55,6 +55,8 @@ set(
   EquirectangularShader.h
   PbrEquiRectangularToCubeMapShader.cpp
   PbrEquiRectangularToCubeMapShader.h
+  PbrPrecomputedMapShader.cpp
+  PbrPrecomputedMapShader.h
   PbrTextureUnit.h
 )
 

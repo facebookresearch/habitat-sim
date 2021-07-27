@@ -8,6 +8,7 @@ from habitat_sim.robots.fetch_robot import FetchRobot
 from habitat_sim.robots.mobile_manipulator import (
     MobileManipulator,
     MobileManipulatorParams,
+    RobotCameraParams,
 )
 from habitat_sim.robots.robot_interface import RobotInterface
 
@@ -16,4 +17,5 @@ __all__ = [
     "MobileManipulatorParams",
     "MobileManipulator",
     "FetchRobot",
+    "RobotCameraParams",
 ]
