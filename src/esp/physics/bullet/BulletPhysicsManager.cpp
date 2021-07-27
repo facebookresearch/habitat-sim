@@ -274,7 +274,7 @@ bool BulletPhysicsManager::attachLinkGeometry(
     const std::shared_ptr<io::URDF::Link>& link,
     gfx::DrawableGroup* drawables,
     const std::string& lightSetup) {
-  bool reqLighting = (lightSetup != esp::NO_LIGHT_KEY);
+  const bool reqLighting = (lightSetup != esp::NO_LIGHT_KEY);
   bool geomSuccess = false;
 
   for (auto& visual : link->m_visualArray) {
