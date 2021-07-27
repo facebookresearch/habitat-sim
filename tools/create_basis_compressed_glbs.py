@@ -119,6 +119,14 @@ def _gltf2unlit(gltf_name: str):
     assert osp.exists(gltf_name)
     with open(gltf_name, "r") as f:
         json_data = json.load(f)
+    # add references to the KHR_materials_unlit extension in
+    # gltf root-level tags
+    ext_gltf_tags = ["extensionsUsed", "extensionsRequired"]
+    for ext_tag in ext_gltf_tags:
+        if ext_tag not in json_data:
+            json_data[ext_tag] = []
+        if "KHR_materials_unlit" not in json_data[ext_tag]:
+            json_data[ext_tag].append("KHR_materials_unlit")
 
     for material in json_data["materials"]:
         assert "pbrMetallicRoughness" in material
