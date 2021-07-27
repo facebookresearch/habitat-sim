@@ -60,16 +60,30 @@
     objects or components of the stage.  This will override entries swept up by substr search in both 'obj_override_names'
     and 'stage_include_obj_substr'.  So if you specify 'wall_cabinet_dummy' here, it will not be considered a stage component or an object component.>
   ],
-  "ao_include_obj_names": {
-    <map of URDF model names (as key) to object node names in scene glb (as value) to map objects/locations to AOs.  These should be
-    excluded from regular object extraction, to prevent double-dipping>
-  },
+
   "stage_instance_file_tag": <stage names to use for stage instance refs in scene instance files. Search for the keys within scene name, and use the values as the stage to ref>,
   "default_lighting_tag":<tag to insert in every scene instance attributes to reference the default lighting>
   "apply_object_transform":<boolean : if provided, apply a transformation to the object's transformation before calculating translation and rotation>,
 
-  "save_articulated_object_instances" : <CURRENTLY ONLY REPLICA_CAD : whether or not to save articulated object instances in scene instance configs>,
-  "ao_instance_mappings": <CURRENTLY ONLY REPLICA_CAD : specifies file name tag look-up and scene instance articulated object mapping to use for each range of scenes>,
+  "save_articulated_object_instances" : <whether or not to save articulated object instances in scene instance configs>,
+
+  "ao_scene_mapping_obj_names": {
+    <map of URDF model names (as key) to object node names in scene glb (as value) to map objects/locations to AOs.  These should be
+    excluded from regular object extraction, to prevent double-dipping.  If not wishing to use scene_graph placement, or no scene-graph
+    object corresponds to the desired URDF, use "" as value (for objects to be placed using absolute transforms in ao_instance_mappings.)>
+  },
+  "ao_instance_mappings": < Dict, keyed by scene tag, specifies file name tag look-up and scene instance articulated object mapping to use for each scene or range of scenes. Dict : >
+        "<key> : <value>" : <key is scene tag, value is dictionary holding instancing information.  Each entry's value can hold the following
+                            (absolute transforms, if provided, are applied before relative transforms, if provided): >
+                "absolute_translation" : <absolute translation to use for object placement (when ignore placement info in scene graph)>,
+                "translation_override_x": <overrides x value of absolute translation from scene graph>,
+                "translation_override_y": <overrides y value of absolute translation from scene graph>,
+                "translation_override_z": <overrides z value of absolute translation from scene graph>,
+                "relative_translation" : <translation component of placement transform, added to scene_graph placement (or 0,0,0 if object is not found in map)>,
+                "absolute_rotation" : <absolute rotational to use for object placement (ignores placement info in scene graph).  Is a quaternion of format w,x,y,z>,
+                "local_relative_rotation" : <rotational component of placement transform (quaternion of format w,x,y,z), local, relative to scene_graph rotational component if present (applied after in quat multiplcation)>,
+                "global_relative_rotation" : <rotational component of placement transform (quaternion of format w,x,y,z), global, relative to scene_graph rotational component if present (applied before in quat multiplcation)>,
+                "uniform_scale" : <scalar value, scaling multiplier applied to all axes. defaults to 1.0>,
 
   "default_attributes": {
     <default attributes settings, used to initialize scene dataset configs before any stage or object-specific values are set>

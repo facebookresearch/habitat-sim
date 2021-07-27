@@ -88,6 +88,7 @@
   "stage_instance_file_tag": {},
   "default_lighting_tag": "",
   "apply_object_transform": false,
+  "save_articulated_object_instances": false,
   "default_attributes": {
     "stages": {
       "requires_lighting": "true",

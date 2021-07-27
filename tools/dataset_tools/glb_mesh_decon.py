@@ -139,7 +139,7 @@ def build_default_configs():
 
     # map of URDF model names to object node names to map objects/locations to AOs.
     # These should be excluded from regular object extraction, to prevent double-dipping
-    default_configs["ao_include_obj_names"] = {}
+    default_configs["ao_scene_mapping_obj_names"] = {}
 
     # This is a set of lowercase substrings of names of objects that
     # should be specified as static in the scene instance upon creation
@@ -560,6 +560,7 @@ def extract_objects_from_scene(
     return object_instance_configs
 
 
+# Currently only supports AOs in ReplicaCAD
 def extract_articulated_objects_from_scene(
     scene_graph, scene_name_base: str, configs: Dict[str, Any]
 ):
@@ -574,98 +575,122 @@ def extract_articulated_objects_from_scene(
         # mapping is provided to map scene name to prebuilt/predefined stage names
         ao_instance_dict = configs["ao_instance_mappings"]
         # mapping of scene object names to AO model names, to use the locations in the scene to place the AOs
-        ao_objects_dict = configs["ao_include_obj_names"]
+        # if scene object name specified in dict is empty, just use json-specified absolute transforms
+        ao_objects_dict = configs["ao_scene_mapping_obj_names"]
         # list of desired AOs to include
-        art_obj_template_names = [
-            "fridge",
-            "kitchen_counter",
-            "kitchenCupboard_01",
-            "door2",
-        ]
+        art_obj_template_names = []
         art_src_object_names = {}
         if len(ao_objects_dict) != 0:
             # get all the objects in the scene so we can find the appropriate objects to use for AO placement, if any do this
             objects_raw = scene_graph.graph.transforms.children_dict[objects_tag]
             for ao_model_name, obj_name_substr in ao_objects_dict.items():
-                for obj_name in objects_raw:
-                    # get actual object name within scene graph
-                    if obj_name_substr.lower() in obj_name.lower():
-                        art_src_object_names[ao_model_name] = obj_name
-                        art_obj_template_names.append(ao_model_name)
+                if not obj_name_substr:
+                    # empty scene node name, so not going to use scene graph for any transform
+                    art_obj_template_names.append(ao_model_name)
+                    art_src_object_names[ao_model_name] = ""
+                else:
+                    for obj_name in objects_raw:
+                        # get actual object name within scene graph
+                        if obj_name_substr.lower() in obj_name.lower():
+                            art_src_object_names[ao_model_name] = obj_name
+                            art_obj_template_names.append(ao_model_name)
+                            break
 
-        for k, v in ao_instance_dict.items():
-            if k.lower() in scene_name_base.lower():
-                mapping_dict = v
+        # find mapping_dict for passed scene in config
+        for scene_name, ao_object_mapping_dict in ao_instance_dict.items():
+            if scene_name.lower() in scene_name_base.lower():
+                mapping_dict = ao_object_mapping_dict
                 break
 
         for ao_name in art_obj_template_names:
+            # get object mapping dictionary from config for this object
+            ao_mapping_dict = mapping_dict[ao_name]
 
+            # set articulated object default scene instance values
             art_obj_instance_dict = {}
             art_obj_instance_dict["template_name"] = ao_name
             art_obj_instance_dict["fixed_base"] = True
             art_obj_instance_dict["auto_clamp_joint_limits"] = True
             art_obj_instance_dict["translation_origin"] = "COM"
             art_obj_instance_dict["motion_type"] = "DYNAMIC"
+            art_obj_instance_dict["translation"] = [0, 0, 0]
+            art_obj_instance_dict["rotation"] = [1, 0, 0, 0]
 
             if ao_name in mapping_dict:
-                # fridge, counter and cupboard provided by json config currently
-                # print("Mapping for : {} is {} ".format(scene_name_base, mapping_dict))
-                # specific mappings for fridge and kitchen counter based on scene
-                art_obj_instance_dict["translation"] = mapping_dict[ao_name][
-                    "translation"
-                ]
-                art_obj_instance_dict["rotation"] = mapping_dict[ao_name]["rotation"]
-
-                if "uniform_scale" in mapping_dict[ao_name]:
-                    art_obj_instance_dict["uniform_scale"] = mapping_dict[ao_name][
+                # apply scaling if present
+                if "uniform_scale" in ao_mapping_dict:
+                    art_obj_instance_dict["uniform_scale"] = ao_mapping_dict[
                         "uniform_scale"
                     ]
 
-            elif "door2" in ao_name:
-                art_obj_instance_dict["translation"] = [-0.35, 2.40, -2.65]
-                art_obj_instance_dict["rotation"] = [1, 0, 0, 0]
-            elif ao_name in ao_objects_dict:
-                # get transform from scene graph
-                obj_name = art_src_object_names[ao_name]
-                obj_transform = scene_graph.graph.get(obj_name)[0]
-                # temporary instance, just to provide transformations in dictionary form
-                tmp_instance_dict = gut.build_instance_config_json(
-                    "not_to_be_used",
-                    obj_transform,
-                    True,
-                    calc_scale=False,
-                )
-                new_trans = np.array(tmp_instance_dict["translation"])
-                new_rot = np.array(tmp_instance_dict["rotation"])
-                if "chestOfDrawers" in ao_name:
-                    new_trans[0] += 0.07
-                    new_trans[1] = 0.0
-                    art_obj_instance_dict["uniform_scale"] = 0.4
-                    new_rot = gut.rotate_quat_by_quat(
-                        new_rot, np.array([0.707, 0.707, 0, 0])
+                # apply absoulate transformations, if provided in mapping dict
+                # or present in scene graph
+                sg_obj_name = art_src_object_names[ao_name]
+                # if sg_obj_name is empty, then transform is either 0 vec, or provided in json
+                if not sg_obj_name:
+                    # Use absolute transforms if provided in json
+                    if "absolute_translation" in ao_mapping_dict:
+                        art_obj_instance_dict["translation"] = ao_mapping_dict[
+                            "absolute_translation"
+                        ]
+                    if "absolute_rotation" in ao_mapping_dict:
+                        art_obj_instance_dict["rotation"] = ao_mapping_dict[
+                            "absolute_rotation"
+                        ]
+                    print(
+                        "\tArticulated Object {} placed using absolute transforms in JSON.".format(
+                            ao_name
+                        )
                     )
-                    # global around y
-                    new_rot = gut.rotate_quat_by_quat(
-                        np.array([0.707, 0.0, 0.707, 0]), new_rot
-                    )
-                elif "cabinet" in ao_name:
-                    new_trans[1] = 0.05
-                    # new_trans[2] -= 0.18
-                    new_rot = gut.rotate_quat_by_quat(
-                        new_rot, np.array([0.0, 0.0, 1.0, 0.0])
-                    )
-                new_rot /= np.linalg.norm(new_rot)
-                art_obj_instance_dict["translation"] = list(new_trans)
-                art_obj_instance_dict["rotation"] = list(new_rot)
-                print(
-                    "\tArticulated Object {} made from existing object transformation.".format(
-                        ao_name
-                    )
-                )
-            else:
-                print("Articulated Object {} not yet supported".format(ao_name))
-                break
 
+                else:
+                    # Use placement in scene graph as absolute transforms, then mod
+                    sg_obj_transform = scene_graph.graph.get(sg_obj_name)[0]
+                    # temporary instance, just to provide transformations in dictionary form
+                    tmp_instance_dict = gut.build_instance_config_json(
+                        "not_to_be_used",
+                        sg_obj_transform,
+                        True,
+                        calc_scale=False,
+                    )
+                    # "absolute" transform provided by scene graph placement
+                    new_trans = np.array(tmp_instance_dict["translation"])
+                    new_rot = np.array(tmp_instance_dict["rotation"])
+                    # process translation overrides
+                    if "translation_override_x" in ao_mapping_dict:
+                        new_trans[0] = ao_mapping_dict["translation_override_x"]
+                    if "translation_override_y" in ao_mapping_dict:
+                        new_trans[1] = ao_mapping_dict["translation_override_y"]
+                    if "translation_override_z" in ao_mapping_dict:
+                        new_trans[2] = ao_mapping_dict["translation_override_z"]
+
+                    # process relative translation components - modify existing transform using relative
+                    if "relative_translation" in ao_mapping_dict:
+                        rel_trans = ao_mapping_dict["relative_translation"]
+                        for i in range(len(new_trans)):
+                            new_trans[i] += rel_trans[i]
+
+                    if "local_relative_rotation" in ao_mapping_dict:
+                        rel_rotation = np.array(
+                            ao_mapping_dict["local_relative_rotation"]
+                        )
+                        new_rot = gut.rotate_quat_by_quat(new_rot, rel_rotation)
+
+                    if "global_relative_rotation" in ao_mapping_dict:
+                        glbl_rotation = np.array(
+                            ao_mapping_dict["global_relative_rotation"]
+                        )
+                        new_rot = gut.rotate_quat_by_quat(glbl_rotation, new_rot)
+
+                    new_rot /= np.linalg.norm(new_rot)
+                    art_obj_instance_dict["translation"] = list(new_trans)
+                    art_obj_instance_dict["rotation"] = list(new_rot)
+
+                    print(
+                        "\tArticulated Object {} made from existing object transformation.".format(
+                            ao_name
+                        )
+                    )
             ao_res_list.append(art_obj_instance_dict)
 
     return ao_res_list
