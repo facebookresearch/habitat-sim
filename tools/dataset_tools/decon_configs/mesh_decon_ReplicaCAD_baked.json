@@ -138,11 +138,10 @@
     "sc1_staging": {
       "cabinet": {
         "relative_translation": [
-          -0.02,
           0.0,
-          -0.1
+          0.0,
+          0.0
         ],
-        "translation_override_y": 0.05,
         "local_relative_rotation": [
           0.94552,
           0,
@@ -154,7 +153,7 @@
         "uniform_scale": 0.4,
         "translation_override_y": 0.0,
         "relative_translation": [
-          0.07,
+          0.0,
           0.0,
           0.0
         ],
@@ -228,11 +227,10 @@
     "sc2_staging": {
       "cabinet": {
         "relative_translation": [
-          -0.02,
           0.0,
-          -0.1
+          0.0,
+          0.0
         ],
-        "translation_override_y": 0.05,
         "local_relative_rotation": [
           0.94552,
           0,
@@ -244,7 +242,7 @@
         "uniform_scale": 0.4,
         "translation_override_y": 0.0,
         "relative_translation": [
-          0.07,
+          0.0,
           0.0,
           0.0
         ],
@@ -318,11 +316,10 @@
     "sc3_staging": {
       "cabinet": {
         "relative_translation": [
-          -0.02,
           0.0,
-          -0.1
+          0.0,
+          0.0
         ],
-        "translation_override_y": 0.05,
         "local_relative_rotation": [
           0.94552,
           0,
@@ -334,7 +331,7 @@
         "uniform_scale": 0.4,
         "translation_override_y": 0.0,
         "relative_translation": [
-          0.07,
+          0.0,
           0.0,
           0.0
         ],
@@ -408,11 +405,10 @@
     "sc4_staging": {
       "cabinet": {
         "relative_translation": [
-          -0.02,
           0.0,
-          -0.1
+          0.0,
+          0.0
         ],
-        "translation_override_y": 0.05,
         "local_relative_rotation": [
           0.94552,
           0,
@@ -424,7 +420,7 @@
         "uniform_scale": 0.4,
         "translation_override_y": 0.0,
         "relative_translation": [
-          0.07,
+          0.0,
           0.0,
           0.0
         ],
