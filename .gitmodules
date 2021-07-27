@@ -52,3 +52,6 @@
 [submodule "src/deps/v-hacd"]
 	path = src/deps/v-hacd
 	url = https://github.com/ScottCSteinhauser/v-hacd.git
+[submodule "src/deps/bps3D"]
+	path = src/deps/bps3D
+	url = https://github.com/eundersander/bps3D
