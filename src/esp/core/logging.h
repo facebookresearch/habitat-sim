@@ -209,10 +209,11 @@ class LogMessageVoidify {
  * first, then the voidify, then the ternary.
  */
 
-#define ESP_LOG_IF(condition, output) \
-  !(condition)                        \
-      ? static_cast<void>(0)          \
-      : esp::logging::impl::LogMessageVoidify{} & (output) /* NOLINT */
+// No formatting on this macro as the NOLINT for clang
+#define ESP_LOG_IF(condition, output)                                         \
+  !(condition)                                                                \
+      ? static_cast<void>(0) /* NOLINTNEXTLINE(bugprone-macro-parentheses) */ \
+      : esp::logging::impl::LogMessageVoidify{} & (output)
 
 // This ends with a nospace since the space is baked in to subsystemPrefix for
 // the case that the logger was created with a nospace flag.
