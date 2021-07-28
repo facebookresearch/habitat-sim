@@ -44,7 +44,7 @@ LoggingLevel levelFromName(const Corrade::Containers::StringView name) {
   if (lowerCaseName == #name##_s) \
   return LoggingLevel::level
 
-  CASE(Verbose1, verbose1);
+  CASE(VeryVerbose, veryverbose);
   CASE(Verbose, verbose);
   CASE(Debug, debug);
   CASE(Warning, warning);

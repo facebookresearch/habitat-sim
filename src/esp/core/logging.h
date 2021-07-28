@@ -16,12 +16,18 @@
 
 namespace esp {
 namespace logging {
-// These are all subsystems that have different logging levels
-// They correspond to namespaces.  When adding a new subsystem, make sure
-// to add an appropriate loggingSubsystem function (see the ADD_SUBSYSTEM_FN
-// helper bellow) and add it to @ref subsystemFromName()
+/**
+ * @brief Habitat-Sim logging subsystems.
+ *
+ * These are all subsystems that have different logging levels. They correspond
+ * to namespaces.  When adding a new subsystem, make sure to add an appropriate
+ * loggingSubsystem function (see the ADD_SUBSYSTEM_FN helper bellow) and add it
+ * to @ref subsystemNames.
+ */
 enum class Subsystem : uint8_t {
-  // This is the catch all subsystem
+  /**
+   * @brief Catch all subsystem that is used when no subsystem is specified
+   */
   Default,
   gfx,
   scene,
@@ -33,7 +39,11 @@ enum class Subsystem : uint8_t {
   io,
   URDF,
 
-  // Must always be last
+  /**
+   * @brief Not a subsystem.  Simply tracks how many subsystems there are.
+   *
+   * Must always be last
+   */
   NumSubsystems,
 };
 
@@ -46,8 +56,17 @@ Subsystem subsystemFromName(Corrade::Containers::StringView name);
 }  // namespace logging
 }  // namespace esp
 
-// This is the catch all for subsystems without a specialization
-// Using c style namespacing that way logging can work outside our namespace
+/**
+ * @brief Top level logging subsystem function allowing logging macros to work
+ * outside the esp namespace
+ *
+ * Uses c style namespacing that way logging can work outside our namespace.
+ *
+ *
+ * There will be many of these functions in different namespaces as we use
+ * namespace resolution to determine the logging subsystem for a given logging
+ * macro.
+ */
 inline esp::logging::Subsystem espLoggingSubsystem() {
   return esp::logging::Subsystem::Default;
 }
@@ -83,22 +102,51 @@ inline logging::Subsystem espLoggingSubsystem() {
 namespace esp {
 namespace logging {
 
+/**
+ * @brief Habitat-Sim logging levels. If the logging level for log macro is
+ * greater than or equal to the logging level within that subsystem, the log
+ * will be printed.
+ *
+ * The convience levels, @ref Verbose and @ref Quiet are the primary user facing
+ * options.  @ref Quiet turns off logging and @ref Verbose is the default and
+ * shows things that are generally useful.  These names exist such that logging
+ * levels can be added and removed without users needed to change what they set
+ * logging to.
+ */
 enum class LoggingLevel : uint8_t {
-  Verbose1,
+  VeryVerbose,
   Debug,
   Warning,
   Error,
 
-  // Verbose enables debug and higher
-  // Note:  If you add something lower prio than Debug,
-  // Verbose should be set equal to that
+  /**
+   * The default logging level.  Enables all logging except for the most verbose
+   * statements. Habitat-Sim will be fairly verbose in this setting, but not
+   * overly so.
+   *
+   * Note: If you add another level that is lower priority than Debug but should
+   * be on by default or Debug is removed/renamed, this will need to be updated.
+   */
   Verbose = Debug,
-  // Quiet is errors and higher
+  /**
+   * Turns of all non-critical logging messages, i.e. those that indicate that
+   * something has gone wrong.
+   */
   Quiet = Error,
 };
 
 LoggingLevel levelFromName(Corrade::Containers::StringView name);
 
+/**
+ * @brief Logging context that tracks which logging statements are enabled.
+ *
+ * The logging system in habitat-sim can be configured in a variety of ways to
+ * determine which logging statements should be printed.
+ *
+ *
+ * Due to the use of @ref ESP_LOG_IF, logging statements that are not printed
+ * are as close to free as reasonably possible.
+ */
 class LoggingContext {
  public:
   constexpr static const char* LOGGING_ENV_VAR_NAME = "HABITAT_SIM_LOG";
@@ -132,8 +180,10 @@ class LoggingContext {
    *
    * This environment string has a fairly simple grammar that is as follows
    *
+   * @code
    *    FilterString: SetLevelCommand (COLON SetLevelCommand)*
    *    SetLevelCommand: (SUBSYSTEM (COMMA SUBSYSTEM)* EQUALS)? LOGGING_LEVEL
+   * @endcode
    *
    * where SUBSYSTEM is a known logging subsystem and LOGGING_LEVEL is one of
    * the logging levels.  If a SetLevelCommand does not contain a list of
@@ -153,9 +203,20 @@ class LoggingContext {
    */
   void reinitializeFromEnv();
 
+  /**
+   * @brief Retrieves the logging level for the given subsystem
+   */
   LoggingLevel levelFor(Subsystem subsystem) const;
 
+  /**
+   * @brief Whether or not there is a current context or not.  Whichever context
+   * class was most recently constructed is the current one.
+   */
   static bool hasCurrent();
+  /**
+   * @brief Retrieves the current logging context.  Throws an error if there
+   * isn't one.
+   */
   static LoggingContext& current();
 
  private:
@@ -163,8 +224,21 @@ class LoggingContext {
   LoggingContext* prevContext_;
 };
 
+/**
+ * @brief Determine if the specified logging level is enabled within a given
+ * subsystem
+ *
+ * Requires an active @ref LoggingContext
+ *
+ * @param[in] subsystem The name of the subsystem. Typically this is returned by
+ * @ref espLoggingSubsystem
+ * @param[in] level The logging level
+ */
 bool isLevelEnabled(Subsystem subsystem, LoggingLevel level);
 
+/**
+ * @brief Return the prefix that gets printed for a given subsystem in that log.
+ */
 Corrade::Containers::String subsystemPrefix(Subsystem subsystem);
 
 namespace impl {
@@ -184,17 +258,21 @@ class LogMessageVoidify {
  * The intent of this macro is actually rather simple (although the
  * implementation is quite opaque).  This macro is just
  *
+ * @code
  *   if (condition) output
+ * @endcode
  *
  * This is a "so simple it's obvious" way to implement a conditional logging
  * macro.  However, the if statement implementation would potentially interact
  * with other parts of the code.  While certianly an edge case, the following
  * should not be valid code:
  *
+ * @code
  *   ESP_DEBUG() << ... ;
  *   else {
  *      ...
  *   }
+ * @endcode
  *
  * So instead, a ternary is used to encapsulate everything as a single
  * expression.  Since a ternary requires both a true and false clause and the
@@ -225,18 +303,30 @@ class LogMessageVoidify {
 #define ESP_LOG_LEVEL_ENABLED(level) \
   esp::logging::isLevelEnabled(espLoggingSubsystem(), (level))
 
-#define ESP_VERBOSE_1(...)                                              \
+/**
+ * @brief Very verbose level logging macro.
+ */
+#define ESP_VERY_VERBOSE(...)                                           \
   ESP_SUBSYS_LOG_IF(                                                    \
-      espLoggingSubsystem(), esp::logging::LoggingLevel::Verbose1,      \
+      espLoggingSubsystem(), esp::logging::LoggingLevel::VeryVerbose,   \
       Corrade::Utility::Debug{Corrade::Utility::Debug::defaultOutput(), \
                               __VA_ARGS__})
+/**
+ * @brief Debug level logging macro.
+ */
 #define ESP_DEBUG(...)                                                        \
   ESP_SUBSYS_LOG_IF(espLoggingSubsystem(), esp::logging::LoggingLevel::Debug, \
                     Corrade::Utility::Debug{__VA_ARGS__})
+/**
+ * @brief Warning level logging macro.
+ */
 #define ESP_WARNING(...)                                 \
   ESP_SUBSYS_LOG_IF(espLoggingSubsystem(),               \
                     esp::logging::LoggingLevel::Warning, \
                     Corrade::Utility::Warning{__VA_ARGS__})
+/**
+ * @brief Error level logging macro.
+ */
 #define ESP_ERROR(...)                                                        \
   ESP_SUBSYS_LOG_IF(espLoggingSubsystem(), esp::logging::LoggingLevel::Error, \
                     Corrade::Utility::Error{__VA_ARGS__})
