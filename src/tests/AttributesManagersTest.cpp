@@ -668,7 +668,15 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
               "rotation": [0.2, 0.3, 0.4, 0.5],
               "initial_joint_pose": [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6],
               "initial_joint_velocities": [1.0, 2.1, 3.2, 4.3, 5.4, 6.5, 7.6],
-              "motion_type": "DYNAMIC"
+              "motion_type": "DYNAMIC",
+              "user_defined" : {
+                  "user_string" : "test_urdf_template0 instance defined string",
+                  "user_bool" : false,
+                  "user_int" : 2,
+                  "user_float" : 1.22,
+                  "user_vec3" : [120.3, 302.5, -25.07],
+                  "user_quat" : [1.23, 1.22, 1.26, 1.21]
+              }
           },
           {
               "template_name": "test_urdf_template1",
@@ -676,7 +684,15 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
               "auto_clamp_joint_limits" : true,
               "translation": [3, 2, 1],
               "rotation": [0.5, 0.6, 0.7, 0.8],
-              "motion_type": "KINEMATIC"
+              "motion_type": "KINEMATIC",
+              "user_defined" : {
+                  "user_string" : "test_urdf_template1 instance defined string",
+                  "user_bool" : false,
+                  "user_int" : 21,
+                  "user_float" : 11.22,
+                  "user_vec3" : [190.3, 902.5, -95.07],
+                  "user_quat" : [1.25, 9.22, 9.26, 0.21]
+              }
           }
       ],
       "default_lighting":  "test_lighting_configuration",
@@ -793,6 +809,20 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
        iter != initJoinVelMap.end(); ++iter) {
     ASSERT_EQ(iter->second, jtVelVals[idx++]);
   }
+  // test test_urdf_template0 ao instance attributes-level user config vals
+  // "user_defined" : {
+  //     "user_string" : "test_urdf_template0 instance defined string",
+  //     "user_bool" : false,
+  //     "user_int" : 2,
+  //     "user_float" : 1.22,
+  //     "user_vec3" : [120.3, 302.5, -25.07],
+  //     "user_quat" : [1.23, 1.22, 1.26, 1.21]
+  // }
+  testUserDefinedConfigVals(artObjInstance->getUserConfiguration(),
+                            "test_urdf_template0 instance defined string",
+                            false, 2, 1.22f,
+                            Magnum::Vector3(120.3f, 302.5f, -25.07f),
+                            Magnum::Quaternion({1.22f, 1.26f, 1.21f}, 1.23f));
 
   artObjInstance = artObjInstances[1];
   ASSERT_EQ(artObjInstance->getHandle(), "test_urdf_template1");
@@ -801,6 +831,20 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
   ASSERT_EQ(artObjInstance->getTranslation(), Magnum::Vector3(3, 2, 1));
   ASSERT_EQ(artObjInstance->getMotionType(),
             static_cast<int>(esp::physics::MotionType::KINEMATIC));
+  // test test_urdf_template0 ao instance attributes-level user config vals
+  // "user_defined" : {
+  //     "user_string" : "test_urdf_template1 instance defined string",
+  //     "user_bool" : false,
+  //     "user_int" : 21,
+  //     "user_float" : 11.22,
+  //     "user_vec3" : [190.3, 902.5, -95.07],
+  //     "user_quat" : [1.25, 9.22, 9.26, 0.21]
+  // }
+  testUserDefinedConfigVals(artObjInstance->getUserConfiguration(),
+                            "test_urdf_template1 instance defined string",
+                            false, 21, 11.22f,
+                            Magnum::Vector3(190.3f, 902.5f, -95.07f),
+                            Magnum::Quaternion({9.22f, 9.26f, 0.21f}, 1.25f));
 
 }  // AttributesManagers_SceneInstanceJSONLoadTest
 
