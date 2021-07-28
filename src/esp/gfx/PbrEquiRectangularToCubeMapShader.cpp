@@ -53,11 +53,9 @@ PbrEquiRectangularToCubeMapShader::PbrEquiRectangularToCubeMapShader() {
   // Add macros
   vert.addSource("#define OUTPUT_UV\n").addSource(rs.get("bigTriangle.vert"));
 
-  std::stringstream outputAttributeLocationsStream;
-  outputAttributeLocationsStream << Cr::Utility::formatString(
-      "#define OUTPUT_ATTRIBUTE_LOCATION_COLOR {}\n", ColorOutput);
-
-  frag.addSource(outputAttributeLocationsStream.str())
+  frag
+      .addSource(Cr::Utility::formatString(
+          "#define OUTPUT_ATTRIBUTE_LOCATION_COLOR {}\n", ColorOutput))
       .addSource(rs.get("equirectangularToCubeMap.frag"));
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, frag}));

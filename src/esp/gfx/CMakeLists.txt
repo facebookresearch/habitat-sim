@@ -55,10 +55,10 @@ set(
   EquirectangularShader.h
   PbrImageBasedLighting.cpp
   PbrImageBasedLighting.h
-  PbrPrecomputedMapShader.cpp
-  PbrPrecomputedMapShader.h
   PbrEquiRectangularToCubeMapShader.cpp
   PbrEquiRectangularToCubeMapShader.h
+  PbrPrecomputedMapShader.cpp
+  PbrPrecomputedMapShader.h
   PbrTextureUnit.h
   DepthMapShader.cpp
   DepthMapShader.h

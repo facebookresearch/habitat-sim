@@ -40,6 +40,7 @@ INPUT_PAGES = [
     "pages/image-extractor.rst",
     "pages/asset-viewer-tutorial.rst",
     "pages/managed-rigid-object-tutorial.rst",
+    "pages/logging.rst",
 ]
 
 PLUGINS = [

@@ -190,7 +190,7 @@ class ManagedArticulatedObject
 
   int getLinkNumDoFs(int linkId) const {
     if (auto sp = getObjectReference()) {
-      return sp->getLinkDoFOffset(linkId);
+      return sp->getLinkNumDoFs(linkId);
     }
     return 0;
   }
