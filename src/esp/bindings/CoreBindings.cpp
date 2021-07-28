@@ -8,6 +8,7 @@
 
 namespace py = pybind11;
 using py::literals::operator""_a;
+using esp::logging::LoggingContext;
 
 namespace esp {
 namespace core {
@@ -50,6 +51,17 @@ void initCoreBindings(py::module& m) {
       .def("uniform_int", py::overload_cast<int, int>(&Random::uniform_int))
       .def("uniform_uint", &Random::uniform_uint)
       .def("normal_float_01", &Random::normal_float_01);
+
+  py::class_<LoggingContext>(m, "LoggingContext")
+      .def_static("current", &LoggingContext::current,
+                  py::return_value_policy::reference)
+      .def_property_readonly("sim_is_quiet", [](LoggingContext& self) -> int {
+        return self.levelFor(logging::Subsystem::sim) >=
+               logging::LoggingLevel::Debug;
+      });
+
+  auto core = m.def_submodule("core");
+  core.attr("_logging_context") = new logging::LoggingContext{};
 }
 
 }  // namespace core

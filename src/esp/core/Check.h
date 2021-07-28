@@ -43,7 +43,7 @@
   C++.
 
   warning
-  - see LOG(WARNING)
+  - see ESP_WARNING()
   - A message to the user telling her she *probably* did something wrong (e.g.
   bad input, bad data)
 */

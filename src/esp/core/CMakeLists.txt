@@ -59,7 +59,7 @@ add_library(
 
 target_link_libraries(
   core
-  PUBLIC Corrade::Utility Magnum::Magnum glog
+  PUBLIC Corrade::Utility Magnum::Magnum MagnumIntegration::Eigen
 )
 
 target_include_directories(core PUBLIC ${PROJECT_BINARY_DIR})

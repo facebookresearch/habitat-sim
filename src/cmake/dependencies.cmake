@@ -42,11 +42,8 @@ include_directories(SYSTEM "${DEPS_DIR}/Sophus")
 include_directories("${DEPS_DIR}/tinyxml2")
 add_subdirectory("${DEPS_DIR}/tinyxml2")
 
-# glog. NOTE: emscripten does not support 32-bit targets, which glog requires.
-# Therefore we do not build glog and use a custom shim instead to emulate glog
-if(CORRADE_TARGET_EMSCRIPTEN)
-  add_library(glog INTERFACE)
-else()
+# We still have some tests that use glog/gtest
+if(BUILD_TEST)
   # We don't want glog tests to be run as part of our build. The BUILD_TESTING
   # variable is set by include(CTest) as an option(). In CMake 3.13+ it should
   # be enough to do just set(BUILD_TESTING OFF) to avoid the option()

@@ -351,7 +351,7 @@ bool CubeMap::saveTexture(TextureType type,
     CORRADE_ASSERT(!filename.empty(),
                    "CubeMap::saveTexture(): Unknown texture type.", false);
 
-    LOG(INFO) << "Saved image " << iFace << " to " << filename;
+    ESP_DEBUG() << "Saved image" << iFace << "to" << filename;
   }  // for
 
   return true;
@@ -434,7 +434,7 @@ void CubeMap::loadTexture(TextureType type,
         CORRADE_INTERNAL_ASSERT_UNREACHABLE();
         break;
     }  // switch
-    LOG(INFO) << "Loaded image " << iFace << " from " << filename;
+    ESP_DEBUG() << "Loaded image" << iFace << "from" << filename;
   }
   // Color texture ONLY, NOT for depth
   if ((flags_ & Flag::BuildMipmap) && (flags_ & Flag::ColorTexture)) {

@@ -59,9 +59,6 @@ LoggingLevel levelFromName(const Corrade::Containers::StringView name) {
 }
 
 namespace {
-#ifdef CORRADE_BUILD_MULTITHREADED
-CORRADE_THREAD_LOCAL
-#endif
 #if defined(MAGNUM_BUILD_STATIC_UNIQUE_GLOBALS) && \
     !defined(CORRADE_TARGET_WINDOWS)
 /* On static builds that get linked to multiple shared libraries and then used

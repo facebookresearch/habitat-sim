@@ -47,10 +47,10 @@ int StageAttributesManager::registerObjectFinalize(
     const std::string& stageAttributesHandle,
     bool forceRegistration) {
   if (stageAttributes->getRenderAssetHandle() == "") {
-    LOG(ERROR)
-        << "::registerObjectFinalize : Attributes template named "
+    ESP_ERROR()
+        << "::registerObjectFinalize : Attributes template named"
         << stageAttributesHandle
-        << " does not have a valid render asset handle specified. Aborting.";
+        << "does not have a valid render asset handle specified. Aborting.";
     return ID_UNDEFINED;
   }
 
@@ -75,19 +75,19 @@ int StageAttributesManager::registerObjectFinalize(
     stageAttributes->setRenderAssetType(static_cast<int>(AssetType::UNKNOWN));
     stageAttributes->setRenderAssetIsPrimitive(false);
   } else if (forceRegistration) {
-    LOG(WARNING)
-        << "::registerObjectFinalize : Render asset template handle : "
-        << renderAssetHandle << " specified in stage template with handle : "
-        << stageAttributesHandle
-        << " does not correspond to any existing file or primitive render "
+    ESP_WARNING()
+        << "::registerObjectFinalize : Render asset template handle :"
+        << renderAssetHandle
+        << "specified in stage template with handle :" << stageAttributesHandle
+        << "does not correspond to any existing file or primitive render "
            "asset. This attributes is not in a valid state.";
   } else {
     // If renderAssetHandle is not valid file name needs to  fail
-    LOG(ERROR)
-        << "::registerObjectFinalize : Render asset template handle : "
-        << renderAssetHandle << " specified in stage template with handle : "
-        << stageAttributesHandle
-        << " does not correspond to any existing file or primitive render "
+    ESP_ERROR()
+        << "::registerObjectFinalize : Render asset template handle :"
+        << renderAssetHandle
+        << "specified in stage template with handle :" << stageAttributesHandle
+        << "does not correspond to any existing file or primitive render "
            "asset.  Aborting. ";
     return ID_UNDEFINED;
   }
@@ -108,12 +108,12 @@ int StageAttributesManager::registerObjectFinalize(
     stageAttributes->setCollisionAssetIsPrimitive(false);
   } else {
     // Else, means no collision data specified, use specified render data
-    LOG(INFO)
-        << "::registerObjectFinalize : Collision asset template handle : "
-        << collisionAssetHandle << " specified in stage template with handle : "
-        << stageAttributesHandle
-        << " does not correspond to any existing file or primitive render "
-           "asset.  Overriding with given render asset handle : "
+    ESP_DEBUG()
+        << "::registerObjectFinalize : Collision asset template handle :"
+        << collisionAssetHandle
+        << "specified in stage template with handle :" << stageAttributesHandle
+        << "does not correspond to any existing file or primitive render "
+           "asset.  Overriding with given render asset handle :"
         << renderAssetHandle << ". ";
 
     stageAttributes->setCollisionAssetHandle(renderAssetHandle);
@@ -136,9 +136,9 @@ StageAttributes::ptr StageAttributesManager::createPrimBasedAttributesTemplate(
     bool registerTemplate) {
   // verify that a primitive asset with the given handle exists
   if (!StageAttributesManager::isValidPrimitiveAttributes(primAssetHandle)) {
-    LOG(ERROR)
+    ESP_ERROR()
         << "::createPrimBasedAttributesTemplate : No primitive with handle '"
-        << primAssetHandle
+        << Mn::Debug::nospace << primAssetHandle << Mn::Debug::nospace
         << "' exists so cannot build physical object.  Aborting.";
     return nullptr;
   }
@@ -202,12 +202,20 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
       newAttributes->setNavmeshAssetHandle(navmeshFilename);
     }
     // Build default semantic descriptor file name
-    std::string houseFilename = io::changeExtension(attributesHandle, ".house");
+    std::string houseFilename = "";
+    for (const auto& ext : {".house", ".scn"}) {
+      const std::string proposed = io::changeExtension(attributesHandle, ext);
+      if (Cr::Utility::Directory::exists(proposed)) {
+        houseFilename = proposed;
+        break;
+      }
+    }
 
     if (!Corrade::Utility::Directory::exists(houseFilename)) {
       houseFilename = io::changeExtension(attributesHandle, ".scn");
     }
     newAttributes->setHouseFilename(houseFilename);
+
     // Build default semantic mesh file name
     const std::string semanticMeshFilename =
         io::removeExtension(houseFilename) + "_semantic.ply";

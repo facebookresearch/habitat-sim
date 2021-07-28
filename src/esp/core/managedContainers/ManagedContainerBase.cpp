@@ -4,6 +4,9 @@
 
 #include "ManagedContainerBase.h"
 #include <Corrade/Utility/FormatStl.h>
+
+namespace Cr = Corrade;
+
 namespace esp {
 namespace core {
 
@@ -28,9 +31,9 @@ std::string ManagedContainerBase::getRandomObjectHandlePerType(
     const std::string& type) const {
   std::size_t numVals = mapOfHandles.size();
   if (numVals == 0) {
-    LOG(ERROR) << "::getRandomObjectHandlePerType : Attempting to get a random "
-               << type << objectType_
-               << " managed object handle but none are loaded; Aboring";
+    ESP_ERROR() << "::getRandomObjectHandlePerType : Attempting to get a random"
+                << type << objectType_
+                << "managed object handle but none are loaded; Aboring";
     return "";
   }
   int randIDX = rand() % numVals;
@@ -164,10 +167,11 @@ int ManagedContainerBase::getObjectIDByHandleOrNew(
     return getObjectInternal<AbstractManagedObject>(objectHandle)->getID();
   }
   if (!getNext) {
-    LOG(ERROR) << "<" << this->objectType_
-               << ">::getObjectIDByHandleOrNew : No " << objectType_
-               << " managed object with handle " << objectHandle
-               << "exists. Aborting";
+    ESP_ERROR() << "<" << Cr::Utility::Debug::nospace << this->objectType_
+                << Cr::Utility::Debug::nospace
+                << ">::getObjectIDByHandleOrNew : No" << objectType_
+                << "managed object with handle" << objectHandle
+                << "exists. Aborting";
     return ID_UNDEFINED;
   }
   return getUnusedObjectID();

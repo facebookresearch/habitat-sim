@@ -321,7 +321,7 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
     std::shared_ptr<T> sp = weakObjRef_.lock();
     if (!sp) {
       // TODO: Verify object is removed from manager here?
-      LOG(WARNING)
+      ESP_WARNING()
           << "This object no longer exists.  Please delete any variable "
              "references.";
     }

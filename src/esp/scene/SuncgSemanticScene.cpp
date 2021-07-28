@@ -42,7 +42,7 @@ std::string SuncgObjectCategory::name(const std::string& mapping) const {
       return modelId_;
     }
   } else {
-    LOG(ERROR) << "Unknown mapping type: " << mapping;
+    ESP_ERROR() << "Unknown mapping type:" << mapping;
     return "UNKNOWN";
   }
 }
@@ -57,7 +57,7 @@ std::string SuncgRegionCategory::name(const std::string& mapping) const {
   } else if (mapping == "" || mapping == "category") {
     return Corrade::Utility::String::join(categories_, ',');
   } else {
-    LOG(ERROR) << "Unknown mapping type: " << mapping;
+    ESP_ERROR() << "Unknown mapping type:" << mapping;
     return "UNKNOWN";
   }
 }
@@ -67,7 +67,7 @@ bool SemanticScene::loadSuncgHouse(
     SemanticScene& scene,
     const quatf& worldRotation /* = quatf::Identity() */) {
   if (!io::exists(houseFilename)) {
-    LOG(ERROR) << "Could not load file " << houseFilename;
+    ESP_ERROR() << "Could not load file" << houseFilename;
     return false;
   }
 
@@ -94,9 +94,9 @@ bool SemanticScene::loadSuncgHouse(
   scene.objects_.clear();
 
   // top-level scene
-  VLOG(1) << "Parsing " << houseFilename;
+  ESP_VERY_VERBOSE() << "Parsing" << houseFilename;
   const auto& json = io::parseJsonFile(houseFilename);
-  VLOG(1) << "Parsed.";
+  ESP_VERY_VERBOSE() << "Parsed.";
   scene.name_ = json["id"].GetString();
   const auto& levels = json["levels"].GetArray();
   scene.elementCounts_["levels"] = static_cast<int>(levels.Size());
@@ -107,7 +107,7 @@ bool SemanticScene::loadSuncgHouse(
 
   int iLevel = 0;
   for (const auto& jsonLevel : levels) {
-    VLOG(1) << "Parsing level iLevel=" << iLevel;
+    ESP_VERY_VERBOSE() << "Parsing level iLevel=" << iLevel;
     const std::string levelId = jsonLevel["id"].GetString();
     const auto& nodes = jsonLevel["nodes"].GetArray();
 
@@ -134,8 +134,8 @@ bool SemanticScene::loadSuncgHouse(
         continue;
       }
 
-      VLOG(1) << "Parsing node jNode=" << jNode << " nodeId=" << nodeId
-              << " nodeType=" << nodeType;
+      ESP_VERY_VERBOSE() << "Parsing node jNode=" << jNode
+                         << "nodeId=" << nodeId << "nodeType=" << nodeType;
 
       // helper for creating objects
       auto createObjectFunc = [&](const std::string& nodeId,
@@ -199,26 +199,26 @@ bool SemanticScene::loadSuncgHouse(
       } else if (nodeType == "Ground") {
         createObjectFunc(nodeId, "Ground");
       } else {
-        LOG(ERROR) << "Unrecognized SUNCG house node type " << nodeType;
+        ESP_ERROR() << "Unrecognized SUNCG house node type" << nodeType;
       }
     }  // for node
 
     // now hook up nodes in this level to their room regions
-    VLOG(1) << "Connecting child nodes to parent regions";
+    ESP_VERY_VERBOSE() << "Connecting child nodes to parent regions";
     for (int jRoom = 0; jRoom < level->regions().size(); ++jRoom) {
       auto room = std::static_pointer_cast<SuncgSemanticRegion>(
           level->regions()[jRoom]);
-      VLOG(1) << "jRoom=" << jRoom;
+      ESP_VERY_VERBOSE() << "jRoom=" << jRoom;
       for (int nodeIndexInLevel : room->nodeIndicesInLevel_) {
         const int objectIndexInLevel = nodeToObjectIndex[nodeIndexInLevel];
-        VLOG(1) << "nodeIndexInLevel=" << nodeIndexInLevel << " -> "
-                << objectIndexInLevel;
+        ESP_VERY_VERBOSE() << "nodeIndexInLevel=" << nodeIndexInLevel << "->"
+                           << objectIndexInLevel;
         if (objectIndexInLevel == ID_UNDEFINED) {
           // node was not valid and ignored, so skip here also
           continue;
         }
-        ASSERT(objectIndexInLevel >= 0 &&
-               objectIndexInLevel < level->objects().size());
+        CORRADE_INTERNAL_ASSERT(objectIndexInLevel >= 0 &&
+                                objectIndexInLevel < level->objects().size());
         const auto& object = level->objects()[objectIndexInLevel];
         object->parentIndex_ = jRoom;
         object->region_ = room;

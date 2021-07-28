@@ -29,9 +29,9 @@ bool SemanticScene::loadReplicaHouse(
   }
 
   // top-level scene
-  VLOG(1) << "loadReplicaHouse::Parsing " << houseFilename;
+  ESP_VERY_VERBOSE() << "loadReplicaHouse::Parsing" << houseFilename;
   const auto& json = io::parseJsonFile(houseFilename);
-  VLOG(1) << "loadReplicaHouse::Parsed.";
+  ESP_VERY_VERBOSE() << "loadReplicaHouse::Parsed.";
 
   // check if Replica or ReplicaCAD
   bool hasObjects = (json.HasMember("objects") && json["objects"].IsArray());
@@ -58,7 +58,7 @@ bool SemanticScene::buildReplicaHouse(const io::JsonDocument& jsonDoc,
      * indexing easy.
      */
     if (id > kMaxIds) {
-      LOG(ERROR) << "Exceeded max number of ids";
+      ESP_ERROR() << "Exceeded max number of ids";
       continue;
     }
     if (scene.categories_.size() < id + 1) {
@@ -86,7 +86,7 @@ bool SemanticScene::buildReplicaHouse(const io::JsonDocument& jsonDoc,
      * indexing easy.
      */
     if (id > kMaxIds) {
-      LOG(ERROR) << "Exceeded max number of ids";
+      ESP_ERROR() << "Exceeded max number of ids";
       continue;
     }
     if (scene.objects_.size() < id + 1) {

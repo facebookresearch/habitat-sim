@@ -17,7 +17,7 @@ namespace esp {
 namespace geo {
 
 std::vector<vec2f> convexHull2D(const std::vector<vec2f>& points) {
-  ASSERT(points.size() > 2);
+  CORRADE_INTERNAL_ASSERT(points.size() > 2);
 
   auto cross = [](const vec2f& o, const vec2f& a, const vec2f& b) {
     return (a(0) - o(0)) * (b(1) - o(1)) - (a(1) - o(1)) * (b(0) - o(0));

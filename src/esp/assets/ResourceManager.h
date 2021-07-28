@@ -237,7 +237,8 @@ class ResourceManager {
    */
   const std::vector<assets::CollisionMeshData>& getCollisionMesh(
       const std::string& collisionAssetHandle) const {
-    CHECK(collisionMeshGroups_.count(collisionAssetHandle) > 0);
+    CORRADE_INTERNAL_ASSERT(collisionMeshGroups_.count(collisionAssetHandle) >
+                            0);
     return collisionMeshGroups_.at(collisionAssetHandle);
   }
 
@@ -312,7 +313,7 @@ class ResourceManager {
    * @return The asset's @ref MeshMetaData object.
    */
   const MeshMetaData& getMeshMetaData(const std::string& metaDataName) const {
-    CHECK(resourceDict_.count(metaDataName) > 0);
+    CORRADE_INTERNAL_ASSERT(resourceDict_.count(metaDataName) > 0);
     return resourceDict_.at(metaDataName).meshMetaData;
   }
 
@@ -335,7 +336,7 @@ class ResourceManager {
    */
   std::shared_ptr<esp::geo::VoxelGrid> getVoxelGrid(
       const std::string& voxelGridName) const {
-    CHECK(voxelGridDict_.count(voxelGridName) > 0);
+    CORRADE_INTERNAL_ASSERT(voxelGridDict_.count(voxelGridName) > 0);
     return voxelGridDict_.at(voxelGridName);
   }
 

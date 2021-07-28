@@ -3,6 +3,8 @@
 // LICENSE file in the root directory of this source tree.
 
 #include <Corrade/Utility/Directory.h>
+#include <glog/logging.h>
+#include <glog/stl_logging.h>
 #include <gtest/gtest.h>
 
 #include "esp/assets/MeshData.h"
@@ -16,12 +18,12 @@
 
 namespace Cr = Corrade;
 
-using namespace esp;
-using namespace esp::nav;
+namespace esp {
+namespace nav {
 
 void printPathPoint(int run, int step, const vec3f& p, float distance) {
-  LOG(INFO) << run << "," << step << "," << p[0] << "," << p[1] << "," << p[2]
-            << "," << distance;
+  ESP_DEBUG() << run << "," << step << "," << p[0] << "," << p[1] << "," << p[2]
+              << "," << distance;
 }
 
 void testPathFinder(PathFinder& pf) {
@@ -32,23 +34,25 @@ void testPathFinder(PathFinder& pf) {
     const bool foundPath = pf.findPath(path);
     if (foundPath) {
       const float islandSize = pf.islandRadius(path.requestedStart);
-      CHECK(islandSize > 0.0);
+      CORRADE_INTERNAL_ASSERT(islandSize > 0.0);
       for (int j = 0; j < path.points.size(); j++) {
         printPathPoint(i, j, path.points[j], path.geodesicDistance);
-        CHECK(pf.islandRadius(path.points[j]) == islandSize);
+        CORRADE_INTERNAL_ASSERT(pf.islandRadius(path.points[j]) == islandSize);
       }
-      CHECK(pf.islandRadius(path.requestedEnd) == islandSize);
+      CORRADE_INTERNAL_ASSERT(pf.islandRadius(path.requestedEnd) == islandSize);
       const vec3f& pathStart = path.points.front();
       const vec3f& pathEnd = path.points.back();
       const vec3f end = pf.tryStep(pathStart, pathEnd);
-      LOG(INFO) << "tryStep initial end=" << pathEnd.transpose()
-                << ", final end=" << end.transpose();
-      CHECK(path.geodesicDistance < std::numeric_limits<float>::infinity());
+      ESP_DEBUG() << "tryStep initial end=" << pathEnd.transpose()
+                  << ", final end=" << end.transpose();
+      CORRADE_INTERNAL_ASSERT(path.geodesicDistance <
+                              std::numeric_limits<float>::infinity());
     }
   }
 }
 
 TEST(NavTest, PathFinderLoadTest) {
+  logging::LoggingContext loggingContext;
   PathFinder pf;
   pf.loadNavMesh(Cr::Utility::Directory::join(
       SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.navmesh"));
@@ -77,23 +81,24 @@ void printRandomizedPathSet(PathFinder& pf) {
       printPathPoint(i, path.points.size() + 1, path.requestedEnd,
                      path.geodesicDistance);
     } else {
-      LOG(WARNING) << "Failed to find shortest path between start="
-                   << path.requestedStart.transpose()
-                   << " and end=" << path.requestedEnd.transpose();
+      ESP_WARNING() << "Failed to find shortest path between start="
+                    << path.requestedStart.transpose()
+                    << "and end=" << path.requestedEnd.transpose();
     }
   }
 }
 
 TEST(NavTest, PathFinderTestCases) {
+  logging::LoggingContext loggingContext;
   PathFinder pf;
   pf.loadNavMesh(Cr::Utility::Directory::join(
       SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.navmesh"));
   ShortestPath testPath;
   testPath.requestedStart = vec3f(-6.493, 0.072, -3.292);
   testPath.requestedEnd = vec3f(-8.98, 0.072, -0.62);
-  LOG(INFO) << "TEST";
+  ESP_DEBUG() << "TEST";
   pf.findPath(testPath);
-  CHECK(testPath.points.size() == 0);
+  CORRADE_INTERNAL_ASSERT(testPath.points.size() == 0);
   CHECK_EQ(testPath.geodesicDistance, std::numeric_limits<float>::infinity());
 
   testPath.requestedStart = pf.getRandomNavigablePoint();
@@ -109,6 +114,7 @@ TEST(NavTest, PathFinderTestCases) {
 }
 
 TEST(NavTest, PathFinderTestNonNavigable) {
+  logging::LoggingContext loggingContext;
   PathFinder pf;
   pf.loadNavMesh(Cr::Utility::Directory::join(
       SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.navmesh"));
@@ -118,10 +124,11 @@ TEST(NavTest, PathFinderTestNonNavigable) {
   const vec3f resultPoint = pf.tryStep<vec3f>(
       nonNavigablePoint, nonNavigablePoint + vec3f{0.25, 0, 0});
 
-  CHECK(nonNavigablePoint.isApprox(resultPoint));
+  CORRADE_INTERNAL_ASSERT(nonNavigablePoint.isApprox(resultPoint));
 }
 
 TEST(NavTest, PathFinderTestSeed) {
+  logging::LoggingContext loggingContext;
   PathFinder pf;
   pf.loadNavMesh(Cr::Utility::Directory::join(
       SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.navmesh"));
@@ -148,6 +155,7 @@ TEST(NavTest, PathFinderTestSeed) {
 }
 
 TEST(NavTest, PathFinderTestMeshData) {
+  logging::LoggingContext loggingContext;
   PathFinder pf;
   pf.loadNavMesh(Cr::Utility::Directory::join(
       SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.navmesh"));
@@ -167,3 +175,5 @@ TEST(NavTest, PathFinderTestMeshData) {
   ASSERT_EQ(meshData->vbo.size(), 63);
   ASSERT_EQ(meshData->ibo.size(), 63);
 }
+}  // namespace nav
+}  // namespace esp

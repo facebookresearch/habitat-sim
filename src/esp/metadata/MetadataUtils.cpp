@@ -29,7 +29,7 @@ int getShaderTypeFromJsonDoc(const io::JsonGenericValue& jsonDoc) {
     if (found != attributes::ShaderTypeNamesMap.end()) {
       shader_type = static_cast<int>(found->second);
     } else {
-      LOG(WARNING)
+      ESP_WARNING()
           << "getShaderTypeFromJsonDoc : `shader_type` value in json  : `"
           << tmpShaderType << "` -> `" << strToLookFor
           << "` does not map to a valid "

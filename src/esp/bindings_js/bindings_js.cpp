@@ -452,4 +452,7 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("setLightSetup", &Simulator::setLightSetup)
       .function("stepWorld", &Simulator::stepWorld)
       .function("castRay", &Simulator::castRay);
+
+  em::class_<logging::LoggingContext>("LoggingContext");
+  em::constant("_loggingContext", std::make_unique<LoggingContext>());
 }
