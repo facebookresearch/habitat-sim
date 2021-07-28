@@ -12,4 +12,8 @@ namespace esp {
  * @brief GFX library
  */
 
+/** @namespace esp::logging
+ * @brief logging library
+ */
+
 }
