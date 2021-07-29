@@ -27,6 +27,7 @@ using namespace esp::physics;
 using namespace esp::scene;
 using namespace esp::sensor;
 using namespace esp::sim;
+using esp::logging::LoggingContext;
 
 // Consider
 // https://becominghuman.ai/passing-and-returning-webassembly-array-parameters-a0f572c65d97
@@ -133,6 +134,9 @@ bool isBuildWithBulletPhysics() {
 }
 
 EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
+  em::class_<LoggingContext>("LoggingContext");
+  em::constant("_loggingContext", std::make_unique<LoggingContext>());
+
   em::function("toQuaternion", &toQuaternion);
   em::function("toVec3f", &toVec3f);
   em::function("toVec4f", &toVec4f);
@@ -452,7 +456,4 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("setLightSetup", &Simulator::setLightSetup)
       .function("stepWorld", &Simulator::stepWorld)
       .function("castRay", &Simulator::castRay);
-
-  em::class_<logging::LoggingContext>("LoggingContext");
-  em::constant("_loggingContext", std::make_unique<LoggingContext>());
 }
