@@ -16,9 +16,13 @@
 #include "esp/nav/PathFinder.h"
 #include "esp/scene/SemanticScene.h"
 
-using namespace esp::assets;
-using namespace esp::scene;
-using namespace esp::nav;
+using esp::assets::AssetInfo;
+using esp::assets::MeshData;
+using esp::assets::Mp3dInstanceMeshData;
+using esp::assets::SceneLoader;
+using esp::nav::NavMeshSettings;
+using esp::nav::PathFinder;
+using esp::scene::SemanticScene;
 
 int createNavMesh(const std::string& meshFile, const std::string& navmeshFile) {
   SceneLoader loader;
@@ -78,14 +82,14 @@ int createGibsonSemanticMesh(const std::string& objFile,
   std::ofstream f(semMeshFile, std::ios::out | std::ios::binary);
   f << "ply" << std::endl;
   f << "format binary_little_endian 1.0" << std::endl;
-  f << "element vertex" << numVerts << std::endl;
+  f << "element vertex " << numVerts << std::endl;
   f << "property float x" << std::endl;
   f << "property float y" << std::endl;
   f << "property float z" << std::endl;
   f << "property uchar red" << std::endl;
   f << "property uchar green" << std::endl;
   f << "property uchar blue" << std::endl;
-  f << "element face" << shapes[0].mesh.num_face_vertices.size() << std::endl;
+  f << "element face " << shapes[0].mesh.num_face_vertices.size() << std::endl;
   f << "property list uchar int vertex_indices" << std::endl;
   f << "property ushort object_id" << std::endl;
   f << "end_header" << std::endl;
