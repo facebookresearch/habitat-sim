@@ -30,12 +30,12 @@ def format_message(record: LogRecord) -> str:
     return record_message
 
 
-class HabSimFormatter(logging.Formatter):
+class HabitatSimFormatter(logging.Formatter):
     def format(self, record: LogRecord) -> str:
         record_message = "[Sim] %s" % (format_message(record),)
         record.getMessage = lambda: record_message  # type: ignore
         return logging.Formatter.format(self, record)
 
 
-handler.setFormatter(HabSimFormatter())
+handler.setFormatter(HabitatSimFormatter())
 logger.addHandler(handler)

@@ -55,7 +55,7 @@ void initCoreBindings(py::module& m) {
   py::class_<LoggingContext>(m, "LoggingContext")
       .def_static("current", &LoggingContext::current,
                   py::return_value_policy::reference)
-      .def_property_readonly("sim_is_quiet", [](LoggingContext& self) -> int {
+      .def_property_readonly("sim_is_quiet", [](LoggingContext& self) -> bool {
         return self.levelFor(logging::Subsystem::sim) >=
                logging::LoggingLevel::Debug;
       });
