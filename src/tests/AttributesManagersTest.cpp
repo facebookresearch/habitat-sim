@@ -675,7 +675,11 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
                   "user_int" : 2,
                   "user_float" : 1.22,
                   "user_vec3" : [120.3, 302.5, -25.07],
-                  "user_quat" : [1.23, 1.22, 1.26, 1.21]
+                  "user_quat" : [1.23, 1.22, 1.26, 1.21],
+                  "user_def_obj" : {
+                      "position" : [0.1, 0.2, 0.3],
+                      "rotation" : [0.5, 0.3, 0.1]
+                  }
               }
           },
           {
@@ -809,12 +813,25 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
        iter != initJoinVelMap.end(); ++iter) {
     ASSERT_EQ(iter->second, jtVelVals[idx++]);
   }
+
   // test test_urdf_template0 ao instance attributes-level user config vals
   testUserDefinedConfigVals(artObjInstance->getUserConfiguration(),
                             "test_urdf_template0 instance defined string",
                             false, 2, 1.22f,
                             Magnum::Vector3(120.3f, 302.5f, -25.07f),
                             Magnum::Quaternion({1.22f, 1.26f, 1.21f}, 1.23f));
+
+  // test nested configuration
+  auto artObjNestedConfig =
+      artObjInstance->getUserConfiguration()->getConfigSubgroupAsPtr(
+          "user_def_obj");
+  ASSERT_NE(artObjNestedConfig, nullptr);
+  ASSERT_EQ(artObjNestedConfig->hasValues(), true);
+  ASSERT_EQ(artObjNestedConfig->getVec3("position"),
+            Magnum::Vector3(0.1f, 0.2f, 0.3f));
+  ASSERT_EQ(artObjNestedConfig->getVec3("rotation"),
+            Magnum::Vector3(0.5f, 0.3f, 0.1f));
+  LOG(WARNING) << "Articulated Object test 3";
 
   artObjInstance = artObjInstances[1];
   ASSERT_EQ(artObjInstance->getHandle(), "test_urdf_template1");

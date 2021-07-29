@@ -10,11 +10,11 @@
 #include <cstdint>
 #define RAPIDJSON_NO_INT64DEFINE
 #include <rapidjson/document.h>
-#include "esp/core/esp.h"
-
 #include <functional>
 #include <string>
 #include <vector>
+#include "esp/core/Configuration.h"
+#include "esp/core/esp.h"
 
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Quaternion.h>
@@ -53,6 +53,18 @@ std::string jsonToString(const JsonDocument& d);
 
 //! Return Vec3f coordinates representation of given JsonObject of array type
 esp::vec3f jsonToVec3f(const JsonGenericValue& jsonArray);
+
+/**
+ * @brief Recursively load a @ref esp::core::Configuration based on a json file.
+ * @param jsonObj The source json being read
+ * @param subGroupName The subgroup name to create amd populate within the
+ * configuration
+ * @param config The owning configuration that the subgroup is a part of
+ * @return The number of configuration settings successfully read.
+ */
+int loadJsonIntoConfiguration(const JsonGenericValue& jsonObj,
+                              const std::string& subGroupName,
+                              esp::core::Configuration& config);
 
 /**
  * @brief Check passed json doc for existence of passed jsonTag as value of
