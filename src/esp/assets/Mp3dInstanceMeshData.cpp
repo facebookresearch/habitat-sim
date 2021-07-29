@@ -141,14 +141,14 @@ bool Mp3dInstanceMeshData::saveSemMeshPLY(
   std::ofstream f(plyFile, std::ios::out | std::ios::binary);
   f << "ply" << std::endl;
   f << "format binary_little_endian 1.0" << std::endl;
-  f << "element vertex" << nVertex << std::endl;
+  f << "element vertex " << nVertex << std::endl;
   f << "property float x" << std::endl;
   f << "property float y" << std::endl;
   f << "property float z" << std::endl;
   f << "property uchar red" << std::endl;
   f << "property uchar green" << std::endl;
   f << "property uchar blue" << std::endl;
-  f << "element face" << nFace << std::endl;
+  f << "element face " << nFace << std::endl;
   f << "property list uchar int vertex_indices" << std::endl;
   f << "property int object_id" << std::endl;
   f << "end_header" << std::endl;
