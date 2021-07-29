@@ -50,12 +50,6 @@ const benchmarkObjects = [
   "frl_apartment_kitchen_utensil_03" // orange spice shaker
 ];
 
-/*class HandRecord {
-  objIds = [];
-  prevButtonStates = [false, false];
-  heldObjId = -1;
-}*/
-
 let preloadedFiles = [];
 
 export class VRDemo {
@@ -187,27 +181,6 @@ export class VRDemo {
       DataUtils.getObjectBaseFilepath()
     );
 
-    // add hands
-    /*this.handRecords = [new HandRecord(), new HandRecord()];
-    const handFilepathsByHandIndex = [
-      [
-        DataUtils.getObjectConfigFilepath("hand_l_open"),
-        DataUtils.getObjectConfigFilepath("hand_l_closed")
-      ],
-      [
-        DataUtils.getObjectConfigFilepath("hand_r_open"),
-        DataUtils.getObjectConfigFilepath("hand_r_closed")
-      ]
-    ];
-    for (const handIndex of [0, 1]) {
-      for (const filepath of handFilepathsByHandIndex[handIndex]) {
-        let objId = this.sim.addObjectByHandle(filepath, null, "", 0);
-        this.sim.setObjectMotionType(Module.MotionType.KINEMATIC, objId, 0);
-        this.sim.setTranslation(new Module.Vector3(0.0, 0.0, 0.0), objId, 0);
-        this.handRecords[handIndex].objIds.push(objId);
-      }
-    }*/
-
     // set up "Enter VR" button
     const elem = document.getElementById("enter-vr");
     elem.style.visibility = "visible";
@@ -222,8 +195,8 @@ export class VRDemo {
       const handle = DataUtils.getObjectConfigFilepath(
         benchmarkObjects[objectIdx]
       );
-      let arrpos = [pos.x(), pos.y(), pos.z()];
-      let arrvel = [vel.x(), vel.y(), vel.z()];
+      let arrpos = Module.toVec3f(pos);
+      let arrvel = Module.toVec3f(vel);
       let spawnInfo = { handle: handle, pos: arrpos, vel: arrvel };
       this.workerThread.postMessage({ type: "spawn", value: spawnInfo });
     };
@@ -285,11 +258,25 @@ export class VRDemo {
 
     this.webXRSession.requestAnimationFrame(this.drawVRScene.bind(this));
 
-    this.workerThread.postMessage({ type: "start", data: null });
-
-    /*this.physicsStepFunction = setInterval(() => {
-      this.sim.stepWorld(1.0 / 60);
-    }, 1000.0 / 60);*/
+    const handFilepathsByHandIndex = [
+      [
+        DataUtils.getObjectConfigFilepath("hand_l_open"),
+        DataUtils.getObjectConfigFilepath("hand_l_closed")
+      ],
+      [
+        DataUtils.getObjectConfigFilepath("hand_r_open"),
+        DataUtils.getObjectConfigFilepath("hand_r_closed")
+      ]
+    ];
+    const spawnOrder = [];
+    for (const handle of objectSpawnOrder) {
+      spawnOrder.push(DataUtils.getObjectConfigFilepath(handle));
+    }
+    const startData = {
+      handFilepathsByHandIndex: handFilepathsByHandIndex,
+      objectSpawnOrder: spawnOrder
+    };
+    this.workerThread.postMessage({ type: "start", value: startData });
 
     let lastFPSUpdateTime = performance.now();
     let overallFPS = 20;
@@ -320,14 +307,12 @@ export class VRDemo {
   }
 
   handleInput(frame) {
+    let handInfo = [];
     for (let inputSource of frame.session.inputSources) {
       if (!inputSource.gripSpace) {
         continue;
       }
       let handIndex = inputSource.handedness == "left" ? 0 : 1;
-      let otherHandIndex = handIndex == 0 ? 1 : 0;
-      let handRecord = this.handRecords[handIndex];
-      let otherHandRecord = this.handRecords[otherHandIndex];
 
       const agent = this.sim.getAgent(this.agentId);
       let state = new Module.AgentState();
@@ -348,11 +333,6 @@ export class VRDemo {
         buttonStates[remappedIndex] ||=
           gp.buttons[i].value > 0 || gp.buttons[i].pressed == true;
       }
-      let closed = buttonStates[0];
-      let handObjId = closed ? handRecord.objIds[1] : handRecord.objIds[0];
-      let hiddenHandObjId = closed
-        ? handRecord.objIds[0]
-        : handRecord.objIds[1];
 
       const pointToArray = p => [p.x, p.y, p.z, p.w];
 
@@ -368,123 +348,16 @@ export class VRDemo {
       let handRot = Module.toQuaternion(
         pointToArray(poseTransform.orientation)
       );
-      this.sim.setTranslation(handPos, handObjId, 0);
-      this.sim.setRotation(handRot, handObjId, 0);
 
-      // hack hide ungripped hand by translating far away
-      this.sim.setTranslation(
-        new Module.Vector3(-1000.0, -1000.0, -1000.0),
-        hiddenHandObjId,
-        0
-      );
-      let palmFacingSign = handIndex == 0 ? 1.0 : -1.0;
-      let palmFacingDir = handRot.transformVector(
-        new Module.Vector3(palmFacingSign, 0.0, 0.0)
-      );
-
-      // try grab
-      if (buttonStates[0] && !handRecord.prevButtonStates[0]) {
-        let grabRay = new Module.Ray(handPos, palmFacingDir);
-        let maxDistance = 0.15;
-
-        let raycastResults = this.sim.castRay(grabRay, maxDistance, 0);
-        let hitObjId = raycastResults.hasHits()
-          ? raycastResults.hits.get(0).objectId
-          : -1;
-
-        if (hitObjId != -1) {
-          handRecord.heldObjId = hitObjId;
-
-          if (otherHandRecord.heldObjId == hitObjId) {
-            // release from other hand
-            otherHandRecord.heldObjId = -1;
-          }
-
-          let currTrans = this.sim.getTranslation(handRecord.heldObjId, 0);
-          let currRot = this.sim.getRotation(handRecord.heldObjId, 0);
-
-          let handRotInverted = handRot.inverted();
-          handRecord.heldRelRot = Module.Quaternion.mul(
-            handRotInverted,
-            currRot
-          );
-          handRecord.heldRelTrans = handRotInverted.transformVector(
-            Module.Vector3.sub(currTrans, handPos)
-          );
-
-          // set held obj to kinematic
-          this.sim.setObjectMotionType(
-            Module.MotionType.KINEMATIC,
-            handRecord.heldObjId,
-            0
-          );
-        }
-      }
-
-      // update held object pose
-      if (handRecord.heldObjId != -1) {
-        let pad =
-          Math.min(0.5, Math.max(0.3, palmFacingDir.y())) *
-          0.05 *
-          palmFacingSign;
-        let adjustedRelTrans = Module.Vector3.add(
-          handRecord.heldRelTrans,
-          new Module.Vector3(pad, 0.0, 0.0)
-        );
-
-        this.sim.setTranslation(
-          Module.Vector3.add(
-            handPos,
-            handRot.transformVector(adjustedRelTrans)
-          ),
-          handRecord.heldObjId,
-          0
-        );
-        this.sim.setRotation(
-          Module.Quaternion.mul(handRot, handRecord.heldRelRot),
-          handRecord.heldObjId,
-          0
-        );
-      }
-
-      // handle release
-      if (handRecord.heldObjId != -1 && !buttonStates[0]) {
-        // set held object to dynamic
-        this.sim.setObjectMotionType(
-          Module.MotionType.DYNAMIC,
-          handRecord.heldObjId,
-          0
-        );
-        handRecord.heldObjId = -1;
-      }
-
-      // spawn object
-      if (buttonStates[1] && !handRecord.prevButtonStates[1]) {
-        const offsetDist = 0.25;
-        let spawnPos = Module.Vector3.add(
-          handPos,
-          new Module.Vector3(
-            palmFacingDir.x() * offsetDist,
-            palmFacingDir.y() * offsetDist,
-            palmFacingDir.z() * offsetDist
-          )
-        );
-        let filepath = "cubeSolid";
-        if (this.objectCounter < objectSpawnOrder.length) {
-          let nextIndex = this.objectCounter;
-          this.objectCounter++;
-          filepath = DataUtils.getObjectConfigFilepath(
-            objectSpawnOrder[nextIndex]
-          );
-        }
-        let objId = this.sim.addObjectByHandle(filepath, null, "", 0);
-        if (objId != -1) {
-          this.sim.setTranslation(spawnPos, objId, 0);
-        }
-      }
-
-      handRecord.prevButtonStates = buttonStates;
+      handInfo.push({
+        index: handIndex,
+        pos: Module.toVec3f(handPos),
+        rot: Module.toVec4f(handRot),
+        gripButton: buttonStates[0],
+        spawnButton: buttonStates[1]
+      });
     }
+    this.workerThread.postMessage({ type: "hands", value: handInfo });
   }
 
   drawVRScene(t, frame) {
@@ -501,7 +374,7 @@ export class VRDemo {
 
     const agent = this.sim.getAgent(this.agentId);
 
-    //this.handleInput(frame);
+    this.handleInput(frame);
     if (!this.benchmarker || !this.benchmarker.active()) {
       updateHeadPose(pose, agent);
     }
