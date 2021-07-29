@@ -27,12 +27,11 @@ class SceneGraph {
   SceneNode& getRootNode() { return rootNode_; }
   const SceneNode& getRootNode() const { return rootNode_; }
 
-  // TODO: remove this
-  gfx::DrawableGroup& getDrawables() {
-    return drawableGroups_.at(std::string{});
+  gfx::DrawableGroup& getDrawables(const char* groupName = "") {
+    return drawableGroups_.at(std::string{groupName});
   }
-  const gfx::DrawableGroup& getDrawables() const {
-    return drawableGroups_.at(std::string{});
+  const gfx::DrawableGroup& getDrawables(const char* groupName = "") const {
+    return drawableGroups_.at(std::string{groupName});
   }
 
   /* @brief check if the scene node is the root node of the scene graph.

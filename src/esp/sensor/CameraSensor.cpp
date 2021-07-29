@@ -109,11 +109,9 @@ gfx::RenderCamera* CameraSensor::getRenderCamera() const {
 
 void CameraSensor::draw(scene::SceneGraph& sceneGraph,
                         gfx::RenderCamera::Flags flags) {
-  for (auto& it : sceneGraph.getDrawableGroups()) {
-    if (it.second.prepareForDraw(*renderCamera_)) {
-      renderCamera_->draw(it.second, flags);
-    }
-  }
+  gfx::DrawableGroup& defaultRenderingGroup = sceneGraph.getDrawables();
+  defaultRenderingGroup.prepareForDraw(*renderCamera_);
+  renderCamera_->draw(defaultRenderingGroup, flags);
 }
 
 bool CameraSensor::drawObservation(sim::Simulator& sim) {

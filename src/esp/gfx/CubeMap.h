@@ -139,19 +139,6 @@ class CubeMap {
   /** @brief get cube map size */
   int getCubeMapSize() { return imageSize_; }
 
-  /**
-   * @brief advanced function, visualize non-color texture such as depth or
-   * object id. It will visualize such a texture in the color buffer.
-   * Visualized texture can be saved for example.
-   *
-   * NOTE: Flag::ColorTexture MUST be set as well
-   */
-  void visualizeTexture(TextureType type,
-                        float n,
-                        float f,
-                        float colorMapOffset = 1.0f / 512.0f,
-                        float colorMapScale = 1.0f / 256.0f);
-
 #ifndef MAGNUM_TARGET_WEBGL
   /**
    * ```
