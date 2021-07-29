@@ -13,9 +13,6 @@
 [submodule "src/deps/magnum-plugins"]
 	path = src/deps/magnum-plugins
 	url = https://github.com/mosra/magnum-plugins.git
-[submodule "src/deps/glog"]
-	path = src/deps/glog
-	url = https://github.com/google/glog.git
 [submodule "src/deps/pybind11"]
 	path = src/deps/pybind11
 	url = https://github.com/pybind/pybind11.git

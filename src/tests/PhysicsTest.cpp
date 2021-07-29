@@ -3,8 +3,6 @@
 // LICENSE file in the root directory of this source tree.
 
 #include <Corrade/Utility/Directory.h>
-#include <glog/logging.h>
-#include <glog/stl_logging.h>
 #include <gtest/gtest.h>
 #include <string>
 

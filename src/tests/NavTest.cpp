@@ -3,8 +3,6 @@
 // LICENSE file in the root directory of this source tree.
 
 #include <Corrade/Utility/Directory.h>
-#include <glog/logging.h>
-#include <glog/stl_logging.h>
 #include <gtest/gtest.h>
 
 #include "esp/assets/MeshData.h"
@@ -99,18 +97,18 @@ TEST(NavTest, PathFinderTestCases) {
   ESP_DEBUG() << "TEST";
   pf.findPath(testPath);
   CORRADE_INTERNAL_ASSERT(testPath.points.size() == 0);
-  CHECK_EQ(testPath.geodesicDistance, std::numeric_limits<float>::infinity());
+  ASSERT_EQ(testPath.geodesicDistance, std::numeric_limits<float>::infinity());
 
   testPath.requestedStart = pf.getRandomNavigablePoint();
   // Jitter the point just enough so that it isn't exactly the same
   testPath.requestedEnd = testPath.requestedStart + vec3f(0.01, 0.0, 0.01);
   pf.findPath(testPath);
   // There should be 2 points
-  CHECK_EQ(testPath.points.size(), 2);
+  ASSERT_EQ(testPath.points.size(), 2);
   // The geodesicDistance should be almost exactly the L2 dist
-  CHECK_LE(std::abs(testPath.geodesicDistance -
-                    (testPath.requestedStart - testPath.requestedEnd).norm()),
-           0.001);
+  ASSERT_LE(std::abs(testPath.geodesicDistance -
+                     (testPath.requestedStart - testPath.requestedEnd).norm()),
+            0.001);
 }
 
 TEST(NavTest, PathFinderTestNonNavigable) {

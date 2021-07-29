@@ -202,14 +202,7 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
       newAttributes->setNavmeshAssetHandle(navmeshFilename);
     }
     // Build default semantic descriptor file name
-    std::string houseFilename = "";
-    for (const auto& ext : {".house", ".scn"}) {
-      const std::string proposed = io::changeExtension(attributesHandle, ext);
-      if (Cr::Utility::Directory::exists(proposed)) {
-        houseFilename = proposed;
-        break;
-      }
-    }
+    std::string houseFilename = io::changeExtension(attributesHandle, ".house");
 
     if (!Corrade::Utility::Directory::exists(houseFilename)) {
       houseFilename = io::changeExtension(attributesHandle, ".scn");

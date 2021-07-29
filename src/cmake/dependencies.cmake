@@ -42,22 +42,6 @@ include_directories(SYSTEM "${DEPS_DIR}/Sophus")
 include_directories("${DEPS_DIR}/tinyxml2")
 add_subdirectory("${DEPS_DIR}/tinyxml2")
 
-# We still have some tests that use glog/gtest
-if(BUILD_TEST)
-  # We don't want glog tests to be run as part of our build. The BUILD_TESTING
-  # variable is set by include(CTest) as an option(). In CMake 3.13+ it should
-  # be enough to do just set(BUILD_TESTING OFF) to avoid the option()
-  # overriding it, but https://cmake.org/cmake/help/latest/policy/CMP0077.html.
-  option(BUILD_TESTING "" OFF)
-  # glog has gflags as an optional dependency, which we don't supply. In some
-  # cases it'll result in system libs being picked up, leading to errors like
-  # described in https://github.com/facebookresearch/habitat-sim/issues/205 or
-  # https://github.com/facebookresearch/habitat-sim/issues/179. We don't need
-  # anything from gflags, so just disable them completely.
-  set(WITH_GFLAGS OFF CACHE BOOL "" FORCE)
-  add_subdirectory("${DEPS_DIR}/glog")
-endif()
-
 # RapidJSON. Use a system package, if preferred.
 if(USE_SYSTEM_RAPIDJSON)
   find_package(RapidJSON CONFIG REQUIRED)

@@ -19,8 +19,6 @@
 #include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/Math/Range.h>
 
-#include <glog/logging.h>
-#include <glog/stl_logging.h>
 #include <gtest/gtest.h>
 #include <fstream>
 #include <string>
