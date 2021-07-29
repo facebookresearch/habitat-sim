@@ -360,7 +360,7 @@ void CubeMap::prepareToDraw(unsigned int cubeSideIndex,
                           Mn::GL::Framebuffer::Status::Complete);
 }
 
-unsigned int CubeMap::getMipmapLevels() {
+unsigned int CubeMap::getMipmapLevels() const {
   return mipmapLevels_;
 }
 

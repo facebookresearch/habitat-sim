@@ -261,7 +261,7 @@ class CubeMap {
    * NOTE: returns 1 if this is non-colored cubemap, or it is colored cubemap
    * but without mipmap enabled.
    */
-  unsigned int getMipmapLevels();
+  unsigned int getMipmapLevels() const;
 
   /**
    * @brief generate mipmap
