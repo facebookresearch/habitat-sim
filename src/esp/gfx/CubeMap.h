@@ -137,7 +137,7 @@ class CubeMap {
   Magnum::GL::CubeMapTexture& getTexture(TextureType type);
 
   /** @brief get cube map size */
-  int getCubeMapSize() { return imageSize_; }
+  int getCubeMapSize() const { return imageSize_; }
 
 #ifndef MAGNUM_TARGET_WEBGL
   /**
