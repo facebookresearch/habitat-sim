@@ -135,7 +135,7 @@ bool isBuildWithBulletPhysics() {
 
 EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::class_<LoggingContext>("LoggingContext");
-  em::constant("_loggingContext", std::make_unique<LoggingContext>());
+  em::constant("_loggingContext", std::make_shared<LoggingContext>());
 
   em::function("toQuaternion", &toQuaternion);
   em::function("toVec3f", &toVec3f);

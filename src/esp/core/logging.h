@@ -90,18 +90,18 @@ inline esp::logging::Subsystem espLoggingSubsystem() {
   }                                                 \
   }
 
-ESP_ADD_SUBSYSTEM_FN(gfx);
-ESP_ADD_SUBSYSTEM_FN(scene);
-ESP_ADD_SUBSYSTEM_FN(sim);
-ESP_ADD_SUBSYSTEM_FN(physics);
-ESP_ADD_SUBSYSTEM_FN(nav);
-ESP_ADD_SUBSYSTEM_FN(metadata);
-ESP_ADD_SUBSYSTEM_FN(geo);
-ESP_ADD_SUBSYSTEM_FN(io);
-ESP_ADD_SUBSYSTEM_FN(core);
-ESP_ADD_SUBSYSTEM_FN(assets);
-ESP_ADD_SUBSYSTEM_FN(sensor);
-ESP_ADD_SUBSYSTEM_FN(agent);
+ESP_ADD_SUBSYSTEM_FN(gfx)
+ESP_ADD_SUBSYSTEM_FN(scene)
+ESP_ADD_SUBSYSTEM_FN(sim)
+ESP_ADD_SUBSYSTEM_FN(physics)
+ESP_ADD_SUBSYSTEM_FN(nav)
+ESP_ADD_SUBSYSTEM_FN(metadata)
+ESP_ADD_SUBSYSTEM_FN(geo)
+ESP_ADD_SUBSYSTEM_FN(io)
+ESP_ADD_SUBSYSTEM_FN(core)
+ESP_ADD_SUBSYSTEM_FN(assets)
+ESP_ADD_SUBSYSTEM_FN(sensor)
+ESP_ADD_SUBSYSTEM_FN(agent)
 
 namespace esp {
 namespace io {
