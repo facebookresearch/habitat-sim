@@ -425,6 +425,13 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
   virtual std::vector<scene::SceneNode*> getVisualSceneNodes() const = 0;
 
   core::Configuration::ptr getUserAttributes() const { return userAttributes_; }
+
+  /**
+   * @brief This function will completely overwrite this object's
+   * user-defined attributes.
+   * @param attr A ptr to the user defined attributes specified for this object.
+   * merge into them.
+   */
   void setUserAttributes(core::Configuration::ptr attr) {
     userAttributes_ = std::move(attr);
   }
