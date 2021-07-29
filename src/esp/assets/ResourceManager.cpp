@@ -1470,7 +1470,7 @@ bool ResourceManager::buildTrajectoryVisualization(
       geo::buildTrajectoryTubeSolid(pts, numSegments, radius, smooth,
                                     numInterp);
   ESP_DEBUG() << "::loadTrajectoryVisualization : Successfully "
-                 "returned from trajectoryTubeSolid ";
+                 "returned from trajectoryTubeSolid";
 
   // make assetInfo
   AssetInfo info{AssetType::PRIMITIVE};

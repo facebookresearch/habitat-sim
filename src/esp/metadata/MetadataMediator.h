@@ -471,7 +471,7 @@ class MetadataMediator {
       ESP_ERROR() << "::getActiveDSAttribs : Unable to set "
                      "active dataset due to Unknown dataset named"
                   << activeSceneDataset_
-                  << " so changing dataset to \"default\".";
+                  << "so changing dataset to \"default\".";
       activeSceneDataset_ = "default";
 
       datasetAttr = sceneDatasetAttributesManager_->getObjectByHandle(

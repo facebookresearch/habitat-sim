@@ -287,7 +287,7 @@ int PhysicsManager::addArticulatedObjectInstance(
                 << "Articulated Object create failed for model filepath"
                 << filepath << ", whose handle is"
                 << aObjInstAttributes->getHandle()
-                << " as specified in articulated object instance attributes.";
+                << "as specified in articulated object instance attributes.";
     return ID_UNDEFINED;
   }
 

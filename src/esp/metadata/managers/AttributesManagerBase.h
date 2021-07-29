@@ -473,7 +473,7 @@ bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
               << "attributes, user_defined config cell in JSON document "
                  "contains key"
               << key
-              << " referencing an unknown/unparsable value, so skipping this "
+              << "referencing an unknown/unparsable value, so skipping this "
                  "key.";
         }
       }

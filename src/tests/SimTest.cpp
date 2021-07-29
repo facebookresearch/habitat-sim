@@ -297,7 +297,7 @@ void SimTest::checkPinholeCameraRGBAObservation(
 }
 
 void SimTest::getSceneRGBAObservation() {
-  ESP_DEBUG() << "Starting Test : getSceneRGBAObservation ";
+  ESP_DEBUG() << "Starting Test : getSceneRGBAObservation";
   setTestCaseName(CORRADE_FUNCTION);
   ESP_DEBUG() << "About to build simulator";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
@@ -309,7 +309,7 @@ void SimTest::getSceneRGBAObservation() {
 }
 
 void SimTest::getSceneWithLightingRGBAObservation() {
-  ESP_DEBUG() << "Starting Test : getSceneWithLightingRGBAObservation ";
+  ESP_DEBUG() << "Starting Test : getSceneWithLightingRGBAObservation";
   setTestCaseName(CORRADE_FUNCTION);
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
@@ -319,7 +319,7 @@ void SimTest::getSceneWithLightingRGBAObservation() {
 }
 
 void SimTest::getDefaultLightingRGBAObservation() {
-  ESP_DEBUG() << "Starting Test : getDefaultLightingRGBAObservation ";
+  ESP_DEBUG() << "Starting Test : getDefaultLightingRGBAObservation";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
@@ -335,7 +335,7 @@ void SimTest::getDefaultLightingRGBAObservation() {
 }
 
 void SimTest::getCustomLightingRGBAObservation() {
-  ESP_DEBUG() << "Starting Test : getCustomLightingRGBAObservation ";
+  ESP_DEBUG() << "Starting Test : getCustomLightingRGBAObservation";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
@@ -352,7 +352,7 @@ void SimTest::getCustomLightingRGBAObservation() {
 }
 
 void SimTest::updateLightSetupRGBAObservation() {
-  ESP_DEBUG() << "Starting Test : updateLightSetupRGBAObservation ";
+  ESP_DEBUG() << "Starting Test : updateLightSetupRGBAObservation";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
@@ -387,7 +387,7 @@ void SimTest::updateLightSetupRGBAObservation() {
 }
 
 void SimTest::updateObjectLightSetupRGBAObservation() {
-  ESP_DEBUG() << "Starting Test : updateObjectLightSetupRGBAObservation ";
+  ESP_DEBUG() << "Starting Test : updateObjectLightSetupRGBAObservation";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
@@ -412,7 +412,7 @@ void SimTest::updateObjectLightSetupRGBAObservation() {
 }
 
 void SimTest::multipleLightingSetupsRGBAObservation() {
-  ESP_DEBUG() << "Starting Test : multipleLightingSetupsRGBAObservation ";
+  ESP_DEBUG() << "Starting Test : multipleLightingSetupsRGBAObservation";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, planeStage, esp::NO_LIGHT_KEY);
@@ -445,7 +445,7 @@ void SimTest::multipleLightingSetupsRGBAObservation() {
 }
 
 void SimTest::recomputeNavmeshWithStaticObjects() {
-  ESP_DEBUG() << "Starting Test : recomputeNavmeshWithStaticObjects ";
+  ESP_DEBUG() << "Starting Test : recomputeNavmeshWithStaticObjects";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, skokloster, esp::NO_LIGHT_KEY);
@@ -510,7 +510,7 @@ void SimTest::recomputeNavmeshWithStaticObjects() {
 }
 
 void SimTest::loadingObjectTemplates() {
-  ESP_DEBUG() << "Starting Test : loadingObjectTemplates ";
+  ESP_DEBUG() << "Starting Test : loadingObjectTemplates";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, planeStage, esp::NO_LIGHT_KEY);
@@ -575,7 +575,7 @@ void SimTest::loadingObjectTemplates() {
 }
 
 void SimTest::buildingPrimAssetObjectTemplates() {
-  ESP_DEBUG() << "Starting Test : buildingPrimAssetObjectTemplates ";
+  ESP_DEBUG() << "Starting Test : buildingPrimAssetObjectTemplates";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, planeStage, esp::NO_LIGHT_KEY);
@@ -718,7 +718,7 @@ void SimTest::buildingPrimAssetObjectTemplates() {
 }  // SimTest::buildingPrimAssetObjectTemplates
 
 void SimTest::addObjectByHandle() {
-  ESP_DEBUG() << "Starting Test : addObject ";
+  ESP_DEBUG() << "Starting Test : addObject";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, planeStage, esp::NO_LIGHT_KEY);
@@ -734,7 +734,7 @@ void SimTest::addObjectByHandle() {
 }
 
 void SimTest::addSensorToObject() {
-  ESP_DEBUG() << "Starting Test : addSensorToObject ";
+  ESP_DEBUG() << "Starting Test : addSensorToObject";
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
@@ -794,7 +794,7 @@ void SimTest::addSensorToObject() {
 }
 
 void SimTest::createMagnumRenderingOff() {
-  ESP_DEBUG() << "Starting Test : createMagnumRenderingOff ";
+  ESP_DEBUG() << "Starting Test : createMagnumRenderingOff";
 
   // create a simulator
   SimulatorConfiguration simConfig{};

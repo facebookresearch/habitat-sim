@@ -473,7 +473,7 @@ void PTexMeshData::loadMeshData(const std::string& meshFile) {
 
   submeshes_.clear();
   if (splitSize_ > 0.0f) {
-    ESP_DEBUG() << "Splitting mesh... ";
+    ESP_DEBUG() << "Splitting mesh...";
 
     collisionVbo_ = Cr::Containers::Array<Mn::Vector3>(originalMesh.vbo.size());
     Cr::Utility::copy(Cr::Containers::arrayCast<Mn::Vector3>(
@@ -830,7 +830,7 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
 
   for (int iMesh = 0; iMesh < submeshes_.size(); ++iMesh) {
     ESP_DEBUG() << "Loading mesh" << iMesh + 1 << "/" << submeshes_.size()
-                << "... ";
+                << "...";
 
     renderingBuffers_.emplace_back(
         std::make_unique<PTexMeshData::RenderingBuffer>());
@@ -855,7 +855,7 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
         submeshes_[iMesh].ibo_tri, Magnum::GL::BufferUsage::StaticDraw);
   }
 #ifndef CORRADE_TARGET_APPLE
-  ESP_DEBUG() << "Calculating mesh adjacency... ";
+  ESP_DEBUG() << "Calculating mesh adjacency...";
 
   std::vector<std::vector<uint32_t>> adjFaces(submeshes_.size());
 
@@ -902,7 +902,7 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
   }
 
   // load atlas data and upload them to GPU
-  ESP_DEBUG() << "loading atlas textures: ";
+  ESP_DEBUG() << "loading atlas textures:";
   for (size_t iMesh = 0; iMesh < renderingBuffers_.size(); ++iMesh) {
     const std::string hdrFile = Cr::Utility::Directory::join(
         atlasFolder_, std::to_string(iMesh) + "-color-ptex.hdr");
@@ -912,7 +912,7 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
                        << hdrFile, );
 
     ESP_DEBUG() << "Loading atlas" << iMesh + 1 << "/"
-                << renderingBuffers_.size() << "from" << hdrFile << ". ";
+                << renderingBuffers_.size() << "from" << hdrFile << ".";
 
     Cr::Containers::Array<const char, Cr::Utility::Directory::MapDeleter> data =
         Cr::Utility::Directory::mapRead(hdrFile);

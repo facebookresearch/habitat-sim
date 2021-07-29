@@ -650,7 +650,7 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
   removeZeroAreaPolys();
 
   ESP_DEBUG() << "Created navmesh with" << ws.pmesh->nverts << "vertices"
-              << ws.pmesh->npolys << " polygons";
+              << ws.pmesh->npolys << "polygons";
 
   return true;
 }

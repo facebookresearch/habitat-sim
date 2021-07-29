@@ -244,7 +244,7 @@ bool ManagedFileBasedContainer<T, Access>::verifyLoadDocument(
     // by here always fail
     ESP_ERROR() << "<" << Magnum::Debug::nospace << this->objectType_
                 << Magnum::Debug::nospace << ">::verifyLoadDocument : File"
-                << filename << " does not exist";
+                << filename << "does not exist";
     return false;
   }
 }  // ManagedFileBasedContainer<T, Access>::verifyLoadDocument

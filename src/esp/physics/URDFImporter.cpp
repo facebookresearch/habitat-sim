@@ -36,7 +36,7 @@ bool URDFImporter::loadURDF(const std::string& filename,
     }
 
     if (ESP_LOG_LEVEL_ENABLED(logging::LoggingLevel::VeryVerbose)) {
-      ESP_VERY_VERBOSE() << "Done parsing URDF model: ";
+      ESP_VERY_VERBOSE() << "Done parsing URDF model:";
       urdfModel->printKinematicChain();
     }
 

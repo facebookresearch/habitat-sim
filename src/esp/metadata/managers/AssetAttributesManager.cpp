@@ -217,7 +217,7 @@ AbstractPrimitiveAttributes::ptr AssetAttributesManager::buildObjectFromJSONDoc(
         << "::buildObjectFromJSONDoc : unable to "
            "create default primitive asset attributes from primClassName"
         << primClassName
-        << " so returning default attributes for solid uvSphere.";
+        << "so returning default attributes for solid uvSphere.";
     return this->getObjectCopyByHandle<attributes::UVSpherePrimitiveAttributes>(
         defaultPrimAttributeHandles_.at("uvSphereSolid"));
   }

@@ -319,7 +319,7 @@ gfx::LightSetup LightLayoutAttributesManager::createLightSetupFromAttributes(
             ESP_DEBUG() << "::createLightSetupFromAttributes : Enum "
                            "gfx::LightType with val"
                         << type
-                        << " is not supported, so defaulting to "
+                        << "is not supported, so defaulting to "
                            "gfx::LightType::Point";
             lightVector = {lightAttr->getPosition(), 1.0f};
           }

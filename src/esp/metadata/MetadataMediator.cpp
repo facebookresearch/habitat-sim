@@ -421,7 +421,7 @@ std::string MetadataMediator::createDatasetReport(
   } else {
     // unknown dataset
     ESP_ERROR() << "::createDatasetReport : Dataset" << sceneDataset
-                << " is not found in the MetadataMediator.  Aborting.";
+                << "is not found in the MetadataMediator.  Aborting.";
     return "Requeseted SceneDataset `" + sceneDataset + "` unknown.";
   }
   std::string res{"Scene Dataset"};

@@ -618,7 +618,7 @@ Mn::Matrix4 BulletURDFImporter::convertURDF2BulletInternal(
     }
   }
 
-  ESP_VERY_VERBOSE() << "  about to recurse";
+  ESP_VERY_VERBOSE() << "about to recurse";
 
   std::vector<int> urdfChildIndices;
   getLinkChildIndices(urdfLinkIndex, urdfChildIndices);

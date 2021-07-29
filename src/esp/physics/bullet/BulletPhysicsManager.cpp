@@ -502,7 +502,7 @@ RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
   results.ray = ray;
   double rayLength = static_cast<double>(ray.direction.length());
   if (rayLength == 0) {
-    ESP_ERROR() << "::castRay : Cannot cast ray with zero length, aborting. ";
+    ESP_ERROR() << "::castRay : Cannot cast ray with zero length, aborting.";
     return results;
   }
   btVector3 from(ray.origin);

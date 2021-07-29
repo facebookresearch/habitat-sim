@@ -88,7 +88,7 @@ int StageAttributesManager::registerObjectFinalize(
         << renderAssetHandle
         << "specified in stage template with handle :" << stageAttributesHandle
         << "does not correspond to any existing file or primitive render "
-           "asset.  Aborting. ";
+           "asset.  Aborting.";
     return ID_UNDEFINED;
   }
 
@@ -114,7 +114,7 @@ int StageAttributesManager::registerObjectFinalize(
         << "specified in stage template with handle :" << stageAttributesHandle
         << "does not correspond to any existing file or primitive render "
            "asset.  Overriding with given render asset handle :"
-        << renderAssetHandle << ". ";
+        << renderAssetHandle << ".";
 
     stageAttributes->setCollisionAssetHandle(renderAssetHandle);
     stageAttributes->setCollisionAssetIsPrimitive(

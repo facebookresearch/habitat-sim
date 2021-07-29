@@ -1019,7 +1019,7 @@ class Simulator {
   bool removeTrajVisByID(int trajVisObjID) {
     if (trajVisNameByID.count(trajVisObjID) == 0) {
       ESP_DEBUG() << "::removeTrajVisByName : No trajectory object with ID:"
-                  << trajVisObjID << " exists.  Ignoring.";
+                  << trajVisObjID << "exists.  Ignoring.";
       return false;
     }
     return removeTrajVisObjectAndAssets(trajVisObjID,

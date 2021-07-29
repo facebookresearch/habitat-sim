@@ -667,7 +667,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * See derived implementations.
    */
   virtual void clampJointLimits() {
-    ESP_DEBUG() << "No base implementation of \"clampJointLimits\". ";
+    ESP_DEBUG() << "No base implementation of \"clampJointLimits\".";
   }
 
   //=========== Joint Motor API ===========
@@ -752,7 +752,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
       CORRADE_UNUSED const JointMotorSettings& settings =
           JointMotorSettings()) {
     ESP_ERROR() << "ArticulatedObject::createMotorsForAllDofs(): - ERROR, "
-                   "SHOULD NOT BE CALLED WITHOUT BULLET ";
+                   "SHOULD NOT BE CALLED WITHOUT BULLET";
     return std::unordered_map<int, int>();
   }
 
@@ -776,7 +776,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
       CORRADE_UNUSED const std::vector<float>& stateTargets,
       CORRADE_UNUSED bool velocities = false) {
     ESP_ERROR() << "ArticulatedObject::updateAllMotorTargets(): - ERROR, "
-                   "SHOULD NOT BE CALLED WITHOUT BULLET ";
+                   "SHOULD NOT BE CALLED WITHOUT BULLET";
   }
 
   //=========== END - Joint Motor API ===========

@@ -220,7 +220,7 @@ int ObjectAttributesManager::registerObjectFinalize(
         << renderAssetHandle
         << "specified in object template with handle :" << objectTemplateHandle
         << "does not correspond to any existing file or primitive render "
-           "asset.  Objects created from this template may fail. ";
+           "asset.  Objects created from this template may fail.";
     objectTemplate->setRenderAssetIsPrimitive(false);
   } else {
     // If renderAssetHandle is neither valid file name nor existing primitive
@@ -231,7 +231,7 @@ int ObjectAttributesManager::registerObjectFinalize(
         << renderAssetHandle
         << "specified in object template with handle :" << objectTemplateHandle
         << "does not correspond to any existing file or primitive render "
-           "asset.  Aborting. ";
+           "asset.  Aborting.";
     return ID_UNDEFINED;
   }
 
@@ -251,7 +251,7 @@ int ObjectAttributesManager::registerObjectFinalize(
         << "specified in object template with handle :" << objectTemplateHandle
         << "does not correspond to any existing file or primitive render "
            "asset.  Overriding with given render asset handle :"
-        << renderAssetHandle << ". ";
+        << renderAssetHandle << ".";
 
     objectTemplate->setCollisionAssetHandle(renderAssetHandle);
     objectTemplate->setCollisionAssetIsPrimitive(

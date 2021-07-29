@@ -108,7 +108,7 @@ MeshData SceneLoader::load(const AssetInfo& info) {
   }
 
   ESP_DEBUG() << "Loaded" << mesh.vbo.size() << "vertices," << mesh.ibo.size()
-              << " indices";
+              << "indices";
 
   return mesh;
 };
