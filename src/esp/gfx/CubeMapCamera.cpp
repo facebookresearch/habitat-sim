@@ -44,8 +44,7 @@ CubeMapCamera& CubeMapCamera::switchToFace(unsigned int cubeSideIndex) {
                  "CubeMapCamera::switchToFace(): the index of the cube side,"
                      << cubeSideIndex << "is illegal.",
                  *this);
-  switchToFace(Mn::GL::CubeMapCoordinate(
-      int(Mn::GL::CubeMapCoordinate::PositiveX) + cubeSideIndex));
+  switchToFace(CubeMapCamera::cubeMapCoordinate(cubeSideIndex));
   return *this;
 }
 
@@ -54,7 +53,6 @@ Mn::Matrix4 CubeMapCamera::getCameraLocalTransform(
   Mn::Vector3 eye{0.0, 0.0, 0.0};
   Mn::Vector3 yUp{0.0, 1.0, 0.0};
   Mn::Vector3 zUp{0.0, 0.0, 1.0};
-
   // Careful: the coordinate system for cubemaps is left-handed.
   // The following implementation is based on:
   // https://www.khronos.org/opengl/wiki/Cubemap_Texture
@@ -89,7 +87,6 @@ CubeMapCamera& CubeMapCamera::switchToFace(Mn::GL::CubeMapCoordinate cubeSide) {
   this->node().setTransformation(
       originalViewingMatrix_ *
       CubeMapCamera::getCameraLocalTransform(cubeSide));
-
   return *this;
 }
 
@@ -100,10 +97,11 @@ CubeMapCamera& CubeMapCamera::setProjectionMatrix(int width,
   using namespace Mn::Math::Literals;
   MagnumCamera::setProjectionMatrix(
       Mn::Matrix4::perspectiveProjection(
-          90.0_degf,  // horizontal field of view angle
-          1.0,        // aspect ratio (width/height)
-          znear,      // z-near plane
-          zfar))      // z-far plane
+          // 90.0_degf,  // horizontal field of view angle
+          Mn::Rad{2.0 * float(atan(width / (width - 0.5)))},
+          1.0,    // aspect ratio (width/height)
+          znear,  // z-near plane
+          zfar))  // z-far plane
       .setViewport({width, width});
   return *this;
 }

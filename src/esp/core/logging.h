@@ -80,14 +80,14 @@ inline esp::logging::Subsystem espLoggingSubsystem() {
   }                                                 \
   }
 
-ADD_SUBSYSTEM_FN(gfx);
-ADD_SUBSYSTEM_FN(scene);
-ADD_SUBSYSTEM_FN(sim);
-ADD_SUBSYSTEM_FN(physics);
-ADD_SUBSYSTEM_FN(nav);
-ADD_SUBSYSTEM_FN(metadata);
-ADD_SUBSYSTEM_FN(geo);
-ADD_SUBSYSTEM_FN(io);
+ADD_SUBSYSTEM_FN(gfx)
+ADD_SUBSYSTEM_FN(scene)
+ADD_SUBSYSTEM_FN(sim)
+ADD_SUBSYSTEM_FN(physics)
+ADD_SUBSYSTEM_FN(nav)
+ADD_SUBSYSTEM_FN(metadata)
+ADD_SUBSYSTEM_FN(geo)
+ADD_SUBSYSTEM_FN(io)
 
 namespace esp {
 namespace io {
