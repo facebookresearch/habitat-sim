@@ -276,7 +276,7 @@ class ManagedArticulatedObject
   }
 
   std::unordered_map<int, int> createMotorsForAllDofs(
-      JointMotorSettings settings) {
+      const JointMotorSettings& settings) {
     if (auto sp = getObjectReference()) {
       return sp->createMotorsForAllDofs(settings);
     }
