@@ -108,7 +108,7 @@ int loadJsonIntoConfiguration(const JsonGenericValue& jsonObj,
       // support nested objects
       auto subGroupPtr = config.getConfigSubgroupAsPtr(subGroupName);
       // get subgroup configuration object
-      esp::core::Configuration newConfig = *subGroupPtr.get();
+      esp::core::Configuration newConfig = *subGroupPtr;
       numConfigSettings += loadJsonIntoConfiguration(obj, key, newConfig);
       // save subgroup's subgroup configuration in original config
       config.setConfigSubSubgroup(newConfig, subGroupName, key);
