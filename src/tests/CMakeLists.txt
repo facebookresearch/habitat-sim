@@ -3,7 +3,7 @@ find_package(MagnumPlugins REQUIRED StbImageImporter)
 
 macro(TEST TEST_NAME)
   add_executable(${TEST_NAME} "${TEST_NAME}.cpp")
-  target_link_libraries(${TEST_NAME} core gtest_main)
+  target_link_libraries(${TEST_NAME} core gtest_main glog)
   set(DEPENDENCIES "${ARGN}")
   foreach(DEPENDENCY IN LISTS DEPENDENCIES)
     target_link_libraries(${TEST_NAME} ${DEPENDENCY})

@@ -16,5 +16,5 @@ add_library(
 
 target_link_libraries(
   geo
-  PUBLIC core glog io gfx
+  PUBLIC core io gfx
 )
