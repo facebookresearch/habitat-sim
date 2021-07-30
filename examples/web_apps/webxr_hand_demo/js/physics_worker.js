@@ -2,103 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-/* global FS, importScripts */
-
-function preloadFunc(url) {
-  let file_parents_str = "/";
-  const splits = url.split("/");
-  let file = splits[splits.length - 1];
-  if (url.indexOf("http") === -1) {
-    let file_parents = splits.slice(0, splits.length - 1);
-    for (let i = 0; i < splits.length - 1; i += 1) {
-      file_parents_str += file_parents[i];
-      if (!FS.analyzePath(file_parents_str).exists) {
-        FS.mkdir(file_parents_str, 777);
-      }
-      file_parents_str += "/";
-    }
-  }
-  FS.createPreloadedFile(file_parents_str, file, url, true, false);
-  return file_parents_str + file;
-}
-
-function createMagnumModule(init) {
-  const module = Object.assign({}, Module);
-  Object.assign(module, {
-    preRun: [],
-    postRun: [],
-    arguments: [],
-    canvas: null,
-    status: null,
-    statusDescription: null,
-    log: null,
-    printErr: function() {},
-    print: function() {},
-    setStatus: function() {},
-    setStatusDescription: function() {},
-    totalDependencies: 0,
-    monitorRunDependencies: function(left) {
-      this.totalDependencies = Math.max(this.totalDependencies, left);
-      if (left) {
-        module.setStatus("Downloading...");
-        module.setStatusDescription(
-          this.totalDependencies - left + " / " + this.totalDependencies
-        );
-      } else {
-        module.setStatus("Download complete");
-        module.setStatusDescription("");
-      }
-    }
-  });
-  Object.assign(module, init);
-  module.setStatus("Downloading...");
-  if (module.log) {
-    module.log.style.display = "none";
-  }
-  return module;
-}
-
-let stageFilepath, physicsConfigFilepath, objectBaseFilepath;
-var Module;
-
-onmessage = function(e) {
-  console.assert(e.data.type == "preloadInfo");
-  let preloadInfo = e.data.value;
-
-  Module = createMagnumModule();
-
-  Module.preRun.push(() => {
-    stageFilepath = preloadInfo.stageFilepath;
-    physicsConfigFilepath = preloadInfo.physicsConfigFilepath;
-    objectBaseFilepath = preloadInfo.objectBaseFilepath;
-    for (const file of preloadInfo.preloadedFiles) {
-      preloadFunc(file);
-    }
-  });
-
-  Module.onRuntimeInitialized = async function() {
-    start();
-  };
-
-  importScripts("hsim_bindings.js");
-};
-
-// -------------------------------------------------------------------------------
-
-function start() {
-  postMessage({ type: "ready", value: null });
-  onmessage = function(e) {
-    // todo: get a bunch of variables here rather than hard code into this file
-    if (e.data.type == "start") {
-      let startData = e.data.value;
-      let physicsWorker = new PhysicsWorker(
-        startData.handFilepathsByHandIndex,
-        startData.objectSpawnOrder
-      );
-      physicsWorker.start();
-    }
-  };
-}
+/* global Module */
 
 class HandRecord {
   objIds = [];
@@ -107,10 +11,17 @@ class HandRecord {
   heldObjId = -1;
 }
 
+// eslint-disable-next-line no-unused-vars
 class PhysicsWorker {
   objectCounter = 0;
 
-  constructor(handFilepathsByHandIndex, objectSpawnOrder) {
+  constructor(
+    physicsConfigFilepath, // .physics_config.json file
+    stageFilepath, // stage .glb file
+    objectBaseFilepath, // folder with all the object_config.json files
+    handFilepathsByHandIndex, // .object_config.json files for the hands, in a nested array like so: [[left closed, left open], [right closed, right open]]
+    objectSpawnOrder // list of .object_config.json files that to be spawned in order when the user presses the spawn button
+  ) {
     // initialize stuff
     this.config = new Module.SimulatorConfiguration();
     this.config.scene_id = stageFilepath;
@@ -122,11 +33,7 @@ class PhysicsWorker {
     Module.loadAllObjectConfigsFromPath(this.sim, objectBaseFilepath);
     this.recorder = this.sim.getGfxReplayManager().getRecorder();
 
-    this.objectSpawnOrder = objectSpawnOrder;
-
     this.handRecords = [new HandRecord(), new HandRecord()];
-
-    // add hands
     for (const handIndex of [0, 1]) {
       for (const filepath of handFilepathsByHandIndex[handIndex]) {
         let objId = this.sim.addObjectByHandle(filepath, null, "", 0);
@@ -135,12 +42,14 @@ class PhysicsWorker {
         this.handRecords[handIndex].objIds.push(objId);
       }
     }
+
+    this.objectSpawnOrder = objectSpawnOrder;
   }
 
   start() {
     let spawn = this.spawn.bind(this);
     let deleteAllObjects = this.deleteAllObjects.bind(this);
-    let operateHands = this.operateHands.bind(this);
+    let updateHandInfo = this.updateHandInfo.bind(this);
     onmessage = function(e) {
       if (e.data.type == "spawn") {
         let spawnInfo = e.data.value;
@@ -151,12 +60,15 @@ class PhysicsWorker {
       } else if (e.data.type == "delete") {
         deleteAllObjects();
       } else if (e.data.type == "hands") {
-        operateHands(e.data.value);
+        updateHandInfo(e.data.value);
       }
     };
 
     // physics step
     this.physicsStepFunction = setInterval(() => {
+      if (this.handInfo) {
+        this.operateHands();
+      }
       this.sim.stepWorld(0.003);
 
       this.recorder.saveKeyframe();
@@ -182,8 +94,12 @@ class PhysicsWorker {
     this.curSpawned = [];
   }
 
-  operateHands(handInfo) {
-    for (const hand of handInfo) {
+  updateHandInfo(handInfo) {
+    this.handInfo = handInfo;
+  }
+
+  operateHands() {
+    for (const hand of this.handInfo) {
       let handRecord = this.handRecords[hand.index];
       let otherHandRecord = this.handRecords[hand.index ^ 1];
       let handObjId = hand.gripButton

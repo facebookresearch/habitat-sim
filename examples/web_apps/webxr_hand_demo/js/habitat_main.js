@@ -48,8 +48,6 @@ Module.preRun.push(() => {
   buildConfigFromURLParameters(config);
   Module.stageName =
     config.stage === undefined ? "remake_v0_JustBigStuff_00" : config.stage;
-  Module.doBenchmarking =
-    config.benchmark === undefined ? false : config.benchmark === "true";
   doPreloading();
 });
 

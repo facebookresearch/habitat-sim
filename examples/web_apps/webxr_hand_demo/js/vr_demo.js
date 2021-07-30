@@ -12,7 +12,6 @@ import {
   drawTextureData
 } from "../lib/habitat-sim-js/vr_utils.js";
 import { DataUtils } from "./data_utils.js";
-import { Benchmark } from "./benchmark.js";
 
 const objectSpawnOrder = [
   "frl_apartment_vase_02", // gray
@@ -33,19 +32,6 @@ const objectSpawnOrder = [
   "frl_apartment_bowl_06", // small white
   "frl_apartment_bowl_06", // small white
 
-  "frl_apartment_kitchen_utensil_02", // green spice shaker
-  "frl_apartment_kitchen_utensil_03" // orange spice shaker
-];
-
-const benchmarkObjects = [
-  "frl_apartment_vase_02", // gray
-  "frl_apartment_plate_02", // double-layer
-  "frl_apartment_pan_01", // blue, with handle
-  "frl_apartment_kitchen_utensil_05", // serving tray
-  "banana_fixed",
-  "frl_apartment_plate_01",
-  "frl_apartment_kitchen_utensil_06", // white handleless cup
-  "frl_apartment_bowl_06", // small white
   "frl_apartment_kitchen_utensil_02", // green spice shaker
   "frl_apartment_kitchen_utensil_03" // orange spice shaker
 ];
@@ -107,29 +93,9 @@ export class VRDemo {
     }
   }
 
-  printedBenchmarkResults = false;
-
   applyKeyframe(jsonKeyframe) {
     let keyframe = this.player.keyframeFromString(jsonKeyframe);
     this.player.applyKeyframe(keyframe);
-    if (this.benchmarker) {
-      if (this.benchmarker.active()) {
-        this.benchmarker.stepBenchmark();
-      } else if (!this.printedBenchmarkResults) {
-        const res = this.benchmarker.getResults();
-        console.log(
-          `Frame time: ${res["meanFrameTime"].toFixed(2)} +/- ${res[
-            "errorFrameTime"
-          ].toFixed(2)} ms`
-        );
-        console.log(
-          `Step time: ${res["meanStepTime"].toFixed(2)} +/- ${res[
-            "errorStepTime"
-          ].toFixed(2)} ms`
-        );
-        this.printedBenchmarkResults = true;
-      }
-    }
   }
 
   start() {
@@ -188,50 +154,6 @@ export class VRDemo {
 
     // create player
     this.player = this.sim.getGfxReplayManager().createEmptyPlayer();
-  }
-
-  initBenchmark() {
-    const spawnFn = (objectIdx, pos, vel) => {
-      const handle = DataUtils.getObjectConfigFilepath(
-        benchmarkObjects[objectIdx]
-      );
-      let arrpos = Module.toVec3f(pos);
-      let arrvel = Module.toVec3f(vel);
-      let spawnInfo = { handle: handle, pos: arrpos, vel: arrvel };
-      this.workerThread.postMessage({ type: "spawn", value: spawnInfo });
-    };
-    const deleteFn = () => {
-      this.workerThread.postMessage({ type: "delete", value: null });
-    };
-    const moveFn = (pos, rot) => {
-      const agent = this.sim.getAgent(this.agentId);
-      let state = new Module.AgentState();
-      agent.getState(state);
-      state.position = pos;
-      state.rotation = rot;
-      agent.setState(state, false);
-    };
-    this.benchmarker = new Benchmark(
-      benchmarkObjects.length,
-      spawnFn,
-      deleteFn
-    );
-    this.benchmarker.spawnPos = new Module.Vector3(2, 2, 2);
-    this.benchmarker.spawnPosJitter = 0.2;
-    this.benchmarker.spawnVel = new Module.Vector3(0, -10, 0);
-
-    this.benchmarker.numIterations = 5;
-    this.benchmarker.objectsPerIteration = 5;
-
-    this.benchmarker.stepsBetweenSpawn = 8;
-    this.benchmarker.stepsBeforeDelete = 100;
-
-    this.benchmarker.moveFn = moveFn;
-    this.benchmarker.viewOffsetY = -2.5;
-    this.benchmarker.moveRadius = 2.0;
-    this.benchmarker.rotationRate = 0.05;
-
-    this.benchmarker.start();
   }
 
   async enterVR() {
@@ -293,10 +215,6 @@ export class VRDemo {
     }, 100.0);
 
     this.fpsElement.style.visibility = "visible";
-
-    if (Module.doBenchmarking) {
-      this.initBenchmark();
-    }
   }
 
   exitVR() {
@@ -375,9 +293,7 @@ export class VRDemo {
     const agent = this.sim.getAgent(this.agentId);
 
     this.handleInput(frame);
-    if (!this.benchmarker || !this.benchmarker.active()) {
-      updateHeadPose(pose, agent);
-    }
+    updateHeadPose(pose, agent);
 
     const layer = session.renderState.baseLayer;
     this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, layer.framebuffer);
@@ -394,8 +310,5 @@ export class VRDemo {
     }
 
     this.currentFramesSkipped++;
-    if (this.benchmarker && this.benchmarker.active()) {
-      this.benchmarker.logFrame();
-    }
   }
 }
