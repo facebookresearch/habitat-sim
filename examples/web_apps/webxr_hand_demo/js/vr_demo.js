@@ -135,10 +135,10 @@ export class VRDemo {
   start() {
     let setup = this.setup.bind(this);
     let applyKeyframe = this.applyKeyframe.bind(this);
-    this.workerThread = new Worker("js/physics_worker.js");
+    this.workerThread = new Worker("js/physics_worker_setup.js");
     let preloadInfo = {
-      stageFilepath: DataUtils.getStageFilepath(Module.stageName),
       physicsConfigFilepath: DataUtils.getPhysicsConfigFilepath(),
+      stageFilepath: DataUtils.getStageFilepath(Module.stageName),
       objectBaseFilepath: DataUtils.getObjectBaseFilepath(),
       preloadedFiles: preloadedFiles
     };
