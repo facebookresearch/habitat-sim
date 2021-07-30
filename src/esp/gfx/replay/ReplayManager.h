@@ -47,6 +47,9 @@ class ReplayManager {
    */
   std::shared_ptr<Player> readKeyframesFromFile(const std::string& filepath);
 
+  /**
+   * @brief Returns an empty Player object.
+   */
   std::shared_ptr<Player> createEmptyPlayer();
 
  private:

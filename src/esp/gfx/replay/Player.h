@@ -60,6 +60,10 @@ class Player {
    */
   void readKeyframesFromFile(const std::string& filepath);
 
+  /**
+   * @brief Given a JSON string encoding a keyframe, returns the keyframe
+   * itself.
+   */
   Keyframe keyframeFromString(const std::string& keyframe);
 
   /**
@@ -103,6 +107,9 @@ class Player {
    */
   const std::vector<Keyframe>& debugGetKeyframes() const { return keyframes_; }
 
+  /**
+   * @brief Applies a keyframe to the player.
+   */
   void applyKeyframe(const Keyframe& keyframe);
 
  private:
