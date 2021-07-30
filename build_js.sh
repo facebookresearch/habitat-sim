@@ -62,3 +62,4 @@ if [ -o ${WEB_APPS} ]
     echo "Then open in a browser:"
     echo "http://0.0.0.0:8000/build_js/esp/bindings_js/bindings.html?scene=skokloster-castle.glb"
 fi
+
