@@ -6,7 +6,7 @@ Taken from https://github.com/benley/python-glog and adapted
 import logging
 from logging import LogRecord
 
-from habitat_sim._ext.habitat_sim_bindings import LoggingContext
+from habitat_sim._ext.habitat_sim_bindings.core import LoggingContext
 
 DEBUG = logging.DEBUG
 INFO = logging.INFO

@@ -174,23 +174,10 @@ class LoggingContext {
   LoggingContext();
 
   /**
-   * @brief Constructor
+   * @brief Constructor.
    *
-   * @param[in] envString Configuration string. See @ref processEnvString for
-   * details
-   */
-  explicit LoggingContext(Corrade::Containers::StringView envString);
-
-  ~LoggingContext();
-
-  LoggingContext(LoggingContext&&) = delete;
-  LoggingContext(LoggingContext&) = delete;
-  LoggingContext& operator=(LoggingContext&) = delete;
-  LoggingContext& operator=(LoggingContext&&) = delete;
-
-  /**
-   * @brief Processes the environment variable string that configures the
-   * habitat-sim logging levels for various subsystems
+   * Processes the environment variable string that configures the habitat-sim
+   * logging levels for various subsystems
    *
    * This environment string has a fairly simple grammar that is as follows
    *
@@ -207,15 +194,18 @@ class LoggingContext {
    * A logging statement is printed if it's logging level has a higher or equal
    * priority to the current logging level for it's subsystem.  verbose is the
    * lowest level. quiet disables debug and warnings.
+   *
+   * @param[in] envString Configuration string. See @ref processEnvString for
+   * details
    */
-  void processEnvString(Corrade::Containers::StringView envString);
+  explicit LoggingContext(Corrade::Containers::StringView envString);
 
-  /**
-   * @brief Retrieves the configuration string from the environment variable
-   * and reconfigures levels.  Useful for allowing the environment variable
-   * to be changed after module level initialization.
-   */
-  void reinitializeFromEnv();
+  ~LoggingContext();
+
+  LoggingContext(LoggingContext&&) = delete;
+  LoggingContext(LoggingContext&) = delete;
+  LoggingContext& operator=(LoggingContext&) = delete;
+  LoggingContext& operator=(LoggingContext&&) = delete;
 
   /**
    * @brief Retrieves the logging level for the given subsystem
@@ -231,11 +221,11 @@ class LoggingContext {
    * @brief Retrieves the current logging context.  Throws an error if there
    * isn't one.
    */
-  static LoggingContext& current();
+  static const LoggingContext& current();
 
  private:
   Corrade::Containers::Array<LoggingLevel> loggingLevels_;
-  LoggingContext* prevContext_;
+  const LoggingContext* prevContext_;
 };
 
 /**

@@ -72,14 +72,14 @@ __attribute__((weak))
 /* uh oh? the test will fail, probably */
 #endif
 #endif
-LoggingContext* currentLoggingContext = nullptr;
+const LoggingContext* currentLoggingContext = nullptr;
 }  // namespace
 
 bool LoggingContext::hasCurrent() {
   return currentLoggingContext != nullptr;
 }
 
-LoggingContext& LoggingContext::current() {
+const LoggingContext& LoggingContext::current() {
   ESP_CHECK(hasCurrent(),
             "esp::logging::LoggingContext: No current logging context.");
 
@@ -91,18 +91,6 @@ LoggingContext::LoggingContext(Corrade::Containers::StringView envString)
                      DEFAULT_LEVEL},
       prevContext_{currentLoggingContext} {
   currentLoggingContext = this;
-  processEnvString(envString);
-}
-
-LoggingContext::LoggingContext()
-    : LoggingContext{std::getenv(LOGGING_ENV_VAR_NAME)} {}
-
-LoggingContext::~LoggingContext() {
-  currentLoggingContext = prevContext_;
-}
-
-void LoggingContext::processEnvString(
-    const Cr::Containers::StringView envString) {
   for (const Cr::Containers::StringView setLevelCommand :
        envString.split(':')) {
     if (setLevelCommand.contains("=")) {
@@ -118,9 +106,11 @@ void LoggingContext::processEnvString(
   }
 }
 
-void LoggingContext::reinitializeFromEnv() {
-  std::fill(loggingLevels_.begin(), loggingLevels_.end(), DEFAULT_LEVEL);
-  processEnvString(std::getenv(LOGGING_ENV_VAR_NAME));
+LoggingContext::LoggingContext()
+    : LoggingContext{std::getenv(LOGGING_ENV_VAR_NAME)} {}
+
+LoggingContext::~LoggingContext() {
+  currentLoggingContext = prevContext_;
 }
 
 LoggingLevel LoggingContext::levelFor(Subsystem subsystem) const {
