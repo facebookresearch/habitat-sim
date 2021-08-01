@@ -575,9 +575,12 @@ void CubeMap::copySubImage(unsigned int cubeSideIndex,
   }
 
   int size = imageSize_ / pow(2, mipLevel);
+
+#ifndef MAGNUM_TARGET_WEBGL
   CORRADE_ASSERT(texture.imageSize(0) == Mn::Vector2i(size, size),
                  "CubeMap::CopyToTexture2D(): the texture size does not match "
                  "the cubemap size.", );
+#endif
   // map for read
   switch (type) {
     case TextureType::Color:
