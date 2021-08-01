@@ -395,7 +395,7 @@ template <class T, core::ManagedObjectAccess Access>
 bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
     const attributes::AbstractAttributes::ptr& attribs,
     const io::JsonGenericValue& jsonConfig) const {
-  // check for user defined attributes
+  // check for user defined attributes and verify it is an object
   if (jsonConfig.HasMember("user_defined")) {
     if (!jsonConfig["user_defined"].IsObject()) {
       LOG(WARNING) << "<" << this->objectType_
@@ -405,72 +405,16 @@ bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
                       "are not of the correct format. Skipping.";
       return false;
     } else {
-      const auto& userObj = jsonConfig["user_defined"];
+      const std::string subGroupName = "user_defined";
+      // get configuration of root-level attributes
+      esp::core::Configuration& config = *attribs.get();
+      // get json object referenced by tag subGroupName
+      const io::JsonGenericValue& jsonObj = jsonConfig[subGroupName.c_str()];
+
       // count number of valid user config settings found
-      int numConfigSettings = 0;
-      // jsonConfig is the json object referenced by the tag "user_defined" in
-      // the original config file.  By here it is guaranteed to be a json
-      // object.
-      for (rapidjson::Value::ConstMemberIterator it = userObj.MemberBegin();
-           it != userObj.MemberEnd(); ++it) {
-        // for each key, attempt to parse
-        const std::string key = it->name.GetString();
-        const auto& obj = it->value;
-        // increment, assuming is valid object
-        ++numConfigSettings;
-        if (obj.IsFloat()) {
-          attribs->setUserConfigValue(key, obj.GetFloat());
-        } else if (obj.IsDouble()) {
-          attribs->setUserConfigValue(key, obj.GetDouble());
-        } else if (obj.IsNumber()) {
-          attribs->setUserConfigValue(key, obj.Get<int>());
-        } else if (obj.IsString()) {
-          attribs->setUserConfigValue(key, obj.GetString());
-        } else if (obj.IsBool()) {
-          attribs->setUserConfigValue(key, obj.GetBool());
-        } else if (obj.IsArray() && obj.Size() > 0 && obj[0].IsNumber()) {
-          // numeric vector or quaternion
-          if (obj.Size() == 3) {
-            Magnum::Vector3 val{};
-            if (io::fromJsonValue(obj, val)) {
-              attribs->setUserConfigValue(key, val);
-            }
-          } else if (obj.Size() == 4) {
-            // assume is quaternion
-            Magnum::Quaternion val{};
-            if (io::fromJsonValue(obj, val)) {
-              attribs->setUserConfigValue(key, val);
-            }
-          } else {
-            // decrement count for key:obj due to not being handled vector
-            --numConfigSettings;
-            // TODO support numeric array in JSON
-            LOG(WARNING)
-                << "<" << this->objectType_
-                << ">::parseUserDefinedJsonVals : For "
-                << attribs->getSimplifiedHandle()
-                << " attributes, user_defined config cell in JSON document "
-                   "contains key "
-                << key
-                << " referencing an unsupported numeric array of length : "
-                << obj.Size() << " so skipping.";
-          }
-        } else {
-          // TODO support other types?
-          // decrement count for key:obj due to not being handled type
-          --numConfigSettings;
-          LOG(WARNING)
-              << "<" << this->objectType_
-              << ">::parseUserDefinedJsonVals : For "
-              << attribs->getSimplifiedHandle()
-              << " attributes, user_defined config cell in JSON document "
-                 "contains key "
-              << key
-              << " referencing an unknown/unparsable value, so skipping this "
-                 "key.";
-        }
-      }
-      // whether or not any valid configs were found
+      int numConfigSettings =
+          io::loadJsonIntoConfiguration(jsonObj, subGroupName, config);
+
       return (numConfigSettings > 0);
     }
   }  // if has user_defined tag
