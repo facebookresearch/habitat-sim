@@ -27,10 +27,11 @@ class SceneGraph {
   SceneNode& getRootNode() { return rootNode_; }
   const SceneNode& getRootNode() const { return rootNode_; }
 
-  gfx::DrawableGroup& getDrawables(std::string groupName = "") {
+  gfx::DrawableGroup& getDrawables(const std::string groupName = "") {
     return drawableGroups_.at(groupName);
   }
-  const gfx::DrawableGroup& getDrawables(std::string groupName = "") const {
+  const gfx::DrawableGroup& getDrawables(
+      const std::string groupName = "") const {
     return drawableGroups_.at(groupName);
   }
 
