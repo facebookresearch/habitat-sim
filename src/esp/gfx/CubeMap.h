@@ -8,7 +8,6 @@
 #include <map>
 
 #include <Corrade/Containers/EnumSet.h>
-#include <Corrade/Containers/Optional.h>
 #include <Corrade/Containers/StaticArray.h>
 #include <Magnum/GL/CubeMapTexture.h>
 #include <Magnum/GL/Framebuffer.h>
@@ -16,10 +15,10 @@
 #include <Magnum/Magnum.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/ResourceManager.h>
+#include <Magnum/Shaders/GenericGL.h>
 #include <Magnum/Trade/AbstractImporter.h>
 #include "esp/gfx/CubeMapCamera.h"
 #include "esp/gfx/RenderCamera.h"
-#include "esp/gfx/TextureVisualizerShader.h"
 #include "esp/scene/SceneGraph.h"
 #include "esp/scene/SceneNode.h"
 
