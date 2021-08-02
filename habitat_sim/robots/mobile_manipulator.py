@@ -365,6 +365,8 @@ class MobileManipulator(RobotInterface):
         # TODO: Has to be added back in after the Habitat Lab commit goes through.
         # if len(ctrl) != len(self.params.arm_joints):
         #    raise ValueError("Control dimension does not match joint dimension")
+        if any(np.isnan(ctrl)):
+            raise ValueError("Control is NaN")
 
         joint_positions = self.sim_obj.joint_positions
         for i, jidx in enumerate(self.params.arm_joints):
@@ -393,6 +395,8 @@ class MobileManipulator(RobotInterface):
         """Set the desired target of the arm joint motors."""
         if len(ctrl) != len(self.params.arm_joints):
             raise ValueError("Control dimension does not match joint dimension")
+        if any(np.isnan(ctrl)):
+            raise ValueError("Control is NaN")
 
         for i, jidx in enumerate(self.params.arm_joints):
             self._set_motor_pos(jidx, ctrl[i])
