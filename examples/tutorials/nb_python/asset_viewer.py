@@ -127,7 +127,7 @@ def make_cfg(settings):
             settings["height"],
             settings["width"],
         ]
-        color_sensor_1st_person_spec.postition = [0.0, settings["sensor_height"], 0.0]
+        color_sensor_1st_person_spec.position = [0.0, settings["sensor_height"], 0.0]
         color_sensor_1st_person_spec.orientation = [
             settings["sensor_pitch"],
             0.0,
@@ -143,7 +143,7 @@ def make_cfg(settings):
             settings["height"],
             settings["width"],
         ]
-        depth_sensor_1st_person_spec.postition = [0.0, settings["sensor_height"], 0.0]
+        depth_sensor_1st_person_spec.position = [0.0, settings["sensor_height"], 0.0]
         depth_sensor_1st_person_spec.orientation = [
             settings["sensor_pitch"],
             0.0,
@@ -159,7 +159,7 @@ def make_cfg(settings):
             settings["height"],
             settings["width"],
         ]
-        semantic_sensor_1st_person_spec.postition = [
+        semantic_sensor_1st_person_spec.position = [
             0.0,
             settings["sensor_height"],
             0.0,
@@ -181,7 +181,7 @@ def make_cfg(settings):
             settings["height"],
             settings["width"],
         ]
-        color_sensor_3rd_person_spec.postition = [
+        color_sensor_3rd_person_spec.position = [
             0.0,
             settings["sensor_height"] + 0.2,
             0.2,
