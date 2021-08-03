@@ -103,7 +103,6 @@ void mipLevelSanityCheck(const char* msgPrefix,
                              << mipmapLevels, );
   }
 }
-}  // namespace
 
 /**
  * @brief convert cube face index to Magnum::GL::CubeMapCoordinate
@@ -166,6 +165,7 @@ Mn::PixelFormat getPixelFormat(CubeMap::TextureType type) {
   }
   CORRADE_INTERNAL_ASSERT_UNREACHABLE();
 }
+}  // namespace
 
 Magnum::GL::CubeMapTexture& CubeMap::texture(TextureType type) {
   CORRADE_INTERNAL_ASSERT(uint8_t(type) < Cr::Containers::arraySize(textures_));
