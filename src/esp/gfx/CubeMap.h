@@ -298,8 +298,7 @@ class CubeMap {
    * 1, 2, 3, 4, or 5
    * @param[in] framebufferSize, the size of the framebuffer
    */
-  void recreateFramebuffer(unsigned int cubeSideIndex,
-                           unsigned int framebufferSize);
+  void recreateFramebuffer(unsigned int cubeSideIndex, int framebufferSize);
 
   /**
    * @brief attach renderbuffers (color etc.) as logical buffers of the

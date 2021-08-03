@@ -30,6 +30,7 @@ namespace Cr = Corrade;
 namespace esp {
 namespace gfx {
 
+namespace {
 const Mn::GL::Framebuffer::ColorAttachment rgbaAttachment =
     Mn::GL::Framebuffer::ColorAttachment{0};
 const Mn::GL::Framebuffer::ColorAttachment objectIdAttachment =
@@ -42,26 +43,24 @@ const Mn::GL::Framebuffer::ColorAttachment vsmAttachment =
  * @brief check if the class instance is created with corresponding texture
  * enabled
  */
-void textureTypeSanityCheck(const std::string& functionNameStr,
+void textureTypeSanityCheck(const char* functionNameStr,
                             CubeMap::Flags& flag,
                             CubeMap::TextureType type) {
   switch (type) {
     case CubeMap::TextureType::Color:
       CORRADE_ASSERT(flag & CubeMap::Flag::ColorTexture,
-                     functionNameStr.c_str()
-                         << "instance was not created with color "
-                            "texture output enabled.", );
+                     functionNameStr << "instance was not created with color "
+                                        "texture output enabled.", );
       return;
       break;
     case CubeMap::TextureType::Depth:
       CORRADE_ASSERT(flag & CubeMap::Flag::DepthTexture,
-                     functionNameStr.c_str()
-                         << "instance was not created with depth "
-                            "texture output enabled.", );
+                     functionNameStr << "instance was not created with depth "
+                                        "texture output enabled.", );
       return;
     case CubeMap::TextureType::ObjectId:
       CORRADE_ASSERT(flag & CubeMap::Flag::ObjectIdTexture,
-                     functionNameStr.c_str()
+                     functionNameStr
                          << "instance was not created with object id"
                             "texture output enabled.", );
       return;
@@ -69,7 +68,7 @@ void textureTypeSanityCheck(const std::string& functionNameStr,
 
     case CubeMap::TextureType::VarianceShadowMap:
       CORRADE_ASSERT(flag & CubeMap::Flag::VarianceShadowMapTexture,
-                     functionNameStr.c_str()
+                     functionNameStr
                          << "instance was not created with variance shadow map"
                             "texture output enabled.", );
       return;
@@ -82,7 +81,7 @@ void textureTypeSanityCheck(const std::string& functionNameStr,
 }
 
 /** @brief do a couple of sanity checks based on mipLevel value */
-void mipLevelSanityCheck(const std::string& msgPrefix,
+void mipLevelSanityCheck(const char* msgPrefix,
                          CubeMap::Flags& flags,
                          unsigned int mipLevel,
                          unsigned int mipmapLevels) {
@@ -104,6 +103,7 @@ void mipLevelSanityCheck(const std::string& msgPrefix,
                              << mipmapLevels, );
   }
 }
+}  // namespace
 
 /**
  * @brief convert cube face index to Magnum::GL::CubeMapCoordinate
@@ -266,9 +266,8 @@ void CubeMap::recreateTexture() {
 }
 
 void CubeMap::recreateFramebuffer(unsigned int cubeSideIndex,
-                                  unsigned int framebufferSize) {
-  Mn::Vector2i viewportSize{int(framebufferSize),
-                            int(framebufferSize)};  // at mip level 0
+                                  int framebufferSize) {
+  Mn::Vector2i viewportSize{framebufferSize};  // at mip level 0
   frameBuffer_[cubeSideIndex] = Mn::GL::Framebuffer{{{}, viewportSize}};
 
   // optional depth buffer is 24-bit integer pixel, which is different from the
@@ -322,7 +321,7 @@ void CubeMap::prepareToDraw(unsigned int cubeSideIndex,
                       mipmapLevels_);
 
   if ((flags_ & Flag::ManuallyBuildMipmap) && (flags_ & Flag::ColorTexture)) {
-    int size = imageSize_ / pow(2, mipLevel);
+    int size = imageSize_ / (1 << mipLevel);
     frameBuffer_[cubeSideIndex].setViewport({{}, {size, size}});
     recreateFramebuffer(cubeSideIndex, size);
     attachFramebufferRenderbuffer(cubeSideIndex, mipLevel);
@@ -341,8 +340,8 @@ void CubeMap::prepareToDraw(unsigned int cubeSideIndex,
   if (flags_ & CubeMap::Flag::ColorTexture &&
       renderCameraFlags & RenderCamera::Flag::ClearColor) {
     frameBuffer_[cubeSideIndex].clearColor(
-        0,                              // color attachment
-        Mn::Color4{0.0, 0.0, 0.0, 1.0}  // clear color
+        0,                                  // color attachment
+        Mn::Color4{0.0f, 0.0f, 0.0f, 1.0f}  // clear color
     );
   }
 
@@ -574,10 +573,10 @@ void CubeMap::copySubImage(unsigned int cubeSideIndex,
                         mipmapLevels_);
   }
 
-  int size = imageSize_ / pow(2, mipLevel);
+  int size = imageSize_ / (1 << mipLevel);
 
 #ifndef MAGNUM_TARGET_WEBGL
-  CORRADE_ASSERT(texture.imageSize(0) == Mn::Vector2i(size, size),
+  CORRADE_ASSERT(texture.imageSize(0) == Mn::Vector2i(size),
                  "CubeMap::CopyToTexture2D(): the texture size does not match "
                  "the cubemap size.", );
 #endif
