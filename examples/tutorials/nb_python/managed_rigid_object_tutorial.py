@@ -75,7 +75,7 @@ def make_configuration():
     rgba_camera_1stperson_spec.uuid = "rgba_camera_1stperson"
     rgba_camera_1stperson_spec.sensor_type = habitat_sim.SensorType.COLOR
     rgba_camera_1stperson_spec.resolution = camera_resolution
-    rgba_camera_1stperson_spec.postition = [0.0, 0.6, 0.0]
+    rgba_camera_1stperson_spec.position = [0.0, 0.6, 0.0]
     rgba_camera_1stperson_spec.orientation = [0.0, 0.0, 0.0]
     rgba_camera_1stperson_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
     sensor_specs.append(rgba_camera_1stperson_spec)
@@ -84,7 +84,7 @@ def make_configuration():
     depth_camera_1stperson_spec.uuid = "depth_camera_1stperson"
     depth_camera_1stperson_spec.sensor_type = habitat_sim.SensorType.DEPTH
     depth_camera_1stperson_spec.resolution = camera_resolution
-    depth_camera_1stperson_spec.postition = [0.0, 0.6, 0.0]
+    depth_camera_1stperson_spec.position = [0.0, 0.6, 0.0]
     depth_camera_1stperson_spec.orientation = [0.0, 0.0, 0.0]
     depth_camera_1stperson_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
     sensor_specs.append(depth_camera_1stperson_spec)
@@ -93,7 +93,7 @@ def make_configuration():
     rgba_camera_3rdperson_spec.uuid = "rgba_camera_3rdperson"
     rgba_camera_3rdperson_spec.sensor_type = habitat_sim.SensorType.COLOR
     rgba_camera_3rdperson_spec.resolution = camera_resolution
-    rgba_camera_3rdperson_spec.postition = [0.0, 1.0, 0.3]
+    rgba_camera_3rdperson_spec.position = [0.0, 1.0, 0.3]
     rgba_camera_3rdperson_spec.orientation = [-45, 0.0, 0.0]
     rgba_camera_3rdperson_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
     sensor_specs.append(rgba_camera_3rdperson_spec)
