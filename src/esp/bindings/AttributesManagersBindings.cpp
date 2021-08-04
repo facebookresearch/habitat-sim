@@ -74,14 +74,14 @@ void declareBaseAttributesManager(py::module& m,
           "handle"_a)
       .def("get_template_handles",
            static_cast<std::vector<std::string> (MgrClass::*)(
-               const std::string&, bool) const>(
+               const std::string&, bool, bool) const>(
                &MgrClass::getObjectHandlesBySubstring),
-           ("Returns a list of " + attrType +
+           ("Returns a potentially sorted list of " + attrType +
             " template handles that either contain or "
             "explicitly do not contain the passed search_str, based on the "
             "value of boolean contains.")
                .c_str(),
-           "search_str"_a = "", "contains"_a = true)
+           "search_str"_a = "", "contains"_a = true, "sorted"_a = true)
       .def("get_templates_info", &MgrClass::getObjectInfoStrings,
            ("Returns a list of CSV strings describing each " + attrType +
             " template whose handles either contain or explicitly do not "
@@ -376,12 +376,12 @@ void initAttributesManagersBindings(py::module& m) {
       .def(
           "get_file_template_handles",
           static_cast<std::vector<std::string> (ObjectAttributesManager::*)(
-              const std::string&, bool) const>(
+              const std::string&, bool, bool) const>(
               &ObjectAttributesManager::getFileTemplateHandlesBySubstring),
-          R"(Returns a list of file-based ObjectAttributes template handles that either contain or
-          explicitly do not contain the passed search_str, based on the value of
+          R"(Returns a potentially sorted list of file-based ObjectAttributes template handles
+          that either contain or explicitly do not contain the passed search_str, based on the value of
           contains.)",
-          "search_str"_a = "", "contains"_a = true)
+          "search_str"_a = "", "contains"_a = true, "sorted"_a = true)
       .def(
           "get_random_file_template_handle",
           &ObjectAttributesManager::getRandomFileTemplateHandle,
@@ -396,12 +396,12 @@ void initAttributesManagersBindings(py::module& m) {
       .def(
           "get_synth_template_handles",
           static_cast<std::vector<std::string> (ObjectAttributesManager::*)(
-              const std::string&, bool) const>(
+              const std::string&, bool, bool) const>(
               &ObjectAttributesManager::getSynthTemplateHandlesBySubstring),
-          R"(Returns a list of synthesized(primitive asset)-based ObjectAttributes template handles
-            that either contain or explicitly do not contain the passed search_str,
+          R"(Returns a potentially sorted list of synthesized(primitive asset)-based ObjectAttributes
+            template handles that either contain or explicitly do not contain the passed search_str,
             based on the value of contains.)",
-          "search_str"_a = "", "contains"_a = true)
+          "search_str"_a = "", "contains"_a = true, "sorted"_a = true)
       .def("get_random_synth_template_handle",
            &ObjectAttributesManager::getRandomSynthTemplateHandle,
            R"(Returns the handle for a random synthesized(primitive asset)-based
