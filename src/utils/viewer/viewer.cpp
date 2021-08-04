@@ -163,6 +163,25 @@ class Viewer : public Mn::Platform::Application {
   void keyReleaseEvent(KeyEvent& event) override;
   void moveAndLook(int repetitions);
 
+  /**
+   * @brief This function will get a screen-space mouse position appropriately
+   * scaled based on framebuffer size and window size.  Generally these would be
+   * the same value, but on certain HiDPI displays (Retina displays) they may be
+   * different.
+   * @param event The mouse event we wish to extract a location of
+   * @return The screen-space location of the mouse event.
+   */
+
+  Mn::Vector2i getMousePosition(Mn::Vector2i mouseEventPosition) {
+    // aquire the mouse position, and scale it based on ratio of framebuffer and
+    // window size.
+    // on retina displays this scaling calc is necessary to account for HiDPI
+    // monitors.
+    Mn::Vector2 scaling = Mn::Vector2{framebufferSize()} * dpiScaling() /
+                          Mn::Vector2{windowSize()};
+
+    return Mn::Vector2i(mouseEventPosition * scaling);
+  }
   // exists if a mouse grabbing constraint is active, destroyed on release
   std::unique_ptr<MouseGrabber> mouseGrabber_ = nullptr;
 
@@ -1387,7 +1406,7 @@ void Viewer::drawEvent() {
     ImGui::Text("%s", profiler_.statistics().c_str());
   }
   std::string modeText =
-      "Mouse Ineraction Mode: " + mouseModeNames.at(mouseInteractionMode);
+      "Mouse Interaction Mode: " + mouseModeNames.at(mouseInteractionMode);
   ImGui::Text("%s", modeText.c_str());
   ImGui::End();
 
@@ -1531,42 +1550,45 @@ void Viewer::createPickedObjectVisualizer(unsigned int objectId) {
 }
 
 void Viewer::mousePressEvent(MouseEvent& event) {
+  // get mouse position, appropriately scaled for Retina Displays
+  auto viewportPoint = getMousePosition(event.position());
   if (mouseInteractionMode == MouseInteractionMode::LOOK) {
-    if (event.button() == MouseEvent::Button::Right &&
-        (event.modifiers() & MouseEvent::Modifier::Shift)) {
-      // cannot use the default framebuffer, so setup another framebuffer,
-      // also, setup the color attachment for rendering, and remove the
-      // visualizer for the previously picked object
-      objectPickingHelper_->prepareToDraw();
+    if (event.button() == MouseEvent::Button::Right) {
+      // if shift pressed w/right click in look mode, get object ID and
+      // create visualization
+      if (event.modifiers() & MouseEvent::Modifier::Shift) {
+        // cannot use the default framebuffer, so setup another framebuffer,
+        // also, setup the color attachment for rendering, and remove the
+        // visualizer for the previously picked object
+        objectPickingHelper_->prepareToDraw();
 
-      // redraw the scene on the object picking framebuffer
-      esp::gfx::RenderCamera::Flags flags =
-          esp::gfx::RenderCamera::Flag::UseDrawableIdAsObjectId;
-      if (simulator_->isFrustumCullingEnabled())
-        flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
-      for (auto& it : activeSceneGraph_->getDrawableGroups()) {
-        renderCamera_->draw(it.second, flags);
-      }
+        // redraw the scene on the object picking framebuffer
+        esp::gfx::RenderCamera::Flags flags =
+            esp::gfx::RenderCamera::Flag::UseDrawableIdAsObjectId;
+        if (simulator_->isFrustumCullingEnabled())
+          flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
+        for (auto& it : activeSceneGraph_->getDrawableGroups()) {
+          renderCamera_->draw(it.second, flags);
+        }
 
-      // Read the object Id
-      unsigned int pickedObject =
-          objectPickingHelper_->getObjectId(event.position(), windowSize());
+        // Read the object Id - takes unscaled mouse position, and scales it in
+        // objectPicker
+        unsigned int pickedObject =
+            objectPickingHelper_->getObjectId(event.position(), windowSize());
 
-      // if an object is selected, create a visualizer
-      createPickedObjectVisualizer(pickedObject);
-      return;
-    }  // drawable selection
-    // add primitive w/ right click if a collision object is hit by a raycast
-    else if (event.button() == MouseEvent::Button::Right) {
+        // if an object is selected, create a visualizer
+        createPickedObjectVisualizer(pickedObject);
+        return;
+      }  // drawable selection
+      // add primitive w/ right click if a collision object is hit by a raycast
       if (simulator_->getPhysicsSimulationLibrary() !=
           esp::physics::PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
-        auto viewportPoint = event.position();
         auto ray = renderCamera_->unproject(viewportPoint);
         esp::physics::RaycastResults raycastResults = simulator_->castRay(ray);
 
         if (raycastResults.hasHits()) {
-          // If VHACD is enabled, and Ctrl + Right Click is used, voxelized the
-          // object clicked on.
+          // If VHACD is enabled, and Ctrl + Right Click is used, voxelized
+          // the object clicked on.
 #ifdef ESP_BUILD_WITH_VHACD
           if (event.modifiers() & MouseEvent::Modifier::Ctrl) {
             auto objID = raycastResults.hits[0].objectId;
@@ -1599,7 +1621,6 @@ void Viewer::mousePressEvent(MouseEvent& event) {
     // GRAB mode
     if (simulator_->getPhysicsSimulationLibrary() !=
         esp::physics::PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
-      auto viewportPoint = event.position();
       auto ray = renderCamera_->unproject(viewportPoint);
       esp::physics::RaycastResults raycastResults = simulator_->castRay(ray);
 
@@ -1676,7 +1697,7 @@ void Viewer::mousePressEvent(MouseEvent& event) {
     }      // end has physics enabled
   }        // end GRAB
 
-  previousMousePoint = event.position();
+  previousMousePoint = viewportPoint;
   event.setAccepted();
   redraw();
 }
@@ -1688,27 +1709,30 @@ void Viewer::mouseReleaseEvent(MouseEvent& event) {
 }
 
 void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
-  // shift+scroll is forced into x direction on mac, seemingly at OS level, so
-  // use both x and y offsets.
+  // shift+scroll is forced into x direction on mac, seemingly at OS level,
+  // so use both x and y offsets.
   float scrollModVal = abs(event.offset().y()) > abs(event.offset().x())
                            ? event.offset().y()
                            : event.offset().x();
   if (!(scrollModVal)) {
     return;
   }
+  // Use shift to scale action response
+  auto shiftPressed = event.modifiers() & MouseEvent::Modifier::Shift;
   if (mouseInteractionMode == MouseInteractionMode::LOOK) {
     // Use shift for fine-grained zooming
-    float modVal =
-        (event.modifiers() & MouseEvent::Modifier::Shift) ? 1.01 : 1.1;
+    float modVal = shiftPressed ? 1.01 : 1.1;
     float mod = scrollModVal > 0 ? modVal : 1.0 / modVal;
     auto& cam = getAgentCamera();
     cam.modifyZoom(mod);
     redraw();
   } else if (mouseInteractionMode == MouseInteractionMode::GRAB &&
              mouseGrabber_ != nullptr) {
+    auto viewportPoint = getMousePosition(event.position());
     // adjust the depth
-    auto ray = renderCamera_->unproject(event.position());
-    mouseGrabber_->gripDepth += scrollModVal * 0.01;
+    float modVal = shiftPressed ? 0.1 : 0.01;
+    auto ray = renderCamera_->unproject(viewportPoint);
+    mouseGrabber_->gripDepth += scrollModVal * modVal;
     mouseGrabber_->updateTransform(
         Mn::Matrix4::from(defaultAgent_->node().rotation().toMatrix(),
                           renderCamera_->node().absoluteTranslation() +
@@ -1719,11 +1743,12 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
 }  // Viewer::mouseScrollEvent
 
 void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
+  if ((mouseInteractionMode == MouseInteractionMode::LOOK) &&
+      (!(event.buttons() & MouseMoveEvent::Button::Left))) {
+    return;
+  }
+  auto viewportPoint = getMousePosition(event.position());
   if (mouseInteractionMode == MouseInteractionMode::LOOK) {
-    if (!(event.buttons() & MouseMoveEvent::Button::Left)) {
-      return;
-    }
-
     const Mn::Vector2i delta = event.relativePosition();
     auto& controls = *defaultAgent_->getControls().get();
     controls(*agentBodyNode_, "turnRight", delta.x());
@@ -1737,7 +1762,7 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
   } else if (mouseInteractionMode == MouseInteractionMode::GRAB &&
              mouseGrabber_ != nullptr) {
     // GRAB mode, move the constraint
-    auto ray = renderCamera_->unproject(event.position());
+    auto ray = renderCamera_->unproject(viewportPoint);
     mouseGrabber_->updateTransform(
         Mn::Matrix4::from(defaultAgent_->node().rotation().toMatrix(),
                           renderCamera_->node().absoluteTranslation() +
@@ -1745,9 +1770,9 @@ void Viewer::mouseMoveEvent(MouseMoveEvent& event) {
   }
 
   redraw();
-  previousMousePoint = event.position();
+  previousMousePoint = viewportPoint;
   event.setAccepted();
-}
+}  // Viewer::mouseMoveEvent
 
 // NOTE: Mouse + shift is to select object on the screen!!
 void Viewer::keyPressEvent(KeyEvent& event) {
@@ -1934,8 +1959,8 @@ void Viewer::keyPressEvent(KeyEvent& event) {
 #ifdef ESP_BUILD_WITH_VHACD
     case KeyEvent::Key::K: {
       iterateAndDisplaySignedDistanceField();
-      // Increase the distance visualized for next time (Pressing L repeatedly
-      // will visualize different distances)
+      // Increase the distance visualized for next time (Pressing L
+      // repeatedly will visualize different distances)
       voxelDistance++;
       break;
     }
@@ -1965,7 +1990,8 @@ void Viewer::keyReleaseEvent(KeyEvent& event) {
 }
 
 int savedFrames = 0;
-//! Save a screenshot to "screenshots/year_month_day_hour-minute-second/#.png"
+//! Save a screenshot to
+//! "screenshots/year_month_day_hour-minute-second/#.png"
 void Viewer::screenshot() {
   std::string screenshot_directory =
       "screenshots/" + viewerStartTimeString + "/";

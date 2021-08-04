@@ -74,7 +74,7 @@ def make_configuration(scene_file):
     rgba_camera_spec.uuid = "rgba_camera"
     rgba_camera_spec.sensor_type = habitat_sim.SensorType.COLOR
     rgba_camera_spec.resolution = camera_resolution
-    rgba_camera_spec.postition = [0.0, 1.5, 0.0]  # ::: fix y to be 0 later
+    rgba_camera_spec.position = [0.0, 1.5, 0.0]  # ::: fix y to be 0 later
     rgba_camera_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
     sensor_specs.append(rgba_camera_spec)
 
@@ -82,7 +82,7 @@ def make_configuration(scene_file):
     semantic_camera_spec.uuid = "semantic_camera"
     semantic_camera_spec.sensor_type = habitat_sim.SensorType.SEMANTIC
     semantic_camera_spec.resolution = camera_resolution
-    semantic_camera_spec.postition = [0.0, 1.5, 0.0]
+    semantic_camera_spec.position = [0.0, 1.5, 0.0]
     semantic_camera_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
     sensor_specs.append(semantic_camera_spec)
 

@@ -92,6 +92,13 @@ class Configuration {
     }
     return configPtr;
   }
+  void setConfigSubSubgroup(Configuration& config,
+                            const std::string& subGroupName,
+                            const std::string& subSubGroupName) {
+    cfg.group(subGroupName)->addGroup(subSubGroupName);
+    *cfg.group(subGroupName)->group(subSubGroupName) =
+        *config.cfg.group(subSubGroupName);
+  }
 
   int getNumConfigSubgroups(const std::string& name) const {
     if (cfg.hasGroup(name)) {
@@ -115,9 +122,21 @@ class Configuration {
     return strings;
   }
 
+  Corrade::Utility::ConfigurationGroup::Groups groups() const {
+    return cfg.groups();
+  }
+  Corrade::Utility::ConfigurationGroup::Values values() const {
+    return cfg.values();
+  }
+  bool hasValues() const { return cfg.hasValues(); }
+
   bool hasValue(const std::string& key) const { return cfg.hasValue(key); }
 
   bool removeValue(const std::string& key) { return cfg.removeValue(key); }
+
+  void setConfiguration(Corrade::Utility::ConfigurationGroup* _cfg) {
+    cfg = *_cfg;
+  }
 
  protected:
   /**

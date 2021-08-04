@@ -16,6 +16,7 @@
 #include <Magnum/Magnum.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/ResourceManager.h>
+#include <Magnum/Shaders/GenericGL.h>
 #include <Magnum/Trade/AbstractImporter.h>
 #include "esp/gfx/CubeMapCamera.h"
 #include "esp/gfx/RenderCamera.h"
@@ -137,7 +138,7 @@ class CubeMap {
   Magnum::GL::CubeMapTexture& getTexture(TextureType type);
 
   /** @brief get cube map size */
-  int getCubeMapSize() { return imageSize_; }
+  int getCubeMapSize() const { return imageSize_; }
 
   /**
    * @brief advanced function, visualize non-color texture such as depth or
@@ -177,12 +178,12 @@ class CubeMap {
    * @return true, if success, otherwise false
    *
    * NOTE:
-   * In this version, it will lose precision when depth texture is saved to the
-   * disk. This is because the pixel format for depth texture is R32F with 1 bit
-   * of sign, 23 bits of mantissa and 8 bits of exponent while the radiance HDR
-   * is 8 bits of mantissa and 8 bits of exponent. So when it is saved, only 8
-   * bits is saved to the R channel (GB channels just repeat the R channel
-   * twice).
+   * In this version, it will lose precision when depth texture is saved to
+   * the disk. This is because the pixel format for depth texture is R32F
+   * with 1 bit of sign, 23 bits of mantissa and 8 bits of exponent while
+   * the radiance HDR is 8 bits of mantissa and 8 bits of exponent. So when
+   * it is saved, only 8 bits is saved to the R channel (GB channels just
+   * repeat the R channel twice).
    */
   // TODO: save HDR textures in EXR format
   bool saveTexture(TextureType type,
@@ -274,7 +275,7 @@ class CubeMap {
    * NOTE: returns 1 if this is non-colored cubemap, or it is colored cubemap
    * but without mipmap enabled.
    */
-  unsigned int getMipmapLevels();
+  unsigned int getMipmapLevels() const;
 
   /**
    * @brief generate mipmap
@@ -312,8 +313,7 @@ class CubeMap {
    * 1, 2, 3, 4, or 5
    * @param[in] framebufferSize, the size of the framebuffer
    */
-  void recreateFramebuffer(unsigned int cubeSideIndex,
-                           unsigned int framebufferSize);
+  void recreateFramebuffer(unsigned int cubeSideIndex, int framebufferSize);
 
   /**
    * @brief attach renderbuffers (color etc.) as logical buffers of the
