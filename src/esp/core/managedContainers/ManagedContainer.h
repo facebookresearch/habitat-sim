@@ -579,8 +579,9 @@ class ManagedContainer : public ManagedContainerBase {
    * @brief Define a map type referencing function pointers to @ref
    * createObjectCopy keyed by string names of classes being instanced,
    */
-  typedef std::map<std::string,
-                   ManagedPtr (ManagedContainer<T, Access>::*)(ManagedPtr&)>
+  typedef std::unordered_map<std::string,
+                             ManagedPtr (ManagedContainer<T, Access>::*)(
+                                 ManagedPtr&)>
       Map_Of_CopyCtors;
 
   /**

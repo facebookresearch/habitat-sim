@@ -257,13 +257,13 @@ class ObjectAttributesManager
    * @brief Maps loaded object template IDs to the appropriate template
    * handles
    */
-  std::map<int, std::string> physicsFileObjTmpltLibByID_;
+  std::unordered_map<int, std::string> physicsFileObjTmpltLibByID_;
 
   /**
    * @brief Maps synthesized, primitive-based object template IDs to the
    * appropriate template handles
    */
-  std::map<int, std::string> physicsSynthObjTmpltLibByID_;
+  std::unordered_map<int, std::string> physicsSynthObjTmpltLibByID_;
 
  public:
   ESP_SMART_POINTERS(ObjectAttributesManager)

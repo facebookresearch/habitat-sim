@@ -24,7 +24,7 @@ bool ManagedContainerBase::setLock(const std::string& objectHandle, bool lock) {
   return true;
 }  // ManagedContainerBase::setLock
 std::string ManagedContainerBase::getRandomObjectHandlePerType(
-    const std::map<int, std::string>& mapOfHandles,
+    const std::unordered_map<int, std::string>& mapOfHandles,
     const std::string& type) const {
   std::size_t numVals = mapOfHandles.size();
   if (numVals == 0) {
@@ -36,8 +36,8 @@ std::string ManagedContainerBase::getRandomObjectHandlePerType(
   int randIDX = rand() % numVals;
 
   std::string res;
-  for (std::pair<std::map<int, std::string>::const_iterator, int> iter(
-           mapOfHandles.begin(), 0);
+  for (std::pair<std::unordered_map<int, std::string>::const_iterator, int>
+           iter(mapOfHandles.begin(), 0);
        (iter.first != mapOfHandles.end() && iter.second <= randIDX);
        ++iter.first, ++iter.second) {
     res = iter.first->second;
@@ -47,7 +47,7 @@ std::string ManagedContainerBase::getRandomObjectHandlePerType(
 
 std::vector<std::string>
 ManagedContainerBase::getObjectHandlesBySubStringPerType(
-    const std::map<int, std::string>& mapOfHandles,
+    const std::unordered_map<int, std::string>& mapOfHandles,
     const std::string& subStr,
     bool contains) const {
   std::vector<std::string> res;
@@ -67,7 +67,8 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
 
   std::size_t strSize = strToLookFor.length();
 
-  for (std::map<int, std::string>::const_iterator iter = mapOfHandles.begin();
+  for (std::unordered_map<int, std::string>::const_iterator iter =
+           mapOfHandles.begin();
        iter != mapOfHandles.end(); ++iter) {
     std::string key = Cr::Utility::String::lowercase(iter->second);
     // be sure that key is big enough to search in (otherwise find has undefined
@@ -87,7 +88,7 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
 
 std::vector<std::string>
 ManagedContainerBase::getObjectHandlesBySubStringPerType(
-    const std::map<std::string, std::set<std::string>>& mapOfHandles,
+    const std::unordered_map<std::string, std::set<std::string>>& mapOfHandles,
     const std::string& subStr,
     bool contains) const {
   std::vector<std::string> res;
@@ -107,8 +108,8 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
 
   std::size_t strSize = strToLookFor.length();
 
-  for (std::map<std::string, std::set<std::string>>::const_iterator iter =
-           mapOfHandles.begin();
+  for (std::unordered_map<std::string, std::set<std::string>>::const_iterator
+           iter = mapOfHandles.begin();
        iter != mapOfHandles.end(); ++iter) {
     std::string key = Cr::Utility::String::lowercase(iter->first);
     // be sure that key is big enough to search in (otherwise find has undefined
@@ -185,7 +186,7 @@ std::string ManagedContainerBase::getObjectInfoCSVString(
 }  // ManagedContainerBase::getObjectInfoCSVString
 
 std::string ManagedContainerBase::getUniqueHandleFromCandidatePerType(
-    const std::map<int, std::string>& mapOfHandles,
+    const std::unordered_map<int, std::string>& mapOfHandles,
     const std::string& name) const {
   // find all existing values with passed name - these should be a list
   // of existing instances of this object name.  We are going to go through

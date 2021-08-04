@@ -539,9 +539,9 @@ class AssetAttributesManager
    * createPrimAttributes() keyed by string names of classes being
    * instanced, as defined in @ref PrimitiveNames3DMap
    */
-  typedef std::map<std::string,
-                   attributes::AbstractPrimitiveAttributes::ptr (
-                       AssetAttributesManager::*)()>
+  typedef std::unordered_map<std::string,
+                             attributes::AbstractPrimitiveAttributes::ptr (
+                                 AssetAttributesManager::*)()>
       Map_Of_PrimTypeCtors;
 
   /**
@@ -556,7 +556,7 @@ class AssetAttributesManager
    * @brief Map relating primitive class name to default attributes template
    * handle. There should always be a template for each of these handles.
    */
-  std::map<std::string, std::string> defaultPrimAttributeHandles_;
+  std::unordered_map<std::string, std::string> defaultPrimAttributeHandles_;
 
  public:
   ESP_SMART_POINTERS(AssetAttributesManager)

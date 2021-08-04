@@ -196,7 +196,9 @@ int ObjectAttributesManager::registerObjectFinalize(
     return ID_UNDEFINED;
   }
 
-  std::map<int, std::string>* mapToUse = nullptr;
+  // create a ref to the partition map of either prims or file-based objects to
+  // place a ref to the object template being regsitered
+  std::unordered_map<int, std::string>* mapToUse = nullptr;
   // Handles for rendering and collision assets
   std::string renderAssetHandle = objectTemplate->getRenderAssetHandle();
   std::string collisionAssetHandle = objectTemplate->getCollisionAssetHandle();
