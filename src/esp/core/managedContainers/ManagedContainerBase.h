@@ -131,9 +131,10 @@ class ManagedContainerBase {
    */
   std::vector<std::string> getObjectHandlesBySubstring(
       const std::string& subStr = "",
-      bool contains = true) const {
+      bool contains = true,
+      bool sorted = true) const {
     return getObjectHandlesBySubStringPerType(objectLibKeyByID_, subStr,
-                                              contains);
+                                              contains, sorted);
   }  // ManagedContainerBase::getObjectHandlesBySubstring
 
   /**
@@ -389,13 +390,15 @@ class ManagedContainerBase {
    * @param subStr substring to search for within existing managed objects
    * @param contains Whether to search for handles containing, or not
    * containing, substr
+   * @param sorted whether the return vector values are sorted
    * @return vector of 0 or more managed object handles containing/not
    * containing the passed substring
    */
   std::vector<std::string> getObjectHandlesBySubStringPerType(
       const std::unordered_map<int, std::string>& mapOfHandles,
       const std::string& subStr,
-      bool contains) const;
+      bool contains,
+      bool sorted) const;
 
   /**
    * @brief Get a list of all managed objects of passed type whose origin
@@ -407,6 +410,7 @@ class ManagedContainerBase {
    * @param subStr substring to search for within existing managed objects
    * @param contains Whether to search for handles containing, or not
    * containing, substr
+   * @param sorted whether the return vector values are sorted
    * @return vector of 0 or more managed object handles containing/not
    * containing the passed substring
    */
@@ -414,7 +418,8 @@ class ManagedContainerBase {
       const std::unordered_map<std::string, std::set<std::string>>&
           mapOfHandles,
       const std::string& subStr,
-      bool contains) const;
+      bool contains,
+      bool sorted) const;
 
   /**
    * @brief Called internally only.  Remove all references from libraries for

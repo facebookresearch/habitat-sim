@@ -4,6 +4,7 @@
 
 #include "ManagedContainerBase.h"
 #include <Corrade/Utility/FormatStl.h>
+#include <algorithm>
 namespace esp {
 namespace core {
 
@@ -49,7 +50,8 @@ std::vector<std::string>
 ManagedContainerBase::getObjectHandlesBySubStringPerType(
     const std::unordered_map<int, std::string>& mapOfHandles,
     const std::string& subStr,
-    bool contains) const {
+    bool contains,
+    bool sorted) const {
   std::vector<std::string> res;
   // if empty return empty vector
   if (mapOfHandles.size() == 0) {
@@ -59,6 +61,9 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
   if (subStr.length() == 0) {
     for (const auto& elem : mapOfHandles) {
       res.push_back(elem.second);
+    }
+    if (sorted) {
+      std::sort(res.begin(), res.end());
     }
     return res;
   }
@@ -83,6 +88,9 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
       res.push_back(iter->second);
     }
   }
+  if (sorted) {
+    std::sort(res.begin(), res.end());
+  }
   return res;
 }  // ManagedContainerBase::getObjectHandlesBySubStringPerType
 
@@ -90,7 +98,8 @@ std::vector<std::string>
 ManagedContainerBase::getObjectHandlesBySubStringPerType(
     const std::unordered_map<std::string, std::set<std::string>>& mapOfHandles,
     const std::string& subStr,
-    bool contains) const {
+    bool contains,
+    bool sorted) const {
   std::vector<std::string> res;
   // if empty return empty vector
   if (mapOfHandles.size() == 0) {
@@ -100,6 +109,9 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
   if (subStr.length() == 0) {
     for (const auto& elem : mapOfHandles) {
       res.push_back(elem.first);
+    }
+    if (sorted) {
+      std::sort(res.begin(), res.end());
     }
     return res;
   }
@@ -124,6 +136,9 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
       res.push_back(iter->first);
     }
   }
+  if (sorted) {
+    std::sort(res.begin(), res.end());
+  }
   return res;
 }  // ManagedContainerBase::getObjectHandlesBySubStringPerType
 
@@ -132,7 +147,7 @@ std::vector<std::string> ManagedContainerBase::getObjectInfoStrings(
     bool contains) const {
   // get all handles that match query elements first
   std::vector<std::string> handles =
-      getObjectHandlesBySubstring(subStr, contains);
+      this->getObjectHandlesBySubstring(subStr, contains, true);
   std::vector<std::string> res(handles.size() + 1);
   if (handles.size() == 0) {
     res[0] = "No " + objectType_ + " constructs available.";
@@ -192,7 +207,7 @@ std::string ManagedContainerBase::getUniqueHandleFromCandidatePerType(
   // of existing instances of this object name.  We are going to go through
   // all of these names and find the "last" instance, meaning the highest count.
   std::vector<std::string> objHandles =
-      this->getObjectHandlesBySubStringPerType(mapOfHandles, name, true);
+      this->getObjectHandlesBySubStringPerType(mapOfHandles, name, true, true);
 
   int incr = 0;
   // use this as pivot character - the last instance of this character in any

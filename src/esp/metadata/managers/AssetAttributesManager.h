@@ -196,7 +196,7 @@ class AssetAttributesManager
     }
     std::string subStr = PrimitiveNames3DMap.at(primType);
     return this->getObjectHandlesBySubStringPerType(this->objectLibKeyByID_,
-                                                    subStr, contains);
+                                                    subStr, contains, true);
   }  // AssetAttributeManager::getTemplateHandlesByPrimType
 
   /**

@@ -618,7 +618,8 @@ void SimTest::buildingPrimAssetObjectTemplates() {
       // the expected class name
       std::string className =
           esp::metadata::managers::AssetAttributesManager::PrimitiveNames3DMap
-              .at(static_cast<esp::metadata::PrimObjTypes>(i));
+              .at(static_cast<esp::metadata::PrimObjTypes>(
+                  primAttr->getPrimObjType()));
       CORRADE_VERIFY((primAttr->getHandle() == handle) &&
                      (handle.find(className) != std::string::npos));
     }
@@ -747,7 +748,7 @@ void SimTest::addSensorToObject() {
   auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
-  auto objs = objectAttribsMgr->getObjectHandlesBySubstring("sphere");
+  auto objs = objectAttribsMgr->getObjectHandlesBySubstring("icosphereSolid");
   int objectID = simulator->addObjectByHandle(objs[0]);
   CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   esp::scene::SceneNode& objectNode = *simulator->getObjectSceneNode(objectID);
