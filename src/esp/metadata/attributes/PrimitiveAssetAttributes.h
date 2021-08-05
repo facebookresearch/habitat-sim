@@ -91,6 +91,10 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
     return getString("primObjClassName");
   }
 
+  /**
+   * @brief The integer representation of the @ref esp::metadata::PrimObjTypes
+   * this primitive represents,
+   */
   int getPrimObjType() const { return getInt("primObjType"); }
   /**
    * @brief This will determine if the stated template has the required

@@ -424,7 +424,7 @@ def make_cfg(settings):
             settings["height"],
             settings["width"],
         ]
-        color_sensor_1st_person_spec.postition = [0.0, settings["sensor_height"], 0.0]
+        color_sensor_1st_person_spec.position = [0.0, settings["sensor_height"], 0.0]
         color_sensor_1st_person_spec.orientation = [
             settings["sensor_pitch"],
             0.0,
@@ -440,7 +440,7 @@ def make_cfg(settings):
             settings["height"],
             settings["width"],
         ]
-        depth_sensor_1st_person_spec.postition = [0.0, settings["sensor_height"], 0.0]
+        depth_sensor_1st_person_spec.position = [0.0, settings["sensor_height"], 0.0]
         depth_sensor_1st_person_spec.orientation = [
             settings["sensor_pitch"],
             0.0,
@@ -456,7 +456,7 @@ def make_cfg(settings):
             settings["height"],
             settings["width"],
         ]
-        semantic_sensor_1st_person_spec.postition = [
+        semantic_sensor_1st_person_spec.position = [
             0.0,
             settings["sensor_height"],
             0.0,
@@ -478,7 +478,7 @@ def make_cfg(settings):
             settings["height"],
             settings["width"],
         ]
-        color_sensor_3rd_person_spec.postition = [
+        color_sensor_3rd_person_spec.position = [
             0.0,
             settings["sensor_height"] + 0.2,
             0.2,
@@ -815,7 +815,7 @@ def build_widget_ui(obj_attr_mgr, prim_attr_mgr):
     if not HAS_WIDGETS:
         sel_file_obj_handle = file_obj_handles[0]
         sel_prim_obj_handle = prim_obj_handles[0]
-        sel_prim_obj_handle = prim_asset_handles[0]
+        sel_asset_handle = prim_asset_handles[0]
         return
 
     # Build widgets

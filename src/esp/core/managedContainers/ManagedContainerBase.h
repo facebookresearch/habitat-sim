@@ -13,8 +13,8 @@
 
 #include <deque>
 #include <functional>
-#include <map>
 #include <set>
+#include <unordered_map>
 
 #include <Corrade/Utility/String.h>
 
@@ -131,9 +131,10 @@ class ManagedContainerBase {
    */
   std::vector<std::string> getObjectHandlesBySubstring(
       const std::string& subStr = "",
-      bool contains = true) const {
+      bool contains = true,
+      bool sorted = true) const {
     return getObjectHandlesBySubStringPerType(objectLibKeyByID_, subStr,
-                                              contains);
+                                              contains, sorted);
   }  // ManagedContainerBase::getObjectHandlesBySubstring
 
   /**
@@ -362,7 +363,7 @@ class ManagedContainerBase {
    * string if none loaded
    */
   std::string getRandomObjectHandlePerType(
-      const std::map<int, std::string>& mapOfHandles,
+      const std::unordered_map<int, std::string>& mapOfHandles,
       const std::string& type) const;
 
   /**
@@ -377,43 +378,48 @@ class ManagedContainerBase {
    * @return A valid, unique name to use for a potential managed object.
    */
   std::string getUniqueHandleFromCandidatePerType(
-      const std::map<int, std::string>& mapOfHandles,
+      const std::unordered_map<int, std::string>& mapOfHandles,
       const std::string& name) const;
 
   /**
    * @brief Get a list of all managed objects of passed type whose origin
    * handles contain substr, ignoring subStr's case.
    *
-   * This version works on std::map<int,std::string> maps' values.
+   * This version works on std::unordered_map<int,std::string> maps' values.
    * @param mapOfHandles map containing the desired managed object handles
    * @param subStr substring to search for within existing managed objects
    * @param contains Whether to search for handles containing, or not
    * containing, substr
+   * @param sorted whether the return vector values are sorted
    * @return vector of 0 or more managed object handles containing/not
    * containing the passed substring
    */
   std::vector<std::string> getObjectHandlesBySubStringPerType(
-      const std::map<int, std::string>& mapOfHandles,
+      const std::unordered_map<int, std::string>& mapOfHandles,
       const std::string& subStr,
-      bool contains) const;
+      bool contains,
+      bool sorted) const;
 
   /**
    * @brief Get a list of all managed objects of passed type whose origin
    * handles contain substr, ignoring subStr's case.
    *
-   * This version works on std::map<std::string, std::set<std::string>> maps's
-   * keys.
+   * This version works on std::unordered_map<std::string,
+   * std::set<std::string>> maps's keys.
    * @param mapOfHandles map containing the desired keys to search.
    * @param subStr substring to search for within existing managed objects
    * @param contains Whether to search for handles containing, or not
    * containing, substr
+   * @param sorted whether the return vector values are sorted
    * @return vector of 0 or more managed object handles containing/not
    * containing the passed substring
    */
   std::vector<std::string> getObjectHandlesBySubStringPerType(
-      const std::map<std::string, std::set<std::string>>& mapOfHandles,
+      const std::unordered_map<std::string, std::set<std::string>>&
+          mapOfHandles,
       const std::string& subStr,
-      bool contains) const;
+      bool contains,
+      bool sorted) const;
 
   /**
    * @brief Called internally only.  Remove all references from libraries for
@@ -439,7 +445,7 @@ class ManagedContainerBase {
   /**
    * @brief Maps string keys to managed object managed objects
    */
-  std::map<std::string, std::shared_ptr<void>> objectLibrary_;
+  std::unordered_map<std::string, std::shared_ptr<void>> objectLibrary_;
 
   /** @brief A descriptive name of the managed object being managed by this
    * manager.
@@ -450,7 +456,7 @@ class ManagedContainerBase {
    * @brief Maps all object attribute IDs to the appropriate handles used
    * by lib
    */
-  std::map<int, std::string> objectLibKeyByID_;
+  std::unordered_map<int, std::string> objectLibKeyByID_;
 
   /**
    * @brief Deque holding all IDs of deleted objects. These ID's should be

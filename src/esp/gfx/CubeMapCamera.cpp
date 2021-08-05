@@ -44,8 +44,7 @@ CubeMapCamera& CubeMapCamera::switchToFace(unsigned int cubeSideIndex) {
                  "CubeMapCamera::switchToFace(): the index of the cube side,"
                      << cubeSideIndex << "is illegal.",
                  *this);
-  switchToFace(Mn::GL::CubeMapCoordinate(
-      int(Mn::GL::CubeMapCoordinate::PositiveX) + cubeSideIndex));
+  switchToFace(CubeMapCamera::cubeMapCoordinate(cubeSideIndex));
   return *this;
 }
 
@@ -54,7 +53,6 @@ Mn::Matrix4 CubeMapCamera::getCameraLocalTransform(
   Mn::Vector3 eye{0.0, 0.0, 0.0};
   Mn::Vector3 yUp{0.0, 1.0, 0.0};
   Mn::Vector3 zUp{0.0, 0.0, 1.0};
-
   // Careful: the coordinate system for cubemaps is left-handed.
   // The following implementation is based on:
   // https://www.khronos.org/opengl/wiki/Cubemap_Texture
@@ -89,7 +87,6 @@ CubeMapCamera& CubeMapCamera::switchToFace(Mn::GL::CubeMapCoordinate cubeSide) {
   this->node().setTransformation(
       originalViewingMatrix_ *
       CubeMapCamera::getCameraLocalTransform(cubeSide));
-
   return *this;
 }
 
