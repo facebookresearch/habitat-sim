@@ -92,12 +92,7 @@ bool operator!=(const ActionSpec& a, const ActionSpec& b) {
 }
 
 bool operator==(const AgentConfiguration& a, const AgentConfiguration& b) {
-  return a.height == b.height && a.radius == b.radius && a.mass == b.mass &&
-         a.linearAcceleration == b.linearAcceleration &&
-         a.angularAcceleration == b.angularAcceleration &&
-         a.linearFriction == b.linearFriction &&
-         a.angularFriction == b.angularFriction &&
-         a.coefficientOfRestitution == b.coefficientOfRestitution &&
+  return a.height == b.height && a.radius == b.radius &&
          esp::equal(a.sensorSpecifications, b.sensorSpecifications) &&
          esp::equal(a.actionSpace, b.actionSpace) && a.bodyType == b.bodyType;
 }

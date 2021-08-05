@@ -226,13 +226,6 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
                              &AgentConfiguration::create<>)
       .property("height", &AgentConfiguration::height)
       .property("radius", &AgentConfiguration::radius)
-      .property("mass", &AgentConfiguration::mass)
-      .property("linearAcceleration", &AgentConfiguration::linearAcceleration)
-      .property("angularAcceleration", &AgentConfiguration::angularAcceleration)
-      .property("linearFriction", &AgentConfiguration::linearFriction)
-      .property("angularFriction", &AgentConfiguration::angularFriction)
-      .property("coefficientOfRestitution",
-                &AgentConfiguration::coefficientOfRestitution)
       .property("sensorSpecifications",
                 &AgentConfiguration::sensorSpecifications);
 
@@ -368,11 +361,7 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
   em::class_<AgentState>("AgentState")
       .smart_ptr_constructor("AgentState", &AgentState::create<>)
       .property("position", &AgentState::position)
-      .property("rotation", &AgentState::rotation)
-      .property("velocity", &AgentState::velocity)
-      .property("angularVelocity", &AgentState::angularVelocity)
-      .property("force", &AgentState::force)
-      .property("torque", &AgentState::torque);
+      .property("rotation", &AgentState::rotation);
 
   em::class_<Agent>("Agent")
       .smart_ptr<Agent::ptr>("Agent::ptr")
