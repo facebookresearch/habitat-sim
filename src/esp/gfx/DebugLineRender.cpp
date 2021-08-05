@@ -98,6 +98,10 @@ void DebugLineRender::flushLines(const Magnum::Matrix4& camMatrix,
                  "DebugLineRender::flushLines: no GL resources; see "
                  "also releaseGLResources", );
 
+  if (_verts.empty()) {
+    return;
+  }
+
   bool doToggleBlend = !glIsEnabled(GL_BLEND);
 
   if (doToggleBlend) {
