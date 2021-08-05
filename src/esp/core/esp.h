@@ -141,7 +141,7 @@ inline std::ostream& operator<<(std::ostream& os, const box3f& bbox) {
 //! Write box3f as a magnum range
 inline Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug& os,
                                            const box3f& bbox) {
-  return os << Magnum::Math::Range<3, float>{bbox};
+  return os << Magnum::Range3D{bbox};
 }
 
 // smart pointers macro
