@@ -380,8 +380,8 @@ std::vector<PTexMeshData::MeshData> loadSubMeshes(
                  "match it from the ptex mesh.",
                  {});
 
-  LOG(INFO) << "The number of quads: " << totalFaces << ", which equals to "
-            << totalFaces * 2 << " triangles.";
+  ESP_DEBUG() << "The number of quads:" << totalFaces << ", which equals to"
+              << totalFaces * 2 << "triangles.";
 
   return subMeshes;
 }
@@ -473,7 +473,7 @@ void PTexMeshData::loadMeshData(const std::string& meshFile) {
 
   submeshes_.clear();
   if (splitSize_ > 0.0f) {
-    LOG(INFO) << "Splitting mesh... ";
+    ESP_DEBUG() << "Splitting mesh...";
 
     collisionVbo_ = Cr::Containers::Array<Mn::Vector3>(originalMesh.vbo.size());
     Cr::Utility::copy(Cr::Containers::arrayCast<Mn::Vector3>(
@@ -498,7 +498,7 @@ void PTexMeshData::loadMeshData(const std::string& meshFile) {
     // TODO:
     // re-activate the following function after the bug is fixed in ReplicaSDK.
     // submeshes_ = splitMesh(originalMesh, splitSize_);
-    // LOG(INFO) << "done" << std::endl;
+    // ESP_DEBUG() << "done" << std::endl;
   } else {
     submeshes_.emplace_back(std::move(originalMesh));
     collisionMeshData_.positions = Cr::Containers::arrayCast<Mn::Vector3>(
@@ -799,12 +799,12 @@ void PTexMeshData::parsePLY(const std::string& filename,
   // Not sure what to do here
   //    if(predictedFaces < numFaces)
   //    {
-  //        LOG(INFO) << "Skipping " << numFaces - predictedFaces << " missing
+  //        ESP_DEBUG()  << "Skipping" << numFaces - predictedFaces  << "missing
   //        faces" << std::endl;
   //    }
   //    else if(numFaces < predictedFaces)
   //    {
-  //        LOG(INFO) << "Ignoring " << predictedFaces - numFaces << " extra
+  //        ESP_DEBUG()  << "Ignoring" << predictedFaces - numFaces  << "extra
   //        faces" << std::endl;
   //    }
 
@@ -829,8 +829,8 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
   }
 
   for (int iMesh = 0; iMesh < submeshes_.size(); ++iMesh) {
-    LOG(INFO) << "Loading mesh " << iMesh + 1 << "/" << submeshes_.size()
-              << "... ";
+    ESP_DEBUG() << "Loading mesh" << iMesh + 1 << "/" << submeshes_.size()
+                << "...";
 
     renderingBuffers_.emplace_back(
         std::make_unique<PTexMeshData::RenderingBuffer>());
@@ -855,7 +855,7 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
         submeshes_[iMesh].ibo_tri, Magnum::GL::BufferUsage::StaticDraw);
   }
 #ifndef CORRADE_TARGET_APPLE
-  LOG(INFO) << "Calculating mesh adjacency... ";
+  ESP_DEBUG() << "Calculating mesh adjacency...";
 
   std::vector<std::vector<uint32_t>> adjFaces(submeshes_.size());
 
@@ -902,7 +902,7 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
   }
 
   // load atlas data and upload them to GPU
-  LOG(INFO) << "loading atlas textures: ";
+  ESP_DEBUG() << "loading atlas textures:";
   for (size_t iMesh = 0; iMesh < renderingBuffers_.size(); ++iMesh) {
     const std::string hdrFile = Cr::Utility::Directory::join(
         atlasFolder_, std::to_string(iMesh) + "-color-ptex.hdr");
@@ -911,8 +911,8 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
                    "PTexMeshData::uploadBuffersToGPU: Cannot find the .hdr file"
                        << hdrFile, );
 
-    LOG(INFO) << "Loading atlas " << iMesh + 1 << "/"
-              << renderingBuffers_.size() << " from " << hdrFile << ". ";
+    ESP_DEBUG() << "Loading atlas" << iMesh + 1 << "/"
+                << renderingBuffers_.size() << "from" << hdrFile << ".";
 
     Cr::Containers::Array<const char, Cr::Utility::Directory::MapDeleter> data =
         Cr::Utility::Directory::mapRead(hdrFile);

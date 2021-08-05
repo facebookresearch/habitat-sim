@@ -8,12 +8,12 @@ Turn off non-critical logging
 
 To turn off non-critical logging, use one of the following based on your current version:
 
-* Habitat-Sim version >= 0.2.0.1
+* Habitat-Sim version >= 0.2.2
   .. code-block::
 
     export MAGNUM_LOG=quiet HABITAT_SIM_LOG=quiet
 
-* Habitat-Sim version < 0.2.0.1
+* Habitat-Sim version < 0.2.2
   .. code-block::
 
     export MAGNUM_LOG=quiet GLOG_minloglevel=2

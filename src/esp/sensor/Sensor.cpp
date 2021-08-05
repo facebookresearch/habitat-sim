@@ -66,7 +66,7 @@ Sensor::Sensor(scene::SceneNode& node, SensorSpec::ptr spec)
 
 Sensor::~Sensor() {
   // Updating of info in SensorSuites will be handled by SceneNode
-  LOG(INFO) << "Deconstructing Sensor";
+  ESP_DEBUG() << "Deconstructing Sensor";
 }
 
 void Sensor::setTransformationFromSpec() {
@@ -100,7 +100,7 @@ void SensorSuite::remove(const std::string& uuid) {
 sensor::Sensor& SensorSuite::get(const std::string& uuid) const {
   ESP_CHECK(
       sensors_.count(uuid),
-      "SensorSuite::get(): SensorSuite does not contain key: " << uuid.c_str());
+      "SensorSuite::get(): SensorSuite does not contain key:" << uuid.c_str());
   return sensors_.at(uuid).get();
 }
 

@@ -28,8 +28,7 @@ static float gUrdfDefaultCollisionMargin = 0.001;
 btCollisionShape* BulletURDFImporter::convertURDFToCollisionShape(
     const io::URDF::CollisionShape* collision,
     std::vector<std::unique_ptr<btCollisionShape>>& linkChildShapes) {
-  Mn::Debug silence{logMessages ? &std::cout : nullptr};
-  Mn::Debug{} << "convertURDFToCollisionShape";
+  ESP_VERY_VERBOSE() << "convertURDFToCollisionShape";
 
   btCollisionShape* shape = nullptr;
 
@@ -114,8 +113,8 @@ btCollisionShape* BulletURDFImporter::convertURDFToCollisionShape(
     } break;  // mesh case
 
     default:
-      Mn::Debug{} << "E - unknown collision geometry type: "
-                  << collision->m_geometry.m_type;
+      ESP_VERY_VERBOSE() << "E - unknown collision geometry type:"
+                         << collision->m_geometry.m_type;
   }
 
   return shape;
@@ -125,13 +124,12 @@ btCompoundShape* BulletURDFImporter::convertLinkCollisionShapes(
     int linkIndex,
     const btTransform& localInertiaFrame,
     std::vector<std::unique_ptr<btCollisionShape>>& linkChildShapes) {
-  Mn::Debug silence{logMessages ? &std::cout : nullptr};
   // TODO: smart pointer
   btCompoundShape* compoundShape = new btCompoundShape();
 
   compoundShape->setMargin(gUrdfDefaultCollisionMargin);
 
-  Mn::Debug{} << " num links = " << activeModel_->m_links.size();
+  ESP_VERY_VERBOSE() << "num links =" << activeModel_->m_links.size();
 
   auto itr = activeModel_->m_links.begin();
   for (int i = 0; (i < linkIndex && itr != activeModel_->m_links.end()); i++) {
@@ -146,15 +144,15 @@ btCompoundShape* BulletURDFImporter::convertLinkCollisionShapes(
           convertURDFToCollisionShape(&col, linkChildShapes);
       if (childShape) {
         Magnum::Matrix4 childTrans = col.m_linkLocalFrame;
-        Mn::Debug{} << "col.m_linkLocalFrame: "
-                    << Magnum::Matrix4(col.m_linkLocalFrame);
+        ESP_VERY_VERBOSE() << "col.m_linkLocalFrame:"
+                           << Magnum::Matrix4(col.m_linkLocalFrame);
 
         compoundShape->addChildShape(
             localInertiaFrame.inverse() * btTransform(childTrans), childShape);
       }
     }
   } else {
-    Mn::Debug{} << "E - No link: " << linkIndex;
+    ESP_VERY_VERBOSE() << "E - No link:" << linkIndex;
   }
 
   return compoundShape;
@@ -280,34 +278,33 @@ Mn::Matrix4 BulletURDFImporter::convertURDF2BulletInternal(
     std::map<int, std::unique_ptr<btCompoundShape>>& linkCompoundShapes,
     std::map<int, std::vector<std::unique_ptr<btCollisionShape>>>&
         linkChildShapes) {
-  Mn::Debug silence{logMessages ? &std::cout : nullptr};
-  Mn::Debug{} << "++++++++++++++++++++++++++++++++++++++";
-  Mn::Debug{} << "convertURDF2BulletInternal...";
+  ESP_VERY_VERBOSE() << "++++++++++++++++++++++++++++++++++++++";
+  ESP_VERY_VERBOSE() << "convertURDF2BulletInternal...";
 
   Mn::Matrix4 linkTransformInWorldSpace;
 
-  Mn::Debug{} << "  urdfLinkIndex = " << urdfLinkIndex;
+  ESP_VERY_VERBOSE() << "urdfLinkIndex =" << urdfLinkIndex;
 
   int mbLinkIndex = cache->getMbIndexFromUrdfIndex(urdfLinkIndex);
-  Mn::Debug{} << "  mbLinkIndex = " << mbLinkIndex;
+  ESP_VERY_VERBOSE() << "mbLinkIndex =" << mbLinkIndex;
 
   int urdfParentIndex = cache->getParentUrdfIndex(urdfLinkIndex);
-  Mn::Debug{} << "  urdfParentIndex = " << urdfParentIndex;
+  ESP_VERY_VERBOSE() << "urdfParentIndex =" << urdfParentIndex;
   int mbParentIndex = cache->getMbIndexFromUrdfIndex(urdfParentIndex);
-  Mn::Debug{} << "  mbParentIndex = " << mbParentIndex;
+  ESP_VERY_VERBOSE() << "mbParentIndex =" << mbParentIndex;
 
   Mn::Matrix4 parentLocalInertialFrame;
   btScalar parentMass(1);
   Mn::Vector3 parentLocalInertiaDiagonal(1);
 
   if (urdfParentIndex == -2) {
-    Mn::Debug{} << "root link has no parent";
+    ESP_VERY_VERBOSE() << "root link has no parent";
   } else {
     getMassAndInertia2(urdfParentIndex, parentMass, parentLocalInertiaDiagonal,
                        parentLocalInertialFrame);
   }
 
-  Mn::Debug{} << "  about to get mass/inertia";
+  ESP_VERY_VERBOSE() << "about to get mass/inertia";
 
   btScalar mass = 0;
   Mn::Matrix4 localInertialFrame;
@@ -315,7 +312,7 @@ Mn::Matrix4 BulletURDFImporter::convertURDF2BulletInternal(
   getMassAndInertia2(urdfLinkIndex, mass, localInertiaDiagonal,
                      localInertialFrame);
 
-  Mn::Debug{} << "  about to get joint info";
+  ESP_VERY_VERBOSE() << "about to get joint info";
 
   Mn::Matrix4 parent2joint;
   int jointType = 0;
@@ -339,13 +336,13 @@ Mn::Matrix4 BulletURDFImporter::convertURDF2BulletInternal(
     linkTransformInWorldSpace = parentTransformInWorldSpace * parent2joint;
   }
 
-  Mn::Debug{} << "  about to convert link collision shapes";
+  ESP_VERY_VERBOSE() << "about to convert link collision shapes";
 
   btCompoundShape* compoundShape =
       convertLinkCollisionShapes(urdfLinkIndex, btTransform(localInertialFrame),
                                  linkChildShapes[mbLinkIndex]);
 
-  Mn::Debug{} << "  about to deal with compoundShape";
+  ESP_VERY_VERBOSE() << "about to deal with compoundShape";
   if (compoundShape) {
     if (mass != 0) {
       if ((flags & CUF_USE_URDF_INERTIA) == 0) {
@@ -509,7 +506,7 @@ Mn::Matrix4 BulletURDFImporter::convertURDF2BulletInternal(
           break;
         }
         default: {
-          Mn::Debug{} << "Invalid joint type." btAssert(0);
+          ESP_VERY_VERBOSE() << "Invalid joint type." btAssert(0);
         }
       }
     }
@@ -528,8 +525,8 @@ Mn::Matrix4 BulletURDFImporter::convertURDF2BulletInternal(
       // simulator will do this when syncing the btMultiBody link transforms to
       // the btMultiBodyLinkCollider
 
-      Mn::Debug{} << "~~~~~~~~~~~~~ col->setWorldTransform(btTransform(tr)): "
-                  << tr;
+      ESP_VERY_VERBOSE()
+          << "~~~~~~~~~~~~~ col->setWorldTransform(btTransform(tr)):" << tr;
 
       col->setWorldTransform(btTransform(tr));
 
@@ -585,9 +582,11 @@ Mn::Matrix4 BulletURDFImporter::convertURDF2BulletInternal(
         cache->m_bulletMultiBody->setBaseCollider(col);
       }
 
-      ASSERT(isDynamic != col->isStaticOrKinematicObject(),
-             "Static or Kinematic object erroneously marked dynamic. This "
-             "should not happen.");
+      CORRADE_ASSERT(
+          isDynamic != col->isStaticOrKinematicObject(),
+          "Static or Kinematic object erroneously marked dynamic. This "
+          "should not happen.",
+          {});
 
       // By convention, fixed links should be authored in the URDF as
       // Noncollidable. Then we will create fixed rigid bodies, separate from
@@ -619,7 +618,7 @@ Mn::Matrix4 BulletURDFImporter::convertURDF2BulletInternal(
     }
   }
 
-  Mn::Debug{} << "  about to recurse";
+  ESP_VERY_VERBOSE() << "about to recurse";
 
   std::vector<int> urdfChildIndices;
   getLinkChildIndices(urdfLinkIndex, urdfChildIndices);

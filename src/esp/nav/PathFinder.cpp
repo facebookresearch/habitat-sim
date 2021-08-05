@@ -379,8 +379,8 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
   rcVcopy(cfg.bmin, bmin);
   rcVcopy(cfg.bmax, bmax);
   rcCalcGridSize(cfg.bmin, cfg.bmax, cfg.cs, &cfg.width, &cfg.height);
-  LOG(INFO) << "Building navmesh with " << cfg.width << "x" << cfg.height
-            << " cells";
+  ESP_DEBUG() << "Building navmesh with" << cfg.width << "x" << cfg.height
+              << "cells";
 
   //
   // Step 2. Rasterize input polygon soup.
@@ -389,12 +389,12 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
   // Allocate voxel heightfield where we rasterize our input data to.
   ws.solid = rcAllocHeightfield();
   if (!ws.solid) {
-    LOG(ERROR) << "Out of memory for heightfield allocation";
+    ESP_ERROR() << "Out of memory for heightfield allocation";
     return false;
   }
   if (!rcCreateHeightfield(&ctx, *ws.solid, cfg.width, cfg.height, cfg.bmin,
                            cfg.bmax, cfg.cs, cfg.ch)) {
-    LOG(ERROR) << "Could not create solid heightfield";
+    ESP_ERROR() << "Could not create solid heightfield";
     return false;
   }
 
@@ -403,7 +403,7 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
   // and array which can hold the max number of triangles you need to process.
   ws.triareas = new unsigned char[ntris];
   if (!ws.triareas) {
-    LOG(ERROR) << "Out of memory for triareas" << ntris;
+    ESP_ERROR() << "Out of memory for triareas" << ntris;
     return false;
   }
 
@@ -415,7 +415,7 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
                           ntris, ws.triareas);
   if (!rcRasterizeTriangles(&ctx, verts, nverts, tris, ws.triareas, ntris,
                             *ws.solid, cfg.walkableClimb)) {
-    LOG(ERROR) << "Could not rasterize triangles.";
+    ESP_ERROR() << "Could not rasterize triangles.";
     return false;
   }
 
@@ -442,18 +442,18 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
   // between walkable cells will be calculated.
   ws.chf = rcAllocCompactHeightfield();
   if (!ws.chf) {
-    LOG(ERROR) << "Out of memory for compact heightfield";
+    ESP_ERROR() << "Out of memory for compact heightfield";
     return false;
   }
   if (!rcBuildCompactHeightfield(&ctx, cfg.walkableHeight, cfg.walkableClimb,
                                  *ws.solid, *ws.chf)) {
-    LOG(ERROR) << "Could not build compact heightfield";
+    ESP_ERROR() << "Could not build compact heightfield";
     return false;
   }
 
   // Erode the walkable area by agent radius.
   if (!rcErodeWalkableArea(&ctx, cfg.walkableRadius, *ws.chf)) {
-    LOG(ERROR) << "Could not erode walkable area";
+    ESP_ERROR() << "Could not erode walkable area";
     return false;
   }
 
@@ -500,13 +500,13 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
   // Prepare for region partitioning, by calculating distance field along the
   // walkable surface.
   if (!rcBuildDistanceField(&ctx, *ws.chf)) {
-    LOG(ERROR) << "Could not build distance field";
+    ESP_ERROR() << "Could not build distance field";
     return false;
   }
   // Partition the walkable surface into simple regions without holes.
   if (!rcBuildRegions(&ctx, *ws.chf, 0, cfg.minRegionArea,
                       cfg.mergeRegionArea)) {
-    LOG(ERROR) << "Could not build watershed regions";
+    ESP_ERROR() << "Could not build watershed regions";
     return false;
   }
   // // Partition the walkable surface into simple regions without holes.
@@ -523,12 +523,12 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
   // Create contours.
   ws.cset = rcAllocContourSet();
   if (!ws.cset) {
-    LOG(ERROR) << "Out of memory for contour set";
+    ESP_ERROR() << "Out of memory for contour set";
     return false;
   }
   if (!rcBuildContours(&ctx, *ws.chf, cfg.maxSimplificationError,
                        cfg.maxEdgeLen, *ws.cset)) {
-    LOG(ERROR) << "Could not create contours";
+    ESP_ERROR() << "Could not create contours";
     return false;
   }
 
@@ -539,11 +539,11 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
   // Build polygon navmesh from the contours.
   ws.pmesh = rcAllocPolyMesh();
   if (!ws.pmesh) {
-    LOG(ERROR) << "Out of memory for polymesh";
+    ESP_ERROR() << "Out of memory for polymesh";
     return false;
   }
   if (!rcBuildPolyMesh(&ctx, *ws.cset, cfg.maxVertsPerPoly, *ws.pmesh)) {
-    LOG(ERROR) << "Could not triangulate contours";
+    ESP_ERROR() << "Could not triangulate contours";
     return false;
   }
 
@@ -554,13 +554,13 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
 
   ws.dmesh = rcAllocPolyMeshDetail();
   if (!ws.dmesh) {
-    LOG(ERROR) << "Out of memory for polymesh detail";
+    ESP_ERROR() << "Out of memory for polymesh detail";
     return false;
   }
 
   if (!rcBuildPolyMeshDetail(&ctx, *ws.pmesh, *ws.chf, cfg.detailSampleDist,
                              cfg.detailSampleMaxError, *ws.dmesh)) {
-    LOG(ERROR) << "Could not build detail mesh";
+    ESP_ERROR() << "Could not build detail mesh";
     return false;
   }
 
@@ -621,14 +621,14 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
     params.buildBvTree = true;
 
     if (!dtCreateNavMeshData(&params, &navData, &navDataSize)) {
-      LOG(ERROR) << "Could not build Detour navmesh";
+      ESP_ERROR() << "Could not build Detour navmesh";
       return false;
     }
 
     navMesh_.reset(dtAllocNavMesh());
     if (!navMesh_) {
       dtFree(navData);
-      LOG(ERROR) << "Could not allocate Detour navmesh";
+      ESP_ERROR() << "Could not allocate Detour navmesh";
       return false;
     }
 
@@ -636,7 +636,7 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
     status = navMesh_->init(navData, navDataSize, DT_TILE_FREE_DATA);
     if (dtStatusFailed(status)) {
       dtFree(navData);
-      LOG(ERROR) << "Could not init Detour navmesh";
+      ESP_ERROR() << "Could not init Detour navmesh";
       return false;
     }
     if (!initNavQuery()) {
@@ -649,8 +649,8 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
   // Added as we also need to remove these on navmesh recomputation
   removeZeroAreaPolys();
 
-  LOG(INFO) << "Created navmesh with " << ws.pmesh->nverts << " vertices "
-            << ws.pmesh->npolys << " polygons";
+  ESP_DEBUG() << "Created navmesh with" << ws.pmesh->nverts << "vertices"
+              << ws.pmesh->npolys << "polygons";
 
   return true;
 }
@@ -662,7 +662,7 @@ bool PathFinder::Impl::initNavQuery() {
   navQuery_.reset(dtAllocNavMeshQuery());
   dtStatus status = navQuery_->init(navMesh_.get(), 2048);
   if (dtStatusFailed(status)) {
-    LOG(ERROR) << "Could not init Detour navmesh query";
+    ESP_ERROR() << "Could not init Detour navmesh query";
     return false;
   }
 
@@ -943,8 +943,8 @@ vec3f PathFinder::Impl::getRandomNavigablePoint(const int maxTries /*= 10*/) {
   }
 
   if (i == maxTries) {
-    LOG(ERROR) << "Failed to getRandomNavigablePoint.  Try increasing max "
-                  "tries if the navmesh is fine but just hard to sample from";
+    ESP_ERROR() << "Failed to getRandomNavigablePoint.  Try increasing max "
+                   "tries if the navmesh is fine but just hard to sample from";
     return vec3f::Constant(Mn::Constants::nan());
   } else {
     return pt;

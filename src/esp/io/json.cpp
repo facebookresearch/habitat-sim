@@ -98,11 +98,11 @@ int loadJsonIntoConfiguration(const JsonGenericValue& jsonObj,
         // decrement count for key:obj due to not being handled vector
         --numConfigSettings;
         // TODO support numeric array in JSON
-        LOG(WARNING) << "::loadJsonIntoConfiguration : For subgroup name "
-                     << subGroupName
-                     << " config cell in JSON document contains key " << key
-                     << " referencing an unsupported numeric array of length : "
-                     << obj.Size() << " so skipping.";
+        ESP_WARNING() << "::loadJsonIntoConfiguration : For subgroup name"
+                      << subGroupName
+                      << "config cell in JSON document contains key" << key
+                      << "referencing an unsupported numeric array of length :"
+                      << obj.Size() << "so skipping.";
       }
     } else if (obj.IsObject()) {
       // support nested objects
@@ -117,11 +117,11 @@ int loadJsonIntoConfiguration(const JsonGenericValue& jsonObj,
       // TODO support other types?
       // decrement count for key:obj due to not being handled type
       --numConfigSettings;
-      LOG(WARNING) << "::loadJsonIntoConfiguration: For subgroup name "
-                   << subGroupName
-                   << " config cell in JSON document contains key " << key
-                   << " referencing an unknown/unparsable value type, so "
-                      "skipping this key.";
+      ESP_WARNING() << "::loadJsonIntoConfiguration: For subgroup name"
+                    << subGroupName
+                    << "config cell in JSON document contains key" << key
+                    << "referencing an unknown/unparsable value type, so "
+                       "skipping this key.";
     }
   }
   return numConfigSettings;
@@ -136,8 +136,8 @@ JsonDocument parseJsonFile(const std::string& file) {
   fclose(pFile);
 
   if (d.HasParseError()) {
-    LOG(ERROR) << "Parse error reading " << file << " Error code "
-               << d.GetParseError() << " at " << d.GetErrorOffset();
+    ESP_ERROR() << "Parse error reading" << file << "Error code"
+                << d.GetParseError() << "at" << d.GetErrorOffset();
     throw std::runtime_error("JSON parse error");
   }
   return d;
@@ -148,8 +148,8 @@ JsonDocument parseJsonString(const std::string& jsonString) {
   d.Parse(jsonString.c_str());
 
   if (d.HasParseError()) {
-    LOG(ERROR) << "Parse error parsing json string. Error code "
-               << d.GetParseError() << " at " << d.GetErrorOffset();
+    ESP_ERROR() << "Parse error parsing json string. Error code"
+                << d.GetParseError() << "at" << d.GetErrorOffset();
     throw std::runtime_error("JSON parse error");
   }
   return d;
@@ -165,7 +165,7 @@ std::string jsonToString(const JsonDocument& d) {
 vec3f jsonToVec3f(const JsonGenericValue& jsonArray) {
   vec3f vec;
   size_t dim = 0;
-  ASSERT(jsonArray.GetArray().Size() == vec.size());
+  CORRADE_INTERNAL_ASSERT(jsonArray.GetArray().Size() == vec.size());
   for (const auto& element : jsonArray.GetArray()) {
     vec[dim++] = element.GetFloat();
   }

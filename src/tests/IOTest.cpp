@@ -18,15 +18,16 @@
 namespace Cr = Corrade;
 #include <limits>
 
-using namespace esp::io;
-
 using esp::metadata::attributes::AbstractObjectAttributes;
 using esp::metadata::attributes::ObjectAttributes;
+namespace esp {
+namespace io {
 
 const std::string dataDir =
     Corrade::Utility::Directory::join(SCENE_DATASETS, "../");
 
 TEST(IOTest, fileExistTest) {
+  logging::LoggingContext loggingContext;
   std::string file = FILE_THAT_EXISTS;
   bool result = exists(file);
   EXPECT_TRUE(result);
@@ -37,16 +38,18 @@ TEST(IOTest, fileExistTest) {
 }
 
 TEST(IOTest, fileSizeTest) {
+  logging::LoggingContext loggingContext;
   std::string existingFile = FILE_THAT_EXISTS;
   auto result = fileSize(existingFile);
-  LOG(INFO) << "File size of " << existingFile << " is " << result;
+  ESP_DEBUG() << "File size of" << existingFile << "is" << result;
 
   std::string nonexistingFile = "Foo.bar";
   result = fileSize(nonexistingFile);
-  LOG(INFO) << "File size of " << nonexistingFile << " is " << result;
+  ESP_DEBUG() << "File size of" << nonexistingFile << "is" << result;
 }
 
 TEST(IOTest, fileRmExtTest) {
+  logging::LoggingContext loggingContext;
   std::string filename = "/foo/bar.jpeg";
 
   // rm extension
@@ -60,6 +63,7 @@ TEST(IOTest, fileRmExtTest) {
 }
 
 TEST(IOTest, fileReplaceExtTest) {
+  logging::LoggingContext loggingContext;
   std::string filename = "/foo/bar.jpeg";
 
   // change extension
@@ -102,6 +106,7 @@ TEST(IOTest, fileReplaceExtTest) {
 }
 
 TEST(IOTest, tokenizeTest) {
+  logging::LoggingContext loggingContext;
   std::string file = ",a,|,bb|c";
   const auto& t1 = tokenize(file, ",");
   EXPECT_EQ((std::vector<std::string>{"", "a", "|", "bb|c"}), t1);
@@ -112,6 +117,7 @@ TEST(IOTest, tokenizeTest) {
 }
 
 TEST(IOTest, parseURDF) {
+  logging::LoggingContext loggingContext;
   const std::string iiwaURDF = Cr::Utility::Directory::join(
       TEST_ASSETS, "urdf/kuka_iiwa/model_free_base.urdf");
 
@@ -120,17 +126,17 @@ TEST(IOTest, parseURDF) {
   // load the iiwa test asset
   std::shared_ptr<esp::io::URDF::Model> urdfModel;
   parser.parseURDF(urdfModel, iiwaURDF);
-  Cr::Utility::Debug() << "name: " << urdfModel->m_name;
+  ESP_DEBUG() << "name:" << urdfModel->m_name;
   EXPECT_EQ(urdfModel->m_name, "lbr_iiwa");
-  Cr::Utility::Debug() << "file: " << urdfModel->m_sourceFile;
+  ESP_DEBUG() << "file:" << urdfModel->m_sourceFile;
   EXPECT_EQ(urdfModel->m_sourceFile, iiwaURDF);
-  Cr::Utility::Debug() << "links: " << urdfModel->m_links;
+  ESP_DEBUG() << "links:" << urdfModel->m_links;
   EXPECT_EQ(urdfModel->m_links.size(), 8);
-  Cr::Utility::Debug() << "root links: " << urdfModel->m_rootLinks;
+  ESP_DEBUG() << "root links:" << urdfModel->m_rootLinks;
   EXPECT_EQ(urdfModel->m_rootLinks.size(), 1);
-  Cr::Utility::Debug() << "joints: " << urdfModel->m_joints;
+  ESP_DEBUG() << "joints:" << urdfModel->m_joints;
   EXPECT_EQ(urdfModel->m_joints.size(), 7);
-  Cr::Utility::Debug() << "materials: " << urdfModel->m_materials;
+  ESP_DEBUG() << "materials:" << urdfModel->m_materials;
   EXPECT_EQ(urdfModel->m_materials.size(), 3);
 
   // check global scaling
@@ -169,6 +175,7 @@ TEST(IOTest, parseURDF) {
  * @brief Test basic JSON file processing
  */
 TEST(IOTest, JsonTest) {
+  logging::LoggingContext loggingContext;
   std::string s = "{\"test\":[1,2,3,4]}";
   const auto& json = esp::io::parseJsonString(s);
   std::vector<int> t;
@@ -234,6 +241,7 @@ TEST(IOTest, JsonTest) {
 // Serialize/deserialize the 7 rapidjson builtin types using
 // io::addMember/readMember and assert equality.
 TEST(IOTest, JsonBuiltinTypesTest) {
+  logging::LoggingContext loggingContext;
   rapidjson::Document d(rapidjson::kObjectType);
   rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
 
@@ -309,6 +317,7 @@ TEST(IOTest, JsonBuiltinTypesTest) {
 // Serialize/deserialize a few stl types using io::addMember/readMember and
 // assert equality.
 TEST(IOTest, JsonStlTypesTest) {
+  logging::LoggingContext loggingContext;
   rapidjson::Document d(rapidjson::kObjectType);
   rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
 
@@ -340,6 +349,7 @@ TEST(IOTest, JsonStlTypesTest) {
 // Serialize/deserialize a few Magnum types using io::addMember/readMember and
 // assert equality.
 TEST(IOTest, JsonMagnumTypesTest) {
+  logging::LoggingContext loggingContext;
   rapidjson::Document d(rapidjson::kObjectType);
   rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
 
@@ -372,6 +382,7 @@ TEST(IOTest, JsonMagnumTypesTest) {
 // Serialize/deserialize a few esp types using io::addMember/readMember and
 // assert equality.
 TEST(IOTest, JsonEspTypesTest) {
+  logging::LoggingContext loggingContext;
   rapidjson::Document d(rapidjson::kObjectType);
   rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
 
@@ -511,6 +522,7 @@ bool fromJsonValue(const JsonGenericValue& obj, MyOuterStruct& x) {
 // Serialize/deserialize MyOuterStruct using io::addMember/readMember and assert
 // equality.
 TEST(IOTest, JsonUserTypeTest) {
+  logging::LoggingContext loggingContext;
   rapidjson::Document d(rapidjson::kObjectType);
   rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
 
@@ -523,3 +535,5 @@ TEST(IOTest, JsonUserTypeTest) {
   EXPECT_EQ(myStruct2.nested.a, myStruct.nested.a);
   EXPECT_EQ(myStruct2.b, myStruct.b);
 }
+}  // namespace io
+}  // namespace esp
