@@ -59,6 +59,7 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
   }
   // if search string is empty, return all values
   if (subStr.length() == 0) {
+    res.reserve(mapOfHandles.size());
     for (const auto& elem : mapOfHandles) {
       res.push_back(elem.second);
     }
@@ -107,6 +108,7 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
   }
   // if search string is empty, return all values
   if (subStr.length() == 0) {
+    res.reserve(mapOfHandles.size());
     for (const auto& elem : mapOfHandles) {
       res.push_back(elem.first);
     }
