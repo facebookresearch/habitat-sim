@@ -57,9 +57,9 @@ bool writeJsonToFile(const JsonDocument& document,
   return writeSuccess;
 }
 
-int loadJsonIntoConfiguration(const JsonGenericValue& jsonObj,
-                              const std::string& subGroupName,
-                              esp::core::Configuration& config) {
+int loadJsonIntoConfigSubgroup(const JsonGenericValue& jsonObj,
+                               const std::string& subGroupName,
+                               esp::core::Configuration& config) {
   // count number of valid user config settings found
 
   int numConfigSettings = 0;
@@ -108,7 +108,7 @@ int loadJsonIntoConfiguration(const JsonGenericValue& jsonObj,
       auto subGroupPtr = config.getConfigSubgroupAsPtr(subGroupName);
       // get subgroup configuration object
       esp::core::Configuration newConfig = *subGroupPtr;
-      numConfigSettings += loadJsonIntoConfiguration(obj, key, newConfig);
+      numConfigSettings += loadJsonIntoConfigSubgroup(obj, key, newConfig);
       // save subgroup's subgroup configuration in original config
       config.setConfigSubSubgroup(newConfig, subGroupName, key);
       //
@@ -123,7 +123,7 @@ int loadJsonIntoConfiguration(const JsonGenericValue& jsonObj,
     }
   }
   return numConfigSettings;
-}  // namespace io
+}  // loadJsonIntoConfigSubgroup
 
 JsonDocument parseJsonFile(const std::string& file) {
   FILE* pFile = fopen(file.c_str(), "rb");

@@ -408,7 +408,7 @@ bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
 
       // count number of valid user config settings found
       int numConfigSettings =
-          io::loadJsonIntoConfiguration(jsonObj, subGroupName, config);
+          io::loadJsonIntoConfigSubgroup(jsonObj, subGroupName, config);
 
       return (numConfigSettings > 0);
     }
