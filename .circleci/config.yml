@@ -6,6 +6,33 @@ gpu: &gpu
   environment:
     FPS_THRESHOLD: 900
 commands:
+  build_osx_conda_pkg:
+    description: "Build OSX Conda-Package"
+    parameters:
+        test:
+          description: "Do not upload to CONDA_CI_NIGHTLY"
+          type: boolean
+          default: False
+    steps:
+      - run:
+          name: Conda Install OSX
+          command: |
+            curl -o ~/miniconda.sh -O https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
+            chmod +x ~/miniconda.sh
+            ~/miniconda.sh -b -p $HOME/miniconda
+            rm ~/miniconda.sh
+            export PATH=$HOME/miniconda/bin:$PATH
+            conda init "$(basename "${SHELL}")"
+            source ~/.bash_profile
+            conda activate
+            conda install -y anaconda-client ccache cmake git ninja conda-build pip
+            echo $(which -a python)
+            pip install gitpython
+            cd habitat-sim/conda-build
+            git submodule update --init --recursive --jobs 16
+            export PYTHONIOENCODING="utf-8"
+            python macos_matrix_builder.py <<#parameters.test>> --ci_test <</ parameters.test>>
+
   install_all_ubuntu_deps:
     description: "Prepares the dependencies"
     steps:
@@ -334,25 +361,8 @@ jobs:
     steps:
       - checkout:
           path: ./habitat-sim
-      - run:
-          name: Conda Install
-          command: |
-            curl -o ~/miniconda.sh -O https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
-            chmod +x ~/miniconda.sh
-            ~/miniconda.sh -b -p $HOME/miniconda
-            rm ~/miniconda.sh
-            export PATH=$HOME/miniconda/bin:$PATH
-            conda init "$(basename "${SHELL}")"
-            source ~/.bash_profile
-            conda activate
-            conda install -y anaconda-client ccache cmake git ninja conda-build pip
-            echo $(which -a python)
-            pip install gitpython
-            cd habitat-sim/conda-build
-            git submodule update --init --recursive --jobs 16
-            export PYTHONIOENCODING="utf-8"
-            python macos_matrix_builder.py --ci_test
-
+      - build_osx_conda_pkg:
+          test: true
   lab_build_habitat:
     <<: *gpu
     steps:
