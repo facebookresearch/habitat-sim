@@ -669,12 +669,12 @@ void SimTest::buildingPrimAssetObjectTemplates() {
     std::string newHandle = primAttr->getHandle();
     CORRADE_VERIFY(newHandle != origCylinderHandle);
     // set test label, to validate that copy is reggistered
-    primAttr->setString("test", "test0");
+    primAttr->set("test", "test0");
     // register new attributes
     int idx = assetAttribsMgr->registerObject(primAttr);
     CORRADE_VERIFY(idx != esp::ID_UNDEFINED);
     // set new test label, to validate against retrieved copy
-    primAttr->setString("test", "test1");
+    primAttr->set("test", "test1");
     // retrieve registered attributes copy
     AbstractPrimitiveAttributes::ptr primAttr2 =
         assetAttribsMgr->getObjectCopyByHandle(newHandle);

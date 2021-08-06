@@ -33,8 +33,8 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
     if (!isWireframe) {  // solid
       // do not call setters since they call buildHandle, which does not
       // exist - is abstract in base class
-      setBool("textureCoordinates", false);
-      setBool("tangents", false);
+      set("textureCoordinates", false);
+      set("tangents", false);
     }
 
   }  // ctor
@@ -51,7 +51,7 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
   // only solid prims can use texture coords
   void setUseTextureCoords(bool useTextureCoords) {
     if (!getIsWireframe()) {  // check if solid
-      setBool("textureCoordinates", useTextureCoords);
+      set("textureCoordinates", useTextureCoords);
       buildHandle();  // build handle based on config
     }
   }
@@ -60,7 +60,7 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
   // only solid prims have option to use tangents
   void setUseTangents(bool tangents) {
     if (!getIsWireframe()) {  // check if solid
-      setBool("tangents", tangents);
+      set("tangents", tangents);
       buildHandle();  // build handle based on config
     }
   }
@@ -70,19 +70,19 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
   // separately for hemispheres and cylinder
   // set virtual so cannot be deleted in capsule attributes
   void setNumRings(int rings) {
-    setInt("rings", rings);
+    set("rings", rings);
     buildHandle();  // build handle based on config
   }
   int getNumRings() const { return getInt("rings"); }
 
   void setNumSegments(int segments) {
-    setInt("segments", segments);
+    set("segments", segments);
     buildHandle();  // build handle based on config
   }
   int getNumSegments() const { return getInt("segments"); }
   // capsule, cone and cylinder use halfLength
   void setHalfLength(double halfLength) {
-    setDouble("halfLength", halfLength);
+    set("halfLength", halfLength);
     buildHandle();
   }
   double getHalfLength() const { return getDouble("halfLength"); }
@@ -114,7 +114,7 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
   void buildHandle() {
     std::ostringstream oHndlStrm;
     oHndlStrm << getPrimObjClassName() << buildHandleDetail();
-    setString("handle", oHndlStrm.str());
+    set("handle", oHndlStrm.str());
   }
 
   /**
@@ -231,15 +231,15 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
  private:
   // Should never change, only set by ctor
   void setPrimObjClassName(const std::string& primObjClassName) {
-    setString("primObjClassName", primObjClassName);
+    set("primObjClassName", primObjClassName);
   }
 
   // Should never change, only set by ctor
-  void setPrimObjType(int primObjType) { setInt("primObjType", primObjType); }
+  void setPrimObjType(int primObjType) { set("primObjType", primObjType); }
 
   // not used to construct prim mesh, so setting this does not require
   // modification to handle.  Should never change, only set by ctor
-  void setIsWireframe(bool isWireframe) { setBool("isWireframe", isWireframe); }
+  void setIsWireframe(bool isWireframe) { set("isWireframe", isWireframe); }
 
  public:
   ESP_SMART_POINTERS(AbstractPrimitiveAttributes)
@@ -253,13 +253,13 @@ class CapsulePrimitiveAttributes : public AbstractPrimitiveAttributes {
                              const std::string& primObjClassName);
 
   void setHemisphereRings(int hemisphereRings) {
-    setInt("hemisphereRings", hemisphereRings);
+    set("hemisphereRings", hemisphereRings);
     buildHandle();  // build handle based on config
   }
   int getHemisphereRings() const { return getInt("hemisphereRings"); }
 
   void setCylinderRings(int cylinderRings) {
-    setInt("cylinderRings", cylinderRings);
+    set("cylinderRings", cylinderRings);
     buildHandle();  // build handle based on config
   }
   int getCylinderRings() const { return getInt("cylinderRings"); }
@@ -306,7 +306,7 @@ class ConePrimitiveAttributes : public AbstractPrimitiveAttributes {
 
   // only solid cones can have end capped
   void setCapEnd(bool capEnd) {
-    setBool("capEnd", capEnd);
+    set("capEnd", capEnd);
     buildHandle();  // build handle based on config
   }
   bool getCapEnd() const { return getBool("capEnd"); }
@@ -386,7 +386,7 @@ class CylinderPrimitiveAttributes : public AbstractPrimitiveAttributes {
 
   // only solid culinders can have ends capped
   void setCapEnds(bool capEnds) {
-    setBool("capEnds", capEnds);
+    set("capEnds", capEnds);
     buildHandle();  // build handle based on config
   }
   bool getCapEnds() const { return getBool("capEnds"); }
@@ -435,13 +435,13 @@ class IcospherePrimitiveAttributes : public AbstractPrimitiveAttributes {
                                     "IcospherePrimitiveAttributes") {
     // setting manually because wireframe icosphere does not currently support
     // subdiv > 1 and setSubdivisions checks for wireframe
-    setInt("subdivisions", 1);
+    set("subdivisions", 1);
     buildHandle();  // build handle based on config
   }
   // only solid icospheres will support subdivision - wireframes default to 1
   void setSubdivisions(int subdivisions) {
     if (!getIsWireframe()) {
-      setInt("subdivisions", subdivisions);
+      set("subdivisions", subdivisions);
       buildHandle();  // build handle based on config
     }
   }

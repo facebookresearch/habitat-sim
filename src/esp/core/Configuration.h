@@ -9,6 +9,8 @@
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/ConfigurationValue.h>
 #include <string>
+#include <typeinfo>
+#include <unordered_map>
 
 #include "esp/core/esp.h"
 
@@ -17,125 +19,286 @@ namespace core {
 
 class Configuration {
  public:
+  Configuration()
+      : configMap_(),
+        intMap_(),
+        boolMap_(),
+        floatMap_(),
+        doubleMap_(),
+        stringMap_(),
+        vecMap_(),
+        quatMap_(),
+        radMap_() {}
+
   // virtual destructor set to that pybind11 recognizes attributes inheritance
   // from configuration to be polymorphic
+
+  Configuration(const Configuration& otr) {
+    configMap_.clear();
+    configMap_.reserve(otr.configMap_.size());
+    for (const auto& entry : otr.configMap_) {
+      configMap_[entry.first] = std::make_shared<Configuration>(*entry.second);
+    }
+    intMap_ = std::unordered_map<std::string, int>{otr.intMap_};
+    boolMap_ = std::unordered_map<std::string, bool>{otr.boolMap_};
+    floatMap_ = std::unordered_map<std::string, float>{otr.floatMap_};
+    doubleMap_ = std::unordered_map<std::string, double>{otr.doubleMap_};
+    stringMap_ = std::unordered_map<std::string, std::string>{otr.stringMap_};
+    vecMap_ = std::unordered_map<std::string, Magnum::Vector3>{otr.vecMap_};
+    quatMap_ =
+        std::unordered_map<std::string, Magnum::Quaternion>{otr.quatMap_};
+    radMap_ = std::unordered_map<std::string, Magnum::Rad>{otr.radMap_};
+  }
+
   virtual ~Configuration() = default;
 
   template <typename T>
-  bool set(const std::string& key, const T& value) {
-    return cfg.setValue(key, value);
+  void set(CORRADE_UNUSED const std::string& key,
+           CORRADE_UNUSED const T& value) {
+    ESP_ERROR() << "::set : Unknown/unsupported type :" << typeid(T).name()
+                << "for key :" << key;
+  }
+  void set(const std::string& key, const bool& value) {
+    addValToMap(key, value, boolMap_);
+  }
+  void set(const std::string& key, const int& value) {
+    addValToMap(key, value, intMap_);
+  }
+  void set(const std::string& key, const float& value) {
+    addValToMap(key, value, floatMap_);
+  }
+  void set(const std::string& key, const double& value) {
+    addValToMap(key, value, doubleMap_);
+  }
+  void set(const std::string& key, const char* value) {
+    addValToMap(key, std::string(value), stringMap_);
+  }
+
+  void set(const std::string& key, const std::string& value) {
+    addValToMap(key, value, stringMap_);
+  }
+
+  void set(const std::string& key, const Magnum::Vector3& value) {
+    addValToMap(key, value, vecMap_);
+  }
+  void set(const std::string& key, const Magnum::Quaternion& value) {
+    addValToMap(key, value, quatMap_);
+  }
+  void set(const std::string& key, const Magnum::Rad& value) {
+    addValToMap(key, value, radMap_);
   }
 
   // subgroup set
   template <typename T>
-  bool setSubgroupValue(const std::string& subgroupName,
+  void setSubgroupValue(const std::string& subgroupName,
                         const std::string& key,
                         const T& value) {
     addNewSubgroup(subgroupName);
-    return cfg.group(subgroupName)->setValue(key, value);
+    configMap_[subgroupName]->set(key, value);
   }
 
-  bool setBool(const std::string& key, bool value) { return set(key, value); }
-  bool setFloat(const std::string& key, float value) { return set(key, value); }
-  bool setDouble(const std::string& key, double value) {
-    return set(key, value);
+  bool hasBool(const std::string& key) const {
+    return checkMapForKey(key, boolMap_);
   }
-  bool setInt(const std::string& key, int value) { return set(key, value); }
-  bool setString(const std::string& key, const std::string& value) {
-    return set(key, value);
+  bool hasFloat(const std::string& key) const {
+    return checkMapForKey(key, floatMap_);
   }
-  bool setVec3(const std::string& key, const Magnum::Vector3& value) {
-    return set(key, value);
+  bool hasDouble(const std::string& key) const {
+    return checkMapForKey(key, doubleMap_);
   }
-  bool setQuat(const std::string& key, const Magnum::Quaternion& value) {
-    return set(key, value);
+  bool hasInt(const std::string& key) const {
+    return checkMapForKey(key, intMap_);
   }
-  bool setRad(const std::string& key, Magnum::Rad value) {
-    return set(key, value);
+  bool hasString(const std::string& key) const {
+    return checkMapForKey(key, stringMap_);
   }
-
-  template <typename T>
-  T get(const std::string& key) const {
-    return cfg.value<T>(key);
+  bool hasVec3(const std::string& key) const {
+    return checkMapForKey(key, vecMap_);
   }
-
-  // subgroup get
-  template <typename T>
-  T getSubgroupValue(const std::string& subgroupName, const std::string& key) {
-    addNewSubgroup(subgroupName);
-    return cfg.group(subgroupName)->value<T>(key);
+  bool hasQuat(const std::string& key) const {
+    return checkMapForKey(key, quatMap_);
+  }
+  bool hasRad(const std::string& key) const {
+    return checkMapForKey(key, radMap_);
   }
 
-  bool getBool(const std::string& key) const { return get<bool>(key); }
-  float getFloat(const std::string& key) const { return get<float>(key); }
-  double getDouble(const std::string& key) const { return get<double>(key); }
-  int getInt(const std::string& key) const { return get<int>(key); }
+  bool getBool(const std::string& key) const {
+    return getValFromMap(key, boolMap_);
+  }
+  float getFloat(const std::string& key) const {
+    return getValFromMap(key, floatMap_);
+  }
+  double getDouble(const std::string& key) const {
+    return getValFromMap(key, doubleMap_);
+  }
+  int getInt(const std::string& key) const {
+    return getValFromMap(key, intMap_);
+  }
   std::string getString(const std::string& key) const {
-    return get<std::string>(key);
+    return getValFromMap(key, stringMap_);
   }
   Magnum::Vector3 getVec3(const std::string& key) const {
-    return get<Magnum::Vector3>(key);
+    return getValFromMap(key, vecMap_);
   }
   Magnum::Quaternion getQuat(const std::string& key) const {
-    return get<Magnum::Quaternion>(key);
+    return getValFromMap(key, quatMap_);
   }
   Magnum::Rad getRad(const std::string& key) const {
-    return get<Magnum::Rad>(key);
+    return getValFromMap(key, radMap_);
+  }
+
+  std::string getBoolAsString(const std::string& key) const {
+    const bool val = getValFromMap(key, boolMap_);
+    return (val ? "True" : "False");
+  }
+  std::string getFloatAsString(const std::string& key) const {
+    const float val = getValFromMap(key, floatMap_);
+    return std::to_string(val);
+  }
+  std::string getDoubleAsString(const std::string& key) const {
+    const double val = getValFromMap(key, doubleMap_);
+    return std::to_string(val);
+  }
+  std::string getIntAsString(const std::string& key) const {
+    const int val = getValFromMap(key, intMap_);
+    return std::to_string(val);
+  }
+
+  std::string getVec3AsString(const std::string& key) const {
+    const Magnum::Vector3 val = getValFromMap(key, vecMap_);
+    std::string begin = "[";
+    return begin.append(std::to_string(val.x()))
+        .append(",")
+        .append(std::to_string(val.y()))
+        .append(",")
+        .append(std::to_string(val.z()))
+        .append("]");
+  }
+  std::string getQuatAsString(const std::string& key) const {
+    const Magnum::Quaternion val = getValFromMap(key, quatMap_);
+    std::string begin = "[";
+    return begin.append(std::to_string(val.vector().x()))
+        .append(",")
+        .append(std::to_string(val.vector().y()))
+        .append(",")
+        .append(std::to_string(val.vector().z()))
+        .append(",")
+        .append(std::to_string(val.scalar()))
+        .append("]");
+  }
+  std::string getRadAsString(const std::string& key) const {
+    const Magnum::Rad val = getValFromMap(key, radMap_);
+    return std::to_string(val.operator float());
+  }
+
+  std::vector<std::string> getBoolKeys() const {
+    return getKeysFromMap(boolMap_);
+  }
+  std::vector<std::string> getFloatKeys() const {
+    return getKeysFromMap(floatMap_);
+  }
+  std::vector<std::string> getDoubleKeys() const {
+    return getKeysFromMap(doubleMap_);
+  }
+  std::vector<std::string> getIntKeys() const {
+    return getKeysFromMap(intMap_);
+  }
+  std::vector<std::string> getStringKeys() const {
+    return getKeysFromMap(stringMap_);
+  }
+  std::vector<std::string> getVec3Keys() const {
+    return getKeysFromMap(vecMap_);
+  }
+  std::vector<std::string> getQuatKeys() const {
+    return getKeysFromMap(quatMap_);
+  }
+  std::vector<std::string> getRadKeys() const {
+    return getKeysFromMap(radMap_);
+  }
+
+  bool removeBool(const std::string& key) {
+    return removeValFromMap(key, boolMap_);
+  }
+  float removeFloat(const std::string& key) {
+    return removeValFromMap(key, floatMap_);
+  }
+  double removeDouble(const std::string& key) {
+    return removeValFromMap(key, doubleMap_);
+  }
+  int removeInt(const std::string& key) {
+    return removeValFromMap(key, intMap_);
+  }
+  std::string removeString(const std::string& key) {
+    return removeValFromMap(key, stringMap_);
+  }
+  Magnum::Vector3 removeVec3(const std::string& key) {
+    return removeValFromMap(key, vecMap_);
+  }
+  Magnum::Quaternion removeQuat(const std::string& key) {
+    return removeValFromMap(key, quatMap_);
+  }
+  Magnum::Rad removeRad(const std::string& key) {
+    return removeValFromMap(key, radMap_);
   }
 
   std::shared_ptr<Configuration> getConfigSubgroupAsPtr(
       const std::string& name) const {
-    std::shared_ptr<Configuration> configPtr =
-        std::make_shared<Configuration>();
-    if (cfg.hasGroup(name)) {
-      configPtr->cfg = *cfg.group(name);
+    if (configMap_.count(name) > 0) {
+      return std::make_shared<Configuration>(*configMap_.at(name));
     }
-    return configPtr;
+    return std::make_shared<Configuration>();
   }
+
   void setConfigSubSubgroup(Configuration& config,
                             const std::string& subGroupName,
                             const std::string& subSubGroupName) {
-    cfg.group(subGroupName)->addGroup(subSubGroupName);
-    *cfg.group(subGroupName)->group(subSubGroupName) =
-        *config.cfg.group(subSubGroupName);
+    // add sub-subgroup to this config's subgroup
+    configMap_[subGroupName]->configMap_[subSubGroupName] =
+        std::make_shared<Configuration>(config);
   }
 
   int getNumConfigSubgroups(const std::string& name) const {
-    if (cfg.hasGroup(name)) {
-      return cfg.group(name)->valueCount();
+    if (checkMapForKey(name, configMap_)) {
+      return configMap_.at(name)->getNumEntries();
     }
+    ESP_ERROR() << "::getNumConfigSubgroups : No subgroup named :" << name;
     return 0;
   }
 
   /**@brief Add a string to a group and return the resulting group size. */
   int addStringToGroup(const std::string& key, const std::string& value) {
-    cfg.addValue(key, value);
-    return cfg.valueCount(key);
+    stringMap_[key] = value;
+    return stringMap_.size();
   }
 
-  /**@brief Collect and return strings in a key group. */
-  std::vector<std::string> getStringGroup(const std::string& key) const {
-    std::vector<std::string> strings;
-    for (size_t v = 0; v < cfg.valueCount(key); ++v) {
-      strings.push_back(cfg.value<std::string>(key, v));
-    }
-    return strings;
+  int getNumEntries() const { return numEntries; }
+
+  bool hasValues() const { return numEntries > 0; }
+
+  bool hasValue(const std::string& key) const {
+    return (configMap_.count(key) > 0) || (intMap_.count(key) > 0) ||
+           (boolMap_.count(key) > 0) || (floatMap_.count(key) > 0) ||
+           (doubleMap_.count(key) > 0) || (stringMap_.count(key) > 0) ||
+           (vecMap_.count(key) > 0) || (quatMap_.count(key) > 0) ||
+           (radMap_.count(key) > 0);
   }
-
-  Corrade::Utility::ConfigurationGroup::Groups groups() const {
-    return cfg.groups();
-  }
-  Corrade::Utility::ConfigurationGroup::Values values() const {
-    return cfg.values();
-  }
-  bool hasValues() const { return cfg.hasValues(); }
-
-  bool hasValue(const std::string& key) const { return cfg.hasValue(key); }
-
-  bool removeValue(const std::string& key) { return cfg.removeValue(key); }
-
-  void setConfiguration(Corrade::Utility::ConfigurationGroup* _cfg) {
-    cfg = *_cfg;
+  /**
+   * @brief Builds and returns @ref Corrade::Utility::ConfigurationGroup holding
+   * the values in this esp::core::Configuration.
+   *
+   * @return a reference to a configuration group for this configuration object.
+   */
+  Corrade::Utility::ConfigurationGroup getConfigGroup() const {
+    Corrade::Utility::ConfigurationGroup cfg{};
+    putValsInConfigGroup(cfg, boolMap_);
+    putValsInConfigGroup(cfg, intMap_);
+    putValsInConfigGroup(cfg, floatMap_);
+    putValsInConfigGroup(cfg, doubleMap_);
+    putValsInConfigGroup(cfg, stringMap_);
+    putValsInConfigGroup(cfg, vecMap_);
+    putValsInConfigGroup(cfg, quatMap_);
+    putValsInConfigGroup(cfg, radMap_);
+    return cfg;
   }
 
  protected:
@@ -144,49 +307,106 @@ class Configuration {
    * @return whether a group was made or not
    */
   bool addNewSubgroup(const std::string& name) {
-    if (cfg.hasGroup(name)) {
+    if (configMap_.count(name) > 0) {
       return false;
     }
-    cfg.addGroup(name);
+    ++numEntries;
+    configMap_[name] = std::make_shared<Configuration>();
     return true;
   }
 
-  Corrade::Utility::ConfigurationGroup cfg;
+  template <typename T>
+  bool checkMapForKey(const std::string& key,
+                      const std::unordered_map<std::string, T>& map) const {
+    return map.count(key) > 0;
+  }
 
+  template <typename T>
+  void addValToMap(const std::string& key,
+                   const T& val,
+                   std::unordered_map<std::string, T>& map) {
+    if (map.count(key) == 0) {
+      ++numEntries;
+    }
+    map[key] = val;
+  }
+
+  template <typename T>
+  T getValFromMap(const std::string& key,
+                  const std::unordered_map<std::string, T>& map) const {
+    if (map.count(key) != 0) {
+      // return a copy
+      return T{map.at(key)};
+    }
+    ESP_ERROR() << "::getValFromMap : Key :" << key
+                << "not present in map of type <std::string,"
+                << typeid(T).name() << ">";
+    return {};
+  }
+
+  template <typename T>
+  T removeValFromMap(const std::string& key,
+                     std::unordered_map<std::string, T>& map) {
+    if (map.count(key) != 0) {
+      T val = T{map.at(key)};
+      map.erase(key);
+      --numEntries;
+      if (numEntries < 0) {
+        numEntries = calcNumEntries();
+      }
+      // return a copy
+      return val;
+    }
+    ESP_WARNING() << "::removeValFromMap : Key :" << key
+                  << "not present in map of type <std::string,"
+                  << typeid(T).name() << ">";
+    return {};
+  }
+
+  template <typename T>
+  std::vector<std::string> getKeysFromMap(
+      const std::unordered_map<std::string, T>& map) const {
+    std::vector<std::string> keys;
+    keys.reserve(map.size());
+    for (const auto& entry : map) {
+      keys.push_back(entry.first);
+    }
+    return keys;
+  }
+
+  template <typename T>
+  void putValsInConfigGroup(
+      Corrade::Utility::ConfigurationGroup& cfg,
+      const std::unordered_map<std::string, T>& map) const {
+    for (const auto& entry : map) {
+      cfg.setValue(entry.first, entry.second);
+    }
+  }
+
+  int calcNumEntries() {
+    return configMap_.size() + intMap_.size() + boolMap_.size() +
+           floatMap_.size() + doubleMap_.size() + stringMap_.size() +
+           vecMap_.size() + quatMap_.size() + radMap_.size();
+  }
+
+  // number of entries added to this configuration
+  int numEntries = 0;
+
+  // Map to hold configurations as subgroups
+  std::unordered_map<std::string, std::shared_ptr<Configuration>> configMap_{};
+
+  // Maps to hold various simple types
+  std::unordered_map<std::string, int> intMap_{};
+  std::unordered_map<std::string, bool> boolMap_{};
+  std::unordered_map<std::string, float> floatMap_{};
+  std::unordered_map<std::string, double> doubleMap_{};
+  std::unordered_map<std::string, std::string> stringMap_{};
+  std::unordered_map<std::string, Magnum::Vector3> vecMap_{};
+  std::unordered_map<std::string, Magnum::Quaternion> quatMap_{};
+  std::unordered_map<std::string, Magnum::Rad> radMap_{};
+  // Corrade::Utility::ConfigurationGroup cfg;
   ESP_SMART_POINTERS(Configuration)
 };  // namespace core
-
-// Below uses std::variant; not yet available in clang c++17
-/*
-#include <std/variant>
-
-class Configuration {
- public:
-  Configuration() : values_() {}
-
-  template <typename T>
-  bool set(const std::string& key, const T& value) {
-    bool didOverride = hasValue(key);
-    values_[key] = value;
-    return didOverride;
-  }
-
-  template <typename T>
-  T get(const std::string& key) const {
-    return boost::get<T>(values_.at(key));
-  }
-
-  bool hasValue(const std::string& key) {
-    return values_.count(key) > 0;
-  }
-
- protected:
-  typedef boost::variant<bool, int, float, double, std::string> ConfigValue;
-  std::map<std::string, ConfigValue> values_;
-
-  ESP_SMART_POINTERS(Configuration)
-};
-*/
 
 }  // namespace core
 }  // namespace esp

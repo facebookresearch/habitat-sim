@@ -122,8 +122,8 @@ class AttributesManagersTest : public testing::Test {
 
     // test changing a user-defined field in each template, verify the templates
     // are not now the same
-    attrTemplate1->setString(keyStr, "temp");
-    attrTemplate2->setString(keyStr, "temp2");
+    attrTemplate1->set(keyStr, "temp");
+    attrTemplate2->set(keyStr, "temp2");
     ASSERT_NE(attrTemplate1->getString(keyStr),
               attrTemplate2->getString(keyStr));
     // get original template ID
@@ -141,7 +141,7 @@ class AttributesManagersTest : public testing::Test {
     ASSERT_EQ(attrTemplate3->getString(keyStr),
               attrTemplate2->getString(keyStr));
     // change field in new copy
-    attrTemplate3->setString(keyStr, "temp3");
+    attrTemplate3->set(keyStr, "temp3");
     // verify that now they are different
     ASSERT_NE(attrTemplate3->getString(keyStr),
               attrTemplate2->getString(keyStr));
@@ -315,9 +315,8 @@ class AttributesManagersTest : public testing::Test {
     if (setRenderHandle) {
       auto attrTemplate1 = mgr->createObject(handle, false);
       // set legitimate render handle in template
-      newAttrTemplate0->set(
-          "render_asset",
-          attrTemplate1->template get<std::string>("render_asset"));
+      newAttrTemplate0->set("render_asset",
+                            attrTemplate1->getString("render_asset"));
     }
 
     // register modified template and verify that this is the template now
@@ -430,7 +429,7 @@ class AttributesManagersTest : public testing::Test {
     std::shared_ptr<T> newAttribs =
         assetAttributesManager_->getObjectOrCopyByHandle<T>(newHandle);
     // verify template has modified values
-    int newValue = newAttribs->template get<int>(ctorModField);
+    int newValue = newAttribs->getInt(ctorModField);
     ASSERT_EQ(legalVal, newValue);
     // remove modified template via handle
     auto oldTemplate2 =

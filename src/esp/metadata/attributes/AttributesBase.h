@@ -141,9 +141,7 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
    * such cases this should be overridden with NOP.
    * @param handle the handle to set.
    */
-  void setHandle(const std::string& handle) override {
-    setString("handle", handle);
-  }
+  void setHandle(const std::string& handle) override { set("handle", handle); }
   std::string getHandle() const override { return getString("handle"); }
 
   /**
@@ -165,7 +163,7 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
    * @brief directory where files used to construct attributes can be found.
    */
   void setFileDirectory(const std::string& fileDirectory) override {
-    setString("fileDirectory", fileDirectory);
+    set("fileDirectory", fileDirectory);
   }
   std::string getFileDirectory() const override {
     return getString("fileDirectory");
@@ -174,20 +172,8 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
   /**
    *  @brief Unique ID referencing attributes
    */
-  void setID(int ID) override { setInt("ID", ID); }
+  void setID(int ID) override { set("ID", ID); }
   int getID() const override { return getInt("ID"); }
-
-  /**
-   * @brief Returns configuration to be used with PrimitiveImporter to
-   * instantiate Primitives.  Names in getter/setters chosen to match parameter
-   * name expectations in PrimitiveImporter.
-   *
-   * @return a reference to the underlying configuration group for this
-   * attributes object
-   */
-  const Corrade::Utility::ConfigurationGroup& getConfigGroup() const {
-    return cfg;
-  }
 
   /**
    * @brief Gets a smart pointer reference to user-specified configuration data
@@ -211,9 +197,38 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
   void setUserConfigValue(const std::string& key, const T& value) {
     setSubgroupValue<T>("user_defined", key, value);
   }
-  template <typename T>
-  T getUserConfigValue(const std::string& key) {
-    return getSubgroupValue<T>("user_defined", key);
+
+  bool getUserConfigBool(const std::string& key) const {
+    const auto ptr = getConfigSubgroupAsPtr("user_defined");
+    return ptr->getBool(key);
+  }
+  int getUserConfigInt(const std::string& key) {
+    const auto ptr = getConfigSubgroupAsPtr("user_defined");
+    return ptr->getInt(key);
+  }
+  float getUserConfigFloat(const std::string& key) {
+    const auto ptr = getConfigSubgroupAsPtr("user_defined");
+    return ptr->getFloat(key);
+  }
+  double getUserConfigDouble(const std::string& key) {
+    const auto ptr = getConfigSubgroupAsPtr("user_defined");
+    return ptr->getDouble(key);
+  }
+  std::string getUserConfigString(const std::string& key) {
+    const auto ptr = getConfigSubgroupAsPtr("user_defined");
+    return ptr->getString(key);
+  }
+  Magnum::Vector3 getUserConfigVec3(const std::string& key) const {
+    const auto ptr = getConfigSubgroupAsPtr("user_defined");
+    return ptr->getVec3(key);
+  }
+  Magnum::Quaternion getUserConfigQuat(const std::string& key) const {
+    const auto ptr = getConfigSubgroupAsPtr("user_defined");
+    return ptr->getQuat(key);
+  }
+  Magnum::Rad getUserConfigRad(const std::string& key) const {
+    const auto ptr = getConfigSubgroupAsPtr("user_defined");
+    return ptr->getRad(key);
   }
 
   /**
@@ -259,7 +274,7 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
    * constructors used to make copies of this object in copy constructor map.
    */
   void setClassKey(const std::string& attributesClassKey) override {
-    setString("attributesClassKey", attributesClassKey);
+    set("attributesClassKey", attributesClassKey);
   }
 
  public:

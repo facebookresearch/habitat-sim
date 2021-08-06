@@ -48,7 +48,7 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
    * stage/object instance.
    */
   void setTranslation(const Magnum::Vector3& translation) {
-    setVec3("translation", translation);
+    set("translation", translation);
   }
   /**
    * @brief Get the translation from the origin of the described
@@ -63,7 +63,7 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
    * setting.
    */
   void setTranslationOrigin(int translation_origin) {
-    setInt("translation_origin", translation_origin);
+    set("translation_origin", translation_origin);
   }
 
   /**
@@ -78,7 +78,7 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
    * @brief Set the rotation of the object
    */
   void setRotation(const Magnum::Quaternion& rotation) {
-    setQuat("rotation", rotation);
+    set("rotation", rotation);
   }
   /**
    * @brief Get the rotation of the object
@@ -88,7 +88,7 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
   /**
    * @brief Set the motion type for the object.  Ignored for stage instances.
    */
-  void setMotionType(int motionType) { setInt("motion_type", motionType); }
+  void setMotionType(int motionType) { set("motion_type", motionType); }
 
   /**
    * @brief Get the motion type for the object.  Ignored for stage instances.
@@ -101,7 +101,7 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
    * of string values in json to @ref
    * esp::metadata::attributes::ObjectInstanceShaderType int values.
    */
-  void setShaderType(int shader_type) { setInt("shader_type", shader_type); }
+  void setShaderType(int shader_type) { set("shader_type", shader_type); }
   int getShaderType() const { return getInt("shader_type"); }
 
   /**
@@ -109,14 +109,14 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
    */
   float getUniformScale() const { return getFloat("uniform_scale"); }
   void setUniformScale(float uniform_scale) {
-    setFloat("uniform_scale", uniform_scale);
+    set("uniform_scale", uniform_scale);
   }
 
   /**
    * @brief Get or set the mass scaling of the instanced object.
    */
   float getMassScale() const { return getFloat("mass_scale"); }
-  void setMassScale(float mass_scale) { setFloat("mass_scale", mass_scale); }
+  void setMassScale(float mass_scale) { set("mass_scale", mass_scale); }
 
   /**
    * @brief Used for info purposes.  Return a string name corresponding to the
@@ -189,7 +189,7 @@ class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
    * fixed.
    */
   bool getFixedBase() const { return getBool("fixed_base"); }
-  void setFixedBase(bool fixed_base) { setBool("fixed_base", fixed_base); }
+  void setFixedBase(bool fixed_base) { set("fixed_base", fixed_base); }
 
   /**
    * @brief Articulated Object Instance only. Get or set whether or not dofs
@@ -200,7 +200,7 @@ class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
     return getBool("auto_clamp_joint_limits");
   }
   void setAutoClampJointLimits(bool auto_clamp_joint_limits) {
-    setBool("auto_clamp_joint_limits", auto_clamp_joint_limits);
+    set("auto_clamp_joint_limits", auto_clamp_joint_limits);
   }
 
   /**
@@ -272,7 +272,7 @@ class SceneAttributes : public AbstractAttributes {
    * instance - should map to an enum value in @InstanceTranslationOriginMap.
    */
   void setTranslationOrigin(int translation_origin) {
-    setInt("translation_origin", translation_origin);
+    set("translation_origin", translation_origin);
   }
 
   /**
@@ -286,7 +286,7 @@ class SceneAttributes : public AbstractAttributes {
    * lighting
    */
   void setLightingHandle(const std::string& lightingHandle) {
-    setString("default_lighting", lightingHandle);
+    set("default_lighting", lightingHandle);
   }
   /**
    * @brief Get the name of the template that describes the scene's default
@@ -300,7 +300,7 @@ class SceneAttributes : public AbstractAttributes {
    * @brief Set the name of the navmesh for the scene
    */
   void setNavmeshHandle(const std::string& navmeshHandle) {
-    setString("navmesh_instance", navmeshHandle);
+    set("navmesh_instance", navmeshHandle);
   }
   /**
    * @brief Get the name of the navmesh for the scene
@@ -311,7 +311,7 @@ class SceneAttributes : public AbstractAttributes {
    * @brief Set the name of the semantic scene descriptor
    */
   void setSemanticSceneHandle(const std::string& semanticSceneDesc) {
-    setString("semantic_scene_instance", semanticSceneDesc);
+    set("semantic_scene_instance", semanticSceneDesc);
   }
 
   /**

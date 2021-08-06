@@ -42,7 +42,7 @@ class LightInstanceAttributes : public AbstractAttributes {
    * @brief Get/Set the position of the light.
    */
   void setPosition(const Magnum::Vector3& position) {
-    setVec3("position", position);
+    set("position", position);
   }
   Magnum::Vector3 getPosition() const { return getVec3("position"); }
 
@@ -50,26 +50,26 @@ class LightInstanceAttributes : public AbstractAttributes {
    * @brief Get/Set the direction of the light.
    */
   void setDirection(const Magnum::Vector3& direction) {
-    setVec3("direction", direction);
+    set("direction", direction);
   }
   Magnum::Vector3 getDirection() const { return getVec3("direction"); }
 
   /**
    * @brief Get/Set the color of the light.
    */
-  void setColor(const Magnum::Vector3& color) { setVec3("color", color); }
+  void setColor(const Magnum::Vector3& color) { set("color", color); }
   Magnum::Vector3 getColor() const { return getVec3("color"); }
 
   /**
    * @brief Get/Set the color scale of the light.
    */
-  void setIntensity(double intensity) { setDouble("intensity", intensity); }
+  void setIntensity(double intensity) { set("intensity", intensity); }
   double getIntensity() const { return getDouble("intensity"); }
 
   /**
    * @brief Get/Set the type of the light
    */
-  void setType(int type) { setInt("type", type); }
+  void setType(int type) { set("type", type); }
   int getType() const { return getInt("type"); }
 
   /**
@@ -78,7 +78,7 @@ class LightInstanceAttributes : public AbstractAttributes {
    * origin, or some object.
    */
   void setPositionModel(int position_model) {
-    setInt("position_model", position_model);
+    set("position_model", position_model);
   }
   int getPositionModel() const { return getInt("position_model"); }
 
@@ -87,7 +87,7 @@ class LightInstanceAttributes : public AbstractAttributes {
    * other lights
    */
   void setInnerConeAngle(Magnum::Rad innerConeAngle) {
-    setRad("innerConeAngle", innerConeAngle);
+    set("innerConeAngle", innerConeAngle);
   }
   Magnum::Rad getInnerConeAngle() const { return getRad("innerConeAngle"); }
 
@@ -96,7 +96,7 @@ class LightInstanceAttributes : public AbstractAttributes {
    * lights
    */
   void setOuterConeAngle(Magnum::Rad outerConeAngle) {
-    setRad("outerConeAngle", outerConeAngle);
+    set("outerConeAngle", outerConeAngle);
   }
   Magnum::Rad getOuterConeAngle() const { return getRad("outerConeAngle"); }
 
@@ -143,13 +143,13 @@ class LightInstanceAttributes : public AbstractAttributes {
    * use that to build this data.
    */
   std::string getObjectInfoInternal() const override {
-    return cfg.value("position")
+    return getVec3AsString("position")
         .append(1, ',')
-        .append(cfg.value("direction"))
+        .append(getVec3AsString("direction"))
         .append(1, ',')
-        .append(cfg.value("color"))
+        .append(getVec3AsString("color"))
         .append(1, ',')
-        .append(cfg.value("intensity"))
+        .append(std::to_string(getIntensity()))
         .append(1, ',')
         .append(getCurrLightTypeName())
         .append(1, ',')
@@ -178,7 +178,7 @@ class LightLayoutAttributes : public AbstractAttributes {
    * This is to make simple, sweeping adjustments to scene lighting in habitat.
    */
   void setPositiveIntensityScale(double positive_intensity_scale) {
-    setDouble("positive_intensity_scale", positive_intensity_scale);
+    set("positive_intensity_scale", positive_intensity_scale);
   }
   /**
    * @brief Get a scale of all positive intensities by specified amount.
@@ -193,7 +193,7 @@ class LightLayoutAttributes : public AbstractAttributes {
    * This is to make simple, sweeping adjustments to scene lighting in habitat.
    */
   void setNegativeIntensityScale(double negative_intensity_scale) {
-    setDouble("negative_intensity_scale", negative_intensity_scale);
+    set("negative_intensity_scale", negative_intensity_scale);
   }
   /**
    * @brief Get a scale of all negative intensities by specified amount.

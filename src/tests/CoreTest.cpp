@@ -15,6 +15,6 @@ TEST(CoreTest, ConfigurationTest) {
   cfg.set("myString", "test");
   EXPECT_TRUE(cfg.hasValue("myInt"));
   EXPECT_TRUE(cfg.hasValue("myString"));
-  EXPECT_EQ(cfg.get<int>("myInt"), 10);
-  EXPECT_EQ(cfg.get<std::string>("myString"), "test");
+  EXPECT_EQ(cfg.getInt("myInt"), 10);
+  EXPECT_EQ(cfg.getString("myString"), "test");
 }

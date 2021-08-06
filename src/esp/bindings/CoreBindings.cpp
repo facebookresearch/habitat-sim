@@ -22,17 +22,43 @@ void initCoreBindings(py::module& m) {
       .def("get_double", &Configuration::getDouble)
       .def("get_vec3", &Configuration::getVec3)
       .def("get_quat", &Configuration::getQuat)
+      .def("get_rad", &Configuration::getRad)
+
+      .def("get_bool_keys", &Configuration::getBoolKeys)
+      .def("get_string_keys", &Configuration::getStringKeys)
+      .def("get_int_keys", &Configuration::getIntKeys)
+      .def("get_double_keys", &Configuration::getDoubleKeys)
+      .def("get_vec3_keys", &Configuration::getVec3Keys)
+      .def("get_quat_keys", &Configuration::getQuatKeys)
+      .def("get_rad_keys", &Configuration::getRadKeys)
+
       .def("get", &Configuration::getString)
+
       .def("set", &Configuration::set<std::string>)
       .def("set", &Configuration::set<int>)
       .def("set", &Configuration::set<double>)
       .def("set", &Configuration::set<bool>)
       .def("set", &Configuration::set<Magnum::Vector3>)
       .def("set", &Configuration::set<Magnum::Quaternion>)
+
       .def("add_string_to_group", &Configuration::addStringToGroup)
-      .def("get_string_group", &Configuration::getStringGroup)
       .def("has_value", &Configuration::hasValue)
-      .def("remove_value", &Configuration::removeValue);
+      .def("has_bool", &Configuration::hasBool)
+      .def("has_int", &Configuration::hasInt)
+      .def("has_string", &Configuration::hasString)
+      .def("has_double", &Configuration::hasDouble)
+      .def("has_float", &Configuration::hasFloat)
+      .def("has_quat", &Configuration::hasQuat)
+      .def("has_vec3", &Configuration::hasVec3)
+      .def("has_rad", &Configuration::hasRad)
+
+      .def("remove_bool", &Configuration::removeBool)
+      .def("remove_string", &Configuration::removeString)
+      .def("remove_int", &Configuration::removeInt)
+      .def("remove_double", &Configuration::removeDouble)
+      .def("remove_vec3", &Configuration::removeVec3)
+      .def("remove_quat", &Configuration::removeQuat)
+      .def("remove_rad", &Configuration::removeRad);
 
   // ==== struct RigidState ===
   py::class_<RigidState, RigidState::ptr>(m, "RigidState")
