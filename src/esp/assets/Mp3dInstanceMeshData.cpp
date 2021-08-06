@@ -30,7 +30,7 @@ namespace assets {
 bool Mp3dInstanceMeshData::loadMp3dPLY(const std::string& plyFile) {
   std::ifstream ifs(plyFile);
   if (!ifs.good()) {
-    LOG(ERROR) << "Cannot open file at " << plyFile;
+    ESP_ERROR() << "Cannot open file at" << plyFile;
     return false;
   }
 
@@ -38,12 +38,12 @@ bool Mp3dInstanceMeshData::loadMp3dPLY(const std::string& plyFile) {
   std::istringstream iss;
   std::getline(ifs, line);
   if (line != "ply") {
-    LOG(ERROR) << "Invalid ply file header";
+    ESP_ERROR() << "Invalid ply file header";
     return false;
   }
   std::getline(ifs, line);
   if (line != "format binary_little_endian 1.0") {
-    LOG(ERROR) << "Invalid ply file header";
+    ESP_ERROR() << "Invalid ply file header";
     return false;
   }
 
@@ -52,7 +52,7 @@ bool Mp3dInstanceMeshData::loadMp3dPLY(const std::string& plyFile) {
   iss.str(line);
   iss >> token;
   if (token != "element") {
-    LOG(ERROR) << "Invalid element vertex header line";
+    ESP_ERROR() << "Invalid element vertex header line";
     return false;
   }
   int nVertex = 0;
@@ -66,7 +66,7 @@ bool Mp3dInstanceMeshData::loadMp3dPLY(const std::string& plyFile) {
   iss2.str(line);
   iss2 >> token;
   if (token != "element") {
-    LOG(ERROR) << "Invalid element face header line";
+    ESP_ERROR() << "Invalid element face header line";
     return false;
   }
   int nFace = 0;
@@ -106,7 +106,7 @@ bool Mp3dInstanceMeshData::loadMp3dPLY(const std::string& plyFile) {
     int32_t categoryId = 0;
 
     ifs.read(reinterpret_cast<char*>(&nIndices), sizeof(nIndices));
-    ASSERT(nIndices == 3);
+    CORRADE_INTERNAL_ASSERT(nIndices == 3);
     ifs.read(reinterpret_cast<char*>(indices.data()), 3 * sizeof(int));
     ifs.read(reinterpret_cast<char*>(&materialId), sizeof(materialId));
     ifs.read(reinterpret_cast<char*>(&segmentId), sizeof(segmentId));

@@ -45,6 +45,7 @@ struct CullingTest : Cr::TestSuite::Tester {
   void frustumCulling();
 
  protected:
+  esp::logging::LoggingContext loggingContext_;
   esp::gfx::WindowlessContext::uptr context_ = nullptr;
   std::unique_ptr<ResourceManager> resourceManager_ = nullptr;
   SceneManager::uptr sceneManager_ = nullptr;

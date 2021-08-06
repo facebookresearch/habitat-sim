@@ -20,6 +20,8 @@ struct VoxelGridTest : Cr::TestSuite::Tester {
 
   void testVoxelGridWithVHACD();
   void testVoxelUtilityFunctions();
+
+  esp::logging::LoggingContext loggingContext_;
 };
 
 VoxelGridTest::VoxelGridTest() {

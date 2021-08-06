@@ -21,6 +21,9 @@ struct SensorTest : Cr::TestSuite::Tester {
   void testSensorFactory();
   void testSensorDestructors();
   void testSetParent();
+
+ private:
+  esp::logging::LoggingContext loggingContext_;
 };
 
 SensorTest::SensorTest() {
