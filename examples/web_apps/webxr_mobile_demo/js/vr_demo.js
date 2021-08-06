@@ -15,27 +15,27 @@ function scale(vec, amount) {
   );
 }
 
-const objectSpawnOrder = [
-  "frl_apartment_vase_02", // gray
-  "frl_apartment_plate_02", // double-layer
-  "frl_apartment_pan_01", // blue, with handle
-
-  "frl_apartment_kitchen_utensil_05", // serving tray
-  "banana_fixed",
-  "banana_fixed",
-  "banana_fixed",
-
+const initialObjects = [
+  "frl_apartment_plate_01", // plate
   "frl_apartment_plate_01",
-  "frl_apartment_plate_01",
-
-  "frl_apartment_kitchen_utensil_06", // white handleless cup
-  "frl_apartment_kitchen_utensil_06", // white handleless cup
-
-  "frl_apartment_bowl_06", // small white
-  "frl_apartment_bowl_06", // small white
-
+  "frl_apartment_kitchen_utensil_06", // cup
+  "frl_apartment_kitchen_utensil_06",
+  "frl_apartment_bowl_06", // bowl
+  "frl_apartment_bowl_06", // bowl
   "frl_apartment_kitchen_utensil_02", // green spice shaker
   "frl_apartment_kitchen_utensil_03" // orange spice shaker
+];
+
+const possibleSpawnLocations = [
+  [0.5, 1.0, 5.5],
+  [0.8, 1.0, 5.75],
+  [0.5, 1.0, 6.0],
+  [0.8, 1.0, 6.25],
+  [0.5, 1.0, 6.5],
+  [0.8, 1.0, 6.75],
+  [0.5, 1.0, 7.0],
+  [0.8, 1.0, 7.25],
+  [0.5, 1.0, 7.5]
 ];
 
 export class VRDemo {
@@ -64,7 +64,7 @@ export class VRDemo {
     preloadFunc(DataUtils.getObjectConfigFilepath("redsphere"));
 
     const replicaCadObjectNames = new Set();
-    for (const object of objectSpawnOrder) {
+    for (const object of initialObjects) {
       replicaCadObjectNames.add(object);
     }
 
@@ -116,6 +116,8 @@ export class VRDemo {
     );
 
     this.debugLineRender = this.sim.getDebugLineRender();
+
+    this.spawnInitialObjects();
 
     // set up "Enter VR" button
     const elem = document.getElementById("enter-vr");
@@ -177,6 +179,31 @@ export class VRDemo {
     this.webXRSession.requestAnimationFrame(this.drawVRScene.bind(this));
   }
 
+  spawnInitialObjects() {
+    // shuffle spawn locations
+    for (let i = possibleSpawnLocations.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const tmp = possibleSpawnLocations[j];
+      possibleSpawnLocations[j] = possibleSpawnLocations[i];
+      possibleSpawnLocations[i] = tmp;
+    }
+    // spawn objects at corresponding locations
+    for (let i = 0; i < initialObjects.length; i++) {
+      let handle = initialObjects[i];
+      let objId = this.sim.addObjectByHandle(
+        DataUtils.getObjectConfigFilepath(handle),
+        null,
+        "",
+        0
+      );
+      this.sim.setTranslation(
+        new Module.Vector3(...possibleSpawnLocations[i]),
+        objId,
+        0
+      );
+    }
+  }
+
   // hide an object by translating far away
   hide(objectId) {
     this.sim.setTranslation(new Module.Vector3(1000, 1000, 1000), objectId, 0);
@@ -222,20 +249,6 @@ export class VRDemo {
         this.heldObjectId,
         0
       );
-    } else {
-      let handle = objectSpawnOrder[this.objectIndex % objectSpawnOrder.length];
-      this.objectIndex++;
-      const objId = this.sim.addObjectByHandle(
-        DataUtils.getObjectConfigFilepath(handle),
-        null,
-        "",
-        0
-      );
-      if (this.headPos != null && this.lookDir != null) {
-        const pointing = scale(this.lookDir, 0.5);
-        const loc = Module.Vector3.add(this.headPos, pointing);
-        this.sim.setTranslation(loc, objId, 0);
-      }
     }
   }
 
@@ -285,9 +298,10 @@ export class VRDemo {
     const sensor = agent.getSubtreeSensors().get("eye");
 
     let pos = pointToArray(view.transform.position).slice(0, -1); // don't need w for position
-    for (let i = 0; i < 3; i++) {
-      pos[i] *= 3; // make movement more sensitive
-    }
+    // adjust sensitivity
+    pos[0] *= 3; // x
+    pos[1] *= 1.5; // y
+    pos[2] *= 3; // z
     sensor.setLocalTransform(
       Module.toVec3f(
         inverseAgentRot.transformVector(new Module.Vector3(...pos))
@@ -318,7 +332,7 @@ export class VRDemo {
     }
     if (this.headPos != null) {
       this.sim.setTranslation(
-        Module.Vector3.add(this.headPos, scale(this.lookDir, 0.7)),
+        Module.Vector3.add(this.headPos, scale(this.lookDir, 0.5)),
         this.heldObjectId,
         0
       );
@@ -340,6 +354,24 @@ export class VRDemo {
     }
   }
 
+  drawDropMarker() {
+    if (this.heldObjectId == -1) {
+      return;
+    }
+    let objPos = this.sim.getTranslation(this.heldObjectId, 0);
+    let downDir = new Module.Vector3(0, -1, 0);
+    let rayDown = new Module.Ray(objPos, downDir);
+    let hit = this.exclusiveRaycast(rayDown, 1000.0, [
+      this.cursor,
+      this.heldObjectId
+    ]);
+    // find where this ray hits, excluding the cursor and the held object
+    let hitPos = hit == null ? -1 : hit.point;
+    this.sim.setTranslation(hitPos, this.dropMarker, 0);
+    let col = new Module.Color4(1.0, 0.0, 0.0, 1.0);
+    this.debugLineRender.drawLine(objPos, hitPos, col);
+  }
+
   drawVRScene(t, frame) {
     const session = frame.session;
 
@@ -354,26 +386,10 @@ export class VRDemo {
 
     const agent = this.sim.getAgent(this.agentId);
 
-    //let zero = new Module.Vector3(0,0,0);
-    //let red = new Module.Color4(1.0, 0.0, 0.0, 1.0);
-    //this.debugLineRender.drawLine(zero, zero, red);
     this.updatePose(pose, agent);
     this.updateHeldObjectPose();
     this.drawCursor();
-    if (this.heldObjectId != -1) {
-      let pos1 = this.sim.getTranslation(this.heldObjectId, 0);
-      let downDir = new Module.Vector3(0, -1, 0);
-      let ray = new Module.Ray(pos1, downDir);
-      let hit = this.exclusiveRaycast(ray, 1000.0, [
-        this.cursor,
-        this.heldObjectId
-      ]);
-      // find where this ray hits, excluding the cursor and the held object
-      let pos2 = hit == null ? -1 : hit.point;
-      this.sim.setTranslation(pos2, this.dropMarker, 0);
-      let col = new Module.Color4(1.0, 0.0, 0.0, 1.0);
-      this.debugLineRender.drawLine(pos1, pos2, col);
-    }
+    this.drawDropMarker();
 
     const layer = session.renderState.baseLayer;
     this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, layer.framebuffer);
