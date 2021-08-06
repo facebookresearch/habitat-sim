@@ -35,6 +35,8 @@ struct ReplicaSceneTest : Cr::TestSuite::Tester {
   void testSemanticSceneLoading();
 
   void testSemanticSceneDescriptorReplicaCAD();
+
+  esp::logging::LoggingContext loggingContext_;
 };
 
 ReplicaSceneTest::ReplicaSceneTest() {
