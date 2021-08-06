@@ -332,7 +332,7 @@ export class VRDemo {
     }
     if (this.headPos != null) {
       this.sim.setTranslation(
-        Module.Vector3.add(this.headPos, scale(this.lookDir, 0.5)),
+        Module.Vector3.add(this.headPos, scale(this.lookDir, 0.3)),
         this.heldObjectId,
         0
       );
