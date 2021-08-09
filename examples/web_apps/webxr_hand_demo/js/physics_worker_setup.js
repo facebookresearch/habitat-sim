@@ -67,25 +67,28 @@ let stageFilepath, physicsConfigFilepath, objectBaseFilepath;
 var Module;
 
 onmessage = function(e) {
-  console.assert(e.data.type == "preloadInfo");
-  let preloadInfo = e.data.value;
+  if (e.data.type == "preloadInfo") {
+    let preloadInfo = e.data.value;
 
-  Module = createMagnumModule();
+    Module = createMagnumModule();
 
-  Module.preRun.push(() => {
-    physicsConfigFilepath = preloadInfo.physicsConfigFilepath;
-    stageFilepath = preloadInfo.stageFilepath;
-    objectBaseFilepath = preloadInfo.objectBaseFilepath;
-    for (const file of preloadInfo.preloadedFiles) {
-      preloadFunc(file);
-    }
-  });
+    Module.preRun.push(() => {
+      physicsConfigFilepath = preloadInfo.physicsConfigFilepath;
+      stageFilepath = preloadInfo.stageFilepath;
+      objectBaseFilepath = preloadInfo.objectBaseFilepath;
+      for (const file of preloadInfo.preloadedFiles) {
+        preloadFunc(file);
+      }
+    });
 
-  Module.onRuntimeInitialized = async function() {
-    start();
-  };
+    Module.onRuntimeInitialized = async function() {
+      start();
+    };
 
-  importScripts("hsim_bindings.js");
+    importScripts("hsim_bindings.js");
+  } else {
+    console.assert(false); // this should be unreachable
+  }
 };
 
 importScripts("physics_worker.js");
@@ -103,6 +106,8 @@ function start() {
         startData.objectSpawnOrder
       );
       physicsWorker.start();
+    } else {
+      console.assert(false); // this should be unreachable
     }
   };
 }

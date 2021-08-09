@@ -13,6 +13,8 @@ import {
 } from "../lib/habitat-sim-js/vr_utils.js";
 import { DataUtils } from "./data_utils.js";
 
+// Objects will be spawned in this order when user presses the spawn button. At
+// the end it will loop back to the beginning.
 const objectSpawnOrder = [
   "frl_apartment_vase_02", // gray
   "frl_apartment_plate_02", // double-layer
@@ -99,9 +101,9 @@ export class VRDemo {
   // Entry point for all the hand demo logic. Starts up the worker thread, then
   // calls setUpHabitat.
   start() {
-    let setUpHabitat = this.setUpHabitat.bind(this);
-    let pushKeyframe = this.pushKeyframe.bind(this);
+    // Initiate worker thread.
     this.workerThread = new Worker("js/physics_worker_setup.js");
+    // Tell worker what files it needs to preload.
     let preloadInfo = {
       physicsConfigFilepath: DataUtils.getPhysicsConfigFilepath(),
       stageFilepath: DataUtils.getStageFilepath(Module.stageName),
@@ -109,15 +111,29 @@ export class VRDemo {
       preloadedFiles: this.preloadedFiles
     };
     this.workerThread.postMessage({ type: "preloadInfo", value: preloadInfo });
+
+    // Worker will tell us when it's "ready", which means it can start stepping
+    // world as soon as we give it the "start" message. Then it will start
+    // sending keyframes, which tell us, physics frame by physics frame, the
+    // objects that were created, destroyed, and moved since the last step.
+    let setUpHabitat = this.setUpHabitat.bind(this);
+    let pushKeyframe = this.pushKeyframe.bind(this);
     this.workerThread.onmessage = function(e) {
       if (e.data.type == "ready") {
+        // When the worker is ready, set up Habitat stuff and create the
+        // "Enter VR" button.
         setUpHabitat();
       } else if (e.data.type == "keyframe") {
+        // Whenever we receive a keyframe from the worker, we call
+        // this.pushKeyframe() to give it to the player to process.
         pushKeyframe(e.data.value);
+      } else {
+        console.assert(false); // this should be unreachable
       }
     };
   }
 
+  // Gives the player a keyframe to append.
   pushKeyframe(jsonKeyframe) {
     this.player.pushJSONKeyframe(jsonKeyframe);
   }
@@ -153,7 +169,8 @@ export class VRDemo {
       DataUtils.getObjectBaseFilepath()
     );
 
-    // create player
+    // create player that reads in keyframes and "plays" them back by
+    // interacting with the Simulator
     this.player = this.sim.getGfxReplayManager().createEmptyPlayer();
 
     // set up "Enter VR" button
@@ -164,6 +181,7 @@ export class VRDemo {
 
   // Code that runs when the user clicks "Enter VR".
   async enterVR() {
+    // WebXR setup stuff.
     if (this.gl === null) {
       this.gl = document.createElement("canvas").getContext("webgl", {
         xrCompatible: true
@@ -185,8 +203,11 @@ export class VRDemo {
       "local-floor"
     );
 
+    // Tell WebXR to call this.drawVRScene() to draw the next frame.
     this.webXRSession.requestAnimationFrame(this.drawVRScene.bind(this));
 
+    // Prepare to tell the worker thread the hand filepaths and what objects
+    // to spawn.
     const handFilepathsByHandIndex = [
       [
         DataUtils.getObjectConfigFilepath("hand_l_open"),
@@ -205,8 +226,13 @@ export class VRDemo {
       handFilepathsByHandIndex: handFilepathsByHandIndex,
       objectSpawnOrder: spawnOrder
     };
+    // Tell the worker thread that we are ready to go. Then it will start
+    // stepping physics.
     this.workerThread.postMessage({ type: "start", value: startData });
 
+    // Code to compute FPS and update the indicator on the top right.
+    // Only visible in Chrome WebXR emulator mode (not in headset).
+    // todo: actually draw the FPS on the canvas.
     let lastFPSUpdateTime = performance.now();
     let overallFPS = 20;
     setInterval(() => {
@@ -304,13 +330,21 @@ export class VRDemo {
 
     const agent = this.sim.getAgent(this.agentId);
 
+    // Set the player to the last (most recent) keyframe. This will iterate
+    // through the new keyframes that were sent by the worker and apply them
+    // one-by-one.
     this.player.setKeyframeIndex(this.player.getNumKeyframes() - 1);
+
+    // Tell the worker thread the current hand positions and spawn/grip button
+    // states (pressed or not pressed).
     this.sendHandInfoToWorker(frame);
+
+    // Update the camera positions based on the user's head pose.
     updateHeadPose(pose, agent);
 
+    // Draw stuff to the canvas.
     const layer = session.renderState.baseLayer;
     this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, layer.framebuffer);
-
     for (var iView = 0; iView < pose.views.length; ++iView) {
       const view = pose.views[iView];
       const viewport = layer.getViewport(view);
@@ -322,6 +356,7 @@ export class VRDemo {
       drawTextureData(this.gl, texRes, texData);
     }
 
+    // Used to compute FPS.
     this.currentFramesSkipped++;
   }
 }
