@@ -70,7 +70,7 @@ void Recorder::saveKeyframe() {
   advanceKeyframe();
 }
 
-Keyframe Recorder::getLatestKeyframe() {
+const Keyframe& Recorder::getLatestKeyframe() {
   CORRADE_ASSERT(!savedKeyframes_.empty(),
                  "Recorder::getLatestKeyframe() : Trying to access latest "
                  "keyframe when there are none",

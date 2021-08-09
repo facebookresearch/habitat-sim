@@ -69,7 +69,7 @@ class Recorder {
   /**
    * @brief Returns the last saved keyframe.
    */
-  Keyframe getLatestKeyframe();
+  const Keyframe& getLatestKeyframe();
 
   /**
    * @brief Add a named "user transform" which can be used to store cameras,
