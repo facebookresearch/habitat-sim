@@ -23,7 +23,7 @@ Keyframe Player::keyframeFromString(const std::string& keyframe) {
   Keyframe res;
   rapidjson::Document d;
   d.Parse<0>(keyframe.c_str());
-  esp::io::readMember(std::move(d), "keyframe", res);
+  esp::io::readMember(d, "keyframe", res);
   return res;
 }
 
