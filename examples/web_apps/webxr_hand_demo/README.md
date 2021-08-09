@@ -38,7 +38,7 @@ $ python3 -m http.server
 1. Observe the logged head poses in the html textarea.
 
 ## VR on Quest 2 (or other headset)
-1. Using a modification of either method above, serve the content at a public URL. For example, you could upload the `task/server_files/habitat_vr_app` folder to Amazon S3 or any web host. [todo: explain how to do this for AWS]
+1. Serve the content at a public URL. This has to be an HTTPS address because that is a requirement for WebXR (just serving it locally won't cut it either). You could upload this `webxr_hand_demo` folder to Amazon S3 or any web host. You might experience some issues uploading the files in `webxr_hand_demo/data` because they are symlinked. If that happens, upload the actual source files, then adjust the file structure to match `webxr_hand_demo/data`. [todo: step through how to host on AWS]
 1. On Quest 2, open the browser and navigate to the URL. Use the Quest controller to click "Enter VR".
 1. Exit immersive VR with the Quest 2 controller's home button.
 
