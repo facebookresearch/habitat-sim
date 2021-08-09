@@ -124,6 +124,7 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
     addNewSubgroup("user_defined");
     AbstractAttributes::setClassKey(attributesClassKey);
     AbstractAttributes::setHandle(handle);
+    set("fileDirectory", "");
   }
 
   ~AbstractAttributes() override = default;

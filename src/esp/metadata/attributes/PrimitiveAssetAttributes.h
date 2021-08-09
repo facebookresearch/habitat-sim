@@ -29,7 +29,10 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
     setPrimObjType(primObjType);
     setPrimObjClassName(primObjClassName);
     setFileDirectory("none");
-
+    // initialize so empty values are present
+    set("halfLength", 0.0);
+    set("segments", 0);
+    set("rings", 0);
     if (!isWireframe) {  // solid
       // do not call setters since they call buildHandle, which does not
       // exist - is abstract in base class

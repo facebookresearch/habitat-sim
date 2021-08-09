@@ -16,15 +16,15 @@ CapsulePrimitiveAttributes::CapsulePrimitiveAttributes(
                                   primObjType,
                                   primObjClassName,
                                   "CapsulePrimitiveAttributes") {
-  setCylinderRings(1);
+  set("cylinderRings", 1);
   if (!isWireframe) {  // solid
-    setHemisphereRings(4);
-    setNumSegments(12);
-    setHalfLength(0.75);
+    set("hemisphereRings", 4);
+    set("segments", 12);
+    set("halfLength", 0.75);
   } else {  // wireframe
-    setHemisphereRings(8);
-    setNumSegments(16);
-    setHalfLength(1.0);
+    set("hemisphereRings", 8);
+    set("segments", 16);
+    set("halfLength", 1.0);
   }
   buildHandle();  // build handle based on config
 }  // CapsulePrimitiveAttributes
@@ -56,14 +56,14 @@ ConePrimitiveAttributes::ConePrimitiveAttributes(
                                   primObjType,
                                   primObjClassName,
                                   "ConePrimitiveAttributes") {
-  setHalfLength(1.25);
+  set("halfLength", 1.25);
 
   if (!isWireframe) {  // solid
-    setNumRings(1);
-    setNumSegments(12);
-    setCapEnd(true);
+    set("rings", 1);
+    set("segments", 12);
+    set("capEnd", true);
   } else {  // wireframe
-    setNumSegments(32);
+    set("segments", 32);
   }
   buildHandle();  // build handle based on config
 }  // ConePrimitiveAttributes
@@ -94,14 +94,14 @@ CylinderPrimitiveAttributes::CylinderPrimitiveAttributes(
                                   primObjType,
                                   primObjClassName,
                                   "CylinderPrimitiveAttributes") {
-  setNumRings(1);
-  setHalfLength(1.0);
+  set("rings", 1);
+  set("halfLength", 1.0);
 
   if (!isWireframe) {  // solid
-    setNumSegments(12);
-    setCapEnds(true);
+    set("segments", 12);
+    set("capEnds", true);
   } else {  // wireframe
-    setNumSegments(32);
+    set("segments", 32);
   }
   buildHandle();  // build handle based on config
 }  // CylinderPrimitiveAttributes
@@ -132,11 +132,11 @@ UVSpherePrimitiveAttributes::UVSpherePrimitiveAttributes(
                                   primObjClassName,
                                   "UVSpherePrimitiveAttributes") {
   if (!isWireframe) {  // solid
-    setNumRings(8);
-    setNumSegments(16);
+    set("rings", 8);
+    set("segments", 16);
   } else {  // wireframe
-    setNumRings(16);
-    setNumSegments(32);
+    set("rings", 16);
+    set("segments", 32);
   }
   buildHandle();  // build handle based on config
 }  // UVSpherePrimitiveAttributes
