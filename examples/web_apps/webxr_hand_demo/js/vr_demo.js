@@ -36,8 +36,6 @@ const objectSpawnOrder = [
   "frl_apartment_kitchen_utensil_03" // orange spice shaker
 ];
 
-let preloadedFiles = [];
-
 export class VRDemo {
   fpsElement;
   lastPaintTime;
@@ -60,7 +58,10 @@ export class VRDemo {
     this.fpsElement = document.getElementById("fps");
   }
 
-  static preloadFiles(preloadFunc) {
+  // Sets up the virtual file system so that these files can be loaded with
+  // their respective file paths. This is called before start().
+  preloadFiles(preloadFunc) {
+    let preloadedFiles = [];
     function doPreload(file) {
       preloadedFiles.push("../" + file);
       preloadFunc(file);
@@ -91,33 +92,39 @@ export class VRDemo {
       doPreload(DataUtils.getObjectCollisionGlbFilepath(name));
       doPreload(DataUtils.getObjectConfigFilepath(name));
     }
+
+    this.preloadedFiles = preloadedFiles;
   }
 
-  pushKeyframe(jsonKeyframe) {
-    this.player.pushJSONKeyframe(jsonKeyframe);
-  }
-
+  // Entry point for all the hand demo logic. Starts up the worker thread, then
+  // calls setUpHabitat.
   start() {
-    let setup = this.setup.bind(this);
+    let setUpHabitat = this.setUpHabitat.bind(this);
     let pushKeyframe = this.pushKeyframe.bind(this);
     this.workerThread = new Worker("js/physics_worker_setup.js");
     let preloadInfo = {
       physicsConfigFilepath: DataUtils.getPhysicsConfigFilepath(),
       stageFilepath: DataUtils.getStageFilepath(Module.stageName),
       objectBaseFilepath: DataUtils.getObjectBaseFilepath(),
-      preloadedFiles: preloadedFiles
+      preloadedFiles: this.preloadedFiles
     };
     this.workerThread.postMessage({ type: "preloadInfo", value: preloadInfo });
     this.workerThread.onmessage = function(e) {
       if (e.data.type == "ready") {
-        setup();
+        setUpHabitat();
       } else if (e.data.type == "keyframe") {
         pushKeyframe(e.data.value);
       }
     };
   }
 
-  setup() {
+  pushKeyframe(jsonKeyframe) {
+    this.player.pushJSONKeyframe(jsonKeyframe);
+  }
+
+  // Initiate simulator, put an agent into the scene, and create "Enter VR"
+  // button.
+  setUpHabitat() {
     // init sim
     this.config = new Module.SimulatorConfiguration();
     this.config.scene_id = "NONE";
@@ -146,15 +153,16 @@ export class VRDemo {
       DataUtils.getObjectBaseFilepath()
     );
 
+    // create player
+    this.player = this.sim.getGfxReplayManager().createEmptyPlayer();
+
     // set up "Enter VR" button
     const elem = document.getElementById("enter-vr");
     elem.style.visibility = "visible";
     elem.addEventListener("click", this.enterVR.bind(this));
-
-    // create player
-    this.player = this.sim.getGfxReplayManager().createEmptyPlayer();
   }
 
+  // Code that runs when the user clicks "Enter VR".
   async enterVR() {
     if (this.gl === null) {
       this.gl = document.createElement("canvas").getContext("webgl", {
@@ -216,6 +224,7 @@ export class VRDemo {
     this.fpsElement.style.visibility = "visible";
   }
 
+  // Code that runs when the user exits Immersive Mode.
   exitVR() {
     if (this.webXRSession !== null) {
       this.webXRSession.end();
@@ -223,7 +232,8 @@ export class VRDemo {
     }
   }
 
-  handleInput(frame) {
+  // Processes the hand pose and sends the relevant information to the worker.
+  sendHandInfoToWorker(frame) {
     let handInfo = [];
     for (let inputSource of frame.session.inputSources) {
       if (!inputSource.gripSpace) {
@@ -277,9 +287,12 @@ export class VRDemo {
     this.workerThread.postMessage({ type: "hands", value: handInfo });
   }
 
+  // WebXR calls this function, which renders frames to the canvas.
   drawVRScene(t, frame) {
     const session = frame.session;
 
+    // Tells WebXR to call drawVRScene again when we are ready to draw another
+    // frame.
     session.requestAnimationFrame(this.drawVRScene.bind(this));
 
     const pose = frame.getViewerPose(this.xrReferenceSpace);
@@ -292,7 +305,7 @@ export class VRDemo {
     const agent = this.sim.getAgent(this.agentId);
 
     this.player.setKeyframeIndex(this.player.getNumKeyframes() - 1);
-    this.handleInput(frame);
+    this.sendHandInfoToWorker(frame);
     updateHeadPose(pose, agent);
 
     const layer = session.renderState.baseLayer;

@@ -32,10 +32,18 @@ function createMagnumModule(init) {
     status: null,
     statusDescription: null,
     log: null,
-    printErr: function() {},
-    print: function() {},
-    setStatus: function() {},
-    setStatusDescription: function() {},
+    printErr: function(msg) {
+      console.log("physics_worker_setup.js - printErr:", msg);
+    },
+    print: function(msg) {
+      console.log("physics_worker_setup.js - print:", msg);
+    },
+    setStatus: function(msg) {
+      console.log("physics_worker_setup.js - setStatus:", msg);
+    },
+    setStatusDescription: function(msg) {
+      console.log("physics_worker_setup.js - setStatusDescription:", msg);
+    },
     totalDependencies: 0,
     monitorRunDependencies: function(left) {
       this.totalDependencies = Math.max(this.totalDependencies, left);
@@ -52,9 +60,6 @@ function createMagnumModule(init) {
   });
   Object.assign(module, init);
   module.setStatus("Downloading...");
-  if (module.log) {
-    module.log.style.display = "none";
-  }
   return module;
 }
 
