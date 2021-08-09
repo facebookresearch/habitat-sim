@@ -13,9 +13,9 @@ std::shared_ptr<Player> ReplayManager::readKeyframesFromFile(
   auto player = std::make_shared<Player>(playerCallback_);
   player->readKeyframesFromFile(filepath);
   if (player->getNumKeyframes() == 0) {
-    LOG(ERROR) << "ReplayManager::readKeyframesFromFile: failed to load any "
-                  "keyframes from ["
-               << filepath << "]";
+    ESP_ERROR() << "ReplayManager::readKeyframesFromFile: failed to load any "
+                   "keyframes from ["
+                << Mn::Debug::nospace << filepath << Mn::Debug::nospace << "]";
     return nullptr;
   }
   return player;

@@ -20,7 +20,7 @@ struct GibsonObjectCategory : public SemanticCategory {
     if (mapping == "category" || mapping == "") {
       return name_;
     } else {
-      LOG(ERROR) << "Unknown mapping type: " << mapping;
+      ESP_ERROR() << "Unknown mapping type:" << mapping;
       return "UNKNOWN";
     }
   }

@@ -107,14 +107,16 @@ class ObjectAttributesManager
    * templates
    * @param contains whether to search for keys containing, or not containing,
    * subStr
+   * @param sorted whether the return vector values are sorted
    * @return vector of 0 or more template handles containing the passed
    * substring
    */
   std::vector<std::string> getFileTemplateHandlesBySubstring(
       const std::string& subStr = "",
-      bool contains = true) const {
+      bool contains = true,
+      bool sorted = true) const {
     return this->getObjectHandlesBySubStringPerType(physicsFileObjTmpltLibByID_,
-                                                    subStr, contains);
+                                                    subStr, contains, sorted);
   }
 
   /**
@@ -147,14 +149,16 @@ class ObjectAttributesManager
    * templates
    * @param contains whether to search for keys containing, or not containing,
    * subStr
+   * @param sorted whether the return vector values are sorted
    * @return vector of 0 or more template handles containing the passed
    * substring
    */
   std::vector<std::string> getSynthTemplateHandlesBySubstring(
       const std::string& subStr = "",
-      bool contains = true) const {
+      bool contains = true,
+      bool sorted = true) const {
     return this->getObjectHandlesBySubStringPerType(
-        physicsSynthObjTmpltLibByID_, subStr, contains);
+        physicsSynthObjTmpltLibByID_, subStr, contains, sorted);
   }
 
   // ======== End File-based and primitive-based partition functions ========
@@ -187,14 +191,14 @@ class ObjectAttributesManager
       std::function<void(int)> assetTypeSetter) override;
 
   /**
-   * @brief Used Internally.  Create and configure newly-created attributes with
-   * any default values, before any specific values are set.
+   * @brief Used Internally.  Create and configure newly-created attributes
+   * with any default values, before any specific values are set.
    *
    * @param handleName handle name to be assigned to attributes
-   * @param builtFromConfig Whether this object attributes is being constructed
-   * from a config file or from some other source.
-   * @return Newly created but unregistered ObjectAttributes pointer, with only
-   * default values set.
+   * @param builtFromConfig Whether this object attributes is being
+   * constructed from a config file or from some other source.
+   * @return Newly created but unregistered ObjectAttributes pointer, with
+   * only default values set.
    */
   attributes::ObjectAttributes::ptr initNewObjectInternal(
       const std::string& handleName,
@@ -224,7 +228,8 @@ class ObjectAttributesManager
    * be modified by the user.
    *
    * @param attributesTemplate The attributes template.
-   * @param attributesTemplateHandle The key for referencing the template in the
+   * @param attributesTemplateHandle The key for referencing the template in
+   * the
    * @ref objectLibrary_. Will be set as origin handle for template.
    * @param forceRegistration Will register object even if conditional
    * registration checks fail.
@@ -257,13 +262,13 @@ class ObjectAttributesManager
    * @brief Maps loaded object template IDs to the appropriate template
    * handles
    */
-  std::map<int, std::string> physicsFileObjTmpltLibByID_;
+  std::unordered_map<int, std::string> physicsFileObjTmpltLibByID_;
 
   /**
    * @brief Maps synthesized, primitive-based object template IDs to the
    * appropriate template handles
    */
-  std::map<int, std::string> physicsSynthObjTmpltLibByID_;
+  std::unordered_map<int, std::string> physicsSynthObjTmpltLibByID_;
 
  public:
   ESP_SMART_POINTERS(ObjectAttributesManager)

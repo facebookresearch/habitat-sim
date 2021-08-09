@@ -22,17 +22,17 @@ class SceneGraph {
   using DrawableGroups = std::unordered_map<std::string, gfx::DrawableGroup>;
 
   SceneGraph();
-  virtual ~SceneGraph() { LOG(INFO) << "Deconstructing SceneGraph"; };
+  virtual ~SceneGraph() { ESP_DEBUG() << "Deconstructing SceneGraph"; };
 
   SceneNode& getRootNode() { return rootNode_; }
   const SceneNode& getRootNode() const { return rootNode_; }
 
-  // TODO: remove this
-  gfx::DrawableGroup& getDrawables() {
-    return drawableGroups_.at(std::string{});
+  gfx::DrawableGroup& getDrawables(const std::string& groupName = {}) {
+    return drawableGroups_.at(groupName);
   }
-  const gfx::DrawableGroup& getDrawables() const {
-    return drawableGroups_.at(std::string{});
+  const gfx::DrawableGroup& getDrawables(
+      const std::string& groupName = {}) const {
+    return drawableGroups_.at(groupName);
   }
 
   /* @brief check if the scene node is the root node of the scene graph.
@@ -78,11 +78,11 @@ class SceneGraph {
         std::piecewise_construct, std::forward_as_tuple(id),
         std::forward_as_tuple(std::forward<DrawableGroupArgs>(args)...));
     if (!inserted.second) {
-      LOG(ERROR) << "DrawableGroup with ID: " << inserted.first->first
-                 << " already exists!";
+      ESP_ERROR() << "DrawableGroup with ID:" << inserted.first->first
+                  << "already exists!";
       return nullptr;
     }
-    LOG(INFO) << "Created DrawableGroup: " << inserted.first->first;
+    ESP_DEBUG() << "Created DrawableGroup:" << inserted.first->first;
     return &inserted.first->second;
   }
 

@@ -22,7 +22,7 @@ namespace scene {
 class SceneManager {
  public:
   SceneManager() = default;
-  ~SceneManager() { LOG(INFO) << "Deconstructing SceneManager"; }
+  ~SceneManager() { ESP_DEBUG() << "Deconstructing SceneManager"; }
 
   // returns the scene ID
   int initSceneGraph();

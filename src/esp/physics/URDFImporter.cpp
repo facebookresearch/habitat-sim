@@ -22,22 +22,21 @@ bool URDFImporter::loadURDF(const std::string& filename,
   if ((modelCache_.count(filename) == 0u) || forceReload) {
     if (!Corrade::Utility::Directory::exists(filename) ||
         Corrade::Utility::Directory::isDirectory(filename)) {
-      Mn::Debug{} << "File does not exist: " << filename
+      ESP_DEBUG() << "File does not exist:" << filename
                   << ". Aborting URDF parse/load.";
       return false;
     }
 
     // parse the URDF from file
-    urdfParser_.logMessages = logMessages;
     std::shared_ptr<io::URDF::Model> urdfModel;
     bool success = urdfParser_.parseURDF(urdfModel, filename);
     if (!success) {
-      Mn::Debug{} << "Failed to parse URDF: " << filename << ", aborting.";
+      ESP_DEBUG() << "Failed to parse URDF:" << filename << ", aborting.";
       return false;
     }
 
-    if (logMessages) {
-      Mn::Debug{} << "Done parsing URDF model: ";
+    if (ESP_LOG_LEVEL_ENABLED(logging::LoggingLevel::VeryVerbose)) {
+      ESP_VERY_VERBOSE() << "Done parsing URDF model:";
       urdfModel->printKinematicChain();
     }
 
@@ -118,7 +117,7 @@ bool URDFImporter::getJointInfo2(int linkIndex,
   }
 
   return false;
-};
+}
 
 bool URDFImporter::getJointInfo(int linkIndex,
                                 Mn::Matrix4& parent2joint,
@@ -171,7 +170,6 @@ void URDFImporter::getMassAndInertia(int linkIndex,
                                      float& mass,
                                      Mn::Vector3& localInertiaDiagonal,
                                      Mn::Matrix4& inertialFrame) const {
-  Mn::Debug silence{logMessages ? &std::cout : nullptr};
   // the link->m_inertia is NOT necessarily aligned with the inertial frame
   // so an additional transform might need to be computed
   auto link = activeModel_->getLink(linkIndex);
@@ -201,8 +199,9 @@ void URDFImporter::getMassAndInertia(int linkIndex,
                         link->m_inertia.m_izz));
 
         // TODO: diagonalization of inertia matrix:
-        Mn::Debug{} << "WARNING: getMassAndInertia: intertia not diagonal. "
-                       "TODO: diagonalize?";
+        ESP_VERY_VERBOSE()
+            << "WARNING: getMassAndInertia: intertia not diagonal. "
+               "TODO: diagonalize?";
         /*
         float threshold = 1.0e-6;
         int numIterations = 30;
@@ -221,9 +220,9 @@ void URDFImporter::getMassAndInertia(int linkIndex,
         principalInertiaY > (principalInertiaX + principalInertiaZ) ||
         principalInertiaZ < 0 ||
         principalInertiaZ > (principalInertiaX + principalInertiaY)) {
-      Mn::Debug{} << "W - Bad inertia tensor properties, setting "
-                     "inertia to zero for link: "
-                  << link->m_name;
+      ESP_VERY_VERBOSE() << "W - Bad inertia tensor properties, setting "
+                            "inertia to zero for link:"
+                         << link->m_name;
       principalInertiaX = 0.f;
       principalInertiaY = 0.f;
       principalInertiaZ = 0.f;
@@ -247,7 +246,7 @@ bool URDFImporter::getLinkContactInfo(
     io::URDF::LinkContactInfo& contactInfo) const {
   auto link = activeModel_->getLink(linkIndex);
   if (link == nullptr) {
-    Mn::Debug{} << "E - No link with index = " << linkIndex;
+    ESP_DEBUG() << "E - No link with index =" << linkIndex;
     return false;
   }
 
@@ -257,7 +256,7 @@ bool URDFImporter::getLinkContactInfo(
 
 void URDFImporter::importURDFAssets() {
   if (activeModel_ == nullptr) {
-    Mn::Debug{}
+    ESP_DEBUG()
         << "URDFImporter::importURDFAssets - No URDF::Model loaded, aborting.";
     return;
   }
@@ -271,7 +270,7 @@ void URDFImporter::importURDFAssets() {
                                     collision.m_geometry.m_meshFileName};
         CORRADE_ASSERT(resourceManager_.loadRenderAsset(meshAsset),
                        "Failed to load URDF ("
-                           << activeModel_->m_name << ") collision asset "
+                           << activeModel_->m_name << ") collision asset"
                            << collision.m_geometry.m_meshFileName, );
       }
     }
@@ -322,7 +321,7 @@ void URDFImporter::importURDFAssets() {
           visualMeshInfo.filepath = visual.m_geometry.m_meshFileName;
           break;
         default:
-          Mn::Debug{} << "URDFImporter::importURDFAssets - unsupported "
+          ESP_DEBUG() << "URDFImporter::importURDFAssets - unsupported "
                          "visual geometry type.";
           break;
       }

@@ -10,9 +10,10 @@ namespace attributes {
 
 PhysicsManagerAttributes::PhysicsManagerAttributes(const std::string& handle)
     : AbstractAttributes("PhysicsManagerAttributes", handle) {
-  setSimulator("none");
-  setTimestep(0.01);
-  setMaxSubsteps(10);
+  setSimulator("bullet");
+  setTimestep(0.008);
+  setGravity({0, -9.8, 0});
+  setFrictionCoefficient(0.4);
 }  // PhysicsManagerAttributes ctor
 
 }  // namespace attributes

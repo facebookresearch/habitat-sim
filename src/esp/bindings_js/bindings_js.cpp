@@ -30,6 +30,7 @@ using namespace esp::scene;
 using namespace esp::sensor;
 using namespace esp::sim;
 using namespace esp::gfx::replay;
+using esp::logging::LoggingContext;
 
 // Consider
 // https://becominghuman.ai/passing-and-returning-webassembly-array-parameters-a0f572c65d97
@@ -136,6 +137,9 @@ bool isBuildWithBulletPhysics() {
 }
 
 EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
+  em::class_<LoggingContext>("LoggingContext");
+  em::constant("_loggingContext", std::make_shared<LoggingContext>());
+
   em::function("toQuaternion", &toQuaternion);
   em::function("toVec3f", &toVec3f);
   em::function("toVec4f", &toVec4f);

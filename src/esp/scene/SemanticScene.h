@@ -40,7 +40,7 @@ class SemanticLevel;
 //! levels, regions and objects
 class SemanticScene {
  public:
-  ~SemanticScene() { LOG(INFO) << "Deconstructing SemanticScene"; }
+  ~SemanticScene() { ESP_DEBUG() << "Deconstructing SemanticScene"; }
   //! return axis aligned bounding box of this House
   box3f aabb() const { return bbox_; }
 
@@ -152,8 +152,9 @@ class SemanticScene {
   static bool checkFileExists(const std::string& filename,
                               const std::string& srcFunc) {
     if (!Cr::Utility::Directory::exists(filename)) {
-      LOG(ERROR) << "::" << srcFunc << " : File " << filename
-                 << " does not exist.  Aborting load.";
+      ESP_WARNING() << "::" << Magnum::Debug::nospace << srcFunc
+                    << Magnum::Debug::nospace << ": File" << filename
+                    << "does not exist.  Aborting load.";
       return false;
     }
     return true;

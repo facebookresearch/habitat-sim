@@ -21,6 +21,11 @@
 #include <Eigen/Geometry>
 // #include <Eigen/StdVector>
 
+#include <Magnum/EigenIntegration/GeometryIntegration.h>
+#include <Magnum/EigenIntegration/Integration.h>
+#include <Magnum/Math/Range.h>
+#include <Magnum/Math/RectangularMatrix.h>
+
 #include "esp/core/configure.h"
 #include "esp/core/logging.h"
 #include "esp/core/spimpl.h"
@@ -44,11 +49,38 @@ static const IOFormat kJsonFormat(StreamPrecision,
                                   "[",   // mat prefix
                                   "]");  // mat suffix
 
-//! Write Eigen matrix types into ostream in JSON string format
 template <typename T, int numRows, int numCols>
 std::ostream& operator<<(std::ostream& os,
                          const Matrix<T, numRows, numCols>& matrix) {
   return os << matrix.format(kJsonFormat);
+}
+
+//! Write Eigen matrix types into ostream in JSON string format
+template <typename T, int numRows, int numCols>
+typename std::enable_if<numRows == Dynamic || numCols == Dynamic,
+                        Corrade::Utility::Debug&>::type
+operator<<(Corrade::Utility::Debug& os,
+           const Matrix<T, numRows, numCols>& matrix) {
+  return os << matrix.format(kJsonFormat);
+}
+
+template <typename T, int numRows, int numCols>
+typename std::enable_if<(numRows != Dynamic && numCols != Dynamic) &&
+                            (numRows != 1 && numCols != 1),
+                        Corrade::Utility::Debug&>::type
+operator<<(Corrade::Utility::Debug& os,
+           const Matrix<T, numRows, numCols>& matrix) {
+  return os << Magnum::Math::RectangularMatrix<numRows, numCols, T>{matrix};
+}
+
+template <typename T, int numRows, int numCols>
+typename std::enable_if<(numRows != Dynamic && numCols != Dynamic) &&
+                            (numRows == 1 || numCols == 1),
+                        Corrade::Utility::Debug&>::type
+operator<<(Corrade::Utility::Debug& os,
+           const Matrix<T, numRows, numCols>& matrix) {
+  return os << Magnum::Math::Vector<(numRows == 1 ? numCols : numRows), T>{
+             matrix};
 }
 
 //! Write Eigen map into ostream in JSON string format
@@ -104,6 +136,12 @@ typedef Eigen::AlignedBox3f box3f;
 //! Write box3f into ostream in JSON string format
 inline std::ostream& operator<<(std::ostream& os, const box3f& bbox) {
   return os << "{min:" << bbox.min() << ",max:" << bbox.max() << "}";
+}
+
+//! Write box3f as a magnum range
+inline Corrade::Utility::Debug& operator<<(Corrade::Utility::Debug& os,
+                                           const box3f& bbox) {
+  return os << Magnum::Range3D{bbox};
 }
 
 // smart pointers macro

@@ -239,14 +239,16 @@ std::vector<int> AttributesManager<T, Access>::loadAllFileBasedTemplates(
   std::vector<int> templateIndices(paths.size(), ID_UNDEFINED);
   if (paths.size() > 0) {
     std::string dir = Cr::Utility::Directory::path(paths[0]);
-    LOG(INFO) << "<" << this->objectType_
-              << ">::loadAllFileBasedTemplates : Loading " << paths.size()
-              << " " << this->objectType_ << " templates found in " << dir;
+    ESP_DEBUG() << "<" << Magnum::Debug::nospace << this->objectType_
+                << Magnum::Debug::nospace
+                << ">::loadAllFileBasedTemplates : Loading" << paths.size()
+                << "" << this->objectType_ << "templates found in" << dir;
     for (int i = 0; i < paths.size(); ++i) {
       auto attributesFilename = paths[i];
-      LOG(INFO) << "::loadAllFileBasedTemplates : Load " << this->objectType_
-                << " template: "
-                << Cr::Utility::Directory::filename(attributesFilename);
+      ESP_VERY_VERBOSE() << "::loadAllFileBasedTemplates : Load"
+                         << this->objectType_ << "template:"
+                         << Cr::Utility::Directory::filename(
+                                attributesFilename);
       auto tmplt = this->createObject(attributesFilename, true);
       // If failed to load, do not attempt to modify further
       if (tmplt == nullptr) {
@@ -260,9 +262,10 @@ std::vector<int> AttributesManager<T, Access>::loadAllFileBasedTemplates(
       templateIndices[i] = tmplt->getID();
     }
   }
-  LOG(INFO) << "<" << this->objectType_
-            << ">::loadAllFileBasedTemplates : Loaded file-based templates: "
-            << std::to_string(paths.size());
+  ESP_DEBUG() << "<" << Magnum::Debug::nospace << this->objectType_
+              << Magnum::Debug::nospace
+              << ">::loadAllFileBasedTemplates : Loaded file-based templates:"
+              << std::to_string(paths.size());
   return templateIndices;
 }  // AttributesManager<T, Access>::loadAllObjectTemplates
 
@@ -278,11 +281,13 @@ std::vector<int> AttributesManager<T, Access>::loadAllTemplatesFromPathAndExt(
   // Check if directory
   const bool dirExists = Dir::isDirectory(path);
   if (dirExists) {
-    LOG(INFO) << "<" << this->objectType_
-              << ">::loadAllTemplatesFromPathAndExt <" << extType
-              << "> : Parsing " << this->objectType_
-              << " library directory: " + path + " for \'" + extType +
-                     "\' files";
+    ESP_DEBUG() << "<" << Magnum::Debug::nospace << this->objectType_
+                << Magnum::Debug::nospace
+                << ">::loadAllTemplatesFromPathAndExt <"
+                << Magnum::Debug::nospace << extType << Magnum::Debug::nospace
+                << "> : Parsing" << this->objectType_
+                << "library directory: " + path + " for \'" + extType +
+                       "\' files";
     for (auto& file : Dir::list(path, Dir::Flag::SortAscending)) {
       std::string absoluteSubfilePath = Dir::join(path, file);
       if (Cr::Utility::String::endsWith(absoluteSubfilePath, extType)) {
@@ -298,11 +303,12 @@ std::vector<int> AttributesManager<T, Access>::loadAllTemplatesFromPathAndExt(
     if (fileExists) {
       paths.push_back(attributesFilepath);
     } else {  // neither a directory or a file
-      LOG(WARNING) << "<" << this->objectType_
-                   << ">::loadAllTemplatesFromPathAndExt : Parsing "
-                   << this->objectType_ << " : Cannot find " << path
-                   << " as directory or " << attributesFilepath
-                   << " as config file. Aborting parse.";
+      ESP_WARNING() << "<" << Magnum::Debug::nospace << this->objectType_
+                    << Magnum::Debug::nospace
+                    << ">::loadAllTemplatesFromPathAndExt : Parsing"
+                    << this->objectType_ << ": Cannot find" << path
+                    << "as directory or" << attributesFilepath
+                    << "as config file. Aborting parse.";
       return templateIndices;
     }  // if fileExists else
   }    // if dirExists else
@@ -320,10 +326,10 @@ void AttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad(
     const io::JsonGenericValue& filePaths) {
   for (rapidjson::SizeType i = 0; i < filePaths.Size(); ++i) {
     if (!filePaths[i].IsString()) {
-      LOG(ERROR) << "::buildAttrSrcPathsFromJSONAndLoad : "
-                    "Invalid path "
-                    "value in file path array element @ idx "
-                 << i << ". Skipping.";
+      ESP_ERROR() << "::buildAttrSrcPathsFromJSONAndLoad : "
+                     "Invalid path "
+                     "value in file path array element @ idx"
+                  << i << ". Skipping.";
       continue;
     }
     std::string absolutePath =
@@ -332,19 +338,20 @@ void AttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad(
     if (globPaths.size() > 0) {
       for (const auto& globPath : globPaths) {
         // load all object templates available as configs in absolutePath
-        LOG(WARNING) << "Glob path result for " << absolutePath << " : "
-                     << globPath;
+        ESP_WARNING() << "Glob path result for" << absolutePath << ":"
+                      << globPath;
         this->loadAllTemplatesFromPathAndExt(globPath, extType, true);
       }
     } else {
-      LOG(WARNING) << "No Glob path result for " << absolutePath;
+      ESP_WARNING() << "No Glob path result for" << absolutePath;
     }
   }
-  LOG(INFO) << "<" << this->objectType_
-            << ">::buildAttrSrcPathsFromJSONAndLoad : "
-            << std::to_string(filePaths.Size())
-            << " paths specified in JSON doc for " << this->objectType_
-            << " templates.";
+  ESP_DEBUG() << "<" << Magnum::Debug::nospace << this->objectType_
+              << Magnum::Debug::nospace
+              << ">::buildAttrSrcPathsFromJSONAndLoad :"
+              << std::to_string(filePaths.Size())
+              << "paths specified in JSON doc for" << this->objectType_
+              << "templates.";
 }  // AttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad
 
 template <class T, core::ManagedObjectAccess Access>
@@ -362,11 +369,12 @@ auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
   // Check if this configuration file exists and if so use it to build
   // attributes
   bool jsonFileExists = (this->isValidFileName(jsonAttrFileName));
-  LOG(INFO) << "<" << this->objectType_
-            << ">::createFromJsonOrDefaultInternal : Proposing JSON name : "
-            << jsonAttrFileName << " from original name : " << filename
-            << " | This file "
-            << (jsonFileExists ? " exists." : " does not exist.");
+  ESP_DEBUG() << "<" << Magnum::Debug::nospace << this->objectType_
+              << Magnum::Debug::nospace
+              << ">::createFromJsonOrDefaultInternal : Proposing JSON name :"
+              << jsonAttrFileName << "from original name :" << filename
+              << "| This file"
+              << (jsonFileExists ? " exists." : " does not exist.");
   if (jsonFileExists) {
     // configuration file exists with requested name, use to build Attributes
     attrs = this->createObjectFromJSONFile(jsonAttrFileName, registerObj);
@@ -395,82 +403,26 @@ template <class T, core::ManagedObjectAccess Access>
 bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
     const attributes::AbstractAttributes::ptr& attribs,
     const io::JsonGenericValue& jsonConfig) const {
-  // check for user defined attributes
+  // check for user defined attributes and verify it is an object
   if (jsonConfig.HasMember("user_defined")) {
     if (!jsonConfig["user_defined"].IsObject()) {
-      LOG(WARNING) << "<" << this->objectType_
-                   << ">::parseUserDefinedJsonVals : "
-                   << attribs->getSimplifiedHandle()
-                   << " attributes specifies user_defined attributes but they "
-                      "are not of the correct format. Skipping.";
+      ESP_WARNING() << "<" << Magnum::Debug::nospace << this->objectType_
+                    << Magnum::Debug::nospace << ">::parseUserDefinedJsonVals :"
+                    << attribs->getSimplifiedHandle()
+                    << "attributes specifies user_defined attributes but they "
+                       "are not of the correct format. Skipping.";
       return false;
     } else {
-      const auto& userObj = jsonConfig["user_defined"];
+      const std::string subGroupName = "user_defined";
+      // get configuration of root-level attributes
+      esp::core::Configuration& config = *attribs.get();
+      // get json object referenced by tag subGroupName
+      const io::JsonGenericValue& jsonObj = jsonConfig[subGroupName.c_str()];
+
       // count number of valid user config settings found
-      int numConfigSettings = 0;
-      // jsonConfig is the json object referenced by the tag "user_defined" in
-      // the original config file.  By here it is guaranteed to be a json
-      // object.
-      for (rapidjson::Value::ConstMemberIterator it = userObj.MemberBegin();
-           it != userObj.MemberEnd(); ++it) {
-        // for each key, attempt to parse
-        const std::string key = it->name.GetString();
-        const auto& obj = it->value;
-        // increment, assuming is valid object
-        ++numConfigSettings;
-        if (obj.IsFloat()) {
-          attribs->setUserConfigValue(key, obj.GetFloat());
-        } else if (obj.IsDouble()) {
-          attribs->setUserConfigValue(key, obj.GetDouble());
-        } else if (obj.IsNumber()) {
-          attribs->setUserConfigValue(key, obj.Get<int>());
-        } else if (obj.IsString()) {
-          attribs->setUserConfigValue(key, obj.GetString());
-        } else if (obj.IsBool()) {
-          attribs->setUserConfigValue(key, obj.GetBool());
-        } else if (obj.IsArray() && obj.Size() > 0 && obj[0].IsNumber()) {
-          // numeric vector or quaternion
-          if (obj.Size() == 3) {
-            Magnum::Vector3 val{};
-            if (io::fromJsonValue(obj, val)) {
-              attribs->setUserConfigValue(key, val);
-            }
-          } else if (obj.Size() == 4) {
-            // assume is quaternion
-            Magnum::Quaternion val{};
-            if (io::fromJsonValue(obj, val)) {
-              attribs->setUserConfigValue(key, val);
-            }
-          } else {
-            // decrement count for key:obj due to not being handled vector
-            --numConfigSettings;
-            // TODO support numeric array in JSON
-            LOG(WARNING)
-                << "<" << this->objectType_
-                << ">::parseUserDefinedJsonVals : For "
-                << attribs->getSimplifiedHandle()
-                << " attributes, user_defined config cell in JSON document "
-                   "contains key "
-                << key
-                << " referencing an unsupported numeric array of length : "
-                << obj.Size() << " so skipping.";
-          }
-        } else {
-          // TODO support other types?
-          // decrement count for key:obj due to not being handled type
-          --numConfigSettings;
-          LOG(WARNING)
-              << "<" << this->objectType_
-              << ">::parseUserDefinedJsonVals : For "
-              << attribs->getSimplifiedHandle()
-              << " attributes, user_defined config cell in JSON document "
-                 "contains key "
-              << key
-              << " referencing an unknown/unparsable value, so skipping this "
-                 "key.";
-        }
-      }
-      // whether or not any valid configs were found
+      int numConfigSettings =
+          io::loadJsonIntoConfiguration(jsonObj, subGroupName, config);
+
       return (numConfigSettings > 0);
     }
   }  // if has user_defined tag

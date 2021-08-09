@@ -59,6 +59,7 @@ struct GeoTest : Cr::TestSuite::Tester {
   const unsigned int iterations_ = 10;
   Mn::Range3D box_{Mn::Vector3{-10.0f, -10.0f, -10.0f},
                    Mn::Vector3{10.0f, 10.0f, 10.0f}};
+  esp::logging::LoggingContext loggingContext_;
 };
 
 GeoTest::GeoTest() {

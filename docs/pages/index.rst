@@ -49,6 +49,11 @@ Python Classes
 
 See the `Classes <./classes.html>`_ tab.
 
+Logging Configuration
+=====================
+
+See :ref:`Logging Configuration <std:doc:logging>` for how to configure *Habitat-Sim* logging.
+
 Python Unit Tests
 =================
 

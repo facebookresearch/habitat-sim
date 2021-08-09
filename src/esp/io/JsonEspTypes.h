@@ -30,8 +30,8 @@ inline bool fromJsonValue(const JsonGenericValue& obj, esp::vec3f& val) {
       if (obj[i].IsNumber()) {
         val[i] = obj[i].GetDouble();
       } else {
-        LOG(ERROR) << " Invalid numeric value specified in JSON vec3f, index :"
-                   << i;
+        ESP_ERROR() << "Invalid numeric value specified in JSON vec3f, index :"
+                    << i;
         return false;
       }
     }

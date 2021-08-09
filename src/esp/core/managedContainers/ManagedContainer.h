@@ -127,9 +127,10 @@ class ManagedContainer : public ManagedContainerBase {
                      const std::string& objectHandle = "",
                      bool forceRegistration = false) {
     if (nullptr == managedObject) {
-      LOG(ERROR) << "<" << this->objectType_
-                 << ">::registerObject : Invalid "
-                    "(null) managed object passed to registration. Aborting.";
+      ESP_ERROR() << "<" << Corrade::Utility::Debug::nospace
+                  << this->objectType_ << Corrade::Utility::Debug::nospace
+                  << ">::registerObject : Invalid "
+                     "(null) managed object passed to registration. Aborting.";
       return ID_UNDEFINED;
     }
     if ("" != objectHandle) {
@@ -138,10 +139,11 @@ class ManagedContainer : public ManagedContainerBase {
     }
     std::string handleToSet = managedObject->getHandle();
     if ("" == handleToSet) {
-      LOG(ERROR) << "<" << this->objectType_
-                 << ">::registerObject : No "
-                    "valid handle specified for "
-                 << objectType_ << " managed object to register. Aborting.";
+      ESP_ERROR() << "<" << Corrade::Utility::Debug::nospace
+                  << this->objectType_ << Corrade::Utility::Debug::nospace
+                  << ">::registerObject : No "
+                     "valid handle specified for"
+                  << objectType_ << "managed object to register. Aborting.";
       return ID_UNDEFINED;
     }
     return registerObjectFinalize(managedObject, handleToSet,
@@ -579,8 +581,9 @@ class ManagedContainer : public ManagedContainerBase {
    * @brief Define a map type referencing function pointers to @ref
    * createObjectCopy keyed by string names of classes being instanced,
    */
-  typedef std::map<std::string,
-                   ManagedPtr (ManagedContainer<T, Access>::*)(ManagedPtr&)>
+  typedef std::unordered_map<std::string,
+                             ManagedPtr (ManagedContainer<T, Access>::*)(
+                                 ManagedPtr&)>
       Map_Of_CopyCtors;
 
   /**
@@ -630,8 +633,8 @@ auto ManagedContainer<T, Access>::removeObjectInternal(
     const std::string& objectHandle,
     const std::string& sourceStr) -> ManagedPtr {
   if (!checkExistsWithMessage(objectHandle, sourceStr)) {
-    LOG(INFO) << sourceStr << " : Unable to remove " << objectType_
-              << " managed object " << objectHandle << " : Does not exist.";
+    ESP_DEBUG() << sourceStr << ": Unable to remove" << objectType_
+                << "managed object" << objectHandle << ": Does not exist.";
     return nullptr;
   }
   std::string msg;
@@ -641,8 +644,8 @@ auto ManagedContainer<T, Access>::removeObjectInternal(
     msg = "User-locked Object.  To delete managed object, unlock it";
   }
   if (msg.length() != 0) {
-    LOG(INFO) << sourceStr << " : Unable to remove " << objectType_
-              << " managed object " << objectHandle << " : " << msg << ".";
+    ESP_DEBUG() << sourceStr << ": Unable to remove" << objectType_
+                << "managed object" << objectHandle << ":" << msg << ".";
     return nullptr;
   }
   ManagedPtr managedObject = getObjectInternal<T>(objectHandle);

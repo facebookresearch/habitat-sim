@@ -315,7 +315,7 @@ def make_cfg(settings):
     color_sensor_spec.uuid = "color_sensor"
     color_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
     color_sensor_spec.resolution = [settings["height"], settings["width"]]
-    color_sensor_spec.postition = [0.0, settings["sensor_height"], 0.0]
+    color_sensor_spec.position = [0.0, settings["sensor_height"], 0.0]
     color_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
     sensor_specs.append(color_sensor_spec)
 
@@ -323,7 +323,7 @@ def make_cfg(settings):
     depth_sensor_spec.uuid = "depth_sensor"
     depth_sensor_spec.sensor_type = habitat_sim.SensorType.DEPTH
     depth_sensor_spec.resolution = [settings["height"], settings["width"]]
-    depth_sensor_spec.postition = [0.0, settings["sensor_height"], 0.0]
+    depth_sensor_spec.position = [0.0, settings["sensor_height"], 0.0]
     depth_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
     sensor_specs.append(depth_sensor_spec)
 
@@ -331,7 +331,7 @@ def make_cfg(settings):
     semantic_sensor_spec.uuid = "semantic_sensor"
     semantic_sensor_spec.sensor_type = habitat_sim.SensorType.SEMANTIC
     semantic_sensor_spec.resolution = [settings["height"], settings["width"]]
-    semantic_sensor_spec.postition = [0.0, settings["sensor_height"], 0.0]
+    semantic_sensor_spec.position = [0.0, settings["sensor_height"], 0.0]
     semantic_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
     sensor_specs.append(semantic_sensor_spec)
 
