@@ -22,6 +22,8 @@ function preloadFunc(url) {
   return file_parents_str + file;
 }
 
+// Sets up the Module object, which is used for all the bindings and
+// interactions with Habitat.
 function createMagnumModule(init) {
   const module = Object.assign({}, Module);
   Object.assign(module, {
@@ -32,6 +34,9 @@ function createMagnumModule(init) {
     status: null,
     statusDescription: null,
     log: null,
+
+    // These dictate what to do with various outputs from the wasm. We
+    // currently just forward them to the JS console.
     printErr: function(msg) {
       console.log("physics_worker_setup.js - printErr:", msg);
     },
@@ -44,6 +49,7 @@ function createMagnumModule(init) {
     setStatusDescription: function(msg) {
       console.log("physics_worker_setup.js - setStatusDescription:", msg);
     },
+
     totalDependencies: 0,
     monitorRunDependencies: function(left) {
       this.totalDependencies = Math.max(this.totalDependencies, left);
@@ -66,12 +72,15 @@ function createMagnumModule(init) {
 let stageFilepath, physicsConfigFilepath, objectBaseFilepath;
 var Module;
 
+// First, wait for the main thread to send us the files to preload.
 onmessage = function(e) {
   if (e.data.type == "preloadInfo") {
+    // Get preloadInfo from the main thread.
     let preloadInfo = e.data.value;
 
     Module = createMagnumModule();
 
+    // Indicate that the first thing to do is to preload all the files.
     Module.preRun.push(() => {
       physicsConfigFilepath = preloadInfo.physicsConfigFilepath;
       stageFilepath = preloadInfo.stageFilepath;
@@ -81,10 +90,14 @@ onmessage = function(e) {
       }
     });
 
+    // Once the functions in Module.preRun are done, we can run start().
     Module.onRuntimeInitialized = async function() {
       start();
     };
 
+    // When we import this script, it will automatically execute the stuff in
+    // preRun, then onRuntimeInitialized. That is why we needed to wait before
+    // importing this.
     importScripts("hsim_bindings.js");
   } else {
     console.assert(false); // this should be unreachable
@@ -93,8 +106,13 @@ onmessage = function(e) {
 
 importScripts("physics_worker.js");
 
+// Main entry point of all the physics logic. This function is called from
+// Module.onRuntimeInitialized after all the preloading is done.
 function start() {
+  // Tell the main thread that we are ready to start stepping.
   postMessage({ type: "ready", value: null });
+
+  // Redefine onmessage to wait for the main thread to give us the start signal.
   onmessage = function(e) {
     if (e.data.type == "start") {
       let startData = e.data.value;

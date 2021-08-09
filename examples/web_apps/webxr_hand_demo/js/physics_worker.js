@@ -31,6 +31,11 @@ class PhysicsWorker {
     this.config.enableGfxReplaySave = true;
     this.sim = new Module.Simulator(this.config);
     Module.loadAllObjectConfigsFromPath(this.sim, objectBaseFilepath);
+
+    // This will automatically keep track of the physics we're doing, including
+    // object creations, deletions, and movements. It stores this information
+    // using an internal list of keyframes, which we will send one by one to
+    // the main thread.
     this.recorder = this.sim.getGfxReplayManager().getRecorder();
 
     this.handRecords = [new HandRecord(), new HandRecord()];
@@ -46,11 +51,24 @@ class PhysicsWorker {
     this.objectSpawnOrder = objectSpawnOrder;
   }
 
+  // Start stepping physics and sending keyframes to the main thread.
   start() {
     let spawn = this.spawn.bind(this);
     let deleteAllObjects = this.deleteAllObjects.bind(this);
     let updateHandInfo = this.updateHandInfo.bind(this);
+
+    // Redefine onmessage again (it was already defined twice in
+    // physics_worker_setup.js) This time, it will be used to handle spawning,
+    // deleting, and hand updates. Currently, only hand updates are being
+    // used by the webapp. Spawning and deleting are for debugging purposes.
     onmessage = function(e) {
+      // "spawn" - means spawn an object with specified handle, position, and
+      //   velocity.
+      // "delete" - means delete all objects. Deleting an object with
+      //   specified objectId is pretty complicated because you have to first
+      //   communicate the objectId of a spawned object.
+      // "hands" - contains hand input from user. The most recent hand info is
+      //   processed at each physics step.
       if (e.data.type == "spawn") {
         let spawnInfo = e.data.value;
         let handle = spawnInfo.handle;
@@ -61,16 +79,21 @@ class PhysicsWorker {
         deleteAllObjects();
       } else if (e.data.type == "hands") {
         updateHandInfo(e.data.value);
+      } else {
+        console.assert(false); // should be unreachable
       }
     };
 
-    // physics step
+    // Step physics every 1/60s.
     this.physicsStepFunction = setInterval(() => {
       if (this.handInfo) {
         this.operateHands();
       }
+
       this.sim.stepWorld(0.003);
 
+      // Get the keyframe corresponding to this step from the recorder. Then
+      // send it back to the main thread.
       this.recorder.saveKeyframe();
       let keyframe = this.recorder.getLatestKeyframe();
       let jsonKeyframe = this.recorder.keyframeToString(keyframe);
@@ -213,12 +236,9 @@ class PhysicsWorker {
             palmFacingDir.z() * offsetDist
           )
         );
-        let filepath = "cubeSolid";
-        if (this.objectCounter < this.objectSpawnOrder.length) {
-          let nextIndex = this.objectCounter;
-          this.objectCounter++;
-          filepath = this.objectSpawnOrder[nextIndex];
-        }
+        let nextIndex = this.objectCounter % this.objectSpawnOrder.length;
+        this.objectCounter++;
+        let filepath = this.objectSpawnOrder[nextIndex];
         let objId = this.sim.addObjectByHandle(filepath, null, "", 0);
         if (objId != -1) {
           this.sim.setTranslation(spawnPos, objId, 0);
