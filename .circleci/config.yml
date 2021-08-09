@@ -13,6 +13,10 @@ commands:
           description: "Do not upload to CONDA_CI_NIGHTLY"
           type: boolean
           default: False
+        nightly:
+          description: "Whether to build in nightly mode"
+          type: boolean
+          default: False
     steps:
       - run:
           name: Conda Install OSX
@@ -23,15 +27,21 @@ commands:
             rm ~/miniconda.sh
             export PATH=$HOME/miniconda/bin:$PATH
             conda init "$(basename "${SHELL}")"
+      - run:
+          name: Conda OSX build
+          command: |
+            export PATH=$HOME/miniconda/bin:$PATH
             source ~/.bash_profile
             conda activate
             conda install -y anaconda-client ccache cmake git ninja conda-build pip
             echo $(which -a python)
             pip install gitpython
+            <<^ parameters.test>> anaconda login --username $AIHABITAT_CONDA_CHN --password $AIHABITAT_CONDA_CHN_PWD
+            conda config --set anaconda_upload yes <</ parameters.test>>
             cd habitat-sim/conda-build
             git submodule update --init --recursive --jobs 16
             export PYTHONIOENCODING="utf-8"
-            python macos_matrix_builder.py <<#parameters.test>> --ci_test <</ parameters.test>>
+            python macos_matrix_builder.py <<# parameters.test>> --ci_test <</ parameters.test>> <<# parameters.nightly>> --nightly <</ parameters.nightly>>
 
   install_all_ubuntu_deps:
     description: "Prepares the dependencies"
@@ -716,6 +726,7 @@ workflows:
       - lab_build_habitat
       - install_and_test_ubuntu
       - test_conda_build
+      - test_conda_build_osx
       - update_docs:
           requires:
             - install_and_test_ubuntu
