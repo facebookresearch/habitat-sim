@@ -108,11 +108,17 @@ class Player {
   const std::vector<Keyframe>& debugGetKeyframes() const { return keyframes_; }
 
   /**
-   * @brief Applies a keyframe to the player.
+   * @brief Appends a Keyframe to the keyframe list.
    */
-  void applyKeyframe(const Keyframe& keyframe);
+  void pushKeyframe(const Keyframe& keyframe);
+
+  /**
+   * @brief Appends a JSON keyframe to the keyframe list.
+   */
+  void pushJSONKeyframe(const std::string& keyframe);
 
  private:
+  void applyKeyframe(const Keyframe& keyframe);
   void readKeyframesFromJsonDocument(const rapidjson::Document& d);
   void clearFrame();
   static void setSemanticIdForSubtree(esp::scene::SceneNode* rootNode,

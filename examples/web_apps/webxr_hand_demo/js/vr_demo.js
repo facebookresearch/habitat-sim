@@ -93,14 +93,13 @@ export class VRDemo {
     }
   }
 
-  applyKeyframe(jsonKeyframe) {
-    let keyframe = this.player.keyframeFromString(jsonKeyframe);
-    this.player.applyKeyframe(keyframe);
+  pushKeyframe(jsonKeyframe) {
+    this.player.pushJSONKeyframe(jsonKeyframe);
   }
 
   start() {
     let setup = this.setup.bind(this);
-    let applyKeyframe = this.applyKeyframe.bind(this);
+    let pushKeyframe = this.pushKeyframe.bind(this);
     this.workerThread = new Worker("js/physics_worker_setup.js");
     let preloadInfo = {
       physicsConfigFilepath: DataUtils.getPhysicsConfigFilepath(),
@@ -113,7 +112,7 @@ export class VRDemo {
       if (e.data.type == "ready") {
         setup();
       } else if (e.data.type == "keyframe") {
-        applyKeyframe(e.data.value);
+        pushKeyframe(e.data.value);
       }
     };
   }
@@ -292,6 +291,7 @@ export class VRDemo {
 
     const agent = this.sim.getAgent(this.agentId);
 
+    this.player.setKeyframeIndex(this.player.getNumKeyframes() - 1);
     this.handleInput(frame);
     updateHeadPose(pose, agent);
 

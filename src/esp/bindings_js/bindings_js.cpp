@@ -265,8 +265,10 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
 
   em::class_<Player>("Player")
       .smart_ptr<Player::ptr>("Player::ptr")
-      .function("applyKeyframe", &Player::applyKeyframe)
-      .function("keyframeFromString", &Player::keyframeFromString);
+      .function("pushJSONKeyframe", &Player::pushJSONKeyframe)
+      .function("setKeyframeIndex", &Player::setKeyframeIndex)
+      .function("getKeyframeIndex", &Player::getKeyframeIndex)
+      .function("getNumKeyframes", &Player::getNumKeyframes);
 
   em::class_<Recorder>("Recorder")
       .smart_ptr<Recorder::ptr>("Recorder::ptr")
