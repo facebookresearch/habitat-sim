@@ -197,6 +197,8 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
 
   template <typename T>
   void setUserConfigValue(const std::string& key, const T& value) {
+    ESP_WARNING() << "setUserConfigValue : key : " << key
+                  << " type : " << typeid(T).name();
     setSubgroupValue<T>("user_defined", key, value);
   }
 

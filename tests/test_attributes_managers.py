@@ -188,24 +188,24 @@ def perform_add_blank_template_test(attr_mgr, valid_render_handle=None):
     new_template_usr.handle = usr_template_handle
 
     # get user configs and set key
-    new_template_usr.set_user_config_val("my_custom_key0", "my_custom_string")
+    new_template_usr.set_user_config_string("my_custom_key0", "my_custom_string")
     assert (
         new_template_usr.get_user_config_string("my_custom_key0") == "my_custom_string"
     )
 
-    new_template_usr.set_user_config_val("my_custom_key1", True)
+    new_template_usr.set_user_config_bool("my_custom_key1", True)
     assert new_template_usr.get_user_config_bool("my_custom_key1") == True
-    new_template_usr.set_user_config_val("my_custom_key2", 10)
+    new_template_usr.set_user_config_int("my_custom_key2", 10)
     assert new_template_usr.get_user_config_int("my_custom_key2") == 10
-    new_template_usr.set_user_config_val("my_custom_key3", 5.8)
+    new_template_usr.set_user_config_double("my_custom_key3", 5.8)
     assert new_template_usr.get_user_config_double("my_custom_key3") == 5.8
-    new_template_usr.set_user_config_val("my_custom_key4", mn.Vector3(1.0, -2.8, 3.0))
+    new_template_usr.set_user_config_vec3("my_custom_key4", mn.Vector3(1.0, -2.8, 3.0))
     assert new_template_usr.get_user_config_vec3("my_custom_key4") == mn.Vector3(
         1.0, -2.8, 3.0
     )
 
     quat_val = mn.Quaternion.rotation(mn.Deg(-115), mn.Vector3.y_axis())
-    new_template_usr.set_user_config_val("my_custom_key5", quat_val)
+    new_template_usr.set_user_config_quat("my_custom_key5", quat_val)
 
     assert new_template_usr.num_user_configs == 6
 

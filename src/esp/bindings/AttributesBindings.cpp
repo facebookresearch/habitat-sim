@@ -71,15 +71,17 @@ void initAttributesBindings(py::module& m) {
       .def("get_user_config_double", &AbstractAttributes::getUserConfigDouble)
       .def("get_user_config_vec3", &AbstractAttributes::getUserConfigVec3)
       .def("get_user_config_quat", &AbstractAttributes::getUserConfigQuat)
-      .def("set_user_config_val",
+
+      .def("set_user_config_string",
            &AbstractAttributes::setUserConfigValue<std::string>)
-      .def("set_user_config_val", &AbstractAttributes::setUserConfigValue<int>)
-      .def("set_user_config_val",
+      .def("set_user_config_int", &AbstractAttributes::setUserConfigValue<int>)
+      .def("set_user_config_double",
            &AbstractAttributes::setUserConfigValue<double>)
-      .def("set_user_config_val", &AbstractAttributes::setUserConfigValue<bool>)
-      .def("set_user_config_val",
+      .def("set_user_config_bool",
+           &AbstractAttributes::setUserConfigValue<bool>)
+      .def("set_user_config_vec3",
            &AbstractAttributes::setUserConfigValue<Magnum::Vector3>)
-      .def("set_user_config_val",
+      .def("set_user_config_quat",
            &AbstractAttributes::setUserConfigValue<Magnum::Quaternion>)
       .def_property_readonly(
           "num_user_configs",
