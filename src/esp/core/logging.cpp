@@ -11,6 +11,7 @@
 #include <Corrade/Containers/Array.h>
 #include <Corrade/Containers/StaticArray.h>
 #include <Corrade/Containers/String.h>
+#include <Corrade/Containers/StringStl.h>
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/Format.h>
 
@@ -128,8 +129,8 @@ Cr::Containers::String buildMessagePrefix(Subsystem subsystem,
                                           int line) {
   auto baseFileName = Cr::Utility::Directory::filename(filename);
   return ""_s.join({"["_s, subsystemNames[uint8_t(subsystem)], "] "_s,
-                    baseFileName.c_str(), "("_s, std::to_string(line).c_str(),
-                    ")::"_s, function.c_str(), " : "_s});
+                    baseFileName, "("_s, std::to_string(line), ")::"_s,
+                    function, " : "_s});
 }
 
 }  // namespace logging
