@@ -112,13 +112,10 @@ bool Parser::parseURDF(std::shared_ptr<Model>& urdfModel,
   XMLDocument xml_doc;
   xml_doc.Parse(xmlString.c_str());
   if (xml_doc.Error()) {
-    ESP_ERROR()
-        << "Parser::parseURDF - XML parse error, aborting URDF parse/load for"
-        << filename;
+    ESP_ERROR() << "XML parse error, aborting URDF parse/load for" << filename;
     return false;
   }
-  ESP_VERY_VERBOSE()
-      << "Parser::parseURDF - XML parsed starting URDF parse/load.";
+  ESP_VERY_VERBOSE() << "XML parsed starting URDF parse/load.";
 
   const XMLElement* robot_xml = xml_doc.FirstChildElement("robot");
   if (!robot_xml) {
@@ -597,8 +594,7 @@ bool Parser::parseVisual(const std::shared_ptr<Model>& model,
           model->m_materials.at(visual.m_materialName);
       visual.m_geometry.m_hasLocalMaterial = true;
     } else {
-      ESP_VERY_VERBOSE() << "Warning: Parser::parseVisual : visual element \""
-                         << visual.m_name
+      ESP_VERY_VERBOSE() << "Warning: visual element \"" << visual.m_name
                          << "\" specified un-defined material name \""
                          << visual.m_materialName << "\".";
     }

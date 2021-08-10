@@ -38,9 +38,9 @@ bool MetadataMediator::setSimulatorConfiguration(
   bool success = setActiveSceneDatasetName(simConfig_.sceneDatasetConfigFile);
   if (!success) {
     // something failed about setting up active scene dataset
-    ESP_ERROR() << "::setSimulatorConfiguration : Some error "
-                   "prevented current scene dataset name to be changed to"
-                << simConfig_.sceneDatasetConfigFile;
+    ESP_ERROR()
+        << "Some error prevented current scene dataset name to be changed to"
+        << simConfig_.sceneDatasetConfigFile;
     return false;
   }
 
@@ -48,8 +48,7 @@ bool MetadataMediator::setSimulatorConfiguration(
   success = setCurrPhysicsAttributesHandle(simConfig_.physicsConfigFile);
   if (!success) {
     // something failed about setting up physics attributes
-    ESP_ERROR() << "::setSimulatorConfiguration : Some error "
-                   "prevented current physics attributes to"
+    ESP_ERROR() << "Some error prevented current physics attributes to"
                 << simConfig_.physicsConfigFile;
     return false;
   }
@@ -61,12 +60,10 @@ bool MetadataMediator::setSimulatorConfiguration(
     datasetAttr->setCurrCfgVals(simConfig_.sceneLightSetup,
                                 simConfig_.frustumCulling);
   } else {
-    ESP_ERROR() << "::setSimulatorConfiguration : No active "
-                   "dataset exists or has been specified. Aborting";
+    ESP_ERROR() << "No active dataset exists or has been specified. Aborting";
     return false;
   }
-  ESP_DEBUG() << "::setSimulatorConfiguration : Set new "
-                 "simulator config for scene/stage :"
+  ESP_DEBUG() << "Set new simulator config for scene/stage :"
               << simConfig_.activeSceneName
               << "and dataset :" << simConfig_.sceneDatasetConfigFile << "which"
               << (activeSceneDataset_ == simConfig_.sceneDatasetConfigFile
@@ -86,8 +83,7 @@ bool MetadataMediator::createPhysicsManagerAttributes(
     if (physAttrs == nullptr) {
       // something failed during creation process.
       ESP_WARNING()
-          << "::createPhysicsManagerAttributes : Unknown  "
-             "physics manager configuration file :"
+          << "Unknown physics manager configuration file :"
           << _physicsManagerAttributesPath
           << "does not exist and is not able to be created.  Aborting.";
       return false;
@@ -103,8 +99,7 @@ bool MetadataMediator::createSceneDataset(const std::string& sceneDatasetName,
   if (exists) {
     // check if not overwrite and exists already
     if (!overwrite) {
-      ESP_WARNING() << "::createSceneDataset : Scene Dataset"
-                    << sceneDatasetName
+      ESP_WARNING() << "Scene Dataset" << sceneDatasetName
                     << "already exists.  To reload and overwrite existing "
                        "data, set overwrite to true. Aborting.";
       return false;
@@ -117,14 +112,12 @@ bool MetadataMediator::createSceneDataset(const std::string& sceneDatasetName,
       sceneDatasetAttributesManager_->createObject(sceneDatasetName, true);
   if (datasetAttribs == nullptr) {
     // not created, do not set name
-    ESP_WARNING() << "::createSceneDataset : Unknown dataset"
-                  << sceneDatasetName
+    ESP_WARNING() << "Unknown dataset" << sceneDatasetName
                   << "does not exist and is not able to be created.  Aborting.";
     return false;
   }
   // if not null then successfully created
-  ESP_DEBUG() << "::createSceneDataset : Dataset" << sceneDatasetName
-              << "successfully created.";
+  ESP_DEBUG() << "Dataset" << sceneDatasetName << "successfully created.";
   // lock dataset to prevent accidental deletion
   sceneDatasetAttributesManager_->setLock(sceneDatasetName, true);
   return true;
@@ -134,14 +127,14 @@ bool MetadataMediator::removeSceneDataset(const std::string& sceneDatasetName) {
   // First check if SceneDatasetAttributes exists
   if (!sceneDatasetExists(sceneDatasetName)) {
     // DNE, do nothing
-    ESP_WARNING() << "::removeSceneDataset : SceneDatasetAttributes"
-                  << sceneDatasetName << "does not exist. Aborting.";
+    ESP_WARNING() << "SceneDatasetAttributes" << sceneDatasetName
+                  << "does not exist. Aborting.";
     return false;
   }
 
   // Next check if is current activeSceneDataset_, and if so skip with warning
   if (sceneDatasetName == activeSceneDataset_) {
-    ESP_WARNING() << "::removeSceneDataset : Cannot remove "
+    ESP_WARNING() << "Cannot remove "
                      "active SceneDatasetAttributes"
                   << sceneDatasetName
                   << ".  Switch to another dataset before removing.";
@@ -156,8 +149,8 @@ bool MetadataMediator::removeSceneDataset(const std::string& sceneDatasetName) {
   // if failed here, probably means SceneDatasetAttributes was set to
   // undeletable, return message and false
   if (delDataset == nullptr) {
-    ESP_WARNING() << "::removeSceneDataset : SceneDatasetAttributes"
-                  << sceneDatasetName << "unable to be deleted. Aborting.";
+    ESP_WARNING() << "SceneDatasetAttributes" << sceneDatasetName
+                  << "unable to be deleted. Aborting.";
     return false;
   }
   // Should always have a default dataset. Use this process to remove extraneous
@@ -167,8 +160,8 @@ bool MetadataMediator::removeSceneDataset(const std::string& sceneDatasetName) {
     // dataset.
     createSceneDataset("default");
   }
-  ESP_DEBUG() << "::removeSceneDataset : SceneDatasetAttributes"
-              << sceneDatasetName << "successfully removed.";
+  ESP_DEBUG() << "SceneDatasetAttributes" << sceneDatasetName
+              << "successfully removed.";
   return true;
 
 }  // MetadataMediator::removeSceneDataset
@@ -420,7 +413,7 @@ std::string MetadataMediator::createDatasetReport(
     ds = sceneDatasetAttributesManager_->getObjectByHandle(sceneDataset);
   } else {
     // unknown dataset
-    ESP_ERROR() << "::createDatasetReport : Dataset" << sceneDataset
+    ESP_ERROR() << "Dataset" << sceneDataset
                 << "is not found in the MetadataMediator.  Aborting.";
     return "Requeseted SceneDataset `" + sceneDataset + "` unknown.";
   }

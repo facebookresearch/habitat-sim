@@ -29,7 +29,7 @@ SceneAttributes::ptr SceneAttributesManager::createObject(
 
   if (nullptr != attrs) {
     ESP_DEBUG() << msg << "scene instance attributes created"
-                << (registerTemplate ? " and registered." : ".");
+                << (registerTemplate ? "and registered." : ".");
   }
   return attrs;
 }  // SceneAttributesManager::createObject
@@ -62,8 +62,8 @@ void SceneAttributesManager::setValsFromJSONDoc(
     attribs->setStageInstance(
         createInstanceAttributesFromJSON(jsonConfig["stage_instance"]));
   } else {
-    ESP_WARNING() << "::setValsFromJSONDoc : No Stage specified for scene"
-                  << attribsDispName << ", or specification error.";
+    ESP_WARNING() << "No Stage specified for scene" << attribsDispName
+                  << ", or specification error.";
   }
 
   // Check for object instances existence
@@ -75,14 +75,13 @@ void SceneAttributesManager::setValsFromJSONDoc(
         if (objCell.IsObject()) {
           attribs->addObjectInstance(createInstanceAttributesFromJSON(objCell));
         } else {
-          ESP_WARNING()
-              << "::setValsFromJSONDoc : Object specification error in scene"
-              << attribsDispName << "at idx :" << i << ".";
+          ESP_WARNING() << "Object specification error in scene"
+                        << attribsDispName << "at idx :" << i << ".";
         }
       }
     } else {
-      ESP_WARNING() << "::setValsFromJSONDoc : No Objects specified for scene"
-                    << attribsDispName << ", or specification error.";
+      ESP_WARNING() << "No Objects specified for scene" << attribsDispName
+                    << ", or specification error.";
     }
   }
 
@@ -98,16 +97,12 @@ void SceneAttributesManager::setValsFromJSONDoc(
         attribs->addArticulatedObjectInstance(
             createAOInstanceAttributesFromJSON(artObjCell));
       } else {
-        ESP_WARNING() << "SceneAttributesManager::setValsFromJSONDoc : "
-                         "Articulated Object "
-                         "specification error in scene"
+        ESP_WARNING() << "Articulated Object specification error in scene"
                       << attribsDispName << "at idx :" << i << ".";
       }
     }
   } else {
-    ESP_WARNING() << "SceneAttributesManager::setValsFromJSONDoc : No "
-                     "Articulated Objects "
-                     "specified for scene"
+    ESP_WARNING() << "Articulated Objects specified for scene"
                   << attribsDispName << ", or specification error.";
   }
 
@@ -117,8 +112,7 @@ void SceneAttributesManager::setValsFromJSONDoc(
     // if "default lighting" is specified in scene json set value.
     attribs->setLightingHandle(dfltLighting);
   } else {
-    ESP_WARNING() << "::setValsFromJSONDoc : No default_lighting "
-                     "specified for scene"
+    ESP_WARNING() << "No default_lighting specified for scene"
                   << attribsDispName << ".";
   }
 
@@ -128,8 +122,7 @@ void SceneAttributesManager::setValsFromJSONDoc(
     // if "navmesh_instance" is specified in scene json set value.
     attribs->setNavmeshHandle(navmeshName);
   } else {
-    ESP_WARNING() << "::setValsFromJSONDoc : No navmesh_instance "
-                     "specified for scene"
+    ESP_WARNING() << "No navmesh_instance specified for scene"
                   << attribsDispName << ".";
   }
 
@@ -139,8 +132,7 @@ void SceneAttributesManager::setValsFromJSONDoc(
     // if "semantic scene instance" is specified in scene json set value.
     attribs->setSemanticSceneHandle(semanticDesc);
   } else {
-    ESP_WARNING() << "::setValsFromJSONDoc : No semantic_scene_instance "
-                     "specified for scene"
+    ESP_WARNING() << "No semantic_scene_instance specified for scene"
                   << attribsDispName << ".";
   }
   // check for user defined attributes

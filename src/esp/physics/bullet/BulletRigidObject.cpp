@@ -259,7 +259,7 @@ void BulletRigidObject::setCollisionFromBB() {
 
 void BulletRigidObject::setMotionType(MotionType mt) {
   if (mt == MotionType::UNDEFINED) {
-    ESP_WARNING() << "::setMotionType : Cannot set motion type "
+    ESP_WARNING() << "Cannot set motion type "
                      "to MotionType::UNDEFINED.  Aborting.";
     return;
   }
@@ -479,7 +479,7 @@ bool BulletRigidObject::contactTest() {
 
 void BulletRigidObject::overrideCollisionGroup(CollisionGroup group) {
   if (!bObjectRigidBody_->isInWorld()) {
-    ESP_ERROR() << "::overrideCollisionGroup failed because "
+    ESP_ERROR() << "Failed because "
                    "the Bullet body hasn't yet been added to the Bullet world.";
   }
 

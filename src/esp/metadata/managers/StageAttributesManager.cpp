@@ -48,8 +48,7 @@ int StageAttributesManager::registerObjectFinalize(
     bool forceRegistration) {
   if (stageAttributes->getRenderAssetHandle() == "") {
     ESP_ERROR()
-        << "::registerObjectFinalize : Attributes template named"
-        << stageAttributesHandle
+        << "Attributes template named" << stageAttributesHandle
         << "does not have a valid render asset handle specified. Aborting.";
     return ID_UNDEFINED;
   }
@@ -76,16 +75,14 @@ int StageAttributesManager::registerObjectFinalize(
     stageAttributes->setRenderAssetIsPrimitive(false);
   } else if (forceRegistration) {
     ESP_WARNING()
-        << "::registerObjectFinalize : Render asset template handle :"
-        << renderAssetHandle
+        << "Render asset template handle :" << renderAssetHandle
         << "specified in stage template with handle :" << stageAttributesHandle
         << "does not correspond to any existing file or primitive render "
            "asset. This attributes is not in a valid state.";
   } else {
     // If renderAssetHandle is not valid file name needs to  fail
     ESP_ERROR()
-        << "::registerObjectFinalize : Render asset template handle :"
-        << renderAssetHandle
+        << "Render asset template handle :" << renderAssetHandle
         << "specified in stage template with handle :" << stageAttributesHandle
         << "does not correspond to any existing file or primitive render "
            "asset.  Aborting.";
@@ -109,8 +106,7 @@ int StageAttributesManager::registerObjectFinalize(
   } else {
     // Else, means no collision data specified, use specified render data
     ESP_DEBUG()
-        << "::registerObjectFinalize : Collision asset template handle :"
-        << collisionAssetHandle
+        << "Collision asset template handle :" << collisionAssetHandle
         << "specified in stage template with handle :" << stageAttributesHandle
         << "does not correspond to any existing file or primitive render "
            "asset.  Overriding with given render asset handle :"
@@ -136,10 +132,9 @@ StageAttributes::ptr StageAttributesManager::createPrimBasedAttributesTemplate(
     bool registerTemplate) {
   // verify that a primitive asset with the given handle exists
   if (!StageAttributesManager::isValidPrimitiveAttributes(primAssetHandle)) {
-    ESP_ERROR()
-        << "::createPrimBasedAttributesTemplate : No primitive with handle '"
-        << Mn::Debug::nospace << primAssetHandle << Mn::Debug::nospace
-        << "' exists so cannot build physical object.  Aborting.";
+    ESP_ERROR() << "No primitive with handle '" << Mn::Debug::nospace
+                << primAssetHandle << Mn::Debug::nospace
+                << "' exists so cannot build physical object.  Aborting.";
     return nullptr;
   }
 

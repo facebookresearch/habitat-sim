@@ -29,9 +29,9 @@ bool SemanticScene::loadReplicaHouse(
   }
 
   // top-level scene
-  ESP_VERY_VERBOSE() << "loadReplicaHouse::Parsing" << houseFilename;
+  ESP_VERY_VERBOSE() << "Parsing" << houseFilename;
   const auto& json = io::parseJsonFile(houseFilename);
-  ESP_VERY_VERBOSE() << "loadReplicaHouse::Parsed.";
+  ESP_VERY_VERBOSE() << "Parsed.";
 
   // check if Replica or ReplicaCAD
   bool hasObjects = (json.HasMember("objects") && json["objects"].IsArray());

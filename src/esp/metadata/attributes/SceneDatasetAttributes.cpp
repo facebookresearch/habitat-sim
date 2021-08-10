@@ -25,8 +25,7 @@ SceneDatasetAttributes::SceneDatasetAttributes(
 bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
     const attributes::SceneAttributes::ptr& sceneInstance) {
   // info display message prefix
-  const std::string infoPrefix("::addNewSceneInstanceToDataset : Dataset : '" +
-                               getSimplifiedHandle() + "' : ");
+  const std::string infoPrefix("Dataset : '" + getSimplifiedHandle() + "' : ");
 
   const std::string sceneInstanceName = sceneInstance->getHandle();
   // verify stage in sceneInstance (required) exists in SceneDatasetAttributes,
