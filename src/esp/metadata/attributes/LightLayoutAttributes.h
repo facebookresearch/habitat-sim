@@ -157,9 +157,6 @@ class LightInstanceAttributes : public AbstractAttributes {
         .append(1, ',');
   }
 
- protected:
-  static int _count;
-
  public:
   ESP_SMART_POINTERS(LightInstanceAttributes)
 
@@ -207,6 +204,15 @@ class LightLayoutAttributes : public AbstractAttributes {
    * @brief Add a light instance to this lighting layout
    */
   void addLightInstance(const LightInstanceAttributes::ptr& _lightInstance) {
+    // set id
+    if (availableLightIDs_.size() > 0) {
+      // use saved value and then remove from storage
+      _lightInstance->setID(availableLightIDs_.front());
+      availableLightIDs_.pop_front();
+    } else {
+      // use size of map to set ID
+      _lightInstance->setID(lightInstances_.size());
+    }
     lightInstances_.emplace(_lightInstance->getHandle(), _lightInstance);
   }
 
@@ -216,6 +222,7 @@ class LightLayoutAttributes : public AbstractAttributes {
   LightInstanceAttributes::ptr removeLightInstance(const std::string& handle) {
     auto inst = getLightInstance(handle);
     if (nullptr != inst) {
+      availableLightIDs_.emplace_front(inst->getID());
       lightInstances_.erase(handle);
     }
     return inst;
@@ -260,6 +267,12 @@ class LightLayoutAttributes : public AbstractAttributes {
    * @brief The light instances used by this lighting layout
    */
   std::map<std::string, LightInstanceAttributes::ptr> lightInstances_;
+
+  /**
+   * @brief Deque holding all released IDs to consume for light instances when
+   * one is deleted, before using size of lightInstances_ container.
+   */
+  std::deque<int> availableLightIDs_;
 
  public:
   ESP_SMART_POINTERS(LightLayoutAttributes)

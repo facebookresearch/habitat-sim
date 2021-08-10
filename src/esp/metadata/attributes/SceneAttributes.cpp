@@ -14,6 +14,7 @@ const std::map<std::string, esp::physics::MotionType>
         {"kinematic", esp::physics::MotionType::KINEMATIC},
         {"dynamic", esp::physics::MotionType::DYNAMIC},
 };
+
 SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
     const std::string& handle,
     const std::string& type)
