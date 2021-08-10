@@ -122,6 +122,9 @@ StageAttributes::StageAttributes(const std::string& handle)
   setCollisionAssetType(0);
   // 4 corresponds to esp::assets::AssetType::INSTANCE_MESH
   setSemanticAssetType(4);
+  // set empty defaults for handles
+  set("navmeshAssetHandle", "");
+  set("semantic_asset", "");
 }  // StageAttributes ctor
 
 }  // namespace attributes

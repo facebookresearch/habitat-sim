@@ -299,9 +299,7 @@ class ObjectAttributes : public AbstractObjectAttributes {
   void setIsVisible(bool isVisible) { set("is_visible", isVisible); }
   bool getIsVisible() const { return getBool("is_visible"); }
 
-  void setSemanticId(uint32_t semanticId) {
-    set("semantic_id", (int)semanticId);
-  }
+  void setSemanticId(int semanticId) { set("semantic_id", semanticId); }
 
   uint32_t getSemanticId() const { return getInt("semantic_id"); }
 

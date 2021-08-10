@@ -19,22 +19,9 @@ namespace core {
 
 class Configuration {
  public:
-  Configuration()
-      : configMap_(),
-        intMap_(),
-        boolMap_(),
-        floatMap_(),
-        doubleMap_(),
-        stringMap_(),
-        vecMap_(),
-        quatMap_(),
-        radMap_() {}
-
-  // virtual destructor set to that pybind11 recognizes attributes inheritance
-  // from configuration to be polymorphic
+  Configuration() = default;
 
   Configuration(const Configuration& otr) {
-    configMap_.clear();
     configMap_.reserve(otr.configMap_.size());
     for (const auto& entry : otr.configMap_) {
       configMap_[entry.first] = std::make_shared<Configuration>(*entry.second);
@@ -44,11 +31,23 @@ class Configuration {
     floatMap_ = std::unordered_map<std::string, float>{otr.floatMap_};
     doubleMap_ = std::unordered_map<std::string, double>{otr.doubleMap_};
     stringMap_ = std::unordered_map<std::string, std::string>{otr.stringMap_};
-    vecMap_ = std::unordered_map<std::string, Magnum::Vector3>{otr.vecMap_};
-    quatMap_ =
-        std::unordered_map<std::string, Magnum::Quaternion>{otr.quatMap_};
-    radMap_ = std::unordered_map<std::string, Magnum::Rad>{otr.radMap_};
+    vecMap_.reserve(otr.vecMap_.size());
+    for (const auto& entry : otr.vecMap_) {
+      vecMap_[entry.first] = Magnum::Vector3{entry.second};
+    }
+    quatMap_.reserve(otr.quatMap_.size());
+    for (const auto& entry : otr.quatMap_) {
+      quatMap_[entry.first] = Magnum::Quaternion{entry.second};
+    }
+    radMap_.reserve(otr.radMap_.size());
+    for (const auto& entry : otr.radMap_) {
+      radMap_[entry.first] = Magnum::Rad{entry.second};
+    }
+    numEntries = calcNumEntries();
   }
+
+  // virtual destructor set to that pybind11 recognizes attributes inheritance
+  // from configuration to be polymorphic
 
   virtual ~Configuration() = default;
 
@@ -93,7 +92,7 @@ class Configuration {
   void setSubgroupValue(const std::string& subgroupName,
                         const std::string& key,
                         const T& value) {
-    addNewSubgroup(subgroupName);
+    makeNewSubgroup(subgroupName);
     configMap_[subgroupName]->set(key, value);
   }
 
@@ -241,21 +240,26 @@ class Configuration {
     return removeValFromMap(key, radMap_);
   }
 
-  std::shared_ptr<Configuration> getConfigSubgroupAsPtr(
+  std::shared_ptr<Configuration> getConfigSubgroupCopy(
       const std::string& name) const {
     if (configMap_.count(name) > 0) {
+      // if exists return copy, so that consumers can modify it freely
       return std::make_shared<Configuration>(*configMap_.at(name));
     }
     return std::make_shared<Configuration>();
   }
 
-  void setConfigSubSubgroup(Configuration& config,
-                            const std::string& subGroupName,
-                            const std::string& subSubGroupName) {
-    // add sub-subgroup to this config's subgroup
-    configMap_[subGroupName]->configMap_[subSubGroupName] =
-        std::make_shared<Configuration>(config);
-  }
+  /**
+   * @brief move specified subgroup config into configMap at desired name
+   */
+  void setConfigSubgroupPtr(const std::string& name,
+                            std::shared_ptr<Configuration>& configPtr) {
+    // overwrite if exists already, move to minimize copies
+    if (configMap_.count(name) == 0) {
+      ++numEntries;
+    }
+    configMap_[name] = std::move(configPtr);
+  }  // setConfigSubgroupPtr
 
   int getNumConfigSubgroups(const std::string& name) const {
     if (checkMapForKey(name, configMap_)) {
@@ -265,7 +269,9 @@ class Configuration {
     return 0;
   }
 
-  /**@brief Add a string to a group and return the resulting group size. */
+  /**
+   *@brief Add a string to a group and return the resulting group size.
+   */
   int addStringToGroup(const std::string& key, const std::string& value) {
     stringMap_[key] = value;
     return stringMap_.size();
@@ -273,7 +279,7 @@ class Configuration {
 
   int getNumEntries() const { return numEntries; }
 
-  bool hasValues() const { return numEntries > 0; }
+  bool hasValues() { return numEntries > 0; }
 
   bool hasValue(const std::string& key) const {
     return (configMap_.count(key) > 0) || (intMap_.count(key) > 0) ||
@@ -283,10 +289,11 @@ class Configuration {
            (radMap_.count(key) > 0);
   }
   /**
-   * @brief Builds and returns @ref Corrade::Utility::ConfigurationGroup holding
-   * the values in this esp::core::Configuration.
+   * @brief Builds and returns @ref Corrade::Utility::ConfigurationGroup
+   * holding the values in this esp::core::Configuration.
    *
-   * @return a reference to a configuration group for this configuration object.
+   * @return a reference to a configuration group for this configuration
+   * object.
    */
   Corrade::Utility::ConfigurationGroup getConfigGroup() const {
     Corrade::Utility::ConfigurationGroup cfg{};
@@ -298,15 +305,18 @@ class Configuration {
     putValsInConfigGroup(cfg, vecMap_);
     putValsInConfigGroup(cfg, quatMap_);
     putValsInConfigGroup(cfg, radMap_);
+    // TODO add subgroup Configuration group for each subgroup Configuration
     return cfg;
   }
 
  protected:
   /**
-   * @brief if no subgroup named this will make one, otherwise does nothing.
+   * @brief if no subgroup with given name this will make one, otherwise does
+   * nothing.
+   * @param name Desired name of new subgroup.
    * @return whether a group was made or not
    */
-  bool addNewSubgroup(const std::string& name) {
+  bool makeNewSubgroup(const std::string& name) {
     if (configMap_.count(name) > 0) {
       return false;
     }
