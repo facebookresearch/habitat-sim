@@ -57,9 +57,8 @@ bool writeJsonToFile(const JsonDocument& document,
   return writeSuccess;
 }
 
-int loadJsonIntoConfigSubgroup(const JsonGenericValue& jsonObj,
-                               const std::string& subGroupName,
-                               esp::core::Configuration& config) {
+int loadJsonIntoConfiguration(const JsonGenericValue& jsonObj,
+                              std::shared_ptr<core::Configuration> config) {
   // count number of valid user config settings found
 
   int numConfigSettings = 0;
@@ -72,52 +71,55 @@ int loadJsonIntoConfigSubgroup(const JsonGenericValue& jsonObj,
     ++numConfigSettings;
 
     if (obj.IsFloat()) {
-      config.setSubgroupValue<float>(subGroupName, key, obj.GetFloat());
+      config->set(key, obj.GetFloat());
     } else if (obj.IsDouble()) {
-      config.setSubgroupValue<double>(subGroupName, key, obj.GetDouble());
+      config->set(key, obj.GetDouble());
     } else if (obj.IsNumber()) {
-      config.setSubgroupValue<int>(subGroupName, key, obj.GetInt());
+      config->set(key, obj.GetInt());
     } else if (obj.IsString()) {
-      config.setSubgroupValue<std::string>(subGroupName, key, obj.GetString());
+      config->set(key, obj.GetString());
     } else if (obj.IsBool()) {
-      config.setSubgroupValue<bool>(subGroupName, key, obj.GetBool());
+      config->set(key, obj.GetBool());
     } else if (obj.IsArray() && obj.Size() > 0 && obj[0].IsNumber()) {
       // numeric vector or quaternion
       if (obj.Size() == 3) {
         Magnum::Vector3 val{};
         if (io::fromJsonValue(obj, val)) {
-          config.setSubgroupValue<Magnum::Vector3>(subGroupName, key, val);
+          config->set(key, val);
         }
       } else if (obj.Size() == 4) {
         // assume is quaternion
         Magnum::Quaternion val{};
         if (io::fromJsonValue(obj, val)) {
-          config.setSubgroupValue<Magnum::Quaternion>(subGroupName, key, val);
+          config->set(key, val);
         }
       } else {
         // decrement count for key:obj due to not being handled vector
         --numConfigSettings;
         // TODO support numeric array in JSON
-        ESP_WARNING() << "For subgroup name" << subGroupName
-                      << "config cell in JSON document contains key" << key
+        ESP_WARNING() << "::loadJsonIntoConfiguration : Config cell in JSON "
+                         "document contains key"
+                      << key
                       << "referencing an unsupported numeric array of length :"
                       << obj.Size() << "so skipping.";
       }
     } else if (obj.IsObject()) {
       // support nested objects
-      auto subGroupPtr = config.getConfigSubgroupAsPtr(subGroupName);
-      // get subgroup configuration object
-      esp::core::Configuration newConfig = *subGroupPtr;
-      numConfigSettings += loadJsonIntoConfigSubgroup(obj, key, newConfig);
+      // create a new subgroup
+      std::shared_ptr<core::Configuration> subGroupPtr =
+          config->getConfigSubgroupCopy(key);
+      ;
+      numConfigSettings += loadJsonIntoConfiguration(obj, subGroupPtr);
       // save subgroup's subgroup configuration in original config
-      config.setConfigSubSubgroup(newConfig, subGroupName, key);
+      config->setConfigSubgroupPtr(key, subGroupPtr);
       //
     } else {
       // TODO support other types?
       // decrement count for key:obj due to not being handled type
       --numConfigSettings;
-      ESP_WARNING() << "For subgroup name" << subGroupName
-                    << "config cell in JSON document contains key" << key
+      ESP_WARNING() << "::loadJsonIntoConfiguration: Config cell in JSON "
+                       "document contains key"
+                    << key
                     << "referencing an unknown/unparsable value type, so "
                        "skipping this key.";
     }
