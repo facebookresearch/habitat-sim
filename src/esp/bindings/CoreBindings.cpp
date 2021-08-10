@@ -34,12 +34,20 @@ void initCoreBindings(py::module& m) {
 
       .def("get", &Configuration::getString)
 
-      .def("set", &Configuration::set<std::string>)
-      .def("set", &Configuration::set<int>)
-      .def("set", &Configuration::set<double>)
-      .def("set", &Configuration::set<bool>)
-      .def("set", &Configuration::set<Magnum::Vector3>)
-      .def("set", &Configuration::set<Magnum::Quaternion>)
+      .def("set", [](Configuration& self, const std::string& key,
+                     const std::string& val) { self.set(key, val); })
+      .def("set", [](Configuration& self, const std::string& key,
+                     const char* val) { self.set(key, val); })
+      .def("set", [](Configuration& self, const std::string& key,
+                     const int& val) { self.set(key, val); })
+      .def("set", [](Configuration& self, const std::string& key,
+                     const double& val) { self.set(key, val); })
+      .def("set", [](Configuration& self, const std::string& key,
+                     const bool& val) { self.set(key, val); })
+      .def("set", [](Configuration& self, const std::string& key,
+                     const Magnum::Quaternion& val) { self.set(key, val); })
+      .def("set", [](Configuration& self, const std::string& key,
+                     const Magnum::Vector3& val) { self.set(key, val); })
 
       .def("add_string_to_group", &Configuration::addStringToGroup)
       .def("has_value", &Configuration::hasValue)
