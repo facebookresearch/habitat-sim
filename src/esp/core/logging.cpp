@@ -19,6 +19,8 @@ using Cr::Containers::Literals::operator""_s;
 namespace esp {
 namespace logging {
 
+constexpr LoggingLevel LoggingContext::DEFAULT_LEVEL;
+
 static_assert(uint8_t(Subsystem::NumSubsystems) ==
                   (sizeof(subsystemNames) / sizeof(subsystemNames[0])),
               "Missing a subsystem name.");
