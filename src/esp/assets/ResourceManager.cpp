@@ -214,8 +214,7 @@ bool ResourceManager::loadStage(
     AssetInfo semanticInfo = assetInfoMap.at("semantic");
     auto semanticStageFilename = semanticInfo.filepath;
     if (Cr::Utility::Directory::exists(semanticStageFilename)) {
-      ESP_DEBUG() << "::loadStage : Loading Semantic Stage mesh :"
-                  << semanticStageFilename;
+      ESP_DEBUG() << "Loading Semantic Stage mesh :" << semanticStageFilename;
       activeSemanticSceneID = sceneManagerPtr->initSceneGraph();
 
       auto& semanticSceneGraph =
@@ -241,21 +240,19 @@ bool ResourceManager::loadStage(
       // regardless of load failure, original code still changed
       // activeSemanticSceneID_
       if (!semanticStageSuccess) {
-        ESP_ERROR() << "::loadStage : Semantic Stage mesh "
-                       "load failed.";
+        ESP_ERROR() << "Semantic Stage mesh load failed.";
         return false;
       } else {
-        ESP_DEBUG() << "::loadStage : Semantic Stage mesh :"
-                    << semanticStageFilename << "loaded.";
+        ESP_DEBUG() << "Semantic Stage mesh :" << semanticStageFilename
+                    << "loaded.";
       }
     } else if (semanticStageFilename !=
                "") {  // semantic file name does not exist but house does
-      ESP_ERROR() << "::loadStage : Not loading semantic mesh - "
-                     "File Name :"
+      ESP_ERROR() << "Not loading semantic mesh with File Name :"
                   << semanticStageFilename << "does not exist.";
     }
   } else {  // not wanting to create semantic mesh
-    ESP_DEBUG() << "::loadStage : Not loading semantic mesh";
+    ESP_DEBUG() << "Not loading semantic mesh";
   }
 
   if (forceSeparateSemanticSceneGraph &&
@@ -283,8 +280,7 @@ bool ResourceManager::loadStage(
   }
   RenderAssetInstanceCreationInfo renderCreation(
       renderInfo.filepath, Cr::Containers::NullOpt, flags, renderLightSetupKey);
-  ESP_DEBUG() << "::loadStage : start load render asset" << renderInfo.filepath
-              << ".";
+  ESP_DEBUG() << "Start load render asset" << renderInfo.filepath << ".";
 
   bool renderMeshSuccess = loadStageInternal(renderInfo,  // AssetInfo
                                              &renderCreation,
@@ -292,8 +288,7 @@ bool ResourceManager::loadStage(
                                              &drawables);  //  drawable group
   if (!renderMeshSuccess) {
     ESP_ERROR()
-        << "ResourceManager::loadStage : Stage render mesh load failed, "
-           "Aborting scene initialization.";
+        << "Stage render mesh load failed, Aborting scene initialization.";
     return false;
   }
   // declare mesh group variable
@@ -302,8 +297,7 @@ bool ResourceManager::loadStage(
   if (assetInfoMap.count("collision") != 0u) {
     AssetInfo colInfo = assetInfoMap.at("collision");
     if (resourceDict_.count(colInfo.filepath) == 0) {
-      ESP_DEBUG() << "::loadStage : start load collision asset"
-                  << colInfo.filepath << ".";
+      ESP_DEBUG() << "Start load collision asset" << colInfo.filepath << ".";
       // will not reload if already present
       bool collisionMeshSuccess =
           loadStageInternal(colInfo,   // AssetInfo
@@ -312,8 +306,8 @@ bool ResourceManager::loadStage(
                             nullptr);  // drawable group
 
       if (!collisionMeshSuccess) {
-        ESP_ERROR() << "ResourceManager::loadStage : Stage collision mesh "
-                       "load failed.  Aborting scene initialization.";
+        ESP_ERROR() << "Stage collision mesh load failed.  Aborting scene "
+                       "initialization.";
         return false;
       }
     }
@@ -337,8 +331,7 @@ bool ResourceManager::loadStage(
     // we are using None-type physicsManager.
     bool sceneSuccess = _physicsManager->addStage(stageAttributes, meshGroup);
     if (!sceneSuccess) {
-      ESP_ERROR() << "::loadStage : Adding Stage"
-                  << stageAttributes->getHandle()
+      ESP_ERROR() << "Adding Stage" << stageAttributes->getHandle()
                   << "to PhysicsManager failed. Aborting scene initialization.";
       return false;
     }
@@ -372,7 +365,7 @@ bool ResourceManager::buildMeshGroups(
 
     // failure during build of collision mesh group
     if (!colMeshGroupSuccess) {
-      ESP_ERROR() << "::loadStage : Stage" << info.filepath
+      ESP_ERROR() << "Stage" << info.filepath
                   << "Collision mesh load failed. Aborting scene "
                      "initialization.";
       return false;
@@ -449,9 +442,7 @@ esp::geo::CoordinateFrame ResourceManager::buildFrameFromAttributes(
     esp::geo::CoordinateFrame frame{upEigen, frontEigen, originEigen};
     return frame;
   } else {
-    ESP_DEBUG() << "::buildFrameFromAttributes : Specified frame "
-                   "in Attributes :"
-                << attribs->getHandle()
+    ESP_DEBUG() << "Specified frame in Attributes :" << attribs->getHandle()
                 << "is not orthogonal, so returning default frame.";
     esp::geo::CoordinateFrame frame;
     return frame;
@@ -698,12 +689,11 @@ bool ResourceManager::loadStageInternal(
     DrawableGroup* drawables) {
   // scene mesh loading
   const std::string& filename = info.filepath;
-  ESP_DEBUG() << "::loadStageInternal : Attempting to load stage" << filename
-              << "";
+  ESP_DEBUG() << "Attempting to load stage" << filename << "";
   bool meshSuccess = true;
   if (info.filepath != EMPTY_SCENE) {
     if (!Cr::Utility::Directory::exists(filename)) {
-      ESP_ERROR() << "::loadStageInternal : Cannot find scene file" << filename;
+      ESP_ERROR() << "Cannot find scene file" << filename;
       meshSuccess = false;
     } else {
       if (info.type == AssetType::SUNCG_SCENE) {
@@ -735,7 +725,7 @@ bool ResourceManager::loadStageInternal(
       }
     }
   } else {
-    ESP_DEBUG() << "::loadStageInternal : Loading empty scene for" << filename;
+    ESP_DEBUG() << "Loading empty scene for" << filename;
     // EMPTY_SCENE (ie. "NONE") string indicates desire for an empty scene (no
     // scene mesh): welcome to the void
   }
@@ -760,8 +750,7 @@ bool ResourceManager::buildStageCollisionMeshGroup(
     if (rawMeshData == nullptr) {
       // means dynamic cast failed
       ESP_DEBUG()
-          << "::buildStageCollisionMeshGroup : "
-             "AssetInfo::AssetType "
+          << "AssetInfo::AssetType "
              "type error: unsupported mesh type, aborting. Try running "
              "without \"--enable-physics\" and consider logging an issue.";
       return false;
@@ -961,10 +950,9 @@ void ResourceManager::buildPrimitiveAssetData(
         primTemplateHandle);
     // if still null, fail.
     if (newTemplate == nullptr) {
-      ESP_ERROR()
-          << "::buildPrimitiveAssetData : Attempting to reference or build a "
-             "primitive template from an unknown/malformed handle :"
-          << primTemplateHandle << ".  Aborting";
+      ESP_ERROR() << "Attempting to reference or build a "
+                     "primitive template from an unknown/malformed handle :"
+                  << primTemplateHandle << ".  Aborting";
       return;
     }
     // we do not want a copy of the newly created template, but the actual
@@ -1458,8 +1446,7 @@ bool ResourceManager::buildTrajectoryVisualization(
     radius = .001;
   }
 
-  ESP_DEBUG() << "::loadTrajectoryVisualization : Calling "
-                 "trajectoryTubeSolid to build a tube named :"
+  ESP_DEBUG() << "Calling trajectoryTubeSolid to build a tube named :"
               << trajVisName << "with" << pts.size()
               << "points, building a tube of radius :" << radius << "using"
               << numSegments << "circular segments and" << numInterp
@@ -1469,8 +1456,7 @@ bool ResourceManager::buildTrajectoryVisualization(
   Cr::Containers::Optional<Mn::Trade::MeshData> trajTubeMesh =
       geo::buildTrajectoryTubeSolid(pts, numSegments, radius, smooth,
                                     numInterp);
-  ESP_DEBUG() << "::loadTrajectoryVisualization : Successfully "
-                 "returned from trajectoryTubeSolid";
+  ESP_DEBUG() << "Successfully returned from trajectoryTubeSolid";
 
   // make assetInfo
   AssetInfo info{AssetType::PRIMITIVE};
