@@ -1044,7 +1044,7 @@ int Viewer::addPrimitiveObject() {
 
 void Viewer::buildTrajectoryVis() {
   if (agentLocs_.size() < 2) {
-    ESP_WARNING() << "::buildTrajectoryVis : No recorded trajectory "
+    ESP_WARNING() << "No recorded trajectory "
                      "points, so nothing to build. Aborting.";
     return;
   }
@@ -1056,18 +1056,17 @@ void Viewer::buildTrajectoryVis() {
           << agentLocs_.size() << "_pts";
   std::string trajObjName(tmpName.str());
 
-  ESP_DEBUG() << "::buildTrajectoryVis : Attempting to build trajectory "
+  ESP_DEBUG() << "Attempting to build trajectory "
                  "tube for :"
               << agentLocs_.size() << "points.";
   int trajObjID = simulator_->addTrajectoryObject(
       trajObjName, agentLocs_, 6, agentTrajRad_, color, true, 10);
   if (trajObjID != esp::ID_UNDEFINED) {
-    ESP_DEBUG() << "::buildTrajectoryVis : Success!  Traj Obj Name :"
-                << trajObjName << "has object ID :" << trajObjID;
+    ESP_DEBUG() << "Success!  Traj Obj Name :" << trajObjName
+                << "has object ID :" << trajObjID;
   } else {
-    ESP_WARNING() << "::buildTrajectoryVis : Attempt to build trajectory "
-                     "visualization"
-                  << trajObjName << "failed; Returned ID_UNDEFINED.";
+    ESP_WARNING() << "Attempt to build trajectory visualization" << trajObjName
+                  << "failed; Returned ID_UNDEFINED.";
   }
 }  // buildTrajectoryVis
 
