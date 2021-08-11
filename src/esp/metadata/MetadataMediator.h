@@ -419,7 +419,7 @@ class MetadataMediator {
       const std::map<std::string, std::string>& assetMapping,
       const std::string& msgString) {
     if (assetMapping.count(assetHandle) == 0) {
-      ESP_WARNING() << msgString << "(getAsset) : Unable to find file path for"
+      ESP_WARNING() << msgString << ": Unable to find file path for"
                     << assetHandle << ".  Aborting.";
       return "";
     }

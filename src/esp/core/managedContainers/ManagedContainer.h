@@ -129,8 +129,8 @@ class ManagedContainer : public ManagedContainerBase {
     if (nullptr == managedObject) {
       ESP_ERROR() << "<" << Corrade::Utility::Debug::nospace
                   << this->objectType_ << Corrade::Utility::Debug::nospace
-                  << ">::registerObject : Invalid "
-                     "(null) managed object passed to registration. Aborting.";
+                  << "> : Invalid (null) managed object passed to "
+                     "registration. Aborting.";
       return ID_UNDEFINED;
     }
     if ("" != objectHandle) {
@@ -141,9 +141,8 @@ class ManagedContainer : public ManagedContainerBase {
     if ("" == handleToSet) {
       ESP_ERROR() << "<" << Corrade::Utility::Debug::nospace
                   << this->objectType_ << Corrade::Utility::Debug::nospace
-                  << ">::registerObject : No "
-                     "valid handle specified for"
-                  << objectType_ << "managed object to register. Aborting.";
+                  << "> : No valid handle specified for" << objectType_
+                  << "managed object to register. Aborting.";
       return ID_UNDEFINED;
     }
     return registerObjectFinalize(managedObject, handleToSet,
@@ -617,9 +616,8 @@ auto ManagedContainer<T, Access>::removeObjectsBySubstring(
       getObjectHandlesBySubstring(subStr, contains);
   for (const std::string& objectHandle : handles) {
     int objID = this->getObjectIDByHandle(objectHandle);
-    ManagedPtr ptr = removeObjectInternal(
-        objID, objectHandle,
-        "<" + this->objectType_ + ">::removeObjectsBySubstring");
+    ManagedPtr ptr = removeObjectInternal(objID, objectHandle,
+                                          "<" + this->objectType_ + ">");
     if (nullptr != ptr) {
       res.push_back(ptr);
     }

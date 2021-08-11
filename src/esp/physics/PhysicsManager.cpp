@@ -79,14 +79,12 @@ int PhysicsManager::addObjectInstance(
     bool defaultCOMCorrection,
     scene::SceneNode* attachmentNode,
     const std::string& lightSetup) {
-  const std::string errMsgTmplt = "::addObjectInstance : ";
   // Get ObjectAttributes
   auto objAttributes =
       resourceManager_.getObjectAttributesManager()->getObjectCopyByHandle(
           attributesHandle);
   if (!objAttributes) {
-    ESP_ERROR() << errMsgTmplt
-                << "Missing/improperly configured objectAttributes"
+    ESP_ERROR() << "Missing/improperly configured objectAttributes"
                 << attributesHandle << ", whose handle contains"
                 << objInstAttributes->getHandle()
                 << "as specified in object instance attributes.";
@@ -110,7 +108,7 @@ int PhysicsManager::addObjectInstance(
 
   if (objID == ID_UNDEFINED) {
     // instancing failed for some reason.
-    ESP_ERROR() << errMsgTmplt << "Object create failed for objectAttributes"
+    ESP_ERROR() << "Object create failed for objectAttributes"
                 << attributesHandle << ", whose handle contains"
                 << objInstAttributes->getHandle()
                 << "as specified in object instance attributes.";
@@ -134,9 +132,8 @@ int PhysicsManager::addObject(const std::string& attributesHandle,
       resourceManager_.getObjectAttributesManager()->getObjectCopyByHandle(
           attributesHandle);
   if (!attributes) {
-    ESP_ERROR()
-        << "::addObject : Object creation failed due to unknown attributes"
-        << attributesHandle;
+    ESP_ERROR() << "Object creation failed due to unknown attributes"
+                << attributesHandle;
     return ID_UNDEFINED;
   } else {
     // attributes exist, get drawables if valid simulator accessible
@@ -157,8 +154,7 @@ int PhysicsManager::addObject(const int attributesID,
       resourceManager_.getObjectAttributesManager()->getObjectCopyByID(
           attributesID);
   if (!attributes) {
-    ESP_ERROR() << "::addObject : "
-                   "Object creation failed due to unknown attributes ID"
+    ESP_ERROR() << "Object creation failed due to unknown attributes ID"
                 << attributesID;
     return ID_UNDEFINED;
   } else {
@@ -181,7 +177,7 @@ int PhysicsManager::addObject(
   //! Make rigid object and add it to existingObjects
   if (!objectAttributes) {
     // should never run, but just in case
-    ESP_ERROR() << "::addObject : Object creation failed due to nonexistant "
+    ESP_ERROR() << "Object creation failed due to nonexistant "
                    "objectAttributes";
     return ID_UNDEFINED;
   }
@@ -190,9 +186,8 @@ int PhysicsManager::addObject(
   bool objectSuccess =
       resourceManager_.instantiateAssetsOnDemand(objectAttributes);
   if (!objectSuccess) {
-    ESP_ERROR() << "::addObject : ResourceManager::instantiateAssetsOnDemand "
-                   "unsuccessful. "
-                   "Aborting.";
+    ESP_ERROR() << "ResourceManager::instantiateAssetsOnDemand "
+                   "unsuccessful. Aborting.";
     return ID_UNDEFINED;
   }
 
@@ -211,9 +206,8 @@ int PhysicsManager::addObject(
     if (attachmentNode == nullptr) {
       delete objectNode;
     }
-    ESP_ERROR()
-        << "::addObject : PhysicsManager::makeRigidObject unsuccessful. "
-           " Aborting.";
+    ESP_ERROR() << "PhysicsManager::makeRigidObject unsuccessful. "
+                   " Aborting.";
     return ID_UNDEFINED;
   }
 
@@ -237,8 +231,7 @@ int PhysicsManager::addObject(
   if (!objectSuccess) {
     // if failed for some reason, remove and return
     removeObject(nextObjectID_, true, true);
-    ESP_ERROR() << "::addObject : PhysicsManager::finalizeObject "
-                   "unsuccessful.  Aborting.";
+    ESP_ERROR() << "PhysicsManager::finalizeObject unsuccessful.  Aborting.";
     return ID_UNDEFINED;
   }
   // Valid object exists by here.
@@ -246,10 +239,10 @@ int PhysicsManager::addObject(
   // and register wrapper with wrapper manager
   // 1.0 Get unique name for object using simplified attributes name.
   std::string simpleObjectHandle = objectAttributes->getSimplifiedHandle();
-  ESP_WARNING() << "::addObject : simpleObjectHandle :" << simpleObjectHandle;
   std::string newObjectHandle =
       rigidObjectManager_->getUniqueHandleFromCandidate(simpleObjectHandle);
-  ESP_WARNING() << "::addObject : newObjectHandle :" << newObjectHandle;
+  ESP_WARNING() << "Simplified template handle :" << simpleObjectHandle
+                << " | newObjectHandle :" << newObjectHandle;
 
   existingObjects_.at(nextObjectID_)->setObjectName(newObjectHandle);
 
@@ -270,8 +263,6 @@ int PhysicsManager::addArticulatedObjectInstance(
     const std::shared_ptr<esp::metadata::attributes::SceneAOInstanceAttributes>&
         aObjInstAttributes,
     const std::string& lightSetup) {
-  std::string errMsgTmplt = "PhysicsManager::addObjectInstance : ";
-
   // Get drawables from simulator. TODO: Support non-existent simulator?
   auto& drawables = simulator_->getDrawableGroup();
 
@@ -283,8 +274,7 @@ int PhysicsManager::addArticulatedObjectInstance(
       false, lightSetup);
   if (aObjID == ID_UNDEFINED) {
     // instancing failed for some reason.
-    ESP_ERROR() << errMsgTmplt
-                << "Articulated Object create failed for model filepath"
+    ESP_ERROR() << "Articulated Object create failed for model filepath"
                 << filepath << ", whose handle is"
                 << aObjInstAttributes->getHandle()
                 << "as specified in articulated object instance attributes.";
