@@ -57,8 +57,9 @@ bool writeJsonToFile(const JsonDocument& document,
   return writeSuccess;
 }
 
-int loadJsonIntoConfiguration(const JsonGenericValue& jsonObj,
-                              std::shared_ptr<core::Configuration> config) {
+int loadJsonIntoConfiguration(
+    const JsonGenericValue& jsonObj,
+    const std::shared_ptr<core::Configuration>& config) {
   // count number of valid user config settings found
 
   int numConfigSettings = 0;

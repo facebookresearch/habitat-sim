@@ -283,7 +283,7 @@ class Configuration {
 
   int getNumEntries() const { return numEntries; }
 
-  bool hasValues() { return numEntries > 0; }
+  bool hasValues() const { return numEntries > 0; }
 
   bool hasValue(const std::string& key) const {
     return (configMap_.count(key) > 0) || (intMap_.count(key) > 0) ||
