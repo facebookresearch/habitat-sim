@@ -39,11 +39,11 @@ void initCoreBindings(py::module& m) {
       .def("set", [](Configuration& self, const std::string& key,
                      const char* val) { self.set(key, val); })
       .def("set", [](Configuration& self, const std::string& key,
-                     const int& val) { self.set(key, val); })
+                     const int val) { self.set(key, val); })
       .def("set", [](Configuration& self, const std::string& key,
-                     const double& val) { self.set(key, val); })
+                     const double val) { self.set(key, val); })
       .def("set", [](Configuration& self, const std::string& key,
-                     const bool& val) { self.set(key, val); })
+                     const bool val) { self.set(key, val); })
       .def("set", [](Configuration& self, const std::string& key,
                      const Magnum::Quaternion& val) { self.set(key, val); })
       .def("set", [](Configuration& self, const std::string& key,
@@ -52,18 +52,18 @@ void initCoreBindings(py::module& m) {
       .def("set_string", [](Configuration& self, const std::string& key,
                             const std::string& val) { self.set(key, val); })
       .def("set_int", [](Configuration& self, const std::string& key,
-                         const int& val) { self.set(key, val); })
+                         const int val) { self.set(key, val); })
       .def("set_double", [](Configuration& self, const std::string& key,
-                            const double& val) { self.set(key, val); })
+                            const double val) { self.set(key, val); })
       .def("set_bool", [](Configuration& self, const std::string& key,
-                          const bool& val) { self.set(key, val); })
+                          const bool val) { self.set(key, val); })
       .def("set_quat",
            [](Configuration& self, const std::string& key,
               const Magnum::Quaternion& val) { self.set(key, val); })
       .def("set_vec3", [](Configuration& self, const std::string& key,
                           const Magnum::Vector3& val) { self.set(key, val); })
 
-      .def("add_string_to_group", &Configuration::addStringToGroup)
+      //.def("add_string_to_group", &Configuration::addStringToGroup)
       .def("has_value", &Configuration::hasValue)
       .def("has_bool", &Configuration::hasBool)
       .def("has_int", &Configuration::hasInt)

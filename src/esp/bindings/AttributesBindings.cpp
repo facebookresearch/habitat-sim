@@ -65,24 +65,72 @@ void initAttributesBindings(py::module& m) {
           "template_id", &AbstractAttributes::getID,
           R"(System-generated ID for template.  Will be unique among templates
           of same type.)")
-      .def("get_user_config_bool", &AbstractAttributes::getUserConfigBool)
-      .def("get_user_config_string", &AbstractAttributes::getUserConfigString)
-      .def("get_user_config_int", &AbstractAttributes::getUserConfigInt)
-      .def("get_user_config_double", &AbstractAttributes::getUserConfigDouble)
-      .def("get_user_config_vec3", &AbstractAttributes::getUserConfigVec3)
-      .def("get_user_config_quat", &AbstractAttributes::getUserConfigQuat)
+      .def("get_user_config_bool",
+           [](AbstractAttributes& self, const std::string& key) {
+             const auto ptr = self.editUserConfiguration();
+             return ptr->getBool(key);
+           })
+      .def("get_user_config_string",
+           [](AbstractAttributes& self, const std::string& key) {
+             const auto ptr = self.editUserConfiguration();
+             return ptr->getString(key);
+           })
+      .def("get_user_config_int",
+           [](AbstractAttributes& self, const std::string& key) {
+             const auto ptr = self.editUserConfiguration();
+             return ptr->getInt(key);
+           })
 
+      .def("get_user_config_double",
+           [](AbstractAttributes& self, const std::string& key) {
+             const auto ptr = self.editUserConfiguration();
+             return ptr->getDouble(key);
+           })
+      .def("get_user_config_vec3",
+           [](AbstractAttributes& self, const std::string& key) {
+             const auto ptr = self.editUserConfiguration();
+             return ptr->getVec3(key);
+           })
+      .def("get_user_config_quat",
+           [](AbstractAttributes& self, const std::string& key) {
+             const auto ptr = self.editUserConfiguration();
+             return ptr->getQuat(key);
+           })
+      .def(
+          "set_user_config_bool",
+          [](AbstractAttributes& self, const std::string& key, const bool val) {
+            const auto ptr = self.editUserConfiguration();
+            return ptr->set(key, val);
+          })
       .def("set_user_config_string",
-           &AbstractAttributes::setUserConfigValue<std::string>)
-      .def("set_user_config_int", &AbstractAttributes::setUserConfigValue<int>)
+           [](AbstractAttributes& self, const std::string& key,
+              const std::string& val) {
+             const auto ptr = self.editUserConfiguration();
+             return ptr->set(key, val);
+           })
+      .def("set_user_config_int",
+           [](AbstractAttributes& self, const std::string& key, const int val) {
+             const auto ptr = self.editUserConfiguration();
+             return ptr->set(key, val);
+           })
       .def("set_user_config_double",
-           &AbstractAttributes::setUserConfigValue<double>)
-      .def("set_user_config_bool",
-           &AbstractAttributes::setUserConfigValue<bool>)
+           [](AbstractAttributes& self, const std::string& key,
+              const double val) {
+             const auto ptr = self.editUserConfiguration();
+             return ptr->set(key, val);
+           })
       .def("set_user_config_vec3",
-           &AbstractAttributes::setUserConfigValue<Magnum::Vector3>)
+           [](AbstractAttributes& self, const std::string& key,
+              const Magnum::Vector3& val) {
+             const auto ptr = self.editUserConfiguration();
+             return ptr->set(key, val);
+           })
       .def("set_user_config_quat",
-           &AbstractAttributes::setUserConfigValue<Magnum::Quaternion>)
+           [](AbstractAttributes& self, const std::string& key,
+              const Magnum::Quaternion& val) {
+             const auto ptr = self.editUserConfiguration();
+             return ptr->set(key, val);
+           })
       .def_property_readonly(
           "num_user_configs",
           &AbstractAttributes::getNumUserDefinedConfigurations,

@@ -21,16 +21,20 @@ class Configuration {
  public:
   Configuration() = default;
 
-  Configuration(const Configuration& otr) {
+  Configuration(const Configuration& otr)
+      : configMap_(),
+        intMap_(otr.intMap_),
+        boolMap_(otr.boolMap_),
+        floatMap_(otr.floatMap_),
+        doubleMap_(otr.doubleMap_),
+        stringMap_(otr.stringMap_),
+        vecMap_(),
+        quatMap_(),
+        radMap_() {
     configMap_.reserve(otr.configMap_.size());
     for (const auto& entry : otr.configMap_) {
       configMap_[entry.first] = std::make_shared<Configuration>(*entry.second);
     }
-    intMap_ = std::unordered_map<std::string, int>{otr.intMap_};
-    boolMap_ = std::unordered_map<std::string, bool>{otr.boolMap_};
-    floatMap_ = std::unordered_map<std::string, float>{otr.floatMap_};
-    doubleMap_ = std::unordered_map<std::string, double>{otr.doubleMap_};
-    stringMap_ = std::unordered_map<std::string, std::string>{otr.stringMap_};
     vecMap_.reserve(otr.vecMap_.size());
     for (const auto& entry : otr.vecMap_) {
       vecMap_[entry.first] = Magnum::Vector3{entry.second};
@@ -54,7 +58,7 @@ class Configuration {
   template <typename T>
   void set(CORRADE_UNUSED const std::string& key,
            CORRADE_UNUSED const T& value) {
-    ESP_ERROR() << "::set : Unknown/unsupported type :" << typeid(T).name()
+    ESP_ERROR() << "Unknown/unsupported type :" << typeid(T).name()
                 << "for key :" << key;
   }
   void set(const std::string& key, const bool& value) {
@@ -85,15 +89,6 @@ class Configuration {
   }
   void set(const std::string& key, const Magnum::Rad& value) {
     addValToMap(key, value, radMap_);
-  }
-
-  // subgroup set
-  template <typename T>
-  void setSubgroupValue(const std::string& subgroupName,
-                        const std::string& key,
-                        const T& value) {
-    makeNewSubgroup(subgroupName);
-    configMap_[subgroupName]->set(key, value);
   }
 
   bool hasBool(const std::string& key) const {
@@ -250,6 +245,15 @@ class Configuration {
   }
 
   /**
+   * @brief Use this function when you wish to modify this configuration's
+   * subgroup.
+   */
+  std::shared_ptr<Configuration> editConfigSubgroup(const std::string& name) {
+    makeNewSubgroup(name);
+    return configMap_.at(name);
+  }
+
+  /**
    * @brief move specified subgroup config into configMap at desired name
    */
   void setConfigSubgroupPtr(const std::string& name,
@@ -265,7 +269,7 @@ class Configuration {
     if (checkMapForKey(name, configMap_)) {
       return configMap_.at(name)->getNumEntries();
     }
-    ESP_ERROR() << "::getNumConfigSubgroups : No subgroup named :" << name;
+    ESP_ERROR() << "No subgroup named :" << name;
     return 0;
   }
 
@@ -348,8 +352,7 @@ class Configuration {
       // return a copy
       return T{map.at(key)};
     }
-    ESP_ERROR() << "::getValFromMap : Key :" << key
-                << "not present in map of type <std::string,"
+    ESP_ERROR() << "Key :" << key << "not present in map of type <std::string,"
                 << typeid(T).name() << ">";
     return {};
   }
@@ -367,7 +370,7 @@ class Configuration {
       // return a copy
       return val;
     }
-    ESP_WARNING() << "::removeValFromMap : Key :" << key
+    ESP_WARNING() << "Key :" << key
                   << "not present in map of type <std::string,"
                   << typeid(T).name() << ">";
     return {};

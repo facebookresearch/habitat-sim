@@ -17,7 +17,7 @@ def test_config_eq():
 def test_core_configuration():
     # test bindings for esp::core::Configuration class
     config = habitat_sim.bindings.ConfigurationGroup()
-    config.set("test", "test statement")
+    config.set_string("test", "test statement")
     assert config.has_value("test")
     assert config.get_string("test") == "test statement"
 
@@ -39,14 +39,14 @@ def test_core_configuration():
     config.set_vec3("vec3", my_vec3)
     assert config.get_vec3("vec3") == my_vec3
 
-    # test string group
-    text_group = ["a", "b", "  c", "12", "0.1", "-=_+.,';:"]
-    for text in text_group:
-        config.add_string_to_group("text_group", text)
+    # # test string group
+    # text_group = ["a", "b", "  c", "12", "0.1", "-=_+.,';:"]
+    # for text in text_group:
+    #     config.add_string_to_group("text_group", text)
 
-    queried_group = config.get_string_group("text_group")
-    for ix, text in enumerate(queried_group):
-        assert text == text_group[ix]
+    # queried_group = config.get_string_group("text_group")
+    # for ix, text in enumerate(queried_group):
+    #     assert text == text_group[ix]
 
 
 def test_physics_object_attributes():
@@ -85,5 +85,5 @@ def test_physics_object_attributes():
     assert object_template.requires_lighting == False
 
     # test that inheritance is correctly configured
-    object_template.set("test_key", "test_string")
+    object_template.set_string("test_key", "test_string")
     assert object_template.get_string("test_key") == "test_string"

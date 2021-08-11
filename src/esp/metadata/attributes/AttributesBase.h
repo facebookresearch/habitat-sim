@@ -179,12 +179,23 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
   int getID() const override { return getInt("ID"); }
 
   /**
-   * @brief Gets a smart pointer reference to user-specified configuration data
-   * from config file. Habitat does not parse or process this data, but it will
-   * be available to the user via python bindings for each object.
+   * @brief Gets a smart pointer reference to a copy of the user-specified
+   * configuration data from config file. Habitat does not parse or process this
+   * data, but it will be available to the user via python bindings for each
+   * object.
    */
   std::shared_ptr<Configuration> getUserConfiguration() const {
     return getConfigSubgroupCopy("user_defined");
+  }
+
+  /**
+   * @brief Gets a smart pointer reference to the actual user-specified
+   * configuration data from config file. Habitat does not parse or process this
+   * data, but it will be available to the user via python bindings for each
+   * object.  This method is for editing the configuration.
+   */
+  std::shared_ptr<Configuration> editUserConfiguration() {
+    return editConfigSubgroup("user_defined");
   }
 
   /**
@@ -193,46 +204,6 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
    */
   int getNumUserDefinedConfigurations() const {
     return getNumConfigSubgroups("user_defined");
-  }
-
-  template <typename T>
-  void setUserConfigValue(const std::string& key, const T& value) {
-    ESP_WARNING() << "setUserConfigValue : key : " << key
-                  << " type : " << typeid(T).name();
-    setSubgroupValue<T>("user_defined", key, value);
-  }
-
-  bool getUserConfigBool(const std::string& key) const {
-    const auto ptr = getConfigSubgroupCopy("user_defined");
-    return ptr->getBool(key);
-  }
-  int getUserConfigInt(const std::string& key) {
-    const auto ptr = getConfigSubgroupCopy("user_defined");
-    return ptr->getInt(key);
-  }
-  float getUserConfigFloat(const std::string& key) {
-    const auto ptr = getConfigSubgroupCopy("user_defined");
-    return ptr->getFloat(key);
-  }
-  double getUserConfigDouble(const std::string& key) {
-    const auto ptr = getConfigSubgroupCopy("user_defined");
-    return ptr->getDouble(key);
-  }
-  std::string getUserConfigString(const std::string& key) {
-    const auto ptr = getConfigSubgroupCopy("user_defined");
-    return ptr->getString(key);
-  }
-  Magnum::Vector3 getUserConfigVec3(const std::string& key) const {
-    const auto ptr = getConfigSubgroupCopy("user_defined");
-    return ptr->getVec3(key);
-  }
-  Magnum::Quaternion getUserConfigQuat(const std::string& key) const {
-    const auto ptr = getConfigSubgroupCopy("user_defined");
-    return ptr->getQuat(key);
-  }
-  Magnum::Rad getUserConfigRad(const std::string& key) const {
-    const auto ptr = getConfigSubgroupCopy("user_defined");
-    return ptr->getRad(key);
   }
 
   /**
