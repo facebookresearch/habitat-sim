@@ -203,7 +203,7 @@ class MetadataMediator {
   std::string getNavmeshPathByHandle(const std::string& navMeshHandle) {
     return getFilePathForHandle(navMeshHandle,
                                 getActiveDSAttribs()->getNavmeshMap(),
-                                "::getNavmeshPathByHandle");
+                                "<getNavmeshPathByHandle>");
 
   }  // MetadataMediator::getNavmeshPathByHandle
 
@@ -227,7 +227,7 @@ class MetadataMediator {
       const std::string& ssDescrHandle) {
     return getFilePathForHandle(
         ssDescrHandle, getActiveDSAttribs()->getSemanticSceneDescrMap(),
-        "::getSemanticSceneDescriptorPathByHandle");
+        "<getSemanticSceneDescriptorPathByHandle>");
 
   }  // MetadataMediator::getNavMeshPathByHandle
 
@@ -468,8 +468,7 @@ class MetadataMediator {
     // this should never happen - there will always be a dataset with the name
     // activeSceneDataset_
     if (datasetAttr == nullptr) {
-      ESP_ERROR() << "::getActiveDSAttribs : Unable to set "
-                     "active dataset due to Unknown dataset named"
+      ESP_ERROR() << "Unable to set active dataset due to Unknown dataset named"
                   << activeSceneDataset_
                   << "so changing dataset to \"default\".";
       activeSceneDataset_ = "default";

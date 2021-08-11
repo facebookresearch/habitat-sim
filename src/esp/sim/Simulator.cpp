@@ -237,38 +237,44 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
           curSceneInstanceAttributes->getSemanticSceneHandle());
 
   if (semanticSceneDescFilename != "") {
-    bool fileExists = false;
+    std::string filenameToUse = semanticSceneDescFilename;
     bool success = false;
     // semantic scene descriptor might not exist, so
     semanticScene_ = nullptr;
     semanticScene_ = scene::SemanticScene::create();
     ESP_DEBUG() << "SceneInstance :" << activeSceneName
                 << "proposed Semantic Scene Descriptor filename :"
-                << semanticSceneDescFilename;
+                << filenameToUse;
 
-    // Attempt to load semantic scene descriptor specified in scene instance
-    // file, agnostic to file type inferred by name,
-    success = scene::SemanticScene::loadSemanticSceneDescriptor(
-        semanticSceneDescFilename, *semanticScene_);
+    bool fileExists = FileUtil::exists(filenameToUse);
+    if (fileExists) {
+      // Attempt to load semantic scene descriptor specified in scene instance
+      // file, agnostic to file type inferred by name, if file exists.
+      success = scene::SemanticScene::loadSemanticSceneDescriptor(
+          filenameToUse, *semanticScene_);
+    }
     if (!success) {
       // attempt to look for specified file failed, attempt to build new file
       // name by searching in path specified of specified file for
       // info_semantic.json file for replica dataset
-      const std::string tmpFName = FileUtil::join(
-          FileUtil::path(semanticSceneDescFilename), "info_semantic.json");
-      if (FileUtil::exists(tmpFName)) {
+      const std::string tmpFName =
+          FileUtil::join(FileUtil::path(filenameToUse), "info_semantic.json");
+      fileExists = FileUtil::exists(tmpFName);
+      if (fileExists) {
         success =
             scene::SemanticScene::loadReplicaHouse(tmpFName, *semanticScene_);
         ESP_DEBUG() << "Attempt to load Replica w/existing constructed file :"
                     << tmpFName << "in directory with"
                     << semanticSceneDescFilename << ":"
-                    << (success ? "" : "not ") << "successful";
+                    << (success ? "" : "not") << "successful";
+        filenameToUse = tmpFName;
       }
     }  // if given SSD file name specifiedd exists
-    ESP_WARNING() << "All attempts to load "
-                     "SSD with SceneAttributes-provided name"
-                  << semanticSceneDescFilename << ": exist :" << fileExists
-                  << ": loaded as expected type :" << success;
+    ESP_WARNING() << "All attempts to load SSD with SceneAttributes "
+                     "provided/constructed name "
+                  << filenameToUse << ": exist :" << fileExists
+                  << ": loaded as expected type :" << (success ? "" : "not")
+                  << "successful";
 
   }  // if semantic scene descriptor specified in scene instance
 

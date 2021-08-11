@@ -353,8 +353,7 @@ TEST(GfxReplayTest, playerReadInvalidFile) {
   // remove bogus file created for this test
   bool success = Corrade::Utility::Directory::rm(testFilepath);
   if (!success) {
-    ESP_WARNING() << "GfxReplayTest::playerReadInvalidFile : unable to remove "
-                     "temporary test JSON file"
+    ESP_WARNING() << "Unable to remove temporary test JSON file"
                   << testFilepath;
   }
 }
@@ -422,8 +421,7 @@ TEST(GfxReplayTest, simulatorIntegration) {
   // remove file created for this test
   bool success = Corrade::Utility::Directory::rm(testFilepath);
   if (!success) {
-    ESP_WARNING() << "GfxReplayTest::simulatorIntegration : unable to remove "
-                     "temporary test JSON file"
+    ESP_WARNING() << "Unable to remove temporary test JSON file"
                   << testFilepath;
   }
 }

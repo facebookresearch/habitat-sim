@@ -201,27 +201,21 @@ bool MetadataMediator::setActiveSceneDatasetName(
   // first check if dataset exists/is loaded, if so then set as default
   if (sceneDatasetExists(sceneDatasetName)) {
     if (activeSceneDataset_ != sceneDatasetName) {
-      ESP_DEBUG() << "::setActiveSceneDatasetName : Previous "
-                     "active dataset"
-                  << activeSceneDataset_ << "changed to" << sceneDatasetName
-                  << "successfully.";
+      ESP_DEBUG() << "Previous active dataset" << activeSceneDataset_
+                  << "changed to" << sceneDatasetName << "successfully.";
       activeSceneDataset_ = sceneDatasetName;
     }
     return true;
   }
   // if does not exist, attempt to create it
-  ESP_DEBUG() << "::setActiveSceneDatasetName : Attempting to "
-                 "create new dataset"
-              << sceneDatasetName;
+  ESP_DEBUG() << "Attempting to create new dataset" << sceneDatasetName;
   bool success = createSceneDataset(sceneDatasetName);
   // if successfully created, set default name to access dataset attributes in
   // SceneDatasetAttributesManager
   if (success) {
     activeSceneDataset_ = sceneDatasetName;
   }
-  ESP_DEBUG() << "::setActiveSceneDatasetName : Attempt to "
-                 "create new dataset"
-              << sceneDatasetName << ""
+  ESP_DEBUG() << "Attempt to create new dataset" << sceneDatasetName << ""
               << (success ? " succeeded." : " failed.")
               << "Currently active dataset :" << activeSceneDataset_;
   return success;
@@ -233,8 +227,7 @@ attributes::SceneAttributes::ptr MetadataMediator::getSceneAttributesByName(
   attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
   // this should never happen
   if (datasetAttr == nullptr) {
-    ESP_ERROR() << "::getSceneAttributesByName : No dataset "
-                   "specified/exists.";
+    ESP_ERROR() << "No dataset specified/exists.";
     return nullptr;
   }
   // directory to look for attributes for this dataset
@@ -252,8 +245,7 @@ attributes::SceneAttributes::ptr MetadataMediator::getSceneAttributesByName(
   if (sceneList.size() > 0) {
     // 1.  Existing, registered SceneAttributes in current active dataset.
     //    In this case the SceneAttributes is returned.
-    ESP_DEBUG() << "::getSceneAttributesByName : Query dataset :"
-                << activeSceneDataset_
+    ESP_DEBUG() << "Query dataset :" << activeSceneDataset_
                 << "for SceneAttributes named :" << sceneName << "yields"
                 << sceneList.size() << "candidates.  Using" << sceneList[0]
                 << ".";
@@ -266,8 +258,7 @@ attributes::SceneAttributes::ptr MetadataMediator::getSceneAttributesByName(
       // 2.  Existing, valid SceneAttributes file on disk, but not in dataset.
       //    If this is the case, then the SceneAttributes should be loaded,
       //    registered, added to the dataset and returned.
-      ESP_DEBUG() << "::getSceneAttributesByName : Dataset :"
-                  << activeSceneDataset_
+      ESP_DEBUG() << "Dataset :" << activeSceneDataset_
                   << "does not reference a SceneAttributes named" << sceneName
                   << "but a SceneAttributes config named"
                   << sceneFilenameCandidate
@@ -284,8 +275,7 @@ attributes::SceneAttributes::ptr MetadataMediator::getSceneAttributesByName(
         //    In this case, a SceneAttributes is created amd registered using
         //    sceneName, referencing the StageAttributes of the same name; This
         //    sceneAttributes is returned.
-        ESP_DEBUG() << "::getSceneAttributesByName : No existing "
-                       "scene instance attributes containing name"
+        ESP_DEBUG() << "No existing scene instance attributes containing name"
                     << sceneName << "found in Dataset :" << activeSceneDataset_
                     << "but" << stageList.size()
                     << "StageAttributes found.  Using" << stageList[0]
@@ -302,7 +292,7 @@ attributes::SceneAttributes::ptr MetadataMediator::getSceneAttributesByName(
         //    In this case, a stage attributes is loaded and registered, then
         //    added to current dataset, and then 3. is performed.
         ESP_DEBUG()
-            << "::getSceneAttributesByName : Dataset :" << activeSceneDataset_
+            << "Dataset :" << activeSceneDataset_
             << "has no preloaded SceneAttributes or StageAttributes named :"
             << sceneName
             << "so loading/creating a new StageAttributes with this "
