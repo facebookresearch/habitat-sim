@@ -117,7 +117,7 @@ export class VRDemo {
     // sending keyframes, which tell us, physics frame by physics frame, the
     // objects that were created, destroyed, and moved since the last step.
     let setUpHabitat = this.setUpHabitat.bind(this);
-    let pushKeyframe = this.pushKeyframe.bind(this);
+    let appendKeyframe = this.appendKeyframe.bind(this);
     this.workerThread.onmessage = function(e) {
       if (e.data.type == "ready") {
         // When the worker is ready, set up Habitat stuff and create the
@@ -126,7 +126,7 @@ export class VRDemo {
       } else if (e.data.type == "keyframe") {
         // Whenever we receive a keyframe from the worker, we call
         // this.pushKeyframe() to give it to the player to process.
-        pushKeyframe(e.data.value);
+        appendKeyframe(e.data.value);
       } else {
         console.assert(false); // this should be unreachable
       }
@@ -134,8 +134,8 @@ export class VRDemo {
   }
 
   // Gives the player a keyframe to append.
-  pushKeyframe(jsonKeyframe) {
-    this.player.pushJSONKeyframe(jsonKeyframe);
+  appendKeyframe(jsonKeyframe) {
+    this.player.appendJSONKeyframe(jsonKeyframe);
   }
 
   // Initiate simulator, put an agent into the scene, and create "Enter VR"
@@ -146,7 +146,6 @@ export class VRDemo {
     this.config.scene_id = "NONE";
     this.config.sceneLightSetup = ""; // this empty string means "use lighting"
     this.config.overrideSceneLightDefaults = true; // always set this to true
-    this.config.allowPbrShader = false; // Pbr shader isn't robust on WebGL yet
     this.sim = new Module.Simulator(this.config);
 
     // init agent

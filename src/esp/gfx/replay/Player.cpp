@@ -172,12 +172,12 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
   }
 }
 
-void Player::pushKeyframe(const Keyframe& keyframe) {
-  keyframes_.emplace_back(keyframe);
+void Player::appendKeyframe(const Keyframe&& keyframe) {
+  keyframes_.emplace_back(std::move(keyframe));
 }
 
-void Player::pushJSONKeyframe(const std::string& keyframe) {
-  pushKeyframe(keyframeFromString(keyframe));
+void Player::appendJSONKeyframe(const std::string& keyframe) {
+  appendKeyframe(keyframeFromString(keyframe));
 }
 
 void Player::setSemanticIdForSubtree(esp::scene::SceneNode* rootNode,

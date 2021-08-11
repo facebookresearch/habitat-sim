@@ -90,7 +90,7 @@ class PhysicsWorker {
         this.operateHands();
       }
 
-      this.sim.stepWorld(0.003);
+      this.sim.stepWorld(1.0 / 60);
 
       // Get the keyframe corresponding to this step from the recorder. Then
       // send it back to the main thread.

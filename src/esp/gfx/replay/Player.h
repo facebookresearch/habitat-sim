@@ -110,12 +110,12 @@ class Player {
   /**
    * @brief Appends a Keyframe to the keyframe list.
    */
-  void pushKeyframe(const Keyframe& keyframe);
+  void appendKeyframe(const Keyframe&& keyframe);
 
   /**
    * @brief Appends a JSON keyframe to the keyframe list.
    */
-  void pushJSONKeyframe(const std::string& keyframe);
+  void appendJSONKeyframe(const std::string& keyframe);
 
  private:
   void applyKeyframe(const Keyframe& keyframe);
