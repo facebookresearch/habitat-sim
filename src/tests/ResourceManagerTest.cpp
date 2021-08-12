@@ -32,7 +32,11 @@ TEST(ResourceManagerTest, createJoinedCollisionMesh) {
   std::shared_ptr<esp::gfx::Renderer> renderer_ = esp::gfx::Renderer::create();
 
   // must declare these in this order due to avoid deallocation errors
-  auto MM = MetadataMediator::create();
+  auto cfg = esp::sim::SimulatorConfiguration{};
+  // setting values for stage load
+  cfg.loadSemanticMesh = false;
+  cfg.forceSeparateSemanticSceneGraph = false;
+  auto MM = MetadataMediator::create(cfg);
   ResourceManager resourceManager(MM);
   SceneManager sceneManager_;
   auto stageAttributesMgr = MM->getStageAttributesManager();
@@ -48,7 +52,7 @@ TEST(ResourceManagerTest, createJoinedCollisionMesh) {
 
   std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
   bool result = resourceManager.loadStage(stageAttributes, nullptr,
-                                          &sceneManager_, tempIDs, false);
+                                          &sceneManager_, tempIDs);
 
   esp::assets::MeshData::uptr joinedBox =
       resourceManager.createJoinedCollisionMesh(boxFile);

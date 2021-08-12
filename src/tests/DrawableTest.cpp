@@ -56,6 +56,9 @@ struct DrawableTest : Cr::TestSuite::Tester {
 
 DrawableTest::DrawableTest() {
   auto cfg = esp::sim::SimulatorConfiguration{};
+  // setting values for stage load
+  cfg.loadSemanticMesh = false;
+  cfg.forceSeparateSemanticSceneGraph = false;
   auto MM = MetadataMediator::create(cfg);
   resourceManager_ = std::make_unique<ResourceManagerExtended>(MM);
   //clang-format off
@@ -72,7 +75,7 @@ DrawableTest::DrawableTest() {
 
   std::vector<int> tempIDs{sceneID_, esp::ID_UNDEFINED};
   bool result = resourceManager_->loadStage(stageAttributes, nullptr,
-                                            &sceneManager_, tempIDs, false);
+                                            &sceneManager_, tempIDs);
 }
 
 void DrawableTest::addRemoveDrawables() {

@@ -192,9 +192,18 @@ bool ResourceManager::loadStage(
     StageAttributes::ptr& stageAttributes,
     const std::shared_ptr<physics::PhysicsManager>& _physicsManager,
     esp::scene::SceneManager* sceneManagerPtr,
-    std::vector<int>& activeSceneIDs,
-    bool createSemanticMesh,
-    bool forceSeparateSemanticSceneGraph) {
+    std::vector<int>& activeSceneIDs) {
+  // If the semantic mesh should be created, based on SimulatorConfiguration
+  bool createSemanticMesh =
+      metadataMediator_->getSimulatorConfiguration().loadSemanticMesh;
+
+  // Force creation of a separate semantic scene graph, even when no semantic
+  // mesh is loaded for the stage.  This is required to support playback of any
+  // replay that includes a semantic-only render asset instance.
+  bool forceSeparateSemanticSceneGraph =
+      metadataMediator_->getSimulatorConfiguration()
+          .forceSeparateSemanticSceneGraph;
+
   // create AssetInfos here for each potential mesh file for the scene, if they
   // are unique.
   bool buildCollisionMesh =

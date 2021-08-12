@@ -384,8 +384,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
 
   // Load stage
   bool loadSuccess = resourceManager_->loadStage(
-      stageAttributes, physicsManager_, sceneManager_.get(), tempIDs,
-      config_.loadSemanticMesh, config_.forceSeparateSemanticSceneGraph);
+      stageAttributes, physicsManager_, sceneManager_.get(), tempIDs);
 
   if (!loadSuccess) {
     ESP_ERROR() << "Cannot load stage :" << stageAttributesHandle;
