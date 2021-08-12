@@ -124,7 +124,9 @@ class URDFImporter {
                                   Magnum::Vector3& localInertiaDiagonal,
                                   Magnum::Matrix4& inertialFrame) const;
 
-  bool logMessages = false;
+  // This is no longer used, instead set the urdf subsystem to veryverbose,
+  // i.e. export HABITAT_SIM_LOG="urdf=veryverbose"
+  // bool logMessages = false;
 
   //! collect and return a list of cached model keys (filepaths)
   std::vector<std::string> getCachedModelKeys() {

@@ -28,10 +28,9 @@ ObjectAttributesManager::createPrimBasedAttributesTemplate(
     bool registerTemplate) {
   // verify that a primitive asset with the given handle exists
   if (!this->isValidPrimitiveAttributes(primAttrTemplateHandle)) {
-    LOG(ERROR)
-        << "::createPrimBasedAttributesTemplate : No primitive with handle '"
-        << primAttrTemplateHandle
-        << "' exists so cannot build physical object.  Aborting.";
+    ESP_ERROR() << "No primitive with handle '" << Mn::Debug::nospace
+                << primAttrTemplateHandle << Mn::Debug::nospace
+                << "' exists so cannot build physical object.  Aborting.";
     return nullptr;
   }
 
@@ -189,14 +188,15 @@ int ObjectAttributesManager::registerObjectFinalize(
     const std::string& objectTemplateHandle,
     bool forceRegistration) {
   if (objectTemplate->getRenderAssetHandle() == "") {
-    LOG(ERROR)
-        << "::registerObjectFinalize : Attributes template named "
-        << objectTemplateHandle
-        << " does not have a valid render asset handle specified. Aborting.";
+    ESP_ERROR()
+        << "Attributes template named" << objectTemplateHandle
+        << "does not have a valid render asset handle specified. Aborting.";
     return ID_UNDEFINED;
   }
 
-  std::map<int, std::string>* mapToUse = nullptr;
+  // create a ref to the partition map of either prims or file-based objects to
+  // place a ref to the object template being regsitered
+  std::unordered_map<int, std::string>* mapToUse = nullptr;
   // Handles for rendering and collision assets
   std::string renderAssetHandle = objectTemplate->getRenderAssetHandle();
   std::string collisionAssetHandle = objectTemplate->getCollisionAssetHandle();
@@ -215,23 +215,21 @@ int ObjectAttributesManager::registerObjectFinalize(
     mapToUse = &physicsFileObjTmpltLibByID_;
   } else if (forceRegistration) {
     // Forcing registration in case of computationaly generated assets
-    LOG(WARNING)
-        << "::registerObjectFinalize : Render asset template handle : "
-        << renderAssetHandle << " specified in object template with handle : "
-        << objectTemplateHandle
-        << " does not correspond to any existing file or primitive render "
-           "asset.  Objects created from this template may fail. ";
+    ESP_WARNING()
+        << "Render asset template handle :" << renderAssetHandle
+        << "specified in object template with handle :" << objectTemplateHandle
+        << "does not correspond to any existing file or primitive render "
+           "asset.  Objects created from this template may fail.";
     objectTemplate->setRenderAssetIsPrimitive(false);
   } else {
     // If renderAssetHandle is neither valid file name nor existing primitive
     // attributes template hande, fail
     // by here always fail
-    LOG(ERROR)
-        << "::registerObjectFinalize : Render asset template handle : "
-        << renderAssetHandle << " specified in object template with handle : "
-        << objectTemplateHandle
-        << " does not correspond to any existing file or primitive render "
-           "asset.  Aborting. ";
+    ESP_ERROR()
+        << "Render asset template handle :" << renderAssetHandle
+        << "specified in object template with handle :" << objectTemplateHandle
+        << "does not correspond to any existing file or primitive render "
+           "asset.  Aborting.";
     return ID_UNDEFINED;
   }
 
@@ -245,14 +243,12 @@ int ObjectAttributesManager::registerObjectFinalize(
     objectTemplate->setCollisionAssetIsPrimitive(false);
   } else {
     // Else, means no collision data specified, use specified render data
-    LOG(INFO)
-        << "::registerObjectFinalize : Collision asset template handle : "
-        << collisionAssetHandle
-        << " specified in object template with handle : "
-        << objectTemplateHandle
-        << " does not correspond to any existing file or primitive render "
-           "asset.  Overriding with given render asset handle : "
-        << renderAssetHandle << ". ";
+    ESP_DEBUG()
+        << "Collision asset template handle :" << collisionAssetHandle
+        << "specified in object template with handle :" << objectTemplateHandle
+        << "does not correspond to any existing file or primitive render "
+           "asset.  Overriding with given render asset handle :"
+        << renderAssetHandle << ".";
 
     objectTemplate->setCollisionAssetHandle(renderAssetHandle);
     objectTemplate->setCollisionAssetIsPrimitive(

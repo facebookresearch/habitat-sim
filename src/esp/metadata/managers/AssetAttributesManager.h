@@ -166,9 +166,9 @@ class AssetAttributesManager
       PrimObjTypes primObjType,
       bool registerTemplate = true) {
     if (primObjType == PrimObjTypes::END_PRIM_OBJ_TYPES) {
-      LOG(ERROR) << "::createObject : Illegal "
-                    "primtitive type name PrimObjTypes::END_PRIM_OBJ_TYPES. "
-                    "Aborting.";
+      ESP_ERROR()
+          << "Illegal primtitive type name PrimObjTypes::END_PRIM_OBJ_TYPES. "
+             "Aborting.";
       return nullptr;
     }
     return this->createObject(PrimitiveNames3DMap.at(primObjType),
@@ -189,14 +189,13 @@ class AssetAttributesManager
       PrimObjTypes primType,
       bool contains = true) const {
     if (primType == PrimObjTypes::END_PRIM_OBJ_TYPES) {
-      LOG(ERROR) << "::getTemplateHandlesByPrimType : "
-                    "Illegal primtitive type "
-                    "name PrimObjTypes::END_PRIM_OBJ_TYPES. Aborting.";
+      ESP_ERROR() << "Illegal primtitive type "
+                     "name PrimObjTypes::END_PRIM_OBJ_TYPES. Aborting.";
       return {};
     }
     std::string subStr = PrimitiveNames3DMap.at(primType);
     return this->getObjectHandlesBySubStringPerType(this->objectLibKeyByID_,
-                                                    subStr, contains);
+                                                    subStr, contains, true);
   }  // AssetAttributeManager::getTemplateHandlesByPrimType
 
   /**
@@ -409,9 +408,9 @@ class AssetAttributesManager
   void setDefaultObject(
       CORRADE_UNUSED attributes::AbstractPrimitiveAttributes::ptr& _defaultObj)
       override {
-    LOG(WARNING) << "::setDefaultObject : Overriding "
-                    "default objects for PrimitiveAssetAttributes not "
-                    "currently supported.  Aborting.";
+    ESP_WARNING()
+        << "Overriding default objects for PrimitiveAssetAttributes not "
+           "currently supported.  Aborting.";
     this->defaultObj_ = nullptr;
   }  // AssetAttributesManager::setDefaultObject
 
@@ -452,9 +451,9 @@ class AssetAttributesManager
   bool verifyTemplateHandle(const std::string& templateHandle,
                             const std::string& attrType) {
     if (std::string::npos == templateHandle.find(attrType)) {
-      LOG(ERROR) << "::verifyTemplateHandle : Handle : " << templateHandle
-                 << " is not of appropriate type for desired " << attrType
-                 << " primitives. Aborting.";
+      ESP_ERROR() << "Handle :" << templateHandle
+                  << "is not of appropriate type for desired" << attrType
+                  << "primitives. Aborting.";
       return false;
     }
     return true;
@@ -490,8 +489,8 @@ class AssetAttributesManager
       const std::string& primClassName,
       CORRADE_UNUSED bool builtFromConfig) override {
     if (primTypeConstructorMap_.count(primClassName) == 0) {
-      LOG(ERROR) << "::initNewObjectInternal : No primitive class"
-                 << primClassName << "exists in Magnum::Primitives. Aborting.";
+      ESP_ERROR() << "No primitive class" << primClassName
+                  << "exists in Magnum::Primitives. Aborting.";
       return nullptr;
     }
     // these attributes ignore any default setttings.
@@ -507,9 +506,9 @@ class AssetAttributesManager
   template <typename T, bool isWireFrame, PrimObjTypes primitiveType>
   attributes::AbstractPrimitiveAttributes::ptr createPrimAttributes() {
     if (primitiveType == PrimObjTypes::END_PRIM_OBJ_TYPES) {
-      LOG(ERROR) << "::createPrimAttributes : Cannot instantiate "
-                    "attributes::AbstractPrimitiveAttributes object for "
-                    "PrimObjTypes::END_PRIM_OBJ_TYPES. Aborting.";
+      ESP_ERROR() << "Cannot instantiate "
+                     "attributes::AbstractPrimitiveAttributes object for "
+                     "PrimObjTypes::END_PRIM_OBJ_TYPES. Aborting.";
       return nullptr;
     }
     int idx = static_cast<int>(primitiveType);
@@ -539,9 +538,9 @@ class AssetAttributesManager
    * createPrimAttributes() keyed by string names of classes being
    * instanced, as defined in @ref PrimitiveNames3DMap
    */
-  typedef std::map<std::string,
-                   attributes::AbstractPrimitiveAttributes::ptr (
-                       AssetAttributesManager::*)()>
+  typedef std::unordered_map<std::string,
+                             attributes::AbstractPrimitiveAttributes::ptr (
+                                 AssetAttributesManager::*)()>
       Map_Of_PrimTypeCtors;
 
   /**
@@ -556,7 +555,7 @@ class AssetAttributesManager
    * @brief Map relating primitive class name to default attributes template
    * handle. There should always be a template for each of these handles.
    */
-  std::map<std::string, std::string> defaultPrimAttributeHandles_;
+  std::unordered_map<std::string, std::string> defaultPrimAttributeHandles_;
 
  public:
   ESP_SMART_POINTERS(AssetAttributesManager)

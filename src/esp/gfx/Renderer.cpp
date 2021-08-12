@@ -68,7 +68,7 @@ struct Renderer::Impl {
 
   ~Impl() {
     acquireGlContext();
-    LOG(INFO) << "Deconstructing Renderer";
+    ESP_DEBUG() << "Deconstructing Renderer";
   }
 
   void draw(RenderCamera& camera,
@@ -210,7 +210,7 @@ struct Renderer::Impl {
 
   void acquireGlContext() {
     if (!contextIsOwned_) {
-      VLOG(1) << "Renderer:: Main thread acquired GL Context";
+      ESP_VERY_VERBOSE() << "Renderer:: Main thread acquired GL Context";
       backgroundRenderer_->releaseContext();
       context_->makeCurrent();
       contextIsOwned_ = true;

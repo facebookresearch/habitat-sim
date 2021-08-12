@@ -29,7 +29,7 @@ except ImportError:
 import habitat_sim.errors
 from habitat_sim.agent.agent import Agent, AgentConfiguration, AgentState
 from habitat_sim.bindings import cuda_enabled
-from habitat_sim.logging import logger
+from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.metadata import MetadataMediator
 from habitat_sim.nav import GreedyGeodesicFollower, NavMeshSettings, PathFinder
 from habitat_sim.sensor import SensorSpec, SensorType
@@ -117,6 +117,7 @@ class Simulator(SimulatorBackend):
         )
 
     def __attrs_post_init__(self) -> None:
+        LoggingContext.reinitialize_from_env()
         self._sanitize_config(self.config)
         self.__set_from_config(self.config)
 

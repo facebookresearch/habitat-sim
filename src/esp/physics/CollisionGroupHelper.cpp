@@ -112,8 +112,8 @@ bool CollisionGroupHelper::setGroupName(CollisionGroup group,
                                         const std::string& newName) {
   auto currentName = getGroupName(group);
   if (collisionGroupNames.count(newName) != 0) {
-    LOG(WARNING) << "CollisionGroupHelper::setGroupName - requested group "
-                    "name is already in use, aborting.";
+    ESP_WARNING() << "Requested group name: " << newName
+                  << "is already in use, aborting.";
     return false;
   }
   collisionGroupNames[newName] = collisionGroupNames.at(currentName);

@@ -4,6 +4,10 @@
 
 #include "ManagedContainerBase.h"
 #include <Corrade/Utility/FormatStl.h>
+#include <algorithm>
+
+namespace Cr = Corrade;
+
 namespace esp {
 namespace core {
 
@@ -24,20 +28,19 @@ bool ManagedContainerBase::setLock(const std::string& objectHandle, bool lock) {
   return true;
 }  // ManagedContainerBase::setLock
 std::string ManagedContainerBase::getRandomObjectHandlePerType(
-    const std::map<int, std::string>& mapOfHandles,
+    const std::unordered_map<int, std::string>& mapOfHandles,
     const std::string& type) const {
   std::size_t numVals = mapOfHandles.size();
   if (numVals == 0) {
-    LOG(ERROR) << "::getRandomObjectHandlePerType : Attempting to get a random "
-               << type << objectType_
-               << " managed object handle but none are loaded; Aboring";
+    ESP_ERROR() << "Attempting to get a random" << type << objectType_
+                << "managed object handle but none are loaded; Aboring";
     return "";
   }
   int randIDX = rand() % numVals;
 
   std::string res;
-  for (std::pair<std::map<int, std::string>::const_iterator, int> iter(
-           mapOfHandles.begin(), 0);
+  for (std::pair<std::unordered_map<int, std::string>::const_iterator, int>
+           iter(mapOfHandles.begin(), 0);
        (iter.first != mapOfHandles.end() && iter.second <= randIDX);
        ++iter.first, ++iter.second) {
     res = iter.first->second;
@@ -47,9 +50,10 @@ std::string ManagedContainerBase::getRandomObjectHandlePerType(
 
 std::vector<std::string>
 ManagedContainerBase::getObjectHandlesBySubStringPerType(
-    const std::map<int, std::string>& mapOfHandles,
+    const std::unordered_map<int, std::string>& mapOfHandles,
     const std::string& subStr,
-    bool contains) const {
+    bool contains,
+    bool sorted) const {
   std::vector<std::string> res;
   // if empty return empty vector
   if (mapOfHandles.size() == 0) {
@@ -57,8 +61,12 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
   }
   // if search string is empty, return all values
   if (subStr.length() == 0) {
+    res.reserve(mapOfHandles.size());
     for (const auto& elem : mapOfHandles) {
       res.push_back(elem.second);
+    }
+    if (sorted) {
+      std::sort(res.begin(), res.end());
     }
     return res;
   }
@@ -67,7 +75,8 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
 
   std::size_t strSize = strToLookFor.length();
 
-  for (std::map<int, std::string>::const_iterator iter = mapOfHandles.begin();
+  for (std::unordered_map<int, std::string>::const_iterator iter =
+           mapOfHandles.begin();
        iter != mapOfHandles.end(); ++iter) {
     std::string key = Cr::Utility::String::lowercase(iter->second);
     // be sure that key is big enough to search in (otherwise find has undefined
@@ -82,14 +91,18 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
       res.push_back(iter->second);
     }
   }
+  if (sorted) {
+    std::sort(res.begin(), res.end());
+  }
   return res;
 }  // ManagedContainerBase::getObjectHandlesBySubStringPerType
 
 std::vector<std::string>
 ManagedContainerBase::getObjectHandlesBySubStringPerType(
-    const std::map<std::string, std::set<std::string>>& mapOfHandles,
+    const std::unordered_map<std::string, std::set<std::string>>& mapOfHandles,
     const std::string& subStr,
-    bool contains) const {
+    bool contains,
+    bool sorted) const {
   std::vector<std::string> res;
   // if empty return empty vector
   if (mapOfHandles.size() == 0) {
@@ -97,8 +110,12 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
   }
   // if search string is empty, return all values
   if (subStr.length() == 0) {
+    res.reserve(mapOfHandles.size());
     for (const auto& elem : mapOfHandles) {
       res.push_back(elem.first);
+    }
+    if (sorted) {
+      std::sort(res.begin(), res.end());
     }
     return res;
   }
@@ -107,8 +124,8 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
 
   std::size_t strSize = strToLookFor.length();
 
-  for (std::map<std::string, std::set<std::string>>::const_iterator iter =
-           mapOfHandles.begin();
+  for (std::unordered_map<std::string, std::set<std::string>>::const_iterator
+           iter = mapOfHandles.begin();
        iter != mapOfHandles.end(); ++iter) {
     std::string key = Cr::Utility::String::lowercase(iter->first);
     // be sure that key is big enough to search in (otherwise find has undefined
@@ -123,6 +140,9 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
       res.push_back(iter->first);
     }
   }
+  if (sorted) {
+    std::sort(res.begin(), res.end());
+  }
   return res;
 }  // ManagedContainerBase::getObjectHandlesBySubStringPerType
 
@@ -131,7 +151,7 @@ std::vector<std::string> ManagedContainerBase::getObjectInfoStrings(
     bool contains) const {
   // get all handles that match query elements first
   std::vector<std::string> handles =
-      getObjectHandlesBySubstring(subStr, contains);
+      this->getObjectHandlesBySubstring(subStr, contains, true);
   std::vector<std::string> res(handles.size() + 1);
   if (handles.size() == 0) {
     res[0] = "No " + objectType_ + " constructs available.";
@@ -164,10 +184,10 @@ int ManagedContainerBase::getObjectIDByHandleOrNew(
     return getObjectInternal<AbstractManagedObject>(objectHandle)->getID();
   }
   if (!getNext) {
-    LOG(ERROR) << "<" << this->objectType_
-               << ">::getObjectIDByHandleOrNew : No " << objectType_
-               << " managed object with handle " << objectHandle
-               << "exists. Aborting";
+    ESP_ERROR() << "<" << Cr::Utility::Debug::nospace << this->objectType_
+                << Cr::Utility::Debug::nospace << "> : No" << objectType_
+                << "managed object with handle" << objectHandle
+                << "exists. Aborting";
     return ID_UNDEFINED;
   }
   return getUnusedObjectID();
@@ -185,13 +205,13 @@ std::string ManagedContainerBase::getObjectInfoCSVString(
 }  // ManagedContainerBase::getObjectInfoCSVString
 
 std::string ManagedContainerBase::getUniqueHandleFromCandidatePerType(
-    const std::map<int, std::string>& mapOfHandles,
+    const std::unordered_map<int, std::string>& mapOfHandles,
     const std::string& name) const {
   // find all existing values with passed name - these should be a list
   // of existing instances of this object name.  We are going to go through
   // all of these names and find the "last" instance, meaning the highest count.
   std::vector<std::string> objHandles =
-      this->getObjectHandlesBySubStringPerType(mapOfHandles, name, true);
+      this->getObjectHandlesBySubStringPerType(mapOfHandles, name, true, true);
 
   int incr = 0;
   // use this as pivot character - the last instance of this character in any

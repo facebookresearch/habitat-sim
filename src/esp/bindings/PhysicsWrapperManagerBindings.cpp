@@ -61,13 +61,13 @@ void declareBaseWrapperManager(py::module& m,
           "handle"_a)
       .def("get_object_handles",
            static_cast<std::vector<std::string> (MgrClass::*)(
-               const std::string&, bool) const>(
+               const std::string&, bool, bool) const>(
                &MgrClass::getObjectHandlesBySubstring),
-           ("Returns a list of " + objType +
+           ("Returns a potentially sorted list of " + objType +
             " handles that either contain or explicitly do not contain the "
             "passed search_str, based on the value of boolean contains.")
                .c_str(),
-           "search_str"_a = "", "contains"_a = true)
+           "search_str"_a = "", "contains"_a = true, "sorted"_a = true)
       .def("get_objects_info", &MgrClass::getObjectInfoStrings,
            ("Returns a list of CSV strings describing each " + objType +
             " whose handles either contain or explicitly do not contain the "

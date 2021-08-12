@@ -14,7 +14,7 @@ CoordinateFrame::CoordinateFrame(const vec3f& up /* = ESP_UP */,
                                  const vec3f& front /* = ESP_FRONT */,
                                  const vec3f& origin /* = vec3f(0, 0, 0) */)
     : up_(up), front_(front), origin_(origin) {
-  ASSERT(up_.isOrthogonal(front_));
+  CORRADE_INTERNAL_ASSERT(up_.isOrthogonal(front_));
 }
 
 CoordinateFrame::CoordinateFrame(const quatf& rotation,
@@ -52,7 +52,7 @@ void CoordinateFrame::fromJson(const std::string& jsonString) {
     front_[i] = front[i].GetFloat();
     origin_[i] = origin[i].GetFloat();
   }
-  ASSERT(up_.isOrthogonal(front_));
+  CORRADE_INTERNAL_ASSERT(up_.isOrthogonal(front_));
 }
 
 bool operator==(const CoordinateFrame& a, const CoordinateFrame& b) {

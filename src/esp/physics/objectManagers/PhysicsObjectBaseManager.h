@@ -96,9 +96,9 @@ class PhysicsObjectBaseManager
       CORRADE_UNUSED bool builtFromConfig) override {
     // construct a new wrapper based on the passed object
     if (managedObjTypeConstructorMap_.count(objectTypeName) == 0) {
-      LOG(ERROR) << "<" << this->objectType_ << ">::initNewObjectInternal ("
-                 << this->objectType_ << ") Unknown constructor type "
-                 << objectTypeName << ".  Aborting.";
+      ESP_ERROR() << "<" << Magnum::Debug::nospace << this->objectType_
+                  << Magnum::Debug::nospace << "> Unknown constructor type"
+                  << objectTypeName << ".  Aborting.";
       return nullptr;
     }
     auto newWrapper = (*this.*managedObjTypeConstructorMap_[objectTypeName])();
@@ -133,8 +133,8 @@ class PhysicsObjectBaseManager
     if (!sp) {
       // This warning message is for python-bound refs to the manager that
       // persist after Simulator/PhysicsManager have been deleted.
-      LOG(WARNING) << "This object manager is no longer valid.  Please delete "
-                      "any variable references.";
+      ESP_WARNING() << "This object manager is no longer valid.  Please delete "
+                       "any variable references.";
     }
     return sp;
   }  // getPhysicsManager

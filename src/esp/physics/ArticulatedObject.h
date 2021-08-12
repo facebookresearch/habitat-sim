@@ -186,73 +186,68 @@ class ArticulatedLink : public RigidBase {
 
   void setTransformation(
       CORRADE_UNUSED const Magnum::Matrix4& transformation) override {
-    Corrade::Utility::Debug()
-        << "(setTransformation) - ArticulatedLink can't do this.";
+    ESP_DEBUG() << "ArticulatedLink can't do this.";
   }
 
   void setTranslation(CORRADE_UNUSED const Magnum::Vector3& vector) override {
-    Corrade::Utility::Debug()
-        << "(setTranslation) - ArticulatedLink can't do this.";
+    ESP_DEBUG() << "ArticulatedLink can't do this.";
   }
 
   void setRotation(
       CORRADE_UNUSED const Magnum::Quaternion& quaternion) override {
-    Corrade::Utility::Debug()
-        << "(setRotation) - ArticulatedLink can't do this.";
+    ESP_DEBUG() << "ArticulatedLink can't do this.";
   }
 
   void setRigidState(
       CORRADE_UNUSED const core::RigidState& rigidState) override {
-    Corrade::Utility::Debug()
-        << "(setRigidState) - ArticulatedLink can't do this.";
+    ESP_DEBUG() << "ArticulatedLink can't do this.";
   }
 
   void resetTransformation() override {
-    Corrade::Utility::Debug()
-        << "(resetTransformation) - ArticulatedLink can't do this.";
+    ESP_DEBUG() << "ArticulatedLink can't do this.";
   }
 
   void translate(CORRADE_UNUSED const Magnum::Vector3& vector) override {
-    Corrade::Utility::Debug() << "(translate) - ArticulatedLink can't do this.";
+    ESP_DEBUG() << "ArticulatedLink can't do this.";
   }
 
   void translateLocal(CORRADE_UNUSED const Magnum::Vector3& vector) override {
-    Corrade::Utility::Debug()
-        << "(translateLocal) - ArticulatedLink can't do this.";
+    ESP_DEBUG() << "ArticulatedLink can't do this.";
   }
 
   void rotate(CORRADE_UNUSED const Magnum::Rad angleInRad,
               CORRADE_UNUSED const Magnum::Vector3& normalizedAxis) override {
-    Corrade::Utility::Debug() << "(rotate) - ArticulatedLink can't do this.";
+    ESP_DEBUG() << "ArticulatedLink can't do this.";
   }
 
   void rotateLocal(
       CORRADE_UNUSED const Magnum::Rad angleInRad,
       CORRADE_UNUSED const Magnum::Vector3& normalizedAxis) override {
-    Corrade::Utility::Debug()
-        << "(rotateLocal) - ArticulatedLink can't do this.";
+    ESP_DEBUG() << "ArticulatedLink can't do this.";
   }
 
   void rotateX(CORRADE_UNUSED const Magnum::Rad angleInRad) override {
-    Corrade::Utility::Debug() << "(rotateX) - ArticulatedLink can't do this.";
+    ESP_DEBUG() << "ArticulatedLink can't do this.";
   }
+
   void rotateY(CORRADE_UNUSED const Magnum::Rad angleInRad) override {
-    Corrade::Utility::Debug() << "(rotateY) - ArticulatedLink can't do this.";
+    ESP_DEBUG() << "ArticulatedLink can't do this.";
   }
+
   void rotateZ(CORRADE_UNUSED const Magnum::Rad angleInRad) override {
-    Corrade::Utility::Debug() << "(rotateZ) - ArticulatedLink can't do this.";
+    ESP_DEBUG() << "ArticulatedLink can't do this.";
   }
+
   void rotateXLocal(CORRADE_UNUSED const Magnum::Rad angleInRad) override {
-    Corrade::Utility::Debug()
-        << "(rotateXLocal) - ArticulatedLink can't do this.";
+    ESP_DEBUG() << "ArticulatedLink can't do this.";
   }
+
   void rotateYLocal(CORRADE_UNUSED const Magnum::Rad angleInRad) override {
-    Corrade::Utility::Debug()
-        << "(rotateYLocal) - ArticulatedLink can't do this.";
+    ESP_DEBUG() << "ArticulatedLink can't do this.";
   }
+
   void rotateZLocal(CORRADE_UNUSED const Magnum::Rad angleInRad) override {
-    Corrade::Utility::Debug()
-        << "(rotateZLocal) - ArticulatedLink can't do this.";
+    ESP_DEBUG() << "ArticulatedLink can't do this.";
   }
 
   /**
@@ -263,8 +258,7 @@ class ArticulatedLink : public RigidBase {
    */
   void resetStateFromSceneInstanceAttr(
       CORRADE_UNUSED bool defaultCOMCorrection = false) override {
-    Corrade::Utility::Debug()
-        << "(resetStateFromSceneInstanceAttr) - ArticulatedLink can't do this.";
+    ESP_DEBUG() << "ArticulatedLink can't do this.";
   }
 
   std::string linkName = "";
@@ -331,7 +325,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
       // base link
       return baseLink_->node();
     }
-    CHECK(links_.count(linkId));
+    CORRADE_INTERNAL_ASSERT(links_.count(linkId));
     return links_.at(linkId)->node();
   }
 
@@ -346,7 +340,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
       // base link
       return baseLink_->visualNodes_;
     }
-    CHECK(links_.count(linkId));
+    CORRADE_INTERNAL_ASSERT(links_.count(linkId));
     return links_.at(linkId)->visualNodes_;
   }
 
@@ -399,7 +393,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
     if (id == -1) {
       return *baseLink_.get();
     }
-    CHECK(links_.count(id));
+    CORRADE_INTERNAL_ASSERT(links_.count(id));
     return *links_.at(id).get();
   }
 
@@ -588,7 +582,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    */
   virtual std::string getLinkJointName(CORRADE_UNUSED int linkId) const {
     ESP_CHECK(links_.count(linkId) != 0,
-              "ArticulatedObject::getLinkJointName - no link with linkId = "
+              "ArticulatedObject::getLinkJointName - no link with linkId ="
                   << linkId);
     return links_.at(linkId)->linkJointName;
   }
@@ -605,7 +599,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
     }
     ESP_CHECK(
         links_.count(linkId) != 0,
-        "ArticulatedObject::getLinkName - no link with linkId = " << linkId);
+        "ArticulatedObject::getLinkName - no link with linkId =" << linkId);
     return links_.at(linkId)->linkName;
   }
 
@@ -677,7 +671,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * See derived implementations.
    */
   virtual void clampJointLimits() {
-    Magnum::Debug{} << "No base implementation of \"clampJointLimits\". ";
+    ESP_DEBUG() << "No base implementation of \"clampJointLimits\".";
   }
 
   //=========== Joint Motor API ===========
@@ -695,8 +689,8 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   virtual int createJointMotor(
       CORRADE_UNUSED const int index,
       CORRADE_UNUSED const JointMotorSettings& settings) {
-    Magnum::Debug{} << "No base implementation of \"createJointMotor\". "
-                       "Requires a physics simulator implementation.";
+    ESP_DEBUG() << "No base implementation of \"createJointMotor\". "
+                   "Requires a physics simulator implementation.";
     return ID_UNDEFINED;
   }
 
@@ -706,7 +700,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   virtual void removeJointMotor(const int motorId) {
     ESP_CHECK(
         jointMotors_.count(motorId) > 0,
-        "ArticulatedObject::removeJointMotor - No motor exists with motorId = "
+        "ArticulatedObject::removeJointMotor - No motor exists with motorId ="
             << motorId);
     jointMotors_.erase(motorId);
   }
@@ -717,7 +711,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   virtual JointMotorSettings getJointMotorSettings(const int motorId) {
     ESP_CHECK(jointMotors_.count(motorId) > 0,
               "ArticulatedObject::getJointMotorSettings - No motor exists with "
-              "motorId = "
+              "motorId ="
                   << motorId);
     return jointMotors_.at(motorId)->settings;
   }
@@ -729,7 +723,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
                                 const JointMotorSettings& settings) {
     ESP_CHECK(
         jointMotors_.count(motorId) > 0,
-        "ArticulatedObject::updateJointMotor - No motor exists with motorId = "
+        "ArticulatedObject::updateJointMotor - No motor exists with motorId ="
             << motorId);
     ESP_CHECK(
         jointMotors_.at(motorId)->settings.motorType == settings.motorType,
@@ -761,8 +755,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   virtual std::unordered_map<int, int> createMotorsForAllDofs(
       CORRADE_UNUSED const JointMotorSettings& settings =
           JointMotorSettings()) {
-    LOG(ERROR) << "ArticulatedObject::createMotorsForAllDofs(): - ERROR, "
-                  "SHOULD NOT BE CALLED WITHOUT BULLET ";
+    ESP_ERROR() << "ERROR, SHOULD NOT BE CALLED WITHOUT BULLET";
     return std::unordered_map<int, int>();
   }
 
@@ -785,8 +778,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   virtual void updateAllMotorTargets(
       CORRADE_UNUSED const std::vector<float>& stateTargets,
       CORRADE_UNUSED bool velocities = false) {
-    LOG(ERROR) << "ArticulatedObject::updateAllMotorTargets(): - ERROR, "
-                  "SHOULD NOT BE CALLED WITHOUT BULLET ";
+    ESP_ERROR() << "ERROR,SHOULD NOT BE CALLED WITHOUT BULLET";
   }
 
   //=========== END - Joint Motor API ===========

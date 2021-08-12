@@ -55,6 +55,8 @@ struct Keyframe {
   std::vector<std::pair<RenderAssetInstanceKey, RenderAssetInstanceState>>
       stateUpdates;
   std::unordered_map<std::string, Transform> userTransforms;
+
+  ESP_SMART_POINTERS(Keyframe)
 };
 
 }  // namespace replay

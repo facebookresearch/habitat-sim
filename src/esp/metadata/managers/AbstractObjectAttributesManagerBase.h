@@ -180,8 +180,8 @@ auto AbstractObjectAttributesManager<T, Access>::createObject(
 
   }  // if this is prim else
   if (nullptr != attrs) {
-    LOG(INFO) << msg << " " << this->objectType_ << " attributes created"
-              << (registerTemplate ? " and registered." : ".");
+    ESP_DEBUG() << msg << "" << this->objectType_ << "attributes created"
+                << (registerTemplate ? "and registered." : ".");
   }
   return attrs;
 
@@ -328,12 +328,13 @@ AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
     if (T::AssetTypeNamesMap.count(strToLookFor)) {
       typeVal = static_cast<int>(T::AssetTypeNamesMap.at(strToLookFor));
     } else {
-      LOG(WARNING) << "<" << this->objectType_
-                   << ">::setJSONAssetHandleAndType : Value in json @ tag : "
-                   << jsonMeshTypeTag << " : `" << tmpVal
-                   << "` does not map to a valid "
-                      "AbstractObjectAttributes::AssetTypeNamesMap value, so "
-                      "defaulting mesh type to AssetType::UNKNOWN.";
+      ESP_WARNING() << "<" << Magnum::Debug::nospace << this->objectType_
+                    << Magnum::Debug::nospace
+                    << "> : Value in json @ tag :" << jsonMeshTypeTag << ": `"
+                    << tmpVal
+                    << "` does not map to a valid "
+                       "AbstractObjectAttributes::AssetTypeNamesMap value, so "
+                       "defaulting mesh type to AssetType::UNKNOWN.";
       typeVal = static_cast<int>(esp::assets::AssetType::UNKNOWN);
     }
     // value found so override current value, otherwise do not.
