@@ -13,6 +13,7 @@
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix4.h>
 #include <Magnum/Shaders/FlatGL.h>
+#include "esp/core/esp.h"
 
 #include <memory>
 #include <vector>
@@ -179,6 +180,8 @@ class DebugLineRender {
   float _internalLineWidth = 1.0f;
   std::unique_ptr<GLResourceSet> _glResources;
   Magnum::Containers::Array<VertexRecord> _verts;
+
+  ESP_SMART_POINTERS(DebugLineRender)
 };
 
 }  // namespace gfx

@@ -224,6 +224,9 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .class_function("mul", &Quaternion_mul)
       .class_function("rotation", &Magnum::Quaternion::rotation);
 
+  em::class_<Magnum::Color4>("Color4")
+      .constructor<float, float, float, float>();
+
   em::class_<AgentConfiguration>("AgentConfiguration")
       .smart_ptr_constructor("AgentConfiguration",
                              &AgentConfiguration::create<>)
@@ -261,6 +264,14 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("hasHits", &RaycastResults::hasHits)
       .property("hits", &RaycastResults::hits)
       .property("ray", &RaycastResults::ray);
+
+  em::class_<DebugLineRender>("DebugLineRender")
+      .smart_ptr_constructor("DebugLineRender", &DebugLineRender::create<>)
+      .function("setLineWidth", &DebugLineRender::setLineWidth)
+      .function("drawLine",
+                em::select_overload<void(
+                    const Magnum::Vector3&, const Magnum::Vector3&,
+                    const Magnum::Color4&)>(&DebugLineRender::drawLine));
 
   em::class_<ReplayManager>("ReplayManager")
       .smart_ptr<ReplayManager::ptr>("ReplayManager::ptr")
@@ -481,6 +492,8 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("setLightSetup", &Simulator::setLightSetup)
       .function("stepWorld", &Simulator::stepWorld)
       .function("castRay", &Simulator::castRay)
+      .function("setObjectIsCollidable", &Simulator::setObjectIsCollidable)
+      .function("getDebugLineRender", &Simulator::getDebugLineRender)
       .function("getGfxReplayManager", &Simulator::getGfxReplayManager)
       .function("setLinearVelocity", &Simulator::setLinearVelocity);
 }
