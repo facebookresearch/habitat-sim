@@ -67,7 +67,7 @@ Details and download instructions: [https://aihabitat.org/datasets/replica_cad/]
 
 ## ScanNet
 
-The official ScanNet data can be downloaded here: [http://www.scan-net.org/](http://www.scan-net.org/). To use ScanNet scans with habitat-sim, the `scene_*.ply` files need to be converted to `*.glb` format using [assimp](https://github.com/assimp/assimp).
+The official ScanNet data can be downloaded here: [http://www.scan-net.org/](http://www.scan-net.org/). To use ScanNet scans with habitat-sim, the `scene_*.ply` files need to be converted to glTF format (`*.glb`). For example, using [assimp](https://github.com/assimp/assimp):
 
 ```
 assimp export <PLY FILE> <GLB PATH> 
