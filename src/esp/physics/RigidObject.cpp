@@ -22,7 +22,7 @@ bool RigidObject::initialize(
 
   // save the copy of the template used to create the object at initialization
   // time
-  setUserAttributes(initAttributes->getUserConfiguration());
+  setOrMergeUserAttributes(initAttributes->getUserConfiguration(), false);
   initializationAttributes_ = std::move(initAttributes);
 
   return initialization_LibSpecific();

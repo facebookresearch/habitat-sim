@@ -127,6 +127,13 @@ int PhysicsManager::addObjectInstance(
 
   // save the scene init attributes used to configure object's initial state
   this->existingObjects_.at(objID)->setSceneInstanceAttr(objInstAttributes);
+  // merge scene instance user-defined configurations with the new object's, if
+  // scene instance specifies any set articulated object's user-defined
+  // attributes, if any exist in scene
+  // instance.
+  this->existingObjects_.at(objID)->setOrMergeUserAttributes(
+      objInstAttributes->getUserConfiguration(), true);
+
   // set object's location, rotation and other pertinent state values based on
   // scene object instance attributes set in the object above.
   this->existingObjects_.at(objID)->resetStateFromSceneInstanceAttr(
@@ -299,8 +306,8 @@ int PhysicsManager::addArticulatedObjectInstance(
 
   // set articulated object's user-defined attributes, if any exist in scene
   // instance.
-  existingArticulatedObjects_.at(aObjID)->setUserAttributes(
-      aObjInstAttributes->getUserConfiguration());
+  existingArticulatedObjects_.at(aObjID)->setOrMergeUserAttributes(
+      aObjInstAttributes->getUserConfiguration(), true);
 
   // set articulated object's location, rotation and other pertinent state
   // values based on

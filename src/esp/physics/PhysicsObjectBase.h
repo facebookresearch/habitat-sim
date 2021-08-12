@@ -427,13 +427,17 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
   core::Configuration::ptr getUserAttributes() const { return userAttributes_; }
 
   /**
-   * @brief This function will completely overwrite this object's
-   * user-defined attributes.
+   * @brief This function will overwrite or merge this object's existing
+   * user-defined attributes with @p attr , based on value of @p merge
    * @param attr A ptr to the user defined attributes specified for this object.
    * merge into them.
    */
-  void setUserAttributes(core::Configuration::ptr attr) {
-    userAttributes_ = std::move(attr);
+  void setOrMergeUserAttributes(core::Configuration::ptr attr, bool merge) {
+    if (merge) {
+      userAttributes_->overwriteWithConfig(attr);
+    } else {
+      userAttributes_ = std::move(attr);
+    }
   }
 
  protected:
