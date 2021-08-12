@@ -25,6 +25,8 @@ void initCoreBindings(py::module& m) {
       .def("get_quat", &Configuration::getQuat)
       .def("get_rad", &Configuration::getRad)
 
+      .def("get", &Configuration::getAsString)
+
       .def("get_bool_keys", &Configuration::getBoolKeys)
       .def("get_string_keys", &Configuration::getStringKeys)
       .def("get_int_keys", &Configuration::getIntKeys)

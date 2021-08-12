@@ -34,18 +34,7 @@ class Configuration {
     for (const auto& entry : otr.configMap_) {
       configMap_[entry.first] = std::make_shared<Configuration>(*entry.second);
     }
-    // vecMap_.reserve(otr.vecMap_.size());
-    // for (const auto& entry : otr.vecMap_) {
-    //   vecMap_[entry.first] = Magnum::Vector3{entry.second};
-    // }
-    // quatMap_.reserve(otr.quatMap_.size());
-    // for (const auto& entry : otr.quatMap_) {
-    //   quatMap_[entry.first] = Magnum::Quaternion{entry.second};
-    // }
-    // radMap_.reserve(otr.radMap_.size());
-    // for (const auto& entry : otr.radMap_) {
-    //   radMap_[entry.first] = Magnum::Rad{entry.second};
-    // }
+
     numEntries = calcNumEntries();
   }
 
@@ -100,39 +89,40 @@ class Configuration {
     return getValFromMap(key, radMap_);
   }
 
-  // ****************** Setters ******************
-  template <typename T>
-  void set(CORRADE_UNUSED const std::string& key,
-           CORRADE_UNUSED const T& value) {
-    ESP_ERROR() << "Unknown/unsupported type :" << typeid(T).name()
-                << "for key :" << key;
-  }
-  void set(const std::string& key, const bool& value) {
-    addValToMap(key, value, boolMap_);
-  }
-  void set(const std::string& key, const int& value) {
-    addValToMap(key, value, intMap_);
-  }
+  /**
+   * @brief This method will look for the provided key, and return a string
+   * holding the object, if it is found in one of this configuration's maps
+   */
+  std::string getAsString(const std::string& key) const {
+    if (hasBool(key)) {
+      return getBoolAsString(key);
+    }
 
-  void set(const std::string& key, const double& value) {
-    addValToMap(key, value, doubleMap_);
-  }
-  void set(const std::string& key, const char* value) {
-    addValToMap(key, std::string(value), stringMap_);
-  }
-
-  void set(const std::string& key, const std::string& value) {
-    addValToMap(key, value, stringMap_);
-  }
-
-  void set(const std::string& key, const Magnum::Vector3& value) {
-    addValToMap(key, value, vecMap_);
-  }
-  void set(const std::string& key, const Magnum::Quaternion& value) {
-    addValToMap(key, value, quatMap_);
-  }
-  void set(const std::string& key, const Magnum::Rad& value) {
-    addValToMap(key, value, radMap_);
+    if (hasDouble(key)) {
+      return getDoubleAsString(key);
+    }
+    if (hasBool(key)) {
+      return getBoolAsString(key);
+    }
+    if (hasInt(key)) {
+      return getIntAsString(key);
+    }
+    if (hasString(key)) {
+      return getString(key);
+    }
+    if (hasRad(key)) {
+      return getRadAsString(key);
+    }
+    if (hasVec3(key)) {
+      return getVec3AsString(key);
+    }
+    if (hasQuat(key)) {
+      return getQuatAsString(key);
+    }
+    std::string retVal = "Key ";
+    retVal.append(key).append(" not present in this configuration");
+    ESP_WARNING() << retVal;
+    return retVal;
   }
 
   // ****************** String Conversion ******************
@@ -198,7 +188,40 @@ class Configuration {
   std::vector<std::string> getRadKeys() const {
     return getKeysFromMap(radMap_);
   }
+  // ****************** Setters ******************
+  template <typename T>
+  void set(CORRADE_UNUSED const std::string& key,
+           CORRADE_UNUSED const T& value) {
+    ESP_ERROR() << "Unknown/unsupported type :" << typeid(T).name()
+                << "for key :" << key;
+  }
+  void set(const std::string& key, const bool& value) {
+    addValToMap(key, value, boolMap_);
+  }
+  void set(const std::string& key, const int& value) {
+    addValToMap(key, value, intMap_);
+  }
 
+  void set(const std::string& key, const double& value) {
+    addValToMap(key, value, doubleMap_);
+  }
+  void set(const std::string& key, const char* value) {
+    addValToMap(key, std::string(value), stringMap_);
+  }
+
+  void set(const std::string& key, const std::string& value) {
+    addValToMap(key, value, stringMap_);
+  }
+
+  void set(const std::string& key, const Magnum::Vector3& value) {
+    addValToMap(key, value, vecMap_);
+  }
+  void set(const std::string& key, const Magnum::Quaternion& value) {
+    addValToMap(key, value, quatMap_);
+  }
+  void set(const std::string& key, const Magnum::Rad& value) {
+    addValToMap(key, value, radMap_);
+  }
   // ****************** Value removal ******************
   bool removeBool(const std::string& key) {
     return removeValFromMap(key, boolMap_);
@@ -235,8 +258,8 @@ class Configuration {
    * storage.
    *
    * @param name The name of the configuration to edit.
-   * @return A pointer to a copy of the configuration having the requested name,
-   * or a pointer to an empty configuration.
+   * @return A pointer to a copy of the configuration having the requested
+   * name, or a pointer to an empty configuration.
    */
 
   std::shared_ptr<Configuration> getSubConfigCopy(
@@ -256,7 +279,8 @@ class Configuration {
    * Use this function when you wish to modify this configuration's
    * subgroup.
    * @param name The name of the configuration to edit.
-   * @return The actual pointer to the configuration having the requested name.
+   * @return The actual pointer to the configuration having the requested
+   * name.
    */
   std::shared_ptr<Configuration> editSubConfig(const std::string& name) {
     makeNewSubgroup(name);
@@ -299,8 +323,8 @@ class Configuration {
   bool hasValues() const { return getNumEntries() > 0; }
 
   /**
-   * @brief Checks if passed @p key is contained in this configuration. Returns
-   * the highest level where @p key was found, or 0 if not found
+   * @brief Checks if passed @p key is contained in this configuration.
+   * Returns the highest level where @p key was found, or 0 if not found
    * @param key The key to look for
    * @return The level @p key was found. 0 if not found (so can be treated as
    * bool)
@@ -324,8 +348,8 @@ class Configuration {
 
   /**
    * @brief Merges configuration pointed to by @p config into this
-   * configuration, including all subconfigs.  Passed config overwrites existing
-   * data in this config.
+   * configuration, including all subconfigs.  Passed config overwrites
+   * existing data in this config.
    * @param config The source of configuration data we wish to merge into this
    * configuration.
    */
