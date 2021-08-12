@@ -241,9 +241,13 @@ class LoggingContext {
 bool isLevelEnabled(Subsystem subsystem, LoggingLevel level);
 
 /**
- * @brief Return the prefix that gets printed for a given subsystem in that log.
+ * @brief Build appropriate prefix for logging messages, including
+ * subsystem/namespace, file, line number and function name
  */
-Corrade::Containers::String subsystemPrefix(Subsystem subsystem);
+Corrade::Containers::String buildMessagePrefix(Subsystem subsystem,
+                                               const std::string& filename,
+                                               const std::string& function,
+                                               int line);
 
 namespace impl {
 class LogMessageVoidify {
@@ -301,7 +305,8 @@ class LogMessageVoidify {
 // the case that the logger was created with a nospace flag.
 #define ESP_SUBSYS_LOG_IF(subsystem, level, output)                        \
   ESP_LOG_IF(esp::logging::isLevelEnabled((subsystem), (level)), (output)) \
-      << esp::logging::subsystemPrefix((subsystem))                        \
+      << esp::logging::buildMessagePrefix((subsystem), (__FILE__),         \
+                                          (__FUNCTION__), (__LINE__))      \
       << Corrade::Utility::Debug::nospace
 
 #define ESP_LOG_LEVEL_ENABLED(level) \

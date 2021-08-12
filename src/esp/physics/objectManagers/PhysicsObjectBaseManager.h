@@ -97,8 +97,7 @@ class PhysicsObjectBaseManager
     // construct a new wrapper based on the passed object
     if (managedObjTypeConstructorMap_.count(objectTypeName) == 0) {
       ESP_ERROR() << "<" << Magnum::Debug::nospace << this->objectType_
-                  << Magnum::Debug::nospace << ">::initNewObjectInternal ("
-                  << this->objectType_ << ") Unknown constructor type"
+                  << Magnum::Debug::nospace << "> Unknown constructor type"
                   << objectTypeName << ".  Aborting.";
       return nullptr;
     }

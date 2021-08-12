@@ -72,9 +72,8 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
     bool success = this->verifyLoadDocument(filename, docConfig);
     if (!success) {
       ESP_ERROR() << "<" << Magnum::Debug::nospace << this->objectType_
-                  << Magnum::Debug::nospace << ">::createObjectFromFile ("
-                  << this->objectType_
-                  << ") : Failure reading document as JSON :" << filename
+                  << Magnum::Debug::nospace
+                  << "> : Failure reading document as JSON :" << filename
                   << ". Aborting.";
       return nullptr;
     }
@@ -98,9 +97,8 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
                                              CORRADE_UNUSED const U& config) {
     ESP_ERROR()
         << "<" << Magnum::Debug::nospace << this->objectType_
-        << Magnum::Debug::nospace << ">::buildManagedObjectFromDoc ("
-        << this->objectType_
-        << ") : Failure loading attributes from document of unknown type :"
+        << Magnum::Debug::nospace
+        << "> : Failure loading attributes from document of unknown type :"
         << filename << ". Aborting.";
   }
   /**
@@ -146,9 +144,8 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
   bool verifyLoadDocument(const std::string& filename,
                           CORRADE_UNUSED U& resDoc) {
     // by here always fail
-    ESP_ERROR() << this->objectType_ << "<" << Magnum::Debug::nospace
-                << this->objectType_ << Magnum::Debug::nospace
-                << ">::verifyLoadDocument : File" << filename
+    ESP_ERROR() << "<" << Magnum::Debug::nospace << this->objectType_
+                << Magnum::Debug::nospace << "> : File" << filename
                 << "failed due to unknown file type.";
     return false;
   }  // ManagedContainerBase::verifyLoadDocument
@@ -211,16 +208,14 @@ std::string ManagedFileBasedContainer<T, Access>::convertFilenameToPassedExt(
     resHandle = Cr::Utility::Directory::splitExtension(filename).first + "." +
                 fileTypeExt;
     ESP_VERY_VERBOSE() << "<" << Magnum::Debug::nospace << this->objectType_
-                       << Magnum::Debug::nospace
-                       << ">::convertFilenameToPassedExt : Filename :"
-                       << filename << "changed to proposed" << fileTypeExt
+                       << Magnum::Debug::nospace << "> : Filename :" << filename
+                       << "changed to proposed" << fileTypeExt
                        << "filename :" << resHandle;
   } else {
     ESP_VERY_VERBOSE() << "<" << Magnum::Debug::nospace << this->objectType_
-                       << Magnum::Debug::nospace
-                       << ">::convertFilenameToPassedExt : Filename :"
-                       << filename << "contains requested file extension"
-                       << fileTypeExt << "already.";
+                       << Magnum::Debug::nospace << "> : Filename :" << filename
+                       << "contains requested file extension" << fileTypeExt
+                       << "already.";
   }
   return resHandle;
 }  // ManagedFileBasedContainer<T, Access>::convertFilenameToPassedExt
@@ -234,8 +229,7 @@ bool ManagedFileBasedContainer<T, Access>::verifyLoadDocument(
       jsonDoc = io::parseJsonFile(filename);
     } catch (...) {
       ESP_ERROR() << "<" << Magnum::Debug::nospace << this->objectType_
-                  << Magnum::Debug::nospace
-                  << ">::verifyLoadDocument : Failed to parse" << filename
+                  << Magnum::Debug::nospace << "> : Failed to parse" << filename
                   << "as JSON.";
       return false;
     }
@@ -243,8 +237,8 @@ bool ManagedFileBasedContainer<T, Access>::verifyLoadDocument(
   } else {
     // by here always fail
     ESP_ERROR() << "<" << Magnum::Debug::nospace << this->objectType_
-                << Magnum::Debug::nospace << ">::verifyLoadDocument : File"
-                << filename << "does not exist";
+                << Magnum::Debug::nospace << "> : File" << filename
+                << "does not exist";
     return false;
   }
 }  // ManagedFileBasedContainer<T, Access>::verifyLoadDocument

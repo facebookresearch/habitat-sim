@@ -11,6 +11,8 @@
 #include <Corrade/Containers/Array.h>
 #include <Corrade/Containers/StaticArray.h>
 #include <Corrade/Containers/String.h>
+#include <Corrade/Containers/StringStl.h>
+#include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/Format.h>
 
 namespace Cr = Corrade;
@@ -121,8 +123,14 @@ bool isLevelEnabled(Subsystem subsystem, LoggingLevel level) {
   return level >= LoggingContext::current().levelFor(subsystem);
 }
 
-Cr::Containers::String subsystemPrefix(Subsystem subsystem) {
-  return ""_s.join({"["_s, subsystemNames[uint8_t(subsystem)], "] "_s});
+Cr::Containers::String buildMessagePrefix(Subsystem subsystem,
+                                          const std::string& filename,
+                                          const std::string& function,
+                                          int line) {
+  auto baseFileName = Cr::Utility::Directory::filename(filename);
+  return ""_s.join({"["_s, subsystemNames[uint8_t(subsystem)], "] "_s,
+                    baseFileName, "("_s, std::to_string(line), ")::"_s,
+                    function, " : "_s});
 }
 
 }  // namespace logging

@@ -98,8 +98,7 @@ int loadJsonIntoConfiguration(const JsonGenericValue& jsonObj,
         // decrement count for key:obj due to not being handled vector
         --numConfigSettings;
         // TODO support numeric array in JSON
-        ESP_WARNING() << "::loadJsonIntoConfiguration : For subgroup name"
-                      << subGroupName
+        ESP_WARNING() << "For subgroup name" << subGroupName
                       << "config cell in JSON document contains key" << key
                       << "referencing an unsupported numeric array of length :"
                       << obj.Size() << "so skipping.";
@@ -117,8 +116,7 @@ int loadJsonIntoConfiguration(const JsonGenericValue& jsonObj,
       // TODO support other types?
       // decrement count for key:obj due to not being handled type
       --numConfigSettings;
-      ESP_WARNING() << "::loadJsonIntoConfiguration: For subgroup name"
-                    << subGroupName
+      ESP_WARNING() << "For subgroup name" << subGroupName
                     << "config cell in JSON document contains key" << key
                     << "referencing an unknown/unparsable value type, so "
                        "skipping this key.";

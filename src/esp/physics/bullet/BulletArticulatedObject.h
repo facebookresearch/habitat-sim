@@ -41,15 +41,13 @@ class BulletArticulatedLink : public ArticulatedLink, public BulletBase {
 
   Magnum::Range3D getCollisionShapeAabb() const override {
     // TODO: collision object should be linked here
-    ESP_WARNING()
-        << "BulletArticulatedLink::getCollisionShapeAabb : Not implemented.";
+    ESP_WARNING() << "Not implemented.";
     return Magnum::Range3D();
   }
 
   //! link can't do this.
   void setMotionType(CORRADE_UNUSED MotionType mt) override {
-    ESP_WARNING() << "BulletArticulatedLink::setMotionType : Cannot set "
-                     "MotionType individually for links.";
+    ESP_WARNING() << "Cannot set MotionType individually for links.";
   }
 
  protected:

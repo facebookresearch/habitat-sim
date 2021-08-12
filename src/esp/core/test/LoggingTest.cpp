@@ -57,24 +57,31 @@ constexpr const struct {
   const char* expected;
 } EnvVarTestData[]{
     {nullptr,
-     "[Default] DebugDefault\n[Default] WarningDefault\n"
-     "[Sim] DebugSim\n[Sim] WarningSim\n"
-     "[Gfx] "
-     "DebugGfx\n[Gfx] WarningGfx\n"},
+     "[Default] LoggingTest.cpp(101)::envVarTest : DebugDefault\n[Default] "
+     "LoggingTest.cpp(102)::envVarTest : WarningDefault\n"
+     "[Sim] LoggingTest.cpp(23)::debug : DebugSim\n[Sim] "
+     "LoggingTest.cpp(26)::warning : WarningSim\n"
+     "[Gfx] LoggingTest.cpp(36)::debug : DebugGfx\n[Gfx] "
+     "LoggingTest.cpp(39)::warning : WarningGfx\n"},
     {"debug",
-     "[Default] DebugDefault\n[Default] WarningDefault\n"
-     "[Sim] DebugSim\n[Sim] WarningSim\n"
-     "[Gfx] "
-     "DebugGfx\n[Gfx] WarningGfx\n"},
+     "[Default] LoggingTest.cpp(101)::envVarTest : DebugDefault\n[Default] "
+     "LoggingTest.cpp(102)::envVarTest : WarningDefault\n"
+     "[Sim] LoggingTest.cpp(23)::debug : DebugSim\n[Sim] "
+     "LoggingTest.cpp(26)::warning : WarningSim\n"
+     "[Gfx] LoggingTest.cpp(36)::debug : DebugGfx\n[Gfx] "
+     "LoggingTest.cpp(39)::warning : WarningGfx\n"},
     {"quiet", ""},
     {"error", ""},
     {"quiet:Sim,Gfx=verbose",
-     "[Sim] DebugSim\n[Sim] WarningSim\n[Gfx] "
-     "DebugGfx\n[Gfx] WarningGfx\n"},
+     "[Sim] LoggingTest.cpp(23)::debug : DebugSim\n[Sim] "
+     "LoggingTest.cpp(26)::warning : WarningSim\n[Gfx] "
+     "LoggingTest.cpp(36)::debug : DebugGfx\n[Gfx] "
+     "LoggingTest.cpp(39)::warning : WarningGfx\n"},
     {"warning:Gfx=debug",
-     "[Default] WarningDefault\n"
-     "[Sim] WarningSim\n[Gfx] "
-     "DebugGfx\n[Gfx] WarningGfx\n"},
+     "[Default] LoggingTest.cpp(102)::envVarTest : WarningDefault\n"
+     "[Sim] LoggingTest.cpp(26)::warning : WarningSim\n[Gfx] "
+     "LoggingTest.cpp(36)::debug : DebugGfx\n[Gfx] "
+     "LoggingTest.cpp(39)::warning : WarningGfx\n"},
 };  // namespace
 
 LoggingTest::LoggingTest() {
