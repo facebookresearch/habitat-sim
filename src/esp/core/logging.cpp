@@ -19,6 +19,7 @@ using Cr::Containers::Literals::operator""_s;
 namespace esp {
 namespace logging {
 
+constexpr const char* LoggingContext::LOGGING_ENV_VAR_NAME;
 constexpr LoggingLevel LoggingContext::DEFAULT_LEVEL;
 
 static_assert(uint8_t(Subsystem::NumSubsystems) ==
