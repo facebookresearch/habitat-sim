@@ -201,7 +201,7 @@ class ManagedContainerBase {
    */
   std::string getObjectHandleByID(const int objectID) const {
     if (objectLibKeyByID_.count(objectID) == 0) {
-      ESP_ERROR() << "::getObjectHandleByID : Unknown" << objectType_
+      ESP_ERROR() << "Unknown" << objectType_
                   << "managed object ID:" << objectID << ". Aborting";
       // never will have registered object with registration handle == ""
       return "";

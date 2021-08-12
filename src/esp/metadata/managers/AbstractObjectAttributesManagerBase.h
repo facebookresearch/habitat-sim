@@ -181,7 +181,7 @@ auto AbstractObjectAttributesManager<T, Access>::createObject(
   }  // if this is prim else
   if (nullptr != attrs) {
     ESP_DEBUG() << msg << "" << this->objectType_ << "attributes created"
-                << (registerTemplate ? " and registered." : ".");
+                << (registerTemplate ? "and registered." : ".");
   }
   return attrs;
 
@@ -330,8 +330,8 @@ AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
     } else {
       ESP_WARNING() << "<" << Magnum::Debug::nospace << this->objectType_
                     << Magnum::Debug::nospace
-                    << ">::setJSONAssetHandleAndType : Value in json @ tag :"
-                    << jsonMeshTypeTag << ": `" << tmpVal
+                    << "> : Value in json @ tag :" << jsonMeshTypeTag << ": `"
+                    << tmpVal
                     << "` does not map to a valid "
                        "AbstractObjectAttributes::AssetTypeNamesMap value, so "
                        "defaulting mesh type to AssetType::UNKNOWN.";

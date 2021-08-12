@@ -262,11 +262,9 @@ void BulletArticulatedObject::resetStateFromSceneInstanceAttr(
   size_t idx = 0;
   for (const auto& elem : initJointPos) {
     if (idx >= aoJointPose.size()) {
-      ESP_WARNING()
-          << "BulletArticulatedObject::resetStateFromSceneInstanceAttr :"
-          << "Attempting to specify more initial joint poses than "
-             "exist in articulated object"
-          << sceneObjInstanceAttr->getHandle() << ", so skipping";
+      ESP_WARNING() << "Attempting to specify more initial joint poses than "
+                       "exist in articulated object"
+                    << sceneObjInstanceAttr->getHandle() << ", so skipping";
       break;
     }
     aoJointPose[idx++] = elem.second;
@@ -283,7 +281,6 @@ void BulletArticulatedObject::resetStateFromSceneInstanceAttr(
   for (const auto& elem : initJointVel) {
     if (idx >= aoJointVels.size()) {
       ESP_WARNING()
-          << "BulletArticulatedObject::resetStateFromSceneInstanceAttr :"
           << "Attempting to specify more initial joint velocities than "
              "exist in articulated object"
           << sceneObjInstanceAttr->getHandle() << ", so skipping";
@@ -324,8 +321,8 @@ void BulletArticulatedObject::setRootAngularVelocity(
 
 void BulletArticulatedObject::setJointForces(const std::vector<float>& forces) {
   if (forces.size() != size_t(btMultiBody_->getNumDofs())) {
-    ESP_DEBUG() << "setJointForces - Force vector size mis-match (input:"
-                << forces.size() << ", expected:" << btMultiBody_->getNumDofs()
+    ESP_DEBUG() << "Force vector size mis-match (input:" << forces.size()
+                << ", expected:" << btMultiBody_->getNumDofs()
                 << "), aborting.";
   }
 
@@ -341,8 +338,8 @@ void BulletArticulatedObject::setJointForces(const std::vector<float>& forces) {
 
 void BulletArticulatedObject::addJointForces(const std::vector<float>& forces) {
   if (forces.size() != size_t(btMultiBody_->getNumDofs())) {
-    ESP_DEBUG() << "addJointForces - Force vector size mis-match (input:"
-                << forces.size() << ", expected:" << btMultiBody_->getNumDofs()
+    ESP_DEBUG() << "Force vector size mis-match (input:" << forces.size()
+                << ", expected:" << btMultiBody_->getNumDofs()
                 << "), aborting.";
   }
 
@@ -372,8 +369,8 @@ std::vector<float> BulletArticulatedObject::getJointForces() {
 void BulletArticulatedObject::setJointVelocities(
     const std::vector<float>& vels) {
   if (vels.size() != size_t(btMultiBody_->getNumDofs())) {
-    ESP_DEBUG() << "setJointVelocities - Velocity vector size mis-match (input:"
-                << vels.size() << ", expected:" << btMultiBody_->getNumDofs()
+    ESP_DEBUG() << "Velocity vector size mis-match (input:" << vels.size()
+                << ", expected:" << btMultiBody_->getNumDofs()
                 << "), aborting.";
   }
 
@@ -405,9 +402,8 @@ void BulletArticulatedObject::setJointPositions(
     const std::vector<float>& positions) {
   if (positions.size() != size_t(btMultiBody_->getNumPosVars())) {
     ESP_DEBUG(Mn::Debug::Flag::NoSpace)
-        << "setJointPositions - Position vector size mis-match (input:"
-        << positions.size() << ", expected:" << btMultiBody_->getNumPosVars()
-        << "), aborting.";
+        << "Position vector size mis-match (input:" << positions.size()
+        << ", expected:" << btMultiBody_->getNumPosVars() << "), aborting.";
   }
 
   int posCount = 0;

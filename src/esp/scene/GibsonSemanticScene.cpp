@@ -24,9 +24,9 @@ bool SemanticScene::
   }
 
   // top-level scene
-  ESP_VERY_VERBOSE() << "loadGibsonHouse::Parsing" << houseFilename;
+  ESP_VERY_VERBOSE() << "Parsing" << houseFilename;
   const io::JsonDocument& json = io::parseJsonFile(houseFilename);
-  ESP_VERY_VERBOSE() << "loadGibsonHouse::Parsed.";
+  ESP_VERY_VERBOSE() << "Parsed.";
 
   return buildGibsonHouse(json, scene, rotation);
 }  // SemanticScene::loadGibsonHouse

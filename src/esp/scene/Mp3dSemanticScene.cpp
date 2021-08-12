@@ -96,9 +96,8 @@ bool SemanticScene::loadMp3dHouse(
   std::string header;
   std::getline(ifs, header);
   if (header != "ASCII 1.1") {
-    ESP_ERROR() << "::loadMp3dHouse : Unsupported Mp3d House "
-                   "format header"
-                << header << "in file name" << houseFilename;
+    ESP_ERROR() << "Unsupported Mp3d House format header" << header
+                << "in file name" << houseFilename;
     return false;
   }
 
