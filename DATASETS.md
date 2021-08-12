@@ -75,4 +75,4 @@ assimp export <PLY FILE> <GLB PATH>
 
 The exported `*.glb` files can directly be used with habitat-sim versions >= 2.0.
 
-Note: Depending on the radius and height of the robot, certain scans may have no navigable locations on the navmesh (~200). These scenes can be filtered out by checking if `sim.pathfinder.is_loaded` is False.
+Note: Depending on the configured radius and height of the agent, certain scans may have no navigable locations on the navmesh (~200). These scenes can be filtered out by checking if `sim.pathfinder.is_loaded` is False.
