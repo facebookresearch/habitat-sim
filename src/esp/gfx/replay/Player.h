@@ -110,7 +110,7 @@ class Player {
   /**
    * @brief Appends a Keyframe to the keyframe list.
    */
-  void appendKeyframe(const Keyframe&& keyframe);
+  void appendKeyframe(Keyframe&& keyframe);
 
   /**
    * @brief Appends a JSON keyframe to the keyframe list.

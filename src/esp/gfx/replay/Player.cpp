@@ -168,7 +168,7 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
   }
 }
 
-void Player::appendKeyframe(const Keyframe&& keyframe) {
+void Player::appendKeyframe(Keyframe&& keyframe) {
   keyframes_.emplace_back(std::move(keyframe));
 }
 
