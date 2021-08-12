@@ -2,25 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-/* global FS, importScripts, PhysicsWorker */
-
-function preloadFunc(url) {
-  let file_parents_str = "/";
-  const splits = url.split("/");
-  let file = splits[splits.length - 1];
-  if (url.indexOf("http") === -1) {
-    let file_parents = splits.slice(0, splits.length - 1);
-    for (let i = 0; i < splits.length - 1; i += 1) {
-      file_parents_str += file_parents[i];
-      if (!FS.analyzePath(file_parents_str).exists) {
-        FS.mkdir(file_parents_str, 777);
-      }
-      file_parents_str += "/";
-    }
-  }
-  FS.createPreloadedFile(file_parents_str, file, url, true, false);
-  return file_parents_str + file;
-}
+/* global preload, importScripts, PhysicsWorker */
 
 // Sets up the Module object, which is used for all the bindings and
 // interactions with Habitat.
@@ -77,6 +59,9 @@ onmessage = function(e) {
   if (e.data.type == "preloadInfo") {
     // Get preloadInfo from the main thread.
     let preloadInfo = e.data.value;
+    // Hack: the 'preload' function was passed here as a string containing JS
+    // code.
+    eval(preloadInfo.preloadFunc);
 
     Module = createMagnumModule();
 
@@ -86,7 +71,7 @@ onmessage = function(e) {
       stageFilepath = preloadInfo.stageFilepath;
       objectBaseFilepath = preloadInfo.objectBaseFilepath;
       for (const file of preloadInfo.preloadedFiles) {
-        preloadFunc(file);
+        preload(file);
       }
     });
 

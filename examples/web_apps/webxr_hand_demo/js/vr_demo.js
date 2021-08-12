@@ -12,6 +12,7 @@ import {
   drawTextureData
 } from "../lib/habitat-sim-js/vr_utils.js";
 import { DataUtils } from "./data_utils.js";
+import { preload } from "../lib/habitat-sim-js/utils.js";
 
 // Objects will be spawned in this order when user presses the spawn button. At
 // the end it will loop back to the beginning.
@@ -108,7 +109,10 @@ export class VRDemo {
       physicsConfigFilepath: DataUtils.getPhysicsConfigFilepath(),
       stageFilepath: DataUtils.getStageFilepath(Module.stageName),
       objectBaseFilepath: DataUtils.getObjectBaseFilepath(),
-      preloadedFiles: this.preloadedFiles
+      preloadedFiles: this.preloadedFiles,
+      // Hack: we convert the 'preload' function into a string in order to pass
+      // it to the worker.
+      preloadFunc: preload.toString()
     };
     this.workerThread.postMessage({ type: "preloadInfo", value: preloadInfo });
 
