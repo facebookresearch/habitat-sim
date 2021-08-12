@@ -9,20 +9,17 @@
 
 namespace em = emscripten;
 
-<<<<<<< HEAD
 #include "esp/gfx/DebugLineRender.h"
-=======
 #include "esp/gfx/replay/Recorder.h"
 #include "esp/gfx/replay/ReplayManager.h"
->>>>>>> ldchen/webxr_hand_demo_parallel
-    #include "esp/scene/SemanticScene.h"
+#include "esp/scene/SemanticScene.h"
 #include "esp/sensor/CameraSensor.h"
 #include "esp/sensor/EquirectangularSensor.h"
 #include "esp/sensor/FisheyeSensor.h"
 #include "esp/sensor/VisualSensor.h"
 #include "esp/sim/Simulator.h"
 
-    using namespace esp;
+using namespace esp;
 using namespace esp::agent;
 using namespace esp::assets;
 using namespace esp::core;
@@ -276,6 +273,7 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
                 em::select_overload<void(
                     const Magnum::Vector3&, const Magnum::Vector3&,
                     const Magnum::Color4&)>(&DebugLineRender::drawLine));
+
   em::class_<ReplayManager>("ReplayManager")
       .smart_ptr<ReplayManager::ptr>("ReplayManager::ptr")
       .function("getRecorder", &ReplayManager::getRecorder)
