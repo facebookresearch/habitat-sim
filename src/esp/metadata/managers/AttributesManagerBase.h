@@ -412,7 +412,7 @@ bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
           io::loadJsonIntoConfiguration(jsonObj, subGroupPtr);
 
       // save as user_defined subgroup configuration
-      attribs->setConfigSubgroupPtr("user_defined", subGroupPtr);
+      attribs->setSubConfigPtr("user_defined", subGroupPtr);
 
       return (numConfigSettings > 0);
     }

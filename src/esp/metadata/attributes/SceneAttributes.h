@@ -106,18 +106,24 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
   int getShaderType() const { return getInt("shader_type"); }
 
   /**
-   * @brief Get or set the uniform scaling of the instanced object.
+   * @brief Get or set the uniform scaling of the instanced object.  Want this
+   * to be a float for consumption in instance creation
    */
-  float getUniformScale() const { return getFloat("uniform_scale"); }
-  void setUniformScale(float uniform_scale) {
+  float getUniformScale() const {
+    return static_cast<float>(getDouble("uniform_scale"));
+  }
+  void setUniformScale(double uniform_scale) {
     set("uniform_scale", uniform_scale);
   }
 
   /**
-   * @brief Get or set the mass scaling of the instanced object.
+   * @brief Get or set the mass scaling of the instanced object.  Want this
+   * to be a float for consumption in instance creation
    */
-  float getMassScale() const { return getFloat("mass_scale"); }
-  void setMassScale(float mass_scale) { set("mass_scale", mass_scale); }
+  float getMassScale() const {
+    return static_cast<float>(getDouble("mass_scale"));
+  }
+  void setMassScale(double mass_scale) { set("mass_scale", mass_scale); }
 
   /**
    * @brief Used for info purposes.  Return a string name corresponding to the

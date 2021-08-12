@@ -71,9 +71,7 @@ int loadJsonIntoConfiguration(
     // increment, assuming is valid object
     ++numConfigSettings;
 
-    if (obj.IsFloat()) {
-      config->set(key, obj.GetFloat());
-    } else if (obj.IsDouble()) {
+    if (obj.IsDouble()) {
       config->set(key, obj.GetDouble());
     } else if (obj.IsNumber()) {
       config->set(key, obj.GetInt());
@@ -106,11 +104,11 @@ int loadJsonIntoConfiguration(
       // support nested objects
       // create a new subgroup
       std::shared_ptr<core::Configuration> subGroupPtr =
-          config->getConfigSubgroupCopy(key);
+          config->getSubConfigCopy(key);
       ;
       numConfigSettings += loadJsonIntoConfiguration(obj, subGroupPtr);
       // save subgroup's subgroup configuration in original config
-      config->setConfigSubgroupPtr(key, subGroupPtr);
+      config->setSubConfigPtr(key, subGroupPtr);
       //
     } else {
       // TODO support other types?

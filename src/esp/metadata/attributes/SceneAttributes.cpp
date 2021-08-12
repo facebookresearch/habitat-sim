@@ -32,8 +32,8 @@ SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
   setTranslationOrigin(
       static_cast<int>(SceneInstanceTranslationOrigin::Unknown));
   // set default multiplicative scaling values
-  setUniformScale(1.0f);
-  setMassScale(1.0f);
+  setUniformScale(1.0);
+  setMassScale(1.0);
 }
 
 std::string SceneObjectInstanceAttributes::getCurrShaderTypeName() const {

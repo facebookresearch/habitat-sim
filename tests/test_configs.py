@@ -30,9 +30,9 @@ def test_core_configuration():
     config.set_int("integer", 3)
     assert config.get_int("integer") == 3
 
-    my_double = 0.77777777777777
-    config.set_double("double", my_double)
-    assert config.get_double("double") == my_double
+    my_float = 0.77777777777777
+    config.set_float("py_float", my_float)
+    assert config.get_float("py_float") == my_float
 
     # Magnum::Vector3 (float)
     my_vec3 = np.array([1.12345, 2.0, -3.0])

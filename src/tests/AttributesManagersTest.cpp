@@ -343,7 +343,7 @@ class AttributesManagersTest : public testing::Test {
    * @param userConfig The configuration object whose contents are to be tested
    * @param str_val Expected string value
    * @param bool_val Expected boolean value
-   * @param float_val Exptected float value
+   * @param double_val Exptected double value
    * @param vec_val Expected Magnum::Vector3 value
    * @param quat_val Expected Quaternion value - note that the JSON is read with
    * scalar at idx 0, whereas the quaternion constructor takes the vector
@@ -354,7 +354,7 @@ class AttributesManagersTest : public testing::Test {
       const std::string& str_val,
       bool bool_val,
       int int_val,
-      float float_val,
+      double double_val,
       Magnum::Vector3 vec_val,
       Magnum::Quaternion quat_val) {
     // user defined attributes from light instance
@@ -362,7 +362,7 @@ class AttributesManagersTest : public testing::Test {
     ASSERT_EQ(userConfig->getString("user_string"), str_val);
     ASSERT_EQ(userConfig->getBool("user_bool"), bool_val);
     ASSERT_EQ(userConfig->getInt("user_int"), int_val);
-    ASSERT_EQ(userConfig->getFloat("user_float"), float_val);
+    ASSERT_EQ(userConfig->getDouble("user_double"), double_val);
     ASSERT_EQ(userConfig->getVec3("user_vec3"), vec_val);
     ASSERT_EQ(userConfig->getQuat("user_quat"), quat_val);
 
@@ -498,7 +498,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_PhysicsJSONLoadTest) {
       "user_string" : "pm defined string",
       "user_bool" : true,
       "user_int" : 15,
-      "user_float" : 12.6,
+      "user_double" : 12.6,
       "user_vec3" : [215.4, 217.6, 2110.1],
       "user_quat" : [0.2, 5.2, 6.2, 7.2]
   }
@@ -518,7 +518,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_PhysicsJSONLoadTest) {
   ASSERT_EQ(physMgrAttr->getRestitutionCoefficient(), 1.1);
   // test physics manager attributes-level user config vals
   testUserDefinedConfigVals(physMgrAttr->getUserConfiguration(),
-                            "pm defined string", true, 15, 12.6f,
+                            "pm defined string", true, 15, 12.6,
                             Magnum::Vector3(215.4, 217.6, 2110.1),
                             Magnum::Quaternion({5.2f, 6.2f, 7.2f}, 0.2f));
 
@@ -548,7 +548,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_LightJSONLoadTest) {
             "user_string" : "light instance defined string",
             "user_bool" : false,
             "user_int" : 42,
-            "user_float" : 1.2,
+            "user_double" : 1.2,
             "user_vec3" : [0.1, 2.3, 4.5],
             "user_quat" : [0.1, 0.2, 0.3, 0.4]
         }
@@ -558,7 +558,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_LightJSONLoadTest) {
         "user_string" : "light attribs defined string",
         "user_bool" : true,
         "user_int" : 23,
-        "user_float" : 2.3,
+        "user_double" : 2.3,
         "user_vec3" : [1.1, 3.3, 5.5],
         "user_quat" : [0.5, 0.6, 0.7, 0.8]
     },
@@ -575,7 +575,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_LightJSONLoadTest) {
   ASSERT_NE(nullptr, lightLayoutAttr);
   // test light layout attributes-level user config vals
   testUserDefinedConfigVals(lightLayoutAttr->getUserConfiguration(),
-                            "light attribs defined string", true, 23, 2.3f,
+                            "light attribs defined string", true, 23, 2.3,
                             Magnum::Vector3(1.1, 3.3, 5.5),
                             Magnum::Quaternion({0.6f, 0.7f, 0.8f}, 0.5f));
   ASSERT_EQ(lightLayoutAttr->getPositiveIntensityScale(), 2.0);
@@ -600,7 +600,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_LightJSONLoadTest) {
 
   // test user defined attributes from light instance
   testUserDefinedConfigVals(lightAttr->getUserConfiguration(),
-                            "light instance defined string", false, 42, 1.2f,
+                            "light instance defined string", false, 42, 1.2,
                             Magnum::Vector3(0.1, 2.3, 4.5),
                             Magnum::Quaternion({0.2f, 0.3f, 0.4f}, 0.1f));
 
@@ -624,7 +624,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
           "user_string" : "stage instance defined string",
           "user_bool" : true,
           "user_int" : 11,
-          "user_float" : 2.2,
+          "user_double" : 2.2,
           "user_vec3" : [1.2, 3.4, 5.6],
           "user_quat" : [0.4, 0.5, 0.6, 0.7]
       }
@@ -640,7 +640,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
               "user_string" : "obj0 instance defined string",
               "user_bool" : false,
               "user_int" : 12,
-              "user_float" : 2.3,
+              "user_double" : 2.3,
               "user_vec3" : [1.3, 3.5, 5.7],
               "user_quat" : [0.3, 0.2, 0.6, 0.1]
           }
@@ -654,7 +654,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
               "user_string" : "obj1 instance defined string",
               "user_bool" : false,
               "user_int" : 1,
-              "user_float" : 1.1,
+              "user_double" : 1.1,
               "user_vec3" : [10.3, 30.5, -5.07],
               "user_quat" : [1.3, 1.2, 1.6, 1.1]
           }
@@ -675,7 +675,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
                   "user_string" : "test_urdf_template0 instance defined string",
                   "user_bool" : false,
                   "user_int" : 2,
-                  "user_float" : 1.22,
+                  "user_double" : 1.22,
                   "user_vec3" : [120.3, 302.5, -25.07],
                   "user_quat" : [1.23, 1.22, 1.26, 1.21],
                   "user_def_obj" : {
@@ -695,7 +695,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
                   "user_string" : "test_urdf_template1 instance defined string",
                   "user_bool" : false,
                   "user_int" : 21,
-                  "user_float" : 11.22,
+                  "user_double" : 11.22,
                   "user_vec3" : [190.3, 902.5, -95.07],
                   "user_quat" : [1.25, 9.22, 9.26, 0.21]
               }
@@ -708,7 +708,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
           "user_string" : "scene instance defined string",
           "user_bool" : true,
           "user_int" : 99,
-          "user_float" : 9.1,
+          "user_double" : 9.1,
           "user_vec3" : [12.3, 32.5, 25.07],
           "user_quat" : [0.3, 3.2, 2.6, 5.1]
       }
@@ -732,7 +732,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
             "test_semantic_descriptor_path1");
   // test scene instance attributes-level user config vals
   testUserDefinedConfigVals(sceneAttr->getUserConfiguration(),
-                            "scene instance defined string", true, 99, 9.1f,
+                            "scene instance defined string", true, 99, 9.1,
                             Magnum::Vector3(12.3, 32.5, 25.07),
                             Magnum::Quaternion({3.2f, 2.6f, 5.1f}, 0.3f));
 
@@ -744,7 +744,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
             Magnum::Quaternion({0.2f, 0.3f, 0.4f}, 0.1f));
   // test stage instance attributes-level user config vals
   testUserDefinedConfigVals(stageInstance->getUserConfiguration(),
-                            "stage instance defined string", true, 11, 2.2f,
+                            "stage instance defined string", true, 11, 2.2,
                             Magnum::Vector3(1.2, 3.4, 5.6),
                             Magnum::Quaternion({0.5f, 0.6f, 0.7f}, 0.4f));
   // make sure that is not default value "flat"
@@ -766,7 +766,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
 
   // test object 0 instance attributes-level user config vals
   testUserDefinedConfigVals(objInstance->getUserConfiguration(),
-                            "obj0 instance defined string", false, 12, 2.3f,
+                            "obj0 instance defined string", false, 12, 2.3,
                             Magnum::Vector3(1.3, 3.5, 5.7),
                             Magnum::Quaternion({0.2f, 0.6f, 0.1f}, 0.3f));
 
@@ -780,7 +780,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
 
   // test object 0 instance attributes-level user config vals
   testUserDefinedConfigVals(objInstance->getUserConfiguration(),
-                            "obj1 instance defined string", false, 1, 1.1f,
+                            "obj1 instance defined string", false, 1, 1.1,
                             Magnum::Vector3(10.3, 30.5, -5.07),
                             Magnum::Quaternion({1.2f, 1.6f, 1.1f}, 1.3f));
 
@@ -819,14 +819,13 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
   // test test_urdf_template0 ao instance attributes-level user config vals
   testUserDefinedConfigVals(artObjInstance->getUserConfiguration(),
                             "test_urdf_template0 instance defined string",
-                            false, 2, 1.22f,
+                            false, 2, 1.22,
                             Magnum::Vector3(120.3f, 302.5f, -25.07f),
                             Magnum::Quaternion({1.22f, 1.26f, 1.21f}, 1.23f));
 
   // test nested configuration
   auto artObjNestedConfig =
-      artObjInstance->getUserConfiguration()->getConfigSubgroupCopy(
-          "user_def_obj");
+      artObjInstance->getUserConfiguration()->getSubConfigCopy("user_def_obj");
   ASSERT_NE(artObjNestedConfig, nullptr);
   ASSERT_EQ(artObjNestedConfig->hasValues(), true);
   ASSERT_EQ(artObjNestedConfig->getVec3("position"),
@@ -845,7 +844,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
   // test test_urdf_template0 ao instance attributes-level user config vals
   testUserDefinedConfigVals(artObjInstance->getUserConfiguration(),
                             "test_urdf_template1 instance defined string",
-                            false, 21, 11.22f,
+                            false, 21, 11.22,
                             Magnum::Vector3(190.3f, 902.5f, -95.07f),
                             Magnum::Quaternion({9.22f, 9.26f, 0.21f}, 1.25f));
 
@@ -882,7 +881,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_StageJSONLoadTest) {
             "user_string" : "stage defined string",
             "user_bool" : false,
             "user_int" : 3,
-            "user_float" : 0.8,
+            "user_double" : 0.8,
             "user_vec3" : [5.4, 7.6, 10.1],
             "user_quat" : [0.1, 1.5, 2.6, 3.7]
         }
@@ -918,7 +917,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_StageJSONLoadTest) {
   ASSERT_EQ(stageAttr->getHouseFilename(), "testJSONHouseFileName.glb");
   // test stage attributes-level user config vals
   testUserDefinedConfigVals(stageAttr->getUserConfiguration(),
-                            "stage defined string", false, 3, 0.8f,
+                            "stage defined string", false, 3, 0.8,
                             Magnum::Vector3(5.4, 7.6, 10.1),
                             Magnum::Quaternion({1.5f, 2.6f, 3.7f}, 0.1f));
 
@@ -954,7 +953,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_ObjectJSONLoadTest) {
       "user_string" : "object defined string",
       "user_bool" : true,
       "user_int" : 5,
-      "user_float" : 2.6,
+      "user_double" : 2.6,
       "user_vec3" : [15.4, 17.6, 110.1],
       "user_quat" : [0.7, 5.5, 6.6, 7.7]
   }
@@ -989,7 +988,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_ObjectJSONLoadTest) {
   ASSERT_EQ(objAttr->getCOM(), Magnum::Vector3(0.1, 0.2, 0.3));
   // test object attributes-level user config vals
   testUserDefinedConfigVals(objAttr->getUserConfiguration(),
-                            "object defined string", true, 5, 2.6f,
+                            "object defined string", true, 5, 2.6,
                             Magnum::Vector3(15.4, 17.6, 110.1),
                             Magnum::Quaternion({5.5f, 6.6f, 7.7f}, 0.7f));
 

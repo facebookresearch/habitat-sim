@@ -19,7 +19,8 @@ void initCoreBindings(py::module& m) {
       .def("get_bool", &Configuration::getBool)
       .def("get_string", &Configuration::getString)
       .def("get_int", &Configuration::getInt)
-      .def("get_double", &Configuration::getDouble)
+      // python floats are doubles
+      .def("get_float", &Configuration::getDouble)
       .def("get_vec3", &Configuration::getVec3)
       .def("get_quat", &Configuration::getQuat)
       .def("get_rad", &Configuration::getRad)
@@ -27,12 +28,10 @@ void initCoreBindings(py::module& m) {
       .def("get_bool_keys", &Configuration::getBoolKeys)
       .def("get_string_keys", &Configuration::getStringKeys)
       .def("get_int_keys", &Configuration::getIntKeys)
-      .def("get_double_keys", &Configuration::getDoubleKeys)
+      .def("get_float_keys", &Configuration::getDoubleKeys)
       .def("get_vec3_keys", &Configuration::getVec3Keys)
       .def("get_quat_keys", &Configuration::getQuatKeys)
       .def("get_rad_keys", &Configuration::getRadKeys)
-
-      .def("get", &Configuration::getString)
 
       .def("set", [](Configuration& self, const std::string& key,
                      const std::string& val) { self.set(key, val); })
@@ -53,8 +52,8 @@ void initCoreBindings(py::module& m) {
                             const std::string& val) { self.set(key, val); })
       .def("set_int", [](Configuration& self, const std::string& key,
                          const int val) { self.set(key, val); })
-      .def("set_double", [](Configuration& self, const std::string& key,
-                            const double val) { self.set(key, val); })
+      .def("set_float", [](Configuration& self, const std::string& key,
+                           const double val) { self.set(key, val); })
       .def("set_bool", [](Configuration& self, const std::string& key,
                           const bool val) { self.set(key, val); })
       .def("set_quat",
@@ -62,14 +61,16 @@ void initCoreBindings(py::module& m) {
               const Magnum::Quaternion& val) { self.set(key, val); })
       .def("set_vec3", [](Configuration& self, const std::string& key,
                           const Magnum::Vector3& val) { self.set(key, val); })
+      .def("set_rad", [](Configuration& self, const std::string& key,
+                         const Magnum::Rad& val) { self.set(key, val); })
 
       //.def("add_string_to_group", &Configuration::addStringToGroup)
-      .def("has_value", &Configuration::hasValue)
+      .def("has_value", &Configuration::hasValue,
+           R"(Returns whether this Configuration has )", "key"_a)
       .def("has_bool", &Configuration::hasBool)
       .def("has_int", &Configuration::hasInt)
       .def("has_string", &Configuration::hasString)
-      .def("has_double", &Configuration::hasDouble)
-      .def("has_float", &Configuration::hasFloat)
+      .def("has_float", &Configuration::hasDouble)
       .def("has_quat", &Configuration::hasQuat)
       .def("has_vec3", &Configuration::hasVec3)
       .def("has_rad", &Configuration::hasRad)
@@ -77,7 +78,7 @@ void initCoreBindings(py::module& m) {
       .def("remove_bool", &Configuration::removeBool)
       .def("remove_string", &Configuration::removeString)
       .def("remove_int", &Configuration::removeInt)
-      .def("remove_double", &Configuration::removeDouble)
+      .def("remove_float", &Configuration::removeDouble)
       .def("remove_vec3", &Configuration::removeVec3)
       .def("remove_quat", &Configuration::removeQuat)
       .def("remove_rad", &Configuration::removeRad);
