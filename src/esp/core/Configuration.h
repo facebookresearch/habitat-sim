@@ -447,10 +447,6 @@ class Configuration {
                    std::unordered_map<std::string, T>& map) {
     if (!checkMapForKey(key, map)) {
       ++numEntries;
-    } else {
-      ESP_DEBUG() << "Key :" << key
-                  << "already present in map of type <std::string,"
-                  << typeid(T).name() << ">.  Overwriting value.";
     }
     map[key] = val;
   }
