@@ -4,7 +4,7 @@
 
 export class DataUtils {
   static getDataDir() {
-    return "data/webxr_mobile_demo_dataset/";
+    return "data/webxr_demo_dataset/";
   }
 
   static getPhysicsConfigFilepath() {

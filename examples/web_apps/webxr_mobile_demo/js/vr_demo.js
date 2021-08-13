@@ -6,7 +6,10 @@
 
 import { initGL, drawTextureData } from "../lib/habitat-sim-js/vr_utils.js";
 import { DataUtils } from "./data_utils.js";
+import { SimHelpers } from "./sim_helpers.js";
 
+// Each of these objects will be spawned at a random location chosen from
+// possibleSpawnLocations.
 const initialObjects = [
   "frl_apartment_plate_01", // plate
   "frl_apartment_plate_01",
@@ -18,6 +21,7 @@ const initialObjects = [
   "frl_apartment_kitchen_utensil_03" // orange spice shaker
 ];
 
+// Possible locations on the counter to spawn objects at.
 const possibleSpawnLocations = [
   [0.5, 1.0, 5.5],
   [0.8, 1.0, 5.75],
@@ -44,14 +48,20 @@ export class VRDemo {
 
   constructor() {}
 
+  // Sets up the virtual file system so that these files can be loaded with
+  // their respective file paths. This is called by habitat_main.js and is the
+  // first function in this file to run.
   preloadFiles(preloadFunc) {
     preloadFunc(DataUtils.getPhysicsConfigFilepath());
 
     preloadFunc(DataUtils.getStageFilepath(Module.stageName));
     preloadFunc(DataUtils.getStageConfigFilepath(Module.stageName));
 
+    // the "cursor" that indicates where the user is pointing
     preloadFunc(DataUtils.getObjectFilepath("greensphere"));
     preloadFunc(DataUtils.getObjectConfigFilepath("greensphere"));
+    // the "dropMarker" that indicates where the held object would fall if it
+    // were dropped
     preloadFunc(DataUtils.getObjectFilepath("redsphere"));
     preloadFunc(DataUtils.getObjectConfigFilepath("redsphere"));
 
@@ -67,6 +77,7 @@ export class VRDemo {
     }
   }
 
+  // Entry point for all the hand demo logic.
   start() {
     // init sim
     this.config = new Module.SimulatorConfiguration();
@@ -75,8 +86,10 @@ export class VRDemo {
     this.config.physicsConfigFile = DataUtils.getPhysicsConfigFilepath();
     this.config.sceneLightSetup = ""; // this empty string means "use lighting"
     this.config.overrideSceneLightDefaults = true; // always set this to true
-    this.config.allowPbrShader = false; // Pbr shader isn't robust on WebGL yet
     this.sim = new Module.Simulator(this.config);
+
+    // this class contains useful helper functions we will use
+    this.simHelpers = new SimHelpers(this.sim);
 
     // init agent
     const agentConfigOrig = new Module.AgentConfiguration();
@@ -88,7 +101,6 @@ export class VRDemo {
     spec.resolution = [1000, 450];
     specs.push_back(spec);
     agentConfigOrig.sensorSpecifications = specs;
-
     this.sim.addAgent(agentConfigOrig);
     this.agentId = 0;
 
@@ -107,8 +119,10 @@ export class VRDemo {
       DataUtils.getObjectBaseFilepath()
     );
 
+    // used to draw red line from grabbed object down to the floor
     this.debugLineRender = this.sim.getDebugLineRender();
 
+    // randomly place the objects on the counter
     this.spawnInitialObjects();
 
     // set up "Enter VR" button
@@ -117,13 +131,14 @@ export class VRDemo {
     elem.addEventListener("click", this.enterVR.bind(this));
   }
 
+  // Code that runs when the user clicks "Enter VR".
   async enterVR() {
+    // WebXR setup stuff.
     if (this.gl === null) {
       this.gl = document.createElement("canvas").getContext("webgl", {
         xrCompatible: true
       });
       initGL(this.gl);
-      console.log("Initialized WebXR GL state");
     }
     this.webXRSession = await navigator.xr.requestSession("immersive-ar");
 
@@ -138,13 +153,17 @@ export class VRDemo {
       "local"
     );
 
+    // When the user touches the screen, we call onTouch. When they let go, we
+    // call onRelease.
     this.webXRSession.addEventListener("selectstart", this.onTouch.bind(this));
     this.webXRSession.addEventListener("selectend", this.onRelease.bind(this));
 
+    // Every 1/60s, step physics by 1/60s.
     this.physicsStepFunction = setInterval(() => {
       this.sim.stepWorld(1.0 / 60);
     }, 1000.0 / 60);
 
+    // Initiate the cursor.
     this.cursor = this.sim.addObjectByHandle(
       DataUtils.getObjectConfigFilepath("greensphere"),
       null,
@@ -154,6 +173,7 @@ export class VRDemo {
     this.sim.setObjectMotionType(Module.MotionType.KINEMATIC, this.cursor, 0);
     this.sim.setObjectIsCollidable(false, this.cursor);
 
+    // Initiate the drop marker.
     this.dropMarker = this.sim.addObjectByHandle(
       DataUtils.getObjectConfigFilepath("redsphere"),
       null,
@@ -166,11 +186,21 @@ export class VRDemo {
       0
     );
     this.sim.setObjectIsCollidable(false, this.dropMarker);
-    this.hide(this.dropMarker);
+    this.simHelpers.hide(this.dropMarker);
 
+    // Tell WebXR to call this.drawVRScene() to draw the next frame.
     this.webXRSession.requestAnimationFrame(this.drawVRScene.bind(this));
   }
 
+  // Code that runs when the user exits Immersive Mode.
+  exitVR() {
+    if (this.webXRSession !== null) {
+      this.webXRSession.end();
+    }
+  }
+
+  // Randomly spawn the objects in initialObjects at locations in
+  // possibleSpawnLocations.
   spawnInitialObjects() {
     // shuffle spawn locations
     for (let i = possibleSpawnLocations.length - 1; i > 0; i--) {
@@ -196,36 +226,15 @@ export class VRDemo {
     }
   }
 
-  // hide an object by translating far away
-  hide(objectId) {
-    this.sim.setTranslation(new Module.Vector3(1000, 1000, 1000), objectId, 0);
-  }
-
-  exitVR() {
-    if (this.webXRSession !== null) {
-      this.webXRSession.end();
-    }
-  }
-
-  exclusiveRaycast(ray, dist, excludes) {
-    let raycastResults = this.sim.castRay(ray, dist, 0);
-    let hits = raycastResults.hits;
-    for (let i = 0; i < hits.size(); i++) {
-      let hit = hits.get(i);
-      if (!excludes.includes(hit.objectId)) {
-        return hit;
-      }
-    }
-    return null;
-  }
-
-  doRaycast() {
+  raycastFromHead() {
     let grabRay = new Module.Ray(this.headPos, this.lookDir);
-    return this.exclusiveRaycast(grabRay, 1000.0, [this.cursor]);
+    return this.simHelpers.exclusiveRaycast(grabRay, 1000.0, [this.cursor]);
   }
 
+  // When the user touches the screen, we see if they are pointing at an object
+  // and if so, we pick it up.
   onTouch() {
-    let rayHitInfo = this.doRaycast();
+    let rayHitInfo = this.raycastFromHead();
     const hitObjId = rayHitInfo == null ? -1 : rayHitInfo.objectId;
     if (hitObjId != -1) {
       this.heldObjectId = hitObjId;
@@ -244,6 +253,7 @@ export class VRDemo {
     }
   }
 
+  // When the user picks up their finger, we drop the held object if it exists.
   onRelease() {
     if (this.heldObjectId == -1) {
       return;
@@ -253,10 +263,12 @@ export class VRDemo {
       this.heldObjectId,
       0
     );
-    this.hide(this.dropMarker);
+    this.simHelpers.hide(this.dropMarker);
     this.heldObjectId = -1;
   }
 
+  // Given the pose (position/orientation of the phone), update the agent's eye
+  // sensor location.
   updatePose(pose, agent) {
     const pointToArray = p => [p.x, p.y, p.z, p.w];
     const FWD = Module.Vector3.zAxis(1);
@@ -318,6 +330,8 @@ export class VRDemo {
     this.headRot = headRotation;
   }
 
+  // Adjust the held object to stay in front of the cursor with the correct
+  // rotation.
   updateHeldObjectPose() {
     if (this.heldObjectId == -1) {
       return;
@@ -345,14 +359,16 @@ export class VRDemo {
     }
   }
 
+  // Draw the green sphere that indicates where the user is looking.
   drawCursor() {
-    let sceneHit = this.doRaycast();
+    let sceneHit = this.raycastFromHead();
     if (sceneHit != null) {
       let hitLoc = sceneHit.point;
       this.sim.setTranslation(hitLoc, this.cursor, 0);
     }
   }
 
+  // Draw the red sphere that is vertically below the held object.
   drawDropMarker() {
     if (this.heldObjectId == -1) {
       return;
@@ -360,7 +376,7 @@ export class VRDemo {
     let objPos = this.sim.getTranslation(this.heldObjectId, 0);
     let downDir = new Module.Vector3(0, -1, 0);
     let rayDown = new Module.Ray(objPos, downDir);
-    let hit = this.exclusiveRaycast(rayDown, 1000.0, [
+    let hit = this.simHelpers.exclusiveRaycast(rayDown, 1000.0, [
       this.cursor,
       this.heldObjectId
     ]);
@@ -371,9 +387,12 @@ export class VRDemo {
     this.debugLineRender.drawLine(objPos, hitPos, col);
   }
 
+  // WebXR calls this function, which renders frames to the canvas.
   drawVRScene(t, frame) {
     const session = frame.session;
 
+    // Tells WebXR to call drawVRScene again when we are ready to draw another
+    // frame.
     session.requestAnimationFrame(this.drawVRScene.bind(this));
 
     const pose = frame.getViewerPose(this.xrReferenceSpace);
@@ -390,6 +409,7 @@ export class VRDemo {
     this.drawCursor();
     this.drawDropMarker();
 
+    // Draw stuff to the canvas.
     const layer = session.renderState.baseLayer;
     this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, layer.framebuffer);
 
