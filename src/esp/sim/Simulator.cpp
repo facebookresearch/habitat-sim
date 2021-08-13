@@ -478,7 +478,7 @@ bool Simulator::instanceObjectsForActiveScene(
 
   // node to attach object to
   scene::SceneNode* attachmentNode = nullptr;
-  int objID = 0;
+  // int objID = 0;
 
   // whether or not to correct for COM shift - only do for blender-sourced
   // scene attributes
@@ -501,9 +501,10 @@ bool Simulator::instanceObjectsForActiveScene(
       return false;
     }
 
-    objID = physicsManager_->addObjectInstance(
-        objInst, objAttrFullHandle, defaultCOMCorrection, attachmentNode,
-        config_.sceneLightSetup);
+    // objID =
+    physicsManager_->addObjectInstance(objInst, objAttrFullHandle,
+                                       defaultCOMCorrection, attachmentNode,
+                                       config_.sceneLightSetup);
   }  // for each object attributes
   return true;
 }  // Simulator::instanceObjectsForActiveScene()
@@ -516,7 +517,7 @@ bool Simulator::instanceArticulatedObjectsForActiveScene(
   const std::vector<SceneAOInstanceAttributes::ptr> artObjInstances =
       curSceneInstanceAttributes->getArticulatedObjectInstances();
 
-  int aoID = 0;
+  // int aoID = 0;
   auto& drawables = getDrawableGroup();
   // Iterate through instances, create object and implement initial
   // transformation.
@@ -527,8 +528,9 @@ bool Simulator::instanceArticulatedObjectsForActiveScene(
             artObjInst->getHandle());
 
     // create articulated object
-    aoID = physicsManager_->addArticulatedObjectInstance(
-        artObjFilePath, artObjInst, config_.sceneLightSetup);
+    // aoID =
+    physicsManager_->addArticulatedObjectInstance(artObjFilePath, artObjInst,
+                                                  config_.sceneLightSetup);
   }  // for each articulated object instance
   return true;
 }  // Simulator::instanceArticulatedObjectsForActiveScene
