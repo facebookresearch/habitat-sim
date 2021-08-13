@@ -171,8 +171,11 @@ class ResourceManager {
    * If parent and drawables are not specified, the assets are loaded, but no
    * new @ref gfx::Drawable is added for the scene (i.e. it will not be
    * rendered).
-   * @param sceneAttributes The @ref StageAttributes that describes the
-   * scene
+   * @param stageAttributes The @ref StageAttributes that describes the
+   * stage
+   * @param stageInstanceAttributes The @ref SceneObjectInstanceAttributes that
+   * describes this particular instance of the stage.  If nullptr then not
+   * created by SceneInstanceAttributes.
    * @param _physicsManager The currently defined @ref physics::PhysicsManager.
    * @param sceneManagerPtr Pointer to scene manager, to fetch drawables and
    * parent node.
@@ -181,7 +184,9 @@ class ResourceManager {
    * @return Whether or not the scene load succeeded.
    */
   bool loadStage(
-      metadata::attributes::StageAttributes::ptr& sceneAttributes,
+      const metadata::attributes::StageAttributes::ptr& stageAttributes,
+      const metadata::attributes::SceneObjectInstanceAttributes::ptr&
+          stageInstanceAttributes,
       const std::shared_ptr<physics::PhysicsManager>& _physicsManager,
       esp::scene::SceneManager* sceneManagerPtr,
       std::vector<int>& activeSceneIDs);
@@ -537,7 +542,7 @@ class ResourceManager {
    * and return it
    *
    * @param attribs the attributes to query for the information.
-   * @param origin Either the origin of the sceneAttributes or the COM value of
+   * @param origin Either the origin of the stageAttributes or the COM value of
    * the objectAttributes.
    * @return the coordinate frame of the assets the passed attributes describes.
    */

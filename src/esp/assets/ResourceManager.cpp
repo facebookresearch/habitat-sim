@@ -75,6 +75,7 @@ using metadata::attributes::AbstractObjectAttributes;
 using metadata::attributes::CubePrimitiveAttributes;
 using metadata::attributes::ObjectAttributes;
 using metadata::attributes::PhysicsManagerAttributes;
+using metadata::attributes::SceneObjectInstanceAttributes;
 using metadata::attributes::StageAttributes;
 using metadata::managers::AssetAttributesManager;
 using metadata::managers::ObjectAttributesManager;
@@ -190,7 +191,8 @@ void ResourceManager::initPhysicsManager(
 }  // ResourceManager::initPhysicsManager
 
 bool ResourceManager::loadStage(
-    StageAttributes::ptr& stageAttributes,
+    const StageAttributes::ptr& stageAttributes,
+    const SceneObjectInstanceAttributes::ptr& stageInstanceAttributes,
     const std::shared_ptr<physics::PhysicsManager>& _physicsManager,
     esp::scene::SceneManager* sceneManagerPtr,
     std::vector<int>& activeSceneIDs) {
@@ -339,7 +341,8 @@ bool ResourceManager::loadStage(
     // Either add with pre-built meshGroup if collision assets are loaded
     // or empty vector for mesh group - this should only be the case if
     // we are using None-type physicsManager.
-    bool sceneSuccess = _physicsManager->addStage(stageAttributes, meshGroup);
+    bool sceneSuccess = _physicsManager->addStage(
+        stageAttributes, stageInstanceAttributes, meshGroup);
     if (!sceneSuccess) {
       ESP_ERROR() << "Adding Stage" << stageAttributes->getHandle()
                   << "to PhysicsManager failed. Aborting scene initialization.";

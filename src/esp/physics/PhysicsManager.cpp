@@ -52,6 +52,8 @@ PhysicsManager::~PhysicsManager() {
 
 bool PhysicsManager::addStage(
     const metadata::attributes::StageAttributes::ptr& initAttributes,
+    const metadata::attributes::SceneObjectInstanceAttributes::ptr&
+        stageInstanceAttributes,
     const std::vector<assets::CollisionMeshData>& meshGroup) {
   // Test Mesh primitive is valid
   for (const assets::CollisionMeshData& meshData : meshGroup) {
@@ -60,16 +62,24 @@ bool PhysicsManager::addStage(
     }
   }
 
-  //! Initialize scene
+  //! Initialize stage
   bool sceneSuccess = addStageFinalize(initAttributes);
+  // add/merge stageInstanceAttributes' copy of user_attributes.
+  if (!stageInstanceAttributes) {
+    ESP_DEBUG() << "Stage built from StageInstanceAttributes";
+    // TODO merge instance attributes into staticStageObject_'s existing
+    // attributes
+  }
+  // TODO process any stage transformations here from stageInstanceAttributes
+
   return sceneSuccess;
 }  // PhysicsManager::addStage
 
 bool PhysicsManager::addStageFinalize(
     const metadata::attributes::StageAttributes::ptr& initAttributes) {
-  //! Initialize scene
-  bool sceneSuccess = staticStageObject_->initialize(initAttributes);
-  return sceneSuccess;
+  //! Initialize stage
+  bool stageSuccess = staticStageObject_->initialize(initAttributes);
+  return stageSuccess;
 }  // PhysicsManager::addStageFinalize
 
 int PhysicsManager::addObjectInstance(

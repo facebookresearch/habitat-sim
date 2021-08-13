@@ -51,7 +51,7 @@ TEST(ResourceManagerTest, createJoinedCollisionMesh) {
   const esp::assets::AssetInfo info = esp::assets::AssetInfo::fromPath(boxFile);
 
   std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
-  bool result = resourceManager.loadStage(stageAttributes, nullptr,
+  bool result = resourceManager.loadStage(stageAttributes, nullptr, nullptr,
                                           &sceneManager_, tempIDs);
 
   esp::assets::MeshData::uptr joinedBox =
@@ -123,7 +123,7 @@ TEST(ResourceManagerTest, VHACDUsageTest) {
       esp::assets::AssetInfo::fromPath(donutFile);
 
   std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
-  bool result = resourceManager.loadStage(stageAttributes, nullptr,
+  bool result = resourceManager.loadStage(stageAttributes, nullptr, nullptr,
                                           &sceneManager_, tempIDs);
 
   esp::assets::MeshData::uptr joinedBox =

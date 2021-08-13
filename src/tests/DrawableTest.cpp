@@ -74,7 +74,7 @@ DrawableTest::DrawableTest() {
   drawableGroup_ = &sceneGraph.getDrawables();
 
   std::vector<int> tempIDs{sceneID_, esp::ID_UNDEFINED};
-  bool result = resourceManager_->loadStage(stageAttributes, nullptr,
+  bool result = resourceManager_->loadStage(stageAttributes, nullptr, nullptr,
                                             &sceneManager_, tempIDs);
 }
 

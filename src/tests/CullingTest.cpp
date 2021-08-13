@@ -83,7 +83,7 @@ int CullingTest::setupTests() {
   int sceneID = sceneManager_->initSceneGraph();
 
   std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
-  bool result = resourceManager_->loadStage(stageAttributes, nullptr,
+  bool result = resourceManager_->loadStage(stageAttributes, nullptr, nullptr,
                                             sceneManager_.get(), tempIDs);
   CORRADE_VERIFY(result);
   return sceneID;

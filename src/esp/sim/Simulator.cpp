@@ -421,7 +421,8 @@ bool Simulator::instanceStageForActiveScene(
 
   // Load stage
   bool loadSuccess = resourceManager_->loadStage(
-      stageAttributes, physicsManager_, sceneManager_.get(), tempIDs);
+      stageAttributes, stageInstanceAttributes, physicsManager_,
+      sceneManager_.get(), tempIDs);
 
   if (!loadSuccess) {
     ESP_ERROR() << "Cannot load stage :" << stageAttributesHandle;

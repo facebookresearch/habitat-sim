@@ -80,7 +80,7 @@ class PhysicsManagerTest : public testing::TestWithParam<bool> {
 
     // load scene
     std::vector<int> tempIDs{sceneID_, esp::ID_UNDEFINED};
-    resourceManager_->loadStage(stageAttributes, physicsManager_,
+    resourceManager_->loadStage(stageAttributes, nullptr, physicsManager_,
                                 &sceneManager_, tempIDs);
 
     rigidObjectManager_ = physicsManager_->getRigidObjectManager();
