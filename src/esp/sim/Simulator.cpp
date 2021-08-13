@@ -235,7 +235,7 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
           curSceneInstanceAttributes->getSemanticSceneHandle());
 
   if (semanticSceneDescFilename != "") {
-    std::string filenameToUse = semanticSceneDescFilename;
+    const std::string& filenameToUse = semanticSceneDescFilename;
     bool success = false;
     // semantic scene descriptor might not exist, so
     semanticScene_ = nullptr;
