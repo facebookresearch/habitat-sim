@@ -292,7 +292,7 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
       if (jCell.HasMember("default_attributes")) {
         if (!jCell["default_attributes"].IsObject()) {
           ESP_WARNING()
-              << "\"" << tag
+              << "\"" << Mn::Debug::nospace << tag << Mn::Debug::nospace
               << ".default_attributes\" cell in JSON config unable to "
                  "be parsed to set default attributes so skipping.";
         } else {
@@ -307,8 +307,8 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
           } else {
             // set attributes as defaultObject_ in attrMgr.
             attrMgr->setDefaultObject(attr);
-            ESP_DEBUG()
-                << "\"" << tag
+            ESP_WARNING()
+                << "\"" << Mn::Debug::nospace << tag << Mn::Debug::nospace
                 << ".default_attributes\" set in Attributes Manager from JSON.";
           }
         }  // if is an object
@@ -319,7 +319,7 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
       if (jCell.HasMember("paths")) {
         if (!jCell["paths"].IsObject()) {
           ESP_WARNING()
-              << "\"" << tag
+              << "\"" << Mn::Debug::nospace << tag << Mn::Debug::nospace
               << ".paths\" cell in JSON config unable to be parsed as "
                  "a JSON object to determine search paths so skipping.";
         } else {

@@ -164,7 +164,8 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
   // copy
   StageAttributes::ptr newAttributes =
       this->constructFromDefault(attributesHandle);
-  if (nullptr == newAttributes) {
+  bool createNewAttributes = (nullptr == newAttributes);
+  if (createNewAttributes) {
     newAttributes = StageAttributes::create(attributesHandle);
   }
   // attempt to set source directory if exists
@@ -213,8 +214,8 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
     // from AssetInfo::fromPath
     // set defaults for passed render asset handles
     StageAttributesManager::setDefaultAssetNameBasedAttributes(
-        newAttributes, true, newAttributes->getRenderAssetHandle(),
-        [newAttributes](auto&& PH1) {
+        newAttributes, createNewAttributes,
+        newAttributes->getRenderAssetHandle(), [newAttributes](auto&& PH1) {
           newAttributes->setRenderAssetType(std::forward<decltype(PH1)>(PH1));
         });
     // set defaults for passed collision asset handles
