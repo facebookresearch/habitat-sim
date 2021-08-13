@@ -1348,19 +1348,38 @@ class Simulator {
       const std::string& activeSceneName);
 
   /**
+   * @brief Instance the stage for the current scene based on the current active
+   * schene's scene instance configuration.
+   * @param curSceneInstanceAttributes The attributes describing the current
+   * scene instance.
+   * @return whether stage creation is completed successfully
+   */
+  bool instanceStageForActiveScene(
+      const metadata::attributes::SceneAttributes::cptr&
+          curSceneInstanceAttributes);
+
+  /**
    * @brief Instance all the objects in the scene based on the current active
    * schene's scene instance configuration.
+   * @param curSceneInstanceAttributes The attributes describing the current
+   * scene instance.
    * @return whether object creation and placement is completed successfully
    */
-  bool instanceObjectsForActiveScene();
+  bool instanceObjectsForActiveScene(
+      const metadata::attributes::SceneAttributes::cptr&
+          curSceneInstanceAttributes);
 
   /**
    * @brief Instance all the articulated objects in the scene based on the
    * current active schene's scene instance configuration.
+   * @param curSceneInstanceAttributes The attributes describing the current
+   * scene instance.
    * @return whether articulated object creation and placement is completed
    * successfully
    */
-  bool instanceArticulatedObjectsForActiveScene();
+  bool instanceArticulatedObjectsForActiveScene(
+      const metadata::attributes::SceneAttributes::cptr&
+          curSceneInstanceAttributes);
 
   /**
    * @brief sample a random valid AgentState in passed agentState
