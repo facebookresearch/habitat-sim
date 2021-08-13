@@ -95,7 +95,6 @@ Magnum::Vector3 Vector3_sub(const Magnum::Vector3& v1,
 
 Magnum::Vector3 Vector3_scalar_mul(const Magnum::Vector3& v, float k) {
   return k * v;
-  a
 }
 
 Observation Sensor_getObservation(Sensor& sensor, Simulator& sim) {
