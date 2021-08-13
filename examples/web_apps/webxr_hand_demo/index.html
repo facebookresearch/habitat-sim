@@ -5,7 +5,6 @@ LICENSE file in the root directory of this source tree.-->
 <html>
 
 <head>
-  <link rel="stylesheet" href="style.css">
   <meta charset="UTF-8" />
   <title>Habitat VR</title>
 </head>
@@ -17,7 +16,7 @@ LICENSE file in the root directory of this source tree.-->
   <div id="status">Initialization...</div>
   <div id="status-description"></div>
   <div><a href="#" id="enter-vr" style="visibility:hidden">Enter VR</a></div>
-  <div id="fps">FPS: 0</div>
+  <div id="fps" style="visibility: hidden; position: absolute; top: 10px; z-index: 1000000; right: 10px;">FPS: 0</div>
 
   <!-- Javascript for our Habitat VR app -->
   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/webxr-polyfill@latest/build/webxr-polyfill.js"></script>
