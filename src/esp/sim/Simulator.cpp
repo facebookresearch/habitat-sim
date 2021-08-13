@@ -142,8 +142,6 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
                      "initialized with True.  Call close() to change this.";
   }
 
-  bool success = false;
-
   if (config_.createRenderer) {
     /* When creating a viewer based app, there is no need to create a
     WindowlessContext since a (windowed) context already exists. */
@@ -177,7 +175,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   }
 
   // (re) create scene instance
-  success = createSceneInstance(config_.activeSceneName);
+  bool success = createSceneInstance(config_.activeSceneName);
 
   ESP_DEBUG() << "CreateSceneInstance success =="
               << (success ? "true" : "false")
@@ -252,43 +250,61 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
       // file, agnostic to file type inferred by name, if file exists.
       success = scene::SemanticScene::loadSemanticSceneDescriptor(
           filenameToUse, *semanticScene_);
-    }
-    if (!success) {
+      if (success) {
+        ESP_WARNING() << "SSD with SceneAttributes-provided name "
+                      << filenameToUse << "successfully found and loaded";
+      } else {
+        // here if provided file exists but does not correspond to appropriate
+        // SSD
+        ESP_ERROR()
+            << "SSD Load Failure! File with SceneAttributes-provided name "
+            << filenameToUse << "exists but was unable to be loaded.";
+      }
+      // if not success then try to construct a name
+    } else {
       // attempt to look for specified file failed, attempt to build new file
       // name by searching in path specified of specified file for
       // info_semantic.json file for replica dataset
-      const std::string tmpFName =
+      const std::string constructedFilename =
           FileUtil::join(FileUtil::path(filenameToUse), "info_semantic.json");
-      fileExists = FileUtil::exists(tmpFName);
+      fileExists = FileUtil::exists(constructedFilename);
       if (fileExists) {
-        success =
-            scene::SemanticScene::loadReplicaHouse(tmpFName, *semanticScene_);
-        ESP_DEBUG() << "Attempt to load Replica w/existing constructed file :"
-                    << tmpFName << "in directory with"
-                    << semanticSceneDescFilename << ":"
-                    << (success ? "" : "not") << "successful";
-        filenameToUse = tmpFName;
+        success = scene::SemanticScene::loadReplicaHouse(constructedFilename,
+                                                         *semanticScene_);
+        if (success) {
+          ESP_DEBUG() << "SSD for Replica using constructed file :"
+                      << constructedFilename << "in directory with"
+                      << semanticSceneDescFilename << "loaded successfully";
+        } else {
+          // here if constructed file exists but does not correspond to
+          // appropriate SSD or some loading error occurred.
+          ESP_ERROR() << "SSD Load Failure! Replica file with constructed name "
+                      << filenameToUse << "exists but was unable to be loaded.";
+        }
+      } else {
+        // neither provided non-empty filename nor constructed filename
+        // exists. This is probably due to an error in the naming in the
+        // SceneAttributes
+        ESP_ERROR()
+            << "SSD File Naming Error! Neither SceneAttributes-provided name :"
+            << filenameToUse
+            << " nor constructed filename :" << constructedFilename
+            << "exist on disk.";
       }
     }  // if given SSD file name specifiedd exists
-    ESP_WARNING() << "All attempts to load SSD with SceneAttributes "
-                     "provided/constructed name "
-                  << filenameToUse << ": exist :" << fileExists
-                  << ": loaded as expected type :" << (success ? "" : "not")
-                  << "successful";
-
-  }  // if semantic scene descriptor specified in scene instance
+  }    // if semantic scene descriptor specified in scene instance
 
   // 3. Specify frustumCulling based on value from config
   frustumCulling_ = config_.frustumCulling;
 
   // return a const ptr to the cur scene instance attributes
   return curSceneInstanceAttributes;
-
 }  // Simulator::setSceneInstanceAttributes
 
 bool Simulator::createSceneInstance(const std::string& activeSceneName) {
-  if (renderer_)
+  if (renderer_) {
     renderer_->acquireGlContext();
+  }
   // 1. initial setup for scene instancing - sets or creates the
   // current scene instance to correspond to the given name.
   metadata::attributes::SceneAttributes::cptr curSceneInstanceAttributes =
@@ -302,7 +318,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   // attributes specified in current simulator configuration held in
   // metadataMediator.
   resourceManager_->initPhysicsManager(
-      physicsManager_, config_.enablePhysics, &rootNode,
+      physicsManager_, &rootNode,
       metadataMediator_->getCurrentPhysicsManagerAttributes());
   // Set PM's reference to this simulator
   physicsManager_->setSimulator(this);
@@ -311,7 +327,6 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   // load so lighting key can be set appropriately. get name of light setup
   // for this scene instance
   std::string lightSetupKey;
-
   if (config_.overrideSceneLightDefaults) {
     lightSetupKey = config_.sceneLightSetup;
     ESP_DEBUG() << "Using config-specified Light key : -" << lightSetupKey
@@ -341,7 +356,6 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   // transformation of stage in scene.
   // TODO : need to support stageInstanceAttributes transformation upon
   // creation.
-
   const SceneObjectInstanceAttributes::ptr stageInstanceAttributes =
       curSceneInstanceAttributes->getStageInstance();
 
@@ -357,8 +371,8 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   // set defaults for stage creation
 
   // set shader type to use for stage - if no valid value is specified in
-  // instance attributes, this field will be whatever was specified in the stage
-  // attributes.
+  // instance attributes, this field will be whatever was specified in the
+  // stage attributes.
   int stageShaderType = stageInstanceAttributes->getShaderType();
   if (stageShaderType !=
       static_cast<int>(
@@ -397,11 +411,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
 
   // refresh the NavMesh visualization if necessary after loading a new
   // SceneGraph
-  if (isNavMeshVisualizationActive()) {
-    // if updating pathfinder_ instance, refresh the visualization.
-    setNavMeshVisualization(false);  // first clear the old instance
-    setNavMeshVisualization(true);
-  }
+  resetNavMeshVisIfActive();
 
   // set activeSemanticSceneID_ values and push onto sceneID vector if
   // appropriate - tempIDs[1] will either be old activeSemanticSceneID_ (if
@@ -542,21 +552,6 @@ bool Simulator::instanceArticulatedObjectsForActiveScene() {
   }  // for each articulated object instance
   return true;
 }  // Simulator::instanceArticulatedObjectsForActiveScene
-
-bool Simulator::createSceneInstanceNoRenderer(
-    const std::string& activeSceneName) {
-  // Initial setup for scene instancing without renderer - sets or creates the
-  // current scene instance to correspond to the given name.  Also builds
-  // navmesh and semantic scene descriptor file if appropriate.
-  metadata::attributes::SceneAttributes::cptr curSceneInstanceAttributes =
-      setSceneInstanceAttributes(activeSceneName);
-
-  // TODO : reset may eventually have all the scene instance instantiation
-  // code so that scenes can be reset
-  reset();
-  return true;
-}  // Simulator::createSceneInstanceNoRenderer
-
 void Simulator::reset() {
   if (physicsManager_ != nullptr) {
     // Note: only resets time to 0 by default.
@@ -772,11 +767,7 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
   }
 
   if (&pathfinder == pathfinder_.get()) {
-    if (isNavMeshVisualizationActive()) {
-      // if updating pathfinder_ instance, refresh the visualization.
-      setNavMeshVisualization(false);  // first clear the old instance
-      setNavMeshVisualization(true);
-    }
+    resetNavMeshVisIfActive();
   }
 
   ESP_DEBUG() << "reconstruct navmesh successful";

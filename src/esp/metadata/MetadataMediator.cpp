@@ -172,8 +172,7 @@ bool MetadataMediator::setCurrPhysicsAttributesHandle(
   if (physicsAttributesManager_->getObjectLibHasHandle(
           _physicsManagerAttributesPath)) {
     if (currPhysicsManagerAttributes_ != _physicsManagerAttributesPath) {
-      ESP_DEBUG() << "::setCurrPhysicsAttributesHandle : Old "
-                     "physics manager attributes"
+      ESP_DEBUG() << "Old physics manager attributes"
                   << currPhysicsManagerAttributes_ << "changed to"
                   << _physicsManagerAttributesPath << "successfully.";
       currPhysicsManagerAttributes_ = _physicsManagerAttributesPath;
