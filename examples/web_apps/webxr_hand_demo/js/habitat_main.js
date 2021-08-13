@@ -11,7 +11,7 @@ import {
   preload
 } from "../lib/habitat-sim-js/utils.js";
 import { VRDemo } from "./vr_demo.js";
-import { isWebXRSupported } from "../lib/habitat-sim-js/vr_utils.js";
+import { isWebXRSupported } from "../lib/habitat-sim-js/xr_utils.js";
 
 function checkSupport() {
   const webgl2Support = checkWebgl2Support();

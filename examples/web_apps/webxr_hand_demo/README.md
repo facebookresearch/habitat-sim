@@ -46,10 +46,10 @@ $ python3 -m http.server
 
 If you encounter Habitat-sim build errors, make sure you have Emscripten properly installed and activated. Delete the build output folders (`habitat-sim/build_corrade-rc` and `habitat-sim/build_js`) and rebuild.
 
-If the VR app fails to load in your desktop browser, look for errors in the browser dev console. Make sure you have data files installed properly, e.g. `habitat-sim/examples/web_apps/webxr_hand_demo/data/webxr_hand_demo_dataset/stages/remake_v0_JustBigStuff_00.glb`. Make sure the WebXR emulator is installed and accessible (e.g. as a tab in Chrome Developer Tools).
+If the VR app fails to load in your desktop browser, look for errors in the browser dev console. Make sure you have data files installed properly, e.g. `habitat-sim/examples/web_apps/webxr_hand_demo/data/webxr_demo_dataset/stages/remake_v0_JustBigStuff_00.glb`. Make sure the WebXR emulator is installed and accessible (e.g. as a tab in Chrome Developer Tools).
 
 # Project folder structure
-- `data/webxr_hand_demo_dataset` contains all the models that are used in the default setup, plus a few extra ReplicaCAD objects
+- `data/webxr_demo_dataset` contains all the models that are used in the default setup, plus a few extra ReplicaCAD objects
     - `default.physics_config.json` contains the physics settings, e.g. gravitational acceleration.
     - `stages` contain the scene `.glb` files and their corresponding `.stage_config.json` files. In order to choose a scene other than `remake_v0_JustBigStuff_00`, you need to add its 2 files here.
     - `objects` contains the hand models as well as the ReplicaCAD objects that can be spawned. It also contains some extra objects you may use.

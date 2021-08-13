@@ -4,7 +4,11 @@
 
 /* global Module, XRWebGLLayer */
 
-import { initGL, drawTextureData } from "../lib/habitat-sim-js/vr_utils.js";
+import { initGL, drawTextureData } from "../lib/habitat-sim-js/xr_utils.js";
+import {
+  VIEW_SENSOR,
+  getEyeSensorSpecs
+} from "../lib/habitat-sim-js/ar_utils.js";
 import { DataUtils } from "./data_utils.js";
 import { SimHelpers } from "./sim_helpers.js";
 
@@ -93,14 +97,7 @@ export class VRDemo {
 
     // init agent
     const agentConfigOrig = new Module.AgentConfiguration();
-    let specs = new Module.VectorSensorSpec();
-    const spec = new Module.CameraSensorSpec();
-    spec.uuid = "eye";
-    spec.sensorType = Module.SensorType.COLOR;
-    spec.sensorSubType = Module.SensorSubType.PINHOLE;
-    spec.resolution = [1000, 450];
-    specs.push_back(spec);
-    agentConfigOrig.sensorSpecifications = specs;
+    agentConfigOrig.sensorSpecifications = getEyeSensorSpecs(1000, 450);
     this.sim.addAgent(agentConfigOrig);
     this.agentId = 0;
 
@@ -226,6 +223,7 @@ export class VRDemo {
     }
   }
 
+  // Casts a ray from head to middle of screen.
   raycastFromHead() {
     let grabRay = new Module.Ray(this.headPos, this.lookDir);
     return this.simHelpers.exclusiveRaycast(grabRay, 1000.0, [this.cursor]);
@@ -299,7 +297,7 @@ export class VRDemo {
 
     const view = pose.views[0];
 
-    const sensor = agent.getSubtreeSensors().get("eye");
+    const sensor = agent.getSubtreeSensors().get(VIEW_SENSOR);
 
     let pos = pointToArray(view.transform.position).slice(0, -1); // don't need w for position
     // adjust sensitivity
@@ -417,7 +415,7 @@ export class VRDemo {
     const viewport = layer.getViewport(view);
     this.gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height);
 
-    const sensor = agent.getSubtreeSensors().get("eye");
+    const sensor = agent.getSubtreeSensors().get(VIEW_SENSOR);
     const texRes = sensor.specification().resolution;
     const texData = sensor.getObservation(this.sim).getData();
     drawTextureData(this.gl, texRes, texData);

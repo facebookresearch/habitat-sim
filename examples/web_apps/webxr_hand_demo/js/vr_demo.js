@@ -5,12 +5,11 @@
 /* global Module, XRWebGLLayer */
 
 import {
-  getEyeSensorSpecs,
-  updateHeadPose,
   VIEW_SENSORS,
-  initGL,
-  drawTextureData
+  getEyeSensorSpecs,
+  updateHeadPose
 } from "../lib/habitat-sim-js/vr_utils.js";
+import { initGL, drawTextureData } from "../lib/habitat-sim-js/xr_utils.js";
 import { DataUtils } from "./data_utils.js";
 import { preload } from "../lib/habitat-sim-js/utils.js";
 
