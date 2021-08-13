@@ -19,6 +19,14 @@ void Player::readKeyframesFromJsonDocument(const rapidjson::Document& d) {
   esp::io::readMember(d, "keyframes", keyframes_);
 }
 
+Keyframe Player::keyframeFromString(const std::string& keyframe) {
+  Keyframe res;
+  rapidjson::Document d;
+  d.Parse<0>(keyframe.c_str());
+  esp::io::readMember(d, "keyframe", res);
+  return res;
+}
+
 Player::Player(const LoadAndCreateRenderAssetInstanceCallback& callback)
     : loadAndCreateRenderAssetInstanceCallback(callback) {}
 
@@ -158,6 +166,14 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     node->setRotation(state.absTransform.rotation);
     setSemanticIdForSubtree(node, state.semanticId);
   }
+}
+
+void Player::appendKeyframe(Keyframe&& keyframe) {
+  keyframes_.emplace_back(std::move(keyframe));
+}
+
+void Player::appendJSONKeyframe(const std::string& keyframe) {
+  appendKeyframe(keyframeFromString(keyframe));
 }
 
 void Player::setSemanticIdForSubtree(esp::scene::SceneNode* rootNode,
