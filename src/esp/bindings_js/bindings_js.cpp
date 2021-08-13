@@ -93,6 +93,11 @@ Magnum::Vector3 Vector3_sub(const Magnum::Vector3& v1,
   return v1 - v2;
 }
 
+Magnum::Vector3 Vector3_scalar_mul(const Magnum::Vector3& v, float k) {
+  return k * v;
+  a
+}
+
 Observation Sensor_getObservation(Sensor& sensor, Simulator& sim) {
   Observation ret;
   if (VisualSensor * visSensor{dynamic_cast<VisualSensor*>(&sensor)})
@@ -208,7 +213,8 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .class_function("zAxis", &Magnum::Vector3::zAxis)
       // add class method instead of operator+
       .class_function("add", &Vector3_add)
-      .class_function("sub", &Vector3_sub);
+      .class_function("sub", &Vector3_sub)
+      .class_function("mul", &Vector3_scalar_mul);
 
   em::class_<Magnum::Quaternion>("Quaternion")
       .constructor<Magnum::Vector3, float>()

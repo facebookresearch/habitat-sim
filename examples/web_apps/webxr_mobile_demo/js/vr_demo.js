@@ -122,6 +122,12 @@ export class VRDemo {
     // randomly place the objects on the counter
     this.spawnInitialObjects();
 
+    // How far away held objects are.
+    this.heldObjectDistance = 0.3;
+
+    // Positions in the real world are multiplied by these values.
+    this.moveSensitivity = new Module.Vector3(3.0, 1.5, 3.0);
+
     // set up "Enter VR" button
     const elem = document.getElementById("enter-vr");
     elem.style.visibility = "visible";
@@ -301,9 +307,9 @@ export class VRDemo {
 
     let pos = pointToArray(view.transform.position).slice(0, -1); // don't need w for position
     // adjust sensitivity
-    pos[0] *= 3; // x
-    pos[1] *= 1.5; // y
-    pos[2] *= 3; // z
+    pos[0] *= this.moveSensitivity.x();
+    pos[1] *= this.moveSensitivity.y();
+    pos[2] *= this.moveSensitivity.z();
     sensor.setLocalTransform(
       Module.toVec3f(
         inverseAgentRot.transformVector(new Module.Vector3(...pos))
@@ -334,16 +340,12 @@ export class VRDemo {
     if (this.heldObjectId == -1) {
       return;
     }
-    function scale(vec, amount) {
-      return new Module.Vector3(
-        vec.x() * amount,
-        vec.y() * amount,
-        vec.z() * amount
-      );
-    }
     if (this.headPos != null) {
       this.sim.setTranslation(
-        Module.Vector3.add(this.headPos, scale(this.lookDir, 0.3)),
+        Module.Vector3.add(
+          this.headPos,
+          Module.Vector3.mul(this.lookDir, this.heldObjectDistance)
+        ),
         this.heldObjectId,
         0
       );
