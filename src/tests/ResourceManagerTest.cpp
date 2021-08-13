@@ -32,7 +32,11 @@ TEST(ResourceManagerTest, createJoinedCollisionMesh) {
   std::shared_ptr<esp::gfx::Renderer> renderer_ = esp::gfx::Renderer::create();
 
   // must declare these in this order due to avoid deallocation errors
-  auto MM = MetadataMediator::create();
+  auto cfg = esp::sim::SimulatorConfiguration{};
+  // setting values for stage load
+  cfg.loadSemanticMesh = false;
+  cfg.forceSeparateSemanticSceneGraph = false;
+  auto MM = MetadataMediator::create(cfg);
   ResourceManager resourceManager(MM);
   SceneManager sceneManager_;
   auto stageAttributesMgr = MM->getStageAttributesManager();
@@ -47,8 +51,8 @@ TEST(ResourceManagerTest, createJoinedCollisionMesh) {
   const esp::assets::AssetInfo info = esp::assets::AssetInfo::fromPath(boxFile);
 
   std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
-  bool result = resourceManager.loadStage(stageAttributes, nullptr,
-                                          &sceneManager_, tempIDs, false);
+  bool result = resourceManager.loadStage(stageAttributes, nullptr, nullptr,
+                                          &sceneManager_, tempIDs);
 
   esp::assets::MeshData::uptr joinedBox =
       resourceManager.createJoinedCollisionMesh(boxFile);
@@ -96,7 +100,12 @@ TEST(ResourceManagerTest, VHACDUsageTest) {
   std::shared_ptr<esp::gfx::Renderer> renderer_ = esp::gfx::Renderer::create();
 
   // must declare these in this order due to avoid deallocation errors
-  auto MM = MetadataMediator::create();
+  // must declare these in this order due to avoid deallocation errors
+  auto cfg = esp::sim::SimulatorConfiguration{};
+  // setting values for stage load
+  cfg.loadSemanticMesh = false;
+  cfg.forceSeparateSemanticSceneGraph = false;
+  auto MM = MetadataMediator::create(cfg);
   ResourceManager resourceManager(MM);
   SceneManager sceneManager_;
   auto stageAttributesMgr = MM->getStageAttributesManager();
@@ -114,8 +123,8 @@ TEST(ResourceManagerTest, VHACDUsageTest) {
       esp::assets::AssetInfo::fromPath(donutFile);
 
   std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
-  bool result = resourceManager.loadStage(stageAttributes, nullptr,
-                                          &sceneManager_, tempIDs, false);
+  bool result = resourceManager.loadStage(stageAttributes, nullptr, nullptr,
+                                          &sceneManager_, tempIDs);
 
   esp::assets::MeshData::uptr joinedBox =
       resourceManager.createJoinedCollisionMesh(donutFile);

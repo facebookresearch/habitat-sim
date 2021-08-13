@@ -75,6 +75,7 @@ using metadata::attributes::AbstractObjectAttributes;
 using metadata::attributes::CubePrimitiveAttributes;
 using metadata::attributes::ObjectAttributes;
 using metadata::attributes::PhysicsManagerAttributes;
+using metadata::attributes::SceneObjectInstanceAttributes;
 using metadata::attributes::StageAttributes;
 using metadata::managers::AssetAttributesManager;
 using metadata::managers::ObjectAttributesManager;
@@ -150,10 +151,11 @@ void ResourceManager::initDefaultPrimAttributes() {
 
 void ResourceManager::initPhysicsManager(
     std::shared_ptr<physics::PhysicsManager>& physicsManager,
-    bool isEnabled,
     scene::SceneNode* parent,
     const metadata::attributes::PhysicsManagerAttributes::ptr&
         physicsManagerAttributes) {
+  const bool isEnabled =
+      metadataMediator_->getSimulatorConfiguration().enablePhysics;
   //! PHYSICS INIT: Use the passed attributes to initialize physics engine
   bool defaultToNoneSimulator = true;
   if (isEnabled) {
@@ -189,12 +191,22 @@ void ResourceManager::initPhysicsManager(
 }  // ResourceManager::initPhysicsManager
 
 bool ResourceManager::loadStage(
-    StageAttributes::ptr& stageAttributes,
+    const StageAttributes::ptr& stageAttributes,
+    const SceneObjectInstanceAttributes::ptr& stageInstanceAttributes,
     const std::shared_ptr<physics::PhysicsManager>& _physicsManager,
     esp::scene::SceneManager* sceneManagerPtr,
-    std::vector<int>& activeSceneIDs,
-    bool createSemanticMesh,
-    bool forceSeparateSemanticSceneGraph) {
+    std::vector<int>& activeSceneIDs) {
+  // If the semantic mesh should be created, based on SimulatorConfiguration
+  const bool createSemanticMesh =
+      metadataMediator_->getSimulatorConfiguration().loadSemanticMesh;
+
+  // Force creation of a separate semantic scene graph, even when no semantic
+  // mesh is loaded for the stage.  This is required to support playback of any
+  // replay that includes a semantic-only render asset instance.
+  const bool forceSeparateSemanticSceneGraph =
+      metadataMediator_->getSimulatorConfiguration()
+          .forceSeparateSemanticSceneGraph;
+
   // create AssetInfos here for each potential mesh file for the scene, if they
   // are unique.
   bool buildCollisionMesh =
@@ -329,7 +341,8 @@ bool ResourceManager::loadStage(
     // Either add with pre-built meshGroup if collision assets are loaded
     // or empty vector for mesh group - this should only be the case if
     // we are using None-type physicsManager.
-    bool sceneSuccess = _physicsManager->addStage(stageAttributes, meshGroup);
+    bool sceneSuccess = _physicsManager->addStage(
+        stageAttributes, stageInstanceAttributes, meshGroup);
     if (!sceneSuccess) {
       ESP_ERROR() << "Adding Stage" << stageAttributes->getHandle()
                   << "to PhysicsManager failed. Aborting scene initialization.";

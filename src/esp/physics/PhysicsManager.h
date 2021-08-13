@@ -252,11 +252,15 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @param initAttributes The attributes structure defining physical
    * properties of the scene.  Must be a copy of the attributes stored in the
    * Attributes Manager.
+   * @param stageInstanceAttributes The stage instance attributes that was used
+   * to create this stage. Might be empty.
    * @param meshGroup collision meshs for the scene.
    * @return true if successful and false otherwise
    */
   bool addStage(
       const metadata::attributes::StageAttributes::ptr& initAttributes,
+      const metadata::attributes::SceneObjectInstanceAttributes::ptr&
+          stageInstanceAttributes,
       const std::vector<assets::CollisionMeshData>& meshGroup);
 
   /**

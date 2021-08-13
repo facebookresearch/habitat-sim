@@ -83,7 +83,7 @@ bool BulletPhysicsManager::initPhysicsFinalize() {
 // https://github.com/mosra/magnum-integration/issues/20
 bool BulletPhysicsManager::addStageFinalize(
     const metadata::attributes::StageAttributes::ptr& initAttributes) {
-  //! Initialize scene
+  //! Initialize BulletRigidStage
   bool sceneSuccess = staticStageObject_->initialize(initAttributes);
 
   return sceneSuccess;

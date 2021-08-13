@@ -43,6 +43,10 @@ class PhysicsManagerTest : public testing::TestWithParam<bool> {
   void resetCreateRendererFlag(bool createRenderer) {
     auto cfg = esp::sim::SimulatorConfiguration{};
     cfg.createRenderer = createRenderer;
+    // setting values for stage load
+    cfg.loadSemanticMesh = false;
+    cfg.forceSeparateSemanticSceneGraph = false;
+    cfg.enablePhysics = true;
     metadataMediator_ = MetadataMediator::create(cfg);
     resourceManager_ = std::make_unique<ResourceManager>(metadataMediator_);
     if (createRenderer) {
@@ -71,13 +75,13 @@ class PhysicsManagerTest : public testing::TestWithParam<bool> {
     auto stageAttributes = stageAttributesMgr->createObject(stageFile, true);
 
     // construct physics manager based on specifications in attributes
-    resourceManager_->initPhysicsManager(physicsManager_, true, &rootNode,
+    resourceManager_->initPhysicsManager(physicsManager_, &rootNode,
                                          physicsManagerAttributes);
 
     // load scene
     std::vector<int> tempIDs{sceneID_, esp::ID_UNDEFINED};
-    resourceManager_->loadStage(stageAttributes, physicsManager_,
-                                &sceneManager_, tempIDs, false);
+    resourceManager_->loadStage(stageAttributes, nullptr, physicsManager_,
+                                &sceneManager_, tempIDs);
 
     rigidObjectManager_ = physicsManager_->getRigidObjectManager();
   }
