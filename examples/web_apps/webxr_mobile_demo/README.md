@@ -8,10 +8,10 @@ This demo may not work on iPhone because AR on the browser, at the time of this 
 
 # Installation
 
-1. `cd` to the main `habitat_sim` directory. Create a folder for the data, then download the object data:
+1. `cd` to the main `habitat_sim` directory. Create a folder for the data, then download the webxr demo data:
 ```bash
 $ mkdir examples/web_apps/webxr_mobile_demo/data
-$ python -m habitat_sim.utils.datasets_download --uids webxr_hand_demo --data-path examples/web_apps/webxr_hand_demo/data <TODO: update this>
+$ python -m habitat_sim.utils.datasets_download --uids webxr_demo --data-path examples/web_apps/webxr_mobile_demo/data
 ```
 2. Follow [instructions](https://github.com/facebookresearch/habitat-sim#experimental-emscripten-webgl-and-web-apps) for installing and activating Emscripten, including `source path/to/emsdk_env.sh` or similar to configure env variables.
 1. `cd` to `examples/web_apps/webxr_mobile_demo` (this directory). Then run a script to transpile Habitat into JS, copy the resulting files over, and also copy over the JS utils files.
