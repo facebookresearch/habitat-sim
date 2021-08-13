@@ -152,8 +152,6 @@ class ResourceManager {
    * attributes
    * @param physicsManager The currently defined @ref physics::PhysicsManager.
    * Will be reseated to the specified physics implementation.
-   * @param isEnabled Whether this PhysicsManager is enabled or not.  Takes the
-   * place of old checks for nullptr.
    * @param parent The @ref scene::SceneNode of which the scene mesh will be
    * added as a child. Typically near the root of the scene. Expected to be
    * static.
@@ -162,7 +160,6 @@ class ResourceManager {
    */
   void initPhysicsManager(
       std::shared_ptr<physics::PhysicsManager>& physicsManager,
-      bool isEnabled,
       scene::SceneNode* parent,
       const metadata::attributes::PhysicsManagerAttributes::ptr&
           physicsManagerAttributes);

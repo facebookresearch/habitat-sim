@@ -150,10 +150,11 @@ void ResourceManager::initDefaultPrimAttributes() {
 
 void ResourceManager::initPhysicsManager(
     std::shared_ptr<physics::PhysicsManager>& physicsManager,
-    bool isEnabled,
     scene::SceneNode* parent,
     const metadata::attributes::PhysicsManagerAttributes::ptr&
         physicsManagerAttributes) {
+  const bool isEnabled =
+      metadataMediator_->getSimulatorConfiguration().enablePhysics;
   //! PHYSICS INIT: Use the passed attributes to initialize physics engine
   bool defaultToNoneSimulator = true;
   if (isEnabled) {
@@ -194,13 +195,13 @@ bool ResourceManager::loadStage(
     esp::scene::SceneManager* sceneManagerPtr,
     std::vector<int>& activeSceneIDs) {
   // If the semantic mesh should be created, based on SimulatorConfiguration
-  bool createSemanticMesh =
+  const bool createSemanticMesh =
       metadataMediator_->getSimulatorConfiguration().loadSemanticMesh;
 
   // Force creation of a separate semantic scene graph, even when no semantic
   // mesh is loaded for the stage.  This is required to support playback of any
   // replay that includes a semantic-only render asset instance.
-  bool forceSeparateSemanticSceneGraph =
+  const bool forceSeparateSemanticSceneGraph =
       metadataMediator_->getSimulatorConfiguration()
           .forceSeparateSemanticSceneGraph;
 

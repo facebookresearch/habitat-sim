@@ -46,6 +46,7 @@ class PhysicsManagerTest : public testing::TestWithParam<bool> {
     // setting values for stage load
     cfg.loadSemanticMesh = false;
     cfg.forceSeparateSemanticSceneGraph = false;
+    cfg.enablePhysics = true;
     metadataMediator_ = MetadataMediator::create(cfg);
     resourceManager_ = std::make_unique<ResourceManager>(metadataMediator_);
     if (createRenderer) {
@@ -74,7 +75,7 @@ class PhysicsManagerTest : public testing::TestWithParam<bool> {
     auto stageAttributes = stageAttributesMgr->createObject(stageFile, true);
 
     // construct physics manager based on specifications in attributes
-    resourceManager_->initPhysicsManager(physicsManager_, true, &rootNode,
+    resourceManager_->initPhysicsManager(physicsManager_, &rootNode,
                                          physicsManagerAttributes);
 
     // load scene
