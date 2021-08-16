@@ -159,15 +159,15 @@ vec4 textureAtlas(sampler2D tex, int faceID, vec2 p) {
 }
 
 void applySaturation(inout vec4 c, float saturation) {
-    float Pr = 0.299f;
-    float Pg = 0.587f;
-    float Pb = 0.114f;
+  float Pr = 0.299f;
+  float Pg = 0.587f;
+  float Pb = 0.114f;
 
-    float P = sqrt(c.r * c.r * Pr + c.g * c.g * Pg + c.b * c.b * Pb);
+  float P = sqrt(c.r * c.r * Pr + c.g * c.g * Pg + c.b * c.b * Pb);
 
-    c.r = P + (c.r - P) * saturation;
-    c.g = P + (c.g - P) * saturation;
-    c.b = P + (c.b - P) * saturation;
+  c.r = P + (c.r - P) * saturation;
+  c.g = P + (c.g - P) * saturation;
+  c.b = P + (c.b - P) * saturation;
 }
 
 layout(location = 0) out vec4 FragColor;
@@ -184,9 +184,9 @@ in vec2 uv;
 
 void main() {
   vec4 c = textureAtlas(atlasTex, gl_PrimitiveID, uv * tileSize) * exposure;
-    applySaturation(c, saturation);
-    c.rgb = pow(c.rgb, vec3(gamma));
-    FragColor = vec4(c.rgb, 1.0f);
+  applySaturation(c, saturation);
+  c.rgb = pow(c.rgb, vec3(gamma));
+  FragColor = vec4(c.rgb, 1.0f);
 
   fragmentObjectId = objectId;
 }

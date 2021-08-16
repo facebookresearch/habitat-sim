@@ -89,17 +89,17 @@ uniform highp vec3 CameraWorldPos;
 // The following function SRGBtoLINEAR is based on:
 // https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/data/shaders/pbr_khr.frag
 vec4 SRGBtoLINEAR(vec4 srgbIn) {
-    #ifdef MANUAL_SRGB
-    #ifdef SRGB_FAST_APPROXIMATION
-    vec3 linOut = pow(srgbIn.xyz,vec3(2.2));
-    #else //SRGB_FAST_APPROXIMATION
-    vec3 bLess = step(vec3(0.04045),srgbIn.xyz);
-    vec3 linOut = mix( srgbIn.xyz/vec3(12.92), pow((srgbIn.xyz+vec3(0.055))/vec3(1.055),vec3(2.4)), bLess );
-    #endif //SRGB_FAST_APPROXIMATION
-    return vec4(linOut,srgbIn.w);;
-    #else //MANUAL_SRGB
-    return srgbIn;
-    #endif //MANUAL_SRGB
+  #ifdef MANUAL_SRGB
+  #ifdef SRGB_FAST_APPROXIMATION
+  vec3 linOut = pow(srgbIn.xyz,vec3(2.2));
+  #else //SRGB_FAST_APPROXIMATION
+  vec3 bLess = step(vec3(0.04045),srgbIn.xyz);
+  vec3 linOut = mix( srgbIn.xyz/vec3(12.92), pow((srgbIn.xyz+vec3(0.055))/vec3(1.055),vec3(2.4)), bLess );
+  #endif //SRGB_FAST_APPROXIMATION
+  return vec4(linOut,srgbIn.w);;
+  #else //MANUAL_SRGB
+  return srgbIn;
+  #endif //MANUAL_SRGB
 }
 
 #if defined(NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENT)
@@ -127,7 +127,7 @@ vec3 getNormalFromNormalMap() {
     B *= -1.0;
     N *= -1.0;
   }
-    mat3 TBN = mat3(T, B, N);
+  mat3 TBN = mat3(T, B, N);
 
   // TBN transforms tangentNormal from tangent space to world space
   return normalize(TBN * tangentNormal);
@@ -173,7 +173,7 @@ vec3 fresnelSchlick(vec3 specularReflectance,
   // https://github.com/SaschaWillems/Vulkan-glTF-PBR
   // For typical incident reflectance range (between 4% to 100%)
   // set the grazing reflectance to 100% for typical fresnel effect.
-    // For very low reflectance range on highly diffuse objects (below 4%),
+  // For very low reflectance range on highly diffuse objects (below 4%),
   // incrementally reduce grazing reflecance to 0%.
   float reflectance = max(max(specularReflectance.r, specularReflectance.g), specularReflectance.b);
   float reflectance90 = clamp(reflectance * 25.0, 0.0, 1.0);
