@@ -8,8 +8,6 @@
 namespace esp {
 namespace core {
 
-ConfigValue::ConfigValue() : i{0}, type{ConfigStoredType::INT} {}
-
 ConfigValue::ConfigValue(const ConfigValue& otr) {
   switch (otr.type) {
     case ConfigStoredType::BOOL:

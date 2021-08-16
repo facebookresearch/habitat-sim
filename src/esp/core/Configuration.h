@@ -40,7 +40,7 @@ class ConfigValue {
   /**
    * @brief This is the type of the data represented in this ConfigValue.
    */
-  ConfigStoredType type;
+  ConfigStoredType type{ConfigStoredType::INT};
 
   /**
    * @brief This anonymous union holds the various typed values that may
@@ -59,8 +59,7 @@ class ConfigValue {
   };
 
  public:
-  ConfigValue();
-
+  ConfigValue() : i{0} {}
   ConfigValue(const ConfigValue& otr);
   ~ConfigValue();
   ConfigValue& operator=(const ConfigValue& otr);
