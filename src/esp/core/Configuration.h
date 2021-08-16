@@ -101,9 +101,6 @@ class Configuration {
     if (hasDouble(key)) {
       return getDoubleAsString(key);
     }
-    if (hasBool(key)) {
-      return getBoolAsString(key);
-    }
     if (hasInt(key)) {
       return getIntAsString(key);
     }
