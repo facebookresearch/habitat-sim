@@ -359,6 +359,8 @@ jobs:
           path: ./habitat-sim
       - run: *install_deps
       - run:
+          command: pyenv global 3.6.5
+      - run:
           name: pip install
           command: python3 -m pip install .
 
