@@ -454,13 +454,18 @@ if __name__ == "__main__":
         cmdclass=dict(build_ext=CMakeBuild),
         zip_safe=False,
         include_package_data=True,
+        package_data={"habitat_sim": ["habitat_sim/sensors/noise_models/data/*"]},
     )
 
     pymagnum_build_dir = osp.join(
         _cmake_build_dir, "deps", "magnum-bindings", "src", "python"
     )
 
-    if not args.skip_install_magnum and not is_pip():
+    if (
+        not args.skip_install_magnum
+        and not is_pip()
+        and os.path.exists(pymagnum_build_dir)
+    ):
         subprocess.check_call(
             [sys.executable, "-m", "pip", "install", pymagnum_build_dir]
         )
