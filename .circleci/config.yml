@@ -358,7 +358,7 @@ jobs:
       - checkout
       - run: *install_deps
       - run:
-          command: pyenv global 3.6.5
+          command: pyenv global 3.7.0
       - run:
           name: pip install
           command: python3 -m pip install .
