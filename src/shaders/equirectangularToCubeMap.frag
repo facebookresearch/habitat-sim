@@ -69,20 +69,20 @@ vec3 uvToXYZFlipped(vec2 uv) {
   // "Unreachable statement in switch body"
   switch (CubeSideIndex) {
     case 0:
-        return vec3( 1.0f,  uv.y, -uv.x);
+      return vec3( 1.0f,  uv.y, -uv.x);
 
     case 1:
-        return vec3(-1.0f,  uv.y,  uv.x);
+      return vec3(-1.0f,  uv.y,  uv.x);
 
     case 2:
     // CAREFUL: py and ny are also switched
-        return vec3( uv.x,  1.0f, -uv.y);
+      return vec3( uv.x,  1.0f, -uv.y);
 
     case 3:
-        return vec3( uv.x, -1.0f,  uv.y);
+      return vec3( uv.x, -1.0f,  uv.y);
 
     case 4:
-        return vec3( uv.x,  uv.y,  1.0f);
+      return vec3( uv.x,  uv.y,  1.0f);
 
     case 5:
     return vec3(-uv.x, +uv.y, -1.0f);
@@ -91,7 +91,7 @@ vec3 uvToXYZFlipped(vec2 uv) {
 
 // Give a light direction, convert it to the spherical coordinates
 vec2 dirToUV(vec3 dir) {
-    return vec2(
+  return vec2(
         0.5f + 0.5f * atan(dir.z, dir.x) * INV_PI,
         1.0f - acos(dir.y) * INV_PI);
 }
@@ -100,13 +100,13 @@ vec3 equirectangularToCubeMap() {
   // regular uv --> light dir -->
   // --> transform the dir to the spherical space -->
   // new uv = (theta, phi) --> transform each to [0, 1]
-    vec3 direction = normalize(uvToXYZFlipped(textureCoordinates));
-    vec2 equirectangularTextureUV = dirToUV(direction);
+  vec3 direction = normalize(uvToXYZFlipped(textureCoordinates));
+  vec2 equirectangularTextureUV = dirToUV(direction);
 
-    return  texture(EquirectangularTexture,
+  return  texture(EquirectangularTexture,
                   equirectangularTextureUV).rgb;
 }
 
 void main(void) {
-    fragmentColor = vec4(equirectangularToCubeMap(), 1.0f);
+  fragmentColor = vec4(equirectangularToCubeMap(), 1.0f);
 }
