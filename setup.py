@@ -42,6 +42,7 @@ def build_parser():
     parser.add_argument(
         "--headless",
         dest="headless",
+        default=True,
         action="store_true",
         help="""Build in headless mode.
 Use "HEADLESS=True pip install ." to build in headless mode with pip""",
@@ -56,9 +57,11 @@ Use "HEADLESS=True pip install ." to build in headless mode with pip""",
         "--bullet",
         "--with-bullet",
         dest="with_bullet",
+        default=True,
         action="store_true",
         help="""Build with Bullet simulation engine.""",
     )
+    parser.add_argument("--no-bullet", dest="with_bullet", action="store_false")
     parser.add_argument(
         "--vhacd",
         dest="with_vhacd",
@@ -454,7 +457,6 @@ if __name__ == "__main__":
         cmdclass=dict(build_ext=CMakeBuild),
         zip_safe=False,
         include_package_data=True,
-        package_data={"habitat_sim": ["habitat_sim/sensors/noise_models/data/*"]},
     )
 
     pymagnum_build_dir = osp.join(
