@@ -48,9 +48,9 @@ std::string SceneObjectInstanceAttributes::getObjectInfoHeaderInternal() const {
 }
 
 std::string SceneObjectInstanceAttributes::getObjectInfoInternal() const {
-  return getVec3AsString("translation")
+  return getAsString("translation")
       .append(1, ',')
-      .append(getQuatAsString("rotation"))
+      .append(getAsString("rotation"))
       .append(1, ',')
       .append(getCurrMotionTypeName())
       .append(1, ',')
@@ -103,7 +103,7 @@ std::string SceneAOInstanceAttributes::getSceneObjInstanceInfoInternal() const {
     initJointVels.append(std::to_string(it.second)).append(1, ',');
   }
   initJointVels.append("]");
-  return getBoolAsString("fixed_base").append(1, ',') +
+  return getAsString("fixed_base").append(1, ',') +
          initJointPose.append(1, ',') + initJointVels.append(1, ',');
 }  // SceneAOInstanceAttributes::getSceneObjInstanceInfoInternal()
 

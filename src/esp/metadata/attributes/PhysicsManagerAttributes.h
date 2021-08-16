@@ -66,7 +66,7 @@ class PhysicsManagerAttributes : public AbstractAttributes {
         .append(1, ',')
         .append(std::to_string(getMaxSubsteps()))
         .append(1, ',')
-        .append(getVec3AsString("gravity"))
+        .append(getAsString("gravity"))
         .append(1, ',')
         .append(std::to_string(getFrictionCoefficient()))
         .append(1, ',')

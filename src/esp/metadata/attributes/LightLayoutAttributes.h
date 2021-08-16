@@ -143,11 +143,11 @@ class LightInstanceAttributes : public AbstractAttributes {
    * use that to build this data.
    */
   std::string getObjectInfoInternal() const override {
-    return getVec3AsString("position")
+    return getAsString("position")
         .append(1, ',')
-        .append(getVec3AsString("direction"))
+        .append(getAsString("direction"))
         .append(1, ',')
-        .append(getVec3AsString("color"))
+        .append(getAsString("color"))
         .append(1, ',')
         .append(std::to_string(getIntensity()))
         .append(1, ',')

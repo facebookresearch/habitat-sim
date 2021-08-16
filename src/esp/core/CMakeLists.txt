@@ -38,6 +38,7 @@ add_library(
   Buffer.h
   Check.cpp
   Check.h
+  Configuration.cpp
   Configuration.h
   esp.cpp
   esp.h

@@ -17,25 +17,144 @@
 namespace esp {
 namespace core {
 
+/**
+ * @brief This enum lists every type of value that can be currently stored
+ * directly in an @ref esp::core::Configuration.
+ */
+enum class ConfigStoredType {
+  BOOL,
+  INT,
+  DOUBLE,
+  STRING,
+  MN_VEC3,
+  MN_QUAT,
+  MN_RAD
+};
+
+/**
+ * @brief This class uses an anonymous tagged union to store values of different
+ * types, as well as providing access to the values in a type safe manner.
+ */
+class ConfigValue {
+ private:
+  /**
+   * @brief This is the type of the data represented in this ConfigValue.
+   */
+  ConfigStoredType type;
+
+  /**
+   * @brief This anonymous union holds the various typed values that may
+   * represent this ConfigValue.  Unions are struct-like constructs where the
+   * storage for all the member variables starts at the same point in memory. By
+   * accessing the appropriate value, the type of the data will be preserved.
+   */
+  union {
+    bool b;
+    int i;
+    double d;
+    std::string s;
+    Magnum::Vector3 v;
+    Magnum::Quaternion q;
+    Magnum::Rad r;
+  };
+
+ public:
+  ConfigValue();
+
+  ConfigValue(const ConfigValue& otr);
+  ~ConfigValue();
+  ConfigValue& operator=(const ConfigValue& otr);
+
+  // setters
+  void set(bool _b);
+  void set(int _i);
+  void set(double _d);
+  void set(const std::string& _s);
+  void set(const char* _s);
+  void set(const Magnum::Vector3& _v);
+  void set(const Magnum::Quaternion& _q);
+  void set(const Magnum::Rad& _r);
+
+  // getters
+  auto getBool() const {
+    getterTypeCheck(ConfigStoredType::BOOL);
+    return b;
+  }
+  auto getInt() const {
+    getterTypeCheck(ConfigStoredType::INT);
+    return i;
+  }
+  auto getDouble() const {
+    getterTypeCheck(ConfigStoredType::DOUBLE);
+    return d;
+  }
+  auto getString() const {
+    getterTypeCheck(ConfigStoredType::STRING);
+    return s;
+  }
+  auto getVec3() const {
+    getterTypeCheck(ConfigStoredType::MN_VEC3);
+    return v;
+  }
+  auto getQuat() const {
+    getterTypeCheck(ConfigStoredType::MN_QUAT);
+    return q;
+  }
+  auto getRad() const {
+    getterTypeCheck(ConfigStoredType::MN_RAD);
+    return r;
+  }
+
+  /**
+   * @brief Retrieve a string representation of the data held in this @ref
+   * ConfigValue
+   */
+  std::string getAsString() const;
+
+  /**
+   * @brief Compare the type of this @ref ConfigValue with the passed type.
+   */
+  bool compareType(const ConfigStoredType& checkType) const {
+    return (type == checkType);
+  }
+
+  /**
+   * @brief Copy this @ref ConfigValue into the passed @ref
+   * Corrade::Utility::ConfigurationGroup
+   */
+  bool putValueInConfigGroup(const std::string& key,
+                             Corrade::Utility::ConfigurationGroup& cfg) const;
+
+ protected:
+  /**
+   * @brief check current Type against passed (Desired) type.  Return if they
+   * are equal; destroy if current type is not trivially destructible.
+   */
+  bool checkTypeAndDest(const ConfigStoredType& checkType);
+
+  /**
+   * @brief verify type being queried is actual type of object
+   */
+  void getterTypeCheck(const ConfigStoredType& checkType) const;
+
+ public:
+  ESP_SMART_POINTERS(ConfigValue)
+};  // ConfigValue
+
+/**
+ * @brief This class holds configuration data in a map of ConfigValues, and also
+ * supports nested configurations via a map of smart pointers to this type.
+ */
 class Configuration {
  public:
   Configuration() = default;
 
   Configuration(const Configuration& otr)
-      : configMap_(),
-        intMap_(otr.intMap_),
-        boolMap_(otr.boolMap_),
-        doubleMap_(otr.doubleMap_),
-        stringMap_(otr.stringMap_),
-        vecMap_(otr.vecMap_),
-        quatMap_(otr.quatMap_),
-        radMap_(otr.radMap_) {
+      : configMap_(), valueMap_(otr.valueMap_) {
     configMap_.reserve(otr.configMap_.size());
     for (const auto& entry : otr.configMap_) {
       configMap_[entry.first] = std::make_shared<Configuration>(*entry.second);
     }
-
-    numEntries = calcNumEntries();
   }
 
   // virtual destructor set to that pybind11 recognizes attributes inheritance
@@ -44,77 +163,93 @@ class Configuration {
   virtual ~Configuration() = default;
 
   bool hasBool(const std::string& key) const {
-    return checkMapForKey(key, boolMap_);
+    return checkMapForKeyAndType(key, ConfigStoredType::BOOL);
   }
   bool hasDouble(const std::string& key) const {
-    return checkMapForKey(key, doubleMap_);
+    return checkMapForKeyAndType(key, ConfigStoredType::DOUBLE);
   }
   bool hasInt(const std::string& key) const {
-    return checkMapForKey(key, intMap_);
+    return checkMapForKeyAndType(key, ConfigStoredType::INT);
   }
   bool hasString(const std::string& key) const {
-    return checkMapForKey(key, stringMap_);
+    return checkMapForKeyAndType(key, ConfigStoredType::STRING);
   }
   bool hasVec3(const std::string& key) const {
-    return checkMapForKey(key, vecMap_);
+    return checkMapForKeyAndType(key, ConfigStoredType::MN_VEC3);
   }
   bool hasQuat(const std::string& key) const {
-    return checkMapForKey(key, quatMap_);
+    return checkMapForKeyAndType(key, ConfigStoredType::MN_QUAT);
   }
   bool hasRad(const std::string& key) const {
-    return checkMapForKey(key, radMap_);
+    return checkMapForKeyAndType(key, ConfigStoredType::MN_RAD);
   }
 
   // ****************** Getters ******************
   bool getBool(const std::string& key) const {
-    return getValFromMap(key, boolMap_);
+    if (hasBool(key)) {
+      return valueMap_.at(key).getBool();
+    }
+    ESP_ERROR() << "Key :" << key << "not present in configuration as boolean";
+    return {};
   }
 
   double getDouble(const std::string& key) const {
-    return getValFromMap(key, doubleMap_);
+    if (hasDouble(key)) {
+      return valueMap_.at(key).getDouble();
+    }
+    ESP_ERROR() << "Key :" << key << "not present in configuration as double";
+    return {};
   }
   int getInt(const std::string& key) const {
-    return getValFromMap(key, intMap_);
+    if (hasInt(key)) {
+      return valueMap_.at(key).getInt();
+    }
+    ESP_ERROR() << "Key :" << key << "not present in configuration as integer";
+    return {};
   }
   std::string getString(const std::string& key) const {
-    return getValFromMap(key, stringMap_);
+    if (hasString(key)) {
+      return valueMap_.at(key).getString();
+    }
+    ESP_ERROR() << "Key :" << key
+                << "not present in configuration as std::string";
+    return {};
   }
+
   Magnum::Vector3 getVec3(const std::string& key) const {
-    return getValFromMap(key, vecMap_);
+    if (hasVec3(key)) {
+      return valueMap_.at(key).getVec3();
+    }
+    ESP_ERROR() << "Key :" << key
+                << "not present in configuration as Magnum::Vector3";
+    return {};
   }
   Magnum::Quaternion getQuat(const std::string& key) const {
-    return getValFromMap(key, quatMap_);
+    if (hasQuat(key)) {
+      return valueMap_.at(key).getQuat();
+    }
+    ESP_ERROR() << "Key :" << key
+                << "not present in configuration as Magnum::Quaternion";
+    return {};
   }
   Magnum::Rad getRad(const std::string& key) const {
-    return getValFromMap(key, radMap_);
+    if (hasRad(key)) {
+      return valueMap_.at(key).getRad();
+    }
+    ESP_ERROR() << "Key :" << key
+                << "not present in configuration as Magnum::Rad";
+    return {};
   }
+
+  // ****************** String Conversion ******************
 
   /**
    * @brief This method will look for the provided key, and return a string
    * holding the object, if it is found in one of this configuration's maps
    */
   std::string getAsString(const std::string& key) const {
-    if (hasBool(key)) {
-      return getBoolAsString(key);
-    }
-
-    if (hasDouble(key)) {
-      return getDoubleAsString(key);
-    }
-    if (hasInt(key)) {
-      return getIntAsString(key);
-    }
-    if (hasString(key)) {
-      return getString(key);
-    }
-    if (hasRad(key)) {
-      return getRadAsString(key);
-    }
-    if (hasVec3(key)) {
-      return getVec3AsString(key);
-    }
-    if (hasQuat(key)) {
-      return getQuatAsString(key);
+    if (valueMap_.count(key) > 0) {
+      return valueMap_.at(key).getAsString();
     }
     std::string retVal = "Key ";
     retVal.append(key).append(" not present in this configuration");
@@ -122,68 +257,35 @@ class Configuration {
     return retVal;
   }
 
-  // ****************** String Conversion ******************
-  std::string getBoolAsString(const std::string& key) const {
-    const bool val = getValFromMap(key, boolMap_);
-    return (val ? "True" : "False");
-  }
-  std::string getDoubleAsString(const std::string& key) const {
-    const double val = getValFromMap(key, doubleMap_);
-    return std::to_string(val);
-  }
-  std::string getIntAsString(const std::string& key) const {
-    const int val = getValFromMap(key, intMap_);
-    return std::to_string(val);
-  }
-
-  std::string getVec3AsString(const std::string& key) const {
-    const Magnum::Vector3 val = getValFromMap(key, vecMap_);
-    std::string begin = "[";
-    return begin.append(std::to_string(val.x()))
-        .append(",")
-        .append(std::to_string(val.y()))
-        .append(",")
-        .append(std::to_string(val.z()))
-        .append("]");
-  }
-  std::string getQuatAsString(const std::string& key) const {
-    const Magnum::Quaternion val = getValFromMap(key, quatMap_);
-    std::string begin = "[";
-    return begin.append(std::to_string(val.vector().x()))
-        .append(",")
-        .append(std::to_string(val.vector().y()))
-        .append(",")
-        .append(std::to_string(val.vector().z()))
-        .append(",")
-        .append(std::to_string(val.scalar()))
-        .append("]");
-  }
-  std::string getRadAsString(const std::string& key) const {
-    const Magnum::Rad val = getValFromMap(key, radMap_);
-    return std::to_string(val.operator float());
-  }
-
   // ****************** Key List Retrieval ******************
+  std::vector<std::string> getKeys() const {
+    std::vector<std::string> keys;
+    keys.reserve(valueMap_.size());
+    for (const auto& entry : valueMap_) {
+      keys.push_back(entry.first);
+    }
+    return keys;
+  }
   std::vector<std::string> getBoolKeys() const {
-    return getKeysFromMap(boolMap_);
+    return getKeysFromMapOfType(ConfigStoredType::BOOL);
   }
   std::vector<std::string> getDoubleKeys() const {
-    return getKeysFromMap(doubleMap_);
+    return getKeysFromMapOfType(ConfigStoredType::DOUBLE);
   }
   std::vector<std::string> getIntKeys() const {
-    return getKeysFromMap(intMap_);
+    return getKeysFromMapOfType(ConfigStoredType::INT);
   }
   std::vector<std::string> getStringKeys() const {
-    return getKeysFromMap(stringMap_);
+    return getKeysFromMapOfType(ConfigStoredType::STRING);
   }
   std::vector<std::string> getVec3Keys() const {
-    return getKeysFromMap(vecMap_);
+    return getKeysFromMapOfType(ConfigStoredType::MN_VEC3);
   }
   std::vector<std::string> getQuatKeys() const {
-    return getKeysFromMap(quatMap_);
+    return getKeysFromMapOfType(ConfigStoredType::MN_QUAT);
   }
   std::vector<std::string> getRadKeys() const {
-    return getKeysFromMap(radMap_);
+    return getKeysFromMapOfType(ConfigStoredType::MN_RAD);
   }
   // ****************** Setters ******************
   template <typename T>
@@ -193,56 +295,118 @@ class Configuration {
                 << "for key :" << key;
   }
   void set(const std::string& key, const bool& value) {
-    addValToMap(key, value, boolMap_);
+    valueMap_[key].set(value);
   }
   void set(const std::string& key, const int& value) {
-    addValToMap(key, value, intMap_);
+    valueMap_[key].set(value);
   }
 
   void set(const std::string& key, const double& value) {
-    addValToMap(key, value, doubleMap_);
+    valueMap_[key].set(value);
   }
   void set(const std::string& key, const char* value) {
-    addValToMap(key, std::string(value), stringMap_);
+    valueMap_[key].set(value);
   }
 
   void set(const std::string& key, const std::string& value) {
-    addValToMap(key, value, stringMap_);
+    valueMap_[key].set(value);
   }
 
   void set(const std::string& key, const Magnum::Vector3& value) {
-    addValToMap(key, value, vecMap_);
+    valueMap_[key].set(value);
   }
   void set(const std::string& key, const Magnum::Quaternion& value) {
-    addValToMap(key, value, quatMap_);
+    valueMap_[key].set(value);
   }
   void set(const std::string& key, const Magnum::Rad& value) {
-    addValToMap(key, value, radMap_);
+    valueMap_[key].set(value);
   }
   // ****************** Value removal ******************
-  bool removeBool(const std::string& key) {
-    return removeValFromMap(key, boolMap_);
+  void removeValueFromMap(const std::string& key) {
+    if (valueMap_.count(key) > 0) {
+      valueMap_.erase(key);
+    }
   }
+
+  bool removeBool(const std::string& key) {
+    if (hasBool(key)) {
+      bool v = valueMap_.at(key).getBool();
+      valueMap_.erase(key);
+      return v;
+    }
+    ESP_WARNING() << "Key :" << key
+                  << "not present in configuration as boolean";
+    return {};
+  }
+
   double removeDouble(const std::string& key) {
-    return removeValFromMap(key, doubleMap_);
+    if (hasDouble(key)) {
+      double v = valueMap_.at(key).getDouble();
+      valueMap_.erase(key);
+      return v;
+    }
+    ESP_WARNING() << "Key :" << key << "not present in configuration as double";
+    return {};
   }
   int removeInt(const std::string& key) {
-    return removeValFromMap(key, intMap_);
+    if (hasInt(key)) {
+      int v = valueMap_.at(key).getInt();
+      valueMap_.erase(key);
+      return v;
+    }
+    ESP_WARNING() << "Key :" << key
+                  << "not present in configuration as integer";
+    return {};
   }
   std::string removeString(const std::string& key) {
-    return removeValFromMap(key, stringMap_);
+    if (hasString(key)) {
+      std::string v = valueMap_.at(key).getString();
+      valueMap_.erase(key);
+      return v;
+    }
+    ESP_WARNING() << "Key :" << key
+                  << "not present in configuration as std::string";
+    return {};
   }
+
   Magnum::Vector3 removeVec3(const std::string& key) {
-    return removeValFromMap(key, vecMap_);
+    if (hasVec3(key)) {
+      Magnum::Vector3 v = valueMap_.at(key).getVec3();
+      valueMap_.erase(key);
+      return v;
+    }
+    ESP_WARNING() << "Key :" << key
+                  << "not present in configuration as Magnum::Vector3";
+    return {};
   }
   Magnum::Quaternion removeQuat(const std::string& key) {
-    return removeValFromMap(key, quatMap_);
+    if (hasQuat(key)) {
+      Magnum::Quaternion v = valueMap_.at(key).getQuat();
+      valueMap_.erase(key);
+      return v;
+    }
+    ESP_WARNING() << "Key :" << key
+                  << "not present in configuration as Magnum::Quaternion";
+    return {};
   }
   Magnum::Rad removeRad(const std::string& key) {
-    return removeValFromMap(key, radMap_);
+    if (hasRad(key)) {
+      return valueMap_.at(key).getRad();
+    }
+    ESP_WARNING() << "Key :" << key
+                  << "not present in configuration as Magnum::Rad";
+    return {};
   }
+
   std::shared_ptr<Configuration> removeSubconfig(const std::string& key) {
-    return removeValFromMap(key, configMap_);
+    if (configMap_.count(key) > 0) {
+      auto val = configMap_.at(key);
+      configMap_.erase(key);
+      return val;
+    }
+    ESP_WARNING() << "Key :" << key
+                  << "not present in map of subconfigurations.";
+    return {};
   }
 
   // ****************** Subconfiguration accessors ******************
@@ -289,15 +453,11 @@ class Configuration {
    */
   void setSubConfigPtr(const std::string& name,
                        std::shared_ptr<Configuration>& configPtr) {
-    // overwrite if exists already, move to minimize copies
-    if (configMap_.count(name) == 0) {
-      ++numEntries;
-    }
     configMap_[name] = std::move(configPtr);
   }  // setSubConfigPtr
 
   int getNumSubConfigs(const std::string& name) const {
-    if (checkMapForKey(name, configMap_)) {
+    if (configMap_.count(name) > 0) {
       return configMap_.at(name)->getNumEntries();
     }
     ESP_WARNING() << "No SubConfig found named :" << name;
@@ -308,14 +468,7 @@ class Configuration {
    * @brief Return number of entries in this configuration. This only counts
    * subconfiguration entries as a single entry.
    */
-  int getNumEntries() const {
-    if (numEntries >= 0) {
-      // if numEntries is a legal value, pass it.
-      return numEntries;
-    }
-    // if an impossible value, recalculate
-    return calcNumEntries();
-  }
+  int getNumEntries() const { return configMap_.size() + valueMap_.size(); }
 
   bool hasValues() const { return getNumEntries() > 0; }
 
@@ -354,13 +507,10 @@ class Configuration {
     if (!src->hasValues()) {
       return;
     }
-    mergeMaps(src->boolMap_, boolMap_);
-    mergeMaps(src->intMap_, intMap_);
-    mergeMaps(src->doubleMap_, doubleMap_);
-    mergeMaps(src->stringMap_, stringMap_);
-    mergeMaps(src->vecMap_, vecMap_);
-    mergeMaps(src->quatMap_, quatMap_);
-    mergeMaps(src->radMap_, radMap_);
+    // copy every element over from src
+    for (const auto& elem : src->valueMap_) {
+      valueMap_[elem.first] = elem.second;
+    }
     // merge subconfigs
     for (const auto& subConfig : configMap_) {
       const auto name = subConfig.first;
@@ -384,13 +534,9 @@ class Configuration {
    */
   int hasValueInternal(const std::string& key, int parentLevel = 0) const {
     int curLevel = parentLevel + 1;
-    if ((intMap_.count(key) > 0) || (boolMap_.count(key) > 0) ||
-        (doubleMap_.count(key) > 0) || (stringMap_.count(key) > 0) ||
-        (vecMap_.count(key) > 0) || (quatMap_.count(key) > 0) ||
-        (radMap_.count(key) > 0)) {
+    if (valueMap_.count(key) > 0) {
       return curLevel;
     }
-
     // not found by here in data maps, check subconfigs, to see what level
     for (const auto& subConfig : configMap_) {
       if (subConfig.first == key) {
@@ -414,13 +560,10 @@ class Configuration {
    */
   void putAllValuesInConfigGroup(
       Corrade::Utility::ConfigurationGroup& cfg) const {
-    putMapValsInConfigGroup(cfg, boolMap_);
-    putMapValsInConfigGroup(cfg, intMap_);
-    putMapValsInConfigGroup(cfg, doubleMap_);
-    putMapValsInConfigGroup(cfg, stringMap_);
-    putMapValsInConfigGroup(cfg, vecMap_);
-    putMapValsInConfigGroup(cfg, quatMap_);
-    putMapValsInConfigGroup(cfg, radMap_);
+    // put tagged union values in map
+    for (const auto& entry : valueMap_) {
+      entry.second.putValueInConfigGroup(entry.first, cfg);
+    }
 
     for (const auto& subConfig : configMap_) {
       const auto name = subConfig.first;
@@ -439,158 +582,45 @@ class Configuration {
     if (configMap_.count(name) > 0) {
       return false;
     }
-    // adding a subgroup entry, increment numEntries
-    ++numEntries;
     configMap_[name] = std::make_shared<Configuration>();
     return true;
   }
 
   /**
-   * @brief Check if passed @p map contains specified key
+   * @brief check if storage map of this configuration has the passed key and if
+   * it is the requested type.
+   * @param key the key to check
+   * @param type the @ref ConfigStoredType type to check for
    */
-  template <typename T>
-  bool checkMapForKey(const std::string& key,
-                      const std::unordered_map<std::string, T>& map) const {
-    return map.count(key) > 0;
+  bool checkMapForKeyAndType(const std::string& key,
+                             const ConfigStoredType& type) const {
+    return (valueMap_.count(key) > 0 && valueMap_.at(key).compareType(type));
   }
 
   /**
-   * @brief Add passed value to passed map.  Increment @ref numEntries if @p
-   * key not present in map.
-   * @tparam The type of the value to add to the map.
-   * @param key The key of the value to add
-   * @param val The value to add
-   * @param map The map to be added to
+   * @brief Retrieve a vector of the keys of the map for the values of the
+   * specified type.
    */
-  template <typename T>
-  void addValToMap(const std::string& key,
-                   const T& val,
-                   std::unordered_map<std::string, T>& map) {
-    if (!checkMapForKey(key, map)) {
-      ++numEntries;
-    }
-    map[key] = val;
-  }
-
-  /**
-   * @brief Retrieve a copy of the value requested, if it is in the map.  If
-   * not, gives an error.
-   * @tparam The type of the value to get from the map.
-   * @param key The key of the value to get
-   * @param map The map to be queried for @p key.
-   * @return The value in map at @p key, or an empty value.
-   */
-  template <typename T>
-  T getValFromMap(const std::string& key,
-                  const std::unordered_map<std::string, T>& map) const {
-    if (checkMapForKey(key, map)) {
-      // return a copy
-      return T{map.at(key)};
-    }
-    ESP_ERROR() << "Key :" << key << "not present in map of type <std::string,"
-                << typeid(T).name() << ">";
-    return {};
-  }
-
-  /**
-   * @brief Retrieve and remove the value requested, if it is in the map.  If
-   * not, gives a warning.
-   * @tparam The type of the value to get from the map.
-   * @param key The key of the value to get
-   * @param map The map to be queried for @p key.
-   * @return The value in map at @p key that has been removed, or an empty
-   * value.
-   */
-  template <typename T>
-  T removeValFromMap(const std::string& key,
-                     std::unordered_map<std::string, T>& map) {
-    if (checkMapForKey(key, map)) {
-      T val = map.at(key);
-      map.erase(key);
-      --numEntries;
-      if (numEntries < 0) {
-        // should never remove more entries than have been entered
-        numEntries = calcNumEntries();
-      }
-      // return a copy
-      return val;
-    }
-    ESP_WARNING() << "Key :" << key
-                  << "not present in map of type <std::string,"
-                  << typeid(T).name() << ">";
-    return {};
-  }
-
-  /**
-   * @brief Retrieve a vector of the keys of @p map.
-   */
-  template <typename T>
-  std::vector<std::string> getKeysFromMap(
-      const std::unordered_map<std::string, T>& map) const {
+  std::vector<std::string> getKeysFromMapOfType(
+      const ConfigStoredType& type) const {
     std::vector<std::string> keys;
-    keys.reserve(map.size());
-    for (const auto& entry : map) {
-      keys.push_back(entry.first);
+    keys.reserve(valueMap_.size());
+    int count = 0;
+    for (const auto& entry : valueMap_) {
+      if (entry.second.compareType(type)) {
+        ++count;
+        keys.push_back(entry.first);
+      }
     }
+    keys.resize(count);
     return keys;
   }
-
-  /**
-   * @brief This will merge 2 maps, with the @p srcMap being copied into/over
-   * the @p destMap .
-   * @tparam the type of object held in both maps
-   * @param srcMap The map to be copied from
-   * @param destMap The map to be merged into/overwritten
-   */
-  template <typename T>
-  void mergeMaps(const std::unordered_map<std::string, T>& srcMap,
-                 std::unordered_map<std::string, T>& destMap) {
-    for (const auto& elem : srcMap) {
-      destMap[elem.first] = elem.second;
-    }
-  }
-
-  /**
-   * @brief Populate the passed @ref Corrade::Utility::ConfigurationGroup with
-   * the values in this Configuration.  Do not use directly for
-   * subgroups/subconfig.
-   * @tparam The type of stored value in the map being read.
-   */
-
-  template <typename T>
-  void putMapValsInConfigGroup(
-      Corrade::Utility::ConfigurationGroup& cfg,
-      const std::unordered_map<std::string, T>& map) const {
-    for (const auto& entry : map) {
-      cfg.setValue(entry.first, entry.second);
-    }
-  }
-
-  /**
-   * @brief calculate the number of entries in this Configuration at this
-   * level.
-   */
-  int calcNumEntries() const {
-    return configMap_.size() + intMap_.size() + boolMap_.size() +
-           doubleMap_.size() + stringMap_.size() + vecMap_.size() +
-           quatMap_.size() + radMap_.size();
-  }
-
-  // number of entries added to this configuration
-  int numEntries = 0;
 
   // Map to hold configurations as subgroups
   std::unordered_map<std::string, std::shared_ptr<Configuration>> configMap_{};
 
-  // Maps to hold various simple types
-  std::unordered_map<std::string, int> intMap_{};
-  std::unordered_map<std::string, bool> boolMap_{};
-  std::unordered_map<std::string, double> doubleMap_{};
-  std::unordered_map<std::string, std::string> stringMap_{};
-  std::unordered_map<std::string, Magnum::Vector3> vecMap_{};
-  std::unordered_map<std::string, Magnum::Quaternion> quatMap_{};
-  std::unordered_map<std::string, Magnum::Rad> radMap_{};
-  // Corrade::Utility::ConfigurationGroup cfg;
+  std::unordered_map<std::string, ConfigValue> valueMap_{};
+
   ESP_SMART_POINTERS(Configuration)
 };  // namespace core
 
