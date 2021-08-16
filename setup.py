@@ -459,7 +459,11 @@ if __name__ == "__main__":
         _cmake_build_dir, "deps", "magnum-bindings", "src", "python"
     )
 
-    if not args.skip_install_magnum and "sdist" not in sys.argv:
+    if (
+        not args.skip_install_magnum
+        and "sdist" not in sys.argv
+        and os.path.exists(pymagnum_build_dir)
+    ):
         subprocess.check_call(
             [sys.executable, "-m", "pip", "install", pymagnum_build_dir]
         )
