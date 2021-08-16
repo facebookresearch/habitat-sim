@@ -21,6 +21,7 @@ import sys
 from distutils.util import strtobool
 from distutils.version import StrictVersion
 
+import pip
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
 
@@ -459,10 +460,15 @@ if __name__ == "__main__":
         _cmake_build_dir, "deps", "magnum-bindings", "src", "python"
     )
 
-    if not args.skip_install_magnum and not is_pip() and "sdist" not in sys.argv:
-        subprocess.check_call(
-            [sys.executable, "-m", "pip", "install", pymagnum_build_dir]
-        )
+    if (
+        not args.skip_install_magnum
+        and "sdist" not in sys.argv
+        and os.path.exists(pymagnum_build_dir)
+    ):
+        pip.main(["install", pymagnum_build_dir])
+        # subprocess.check_call(
+        #    [sys.executable, "-m", "pip", "install", pymagnum_build_dir]
+        # )
     else:
         print(
             "Assuming magnum bindings are already installed (or we're inside pip and *\\_('-')_/*)"
