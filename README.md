@@ -70,8 +70,9 @@ for a list of what was externally contributed and the corresponding work/citatio
 
 Habitat-Sim can be installed in 3 ways:
 1. Via Conda - Recommended method for most users. Stable release and nightly builds.
-2. Via Docker - Updated approximately once per year for [Habitat Challenge](https://aihabitat.org/challenge/).  Read [habitat-docker-setup](https://github.com/facebookresearch/habitat-lab#docker-setup).
-3. Via Source - For active development. Read [build instructions and common build issues](BUILD_FROM_SOURCE.md).
+1. Via PIP - `pip install .` to compile the latest build with bullet.
+1. Via Docker - Updated approximately once per year for [Habitat Challenge](https://aihabitat.org/challenge/).  Read [habitat-docker-setup](https://github.com/facebookresearch/habitat-lab#docker-setup).
+1. Via Source - For active development. Read [build instructions and common build issues](BUILD_FROM_SOURCE.md).
 
 ### [Recommended] Conda Packages
 
