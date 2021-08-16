@@ -50,7 +50,6 @@ def build_parser():
     parser.add_argument(
         "--headless",
         dest="headless",
-        default=True,
         action="store_true",
         help="""Build in headless mode.
 Use "HEADLESS=True pip install ." to build in headless mode with pip""",
