@@ -21,7 +21,6 @@ import sys
 from distutils.util import strtobool
 from distutils.version import StrictVersion
 
-import pip
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
 
@@ -461,7 +460,9 @@ if __name__ == "__main__":
     )
 
     if not args.skip_install_magnum and "sdist" not in sys.argv:
-        pip.main(["install", pymagnum_build_dir])
+        subprocess.check_call(
+            [sys.executable, "-m", "pip", "install", pymagnum_build_dir]
+        )
     else:
         print(
             "Assuming magnum bindings are already installed (or we're inside pip and *\\_('-')_/*)"
