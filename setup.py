@@ -18,6 +18,7 @@ import re
 import shlex
 import subprocess
 import sys
+from distutils.util import strtobool
 from distutils.version import StrictVersion
 
 from setuptools import Extension, find_packages, setup
@@ -33,6 +34,12 @@ except ImportError:
 
 
 ARG_CACHE_BLACKLIST = {"force_cmake", "cache_args", "inplace"}
+
+
+def is_pip():
+    # This will end with python if driven with python setup.py ...
+    return osp.basename(os.environ.get("_", "/pip/no")).startswith("pip")
+
 
 # TODO refactor to the proper way to pass options to setup.py so pip can do so.
 def build_parser():
@@ -50,6 +57,7 @@ Use "HEADLESS=True pip install ." to build in headless mode with pip""",
     parser.add_argument(
         "--with-cuda",
         action="store_true",
+        default=strtobool(os.environ.get("WITH_CUDA", "False").lower()),
         dest="with_cuda",
         help="Build CUDA enabled features.  Requires CUDA to be installed",
     )
@@ -57,7 +65,7 @@ Use "HEADLESS=True pip install ." to build in headless mode with pip""",
         "--bullet",
         "--with-bullet",
         dest="with_bullet",
-        default=True,
+        default=strtobool(os.environ.get("WITH_BULLET", str(is_pip())).lower()),
         action="store_true",
         help="""Build with Bullet simulation engine.""",
     )
@@ -87,14 +95,13 @@ Use "HEADLESS=True pip install ." to build in headless mode with pip""",
     parser.add_argument(
         "--cmake-args",
         type=str,
-        default="",
+        default=os.environ.get("CMAKE_ARGS", ""),
         help="""Additional arguements to be passed to cmake.
 Note that you will need to do `--cmake-args="..."` as `--cmake-args "..."`
 will generally not be parsed correctly
 You may need to use --force-cmake to ensure cmake is rerun with new args.
 Use "CMAKE_ARGS="..." pip install ." to set cmake args with pip""",
     )
-
     parser.add_argument(
         "--no-update-submodules",
         dest="no_update_submodules",
@@ -179,11 +186,6 @@ def has_ninja():
         return True
     except (OSError, subprocess.SubprocessError):
         return False
-
-
-def is_pip():
-    # This will end with python if driven with python setup.py ...
-    return osp.basename(os.environ.get("_", "/pip/no")).startswith("pip")
 
 
 class CMakeExtension(Extension):
@@ -423,12 +425,6 @@ if __name__ == "__main__":
         "{}.{}".format(sys.version_info[0], sys.version_info[1])
     ) >= StrictVersion("3.6"), "Must use python3.6 or newer"
 
-    if os.environ.get("HEADLESS", "").lower() == "true":
-        args.headless = True
-
-    if os.environ.get("CMAKE_ARGS", None) is not None:
-        args.cmake_args = os.environ["CMAKE_ARGS"]
-
     with open("./requirements.txt", "r") as f:
         requirements = [l.strip() for l in f.readlines() if len(l.strip()) > 0]
 
@@ -463,11 +459,7 @@ if __name__ == "__main__":
         _cmake_build_dir, "deps", "magnum-bindings", "src", "python"
     )
 
-    if (
-        not args.skip_install_magnum
-        and not is_pip()
-        and os.path.exists(pymagnum_build_dir)
-    ):
+    if not args.skip_install_magnum and not is_pip() and "sdist" not in sys.argv:
         subprocess.check_call(
             [sys.executable, "-m", "pip", "install", pymagnum_build_dir]
         )
