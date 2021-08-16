@@ -355,8 +355,7 @@ jobs:
   test_pip_build:
     <<: *gpu
     steps:
-      - checkout:
-          path: ./habitat-sim
+      - checkout
       - run: *install_deps
       - run:
           command: pyenv global 3.6.5
