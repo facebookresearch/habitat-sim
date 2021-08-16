@@ -469,7 +469,7 @@ if __name__ == "__main__":
             [sys.executable, "-m", "pip", "install", pymagnum_build_dir]
         )
     else:
-        if not os.path.exists(pymagnum_build_dir):
+        if not os.path.exists(pymagnum_build_dir) and "sdist" not in sys.argv:
             print(
                 f"{pymagnum_build_dir} does not exist and therefore we cannot install magnum-bindings directly."
             )
