@@ -27,6 +27,13 @@ repos:
         args: ['--fix=lf']
     -   id: requirements-txt-fixer
 
+    # Changes tabs to spaces
+-   repo: https://github.com/Lucas-C/pre-commit-hooks
+    rev: v1.1.10
+    hooks:
+    -   id: remove-tabs
+        exclude: "(^(.git|setup.cfg))|(.(json|scn)$)"
+
 -   repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
     rev: v2.1.0
     hooks:
@@ -36,13 +43,13 @@ repos:
         args: [--autofix]
 
 -   repo: https://github.com/timothycrosley/isort
-    rev: 5.8.0
+    rev: 5.9.3
     hooks:
     -   id: isort
         exclude: docs/
 
 -   repo: https://github.com/ambv/black
-    rev: 21.5b2
+    rev: 21.7b0
     hooks:
     - id: black
       exclude: ^examples/tutorials/(nb_python|colabs)
@@ -67,7 +74,7 @@ repos:
         - flake8-simplify==0.14.1
 
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: 'v0.901'
+    rev: 'v0.910'
     hooks:
     -   id: mypy
         pass_filenames: false
@@ -75,17 +82,17 @@ repos:
         - attrs
 
 -   repo: https://github.com/seddonym/import-linter
-    rev: v1.2.1
+    rev: v1.2.4
     hooks:
     -   id: import-linter
 
 -   repo: https://github.com/kynan/nbstripout
-    rev: 0.4.0
+    rev: 0.5.0
     hooks:
     -   id: nbstripout
 
 -   repo: https://github.com/mwouts/jupytext
-    rev: v1.11.2
+    rev: v1.11.4
     hooks:
     -   id: jupytext
         files: '^examples/tutorials/(colabs|nb_python)/(.*\.py|.*\.ipynb)$'
@@ -112,7 +119,7 @@ repos:
         exclude: (^src/(cmake/Find|deps)|configure\.h\.cmake$)
 
 -   repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v7.28.0
+    rev: v8.0.0-beta.0
     hooks:
     -   id: eslint
         args: [--fix, --ext .html,.js]
@@ -129,6 +136,6 @@ repos:
     -   id: shellcheck
 
 -   repo: https://github.com/AleksaC/circleci-cli-py
-    rev: v0.1.15224
+    rev: v0.1.15824
     hooks:
     -   id: circle-ci-validator
