@@ -360,7 +360,7 @@ jobs:
       - run: *install_deps
       - run:
           name: pip install
-          command: pip install .
+          command: python3 -m pip install .
 
   lab_build_habitat:
     <<: *gpu
