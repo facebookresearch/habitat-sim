@@ -121,8 +121,8 @@ class ManagedContainerBase {
   }
 
   /**
-   * @brief Get a list of all managed objects whose keys contain @p subStr,
-   * ignoring subStr's case
+   * @brief Get a list of all managed objects handles that contain, or
+   * explicitly do not contain @p subStr, ignoring subStr's case
    * @param subStr substring key to search for within existing managed objects.
    * @param contains whether to search for keys containing, or excluding,
    * passed @p subStr
