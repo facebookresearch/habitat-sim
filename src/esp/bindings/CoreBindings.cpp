@@ -68,7 +68,7 @@ void initCoreBindings(py::module& m) {
 
       //.def("add_string_to_group", &Configuration::addStringToGroup)
       .def("has_value", &Configuration::hasValue,
-           R"(Returns whether this Configuration has )", "key"_a)
+           R"(Returns whether this Configuration has the passed key.)", "key"_a)
       .def("has_bool", &Configuration::hasBool)
       .def("has_int", &Configuration::hasInt)
       .def("has_string", &Configuration::hasString)

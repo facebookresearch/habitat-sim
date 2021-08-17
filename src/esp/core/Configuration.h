@@ -105,6 +105,11 @@ class ConfigValue {
   }
 
   /**
+   * @brief Returns the current type of this @ref ConfigValue
+   */
+  ConfigStoredType getType() const { return type; }
+
+  /**
    * @brief Retrieve a string representation of the data held in this @ref
    * ConfigValue
    */
