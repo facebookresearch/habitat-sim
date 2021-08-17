@@ -14,6 +14,15 @@ namespace esp {
 namespace core {
 
 void initCoreBindings(py::module& m) {
+  py::enum_<ConfigStoredType>(m, "ConfigStoredType")
+      .value("Boolean", ConfigStoredType::Boolean)
+      .value("Integer", ConfigStoredType::Integer)
+      .value("Double", ConfigStoredType::Double)
+      .value("String", ConfigStoredType::String)
+      .value("MagnumVec3", ConfigStoredType::MagnumVec3)
+      .value("MagnumQuat", ConfigStoredType::MagnumQuat)
+      .value("MagnumRad", ConfigStoredType::MagnumRad);
+
   py::class_<Configuration, Configuration::ptr>(m, "ConfigurationGroup")
       .def(py::init(&Configuration::create<>))
       .def("get_bool", &Configuration::getBool)
@@ -34,6 +43,12 @@ void initCoreBindings(py::module& m) {
       .def("get_vec3_keys", &Configuration::getVec3Keys)
       .def("get_quat_keys", &Configuration::getQuatKeys)
       .def("get_rad_keys", &Configuration::getRadKeys)
+      .def("get_value_types", &Configuration::getValueTypes,
+           R"(Returns a dictionary where the keys are the names of the values
+           this configuration holds and the values are the types of these values.)")
+      .def(
+          "get_config_keys", &Configuration::getSubConfigKeys,
+          R"(Retrieves a list of the keys of this configuration's subconfigurations)")
 
       .def("set", [](Configuration& self, const std::string& key,
                      const std::string& val) { self.set(key, val); })

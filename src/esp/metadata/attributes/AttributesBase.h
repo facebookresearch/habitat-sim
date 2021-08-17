@@ -194,7 +194,7 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
    * data, but it will be available to the user via python bindings for each
    * object.  This method is for editing the configuration.
    */
-  std::shared_ptr<Configuration> editUserConfiguration() {
+  std::shared_ptr<Configuration>& editUserConfiguration() {
     return editSubConfig("user_defined");
   }
 

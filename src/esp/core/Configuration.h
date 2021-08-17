@@ -22,13 +22,13 @@ namespace core {
  * directly in an @ref esp::core::Configuration.
  */
 enum class ConfigStoredType {
-  BOOL,
-  INT,
-  DOUBLE,
-  STRING,
-  MN_VEC3,
-  MN_QUAT,
-  MN_RAD
+  Boolean,
+  Integer,
+  Double,
+  String,
+  MagnumVec3,
+  MagnumQuat,
+  MagnumRad
 };
 
 /**
@@ -40,7 +40,7 @@ class ConfigValue {
   /**
    * @brief This is the type of the data represented in this ConfigValue.
    */
-  ConfigStoredType type{ConfigStoredType::INT};
+  ConfigStoredType type{ConfigStoredType::Integer};
 
   /**
    * @brief This anonymous union holds the various typed values that may
@@ -89,31 +89,31 @@ class ConfigValue {
 
   // getters
   auto getBool() const {
-    getterTypeCheck(ConfigStoredType::BOOL);
+    getterTypeCheck(ConfigStoredType::Boolean);
     return b;
   }
   auto getInt() const {
-    getterTypeCheck(ConfigStoredType::INT);
+    getterTypeCheck(ConfigStoredType::Integer);
     return i;
   }
   auto getDouble() const {
-    getterTypeCheck(ConfigStoredType::DOUBLE);
+    getterTypeCheck(ConfigStoredType::Double);
     return d;
   }
   auto getString() const {
-    getterTypeCheck(ConfigStoredType::STRING);
+    getterTypeCheck(ConfigStoredType::String);
     return s;
   }
   auto getVec3() const {
-    getterTypeCheck(ConfigStoredType::MN_VEC3);
+    getterTypeCheck(ConfigStoredType::MagnumVec3);
     return v;
   }
   auto getQuat() const {
-    getterTypeCheck(ConfigStoredType::MN_QUAT);
+    getterTypeCheck(ConfigStoredType::MagnumQuat);
     return q;
   }
   auto getRad() const {
-    getterTypeCheck(ConfigStoredType::MN_RAD);
+    getterTypeCheck(ConfigStoredType::MagnumRad);
     return r;
   }
 
@@ -180,25 +180,25 @@ class Configuration {
   virtual ~Configuration() = default;
 
   bool hasBool(const std::string& key) const {
-    return checkMapForKeyAndType(key, ConfigStoredType::BOOL);
+    return checkMapForKeyAndType(key, ConfigStoredType::Boolean);
   }
   bool hasDouble(const std::string& key) const {
-    return checkMapForKeyAndType(key, ConfigStoredType::DOUBLE);
+    return checkMapForKeyAndType(key, ConfigStoredType::Double);
   }
   bool hasInt(const std::string& key) const {
-    return checkMapForKeyAndType(key, ConfigStoredType::INT);
+    return checkMapForKeyAndType(key, ConfigStoredType::Integer);
   }
   bool hasString(const std::string& key) const {
-    return checkMapForKeyAndType(key, ConfigStoredType::STRING);
+    return checkMapForKeyAndType(key, ConfigStoredType::String);
   }
   bool hasVec3(const std::string& key) const {
-    return checkMapForKeyAndType(key, ConfigStoredType::MN_VEC3);
+    return checkMapForKeyAndType(key, ConfigStoredType::MagnumVec3);
   }
   bool hasQuat(const std::string& key) const {
-    return checkMapForKeyAndType(key, ConfigStoredType::MN_QUAT);
+    return checkMapForKeyAndType(key, ConfigStoredType::MagnumQuat);
   }
   bool hasRad(const std::string& key) const {
-    return checkMapForKeyAndType(key, ConfigStoredType::MN_RAD);
+    return checkMapForKeyAndType(key, ConfigStoredType::MagnumRad);
   }
 
   // ****************** Getters ******************
@@ -283,26 +283,39 @@ class Configuration {
     }
     return keys;
   }
+
+  /**
+   * @brief This function returns this configuration's subconfig keys.
+   */
+  std::vector<std::string> getSubConfigKeys() const {
+    std::vector<std::string> keys;
+    keys.reserve(configMap_.size());
+    for (const auto& entry : configMap_) {
+      keys.push_back(entry.first);
+    }
+    return keys;
+  }
+
   std::vector<std::string> getBoolKeys() const {
-    return getKeysFromMapOfType(ConfigStoredType::BOOL);
+    return getKeysFromMapOfType(ConfigStoredType::Boolean);
   }
   std::vector<std::string> getDoubleKeys() const {
-    return getKeysFromMapOfType(ConfigStoredType::DOUBLE);
+    return getKeysFromMapOfType(ConfigStoredType::Double);
   }
   std::vector<std::string> getIntKeys() const {
-    return getKeysFromMapOfType(ConfigStoredType::INT);
+    return getKeysFromMapOfType(ConfigStoredType::Integer);
   }
   std::vector<std::string> getStringKeys() const {
-    return getKeysFromMapOfType(ConfigStoredType::STRING);
+    return getKeysFromMapOfType(ConfigStoredType::String);
   }
   std::vector<std::string> getVec3Keys() const {
-    return getKeysFromMapOfType(ConfigStoredType::MN_VEC3);
+    return getKeysFromMapOfType(ConfigStoredType::MagnumVec3);
   }
   std::vector<std::string> getQuatKeys() const {
-    return getKeysFromMapOfType(ConfigStoredType::MN_QUAT);
+    return getKeysFromMapOfType(ConfigStoredType::MagnumQuat);
   }
   std::vector<std::string> getRadKeys() const {
-    return getKeysFromMapOfType(ConfigStoredType::MN_RAD);
+    return getKeysFromMapOfType(ConfigStoredType::MagnumRad);
   }
   // ****************** Setters ******************
   template <typename T>
@@ -439,7 +452,6 @@ class Configuration {
    * @return A pointer to a copy of the configuration having the requested
    * name, or a pointer to an empty configuration.
    */
-
   std::shared_ptr<Configuration> getSubConfigCopy(
       const std::string& name) const {
     if (configMap_.count(name) > 0) {
@@ -460,7 +472,7 @@ class Configuration {
    * @return The actual pointer to the configuration having the requested
    * name.
    */
-  std::shared_ptr<Configuration> editSubConfig(const std::string& name) {
+  std::shared_ptr<Configuration>& editSubConfig(const std::string& name) {
     makeNewSubgroup(name);
     return configMap_.at(name);
   }
@@ -511,6 +523,19 @@ class Configuration {
     Corrade::Utility::ConfigurationGroup cfg{};
     putAllValuesInConfigGroup(cfg);
     return cfg;
+  }
+
+  /**
+   * @brief This method will build a vector of all the config values this
+   * configuration holds and the types of these values.
+   */
+  std::unordered_map<std::string, ConfigStoredType> getValueTypes() const {
+    std::unordered_map<std::string, ConfigStoredType> res{};
+    res.reserve(valueMap_.size());
+    for (const auto& elem : valueMap_) {
+      res[elem.first] = elem.second.getType();
+    }
+    return res;
   }
 
   /**

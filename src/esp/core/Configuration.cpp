@@ -19,26 +19,26 @@ ConfigValue::~ConfigValue() {
 void ConfigValue::copyValueInto(const ConfigValue& otr,
                                 const std::string& src) {
   switch (otr.type) {
-    case ConfigStoredType::BOOL:
+    case ConfigStoredType::Boolean:
       b = otr.b;
       break;
-    case ConfigStoredType::INT:
+    case ConfigStoredType::Integer:
       i = otr.i;
       break;
-    case ConfigStoredType::DOUBLE:
+    case ConfigStoredType::Double:
       d = otr.d;
       break;
-    case ConfigStoredType::STRING:
+    case ConfigStoredType::String:
       // placement new
       new (&s) auto(otr.s);
       break;
-    case ConfigStoredType::MN_VEC3:
+    case ConfigStoredType::MagnumVec3:
       new (&v) auto(otr.v);
       break;
-    case ConfigStoredType::MN_QUAT:
+    case ConfigStoredType::MagnumQuat:
       new (&q) auto(otr.q);
       break;
-    case ConfigStoredType::MN_RAD:
+    case ConfigStoredType::MagnumRad:
       new (&r) auto(otr.r);
       break;
     default:
@@ -50,89 +50,89 @@ void ConfigValue::copyValueInto(const ConfigValue& otr,
 
 void ConfigValue::deleteCurrentValue(const std::string& src) {
   switch (type) {
-    case ConfigStoredType::BOOL:
-    case ConfigStoredType::INT:
-    case ConfigStoredType::DOUBLE:
+    case ConfigStoredType::Boolean:
+    case ConfigStoredType::Integer:
+    case ConfigStoredType::Double:
       // trivially destructible
       break;
-    case ConfigStoredType::STRING:
+    case ConfigStoredType::String:
       s.~basic_string();
       break;
-    case ConfigStoredType::MN_VEC3:
+    case ConfigStoredType::MagnumVec3:
       v.~Vector3();
       break;
-    case ConfigStoredType::MN_QUAT:
+    case ConfigStoredType::MagnumQuat:
       q.~Quaternion();
       break;
-    case ConfigStoredType::MN_RAD:
+    case ConfigStoredType::MagnumRad:
       r.~Rad();
       break;
     default:
       ESP_CHECK(true, "Unknown/unsupported Type in " + src);
   }  // switch
   i = 0;
-  type = ConfigStoredType::INT;
+  type = ConfigStoredType::Integer;
 }
 
 void ConfigValue::set(int _i) {
-  checkTypeAndDest(ConfigStoredType::INT);
+  checkTypeAndDest(ConfigStoredType::Integer);
   i = _i;
-  type = ConfigStoredType::INT;
+  type = ConfigStoredType::Integer;
 }
 
 void ConfigValue::set(bool _b) {
-  checkTypeAndDest(ConfigStoredType::BOOL);
+  checkTypeAndDest(ConfigStoredType::Boolean);
   b = _b;
-  type = ConfigStoredType::BOOL;
+  type = ConfigStoredType::Boolean;
 }
 
 void ConfigValue::set(double _d) {
-  checkTypeAndDest(ConfigStoredType::DOUBLE);
+  checkTypeAndDest(ConfigStoredType::Double);
   d = _d;
-  type = ConfigStoredType::DOUBLE;
+  type = ConfigStoredType::Double;
 }
 void ConfigValue::set(const char* _c) {
-  if (checkTypeAndDest(ConfigStoredType::STRING)) {
+  if (checkTypeAndDest(ConfigStoredType::String)) {
     s = std::string(_c);
   } else {
     new (&s) std::string(_c);
-    type = ConfigStoredType::STRING;
+    type = ConfigStoredType::String;
   }
 }
 
 void ConfigValue::set(const std::string& _s) {
-  if (checkTypeAndDest(ConfigStoredType::STRING)) {
+  if (checkTypeAndDest(ConfigStoredType::String)) {
     s = _s;
   } else {
     new (&s) auto(_s);
-    type = ConfigStoredType::STRING;
+    type = ConfigStoredType::String;
   }
 }
 
 void ConfigValue::set(const Magnum::Vector3& _v) {
-  if (checkTypeAndDest(ConfigStoredType::MN_VEC3)) {
+  if (checkTypeAndDest(ConfigStoredType::MagnumVec3)) {
     v = _v;
   } else {
     new (&v) auto(_v);
-    type = ConfigStoredType::MN_VEC3;
+    type = ConfigStoredType::MagnumVec3;
   }
 }
 
 void ConfigValue::set(const Magnum::Quaternion& _q) {
-  if (checkTypeAndDest(ConfigStoredType::MN_QUAT)) {
+  if (checkTypeAndDest(ConfigStoredType::MagnumQuat)) {
     q = _q;
   } else {
     new (&q) auto(_q);
-    type = ConfigStoredType::MN_QUAT;
+    type = ConfigStoredType::MagnumQuat;
   }
 }
 
 void ConfigValue::set(const Magnum::Rad& _r) {
-  if (checkTypeAndDest(ConfigStoredType::MN_RAD)) {
+  if (checkTypeAndDest(ConfigStoredType::MagnumRad)) {
     r = _r;
   } else {
     new (&r) auto(_r);
-    type = ConfigStoredType::MN_RAD;
+    type = ConfigStoredType::MagnumRad;
   }
 }
 
@@ -157,15 +157,15 @@ ConfigValue& ConfigValue::operator=(const ConfigValue& otr) {
 
 std::string ConfigValue::getAsString() const {
   switch (type) {
-    case ConfigStoredType::BOOL:
+    case ConfigStoredType::Boolean:
       return (b ? "True" : "False");
-    case ConfigStoredType::INT:
+    case ConfigStoredType::Integer:
       return std::to_string(i);
-    case ConfigStoredType::DOUBLE:
+    case ConfigStoredType::Double:
       return std::to_string(d);
-    case ConfigStoredType::STRING:
+    case ConfigStoredType::String:
       return s;
-    case ConfigStoredType::MN_VEC3: {
+    case ConfigStoredType::MagnumVec3: {
       std::string begin = "[";
       return begin.append(std::to_string(v.x()))
           .append(",")
@@ -174,7 +174,7 @@ std::string ConfigValue::getAsString() const {
           .append(std::to_string(v.z()))
           .append("]");
     }
-    case ConfigStoredType::MN_QUAT: {
+    case ConfigStoredType::MagnumQuat: {
       std::string begin = "[";
       return begin.append(std::to_string(q.vector().x()))
           .append(",")
@@ -185,7 +185,7 @@ std::string ConfigValue::getAsString() const {
           .append(std::to_string(q.scalar()))
           .append("]");
     }
-    case ConfigStoredType::MN_RAD:
+    case ConfigStoredType::MagnumRad:
       return std::to_string(r.operator float());
     default:
       ESP_CHECK(true, "Unknown/unsupported Type in ConfigValue::getAsString.");
@@ -196,19 +196,19 @@ bool ConfigValue::putValueInConfigGroup(
     const std::string& key,
     Corrade::Utility::ConfigurationGroup& cfg) const {
   switch (type) {
-    case ConfigStoredType::BOOL:
+    case ConfigStoredType::Boolean:
       return cfg.setValue(key, b);
-    case ConfigStoredType::INT:
+    case ConfigStoredType::Integer:
       return cfg.setValue(key, i);
-    case ConfigStoredType::DOUBLE:
+    case ConfigStoredType::Double:
       return cfg.setValue(key, d);
-    case ConfigStoredType::STRING:
+    case ConfigStoredType::String:
       return cfg.setValue(key, s);
-    case ConfigStoredType::MN_VEC3:
+    case ConfigStoredType::MagnumVec3:
       return cfg.setValue(key, v);
-    case ConfigStoredType::MN_QUAT:
+    case ConfigStoredType::MagnumQuat:
       return cfg.setValue(key, q);
-    case ConfigStoredType::MN_RAD:
+    case ConfigStoredType::MagnumRad:
       return cfg.setValue(key, r);
     default:
       ESP_CHECK(
