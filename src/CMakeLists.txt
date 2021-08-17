@@ -53,6 +53,7 @@ option(
   ON
 )
 option(BUILD_TEST "Build test binaries" OFF)
+option(BUILD_INTREE "Build python bindings intree" OFF)
 option(USE_SYSTEM_ASSIMP "Use system Assimp instead of a bundled submodule" OFF)
 option(USE_SYSTEM_EIGEN "Use system Eigen instead of a bundled submodule" OFF)
 option(USE_SYSTEM_GLFW "Use system GLFW instead of a bundled submodule" OFF)
@@ -116,13 +117,30 @@ if(APPLE)
 else()
   set(_rpath_portable_origin $ORIGIN)
 endif(APPLE)
-set(CMAKE_SKIP_BUILD_RPATH FALSE)
-set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-#_magnum.so needs to look at habitat_sim/_ext for its corrade dependencies
-set(CMAKE_INSTALL_RPATH
+if(BUILD_INTREE)
+  set(CMAKE_SKIP_BUILD_RPATH FALSE)
+  set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+  set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+  #_magnum.so needs to look at habitat_sim/_ext for its corrade dependencies
+  set(
+    CMAKE_INSTALL_RPATH
     "${_rpath_portable_origin}:${_rpath_portable_origin}/habitat_sim/_ext/:../../../.."
-)
+  )
+else()
+  # use, i.e. don't skip the full RPATH for the build tree
+  set(CMAKE_SKIP_BUILD_RPATH FALSE)
+
+  # when building, don't use the install RPATH already
+  # (but later on when installing)
+  set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+
+  # the RPATH to be used when installing
+  set(CMAKE_INSTALL_RPATH "")
+
+  # don't add the automatically determined parts of the RPATH
+  # which point to directories outside the build tree to the install RPATH
+  set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
+endif()
 
 # ---[ Dependencies
 include(cmake/dependencies.cmake)
