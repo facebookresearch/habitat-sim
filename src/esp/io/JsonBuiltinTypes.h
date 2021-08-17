@@ -75,7 +75,7 @@ JsonGenericValue toJsonValue(const T&, JsonAllocator&) {
 // can be directly constructed from the builtin types.
 
 inline JsonGenericValue toJsonValue(bool x, JsonAllocator&) {
-  return JsonGenericValue(x);
+  return JsonGenericValue(x, nullptr);
 }
 
 inline JsonGenericValue toJsonValue(int x, JsonAllocator&) {
