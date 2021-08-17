@@ -10,6 +10,8 @@ __version__ = "0.2.1"
 
 if not getattr(builtins, "__HSIM_SETUP__", False):
     # TODO: kept only for compatibiliy with existing code. Please gradually remove
+    import magnum
+    from habitat_sim._ext.habitat_sim_bindings import MapStringString
     from habitat_sim import (
         agent,
         attributes,
@@ -28,7 +30,6 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         simulator,
         utils,
     )
-    from habitat_sim._ext.habitat_sim_bindings import MapStringString
 
     try:
         from habitat_sim._ext.habitat_sim_bindings import VHACDParameters  # noqa: F401

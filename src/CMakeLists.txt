@@ -120,7 +120,7 @@ set(CMAKE_SKIP_BUILD_RPATH FALSE)
 set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 #_magnum.so needs to look at habitat_sim/_ext for its corrade dependencies
 set(CMAKE_INSTALL_RPATH 
-	"${_rpath_portable_origin}:${_rpath_portable_origin}/corrade/
+	"${_rpath_portable_origin}:${_rpath_portable_origin}/habitat_sim/_ext/:${_rpath_portable_origin}../../../..
 ")
 set(CMAKE_BUILD_RPATH_USE_ORIGIN TRUE)
 
