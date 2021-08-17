@@ -9,6 +9,15 @@ namespace esp {
 namespace core {
 
 ConfigValue::ConfigValue(const ConfigValue& otr) {
+  copyValueInto(otr, "copy constructor");
+}
+
+ConfigValue::~ConfigValue() {
+  deleteCurrentValue("ConfigValue destructor.");
+}
+
+void ConfigValue::copyValueInto(const ConfigValue& otr,
+                                const std::string& src) {
   switch (otr.type) {
     case ConfigStoredType::BOOL:
       b = otr.b;
@@ -33,14 +42,13 @@ ConfigValue::ConfigValue(const ConfigValue& otr) {
       new (&r) auto(otr.r);
       break;
     default:
-      ESP_CHECK(true,
-                "Unknown/unsupported Type in ConfigValue copy constructor");
+      ESP_CHECK(true, "Unknown/Unsupported Type in ConfigValue " + src);
   }  // switch
   // set new type
   type = otr.type;
 }
 
-ConfigValue::~ConfigValue() {
+void ConfigValue::deleteCurrentValue(const std::string& src) {
   switch (type) {
     case ConfigStoredType::BOOL:
     case ConfigStoredType::INT:
@@ -60,8 +68,10 @@ ConfigValue::~ConfigValue() {
       r.~Rad();
       break;
     default:
-      ESP_CHECK(true, "Unknown/unsupported Type in ConfigValue destructor.");
+      ESP_CHECK(true, "Unknown/unsupported Type in " + src);
   }  // switch
+  i = 0;
+  type = ConfigStoredType::INT;
 }
 
 void ConfigValue::set(int _i) {
@@ -131,77 +141,17 @@ bool ConfigValue::checkTypeAndDest(const ConfigStoredType& checkType) {
     return true;
   }
   // if this object's type is not trivially constructible, call its destructor
-  if (type == ConfigStoredType::STRING) {
-    s.~basic_string();
-  } else if (type == ConfigStoredType::MN_VEC3) {
-    v.~Vector3();
-  } else if (type == ConfigStoredType::MN_QUAT) {
-    q.~Quaternion();
-  } else if (type == ConfigStoredType::MN_RAD) {
-    r.~Rad();
-  }
+  deleteCurrentValue("checkTypeAndDest function");
   return false;
 }
 
 ConfigValue& ConfigValue::operator=(const ConfigValue& otr) {
   // if current value is string, magnum vector, magnum quat or magnum rad
-  // check if otr is same type, otherwise clear out type
-  if (type == ConfigStoredType::STRING) {
-    if (otr.type == ConfigStoredType::STRING) {
-      // if both are strings
-      s = otr.s;  // usual string assignment
-      return *this;
-    }
-    // other is not string, so destruct string
-    s.~basic_string();
-  } else if (type == ConfigStoredType::MN_VEC3) {
-    if (otr.type == ConfigStoredType::MN_VEC3) {
-      v = otr.v;
-      return *this;
-    }
-    v.~Vector3();
-  } else if (type == ConfigStoredType::MN_QUAT) {
-    if (otr.type == ConfigStoredType::MN_QUAT) {
-      q = otr.q;
-      return *this;
-    }
-    q.~Quaternion();
-  } else if (type == ConfigStoredType::MN_RAD) {
-    if (otr.type == ConfigStoredType::MN_RAD) {
-      r = otr.r;
-      return *this;
-    }
-    r.~Rad();
+  if (type != otr.type) {
+    deleteCurrentValue("assignment operator");
   }
+  copyValueInto(otr, "assignment operator");
 
-  switch (otr.type) {
-    case ConfigStoredType::BOOL:
-      b = otr.b;
-      break;
-    case ConfigStoredType::INT:
-      i = otr.i;
-      break;
-    case ConfigStoredType::DOUBLE:
-      d = otr.d;
-      break;
-    case ConfigStoredType::STRING:
-      // placement new
-      new (&s) auto(otr.s);
-      break;
-    case ConfigStoredType::MN_VEC3:
-      new (&v) auto(otr.v);
-      break;
-    case ConfigStoredType::MN_QUAT:
-      new (&q) auto(otr.q);
-      break;
-    case ConfigStoredType::MN_RAD:
-      new (&r) auto(otr.r);
-      break;
-    default:
-      ESP_CHECK(true, "Unknown/unsupported Type in ConfigValue operator=.");
-  }  // switch
-  // set new type
-  type = otr.type;
   return *this;
 }
 

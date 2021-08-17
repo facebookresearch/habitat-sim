@@ -58,6 +58,19 @@ class ConfigValue {
     Magnum::Rad r;
   };
 
+  /**
+   * @brief Copy the passed @p val into this ConfigValue.
+   * @param val source val to copy into this config
+   * @param src string name of calling method, for debugging.
+   */
+  void copyValueInto(const ConfigValue& val, const std::string& src);
+
+  /**
+   * @brief Delete the current value.  Resets type to int, i to 0.
+   * @param src string name of calling method, for debugging.
+   */
+  void deleteCurrentValue(const std::string& src);
+
  public:
   ConfigValue() : i{0} {}
   ConfigValue(const ConfigValue& otr);
