@@ -118,6 +118,7 @@ class MobileManipulator(RobotInterface):
         super().__init__()
         self.urdf_path = urdf_path
         self.params = params
+        self.fix_joint_values: Optional[List[float]] = None
 
         self._sim = sim
         self._limit_robo_joints = limit_robo_joints
@@ -222,6 +223,8 @@ class MobileManipulator(RobotInterface):
                 cam_transform = inv_T @ cam_transform
 
                 sens_obj.node.transformation = cam_transform
+        if self.fix_joint_values is not None:
+            self.arm_joint_pos = self.fix_joint_values
 
         # Guard against out of limit joints
         # TODO: should auto clamping be enabled instead? How often should we clamp?
