@@ -68,7 +68,7 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
    */
   ManagedFileIOPtr createObjectFromJSONFile(const std::string& filename,
                                             bool registerObject = true) {
-    std::shared_ptr<io::JsonDocument> docConfig{};
+    std::unique_ptr<io::JsonDocument> docConfig{};
     bool success = this->verifyLoadDocument(filename, docConfig);
     if (!success) {
       ESP_ERROR() << "<" << Magnum::Debug::nospace << this->objectType_
@@ -142,7 +142,7 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
    */
   template <class U>
   bool verifyLoadDocument(const std::string& filename,
-                          CORRADE_UNUSED std::shared_ptr<U>& resDoc) {
+                          CORRADE_UNUSED std::unique_ptr<U>& resDoc) {
     // by here always fail
     ESP_ERROR() << "<" << Magnum::Debug::nospace << this->objectType_
                 << Magnum::Debug::nospace << "> : File" << filename
@@ -158,7 +158,7 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
    * @return whether document has been loaded successfully or not
    */
   bool verifyLoadDocument(const std::string& filename,
-                          std::shared_ptr<io::JsonDocument>& jsonDoc);
+                          std::unique_ptr<io::JsonDocument>& jsonDoc);
 
   /**
    * @brief Will build a new file name for @p filename by replacing the existing
@@ -223,10 +223,10 @@ std::string ManagedFileBasedContainer<T, Access>::convertFilenameToPassedExt(
 template <class T, ManagedObjectAccess Access>
 bool ManagedFileBasedContainer<T, Access>::verifyLoadDocument(
     const std::string& filename,
-    std::shared_ptr<io::JsonDocument>& jsonDoc) {
+    std::unique_ptr<io::JsonDocument>& jsonDoc) {
   if (isValidFileName(filename)) {
     try {
-      jsonDoc = std::make_shared<io::JsonDocument>(io::parseJsonFile(filename));
+      jsonDoc = std::make_unique<io::JsonDocument>(io::parseJsonFile(filename));
     } catch (...) {
       ESP_ERROR() << "<" << Magnum::Debug::nospace << this->objectType_
                   << Magnum::Debug::nospace << "> : Failed to parse" << filename
