@@ -109,6 +109,17 @@ endif()
 #set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
 
+# Properly set the rpath in a cross-platform way
+if(APPLE)
+  set(CMAKE_MACOSX_RPATH ON)
+  set(_rpath_portable_origin "@loader_path")
+else()
+  set(_rpath_portable_origin $ORIGIN)
+endif(APPLE)
+set(CMAKE_INSTALL_RPATH "${_rpath_portable_origin}")
+set(CMAKE_SKIP_BUILD_RPATH FALSE)
+set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+
 # ---[ Dependencies
 include(cmake/dependencies.cmake)
 
