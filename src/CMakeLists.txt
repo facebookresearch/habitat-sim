@@ -116,9 +116,10 @@ if(APPLE)
 else()
   set(_rpath_portable_origin $ORIGIN)
 endif(APPLE)
-set(CMAKE_INSTALL_RPATH "${_rpath_portable_origin}")
 set(CMAKE_SKIP_BUILD_RPATH FALSE)
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+set(CMAKE_INSTALL_RPATH "${_rpath_portable_origin}")
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # ---[ Dependencies
 include(cmake/dependencies.cmake)
