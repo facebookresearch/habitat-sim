@@ -363,6 +363,10 @@ jobs:
             - ccache-{{ arch }}-master-pip
           paths:
             - /home/circleci/.ccache
+      - run: |
+            ccache --show-stats
+            ccache --zero-stats
+            ccache --max-size=10.0G
       - run:
           name: pip install
           command: |
@@ -372,7 +376,6 @@ jobs:
             cd ../ && python3 -c "import habitat_sim"
       - save_cache:
           key: ccache-{{ arch }}-{{ .Branch }}-pip
-          background: true
           paths:
             - /home/circleci/.ccache
 
