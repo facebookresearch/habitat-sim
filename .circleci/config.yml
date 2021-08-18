@@ -364,6 +364,7 @@ jobs:
           paths:
             - /home/circleci/.ccache
       - run: |
+            sudo apt-get install -y ccache
             ccache --show-stats
             ccache --zero-stats
             ccache --max-size=10.0G
