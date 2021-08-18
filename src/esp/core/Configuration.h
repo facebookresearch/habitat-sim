@@ -250,7 +250,7 @@ class Configuration {
       return valueMap_.at(key).getType();
     }
     ESP_ERROR() << "Key :" << key << "not present in configuration.";
-    return ConfigStoredType::Integer;
+    return ConfigStoredType::Unknown;
   }
 
   // ****************** String Conversion ******************
