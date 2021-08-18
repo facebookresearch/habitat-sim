@@ -497,6 +497,7 @@ jobs:
           name: Build, install habitat-sim and run benchmark
           no_output_timeout: 25m
           command: |
+              while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat;
               cd habitat-sim
