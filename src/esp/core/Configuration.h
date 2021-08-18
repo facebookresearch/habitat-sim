@@ -449,14 +449,14 @@ class Configuration {
    * @brief Retrieves a shared pointer to a copy of the subConfig @ref
    * esp::core::Configuration that has the passed @p name . This will create a
    * pointer to a new sub-configuration if none exists already with that name,
-   * but will not add this configuration to this Configuration's internal;
+   * but will not add this configuration to this Configuration's internal
    * storage.
    *
    * @param name The name of the configuration to edit.
    * @return A pointer to a copy of the configuration having the requested
    * name, or a pointer to an empty configuration.
    */
-  std::shared_ptr<Configuration> getSubConfigCopy(
+  std::shared_ptr<Configuration> getSubconfigCopy(
       const std::string& name) const {
     if (configMap_.count(name) > 0) {
       // if exists return copy, so that consumers can modify it freely
@@ -471,12 +471,12 @@ class Configuration {
    * new sub-configuration if none exists.
    *
    * Use this function when you wish to modify this configuration's
-   * subgroup.
+   * subgroup, possibly creating it in the process.
    * @param name The name of the configuration to edit.
    * @return The actual pointer to the configuration having the requested
    * name.
    */
-  std::shared_ptr<Configuration>& editSubConfig(const std::string& name) {
+  std::shared_ptr<Configuration>& editSubconfig(const std::string& name) {
     makeNewSubgroup(name);
     return configMap_.at(name);
   }
@@ -484,16 +484,16 @@ class Configuration {
   /**
    * @brief move specified subgroup config into configMap at desired name
    */
-  void setSubConfigPtr(const std::string& name,
+  void setSubconfigPtr(const std::string& name,
                        std::shared_ptr<Configuration>& configPtr) {
     configMap_[name] = std::move(configPtr);
-  }  // setSubConfigPtr
+  }  // setSubconfigPtr
 
-  int getNumSubConfigs(const std::string& name) const {
+  int getNumSubconfigs(const std::string& name) const {
     if (configMap_.count(name) > 0) {
       return configMap_.at(name)->getNumEntries();
     }
-    ESP_WARNING() << "No SubConfig found named :" << name;
+    ESP_WARNING() << "No Subconfig found named :" << name;
     return 0;
   }
 

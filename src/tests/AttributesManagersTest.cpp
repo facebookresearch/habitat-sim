@@ -825,7 +825,7 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
 
   // test nested configuration
   auto artObjNestedConfig =
-      artObjInstance->getUserConfiguration()->getSubConfigCopy("user_def_obj");
+      artObjInstance->getUserConfiguration()->getSubconfigCopy("user_def_obj");
   ASSERT_NE(artObjNestedConfig, nullptr);
   ASSERT_EQ(artObjNestedConfig->hasValues(), true);
   ASSERT_EQ(artObjNestedConfig->getVec3("position"),

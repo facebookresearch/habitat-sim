@@ -48,17 +48,19 @@ void initCoreBindings(py::module& m) {
            R"(Returns a dictionary where the keys are the names of the values
            this configuration holds and the values are the types of these values.)")
       .def(
-          "get_config_keys", &Configuration::getSubConfigKeys,
+          "get_subconfig_keys", &Configuration::getSubconfigKeys,
           R"(Retrieves a list of the keys of this configuration's subconfigurations)")
 
-      .def("get_subconfig", &Configuration::editSubConfig,
-           R"(Get the subconfiguration with the given name.)")
-      .def("get_subconfig_copy", &Configuration::getSubConfigCopy,
-           R"(Get a copy of the subconfiguration with the given name.)")
-      .def("save_subconfig", &Configuration::setSubConfigPtr,
+      .def("get_subconfig", &Configuration::editSubconfig,
+           pybind11::return_value_policy::reference,
+           R"(Get the subconfiguration with the given name.)", "name"_a)
+      .def("get_subconfig_copy", &Configuration::getSubconfigCopy,
+           pybind11::return_value_policy::reference,
+           R"(Get a copy of the subconfiguration with the given name.)",
+           "name"_a)
+      .def("save_subconfig", &Configuration::setSubconfigPtr,
            R"(Save a subconfiguration with the given name.)", "name"_a,
            "subconfig"_a)
-
       .def("set", [](Configuration& self, const std::string& key,
                      const std::string& val) { self.set(key, val); })
       .def("set", [](Configuration& self, const std::string& key,
