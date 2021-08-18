@@ -123,7 +123,7 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH NOT BUILD_TREE)
 if(NOT BUILD_TREE)
   set(
     CMAKE_INSTALL_RPATH
-    "${_rpath_portable_origin}:${_rpath_portable_origin}/habitat_sim/_ext/:../../../..:../lib"
+    "${_rpath_portable_origin}:${_rpath_portable_origin}/habitat_sim/_ext/:../../../.."
   )
 else()
   set(CMAKE_INSTALL_RPATH "")
