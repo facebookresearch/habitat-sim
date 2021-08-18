@@ -1,6 +1,10 @@
 find_package(Magnum REQUIRED DebugTools AnyImageConverter)
 find_package(MagnumPlugins REQUIRED StbImageImporter)
 
+# needed for BatchedSimulator
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED 17)
+
 macro(TEST TEST_NAME)
   add_executable(${TEST_NAME} "${TEST_NAME}.cpp")
   target_link_libraries(${TEST_NAME} core gtest_main)
@@ -83,6 +87,9 @@ target_include_directories(SceneGraphTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(SensorTest SensorTest.cpp LIBRARIES sensor sim)
 target_include_directories(SensorTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
+test(BatchedSimTest batched_sim)
+target_include_directories(GfxReplayTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 # Some tests are LOUD, we don't want to include their full log (but OTOH we
 # want to have full log from others, so this is a compromise)
