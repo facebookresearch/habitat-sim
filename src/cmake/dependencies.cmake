@@ -5,6 +5,9 @@
 set(DEPS_DIR "${CMAKE_CURRENT_LIST_DIR}/../deps")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_LIST_DIR}")
 
+include_directories("${DEPS_DIR}/bps3D")
+add_subdirectory("${DEPS_DIR}/bps3D")
+
 # Find Corrade first so we can use CORRADE_TARGET_*
 if(NOT USE_SYSTEM_MAGNUM)
   # These are enabled by default but we don't need them right now -- disabling
