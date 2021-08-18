@@ -320,6 +320,7 @@ jobs:
       - run:
           name: Build conda Linux packages for CI
           command: |
+              while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat;
               cd habitat-sim
@@ -643,7 +644,6 @@ jobs:
           name: Build conda Linux packages
           no_output_timeout: 240m
           command: |
-              while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat;
 
