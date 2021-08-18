@@ -208,7 +208,7 @@ if __name__ == "__main__":
     for k, _ in user_attributes_dict.items():
         print(
             "Sphere Object user attribute : {} : {}".format(
-                k, sphere_obj.user_attributes.get(k)
+                k, sphere_obj.user_attributes.get_as_string(k)
             )
         )
 

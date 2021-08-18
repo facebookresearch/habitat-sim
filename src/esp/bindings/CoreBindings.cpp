@@ -34,10 +34,13 @@ void initCoreBindings(py::module& m) {
       .def("get_vec3", &Configuration::getVec3)
       .def("get_quat", &Configuration::getQuat)
       .def("get_rad", &Configuration::getRad)
-      .def("get_type", &Configuration::getType,
-           R"(Retrieves the ConfigStoredType of the named value.)")
+      .def(
+          "get_type", &Configuration::getType,
+          R"(Retrieves the ConfigStoredType of the value referred to by the passed key.)")
 
-      .def("get", &Configuration::getAsString)
+      .def(
+          "get_as_string", &Configuration::getAsString,
+          R"(Retrieves a string representation of the value referred to by the passed key.)")
 
       .def("get_bool_keys",
            &Configuration::getStoredKeys<ConfigStoredType::Boolean>)
