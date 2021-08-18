@@ -83,7 +83,7 @@ class ConfigValue {
   // setters
 
   template <typename T>
-  bool set(T value) {
+  bool set(CORRADE_UNUSED T value) {
     // unsupported type
     return false;
   }
