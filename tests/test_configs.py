@@ -58,8 +58,9 @@ def test_core_configuration():
     subconfig_5 = subconfig_4.get_subconfig("subconfig_5")
 
     # add a string to find to deepest nested subconfig
-    subconfig_5.set_string("string_to_find", "this is a string to find")
-    assert subconfig_5.get_string("string_to_find") == "this is a string to find"
+    string_to_add = "this is a string to find"
+    subconfig_5.set_string("string_to_find", string_to_add)
+    assert subconfig_5.get_string("string_to_find") == string_to_add
     # now search config tree to find "string_to_find"
     breadcrumbs = config.find_value_location("string_to_find")
     # make sure breadcrumbs array returns 7 values, 6 subconfig keys, in order, plus the key we are looking for
@@ -72,10 +73,22 @@ def test_core_configuration():
     assert breadcrumbs[5] == "subconfig_5"
     assert breadcrumbs[6] == "string_to_find"
 
+    # get value
+    # first get to last subconfig
+    subconfig_to_check = config
+    for i in range(len(breadcrumbs) - 1):
+        subconfig_to_check = subconfig_to_check.get_subconfig(breadcrumbs[i])
+    # check at final subconfig
+    assert subconfig_to_check.has_string(breadcrumbs[-1])
+    # check value is as expected
+    assert subconfig_to_check.get_string(breadcrumbs[-1]) == string_to_add
+
     # add another value to a different subconfig
     subconfig_31 = subconfig_2.get_subconfig("subconfig_31")
     # set value
-    subconfig_31.set_vec3("vec3_to_find", np.array([11.12345, 12.0, -13.0]))
+    vec_to_add = np.array([11.12345, 12.0, -13.0])
+    subconfig_31.set_vec3("vec3_to_find", vec_to_add)
+    assert subconfig_31.get_vec3("vec3_to_find") == vec_to_add
     # find breadcrumbs to this value
     breadcrumbs2 = config.find_value_location("vec3_to_find")
     assert len(breadcrumbs2) == 5
@@ -84,6 +97,16 @@ def test_core_configuration():
     assert breadcrumbs2[2] == "subconfig_2"
     assert breadcrumbs2[3] == "subconfig_31"
     assert breadcrumbs2[4] == "vec3_to_find"
+
+    # get value
+    # first get to last subconfig
+    subconfig_to_check = config
+    for i in range(len(breadcrumbs2) - 1):
+        subconfig_to_check = subconfig_to_check.get_subconfig(breadcrumbs2[i])
+    # check at final subconfig
+    assert subconfig_to_check.has_vec3(breadcrumbs2[-1])
+    # check value is as expected
+    assert subconfig_to_check.get_vec3(breadcrumbs2[-1]) == vec_to_add
 
     # remove nested subconfig
     nested_subconfig = config.remove_subconfig("subconfig_0")
