@@ -367,6 +367,10 @@ bool BulletPhysicsManager::attachLinkGeometry(
       geomSuccess = resourceManager_.loadAndCreateRenderAssetInstance(
                         visualMeshInfo, creation, &visualGeomComponent,
                         drawables, &linkObject->visualNodes_) != nullptr;
+      ESP_CHECK(geomSuccess,
+                "BulletPhysicsManager::attachLinkGeometry "
+                "loadAndCreateRenderAssetInstance failed for filepath: " +
+                    visualMeshInfo.filepath);
 
       // cache the visual component for later query
       if (geomSuccess) {
