@@ -357,17 +357,17 @@ jobs:
     steps:
       - checkout
       - run: *install_deps
-      - restore_cache:
-          keys:
-            - ccache-{{ arch }}-{{ .Branch }}-pip
-            - ccache-{{ arch }}-master-pip
-          paths:
-            - /home/circleci/.ccache
-      - run: |
-            sudo apt-get install -y ccache
-            ccache --show-stats
-            ccache --zero-stats
-            ccache --max-size=10.0G
+        #- restore_cache:
+        #keys:
+            #- ccache-{{ arch }}-{{ .Branch }}-pip
+              #- ccache-{{ arch }}-master-pip
+              #paths:
+            # - /home/circleci/.ccache
+              #- run: |
+              #sudo apt-get install -y ccache
+              #ccache --show-stats
+              #ccache --zero-stats
+              #ccache --max-size=10.0G
       - run:
           name: pip install
           command: |
@@ -375,10 +375,10 @@ jobs:
             python3 -m pip install -U pip
             python3 -m pip install . -v
             cd ../ && python3 -c "import habitat_sim"
-      - save_cache:
-          key: ccache-{{ arch }}-{{ .Branch }}-pip
-          paths:
-            - /home/circleci/.ccache
+            #- save_cache:
+            #key: ccache-{{ arch }}-{{ .Branch }}-pip
+            #paths:
+            #- /home/circleci/.ccache
 
   lab_build_habitat:
     <<: *gpu
