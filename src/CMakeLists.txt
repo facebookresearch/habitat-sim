@@ -124,7 +124,7 @@ if(NOT BUILD_INTREE)
   #_magnum.so needs to look at habitat_sim/_ext for its corrade dependencies
   set(
     CMAKE_INSTALL_RPATH
-    "${_rpath_portable_origin}:${_rpath_portable_origin}/habitat_sim/_ext/:../../../.."
+    "${_rpath_portable_origin}:${_rpath_portable_origin}/habitat_sim/_ext/:.${_rpath_portable_origin}/habitat_sim/_ext/./../../.."
   )
 else()
   # Set to defaults
@@ -166,14 +166,22 @@ endif()
 # add subdirectories
 add_subdirectory(esp)
 
+if(BUILD_PYTHON_BINDINGS)
+  message("Building Python bindings")
+  add_subdirectory(esp/bindings)
+endif()
+
+# emscripten js bindings
+if(CORRADE_TARGET_EMSCRIPTEN)
+  message("Building Emscripten JS bindings")
+  add_subdirectory(esp/bindings_js)
+endif()
+
+# Build the following with the build RPath
+set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 if(BUILD_DATATOOL)
   message("Building datatool")
   add_subdirectory(utils/datatool)
-endif()
-
-if(BUILD_GUI_VIEWERS)
-  message("Building GUI viewer")
-  add_subdirectory(utils/viewer)
 endif()
 
 if(BUILD_BASIS_COMPRESSOR)
@@ -185,13 +193,7 @@ if(BUILD_TEST)
 endif()
 
 # pybind bindings
-if(BUILD_PYTHON_BINDINGS)
-  message("Building Python bindings")
-  add_subdirectory(esp/bindings)
-endif()
-
-# emscripten js bindings
-if(CORRADE_TARGET_EMSCRIPTEN)
-  message("Building Emscripten JS bindings")
-  add_subdirectory(esp/bindings_js)
+if(BUILD_GUI_VIEWERS)
+  message("Building GUI viewer")
+  add_subdirectory(utils/viewer)
 endif()
