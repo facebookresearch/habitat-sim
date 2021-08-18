@@ -32,6 +32,12 @@ class ManagedBulletArticulatedObject
     return false;
   }
 
+  std::shared_ptr<BulletArticulatedObject> hackGetBulletObjectReference()
+      const {
+    return std::static_pointer_cast<BulletArticulatedObject>(
+        this->getObjectReference());
+  }
+
  protected:
   /**
    * @brief This function accesses the
