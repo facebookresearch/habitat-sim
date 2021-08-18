@@ -22,6 +22,7 @@ namespace core {
  * directly in an @ref esp::core::Configuration.
  */
 enum class ConfigStoredType {
+  Unknown = ID_UNDEFINED,
   Boolean,
   Integer,
   Double,
@@ -40,7 +41,7 @@ class ConfigValue {
   /**
    * @brief This is the type of the data represented in this ConfigValue.
    */
-  ConfigStoredType type{ConfigStoredType::Integer};
+  ConfigStoredType type{ConfigStoredType::Unknown};
 
   /**
    * @brief This anonymous union holds the various typed values that may
@@ -76,6 +77,8 @@ class ConfigValue {
   ConfigValue(const ConfigValue& otr);
   ~ConfigValue();
   ConfigValue& operator=(const ConfigValue& otr);
+
+  bool isValid() const { return type != ConfigStoredType::Unknown; }
 
   // setters
   void set(bool _b);
@@ -265,11 +268,12 @@ class Configuration {
    * holding the object, if it is found in one of this configuration's maps
    */
   std::string getAsString(const std::string& key) const {
-    if (valueMap_.count(key) > 0) {
+    if ((valueMap_.count(key) > 0) && (valueMap_.at(key).isValid())) {
       return valueMap_.at(key).getAsString();
     }
     std::string retVal = "Key ";
-    retVal.append(key).append(" not present in this configuration");
+    retVal.append(key).append(
+        " does not represent a valid value in this configuration.");
     ESP_WARNING() << retVal;
     return retVal;
   }

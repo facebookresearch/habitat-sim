@@ -15,6 +15,7 @@ namespace core {
 
 void initCoreBindings(py::module& m) {
   py::enum_<ConfigStoredType>(m, "ConfigStoredType")
+      .value("Unknown", ConfigStoredType::Unknown)
       .value("Boolean", ConfigStoredType::Boolean)
       .value("Integer", ConfigStoredType::Integer)
       .value("Double", ConfigStoredType::Double)

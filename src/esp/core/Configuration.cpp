@@ -18,6 +18,10 @@ ConfigValue::~ConfigValue() {
 
 void ConfigValue::copyValueInto(const ConfigValue& otr,
                                 const std::string& src) {
+  ESP_CHECK(
+      otr.type != ConfigStoredType::Unknown,
+      "Attempting to copy unknown type/uninitialized value into ConfigValue" +
+          src);
   switch (otr.type) {
     case ConfigStoredType::Boolean:
       b = otr.b;
@@ -29,7 +33,6 @@ void ConfigValue::copyValueInto(const ConfigValue& otr,
       d = otr.d;
       break;
     case ConfigStoredType::String:
-      // placement new
       new (&s) auto(otr.s);
       break;
     case ConfigStoredType::MagnumVec3:
@@ -42,7 +45,7 @@ void ConfigValue::copyValueInto(const ConfigValue& otr,
       new (&r) auto(otr.r);
       break;
     default:
-      ESP_CHECK(true, "Unknown/Unsupported Type in ConfigValue " + src);
+      ESP_CHECK(true, "Attempted to copy unknown/unsupported type :" + src);
   }  // switch
   // set new type
   type = otr.type;
@@ -50,6 +53,7 @@ void ConfigValue::copyValueInto(const ConfigValue& otr,
 
 void ConfigValue::deleteCurrentValue(const std::string& src) {
   switch (type) {
+    case ConfigStoredType::Unknown:
     case ConfigStoredType::Boolean:
     case ConfigStoredType::Integer:
     case ConfigStoredType::Double:
@@ -68,10 +72,9 @@ void ConfigValue::deleteCurrentValue(const std::string& src) {
       r.~Rad();
       break;
     default:
-      ESP_CHECK(true, "Unknown/unsupported Type in " + src);
+      ESP_CHECK(true, "Attempted to delete unknown/unsupported type :" + src);
   }  // switch
-  i = 0;
-  type = ConfigStoredType::Integer;
+  type = ConfigStoredType::Unknown;
 }
 
 void ConfigValue::set(int _i) {
@@ -140,8 +143,10 @@ bool ConfigValue::checkTypeAndDest(const ConfigStoredType& checkType) {
   if (type == checkType) {
     return true;
   }
-  // if this object's type is not trivially constructible, call its destructor
-  deleteCurrentValue("checkTypeAndDest function");
+  if (type != ConfigStoredType::Unknown) {
+    // destructor on non-trivial types
+    deleteCurrentValue("checkTypeAndDest function");
+  }
   return false;
 }
 
@@ -157,6 +162,8 @@ ConfigValue& ConfigValue::operator=(const ConfigValue& otr) {
 
 std::string ConfigValue::getAsString() const {
   switch (type) {
+    case ConfigStoredType::Unknown:
+      return "Undefined value/Unknown type";
     case ConfigStoredType::Boolean:
       return (b ? "True" : "False");
     case ConfigStoredType::Integer:
@@ -196,6 +203,8 @@ bool ConfigValue::putValueInConfigGroup(
     const std::string& key,
     Corrade::Utility::ConfigurationGroup& cfg) const {
   switch (type) {
+    case ConfigStoredType::Unknown:
+      return false;
     case ConfigStoredType::Boolean:
       return cfg.setValue(key, b);
     case ConfigStoredType::Integer:
