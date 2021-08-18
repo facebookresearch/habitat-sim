@@ -34,16 +34,25 @@ void initCoreBindings(py::module& m) {
       .def("get_vec3", &Configuration::getVec3)
       .def("get_quat", &Configuration::getQuat)
       .def("get_rad", &Configuration::getRad)
+      .def("get_type", &Configuration::getType,
+           R"(Retrieves the ConfigStoredType of the named value.)")
 
       .def("get", &Configuration::getAsString)
 
-      .def("get_bool_keys", &Configuration::getBoolKeys)
-      .def("get_string_keys", &Configuration::getStringKeys)
-      .def("get_int_keys", &Configuration::getIntKeys)
-      .def("get_float_keys", &Configuration::getDoubleKeys)
-      .def("get_vec3_keys", &Configuration::getVec3Keys)
-      .def("get_quat_keys", &Configuration::getQuatKeys)
-      .def("get_rad_keys", &Configuration::getRadKeys)
+      .def("get_bool_keys",
+           &Configuration::getStoredKeys<ConfigStoredType::Boolean>)
+      .def("get_string_keys",
+           &Configuration::getStoredKeys<ConfigStoredType::String>)
+      .def("get_int_keys",
+           &Configuration::getStoredKeys<ConfigStoredType::Integer>)
+      .def("get_float_keys",
+           &Configuration::getStoredKeys<ConfigStoredType::Double>)
+      .def("get_vec3_keys",
+           &Configuration::getStoredKeys<ConfigStoredType::MagnumVec3>)
+      .def("get_quat_keys",
+           &Configuration::getStoredKeys<ConfigStoredType::MagnumQuat>)
+      .def("get_rad_keys",
+           &Configuration::getStoredKeys<ConfigStoredType::MagnumRad>)
       .def("get_value_types", &Configuration::getValueTypes,
            R"(Returns a dictionary where the keys are the names of the values
            this configuration holds and the values are the types of these values.)")
@@ -92,24 +101,84 @@ void initCoreBindings(py::module& m) {
       .def("set_rad", [](Configuration& self, const std::string& key,
                          const Magnum::Rad& val) { self.set(key, val); })
 
-      //.def("add_string_to_group", &Configuration::addStringToGroup)
-      .def("has_value", &Configuration::hasValue,
-           R"(Returns whether this Configuration has the passed key.)", "key"_a)
-      .def("has_bool", &Configuration::hasBool)
-      .def("has_int", &Configuration::hasInt)
-      .def("has_string", &Configuration::hasString)
-      .def("has_float", &Configuration::hasDouble)
-      .def("has_quat", &Configuration::hasQuat)
-      .def("has_vec3", &Configuration::hasVec3)
-      .def("has_rad", &Configuration::hasRad)
+      .def(
+          "find_value_location", &Configuration::findValue,
+          R"(Returns a list of keys, in order, for the traversal of the nested subconfigurations in
+          this Configuration to get the requested key's value or subconfig.  Key is not found if list is empty.)",
+          "key"_a)
+      .def(
+          "has_value", &Configuration::hasValue,
+          R"(Returns whether or not this Configuration has the passed key. Doesn not check subconfigurations.)",
+          "key"_a)
+      .def(
+          "has_bool",
+          [](Configuration& self, const std::string& key) {
+            return self.checkMapForKeyAndType(key, ConfigStoredType::Boolean);
+          },
+          R"(Returns true if specified key references a boolean value in this configuration.)")
+      .def(
+          "has_int",
+          [](Configuration& self, const std::string& key) {
+            return self.checkMapForKeyAndType(key, ConfigStoredType::Integer);
+          },
+          R"(Returns true if specified key references a integer value in this configuration.)")
+      .def(
+          "has_string",
+          [](Configuration& self, const std::string& key) {
+            return self.checkMapForKeyAndType(key, ConfigStoredType::String);
+          },
+          R"(Returns true if specified key references a string value in this configuration.)")
+      .def(
+          "has_float",
+          [](Configuration& self, const std::string& key) {
+            return self.checkMapForKeyAndType(key, ConfigStoredType::Double);
+          },
+          R"(Returns true if specified key references a float value in this configuration.)")
+      .def(
+          "has_quat",
+          [](Configuration& self, const std::string& key) {
+            return self.checkMapForKeyAndType(key,
+                                              ConfigStoredType::MagnumQuat);
+          },
+          R"(Returns true if specified key references a Magnum::Quaternion value in this configuration.)")
+      .def(
+          "has_vec3",
+          [](Configuration& self, const std::string& key) {
+            return self.checkMapForKeyAndType(key,
+                                              ConfigStoredType::MagnumVec3);
+          },
+          R"(Returns true if specified key references a Magnum::Vector3 value in this configuration.)")
+      .def(
+          "has_rad",
+          [](Configuration& self, const std::string& key) {
+            return self.checkMapForKeyAndType(key, ConfigStoredType::MagnumRad);
+          },
+          R"(Returns true if specified key references a Magnum::Rad value in this configuration.)")
 
-      .def("remove_bool", &Configuration::removeBool)
-      .def("remove_string", &Configuration::removeString)
-      .def("remove_int", &Configuration::removeInt)
-      .def("remove_float", &Configuration::removeDouble)
-      .def("remove_vec3", &Configuration::removeVec3)
-      .def("remove_quat", &Configuration::removeQuat)
-      .def("remove_rad", &Configuration::removeRad);
+      .def(
+          "remove_bool", &Configuration::removeBool,
+          R"(Removes and returns boolean value corresponding to passed key, if found. Gives warning otherwise.)")
+      .def(
+          "remove_string", &Configuration::removeString,
+          R"(Removes and returns string value corresponding to passed key, if found. Gives warning otherwise.)")
+      .def(
+          "remove_int", &Configuration::removeInt,
+          R"(Removes and returns integer value corresponding to passed key, if found. Gives warning otherwise.)")
+      .def(
+          "remove_float", &Configuration::removeDouble,
+          R"(Removes and returns float value corresponding to passed key, if found. Gives warning otherwise.)")
+      .def(
+          "remove_vec3", &Configuration::removeVec3,
+          R"(Removes and returns Magnum::Vector3 value corresponding to passed key, if found. Gives warning otherwise.)")
+      .def(
+          "remove_quat", &Configuration::removeQuat,
+          R"(Removes and returns Magnum::Quaternion value corresponding to passed key, if found. Gives warning otherwise.)")
+      .def(
+          "remove_rad", &Configuration::removeRad,
+          R"(Removes and returns Magnum::Rad value corresponding to passed key, if found. Gives warning otherwise.)")
+      .def(
+          "remove_subconfig", &Configuration::removeSubconfig,
+          R"(Removes and returns subconfiguration corresponding to passed key, if found. Gives warning otherwise.)");
 
   // ==== struct RigidState ===
   py::class_<RigidState, RigidState::ptr>(m, "RigidState")

@@ -77,66 +77,73 @@ void ConfigValue::deleteCurrentValue(const std::string& src) {
   type = ConfigStoredType::Unknown;
 }
 
-void ConfigValue::set(int _i) {
+bool ConfigValue::set(int _i) {
   checkTypeAndDest(ConfigStoredType::Integer);
   i = _i;
   type = ConfigStoredType::Integer;
+  return true;
 }
 
-void ConfigValue::set(bool _b) {
+bool ConfigValue::set(bool _b) {
   checkTypeAndDest(ConfigStoredType::Boolean);
   b = _b;
   type = ConfigStoredType::Boolean;
+  return true;
 }
 
-void ConfigValue::set(double _d) {
+bool ConfigValue::set(double _d) {
   checkTypeAndDest(ConfigStoredType::Double);
   d = _d;
   type = ConfigStoredType::Double;
+  return true;
 }
-void ConfigValue::set(const char* _c) {
+bool ConfigValue::set(const char* _c) {
   if (checkTypeAndDest(ConfigStoredType::String)) {
     s = std::string(_c);
   } else {
     new (&s) std::string(_c);
     type = ConfigStoredType::String;
   }
+  return true;
 }
-
-void ConfigValue::set(const std::string& _s) {
+bool ConfigValue::set(const std::string& _s) {
   if (checkTypeAndDest(ConfigStoredType::String)) {
     s = _s;
   } else {
     new (&s) auto(_s);
     type = ConfigStoredType::String;
   }
+  return true;
 }
 
-void ConfigValue::set(const Magnum::Vector3& _v) {
+bool ConfigValue::set(const Magnum::Vector3& _v) {
   if (checkTypeAndDest(ConfigStoredType::MagnumVec3)) {
     v = _v;
   } else {
     new (&v) auto(_v);
     type = ConfigStoredType::MagnumVec3;
   }
+  return true;
 }
 
-void ConfigValue::set(const Magnum::Quaternion& _q) {
+bool ConfigValue::set(const Magnum::Quaternion& _q) {
   if (checkTypeAndDest(ConfigStoredType::MagnumQuat)) {
     q = _q;
   } else {
     new (&q) auto(_q);
     type = ConfigStoredType::MagnumQuat;
   }
+  return true;
 }
 
-void ConfigValue::set(const Magnum::Rad& _r) {
+bool ConfigValue::set(const Magnum::Rad& _r) {
   if (checkTypeAndDest(ConfigStoredType::MagnumRad)) {
     r = _r;
   } else {
     new (&r) auto(_r);
     type = ConfigStoredType::MagnumRad;
   }
+  return true;
 }
 
 bool ConfigValue::checkTypeAndDest(const ConfigStoredType& checkType) {

@@ -81,14 +81,20 @@ class ConfigValue {
   bool isValid() const { return type != ConfigStoredType::Unknown; }
 
   // setters
-  void set(bool _b);
-  void set(int _i);
-  void set(double _d);
-  void set(const std::string& _s);
-  void set(const char* _s);
-  void set(const Magnum::Vector3& _v);
-  void set(const Magnum::Quaternion& _q);
-  void set(const Magnum::Rad& _r);
+
+  template <typename T>
+  bool set(T value) {
+    // unsupported type
+    return false;
+  }
+  bool set(bool _b);
+  bool set(int _i);
+  bool set(double _d);
+  bool set(const std::string& _s);
+  bool set(const char* _s);
+  bool set(const Magnum::Vector3& _v);
+  bool set(const Magnum::Quaternion& _q);
+  bool set(const Magnum::Rad& _r);
 
   // getters
   auto getBool() const {
@@ -182,31 +188,9 @@ class Configuration {
 
   virtual ~Configuration() = default;
 
-  bool hasBool(const std::string& key) const {
-    return checkMapForKeyAndType(key, ConfigStoredType::Boolean);
-  }
-  bool hasDouble(const std::string& key) const {
-    return checkMapForKeyAndType(key, ConfigStoredType::Double);
-  }
-  bool hasInt(const std::string& key) const {
-    return checkMapForKeyAndType(key, ConfigStoredType::Integer);
-  }
-  bool hasString(const std::string& key) const {
-    return checkMapForKeyAndType(key, ConfigStoredType::String);
-  }
-  bool hasVec3(const std::string& key) const {
-    return checkMapForKeyAndType(key, ConfigStoredType::MagnumVec3);
-  }
-  bool hasQuat(const std::string& key) const {
-    return checkMapForKeyAndType(key, ConfigStoredType::MagnumQuat);
-  }
-  bool hasRad(const std::string& key) const {
-    return checkMapForKeyAndType(key, ConfigStoredType::MagnumRad);
-  }
-
   // ****************** Getters ******************
   bool getBool(const std::string& key) const {
-    if (hasBool(key)) {
+    if (checkMapForKeyAndType(key, ConfigStoredType::Boolean)) {
       return valueMap_.at(key).getBool();
     }
     ESP_ERROR() << "Key :" << key << "not present in configuration as boolean";
@@ -214,21 +198,21 @@ class Configuration {
   }
 
   double getDouble(const std::string& key) const {
-    if (hasDouble(key)) {
+    if (checkMapForKeyAndType(key, ConfigStoredType::Double)) {
       return valueMap_.at(key).getDouble();
     }
     ESP_ERROR() << "Key :" << key << "not present in configuration as double";
     return {};
   }
   int getInt(const std::string& key) const {
-    if (hasInt(key)) {
+    if (checkMapForKeyAndType(key, ConfigStoredType::Integer)) {
       return valueMap_.at(key).getInt();
     }
     ESP_ERROR() << "Key :" << key << "not present in configuration as integer";
     return {};
   }
   std::string getString(const std::string& key) const {
-    if (hasString(key)) {
+    if (checkMapForKeyAndType(key, ConfigStoredType::String)) {
       return valueMap_.at(key).getString();
     }
     ESP_ERROR() << "Key :" << key
@@ -237,7 +221,7 @@ class Configuration {
   }
 
   Magnum::Vector3 getVec3(const std::string& key) const {
-    if (hasVec3(key)) {
+    if (checkMapForKeyAndType(key, ConfigStoredType::MagnumVec3)) {
       return valueMap_.at(key).getVec3();
     }
     ESP_ERROR() << "Key :" << key
@@ -245,7 +229,7 @@ class Configuration {
     return {};
   }
   Magnum::Quaternion getQuat(const std::string& key) const {
-    if (hasQuat(key)) {
+    if (checkMapForKeyAndType(key, ConfigStoredType::MagnumQuat)) {
       return valueMap_.at(key).getQuat();
     }
     ESP_ERROR() << "Key :" << key
@@ -253,12 +237,20 @@ class Configuration {
     return {};
   }
   Magnum::Rad getRad(const std::string& key) const {
-    if (hasRad(key)) {
+    if (checkMapForKeyAndType(key, ConfigStoredType::MagnumRad)) {
       return valueMap_.at(key).getRad();
     }
     ESP_ERROR() << "Key :" << key
                 << "not present in configuration as Magnum::Rad";
     return {};
+  }
+
+  ConfigStoredType getType(const std::string& key) const {
+    if (valueMap_.count(key) > 0) {
+      return valueMap_.at(key).getType();
+    }
+    ESP_ERROR() << "Key :" << key << "not present in configuration.";
+    return ConfigStoredType::Integer;
   }
 
   // ****************** String Conversion ******************
@@ -291,7 +283,7 @@ class Configuration {
   /**
    * @brief This function returns this configuration's subconfig keys.
    */
-  std::vector<std::string> getSubConfigKeys() const {
+  std::vector<std::string> getSubconfigKeys() const {
     std::vector<std::string> keys;
     keys.reserve(configMap_.size());
     for (const auto& entry : configMap_) {
@@ -300,61 +292,35 @@ class Configuration {
     return keys;
   }
 
-  std::vector<std::string> getBoolKeys() const {
-    return getKeysFromMapOfType(ConfigStoredType::Boolean);
+  template <ConfigStoredType storedType>
+  std::vector<std::string> getStoredKeys() const {
+    std::vector<std::string> keys;
+    // reserve space for all keys
+    keys.reserve(valueMap_.size());
+    int count = 0;
+    for (const auto& entry : valueMap_) {
+      if (entry.second.compareType(storedType)) {
+        ++count;
+        keys.push_back(entry.first);
+      }
+    }
+    if (count < keys.size()) {
+      keys.resize(count);
+    }
+    return keys;
   }
-  std::vector<std::string> getDoubleKeys() const {
-    return getKeysFromMapOfType(ConfigStoredType::Double);
-  }
-  std::vector<std::string> getIntKeys() const {
-    return getKeysFromMapOfType(ConfigStoredType::Integer);
-  }
-  std::vector<std::string> getStringKeys() const {
-    return getKeysFromMapOfType(ConfigStoredType::String);
-  }
-  std::vector<std::string> getVec3Keys() const {
-    return getKeysFromMapOfType(ConfigStoredType::MagnumVec3);
-  }
-  std::vector<std::string> getQuatKeys() const {
-    return getKeysFromMapOfType(ConfigStoredType::MagnumQuat);
-  }
-  std::vector<std::string> getRadKeys() const {
-    return getKeysFromMapOfType(ConfigStoredType::MagnumRad);
-  }
+
   // ****************** Setters ******************
   template <typename T>
-  void set(CORRADE_UNUSED const std::string& key,
-           CORRADE_UNUSED const T& value) {
-    ESP_ERROR() << "Unknown/unsupported type :" << typeid(T).name()
-                << "for key :" << key;
-  }
-  void set(const std::string& key, const bool& value) {
-    valueMap_[key].set(value);
-  }
-  void set(const std::string& key, const int& value) {
-    valueMap_[key].set(value);
+  void set(const std::string& key, T value) {
+    bool success = valueMap_[key].set(value);
+    if (!success) {
+      ESP_ERROR() << "Unknown/Unsupported type :" << typeid(T).name()
+                  << "for Key :" << key;
+      valueMap_.erase(key);
+    }
   }
 
-  void set(const std::string& key, const double& value) {
-    valueMap_[key].set(value);
-  }
-  void set(const std::string& key, const char* value) {
-    valueMap_[key].set(value);
-  }
-
-  void set(const std::string& key, const std::string& value) {
-    valueMap_[key].set(value);
-  }
-
-  void set(const std::string& key, const Magnum::Vector3& value) {
-    valueMap_[key].set(value);
-  }
-  void set(const std::string& key, const Magnum::Quaternion& value) {
-    valueMap_[key].set(value);
-  }
-  void set(const std::string& key, const Magnum::Rad& value) {
-    valueMap_[key].set(value);
-  }
   // ****************** Value removal ******************
   void removeValueFromMap(const std::string& key) {
     if (valueMap_.count(key) > 0) {
@@ -363,7 +329,7 @@ class Configuration {
   }
 
   bool removeBool(const std::string& key) {
-    if (hasBool(key)) {
+    if (checkMapForKeyAndType(key, ConfigStoredType::Boolean)) {
       bool v = valueMap_.at(key).getBool();
       valueMap_.erase(key);
       return v;
@@ -374,7 +340,7 @@ class Configuration {
   }
 
   double removeDouble(const std::string& key) {
-    if (hasDouble(key)) {
+    if (checkMapForKeyAndType(key, ConfigStoredType::Double)) {
       double v = valueMap_.at(key).getDouble();
       valueMap_.erase(key);
       return v;
@@ -383,7 +349,7 @@ class Configuration {
     return {};
   }
   int removeInt(const std::string& key) {
-    if (hasInt(key)) {
+    if (checkMapForKeyAndType(key, ConfigStoredType::Integer)) {
       int v = valueMap_.at(key).getInt();
       valueMap_.erase(key);
       return v;
@@ -393,7 +359,7 @@ class Configuration {
     return {};
   }
   std::string removeString(const std::string& key) {
-    if (hasString(key)) {
+    if (checkMapForKeyAndType(key, ConfigStoredType::String)) {
       std::string v = valueMap_.at(key).getString();
       valueMap_.erase(key);
       return v;
@@ -404,7 +370,7 @@ class Configuration {
   }
 
   Magnum::Vector3 removeVec3(const std::string& key) {
-    if (hasVec3(key)) {
+    if (checkMapForKeyAndType(key, ConfigStoredType::MagnumVec3)) {
       Magnum::Vector3 v = valueMap_.at(key).getVec3();
       valueMap_.erase(key);
       return v;
@@ -414,7 +380,7 @@ class Configuration {
     return {};
   }
   Magnum::Quaternion removeQuat(const std::string& key) {
-    if (hasQuat(key)) {
+    if (checkMapForKeyAndType(key, ConfigStoredType::MagnumQuat)) {
       Magnum::Quaternion v = valueMap_.at(key).getQuat();
       valueMap_.erase(key);
       return v;
@@ -424,8 +390,10 @@ class Configuration {
     return {};
   }
   Magnum::Rad removeRad(const std::string& key) {
-    if (hasRad(key)) {
-      return valueMap_.at(key).getRad();
+    if (checkMapForKeyAndType(key, ConfigStoredType::MagnumRad)) {
+      Magnum::Rad v = valueMap_.at(key).getRad();
+      valueMap_.erase(key);
+      return v;
     }
     ESP_WARNING() << "Key :" << key
                   << "not present in configuration as Magnum::Rad";
@@ -441,6 +409,17 @@ class Configuration {
     ESP_WARNING() << "Key :" << key
                   << "not present in map of subconfigurations.";
     return {};
+  }
+  // ***************** Check if value is present ******************
+  /**
+   * @brief check if storage map of this configuration has the passed key and
+   * if it is the requested type.
+   * @param key the key to check
+   * @param type the @ref ConfigStoredType type to check for
+   */
+  bool checkMapForKeyAndType(const std::string& key,
+                             const ConfigStoredType& type) const {
+    return (valueMap_.count(key) > 0 && valueMap_.at(key).compareType(type));
   }
 
   // ****************** Subconfiguration accessors ******************
@@ -506,14 +485,26 @@ class Configuration {
   bool hasValues() const { return getNumEntries() > 0; }
 
   /**
-   * @brief Checks if passed @p key is contained in this configuration.
-   * Returns the highest level where @p key was found, or 0 if not found
-   * @param key The key to look for
-   * @return The level @p key was found. 0 if not found (so can be treated as
-   * bool)
+   * @brief Returns whether this @ref Configuration has the passed @p key as a
+   * non-configuration value. Does not check subconfigurations.
    */
-  int hasValue(const std::string& key) const {
-    return hasValueInternal(key, 0);
+  bool hasValue(const std::string& key) const {
+    return valueMap_.count(key) > 0;
+  }
+
+  /**
+   * @brief Checks if passed @p key is contained in this configuration.
+   * Returns a list of nested subconfiguration keys, in order, to the
+   * configuration where the key was found, ending in the requested @p key. If
+   * list is empty, @p key was not found.
+   * @param key The key to look for
+   * @return A breadcrumb list to where the value referenced by @p key
+   * resides. An empty list means the value was not found.
+   */
+  std::vector<std::string> findValue(const std::string& key) const {
+    std::vector<std::string> breadcrumbs{};
+    findValueInternal(key, 0, breadcrumbs);
+    return breadcrumbs;
   }
 
   /**
@@ -573,27 +564,40 @@ class Configuration {
    * Returns the highest level where @p key was found
    * @param key The key to look for
    * @param parentLevel The parent level to the current iteration.  If
-   * iteration finds
-   * @p key, it will return parentLevel+1
+   * iteration finds @p key, it will return parentLevel+1
+   * @param breadcrumb [out] List of keys to subconfigs to get to value.
+   * Always should end with @p key.
    * @return The level @p key was found. 0 if not found (so can be treated
    * as bool)
    */
-  int hasValueInternal(const std::string& key, int parentLevel = 0) const {
+  int findValueInternal(const std::string& key,
+                        int parentLevel,
+                        std::vector<std::string>& breadcrumb) const {
     int curLevel = parentLevel + 1;
     if (valueMap_.count(key) > 0) {
+      // Found at this level, access directly via key to get value
+      breadcrumb.push_back(key);
       return curLevel;
     }
+
     // not found by here in data maps, check subconfigs, to see what level
     for (const auto& subConfig : configMap_) {
       if (subConfig.first == key) {
-        // name of subconfiguration
+        // key matches name of subconfiguration
+        breadcrumb.push_back(key);
         return curLevel;
       }
-      // find level of
-      int resLevel = subConfig.second->hasValueInternal(key, curLevel);
+      // add subconfig key to breadcrumb
+      breadcrumb.push_back(subConfig.first);
+      // search this subconfiguration
+      int resLevel =
+          subConfig.second->findValueInternal(key, curLevel, breadcrumb);
       // if found, will be greater than curLevel
       if (resLevel > curLevel) {
         return resLevel;
+      } else {
+        // remove subconfig key from breadcrumb
+        breadcrumb.pop_back();
       }
     }
     // if not found, return lowest level having been checked
@@ -632,39 +636,10 @@ class Configuration {
     return true;
   }
 
-  /**
-   * @brief check if storage map of this configuration has the passed key and if
-   * it is the requested type.
-   * @param key the key to check
-   * @param type the @ref ConfigStoredType type to check for
-   */
-  bool checkMapForKeyAndType(const std::string& key,
-                             const ConfigStoredType& type) const {
-    return (valueMap_.count(key) > 0 && valueMap_.at(key).compareType(type));
-  }
-
-  /**
-   * @brief Retrieve a vector of the keys of the map for the values of the
-   * specified type.
-   */
-  std::vector<std::string> getKeysFromMapOfType(
-      const ConfigStoredType& type) const {
-    std::vector<std::string> keys;
-    keys.reserve(valueMap_.size());
-    int count = 0;
-    for (const auto& entry : valueMap_) {
-      if (entry.second.compareType(type)) {
-        ++count;
-        keys.push_back(entry.first);
-      }
-    }
-    keys.resize(count);
-    return keys;
-  }
-
   // Map to hold configurations as subgroups
   std::unordered_map<std::string, std::shared_ptr<Configuration>> configMap_{};
 
+  // Map that haolds all config values
   std::unordered_map<std::string, ConfigValue> valueMap_{};
 
   ESP_SMART_POINTERS(Configuration)
