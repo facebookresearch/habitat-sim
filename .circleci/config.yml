@@ -643,10 +643,10 @@ jobs:
           name: Build conda Linux packages
           no_output_timeout: 240m
           command: |
+              while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat;
 
-              while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
               # Install anaconda to work with packages repo
               curl -O https://repo.anaconda.com/archive/Anaconda3-2020.11-Linux-x86_64.sh
               bash Anaconda3-2020.11-Linux-x86_64.sh -b -p $HOME/anaconda
