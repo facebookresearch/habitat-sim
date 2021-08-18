@@ -120,9 +120,14 @@ endif(APPLE)
 set(CMAKE_SKIP_BUILD_RPATH FALSE)
 set(CMAKE_BUILD_WITH_INSTALL_RPATH NOT BUILD_TREE)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH NOT BUILD_TREE)
-set(CMAKE_INSTALL_RPATH
-    "${_rpath_portable_origin}:${_rpath_portable_origin}/habitat_sim/_ext/:../../../.."
-)
+if(NOT BUILD_TREE)
+  set(
+    CMAKE_INSTALL_RPATH
+    "${_rpath_portable_origin}:${_rpath_portable_origin}/habitat_sim/_ext/:../../../..:../lib"
+  )
+else()
+  set(CMAKE_INSTALL_RPATH "")
+endif()
 
 # ---[ Dependencies
 include(cmake/dependencies.cmake)
