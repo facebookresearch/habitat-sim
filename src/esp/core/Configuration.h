@@ -297,7 +297,7 @@ class Configuration {
     std::vector<std::string> keys;
     // reserve space for all keys
     keys.reserve(valueMap_.size());
-    int count = 0;
+    unsigned int count = 0;
     for (const auto& entry : valueMap_) {
       if (entry.second.compareType(storedType)) {
         ++count;
