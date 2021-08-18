@@ -157,6 +157,9 @@ void initCoreBindings(py::module& m) {
             return self.checkMapForKeyAndType(key, ConfigStoredType::MagnumRad);
           },
           R"(Returns true if specified key references a Magnum::Rad value in this configuration.)")
+      .def(
+          "has_subconfig", &Configuration::hasSubconfig,
+          R"(Returns true if specified key references an existing subconfiguration within this configuration.)")
 
       .def(
           "remove_bool", &Configuration::removeBool,

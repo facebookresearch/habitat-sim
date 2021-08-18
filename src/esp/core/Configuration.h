@@ -401,7 +401,7 @@ class Configuration {
   }
 
   std::shared_ptr<Configuration> removeSubconfig(const std::string& key) {
-    if (configMap_.count(key) > 0) {
+    if (hasSubconfig(key)) {
       auto val = configMap_.at(key);
       configMap_.erase(key);
       return val;
@@ -420,6 +420,14 @@ class Configuration {
   bool checkMapForKeyAndType(const std::string& key,
                              const ConfigStoredType& type) const {
     return (valueMap_.count(key) > 0 && valueMap_.at(key).compareType(type));
+  }
+
+  /**
+   * @brief return if passed key corresponds to a subconfig in this
+   * configuration
+   */
+  bool hasSubconfig(const std::string& key) const {
+    return (configMap_.count(key) > 0);
   }
 
   // ****************** Subconfiguration accessors ******************

@@ -1,3 +1,4 @@
+import magnum as mn
 import numpy as np
 
 import habitat_sim
@@ -39,14 +40,68 @@ def test_core_configuration():
     config.set_vec3("vec3", my_vec3)
     assert config.get_vec3("vec3") == my_vec3
 
-    # # test string group
-    # text_group = ["a", "b", "  c", "12", "0.1", "-=_+.,';:"]
-    # for text in text_group:
-    #     config.add_string_to_group("text_group", text)
+    # Magnum::Quaternion (float)
+    my_quat = mn.Quaternion(((1.12345, 2.0, -3.0), 4.0))
+    config.set_quat("quat", my_quat)
+    assert config.get_quat("quat") == my_quat
 
-    # queried_group = config.get_string_group("text_group")
-    # for ix, text in enumerate(queried_group):
-    #     assert text == text_group[ix]
+    # test subconfig editing and find
+    # create subconfig with passed name and edit it directly
+    # changes are saved
+    subconfig_0 = config.get_subconfig("subconfig_0")
+    # create subconfig_1 as child of subconfig_0 and edit directly
+    subconfig_1 = subconfig_0.get_subconfig("subconfig_1")
+    # etc.
+    subconfig_2 = subconfig_1.get_subconfig("subconfig_2")
+    subconfig_3 = subconfig_2.get_subconfig("subconfig_3")
+    subconfig_4 = subconfig_3.get_subconfig("subconfig_4")
+    subconfig_5 = subconfig_4.get_subconfig("subconfig_5")
+
+    # add a string to find to deepest nested subconfig
+    subconfig_5.set_string("string_to_find", "this is a string to find")
+    assert subconfig_5.get_string("string_to_find") == "this is a string to find"
+    # now search config tree to find "string_to_find"
+    breadcrumbs = config.find_value_location("string_to_find")
+    # make sure breadcrumbs array returns 7 values, 6 subconfig keys, in order, plus the key we are looking for
+    assert len(breadcrumbs) == 7
+    assert breadcrumbs[0] == "subconfig_0"
+    assert breadcrumbs[1] == "subconfig_1"
+    assert breadcrumbs[2] == "subconfig_2"
+    assert breadcrumbs[3] == "subconfig_3"
+    assert breadcrumbs[4] == "subconfig_4"
+    assert breadcrumbs[5] == "subconfig_5"
+    assert breadcrumbs[6] == "string_to_find"
+
+    # add another value to a different subconfig
+    subconfig_31 = subconfig_2.get_subconfig("subconfig_31")
+    # set value
+    subconfig_31.set_vec3("vec3_to_find", np.array([11.12345, 12.0, -13.0]))
+    # find breadcrumbs to this value
+    breadcrumbs2 = config.find_value_location("vec3_to_find")
+    assert len(breadcrumbs2) == 5
+    assert breadcrumbs2[0] == "subconfig_0"
+    assert breadcrumbs2[1] == "subconfig_1"
+    assert breadcrumbs2[2] == "subconfig_2"
+    assert breadcrumbs2[3] == "subconfig_31"
+    assert breadcrumbs2[4] == "vec3_to_find"
+
+    # remove nested subconfig
+    nested_subconfig = config.remove_subconfig("subconfig_0")
+    assert not config.has_subconfig("subconfig_0")
+    assert nested_subconfig.has_subconfig("subconfig_1")
+
+    # test subconfig create/modify/save
+    # creates a new subconfig_new, puts it in config's subconfigs, and returns a copy
+    subconfig_new = config.get_subconfig_copy("subconfig_new")
+    subconfig_new.set_string("test_string", "this is a test string")
+
+    assert subconfig_new.has_string("test_string")
+    assert not config.get_subconfig("subconfig_new").has_string("test_string")
+
+    # now adde subconfig into config
+    config.save_subconfig("subconfig_new", subconfig_new)
+    # now nested subconfig should have key
+    assert config.get_subconfig("subconfig_new").has_string("test_string")
 
 
 def test_physics_object_attributes():
