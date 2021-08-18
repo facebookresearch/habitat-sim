@@ -16,6 +16,7 @@ import os
 import os.path as osp
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 from distutils.util import strtobool
@@ -36,6 +37,10 @@ except ImportError:
 ARG_CACHE_BLACKLIST = {"force_cmake", "cache_args", "inplace"}
 
 
+def str2bool(input_str: str) -> bool:
+    return bool(strtobool(input_str.lower()))
+
+
 def is_pip():
     # This will end with python if driven with python setup.py ...
     return osp.basename(os.environ.get("_", "/pip/no")).startswith("pip")
@@ -49,7 +54,7 @@ def build_parser():
     parser.add_argument(
         "--headless",
         dest="headless",
-        default=strtobool(os.environ.get("HEADLESS", str(is_pip())).lower()),
+        default=str2bool(os.environ.get("HEADLESS", str(is_pip()))),
         action="store_true",
         help="""Build in headless mode.
 Use "HEADLESS=True pip install ." to build in headless mode with pip""",
@@ -57,7 +62,7 @@ Use "HEADLESS=True pip install ." to build in headless mode with pip""",
     parser.add_argument(
         "--with-cuda",
         action="store_true",
-        default=strtobool(os.environ.get("WITH_CUDA", "False").lower()),
+        default=str2bool(os.environ.get("WITH_CUDA", "False")),
         dest="with_cuda",
         help="Build CUDA enabled features.  Requires CUDA to be installed",
     )
@@ -65,7 +70,7 @@ Use "HEADLESS=True pip install ." to build in headless mode with pip""",
         "--bullet",
         "--with-bullet",
         dest="with_bullet",
-        default=strtobool(os.environ.get("WITH_BULLET", str(is_pip())).lower()),
+        default=str2bool(os.environ.get("WITH_BULLET", str(is_pip()))),
         action="store_true",
         help="""Build with Bullet simulation engine. Default to True when pip installing.
  Default value is otherwise false or provided  WITH_BULLET=ON or WITH_BULLET_OFF when doing pip install.""",
@@ -334,8 +339,20 @@ class CMakeBuild(build_ext):
             env.get("CXXFLAGS", ""), self.distribution.get_version()
         )
 
-        if self.run_cmake(cmake_args):
+        if is_pip() or self.run_cmake(cmake_args):
             os.makedirs(self.build_temp, exist_ok=True)
+            # Remove invalid cmakefiles if is is_pip()
+            for cmake_cache_f in [
+                "CMakeFiles",
+                "CMakeCache.txt",
+                "cmake_install.cmake",
+            ]:
+                cmake_cache_f = osp.join(self.build_temp, cmake_cache_f)
+                if is_pip() and osp.exists(cmake_cache_f):
+                    if osp.isdir(cmake_cache_f):
+                        shutil.rmtree(cmake_cache_f)
+                    else:
+                        os.remove(cmake_cache_f)
             subprocess.check_call(
                 [osp.join(CMAKE_BIN_DIR, "cmake")]
                 + cmake_args
@@ -426,7 +443,6 @@ if __name__ == "__main__":
     assert StrictVersion(
         "{}.{}".format(sys.version_info[0], sys.version_info[1])
     ) >= StrictVersion("3.6"), "Must use python3.6 or newer"
-
     with open("./requirements.txt", "r") as f:
         requirements = [l.strip() for l in f.readlines() if len(l.strip()) > 0]
 
