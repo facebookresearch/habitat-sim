@@ -50,16 +50,16 @@ def perform_general_tests(attr_mgr, search_string):
 
     # verify the templates hold different data and are not the
     # same object
-    assert template1.get_string("test_key") != template2.get_string("test_key")
+    assert template1.get("test_key") != template2.get("test_key")
     # verify 0 and 2 hold same user-set value
-    assert template0.get_string("test_key") == template2.get_string("test_key")
+    assert template0.get("test_key") == template2.get("test_key")
 
     # change retrieved template, verify it is not same object as template0
     template2.set("test_key", "template2_test")
 
     # verify the templates hold different data and are not the
     # same object
-    assert template0.get_string("test_key") != template2.get_string("test_key")
+    assert template0.get("test_key") != template2.get("test_key")
 
     # add new template with specified handle
     new_template_handle = "new_template_0"
@@ -166,7 +166,7 @@ def perform_add_blank_template_test(attr_mgr, valid_render_handle=None):
     # verify template 0 and template 1 are copies of the same template
     assert new_template0.handle == new_template1.handle
     assert new_template0.template_id == new_template1.template_id
-    assert new_template0.get_string("test_key") == new_template1.get_string("test_key")
+    assert new_template0.get("test_key") == new_template1.get("test_key")
 
     # remove newly added default template
     new_template2 = attr_mgr.remove_template_by_handle(new_template_handle)
@@ -174,7 +174,7 @@ def perform_add_blank_template_test(attr_mgr, valid_render_handle=None):
     # verify added template was one removed
     assert new_template0.handle == new_template2.handle
     assert new_template0.template_id == new_template2.template_id
-    assert new_template0.get_string("test_key") == new_template2.get_string("test_key")
+    assert new_template0.get("test_key") == new_template2.get("test_key")
 
     # test addition of user-configurations and verify values
 
@@ -347,7 +347,7 @@ def perform_asset_attrib_mgr_tests(
     new_template = attr_mgr.get_template_by_handle(new_handle)
 
     # verify they do not hold the same values in the important fields
-    assert old_template.get_int(ctor_mod_field) != new_template.get_int(ctor_mod_field)
+    assert old_template.get(ctor_mod_field) != new_template.get(ctor_mod_field)
     # verify we have more templates than when we started
     assert orig_num_templates != attr_mgr.get_num_templates()
 
