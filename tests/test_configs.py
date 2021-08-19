@@ -17,33 +17,33 @@ def test_config_eq():
 
 def test_core_configuration():
     # test bindings for esp::core::Configuration class
-    config = habitat_sim.bindings.ConfigurationGroup()
-    config.set_string("test", "test statement")
+    config = habitat_sim.bindings.Configuration()
+    config.set("test", "test statement")
     assert config.has_value("test")
-    assert config.get_string("test") == "test statement"
+    assert config.get("test") == "test statement"
 
-    config.remove_string("test")
+    config.remove("test")
     assert not config.has_value("test")
 
-    config.set_bool("bool", np.array(True))
-    assert config.get_bool("bool") == True
+    config.set("bool", np.array(True))
+    assert config.get("bool") == True
 
-    config.set_int("integer", 3)
-    assert config.get_int("integer") == 3
+    config.set("integer", 3)
+    assert config.get("integer") == 3
 
     my_float = 0.77777777777777
-    config.set_float("py_float", my_float)
-    assert config.get_float("py_float") == my_float
+    config.set("py_float", my_float)
+    assert config.get("py_float") == my_float
 
     # Magnum::Vector3 (float)
     my_vec3 = np.array([1.12345, 2.0, -3.0])
-    config.set_vec3("vec3", my_vec3)
-    assert config.get_vec3("vec3") == my_vec3
+    config.set("vec3", my_vec3)
+    assert config.get("vec3") == my_vec3
 
     # Magnum::Quaternion (float)
     my_quat = mn.Quaternion(((1.12345, 2.0, -3.0), 4.0))
-    config.set_quat("quat", my_quat)
-    assert config.get_quat("quat") == my_quat
+    config.set("quat", my_quat)
+    assert config.get("quat") == my_quat
 
     # test subconfig editing and find
     # create subconfig with passed name and edit it directly
@@ -59,8 +59,8 @@ def test_core_configuration():
 
     # add a string to find to deepest nested subconfig
     string_to_add = "this is a string to find"
-    subconfig_5.set_string("string_to_find", string_to_add)
-    assert subconfig_5.get_string("string_to_find") == string_to_add
+    subconfig_5.set("string_to_find", string_to_add)
+    assert subconfig_5.get("string_to_find") == string_to_add
     # now search config tree to find "string_to_find"
     breadcrumbs = config.find_value_location("string_to_find")
     # make sure breadcrumbs array returns 7 values, 6 subconfig keys, in order, plus the key we are looking for
@@ -81,14 +81,14 @@ def test_core_configuration():
     # check at final subconfig
     assert subconfig_to_check.has_string(breadcrumbs[-1])
     # check value is as expected
-    assert subconfig_to_check.get_string(breadcrumbs[-1]) == string_to_add
+    assert subconfig_to_check.get(breadcrumbs[-1]) == string_to_add
 
     # add another value to a different subconfig
     subconfig_31 = subconfig_2.get_subconfig("subconfig_31")
     # set value
     vec_to_add = np.array([11.12345, 12.0, -13.0])
-    subconfig_31.set_vec3("vec3_to_find", vec_to_add)
-    assert subconfig_31.get_vec3("vec3_to_find") == vec_to_add
+    subconfig_31.set("vec3_to_find", vec_to_add)
+    assert subconfig_31.get("vec3_to_find") == vec_to_add
     # find breadcrumbs to this value
     breadcrumbs2 = config.find_value_location("vec3_to_find")
     assert len(breadcrumbs2) == 5
@@ -106,7 +106,7 @@ def test_core_configuration():
     # check at final subconfig
     assert subconfig_to_check.has_vec3(breadcrumbs2[-1])
     # check value is as expected
-    assert subconfig_to_check.get_vec3(breadcrumbs2[-1]) == vec_to_add
+    assert subconfig_to_check.get(breadcrumbs2[-1]) == vec_to_add
 
     # remove nested subconfig
     nested_subconfig = config.remove_subconfig("subconfig_0")
@@ -116,7 +116,7 @@ def test_core_configuration():
     # test subconfig create/modify/save
     # creates a new subconfig_new, puts it in config's subconfigs, and returns a copy
     subconfig_new = config.get_subconfig_copy("subconfig_new")
-    subconfig_new.set_string("test_string", "this is a test string")
+    subconfig_new.set("test_string", "this is a test string")
 
     assert subconfig_new.has_string("test_string")
     assert not config.get_subconfig("subconfig_new").has_string("test_string")
@@ -163,5 +163,5 @@ def test_physics_object_attributes():
     assert object_template.requires_lighting == False
 
     # test that inheritance is correctly configured
-    object_template.set_string("test_key", "test_string")
-    assert object_template.get_string("test_key") == "test_string"
+    object_template.set("test_key", "test_string")
+    assert object_template.get("test_key") == "test_string"
