@@ -125,11 +125,11 @@ class ConfigValue {
  public:
   ConfigValue() = default;
   ConfigValue(const ConfigValue& otr);
-  ConfigValue(ConfigValue&& otr);
+  ConfigValue(ConfigValue&& otr) noexcept;
   ~ConfigValue();
   ConfigValue& operator=(const ConfigValue& otr);
 
-  ConfigValue& operator=(ConfigValue&& otr);
+  ConfigValue& operator=(ConfigValue&& otr) noexcept;
 
   bool isValid() const { return _type != ConfigStoredType::Unknown; }
 
@@ -191,7 +191,7 @@ class ConfigValue {
   ESP_SMART_POINTERS(ConfigValue)
 };  // ConfigValue
 
-MAGNUM_EXPORT Mn::Debug& operator<<(Mn::Debug& debug, const ConfigValue value);
+MAGNUM_EXPORT Mn::Debug& operator<<(Mn::Debug& debug, const ConfigValue& value);
 
 /**
  * @brief This class holds configuration data in a map of ConfigValues, and also

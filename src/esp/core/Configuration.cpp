@@ -58,7 +58,7 @@ ConfigValue::ConfigValue(const ConfigValue& otr) {
   copyValueInto(otr, "Copy Constructor");
 }
 
-ConfigValue::ConfigValue(ConfigValue&& otr) {
+ConfigValue::ConfigValue(ConfigValue&& otr) noexcept {
   copyValueInto(otr, "Move Constructor");
 }
 
@@ -90,33 +90,6 @@ void ConfigValue::deleteCurrentValue(const std::string& src) {
     nonTrivialConfigStoredTypeHandlerFor(_type).destructor(_data);
 }
 
-// template <class T>
-// void ConfigValue::set(const T& value) {
-//   // this never fails, not a bool anymore
-//   deleteCurrentValue("Setter");
-//   // this will blow up at compile time if such type is not supported
-//   _type = configStoredTypeFor<T>();
-//   // see later
-//   static_assert(isConfigStoredTypeNonTrivial(configStoredTypeFor<T>()) !=
-//                     std::is_trivially_copyable<T>::value,
-//                 "something's off!");
-//   // this will blow up if we added new larger types but forgot to update the
-//   // storage
-//   static_assert(sizeof(T) > sizeof(_data), "internal storage too small");
-//   // static_assert(alignof(T) > alignof(_data), "internal storage too
-//   // unaligned");
-//   // _data should be destructed at this point, construct a new value
-//   new (_data) T{value};
-// }
-
-// template <class T>
-// T ConfigValue::get() const {
-//   // ESP_CHECK(_type == configStoredTypeFor<T>(),
-//   //           "Attempting to access ConfigValue of" << _type << "with"
-//   //                                                 <<
-//   // configStoredTypeFor<T>()); return *reinterpret_cast<const T*>(_data);
-// }
-
 ConfigValue& ConfigValue::operator=(const ConfigValue& otr) {
   // if current value is string, magnum vector, magnum quat or magnum rad
   deleteCurrentValue("assignment operator");
@@ -126,7 +99,7 @@ ConfigValue& ConfigValue::operator=(const ConfigValue& otr) {
   return *this;
 }
 
-ConfigValue& ConfigValue::operator=(ConfigValue&& otr) {
+ConfigValue& ConfigValue::operator=(ConfigValue&& otr) noexcept {
   // if current value is string, magnum vector, magnum quat or magnum rad
   deleteCurrentValue("move assignment operator");
   moveValueInto(std::move(otr), "move assignment operator");
@@ -198,7 +171,7 @@ bool ConfigValue::putValueInConfigGroup(
   return false;
 }  // ConfigValue::putValueInConfigGroup
 
-Mn::Debug& operator<<(Mn::Debug& debug, const ConfigValue value) {
+Mn::Debug& operator<<(Mn::Debug& debug, const ConfigValue& value) {
   return debug << "ConfigValue (" << Mn::Debug::nospace << value.getAsString()
                << Mn::Debug::nospace << ")";
 }
