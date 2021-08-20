@@ -273,7 +273,7 @@ class CMakeBuild(build_ext):
             "-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=" + extdir,
             "-DPYTHON_EXECUTABLE=" + sys.executable,
             "-DCMAKE_EXPORT_COMPILE_COMMANDS={}".format("OFF" if is_pip() else "ON"),
-            "-DREL_BUILD_RPATH={}".format("ON" if self.inplace else "OFF"),
+            "-DREL_BUILD_RPATH={}".format("OFF" if self.inplace else "ON"),
         ]
         if args.lto is not None:
             cmake_args += [
