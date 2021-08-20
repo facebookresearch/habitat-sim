@@ -1394,10 +1394,10 @@ void Viewer::drawEvent() {
         break;
     }
     ImGui::Text("%s", profiler_.statistics().c_str());
+    std::string modeText =
+        "Mouse Interaction Mode: " + mouseModeNames.at(mouseInteractionMode);
+    ImGui::Text("%s", modeText.c_str());
   }
-  std::string modeText =
-      "Mouse Interaction Mode: " + mouseModeNames.at(mouseInteractionMode);
-  ImGui::Text("%s", modeText.c_str());
   ImGui::End();
 
   /* Set appropriate states. If you only draw ImGui, it is sufficient to
