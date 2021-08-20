@@ -205,7 +205,7 @@ class LightLayoutAttributes : public AbstractAttributes {
    */
   void addLightInstance(const LightInstanceAttributes::ptr& _lightInstance) {
     // set id
-    if (availableLightIDs_.size() > 0) {
+    if (!availableLightIDs_.empty()) {
       // use saved value and then remove from storage
       _lightInstance->setID(availableLightIDs_.front());
       availableLightIDs_.pop_front();
