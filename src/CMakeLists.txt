@@ -53,7 +53,7 @@ option(
   ON
 )
 option(BUILD_TEST "Build test binaries" OFF)
-option(REL_BUILD_RPATH "Is build path relative" OFF)
+option(BUILD_REL_RPATH "Build rel rpath" OFF)
 option(USE_SYSTEM_ASSIMP "Use system Assimp instead of a bundled submodule" OFF)
 option(USE_SYSTEM_EIGEN "Use system Eigen instead of a bundled submodule" OFF)
 option(USE_SYSTEM_GLFW "Use system GLFW instead of a bundled submodule" OFF)
@@ -119,15 +119,16 @@ else()
 endif(APPLE)
 set(CMAKE_SKIP_BUILD_RPATH FALSE)
 if(REL_BUILD_RPATH)
-  set(CMAKE_BUILD_WITH_INSTALL_RPATH REL_BUILD_RPATH)
-  set(CMAKE_INSTALL_RPATH_USE_LINK_PATH REL_BUILD_RPATH)
-  # Set Install RPath to relative for Python bindings
-  # RPATH needs to find corrade.so, magnum.so and habitat_sim/ext/*.so
+  message("Using relative rpath")
+  set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+  set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+  #_magnum.so needs to look at habitat_sim/_ext for its corrade dependencies
   set(CMAKE_INSTALL_RPATH
       "${_rpath_portable_origin}" "${_rpath_portable_origin}/habitat_sim/_ext/"
       "${_rpath_portable_origin}../../../.."
   )
 else()
+  message("Using absolute rpath")
   # Set to defaults
   set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
   set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
