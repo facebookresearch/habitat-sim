@@ -20,7 +20,7 @@ bool RigidStage::initialize(
   objectMotionType_ = MotionType::STATIC;
   // save the copy of the template used to create the object at initialization
   // time
-  setOrMergeUserAttributes(initAttributes->getUserConfiguration(), false);
+  setUserAttributes(initAttributes->getUserConfiguration());
   initializationAttributes_ = std::move(initAttributes);
 
   return initialization_LibSpecific();
