@@ -53,7 +53,7 @@ option(
   ON
 )
 option(BUILD_TEST "Build test binaries" OFF)
-option(REL_BUILD_RPATH "Build rel rpath" OFF)
+option(REL_BUILD_RPATH "Use a relative build rpath" OFF)
 option(USE_SYSTEM_ASSIMP "Use system Assimp instead of a bundled submodule" OFF)
 option(USE_SYSTEM_EIGEN "Use system Eigen instead of a bundled submodule" OFF)
 option(USE_SYSTEM_GLFW "Use system GLFW instead of a bundled submodule" OFF)
