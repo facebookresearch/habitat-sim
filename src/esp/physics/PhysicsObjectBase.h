@@ -442,7 +442,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    * @param attr A ptr to the user defined attributes specified for this object.
    * merge into them.
    */
-  void mergeUserAttributes(core::Configuration::ptr attr) {
+  void mergeUserAttributes(const core::Configuration::ptr& attr) {
     userAttributes_->overwriteWithConfig(attr);
   }
 
