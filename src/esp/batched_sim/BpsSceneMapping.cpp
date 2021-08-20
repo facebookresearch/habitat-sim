@@ -34,11 +34,11 @@ std::pair<int, int> BpsSceneMapping::findMeshIndexMaterialIndex(
     const std::string& meshName,
     const std::string& mtrlName) {
   auto it = std::find(meshes.begin(), meshes.end(), meshName);
-  ASSERT(it != meshes.end());
+  CORRADE_INTERNAL_ASSERT(it != meshes.end());
   int meshIndex = it - meshes.begin();
 
   it = std::find(materials.begin(), materials.end(), mtrlName);
-  ASSERT(it != materials.end());
+  CORRADE_INTERNAL_ASSERT(it != materials.end());
   int mtrlIndex = it - materials.begin();
 
   return {meshIndex, mtrlIndex};
@@ -78,7 +78,7 @@ std::tuple<int, int, float> BpsSceneMapping::findMeshIndexMaterialIndexScale(
       break;
     }
   }
-  ASSERT(found);
+  CORRADE_INTERNAL_ASSERT(found);
 
   auto [meshIndex, mtrlIndex] = findMeshIndexMaterialIndex(meshName, mtrlName);
   constexpr float scale = 1.f;

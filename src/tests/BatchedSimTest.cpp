@@ -68,6 +68,8 @@ void saveFrame(const char* fname,
 class BatchedSimulatorTest : public ::testing::Test {};
 
 TEST_F(BatchedSimulatorTest, basic) {
+  esp::logging::LoggingContext loggingContext;
+
   BatchedSimulator bsim;
 
   bsim.stepPhysics();

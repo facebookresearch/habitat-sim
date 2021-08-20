@@ -356,7 +356,7 @@ void BatchedSimulator::stepPhysics() {
   static float animTime = 0.f;
   animTime += 0.1f;
 
-  Mn::Vector3 animBaseTranslationOffset{animTime * 0.2, 0.f,
+  Mn::Vector3 animBaseTranslationOffset{animTime * 0.2f, 0.f,
                                         0.f};      // translate at 0.2 m/s
   float animBaseRotationOffset = animTime * 90.f;  // rotate at 90 deg/s
   // move from -0.2 to 0.2 with period = 1s
