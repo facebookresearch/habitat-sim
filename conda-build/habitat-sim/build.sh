@@ -49,7 +49,7 @@ ext_folder=$(dirname "${corrade_bindings}")/habitat_sim/_ext
 if [ "$(uname)" == "Darwin" ]; then
   install_name_tool -add_rpath @loader_path/habitat_sim/_ext "${corrade_bindings}"
   install_name_tool -add_rpath @loader_path/habitat_sim/_ext "${magnum_bindings}"
-  install_name_tool -add_rpath @loader_path "${hsim_bindings}"
+  #install_name_tool -add_rpath @loader_path "${hsim_bindings}"
 
 
   install_name_tool -add_rpath @loader_path/../"${ext_folder}" bin/habitat-viewer
