@@ -3,163 +3,118 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "Configuration.h"
+#include <Corrade/Utility/Debug.h>
+#include <Corrade/Utility/FormatStl.h>
 #include "esp/core/Check.h"
+
+namespace Cr = Corrade;
+namespace Mn = Magnum;
 
 namespace esp {
 namespace core {
+namespace config {
+
+struct NonTrivialTypeHandler {
+  // void (*copier)(const char*, char*);
+  // void (*mover)(char*, char*);
+  // void (*destructor)(char*);
+
+  template <class T>
+  void copier(const char* src, char* dst) {
+    *reinterpret_cast<T*>(dst) = *reinterpret_cast<const T*>(src);
+  }
+
+  template <class T>
+  void mover(char* src, char* dst) {
+    *reinterpret_cast<T*>(dst) = std::move(*reinterpret_cast<T*>(src));
+  }
+  template <class T>
+  void destructor(char* src) {
+    reinterpret_cast<T*>(src)->~T();
+  }
+
+  template <class T>
+  static constexpr NonTrivialTypeHandler make() {
+    return {copier<T>, mover<T>, destructor<T>};
+  }
+};
+
+constexpr NonTrivialTypeHandler nonTrivialTypeHandlers[]{
+    NonTrivialTypeHandler::make<std::string>()};
+
+NonTrivialTypeHandler nonTrivialConfigStoredTypeHandlerFor(
+    ConfigStoredType type) {  // eugh, long name
+  const std::size_t i = int(type) - int(ConfigStoredType::_nonTrivialTypes);
+  CORRADE_INTERNAL_ASSERT(i <
+                          Cr::Containers::arraySize(nonTrivialTypeHandlers));
+  return nonTrivialTypeHandlers[i];
+}
 
 ConfigValue::ConfigValue(const ConfigValue& otr) {
-  copyValueInto(otr, "copy constructor");
+  copyValueInto(otr, "Copy Constructor");
+}
+
+ConfigValue::ConfigValue(ConfigValue&& otr) {
+  copyValueInto(otr, "Move Constructor");
 }
 
 ConfigValue::~ConfigValue() {
-  deleteCurrentValue("ConfigValue destructor.");
+  deleteCurrentValue("Destructor.");
 }
 
 void ConfigValue::copyValueInto(const ConfigValue& otr,
                                 const std::string& src) {
-  ESP_CHECK(
-      otr.type != ConfigStoredType::Unknown,
-      "Attempting to copy unknown type/uninitialized value into ConfigValue" +
-          src);
-  switch (otr.type) {
-    case ConfigStoredType::Boolean:
-      b = otr.b;
-      break;
-    case ConfigStoredType::Integer:
-      i = otr.i;
-      break;
-    case ConfigStoredType::Double:
-      d = otr.d;
-      break;
-    case ConfigStoredType::String:
-      new (&s) auto(otr.s);
-      break;
-    case ConfigStoredType::MagnumVec3:
-      new (&v) auto(otr.v);
-      break;
-    case ConfigStoredType::MagnumQuat:
-      new (&q) auto(otr.q);
-      break;
-    case ConfigStoredType::MagnumRad:
-      new (&r) auto(otr.r);
-      break;
-    default:
-      ESP_CHECK(true, "Attempted to copy unknown/unsupported type :" + src);
-  }  // switch
+  std::memcpy(_data, otr._data, sizeof(_data));
   // set new type
-  type = otr.type;
+  _type = otr._type;
+  if (isConfigStoredTypeNonTrivial(otr._type)) {
+    nonTrivialConfigStoredTypeHandlerFor(_type).copier(otr._data, _data);
+  }
+}
+
+void ConfigValue::moveValueInto(ConfigValue&& otr, const std::string& src) {
+  std::memcpy(_data, otr._data, sizeof(_data));
+  // set new type
+  _type = otr._type;
+  if (isConfigStoredTypeNonTrivial(otr._type)) {
+    nonTrivialConfigStoredTypeHandlerFor(_type).mover(otr._data, _data);
+  }
 }
 
 void ConfigValue::deleteCurrentValue(const std::string& src) {
-  switch (type) {
-    case ConfigStoredType::Unknown:
-    case ConfigStoredType::Boolean:
-    case ConfigStoredType::Integer:
-    case ConfigStoredType::Double:
-      // trivially destructible
-      break;
-    case ConfigStoredType::String:
-      s.~basic_string();
-      break;
-    case ConfigStoredType::MagnumVec3:
-      v.~Vector3();
-      break;
-    case ConfigStoredType::MagnumQuat:
-      q.~Quaternion();
-      break;
-    case ConfigStoredType::MagnumRad:
-      r.~Rad();
-      break;
-    default:
-      ESP_CHECK(true, "Attempted to delete unknown/unsupported type :" + src);
-  }  // switch
-  type = ConfigStoredType::Unknown;
+  if (isConfigStoredTypeNonTrivial(_type))
+    nonTrivialConfigStoredTypeHandlerFor(_type).destructor(_data);
 }
 
-bool ConfigValue::set(int _i) {
-  checkTypeAndDest(ConfigStoredType::Integer);
-  i = _i;
-  type = ConfigStoredType::Integer;
-  return true;
+template <class T>
+void ConfigValue::set(const T& value) {
+  // this never fails, not a bool anymore
+  deleteCurrentValue("Setter");
+  // this will blow up at compile time if such type is not supported
+  _type = configStoredTypeFor<T>();
+  // see later
+  static_assert(isConfigStoredTypeNonTrivial(configStoredTypeFor<T>) !=
+                    std::is_trivially_copyable<T>::value,
+                "something's off!");
+  // this will blow up if we added new larger types but forgot to update the
+  // storage
+  static_assert(sizeof(T) > sizeof(_data), "internal storage too small");
+  static_assert(alignof(T) > alignof(_data), "internal storage too unaligned");
+  // _data should be destructed at this point, construct a new value
+  new (_data) T{value};
 }
 
-bool ConfigValue::set(bool _b) {
-  checkTypeAndDest(ConfigStoredType::Boolean);
-  b = _b;
-  type = ConfigStoredType::Boolean;
-  return true;
-}
-
-bool ConfigValue::set(double _d) {
-  checkTypeAndDest(ConfigStoredType::Double);
-  d = _d;
-  type = ConfigStoredType::Double;
-  return true;
-}
-bool ConfigValue::set(const char* _c) {
-  if (checkTypeAndDest(ConfigStoredType::String)) {
-    s = std::string(_c);
-  } else {
-    new (&s) std::string(_c);
-    type = ConfigStoredType::String;
-  }
-  return true;
-}
-bool ConfigValue::set(const std::string& _s) {
-  if (checkTypeAndDest(ConfigStoredType::String)) {
-    s = _s;
-  } else {
-    new (&s) auto(_s);
-    type = ConfigStoredType::String;
-  }
-  return true;
-}
-
-bool ConfigValue::set(const Magnum::Vector3& _v) {
-  if (checkTypeAndDest(ConfigStoredType::MagnumVec3)) {
-    v = _v;
-  } else {
-    new (&v) auto(_v);
-    type = ConfigStoredType::MagnumVec3;
-  }
-  return true;
-}
-
-bool ConfigValue::set(const Magnum::Quaternion& _q) {
-  if (checkTypeAndDest(ConfigStoredType::MagnumQuat)) {
-    q = _q;
-  } else {
-    new (&q) auto(_q);
-    type = ConfigStoredType::MagnumQuat;
-  }
-  return true;
-}
-
-bool ConfigValue::set(const Magnum::Rad& _r) {
-  if (checkTypeAndDest(ConfigStoredType::MagnumRad)) {
-    r = _r;
-  } else {
-    new (&r) auto(_r);
-    type = ConfigStoredType::MagnumRad;
-  }
-  return true;
-}
-
-bool ConfigValue::checkTypeAndDest(const ConfigStoredType& checkType) {
-  if (type == checkType) {
-    return true;
-  }
-  if (type != ConfigStoredType::Unknown) {
-    // destructor on non-trivial types
-    deleteCurrentValue("checkTypeAndDest function");
-  }
-  return false;
+template <class T>
+const T& ConfigValue::get() const {
+  ESP_CHECK(_type == configStoredTypeFor<T>(),
+            "Attempting to access ConfigValue of" << _type << "with"
+                                                  << configStoredTypeFor<T>());
+  return *reinterpret_cast<const T*>(_data);
 }
 
 ConfigValue& ConfigValue::operator=(const ConfigValue& otr) {
   // if current value is string, magnum vector, magnum quat or magnum rad
-  if (type != otr.type) {
+  if (_type != otr._type) {
     deleteCurrentValue("assignment operator");
   }
   copyValueInto(otr, "assignment operator");
@@ -167,40 +122,47 @@ ConfigValue& ConfigValue::operator=(const ConfigValue& otr) {
   return *this;
 }
 
+ConfigValue& ConfigValue::operator=(ConfigValue&& otr) {
+  // if current value is string, magnum vector, magnum quat or magnum rad
+  if (_type != otr._type) {
+    deleteCurrentValue("move assignment operator");
+  }
+  moveValueInto(std::move(otr), "move assignment operator");
+
+  return *this;
+}
+
 std::string ConfigValue::getAsString() const {
-  switch (type) {
-    case ConfigStoredType::Unknown:
+  switch (_type) {
+    case ConfigStoredType::Unknown: {
       return "Undefined value/Unknown type";
-    case ConfigStoredType::Boolean:
-      return (b ? "True" : "False");
-    case ConfigStoredType::Integer:
-      return std::to_string(i);
-    case ConfigStoredType::Double:
-      return std::to_string(d);
-    case ConfigStoredType::String:
-      return s;
+    }
+    case ConfigStoredType::Boolean: {
+      return (get<bool>() ? "True" : "False");
+    }
+    case ConfigStoredType::Integer: {
+      return std::to_string(get<int>());
+    }
+    case ConfigStoredType::Double: {
+      return std::to_string(get<double>());
+    }
+    case ConfigStoredType::String: {
+      return get<std::string>();
+    }
     case ConfigStoredType::MagnumVec3: {
-      std::string begin = "[";
-      return begin.append(std::to_string(v.x()))
-          .append(",")
-          .append(std::to_string(v.y()))
-          .append(",")
-          .append(std::to_string(v.z()))
-          .append("]");
+      auto v = get<Mn::Vector3>();
+      return Cr::Utility::formatString("[{} {} {}]", v.x(), v.y(), v.z());
     }
     case ConfigStoredType::MagnumQuat: {
-      std::string begin = "[";
-      return begin.append(std::to_string(q.vector().x()))
-          .append(",")
-          .append(std::to_string(q.vector().y()))
-          .append(",")
-          .append(std::to_string(q.vector().z()))
-          .append(",")
-          .append(std::to_string(q.scalar()))
-          .append("]");
+      auto q = get<Mn::Quaternion>();
+      auto qv = q.vector();
+      return Cr::Utility::formatString("[{} {} {}] {}", qv.x(), qv.y(), qv.z(),
+                                       q.scalar());
     }
-    case ConfigStoredType::MagnumRad:
+    case ConfigStoredType::MagnumRad: {
+      auto r = get<Mn::Rad>();
       return std::to_string(r.operator float());
+    }
     default:
       ESP_CHECK(true, "Unknown/unsupported Type in ConfigValue::getAsString.");
   }  // switch
@@ -208,24 +170,24 @@ std::string ConfigValue::getAsString() const {
 
 bool ConfigValue::putValueInConfigGroup(
     const std::string& key,
-    Corrade::Utility::ConfigurationGroup& cfg) const {
-  switch (type) {
+    Cr::Utility::ConfigurationGroup& cfg) const {
+  switch (_type) {
     case ConfigStoredType::Unknown:
       return false;
     case ConfigStoredType::Boolean:
-      return cfg.setValue(key, b);
+      return cfg.setValue(key, get<bool>());
     case ConfigStoredType::Integer:
-      return cfg.setValue(key, i);
+      return cfg.setValue(key, get<int>());
     case ConfigStoredType::Double:
-      return cfg.setValue(key, d);
+      return cfg.setValue(key, get<double>());
     case ConfigStoredType::String:
-      return cfg.setValue(key, s);
+      return cfg.setValue(key, get<std::string>());
     case ConfigStoredType::MagnumVec3:
-      return cfg.setValue(key, v);
+      return cfg.setValue(key, get<Mn::Vector3>());
     case ConfigStoredType::MagnumQuat:
-      return cfg.setValue(key, q);
+      return cfg.setValue(key, get<Mn::Quaternion>());
     case ConfigStoredType::MagnumRad:
-      return cfg.setValue(key, r);
+      return cfg.setValue(key, get<Mn::Rad>());
     default:
       ESP_CHECK(
           true,
@@ -234,13 +196,11 @@ bool ConfigValue::putValueInConfigGroup(
   return false;
 }  // ConfigValue::putValueInConfigGroup
 
-// internal check on get
-void ConfigValue::getterTypeCheck(const ConfigStoredType& checkType) const {
-  // If attempting to get a value that is not the type of this ConfigType,
-  // fail
-  ESP_CHECK(type == checkType,
-            "Attempting to access incorrect type in ConfigValue.");
+Mn::Debug& operator<<(Mn::Debug& debug, const ConfigValue value) {
+  return debug << "ConfigValue (" << Mn::Debug::nospace << value.getAsString()
+               << Mn::Debug::nospace << ")";
 }
 
+}  // namespace config
 }  // namespace core
 }  // namespace esp

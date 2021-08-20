@@ -59,7 +59,7 @@ bool writeJsonToFile(const JsonDocument& document,
 
 int loadJsonIntoConfiguration(
     const JsonGenericValue& jsonObj,
-    const std::shared_ptr<core::Configuration>& config) {
+    const std::shared_ptr<core::config::Configuration>& config) {
   // count number of valid user config settings found
 
   int numConfigSettings = 0;
@@ -103,7 +103,7 @@ int loadJsonIntoConfiguration(
     } else if (obj.IsObject()) {
       // support nested objects
       // create a new subgroup
-      std::shared_ptr<core::Configuration> subGroupPtr =
+      std::shared_ptr<core::config::Configuration> subGroupPtr =
           config->getSubconfigCopy(key);
       ;
       numConfigSettings += loadJsonIntoConfiguration(obj, subGroupPtr);

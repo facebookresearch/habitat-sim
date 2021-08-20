@@ -12,7 +12,10 @@ namespace esp {
 
 namespace core {
 
+namespace config {
 void initCoreBindings(pybind11::module& m);
+
+}
 
 }  // namespace core
 

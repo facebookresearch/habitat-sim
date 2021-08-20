@@ -115,7 +115,7 @@ std::string getTranslationOriginName(int translationOrigin);
  * a @ref esp::core::ManagedContainer.
  */
 class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
-                           public esp::core::Configuration {
+                           public esp::core::config::Configuration {
  public:
   AbstractAttributes(const std::string& attributesClassKey,
                      const std::string& handle)

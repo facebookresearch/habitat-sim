@@ -7,15 +7,19 @@
 
 #include <Corrade/Utility/Configuration.h>
 #include <Magnum/Magnum.h>
-#include <Magnum/Math/ConfigurationValue.h>
 #include <string>
 #include <typeinfo>
 #include <unordered_map>
 
 #include "esp/core/esp.h"
 
+namespace Cr = Corrade;
+namespace Mn = Magnum;
+
 namespace esp {
 namespace core {
+
+namespace config {
 
 /**
  * @brief This enum lists every type of value that can be currently stored
@@ -26,11 +30,58 @@ enum class ConfigStoredType {
   Boolean,
   Integer,
   Double,
-  String,
   MagnumVec3,
   MagnumQuat,
-  MagnumRad
+  MagnumRad,
+
+  _nonTrivialTypes,  // all non-trivial types must be represented with an enum
+                     // past this point
+  String = _nonTrivialTypes,
 };
+
+/**
+ * @brief Quick check to see if type is trivial or not
+ */
+bool isConfigStoredTypeNonTrivial(ConfigStoredType type) {
+  return int(type) >= int(ConfigStoredType::_nonTrivialTypes);
+}
+
+/**
+ * @brief Function template to return type enum for specified type
+ */
+template <class T>
+ConfigStoredType configStoredTypeFor() {
+  static_assert(sizeof(T) == 0, "unsupported type ");
+  return {};
+}
+template <>
+ConfigStoredType configStoredTypeFor<bool>() {
+  return ConfigStoredType::Boolean;
+}
+template <>
+ConfigStoredType configStoredTypeFor<int>() {
+  return ConfigStoredType::Integer;
+}
+template <>
+ConfigStoredType configStoredTypeFor<double>() {
+  return ConfigStoredType::Double;
+}
+template <>
+ConfigStoredType configStoredTypeFor<std::string>() {
+  return ConfigStoredType::String;
+}
+template <>
+ConfigStoredType configStoredTypeFor<Mn::Vector3>() {
+  return ConfigStoredType::MagnumVec3;
+}
+template <>
+ConfigStoredType configStoredTypeFor<Mn::Quaternion>() {
+  return ConfigStoredType::MagnumQuat;
+}
+template <>
+ConfigStoredType configStoredTypeFor<Mn::Rad>() {
+  return ConfigStoredType::MagnumRad;
+}
 
 /**
  * @brief This class uses an anonymous tagged union to store values of different
@@ -41,23 +92,13 @@ class ConfigValue {
   /**
    * @brief This is the type of the data represented in this ConfigValue.
    */
-  ConfigStoredType type{ConfigStoredType::Unknown};
+  ConfigStoredType _type{ConfigStoredType::Unknown};
 
   /**
-   * @brief This anonymous union holds the various typed values that may
-   * represent this ConfigValue.  Unions are struct-like constructs where the
-   * storage for all the member variables starts at the same point in memory. By
-   * accessing the appropriate value, the type of the data will be preserved.
+   * @brief The data this ConfigValue holds - four floats at most, doubles and
+   * 64bit pointers need 8-byte alignment
    */
-  union {
-    bool b;
-    int i;
-    double d;
-    std::string s;
-    Magnum::Vector3 v;
-    Magnum::Quaternion q;
-    Magnum::Rad r;
-  };
+  alignas(8) char _data[4 * 4];
 
   /**
    * @brief Copy the passed @p val into this ConfigValue.
@@ -67,69 +108,39 @@ class ConfigValue {
   void copyValueInto(const ConfigValue& val, const std::string& src);
 
   /**
+   * @brief Move the passed @p val into this ConfigVal.
+   * @param val source val to copy into this config
+   * @param src string name of calling method, for debugging.
+   */
+  void moveValueInto(ConfigValue&& val, const std::string& src);
+
+  /**
    * @brief Delete the current value.  Resets type to int, i to 0.
    * @param src string name of calling method, for debugging.
    */
   void deleteCurrentValue(const std::string& src);
 
  public:
-  ConfigValue() : i{0} {}
+  ConfigValue() : _data{0} {}
   ConfigValue(const ConfigValue& otr);
+  ConfigValue(ConfigValue&& otr);
   ~ConfigValue();
   ConfigValue& operator=(const ConfigValue& otr);
 
-  bool isValid() const { return type != ConfigStoredType::Unknown; }
+  ConfigValue& operator=(ConfigValue&& otr);
 
-  // setters
+  bool isValid() const { return _type != ConfigStoredType::Unknown; }
 
-  template <typename T>
-  bool set(CORRADE_UNUSED T value) {
-    // unsupported type
-    return false;
-  }
-  bool set(bool _b);
-  bool set(int _i);
-  bool set(double _d);
-  bool set(const std::string& _s);
-  bool set(const char* _s);
-  bool set(const Magnum::Vector3& _v);
-  bool set(const Magnum::Quaternion& _q);
-  bool set(const Magnum::Rad& _r);
+  template <class T>
+  void set(const T& value);
 
-  // getters
-  auto getBool() const {
-    getterTypeCheck(ConfigStoredType::Boolean);
-    return b;
-  }
-  auto getInt() const {
-    getterTypeCheck(ConfigStoredType::Integer);
-    return i;
-  }
-  auto getDouble() const {
-    getterTypeCheck(ConfigStoredType::Double);
-    return d;
-  }
-  auto getString() const {
-    getterTypeCheck(ConfigStoredType::String);
-    return s;
-  }
-  auto getVec3() const {
-    getterTypeCheck(ConfigStoredType::MagnumVec3);
-    return v;
-  }
-  auto getQuat() const {
-    getterTypeCheck(ConfigStoredType::MagnumQuat);
-    return q;
-  }
-  auto getRad() const {
-    getterTypeCheck(ConfigStoredType::MagnumRad);
-    return r;
-  }
+  template <class T>
+  const T& get() const;
 
   /**
    * @brief Returns the current type of this @ref ConfigValue
    */
-  ConfigStoredType getType() const { return type; }
+  ConfigStoredType getType() const { return _type; }
 
   /**
    * @brief Retrieve a string representation of the data held in this @ref
@@ -141,31 +152,21 @@ class ConfigValue {
    * @brief Compare the type of this @ref ConfigValue with the passed type.
    */
   bool compareType(const ConfigStoredType& checkType) const {
-    return (type == checkType);
+    return (_type == checkType);
   }
 
   /**
    * @brief Copy this @ref ConfigValue into the passed @ref
-   * Corrade::Utility::ConfigurationGroup
+   * Cr::Utility::ConfigurationGroup
    */
   bool putValueInConfigGroup(const std::string& key,
-                             Corrade::Utility::ConfigurationGroup& cfg) const;
-
- protected:
-  /**
-   * @brief check current Type against passed (Desired) type.  Return if they
-   * are equal; destroy if current type is not trivially destructible.
-   */
-  bool checkTypeAndDest(const ConfigStoredType& checkType);
-
-  /**
-   * @brief verify type being queried is actual type of object
-   */
-  void getterTypeCheck(const ConfigStoredType& checkType) const;
+                             Cr::Utility::ConfigurationGroup& cfg) const;
 
  public:
   ESP_SMART_POINTERS(ConfigValue)
 };  // ConfigValue
+
+MAGNUM_EXPORT Mn::Debug& operator<<(Mn::Debug& debug, const ConfigValue value);
 
 /**
  * @brief This class holds configuration data in a map of ConfigValues, and also
@@ -191,7 +192,7 @@ class Configuration {
   // ****************** Getters ******************
   bool getBool(const std::string& key) const {
     if (checkMapForKeyAndType(key, ConfigStoredType::Boolean)) {
-      return valueMap_.at(key).getBool();
+      return valueMap_.at(key).get<bool>();
     }
     ESP_ERROR() << "Key :" << key << "not present in configuration as boolean";
     return {};
@@ -199,49 +200,48 @@ class Configuration {
 
   double getDouble(const std::string& key) const {
     if (checkMapForKeyAndType(key, ConfigStoredType::Double)) {
-      return valueMap_.at(key).getDouble();
+      return valueMap_.at(key).get<double>();
     }
     ESP_ERROR() << "Key :" << key << "not present in configuration as double";
     return {};
   }
   int getInt(const std::string& key) const {
     if (checkMapForKeyAndType(key, ConfigStoredType::Integer)) {
-      return valueMap_.at(key).getInt();
+      return valueMap_.at(key).get<int>();
     }
     ESP_ERROR() << "Key :" << key << "not present in configuration as integer";
     return {};
   }
   std::string getString(const std::string& key) const {
     if (checkMapForKeyAndType(key, ConfigStoredType::String)) {
-      return valueMap_.at(key).getString();
+      return valueMap_.at(key).get<std::string>();
     }
     ESP_ERROR() << "Key :" << key
                 << "not present in configuration as std::string";
     return {};
   }
 
-  Magnum::Vector3 getVec3(const std::string& key) const {
+  Mn::Vector3 getVec3(const std::string& key) const {
     if (checkMapForKeyAndType(key, ConfigStoredType::MagnumVec3)) {
-      return valueMap_.at(key).getVec3();
+      return valueMap_.at(key).get<Mn::Vector3>();
     }
     ESP_ERROR() << "Key :" << key
-                << "not present in configuration as Magnum::Vector3";
+                << "not present in configuration as Mn::Vector3";
     return {};
   }
-  Magnum::Quaternion getQuat(const std::string& key) const {
+  Mn::Quaternion getQuat(const std::string& key) const {
     if (checkMapForKeyAndType(key, ConfigStoredType::MagnumQuat)) {
-      return valueMap_.at(key).getQuat();
+      return valueMap_.at(key).get<Mn::Quaternion>();
     }
     ESP_ERROR() << "Key :" << key
-                << "not present in configuration as Magnum::Quaternion";
+                << "not present in configuration as Mn::Quaternion";
     return {};
   }
-  Magnum::Rad getRad(const std::string& key) const {
+  Mn::Rad getRad(const std::string& key) const {
     if (checkMapForKeyAndType(key, ConfigStoredType::MagnumRad)) {
-      return valueMap_.at(key).getRad();
+      return valueMap_.at(key).get<Mn::Rad>();
     }
-    ESP_ERROR() << "Key :" << key
-                << "not present in configuration as Magnum::Rad";
+    ESP_ERROR() << "Key :" << key << "not present in configuration as Mn::Rad";
     return {};
   }
 
@@ -313,12 +313,7 @@ class Configuration {
   // ****************** Setters ******************
   template <typename T>
   void set(const std::string& key, T value) {
-    bool success = valueMap_[key].set(value);
-    if (!success) {
-      ESP_ERROR() << "Unknown/Unsupported type :" << typeid(T).name()
-                  << "for Key :" << key;
-      valueMap_.erase(key);
-    }
+    valueMap_[key].set(value);
   }
 
   // ****************** Value removal ******************
@@ -330,7 +325,7 @@ class Configuration {
 
   bool removeBool(const std::string& key) {
     if (checkMapForKeyAndType(key, ConfigStoredType::Boolean)) {
-      bool v = valueMap_.at(key).getBool();
+      bool v = valueMap_.at(key).get<bool>();
       valueMap_.erase(key);
       return v;
     }
@@ -341,7 +336,7 @@ class Configuration {
 
   double removeDouble(const std::string& key) {
     if (checkMapForKeyAndType(key, ConfigStoredType::Double)) {
-      double v = valueMap_.at(key).getDouble();
+      double v = valueMap_.at(key).get<double>();
       valueMap_.erase(key);
       return v;
     }
@@ -350,7 +345,7 @@ class Configuration {
   }
   int removeInt(const std::string& key) {
     if (checkMapForKeyAndType(key, ConfigStoredType::Integer)) {
-      int v = valueMap_.at(key).getInt();
+      int v = valueMap_.at(key).get<int>();
       valueMap_.erase(key);
       return v;
     }
@@ -360,7 +355,7 @@ class Configuration {
   }
   std::string removeString(const std::string& key) {
     if (checkMapForKeyAndType(key, ConfigStoredType::String)) {
-      std::string v = valueMap_.at(key).getString();
+      std::string v = valueMap_.at(key).get<std::string>();
       valueMap_.erase(key);
       return v;
     }
@@ -369,34 +364,34 @@ class Configuration {
     return {};
   }
 
-  Magnum::Vector3 removeVec3(const std::string& key) {
+  Mn::Vector3 removeVec3(const std::string& key) {
     if (checkMapForKeyAndType(key, ConfigStoredType::MagnumVec3)) {
-      Magnum::Vector3 v = valueMap_.at(key).getVec3();
+      Mn::Vector3 v = valueMap_.at(key).get<Mn::Vector3>();
       valueMap_.erase(key);
       return v;
     }
     ESP_WARNING() << "Key :" << key
-                  << "not present in configuration as Magnum::Vector3";
+                  << "not present in configuration as Mn::Vector3";
     return {};
   }
-  Magnum::Quaternion removeQuat(const std::string& key) {
+  Mn::Quaternion removeQuat(const std::string& key) {
     if (checkMapForKeyAndType(key, ConfigStoredType::MagnumQuat)) {
-      Magnum::Quaternion v = valueMap_.at(key).getQuat();
+      Mn::Quaternion v = valueMap_.at(key).get<Mn::Quaternion>();
       valueMap_.erase(key);
       return v;
     }
     ESP_WARNING() << "Key :" << key
-                  << "not present in configuration as Magnum::Quaternion";
+                  << "not present in configuration as Mn::Quaternion";
     return {};
   }
-  Magnum::Rad removeRad(const std::string& key) {
+  Mn::Rad removeRad(const std::string& key) {
     if (checkMapForKeyAndType(key, ConfigStoredType::MagnumRad)) {
-      Magnum::Rad v = valueMap_.at(key).getRad();
+      Mn::Rad v = valueMap_.at(key).get<Mn::Rad>();
       valueMap_.erase(key);
       return v;
     }
     ESP_WARNING() << "Key :" << key
-                  << "not present in configuration as Magnum::Rad";
+                  << "not present in configuration as Mn::Rad";
     return {};
   }
 
@@ -516,14 +511,14 @@ class Configuration {
   }
 
   /**
-   * @brief Builds and returns @ref Corrade::Utility::ConfigurationGroup
+   * @brief Builds and returns @ref Cr::Utility::ConfigurationGroup
    * holding the values in this esp::core::Configuration.
    *
    * @return a reference to a configuration group for this configuration
    * object.
    */
-  Corrade::Utility::ConfigurationGroup getConfigGroup() const {
-    Corrade::Utility::ConfigurationGroup cfg{};
+  Cr::Utility::ConfigurationGroup getConfigGroup() const {
+    Cr::Utility::ConfigurationGroup cfg{};
     putAllValuesInConfigGroup(cfg);
     return cfg;
   }
@@ -616,8 +611,7 @@ class Configuration {
    * @brief Populate the passed cfg with all the values this map holds, along
    * with the values any subgroups/sub-Configs it may hold
    */
-  void putAllValuesInConfigGroup(
-      Corrade::Utility::ConfigurationGroup& cfg) const {
+  void putAllValuesInConfigGroup(Cr::Utility::ConfigurationGroup& cfg) const {
     // put tagged union values in map
     for (const auto& entry : valueMap_) {
       entry.second.putValueInConfigGroup(entry.first, cfg);
@@ -637,10 +631,14 @@ class Configuration {
    * @return whether a group was made or not
    */
   bool makeNewSubgroup(const std::string& name) {
-    if (configMap_.count(name) > 0) {
+    // Attempt to insert an empty pointer
+    auto result = configMap_.insert({name, std::shared_ptr<Configuration>{}});
+    // If name already present, nothing inserted
+    if (!result.second) {
       return false;
     }
-    configMap_[name] = std::make_shared<Configuration>();
+    // Not present yet, fill it with an actual instance
+    result.first->second = std::make_shared<Configuration>();
     return true;
   }
 
@@ -651,8 +649,9 @@ class Configuration {
   std::unordered_map<std::string, ConfigValue> valueMap_{};
 
   ESP_SMART_POINTERS(Configuration)
-};  // namespace core
+};  // class Configuration
 
+}  // namespace config
 }  // namespace core
 }  // namespace esp
 

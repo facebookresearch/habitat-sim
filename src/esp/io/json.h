@@ -64,7 +64,7 @@ esp::vec3f jsonToVec3f(const JsonGenericValue& jsonArray);
  */
 int loadJsonIntoConfiguration(
     const JsonGenericValue& jsonObj,
-    const std::shared_ptr<esp::core::Configuration>& configPtr);
+    const std::shared_ptr<esp::core::config::Configuration>& configPtr);
 
 /**
  * @brief Check passed json doc for existence of passed jsonTag as value of

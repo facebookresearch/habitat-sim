@@ -402,7 +402,7 @@ bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
     } else {
       const std::string subGroupName = "user_defined";
       // get pointer to user_defined subgroup configuration
-      std::shared_ptr<core::Configuration> subGroupPtr =
+      std::shared_ptr<core::config::Configuration> subGroupPtr =
           attribs->getUserConfiguration();
       // get json object referenced by tag subGroupName
       const io::JsonGenericValue& jsonObj = jsonConfig[subGroupName.c_str()];

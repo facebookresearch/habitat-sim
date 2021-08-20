@@ -12,6 +12,7 @@ using esp::logging::LoggingContext;
 
 namespace esp {
 namespace core {
+namespace config {
 
 void initCoreBindings(py::module& m) {
   py::enum_<ConfigStoredType>(m, "ConfigStoredType")
@@ -240,6 +241,7 @@ void initCoreBindings(py::module& m) {
   core.attr("_logging_context") = new LoggingContext{};
 }
 
+}  // namespace config
 }  // namespace core
 
 }  // namespace esp
