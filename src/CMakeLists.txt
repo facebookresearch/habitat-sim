@@ -118,14 +118,21 @@ else()
   set(_rpath_portable_origin $ORIGIN)
 endif(APPLE)
 set(CMAKE_SKIP_BUILD_RPATH FALSE)
-set(CMAKE_BUILD_WITH_INSTALL_RPATH REL_BUILD_RPATH)
-set(CMAKE_INSTALL_RPATH_USE_LINK_PATH REL_BUILD_RPATH)
-# Set Install RPath to relative for Python bindings
-# RPATH needs to find corrade.so, magnum.so and habitat_sim/ext/*.so
-set(CMAKE_INSTALL_RPATH
-    "${_rpath_portable_origin}" "${_rpath_portable_origin}/habitat_sim/_ext/"
-    "${_rpath_portable_origin}../../../.."
-)
+if(REL_BUILD_RPATH)
+  set(CMAKE_BUILD_WITH_INSTALL_RPATH REL_BUILD_RPATH)
+  set(CMAKE_INSTALL_RPATH_USE_LINK_PATH REL_BUILD_RPATH)
+  # Set Install RPath to relative for Python bindings
+  # RPATH needs to find corrade.so, magnum.so and habitat_sim/ext/*.so
+  set(CMAKE_INSTALL_RPATH
+      "${_rpath_portable_origin}" "${_rpath_portable_origin}/habitat_sim/_ext/"
+      "${_rpath_portable_origin}../../../.."
+  )
+else()
+  # Set to defaults
+  set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+  set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
+  set(CMAKE_INSTALL_RPATH "")
+endif()
 
 # ---[ Dependencies
 include(cmake/dependencies.cmake)
