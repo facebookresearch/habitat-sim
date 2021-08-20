@@ -123,4 +123,5 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   esp::physics::initPhysicsObjectBindings(m);
   esp::physics::initPhysicsWrapperManagerBindings(m);
   esp::sim::initSimBindings(m);
+  esp::batched_sim::initBatchedSimBindings(m);
 }

@@ -69,13 +69,15 @@ class BatchedSimulator {
   void stepPhysics();
   void startRender();
   void waitForFrame();
-  bps3D::Renderer* debugGetBpsRenderer();
+  bps3D::Renderer& getBpsRenderer();
 
  private:
   Robot robot_;
   SimInstanceSet simInstances_;
   std::unique_ptr<esp::sim::Simulator> legacySim_;
   std::unique_ptr<BpsWrapper> bpsWrapper_;
+
+  ESP_SMART_POINTERS(BatchedSimulator)
 };
 
 }  // namespace batched_sim

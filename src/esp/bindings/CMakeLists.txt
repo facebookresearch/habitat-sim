@@ -1,5 +1,8 @@
 find_package(MagnumBindings REQUIRED Python)
 
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED 17)
+
 pybind11_add_module(
   habitat_sim_bindings
   bindings.h
@@ -19,6 +22,7 @@ pybind11_add_module(
   SensorBindings.cpp
   ShortestPathBindings.cpp
   SimBindings.cpp
+  BatchedSimBindings.cpp
 )
 target_link_libraries(
   habitat_sim_bindings
@@ -32,6 +36,7 @@ target_link_libraries(
          sensor
          physics
          sim
+         batched_sim
 )
 
 # target_include_directories(environment

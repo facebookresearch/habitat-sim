@@ -59,6 +59,10 @@ namespace sim {
 void initSimBindings(pybind11::module& m);
 }
 
+namespace batched_sim {
+void initBatchedSimBindings(pybind11::module& m);
+}
+
 }  // namespace esp
 
 #endif  // ESP_BINDINGS_BINDINGS_H_

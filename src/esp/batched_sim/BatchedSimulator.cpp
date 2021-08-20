@@ -185,6 +185,7 @@ void RobotInstanceSet::updateLinkTransforms() {
       }
     }
 
+#if 0
     if (b == 0) {
       std::ostringstream ss;
       auto* mb = robot_->artObj->btMultiBody_.get();
@@ -236,6 +237,7 @@ void RobotInstanceSet::updateLinkTransforms() {
       ss << "\n";
       LOG(WARNING) << ss.str();
     }
+#endif
   }
 
   {
@@ -290,7 +292,7 @@ Robot::Robot(const std::string& filepath, esp::sim::Simulator* sim) {
 }
 
 BpsWrapper::BpsWrapper() {
-  uint32_t batch_size = 11;
+  uint32_t batch_size = 11;  // todo: get from python
   glm::u32vec2 out_dim(1024, 1024);
 
   renderer_ = std::make_unique<bps3D::Renderer>(bps3D::RenderConfig{
@@ -351,15 +353,26 @@ void BatchedSimulator::stepPhysics() {
 
   // todo: animate over time
 
+  static float animTime = 0.f;
+  animTime += 0.1f;
+
+  Mn::Vector3 animBaseTranslationOffset{animTime * 0.2, 0.f,
+                                        0.f};      // translate at 0.2 m/s
+  float animBaseRotationOffset = animTime * 90.f;  // rotate at 90 deg/s
+  // move from -0.2 to 0.2 with period = 1s
+  float animJointPosOffset = Mn::Math::sin(Mn::Deg(animTime * 360.f)) * 0.2f;
+
   // stepping code
   for (int b = 0; b < batchSize; b++) {
     simInstances_.robots.rootTransforms_[b] =
-        Mn::Matrix4::translation({1.61, 0.0, 0.98}) *
-        Mn::Matrix4::rotation(Mn::Deg(-b * 10.f), {0.f, 1.f, 0.f}) *
+        Mn::Matrix4::translation(Mn::Vector3{1.61, 0.0, 0.98} +
+                                 animBaseTranslationOffset) *
+        Mn::Matrix4::rotation(Mn::Deg(-b * 10.f + animBaseRotationOffset),
+                              {0.f, 1.f, 0.f}) *
         Mn::Matrix4::rotation(Mn::Deg(-90.f), {1.f, 0.f, 0.f});
 
     int baseJointIndex = b * robot_.numPosVars;
-    float jointPos = b * 0.05;
+    float jointPos = b * 0.05 + animJointPosOffset;
     for (int j = 0; j < robot_.numPosVars; j++) {
       simInstances_.robots.jointPositions_[baseJointIndex + j] = jointPos;
     }
@@ -376,8 +389,9 @@ void BatchedSimulator::waitForFrame() {
   bpsWrapper_->renderer_->waitForFrame();
 }
 
-bps3D::Renderer* BatchedSimulator::debugGetBpsRenderer() {
-  return bpsWrapper_->renderer_.get();
+bps3D::Renderer& BatchedSimulator::getBpsRenderer() {
+  CORRADE_INTERNAL_ASSERT(bpsWrapper_->renderer_.get());
+  return *bpsWrapper_->renderer_.get();
 }
 
 }  // namespace batched_sim

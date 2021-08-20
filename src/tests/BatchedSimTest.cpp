@@ -2,17 +2,14 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include <gtest/gtest.h>
-
 #include "esp/batched_sim/BatchedSimulator.h"
 #include "esp/batched_sim/BpsSceneMapping.h"
 #include "esp/batched_sim/GlmUtils.h"
 
-#include <glm/gtx/transform.hpp>
-
 #include <cuda_runtime.h>
-
+#include <gtest/gtest.h>
 #include <bps3D.hpp>
+#include <glm/gtx/transform.hpp>
 
 // FIXME
 // #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -77,8 +74,8 @@ TEST_F(BatchedSimulatorTest, basic) {
   bsim.startRender();
   bsim.waitForFrame();
 
-  uint8_t* base_color_ptr = bsim.debugGetBpsRenderer()->getColorPointer();
-  float* base_depth_ptr = bsim.debugGetBpsRenderer()->getDepthPointer();
+  uint8_t* base_color_ptr = bsim.getBpsRenderer().getColorPointer();
+  float* base_depth_ptr = bsim.getBpsRenderer().getDepthPointer();
 
   // temp hack copied from BpsWrapper internals
   uint32_t batch_size = 11;
