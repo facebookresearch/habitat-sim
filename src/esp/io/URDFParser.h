@@ -522,6 +522,8 @@ class Parser {
   bool parseURDF(std::shared_ptr<Model>& model,
                  const std::string& meshFilename);
 
+  bool doCheckMeshFilesExist = true;
+
   // This is no longer used, instead set the urdf and physics subsystem to
   // veryverbose, i.e. export HABITAT_SIM_LOG="urdf,physics=veryverbose" bool
   // logMessages = false;

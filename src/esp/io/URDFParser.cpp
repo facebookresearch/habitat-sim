@@ -818,7 +818,9 @@ bool Parser::validateMeshFile(std::string& meshFilename) {
 
   bool meshSuccess = false;
   // defer asset loading to instancing time. Check asset file existence here.
-  meshSuccess = Corrade::Utility::Directory::exists(meshFilePath);
+  meshSuccess = doCheckMeshFilesExist
+                    ? Corrade::Utility::Directory::exists(meshFilePath)
+                    : true;
 
   if (meshSuccess) {
     // modify the meshFilename to full filepath to enable access into
