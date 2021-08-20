@@ -55,7 +55,7 @@ if [ "$(uname)" == "Darwin" ]; then
   install_name_tool -add_rpath @loader_path/../"${ext_folder}" bin/habitat-viewer
 
 
-  find "$(dirname "${hsim_bindings}")" -name "*Corrade*dylib" -print0 | xargs -I {} install_name_tool -add_rpath @loader_path {}
+  #find "$(dirname "${hsim_bindings}")" -name "*Corrade*dylib" -print0 | xargs -I {} install_name_tool -add_rpath @loader_path {}
 
 
   pushd "$(find . -name "corrade" -type d)" || exit
