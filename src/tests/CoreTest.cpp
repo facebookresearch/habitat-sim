@@ -7,7 +7,7 @@
 #include "esp/core/Configuration.h"
 #include "esp/core/esp.h"
 
-using namespace esp::core;
+using namespace esp::core::config;
 
 TEST(CoreTest, ConfigurationTest) {
   Configuration cfg;

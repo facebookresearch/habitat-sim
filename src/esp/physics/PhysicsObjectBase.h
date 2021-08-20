@@ -424,7 +424,9 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    */
   virtual std::vector<scene::SceneNode*> getVisualSceneNodes() const = 0;
 
-  core::Configuration::ptr getUserAttributes() const { return userAttributes_; }
+  core::config::Configuration::ptr getUserAttributes() const {
+    return userAttributes_;
+  }
 
   /**
    * @brief This function will overwrite this object's existing user-defined
@@ -432,7 +434,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    * @param attr A ptr to the user defined attributes specified for this object.
    * merge into them.
    */
-  void setUserAttributes(core::Configuration::ptr attr) {
+  void setUserAttributes(core::config::Configuration::ptr attr) {
     userAttributes_ = std::move(attr);
   }
 
@@ -501,7 +503,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    * internally processed by habitat, but provide a "scratch pad" for the user
    * to access and save important information and metadata.
    */
-  core::Configuration::ptr userAttributes_{};
+  core::config::Configuration::ptr userAttributes_{};
 
  private:
   /**

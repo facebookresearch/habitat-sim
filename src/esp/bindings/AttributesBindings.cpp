@@ -51,7 +51,7 @@ void initAttributesBindings(py::module& m) {
 
   // ==== AbstractAttributes ====
   py::class_<AbstractAttributes, esp::core::AbstractFileBasedManagedObject,
-             esp::core::Configuration, AbstractAttributes::ptr>(
+             esp::core::config::Configuration, AbstractAttributes::ptr>(
       m, "AbstractAttributes")
       .def(py::init(
           &AbstractAttributes::create<const std::string&, const std::string&>))

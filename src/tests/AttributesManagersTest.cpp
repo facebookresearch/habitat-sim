@@ -350,7 +350,7 @@ class AttributesManagersTest : public testing::Test {
    * component in the first position and the scalar in the second.
    */
   void testUserDefinedConfigVals(
-      std::shared_ptr<esp::core::Configuration> userConfig,
+      std::shared_ptr<esp::core::config::Configuration> userConfig,
       const std::string& str_val,
       bool bool_val,
       int int_val,

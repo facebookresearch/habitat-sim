@@ -5,6 +5,7 @@
 #include "Configuration.h"
 #include <Corrade/Utility/Debug.h>
 #include <Corrade/Utility/FormatStl.h>
+#include <Magnum/Math/ConfigurationValue.h>
 #include "esp/core/Check.h"
 
 namespace Cr = Corrade;
@@ -14,31 +15,34 @@ namespace esp {
 namespace core {
 namespace config {
 
+namespace {
+
+// free functions for non-trivial types control.
+template <class T>
+void copyConstructorFunc(const char* src, char* dst) {
+  new (dst) T{*reinterpret_cast<const T*>(src)};
+}
+template <class T>
+void moveConstructorFunc(char* src, char* dst) {
+  new (dst) T{std::move(*reinterpret_cast<T*>(src))};
+}
+template <class T>
+void destructorFunc(char* src) {
+  reinterpret_cast<T*>(src)->~T();
+}
+
 struct NonTrivialTypeHandler {
-  // void (*copier)(const char*, char*);
-  // void (*mover)(char*, char*);
-  // void (*destructor)(char*);
-
-  template <class T>
-  void copier(const char* src, char* dst) {
-    *reinterpret_cast<T*>(dst) = *reinterpret_cast<const T*>(src);
-  }
-
-  template <class T>
-  void mover(char* src, char* dst) {
-    *reinterpret_cast<T*>(dst) = std::move(*reinterpret_cast<T*>(src));
-  }
-  template <class T>
-  void destructor(char* src) {
-    reinterpret_cast<T*>(src)->~T();
-  }
+  void (*copier)(const char*, char*);
+  void (*mover)(char*, char*);
+  void (*destructor)(char*);
 
   template <class T>
   static constexpr NonTrivialTypeHandler make() {
-    return {copier<T>, mover<T>, destructor<T>};
+    return {copyConstructorFunc<T>, moveConstructorFunc<T>, destructorFunc<T>};
   }
 };
 
+}  // namespace
 constexpr NonTrivialTypeHandler nonTrivialTypeHandlers[]{
     NonTrivialTypeHandler::make<std::string>()};
 
@@ -86,37 +90,37 @@ void ConfigValue::deleteCurrentValue(const std::string& src) {
     nonTrivialConfigStoredTypeHandlerFor(_type).destructor(_data);
 }
 
-template <class T>
-void ConfigValue::set(const T& value) {
-  // this never fails, not a bool anymore
-  deleteCurrentValue("Setter");
-  // this will blow up at compile time if such type is not supported
-  _type = configStoredTypeFor<T>();
-  // see later
-  static_assert(isConfigStoredTypeNonTrivial(configStoredTypeFor<T>) !=
-                    std::is_trivially_copyable<T>::value,
-                "something's off!");
-  // this will blow up if we added new larger types but forgot to update the
-  // storage
-  static_assert(sizeof(T) > sizeof(_data), "internal storage too small");
-  static_assert(alignof(T) > alignof(_data), "internal storage too unaligned");
-  // _data should be destructed at this point, construct a new value
-  new (_data) T{value};
-}
+// template <class T>
+// void ConfigValue::set(const T& value) {
+//   // this never fails, not a bool anymore
+//   deleteCurrentValue("Setter");
+//   // this will blow up at compile time if such type is not supported
+//   _type = configStoredTypeFor<T>();
+//   // see later
+//   static_assert(isConfigStoredTypeNonTrivial(configStoredTypeFor<T>()) !=
+//                     std::is_trivially_copyable<T>::value,
+//                 "something's off!");
+//   // this will blow up if we added new larger types but forgot to update the
+//   // storage
+//   static_assert(sizeof(T) > sizeof(_data), "internal storage too small");
+//   // static_assert(alignof(T) > alignof(_data), "internal storage too
+//   // unaligned");
+//   // _data should be destructed at this point, construct a new value
+//   new (_data) T{value};
+// }
 
-template <class T>
-const T& ConfigValue::get() const {
-  ESP_CHECK(_type == configStoredTypeFor<T>(),
-            "Attempting to access ConfigValue of" << _type << "with"
-                                                  << configStoredTypeFor<T>());
-  return *reinterpret_cast<const T*>(_data);
-}
+// template <class T>
+// T ConfigValue::get() const {
+//   // ESP_CHECK(_type == configStoredTypeFor<T>(),
+//   //           "Attempting to access ConfigValue of" << _type << "with"
+//   //                                                 <<
+//   // configStoredTypeFor<T>()); return *reinterpret_cast<const T*>(_data);
+// }
 
 ConfigValue& ConfigValue::operator=(const ConfigValue& otr) {
   // if current value is string, magnum vector, magnum quat or magnum rad
-  if (_type != otr._type) {
-    deleteCurrentValue("assignment operator");
-  }
+  deleteCurrentValue("assignment operator");
+
   copyValueInto(otr, "assignment operator");
 
   return *this;
@@ -124,9 +128,7 @@ ConfigValue& ConfigValue::operator=(const ConfigValue& otr) {
 
 ConfigValue& ConfigValue::operator=(ConfigValue&& otr) {
   // if current value is string, magnum vector, magnum quat or magnum rad
-  if (_type != otr._type) {
-    deleteCurrentValue("move assignment operator");
-  }
+  deleteCurrentValue("move assignment operator");
   moveValueInto(std::move(otr), "move assignment operator");
 
   return *this;

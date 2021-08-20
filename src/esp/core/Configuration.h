@@ -42,44 +42,46 @@ enum class ConfigStoredType {
 /**
  * @brief Quick check to see if type is trivial or not
  */
-bool isConfigStoredTypeNonTrivial(ConfigStoredType type) {
-  return int(type) >= int(ConfigStoredType::_nonTrivialTypes);
+constexpr bool isConfigStoredTypeNonTrivial(ConfigStoredType type) {
+  return static_cast<int>(type) >=
+         static_cast<int>(ConfigStoredType::_nonTrivialTypes);
 }
 
 /**
  * @brief Function template to return type enum for specified type
  */
 template <class T>
-ConfigStoredType configStoredTypeFor() {
+constexpr ConfigStoredType configStoredTypeFor() {
   static_assert(sizeof(T) == 0, "unsupported type ");
   return {};
 }
+
 template <>
-ConfigStoredType configStoredTypeFor<bool>() {
+constexpr ConfigStoredType configStoredTypeFor<bool>() {
   return ConfigStoredType::Boolean;
 }
 template <>
-ConfigStoredType configStoredTypeFor<int>() {
+constexpr ConfigStoredType configStoredTypeFor<int>() {
   return ConfigStoredType::Integer;
 }
 template <>
-ConfigStoredType configStoredTypeFor<double>() {
+constexpr ConfigStoredType configStoredTypeFor<double>() {
   return ConfigStoredType::Double;
 }
 template <>
-ConfigStoredType configStoredTypeFor<std::string>() {
+constexpr ConfigStoredType configStoredTypeFor<std::string>() {
   return ConfigStoredType::String;
 }
 template <>
-ConfigStoredType configStoredTypeFor<Mn::Vector3>() {
+constexpr ConfigStoredType configStoredTypeFor<Mn::Vector3>() {
   return ConfigStoredType::MagnumVec3;
 }
 template <>
-ConfigStoredType configStoredTypeFor<Mn::Quaternion>() {
+constexpr ConfigStoredType configStoredTypeFor<Mn::Quaternion>() {
   return ConfigStoredType::MagnumQuat;
 }
 template <>
-ConfigStoredType configStoredTypeFor<Mn::Rad>() {
+constexpr ConfigStoredType configStoredTypeFor<Mn::Rad>() {
   return ConfigStoredType::MagnumRad;
 }
 
@@ -98,7 +100,7 @@ class ConfigValue {
    * @brief The data this ConfigValue holds - four floats at most, doubles and
    * 64bit pointers need 8-byte alignment
    */
-  alignas(8) char _data[4 * 4];
+  alignas(sizeof(void*) * 2) char _data[4 * 8];
 
   /**
    * @brief Copy the passed @p val into this ConfigValue.
@@ -121,7 +123,7 @@ class ConfigValue {
   void deleteCurrentValue(const std::string& src);
 
  public:
-  ConfigValue() : _data{0} {}
+  ConfigValue() = default;
   ConfigValue(const ConfigValue& otr);
   ConfigValue(ConfigValue&& otr);
   ~ConfigValue();
@@ -132,10 +134,33 @@ class ConfigValue {
   bool isValid() const { return _type != ConfigStoredType::Unknown; }
 
   template <class T>
-  void set(const T& value);
+  void set(const T& value) {
+    // this never fails, not a bool anymore
+    deleteCurrentValue("Setter");
+    // this will blow up at compile time if such type is not supported
+    _type = configStoredTypeFor<T>();
+    // see later
+    static_assert(isConfigStoredTypeNonTrivial(configStoredTypeFor<T>()) !=
+                      std::is_trivially_copyable<T>::value,
+                  "something's off!");
+    // this will blow up if we added new larger types but forgot to update the
+    // storage
+    static_assert(sizeof(T) <= sizeof(_data), "internal storage too small");
+    static_assert(alignof(T) <= alignof(ConfigValue),
+                  "internal storage too unaligned");
+
+    //_data should be destructed at this point, construct a new value
+    new (_data) T{value};
+  }
 
   template <class T>
-  const T& get() const;
+  const T& get() const {
+    // ESP_CHECK(_type == configStoredTypeFor<T>(),
+    //           "Attempting to access ConfigValue of" << _type << "with"
+    //                                                 <<
+    //                                                 configStoredTypeFor<T>());
+    return *reinterpret_cast<const T*>(_data);
+  }
 
   /**
    * @brief Returns the current type of this @ref ConfigValue
@@ -312,8 +337,11 @@ class Configuration {
 
   // ****************** Setters ******************
   template <typename T>
-  void set(const std::string& key, T value) {
-    valueMap_[key].set(value);
+  void set(const std::string& key, const T& value) {
+    valueMap_[key].set<T>(value);
+  }
+  void set(const std::string& key, const char* value) {
+    valueMap_[key].set<std::string>(std::string(value));
   }
 
   // ****************** Value removal ******************
