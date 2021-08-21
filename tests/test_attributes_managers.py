@@ -98,6 +98,13 @@ def perform_general_tests(attr_mgr, search_string):
         tmplt_id = attr_mgr.register_template(template3, new_iter_handle)
         assert tmplt_id != -1
 
+    # retrieve a dictionary of all templates that were
+    # just created, using search on handle stub substring
+    new_template_dict = attr_mgr.get_templates_by_handle_substring(new_handle_stub)
+    assert len(new_template_dict) == num_to_add
+    for k, v in new_template_dict.items():
+        assert k == v.handle
+
     # lock all added templates
     locked_template_handles = attr_mgr.set_lock_by_substring(
         True, new_handle_stub, True

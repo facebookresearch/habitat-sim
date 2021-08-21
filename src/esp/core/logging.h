@@ -21,8 +21,8 @@ namespace logging {
  *
  * These are all subsystems that have different logging levels. They correspond
  * to namespaces.  When adding a new subsystem, make sure to add an appropriate
- * loggingSubsystem function (see the ADD_SUBSYSTEM_FN helper bellow) and add it
- * to @ref subsystemNames.
+ * loggingSubsystem function (see the @ref ESP_ADD_SUBSYSTEM_FN helper bellow)
+ * and add it to @ref subsystemNames.
  */
 enum class Subsystem : uint8_t {
   /**
@@ -38,6 +38,10 @@ enum class Subsystem : uint8_t {
   geo,
   io,
   URDF,
+  core,
+  assets,
+  sensor,
+  agent,
 
   /**
    * @brief Not a subsystem.  Simply tracks how many subsystems there are.
@@ -47,9 +51,10 @@ enum class Subsystem : uint8_t {
   NumSubsystems,
 };
 
-constexpr const char* subsystemNames[] = {"Default", "Gfx", "Scene",    "Sim",
-                                          "Physics", "Nav", "Metadata", "Geo",
-                                          "IO",      "URDF"};
+constexpr const char* subsystemNames[] = {
+    "Default", "Gfx", "Scene", "Sim",  "Physics", "Nav",    "Metadata",
+    "Geo",     "IO",  "URDF",  "Core", "Assets",  "Sensor", "Agent",
+};
 
 Subsystem subsystemFromName(Corrade::Containers::StringView name);
 
@@ -71,7 +76,12 @@ inline esp::logging::Subsystem espLoggingSubsystem() {
   return esp::logging::Subsystem::Default;
 }
 
-#define ADD_SUBSYSTEM_FN(subsystemName)             \
+/**
+ * @brief Helper macro to add functions for determining the current subsystem.
+ *
+ * This macro assumes that the namespace for a subsystem is esp::<subsystemName>
+ */
+#define ESP_ADD_SUBSYSTEM_FN(subsystemName)         \
   namespace esp {                                   \
   namespace subsystemName {                         \
   inline logging::Subsystem espLoggingSubsystem() { \
@@ -80,14 +90,18 @@ inline esp::logging::Subsystem espLoggingSubsystem() {
   }                                                 \
   }
 
-ADD_SUBSYSTEM_FN(gfx)
-ADD_SUBSYSTEM_FN(scene)
-ADD_SUBSYSTEM_FN(sim)
-ADD_SUBSYSTEM_FN(physics)
-ADD_SUBSYSTEM_FN(nav)
-ADD_SUBSYSTEM_FN(metadata)
-ADD_SUBSYSTEM_FN(geo)
-ADD_SUBSYSTEM_FN(io)
+ESP_ADD_SUBSYSTEM_FN(gfx)
+ESP_ADD_SUBSYSTEM_FN(scene)
+ESP_ADD_SUBSYSTEM_FN(sim)
+ESP_ADD_SUBSYSTEM_FN(physics)
+ESP_ADD_SUBSYSTEM_FN(nav)
+ESP_ADD_SUBSYSTEM_FN(metadata)
+ESP_ADD_SUBSYSTEM_FN(geo)
+ESP_ADD_SUBSYSTEM_FN(io)
+ESP_ADD_SUBSYSTEM_FN(core)
+ESP_ADD_SUBSYSTEM_FN(assets)
+ESP_ADD_SUBSYSTEM_FN(sensor)
+ESP_ADD_SUBSYSTEM_FN(agent)
 
 namespace esp {
 namespace io {
@@ -160,23 +174,10 @@ class LoggingContext {
   LoggingContext();
 
   /**
-   * @brief Constructor
+   * @brief Constructor.
    *
-   * @param[in] envString Configuration string. See @ref processEnvString for
-   * details
-   */
-  explicit LoggingContext(Corrade::Containers::StringView envString);
-
-  ~LoggingContext();
-
-  LoggingContext(LoggingContext&&) = delete;
-  LoggingContext(LoggingContext&) = delete;
-  LoggingContext& operator=(LoggingContext&) = delete;
-  LoggingContext& operator=(LoggingContext&&) = delete;
-
-  /**
-   * @brief Processes the environment variable string that configures the
-   * habitat-sim logging levels for various subsystems
+   * Processes the environment variable string that configures the habitat-sim
+   * logging levels for various subsystems
    *
    * This environment string has a fairly simple grammar that is as follows
    *
@@ -193,15 +194,18 @@ class LoggingContext {
    * A logging statement is printed if it's logging level has a higher or equal
    * priority to the current logging level for it's subsystem.  verbose is the
    * lowest level. quiet disables debug and warnings.
+   *
+   * @param[in] envString Configuration string. See @ref processEnvString for
+   * details
    */
-  void processEnvString(Corrade::Containers::StringView envString);
+  explicit LoggingContext(Corrade::Containers::StringView envString);
 
-  /**
-   * @brief Retrieves the configuration string from the environment variable
-   * and reconfigures levels.  Useful for allowing the environment variable
-   * to be changed after module level initialization.
-   */
-  void reinitializeFromEnv();
+  ~LoggingContext();
+
+  LoggingContext(LoggingContext&&) = delete;
+  LoggingContext(LoggingContext&) = delete;
+  LoggingContext& operator=(LoggingContext&) = delete;
+  LoggingContext& operator=(LoggingContext&&) = delete;
 
   /**
    * @brief Retrieves the logging level for the given subsystem
@@ -217,11 +221,11 @@ class LoggingContext {
    * @brief Retrieves the current logging context.  Throws an error if there
    * isn't one.
    */
-  static LoggingContext& current();
+  static const LoggingContext& current();
 
  private:
   Corrade::Containers::Array<LoggingLevel> loggingLevels_;
-  LoggingContext* prevContext_;
+  const LoggingContext* prevContext_;
 };
 
 /**
@@ -237,9 +241,13 @@ class LoggingContext {
 bool isLevelEnabled(Subsystem subsystem, LoggingLevel level);
 
 /**
- * @brief Return the prefix that gets printed for a given subsystem in that log.
+ * @brief Build appropriate prefix for logging messages, including
+ * subsystem/namespace, file, line number and function name
  */
-Corrade::Containers::String subsystemPrefix(Subsystem subsystem);
+Corrade::Containers::String buildMessagePrefix(Subsystem subsystem,
+                                               const std::string& filename,
+                                               const std::string& function,
+                                               int line);
 
 namespace impl {
 class LogMessageVoidify {
@@ -297,7 +305,8 @@ class LogMessageVoidify {
 // the case that the logger was created with a nospace flag.
 #define ESP_SUBSYS_LOG_IF(subsystem, level, output)                        \
   ESP_LOG_IF(esp::logging::isLevelEnabled((subsystem), (level)), (output)) \
-      << esp::logging::subsystemPrefix((subsystem))                        \
+      << esp::logging::buildMessagePrefix((subsystem), (__FILE__),         \
+                                          (__FUNCTION__), (__LINE__))      \
       << Corrade::Utility::Debug::nospace
 
 #define ESP_LOG_LEVEL_ENABLED(level) \
@@ -306,11 +315,11 @@ class LogMessageVoidify {
 /**
  * @brief Very verbose level logging macro.
  */
-#define ESP_VERY_VERBOSE(...)                                           \
-  ESP_SUBSYS_LOG_IF(                                                    \
-      espLoggingSubsystem(), esp::logging::LoggingLevel::VeryVerbose,   \
-      Corrade::Utility::Debug{Corrade::Utility::Debug::defaultOutput(), \
-                              __VA_ARGS__})
+#define ESP_VERY_VERBOSE(...)                                            \
+  ESP_SUBSYS_LOG_IF(                                                     \
+      espLoggingSubsystem(), esp::logging::LoggingLevel::VeryVerbose,    \
+      (Corrade::Utility::Debug{Corrade::Utility::Debug::defaultOutput(), \
+                               __VA_ARGS__}))
 /**
  * @brief Debug level logging macro.
  */
@@ -330,57 +339,5 @@ class LogMessageVoidify {
 #define ESP_ERROR(...)                                                        \
   ESP_SUBSYS_LOG_IF(espLoggingSubsystem(), esp::logging::LoggingLevel::Error, \
                     Corrade::Utility::Error{__VA_ARGS__})
-
-#if defined(ESP_BUILD_GLOG_SHIM)
-
-// Our own shims "emulating" GLOG
-// TODO shims are hack to get things compiling, implement expected
-// behaviors
-
-#define GLOG_INFO \
-  Corrade::Utility::Debug {}
-#define GLOG_WARNING \
-  Corrade::Utility::Warning {}
-#define GLOG_ERROR \
-  Corrade::Utility::Error {}
-#define GLOG_FATAL \
-  Corrade::Utility::Fatal {}
-#define LOG(severity) GLOG_##severity
-#define LOG_IF(severity, condition) \
-  !(condition) ? (void)0            \
-               : esp::logging::impl::LogMessageVoidify{} & LOG(severity)
-
-#define VLOG_LEVEL 0
-
-#define VLOG_IS_ON(verboselevel) (VLOG_LEVEL >= (verboselevel))
-#define VLOG(verboselevel) LOG_IF(INFO, VLOG_IS_ON(verboselevel))
-#define VLOG_IF(verboselevel, condition) \
-  LOG_IF(INFO, (condition) && VLOG_IS_ON(verboselevel))
-#define VLOG_EVERY_N(verboselevel, n) \
-  LOG_IF_EVERY_N(INFO, VLOG_IS_ON(verboselevel), n)
-#define VLOG_IF_EVERY_N(verboselevel, condition, n) \
-  LOG_IF_EVERY_N(INFO, (condition) && VLOG_IS_ON(verboselevel), n)
-
-#define CHECK(condition) \
-  LOG_IF(ERROR, !(condition)) << "Check failed: " #condition " "
-#define CHECK_EQ(a, b) CHECK(a == b)
-#define CHECK_GE(a, b) CHECK(a >= b)
-#define CHECK_LT(a, b) CHECK(a < b)
-#define CHECK_LE(a, b) CHECK(a <= b)
-
-#else
-// stl_logging.h needs to be before logging.h because template magic.
-#include <glog/logging.h>
-#include <glog/stl_logging.h>
-#endif
-
-#define ASSERT(x, ...)                                                   \
-  do {                                                                   \
-    if (!(x)) {                                                          \
-      Corrade::Utility::Error{Corrade::Utility::Debug::Flag::NoSpace}    \
-          << "Assert failed: " #x << "," << __FILE__ << ":" << __LINE__; \
-      exit(-1);                                                          \
-    }                                                                    \
-  } while (false)
 
 #endif  // ESP_CORE_LOGGING_H_

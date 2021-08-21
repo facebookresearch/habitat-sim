@@ -39,8 +39,10 @@ function checkSupport() {
 
 checkSupport();
 
+let demo = new VRDemo();
+
 function doPreloading() {
-  VRDemo.preloadFiles(preload);
+  demo.preloadFiles(preload);
 }
 
 Module.preRun.push(() => {
@@ -53,7 +55,6 @@ Module.preRun.push(() => {
 
 async function doRun() {
   if (isWebXRSupported()) {
-    let demo = new VRDemo();
     demo.start();
   } else {
     console.log(

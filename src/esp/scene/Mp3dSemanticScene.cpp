@@ -57,7 +57,7 @@ int Mp3dObjectCategory::index(const std::string& mapping) const {
   } else if (mapping == "raw") {
     return categoryMappingIndex_;
   } else {
-    LOG(ERROR) << "Unknown SemanticCategory mapping" << mapping;
+    ESP_ERROR() << "Unknown SemanticCategory mapping" << mapping;
     return ID_UNDEFINED;
   }
 }
@@ -68,7 +68,7 @@ std::string Mp3dObjectCategory::name(const std::string& mapping) const {
   } else if (mapping == "raw") {
     return categoryMappingName_;
   } else {
-    LOG(ERROR) << "Unknown SemanticCategory mapping" << mapping;
+    ESP_ERROR() << "Unknown SemanticCategory mapping" << mapping;
     return "";
   }
 }
@@ -96,9 +96,8 @@ bool SemanticScene::loadMp3dHouse(
   std::string header;
   std::getline(ifs, header);
   if (header != "ASCII 1.1") {
-    LOG(ERROR) << "::loadMp3dHouse : Unsupported Mp3d House "
-                  "format header "
-               << header << " in file name " << houseFilename;
+    ESP_ERROR() << "Unsupported Mp3d House format header" << header
+                << "in file name" << houseFilename;
     return false;
   }
 

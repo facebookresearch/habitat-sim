@@ -243,7 +243,7 @@ def make_video(
             primary_obs,
             primary_obs_type,
             video_dims,
-            overlay_settings=None,
+            overlay_settings=overlay_settings,
             observation_to_image=observation_to_image,
         )
 

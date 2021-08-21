@@ -25,13 +25,18 @@ using esp::metadata::MetadataMediator;
 using esp::scene::SceneManager;
 
 TEST(ResourceManagerTest, createJoinedCollisionMesh) {
+  esp::logging::LoggingContext loggingContext;
   esp::gfx::WindowlessContext::uptr context_ =
       esp::gfx::WindowlessContext::create_unique(0);
 
   std::shared_ptr<esp::gfx::Renderer> renderer_ = esp::gfx::Renderer::create();
 
   // must declare these in this order due to avoid deallocation errors
-  auto MM = MetadataMediator::create();
+  auto cfg = esp::sim::SimulatorConfiguration{};
+  // setting values for stage load
+  cfg.loadSemanticMesh = false;
+  cfg.forceSeparateSemanticSceneGraph = false;
+  auto MM = MetadataMediator::create(cfg);
   ResourceManager resourceManager(MM);
   SceneManager sceneManager_;
   auto stageAttributesMgr = MM->getStageAttributesManager();
@@ -46,8 +51,8 @@ TEST(ResourceManagerTest, createJoinedCollisionMesh) {
   const esp::assets::AssetInfo info = esp::assets::AssetInfo::fromPath(boxFile);
 
   std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
-  bool result = resourceManager.loadStage(stageAttributes, nullptr,
-                                          &sceneManager_, tempIDs, false);
+  bool result = resourceManager.loadStage(stageAttributes, nullptr, nullptr,
+                                          &sceneManager_, tempIDs);
 
   esp::assets::MeshData::uptr joinedBox =
       resourceManager.createJoinedCollisionMesh(boxFile);
@@ -74,13 +79,13 @@ TEST(ResourceManagerTest, createJoinedCollisionMesh) {
       12, 13, 14, 12, 15, 13, 16, 17, 18, 16, 18, 19, 20, 21, 22, 20, 22, 23};
 
   for (size_t vix = 0; vix < joinedBox->vbo.size(); vix++) {
-    // Cr::Utility::Debug() << joinedBox->vbo[vix] << " vs " <<
+    // ESP_DEBUG() << joinedBox->vbo[vix]   << "vs" <<
     // vertGroundTruth[vix];
     ASSERT_EQ(vertGroundTruth[vix], Magnum::Vector3(joinedBox->vbo[vix]));
   }
 
   for (size_t iix = 0; iix < joinedBox->ibo.size(); iix++) {
-    // Cr::Utility::Debug() << joinedBox->ibo[iix] << " vs " <<
+    // ESP_DEBUG() << joinedBox->ibo[iix]   << "vs" <<
     // indexGroundTruth[iix];
     ASSERT_EQ(indexGroundTruth[iix], joinedBox->ibo[iix]);
   }
@@ -88,13 +93,19 @@ TEST(ResourceManagerTest, createJoinedCollisionMesh) {
 
 #ifdef ESP_BUILD_WITH_VHACD
 TEST(ResourceManagerTest, VHACDUsageTest) {
+  esp::logging::LoggingContext loggingContext;
   esp::gfx::WindowlessContext::uptr context_ =
       esp::gfx::WindowlessContext::create_unique(0);
 
   std::shared_ptr<esp::gfx::Renderer> renderer_ = esp::gfx::Renderer::create();
 
   // must declare these in this order due to avoid deallocation errors
-  auto MM = MetadataMediator::create();
+  // must declare these in this order due to avoid deallocation errors
+  auto cfg = esp::sim::SimulatorConfiguration{};
+  // setting values for stage load
+  cfg.loadSemanticMesh = false;
+  cfg.forceSeparateSemanticSceneGraph = false;
+  auto MM = MetadataMediator::create(cfg);
   ResourceManager resourceManager(MM);
   SceneManager sceneManager_;
   auto stageAttributesMgr = MM->getStageAttributesManager();
@@ -112,8 +123,8 @@ TEST(ResourceManagerTest, VHACDUsageTest) {
       esp::assets::AssetInfo::fromPath(donutFile);
 
   std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
-  bool result = resourceManager.loadStage(stageAttributes, nullptr,
-                                          &sceneManager_, tempIDs, false);
+  bool result = resourceManager.loadStage(stageAttributes, nullptr, nullptr,
+                                          &sceneManager_, tempIDs);
 
   esp::assets::MeshData::uptr joinedBox =
       resourceManager.createJoinedCollisionMesh(donutFile);
@@ -121,16 +132,17 @@ TEST(ResourceManagerTest, VHACDUsageTest) {
   esp::assets::ResourceManager::VHACDParameters params;
   // params.setMaxNumVerticesPerCH(10);
   params.m_resolution = 1000000;
-  ASSERT(!resourceManager.isAssetDataRegistered(CHdonutFile));
+  CORRADE_INTERNAL_ASSERT(!resourceManager.isAssetDataRegistered(CHdonutFile));
   resourceManager.createConvexHullDecomposition(donutFile, CHdonutFile, params,
                                                 true);
 
-  ASSERT(resourceManager.isAssetDataRegistered(CHdonutFile));
+  CORRADE_INTERNAL_ASSERT(resourceManager.isAssetDataRegistered(CHdonutFile));
 }
 #endif
 
 // Load and create a render asset instance and assert success
 TEST(ResourceManagerTest, loadAndCreateRenderAssetInstance) {
+  esp::logging::LoggingContext loggingContext;
   esp::gfx::WindowlessContext::uptr context_ =
       esp::gfx::WindowlessContext::create_unique(0);
 
@@ -157,5 +169,5 @@ TEST(ResourceManagerTest, loadAndCreateRenderAssetInstance) {
   std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
   auto* node = resourceManager.loadAndCreateRenderAssetInstance(
       info, creation, &sceneManager_, tempIDs);
-  ASSERT(node);
+  CORRADE_INTERNAL_ASSERT(node);
 }

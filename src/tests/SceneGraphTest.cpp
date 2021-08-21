@@ -13,6 +13,7 @@ class SceneGraphTest : public ::testing::Test {
  protected:
   void SetUp() override { numInitialGroups = g.getDrawableGroups().size(); }
 
+  esp::logging::LoggingContext loggingContext_;
   size_t numInitialGroups;
   SceneGraph g;
   const std::string groupName = "testGroup";

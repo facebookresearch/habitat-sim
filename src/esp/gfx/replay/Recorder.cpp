@@ -49,8 +49,8 @@ void Recorder::onLoadRenderAsset(const esp::assets::AssetInfo& assetInfo) {
 void Recorder::onCreateRenderAssetInstance(
     scene::SceneNode* node,
     const esp::assets::RenderAssetInstanceCreationInfo& creation) {
-  ASSERT(node);
-  ASSERT(findInstance(node) == ID_UNDEFINED);
+  CORRADE_INTERNAL_ASSERT(node);
+  CORRADE_INTERNAL_ASSERT(findInstance(node) == ID_UNDEFINED);
 
   RenderAssetInstanceKey instanceKey = getNewInstanceKey();
 
@@ -70,6 +70,14 @@ void Recorder::saveKeyframe() {
   advanceKeyframe();
 }
 
+const Keyframe& Recorder::getLatestKeyframe() {
+  CORRADE_ASSERT(!savedKeyframes_.empty(),
+                 "Recorder::getLatestKeyframe() : Trying to access latest "
+                 "keyframe when there are none",
+                 savedKeyframes_.back());
+  return savedKeyframes_.back();
+}
+
 void Recorder::addUserTransformToKeyframe(const std::string& name,
                                           const Magnum::Vector3& translation,
                                           const Magnum::Quaternion& rotation) {
@@ -79,7 +87,7 @@ void Recorder::addUserTransformToKeyframe(const std::string& name,
 void Recorder::addLoadsCreationsDeletions(KeyframeIterator begin,
                                           KeyframeIterator end,
                                           Keyframe* dest) {
-  ASSERT(dest);
+  CORRADE_INTERNAL_ASSERT(dest);
   for (KeyframeIterator curr = begin; curr != end; curr++) {
     const auto& keyframe = *curr;
     dest->loads.insert(dest->loads.end(), keyframe.loads.begin(),
@@ -109,7 +117,7 @@ void Recorder::checkAndAddDeletion(Keyframe* keyframe,
 
 void Recorder::onDeleteRenderAssetInstance(const scene::SceneNode* node) {
   int index = findInstance(node);
-  ASSERT(index != ID_UNDEFINED);
+  CORRADE_INTERNAL_ASSERT(index != ID_UNDEFINED);
 
   auto instanceKey = instanceRecords_[index].instanceKey;
 
@@ -181,6 +189,13 @@ std::string Recorder::writeSavedKeyframesToString() {
   return esp::io::jsonToString(document);
 }
 
+std::string Recorder::keyframeToString(const Keyframe& keyframe) {
+  rapidjson::Document d(rapidjson::kObjectType);
+  rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
+  esp::io::addMember(d, "keyframe", keyframe, allocator);
+  return esp::io::jsonToString(d);
+}
+
 void Recorder::consolidateSavedKeyframes() {
   // consolidate saved keyframes into current keyframe
   addLoadsCreationsDeletions(savedKeyframes_.begin(), savedKeyframes_.end(),
@@ -195,8 +210,7 @@ void Recorder::consolidateSavedKeyframes() {
 
 rapidjson::Document Recorder::writeKeyframesToJsonDocument() {
   if (savedKeyframes_.empty()) {
-    LOG(WARNING) << "Recorder::writeKeyframesToJsonDocument: no saved "
-                    "keyframes to write";
+    ESP_WARNING() << "No saved keyframes to write";
     return rapidjson::Document();
   }
 

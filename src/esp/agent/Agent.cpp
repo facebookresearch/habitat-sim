@@ -27,7 +27,7 @@ Agent::Agent(scene::SceneNode& agentNode, const AgentConfiguration& cfg)
 }  // Agent::Agent
 
 Agent::~Agent() {
-  LOG(INFO) << "Deconstructing Agent";
+  ESP_DEBUG() << "Deconstructing Agent";
 }
 
 bool Agent::act(const std::string& actionName) {
@@ -71,9 +71,9 @@ void Agent::setState(const AgentState& state,
   node().setTranslation(Magnum::Vector3(state.position));
 
   const Eigen::Map<const quatf> rot(state.rotation.data());
-  CHECK_LT(std::abs(rot.norm() - 1.0),
-           2.0 * Magnum::Math::TypeTraits<float>::epsilon())
-      << state.rotation << " not a valid rotation";
+  CORRADE_ASSERT(std::abs(rot.norm() - 1.0) <
+                     2.0 * Magnum::Math::TypeTraits<float>::epsilon(),
+                 state.rotation << " not a valid rotation", );
   node().setRotation(Magnum::Quaternion(quatf(rot)).normalized());
 
   if (resetSensors) {

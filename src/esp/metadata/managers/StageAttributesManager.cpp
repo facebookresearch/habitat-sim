@@ -47,10 +47,9 @@ int StageAttributesManager::registerObjectFinalize(
     const std::string& stageAttributesHandle,
     bool forceRegistration) {
   if (stageAttributes->getRenderAssetHandle() == "") {
-    LOG(ERROR)
-        << "::registerObjectFinalize : Attributes template named "
-        << stageAttributesHandle
-        << " does not have a valid render asset handle specified. Aborting.";
+    ESP_ERROR()
+        << "Attributes template named" << stageAttributesHandle
+        << "does not have a valid render asset handle specified. Aborting.";
     return ID_UNDEFINED;
   }
 
@@ -75,20 +74,18 @@ int StageAttributesManager::registerObjectFinalize(
     stageAttributes->setRenderAssetType(static_cast<int>(AssetType::UNKNOWN));
     stageAttributes->setRenderAssetIsPrimitive(false);
   } else if (forceRegistration) {
-    LOG(WARNING)
-        << "::registerObjectFinalize : Render asset template handle : "
-        << renderAssetHandle << " specified in stage template with handle : "
-        << stageAttributesHandle
-        << " does not correspond to any existing file or primitive render "
+    ESP_WARNING()
+        << "Render asset template handle :" << renderAssetHandle
+        << "specified in stage template with handle :" << stageAttributesHandle
+        << "does not correspond to any existing file or primitive render "
            "asset. This attributes is not in a valid state.";
   } else {
     // If renderAssetHandle is not valid file name needs to  fail
-    LOG(ERROR)
-        << "::registerObjectFinalize : Render asset template handle : "
-        << renderAssetHandle << " specified in stage template with handle : "
-        << stageAttributesHandle
-        << " does not correspond to any existing file or primitive render "
-           "asset.  Aborting. ";
+    ESP_ERROR()
+        << "Render asset template handle :" << renderAssetHandle
+        << "specified in stage template with handle :" << stageAttributesHandle
+        << "does not correspond to any existing file or primitive render "
+           "asset.  Aborting.";
     return ID_UNDEFINED;
   }
 
@@ -108,13 +105,12 @@ int StageAttributesManager::registerObjectFinalize(
     stageAttributes->setCollisionAssetIsPrimitive(false);
   } else {
     // Else, means no collision data specified, use specified render data
-    LOG(INFO)
-        << "::registerObjectFinalize : Collision asset template handle : "
-        << collisionAssetHandle << " specified in stage template with handle : "
-        << stageAttributesHandle
-        << " does not correspond to any existing file or primitive render "
-           "asset.  Overriding with given render asset handle : "
-        << renderAssetHandle << ". ";
+    ESP_DEBUG()
+        << "Collision asset template handle :" << collisionAssetHandle
+        << "specified in stage template with handle :" << stageAttributesHandle
+        << "does not correspond to any existing file or primitive render "
+           "asset.  Overriding with given render asset handle :"
+        << renderAssetHandle << ".";
 
     stageAttributes->setCollisionAssetHandle(renderAssetHandle);
     stageAttributes->setCollisionAssetIsPrimitive(
@@ -136,10 +132,9 @@ StageAttributes::ptr StageAttributesManager::createPrimBasedAttributesTemplate(
     bool registerTemplate) {
   // verify that a primitive asset with the given handle exists
   if (!StageAttributesManager::isValidPrimitiveAttributes(primAssetHandle)) {
-    LOG(ERROR)
-        << "::createPrimBasedAttributesTemplate : No primitive with handle '"
-        << primAssetHandle
-        << "' exists so cannot build physical object.  Aborting.";
+    ESP_ERROR() << "No primitive with handle '" << Mn::Debug::nospace
+                << primAssetHandle << Mn::Debug::nospace
+                << "' exists so cannot build physical object.  Aborting.";
     return nullptr;
   }
 
@@ -169,7 +164,8 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
   // copy
   StageAttributes::ptr newAttributes =
       this->constructFromDefault(attributesHandle);
-  if (nullptr == newAttributes) {
+  bool createNewAttributes = (nullptr == newAttributes);
+  if (createNewAttributes) {
     newAttributes = StageAttributes::create(attributesHandle);
   }
   // attempt to set source directory if exists
@@ -208,6 +204,7 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
       houseFilename = io::changeExtension(attributesHandle, ".scn");
     }
     newAttributes->setHouseFilename(houseFilename);
+
     // Build default semantic mesh file name
     const std::string semanticMeshFilename =
         io::removeExtension(houseFilename) + "_semantic.ply";
@@ -217,8 +214,8 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
     // from AssetInfo::fromPath
     // set defaults for passed render asset handles
     StageAttributesManager::setDefaultAssetNameBasedAttributes(
-        newAttributes, true, newAttributes->getRenderAssetHandle(),
-        [newAttributes](auto&& PH1) {
+        newAttributes, createNewAttributes,
+        newAttributes->getRenderAssetHandle(), [newAttributes](auto&& PH1) {
           newAttributes->setRenderAssetType(std::forward<decltype(PH1)>(PH1));
         });
     // set defaults for passed collision asset handles

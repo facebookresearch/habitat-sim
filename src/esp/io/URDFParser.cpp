@@ -11,6 +11,7 @@
 #include <iostream>
 
 #include "URDFParser.h"
+#include "esp/core/logging.h"
 
 #include "tinyxml2/tinyxml2.h"
 
@@ -101,8 +102,6 @@ void Model::setMassScaling(float massScaling) {
 
 bool Parser::parseURDF(std::shared_ptr<Model>& urdfModel,
                        const std::string& filename) {
-  Mn::Debug silence{logMessages ? &std::cout : nullptr};
-
   // override the previous model with a fresh one
   urdfModel = std::make_shared<Model>();
   sourceFilePath_ = filename;
@@ -113,17 +112,15 @@ bool Parser::parseURDF(std::shared_ptr<Model>& urdfModel,
   XMLDocument xml_doc;
   xml_doc.Parse(xmlString.c_str());
   if (xml_doc.Error()) {
-    Mn::Error{}
-        << "Parser::parseURDF - XML parse error, aborting URDF parse/load for "
-        << filename;
+    ESP_ERROR() << "XML parse error, aborting URDF parse/load for" << filename;
     return false;
   }
-  Mn::Debug{} << "Parser::parseURDF - XML parsed starting URDF parse/load.";
+  ESP_VERY_VERBOSE() << "XML parsed starting URDF parse/load.";
 
   const XMLElement* robot_xml = xml_doc.FirstChildElement("robot");
   if (!robot_xml) {
-    Mn::Error{}
-        << "E - expected a <robot> element. Aborting URDF parse/load for "
+    ESP_ERROR()
+        << "E - expected a <robot> element. Aborting URDF parse/load for"
         << filename;
     return false;
   }
@@ -131,9 +128,8 @@ bool Parser::parseURDF(std::shared_ptr<Model>& urdfModel,
   // Get robot name
   const char* name = robot_xml->Attribute("name");
   if (!name) {
-    Mn::Error{}
-        << "E - expected a name for robot. Aborting URDF parse/load for "
-        << filename;
+    ESP_ERROR() << "E - expected a name for robot. Aborting URDF parse/load for"
+                << filename;
     return false;
   }
   urdfModel->m_name = name;
@@ -151,7 +147,7 @@ bool Parser::parseURDF(std::shared_ptr<Model>& urdfModel,
       urdfModel->m_materials[material.m_name] =
           std::make_shared<Material>(material);
     } else {
-      Mn::Debug{} << "W - Duplicate material";
+      ESP_VERY_VERBOSE() << "W - Duplicate material";
     }
   }
 
@@ -162,10 +158,10 @@ bool Parser::parseURDF(std::shared_ptr<Model>& urdfModel,
 
     if (parseLink(urdfModel, *link, link_xml)) {
       if (urdfModel->m_links.count(link->m_name) != 0u) {
-        Mn::Error{}
+        ESP_ERROR()
             << "E - Link name  (" << link->m_name
             << ") is not unique, link names "
-               "in the same model have to be unique. Aborting parse/load for "
+               "in the same model have to be unique. Aborting parse/load for"
             << filename;
         return false;
       } else {
@@ -178,8 +174,8 @@ bool Parser::parseURDF(std::shared_ptr<Model>& urdfModel,
             if (mat_itr != urdfModel->m_materials.end()) {
               vis.m_geometry.m_localMaterial = mat_itr->second;
             } else {
-              Mn::Error{} << "E - Cannot find material with name: "
-                          << vis.m_materialName << ". Aborting parse/load for "
+              ESP_ERROR() << "E - Cannot find material with name:"
+                          << vis.m_materialName << ". Aborting parse/load for"
                           << filename;
             }
           }
@@ -189,13 +185,13 @@ bool Parser::parseURDF(std::shared_ptr<Model>& urdfModel,
         urdfModel->m_links[link->m_name] = link;
       }
     } else {
-      Mn::Error{} << "E - failed to parse link. Aborting parse/load for "
+      ESP_ERROR() << "E - failed to parse link. Aborting parse/load for"
                   << filename;
       return false;
     }
   }
   if (urdfModel->m_links.size() == 0) {
-    Mn::Error{} << "W - No links found in URDF file. Aborting parse/load for "
+    ESP_ERROR() << "W - No links found in URDF file. Aborting parse/load for"
                 << filename;
     return false;
   }
@@ -207,15 +203,15 @@ bool Parser::parseURDF(std::shared_ptr<Model>& urdfModel,
 
     if (parseJoint(*joint, joint_xml)) {
       if (urdfModel->m_joints.count(joint->m_name) != 0u) {
-        Mn::Error{} << "E - joint " << joint->m_name
-                    << " is not unique. Aborting parse/load for " << filename;
+        ESP_ERROR() << "E - joint" << joint->m_name
+                    << "is not unique. Aborting parse/load for" << filename;
         return false;
       } else {
         urdfModel->m_joints[joint->m_name] = joint;
       }
     } else {
-      Mn::Error{} << "E - joint xml is not initialized correctly. Aborting "
-                     "parse/load for "
+      ESP_ERROR() << "E - joint xml is not initialized correctly. Aborting "
+                     "parse/load for"
                   << filename;
       return false;
     }
@@ -227,7 +223,7 @@ bool Parser::parseURDF(std::shared_ptr<Model>& urdfModel,
     return false;
   }
 
-  Mn::Debug{} << "Done parsing URDF";
+  ESP_VERY_VERBOSE() << "Done parsing URDF";
 
   return true;
 }
@@ -275,9 +271,8 @@ static bool parseVector3(Mn::Vector3& vec3,
 }
 
 bool Parser::parseMaterial(Material& material, const XMLElement* config) const {
-  Mn::Debug silence{logMessages ? &std::cout : nullptr};
   if (!config->Attribute("name")) {
-    Mn::Debug{} << "E - Material must contain a name attribute";
+    ESP_VERY_VERBOSE() << "E - Material must contain a name attribute";
     return false;
   }
   material.m_name = config->Attribute("name");
@@ -297,7 +292,7 @@ bool Parser::parseMaterial(Material& material, const XMLElement* config) const {
       if (c->Attribute("rgba")) {
         if (!parseColor4(material.m_matColor.m_rgbaColor,
                          c->Attribute("rgba"))) {
-          Mn::Debug{} << "W - " << material.m_name << " has no rgba";
+          ESP_VERY_VERBOSE() << "W -" << material.m_name << "has no rgba";
         }
       }
     }
@@ -320,14 +315,13 @@ bool Parser::parseMaterial(Material& material, const XMLElement* config) const {
 bool Parser::parseLink(const std::shared_ptr<Model>& model,
                        Link& link,
                        const XMLElement* config) {
-  Mn::Debug silence{logMessages ? &std::cout : nullptr};
   const char* linkName = config->Attribute("name");
   if (!linkName) {
-    Mn::Debug{} << "E - Link with no name";
+    ESP_VERY_VERBOSE() << "E - Link with no name";
     return false;
   }
-  Mn::Debug{} << "------------------------------------";
-  Mn::Debug{} << "Parser::parseLink: " << linkName;
+  ESP_VERY_VERBOSE() << "------------------------------------";
+  ESP_VERY_VERBOSE() << "Parser::parseLink:" << linkName;
   link.m_name = linkName;
 
   {
@@ -337,7 +331,7 @@ bool Parser::parseLink(const std::shared_ptr<Model>& model,
       const XMLElement* damping_xml = ci->FirstChildElement("inertia_scaling");
       if (damping_xml) {
         if (!damping_xml->Attribute("value")) {
-          Mn::Debug{}
+          ESP_VERY_VERBOSE()
               << "E - Link/contact: damping element must have value attribute";
           return false;
         }
@@ -351,8 +345,8 @@ bool Parser::parseLink(const std::shared_ptr<Model>& model,
             ci->FirstChildElement("lateral_friction");
         if (friction_xml) {
           if (!friction_xml->Attribute("value")) {
-            Mn::Debug{} << "E - Link/contact: lateral_friction "
-                           "element must have value attribute";
+            ESP_VERY_VERBOSE() << "E - Link/contact: lateral_friction "
+                                  "element must have value attribute";
             return false;
           }
 
@@ -366,8 +360,8 @@ bool Parser::parseLink(const std::shared_ptr<Model>& model,
             ci->FirstChildElement("rolling_friction");
         if (rolling_xml) {
           if (!rolling_xml->Attribute("value")) {
-            Mn::Debug{} << "E - Link/contact: rolling friction "
-                           "element must have value attribute";
+            ESP_VERY_VERBOSE() << "E - Link/contact: rolling friction "
+                                  "element must have value attribute";
             return false;
           }
 
@@ -382,8 +376,8 @@ bool Parser::parseLink(const std::shared_ptr<Model>& model,
             ci->FirstChildElement("restitution");
         if (restitution_xml) {
           if (!restitution_xml->Attribute("value")) {
-            Mn::Debug{} << "E - Link/contact: restitution "
-                           "element must have value attribute";
+            ESP_VERY_VERBOSE() << "E - Link/contact: restitution "
+                                  "element must have value attribute";
             return false;
           }
 
@@ -398,8 +392,8 @@ bool Parser::parseLink(const std::shared_ptr<Model>& model,
             ci->FirstChildElement("spinning_friction");
         if (spinning_xml) {
           if (!spinning_xml->Attribute("value")) {
-            Mn::Debug{} << "E - Link/contact: spinning friction "
-                           "element must have value attribute";
+            ESP_VERY_VERBOSE() << "E - Link/contact: spinning friction "
+                                  "element must have value attribute";
             return false;
           }
 
@@ -419,8 +413,8 @@ bool Parser::parseLink(const std::shared_ptr<Model>& model,
         const XMLElement* stiffness_xml = ci->FirstChildElement("stiffness");
         if (stiffness_xml) {
           if (!stiffness_xml->Attribute("value")) {
-            Mn::Debug{} << "E - Link/contact: stiffness element "
-                           "must have value attribute";
+            ESP_VERY_VERBOSE() << "E - Link/contact: stiffness element "
+                                  "must have value attribute";
             return false;
           }
 
@@ -433,8 +427,8 @@ bool Parser::parseLink(const std::shared_ptr<Model>& model,
         const XMLElement* damping_xml = ci->FirstChildElement("damping");
         if (damping_xml) {
           if (!damping_xml->Attribute("value")) {
-            Mn::Debug{} << "E - Link/contact: damping element "
-                           "must have value attribute";
+            ESP_VERY_VERBOSE() << "E - Link/contact: damping element "
+                                  "must have value attribute";
             return false;
           }
 
@@ -450,8 +444,8 @@ bool Parser::parseLink(const std::shared_ptr<Model>& model,
   const XMLElement* i = config->FirstChildElement("inertial");
   if (i) {
     if (!parseInertia(link.m_inertia, i)) {
-      Mn::Debug{} << "E - Could not parse inertial element for Link:";
-      Mn::Debug{} << link.m_name;
+      ESP_VERY_VERBOSE() << "E - Could not parse inertial element for Link:";
+      ESP_VERY_VERBOSE() << link.m_name;
       return false;
     }
     link.m_inertia.m_mass *= model->getGlobalScaling();
@@ -463,8 +457,8 @@ bool Parser::parseLink(const std::shared_ptr<Model>& model,
       link.m_inertia.m_iyy = 0.f;
       link.m_inertia.m_izz = 0.f;
     } else {
-      Mn::Debug{}
-          << "W - No inertial data for link: " << link.m_name
+      ESP_VERY_VERBOSE()
+          << "W - No inertial data for link:" << link.m_name
           << ", using mass=1, localinertiadiagonal = 1,1,1, identity local "
              "inertial frame";
       link.m_inertia.m_mass = 1.f * model->getMassScaling();
@@ -483,8 +477,8 @@ bool Parser::parseLink(const std::shared_ptr<Model>& model,
     if (parseVisual(model, visual, vis_xml)) {
       link.m_visualArray.push_back(visual);
     } else {
-      Mn::Debug{} << "E - Could not parse visual element for Link:"
-                  << link.m_name;
+      ESP_VERY_VERBOSE() << "E - Could not parse visual element for Link:"
+                         << link.m_name;
       return false;
     }
   }
@@ -497,8 +491,8 @@ bool Parser::parseLink(const std::shared_ptr<Model>& model,
     if (parseCollision(col, col_xml)) {
       link.m_collisionArray.push_back(col);
     } else {
-      Mn::Debug{} << "E - Could not parse collision element for Link:"
-                  << link.m_name.c_str();
+      ESP_VERY_VERBOSE() << "E - Could not parse collision element for Link:"
+                         << link.m_name.c_str();
       return false;
     }
   }
@@ -547,7 +541,6 @@ bool Parser::parseCollision(CollisionShape& collision,
 bool Parser::parseVisual(const std::shared_ptr<Model>& model,
                          VisualShape& visual,
                          const XMLElement* config) {
-  Mn::Debug silence{logMessages ? &std::cout : nullptr};
   visual.m_linkLocalFrame = Mn::Matrix4();  // Identity
 
   // Origin
@@ -574,7 +567,7 @@ bool Parser::parseVisual(const std::shared_ptr<Model>& model,
   if (mat) {
     // get material name
     if (!mat->Attribute("name")) {
-      Mn::Debug{} << "E - Visual material must contain a name attribute";
+      ESP_VERY_VERBOSE() << "E - Visual material must contain a name attribute";
       return false;
     }
     visual.m_materialName = mat->Attribute("name");
@@ -601,9 +594,9 @@ bool Parser::parseVisual(const std::shared_ptr<Model>& model,
           model->m_materials.at(visual.m_materialName);
       visual.m_geometry.m_hasLocalMaterial = true;
     } else {
-      Mn::Debug{} << "Warning: Parser::parseVisual : visual element \""
-                  << visual.m_name << "\" specified un-defined material name \""
-                  << visual.m_materialName << "\".";
+      ESP_VERY_VERBOSE() << "Warning: visual element \"" << visual.m_name
+                         << "\" specified un-defined material name \""
+                         << visual.m_materialName << "\".";
     }
   }
 
@@ -649,13 +642,12 @@ bool Parser::parseTransform(Mn::Matrix4& tr, const XMLElement* xml) const {
 }
 
 bool Parser::parseGeometry(Geometry& geom, const XMLElement* g) {
-  Mn::Debug silence{logMessages ? &std::cout : nullptr};
   if (g == nullptr)
     return false;
 
   const XMLElement* shape = g->FirstChildElement();
   if (!shape) {
-    Mn::Debug{} << "E - Geometry tag contains no child element.";
+    ESP_VERY_VERBOSE() << "E - Geometry tag contains no child element.";
     return false;
   }
 
@@ -665,7 +657,7 @@ bool Parser::parseGeometry(Geometry& geom, const XMLElement* g) {
     geom.m_type = GEOM_SPHERE;
 
     if (!shape->Attribute("radius")) {
-      Mn::Debug{} << "E - Sphere shape must have a radius attribute";
+      ESP_VERY_VERBOSE() << "E - Sphere shape must have a radius attribute";
       return false;
     } else {
       geom.m_sphereRadius = std::stod(shape->Attribute("radius"));
@@ -673,7 +665,7 @@ bool Parser::parseGeometry(Geometry& geom, const XMLElement* g) {
   } else if (type_name == "box") {
     geom.m_type = GEOM_BOX;
     if (!shape->Attribute("size")) {
-      Mn::Debug{} << "E - box requires a size attribute";
+      ESP_VERY_VERBOSE() << "E - box requires a size attribute";
       return false;
     } else {
       parseVector3(geom.m_boxSize, shape->Attribute("size"));
@@ -684,7 +676,7 @@ bool Parser::parseGeometry(Geometry& geom, const XMLElement* g) {
     geom.m_capsuleHeight = 0.1;
 
     if (!shape->Attribute("length") || !shape->Attribute("radius")) {
-      Mn::Debug{}
+      ESP_VERY_VERBOSE()
           << "E - Cylinder shape must have both length and radius attributes";
       return false;
     }
@@ -695,7 +687,7 @@ bool Parser::parseGeometry(Geometry& geom, const XMLElement* g) {
     geom.m_type = GEOM_CAPSULE;
 
     if (!shape->Attribute("length") || !shape->Attribute("radius")) {
-      Mn::Debug{}
+      ESP_VERY_VERBOSE()
           << "E - Capsule shape must have both length and radius attributes";
       return false;
     }
@@ -712,8 +704,8 @@ bool Parser::parseGeometry(Geometry& geom, const XMLElement* g) {
     }
     if (shape->Attribute("scale")) {
       if (!parseVector3(geom.m_meshScale, shape->Attribute("scale"))) {
-        Mn::Debug{} << "W - Scale should be a vector3, not "
-                       "single scalar. Workaround activated.";
+        ESP_VERY_VERBOSE() << "W - Scale should be a vector3, not "
+                              "single scalar. Workaround activated.";
         std::string scalar_str = shape->Attribute("scale");
         double scaleFactor = std::stod(scalar_str);
         if (scaleFactor != 0.0) {
@@ -723,7 +715,7 @@ bool Parser::parseGeometry(Geometry& geom, const XMLElement* g) {
     }
 
     if (fn.empty()) {
-      Mn::Debug{} << "E - Mesh filename is empty";
+      ESP_VERY_VERBOSE() << "E - Mesh filename is empty";
       return false;
     }
 
@@ -742,13 +734,13 @@ bool Parser::parseGeometry(Geometry& geom, const XMLElement* g) {
       geom.m_type = GEOM_PLANE;
 
       if (!shape->Attribute("normal")) {
-        Mn::Debug{} << "E - Plane requires a normal attribute";
+        ESP_VERY_VERBOSE() << "E - Plane requires a normal attribute";
         return false;
       } else {
         parseVector3(geom.m_planeNormal, shape->Attribute("normal"));
       }
     } else {
-      Mn::Debug{} << "E - Unknown geometry type: " << type_name;
+      ESP_VERY_VERBOSE() << "E - Unknown geometry type:" << type_name;
       return false;
     }
   }
@@ -757,7 +749,6 @@ bool Parser::parseGeometry(Geometry& geom, const XMLElement* g) {
 }
 
 bool Parser::parseInertia(Inertia& inertia, const XMLElement* config) {
-  Mn::Debug silence{logMessages ? &std::cout : nullptr};
   inertia.m_linkLocalFrame = Mn::Matrix4();  // Identity
   inertia.m_mass = 0.f;
 
@@ -772,12 +763,13 @@ bool Parser::parseInertia(Inertia& inertia, const XMLElement* config) {
 
   const XMLElement* mass_xml = config->FirstChildElement("mass");
   if (!mass_xml) {
-    Mn::Debug{} << "E - Inertial element must have a mass element";
+    ESP_VERY_VERBOSE() << "E - Inertial element must have a mass element";
     return false;
   }
 
   if (!mass_xml->Attribute("value")) {
-    Mn::Debug{} << "E - Inertial: mass element must have value attribute";
+    ESP_VERY_VERBOSE()
+        << "E - Inertial: mass element must have value attribute";
     return false;
   }
 
@@ -785,7 +777,7 @@ bool Parser::parseInertia(Inertia& inertia, const XMLElement* config) {
 
   const XMLElement* inertia_xml = config->FirstChildElement("inertia");
   if (!inertia_xml) {
-    Mn::Debug{} << "E - Inertial element must have inertia element";
+    ESP_VERY_VERBOSE() << "E - Inertial element must have inertia element";
     return false;
   }
 
@@ -801,8 +793,8 @@ bool Parser::parseInertia(Inertia& inertia, const XMLElement* config) {
       inertia.m_iyz = 0;
       inertia.m_izz = std::stod(inertia_xml->Attribute("izz"));
     } else {
-      Mn::Debug{} << "E - Inertial: inertia element must have "
-                     "ixx,ixy,ixz,iyy,iyz,izz attributes";
+      ESP_VERY_VERBOSE() << "E - Inertial: inertia element must have "
+                            "ixx,ixy,ixz,iyy,iyz,izz attributes";
       return false;
     }
   } else {
@@ -818,7 +810,6 @@ bool Parser::parseInertia(Inertia& inertia, const XMLElement* config) {
 }
 
 bool Parser::validateMeshFile(std::string& meshFilename) {
-  Mn::Debug silence{logMessages ? &std::cout : nullptr};
   std::string urdfDirectory =
       sourceFilePath_.substr(0, sourceFilePath_.find_last_of('/'));
 
@@ -834,14 +825,13 @@ bool Parser::validateMeshFile(std::string& meshFilename) {
     // ResourceManager assets later.
     meshFilename = meshFilePath;
   } else {
-    Mn::Debug{} << "Mesh file \"" << meshFilePath << "\"does not exist.";
+    ESP_VERY_VERBOSE() << "Mesh file \"" << meshFilePath << "\"does not exist.";
   }
 
   return meshSuccess;
 }
 
 bool Parser::initTreeAndRoot(const std::shared_ptr<Model>& model) const {
-  Mn::Debug silence{logMessages ? &std::cout : nullptr};
   // every link has children links and joints, but no parents, so we create a
   // local convenience data structure for keeping child->parent relations
   std::map<std::string, std::string> parentLinkTree;
@@ -855,21 +845,23 @@ bool Parser::initTreeAndRoot(const std::shared_ptr<Model>& model) const {
     std::string parent_link_name = joint->m_parentLinkName;
     std::string child_link_name = joint->m_childLinkName;
     if (parent_link_name.empty() || child_link_name.empty()) {
-      Mn::Debug{} << "E - parent link or child link is empty for joint: "
-                  << joint->m_name;
+      ESP_VERY_VERBOSE() << "E - parent link or child link is empty for joint:"
+                         << joint->m_name;
       return false;
     }
 
     if (model->m_links.count(joint->m_childLinkName) == 0u) {
-      Mn::Debug{} << "E - Cannot find child link for joint: " << joint->m_name
-                  << ", child: " << joint->m_childLinkName;
+      ESP_VERY_VERBOSE() << "E - Cannot find child link for joint:"
+                         << joint->m_name
+                         << ", child:" << joint->m_childLinkName;
       return false;
     }
     auto childLink = model->m_links.at(joint->m_childLinkName);
 
     if (model->m_links.count(joint->m_parentLinkName) == 0u) {
-      Mn::Debug{} << "E - Cannot find parent link for joint: " << joint->m_name
-                  << ", parent: " << joint->m_parentLinkName;
+      ESP_VERY_VERBOSE() << "E - Cannot find parent link for joint:"
+                         << joint->m_name
+                         << ", parent:" << joint->m_parentLinkName;
       return false;
     }
     auto parentLink = model->m_links.at(joint->m_parentLinkName);
@@ -897,15 +889,15 @@ bool Parser::initTreeAndRoot(const std::shared_ptr<Model>& model) const {
   }
 
   if (model->m_rootLinks.size() > 1) {
-    Mn::Debug{} << "W - URDF file with multiple root links found:";
+    ESP_VERY_VERBOSE() << "W - URDF file with multiple root links found:";
 
     for (size_t i = 0; i < model->m_rootLinks.size(); i++) {
-      Mn::Debug{} << model->m_rootLinks[i]->m_name;
+      ESP_VERY_VERBOSE() << model->m_rootLinks[i]->m_name;
     }
   }
 
   if (model->m_rootLinks.size() == 0) {
-    Mn::Debug{} << "E - URDF without root link found.";
+    ESP_VERY_VERBOSE() << "E - URDF without root link found.";
     return false;
   }
   return true;
@@ -947,7 +939,6 @@ bool Parser::parseJointLimits(Joint& joint,
 
 bool Parser::parseJointDynamics(Joint& joint,
                                 const tinyxml2::XMLElement* config) const {
-  Mn::Debug silence{logMessages ? &std::cout : nullptr};
   joint.m_jointDamping = 0;
   joint.m_jointFriction = 0;
 
@@ -964,8 +955,8 @@ bool Parser::parseJointDynamics(Joint& joint,
   }
 
   if (damping_str == nullptr && friction_str == nullptr) {
-    Mn::Debug{} << "E - joint dynamics element specified with no "
-                   "damping and no friction";
+    ESP_VERY_VERBOSE() << "E - joint dynamics element specified with no "
+                          "damping and no friction";
     return false;
   }
 
@@ -973,11 +964,10 @@ bool Parser::parseJointDynamics(Joint& joint,
 }
 
 bool Parser::parseJoint(Joint& joint, const tinyxml2::XMLElement* config) {
-  Mn::Debug silence{logMessages ? &std::cout : nullptr};
   // Get Joint Name
   const char* name = config->Attribute("name");
   if (!name) {
-    Mn::Debug{} << "E - unnamed joint found";
+    ESP_VERY_VERBOSE() << "E - unnamed joint found";
     return false;
   }
   joint.m_name = name;
@@ -987,8 +977,8 @@ bool Parser::parseJoint(Joint& joint, const tinyxml2::XMLElement* config) {
   const XMLElement* origin_xml = config->FirstChildElement("origin");
   if (origin_xml) {
     if (!parseTransform(joint.m_parentLinkToJointTransform, origin_xml)) {
-      Mn::Debug{} << "E - Malformed parent origin element for joint: "
-                  << joint.m_name;
+      ESP_VERY_VERBOSE() << "E - Malformed parent origin element for joint:"
+                         << joint.m_name;
       return false;
     }
   }
@@ -998,9 +988,9 @@ bool Parser::parseJoint(Joint& joint, const tinyxml2::XMLElement* config) {
   if (parent_xml) {
     const char* pname = parent_xml->Attribute("link");
     if (!pname) {
-      Mn::Debug{} << "E - no parent link name specified for "
-                     "Joint link. this might be the root? "
-                  << joint.m_name;
+      ESP_VERY_VERBOSE() << "E - no parent link name specified for "
+                            "Joint link. this might be the root?"
+                         << joint.m_name;
       return false;
     } else {
       joint.m_parentLinkName = std::string(pname);
@@ -1012,8 +1002,8 @@ bool Parser::parseJoint(Joint& joint, const tinyxml2::XMLElement* config) {
   if (child_xml) {
     const char* pname = child_xml->Attribute("link");
     if (!pname) {
-      Mn::Debug{} << "E - no child link name specified for Joint link "
-                  << joint.m_name;
+      ESP_VERY_VERBOSE() << "E - no child link name specified for Joint link"
+                         << joint.m_name;
       return false;
     } else {
       joint.m_childLinkName = std::string(pname);
@@ -1023,8 +1013,8 @@ bool Parser::parseJoint(Joint& joint, const tinyxml2::XMLElement* config) {
   // Get Joint type
   const char* type_char = config->Attribute("type");
   if (!type_char) {
-    Mn::Debug{} << "E - joint " << joint.m_name
-                << " has no type, check to see if it's a reference.";
+    ESP_VERY_VERBOSE() << "E - joint" << joint.m_name
+                       << "has no type, check to see if it's a reference.";
     return false;
   }
 
@@ -1044,8 +1034,8 @@ bool Parser::parseJoint(Joint& joint, const tinyxml2::XMLElement* config) {
   else if (type_str == "fixed")
     joint.m_type = FixedJoint;
   else {
-    Mn::Debug{} << "E - Joint " << joint.m_name
-                << " has unknown type: " << type_str;
+    ESP_VERY_VERBOSE() << "E - Joint" << joint.m_name
+                       << "has unknown type:" << type_str;
     return false;
   }
 
@@ -1054,16 +1044,16 @@ bool Parser::parseJoint(Joint& joint, const tinyxml2::XMLElement* config) {
     // axis
     const XMLElement* axis_xml = config->FirstChildElement("axis");
     if (!axis_xml) {
-      Mn::Debug{} << "W - urdfdom: no axis elemement for Joint, "
-                     "defaulting to (1,0,0) axis "
-                  << joint.m_name;
+      ESP_VERY_VERBOSE() << "W - urdfdom: no axis elemement for Joint, "
+                            "defaulting to (1,0,0) axis"
+                         << joint.m_name;
       joint.m_localJointAxis = Mn::Vector3(1, 0, 0);
     } else {
       if (axis_xml->Attribute("xyz")) {
         if (!parseVector3(joint.m_localJointAxis, axis_xml->Attribute("xyz"))) {
-          Mn::Debug{} << "E - Malformed axis element: "
-                      << axis_xml->Attribute("xyz")
-                      << " for joint: " << joint.m_name;
+          ESP_VERY_VERBOSE()
+              << "E - Malformed axis element:" << axis_xml->Attribute("xyz")
+              << "for joint:" << joint.m_name;
           return false;
         }
       }
@@ -1074,18 +1064,18 @@ bool Parser::parseJoint(Joint& joint, const tinyxml2::XMLElement* config) {
   const XMLElement* limit_xml = config->FirstChildElement("limit");
   if (limit_xml) {
     if (!parseJointLimits(joint, limit_xml)) {
-      Mn::Debug{} << "E - Could not parse limit element for joint:"
-                  << joint.m_name;
+      ESP_VERY_VERBOSE() << "E - Could not parse limit element for joint:"
+                         << joint.m_name;
       return false;
     }
   } else if (joint.m_type == RevoluteJoint) {
-    Mn::Debug{}
-        << "E - Joint is of type REVOLUTE but it does not specify limits: "
+    ESP_VERY_VERBOSE()
+        << "E - Joint is of type REVOLUTE but it does not specify limits:"
         << joint.m_name;
     return false;
   } else if (joint.m_type == PrismaticJoint) {
-    Mn::Debug{} << "E - Joint is of type PRISMATIC without limits: "
-                << joint.m_name;
+    ESP_VERY_VERBOSE() << "E - Joint is of type PRISMATIC without limits:"
+                       << joint.m_name;
     return false;
   }
 
@@ -1108,8 +1098,8 @@ bool Parser::parseJoint(Joint& joint, const tinyxml2::XMLElement* config) {
     }
 
     if (damping_str == nullptr && friction_str == nullptr) {
-      Mn::Debug{} << "E - joint dynamics element specified with "
-                     "no damping and no friction";
+      ESP_VERY_VERBOSE() << "E - joint dynamics element specified with "
+                            "no damping and no friction";
       return false;
     }
   }
@@ -1118,33 +1108,39 @@ bool Parser::parseJoint(Joint& joint, const tinyxml2::XMLElement* config) {
 }
 
 void printLinkChildrenHelper(Link& link, const std::string& printPrefix = "") {
-  // Mn::Debug{} << printPrefix<<"link "<< link.m_name;
+  // ESP_VERY_VERBOSE() << printPrefix<<"link "<< link.m_name;
   int childIndex = 0;
   for (auto& child : link.m_childJoints) {
-    Mn::Debug{} << printPrefix << " child J(" << childIndex
-                << "): " << child.lock()->m_name << " ->("
-                << child.lock()->m_childLinkName << ")";
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+        << printPrefix << "child J(" << childIndex
+        << "):" << child.lock()->m_name << "->("
+        << child.lock()->m_childLinkName << ")";
     childIndex++;
   }
   childIndex = 0;
   for (auto& child : link.m_childLinks) {
-    Mn::Debug{} << printPrefix << " child L(" << childIndex
-                << "): " << child.lock()->m_name;
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+        << printPrefix << "child L(" << childIndex
+        << "):" << child.lock()->m_name;
     printLinkChildrenHelper(*(child.lock()), printPrefix + "  ");
     childIndex++;
   }
 }
 
 void Model::printKinematicChain() const {
-  Mn::Debug{} << "------------------------------------------------------";
-  Mn::Debug{} << "Model::printKinematicChain: model = " << m_name;
+  ESP_VERY_VERBOSE()
+      << "------------------------------------------------------";
+  ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+      << "Model::printKinematicChain: model =" << m_name;
   int rootIndex = 0;
   for (const auto& root : m_rootLinks) {
-    Mn::Debug{} << "root L(" << rootIndex << "): " << root->m_name;
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+        << "root L(" << rootIndex << "):" << root->m_name;
     printLinkChildrenHelper(*root);
     rootIndex++;
   }
-  Mn::Debug{} << "------------------------------------------------------";
+  ESP_VERY_VERBOSE()
+      << "------------------------------------------------------";
 }
 
 }  // namespace URDF

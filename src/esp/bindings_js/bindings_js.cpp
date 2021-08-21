@@ -9,6 +9,8 @@
 
 namespace em = emscripten;
 
+#include "esp/gfx/replay/Recorder.h"
+#include "esp/gfx/replay/ReplayManager.h"
 #include "esp/scene/SemanticScene.h"
 #include "esp/sensor/CameraSensor.h"
 #include "esp/sensor/EquirectangularSensor.h"
@@ -27,6 +29,8 @@ using namespace esp::physics;
 using namespace esp::scene;
 using namespace esp::sensor;
 using namespace esp::sim;
+using namespace esp::gfx::replay;
+using esp::logging::LoggingContext;
 
 // Consider
 // https://becominghuman.ai/passing-and-returning-webassembly-array-parameters-a0f572c65d97
@@ -133,6 +137,9 @@ bool isBuildWithBulletPhysics() {
 }
 
 EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
+  em::class_<LoggingContext>("LoggingContext");
+  em::constant("_loggingContext", std::make_shared<LoggingContext>());
+
   em::function("toQuaternion", &toQuaternion);
   em::function("toVec3f", &toVec3f);
   em::function("toVec4f", &toVec4f);
@@ -255,6 +262,26 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("hits", &RaycastResults::hits)
       .property("ray", &RaycastResults::ray);
 
+  em::class_<ReplayManager>("ReplayManager")
+      .smart_ptr<ReplayManager::ptr>("ReplayManager::ptr")
+      .function("getRecorder", &ReplayManager::getRecorder)
+      .function("createEmptyPlayer", &ReplayManager::createEmptyPlayer);
+
+  em::class_<Player>("Player")
+      .smart_ptr<Player::ptr>("Player::ptr")
+      .function("appendJSONKeyframe", &Player::appendJSONKeyframe)
+      .function("setKeyframeIndex", &Player::setKeyframeIndex)
+      .function("getKeyframeIndex", &Player::getKeyframeIndex)
+      .function("getNumKeyframes", &Player::getNumKeyframes);
+
+  em::class_<Recorder>("Recorder")
+      .smart_ptr<Recorder::ptr>("Recorder::ptr")
+      .function("saveKeyframe", &Recorder::saveKeyframe)
+      .function("getLatestKeyframe", &Recorder::getLatestKeyframe)
+      .function("keyframeToString", &Recorder::keyframeToString);
+
+  em::class_<Keyframe>("Keyframe").smart_ptr<Keyframe::ptr>("Keyframe::ptr");
+
   em::class_<PathFinder>("PathFinder")
       .smart_ptr<PathFinder::ptr>("PathFinder::ptr")
       .property("bounds", &PathFinder::bounds)
@@ -358,8 +385,10 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("gpuDeviceId", &SimulatorConfiguration::gpuDeviceId)
       .property("compressTextures", &SimulatorConfiguration::compressTextures)
       .property("enablePhysics", &SimulatorConfiguration::enablePhysics)
-      .property("physicsConfigFile",
-                &SimulatorConfiguration::physicsConfigFile);
+      .property("physicsConfigFile", &SimulatorConfiguration::physicsConfigFile)
+      .property("createRenderer", &SimulatorConfiguration::createRenderer)
+      .property("enableGfxReplaySave",
+                &SimulatorConfiguration::enableGfxReplaySave);
 
   em::class_<AgentState>("AgentState")
       .smart_ptr_constructor("AgentState", &AgentState::create<>)
@@ -451,5 +480,7 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .function("getLightSetup", &Simulator::getLightSetup)
       .function("setLightSetup", &Simulator::setLightSetup)
       .function("stepWorld", &Simulator::stepWorld)
-      .function("castRay", &Simulator::castRay);
+      .function("castRay", &Simulator::castRay)
+      .function("getGfxReplayManager", &Simulator::getGfxReplayManager)
+      .function("setLinearVelocity", &Simulator::setLinearVelocity);
 }

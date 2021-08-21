@@ -42,8 +42,8 @@ inline bool fromJsonValue(const JsonGenericValue& obj, Magnum::Vector3& val) {
       if (obj[i].IsNumber()) {
         val[i] = obj[i].GetDouble();
       } else {
-        LOG(ERROR) << " Invalid numeric value specified in JSON Vec3, index :"
-                   << i;
+        ESP_ERROR() << "Invalid numeric value specified in JSON Vec3, index :"
+                    << i;
         return false;
       }
     }
@@ -73,8 +73,8 @@ inline bool fromJsonValue(const JsonGenericValue& obj, Magnum::Color4& val) {
       if (obj[i].IsNumber()) {
         vec4[i] = obj[i].GetDouble();
       } else {
-        LOG(ERROR) << " Invalid numeric value specified in JSON Color4, index :"
-                   << i;
+        ESP_ERROR() << "Invalid numeric value specified in JSON Color4, index :"
+                    << i;
         return false;
       }
     }
@@ -138,7 +138,7 @@ inline bool fromJsonValue(const JsonGenericValue& obj, Magnum::Rad& val) {
     val = Magnum::Rad{obj.GetFloat()};
     return true;
   }
-  LOG(ERROR) << "Invalid double value";
+  ESP_ERROR() << "Invalid double value";
   return true;
 }
 

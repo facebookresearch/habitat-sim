@@ -41,9 +41,9 @@ box3f OBB::toAABB() const {
 }
 
 void OBB::recomputeTransforms() {
-  ASSERT(center_.allFinite());
-  ASSERT(halfExtents_.allFinite());
-  ASSERT(rotation_.coeffs().allFinite());
+  CORRADE_INTERNAL_ASSERT(center_.allFinite());
+  CORRADE_INTERNAL_ASSERT(halfExtents_.allFinite());
+  CORRADE_INTERNAL_ASSERT(rotation_.coeffs().allFinite());
 
   // TODO(MS): these can be composed more efficiently and directly
   const mat3f R = rotation_.matrix();
@@ -135,7 +135,7 @@ OBB computeGravityAlignedMOBB(const vec3f& gravity,
   }
 
   const auto hull = convexHull2D(in_plane_points);
-  ASSERT(hull.size() > 0);
+  CORRADE_INTERNAL_ASSERT(hull.size() > 0);
 
   std::vector<vec2f> edge_dirs;
   for (size_t i = 0; i < hull.size(); ++i) {
@@ -218,7 +218,7 @@ OBB computeGravityAlignedMOBB(const vec3f& gravity,
         bottom_idx = (bottom_idx + 1) % hull.size();
         break;
       default:
-        ASSERT(false);
+        CORRADE_INTERNAL_ASSERT(false);
     }
 
     const float area =

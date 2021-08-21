@@ -16,9 +16,13 @@
 #include "esp/nav/PathFinder.h"
 #include "esp/scene/SemanticScene.h"
 
-using namespace esp::assets;
-using namespace esp::scene;
-using namespace esp::nav;
+using esp::assets::AssetInfo;
+using esp::assets::MeshData;
+using esp::assets::Mp3dInstanceMeshData;
+using esp::assets::SceneLoader;
+using esp::nav::NavMeshSettings;
+using esp::nav::PathFinder;
+using esp::scene::SemanticScene;
 
 int createNavMesh(const std::string& meshFile, const std::string& navmeshFile) {
   SceneLoader loader;
@@ -28,11 +32,11 @@ int createNavMesh(const std::string& meshFile, const std::string& navmeshFile) {
   bs.setDefaults();
   PathFinder pf;
   if (!pf.build(bs, mesh)) {
-    LOG(ERROR) << "Failed to build navmesh";
+    ESP_ERROR() << "Failed to build navmesh";
     return 2;
   }
   if (!pf.saveNavMesh(navmeshFile)) {
-    LOG(ERROR) << "Failed to save navmesh";
+    ESP_ERROR() << "Failed to save navmesh";
     return 3;
   }
   return 0;
@@ -41,7 +45,7 @@ int createNavMesh(const std::string& meshFile, const std::string& navmeshFile) {
 int createGibsonSemanticMesh(const std::string& objFile,
                              const std::string& idsFile,
                              const std::string& semMeshFile) {
-  LOG(INFO) << "createGibsonSemanticMesh";
+  ESP_DEBUG() << "createGibsonSemanticMesh";
   tinyobj::attrib_t attrib;
   std::vector<tinyobj::shape_t> shapes;
   std::vector<tinyobj::material_t> materials;
@@ -52,13 +56,13 @@ int createGibsonSemanticMesh(const std::string& objFile,
   bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err,
                               objFile.c_str());
   if (!warn.empty()) {
-    LOG(WARNING) << warn;
+    ESP_WARNING() << warn;
   }
   if (!err.empty()) {
-    LOG(ERROR) << err;
+    ESP_ERROR() << err;
   }
   if (!ret) {
-    LOG(ERROR) << "Failed to load " << objFile;
+    ESP_ERROR() << "Failed to load" << objFile;
     return 1;
   }
 
@@ -69,7 +73,7 @@ int createGibsonSemanticMesh(const std::string& objFile,
   std::vector<unsigned short> objectId(size / sizeof(short));
   file.read(reinterpret_cast<char*>(objectId.data()), size);
   if (!file) {
-    LOG(ERROR) << "Failed to load " << idsFile;
+    ESP_ERROR() << "Failed to load" << idsFile;
     return 2;
   }
 
@@ -127,7 +131,7 @@ int createMp3dSemanticMesh(const std::string& plyFile,
   SemanticScene semanticScene;
   bool success = SemanticScene::loadMp3dHouse(houseFile, semanticScene);
   if (!success) {
-    LOG(ERROR) << "Failed loading MP3D house file " << houseFile;
+    ESP_ERROR() << "Failed loading MP3D house file" << houseFile;
     return 1;
   }
   const std::unordered_map<int, int>& objectIdMap =
@@ -136,14 +140,14 @@ int createMp3dSemanticMesh(const std::string& plyFile,
   Mp3dInstanceMeshData mp3dMesh;
   success = mp3dMesh.loadMp3dPLY(plyFile);
   if (!success) {
-    LOG(ERROR) << "Failed parsing MP3D segmenation PLY " << plyFile;
+    ESP_ERROR() << "Failed parsing MP3D segmenation PLY" << plyFile;
     return 1;
   }
 
   success =
       mp3dMesh.saveSemMeshPLY(semMeshFile, semanticScene.getSemanticIndexMap());
   if (!success) {
-    LOG(ERROR) << "Failed saving MP3D semantic mesh PLY " << plyFile;
+    ESP_ERROR() << "Failed saving MP3D semantic mesh PLY" << plyFile;
     return 1;
   }
 
@@ -175,10 +179,10 @@ int main(int argc, char** argv) {
     }
     createGibsonSemanticMesh(argv[2], argv[3], argv[4]);
   } else {
-    LOG(ERROR) << "Unrecognized task " << task;
+    ESP_ERROR() << "Unrecognized task" << task;
     return 1;
   }
 
-  LOG(INFO) << "task: \"" << task << "\" done";
+  ESP_DEBUG() << "task: \"" << task << "\" done";
   return 0;
 }

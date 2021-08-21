@@ -24,9 +24,9 @@ bool SemanticScene::
   }
 
   // top-level scene
-  VLOG(1) << "loadGibsonHouse::Parsing " << houseFilename;
+  ESP_VERY_VERBOSE() << "Parsing" << houseFilename;
   const io::JsonDocument& json = io::parseJsonFile(houseFilename);
-  VLOG(1) << "loadGibsonHouse::Parsed.";
+  ESP_VERY_VERBOSE() << "Parsed.";
 
   return buildGibsonHouse(json, scene, rotation);
 }  // SemanticScene::loadGibsonHouse
@@ -46,7 +46,7 @@ bool SemanticScene::buildGibsonHouse(const io::JsonDocument& jsonDoc,
     SemanticObject::ptr object = SemanticObject::create();
     int id = jsonObject["id"].GetInt();
     if (id > kMaxIds) {
-      LOG(ERROR) << "Exceeded max number of ids";
+      ESP_ERROR() << "Exceeded max number of ids";
       continue;
     }
     if (scene.objects_.size() < id + 1) {
@@ -78,13 +78,13 @@ bool SemanticScene::buildGibsonHouse(const io::JsonDocument& jsonDoc,
         // Rotating sizes
         size = (rotation * io::jsonToVec3f(jsonSize)).array().abs();
       } else {
-        LOG(WARNING) << "Object size from " << categoryName
-                     << " isn't provided.";
+        ESP_WARNING() << "Object size from" << categoryName
+                      << "isn't provided.";
       }
       object->obb_ = geo::OBB(center, size, quatf::Identity());
     } else {
-      LOG(WARNING) << "Object center coordinates from " << categoryName
-                   << " aren't provided.";
+      ESP_WARNING() << "Object center coordinates from" << categoryName
+                    << "aren't provided.";
     }
     scene.objects_[id] = std::move(object);
   }

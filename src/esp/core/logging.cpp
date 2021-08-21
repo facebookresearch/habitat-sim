@@ -11,6 +11,8 @@
 #include <Corrade/Containers/Array.h>
 #include <Corrade/Containers/StaticArray.h>
 #include <Corrade/Containers/String.h>
+#include <Corrade/Containers/StringStl.h>
+#include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/Format.h>
 
 namespace Cr = Corrade;
@@ -18,6 +20,9 @@ using Cr::Containers::Literals::operator""_s;
 
 namespace esp {
 namespace logging {
+
+constexpr const char* LoggingContext::LOGGING_ENV_VAR_NAME;
+constexpr LoggingLevel LoggingContext::DEFAULT_LEVEL;
 
 static_assert(uint8_t(Subsystem::NumSubsystems) ==
                   (sizeof(subsystemNames) / sizeof(subsystemNames[0])),
@@ -59,9 +64,6 @@ LoggingLevel levelFromName(const Corrade::Containers::StringView name) {
 }
 
 namespace {
-#ifdef CORRADE_BUILD_MULTITHREADED
-CORRADE_THREAD_LOCAL
-#endif
 #if defined(MAGNUM_BUILD_STATIC_UNIQUE_GLOBALS) && \
     !defined(CORRADE_TARGET_WINDOWS)
 /* On static builds that get linked to multiple shared libraries and then used
@@ -75,14 +77,14 @@ __attribute__((weak))
 /* uh oh? the test will fail, probably */
 #endif
 #endif
-LoggingContext* currentLoggingContext = nullptr;
+const LoggingContext* currentLoggingContext = nullptr;
 }  // namespace
 
 bool LoggingContext::hasCurrent() {
   return currentLoggingContext != nullptr;
 }
 
-LoggingContext& LoggingContext::current() {
+const LoggingContext& LoggingContext::current() {
   ESP_CHECK(hasCurrent(),
             "esp::logging::LoggingContext: No current logging context.");
 
@@ -94,18 +96,6 @@ LoggingContext::LoggingContext(Corrade::Containers::StringView envString)
                      DEFAULT_LEVEL},
       prevContext_{currentLoggingContext} {
   currentLoggingContext = this;
-  processEnvString(envString);
-}
-
-LoggingContext::LoggingContext()
-    : LoggingContext{std::getenv(LOGGING_ENV_VAR_NAME)} {}
-
-LoggingContext::~LoggingContext() {
-  currentLoggingContext = prevContext_;
-}
-
-void LoggingContext::processEnvString(
-    const Cr::Containers::StringView envString) {
   for (const Cr::Containers::StringView setLevelCommand :
        envString.split(':')) {
     if (setLevelCommand.contains("=")) {
@@ -121,9 +111,11 @@ void LoggingContext::processEnvString(
   }
 }
 
-void LoggingContext::reinitializeFromEnv() {
-  std::fill(loggingLevels_.begin(), loggingLevels_.end(), DEFAULT_LEVEL);
-  processEnvString(std::getenv(LOGGING_ENV_VAR_NAME));
+LoggingContext::LoggingContext()
+    : LoggingContext{std::getenv(LOGGING_ENV_VAR_NAME)} {}
+
+LoggingContext::~LoggingContext() {
+  currentLoggingContext = prevContext_;
 }
 
 LoggingLevel LoggingContext::levelFor(Subsystem subsystem) const {
@@ -134,8 +126,14 @@ bool isLevelEnabled(Subsystem subsystem, LoggingLevel level) {
   return level >= LoggingContext::current().levelFor(subsystem);
 }
 
-Cr::Containers::String subsystemPrefix(Subsystem subsystem) {
-  return ""_s.join({"["_s, subsystemNames[uint8_t(subsystem)], "] "_s});
+Cr::Containers::String buildMessagePrefix(Subsystem subsystem,
+                                          const std::string& filename,
+                                          const std::string& function,
+                                          int line) {
+  auto baseFileName = Cr::Utility::Directory::filename(filename);
+  return ""_s.join({"["_s, subsystemNames[uint8_t(subsystem)], "] "_s,
+                    baseFileName, "("_s, std::to_string(line), ")::"_s,
+                    function, " : "_s});
 }
 
 }  // namespace logging

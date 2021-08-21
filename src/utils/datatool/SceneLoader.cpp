@@ -37,7 +37,7 @@ SceneLoader::SceneLoader()
 MeshData SceneLoader::load(const AssetInfo& info) {
   MeshData mesh;
   if (!esp::io::exists(info.filepath)) {
-    LOG(ERROR) << "Could not find file " << info.filepath;
+    ESP_ERROR() << "Could not find file" << info.filepath;
     return mesh;
   }
 
@@ -107,8 +107,8 @@ MeshData SceneLoader::load(const AssetInfo& info) {
     }  // meshes
   }
 
-  LOG(INFO) << "Loaded " << mesh.vbo.size() << " vertices, " << mesh.ibo.size()
-            << " indices";
+  ESP_DEBUG() << "Loaded" << mesh.vbo.size() << "vertices," << mesh.ibo.size()
+              << "indices";
 
   return mesh;
 };
