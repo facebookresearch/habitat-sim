@@ -6,11 +6,14 @@
 #define ESP_CORE_CONFIGURATION_H_
 
 #include <Corrade/Utility/Configuration.h>
+#include <Corrade/Utility/Debug.h>
+#include <Corrade/Utility/FormatStl.h>
 #include <Magnum/Magnum.h>
 #include <string>
 #include <typeinfo>
 #include <unordered_map>
 
+#include "esp/core/Check.h"
 #include "esp/core/esp.h"
 
 namespace Cr = Corrade;
@@ -34,8 +37,10 @@ enum class ConfigStoredType {
   MagnumQuat,
   MagnumRad,
 
-  _nonTrivialTypes,  // all non-trivial types must be represented with an enum
-                     // past this point
+  _nonTrivialTypes,
+  /**
+   * @brief All enum values of nontrivial types must be added after @p String .
+   */
   String = _nonTrivialTypes,
 };
 
@@ -48,7 +53,8 @@ constexpr bool isConfigStoredTypeNonTrivial(ConfigStoredType type) {
 }
 
 /**
- * @brief Function template to return type enum for specified type
+ * @brief Function template to return type enum for specified type. Add a
+ * specialization for each new type we wish to support.
  */
 template <class T>
 constexpr ConfigStoredType configStoredTypeFor() {
@@ -85,6 +91,8 @@ constexpr ConfigStoredType configStoredTypeFor<Mn::Rad>() {
   return ConfigStoredType::MagnumRad;
 }
 
+MAGNUM_EXPORT Mn::Debug& operator<<(Mn::Debug& debug,
+                                    const ConfigStoredType& value);
 /**
  * @brief This class uses an anonymous tagged union to store values of different
  * types, as well as providing access to the values in a type safe manner.
@@ -105,22 +113,19 @@ class ConfigValue {
   /**
    * @brief Copy the passed @p val into this ConfigValue.
    * @param val source val to copy into this config
-   * @param src string name of calling method, for debugging.
    */
-  void copyValueInto(const ConfigValue& val, const std::string& src);
+  void copyValueInto(const ConfigValue& val);
 
   /**
    * @brief Move the passed @p val into this ConfigVal.
    * @param val source val to copy into this config
-   * @param src string name of calling method, for debugging.
    */
-  void moveValueInto(ConfigValue&& val, const std::string& src);
+  void moveValueInto(ConfigValue&& val);
 
   /**
-   * @brief Delete the current value.  Resets type to int, i to 0.
-   * @param src string name of calling method, for debugging.
+   * @brief Delete the current value.  Resets type to int
    */
-  void deleteCurrentValue(const std::string& src);
+  void deleteCurrentValue();
 
  public:
   ConfigValue() = default;
@@ -136,7 +141,7 @@ class ConfigValue {
   template <class T>
   void set(const T& value) {
     // this never fails, not a bool anymore
-    deleteCurrentValue("Setter");
+    deleteCurrentValue();
     // this will blow up at compile time if such type is not supported
     _type = configStoredTypeFor<T>();
     // see later
@@ -155,10 +160,9 @@ class ConfigValue {
 
   template <class T>
   const T& get() const {
-    // ESP_CHECK(_type == configStoredTypeFor<T>(),
-    //           "Attempting to access ConfigValue of" << _type << "with"
-    //                                                 <<
-    //                                                 configStoredTypeFor<T>());
+    ESP_CHECK(_type == configStoredTypeFor<T>(),
+              "Attempting to access ConfigValue of"
+                  << _type << "with type" << configStoredTypeFor<T>());
     return *reinterpret_cast<const T*>(_data);
   }
 

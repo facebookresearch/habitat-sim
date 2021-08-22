@@ -19,15 +19,15 @@ namespace {
 
 // free functions for non-trivial types control.
 template <class T>
-void copyConstructorFunc(const char* src, char* dst) {
+void copyConstructorFunc(const char* src, char* const dst) {
   new (dst) T{*reinterpret_cast<const T*>(src)};
 }
 template <class T>
-void moveConstructorFunc(char* src, char* dst) {
+void moveConstructorFunc(char* const src, char* const dst) {
   new (dst) T{std::move(*reinterpret_cast<T*>(src))};
 }
 template <class T>
-void destructorFunc(char* src) {
+void destructorFunc(char* const src) {
   reinterpret_cast<T*>(src)->~T();
 }
 
@@ -55,19 +55,18 @@ NonTrivialTypeHandler nonTrivialConfigStoredTypeHandlerFor(
 }
 
 ConfigValue::ConfigValue(const ConfigValue& otr) {
-  copyValueInto(otr, "Copy Constructor");
+  copyValueInto(otr);
 }
 
 ConfigValue::ConfigValue(ConfigValue&& otr) noexcept {
-  copyValueInto(otr, "Move Constructor");
+  copyValueInto(otr);
 }
 
 ConfigValue::~ConfigValue() {
-  deleteCurrentValue("Destructor.");
+  deleteCurrentValue();
 }
 
-void ConfigValue::copyValueInto(const ConfigValue& otr,
-                                const std::string& src) {
+void ConfigValue::copyValueInto(const ConfigValue& otr) {
   std::memcpy(_data, otr._data, sizeof(_data));
   // set new type
   _type = otr._type;
@@ -76,7 +75,8 @@ void ConfigValue::copyValueInto(const ConfigValue& otr,
   }
 }
 
-void ConfigValue::moveValueInto(ConfigValue&& otr, const std::string& src) {
+void ConfigValue::moveValueInto(ConfigValue&& otr) {
+  // moving character buffer ends up not being much better than copy
   std::memcpy(_data, otr._data, sizeof(_data));
   // set new type
   _type = otr._type;
@@ -85,25 +85,24 @@ void ConfigValue::moveValueInto(ConfigValue&& otr, const std::string& src) {
   }
 }
 
-void ConfigValue::deleteCurrentValue(const std::string& src) {
-  if (isConfigStoredTypeNonTrivial(_type))
+void ConfigValue::deleteCurrentValue() {
+  _type = ConfigStoredType::Unknown;
+  if (isConfigStoredTypeNonTrivial(_type)) {
     nonTrivialConfigStoredTypeHandlerFor(_type).destructor(_data);
+  }
 }
 
 ConfigValue& ConfigValue::operator=(const ConfigValue& otr) {
-  // if current value is string, magnum vector, magnum quat or magnum rad
-  deleteCurrentValue("assignment operator");
-
-  copyValueInto(otr, "assignment operator");
-
+  if (this != &otr) {
+    deleteCurrentValue();
+    copyValueInto(otr);
+  }
   return *this;
-}
+}  // namespace config
 
 ConfigValue& ConfigValue::operator=(ConfigValue&& otr) noexcept {
-  // if current value is string, magnum vector, magnum quat or magnum rad
-  deleteCurrentValue("move assignment operator");
-  moveValueInto(std::move(otr), "move assignment operator");
-
+  deleteCurrentValue();
+  moveValueInto(std::move(otr));
   return *this;
 }
 
@@ -171,9 +170,25 @@ bool ConfigValue::putValueInConfigGroup(
   return false;
 }  // ConfigValue::putValueInConfigGroup
 
+Mn::Debug& operator<<(Mn::Debug& debug, const ConfigStoredType& value) {
+  debug << "Type";
+  switch (value) {
+/* LCOV_EXCL_START */
+#define _c(value)               \
+  case ConfigStoredType::value: \
+    return debug << ":" #value;
+    _c(Unknown) _c(Boolean) _c(Integer) _c(Double) _c(MagnumVec3) _c(MagnumQuat)
+        _c(MagnumRad) _c(String)
+#undef _c
+    /* LCOV_EXCL_STOP */
+  }
+  return debug << ":" << reinterpret_cast<void*>(int(value))
+               << "not supported in debug stream";
+}
+
 Mn::Debug& operator<<(Mn::Debug& debug, const ConfigValue& value) {
-  return debug << "ConfigValue (" << Mn::Debug::nospace << value.getAsString()
-               << Mn::Debug::nospace << ")";
+  return debug << "ConfigValue :(" << Mn::Debug::nospace << value.getAsString()
+               << "|" << value.getType() << Mn::Debug::nospace << ")";
 }
 
 }  // namespace config
