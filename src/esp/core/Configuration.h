@@ -108,7 +108,7 @@ class ConfigValue {
    * @brief The data this ConfigValue holds - four floats at most, doubles and
    * 64bit pointers need 8-byte alignment
    */
-  alignas(sizeof(void*) * 2) char _data[4 * 8];
+  alignas(sizeof(void*) * 2) char _data[4 * 8] = {0};
 
   /**
    * @brief Copy the passed @p val into this ConfigValue.

@@ -19,7 +19,7 @@ namespace {
 
 // free functions for non-trivial types control.
 template <class T>
-void copyConstructorFunc(const char* src, char* const dst) {
+void copyConstructorFunc(const char* const src, char* const dst) {
   new (dst) T{*reinterpret_cast<const T*>(src)};
 }
 template <class T>
@@ -32,9 +32,9 @@ void destructorFunc(char* const src) {
 }
 
 struct NonTrivialTypeHandler {
-  void (*copier)(const char*, char*);
-  void (*mover)(char*, char*);
-  void (*destructor)(char*);
+  void (*copier)(const char* const, char* const);
+  void (*mover)(char* const, char* const);
+  void (*destructor)(char* const);
 
   template <class T>
   static constexpr NonTrivialTypeHandler make() {
@@ -174,15 +174,15 @@ Mn::Debug& operator<<(Mn::Debug& debug, const ConfigStoredType& value) {
   debug << "Type";
   switch (value) {
 /* LCOV_EXCL_START */
-#define _c(value)               \
+#define _s(value)               \
   case ConfigStoredType::value: \
     return debug << ":" #value;
-    _c(Unknown) _c(Boolean) _c(Integer) _c(Double) _c(MagnumVec3) _c(MagnumQuat)
-        _c(MagnumRad) _c(String)
-#undef _c
+    _s(Unknown) _s(Boolean) _s(Integer) _s(Double) _s(MagnumVec3) _s(MagnumQuat)
+        _s(MagnumRad) _s(String)
+#undef _s
     /* LCOV_EXCL_STOP */
   }
-  return debug << ":" << reinterpret_cast<void*>(int(value))
+  return debug << ":" << static_cast<int>(value)
                << "not supported in debug stream";
 }
 
