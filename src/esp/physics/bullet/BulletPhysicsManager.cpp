@@ -147,6 +147,12 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
 
   // TODO: set these flags up better
   u2b->flags = 0;
+
+  // temp enable collision between links, except for parent-child links
+  urdfImporter_->flags |= ConvertURDFFlags::CUF_USE_SELF_COLLISION;
+  urdfImporter_->flags |=
+      ConvertURDFFlags::CUF_USE_SELF_COLLISION_EXCLUDE_PARENT;
+
   u2b->initURDF2BulletCache();
 
   articulatedObject->initializeFromURDF(*urdfImporter_, {}, physicsNode_);
