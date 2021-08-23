@@ -5,6 +5,7 @@
 // Construction code adapted from Bullet3/examples/
 
 #include "BulletArticulatedObject.h"
+#include "BulletDebugManager.h"
 #include "BulletDynamics/Featherstone/btMultiBodyLinkCollider.h"
 #include "BulletPhysicsManager.h"
 #include "BulletURDFImporter.h"
@@ -618,6 +619,25 @@ struct AOSimulationContactResultCallback
     : public SimulationContactResultCallback {
   btMultiBody* mb_ = nullptr;
   btRigidBody* fixedBaseColObj_ = nullptr;
+
+#if 0
+  btScalar addSingleResult(
+      CORRADE_UNUSED btManifoldPoint& cp,
+      CORRADE_UNUSED const btCollisionObjectWrapper* colObj0Wrap,
+      CORRADE_UNUSED int partId0,
+      CORRADE_UNUSED int index0,
+      CORRADE_UNUSED const btCollisionObjectWrapper* colObj1Wrap,
+      CORRADE_UNUSED int partId1,
+      CORRADE_UNUSED int index1) override {
+    bCollision = true;
+
+    CORRADE_INTERNAL_ASSERT(colObj0Wrap && colObj1Wrap);
+    ESP_DEBUG() << "addSingleResult [" << BulletDebugManager::get().getCollisionObjectName(colObj0Wrap->getCollisionObject())
+      << "] vs [" << BulletDebugManager::get().getCollisionObjectName(colObj1Wrap->getCollisionObject());
+
+    return 0;  // not used
+  }
+#endif
 
   /**
    * @brief Constructor taking the AO's btMultiBody as input to screen

@@ -457,6 +457,9 @@ class BulletRigidObject : public BulletBase,
   bool initialization_LibSpecific() override;
 
  protected:
+  // TODO: document
+  std::string getCollisionDebugName();
+
   /**
    * @brief Used to synchronize Bullet's notion of the object state
    * after it was changed kinematically. Called automatically on kinematic
