@@ -54,6 +54,7 @@ option(
 )
 option(BUILD_TEST "Build test binaries" OFF)
 option(USE_SYSTEM_ASSIMP "Use system Assimp instead of a bundled submodule" OFF)
+option(USE_SYSTEM_OPENEXR "Use system OpenEXR instead of a bundled submodule" OFF)
 option(USE_SYSTEM_EIGEN "Use system Eigen instead of a bundled submodule" OFF)
 option(USE_SYSTEM_GLFW "Use system GLFW instead of a bundled submodule" OFF)
 option(USE_SYSTEM_MAGNUM "Use system Magnum instead of a bundled submodule" OFF)
