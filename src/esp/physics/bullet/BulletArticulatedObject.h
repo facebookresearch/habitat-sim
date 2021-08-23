@@ -410,6 +410,8 @@ class BulletArticulatedObject : public ArticulatedObject {
   //! The Bullet multibody structure
   std::unique_ptr<btMultiBody> btMultiBody_;
 
+  void updateAabbs();
+
  protected:
   /**
    * @brief Called internally from syncPose()  Used to update physics

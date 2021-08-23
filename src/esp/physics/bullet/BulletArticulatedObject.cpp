@@ -589,10 +589,7 @@ void BulletArticulatedObject::clampJointLimits() {
   }
 }
 
-void BulletArticulatedObject::updateKinematicState() {
-  btMultiBody_->forwardKinematics(scratch_q_, scratch_m_);
-  btMultiBody_->updateCollisionObjectWorldTransforms(scratch_q_, scratch_m_);
-  // Need to update the aabbs manually also for broadphase collision detection
+void BulletArticulatedObject::updateAabbs() {
   for (int linkIx = 0; linkIx < btMultiBody_->getNumLinks(); ++linkIx) {
     bWorld_->updateSingleAabb(btMultiBody_->getLinkCollider(linkIx));
   }
@@ -600,6 +597,13 @@ void BulletArticulatedObject::updateKinematicState() {
   if (bFixedObjectRigidBody_) {
     bWorld_->updateSingleAabb(bFixedObjectRigidBody_.get());
   }
+}
+
+void BulletArticulatedObject::updateKinematicState() {
+  btMultiBody_->forwardKinematics(scratch_q_, scratch_m_);
+  btMultiBody_->updateCollisionObjectWorldTransforms(scratch_q_, scratch_m_);
+  // Need to update the aabbs manually also for broadphase collision detection
+  updateAabbs();
   // update visual shapes
   if (!isDeferringUpdate_) {
     updateNodes(true);
