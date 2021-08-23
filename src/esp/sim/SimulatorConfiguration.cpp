@@ -14,6 +14,7 @@ bool operator==(const SimulatorConfiguration& a,
          a.defaultCameraUuid == b.defaultCameraUuid &&
          a.compressTextures == b.compressTextures &&
          a.createRenderer == b.createRenderer &&
+         a.loadRenderAssets == b.loadRenderAssets &&
          a.allowSliding == b.allowSliding &&
          a.frustumCulling == b.frustumCulling &&
          a.enablePhysics == b.enablePhysics &&

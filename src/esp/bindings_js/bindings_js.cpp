@@ -387,6 +387,7 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("enablePhysics", &SimulatorConfiguration::enablePhysics)
       .property("physicsConfigFile", &SimulatorConfiguration::physicsConfigFile)
       .property("createRenderer", &SimulatorConfiguration::createRenderer)
+      .property("loadRenderAssets", &SimulatorConfiguration::loadRenderAssets)
       .property("enableGfxReplaySave",
                 &SimulatorConfiguration::enableGfxReplaySave);
 

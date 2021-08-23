@@ -129,6 +129,10 @@ bool ResourceManager::getCreateRenderer() const {
   return metadataMediator_->getCreateRenderer();
 }
 
+bool ResourceManager::getLoadRenderAssets() const {
+  return metadataMediator_->getSimulatorConfiguration().loadRenderAssets;
+}
+
 void ResourceManager::initDefaultPrimAttributes() {
   if (!getCreateRenderer()) {
     return;

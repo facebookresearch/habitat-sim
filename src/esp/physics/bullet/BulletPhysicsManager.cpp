@@ -358,19 +358,23 @@ bool BulletPhysicsManager::attachLinkGeometry(
 
     // add the visual shape to the SceneGraph
     if (visualSetupSuccess) {
-      assets::RenderAssetInstanceCreationInfo::Flags flags;
-      flags |= assets::RenderAssetInstanceCreationInfo::Flag::IsRGBD;
-      flags |= assets::RenderAssetInstanceCreationInfo::Flag::IsSemantic;
-      assets::RenderAssetInstanceCreationInfo creation(
-          visualMeshInfo.filepath, Mn::Vector3{1}, flags, lightSetup);
+      if (resourceManager_.getLoadRenderAssets()) {
+        assets::RenderAssetInstanceCreationInfo::Flags flags;
+        flags |= assets::RenderAssetInstanceCreationInfo::Flag::IsRGBD;
+        flags |= assets::RenderAssetInstanceCreationInfo::Flag::IsSemantic;
+        assets::RenderAssetInstanceCreationInfo creation(
+            visualMeshInfo.filepath, Mn::Vector3{1}, flags, lightSetup);
 
-      geomSuccess = resourceManager_.loadAndCreateRenderAssetInstance(
-                        visualMeshInfo, creation, &visualGeomComponent,
-                        drawables, &linkObject->visualNodes_) != nullptr;
-      ESP_CHECK(geomSuccess,
-                "BulletPhysicsManager::attachLinkGeometry "
-                "loadAndCreateRenderAssetInstance failed for filepath: " +
-                    visualMeshInfo.filepath);
+        geomSuccess = resourceManager_.loadAndCreateRenderAssetInstance(
+                          visualMeshInfo, creation, &visualGeomComponent,
+                          drawables, &linkObject->visualNodes_) != nullptr;
+        ESP_CHECK(geomSuccess,
+                  "BulletPhysicsManager::attachLinkGeometry "
+                  "loadAndCreateRenderAssetInstance failed for filepath: " +
+                      visualMeshInfo.filepath);
+      } else {
+        geomSuccess = true;
+      }
 
       // cache the visual component for later query
       if (geomSuccess) {

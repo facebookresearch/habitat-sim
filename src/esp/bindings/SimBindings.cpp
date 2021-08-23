@@ -46,6 +46,8 @@ void initSimBindings(py::module& m) {
       .def_readwrite("gpu_device_id", &SimulatorConfiguration::gpuDeviceId)
       .def_readwrite("allow_sliding", &SimulatorConfiguration::allowSliding)
       .def_readwrite("create_renderer", &SimulatorConfiguration::createRenderer)
+      .def_readwrite("load_render_assets",
+                     &SimulatorConfiguration::loadRenderAssets)
       .def_readwrite(
           "leave_context_with_background_renderer",
           &SimulatorConfiguration::leaveContextWithBackgroundRenderer,

@@ -24,6 +24,7 @@ struct SimulatorConfiguration {
   std::string defaultCameraUuid = "rgba_camera";
   bool compressTextures = false;
   bool createRenderer = true;
+  bool loadRenderAssets = true;
   // Whether or not the agent can slide on collisions
   bool allowSliding = true;
   // enable or disable the frustum culling

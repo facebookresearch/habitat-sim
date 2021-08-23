@@ -27,6 +27,8 @@ bool URDFImporter::loadURDF(const std::string& filename,
       return false;
     }
 
+    urdfParser_.doCheckMeshFilesExist = resourceManager_.getLoadRenderAssets();
+
     // parse the URDF from file
     std::shared_ptr<io::URDF::Model> urdfModel;
     bool success = urdfParser_.parseURDF(urdfModel, filename);
