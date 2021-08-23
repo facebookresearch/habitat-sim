@@ -34,22 +34,42 @@ struct Robot {
   esp::physics::BulletArticulatedObject* artObj = nullptr;
   BpsSceneMapping sceneMapping;
   std::vector<Magnum::Matrix4> nodeTransformFixups;
+  std::pair<std::vector<float>, std::vector<float>> jointPositionLimits;
+};
+
+struct RolloutRecord {
+  RolloutRecord() = default;
+  RolloutRecord(int numRolloutSteps,
+                int numEnvs,
+                int numJointVars,
+                int numNodes);
+
+  int numRolloutSteps_ = 0;
+  std::vector<float>
+      jointPositions_;       // [numRolloutSteps * numEnvs * numJointVars]
+  std::vector<float> yaws_;  // [numRolloutSteps * numEnvs]
+  std::vector<Mn::Vector2> positions_;           // [numRolloutSteps * numEnvs]
+  std::vector<Magnum::Matrix4> rootTransforms_;  // [numRolloutSteps * numEnvs]
+  std::vector<Magnum::Matrix4>
+      nodeTransforms_;  // [numRolloutSteps * numEnvs * numNodes]
+
+  std::vector<float> rewards_;  // [numRolloutSteps * numEnvs]
 };
 
 class RobotInstanceSet {
  public:
   RobotInstanceSet() = default;
   RobotInstanceSet(Robot* robot,
-                   int batchSize,
-                   std::vector<bps3D::Environment>* envs);
+                   int numEnvs,
+                   std::vector<bps3D::Environment>* envs,
+                   RolloutRecord* rollouts);
 
-  void updateLinkTransforms();
+  void updateLinkTransforms(int currRolloutStep);
 
   Robot* robot_ = nullptr;
-  int batchSize_ = 0;
-  std::vector<float> jointPositions_;
-  std::vector<Magnum::Matrix4> rootTransforms_;
-  std::vector<Magnum::Matrix4> nodeTransforms_;
+  int numEnvs_ = 0;
+  RolloutRecord* rollouts_ = nullptr;
+
   std::vector<int> nodeInstanceIds_;
 
   btAlignedObjectArray<btQuaternion> scratch_q_;
@@ -58,24 +78,47 @@ class RobotInstanceSet {
   std::vector<bps3D::Environment>* envs_;
 };
 
-struct SimInstanceSet {
-  RobotInstanceSet robots;
+struct RewardCalculationContext {
+  RewardCalculationContext() = default;
+  RewardCalculationContext(const Robot* robot,
+                           int numEnvs,
+                           RolloutRecord* rollouts);
+
+  void calcRewards(int currRolloutStep, int bStart, int bEnd);
+
+  esp::physics::BulletArticulatedObject* artObj_ = nullptr;
+  std::unique_ptr<esp::sim::Simulator> legacySim_;
+  btAlignedObjectArray<btQuaternion> scratch_q_;
+  btAlignedObjectArray<btVector3> scratch_m_;
+  const Robot* robot_ = nullptr;
+  int numEnvs_ = -1;
+  RolloutRecord* rollouts_ = nullptr;
 };
 
 class BatchedSimulator {
  public:
   BatchedSimulator();
 
+  void setActions(std::vector<float>&& actions);
   void stepPhysics();
   void startRender();
   void waitForFrame();
   bps3D::Renderer& getBpsRenderer();
 
+  void calcRewards();
+
  private:
+  void randomizeRobotsForCurrentStep();
+
   Robot robot_;
-  SimInstanceSet simInstances_;
+  RobotInstanceSet robots_;
+  int currRolloutStep_ = -1;
+  RolloutRecord rollouts_;
   std::unique_ptr<esp::sim::Simulator> legacySim_;
   std::unique_ptr<BpsWrapper> bpsWrapper_;
+  std::vector<float> actions_;
+  int maxRolloutSteps_ = -1;
+  RewardCalculationContext rewardContext_;
 
   ESP_SMART_POINTERS(BatchedSimulator)
 };

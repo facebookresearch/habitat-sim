@@ -26,7 +26,9 @@ py::capsule getColorMemory(BatchedSimulator& bsim, const uint32_t groupIdx) {
 void initBatchedSimBindings(py::module& m) {
   py::class_<BatchedSimulator, BatchedSimulator::ptr>(m, "BatchedSimulator")
       .def(py::init(&BatchedSimulator::create<>))
+      .def("set_actions", &BatchedSimulator::setActions, R"(todo)")
       .def("step_physics", &BatchedSimulator::stepPhysics, R"(todo)")
+      .def("calc_rewards", &BatchedSimulator::calcRewards, R"(todo)")
       .def("start_render", &BatchedSimulator::startRender, R"(todo)")
       .def("wait_for_frame", &BatchedSimulator::waitForFrame, R"(todo)")
 

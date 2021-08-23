@@ -72,7 +72,11 @@ TEST_F(BatchedSimulatorTest, basic) {
 
   BatchedSimulator bsim;
 
+  bsim.calcRewards();
   bsim.stepPhysics();
+
+  bsim.calcRewards();
+
   bsim.startRender();
   bsim.waitForFrame();
 
@@ -80,8 +84,8 @@ TEST_F(BatchedSimulatorTest, basic) {
   float* base_depth_ptr = bsim.getBpsRenderer().getDepthPointer();
 
   // temp hack copied from BpsWrapper internals
-  uint32_t batch_size = 11;
-  glm::u32vec2 out_dim(1024, 1024);
+  uint32_t batch_size = 1;
+  glm::u32vec2 out_dim(512, 512);
 
   for (uint32_t batch_idx = 0; batch_idx < batch_size; batch_idx++) {
     saveFrame(("./out_color_" + std::to_string(batch_idx) + ".bmp").c_str(),

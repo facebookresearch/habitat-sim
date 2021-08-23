@@ -62,19 +62,41 @@ std::string getMeshNameFromURDFVisualFilepath(const std::string& filepath) {
 
 }  // namespace
 
+void BatchedSimulator::randomizeRobotsForCurrentStep() {
+  CORRADE_INTERNAL_ASSERT(currRolloutStep_ >= 0);
+  int numEnvs = bpsWrapper_->envs_.size();
+  int numPosVars = robot_.numPosVars;
+
+  float* yaws = &rollouts_.yaws_[currRolloutStep_ * numEnvs];
+  Mn::Vector2* positions = &rollouts_.positions_[currRolloutStep_ * numEnvs];
+  float* jointPositions =
+      &rollouts_.jointPositions_[currRolloutStep_ * numEnvs * numPosVars];
+
+  auto random = core::Random(/*seed*/ 0);
+  for (int b = 0; b < numEnvs; b++) {
+    yaws[b] = random.uniform_float(-float(Mn::Rad(Mn::Deg(90.f))), 0.f);
+    positions[b] =
+        Mn::Vector2(1.61, 0.98) + Mn::Vector2(random.uniform_float(-0.1, 0.1f),
+                                              random.uniform_float(-0.1, 0.1f));
+    for (int j = 0; j < robot_.numPosVars; j++) {
+      auto& pos = jointPositions[b * robot_.numPosVars + j];
+      pos = random.uniform_float(-0.1, 0.2f);
+      pos = Mn::Math::clamp(pos, robot_.jointPositionLimits.first[j],
+                            robot_.jointPositionLimits.second[j]);
+    }
+  }
+}
+
 RobotInstanceSet::RobotInstanceSet(Robot* robot,
-                                   int batchSize,
-                                   std::vector<bps3D::Environment>* envs)
-    : batchSize_(batchSize), envs_(envs), robot_(robot) {
+                                   int numEnvs,
+                                   std::vector<bps3D::Environment>* envs,
+                                   RolloutRecord* rollouts)
+    : numEnvs_(numEnvs), envs_(envs), robot_(robot), rollouts_(rollouts) {
   int numLinks = robot->artObj->getNumLinks();
   int numNodes = numLinks + 1;  // include base
-  int batchNumPosVars = robot_->numPosVars * batchSize;
-  int batchNumNodes = numNodes * batchSize;
-  jointPositions_.resize(batchNumPosVars, 0);
-  rootTransforms_.resize(batchSize,
-                         Magnum::Matrix4(Magnum::Math::IdentityInit));
-  nodeTransforms_.resize(batchNumNodes,
-                         Magnum::Matrix4(Magnum::Math::IdentityInit));
+  int batchNumPosVars = robot_->numPosVars * numEnvs;
+  int batchNumNodes = numNodes * numEnvs;
+
   nodeInstanceIds_.resize(batchNumNodes, -1);
 
   const auto* mb = robot_->artObj->btMultiBody_.get();
@@ -117,16 +139,33 @@ RobotInstanceSet::RobotInstanceSet(Robot* robot,
   }
 }
 
-void RobotInstanceSet::updateLinkTransforms() {
+void RobotInstanceSet::updateLinkTransforms(int currRolloutStep) {
   esp::gfx::replay::Keyframe debugKeyframe;
   int numLinks = robot_->artObj->getNumLinks();
   int numNodes = numLinks + 1;
+  int numEnvs = numEnvs_;
+  int numPosVars = robot_->numPosVars;
 
   auto* mb = robot_->artObj->btMultiBody_.get();
   int posCount = 0;
 
-  for (int b = 0; b < batchSize_; b++) {
-    btTransform tr{rootTransforms_[b]};
+  const float* yaws = &rollouts_->yaws_[currRolloutStep * numEnvs];
+  const Mn::Vector2* positions =
+      &rollouts_->positions_[currRolloutStep * numEnvs];
+  const float* jointPositions =
+      &rollouts_->jointPositions_[currRolloutStep * numEnvs * numPosVars];
+  Mn::Matrix4* rootTransforms =
+      &rollouts_->rootTransforms_[currRolloutStep * numEnvs];
+
+  for (int b = 0; b < numEnvs_; b++) {
+    // perf todo: simplify this
+    rootTransforms[b] =
+        Mn::Matrix4::translation(
+            Mn::Vector3(positions[b].x(), 0.f, positions[b].y())) *
+        Mn::Matrix4::rotation(Mn::Rad(yaws[b]), {0.f, 1.f, 0.f}) *
+        Mn::Matrix4::rotation(Mn::Deg(-90.f), {1.f, 0.f, 0.f});
+
+    btTransform tr{rootTransforms[b]};
     mb->setBaseWorldTransform(tr);
 
     for (int i = 0; i < numLinks; ++i) {
@@ -134,7 +173,7 @@ void RobotInstanceSet::updateLinkTransforms() {
       // optimization todo: find correct subset of links
       if (link.m_posVarCount > 0) {
         mb->setJointPosMultiDof(i,
-                                const_cast<float*>(&jointPositions_[posCount]));
+                                const_cast<float*>(&jointPositions[posCount]));
         posCount += link.m_posVarCount;
       }
     }
@@ -164,7 +203,7 @@ void RobotInstanceSet::updateLinkTransforms() {
 
         auto tmp = robot_->nodeTransformFixups[nodeIndex];
         // auto vec = tmp[3];
-        // const float scale = (float)b / (batchSize_ - 1);
+        // const float scale = (float)b / (numEnvs_ - 1);
         // tmp[3] = Mn::Vector4(vec.xyz() * scale, 1.f);
         mat = mat * tmp;
 
@@ -240,6 +279,7 @@ void RobotInstanceSet::updateLinkTransforms() {
 #endif
   }
 
+#if 0
   {
     {
       rapidjson::Document document(rapidjson::kObjectType);
@@ -248,6 +288,7 @@ void RobotInstanceSet::updateLinkTransforms() {
       esp::io::writeJsonToFile(document, "temp.replay.json");
     }
   }
+#endif
 }
 
 Robot::Robot(const std::string& filepath, esp::sim::Simulator* sim) {
@@ -256,11 +297,17 @@ Robot::Robot(const std::string& filepath, esp::sim::Simulator* sim) {
       sim->getArticulatedObjectManager()->addBulletArticulatedObjectFromURDF(
           filepath);
 
+  // temp
+  bool result = managedObj->contactTest();
+  ESP_DEBUG() << "contactTest result: " << result;
+
   artObj = static_cast<esp::physics::BulletArticulatedObject*>(
       managedObj->hackGetBulletObjectReference().get());
   sceneMapping = BpsSceneMapping::loadFromFile(
       "/home/eundersander/projects/bps_data/combined_Stage_v3_sc0_staging/"
       "combined_Stage_v3_sc0_staging_trimesh.bps.mapping.json");
+
+  jointPositionLimits = artObj->getJointPositionLimits();
 
   int numLinks = artObj->getNumLinks();
   int numNodes = numLinks + 1;
@@ -292,11 +339,12 @@ Robot::Robot(const std::string& filepath, esp::sim::Simulator* sim) {
 }
 
 BpsWrapper::BpsWrapper() {
-  uint32_t batch_size = 11;  // todo: get from python
-  glm::u32vec2 out_dim(1024, 1024);
+  uint32_t numEnvs = 1;  // todo: get from python
+  glm::u32vec2 out_dim(512,
+                       512);  // see also rollout_test.py, python/rl/agent.py
 
   renderer_ = std::make_unique<bps3D::Renderer>(bps3D::RenderConfig{
-      0, 1, batch_size, out_dim.x, out_dim.y, false,
+      0, 1, numEnvs, out_dim.x, out_dim.y, false,
       bps3D::RenderMode::Depth | bps3D::RenderMode::UnlitRGB});
 
   loader_ = std::make_unique<bps3D::AssetLoader>(renderer_->makeLoader());
@@ -309,7 +357,7 @@ BpsWrapper::BpsWrapper() {
   const Mn::Quaternion camRot{{0, -0.529178, 0}, 0.848511};
   glm::mat4 base(glm::inverse(toGlmMat4(camPos, camRot)));
 
-  for (int b = 0; b < batch_size; b++) {
+  for (int b = 0; b < numEnvs; b++) {
     glm::mat4 view = base;
     auto env = renderer_->makeEnvironment(scene_, view, /*fov*/ 45.f, 0.f, 0.01,
                                           1000.f);
@@ -332,6 +380,7 @@ BatchedSimulator::BatchedSimulator() {
   simConfig.activeSceneName = "NONE";
   simConfig.enablePhysics = true;
   simConfig.createRenderer = false;
+  simConfig.loadRenderAssets = false;
   // simConfig.physicsConfigFile = physicsConfigFile;
 
   legacySim_ = esp::sim::Simulator::create_unique(simConfig);
@@ -339,17 +388,101 @@ BatchedSimulator::BatchedSimulator() {
   const std::string filepath = "data/URDF/opt_fetch/robots/fetch.urdf";
 
   robot_ = Robot(filepath, legacySim_.get());
+  int numLinks = robot_.artObj->getNumLinks();
+  int numNodes = numLinks + 1;  // include base
 
-  const int batchSize = bpsWrapper_->envs_.size();
-  simInstances_.robots =
-      RobotInstanceSet(&robot_, batchSize, &bpsWrapper_->envs_);
+  const int numEnvs = bpsWrapper_->envs_.size();
+  robots_ = RobotInstanceSet(&robot_, numEnvs, &bpsWrapper_->envs_, &rollouts_);
+
+  // see also python/rl/agent.py
+  const int numJointDegrees = robot_.numPosVars;
+  const int numBaseDegrees = 2;  // rotate and move-forward/back
+
+  int batchNumActions = (numJointDegrees + numBaseDegrees) * numEnvs;
+  actions_.resize(batchNumActions, 0.f);
+
+  maxRolloutSteps_ = 32;
+  currRolloutStep_ = 0;
+  rollouts_ =
+      RolloutRecord(maxRolloutSteps_, numEnvs, robot_.numPosVars, numNodes);
+
+  rewardContext_ = RewardCalculationContext(&robot_, numEnvs, &rollouts_);
+
+  randomizeRobotsForCurrentStep();
+  robots_.updateLinkTransforms(currRolloutStep_);
 
   // todo: check that everything is in good state to render (even though we
   // haven't stepped)
 }
 
+void BatchedSimulator::setActions(std::vector<float>&& actions) {
+  ESP_CHECK(actions.size() == actions_.size(),
+            "BatchedSimulator::setActions: input dimension should be " +
+                std::to_string(actions_.size()) + ", not " +
+                std::to_string(actions.size()));
+  actions_ = std::move(actions);
+}
+
 void BatchedSimulator::stepPhysics() {
-  int batchSize = bpsWrapper_->envs_.size();
+  int prevRolloutStep = currRolloutStep_;
+  currRolloutStep_++;
+
+  // temp reset rollout
+  if (currRolloutStep_ == maxRolloutSteps_) {
+    currRolloutStep_ = 0;
+  }
+
+  int numEnvs = bpsWrapper_->envs_.size();
+  int numPosVars = robot_.numPosVars;
+
+  auto& robots = robots_;
+
+  int actionIndex = 0;
+
+  const float* prevYaws = &rollouts_.yaws_[prevRolloutStep * numEnvs];
+  float* yaws = &rollouts_.yaws_[currRolloutStep_ * numEnvs];
+  const Mn::Vector2* prevPositions =
+      &rollouts_.positions_[prevRolloutStep * numEnvs];
+  Mn::Vector2* positions = &rollouts_.positions_[currRolloutStep_ * numEnvs];
+  Mn::Matrix4* rootTransforms =
+      &rollouts_.rootTransforms_[currRolloutStep_ * numEnvs];
+  const float* prevJointPositions =
+      &rollouts_.jointPositions_[prevRolloutStep * numEnvs * numPosVars];
+  float* jointPositions =
+      &rollouts_.jointPositions_[currRolloutStep_ * numEnvs * numPosVars];
+
+  // stepping code
+  for (int b = 0; b < numEnvs; b++) {
+    yaws[b] = prevYaws[b] +
+              actions_[actionIndex++] * 5.f;  // todo: wrap angle to 360 degrees
+    // note clamp move-forward action to [0,-]
+    constexpr float baseMovementSpeed =
+        0.f;  // temp disable movement so that robot stays on-screen
+    positions[b] =
+        prevPositions[b] + Mn::Vector2(Mn::Math::cos(Mn::Math::Rad(yaws[b])),
+                                       -Mn::Math::sin(Mn::Math::Rad(yaws[b]))) *
+                               Mn::Math::max(actions_[actionIndex++], 0.f) *
+                               baseMovementSpeed;
+
+    int baseJointIndex = b * robot_.numPosVars;
+    for (int j = 0; j < robot_.numPosVars; j++) {
+      auto& pos = jointPositions[baseJointIndex + j];
+      const auto& prevPos = prevJointPositions[baseJointIndex + j];
+      pos = prevPos + actions_[actionIndex++];
+      pos = Mn::Math::clamp(pos, robot_.jointPositionLimits.first[j],
+                            robot_.jointPositionLimits.second[j]);
+
+      // todo: clamp to joint limits
+    }
+  }
+  CORRADE_INTERNAL_ASSERT(actionIndex == actions_.size());
+
+  robots_.updateLinkTransforms(currRolloutStep_);
+}
+
+#if 0
+void BatchedSimulator::stepPhysicsWithReferenceActions() {
+  int numEnvs = bpsWrapper_->envs_.size();
 
   // todo: animate over time
 
@@ -362,24 +495,37 @@ void BatchedSimulator::stepPhysics() {
   // move from -0.2 to 0.2 with period = 1s
   float animJointPosOffset = Mn::Math::sin(Mn::Deg(animTime * 360.f)) * 0.2f;
 
+  auto& robots = robots_;
+
+  int actionIndex = 0;
+
   // stepping code
-  for (int b = 0; b < batchSize; b++) {
-    simInstances_.robots.rootTransforms_[b] =
-        Mn::Matrix4::translation(Mn::Vector3{1.61, 0.0, 0.98} +
-                                 animBaseTranslationOffset) *
-        Mn::Matrix4::rotation(Mn::Deg(-b * 10.f + animBaseRotationOffset),
+  for (int b = 0; b < numEnvs; b++) {
+
+    yaws[b] += actions_[actionIndex++]; // todo: wrap angle to 360 degrees
+    // note clamp move-forward action to [0,-]
+    positions[b] += Mn::Vector2(Mn::Math::cos(Mn::Math::Rad(yaws[b])),
+      Mn::Math::sin(Mn::Math::Rad(yaws[b])))
+      * Mn::Math::max(actions_[actionIndex++], 0.f);
+
+    // perf todo: simplify this
+    robots.rootTransforms_[b] =
+        Mn::Matrix4::translation(Mn::Vector3(positions[b].x(), 0.f, positions[b].y())) *
+        Mn::Matrix4::rotation(Mn::Deg(yaws[b]),
                               {0.f, 1.f, 0.f}) *
         Mn::Matrix4::rotation(Mn::Deg(-90.f), {1.f, 0.f, 0.f});
 
     int baseJointIndex = b * robot_.numPosVars;
     float jointPos = b * 0.05 + animJointPosOffset;
     for (int j = 0; j < robot_.numPosVars; j++) {
-      simInstances_.robots.jointPositions_[baseJointIndex + j] = jointPos;
+      jointPositions[baseJointIndex + j] += actions_[actionIndex++];
+      // todo: clamp to joint limits
     }
   }
 
-  simInstances_.robots.updateLinkTransforms();
+  robots_.updateLinkTransforms();
 }
+#endif
 
 void BatchedSimulator::startRender() {
   bpsWrapper_->renderer_->render(bpsWrapper_->envs_.data());
@@ -392,6 +538,115 @@ void BatchedSimulator::waitForFrame() {
 bps3D::Renderer& BatchedSimulator::getBpsRenderer() {
   CORRADE_INTERNAL_ASSERT(bpsWrapper_->renderer_.get());
   return *bpsWrapper_->renderer_.get();
+}
+
+RewardCalculationContext::RewardCalculationContext(const Robot* robot,
+                                                   int numEnvs,
+                                                   RolloutRecord* rollouts)
+    : robot_(robot), numEnvs_(numEnvs), rollouts_(rollouts) {
+  esp::sim::SimulatorConfiguration simConfig{};
+  simConfig.activeSceneName = "NONE";  // todo: ReplicaCAD stage
+  simConfig.enablePhysics = true;
+  simConfig.createRenderer = false;
+  simConfig.loadRenderAssets =
+      false;  // todo: avoid creating render assets for stage
+  // simConfig.physicsConfigFile = physicsConfigFile;
+
+  legacySim_ = esp::sim::Simulator::create_unique(simConfig);
+
+  // todo: avoid code duplication with Robot
+  const std::string filepath = "data/URDF/opt_fetch/robots/fetch.urdf";
+  // todo: delete object on destruction
+  auto managedObj = legacySim_->getArticulatedObjectManager()
+                        ->addBulletArticulatedObjectFromURDF(filepath);
+  artObj_ = static_cast<esp::physics::BulletArticulatedObject*>(
+      managedObj->hackGetBulletObjectReference().get());
+
+  bool result = managedObj->contactTest();
+  ESP_DEBUG() << "contactTest result: " << result;
+}
+
+void RewardCalculationContext::calcRewards(int currRolloutStep,
+                                           int bStart,
+                                           int bEnd) {
+  const Robot* robot = robot_;
+  esp::physics::BulletArticulatedObject* artObj = artObj_;
+  auto* mb = artObj->btMultiBody_.get();
+  RolloutRecord& rollouts = *rollouts_;
+
+  int numPosVars = robot->numPosVars;
+  int numEnvs = numEnvs_;
+  int numLinks = robot->artObj->getNumLinks();
+
+  const float* yaws = &rollouts.yaws_[currRolloutStep * numEnvs];
+  const Mn::Vector2* positions =
+      &rollouts.positions_[currRolloutStep * numEnvs];
+  const float* jointPositions =
+      &rollouts.jointPositions_[currRolloutStep * numEnvs * numPosVars];
+  const Mn::Matrix4* rootTransforms =
+      &rollouts_->rootTransforms_[currRolloutStep * numEnvs];
+
+  float* rewards = &rollouts.rewards_[currRolloutStep * numEnvs];
+
+  int posCount = bStart * numPosVars;
+
+  for (int b = bStart; b < bEnd; b++) {
+    // this should already be computed
+    // rootTransforms[b] =
+    //     Mn::Matrix4::translation(Mn::Vector3(positions[b].x(), 0.f,
+    //     positions[b].y())) * Mn::Matrix4::rotation(Mn::Rad(yaws[b]),
+    //                           {0.f, 1.f, 0.f}) *
+    //     Mn::Matrix4::rotation(Mn::Deg(-90.f), {1.f, 0.f, 0.f});
+
+    btTransform tr{rootTransforms[b]};
+    mb->setBaseWorldTransform(tr);
+
+    for (int i = 0; i < numLinks; ++i) {
+      auto& link = mb->getLink(i);
+      // optimization todo: find correct subset of links
+      if (link.m_posVarCount > 0) {
+        mb->setJointPosMultiDof(i,
+                                const_cast<float*>(&jointPositions[posCount]));
+        posCount += link.m_posVarCount;
+      }
+    }
+
+    //// copied from BulletArticulatedObject::updateKinematicState ////
+    mb->forwardKinematics(scratch_q_, scratch_m_);
+    mb->updateCollisionObjectWorldTransforms(scratch_q_, scratch_m_);
+    artObj->updateAabbs();
+
+    bool isContact = artObj->contactTest();
+
+    if (isContact) {
+      ESP_WARNING() << "collision, step " << currRolloutStep << ", env " << b;
+    }
+
+    rewards[b] = isContact ? -1.f : 1.f;
+  }
+}
+
+void BatchedSimulator::calcRewards() {
+  int numEnvs = bpsWrapper_->envs_.size();
+
+  rewardContext_.calcRewards(currRolloutStep_, 0, numEnvs);
+}
+
+RolloutRecord::RolloutRecord(int numRolloutSteps,
+                             int numEnvs,
+                             int numPosVars,
+                             int numNodes)
+    : numRolloutSteps_(numRolloutSteps) {
+  Magnum::Matrix4 nanMat(NAN);
+  Mn::Vector2 nanVec(NAN);
+
+  jointPositions_.resize(numRolloutSteps * numEnvs * numPosVars, NAN);
+  yaws_.resize(numRolloutSteps * numEnvs, NAN);
+  positions_.resize(numRolloutSteps * numEnvs, nanVec);
+  rootTransforms_.resize(numRolloutSteps * numEnvs, nanMat);
+  nodeTransforms_.resize(numRolloutSteps * numEnvs * numNodes, nanMat);
+
+  rewards_.resize(numRolloutSteps * numEnvs, NAN);
 }
 
 }  // namespace batched_sim
