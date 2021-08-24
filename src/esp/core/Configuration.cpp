@@ -18,19 +18,21 @@ namespace config {
 namespace {
 
 // free functions for non-trivial types control.
-// NOLINTNEXTLINE
 template <class T>
-void copyConstructorFunc(const char* const src, char* const dst) {
+void copyConstructorFunc(
+    const char* const src,
+    char* const dst) {  // NOLINT(readability-non-const-parameter)
   new (dst) T{*reinterpret_cast<const T*>(src)};
 }
-// NOLINTNEXTLINE
 template <class T>
-void moveConstructorFunc(char* const src, char* const dst) {
+void moveConstructorFunc(
+    char* const src,
+    char* const dst) {  // NOLINT(readability-non-const-parameter)
   new (dst) T{std::move(*reinterpret_cast<T*>(src))};
 }
-// NOLINTNEXTLINE
 template <class T>
-void destructorFunc(char* const src) {
+void destructorFunc(
+    char* const src) {  // NOLINT(readability-non-const-parameter)
   reinterpret_cast<T*>(src)->~T();
 }
 
