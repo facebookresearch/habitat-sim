@@ -65,72 +65,12 @@ void initAttributesBindings(py::module& m) {
           "template_id", &AbstractAttributes::getID,
           R"(System-generated ID for template.  Will be unique among templates
           of same type.)")
-      .def("get_user_config_bool",
-           [](AbstractAttributes& self, const std::string& key) {
-             const auto ptr = self.editUserConfiguration();
-             return ptr->get<bool>(key);
-           })
-      .def("get_user_config_string",
-           [](AbstractAttributes& self, const std::string& key) {
-             const auto ptr = self.editUserConfiguration();
-             return ptr->get<std::string>(key);
-           })
-      .def("get_user_config_int",
-           [](AbstractAttributes& self, const std::string& key) {
-             const auto ptr = self.editUserConfiguration();
-             return ptr->get<int>(key);
-           })
 
-      .def("get_user_config_double",
-           [](AbstractAttributes& self, const std::string& key) {
-             const auto ptr = self.editUserConfiguration();
-             return ptr->get<double>(key);
-           })
-      .def("get_user_config_vec3",
-           [](AbstractAttributes& self, const std::string& key) {
-             const auto ptr = self.editUserConfiguration();
-             return ptr->get<Mn::Vector3>(key);
-           })
-      .def("get_user_config_quat",
-           [](AbstractAttributes& self, const std::string& key) {
-             const auto ptr = self.editUserConfiguration();
-             return ptr->get<Mn::Quaternion>(key);
-           })
       .def(
-          "set_user_config_bool",
-          [](AbstractAttributes& self, const std::string& key, const bool val) {
-            const auto ptr = self.editUserConfiguration();
-            return ptr->set(key, val);
-          })
-      .def("set_user_config_string",
-           [](AbstractAttributes& self, const std::string& key,
-              const std::string& val) {
-             const auto ptr = self.editUserConfiguration();
-             return ptr->set(key, val);
-           })
-      .def("set_user_config_int",
-           [](AbstractAttributes& self, const std::string& key, const int val) {
-             const auto ptr = self.editUserConfiguration();
-             return ptr->set(key, val);
-           })
-      .def("set_user_config_double",
-           [](AbstractAttributes& self, const std::string& key,
-              const double val) {
-             const auto ptr = self.editUserConfiguration();
-             return ptr->set(key, val);
-           })
-      .def("set_user_config_vec3",
-           [](AbstractAttributes& self, const std::string& key,
-              const Magnum::Vector3& val) {
-             const auto ptr = self.editUserConfiguration();
-             return ptr->set(key, val);
-           })
-      .def("set_user_config_quat",
-           [](AbstractAttributes& self, const std::string& key,
-              const Magnum::Quaternion& val) {
-             const auto ptr = self.editUserConfiguration();
-             return ptr->set(key, val);
-           })
+          "get_user_config", &AbstractAttributes::editUserConfiguration,
+          R"(Retrieve the User Config object for this attributes, so that it can be
+          viewed or modified. Any changes to the user_config will require the owning
+          attributes to be re-registered.)")
       .def_property_readonly(
           "num_user_configs",
           &AbstractAttributes::getNumUserDefinedConfigurations,
