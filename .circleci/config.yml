@@ -505,9 +505,9 @@ jobs:
               nvm use v11.9.0
               . ~/emsdk/emsdk_env.sh
               CMAKE_GENERATOR=Ninja ./build_js.sh --bullet
-              # switch back to cmake 3.10
+              # switch back to cmake 3.12
               sudo rm /usr/local/bin/cmake
-              sudo ln -s /opt/cmake310/bin/cmake /usr/local/bin/cmake
+              sudo ln -s /opt/cmake312/bin/cmake /usr/local/bin/cmake
       - run:
           name: Run sim benchmark
           command: |
