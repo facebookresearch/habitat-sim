@@ -12,11 +12,11 @@ namespace esp {
 
 namespace core {
 
-namespace config {
 void initCoreBindings(pybind11::module& m);
+namespace config {
 
-}
-
+void initConfigBindings(pybind11::module& m);
+}  // namespace config
 }  // namespace core
 
 namespace geo {
