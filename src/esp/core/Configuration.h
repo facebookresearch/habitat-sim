@@ -182,7 +182,8 @@ class ConfigValue {
     ESP_CHECK(_type == configStoredTypeFor<T>(),
               "Attempting to access ConfigValue of"
                   << _type << "with type" << configStoredTypeFor<T>());
-    return *reinterpret_cast<const T*>(_data);
+    auto val = [&]() { return reinterpret_cast<const T*>(this->_data); };
+    return *val();
   }
 
   /**
