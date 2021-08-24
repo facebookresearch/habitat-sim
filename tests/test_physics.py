@@ -542,6 +542,11 @@ def test_collision_groups():
             assert not cube_obj1.contact_test()
             assert not cube_obj2.contact_test()
 
+            # test Noncollidable vs Noncollidable
+            cube_obj1.override_collision_group(cg.Noncollidable)
+            assert not cube_obj1.contact_test()
+            assert not cube_obj2.contact_test()
+
 
 def check_articulated_object_root_state(
     articulated_object, target_rigid_state, epsilon=1.0e-4
