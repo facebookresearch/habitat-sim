@@ -251,6 +251,11 @@ if(NOT USE_SYSTEM_MAGNUM)
     set(BUILD_SHARED_LIBS ${_PREV_BUILD_SHARED_LIBS})
     set(BUILD_TESTING ${_PREV_BUILD_TESTING})
     unset(CMAKE_DEBUG_POSTFIX CACHE)
+    # Disable threading on Emscripten. Brings more problems than is currently
+    # worth-
+    if(CORRADE_TARGET_EMSCRIPTEN)
+      set(OPENEXR_ENABLE_THREADING OFF CACHE BOOL "" FORCE)
+    endif()
 
     set(WITH_OPENEXRIMPORTER ON CACHE BOOL "" FORCE)
     set(WITH_OPENEXRIMAGECONVERTER ON CACHE BOOL "" FORCE)
