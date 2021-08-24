@@ -239,6 +239,11 @@ if(NOT USE_SYSTEM_MAGNUM)
     # OpenEXR implicitly bundles Imath. However, without this only the first
     # CMake run will pass and subsequent runs will fail.
     set(CMAKE_DISABLE_FIND_PACKAGE_Imath ON)
+    # Disable threading on Emscripten. Brings more problems than is currently
+    # worth-
+    if(CORRADE_TARGET_EMSCRIPTEN)
+      set(OPENEXR_ENABLE_THREADING OFF CACHE BOOL "" FORCE)
+    endif()
     # These variables may be used by other projects, so ensure they're reset
     # back to their original values after. OpenEXR forces CMAKE_DEBUG_POSTFIX
     # to _d, which isn't desired outside of that library.
@@ -251,11 +256,6 @@ if(NOT USE_SYSTEM_MAGNUM)
     set(BUILD_SHARED_LIBS ${_PREV_BUILD_SHARED_LIBS})
     set(BUILD_TESTING ${_PREV_BUILD_TESTING})
     unset(CMAKE_DEBUG_POSTFIX CACHE)
-    # Disable threading on Emscripten. Brings more problems than is currently
-    # worth-
-    if(CORRADE_TARGET_EMSCRIPTEN)
-      set(OPENEXR_ENABLE_THREADING OFF CACHE BOOL "" FORCE)
-    endif()
 
     set(WITH_OPENEXRIMPORTER ON CACHE BOOL "" FORCE)
     set(WITH_OPENEXRIMAGECONVERTER ON CACHE BOOL "" FORCE)
