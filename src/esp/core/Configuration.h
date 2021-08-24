@@ -429,9 +429,10 @@ class Configuration {
    */
   std::shared_ptr<Configuration> getSubconfigCopy(
       const std::string& name) const {
-    if (configMap_.count(name) > 0) {
+    auto configIter = configMap_.find(name);
+    if (configIter != configMap_.end()) {
       // if exists return copy, so that consumers can modify it freely
-      return std::make_shared<Configuration>(*configMap_.at(name));
+      return std::make_shared<Configuration>(*configIter->second);
     }
     return std::make_shared<Configuration>();
   }
@@ -461,8 +462,9 @@ class Configuration {
   }  // setSubconfigPtr
 
   int getNumSubconfigs(const std::string& name) const {
-    if (configMap_.count(name) > 0) {
-      return configMap_.at(name)->getNumEntries();
+    auto configIter = configMap_.find(name);
+    if (configIter != configMap_.end()) {
+      return configIter->second->getNumEntries();
     }
     ESP_WARNING() << "No Subconfig found named :" << name;
     return 0;
