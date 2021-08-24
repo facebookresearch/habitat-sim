@@ -17,20 +17,27 @@ namespace config {
 
 namespace {
 
+// enum class hash function - uses enum value as hash
+struct ConfigStoredTypeHash {
+  template <typename T>
+  std::size_t operator()(T t) const {
+    return static_cast<std::size_t>(t);
+  }
+};
+
 /**
  * @brief Constant map to provide mappings from @ref ConfigStoredType enum tags
  * to string.  All supported types should have mappings in this map
  */
-const std::unordered_map<ConfigStoredType, std::string> ConfigTypeNamesMap = {
-    {ConfigStoredType::Unknown, "Unknown"},
-    {ConfigStoredType::Boolean, "bool"},
-    {ConfigStoredType::Integer, "int"},
-    {ConfigStoredType::Double, "double"},
-    {ConfigStoredType::MagnumVec3, "Magnum::Vector3"},
-    {ConfigStoredType::MagnumQuat, "Magnum::Quaternion"},
-    {ConfigStoredType::MagnumRad, "Magnum::Rad"},
-    {ConfigStoredType::String, "std::string"},
-};
+const std::unordered_map<ConfigStoredType, std::string, ConfigStoredTypeHash>
+    ConfigTypeNamesMap = {{ConfigStoredType::Unknown, "Unknown"},
+                          {ConfigStoredType::Boolean, "bool"},
+                          {ConfigStoredType::Integer, "int"},
+                          {ConfigStoredType::Double, "double"},
+                          {ConfigStoredType::MagnumVec3, "Magnum::Vector3"},
+                          {ConfigStoredType::MagnumQuat, "Magnum::Quaternion"},
+                          {ConfigStoredType::MagnumRad, "Magnum::Rad"},
+                          {ConfigStoredType::String, "std::string"}};
 
 // force this functionality to remain local to this file.
 
