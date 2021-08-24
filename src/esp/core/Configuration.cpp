@@ -26,7 +26,7 @@ void copyConstructorFunc(
 }
 template <class T>
 void moveConstructorFunc(
-    char* const src,
+    char* const src,    // NOLINT(readability-non-const-parameter)
     char* const dst) {  // NOLINT(readability-non-const-parameter)
   new (dst) T{std::move(*reinterpret_cast<T*>(src))};
 }
