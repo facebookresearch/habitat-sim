@@ -26,7 +26,9 @@ namespace config {
 
 /**
  * @brief This enum lists every type of value that can be currently stored
- * directly in an @ref esp::core::Configuration.
+ * directly in an @ref esp::core::Configuration.  All supported types should
+ * have entries in this enum class.  All non-trivial types should have their
+ * enums placed below @p _nonTrivialTypes tag.
  */
 enum class ConfigStoredType {
   Unknown = ID_UNDEFINED,
@@ -53,8 +55,9 @@ constexpr bool isConfigStoredTypeNonTrivial(ConfigStoredType type) {
 }
 
 /**
- * @brief Function template to return type enum for specified type. Add a
- * specialization for each new type we wish to support.
+ * @brief Function template to return type enum for specified type. All
+ * supported types should have a specialization of this function handling their
+ * type to @ref ConfigStoredType enum tags mapping.
  */
 template <class T>
 constexpr ConfigStoredType configStoredTypeFor() {
@@ -91,8 +94,12 @@ constexpr ConfigStoredType configStoredTypeFor<Mn::Rad>() {
   return ConfigStoredType::MagnumRad;
 }
 
+/**
+ * @brief Stream operator to support display of @ref ConfigStoredType enum tags
+ */
 MAGNUM_EXPORT Mn::Debug& operator<<(Mn::Debug& debug,
                                     const ConfigStoredType& value);
+
 /**
  * @brief This class uses an anonymous tagged union to store values of different
  * types, as well as providing access to the values in a type safe manner.
@@ -105,25 +112,31 @@ class ConfigValue {
   ConfigStoredType _type{ConfigStoredType::Unknown};
 
   /**
-   * @brief The data this ConfigValue holds - four floats at most, doubles and
-   * 64bit pointers need 8-byte alignment
+   * @brief The data this ConfigValue holds - four doubles at most (strings
+   * require 32 bytes), doubles and 64bit pointers need 8-byte alignment
    */
   alignas(sizeof(void*) * 2) char _data[4 * 8] = {0};
 
   /**
-   * @brief Copy the passed @p val into this ConfigValue.
+   * @brief Copy the passed @p val into this ConfigValue.  If this @ref
+   * ConfigValue's type is not trivial, this will call the appropriate copy
+   * handler for the type.
    * @param val source val to copy into this config
    */
-  void copyValueInto(const ConfigValue& val);
+  void copyValueFrom(const ConfigValue& val);
 
   /**
-   * @brief Move the passed @p val into this ConfigVal.
+   * @brief Move the passed @p val into this ConfigVal. If this @ref
+   * ConfigValue's type is not trivial, this will call the appropriate move
+   * handler for the type.
    * @param val source val to copy into this config
    */
-  void moveValueInto(ConfigValue&& val);
+  void moveValueFrom(ConfigValue&& val);
 
   /**
-   * @brief Delete the current value.  Resets type to int
+   * @brief Delete the current value. If this @ref
+   * ConfigValue's type is not trivial, this will call the appropriate
+   * destructor handler for the type.
    */
   void deleteCurrentValue();
 

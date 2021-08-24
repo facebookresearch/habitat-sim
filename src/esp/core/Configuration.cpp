@@ -36,6 +36,10 @@ void destructorFunc(
   reinterpret_cast<T*>(src)->~T();
 }
 
+/**
+ * @brief This struct handles non-trivial types by providing a copy constructor,
+ * a move constructor and a destructor as function pointers.
+ */
 struct NonTrivialTypeHandler {
   void (*copier)(const char* const, char* const);
   void (*mover)(char* const, char* const);
@@ -47,7 +51,12 @@ struct NonTrivialTypeHandler {
   }
 };
 
-}  // namespace
+/**
+ * @brief Table of @ref NonTrivialTypeHandler s for the types this @ref
+ * ConfigValue support. There needs to be an entry in this table for each
+ * non-trivial type specified in @ref ConfigStoredType enum, following the
+ * pattern for strings.
+ */
 constexpr NonTrivialTypeHandler nonTrivialTypeHandlers[]{
     NonTrivialTypeHandler::make<std::string>()};
 
@@ -59,34 +68,38 @@ NonTrivialTypeHandler nonTrivialConfigStoredTypeHandlerFor(
   return nonTrivialTypeHandlers[i];
 }
 
+}  // namespace
+
 ConfigValue::ConfigValue(const ConfigValue& otr) {
-  copyValueInto(otr);
-}
+  copyValueFrom(otr);
+}  // copy ctor
 
 ConfigValue::ConfigValue(ConfigValue&& otr) noexcept {
-  copyValueInto(otr);
-}
+  moveValueFrom(std::move(otr));
+}  // move ctor
 
 ConfigValue::~ConfigValue() {
   deleteCurrentValue();
-}
+}  // destructor
 
-void ConfigValue::copyValueInto(const ConfigValue& otr) {
-  std::memcpy(_data, otr._data, sizeof(_data));
+void ConfigValue::copyValueFrom(const ConfigValue& otr) {
   // set new type
   _type = otr._type;
   if (isConfigStoredTypeNonTrivial(otr._type)) {
     nonTrivialConfigStoredTypeHandlerFor(_type).copier(otr._data, _data);
+  } else {
+    std::memcpy(_data, otr._data, sizeof(_data));
   }
 }
 
-void ConfigValue::moveValueInto(ConfigValue&& otr) {
-  // moving character buffer ends up not being much better than copy
-  std::memcpy(_data, otr._data, sizeof(_data));
+void ConfigValue::moveValueFrom(ConfigValue&& otr) {
   // set new type
   _type = otr._type;
   if (isConfigStoredTypeNonTrivial(otr._type)) {
     nonTrivialConfigStoredTypeHandlerFor(_type).mover(otr._data, _data);
+  } else {
+    // moving character buffer ends up not being much better than copy
+    std::memcpy(_data, otr._data, sizeof(_data));
   }
 }
 
@@ -100,14 +113,14 @@ void ConfigValue::deleteCurrentValue() {
 ConfigValue& ConfigValue::operator=(const ConfigValue& otr) {
   if (this != &otr) {
     deleteCurrentValue();
-    copyValueInto(otr);
+    copyValueFrom(otr);
   }
   return *this;
 }  // namespace config
 
 ConfigValue& ConfigValue::operator=(ConfigValue&& otr) noexcept {
   deleteCurrentValue();
-  moveValueInto(std::move(otr));
+  moveValueFrom(std::move(otr));
   return *this;
 }
 
