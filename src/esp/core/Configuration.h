@@ -234,65 +234,35 @@ class Configuration {
 
   // virtual destructor set to that pybind11 recognizes attributes inheritance
   // from configuration to be polymorphic
-
   virtual ~Configuration() = default;
 
   // ****************** Getters ******************
-  bool getBool(const std::string& key) const {
-    if (checkMapForKeyAndType(key, ConfigStoredType::Boolean)) {
-      return valueMap_.at(key).get<bool>();
+  /**
+   * @brief Get value specified by @p key and expected to be type @p T and
+   * return it if it exists and is appropriate type.  Otherwise throw a warning
+   * and return a default value.
+   * @tparam The type of the value desired
+   * @param key The key of the value desired to be retrieved.
+   * @return The value held at @p key, expected to be type @p T .  If not found,
+   * or not of expected type, gives an error message and returns a default
+   * value.
+   */
+  template <class T>
+  T get(const std::string& key) const {
+    if (checkMapForKeyAndType<T>(key)) {
+      return valueMap_.at(key).get<T>();
     }
-    ESP_ERROR() << "Key :" << key << "not present in configuration as boolean";
+    const ConfigStoredType desiredType = configStoredTypeFor<T>();
+    ESP_ERROR() << "Key :" << key << "not present in configuration as"
+                << getNameForStoredType(desiredType);
     return {};
   }
 
-  double getDouble(const std::string& key) const {
-    if (checkMapForKeyAndType(key, ConfigStoredType::Double)) {
-      return valueMap_.at(key).get<double>();
-    }
-    ESP_ERROR() << "Key :" << key << "not present in configuration as double";
-    return {};
-  }
-  int getInt(const std::string& key) const {
-    if (checkMapForKeyAndType(key, ConfigStoredType::Integer)) {
-      return valueMap_.at(key).get<int>();
-    }
-    ESP_ERROR() << "Key :" << key << "not present in configuration as integer";
-    return {};
-  }
-  std::string getString(const std::string& key) const {
-    if (checkMapForKeyAndType(key, ConfigStoredType::String)) {
-      return valueMap_.at(key).get<std::string>();
-    }
-    ESP_ERROR() << "Key :" << key
-                << "not present in configuration as std::string";
-    return {};
-  }
-
-  Mn::Vector3 getVec3(const std::string& key) const {
-    if (checkMapForKeyAndType(key, ConfigStoredType::MagnumVec3)) {
-      return valueMap_.at(key).get<Mn::Vector3>();
-    }
-    ESP_ERROR() << "Key :" << key
-                << "not present in configuration as Mn::Vector3";
-    return {};
-  }
-  Mn::Quaternion getQuat(const std::string& key) const {
-    if (checkMapForKeyAndType(key, ConfigStoredType::MagnumQuat)) {
-      return valueMap_.at(key).get<Mn::Quaternion>();
-    }
-    ESP_ERROR() << "Key :" << key
-                << "not present in configuration as Mn::Quaternion";
-    return {};
-  }
-  Mn::Rad getRad(const std::string& key) const {
-    if (checkMapForKeyAndType(key, ConfigStoredType::MagnumRad)) {
-      return valueMap_.at(key).get<Mn::Rad>();
-    }
-    ESP_ERROR() << "Key :" << key << "not present in configuration as Mn::Rad";
-    return {};
-  }
-
+  /**
+   * @brief Return the @ref ConfigStoredType enum representing the type of the
+   * value referenced by the passed @p key or @ref ConfigStoredType::Unknown if
+   * unknown/unspecified.
+   */
   ConfigStoredType getType(const std::string& key) const {
     if (valueMap_.count(key) > 0) {
       return valueMap_.at(key).getType();
@@ -311,14 +281,18 @@ class Configuration {
     if ((valueMap_.count(key) > 0) && (valueMap_.at(key).isValid())) {
       return valueMap_.at(key).getAsString();
     }
-    std::string retVal = "Key ";
-    retVal.append(key).append(
-        " does not represent a valid value in this configuration.");
+    std::string retVal = Cr::Utility::formatString(
+        "Key {} does not represent a valid value in this configuration.", key);
     ESP_WARNING() << retVal;
     return retVal;
   }
 
   // ****************** Key List Retrieval ******************
+
+  /**
+   * @brief Retrieve list of keys present in this @ref Configuration's
+   * valueMap_.  Subconfigs are not included.
+   */
   std::vector<std::string> getKeys() const {
     std::vector<std::string> keys;
     keys.reserve(valueMap_.size());
@@ -329,7 +303,7 @@ class Configuration {
   }
 
   /**
-   * @brief This function returns this configuration's subconfig keys.
+   * @brief This function returns this @ref Configuration's subconfig keys.
    */
   std::vector<std::string> getSubconfigKeys() const {
     std::vector<std::string> keys;
@@ -368,81 +342,36 @@ class Configuration {
   }
 
   // ****************** Value removal ******************
+
+  /**
+   * @brief Silently remove passed value from map, if it exists.
+   */
   void removeValueFromMap(const std::string& key) {
     if (valueMap_.count(key) > 0) {
       valueMap_.erase(key);
     }
   }
 
-  bool removeBool(const std::string& key) {
-    if (checkMapForKeyAndType(key, ConfigStoredType::Boolean)) {
-      bool v = valueMap_.at(key).get<bool>();
+  /**
+   * @brief Remove value specified by @p key and expected to be type @p T and
+   * return it if it exists and is appropriate type.  Otherwise throw a warning
+   * and return a default value.
+   * @tparam The type of the value desired
+   * @param key The key of the value desired to be retrieved/removed.
+   * @return The erased value, held at @p key and expected to be type @p T , if
+   * found.  If not found, or not of expected type, gives a warning and returns
+   * a default value.
+   */
+  template <class T>
+  T removeAndRetrieve(const std::string& key) {
+    if (checkMapForKeyAndType<T>(key)) {
+      T val = valueMap_.at(key).get<T>();
       valueMap_.erase(key);
-      return v;
+      return val;
     }
-    ESP_WARNING() << "Key :" << key
-                  << "not present in configuration as boolean";
-    return {};
-  }
-
-  double removeDouble(const std::string& key) {
-    if (checkMapForKeyAndType(key, ConfigStoredType::Double)) {
-      double v = valueMap_.at(key).get<double>();
-      valueMap_.erase(key);
-      return v;
-    }
-    ESP_WARNING() << "Key :" << key << "not present in configuration as double";
-    return {};
-  }
-  int removeInt(const std::string& key) {
-    if (checkMapForKeyAndType(key, ConfigStoredType::Integer)) {
-      int v = valueMap_.at(key).get<int>();
-      valueMap_.erase(key);
-      return v;
-    }
-    ESP_WARNING() << "Key :" << key
-                  << "not present in configuration as integer";
-    return {};
-  }
-  std::string removeString(const std::string& key) {
-    if (checkMapForKeyAndType(key, ConfigStoredType::String)) {
-      std::string v = valueMap_.at(key).get<std::string>();
-      valueMap_.erase(key);
-      return v;
-    }
-    ESP_WARNING() << "Key :" << key
-                  << "not present in configuration as std::string";
-    return {};
-  }
-
-  Mn::Vector3 removeVec3(const std::string& key) {
-    if (checkMapForKeyAndType(key, ConfigStoredType::MagnumVec3)) {
-      Mn::Vector3 v = valueMap_.at(key).get<Mn::Vector3>();
-      valueMap_.erase(key);
-      return v;
-    }
-    ESP_WARNING() << "Key :" << key
-                  << "not present in configuration as Mn::Vector3";
-    return {};
-  }
-  Mn::Quaternion removeQuat(const std::string& key) {
-    if (checkMapForKeyAndType(key, ConfigStoredType::MagnumQuat)) {
-      Mn::Quaternion v = valueMap_.at(key).get<Mn::Quaternion>();
-      valueMap_.erase(key);
-      return v;
-    }
-    ESP_WARNING() << "Key :" << key
-                  << "not present in configuration as Mn::Quaternion";
-    return {};
-  }
-  Mn::Rad removeRad(const std::string& key) {
-    if (checkMapForKeyAndType(key, ConfigStoredType::MagnumRad)) {
-      Mn::Rad v = valueMap_.at(key).get<Mn::Rad>();
-      valueMap_.erase(key);
-      return v;
-    }
-    ESP_WARNING() << "Key :" << key
-                  << "not present in configuration as Mn::Rad";
+    const ConfigStoredType desiredType = configStoredTypeFor<T>();
+    ESP_WARNING() << "Key :" << key << "not present in configuration as"
+                  << getNameForStoredType(desiredType);
     return {};
   }
 
@@ -456,16 +385,25 @@ class Configuration {
                   << "not present in map of subconfigurations.";
     return {};
   }
+
   // ***************** Check if value is present ******************
   /**
    * @brief check if storage map of this configuration has the passed key and
    * if it is the requested type.
+   * @tparam The expected type of the variable being searched for
    * @param key the key to check
    * @param type the @ref ConfigStoredType type to check for
    */
-  bool checkMapForKeyAndType(const std::string& key,
-                             const ConfigStoredType& type) const {
-    return (valueMap_.count(key) > 0 && valueMap_.at(key).compareType(type));
+
+  template <class T>
+  bool checkMapForKeyAndType(const std::string& key) const {
+    // check if present
+    if (valueMap_.count(key) == 0) {
+      return false;
+    }
+    // key is present, check if appropriate type
+    const ConfigStoredType& type = configStoredTypeFor<T>();
+    return valueMap_.at(key).compareType(type);
   }
 
   /**

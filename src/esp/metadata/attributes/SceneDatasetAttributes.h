@@ -166,7 +166,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
         physMgrAttrHandle);
   }
   std::string getPhysicsManagerHandle() const {
-    return getString("physMgrAttrHandle");
+    return get<std::string>("physMgrAttrHandle");
   }
 
   /**

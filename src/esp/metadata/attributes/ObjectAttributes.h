@@ -38,20 +38,20 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * @brief Scale of the ojbect
    */
   void setScale(const Magnum::Vector3& scale) { set("scale", scale); }
-  Magnum::Vector3 getScale() const { return getVec3("scale"); }
+  Magnum::Vector3 getScale() const { return get<Magnum::Vector3>("scale"); }
 
   /**
    * @brief collision shape inflation margin
    */
   void setMargin(double margin) { set("margin", margin); }
-  double getMargin() const { return getDouble("margin"); }
+  double getMargin() const { return get<double>("margin"); }
 
   // if object should be checked for collisions - if other objects can collide
   // with this object
   void setIsCollidable(bool isCollidable) {
     set("is_collidable", isCollidable);
   }
-  bool getIsCollidable() const { return getBool("is_collidable"); }
+  bool getIsCollidable() const { return get<bool>("is_collidable"); }
 
   /**
    * @brief set default up orientation for object/stage mesh
@@ -62,7 +62,9 @@ class AbstractObjectAttributes : public AbstractAttributes {
   /**
    * @brief get default up orientation for object/stage mesh
    */
-  Magnum::Vector3 getOrientUp() const { return getVec3("orient_up"); }
+  Magnum::Vector3 getOrientUp() const {
+    return get<Magnum::Vector3>("orient_up");
+  }
   /**
    * @brief set default forward orientation for object/stage mesh
    */
@@ -72,7 +74,9 @@ class AbstractObjectAttributes : public AbstractAttributes {
   /**
    * @brief get default forward orientation for object/stage mesh
    */
-  Magnum::Vector3 getOrientFront() const { return getVec3("orient_front"); }
+  Magnum::Vector3 getOrientFront() const {
+    return get<Magnum::Vector3>("orient_front");
+  }
 
   /**
    * @brief Sets how many units map to a meter.
@@ -83,31 +87,33 @@ class AbstractObjectAttributes : public AbstractAttributes {
   /**
    * @brief Gets how many units map to a meter.
    */
-  double getUnitsToMeters() const { return getDouble("units_to_meters"); }
+  double getUnitsToMeters() const { return get<double>("units_to_meters"); }
 
   void setFrictionCoefficient(double frictionCoefficient) {
     set("friction_coefficient", frictionCoefficient);
   }
   double getFrictionCoefficient() const {
-    return getDouble("friction_coefficient");
+    return get<double>("friction_coefficient");
   }
 
   void setRestitutionCoefficient(double restitutionCoefficient) {
     set("restitution_coefficient", restitutionCoefficient);
   }
   double getRestitutionCoefficient() const {
-    return getDouble("restitution_coefficient");
+    return get<double>("restitution_coefficient");
   }
   void setRenderAssetType(int renderAssetType) {
     set("render_asset_type", renderAssetType);
   }
-  int getRenderAssetType() { return getInt("render_asset_type"); }
+  int getRenderAssetType() { return get<int>("render_asset_type"); }
 
   void setRenderAssetHandle(const std::string& renderAssetHandle) {
     set("render_asset", renderAssetHandle);
     setIsDirty();
   }
-  std::string getRenderAssetHandle() const { return getString("render_asset"); }
+  std::string getRenderAssetHandle() const {
+    return get<std::string>("render_asset");
+  }
 
   /**
    * @brief Sets whether this object uses file-based mesh render object or
@@ -120,7 +126,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
   }
 
   bool getRenderAssetIsPrimitive() const {
-    return getBool("renderAssetIsPrimitive");
+    return get<bool>("renderAssetIsPrimitive");
   }
 
   void setCollisionAssetHandle(const std::string& collisionAssetHandle) {
@@ -128,19 +134,19 @@ class AbstractObjectAttributes : public AbstractAttributes {
     setIsDirty();
   }
   std::string getCollisionAssetHandle() const {
-    return getString("collision_asset");
+    return get<std::string>("collision_asset");
   }
 
   void setCollisionAssetType(int collisionAssetType) {
     set("collision_asset_type", collisionAssetType);
   }
-  int getCollisionAssetType() { return getInt("collision_asset_type"); }
+  int getCollisionAssetType() { return get<int>("collision_asset_type"); }
 
   void setCollisionAssetSize(const Magnum::Vector3& collisionAssetSize) {
     set("collision_asset_size", collisionAssetSize);
   }
   Magnum::Vector3 getCollisionAssetSize() const {
-    return getVec3("collision_asset_size");
+    return get<Magnum::Vector3>("collision_asset_size");
   }
 
   /**
@@ -159,7 +165,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * primitive (implicitly calculated) or a mesh
    */
   bool getCollisionAssetIsPrimitive() const {
-    return getBool("collisionAssetIsPrimitive");
+    return get<bool>("collisionAssetIsPrimitive");
   }
 
   /**
@@ -176,7 +182,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * @return Whether this object uses mesh collision or primitive(implicit)
    * collision calculation.
    */
-  bool getUseMeshCollision() const { return getBool("use_mesh_collision"); }
+  bool getUseMeshCollision() const { return get<bool>("use_mesh_collision"); }
 
   /**
    * @brief Set the default shader to use for an object or stage.  This may be
@@ -188,15 +194,15 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * @brief Get the default shader to use for an object or stage.  This may be
    * overridden by a scene instance specification.
    */
-  int getShaderType() const { return getInt("shader_type"); }
+  int getShaderType() const { return get<int>("shader_type"); }
 
   // if true use phong illumination model instead of flat shading
   void setRequiresLighting(bool requiresLighting) {
     set("requires_lighting", requiresLighting);
   }
-  bool getRequiresLighting() const { return getBool("requires_lighting"); }
+  bool getRequiresLighting() const { return get<bool>("requires_lighting"); }
 
-  bool getIsDirty() const { return getBool("__isDirty"); }
+  bool getIsDirty() const { return get<bool>("__isDirty"); }
   void setIsClean() { set("__isDirty", false); }
 
   /**
@@ -247,32 +253,32 @@ class ObjectAttributes : public AbstractObjectAttributes {
   explicit ObjectAttributes(const std::string& handle = "");
   // center of mass (COM)
   void setCOM(const Magnum::Vector3& com) { set("COM", com); }
-  Magnum::Vector3 getCOM() const { return getVec3("COM"); }
+  Magnum::Vector3 getCOM() const { return get<Magnum::Vector3>("COM"); }
 
   // whether com is provided or not
   void setComputeCOMFromShape(bool computeCOMFromShape) {
     set("compute_COM_from_shape", computeCOMFromShape);
   }
   bool getComputeCOMFromShape() const {
-    return getBool("compute_COM_from_shape");
+    return get<bool>("compute_COM_from_shape");
   }
 
   void setMass(double mass) { set("mass", mass); }
-  double getMass() const { return getDouble("mass"); }
+  double getMass() const { return get<double>("mass"); }
 
   // inertia diagonal
   void setInertia(const Magnum::Vector3& inertia) { set("inertia", inertia); }
-  Magnum::Vector3 getInertia() const { return getVec3("inertia"); }
+  Magnum::Vector3 getInertia() const { return get<Magnum::Vector3>("inertia"); }
 
   void setLinearDamping(double linearDamping) {
     set("linear_damping", linearDamping);
   }
-  double getLinearDamping() const { return getDouble("linear_damping"); }
+  double getLinearDamping() const { return get<double>("linear_damping"); }
 
   void setAngularDamping(double angularDamping) {
     set("angular_damping", angularDamping);
   }
-  double getAngularDamping() const { return getDouble("angular_damping"); }
+  double getAngularDamping() const { return get<double>("angular_damping"); }
 
   // if true override other settings and use render mesh bounding box as
   // collision object
@@ -280,7 +286,7 @@ class ObjectAttributes : public AbstractObjectAttributes {
     set("use_bounding_box_for_collision", useBoundingBoxForCollision);
   }
   bool getBoundingBoxCollisions() const {
-    return getBool("use_bounding_box_for_collision");
+    return get<bool>("use_bounding_box_for_collision");
   }
 
   // if true join all mesh components of an asset into a unified collision
@@ -289,7 +295,7 @@ class ObjectAttributes : public AbstractObjectAttributes {
     set("join_collision_meshes", joinCollisionMeshes);
   }
   bool getJoinCollisionMeshes() const {
-    return getBool("join_collision_meshes");
+    return get<bool>("join_collision_meshes");
   }
 
   /**
@@ -297,11 +303,11 @@ class ObjectAttributes : public AbstractObjectAttributes {
    * object.  If is not visible then should not add object to drawables.
    */
   void setIsVisible(bool isVisible) { set("is_visible", isVisible); }
-  bool getIsVisible() const { return getBool("is_visible"); }
+  bool getIsVisible() const { return get<bool>("is_visible"); }
 
   void setSemanticId(int semanticId) { set("semantic_id", semanticId); }
 
-  uint32_t getSemanticId() const { return getInt("semantic_id"); }
+  uint32_t getSemanticId() const { return get<int>("semantic_id"); }
 
  protected:
   /**
@@ -333,38 +339,40 @@ class StageAttributes : public AbstractObjectAttributes {
   explicit StageAttributes(const std::string& handle = "");
 
   void setOrigin(const Magnum::Vector3& origin) { set("origin", origin); }
-  Magnum::Vector3 getOrigin() const { return getVec3("origin"); }
+  Magnum::Vector3 getOrigin() const { return get<Magnum::Vector3>("origin"); }
 
   void setGravity(const Magnum::Vector3& gravity) { set("gravity", gravity); }
-  Magnum::Vector3 getGravity() const { return getVec3("gravity"); }
+  Magnum::Vector3 getGravity() const { return get<Magnum::Vector3>("gravity"); }
   void setHouseFilename(const std::string& houseFilename) {
     set("houseFilename", houseFilename);
     setIsDirty();
   }
-  std::string getHouseFilename() const { return getString("houseFilename"); }
+  std::string getHouseFilename() const {
+    return get<std::string>("houseFilename");
+  }
   void setSemanticAssetHandle(const std::string& semanticAssetHandle) {
     set("semantic_asset", semanticAssetHandle);
     setIsDirty();
   }
   std::string getSemanticAssetHandle() const {
-    return getString("semantic_asset");
+    return get<std::string>("semantic_asset");
   }
   void setSemanticAssetType(int semanticAssetType) {
     set("semantic_asset_type", semanticAssetType);
   }
-  int getSemanticAssetType() { return getInt("semantic_asset_type"); }
+  int getSemanticAssetType() { return get<int>("semantic_asset_type"); }
 
   void setLoadSemanticMesh(bool loadSemanticMesh) {
     set("loadSemanticMesh", loadSemanticMesh);
   }
-  bool getLoadSemanticMesh() { return getBool("loadSemanticMesh"); }
+  bool getLoadSemanticMesh() { return get<bool>("loadSemanticMesh"); }
 
   void setNavmeshAssetHandle(const std::string& navmeshAssetHandle) {
     set("navmeshAssetHandle", navmeshAssetHandle);
     setIsDirty();
   }
   std::string getNavmeshAssetHandle() const {
-    return getString("navmeshAssetHandle");
+    return get<std::string>("navmeshAssetHandle");
   }
 
   /**
@@ -376,7 +384,7 @@ class StageAttributes : public AbstractObjectAttributes {
     set("light_setup", lightSetup);
     setRequiresLighting(lightSetup != NO_LIGHT_KEY);
   }
-  std::string getLightSetup() const { return getString("light_setup"); }
+  std::string getLightSetup() const { return get<std::string>("light_setup"); }
 
   /**
    * @brief set frustum culling for stage.  Default value comes from
@@ -386,7 +394,7 @@ class StageAttributes : public AbstractObjectAttributes {
   void setFrustumCulling(bool frustumCulling) {
     set("frustum_culling", frustumCulling);
   }
-  bool getFrustumCulling() const { return getBool("frustum_culling"); }
+  bool getFrustumCulling() const { return get<bool>("frustum_culling"); }
 
  protected:
   /**

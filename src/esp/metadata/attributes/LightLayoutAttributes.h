@@ -44,7 +44,9 @@ class LightInstanceAttributes : public AbstractAttributes {
   void setPosition(const Magnum::Vector3& position) {
     set("position", position);
   }
-  Magnum::Vector3 getPosition() const { return getVec3("position"); }
+  Magnum::Vector3 getPosition() const {
+    return get<Magnum::Vector3>("position");
+  }
 
   /**
    * @brief Get/Set the direction of the light.
@@ -52,25 +54,27 @@ class LightInstanceAttributes : public AbstractAttributes {
   void setDirection(const Magnum::Vector3& direction) {
     set("direction", direction);
   }
-  Magnum::Vector3 getDirection() const { return getVec3("direction"); }
+  Magnum::Vector3 getDirection() const {
+    return get<Magnum::Vector3>("direction");
+  }
 
   /**
    * @brief Get/Set the color of the light.
    */
   void setColor(const Magnum::Vector3& color) { set("color", color); }
-  Magnum::Vector3 getColor() const { return getVec3("color"); }
+  Magnum::Vector3 getColor() const { return get<Magnum::Vector3>("color"); }
 
   /**
    * @brief Get/Set the color scale of the light.
    */
   void setIntensity(double intensity) { set("intensity", intensity); }
-  double getIntensity() const { return getDouble("intensity"); }
+  double getIntensity() const { return get<double>("intensity"); }
 
   /**
    * @brief Get/Set the type of the light
    */
   void setType(int type) { set("type", type); }
-  int getType() const { return getInt("type"); }
+  int getType() const { return get<int>("type"); }
 
   /**
    * @brief Get/Set the position model to use when placing the light - whether
@@ -80,7 +84,7 @@ class LightInstanceAttributes : public AbstractAttributes {
   void setPositionModel(int position_model) {
     set("position_model", position_model);
   }
-  int getPositionModel() const { return getInt("position_model"); }
+  int getPositionModel() const { return get<int>("position_model"); }
 
   /**
    * @brief Get/Set inner cone angle for spotlights.  Should be ignored for
@@ -89,7 +93,9 @@ class LightInstanceAttributes : public AbstractAttributes {
   void setInnerConeAngle(Magnum::Rad innerConeAngle) {
     set("innerConeAngle", innerConeAngle);
   }
-  Magnum::Rad getInnerConeAngle() const { return getRad("innerConeAngle"); }
+  Magnum::Rad getInnerConeAngle() const {
+    return get<Magnum::Rad>("innerConeAngle");
+  }
 
   /**
    * @brief Get/Set inner cone angle for spotlights. Should be ignored for other
@@ -98,7 +104,9 @@ class LightInstanceAttributes : public AbstractAttributes {
   void setOuterConeAngle(Magnum::Rad outerConeAngle) {
     set("outerConeAngle", outerConeAngle);
   }
-  Magnum::Rad getOuterConeAngle() const { return getRad("outerConeAngle"); }
+  Magnum::Rad getOuterConeAngle() const {
+    return get<Magnum::Rad>("outerConeAngle");
+  }
 
  protected:
   /**
@@ -182,7 +190,7 @@ class LightLayoutAttributes : public AbstractAttributes {
    * This is to make simple, sweeping adjustments to scene lighting in habitat.
    */
   double getPositiveIntensityScale() const {
-    return getDouble("positive_intensity_scale");
+    return get<double>("positive_intensity_scale");
   }
 
   /**
@@ -197,7 +205,7 @@ class LightLayoutAttributes : public AbstractAttributes {
    * This is to make simple, sweeping adjustments to scene lighting in habitat.
    */
   double getNegativeIntensityScale() const {
-    return getDouble("negative_intensity_scale");
+    return get<double>("negative_intensity_scale");
   }
 
   /**

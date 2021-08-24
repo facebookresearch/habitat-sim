@@ -135,7 +135,7 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
    * Used as key in constructor function pointer maps in AttributesManagers.
    */
   std::string getClassKey() const override {
-    return getString("attributesClassKey");
+    return get<std::string>("attributesClassKey");
   }
 
   /**
@@ -145,7 +145,7 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
    * @param handle the handle to set.
    */
   void setHandle(const std::string& handle) override { set("handle", handle); }
-  std::string getHandle() const override { return getString("handle"); }
+  std::string getHandle() const override { return get<std::string>("handle"); }
 
   /**
    * @brief This will return a simplified version of the attributes handle. Note
@@ -169,14 +169,14 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
     set("fileDirectory", fileDirectory);
   }
   std::string getFileDirectory() const override {
-    return getString("fileDirectory");
+    return get<std::string>("fileDirectory");
   }
 
   /**
    *  @brief Unique ID referencing attributes
    */
   void setID(int ID) override { set("ID", ID); }
-  int getID() const override { return getInt("ID"); }
+  int getID() const override { return get<int>("ID"); }
 
   /**
    * @brief Gets a smart pointer reference to a copy of the user-specified

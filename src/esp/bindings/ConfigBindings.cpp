@@ -32,19 +32,19 @@ void initConfigBindings(py::module& m) {
             // switch on type
             switch (self.getType(key)) {
               case ConfigStoredType::Boolean:
-                return py::cast(self.getBool(key));
+                return py::cast(self.get<bool>(key));
               case ConfigStoredType::Integer:
-                return py::cast(self.getInt(key));
+                return py::cast(self.get<int>(key));
               case ConfigStoredType::Double:
-                return py::cast(self.getDouble(key));
+                return py::cast(self.get<double>(key));
               case ConfigStoredType::String:
-                return py::cast(self.getString(key));
+                return py::cast(self.get<std::string>(key));
               case ConfigStoredType::MagnumVec3:
-                return py::cast(self.getVec3(key));
+                return py::cast(self.get<Mn::Vector3>(key));
               case ConfigStoredType::MagnumQuat:
-                return py::cast(self.getQuat(key));
+                return py::cast(self.get<Mn::Quaternion>(key));
               case ConfigStoredType::MagnumRad:
-                return py::cast(self.getRad(key));
+                return py::cast(self.get<Mn::Rad>(key));
               default:
                 // unknown type or value not found
                 throw py::value_error("No valid value found for key " + key);
@@ -124,45 +124,43 @@ void initConfigBindings(py::module& m) {
       .def(
           "has_bool",
           [](Configuration& self, const std::string& key) {
-            return self.checkMapForKeyAndType(key, ConfigStoredType::Boolean);
+            return self.checkMapForKeyAndType<bool>(key);
           },
           R"(Returns true if specified key references a boolean value in this configuration.)")
       .def(
           "has_int",
           [](Configuration& self, const std::string& key) {
-            return self.checkMapForKeyAndType(key, ConfigStoredType::Integer);
+            return self.checkMapForKeyAndType<int>(key);
           },
           R"(Returns true if specified key references a integer value in this configuration.)")
       .def(
           "has_string",
           [](Configuration& self, const std::string& key) {
-            return self.checkMapForKeyAndType(key, ConfigStoredType::String);
+            return self.checkMapForKeyAndType<std::string>(key);
           },
           R"(Returns true if specified key references a string value in this configuration.)")
       .def(
           "has_float",
           [](Configuration& self, const std::string& key) {
-            return self.checkMapForKeyAndType(key, ConfigStoredType::Double);
+            return self.checkMapForKeyAndType<double>(key);
           },
           R"(Returns true if specified key references a float value in this configuration.)")
       .def(
           "has_quat",
           [](Configuration& self, const std::string& key) {
-            return self.checkMapForKeyAndType(key,
-                                              ConfigStoredType::MagnumQuat);
+            return self.checkMapForKeyAndType<Mn::Quaternion>(key);
           },
           R"(Returns true if specified key references a Magnum::Quaternion value in this configuration.)")
       .def(
           "has_vec3",
           [](Configuration& self, const std::string& key) {
-            return self.checkMapForKeyAndType(key,
-                                              ConfigStoredType::MagnumVec3);
+            return self.checkMapForKeyAndType<Mn::Vector3>(key);
           },
           R"(Returns true if specified key references a Magnum::Vector3 value in this configuration.)")
       .def(
           "has_rad",
           [](Configuration& self, const std::string& key) {
-            return self.checkMapForKeyAndType(key, ConfigStoredType::MagnumRad);
+            return self.checkMapForKeyAndType<Mn::Rad>(key);
           },
           R"(Returns true if specified key references a Magnum::Rad value in this configuration.)")
 
@@ -176,19 +174,19 @@ void initConfigBindings(py::module& m) {
             // switch on type
             switch (self.getType(key)) {
               case ConfigStoredType::Boolean:
-                return py::cast(self.removeBool(key));
+                return py::cast(self.removeAndRetrieve<bool>(key));
               case ConfigStoredType::Integer:
-                return py::cast(self.removeInt(key));
+                return py::cast(self.removeAndRetrieve<int>(key));
               case ConfigStoredType::Double:
-                return py::cast(self.removeDouble(key));
+                return py::cast(self.removeAndRetrieve<double>(key));
               case ConfigStoredType::String:
-                return py::cast(self.removeString(key));
+                return py::cast(self.removeAndRetrieve<std::string>(key));
               case ConfigStoredType::MagnumVec3:
-                return py::cast(self.removeVec3(key));
+                return py::cast(self.removeAndRetrieve<Mn::Vector3>(key));
               case ConfigStoredType::MagnumQuat:
-                return py::cast(self.removeQuat(key));
+                return py::cast(self.removeAndRetrieve<Mn::Quaternion>(key));
               case ConfigStoredType::MagnumRad:
-                return py::cast(self.removeRad(key));
+                return py::cast(self.removeAndRetrieve<Mn::Rad>(key));
               default:
                 // unknown type or value not found
                 throw py::value_error("No valid value found for key " + key);

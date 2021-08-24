@@ -68,33 +68,33 @@ void initAttributesBindings(py::module& m) {
       .def("get_user_config_bool",
            [](AbstractAttributes& self, const std::string& key) {
              const auto ptr = self.editUserConfiguration();
-             return ptr->getBool(key);
+             return ptr->get<bool>(key);
            })
       .def("get_user_config_string",
            [](AbstractAttributes& self, const std::string& key) {
              const auto ptr = self.editUserConfiguration();
-             return ptr->getString(key);
+             return ptr->get<std::string>(key);
            })
       .def("get_user_config_int",
            [](AbstractAttributes& self, const std::string& key) {
              const auto ptr = self.editUserConfiguration();
-             return ptr->getInt(key);
+             return ptr->get<int>(key);
            })
 
       .def("get_user_config_double",
            [](AbstractAttributes& self, const std::string& key) {
              const auto ptr = self.editUserConfiguration();
-             return ptr->getDouble(key);
+             return ptr->get<double>(key);
            })
       .def("get_user_config_vec3",
            [](AbstractAttributes& self, const std::string& key) {
              const auto ptr = self.editUserConfiguration();
-             return ptr->getVec3(key);
+             return ptr->get<Mn::Vector3>(key);
            })
       .def("get_user_config_quat",
            [](AbstractAttributes& self, const std::string& key) {
              const auto ptr = self.editUserConfiguration();
-             return ptr->getQuat(key);
+             return ptr->get<Mn::Quaternion>(key);
            })
       .def(
           "set_user_config_bool",

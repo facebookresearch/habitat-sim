@@ -124,8 +124,8 @@ class AttributesManagersTest : public testing::Test {
     // are not now the same
     attrTemplate1->set(keyStr, "temp");
     attrTemplate2->set(keyStr, "temp2");
-    ASSERT_NE(attrTemplate1->getString(keyStr),
-              attrTemplate2->getString(keyStr));
+    ASSERT_NE(attrTemplate1->template get<std::string>(keyStr),
+              attrTemplate2->template get<std::string>(keyStr));
     // get original template ID
     int oldID = attrTemplate1->getID();
 
@@ -138,13 +138,13 @@ class AttributesManagersTest : public testing::Test {
     // get another copy
     auto attrTemplate3 = mgr->getObjectOrCopyByHandle(handle);
     // verify added field is present and the same
-    ASSERT_EQ(attrTemplate3->getString(keyStr),
-              attrTemplate2->getString(keyStr));
+    ASSERT_EQ(attrTemplate3->template get<std::string>(keyStr),
+              attrTemplate2->template get<std::string>(keyStr));
     // change field in new copy
     attrTemplate3->set(keyStr, "temp3");
     // verify that now they are different
-    ASSERT_NE(attrTemplate3->getString(keyStr),
-              attrTemplate2->getString(keyStr));
+    ASSERT_NE(attrTemplate3->template get<std::string>(keyStr),
+              attrTemplate2->template get<std::string>(keyStr));
 
     // test removal
     int removeID = attrTemplate2->getID();
@@ -315,8 +315,9 @@ class AttributesManagersTest : public testing::Test {
     if (setRenderHandle) {
       auto attrTemplate1 = mgr->createObject(handle, false);
       // set legitimate render handle in template
-      newAttrTemplate0->set("render_asset",
-                            attrTemplate1->getString("render_asset"));
+      newAttrTemplate0->set(
+          "render_asset",
+          attrTemplate1->template get<std::string>("render_asset"));
     }
 
     // register modified template and verify that this is the template now
@@ -359,12 +360,13 @@ class AttributesManagersTest : public testing::Test {
       Magnum::Quaternion quat_val) {
     // user defined attributes from light instance
     ASSERT_NE(nullptr, userConfig);
-    ASSERT_EQ(userConfig->getString("user_string"), str_val);
-    ASSERT_EQ(userConfig->getBool("user_bool"), bool_val);
-    ASSERT_EQ(userConfig->getInt("user_int"), int_val);
-    ASSERT_EQ(userConfig->getDouble("user_double"), double_val);
-    ASSERT_EQ(userConfig->getVec3("user_vec3"), vec_val);
-    ASSERT_EQ(userConfig->getQuat("user_quat"), quat_val);
+    ASSERT_EQ(userConfig->template get<std::string>("user_string"), str_val);
+    ASSERT_EQ(userConfig->template get<bool>("user_bool"), bool_val);
+    ASSERT_EQ(userConfig->template get<int>("user_int"), int_val);
+    ASSERT_EQ(userConfig->template get<double>("user_double"), double_val);
+    ASSERT_EQ(userConfig->template get<Magnum::Vector3>("user_vec3"), vec_val);
+    ASSERT_EQ(userConfig->template get<Magnum::Quaternion>("user_quat"),
+              quat_val);
 
   }  // AttributesManagersTest::testUserDefinedConfigVals
 
@@ -429,7 +431,7 @@ class AttributesManagersTest : public testing::Test {
     std::shared_ptr<T> newAttribs =
         assetAttributesManager_->getObjectOrCopyByHandle<T>(newHandle);
     // verify template has modified values
-    int newValue = newAttribs->getInt(ctorModField);
+    int newValue = newAttribs->template get<int>(ctorModField);
     ASSERT_EQ(legalVal, newValue);
     // remove modified template via handle
     auto oldTemplate2 =
@@ -828,9 +830,9 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
       artObjInstance->getUserConfiguration()->getSubconfigCopy("user_def_obj");
   ASSERT_NE(artObjNestedConfig, nullptr);
   ASSERT_EQ(artObjNestedConfig->hasValues(), true);
-  ASSERT_EQ(artObjNestedConfig->getVec3("position"),
+  ASSERT_EQ(artObjNestedConfig->template get<Magnum::Vector3>("position"),
             Magnum::Vector3(0.1f, 0.2f, 0.3f));
-  ASSERT_EQ(artObjNestedConfig->getVec3("rotation"),
+  ASSERT_EQ(artObjNestedConfig->template get<Magnum::Vector3>("rotation"),
             Magnum::Vector3(0.5f, 0.3f, 0.1f));
   ESP_WARNING() << "Articulated Object test 3";
 

@@ -68,7 +68,8 @@ bool BulletPhysicsManager::initPhysicsFinalize() {
   }
 
   // currently GLB meshes are y-up
-  bWorld_->setGravity(btVector3(physicsManagerAttributes_->getVec3("gravity")));
+  bWorld_->setGravity(
+      btVector3(physicsManagerAttributes_->get<Magnum::Vector3>("gravity")));
 
   //! Create new scene node
   staticStageObject_ = physics::BulletRigidStage::create(

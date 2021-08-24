@@ -49,7 +49,7 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
   // setting externally is prohibited
   void setHandle(const std::string&) override {}
 
-  bool getIsWireframe() const { return getBool("isWireframe"); }
+  bool getIsWireframe() const { return get<bool>("isWireframe"); }
 
   // only solid prims can use texture coords
   void setUseTextureCoords(bool useTextureCoords) {
@@ -58,7 +58,7 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
       buildHandle();  // build handle based on config
     }
   }
-  bool getUseTextureCoords() const { return getBool("textureCoordinates"); }
+  bool getUseTextureCoords() const { return get<bool>("textureCoordinates"); }
 
   // only solid prims have option to use tangents
   void setUseTangents(bool tangents) {
@@ -67,7 +67,7 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
       buildHandle();  // build handle based on config
     }
   }
-  bool getUseTangents() const { return getBool("tangents"); }
+  bool getUseTangents() const { return get<bool>("tangents"); }
 
   // only circular prims set number of rings - NOTE : capsule sets rings
   // separately for hemispheres and cylinder
@@ -76,29 +76,29 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
     set("rings", rings);
     buildHandle();  // build handle based on config
   }
-  int getNumRings() const { return getInt("rings"); }
+  int getNumRings() const { return get<int>("rings"); }
 
   void setNumSegments(int segments) {
     set("segments", segments);
     buildHandle();  // build handle based on config
   }
-  int getNumSegments() const { return getInt("segments"); }
+  int getNumSegments() const { return get<int>("segments"); }
   // capsule, cone and cylinder use halfLength
   void setHalfLength(double halfLength) {
     set("halfLength", halfLength);
     buildHandle();
   }
-  double getHalfLength() const { return getDouble("halfLength"); }
+  double getHalfLength() const { return get<double>("halfLength"); }
 
   std::string getPrimObjClassName() const {
-    return getString("primObjClassName");
+    return get<std::string>("primObjClassName");
   }
 
   /**
    * @brief The integer representation of the @ref esp::metadata::PrimObjTypes
    * this primitive represents,
    */
-  int getPrimObjType() const { return getInt("primObjType"); }
+  int getPrimObjType() const { return get<int>("primObjType"); }
   /**
    * @brief This will determine if the stated template has the required
    * quantities needed to instantiate a primitive properly of desired type.
@@ -259,13 +259,13 @@ class CapsulePrimitiveAttributes : public AbstractPrimitiveAttributes {
     set("hemisphereRings", hemisphereRings);
     buildHandle();  // build handle based on config
   }
-  int getHemisphereRings() const { return getInt("hemisphereRings"); }
+  int getHemisphereRings() const { return get<int>("hemisphereRings"); }
 
   void setCylinderRings(int cylinderRings) {
     set("cylinderRings", cylinderRings);
     buildHandle();  // build handle based on config
   }
-  int getCylinderRings() const { return getInt("cylinderRings"); }
+  int getCylinderRings() const { return get<int>("cylinderRings"); }
 
   /**
    * @brief This will determine if the stated template has the required
@@ -312,7 +312,7 @@ class ConePrimitiveAttributes : public AbstractPrimitiveAttributes {
     set("capEnd", capEnd);
     buildHandle();  // build handle based on config
   }
-  bool getCapEnd() const { return getBool("capEnd"); }
+  bool getCapEnd() const { return get<bool>("capEnd"); }
 
   /**
    * @brief This will determine if the stated template has the required
@@ -392,7 +392,7 @@ class CylinderPrimitiveAttributes : public AbstractPrimitiveAttributes {
     set("capEnds", capEnds);
     buildHandle();  // build handle based on config
   }
-  bool getCapEnds() const { return getBool("capEnds"); }
+  bool getCapEnds() const { return get<bool>("capEnds"); }
 
   /**
    * @brief This will determine if the stated template has the required
@@ -448,7 +448,7 @@ class IcospherePrimitiveAttributes : public AbstractPrimitiveAttributes {
       buildHandle();  // build handle based on config
     }
   }
-  int getSubdivisions() const { return getInt("subdivisions"); }
+  int getSubdivisions() const { return get<int>("subdivisions"); }
 
   /**
    * @brief This will determine if the stated template has the required
