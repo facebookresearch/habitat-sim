@@ -17,6 +17,23 @@ namespace config {
 
 namespace {
 
+/**
+ * @brief Constant map to provide mappings from @ref ConfigStoredType enum tags
+ * to string.  All supported types should have mappings in this map
+ */
+const std::unordered_map<ConfigStoredType, std::string> ConfigTypeNamesMap = {
+    {ConfigStoredType::Unknown, "Unknown"},
+    {ConfigStoredType::Boolean, "bool"},
+    {ConfigStoredType::Integer, "int"},
+    {ConfigStoredType::Double, "double"},
+    {ConfigStoredType::MagnumVec3, "Magnum::Vector3"},
+    {ConfigStoredType::MagnumQuat, "Magnum::Quaternion"},
+    {ConfigStoredType::MagnumRad, "Magnum::Rad"},
+    {ConfigStoredType::String, "std::string"},
+};
+
+// force this functionality to remain local to this file.
+
 // free functions for non-trivial types control.
 template <class T>
 void copyConstructorFunc(
@@ -69,6 +86,19 @@ NonTrivialTypeHandler nonTrivialConfigStoredTypeHandlerFor(
 }
 
 }  // namespace
+
+std::string getNameForStoredType(const ConfigStoredType& value) {
+  auto valName = ConfigTypeNamesMap.find(value);
+  if (valName != ConfigTypeNamesMap.end()) {
+    return valName->second;
+  }
+  // this should happen only if newly supported type has not been added to
+  // ConfigTypeNamesMap
+  return Cr::Utility::formatString(
+      "ConfigStoredType with value {} not currently supported fully as a type "
+      "for a ConfigValue",
+      static_cast<int>(value));
+}
 
 ConfigValue::ConfigValue(const ConfigValue& otr) {
   copyValueFrom(otr);
@@ -189,19 +219,7 @@ bool ConfigValue::putValueInConfigGroup(
 }  // ConfigValue::putValueInConfigGroup
 
 Mn::Debug& operator<<(Mn::Debug& debug, const ConfigStoredType& value) {
-  debug << "Type";
-  switch (value) {
-/* LCOV_EXCL_START */
-#define _s(value)               \
-  case ConfigStoredType::value: \
-    return debug << ":" #value;
-    _s(Unknown) _s(Boolean) _s(Integer) _s(Double) _s(MagnumVec3) _s(MagnumQuat)
-        _s(MagnumRad) _s(String)
-#undef _s
-    /* LCOV_EXCL_STOP */
-  }
-  return debug << ":" << static_cast<int>(value)
-               << "not supported in debug stream";
+  return debug << "Type:" << getNameForStoredType(value);
 }
 
 Mn::Debug& operator<<(Mn::Debug& debug, const ConfigValue& value) {

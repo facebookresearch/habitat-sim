@@ -47,7 +47,13 @@ enum class ConfigStoredType {
 };
 
 /**
- * @brief Quick check to see if type is trivial or not
+ * @brief Retrieve a string description of the passed @ref ConfigStoredType enum
+ * value.
+ */
+std::string getNameForStoredType(const ConfigStoredType& value);
+
+/**
+ * @brief Quick check to see if type is trivial or not.
  */
 constexpr bool isConfigStoredTypeNonTrivial(ConfigStoredType type) {
   return static_cast<int>(type) >=
