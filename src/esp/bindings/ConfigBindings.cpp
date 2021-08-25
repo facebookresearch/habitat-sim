@@ -17,7 +17,7 @@ void initConfigBindings(py::module& m) {
       .value("Unknown", ConfigStoredType::Unknown)
       .value("Boolean", ConfigStoredType::Boolean)
       .value("Integer", ConfigStoredType::Integer)
-      .value("Double", ConfigStoredType::Double)
+      .value("Float", ConfigStoredType::Double)
       .value("String", ConfigStoredType::String)
       .value("MagnumVec3", ConfigStoredType::MagnumVec3)
       .value("MagnumQuat", ConfigStoredType::MagnumQuat)
@@ -100,10 +100,10 @@ void initConfigBindings(py::module& m) {
           R"(Retrieves a list of the keys of this configuration's subconfigurations)")
 
       .def("get_subconfig", &Configuration::editSubconfig,
-           pybind11::return_value_policy::reference,
+           py::return_value_policy::reference_internal,
            R"(Get the subconfiguration with the given name.)", "name"_a)
       .def("get_subconfig_copy", &Configuration::getSubconfigCopy,
-           pybind11::return_value_policy::reference,
+           py::return_value_policy::reference,
            R"(Get a copy of the subconfiguration with the given name.)",
            "name"_a)
       .def("save_subconfig", &Configuration::setSubconfigPtr,

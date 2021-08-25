@@ -65,10 +65,10 @@ void initAttributesBindings(py::module& m) {
           "template_id", &AbstractAttributes::getID,
           R"(System-generated ID for template.  Will be unique among templates
           of same type.)")
-
       .def(
           "get_user_config", &AbstractAttributes::editUserConfiguration,
-          R"(Retrieve the User Config object for this attributes, so that it can be
+          py::return_value_policy::reference_internal,
+          R"(Returns a reference to the User Config object for this attributes, so that it can be
           viewed or modified. Any changes to the user_config will require the owning
           attributes to be re-registered.)")
       .def_property_readonly(
