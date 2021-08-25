@@ -6,6 +6,7 @@ pybind11_add_module(
   bindings.cpp
   AttributesBindings.cpp
   AttributesManagersBindings.cpp
+  ConfigBindings.cpp
   CoreBindings.cpp
   GeoBindings.cpp
   GfxBindings.cpp

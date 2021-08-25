@@ -14,6 +14,7 @@ const std::map<std::string, esp::physics::MotionType>
         {"kinematic", esp::physics::MotionType::KINEMATIC},
         {"dynamic", esp::physics::MotionType::DYNAMIC},
 };
+
 SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
     const std::string& handle,
     const std::string& type)
@@ -25,14 +26,14 @@ SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
   // defaults to unknown/undefined
   setMotionType(static_cast<int>(esp::physics::MotionType::UNDEFINED));
   // set to no rotation
-  setQuat("rotation", Mn::Quaternion(Mn::Math::IdentityInit));
-  setVec3("translation", Mn::Vector3());
+  set("rotation", Mn::Quaternion(Mn::Math::IdentityInit));
+  set("translation", Mn::Vector3());
   // defaults to unknown so that obj instances use scene instance setting
   setTranslationOrigin(
       static_cast<int>(SceneInstanceTranslationOrigin::Unknown));
   // set default multiplicative scaling values
-  setUniformScale(1.0f);
-  setMassScale(1.0f);
+  setUniformScale(1.0);
+  setMassScale(1.0);
 }
 
 std::string SceneObjectInstanceAttributes::getCurrShaderTypeName() const {
@@ -47,17 +48,17 @@ std::string SceneObjectInstanceAttributes::getObjectInfoHeaderInternal() const {
 }
 
 std::string SceneObjectInstanceAttributes::getObjectInfoInternal() const {
-  return cfg.value("translation")
+  return getAsString("translation")
       .append(1, ',')
-      .append(cfg.value("rotation"))
+      .append(getAsString("rotation"))
       .append(1, ',')
       .append(getCurrMotionTypeName())
       .append(1, ',')
       .append(getCurrShaderTypeName())
       .append(1, ',')
-      .append(cfg.value("uniform_scale"))
+      .append(std::to_string(getUniformScale()))
       .append(1, ',')
-      .append(cfg.value("mass_scale"))
+      .append(std::to_string(getMassScale()))
       .append(1, ',')
       .append(getTranslationOriginName(getTranslationOrigin()))
       .append(1, ',')
@@ -102,8 +103,8 @@ std::string SceneAOInstanceAttributes::getSceneObjInstanceInfoInternal() const {
     initJointVels.append(std::to_string(it.second)).append(1, ',');
   }
   initJointVels.append("]");
-  return cfg.value("fixed_base").append(1, ',') + initJointPose.append(1, ',') +
-         initJointVels.append(1, ',');
+  return getAsString("fixed_base").append(1, ',') +
+         initJointPose.append(1, ',') + initJointVels.append(1, ',');
 }  // SceneAOInstanceAttributes::getSceneObjInstanceInfoInternal()
 
 SceneAttributes::SceneAttributes(const std::string& handle)

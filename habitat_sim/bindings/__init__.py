@@ -10,7 +10,7 @@
 from habitat_sim._ext.habitat_sim_bindings import (
     CameraSensor,
     CameraSensorSpec,
-    ConfigurationGroup,
+    Configuration,
     CubeMapSensorBase,
     CubeMapSensorBaseSpec,
     EquirectangularSensor,

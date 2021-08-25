@@ -54,19 +54,19 @@ std::string AbstractObjectAttributes::getObjectInfoInternal() const {
       .append(1, ',')
       .append(getCollisionAssetHandle())
       .append(1, ',')
-      .append(cfg.value("scale"))
+      .append(getAsString("scale"))
       .append(1, ',')
-      .append(cfg.value("margin"))
+      .append(std::to_string(getMargin()))
       .append(1, ',')
-      .append(cfg.value("orient_up"))
+      .append(getAsString("orient_up"))
       .append(1, ',')
-      .append(cfg.value("orient_front"))
+      .append(getAsString("orient_front"))
       .append(1, ',')
-      .append(cfg.value("units_to_meters"))
+      .append(std::to_string(getUnitsToMeters()))
       .append(1, ',')
-      .append(cfg.value("friction_coefficient"))
+      .append(std::to_string(getFrictionCoefficient()))
       .append(1, ',')
-      .append(cfg.value("restitution_coefficient"))
+      .append(std::to_string(getRestitutionCoefficient()))
       .append(1, ',')
       .append(getCurrShaderTypeName())
       .append(1, ',')
@@ -96,17 +96,17 @@ ObjectAttributes::ObjectAttributes(const std::string& handle)
 }  // ObjectAttributes ctor
 
 std::string ObjectAttributes::getAbstractObjectInfoInternal() const {
-  return cfg.value("mass")
+  return std::to_string(getMass())
       .append(1, ',')
-      .append(cfg.value("COM"))
+      .append(getAsString("COM"))
       .append(1, ',')
-      .append(cfg.value("inertia"))
+      .append(getAsString("inertia"))
       .append(1, ',')
-      .append(cfg.value("angular_damping"))
+      .append(std::to_string(getAngularDamping()))
       .append(1, ',')
-      .append(cfg.value("linear_damping"))
+      .append(std::to_string(getLinearDamping()))
       .append(1, ',')
-      .append(cfg.value("semantic_id"));
+      .append(std::to_string(getSemanticId()));
 }
 
 StageAttributes::StageAttributes(const std::string& handle)
@@ -122,6 +122,9 @@ StageAttributes::StageAttributes(const std::string& handle)
   setCollisionAssetType(0);
   // 4 corresponds to esp::assets::AssetType::INSTANCE_MESH
   setSemanticAssetType(4);
+  // set empty defaults for handles
+  set("navmeshAssetHandle", "");
+  set("semantic_asset", "");
 }  // StageAttributes ctor
 
 }  // namespace attributes
