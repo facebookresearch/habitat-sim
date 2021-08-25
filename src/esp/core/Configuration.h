@@ -449,9 +449,9 @@ class Configuration {
    * @return The actual pointer to the configuration having the requested
    * name.
    */
-  std::shared_ptr<Configuration>& editSubconfig(const std::string& name) {
-    makeNewSubgroup(name);
-    return configMap_.at(name);
+  std::shared_ptr<Configuration> editSubconfig(const std::string& name) {
+    // retrieve existing (or create new) subgroup, with passed name
+    return addSubgroup(name);
   }
 
   /**
@@ -546,10 +546,8 @@ class Configuration {
     // merge subconfigs
     for (const auto& subConfig : configMap_) {
       const auto name = subConfig.first;
-      // make if DNE
-      makeNewSubgroup(name);
-      // merge src subconfig
-      configMap_[name]->overwriteWithConfig(subConfig.second);
+      // make if DNE and merge src subconfig
+      addSubgroup(name)->overwriteWithConfig(subConfig.second);
     }
   }
 
@@ -622,16 +620,14 @@ class Configuration {
    * @param name Desired name of new subgroup.
    * @return whether a group was made or not
    */
-  bool makeNewSubgroup(const std::string& name) {
+  std::shared_ptr<Configuration> addSubgroup(const std::string& name) {
     // Attempt to insert an empty pointer
     auto result = configMap_.insert({name, std::shared_ptr<Configuration>{}});
-    // If name already present, nothing inserted
-    if (!result.second) {
-      return false;
+    // If name not already present (insert succeeded) then add new configuration
+    if (result.second) {
+      result.first->second = std::make_shared<Configuration>();
     }
-    // Not present yet, fill it with an actual instance
-    result.first->second = std::make_shared<Configuration>();
-    return true;
+    return result.first->second;
   }
 
   // Map to hold configurations as subgroups

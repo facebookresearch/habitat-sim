@@ -121,7 +121,7 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
                      const std::string& handle)
       : Configuration() {
     // set up an existing subgroup for user_defined attributes
-    makeNewSubgroup("user_defined");
+    addSubgroup("user_defined");
     AbstractAttributes::setClassKey(attributesClassKey);
     AbstractAttributes::setHandle(handle);
     // set initial vals, will be overwritten when registered
@@ -194,7 +194,7 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
    * data, but it will be available to the user via python bindings for each
    * object.  This method is for editing the configuration.
    */
-  std::shared_ptr<Configuration>& editUserConfiguration() {
+  std::shared_ptr<Configuration> editUserConfiguration() {
     return editSubconfig("user_defined");
   }
 
