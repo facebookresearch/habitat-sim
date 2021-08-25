@@ -67,6 +67,15 @@ int loadJsonIntoConfiguration(
     const std::shared_ptr<esp::core::config::Configuration>& configPtr);
 
 /**
+ * @brief Recursively traverse passed @ref esp::core::Configuration to write all
+ * values into a JSON document.
+ * @param configPtr Shared pointer to configuration to read into JSON document
+ * @return JSON document populated with values from Configuration.
+ */
+JsonGenericValue buildJsonFromConfiguration(
+    const std::shared_ptr<esp::core::config::Configuration>& configPtr);
+
+/**
  * @brief Check passed json doc for existence of passed jsonTag as value of
  * type T. If present, populate passed setter with value. Returns
  * whether tag is found and successfully populated, or not. Logs an error if

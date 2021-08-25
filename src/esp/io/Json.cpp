@@ -121,6 +121,9 @@ int loadJsonIntoConfiguration(
   return numConfigSettings;
 }  // loadJsonIntoConfigSubgroup
 
+JsonGenericValue buildJsonFromConfiguration(
+    const std::shared_ptr<esp::core::config::Configuration>& configPtr) {}
+
 JsonDocument parseJsonFile(const std::string& file) {
   FILE* pFile = fopen(file.c_str(), "rb");
   char buffer[65536];

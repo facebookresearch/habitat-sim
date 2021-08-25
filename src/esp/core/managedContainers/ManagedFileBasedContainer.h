@@ -164,10 +164,9 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
           << objectHandle << " to save as JSON. Aborting.";
       return false;
     }
+    namespace FileUtil = Cr::Utility::Directory;
     // Managed file-based object to save
     ManagedFileIOPtr obj = this->getObjectInternal(objectHandle);
-
-    namespace FileUtil = Cr::Utility::Directory;
 
     std::string fileDirectory = FileUtil::path(fullFilename);
     // if no directory given then use object's local directory
@@ -210,9 +209,10 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
    * exist, will return false.
    * @return Whether save was successful
    */
-  bool saveManagedObjectToFileInternal(ManagedFileIOPtr managedObject,
-                                       const std::string& filename,
-                                       const std::string& fileDirectory);
+  virtual bool saveManagedObjectToFileInternal(
+      const ManagedFileIOPtr& managedObject,
+      const std::string& filename,
+      const std::string& fileDirectory) const = 0;
 
   /**
    * @brief Verify passd @p filename is legal document of type T. Returns loaded
@@ -333,33 +333,6 @@ bool ManagedFileBasedContainer<T, Access>::verifyLoadDocument(
     return false;
   }
 }  // ManagedFileBasedContainer<T, Access>::verifyLoadDocument
-
-template <class T, ManagedObjectAccess Access>
-bool ManagedFileBasedContainer<T, Access>::saveManagedObjectToFileInternal(
-    ManagedFileIOPtr managedObject,
-    const std::string& filename,
-    const std::string& fileDirectory) {
-  namespace FileUtil = Cr::Utility::Directory;
-  if (!FileUtil::exists(fileDirectory)) {
-    // output directory not found
-    ESP_ERROR() << "<" << this->objectType_
-                << ">::saveManagedObjectToFile : Destination directory "
-                << fileDirectory << " does not exist to save "
-                << managedObject->getSimplifiedHandle() << " object. Aborting.";
-    return false;
-  }
-  // construct fully qualified filename
-  std::string fullFilename = FileUtil::join(fileDirectory, filename);
-
-  // TODO Build and save JSON file from managedObject
-  rapidjson::Document jsonDocument{};
-
-  // want to use pretty writer since we wish for the file to be human readable.
-  bool success = esp::io::writeJsonToFile(jsonDocument, fullFilename, true, 7);
-
-  return success;
-
-}  // ManagedFileBasedContainer<T, Access>::saveManagedObjectToFileInternal
 
 template <class T, ManagedObjectAccess Access>
 bool ManagedFileBasedContainer<T, Access>::saveManagedObjectToFile(
