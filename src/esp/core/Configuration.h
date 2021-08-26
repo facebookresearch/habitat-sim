@@ -223,6 +223,11 @@ MAGNUM_EXPORT Mn::Debug& operator<<(Mn::Debug& debug, const ConfigValue& value);
  */
 class Configuration {
  public:
+  // convenience typedefs
+  typedef std::unordered_map<std::string, ConfigValue> ValueMapType;
+  typedef std::unordered_map<std::string, std::shared_ptr<Configuration>>
+      ConfigMapType;
+
   Configuration() = default;
 
   Configuration(const Configuration& otr)
@@ -399,12 +404,14 @@ class Configuration {
   template <class T>
   bool checkMapForKeyAndType(const std::string& key) const {
     // check if present
-    if (valueMap_.count(key) == 0) {
+    ValueMapType::const_iterator mapIter = valueMap_.find(key);
+    if (mapIter == valueMap_.end()) {
+      // not found
       return false;
     }
     // key is present, check if appropriate type
     const ConfigStoredType& type = configStoredTypeFor<T>();
-    return valueMap_.at(key).compareType(type);
+    return mapIter->second.getType() == type;
   }
 
   /**
@@ -631,10 +638,10 @@ class Configuration {
   }
 
   // Map to hold configurations as subgroups
-  std::unordered_map<std::string, std::shared_ptr<Configuration>> configMap_{};
+  ConfigMapType configMap_{};
 
   // Map that haolds all config values
-  std::unordered_map<std::string, ConfigValue> valueMap_{};
+  ValueMapType valueMap_{};
 
   ESP_SMART_POINTERS(Configuration)
 };  // class Configuration
