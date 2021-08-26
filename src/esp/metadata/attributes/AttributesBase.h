@@ -220,11 +220,9 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
    * of this managed object.
    */
   std::string getObjectInfo() const override {
-    return getSimplifiedHandle()
-        .append(", ")
-        .append(std::to_string(getID()))
-        .append(", ")
-        .append(getObjectInfoInternal());
+    return Cr::Utility::formatString("{},{},{}", getSimplifiedHandle(),
+                                     getAsString("ID"),
+                                     getObjectInfoInternal());
   }
 
  protected:

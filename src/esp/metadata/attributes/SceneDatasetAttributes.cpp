@@ -25,8 +25,8 @@ SceneDatasetAttributes::SceneDatasetAttributes(
 bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
     const attributes::SceneAttributes::ptr& sceneInstance) {
   // info display message prefix
-  std::string infoPrefix("Dataset : '");
-  infoPrefix.append(getSimplifiedHandle()).append("' : ");
+  std::string infoPrefix =
+      Cr::Utility::formatString("Dataset : '{}' : ", getSimplifiedHandle());
 
   const std::string sceneInstanceName = sceneInstance->getHandle();
   // verify stage in sceneInstance (required) exists in SceneDatasetAttributes,
@@ -189,87 +189,69 @@ SceneDatasetAttributes::getNamedObjectAttributesCopy(
   return objectAttributesManager_->getObjectCopyByHandle(fullObjName);
 }  // SceneDatasetAttributes::getNamedObjectAttributesCopy
 
+namespace {
+
+std::string concatStrings(const std::string& header,
+                          const std::vector<std::string>& vec) {
+  std::string res =
+      Cr::Utility::formatString("\n{} : {} available.\n", header, vec.size());
+  for (const std::string& s : vec) {
+    res.append(Cr::Utility::formatString("{}\n", s));
+  }
+  return res;
+}
+
+std::string concatStrings(const std::string& header,
+                          const std::map<std::string, std::string>& map) {
+  std::string res =
+      Cr::Utility::formatString("\n{} : {} available.\n", header, map.size());
+  for (const auto& item : map) {
+    res.append(Cr::Utility::formatString("{}, {}\n", item.first, item.second));
+  }
+  return res;
+}
+
+}  // namespace
+
 std::string SceneDatasetAttributes::getObjectInfoInternal() const {
   // provide a summary for all info for this scene dataset
-  std::string res = "\n";
+
   // scene instances
-
-  std::vector<std::string> sceneInstAttrInfoAra =
-      sceneAttributesManager_->getObjectInfoStrings();
-  res.append("\nScene Instances : ")
-      .append(std::to_string(sceneInstAttrInfoAra.size() - 1))
-      .append(" loaded.\n");
-
-  for (const std::string& s : sceneInstAttrInfoAra) {
-    res.append(s).append(1, '\n');
-  }
+  std::string sceneRes = concatStrings(
+      "Scene Instances", sceneAttributesManager_->getObjectInfoStrings());
 
   // stages
-  std::vector<std::string> stageAttrInfoAra =
-      stageAttributesManager_->getObjectInfoStrings();
-  res.append("\nStage Templates : ")
-      .append(std::to_string(stageAttrInfoAra.size() - 1))
-      .append(" loaded.\n");
-  for (const std::string& s : stageAttrInfoAra) {
-    res.append(s).append(1, '\n');
-  }
+  std::string stageRes = concatStrings(
+      "Stage Templates", stageAttributesManager_->getObjectInfoStrings());
 
   // objects
-  std::vector<std::string> objAttrInfoAra =
-      objectAttributesManager_->getObjectInfoStrings();
-  res.append("\nObject Templates : ")
-      .append(std::to_string(objAttrInfoAra.size() - 1))
-      .append(" loaded.\n");
-  for (const std::string& s : objAttrInfoAra) {
-    res.append(s).append(1, '\n');
-  }
+  std::string objRes = concatStrings(
+      "Object Templates", objectAttributesManager_->getObjectInfoStrings());
 
   // articulated objects
-  res.append("\nArticulated Object Models : ")
-      .append(std::to_string(articulatedObjPaths.size()))
-      .append(" loaded.\n");
-
-  for (const auto& item : articulatedObjPaths) {
-    res.append(item.first).append(1, ',').append(item.second).append(1, '\n');
-  }
+  std::string AObjRes =
+      concatStrings("Articulated Object Models", articulatedObjPaths);
 
   // lights
   std::vector<std::string> lightAttrInfoAra =
       lightLayoutAttributesManager_->getObjectInfoStrings();
-  res.append("\nLighting Configurations : ")
-      .append(std::to_string(lightAttrInfoAra.size() - 1))
-      .append(" loaded.\n");
-  for (const std::string& s : lightAttrInfoAra) {
-    res.append(s).append(1, '\n');
-  }
+  std::string lightRes =
+      concatStrings("Lighting Configurations",
+                    lightLayoutAttributesManager_->getObjectInfoStrings());
 
   // prims
-  std::vector<std::string> primAttrInfoAra =
-      assetAttributesManager_->getObjectInfoStrings();
-  res.append("\nPrimitives Templates : ")
-      .append(std::to_string(primAttrInfoAra.size() - 1))
-      .append(" loaded.\n");
-  for (const std::string& s : primAttrInfoAra) {
-    res.append(s).append(1, '\n');
-  }
+  std::string primRes = concatStrings(
+      "Primitives Templates", assetAttributesManager_->getObjectInfoStrings());
 
   // navmesh
-  res.append("\nNavmeshes : ")
-      .append(std::to_string(navmeshMap_.size()))
-      .append(" loaded.\n");
-  for (const auto& item : navmeshMap_) {
-    res.append(item.first).append(1, ',').append(item.second).append(1, '\n');
-  }
-
+  std::string navRes = concatStrings("Navmeshes", navmeshMap_);
   // SSD entries
-  res.append("\nSemantic Scene Descriptors : ")
-      .append(std::to_string(semanticSceneDescrMap_.size()))
-      .append(" loaded.\n");
-  for (const auto& item : semanticSceneDescrMap_) {
-    res.append(item.first).append(1, ',').append(item.second).append(1, '\n');
-  }
+  std::string ssdRes =
+      concatStrings("Semantic Scene Descriptors", semanticSceneDescrMap_);
 
-  return res;
+  return Cr::Utility::formatString("{}{}{}{}{}{}{}{}", sceneRes, stageRes,
+                                   objRes, AObjRes, lightRes, primRes, navRes,
+                                   ssdRes);
 }
 
 std::string SceneDatasetAttributes::getDatasetSummaryHeader() {
@@ -279,29 +261,15 @@ std::string SceneDatasetAttributes::getDatasetSummaryHeader() {
 }
 
 std::string SceneDatasetAttributes::getDatasetSummary() const {
-  std::string res{
-      getSimplifiedHandle()
-          .append(1, ',')
-          .append(std::to_string(sceneAttributesManager_->getNumObjects()))
-          .append(1, ',')
-          .append(std::to_string(stageAttributesManager_->getNumObjects()))
-          .append(1, ',')
-          .append(std::to_string(objectAttributesManager_->getNumObjects()))
-          .append(1, ',')
-          .append(std::to_string(articulatedObjPaths.size()))
-          .append(1, ',')
-          .append(
-              std::to_string(lightLayoutAttributesManager_->getNumObjects()))
-          .append(1, ',')
-          .append(std::to_string(assetAttributesManager_->getNumObjects()))
-          .append(1, ',')
-          .append(std::to_string(navmeshMap_.size()))
-          .append(1, ',')
-          .append(std::to_string(semanticSceneDescrMap_.size()))
-          .append(1, ',')};
-  return res;
-
-}  // SceneDatasetAttributes::getDatasetSummary
+  return Cr::Utility::formatString(
+      "{},{},{},{},{},{},{},{},{},", getSimplifiedHandle(),
+      sceneAttributesManager_->getNumObjects(),
+      stageAttributesManager_->getNumObjects(),
+      objectAttributesManager_->getNumObjects(), articulatedObjPaths.size(),
+      lightLayoutAttributesManager_->getNumObjects(),
+      assetAttributesManager_->getNumObjects(), navmeshMap_.size(),
+      semanticSceneDescrMap_.size());
+}  // namespace attributes
 
 }  // namespace attributes
 }  // namespace metadata

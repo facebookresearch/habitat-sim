@@ -48,21 +48,12 @@ std::string SceneObjectInstanceAttributes::getObjectInfoHeaderInternal() const {
 }
 
 std::string SceneObjectInstanceAttributes::getObjectInfoInternal() const {
-  return getAsString("translation")
-      .append(1, ',')
-      .append(getAsString("rotation"))
-      .append(1, ',')
-      .append(getCurrMotionTypeName())
-      .append(1, ',')
-      .append(getCurrShaderTypeName())
-      .append(1, ',')
-      .append(std::to_string(getUniformScale()))
-      .append(1, ',')
-      .append(std::to_string(getMassScale()))
-      .append(1, ',')
-      .append(getTranslationOriginName(getTranslationOrigin()))
-      .append(1, ',')
-      .append(getSceneObjInstanceInfoInternal());
+  return Cr::Utility::formatString(
+      "{},{},{},{},{},{},{},{}", getAsString("translation"),
+      getAsString("rotation"), getCurrMotionTypeName(), getCurrShaderTypeName(),
+      getAsString("uniform_scale"), getAsString("mass_scale"),
+      getTranslationOriginName(getTranslationOrigin()),
+      getSceneObjInstanceInfoInternal());
 }  // SceneObjectInstanceAttributes::getObjectInfoInternal()
 
 SceneAOInstanceAttributes::SceneAOInstanceAttributes(const std::string& handle)
@@ -75,36 +66,38 @@ SceneAOInstanceAttributes::SceneAOInstanceAttributes(const std::string& handle)
 
 std::string SceneAOInstanceAttributes::getSceneObjInstanceInfoHeaderInternal()
     const {
-  const std::string posePrfx{"Init Pose "};
   std::string initPoseHdr;
   int iter = 0;
   for (const auto& it : initJointPose_) {
-    initPoseHdr.append(posePrfx).append(std::to_string(iter++)).append(1, ',');
+    initPoseHdr.append(
+        Cr::Utility::formatString("Init Pose {},", std::to_string(iter++)));
   }
-  const std::string velPrfx{"Init Vel "};
   std::string initVelHdr;
   iter = 0;
   for (const auto& it : initJointPose_) {
-    initVelHdr.append(velPrfx).append(std::to_string(iter++)).append(1, ',');
+    initVelHdr.append(
+        Cr::Utility::formatString("Init Vel {},", std::to_string(iter++)));
   }
-  std::string res{"Is Fixed Base?, "};
-  res.append(initPoseHdr).append(initVelHdr);
-  return res;
+  return Cr::Utility::formatString("Is Fixed Base?, {} {}", initPoseHdr,
+                                   initVelHdr);
 }  // SceneAOInstanceAttributes::getSceneObjInstanceInfoHeaderInternal
 
 std::string SceneAOInstanceAttributes::getSceneObjInstanceInfoInternal() const {
   std::string initJointPose{"["};
   for (const auto& it : initJointPose_) {
-    initJointPose.append(std::to_string(it.second)).append(1, ',');
+    initJointPose.append(
+        Cr::Utility::formatString("{},", std::to_string(it.second)));
   }
   initJointPose.append("]");
   std::string initJointVels{"["};
   for (const auto& it : initJointPose_) {
-    initJointVels.append(std::to_string(it.second)).append(1, ',');
+    initJointVels.append(
+        Cr::Utility::formatString("{},", std::to_string(it.second)));
   }
   initJointVels.append("]");
-  return getAsString("fixed_base").append(1, ',') +
-         initJointPose.append(1, ',') + initJointVels.append(1, ',');
+
+  return Cr::Utility::formatString("{},{},{},", getAsString("fixed_base"),
+                                   initJointPose, initJointVels);
 }  // SceneAOInstanceAttributes::getSceneObjInstanceInfoInternal()
 
 SceneAttributes::SceneAttributes(const std::string& handle)
@@ -117,53 +110,41 @@ SceneAttributes::SceneAttributes(const std::string& handle)
 }
 
 std::string SceneAttributes::getObjectInfoInternal() const {
-  std::string res = "\n";
   // scene-specific info constants
   // default translation origin
-  res.append(
-      "Default Translation Origin, Default Lighting,Navmesh Handle,Semantic "
-      "Scene Descriptor Handle,\n");
 
-  res.append(getTranslationOriginName(getTranslationOrigin()))
-      .append(1, ',')
-      .append(getLightingHandle())
-      .append(1, ',')
-      .append(getNavmeshHandle())
-      .append(1, ',')
-      .append(getSemanticSceneHandle())
-      .append(1, '\n');
-
+  std::string res = Cr::Utility::formatString(
+      "\nDefault Translation Origin, Default Lighting,Navmesh Handle,Semantic "
+      "Scene Descriptor Handle,\n{},{},{},{}\nStage Instance Info :\n{}\n{}\n",
+      getTranslationOriginName(getTranslationOrigin()), getLightingHandle(),
+      getNavmeshHandle(), getSemanticSceneHandle(),
+      stageInstance_->getObjectInfoHeader(), stageInstance_->getObjectInfo());
   // stage instance info
-  res.append("Stage Instance Info :\n");
-  res.append(stageInstance_->getObjectInfoHeader()).append(1, '\n');
-  res.append(stageInstance_->getObjectInfo()).append(1, '\n');
-
   int iter = 0;
   // object instance info
   for (const auto& objInst : objectInstances_) {
     if (iter == 0) {
-      iter++;
-      res.append("Object Instance Info :\n");
-      res.append(objInst->getObjectInfoHeader()).append(1, '\n');
+      ++iter;
+      res.append(Cr::Utility::formatString("Object Instance Info :\n{}\n",
+                                           objInst->getObjectInfoHeader()));
     }
-    res.append(objInst->getObjectInfo()).append(1, '\n');
+    res.append(Cr::Utility::formatString("{}\n", objInst->getObjectInfo()));
   }
 
   // articulated object instance info
   iter = 0;
   for (const auto& artObjInst : articulatedObjectInstances_) {
     if (iter == 0) {
-      iter++;
-      res.append("Articulated Object Instance Info :\n");
-      res.append(artObjInst->getObjectInfoHeader()).append(1, '\n');
+      ++iter;
+      res.append(
+          Cr::Utility::formatString("Articulated Object Instance Info :\n{}\n",
+                                    artObjInst->getObjectInfoHeader()));
     }
-    res.append(artObjInst->getObjectInfo()).append(1, '\n');
+    res.append(Cr::Utility::formatString("{}\n", artObjInst->getObjectInfo()));
   }
 
-  res.append("End of data for Scene Instance ")
-      .append(getSimplifiedHandle())
-      .append(1, '\n');
-
+  res.append(Cr::Utility::formatString("End of data for Scene Instance {}\n",
+                                       getSimplifiedHandle()));
   return res;
 }  // SceneAttributes::getObjectInfoInternal
 

@@ -408,14 +408,9 @@ class StageAttributes : public AbstractObjectAttributes {
    * @brief get AbstractObject specific info for csv string
    */
   std::string getAbstractObjectInfoInternal() const override {
-    std::string res = getNavmeshAssetHandle();
-    res.append(1, ',')
-        .append(getAsString("gravity"))
-        .append(1, ',')
-        .append(getAsString("origin"))
-        .append(1, ',')
-        .append(getLightSetup());
-    return res;
+    return Cr::Utility::formatString("{},{},{},{}", getNavmeshAssetHandle(),
+                                     getAsString("gravity"),
+                                     getAsString("origin"), getLightSetup());
   }
 
  public:
