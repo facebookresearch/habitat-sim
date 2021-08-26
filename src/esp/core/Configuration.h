@@ -558,6 +558,22 @@ class Configuration {
     }
   }
 
+  /**
+   * @brief Returns a const iterator across the map of values.
+   */
+  std::pair<ValueMapType::const_iterator, ValueMapType::const_iterator>
+  getValuesIterator() const {
+    return std::make_pair(valueMap_.begin(), valueMap_.end());
+  }
+
+  /**
+   * @brief Returns a const iterator across the map of subconfigurations.
+   */
+  std::pair<ConfigMapType::const_iterator, ConfigMapType::const_iterator>
+  getSubconfigIterator() const {
+    return std::make_pair(configMap_.begin(), configMap_.end());
+  }
+
  protected:
   /**
    * @brief Checks if passed @p key is contained in this configuration.
