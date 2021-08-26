@@ -242,10 +242,10 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
    * @return a copy of the scene instance attributes used to place this object
    * in the scene.
    */
-  std::shared_ptr<metadata::attributes::SceneObjectInstanceAttributes>
+  std::shared_ptr<const metadata::attributes::SceneObjectInstanceAttributes>
   getSceneInstanceAttributes() const {
     return PhysicsObjectBase::getSceneInstanceAttrInternal<
-        metadata::attributes::SceneObjectInstanceAttributes>();
+        const metadata::attributes::SceneObjectInstanceAttributes>();
   }
 
   /** @brief Get a copy of the template used to initialize this object

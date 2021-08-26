@@ -218,7 +218,13 @@ class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
    * @brief retrieve a mutable reference to this scene attributes joint initial
    * pose map
    */
-  std::map<std::string, float>& getInitJointPose() { return initJointPose_; }
+  const std::map<std::string, float>& getInitJointPose() const {
+    return initJointPose_;
+  }
+
+  std::map<std::string, float>& copyIntoInitJointPose() {
+    return initJointPose_;
+  }
 
   /**
    * @brief Add a value to this scene attributes joint initial pose map
@@ -233,7 +239,10 @@ class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
    * @brief retrieve a mutable reference to this scene attributes joint initial
    * velocity map
    */
-  std::map<std::string, float>& getInitJointVelocities() {
+  const std::map<std::string, float>& getInitJointVelocities() const {
+    return initJointVelocities_;
+  }
+  std::map<std::string, float>& copyIntoInitJointVelocities() {
     return initJointVelocities_;
   }
 
@@ -369,7 +378,7 @@ class SceneAttributes : public AbstractAttributes {
   /**
    * @brief Get the object instance descriptions for this scene
    */
-  const std::vector<SceneObjectInstanceAttributes::ptr>& getObjectInstances()
+  const std::vector<SceneObjectInstanceAttributes::cptr>& getObjectInstances()
       const {
     return objectInstances_;
   }
@@ -394,7 +403,7 @@ class SceneAttributes : public AbstractAttributes {
   /**
    * @brief Get the object instance descriptions for this scene
    */
-  const std::vector<SceneAOInstanceAttributes::ptr>&
+  const std::vector<SceneAOInstanceAttributes::cptr>&
   getArticulatedObjectInstances() const {
     return articulatedObjectInstances_;
   }
@@ -420,7 +429,7 @@ class SceneAttributes : public AbstractAttributes {
   /**
    * @brief All the object instance descriptors used by the scene
    */
-  std::vector<SceneObjectInstanceAttributes::ptr> objectInstances_;
+  std::vector<SceneObjectInstanceAttributes::cptr> objectInstances_;
   /**
    * @brief Deque holding all released IDs to consume for object instances when
    * one is deleted, before using size of objectInstances_ container.
@@ -430,7 +439,7 @@ class SceneAttributes : public AbstractAttributes {
   /**
    * @brief All the articulated object instance descriptors used by the scene
    */
-  std::vector<SceneAOInstanceAttributes::ptr> articulatedObjectInstances_;
+  std::vector<SceneAOInstanceAttributes::cptr> articulatedObjectInstances_;
   /**
    * @brief Deque holding all released IDs to consume for articulated object
    * instances when one is deleted, before using size of

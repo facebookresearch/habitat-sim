@@ -83,7 +83,7 @@ bool PhysicsManager::addStageFinalize(
 }  // PhysicsManager::addStageFinalize
 
 int PhysicsManager::addObjectInstance(
-    const esp::metadata::attributes::SceneObjectInstanceAttributes::ptr&
+    const esp::metadata::attributes::SceneObjectInstanceAttributes::cptr&
         objInstAttributes,
     const std::string& attributesHandle,
     bool defaultCOMCorrection,
@@ -277,7 +277,8 @@ int PhysicsManager::addObject(
 
 int PhysicsManager::addArticulatedObjectInstance(
     const std::string& filepath,
-    const std::shared_ptr<esp::metadata::attributes::SceneAOInstanceAttributes>&
+    const std::shared_ptr<
+        const esp::metadata::attributes::SceneAOInstanceAttributes>&
         aObjInstAttributes,
     const std::string& lightSetup) {
   // Get drawables from simulator. TODO: Support non-existent simulator?

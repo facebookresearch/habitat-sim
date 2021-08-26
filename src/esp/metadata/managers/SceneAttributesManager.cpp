@@ -189,7 +189,7 @@ SceneAttributesManager::createAOInstanceAttributesFromJSON(
     } else if (jCell["initial_joint_pose"].IsObject()) {
       // load values into map
       io::readMember<std::map<std::string, float>>(
-          jCell, "initial_joint_pose", instanceAttrs->getInitJointPose());
+          jCell, "initial_joint_pose", instanceAttrs->copyIntoInitJointPose());
     } else {
       ESP_WARNING()
           << "SceneAttributesManager::"
@@ -216,7 +216,7 @@ SceneAttributesManager::createAOInstanceAttributesFromJSON(
       // load values into map
       io::readMember<std::map<std::string, float>>(
           jCell, "initial_joint_velocities",
-          instanceAttrs->getInitJointVelocities());
+          instanceAttrs->copyIntoInitJointVelocities());
     } else {
       ESP_WARNING()
           << "SceneAttributesManager::"
