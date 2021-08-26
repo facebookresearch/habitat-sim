@@ -362,6 +362,10 @@ class Configuration {
     valueMap_[key].set<std::string>(std::string(value));
   }
 
+  void set(const std::string& key, float value) {
+    valueMap_[key].set<double>(value);
+  }
+
   // ****************** Value removal ******************
 
   /**
