@@ -237,14 +237,30 @@ class Configuration {
 
   // ****************** Getters ******************
   /**
+   * @brief Get @ref ConfigValue specified by key, or empty ConfigValue if DNE.
+   *
+   * @param key The key of the value desired to be retrieved.
+   * @return ConfigValue specified by key. If none exists, will be empty
+   * ConfigValue, with type @ref ConfigStoredType::Unknown
+   */
+  ConfigValue get(const std::string& key) const {
+    ValueMapType::const_iterator mapIter = valueMap_.find(key);
+    if (mapIter != valueMap_.end()) {
+      return mapIter->second;
+    }
+    ESP_ERROR() << "Key :" << key << "not present in configuration";
+    return {};
+  }
+
+  /**
    * @brief Get value specified by @p key and expected to be type @p T and
-   * return it if it exists and is appropriate type.  Otherwise throw a warning
-   * and return a default value.
+   * return it if it exists and is appropriate type.  Otherwise throw a
+   * warning and return a default value.
    * @tparam The type of the value desired
    * @param key The key of the value desired to be retrieved.
-   * @return The value held at @p key, expected to be type @p T .  If not found,
-   * or not of expected type, gives an error message and returns a default
-   * value.
+   * @return The value held at @p key, expected to be type @p T .  If not
+   * found, or not of expected type, gives an error message and returns a
+   * default value.
    */
   template <class T>
   T get(const std::string& key) const {
@@ -252,7 +268,7 @@ class Configuration {
     const ConfigStoredType desiredType = configStoredTypeFor<T>();
     if (mapIter != valueMap_.end() &&
         (mapIter->second.getType() == desiredType)) {
-      return valueMap_.at(key).get<T>();
+      return mapIter->second.get<T>();
     }
     ESP_ERROR() << "Key :" << key << "not present in configuration as"
                 << getNameForStoredType(desiredType);
@@ -261,8 +277,8 @@ class Configuration {
 
   /**
    * @brief Return the @ref ConfigStoredType enum representing the type of the
-   * value referenced by the passed @p key or @ref ConfigStoredType::Unknown if
-   * unknown/unspecified.
+   * value referenced by the passed @p key or @ref ConfigStoredType::Unknown
+   * if unknown/unspecified.
    */
   ConfigStoredType getType(const std::string& key) const {
     ValueMapType::const_iterator mapIter = valueMap_.find(key);
@@ -280,8 +296,9 @@ class Configuration {
    * holding the object, if it is found in one of this configuration's maps
    */
   std::string getAsString(const std::string& key) const {
-    if ((valueMap_.count(key) > 0) && (valueMap_.at(key).isValid())) {
-      return valueMap_.at(key).getAsString();
+    ValueMapType::const_iterator mapIter = valueMap_.find(key);
+    if (mapIter != valueMap_.end()) {
+      return mapIter->second.getAsString();
     }
     std::string retVal = Cr::Utility::formatString(
         "Key {} does not represent a valid value in this configuration.", key);
@@ -316,8 +333,13 @@ class Configuration {
     return keys;
   }
 
-  template <ConfigStoredType storedType>
-  std::vector<std::string> getStoredKeys() const {
+  /**
+   * @brief Retrieve a list of all the keys in this @ref Configuration pointing
+  to values of passed type @p storedType.
+   * @param storedType The desired type of value whose key should be returned.
+   * @return vector of string keys pointing to values of desired @p storedType
+   */
+  std::vector<std::string> getStoredKeys(ConfigStoredType storedType) const {
     std::vector<std::string> keys;
     // reserve space for all keys
     keys.reserve(valueMap_.size());
@@ -343,33 +365,41 @@ class Configuration {
   // ****************** Value removal ******************
 
   /**
-   * @brief Silently remove passed value from map, if it exists.
+   * @brief Remove value specified by @p key and return it if it exists.
+   * Otherwise throw a warning and return a default value.
+   * @param key The key of the value desired to be retrieved/removed.
+   * @return The erased value, held at @p key if found.  If not found, or not of
+   * expected type, gives a warning and returns a default value.
    */
-  void removeValueFromMap(const std::string& key) {
-    if (valueMap_.count(key) > 0) {
-      valueMap_.erase(key);
+
+  ConfigValue remove(const std::string& key) {
+    ValueMapType::const_iterator mapIter = valueMap_.find(key);
+    if (mapIter != valueMap_.end()) {
+      valueMap_.erase(mapIter);
+      return mapIter->second;
     }
+    ESP_WARNING() << "Key :" << key << "not present in configuration";
+    return {};
   }
 
   /**
    * @brief Remove value specified by @p key and expected to be type @p T and
-   * return it if it exists and is appropriate type.  Otherwise throw a warning
-   * and return a default value.
+   * return it if it exists and is appropriate type.  Otherwise throw a
+   * warning and return a default value.
    * @tparam The type of the value desired
    * @param key The key of the value desired to be retrieved/removed.
-   * @return The erased value, held at @p key and expected to be type @p T , if
-   * found.  If not found, or not of expected type, gives a warning and returns
-   * a default value.
+   * @return The erased value, held at @p key and expected to be type @p T ,
+   * if found.  If not found, or not of expected type, gives a warning and
+   * returns a default value.
    */
   template <class T>
-  T removeAndRetrieve(const std::string& key) {
+  T remove(const std::string& key) {
     ValueMapType::const_iterator mapIter = valueMap_.find(key);
     const ConfigStoredType desiredType = configStoredTypeFor<T>();
     if (mapIter != valueMap_.end() &&
         (mapIter->second.getType() == desiredType)) {
-      T val = valueMap_.at(key).get<T>();
-      valueMap_.erase(key);
-      return val;
+      valueMap_.erase(mapIter);
+      return mapIter->second.get<T>();
     }
     ESP_WARNING() << "Key :" << key << "not present in configuration as"
                   << getNameForStoredType(desiredType);
@@ -377,36 +407,14 @@ class Configuration {
   }
 
   std::shared_ptr<Configuration> removeSubconfig(const std::string& key) {
-    if (hasSubconfig(key)) {
-      auto val = configMap_.at(key);
-      configMap_.erase(key);
-      return val;
+    ConfigMapType::const_iterator mapIter = configMap_.find(key);
+    if (mapIter != configMap_.end()) {
+      configMap_.erase(mapIter);
+      return mapIter->second;
     }
     ESP_WARNING() << "Key :" << key
                   << "not present in map of subconfigurations.";
     return {};
-  }
-
-  // *************** Check if value of specific type is present *************
-  /**
-   * @brief check if storage map of this configuration has the passed key and
-   * if it is the requested type.
-   * @tparam The expected type of the variable being searched for
-   * @param key the key to check
-   * @param type the @ref ConfigStoredType type to check for
-   */
-
-  template <class T>
-  bool checkMapForKeyAndType(const std::string& key) const {
-    // check if present
-    ValueMapType::const_iterator mapIter = valueMap_.find(key);
-    if (mapIter == valueMap_.end()) {
-      // not found
-      return false;
-    }
-    // key is present, check if appropriate type
-    const ConfigStoredType& type = configStoredTypeFor<T>();
-    return mapIter->second.getType() == type;
   }
 
   /**
@@ -414,7 +422,8 @@ class Configuration {
    * configuration
    */
   bool hasSubconfig(const std::string& key) const {
-    return (configMap_.count(key) > 0);
+    ConfigMapType::const_iterator mapIter = configMap_.find(key);
+    return (mapIter != configMap_.end());
   }
 
   // ****************** Subconfiguration accessors ******************
@@ -489,11 +498,17 @@ class Configuration {
     return valueMap_.count(key) > 0;
   }
 
+  bool hasKeyOfType(const std::string& key, ConfigStoredType desiredType) {
+    ValueMapType::const_iterator mapIter = valueMap_.find(key);
+    return (mapIter != valueMap_.end() &&
+            (mapIter->second.getType() == desiredType));
+  }
+
   /**
    * @brief Checks if passed @p key is contained in this configuration.
    * Returns a list of nested subconfiguration keys, in order, to the
-   * configuration where the key was found, ending in the requested @p key. If
-   * list is empty, @p key was not found.
+   * configuration where the key was found, ending in the requested @p key.
+   * If list is empty, @p key was not found.
    * @param key The key to look for
    * @return A breadcrumb list to where the value referenced by @p key
    * resides. An empty list means the value was not found.
@@ -643,7 +658,8 @@ class Configuration {
   std::shared_ptr<Configuration> addSubgroup(const std::string& name) {
     // Attempt to insert an empty pointer
     auto result = configMap_.insert({name, std::shared_ptr<Configuration>{}});
-    // If name not already present (insert succeeded) then add new configuration
+    // If name not already present (insert succeeded) then add new
+    // configuration
     if (result.second) {
       result.first->second = std::make_shared<Configuration>();
     }
