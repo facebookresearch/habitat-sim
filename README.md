@@ -107,6 +107,10 @@ Pick one of the options below depending on your system/needs:
    conda install habitat-sim withbullet headless -c conda-forge -c aihabitat
    ```
 
+Conda packages for older versions can installed by explicitly specifying the version, e.g. `conda install habitat-sim=0.1.6 -c conda-forge -c aihabitat`.
+
+We also provide a [nightly conda build for the master branch](https://anaconda.org/aihabitat-nightly). However, this should only be used if you need a specific feature not yet in the latest release version. To get the nightly build of the latest master, simply swap `-c aihabitat` for `-c aihabitat-nightly`.
+
 ## PIP Wheels and PIP install
 - You can also allow pip to compile a specific version of Habitat. First clone the repo, then `pip install .` in the current git root directory
   to start the compilation process. To quickly compile the latest master, run `pip install git+https://github.com/facebookresearch/habitat-sim`.
@@ -117,10 +121,6 @@ Pick one of the options below depending on your system/needs:
 - Most compilation options can be accessed by either modifying the relevant ENV\_VARS (WITH\_BULLET, WITH\_CUDA, HEADLESS) etc or by passing the args through pip's `--global-option` and `--build-option` arguments.
 
 - By default, we build a headless version with bullet enabled.
-
-Conda packages for older versions can installed by explicitly specifying the version, e.g. `conda install habitat-sim=0.1.6 -c conda-forge -c aihabitat`.
-
-We also provide a [nightly conda build for the master branch](https://anaconda.org/aihabitat-nightly). However, this should only be used if you need a specific feature not yet in the latest release version. To get the nightly build of the latest master, simply swap `-c aihabitat` for `-c aihabitat-nightly`.
 
 ## Testing
 
