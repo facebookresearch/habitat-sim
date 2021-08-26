@@ -198,13 +198,6 @@ class ConfigValue {
   std::string getAsString() const;
 
   /**
-   * @brief Compare the type of this @ref ConfigValue with the passed type.
-   */
-  bool compareType(const ConfigStoredType& checkType) const {
-    return (_type == checkType);
-  }
-
-  /**
    * @brief Copy this @ref ConfigValue into the passed @ref
    * Cr::Utility::ConfigurationGroup
    */
@@ -255,10 +248,12 @@ class Configuration {
    */
   template <class T>
   T get(const std::string& key) const {
-    if (checkMapForKeyAndType<T>(key)) {
+    ValueMapType::const_iterator mapIter = valueMap_.find(key);
+    const ConfigStoredType desiredType = configStoredTypeFor<T>();
+    if (mapIter != valueMap_.end() &&
+        (mapIter->second.getType() == desiredType)) {
       return valueMap_.at(key).get<T>();
     }
-    const ConfigStoredType desiredType = configStoredTypeFor<T>();
     ESP_ERROR() << "Key :" << key << "not present in configuration as"
                 << getNameForStoredType(desiredType);
     return {};
@@ -270,8 +265,9 @@ class Configuration {
    * unknown/unspecified.
    */
   ConfigStoredType getType(const std::string& key) const {
-    if (valueMap_.count(key) > 0) {
-      return valueMap_.at(key).getType();
+    ValueMapType::const_iterator mapIter = valueMap_.find(key);
+    if (mapIter != valueMap_.end()) {
+      return mapIter->second.getType();
     }
     ESP_ERROR() << "Key :" << key << "not present in configuration.";
     return ConfigStoredType::Unknown;
@@ -327,13 +323,10 @@ class Configuration {
     keys.reserve(valueMap_.size());
     unsigned int count = 0;
     for (const auto& entry : valueMap_) {
-      if (entry.second.compareType(storedType)) {
+      if (entry.second.getType() == storedType) {
         ++count;
         keys.push_back(entry.first);
       }
-    }
-    if (count < keys.size()) {
-      keys.resize(count);
     }
     return keys;
   }
@@ -370,12 +363,14 @@ class Configuration {
    */
   template <class T>
   T removeAndRetrieve(const std::string& key) {
-    if (checkMapForKeyAndType<T>(key)) {
+    ValueMapType::const_iterator mapIter = valueMap_.find(key);
+    const ConfigStoredType desiredType = configStoredTypeFor<T>();
+    if (mapIter != valueMap_.end() &&
+        (mapIter->second.getType() == desiredType)) {
       T val = valueMap_.at(key).get<T>();
       valueMap_.erase(key);
       return val;
     }
-    const ConfigStoredType desiredType = configStoredTypeFor<T>();
     ESP_WARNING() << "Key :" << key << "not present in configuration as"
                   << getNameForStoredType(desiredType);
     return {};
@@ -392,7 +387,7 @@ class Configuration {
     return {};
   }
 
-  // ***************** Check if value is present ******************
+  // *************** Check if value of specific type is present *************
   /**
    * @brief check if storage map of this configuration has the passed key and
    * if it is the requested type.
@@ -505,6 +500,8 @@ class Configuration {
    */
   std::vector<std::string> findValue(const std::string& key) const {
     std::vector<std::string> breadcrumbs{};
+    // this will make room for some layers without realloc.
+    breadcrumbs.reserve(10);
     findValueInternal(key, 0, breadcrumbs);
     return breadcrumbs;
   }
