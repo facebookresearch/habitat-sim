@@ -52,7 +52,7 @@ PhysicsManager::~PhysicsManager() {
 
 bool PhysicsManager::addStage(
     const metadata::attributes::StageAttributes::ptr& initAttributes,
-    const metadata::attributes::SceneObjectInstanceAttributes::ptr&
+    const metadata::attributes::SceneObjectInstanceAttributes::cptr&
         stageInstanceAttributes,
     const std::vector<assets::CollisionMeshData>& meshGroup) {
   // Test Mesh primitive is valid

@@ -379,7 +379,7 @@ bool Simulator::instanceStageForActiveScene(
   // transformation of stage in scene.
   // TODO : need to support stageInstanceAttributes transformation upon
   // creation.
-  const SceneObjectInstanceAttributes::ptr stageInstanceAttributes =
+  const SceneObjectInstanceAttributes::cptr stageInstanceAttributes =
       curSceneInstanceAttributes->getStageInstance();
 
   // Get full library name of StageAttributes

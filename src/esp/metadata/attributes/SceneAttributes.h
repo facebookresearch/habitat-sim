@@ -345,7 +345,7 @@ class SceneAttributes : public AbstractAttributes {
   /**
    * @brief Get the description of the stage placement for this scene instance.
    */
-  SceneObjectInstanceAttributes::ptr getStageInstance() const {
+  SceneObjectInstanceAttributes::cptr getStageInstance() const {
     return stageInstance_;
   }
 
@@ -415,7 +415,7 @@ class SceneAttributes : public AbstractAttributes {
   /**
    * @brief The stage instance used by the scene
    */
-  SceneObjectInstanceAttributes::ptr stageInstance_ = nullptr;
+  SceneObjectInstanceAttributes::cptr stageInstance_ = nullptr;
 
   /**
    * @brief All the object instance descriptors used by the scene

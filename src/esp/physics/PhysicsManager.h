@@ -259,7 +259,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    */
   bool addStage(
       const metadata::attributes::StageAttributes::ptr& initAttributes,
-      const metadata::attributes::SceneObjectInstanceAttributes::ptr&
+      const metadata::attributes::SceneObjectInstanceAttributes::cptr&
           stageInstanceAttributes,
       const std::vector<assets::CollisionMeshData>& meshGroup);
 
