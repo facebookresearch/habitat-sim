@@ -179,10 +179,10 @@ void PbrImageBasedLighting::recreateTextures() {
   // TODO: HDR!!
   // we do not use build-in function `renderToTexture` in the CubeMap class. So
   // we will have to populate the mipmaps by ourselves in this class.
-  environmentMap_ = CubeMap(
-      environmentMapSize,
-      {CubeMap::Flag::ColorTexture | CubeMap::Flag::ManuallyBuildMipmap});
-  irradianceMap_ = CubeMap(irradianceMapSize, {CubeMap::Flag::ColorTexture});
+  environmentMap_ =
+      CubeMap(environmentMapSize,
+              CubeMap::Flag::ColorTexture | CubeMap::Flag::ManuallyBuildMipmap);
+  irradianceMap_ = CubeMap(irradianceMapSize, CubeMap::Flag::ColorTexture);
   prefilteredMap_ = CubeMap(
       prefilteredMapSize,
       {CubeMap::Flag::ColorTexture | CubeMap::Flag::ManuallyBuildMipmap});
