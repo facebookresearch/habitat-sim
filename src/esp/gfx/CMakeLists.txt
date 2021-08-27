@@ -115,6 +115,9 @@ find_package(Corrade REQUIRED Utility)
 corrade_add_resource(ShaderResources ../../shaders/Shaders.conf)
 list(APPEND gfx_SOURCES ${ShaderResources})
 
+corrade_add_resource(PbrImageResources ../../../data/pbr/PbrImages.conf)
+list(APPEND gfx_SOURCES ${PbrImageResources})
+
 add_library(
   gfx STATIC
   ${gfx_SOURCES}

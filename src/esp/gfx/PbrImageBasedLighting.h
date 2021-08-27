@@ -111,71 +111,40 @@ class PbrImageBasedLighting {
   Cr::Containers::Optional<Magnum::GL::Texture2D> brdfLUT_;
 
   ShaderManager& shaderManager_;
-
+  /**
+   * @brief recreate brdf lookup table, irradiance map, prefiltered environment
+   * map
+   */
   void recreateTextures();
 
   /** @brief load the brdf LUT from the disk */
+  // TODO: HDR
   void loadBrdfLookUpTable();
 
   enum class PrecomputedMapType : uint8_t {
     IrradianceMap = 0,
     PrefilteredMap = 1,
   };
+
+  /**
+   * @brief precompute the irradiance map, prefiltered environment map
+   * @param[in] type, see @ref PrecomputedMapType
+   */
   void computePrecomputedMap(PrecomputedMapType type);
 
   enum class PbrIblShaderType : uint8_t {
     IrradianceMap = 0,
     PrefilteredMap = 1,
-    // BrdfLookupTable = 2,
+    // BrdfLookupTable = 2, // TODO
     EquirectangularToCubeMap = 3,
   };
+  /**
+   * @brief get the shader based on the type
+   * @param[in] type, see @ref PbrIblShaderType
+   */
   template <typename T>
   Mn::Resource<Mn::GL::AbstractShaderProgram, T> getShader(
-      PbrIblShaderType type) {
-    Mn::ResourceKey key;
-    switch (type) {
-      case PbrIblShaderType::IrradianceMap:
-        key = Mn::ResourceKey{"irradianceMap"};
-        break;
-
-      case PbrIblShaderType::PrefilteredMap:
-        key = Mn::ResourceKey{"prefilteredMap"};
-        break;
-
-      case PbrIblShaderType::EquirectangularToCubeMap:
-        key = Mn::ResourceKey{"equirectangularToCubeMap"};
-        break;
-
-      default:
-        CORRADE_INTERNAL_ASSERT_UNREACHABLE();
-        break;
-    }
-    Mn::Resource<Mn::GL::AbstractShaderProgram, T> shader =
-        shaderManager_.get<Mn::GL::AbstractShaderProgram, T>(key);
-
-    if (!shader) {
-      if (type == PbrIblShaderType::IrradianceMap) {
-        shaderManager_.set<Mn::GL::AbstractShaderProgram>(
-            shader.key(),
-            new PbrPrecomputedMapShader(PbrPrecomputedMapShader::Flags{
-                PbrPrecomputedMapShader::Flag::IrradianceMap}),
-            Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
-      } else if (type == PbrIblShaderType::EquirectangularToCubeMap) {
-        shaderManager_.set<Mn::GL::AbstractShaderProgram>(
-            shader.key(), new PbrEquiRectangularToCubeMapShader(),
-            Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
-      } else if (type == PbrIblShaderType::PrefilteredMap) {
-        shaderManager_.set<Mn::GL::AbstractShaderProgram>(
-            shader.key(),
-            new PbrPrecomputedMapShader(PbrPrecomputedMapShader::Flags{
-                PbrPrecomputedMapShader::Flag::PrefilteredMap}),
-            Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
-      }
-    }
-    CORRADE_INTERNAL_ASSERT(shader);
-
-    return shader;
-  }
+      PbrIblShaderType type);
 };
 
 CORRADE_ENUMSET_OPERATORS(PbrImageBasedLighting::Flags)

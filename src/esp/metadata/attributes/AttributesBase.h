@@ -115,15 +115,18 @@ std::string getTranslationOriginName(int translationOrigin);
  * a @ref esp::core::ManagedContainer.
  */
 class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
-                           public esp::core::Configuration {
+                           public esp::core::config::Configuration {
  public:
   AbstractAttributes(const std::string& attributesClassKey,
                      const std::string& handle)
       : Configuration() {
     // set up an existing subgroup for user_defined attributes
-    addNewSubgroup("user_defined");
+    addSubgroup("user_defined");
     AbstractAttributes::setClassKey(attributesClassKey);
     AbstractAttributes::setHandle(handle);
+    // set initial vals, will be overwritten when registered
+    set("ID", 0);
+    set("fileDirectory", "");
   }
 
   ~AbstractAttributes() override = default;
@@ -132,7 +135,7 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
    * Used as key in constructor function pointer maps in AttributesManagers.
    */
   std::string getClassKey() const override {
-    return getString("attributesClassKey");
+    return get<std::string>("attributesClassKey");
   }
 
   /**
@@ -141,10 +144,8 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
    * such cases this should be overridden with NOP.
    * @param handle the handle to set.
    */
-  void setHandle(const std::string& handle) override {
-    setString("handle", handle);
-  }
-  std::string getHandle() const override { return getString("handle"); }
+  void setHandle(const std::string& handle) override { set("handle", handle); }
+  std::string getHandle() const override { return get<std::string>("handle"); }
 
   /**
    * @brief This will return a simplified version of the attributes handle. Note
@@ -165,38 +166,36 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
    * @brief directory where files used to construct attributes can be found.
    */
   void setFileDirectory(const std::string& fileDirectory) override {
-    setString("fileDirectory", fileDirectory);
+    set("fileDirectory", fileDirectory);
   }
   std::string getFileDirectory() const override {
-    return getString("fileDirectory");
+    return get<std::string>("fileDirectory");
   }
 
   /**
    *  @brief Unique ID referencing attributes
    */
-  void setID(int ID) override { setInt("ID", ID); }
-  int getID() const override { return getInt("ID"); }
+  void setID(int ID) override { set("ID", ID); }
+  int getID() const override { return get<int>("ID"); }
 
   /**
-   * @brief Returns configuration to be used with PrimitiveImporter to
-   * instantiate Primitives.  Names in getter/setters chosen to match parameter
-   * name expectations in PrimitiveImporter.
-   *
-   * @return a reference to the underlying configuration group for this
-   * attributes object
+   * @brief Gets a smart pointer reference to a copy of the user-specified
+   * configuration data from config file. Habitat does not parse or process this
+   * data, but it will be available to the user via python bindings for each
+   * object.
    */
-  const Corrade::Utility::ConfigurationGroup& getConfigGroup() const {
-    return cfg;
+  std::shared_ptr<Configuration> getUserConfiguration() const {
+    return getSubconfigCopy("user_defined");
   }
 
   /**
-   * @brief Gets a smart pointer reference to user-specified configuration data
-   * from config file. Habitat does not parse or process this data, but it will
-   * be available to the user via python bindings for each object.
+   * @brief Gets a smart pointer reference to the actual user-specified
+   * configuration data from config file. Habitat does not parse or process this
+   * data, but it will be available to the user via python bindings for each
+   * object.  This method is for editing the configuration.
    */
-
-  std::shared_ptr<Configuration> getUserConfiguration() const {
-    return getConfigSubgroupAsPtr("user_defined");
+  std::shared_ptr<Configuration> editUserConfiguration() {
+    return editSubconfig("user_defined");
   }
 
   /**
@@ -204,16 +203,7 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
    * sub-ConfigurationGroup) this attributes has.
    */
   int getNumUserDefinedConfigurations() const {
-    return getNumConfigSubgroups("user_defined");
-  }
-
-  template <typename T>
-  void setUserConfigValue(const std::string& key, const T& value) {
-    setSubgroupValue<T>("user_defined", key, value);
-  }
-  template <typename T>
-  T getUserConfigValue(const std::string& key) {
-    return getSubgroupValue<T>("user_defined", key);
+    return getNumSubconfigs("user_defined");
   }
 
   /**
@@ -259,7 +249,7 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
    * constructors used to make copies of this object in copy constructor map.
    */
   void setClassKey(const std::string& attributesClassKey) override {
-    setString("attributesClassKey", attributesClassKey);
+    set("attributesClassKey", attributesClassKey);
   }
 
  public:

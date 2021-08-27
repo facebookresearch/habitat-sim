@@ -5,6 +5,7 @@
 #ifndef ESP_METADATA_ATTRIBUTES_SCENEATTRIBUTES_H_
 #define ESP_METADATA_ATTRIBUTES_SCENEATTRIBUTES_H_
 
+#include <deque>
 #include <utility>
 
 #include "AttributesBase.h"
@@ -48,13 +49,15 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
    * stage/object instance.
    */
   void setTranslation(const Magnum::Vector3& translation) {
-    setVec3("translation", translation);
+    set("translation", translation);
   }
   /**
    * @brief Get the translation from the origin of the described
    * stage/object instance.
    */
-  Magnum::Vector3 getTranslation() const { return getVec3("translation"); }
+  Magnum::Vector3 getTranslation() const {
+    return get<Magnum::Vector3>("translation");
+  }
 
   /**
    * @brief Set a value representing the mechanism used to create this scene
@@ -63,7 +66,7 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
    * setting.
    */
   void setTranslationOrigin(int translation_origin) {
-    setInt("translation_origin", translation_origin);
+    set("translation_origin", translation_origin);
   }
 
   /**
@@ -72,28 +75,30 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
    * This acts as an instance-specific override to the scene-instance-wide
    * setting.
    */
-  int getTranslationOrigin() const { return getInt("translation_origin"); }
+  int getTranslationOrigin() const { return get<int>("translation_origin"); }
 
   /**
    * @brief Set the rotation of the object
    */
   void setRotation(const Magnum::Quaternion& rotation) {
-    setQuat("rotation", rotation);
+    set("rotation", rotation);
   }
   /**
    * @brief Get the rotation of the object
    */
-  Magnum::Quaternion getRotation() const { return getQuat("rotation"); }
+  Magnum::Quaternion getRotation() const {
+    return get<Magnum::Quaternion>("rotation");
+  }
 
   /**
    * @brief Set the motion type for the object.  Ignored for stage instances.
    */
-  void setMotionType(int motionType) { setInt("motion_type", motionType); }
+  void setMotionType(int motionType) { set("motion_type", motionType); }
 
   /**
    * @brief Get the motion type for the object.  Ignored for stage instances.
    */
-  int getMotionType() const { return getInt("motion_type"); }
+  int getMotionType() const { return get<int>("motion_type"); }
 
   /**
    * @brief Set the default shader to use for an object or stage.  Uses values
@@ -101,22 +106,28 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
    * of string values in json to @ref
    * esp::metadata::attributes::ObjectInstanceShaderType int values.
    */
-  void setShaderType(int shader_type) { setInt("shader_type", shader_type); }
-  int getShaderType() const { return getInt("shader_type"); }
+  void setShaderType(int shader_type) { set("shader_type", shader_type); }
+  int getShaderType() const { return get<int>("shader_type"); }
 
   /**
-   * @brief Get or set the uniform scaling of the instanced object.
+   * @brief Get or set the uniform scaling of the instanced object.  Want this
+   * to be a float for consumption in instance creation
    */
-  float getUniformScale() const { return getFloat("uniform_scale"); }
-  void setUniformScale(float uniform_scale) {
-    setFloat("uniform_scale", uniform_scale);
+  float getUniformScale() const {
+    return static_cast<float>(get<double>("uniform_scale"));
+  }
+  void setUniformScale(double uniform_scale) {
+    set("uniform_scale", uniform_scale);
   }
 
   /**
-   * @brief Get or set the mass scaling of the instanced object.
+   * @brief Get or set the mass scaling of the instanced object.  Want this
+   * to be a float for consumption in instance creation
    */
-  float getMassScale() const { return getFloat("mass_scale"); }
-  void setMassScale(float mass_scale) { setFloat("mass_scale", mass_scale); }
+  float getMassScale() const {
+    return static_cast<float>(get<double>("mass_scale"));
+  }
+  void setMassScale(double mass_scale) { set("mass_scale", mass_scale); }
 
   /**
    * @brief Used for info purposes.  Return a string name corresponding to the
@@ -188,8 +199,8 @@ class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
    * @brief Articulated Object Instance only. Get or set whether or not base is
    * fixed.
    */
-  bool getFixedBase() const { return getBool("fixed_base"); }
-  void setFixedBase(bool fixed_base) { setBool("fixed_base", fixed_base); }
+  bool getFixedBase() const { return get<bool>("fixed_base"); }
+  void setFixedBase(bool fixed_base) { set("fixed_base", fixed_base); }
 
   /**
    * @brief Articulated Object Instance only. Get or set whether or not dofs
@@ -197,10 +208,10 @@ class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
    * simulation step.
    */
   bool getAutoClampJointLimits() const {
-    return getBool("auto_clamp_joint_limits");
+    return get<bool>("auto_clamp_joint_limits");
   }
   void setAutoClampJointLimits(bool auto_clamp_joint_limits) {
-    setBool("auto_clamp_joint_limits", auto_clamp_joint_limits);
+    set("auto_clamp_joint_limits", auto_clamp_joint_limits);
   }
 
   /**
@@ -272,59 +283,63 @@ class SceneAttributes : public AbstractAttributes {
    * instance - should map to an enum value in @InstanceTranslationOriginMap.
    */
   void setTranslationOrigin(int translation_origin) {
-    setInt("translation_origin", translation_origin);
+    set("translation_origin", translation_origin);
   }
 
   /**
    * @brief Get the value representing the mechanism used to create this scene
    * instance - should map to an enum value in @InstanceTranslationOriginMap.
    */
-  int getTranslationOrigin() const { return getInt("translation_origin"); }
+  int getTranslationOrigin() const { return get<int>("translation_origin"); }
 
   /**
    * @brief Set the name of the template that describes the scene's default
    * lighting
    */
   void setLightingHandle(const std::string& lightingHandle) {
-    setString("default_lighting", lightingHandle);
+    set("default_lighting", lightingHandle);
   }
   /**
    * @brief Get the name of the template that describes the scene's default
    * lighting
    */
   std::string getLightingHandle() const {
-    return getString("default_lighting");
+    return get<std::string>("default_lighting");
   }
 
   /**
    * @brief Set the name of the navmesh for the scene
    */
   void setNavmeshHandle(const std::string& navmeshHandle) {
-    setString("navmesh_instance", navmeshHandle);
+    set("navmesh_instance", navmeshHandle);
   }
   /**
    * @brief Get the name of the navmesh for the scene
    */
-  std::string getNavmeshHandle() const { return getString("navmesh_instance"); }
+  std::string getNavmeshHandle() const {
+    return get<std::string>("navmesh_instance");
+  }
 
   /**
    * @brief Set the name of the semantic scene descriptor
    */
   void setSemanticSceneHandle(const std::string& semanticSceneDesc) {
-    setString("semantic_scene_instance", semanticSceneDesc);
+    set("semantic_scene_instance", semanticSceneDesc);
   }
 
   /**
    * @brief Get the name of the semantic scene descriptor
    */
   std::string getSemanticSceneHandle() const {
-    return getString("semantic_scene_instance");
+    return get<std::string>("semantic_scene_instance");
   }
 
   /**
    * @brief Set the description of the stage placement for this scene instance.
+   * Scene instance will always have only 1 stage instance reference.
    */
   void setStageInstance(SceneObjectInstanceAttributes::ptr _stageInstance) {
+    _stageInstance->setID(0);
     stageInstance_ = std::move(_stageInstance);
   }
   /**
@@ -339,8 +354,11 @@ class SceneAttributes : public AbstractAttributes {
    */
   void addObjectInstance(
       const SceneObjectInstanceAttributes::ptr& _objInstance) {
+    // use size of container to set ID
+    _objInstance->setID(objectInstances_.size());
     objectInstances_.push_back(_objInstance);
   }
+
   /**
    * @brief Get the object instance descriptions for this scene
    */
@@ -354,8 +372,11 @@ class SceneAttributes : public AbstractAttributes {
    */
   void addArticulatedObjectInstance(
       const SceneAOInstanceAttributes::ptr& _artObjInstance) {
+    // use size of container to set ID
+    _artObjInstance->setID(articulatedObjectInstances_.size());
     articulatedObjectInstances_.push_back(_artObjInstance);
   }
+
   /**
    * @brief Get the object instance descriptions for this scene
    */

@@ -128,7 +128,7 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
     return nullptr;
   }  // getSceneNode
 
-  core::Configuration::ptr getUserAttributes() const {
+  core::config::Configuration::ptr getUserAttributes() const {
     if (auto sp = this->getObjectReference()) {
       return sp->getUserAttributes();
     }

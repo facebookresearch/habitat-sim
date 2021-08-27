@@ -163,14 +163,14 @@ Magnum::Color3 getAmbientLightColor(const LightSetup& lightSetup) {
 }
 
 void printOutLightSetup(const LightSetup& lightSetup) {
-  LOG(INFO) << "light number: " << lightSetup.size();
+  ESP_DEBUG() << "light number: " << lightSetup.size();
   for (size_t iLight = 0; iLight < lightSetup.size(); ++iLight) {
     const auto& c = lightSetup[iLight].color;
-    LOG(INFO) << "light " << iLight << ": ";
-    LOG(INFO) << "color = " << c.r() << ", " << c.g() << ", " << c.b();
+    ESP_DEBUG() << "light " << iLight << ": ";
+    ESP_DEBUG() << "color = " << c.r() << ", " << c.g() << ", " << c.b();
     const auto& v = lightSetup[iLight].vector;
-    LOG(INFO) << "light vector = " << v.r() << ", " << v.g() << ", " << v.b()
-              << ", " << v.a();
+    ESP_DEBUG() << "light vector = " << v.r() << ", " << v.g() << ", " << v.b()
+                << ", " << v.a();
   }
 }
 

@@ -46,7 +46,7 @@ std::map<CollisionGroup, CollisionGroups>
         // everything except Noncollidable
         {CollisionGroup::Robot, ~CollisionGroup::Noncollidable},
         // nothing
-        {CollisionGroup::Noncollidable, ~CollisionGroups()},
+        {CollisionGroup::Noncollidable, CollisionGroups()},
 
         // everything except Noncollidable
         {CollisionGroup::UserGroup0, ~CollisionGroup::Noncollidable},
