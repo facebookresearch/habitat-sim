@@ -195,7 +195,7 @@ CubeMap& PbrImageBasedLighting::getIrradianceMap() {
                  *irradianceMap_);
 
   CORRADE_ASSERT(
-      irradianceMap_ != Cr::Containers::NullOpt,
+      irradianceMap_,
       "PbrImageBasedLighting::getIrradianceMap(): the irradiance map is empty. "
       "Did you forget to load or compute it (from environment map)?",
       *irradianceMap_);
@@ -209,7 +209,7 @@ CubeMap& PbrImageBasedLighting::getPrefilteredMap() {
                  "not created with indirect specular part enabled.",
                  *prefilteredMap_);
 
-  CORRADE_ASSERT(prefilteredMap_ != Cr::Containers::NullOpt,
+  CORRADE_ASSERT(prefilteredMap_,
                  "PbrImageBasedLighting::getPrefilteredMap(): the pre-filtered "
                  "cube map is empty."
                  "Did you forget to load or compute it (from environment map)?",
@@ -223,7 +223,7 @@ Mn::GL::Texture2D& PbrImageBasedLighting::getBrdfLookupTable() {
                  "not created with indirect specular part enabled.",
                  *brdfLUT_);
 
-  CORRADE_ASSERT(brdfLUT_ != Cr::Containers::NullOpt,
+  CORRADE_ASSERT(brdfLUT_,
                  "PbrImageBasedLighting::getBrdfLookupTable(): the brdf lookup "
                  "table (a texture) is empty"
                  "Did you forget to load or compute it (from environment map)?",
@@ -265,18 +265,18 @@ void PbrImageBasedLighting::loadBrdfLookUpTable() {
 
 void PbrImageBasedLighting::computePrecomputedMap(PrecomputedMapType type) {
   CORRADE_ASSERT(
-      environmentMap_ != Cr::Containers::NullOpt,
+      environmentMap_,
       "PbrImageBasedLighting::computePrecomputedMap(): the environment "
       "map cannot be found. Have you loaded it? ", );
 
   if (type == PrecomputedMapType::IrradianceMap) {
     CORRADE_ASSERT(
-        irradianceMap_ != Cr::Containers::NullOpt,
+        irradianceMap_,
         "PbrImageBasedLighting::computePrecomputedMap(): the irradiance map "
         "is empty (not initialized).", );
   } else {
     CORRADE_ASSERT(
-        prefilteredMap_ != Cr::Containers::NullOpt,
+        prefilteredMap_,
         "PbrImageBasedLighting::computePrecomputedMap(): the prefiltered map "
         "is empty (not initialized).", );
   }
