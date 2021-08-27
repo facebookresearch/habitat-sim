@@ -144,51 +144,7 @@ class PbrImageBasedLighting {
    */
   template <typename T>
   Mn::Resource<Mn::GL::AbstractShaderProgram, T> getShader(
-      PbrIblShaderType type) {
-    Mn::ResourceKey key;
-    switch (type) {
-      case PbrIblShaderType::IrradianceMap:
-        key = Mn::ResourceKey{"irradianceMap"};
-        break;
-
-      case PbrIblShaderType::PrefilteredMap:
-        key = Mn::ResourceKey{"prefilteredMap"};
-        break;
-
-      case PbrIblShaderType::EquirectangularToCubeMap:
-        key = Mn::ResourceKey{"equirectangularToCubeMap"};
-        break;
-
-      default:
-        CORRADE_INTERNAL_ASSERT_UNREACHABLE();
-        break;
-    }
-    Mn::Resource<Mn::GL::AbstractShaderProgram, T> shader =
-        shaderManager_.get<Mn::GL::AbstractShaderProgram, T>(key);
-
-    if (!shader) {
-      if (type == PbrIblShaderType::IrradianceMap) {
-        shaderManager_.set<Mn::GL::AbstractShaderProgram>(
-            shader.key(),
-            new PbrPrecomputedMapShader(PbrPrecomputedMapShader::Flags{
-                PbrPrecomputedMapShader::Flag::IrradianceMap}),
-            Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
-      } else if (type == PbrIblShaderType::EquirectangularToCubeMap) {
-        shaderManager_.set<Mn::GL::AbstractShaderProgram>(
-            shader.key(), new PbrEquiRectangularToCubeMapShader(),
-            Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
-      } else if (type == PbrIblShaderType::PrefilteredMap) {
-        shaderManager_.set<Mn::GL::AbstractShaderProgram>(
-            shader.key(),
-            new PbrPrecomputedMapShader(PbrPrecomputedMapShader::Flags{
-                PbrPrecomputedMapShader::Flag::PrefilteredMap}),
-            Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
-      }
-    }
-    CORRADE_INTERNAL_ASSERT(shader);
-
-    return shader;
-  }
+      PbrIblShaderType type);
 };
 
 CORRADE_ENUMSET_OPERATORS(PbrImageBasedLighting::Flags)

@@ -26,8 +26,8 @@
 // This is to import the "resources" at runtime. When the resource is
 // compiled into static library, it must be explicitly initialized via this
 // macro, and should be called *outside* of any namespace.
-static void importShaderResources() {
-  CORRADE_RESOURCE_INITIALIZE(ShaderResources)
+static void importPbrImageResources() {
+  CORRADE_RESOURCE_INITIALIZE(PbrImageResources)
 }
 
 namespace Mn = Magnum;
@@ -37,10 +37,10 @@ namespace esp {
 namespace gfx {
 
 namespace {
-const unsigned int environmentMapSize = 1024;
-const unsigned int prefilteredMapSize = 1024;
-const unsigned int irradianceMapSize = 128;
-const unsigned int brdfLUTSize = 512;
+constexpr unsigned int environmentMapSize = 1024;
+constexpr unsigned int prefilteredMapSize = 1024;
+constexpr unsigned int irradianceMapSize = 128;
+constexpr unsigned int brdfLUTSize = 512;
 };  // namespace
 
 PbrImageBasedLighting::PbrImageBasedLighting(
@@ -61,6 +61,54 @@ PbrImageBasedLighting::PbrImageBasedLighting(
 
   // compute the prefiltered environment map (indirect specular part)
   computePrecomputedMap(PrecomputedMapType::PrefilteredMap);
+}
+
+template <typename T>
+Mn::Resource<Mn::GL::AbstractShaderProgram, T> PbrImageBasedLighting::getShader(
+    PbrIblShaderType type) {
+  Mn::ResourceKey key;
+  switch (type) {
+    case PbrIblShaderType::IrradianceMap:
+      key = Mn::ResourceKey{"irradianceMap"};
+      break;
+
+    case PbrIblShaderType::PrefilteredMap:
+      key = Mn::ResourceKey{"prefilteredMap"};
+      break;
+
+    case PbrIblShaderType::EquirectangularToCubeMap:
+      key = Mn::ResourceKey{"equirectangularToCubeMap"};
+      break;
+
+    default:
+      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+      break;
+  }
+  Mn::Resource<Mn::GL::AbstractShaderProgram, T> shader =
+      shaderManager_.get<Mn::GL::AbstractShaderProgram, T>(key);
+
+  if (!shader) {
+    if (type == PbrIblShaderType::IrradianceMap) {
+      shaderManager_.set<Mn::GL::AbstractShaderProgram>(
+          shader.key(),
+          new PbrPrecomputedMapShader(PbrPrecomputedMapShader::Flags{
+              PbrPrecomputedMapShader::Flag::IrradianceMap}),
+          Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
+    } else if (type == PbrIblShaderType::EquirectangularToCubeMap) {
+      shaderManager_.set<Mn::GL::AbstractShaderProgram>(
+          shader.key(), new PbrEquiRectangularToCubeMapShader(),
+          Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
+    } else if (type == PbrIblShaderType::PrefilteredMap) {
+      shaderManager_.set<Mn::GL::AbstractShaderProgram>(
+          shader.key(),
+          new PbrPrecomputedMapShader(PbrPrecomputedMapShader::Flags{
+              PbrPrecomputedMapShader::Flag::PrefilteredMap}),
+          Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
+    }
+  }
+  CORRADE_INTERNAL_ASSERT(shader);
+
+  return shader;
 }
 
 void PbrImageBasedLighting::convertEquirectangularToCubeMap(
@@ -192,6 +240,10 @@ void PbrImageBasedLighting::loadBrdfLookUpTable() {
   Cr::Containers::Pointer<Mn::Trade::AbstractImporter> importer =
       manager.loadAndInstantiate(importerName);
   CORRADE_INTERNAL_ASSERT(importer);
+
+  if (!Cr::Utility::Resource::hasGroup("pbr-images")) {
+    importPbrImageResources();
+  }
 
   // TODO: HDR, No LDR in the future!
   // temporarily using the brdflut from here:
