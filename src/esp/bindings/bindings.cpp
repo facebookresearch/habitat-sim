@@ -108,6 +108,7 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
   // TODO(msb) gfx, scene, and sensor should not cross-depend
   // TODO(msb) sim and sensor should not cross-depend
   esp::initEspBindings(m);
+  esp::core::config::initConfigBindings(m);
   esp::core::initCoreBindings(m);
   esp::geo::initGeoBindings(m);
   esp::scene::initSceneBindings(m);

@@ -181,6 +181,12 @@ def test_dynamics():
             len(rigid_obj_mgr.get_object_handles()) == rigid_obj_mgr.get_num_objects()
         )
 
+        obj_dict = rigid_obj_mgr.get_objects_by_handle_substring("cheezit")
+        assert len(obj_dict) == rigid_obj_mgr.get_num_objects()
+        for k, v in obj_dict.items():
+            assert k == v.handle
+            assert v.is_alive
+
         # place the objects over the table in room
         cheezit_box1.translation = [-0.569043, 2.04804, 13.6156]
         cheezit_box2.translation = [-0.569043, 2.04804, 12.6156]
@@ -533,6 +539,11 @@ def test_collision_groups():
 
             # test Noncollidable
             cube_obj2.override_collision_group(cg.Noncollidable)
+            assert not cube_obj1.contact_test()
+            assert not cube_obj2.contact_test()
+
+            # test Noncollidable vs Noncollidable
+            cube_obj1.override_collision_group(cg.Noncollidable)
             assert not cube_obj1.contact_test()
             assert not cube_obj2.contact_test()
 
