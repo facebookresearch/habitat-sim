@@ -113,14 +113,14 @@ uniform int PbrDebugDisplay;
 // The following function Uncharted2Tonemap is based on:
 // https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/data/shaders/pbr_khr.frag
 vec3 Uncharted2Tonemap(vec3 color) {
-	float A = 0.15;
-	float B = 0.50;
-	float C = 0.10;
-	float D = 0.20;
-	float E = 0.02;
-	float F = 0.30;
-	float W = 11.2;
-	return ((color*(A*color+C*B)+D*E)/(color*(A*color+B)+D*F))-E/F;
+    float A = 0.15;
+    float B = 0.50;
+    float C = 0.10;
+    float D = 0.20;
+    float E = 0.02;
+    float F = 0.30;
+    float W = 11.2;
+    return ((color*(A*color+C*B)+D*E)/(color*(A*color+B)+D*F))-E/F;
 }
 
 // TODO: make them uniform variables
@@ -130,25 +130,25 @@ const float gamma = 2.2f;
 // The following function tonemap is based on:
 // https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/data/shaders/pbr_khr.frag
 vec4 tonemap(vec4 color) {
-	vec3 outcol = Uncharted2Tonemap(color.rgb * exposure);
-	outcol = outcol * (1.0f / Uncharted2Tonemap(vec3(11.2f)));
-	return vec4(pow(outcol, vec3(1.0f / gamma)), color.a);
+    vec3 outcol = Uncharted2Tonemap(color.rgb * exposure);
+    outcol = outcol * (1.0f / Uncharted2Tonemap(vec3(11.2f)));
+    return vec4(pow(outcol, vec3(1.0f / gamma)), color.a);
 }
 
 // The following function SRGBtoLINEAR is based on:
 // https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/data/shaders/pbr_khr.frag
 vec4 SRGBtoLINEAR(vec4 srgbIn) {
-	#ifdef MANUAL_SRGB
-	#ifdef SRGB_FAST_APPROXIMATION
-	vec3 linOut = pow(srgbIn.xyz,vec3(2.2));
-	#else //SRGB_FAST_APPROXIMATION
-	vec3 bLess = step(vec3(0.04045),srgbIn.xyz);
-	vec3 linOut = mix( srgbIn.xyz/vec3(12.92), pow((srgbIn.xyz+vec3(0.055))/vec3(1.055),vec3(2.4)), bLess );
-	#endif //SRGB_FAST_APPROXIMATION
-	return vec4(linOut,srgbIn.w);;
-	#else //MANUAL_SRGB
-	return srgbIn;
-	#endif //MANUAL_SRGB
+  #ifdef MANUAL_SRGB
+  #ifdef SRGB_FAST_APPROXIMATION
+  vec3 linOut = pow(srgbIn.xyz,vec3(2.2));
+  #else //SRGB_FAST_APPROXIMATION
+  vec3 bLess = step(vec3(0.04045),srgbIn.xyz);
+  vec3 linOut = mix( srgbIn.xyz/vec3(12.92), pow((srgbIn.xyz+vec3(0.055))/vec3(1.055),vec3(2.4)), bLess );
+  #endif //SRGB_FAST_APPROXIMATION
+  return vec4(linOut,srgbIn.w);;
+  #else //MANUAL_SRGB
+  return srgbIn;
+  #endif //MANUAL_SRGB
 }
 
 #if defined(NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENT)
@@ -167,29 +167,29 @@ vec3 getNormalFromNormalMap() {
   vec3 N = normalize(normal);
 #else
   // #error can only accept precomputed TBN
-	// Perturb normal, see http://www.thetenthplanet.de/archives/1180
+    // Perturb normal, see http://www.thetenthplanet.de/archives/1180
   // material_info.glsl from https://github.com/KhronosGroup/glTF-Sample-Viewer
   /*
-	vec3 pos_dx = dFdx(position);
-	vec3 pos_dy = dFdy(position);
-	vec3 uv_dx = dFdx(vec3(texCoord, 0.0));
-	vec3 uv_dy = dFdy(vec3(texCoord, 0.0));
-	vec3 T_ = (uv_dy.t * pos_dx - uv_dx.t * pos_dy) /
+    vec3 pos_dx = dFdx(position);
+    vec3 pos_dy = dFdy(position);
+    vec3 uv_dx = dFdx(vec3(texCoord, 0.0));
+    vec3 uv_dy = dFdy(vec3(texCoord, 0.0));
+    vec3 T_ = (uv_dy.t * pos_dx - uv_dx.t * pos_dy) /
             (uv_dx.s * uv_dy.t - uv_dy.s * uv_dx.t);
-	vec3 N = normalize(normal);
+    vec3 N = normalize(normal);
   // othewise one can approximate the N using:
   // vec3 N = normalize(cross(pos_dx, pos_dy));
   vec3 T = normalize(T_ - N * dot(N, T_));
-	vec3 B = normalize(cross(N, T));
+    vec3 B = normalize(cross(N, T));
   */
   vec3 q1 = dFdx(position);
-	vec3 q2 = dFdy(position);
-	vec2 st1 = dFdx(texCoord);
-	vec2 st2 = dFdy(texCoord);
+    vec3 q2 = dFdy(position);
+    vec2 st1 = dFdx(texCoord);
+    vec2 st2 = dFdy(texCoord);
 
-	vec3 N = normalize(normal);
-	vec3 T = normalize(q1 * st2.t - q2 * st1.t);
-	vec3 B = -normalize(cross(N, T));
+    vec3 N = normalize(normal);
+    vec3 T = normalize(q1 * st2.t - q2 * st1.t);
+    vec3 B = -normalize(cross(N, T));
 #endif
   // negate the TBN matrix for back-facing primitives
   if (gl_FrontFacing == false) {
@@ -197,7 +197,7 @@ vec3 getNormalFromNormalMap() {
     B *= -1.0;
     N *= -1.0;
   }
-	mat3 TBN = mat3(T, B, N);
+  mat3 TBN = mat3(T, B, N);
 
   // TBN transforms tangentNormal from tangent space to world space
   return normalize(TBN * tangentNormal);
@@ -243,7 +243,7 @@ vec3 fresnelSchlick(vec3 specularReflectance,
   // https://github.com/SaschaWillems/Vulkan-glTF-PBR
   // For typical incident reflectance range (between 4% to 100%)
   // set the grazing reflectance to 100% for typical fresnel effect.
-	// For very low reflectance range on highly diffuse objects (below 4%),
+  // For very low reflectance range on highly diffuse objects (below 4%),
   // incrementally reduce grazing reflecance to 0%.
   float reflectance = max(max(specularReflectance.r, specularReflectance.g), specularReflectance.b);
   float reflectance90 = clamp(reflectance * 25.0, 0.0, 1.0);
@@ -466,9 +466,9 @@ fragmentColor.rgb += iblSpecularContrib;
 
 
 // PBR equation debug
-	// "none", "Diff (l,n)", "F (l,h)", "G (l,v,h)", "D (h)", "Specular"
-	if (PbrDebugDisplay > 0) {
-		switch (PbrDebugDisplay) {
+    // "none", "Diff (l,n)", "F (l,h)", "G (l,v,h)", "D (h)", "Specular"
+    if (PbrDebugDisplay > 0) {
+        switch (PbrDebugDisplay) {
       case 1:
         fragmentColor.rgb = diffuseContrib; // direct diffuse
         break;
@@ -485,9 +485,9 @@ fragmentColor.rgb += iblSpecularContrib;
           fragmentColor.rgb = iblSpecularContrib; // ibl specular
         #endif
         break;
-			case 5:
-				fragmentColor.rgb = n; // normal
-				break;
+            case 5:
+                fragmentColor.rgb = n; // normal
+                break;
       case 6:
       #if defined(SHADOWS_PCF) || defined(SHADOWS_VSM)
         fragmentColor.rgb = visualizePointShadowMap(1, position, LightDirections[1].xyz);
@@ -495,19 +495,19 @@ fragmentColor.rgb += iblSpecularContrib;
         break;
 
     /*
-			case 2:
-				outColor.rgb = F;
-				break;
-			case 3:
-				outColor.rgb = vec3(G);
-				break;
-			case 4:
-				outColor.rgb = vec3(D);
-				break;
-			case 5:
-				outColor.rgb = specContrib;
-				break;
+            case 2:
+                outColor.rgb = F;
+                break;
+            case 3:
+                outColor.rgb = vec3(G);
+                break;
+            case 4:
+                outColor.rgb = vec3(D);
+                break;
+            case 5:
+                outColor.rgb = specContrib;
+                break;
     */
-		}
-	}
+        }
+    }
 }

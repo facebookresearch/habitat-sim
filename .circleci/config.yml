@@ -320,6 +320,7 @@ jobs:
       - run:
           name: Build conda Linux packages for CI
           command: |
+              while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat;
               cd habitat-sim
@@ -352,6 +353,18 @@ jobs:
             git submodule update --init --recursive --jobs 16
             export PYTHONIOENCODING="utf-8"
             python macos_matrix_builder.py --ci_test
+  test_pip_build:
+    <<: *gpu
+    steps:
+      - checkout
+      - run: *install_deps
+      - run:
+          name: pip install
+          command: |
+            pyenv global 3.7.0
+            python3 -m pip install -U pip
+            python3 -m pip install . -v
+            cd ../ && python3 -c "import habitat_sim"
 
   lab_build_habitat:
     <<: *gpu
@@ -469,6 +482,7 @@ jobs:
           name: Build, install habitat-sim and run benchmark
           no_output_timeout: 25m
           command: |
+              while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat;
               cd habitat-sim
@@ -693,6 +707,7 @@ workflows:
       - lab_build_habitat
       - test_conda_build
       - test_conda_build_osx
+      - test_pip_build
       - install_and_test_ubuntu
       - pre-commit
   nightly:

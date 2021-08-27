@@ -10,6 +10,7 @@ __version__ = "0.2.1"
 
 if not getattr(builtins, "__HSIM_SETUP__", False):
     # TODO: kept only for compatibiliy with existing code. Please gradually remove
+    import habitat_sim._ext.habitat_sim_bindings
     from habitat_sim import (
         agent,
         attributes,
