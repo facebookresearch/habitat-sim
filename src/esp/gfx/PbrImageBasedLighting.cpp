@@ -183,9 +183,9 @@ void PbrImageBasedLighting::recreateTextures() {
       CubeMap(environmentMapSize,
               CubeMap::Flag::ColorTexture | CubeMap::Flag::ManuallyBuildMipmap);
   irradianceMap_ = CubeMap(irradianceMapSize, CubeMap::Flag::ColorTexture);
-  prefilteredMap_ = CubeMap(
-      prefilteredMapSize,
-      {CubeMap::Flag::ColorTexture | CubeMap::Flag::ManuallyBuildMipmap});
+  prefilteredMap_ =
+      CubeMap(prefilteredMapSize,
+              CubeMap::Flag::ColorTexture | CubeMap::Flag::ManuallyBuildMipmap);
 }
 
 CubeMap& PbrImageBasedLighting::getIrradianceMap() {
@@ -336,7 +336,7 @@ void PbrImageBasedLighting::computePrecomputedMap(PrecomputedMapType type) {
         // bind framebuffer, clear color and depth
         prefilteredMap_->prepareToDraw(
             jSide,
-            {RenderCamera::Flag::ClearColor | RenderCamera::Flag::ClearDepth},
+            RenderCamera::Flag::ClearColor | RenderCamera::Flag::ClearDepth,
             iMip);
         shader->draw(cube);
       }  // for jSide
