@@ -283,15 +283,15 @@ void SceneAttributesManager::loadAbstractObjectAttributesFromJson(
       });
 
   // uniform scaling for instance
-  io::jsonIntoSetter<float>(jCell, "uniform_scale",
-                            [instanceAttrs](float uniform_scale) {
-                              instanceAttrs->setUniformScale(uniform_scale);
-                            });
+  io::jsonIntoSetter<double>(jCell, "uniform_scale",
+                             [instanceAttrs](double uniform_scale) {
+                               instanceAttrs->setUniformScale(uniform_scale);
+                             });
   // mass scaling for instance
-  io::jsonIntoSetter<float>(jCell, "mass_scale",
-                            [instanceAttrs](float mass_scale) {
-                              instanceAttrs->setMassScale(mass_scale);
-                            });
+  io::jsonIntoSetter<double>(jCell, "mass_scale",
+                             [instanceAttrs](double mass_scale) {
+                               instanceAttrs->setMassScale(mass_scale);
+                             });
 
   // check for user defined attributes
   this->parseUserDefinedJsonVals(instanceAttrs, jCell);

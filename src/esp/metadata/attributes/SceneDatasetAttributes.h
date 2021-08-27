@@ -161,12 +161,12 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * governs this Dataset
    */
   void setPhysicsManagerHandle(const std::string& physMgrAttrHandle) {
-    setString("physMgrAttrHandle", physMgrAttrHandle);
+    set("physMgrAttrHandle", physMgrAttrHandle);
     stageAttributesManager_->setCurrPhysicsManagerAttributesHandle(
         physMgrAttrHandle);
   }
   std::string getPhysicsManagerHandle() const {
-    return getString("physMgrAttrHandle");
+    return get<std::string>("physMgrAttrHandle");
   }
 
   /**

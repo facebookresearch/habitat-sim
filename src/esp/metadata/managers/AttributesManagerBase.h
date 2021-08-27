@@ -401,14 +401,18 @@ bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
       return false;
     } else {
       const std::string subGroupName = "user_defined";
-      // get configuration of root-level attributes
-      esp::core::Configuration& config = *attribs.get();
+      // get pointer to user_defined subgroup configuration
+      std::shared_ptr<core::config::Configuration> subGroupPtr =
+          attribs->getUserConfiguration();
       // get json object referenced by tag subGroupName
       const io::JsonGenericValue& jsonObj = jsonConfig[subGroupName.c_str()];
 
       // count number of valid user config settings found
       int numConfigSettings =
-          io::loadJsonIntoConfiguration(jsonObj, subGroupName, config);
+          io::loadJsonIntoConfiguration(jsonObj, subGroupPtr);
+
+      // save as user_defined subgroup configuration
+      attribs->setSubconfigPtr("user_defined", subGroupPtr);
 
       return (numConfigSettings > 0);
     }
