@@ -123,9 +123,8 @@ if(REL_BUILD_RPATH)
   set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
   set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
   #_magnum.so needs to look at habitat_sim/_ext for its corrade dependencies
-  set(CMAKE_INSTALL_RPATH
-      "${_rpath_portable_origin}" "${_rpath_portable_origin}/habitat_sim/_ext/"
-      "${_rpath_portable_origin}../../../.."
+  set(CMAKE_INSTALL_RPATH "${_rpath_portable_origin}"
+                          "${_rpath_portable_origin}/habitat_sim/_ext/"
   )
 else()
   message("Using absolute rpath")

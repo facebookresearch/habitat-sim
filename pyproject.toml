@@ -1,5 +1,5 @@
 [build-system]
-build-backend = "setuptools.build_meta:__legacy__"
+build-backend = "setuptools.build_meta"
 requires = [
             "cmake",
             "ninja",
