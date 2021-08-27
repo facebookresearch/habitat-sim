@@ -248,9 +248,13 @@ void PbrImageBasedLighting::loadBrdfLookUpTable() {
   // TODO: HDR, No LDR in the future!
   // temporarily using the brdflut from here:
   // https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/screenshots/tex_brdflut.png
-  std::string filename = "./data/pbr/brdflut_ldr_512x512.png";
+  const std::string brdflutFilename = "brdflut_ldr_512x512.png";
 
-  importer->openFile(filename);
+  // this is not the file name, but the group name in the config file
+  // see PbrImages.conf in the shaders folder
+  const Cr::Utility::Resource rs{"pbr-images"};
+  importer->openData(rs.getRaw(brdflutFilename));
+
   Cr::Containers::Optional<Mn::Trade::ImageData2D> imageData =
       importer->image2D(0);
   // sanity checks
