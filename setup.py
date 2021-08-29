@@ -42,9 +42,12 @@ def str2bool(input_str: str) -> bool:
     return bool(strtobool(input_str.lower()))
 
 
-def is_pip():
-    # This will end with python if driven with python setup.py ...
-    return osp.basename(os.environ.get("_", "/pip/no")).startswith("pip")
+def is_pip() -> bool:
+    # This will end with python if driven with python setup.py or PEP517_BUILD_BACKEND will be set
+    return (
+        osp.basename(os.environ.get("_", "/pip/no")).startswith("pip")
+        or os.environ.get("PEP517_BUILD_BACKEND") is not None
+    )
 
 
 # TODO refactor to the proper way to pass options to setup.py so pip can do so.
@@ -447,11 +450,6 @@ if __name__ == "__main__":
     with open("./requirements.txt", "r") as f:
         requirements = [l.strip() for l in f.readlines() if len(l.strip()) > 0]
 
-    # Only install pytest if we are running tests
-    if {"pytest", "test", "ptr"}.intersection(sys.argv):
-        setup_requires = ["pytest-runner"]
-    else:
-        setup_requires = []
     builtins.__HSIM_SETUP__ = True
     import habitat_sim
 
@@ -463,7 +461,6 @@ if __name__ == "__main__":
         long_description="",
         packages=find_packages(),
         install_requires=requirements,
-        setup_requires=setup_requires,
         tests_require=["hypothesis", "pytest-benchmark", "pytest"],
         python_requires=">=3.6",
         # add extension module
@@ -473,7 +470,6 @@ if __name__ == "__main__":
         zip_safe=False,
         include_package_data=True,
     )
-
     pymagnum_build_dir = osp.join(
         _cmake_build_dir, "deps", "magnum-bindings", "src", "python"
     )
