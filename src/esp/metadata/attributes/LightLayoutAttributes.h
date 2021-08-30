@@ -42,35 +42,39 @@ class LightInstanceAttributes : public AbstractAttributes {
    * @brief Get/Set the position of the light.
    */
   void setPosition(const Magnum::Vector3& position) {
-    setVec3("position", position);
+    set("position", position);
   }
-  Magnum::Vector3 getPosition() const { return getVec3("position"); }
+  Magnum::Vector3 getPosition() const {
+    return get<Magnum::Vector3>("position");
+  }
 
   /**
    * @brief Get/Set the direction of the light.
    */
   void setDirection(const Magnum::Vector3& direction) {
-    setVec3("direction", direction);
+    set("direction", direction);
   }
-  Magnum::Vector3 getDirection() const { return getVec3("direction"); }
+  Magnum::Vector3 getDirection() const {
+    return get<Magnum::Vector3>("direction");
+  }
 
   /**
    * @brief Get/Set the color of the light.
    */
-  void setColor(const Magnum::Vector3& color) { setVec3("color", color); }
-  Magnum::Vector3 getColor() const { return getVec3("color"); }
+  void setColor(const Magnum::Vector3& color) { set("color", color); }
+  Magnum::Vector3 getColor() const { return get<Magnum::Vector3>("color"); }
 
   /**
    * @brief Get/Set the color scale of the light.
    */
-  void setIntensity(double intensity) { setDouble("intensity", intensity); }
-  double getIntensity() const { return getDouble("intensity"); }
+  void setIntensity(double intensity) { set("intensity", intensity); }
+  double getIntensity() const { return get<double>("intensity"); }
 
   /**
    * @brief Get/Set the type of the light
    */
-  void setType(int type) { setInt("type", type); }
-  int getType() const { return getInt("type"); }
+  void setType(int type) { set("type", type); }
+  int getType() const { return get<int>("type"); }
 
   /**
    * @brief Get/Set the position model to use when placing the light - whether
@@ -78,27 +82,31 @@ class LightInstanceAttributes : public AbstractAttributes {
    * origin, or some object.
    */
   void setPositionModel(int position_model) {
-    setInt("position_model", position_model);
+    set("position_model", position_model);
   }
-  int getPositionModel() const { return getInt("position_model"); }
+  int getPositionModel() const { return get<int>("position_model"); }
 
   /**
    * @brief Get/Set inner cone angle for spotlights.  Should be ignored for
    * other lights
    */
   void setInnerConeAngle(Magnum::Rad innerConeAngle) {
-    setRad("innerConeAngle", innerConeAngle);
+    set("innerConeAngle", innerConeAngle);
   }
-  Magnum::Rad getInnerConeAngle() const { return getRad("innerConeAngle"); }
+  Magnum::Rad getInnerConeAngle() const {
+    return get<Magnum::Rad>("innerConeAngle");
+  }
 
   /**
    * @brief Get/Set inner cone angle for spotlights. Should be ignored for other
    * lights
    */
   void setOuterConeAngle(Magnum::Rad outerConeAngle) {
-    setRad("outerConeAngle", outerConeAngle);
+    set("outerConeAngle", outerConeAngle);
   }
-  Magnum::Rad getOuterConeAngle() const { return getRad("outerConeAngle"); }
+  Magnum::Rad getOuterConeAngle() const {
+    return get<Magnum::Rad>("outerConeAngle");
+  }
 
  protected:
   /**
@@ -143,22 +151,19 @@ class LightInstanceAttributes : public AbstractAttributes {
    * use that to build this data.
    */
   std::string getObjectInfoInternal() const override {
-    return cfg.value("position")
+    return getAsString("position")
         .append(1, ',')
-        .append(cfg.value("direction"))
+        .append(getAsString("direction"))
         .append(1, ',')
-        .append(cfg.value("color"))
+        .append(getAsString("color"))
         .append(1, ',')
-        .append(cfg.value("intensity"))
+        .append(std::to_string(getIntensity()))
         .append(1, ',')
         .append(getCurrLightTypeName())
         .append(1, ',')
         .append(getCurrLightPositionModelName())
         .append(1, ',');
   }
-
- protected:
-  static int _count;
 
  public:
   ESP_SMART_POINTERS(LightInstanceAttributes)
@@ -178,14 +183,14 @@ class LightLayoutAttributes : public AbstractAttributes {
    * This is to make simple, sweeping adjustments to scene lighting in habitat.
    */
   void setPositiveIntensityScale(double positive_intensity_scale) {
-    setDouble("positive_intensity_scale", positive_intensity_scale);
+    set("positive_intensity_scale", positive_intensity_scale);
   }
   /**
    * @brief Get a scale of all positive intensities by specified amount.
    * This is to make simple, sweeping adjustments to scene lighting in habitat.
    */
   double getPositiveIntensityScale() const {
-    return getDouble("positive_intensity_scale");
+    return get<double>("positive_intensity_scale");
   }
 
   /**
@@ -193,20 +198,29 @@ class LightLayoutAttributes : public AbstractAttributes {
    * This is to make simple, sweeping adjustments to scene lighting in habitat.
    */
   void setNegativeIntensityScale(double negative_intensity_scale) {
-    setDouble("negative_intensity_scale", negative_intensity_scale);
+    set("negative_intensity_scale", negative_intensity_scale);
   }
   /**
    * @brief Get a scale of all negative intensities by specified amount.
    * This is to make simple, sweeping adjustments to scene lighting in habitat.
    */
   double getNegativeIntensityScale() const {
-    return getDouble("negative_intensity_scale");
+    return get<double>("negative_intensity_scale");
   }
 
   /**
    * @brief Add a light instance to this lighting layout
    */
   void addLightInstance(const LightInstanceAttributes::ptr& _lightInstance) {
+    // set id
+    if (!availableLightIDs_.empty()) {
+      // use saved value and then remove from storage
+      _lightInstance->setID(availableLightIDs_.front());
+      availableLightIDs_.pop_front();
+    } else {
+      // use size of map to set ID
+      _lightInstance->setID(lightInstances_.size());
+    }
     lightInstances_.emplace(_lightInstance->getHandle(), _lightInstance);
   }
 
@@ -216,6 +230,7 @@ class LightLayoutAttributes : public AbstractAttributes {
   LightInstanceAttributes::ptr removeLightInstance(const std::string& handle) {
     auto inst = getLightInstance(handle);
     if (nullptr != inst) {
+      availableLightIDs_.emplace_front(inst->getID());
       lightInstances_.erase(handle);
     }
     return inst;
@@ -260,6 +275,12 @@ class LightLayoutAttributes : public AbstractAttributes {
    * @brief The light instances used by this lighting layout
    */
   std::map<std::string, LightInstanceAttributes::ptr> lightInstances_;
+
+  /**
+   * @brief Deque holding all released IDs to consume for light instances when
+   * one is deleted, before using size of lightInstances_ container.
+   */
+  std::deque<int> availableLightIDs_;
 
  public:
   ESP_SMART_POINTERS(LightLayoutAttributes)

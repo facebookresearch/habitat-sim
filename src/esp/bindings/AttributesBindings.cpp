@@ -51,7 +51,7 @@ void initAttributesBindings(py::module& m) {
 
   // ==== AbstractAttributes ====
   py::class_<AbstractAttributes, esp::core::AbstractFileBasedManagedObject,
-             esp::core::Configuration, AbstractAttributes::ptr>(
+             esp::core::config::Configuration, AbstractAttributes::ptr>(
       m, "AbstractAttributes")
       .def(py::init(
           &AbstractAttributes::create<const std::string&, const std::string&>))
@@ -65,29 +65,12 @@ void initAttributesBindings(py::module& m) {
           "template_id", &AbstractAttributes::getID,
           R"(System-generated ID for template.  Will be unique among templates
           of same type.)")
-      .def("get_user_config_bool",
-           &AbstractAttributes::getUserConfigValue<bool>)
-      .def("get_user_config_string",
-           &AbstractAttributes::getUserConfigValue<std::string>)
-      .def("get_user_config_int", &AbstractAttributes::getUserConfigValue<int>)
-      .def("get_user_config_double",
-           &AbstractAttributes::getUserConfigValue<double>)
-      .def("get_user_config_vec3",
-           &AbstractAttributes::getUserConfigValue<Magnum::Vector3>)
-      .def("get_user_config_quat",
-           &AbstractAttributes::getUserConfigValue<Magnum::Quaternion>)
-      .def("get_user_config_val",
-           &AbstractAttributes::getUserConfigValue<std::string>)
-      .def("set_user_config_val",
-           &AbstractAttributes::setUserConfigValue<std::string>)
-      .def("set_user_config_val", &AbstractAttributes::setUserConfigValue<int>)
-      .def("set_user_config_val",
-           &AbstractAttributes::setUserConfigValue<double>)
-      .def("set_user_config_val", &AbstractAttributes::setUserConfigValue<bool>)
-      .def("set_user_config_val",
-           &AbstractAttributes::setUserConfigValue<Magnum::Vector3>)
-      .def("set_user_config_val",
-           &AbstractAttributes::setUserConfigValue<Magnum::Quaternion>)
+      .def(
+          "get_user_config", &AbstractAttributes::editUserConfiguration,
+          py::return_value_policy::reference_internal,
+          R"(Returns a reference to the User Config object for this attributes, so that it can be
+          viewed or modified. Any changes to the user_config will require the owning
+          attributes to be re-registered.)")
       .def_property_readonly(
           "num_user_configs",
           &AbstractAttributes::getNumUserDefinedConfigurations,
