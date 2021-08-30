@@ -1887,7 +1887,7 @@ void ResourceManager::loadTextures(Importer& importer,
 
     auto textureData = importer.texture(iTexture);
     if (!textureData ||
-        textureData->type() != Magnum::Trade::TextureData::Type::Texture2D) {
+        textureData->type() != Magnum::Trade::TextureType::Texture2D) {
       ESP_ERROR() << "Cannot load texture" << iTexture << "skipping";
       currentTexture = nullptr;
       continue;
