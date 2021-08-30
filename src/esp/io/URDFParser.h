@@ -14,6 +14,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "esp/core/Configuration.h"
 
 /** @file
  * @brief Storage classes for articulated object metadata and URDF file parsing
@@ -357,7 +358,42 @@ class Model {
    */
   float getMassScaling() const { return m_massScaling; }
 
+  /**
+   * @brief This function conditionally loads configuration data from a Json
+   * file for this Articulated Model, should an appropriate file exist. This
+   * configuration file must meet the following criteria to be loaded :
+   * --Exist in the same directory as thsi model's source URDF/XML file.
+   * - Have the same root name as this model's source URDF/XML file.
+   * - Have '.ao_config.json' as an extension.
+   *
+   * This method will construct a name candidate from the passed @p filename and
+   * attempt to load this file into this model's @ref jsonAttributes_ variable.
+   * @param filename The filename for the URDF?XML file describing this model.
+   * @return Whether successful or not.
+   */
+  bool loadJsonAttributes(const std::string& filename);
+
+  /**
+   * @brief Gets a smart pointer reference to a copy of the user-specified
+   * configuration data from a config file. Habitat does not parse or process
+   * this data, but it will be available to the user via python bindings for
+   * each object.
+   */
+  std::shared_ptr<core::config::Configuration> getUserConfiguration() const {
+    return jsonAttributes_->getSubconfigCopy("user_defined");
+  }
+
  protected:
+  /**
+   * @brief Json-based attributes defining characteristics of this model not
+   * specified in the source XML/URDF. Primarly to support defaultt user-defined
+   * attribnutes. This data is read in from a json file with the same name as
+   * the source XML/URDF for this model, and the extension ".ao_config.json".
+   */
+
+  std::shared_ptr<core::config::Configuration> jsonAttributes_ =
+      std::make_shared<core::config::Configuration>();
+
   // scaling values which can be applied to the model after parsing
   //! Global euclidean scaling applied to the model's transforms, asset scales,
   //! and prismatic joint limits. Does not affect mass.
@@ -368,7 +404,7 @@ class Model {
 
   //! Scale the transformation and parameters of a Shape
   void scaleShape(Shape& shape, float scale);
-};
+};  // class model
 
 /**
  * @brief Functional class for parsing URDF files into a URDF::Model

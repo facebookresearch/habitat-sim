@@ -159,6 +159,8 @@ void BulletArticulatedObject::initializeFromURDF(
         createJointMotor(linkIx, settings);
       }
     }
+    // set user config attributes from model.
+    setUserAttributes(urdfModel->getUserConfiguration());
 
     // in case the base transform is not zero by default
     syncPose();
