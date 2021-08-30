@@ -245,7 +245,7 @@ bool Parser::parseURDF(std::shared_ptr<Model>& urdfModel,
       return false;
     }
   }
-  if (urdfModel->m_links.size() == 0) {
+  if (urdfModel->m_links.empty()) {
     ESP_ERROR() << "No links found in URDF file. Aborting parse/load for"
                 << filename;
     return false;
@@ -956,7 +956,7 @@ bool Parser::initTreeAndRoot(const std::shared_ptr<Model>& model) const {
     }
   }
 
-  if (model->m_rootLinks.size() == 0) {
+  if (model->m_rootLinks.empty()) {
     ESP_VERY_VERBOSE() << "URDF without root link found.";
     return false;
   }
