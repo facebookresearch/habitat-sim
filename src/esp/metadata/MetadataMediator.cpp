@@ -406,14 +406,8 @@ std::string MetadataMediator::createDatasetReport(
                 << "is not found in the MetadataMediator.  Aborting.";
     return "Requeseted SceneDataset `" + sceneDataset + "` unknown.";
   }
-  std::string res{"Scene Dataset"};
-
-  res.append(ds->getObjectInfoHeader())
-      .append(1, '\n')
-      .append(ds->getObjectInfo())
-      .append(1, '\n');
-  return res;
-
+  return Corrade::Utility::formatString(
+      "Scene Dataset {}\n{}\n", ds->getObjectInfoHeader(), ds->getObjectInfo());
 }  // MetadataMediator::const std::string MetadataMediator::createDatasetReport(
 
 }  // namespace metadata

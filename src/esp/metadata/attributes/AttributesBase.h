@@ -211,8 +211,8 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
    * info returned for this managed object.
    */
   std::string getObjectInfoHeader() const override {
-    std::string res{"Simplified Name, ID, "};
-    return res.append(getObjectInfoHeaderInternal());
+    return Cr::Utility::formatString("Simplified Name, ID, {}",
+                                     getObjectInfoHeaderInternal());
   }
 
   /**
