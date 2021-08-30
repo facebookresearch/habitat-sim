@@ -53,8 +53,8 @@ class PhysicsManagerAttributes : public AbstractAttributes {
    */
 
   std::string getObjectInfoHeaderInternal() const override {
-    return "Simulator Type, Timestep, Max Substeps, Gravity XYZ, Friction "
-           "Coefficient, Restitution Coefficient,";
+    return "Simulator Type,Timestep,Max Substeps,Gravity XYZ,Friction "
+           "Coefficient,Restitution Coefficient,";
   }
 
   /**
@@ -62,17 +62,11 @@ class PhysicsManagerAttributes : public AbstractAttributes {
    * of this managed object.
    */
   std::string getObjectInfoInternal() const override {
-    return getSimulator()
-        .append(1, ',')
-        .append(std::to_string(getTimestep()))
-        .append(1, ',')
-        .append(std::to_string(getMaxSubsteps()))
-        .append(1, ',')
-        .append(getAsString("gravity"))
-        .append(1, ',')
-        .append(std::to_string(getFrictionCoefficient()))
-        .append(1, ',')
-        .append(std::to_string(getRestitutionCoefficient()));
+    return Cr::Utility::formatString(
+        "{},{},{},{},{},{}", getSimulator(), getAsString("timestep"),
+        getAsString("max_substeps"), getAsString("gravity"),
+        getAsString("friction_coefficient"),
+        getAsString("restitution_coefficient"));
   }
 
  public:

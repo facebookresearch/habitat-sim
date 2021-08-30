@@ -392,7 +392,7 @@ bool Simulator::instanceStageForActiveScene(
   // transformation of stage in scene.
   // TODO : need to support stageInstanceAttributes transformation upon
   // creation.
-  const SceneObjectInstanceAttributes::ptr stageInstanceAttributes =
+  const SceneObjectInstanceAttributes::cptr stageInstanceAttributes =
       curSceneInstanceAttributes->getStageInstance();
 
   // Get full library name of StageAttributes
@@ -486,7 +486,7 @@ bool Simulator::instanceObjectsForActiveScene(
         curSceneInstanceAttributes) {
   // 5. Load object instances as spceified by Scene Instance Attributes.
   // Get all instances of objects described in scene
-  const std::vector<SceneObjectInstanceAttributes::ptr> objectInstances =
+  const std::vector<SceneObjectInstanceAttributes::cptr> objectInstances =
       curSceneInstanceAttributes->getObjectInstances();
 
   // node to attach object to
@@ -527,7 +527,7 @@ bool Simulator::instanceArticulatedObjectsForActiveScene(
         curSceneInstanceAttributes) {
   // 6. Load all articulated object instances
   // Get all instances of articulated objects described in scene
-  const std::vector<SceneAOInstanceAttributes::ptr> artObjInstances =
+  const std::vector<SceneAOInstanceAttributes::cptr> artObjInstances =
       curSceneInstanceAttributes->getArticulatedObjectInstances();
 
   // int aoID = 0;

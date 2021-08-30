@@ -193,7 +193,8 @@ std::string ConfigValue::getAsString() const {
       return std::to_string(r.operator float());
     }
     default:
-      ESP_CHECK(true, "Unknown/unsupported Type in ConfigValue::getAsString.");
+      CORRADE_ASSERT_UNREACHABLE(
+          "Unknown/unsupported Type in ConfigValue::getAsString", "");
   }  // switch
 }  // ConfigValue::getAsString
 
@@ -218,11 +219,10 @@ bool ConfigValue::putValueInConfigGroup(
     case ConfigStoredType::MagnumRad:
       return cfg.setValue(key, get<Mn::Rad>());
     default:
-      ESP_CHECK(
-          true,
-          "Unknown/unsupported Type in ConfigValue::putValueInConfigGroup.");
+      CORRADE_ASSERT_UNREACHABLE(
+          "Unknown/unsupported Type in ConfigValue::putValueInConfigGroup",
+          false);
   }  // switch
-  return false;
 }  // ConfigValue::putValueInConfigGroup
 
 Mn::Debug& operator<<(Mn::Debug& debug, const ConfigStoredType& value) {

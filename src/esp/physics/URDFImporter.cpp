@@ -246,7 +246,7 @@ bool URDFImporter::getLinkContactInfo(
     io::URDF::LinkContactInfo& contactInfo) const {
   auto link = activeModel_->getLink(linkIndex);
   if (link == nullptr) {
-    ESP_DEBUG() << "E - No link with index =" << linkIndex;
+    ESP_DEBUG() << "No link with index =" << linkIndex;
     return false;
   }
 

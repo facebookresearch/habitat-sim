@@ -42,35 +42,20 @@ AbstractObjectAttributes::AbstractObjectAttributes(
 }  // AbstractObjectAttributes ctor
 
 std::string AbstractObjectAttributes::getObjectInfoHeaderInternal() const {
-  return "Render Asset Handle, Collision Asset Handle, Scale, Margin, Up XYZ, "
-         "Front XYZ, Units to M, Friction Coefficient, Restitution "
-         "Coefficient, Current Shader "
-         "Type, " +
+  return "Render Asset Handle,Collision Asset Handle,Scale,Margin,Up XYZ,"
+         "Front XYZ,Units to M,Friction Coefficient,Restitution "
+         "Coefficient,Current Shader Type," +
          getAbstractObjectInfoHeaderInternal();
 }
 
 std::string AbstractObjectAttributes::getObjectInfoInternal() const {
-  return getRenderAssetHandle()
-      .append(1, ',')
-      .append(getCollisionAssetHandle())
-      .append(1, ',')
-      .append(getAsString("scale"))
-      .append(1, ',')
-      .append(std::to_string(getMargin()))
-      .append(1, ',')
-      .append(getAsString("orient_up"))
-      .append(1, ',')
-      .append(getAsString("orient_front"))
-      .append(1, ',')
-      .append(std::to_string(getUnitsToMeters()))
-      .append(1, ',')
-      .append(std::to_string(getFrictionCoefficient()))
-      .append(1, ',')
-      .append(std::to_string(getRestitutionCoefficient()))
-      .append(1, ',')
-      .append(getCurrShaderTypeName())
-      .append(1, ',')
-      .append(getAbstractObjectInfoInternal());
+  return Cr::Utility::formatString(
+      "{},{},{},{},{},{},{},{},{},{},{}", getRenderAssetHandle(),
+      getCollisionAssetHandle(), getAsString("scale"), getAsString("margin"),
+      getAsString("orient_up"), getAsString("orient_front"),
+      getAsString("units_to_meters"), getAsString("friction_coefficient"),
+      getAsString("restitution_coefficient"), getCurrShaderTypeName(),
+      getAbstractObjectInfoInternal());
 }  // AbstractObjectAttributes::getObjectInfoInternal
 
 ObjectAttributes::ObjectAttributes(const std::string& handle)
@@ -96,17 +81,10 @@ ObjectAttributes::ObjectAttributes(const std::string& handle)
 }  // ObjectAttributes ctor
 
 std::string ObjectAttributes::getAbstractObjectInfoInternal() const {
-  return std::to_string(getMass())
-      .append(1, ',')
-      .append(getAsString("COM"))
-      .append(1, ',')
-      .append(getAsString("inertia"))
-      .append(1, ',')
-      .append(std::to_string(getAngularDamping()))
-      .append(1, ',')
-      .append(std::to_string(getLinearDamping()))
-      .append(1, ',')
-      .append(std::to_string(getSemanticId()));
+  return Cr::Utility::formatString(
+      "{},{},{},{},{},{}", getAsString("mass"), getAsString("COM"),
+      getAsString("inertia"), getAsString("angular_damping"),
+      getAsString("linear_damping"), getAsString("semantic_id"));
 }
 
 StageAttributes::StageAttributes(const std::string& handle)

@@ -141,7 +141,7 @@ class LightInstanceAttributes : public AbstractAttributes {
    */
 
   std::string getObjectInfoHeaderInternal() const override {
-    return "Position XYZ, Direction XYZ, Color RGB, Intensity, Light Type, "
+    return "Position XYZ,Direction XYZ,Color RGB,Intensity,Light Type,"
            "Light Position Model,";
   }
   /**
@@ -151,18 +151,10 @@ class LightInstanceAttributes : public AbstractAttributes {
    * use that to build this data.
    */
   std::string getObjectInfoInternal() const override {
-    return getAsString("position")
-        .append(1, ',')
-        .append(getAsString("direction"))
-        .append(1, ',')
-        .append(getAsString("color"))
-        .append(1, ',')
-        .append(std::to_string(getIntensity()))
-        .append(1, ',')
-        .append(getCurrLightTypeName())
-        .append(1, ',')
-        .append(getCurrLightPositionModelName())
-        .append(1, ',');
+    return Cr::Utility::formatString(
+        "{},{},{},{},{},{},", getAsString("position"), getAsString("direction"),
+        getAsString("color"), getAsString("intensity"), getCurrLightTypeName(),
+        getCurrLightPositionModelName());
   }
 
  public:

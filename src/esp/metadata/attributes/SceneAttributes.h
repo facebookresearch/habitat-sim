@@ -218,7 +218,13 @@ class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
    * @brief retrieve a mutable reference to this scene attributes joint initial
    * pose map
    */
-  std::map<std::string, float>& getInitJointPose() { return initJointPose_; }
+  const std::map<std::string, float>& getInitJointPose() const {
+    return initJointPose_;
+  }
+
+  std::map<std::string, float>& copyIntoInitJointPose() {
+    return initJointPose_;
+  }
 
   /**
    * @brief Add a value to this scene attributes joint initial pose map
@@ -233,7 +239,10 @@ class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
    * @brief retrieve a mutable reference to this scene attributes joint initial
    * velocity map
    */
-  std::map<std::string, float>& getInitJointVelocities() {
+  const std::map<std::string, float>& getInitJointVelocities() const {
+    return initJointVelocities_;
+  }
+  std::map<std::string, float>& copyIntoInitJointVelocities() {
     return initJointVelocities_;
   }
 
@@ -345,7 +354,7 @@ class SceneAttributes : public AbstractAttributes {
   /**
    * @brief Get the description of the stage placement for this scene instance.
    */
-  SceneObjectInstanceAttributes::ptr getStageInstance() const {
+  SceneObjectInstanceAttributes::cptr getStageInstance() const {
     return stageInstance_;
   }
 
@@ -354,15 +363,22 @@ class SceneAttributes : public AbstractAttributes {
    */
   void addObjectInstance(
       const SceneObjectInstanceAttributes::ptr& _objInstance) {
-    // use size of container to set ID
-    _objInstance->setID(objectInstances_.size());
+    // set id
+    if (!availableObjInstIDs_.empty()) {
+      // use saved value and then remove from storage
+      _objInstance->setID(availableObjInstIDs_.front());
+      availableObjInstIDs_.pop_front();
+    } else {
+      // use size of container to set ID
+      _objInstance->setID(objectInstances_.size());
+    }
     objectInstances_.push_back(_objInstance);
   }
 
   /**
    * @brief Get the object instance descriptions for this scene
    */
-  const std::vector<SceneObjectInstanceAttributes::ptr>& getObjectInstances()
+  const std::vector<SceneObjectInstanceAttributes::cptr>& getObjectInstances()
       const {
     return objectInstances_;
   }
@@ -372,15 +388,22 @@ class SceneAttributes : public AbstractAttributes {
    */
   void addArticulatedObjectInstance(
       const SceneAOInstanceAttributes::ptr& _artObjInstance) {
-    // use size of container to set ID
-    _artObjInstance->setID(articulatedObjectInstances_.size());
+    // set id
+    if (!availableArtObjInstIDs_.empty()) {
+      // use saved value and then remove from storage
+      _artObjInstance->setID(availableArtObjInstIDs_.front());
+      availableArtObjInstIDs_.pop_front();
+    } else {
+      // use size of container to set ID
+      _artObjInstance->setID(articulatedObjectInstances_.size());
+    }
     articulatedObjectInstances_.push_back(_artObjInstance);
   }
 
   /**
    * @brief Get the object instance descriptions for this scene
    */
-  const std::vector<SceneAOInstanceAttributes::ptr>&
+  const std::vector<SceneAOInstanceAttributes::cptr>&
   getArticulatedObjectInstances() const {
     return articulatedObjectInstances_;
   }
@@ -401,17 +424,28 @@ class SceneAttributes : public AbstractAttributes {
   /**
    * @brief The stage instance used by the scene
    */
-  SceneObjectInstanceAttributes::ptr stageInstance_ = nullptr;
+  SceneObjectInstanceAttributes::cptr stageInstance_ = nullptr;
 
   /**
    * @brief All the object instance descriptors used by the scene
    */
-  std::vector<SceneObjectInstanceAttributes::ptr> objectInstances_;
+  std::vector<SceneObjectInstanceAttributes::cptr> objectInstances_;
+  /**
+   * @brief Deque holding all released IDs to consume for object instances when
+   * one is deleted, before using size of objectInstances_ container.
+   */
+  std::deque<int> availableObjInstIDs_;
 
   /**
    * @brief All the articulated object instance descriptors used by the scene
    */
-  std::vector<SceneAOInstanceAttributes::ptr> articulatedObjectInstances_;
+  std::vector<SceneAOInstanceAttributes::cptr> articulatedObjectInstances_;
+  /**
+   * @brief Deque holding all released IDs to consume for articulated object
+   * instances when one is deleted, before using size of
+   * articulatedObjectInstances_ container.
+   */
+  std::deque<int> availableArtObjInstIDs_;
 
  public:
   ESP_SMART_POINTERS(SceneAttributes)
