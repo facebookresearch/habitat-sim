@@ -364,7 +364,7 @@ class SceneAttributes : public AbstractAttributes {
   void addObjectInstance(
       const SceneObjectInstanceAttributes::ptr& _objInstance) {
     // set id
-    if (availableObjInstIDs_.size() > 0) {
+    if (!availableObjInstIDs_.empty()) {
       // use saved value and then remove from storage
       _objInstance->setID(availableObjInstIDs_.front());
       availableObjInstIDs_.pop_front();
@@ -389,7 +389,7 @@ class SceneAttributes : public AbstractAttributes {
   void addArticulatedObjectInstance(
       const SceneAOInstanceAttributes::ptr& _artObjInstance) {
     // set id
-    if (availableArtObjInstIDs_.size() > 0) {
+    if (!availableArtObjInstIDs_.empty()) {
       // use saved value and then remove from storage
       _artObjInstance->setID(availableArtObjInstIDs_.front());
       availableArtObjInstIDs_.pop_front();
