@@ -211,8 +211,8 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
    * info returned for this managed object.
    */
   std::string getObjectInfoHeader() const override {
-    std::string res{"Simplified Name, ID, "};
-    return res.append(getObjectInfoHeaderInternal());
+    return Cr::Utility::formatString("Simplified Name, ID, {}",
+                                     getObjectInfoHeaderInternal());
   }
 
   /**
@@ -220,11 +220,9 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
    * of this managed object.
    */
   std::string getObjectInfo() const override {
-    return getSimplifiedHandle()
-        .append(", ")
-        .append(std::to_string(getID()))
-        .append(", ")
-        .append(getObjectInfoInternal());
+    return Cr::Utility::formatString("{},{},{}", getSimplifiedHandle(),
+                                     getAsString("ID"),
+                                     getObjectInfoInternal());
   }
 
  protected:

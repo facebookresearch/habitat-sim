@@ -192,7 +192,7 @@ void ResourceManager::initPhysicsManager(
 
 bool ResourceManager::loadStage(
     const StageAttributes::ptr& stageAttributes,
-    const SceneObjectInstanceAttributes::ptr& stageInstanceAttributes,
+    const SceneObjectInstanceAttributes::cptr& stageInstanceAttributes,
     const std::shared_ptr<physics::PhysicsManager>& _physicsManager,
     esp::scene::SceneManager* sceneManagerPtr,
     std::vector<int>& activeSceneIDs) {

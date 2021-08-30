@@ -259,7 +259,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    */
   bool addStage(
       const metadata::attributes::StageAttributes::ptr& initAttributes,
-      const metadata::attributes::SceneObjectInstanceAttributes::ptr&
+      const metadata::attributes::SceneObjectInstanceAttributes::cptr&
           stageInstanceAttributes,
       const std::vector<assets::CollisionMeshData>& meshGroup);
 
@@ -279,7 +279,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
    */
   int addObjectInstance(
-      const esp::metadata::attributes::SceneObjectInstanceAttributes::ptr&
+      const esp::metadata::attributes::SceneObjectInstanceAttributes::cptr&
           objInstAttributes,
       const std::string& attributesHandle,
       bool defaultCOMCorrection = false,
@@ -472,7 +472,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   int addArticulatedObjectInstance(
       const std::string& filepath,
       const std::shared_ptr<
-          esp::metadata::attributes::SceneAOInstanceAttributes>&
+          const esp::metadata::attributes::SceneAOInstanceAttributes>&
           aObjInstAttributes,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
 

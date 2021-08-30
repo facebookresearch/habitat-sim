@@ -510,7 +510,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    * @brief This object's instancing attributes, if any were used during its
    * creation.
    */
-  std::shared_ptr<metadata::attributes::SceneObjectInstanceAttributes>
+  std::shared_ptr<const metadata::attributes::SceneObjectInstanceAttributes>
       _sceneInstanceAttributes = nullptr;
 
  public:

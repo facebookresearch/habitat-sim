@@ -256,8 +256,7 @@ void BulletArticulatedObject::resetStateFromSceneInstanceAttr(
   // get array of existing joint dofs
   std::vector<float> aoJointPose = getJointPositions();
   // get instance-specified initial joint positions
-  std::map<std::string, float>& initJointPos =
-      sceneObjInstanceAttr->getInitJointPose();
+  const auto& initJointPos = sceneObjInstanceAttr->getInitJointPose();
   // map instance vals into
   size_t idx = 0;
   for (const auto& elem : initJointPos) {
@@ -275,7 +274,7 @@ void BulletArticulatedObject::resetStateFromSceneInstanceAttr(
   // get array of existing joint vel dofs
   std::vector<float> aoJointVels = getJointVelocities();
   // get instance-specified initial joint velocities
-  std::map<std::string, float>& initJointVel =
+  const std::map<std::string, float>& initJointVel =
       sceneObjInstanceAttr->getInitJointVelocities();
   idx = 0;
   for (const auto& elem : initJointVel) {
