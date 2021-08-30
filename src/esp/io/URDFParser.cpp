@@ -103,14 +103,13 @@ void Model::setMassScaling(float massScaling) {
 }
 
 bool Model::loadJsonAttributes(const std::string& filename) {
-  // rebuild name
   namespace CrUt = Corrade::Utility;
-  namespace CrUtDir = CrUt::Directory;
   const std::string jsonName = CrUt::formatString(
-      "{}.ao_config.json",
-      CrUtDir::splitExtension(CrUtDir::splitExtension(filename).first).first);
+      "{}.ao_config.json", CrUt::Directory::splitExtension(
+                               CrUt::Directory::splitExtension(filename).first)
+                               .first);
 
-  if (!CrUtDir::exists(jsonName)) {
+  if (!CrUt::Directory::exists(jsonName)) {
     // file does not exists, so no Json configuration defined for this Model.
     return false;
   }
@@ -121,14 +120,13 @@ bool Model::loadJsonAttributes(const std::string& filename) {
     ESP_ERROR() << "<Model> : Failed to parse" << jsonName << "as JSON.";
     return false;
   }
+  // JSON file exists and has been loaded; use to build this model's
+  // configuration attributes
   // convert doc to const Json Generic val
   const io::JsonGenericValue jsonConfig = docConfig->GetObject();
 
   const std::string subGroupName = "user_defined";
   const char* sg_cstr = subGroupName.c_str();
-  // JSON file exists and has been loaded; use to build this model's
-  // configuration attributes
-  jsonAttributes_ = std::make_shared<esp::core::config::Configuration>();
 
   // check for user defined attributes and verify it is an object
   if (jsonConfig.HasMember(sg_cstr)) {
