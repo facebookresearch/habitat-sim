@@ -563,7 +563,7 @@ jobs:
                 --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
 
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
-              pytest -n auto --durations=10 --cov-report=xml --cov=./
+              pytest -n 8 --durations=10 --cov-report=xml --cov=./
 
               #run the marked pytest-benchmark tests and print the results
               pytest -m sim_benchmarks
