@@ -65,9 +65,8 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
       "#define ATTRIBUTE_LOCATION_POSITION {}\n", Position::Location);
   attributeLocationsStream << Cr::Utility::formatString(
       "#define ATTRIBUTE_LOCATION_NORMAL {}\n", Normal::Location);
-  if (flags_ & (Flag::NormalTexture | Flag::PrecomputedTangent) &&
-      // TODO: remove this constraint after IBL is introduced.
-      (lightCount_ != 0u)) {
+  if ((flags_ & Flag::NormalTexture) && (flags_ & Flag::PrecomputedTangent) &&
+      (lightCount_ != 0u || flags_ & Flag::ImageBasedLighting)) {
     attributeLocationsStream << Cr::Utility::formatString(
         "#define ATTRIBUTE_LOCATION_TANGENT4 {}\n", Tangent4::Location);
   }
@@ -101,8 +100,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   outputAttributeLocationsStream << Cr::Utility::formatString(
       "#define OUTPUT_ATTRIBUTE_LOCATION_OBJECT_ID {}\n", ObjectIdOutput);
 
-  frag.addSource(attributeLocationsStream.str())
-      .addSource(outputAttributeLocationsStream.str())
+  frag.addSource(outputAttributeLocationsStream.str())
       .addSource(isTextured ? "#define TEXTURED\n" : "")
       .addSource(flags_ & Flag::BaseColorTexture ? "#define BASECOLOR_TEXTURE\n"
                                                  : "")
@@ -119,6 +117,9 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
       .addSource(flags_ & Flag::ObjectId ? "#define OBJECT_ID\n" : "")
       .addSource(flags_ & Flag::PrecomputedTangent
                      ? "#define PRECOMPUTED_TANGENT\n"
+                     : "")
+      .addSource(flags_ & Flag::ImageBasedLighting
+                     ? "#define IMAGE_BASED_LIGHTING\n"
                      : "")
       .addSource(
           Cr::Utility::formatString("#define LIGHT_COUNT {}\n", lightCount_))
@@ -139,8 +140,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
 #endif
   {
     bindAttributeLocation(Position::Location, "vertexPosition");
-    // TODO: remove this constraint after IBL is introduced.
-    if (lightCount_ != 0u) {
+    if (lightCount_ != 0u || flags_ & Flag::ImageBasedLighting) {
       bindAttributeLocation(Normal::Location, "vertexNormal");
       if (flags_ & (Flag::NormalTexture | Flag::PrecomputedTangent)) {
         bindAttributeLocation(Tangent4::Location, "vertexTangent");
@@ -153,8 +153,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
 
   // set texture binding points in the shader;
   // see PBR vertex, fragment shader code for details
-  // TODO: remove this constraint after IBL is introduced.
-  if (lightCount_ != 0u) {
+  if (lightCount_ != 0u || flags_ & Flag::ImageBasedLighting) {
     if (flags_ & Flag::BaseColorTexture) {
       setUniform(uniformLocation("BaseColorTexture"),
                  pbrTextureUnitSpace::TextureUnit::BaseColor);
@@ -177,6 +176,16 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   if (flags_ & Flag::EmissiveTexture) {
     setUniform(uniformLocation("EmissiveTexture"),
                pbrTextureUnitSpace::TextureUnit::Emissive);
+  }
+
+  // IBL related textures
+  if (flags_ & Flag::ImageBasedLighting) {
+    setUniform(uniformLocation("IrradianceMap"),
+               pbrTextureUnitSpace::TextureUnit::IrradianceMap);
+    setUniform(uniformLocation("BrdfLUT"),
+               pbrTextureUnitSpace::TextureUnit::BrdfLUT);
+    setUniform(uniformLocation("PrefilteredMap"),
+               pbrTextureUnitSpace::TextureUnit::PrefilteredMap);
   }
 
   // cache the uniform locations
@@ -206,19 +215,32 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   }
 
   if ((flags_ & Flag::NormalTexture) && (flags_ & Flag::NormalTextureScale) &&
-      // TODO: remove this constraint after IBL is introduced.
-      (lightCount_ != 0u)) {
+      (lightCount_ != 0u || flags_ & Flag::ImageBasedLighting)) {
     normalTextureScaleUniform_ = uniformLocation("NormalTextureScale");
   }
 
   cameraWorldPosUniform_ = uniformLocation("CameraWorldPos");
 
+  // IBL related uniform
+  if (flags_ & Flag::ImageBasedLighting) {
+    prefilteredMapMipLevelsUniform_ =
+        uniformLocation("PrefilteredMapMipLevels");
+  }
+
+  // pbr equation scales
+  scaleDirectDiffuseUniform_ = uniformLocation("Scales.directDiffuse");
+  scaleDirectSpecularUniform_ = uniformLocation("Scales.directSpecular");
+  scaleIblDiffuseUniform_ = uniformLocation("Scales.iblDiffuse");
+  scaleIblSpecularUniform_ = uniformLocation("Scales.iblSpecular");
+
+  // for debug info
+  pbrDebugDisplayUniform_ = uniformLocation("PbrDebugDisplay");
+
   // initialize the shader with some "reasonable defaults"
   setViewMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
   setModelMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
   setProjectionMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
-  // TODO: remove this constraint after IBL is introduced.
-  if (lightCount_ != 0u) {
+  if (lightCount_ != 0u || flags_ & Flag::ImageBasedLighting) {
     setBaseColor(Magnum::Color4{0.7f});
     setRoughness(0.9f);
     setMetallic(0.1f);
@@ -226,7 +248,9 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
       setNormalTextureScale(1.0f);
     }
     setNormalMatrix(Mn::Matrix3x3{Mn::Math::IdentityInit});
+  }
 
+  if (lightCount_ != 0u) {
     setLightVectors(Cr::Containers::Array<Mn::Vector4>{
         Cr::DirectInit, lightCount_,
         // a single directional "fill" light, coming from the center of the
@@ -238,7 +262,15 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     setLightRanges(Cr::Containers::Array<Mn::Float>{Cr::DirectInit, lightCount_,
                                                     Mn::Constants::inf()});
   }
+
   setEmissiveColor(Magnum::Color3{0.0f});
+  PbrShader::PbrEquationScales scales;
+  if (flags_ & Flag::ImageBasedLighting) {
+    scales.IblDiffuse = 0.8;
+    scales.IblSpecular = 0.3;
+  }
+  setPbrEquationScales(scales);
+  setDebugDisplay(PbrDebugDisplay::None);
 }
 
 // Note: the texture binding points are explicitly specified above.
@@ -249,8 +281,7 @@ PbrShader& PbrShader::bindBaseColorTexture(Mn::GL::Texture2D& texture) {
                  "PbrShader::bindBaseColorTexture(): the shader was not "
                  "created with base color texture enabled",
                  *this);
-  // TODO: remove this constraint after IBL is introduced.
-  if (lightCount_ != 0u) {
+  if (lightCount_ != 0u || flags_ & Flag::ImageBasedLighting) {
     texture.bind(pbrTextureUnitSpace::TextureUnit::BaseColor);
   }
   return *this;
@@ -262,8 +293,7 @@ PbrShader& PbrShader::bindMetallicRoughnessTexture(Mn::GL::Texture2D& texture) {
       "PbrShader::bindMetallicRoughnessTexture(): the shader was not "
       "created with metallicRoughness texture enabled.",
       *this);
-  // TODO: remove this constraint after IBL is introduced.
-  if (lightCount_ != 0u) {
+  if (lightCount_ != 0u || flags_ & Flag::ImageBasedLighting) {
     texture.bind(pbrTextureUnitSpace::TextureUnit::MetallicRoughness);
   }
   return *this;
@@ -274,8 +304,7 @@ PbrShader& PbrShader::bindNormalTexture(Mn::GL::Texture2D& texture) {
                  "PbrShader::bindNormalTexture(): the shader was not "
                  "created with normal texture enabled",
                  *this);
-  // TODO: remove this constraint after IBL is introduced.
-  if (lightCount_ != 0u) {
+  if (lightCount_ != 0u || flags_ & Flag::ImageBasedLighting) {
     texture.bind(pbrTextureUnitSpace::TextureUnit::Normal);
   }
   return *this;
@@ -288,6 +317,33 @@ PbrShader& PbrShader::bindEmissiveTexture(Mn::GL::Texture2D& texture) {
                  *this);
   // emissive texture does not depend on lights
   texture.bind(pbrTextureUnitSpace::TextureUnit::Emissive);
+  return *this;
+}
+
+PbrShader& PbrShader::bindIrradianceCubeMap(Mn::GL::CubeMapTexture& texture) {
+  CORRADE_ASSERT(flags_ & Flag::ImageBasedLighting,
+                 "PbrShader::bindIrradianceCubeMap(): the shader was not "
+                 "created with image based lighting enabled",
+                 *this);
+  texture.bind(pbrTextureUnitSpace::TextureUnit::IrradianceMap);
+  return *this;
+}
+
+PbrShader& PbrShader::bindBrdfLUT(Mn::GL::Texture2D& texture) {
+  CORRADE_ASSERT(flags_ & Flag::ImageBasedLighting,
+                 "PbrShader::bindBrdfLUT(): the shader was not "
+                 "created with image based lighting enabled",
+                 *this);
+  texture.bind(pbrTextureUnitSpace::TextureUnit::BrdfLUT);
+  return *this;
+}
+
+PbrShader& PbrShader::bindPrefilteredMap(Magnum::GL::CubeMapTexture& texture) {
+  CORRADE_ASSERT(flags_ & Flag::ImageBasedLighting,
+                 "PbrShader::bindPrefilteredMap(): the shader was not "
+                 "created with image based lighting enabled",
+                 *this);
+  texture.bind(pbrTextureUnitSpace::TextureUnit::PrefilteredMap);
   return *this;
 }
 
@@ -318,9 +374,17 @@ PbrShader& PbrShader::setObjectId(unsigned int objectId) {
   return *this;
 }
 
+PbrShader& PbrShader::setPrefilteredMapMipLevels(unsigned int mipLevels) {
+  CORRADE_ASSERT(flags_ & Flag::ImageBasedLighting,
+                 "PbrShader::setPrefilteredMapMipLevels(): the shader was not "
+                 "created with image based lighting enabled",
+                 *this);
+  setUniform(prefilteredMapMipLevelsUniform_, mipLevels);
+  return *this;
+}
+
 PbrShader& PbrShader::setBaseColor(const Mn::Color4& color) {
-  // TODO: remove this constraint after IBL is introduced.
-  if (lightCount_ != 0u) {
+  if (lightCount_ != 0u || flags_ & Flag::ImageBasedLighting) {
     setUniform(baseColorUniform_, color);
   }
   return *this;
@@ -332,18 +396,29 @@ PbrShader& PbrShader::setEmissiveColor(const Magnum::Color3& color) {
 }
 
 PbrShader& PbrShader::setRoughness(float roughness) {
-  // TODO: remove this constraint after IBL is introduced.
-  if (lightCount_ != 0u) {
+  if (lightCount_ != 0u || flags_ & Flag::ImageBasedLighting) {
     setUniform(roughnessUniform_, roughness);
   }
   return *this;
 }
 
 PbrShader& PbrShader::setMetallic(float metallic) {
-  // TODO: remove this constraint after IBL is introduced.
-  if (lightCount_ != 0u) {
+  if (lightCount_ != 0u || flags_ & Flag::ImageBasedLighting) {
     setUniform(metallicUniform_, metallic);
   }
+  return *this;
+}
+
+PbrShader& PbrShader::setPbrEquationScales(const PbrEquationScales& scales) {
+  setUniform(scaleDirectDiffuseUniform_, scales.DirectDiffuse);
+  setUniform(scaleDirectSpecularUniform_, scales.DirectSpecular);
+  setUniform(scaleIblDiffuseUniform_, scales.IblDiffuse);
+  setUniform(scaleIblSpecularUniform_, scales.IblSpecular);
+  return *this;
+}
+
+PbrShader& PbrShader::setDebugDisplay(PbrDebugDisplay index) {
+  setUniform(pbrDebugDisplayUniform_, int(index));
   return *this;
 }
 
@@ -459,8 +534,8 @@ PbrShader& PbrShader::setNormalTextureScale(float scale) {
                  "PbrShader::setNormalTextureScale(): the shader was not "
                  "created with normal texture enabled",
                  *this);
-  // TODO: remove this constraint after IBL is introduced.
-  if ((flags_ & Flag::NormalTextureScale) && (lightCount_ != 0u)) {
+  if ((flags_ & Flag::NormalTextureScale) &&
+      (lightCount_ != 0u || flags_ & Flag::ImageBasedLighting)) {
     setUniform(normalTextureScaleUniform_, scale);
   }
   return *this;
