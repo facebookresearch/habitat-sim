@@ -12,6 +12,8 @@
 
 #include "URDFParser.h"
 #include "esp/core/logging.h"
+#include "esp/io/io.h"
+#include "esp/io/json.h"
 
 #include "tinyxml2/tinyxml2.h"
 
@@ -99,6 +101,62 @@ void Model::setMassScaling(float massScaling) {
 
   m_massScaling = massScaling;
 }
+
+bool Model::loadJsonAttributes(const std::string& filename) {
+  // rebuild name
+  namespace CrUt = Corrade::Utility;
+  namespace CrUtDir = CrUt::Directory;
+  const std::string jsonName = CrUt::formatString(
+      "{}.ao_config.json",
+      CrUtDir::splitExtension(CrUtDir::splitExtension(filename).first).first);
+
+  if (!CrUtDir::exists(jsonName)) {
+    // file does not exists, so no Json configuration defined for this Model.
+    return false;
+  }
+  std::unique_ptr<io::JsonDocument> docConfig{};
+  try {
+    docConfig = std::make_unique<io::JsonDocument>(io::parseJsonFile(jsonName));
+  } catch (...) {
+    ESP_ERROR() << "<Model> : Failed to parse" << jsonName << "as JSON.";
+    return false;
+  }
+  // convert doc to const Json Generic val
+  const io::JsonGenericValue jsonConfig = docConfig->GetObject();
+
+  const std::string subGroupName = "user_defined";
+  const char* sg_cstr = subGroupName.c_str();
+  // JSON file exists and has been loaded; use to build this model's
+  // configuration attributes
+  jsonAttributes_ = std::make_shared<esp::core::config::Configuration>();
+
+  // check for user defined attributes and verify it is an object
+  if (jsonConfig.HasMember(sg_cstr)) {
+    if (!jsonConfig[sg_cstr].IsObject()) {
+      ESP_WARNING()
+          << "<Model> : Json Config file specifies user_defined attributes but "
+             "they are not of the correct format. Skipping user_defined "
+             "config load.";
+      return false;
+    }
+
+    // get pointer to user_defined subgroup configuration
+    std::shared_ptr<core::config::Configuration> subGroupPtr =
+        jsonAttributes_->getSubconfigCopy(subGroupName);
+    // get json object referenced by tag subGroupName
+    const io::JsonGenericValue& jsonObj = jsonConfig[subGroupName.c_str()];
+    // count number of valid user config settings found
+    int numConfigSettings = io::loadJsonIntoConfiguration(jsonObj, subGroupPtr);
+
+    // save as user_defined subgroup configuration
+    jsonAttributes_->setSubconfigPtr(subGroupName, subGroupPtr);
+
+    return (numConfigSettings > 0);
+  }  // if has user_defined tag
+  ESP_WARNING() << "<Model> : Json Config file exists but \"" << subGroupName
+                << "\" tag not found within file.";
+  return false;
+}  // Model::loadJsonAttributes
 
 bool Parser::parseURDF(std::shared_ptr<Model>& urdfModel,
                        const std::string& filename) {
@@ -224,6 +282,13 @@ bool Parser::parseURDF(std::shared_ptr<Model>& urdfModel,
 
   ESP_VERY_VERBOSE() << "Done parsing URDF for" << filename;
 
+  // attempt to load JSON config for this Model
+  if (urdfModel->loadJsonAttributes(filename)) {
+    ESP_VERY_VERBOSE() << "Loading JSON Attributes successful for this model.";
+  } else {
+    ESP_VERY_VERBOSE()
+        << "No extra JSON configuration data found for this model.";
+  }
   return true;
 }
 
