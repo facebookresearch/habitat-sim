@@ -304,9 +304,9 @@ int PhysicsManager::addArticulatedObjectInstance(
   existingArticulatedObjects_.at(aObjID)->setSceneInstanceAttr(
       aObjInstAttributes);
 
-  // set articulated object's user-defined attributes, if any exist in scene
+  // merge articulated object's user-defined attributes, if any exist in scene
   // instance.
-  existingArticulatedObjects_.at(aObjID)->setUserAttributes(
+  existingArticulatedObjects_.at(aObjID)->mergeUserAttributes(
       aObjInstAttributes->getUserConfiguration());
 
   // set articulated object's location, rotation and other pertinent state
