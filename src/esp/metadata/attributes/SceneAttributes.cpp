@@ -42,8 +42,8 @@ std::string SceneObjectInstanceAttributes::getCurrShaderTypeName() const {
 }
 
 std::string SceneObjectInstanceAttributes::getObjectInfoHeaderInternal() const {
-  return "Translation XYZ, Rotation XYZW, Motion Type, Shader Type, Uniform "
-         "Scale, Mass Scale, Translation Origin, " +
+  return "Translation XYZ,Rotation XYZW,Motion Type,Shader Type,Uniform "
+         "Scale,Mass Scale,Translation Origin," +
          getSceneObjInstanceInfoHeaderInternal();
 }
 
@@ -66,38 +66,36 @@ SceneAOInstanceAttributes::SceneAOInstanceAttributes(const std::string& handle)
 
 std::string SceneAOInstanceAttributes::getSceneObjInstanceInfoHeaderInternal()
     const {
-  std::string initPoseHdr;
+  std::string infoHdr{"Is Fixed Base?,"};
   int iter = 0;
   for (const auto& it : initJointPose_) {
-    initPoseHdr.append(
-        Cr::Utility::formatString("Init Pose {},", std::to_string(iter++)));
+    Cr::Utility::formatInto(infoHdr, infoHdr.size(), "Init Pose {},",
+                            std::to_string(iter++));
   }
-  std::string initVelHdr;
   iter = 0;
   for (const auto& it : initJointPose_) {
-    initVelHdr.append(
-        Cr::Utility::formatString("Init Vel {},", std::to_string(iter++)));
+    Cr::Utility::formatInto(infoHdr, infoHdr.size(), "Init Vel {},",
+                            std::to_string(iter++));
   }
-  return Cr::Utility::formatString("Is Fixed Base?, {} {}", initPoseHdr,
-                                   initVelHdr);
+  return infoHdr;
 }  // SceneAOInstanceAttributes::getSceneObjInstanceInfoHeaderInternal
 
 std::string SceneAOInstanceAttributes::getSceneObjInstanceInfoInternal() const {
-  std::string initJointPose{"["};
+  std::string initPoseStr{"["};
+  Cr::Utility::formatInto(initPoseStr, initPoseStr.size(), "{},",
+                          getAsString("fixed_base"));
   for (const auto& it : initJointPose_) {
-    initJointPose.append(
-        Cr::Utility::formatString("{},", std::to_string(it.second)));
+    Cr::Utility::formatInto(initPoseStr, initPoseStr.size(), "{},",
+                            std::to_string(it.second));
   }
-  initJointPose.append("]");
-  std::string initJointVels{"["};
+  Cr::Utility::formatInto(initPoseStr, initPoseStr.size(), "],[");
   for (const auto& it : initJointPose_) {
-    initJointVels.append(
-        Cr::Utility::formatString("{},", std::to_string(it.second)));
+    Cr::Utility::formatInto(initPoseStr, initPoseStr.size(), "{},",
+                            std::to_string(it.second));
   }
-  initJointVels.append("]");
+  Cr::Utility::formatInto(initPoseStr, initPoseStr.size(), "]");
 
-  return Cr::Utility::formatString("{},{},{},", getAsString("fixed_base"),
-                                   initJointPose, initJointVels);
+  return initPoseStr;
 }  // SceneAOInstanceAttributes::getSceneObjInstanceInfoInternal()
 
 SceneAttributes::SceneAttributes(const std::string& handle)
@@ -114,7 +112,7 @@ std::string SceneAttributes::getObjectInfoInternal() const {
   // default translation origin
 
   std::string res = Cr::Utility::formatString(
-      "\nDefault Translation Origin, Default Lighting,Navmesh Handle,Semantic "
+      "\nDefault Translation Origin,Default Lighting,Navmesh Handle,Semantic "
       "Scene Descriptor Handle,\n{},{},{},{}\nStage Instance Info :\n{}\n{}\n",
       getTranslationOriginName(getTranslationOrigin()), getLightingHandle(),
       getNavmeshHandle(), getSemanticSceneHandle(),
@@ -125,10 +123,10 @@ std::string SceneAttributes::getObjectInfoInternal() const {
   for (const auto& objInst : objectInstances_) {
     if (iter == 0) {
       ++iter;
-      res.append(Cr::Utility::formatString("Object Instance Info :\n{}\n",
-                                           objInst->getObjectInfoHeader()));
+      Cr::Utility::formatInto(res, res.size(), "Object Instance Info :\n{}\n",
+                              objInst->getObjectInfoHeader());
     }
-    res.append(Cr::Utility::formatString("{}\n", objInst->getObjectInfo()));
+    Cr::Utility::formatInto(res, res.size(), "{}\n", objInst->getObjectInfo());
   }
 
   // articulated object instance info
@@ -136,15 +134,17 @@ std::string SceneAttributes::getObjectInfoInternal() const {
   for (const auto& artObjInst : articulatedObjectInstances_) {
     if (iter == 0) {
       ++iter;
-      res.append(
-          Cr::Utility::formatString("Articulated Object Instance Info :\n{}\n",
-                                    artObjInst->getObjectInfoHeader()));
+      Cr::Utility::formatInto(res, res.size(),
+                              "Articulated Object Instance Info :\n{}\n",
+                              artObjInst->getObjectInfoHeader());
     }
-    res.append(Cr::Utility::formatString("{}\n", artObjInst->getObjectInfo()));
+    Cr::Utility::formatInto(res, res.size(), "{}\n",
+                            artObjInst->getObjectInfo());
   }
 
-  res.append(Cr::Utility::formatString("End of data for Scene Instance {}\n",
-                                       getSimplifiedHandle()));
+  Cr::Utility::formatInto(res, res.size(),
+                          "End of data for Scene Instance {}\n",
+                          getSimplifiedHandle());
   return res;
 }  // SceneAttributes::getObjectInfoInternal
 

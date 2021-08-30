@@ -314,8 +314,8 @@ class ObjectAttributes : public AbstractObjectAttributes {
    * @brief get AbstractObject specific info header
    */
   std::string getAbstractObjectInfoHeaderInternal() const override {
-    return "Mass, COM XYZ, I XX YY ZZ, Angular Damping, "
-           "Linear Damping, Semantic ID";
+    return "Mass,COM XYZ,I XX YY ZZ,Angular Damping,"
+           "Linear Damping,Semantic ID";
   }
   /**
    * @brief get AbstractObject specific info for csv string
@@ -401,7 +401,7 @@ class StageAttributes : public AbstractObjectAttributes {
    * @brief get AbstractObject specific info header
    */
   std::string getAbstractObjectInfoHeaderInternal() const override {
-    return "Navmesh Handle, Gravity XYZ, Origin XYZ, Light Setup,";
+    return "Navmesh Handle,Gravity XYZ,Origin XYZ,Light Setup,";
   }
 
   /**

@@ -141,7 +141,7 @@ class LightInstanceAttributes : public AbstractAttributes {
    */
 
   std::string getObjectInfoHeaderInternal() const override {
-    return "Position XYZ, Direction XYZ, Color RGB, Intensity, Light Type, "
+    return "Position XYZ,Direction XYZ,Color RGB,Intensity,Light Type,"
            "Light Position Model,";
   }
   /**

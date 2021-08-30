@@ -53,8 +53,8 @@ class PhysicsManagerAttributes : public AbstractAttributes {
    */
 
   std::string getObjectInfoHeaderInternal() const override {
-    return "Simulator Type, Timestep, Max Substeps, Gravity XYZ, Friction "
-           "Coefficient, Restitution Coefficient,";
+    return "Simulator Type,Timestep,Max Substeps,Gravity XYZ,Friction "
+           "Coefficient,Restitution Coefficient,";
   }
 
   /**

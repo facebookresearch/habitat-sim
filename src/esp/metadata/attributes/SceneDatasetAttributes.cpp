@@ -193,10 +193,11 @@ namespace {
 
 std::string concatStrings(const std::string& header,
                           const std::vector<std::string>& vec) {
-  std::string res =
-      Cr::Utility::formatString("\n{} : {} available.\n", header, vec.size());
+  // subtract 1 for header row
+  std::string res = Cr::Utility::formatString("\n{} : {} available.\n", header,
+                                              vec.size() - 1);
   for (const std::string& s : vec) {
-    res.append(Cr::Utility::formatString("{}\n", s));
+    Cr::Utility::formatInto(res, res.size(), "{}\n", s);
   }
   return res;
 }
@@ -206,7 +207,8 @@ std::string concatStrings(const std::string& header,
   std::string res =
       Cr::Utility::formatString("\n{} : {} available.\n", header, map.size());
   for (const auto& item : map) {
-    res.append(Cr::Utility::formatString("{}, {}\n", item.first, item.second));
+    Cr::Utility::formatInto(res, res.size(), "{}, {}\n", item.first,
+                            item.second);
   }
   return res;
 }
@@ -215,49 +217,54 @@ std::string concatStrings(const std::string& header,
 
 std::string SceneDatasetAttributes::getObjectInfoInternal() const {
   // provide a summary for all info for this scene dataset
-
   // scene instances
-  std::string sceneRes = concatStrings(
+  std::string res = concatStrings(
       "Scene Instances", sceneAttributesManager_->getObjectInfoStrings());
 
   // stages
-  std::string stageRes = concatStrings(
-      "Stage Templates", stageAttributesManager_->getObjectInfoStrings());
+  Cr::Utility::formatInto(
+      res, res.size(), "{}",
+      concatStrings("Stage Templates",
+                    stageAttributesManager_->getObjectInfoStrings()));
 
   // objects
-  std::string objRes = concatStrings(
-      "Object Templates", objectAttributesManager_->getObjectInfoStrings());
+  Cr::Utility::formatInto(
+      res, res.size(), "{}",
+      concatStrings("Object Templates",
+                    objectAttributesManager_->getObjectInfoStrings()));
 
   // articulated objects
-  std::string AObjRes =
-      concatStrings("Articulated Object Models", articulatedObjPaths);
+  Cr::Utility::formatInto(
+      res, res.size(), "{}",
+      concatStrings("Articulated Object Models", articulatedObjPaths));
 
   // lights
-  std::vector<std::string> lightAttrInfoAra =
-      lightLayoutAttributesManager_->getObjectInfoStrings();
-  std::string lightRes =
+  Cr::Utility::formatInto(
+      res, res.size(), "{}",
       concatStrings("Lighting Configurations",
-                    lightLayoutAttributesManager_->getObjectInfoStrings());
+                    lightLayoutAttributesManager_->getObjectInfoStrings()));
 
   // prims
-  std::string primRes = concatStrings(
-      "Primitives Templates", assetAttributesManager_->getObjectInfoStrings());
+  Cr::Utility::formatInto(
+      res, res.size(), "{}",
+      concatStrings("Primitives Templates",
+                    assetAttributesManager_->getObjectInfoStrings()));
 
   // navmesh
-  std::string navRes = concatStrings("Navmeshes", navmeshMap_);
+  Cr::Utility::formatInto(res, res.size(), "{}",
+                          concatStrings("Navmeshes", navmeshMap_));
   // SSD entries
-  std::string ssdRes =
-      concatStrings("Semantic Scene Descriptors", semanticSceneDescrMap_);
+  Cr::Utility::formatInto(
+      res, res.size(), "{}",
+      concatStrings("Semantic Scene Descriptors", semanticSceneDescrMap_));
 
-  return Cr::Utility::formatString("{}{}{}{}{}{}{}{}", sceneRes, stageRes,
-                                   objRes, AObjRes, lightRes, primRes, navRes,
-                                   ssdRes);
+  return res;
 }
 
 std::string SceneDatasetAttributes::getDatasetSummaryHeader() {
-  return "Dataset Name, Scene Instance Templates, Stage Templates, Object "
-         "Templates, Articulated Object Paths, Lighting Templates, Primitive "
-         "Templates, Navmesh Entries, Semantic Scene Descriptor Entries,";
+  return "Dataset Name,Scene Instance Templates,Stage Templates,Object "
+         "Templates,Articulated Object Paths,Lighting Templates,Primitive "
+         "Templates,Navmesh Entries,Semantic Scene Descriptor Entries,";
 }
 
 std::string SceneDatasetAttributes::getDatasetSummary() const {
