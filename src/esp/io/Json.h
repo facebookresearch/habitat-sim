@@ -68,11 +68,14 @@ int loadJsonIntoConfiguration(
 
 /**
  * @brief Recursively traverse passed @ref esp::core::Configuration to write all
- * values into a JSON document.
+ * values into a JSON document, and save this document to the passed @p
+ * filename.
+ * @param filename The fully qualified filename to save the document to.
  * @param configPtr Shared pointer to configuration to read into JSON document
- * @return JSON document populated with values from Configuration.
+ * @return Whether successful or not.
  */
-JsonGenericValue buildJsonFromConfiguration(
+bool writeConfigurationToJsonFile(
+    const std::string& filename,
     const std::shared_ptr<esp::core::config::Configuration>& configPtr);
 
 /**

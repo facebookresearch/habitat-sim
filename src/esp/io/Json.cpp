@@ -121,8 +121,30 @@ int loadJsonIntoConfiguration(
   return numConfigSettings;
 }  // loadJsonIntoConfigSubgroup
 
-JsonGenericValue buildJsonFromConfiguration(
-    const std::shared_ptr<esp::core::config::Configuration>& configPtr) {}
+bool writeConfigurationToJsonFile(
+    const std::string& filename,
+    const std::shared_ptr<esp::core::config::Configuration>& configPtr) {
+  rapidjson::Document doc(rapidjson::kObjectType);
+  rapidjson::Document::AllocatorType& allocator = doc.GetAllocator();
+  // construct jsonObject holding all Configuration values and add it to doc
+
+  // esp/io/libio.a(JsonEspTypes.cpp.o): In function `bool
+  //       esp::io::readMember<esp::geo::CoordinateFrame>(rapidjson::GenericValue<rapidjson::UTF8<char>,
+  //       rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> > const&,
+  //       char const*, esp::geo::CoordinateFrame&)':
+  // JsonEspTypes.h:102: undefined reference to
+  // `esp::geo::CoordinateFrame::CoordinateFrame(Eigen::Matrix<float, 3, 1, 0,
+  // 3, 1> const&, Eigen::Matrix<float, 3, 1, 0, 3, 1> const&,
+  // Eigen::Matrix<float, 3, 1, 0, 3, 1> const&)'
+
+  // Uncommenting these lines causes the above linker error
+  // auto configJson = io::toJsonValue(configPtr, allocator);
+  // doc.AddMember("", configJson, allocator);
+
+  // save to file
+  bool success = writeJsonToFile(doc, filename, true, 7);
+  return success;
+}  // buildJsonFromConfiguration
 
 JsonDocument parseJsonFile(const std::string& file) {
   FILE* pFile = fopen(file.c_str(), "rb");

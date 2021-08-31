@@ -14,6 +14,7 @@
 
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
 #include "esp/core/Esp.h"
+#include "esp/core/Configuration.h"
 #include "esp/gfx/replay/Keyframe.h"
 
 namespace esp {
@@ -39,6 +40,26 @@ inline bool fromJsonValue(const JsonGenericValue& obj, esp::vec3f& val) {
   }
   return false;
 }
+
+/**
+ * @brief Overload to convert a @ref core::config::Configuration to a Json
+ * document
+ * @param config The configuration to build the Json from
+ * @param allocator The owning document's allocator.
+ * @return The Json object holding the data from the configuration
+ */
+JsonGenericValue toJsonValue(
+    const std::shared_ptr<core::config::Configuration>& configPtr,
+    JsonAllocator& allocator);
+
+/**
+ * @brief Overload to convert a @ref core::config::ConfigValue to a
+ * Json document
+ * @param cfgVal The @ref core::config::ConfigValue we want to save in Json
+ * @param allocator Allocator for realloc mem.
+ */
+JsonGenericValue toJsonValue(const core::config::ConfigValue& cfgVal,
+                             JsonAllocator& allocator);
 
 inline JsonGenericValue toJsonValue(
     const esp::assets::PhongMaterialColor& material,

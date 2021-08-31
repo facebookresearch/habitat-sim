@@ -430,14 +430,8 @@ bool AttributesManager<T, Access>::saveManagedObjectToFileInternal(
   }
   // construct fully qualified filename
   std::string fullFilename = FileUtil::join(fileDirectory, filename);
-  // TODO Build and save JSON file from managedObject
-  std::unique_ptr<io::JsonDocument> jsonDocument{};
-
-  io::JsonGenericValue JsonCell = io::buildJsonFromConfiguration(attribs);
-  // jsonDocument->SetObject(JsonCell);
-  // want to use pretty writer since we wish for the file to be human
-  // readable.
-  bool success = esp::io::writeJsonToFile(*jsonDocument, fullFilename, true, 7);
+  // write configuration to file
+  bool success = io::writeConfigurationToJsonFile(fullFilename, attribs);
 
   return success;
 
