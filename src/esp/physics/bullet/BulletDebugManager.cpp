@@ -13,14 +13,6 @@
 namespace esp {
 namespace physics {
 
-std::string BulletDebugManager::getCollisionObjectName(
-    const btCollisionObject* colObj) {
-  if (collisionObjectToDebugName_.count(colObj)) {
-    return collisionObjectToDebugName_[colObj];
-  }
-  return "Unknown";
-}
-
 void BulletDebugManager::mapCollisionObjectTo(const btCollisionObject* colObj,
                                               const std::string& debugName) {
   collisionObjectToDebugName_[colObj] = debugName;
@@ -72,6 +64,17 @@ void BulletDebugManager::processActiveManifolds(
       func(colObj0, colObj1, manifold);
     }
   }
+}
+
+std::string BulletDebugManager::getCollisionObjectName(
+    const btCollisionObject* colObj) {
+  return getDebugStringForCollisionObject(colObj);
+#if 0
+  if (collisionObjectToDebugName_.count(colObj)) {
+    return collisionObjectToDebugName_[colObj];
+  }
+  return "Unknown";
+#endif
 }
 
 std::string BulletDebugManager::getDebugStringForCollisionObject(
