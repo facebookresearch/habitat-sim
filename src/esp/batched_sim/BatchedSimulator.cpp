@@ -12,6 +12,8 @@
 
 #include <iostream>
 
+#include <mutex>
+
 namespace esp {
 namespace batched_sim {
 
@@ -297,10 +299,6 @@ Robot::Robot(const std::string& filepath, esp::sim::Simulator* sim) {
       sim->getArticulatedObjectManager()->addBulletArticulatedObjectFromURDF(
           filepath);
 
-  // temp
-  bool result = managedObj->contactTest();
-  ESP_DEBUG() << "contactTest result: " << result;
-
   artObj = static_cast<esp::physics::BulletArticulatedObject*>(
       managedObj->hackGetBulletObjectReference().get());
   sceneMapping = BpsSceneMapping::loadFromFile(
@@ -339,9 +337,9 @@ Robot::Robot(const std::string& filepath, esp::sim::Simulator* sim) {
 }
 
 BpsWrapper::BpsWrapper() {
-  uint32_t numEnvs = 1;  // todo: get from python
-  glm::u32vec2 out_dim(512,
-                       512);  // see also rollout_test.py, python/rl/agent.py
+  uint32_t numEnvs = 128;  // todo: get from python
+  glm::u32vec2 out_dim(256,
+                       256);  // see also rollout_test.py, python/rl/agent.py
 
   renderer_ = std::make_unique<bps3D::Renderer>(bps3D::RenderConfig{
       0, 1, numEnvs, out_dim.x, out_dim.y, false,
@@ -545,7 +543,8 @@ RewardCalculationContext::RewardCalculationContext(const Robot* robot,
                                                    RolloutRecord* rollouts)
     : robot_(robot), numEnvs_(numEnvs), rollouts_(rollouts) {
   esp::sim::SimulatorConfiguration simConfig{};
-  simConfig.activeSceneName = "NONE";  // todo: ReplicaCAD stage
+  simConfig.activeSceneName =
+      "data/stages/Stage_v3_sc0_staging_no_textures.glb";
   simConfig.enablePhysics = true;
   simConfig.createRenderer = false;
   simConfig.loadRenderAssets =
@@ -561,9 +560,6 @@ RewardCalculationContext::RewardCalculationContext(const Robot* robot,
                         ->addBulletArticulatedObjectFromURDF(filepath);
   artObj_ = static_cast<esp::physics::BulletArticulatedObject*>(
       managedObj->hackGetBulletObjectReference().get());
-
-  bool result = managedObj->contactTest();
-  ESP_DEBUG() << "contactTest result: " << result;
 }
 
 void RewardCalculationContext::calcRewards(int currRolloutStep,
@@ -617,10 +613,10 @@ void RewardCalculationContext::calcRewards(int currRolloutStep,
     artObj->updateAabbs();
 
     bool isContact = artObj->contactTest();
-
-    if (isContact) {
-      ESP_WARNING() << "collision, step " << currRolloutStep << ", env " << b;
-    }
+    // if (isContact) {
+    //   ESP_WARNING() << "collision, step " << currRolloutStep << ", env " <<
+    //   b;
+    // }
 
     rewards[b] = isContact ? -1.f : 1.f;
   }
@@ -648,6 +644,114 @@ RolloutRecord::RolloutRecord(int numRolloutSteps,
 
   rewards_.resize(numRolloutSteps * numEnvs, NAN);
 }
+
+#if 0
+class ThreadPool {
+
+  struct Job {
+    int currRolloutStep,
+    int bStart,
+    int bEnd
+  };
+
+  void createThreadPool();
+  void loopFunction(int workerThread);
+  void onResetRollouts() {
+    {
+      unique_lock<mutex> lock(threadpool_mutex_);
+      CORRADE_INTERNAL_ASSERT(jobStack_.empty());
+      // todo: assert not waiting for jobs to finish
+    }
+    numQueuedSteps_ = 0;
+  }
+
+  std::mutex threadpool_mutex_;
+  bool terminate_pool_; // protect with mutex
+
+  std::vector<Job> jobStack_;
+  std::vector<RewardCalculationContext> rewardContextPerThread_;
+  int numQueuedSteps_ = 0;
+  int numActiveJobs_ = 0; // protect with mutex
+};
+
+
+void ThreadPool::createThreadPool() {
+  int numThreads = thread::hardware_concurrency();
+  vector<thread> pool;
+  for(int ii = 0; ii < numThreads; ii++) {
+    pool.push_back(thread(ThreadPool::loopFunction, ii));
+  }
+}
+
+// runs on main thread
+void ThreadPool::tryQueueWork(int currRolloutStep) {
+
+  // todo: check for off-by-one
+  if (currRolloutStep == numQueuedSteps_) {
+    return;
+  }
+
+  {
+    unique_lock<mutex> lock(threadpool_mutex_);
+    while (currRolloutStep > numQueuedSteps_) {
+      // temp: for now, queue all envs for one step as single job
+      jobStack_.push_back(Job{numQueuedSteps_, 0, numEnvs_});
+      numQueuedSteps_++;
+    }
+
+
+}
+
+void ThreadPool::~ThreadPool() {
+{
+  {
+    unique_lock<mutex> lock(threadpool_mutex_);
+    terminate_pool_ = true; // use this flag in condition.wait
+  }
+  condition.notify_all(); // wake up all threads.
+
+  // Join all threads.
+  for(std::thread &every_thread : thread_vector) {
+    every_thread.join();
+  }
+
+  thread_vector.clear();
+  stopped = true; // use this flag in destructor, if not set, call shutdown()
+
+}
+
+void issueCalculateRewardJobs() {
+
+  Pool_Obj.Add_Job(std::bind(&Some_Class::Some_Method, &Some_object));
+
+}
+
+void ThreadPool::loopFunction(int threadIndex)
+{
+  while(true)
+  {
+    {
+        unique_lock<mutex> lock(threadpool_mutex_);
+        condition.wait(lock, [this](){return !Queue.empty() || terminate_pool_;});
+        if (terminate_pool_) {
+          break;
+        }
+        Job = Queue.front();
+        Queue.pop();
+    }
+    Job(); // function<void()> type
+  }
+};
+
+void The_Pool::Add_Job(function<void()> New_Job)
+{
+    {
+         unique_lock<mutex> lock(Queue_Mutex);
+         Queue.push(New_Job);
+    }
+    condition.notify_one();
+}
+#endif
 
 }  // namespace batched_sim
 }  // namespace esp
