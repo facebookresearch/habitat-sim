@@ -185,8 +185,8 @@ std::string ConfigValue::getAsString() const {
     case ConfigStoredType::MagnumQuat: {
       auto q = get<Mn::Quaternion>();
       auto qv = q.vector();
-      return Cr::Utility::formatString("[{} {} {}] {}", qv.x(), qv.y(), qv.z(),
-                                       q.scalar());
+      return Cr::Utility::formatString("{} [{} {} {}]", q.scalar(), qv.x(),
+                                       qv.y(), qv.z());
     }
     case ConfigStoredType::MagnumRad: {
       auto r = get<Mn::Rad>();

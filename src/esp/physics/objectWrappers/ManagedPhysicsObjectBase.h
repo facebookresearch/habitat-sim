@@ -267,7 +267,7 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
    * info returned for this managed object.
    */
   std::string getObjectInfoHeader() const override {
-    return "Type, Name, ID, Translation XYZ, Rotation XYZW, " +
+    return "Type, Name, ID, Translation XYZ, Rotation W[XYZ], " +
            getPhyObjInfoHeaderInternal();
   }
 
