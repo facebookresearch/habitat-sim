@@ -79,6 +79,28 @@ bool writeConfigurationToJsonFile(
     const std::shared_ptr<esp::core::config::Configuration>& configPtr);
 
 /**
+ * @brief Convert a @ref core::config::Configuration to a Json
+ * document.  Unable to use toJsonValue<> paradigm due to link errors/cyclic
+ * deps.
+ * @param config The configuration to build the Json from
+ * @param allocator The owning document's allocator.
+ * @return The Json object holding the data from the configuration
+ */
+JsonGenericValue configToJsonValue(
+    const std::shared_ptr<core::config::Configuration>& configPtr,
+    JsonAllocator& allocator);
+
+/**
+ * @brief Convert a @ref core::config::ConfigValue to a
+ * Json document.  Unable to use toJsonValue<> paradigm due to link
+ * errors/cyclic deps.
+ * @param cfgVal The @ref core::config::ConfigValue we want to save in Json
+ * @param allocator Allocator for realloc mem.
+ */
+JsonGenericValue cfgValToJsonValue(const core::config::ConfigValue& cfgVal,
+                                   JsonAllocator& allocator);
+
+/**
  * @brief Check passed json doc for existence of passed jsonTag as value of
  * type T. If present, populate passed setter with value. Returns
  * whether tag is found and successfully populated, or not. Logs an error if

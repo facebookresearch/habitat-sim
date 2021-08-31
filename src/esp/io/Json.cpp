@@ -121,25 +121,81 @@ int loadJsonIntoConfiguration(
   return numConfigSettings;
 }  // loadJsonIntoConfigSubgroup
 
+JsonGenericValue configToJsonValue(
+    const std::shared_ptr<core::config::Configuration>& configPtr,
+    JsonAllocator& allocator) {
+  JsonGenericValue jsonObj(rapidjson::kObjectType);
+  // iterate through all values
+  // pair of begin/end const iterators to all values
+  auto valIterPair = configPtr->getValuesIterator();
+  auto valBegin = valIterPair.first;
+  auto valEnd = valIterPair.second;
+  for (auto& valIter = valIterPair.first; valIter != valIterPair.second;
+       ++valIter) {
+    if (valIter->second.isValid()) {
+      // make sure value is legal
+      rapidjson::GenericStringRef<char> name{valIter->first.c_str()};
+      auto jsonVal = cfgValToJsonValue(valIter->second, allocator);
+      jsonObj.AddMember(name, jsonVal, allocator);
+    } else {
+      ESP_WARNING() << "Unitialized ConfigValue in Configuration @ key ["
+                    << valIter->first << "]";
+    }
+  }  // iterate through all values
+
+  // iterate through subconfigs
+  // pair of begin/end const iterators to all subconfigurations
+  auto cfgIterPair = configPtr->getSubconfigIterator();
+  for (auto& cfgIter = cfgIterPair.first; cfgIter != cfgIterPair.second;
+       ++cfgIter) {
+    rapidjson::GenericStringRef<char> name{cfgIter->first.c_str()};
+    JsonGenericValue subObj = configToJsonValue(cfgIter->second, allocator);
+    jsonObj.AddMember(name, subObj, allocator);
+  }  // iterate through all configurations
+
+  return jsonObj;
+}  // toJsonValue<core::config::Configuration>
+
+JsonGenericValue cfgValToJsonValue(const core::config::ConfigValue& cfgVal,
+                                   JsonAllocator& allocator) {
+  // unknown is checked before this function is called, so does not need support
+  switch (cfgVal.getType()) {
+    case core::config::ConfigStoredType::Boolean: {
+      return toJsonValue(cfgVal.get<bool>(), allocator);
+    }
+    case core::config::ConfigStoredType::Integer: {
+      return toJsonValue(cfgVal.get<int>(), allocator);
+    }
+    case core::config::ConfigStoredType::Double: {
+      return toJsonValue(cfgVal.get<double>(), allocator);
+    }
+    case core::config::ConfigStoredType::MagnumVec3: {
+      return toJsonValue(cfgVal.get<Magnum::Vector3>(), allocator);
+    }
+    case core::config::ConfigStoredType::MagnumQuat: {
+      return toJsonValue(cfgVal.get<Magnum::Quaternion>(), allocator);
+    }
+    case core::config::ConfigStoredType::MagnumRad: {
+      auto r = cfgVal.get<Magnum::Rad>();
+      return toJsonValue((r.operator float()), allocator);
+    }
+    case core::config::ConfigStoredType::String: {
+      return toJsonValue(cfgVal.get<std::string>(), allocator);
+    }
+    default:
+      CORRADE_ASSERT_UNREACHABLE(
+          "Unknown/unsupported Type in io::toJsonValue<ConfigValue>", {});
+  }
+}  // toJsonValue<core::config::ConfigValue>
+
 bool writeConfigurationToJsonFile(
     const std::string& filename,
     const std::shared_ptr<esp::core::config::Configuration>& configPtr) {
   rapidjson::Document doc(rapidjson::kObjectType);
   rapidjson::Document::AllocatorType& allocator = doc.GetAllocator();
-  // construct jsonObject holding all Configuration values and add it to doc
-
-  // esp/io/libio.a(JsonEspTypes.cpp.o): In function `bool
-  //       esp::io::readMember<esp::geo::CoordinateFrame>(rapidjson::GenericValue<rapidjson::UTF8<char>,
-  //       rapidjson::MemoryPoolAllocator<rapidjson::CrtAllocator> > const&,
-  //       char const*, esp::geo::CoordinateFrame&)':
-  // JsonEspTypes.h:102: undefined reference to
-  // `esp::geo::CoordinateFrame::CoordinateFrame(Eigen::Matrix<float, 3, 1, 0,
-  // 3, 1> const&, Eigen::Matrix<float, 3, 1, 0, 3, 1> const&,
-  // Eigen::Matrix<float, 3, 1, 0, 3, 1> const&)'
-
-  // Uncommenting these lines causes the above linker error
-  // auto configJson = io::toJsonValue(configPtr, allocator);
-  // doc.AddMember("", configJson, allocator);
+  // build Json from passed Configuration
+  auto configJson = configToJsonValue(configPtr, allocator);
+  doc.AddMember("", configJson, allocator);
 
   // save to file
   bool success = writeJsonToFile(doc, filename, true, 7);
