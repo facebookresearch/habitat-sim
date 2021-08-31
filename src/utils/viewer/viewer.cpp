@@ -74,6 +74,8 @@ namespace Mn = Magnum;
 
 namespace {
 
+esp::physics::ManagedArticulatedObject::ptr g_ao;
+
 //! return current time as string in format
 //! "year_month_day_hour-minutes-seconds"
 std::string getCurrentTimeString() {
@@ -1246,6 +1248,18 @@ void Viewer::drawEvent() {
     timeSinceLastSimulation = fmod(timeSinceLastSimulation, 1.0 / 60.0);
   }
 
+  {
+    static int counter = 0;
+    counter++;
+    if (counter % 30 == 0) {
+      // temp
+      if (g_ao) {
+        bool result = g_ao->contactTest();
+        ESP_DEBUG() << "contactTest result: " << result;
+      }
+    }
+  }
+
   uint32_t visibles = renderCamera_->getPreviousNumVisibleDrawables();
 
   if (visualizeMode_ == VisualizeMode::Depth ||
@@ -1929,6 +1943,11 @@ void Viewer::keyPressEvent(KeyEvent& event) {
         ao->setTranslation(
             defaultAgent_->node().transformation().transformPoint(
                 {0, 1.0, -1.5}));
+
+        // temp
+        bool result = ao->contactTest();
+        g_ao = ao;
+        ESP_DEBUG() << "contactTest result: " << result;
       }
     } break;
     case KeyEvent::Key::L: {
