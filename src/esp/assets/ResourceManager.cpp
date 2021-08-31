@@ -225,7 +225,7 @@ bool ResourceManager::loadStage(
   // set equal to current Simulator::activeSemanticSceneID_ value
   int activeSemanticSceneID = activeSceneIDs[0];
   // if semantic scene load is requested and possible
-  if (assetInfoMap.count("semantic") != 0u) {
+  if (getLoadRenderAssets() && assetInfoMap.count("semantic") != 0u) {
     // check if file names exist
     AssetInfo semanticInfo = assetInfoMap.at("semantic");
     auto semanticStageFilename = semanticInfo.filepath;
@@ -268,7 +268,7 @@ bool ResourceManager::loadStage(
                   << semanticStageFilename << "does not exist.";
     }
   } else {  // not wanting to create semantic mesh
-    ESP_DEBUG() << "Not loading semantic mesh";
+    ESP_DEBUG() << "Not loading stage semantic render asset";
   }
 
   if (forceSeparateSemanticSceneGraph &&
@@ -282,31 +282,37 @@ bool ResourceManager::loadStage(
   activeSceneIDs[1] = activeSemanticSceneID;
   const bool isSeparateSemanticScene = activeSceneIDs[1] != activeSceneIDs[0];
 
-  auto& sceneGraph = sceneManagerPtr->getSceneGraph(activeSceneIDs[0]);
-  auto& rootNode = sceneGraph.getRootNode();
-  auto& drawables = sceneGraph.getDrawables();
-
   AssetInfo renderInfo = assetInfoMap.at("render");
 
-  RenderAssetInstanceCreationInfo::Flags flags;
-  flags |= RenderAssetInstanceCreationInfo::Flag::IsStatic;
-  flags |= RenderAssetInstanceCreationInfo::Flag::IsRGBD;
-  if (!isSeparateSemanticScene) {
-    flags |= RenderAssetInstanceCreationInfo::Flag::IsSemantic;
-  }
-  RenderAssetInstanceCreationInfo renderCreation(
-      renderInfo.filepath, Cr::Containers::NullOpt, flags, renderLightSetupKey);
-  ESP_DEBUG() << "Start load render asset" << renderInfo.filepath << ".";
+  if (getLoadRenderAssets()) {
+    auto& sceneGraph = sceneManagerPtr->getSceneGraph(activeSceneIDs[0]);
+    auto& rootNode = sceneGraph.getRootNode();
+    auto& drawables = sceneGraph.getDrawables();
 
-  bool renderMeshSuccess = loadStageInternal(renderInfo,  // AssetInfo
-                                             &renderCreation,
-                                             &rootNode,    // parent scene node
-                                             &drawables);  //  drawable group
-  if (!renderMeshSuccess) {
-    ESP_ERROR()
-        << "Stage render mesh load failed, Aborting scene initialization.";
-    return false;
+    RenderAssetInstanceCreationInfo::Flags flags;
+    flags |= RenderAssetInstanceCreationInfo::Flag::IsStatic;
+    flags |= RenderAssetInstanceCreationInfo::Flag::IsRGBD;
+    if (!isSeparateSemanticScene) {
+      flags |= RenderAssetInstanceCreationInfo::Flag::IsSemantic;
+    }
+    RenderAssetInstanceCreationInfo renderCreation(renderInfo.filepath,
+                                                   Cr::Containers::NullOpt,
+                                                   flags, renderLightSetupKey);
+    ESP_DEBUG() << "Start load render asset" << renderInfo.filepath << ".";
+
+    bool renderMeshSuccess = loadStageInternal(renderInfo,  // AssetInfo
+                                               &renderCreation,
+                                               &rootNode,  // parent scene node
+                                               &drawables);  //  drawable group
+    if (!renderMeshSuccess) {
+      ESP_ERROR()
+          << "Stage render mesh load failed, Aborting scene initialization.";
+      return false;
+    }
+  } else {  // not wanting to create semantic mesh
+    ESP_DEBUG() << "Not loading stage rgb render asset";
   }
+
   // declare mesh group variable
   std::vector<CollisionMeshData> meshGroup;
   AssetInfo& infoToUse = renderInfo;
