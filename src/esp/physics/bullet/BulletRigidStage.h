@@ -33,6 +33,8 @@ class BulletRigidStage : public BulletBase, public RigidStage {
   ~BulletRigidStage() override;
 
  private:
+  std::string getCollisionDebugName(int subpartId);
+
   /**
    * @brief Finalize the initialization of this @ref RigidScene
    * geometry.  This holds bullet-specific functionality for stages.
