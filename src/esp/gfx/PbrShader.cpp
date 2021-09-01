@@ -41,6 +41,10 @@ namespace Cr = Corrade;
 namespace esp {
 namespace gfx {
 
+inline bool PbrShader::lightingIsEnabled() {
+  return (lightCount_ != 0u || flags_ & Flag::ImageBasedLighting);
+}
+
 PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     : flags_(originalFlags), lightCount_(lightCount) {
   if (!Cr::Utility::Resource::hasGroup("default-shaders")) {
@@ -66,7 +70,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   attributeLocationsStream << Cr::Utility::formatString(
       "#define ATTRIBUTE_LOCATION_NORMAL {}\n", Normal::Location);
   if ((flags_ & Flag::NormalTexture) && (flags_ & Flag::PrecomputedTangent) &&
-      (lightCount_ != 0u || flags_ & Flag::ImageBasedLighting)) {
+      lightingIsEnabled()) {
     attributeLocationsStream << Cr::Utility::formatString(
         "#define ATTRIBUTE_LOCATION_TANGENT4 {}\n", Tangent4::Location);
   }
@@ -140,7 +144,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
 #endif
   {
     bindAttributeLocation(Position::Location, "vertexPosition");
-    if (lightCount_ != 0u || flags_ & Flag::ImageBasedLighting) {
+    if (lightingIsEnabled()) {
       bindAttributeLocation(Normal::Location, "vertexNormal");
       if (flags_ & (Flag::NormalTexture | Flag::PrecomputedTangent)) {
         bindAttributeLocation(Tangent4::Location, "vertexTangent");
@@ -153,7 +157,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
 
   // set texture binding points in the shader;
   // see PBR vertex, fragment shader code for details
-  if (lightCount_ != 0u || flags_ & Flag::ImageBasedLighting) {
+  if (lightingIsEnabled()) {
     if (flags_ & Flag::BaseColorTexture) {
       setUniform(uniformLocation("BaseColorTexture"),
                  pbrTextureUnitSpace::TextureUnit::BaseColor);
@@ -215,7 +219,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   }
 
   if ((flags_ & Flag::NormalTexture) && (flags_ & Flag::NormalTextureScale) &&
-      (lightCount_ != 0u || flags_ & Flag::ImageBasedLighting)) {
+      lightingIsEnabled()) {
     normalTextureScaleUniform_ = uniformLocation("NormalTextureScale");
   }
 
@@ -240,7 +244,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   setViewMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
   setModelMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
   setProjectionMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
-  if (lightCount_ != 0u || flags_ & Flag::ImageBasedLighting) {
+  if (lightingIsEnabled()) {
     setBaseColor(Magnum::Color4{0.7f});
     setRoughness(0.9f);
     setMetallic(0.1f);
@@ -281,7 +285,7 @@ PbrShader& PbrShader::bindBaseColorTexture(Mn::GL::Texture2D& texture) {
                  "PbrShader::bindBaseColorTexture(): the shader was not "
                  "created with base color texture enabled",
                  *this);
-  if (lightCount_ != 0u || flags_ & Flag::ImageBasedLighting) {
+  if (lightingIsEnabled()) {
     texture.bind(pbrTextureUnitSpace::TextureUnit::BaseColor);
   }
   return *this;
@@ -293,7 +297,7 @@ PbrShader& PbrShader::bindMetallicRoughnessTexture(Mn::GL::Texture2D& texture) {
       "PbrShader::bindMetallicRoughnessTexture(): the shader was not "
       "created with metallicRoughness texture enabled.",
       *this);
-  if (lightCount_ != 0u || flags_ & Flag::ImageBasedLighting) {
+  if (lightingIsEnabled()) {
     texture.bind(pbrTextureUnitSpace::TextureUnit::MetallicRoughness);
   }
   return *this;
@@ -304,7 +308,7 @@ PbrShader& PbrShader::bindNormalTexture(Mn::GL::Texture2D& texture) {
                  "PbrShader::bindNormalTexture(): the shader was not "
                  "created with normal texture enabled",
                  *this);
-  if (lightCount_ != 0u || flags_ & Flag::ImageBasedLighting) {
+  if (lightingIsEnabled()) {
     texture.bind(pbrTextureUnitSpace::TextureUnit::Normal);
   }
   return *this;
@@ -384,7 +388,7 @@ PbrShader& PbrShader::setPrefilteredMapMipLevels(unsigned int mipLevels) {
 }
 
 PbrShader& PbrShader::setBaseColor(const Mn::Color4& color) {
-  if (lightCount_ != 0u || flags_ & Flag::ImageBasedLighting) {
+  if (lightingIsEnabled()) {
     setUniform(baseColorUniform_, color);
   }
   return *this;
@@ -396,14 +400,14 @@ PbrShader& PbrShader::setEmissiveColor(const Magnum::Color3& color) {
 }
 
 PbrShader& PbrShader::setRoughness(float roughness) {
-  if (lightCount_ != 0u || flags_ & Flag::ImageBasedLighting) {
+  if (lightingIsEnabled()) {
     setUniform(roughnessUniform_, roughness);
   }
   return *this;
 }
 
 PbrShader& PbrShader::setMetallic(float metallic) {
-  if (lightCount_ != 0u || flags_ & Flag::ImageBasedLighting) {
+  if (lightingIsEnabled()) {
     setUniform(metallicUniform_, metallic);
   }
   return *this;
@@ -534,8 +538,7 @@ PbrShader& PbrShader::setNormalTextureScale(float scale) {
                  "PbrShader::setNormalTextureScale(): the shader was not "
                  "created with normal texture enabled",
                  *this);
-  if ((flags_ & Flag::NormalTextureScale) &&
-      (lightCount_ != 0u || flags_ & Flag::ImageBasedLighting)) {
+  if ((flags_ & Flag::NormalTextureScale) && lightingIsEnabled()) {
     setUniform(normalTextureScaleUniform_, scale);
   }
   return *this;
