@@ -64,6 +64,10 @@ void initMetadataMediatorBindings(py::module& m) {
           pybind11::return_value_policy::reference,
           R"(The current dataset's StageAttributesManager instance
             for configuring simulation stage templates.)")
+      .def_property_readonly(
+          "urdf_paths", &MetadataMediator::getArticulatedObjectModelFilenames,
+          pybind11::return_value_policy::reference,
+          R"(Access to the dictionary of URDF paths, keyed by shortened name, value being full path.)")
       .def(
           "get_scene_handles", &MetadataMediator::getAllSceneInstanceHandles,
           R"(Returns a list the names of all the available scene instances in the currently active dataset.)")
