@@ -13,6 +13,7 @@
 #include <Corrade/Utility/FormatStl.h>
 #include <Corrade/Utility/Resource.h>
 #include <Magnum/GL/Context.h>
+#include <Magnum/GL/CubeMapTexture.h>
 #include <Magnum/GL/Extensions.h>
 #include <Magnum/GL/Shader.h>
 #include <Magnum/GL/Texture.h>
@@ -270,6 +271,10 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   setEmissiveColor(Magnum::Color3{0.0f});
   PbrShader::PbrEquationScales scales;
   if (flags_ & Flag::ImageBasedLighting) {
+    // These are empirical numbers. Discount the diffuse light from IBL so the
+    // ambient light will not be too strong. Also keeping the IBL specular
+    // component relatively low can guarantee the super glossy surface would not
+    // reflect the environment like a mirror.
     scales.IblDiffuse = 0.8;
     scales.IblSpecular = 0.3;
   }

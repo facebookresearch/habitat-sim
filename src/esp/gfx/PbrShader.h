@@ -10,7 +10,6 @@
 #include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/EnumSet.h>
 #include <Magnum/GL/AbstractShaderProgram.h>
-#include <Magnum/GL/CubeMapTexture.h>
 #include <Magnum/Shaders/GenericGL.h>
 
 #include "esp/core/esp.h"
@@ -18,6 +17,7 @@
 namespace esp {
 
 namespace gfx {
+class CubeMapTexture;
 
 class PbrShader : public Magnum::GL::AbstractShaderProgram {
  public:
