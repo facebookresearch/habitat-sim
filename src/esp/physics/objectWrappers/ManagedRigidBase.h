@@ -238,36 +238,21 @@ class AbstractManagedRigidBase
    */
   std::string getPhysObjInfoInternal(std::shared_ptr<T>& sp) const override {
     namespace CrUt = Corrade::Utility;
-    std::string res =
-        std::to_string(sp->getMass())
-            .append(1, ',')
-            .append(CrUt::ConfigurationValue<Mn::Vector3>::toString(
-                sp->getCOM(), {}))
-            .append(1, ',')
-            .append(CrUt::ConfigurationValue<Mn::Vector3>::toString(
-                sp->getInertiaVector(), {}))
-            .append(1, ',')
-            .append(CrUt::ConfigurationValue<Mn::Vector3>::toString(
-                sp->getAngularVelocity(), {}))
-            .append(1, ',')
-            .append(std::to_string(sp->getAngularDamping()))
-            .append(1, ',')
-            .append(CrUt::ConfigurationValue<Mn::Vector3>::toString(
-                sp->getLinearVelocity(), {}))
-            .append(1, ',')
-            .append(std::to_string(sp->getLinearDamping()))
-            .append(1, ',')
-            .append(sp->getCollidable() ? "True" : "False")
-            .append(1, ',')
-            .append(std::to_string(sp->getFrictionCoefficient()))
-            .append(1, ',')
-            .append(std::to_string(sp->getRestitutionCoefficient()))
-            .append(1, ',')
-            .append(CrUt::ConfigurationValue<Mn::Vector3>::toString(
-                sp->getScale(), {}))
-            .append(1, ',')
-            .append(std::to_string(sp->getSemanticId()))
-            .append(getRigidBaseInfoInternal(sp));
+
+    std::string res = CrUt::formatString(
+        "{},{},{},{},{},{},{},{},{},{},{},{},{}", sp->getMass(),
+        CrUt::ConfigurationValue<Mn::Vector3>::toString(sp->getCOM(), {}),
+        CrUt::ConfigurationValue<Mn::Vector3>::toString(sp->getInertiaVector(),
+                                                        {}),
+        std::to_string(sp->getAngularDamping()),
+        CrUt::ConfigurationValue<Mn::Vector3>::toString(sp->getLinearVelocity(),
+                                                        {}),
+        std::to_string(sp->getLinearDamping()),
+        (sp->getCollidable() ? "True" : "False"),
+        std::to_string(sp->getFrictionCoefficient()),
+        std::to_string(sp->getRestitutionCoefficient()),
+        CrUt::ConfigurationValue<Mn::Vector3>::toString(sp->getScale(), {}),
+        std::to_string(sp->getSemanticId()), getRigidBaseInfoInternal(sp));
     return res;
   }
 

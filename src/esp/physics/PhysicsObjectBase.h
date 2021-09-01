@@ -62,7 +62,8 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
                     const assets::ResourceManager& resMgr)
       : Magnum::SceneGraph::AbstractFeature3D(*bodyNode),
         objectId_(objectId),
-        resMgr_(resMgr) {}
+        resMgr_(resMgr),
+        userAttributes_(std::make_shared<core::config::Configuration>()) {}
 
   ~PhysicsObjectBase() override = default;
 
@@ -503,14 +504,14 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    * internally processed by habitat, but provide a "scratch pad" for the user
    * to access and save important information and metadata.
    */
-  core::config::Configuration::ptr userAttributes_{};
+  core::config::Configuration::ptr userAttributes_ = nullptr;
 
  private:
   /**
    * @brief This object's instancing attributes, if any were used during its
    * creation.
    */
-  std::shared_ptr<metadata::attributes::SceneObjectInstanceAttributes>
+  std::shared_ptr<const metadata::attributes::SceneObjectInstanceAttributes>
       _sceneInstanceAttributes = nullptr;
 
  public:

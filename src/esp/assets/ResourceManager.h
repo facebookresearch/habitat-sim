@@ -185,7 +185,7 @@ class ResourceManager {
    */
   bool loadStage(
       const metadata::attributes::StageAttributes::ptr& stageAttributes,
-      const metadata::attributes::SceneObjectInstanceAttributes::ptr&
+      const metadata::attributes::SceneObjectInstanceAttributes::cptr&
           stageInstanceAttributes,
       const std::shared_ptr<physics::PhysicsManager>& _physicsManager,
       esp::scene::SceneManager* sceneManagerPtr,

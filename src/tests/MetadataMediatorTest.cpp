@@ -348,12 +348,12 @@ TEST_F(MetadataMediatorTest, testDataset0) {
   // test object instances
   //
   // get all instances
-  const std::vector<Attrs::SceneObjectInstanceAttributes::ptr>
+  const std::vector<Attrs::SceneObjectInstanceAttributes::cptr>
       objInstanceAttrs = sceneAttrs->getObjectInstances();
   ASSERT_EQ(objInstanceAttrs.size(), 2);
 
   // first object instance
-  const Attrs::SceneObjectInstanceAttributes::ptr& objAttr0 =
+  const Attrs::SceneObjectInstanceAttributes::cptr& objAttr0 =
       objInstanceAttrs[0];
   // name
   std::string objName = objAttr0->getHandle();
@@ -364,7 +364,7 @@ TEST_F(MetadataMediatorTest, testDataset0) {
   ASSERT_EQ(objAttr0->getTranslationOrigin(), assetLocalInt);
 
   // second object instance
-  const Attrs::SceneObjectInstanceAttributes::ptr& objAttr1 =
+  const Attrs::SceneObjectInstanceAttributes::cptr& objAttr1 =
       objInstanceAttrs[1];
   // name
   objName = objAttr1->getHandle();

@@ -314,8 +314,8 @@ class ObjectAttributes : public AbstractObjectAttributes {
    * @brief get AbstractObject specific info header
    */
   std::string getAbstractObjectInfoHeaderInternal() const override {
-    return "Mass, COM XYZ, I XX YY ZZ, Angular Damping, "
-           "Linear Damping, Semantic ID";
+    return "Mass,COM XYZ,I XX YY ZZ,Angular Damping,"
+           "Linear Damping,Semantic ID";
   }
   /**
    * @brief get AbstractObject specific info for csv string
@@ -401,21 +401,16 @@ class StageAttributes : public AbstractObjectAttributes {
    * @brief get AbstractObject specific info header
    */
   std::string getAbstractObjectInfoHeaderInternal() const override {
-    return "Navmesh Handle, Gravity XYZ, Origin XYZ, Light Setup,";
+    return "Navmesh Handle,Gravity XYZ,Origin XYZ,Light Setup,";
   }
 
   /**
    * @brief get AbstractObject specific info for csv string
    */
   std::string getAbstractObjectInfoInternal() const override {
-    std::string res = getNavmeshAssetHandle();
-    res.append(1, ',')
-        .append(getAsString("gravity"))
-        .append(1, ',')
-        .append(getAsString("origin"))
-        .append(1, ',')
-        .append(getLightSetup());
-    return res;
+    return Cr::Utility::formatString("{},{},{},{}", getNavmeshAssetHandle(),
+                                     getAsString("gravity"),
+                                     getAsString("origin"), getLightSetup());
   }
 
  public:

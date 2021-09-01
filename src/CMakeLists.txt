@@ -2,7 +2,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.12)
 
 option(BUILD_WITH_CUDA "Build Habitat-Sim with CUDA features enabled -- Requires CUDA"
        OFF
@@ -55,6 +55,7 @@ option(
 option(BUILD_TEST "Build test binaries" OFF)
 option(REL_BUILD_RPATH "Use a relative build rpath" OFF)
 option(USE_SYSTEM_ASSIMP "Use system Assimp instead of a bundled submodule" OFF)
+option(USE_SYSTEM_OPENEXR "Use system OpenEXR instead of a bundled submodule" OFF)
 option(USE_SYSTEM_EIGEN "Use system Eigen instead of a bundled submodule" OFF)
 option(USE_SYSTEM_GLFW "Use system GLFW instead of a bundled submodule" OFF)
 option(USE_SYSTEM_MAGNUM "Use system Magnum instead of a bundled submodule" OFF)

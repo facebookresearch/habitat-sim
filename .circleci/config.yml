@@ -20,20 +20,18 @@ commands:
       - run:
           name: Install cmake
           no_output_timeout: 5m
-          # tinyply requires CMake 3.10, so stay at that version. Ubuntu 16.04
-          # has 3.5, so once tinyply is removed, we could go lower (well, if
-          # anybody actually needs that). We also download CMake 3.20, which
+          # OpenEXR requires CMake 3.12. We also download CMake 3.20, which
           # we'll use later for the JS build only.
           command: |
               echo $(git ls-remote https://github.com/facebookresearch/habitat-lab.git HEAD | awk '{ print $1}') > ./hablab_sha
               cat ./hablab_sha
-              wget https://cmake.org/files/v3.10/cmake-3.10.3-Linux-x86_64.sh
+              wget https://cmake.org/files/v3.12/cmake-3.12.4-Linux-x86_64.sh
               wget https://cmake.org/files/v3.20/cmake-3.20.1-linux-x86_64.sh
-              sudo mkdir /opt/cmake310
+              sudo mkdir /opt/cmake312
               sudo mkdir /opt/cmake320
-              sudo sh ./cmake-3.10.3-Linux-x86_64.sh --prefix=/opt/cmake310 --skip-license
+              sudo sh ./cmake-3.12.4-Linux-x86_64.sh --prefix=/opt/cmake312 --skip-license
               sudo sh ./cmake-3.20.1-linux-x86_64.sh --prefix=/opt/cmake320 --skip-license
-              sudo ln -s /opt/cmake310/bin/cmake /usr/local/bin/cmake
+              sudo ln -s /opt/cmake312/bin/cmake /usr/local/bin/cmake
       - run: &install_deps
           name: Install dependencies
           no_output_timeout: 20m
@@ -521,9 +519,9 @@ jobs:
               nvm use v11.9.0
               . ~/emsdk/emsdk_env.sh
               CMAKE_GENERATOR=Ninja ./build_js.sh --bullet
-              # switch back to cmake 3.10
+              # switch back to cmake 3.12
               sudo rm /usr/local/bin/cmake
-              sudo ln -s /opt/cmake310/bin/cmake /usr/local/bin/cmake
+              sudo ln -s /opt/cmake312/bin/cmake /usr/local/bin/cmake
       - run:
           name: Run sim benchmark
           command: |

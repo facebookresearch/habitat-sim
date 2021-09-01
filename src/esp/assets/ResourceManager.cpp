@@ -192,7 +192,7 @@ void ResourceManager::initPhysicsManager(
 
 bool ResourceManager::loadStage(
     const StageAttributes::ptr& stageAttributes,
-    const SceneObjectInstanceAttributes::ptr& stageInstanceAttributes,
+    const SceneObjectInstanceAttributes::cptr& stageInstanceAttributes,
     const std::shared_ptr<physics::PhysicsManager>& _physicsManager,
     esp::scene::SceneManager* sceneManagerPtr,
     std::vector<int>& activeSceneIDs) {
@@ -1887,7 +1887,7 @@ void ResourceManager::loadTextures(Importer& importer,
 
     auto textureData = importer.texture(iTexture);
     if (!textureData ||
-        textureData->type() != Magnum::Trade::TextureData::Type::Texture2D) {
+        textureData->type() != Magnum::Trade::TextureType::Texture2D) {
       ESP_ERROR() << "Cannot load texture" << iTexture << "skipping";
       currentTexture = nullptr;
       continue;
