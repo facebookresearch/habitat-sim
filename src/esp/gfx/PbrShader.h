@@ -14,7 +14,12 @@
 
 #include "esp/core/esp.h"
 
+namespace Magnum {
+namespace GL {
 class CubeMapTexture;
+};
+};  // namespace Magnum
+
 namespace esp {
 namespace gfx {
 
