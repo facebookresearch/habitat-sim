@@ -97,7 +97,9 @@ if(CMAKE_INTERPROCEDURAL_OPTIMIZATION)
        OR (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION
                                                      VERSION_LESS 13.0)
     )
-      message("-- Forcing full LTO for compatibility: ThinLTO requires Clang>13.0")
+      message(
+        "-- Forcing full LTO for compatibility: ThinLTO requires LLVM Clang>=13.0"
+      )
       # Clang has some issues with thinLTO (segfaults on final linking)
       # This enables full LTO through CMake
       # FullLTO is slow, but may yield performance improvements.
