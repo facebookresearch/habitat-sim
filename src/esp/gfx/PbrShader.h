@@ -14,10 +14,9 @@
 
 #include "esp/core/esp.h"
 
-namespace esp {
-
-namespace gfx {
 class CubeMapTexture;
+namespace esp {
+namespace gfx {
 
 class PbrShader : public Magnum::GL::AbstractShaderProgram {
  public:
