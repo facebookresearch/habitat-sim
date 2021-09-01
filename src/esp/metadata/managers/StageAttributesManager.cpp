@@ -275,8 +275,8 @@ void StageAttributesManager::setDefaultAssetNameBasedAttributes(
     assetTypeSetter(static_cast<int>(AssetType::MP3D_MESH));
     // Create a coordinate for the mesh by rotating the default ESP
     // coordinate frame to -Z gravity
-    up = up2;
-    fwd = fwd2;
+    // up = up2;
+    // fwd = fwd2;
   } else if (StageAttributesManager::isValidPrimitiveAttributes(fileName)) {
     assetTypeSetter(static_cast<int>(AssetType::PRIMITIVE));
   } else {
