@@ -218,14 +218,13 @@ class Configuration {
  public:
   // convenience typedefs
   typedef std::unordered_map<std::string, ConfigValue> ValueMapType;
-  typedef std::unordered_map<std::string, std::shared_ptr<Configuration>>
-      ConfigMapType;
+  typedef std::map<std::string, std::shared_ptr<Configuration>> ConfigMapType;
 
   Configuration() = default;
 
   Configuration(const Configuration& otr)
       : configMap_(), valueMap_(otr.valueMap_) {
-    configMap_.reserve(otr.configMap_.size());
+    // configMap_.reserve(otr.configMap_.size());
     for (const auto& entry : otr.configMap_) {
       configMap_[entry.first] = std::make_shared<Configuration>(*entry.second);
     }
