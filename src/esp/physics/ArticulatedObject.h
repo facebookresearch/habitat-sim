@@ -315,6 +315,12 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   };
 
   /**
+   * @brief Get the uniform global scaling applied to this object during import.
+   * @return The global scaling applied to the object.
+   */
+  float getGlobalScale() const { return globalScale_; }
+
+  /**
    * @brief Get a const reference to an ArticulatedLink SceneNode for
    * info query purposes.
    * @param linkId The ArticulatedLink ID or -1 for the baseLink.
@@ -827,6 +833,9 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   //! if true, automatically clamp dofs to joint limits before physics
   //! simulation steps
   bool autoClampJointLimits_ = false;
+
+  //! Cache the global scaling from the source model. Set during import.
+  float globalScale_ = 1.0;
 
  public:
   ESP_SMART_POINTERS(ArticulatedObject)

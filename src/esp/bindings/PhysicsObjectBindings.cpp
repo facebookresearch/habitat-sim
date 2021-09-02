@@ -337,6 +337,9 @@ void declareArticulatedObjectWrapper(py::module& m,
              AbstractManagedPhysicsObject<ArticulatedObject>,
              std::shared_ptr<ManagedArticulatedObject>>(m,
                                                         classStrPrefix.c_str())
+      .def_property_readonly(
+          "global_scale", &ManagedArticulatedObject::getGlobalScale,
+          R"(The uniform global scaling applied to this object during import.)")
       .def("get_link_scene_node", &ManagedArticulatedObject::getLinkSceneNode,
            ("Get the scene node for this " + objType +
             "'s articulated link specified by the passed "
