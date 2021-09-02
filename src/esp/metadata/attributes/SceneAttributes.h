@@ -371,8 +371,7 @@ class SceneAttributes : public AbstractAttributes {
   /**
    * @brief Get the object instance descriptions for this scene
    */
-  const std::vector<SceneObjectInstanceAttributes::cptr> getObjectInstances()
-      const {
+  std::vector<SceneObjectInstanceAttributes::cptr> getObjectInstances() const {
     return getObjectInstanceAttrInternal<SceneObjectInstanceAttributes>(
         objInstConfig_);
   }
@@ -390,8 +389,8 @@ class SceneAttributes : public AbstractAttributes {
   /**
    * @brief Get the object instance descriptions for this scene
    */
-  const std::vector<SceneAOInstanceAttributes::cptr>
-  getArticulatedObjectInstances() const {
+  std::vector<SceneAOInstanceAttributes::cptr> getArticulatedObjectInstances()
+      const {
     return getObjectInstanceAttrInternal<SceneAOInstanceAttributes>(
         artObjInstConfig_);
   }
