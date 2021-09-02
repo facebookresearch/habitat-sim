@@ -221,7 +221,7 @@ jobs:
                 pytest \
                 sphinx \
                 tqdm
-              pip install -r requirements.txt torch --progress-bar off
+              pip install --prefer-binary -r requirements.txt torch --progress-bar off
       - run:
           name: run black
           command: |
