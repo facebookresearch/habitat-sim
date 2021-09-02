@@ -205,7 +205,8 @@ jobs:
               sudo rm  llvm-config
               sudo ln -s llvm-config-10 llvm-config
               cd ~/project/
-              pip install -U \
+              pip install -U pip
+              pip install -U --prefer-binary \
                 black \
                 flake8 \
                 flake8-bugbear \
