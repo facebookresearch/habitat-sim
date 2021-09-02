@@ -1,0 +1,83 @@
+{
+  "dataset_name": "Floorplanner",
+  "dataset_src_rel_to_home": true,
+  "dataset_src_subdir": "Facebook/Floorplanner",
+  "scenes_src_subdir": "june29_38_scenes/",
+  "objects_src_subdir": "objects/",
+  "dataset_dest_rel_to_home": true,
+  "dataset_dest_subdir": "Facebook/Floorplanner/scene_dataset/",
+  "dataset_glb_dest_subdir": ".",
+  "stage_glb_dest_subdir": "stages/",
+  "obj_glb_dest_subdir": "objects/",
+  "dataset_config_dest_subdir": "configs/",
+  "scene_instance_dest_subdir": "scenes/",
+  "stage_config_dest_subdir": "stages/",
+  "obj_config_dest_subdir": "objects/",
+  "light_config_dest_subdir": "lighting/",
+  "stage_tag": "Structure",
+  "objects_tag": "Objects",
+  "lighting_tag": "Lighting",
+  "build_dataset_config": true,
+  "build_scene_configs": true,
+  "build_stage_configs": true,
+  "build_object_configs": true,
+  "build_lighting_configs": true,
+  "build_stage_glbs": true,
+  "build_object_glbs": true,
+  "objects_all_static": false,
+  "match_object_names": false,
+  "stage_include_obj_substr": [],
+  "obj_override_names": [],
+  "obj_exclude_names": [],
+  "obj_created_static": [],
+  "obj_created_dynamic": [],
+  "scenegraph_diagnostics_subdir": "floorplanner_scenegraph_diag/",
+  "save_scenegraph_hierarchy": true,
+  "stage_instance_file_tag": {},
+  "default_lighting_tag": "",
+  "apply_object_transform": false,
+  "save_articulated_object_instances": false,
+  "default_attributes": {
+    "stages": {
+      "requires_lighting": "true",
+      "up": [
+        0,
+        1,
+        0
+      ],
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ]
+    },
+    "objects": {
+      "requires_lighting": "true",
+      "up": [
+        0,
+        1,
+        0
+      ],
+      "front": [
+        0,
+        0,
+        -1
+      ],
+      "origin": [
+        0,
+        0,
+        0
+      ]
+    },
+    "scene_instances": {
+      "translation_origin": "asset_local",
+      "default_lighting": ""
+    },
+    "light_setups": {}
+  }
+}
