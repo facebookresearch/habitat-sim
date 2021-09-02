@@ -219,7 +219,6 @@ jobs:
                 numpy \
                 pytest \
                 sphinx \
-                pillow \
                 tqdm
               pip install -r requirements.txt torch --progress-bar off
       - run:
