@@ -364,30 +364,17 @@ class SceneAttributes : public AbstractAttributes {
    * @brief Add a description of an object instance to this scene instance
    */
   void addObjectInstance(SceneObjectInstanceAttributes::ptr _objInstance) {
-    // setObjectInstanceAttrInternal<SceneObjectInstanceAttributes>(
-    //     _objInstance, availableObjInstIDs_, "object_instances", "obj_inst_");
-
-    // set id
-    if (!availableObjInstIDs_.empty()) {
-      // use saved value and then remove from storage
-      _objInstance->setID(availableObjInstIDs_.front());
-      availableObjInstIDs_.pop_front();
-    } else {
-      // use size of container to set ID
-      _objInstance->setID(objectInstances_.size());
-    }
-    objectInstances_.push_back(std::move(_objInstance));
+    setObjectInstanceAttrInternal<SceneObjectInstanceAttributes>(
+        _objInstance, availableObjInstIDs_, objInstConfig_, "obj_inst_");
   }
 
   /**
    * @brief Get the object instance descriptions for this scene
    */
-  const std::vector<SceneObjectInstanceAttributes::cptr>& getObjectInstances()
+  const std::vector<SceneObjectInstanceAttributes::cptr> getObjectInstances()
       const {
-    // objectInstances_ =
-    //     getObjectInstanceAttrInternal<SceneObjectInstanceAttributes>(
-    //         "object_instances");
-    return objectInstances_;
+    return getObjectInstanceAttrInternal<SceneObjectInstanceAttributes>(
+        objInstConfig_);
   }
 
   /**
@@ -395,30 +382,18 @@ class SceneAttributes : public AbstractAttributes {
    */
   void addArticulatedObjectInstance(
       SceneAOInstanceAttributes::ptr _artObjInstance) {
-    // setObjectInstanceAttrInternal<SceneObjectInstanceAttributes>(
-    //     _artObjInstance, availableArtObjInstIDs_, "ao_instances",
-    //     "art_obj_inst_");
-    // set id
-    if (!availableArtObjInstIDs_.empty()) {
-      // use saved value and then remove from storage
-      _artObjInstance->setID(availableArtObjInstIDs_.front());
-      availableArtObjInstIDs_.pop_front();
-    } else {
-      // use size of container to set ID
-      _artObjInstance->setID(articulatedObjectInstances_.size());
-    }
-    articulatedObjectInstances_.push_back(std::move(_artObjInstance));
+    setObjectInstanceAttrInternal<SceneAOInstanceAttributes>(
+        _artObjInstance, availableArtObjInstIDs_, artObjInstConfig_,
+        "art_obj_inst_");
   }
 
   /**
    * @brief Get the object instance descriptions for this scene
    */
-  const std::vector<SceneAOInstanceAttributes::cptr>&
+  const std::vector<SceneAOInstanceAttributes::cptr>
   getArticulatedObjectInstances() const {
-    // articulatedObjectInstances_ =
-    // getObjectInstanceAttrInternal<SceneAOInstanceAttributes>(
-    //     "ao_instances");
-    return articulatedObjectInstances_;
+    return getObjectInstanceAttrInternal<SceneAOInstanceAttributes>(
+        artObjInstConfig_);
   }
 
  protected:
@@ -436,10 +411,11 @@ class SceneAttributes : public AbstractAttributes {
    * the instance in the subconfig.
    */
   template <class T>
-  void setObjectInstanceAttrInternal(std::shared_ptr<T> objInst,
-                                     std::deque<int>& availableIDs,
-                                     const std::string& subconfigKey,
-                                     const std::string& objInstNamePrefix);
+  void setObjectInstanceAttrInternal(
+      std::shared_ptr<T>& objInst,
+      std::deque<int>& availableIDs,
+      const std::shared_ptr<Configuration>& objInstConfig,
+      const std::string& objInstNamePrefix);
 
   /**
    * @brief return a vector of shared pointers to scene instance
@@ -447,7 +423,7 @@ class SceneAttributes : public AbstractAttributes {
    */
   template <class T>
   std::vector<std::shared_ptr<const T>> getObjectInstanceAttrInternal(
-      const std::string& subconfigKey) const;
+      const std::shared_ptr<Configuration>& objInstConfig) const;
 
   /**
    * @brief Retrieve a comma-separated string holding the header values for the
@@ -462,9 +438,9 @@ class SceneAttributes : public AbstractAttributes {
   std::string getObjectInfoInternal() const override;
 
   /**
-   * @brief All the object instance descriptors used by the scene
+   * @brief Shortcut to object instance configuration.
    */
-  std::vector<SceneObjectInstanceAttributes::cptr> objectInstances_;
+  std::shared_ptr<Configuration> objInstConfig_{};
   /**
    * @brief Deque holding all released IDs to consume for object instances when
    * one is deleted, before using size of objectInstances_ container.
@@ -472,9 +448,10 @@ class SceneAttributes : public AbstractAttributes {
   std::deque<int> availableObjInstIDs_;
 
   /**
-   * @brief All the articulated object instance descriptors used by the scene
+   * @brief Shortcut to articulated object instance configuration.
    */
-  std::vector<SceneAOInstanceAttributes::cptr> articulatedObjectInstances_;
+  std::shared_ptr<Configuration> artObjInstConfig_{};
+
   /**
    * @brief Deque holding all released IDs to consume for articulated object
    * instances when one is deleted, before using size of
@@ -488,15 +465,11 @@ class SceneAttributes : public AbstractAttributes {
 
 template <class T>
 void SceneAttributes::setObjectInstanceAttrInternal(
-    std::shared_ptr<T> objInst,
+    std::shared_ptr<T>& objInst,
     std::deque<int>& availableIDs,
-    const std::string& subconfigKey,
+    const std::shared_ptr<Configuration>& objInstConfig,
     const std::string& objInstNamePrefix) {
   // get subconfig for articulated object instances, add this ao instance as a
-  // subconfig of this.
-  std::shared_ptr<Configuration> objInstConfig =
-      editSubconfig<Configuration>(subconfigKey);
-
   // set id
   if (!availableIDs.empty()) {
     // use saved value and then remove from storage
@@ -506,9 +479,10 @@ void SceneAttributes::setObjectInstanceAttrInternal(
     // use size of container to set ID
     objInst->setID(objInstConfig->getNumSubconfigEntries());
   }
-
+  // get last key
   objInstConfig->setSubconfigPtr<T>(
-      Cr::Utility::formatString("{}{}", objInstNamePrefix,
+      Cr::Utility::formatString("{:.05d}_{}{}", objInst->getID(),
+                                objInstNamePrefix,
                                 objInst->getSimplifiedHandle()),
       objInst);
 }
@@ -516,12 +490,8 @@ void SceneAttributes::setObjectInstanceAttrInternal(
 template <class T>
 std::vector<std::shared_ptr<const T>>
 SceneAttributes::getObjectInstanceAttrInternal(
-    const std::string& subconfigKey) const {
+    const std::shared_ptr<Configuration>& objInstConfig) const {
   std::vector<std::shared_ptr<const T>> res{};
-  // get sub-configuration holding the desired object instances as
-  // subconfigurations
-  auto objInstConfig = getSubconfigRef(subconfigKey);
-
   // pair of begin/end const iters through subconfig of given name
   int numSubconfigs = objInstConfig->getNumSubconfigEntries();
   if (numSubconfigs == 0) {
@@ -533,13 +503,14 @@ SceneAttributes::getObjectInstanceAttrInternal(
   // map if cast successful
   for (auto objIter = objInstIter.first; objIter != objInstIter.second;
        ++objIter) {
-    const auto obj = objIter->second;
-    if (auto objPtr = std::dynamic_pointer_cast<T>(obj)) {
+    auto obj = objIter->second;
+    if (std::shared_ptr<T> objPtr = std::dynamic_pointer_cast<T>(obj)) {
       res.push_back(objPtr);
     } else {
-      ESP_WARNING() << "Subconfig obj of" << subconfigKey << "subconfig with"
-                    << obj->getNumEntries() << "entries is not appropriate type"
-                    << typeid(T).name();
+      ESP_WARNING() << "Subconfig obj  with" << obj->getNumEntries()
+                    << "entries is not appropriate type" << typeid(T).name()
+                    << " | " << typeid(obj).name() << " | {" << objIter->first
+                    << " : " << obj->getAsString("handle") << "}";
     }
   }
   return res;

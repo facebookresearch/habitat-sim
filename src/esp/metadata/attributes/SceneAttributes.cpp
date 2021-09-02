@@ -105,6 +105,9 @@ SceneAttributes::SceneAttributes(const std::string& handle)
   // defaults to asset local
   setTranslationOrigin(
       static_cast<int>(SceneInstanceTranslationOrigin::AssetLocal));
+  // get refs to internal subconfigs for object and ao instances
+  objInstConfig_ = editSubconfig<Configuration>("object_instances");
+  artObjInstConfig_ = editSubconfig<Configuration>("ao_instances");
 }
 
 std::string SceneAttributes::getObjectInfoInternal() const {
