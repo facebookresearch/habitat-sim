@@ -113,14 +113,19 @@ std::string SceneAttributes::getObjectInfoInternal() const {
 
   std::string res = Cr::Utility::formatString(
       "\nDefault Translation Origin,Default Lighting,Navmesh Handle,Semantic "
-      "Scene Descriptor Handle,\n{},{},{},{}\nStage Instance Info :\n{}\n{}\n",
+      "Scene Descriptor Handle,\n{},{},{},{}\n",
       getTranslationOriginName(getTranslationOrigin()), getLightingHandle(),
-      getNavmeshHandle(), getSemanticSceneHandle(),
-      stageInstance_->getObjectInfoHeader(), stageInstance_->getObjectInfo());
+      getNavmeshHandle(), getSemanticSceneHandle());
+
+  const SceneObjectInstanceAttributes::cptr stageInstance = getStageInstance();
+  Cr::Utility::formatInto(res, res.size(), "Stage Instance Info :\n{}\n{}\n",
+                          stageInstance->getObjectInfoHeader(),
+                          stageInstance->getObjectInfo());
   // stage instance info
   int iter = 0;
   // object instance info
-  for (const auto& objInst : objectInstances_) {
+  const auto& objInstances = getObjectInstances();
+  for (const auto& objInst : objInstances) {
     if (iter == 0) {
       ++iter;
       Cr::Utility::formatInto(res, res.size(), "Object Instance Info :\n{}\n",
@@ -131,7 +136,8 @@ std::string SceneAttributes::getObjectInfoInternal() const {
 
   // articulated object instance info
   iter = 0;
-  for (const auto& artObjInst : articulatedObjectInstances_) {
+  const auto& articulatedObjectInstances = getArticulatedObjectInstances();
+  for (const auto& artObjInst : articulatedObjectInstances) {
     if (iter == 0) {
       ++iter;
       Cr::Utility::formatInto(res, res.size(),

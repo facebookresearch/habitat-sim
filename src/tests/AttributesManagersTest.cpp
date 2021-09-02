@@ -827,9 +827,10 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
 
   // test nested configuration
   auto artObjNestedConfig =
-      artObjInstance->getUserConfiguration()->getSubconfigCopy("user_def_obj");
+      artObjInstance->getUserConfiguration()
+          ->getSubconfigCopy<esp::core::config::Configuration>("user_def_obj");
   ASSERT_NE(artObjNestedConfig, nullptr);
-  ASSERT_EQ(artObjNestedConfig->hasValues(), true);
+  ASSERT_EQ(artObjNestedConfig->getNumEntries() > 0, true);
   ASSERT_EQ(artObjNestedConfig->template get<Magnum::Vector3>("position"),
             Magnum::Vector3(0.1f, 0.2f, 0.3f));
   ASSERT_EQ(artObjNestedConfig->template get<Magnum::Vector3>("rotation"),

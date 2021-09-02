@@ -380,7 +380,8 @@ class Model {
    * each object.
    */
   std::shared_ptr<core::config::Configuration> getUserConfiguration() const {
-    return jsonAttributes_->getSubconfigCopy("user_defined");
+    return jsonAttributes_->getSubconfigCopy<core::config::Configuration>(
+        "user_defined");
   }
 
  protected:

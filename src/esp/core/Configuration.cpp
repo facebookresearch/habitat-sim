@@ -225,6 +225,43 @@ bool ConfigValue::putValueInConfigGroup(
   }  // switch
 }  // ConfigValue::putValueInConfigGroup
 
+/**
+ * @brief Retrieves a shared pointer to a copy of the subConfig @ref
+ * esp::core::Configuration that has the passed @p name . This will create a
+ * pointer to a new sub-configuration if none exists already with that name,
+ * but will not add this configuration to this Configuration's internal
+ * storage.
+ *
+ * @param name The name of the configuration to retrieve.
+ * @return A pointer to a copy of the configuration having the requested
+ * name, or a pointer to an empty configuration.
+ */
+
+template <>
+std::shared_ptr<Configuration> Configuration::getSubconfigCopy<Configuration>(
+    const std::string& name) const {
+  auto configIter = configMap_.find(name);
+  if (configIter != configMap_.end()) {
+    // if exists return copy, so that consumers can modify it freely
+    return std::make_shared<Configuration>(*configIter->second);
+  }
+  return std::make_shared<Configuration>();
+}
+
+template <>
+std::shared_ptr<Configuration> Configuration::editSubconfig<Configuration>(
+    const std::string& name) {
+  // retrieve existing (or create new) subgroup, with passed name
+  return addSubgroup(name);
+}
+
+template <>
+void Configuration::setSubconfigPtr<Configuration>(
+    const std::string& name,
+    std::shared_ptr<Configuration>& configPtr) {
+  configMap_[name] = std::move(configPtr);
+}  // setSubconfigPtr
+
 Mn::Debug& operator<<(Mn::Debug& debug, const ConfigStoredType& value) {
   return debug << "Type:" << getNameForStoredType(value);
 }

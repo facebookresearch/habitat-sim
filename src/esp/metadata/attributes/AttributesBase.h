@@ -185,7 +185,7 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
    * object.
    */
   std::shared_ptr<Configuration> getUserConfiguration() const {
-    return getSubconfigCopy("user_defined");
+    return getSubconfigCopy<Configuration>("user_defined");
   }
 
   /**
@@ -195,7 +195,7 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
    * object.  This method is for editing the configuration.
    */
   std::shared_ptr<Configuration> editUserConfiguration() {
-    return editSubconfig("user_defined");
+    return editSubconfig<Configuration>("user_defined");
   }
 
   /**
@@ -203,7 +203,7 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
    * sub-ConfigurationGroup) this attributes has.
    */
   int getNumUserDefinedConfigurations() const {
-    return getNumSubconfigs("user_defined");
+    return getSubconfigNumEntries("user_defined");
   }
 
   /**
