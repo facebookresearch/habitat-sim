@@ -586,11 +586,14 @@ jobs:
           command: |
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat; cd habitat-sim
+
+              curl -Os https://uploader.codecov.io/latest/linux/codecov
+              chmod +x codecov
               #Uploading test coverage for Python code
-              bash <(curl -s https://codecov.io/bash) -f coverage.xml -cF Python
+              ./codecov -f coverage.xml -cF Python
 
               # Uploading test coverage for JS code
-              bash <(curl -s https://codecov.io/bash) -f coverage_js/coverage-final.json -cF JavaScript
+              ./codecov coverage_js/coverage-final.json -cF JavaScript
 
               #Uploading test coverage for C++ code
               lcov --directory . --capture --output-file coverage.info
@@ -600,7 +603,7 @@ jobs:
               lcov --remove coverage.info "*/deps/*" --output-file coverage.info > /dev/null
               lcov --remove coverage.info "*/test/*" --output-file coverage.info > /dev/null
               lcov --remove coverage.info "*/tests/*" --output-file coverage.info > /dev/null
-              bash <(curl -s https://codecov.io/bash) -f coverage.info -cF CPP
+              ./codecov -f coverage.info -cF CPP
 
 
 
