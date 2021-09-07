@@ -462,13 +462,7 @@ class Configuration {
    * @return A breadcrumb list to where the value referenced by @p key
    * resides. An empty list means the value was not found.
    */
-  std::vector<std::string> findValue(const std::string& key) const {
-    std::vector<std::string> breadcrumbs{};
-    // this will make room for some layers without realloc.
-    breadcrumbs.reserve(10);
-    findValueInternal(key, 0, breadcrumbs);
-    return breadcrumbs;
-  }
+  std::vector<std::string> findValue(const std::string& key) const;
 
   /**
    * @brief Builds and returns @ref Cr::Utility::ConfigurationGroup
@@ -533,11 +527,11 @@ class Configuration {
   }
 
   /**
-   * @brief return pointer to sub-configuration of given @p name.  Will fail if
-   * configuration with given name dne.
+   * @brief return pointer to read-only sub-configuration of given @p name. Will
+   * fail if configuration with given name dne.
    * @param name The name of the desired configuration.
    */
-  std::shared_ptr<Configuration> getSubconfigRef(
+  std::shared_ptr<const Configuration> getSubconfigView(
       const std::string& name) const {
     auto configIter = configMap_.find(name);
     CORRADE_ASSERT(configIter != configMap_.end(), "", nullptr);
@@ -641,8 +635,9 @@ class Configuration {
 
  protected:
   /**
-   * @brief Checks if passed @p key is contained in this configuration.
+   * @brief Friend function.  Checks if passed @p key is contained in @p config.
    * Returns the highest level where @p key was found
+   * @param config The configuration to search for passed key
    * @param key The key to look for
    * @param parentLevel The parent level to the current iteration.  If
    * iteration finds @p key, it will return parentLevel+1
@@ -651,9 +646,10 @@ class Configuration {
    * @return The level @p key was found. 0 if not found (so can be treated
    * as bool)
    */
-  int findValueInternal(const std::string& key,
-                        int parentLevel,
-                        std::vector<std::string>& breadcrumb) const;
+  friend int findValueInternal(const Configuration& config,
+                               const std::string& key,
+                               int parentLevel,
+                               std::vector<std::string>& breadcrumb);
 
   /**
    * @brief Populate the passed cfg with all the values this map holds, along

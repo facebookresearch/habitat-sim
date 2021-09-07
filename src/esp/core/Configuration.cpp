@@ -271,19 +271,19 @@ void Configuration::setSubconfigPtr<Configuration>(
   configMap_[name] = std::move(configPtr);
 }  // setSubconfigPtr
 
-int Configuration::findValueInternal(
-    const std::string& key,
-    int parentLevel,
-    std::vector<std::string>& breadcrumb) const {
+int findValueInternal(const Configuration& config,
+                      const std::string& key,
+                      int parentLevel,
+                      std::vector<std::string>& breadcrumb) {
   int curLevel = parentLevel + 1;
-  if (valueMap_.count(key) > 0) {
+  if (config.valueMap_.count(key) > 0) {
     // Found at this level, access directly via key to get value
     breadcrumb.push_back(key);
     return curLevel;
   }
 
   // not found by here in data maps, check subconfigs, to see what level
-  for (const auto& subConfig : configMap_) {
+  for (const auto& subConfig : config.configMap_) {
     if (subConfig.first == key) {
       // key matches name of subconfiguration
       breadcrumb.push_back(key);
@@ -293,7 +293,7 @@ int Configuration::findValueInternal(
     breadcrumb.push_back(subConfig.first);
     // search this subconfiguration
     int resLevel =
-        subConfig.second->findValueInternal(key, curLevel, breadcrumb);
+        findValueInternal(*subConfig.second, key, curLevel, breadcrumb);
     // if found, will be greater than curLevel
     if (resLevel > curLevel) {
       return resLevel;
@@ -304,6 +304,15 @@ int Configuration::findValueInternal(
   }
   // if not found, return lowest level having been checked
   return parentLevel;
+}
+
+std::vector<std::string> Configuration::findValue(
+    const std::string& key) const {
+  std::vector<std::string> breadcrumbs{};
+  // this will make room for some layers without realloc.
+  breadcrumbs.reserve(10);
+  findValueInternal(*this, key, 0, breadcrumbs);
+  return breadcrumbs;
 }
 
 Configuration& Configuration::operator=(const Configuration& otr) {
