@@ -419,7 +419,12 @@ bool Simulator::instanceStageForActiveScene(
   // set scaling values for this instance of stage attributes
   stageAttributes->setScale(stageAttributes->getScale() *
                             stageInstanceAttributes->getUniformScale());
-
+  // set visibility if explicitly specified in stage instance configs
+  int visSet = stageInstanceAttributes->getIsInstanceVisible();
+  if (visSet != ID_UNDEFINED) {
+    // specfied in scene instance
+    stageAttributes->setIsVisible(visSet == 1 ? true : false);
+  }
   // create a structure to manage active scene and active semantic scene ID
   // passing to and from loadStage
   std::vector<int> tempIDs{activeSceneID_, activeSemanticSceneID_};

@@ -89,6 +89,12 @@ class AbstractObjectAttributes : public AbstractAttributes {
    */
   double getUnitsToMeters() const { return get<double>("units_to_meters"); }
 
+  /**
+   * @brief If not visible can add dynamic non-rendered object into a scene
+   * object.  If is not visible then should not add object to drawables.
+   */
+  void setIsVisible(bool isVisible) { set("is_visible", isVisible); }
+  bool getIsVisible() const { return get<bool>("is_visible"); }
   void setFrictionCoefficient(double frictionCoefficient) {
     set("friction_coefficient", frictionCoefficient);
   }
@@ -297,13 +303,6 @@ class ObjectAttributes : public AbstractObjectAttributes {
   bool getJoinCollisionMeshes() const {
     return get<bool>("join_collision_meshes");
   }
-
-  /**
-   * @brief If not visible can add dynamic non-rendered object into a scene
-   * object.  If is not visible then should not add object to drawables.
-   */
-  void setIsVisible(bool isVisible) { set("is_visible", isVisible); }
-  bool getIsVisible() const { return get<bool>("is_visible"); }
 
   void setSemanticId(int semanticId) { set("semantic_id", semanticId); }
 

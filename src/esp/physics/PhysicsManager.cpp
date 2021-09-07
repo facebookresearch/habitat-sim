@@ -93,6 +93,14 @@ int PhysicsManager::addObjectInstance(
   auto objAttributes =
       resourceManager_.getObjectAttributesManager()->getObjectCopyByHandle(
           attributesHandle);
+  // check if an object is being set to be not visible for a particular
+  // instance.
+  int visSet = objInstAttributes->getIsInstanceVisible();
+  if (visSet != ID_UNDEFINED) {
+    // specfied in scene instance
+    objAttributes->setIsVisible(visSet == 1 ? true : false);
+  }
+
   if (!objAttributes) {
     ESP_ERROR() << "Missing/improperly configured objectAttributes"
                 << attributesHandle << ", whose handle contains"
@@ -282,6 +290,15 @@ int PhysicsManager::addArticulatedObjectInstance(
     const std::string& lightSetup) {
   // Get drawables from simulator. TODO: Support non-existent simulator?
   auto& drawables = simulator_->getDrawableGroup();
+
+  // check if an object is being set to be not visible for a particular
+  // instance.
+  int visSet = aObjInstAttributes->getIsInstanceVisible();
+  if (visSet != ID_UNDEFINED) {
+    // specfied in scene instance
+    // objAttributes->setIsVisible(visSet == 1 ? true : false);
+    // TODO: manage articulated object visibility.
+  }
 
   // call object creation (resides only in physics library-based derived physics
   // managers)

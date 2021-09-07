@@ -28,6 +28,8 @@ SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
   // set to no rotation
   set("rotation", Mn::Quaternion(Mn::Math::IdentityInit));
   set("translation", Mn::Vector3());
+  // don't override attributes-specified visibility.
+  set("is_insitance_visible", ID_UNDEFINED);
   // defaults to unknown so that obj instances use scene instance setting
   setTranslationOrigin(
       static_cast<int>(SceneInstanceTranslationOrigin::Unknown));
