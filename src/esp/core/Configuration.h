@@ -224,15 +224,28 @@ class Configuration {
 
   Configuration(const Configuration& otr)
       : configMap_(), valueMap_(otr.valueMap_) {
-    // configMap_.reserve(otr.configMap_.size());
     for (const auto& entry : otr.configMap_) {
       configMap_[entry.first] = std::make_shared<Configuration>(*entry.second);
     }
-  }
+  }  // copy ctor
+
+  Configuration(Configuration&& otr)
+      : configMap_(std::move(otr.configMap_)),
+        valueMap_(std::move(otr.valueMap_)) {}  // move ctor
 
   // virtual destructor set to that pybind11 recognizes attributes inheritance
   // from configuration to be polymorphic
   virtual ~Configuration() = default;
+
+  /**
+   * @brief Copy Assignment.
+   */
+  Configuration& operator=(const Configuration& otr);
+
+  /**
+   * @brief Move Assignment.
+   */
+  Configuration& operator=(Configuration&& otr);
 
   // ****************** Getters ******************
   /**

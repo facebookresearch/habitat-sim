@@ -306,6 +306,22 @@ int Configuration::findValueInternal(
   return parentLevel;
 }
 
+Configuration& Configuration::operator=(const Configuration& otr) {
+  if (this != &otr) {
+    configMap_.clear();
+    valueMap_ = otr.valueMap_;
+    for (const auto& entry : otr.configMap_) {
+      configMap_[entry.first] = std::make_shared<Configuration>(*entry.second);
+    }
+  }
+  return *this;
+}
+Configuration& Configuration::operator=(Configuration&& otr) {
+  configMap_ = std::move(otr.configMap_);
+  valueMap_ = std::move(otr.valueMap_);
+  return *this;
+}
+
 }  // namespace config
 }  // namespace core
 }  // namespace esp
