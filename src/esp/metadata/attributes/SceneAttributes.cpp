@@ -110,6 +110,53 @@ SceneAttributes::SceneAttributes(const std::string& handle)
   artObjInstConfig_ = editSubconfig<Configuration>("ao_instances");
 }
 
+SceneAttributes::SceneAttributes(const SceneAttributes& otr)
+    : AbstractAttributes(otr),
+      availableObjInstIDs_(otr.availableObjInstIDs_),
+      availableArtObjInstIDs_(otr.availableArtObjInstIDs_) {
+  // get refs to internal subconfigs for object and ao instances
+  objInstConfig_ = editSubconfig<Configuration>("object_instances");
+  copySubconfigIntoMe<SceneObjectInstanceAttributes>(otr.objInstConfig_,
+                                                     objInstConfig_);
+  artObjInstConfig_ = editSubconfig<Configuration>("ao_instances");
+  copySubconfigIntoMe<SceneAOInstanceAttributes>(otr.artObjInstConfig_,
+                                                 artObjInstConfig_);
+}
+SceneAttributes::SceneAttributes(SceneAttributes&& otr) noexcept
+    : AbstractAttributes(std::move(static_cast<AbstractAttributes>(otr))),
+      availableObjInstIDs_(std::move(otr.availableObjInstIDs_)),
+      availableArtObjInstIDs_(std::move(otr.availableArtObjInstIDs_)) {
+  // get refs to internal subconfigs for object and ao instances
+  // originals were moved over so should retain full derived class
+  objInstConfig_ = editSubconfig<Configuration>("object_instances");
+  artObjInstConfig_ = editSubconfig<Configuration>("ao_instances");
+}
+
+SceneAttributes& SceneAttributes::operator=(const SceneAttributes& otr) {
+  if (this != &otr) {
+    this->AbstractAttributes::operator=(otr);
+    availableObjInstIDs_ = otr.availableObjInstIDs_;
+    availableArtObjInstIDs_ = otr.availableArtObjInstIDs_;
+    // get refs to internal subconfigs for object and ao instances
+    objInstConfig_ = editSubconfig<Configuration>("object_instances");
+    copySubconfigIntoMe<SceneObjectInstanceAttributes>(otr.objInstConfig_,
+                                                       objInstConfig_);
+    artObjInstConfig_ = editSubconfig<Configuration>("ao_instances");
+    copySubconfigIntoMe<SceneAOInstanceAttributes>(otr.artObjInstConfig_,
+                                                   artObjInstConfig_);
+  }
+  return *this;
+}
+SceneAttributes& SceneAttributes::operator=(SceneAttributes&& otr) noexcept {
+  availableObjInstIDs_ = std::move(otr.availableObjInstIDs_);
+  availableArtObjInstIDs_ = std::move(otr.availableArtObjInstIDs_);
+  this->AbstractAttributes::operator=(
+      std::move(static_cast<AbstractAttributes>(otr)));
+
+  objInstConfig_ = editSubconfig<Configuration>("object_instances");
+  artObjInstConfig_ = editSubconfig<Configuration>("ao_instances");
+  return *this;
+}
 std::string SceneAttributes::getObjectInfoInternal() const {
   // scene-specific info constants
   // default translation origin

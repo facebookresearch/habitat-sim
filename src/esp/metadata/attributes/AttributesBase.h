@@ -119,16 +119,13 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
                            public esp::core::config::Configuration {
  public:
   AbstractAttributes(const std::string& attributesClassKey,
-                     const std::string& handle)
-      : AbstractFileBasedManagedObject(), Configuration() {
-    // set up an existing subgroup for user_defined attributes
-    addSubgroup("user_defined");
-    AbstractAttributes::setClassKey(attributesClassKey);
-    AbstractAttributes::setHandle(handle);
-    // set initial vals, will be overwritten when registered
-    set("ID", 0);
-    set("fileDirectory", "");
-  }
+                     const std::string& handle);
+
+  AbstractAttributes(const AbstractAttributes& otr);
+  AbstractAttributes(AbstractAttributes&& otr) noexcept;
+
+  AbstractAttributes& operator=(const AbstractAttributes& otr);
+  AbstractAttributes& operator=(AbstractAttributes&& otr) noexcept;
 
   ~AbstractAttributes() override = default;
   /**
@@ -228,25 +225,82 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
 
  protected:
   /**
-   * @brief return a vector of shared pointers to @ref AttributesBase
+   * @brief return a vector of shared pointers to const @ref AttributesBase
    * sub-configurations.
+   * @param subAttrConfig The subconfiguration from which to aquire the
+   * subconfigs.
    */
   template <class T>
-  std::vector<std::shared_ptr<const T>> getSubAttributesInternal(
+  std::vector<std::shared_ptr<const T>> getSubAttributesListInternal(
       const std::shared_ptr<Configuration>& subAttrConfig) const;
+
+  template <class T>
+  void copySubconfigIntoMe(
+      const std::shared_ptr<Configuration>& srcSubAttrConfig,
+      const std::shared_ptr<Configuration>& destSubAttrConfig);
+
+  /**
+   * @brief Return the number of SubAttribute Configurations with passed key
+   * @p subConfigNamePrefix in name
+   * @param subConfigNamePrefix Name tag to look for to count subconfig.
+   * @param subAttrConfig
+   */
+  int getNumSubAttributesInternal(
+      const std::string& subConfigNamePrefix,
+      const std::shared_ptr<Configuration>& subAttrConfig) const {
+    int res = 0;
+    if (subConfigNamePrefix == "") {
+      return subAttrConfig->getNumSubconfigEntries();
+    }
+    // iterator to subAttrConfig's subConfigs
+    auto subAttrIter = subAttrConfig->getSubconfigIterator();
+    for (auto objIter = subAttrIter.first; objIter != subAttrIter.second;
+         ++objIter) {
+      const std::string key = objIter->first;
+      if (std::string::npos != key.find(subConfigNamePrefix)) {
+        ++res;
+      }
+    }
+    return res;
+  }
+
+  /**
+   * @brief Returns a shared pointer to the named @ref AttributesBase
+   * sub-configurations member of the passed @p subAttrConfig.
+   */
+  template <class T>
+  std::shared_ptr<const T> getNamedSubAttributesInternal(
+      const std::string& name,
+      const std::shared_ptr<Configuration>& subAttrConfig) const;
+
+  /**
+   * @brief Removes and returns a shared pointer to the named @ref
+   * AttributesBase sub-configurations member of the passed @p subAttrConfig.
+   * The object's ID is freed as part of this process, to be used by other
+   * objects.
+   * @tparam The desired type of the removed Configuration
+   * @param name The name of the object to remove.
+   * @param availableIDs A deque of the IDs that this configuration has
+   * available for these types of Subconfigurations to use.
+   * @param subAttrConfig The
+   */
+  template <class T>
+  std::shared_ptr<T> removeNamedSubAttributesInternal(
+      const std::string& name,
+      std::deque<int>& availableIDs,
+      const std::shared_ptr<Configuration>& subAttrConfig);
 
   /**
    * @brief Add the passed shared pointer to @ref AbstractAttributes , @p
    * objInst , to the appropriate sub-config using the passed name.
    *
    * @tparam The type of smartpointer object instance attributes
-   * @param objInst The object instance attributes pointer
+   * @param objInst The subAttributes Configuration pointer
    * @param availableIDs The ids available that can be used for the passed
    * attributes
-   * @param subconfigKey The string key representing the subconfig to place @p
-   * objInst in.
+   * @param subAttrConfig The subconfig to place @p objInst in.
    * @param objInstNamePrefix The prefix to use to construct the key to store
-   * the instance in the subconfig.
+   * the instance in the subconfig. If empty, will use @p objInst->getHandle().
    */
   template <class T>
   void setSubAttributesInternal(
@@ -285,8 +339,12 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
 
 template <class T>
 std::vector<std::shared_ptr<const T>>
-AbstractAttributes::getSubAttributesInternal(
+AbstractAttributes::getSubAttributesListInternal(
     const std::shared_ptr<Configuration>& subAttrConfig) const {
+  static_assert(
+      std::is_base_of<AbstractAttributes, T>::value,
+      "AbstractAttributes : Desired subconfig type must be derived from "
+      "esp::metadata::AbstractAttributes");
   std::vector<std::shared_ptr<const T>> res{};
   // pair of begin/end const iters through subconfig of given name
   int numSubconfigs = subAttrConfig->getNumSubconfigEntries();
@@ -302,18 +360,91 @@ AbstractAttributes::getSubAttributesInternal(
        ++objIter) {
     auto obj = objIter->second;
     if (std::shared_ptr<T> objPtr = std::dynamic_pointer_cast<T>(obj)) {
-      res.emplace_back(std::move(objPtr));
-    } else {
       ESP_WARNING() << getClassKey() << ": Subconfig obj with"
                     << obj->getNumEntries()
-                    << "entries is not castable to appropriate type const"
-                    << typeid(T).name() << " | " << typeid(obj).name() << " | {"
-                    << objIter->first << " : " << obj->getAsString("handle")
-                    << "}";
+                    << "entries SUCCESSFULLY CASTED TO type shared ptr to const"
+                    << typeid(T).name() << "| Obj type:" << typeid(obj).name()
+                    << "| Subconfig Key : {" << objIter->first << " : "
+                    << obj->getAsString("handle") << "}";
+
+      res.emplace_back(std::move(objPtr));
+    } else {
+      // should not happen - would mean that subconfiguration specified for
+      // tracking sub-attributes has a Configuration that is not castable to the
+      // required sub-attributes type.
+      ESP_WARNING()
+          << getClassKey() << ": Subconfig obj with" << obj->getNumEntries()
+          << "entries is not castable to appropriate type shared ptr to const"
+          << typeid(T).name() << "| Obj type:" << typeid(obj).name()
+          << "| Subconfig Key : {" << objIter->first << " : "
+          << obj->getAsString("handle") << "}";
     }
   }
   return res;
-}
+}  // AbstractAttributes::getSubAttributesListInternal
+
+template <class T>
+std::shared_ptr<const T> AbstractAttributes::getNamedSubAttributesInternal(
+    const std::string& name,
+    const std::shared_ptr<Configuration>& subAttrConfig) const {
+  static_assert(
+      std::is_base_of<AbstractAttributes, T>::value,
+      "AbstractAttributes : Desired subconfig type must be derived from "
+      "esp::metadata::AbstractAttributes");
+  auto obj = subAttrConfig->getSubconfigView(name);
+  if (obj == nullptr) {
+    // not found - fail quietly
+    return nullptr;
+  }
+  if (std::shared_ptr<const T> objPtr =
+          std::dynamic_pointer_cast<const T>(obj)) {
+    return objPtr;
+  } else {
+    // should not happen - would mean that subconfiguration specified for
+    // tracking sub-attributes has a Configuration that is not castable to the
+    // required sub-attributes type.
+    ESP_ERROR() << getClassKey() << ": Subconfig obj with"
+                << obj->getNumEntries() << "entries and name :" << name
+                << "is not castable to appropriate type shared ptr to const"
+                << typeid(T).name() << " | obj type :" << typeid(obj).name()
+                << "| handle :" << obj->getAsString("handle");
+    return nullptr;
+  }
+
+}  // AbstractAttributes::getNamedSubAttributesInternal
+
+template <class T>
+std::shared_ptr<T> AbstractAttributes::removeNamedSubAttributesInternal(
+    const std::string& name,
+    std::deque<int>& availableIDs,
+    const std::shared_ptr<Configuration>& subAttrConfig) {
+  static_assert(
+      std::is_base_of<AbstractAttributes, T>::value,
+      "AbstractAttributes : Desired subconfig type must be derived from "
+      "esp::metadata::AbstractAttributes");
+  auto obj = subAttrConfig->removeSubconfig(name);
+  if (obj == nullptr) {
+    // not found - fail quietly
+    return nullptr;
+  }
+
+  if (std::shared_ptr<T> objPtr = std::dynamic_pointer_cast<T>(obj)) {
+    // queue available ID
+    availableIDs.emplace_front(obj->get<int>("ID"));
+    return objPtr;
+  } else {
+    // should not happen - would mean that subconfiguration specified for
+    // tracking sub-attributes has a Configuration that is not castable to the
+    // required sub-attributes type.
+    ESP_WARNING() << getClassKey() << ": Subconfig obj with"
+                  << obj->getNumEntries() << "entries and name :" << name
+                  << "is not castable to appropriate type shared ptr to const"
+                  << typeid(T).name() << " | obj type :" << typeid(obj).name()
+                  << "| handle :" << obj->getAsString("handle");
+    return nullptr;
+  }
+
+}  // AbstractAttributes::getNamedSubAttributesInternal
 
 template <class T>
 void AbstractAttributes::setSubAttributesInternal(
@@ -321,6 +452,10 @@ void AbstractAttributes::setSubAttributesInternal(
     std::deque<int>& availableIDs,
     const std::shared_ptr<Configuration>& subAttrConfig,
     const std::string& objInstNamePrefix) {
+  static_assert(
+      std::is_base_of<AbstractAttributes, T>::value,
+      "AbstractAttributes : Desired subconfig type must be derived from "
+      "esp::metadata::AbstractAttributes");
   // get subconfig for articulated object instances, add this ao instance as a
   // set id
   if (!availableIDs.empty()) {
@@ -333,11 +468,44 @@ void AbstractAttributes::setSubAttributesInternal(
   }
   // get last key
   subAttrConfig->setSubconfigPtr<T>(
-      Cr::Utility::formatString("{:.05d}_{}{}", objInst->getID(),
-                                objInstNamePrefix,
-                                objInst->getSimplifiedHandle()),
+      objInstNamePrefix == ""
+          ? objInst->getHandle()
+          : Cr::Utility::formatString("{:.05d}_{}{}", objInst->getID(),
+                                      objInstNamePrefix,
+                                      objInst->getSimplifiedHandle()),
       objInst);
-}
+}  // AbstractAttributes::setSubAttributesInternal
+
+template <class T>
+void AbstractAttributes::copySubconfigIntoMe(
+    const std::shared_ptr<Configuration>& srcSubAttrConfig,
+    const std::shared_ptr<Configuration>& destSubAttrConfig) {
+  // copy configs from srcSubAttrConfig into destSubAttrConfig, with appropriate
+  // casting
+
+  // get begin/end pair of iterators for subconfiguration
+  auto subAttrIter = srcSubAttrConfig->getSubconfigIterator();
+
+  // iterate through subconfig entries, casting appropriately and adding to
+  // map if cast successful
+  for (auto objIter = subAttrIter.first; objIter != subAttrIter.second;
+       ++objIter) {
+    auto obj = objIter->second;
+    if (std::shared_ptr<T> objPtr = std::dynamic_pointer_cast<T>(obj)) {
+      destSubAttrConfig->setSubconfigPtr<T>(objIter->first, objPtr);
+    } else {
+      // should not happen - would mean that subconfiguration specified for
+      // tracking sub-attributes has a Configuration that is not castable to the
+      // required sub-attributes type.
+      ESP_WARNING() << getClassKey() << ": Subconfig obj with"
+                    << obj->getNumEntries()
+                    << "entries is not castable to appropriate type const"
+                    << typeid(T).name() << "| Obj type:" << typeid(obj).name()
+                    << "| Subconfig Key : {" << objIter->first << " : "
+                    << obj->getAsString("handle") << "}";
+    }
+  }
+}  // AbstractAttributes::copySubconfigIntoMe
 
 }  // namespace attributes
 }  // namespace metadata

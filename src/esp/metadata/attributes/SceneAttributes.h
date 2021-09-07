@@ -287,6 +287,12 @@ class SceneAttributes : public AbstractAttributes {
  public:
   explicit SceneAttributes(const std::string& handle);
 
+  SceneAttributes(const SceneAttributes& otr);
+  SceneAttributes(SceneAttributes&& otr) noexcept;
+
+  SceneAttributes& operator=(const SceneAttributes& otr);
+  SceneAttributes& operator=(SceneAttributes&& otr) noexcept;
+
   /**
    * @brief Set a value representing the mechanism used to create this scene
    * instance - should map to an enum value in @InstanceTranslationOriginMap.
@@ -373,8 +379,15 @@ class SceneAttributes : public AbstractAttributes {
    * @brief Get the object instance descriptions for this scene
    */
   std::vector<SceneObjectInstanceAttributes::cptr> getObjectInstances() const {
-    return getSubAttributesInternal<SceneObjectInstanceAttributes>(
+    return getSubAttributesListInternal<SceneObjectInstanceAttributes>(
         objInstConfig_);
+  }
+  /**
+   * @brief Return the number of defined @ref SceneObjectInstanceAttributes
+   * subconfigs in this scene instance.
+   */
+  int getNumObjInstances() const {
+    return getNumSubAttributesInternal("obj_inst_", objInstConfig_);
   }
 
   /**
@@ -392,8 +405,16 @@ class SceneAttributes : public AbstractAttributes {
    */
   std::vector<SceneAOInstanceAttributes::cptr> getArticulatedObjectInstances()
       const {
-    return getSubAttributesInternal<SceneAOInstanceAttributes>(
+    return getSubAttributesListInternal<SceneAOInstanceAttributes>(
         artObjInstConfig_);
+  }
+
+  /**
+   * @brief Return the number of defined @ref SceneAOInstanceAttributes
+   * subconfigs in this scene instance.
+   */
+  int getNumAOInstances() const {
+    return getNumSubAttributesInternal("art_obj_inst_", artObjInstConfig_);
   }
 
  protected:

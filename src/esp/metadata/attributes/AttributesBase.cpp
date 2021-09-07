@@ -55,6 +55,36 @@ std::string getTranslationOriginName(int translationOrigin) {
   return "default";
 }
 
+AbstractAttributes::AbstractAttributes(const std::string& attributesClassKey,
+                                       const std::string& handle)
+    : Configuration() {
+  // set up an existing subgroup for user_defined attributes
+  addSubgroup("user_defined");
+  AbstractAttributes::setClassKey(attributesClassKey);
+  AbstractAttributes::setHandle(handle);
+  // set initial vals, will be overwritten when registered
+  set("ID", 0);
+  set("fileDirectory", "");
+}
+
+AbstractAttributes::AbstractAttributes(const AbstractAttributes& otr)
+    : Configuration(otr) {}
+AbstractAttributes::AbstractAttributes(AbstractAttributes&& otr) noexcept
+    : Configuration(std::move(otr)) {}
+
+AbstractAttributes& AbstractAttributes::operator=(
+    const AbstractAttributes& otr) {
+  if (this != &otr) {
+    this->Configuration::operator=(otr);
+  }
+  return *this;
+}
+AbstractAttributes& AbstractAttributes::operator=(
+    AbstractAttributes&& otr) noexcept {
+  this->Configuration::operator=(std::move(otr));
+  return *this;
+}
+
 }  // namespace attributes
 }  // namespace metadata
 }  // namespace esp
