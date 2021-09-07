@@ -316,7 +316,7 @@ Configuration& Configuration::operator=(const Configuration& otr) {
   }
   return *this;
 }
-Configuration& Configuration::operator=(Configuration&& otr) {
+Configuration& Configuration::operator=(Configuration&& otr) noexcept {
   configMap_ = std::move(otr.configMap_);
   valueMap_ = std::move(otr.valueMap_);
   return *this;

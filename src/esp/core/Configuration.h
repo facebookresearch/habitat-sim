@@ -229,7 +229,7 @@ class Configuration {
     }
   }  // copy ctor
 
-  Configuration(Configuration&& otr)
+  Configuration(Configuration&& otr) noexcept
       : configMap_(std::move(otr.configMap_)),
         valueMap_(std::move(otr.valueMap_)) {}  // move ctor
 
@@ -245,7 +245,7 @@ class Configuration {
   /**
    * @brief Move Assignment.
    */
-  Configuration& operator=(Configuration&& otr);
+  Configuration& operator=(Configuration&& otr) noexcept;
 
   // ****************** Getters ******************
   /**
