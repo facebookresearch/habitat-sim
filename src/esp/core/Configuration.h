@@ -245,7 +245,7 @@ class Configuration {
   /**
    * @brief Move Assignment.
    */
-  Configuration& operator=(Configuration&& otr) noexcept;
+  Configuration& operator=(Configuration&& otr) noexcept = default;
 
   // ****************** Getters ******************
   /**

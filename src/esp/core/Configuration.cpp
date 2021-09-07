@@ -297,10 +297,9 @@ int findValueInternal(const Configuration& config,
     // if found, will be greater than curLevel
     if (resLevel > curLevel) {
       return resLevel;
-    } else {
-      // remove subconfig key from breadcrumb
-      breadcrumb.pop_back();
     }
+    // remove subconfig key from breadcrumb
+    breadcrumb.pop_back();
   }
   // if not found, return lowest level having been checked
   return parentLevel;
@@ -323,11 +322,6 @@ Configuration& Configuration::operator=(const Configuration& otr) {
       configMap_[entry.first] = std::make_shared<Configuration>(*entry.second);
     }
   }
-  return *this;
-}
-Configuration& Configuration::operator=(Configuration&& otr) noexcept {
-  configMap_ = std::move(otr.configMap_);
-  valueMap_ = std::move(otr.valueMap_);
   return *this;
 }
 
