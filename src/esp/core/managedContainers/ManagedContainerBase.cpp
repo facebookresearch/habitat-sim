@@ -59,36 +59,31 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
   if (mapOfHandles.size() == 0) {
     return res;
   }
+  res.reserve(mapOfHandles.size());
   // if search string is empty, return all values
   if (subStr.length() == 0) {
-    res.reserve(mapOfHandles.size());
     for (const auto& elem : mapOfHandles) {
       res.push_back(elem.second);
     }
-    if (sorted) {
-      std::sort(res.begin(), res.end());
-    }
-    return res;
-  }
-  // build search criteria
-  std::string strToLookFor = Cr::Utility::String::lowercase(subStr);
-
-  std::size_t strSize = strToLookFor.length();
-
-  for (std::unordered_map<int, std::string>::const_iterator iter =
-           mapOfHandles.begin();
-       iter != mapOfHandles.end(); ++iter) {
-    std::string key = Cr::Utility::String::lowercase(iter->second);
-    // be sure that key is big enough to search in (otherwise find has undefined
-    // behavior)
-    if (key.length() < strSize) {
-      continue;
-    }
-    bool found = (std::string::npos != key.find(strToLookFor));
-    if (found == contains) {
-      // if found and searching for contains, or not found and searching for not
-      // contains
-      res.push_back(iter->second);
+  } else {
+    // build search criteria for reverse map
+    std::string strToLookFor = Cr::Utility::String::lowercase(subStr);
+    std::size_t strSize = strToLookFor.length();
+    for (std::unordered_map<int, std::string>::const_iterator iter =
+             mapOfHandles.begin();
+         iter != mapOfHandles.end(); ++iter) {
+      std::string key = Cr::Utility::String::lowercase(iter->second);
+      // be sure that key is big enough to search in (otherwise find has
+      // undefined behavior)
+      if (key.length() < strSize) {
+        continue;
+      }
+      bool found = (std::string::npos != key.find(strToLookFor));
+      if (found == contains) {
+        // if found and searching for contains, or not found and searching for
+        // not contains
+        res.push_back(iter->second);
+      }
     }
   }
   if (sorted) {
@@ -108,36 +103,31 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
   if (mapOfHandles.size() == 0) {
     return res;
   }
+  res.reserve(mapOfHandles.size());
   // if search string is empty, return all values
   if (subStr.length() == 0) {
-    res.reserve(mapOfHandles.size());
     for (const auto& elem : mapOfHandles) {
       res.push_back(elem.first);
     }
-    if (sorted) {
-      std::sort(res.begin(), res.end());
-    }
-    return res;
-  }
-  // build search criteria
-  std::string strToLookFor = Cr::Utility::String::lowercase(subStr);
-
-  std::size_t strSize = strToLookFor.length();
-
-  for (std::unordered_map<std::string, std::set<std::string>>::const_iterator
-           iter = mapOfHandles.begin();
-       iter != mapOfHandles.end(); ++iter) {
-    std::string key = Cr::Utility::String::lowercase(iter->first);
-    // be sure that key is big enough to search in (otherwise find has undefined
-    // behavior)
-    if (key.length() < strSize) {
-      continue;
-    }
-    bool found = (std::string::npos != key.find(strToLookFor));
-    if (found == contains) {
-      // if found and searching for contains, or not found and searching for not
-      // contains
-      res.push_back(iter->first);
+  } else {
+    // build search criteria
+    std::string strToLookFor = Cr::Utility::String::lowercase(subStr);
+    std::size_t strSize = strToLookFor.length();
+    for (std::unordered_map<std::string, std::set<std::string>>::const_iterator
+             iter = mapOfHandles.begin();
+         iter != mapOfHandles.end(); ++iter) {
+      std::string key = Cr::Utility::String::lowercase(iter->first);
+      // be sure that key is big enough to search in (otherwise find has
+      // undefined behavior)
+      if (key.length() < strSize) {
+        continue;
+      }
+      bool found = (std::string::npos != key.find(strToLookFor));
+      if (found == contains) {
+        // if found and searching for contains, or not found and searching for
+        // not contains
+        res.push_back(iter->first);
+      }
     }
   }
   if (sorted) {
