@@ -533,15 +533,18 @@ class Configuration {
   }
 
   /**
-   * @brief Retrieves the stored shared pointer to the subConfig @ref
-   * esp::core::Configuration that has the passed @p name . This will create a
-   * new sub-configuration if none exists.
+   * @brief Templated Version. Retrieves the stored shared pointer to the
+   * subConfig @ref esp::core::Configuration that has the passed @p name , cast
+   * to the specified type. This will create a shared pointer to a new
+   * sub-configuration if none exists and return it, cast to specified type.
    *
    * Use this function when you wish to modify this configuration's
    * subgroup, possibly creating it in the process.
+   * @tparam The type to cast the @ref esp::core::Configuration to.  Type is
+   * checked to verify that it inherits from Configuration.
    * @param name The name of the configuration to edit.
    * @return The actual pointer to the configuration having the requested
-   * name.
+   * name, cast to the specified type.
    */
   template <class T>
   std::shared_ptr<T> editSubconfig(const std::string& name) {
@@ -637,37 +640,7 @@ class Configuration {
    */
   int findValueInternal(const std::string& key,
                         int parentLevel,
-                        std::vector<std::string>& breadcrumb) const {
-    int curLevel = parentLevel + 1;
-    if (valueMap_.count(key) > 0) {
-      // Found at this level, access directly via key to get value
-      breadcrumb.push_back(key);
-      return curLevel;
-    }
-
-    // not found by here in data maps, check subconfigs, to see what level
-    for (const auto& subConfig : configMap_) {
-      if (subConfig.first == key) {
-        // key matches name of subconfiguration
-        breadcrumb.push_back(key);
-        return curLevel;
-      }
-      // add subconfig key to breadcrumb
-      breadcrumb.push_back(subConfig.first);
-      // search this subconfiguration
-      int resLevel =
-          subConfig.second->findValueInternal(key, curLevel, breadcrumb);
-      // if found, will be greater than curLevel
-      if (resLevel > curLevel) {
-        return resLevel;
-      } else {
-        // remove subconfig key from breadcrumb
-        breadcrumb.pop_back();
-      }
-    }
-    // if not found, return lowest level having been checked
-    return parentLevel;
-  }
+                        std::vector<std::string>& breadcrumb) const;
 
   /**
    * @brief Populate the passed cfg with all the values this map holds, along

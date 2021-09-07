@@ -225,6 +225,15 @@ bool ConfigValue::putValueInConfigGroup(
   }  // switch
 }  // ConfigValue::putValueInConfigGroup
 
+Mn::Debug& operator<<(Mn::Debug& debug, const ConfigStoredType& value) {
+  return debug << "Type:" << getNameForStoredType(value);
+}
+
+Mn::Debug& operator<<(Mn::Debug& debug, const ConfigValue& value) {
+  return debug << "ConfigValue :(" << Mn::Debug::nospace << value.getAsString()
+               << "|" << value.getType() << Mn::Debug::nospace << ")";
+}
+
 /**
  * @brief Retrieves a shared pointer to a copy of the subConfig @ref
  * esp::core::Configuration that has the passed @p name . This will create a
@@ -262,13 +271,39 @@ void Configuration::setSubconfigPtr<Configuration>(
   configMap_[name] = std::move(configPtr);
 }  // setSubconfigPtr
 
-Mn::Debug& operator<<(Mn::Debug& debug, const ConfigStoredType& value) {
-  return debug << "Type:" << getNameForStoredType(value);
-}
+int Configuration::findValueInternal(
+    const std::string& key,
+    int parentLevel,
+    std::vector<std::string>& breadcrumb) const {
+  int curLevel = parentLevel + 1;
+  if (valueMap_.count(key) > 0) {
+    // Found at this level, access directly via key to get value
+    breadcrumb.push_back(key);
+    return curLevel;
+  }
 
-Mn::Debug& operator<<(Mn::Debug& debug, const ConfigValue& value) {
-  return debug << "ConfigValue :(" << Mn::Debug::nospace << value.getAsString()
-               << "|" << value.getType() << Mn::Debug::nospace << ")";
+  // not found by here in data maps, check subconfigs, to see what level
+  for (const auto& subConfig : configMap_) {
+    if (subConfig.first == key) {
+      // key matches name of subconfiguration
+      breadcrumb.push_back(key);
+      return curLevel;
+    }
+    // add subconfig key to breadcrumb
+    breadcrumb.push_back(subConfig.first);
+    // search this subconfiguration
+    int resLevel =
+        subConfig.second->findValueInternal(key, curLevel, breadcrumb);
+    // if found, will be greater than curLevel
+    if (resLevel > curLevel) {
+      return resLevel;
+    } else {
+      // remove subconfig key from breadcrumb
+      breadcrumb.pop_back();
+    }
+  }
+  // if not found, return lowest level having been checked
+  return parentLevel;
 }
 
 }  // namespace config
