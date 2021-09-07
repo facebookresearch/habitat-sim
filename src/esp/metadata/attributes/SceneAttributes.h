@@ -353,7 +353,8 @@ class SceneAttributes : public AbstractAttributes {
                                                    _stageInstance);
   }
   /**
-   * @brief Get the description of the stage placement for this scene instance.
+   * @brief Get a shared_pointer to the @ref SceneObjectInstanceAttributes
+   * descibing the stage placement for this scene instance.
    */
   SceneObjectInstanceAttributes::cptr getStageInstance() const {
     return getSubconfigCopy<const SceneObjectInstanceAttributes>(
@@ -364,7 +365,7 @@ class SceneAttributes : public AbstractAttributes {
    * @brief Add a description of an object instance to this scene instance
    */
   void addObjectInstance(SceneObjectInstanceAttributes::ptr _objInstance) {
-    setObjectInstanceAttrInternal<SceneObjectInstanceAttributes>(
+    setSubAttributesInternal<SceneObjectInstanceAttributes>(
         _objInstance, availableObjInstIDs_, objInstConfig_, "obj_inst_");
   }
 
@@ -372,7 +373,7 @@ class SceneAttributes : public AbstractAttributes {
    * @brief Get the object instance descriptions for this scene
    */
   std::vector<SceneObjectInstanceAttributes::cptr> getObjectInstances() const {
-    return getObjectInstanceAttrInternal<SceneObjectInstanceAttributes>(
+    return getSubAttributesInternal<SceneObjectInstanceAttributes>(
         objInstConfig_);
   }
 
@@ -381,7 +382,7 @@ class SceneAttributes : public AbstractAttributes {
    */
   void addArticulatedObjectInstance(
       SceneAOInstanceAttributes::ptr _artObjInstance) {
-    setObjectInstanceAttrInternal<SceneAOInstanceAttributes>(
+    setSubAttributesInternal<SceneAOInstanceAttributes>(
         _artObjInstance, availableArtObjInstIDs_, artObjInstConfig_,
         "art_obj_inst_");
   }
@@ -391,39 +392,11 @@ class SceneAttributes : public AbstractAttributes {
    */
   std::vector<SceneAOInstanceAttributes::cptr> getArticulatedObjectInstances()
       const {
-    return getObjectInstanceAttrInternal<SceneAOInstanceAttributes>(
+    return getSubAttributesInternal<SceneAOInstanceAttributes>(
         artObjInstConfig_);
   }
 
  protected:
-  /**
-   * @brief Add the passed object/ao scene instance to the appropriate
-   * sub-config using the passed name.
-   *
-   * @tparam The type of smartpointer object instance attributes
-   * @param objInst The object instance attributes pointer
-   * @param availableIDs The ids available that can be used for the passed
-   * attributes
-   * @param subconfigKey The string key representing the subconfig to place @p
-   * objInst in.
-   * @param objInstNamePrefix The prefix to use to construct the key to store
-   * the instance in the subconfig.
-   */
-  template <class T>
-  void setObjectInstanceAttrInternal(
-      std::shared_ptr<T>& objInst,
-      std::deque<int>& availableIDs,
-      const std::shared_ptr<Configuration>& objInstConfig,
-      const std::string& objInstNamePrefix);
-
-  /**
-   * @brief return a vector of shared pointers to scene instance
-   * configurations.
-   */
-  template <class T>
-  std::vector<std::shared_ptr<const T>> getObjectInstanceAttrInternal(
-      const std::shared_ptr<Configuration>& objInstConfig) const;
-
   /**
    * @brief Retrieve a comma-separated string holding the header values for the
    * info returned for this managed object, type-specific.
@@ -437,7 +410,8 @@ class SceneAttributes : public AbstractAttributes {
   std::string getObjectInfoInternal() const override;
 
   /**
-   * @brief Shortcut to object instance configuration.
+   * @brief Smartpointer to created object instance configuration. The
+   * configuration is created on SceneAttributes construction.
    */
   std::shared_ptr<Configuration> objInstConfig_{};
   /**
@@ -447,7 +421,8 @@ class SceneAttributes : public AbstractAttributes {
   std::deque<int> availableObjInstIDs_;
 
   /**
-   * @brief Shortcut to articulated object instance configuration.
+   * @brief Smartpointer to created articulated object instance configuration.
+   * The configuratio is created on SceneAttributes construction.
    */
   std::shared_ptr<Configuration> artObjInstConfig_{};
 
@@ -461,59 +436,6 @@ class SceneAttributes : public AbstractAttributes {
  public:
   ESP_SMART_POINTERS(SceneAttributes)
 };  // class SceneAttributes
-
-template <class T>
-void SceneAttributes::setObjectInstanceAttrInternal(
-    std::shared_ptr<T>& objInst,
-    std::deque<int>& availableIDs,
-    const std::shared_ptr<Configuration>& objInstConfig,
-    const std::string& objInstNamePrefix) {
-  // get subconfig for articulated object instances, add this ao instance as a
-  // set id
-  if (!availableIDs.empty()) {
-    // use saved value and then remove from storage
-    objInst->setID(availableIDs.front());
-    availableIDs.pop_front();
-  } else {
-    // use size of container to set ID
-    objInst->setID(objInstConfig->getNumSubconfigEntries());
-  }
-  // get last key
-  objInstConfig->setSubconfigPtr<T>(
-      Cr::Utility::formatString("{:.05d}_{}{}", objInst->getID(),
-                                objInstNamePrefix,
-                                objInst->getSimplifiedHandle()),
-      objInst);
-}
-
-template <class T>
-std::vector<std::shared_ptr<const T>>
-SceneAttributes::getObjectInstanceAttrInternal(
-    const std::shared_ptr<Configuration>& objInstConfig) const {
-  std::vector<std::shared_ptr<const T>> res{};
-  // pair of begin/end const iters through subconfig of given name
-  int numSubconfigs = objInstConfig->getNumSubconfigEntries();
-  if (numSubconfigs == 0) {
-    return {};
-  }
-  res.reserve(numSubconfigs);
-  auto objInstIter = objInstConfig->getSubconfigIterator();
-  // iterate through subconfig entries, casting appropriately and adding to
-  // map if cast successful
-  for (auto objIter = objInstIter.first; objIter != objInstIter.second;
-       ++objIter) {
-    auto obj = objIter->second;
-    if (std::shared_ptr<T> objPtr = std::dynamic_pointer_cast<T>(obj)) {
-      res.push_back(objPtr);
-    } else {
-      ESP_WARNING() << "Subconfig obj  with" << obj->getNumEntries()
-                    << "entries is not appropriate type" << typeid(T).name()
-                    << " | " << typeid(obj).name() << " | {" << objIter->first
-                    << " : " << obj->getAsString("handle") << "}";
-    }
-  }
-  return res;
-}
 
 }  // namespace attributes
 }  // namespace metadata

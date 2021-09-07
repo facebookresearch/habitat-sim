@@ -6,6 +6,7 @@
 #define ESP_METADATA_ATTRIBUTES_ATTRIBUTESBASE_H_
 
 #include <Corrade/Utility/Directory.h>
+#include <deque>
 #include "esp/core/Configuration.h"
 #include "esp/core/managedContainers/AbstractManagedObject.h"
 
@@ -119,7 +120,7 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
  public:
   AbstractAttributes(const std::string& attributesClassKey,
                      const std::string& handle)
-      : Configuration() {
+      : AbstractFileBasedManagedObject(), Configuration() {
     // set up an existing subgroup for user_defined attributes
     addSubgroup("user_defined");
     AbstractAttributes::setClassKey(attributesClassKey);
@@ -227,6 +228,34 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
 
  protected:
   /**
+   * @brief return a vector of shared pointers to @ref AttributesBase
+   * sub-configurations.
+   */
+  template <class T>
+  std::vector<std::shared_ptr<const T>> getSubAttributesInternal(
+      const std::shared_ptr<Configuration>& subAttrConfig) const;
+
+  /**
+   * @brief Add the passed shared pointer to @ref AbstractAttributes , @p
+   * objInst , to the appropriate sub-config using the passed name.
+   *
+   * @tparam The type of smartpointer object instance attributes
+   * @param objInst The object instance attributes pointer
+   * @param availableIDs The ids available that can be used for the passed
+   * attributes
+   * @param subconfigKey The string key representing the subconfig to place @p
+   * objInst in.
+   * @param objInstNamePrefix The prefix to use to construct the key to store
+   * the instance in the subconfig.
+   */
+  template <class T>
+  void setSubAttributesInternal(
+      std::shared_ptr<T>& objInst,
+      std::deque<int>& availableIDs,
+      const std::shared_ptr<Configuration>& subAttrConfig,
+      const std::string& objInstNamePrefix);
+
+  /**
    * @brief Retrieve a comma-separated string holding the header values for
    * the info returned for this managed object, type-specific.
    */
@@ -253,6 +282,62 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
  public:
   ESP_SMART_POINTERS(AbstractAttributes)
 };  // class AbstractAttributes
+
+template <class T>
+std::vector<std::shared_ptr<const T>>
+AbstractAttributes::getSubAttributesInternal(
+    const std::shared_ptr<Configuration>& subAttrConfig) const {
+  std::vector<std::shared_ptr<const T>> res{};
+  // pair of begin/end const iters through subconfig of given name
+  int numSubconfigs = subAttrConfig->getNumSubconfigEntries();
+  if (numSubconfigs == 0) {
+    return {};
+  }
+  res.reserve(numSubconfigs);
+  // get begin/end pair of iterators for subconfiguration
+  auto subAttrIter = subAttrConfig->getSubconfigIterator();
+  // iterate through subconfig entries, casting appropriately and adding to
+  // map if cast successful
+  for (auto objIter = subAttrIter.first; objIter != subAttrIter.second;
+       ++objIter) {
+    auto obj = objIter->second;
+    if (std::shared_ptr<T> objPtr = std::dynamic_pointer_cast<T>(obj)) {
+      res.emplace_back(std::move(objPtr));
+    } else {
+      ESP_WARNING() << getClassKey() << ": Subconfig obj with"
+                    << obj->getNumEntries()
+                    << "entries is not castable to appropriate type const"
+                    << typeid(T).name() << " | " << typeid(obj).name() << " | {"
+                    << objIter->first << " : " << obj->getAsString("handle")
+                    << "}";
+    }
+  }
+  return res;
+}
+
+template <class T>
+void AbstractAttributes::setSubAttributesInternal(
+    std::shared_ptr<T>& objInst,
+    std::deque<int>& availableIDs,
+    const std::shared_ptr<Configuration>& subAttrConfig,
+    const std::string& objInstNamePrefix) {
+  // get subconfig for articulated object instances, add this ao instance as a
+  // set id
+  if (!availableIDs.empty()) {
+    // use saved value and then remove from storage
+    objInst->setID(availableIDs.front());
+    availableIDs.pop_front();
+  } else {
+    // use size of container to set ID
+    objInst->setID(subAttrConfig->getNumSubconfigEntries());
+  }
+  // get last key
+  subAttrConfig->setSubconfigPtr<T>(
+      Cr::Utility::formatString("{:.05d}_{}{}", objInst->getID(),
+                                objInstNamePrefix,
+                                objInst->getSimplifiedHandle()),
+      objInst);
+}
 
 }  // namespace attributes
 }  // namespace metadata
