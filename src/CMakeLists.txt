@@ -93,7 +93,14 @@ if(CMAKE_INTERPROCEDURAL_OPTIMIZATION)
     # Policy that enables INTERPROCEDURAL_OPTIMIZATION
     set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
     cmake_policy(SET CMP0069 NEW)
-    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang"
+       OR (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION
+                                                     VERSION_LESS 13.0)
+    )
+      message(
+        "-- Forcing full LTO for compatibility: ThinLTO requires LLVM Clang>=13.0"
+      )
       # Clang has some issues with thinLTO (segfaults on final linking)
       # This enables full LTO through CMake
       # FullLTO is slow, but may yield performance improvements.

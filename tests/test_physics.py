@@ -654,9 +654,12 @@ def test_articulated_object_add_remove():
         assert robot.object_id == 0  # first robot added
 
         # add a second robot
-        robot2 = art_obj_mgr.add_articulated_object_from_urdf(filepath=robot_file)
+        robot2 = art_obj_mgr.add_articulated_object_from_urdf(
+            filepath=robot_file, global_scale=2.0
+        )
         assert robot2
         assert art_obj_mgr.get_num_objects() == 2
+        assert robot2.global_scale == 2.0
 
         # remove a robot and check that it was removed
         art_obj_mgr.remove_object_by_handle(robot.handle)

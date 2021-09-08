@@ -205,7 +205,8 @@ jobs:
               sudo rm  llvm-config
               sudo ln -s llvm-config-10 llvm-config
               cd ~/project/
-              pip install -U \
+              pip install -U pip
+              pip install -U --prefer-binary \
                 black \
                 flake8 \
                 flake8-bugbear \
@@ -219,9 +220,8 @@ jobs:
                 numpy \
                 pytest \
                 sphinx \
-                pillow \
                 tqdm
-              pip install -r requirements.txt torch --progress-bar off
+              pip install --prefer-binary -r requirements.txt torch --progress-bar off
       - run:
           name: run black
           command: |
@@ -561,7 +561,7 @@ jobs:
                 --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
 
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
-              pytest -n auto --durations=10 --cov-report=xml --cov=./
+              pytest -n 8 --durations=10 --cov-report=xml --cov=./
 
               #run the marked pytest-benchmark tests and print the results
               pytest -m sim_benchmarks
