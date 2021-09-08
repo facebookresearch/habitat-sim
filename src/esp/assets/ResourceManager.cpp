@@ -103,6 +103,11 @@ ResourceManager::ResourceManager(
   initDefaultLightSetups();
   initDefaultMaterials();
   buildImporters();
+
+  if (flags_ & Flag::PbrImageBasedLighting) {
+    // TODO: HDRi image name should be config based
+    initPbrImageBasedLighting("lythwood_room_4k.jpg");
+  }
 }
 
 ResourceManager::~ResourceManager() {
@@ -2194,7 +2199,9 @@ void ResourceManager::createDrawable(Mn::GL::Mesh* mesh,
           shaderManager_,      // shader manager
           lightSetupKey,       // lightSetup key
           materialKey,         // material key
-          group);              // drawable group
+          group,               // drawable group
+          activePbrIbl_ >= 0 ? pbrImageBasedLightings_[activePbrIbl_].get()
+                             : nullptr);  // pbr image based lighting
       break;
   }
 }  // ResourceManager::createDrawable
@@ -2302,6 +2309,24 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
 void ResourceManager::initDefaultLightSetups() {
   shaderManager_.set(NO_LIGHT_KEY, gfx::LightSetup{});
   shaderManager_.setFallback(gfx::LightSetup{});
+}
+
+void ResourceManager::initPbrImageBasedLighting(
+    const std::string& hdriImageFilename) {
+  // TODO:
+  // should work with the scene instance config, initialize
+  // different PBR IBLs at different positions in the scene.
+
+  // TODO: HDR Image!
+  // TODO: Indirect specular
+  activePbrIbl_ = 0;
+  pbrImageBasedLightings_.emplace(
+      activePbrIbl_,
+      std::make_unique<gfx::PbrImageBasedLighting>(
+          gfx::PbrImageBasedLighting::Flag::IndirectDiffuse |
+              gfx::PbrImageBasedLighting::Flag::IndirectSpecular |
+              gfx::PbrImageBasedLighting::Flag::UseLDRImages,
+          shaderManager_, hdriImageFilename));
 }
 
 void ResourceManager::initDefaultMaterials() {
