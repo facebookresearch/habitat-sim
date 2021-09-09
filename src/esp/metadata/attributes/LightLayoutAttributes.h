@@ -170,6 +170,12 @@ class LightLayoutAttributes : public AbstractAttributes {
  public:
   explicit LightLayoutAttributes(const std::string& handle = "");
 
+  LightLayoutAttributes(const LightLayoutAttributes& otr);
+  LightLayoutAttributes(LightLayoutAttributes&& otr) noexcept;
+
+  LightLayoutAttributes& operator=(const LightLayoutAttributes& otr);
+  LightLayoutAttributes& operator=(LightLayoutAttributes&& otr) noexcept;
+
   /**
    * @brief Set a scale of all positive intensities by specified amount.
    * This is to make simple, sweeping adjustments to scene lighting in habitat.
@@ -203,51 +209,39 @@ class LightLayoutAttributes : public AbstractAttributes {
   /**
    * @brief Add a light instance to this lighting layout
    */
-  void addLightInstance(const LightInstanceAttributes::ptr& _lightInstance) {
-    // set id
-    if (!availableLightIDs_.empty()) {
-      // use saved value and then remove from storage
-      _lightInstance->setID(availableLightIDs_.front());
-      availableLightIDs_.pop_front();
-    } else {
-      // use size of map to set ID
-      _lightInstance->setID(lightInstances_.size());
-    }
-    lightInstances_.emplace(_lightInstance->getHandle(), _lightInstance);
+  void addLightInstance(LightInstanceAttributes::ptr _lightInstance) {
+    this->setSubAttributesInternal<LightInstanceAttributes>(
+        _lightInstance, availableLightIDs_, lightInstConfig_, "");
   }
 
   /**
    * @brief Remove a light from this lighting layout
    */
   LightInstanceAttributes::ptr removeLightInstance(const std::string& handle) {
-    auto inst = getLightInstance(handle);
-    if (nullptr != inst) {
-      availableLightIDs_.emplace_front(inst->getID());
-      lightInstances_.erase(handle);
-    }
-    return inst;
+    return this->removeNamedSubAttributesInternal<LightInstanceAttributes>(
+        handle, availableLightIDs_, lightInstConfig_);
   }
 
-  LightInstanceAttributes::ptr getLightInstance(const std::string& handle) {
-    if (lightInstances_.count(handle) == 0) {
-      return nullptr;
-    }
-    auto inst = lightInstances_.at(handle);
-    return inst;
+  LightInstanceAttributes::cptr getLightInstance(const std::string& handle) {
+    return getNamedSubAttributesInternal<LightInstanceAttributes>(
+        handle, lightInstConfig_);
   }
 
   /**
    * @brief Get the lighting instances for this layout
    */
-  const std::map<std::string, LightInstanceAttributes::ptr>& getLightInstances()
-      const {
-    return lightInstances_;
+  std::vector<LightInstanceAttributes::cptr> getLightInstances() const {
+    return this->getSubAttributesListInternal<LightInstanceAttributes>(
+        lightInstConfig_);
   }
 
   /**
-   * @brief Return how many lights are in this light layout
+   * @brief Return how many lights are in this light layout - number of
+   * subconfigs in @ref lightInstConfig_ subconfig.
    */
-  int getNumLightInstances() { return lightInstances_.size(); }
+  int getNumLightInstances() const {
+    return this->getNumSubAttributesInternal("", lightInstConfig_);
+  }
 
  protected:
   /**
@@ -264,10 +258,10 @@ class LightLayoutAttributes : public AbstractAttributes {
   std::string getObjectInfoInternal() const override;
 
   /**
-   * @brief The light instances used by this lighting layout
+   * @brief Smartpointer to created light instance configuration. The
+   * configuration is created on LightLayoutAttributes construction.
    */
-  std::map<std::string, LightInstanceAttributes::ptr> lightInstances_;
-
+  std::shared_ptr<Configuration> lightInstConfig_{};
   /**
    * @brief Deque holding all released IDs to consume for light instances when
    * one is deleted, before using size of lightInstances_ container.

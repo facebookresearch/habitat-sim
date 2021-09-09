@@ -114,14 +114,15 @@ void initConfigBindings(py::module& m) {
           "get_subconfig_keys", &Configuration::getSubconfigKeys,
           R"(Retrieves a list of the keys of this configuration's subconfigurations)")
 
-      .def("get_subconfig", &Configuration::editSubconfig,
+      .def("get_subconfig", &Configuration::editSubconfig<Configuration>,
            py::return_value_policy::reference_internal,
            R"(Get the subconfiguration with the given name.)", "name"_a)
-      .def("get_subconfig_copy", &Configuration::getSubconfigCopy,
+      .def("get_subconfig_copy",
+           &Configuration::getSubconfigCopy<Configuration>,
            py::return_value_policy::reference,
            R"(Get a copy of the subconfiguration with the given name.)",
            "name"_a)
-      .def("save_subconfig", &Configuration::setSubconfigPtr,
+      .def("save_subconfig", &Configuration::setSubconfigPtr<Configuration>,
            R"(Save a subconfiguration with the given name.)", "name"_a,
            "subconfig"_a)
       .def(

@@ -234,6 +234,97 @@ Mn::Debug& operator<<(Mn::Debug& debug, const ConfigValue& value) {
                << "|" << value.getType() << Mn::Debug::nospace << ")";
 }
 
+/**
+ * @brief Retrieves a shared pointer to a copy of the subConfig @ref
+ * esp::core::Configuration that has the passed @p name . This will create a
+ * pointer to a new sub-configuration if none exists already with that name,
+ * but will not add this configuration to this Configuration's internal
+ * storage.
+ *
+ * @param name The name of the configuration to retrieve.
+ * @return A pointer to a copy of the configuration having the requested
+ * name, or a pointer to an empty configuration.
+ */
+
+template <>
+std::shared_ptr<Configuration> Configuration::getSubconfigCopy<Configuration>(
+    const std::string& name) const {
+  auto configIter = configMap_.find(name);
+  if (configIter != configMap_.end()) {
+    // if exists return copy, so that consumers can modify it freely
+    return std::make_shared<Configuration>(*configIter->second);
+  }
+  return std::make_shared<Configuration>();
+}
+
+template <>
+std::shared_ptr<Configuration> Configuration::editSubconfig<Configuration>(
+    const std::string& name) {
+  // retrieve existing (or create new) subgroup, with passed name
+  return addSubgroup(name);
+}
+
+template <>
+void Configuration::setSubconfigPtr<Configuration>(
+    const std::string& name,
+    std::shared_ptr<Configuration>& configPtr) {
+  configMap_[name] = std::move(configPtr);
+}  // setSubconfigPtr
+
+int Configuration::findValueInternal(const Configuration& config,
+                                     const std::string& key,
+                                     int parentLevel,
+                                     std::vector<std::string>& breadcrumb) {
+  int curLevel = parentLevel + 1;
+  if (config.valueMap_.count(key) > 0) {
+    // Found at this level, access directly via key to get value
+    breadcrumb.push_back(key);
+    return curLevel;
+  }
+
+  // not found by here in data maps, check subconfigs, to see what level
+  for (const auto& subConfig : config.configMap_) {
+    if (subConfig.first == key) {
+      // key matches name of subconfiguration
+      breadcrumb.push_back(key);
+      return curLevel;
+    }
+    // add subconfig key to breadcrumb
+    breadcrumb.push_back(subConfig.first);
+    // search this subconfiguration
+    int resLevel =
+        findValueInternal(*subConfig.second, key, curLevel, breadcrumb);
+    // if found, will be greater than curLevel
+    if (resLevel > curLevel) {
+      return resLevel;
+    }
+    // remove subconfig key from breadcrumb
+    breadcrumb.pop_back();
+  }
+  // if not found, return lowest level having been checked
+  return parentLevel;
+}
+
+std::vector<std::string> Configuration::findValue(
+    const std::string& key) const {
+  std::vector<std::string> breadcrumbs{};
+  // this will make room for some layers without realloc.
+  breadcrumbs.reserve(10);
+  findValueInternal(*this, key, 0, breadcrumbs);
+  return breadcrumbs;
+}
+
+Configuration& Configuration::operator=(const Configuration& otr) {
+  if (this != &otr) {
+    configMap_.clear();
+    valueMap_ = otr.valueMap_;
+    for (const auto& entry : otr.configMap_) {
+      configMap_[entry.first] = std::make_shared<Configuration>(*entry.second);
+    }
+  }
+  return *this;
+}
+
 }  // namespace config
 }  // namespace core
 }  // namespace esp

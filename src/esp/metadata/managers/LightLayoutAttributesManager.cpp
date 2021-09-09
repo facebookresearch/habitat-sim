@@ -286,11 +286,8 @@ gfx::LightSetup LightLayoutAttributesManager::createLightSetupFromAttributes(
                               .color = {0.4, 0.4, 0.4},
                               .model = gfx::LightPositionModel::Global}};
     } else {
-      const std::map<std::string, LightInstanceAttributes::ptr>&
-          lightInstances = lightLayoutAttributes->getLightInstances();
-      for (const std::pair<const std::string, LightInstanceAttributes::ptr>&
-               elem : lightInstances) {
-        const LightInstanceAttributes::ptr& lightAttr = elem.second;
+      auto lightInstances = lightLayoutAttributes->getLightInstances();
+      for (const LightInstanceAttributes::cptr& lightAttr : lightInstances) {
         const int type = lightAttr->getType();
         const gfx::LightType typeEnum = static_cast<gfx::LightType>(type);
         const gfx::LightPositionModel posModelEnum =

@@ -380,17 +380,17 @@ class Model {
    * each object.
    */
   std::shared_ptr<core::config::Configuration> getUserConfiguration() const {
-    return jsonAttributes_->getSubconfigCopy("user_defined");
+    return jsonAttributes_->getSubconfigCopy<core::config::Configuration>(
+        "user_defined");
   }
 
  protected:
   /**
    * @brief Json-based attributes defining characteristics of this model not
    * specified in the source XML/URDF. Primarly to support defaultt user-defined
-   * attribnutes. This data is read in from a json file with the same name as
-   * the source XML/URDF for this model, and the extension ".ao_config.json".
+   * attributes. This data is read in from a json file with the same base name
+   * as the source XML/URDF for this model but the extension ".ao_config.json".
    */
-
   std::shared_ptr<core::config::Configuration> jsonAttributes_ =
       std::make_shared<core::config::Configuration>();
 

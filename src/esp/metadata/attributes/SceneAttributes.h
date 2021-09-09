@@ -287,6 +287,12 @@ class SceneAttributes : public AbstractAttributes {
  public:
   explicit SceneAttributes(const std::string& handle);
 
+  SceneAttributes(const SceneAttributes& otr);
+  SceneAttributes(SceneAttributes&& otr) noexcept;
+
+  SceneAttributes& operator=(const SceneAttributes& otr);
+  SceneAttributes& operator=(SceneAttributes&& otr) noexcept;
+
   /**
    * @brief Set a value representing the mechanism used to create this scene
    * instance - should map to an enum value in @InstanceTranslationOriginMap.
@@ -349,63 +355,66 @@ class SceneAttributes : public AbstractAttributes {
    */
   void setStageInstance(SceneObjectInstanceAttributes::ptr _stageInstance) {
     _stageInstance->setID(0);
-    stageInstance_ = std::move(_stageInstance);
+    setSubconfigPtr<SceneObjectInstanceAttributes>("stage_instance",
+                                                   _stageInstance);
   }
   /**
-   * @brief Get the description of the stage placement for this scene instance.
+   * @brief Get a shared_pointer to the @ref SceneObjectInstanceAttributes
+   * descibing the stage placement for this scene instance.
    */
   SceneObjectInstanceAttributes::cptr getStageInstance() const {
-    return stageInstance_;
+    return getSubconfigCopy<const SceneObjectInstanceAttributes>(
+        "stage_instance");
   }
 
   /**
    * @brief Add a description of an object instance to this scene instance
    */
-  void addObjectInstance(
-      const SceneObjectInstanceAttributes::ptr& _objInstance) {
-    // set id
-    if (!availableObjInstIDs_.empty()) {
-      // use saved value and then remove from storage
-      _objInstance->setID(availableObjInstIDs_.front());
-      availableObjInstIDs_.pop_front();
-    } else {
-      // use size of container to set ID
-      _objInstance->setID(objectInstances_.size());
-    }
-    objectInstances_.push_back(_objInstance);
+  void addObjectInstance(SceneObjectInstanceAttributes::ptr _objInstance) {
+    setSubAttributesInternal<SceneObjectInstanceAttributes>(
+        _objInstance, availableObjInstIDs_, objInstConfig_, "obj_inst_");
   }
 
   /**
    * @brief Get the object instance descriptions for this scene
    */
-  const std::vector<SceneObjectInstanceAttributes::cptr>& getObjectInstances()
-      const {
-    return objectInstances_;
+  std::vector<SceneObjectInstanceAttributes::cptr> getObjectInstances() const {
+    return getSubAttributesListInternal<SceneObjectInstanceAttributes>(
+        objInstConfig_);
+  }
+  /**
+   * @brief Return the number of defined @ref SceneObjectInstanceAttributes
+   * subconfigs in this scene instance.
+   */
+  int getNumObjInstances() const {
+    return getNumSubAttributesInternal("obj_inst_", objInstConfig_);
   }
 
   /**
    * @brief Add a description of an object instance to this scene instance
    */
   void addArticulatedObjectInstance(
-      const SceneAOInstanceAttributes::ptr& _artObjInstance) {
-    // set id
-    if (!availableArtObjInstIDs_.empty()) {
-      // use saved value and then remove from storage
-      _artObjInstance->setID(availableArtObjInstIDs_.front());
-      availableArtObjInstIDs_.pop_front();
-    } else {
-      // use size of container to set ID
-      _artObjInstance->setID(articulatedObjectInstances_.size());
-    }
-    articulatedObjectInstances_.push_back(_artObjInstance);
+      SceneAOInstanceAttributes::ptr _artObjInstance) {
+    setSubAttributesInternal<SceneAOInstanceAttributes>(
+        _artObjInstance, availableArtObjInstIDs_, artObjInstConfig_,
+        "art_obj_inst_");
   }
 
   /**
    * @brief Get the object instance descriptions for this scene
    */
-  const std::vector<SceneAOInstanceAttributes::cptr>&
-  getArticulatedObjectInstances() const {
-    return articulatedObjectInstances_;
+  std::vector<SceneAOInstanceAttributes::cptr> getArticulatedObjectInstances()
+      const {
+    return getSubAttributesListInternal<SceneAOInstanceAttributes>(
+        artObjInstConfig_);
+  }
+
+  /**
+   * @brief Return the number of defined @ref SceneAOInstanceAttributes
+   * subconfigs in this scene instance.
+   */
+  int getNumAOInstances() const {
+    return getNumSubAttributesInternal("art_obj_inst_", artObjInstConfig_);
   }
 
  protected:
@@ -413,7 +422,6 @@ class SceneAttributes : public AbstractAttributes {
    * @brief Retrieve a comma-separated string holding the header values for the
    * info returned for this managed object, type-specific.
    */
-
   std::string getObjectInfoHeaderInternal() const override { return ""; }
 
   /**
@@ -421,15 +429,12 @@ class SceneAttributes : public AbstractAttributes {
    * of this managed object.
    */
   std::string getObjectInfoInternal() const override;
-  /**
-   * @brief The stage instance used by the scene
-   */
-  SceneObjectInstanceAttributes::cptr stageInstance_ = nullptr;
 
   /**
-   * @brief All the object instance descriptors used by the scene
+   * @brief Smartpointer to created object instance configuration. The
+   * configuration is created on SceneAttributes construction.
    */
-  std::vector<SceneObjectInstanceAttributes::cptr> objectInstances_;
+  std::shared_ptr<Configuration> objInstConfig_{};
   /**
    * @brief Deque holding all released IDs to consume for object instances when
    * one is deleted, before using size of objectInstances_ container.
@@ -437,9 +442,11 @@ class SceneAttributes : public AbstractAttributes {
   std::deque<int> availableObjInstIDs_;
 
   /**
-   * @brief All the articulated object instance descriptors used by the scene
+   * @brief Smartpointer to created articulated object instance configuration.
+   * The configuratio is created on SceneAttributes construction.
    */
-  std::vector<SceneAOInstanceAttributes::cptr> articulatedObjectInstances_;
+  std::shared_ptr<Configuration> artObjInstConfig_{};
+
   /**
    * @brief Deque holding all released IDs to consume for articulated object
    * instances when one is deleted, before using size of
@@ -450,6 +457,7 @@ class SceneAttributes : public AbstractAttributes {
  public:
   ESP_SMART_POINTERS(SceneAttributes)
 };  // class SceneAttributes
+
 }  // namespace attributes
 }  // namespace metadata
 }  // namespace esp
