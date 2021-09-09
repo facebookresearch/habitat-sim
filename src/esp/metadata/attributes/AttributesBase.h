@@ -234,6 +234,18 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
   std::vector<std::shared_ptr<const T>> getSubAttributesListInternal(
       const std::shared_ptr<Configuration>& subAttrConfig) const;
 
+  /**
+   * @brief This function is specifcially designed to copy sub-subconfigs whilst
+   * retaining their full type.  Any @ref AbstractAttributes object that gets
+   * stored as a subconfig @ref Configuration will retain its full type the
+   * config owning it gets copy constructed, in which case the copy will not
+   * retain its @ref AbstractFileBasedManagedObject interface characteristics.
+   * This function is provided so that any @ref AbstractAttributes object that
+   * is copied will have its sub-subconfigs copied with appropriate type.
+   * @param srcSubAttrConfig The source of the copy, which retains appropriate
+   * type.
+   * @param destSubAttrConfig The destination of the copy.
+   */
   template <class T>
   void copySubconfigIntoMe(
       const std::shared_ptr<Configuration>& srcSubAttrConfig,
@@ -359,26 +371,17 @@ AbstractAttributes::getSubAttributesListInternal(
   for (auto objIter = subAttrIter.first; objIter != subAttrIter.second;
        ++objIter) {
     auto obj = objIter->second;
-    if (std::shared_ptr<T> objPtr = std::dynamic_pointer_cast<T>(obj)) {
-      ESP_WARNING() << getClassKey() << ": Subconfig obj with"
-                    << obj->getNumEntries()
-                    << "entries SUCCESSFULLY CASTED TO type shared ptr to const"
-                    << typeid(T).name() << "| Obj type:" << typeid(obj).name()
-                    << "| Subconfig Key : {" << objIter->first << " : "
-                    << obj->getAsString("handle") << "}";
+    std::shared_ptr<T> objPtr;
+    CORRADE_ASSERT_OUTPUT(
+        objPtr = std::dynamic_pointer_cast<T>(obj),
+        Cr::Utility::formatString(
+            "{}: Subconfig obj with {} entries is not castable to appropriate "
+            "type const {} | Obj type:{} | Subconfig K:V : ( {}, {} )",
+            getClassKey(), obj->getNumEntries(), typeid(T).name(),
+            typeid(obj).name(), objIter->first, obj->getAsString("handle")),
+        res);
 
-      res.emplace_back(std::move(objPtr));
-    } else {
-      // should not happen - would mean that subconfiguration specified for
-      // tracking sub-attributes has a Configuration that is not castable to the
-      // required sub-attributes type.
-      ESP_WARNING()
-          << getClassKey() << ": Subconfig obj with" << obj->getNumEntries()
-          << "entries is not castable to appropriate type shared ptr to const"
-          << typeid(T).name() << "| Obj type:" << typeid(obj).name()
-          << "| Subconfig Key : {" << objIter->first << " : "
-          << obj->getAsString("handle") << "}";
-    }
+    res.emplace_back(std::move(std::const_pointer_cast<const T>(objPtr)));
   }
   return res;
 }  // AbstractAttributes::getSubAttributesListInternal
@@ -396,20 +399,16 @@ std::shared_ptr<const T> AbstractAttributes::getNamedSubAttributesInternal(
     // not found - fail quietly
     return nullptr;
   }
-  if (std::shared_ptr<const T> objPtr =
-          std::dynamic_pointer_cast<const T>(obj)) {
-    return objPtr;
-  } else {
-    // should not happen - would mean that subconfiguration specified for
-    // tracking sub-attributes has a Configuration that is not castable to the
-    // required sub-attributes type.
-    ESP_ERROR() << getClassKey() << ": Subconfig obj with"
-                << obj->getNumEntries() << "entries and name :" << name
-                << "is not castable to appropriate type shared ptr to const"
-                << typeid(T).name() << " | obj type :" << typeid(obj).name()
-                << "| handle :" << obj->getAsString("handle");
-    return nullptr;
-  }
+  std::shared_ptr<const T> objPtr;
+  CORRADE_ASSERT_OUTPUT(
+      objPtr = std::dynamic_pointer_cast<const T>(obj),
+      Cr::Utility::formatString(
+          "{}: Subconfig obj with {} entries is not castable to appropriate "
+          "type const {} | Obj type:{} | Handle : {}",
+          getClassKey(), obj->getNumEntries(), typeid(T).name(),
+          typeid(obj).name(), obj->getAsString("handle")),
+      nullptr);
+  return objPtr;
 
 }  // AbstractAttributes::getNamedSubAttributesInternal
 
@@ -427,24 +426,20 @@ std::shared_ptr<T> AbstractAttributes::removeNamedSubAttributesInternal(
     // not found - fail quietly
     return nullptr;
   }
+  std::shared_ptr<T> objPtr;
+  CORRADE_ASSERT_OUTPUT(
+      objPtr = std::dynamic_pointer_cast<T>(obj),
+      Cr::Utility::formatString(
+          "{}: Subconfig obj with {} entries is not castable to appropriate "
+          "type const {} | Obj type:{} | Handle : {}",
+          getClassKey(), obj->getNumEntries(), typeid(T).name(),
+          typeid(obj).name(), obj->getAsString("handle")),
+      nullptr);
+  // queue available ID
+  availableIDs.emplace_front(obj->get<int>("ID"));
+  return objPtr;
 
-  if (std::shared_ptr<T> objPtr = std::dynamic_pointer_cast<T>(obj)) {
-    // queue available ID
-    availableIDs.emplace_front(obj->get<int>("ID"));
-    return objPtr;
-  } else {
-    // should not happen - would mean that subconfiguration specified for
-    // tracking sub-attributes has a Configuration that is not castable to the
-    // required sub-attributes type.
-    ESP_WARNING() << getClassKey() << ": Subconfig obj with"
-                  << obj->getNumEntries() << "entries and name :" << name
-                  << "is not castable to appropriate type shared ptr to const"
-                  << typeid(T).name() << " | obj type :" << typeid(obj).name()
-                  << "| handle :" << obj->getAsString("handle");
-    return nullptr;
-  }
-
-}  // AbstractAttributes::getNamedSubAttributesInternal
+}  // AbstractAttributes::removeNamedSubAttributesInternal
 
 template <class T>
 void AbstractAttributes::setSubAttributesInternal(
@@ -491,19 +486,15 @@ void AbstractAttributes::copySubconfigIntoMe(
   for (auto objIter = subAttrIter.first; objIter != subAttrIter.second;
        ++objIter) {
     auto obj = objIter->second;
-    if (std::shared_ptr<T> objPtr = std::dynamic_pointer_cast<T>(obj)) {
-      destSubAttrConfig->setSubconfigPtr<T>(objIter->first, objPtr);
-    } else {
-      // should not happen - would mean that subconfiguration specified for
-      // tracking sub-attributes has a Configuration that is not castable to the
-      // required sub-attributes type.
-      ESP_WARNING() << getClassKey() << ": Subconfig obj with"
-                    << obj->getNumEntries()
-                    << "entries is not castable to appropriate type const"
-                    << typeid(T).name() << "| Obj type:" << typeid(obj).name()
-                    << "| Subconfig Key : {" << objIter->first << " : "
-                    << obj->getAsString("handle") << "}";
-    }
+    std::shared_ptr<T> objPtr;
+    CORRADE_ASSERT_OUTPUT(
+        objPtr = std::dynamic_pointer_cast<T>(obj),
+        Cr::Utility::formatString(
+            "{}: Subconfig obj with {} entries is not castable to appropriate "
+            "type const {} | Obj type:{} | Subconfig K:V : ( {}, {} )",
+            getClassKey(), obj->getNumEntries(), typeid(T).name(),
+            typeid(obj).name(), objIter->first, obj->getAsString("handle")), );
+    destSubAttrConfig->setSubconfigPtr<T>(objIter->first, objPtr);
   }
 }  // AbstractAttributes::copySubconfigIntoMe
 
