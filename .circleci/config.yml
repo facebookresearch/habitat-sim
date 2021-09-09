@@ -176,8 +176,9 @@ commands:
             - habitat-lab-{{ checksum "./hablab_sha" }}
       - restore_cache:
           keys:
-            - ccache-{{ arch }}-{{ .Branch }}
-            - ccache-{{ arch }}-master
+            - ccache-{{ arch }}-{{ .Branch }}-{{ .BuildNum }}
+            - ccache-{{ arch }}-{{ .Branch }}-
+            - ccache-{{ arch }}-master-
           paths:
             - /home/circleci/.ccache
       - run:
@@ -577,7 +578,7 @@ jobs:
               # Generate JS CodeConv
               npm run test_with_coverage
       - save_cache:
-          key: ccache-{{ arch }}-{{ .Branch }}
+          key: ccache-{{ arch }}-{{ .Branch }}-{{ .BuildNum }}
           background: true
           paths:
             - /home/circleci/.ccache
@@ -586,21 +587,24 @@ jobs:
           command: |
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat; cd habitat-sim
+
+              curl -Os https://uploader.codecov.io/latest/linux/codecov
+              chmod +x codecov
               #Uploading test coverage for Python code
-              bash <(curl -s https://codecov.io/bash) -f coverage.xml -cF Python
+              ./codecov -f coverage.xml -cF Python
 
               # Uploading test coverage for JS code
-              bash <(curl -s https://codecov.io/bash) -f coverage_js/coverage-final.json -cF JavaScript
+              ./codecov coverage_js/coverage-final.json -cF JavaScript
 
               #Uploading test coverage for C++ code
               lcov --directory . --capture --output-file coverage.info
               # Replaces -1 linecount with zero to prevent lcov from crashing:
               # https://github.com/psycofdj/coverxygen/issues/6
               sed -i -e 's/,-1$/,0/g' coverage.info
-              lcov --remove coverage.info "*/deps/*" --output-file coverage.info > /dev/null
-              lcov --remove coverage.info "*/test/*" --output-file coverage.info > /dev/null
-              lcov --remove coverage.info "*/tests/*" --output-file coverage.info > /dev/null
-              bash <(curl -s https://codecov.io/bash) -f coverage.info -cF CPP
+              #lcov --remove coverage.info "*/deps/*" --output-file coverage.info > /dev/null
+              #lcov --remove coverage.info "*/test/*" --output-file coverage.info > /dev/null
+              #lcov --remove coverage.info "*/tests/*" --output-file coverage.info > /dev/null
+              ./codecov -f coverage.info -cF CPP
 
 
 
