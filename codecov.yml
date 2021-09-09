@@ -1,4 +1,4 @@
 ignore:
-  - "**/deps/**"
-  - "**/test/**"
-  - "**/tests/**"
+  - "src/**/deps/**"
+  - "src/**/test/**"
+  - "src/**/tests/**"
