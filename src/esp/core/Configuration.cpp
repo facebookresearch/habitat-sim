@@ -271,10 +271,10 @@ void Configuration::setSubconfigPtr<Configuration>(
   configMap_[name] = std::move(configPtr);
 }  // setSubconfigPtr
 
-int findValueInternal(const Configuration& config,
-                      const std::string& key,
-                      int parentLevel,
-                      std::vector<std::string>& breadcrumb) {
+int Configuration::findValueInternal(const Configuration& config,
+                                     const std::string& key,
+                                     int parentLevel,
+                                     std::vector<std::string>& breadcrumb) {
   int curLevel = parentLevel + 1;
   if (config.valueMap_.count(key) > 0) {
     // Found at this level, access directly via key to get value

@@ -646,7 +646,7 @@ class Configuration {
    * @return The level @p key was found. 0 if not found (so can be treated
    * as bool)
    */
-  friend int findValueInternal(const Configuration& config,
+  static int findValueInternal(const Configuration& config,
                                const std::string& key,
                                int parentLevel,
                                std::vector<std::string>& breadcrumb);
