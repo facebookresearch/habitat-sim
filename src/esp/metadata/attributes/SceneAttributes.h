@@ -96,9 +96,9 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
    */
   void setIsInstanceVisible(bool isVisible) {
     // needs to be int to cover "no specification"
-    set("is_insitance_visible", (isVisible ? 1 : 0));
+    set("is_instance_visible", (isVisible ? 1 : 0));
   }
-  int getIsInstanceVisible() const { return get<int>("is_insitance_visible"); }
+  int getIsInstanceVisible() const { return get<int>("is_instance_visible"); }
 
   /**
    * @brief Set the motion type for the object.  Ignored for stage instances.
