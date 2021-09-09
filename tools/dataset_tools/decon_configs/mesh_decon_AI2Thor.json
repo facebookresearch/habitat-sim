@@ -1,7 +1,7 @@
 {
   "dataset_name": "AI2Thor",
   "dataset_src_rel_to_home": true,
-  "dataset_src_subdir": "Documents/AI2Thor/",
+  "dataset_src_subdir": "Datasets In Progress/AI2Thor/",
   "scenes_src_subdir": "scenes/",
   "objects_src_subdir": "objects/",
   "dataset_dest_rel_to_home": true,
