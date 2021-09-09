@@ -126,6 +126,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
       .addSource(flags_ & Flag::ImageBasedLighting
                      ? "#define IMAGE_BASED_LIGHTING\n"
                      : "")
+      .addSource(flags_ & Flag::ImageBasedLighting ? "#define TONE_MAP\n" : "")
       .addSource(
           Cr::Utility::formatString("#define LIGHT_COUNT {}\n", lightCount_))
       .addSource(rs.get("pbrCommon.glsl") + "\n")
@@ -233,15 +234,13 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   }
 
   // pbr equation scales
-  scaleDirectDiffuseUniform_ = uniformLocation("Scales.directDiffuse");
-  scaleDirectSpecularUniform_ = uniformLocation("Scales.directSpecular");
-  scaleIblDiffuseUniform_ = uniformLocation("Scales.iblDiffuse");
-  scaleIblSpecularUniform_ = uniformLocation("Scales.iblSpecular");
+  componentScalesUniform_ = uniformLocation("ComponentScales");
 
   // for debug info
   pbrDebugDisplayUniform_ = uniformLocation("PbrDebugDisplay");
 
   // initialize the shader with some "reasonable defaults"
+  setPbrEquationScales(PbrEquationScales{});
   setViewMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
   setModelMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
   setProjectionMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
@@ -275,8 +274,8 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     // ambient light will not be too strong. Also keeping the IBL specular
     // component relatively low can guarantee the super glossy surface would not
     // reflect the environment like a mirror.
-    scales.IblDiffuse = 0.8;
-    scales.IblSpecular = 0.3;
+    scales.iblDiffuse = 0.8;
+    scales.iblSpecular = 0.3;
   }
   setPbrEquationScales(scales);
   setDebugDisplay(PbrDebugDisplay::None);
@@ -419,10 +418,9 @@ PbrShader& PbrShader::setMetallic(float metallic) {
 }
 
 PbrShader& PbrShader::setPbrEquationScales(const PbrEquationScales& scales) {
-  setUniform(scaleDirectDiffuseUniform_, scales.DirectDiffuse);
-  setUniform(scaleDirectSpecularUniform_, scales.DirectSpecular);
-  setUniform(scaleIblDiffuseUniform_, scales.IblDiffuse);
-  setUniform(scaleIblSpecularUniform_, scales.IblSpecular);
+  Mn::Vector4 componentScales{scales.directDiffuse, scales.directSpecular,
+                              scales.iblDiffuse, scales.iblSpecular};
+  setUniform(componentScalesUniform_, componentScales);
   return *this;
 }
 

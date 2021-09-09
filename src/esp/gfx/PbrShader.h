@@ -481,10 +481,10 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    * Toggles that control contributions from different components
    */
   struct PbrEquationScales {
-    float DirectDiffuse = 1.0f;
-    float DirectSpecular = 1.0f;
-    float IblDiffuse = 1.0f;
-    float IblSpecular = 1.0f;
+    float directDiffuse = 1.0f;
+    float directSpecular = 1.0f;
+    float iblDiffuse = 1.0f;
+    float iblSpecular = 1.0f;
   };
 
   /**
@@ -539,10 +539,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   int prefilteredMapMipLevelsUniform_ = ID_UNDEFINED;
 
   // scales
-  int scaleDirectDiffuseUniform_ = ID_UNDEFINED;
-  int scaleDirectSpecularUniform_ = ID_UNDEFINED;
-  int scaleIblDiffuseUniform_ = ID_UNDEFINED;
-  int scaleIblSpecularUniform_ = ID_UNDEFINED;
+  int componentScalesUniform_ = ID_UNDEFINED;
 
   // pbr debug info
   int pbrDebugDisplayUniform_ = ID_UNDEFINED;

@@ -91,19 +91,22 @@ uniform mediump float NormalTextureScale
 // camera position in world space
 uniform highp vec3 CameraWorldPos;
 
+// scales for components in the PBR equation
+// [0] = direct diffuse
+// [1] = direct specular
+// [2] = ibl diffuse
+// [3] = ibl specular
+const int DirectDiffuse = 0;
+const int DirectSpecular = 1;
+#if defined(IMAGE_BASED_LIGHTING)
+const int IblDiffuse = 2;
+const int IblSpecular = 3;
+#endif
+uniform highp vec4 ComponentScales;
+
 #if defined(IMAGE_BASED_LIGHTING)
 uniform uint PrefilteredMapMipLevels;
 #endif
-
-struct PbrEquationScales {
-  float directDiffuse;
-  float directSpecular;
-#if defined(IMAGE_BASED_LIGHTING)
-  float iblDiffuse;   // 0.0 ~ 1.0
-  float iblSpecular;  // 0.0 ~ 1.0
-#endif
-};
-uniform PbrEquationScales Scales;
 
 uniform int PbrDebugDisplay;
 
@@ -296,7 +299,7 @@ vec3 computeIBLDiffuse(vec3 c_diff, vec3 n) {
   // diffuse part = c_diff * irradiance
   // return c_diff * texture(IrradianceMap, n).rgb * Scales.iblDiffuse;
   return c_diff * SRGBtoLINEAR(tonemap(texture(IrradianceMap, n))).rgb *
-         Scales.iblDiffuse;
+         ComponentScales[IblDiffuse];
 }
 
 vec3 computeIBLSpecular(float roughness,
@@ -309,7 +312,7 @@ vec3 computeIBLSpecular(float roughness,
       SRGBtoLINEAR(tonemap(textureLod(PrefilteredMap, reflectionDir, lod))).rgb;
 
   return prefilteredColor * (specularReflectance * brdf.x + brdf.y) *
-         Scales.iblSpecular;
+         ComponentScales[IblSpecular];
 }
 #endif
 
@@ -416,6 +419,9 @@ void main() {
     diffuseContrib += currentDiffuseContrib;
     specularContrib += currentSpecularContrib;
   }  // for lights
+
+  diffuseContrib *= ComponentScales[DirectDiffuse];
+  specularContrib *= ComponentScales[DirectSpecular];
 
   // TODO: use ALPHA_MASK to discard fragments
   fragmentColor += vec4(diffuseContrib + specularContrib, baseColor.a);
