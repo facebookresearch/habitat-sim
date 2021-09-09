@@ -67,24 +67,6 @@ AbstractAttributes::AbstractAttributes(const std::string& attributesClassKey,
   set("fileDirectory", "");
 }
 
-AbstractAttributes::AbstractAttributes(const AbstractAttributes& otr)
-    : Configuration(otr) {}
-AbstractAttributes::AbstractAttributes(AbstractAttributes&& otr) noexcept
-    : Configuration(std::move(otr)) {}
-
-AbstractAttributes& AbstractAttributes::operator=(
-    const AbstractAttributes& otr) {
-  if (this != &otr) {
-    this->Configuration::operator=(otr);
-  }
-  return *this;
-}
-AbstractAttributes& AbstractAttributes::operator=(
-    AbstractAttributes&& otr) noexcept {
-  this->Configuration::operator=(std::move(otr));
-  return *this;
-}
-
 }  // namespace attributes
 }  // namespace metadata
 }  // namespace esp

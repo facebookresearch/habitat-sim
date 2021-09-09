@@ -121,11 +121,11 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
   AbstractAttributes(const std::string& attributesClassKey,
                      const std::string& handle);
 
-  AbstractAttributes(const AbstractAttributes& otr);
-  AbstractAttributes(AbstractAttributes&& otr) noexcept;
+  AbstractAttributes(const AbstractAttributes& otr) = default;
+  AbstractAttributes(AbstractAttributes&& otr) noexcept = default;
 
-  AbstractAttributes& operator=(const AbstractAttributes& otr);
-  AbstractAttributes& operator=(AbstractAttributes&& otr) noexcept;
+  AbstractAttributes& operator=(const AbstractAttributes& otr) = default;
+  AbstractAttributes& operator=(AbstractAttributes&& otr) noexcept = default;
 
   ~AbstractAttributes() override = default;
   /**
