@@ -601,9 +601,9 @@ jobs:
               # Replaces -1 linecount with zero to prevent lcov from crashing:
               # https://github.com/psycofdj/coverxygen/issues/6
               sed -i -e 's/,-1$/,0/g' coverage.info
-              lcov --remove coverage.info "*/deps/*" --output-file coverage.info > /dev/null
-              lcov --remove coverage.info "*/test/*" --output-file coverage.info > /dev/null
-              lcov --remove coverage.info "*/tests/*" --output-file coverage.info > /dev/null
+              #lcov --remove coverage.info "*/deps/*" --output-file coverage.info > /dev/null
+              #lcov --remove coverage.info "*/test/*" --output-file coverage.info > /dev/null
+              #lcov --remove coverage.info "*/tests/*" --output-file coverage.info > /dev/null
               ./codecov -f coverage.info -cF CPP
 
 
