@@ -48,12 +48,30 @@ std::string ManagedContainerBase::getRandomObjectHandlePerType(
   return res;
 }  // ManagedContainerBase::getRandomObjectHandlePerType
 
-std::vector<std::string>
-ManagedContainerBase::getObjectHandlesBySubStringPerType(
-    const std::unordered_map<int, std::string>& mapOfHandles,
+namespace {
+/**
+ * @brief This function will find the strings in the @p mapOfHandles that match,
+ * or strictly do not match, the passed @p subStr search criteria.
+ * @tparam The index in the pair of map elements to be searched. (non-type
+ * param)
+ * @tparam The class of the keys in the passed map
+ * @tparam The class of the values in the passed map
+ * @param mapOfHandles The map to search
+ * @param subStr The substring to find within the requested index (key or value)
+ * in the map elements
+ * @param contains Whether @p subStr should be found or excluded in the results
+ * returned
+ * @param sorted Whether the results should be sorted.
+ * @return A vector of strings that either match, or explicitly do not match,
+ * the passed @p subStr in the passed @p mapOfHandles.
+ */
+
+template <int Idx, class T, class U>
+std::vector<std::string> getHandlesBySubStringPerTypeInternal(
+    const std::unordered_map<T, U>& mapOfHandles,
     const std::string& subStr,
     bool contains,
-    bool sorted) const {
+    bool sorted) {
   std::vector<std::string> res;
   // if empty return empty vector
   if (mapOfHandles.size() == 0) {
@@ -63,16 +81,17 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
   // if search string is empty, return all values
   if (subStr.length() == 0) {
     for (const auto& elem : mapOfHandles) {
-      res.push_back(elem.second);
+      res.emplace_back(std::get<Idx>(elem));
     }
   } else {
     // build search criteria for reverse map
     std::string strToLookFor = Cr::Utility::String::lowercase(subStr);
     std::size_t strSize = strToLookFor.length();
-    for (std::unordered_map<int, std::string>::const_iterator iter =
+    for (typename std::unordered_map<T, U>::const_iterator iter =
              mapOfHandles.begin();
          iter != mapOfHandles.end(); ++iter) {
-      std::string key = Cr::Utility::String::lowercase(iter->second);
+      std::string rawKey = std::get<Idx>(*iter);
+      std::string key = Cr::Utility::String::lowercase(rawKey);
       // be sure that key is big enough to search in (otherwise find has
       // undefined behavior)
       if (key.length() < strSize) {
@@ -82,7 +101,7 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
       if (found == contains) {
         // if found and searching for contains, or not found and searching for
         // not contains
-        res.push_back(iter->second);
+        res.emplace_back(rawKey);
       }
     }
   }
@@ -90,6 +109,18 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
     std::sort(res.begin(), res.end());
   }
   return res;
+}
+}  // namespace
+
+std::vector<std::string>
+ManagedContainerBase::getObjectHandlesBySubStringPerType(
+    const std::unordered_map<int, std::string>& mapOfHandles,
+    const std::string& subStr,
+    bool contains,
+    bool sorted) const {
+  // get second element of pair in map entries (string)
+  return getHandlesBySubStringPerTypeInternal<1>(mapOfHandles, subStr, contains,
+                                                 sorted);
 }  // ManagedContainerBase::getObjectHandlesBySubStringPerType
 
 std::vector<std::string>
@@ -98,42 +129,9 @@ ManagedContainerBase::getObjectHandlesBySubStringPerType(
     const std::string& subStr,
     bool contains,
     bool sorted) const {
-  std::vector<std::string> res;
-  // if empty return empty vector
-  if (mapOfHandles.size() == 0) {
-    return res;
-  }
-  res.reserve(mapOfHandles.size());
-  // if search string is empty, return all values
-  if (subStr.length() == 0) {
-    for (const auto& elem : mapOfHandles) {
-      res.push_back(elem.first);
-    }
-  } else {
-    // build search criteria
-    std::string strToLookFor = Cr::Utility::String::lowercase(subStr);
-    std::size_t strSize = strToLookFor.length();
-    for (std::unordered_map<std::string, std::set<std::string>>::const_iterator
-             iter = mapOfHandles.begin();
-         iter != mapOfHandles.end(); ++iter) {
-      std::string key = Cr::Utility::String::lowercase(iter->first);
-      // be sure that key is big enough to search in (otherwise find has
-      // undefined behavior)
-      if (key.length() < strSize) {
-        continue;
-      }
-      bool found = (std::string::npos != key.find(strToLookFor));
-      if (found == contains) {
-        // if found and searching for contains, or not found and searching for
-        // not contains
-        res.push_back(iter->first);
-      }
-    }
-  }
-  if (sorted) {
-    std::sort(res.begin(), res.end());
-  }
-  return res;
+  // get first element of pair in map entries (string)
+  return getHandlesBySubStringPerTypeInternal<0>(mapOfHandles, subStr, contains,
+                                                 sorted);
 }  // ManagedContainerBase::getObjectHandlesBySubStringPerType
 
 std::vector<std::string> ManagedContainerBase::getObjectInfoStrings(
