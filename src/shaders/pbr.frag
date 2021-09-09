@@ -108,6 +108,40 @@ uniform PbrEquationScales Scales;
 uniform int PbrDebugDisplay;
 
 // -------------- shader ------------------
+
+// The following function Uncharted2Tonemap is based on:
+// https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/data/shaders/pbr_khr.frag
+vec3 Uncharted2Tonemap(vec3 color) {
+  float A = 0.15;
+  float B = 0.50;
+  float C = 0.10;
+  float D = 0.20;
+  float E = 0.02;
+  float F = 0.30;
+  float W = 11.2;
+  return ((color * (A * color + C * B) + D * E) /
+          (color * (A * color + B) + D * F)) -
+         E / F;
+}
+
+// TODO: make them uniform variables
+const float exposure = 4.5f;
+const float gamma = 2.2f;
+
+// The following function tonemap is based on:
+// https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/data/shaders/pbr_khr.frag
+// Tone mapping is to take a wide dynamic range of values and compressing them
+// into a smaller range that is appropriate for the output device.
+vec4 tonemap(vec4 color) {
+#ifdef TONE_MAP
+  vec3 outcol = Uncharted2Tonemap(color.rgb * exposure);
+  outcol = outcol * (1.0f / Uncharted2Tonemap(vec3(11.2f)));
+  return vec4(pow(outcol, vec3(1.0f / gamma)), color.a);
+#else
+  return color;
+#endif
+}
+
 // The following function SRGBtoLINEAR is based on:
 // https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/data/shaders/pbr_khr.frag
 vec4 SRGBtoLINEAR(vec4 srgbIn) {

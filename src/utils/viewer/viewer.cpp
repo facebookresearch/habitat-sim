@@ -774,6 +774,8 @@ Viewer::Viewer(const Arguments& arguments)
               << simConfig_.sceneDatasetConfigFile
               << "| Loading Scene :" << simConfig_.activeSceneName;
 
+  simConfig_.pbrImageBasedLighting = true;  // XXX
+
   // create simulator instance
   simulator_ = esp::sim::Simulator::create_unique(simConfig_, MM_);
 
