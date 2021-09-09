@@ -98,7 +98,7 @@ int PhysicsManager::addObjectInstance(
   int visSet = objInstAttributes->getIsInstanceVisible();
   if (visSet != ID_UNDEFINED) {
     // specfied in scene instance
-    objAttributes->setIsVisible(visSet == 1 ? true : false);
+    objAttributes->setIsVisible(visSet == 1);
   }
 
   if (!objAttributes) {
@@ -296,7 +296,7 @@ int PhysicsManager::addArticulatedObjectInstance(
   int visSet = aObjInstAttributes->getIsInstanceVisible();
   if (visSet != ID_UNDEFINED) {
     // specfied in scene instance
-    // objAttributes->setIsVisible(visSet == 1 ? true : false);
+    // objAttributes->setIsVisible(visSet == 1);
     // TODO: manage articulated object visibility.
   }
 

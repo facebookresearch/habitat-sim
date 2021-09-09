@@ -423,7 +423,7 @@ bool Simulator::instanceStageForActiveScene(
   int visSet = stageInstanceAttributes->getIsInstanceVisible();
   if (visSet != ID_UNDEFINED) {
     // specfied in scene instance
-    stageAttributes->setIsVisible(visSet == 1 ? true : false);
+    stageAttributes->setIsVisible(visSet == 1);
   }
   // create a structure to manage active scene and active semantic scene ID
   // passing to and from loadStage
