@@ -671,7 +671,7 @@ Viewer::Viewer(const Arguments& arguments)
                "Specify path to load camera transform from.")
       .addBooleanOption("ibl")
       .setHelp("ibl",
-               "Image Based Lighting (it works only when PBR models exists in "
+               "Image Based Lighting (it works only when PBR models exist in "
                "the scene.")
       .parse(arguments.argc, arguments.argv);
 
