@@ -2318,7 +2318,6 @@ void ResourceManager::initPbrImageBasedLighting(
   // different PBR IBLs at different positions in the scene.
 
   // TODO: HDR Image!
-  // TODO: Indirect specular
   activePbrIbl_ = 0;
   pbrImageBasedLightings_.emplace(
       activePbrIbl_,
