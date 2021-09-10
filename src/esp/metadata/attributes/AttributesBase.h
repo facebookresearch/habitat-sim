@@ -225,6 +225,15 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
 
  protected:
   /**
+   * @brief Changing access to setter so that Configuration bindings cannot be
+   * used to set a resserved value to an incorrect type. The inheritors of this
+   * class provide an interface to set the values that the consumers of these
+   * Attributes depend on and this should be the only mechanism capable of doing
+   * so.
+   */
+  using Configuration::set;
+
+  /**
    * @brief return a vector of shared pointers to const @ref AttributesBase
    * sub-configurations.
    * @param subAttrConfig The subconfiguration from which to aquire the

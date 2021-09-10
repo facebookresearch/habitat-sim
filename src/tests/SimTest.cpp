@@ -668,21 +668,21 @@ void SimTest::buildingPrimAssetObjectTemplates() {
     // quantity being modified
     std::string newHandle = primAttr->getHandle();
     CORRADE_VERIFY(newHandle != origCylinderHandle);
-    // set test label, to validate that copy is reggistered
-    primAttr->set("test", "test0");
+    // set bogus file directory, to validate that copy is reggistered
+    primAttr->setFileDirectory("test0");
     // register new attributes
     int idx = assetAttribsMgr->registerObject(primAttr);
     CORRADE_VERIFY(idx != esp::ID_UNDEFINED);
     // set new test label, to validate against retrieved copy
-    primAttr->set("test", "test1");
+    primAttr->setFileDirectory("test1");
     // retrieve registered attributes copy
     AbstractPrimitiveAttributes::ptr primAttr2 =
         assetAttribsMgr->getObjectCopyByHandle(newHandle);
     // verify pre-reg and post-reg are named the same
     CORRADE_VERIFY(primAttr->getHandle() == primAttr2->getHandle());
     // verify retrieved attributes is copy, not original
-    CORRADE_VERIFY(primAttr->get<std::string>("test") !=
-                   primAttr2->get<std::string>("test"));
+    CORRADE_VERIFY(primAttr->getFileDirectory() !=
+                   primAttr2->getFileDirectory());
     // remove modified attributes
     AbstractPrimitiveAttributes::ptr primAttr3 =
         assetAttribsMgr->removeObjectByHandle(newHandle);
