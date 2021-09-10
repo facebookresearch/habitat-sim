@@ -168,7 +168,3 @@ def test_physics_object_attributes():
     assert object_template.join_collision_meshes == False
     object_template.requires_lighting = False
     assert object_template.requires_lighting == False
-
-    # test that inheritance is correctly configured
-    object_template.set("test_key", "test_string")
-    assert object_template.get("test_key") == "test_string"
