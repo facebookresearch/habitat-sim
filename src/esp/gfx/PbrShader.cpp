@@ -42,7 +42,7 @@ namespace Cr = Corrade;
 namespace esp {
 namespace gfx {
 
-inline bool PbrShader::lightingIsEnabled() {
+inline bool PbrShader::lightingIsEnabled() const {
   return (lightCount_ != 0u || flags_ & Flag::ImageBasedLighting);
 }
 

@@ -545,7 +545,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   int pbrDebugDisplayUniform_ = ID_UNDEFINED;
 
   /** @brief return true if direct lights or image based lighting is enabled. */
-  inline bool lightingIsEnabled();
+  inline bool lightingIsEnabled() const;
 };
 
 CORRADE_ENUMSET_OPERATORS(PbrShader::Flags)
