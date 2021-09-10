@@ -1134,7 +1134,7 @@ class ResourceManager {
    * an environment map, an irradiance map, a BRDF lookup table (2D texture),
    * and a pre-fitered map
    */
-  std::map<int, std::unique_ptr<esp::gfx::PbrImageBasedLighting>>
+  std::vector<std::unique_ptr<esp::gfx::PbrImageBasedLighting>>
       pbrImageBasedLightings_;
 
   int activePbrIbl_ = ID_UNDEFINED;

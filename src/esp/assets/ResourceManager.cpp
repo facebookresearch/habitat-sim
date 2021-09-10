@@ -2318,14 +2318,13 @@ void ResourceManager::initPbrImageBasedLighting(
   // different PBR IBLs at different positions in the scene.
 
   // TODO: HDR Image!
-  activePbrIbl_ = 0;
-  pbrImageBasedLightings_.emplace(
-      activePbrIbl_,
+  pbrImageBasedLightings_.emplace_back(
       std::make_unique<gfx::PbrImageBasedLighting>(
           gfx::PbrImageBasedLighting::Flag::IndirectDiffuse |
               gfx::PbrImageBasedLighting::Flag::IndirectSpecular |
               gfx::PbrImageBasedLighting::Flag::UseLDRImages,
           shaderManager_, hdriImageFilename));
+  activePbrIbl_ = 0;
 }
 
 void ResourceManager::initDefaultMaterials() {

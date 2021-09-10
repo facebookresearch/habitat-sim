@@ -779,9 +779,7 @@ Viewer::Viewer(const Arguments& arguments)
               << "| Loading Scene :" << simConfig_.activeSceneName;
 
   // image based lighting (PBR)
-  if (args.isSet("ibl")) {
-    simConfig_.pbrImageBasedLighting = true;
-  }
+  simConfig_.pbrImageBasedLighting = args.isSet("ibl");
 
   // create simulator instance
   simulator_ = esp::sim::Simulator::create_unique(simConfig_, MM_);

@@ -10,15 +10,10 @@
 #include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/EnumSet.h>
 #include <Magnum/GL/AbstractShaderProgram.h>
+#include <Magnum/GL/GL.h>  // header with all forward declarations for the Mn::GL namespace
 #include <Magnum/Shaders/GenericGL.h>
 
 #include "esp/core/esp.h"
-
-namespace Magnum {
-namespace GL {
-class CubeMapTexture;
-};
-};  // namespace Magnum
 
 namespace esp {
 namespace gfx {

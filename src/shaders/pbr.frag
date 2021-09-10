@@ -145,25 +145,6 @@ vec4 tonemap(vec4 color) {
 #endif
 }
 
-// The following function SRGBtoLINEAR is based on:
-// https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/data/shaders/pbr_khr.frag
-vec4 SRGBtoLINEAR(vec4 srgbIn) {
-#ifdef MANUAL_SRGB
-#ifdef SRGB_FAST_APPROXIMATION
-  vec3 linOut = pow(srgbIn.xyz, vec3(2.2));
-#else   // SRGB_FAST_APPROXIMATION
-  vec3 bLess = step(vec3(0.04045), srgbIn.xyz);
-  vec3 linOut =
-      mix(srgbIn.xyz / vec3(12.92),
-          pow((srgbIn.xyz + vec3(0.055)) / vec3(1.055), vec3(2.4)), bLess);
-#endif  // SRGB_FAST_APPROXIMATION
-  return vec4(linOut, srgbIn.w);
-  ;
-#else   // MANUAL_SRGB
-  return srgbIn;
-#endif  // MANUAL_SRGB
-}
-
 #if defined(NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENT)
 vec3 getNormalFromNormalMap() {
   vec3 tangentNormal =
@@ -298,7 +279,7 @@ void microfacetModel(vec3 specularReflectance,
 vec3 computeIBLDiffuse(vec3 c_diff, vec3 n) {
   // diffuse part = c_diff * irradiance
   // return c_diff * texture(IrradianceMap, n).rgb * Scales.iblDiffuse;
-  return c_diff * SRGBtoLINEAR(tonemap(texture(IrradianceMap, n))).rgb *
+  return c_diff * tonemap(texture(IrradianceMap, n)).rgb *
          ComponentScales[IblDiffuse];
 }
 
@@ -309,7 +290,7 @@ vec3 computeIBLSpecular(float roughness,
   vec3 brdf = texture(BrdfLUT, vec2(max(n_dot_v, 0.0), 1.0 - roughness)).rgb;
   float lod = roughness * float(PrefilteredMapMipLevels);
   vec3 prefilteredColor =
-      SRGBtoLINEAR(tonemap(textureLod(PrefilteredMap, reflectionDir, lod))).rgb;
+      tonemap(textureLod(PrefilteredMap, reflectionDir, lod)).rgb;
 
   return prefilteredColor * (specularReflectance * brdf.x + brdf.y) *
          ComponentScales[IblSpecular];
@@ -319,14 +300,14 @@ vec3 computeIBLSpecular(float roughness,
 void main() {
   vec3 emissiveColor = Material.emissiveColor;
 #if defined(EMISSIVE_TEXTURE)
-  emissiveColor *= SRGBtoLINEAR(texture(EmissiveTexture, texCoord)).rgb;
+  emissiveColor *= texture(EmissiveTexture, texCoord).rgb;
 #endif
   fragmentColor = vec4(emissiveColor, 0.0);
 
 #if (LIGHT_COUNT > 0)
   vec4 baseColor = Material.baseColor;
 #if defined(BASECOLOR_TEXTURE)
-  baseColor *= SRGBtoLINEAR(texture(BaseColorTexture, texCoord));
+  baseColor *= texture(BaseColorTexture, texCoord);
 #endif
 
   float roughness = Material.roughness;
