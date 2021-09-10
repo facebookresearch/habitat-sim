@@ -669,6 +669,10 @@ Viewer::Viewer(const Arguments& arguments)
       .addOption("agent-transform-filepath")
       .setHelp("agent-transform-filepath",
                "Specify path to load camera transform from.")
+      .addBooleanOption("ibl")
+      .setHelp("ibl",
+               "Image Based Lighting (it works only when PBR models exists in "
+               "the scene.")
       .parse(arguments.argc, arguments.argv);
 
   const auto viewportSize = Mn::GL::defaultFramebuffer.viewport().size();
@@ -774,7 +778,10 @@ Viewer::Viewer(const Arguments& arguments)
               << simConfig_.sceneDatasetConfigFile
               << "| Loading Scene :" << simConfig_.activeSceneName;
 
-  simConfig_.pbrImageBasedLighting = true;  // XXX
+  // image based lighting (PBR)
+  if (args.isSet("ibl")) {
+    simConfig_.pbrImageBasedLighting = true;
+  }
 
   // create simulator instance
   simulator_ = esp::sim::Simulator::create_unique(simConfig_, MM_);
