@@ -240,7 +240,6 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   pbrDebugDisplayUniform_ = uniformLocation("PbrDebugDisplay");
 
   // initialize the shader with some "reasonable defaults"
-  setPbrEquationScales(PbrEquationScales{});
   setViewMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
   setModelMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
   setProjectionMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
