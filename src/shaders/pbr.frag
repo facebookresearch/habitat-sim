@@ -423,6 +423,7 @@ void main() {
 #endif
   // PBR equation debug
   // "none", "Diff (l,n)", "F (l,h)", "G (l,v,h)", "D (h)", "Specular"
+#if defined(PBR_DEBUG_DISPLAY)
   if (PbrDebugDisplay > 0) {
     switch (PbrDebugDisplay) {
       case 1:
@@ -455,4 +456,5 @@ void main() {
         break;
     }  // switch
   }
+#endif
 }  // main

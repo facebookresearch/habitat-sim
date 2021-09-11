@@ -127,6 +127,8 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
                      ? "#define IMAGE_BASED_LIGHTING\n"
                      : "")
       .addSource(flags_ & Flag::ImageBasedLighting ? "#define TONE_MAP\n" : "")
+      .addSource(flags_ & Flag::DebugDisplay ? "#define PBR_DEBUG_DISPLAY\n"
+                                             : "")
       .addSource(
           Cr::Utility::formatString("#define LIGHT_COUNT {}\n", lightCount_))
       .addSource(rs.get("pbrCommon.glsl") + "\n")
@@ -237,7 +239,9 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
   componentScalesUniform_ = uniformLocation("ComponentScales");
 
   // for debug info
-  pbrDebugDisplayUniform_ = uniformLocation("PbrDebugDisplay");
+  if (flags_ & Flag::DebugDisplay) {
+    pbrDebugDisplayUniform_ = uniformLocation("PbrDebugDisplay");
+  }
 
   // initialize the shader with some "reasonable defaults"
   setViewMatrix(Mn::Matrix4{Mn::Math::IdentityInit});
@@ -277,7 +281,9 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
     scales.iblSpecular = 0.3;
   }
   setPbrEquationScales(scales);
-  setDebugDisplay(PbrDebugDisplay::None);
+  if (flags_ & Flag::DebugDisplay) {
+    setDebugDisplay(PbrDebugDisplay::None);
+  }
 }
 
 // Note: the texture binding points are explicitly specified above.
@@ -424,6 +430,10 @@ PbrShader& PbrShader::setPbrEquationScales(const PbrEquationScales& scales) {
 }
 
 PbrShader& PbrShader::setDebugDisplay(PbrDebugDisplay index) {
+  CORRADE_ASSERT(flags_ & Flag::DebugDisplay,
+                 "PbrShader::setDebugDisplay(): the shader was not "
+                 "created with DebugDisplay enabled",
+                 *this);
   setUniform(pbrDebugDisplayUniform_, int(index));
   return *this;
 }

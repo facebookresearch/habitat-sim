@@ -74,7 +74,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    *
    * @see @ref Flags, @ref flags()
    */
-  enum class Flag : Magnum::UnsignedShort {
+  enum class Flag : Magnum::UnsignedInt {
     /**
      * Multiply base color with the baseColor texture.
      * @see @ref setBaseColor(), @ref bindBaseColorTexture()
@@ -186,8 +186,13 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
     /**
      * render point light shadows using variance shadow map (VSM)
      */
-    // ShadowsVSM = 1 << 15, // TODO
+    // ShadowsVSM = 1 << 14, // TODO
 
+    /**
+     * Enable shader debug mode. Then developer can set the uniform
+     * PbrDebugDisplay in the fragment shader for debugging
+     */
+    DebugDisplay = 1 << 15,
     /*
      * TODO: alphaMask
      */
