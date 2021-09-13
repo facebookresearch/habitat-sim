@@ -98,7 +98,7 @@ if(BUILD_WITH_VHACD)
   target_include_directories(VoxelGridTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 endif()
 
-test(SceneGraphTest scene)
+corrade_add_test(SceneGraphTest SceneGraphTest.cpp LIBRARIES scene)
 target_include_directories(SceneGraphTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 test(SuncgTest scene)
