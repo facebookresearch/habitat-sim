@@ -129,22 +129,22 @@ struct Renderer::Impl {
       if (type == sensor::SensorType::Depth) {
 #ifdef ENABLE_VISUALIZATION_WORKAROUND_ON_MAC
         // create a BufferImage instance, if not already
-        if (!depthBufferImage) {
-          depthBufferImage.emplace(Mn::GL::PixelFormat::DepthComponent,
-                                   Mn::GL::PixelType::Float);
+        if (!depthBufferImage_) {
+          depthBufferImage_.emplace(Mn::GL::PixelFormat::DepthComponent,
+                                    Mn::GL::PixelType::Float);
         }
-        tgt.getDepthTexture().image(0, *depthBufferImage,
+        tgt.getDepthTexture().image(0, *depthBufferImage_,
                                     Mn::GL::BufferUsage::StaticRead);
 
         // This takes the above output image (which is depth) and
         // "reinterprets" it as R32F. In other words, the image below serves
         // as an "image view".
         Mn::GL::BufferImage2D clonedDepthImage{
-            depthBufferImage->storage(), Mn::PixelFormat::R32F,
-            depthBufferImage->size(),
-            Mn::GL::Buffer::wrap(depthBufferImage->buffer().id(),
+            depthBufferImage_->storage(), Mn::PixelFormat::R32F,
+            depthBufferImage_->size(),
+            Mn::GL::Buffer::wrap(depthBufferImage_->buffer().id(),
                                  Mn::GL::ObjectFlag::Created),
-            depthBufferImage->dataSize()};
+            depthBufferImage_->dataSize()};
 
         // setup a texture
         if (!visualizedTex ||
@@ -368,9 +368,9 @@ struct Renderer::Impl {
 #endif
   Cr::Containers::Optional<Mn::GL::Mesh> mesh_;
   Mn::ResourceManager<Mn::GL::AbstractShaderProgram> shaderManager_;
+  Cr::Containers::Optional<Mn::GL::Texture2D> visualizedTex_;
 #ifdef ENABLE_VISUALIZATION_WORKAROUND_ON_MAC
-  Cr::Containers::Optional<Mn::GL::Texture2D> visualizedTex;
-  Cr::Containers::Optional<Mn::GL::BufferImage2D> depthBufferImage;
+  Cr::Containers::Optional<Mn::GL::BufferImage2D> depthBufferImage_;
 #endif
 
   enum class RendererShaderType : uint8_t {
