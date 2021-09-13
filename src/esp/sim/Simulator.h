@@ -81,6 +81,7 @@ class Simulator {
     return semanticScene_;
   }
 
+  /** @brief check if the semantic scene exists.*/
   bool semanticSceneExists() const { return (semanticScene_ != nullptr); }
 
   /**
@@ -91,9 +92,7 @@ class Simulator {
     return sceneManager_->getSceneGraph(activeSceneID_);
   }
 
-  /**
-   * @brief get the semantic scene's SceneGraph for rendering
-   */
+  /** @brief get the semantic scene's SceneGraph for rendering */
   scene::SceneGraph& getActiveSemanticSceneGraph() {
     CORRADE_INTERNAL_ASSERT(std::size_t(activeSemanticSceneID_) <
                             sceneID_.size());

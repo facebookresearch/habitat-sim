@@ -104,11 +104,10 @@ int loadJsonIntoConfiguration(
       // support nested objects
       // create a new subgroup
       std::shared_ptr<core::config::Configuration> subGroupPtr =
-          config->getSubconfigCopy(key);
-      ;
+          config->getSubconfigCopy<core::config::Configuration>(key);
       numConfigSettings += loadJsonIntoConfiguration(obj, subGroupPtr);
       // save subgroup's subgroup configuration in original config
-      config->setSubconfigPtr(key, subGroupPtr);
+      config->setSubconfigPtr<core::config::Configuration>(key, subGroupPtr);
       //
     } else {
       // TODO support other types?

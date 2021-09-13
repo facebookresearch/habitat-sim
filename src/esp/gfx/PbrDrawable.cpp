@@ -137,8 +137,8 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   PbrShader::PbrEquationScales scales;
   // scales.DirectDiffuse = 0.8;
   // scales.DirectSpecular = 0.8;
-  scales.IblDiffuse = 0.8;
-  scales.IblSpecular = 0.3;
+  scales.iblDiffuse = 0.8;
+  scales.iblSpecular = 0.3;
   /*
   scales.IblDiffuse = 0.0;
   scales.IblSpecular = 0.0;
@@ -150,6 +150,11 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::IblSpecular);
   // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::Normal);
   // (*shader_).setDebugDisplay(PbrShader::PbrDebugDisplay::Shadow0);
+
+  // TODO:
+  // IN PbrShader class, we set the resonable defaults for the
+  // PbrShader::PbrEquationScales. Here we need a smart way to reset it
+  // just in case user would like to do so during the run-time.
 
   if ((flags_ & PbrShader::Flag::BaseColorTexture) &&
       (materialData_->baseColorTexture != nullptr)) {

@@ -79,6 +79,9 @@ void BulletArticulatedObject::initializeFromURDF(
 
   auto urdfModel = u2b.getModel();
 
+  // cache the global scaling from the source model
+  globalScale_ = urdfModel->getGlobalScaling();
+
   int urdfLinkIndex = u2b.getRootLinkIndex();
   // int rootIndex = u2b.getRootLinkIndex();
 

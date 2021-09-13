@@ -140,7 +140,8 @@ bool Model::loadJsonAttributes(const std::string& filename) {
 
     // get pointer to user_defined subgroup configuration
     std::shared_ptr<core::config::Configuration> subGroupPtr =
-        jsonAttributes_->getSubconfigCopy(subGroupName);
+        jsonAttributes_->getSubconfigCopy<core::config::Configuration>(
+            subGroupName);
     // get json object referenced by tag subGroupName
     const io::JsonGenericValue& jsonObj = jsonConfig[subGroupName.c_str()];
     // count number of valid user config settings found

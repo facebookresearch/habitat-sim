@@ -193,12 +193,7 @@ void GeoTest::coordinateFrame() {
   CORRADE_VERIFY(c2.rotationWorldToFrame().isApprox(rotation));
 
   const std::string j = R"({"up":[0,0,1],"front":[-1,0,0],"origin":[1,-2,3]})";
-  CORRADE_COMPARE(c1.toJson(), j);
-  CoordinateFrame c3(j);
-  CORRADE_VERIFY(c1 == c3);
-  CoordinateFrame c4;
-  c4.fromJson(j);
-  CORRADE_VERIFY(c3 == c4);
+  CORRADE_COMPARE(c1.toString(), j);
 }
 
 }  // namespace Test

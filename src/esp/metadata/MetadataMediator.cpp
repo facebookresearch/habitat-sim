@@ -247,7 +247,7 @@ attributes::SceneAttributes::ptr MetadataMediator::getSceneAttributesByName(
     ESP_DEBUG() << "Query dataset :" << activeSceneDataset_
                 << "for SceneAttributes named :" << sceneName << "yields"
                 << sceneList.size() << "candidates.  Using" << sceneList[0]
-                << ".";
+                << Mn::Debug::nospace << ".";
     sceneAttributes = dsSceneAttrMgr->getObjectCopyByHandle(sceneList[0]);
   } else {
     const std::string sceneFilenameCandidate =

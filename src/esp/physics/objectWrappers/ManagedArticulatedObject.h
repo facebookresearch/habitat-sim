@@ -24,6 +24,13 @@ class ManagedArticulatedObject
       : AbstractManagedPhysicsObject<esp::physics::ArticulatedObject>(
             classKey) {}
 
+  float getGlobalScale() const {
+    if (auto sp = getObjectReference()) {
+      return sp->getGlobalScale();
+    }
+    return 1.0;
+  }
+
   scene::SceneNode* getLinkSceneNode(int linkId = -1) const {
     if (auto sp = getObjectReference()) {
       return &const_cast<scene::SceneNode&>(sp->getLinkSceneNode(linkId));

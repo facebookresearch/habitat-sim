@@ -105,22 +105,77 @@ SceneAttributes::SceneAttributes(const std::string& handle)
   // defaults to asset local
   setTranslationOrigin(
       static_cast<int>(SceneInstanceTranslationOrigin::AssetLocal));
+  // get refs to internal subconfigs for object and ao instances
+  objInstConfig_ = editSubconfig<Configuration>("object_instances");
+  artObjInstConfig_ = editSubconfig<Configuration>("ao_instances");
 }
 
+SceneAttributes::SceneAttributes(const SceneAttributes& otr)
+    : AbstractAttributes(otr),
+      availableObjInstIDs_(otr.availableObjInstIDs_),
+      availableArtObjInstIDs_(otr.availableArtObjInstIDs_) {
+  // get refs to internal subconfigs for object and ao instances
+  objInstConfig_ = editSubconfig<Configuration>("object_instances");
+  copySubconfigIntoMe<SceneObjectInstanceAttributes>(otr.objInstConfig_,
+                                                     objInstConfig_);
+  artObjInstConfig_ = editSubconfig<Configuration>("ao_instances");
+  copySubconfigIntoMe<SceneAOInstanceAttributes>(otr.artObjInstConfig_,
+                                                 artObjInstConfig_);
+}
+SceneAttributes::SceneAttributes(SceneAttributes&& otr) noexcept
+    : AbstractAttributes(std::move(static_cast<AbstractAttributes>(otr))),
+      availableObjInstIDs_(std::move(otr.availableObjInstIDs_)),
+      availableArtObjInstIDs_(std::move(otr.availableArtObjInstIDs_)) {
+  // get refs to internal subconfigs for object and ao instances
+  // originals were moved over so should retain full derived class
+  objInstConfig_ = editSubconfig<Configuration>("object_instances");
+  artObjInstConfig_ = editSubconfig<Configuration>("ao_instances");
+}
+
+SceneAttributes& SceneAttributes::operator=(const SceneAttributes& otr) {
+  if (this != &otr) {
+    this->AbstractAttributes::operator=(otr);
+    availableObjInstIDs_ = otr.availableObjInstIDs_;
+    availableArtObjInstIDs_ = otr.availableArtObjInstIDs_;
+    // get refs to internal subconfigs for object and ao instances
+    objInstConfig_ = editSubconfig<Configuration>("object_instances");
+    copySubconfigIntoMe<SceneObjectInstanceAttributes>(otr.objInstConfig_,
+                                                       objInstConfig_);
+    artObjInstConfig_ = editSubconfig<Configuration>("ao_instances");
+    copySubconfigIntoMe<SceneAOInstanceAttributes>(otr.artObjInstConfig_,
+                                                   artObjInstConfig_);
+  }
+  return *this;
+}
+SceneAttributes& SceneAttributes::operator=(SceneAttributes&& otr) noexcept {
+  availableObjInstIDs_ = std::move(otr.availableObjInstIDs_);
+  availableArtObjInstIDs_ = std::move(otr.availableArtObjInstIDs_);
+  this->AbstractAttributes::operator=(
+      std::move(static_cast<AbstractAttributes>(otr)));
+
+  objInstConfig_ = editSubconfig<Configuration>("object_instances");
+  artObjInstConfig_ = editSubconfig<Configuration>("ao_instances");
+  return *this;
+}
 std::string SceneAttributes::getObjectInfoInternal() const {
   // scene-specific info constants
   // default translation origin
 
   std::string res = Cr::Utility::formatString(
       "\nDefault Translation Origin,Default Lighting,Navmesh Handle,Semantic "
-      "Scene Descriptor Handle,\n{},{},{},{}\nStage Instance Info :\n{}\n{}\n",
+      "Scene Descriptor Handle,\n{},{},{},{}\n",
       getTranslationOriginName(getTranslationOrigin()), getLightingHandle(),
-      getNavmeshHandle(), getSemanticSceneHandle(),
-      stageInstance_->getObjectInfoHeader(), stageInstance_->getObjectInfo());
+      getNavmeshHandle(), getSemanticSceneHandle());
+
+  const SceneObjectInstanceAttributes::cptr stageInstance = getStageInstance();
+  Cr::Utility::formatInto(res, res.size(), "Stage Instance Info :\n{}\n{}\n",
+                          stageInstance->getObjectInfoHeader(),
+                          stageInstance->getObjectInfo());
   // stage instance info
   int iter = 0;
   // object instance info
-  for (const auto& objInst : objectInstances_) {
+  const auto& objInstances = getObjectInstances();
+  for (const auto& objInst : objInstances) {
     if (iter == 0) {
       ++iter;
       Cr::Utility::formatInto(res, res.size(), "Object Instance Info :\n{}\n",
@@ -131,7 +186,8 @@ std::string SceneAttributes::getObjectInfoInternal() const {
 
   // articulated object instance info
   iter = 0;
-  for (const auto& artObjInst : articulatedObjectInstances_) {
+  const auto& articulatedObjectInstances = getArticulatedObjectInstances();
+  for (const auto& artObjInst : articulatedObjectInstances) {
     if (iter == 0) {
       ++iter;
       Cr::Utility::formatInto(res, res.size(),

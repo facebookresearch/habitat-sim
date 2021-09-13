@@ -10,13 +10,12 @@
 #include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/EnumSet.h>
 #include <Magnum/GL/AbstractShaderProgram.h>
-#include <Magnum/GL/CubeMapTexture.h>
+#include <Magnum/GL/GL.h>  // header with all forward declarations for the Mn::GL namespace
 #include <Magnum/Shaders/GenericGL.h>
 
 #include "esp/core/esp.h"
 
 namespace esp {
-
 namespace gfx {
 
 class PbrShader : public Magnum::GL::AbstractShaderProgram {
@@ -75,7 +74,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    *
    * @see @ref Flags, @ref flags()
    */
-  enum class Flag : Magnum::UnsignedShort {
+  enum class Flag : Magnum::UnsignedInt {
     /**
      * Multiply base color with the baseColor texture.
      * @see @ref setBaseColor(), @ref bindBaseColorTexture()
@@ -197,6 +196,11 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      */
     ShadowsVSM = 1 << 15,
 
+    /**
+     * Enable shader debug mode. Then developer can set the uniform
+     * PbrDebugDisplay in the fragment shader for debugging
+     */
+    DebugDisplay = 1 << 15,
     /*
      * TODO: alphaMask
      */
@@ -500,10 +504,10 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    * Toggles that control contributions from different components
    */
   struct PbrEquationScales {
-    float DirectDiffuse = 1.0f;
-    float DirectSpecular = 1.0f;
-    float IblDiffuse = 1.0f;
-    float IblSpecular = 1.0f;
+    float directDiffuse = 1.0f;
+    float directSpecular = 1.0f;
+    float iblDiffuse = 1.0f;
+    float iblSpecular = 1.0f;
   };
 
   /**
@@ -568,27 +572,16 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   int prefilteredMapMipLevelsUniform_ = ID_UNDEFINED;
 
   // scales
-  int scaleDirectDiffuseUniform_ = ID_UNDEFINED;
-  int scaleDirectSpecularUniform_ = ID_UNDEFINED;
-  int scaleIblDiffuseUniform_ = ID_UNDEFINED;
-  int scaleIblSpecularUniform_ = ID_UNDEFINED;
-
+  int componentScalesUniform_ = ID_UNDEFINED;
   // shadows
   int lightNearPlaneUniform_ = ID_UNDEFINED;
   int lightFarPlaneUniform_ = ID_UNDEFINED;
 
-  /*
-  tone mapping
-  currently the following values are hard coded in the pbrCommon.glsl
-  float exposure = 4.5f;
-  float gamma = 2.2f;
-  */
-  // TODO:
-  // int exposureUniform_ = ID_UNDEFINED;
-  // int gammaUniform_ = ID_UNDEFINED;
-
   // pbr debug info
   int pbrDebugDisplayUniform_ = ID_UNDEFINED;
+
+  /** @brief return true if direct lights or image based lighting is enabled. */
+  inline bool lightingIsEnabled() const;
 };
 
 CORRADE_ENUMSET_OPERATORS(PbrShader::Flags)

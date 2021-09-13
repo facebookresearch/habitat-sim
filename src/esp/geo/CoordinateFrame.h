@@ -21,7 +21,6 @@ class CoordinateFrame {
                            const vec3f& origin = vec3f::Zero());
   explicit CoordinateFrame(const quatf& rotation,
                            const vec3f& origin = vec3f::Zero());
-  explicit CoordinateFrame(const std::string& json);
 
   //! Returns position of origin of this CoordinateFrame relative to parent
   vec3f origin() const { return origin_; }
@@ -50,10 +49,7 @@ class CoordinateFrame {
   Transform transformationWorldToFrame() const;
 
   //! Returns a stringified JSON representation of this CoordinateFrame
-  std::string toJson() const;
-
-  //! Read CoordinateFrame from stringified JSON
-  void fromJson(const std::string& json);
+  std::string toString() const;
 
  protected:
   vec3f up_;
@@ -66,7 +62,7 @@ bool operator==(const CoordinateFrame& a, const CoordinateFrame& b);
 bool operator!=(const CoordinateFrame& a, const CoordinateFrame& b);
 
 inline std::ostream& operator<<(std::ostream& os, const CoordinateFrame& c) {
-  return os << c.toJson();
+  return os << c.toString();
 }
 
 }  // namespace geo

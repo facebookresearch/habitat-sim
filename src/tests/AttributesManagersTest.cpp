@@ -98,8 +98,6 @@ class AttributesManagersTest : public testing::Test {
    */
   template <typename T>
   void testCreateAndRemove(std::shared_ptr<T> mgr, const std::string& handle) {
-    // meaningless key to modify attributes for verifcation of behavior
-    std::string keyStr = "tempKey";
     // get starting number of templates
     int orignNumTemplates = mgr->getNumObjects();
     // verify template is not present - should not be
@@ -122,10 +120,10 @@ class AttributesManagersTest : public testing::Test {
 
     // test changing a user-defined field in each template, verify the templates
     // are not now the same
-    attrTemplate1->set(keyStr, "temp");
-    attrTemplate2->set(keyStr, "temp2");
-    ASSERT_NE(attrTemplate1->template get<std::string>(keyStr),
-              attrTemplate2->template get<std::string>(keyStr));
+    attrTemplate1->setFileDirectory("temp_dir_1");
+    attrTemplate2->setFileDirectory("temp_dir_2");
+    ASSERT_NE(attrTemplate1->getFileDirectory(),
+              attrTemplate2->getFileDirectory());
     // get original template ID
     int oldID = attrTemplate1->getID();
 
@@ -138,13 +136,13 @@ class AttributesManagersTest : public testing::Test {
     // get another copy
     auto attrTemplate3 = mgr->getObjectOrCopyByHandle(handle);
     // verify added field is present and the same
-    ASSERT_EQ(attrTemplate3->template get<std::string>(keyStr),
-              attrTemplate2->template get<std::string>(keyStr));
+    ASSERT_EQ(attrTemplate3->getFileDirectory(),
+              attrTemplate2->getFileDirectory());
     // change field in new copy
-    attrTemplate3->set(keyStr, "temp3");
+    attrTemplate3->setFileDirectory("temp_dir_3");
     // verify that now they are different
-    ASSERT_NE(attrTemplate3->template get<std::string>(keyStr),
-              attrTemplate2->template get<std::string>(keyStr));
+    ASSERT_NE(attrTemplate3->getFileDirectory(),
+              attrTemplate2->getFileDirectory());
 
     // test removal
     int removeID = attrTemplate2->getID();
@@ -295,6 +293,24 @@ class AttributesManagersTest : public testing::Test {
    * @param renderHandle a legal render handle to set for the new template so
    * that registration won't fail.
    */
+
+  // ignore for physics attributes
+
+  void processTemplateRenderAsset(
+      std::shared_ptr<AttrMgrs::PhysicsAttributesManager> mgr,
+      std::shared_ptr<Attrs::PhysicsManagerAttributes> newAttrTemplate0,
+      const std::string& handle) {}
+
+  template <typename T, typename U>
+  void processTemplateRenderAsset(std::shared_ptr<T> mgr,
+                                  std::shared_ptr<U> newAttrTemplate0,
+                                  const std::string& handle) {
+    auto attrTemplate1 = mgr->createObject(handle, false);
+    // set legitimate render handle in template
+    newAttrTemplate0->setRenderAssetHandle(
+        attrTemplate1->template get<std::string>("render_asset"));
+  }
+
   template <typename T>
   void testCreateAndRemoveDefault(std::shared_ptr<T> mgr,
                                   const std::string& handle,
@@ -312,14 +328,7 @@ class AttributesManagersTest : public testing::Test {
     // create template from source handle, register it and retrieve it
     // Note: registration of template means this is a copy of registered
     // template
-    if (setRenderHandle) {
-      auto attrTemplate1 = mgr->createObject(handle, false);
-      // set legitimate render handle in template
-      newAttrTemplate0->set(
-          "render_asset",
-          attrTemplate1->template get<std::string>("render_asset"));
-    }
-
+    processTemplateRenderAsset(mgr, newAttrTemplate0, handle);
     // register modified template and verify that this is the template now
     // stored
     int newID = mgr->registerObject(newAttrTemplate0, newHandle);
@@ -341,13 +350,14 @@ class AttributesManagersTest : public testing::Test {
    * @brief This method will test the user-defined configuration values to see
    * that they match with expected passed values.  The config is expected to
    * hold one of each type that it supports.
-   * @param userConfig The configuration object whose contents are to be tested
+   * @param userConfig The configuration object whose contents are to be
+   * tested
    * @param str_val Expected string value
    * @param bool_val Expected boolean value
    * @param double_val Exptected double value
    * @param vec_val Expected Magnum::Vector3 value
-   * @param quat_val Expected Quaternion value - note that the JSON is read with
-   * scalar at idx 0, whereas the quaternion constructor takes the vector
+   * @param quat_val Expected Quaternion value - note that the JSON is read
+   * with scalar at idx 0, whereas the quaternion constructor takes the vector
    * component in the first position and the scalar in the second.
    */
   void testUserDefinedConfigVals(
@@ -384,7 +394,6 @@ class AttributesManagersTest : public testing::Test {
    */
   template <typename T>
   void testAssetAttributesModRegRemove(std::shared_ptr<T> defaultAttribs,
-                                       const std::string& ctorModField,
                                        int legalVal,
                                        int const* illegalVal) {
     // get starting number of templates
@@ -401,13 +410,13 @@ class AttributesManagersTest : public testing::Test {
     if (nullptr != illegalVal) {
       // modify template value used by primitive constructor (will change
       // name) illegal modification
-      defaultAttribs->set(ctorModField, *illegalVal);
+      defaultAttribs->setNumSegments(*illegalVal);
       // verify template is not valid
       bool isTemplateValid = defaultAttribs->isValidTemplate();
       ASSERT_NE(isTemplateValid, true);
     }
     // legal modification, different than default
-    defaultAttribs->set(ctorModField, legalVal);
+    defaultAttribs->setNumSegments(legalVal);
     // verify template is valid
     isTemplateValid = defaultAttribs->isValidTemplate();
     ASSERT_EQ(isTemplateValid, true);
@@ -431,7 +440,7 @@ class AttributesManagersTest : public testing::Test {
     std::shared_ptr<T> newAttribs =
         assetAttributesManager_->getObjectOrCopyByHandle<T>(newHandle);
     // verify template has modified values
-    int newValue = newAttribs->template get<int>(ctorModField);
+    int newValue = newAttribs->getNumSegments();
     ASSERT_EQ(legalVal, newValue);
     // remove modified template via handle
     auto oldTemplate2 =
@@ -827,9 +836,10 @@ TEST_F(AttributesManagersTest, AttributesManagers_SceneInstanceJSONLoadTest) {
 
   // test nested configuration
   auto artObjNestedConfig =
-      artObjInstance->getUserConfiguration()->getSubconfigCopy("user_def_obj");
+      artObjInstance->getUserConfiguration()
+          ->getSubconfigCopy<esp::core::config::Configuration>("user_def_obj");
   ASSERT_NE(artObjNestedConfig, nullptr);
-  ASSERT_EQ(artObjNestedConfig->hasValues(), true);
+  ASSERT_EQ(artObjNestedConfig->getNumEntries() > 0, true);
   ASSERT_EQ(artObjNestedConfig->template get<Magnum::Vector3>("position"),
             Magnum::Vector3(0.1f, 0.2f, 0.3f));
   ASSERT_EQ(artObjNestedConfig->template get<Magnum::Vector3>("rotation"),
@@ -1161,7 +1171,7 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
 
     // for solid primitives, and value > 2 for segments is legal
     testAssetAttributesModRegRemove<CapsulePrimitiveAttributes>(
-        dfltCapsAttribs, "segments", legalModValSolid, &illegalModValSolid);
+        dfltCapsAttribs, legalModValSolid, &illegalModValSolid);
 
     // test that a new template can be created from the specified handles
     testAssetAttributesTemplateCreateFromHandle(capsule3DSolidHandle);
@@ -1172,7 +1182,7 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
     ASSERT_NE(nullptr, dfltCapsAttribs);
     // segments must be mult of 4 for wireframe primtives
     testAssetAttributesModRegRemove<CapsulePrimitiveAttributes>(
-        dfltCapsAttribs, "segments", legalModValWF, &illegalModValWF);
+        dfltCapsAttribs, legalModValWF, &illegalModValWF);
     // test that a new template can be created from the specified handles
     testAssetAttributesTemplateCreateFromHandle(capsule3DWireframeHandle);
   }
@@ -1188,7 +1198,7 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
 
     // for solid primitives, and value > 2 for segments is legal
     testAssetAttributesModRegRemove<ConePrimitiveAttributes>(
-        dfltConeAttribs, "segments", legalModValSolid, &illegalModValSolid);
+        dfltConeAttribs, legalModValSolid, &illegalModValSolid);
 
     // test that a new template can be created from the specified handles
     testAssetAttributesTemplateCreateFromHandle(coneSolidHandle);
@@ -1199,7 +1209,7 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
     ASSERT_NE(nullptr, dfltConeAttribs);
     // segments must be mult of 4 for wireframe primtives
     testAssetAttributesModRegRemove<ConePrimitiveAttributes>(
-        dfltConeAttribs, "segments", legalModValWF, &illegalModValWF);
+        dfltConeAttribs, legalModValWF, &illegalModValWF);
 
     // test that a new template can be created from the specified handles
     testAssetAttributesTemplateCreateFromHandle(coneWireframeHandle);
@@ -1216,7 +1226,7 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
 
     // for solid primitives, and value > 2 for segments is legal
     testAssetAttributesModRegRemove<CylinderPrimitiveAttributes>(
-        dfltCylAttribs, "segments", 5, &illegalModValSolid);
+        dfltCylAttribs, 5, &illegalModValSolid);
 
     // test that a new template can be created from the specified handles
     testAssetAttributesTemplateCreateFromHandle(cylinderSolidHandle);
@@ -1227,7 +1237,7 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
     ASSERT_NE(nullptr, dfltCylAttribs);
     // segments must be mult of 4 for wireframe primtives
     testAssetAttributesModRegRemove<CylinderPrimitiveAttributes>(
-        dfltCylAttribs, "segments", legalModValWF, &illegalModValWF);
+        dfltCylAttribs, legalModValWF, &illegalModValWF);
     // test that a new template can be created from the specified handles
     testAssetAttributesTemplateCreateFromHandle(cylinderWireframeHandle);
   }
@@ -1243,7 +1253,7 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
 
     // for solid primitives, and value > 2 for segments is legal
     testAssetAttributesModRegRemove<UVSpherePrimitiveAttributes>(
-        dfltUVSphereAttribs, "segments", 5, &illegalModValSolid);
+        dfltUVSphereAttribs, 5, &illegalModValSolid);
 
     // test that a new template can be created from the specified handles
     testAssetAttributesTemplateCreateFromHandle(uvSphereSolidHandle);
@@ -1255,7 +1265,7 @@ TEST_F(AttributesManagersTest, PrimitiveAssetAttributesTest) {
     ASSERT_NE(nullptr, dfltUVSphereAttribs);
     // segments must be mult of 4 for wireframe primtives
     testAssetAttributesModRegRemove<UVSpherePrimitiveAttributes>(
-        dfltUVSphereAttribs, "segments", legalModValWF, &illegalModValWF);
+        dfltUVSphereAttribs, legalModValWF, &illegalModValWF);
 
     // test that a new template can be created from the specified handles
     testAssetAttributesTemplateCreateFromHandle(uvSphereWireframeHandle);

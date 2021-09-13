@@ -123,39 +123,42 @@ struct Renderer::Impl {
       // shader may has been switched
       shader->rebindColorMapTexture();
 
+      // shader may has been switched
+      shader->rebindColorMapTexture();
+
       if (type == sensor::SensorType::Depth) {
 #ifdef ENABLE_VISUALIZATION_WORKAROUND_ON_MAC
         // create a BufferImage instance, if not already
-        if (!depthBufferImage_) {
-          depthBufferImage_.emplace(Mn::GL::PixelFormat::DepthComponent,
-                                    Mn::GL::PixelType::Float);
+        if (!depthBufferImage) {
+          depthBufferImage.emplace(Mn::GL::PixelFormat::DepthComponent,
+                                   Mn::GL::PixelType::Float);
         }
-        tgt.getDepthTexture().image(0, *depthBufferImage_,
+        tgt.getDepthTexture().image(0, *depthBufferImage,
                                     Mn::GL::BufferUsage::StaticRead);
 
         // This takes the above output image (which is depth) and
         // "reinterprets" it as R32F. In other words, the image below serves
         // as an "image view".
         Mn::GL::BufferImage2D clonedDepthImage{
-            depthBufferImage_->storage(), Mn::PixelFormat::R32F,
-            depthBufferImage_->size(),
-            Mn::GL::Buffer::wrap(depthBufferImage_->buffer().id(),
+            depthBufferImage->storage(), Mn::PixelFormat::R32F,
+            depthBufferImage->size(),
+            Mn::GL::Buffer::wrap(depthBufferImage->buffer().id(),
                                  Mn::GL::ObjectFlag::Created),
-            depthBufferImage_->dataSize()};
+            depthBufferImage->dataSize()};
 
         // setup a texture
-        if (!visualizedTex_ ||
-            visualizedTex_->imageSize(0) != tgt.framebufferSize()) {
-          visualizedTex_ = Mn::GL::Texture2D{};
-          (*visualizedTex_)
+        if (!visualizedTex ||
+            visualizedTex->imageSize(0) != tgt.framebufferSize()) {
+          visualizedTex = Mn::GL::Texture2D{};
+          (*visualizedTex)
               .setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
               .setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
               .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
               .setStorage(1, Mn::GL::TextureFormat::R32F,
                           tgt.framebufferSize());
         }
-        (*visualizedTex_).setSubImage(0, {}, clonedDepthImage);
-        shader->bindDepthTexture(*visualizedTex_);
+        (*visualizedTex).setSubImage(0, {}, clonedDepthImage);
+        shader->bindDepthTexture(*visualizedTex);
 #else
         shader->bindDepthTexture(tgt.getDepthTexture());
 #endif
@@ -365,9 +368,9 @@ struct Renderer::Impl {
 #endif
   Cr::Containers::Optional<Mn::GL::Mesh> mesh_;
   Mn::ResourceManager<Mn::GL::AbstractShaderProgram> shaderManager_;
-  Cr::Containers::Optional<Mn::GL::Texture2D> visualizedTex_;
 #ifdef ENABLE_VISUALIZATION_WORKAROUND_ON_MAC
-  Cr::Containers::Optional<Mn::GL::BufferImage2D> depthBufferImage_;
+  Cr::Containers::Optional<Mn::GL::Texture2D> visualizedTex;
+  Cr::Containers::Optional<Mn::GL::BufferImage2D> depthBufferImage;
 #endif
 
   enum class RendererShaderType : uint8_t {
@@ -409,7 +412,7 @@ struct Renderer::Impl {
         shaderManager_.set<Mn::GL::AbstractShaderProgram>(
             shader.key(),
             new DepthShader{DepthShader::Flag::UnprojectExistingDepth},
-            Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
+            Mn::ResourceDataState::Final, Mn::ResourcePolicy::Resident);
       } else if (type == RendererShaderType::DepthTextureVisualizer) {
         shaderManager_.set<Mn::GL::AbstractShaderProgram>(
             shader.key(),

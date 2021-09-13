@@ -102,7 +102,7 @@ void SceneAttributesManager::setValsFromJSONDoc(
       }
     }
   } else {
-    ESP_WARNING() << "Articulated Objects specified for scene"
+    ESP_WARNING() << "No Articulated Objects specified for scene"
                   << attribsDispName << ", or specification error.";
   }
 

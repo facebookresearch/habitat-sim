@@ -12,6 +12,7 @@
 #include "esp/gfx/PbrShader.h"
 #include "esp/gfx/ShaderManager.h"
 #include "esp/gfx/ShadowMapManager.h"
+
 namespace esp {
 namespace gfx {
 

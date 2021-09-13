@@ -3,7 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 // For technical details, see here:
-//https://rauwendaal.net/2014/06/14/rendering-a-screen-covering-triangle-in-opengl/
+// https://rauwendaal.net/2014/06/14/rendering-a-screen-covering-triangle-in-opengl/
 
 /*
 v0(-1, 1)  v2(3, 1)

@@ -105,7 +105,8 @@ ResourceManager::ResourceManager(
   buildImporters();
 
   if (flags_ & Flag::PbrImageBasedLighting) {
-    initPbrImageBasedLighting();
+    // TODO: HDRi image name should be config based
+    initPbrImageBasedLighting("lythwood_room_4k.jpg");
   }
 }
 
@@ -2310,30 +2311,20 @@ void ResourceManager::initDefaultLightSetups() {
   shaderManager_.setFallback(gfx::LightSetup{});
 }
 
-void ResourceManager::initPbrImageBasedLighting() {
+void ResourceManager::initPbrImageBasedLighting(
+    const std::string& hdriImageFilename) {
   // TODO:
   // should work with the scene instance config, initialize
   // different PBR IBLs at different positions in the scene.
 
   // TODO: HDR Image!
-  // TODO: Indirect specular
-  activePbrIbl_ = 0;
-  pbrImageBasedLightings_.emplace(
-      activePbrIbl_,
+  pbrImageBasedLightings_.emplace_back(
       std::make_unique<gfx::PbrImageBasedLighting>(
-          gfx::PbrImageBasedLighting::Flags{
-              gfx::PbrImageBasedLighting::Flag::IndirectDiffuse |
+          gfx::PbrImageBasedLighting::Flag::IndirectDiffuse |
               gfx::PbrImageBasedLighting::Flag::IndirectSpecular |
-              gfx::PbrImageBasedLighting::Flag::UseLDRImages},
-          // shaderManager_, "./data/pbr/Malibu_Overlook_4k.jpg"));
-          // shaderManager_, "./data/pbr/Alexs_Apt_8k.jpg"));
-          //  shaderManager_, "./data/pbr/Stadium_Center_8k.jpg"));
-          // shaderManager_, "./data/pbr/MonValley_G_DirtRoad_8k.jpg"));  //
-          // keep
-          // shaderManager_, "./data/pbr/PaperMill_E_8k.jpg"));  // keep
-          // shaderManager_, "./data/pbr/20_Subway_Lights_8k.jpg"));  // keep
-          shaderManager_, "./data/pbr/lythwood_room_4k.png"));  // keep
-  // shaderManager_, "./data/pbr/snow_test8_Bg.jpg"));
+              gfx::PbrImageBasedLighting::Flag::UseLDRImages,
+          shaderManager_, hdriImageFilename));
+  activePbrIbl_ = 0;
 }
 
 void ResourceManager::initDefaultMaterials() {

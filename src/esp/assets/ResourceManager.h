@@ -972,8 +972,16 @@ class ResourceManager {
 
   /**
    * @brief initialize pbr image based lighting
+   * @param[in] hdriImageFilename, the name of the
+   * HDRi image (an equirectangular image), that will be converted to a
+   * environment cube map
+   * NOTE!!! Such an image MUST be SPECIFIED in the
+   * ~/habitat-sim/data/pbr/PbrImages.conf
+   * and be put in that folder.
+   * example image:
+   * ~/habitat-sim/data/pbr/lythwood_room_4k.png
    */
-  void initPbrImageBasedLighting();
+  void initPbrImageBasedLighting(const std::string& hdriImageFilename);
 
   /**
    * @brief initialize default material setups in the current ShaderManager
@@ -1148,8 +1156,9 @@ class ResourceManager {
    * an environment map, an irradiance map, a BRDF lookup table (2D texture),
    * and a pre-fitered map
    */
-  std::map<int, std::unique_ptr<esp::gfx::PbrImageBasedLighting>>
+  std::vector<std::unique_ptr<esp::gfx::PbrImageBasedLighting>>
       pbrImageBasedLightings_;
+
   int activePbrIbl_ = ID_UNDEFINED;
 
   /**
@@ -1159,7 +1168,6 @@ class ResourceManager {
   gfx::ShadowMapManager shadowManager_;
   // scene graph id -> keys for the shadow maps
   std::map<int, std::vector<Magnum::ResourceKey>> shadowMapKeys_;
-
 };  // class ResourceManager
 
 CORRADE_ENUMSET_OPERATORS(ResourceManager::Flags)
