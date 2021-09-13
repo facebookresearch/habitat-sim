@@ -80,7 +80,7 @@ target_include_directories(SimTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 corrade_add_test(PhysicsTest PhysicsTest.cpp LIBRARIES physics)
 target_include_directories(PhysicsTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-test(ResourceManagerTest assets)
+corrade_add_test(ResourceManagerTest ResourceManagerTest.cpp LIBRARIES assets)
 target_include_directories(ResourceManagerTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 if(BUILD_WITH_VHACD)
@@ -98,11 +98,11 @@ if(BUILD_WITH_VHACD)
   target_include_directories(VoxelGridTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 endif()
 
-test(SuncgTest scene)
-target_include_directories(SuncgTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-
 test(SceneGraphTest scene)
 target_include_directories(SceneGraphTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
+test(SuncgTest scene)
+target_include_directories(SuncgTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(SensorTest SensorTest.cpp LIBRARIES sensor sim)
 target_include_directories(SensorTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
