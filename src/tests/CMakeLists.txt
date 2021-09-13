@@ -48,7 +48,9 @@ target_include_directories(GfxReplayTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 corrade_add_test(IOTest IOTest.cpp LIBRARIES io metadata)
 target_include_directories(IOTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-test(MetadataMediatorTest assets metadata)
+corrade_add_test(
+  MetadataMediatorTest MetadataMediatorTest.cpp LIBRARIES assets metadata
+)
 target_include_directories(MetadataMediatorTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 test(NavTest nav assets)
