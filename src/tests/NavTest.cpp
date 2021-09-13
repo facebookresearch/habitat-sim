@@ -2,8 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include <Corrade/TestSuite/Tester.h>
 #include <Corrade/Utility/Directory.h>
-#include <gtest/gtest.h>
 
 #include "esp/assets/MeshData.h"
 #include "esp/core/esp.h"
@@ -16,57 +16,70 @@
 
 namespace Cr = Corrade;
 
-namespace esp {
-namespace nav {
+namespace Test {
 
-void printPathPoint(int run, int step, const vec3f& p, float distance) {
-  ESP_DEBUG() << run << "," << step << "," << p[0] << "," << p[1] << "," << p[2]
-              << "," << distance;
+void printPathPoint(int run, int step, const esp::vec3f& p, float distance) {
+  ESP_VERY_VERBOSE() << run << "," << step << "," << p[0] << "," << p[1] << ","
+                     << p[2] << "," << distance;
 }
 
-void testPathFinder(PathFinder& pf) {
+struct NavTest : Cr::TestSuite::Tester {
+  explicit NavTest();
+
+  void PathFinderLoadTest();
+  void PathFinderTestCases();
+
+  void PathFinderTestNonNavigable();
+  void PathFinderTestSeed();
+
+  void PathFinderTestMeshData();
+  esp::logging::LoggingContext loggingContext;
+};
+
+NavTest::NavTest() {
+  addTests({&NavTest::PathFinderLoadTest, &NavTest::PathFinderTestCases,
+            &NavTest::PathFinderTestNonNavigable, &NavTest::PathFinderTestSeed,
+            &NavTest::PathFinderTestMeshData});
+}  // namespace Test
+
+void NavTest::PathFinderLoadTest() {
+  esp::nav::PathFinder pf;
+  pf.loadNavMesh(Cr::Utility::Directory::join(
+      SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.navmesh"));
   for (int i = 0; i < 100000; i++) {
-    ShortestPath path;
+    esp::nav::ShortestPath path;
     path.requestedStart = pf.getRandomNavigablePoint();
     path.requestedEnd = pf.getRandomNavigablePoint();
     const bool foundPath = pf.findPath(path);
     if (foundPath) {
       const float islandSize = pf.islandRadius(path.requestedStart);
-      CORRADE_INTERNAL_ASSERT(islandSize > 0.0);
+      CORRADE_VERIFY(islandSize > 0.0);
       for (int j = 0; j < path.points.size(); j++) {
         printPathPoint(i, j, path.points[j], path.geodesicDistance);
-        CORRADE_INTERNAL_ASSERT(pf.islandRadius(path.points[j]) == islandSize);
+        CORRADE_VERIFY(pf.islandRadius(path.points[j]) == islandSize);
       }
-      CORRADE_INTERNAL_ASSERT(pf.islandRadius(path.requestedEnd) == islandSize);
-      const vec3f& pathStart = path.points.front();
-      const vec3f& pathEnd = path.points.back();
-      const vec3f end = pf.tryStep(pathStart, pathEnd);
+      CORRADE_VERIFY(pf.islandRadius(path.requestedEnd) == islandSize);
+      const esp::vec3f& pathStart = path.points.front();
+      const esp::vec3f& pathEnd = path.points.back();
+      const esp::vec3f end = pf.tryStep(pathStart, pathEnd);
       ESP_DEBUG() << "tryStep initial end=" << pathEnd.transpose()
                   << ", final end=" << end.transpose();
-      CORRADE_INTERNAL_ASSERT(path.geodesicDistance <
-                              std::numeric_limits<float>::infinity());
+      CORRADE_VERIFY(path.geodesicDistance <
+                     std::numeric_limits<float>::infinity());
     }
   }
 }
 
-TEST(NavTest, PathFinderLoadTest) {
-  logging::LoggingContext loggingContext;
-  PathFinder pf;
-  pf.loadNavMesh(Cr::Utility::Directory::join(
-      SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.navmesh"));
-  testPathFinder(pf);
-}
-
-void printRandomizedPathSet(PathFinder& pf) {
-  core::Random random;
-  ShortestPath path;
+void printRandomizedPathSet(esp::nav::PathFinder& pf) {
+  esp::core::Random random;
+  esp::nav::ShortestPath path;
   path.requestedStart = pf.getRandomNavigablePoint();
   path.requestedEnd = pf.getRandomNavigablePoint();
-  std::cout << "run,step,x,y,z,geodesicDistance" << std::endl;
+  ESP_VERY_VERBOSE() << "run,step,x,y,z,geodesicDistance";
   for (int i = 0; i < 100; i++) {
     const float r = 0.1;
-    vec3f rv(random.uniform_float(-r, r), 0, random.uniform_float(-r, r));
-    vec3f rv2(random.uniform_float(-r, r), 0, random.uniform_float(-r, r));
+    esp::vec3f rv(random.uniform_float(-r, r), 0, random.uniform_float(-r, r));
+    esp::vec3f rv2(random.uniform_float(-r, r), 0, random.uniform_float(-r, r));
     path.requestedStart += rv;
     path.requestedEnd += rv2;
     const bool foundPath = pf.findPath(path);
@@ -86,83 +99,80 @@ void printRandomizedPathSet(PathFinder& pf) {
   }
 }
 
-TEST(NavTest, PathFinderTestCases) {
-  logging::LoggingContext loggingContext;
-  PathFinder pf;
+void NavTest::PathFinderTestCases() {
+  esp::nav::PathFinder pf;
   pf.loadNavMesh(Cr::Utility::Directory::join(
       SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.navmesh"));
-  ShortestPath testPath;
-  testPath.requestedStart = vec3f(-6.493, 0.072, -3.292);
-  testPath.requestedEnd = vec3f(-8.98, 0.072, -0.62);
-  ESP_DEBUG() << "TEST";
+  esp::nav::ShortestPath testPath;
+  testPath.requestedStart = esp::vec3f(-6.493, 0.072, -3.292);
+  testPath.requestedEnd = esp::vec3f(-8.98, 0.072, -0.62);
   pf.findPath(testPath);
-  CORRADE_INTERNAL_ASSERT(testPath.points.size() == 0);
-  ASSERT_EQ(testPath.geodesicDistance, std::numeric_limits<float>::infinity());
+  CORRADE_VERIFY(testPath.points.size() == 0);
+  CORRADE_COMPARE(testPath.geodesicDistance,
+                  std::numeric_limits<float>::infinity());
 
   testPath.requestedStart = pf.getRandomNavigablePoint();
   // Jitter the point just enough so that it isn't exactly the same
-  testPath.requestedEnd = testPath.requestedStart + vec3f(0.01, 0.0, 0.01);
+  testPath.requestedEnd = testPath.requestedStart + esp::vec3f(0.01, 0.0, 0.01);
   pf.findPath(testPath);
   // There should be 2 points
-  ASSERT_EQ(testPath.points.size(), 2);
+  CORRADE_COMPARE(testPath.points.size(), 2);
   // The geodesicDistance should be almost exactly the L2 dist
-  ASSERT_LE(std::abs(testPath.geodesicDistance -
-                     (testPath.requestedStart - testPath.requestedEnd).norm()),
-            0.001);
+  CORRADE_VERIFY(
+      std::abs(testPath.geodesicDistance -
+               (testPath.requestedStart - testPath.requestedEnd).norm()) <=
+      0.001);
 }
 
-TEST(NavTest, PathFinderTestNonNavigable) {
-  logging::LoggingContext loggingContext;
-  PathFinder pf;
+void NavTest::PathFinderTestNonNavigable() {
+  esp::nav::PathFinder pf;
   pf.loadNavMesh(Cr::Utility::Directory::join(
       SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.navmesh"));
 
-  const vec3f nonNavigablePoint{1e2, 1e2, 1e2};
+  const esp::vec3f nonNavigablePoint{1e2, 1e2, 1e2};
 
-  const vec3f resultPoint = pf.tryStep<vec3f>(
-      nonNavigablePoint, nonNavigablePoint + vec3f{0.25, 0, 0});
+  const esp::vec3f resultPoint = pf.tryStep<esp::vec3f>(
+      nonNavigablePoint, nonNavigablePoint + esp::vec3f{0.25, 0, 0});
 
-  CORRADE_INTERNAL_ASSERT(nonNavigablePoint.isApprox(resultPoint));
+  CORRADE_VERIFY(nonNavigablePoint.isApprox(resultPoint));
 }
 
-TEST(NavTest, PathFinderTestSeed) {
-  logging::LoggingContext loggingContext;
-  PathFinder pf;
+void NavTest::PathFinderTestSeed() {
+  esp::nav::PathFinder pf;
   pf.loadNavMesh(Cr::Utility::Directory::join(
       SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.navmesh"));
 
   // The same seed should produce the same point
   pf.seed(1);
-  vec3f firstPoint = pf.getRandomNavigablePoint();
+  esp::vec3f firstPoint = pf.getRandomNavigablePoint();
   pf.seed(1);
-  vec3f secondPoint = pf.getRandomNavigablePoint();
-  ASSERT_TRUE(firstPoint == secondPoint);
+  esp::vec3f secondPoint = pf.getRandomNavigablePoint();
+  CORRADE_VERIFY(firstPoint == secondPoint);
 
   // Different seeds should produce different points
   pf.seed(2);
-  vec3f firstPoint2 = pf.getRandomNavigablePoint();
+  esp::vec3f firstPoint2 = pf.getRandomNavigablePoint();
   pf.seed(3);
-  vec3f secondPoint2 = pf.getRandomNavigablePoint();
-  ASSERT_TRUE(firstPoint2 != secondPoint2);
+  esp::vec3f secondPoint2 = pf.getRandomNavigablePoint();
+  CORRADE_VERIFY(firstPoint2 != secondPoint2);
 
   // One seed should produce different points when sampled twice
   pf.seed(4);
-  vec3f firstPoint3 = pf.getRandomNavigablePoint();
-  vec3f secondPoint3 = pf.getRandomNavigablePoint();
-  ASSERT_TRUE(firstPoint3 != secondPoint3);
+  esp::vec3f firstPoint3 = pf.getRandomNavigablePoint();
+  esp::vec3f secondPoint3 = pf.getRandomNavigablePoint();
+  CORRADE_VERIFY(firstPoint3 != secondPoint3);
 }
 
-TEST(NavTest, PathFinderTestMeshData) {
-  logging::LoggingContext loggingContext;
-  PathFinder pf;
+void NavTest::PathFinderTestMeshData() {
+  esp::nav::PathFinder pf;
   pf.loadNavMesh(Cr::Utility::Directory::join(
       SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.navmesh"));
 
   esp::assets::MeshData::ptr meshData = pf.getNavMeshData();
 
   // Will change if asset changes
-  ASSERT_EQ(meshData->vbo.size(), 1155);
-  ASSERT_EQ(meshData->ibo.size(), 1155);
+  CORRADE_COMPARE(meshData->vbo.size(), 1155);
+  CORRADE_COMPARE(meshData->ibo.size(), 1155);
 
   pf.loadNavMesh(Cr::Utility::Directory::join(
       SCENE_DATASETS, "habitat-test-scenes/van-gogh-room.navmesh"));
@@ -170,8 +180,9 @@ TEST(NavTest, PathFinderTestMeshData) {
   meshData = pf.getNavMeshData();
 
   // Will change if asset changes
-  ASSERT_EQ(meshData->vbo.size(), 63);
-  ASSERT_EQ(meshData->ibo.size(), 63);
+  CORRADE_COMPARE(meshData->vbo.size(), 63);
+  CORRADE_COMPARE(meshData->ibo.size(), 63);
 }
-}  // namespace nav
-}  // namespace esp
+}  // namespace Test
+
+CORRADE_TEST_MAIN(Test::NavTest)

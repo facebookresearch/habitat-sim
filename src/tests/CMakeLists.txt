@@ -53,7 +53,14 @@ corrade_add_test(
 )
 target_include_directories(MetadataMediatorTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-test(NavTest nav assets)
+corrade_add_test(
+  NavTest
+  NavTest.cpp
+  LIBRARIES
+  core
+  nav
+  assets
+)
 target_include_directories(NavTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 test(Mp3dTest scene)
