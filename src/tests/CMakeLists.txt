@@ -15,7 +15,14 @@ configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/configure.h
 )
 
-test(AttributesManagersTest assets metadata)
+corrade_add_test(
+  AttributesManagersTest
+  AttributesManagersTest.cpp
+  LIBRARIES
+  core
+  assets
+  metadata
+)
 target_include_directories(AttributesManagersTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(CoreTest CoreTest.cpp LIBRARIES core io)
