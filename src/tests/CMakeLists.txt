@@ -18,7 +18,7 @@ configure_file(
 test(AttributesManagersTest assets metadata)
 target_include_directories(AttributesManagersTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-test(CoreTest io)
+corrade_add_test(CoreTest CoreTest.cpp LIBRARIES core io)
 
 test(MetadataMediatorTest assets metadata)
 target_include_directories(MetadataMediatorTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
