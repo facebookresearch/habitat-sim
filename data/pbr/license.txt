@@ -12,9 +12,9 @@ https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/LICENSE
 
 
 ====================
-lythwood_room_4k.png
+lythwood_room_4k.jpg
 ====================
-The above picture is from https://polyhaven.com/a/lythwood_room
+The above picture was originally in .png format and was from https://polyhaven.com/a/lythwood_room
 
 License: CC0 (public domain)
 Details can be found here: https://polyhaven.com/license and https://creativecommons.org/publicdomain/zero/1.0/

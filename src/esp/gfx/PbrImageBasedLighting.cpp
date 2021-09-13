@@ -46,11 +46,16 @@ constexpr unsigned int brdfLUTSize = 512;
 PbrImageBasedLighting::PbrImageBasedLighting(
     Flags flags,
     ShaderManager& shaderManager,
-    const std::string& equirectangularImageFilename)
+    const std::string& hdriImageFilename)
     : flags_(flags), shaderManager_(shaderManager) {
   recreateTextures();
 
-  convertEquirectangularToCubeMap(equirectangularImageFilename);
+  // import the resources (URDF lookup texture, HDRi environment etc.)
+  if (!Cr::Utility::Resource::hasGroup("pbr-images")) {
+    importPbrImageResources();
+  }
+  // the image filename must be specified in the Resource
+  convertEquirectangularToCubeMap(hdriImageFilename);
 
   // compute the irradiance map for indirect diffuse part
   computePrecomputedMap(PrecomputedMapType::IrradianceMap);
@@ -112,7 +117,7 @@ Mn::Resource<Mn::GL::AbstractShaderProgram, T> PbrImageBasedLighting::getShader(
 }
 
 void PbrImageBasedLighting::convertEquirectangularToCubeMap(
-    const std::string& equirectangularImageFilename) {
+    const std::string& hdriImageFilename) {
   // ==== load the equirectangular texture ====
   // TODO: HDR!!
   // plugin manager used to instantiate importers which in turn are used
@@ -123,7 +128,8 @@ void PbrImageBasedLighting::convertEquirectangularToCubeMap(
       manager.loadAndInstantiate(importerName);
   CORRADE_INTERNAL_ASSERT(importer);
 
-  importer->openFile(equirectangularImageFilename);
+  const Cr::Utility::Resource rs{"pbr-images"};
+  importer->openData(rs.getRaw(hdriImageFilename));
   Cr::Containers::Optional<Mn::Trade::ImageData2D> imageData =
       importer->image2D(0);
   // sanity checks
@@ -240,10 +246,6 @@ void PbrImageBasedLighting::loadBrdfLookUpTable() {
   Cr::Containers::Pointer<Mn::Trade::AbstractImporter> importer =
       manager.loadAndInstantiate(importerName);
   CORRADE_INTERNAL_ASSERT(importer);
-
-  if (!Cr::Utility::Resource::hasGroup("pbr-images")) {
-    importPbrImageResources();
-  }
 
   // TODO: HDR, No LDR in the future!
   // temporarily using the brdflut from here:

@@ -34,7 +34,7 @@ uniform vec3 LightColors[LIGHT_COUNT];
 uniform float LightRanges[LIGHT_COUNT];
 
 // lights in world space!
-// if .w == 0, it means it is a dirctional light, .xyz is the direction;
+// if .w == 0, it means it is a directional light, .xyz is the direction;
 // if .w == 1, it means it is a point light, .xyz is the light position;
 // it is NOT put in the Light Structure, simply because we may modify the code
 // so it is computed in the vertex shader.
@@ -43,14 +43,14 @@ uniform vec4 LightDirections[LIGHT_COUNT];
 
 // -------------- material, textures ------------------
 struct MaterialData {
-  vec4 baseColor;     // diffuse color, if BaseColorTexture exists,
-                      // multiply it with the BaseColorTexture
-  float roughness;    // roughness of a surface, if roughness texture exists,
-                      // multiply it with the MetallicRoughnessTexture
-  float metallic;     // metalness of a surface, if metallic texture exists,
-                      // multiply it the MetallicRoughnessTexture
-  vec3 emissiveColor; // emissiveColor, if emissive texture exists,
-                      // multiply it the EmissiveTexture
+  vec4 baseColor;      // diffuse color, if BaseColorTexture exists,
+                       // multiply it with the BaseColorTexture
+  float roughness;     // roughness of a surface, if roughness texture exists,
+                       // multiply it with the MetallicRoughnessTexture
+  float metallic;      // metalness of a surface, if metallic texture exists,
+                       // multiply it the MetallicRoughnessTexture
+  vec3 emissiveColor;  // emissiveColor, if emissive texture exists,
+                       // multiply it the EmissiveTexture
 };
 uniform MaterialData Material;
 
@@ -69,6 +69,12 @@ uniform sampler2D NormalTexture;
 uniform sampler2D EmissiveTexture;
 #endif
 
+#if defined(IMAGE_BASED_LIGHTING)
+uniform samplerCube IrradianceMap;
+uniform sampler2D BrdfLUT;
+uniform samplerCube PrefilteredMap;
+#endif
+
 // -------------- uniforms ----------------
 #if defined(OBJECT_ID)
 uniform highp uint ObjectId;
@@ -85,21 +91,58 @@ uniform mediump float NormalTextureScale
 // camera position in world space
 uniform highp vec3 CameraWorldPos;
 
+// scales for components in the PBR equation
+// [0] = direct diffuse
+// [1] = direct specular
+// [2] = ibl diffuse
+// [3] = ibl specular
+const int DirectDiffuse = 0;
+const int DirectSpecular = 1;
+#if defined(IMAGE_BASED_LIGHTING)
+const int IblDiffuse = 2;
+const int IblSpecular = 3;
+#endif
+uniform highp vec4 ComponentScales;
+
+#if defined(IMAGE_BASED_LIGHTING)
+uniform uint PrefilteredMapMipLevels;
+#endif
+
+uniform int PbrDebugDisplay;
+
 // -------------- shader ------------------
-// The following function SRGBtoLINEAR is based on:
+
+// The following function Uncharted2Tonemap is based on:
 // https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/data/shaders/pbr_khr.frag
-vec4 SRGBtoLINEAR(vec4 srgbIn) {
-  #ifdef MANUAL_SRGB
-  #ifdef SRGB_FAST_APPROXIMATION
-  vec3 linOut = pow(srgbIn.xyz,vec3(2.2));
-  #else //SRGB_FAST_APPROXIMATION
-  vec3 bLess = step(vec3(0.04045),srgbIn.xyz);
-  vec3 linOut = mix( srgbIn.xyz/vec3(12.92), pow((srgbIn.xyz+vec3(0.055))/vec3(1.055),vec3(2.4)), bLess );
-  #endif //SRGB_FAST_APPROXIMATION
-  return vec4(linOut,srgbIn.w);;
-  #else //MANUAL_SRGB
-  return srgbIn;
-  #endif //MANUAL_SRGB
+vec3 Uncharted2Tonemap(vec3 color) {
+  float A = 0.15;
+  float B = 0.50;
+  float C = 0.10;
+  float D = 0.20;
+  float E = 0.02;
+  float F = 0.30;
+  float W = 11.2;
+  return ((color * (A * color + C * B) + D * E) /
+          (color * (A * color + B) + D * F)) -
+         E / F;
+}
+
+// TODO: make them uniform variables
+const float exposure = 4.5f;
+const float gamma = 2.2f;
+
+// The following function tonemap is based on:
+// https://github.com/SaschaWillems/Vulkan-glTF-PBR/blob/master/data/shaders/pbr_khr.frag
+// Tone mapping is to take a wide dynamic range of values and compressing them
+// into a smaller range that is appropriate for the output device.
+vec4 tonemap(vec4 color) {
+#ifdef TONE_MAP
+  vec3 outcol = Uncharted2Tonemap(color.rgb * exposure);
+  outcol = outcol * (1.0f / Uncharted2Tonemap(vec3(11.2f)));
+  return vec4(pow(outcol, vec3(1.0f / gamma)), color.a);
+#else
+  return color;
+#endif
 }
 
 #if defined(NORMAL_TEXTURE) && defined(PRECOMPUTED_TANGENT)
@@ -168,18 +211,17 @@ float specularGeometricAttenuation(float n_dot_l,
 // v_dot_h: <view, halfVector>
 //          view: camera direction, aka light outgoing direction
 //          halfVector: half vector of light and view
-vec3 fresnelSchlick(vec3 specularReflectance,
-                    float v_dot_h) {
+vec3 fresnelSchlick(vec3 specularReflectance, float v_dot_h) {
   // https://github.com/SaschaWillems/Vulkan-glTF-PBR
   // For typical incident reflectance range (between 4% to 100%)
   // set the grazing reflectance to 100% for typical fresnel effect.
   // For very low reflectance range on highly diffuse objects (below 4%),
   // incrementally reduce grazing reflecance to 0%.
-  float reflectance = max(max(specularReflectance.r, specularReflectance.g), specularReflectance.b);
+  float reflectance = max(max(specularReflectance.r, specularReflectance.g),
+                          specularReflectance.b);
   float reflectance90 = clamp(reflectance * 25.0, 0.0, 1.0);
   return specularReflectance +
-         (vec3(reflectance90) - specularReflectance) *
-         pow(1.0 - v_dot_h, 5.0);
+         (vec3(reflectance90) - specularReflectance) * pow(1.0 - v_dot_h, 5.0);
 }
 
 // specularReflectance: specular reflectance at normal incidence
@@ -221,9 +263,9 @@ void microfacetModel(vec3 specularReflectance,
   float temp = max(4.0 * n_dot_l * n_dot_v, Epsilon);
   vec3 specular = Fresnel *
                   specularGeometricAttenuation(n_dot_l, n_dot_v, roughness) *
-  // normalDistributionGGX is defined in the pbrCommon.glsl
-  // Specular D, normal distribution function (NDF),
-  // also known as ggxDistribution
+                  // normalDistributionGGX is defined in the pbrCommon.glsl
+                  // Specular D, normal distribution function (NDF),
+                  // also known as ggxDistribution
                   normalDistributionGGX(n_dot_h, roughness) / temp;
 
   vec3 tempVec = lightRadiance * n_dot_l;
@@ -231,17 +273,41 @@ void microfacetModel(vec3 specularReflectance,
   specularContrib = specular * tempVec;
 }
 
+#if defined(IMAGE_BASED_LIGHTING)
+// c_diff: diffuse color
+// n: normal on shading location in world space
+vec3 computeIBLDiffuse(vec3 c_diff, vec3 n) {
+  // diffuse part = c_diff * irradiance
+  // return c_diff * texture(IrradianceMap, n).rgb * Scales.iblDiffuse;
+  return c_diff * tonemap(texture(IrradianceMap, n)).rgb *
+         ComponentScales[IblDiffuse];
+}
+
+vec3 computeIBLSpecular(float roughness,
+                        float n_dot_v,
+                        vec3 specularReflectance,
+                        vec3 reflectionDir) {
+  vec3 brdf = texture(BrdfLUT, vec2(max(n_dot_v, 0.0), 1.0 - roughness)).rgb;
+  float lod = roughness * float(PrefilteredMapMipLevels);
+  vec3 prefilteredColor =
+      tonemap(textureLod(PrefilteredMap, reflectionDir, lod)).rgb;
+
+  return prefilteredColor * (specularReflectance * brdf.x + brdf.y) *
+         ComponentScales[IblSpecular];
+}
+#endif
+
 void main() {
   vec3 emissiveColor = Material.emissiveColor;
 #if defined(EMISSIVE_TEXTURE)
-  emissiveColor *= SRGBtoLINEAR(texture(EmissiveTexture, texCoord)).rgb;
+  emissiveColor *= texture(EmissiveTexture, texCoord).rgb;
 #endif
   fragmentColor = vec4(emissiveColor, 0.0);
 
 #if (LIGHT_COUNT > 0)
   vec4 baseColor = Material.baseColor;
 #if defined(BASECOLOR_TEXTURE)
-  baseColor *= SRGBtoLINEAR(texture(BaseColorTexture, texCoord));
+  baseColor *= texture(BaseColorTexture, texCoord);
 #endif
 
   float roughness = Material.roughness;
@@ -276,7 +342,8 @@ void main() {
 
   // compute specularReflectance, specular reflectance at normal incidence
   // for nonmetal, using constant 0.04
-  vec3 specularReflectance = mix(vec3(DielectricSpecular), baseColor.rgb, metallic);
+  vec3 specularReflectance =
+      mix(vec3(DielectricSpecular), baseColor.rgb, metallic);
 
   // diffuse color (c_diff in gltf 2.0 spec:
   // https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/README.md#metal-brdf-and-dielectric-brdf)
@@ -293,14 +360,13 @@ void main() {
     // Attenuation. Directional lights have the .w component set to 0, use
     // that to make the distance zero -- which will then ensure the
     // attenuation is always 1.0
-    highp float dist =
-        length(LightDirections[iLight].xyz - position) * LightDirections[iLight].w;
+    highp float dist = length(LightDirections[iLight].xyz - position) *
+                       LightDirections[iLight].w;
     // If range is 0 for whatever reason, clamp it to a small value to
     // avoid a NaN when dist is 0 as well (which is the case for
     // directional lights).
-    highp float attenuation =
-        clamp(1.0 - pow(dist / max(LightRanges[iLight], 0.0001), 4.0), 0.0,
-              1.0);
+    highp float attenuation = clamp(
+        1.0 - pow(dist / max(LightRanges[iLight], 0.0001), 4.0), 0.0, 1.0);
     attenuation = attenuation * attenuation / (1.0 + dist * dist);
 
     // radiance
@@ -328,26 +394,67 @@ void main() {
     float n_dot_h = clamp(dot(n, halfVector), 0.0, 1.0);
     vec3 currentDiffuseContrib = vec3(0.0, 0.0, 0.0);
     vec3 currentSpecularContrib = vec3(0.0, 0.0, 0.0);
-    microfacetModel(specularReflectance,
-                    c_diff,
-                    metallic,
-                    roughness,
-                    v_dot_h,
-                    n_dot_l,
-                    n_dot_v,
-                    n_dot_h,
-                    lightRadiance,
-                    currentDiffuseContrib,
-                    currentSpecularContrib);
+    microfacetModel(specularReflectance, c_diff, metallic, roughness, v_dot_h,
+                    n_dot_l, n_dot_v, n_dot_h, lightRadiance,
+                    currentDiffuseContrib, currentSpecularContrib);
     diffuseContrib += currentDiffuseContrib;
     specularContrib += currentSpecularContrib;
   }  // for lights
+
+  diffuseContrib *= ComponentScales[DirectDiffuse];
+  specularContrib *= ComponentScales[DirectSpecular];
 
   // TODO: use ALPHA_MASK to discard fragments
   fragmentColor += vec4(diffuseContrib + specularContrib, baseColor.a);
 #endif  // if LIGHT_COUNT > 0
 
+#if defined(IMAGE_BASED_LIGHTING)
+  vec3 iblDiffuseContrib = computeIBLDiffuse(c_diff, n);
+  fragmentColor.rgb += iblDiffuseContrib;
+
+  vec3 reflection = normalize(reflect(-view, n));
+  vec3 iblSpecularContrib =
+      computeIBLSpecular(roughness, n_dot_v, specularReflectance, reflection);
+  fragmentColor.rgb += iblSpecularContrib;
+#endif  // IMAGE_BASED_LIGHTING
+
 #if defined(OBJECT_ID)
   fragmentObjectId = ObjectId;
 #endif
-}
+  // PBR equation debug
+  // "none", "Diff (l,n)", "F (l,h)", "G (l,v,h)", "D (h)", "Specular"
+#if defined(PBR_DEBUG_DISPLAY)
+  if (PbrDebugDisplay > 0) {
+    switch (PbrDebugDisplay) {
+      case 1:
+        fragmentColor.rgb = diffuseContrib;  // direct diffuse
+        break;
+      case 2:
+        fragmentColor.rgb = specularContrib;  // direct specular
+        break;
+      case 3:
+#if defined(IMAGE_BASED_LIGHTING)
+        fragmentColor.rgb = iblDiffuseContrib;  // ibl diffuse
+#endif
+        break;
+      case 4:
+#if defined(IMAGE_BASED_LIGHTING)
+        fragmentColor.rgb = iblSpecularContrib;  // ibl specular
+#endif
+        break;
+      case 5:
+        fragmentColor.rgb = n;  // normal
+        break;
+      case 6:
+        // TODO: Shadows
+        /*
+#if defined(SHADOWS_VSM)
+        fragmentColor.rgb =
+            visualizePointShadowMap(1, position, LightDirections[1].xyz);
+#endif
+*/
+        break;
+    }  // switch
+  }
+#endif
+}  // main
