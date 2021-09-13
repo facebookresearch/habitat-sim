@@ -2,8 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include <Corrade/TestSuite/Tester.h>
 #include <Corrade/Utility/Directory.h>
-#include <gtest/gtest.h>
 #include <string>
 
 #include "esp/sim/Simulator.h"
@@ -36,11 +36,22 @@ const std::string physicsConfigFile =
     Cr::Utility::Directory::join(SCENE_DATASETS,
                                  "../default.physics_config.json");
 
-class PhysicsManagerTest : public testing::TestWithParam<bool> {
- protected:
-  void SetUp() override{};
+namespace Test {
+struct PhysicsTest : Cr::TestSuite::Tester {
+  explicit PhysicsTest();
+
+  void close() {
+    physicsManager_ = nullptr;
+
+    sceneManager_ = nullptr;
+
+    resourceManager_ = nullptr;
+
+    context_ = nullptr;
+  }
 
   void resetCreateRendererFlag(bool createRenderer) {
+    close();
     auto cfg = esp::sim::SimulatorConfiguration{};
     cfg.createRenderer = createRenderer;
     // setting values for stage load
@@ -48,20 +59,22 @@ class PhysicsManagerTest : public testing::TestWithParam<bool> {
     cfg.forceSeparateSemanticSceneGraph = false;
     cfg.enablePhysics = true;
     metadataMediator_ = MetadataMediator::create(cfg);
+    // get attributes manager for physics world attributes
+    physicsAttributesManager_ =
+        metadataMediator_->getPhysicsAttributesManager();
+
+    sceneManager_ = SceneManager::create_unique();
     resourceManager_ = std::make_unique<ResourceManager>(metadataMediator_);
     if (createRenderer) {
       context_ = esp::gfx::WindowlessContext::create_unique(0);
     }
     resourceManager_->setRequiresTextures(createRenderer);
 
-    sceneID_ = sceneManager_.initSceneGraph();
-    // get attributes manager for physics world attributes
-    physicsAttributesManager_ =
-        metadataMediator_->getPhysicsAttributesManager();
+    sceneID_ = sceneManager_->initSceneGraph();
   }
 
   void initStage(const std::string& stageFile) {
-    auto& sceneGraph = sceneManager_.getSceneGraph(sceneID_);
+    auto& sceneGraph = sceneManager_->getSceneGraph(sceneID_);
     auto& rootNode = sceneGraph.getRootNode();
 
     // construct appropriate physics attributes based on config file
@@ -81,7 +94,7 @@ class PhysicsManagerTest : public testing::TestWithParam<bool> {
     // load scene
     std::vector<int> tempIDs{sceneID_, esp::ID_UNDEFINED};
     resourceManager_->loadStage(stageAttributes, nullptr, physicsManager_,
-                                &sceneManager_, tempIDs);
+                                sceneManager_.get(), tempIDs);
 
     rigidObjectManager_ = physicsManager_->getRigidObjectManager();
   }
@@ -90,7 +103,7 @@ class PhysicsManagerTest : public testing::TestWithParam<bool> {
                             esp::gfx::DrawableGroup* drawables = nullptr,
                             esp::scene::SceneNode* attachmentNode = nullptr) {
     if (drawables == nullptr) {
-      drawables = &sceneManager_.getSceneGraph(sceneID_).getDrawables();
+      drawables = &sceneManager_->getSceneGraph(sceneID_).getDrawables();
     }
     int objectId =
         physicsManager_->addObject(objectFile, drawables, attachmentNode);
@@ -106,6 +119,19 @@ class PhysicsManagerTest : public testing::TestWithParam<bool> {
     return objectWrapper;
   }
 
+  // tests
+  void testJoinCompound();
+  void testCollisionBoundingBox();
+  void testDiscreteContactTest();
+  void testBulletCompoundShapeMargins();
+  void testConfigurableScaling();
+  void testVelocityControl();
+  void testSceneNodeAttachment();
+  void testMotionTypes();
+  void testNumActiveContactPoints();
+  void testRemoveSleepingSupport();
+  /////
+
   esp::logging::LoggingContext loggingContext_;
   // must declare these in this order due to avoid deallocation errors
   esp::gfx::WindowlessContext::uptr context_;
@@ -114,278 +140,361 @@ class PhysicsManagerTest : public testing::TestWithParam<bool> {
   std::unique_ptr<ResourceManager> resourceManager_ = nullptr;
 
   AttrMgrs::PhysicsAttributesManager::ptr physicsAttributesManager_;
-  SceneManager sceneManager_;
+  SceneManager::uptr sceneManager_ = nullptr;
   PhysicsManager::ptr physicsManager_;
 
   std::shared_ptr<esp::physics::RigidObjectManager> rigidObjectManager_;
 
   int sceneID_;
-};
+};  // struct PhysicsTest
 
-// Parameterized tests: for each TEST_P, we run it once with GetParam()==false
-// and again with GetParam()==true.
-INSTANTIATE_TEST_CASE_P(CreateRendererToggle,
-                        PhysicsManagerTest,
-                        testing::Values(false, true));
+PhysicsTest::PhysicsTest() {
+  addTests(
+      {&PhysicsTest::testJoinCompound, &PhysicsTest::testCollisionBoundingBox,
+       &PhysicsTest::testDiscreteContactTest,
+       &PhysicsTest::testBulletCompoundShapeMargins,
+       &PhysicsTest::testConfigurableScaling, &PhysicsTest::testVelocityControl,
+       &PhysicsTest::testSceneNodeAttachment, &PhysicsTest::testMotionTypes,
+       &PhysicsTest::testNumActiveContactPoints,
+       &PhysicsTest::testRemoveSleepingSupport});
+}
 
-TEST_P(PhysicsManagerTest, JoinCompound) {
+void PhysicsTest::testJoinCompound() {
   ESP_DEBUG() << "Starting physics test: JoinCompound";
-
-  resetCreateRendererFlag(GetParam());
 
   std::string stageFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/scenes/simple_room.glb");
   std::string objectFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/objects/nested_box.glb");
 
-  initStage(stageFile);
+  for (bool resetRender : {false, true}) {
+    resetCreateRendererFlag(resetRender);
 
-  if (physicsManager_->getPhysicsSimulationLibrary() !=
-      PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
-    // if we have a simulation implementation then test a joined vs. unjoined
-    // object
-    // ObjectAttributes ObjectAttributes;
-    ObjectAttributes::ptr ObjectAttributes = ObjectAttributes::create();
-    ObjectAttributes->setRenderAssetHandle(objectFile);
-    auto objectAttributesManager =
-        metadataMediator_->getObjectAttributesManager();
-    objectAttributesManager->registerObject(ObjectAttributes, objectFile);
+    initStage(stageFile);
 
-    // get a reference to the stored template to edit
-    ObjectAttributes::ptr objectTemplate =
-        objectAttributesManager->getObjectCopyByHandle(objectFile);
+    if (physicsManager_->getPhysicsSimulationLibrary() !=
+        PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
+      // if we have a simulation implementation then test a joined vs. unjoined
+      // object
+      // ObjectAttributes ObjectAttributes;
+      ObjectAttributes::ptr ObjectAttributes = ObjectAttributes::create();
+      ObjectAttributes->setRenderAssetHandle(objectFile);
+      auto objectAttributesManager =
+          metadataMediator_->getObjectAttributesManager();
+      objectAttributesManager->registerObject(ObjectAttributes, objectFile);
 
-    for (int i = 0; i < 2; i++) {
-      // mark the object not joined
-      if (i == 0) {
-        objectTemplate->setJoinCollisionMeshes(false);
-      } else {
-        objectTemplate->setJoinCollisionMeshes(true);
+      // get a reference to the stored template to edit
+      ObjectAttributes::ptr objectTemplate =
+          objectAttributesManager->getObjectCopyByHandle(objectFile);
+
+      for (int i = 0; i < 2; i++) {
+        // mark the object not joined
+        if (i == 0) {
+          objectTemplate->setJoinCollisionMeshes(false);
+        } else {
+          objectTemplate->setJoinCollisionMeshes(true);
+        }
+        objectAttributesManager->registerObject(objectTemplate);
+        physicsManager_->reset();
+
+        // add and simulate objects
+        int num_objects = 7;
+        for (int o = 0; o < num_objects; o++) {
+          auto objWrapper = rigidObjectManager_->addObjectByHandle(objectFile);
+
+          esp::scene::SceneNode* node = objWrapper->getSceneNode();
+
+          Magnum::Matrix4 R{
+              Magnum::Matrix4::rotationX(Magnum::Math::Rad<float>(-1.56)) *
+              Magnum::Matrix4::rotationY(Magnum::Math::Rad<float>(-0.25))};
+          float boxHeight = 2.0 + (o * 2);
+          Magnum::Vector3 initialPosition{0.0, boxHeight + 1.5f, 0.0};
+          objWrapper->setRotation(
+              Magnum::Quaternion::fromMatrix(R.rotationNormalized()));
+          objWrapper->setTranslation(initialPosition);
+
+          CORRADE_COMPARE(node->absoluteTranslation(), initialPosition);
+        }
+
+        float timeToSim = 20.0;
+        while (physicsManager_->getWorldTime() < timeToSim) {
+          physicsManager_->stepPhysics(0.1);
+        }
+        int numActiveObjects = physicsManager_->checkActiveObjects();
+        ESP_DEBUG() << "Number of active objects:" << numActiveObjects
+                    << "| Num Total Objects :"
+                    << physicsManager_->getNumRigidObjects();
+
+        if (i == 1) {
+          // when collision meshes are joined, objects should be stable
+          CORRADE_COMPARE(numActiveObjects, 0);
+          CORRADE_COMPARE(physicsManager_->getNumActiveContactPoints(), 0);
+        }
+
+        rigidObjectManager_->removeAllObjects();
       }
-      objectAttributesManager->registerObject(objectTemplate);
-      physicsManager_->reset();
-
-      // add and simulate objects
-      int num_objects = 7;
-      for (int o = 0; o < num_objects; o++) {
-        auto objWrapper = rigidObjectManager_->addObjectByHandle(objectFile);
-
-        esp::scene::SceneNode* node = objWrapper->getSceneNode();
-
-        Magnum::Matrix4 R{
-            Magnum::Matrix4::rotationX(Magnum::Math::Rad<float>(-1.56)) *
-            Magnum::Matrix4::rotationY(Magnum::Math::Rad<float>(-0.25))};
-        float boxHeight = 2.0 + (o * 2);
-        Magnum::Vector3 initialPosition{0.0, boxHeight + 1.5f, 0.0};
-        objWrapper->setRotation(
-            Magnum::Quaternion::fromMatrix(R.rotationNormalized()));
-        objWrapper->setTranslation(initialPosition);
-
-        ASSERT_EQ(node->absoluteTranslation(), initialPosition);
-      }
-
-      float timeToSim = 20.0;
-      while (physicsManager_->getWorldTime() < timeToSim) {
-        physicsManager_->stepPhysics(0.1);
-      }
-      int numActiveObjects = physicsManager_->checkActiveObjects();
-      ESP_DEBUG() << "Number of active objects:" << numActiveObjects
-                  << "| Num Total Objects :"
-                  << physicsManager_->getNumRigidObjects();
-
-      if (i == 1) {
-        // when collision meshes are joined, objects should be stable
-        ASSERT_EQ(numActiveObjects, 0);
-        ASSERT_EQ(physicsManager_->getNumActiveContactPoints(), 0);
-      }
-
-      rigidObjectManager_->removeAllObjects();
     }
-  }
-}
+  }  // for resetCreateRendererFlag false and true
+}  // PhysicsTest::testJoinCompound
 
 #ifdef ESP_BUILD_WITH_BULLET
-TEST_P(PhysicsManagerTest, CollisionBoundingBox) {
+void PhysicsTest::testCollisionBoundingBox() {
   ESP_DEBUG() << "Starting physics test: CollisionBoundingBox";
-
-  resetCreateRendererFlag(GetParam());
 
   std::string stageFile =
       Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
   std::string objectFile =
       Cr::Utility::Directory::join(dataDir, "test_assets/objects/sphere.glb");
 
-  initStage(stageFile);
+  for (bool resetRender : {false, true}) {
+    resetCreateRendererFlag(resetRender);
 
-  if (physicsManager_->getPhysicsSimulationLibrary() !=
-      PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
-    // if we have a simulation implementation then test bounding box vs mesh for
-    // sphere object
+    initStage(stageFile);
 
-    ObjectAttributes::ptr ObjectAttributes = ObjectAttributes::create();
-    ObjectAttributes->setRenderAssetHandle(objectFile);
-    ObjectAttributes->setMargin(0.0);
-    ObjectAttributes->setJoinCollisionMeshes(false);
+    if (physicsManager_->getPhysicsSimulationLibrary() !=
+        PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
+      // if we have a simulation implementation then test bounding box vs mesh
+      // for sphere object
 
-    auto objectAttributesManager =
-        metadataMediator_->getObjectAttributesManager();
-    objectAttributesManager->registerObject(ObjectAttributes, objectFile);
+      ObjectAttributes::ptr ObjectAttributes = ObjectAttributes::create();
+      ObjectAttributes->setRenderAssetHandle(objectFile);
+      ObjectAttributes->setMargin(0.0);
+      ObjectAttributes->setJoinCollisionMeshes(false);
 
-    // get a reference to the stored template to edit
-    ObjectAttributes::ptr objectTemplate =
-        objectAttributesManager->getObjectCopyByHandle(objectFile);
+      auto objectAttributesManager =
+          metadataMediator_->getObjectAttributesManager();
+      objectAttributesManager->registerObject(ObjectAttributes, objectFile);
 
-    for (int i = 0; i < 2; i++) {
-      if (i == 0) {
-        objectTemplate->setBoundingBoxCollisions(false);
-      } else {
-        objectTemplate->setBoundingBoxCollisions(true);
-      }
-      objectAttributesManager->registerObject(objectTemplate);
-      physicsManager_->reset();
+      // get a reference to the stored template to edit
+      ObjectAttributes::ptr objectTemplate =
+          objectAttributesManager->getObjectCopyByHandle(objectFile);
 
-      auto objectWrapper = makeObjectGetWrapper(
-          objectFile, &sceneManager_.getSceneGraph(sceneID_).getDrawables());
-      ASSERT_NE(objectWrapper, nullptr);
-
-      Magnum::Vector3 initialPosition{0.0, 0.25, 0.0};
-      objectWrapper->setTranslation(initialPosition);
-
-      Magnum::Quaternion prevOrientation = objectWrapper->getRotation();
-      Magnum::Vector3 prevPosition = objectWrapper->getTranslation();
-      float timeToSim = 3.0;
-      while (physicsManager_->getWorldTime() < timeToSim) {
-        Magnum::Vector3 force{2.0, 0.0, 0.0};
-        objectWrapper->applyForce(force, Magnum::Vector3{});
-        physicsManager_->stepPhysics(0.1);
-
-        Magnum::Quaternion orientation = objectWrapper->getRotation();
-        Magnum::Vector3 position = objectWrapper->getTranslation();
-
-        // object is being pushed, so should be moving
-        ASSERT_NE(position, prevPosition);
-        Magnum::Rad q_angle =
-            Magnum::Math::angle(orientation, Magnum::Quaternion({0, 0, 0}, 1));
-        if (i == 1) {
-          // bounding box for collision, so the sphere should not be rolling
-          ASSERT_LE(q_angle, Magnum::Rad{0.1});
+      for (int i = 0; i < 2; i++) {
+        if (i == 0) {
+          objectTemplate->setBoundingBoxCollisions(false);
         } else {
-          // no bounding box, so the sphere should be rolling
-          ASSERT_NE(orientation, prevOrientation);
+          objectTemplate->setBoundingBoxCollisions(true);
+        }
+        objectAttributesManager->registerObject(objectTemplate);
+        physicsManager_->reset();
+
+        auto objectWrapper = makeObjectGetWrapper(
+            objectFile, &sceneManager_->getSceneGraph(sceneID_).getDrawables());
+        CORRADE_VERIFY(objectWrapper != nullptr);
+
+        Magnum::Vector3 initialPosition{0.0, 0.25, 0.0};
+        objectWrapper->setTranslation(initialPosition);
+
+        Magnum::Quaternion prevOrientation = objectWrapper->getRotation();
+        Magnum::Vector3 prevPosition = objectWrapper->getTranslation();
+        float timeToSim = 3.0;
+        while (physicsManager_->getWorldTime() < timeToSim) {
+          Magnum::Vector3 force{2.0, 0.0, 0.0};
+          objectWrapper->applyForce(force, Magnum::Vector3{});
+          physicsManager_->stepPhysics(0.1);
+
+          Magnum::Quaternion orientation = objectWrapper->getRotation();
+          Magnum::Vector3 position = objectWrapper->getTranslation();
+
+          // object is being pushed, so should be moving
+          CORRADE_VERIFY(position != prevPosition);
+          Magnum::Rad q_angle = Magnum::Math::angle(
+              orientation, Magnum::Quaternion({0, 0, 0}, 1));
+          if (i == 1) {
+            // bounding box for collision, so the sphere should not be rolling
+            CORRADE_VERIFY(q_angle <= Magnum::Rad{0.1});
+          } else {
+            // no bounding box, so the sphere should be rolling
+            CORRADE_VERIFY(orientation != prevOrientation);
+          }
+
+          prevOrientation = orientation;
+          prevPosition = position;
         }
 
-        prevOrientation = orientation;
-        prevPosition = position;
+        rigidObjectManager_->removePhysObjectByID(objectWrapper->getID());
       }
-
-      rigidObjectManager_->removePhysObjectByID(objectWrapper->getID());
     }
-  }
-}
+  }  // for resetCreateRendererFlag false and true
+}  // PhysicsTest::testCollisionBoundingBox
 
-TEST_P(PhysicsManagerTest, DiscreteContactTest) {
+void PhysicsTest::testDiscreteContactTest() {
   ESP_DEBUG() << "Starting physics test: DiscreteContactTest";
-
-  resetCreateRendererFlag(GetParam());
 
   std::string stageFile =
       Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
   std::string objectFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/objects/transform_box.glb");
 
-  initStage(stageFile);
+  for (bool resetRender : {false, true}) {
+    resetCreateRendererFlag(resetRender);
 
-  if (physicsManager_->getPhysicsSimulationLibrary() !=
-      PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
-    ObjectAttributes::ptr ObjectAttributes = ObjectAttributes::create();
-    ObjectAttributes->setRenderAssetHandle(objectFile);
-    ObjectAttributes->setMargin(0.0);
-    auto objectAttributesManager =
-        metadataMediator_->getObjectAttributesManager();
-    objectAttributesManager->registerObject(ObjectAttributes, objectFile);
+    initStage(stageFile);
 
-    // generate two centered boxes with dimension 2x2x2
-    auto objWrapper0 = rigidObjectManager_->addObjectByHandle(objectFile);
-    auto objWrapper1 = rigidObjectManager_->addObjectByHandle(objectFile);
+    if (physicsManager_->getPhysicsSimulationLibrary() !=
+        PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
+      ObjectAttributes::ptr ObjectAttributes = ObjectAttributes::create();
+      ObjectAttributes->setRenderAssetHandle(objectFile);
+      ObjectAttributes->setMargin(0.0);
+      auto objectAttributesManager =
+          metadataMediator_->getObjectAttributesManager();
+      objectAttributesManager->registerObject(ObjectAttributes, objectFile);
 
-    // place them in collision free location (0.1 about ground plane and 0.2
-    // apart)
-    objWrapper0->setTranslation(Magnum::Vector3{0, 1.1, 0});
-    objWrapper1->setTranslation(Magnum::Vector3{2.2, 1.1, 0});
-    ASSERT_FALSE(objWrapper0->contactTest());
-    ASSERT_FALSE(objWrapper1->contactTest());
+      // generate two centered boxes with dimension 2x2x2
+      auto objWrapper0 = rigidObjectManager_->addObjectByHandle(objectFile);
+      auto objWrapper1 = rigidObjectManager_->addObjectByHandle(objectFile);
 
-    // move box 0 into floor
-    objWrapper0->setTranslation(Magnum::Vector3{0, 0.9, 0});
-    ASSERT_TRUE(objWrapper0->contactTest());
-    ASSERT_FALSE(objWrapper1->contactTest());
-    // set box 0 STATIC (STATIC vs STATIC stage)
-    objWrapper0->setMotionType(esp::physics::MotionType::STATIC);
-    ASSERT_FALSE(objWrapper0->contactTest());
-    // set box 0 KINEMATIC (KINEMATIC vs STATIC stage)
-    objWrapper0->setMotionType(esp::physics::MotionType::KINEMATIC);
-    ASSERT_FALSE(objWrapper0->contactTest());
-    // reset to DYNAMIC
-    objWrapper0->setMotionType(esp::physics::MotionType::DYNAMIC);
+      // place them in collision free location (0.1 about ground plane and 0.2
+      // apart)
+      objWrapper0->setTranslation(Magnum::Vector3{0, 1.1, 0});
+      objWrapper1->setTranslation(Magnum::Vector3{2.2, 1.1, 0});
+      CORRADE_VERIFY(!objWrapper0->contactTest());
+      CORRADE_VERIFY(!objWrapper1->contactTest());
 
-    // set stage to non-collidable
-    ASSERT_TRUE(physicsManager_->getStageIsCollidable());
-    physicsManager_->setStageIsCollidable(false);
-    ASSERT_FALSE(physicsManager_->getStageIsCollidable());
-    ASSERT_FALSE(objWrapper0->contactTest());
+      // move box 0 into floor
+      objWrapper0->setTranslation(Magnum::Vector3{0, 0.9, 0});
+      CORRADE_VERIFY(objWrapper0->contactTest());
+      CORRADE_VERIFY(!objWrapper1->contactTest());
+      // set box 0 STATIC (STATIC vs STATIC stage)
+      objWrapper0->setMotionType(esp::physics::MotionType::STATIC);
+      CORRADE_VERIFY(!objWrapper0->contactTest());
+      // set box 0 KINEMATIC (KINEMATIC vs STATIC stage)
+      objWrapper0->setMotionType(esp::physics::MotionType::KINEMATIC);
+      CORRADE_VERIFY(!objWrapper0->contactTest());
+      // reset to DYNAMIC
+      objWrapper0->setMotionType(esp::physics::MotionType::DYNAMIC);
 
-    // move box 0 into box 1
-    objWrapper0->setTranslation(Magnum::Vector3{1.1, 1.1, 0});
-    ASSERT_TRUE(objWrapper0->contactTest());
-    ASSERT_TRUE(objWrapper1->contactTest());
-    // set box 0 STATIC (STATIC vs DYNAMIC)
-    objWrapper0->setMotionType(esp::physics::MotionType::STATIC);
-    ASSERT_TRUE(objWrapper0->contactTest());
-    ASSERT_TRUE(objWrapper1->contactTest());
-    // set box 1 STATIC (STATIC vs STATIC)
-    objWrapper1->setMotionType(esp::physics::MotionType::STATIC);
-    ASSERT_FALSE(objWrapper0->contactTest());
-    ASSERT_FALSE(objWrapper1->contactTest());
-    // set box 0 KINEMATIC (KINEMATIC vs STATIC)
-    objWrapper0->setMotionType(esp::physics::MotionType::KINEMATIC);
-    ASSERT_FALSE(objWrapper0->contactTest());
-    ASSERT_FALSE(objWrapper1->contactTest());
-    // set box 1 KINEMATIC (KINEMATIC vs KINEMATIC)
-    objWrapper1->setMotionType(esp::physics::MotionType::KINEMATIC);
-    ASSERT_FALSE(objWrapper0->contactTest());
-    ASSERT_FALSE(objWrapper1->contactTest());
-    // reset box 0 DYNAMIC (DYNAMIC vs KINEMATIC)
-    objWrapper0->setMotionType(esp::physics::MotionType::DYNAMIC);
-    ASSERT_TRUE(objWrapper0->contactTest());
-    ASSERT_TRUE(objWrapper1->contactTest());
+      // set stage to non-collidable
+      CORRADE_VERIFY(physicsManager_->getStageIsCollidable());
+      physicsManager_->setStageIsCollidable(false);
+      CORRADE_VERIFY(!physicsManager_->getStageIsCollidable());
+      CORRADE_VERIFY(!objWrapper0->contactTest());
 
-    // set box 0 to non-collidable
-    ASSERT_TRUE(objWrapper0->getCollidable());
-    objWrapper0->setCollidable(false);
-    ASSERT_FALSE(objWrapper0->getCollidable());
-    ASSERT_FALSE(objWrapper0->contactTest());
-    ASSERT_FALSE(objWrapper1->contactTest());
-  }
-}
+      // move box 0 into box 1
+      objWrapper0->setTranslation(Magnum::Vector3{1.1, 1.1, 0});
+      CORRADE_VERIFY(objWrapper0->contactTest());
+      CORRADE_VERIFY(objWrapper1->contactTest());
+      // set box 0 STATIC (STATIC vs DYNAMIC)
+      objWrapper0->setMotionType(esp::physics::MotionType::STATIC);
+      CORRADE_VERIFY(objWrapper0->contactTest());
+      CORRADE_VERIFY(objWrapper1->contactTest());
+      // set box 1 STATIC (STATIC vs STATIC)
+      objWrapper1->setMotionType(esp::physics::MotionType::STATIC);
+      CORRADE_VERIFY(!objWrapper0->contactTest());
+      CORRADE_VERIFY(!objWrapper1->contactTest());
+      // set box 0 KINEMATIC (KINEMATIC vs STATIC)
+      objWrapper0->setMotionType(esp::physics::MotionType::KINEMATIC);
+      CORRADE_VERIFY(!objWrapper0->contactTest());
+      CORRADE_VERIFY(!objWrapper1->contactTest());
+      // set box 1 KINEMATIC (KINEMATIC vs KINEMATIC)
+      objWrapper1->setMotionType(esp::physics::MotionType::KINEMATIC);
+      CORRADE_VERIFY(!objWrapper0->contactTest());
+      CORRADE_VERIFY(!objWrapper1->contactTest());
+      // reset box 0 DYNAMIC (DYNAMIC vs KINEMATIC)
+      objWrapper0->setMotionType(esp::physics::MotionType::DYNAMIC);
+      CORRADE_VERIFY(objWrapper0->contactTest());
+      CORRADE_VERIFY(objWrapper1->contactTest());
 
-TEST_P(PhysicsManagerTest, BulletCompoundShapeMargins) {
+      // set box 0 to non-collidable
+      CORRADE_VERIFY(objWrapper0->getCollidable());
+      objWrapper0->setCollidable(false);
+      CORRADE_VERIFY(!objWrapper0->getCollidable());
+      CORRADE_VERIFY(!objWrapper0->contactTest());
+      CORRADE_VERIFY(!objWrapper1->contactTest());
+    }
+  }  // for resetCreateRendererFlag false and true
+}  // PhysicsTest::testDiscreteContactTest
+
+void PhysicsTest::testBulletCompoundShapeMargins() {
   // test that all different construction methods for a simple shape result in
   // the same Aabb for the given margin
   ESP_DEBUG() << "Starting physics test: BulletCompoundShapeMargins";
 
-  resetCreateRendererFlag(GetParam());
-
   std::string objectFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/objects/transform_box.glb");
 
-  initStage(objectFile);
+  for (bool resetRender : {false, true}) {
+    resetCreateRendererFlag(resetRender);
+    initStage(objectFile);
 
-  if (physicsManager_->getPhysicsSimulationLibrary() ==
-      PhysicsManager::PhysicsSimulationLibrary::Bullet) {
+    if (physicsManager_->getPhysicsSimulationLibrary() ==
+        PhysicsManager::PhysicsSimulationLibrary::Bullet) {
+      // test joined vs. unjoined
+      ObjectAttributes::ptr ObjectAttributes = ObjectAttributes::create();
+      ObjectAttributes->setRenderAssetHandle(objectFile);
+      ObjectAttributes->setMargin(0.1);
+
+      auto objectAttributesManager =
+          metadataMediator_->getObjectAttributesManager();
+      objectAttributesManager->registerObject(ObjectAttributes, objectFile);
+
+      // get a reference to the stored template to edit
+      ObjectAttributes::ptr objectTemplate =
+          objectAttributesManager->getObjectCopyByHandle(objectFile);
+
+      auto* drawables = &sceneManager_->getSceneGraph(sceneID_).getDrawables();
+
+      // add the unjoined object
+      objectTemplate->setJoinCollisionMeshes(false);
+      objectAttributesManager->registerObject(objectTemplate);
+      auto objectWrapper0 = makeObjectGetWrapper(objectFile, drawables);
+      CORRADE_VERIFY(objectWrapper0 != nullptr);
+
+      // add the joined object
+      objectTemplate->setJoinCollisionMeshes(true);
+      objectAttributesManager->registerObject(objectTemplate);
+
+      auto objectWrapper1 = makeObjectGetWrapper(objectFile, drawables);
+      CORRADE_VERIFY(objectWrapper1 != nullptr);
+
+      // add bounding box object
+      objectTemplate->setBoundingBoxCollisions(true);
+      objectAttributesManager->registerObject(objectTemplate);
+      auto objectWrapper2 = makeObjectGetWrapper(objectFile, drawables);
+      CORRADE_VERIFY(objectWrapper2 != nullptr);
+
+      esp::physics::BulletPhysicsManager* bPhysManager =
+          static_cast<esp::physics::BulletPhysicsManager*>(
+              physicsManager_.get());
+
+      const Magnum::Range3D AabbStage =
+          bPhysManager->getStageCollisionShapeAabb();
+
+      const Magnum::Range3D AabbOb0 = objectWrapper0->getCollisionShapeAabb();
+      const Magnum::Range3D AabbOb1 = objectWrapper1->getCollisionShapeAabb();
+      const Magnum::Range3D AabbOb2 = objectWrapper2->getCollisionShapeAabb();
+
+      Magnum::Range3D objectGroundTruth({-1.1, -1.1, -1.1}, {1.1, 1.1, 1.1});
+      Magnum::Range3D stageGroundTruth({-1.04, -1.04, -1.04},
+                                       {1.04, 1.04, 1.04});
+
+      CORRADE_COMPARE(AabbStage, stageGroundTruth);
+      CORRADE_COMPARE(AabbOb0, objectGroundTruth);
+      CORRADE_COMPARE(AabbOb1, objectGroundTruth);
+      CORRADE_COMPARE(AabbOb2, objectGroundTruth);
+    }
+  }  // for resetCreateRendererFlag false and true
+}  // PhysicsTest::testBulletCompoundShapeMargins
+#endif
+
+void PhysicsTest::testConfigurableScaling() {
+  // test scaling of objects via template configuration (visual and collision)
+  ESP_DEBUG() << "Starting physics test: ConfigurableScaling";
+  for (bool resetRender : {false, true}) {
+    resetCreateRendererFlag(resetRender);
+
+    std::string stageFile =
+        Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
+
+    std::string objectFile = Cr::Utility::Directory::join(
+        dataDir, "test_assets/objects/transform_box.glb");
+
+    initStage(stageFile);
+
     // test joined vs. unjoined
     ObjectAttributes::ptr ObjectAttributes = ObjectAttributes::create();
     ObjectAttributes->setRenderAssetHandle(objectFile);
-    ObjectAttributes->setMargin(0.1);
+    ObjectAttributes->setMargin(0.0);
 
     auto objectAttributesManager =
         metadataMediator_->getObjectAttributesManager();
@@ -395,572 +504,512 @@ TEST_P(PhysicsManagerTest, BulletCompoundShapeMargins) {
     ObjectAttributes::ptr objectTemplate =
         objectAttributesManager->getObjectCopyByHandle(objectFile);
 
-    auto* drawables = &sceneManager_.getSceneGraph(sceneID_).getDrawables();
+    std::vector<Magnum::Vector3> testScales{
+        {1.0, 1.0, 1.0},  {4.0, 3.0, 2.0},    {0.1, 0.2, 0.3},
+        {0.0, 0.0, 0.0},  {-1.0, -1.0, -1.0}, {-1.0, 1.0, 1.0},
+        {4.0, -3.0, 2.0}, {0.1, -0.2, -0.3}};
 
-    // add the unjoined object
-    objectTemplate->setJoinCollisionMeshes(false);
-    objectAttributesManager->registerObject(objectTemplate);
-    auto objectWrapper0 = makeObjectGetWrapper(objectFile, drawables);
-    ASSERT_NE(objectWrapper0, nullptr);
+    auto& drawables = sceneManager_->getSceneGraph(sceneID_).getDrawables();
 
-    // add the joined object
-    objectTemplate->setJoinCollisionMeshes(true);
-    objectAttributesManager->registerObject(objectTemplate);
+    std::vector<int> objectIDs;
+    for (auto& testScale : testScales) {
+      objectTemplate->setScale(testScale);
+      objectAttributesManager->registerObject(objectTemplate);
 
-    auto objectWrapper1 = makeObjectGetWrapper(objectFile, drawables);
-    ASSERT_NE(objectWrapper1, nullptr);
+      Magnum::Range3D boundsGroundTruth(-abs(testScale), abs(testScale));
 
-    // add bounding box object
-    objectTemplate->setBoundingBoxCollisions(true);
-    objectAttributesManager->registerObject(objectTemplate);
-    auto objectWrapper2 = makeObjectGetWrapper(objectFile, drawables);
-    ASSERT_NE(objectWrapper2, nullptr);
+      auto objectWrapper = makeObjectGetWrapper(objectFile, &drawables);
+      CORRADE_VERIFY(objectWrapper != nullptr);
 
-    esp::physics::BulletPhysicsManager* bPhysManager =
-        static_cast<esp::physics::BulletPhysicsManager*>(physicsManager_.get());
+      objectIDs.push_back(objectWrapper->getID());
 
-    const Magnum::Range3D AabbStage =
-        bPhysManager->getStageCollisionShapeAabb();
+      const Magnum::Range3D& visualBounds =
+          objectWrapper->getSceneNode()->getCumulativeBB();
 
-    const Magnum::Range3D AabbOb0 = objectWrapper0->getCollisionShapeAabb();
-    const Magnum::Range3D AabbOb1 = objectWrapper1->getCollisionShapeAabb();
-    const Magnum::Range3D AabbOb2 = objectWrapper2->getCollisionShapeAabb();
-
-    Magnum::Range3D objectGroundTruth({-1.1, -1.1, -1.1}, {1.1, 1.1, 1.1});
-    Magnum::Range3D stageGroundTruth({-1.04, -1.04, -1.04}, {1.04, 1.04, 1.04});
-
-    ASSERT_EQ(AabbStage, stageGroundTruth);
-    ASSERT_EQ(AabbOb0, objectGroundTruth);
-    ASSERT_EQ(AabbOb1, objectGroundTruth);
-    ASSERT_EQ(AabbOb2, objectGroundTruth);
-  }
-}
-#endif
-
-TEST_P(PhysicsManagerTest, ConfigurableScaling) {
-  // test scaling of objects via template configuration (visual and collision)
-  ESP_DEBUG() << "Starting physics test: ConfigurableScaling";
-
-  resetCreateRendererFlag(GetParam());
-
-  std::string stageFile =
-      Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
-
-  std::string objectFile = Cr::Utility::Directory::join(
-      dataDir, "test_assets/objects/transform_box.glb");
-
-  initStage(stageFile);
-
-  // test joined vs. unjoined
-  ObjectAttributes::ptr ObjectAttributes = ObjectAttributes::create();
-  ObjectAttributes->setRenderAssetHandle(objectFile);
-  ObjectAttributes->setMargin(0.0);
-
-  auto objectAttributesManager =
-      metadataMediator_->getObjectAttributesManager();
-  objectAttributesManager->registerObject(ObjectAttributes, objectFile);
-
-  // get a reference to the stored template to edit
-  ObjectAttributes::ptr objectTemplate =
-      objectAttributesManager->getObjectCopyByHandle(objectFile);
-
-  std::vector<Magnum::Vector3> testScales{
-      {1.0, 1.0, 1.0},  {4.0, 3.0, 2.0},    {0.1, 0.2, 0.3},
-      {0.0, 0.0, 0.0},  {-1.0, -1.0, -1.0}, {-1.0, 1.0, 1.0},
-      {4.0, -3.0, 2.0}, {0.1, -0.2, -0.3}};
-
-  auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
-
-  std::vector<int> objectIDs;
-  for (auto& testScale : testScales) {
-    objectTemplate->setScale(testScale);
-    objectAttributesManager->registerObject(objectTemplate);
-
-    Magnum::Range3D boundsGroundTruth(-abs(testScale), abs(testScale));
-
-    auto objectWrapper = makeObjectGetWrapper(objectFile, &drawables);
-    ASSERT_NE(objectWrapper, nullptr);
-
-    objectIDs.push_back(objectWrapper->getID());
-
-    const Magnum::Range3D& visualBounds =
-        objectWrapper->getSceneNode()->getCumulativeBB();
-
-    ASSERT_EQ(visualBounds, boundsGroundTruth);
+      CORRADE_COMPARE(visualBounds, boundsGroundTruth);
 
 // Test Bullet collision shape scaling
 #ifdef ESP_BUILD_WITH_BULLET
-    if (physicsManager_->getPhysicsSimulationLibrary() ==
-        PhysicsManager::PhysicsSimulationLibrary::Bullet) {
-      Magnum::Range3D aabb = objectWrapper->getCollisionShapeAabb();
+      if (physicsManager_->getPhysicsSimulationLibrary() ==
+          PhysicsManager::PhysicsSimulationLibrary::Bullet) {
+        Magnum::Range3D aabb = objectWrapper->getCollisionShapeAabb();
 
-      ASSERT_EQ(aabb, boundsGroundTruth);
-    }
+        CORRADE_COMPARE(aabb, boundsGroundTruth);
+      }
 #endif
-  }
+    }
 
-  // check that scales are stored and queried correctly
-  for (size_t ix = 0; ix < objectIDs.size(); ix++) {
-    ASSERT_EQ(rigidObjectManager_->getObjectCopyByID(objectIDs[ix])->getScale(),
-              testScales[ix]);
-  }
-}
+    // check that scales are stored and queried correctly
+    for (size_t ix = 0; ix < objectIDs.size(); ix++) {
+      CORRADE_COMPARE(
+          rigidObjectManager_->getObjectCopyByID(objectIDs[ix])->getScale(),
+          testScales[ix]);
+    }
+  }  // for resetCreateRendererFlag false and true
+}  // PhysicsTest::testConfigurableScaling
 
-TEST_P(PhysicsManagerTest, TestVelocityControl) {
+void PhysicsTest::testVelocityControl() {
   // test scaling of objects via template configuration (visual and collision)
   ESP_DEBUG() << "Starting physics test: TestVelocityControl";
+  for (bool resetRender : {false, true}) {
+    resetCreateRendererFlag(resetRender);
 
-  resetCreateRendererFlag(GetParam());
+    std::string objectFile = Cr::Utility::Directory::join(
+        dataDir, "test_assets/objects/transform_box.glb");
 
-  std::string objectFile = Cr::Utility::Directory::join(
-      dataDir, "test_assets/objects/transform_box.glb");
+    std::string stageFile =
+        Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
 
-  std::string stageFile =
-      Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
-
-  initStage(stageFile);
-
-  ObjectAttributes::ptr ObjectAttributes = ObjectAttributes::create();
-  ObjectAttributes->setRenderAssetHandle(objectFile);
-  ObjectAttributes->setMargin(0.0);
-  auto objectAttributesManager =
-      metadataMediator_->getObjectAttributesManager();
-  objectAttributesManager->registerObject(ObjectAttributes, objectFile);
-
-  auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
-
-  auto objectWrapper = makeObjectGetWrapper(objectFile, &drawables);
-  ASSERT_NE(objectWrapper, nullptr);
-
-  objectWrapper->setTranslation(Magnum::Vector3{0, 1.0, 0});
-
-  Magnum::Vector3 commandLinVel(1.0, 1.0, 1.0);
-  Magnum::Vector3 commandAngVel(1.0, 1.0, 1.0);
-
-  // test results of getting/setting
-  if (physicsManager_->getPhysicsSimulationLibrary() ==
-      PhysicsManager::PhysicsSimulationLibrary::Bullet) {
-    objectWrapper->setLinearVelocity(commandLinVel);
-    objectWrapper->setAngularVelocity(commandAngVel);
-
-    ASSERT_EQ(objectWrapper->getLinearVelocity(), commandLinVel);
-    ASSERT_EQ(objectWrapper->getAngularVelocity(), commandAngVel);
-
-  } else if (physicsManager_->getPhysicsSimulationLibrary() ==
-             PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
-    objectWrapper->setLinearVelocity(commandLinVel);
-    objectWrapper->setAngularVelocity(commandAngVel);
-
-    // default kinematics always 0 velocity when queried
-    ASSERT_EQ(objectWrapper->getLinearVelocity(), Magnum::Vector3{});
-    ASSERT_EQ(objectWrapper->getAngularVelocity(), Magnum::Vector3{});
-  }
-
-  // test constant velocity control mechanism
-  esp::physics::VelocityControl::ptr velControl =
-      objectWrapper->getVelocityControl();
-  velControl->controllingAngVel = true;
-  velControl->controllingLinVel = true;
-  velControl->linVel = Magnum::Vector3{1.0, -1.0, 1.0};
-  velControl->angVel = Magnum::Vector3{1.0, 0, 0};
-
-  // first kinematic
-  objectWrapper->setMotionType(esp::physics::MotionType::KINEMATIC);
-  objectWrapper->setTranslation(Magnum::Vector3{0, 2.0, 0});
-
-  float targetTime = 2.0;
-  while (physicsManager_->getWorldTime() < targetTime) {
-    physicsManager_->stepPhysics(targetTime - physicsManager_->getWorldTime());
-  }
-  Magnum::Vector3 posGroundTruth{2.0, 0.0, 2.0};
-  Magnum::Quaternion qGroundTruth{{0.842602, 0, 0}, 0.538537};
-
-  float errorEps = 0.015;  // fairly loose due to discrete timestep
-  ASSERT_LE((objectWrapper->getTranslation() - posGroundTruth).length(),
-            errorEps);
-  Magnum::Rad angleError =
-      Magnum::Math::angle(objectWrapper->getRotation(), qGroundTruth);
-
-  ASSERT_LE(float(angleError), errorEps);
-
-  if (physicsManager_->getPhysicsSimulationLibrary() ==
-      PhysicsManager::PhysicsSimulationLibrary::Bullet) {
-    objectWrapper->setMotionType(esp::physics::MotionType::DYNAMIC);
-    objectWrapper->resetTransformation();
-    objectWrapper->setTranslation(Magnum::Vector3{0, 2.0, 0});
-    physicsManager_->setGravity({});  // 0 gravity interference
-    physicsManager_->reset();         // reset time to 0
-
-    // should closely follow kinematic result while uninhibited in 0 gravity
-    float targetTime = 0.5;
-    esp::core::RigidState initialObjectState(objectWrapper->getRotation(),
-                                             objectWrapper->getTranslation());
-    esp::core::RigidState kinematicResult =
-        velControl->integrateTransform(targetTime, initialObjectState);
-    while (physicsManager_->getWorldTime() < targetTime) {
-      physicsManager_->stepPhysics(physicsManager_->getTimestep());
-    }
-    ASSERT_LE((objectWrapper->getTranslation() - kinematicResult.translation)
-                  .length(),
-              errorEps);
-    angleError = Magnum::Math::angle(objectWrapper->getRotation(),
-                                     kinematicResult.rotation);
-    ASSERT_LE(float(angleError), errorEps);
-
-    // should then get blocked by ground plane collision
-    targetTime = 2.0;
-    while (physicsManager_->getWorldTime() < targetTime) {
-      physicsManager_->stepPhysics(physicsManager_->getTimestep());
-    }
-    ASSERT_GE(objectWrapper->getTranslation()[1], 1.0 - errorEps);
-  }
-
-  // test local velocity
-  objectWrapper->setMotionType(esp::physics::MotionType::KINEMATIC);
-  objectWrapper->resetTransformation();
-  objectWrapper->setTranslation(Magnum::Vector3{0, 2.0, 0});
-
-  velControl->linVel = Magnum::Vector3{0.0, 0.0, -1.0};
-  velControl->angVel = Magnum::Vector3{1.0, 0, 0};
-  velControl->angVelIsLocal = true;
-  velControl->linVelIsLocal = true;
-
-  targetTime = 10.0;
-  physicsManager_->reset();  // reset time to 0
-  while (physicsManager_->getWorldTime() < targetTime) {
-    physicsManager_->stepPhysics(physicsManager_->getTimestep());
-  }
-
-  Magnum::Vector3 posLocalGroundTruth{0, 3.83589, 0.543553};
-  Magnum::Quaternion qLocalGroundTruth{{-0.95782, 0, 0}, 0.287495};
-  qLocalGroundTruth = qLocalGroundTruth.normalized();
-
-  // test zero velocity kinematic integration (should not change state)
-  velControl->linVel = Magnum::Vector3{0.0, 0.0, 0.0};
-  velControl->angVel = Magnum::Vector3{0.0, 0.0, 0.0};
-  physicsManager_->stepPhysics(physicsManager_->getTimestep());
-
-  ASSERT_LE((objectWrapper->getTranslation() - posLocalGroundTruth).length(),
-            errorEps);
-  Magnum::Rad angleErrorLocal =
-      Magnum::Math::angle(objectWrapper->getRotation(), qLocalGroundTruth);
-
-  ASSERT_LE(float(angleErrorLocal), errorEps);
-}
-
-TEST_P(PhysicsManagerTest, TestSceneNodeAttachment) {
-  // test attaching/detaching existing SceneNode to/from physical simulation
-  ESP_DEBUG() << "Starting physics test: TestSceneNodeAttachment";
-
-  resetCreateRendererFlag(GetParam());
-
-  std::string objectFile = Cr::Utility::Directory::join(
-      dataDir, "test_assets/objects/transform_box.glb");
-
-  std::string stageFile =
-      Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
-
-  initStage(stageFile);
-
-  ObjectAttributes::ptr ObjectAttributes = ObjectAttributes::create();
-  ObjectAttributes->setRenderAssetHandle(objectFile);
-  auto objectAttributesManager =
-      metadataMediator_->getObjectAttributesManager();
-  objectAttributesManager->registerObject(ObjectAttributes, objectFile);
-
-  esp::scene::SceneNode& root =
-      sceneManager_.getSceneGraph(sceneID_).getRootNode();
-  esp::scene::SceneNode* newNode = &root.createChild();
-  ASSERT_EQ(root.children().last(), newNode);
-
-  auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
-
-  // Test attaching newNode to a RigidBody
-
-  auto objectWrapper = makeObjectGetWrapper(objectFile, &drawables, newNode);
-  ASSERT_NE(objectWrapper, nullptr);
-
-  ASSERT_EQ(objectWrapper->getSceneNode(), newNode);
-
-  // Test updating newNode position with PhysicsManager
-  Magnum::Vector3 newPos{1.0, 3.0, 0.0};
-  objectWrapper->setTranslation(newPos);
-  ASSERT_EQ(objectWrapper->getTranslation(), newPos);
-  ASSERT_EQ(newNode->translation(), newPos);
-
-  // Test leaving newNode without visualNode_ after destroying the RigidBody
-  physicsManager_->removeObject(objectWrapper->getID(), false, true);
-  CORRADE_INTERNAL_ASSERT(newNode->children().isEmpty());
-
-  // Test leaving the visualNode attached to newNode after destroying the
-  // RigidBody
-  objectWrapper = makeObjectGetWrapper(objectFile, &drawables, newNode);
-  ASSERT_NE(objectWrapper, nullptr);
-  physicsManager_->removeObject(objectWrapper->getID(), false, false);
-  CORRADE_INTERNAL_ASSERT(!newNode->children().isEmpty());
-
-  // Test destroying newNode with the RigidBody
-  objectWrapper = makeObjectGetWrapper(objectFile, &drawables, newNode);
-  ASSERT_NE(objectWrapper, nullptr);
-  physicsManager_->removeObject(objectWrapper->getID(), true, true);
-  ASSERT_NE(root.children().last(), newNode);
-}
-
-TEST_P(PhysicsManagerTest, TestMotionTypes) {
-  // test setting motion types and expected simulation behaviors
-  ESP_DEBUG() << "Starting physics test: TestMotionTypes";
-
-  resetCreateRendererFlag(GetParam());
-
-  std::string objectFile = Cr::Utility::Directory::join(
-      dataDir, "test_assets/objects/transform_box.glb");
-
-  std::string stageFile =
-      Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
-
-  initStage(stageFile);
-
-  // ensure that changing default timestep does not affect results
-  physicsManager_->setTimestep(0.0041666666);
-
-  // We need dynamics to test this.
-  if (physicsManager_->getPhysicsSimulationLibrary() !=
-      PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
-    float boxHalfExtent = 0.2;
+    initStage(stageFile);
 
     ObjectAttributes::ptr ObjectAttributes = ObjectAttributes::create();
     ObjectAttributes->setRenderAssetHandle(objectFile);
-    ObjectAttributes->setBoundingBoxCollisions(true);
-    ObjectAttributes->setScale({boxHalfExtent, boxHalfExtent, boxHalfExtent});
+    ObjectAttributes->setMargin(0.0);
     auto objectAttributesManager =
         metadataMediator_->getObjectAttributesManager();
+    objectAttributesManager->registerObject(ObjectAttributes, objectFile);
 
-    int boxId =
-        objectAttributesManager->registerObject(ObjectAttributes, objectFile);
-    auto objTemplate = objectAttributesManager->getObjectByID(boxId);
+    auto& drawables = sceneManager_->getSceneGraph(sceneID_).getDrawables();
 
-    auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
+    auto objectWrapper = makeObjectGetWrapper(objectFile, &drawables);
+    CORRADE_VERIFY(objectWrapper != nullptr);
 
-    float stageCollisionMargin = 0.04;
+    objectWrapper->setTranslation(Magnum::Vector3{0, 1.0, 0});
 
-    for (int testId = 0; testId < 3; testId++) {
-      auto objWrapper0 =
-          makeObjectGetWrapper(objTemplate->getHandle(), &drawables);
-      auto objWrapper1 =
-          makeObjectGetWrapper(objTemplate->getHandle(), &drawables);
+    Magnum::Vector3 commandLinVel(1.0, 1.0, 1.0);
+    Magnum::Vector3 commandAngVel(1.0, 1.0, 1.0);
 
-      switch (testId) {
-        case 0: {
-          // test 0: stacking two DYNAMIC objects
-          objWrapper0->setTranslation(
-              {0, stageCollisionMargin + boxHalfExtent, 0});
-          objWrapper1->setTranslation(
-              {0, stageCollisionMargin + boxHalfExtent * 3, 0});
+    // test results of getting/setting
+    if (physicsManager_->getPhysicsSimulationLibrary() ==
+        PhysicsManager::PhysicsSimulationLibrary::Bullet) {
+      objectWrapper->setLinearVelocity(commandLinVel);
+      objectWrapper->setAngularVelocity(commandAngVel);
 
-          while (physicsManager_->getWorldTime() < 6.0) {
-            physicsManager_->stepPhysics(0.1);
-          }
-          ASSERT_FALSE(objWrapper0->isActive());
-          ASSERT_FALSE(objWrapper1->isActive());
-          ASSERT_LE(
-              (objWrapper0->getTranslation() -
-               Magnum::Vector3{0.0, stageCollisionMargin + boxHalfExtent, 0.0})
-                  .length(),
-              1.0e-3);
-          ASSERT_LE((objWrapper1->getTranslation() -
-                     Magnum::Vector3{
-                         0.0, stageCollisionMargin + boxHalfExtent * 3, 0.0})
-                        .length(),
-                    1.0e-3);
-        } break;
-        case 1: {
-          // test 1: stacking a DYNAMIC object on a STATIC object
-          objWrapper0->setTranslation({0, boxHalfExtent * 2, 0});
-          objWrapper0->setMotionType(esp::physics::MotionType::STATIC);
-          objWrapper1->setTranslation({0, boxHalfExtent * 5, 0});
+      CORRADE_COMPARE(objectWrapper->getLinearVelocity(), commandLinVel);
+      CORRADE_COMPARE(objectWrapper->getAngularVelocity(), commandAngVel);
 
-          while (physicsManager_->getWorldTime() < 6.0) {
-            physicsManager_->stepPhysics(0.1);
-          }
-          ASSERT_FALSE(objWrapper1->isActive());
-          ASSERT_LE((objWrapper0->getTranslation() -
-                     Magnum::Vector3{0.0, boxHalfExtent * 2, 0.0})
-                        .length(),
-                    1.0e-4);
-          ASSERT_LE((objWrapper1->getTranslation() -
-                     Magnum::Vector3{0.0, boxHalfExtent * 4, 0.0})
-                        .length(),
-                    2.0e-4);
-        } break;
-        case 2: {
-          // test 2: stacking a DYNAMIC object on a moving KINEMATIC object
-          objWrapper0->setTranslation({0, boxHalfExtent * 2, 0});
-          objWrapper0->setMotionType(esp::physics::MotionType::KINEMATIC);
+    } else if (physicsManager_->getPhysicsSimulationLibrary() ==
+               PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
+      objectWrapper->setLinearVelocity(commandLinVel);
+      objectWrapper->setAngularVelocity(commandAngVel);
 
-          esp::physics::VelocityControl::ptr velCon =
-              objWrapper0->getVelocityControl();
-          velCon->controllingLinVel = true;
-          velCon->linVel = {0.2, 0, 0};
+      // default kinematics always 0 velocity when queried
+      CORRADE_COMPARE(objectWrapper->getLinearVelocity(), Magnum::Vector3{});
+      CORRADE_COMPARE(objectWrapper->getAngularVelocity(), Magnum::Vector3{});
+    }
 
-          objWrapper1->setTranslation({0, boxHalfExtent * 5, 0});
+    // test constant velocity control mechanism
+    esp::physics::VelocityControl::ptr velControl =
+        objectWrapper->getVelocityControl();
+    velControl->controllingAngVel = true;
+    velControl->controllingLinVel = true;
+    velControl->linVel = Magnum::Vector3{1.0, -1.0, 1.0};
+    velControl->angVel = Magnum::Vector3{1.0, 0, 0};
 
-          while (physicsManager_->getWorldTime() < 3.0) {
-            // take single sub-steps for velocity control precision
-            physicsManager_->stepPhysics(-1);
-          }
-          ASSERT_LE((objWrapper0->getTranslation() -
-                     Magnum::Vector3{0.6, boxHalfExtent * 2, 0.0})
-                        .length(),
-                    1.0e-3);
-          ASSERT_LE((objWrapper1->getTranslation() -
-                     Magnum::Vector3{0.559155, boxHalfExtent * 4, 0.0})
-                        .length(),
-                    2.0e-3);
-        } break;
+    // first kinematic
+    objectWrapper->setMotionType(esp::physics::MotionType::KINEMATIC);
+    objectWrapper->setTranslation(Magnum::Vector3{0, 2.0, 0});
+
+    float targetTime = 2.0;
+    while (physicsManager_->getWorldTime() < targetTime) {
+      physicsManager_->stepPhysics(targetTime -
+                                   physicsManager_->getWorldTime());
+    }
+    Magnum::Vector3 posGroundTruth{2.0, 0.0, 2.0};
+    Magnum::Quaternion qGroundTruth{{0.842602, 0, 0}, 0.538537};
+
+    float errorEps = 0.015;  // fairly loose due to discrete timestep
+    CORRADE_VERIFY(
+        (objectWrapper->getTranslation() - posGroundTruth).length() <=
+        errorEps);
+    Magnum::Rad angleError =
+        Magnum::Math::angle(objectWrapper->getRotation(), qGroundTruth);
+
+    CORRADE_VERIFY(float(angleError) <= errorEps);
+
+    if (physicsManager_->getPhysicsSimulationLibrary() ==
+        PhysicsManager::PhysicsSimulationLibrary::Bullet) {
+      objectWrapper->setMotionType(esp::physics::MotionType::DYNAMIC);
+      objectWrapper->resetTransformation();
+      objectWrapper->setTranslation(Magnum::Vector3{0, 2.0, 0});
+      physicsManager_->setGravity({});  // 0 gravity interference
+      physicsManager_->reset();         // reset time to 0
+
+      // should closely follow kinematic result while uninhibited in 0 gravity
+      float targetTime = 0.5;
+      esp::core::RigidState initialObjectState(objectWrapper->getRotation(),
+                                               objectWrapper->getTranslation());
+      esp::core::RigidState kinematicResult =
+          velControl->integrateTransform(targetTime, initialObjectState);
+      while (physicsManager_->getWorldTime() < targetTime) {
+        physicsManager_->stepPhysics(physicsManager_->getTimestep());
       }
+      CORRADE_VERIFY(
+          (objectWrapper->getTranslation() - kinematicResult.translation)
+              .length() <= errorEps);
+      angleError = Magnum::Math::angle(objectWrapper->getRotation(),
+                                       kinematicResult.rotation);
+      CORRADE_VERIFY(float(angleError) <= errorEps);
 
-      // reset the scene
-      rigidObjectManager_->removeAllObjects();
-      physicsManager_->reset();  // time=0
+      // should then get blocked by ground plane collision
+      targetTime = 2.0;
+      while (physicsManager_->getWorldTime() < targetTime) {
+        physicsManager_->stepPhysics(physicsManager_->getTimestep());
+      }
+      CORRADE_VERIFY(objectWrapper->getTranslation()[1] >= 1.0 - errorEps);
     }
-  }
-}
 
-TEST_P(PhysicsManagerTest, TestNumActiveContactPoints) {
+    // test local velocity
+    objectWrapper->setMotionType(esp::physics::MotionType::KINEMATIC);
+    objectWrapper->resetTransformation();
+    objectWrapper->setTranslation(Magnum::Vector3{0, 2.0, 0});
+
+    velControl->linVel = Magnum::Vector3{0.0, 0.0, -1.0};
+    velControl->angVel = Magnum::Vector3{1.0, 0, 0};
+    velControl->angVelIsLocal = true;
+    velControl->linVelIsLocal = true;
+
+    targetTime = 10.0;
+    physicsManager_->reset();  // reset time to 0
+    while (physicsManager_->getWorldTime() < targetTime) {
+      physicsManager_->stepPhysics(physicsManager_->getTimestep());
+    }
+
+    Magnum::Vector3 posLocalGroundTruth{0, 3.83589, 0.543553};
+    Magnum::Quaternion qLocalGroundTruth{{-0.95782, 0, 0}, 0.287495};
+    qLocalGroundTruth = qLocalGroundTruth.normalized();
+
+    // test zero velocity kinematic integration (should not change state)
+    velControl->linVel = Magnum::Vector3{0.0, 0.0, 0.0};
+    velControl->angVel = Magnum::Vector3{0.0, 0.0, 0.0};
+    physicsManager_->stepPhysics(physicsManager_->getTimestep());
+
+    CORRADE_VERIFY(
+        (objectWrapper->getTranslation() - posLocalGroundTruth).length() <=
+        errorEps);
+    Magnum::Rad angleErrorLocal =
+        Magnum::Math::angle(objectWrapper->getRotation(), qLocalGroundTruth);
+
+    CORRADE_VERIFY(float(angleErrorLocal) <= errorEps);
+  }  // for resetCreateRendererFlag false and true
+}  // PhysicsTest::testVelocityControl
+
+void PhysicsTest::testSceneNodeAttachment() {
+  // test attaching/detaching existing SceneNode to/from physical simulation
+  ESP_DEBUG() << "Starting physics test: TestSceneNodeAttachment";
+  for (bool resetRender : {false, true}) {
+    resetCreateRendererFlag(resetRender);
+
+    std::string objectFile = Cr::Utility::Directory::join(
+        dataDir, "test_assets/objects/transform_box.glb");
+
+    std::string stageFile =
+        Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
+
+    initStage(stageFile);
+
+    ObjectAttributes::ptr ObjectAttributes = ObjectAttributes::create();
+    ObjectAttributes->setRenderAssetHandle(objectFile);
+    auto objectAttributesManager =
+        metadataMediator_->getObjectAttributesManager();
+    objectAttributesManager->registerObject(ObjectAttributes, objectFile);
+
+    esp::scene::SceneNode& root =
+        sceneManager_->getSceneGraph(sceneID_).getRootNode();
+    esp::scene::SceneNode* newNode = &root.createChild();
+    CORRADE_COMPARE(root.children().last(), newNode);
+
+    auto& drawables = sceneManager_->getSceneGraph(sceneID_).getDrawables();
+
+    // Test attaching newNode to a RigidBody
+
+    auto objectWrapper = makeObjectGetWrapper(objectFile, &drawables, newNode);
+    CORRADE_VERIFY(objectWrapper != nullptr);
+
+    CORRADE_COMPARE(objectWrapper->getSceneNode(), newNode);
+
+    // Test updating newNode position with PhysicsManager
+    Magnum::Vector3 newPos{1.0, 3.0, 0.0};
+    objectWrapper->setTranslation(newPos);
+    CORRADE_COMPARE(objectWrapper->getTranslation(), newPos);
+    CORRADE_COMPARE(newNode->translation(), newPos);
+
+    // Test leaving newNode without visualNode_ after destroying the RigidBody
+    physicsManager_->removeObject(objectWrapper->getID(), false, true);
+    CORRADE_VERIFY(newNode->children().isEmpty());
+
+    // Test leaving the visualNode attached to newNode after destroying the
+    // RigidBody
+    objectWrapper = makeObjectGetWrapper(objectFile, &drawables, newNode);
+    CORRADE_VERIFY(objectWrapper != nullptr);
+    physicsManager_->removeObject(objectWrapper->getID(), false, false);
+    CORRADE_VERIFY(!newNode->children().isEmpty());
+
+    // Test destroying newNode with the RigidBody
+    objectWrapper = makeObjectGetWrapper(objectFile, &drawables, newNode);
+    CORRADE_VERIFY(objectWrapper != nullptr);
+    physicsManager_->removeObject(objectWrapper->getID(), true, true);
+    CORRADE_VERIFY(root.children().last() != newNode);
+  }  // for resetCreateRendererFlag false and true
+}  // PhysicsTest::testSceneNodeAttachment
+
+void PhysicsTest::testMotionTypes() {
+  // test setting motion types and expected simulation behaviors
+  ESP_DEBUG() << "Starting physics test: TestMotionTypes";
+  for (bool resetRender : {false, true}) {
+    resetCreateRendererFlag(resetRender);
+
+    std::string objectFile = Cr::Utility::Directory::join(
+        dataDir, "test_assets/objects/transform_box.glb");
+
+    std::string stageFile =
+        Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
+
+    initStage(stageFile);
+
+    // ensure that changing default timestep does not affect results
+    physicsManager_->setTimestep(0.0041666666);
+
+    // We need dynamics to test this.
+    if (physicsManager_->getPhysicsSimulationLibrary() !=
+        PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
+      float boxHalfExtent = 0.2;
+
+      ObjectAttributes::ptr ObjectAttributes = ObjectAttributes::create();
+      ObjectAttributes->setRenderAssetHandle(objectFile);
+      ObjectAttributes->setBoundingBoxCollisions(true);
+      ObjectAttributes->setScale({boxHalfExtent, boxHalfExtent, boxHalfExtent});
+      auto objectAttributesManager =
+          metadataMediator_->getObjectAttributesManager();
+
+      int boxId =
+          objectAttributesManager->registerObject(ObjectAttributes, objectFile);
+      auto objTemplate = objectAttributesManager->getObjectByID(boxId);
+
+      auto& drawables = sceneManager_->getSceneGraph(sceneID_).getDrawables();
+
+      float stageCollisionMargin = 0.04;
+
+      for (int testId = 0; testId < 3; testId++) {
+        auto objWrapper0 =
+            makeObjectGetWrapper(objTemplate->getHandle(), &drawables);
+        auto objWrapper1 =
+            makeObjectGetWrapper(objTemplate->getHandle(), &drawables);
+
+        switch (testId) {
+          case 0: {
+            // test 0: stacking two DYNAMIC objects
+            objWrapper0->setTranslation(
+                {0, stageCollisionMargin + boxHalfExtent, 0});
+            objWrapper1->setTranslation(
+                {0, stageCollisionMargin + boxHalfExtent * 3, 0});
+
+            while (physicsManager_->getWorldTime() < 6.0) {
+              physicsManager_->stepPhysics(0.1);
+            }
+            CORRADE_VERIFY(!objWrapper0->isActive());
+            CORRADE_VERIFY(!objWrapper1->isActive());
+            CORRADE_VERIFY((objWrapper0->getTranslation() -
+                            Magnum::Vector3{
+                                0.0, stageCollisionMargin + boxHalfExtent, 0.0})
+                               .length() <= 1.0e-3);
+            CORRADE_VERIFY(
+                (objWrapper1->getTranslation() -
+                 Magnum::Vector3{0.0, stageCollisionMargin + boxHalfExtent * 3,
+                                 0.0})
+                    .length() <= 1.0e-3);
+          } break;
+          case 1: {
+            // test 1: stacking a DYNAMIC object on a STATIC object
+            objWrapper0->setTranslation({0, boxHalfExtent * 2, 0});
+            objWrapper0->setMotionType(esp::physics::MotionType::STATIC);
+            objWrapper1->setTranslation({0, boxHalfExtent * 5, 0});
+
+            while (physicsManager_->getWorldTime() < 6.0) {
+              physicsManager_->stepPhysics(0.1);
+            }
+            CORRADE_VERIFY(!objWrapper1->isActive());
+            CORRADE_VERIFY((objWrapper0->getTranslation() -
+                            Magnum::Vector3{0.0, boxHalfExtent * 2, 0.0})
+                               .length() <= 1.0e-4);
+            CORRADE_VERIFY((objWrapper1->getTranslation() -
+                            Magnum::Vector3{0.0, boxHalfExtent * 4, 0.0})
+                               .length() <= 2.0e-4);
+          } break;
+          case 2: {
+            // test 2: stacking a DYNAMIC object on a moving KINEMATIC object
+            objWrapper0->setTranslation({0, boxHalfExtent * 2, 0});
+            objWrapper0->setMotionType(esp::physics::MotionType::KINEMATIC);
+
+            esp::physics::VelocityControl::ptr velCon =
+                objWrapper0->getVelocityControl();
+            velCon->controllingLinVel = true;
+            velCon->linVel = {0.2, 0, 0};
+
+            objWrapper1->setTranslation({0, boxHalfExtent * 5, 0});
+
+            while (physicsManager_->getWorldTime() < 3.0) {
+              // take single sub-steps for velocity control precision
+              physicsManager_->stepPhysics(-1);
+            }
+            CORRADE_VERIFY((objWrapper0->getTranslation() -
+                            Magnum::Vector3{0.6, boxHalfExtent * 2, 0.0})
+                               .length() <= 1.0e-3);
+            CORRADE_VERIFY((objWrapper1->getTranslation() -
+                            Magnum::Vector3{0.559155, boxHalfExtent * 4, 0.0})
+                               .length() <= 2.0e-3);
+          } break;
+        }
+
+        // reset the scene
+        rigidObjectManager_->removeAllObjects();
+        physicsManager_->reset();  // time=0
+      }
+    }
+  }  // for resetCreateRendererFlag false and true
+}  // PhysicsTest::testMotionTypes
+
+void PhysicsTest::testNumActiveContactPoints() {
   ESP_DEBUG() << "Starting physics test: TestNumActiveContactPoints";
+  for (bool resetRender : {false, true}) {
+    resetCreateRendererFlag(resetRender);
 
-  resetCreateRendererFlag(GetParam());
+    std::string stageFile = Cr::Utility::Directory::join(
+        dataDir, "test_assets/scenes/simple_room.glb");
 
-  std::string stageFile = Cr::Utility::Directory::join(
-      dataDir, "test_assets/scenes/simple_room.glb");
+    initStage(stageFile);
+    auto& drawables = sceneManager_->getSceneGraph(sceneID_).getDrawables();
 
-  initStage(stageFile);
-  auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
+    // We need dynamics to test this.
+    if (physicsManager_->getPhysicsSimulationLibrary() !=
+        PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
+      auto objectAttributesManager =
+          metadataMediator_->getObjectAttributesManager();
 
-  // We need dynamics to test this.
-  if (physicsManager_->getPhysicsSimulationLibrary() !=
-      PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
-    auto objectAttributesManager =
-        metadataMediator_->getObjectAttributesManager();
+      std::string cubeHandle =
+          objectAttributesManager->getObjectHandlesBySubstring("cubeSolid")[0];
 
-    std::string cubeHandle =
-        objectAttributesManager->getObjectHandlesBySubstring("cubeSolid")[0];
+      // add a single cube
+      Mn::Vector3 stackBase(0.21964, 1.29183, -0.0897472);
+      auto objWrapper0 = makeObjectGetWrapper(cubeHandle, &drawables);
+      objWrapper0->setTranslation(stackBase);
 
-    // add a single cube
-    Mn::Vector3 stackBase(0.21964, 1.29183, -0.0897472);
-    auto objWrapper0 = makeObjectGetWrapper(cubeHandle, &drawables);
-    objWrapper0->setTranslation(stackBase);
+      // no active contact points at start
+      CORRADE_COMPARE(physicsManager_->getNumActiveContactPoints(), 0);
 
-    // no active contact points at start
-    ASSERT_EQ(physicsManager_->getNumActiveContactPoints(), 0);
-
-    // simulate to let cube fall and hit the ground
-    while (physicsManager_->getWorldTime() < 2.0) {
-      physicsManager_->stepPhysics(0.1);
-    }
-
-    auto allContactPoints = physicsManager_->getContactPoints();
-    // expect 4 active contact points for cube
-    ASSERT_EQ(allContactPoints.size(), 4);
-    ASSERT_EQ(physicsManager_->getNumActiveContactPoints(), 4);
-    float totalNormalForce = 0;
-    for (auto& cp : allContactPoints) {
-      // contacts are still active
-      CORRADE_INTERNAL_ASSERT(cp.isActive);
-      // normal direction is unit Y (world up)
-      ASSERT_LE(
-          (cp.contactNormalOnBInWS - Magnum::Vector3{0.0, 1.0, 0.0}).length(),
-          1.0e-4);
-      // one object is the cube (0), other is the stage (-1)
-      ASSERT_EQ(cp.objectIdA, 0);
-      ASSERT_EQ(cp.objectIdB, -1);
-      // accumulate the normal force
-      totalNormalForce += cp.normalForce;
-      // solver should keep the cube at the contact boundary (~0 penetration)
-      ASSERT_LE(cp.contactDistance, 1.0e-4);
-    }
-    // mass 1 cube under gravity should require normal contact force of ~9.8
-    ASSERT_LE(totalNormalForce - 9.8, 3.0e-4);
-
-    // continue simulation until the cube is stable and sleeping
-    while (physicsManager_->getWorldTime() < 4.0) {
-      physicsManager_->stepPhysics(0.1);
-    }
-    // 4 inactive contact points at end
-    ASSERT_EQ(physicsManager_->getContactPoints().size(), 4);
-    // no active contact points at end
-    ASSERT_EQ(physicsManager_->getNumActiveContactPoints(), 0);
-  }
-}
-
-TEST_P(PhysicsManagerTest, TestRemoveSleepingSupport) {
-  // test that removing a sleeping support object wakes its collision island
-  ESP_DEBUG() << "Starting physics test: TestRemoveSleepingSupport";
-
-  resetCreateRendererFlag(GetParam());
-
-  std::string stageFile = "NONE";
-
-  initStage(stageFile);
-  auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
-
-  // We need dynamics to test this.
-  if (physicsManager_->getPhysicsSimulationLibrary() !=
-      PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
-    auto objectAttributesManager =
-        metadataMediator_->getObjectAttributesManager();
-
-    std::string cubeHandle =
-        objectAttributesManager->getObjectHandlesBySubstring("cubeSolid")[0];
-
-    // create a stack of cubes in free space
-    Mn::Vector3 stackBase(0.21964, 1.29183, -0.0897472);
-    std::vector<esp::physics::ManagedRigidObject::ptr> cubes;
-    int stackSize = 4;
-    for (int i = 0; i < stackSize; ++i) {
-      auto cubeWrapper = makeObjectGetWrapper(cubeHandle, &drawables);
-      cubeWrapper->setTranslation((Mn::Vector3(0, 0.2, 0) * i) + stackBase);
-      cubes.push_back(cubeWrapper);
-    }
-
-    cubes[0]->setMotionType(esp::physics::MotionType::STATIC);
-
-    for (int testCase = 0; testCase < 2; ++testCase) {
-      // reset time to 0, should not otherwise modify state
-      physicsManager_->reset();
-      CORRADE_INTERNAL_ASSERT(physicsManager_->getNumRigidObjects() > 0);
-
-      // simulate to stabilize the stack and populate collision islands
-      while (physicsManager_->getWorldTime() < 4.0) {
+      // simulate to let cube fall and hit the ground
+      while (physicsManager_->getWorldTime() < 2.0) {
         physicsManager_->stepPhysics(0.1);
       }
 
-      // cubes should be sleeping
-      for (auto cube : cubes) {
-        CORRADE_INTERNAL_ASSERT(!cube->isActive());
+      auto allContactPoints = physicsManager_->getContactPoints();
+      // expect 4 active contact points for cube
+      CORRADE_COMPARE(allContactPoints.size(), 4);
+      CORRADE_COMPARE(physicsManager_->getNumActiveContactPoints(), 4);
+      float totalNormalForce = 0;
+      for (auto& cp : allContactPoints) {
+        // contacts are still active
+        CORRADE_VERIFY(cp.isActive);
+        // normal direction is unit Y (world up)
+        CORRADE_VERIFY(
+            (cp.contactNormalOnBInWS - Magnum::Vector3{0.0, 1.0, 0.0})
+                .length() <= 1.0e-4);
+        // one object is the cube (0), other is the stage (-1)
+        CORRADE_COMPARE(cp.objectIdA, 0);
+        CORRADE_COMPARE(cp.objectIdB, -1);
+        // accumulate the normal force
+        totalNormalForce += cp.normalForce;
+        // solver should keep the cube at the contact boundary (~0 penetration)
+        CORRADE_VERIFY(cp.contactDistance <= 1.0e-4);
       }
+      // mass 1 cube under gravity should require normal contact force of ~9.8
+      CORRADE_VERIFY(totalNormalForce - 9.8 <= 3.0e-4);
 
-      // no active contact points
-      ASSERT_EQ(physicsManager_->getNumActiveContactPoints(), 0);
-
-      if (testCase == 0) {
-        // first remove the bottom-most DYNAMIC object, expecting those above to
-        // fall
-        rigidObjectManager_->removePhysObjectByID(cubes[1]->getID());
-        cubes.erase(cubes.begin() + 1);
-      } else if (testCase == 1) {
-        // second remove the STATIC bottom cube
-        rigidObjectManager_->removePhysObjectByID(cubes[0]->getID());
-        cubes.erase(cubes.begin());
+      // continue simulation until the cube is stable and sleeping
+      while (physicsManager_->getWorldTime() < 4.0) {
+        physicsManager_->stepPhysics(0.1);
       }
-
-      // remaining cubes should now be awake
-      for (auto cube : cubes) {
-        if (cube->getMotionType() != esp::physics::MotionType::STATIC) {
-          CORRADE_INTERNAL_ASSERT(cube->isActive());
-        }
-      }
-      ASSERT_GT(physicsManager_->getNumActiveContactPoints(), 0);
+      // 4 inactive contact points at end
+      CORRADE_COMPARE(physicsManager_->getContactPoints().size(), 4);
+      // no active contact points at end
+      CORRADE_COMPARE(physicsManager_->getNumActiveContactPoints(), 0);
     }
-  }
-}
+  }  // for resetCreateRendererFlag false and true
+}  // PhysicsTest::testNumActiveContactPoints
+
+void PhysicsTest::testRemoveSleepingSupport() {
+  // test that removing a sleeping support object wakes its collision island
+  ESP_DEBUG() << "Starting physics test: TestRemoveSleepingSupport";
+  for (bool resetRender : {false, true}) {
+    resetCreateRendererFlag(resetRender);
+
+    std::string stageFile = "NONE";
+
+    initStage(stageFile);
+    auto& drawables = sceneManager_->getSceneGraph(sceneID_).getDrawables();
+
+    // We need dynamics to test this.
+    if (physicsManager_->getPhysicsSimulationLibrary() !=
+        PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
+      auto objectAttributesManager =
+          metadataMediator_->getObjectAttributesManager();
+
+      std::string cubeHandle =
+          objectAttributesManager->getObjectHandlesBySubstring("cubeSolid")[0];
+
+      // create a stack of cubes in free space
+      Mn::Vector3 stackBase(0.21964, 1.29183, -0.0897472);
+      std::vector<esp::physics::ManagedRigidObject::ptr> cubes;
+      int stackSize = 4;
+      for (int i = 0; i < stackSize; ++i) {
+        auto cubeWrapper = makeObjectGetWrapper(cubeHandle, &drawables);
+        cubeWrapper->setTranslation((Mn::Vector3(0, 0.2, 0) * i) + stackBase);
+        cubes.push_back(cubeWrapper);
+      }
+
+      cubes[0]->setMotionType(esp::physics::MotionType::STATIC);
+
+      for (int testCase = 0; testCase < 2; ++testCase) {
+        // reset time to 0, should not otherwise modify state
+        physicsManager_->reset();
+        CORRADE_VERIFY(physicsManager_->getNumRigidObjects() > 0);
+
+        // simulate to stabilize the stack and populate collision islands
+        while (physicsManager_->getWorldTime() < 4.0) {
+          physicsManager_->stepPhysics(0.1);
+        }
+
+        // cubes should be sleeping
+        for (auto cube : cubes) {
+          CORRADE_VERIFY(!cube->isActive());
+        }
+
+        // no active contact points
+        CORRADE_COMPARE(physicsManager_->getNumActiveContactPoints(), 0);
+
+        if (testCase == 0) {
+          // first remove the bottom-most DYNAMIC object, expecting those above
+          // to fall
+          rigidObjectManager_->removePhysObjectByID(cubes[1]->getID());
+          cubes.erase(cubes.begin() + 1);
+        } else if (testCase == 1) {
+          // second remove the STATIC bottom cube
+          rigidObjectManager_->removePhysObjectByID(cubes[0]->getID());
+          cubes.erase(cubes.begin());
+        }
+
+        // remaining cubes should now be awake
+        for (auto cube : cubes) {
+          if (cube->getMotionType() != esp::physics::MotionType::STATIC) {
+            CORRADE_VERIFY(cube->isActive());
+          }
+        }
+        CORRADE_VERIFY(physicsManager_->getNumActiveContactPoints() > 0);
+      }
+    }
+  }  // for resetCreateRendererFlag false and true
+}  // PhysicsTest::testRemoveSleepingSupport
+
+}  // namespace Test
+
+CORRADE_TEST_MAIN(Test::PhysicsTest)

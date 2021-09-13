@@ -77,7 +77,7 @@ corrade_add_test(
 )
 target_include_directories(SimTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-test(PhysicsTest physics)
+corrade_add_test(PhysicsTest PhysicsTest.cpp LIBRARIES physics)
 target_include_directories(PhysicsTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 test(ResourceManagerTest assets)
@@ -110,6 +110,6 @@ target_include_directories(SensorTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 # Some tests are LOUD, we don't want to include their full log (but OTOH we
 # want to have full log from others, so this is a compromise)
 set_tests_properties(
-  NavTest Mp3dTest SimTest SuncgTest
+  MetadataMediatorTest Mp3dTest NavTest SimTest SuncgTest
   PROPERTIES ENVIRONMENT "HABITAT_SIM_LOG=quiet;MAGNUM_LOG=QUIET"
 )
