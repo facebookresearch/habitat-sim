@@ -27,6 +27,24 @@ target_include_directories(AttributesManagersTest PRIVATE ${CMAKE_CURRENT_BINARY
 
 corrade_add_test(CoreTest CoreTest.cpp LIBRARIES core io)
 
+corrade_add_test(CullingTest CullingTest.cpp LIBRARIES gfx)
+target_include_directories(CullingTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
+corrade_add_test(DrawableTest DrawableTest.cpp LIBRARIES gfx)
+target_include_directories(DrawableTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
+corrade_add_test(GeoTest GeoTest.cpp LIBRARIES geo)
+
+corrade_add_test(
+  GfxReplayTest
+  GfxReplayTest.cpp
+  LIBRARIES
+  assets
+  gfx
+  sim
+)
+target_include_directories(GfxReplayTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
 test(MetadataMediatorTest assets metadata)
 target_include_directories(MetadataMediatorTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
@@ -50,16 +68,8 @@ corrade_add_test(
 )
 target_include_directories(SimTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(GeoTest GeoTest.cpp LIBRARIES geo)
-
-corrade_add_test(DrawableTest DrawableTest.cpp LIBRARIES gfx)
-target_include_directories(DrawableTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-
 test(PhysicsTest physics)
 target_include_directories(PhysicsTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-
-test(GfxReplayTest assets gfx sim)
-target_include_directories(GfxReplayTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 test(ResourceManagerTest assets)
 target_include_directories(ResourceManagerTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
@@ -78,9 +88,6 @@ if(BUILD_WITH_VHACD)
   )
   target_include_directories(VoxelGridTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 endif()
-
-corrade_add_test(CullingTest CullingTest.cpp LIBRARIES gfx)
-target_include_directories(CullingTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 test(SuncgTest scene)
 target_include_directories(SuncgTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
