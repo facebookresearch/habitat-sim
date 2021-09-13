@@ -53,6 +53,9 @@ corrade_add_test(
 )
 target_include_directories(MetadataMediatorTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
+corrade_add_test(Mp3dTest Mp3dTest.cpp LIBRARIES scene)
+target_include_directories(Mp3dTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
 corrade_add_test(
   NavTest
   NavTest.cpp
@@ -62,9 +65,6 @@ corrade_add_test(
   assets
 )
 target_include_directories(NavTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-
-test(Mp3dTest scene)
-target_include_directories(Mp3dTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(
   SimTest
@@ -110,8 +110,6 @@ target_include_directories(SensorTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 # Some tests are LOUD, we don't want to include their full log (but OTOH we
 # want to have full log from others, so this is a compromise)
 set_tests_properties(
-  NavTest Mp3dTest SuncgTest PROPERTIES ENVIRONMENT "HABITAT_SIM_LOG=nav,scene=quiet"
-)
-set_tests_properties(
-  SimTest PROPERTIES ENVIRONMENT "HABITAT_SIM_LOG=quiet;MAGNUM_LOG=QUIET"
+  NavTest Mp3dTest SimTest SuncgTest
+  PROPERTIES ENVIRONMENT "HABITAT_SIM_LOG=quiet;MAGNUM_LOG=QUIET"
 )

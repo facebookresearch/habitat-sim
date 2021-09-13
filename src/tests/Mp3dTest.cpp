@@ -2,8 +2,9 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include <Corrade/TestSuite/Tester.h>
+#include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/Directory.h>
-#include <gtest/gtest.h>
 
 #include "esp/scene/SemanticScene.h"
 
@@ -11,49 +12,70 @@
 
 namespace Cr = Corrade;
 
-namespace esp {
-namespace scene {
+namespace Test {
 
-TEST(Mp3dTest, Load) {
-  logging::LoggingContext loggingContext;
+struct Mp3dTest : Cr::TestSuite::Tester {
+  explicit Mp3dTest();
+
+  void testLoad();
+
+  esp::logging::LoggingContext loggingContext;
+};  // struct Mp3Test
+
+Mp3dTest::Mp3dTest() {
+  addTests({&Mp3dTest::testLoad});
+}  // Mp3dTest ctor
+
+void Mp3dTest::testLoad() {
   const std::string filename = Cr::Utility::Directory::join(
-      SCENE_DATASETS, "mp3d/1LXtFkjw3qL/1LXtFkjw3qL.house");
-  if (!Cr::Utility::Directory::exists(filename))
-    GTEST_SKIP_("MP3D dataset not found.");
+      SCENE_DATASETS, "mp3d/17DRP5sb8fy/17DRP5sb8fy.house");
+  if (!Cr::Utility::Directory::exists(filename)) {
+    CORRADE_SKIP("MP3D dataset not found.");
+  }
 
-  SemanticScene house;
-  const quatf alignGravity =
-      quatf::FromTwoVectors(-vec3f::UnitZ(), geo::ESP_GRAVITY);
-  const quatf alignFront =
-      quatf::FromTwoVectors(-vec3f::UnitX(), geo::ESP_FRONT);
-  SemanticScene::loadMp3dHouse(filename, house, alignFront * alignGravity);
-  ESP_DEBUG(Cr::Utility::Debug::Flag::NoSpace)
-      << "House{nobjects:" << house.count("objects")
-      << ",nlevels:" << house.count("levels")
-      << ",nregions:" << house.count("regions")
-      << ",ncategories:" << house.count("categories")
-      << ",bbox:" << house.aabb() << "}";
+  esp::scene::SemanticScene house;
+  const esp::quatf alignGravity =
+      esp::quatf::FromTwoVectors(-esp::vec3f::UnitZ(), esp::geo::ESP_GRAVITY);
+  const esp::quatf alignFront =
+      esp::quatf::FromTwoVectors(-esp::vec3f::UnitX(), esp::geo::ESP_FRONT);
+  esp::scene::SemanticScene::loadMp3dHouse(filename, house,
+                                           alignFront * alignGravity);
+  ESP_DEBUG() << "House{nobjects:" << house.count("objects")
+              << ",nlevels:" << house.count("levels")
+              << ",nregions:" << house.count("regions") << ",ncategories:"
+              << house.count("categories")
+              //<< ",bbox:" << house.aabb()
+              << "}";
+  ESP_DEBUG() << "~~~~~~~~~~~ Categories : " << house.categories().size();
+  CORRADE_COMPARE(house.categories().size(), 1659);
   for (auto& category : house.categories()) {
-    ESP_DEBUG(Cr::Utility::Debug::Flag::NoSpace)
-        << "SemanticCategory{i:" << category->index("raw")
-        << ",name:" << category->name("raw")
-        << ",mpcat40Name:" << category->name("") << "}";
+    ESP_DEBUG() << "SemanticCategory{i:" << category->index("raw")
+                << ",name:" << category->name("raw")
+                << ",mpcat40Name:" << category->name("") << "}";
   }
+  ESP_DEBUG() << "~~~~~~~~~~~ Levels : " << house.levels().size();
+  CORRADE_COMPARE(house.levels().size(), 1);
   for (auto& level : house.levels()) {
-    ESP_DEBUG(Cr::Utility::Debug::Flag::NoSpace)
-        << "Level{id:" << level->id() << ",aabb:" << level->aabb() << "}";
+    ESP_DEBUG() << "Level{id:"
+                << level->id()
+                //<< ",aabb:" << level->aabb()
+                << "}";
     for (auto& region : level->regions()) {
-      ESP_DEBUG(Cr::Utility::Debug::Flag::NoSpace)
-          << "Region{id:" << region->id() << ",aabb:" << region->aabb()
-          << ",category:" << region->category()->name()
-          << ",index:" << region->category()->index() << "}";
+      ESP_DEBUG() << "Region{id:"
+                  << region->id()
+                  //<< ",aabb:" << region->aabb()
+                  << ",category:" << region->category()->name()
+                  << ",index:" << region->category()->index() << "}";
       for (auto& object : region->objects()) {
-        ESP_DEBUG(Cr::Utility::Debug::Flag::NoSpace)
-            << "Object{id:" << object->id() << ",obb:" << object->obb()
-            << ",category:" << object->category()->name() << "}";
-      }
-    }
-  }
+        ESP_DEBUG() << "Object{id:"
+                    << object->id()
+                    //<< ",obb:" << object->obb()
+                    << ",category:" << object->category()->name() << "}";
+      }  // per object
+    }    // per region
+  }      // per level
 }
-}  // namespace scene
-}  // namespace esp
+
+}  // namespace Test
+
+CORRADE_TEST_MAIN(Test::Mp3dTest)
