@@ -40,7 +40,7 @@ using Attrs::SceneAttributes;
 using Attrs::StageAttributes;
 using Attrs::UVSpherePrimitiveAttributes;
 
-namespace Test {
+namespace {
 const std::string physicsConfigFile =
     Cr::Utility::Directory::join(DATA_DIR,
                                  "test_assets/testing.physics_config.json");
@@ -1423,6 +1423,6 @@ void AttributesManagersTest::testPrimitiveAssetAttributes() {
   }
 }  // AttributesManagersTest::AsssetAttributesManagerGetAndModify test
 
-}  // namespace Test
+}  // namespace
 
-CORRADE_TEST_MAIN(Test::AttributesManagersTest)
+CORRADE_TEST_MAIN(AttributesManagersTest)

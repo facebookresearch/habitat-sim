@@ -12,7 +12,7 @@
 
 namespace Cr = Corrade;
 
-namespace Test {
+namespace {
 
 struct Mp3dTest : Cr::TestSuite::Tester {
   explicit Mp3dTest();
@@ -70,6 +70,6 @@ void Mp3dTest::testLoad() {
   }      // per level
 }
 
-}  // namespace Test
+}  // namespace
 
-CORRADE_TEST_MAIN(Test::Mp3dTest)
+CORRADE_TEST_MAIN(Mp3dTest)

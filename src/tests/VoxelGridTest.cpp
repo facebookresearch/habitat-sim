@@ -14,6 +14,8 @@
 namespace Cr = Corrade;
 namespace Mn = Magnum;
 
+namespace {
+
 // Test is not compiled if --vhacd is not enabled
 struct VoxelGridTest : Cr::TestSuite::Tester {
   explicit VoxelGridTest();
@@ -181,5 +183,6 @@ void VoxelGridTest::testVoxelUtilityFunctions() {
   }
   CORRADE_VERIFY(valuesAreInRange);
 }
+}  // namespace
 
 CORRADE_TEST_MAIN(VoxelGridTest)

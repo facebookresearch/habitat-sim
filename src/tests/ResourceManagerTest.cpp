@@ -27,7 +27,7 @@ using esp::assets::ResourceManager;
 using esp::metadata::MetadataMediator;
 using esp::scene::SceneManager;
 
-namespace Test {
+namespace {
 
 struct ResourceManagerTest : Cr::TestSuite::Tester {
   explicit ResourceManagerTest();
@@ -191,6 +191,6 @@ void ResourceManagerTest::loadAndCreateRenderAssetInstance() {
       info, creation, &sceneManager_, tempIDs);
   CORRADE_VERIFY(node);
 }
-}  // namespace Test
+}  // namespace
 
-CORRADE_TEST_MAIN(Test::ResourceManagerTest)
+CORRADE_TEST_MAIN(ResourceManagerTest)

@@ -37,7 +37,7 @@ const std::string physicsConfigFile =
     Cr::Utility::Directory::join(SCENE_DATASETS,
                                  "../default.physics_config.json");
 
-namespace Test {
+namespace {
 struct PhysicsTest : Cr::TestSuite::Tester {
   explicit PhysicsTest();
 
@@ -1029,6 +1029,6 @@ void PhysicsTest::testRemoveSleepingSupport() {
   }  // for resetCreateRendererFlag false and true
 }  // PhysicsTest::testRemoveSleepingSupport
 
-}  // namespace Test
+}  // namespace
 
-CORRADE_TEST_MAIN(Test::PhysicsTest)
+CORRADE_TEST_MAIN(PhysicsTest)

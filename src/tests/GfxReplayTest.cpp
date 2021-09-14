@@ -33,7 +33,7 @@ using esp::scene::SceneManager;
 using esp::sim::Simulator;
 using esp::sim::SimulatorConfiguration;
 
-namespace Test {
+namespace {
 
 struct GfxReplayTest : Cr::TestSuite::Tester {
   explicit GfxReplayTest();
@@ -142,8 +142,9 @@ void GfxReplayTest::testRecorder() {
   CORRADE_COMPARE(keyframes[0].loads.size(), 1);
   CORRADE_VERIFY(keyframes[0].loads[0] == info);
   CORRADE_COMPARE(keyframes[0].creations.size(), 1);
-  CORRADE_VERIFY(keyframes[0].creations[0].second.filepath.find(
-                     "objects/transform_box.glb") != std::string::npos);
+  CORRADE_COMPARE_AS(keyframes[0].creations[0].second.filepath.find(
+                         "objects/transform_box.glb"),
+                     std::string::npos, Cr::TestSuite::Compare::NotEqual);
   CORRADE_COMPARE(keyframes[0].stateUpdates.size(), 1);
   esp::gfx::replay::RenderAssetInstanceKey instanceKey =
       keyframes[0].creations[0].first;
@@ -445,6 +446,6 @@ void GfxReplayTest::testSimulatorIntegration() {
   }
 }
 
-}  // namespace Test
+}  // namespace
 
-CORRADE_TEST_MAIN(Test::GfxReplayTest)
+CORRADE_TEST_MAIN(GfxReplayTest)

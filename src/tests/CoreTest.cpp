@@ -8,7 +8,7 @@
 
 using namespace esp::core::config;
 
-namespace Test {
+namespace {
 
 struct CoreTest : Cr::TestSuite::Tester {
   explicit CoreTest();
@@ -32,6 +32,6 @@ void CoreTest::TestConfiguration() {
   CORRADE_COMPARE(cfg.get<std::string>("myString"), "test");
 }
 
-}  // namespace Test
+}  // namespace
 
-CORRADE_TEST_MAIN(Test::CoreTest)
+CORRADE_TEST_MAIN(CoreTest)

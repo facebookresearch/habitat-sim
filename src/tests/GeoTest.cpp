@@ -20,26 +20,7 @@ using namespace esp;
 using namespace esp::geo;
 
 // reference: https://github.com/facebookresearch/habitat-sim/pull/496/files
-namespace Test {
-// standard method
-// transform the 8 corners, and extract the min and max
-Mn::Range3D getTransformedBB_standard(const Mn::Range3D& range,
-                                      const Mn::Matrix4& xform) {
-  std::vector<Mn::Vector3> corners;
-  corners.push_back(xform.transformPoint(range.frontBottomLeft()));
-  corners.push_back(xform.transformPoint(range.frontBottomRight()));
-  corners.push_back(xform.transformPoint(range.frontTopLeft()));
-  corners.push_back(xform.transformPoint(range.frontTopRight()));
-
-  corners.push_back(xform.transformPoint(range.backTopLeft()));
-  corners.push_back(xform.transformPoint(range.backTopRight()));
-  corners.push_back(xform.transformPoint(range.backBottomLeft()));
-  corners.push_back(xform.transformPoint(range.backBottomRight()));
-
-  Mn::Range3D transformedBB{Mn::Math::minmax(corners)};
-
-  return transformedBB;
-}
+namespace {
 
 struct GeoTest : Cr::TestSuite::Tester {
   explicit GeoTest();
@@ -51,6 +32,10 @@ struct GeoTest : Cr::TestSuite::Tester {
   // benchmarks
   void getTransformedBB_standard();
   void getTransformedBB();
+  // standard method
+  // transform the 8 corners, and extract the min and max
+  Mn::Range3D getTransformedBB_standard(const Mn::Range3D& range,
+                                        const Mn::Matrix4& xform);
 
   std::vector<Mn::Matrix4> xforms_;
   // number of transformations
@@ -87,10 +72,30 @@ GeoTest::GeoTest() {
   }
 }
 
+// standard method
+// transform the 8 corners, and extract the min and max
+Mn::Range3D GeoTest::getTransformedBB_standard(const Mn::Range3D& range,
+                                               const Mn::Matrix4& xform) {
+  std::vector<Mn::Vector3> corners;
+  corners.push_back(xform.transformPoint(range.frontBottomLeft()));
+  corners.push_back(xform.transformPoint(range.frontBottomRight()));
+  corners.push_back(xform.transformPoint(range.frontTopLeft()));
+  corners.push_back(xform.transformPoint(range.frontTopRight()));
+
+  corners.push_back(xform.transformPoint(range.backTopLeft()));
+  corners.push_back(xform.transformPoint(range.backTopRight()));
+  corners.push_back(xform.transformPoint(range.backBottomLeft()));
+  corners.push_back(xform.transformPoint(range.backBottomRight()));
+
+  Mn::Range3D transformedBB{Mn::Math::minmax(corners)};
+
+  return transformedBB;
+}
+
 void GeoTest::getTransformedBB_standard() {
   Mn::Range3D aabb;
   CORRADE_BENCHMARK(iterations_) for (auto& xform : xforms_) {
-    aabb = Test::getTransformedBB_standard(box_, xform);
+    aabb = getTransformedBB_standard(box_, xform);
   }
 }
 
@@ -106,7 +111,7 @@ void GeoTest::aabb() {
   // respectively.
   // compare the results, which should be identical
   for (auto& xform : xforms_) {
-    Mn::Range3D aabbControl = Test::getTransformedBB_standard(box_, xform);
+    Mn::Range3D aabbControl = getTransformedBB_standard(box_, xform);
     Mn::Range3D aabbTest = esp::geo::getTransformedBB(box_, xform);
 
     float eps = 1e-8f;
@@ -196,6 +201,6 @@ void GeoTest::coordinateFrame() {
   CORRADE_COMPARE(c1.toString(), j);
 }
 
-}  // namespace Test
+}  // namespace
 
-CORRADE_TEST_MAIN(Test::GeoTest)
+CORRADE_TEST_MAIN(GeoTest)

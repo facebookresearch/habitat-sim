@@ -21,7 +21,7 @@ namespace Cr = Corrade;
 using esp::metadata::attributes::AbstractObjectAttributes;
 using esp::metadata::attributes::ObjectAttributes;
 
-namespace Test {
+namespace {
 const std::string dataDir =
     Corrade::Utility::Directory::join(SCENE_DATASETS, "../");
 
@@ -560,6 +560,6 @@ void IOTest::testJsonUserType() {
   CORRADE_COMPARE(myStruct2.b, myStruct.b);
 }
 
-}  // namespace Test
+}  // namespace
 
-CORRADE_TEST_MAIN(Test::IOTest)
+CORRADE_TEST_MAIN(IOTest)

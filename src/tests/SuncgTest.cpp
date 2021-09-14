@@ -11,7 +11,7 @@
 
 namespace Cr = Corrade;
 
-namespace Test {
+namespace {
 
 struct SuncgTest : Cr::TestSuite::Tester {
   explicit SuncgTest();
@@ -51,6 +51,5 @@ void SuncgTest::testLoad() {
     }
   }
 }
-}  // namespace Test
-
-CORRADE_TEST_MAIN(Test::SuncgTest)
+}  // namespace
+CORRADE_TEST_MAIN(SuncgTest)

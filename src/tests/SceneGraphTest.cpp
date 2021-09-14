@@ -9,7 +9,7 @@
 using esp::gfx::DrawableGroup;
 using esp::scene::SceneGraph;
 
-namespace Test {
+namespace {
 struct SceneGraphTest : Cr::TestSuite::Tester {
   explicit SceneGraphTest();
   void testGetDrawableGroup();
@@ -41,6 +41,6 @@ void SceneGraphTest::testDeleteDrawableGroup() {
   CORRADE_COMPARE(g.getDrawableGroups().size(), numInitialGroups);
   CORRADE_VERIFY(g.getDrawableGroup(groupName) == nullptr);
 }
-}  // namespace Test
+}  // namespace
 
-CORRADE_TEST_MAIN(Test::SceneGraphTest)
+CORRADE_TEST_MAIN(SceneGraphTest)

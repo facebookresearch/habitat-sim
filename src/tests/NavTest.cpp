@@ -17,7 +17,7 @@
 
 namespace Cr = Corrade;
 
-namespace Test {
+namespace {
 
 void printPathPoint(int run, int step, const esp::vec3f& p, float distance) {
   ESP_VERY_VERBOSE() << run << "," << step << "," << Mn::Vector3{p} << ","
@@ -185,6 +185,6 @@ void NavTest::PathFinderTestMeshData() {
   CORRADE_COMPARE(meshData->vbo.size(), 63);
   CORRADE_COMPARE(meshData->ibo.size(), 63);
 }
-}  // namespace Test
+}  // namespace
 
-CORRADE_TEST_MAIN(Test::NavTest)
+CORRADE_TEST_MAIN(NavTest)

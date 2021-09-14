@@ -24,7 +24,6 @@ using esp::assets::ResourceManager;
 using esp::metadata::MetadataMediator;
 using esp::scene::SceneManager;
 
-namespace Test {
 // on GCC and Clang, the following namespace causes useful warnings to be
 // printed when you have accidentally unused variables or functions in the test
 namespace {
@@ -155,6 +154,5 @@ void DrawableTest::addRemoveDrawables() {
 }
 
 }  // namespace
-}  // namespace Test
 
-CORRADE_TEST_MAIN(Test::DrawableTest)
+CORRADE_TEST_MAIN(DrawableTest)

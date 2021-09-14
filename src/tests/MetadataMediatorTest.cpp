@@ -16,7 +16,7 @@ namespace Attrs = esp::metadata::attributes;
 
 using esp::metadata::MetadataMediator;
 
-namespace Test {
+namespace {
 
 const std::string physicsConfigFile =
     Cr::Utility::Directory::join(DATA_DIR,
@@ -564,6 +564,6 @@ void MetadataMediatorTest::testDatasetDelete() {
 
 }  // testDatasetDelete
 
-}  // namespace Test
+}  // namespace
 
-CORRADE_TEST_MAIN(Test::MetadataMediatorTest)
+CORRADE_TEST_MAIN(MetadataMediatorTest)

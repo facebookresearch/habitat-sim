@@ -30,7 +30,6 @@ using esp::metadata::MetadataMediator;
 using esp::scene::SceneManager;
 using Magnum::Math::Literals::operator""_degf;
 
-namespace Test {
 // on GCC and Clang, the following namespace causes useful warnings to be
 // printed when you have accidentally unused variables or functions in the test
 namespace {
@@ -276,6 +275,5 @@ void CullingTest::frustumCulling() {
   CORRADE_COMPARE(numVisibleObjects, numVisibleObjectsGroundTruth);
 }
 }  // namespace
-}  // namespace Test
 
-CORRADE_TEST_MAIN(Test::CullingTest)
+CORRADE_TEST_MAIN(CullingTest)

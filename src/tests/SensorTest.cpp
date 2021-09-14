@@ -14,6 +14,7 @@ namespace Cr = Corrade;
 using namespace esp::sensor;
 using namespace esp::scene;
 
+namespace {
 // TODO: Add tests for different Sensors
 struct SensorTest : Cr::TestSuite::Tester {
   explicit SensorTest();
@@ -375,5 +376,6 @@ void SensorTest::testSetParent() {
   CORRADE_COMPARE(child2Node.getNodeSensors().size(), 1);
   CORRADE_COMPARE(child2Node.getSubtreeSensors().size(), 1);
 }
+}  // namespace
 
 CORRADE_TEST_MAIN(SensorTest)
