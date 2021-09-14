@@ -422,8 +422,7 @@ void AttributesManagersTest::testRemoveAllButDefault(std::shared_ptr<T> mgr,
     // register template with new handle
     int tmpltID = mgr->registerObject(attrTemplate1, newHandleIter);
     // verify template added
-    CORRADE_COMPARE_AS(tmpltID, esp::ID_UNDEFINED,
-                       Cr::TestSuite::Compare::NotEqual);
+    CORRADE_VERIFY(tmpltID != esp::ID_UNDEFINED);
     auto attrTemplate2 = mgr->getObjectOrCopyByHandle(newHandleIter);
     // verify added template  exists
     CORRADE_VERIFY(attrTemplate2);
@@ -440,8 +439,7 @@ void AttributesManagersTest::testRemoveAllButDefault(std::shared_ptr<T> mgr,
     // register template with new handle
     int tmpltID = mgr->registerObject(tmplt);
     // verify template added
-    CORRADE_COMPARE_AS(tmpltID, esp::ID_UNDEFINED,
-                       Cr::TestSuite::Compare::NotEqual);
+    CORRADE_VERIFY(tmpltID != esp::ID_UNDEFINED);
     auto attrTemplate2 = mgr->getObjectOrCopyByHandle(tmplt->getHandle());
     // verify added template  exists
     CORRADE_VERIFY(attrTemplate2);
