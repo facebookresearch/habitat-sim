@@ -52,6 +52,9 @@ target_include_directories(GibsonSceneTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 corrade_add_test(IOTest IOTest.cpp LIBRARIES io metadata)
 target_include_directories(IOTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
+corrade_add_test(LoggingTest LoggingTest.cpp LIBRARIES core)
+set_tests_properties(LoggingTest PROPERTIES ENVIRONMENT HABITAT_SIM_LOG="")
+
 corrade_add_test(
   MetadataMediatorTest MetadataMediatorTest.cpp LIBRARIES assets metadata
 )

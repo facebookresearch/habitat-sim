@@ -41,9 +41,7 @@ void warning(const Cr::Containers::StringView statement) {
 }  // namespace
 }  // namespace test
 }  // namespace gfx
-
-namespace logging {
-namespace test {
+}  // namespace esp
 namespace {
 
 struct LoggingTest : Cr::TestSuite::Tester {
@@ -57,15 +55,15 @@ constexpr const struct {
   const char* expected;
 } EnvVarTestData[]{
     {nullptr,
-     "[Default] LoggingTest.cpp(101)::envVarTest : DebugDefault\n[Default] "
-     "LoggingTest.cpp(102)::envVarTest : WarningDefault\n"
+     "[Default] LoggingTest.cpp(99)::envVarTest : DebugDefault\n[Default] "
+     "LoggingTest.cpp(100)::envVarTest : WarningDefault\n"
      "[Sim] LoggingTest.cpp(23)::debug : DebugSim\n[Sim] "
      "LoggingTest.cpp(26)::warning : WarningSim\n"
      "[Gfx] LoggingTest.cpp(36)::debug : DebugGfx\n[Gfx] "
      "LoggingTest.cpp(39)::warning : WarningGfx\n"},
     {"debug",
-     "[Default] LoggingTest.cpp(101)::envVarTest : DebugDefault\n[Default] "
-     "LoggingTest.cpp(102)::envVarTest : WarningDefault\n"
+     "[Default] LoggingTest.cpp(99)::envVarTest : DebugDefault\n[Default] "
+     "LoggingTest.cpp(100)::envVarTest : WarningDefault\n"
      "[Sim] LoggingTest.cpp(23)::debug : DebugSim\n[Sim] "
      "LoggingTest.cpp(26)::warning : WarningSim\n"
      "[Gfx] LoggingTest.cpp(36)::debug : DebugGfx\n[Gfx] "
@@ -78,11 +76,11 @@ constexpr const struct {
      "LoggingTest.cpp(36)::debug : DebugGfx\n[Gfx] "
      "LoggingTest.cpp(39)::warning : WarningGfx\n"},
     {"warning:Gfx=debug",
-     "[Default] LoggingTest.cpp(102)::envVarTest : WarningDefault\n"
+     "[Default] LoggingTest.cpp(100)::envVarTest : WarningDefault\n"
      "[Sim] LoggingTest.cpp(26)::warning : WarningSim\n[Gfx] "
      "LoggingTest.cpp(36)::debug : DebugGfx\n[Gfx] "
      "LoggingTest.cpp(39)::warning : WarningGfx\n"},
-};  // namespace
+};  // EnvVarTestData
 
 LoggingTest::LoggingTest() {
   addInstancedTests({&LoggingTest::envVarTest},
@@ -92,7 +90,7 @@ LoggingTest::LoggingTest() {
 void LoggingTest::envVarTest() {
   auto&& data = EnvVarTestData[testCaseInstanceId()];
 
-  LoggingContext ctx{data.envString};
+  esp::logging::LoggingContext ctx{data.envString};
 
   std::ostringstream out;
   Cr::Utility::Debug debugCapture{&out};
@@ -101,19 +99,15 @@ void LoggingTest::envVarTest() {
   ESP_DEBUG() << "DebugDefault";
   ESP_WARNING() << "WarningDefault";
 
-  sim::test::debug("DebugSim");
-  sim::test::warning("WarningSim");
+  esp::sim::test::debug("DebugSim");
+  esp::sim::test::warning("WarningSim");
 
-  gfx::test::debug("DebugGfx");
-  gfx::test::warning("WarningGfx");
+  esp::gfx::test::debug("DebugGfx");
+  esp::gfx::test::warning("WarningGfx");
 
   CORRADE_COMPARE(Cr::Containers::StringView{out.str()},
                   Cr::Containers::StringView{data.expected});
 }
 
 }  // namespace
-}  // namespace test
-}  // namespace logging
-}  // namespace esp
-
-CORRADE_TEST_MAIN(esp::logging::test::LoggingTest)
+CORRADE_TEST_MAIN(LoggingTest)
