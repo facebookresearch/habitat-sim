@@ -24,7 +24,6 @@ using esp::assets::ResourceManager;
 using esp::metadata::MetadataMediator;
 using esp::scene::SceneManager;
 
-namespace Test {
 // on GCC and Clang, the following namespace causes useful warnings to be
 // printed when you have accidentally unused variables or functions in the test
 namespace {
@@ -63,7 +62,7 @@ DrawableTest::DrawableTest() {
   resourceManager_ = std::make_unique<ResourceManagerExtended>(MM);
   //clang-format off
   addTests({&DrawableTest::addRemoveDrawables});
-  // flang-format on
+  //clang-format on
   auto stageAttributesMgr = MM->getStageAttributesManager();
   std::string stageFile =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/5boxes.glb");
@@ -112,9 +111,9 @@ void DrawableTest::addRemoveDrawables() {
 
   // we already had 5 boxes in the scene, 1 toy box added before the current
   // one, so the id should be 6
-  CORRADE_VERIFY(dr->getDrawableId() == 6);
+  CORRADE_COMPARE(dr->getDrawableId(), 6);
   // verify this drawable has been added to drawable group
-  CORRADE_VERIFY(dr->drawables() == drawableGroup_);
+  CORRADE_COMPARE(dr->drawables(), drawableGroup_);
 
   // step 2: add a single drawable to a group
   dr = new esp::gfx::GenericDrawable{node,
@@ -155,6 +154,5 @@ void DrawableTest::addRemoveDrawables() {
 }
 
 }  // namespace
-}  // namespace Test
 
-CORRADE_TEST_MAIN(Test::DrawableTest)
+CORRADE_TEST_MAIN(DrawableTest)
