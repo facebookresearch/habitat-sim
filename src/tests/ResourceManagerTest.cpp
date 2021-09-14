@@ -41,163 +41,156 @@ struct ResourceManagerTest : Cr::TestSuite::Tester {
 ResourceManagerTest::ResourceManagerTest() {
   addTests({&ResourceManagerTest::createJoinedCollisionMesh,
 #ifdef ESP_BUILD_WITH_VHACD
-            &ResourceManagerTest::VHACDUsageTest
-             &ResourceManagerTest::loadAndCreateRenderAssetInstance
+            &ResourceManagerTest::VHACDUsageTest,
+            &ResourceManagerTest::loadAndCreateRenderAssetInstance});
 #else
-       &ResourceManagerTest::loadAndCreateRenderAssetInstance});
+            &ResourceManagerTest::loadAndCreateRenderAssetInstance});
 #endif
-
 }
 
 void ResourceManagerTest::createJoinedCollisionMesh() {
-    esp::gfx::WindowlessContext::uptr context_ =
-        esp::gfx::WindowlessContext::create_unique(0);
+  esp::gfx::WindowlessContext::uptr context_ =
+      esp::gfx::WindowlessContext::create_unique(0);
 
-    std::shared_ptr<esp::gfx::Renderer> renderer_ =
-        esp::gfx::Renderer::create();
+  std::shared_ptr<esp::gfx::Renderer> renderer_ = esp::gfx::Renderer::create();
 
-    // must declare these in this order due to avoid deallocation errors
-    auto cfg = esp::sim::SimulatorConfiguration{};
-    // setting values for stage load
-    cfg.loadSemanticMesh = false;
-    cfg.forceSeparateSemanticSceneGraph = false;
-    auto MM = MetadataMediator::create(cfg);
-    ResourceManager resourceManager(MM);
-    SceneManager sceneManager_;
-    auto stageAttributesMgr = MM->getStageAttributesManager();
-    std::string boxFile =
-        Cr::Utility::Directory::join(TEST_ASSETS, "objects/transform_box.glb");
+  // must declare these in this order due to avoid deallocation errors
+  auto cfg = esp::sim::SimulatorConfiguration{};
+  // setting values for stage load
+  cfg.loadSemanticMesh = false;
+  cfg.forceSeparateSemanticSceneGraph = false;
+  auto MM = MetadataMediator::create(cfg);
+  ResourceManager resourceManager(MM);
+  SceneManager sceneManager_;
+  auto stageAttributesMgr = MM->getStageAttributesManager();
+  std::string boxFile =
+      Cr::Utility::Directory::join(TEST_ASSETS, "objects/transform_box.glb");
 
-    // create stage attributes file
-    auto stageAttributes = stageAttributesMgr->createObject(boxFile, true);
+  // create stage attributes file
+  auto stageAttributes = stageAttributesMgr->createObject(boxFile, true);
 
-    int sceneID = sceneManager_.initSceneGraph();
-    auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
-    const esp::assets::AssetInfo info =
-        esp::assets::AssetInfo::fromPath(boxFile);
+  int sceneID = sceneManager_.initSceneGraph();
+  auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
+  const esp::assets::AssetInfo info = esp::assets::AssetInfo::fromPath(boxFile);
 
-    std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
-    bool result = resourceManager.loadStage(stageAttributes, nullptr, nullptr,
-                                            &sceneManager_, tempIDs);
+  std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
+  bool result = resourceManager.loadStage(stageAttributes, nullptr, nullptr,
+                                          &sceneManager_, tempIDs);
 
-    esp::assets::MeshData::uptr joinedBox =
-        resourceManager.createJoinedCollisionMesh(boxFile);
+  esp::assets::MeshData::uptr joinedBox =
+      resourceManager.createJoinedCollisionMesh(boxFile);
 
-    // transform_box.glb is composed of 6 identical triangulated plane meshes
-    // transformed into a cube via a transform heirarchy. Combined, the
-    // resulting mesh should have 24 vertices and 36 indices with corners at the
-    // unit corner coordinates as defined in the ground truth vectors below.
-    int numVerts = joinedBox->vbo.size();
-    int numIndices = joinedBox->ibo.size();
+  // transform_box.glb is composed of 6 identical triangulated plane meshes
+  // transformed into a cube via a transform heirarchy. Combined, the
+  // resulting mesh should have 24 vertices and 36 indices with corners at the
+  // unit corner coordinates as defined in the ground truth vectors below.
+  int numVerts = joinedBox->vbo.size();
+  int numIndices = joinedBox->ibo.size();
 
-    CORRADE_COMPARE(numVerts, 24);
-    CORRADE_COMPARE(numIndices, 36);
+  CORRADE_COMPARE(numVerts, 24);
+  CORRADE_COMPARE(numIndices, 36);
 
-    std::vector<Magnum::Vector3> vertGroundTruth{
-        {-1, 1, 1},  {-1, 1, -1}, {-1, -1, -1}, {-1, -1, 1},  {1, 1, 1},
-        {1, -1, -1}, {1, 1, -1},  {1, -1, 1},   {1, 1, -1},   {-1, -1, -1},
-        {-1, 1, -1}, {1, -1, -1}, {1, 1, 1},    {-1, 1, -1},  {-1, 1, 1},
-        {1, 1, -1},  {1, -1, 1},  {-1, -1, 1},  {-1, -1, -1}, {1, -1, -1},
-        {1, 1, 1},   {-1, 1, 1},  {-1, -1, 1},  {1, -1, 1}};
+  std::vector<Magnum::Vector3> vertGroundTruth{
+      {-1, 1, 1},  {-1, 1, -1}, {-1, -1, -1}, {-1, -1, 1},  {1, 1, 1},
+      {1, -1, -1}, {1, 1, -1},  {1, -1, 1},   {1, 1, -1},   {-1, -1, -1},
+      {-1, 1, -1}, {1, -1, -1}, {1, 1, 1},    {-1, 1, -1},  {-1, 1, 1},
+      {1, 1, -1},  {1, -1, 1},  {-1, -1, 1},  {-1, -1, -1}, {1, -1, -1},
+      {1, 1, 1},   {-1, 1, 1},  {-1, -1, 1},  {1, -1, 1}};
 
-    std::vector<uint32_t> indexGroundTruth{
-        0,  1,  2,  0,  2,  3,  4,  5,  6,  4,  7,  5,  8,  9,  10, 8,  11, 9,
-        12, 13, 14, 12, 15, 13, 16, 17, 18, 16, 18, 19, 20, 21, 22, 20, 22, 23};
+  std::vector<uint32_t> indexGroundTruth{
+      0,  1,  2,  0,  2,  3,  4,  5,  6,  4,  7,  5,  8,  9,  10, 8,  11, 9,
+      12, 13, 14, 12, 15, 13, 16, 17, 18, 16, 18, 19, 20, 21, 22, 20, 22, 23};
 
-    for (size_t vix = 0; vix < joinedBox->vbo.size(); vix++) {
-      // ESP_DEBUG() << joinedBox->vbo[vix]   << "vs" <<
-      // vertGroundTruth[vix];
-      CORRADE_COMPARE(vertGroundTruth[vix],
-                      Magnum::Vector3(joinedBox->vbo[vix]));
-    }
+  for (size_t vix = 0; vix < joinedBox->vbo.size(); vix++) {
+    // ESP_DEBUG() << joinedBox->vbo[vix]   << "vs" <<
+    // vertGroundTruth[vix];
+    CORRADE_COMPARE(vertGroundTruth[vix], Magnum::Vector3(joinedBox->vbo[vix]));
+  }
 
-    for (size_t iix = 0; iix < joinedBox->ibo.size(); iix++) {
-      // ESP_DEBUG() << joinedBox->ibo[iix]   << "vs" <<
-      // indexGroundTruth[iix];
-      CORRADE_COMPARE(indexGroundTruth[iix], joinedBox->ibo[iix]);
-    }
+  for (size_t iix = 0; iix < joinedBox->ibo.size(); iix++) {
+    // ESP_DEBUG() << joinedBox->ibo[iix]   << "vs" <<
+    // indexGroundTruth[iix];
+    CORRADE_COMPARE(indexGroundTruth[iix], joinedBox->ibo[iix]);
+  }
 }
 
 #ifdef ESP_BUILD_WITH_VHACD
 void ResourceManagerTest::VHACDUsageTest() {
-    esp::gfx::WindowlessContext::uptr context_ =
-        esp::gfx::WindowlessContext::create_unique(0);
+  esp::gfx::WindowlessContext::uptr context_ =
+      esp::gfx::WindowlessContext::create_unique(0);
 
-    std::shared_ptr<esp::gfx::Renderer> renderer_ =
-        esp::gfx::Renderer::create();
+  std::shared_ptr<esp::gfx::Renderer> renderer_ = esp::gfx::Renderer::create();
 
-    // must declare these in this order due to avoid deallocation errors
-    // must declare these in this order due to avoid deallocation errors
-    auto cfg = esp::sim::SimulatorConfiguration{};
-    // setting values for stage load
-    cfg.loadSemanticMesh = false;
-    cfg.forceSeparateSemanticSceneGraph = false;
-    auto MM = MetadataMediator::create(cfg);
-    ResourceManager resourceManager(MM);
-    SceneManager sceneManager_;
-    auto stageAttributesMgr = MM->getStageAttributesManager();
-    std::string donutFile =
-        Cr::Utility::Directory::join(TEST_ASSETS, "objects/donut.glb");
-    std::string CHdonutFile =
-        Cr::Utility::Directory::join(TEST_ASSETS, "objects/CHdonut.glb");
+  // must declare these in this order due to avoid deallocation errors
+  // must declare these in this order due to avoid deallocation errors
+  auto cfg = esp::sim::SimulatorConfiguration{};
+  // setting values for stage load
+  cfg.loadSemanticMesh = false;
+  cfg.forceSeparateSemanticSceneGraph = false;
+  auto MM = MetadataMediator::create(cfg);
+  ResourceManager resourceManager(MM);
+  SceneManager sceneManager_;
+  auto stageAttributesMgr = MM->getStageAttributesManager();
+  std::string donutFile =
+      Cr::Utility::Directory::join(TEST_ASSETS, "objects/donut.glb");
+  std::string CHdonutFile =
+      Cr::Utility::Directory::join(TEST_ASSETS, "objects/CHdonut.glb");
 
-    // create stage attributes file
-    auto stageAttributes = stageAttributesMgr->createObject(donutFile, true);
+  // create stage attributes file
+  auto stageAttributes = stageAttributesMgr->createObject(donutFile, true);
 
-    int sceneID = sceneManager_.initSceneGraph();
-    auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
-    const esp::assets::AssetInfo info =
-        esp::assets::AssetInfo::fromPath(donutFile);
+  int sceneID = sceneManager_.initSceneGraph();
+  auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
+  const esp::assets::AssetInfo info =
+      esp::assets::AssetInfo::fromPath(donutFile);
 
-    std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
-    bool result = resourceManager.loadStage(stageAttributes, nullptr, nullptr,
-                                            &sceneManager_, tempIDs);
+  std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
+  bool result = resourceManager.loadStage(stageAttributes, nullptr, nullptr,
+                                          &sceneManager_, tempIDs);
 
-    esp::assets::MeshData::uptr joinedBox =
-        resourceManager.createJoinedCollisionMesh(donutFile);
+  esp::assets::MeshData::uptr joinedBox =
+      resourceManager.createJoinedCollisionMesh(donutFile);
 
-    esp::assets::ResourceManager::VHACDParameters params;
-    // params.setMaxNumVerticesPerCH(10);
-    params.m_resolution = 1000000;
-    CORRADE_VERIFY(!resourceManager.isAssetDataRegistered(CHdonutFile));
-    resourceManager.createConvexHullDecomposition(donutFile, CHdonutFile,
-                                                  params, true);
+  esp::assets::ResourceManager::VHACDParameters params;
+  // params.setMaxNumVerticesPerCH(10);
+  params.m_resolution = 1000000;
+  CORRADE_VERIFY(!resourceManager.isAssetDataRegistered(CHdonutFile));
+  resourceManager.createConvexHullDecomposition(donutFile, CHdonutFile, params,
+                                                true);
 
-    CORRADE_VERIFY(resourceManager.isAssetDataRegistered(CHdonutFile));
+  CORRADE_VERIFY(resourceManager.isAssetDataRegistered(CHdonutFile));
 }
 #endif
 
 // Load and create a render asset instance and assert success
 void ResourceManagerTest::loadAndCreateRenderAssetInstance() {
-    esp::gfx::WindowlessContext::uptr context_ =
-        esp::gfx::WindowlessContext::create_unique(0);
+  esp::gfx::WindowlessContext::uptr context_ =
+      esp::gfx::WindowlessContext::create_unique(0);
 
-    std::shared_ptr<esp::gfx::Renderer> renderer_ =
-        esp::gfx::Renderer::create();
+  std::shared_ptr<esp::gfx::Renderer> renderer_ = esp::gfx::Renderer::create();
 
-    // must declare these in this order due to avoid deallocation errors
-    auto MM = MetadataMediator::create();
-    ResourceManager resourceManager(MM);
-    SceneManager sceneManager_;
-    std::string boxFile =
-        Cr::Utility::Directory::join(TEST_ASSETS, "objects/transform_box.glb");
+  // must declare these in this order due to avoid deallocation errors
+  auto MM = MetadataMediator::create();
+  ResourceManager resourceManager(MM);
+  SceneManager sceneManager_;
+  std::string boxFile =
+      Cr::Utility::Directory::join(TEST_ASSETS, "objects/transform_box.glb");
 
-    int sceneID = sceneManager_.initSceneGraph();
-    auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
-    const esp::assets::AssetInfo info =
-        esp::assets::AssetInfo::fromPath(boxFile);
+  int sceneID = sceneManager_.initSceneGraph();
+  auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
+  const esp::assets::AssetInfo info = esp::assets::AssetInfo::fromPath(boxFile);
 
-    const std::string lightSetupKey = "";
-    esp::assets::RenderAssetInstanceCreationInfo::Flags flags;
-    flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsRGBD;
-    flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsSemantic;
-    esp::assets::RenderAssetInstanceCreationInfo creation(
-        boxFile, Corrade::Containers::NullOpt, flags, lightSetupKey);
+  const std::string lightSetupKey = "";
+  esp::assets::RenderAssetInstanceCreationInfo::Flags flags;
+  flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsRGBD;
+  flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsSemantic;
+  esp::assets::RenderAssetInstanceCreationInfo creation(
+      boxFile, Corrade::Containers::NullOpt, flags, lightSetupKey);
 
-    std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
-    auto* node = resourceManager.loadAndCreateRenderAssetInstance(
-        info, creation, &sceneManager_, tempIDs);
-    CORRADE_VERIFY(node);
+  std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
+  auto* node = resourceManager.loadAndCreateRenderAssetInstance(
+      info, creation, &sceneManager_, tempIDs);
+  CORRADE_VERIFY(node);
 }
 }  // namespace Test
 
