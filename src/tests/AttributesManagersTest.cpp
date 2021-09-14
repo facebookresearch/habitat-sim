@@ -2,6 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include <Corrade/TestSuite/Compare/Numeric.h>
 #include <Corrade/TestSuite/Tester.h>
 #include <string>
 
@@ -295,8 +296,9 @@ void AttributesManagersTest::testCreateAndRemove(std::shared_ptr<T> mgr,
   // are not now the same
   attrTemplate1->setFileDirectory("temp_dir_1");
   attrTemplate2->setFileDirectory("temp_dir_2");
-  CORRADE_VERIFY(attrTemplate1->getFileDirectory() !=
-                 attrTemplate2->getFileDirectory());
+  CORRADE_COMPARE_AS(attrTemplate1->getFileDirectory(),
+                     attrTemplate2->getFileDirectory(),
+                     Cr::TestSuite::Compare::NotEqual);
   // get original template ID
   int oldID = attrTemplate1->getID();
 
@@ -314,8 +316,9 @@ void AttributesManagersTest::testCreateAndRemove(std::shared_ptr<T> mgr,
   // change field in new copy
   attrTemplate3->setFileDirectory("temp_dir_3");
   // verify that now they are different
-  CORRADE_VERIFY(attrTemplate3->getFileDirectory() !=
-                 attrTemplate2->getFileDirectory());
+  CORRADE_COMPARE_AS(attrTemplate3->getFileDirectory(),
+                     attrTemplate2->getFileDirectory(),
+                     Cr::TestSuite::Compare::NotEqual);
 
   // test removal
   int removeID = attrTemplate2->getID();
@@ -372,7 +375,8 @@ void AttributesManagersTest::testCreateAndRemoveLights(
   int numLoadedLights = mgr->getNumObjects();
 
   // verify lights were added
-  CORRADE_VERIFY(numLoadedLights != origNumTemplates);
+  CORRADE_COMPARE_AS(numLoadedLights, origNumTemplates,
+                     Cr::TestSuite::Compare::NotEqual);
 
   // get handles of all lights added
   auto lightHandles = mgr->getObjectHandlesBySubstring();
@@ -418,7 +422,8 @@ void AttributesManagersTest::testRemoveAllButDefault(std::shared_ptr<T> mgr,
     // register template with new handle
     int tmpltID = mgr->registerObject(attrTemplate1, newHandleIter);
     // verify template added
-    CORRADE_VERIFY(tmpltID != -1);
+    CORRADE_COMPARE_AS(tmpltID, esp::ID_UNDEFINED,
+                       Cr::TestSuite::Compare::NotEqual);
     auto attrTemplate2 = mgr->getObjectOrCopyByHandle(newHandleIter);
     // verify added template  exists
     CORRADE_VERIFY(attrTemplate2);
@@ -435,7 +440,8 @@ void AttributesManagersTest::testRemoveAllButDefault(std::shared_ptr<T> mgr,
     // register template with new handle
     int tmpltID = mgr->registerObject(tmplt);
     // verify template added
-    CORRADE_VERIFY(tmpltID != -1);
+    CORRADE_COMPARE_AS(tmpltID, esp::ID_UNDEFINED,
+                       Cr::TestSuite::Compare::NotEqual);
     auto attrTemplate2 = mgr->getObjectOrCopyByHandle(tmplt->getHandle());
     // verify added template  exists
     CORRADE_VERIFY(attrTemplate2);

@@ -156,13 +156,15 @@ void NavTest::PathFinderTestSeed() {
   esp::vec3f firstPoint2 = pf.getRandomNavigablePoint();
   pf.seed(3);
   esp::vec3f secondPoint2 = pf.getRandomNavigablePoint();
-  CORRADE_VERIFY(firstPoint2 != secondPoint2);
+  CORRADE_COMPARE_AS(firstPoint2, secondPoint2,
+                     Cr::TestSuite::Compare::NotEqual);
 
   // One seed should produce different points when sampled twice
   pf.seed(4);
   esp::vec3f firstPoint3 = pf.getRandomNavigablePoint();
   esp::vec3f secondPoint3 = pf.getRandomNavigablePoint();
-  CORRADE_VERIFY(firstPoint3 != secondPoint3);
+  CORRADE_COMPARE_AS(firstPoint3, secondPoint3,
+                     Cr::TestSuite::Compare::NotEqual);
 }
 
 void NavTest::PathFinderTestMeshData() {

@@ -2,6 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include <Corrade/TestSuite/Compare/Numeric.h>
 #include <Corrade/TestSuite/Tester.h>
 #include "esp/metadata/MetadataMediator.h"
 #include "esp/metadata/managers/AssetAttributesManager.h"
@@ -236,8 +237,8 @@ void MetadataMediatorTest::testDataset0() {
   // verify set to values in dataset_config file
   newRenderAssetHandle = objAttr->getRenderAssetHandle();
   // verify same renderasset handle to loaded stage attributes
-  CORRADE_VERIFY(newRenderAssetHandle.find("dataset_test_object3.glb") !=
-                 std::string::npos);
+  CORRADE_COMPARE_AS(newRenderAssetHandle.find("dataset_test_object3.glb"),
+                     std::string::npos, Cr::TestSuite::Compare::NotEqual);
   // verify values set correctly
 
   CORRADE_COMPARE(objAttr->getMass(), 1.1);
@@ -339,14 +340,16 @@ void MetadataMediatorTest::testDataset0() {
   //
   // default lighting name
   const std::string lightHandle = sceneAttrs->getLightingHandle();
-  CORRADE_VERIFY(lightHandle.find("modified_test_lights") != std::string::npos);
+  CORRADE_COMPARE_AS(lightHandle.find("modified_test_lights"),
+                     std::string::npos, Cr::TestSuite::Compare::NotEqual);
   // navmesh
   const std::string navmeshHandle = sceneAttrs->getNavmeshHandle();
-  CORRADE_VERIFY(navmeshHandle.find("navmesh_path1") != std::string::npos);
+  CORRADE_COMPARE_AS(navmeshHandle.find("navmesh_path1"), std::string::npos,
+                     Cr::TestSuite::Compare::NotEqual);
   // ssd
   const std::string ssdHandle = sceneAttrs->getSemanticSceneHandle();
-  CORRADE_VERIFY(ssdHandle.find("semantic_descriptor_path1") !=
-                 std::string::npos);
+  CORRADE_COMPARE_AS(ssdHandle.find("semantic_descriptor_path1"),
+                     std::string::npos, Cr::TestSuite::Compare::NotEqual);
 
   //
   // test stage instance
@@ -354,7 +357,8 @@ void MetadataMediatorTest::testDataset0() {
   const auto stageInstanceAttrs = sceneAttrs->getStageInstance();
   // verify name
   const std::string stageName = stageInstanceAttrs->getHandle();
-  CORRADE_VERIFY(stageName.find("modified_test_stage") != std::string::npos);
+  CORRADE_COMPARE_AS(stageName.find("modified_test_stage"), std::string::npos,
+                     Cr::TestSuite::Compare::NotEqual);
   // verify translation origin to be asset_local
   CORRADE_COMPARE(stageInstanceAttrs->getTranslationOrigin(), assetLocalInt);
   // verify translation amount to be expected amount
@@ -373,7 +377,8 @@ void MetadataMediatorTest::testDataset0() {
       objInstanceAttrs[0];
   // name
   std::string objName = objAttr0->getHandle();
-  CORRADE_VERIFY(objName.find("dataset_test_object1") != std::string::npos);
+  CORRADE_COMPARE_AS(objName.find("dataset_test_object1"), std::string::npos,
+                     Cr::TestSuite::Compare::NotEqual);
   // translation
   CORRADE_COMPARE(objAttr0->getTranslation(), Magnum::Vector3(0.1, 0.2, 0.3));
   // translation origin
@@ -384,7 +389,8 @@ void MetadataMediatorTest::testDataset0() {
       objInstanceAttrs[1];
   // name
   objName = objAttr1->getHandle();
-  CORRADE_VERIFY(objName.find("dataset_test_object2") != std::string::npos);
+  CORRADE_COMPARE_AS(objName.find("dataset_test_object2"), std::string::npos,
+                     Cr::TestSuite::Compare::NotEqual);
   // translation
   CORRADE_COMPARE(objAttr1->getTranslation(), Magnum::Vector3(0.3, 0.4, 0.5));
   // translation origin

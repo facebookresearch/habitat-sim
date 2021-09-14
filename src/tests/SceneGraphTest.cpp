@@ -29,7 +29,7 @@ void SceneGraphTest::testGetDrawableGroup() {
   CORRADE_VERIFY(g.getDrawableGroup("not created") == nullptr);
 
   DrawableGroup* group = g.createDrawableGroup(groupName);
-  CORRADE_VERIFY(group != nullptr);
+  CORRADE_VERIFY(group);
   CORRADE_COMPARE(g.getDrawableGroups().size(), numInitialGroups + 1);
   CORRADE_COMPARE(g.getDrawableGroup(groupName), group);
 }

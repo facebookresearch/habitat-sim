@@ -328,7 +328,8 @@ void SimTest::getDefaultLightingRGBAObservation() {
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
   auto objs = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
   int objectID = simulator->addObjectByHandle(objs[0]);
-  CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
+  CORRADE_COMPARE_AS(objectID, esp::ID_UNDEFINED,
+                     Cr::TestSuite::Compare::NotEqual);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
   checkPinholeCameraRGBAObservation(
@@ -345,7 +346,8 @@ void SimTest::getCustomLightingRGBAObservation() {
   auto objs = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
   int objectID =
       simulator->addObjectByHandle(objs[0], nullptr, "custom_lighting_1");
-  CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
+  CORRADE_COMPARE_AS(objectID, esp::ID_UNDEFINED,
+                     Cr::TestSuite::Compare::NotEqual);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
   checkPinholeCameraRGBAObservation(
@@ -362,7 +364,8 @@ void SimTest::updateLightSetupRGBAObservation() {
   // update default lighting
   auto objs = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
   int objectID = simulator->addObjectByHandle(objs[0]);
-  CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
+  CORRADE_COMPARE_AS(objectID, esp::ID_UNDEFINED,
+                     Cr::TestSuite::Compare::NotEqual);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
   checkPinholeCameraRGBAObservation(
@@ -376,7 +379,8 @@ void SimTest::updateLightSetupRGBAObservation() {
   // update custom lighting
   objectID =
       simulator->addObjectByHandle(objs[0], nullptr, "custom_lighting_1");
-  CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
+  CORRADE_COMPARE_AS(objectID, esp::ID_UNDEFINED,
+                     Cr::TestSuite::Compare::NotEqual);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
 
   checkPinholeCameraRGBAObservation(
@@ -396,7 +400,8 @@ void SimTest::updateObjectLightSetupRGBAObservation() {
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
   auto objs = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
   int objectID = simulator->addObjectByHandle(objs[0]);
-  CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
+  CORRADE_COMPARE_AS(objectID, esp::ID_UNDEFINED,
+                     Cr::TestSuite::Compare::NotEqual);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedDefaultLighting.png", maxThreshold, 0.71f);
@@ -423,12 +428,14 @@ void SimTest::multipleLightingSetupsRGBAObservation() {
   auto objs = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
   int objectID =
       simulator->addObjectByHandle(objs[0], nullptr, "custom_lighting_1");
-  CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
+  CORRADE_COMPARE_AS(objectID, esp::ID_UNDEFINED,
+                     Cr::TestSuite::Compare::NotEqual);
   simulator->setTranslation({0.0f, 0.5f, -0.5f}, objectID);
 
   int otherObjectID =
       simulator->addObjectByHandle(objs[0], nullptr, "custom_lighting_1");
-  CORRADE_VERIFY(otherObjectID != esp::ID_UNDEFINED);
+  CORRADE_COMPARE_AS(otherObjectID, esp::ID_UNDEFINED,
+                     Cr::TestSuite::Compare::NotEqual);
   simulator->setTranslation({2.0f, 0.5f, -0.5f}, otherObjectID);
 
   checkPinholeCameraRGBAObservation(
@@ -524,7 +531,8 @@ void SimTest::loadingObjectTemplates() {
           Cr::Utility::Directory::join(TEST_ASSETS, "objects"));
   CORRADE_VERIFY(!templateIndices.empty());
   for (auto index : templateIndices) {
-    CORRADE_VERIFY(index != esp::ID_UNDEFINED);
+    CORRADE_COMPARE_AS(index, esp::ID_UNDEFINED,
+                       Cr::TestSuite::Compare::NotEqual);
   }
 
   // reload again and ensure that old loaded indices are returned
@@ -560,15 +568,16 @@ void SimTest::loadingObjectTemplates() {
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/transform_box.glb");
   newTemplate->setRenderAssetHandle(boxPath);
   int templateIndex = objectAttribsMgr->registerObject(newTemplate, boxPath);
-
-  CORRADE_VERIFY(templateIndex != esp::ID_UNDEFINED);
+  CORRADE_COMPARE_AS(templateIndex, esp::ID_UNDEFINED,
+                     Cr::TestSuite::Compare::NotEqual);
   // change render asset for object template named boxPath
   std::string chairPath =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/chair.glb");
   newTemplate->setRenderAssetHandle(chairPath);
   int templateIndex2 = objectAttribsMgr->registerObject(newTemplate, boxPath);
 
-  CORRADE_VERIFY(templateIndex2 != esp::ID_UNDEFINED);
+  CORRADE_COMPARE_AS(templateIndex2, esp::ID_UNDEFINED,
+                     Cr::TestSuite::Compare::NotEqual);
   CORRADE_COMPARE(templateIndex2, templateIndex);
   ObjectAttributes::ptr newTemplate2 =
       objectAttribsMgr->getObjectCopyByHandle(boxPath);
@@ -604,7 +613,7 @@ void SimTest::buildingPrimAssetObjectTemplates() {
     // valid values to be used to construct magnum primitives
     for (int i = 0; i < numPrimsExpected; ++i) {
       std::string handle = primObjAssetHandles[i];
-      CORRADE_VERIFY(handle != "");
+      CORRADE_VERIFY(!handle.empty());
       primAttr = assetAttribsMgr->getObjectCopyByHandle(handle);
       CORRADE_VERIFY(primAttr);
       CORRADE_VERIFY(primAttr->isValidTemplate());
@@ -614,8 +623,10 @@ void SimTest::buildingPrimAssetObjectTemplates() {
           esp::metadata::managers::AssetAttributesManager::PrimitiveNames3DMap
               .at(static_cast<esp::metadata::PrimObjTypes>(
                   primAttr->getPrimObjType()));
-      CORRADE_VERIFY((primAttr->getHandle() == handle) &&
-                     (handle.find(className) != std::string::npos));
+
+      CORRADE_COMPARE(primAttr->getHandle(), handle);
+      CORRADE_COMPARE_AS(handle.find(className), std::string::npos,
+                         Cr::TestSuite::Compare::NotEqual);
     }
   }
   // empty vector of handles
@@ -632,7 +643,8 @@ void SimTest::buildingPrimAssetObjectTemplates() {
                        Cr::TestSuite::Compare::Greater);
     // coneSolid should appear in handle
     std::string checkStr("coneSolid");
-    CORRADE_VERIFY(primObjAssetHandles[0].find(checkStr) != std::string::npos);
+    CORRADE_COMPARE_AS(primObjAssetHandles[0].find(checkStr), std::string::npos,
+                       Cr::TestSuite::Compare::NotEqual);
     // empty vector of handles
     primObjAssetHandles.clear();
 
@@ -669,12 +681,15 @@ void SimTest::buildingPrimAssetObjectTemplates() {
     // verify that internal name of attributes has changed due to essential
     // quantity being modified
     std::string newHandle = primAttr->getHandle();
-    CORRADE_VERIFY(newHandle != origCylinderHandle);
+
+    CORRADE_COMPARE_AS(newHandle, origCylinderHandle,
+                       Cr::TestSuite::Compare::NotEqual);
     // set bogus file directory, to validate that copy is reggistered
     primAttr->setFileDirectory("test0");
     // register new attributes
     int idx = assetAttribsMgr->registerObject(primAttr);
-    CORRADE_VERIFY(idx != esp::ID_UNDEFINED);
+    CORRADE_COMPARE_AS(idx, esp::ID_UNDEFINED,
+                       Cr::TestSuite::Compare::NotEqual);
     // set new test label, to validate against retrieved copy
     primAttr->setFileDirectory("test1");
     // retrieve registered attributes copy
@@ -683,8 +698,10 @@ void SimTest::buildingPrimAssetObjectTemplates() {
     // verify pre-reg and post-reg are named the same
     CORRADE_COMPARE(primAttr->getHandle(), primAttr2->getHandle());
     // verify retrieved attributes is copy, not original
-    CORRADE_VERIFY(primAttr->getFileDirectory() !=
-                   primAttr2->getFileDirectory());
+
+    CORRADE_COMPARE_AS(primAttr->getFileDirectory(),
+                       primAttr2->getFileDirectory(),
+                       Cr::TestSuite::Compare::NotEqual);
     // remove modified attributes
     AbstractPrimitiveAttributes::ptr primAttr3 =
         assetAttribsMgr->removeObjectByHandle(newHandle);
@@ -714,7 +731,8 @@ void SimTest::buildingPrimAssetObjectTemplates() {
     CORRADE_VERIFY(newCylObjAttr);
     // create object with new attributes
     int objectID = simulator->addObjectByHandle(newHandle);
-    CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
+    CORRADE_COMPARE_AS(objectID, esp::ID_UNDEFINED,
+                       Cr::TestSuite::Compare::NotEqual);
   }
   // empty vector of handles
   primObjAssetHandles.clear();
@@ -727,14 +745,15 @@ void SimTest::addObjectByHandle() {
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, planeStage, esp::NO_LIGHT_KEY);
 
-  int objectId = simulator->addObjectByHandle("invalid_handle");
-  CORRADE_COMPARE(objectId, esp::ID_UNDEFINED);
+  int objectID = simulator->addObjectByHandle("invalid_handle");
+  CORRADE_COMPARE(objectID, esp::ID_UNDEFINED);
 
   // pass valid object_config.json filepath as handle to addObjectByHandle
   const auto validHandle = Cr::Utility::Directory::join(
       TEST_ASSETS, "objects/nested_box.object_config.json");
-  objectId = simulator->addObjectByHandle(validHandle);
-  CORRADE_VERIFY(objectId != esp::ID_UNDEFINED);
+  objectID = simulator->addObjectByHandle(validHandle);
+  CORRADE_COMPARE_AS(objectID, esp::ID_UNDEFINED,
+                     Cr::TestSuite::Compare::NotEqual);
 }
 
 void SimTest::addSensorToObject() {
@@ -746,7 +765,8 @@ void SimTest::addSensorToObject() {
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
   auto objs = objectAttribsMgr->getObjectHandlesBySubstring("icosphereSolid");
   int objectID = simulator->addObjectByHandle(objs[0]);
-  CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
+  CORRADE_COMPARE_AS(objectID, esp::ID_UNDEFINED,
+                     Cr::TestSuite::Compare::NotEqual);
   esp::scene::SceneNode& objectNode = *simulator->getObjectSceneNode(objectID);
 
   // Add sensor to sphere object
@@ -766,7 +786,8 @@ void SimTest::addSensorToObject() {
 
   auto objs2 = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
   int objectID2 = simulator->addObjectByHandle(objs[0]);
-  CORRADE_VERIFY(objectID2 != esp::ID_UNDEFINED);
+  CORRADE_COMPARE_AS(objectID2, esp::ID_UNDEFINED,
+                     Cr::TestSuite::Compare::NotEqual);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID2);
   esp::scene::SceneNode& objectNode2 =
       *simulator->getObjectSceneNode(objectID2);
@@ -823,7 +844,8 @@ void SimTest::createMagnumRenderingOff() {
   // check that adding a primitive object works
   objectID = simulator->addObjectByHandle("cubeSolid");
   simulator->setTranslation({10.0f, 10.0f, 10.0f}, objectID);
-  CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
+  CORRADE_COMPARE_AS(objectID, esp::ID_UNDEFINED,
+                     Cr::TestSuite::Compare::NotEqual);
   esp::scene::SceneNode* objectNode = simulator->getObjectSceneNode(objectID);
 
   auto distanceBetween = [](Mn::Vector3 a, Mn::Vector3 b) {
@@ -872,7 +894,8 @@ void SimTest::createMagnumRenderingOff() {
   simulator->removeObject(objectID);
   objectID = simulator->addObjectByHandle("cubeWireframe");
   simulator->setTranslation({10.0f, 10.0f, 10.0f}, objectID);
-  CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
+  CORRADE_COMPARE_AS(objectID, esp::ID_UNDEFINED,
+                     Cr::TestSuite::Compare::NotEqual);
   objectNode = simulator->getObjectSceneNode(objectID);
   testRaycast();
   testBoundingBox();

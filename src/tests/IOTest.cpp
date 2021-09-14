@@ -473,11 +473,11 @@ void IOTest::testJsonEspTypes() {
         Mn::Color4(0.2, 0.3, 0.4, 0.5);
     assetInfo.overridePhongMaterial->specularColor =
         Mn::Color4(0.3, 0.4, 0.5, 0.6);
-    CORRADE_VERIFY(assetInfo.overridePhongMaterial != Cr::Containers::NullOpt);
+    CORRADE_VERIFY(assetInfo.overridePhongMaterial);
     esp::io::addMember(d, "assetInfoColorOverride", assetInfo, allocator);
     CORRADE_VERIFY(
         esp::io::readMember(d, "assetInfoColorOverride", assetInfo2));
-    CORRADE_VERIFY(assetInfo2.overridePhongMaterial != Cr::Containers::NullOpt);
+    CORRADE_VERIFY(assetInfo2.overridePhongMaterial);
     CORRADE_COMPARE(assetInfo2.overridePhongMaterial->ambientColor,
                     assetInfo.overridePhongMaterial->ambientColor);
     CORRADE_COMPARE(assetInfo2.overridePhongMaterial->diffuseColor,

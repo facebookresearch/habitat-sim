@@ -298,7 +298,8 @@ void PhysicsTest::testCollisionBoundingBox() {
           Magnum::Vector3 position = objectWrapper->getTranslation();
 
           // object is being pushed, so should be moving
-          CORRADE_VERIFY(position != prevPosition);
+          CORRADE_COMPARE_AS(position, prevPosition,
+                             Cr::TestSuite::Compare::NotEqual);
           Magnum::Rad q_angle = Magnum::Math::angle(
               orientation, Magnum::Quaternion({0, 0, 0}, 1));
           if (i == 1) {
@@ -307,7 +308,8 @@ void PhysicsTest::testCollisionBoundingBox() {
                                Cr::TestSuite::Compare::LessOrEqual);
           } else {
             // no bounding box, so the sphere should be rolling
-            CORRADE_VERIFY(orientation != prevOrientation);
+            CORRADE_COMPARE_AS(orientation, prevOrientation,
+                               Cr::TestSuite::Compare::NotEqual);
           }
 
           prevOrientation = orientation;
@@ -756,7 +758,8 @@ void PhysicsTest::testSceneNodeAttachment() {
     objectWrapper = makeObjectGetWrapper(objectFile, &drawables, newNode);
     CORRADE_VERIFY(objectWrapper);
     physicsManager_->removeObject(objectWrapper->getID(), true, true);
-    CORRADE_VERIFY(root.children().last() != newNode);
+    CORRADE_COMPARE_AS(root.children().last(), newNode,
+                       Cr::TestSuite::Compare::NotEqual);
   }  // for resetCreateRendererFlag false and true
 }  // PhysicsTest::testSceneNodeAttachment
 
