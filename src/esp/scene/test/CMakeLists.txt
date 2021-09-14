@@ -12,15 +12,3 @@ target_link_libraries(
 )
 
 gtest_discover_tests(GibsonSceneTest)
-
-find_package(Corrade REQUIRED Utility TestSuite)
-corrade_add_test(
-  ReplicaSceneTest
-  ReplicaSceneTest.cpp
-  LIBRARIES
-  scene
-  assets
-  sim
-  Corrade::Utility
-)
-target_include_directories(ReplicaSceneTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})

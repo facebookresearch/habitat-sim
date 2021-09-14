@@ -70,6 +70,16 @@ target_include_directories(NavTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 corrade_add_test(PhysicsTest PhysicsTest.cpp LIBRARIES physics)
 target_include_directories(PhysicsTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
+corrade_add_test(
+  ReplicaSceneTest
+  ReplicaSceneTest.cpp
+  LIBRARIES
+  scene
+  assets
+  sim
+)
+target_include_directories(ReplicaSceneTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
 corrade_add_test(ResourceManagerTest ResourceManagerTest.cpp LIBRARIES assets)
 target_include_directories(ResourceManagerTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 

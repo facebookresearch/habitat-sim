@@ -1,3 +1,7 @@
+// Copyright (c) Facebook, Inc. and its affiliates.
+// This source code is licensed under the MIT license found in the
+// LICENSE file in the root directory of this source tree.
+
 #include <Corrade/TestSuite/Compare/Numeric.h>
 #include <Corrade/TestSuite/Tester.h>
 
@@ -112,13 +116,13 @@ void ReplicaSceneTest::testSemanticSceneLoading() {
   esp::sim::Simulator sim{cfg};
 
   const auto& scene = sim.getSemanticScene();
-  CORRADE_VERIFY(scene != nullptr);
+  CORRADE_VERIFY(scene);
   CORRADE_COMPARE(scene->objects().size(), 94);
 
-  CORRADE_VERIFY(scene->objects()[12] != nullptr);
+  CORRADE_VERIFY(scene->objects()[1]);
   CORRADE_COMPARE(scene->objects()[12]->id(), "_12");
 
-  CORRADE_VERIFY(scene->objects()[12]->category() != nullptr);
+  CORRADE_VERIFY(scene->objects()[12]->category());
 
   CORRADE_COMPARE(scene->objects()[12]->category()->index(), 13);
   CORRADE_COMPARE(scene->objects()[12]->category()->name(), "book");
@@ -138,7 +142,7 @@ void ReplicaSceneTest::testSemanticSceneDescriptorReplicaCAD() {
   esp::sim::Simulator sim{cfg};
   // semantic scene descriptor is specified in scene dataset config
   const auto& scene = sim.getSemanticScene();
-  CORRADE_VERIFY(scene != nullptr);
+  CORRADE_VERIFY(scene);
   // ReplicaCAD only populates categories - 101 specified + cat 0
   CORRADE_COMPARE(scene->categories().size(), 102);
 
