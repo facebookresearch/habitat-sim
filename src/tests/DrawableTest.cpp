@@ -62,7 +62,7 @@ DrawableTest::DrawableTest() {
   resourceManager_ = std::make_unique<ResourceManagerExtended>(MM);
   //clang-format off
   addTests({&DrawableTest::addRemoveDrawables});
-  // flang-format on
+  //clang-format on
   auto stageAttributesMgr = MM->getStageAttributesManager();
   std::string stageFile =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/5boxes.glb");

@@ -63,10 +63,8 @@ corrade_add_test(ResourceManagerTest ResourceManagerTest.cpp LIBRARIES assets)
 target_include_directories(ResourceManagerTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(SceneGraphTest SceneGraphTest.cpp LIBRARIES scene)
-target_include_directories(SceneGraphTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(SensorTest SensorTest.cpp LIBRARIES sensor sim)
-target_include_directories(SensorTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(
   SimTest
