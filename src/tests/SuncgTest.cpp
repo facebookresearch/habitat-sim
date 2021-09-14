@@ -38,19 +38,14 @@ void SuncgTest::testLoad() {
 
   CORRADE_VERIFY(house.levels().size() > 0);
   for (auto& level : house.levels()) {
-    ESP_DEBUG() << "Level{id:"
-                << level->id()
-                // << ",aabb:" << level->aabb()
-                << "}";
+    ESP_DEBUG() << "Level{id:" << level->id()
+                << ",aabb:" << Mn::Range3D{level->aabb()} << "}";
     for (auto& region : level->regions()) {
-      ESP_DEBUG() << "Region{id:"
-                  << region->id()
-                  //<< ",aabb:" << region->aabb()
+      ESP_DEBUG() << "Region{id:" << region->id()
+                  << ",aabb:" << Mn::Range3D{region->aabb()}
                   << ",category:" << region->category()->name() << "}";
       for (auto& object : region->objects()) {
-        ESP_DEBUG() << "Object{id:"
-                    << object->id()
-                    //<< ",obb:" << object->obb()
+        ESP_DEBUG() << "Object{id:" << object->id() << ",obb:" << object->obb()
                     << ",category:" << object->category()->name() << "}";
       }
     }

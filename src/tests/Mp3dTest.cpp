@@ -42,10 +42,9 @@ void Mp3dTest::testLoad() {
                                            alignFront * alignGravity);
   ESP_DEBUG() << "House{nobjects:" << house.count("objects")
               << ",nlevels:" << house.count("levels")
-              << ",nregions:" << house.count("regions") << ",ncategories:"
-              << house.count("categories")
-              //<< ",bbox:" << house.aabb()
-              << "}";
+              << ",nregions:" << house.count("regions")
+              << ",ncategories:" << house.count("categories")
+              << ",bbox:" << Mn::Range3D{house.aabb()} << "}";
   ESP_DEBUG() << "~~~~~~~~~~~ Categories : " << house.categories().size();
   CORRADE_COMPARE(house.categories().size(), 1659);
   for (auto& category : house.categories()) {
@@ -56,20 +55,15 @@ void Mp3dTest::testLoad() {
   ESP_DEBUG() << "~~~~~~~~~~~ Levels : " << house.levels().size();
   CORRADE_COMPARE(house.levels().size(), 1);
   for (auto& level : house.levels()) {
-    ESP_DEBUG() << "Level{id:"
-                << level->id()
-                //<< ",aabb:" << level->aabb()
-                << "}";
+    ESP_DEBUG() << "Level{id:" << level->id()
+                << ",aabb:" << Mn::Range3D{level->aabb()} << "}";
     for (auto& region : level->regions()) {
-      ESP_DEBUG() << "Region{id:"
-                  << region->id()
-                  //<< ",aabb:" << region->aabb()
+      ESP_DEBUG() << "Region{id:" << region->id()
+                  << ",aabb:" << Mn::Range3D{region->aabb()}
                   << ",category:" << region->category()->name()
                   << ",index:" << region->category()->index() << "}";
       for (auto& object : region->objects()) {
-        ESP_DEBUG() << "Object{id:"
-                    << object->id()
-                    //<< ",obb:" << object->obb()
+        ESP_DEBUG() << "Object{id:" << object->id() << ",obb:" << object->obb()
                     << ",category:" << object->category()->name() << "}";
       }  // per object
     }    // per region
