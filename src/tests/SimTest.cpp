@@ -874,18 +874,18 @@ void SimTest::createMagnumRenderingOff() {
     // check that we can still compute bounding box of the object
     Magnum::Range3D meshbb = objectNode->getCumulativeBB();
     float eps = 0.001;
-    CORRADE_COMPARE_AS(abs(meshbb.left() - -0.1), eps,
-                       Cr::TestSuite::Compare::Less);
-    CORRADE_COMPARE_AS(abs(meshbb.right() - 0.1), eps,
-                       Cr::TestSuite::Compare::Less);
-    CORRADE_COMPARE_AS(abs(meshbb.bottom() - -0.1), eps,
-                       Cr::TestSuite::Compare::Less);
-    CORRADE_COMPARE_AS(abs(meshbb.top() - 0.1), eps,
-                       Cr::TestSuite::Compare::Less);
-    CORRADE_COMPARE_AS(abs(meshbb.back() - -0.1), eps,
-                       Cr::TestSuite::Compare::Less);
-    CORRADE_COMPARE_AS(abs(meshbb.front() - 0.1), eps,
-                       Cr::TestSuite::Compare::Less);
+    CORRADE_COMPARE_WITH(meshbb.left(), -0.1,
+                         Cr::TestSuite::Compare::around(eps));
+    CORRADE_COMPARE_WITH(meshbb.right(), 0.1,
+                         Cr::TestSuite::Compare::around(eps));
+    CORRADE_COMPARE_WITH(meshbb.bottom(), -0.1,
+                         Cr::TestSuite::Compare::around(eps));
+    CORRADE_COMPARE_WITH(meshbb.top(), 0.1,
+                         Cr::TestSuite::Compare::around(eps));
+    CORRADE_COMPARE_WITH(meshbb.back(), -0.1,
+                         Cr::TestSuite::Compare::around(eps));
+    CORRADE_COMPARE_WITH(meshbb.front(), 0.1,
+                         Cr::TestSuite::Compare::around(eps));
   };
   // test raycast and bounding box for cubeSolid
   testRaycast();
