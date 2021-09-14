@@ -11,7 +11,6 @@
 #include <Magnum/Math/Frustum.h>
 #include <Magnum/Math/Intersection.h>
 #include <Magnum/Math/Range.h>
-#include <gtest/gtest.h>
 #include <string>
 
 #include "esp/assets/ResourceManager.h"
