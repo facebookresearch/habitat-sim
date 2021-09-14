@@ -20,6 +20,17 @@ corrade_add_test(CoreTest CoreTest.cpp LIBRARIES core io)
 corrade_add_test(CullingTest CullingTest.cpp LIBRARIES gfx)
 target_include_directories(CullingTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
+corrade_add_test(
+  DepthUnprojectionTest
+  DepthUnprojectionTest.cpp
+  LIBRARIES
+  gfx
+  Magnum::MeshTools
+  Magnum::OpenGLTester
+  Magnum::Trade
+  Magnum::Primitives
+)
+
 corrade_add_test(DrawableTest DrawableTest.cpp LIBRARIES gfx)
 target_include_directories(DrawableTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
