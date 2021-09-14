@@ -45,10 +45,8 @@ ResourceManagerTest::ResourceManagerTest() {
   addTests({&ResourceManagerTest::createJoinedCollisionMesh,
 #ifdef ESP_BUILD_WITH_VHACD
             &ResourceManagerTest::VHACDUsageTest,
-            &ResourceManagerTest::loadAndCreateRenderAssetInstance});
-#else
-            &ResourceManagerTest::loadAndCreateRenderAssetInstance});
 #endif
+            &ResourceManagerTest::loadAndCreateRenderAssetInstance});
 }
 
 void ResourceManagerTest::createJoinedCollisionMesh() {
