@@ -46,6 +46,9 @@ corrade_add_test(
 )
 target_include_directories(GfxReplayTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
+corrade_add_test(GibsonSceneTest GibsonSceneTest.cpp LIBRARIES scene sim)
+target_include_directories(GibsonSceneTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
 corrade_add_test(IOTest IOTest.cpp LIBRARIES io metadata)
 target_include_directories(IOTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
@@ -122,6 +125,14 @@ endif()
 # Some tests are LOUD, we don't want to include their full log (but OTOH we
 # want to have full log from others, so this is a compromise)
 set_tests_properties(
-  MetadataMediatorTest Mp3dTest NavTest SimTest SuncgTest
+  GfxReplayTest
+  MetadataMediatorTest
+  Mp3dTest
+  NavTest
+  PhysicsTest
+  ReplicaSceneTest
+  ResourceManagerTest
+  SimTest
+  SuncgTest
   PROPERTIES ENVIRONMENT "HABITAT_SIM_LOG=quiet;MAGNUM_LOG=QUIET"
 )

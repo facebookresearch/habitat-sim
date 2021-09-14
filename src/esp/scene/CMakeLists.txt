@@ -25,7 +25,3 @@ target_link_libraries(
   scene
   PUBLIC assets core geo gfx io
 )
-
-if(BUILD_TEST)
-  add_subdirectory(test)
-endif()
