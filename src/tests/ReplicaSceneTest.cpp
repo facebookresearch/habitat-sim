@@ -119,7 +119,7 @@ void ReplicaSceneTest::testSemanticSceneLoading() {
   CORRADE_VERIFY(scene);
   CORRADE_COMPARE(scene->objects().size(), 94);
 
-  CORRADE_VERIFY(scene->objects()[1]);
+  CORRADE_VERIFY(scene->objects()[12]);
   CORRADE_COMPARE(scene->objects()[12]->id(), "_12");
 
   CORRADE_VERIFY(scene->objects()[12]->category());
