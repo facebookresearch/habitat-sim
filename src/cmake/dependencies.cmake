@@ -324,20 +324,3 @@ if(NOT CORRADE_TARGET_EMSCRIPTEN)
   add_library(atomic_wait STATIC ${DEPS_DIR}/atomic_wait/atomic_wait.cpp)
   target_include_directories(atomic_wait PUBLIC ${DEPS_DIR}/atomic_wait)
 endif()
-
-# gtest build
-if(BUILD_TEST)
-  # store build shared libs option
-  set(TEMP_BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS})
-
-  # build gtest static libs and embed into test binaries so no need to install
-  set(BUILD_SHARED_LIBS OFF CACHE BOOL "BUILD_SHARED_LIBS" FORCE)
-  set(BUILD_GTEST ON CACHE BOOL "BUILD_GTEST" FORCE)
-  set(INSTALL_GTEST OFF CACHE BOOL "INSTALL_GTEST" FORCE)
-  set(BUILD_GMOCK OFF CACHE BOOL "BUILD_GMOCK" FORCE)
-  add_subdirectory("${DEPS_DIR}/googletest")
-  include_directories(SYSTEM "${DEPS_DIR}/googletest/googletest/include")
-
-  # restore build shared libs option
-  set(BUILD_SHARED_LIBS ${TEMP_BUILD_SHARED_LIBS})
-endif()
