@@ -140,7 +140,8 @@ struct SimTest : Cr::TestSuite::Tester {
   LightSetup lightSetup2{{Magnum::Vector4{0.0f, 0.5f, 1.0f, 0.0f},
                           {0.0, 5.0, 5.0},
                           LightPositionModel::Camera}};
-};
+};  // struct SimTest
+
 struct {
   // display name for sim being tested
   const char* name;
