@@ -112,9 +112,9 @@ void DrawableTest::addRemoveDrawables() {
 
   // we already had 5 boxes in the scene, 1 toy box added before the current
   // one, so the id should be 6
-  CORRADE_VERIFY(dr->getDrawableId() == 6);
+  CORRADE_COMPARE(dr->getDrawableId(), 6);
   // verify this drawable has been added to drawable group
-  CORRADE_VERIFY(dr->drawables() == drawableGroup_);
+  CORRADE_COMPARE(dr->drawables(), drawableGroup_);
 
   // step 2: add a single drawable to a group
   dr = new esp::gfx::GenericDrawable{node,

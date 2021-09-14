@@ -33,15 +33,15 @@ struct IOTest : Cr::TestSuite::Tester {
   void fileRmExtTest();
   void fileReplaceExtTest();
   void tokenizeTest();
+
   void parseURDF();
-  void JsonTest();
-  void JsonBuiltinTypesTest();
+  void testJson();
+  void testJsonBuiltinTypes();
+  void testJsonStlTypes();
+  void testJsonMagnumTypes();
+  void testJsonEspTypes();
 
-  void JsonStlTypesTest();
-  void JsonMagnumTypesTest();
-  void JsonEspTypesTest();
-
-  void JsonUserTypeTest();
+  void testJsonUserType();
 
   esp::logging::LoggingContext loggingContext;
 };
@@ -49,10 +49,10 @@ struct IOTest : Cr::TestSuite::Tester {
 IOTest::IOTest() {
   addTests({&IOTest::fileExistTest, &IOTest::fileSizeTest,
             &IOTest::fileRmExtTest, &IOTest::fileReplaceExtTest,
-            &IOTest::tokenizeTest, &IOTest::parseURDF, &IOTest::JsonTest,
-            &IOTest::JsonBuiltinTypesTest, &IOTest::JsonStlTypesTest,
-            &IOTest::JsonMagnumTypesTest, &IOTest::JsonEspTypesTest,
-            &IOTest::JsonUserTypeTest});
+            &IOTest::tokenizeTest, &IOTest::parseURDF, &IOTest::testJson,
+            &IOTest::testJsonBuiltinTypes, &IOTest::testJsonStlTypes,
+            &IOTest::testJsonMagnumTypes, &IOTest::testJsonEspTypes,
+            &IOTest::testJsonUserType});
 }
 
 void IOTest::fileExistTest() {
@@ -197,7 +197,7 @@ void IOTest::parseURDF() {
 /**
  * @brief Test basic JSON file processing
  */
-void IOTest::JsonTest() {
+void IOTest::testJson() {
   std::string s = "{\"test\":[1,2,3,4]}";
   const auto& json = esp::io::parseJsonString(s);
   std::vector<int> t;
@@ -262,7 +262,7 @@ void IOTest::JsonTest() {
 
 // Serialize/deserialize the 7 rapidjson builtin types using
 // io::esp::io::addMember/esp::io::readMember and assert equality.
-void IOTest::JsonBuiltinTypesTest() {
+void IOTest::testJsonBuiltinTypes() {
   rapidjson::Document d(rapidjson::kObjectType);
   rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
 
@@ -337,7 +337,7 @@ void IOTest::JsonBuiltinTypesTest() {
 
 // Serialize/deserialize a few stl types using
 // io::esp::io::addMember/esp::io::readMember and assert equality.
-void IOTest::JsonStlTypesTest() {
+void IOTest::testJsonStlTypes() {
   rapidjson::Document d(rapidjson::kObjectType);
   rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
 
@@ -369,7 +369,7 @@ void IOTest::JsonStlTypesTest() {
 // Serialize/deserialize a few Magnum types using
 // io::esp::io::addMember/esp::io::readMember and
 // assert equality.
-void IOTest::JsonMagnumTypesTest() {
+void IOTest::testJsonMagnumTypes() {
   rapidjson::Document d(rapidjson::kObjectType);
   rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
 
@@ -401,7 +401,7 @@ void IOTest::JsonMagnumTypesTest() {
 
 // Serialize/deserialize a few esp types using
 // io::esp::io::addMember/esp::io::readMember and assert equality.
-void IOTest::JsonEspTypesTest() {
+void IOTest::testJsonEspTypes() {
   rapidjson::Document d(rapidjson::kObjectType);
   rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
 
@@ -546,7 +546,7 @@ bool fromJsonValue(const esp::io::JsonGenericValue& obj, MyOuterStruct& x) {
 // Serialize/deserialize MyOuterStruct using
 // io::esp::io::addMember/esp::io::readMember and assert
 // equality.
-void IOTest::JsonUserTypeTest() {
+void IOTest::testJsonUserType() {
   rapidjson::Document d(rapidjson::kObjectType);
   rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
 

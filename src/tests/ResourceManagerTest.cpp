@@ -2,7 +2,10 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include <Corrade/Containers/ArrayView.h>
+#include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/Containers/Optional.h>
+#include <Corrade/TestSuite/Compare/Container.h>
 #include <Corrade/TestSuite/Tester.h>
 #include <Corrade/Utility/Directory.h>
 #include <Magnum/EigenIntegration/Integration.h>
@@ -90,29 +93,25 @@ void ResourceManagerTest::createJoinedCollisionMesh() {
   CORRADE_COMPARE(numVerts, 24);
   CORRADE_COMPARE(numIndices, 36);
 
-  std::vector<Magnum::Vector3> vertGroundTruth{
-      {-1, 1, 1},  {-1, 1, -1}, {-1, -1, -1}, {-1, -1, 1},  {1, 1, 1},
-      {1, -1, -1}, {1, 1, -1},  {1, -1, 1},   {1, 1, -1},   {-1, -1, -1},
-      {-1, 1, -1}, {1, -1, -1}, {1, 1, 1},    {-1, 1, -1},  {-1, 1, 1},
-      {1, 1, -1},  {1, -1, 1},  {-1, -1, 1},  {-1, -1, -1}, {1, -1, -1},
-      {1, 1, 1},   {-1, 1, 1},  {-1, -1, 1},  {1, -1, 1}};
+  CORRADE_COMPARE_AS(
+      Cr::Containers::arrayCast<const Mn::Vector3>(
+          Cr::Containers::arrayView(joinedBox->vbo)),
+      Cr::Containers::arrayView<Magnum::Vector3>(
+          {{-1, 1, 1},  {-1, 1, -1}, {-1, -1, -1}, {-1, -1, 1},  {1, 1, 1},
+           {1, -1, -1}, {1, 1, -1},  {1, -1, 1},   {1, 1, -1},   {-1, -1, -1},
+           {-1, 1, -1}, {1, -1, -1}, {1, 1, 1},    {-1, 1, -1},  {-1, 1, 1},
+           {1, 1, -1},  {1, -1, 1},  {-1, -1, 1},  {-1, -1, -1}, {1, -1, -1},
+           {1, 1, 1},   {-1, 1, 1},  {-1, -1, 1},  {1, -1, 1}}),
+      Cr::TestSuite::Compare::Container);
 
-  std::vector<uint32_t> indexGroundTruth{
-      0,  1,  2,  0,  2,  3,  4,  5,  6,  4,  7,  5,  8,  9,  10, 8,  11, 9,
-      12, 13, 14, 12, 15, 13, 16, 17, 18, 16, 18, 19, 20, 21, 22, 20, 22, 23};
+  CORRADE_COMPARE_AS(Cr::Containers::arrayView(joinedBox->ibo),
+                     Cr::Containers::arrayView<uint32_t>(
+                         {0,  1,  2,  0,  2,  3,  4,  5,  6,  4,  7,  5,
+                          8,  9,  10, 8,  11, 9,  12, 13, 14, 12, 15, 13,
+                          16, 17, 18, 16, 18, 19, 20, 21, 22, 20, 22, 23}),
+                     Cr::TestSuite::Compare::Container);
 
-  for (size_t vix = 0; vix < joinedBox->vbo.size(); vix++) {
-    // ESP_DEBUG() << joinedBox->vbo[vix]   << "vs" <<
-    // vertGroundTruth[vix];
-    CORRADE_COMPARE(vertGroundTruth[vix], Magnum::Vector3(joinedBox->vbo[vix]));
-  }
-
-  for (size_t iix = 0; iix < joinedBox->ibo.size(); iix++) {
-    // ESP_DEBUG() << joinedBox->ibo[iix]   << "vs" <<
-    // indexGroundTruth[iix];
-    CORRADE_COMPARE(indexGroundTruth[iix], joinedBox->ibo[iix]);
-  }
-}
+}  // namespace Test
 
 #ifdef ESP_BUILD_WITH_VHACD
 void ResourceManagerTest::VHACDUsageTest() {

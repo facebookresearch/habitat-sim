@@ -2,6 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include <Corrade/TestSuite/Compare/Numeric.h>
 #include <Corrade/TestSuite/Tester.h>
 #include <Corrade/Utility/Directory.h>
 #include <string>
@@ -280,7 +281,7 @@ void PhysicsTest::testCollisionBoundingBox() {
 
         auto objectWrapper = makeObjectGetWrapper(
             objectFile, &sceneManager_->getSceneGraph(sceneID_).getDrawables());
-        CORRADE_VERIFY(objectWrapper != nullptr);
+        CORRADE_VERIFY(objectWrapper);
 
         Magnum::Vector3 initialPosition{0.0, 0.25, 0.0};
         objectWrapper->setTranslation(initialPosition);
@@ -302,7 +303,8 @@ void PhysicsTest::testCollisionBoundingBox() {
               orientation, Magnum::Quaternion({0, 0, 0}, 1));
           if (i == 1) {
             // bounding box for collision, so the sphere should not be rolling
-            CORRADE_VERIFY(q_angle <= Magnum::Rad{0.1});
+            CORRADE_COMPARE_AS(q_angle, Magnum::Rad{0.1},
+                               Cr::TestSuite::Compare::LessOrEqual);
           } else {
             // no bounding box, so the sphere should be rolling
             CORRADE_VERIFY(orientation != prevOrientation);
@@ -438,20 +440,20 @@ void PhysicsTest::testBulletCompoundShapeMargins() {
       objectTemplate->setJoinCollisionMeshes(false);
       objectAttributesManager->registerObject(objectTemplate);
       auto objectWrapper0 = makeObjectGetWrapper(objectFile, drawables);
-      CORRADE_VERIFY(objectWrapper0 != nullptr);
+      CORRADE_VERIFY(objectWrapper0);
 
       // add the joined object
       objectTemplate->setJoinCollisionMeshes(true);
       objectAttributesManager->registerObject(objectTemplate);
 
       auto objectWrapper1 = makeObjectGetWrapper(objectFile, drawables);
-      CORRADE_VERIFY(objectWrapper1 != nullptr);
+      CORRADE_VERIFY(objectWrapper1);
 
       // add bounding box object
       objectTemplate->setBoundingBoxCollisions(true);
       objectAttributesManager->registerObject(objectTemplate);
       auto objectWrapper2 = makeObjectGetWrapper(objectFile, drawables);
-      CORRADE_VERIFY(objectWrapper2 != nullptr);
+      CORRADE_VERIFY(objectWrapper2);
 
       esp::physics::BulletPhysicsManager* bPhysManager =
           static_cast<esp::physics::BulletPhysicsManager*>(
@@ -519,7 +521,7 @@ void PhysicsTest::testConfigurableScaling() {
       Magnum::Range3D boundsGroundTruth(-abs(testScale), abs(testScale));
 
       auto objectWrapper = makeObjectGetWrapper(objectFile, &drawables);
-      CORRADE_VERIFY(objectWrapper != nullptr);
+      CORRADE_VERIFY(objectWrapper);
 
       objectIDs.push_back(objectWrapper->getID());
 
@@ -572,7 +574,7 @@ void PhysicsTest::testVelocityControl() {
     auto& drawables = sceneManager_->getSceneGraph(sceneID_).getDrawables();
 
     auto objectWrapper = makeObjectGetWrapper(objectFile, &drawables);
-    CORRADE_VERIFY(objectWrapper != nullptr);
+    CORRADE_VERIFY(objectWrapper);
 
     objectWrapper->setTranslation(Magnum::Vector3{0, 1.0, 0});
 
@@ -619,13 +621,14 @@ void PhysicsTest::testVelocityControl() {
     Magnum::Quaternion qGroundTruth{{0.842602, 0, 0}, 0.538537};
 
     float errorEps = 0.015;  // fairly loose due to discrete timestep
-    CORRADE_VERIFY(
-        (objectWrapper->getTranslation() - posGroundTruth).length() <=
-        errorEps);
+    CORRADE_COMPARE_AS(
+        (objectWrapper->getTranslation() - posGroundTruth).length(), errorEps,
+        Cr::TestSuite::Compare::LessOrEqual);
     Magnum::Rad angleError =
         Magnum::Math::angle(objectWrapper->getRotation(), qGroundTruth);
 
-    CORRADE_VERIFY(float(angleError) <= errorEps);
+    CORRADE_COMPARE_AS(float(angleError), errorEps,
+                       Cr::TestSuite::Compare::LessOrEqual);
 
     if (physicsManager_->getPhysicsSimulationLibrary() ==
         PhysicsManager::PhysicsSimulationLibrary::Bullet) {
@@ -644,19 +647,22 @@ void PhysicsTest::testVelocityControl() {
       while (physicsManager_->getWorldTime() < targetTime) {
         physicsManager_->stepPhysics(physicsManager_->getTimestep());
       }
-      CORRADE_VERIFY(
+      CORRADE_COMPARE_AS(
           (objectWrapper->getTranslation() - kinematicResult.translation)
-              .length() <= errorEps);
+              .length(),
+          errorEps, Cr::TestSuite::Compare::LessOrEqual);
       angleError = Magnum::Math::angle(objectWrapper->getRotation(),
                                        kinematicResult.rotation);
-      CORRADE_VERIFY(float(angleError) <= errorEps);
+      CORRADE_COMPARE_AS(float(angleError), errorEps,
+                         Cr::TestSuite::Compare::LessOrEqual);
 
       // should then get blocked by ground plane collision
       targetTime = 2.0;
       while (physicsManager_->getWorldTime() < targetTime) {
         physicsManager_->stepPhysics(physicsManager_->getTimestep());
       }
-      CORRADE_VERIFY(objectWrapper->getTranslation()[1] >= 1.0 - errorEps);
+      CORRADE_COMPARE_AS(objectWrapper->getTranslation()[1], 1.0 - errorEps,
+                         Cr::TestSuite::Compare::GreaterOrEqual);
     }
 
     // test local velocity
@@ -684,13 +690,14 @@ void PhysicsTest::testVelocityControl() {
     velControl->angVel = Magnum::Vector3{0.0, 0.0, 0.0};
     physicsManager_->stepPhysics(physicsManager_->getTimestep());
 
-    CORRADE_VERIFY(
-        (objectWrapper->getTranslation() - posLocalGroundTruth).length() <=
-        errorEps);
+    CORRADE_COMPARE_AS(
+        (objectWrapper->getTranslation() - posLocalGroundTruth).length(),
+        errorEps, Cr::TestSuite::Compare::LessOrEqual);
     Magnum::Rad angleErrorLocal =
         Magnum::Math::angle(objectWrapper->getRotation(), qLocalGroundTruth);
 
-    CORRADE_VERIFY(float(angleErrorLocal) <= errorEps);
+    CORRADE_COMPARE_AS(float(angleErrorLocal), errorEps,
+                       Cr::TestSuite::Compare::LessOrEqual);
   }  // for resetCreateRendererFlag false and true
 }  // PhysicsTest::testVelocityControl
 
@@ -724,7 +731,7 @@ void PhysicsTest::testSceneNodeAttachment() {
     // Test attaching newNode to a RigidBody
 
     auto objectWrapper = makeObjectGetWrapper(objectFile, &drawables, newNode);
-    CORRADE_VERIFY(objectWrapper != nullptr);
+    CORRADE_VERIFY(objectWrapper);
 
     CORRADE_COMPARE(objectWrapper->getSceneNode(), newNode);
 
@@ -741,13 +748,13 @@ void PhysicsTest::testSceneNodeAttachment() {
     // Test leaving the visualNode attached to newNode after destroying the
     // RigidBody
     objectWrapper = makeObjectGetWrapper(objectFile, &drawables, newNode);
-    CORRADE_VERIFY(objectWrapper != nullptr);
+    CORRADE_VERIFY(objectWrapper);
     physicsManager_->removeObject(objectWrapper->getID(), false, false);
     CORRADE_VERIFY(!newNode->children().isEmpty());
 
     // Test destroying newNode with the RigidBody
     objectWrapper = makeObjectGetWrapper(objectFile, &drawables, newNode);
-    CORRADE_VERIFY(objectWrapper != nullptr);
+    CORRADE_VERIFY(objectWrapper);
     physicsManager_->removeObject(objectWrapper->getID(), true, true);
     CORRADE_VERIFY(root.children().last() != newNode);
   }  // for resetCreateRendererFlag false and true
@@ -809,15 +816,18 @@ void PhysicsTest::testMotionTypes() {
             }
             CORRADE_VERIFY(!objWrapper0->isActive());
             CORRADE_VERIFY(!objWrapper1->isActive());
-            CORRADE_VERIFY((objWrapper0->getTranslation() -
-                            Magnum::Vector3{
-                                0.0, stageCollisionMargin + boxHalfExtent, 0.0})
-                               .length() <= 1.0e-3);
-            CORRADE_VERIFY(
+            CORRADE_COMPARE_AS(
+                (objWrapper0->getTranslation() -
+                 Magnum::Vector3{0.0, stageCollisionMargin + boxHalfExtent,
+                                 0.0})
+                    .length(),
+                1.0e-3, Cr::TestSuite::Compare::LessOrEqual);
+            CORRADE_COMPARE_AS(
                 (objWrapper1->getTranslation() -
                  Magnum::Vector3{0.0, stageCollisionMargin + boxHalfExtent * 3,
                                  0.0})
-                    .length() <= 1.0e-3);
+                    .length(),
+                1.0e-3, Cr::TestSuite::Compare::LessOrEqual);
           } break;
           case 1: {
             // test 1: stacking a DYNAMIC object on a STATIC object
@@ -829,12 +839,14 @@ void PhysicsTest::testMotionTypes() {
               physicsManager_->stepPhysics(0.1);
             }
             CORRADE_VERIFY(!objWrapper1->isActive());
-            CORRADE_VERIFY((objWrapper0->getTranslation() -
-                            Magnum::Vector3{0.0, boxHalfExtent * 2, 0.0})
-                               .length() <= 1.0e-4);
-            CORRADE_VERIFY((objWrapper1->getTranslation() -
-                            Magnum::Vector3{0.0, boxHalfExtent * 4, 0.0})
-                               .length() <= 2.0e-4);
+            CORRADE_COMPARE_AS((objWrapper0->getTranslation() -
+                                Magnum::Vector3{0.0, boxHalfExtent * 2, 0.0})
+                                   .length(),
+                               1.0e-4, Cr::TestSuite::Compare::LessOrEqual);
+            CORRADE_COMPARE_AS((objWrapper1->getTranslation() -
+                                Magnum::Vector3{0.0, boxHalfExtent * 4, 0.0})
+                                   .length(),
+                               2.0e-4, Cr::TestSuite::Compare::LessOrEqual);
           } break;
           case 2: {
             // test 2: stacking a DYNAMIC object on a moving KINEMATIC object
@@ -852,12 +864,15 @@ void PhysicsTest::testMotionTypes() {
               // take single sub-steps for velocity control precision
               physicsManager_->stepPhysics(-1);
             }
-            CORRADE_VERIFY((objWrapper0->getTranslation() -
-                            Magnum::Vector3{0.6, boxHalfExtent * 2, 0.0})
-                               .length() <= 1.0e-3);
-            CORRADE_VERIFY((objWrapper1->getTranslation() -
-                            Magnum::Vector3{0.559155, boxHalfExtent * 4, 0.0})
-                               .length() <= 2.0e-3);
+            CORRADE_COMPARE_AS((objWrapper0->getTranslation() -
+                                Magnum::Vector3{0.6, boxHalfExtent * 2, 0.0})
+                                   .length(),
+                               1.0e-3, Cr::TestSuite::Compare::LessOrEqual);
+            CORRADE_COMPARE_AS(
+                (objWrapper1->getTranslation() -
+                 Magnum::Vector3{0.559155, boxHalfExtent * 4, 0.0})
+                    .length(),
+                2.0e-3, Cr::TestSuite::Compare::LessOrEqual);
           } break;
         }
 
@@ -911,19 +926,21 @@ void PhysicsTest::testNumActiveContactPoints() {
         // contacts are still active
         CORRADE_VERIFY(cp.isActive);
         // normal direction is unit Y (world up)
-        CORRADE_VERIFY(
-            (cp.contactNormalOnBInWS - Magnum::Vector3{0.0, 1.0, 0.0})
-                .length() <= 1.0e-4);
+        CORRADE_COMPARE_AS(
+            (cp.contactNormalOnBInWS - Magnum::Vector3{0.0, 1.0, 0.0}).length(),
+            1.0e-4, Cr::TestSuite::Compare::LessOrEqual);
         // one object is the cube (0), other is the stage (-1)
         CORRADE_COMPARE(cp.objectIdA, 0);
         CORRADE_COMPARE(cp.objectIdB, -1);
         // accumulate the normal force
         totalNormalForce += cp.normalForce;
         // solver should keep the cube at the contact boundary (~0 penetration)
-        CORRADE_VERIFY(cp.contactDistance <= 1.0e-4);
+        CORRADE_COMPARE_AS(cp.contactDistance, 1.0e-4,
+                           Cr::TestSuite::Compare::LessOrEqual);
       }
       // mass 1 cube under gravity should require normal contact force of ~9.8
-      CORRADE_VERIFY(totalNormalForce - 9.8 <= 3.0e-4);
+      CORRADE_COMPARE_AS(totalNormalForce - 9.8, 3.0e-4,
+                         Cr::TestSuite::Compare::LessOrEqual);
 
       // continue simulation until the cube is stable and sleeping
       while (physicsManager_->getWorldTime() < 4.0) {
@@ -972,7 +989,8 @@ void PhysicsTest::testRemoveSleepingSupport() {
       for (int testCase = 0; testCase < 2; ++testCase) {
         // reset time to 0, should not otherwise modify state
         physicsManager_->reset();
-        CORRADE_VERIFY(physicsManager_->getNumRigidObjects() > 0);
+        CORRADE_COMPARE_AS(physicsManager_->getNumRigidObjects(), 0,
+                           Cr::TestSuite::Compare::Greater);
 
         // simulate to stabilize the stack and populate collision islands
         while (physicsManager_->getWorldTime() < 4.0) {
@@ -1004,7 +1022,8 @@ void PhysicsTest::testRemoveSleepingSupport() {
             CORRADE_VERIFY(cube->isActive());
           }
         }
-        CORRADE_VERIFY(physicsManager_->getNumActiveContactPoints() > 0);
+        CORRADE_COMPARE_AS(physicsManager_->getNumActiveContactPoints(), 0,
+                           Cr::TestSuite::Compare::Greater);
       }
     }
   }  // for resetCreateRendererFlag false and true

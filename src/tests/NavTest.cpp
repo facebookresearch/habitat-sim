@@ -2,6 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include <Corrade/TestSuite/Compare/Numeric.h>
 #include <Corrade/TestSuite/Tester.h>
 #include <Corrade/Utility/Directory.h>
 
@@ -19,8 +20,8 @@ namespace Cr = Corrade;
 namespace Test {
 
 void printPathPoint(int run, int step, const esp::vec3f& p, float distance) {
-  ESP_VERY_VERBOSE() << run << "," << step << "," << p[0] << "," << p[1] << ","
-                     << p[2] << "," << distance;
+  ESP_VERY_VERBOSE() << run << "," << step << "," << Mn::Vector3{p} << ","
+                     << distance;
 }
 
 struct NavTest : Cr::TestSuite::Tester {
@@ -53,19 +54,20 @@ void NavTest::PathFinderLoadTest() {
     const bool foundPath = pf.findPath(path);
     if (foundPath) {
       const float islandSize = pf.islandRadius(path.requestedStart);
-      CORRADE_VERIFY(islandSize > 0.0);
+      CORRADE_COMPARE_AS(islandSize, 0.0, Cr::TestSuite::Compare::Greater);
       for (int j = 0; j < path.points.size(); j++) {
         printPathPoint(i, j, path.points[j], path.geodesicDistance);
-        CORRADE_VERIFY(pf.islandRadius(path.points[j]) == islandSize);
+        CORRADE_COMPARE(pf.islandRadius(path.points[j]), islandSize);
       }
-      CORRADE_VERIFY(pf.islandRadius(path.requestedEnd) == islandSize);
+      CORRADE_COMPARE(pf.islandRadius(path.requestedEnd), islandSize);
       const esp::vec3f& pathStart = path.points.front();
       const esp::vec3f& pathEnd = path.points.back();
       const esp::vec3f end = pf.tryStep(pathStart, pathEnd);
       ESP_DEBUG() << "tryStep initial end=" << pathEnd.transpose()
                   << ", final end=" << end.transpose();
-      CORRADE_VERIFY(path.geodesicDistance <
-                     std::numeric_limits<float>::infinity());
+      CORRADE_COMPARE_AS(path.geodesicDistance,
+                         std::numeric_limits<float>::infinity(),
+                         Cr::TestSuite::Compare::Less);
     }
   }
 }
@@ -107,7 +109,7 @@ void NavTest::PathFinderTestCases() {
   testPath.requestedStart = esp::vec3f(-6.493, 0.072, -3.292);
   testPath.requestedEnd = esp::vec3f(-8.98, 0.072, -0.62);
   pf.findPath(testPath);
-  CORRADE_VERIFY(testPath.points.size() == 0);
+  CORRADE_COMPARE(testPath.points.size(), 0);
   CORRADE_COMPARE(testPath.geodesicDistance,
                   std::numeric_limits<float>::infinity());
 
@@ -118,10 +120,10 @@ void NavTest::PathFinderTestCases() {
   // There should be 2 points
   CORRADE_COMPARE(testPath.points.size(), 2);
   // The geodesicDistance should be almost exactly the L2 dist
-  CORRADE_VERIFY(
+  CORRADE_COMPARE_AS(
       std::abs(testPath.geodesicDistance -
-               (testPath.requestedStart - testPath.requestedEnd).norm()) <=
-      0.001);
+               (testPath.requestedStart - testPath.requestedEnd).norm()),
+      0.001, Cr::TestSuite::Compare::LessOrEqual);
 }
 
 void NavTest::PathFinderTestNonNavigable() {
@@ -147,7 +149,7 @@ void NavTest::PathFinderTestSeed() {
   esp::vec3f firstPoint = pf.getRandomNavigablePoint();
   pf.seed(1);
   esp::vec3f secondPoint = pf.getRandomNavigablePoint();
-  CORRADE_VERIFY(firstPoint == secondPoint);
+  CORRADE_COMPARE(firstPoint, secondPoint);
 
   // Different seeds should produce different points
   pf.seed(2);

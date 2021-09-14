@@ -282,7 +282,7 @@ void AttributesManagersTest::testCreateAndRemove(std::shared_ptr<T> mgr,
   // template
   auto attrTemplate1 = mgr->createObject(handle, true);
   // verify it exists
-  CORRADE_VERIFY(attrTemplate1 != nullptr);
+  CORRADE_VERIFY(attrTemplate1);
   // verify ID exists
   bool idIsPresent = mgr->getObjectLibHasID(attrTemplate1->getID());
   CORRADE_VERIFY(idIsPresent);
@@ -322,7 +322,7 @@ void AttributesManagersTest::testCreateAndRemove(std::shared_ptr<T> mgr,
   // remove template by ID, acquire copy of removed template
   auto oldTemplate = mgr->removeObjectByID(removeID);
   // verify it exists
-  CORRADE_VERIFY(oldTemplate != nullptr);
+  CORRADE_VERIFY(oldTemplate);
   // verify there are same number of templates as when we started
   CORRADE_COMPARE(orignNumTemplates, mgr->getNumObjects());
   // re-add template copy via registration
@@ -335,14 +335,14 @@ void AttributesManagersTest::testCreateAndRemove(std::shared_ptr<T> mgr,
   // attempt to remove attributes via handle
   auto oldTemplate2 = mgr->removeObjectByHandle(handle);
   // verify no template was deleted
-  CORRADE_VERIFY(oldTemplate2 == nullptr);
+  CORRADE_VERIFY(!oldTemplate2);
   // unlock template
   success = mgr->setLock(handle, false);
 
   // remove  attributes via handle
   auto oldTemplate3 = mgr->removeObjectByHandle(handle);
   // verify deleted template exists
-  CORRADE_VERIFY(oldTemplate3 != nullptr);
+  CORRADE_VERIFY(oldTemplate3);
   // verify ID does not exist in library now
   idIsPresent = mgr->getObjectLibHasID(oldTemplate3->getID());
   CORRADE_VERIFY(!idIsPresent);
@@ -421,7 +421,7 @@ void AttributesManagersTest::testRemoveAllButDefault(std::shared_ptr<T> mgr,
     CORRADE_VERIFY(tmpltID != -1);
     auto attrTemplate2 = mgr->getObjectOrCopyByHandle(newHandleIter);
     // verify added template  exists
-    CORRADE_VERIFY(attrTemplate2 != nullptr);
+    CORRADE_VERIFY(attrTemplate2);
   }
 
   // now delete all templates that
@@ -438,7 +438,7 @@ void AttributesManagersTest::testRemoveAllButDefault(std::shared_ptr<T> mgr,
     CORRADE_VERIFY(tmpltID != -1);
     auto attrTemplate2 = mgr->getObjectOrCopyByHandle(tmplt->getHandle());
     // verify added template  exists
-    CORRADE_VERIFY(attrTemplate2 != nullptr);
+    CORRADE_VERIFY(attrTemplate2);
   }
 
   // now delete all templates that have just been added
@@ -471,7 +471,7 @@ void AttributesManagersTest::testCreateAndRemoveDefault(
   // create new template but do not register it
   auto newAttrTemplate0 = mgr->createDefaultObject(newHandle, false);
   // verify real template was returned
-  CORRADE_VERIFY(newAttrTemplate0 != nullptr);
+  CORRADE_VERIFY(newAttrTemplate0);
 
   // create template from source handle, register it and retrieve it
   // Note: registration of template means this is a copy of registered
@@ -488,7 +488,7 @@ void AttributesManagersTest::testCreateAndRemoveDefault(
   auto newAttrTemplate1 = mgr->removeObjectByHandle(newHandle);
 
   // verify it exists
-  CORRADE_VERIFY(newAttrTemplate1 != nullptr);
+  CORRADE_VERIFY(newAttrTemplate1);
   // verify there are same number of templates as when we started
   CORRADE_COMPARE(orignNumTemplates, mgr->getNumObjects());
 
@@ -517,16 +517,13 @@ void AttributesManagersTest::testUserDefinedConfigVals(
     Magnum::Vector3 vec_val,
     Magnum::Quaternion quat_val) {
   // user defined attributes from light instance
-  CORRADE_VERIFY(userConfig != nullptr);
-  CORRADE_COMPARE(userConfig->template get<std::string>("user_string"),
-                  str_val);
-  CORRADE_COMPARE(userConfig->template get<bool>("user_bool"), bool_val);
-  CORRADE_COMPARE(userConfig->template get<int>("user_int"), int_val);
-  CORRADE_COMPARE(userConfig->template get<double>("user_double"), double_val);
-  CORRADE_COMPARE(userConfig->template get<Magnum::Vector3>("user_vec3"),
-                  vec_val);
-  CORRADE_COMPARE(userConfig->template get<Magnum::Quaternion>("user_quat"),
-                  quat_val);
+  CORRADE_VERIFY(userConfig);
+  CORRADE_COMPARE(userConfig->get<std::string>("user_string"), str_val);
+  CORRADE_COMPARE(userConfig->get<bool>("user_bool"), bool_val);
+  CORRADE_COMPARE(userConfig->get<int>("user_int"), int_val);
+  CORRADE_COMPARE(userConfig->get<double>("user_double"), double_val);
+  CORRADE_COMPARE(userConfig->get<Magnum::Vector3>("user_vec3"), vec_val);
+  CORRADE_COMPARE(userConfig->get<Magnum::Quaternion>("user_quat"), quat_val);
 
 }  // AttributesManagersTest::testUserDefinedConfigVals
 
@@ -595,7 +592,7 @@ void AttributesManagersTest::testAssetAttributesModRegRemove(
   // remove modified template via handle
   auto oldTemplate2 = assetAttributesManager_->removeObjectByHandle(newHandle);
   // verify deleted template  exists
-  CORRADE_VERIFY(oldTemplate2 != nullptr);
+  CORRADE_VERIFY(oldTemplate2);
 
   // verify there are same number of templates as when we started
   CORRADE_COMPARE(orignNumTemplates, assetAttributesManager_->getNumObjects());
@@ -613,7 +610,7 @@ void AttributesManagersTest::testAssetAttributesTemplateCreateFromHandle(
   // create new template based on handle and verify that it is created
   auto newTemplate =
       assetAttributesManager_->createTemplateFromHandle(newTemplateName, true);
-  CORRADE_VERIFY(newTemplate != nullptr);
+  CORRADE_VERIFY(newTemplate);
 
   // now verify that template is in library
   templateExists =
@@ -624,7 +621,7 @@ void AttributesManagersTest::testAssetAttributesTemplateCreateFromHandle(
   auto oldTemplate =
       assetAttributesManager_->removeObjectByHandle(newTemplateName);
   // verify deleted template  exists
-  CORRADE_VERIFY(oldTemplate != nullptr);
+  CORRADE_VERIFY(oldTemplate);
 
   // verify there are same number of templates as when we started
   CORRADE_COMPARE(orignNumTemplates, assetAttributesManager_->getNumObjects());
@@ -659,7 +656,7 @@ void AttributesManagersTest::testPhysicsJSONLoad() {
                                         Attrs::PhysicsManagerAttributes>(
           physicsAttributesManager_, jsonString);
   // verify exists
-  CORRADE_VERIFY(physMgrAttr != nullptr);
+  CORRADE_VERIFY(physMgrAttr);
   // match values set in test JSON
   // TODO : get these values programmatically?
   CORRADE_COMPARE(physMgrAttr->getGravity(), Magnum::Vector3(1, 2, 3));
@@ -725,7 +722,7 @@ void AttributesManagersTest::testLightJSONLoad() {
           lightLayoutAttributesManager_, jsonString);
 
   // verify exists
-  CORRADE_VERIFY(lightLayoutAttr != nullptr);
+  CORRADE_VERIFY(lightLayoutAttr);
   // test light layout attributes-level user config vals
   testUserDefinedConfigVals(lightLayoutAttr->getUserConfiguration(),
                             "light attribs defined string", true, 23, 2.3,
@@ -735,7 +732,7 @@ void AttributesManagersTest::testLightJSONLoad() {
   CORRADE_COMPARE(lightLayoutAttr->getNegativeIntensityScale(), 1.5);
   auto lightAttr = lightLayoutAttr->getLightInstance("test");
   // verify that lightAttr exists
-  CORRADE_VERIFY(lightAttr != nullptr);
+  CORRADE_VERIFY(lightAttr);
 
   // match values set in test JSON
   // TODO : get these values programmatically?
@@ -875,7 +872,7 @@ void AttributesManagersTest::testSceneInstanceJSONLoad() {
           sceneAttributesManager_, jsonString);
 
   // verify exists
-  CORRADE_VERIFY(sceneAttr != nullptr);
+  CORRADE_VERIFY(sceneAttr);
 
   // match values set in test JSON
   CORRADE_COMPARE(
@@ -983,7 +980,7 @@ void AttributesManagersTest::testSceneInstanceJSONLoad() {
   auto artObjNestedConfig =
       artObjInstance->getUserConfiguration()
           ->getSubconfigCopy<esp::core::config::Configuration>("user_def_obj");
-  CORRADE_VERIFY(artObjNestedConfig != nullptr);
+  CORRADE_VERIFY(artObjNestedConfig);
   CORRADE_VERIFY(artObjNestedConfig->getNumEntries() > 0);
   CORRADE_COMPARE(artObjNestedConfig->template get<Magnum::Vector3>("position"),
                   Magnum::Vector3(0.1f, 0.2f, 0.3f));
@@ -1050,7 +1047,7 @@ void AttributesManagersTest::testStageJSONLoad() {
                                         Attrs::StageAttributes>(
           stageAttributesManager_, jsonString);
   // verify exists
-  CORRADE_VERIFY(stageAttr != nullptr);
+  CORRADE_VERIFY(stageAttr);
   // match values set in test JSON
   // TODO : get these values programmatically?
   CORRADE_COMPARE(stageAttr->getScale(), Magnum::Vector3(2, 3, 4));
@@ -1126,7 +1123,7 @@ void AttributesManagersTest::testObjectJSONLoad() {
                                         Attrs::ObjectAttributes>(
           objectAttributesManager_, jsonString);
   // verify exists
-  CORRADE_VERIFY(objAttr != nullptr);
+  CORRADE_VERIFY(objAttr);
   // match values set in test JSON
   // TODO : get these values programmatically?
   CORRADE_COMPARE(objAttr->getScale(), Magnum::Vector3(2, 3, 4));
@@ -1321,7 +1318,7 @@ void AttributesManagersTest::testPrimitiveAssetAttributes() {
     CapsulePrimitiveAttributes::ptr dfltCapsAttribs =
         assetAttributesManager_->getDefaultCapsuleTemplate(false);
     // verify it exists
-    CORRADE_VERIFY(dfltCapsAttribs != nullptr);
+    CORRADE_VERIFY(dfltCapsAttribs);
 
     // for solid primitives, and value > 2 for segments is legal
     testAssetAttributesModRegRemove<CapsulePrimitiveAttributes>(
@@ -1333,7 +1330,7 @@ void AttributesManagersTest::testPrimitiveAssetAttributes() {
     // test wireframe version
     dfltCapsAttribs = assetAttributesManager_->getDefaultCapsuleTemplate(true);
     // verify it exists
-    CORRADE_VERIFY(dfltCapsAttribs != nullptr);
+    CORRADE_VERIFY(dfltCapsAttribs);
     // segments must be mult of 4 for wireframe primtives
     testAssetAttributesModRegRemove<CapsulePrimitiveAttributes>(
         dfltCapsAttribs, legalModValWF, &illegalModValWF);
@@ -1348,7 +1345,7 @@ void AttributesManagersTest::testPrimitiveAssetAttributes() {
     ConePrimitiveAttributes::ptr dfltConeAttribs =
         assetAttributesManager_->getDefaultConeTemplate(false);
     // verify it exists
-    CORRADE_VERIFY(dfltConeAttribs != nullptr);
+    CORRADE_VERIFY(dfltConeAttribs);
 
     // for solid primitives, and value > 2 for segments is legal
     testAssetAttributesModRegRemove<ConePrimitiveAttributes>(
@@ -1360,7 +1357,7 @@ void AttributesManagersTest::testPrimitiveAssetAttributes() {
     // test wireframe version
     dfltConeAttribs = assetAttributesManager_->getDefaultConeTemplate(true);
     // verify it exists
-    CORRADE_VERIFY(dfltConeAttribs != nullptr);
+    CORRADE_VERIFY(dfltConeAttribs);
     // segments must be mult of 4 for wireframe primtives
     testAssetAttributesModRegRemove<ConePrimitiveAttributes>(
         dfltConeAttribs, legalModValWF, &illegalModValWF);
@@ -1376,7 +1373,7 @@ void AttributesManagersTest::testPrimitiveAssetAttributes() {
     CylinderPrimitiveAttributes::ptr dfltCylAttribs =
         assetAttributesManager_->getDefaultCylinderTemplate(false);
     // verify it exists
-    CORRADE_VERIFY(dfltCylAttribs != nullptr);
+    CORRADE_VERIFY(dfltCylAttribs);
 
     // for solid primitives, and value > 2 for segments is legal
     testAssetAttributesModRegRemove<CylinderPrimitiveAttributes>(
@@ -1388,7 +1385,7 @@ void AttributesManagersTest::testPrimitiveAssetAttributes() {
     // test wireframe version
     dfltCylAttribs = assetAttributesManager_->getDefaultCylinderTemplate(true);
     // verify it exists
-    CORRADE_VERIFY(dfltCylAttribs != nullptr);
+    CORRADE_VERIFY(dfltCylAttribs);
     // segments must be mult of 4 for wireframe primtives
     testAssetAttributesModRegRemove<CylinderPrimitiveAttributes>(
         dfltCylAttribs, legalModValWF, &illegalModValWF);
@@ -1403,7 +1400,7 @@ void AttributesManagersTest::testPrimitiveAssetAttributes() {
     UVSpherePrimitiveAttributes::ptr dfltUVSphereAttribs =
         assetAttributesManager_->getDefaultUVSphereTemplate(false);
     // verify it exists
-    CORRADE_VERIFY(dfltUVSphereAttribs != nullptr);
+    CORRADE_VERIFY(dfltUVSphereAttribs);
 
     // for solid primitives, and value > 2 for segments is legal
     testAssetAttributesModRegRemove<UVSpherePrimitiveAttributes>(
@@ -1416,7 +1413,7 @@ void AttributesManagersTest::testPrimitiveAssetAttributes() {
     dfltUVSphereAttribs =
         assetAttributesManager_->getDefaultUVSphereTemplate(true);
     // verify it exists
-    CORRADE_VERIFY(dfltUVSphereAttribs != nullptr);
+    CORRADE_VERIFY(dfltUVSphereAttribs);
     // segments must be mult of 4 for wireframe primtives
     testAssetAttributesModRegRemove<UVSpherePrimitiveAttributes>(
         dfltUVSphereAttribs, legalModValWF, &illegalModValWF);

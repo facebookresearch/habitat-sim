@@ -118,7 +118,7 @@ void MetadataMediatorTest::testDataset0() {
   // get render asset handle for later comparison
   auto renderAssetHandle = stageAttr->getRenderAssetHandle();
   // verify existence
-  CORRADE_VERIFY(stageAttr != nullptr);
+  CORRADE_VERIFY(stageAttr);
   // verify set to values in file
   CORRADE_COMPARE(stageAttr->getScale(), Magnum::Vector3(2, 2, 2));
   CORRADE_VERIFY(stageAttr->getRequiresLighting());
@@ -136,7 +136,7 @@ void MetadataMediatorTest::testDataset0() {
   // get copy of attributes
   stageAttr = stageAttributesMgr->getObjectCopyByHandle(stageAttrHandles[0]);
   // verify existence
-  CORRADE_VERIFY(stageAttr != nullptr);
+  CORRADE_VERIFY(stageAttr);
   // verify set to override values in dataset_config file
   CORRADE_COMPARE(stageAttr->getScale(), Magnum::Vector3(1, 1, 1));
   CORRADE_COMPARE(stageAttr->getMargin(), 0.041);
@@ -151,7 +151,7 @@ void MetadataMediatorTest::testDataset0() {
   // get copy of attributes
   stageAttr = stageAttributesMgr->getObjectCopyByHandle(stageAttrHandles[0]);
   // verify existence
-  CORRADE_VERIFY(stageAttr != nullptr);
+  CORRADE_VERIFY(stageAttr);
   // verify set to values in dataset_config file
   auto newRenderAssetHandle = stageAttr->getRenderAssetHandle();
   // verify same renderasset handle to loaded stage attributes
@@ -168,7 +168,7 @@ void MetadataMediatorTest::testDataset0() {
   // get new attributes but don't register
   stageAttr = stageAttributesMgr->createObject("new_default_attributes", false);
   // verify existence
-  CORRADE_VERIFY(stageAttr != nullptr);
+  CORRADE_VERIFY(stageAttr);
   // verify contains default attributes value
   CORRADE_COMPARE(stageAttr->getOrigin(), Magnum::Vector3(1.0, 2.0, 3.0));
 
@@ -189,7 +189,7 @@ void MetadataMediatorTest::testDataset0() {
   // get copy of attributes
   auto objAttr = objectAttributesMgr->getObjectCopyByHandle(objAttrHandles[0]);
   // verify existence
-  CORRADE_VERIFY(objAttr != nullptr);
+  CORRADE_VERIFY(objAttr);
   // verify set to values in file
   CORRADE_COMPARE(objAttr->getScale(), Magnum::Vector3(1, 1, 1));
   CORRADE_VERIFY(objAttr->getRequiresLighting());
@@ -210,7 +210,7 @@ void MetadataMediatorTest::testDataset0() {
   // get copy of attributes
   objAttr = objectAttributesMgr->getObjectCopyByHandle(objAttrHandles[0]);
   // verify existence
-  CORRADE_VERIFY(objAttr != nullptr);
+  CORRADE_VERIFY(objAttr);
   // verify identical to copied object except for override values in
   // dataset_config file
   CORRADE_COMPARE(objAttr->getScale(), Magnum::Vector3(1, 1, 1));
@@ -232,7 +232,7 @@ void MetadataMediatorTest::testDataset0() {
   // get copy of attributes
   objAttr = objectAttributesMgr->getObjectCopyByHandle(objAttrHandles[0]);
   // verify existence
-  CORRADE_VERIFY(objAttr != nullptr);
+  CORRADE_VERIFY(objAttr);
   // verify set to values in dataset_config file
   newRenderAssetHandle = objAttr->getRenderAssetHandle();
   // verify same renderasset handle to loaded stage attributes
@@ -247,7 +247,7 @@ void MetadataMediatorTest::testDataset0() {
   // get new attributes but don't register
   objAttr = objectAttributesMgr->createObject("new_default_attributes", false);
   // verify existence
-  CORRADE_VERIFY(objAttr != nullptr);
+  CORRADE_VERIFY(objAttr);
   // verify contains default attributes value
   CORRADE_COMPARE(objAttr->getMass(), 10.0);
   CORRADE_COMPARE(objAttr->getInertia(), Magnum::Vector3(3, 2, 1));
@@ -272,7 +272,7 @@ void MetadataMediatorTest::testDataset0() {
   auto lightAttr =
       lightsLayoutAttributesMgr->getObjectCopyByHandle(lightAttrHandles[0]);
   // verify existence
-  CORRADE_VERIFY(lightAttr != nullptr);
+  CORRADE_VERIFY(lightAttr);
   // verify the number of lights within the lighting layout
   CORRADE_COMPARE(12, lightAttr->getNumLightInstances());
 
@@ -285,7 +285,7 @@ void MetadataMediatorTest::testDataset0() {
   lightAttr =
       lightsLayoutAttributesMgr->getObjectCopyByHandle(lightAttrHandles[0]);
   // verify existence
-  CORRADE_VERIFY(lightAttr != nullptr);
+  CORRADE_VERIFY(lightAttr);
   // verify the number of lights within the lighting layout
   CORRADE_COMPARE(lightAttr->getNumLightInstances(), 12);
 
@@ -298,7 +298,7 @@ void MetadataMediatorTest::testDataset0() {
   lightAttr =
       lightsLayoutAttributesMgr->getObjectCopyByHandle(lightAttrHandles[0]);
   // verify existence
-  CORRADE_VERIFY(lightAttr != nullptr);
+  CORRADE_VERIFY(lightAttr);
   // verify the number of lights within the lighting layout
   CORRADE_COMPARE(lightAttr->getNumLightInstances(), 3);
 
@@ -327,7 +327,7 @@ void MetadataMediatorTest::testDataset0() {
   // metadata::attributes::SceneAttributes::cptr curSceneInstanceAttributes =
   auto sceneAttrs = MM_->getSceneAttributesByName(activeSceneName);
   // this should be a scene instance attributes with specific stage and object
-  CORRADE_VERIFY(sceneAttrs != nullptr);
+  CORRADE_VERIFY(sceneAttrs);
   // verify default value for translation origin
   CORRADE_COMPARE(sceneAttrs->getTranslationOrigin(),
                   static_cast<int>(Attrs::SceneInstanceTranslationOrigin::COM));
@@ -530,7 +530,7 @@ void MetadataMediatorTest::testDatasetDelete() {
   // get the stage attributes manager for the scene dataset
   const auto& stageAttrMgr_DS1 = MM_->getStageAttributesManager();
   // verify not nullptr
-  CORRADE_VERIFY(stageAttrMgr_DS1 != nullptr);
+  CORRADE_VERIFY(stageAttrMgr_DS1);
 
   // load datsaet 0 and make active
   initDataset0();
@@ -547,7 +547,7 @@ void MetadataMediatorTest::testDatasetDelete() {
   CORRADE_VERIFY(!MM_->sceneDatasetExists(nameDS1));
 
   // verify deleted scene dataset's stage manager is nullptr
-  CORRADE_COMPARE(stageAttrMgr_DS1, nullptr);
+  CORRADE_VERIFY(!stageAttrMgr_DS1);
 
   // attempt to delete dataset 0 and verify fails - cannot delete active dataset
   CORRADE_VERIFY(!MM_->removeSceneDataset(nameDS0));

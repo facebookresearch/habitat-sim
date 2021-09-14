@@ -28,7 +28,7 @@ void CoreTest::TestConfiguration() {
   cfg.set("myString", "test");
   CORRADE_VERIFY(cfg.hasValue("myInt"));
   CORRADE_VERIFY(cfg.hasValue("myString"));
-  CORRADE_VERIFY(cfg.get<int>("myInt") == 10);
+  CORRADE_COMPARE(cfg.get<int>("myInt"), 10);
   CORRADE_COMPARE(cfg.get<std::string>("myString"), "test");
 }
 

@@ -605,7 +605,7 @@ void SimTest::buildingPrimAssetObjectTemplates() {
       std::string handle = primObjAssetHandles[i];
       CORRADE_VERIFY(handle != "");
       primAttr = assetAttribsMgr->getObjectCopyByHandle(handle);
-      CORRADE_VERIFY(primAttr != nullptr);
+      CORRADE_VERIFY(primAttr);
       CORRADE_VERIFY(primAttr->isValidTemplate());
       // verify that the attributes contains the handle, and the handle contains
       // the expected class name
@@ -881,7 +881,7 @@ void SimTest::createMagnumRenderingOff() {
   Observation observation;
 
   // check that there is no renderer
-  CORRADE_VERIFY(simulator->getRenderer() == nullptr);
+  CORRADE_VERIFY(!simulator->getRenderer());
   CORRADE_VERIFY(cameraSensor.getObservation(*simulator, observation) == false);
 }
 
