@@ -601,6 +601,6 @@ events happen:
 Thank you for reading!
 
 
-.. _this code: https://github.com/facebookresearch/habitat-sim/blob/master/habitat_sim/utils/data/pose_extractor.py
+.. _this code: https://github.com/facebookresearch/habitat-sim/blob/main/habitat_sim/utils/data/pose_extractor.py
 
-.. _Habitat-Sim Basics for Navigation Colab notebook: https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/master/examples/tutorials/colabs/ECCV_2020_Navigation.ipynb
+.. _Habitat-Sim Basics for Navigation Colab notebook: https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/ECCV_2020_Navigation.ipynb

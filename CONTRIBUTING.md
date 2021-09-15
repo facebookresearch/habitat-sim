@@ -9,10 +9,10 @@ possible.
 - Try to make small, logically independent, self-documenting commits (and reflect this in the commit messages by providing brief rationale/change summary).
 - We encourage creating draft PRs to gather early feedback.
 - Request reviews from at least one Habitat core team member (if the scope of changes necessitates, request from two or more reviewers).
-- We have adopted squash-and-merge as the policy for incorporating PRs into the master branch.  We encourage more smaller/focused PRs rather than big PRs with many independent changes.  This also enables faster development by merging PRs into master quickly and reducing the need to rebase due to changes on master.
-- While working on a PR, try to religiously keep your fork up-to-date with master by rebasing as necessary.  Note that the above recommendation for smaller and more frequent PRs reduces the burden of rebasing.
+- We have adopted squash-and-merge as the policy for incorporating PRs into the main branch.  We encourage more smaller/focused PRs rather than big PRs with many independent changes.  This also enables faster development by merging PRs into main quickly and reducing the need to rebase due to changes on main.
+- While working on a PR, try to religiously keep your fork up-to-date with main by rebasing as necessary.  Note that the above recommendation for smaller and more frequent PRs reduces the burden of rebasing.
 - We expect PR ready for final review only if Continuous Integration tests are passing.
-- Recommended: after getting a PR through reviews/feedback and is merged into master, delete the branch to de-clutter noise.
+- Recommended: after getting a PR through reviews/feedback and is merged into main, delete the branch to de-clutter noise.
 - Reach out to us with questions or suggestions on our Slack channel.
 
 ## Contributor License Agreement ("CLA")
@@ -20,7 +20,7 @@ In order to accept your pull request, we need you to submit a CLA. You only need
 to do this once to work on any of Facebook's open source projects. Complete your CLA [here](https://code.facebook.com/cla).
 
 By contributing to habitat-sim, you agree that your contributions will be licensed
-under [the LICENSE file](https://github.com/facebookresearch/habitat-sim/blob/master/LICENSE).
+under [the LICENSE file](https://github.com/facebookresearch/habitat-sim/blob/main/LICENSE).
 
 ## Versioning / release workflow
 We use [semantic versioning](https://semver.org/). To prepare a release:

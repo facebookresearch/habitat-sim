@@ -178,7 +178,7 @@ commands:
           keys:
             - ccache-{{ arch }}-{{ .Branch }}-{{ .BuildNum }}
             - ccache-{{ arch }}-{{ .Branch }}-
-            - ccache-{{ arch }}-master-
+            - ccache-{{ arch }}-main-
           paths:
             - /home/circleci/.ccache
       - run:
@@ -718,7 +718,7 @@ workflows:
           cron: "0 7 * * *"
           filters:
             branches:
-              only: master
+              only: main
     jobs:
       - lab_build_habitat
       - install_and_test_ubuntu
@@ -728,7 +728,7 @@ workflows:
             - install_and_test_ubuntu
           filters:
             branches:
-              only: master
+              only: main
       - build_conda_binaries:
           AIHABITAT_CONDA_CHN: aihabitat-nightly
           AIHABITAT_CONDA_CHN_PWD_VAR: AIHABITAT_NIGHTLY_CONDA_PWD
@@ -737,7 +737,7 @@ workflows:
             - install_and_test_ubuntu
           filters:
             branches:
-              only: master
+              only: main
 
   version_conda_release:
     jobs:
