@@ -10,6 +10,7 @@ if(NOT USE_SYSTEM_MAGNUM)
   # These are enabled by default but we don't need them right now -- disabling
   # for slightly faster builds. If you need any of these, simply delete a line.
   set(WITH_INTERCONNECT OFF CACHE BOOL "" FORCE)
+  # Ensure Corrade should be built statically if Magnum is.
   set(BUILD_PLUGINS_STATIC ON CACHE BOOL "BUILD_PLUGINS_STATIC" FORCE)
   set(BUILD_STATIC ON CACHE BOOL "BUILD_STATIC" FORCE)
   set(BUILD_STATIC_PIC ON CACHE BOOL "BUILD_STATIC_PIC" FORCE)
