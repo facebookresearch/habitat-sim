@@ -16,7 +16,6 @@
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
 
-#include "esp/io/Io.h"
 #include "esp/io/Json.h"
 
 namespace esp {
