@@ -121,6 +121,10 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
     sceneManager_ = scene::SceneManager::create_unique();
   }
 
+  if (!pathfinder_) {
+    pathfinder_ = nav::PathFinder::create();
+  }
+
   // if configuration is unchanged, just reset and return
   if (cfg == config_) {
     reset();
@@ -207,7 +211,6 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
   ESP_DEBUG() << "Navmesh file location in scene instance :" << navmeshFileLoc;
   // Get name of navmesh and use to create pathfinder and load navmesh
   // create pathfinder and load navmesh if available
-  pathfinder_ = nav::PathFinder::create();
   if (FileUtil::exists(navmeshFileLoc)) {
     ESP_DEBUG() << "Loading navmesh from" << navmeshFileLoc;
     bool pfSuccess = pathfinder_->loadNavMesh(navmeshFileLoc);
