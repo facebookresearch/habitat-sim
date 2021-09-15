@@ -759,7 +759,7 @@ void PTexMeshData::parsePLY(const std::string& filename,
   Cr::Containers::Array<const char, Cr::Utility::Directory::MapDeleter>
       mmappedData = Cr::Utility::Directory::mapRead(filename);
 
-  const auto fileSize = *Cr::Utility::Directory::fileSize(filename);
+  const size_t fileSize = *Cr::Utility::Directory::fileSize(filename);
 
   // Parse each vertex packet and unpack
   const char* bytes = mmappedData + postHeader;
