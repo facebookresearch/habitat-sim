@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include <Corrade/Utility/Directory.h>
 #include <sophus/so3.hpp>
 #include "esp/assets/GenericInstanceMeshData.h"
 #include "esp/core/Esp.h"
@@ -34,7 +35,7 @@ SceneLoader::SceneLoader()
 
 MeshData SceneLoader::load(const AssetInfo& info) {
   MeshData mesh;
-  if (!esp::io::exists(info.filepath)) {
+  if (!Cr::Utility::Directory::exists(info.filepath)) {
     ESP_ERROR() << "Could not find file" << info.filepath;
     return mesh;
   }
