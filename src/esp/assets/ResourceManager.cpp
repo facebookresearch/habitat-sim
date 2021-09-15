@@ -75,6 +75,7 @@ using metadata::attributes::AbstractObjectAttributes;
 using metadata::attributes::CubePrimitiveAttributes;
 using metadata::attributes::ObjectAttributes;
 using metadata::attributes::PhysicsManagerAttributes;
+using metadata::attributes::SceneObjectInstanceAttributes;
 using metadata::attributes::StageAttributes;
 using metadata::managers::AssetAttributesManager;
 using metadata::managers::ObjectAttributesManager;
@@ -102,6 +103,11 @@ ResourceManager::ResourceManager(
   initDefaultLightSetups();
   initDefaultMaterials();
   buildImporters();
+
+  if (flags_ & Flag::PbrImageBasedLighting) {
+    // TODO: HDRi image name should be config based
+    initPbrImageBasedLighting("lythwood_room_4k.jpg");
+  }
 }
 
 ResourceManager::~ResourceManager() {
@@ -150,10 +156,11 @@ void ResourceManager::initDefaultPrimAttributes() {
 
 void ResourceManager::initPhysicsManager(
     std::shared_ptr<physics::PhysicsManager>& physicsManager,
-    bool isEnabled,
     scene::SceneNode* parent,
     const metadata::attributes::PhysicsManagerAttributes::ptr&
         physicsManagerAttributes) {
+  const bool isEnabled =
+      metadataMediator_->getSimulatorConfiguration().enablePhysics;
   //! PHYSICS INIT: Use the passed attributes to initialize physics engine
   bool defaultToNoneSimulator = true;
   if (isEnabled) {
@@ -189,12 +196,22 @@ void ResourceManager::initPhysicsManager(
 }  // ResourceManager::initPhysicsManager
 
 bool ResourceManager::loadStage(
-    StageAttributes::ptr& stageAttributes,
+    const StageAttributes::ptr& stageAttributes,
+    const SceneObjectInstanceAttributes::cptr& stageInstanceAttributes,
     const std::shared_ptr<physics::PhysicsManager>& _physicsManager,
     esp::scene::SceneManager* sceneManagerPtr,
-    std::vector<int>& activeSceneIDs,
-    bool createSemanticMesh,
-    bool forceSeparateSemanticSceneGraph) {
+    std::vector<int>& activeSceneIDs) {
+  // If the semantic mesh should be created, based on SimulatorConfiguration
+  const bool createSemanticMesh =
+      metadataMediator_->getSimulatorConfiguration().loadSemanticMesh;
+
+  // Force creation of a separate semantic scene graph, even when no semantic
+  // mesh is loaded for the stage.  This is required to support playback of any
+  // replay that includes a semantic-only render asset instance.
+  const bool forceSeparateSemanticSceneGraph =
+      metadataMediator_->getSimulatorConfiguration()
+          .forceSeparateSemanticSceneGraph;
+
   // create AssetInfos here for each potential mesh file for the scene, if they
   // are unique.
   bool buildCollisionMesh =
@@ -329,7 +346,8 @@ bool ResourceManager::loadStage(
     // Either add with pre-built meshGroup if collision assets are loaded
     // or empty vector for mesh group - this should only be the case if
     // we are using None-type physicsManager.
-    bool sceneSuccess = _physicsManager->addStage(stageAttributes, meshGroup);
+    bool sceneSuccess = _physicsManager->addStage(
+        stageAttributes, stageInstanceAttributes, meshGroup);
     if (!sceneSuccess) {
       ESP_ERROR() << "Adding Stage" << stageAttributes->getHandle()
                   << "to PhysicsManager failed. Aborting scene initialization.";
@@ -1874,7 +1892,7 @@ void ResourceManager::loadTextures(Importer& importer,
 
     auto textureData = importer.texture(iTexture);
     if (!textureData ||
-        textureData->type() != Magnum::Trade::TextureData::Type::Texture2D) {
+        textureData->type() != Magnum::Trade::TextureType::Texture2D) {
       ESP_ERROR() << "Cannot load texture" << iTexture << "skipping";
       currentTexture = nullptr;
       continue;
@@ -2181,7 +2199,9 @@ void ResourceManager::createDrawable(Mn::GL::Mesh* mesh,
           shaderManager_,      // shader manager
           lightSetupKey,       // lightSetup key
           materialKey,         // material key
-          group);              // drawable group
+          group,               // drawable group
+          activePbrIbl_ >= 0 ? pbrImageBasedLightings_[activePbrIbl_].get()
+                             : nullptr);  // pbr image based lighting
       break;
   }
 }  // ResourceManager::createDrawable
@@ -2289,6 +2309,22 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
 void ResourceManager::initDefaultLightSetups() {
   shaderManager_.set(NO_LIGHT_KEY, gfx::LightSetup{});
   shaderManager_.setFallback(gfx::LightSetup{});
+}
+
+void ResourceManager::initPbrImageBasedLighting(
+    const std::string& hdriImageFilename) {
+  // TODO:
+  // should work with the scene instance config, initialize
+  // different PBR IBLs at different positions in the scene.
+
+  // TODO: HDR Image!
+  pbrImageBasedLightings_.emplace_back(
+      std::make_unique<gfx::PbrImageBasedLighting>(
+          gfx::PbrImageBasedLighting::Flag::IndirectDiffuse |
+              gfx::PbrImageBasedLighting::Flag::IndirectSpecular |
+              gfx::PbrImageBasedLighting::Flag::UseLDRImages,
+          shaderManager_, hdriImageFilename));
+  activePbrIbl_ = 0;
 }
 
 void ResourceManager::initDefaultMaterials() {

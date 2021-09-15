@@ -53,6 +53,8 @@ set(
   DoubleSphereCameraShader.h
   EquirectangularShader.cpp
   EquirectangularShader.h
+  PbrImageBasedLighting.cpp
+  PbrImageBasedLighting.h
   PbrEquiRectangularToCubeMapShader.cpp
   PbrEquiRectangularToCubeMapShader.h
   PbrPrecomputedMapShader.cpp
@@ -99,6 +101,9 @@ find_package(Corrade REQUIRED Utility)
 # set_directory_properties(PROPERTIES CORRADE_USE_PEDANTIC_FLAGS ON)
 corrade_add_resource(ShaderResources ../../shaders/Shaders.conf)
 list(APPEND gfx_SOURCES ${ShaderResources})
+
+corrade_add_resource(PbrImageResources ../../../data/pbr/PbrImages.conf)
+list(APPEND gfx_SOURCES ${PbrImageResources})
 
 add_library(
   gfx STATIC
@@ -170,8 +175,4 @@ elseif(UNIX)
     find_package(Magnum REQUIRED WindowlessEglApplication)
     target_link_libraries(gfx PUBLIC Magnum::WindowlessEglApplication)
   endif()
-endif()
-
-if(BUILD_TEST)
-  add_subdirectory(test)
 endif()

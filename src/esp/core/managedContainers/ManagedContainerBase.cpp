@@ -162,17 +162,17 @@ std::vector<std::string> ManagedContainerBase::getObjectInfoStrings(
     // get the object
     auto objPtr = getObjectInternal<AbstractManagedObject>(objectHandle);
     if (idx == 0) {
-      res[idx++]
-          .append(objectType_)
-          .append(" Full name, Can delete?, Is locked?, ")
-          .append(objPtr->getObjectInfoHeader());
+      Cr::Utility::formatInto(res[idx], res[idx].size(),
+                              "{} Full name,Can delete?,Is locked?,{}",
+                              objectType_, objPtr->getObjectInfoHeader());
+      ++idx;
     }
-    res[idx++]
-        .append(objectHandle)
-        .append(1, ',')
-        .append(((this->getIsUndeletable(objectHandle)) ? "False, " : "True, "))
-        .append(((this->getIsUserLocked(objectHandle)) ? "True, " : "False, "))
-        .append(objPtr->getObjectInfo());
+    Cr::Utility::formatInto(
+        res[idx], res[idx].size(), "{},{},{},{}", objectHandle,
+        (this->getIsUndeletable(objectHandle) ? "False" : "True"),
+        (this->getIsUserLocked(objectHandle) ? "True" : "False"),
+        objPtr->getObjectInfo());
+    ++idx;
   }
   return res;
 }  // ManagedContainerBase::getObjectInfoStrings
@@ -199,7 +199,7 @@ std::string ManagedContainerBase::getObjectInfoCSVString(
   std::vector<std::string> infoAra = getObjectInfoStrings(subStr, contains);
   std::string res;
   for (std::string& s : infoAra) {
-    res += s.append(1, '\n');
+    Cr::Utility::formatInto(res, res.size(), "{}\n", s);
   }
   return res;
 }  // ManagedContainerBase::getObjectInfoCSVString

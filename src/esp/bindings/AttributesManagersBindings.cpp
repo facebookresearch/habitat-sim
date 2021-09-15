@@ -235,7 +235,17 @@ void declareBaseAttributesManager(py::module& m,
             " template specified by the passed handle if it exists, and NULL "
             "if it does not.")
                .c_str(),
-           "handle"_a);
+           "handle"_a)
+      .def("get_templates_by_handle_substring",
+           static_cast<std::unordered_map<std::string, AttribsPtr> (
+               MgrClass::*)(const std::string&, bool)>(
+               &MgrClass::getObjectsByHandleSubstring),
+           ("Returns a dictionary of " + attrType +
+            " templates, keyed by their handles, for all handles that either "
+            "contain or explicitly do not contain the passed search_str, based "
+            "on the value of boolean contains.")
+               .c_str(),
+           "search_str"_a = "", "contains"_a = true);
 }  // declareBaseAttributesManager
 
 void initAttributesManagersBindings(py::module& m) {

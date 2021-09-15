@@ -11,7 +11,6 @@
 #include <Magnum/Math/Frustum.h>
 #include <Magnum/Math/Intersection.h>
 #include <Magnum/Math/Range.h>
-#include <gtest/gtest.h>
 #include <string>
 
 #include "esp/assets/ResourceManager.h"
@@ -30,7 +29,6 @@ using esp::metadata::MetadataMediator;
 using esp::scene::SceneManager;
 using Magnum::Math::Literals::operator""_degf;
 
-namespace Test {
 // on GCC and Clang, the following namespace causes useful warnings to be
 // printed when you have accidentally unused variables or functions in the test
 namespace {
@@ -61,6 +59,9 @@ CullingTest::CullingTest() {
 int CullingTest::setupTests() {
   // set up a default simulation config to initialize MM
   auto cfg = esp::sim::SimulatorConfiguration{};
+  // setting values for stage load
+  cfg.loadSemanticMesh = false;
+  cfg.forceSeparateSemanticSceneGraph = false;
   auto MM = MetadataMediator::create(cfg);
   // must declare these in this order due to avoid deallocation errors
   if (!resourceManager_) {
@@ -80,8 +81,8 @@ int CullingTest::setupTests() {
   int sceneID = sceneManager_->initSceneGraph();
 
   std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
-  bool result = resourceManager_->loadStage(
-      stageAttributes, nullptr, sceneManager_.get(), tempIDs, false);
+  bool result = resourceManager_->loadStage(stageAttributes, nullptr, nullptr,
+                                            sceneManager_.get(), tempIDs);
   CORRADE_VERIFY(result);
   return sceneID;
 }
@@ -273,6 +274,5 @@ void CullingTest::frustumCulling() {
   CORRADE_COMPARE(numVisibleObjects, numVisibleObjectsGroundTruth);
 }
 }  // namespace
-}  // namespace Test
 
-CORRADE_TEST_MAIN(Test::CullingTest)
+CORRADE_TEST_MAIN(CullingTest)

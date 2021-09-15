@@ -102,7 +102,7 @@ void SceneAttributesManager::setValsFromJSONDoc(
       }
     }
   } else {
-    ESP_WARNING() << "Articulated Objects specified for scene"
+    ESP_WARNING() << "No Articulated Objects specified for scene"
                   << attribsDispName << ", or specification error.";
   }
 
@@ -189,7 +189,7 @@ SceneAttributesManager::createAOInstanceAttributesFromJSON(
     } else if (jCell["initial_joint_pose"].IsObject()) {
       // load values into map
       io::readMember<std::map<std::string, float>>(
-          jCell, "initial_joint_pose", instanceAttrs->getInitJointPose());
+          jCell, "initial_joint_pose", instanceAttrs->copyIntoInitJointPose());
     } else {
       ESP_WARNING()
           << "SceneAttributesManager::"
@@ -216,7 +216,7 @@ SceneAttributesManager::createAOInstanceAttributesFromJSON(
       // load values into map
       io::readMember<std::map<std::string, float>>(
           jCell, "initial_joint_velocities",
-          instanceAttrs->getInitJointVelocities());
+          instanceAttrs->copyIntoInitJointVelocities());
     } else {
       ESP_WARNING()
           << "SceneAttributesManager::"
@@ -283,15 +283,15 @@ void SceneAttributesManager::loadAbstractObjectAttributesFromJson(
       });
 
   // uniform scaling for instance
-  io::jsonIntoSetter<float>(jCell, "uniform_scale",
-                            [instanceAttrs](float uniform_scale) {
-                              instanceAttrs->setUniformScale(uniform_scale);
-                            });
+  io::jsonIntoSetter<double>(jCell, "uniform_scale",
+                             [instanceAttrs](double uniform_scale) {
+                               instanceAttrs->setUniformScale(uniform_scale);
+                             });
   // mass scaling for instance
-  io::jsonIntoSetter<float>(jCell, "mass_scale",
-                            [instanceAttrs](float mass_scale) {
-                              instanceAttrs->setMassScale(mass_scale);
-                            });
+  io::jsonIntoSetter<double>(jCell, "mass_scale",
+                             [instanceAttrs](double mass_scale) {
+                               instanceAttrs->setMassScale(mass_scale);
+                             });
 
   // check for user defined attributes
   this->parseUserDefinedJsonVals(instanceAttrs, jCell);

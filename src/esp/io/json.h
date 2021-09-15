@@ -55,16 +55,16 @@ std::string jsonToString(const JsonDocument& d);
 esp::vec3f jsonToVec3f(const JsonGenericValue& jsonArray);
 
 /**
- * @brief Recursively load a @ref esp::core::Configuration based on a json file.
+ * @brief Recursively load data into a @ref esp::core::Configuration based on a
+ * json file.
  * @param jsonObj The source json being read
- * @param subGroupName The subgroup name to create amd populate within the
- * configuration
- * @param config The owning configuration that the subgroup is a part of
+ * @param configPtr Shared pointer to configuration to populate with the JSON
+ * data
  * @return The number of configuration settings successfully read.
  */
-int loadJsonIntoConfiguration(const JsonGenericValue& jsonObj,
-                              const std::string& subGroupName,
-                              esp::core::Configuration& config);
+int loadJsonIntoConfiguration(
+    const JsonGenericValue& jsonObj,
+    const std::shared_ptr<esp::core::config::Configuration>& configPtr);
 
 /**
  * @brief Check passed json doc for existence of passed jsonTag as value of

@@ -79,6 +79,9 @@ void BulletArticulatedObject::initializeFromURDF(
 
   auto urdfModel = u2b.getModel();
 
+  // cache the global scaling from the source model
+  globalScale_ = urdfModel->getGlobalScaling();
+
   int urdfLinkIndex = u2b.getRootLinkIndex();
   // int rootIndex = u2b.getRootLinkIndex();
 
@@ -159,6 +162,8 @@ void BulletArticulatedObject::initializeFromURDF(
         createJointMotor(linkIx, settings);
       }
     }
+    // set user config attributes from model.
+    setUserAttributes(urdfModel->getUserConfiguration());
 
     // in case the base transform is not zero by default
     syncPose();
@@ -256,8 +261,7 @@ void BulletArticulatedObject::resetStateFromSceneInstanceAttr(
   // get array of existing joint dofs
   std::vector<float> aoJointPose = getJointPositions();
   // get instance-specified initial joint positions
-  std::map<std::string, float>& initJointPos =
-      sceneObjInstanceAttr->getInitJointPose();
+  const auto& initJointPos = sceneObjInstanceAttr->getInitJointPose();
   // map instance vals into
   size_t idx = 0;
   for (const auto& elem : initJointPos) {
@@ -275,7 +279,7 @@ void BulletArticulatedObject::resetStateFromSceneInstanceAttr(
   // get array of existing joint vel dofs
   std::vector<float> aoJointVels = getJointVelocities();
   // get instance-specified initial joint velocities
-  std::map<std::string, float>& initJointVel =
+  const std::map<std::string, float>& initJointVel =
       sceneObjInstanceAttr->getInitJointVelocities();
   idx = 0;
   for (const auto& elem : initJointVel) {

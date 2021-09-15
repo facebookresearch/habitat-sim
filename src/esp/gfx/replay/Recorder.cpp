@@ -70,6 +70,14 @@ void Recorder::saveKeyframe() {
   advanceKeyframe();
 }
 
+const Keyframe& Recorder::getLatestKeyframe() {
+  CORRADE_ASSERT(!savedKeyframes_.empty(),
+                 "Recorder::getLatestKeyframe() : Trying to access latest "
+                 "keyframe when there are none",
+                 savedKeyframes_.back());
+  return savedKeyframes_.back();
+}
+
 void Recorder::addUserTransformToKeyframe(const std::string& name,
                                           const Magnum::Vector3& translation,
                                           const Magnum::Quaternion& rotation) {
@@ -179,6 +187,13 @@ std::string Recorder::writeSavedKeyframesToString() {
   consolidateSavedKeyframes();
 
   return esp::io::jsonToString(document);
+}
+
+std::string Recorder::keyframeToString(const Keyframe& keyframe) {
+  rapidjson::Document d(rapidjson::kObjectType);
+  rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
+  esp::io::addMember(d, "keyframe", keyframe, allocator);
+  return esp::io::jsonToString(d);
 }
 
 void Recorder::consolidateSavedKeyframes() {

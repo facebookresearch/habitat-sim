@@ -38,6 +38,7 @@ add_library(
   Buffer.h
   Check.cpp
   Check.h
+  Configuration.cpp
   Configuration.h
   esp.cpp
   esp.h
@@ -59,7 +60,3 @@ target_link_libraries(
 )
 
 target_include_directories(core PUBLIC ${PROJECT_BINARY_DIR})
-
-if(BUILD_TEST)
-  add_subdirectory(test)
-endif()

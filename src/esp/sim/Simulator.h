@@ -81,14 +81,18 @@ class Simulator {
     return semanticScene_;
   }
 
+  /** @brief check if the semantic scene exists.*/
   bool semanticSceneExists() const { return (semanticScene_ != nullptr); }
 
+  /**
+   * @brief get the current active scene graph
+   */
   scene::SceneGraph& getActiveSceneGraph() {
     CORRADE_INTERNAL_ASSERT(std::size_t(activeSceneID_) < sceneID_.size());
     return sceneManager_->getSceneGraph(activeSceneID_);
   }
 
-  //! return the semantic scene's SceneGraph for rendering
+  /** @brief get the semantic scene's SceneGraph for rendering */
   scene::SceneGraph& getActiveSemanticSceneGraph() {
     CORRADE_INTERNAL_ASSERT(std::size_t(activeSemanticSceneID_) <
                             sceneID_.size());
@@ -1028,6 +1032,17 @@ class Simulator {
 
  protected:
   /**
+   * @brief if Navemesh visualization is active, reset the visualization.
+   */
+  void resetNavMeshVisIfActive() {
+    if (isNavMeshVisualizationActive()) {
+      // if updating pathfinder_ instance, refresh the visualization.
+      setNavMeshVisualization(false);  // first clear the old instance
+      setNavMeshVisualization(true);
+    }
+  }
+
+  /**
    * @brief Internal use only. Remove a trajectory object, its mesh, and all
    * references to it.
    * @param trajVisObjID The object ID of the trajectory visualization to
@@ -1326,16 +1341,6 @@ class Simulator {
   bool createSceneInstance(const std::string& activeSceneName);
 
   /**
-   * @brief Builds a scene instance based on @ref
-   * esp::metadata::attributes::SceneAttributes referenced by @p activeSceneName
-   * . This function is specifically for cases where no renderer is desired.
-   * @param activeSceneName The name of the desired SceneAttributes to use to
-   * instantiate a scene.
-   * @return Whether successful or not.
-   */
-  bool createSceneInstanceNoRenderer(const std::string& activeSceneName);
-
-  /**
    * @brief Shared initial functionality for creating/setting the current scene
    * instance attributes corresponding to activeSceneName, regardless of desired
    * renderer state.
@@ -1347,19 +1352,38 @@ class Simulator {
       const std::string& activeSceneName);
 
   /**
+   * @brief Instance the stage for the current scene based on the current active
+   * schene's scene instance configuration.
+   * @param curSceneInstanceAttributes The attributes describing the current
+   * scene instance.
+   * @return whether stage creation is completed successfully
+   */
+  bool instanceStageForActiveScene(
+      const metadata::attributes::SceneAttributes::cptr&
+          curSceneInstanceAttributes);
+
+  /**
    * @brief Instance all the objects in the scene based on the current active
    * schene's scene instance configuration.
+   * @param curSceneInstanceAttributes The attributes describing the current
+   * scene instance.
    * @return whether object creation and placement is completed successfully
    */
-  bool instanceObjectsForActiveScene();
+  bool instanceObjectsForActiveScene(
+      const metadata::attributes::SceneAttributes::cptr&
+          curSceneInstanceAttributes);
 
   /**
    * @brief Instance all the articulated objects in the scene based on the
    * current active schene's scene instance configuration.
+   * @param curSceneInstanceAttributes The attributes describing the current
+   * scene instance.
    * @return whether articulated object creation and placement is completed
    * successfully
    */
-  bool instanceArticulatedObjectsForActiveScene();
+  bool instanceArticulatedObjectsForActiveScene(
+      const metadata::attributes::SceneAttributes::cptr&
+          curSceneInstanceAttributes);
 
   /**
    * @brief sample a random valid AgentState in passed agentState

@@ -2,7 +2,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.12)
 
 option(BUILD_WITH_CUDA "Build Habitat-Sim with CUDA features enabled -- Requires CUDA"
        OFF
@@ -53,7 +53,9 @@ option(
   ON
 )
 option(BUILD_TEST "Build test binaries" OFF)
+option(REL_BUILD_RPATH "Use a relative build rpath" OFF)
 option(USE_SYSTEM_ASSIMP "Use system Assimp instead of a bundled submodule" OFF)
+option(USE_SYSTEM_OPENEXR "Use system OpenEXR instead of a bundled submodule" OFF)
 option(USE_SYSTEM_EIGEN "Use system Eigen instead of a bundled submodule" OFF)
 option(USE_SYSTEM_GLFW "Use system GLFW instead of a bundled submodule" OFF)
 option(USE_SYSTEM_MAGNUM "Use system Magnum instead of a bundled submodule" OFF)
@@ -91,7 +93,14 @@ if(CMAKE_INTERPROCEDURAL_OPTIMIZATION)
     # Policy that enables INTERPROCEDURAL_OPTIMIZATION
     set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
     cmake_policy(SET CMP0069 NEW)
-    if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang"
+       OR (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION
+                                                     VERSION_LESS 13.0)
+    )
+      message(
+        "-- Forcing full LTO for compatibility: ThinLTO requires LLVM Clang>=13.0"
+      )
       # Clang has some issues with thinLTO (segfaults on final linking)
       # This enables full LTO through CMake
       # FullLTO is slow, but may yield performance improvements.
@@ -108,6 +117,30 @@ endif()
 #set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 #set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
+
+# Properly set the rpath in a cross-platform way
+if(APPLE)
+  set(CMAKE_MACOSX_RPATH ON)
+  set(_rpath_portable_origin "@loader_path")
+else()
+  set(_rpath_portable_origin $ORIGIN)
+endif(APPLE)
+set(CMAKE_SKIP_BUILD_RPATH FALSE)
+if(REL_BUILD_RPATH)
+  message("Using relative rpath")
+  set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
+  set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+  #_magnum.so needs to look at habitat_sim/_ext for its corrade dependencies
+  set(CMAKE_INSTALL_RPATH "${_rpath_portable_origin}"
+                          "${_rpath_portable_origin}/habitat_sim/_ext/"
+  )
+else()
+  message("Using absolute rpath")
+  # Set to defaults
+  set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+  set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
+  set(CMAKE_INSTALL_RPATH "")
+endif()
 
 # ---[ Dependencies
 include(cmake/dependencies.cmake)
@@ -142,14 +175,22 @@ endif()
 # add subdirectories
 add_subdirectory(esp)
 
+if(BUILD_PYTHON_BINDINGS)
+  message("Building Python bindings")
+  add_subdirectory(esp/bindings)
+endif()
+
+# emscripten js bindings
+if(CORRADE_TARGET_EMSCRIPTEN)
+  message("Building Emscripten JS bindings")
+  add_subdirectory(esp/bindings_js)
+endif()
+
+# Build the following with the build RPath
+set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
 if(BUILD_DATATOOL)
   message("Building datatool")
   add_subdirectory(utils/datatool)
-endif()
-
-if(BUILD_GUI_VIEWERS)
-  message("Building GUI viewer")
-  add_subdirectory(utils/viewer)
 endif()
 
 if(BUILD_BASIS_COMPRESSOR)
@@ -161,13 +202,7 @@ if(BUILD_TEST)
 endif()
 
 # pybind bindings
-if(BUILD_PYTHON_BINDINGS)
-  message("Building Python bindings")
-  add_subdirectory(esp/bindings)
-endif()
-
-# emscripten js bindings
-if(CORRADE_TARGET_EMSCRIPTEN)
-  message("Building Emscripten JS bindings")
-  add_subdirectory(esp/bindings_js)
+if(BUILD_GUI_VIEWERS)
+  message("Building GUI viewer")
+  add_subdirectory(utils/viewer)
 endif()

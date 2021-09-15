@@ -172,8 +172,7 @@ bool MetadataMediator::setCurrPhysicsAttributesHandle(
   if (physicsAttributesManager_->getObjectLibHasHandle(
           _physicsManagerAttributesPath)) {
     if (currPhysicsManagerAttributes_ != _physicsManagerAttributesPath) {
-      ESP_DEBUG() << "::setCurrPhysicsAttributesHandle : Old "
-                     "physics manager attributes"
+      ESP_DEBUG() << "Old physics manager attributes"
                   << currPhysicsManagerAttributes_ << "changed to"
                   << _physicsManagerAttributesPath << "successfully.";
       currPhysicsManagerAttributes_ = _physicsManagerAttributesPath;
@@ -248,7 +247,7 @@ attributes::SceneAttributes::ptr MetadataMediator::getSceneAttributesByName(
     ESP_DEBUG() << "Query dataset :" << activeSceneDataset_
                 << "for SceneAttributes named :" << sceneName << "yields"
                 << sceneList.size() << "candidates.  Using" << sceneList[0]
-                << ".";
+                << Mn::Debug::nospace << ".";
     sceneAttributes = dsSceneAttrMgr->getObjectCopyByHandle(sceneList[0]);
   } else {
     const std::string sceneFilenameCandidate =
@@ -407,14 +406,8 @@ std::string MetadataMediator::createDatasetReport(
                 << "is not found in the MetadataMediator.  Aborting.";
     return "Requeseted SceneDataset `" + sceneDataset + "` unknown.";
   }
-  std::string res{"Scene Dataset"};
-
-  res.append(ds->getObjectInfoHeader())
-      .append(1, '\n')
-      .append(ds->getObjectInfo())
-      .append(1, '\n');
-  return res;
-
+  return Corrade::Utility::formatString(
+      "Scene Dataset {}\n{}\n", ds->getObjectInfoHeader(), ds->getObjectInfo());
 }  // MetadataMediator::const std::string MetadataMediator::createDatasetReport(
 
 }  // namespace metadata

@@ -17,33 +17,33 @@ class PhysicsManagerAttributes : public AbstractAttributes {
   explicit PhysicsManagerAttributes(const std::string& handle = "");
 
   void setSimulator(const std::string& simulator) {
-    setString("physics_simulator", simulator);
+    set("physics_simulator", simulator);
   }
-  std::string getSimulator() const { return getString("physics_simulator"); }
-
-  void setTimestep(double timestep) { setDouble("timestep", timestep); }
-  double getTimestep() const { return getDouble("timestep"); }
-
-  void setMaxSubsteps(int maxSubsteps) { setInt("max_substeps", maxSubsteps); }
-  int getMaxSubsteps() const { return getInt("max_substeps"); }
-
-  void setGravity(const Magnum::Vector3& gravity) {
-    setVec3("gravity", gravity);
+  std::string getSimulator() const {
+    return get<std::string>("physics_simulator");
   }
-  Magnum::Vector3 getGravity() const { return getVec3("gravity"); }
+
+  void setTimestep(double timestep) { set("timestep", timestep); }
+  double getTimestep() const { return get<double>("timestep"); }
+
+  void setMaxSubsteps(int maxSubsteps) { set("max_substeps", maxSubsteps); }
+  int getMaxSubsteps() const { return get<int>("max_substeps"); }
+
+  void setGravity(const Magnum::Vector3& gravity) { set("gravity", gravity); }
+  Magnum::Vector3 getGravity() const { return get<Magnum::Vector3>("gravity"); }
 
   void setFrictionCoefficient(double frictionCoefficient) {
-    setDouble("friction_coefficient", frictionCoefficient);
+    set("friction_coefficient", frictionCoefficient);
   }
   double getFrictionCoefficient() const {
-    return getDouble("friction_coefficient");
+    return get<double>("friction_coefficient");
   }
 
   void setRestitutionCoefficient(double restitutionCoefficient) {
-    setDouble("restitution_coefficient", restitutionCoefficient);
+    set("restitution_coefficient", restitutionCoefficient);
   }
   double getRestitutionCoefficient() const {
-    return getDouble("restitution_coefficient");
+    return get<double>("restitution_coefficient");
   }
 
  protected:
@@ -53,8 +53,8 @@ class PhysicsManagerAttributes : public AbstractAttributes {
    */
 
   std::string getObjectInfoHeaderInternal() const override {
-    return "Simulator Type, Timestep, Max Substeps, Gravity XYZ, Friction "
-           "Coefficient, Restitution Coefficient,";
+    return "Simulator Type,Timestep,Max Substeps,Gravity XYZ,Friction "
+           "Coefficient,Restitution Coefficient,";
   }
 
   /**
@@ -62,17 +62,11 @@ class PhysicsManagerAttributes : public AbstractAttributes {
    * of this managed object.
    */
   std::string getObjectInfoInternal() const override {
-    return getSimulator()
-        .append(1, ',')
-        .append(cfg.value("timestep"))
-        .append(1, ',')
-        .append(cfg.value("max_substeps"))
-        .append(1, ',')
-        .append(cfg.value("gravity"))
-        .append(1, ',')
-        .append(cfg.value("friction_coefficient"))
-        .append(1, ',')
-        .append(cfg.value("restitution_coefficient"));
+    return Cr::Utility::formatString(
+        "{},{},{},{},{},{}", getSimulator(), getAsString("timestep"),
+        getAsString("max_substeps"), getAsString("gravity"),
+        getAsString("friction_coefficient"),
+        getAsString("restitution_coefficient"));
   }
 
  public:

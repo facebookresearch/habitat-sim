@@ -52,6 +52,8 @@ PhysicsManager::~PhysicsManager() {
 
 bool PhysicsManager::addStage(
     const metadata::attributes::StageAttributes::ptr& initAttributes,
+    const metadata::attributes::SceneObjectInstanceAttributes::cptr&
+        stageInstanceAttributes,
     const std::vector<assets::CollisionMeshData>& meshGroup) {
   // Test Mesh primitive is valid
   for (const assets::CollisionMeshData& meshData : meshGroup) {
@@ -60,20 +62,28 @@ bool PhysicsManager::addStage(
     }
   }
 
-  //! Initialize scene
+  //! Initialize stage
   bool sceneSuccess = addStageFinalize(initAttributes);
+  // add/merge stageInstanceAttributes' copy of user_attributes.
+  if (!stageInstanceAttributes) {
+    ESP_DEBUG() << "Stage built from StageInstanceAttributes";
+    // TODO merge instance attributes into staticStageObject_'s existing
+    // attributes
+  }
+  // TODO process any stage transformations here from stageInstanceAttributes
+
   return sceneSuccess;
 }  // PhysicsManager::addStage
 
 bool PhysicsManager::addStageFinalize(
     const metadata::attributes::StageAttributes::ptr& initAttributes) {
-  //! Initialize scene
-  bool sceneSuccess = staticStageObject_->initialize(initAttributes);
-  return sceneSuccess;
+  //! Initialize stage
+  bool stageSuccess = staticStageObject_->initialize(initAttributes);
+  return stageSuccess;
 }  // PhysicsManager::addStageFinalize
 
 int PhysicsManager::addObjectInstance(
-    const esp::metadata::attributes::SceneObjectInstanceAttributes::ptr&
+    const esp::metadata::attributes::SceneObjectInstanceAttributes::cptr&
         objInstAttributes,
     const std::string& attributesHandle,
     bool defaultCOMCorrection,
@@ -114,13 +124,19 @@ int PhysicsManager::addObjectInstance(
                 << "as specified in object instance attributes.";
     return ID_UNDEFINED;
   }
+  auto objPtr = this->existingObjects_.at(objID);
 
   // save the scene init attributes used to configure object's initial state
-  this->existingObjects_.at(objID)->setSceneInstanceAttr(objInstAttributes);
+  objPtr->setSceneInstanceAttr(objInstAttributes);
+  // merge scene instance user-defined configurations with the new object's, if
+  // scene instance specifies any set articulated object's user-defined
+  // attributes, if any exist in scene
+  // instance.
+  objPtr->mergeUserAttributes(objInstAttributes->getUserConfiguration());
+
   // set object's location, rotation and other pertinent state values based on
   // scene object instance attributes set in the object above.
-  this->existingObjects_.at(objID)->resetStateFromSceneInstanceAttr(
-      defaultCOMCorrection);
+  objPtr->resetStateFromSceneInstanceAttr(defaultCOMCorrection);
 
   return objID;
 }  // PhysicsManager::addObjectInstance
@@ -260,7 +276,8 @@ int PhysicsManager::addObject(
 
 int PhysicsManager::addArticulatedObjectInstance(
     const std::string& filepath,
-    const std::shared_ptr<esp::metadata::attributes::SceneAOInstanceAttributes>&
+    const std::shared_ptr<
+        const esp::metadata::attributes::SceneAOInstanceAttributes>&
         aObjInstAttributes,
     const std::string& lightSetup) {
   // Get drawables from simulator. TODO: Support non-existent simulator?
@@ -282,20 +299,18 @@ int PhysicsManager::addArticulatedObjectInstance(
   }
 
   // set articulated object up using scene instance
-
+  auto aObjPtr = existingArticulatedObjects_.at(aObjID);
   // set articulated object's scene instancing attributes
-  existingArticulatedObjects_.at(aObjID)->setSceneInstanceAttr(
-      aObjInstAttributes);
+  aObjPtr->setSceneInstanceAttr(aObjInstAttributes);
 
-  // set articulated object's user-defined attributes, if any exist in scene
+  // merge articulated object's user-defined attributes, if any exist in scene
   // instance.
-  existingArticulatedObjects_.at(aObjID)->setUserAttributes(
-      aObjInstAttributes->getUserConfiguration());
+  aObjPtr->mergeUserAttributes(aObjInstAttributes->getUserConfiguration());
 
   // set articulated object's location, rotation and other pertinent state
   // values based on
   // scene object instance attributes set in the object above.
-  existingArticulatedObjects_.at(aObjID)->resetStateFromSceneInstanceAttr();
+  aObjPtr->resetStateFromSceneInstanceAttr();
 
   return aObjID;
 }  // PhysicsManager::addArticulatedObjectInstance

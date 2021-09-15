@@ -68,7 +68,7 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
    */
   ManagedFileIOPtr createObjectFromJSONFile(const std::string& filename,
                                             bool registerObject = true) {
-    io::JsonDocument docConfig = nullptr;
+    std::unique_ptr<io::JsonDocument> docConfig{};
     bool success = this->verifyLoadDocument(filename, docConfig);
     if (!success) {
       ESP_ERROR() << "<" << Magnum::Debug::nospace << this->objectType_
@@ -78,7 +78,7 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
       return nullptr;
     }
     // convert doc to const value
-    const io::JsonGenericValue config = docConfig.GetObject();
+    const io::JsonGenericValue config = docConfig->GetObject();
     ManagedFileIOPtr attr = this->buildManagedObjectFromDoc(filename, config);
     return this->postCreateRegister(attr, registerObject);
   }  // ManagedFileBasedContainer::createObjectFromJSONFile
@@ -136,13 +136,13 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
    * no appropriate specialization exists for passed type of document.
    *
    * @tparam type of document
-   * @param filename name of potentia document to load
+   * @param filename name of potential document to load
    * @param resDoc a reference to the document to be parsed.
    * @return whether document has been loaded successfully or not
    */
   template <class U>
   bool verifyLoadDocument(const std::string& filename,
-                          CORRADE_UNUSED U& resDoc) {
+                          CORRADE_UNUSED std::unique_ptr<U>& resDoc) {
     // by here always fail
     ESP_ERROR() << "<" << Magnum::Debug::nospace << this->objectType_
                 << Magnum::Debug::nospace << "> : File" << filename
@@ -158,7 +158,7 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
    * @return whether document has been loaded successfully or not
    */
   bool verifyLoadDocument(const std::string& filename,
-                          io::JsonDocument& jsonDoc);
+                          std::unique_ptr<io::JsonDocument>& jsonDoc);
 
   /**
    * @brief Will build a new file name for @p filename by replacing the existing
@@ -223,10 +223,10 @@ std::string ManagedFileBasedContainer<T, Access>::convertFilenameToPassedExt(
 template <class T, ManagedObjectAccess Access>
 bool ManagedFileBasedContainer<T, Access>::verifyLoadDocument(
     const std::string& filename,
-    io::JsonDocument& jsonDoc) {
+    std::unique_ptr<io::JsonDocument>& jsonDoc) {
   if (isValidFileName(filename)) {
     try {
-      jsonDoc = io::parseJsonFile(filename);
+      jsonDoc = std::make_unique<io::JsonDocument>(io::parseJsonFile(filename));
     } catch (...) {
       ESP_ERROR() << "<" << Magnum::Debug::nospace << this->objectType_
                   << Magnum::Debug::nospace << "> : Failed to parse" << filename
