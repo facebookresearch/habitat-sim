@@ -36,7 +36,7 @@ commands:
             conda install -y anaconda-client ccache cmake git ninja conda-build pip
             echo $(which -a python)
             pip install gitpython
-            anaconda login --username << parameters.AIHABITAT_CONDA_CHN >>  --password $<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >>
+            <<^ parameters.test>> anaconda login --username << parameters.AIHABITAT_CONDA_CHN >>  --password $<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >>
             conda config --set anaconda_upload yes <</ parameters.test>>
             cd habitat-sim/conda-build
             git submodule update --init --recursive --jobs 16
