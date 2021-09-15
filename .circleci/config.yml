@@ -626,8 +626,6 @@ jobs:
       - restore_cache:
           keys:
             - conda-{{ checksum "habitat-sim/.circleci/config.yml" }}
-      - run: *install_conda
-      - run: *install_deps
       - run:
           name: Build conda Linux packages
           no_output_timeout: 240m
