@@ -207,7 +207,8 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
 
     // Build default semantic mesh file name
     const std::string semanticMeshFilename =
-        io::removeExtension(houseFilename) + "_semantic.ply";
+        Cr::Utility::Directory::splitExtension(houseFilename).first +
+        "_semantic.ply";
     newAttributes->setSemanticAssetHandle(semanticMeshFilename);
 
     // set default origin and orientation values based on file name

@@ -8,7 +8,6 @@
 #include <Corrade/Utility/String.h>
 
 #include "esp/assets/Asset.h"
-#include "esp/io/Io.h"
 #include "esp/io/Json.h"
 
 namespace Cr = Corrade;

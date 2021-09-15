@@ -49,7 +49,6 @@
 #include "esp/core/Esp.h"
 #include "esp/core/Utility.h"
 #include "esp/gfx/Drawable.h"
-#include "esp/io/Io.h"
 
 #ifdef ESP_BUILD_WITH_VHACD
 #include "esp/geo/VoxelUtils.h"

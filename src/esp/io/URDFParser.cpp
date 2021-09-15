@@ -12,7 +12,6 @@
 
 #include "URDFParser.h"
 #include "esp/core/Logging.h"
-#include "esp/io/Io.h"
 #include "esp/io/Json.h"
 
 #include "tinyxml2/tinyxml2.h"

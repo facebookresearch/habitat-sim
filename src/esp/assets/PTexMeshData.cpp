@@ -24,7 +24,6 @@
 
 #include "esp/core/Esp.h"
 #include "esp/gfx/PTexMeshShader.h"
-#include "esp/io/Io.h"
 #include "esp/io/Json.h"
 
 static constexpr int ROTATION_SHIFT = 30;
@@ -38,18 +37,18 @@ namespace assets {
 
 void PTexMeshData::load(const std::string& meshFile,
                         const std::string& atlasFolder) {
-  if (!io::exists(meshFile)) {
+  if (!Cr::Utility::Directory::exists(meshFile)) {
     Cr::Utility::Fatal{-1} << "PTexMeshData::load: Mesh file" << meshFile
                            << "does not exist.";
   }
-  if (!io::exists(atlasFolder)) {
+  if (!Cr::Utility::Directory::exists(atlasFolder)) {
     Cr::Utility::Fatal{-1} << "PTexMeshData::load: The atlasFolder"
                            << atlasFolder << "does not exist.";
   }
 
   // Parse parameters
   const auto& paramsFile = atlasFolder + "/parameters.json";
-  if (!io::exists(paramsFile)) {
+  if (!Cr::Utility::Directory::exists(paramsFile)) {
     Cr::Utility::Fatal{-1} << "PTexMeshData::load: The parameter file"
                            << paramsFile << "does not exist.";
   }
@@ -760,7 +759,7 @@ void PTexMeshData::parsePLY(const std::string& filename,
   Cr::Containers::Array<const char, Cr::Utility::Directory::MapDeleter>
       mmappedData = Cr::Utility::Directory::mapRead(filename);
 
-  const size_t fileSize = io::fileSize(filename);
+  const size_t fileSize = *Cr::Utility::Directory::fileSize(filename);
 
   // Parse each vertex packet and unpack
   const char* bytes = mmappedData + postHeader;
@@ -907,7 +906,7 @@ void PTexMeshData::uploadBuffersToGPU(bool forceReload) {
     const std::string hdrFile = Cr::Utility::Directory::join(
         atlasFolder_, std::to_string(iMesh) + "-color-ptex.hdr");
 
-    CORRADE_ASSERT(io::exists(hdrFile),
+    CORRADE_ASSERT(Cr::Utility::Directory::exists(hdrFile),
                    "PTexMeshData::uploadBuffersToGPU: Cannot find the .hdr file"
                        << hdrFile, );
 

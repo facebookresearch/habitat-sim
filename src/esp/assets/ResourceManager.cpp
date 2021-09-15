@@ -44,7 +44,6 @@
 #include "esp/gfx/MaterialUtil.h"
 #include "esp/gfx/PbrDrawable.h"
 #include "esp/gfx/replay/Recorder.h"
-#include "esp/io/Io.h"
 #include "esp/io/Json.h"
 #include "esp/io/URDFParser.h"
 #include "esp/physics/PhysicsManager.h"
@@ -2217,7 +2216,8 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
       Cr::Utility::Directory::current(), houseInfo.filepath);
   const auto& json = io::parseJsonFile(houseFile);
   const auto& levels = json["levels"].GetArray();
-  std::vector<std::string> pathTokens = io::tokenize(houseFile, "/", 0, true);
+  std::vector<std::string> pathTokens =
+      Cr::Utility::String::splitWithoutEmptyParts(houseFile, '/');
   CORRADE_INTERNAL_ASSERT(pathTokens.size() >= 3);
   pathTokens.pop_back();  // house.json
   const std::string houseId = pathTokens.back();

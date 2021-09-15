@@ -20,7 +20,6 @@
 
 #include "esp/core/Esp.h"
 #include "esp/geo/Geo.h"
-#include "esp/io/Io.h"
 #include "esp/io/Json.h"
 
 namespace Cr = Corrade;

@@ -9,7 +9,6 @@
 #include <sophus/se3.hpp>
 #include <string>
 
-#include "esp/io/Io.h"
 #include "esp/io/Json.h"
 
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
