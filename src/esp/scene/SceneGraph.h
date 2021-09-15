@@ -7,7 +7,7 @@
 
 #include <unordered_map>
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/gfx/magnum.h"
 
 #include "SceneNode.h"

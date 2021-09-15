@@ -4,7 +4,7 @@
 #include <Corrade/TestSuite/Tester.h>
 #include <Corrade/Utility/Directory.h>
 #include <string>
-#include "esp/io/io.h"
+#include "esp/io/Io.h"
 #include "esp/scene/SemanticScene.h"
 #include "esp/sim/Simulator.h"
 

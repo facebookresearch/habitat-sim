@@ -11,7 +11,7 @@
 
 #include "JsonBuiltinTypes.h"
 
-#include "esp/core/logging.h"
+#include "esp/core/Logging.h"
 
 #include <Corrade/Containers/Optional.h>
 #include <Magnum/Magnum.h>

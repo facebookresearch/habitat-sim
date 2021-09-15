@@ -9,7 +9,7 @@
 #include "esp/assets/BaseMesh.h"
 #include "esp/assets/GenericInstanceMeshData.h"
 #include "esp/assets/MeshData.h"
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/geo/VoxelWrapper.h"
 #include "esp/metadata/attributes/AttributesBase.h"
 #include "esp/physics/PhysicsObjectBase.h"

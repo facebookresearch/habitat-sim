@@ -5,8 +5,8 @@
 #include "Recorder.h"
 
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
+#include "esp/io/Json.h"
 #include "esp/io/JsonAllTypes.h"
-#include "esp/io/json.h"
 #include "esp/scene/SceneNode.h"
 
 namespace esp {

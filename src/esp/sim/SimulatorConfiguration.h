@@ -7,7 +7,7 @@
 
 #include <string>
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/physics/configure.h"
 
 namespace esp {

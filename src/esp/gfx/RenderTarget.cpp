@@ -27,7 +27,7 @@
 #ifdef ESP_BUILD_WITH_CUDA
 #include <cuda_gl_interop.h>
 #include <cuda_runtime.h>
-#include "helper_cuda.h"
+#include "HelperCuda.h"
 #endif
 
 namespace Cr = Corrade;

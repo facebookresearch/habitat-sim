@@ -26,9 +26,9 @@
 #include <Magnum/Math/Range.h>
 #include <Magnum/Math/RectangularMatrix.h>
 
+#include "esp/core/Logging.h"
+#include "esp/core/Spimpl.h"
 #include "esp/core/configure.h"
-#include "esp/core/logging.h"
-#include "esp/core/spimpl.h"
 
 namespace Eigen {
 typedef Matrix<uint8_t, 3, 1> Vector3uc;

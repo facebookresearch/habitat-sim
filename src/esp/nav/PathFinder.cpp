@@ -22,7 +22,7 @@
 #include <limits>
 
 #include "esp/assets/MeshData.h"
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
 #include "DetourNavMesh.h"
 #include "DetourNavMeshBuilder.h"

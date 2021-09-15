@@ -8,7 +8,7 @@
 #include <Magnum/GL/CubeMapTexture.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Tags.h>
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/gfx/RenderCamera.h"
 
 namespace esp {

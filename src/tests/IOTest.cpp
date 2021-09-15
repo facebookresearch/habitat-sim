@@ -7,11 +7,11 @@
 #include <Corrade/Utility/Directory.h>
 
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
+#include "esp/io/Io.h"
+#include "esp/io/Json.h"
 #include "esp/io/JsonAllTypes.h"
 #include "esp/io/URDFParser.h"
-#include "esp/io/io.h"
-#include "esp/io/json.h"
 #include "esp/metadata/attributes/ObjectAttributes.h"
 
 #include "configure.h"

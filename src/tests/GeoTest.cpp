@@ -10,8 +10,8 @@
 #include <Magnum/Math/FunctionsBatch.h>
 #include "esp/core/Utility.h"
 #include "esp/geo/CoordinateFrame.h"
+#include "esp/geo/Geo.h"
 #include "esp/geo/OBB.h"
-#include "esp/geo/geo.h"
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;

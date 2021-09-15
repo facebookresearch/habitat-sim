@@ -11,8 +11,8 @@
 
 #include "esp/assets/Asset.h"
 #include "esp/assets/ResourceManager.h"
-#include "esp/io/io.h"
-#include "esp/io/json.h"
+#include "esp/io/Io.h"
+#include "esp/io/Json.h"
 
 namespace esp {
 using assets::AssetType;

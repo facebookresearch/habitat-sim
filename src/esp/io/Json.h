@@ -14,7 +14,7 @@
 #include <string>
 #include <vector>
 #include "esp/core/Configuration.h"
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Quaternion.h>

@@ -10,7 +10,7 @@
 #include <Magnum/Math/ConfigurationValue.h>
 
 #include "esp/core/Check.h"
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
 #include "esp/gfx/RenderCamera.h"
 #include "esp/sensor/Sensor.h"
