@@ -17,6 +17,12 @@ commands:
           description: "Whether to build in nightly mode"
           type: boolean
           default: False
+        AIHABITAT_CONDA_CHN:
+          type: string
+          default: "aihabitat"
+        AIHABITAT_CONDA_CHN_PWD_VAR:
+          type: string
+          default: "AIHABITAT_CONDA_PWD"
     steps:
       - run:
           name: Conda Install OSX
