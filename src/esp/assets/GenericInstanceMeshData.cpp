@@ -19,9 +19,9 @@
 #include <Magnum/Trade/AbstractImporter.h>
 
 #include "esp/core/Esp.h"
-#include "esp/geo/geo.h"
+#include "esp/geo/Geo.h"
+#include "esp/io/Io.h"
 #include "esp/io/Json.h"
-#include "esp/io/io.h"
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;

@@ -8,7 +8,7 @@
 #include "magnum.h"
 
 #include "esp/core/Esp.h"
-#include "esp/geo/geo.h"
+#include "esp/geo/Geo.h"
 #include "esp/scene/SceneNode.h"
 
 namespace esp {

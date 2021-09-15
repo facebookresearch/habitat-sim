@@ -11,7 +11,7 @@
 #include <sophus/so3.hpp>
 #include "esp/assets/GenericInstanceMeshData.h"
 #include "esp/core/Esp.h"
-#include "esp/geo/geo.h"
+#include "esp/geo/Geo.h"
 
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>

@@ -11,9 +11,9 @@
 #include <iostream>
 
 #include "URDFParser.h"
-#include "esp/core/logging.h"
+#include "esp/core/Logging.h"
+#include "esp/io/Io.h"
 #include "esp/io/Json.h"
-#include "esp/io/io.h"
 
 #include "tinyxml2/tinyxml2.h"
 

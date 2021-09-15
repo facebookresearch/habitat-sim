@@ -9,7 +9,7 @@
 #include <Magnum/Math/Color.h>
 
 #include "esp/core/Check.h"
-#include "esp/core/logging.h"
+#include "esp/core/Logging.h"
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;

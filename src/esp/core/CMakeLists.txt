@@ -42,15 +42,15 @@ add_library(
   Configuration.h
   Esp.cpp
   Esp.h
-  logging.cpp
-  logging.h
+  Logging.cpp
+  Logging.h
   managedContainers/AbstractManagedObject.h
   managedContainers/ManagedContainer.h
   managedContainers/ManagedContainerBase.cpp
   managedContainers/ManagedContainerBase.h
   managedContainers/ManagedFileBasedContainer.h
-  random.h
-  spimpl.h
+  Random.h
+  Spimpl.h
   Utility.h
 )
 

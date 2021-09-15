@@ -4,8 +4,8 @@
 
 #include "esp/bindings/Bindings.h"
 
+#include "esp/geo/Geo.h"
 #include "esp/geo/OBB.h"
-#include "esp/geo/geo.h"
 
 namespace py = pybind11;
 using py::literals::operator""_a;

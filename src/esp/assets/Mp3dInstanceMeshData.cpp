@@ -21,8 +21,8 @@
 #include <Magnum/Trade/Trade.h>
 
 #include "esp/core/Esp.h"
-#include "esp/geo/geo.h"
-#include "esp/io/io.h"
+#include "esp/geo/Geo.h"
+#include "esp/io/Io.h"
 
 namespace esp {
 namespace assets {

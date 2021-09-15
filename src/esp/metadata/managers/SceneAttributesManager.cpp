@@ -8,8 +8,8 @@
 #include "esp/metadata/MetadataUtils.h"
 #include "esp/physics/RigidBase.h"
 
+#include "esp/io/Io.h"
 #include "esp/io/Json.h"
-#include "esp/io/io.h"
 
 namespace esp {
 namespace metadata {
