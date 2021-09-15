@@ -27,10 +27,6 @@ const std::string dataDir =
 
 struct IOTest : Cr::TestSuite::Tester {
   explicit IOTest();
-
-  void fileExistTest();
-  void fileSizeTest();
-  void fileRmExtTest();
   void fileReplaceExtTest();
   void tokenizeTest();
 
@@ -47,45 +43,11 @@ struct IOTest : Cr::TestSuite::Tester {
 };
 
 IOTest::IOTest() {
-  addTests({&IOTest::fileExistTest, &IOTest::fileSizeTest,
-            &IOTest::fileRmExtTest, &IOTest::fileReplaceExtTest,
-            &IOTest::tokenizeTest, &IOTest::parseURDF, &IOTest::testJson,
+  addTests({&IOTest::fileReplaceExtTest, &IOTest::tokenizeTest,
+            &IOTest::parseURDF, &IOTest::testJson,
             &IOTest::testJsonBuiltinTypes, &IOTest::testJsonStlTypes,
             &IOTest::testJsonMagnumTypes, &IOTest::testJsonEspTypes,
             &IOTest::testJsonUserType});
-}
-
-void IOTest::fileExistTest() {
-  std::string file = FILE_THAT_EXISTS;
-  bool result = esp::io::exists(file);
-  CORRADE_VERIFY(result);
-
-  file = "Foo.bar";
-  result = esp::io::exists(file);
-  CORRADE_VERIFY(!result);
-}
-
-void IOTest::fileSizeTest() {
-  std::string existingFile = FILE_THAT_EXISTS;
-  auto result = esp::io::fileSize(existingFile);
-  CORRADE_VERIFY(result > 0);
-
-  std::string nonexistingFile = "Foo.bar";
-  result = esp::io::fileSize(nonexistingFile);
-  CORRADE_COMPARE(result, 0);
-}
-
-void IOTest::fileRmExtTest() {
-  std::string filename = "/foo/bar.jpeg";
-
-  // rm extension
-  std::string result = esp::io::removeExtension(filename);
-  CORRADE_COMPARE(result, "/foo/bar");
-  CORRADE_COMPARE(filename, "/foo/bar.jpeg");
-
-  std::string filenameNoExt = "/path/to/foobar";
-  result = esp::io::removeExtension(filenameNoExt);
-  CORRADE_COMPARE(result, filenameNoExt);
 }
 
 void IOTest::fileReplaceExtTest() {

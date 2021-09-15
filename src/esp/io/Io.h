@@ -11,12 +11,12 @@
 namespace esp {
 namespace io {
 
-bool exists(const std::string& file);
-
-size_t fileSize(const std::string& file);
-
-std::string removeExtension(const std::string& file);
-
+/**
+ * @brief Replaces the extension of the given @p filename to the given @p ext.
+ * @param filename The fully-qualified filename to change the extension to.
+ * @param ext The extension to change to. If it is not prefixed wtih a dot, one
+ * will be added.
+ */
 std::string changeExtension(const std::string& file, const std::string& ext);
 
 /**
