@@ -27,10 +27,8 @@ namespace Mn = Magnum;
 using Mn::Math::Literals::operator""_degf;
 using Mn::Math::Literals::operator""_rgbf;
 
-namespace esp {
-namespace gfx {
-namespace test {
 namespace {
+using namespace esp::gfx;
 
 struct DepthUnprojectionTest : Mn::GL::OpenGLTester {
   explicit DepthUnprojectionTest();
@@ -369,8 +367,5 @@ void DepthUnprojectionTest::benchmarkGpuUnprojectExisting() {
 }
 
 }  // namespace
-}  // namespace test
-}  // namespace gfx
-}  // namespace esp
 
-CORRADE_TEST_MAIN(esp::gfx::test::DepthUnprojectionTest)
+CORRADE_TEST_MAIN(DepthUnprojectionTest)

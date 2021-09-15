@@ -13,7 +13,3 @@ target_link_libraries(
   PUBLIC core agent scene
   PRIVATE Detour Recast
 )
-
-if(BUILD_TEST)
-  add_subdirectory(test)
-endif()

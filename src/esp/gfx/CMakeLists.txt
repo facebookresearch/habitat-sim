@@ -176,7 +176,3 @@ elseif(UNIX)
     target_link_libraries(gfx PUBLIC Magnum::WindowlessEglApplication)
   endif()
 endif()
-
-if(BUILD_TEST)
-  add_subdirectory(test)
-endif()

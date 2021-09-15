@@ -44,8 +44,6 @@ using esp::sim::Simulator;
 using esp::sim::SimulatorConfiguration;
 
 namespace {
-
-// NOLINTNEXTLINE(google-build-using-namespace)
 using namespace Magnum::Math::Literals;
 
 const std::string vangogh =

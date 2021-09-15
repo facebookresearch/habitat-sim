@@ -20,6 +20,17 @@ corrade_add_test(CoreTest CoreTest.cpp LIBRARIES core io)
 corrade_add_test(CullingTest CullingTest.cpp LIBRARIES gfx)
 target_include_directories(CullingTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
+corrade_add_test(
+  DepthUnprojectionTest
+  DepthUnprojectionTest.cpp
+  LIBRARIES
+  gfx
+  Magnum::MeshTools
+  Magnum::OpenGLTester
+  Magnum::Trade
+  Magnum::Primitives
+)
+
 corrade_add_test(DrawableTest DrawableTest.cpp LIBRARIES gfx)
 target_include_directories(DrawableTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
@@ -35,8 +46,14 @@ corrade_add_test(
 )
 target_include_directories(GfxReplayTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
+corrade_add_test(GibsonSceneTest GibsonSceneTest.cpp LIBRARIES scene sim)
+target_include_directories(GibsonSceneTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
 corrade_add_test(IOTest IOTest.cpp LIBRARIES io metadata)
 target_include_directories(IOTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
+corrade_add_test(LoggingTest LoggingTest.cpp LIBRARIES core)
+set_tests_properties(LoggingTest PROPERTIES ENVIRONMENT HABITAT_SIM_LOG="")
 
 corrade_add_test(
   MetadataMediatorTest MetadataMediatorTest.cpp LIBRARIES assets metadata
@@ -56,8 +73,21 @@ corrade_add_test(
 )
 target_include_directories(NavTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
+corrade_add_test(PathFinderTest PathFinderTest.cpp LIBRARIES nav Corrade::Utility)
+target_include_directories(PathFinderTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
 corrade_add_test(PhysicsTest PhysicsTest.cpp LIBRARIES physics)
 target_include_directories(PhysicsTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
+corrade_add_test(
+  ReplicaSceneTest
+  ReplicaSceneTest.cpp
+  LIBRARIES
+  scene
+  assets
+  sim
+)
+target_include_directories(ReplicaSceneTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 corrade_add_test(ResourceManagerTest ResourceManagerTest.cpp LIBRARIES assets)
 target_include_directories(ResourceManagerTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
@@ -98,6 +128,14 @@ endif()
 # Some tests are LOUD, we don't want to include their full log (but OTOH we
 # want to have full log from others, so this is a compromise)
 set_tests_properties(
-  MetadataMediatorTest Mp3dTest NavTest SimTest SuncgTest
+  GfxReplayTest
+  MetadataMediatorTest
+  Mp3dTest
+  NavTest
+  PhysicsTest
+  ReplicaSceneTest
+  ResourceManagerTest
+  SimTest
+  SuncgTest
   PROPERTIES ENVIRONMENT "HABITAT_SIM_LOG=quiet;MAGNUM_LOG=QUIET"
 )
