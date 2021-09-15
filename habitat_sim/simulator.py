@@ -31,7 +31,7 @@ from habitat_sim.agent.agent import Agent, AgentConfiguration, AgentState
 from habitat_sim.bindings import cuda_enabled
 from habitat_sim.logging import LoggingContext, logger
 from habitat_sim.metadata import MetadataMediator
-from habitat_sim.nav import GreedyGeodesicFollower, NavMeshSettings, PathFinder
+from habitat_sim.nav import GreedyGeodesicFollower, NavMeshSettings
 from habitat_sim.sensor import SensorSpec, SensorType
 from habitat_sim.sensors.noise_models import make_sensor_noise_model
 from habitat_sim.sim import SimulatorBackend, SimulatorConfiguration
@@ -216,14 +216,9 @@ class Simulator(SimulatorBackend):
         else:
             navmesh_filenname = osp.splitext(config.sim_cfg.scene_id)[0] + ".navmesh"
 
-        self.pathfinder = PathFinder()
-        if osp.exists(navmesh_filenname):
+        if osp.exists(navmesh_filenname) and not self.pathfinder.is_loaded:
             self.pathfinder.load_nav_mesh(navmesh_filenname)
             logger.info(f"Loaded navmesh {navmesh_filenname}")
-        else:
-            logger.warning(
-                f"Could not find navmesh {navmesh_filenname}, no collision checking will be done"
-            )
 
         agent_legacy_config = AgentConfiguration()
         default_agent_config = config.agents[config.sim_cfg.default_agent_id]
@@ -241,6 +236,11 @@ class Simulator(SimulatorBackend):
             self.recompute_navmesh(self.pathfinder, navmesh_settings)
 
         self.pathfinder.seed(config.sim_cfg.random_seed)
+
+        if not self.pathfinder.is_loaded:
+            logger.warning(
+                "Could not find a navmesh, no collision checking will be done"
+            )
 
     def reconfigure(self, config: Configuration) -> None:
         self._sanitize_config(config)
