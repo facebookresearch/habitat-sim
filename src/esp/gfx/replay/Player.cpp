@@ -5,7 +5,7 @@
 #include "Player.h"
 
 #include "esp/assets/ResourceManager.h"
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/io/JsonAllTypes.h"
 
 #include <rapidjson/document.h>

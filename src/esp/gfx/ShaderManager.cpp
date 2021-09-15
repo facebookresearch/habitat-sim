@@ -4,7 +4,7 @@
 
 #include "ShaderManager.h"
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/gfx/Drawable.h"
 #include "esp/scene/SceneNode.h"
 

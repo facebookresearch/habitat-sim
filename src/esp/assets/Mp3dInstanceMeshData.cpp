@@ -20,7 +20,7 @@
 #include <Magnum/PixelFormat.h>
 #include <Magnum/Trade/Trade.h>
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/geo/geo.h"
 #include "esp/io/io.h"
 

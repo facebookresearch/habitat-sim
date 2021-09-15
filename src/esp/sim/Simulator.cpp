@@ -14,7 +14,7 @@
 #include <Magnum/GL/Context.h>
 #include <Magnum/GL/Renderer.h>
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"

@@ -8,7 +8,7 @@
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Quaternion.h>
 
-#include "esp.h"
+#include "Esp.h"
 
 namespace esp {
 namespace core {

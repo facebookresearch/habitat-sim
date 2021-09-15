@@ -7,7 +7,7 @@
 
 #include <Corrade/Containers/EnumSet.h>
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "magnum.h"
 
 namespace esp {

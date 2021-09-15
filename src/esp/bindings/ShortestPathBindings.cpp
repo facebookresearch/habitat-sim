@@ -2,7 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "esp/bindings/bindings.h"
+#include "esp/bindings/Bindings.h"
 
 #include <pybind11/eigen.h>
 #include <pybind11/functional.h>
@@ -11,7 +11,7 @@
 #include <Magnum/Math/Vector3.h>
 
 #include "esp/assets/MeshData.h"
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/nav/GreedyFollower.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/scene/ObjectControls.h"

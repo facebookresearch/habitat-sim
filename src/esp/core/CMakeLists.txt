@@ -40,8 +40,8 @@ add_library(
   Check.h
   Configuration.cpp
   Configuration.h
-  esp.cpp
-  esp.h
+  Esp.cpp
+  Esp.h
   logging.cpp
   logging.h
   managedContainers/AbstractManagedObject.h

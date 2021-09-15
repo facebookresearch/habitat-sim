@@ -7,7 +7,7 @@
 
 #include "magnum.h"
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/geo/geo.h"
 #include "esp/scene/SceneNode.h"
 

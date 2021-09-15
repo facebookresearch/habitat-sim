@@ -12,7 +12,7 @@
 #include <Magnum/GL/AbstractShaderProgram.h>
 #include <Magnum/GL/CubeMapTexture.h>
 #include "Magnum/GL/Mesh.h"
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/gfx/CubeMap.h"
 
 namespace esp {

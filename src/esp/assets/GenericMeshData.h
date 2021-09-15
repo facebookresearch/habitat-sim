@@ -15,7 +15,7 @@
 #include <Magnum/Trade/AbstractImporter.h>
 
 #include "BaseMesh.h"
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
 namespace esp {
 namespace assets {

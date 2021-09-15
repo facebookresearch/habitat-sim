@@ -12,7 +12,7 @@
 #include "CubeMap.h"
 #include "PbrEquiRectangularToCubeMapShader.h"
 #include "PbrPrecomputedMapShader.h"
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/gfx/ShaderManager.h"
 
 namespace esp {

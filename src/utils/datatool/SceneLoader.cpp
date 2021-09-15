@@ -8,12 +8,10 @@
 #include <string>
 #include <vector>
 
-#include "esp/assets/GenericInstanceMeshData.h"
-#include "esp/core/esp.h"
-#include "esp/geo/geo.h"
-#include "esp/io/io.h"
-
 #include <sophus/so3.hpp>
+#include "esp/assets/GenericInstanceMeshData.h"
+#include "esp/core/Esp.h"
+#include "esp/geo/geo.h"
 
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>

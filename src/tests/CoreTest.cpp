@@ -4,7 +4,7 @@
 
 #include <Corrade/TestSuite/Tester.h>
 #include "esp/core/Configuration.h"
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
 using namespace esp::core::config;
 

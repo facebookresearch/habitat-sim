@@ -15,7 +15,7 @@
 #include "esp/assets/Asset.h"
 #include "esp/assets/BaseMesh.h"
 #include "esp/assets/MeshMetaData.h"
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/scene/SceneNode.h"
 
 namespace esp {

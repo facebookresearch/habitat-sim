@@ -13,7 +13,7 @@
 #include <Magnum/GL/GL.h>  // header with all forward declarations for the Mn::GL namespace
 #include <Magnum/Shaders/GenericGL.h>
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
 namespace esp {
 namespace gfx {

@@ -22,7 +22,7 @@
 #include <Magnum/ImageView.h>
 #include <Magnum/PixelFormat.h>
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/gfx/PTexMeshShader.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"

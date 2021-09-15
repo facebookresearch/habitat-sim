@@ -13,7 +13,7 @@
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
 namespace Cr = Corrade;
 

@@ -11,7 +11,7 @@
 
 #include <Corrade/Containers/ArrayView.h>
 #include <Magnum/Magnum.h>
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
 namespace esp {
 namespace assets {

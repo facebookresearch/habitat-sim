@@ -7,7 +7,7 @@
 #define ESP_GEO_VOXEL_UTILITY_H_
 
 #include "VoxelWrapper.h"
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/geo/geo.h"
 
 namespace esp {

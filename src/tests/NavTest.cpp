@@ -7,7 +7,7 @@
 #include <Corrade/Utility/Directory.h>
 
 #include "esp/assets/MeshData.h"
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/core/random.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/scene/ObjectControls.h"

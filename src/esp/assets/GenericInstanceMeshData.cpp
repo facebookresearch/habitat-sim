@@ -18,7 +18,7 @@
 #include <Magnum/Shaders/GenericGL.h>
 #include <Magnum/Trade/AbstractImporter.h>
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/geo/geo.h"
 #include "esp/io/io.h"
 #include "esp/io/json.h"

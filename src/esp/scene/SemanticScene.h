@@ -12,7 +12,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/geo/OBB.h"
 #include "esp/io/json.h"
 

@@ -7,7 +7,7 @@
 
 #include <Magnum/Math/ConfigurationValue.h>
 #include "VisualSensor.h"
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
 namespace esp {
 namespace sensor {

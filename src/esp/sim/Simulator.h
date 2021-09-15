@@ -10,7 +10,7 @@
 #include <utility>
 #include "esp/agent/Agent.h"
 #include "esp/assets/ResourceManager.h"
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/core/random.h"
 #include "esp/gfx/DebugLineRender.h"
 #include "esp/gfx/RenderTarget.h"

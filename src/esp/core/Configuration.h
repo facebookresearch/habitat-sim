@@ -14,7 +14,7 @@
 #include <unordered_map>
 
 #include "esp/core/Check.h"
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
