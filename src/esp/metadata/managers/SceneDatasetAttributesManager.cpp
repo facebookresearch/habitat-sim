@@ -4,7 +4,6 @@
 
 #include "SceneDatasetAttributesManager.h"
 
-#include "esp/io/Io.h"
 #include "esp/io/Json.h"
 
 namespace esp {

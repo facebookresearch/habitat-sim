@@ -44,7 +44,6 @@
 #include "esp/gfx/MaterialUtil.h"
 #include "esp/gfx/PbrDrawable.h"
 #include "esp/gfx/replay/Recorder.h"
-#include "esp/io/Io.h"
 #include "esp/io/Json.h"
 #include "esp/io/URDFParser.h"
 #include "esp/physics/PhysicsManager.h"
