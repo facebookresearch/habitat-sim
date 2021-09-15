@@ -156,7 +156,7 @@ int createMp3dSemanticMesh(const std::string& plyFile,
 
 int main(int argc, char** argv) {
   if (argc < 4) {
-    std::cout << "Usage: datatool task input_file output_file" << std::endl;
+    std::cout << "Usage: Datatool task input_file output_file" << std::endl;
     return 64;
   }
   const std::string task = argv[1];
@@ -164,7 +164,7 @@ int main(int argc, char** argv) {
     createNavMesh(argv[2], argv[3]);
   } else if (task == "create_mp3d_semantic_mesh") {
     if (argc < 5) {
-      std::cout << "Usage: datatool create_mp3d_semantic_mesh input_ply "
+      std::cout << "Usage: Datatool create_mp3d_semantic_mesh input_ply "
                    "input_house output_mesh"
                 << std::endl;
       return 64;
@@ -172,7 +172,7 @@ int main(int argc, char** argv) {
     createMp3dSemanticMesh(argv[2], argv[3], argv[4]);
   } else if (task == "create_gibson_semantic_mesh") {
     if (argc < 5) {
-      std::cout << "Usage: datatool create_gibson_semantic_mesh input_obj "
+      std::cout << "Usage: Datatool create_gibson_semantic_mesh input_obj "
                    "input_ids output_mesh"
                 << std::endl;
       return 64;
