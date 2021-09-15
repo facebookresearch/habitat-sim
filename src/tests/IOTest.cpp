@@ -28,8 +28,6 @@ const std::string dataDir =
 struct IOTest : Cr::TestSuite::Tester {
   explicit IOTest();
   void fileReplaceExtTest();
-  void tokenizeTest();
-
   void parseURDF();
   void testJson();
   void testJsonBuiltinTypes();
@@ -43,8 +41,7 @@ struct IOTest : Cr::TestSuite::Tester {
 };
 
 IOTest::IOTest() {
-  addTests({&IOTest::fileReplaceExtTest, &IOTest::tokenizeTest,
-            &IOTest::parseURDF, &IOTest::testJson,
+  addTests({&IOTest::fileReplaceExtTest, &IOTest::parseURDF, &IOTest::testJson,
             &IOTest::testJsonBuiltinTypes, &IOTest::testJsonStlTypes,
             &IOTest::testJsonMagnumTypes, &IOTest::testJsonEspTypes,
             &IOTest::testJsonUserType});
@@ -90,16 +87,6 @@ void IOTest::fileReplaceExtTest() {
   cornerCase = ".jpg";
   result = esp::io::changeExtension(cornerCase, cornerCaseExt);
   CORRADE_COMPARE(result, ".jpg.png");
-}
-
-void IOTest::tokenizeTest() {
-  std::string file = ",a,|,bb|c";
-  const auto& t1 = esp::io::tokenize(file, ",");
-  CORRADE_COMPARE((std::vector<std::string>{"", "a", "|", "bb|c"}), t1);
-  const auto& t2 = esp::io::tokenize(file, "|");
-  CORRADE_COMPARE((std::vector<std::string>{",a,", ",bb", "c"}), t2);
-  const auto& t3 = esp::io::tokenize(file, ",|", 0, true);
-  CORRADE_COMPARE((std::vector<std::string>{"", "a", "bb", "c"}), t3);
 }
 
 void IOTest::parseURDF() {

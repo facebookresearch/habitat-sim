@@ -28,18 +28,6 @@ std::string changeExtension(const std::string& file, const std::string& ext);
  */
 std::vector<std::string> globDirs(const std::string& pattern);
 
-/** @brief Tokenize input string by any delimiter char in delimiterCharList.
- *
- * @param delimiterCharList string containing all delimiter chars
- * @param limit > 0 indicates maximum number of times delimiter is applied
- * @param mergeAdjacentDelimiters whether to merge adjacent delimiters
- * @return std::vector<std::string>> of tokens
- */
-std::vector<std::string> tokenize(const std::string& string,
-                                  const std::string& delimiterCharList,
-                                  int limit = 0,
-                                  bool mergeAdjacentDelimiters = false);
-
 }  // namespace io
 }  // namespace esp
 
