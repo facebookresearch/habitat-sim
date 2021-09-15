@@ -123,6 +123,12 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
   // if configuration is unchanged, just reset and return
   if (cfg == config_) {
+    // This is a check to make sure that pathfinder_ is not null after
+    // a reconfigure. We check to see if it's null so that an existing
+    // one isn't overwritten.
+    if (!pathfinder_) {
+      pathfinder_ = nav::PathFinder::create();
+    }
     reset();
     return;
   }
