@@ -43,9 +43,9 @@ Below are the supported JSON tags for Physics Manager Attributes templates, and 
     - double
     - The default coefficient of restitution. This can be overridden in Stage and Object Attributes.
 
-`Stage Attributes`_
-===================
-A stage in Habitat-Sim is a static object consisting of static background scenery wherein an agent acts.  Stage Attributes templates hold relevant information describing a stage's render and collision assets and physical properties.  Any source configuration files used to build these attributes should be named using the following format:
+`StageAttributes`_
+==================
+A stage in Habitat-Sim is a static object consisting of static background scenery wherein an agent acts.  :ref:`StageAttributes` templates hold relevant information describing a stage's render and collision assets and physical properties.  Any source configuration files used to build these attributes should be named using the following format:
 
      <stagename>.stage_config.json
 
@@ -69,12 +69,6 @@ Below are the handles and descriptors for various mesh assets used by a stage.
 "semantic_asset"
     - string
     - The name of the file describing the stage's semantic mesh.
-"house_filename"
-    - string
-    - The name of the file containing semantic type maps and hierarchy.
-"nav_asset"
-    - string
-    - The name of the file describing the NavMesh for this stage.
 
 Stage Frame and Origin
 ----------------------
@@ -117,13 +111,10 @@ Below are stage-specific physical and object-related quantities.  These values w
 "units_to_meters"
     - double
     - The conversion of given units to meters.
-"requires_lighting"
-    - boolean
-    - Whether the stage should be rendered with lighting or flat shading.
 
-`Object Attributes`_
-====================
-Object Attributes templates hold descriptive information for instancing rigid objects into Habitat-Sim.  These file names should be formatted as follows:
+`ObjectAttributes`_
+===================
+:ref:`ObjectAttributes` templates hold descriptive information for instancing rigid objects into Habitat-Sim.  These file names should be formatted as follows:
 
      <objectname>.object_config.json
 
