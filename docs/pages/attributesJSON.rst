@@ -13,13 +13,13 @@ Using JSON Files to configure Attributes
 
 Attributes templates provide a mechanism by which the various constructions in Habitat can be customized and built with user-specified characteristics, either at program start or on the fly.
 
-`Physics Manager Attributes`_
-=============================
-Physics Manager Attributes templates describe quantities pertinent to building the simulation world.  Any source configuration JSON files used to build these attributes should be formatted as follows:
+`PhysicsManagerAttributes`_
+===========================
+:ref:`PhysicsManagerAttributes` templates describe quantities pertinent to building the simulation world.  Any source configuration JSON files used to build these attributes should be formatted as follows:
 
      <worldname>.physics_config.json
 
-`An example of an appropriately configured Physics Manager Attributes file can be found below <../../../data/test_assets/testing.physics_config.json>`_:
+`An example of an appropriately configured Physics Manager Attributes file can be found below <facebookresearch/habitat-sim/blob/master/data/test_assets/testing.physics_config.json>`_:
 
 .. include:: ../../data/test_assets/testing.physics_config.json
     :code: json
@@ -42,9 +42,6 @@ Below are the supported JSON tags for Physics Manager Attributes templates, and 
 "restitution_coefficient"
     - double
     - The default coefficient of restitution. This can be overridden in Stage and Object Attributes.
-"rigid object paths"
-    - list of strings
-    - A list of locations to query for supported object files that should be available to be loaded into the world.
 
 `Stage Attributes`_
 ===================
@@ -52,7 +49,7 @@ A stage in Habitat-Sim is a static object consisting of static background scener
 
      <stagename>.stage_config.json
 
-`An example of an appropriately configured Stage Attributes file can be found below <../../../data/test_assets/scenes/stage_floor1.stage_config.json>`_:
+`An example of an appropriately configured Stage Attributes file can be found below <facebookresearch/habitat-sim/blob/master/data/test_assets/scenes/stage_floor1.stage_config.json>`_:
 
 .. include:: ../../data/test_assets/scenes/stage_floor1.stage_config.json
     :code: json
@@ -130,7 +127,7 @@ Object Attributes templates hold descriptive information for instancing rigid ob
 
      <objectname>.object_config.json
 
-`An example of an appropriately configured Object Attributes file can be found below <../../../data/test_assets/objects/donut.object_config.json>`_:
+`An example of an appropriately configured Object Attributes file can be found below <facebookresearch/habitat-sim/blob/master/data/test_assets/objects/donut.object_config.json>`_:
 
 .. include:: ../../data/test_assets/objects/donut.object_config.json
     :code: json
@@ -208,7 +205,7 @@ Light Setup Attributes templates hold descriptive information for light setups i
 
      <lightingname>.lighting_config.json
 
-`An example of an appropriately configured Light Setup Attributes file can be found below <../../../data/test_assets/lights/test_lights.lighting_config.json>`_:
+`An example of an appropriately configured Light Setup Attributes file can be found below <facebookresearch/habitat-sim/blob/master/data/test_assets/lights/test_lights.lighting_config.json>`_:
 
 .. include:: ../../data/test_assets/lights/test_lights.lighting_config.json
     :code: json

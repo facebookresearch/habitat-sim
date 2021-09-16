@@ -19,19 +19,34 @@ class PhysicsManagerAttributes : public AbstractAttributes {
  public:
   explicit PhysicsManagerAttributes(const std::string& handle = "");
 
+  /**
+   * @brief Sets the string name for the physics simulation engine we wish to
+   * use.
+   */
   void setSimulator(const std::string& simulator) {
     set("physics_simulator", simulator);
   }
+  /**
+   * @brief Gets the config-specified string name for the physics simulation
+   * engine we wish to use.
+   */
   std::string getSimulator() const {
     return get<std::string>("physics_simulator");
   }
 
+  /**
+   * @brief Sets the simulation timestep to use for dynamic simulation.
+   */
   void setTimestep(double timestep) { set("timestep", timestep); }
+
+  /**
+   * @brief Get the simulation timestep to use for dynamic simulation.
+   */
   double getTimestep() const { return get<double>("timestep"); }
 
-  void setMaxSubsteps(int maxSubsteps) { set("max_substeps", maxSubsteps); }
-  int getMaxSubsteps() const { return get<int>("max_substeps"); }
-
+  /**
+   * @brief Set Simulator-wide gravity.
+   */
   void setGravity(const Magnum::Vector3& gravity) { set("gravity", gravity); }
   Magnum::Vector3 getGravity() const { return get<Magnum::Vector3>("gravity"); }
 
