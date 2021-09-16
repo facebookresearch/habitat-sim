@@ -99,6 +99,9 @@ Below are stage-specific physical and object-related quantities.  These values w
 "is_collidable"
     - boolean
     - Whether the stage should be added to the collision and physics simulation world upon instancing.
+"shader_type"
+    - string (one of "material", "flat", "phong", "pbr")
+    - The shader to be used to render the stage. 'material' uses the render asset's specified material, other values force specified shader regardless of asset specification.
 "margin"
     - double
     - Distance margin for collision calculations.
@@ -134,6 +137,9 @@ Below are the handles and descriptors for various mesh assets used by an object.
 "collision_asset"
     - string
     - The name of the file describing the collision mesh to be used by the object.
+"collision_asset_size"
+    - 3-vector
+    - Size of collision asset, to allow it to be scaled to fit render asset
 
 Object Frame and Origin
 -----------------------
@@ -168,9 +174,9 @@ Below are object-specific physical quantities.  These values will override simil
 "units_to_meters"
     - double
     - The conversion of given units to meters.
-"requires_lighting"
-    - boolean
-    - Whether the object should be rendered with lighting or flat shading.
+"shader_type"
+    - string (one of "material", "flat", "phong", "pbr")
+    - The shader to be used to render the object. 'material' uses the render asset's specified material, other values force specified shader regardless of asset specification.
 "mass"
     - double
     - The mass of the object, for physics calculations.
@@ -190,18 +196,18 @@ Below are object-specific physical quantities.  These values will override simil
     - integer
     - The semantic id assigned to objects made with this configuration.
 
-`Light Setup Attributes`_
-=========================
-Light Setup Attributes templates hold descriptive information for light setups into Habitat-Sim.  These file names should be formatted as follows:
+`LightLayoutAttributes`_
+==========================
+:ref:`LightLayoutAttributes` templates hold descriptive information for light setups into Habitat-Sim.  These file names should be formatted as follows:
 
      <lightingname>.lighting_config.json
 
-`An example of an appropriately configured Light Setup Attributes file can be found below <facebookresearch/habitat-sim/blob/master/data/test_assets/lights/test_lights.lighting_config.json>`_:
+`An example of an appropriately configured LightLayoutAttributes file can be found below <facebookresearch/habitat-sim/blob/master/data/test_assets/lights/test_lights.lighting_config.json>`_:
 
 .. include:: ../../data/test_assets/lights/test_lights.lighting_config.json
     :code: json
 
-The Light Setup attributes JSON should contain a single cell named "lights" that references a JSON object consisting of key-value pairs, where each key is a string ID that is unique to the lighting layout and the value is a JSON object containing appropriate combinations of the following data for the light type being described.
+The LightLayoutAttributes JSON should contain a single cell named "lights" that references a JSON object consisting of key-value pairs, where each key is a string ID that is unique to the lighting layout and the value is a JSON object containing appropriate combinations of the following data for the light type being described.
 
 "position"
     - 3-vector
@@ -220,4 +226,4 @@ The Light Setup attributes JSON should contain a single cell named "lights" that
     - The type of the light.  "point" and "directional" are currently supported.
 "position_model"
   - string
-  - They frame to use to place the light. "global", meaning stage's origin, and "camera", meaning place relative to a (potentially moving) camera, are currently supported.
+  - The frame to use to place the light. "global", meaning stage's origin, and "camera", meaning place relative to a (potentially moving) camera, are currently supported.
