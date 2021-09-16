@@ -260,8 +260,8 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
       success = scene::SemanticScene::loadSemanticSceneDescriptor(
           filenameToUse, *semanticScene_);
       if (success) {
-        ESP_WARNING() << "SSD with SceneAttributes-provided name "
-                      << filenameToUse << "successfully found and loaded";
+        ESP_DEBUG() << "SSD with SceneAttributes-provided name "
+                    << filenameToUse << "successfully found and loaded";
       } else {
         // here if provided file exists but does not correspond to appropriate
         // SSD

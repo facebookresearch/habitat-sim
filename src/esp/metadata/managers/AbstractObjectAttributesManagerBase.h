@@ -180,7 +180,7 @@ auto AbstractObjectAttributesManager<T, Access>::createObject(
 
   }  // if this is prim else
   if (nullptr != attrs) {
-    ESP_DEBUG() << msg << "" << this->objectType_ << "attributes created"
+    ESP_DEBUG() << msg << this->objectType_ << "attributes created"
                 << (registerTemplate ? "and registered." : ".");
   }
   return attrs;
