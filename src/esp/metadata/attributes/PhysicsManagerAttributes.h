@@ -44,6 +44,9 @@ class PhysicsManagerAttributes : public AbstractAttributes {
    */
   double getTimestep() const { return get<double>("timestep"); }
 
+  void setMaxSubsteps(int maxSubsteps) { set("max_substeps", maxSubsteps); }
+  int getMaxSubsteps() const { return get<int>("max_substeps"); }
+
   /**
    * @brief Set Simulator-wide gravity.
    */
