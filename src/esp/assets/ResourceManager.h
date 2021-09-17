@@ -21,6 +21,7 @@
 #include <Magnum/GL/TextureFormat.h>
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/MeshTools/Transform.h>
+#include <Magnum/ResourceManager.h>
 #include <Magnum/SceneGraph/MatrixTransformation3D.h>
 #include <Magnum/Trade/Trade.h>
 
@@ -38,6 +39,7 @@
 #include "esp/gfx/MaterialData.h"
 #include "esp/gfx/PbrImageBasedLighting.h"
 #include "esp/gfx/ShaderManager.h"
+#include "esp/gfx/ShadowMapManager.h"
 #include "esp/physics/configure.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
@@ -624,6 +626,26 @@ class ResourceManager {
    */
   bool loadRenderAsset(const AssetInfo& info);
 
+  /**
+   * @brief get the shader manager
+   */
+  gfx::ShaderManager& getShaderManager() { return shaderManager_; }
+
+  /**
+   * @brief get the shadow map manager
+   */
+  gfx::ShadowMapManager& getShadowMapManger() { return shadowManager_; }
+
+  /**
+   * @brief get the shadow map keys
+   */
+  std::map<int, std::vector<Magnum::ResourceKey>>& getShadowMapKeys() {
+    return shadowMapKeys_;
+  }
+
+  static constexpr const char* SHADOW_MAP_KEY_TEMPLATE =
+      "scene_id={}-light_id={}";
+
  private:
   /**
    * @brief Load the requested mesh info into @ref meshInfo corresponding to
@@ -1138,6 +1160,14 @@ class ResourceManager {
       pbrImageBasedLightings_;
 
   int activePbrIbl_ = ID_UNDEFINED;
+
+  /**
+   * @brief shadow map for point lights
+   */
+  // TODO: directional light shadow maps
+  gfx::ShadowMapManager shadowManager_;
+  // scene graph id -> keys for the shadow maps
+  std::map<int, std::vector<Magnum::ResourceKey>> shadowMapKeys_;
 };  // class ResourceManager
 
 CORRADE_ENUMSET_OPERATORS(ResourceManager::Flags)

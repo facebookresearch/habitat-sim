@@ -718,7 +718,7 @@ void Simulator::setShadowMapsToDrawables() {
     gfx::PbrDrawable::ShadowData shadowData;
     shadowData.shadowMapManger = &shadowManager;
     shadowData.shadowMapKeys = &shadowMapKeys[activeSceneID_];
-    CORRADE_ASSERT(shadowData.shadowMapKeys.size(),
+    CORRADE_ASSERT(shadowData.shadowMapKeys && shadowData.shadowMapKeys->size(),
                    "Simulator::setShadowMapsToDrawables(): there are no shadow "
                    "maps for the current active scene graph.", );
     pbrDrawable.setShadowData(shadowData,
