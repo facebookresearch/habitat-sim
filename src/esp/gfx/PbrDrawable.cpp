@@ -184,6 +184,25 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
         pbrIbl_->getPrefilteredMap().getMipmapLevels());
   }
 
+  if (flags_ & PbrShader::Flag::ShadowsVSM) {
+    CORRADE_INTERNAL_ASSERT(shadowData_);
+
+    for (int iShadow = 0; iShadow < shadowData_->shadowMapKeys->size();
+         ++iShadow) {
+      Mn::Resource<CubeMap> shadowMap =
+          (*shadowData_->shadowMapManger)
+              .get<CubeMap>((*shadowData_->shadowMapKeys)[iShadow]);
+
+      CORRADE_INTERNAL_ASSERT(shadowMap);
+
+      if (flags_ & PbrShader::Flag::ShadowsVSM) {
+        shader_->bindPointShadowMap(
+            iShadow,
+            shadowMap->getTexture(CubeMap::TextureType::VarianceShadowMap));
+      }
+    }
+  }
+
   shader_->draw(getMesh());
 
   // WE stopped supporting doubleSided material due to lighting artifacts on
@@ -259,6 +278,21 @@ PbrDrawable& PbrDrawable::updateShaderLightDirectionParameters(
   shader_->setLightVectors(lightPositions);
 
   return *this;
+}
+
+void PbrDrawable::setShadowData(const ShadowData& shadowData,
+                                PbrShader::Flag shadowFlag) {
+  // sanity check first
+  CORRADE_ASSERT(shadowFlag == PbrShader::Flag::ShadowsVSM,
+                 "PbrDrawable::setShadowData(): the shadow flag can only be "
+                 "ShadowsVSM.", );
+
+  CORRADE_ASSERT(shadowData.shadowMapManger && shadowData.shadowMapKeys,
+                 "PbrDrawable::setShadowData(): failed to enable the "
+                 "shadows. shadow manager or the shadow keys is nullptr.", );
+
+  shadowData_ = shadowData;
+  flags_ |= shadowFlag;
 }
 
 }  // namespace gfx

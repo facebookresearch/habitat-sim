@@ -105,6 +105,7 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
       "#define OUTPUT_ATTRIBUTE_LOCATION_OBJECT_ID {}\n", ObjectIdOutput);
 
   frag.addSource(outputAttributeLocationsStream.str())
+      .addSource(flags_ & Flag::ShadowsVSM ? "#define SHADOWS_VSM\n" : "")
       .addSource(isTextured ? "#define TEXTURED\n" : "")
       .addSource(flags_ & Flag::BaseColorTexture ? "#define BASECOLOR_TEXTURE\n"
                                                  : "")
@@ -130,6 +131,8 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
                                              : "")
       .addSource(
           Cr::Utility::formatString("#define LIGHT_COUNT {}\n", lightCount_))
+      .addSource(flags_ & Flag::ShadowsVSM ? rs.get("shadowsVSM.glsl") + "\n"
+                                           : "")
       .addSource(rs.get("pbrCommon.glsl") + "\n")
       .addSource(rs.get("pbr.frag"));
 
@@ -193,6 +196,16 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
                pbrTextureUnitSpace::TextureUnit::BrdfLUT);
     setUniform(uniformLocation("PrefilteredMap"),
                pbrTextureUnitSpace::TextureUnit::PrefilteredMap);
+  }
+
+  // VSM shadows
+  if (flags_ & Flag::ShadowsVSM) {
+    setUniform(uniformLocation("ShadowMap[0]"),
+               pbrTextureUnitSpace::TextureUnit::ShadowMap0);
+    setUniform(uniformLocation("ShadowMap[1]"),
+               pbrTextureUnitSpace::TextureUnit::ShadowMap1);
+    setUniform(uniformLocation("ShadowMap[2]"),
+               pbrTextureUnitSpace::TextureUnit::ShadowMap2);
   }
 
   // cache the uniform locations
@@ -356,6 +369,33 @@ PbrShader& PbrShader::bindPrefilteredMap(Magnum::GL::CubeMapTexture& texture) {
                  "created with image based lighting enabled",
                  *this);
   texture.bind(pbrTextureUnitSpace::TextureUnit::PrefilteredMap);
+  return *this;
+}
+
+PbrShader& PbrShader::bindPointShadowMap(int index,
+                                         Magnum::GL::CubeMapTexture& texture) {
+  CORRADE_ASSERT(
+      index >= 0 && index < 3,
+      "PbrShader::bindPointShadowMap(): the texture index was illegal.", *this);
+  CORRADE_ASSERT(flags_ & Flag::ShadowsVSM,
+                 "PbrShader::bindPointShadowMap(): the shader was not "
+                 "created with shadows enabled",
+                 *this);
+  switch (index) {
+    case 0:
+      texture.bind(pbrTextureUnitSpace::TextureUnit::ShadowMap0);
+      break;
+    case 1:
+      texture.bind(pbrTextureUnitSpace::TextureUnit::ShadowMap1);
+      break;
+    case 2:
+      texture.bind(pbrTextureUnitSpace::TextureUnit::ShadowMap2);
+      break;
+
+    default:
+      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+      break;
+  }
   return *this;
 }
 

@@ -5,15 +5,24 @@
 #ifndef ESP_GFX_PBRDRAWABLE_H_
 #define ESP_GFX_PBRDRAWABLE_H_
 
+#include <Corrade/Containers/Optional.h>
+
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/PbrImageBasedLighting.h"
 #include "esp/gfx/PbrShader.h"
 #include "esp/gfx/ShaderManager.h"
+#include "esp/gfx/ShadowMapManager.h"
 namespace esp {
 namespace gfx {
 
 class PbrDrawable : public Drawable {
  public:
+  struct ShadowData {
+    // all the terms must be set by the user
+    ShadowMapManager* shadowMapManger = nullptr;
+    ShadowMapKeys* shadowMapKeys = nullptr;
+  };
+
   /**
    * @brief Constructor, to create a PbrDrawable for the given object using
    * shader and mesh. Adds drawable to given group and uses provided texture,
@@ -33,6 +42,13 @@ class PbrDrawable : public Drawable {
    *  @param lightSetupKey the key value for the light resource
    */
   void setLightSetup(const Magnum::ResourceKey& lightSetupKey) override;
+
+  /**
+   * @brief Set the shadow map info
+   * @param[in] shadowData, contains all the data needed in the shadow mapping
+   * @param[in] shadowFlag, can only be either ShadowsPCF or ShadowsVSM
+   */
+  void setShadowData(const ShadowData& data, PbrShader::Flag shadowFlag);
 
   static constexpr const char* SHADER_KEY_TEMPLATE = "PBR-lights={}-flags={}";
 
@@ -87,6 +103,7 @@ class PbrDrawable : public Drawable {
   Magnum::Resource<MaterialData, PbrMaterialData> materialData_;
   Magnum::Resource<LightSetup> lightSetup_;
   PbrImageBasedLighting* pbrIbl_ = nullptr;
+  Corrade::Containers::Optional<ShadowData> shadowData_;
 };
 
 }  // namespace gfx

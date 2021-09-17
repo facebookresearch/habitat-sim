@@ -23,6 +23,7 @@
 
 #include "esp/core/Check.h"
 #include "esp/gfx/DepthUnprojection.h"
+#include "esp/gfx/GaussianFilterShader.h"
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/TextureVisualizerShader.h"
 #include "esp/gfx/magnum.h"
@@ -126,36 +127,36 @@ struct Renderer::Impl {
       if (type == sensor::SensorType::Depth) {
 #ifdef ENABLE_VISUALIZATION_WORKAROUND_ON_MAC
         // create a BufferImage instance, if not already
-        if (!depthBufferImage) {
-          depthBufferImage.emplace(Mn::GL::PixelFormat::DepthComponent,
-                                   Mn::GL::PixelType::Float);
+        if (!depthBufferImage_) {
+          depthBufferImage_.emplace(Mn::GL::PixelFormat::DepthComponent,
+                                    Mn::GL::PixelType::Float);
         }
-        tgt.getDepthTexture().image(0, *depthBufferImage,
+        tgt.getDepthTexture().image(0, *depthBufferImage_,
                                     Mn::GL::BufferUsage::StaticRead);
 
         // This takes the above output image (which is depth) and
         // "reinterprets" it as R32F. In other words, the image below serves
         // as an "image view".
         Mn::GL::BufferImage2D clonedDepthImage{
-            depthBufferImage->storage(), Mn::PixelFormat::R32F,
-            depthBufferImage->size(),
-            Mn::GL::Buffer::wrap(depthBufferImage->buffer().id(),
+            depthBufferImage_->storage(), Mn::PixelFormat::R32F,
+            depthBufferImage_->size(),
+            Mn::GL::Buffer::wrap(depthBufferImage_->buffer().id(),
                                  Mn::GL::ObjectFlag::Created),
-            depthBufferImage->dataSize()};
+            depthBufferImage_->dataSize()};
 
         // setup a texture
-        if (!visualizedTex ||
-            visualizedTex->imageSize(0) != tgt.framebufferSize()) {
-          visualizedTex = Mn::GL::Texture2D{};
-          (*visualizedTex)
+        if (!visualizedTex_ ||
+            visualizedTex_->imageSize(0) != tgt.framebufferSize()) {
+          visualizedTex_ = Mn::GL::Texture2D{};
+          (*visualizedTex_)
               .setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
               .setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
               .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
               .setStorage(1, Mn::GL::TextureFormat::R32F,
                           tgt.framebufferSize());
         }
-        (*visualizedTex).setSubImage(0, {}, clonedDepthImage);
-        shader->bindDepthTexture(*visualizedTex);
+        (*visualizedTex_).setSubImage(0, {}, clonedDepthImage);
+        shader->bindDepthTexture(*visualizedTex_);
 #else
         shader->bindDepthTexture(tgt.getDepthTexture());
 #endif
@@ -170,6 +171,81 @@ struct Renderer::Impl {
 
       // TODO object id
       Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
+    }
+  }
+
+  void applyGaussianFiltering(CubeMap& target,
+                              CubeMap& helper,
+                              CubeMap::TextureType type) {
+    CORRADE_ASSERT((type == CubeMap::TextureType::Color) ||
+                       (type == CubeMap::TextureType::VarianceShadowMap),
+                   "Renderer::Impl::applyGaussianFiltering(): type can only be "
+                   "Color or VarianceShadowMap.", );
+
+    if (type == CubeMap::TextureType::Color) {
+      CORRADE_ASSERT((target.getFlags() & CubeMap::Flag::ColorTexture) &&
+                         (helper.getFlags() & CubeMap::Flag::ColorTexture),
+                     "Renderer::Impl::applyGaussianFiltering(): cubemap is not "
+                     "created with specified flag (ColorTexture) enabled.", );
+    } else if (type == CubeMap::TextureType::VarianceShadowMap) {
+      CORRADE_ASSERT(
+          (target.getFlags() & CubeMap::Flag::VarianceShadowMapTexture) &&
+              (helper.getFlags() & CubeMap::Flag::VarianceShadowMapTexture),
+          "Renderer::Impl::applyGaussianFiltering(): cubemap is not "
+          "created with specified flag (VarianceShadowMapTexture) enabled.", );
+    }
+
+    int imageSize = target.getCubeMapSize();
+    if (helper.getCubeMapSize() != imageSize) {
+      helper.reset(imageSize);
+    }
+
+    // get mesh
+    if (!mesh_) {
+      // prepare a big triangle mesh to cover the screen
+      mesh_ = Mn::GL::Mesh{};
+      mesh_->setCount(3);
+    }
+
+    // get shader
+    esp::gfx::Renderer::Impl::RendererShaderType rendererShaderType =
+        esp::gfx::Renderer::Impl::RendererShaderType::GaussianFilter;
+
+    Mn::Resource<Mn::GL::AbstractShaderProgram, GaussianFilterShader> shader =
+        getShader<GaussianFilterShader>(rendererShaderType);
+
+    if ((!visualizedTex_) ||
+        visualizedTex_->imageSize(0) != Mn::Vector2i{imageSize, imageSize}) {
+      visualizedTex_ = Mn::GL::Texture2D{};
+      (*visualizedTex_)
+          .setMinificationFilter(Mn::GL::SamplerFilter::Linear)
+          .setMagnificationFilter(Mn::GL::SamplerFilter::Linear)
+          .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
+          .setStorage(1, Mn::GL::TextureFormat::RG32F, {imageSize, imageSize});
+    }
+    // Round 1, apply gaussian filter horizontally to original cubemap,
+    // store the result in the helper.
+    shader->setFilteringDirection(
+        GaussianFilterShader::FilteringDirection::Horizontal);
+    for (unsigned int iFace = 0; iFace < 6; ++iFace) {
+      target.copySubImage(iFace, type, *visualizedTex_, 0);
+      helper.prepareToDraw(iFace);
+      shader->bindTexture(*visualizedTex_);
+      shader->draw(*mesh_);
+    }
+    // Round 2, apply gaussian filter vertically to helper cubemap,
+    // store the result in the target cubemap.
+    shader->setFilteringDirection(
+        GaussianFilterShader::FilteringDirection::Vertical);
+    for (unsigned int iFace = 0; iFace < 6; ++iFace) {
+      helper.copySubImage(iFace, type, *visualizedTex_, 0);
+      target.prepareToDraw(iFace);
+      shader->bindTexture(*visualizedTex_);
+      shader->draw(*mesh_);
+    }
+
+    if (target.getFlags() & CubeMap::Flag::AutoBuildMipmap) {
+      target.generateMipmap(type);
     }
   }
 
@@ -290,15 +366,16 @@ struct Renderer::Impl {
 #endif
   Cr::Containers::Optional<Mn::GL::Mesh> mesh_;
   Mn::ResourceManager<Mn::GL::AbstractShaderProgram> shaderManager_;
+  Cr::Containers::Optional<Mn::GL::Texture2D> visualizedTex_;
 #ifdef ENABLE_VISUALIZATION_WORKAROUND_ON_MAC
-  Cr::Containers::Optional<Mn::GL::Texture2D> visualizedTex;
-  Cr::Containers::Optional<Mn::GL::BufferImage2D> depthBufferImage;
+  Cr::Containers::Optional<Mn::GL::BufferImage2D> depthBufferImage_;
 #endif
 
   enum class RendererShaderType : uint8_t {
     DepthShader = 0,
     DepthTextureVisualizer = 1,
     ObjectIdTextureVisualizer = 2,
+    GaussianFilter = 3,
   };
   template <typename T>
   Mn::Resource<Mn::GL::AbstractShaderProgram, T> getShader(
@@ -315,6 +392,10 @@ struct Renderer::Impl {
 
       case RendererShaderType::ObjectIdTextureVisualizer:
         key = Mn::ResourceKey{"objectIdVisualizer"};
+        break;
+
+      case RendererShaderType::GaussianFilter:
+        key = Mn::ResourceKey{"gaussianFilter"};
         break;
 
       default:
@@ -341,6 +422,10 @@ struct Renderer::Impl {
             shader.key(),
             new TextureVisualizerShader{
                 {TextureVisualizerShader::Flag::ObjectIdTexture}},
+            Mn::ResourceDataState::Final, Mn::ResourcePolicy::Resident);
+      } else if (type == RendererShaderType::GaussianFilter) {
+        shaderManager_.set<Mn::GL::AbstractShaderProgram>(
+            shader.key(), new GaussianFilterShader{},
             Mn::ResourceDataState::Final, Mn::ResourcePolicy::Resident);
       }
     }
@@ -403,6 +488,12 @@ void Renderer::visualize(sensor::VisualSensor& sensor,
                          float colorMapOffset,
                          float colorMapScale) {
   pimpl_->visualize(sensor, colorMapOffset, colorMapScale);
+}
+
+void Renderer::applyGaussianFiltering(CubeMap& target,
+                                      CubeMap& helper,
+                                      CubeMap::TextureType type) {
+  pimpl_->applyGaussianFiltering(target, helper, type);
 }
 
 }  // namespace gfx
