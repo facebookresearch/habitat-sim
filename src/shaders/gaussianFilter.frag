@@ -12,7 +12,7 @@ in highp vec2 textureCoordinates;
 
 // ------------ uniforms --------------------
 uniform highp sampler2D SourceTexture;
-uniform bool FilterHorizontally; // true on x or false on y axis
+uniform bool FilterHorizontally;  // true on x or false on y axis
 
 //------------- output ----------------------
 layout(location = OUTPUT_ATTRIBUTE_LOCATION_COLOR) out highp vec4 fragmentColor;
@@ -31,20 +31,33 @@ void main(void) {
 
   // If you see artifact, then tune the vsmBias in the shadowsVSM.glsl
   // const int samples = 5;
-  // float weight[samples] = float[](0.2270270270, 0.1945945946, 0.1216216216, 0.0540540541, 0.0162162162);
+  // float weight[samples] = float[](0.2270270270, 0.1945945946, 0.1216216216,
+  // 0.0540540541, 0.0162162162);
 
   vec3 result = texture(SourceTexture, textureCoordinates).rgb * weight[0];
   for (int i = 1; i < samples; ++i) {
     if (FilterHorizontally) {
       // x axis
-      result += texture(SourceTexture, textureCoordinates + vec2(scale * i, 0.0)).rgb * weight[i];
-      result += texture(SourceTexture, textureCoordinates - vec2(scale * i, 0.0)).rgb * weight[i];
+      result +=
+          texture(SourceTexture, textureCoordinates + vec2(scale * i, 0.0))
+              .rgb *
+          weight[i];
+      result +=
+          texture(SourceTexture, textureCoordinates - vec2(scale * i, 0.0))
+              .rgb *
+          weight[i];
     } else {
       // y axis
-      result += texture(SourceTexture, textureCoordinates + vec2(0.0, scale * i)).rgb * weight[i];
-      result += texture(SourceTexture, textureCoordinates - vec2(0.0, scale * i)).rgb * weight[i];
+      result +=
+          texture(SourceTexture, textureCoordinates + vec2(0.0, scale * i))
+              .rgb *
+          weight[i];
+      result +=
+          texture(SourceTexture, textureCoordinates - vec2(0.0, scale * i))
+              .rgb *
+          weight[i];
     }
-  } // for
+  }  // for
   fragmentColor = vec4(result, 1.0);
 
   /*

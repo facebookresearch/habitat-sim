@@ -74,9 +74,9 @@ GaussianFilterShader& GaussianFilterShader::bindTexture(
 GaussianFilterShader& GaussianFilterShader::setFilteringDirection(
     FilteringDirection dir) {
   if (dir == FilteringDirection::Horizontal) {
-    setUniform(filterHorizontallyUniform_, true);
+    setUniform(filterHorizontallyUniform_, 1);
   } else {
-    setUniform(filterHorizontallyUniform_, false);
+    setUniform(filterHorizontallyUniform_, 0);
   }
   return *this;
 }
