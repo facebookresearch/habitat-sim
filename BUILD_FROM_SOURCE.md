@@ -10,7 +10,7 @@
 ```
 
 - You can also allow pip to compile a specific version of Habitat. First clone the repo, then `pip install .` in the current git root directory
-  to start the compilation process. To quickly compile the latest master, run `pip install git+https://github.com/facebookresearch/habitat-sim`.
+  to start the compilation process. To quickly compile the latest main, run `pip install git+https://github.com/facebookresearch/habitat-sim`.
 
 - Since pip out of tree by default, this process will copy quite a lot of data to your TMPDIR. You can change this location by modifying the TMPDIR env variable.
   It will also not cache previous builds effectively and therefore will be slow. For active develeopment, building using `python setup.py install...` is recommended.
