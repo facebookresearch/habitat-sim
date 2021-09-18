@@ -85,10 +85,39 @@ void BulletArticulatedObject::initializeFromURDF(
   int urdfLinkIndex = u2b.getRootLinkIndex();
   // int rootIndex = u2b.getRootLinkIndex();
 
-  // NOTE: recursive path only
-  u2b.convertURDF2BulletInternal(urdfLinkIndex, rootTransformInWorldSpace,
-                                 bWorld_.get(), linkCompoundShapes_,
-                                 linkChildShapes_);
+  bool recursive = (u2b.flags & CUF_MAINTAIN_LINK_ORDER) == 0;
+
+  if (recursive) {
+    // NOTE: recursive path only
+    u2b.convertURDF2BulletInternal(urdfLinkIndex, rootTransformInWorldSpace,
+                                   bWorld_.get(), linkCompoundShapes_,
+                                   linkChildShapes_, recursive);
+  } else {
+    std::vector<Mn::Matrix4> parentTransforms;
+    parentTransforms.resize(urdfLinkIndex + 1);
+    parentTransforms[urdfLinkIndex] = rootTransformInWorldSpace;
+    std::vector<childParentIndex> allIndices;
+
+    u2b.getAllIndices(urdfLinkIndex, -1, allIndices);
+    std::sort(allIndices.begin(), allIndices.end(),
+              [](const childParentIndex& a, const childParentIndex& b) {
+                return a.m_index < b.m_index;
+              });
+
+    for (int i = 0; i < allIndices.size(); i++) {
+      int urdfLinkIndex = allIndices[i].m_index;
+      int parentIndex = allIndices[i].m_parentIndex;
+      Mn::Matrix4 parentTr = parentIndex >= 0 ? parentTransforms[parentIndex]
+                                              : rootTransformInWorldSpace;
+      Mn::Matrix4 tr = u2b.convertURDF2BulletInternal(
+          urdfLinkIndex, parentTr, bWorld_.get(), linkCompoundShapes_,
+          linkChildShapes_, recursive);
+      if ((urdfLinkIndex + 1) >= parentTransforms.size()) {
+        parentTransforms.resize(urdfLinkIndex + 1);
+      }
+      parentTransforms[urdfLinkIndex] = tr;
+    }
+  }
 
   if (u2b.cache->m_bulletMultiBody) {
     btMultiBody* mb = u2b.cache->m_bulletMultiBody;
@@ -126,8 +155,7 @@ void BulletArticulatedObject::initializeFromURDF(
          urdfLinkIx < urdfImporter.getModel()->m_links.size(); ++urdfLinkIx) {
       int bulletLinkIx =
           u2b.cache->m_urdfLinkIndices2BulletLinkIndices[urdfLinkIx];
-      auto urdfLink = u2b.getModel()->m_links.at(
-          u2b.getModel()->m_linkIndicesToNames[urdfLinkIx]);
+      auto urdfLink = u2b.getModel()->getLink(urdfLinkIx);
 
       ArticulatedLink* linkObject = nullptr;
       if (bulletLinkIx >= 0) {

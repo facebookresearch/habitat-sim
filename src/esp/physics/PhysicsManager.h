@@ -493,6 +493,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * the components of the @ref ArticulatedObject.
    * @param forceReload If true, reload the source URDF from file, replacing the
    * cached model.
+   * @param maintainLinkOrder If true, maintain the order of link definitions
+   * from the URDF file as the link indices.
    * @param lightSetup The string name of the desired lighting setup to use.
    *
    * @return A unique id for the @ref BulletArticulatedObject, allocated from
@@ -504,6 +506,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
       CORRADE_UNUSED float globalScale = 1.0,
       CORRADE_UNUSED float massScale = 1.0,
       CORRADE_UNUSED bool forceReload = false,
+      CORRADE_UNUSED bool maintainLinkOrder = false,
       CORRADE_UNUSED const std::string& lightSetup = DEFAULT_LIGHTING_KEY) {
     ESP_DEBUG() << "Not implemented in base PhysicsManager.";
     return ID_UNDEFINED;
@@ -526,6 +529,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * the components of the @ref ArticulatedObject.
    * @param forceReload If true, reload the source URDF from file, replacing the
    * cached model.
+   * @param maintainLinkOrder If true, maintain the order of link definitions
+   * from the URDF file as the link indices.
    * @param lightSetup The string name of the desired lighting setup to use.
    *
    * @return A unique id for the @ref ArticulatedObject, allocated from the same
@@ -538,6 +543,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
       CORRADE_UNUSED float globalScale = 1.0,
       CORRADE_UNUSED float massScale = 1.0,
       CORRADE_UNUSED bool forceReload = false,
+      CORRADE_UNUSED bool maintainLinkOrder = false,
       CORRADE_UNUSED const std::string& lightSetup = DEFAULT_LIGHTING_KEY) {
     ESP_DEBUG() << "Not implemented in base PhysicsManager.";
     return ID_UNDEFINED;

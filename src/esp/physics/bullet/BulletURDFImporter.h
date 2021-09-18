@@ -32,6 +32,20 @@ struct JointLimitConstraintInfo {
 };
 
 /**
+ * @brief struct to encapsulate mapping between child and parent links ids.
+ */
+struct childParentIndex {
+  int m_index;
+  int m_mbIndex;
+  int m_parentIndex;
+  int m_parentMBIndex;
+
+  std::string m_link_name;
+};
+
+Mn::Debug& operator<<(Mn::Debug& debug, const childParentIndex cpi);
+
+/**
  * @brief Structure to hold construction time multi-body data.
  */
 struct URDF2BulletCached {
@@ -85,11 +99,18 @@ class BulletURDFImporter : public URDFImporter {
       btMultiBodyDynamicsWorld* world1,
       std::map<int, std::unique_ptr<btCompoundShape>>& linkCompoundShapes,
       std::map<int, std::vector<std::unique_ptr<btCollisionShape>>>&
-          linkChildShapes);
+          linkChildShapes,
+      bool recursive = false);
 
   //! The temporary Bullet multibody cache initialized by
   //! convertURDF2BulletInternal and cleared after instancing the object
   std::shared_ptr<URDF2BulletCached> cache = nullptr;
+
+  //! Recursively get all indices from the model with mappings between parents
+  //! and children
+  void getAllIndices(int urdfLinkIndex,
+                     int parentIndex,
+                     std::vector<childParentIndex>& allIndices);
 
  protected:
   //! Construct a set of Bullet collision shapes from the URDF::CollisionShape

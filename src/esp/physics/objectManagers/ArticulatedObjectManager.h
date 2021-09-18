@@ -36,6 +36,8 @@ class ArticulatedObjectManager
    * the components of the @ref ArticulatedObject.
    * @param forceReload If true, reload the source URDF from file, replacing the
    * cached model.
+   * @param maintainLinkOrder If true, maintain the order of link definitions
+   * from the URDF file as the link indices.
    * @param lightSetup The string name of the desired lighting setup to use.
    *
    * @return A reference to the created ArticulatedObject
@@ -46,6 +48,7 @@ class ArticulatedObjectManager
       float globalScale = 1.0,
       float massScale = 1.0,
       bool forceReload = false,
+      bool maintainLinkOrder = false,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
 
   /**
@@ -62,6 +65,8 @@ class ArticulatedObjectManager
    * the components of the @ref ArticulatedObject.
    * @param forceReload If true, reload the source URDF from file, replacing the
    * cached model.
+   * @param maintainLinkOrder If true, maintain the order of link definitions
+   * from the URDF file as the link indices.
    * @param lightSetup The string name of the desired lighting setup to use.
    *
    * @return A reference to the created ArticulatedObject
@@ -73,10 +78,12 @@ class ArticulatedObjectManager
       float globalScale = 1.0,
       float massScale = 1.0,
       bool forceReload = false,
+      bool maintainLinkOrder = false,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY) {
     return std::static_pointer_cast<ManagedBulletArticulatedObject>(
         addArticulatedObjectFromURDF(filepath, fixedBase, globalScale,
-                                     massScale, forceReload, lightSetup));
+                                     massScale, forceReload, maintainLinkOrder,
+                                     lightSetup));
   }
 
   /**
@@ -94,6 +101,8 @@ class ArticulatedObjectManager
    * all the components of the @ref ArticulatedObject.
    * @param forceReload If true, reload the source URDF from file, replacing
    * the cached model.
+   * @param maintainLinkOrder If true, maintain the order of link definitions
+   * from the URDF file as the link indices.
    * @param lightSetup The string name of the desired lighting setup to use.
    *
    * @return A reference to the created ArticulatedObject
@@ -106,6 +115,7 @@ class ArticulatedObjectManager
       float globalScale = 1.0,
       float massScale = 1.0,
       bool forceReload = false,
+      bool maintainLinkOrder = false,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
 
  protected:

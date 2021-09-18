@@ -78,6 +78,8 @@ class BulletPhysicsManager : public PhysicsManager {
    * the components of the @ref ArticulatedObject.
    * @param forceReload If true, reload the source URDF from file, replacing the
    * cached model.
+   * @param maintainLinkOrder If true, maintain the order of link definitions
+   * from the URDF file as the link indices.
    * @param lightSetup The string name of the desired lighting setup to use.
    *
    * @return A unique id for the @ref ArticulatedObject, allocated from the same
@@ -89,6 +91,7 @@ class BulletPhysicsManager : public PhysicsManager {
       float globalScale = 1.0,
       float massScale = 1.0,
       bool forceReload = false,
+      bool maintainLinkOrder = false,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY) override;
 
   /**
@@ -106,6 +109,8 @@ class BulletPhysicsManager : public PhysicsManager {
    * the components of the @ref ArticulatedObject.
    * @param forceReload If true, reload the source URDF from file, replacing the
    * cached model.
+   * @param maintainLinkOrder If true, maintain the order of link definitions
+   * from the URDF file as the link indices.
    * @param lightSetup The string name of the desired lighting setup to use.
    *
    * @return A unique id for the @ref ArticulatedObject, allocated from the same
@@ -118,6 +123,7 @@ class BulletPhysicsManager : public PhysicsManager {
       float globalScale = 1.0,
       float massScale = 1.0,
       bool forceReload = false,
+      bool maintainLinkOrder = false,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY) override;
 
   /**
