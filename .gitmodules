@@ -1,6 +1,3 @@
-[submodule "src/deps/googletest"]
-	path = src/deps/googletest
-	url = https://github.com/google/googletest
 [submodule "src/deps/rapidjson"]
 	path = src/deps/rapidjson
 	url = https://github.com/Tencent/rapidjson.git
@@ -52,3 +49,6 @@
 [submodule "src/deps/v-hacd"]
 	path = src/deps/v-hacd
 	url = https://github.com/ScottCSteinhauser/v-hacd.git
+[submodule "src/deps/openexr"]
+	path = src/deps/openexr
+	url = https://github.com/AcademySoftwareFoundation/openexr

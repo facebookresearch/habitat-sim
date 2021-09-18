@@ -8,8 +8,7 @@
 #include <Corrade/Utility/String.h>
 
 #include "esp/assets/Asset.h"
-#include "esp/io/io.h"
-#include "esp/io/json.h"
+#include "esp/io/Json.h"
 
 namespace Cr = Corrade;
 
@@ -28,10 +27,9 @@ ObjectAttributesManager::createPrimBasedAttributesTemplate(
     bool registerTemplate) {
   // verify that a primitive asset with the given handle exists
   if (!this->isValidPrimitiveAttributes(primAttrTemplateHandle)) {
-    ESP_ERROR()
-        << "::createPrimBasedAttributesTemplate : No primitive with handle '"
-        << Mn::Debug::nospace << primAttrTemplateHandle << Mn::Debug::nospace
-        << "' exists so cannot build physical object.  Aborting.";
+    ESP_ERROR() << "No primitive with handle '" << Mn::Debug::nospace
+                << primAttrTemplateHandle << Mn::Debug::nospace
+                << "' exists so cannot build physical object.  Aborting.";
     return nullptr;
   }
 
@@ -190,8 +188,7 @@ int ObjectAttributesManager::registerObjectFinalize(
     bool forceRegistration) {
   if (objectTemplate->getRenderAssetHandle() == "") {
     ESP_ERROR()
-        << "::registerObjectFinalize : Attributes template named"
-        << objectTemplateHandle
+        << "Attributes template named" << objectTemplateHandle
         << "does not have a valid render asset handle specified. Aborting.";
     return ID_UNDEFINED;
   }
@@ -218,8 +215,7 @@ int ObjectAttributesManager::registerObjectFinalize(
   } else if (forceRegistration) {
     // Forcing registration in case of computationaly generated assets
     ESP_WARNING()
-        << "::registerObjectFinalize : Render asset template handle :"
-        << renderAssetHandle
+        << "Render asset template handle :" << renderAssetHandle
         << "specified in object template with handle :" << objectTemplateHandle
         << "does not correspond to any existing file or primitive render "
            "asset.  Objects created from this template may fail.";
@@ -229,8 +225,7 @@ int ObjectAttributesManager::registerObjectFinalize(
     // attributes template hande, fail
     // by here always fail
     ESP_ERROR()
-        << "::registerObjectFinalize : Render asset template handle :"
-        << renderAssetHandle
+        << "Render asset template handle :" << renderAssetHandle
         << "specified in object template with handle :" << objectTemplateHandle
         << "does not correspond to any existing file or primitive render "
            "asset.  Aborting.";
@@ -248,8 +243,7 @@ int ObjectAttributesManager::registerObjectFinalize(
   } else {
     // Else, means no collision data specified, use specified render data
     ESP_DEBUG()
-        << "::registerObjectFinalize : Collision asset template handle :"
-        << collisionAssetHandle
+        << "Collision asset template handle :" << collisionAssetHandle
         << "specified in object template with handle :" << objectTemplateHandle
         << "does not correspond to any existing file or primitive render "
            "asset.  Overriding with given render asset handle :"

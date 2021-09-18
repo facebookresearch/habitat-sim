@@ -3,7 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "SceneManager.h"
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
 namespace esp {
 namespace scene {

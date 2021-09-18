@@ -8,8 +8,8 @@
 #include "esp/metadata/MetadataUtils.h"
 #include "esp/physics/RigidBase.h"
 
-#include "esp/io/io.h"
-#include "esp/io/json.h"
+#include "esp/io/Io.h"
+#include "esp/io/Json.h"
 
 namespace esp {
 namespace metadata {
@@ -29,7 +29,7 @@ SceneAttributes::ptr SceneAttributesManager::createObject(
 
   if (nullptr != attrs) {
     ESP_DEBUG() << msg << "scene instance attributes created"
-                << (registerTemplate ? " and registered." : ".");
+                << (registerTemplate ? "and registered." : ".");
   }
   return attrs;
 }  // SceneAttributesManager::createObject
@@ -62,8 +62,8 @@ void SceneAttributesManager::setValsFromJSONDoc(
     attribs->setStageInstance(
         createInstanceAttributesFromJSON(jsonConfig["stage_instance"]));
   } else {
-    ESP_WARNING() << "::setValsFromJSONDoc : No Stage specified for scene"
-                  << attribsDispName << ", or specification error.";
+    ESP_WARNING() << "No Stage specified for scene" << attribsDispName
+                  << ", or specification error.";
   }
 
   // Check for object instances existence
@@ -75,14 +75,13 @@ void SceneAttributesManager::setValsFromJSONDoc(
         if (objCell.IsObject()) {
           attribs->addObjectInstance(createInstanceAttributesFromJSON(objCell));
         } else {
-          ESP_WARNING()
-              << "::setValsFromJSONDoc : Object specification error in scene"
-              << attribsDispName << "at idx :" << i << ".";
+          ESP_WARNING() << "Object specification error in scene"
+                        << attribsDispName << "at idx :" << i << ".";
         }
       }
     } else {
-      ESP_WARNING() << "::setValsFromJSONDoc : No Objects specified for scene"
-                    << attribsDispName << ", or specification error.";
+      ESP_WARNING() << "No Objects specified for scene" << attribsDispName
+                    << ", or specification error.";
     }
   }
 
@@ -98,16 +97,12 @@ void SceneAttributesManager::setValsFromJSONDoc(
         attribs->addArticulatedObjectInstance(
             createAOInstanceAttributesFromJSON(artObjCell));
       } else {
-        ESP_WARNING() << "SceneAttributesManager::setValsFromJSONDoc : "
-                         "Articulated Object "
-                         "specification error in scene"
+        ESP_WARNING() << "Articulated Object specification error in scene"
                       << attribsDispName << "at idx :" << i << ".";
       }
     }
   } else {
-    ESP_WARNING() << "SceneAttributesManager::setValsFromJSONDoc : No "
-                     "Articulated Objects "
-                     "specified for scene"
+    ESP_WARNING() << "No Articulated Objects specified for scene"
                   << attribsDispName << ", or specification error.";
   }
 
@@ -117,8 +112,7 @@ void SceneAttributesManager::setValsFromJSONDoc(
     // if "default lighting" is specified in scene json set value.
     attribs->setLightingHandle(dfltLighting);
   } else {
-    ESP_WARNING() << "::setValsFromJSONDoc : No default_lighting "
-                     "specified for scene"
+    ESP_WARNING() << "No default_lighting specified for scene"
                   << attribsDispName << ".";
   }
 
@@ -128,8 +122,7 @@ void SceneAttributesManager::setValsFromJSONDoc(
     // if "navmesh_instance" is specified in scene json set value.
     attribs->setNavmeshHandle(navmeshName);
   } else {
-    ESP_WARNING() << "::setValsFromJSONDoc : No navmesh_instance "
-                     "specified for scene"
+    ESP_WARNING() << "No navmesh_instance specified for scene"
                   << attribsDispName << ".";
   }
 
@@ -139,8 +132,7 @@ void SceneAttributesManager::setValsFromJSONDoc(
     // if "semantic scene instance" is specified in scene json set value.
     attribs->setSemanticSceneHandle(semanticDesc);
   } else {
-    ESP_WARNING() << "::setValsFromJSONDoc : No semantic_scene_instance "
-                     "specified for scene"
+    ESP_WARNING() << "No semantic_scene_instance specified for scene"
                   << attribsDispName << ".";
   }
   // check for user defined attributes
@@ -197,7 +189,7 @@ SceneAttributesManager::createAOInstanceAttributesFromJSON(
     } else if (jCell["initial_joint_pose"].IsObject()) {
       // load values into map
       io::readMember<std::map<std::string, float>>(
-          jCell, "initial_joint_pose", instanceAttrs->getInitJointPose());
+          jCell, "initial_joint_pose", instanceAttrs->copyIntoInitJointPose());
     } else {
       ESP_WARNING()
           << "SceneAttributesManager::"
@@ -224,7 +216,7 @@ SceneAttributesManager::createAOInstanceAttributesFromJSON(
       // load values into map
       io::readMember<std::map<std::string, float>>(
           jCell, "initial_joint_velocities",
-          instanceAttrs->getInitJointVelocities());
+          instanceAttrs->copyIntoInitJointVelocities());
     } else {
       ESP_WARNING()
           << "SceneAttributesManager::"
@@ -291,15 +283,15 @@ void SceneAttributesManager::loadAbstractObjectAttributesFromJson(
       });
 
   // uniform scaling for instance
-  io::jsonIntoSetter<float>(jCell, "uniform_scale",
-                            [instanceAttrs](float uniform_scale) {
-                              instanceAttrs->setUniformScale(uniform_scale);
-                            });
+  io::jsonIntoSetter<double>(jCell, "uniform_scale",
+                             [instanceAttrs](double uniform_scale) {
+                               instanceAttrs->setUniformScale(uniform_scale);
+                             });
   // mass scaling for instance
-  io::jsonIntoSetter<float>(jCell, "mass_scale",
-                            [instanceAttrs](float mass_scale) {
-                              instanceAttrs->setMassScale(mass_scale);
-                            });
+  io::jsonIntoSetter<double>(jCell, "mass_scale",
+                             [instanceAttrs](double mass_scale) {
+                               instanceAttrs->setMassScale(mass_scale);
+                             });
 
   // check for user defined attributes
   this->parseUserDefinedJsonVals(instanceAttrs, jCell);

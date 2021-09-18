@@ -6,7 +6,7 @@
 #define ESP_ASSETS_ASSET_H_
 
 #include <Magnum/Math/Color.h>
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/geo/CoordinateFrame.h"
 
 namespace esp {

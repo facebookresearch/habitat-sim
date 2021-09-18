@@ -2,7 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "esp/bindings/bindings.h"
+#include "esp/bindings/Bindings.h"
 
 #include "esp/physics/bullet/objectWrappers/ManagedBulletArticulatedObject.h"
 #include "esp/physics/bullet/objectWrappers/ManagedBulletRigidObject.h"
@@ -176,7 +176,17 @@ void declareBaseWrapperManager(py::module& m,
             " specified by the passed handle if it exists, and NULL if it does "
             "not.")
                .c_str(),
-           "handle"_a);
+           "handle"_a)
+      .def("get_objects_by_handle_substring",
+           static_cast<std::unordered_map<std::string, WrapperPtr> (
+               MgrClass::*)(const std::string&, bool)>(
+               &MgrClass::template getObjectsByHandleSubstring<U>),
+           ("Returns a dictionary of " + objType +
+            " objects, keyed by their handles, for all handles that either "
+            "contain or explicitly do not contain the passed search_str, based "
+            "on the value of boolean contains.")
+               .c_str(),
+           "search_str"_a = "", "contains"_a = true);
 }  // declareBaseWrapperManager
 
 template <typename T>

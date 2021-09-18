@@ -38,18 +38,19 @@ add_library(
   Buffer.h
   Check.cpp
   Check.h
+  Configuration.cpp
   Configuration.h
-  esp.cpp
-  esp.h
-  logging.cpp
-  logging.h
+  Esp.cpp
+  Esp.h
+  Logging.cpp
+  Logging.h
   managedContainers/AbstractManagedObject.h
   managedContainers/ManagedContainer.h
   managedContainers/ManagedContainerBase.cpp
   managedContainers/ManagedContainerBase.h
   managedContainers/ManagedFileBasedContainer.h
-  random.h
-  spimpl.h
+  Random.h
+  Spimpl.h
   Utility.h
 )
 
@@ -59,7 +60,3 @@ target_link_libraries(
 )
 
 target_include_directories(core PUBLIC ${PROJECT_BINARY_DIR})
-
-if(BUILD_TEST)
-  add_subdirectory(test)
-endif()

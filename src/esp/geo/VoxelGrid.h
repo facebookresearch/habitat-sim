@@ -19,8 +19,8 @@
 
 #include "esp/assets/MeshData.h"
 #include "esp/assets/MeshMetaData.h"
-#include "esp/core/esp.h"
-#include "esp/geo/geo.h"
+#include "esp/core/Esp.h"
+#include "esp/geo/Geo.h"
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/magnum.h"
 

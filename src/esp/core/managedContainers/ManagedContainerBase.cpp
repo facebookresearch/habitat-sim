@@ -32,8 +32,7 @@ std::string ManagedContainerBase::getRandomObjectHandlePerType(
     const std::string& type) const {
   std::size_t numVals = mapOfHandles.size();
   if (numVals == 0) {
-    ESP_ERROR() << "::getRandomObjectHandlePerType : Attempting to get a random"
-                << type << objectType_
+    ESP_ERROR() << "Attempting to get a random" << type << objectType_
                 << "managed object handle but none are loaded; Aboring";
     return "";
   }
@@ -163,17 +162,17 @@ std::vector<std::string> ManagedContainerBase::getObjectInfoStrings(
     // get the object
     auto objPtr = getObjectInternal<AbstractManagedObject>(objectHandle);
     if (idx == 0) {
-      res[idx++]
-          .append(objectType_)
-          .append(" Full name, Can delete?, Is locked?, ")
-          .append(objPtr->getObjectInfoHeader());
+      Cr::Utility::formatInto(res[idx], res[idx].size(),
+                              "{} Full name,Can delete?,Is locked?,{}",
+                              objectType_, objPtr->getObjectInfoHeader());
+      ++idx;
     }
-    res[idx++]
-        .append(objectHandle)
-        .append(1, ',')
-        .append(((this->getIsUndeletable(objectHandle)) ? "False, " : "True, "))
-        .append(((this->getIsUserLocked(objectHandle)) ? "True, " : "False, "))
-        .append(objPtr->getObjectInfo());
+    Cr::Utility::formatInto(
+        res[idx], res[idx].size(), "{},{},{},{}", objectHandle,
+        (this->getIsUndeletable(objectHandle) ? "False" : "True"),
+        (this->getIsUserLocked(objectHandle) ? "True" : "False"),
+        objPtr->getObjectInfo());
+    ++idx;
   }
   return res;
 }  // ManagedContainerBase::getObjectInfoStrings
@@ -186,8 +185,7 @@ int ManagedContainerBase::getObjectIDByHandleOrNew(
   }
   if (!getNext) {
     ESP_ERROR() << "<" << Cr::Utility::Debug::nospace << this->objectType_
-                << Cr::Utility::Debug::nospace
-                << ">::getObjectIDByHandleOrNew : No" << objectType_
+                << Cr::Utility::Debug::nospace << "> : No" << objectType_
                 << "managed object with handle" << objectHandle
                 << "exists. Aborting";
     return ID_UNDEFINED;
@@ -201,7 +199,7 @@ std::string ManagedContainerBase::getObjectInfoCSVString(
   std::vector<std::string> infoAra = getObjectInfoStrings(subStr, contains);
   std::string res;
   for (std::string& s : infoAra) {
-    res += s.append(1, '\n');
+    Cr::Utility::formatInto(res, res.size(), "{}\n", s);
   }
   return res;
 }  // ManagedContainerBase::getObjectInfoCSVString

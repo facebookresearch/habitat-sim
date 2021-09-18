@@ -9,7 +9,7 @@
 #include <utility>
 
 #include "SceneNode.h"
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
 using Magnum::EigenIntegration::cast;
 

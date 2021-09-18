@@ -5,7 +5,7 @@
 #include "SceneNode.h"
 #include "SceneGraph.h"
 #include "esp/core/Check.h"
-#include "esp/geo/geo.h"
+#include "esp/geo/Geo.h"
 #include "esp/sensor/Sensor.h"
 
 namespace Mn = Magnum;

@@ -21,10 +21,8 @@ const std::map<std::string, esp::gfx::LightPositionModel>
         {"camera", esp::gfx::LightPositionModel::Camera},
         {"object", esp::gfx::LightPositionModel::Object}};
 
-int LightInstanceAttributes::_count{0};
 LightInstanceAttributes::LightInstanceAttributes(const std::string& handle)
     : AbstractAttributes("LightInstanceAttributes", handle) {
-  setID(_count++);
   setPosition({0.0, 0.0, 0.0});
   setDirection({0.0, -1.0, 0.0});
   setColor({1.0, 1.0, 1.0});
@@ -41,21 +39,57 @@ LightLayoutAttributes::LightLayoutAttributes(const std::string& handle)
   // set default scaling for positive and negative intensities to 1.0
   setPositiveIntensityScale(1.0);
   setNegativeIntensityScale(1.0);
+  // get ref to internal subconfig for light instances
+  lightInstConfig_ = editSubconfig<Configuration>("light_instances");
+}
+LightLayoutAttributes::LightLayoutAttributes(const LightLayoutAttributes& otr)
+    : AbstractAttributes(otr), availableLightIDs_(otr.availableLightIDs_) {
+  lightInstConfig_ = editSubconfig<Configuration>("light_instances");
+
+  copySubconfigIntoMe<LightInstanceAttributes>(otr.lightInstConfig_,
+                                               lightInstConfig_);
+}
+LightLayoutAttributes::LightLayoutAttributes(
+    LightLayoutAttributes&& otr) noexcept
+    : AbstractAttributes(std::move(static_cast<AbstractAttributes>(otr))),
+      availableLightIDs_(std::move(otr.availableLightIDs_)) {
+  lightInstConfig_ = editSubconfig<Configuration>("light_instances");
+}
+
+LightLayoutAttributes& LightLayoutAttributes::operator=(
+    const LightLayoutAttributes& otr) {
+  if (this != &otr) {
+    this->AbstractAttributes::operator=(otr);
+    // point to our own light instance config and available ids
+    availableLightIDs_ = otr.availableLightIDs_;
+    lightInstConfig_ = editSubconfig<Configuration>("light_instances");
+    copySubconfigIntoMe<LightInstanceAttributes>(otr.lightInstConfig_,
+                                                 lightInstConfig_);
+  }
+  return *this;
+}
+LightLayoutAttributes& LightLayoutAttributes::operator=(
+    LightLayoutAttributes&& otr) noexcept {
+  // point to our own light instance config and available ids
+  availableLightIDs_ = std::move(otr.availableLightIDs_);
+  this->AbstractAttributes::operator=(
+      std::move(static_cast<AbstractAttributes>(otr)));
+  lightInstConfig_ = editSubconfig<Configuration>("light_instances");
+  return *this;
 }
 
 std::string LightLayoutAttributes::getObjectInfoInternal() const {
   std::string res = "\n";
   int iter = 0;
-  for (const auto& lightInst : lightInstances_) {
+  auto lightInstances = getLightInstances();
+  for (const auto& lightInst : lightInstances) {
     if (iter == 0) {
-      iter++;
-      res.append(1, ',')
-          .append(lightInst.second->getObjectInfoHeader())
-          .append(1, '\n');
+      ++iter;
+      Cr::Utility::formatInto(res, res.size(), ",{}\n",
+                              lightInst->getObjectInfoHeader());
     }
-    res.append(1, ',')
-        .append(lightInst.second->getObjectInfo())
-        .append(1, '\n');
+    Cr::Utility::formatInto(res, res.size(), ",{}\n",
+                            lightInst->getObjectInfo());
   }
   return res;
 }

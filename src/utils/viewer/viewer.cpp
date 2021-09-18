@@ -46,10 +46,9 @@
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Renderer.h>
 #include <sophus/so3.hpp>
+#include "esp/core/Esp.h"
 #include "esp/core/Utility.h"
-#include "esp/core/esp.h"
 #include "esp/gfx/Drawable.h"
-#include "esp/io/io.h"
 
 #ifdef ESP_BUILD_WITH_VHACD
 #include "esp/geo/VoxelUtils.h"
@@ -669,6 +668,10 @@ Viewer::Viewer(const Arguments& arguments)
       .addOption("agent-transform-filepath")
       .setHelp("agent-transform-filepath",
                "Specify path to load camera transform from.")
+      .addBooleanOption("ibl")
+      .setHelp("ibl",
+               "Image Based Lighting (it works only when PBR models exist in "
+               "the scene.")
       .parse(arguments.argc, arguments.argv);
 
   const auto viewportSize = Mn::GL::defaultFramebuffer.viewport().size();
@@ -773,6 +776,9 @@ Viewer::Viewer(const Arguments& arguments)
   ESP_DEBUG() << "Scene Dataset Configuration file location :"
               << simConfig_.sceneDatasetConfigFile
               << "| Loading Scene :" << simConfig_.activeSceneName;
+
+  // image based lighting (PBR)
+  simConfig_.pbrImageBasedLighting = args.isSet("ibl");
 
   // create simulator instance
   simulator_ = esp::sim::Simulator::create_unique(simConfig_, MM_);
@@ -1044,7 +1050,7 @@ int Viewer::addPrimitiveObject() {
 
 void Viewer::buildTrajectoryVis() {
   if (agentLocs_.size() < 2) {
-    ESP_WARNING() << "::buildTrajectoryVis : No recorded trajectory "
+    ESP_WARNING() << "No recorded trajectory "
                      "points, so nothing to build. Aborting.";
     return;
   }
@@ -1056,18 +1062,17 @@ void Viewer::buildTrajectoryVis() {
           << agentLocs_.size() << "_pts";
   std::string trajObjName(tmpName.str());
 
-  ESP_DEBUG() << "::buildTrajectoryVis : Attempting to build trajectory "
+  ESP_DEBUG() << "Attempting to build trajectory "
                  "tube for :"
               << agentLocs_.size() << "points.";
   int trajObjID = simulator_->addTrajectoryObject(
       trajObjName, agentLocs_, 6, agentTrajRad_, color, true, 10);
   if (trajObjID != esp::ID_UNDEFINED) {
-    ESP_DEBUG() << "::buildTrajectoryVis : Success!  Traj Obj Name :"
-                << trajObjName << "has object ID :" << trajObjID;
+    ESP_DEBUG() << "Success!  Traj Obj Name :" << trajObjName
+                << "has object ID :" << trajObjID;
   } else {
-    ESP_WARNING() << "::buildTrajectoryVis : Attempt to build trajectory "
-                     "visualization"
-                  << trajObjName << "failed; Returned ID_UNDEFINED.";
+    ESP_WARNING() << "Attempt to build trajectory visualization" << trajObjName
+                  << "failed; Returned ID_UNDEFINED.";
   }
 }  // buildTrajectoryVis
 
@@ -1395,10 +1400,10 @@ void Viewer::drawEvent() {
         break;
     }
     ImGui::Text("%s", profiler_.statistics().c_str());
+    std::string modeText =
+        "Mouse Interaction Mode: " + mouseModeNames.at(mouseInteractionMode);
+    ImGui::Text("%s", modeText.c_str());
   }
-  std::string modeText =
-      "Mouse Interaction Mode: " + mouseModeNames.at(mouseInteractionMode);
-  ImGui::Text("%s", modeText.c_str());
   ImGui::End();
 
   /* Set appropriate states. If you only draw ImGui, it is sufficient to

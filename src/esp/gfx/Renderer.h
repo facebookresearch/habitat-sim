@@ -5,7 +5,7 @@
 #ifndef ESP_GFX_RENDERER_H_
 #define ESP_GFX_RENDERER_H_
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/WindowlessContext.h"
 #include "esp/scene/SceneGraph.h"

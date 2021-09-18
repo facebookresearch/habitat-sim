@@ -47,7 +47,7 @@ class ManagedRigidObject
    * that to build this data.
    */
   std::string getRigidBaseInfoHeaderInternal() const override {
-    return "Creation Attributes Name,";
+    return "Creation Attributes Name";
   }
 
   /**
@@ -57,9 +57,7 @@ class ManagedRigidObject
    */
   std::string getRigidBaseInfoInternal(
       std::shared_ptr<esp::physics::RigidObject>& sp) const override {
-    std::string res =
-        sp->getInitializationAttributes()->getHandle().append(1, ',');
-    return res;
+    return sp->getInitializationAttributes()->getHandle();
   }
 
  public:

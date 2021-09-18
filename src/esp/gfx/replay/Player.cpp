@@ -5,7 +5,7 @@
 #include "Player.h"
 
 #include "esp/assets/ResourceManager.h"
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/io/JsonAllTypes.h"
 
 #include <rapidjson/document.h>
@@ -19,6 +19,14 @@ void Player::readKeyframesFromJsonDocument(const rapidjson::Document& d) {
   esp::io::readMember(d, "keyframes", keyframes_);
 }
 
+Keyframe Player::keyframeFromString(const std::string& keyframe) {
+  Keyframe res;
+  rapidjson::Document d;
+  d.Parse<0>(keyframe.c_str());
+  esp::io::readMember(d, "keyframe", res);
+  return res;
+}
+
 Player::Player(const LoadAndCreateRenderAssetInstanceCallback& callback)
     : loadAndCreateRenderAssetInstanceCallback(callback) {}
 
@@ -26,17 +34,14 @@ void Player::readKeyframesFromFile(const std::string& filepath) {
   close();
 
   if (!Corrade::Utility::Directory::exists(filepath)) {
-    ESP_ERROR() << "Player::readKeyframesFromFile: file" << filepath
-                << "not found.";
+    ESP_ERROR() << "File" << filepath << "not found.";
     return;
   }
   try {
     auto newDoc = esp::io::parseJsonFile(filepath);
     readKeyframesFromJsonDocument(newDoc);
   } catch (...) {
-    ESP_ERROR()
-        << "Player::readKeyframesFromFile: failed to parse keyframes from"
-        << filepath << ".";
+    ESP_ERROR() << "Failed to parse keyframes from" << filepath << ".";
   }
 }
 
@@ -112,9 +117,8 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     const auto& creation = pair.second;
     if (assetInfos_.count(creation.filepath) == 0u) {
       if (failedFilepaths_.count(creation.filepath) == 0u) {
-        ESP_WARNING() << "Player: missing asset info for ["
-                      << Mn::Debug::nospace << creation.filepath
-                      << Mn::Debug::nospace << "]";
+        ESP_WARNING() << "Missing asset info for [" << Mn::Debug::nospace
+                      << creation.filepath << Mn::Debug::nospace << "]";
         failedFilepaths_.insert(creation.filepath);
       }
       continue;
@@ -124,7 +128,7 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
         assetInfos_[creation.filepath], creation);
     if (!node) {
       if (failedFilepaths_.count(creation.filepath) == 0u) {
-        ESP_WARNING() << "Player: load failed for asset [" << Mn::Debug::nospace
+        ESP_WARNING() << "Load failed for asset [" << Mn::Debug::nospace
                       << creation.filepath << Mn::Debug::nospace << "]";
         failedFilepaths_.insert(creation.filepath);
       }
@@ -162,6 +166,14 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     node->setRotation(state.absTransform.rotation);
     setSemanticIdForSubtree(node, state.semanticId);
   }
+}
+
+void Player::appendKeyframe(Keyframe&& keyframe) {
+  keyframes_.emplace_back(std::move(keyframe));
+}
+
+void Player::appendJSONKeyframe(const std::string& keyframe) {
+  appendKeyframe(keyframeFromString(keyframe));
 }
 
 void Player::setSemanticIdForSubtree(esp::scene::SceneNode* rootNode,

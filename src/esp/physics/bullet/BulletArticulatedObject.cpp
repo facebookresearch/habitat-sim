@@ -79,6 +79,9 @@ void BulletArticulatedObject::initializeFromURDF(
 
   auto urdfModel = u2b.getModel();
 
+  // cache the global scaling from the source model
+  globalScale_ = urdfModel->getGlobalScaling();
+
   int urdfLinkIndex = u2b.getRootLinkIndex();
   // int rootIndex = u2b.getRootLinkIndex();
 
@@ -159,6 +162,8 @@ void BulletArticulatedObject::initializeFromURDF(
         createJointMotor(linkIx, settings);
       }
     }
+    // set user config attributes from model.
+    setUserAttributes(urdfModel->getUserConfiguration());
 
     // in case the base transform is not zero by default
     syncPose();
@@ -256,17 +261,14 @@ void BulletArticulatedObject::resetStateFromSceneInstanceAttr(
   // get array of existing joint dofs
   std::vector<float> aoJointPose = getJointPositions();
   // get instance-specified initial joint positions
-  std::map<std::string, float>& initJointPos =
-      sceneObjInstanceAttr->getInitJointPose();
+  const auto& initJointPos = sceneObjInstanceAttr->getInitJointPose();
   // map instance vals into
   size_t idx = 0;
   for (const auto& elem : initJointPos) {
     if (idx >= aoJointPose.size()) {
-      ESP_WARNING()
-          << "BulletArticulatedObject::resetStateFromSceneInstanceAttr :"
-          << "Attempting to specify more initial joint poses than "
-             "exist in articulated object"
-          << sceneObjInstanceAttr->getHandle() << ", so skipping";
+      ESP_WARNING() << "Attempting to specify more initial joint poses than "
+                       "exist in articulated object"
+                    << sceneObjInstanceAttr->getHandle() << ", so skipping";
       break;
     }
     aoJointPose[idx++] = elem.second;
@@ -277,13 +279,12 @@ void BulletArticulatedObject::resetStateFromSceneInstanceAttr(
   // get array of existing joint vel dofs
   std::vector<float> aoJointVels = getJointVelocities();
   // get instance-specified initial joint velocities
-  std::map<std::string, float>& initJointVel =
+  const std::map<std::string, float>& initJointVel =
       sceneObjInstanceAttr->getInitJointVelocities();
   idx = 0;
   for (const auto& elem : initJointVel) {
     if (idx >= aoJointVels.size()) {
       ESP_WARNING()
-          << "BulletArticulatedObject::resetStateFromSceneInstanceAttr :"
           << "Attempting to specify more initial joint velocities than "
              "exist in articulated object"
           << sceneObjInstanceAttr->getHandle() << ", so skipping";
@@ -324,8 +325,8 @@ void BulletArticulatedObject::setRootAngularVelocity(
 
 void BulletArticulatedObject::setJointForces(const std::vector<float>& forces) {
   if (forces.size() != size_t(btMultiBody_->getNumDofs())) {
-    ESP_DEBUG() << "setJointForces - Force vector size mis-match (input:"
-                << forces.size() << ", expected:" << btMultiBody_->getNumDofs()
+    ESP_DEBUG() << "Force vector size mis-match (input:" << forces.size()
+                << ", expected:" << btMultiBody_->getNumDofs()
                 << "), aborting.";
   }
 
@@ -341,8 +342,8 @@ void BulletArticulatedObject::setJointForces(const std::vector<float>& forces) {
 
 void BulletArticulatedObject::addJointForces(const std::vector<float>& forces) {
   if (forces.size() != size_t(btMultiBody_->getNumDofs())) {
-    ESP_DEBUG() << "addJointForces - Force vector size mis-match (input:"
-                << forces.size() << ", expected:" << btMultiBody_->getNumDofs()
+    ESP_DEBUG() << "Force vector size mis-match (input:" << forces.size()
+                << ", expected:" << btMultiBody_->getNumDofs()
                 << "), aborting.";
   }
 
@@ -372,8 +373,8 @@ std::vector<float> BulletArticulatedObject::getJointForces() {
 void BulletArticulatedObject::setJointVelocities(
     const std::vector<float>& vels) {
   if (vels.size() != size_t(btMultiBody_->getNumDofs())) {
-    ESP_DEBUG() << "setJointVelocities - Velocity vector size mis-match (input:"
-                << vels.size() << ", expected:" << btMultiBody_->getNumDofs()
+    ESP_DEBUG() << "Velocity vector size mis-match (input:" << vels.size()
+                << ", expected:" << btMultiBody_->getNumDofs()
                 << "), aborting.";
   }
 
@@ -405,9 +406,8 @@ void BulletArticulatedObject::setJointPositions(
     const std::vector<float>& positions) {
   if (positions.size() != size_t(btMultiBody_->getNumPosVars())) {
     ESP_DEBUG(Mn::Debug::Flag::NoSpace)
-        << "setJointPositions - Position vector size mis-match (input:"
-        << positions.size() << ", expected:" << btMultiBody_->getNumPosVars()
-        << "), aborting.";
+        << "Position vector size mis-match (input:" << positions.size()
+        << ", expected:" << btMultiBody_->getNumPosVars() << "), aborting.";
   }
 
   int posCount = 0;

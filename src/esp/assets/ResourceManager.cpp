@@ -39,14 +39,13 @@
 
 #include <memory>
 
-#include "esp/geo/geo.h"
+#include "esp/geo/Geo.h"
 #include "esp/gfx/GenericDrawable.h"
 #include "esp/gfx/MaterialUtil.h"
 #include "esp/gfx/PbrDrawable.h"
 #include "esp/gfx/replay/Recorder.h"
+#include "esp/io/Json.h"
 #include "esp/io/URDFParser.h"
-#include "esp/io/io.h"
-#include "esp/io/json.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/scene/SceneGraph.h"
 
@@ -75,6 +74,7 @@ using metadata::attributes::AbstractObjectAttributes;
 using metadata::attributes::CubePrimitiveAttributes;
 using metadata::attributes::ObjectAttributes;
 using metadata::attributes::PhysicsManagerAttributes;
+using metadata::attributes::SceneObjectInstanceAttributes;
 using metadata::attributes::StageAttributes;
 using metadata::managers::AssetAttributesManager;
 using metadata::managers::ObjectAttributesManager;
@@ -102,6 +102,11 @@ ResourceManager::ResourceManager(
   initDefaultLightSetups();
   initDefaultMaterials();
   buildImporters();
+
+  if (flags_ & Flag::PbrImageBasedLighting) {
+    // TODO: HDRi image name should be config based
+    initPbrImageBasedLighting("lythwood_room_4k.jpg");
+  }
 }
 
 ResourceManager::~ResourceManager() {
@@ -150,10 +155,11 @@ void ResourceManager::initDefaultPrimAttributes() {
 
 void ResourceManager::initPhysicsManager(
     std::shared_ptr<physics::PhysicsManager>& physicsManager,
-    bool isEnabled,
     scene::SceneNode* parent,
     const metadata::attributes::PhysicsManagerAttributes::ptr&
         physicsManagerAttributes) {
+  const bool isEnabled =
+      metadataMediator_->getSimulatorConfiguration().enablePhysics;
   //! PHYSICS INIT: Use the passed attributes to initialize physics engine
   bool defaultToNoneSimulator = true;
   if (isEnabled) {
@@ -189,12 +195,22 @@ void ResourceManager::initPhysicsManager(
 }  // ResourceManager::initPhysicsManager
 
 bool ResourceManager::loadStage(
-    StageAttributes::ptr& stageAttributes,
+    const StageAttributes::ptr& stageAttributes,
+    const SceneObjectInstanceAttributes::cptr& stageInstanceAttributes,
     const std::shared_ptr<physics::PhysicsManager>& _physicsManager,
     esp::scene::SceneManager* sceneManagerPtr,
-    std::vector<int>& activeSceneIDs,
-    bool createSemanticMesh,
-    bool forceSeparateSemanticSceneGraph) {
+    std::vector<int>& activeSceneIDs) {
+  // If the semantic mesh should be created, based on SimulatorConfiguration
+  const bool createSemanticMesh =
+      metadataMediator_->getSimulatorConfiguration().loadSemanticMesh;
+
+  // Force creation of a separate semantic scene graph, even when no semantic
+  // mesh is loaded for the stage.  This is required to support playback of any
+  // replay that includes a semantic-only render asset instance.
+  const bool forceSeparateSemanticSceneGraph =
+      metadataMediator_->getSimulatorConfiguration()
+          .forceSeparateSemanticSceneGraph;
+
   // create AssetInfos here for each potential mesh file for the scene, if they
   // are unique.
   bool buildCollisionMesh =
@@ -214,8 +230,7 @@ bool ResourceManager::loadStage(
     AssetInfo semanticInfo = assetInfoMap.at("semantic");
     auto semanticStageFilename = semanticInfo.filepath;
     if (Cr::Utility::Directory::exists(semanticStageFilename)) {
-      ESP_DEBUG() << "::loadStage : Loading Semantic Stage mesh :"
-                  << semanticStageFilename;
+      ESP_DEBUG() << "Loading Semantic Stage mesh :" << semanticStageFilename;
       activeSemanticSceneID = sceneManagerPtr->initSceneGraph();
 
       auto& semanticSceneGraph =
@@ -241,21 +256,19 @@ bool ResourceManager::loadStage(
       // regardless of load failure, original code still changed
       // activeSemanticSceneID_
       if (!semanticStageSuccess) {
-        ESP_ERROR() << "::loadStage : Semantic Stage mesh "
-                       "load failed.";
+        ESP_ERROR() << "Semantic Stage mesh load failed.";
         return false;
       } else {
-        ESP_DEBUG() << "::loadStage : Semantic Stage mesh :"
-                    << semanticStageFilename << "loaded.";
+        ESP_DEBUG() << "Semantic Stage mesh :" << semanticStageFilename
+                    << "loaded.";
       }
     } else if (semanticStageFilename !=
                "") {  // semantic file name does not exist but house does
-      ESP_ERROR() << "::loadStage : Not loading semantic mesh - "
-                     "File Name :"
+      ESP_ERROR() << "Not loading semantic mesh with File Name :"
                   << semanticStageFilename << "does not exist.";
     }
   } else {  // not wanting to create semantic mesh
-    ESP_DEBUG() << "::loadStage : Not loading semantic mesh";
+    ESP_DEBUG() << "Not loading semantic mesh";
   }
 
   if (forceSeparateSemanticSceneGraph &&
@@ -283,8 +296,7 @@ bool ResourceManager::loadStage(
   }
   RenderAssetInstanceCreationInfo renderCreation(
       renderInfo.filepath, Cr::Containers::NullOpt, flags, renderLightSetupKey);
-  ESP_DEBUG() << "::loadStage : start load render asset" << renderInfo.filepath
-              << ".";
+  ESP_DEBUG() << "Start load render asset" << renderInfo.filepath << ".";
 
   bool renderMeshSuccess = loadStageInternal(renderInfo,  // AssetInfo
                                              &renderCreation,
@@ -292,8 +304,7 @@ bool ResourceManager::loadStage(
                                              &drawables);  //  drawable group
   if (!renderMeshSuccess) {
     ESP_ERROR()
-        << "ResourceManager::loadStage : Stage render mesh load failed, "
-           "Aborting scene initialization.";
+        << "Stage render mesh load failed, Aborting scene initialization.";
     return false;
   }
   // declare mesh group variable
@@ -302,8 +313,7 @@ bool ResourceManager::loadStage(
   if (assetInfoMap.count("collision") != 0u) {
     AssetInfo colInfo = assetInfoMap.at("collision");
     if (resourceDict_.count(colInfo.filepath) == 0) {
-      ESP_DEBUG() << "::loadStage : start load collision asset"
-                  << colInfo.filepath << ".";
+      ESP_DEBUG() << "Start load collision asset" << colInfo.filepath << ".";
       // will not reload if already present
       bool collisionMeshSuccess =
           loadStageInternal(colInfo,   // AssetInfo
@@ -312,8 +322,8 @@ bool ResourceManager::loadStage(
                             nullptr);  // drawable group
 
       if (!collisionMeshSuccess) {
-        ESP_ERROR() << "ResourceManager::loadStage : Stage collision mesh "
-                       "load failed.  Aborting scene initialization.";
+        ESP_ERROR() << "Stage collision mesh load failed.  Aborting scene "
+                       "initialization.";
         return false;
       }
     }
@@ -335,10 +345,10 @@ bool ResourceManager::loadStage(
     // Either add with pre-built meshGroup if collision assets are loaded
     // or empty vector for mesh group - this should only be the case if
     // we are using None-type physicsManager.
-    bool sceneSuccess = _physicsManager->addStage(stageAttributes, meshGroup);
+    bool sceneSuccess = _physicsManager->addStage(
+        stageAttributes, stageInstanceAttributes, meshGroup);
     if (!sceneSuccess) {
-      ESP_ERROR() << "::loadStage : Adding Stage"
-                  << stageAttributes->getHandle()
+      ESP_ERROR() << "Adding Stage" << stageAttributes->getHandle()
                   << "to PhysicsManager failed. Aborting scene initialization.";
       return false;
     }
@@ -372,7 +382,7 @@ bool ResourceManager::buildMeshGroups(
 
     // failure during build of collision mesh group
     if (!colMeshGroupSuccess) {
-      ESP_ERROR() << "::loadStage : Stage" << info.filepath
+      ESP_ERROR() << "Stage" << info.filepath
                   << "Collision mesh load failed. Aborting scene "
                      "initialization.";
       return false;
@@ -449,9 +459,7 @@ esp::geo::CoordinateFrame ResourceManager::buildFrameFromAttributes(
     esp::geo::CoordinateFrame frame{upEigen, frontEigen, originEigen};
     return frame;
   } else {
-    ESP_DEBUG() << "::buildFrameFromAttributes : Specified frame "
-                   "in Attributes :"
-                << attribs->getHandle()
+    ESP_DEBUG() << "Specified frame in Attributes :" << attribs->getHandle()
                 << "is not orthogonal, so returning default frame.";
     esp::geo::CoordinateFrame frame;
     return frame;
@@ -698,12 +706,11 @@ bool ResourceManager::loadStageInternal(
     DrawableGroup* drawables) {
   // scene mesh loading
   const std::string& filename = info.filepath;
-  ESP_DEBUG() << "::loadStageInternal : Attempting to load stage" << filename
-              << "";
+  ESP_DEBUG() << "Attempting to load stage" << filename << "";
   bool meshSuccess = true;
   if (info.filepath != EMPTY_SCENE) {
     if (!Cr::Utility::Directory::exists(filename)) {
-      ESP_ERROR() << "::loadStageInternal : Cannot find scene file" << filename;
+      ESP_ERROR() << "Cannot find scene file" << filename;
       meshSuccess = false;
     } else {
       if (info.type == AssetType::SUNCG_SCENE) {
@@ -735,7 +742,7 @@ bool ResourceManager::loadStageInternal(
       }
     }
   } else {
-    ESP_DEBUG() << "::loadStageInternal : Loading empty scene for" << filename;
+    ESP_DEBUG() << "Loading empty scene for" << filename;
     // EMPTY_SCENE (ie. "NONE") string indicates desire for an empty scene (no
     // scene mesh): welcome to the void
   }
@@ -760,8 +767,7 @@ bool ResourceManager::buildStageCollisionMeshGroup(
     if (rawMeshData == nullptr) {
       // means dynamic cast failed
       ESP_DEBUG()
-          << "::buildStageCollisionMeshGroup : "
-             "AssetInfo::AssetType "
+          << "AssetInfo::AssetType "
              "type error: unsupported mesh type, aborting. Try running "
              "without \"--enable-physics\" and consider logging an issue.";
       return false;
@@ -961,10 +967,9 @@ void ResourceManager::buildPrimitiveAssetData(
         primTemplateHandle);
     // if still null, fail.
     if (newTemplate == nullptr) {
-      ESP_ERROR()
-          << "::buildPrimitiveAssetData : Attempting to reference or build a "
-             "primitive template from an unknown/malformed handle :"
-          << primTemplateHandle << ".  Aborting";
+      ESP_ERROR() << "Attempting to reference or build a "
+                     "primitive template from an unknown/malformed handle :"
+                  << primTemplateHandle << ".  Aborting";
       return;
     }
     // we do not want a copy of the newly created template, but the actual
@@ -1458,8 +1463,7 @@ bool ResourceManager::buildTrajectoryVisualization(
     radius = .001;
   }
 
-  ESP_DEBUG() << "::loadTrajectoryVisualization : Calling "
-                 "trajectoryTubeSolid to build a tube named :"
+  ESP_DEBUG() << "Calling trajectoryTubeSolid to build a tube named :"
               << trajVisName << "with" << pts.size()
               << "points, building a tube of radius :" << radius << "using"
               << numSegments << "circular segments and" << numInterp
@@ -1469,8 +1473,7 @@ bool ResourceManager::buildTrajectoryVisualization(
   Cr::Containers::Optional<Mn::Trade::MeshData> trajTubeMesh =
       geo::buildTrajectoryTubeSolid(pts, numSegments, radius, smooth,
                                     numInterp);
-  ESP_DEBUG() << "::loadTrajectoryVisualization : Successfully "
-                 "returned from trajectoryTubeSolid";
+  ESP_DEBUG() << "Successfully returned from trajectoryTubeSolid";
 
   // make assetInfo
   AssetInfo info{AssetType::PRIMITIVE};
@@ -1888,7 +1891,7 @@ void ResourceManager::loadTextures(Importer& importer,
 
     auto textureData = importer.texture(iTexture);
     if (!textureData ||
-        textureData->type() != Magnum::Trade::TextureData::Type::Texture2D) {
+        textureData->type() != Magnum::Trade::TextureType::Texture2D) {
       ESP_ERROR() << "Cannot load texture" << iTexture << "skipping";
       currentTexture = nullptr;
       continue;
@@ -2195,7 +2198,9 @@ void ResourceManager::createDrawable(Mn::GL::Mesh* mesh,
           shaderManager_,      // shader manager
           lightSetupKey,       // lightSetup key
           materialKey,         // material key
-          group);              // drawable group
+          group,               // drawable group
+          activePbrIbl_ >= 0 ? pbrImageBasedLightings_[activePbrIbl_].get()
+                             : nullptr);  // pbr image based lighting
       break;
   }
 }  // ResourceManager::createDrawable
@@ -2211,7 +2216,8 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
       Cr::Utility::Directory::current(), houseInfo.filepath);
   const auto& json = io::parseJsonFile(houseFile);
   const auto& levels = json["levels"].GetArray();
-  std::vector<std::string> pathTokens = io::tokenize(houseFile, "/", 0, true);
+  std::vector<std::string> pathTokens =
+      Cr::Utility::String::splitWithoutEmptyParts(houseFile, '/');
   CORRADE_INTERNAL_ASSERT(pathTokens.size() >= 3);
   pathTokens.pop_back();  // house.json
   const std::string houseId = pathTokens.back();
@@ -2303,6 +2309,22 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
 void ResourceManager::initDefaultLightSetups() {
   shaderManager_.set(NO_LIGHT_KEY, gfx::LightSetup{});
   shaderManager_.setFallback(gfx::LightSetup{});
+}
+
+void ResourceManager::initPbrImageBasedLighting(
+    const std::string& hdriImageFilename) {
+  // TODO:
+  // should work with the scene instance config, initialize
+  // different PBR IBLs at different positions in the scene.
+
+  // TODO: HDR Image!
+  pbrImageBasedLightings_.emplace_back(
+      std::make_unique<gfx::PbrImageBasedLighting>(
+          gfx::PbrImageBasedLighting::Flag::IndirectDiffuse |
+              gfx::PbrImageBasedLighting::Flag::IndirectSpecular |
+              gfx::PbrImageBasedLighting::Flag::UseLDRImages,
+          shaderManager_, hdriImageFilename));
+  activePbrIbl_ = 0;
 }
 
 void ResourceManager::initDefaultMaterials() {

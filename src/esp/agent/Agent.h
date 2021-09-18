@@ -8,7 +8,7 @@
 #include <set>
 #include <string>
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SceneNode.h"
 #include "esp/sensor/Sensor.h"

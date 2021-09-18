@@ -11,8 +11,7 @@
 
 #include <Corrade/Utility/String.h>
 
-#include "esp/io/io.h"
-#include "esp/io/json.h"
+#include "esp/io/Json.h"
 
 namespace esp {
 namespace scene {
@@ -66,7 +65,7 @@ bool SemanticScene::loadSuncgHouse(
     const std::string& houseFilename,
     SemanticScene& scene,
     const quatf& worldRotation /* = quatf::Identity() */) {
-  if (!io::exists(houseFilename)) {
+  if (!Cr::Utility::Directory::exists(houseFilename)) {
     ESP_ERROR() << "Could not load file" << houseFilename;
     return false;
   }

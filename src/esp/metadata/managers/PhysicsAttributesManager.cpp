@@ -5,7 +5,7 @@
 #include "PhysicsAttributesManager.h"
 #include "AttributesManagerBase.h"
 
-#include "esp/io/json.h"
+#include "esp/io/Json.h"
 
 namespace Cr = Corrade;
 namespace esp {
@@ -24,7 +24,7 @@ PhysicsManagerAttributes::ptr PhysicsAttributesManager::createObject(
 
   if (nullptr != attrs) {
     ESP_DEBUG() << msg << "physics manager attributes created"
-                << (registerTemplate ? " and registered." : ".");
+                << (registerTemplate ? "and registered." : ".");
   }
   return attrs;
 }  // PhysicsAttributesManager::createObject

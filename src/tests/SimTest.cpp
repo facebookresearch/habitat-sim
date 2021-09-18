@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include <Corrade/Containers/StridedArrayView.h>
+#include <Corrade/TestSuite/Compare/Numeric.h>
 #include <Corrade/TestSuite/Tester.h>
 #include <Corrade/Utility/Directory.h>
 #include <Magnum/DebugTools/CompareImage.h>
@@ -43,8 +44,6 @@ using esp::sim::Simulator;
 using esp::sim::SimulatorConfiguration;
 
 namespace {
-
-// NOLINTNEXTLINE(google-build-using-namespace)
 using namespace Magnum::Math::Literals;
 
 const std::string vangogh =
@@ -139,7 +138,8 @@ struct SimTest : Cr::TestSuite::Tester {
   LightSetup lightSetup2{{Magnum::Vector4{0.0f, 0.5f, 1.0f, 0.0f},
                           {0.0, 5.0, 5.0},
                           LightPositionModel::Camera}};
-};
+};  // struct SimTest
+
 struct {
   // display name for sim being tested
   const char* name;
@@ -195,7 +195,7 @@ void SimTest::reconfigure() {
   Simulator simulator(cfg);
   PathFinder::ptr pathfinder = simulator.getPathFinder();
   simulator.reconfigure(cfg);
-  CORRADE_VERIFY(pathfinder == simulator.getPathFinder());
+  CORRADE_COMPARE(pathfinder, simulator.getPathFinder());
   SimulatorConfiguration cfg2;
   cfg2.activeSceneName = skokloster;
   simulator.reconfigure(cfg2);
@@ -208,7 +208,7 @@ void SimTest::reconfigure() {
   Simulator simulator_mm(cfg_mm, MM);
   PathFinder::ptr pathfinder_mm = simulator_mm.getPathFinder();
   simulator_mm.reconfigure(cfg_mm);
-  CORRADE_VERIFY(pathfinder_mm == simulator_mm.getPathFinder());
+  CORRADE_COMPARE(pathfinder_mm, simulator_mm.getPathFinder());
   SimulatorConfiguration cfg2_mm;
   cfg2_mm.activeSceneName = skokloster;
   simulator_mm.reconfigure(cfg2_mm);
@@ -235,9 +235,9 @@ void SimTest::reset() {
 
     auto stateFinal = AgentState::create();
     agent->getState(stateFinal);
-    CORRADE_VERIFY(stateOrig->position == stateFinal->position);
-    CORRADE_VERIFY(stateOrig->rotation == stateFinal->rotation);
-    CORRADE_VERIFY(pathfinder == simulator.getPathFinder());
+    CORRADE_COMPARE(stateOrig->position, stateFinal->position);
+    CORRADE_COMPARE(stateOrig->rotation, stateFinal->rotation);
+    CORRADE_COMPARE(pathfinder, simulator.getPathFinder());
   };
 
   SimulatorConfiguration cfg;
@@ -530,14 +530,14 @@ void SimTest::loadingObjectTemplates() {
   std::vector<int> templateIndices2 =
       objectAttribsMgr->loadAllJSONConfigsFromPath(
           Cr::Utility::Directory::join(TEST_ASSETS, "objects"));
-  CORRADE_VERIFY(templateIndices2 == templateIndices);
+  CORRADE_COMPARE(templateIndices2, templateIndices);
 
   // test the loaded assets and accessing them by name
   // verify that getting the template handles with empty string returns all
   int numLoadedTemplates = templateIndices2.size();
   std::vector<std::string> templateHandles =
       objectAttribsMgr->getFileTemplateHandlesBySubstring();
-  CORRADE_VERIFY(numLoadedTemplates == templateHandles.size());
+  CORRADE_COMPARE(numLoadedTemplates, templateHandles.size());
 
   // verify that querying with sub string returns template handle corresponding
   // to that substring
@@ -550,7 +550,7 @@ void SimTest::loadingObjectTemplates() {
   // get all handles that match 2nd half of known handle
   std::vector<std::string> matchTmpltHandles =
       objectAttribsMgr->getObjectHandlesBySubstring(tmpHndl);
-  CORRADE_VERIFY(matchTmpltHandles[0] == fullTmpHndl);
+  CORRADE_COMPARE(matchTmpltHandles[0], fullTmpHndl);
 
   // test fresh template as smart pointer
   ObjectAttributes::ptr newTemplate =
@@ -568,10 +568,10 @@ void SimTest::loadingObjectTemplates() {
   int templateIndex2 = objectAttribsMgr->registerObject(newTemplate, boxPath);
 
   CORRADE_VERIFY(templateIndex2 != esp::ID_UNDEFINED);
-  CORRADE_VERIFY(templateIndex2 == templateIndex);
+  CORRADE_COMPARE(templateIndex2, templateIndex);
   ObjectAttributes::ptr newTemplate2 =
       objectAttribsMgr->getObjectCopyByHandle(boxPath);
-  CORRADE_VERIFY(newTemplate2->getRenderAssetHandle() == chairPath);
+  CORRADE_COMPARE(newTemplate2->getRenderAssetHandle(), chairPath);
 }
 
 void SimTest::buildingPrimAssetObjectTemplates() {
@@ -595,7 +595,7 @@ void SimTest::buildingPrimAssetObjectTemplates() {
   int numPrimsExpected =
       static_cast<int>(esp::metadata::PrimObjTypes::END_PRIM_OBJ_TYPES);
   // verify the number of primitive templates
-  CORRADE_VERIFY(numPrimsExpected == primObjAssetHandles.size());
+  CORRADE_COMPARE(numPrimsExpected, primObjAssetHandles.size());
 
   AbstractPrimitiveAttributes::ptr primAttr;
   {
@@ -603,9 +603,9 @@ void SimTest::buildingPrimAssetObjectTemplates() {
     // valid values to be used to construct magnum primitives
     for (int i = 0; i < numPrimsExpected; ++i) {
       std::string handle = primObjAssetHandles[i];
-      CORRADE_VERIFY(handle != "");
+      CORRADE_VERIFY(!handle.empty());
       primAttr = assetAttribsMgr->getObjectCopyByHandle(handle);
-      CORRADE_VERIFY(primAttr != nullptr);
+      CORRADE_VERIFY(primAttr);
       CORRADE_VERIFY(primAttr->isValidTemplate());
       // verify that the attributes contains the handle, and the handle contains
       // the expected class name
@@ -613,8 +613,9 @@ void SimTest::buildingPrimAssetObjectTemplates() {
           esp::metadata::managers::AssetAttributesManager::PrimitiveNames3DMap
               .at(static_cast<esp::metadata::PrimObjTypes>(
                   primAttr->getPrimObjType()));
-      CORRADE_VERIFY((primAttr->getHandle() == handle) &&
-                     (handle.find(className) != std::string::npos));
+
+      CORRADE_COMPARE(primAttr->getHandle(), handle);
+      CORRADE_VERIFY(handle.find(className) != std::string::npos);
     }
   }
   // empty vector of handles
@@ -625,9 +626,10 @@ void SimTest::buildingPrimAssetObjectTemplates() {
     primObjAssetHandles =
         objectAttribsMgr->getSynthTemplateHandlesBySubstring("CONESOLID");
     // should only be one handle in this vector
-    CORRADE_VERIFY(1 == primObjAssetHandles.size());
+    CORRADE_COMPARE(primObjAssetHandles.size(), 1);
     // handle should not be empty and be long enough to hold class name prefix
-    CORRADE_VERIFY(9 < primObjAssetHandles[0].length());
+    CORRADE_COMPARE_AS(primObjAssetHandles[0].length(), 9,
+                       Cr::TestSuite::Compare::Greater);
     // coneSolid should appear in handle
     std::string checkStr("coneSolid");
     CORRADE_VERIFY(primObjAssetHandles[0].find(checkStr) != std::string::npos);
@@ -639,9 +641,9 @@ void SimTest::buildingPrimAssetObjectTemplates() {
     primObjAssetHandles = objectAttribsMgr->getSynthTemplateHandlesBySubstring(
         "CONESOLID", false);
     // should be all handles but coneSolid handle here
-    CORRADE_VERIFY((numPrimsExpected - 1) == primObjAssetHandles.size());
+    CORRADE_COMPARE((numPrimsExpected - 1), primObjAssetHandles.size());
     for (auto primObjAssetHandle : primObjAssetHandles) {
-      CORRADE_VERIFY(primObjAssetHandle.find(checkStr) == std::string::npos);
+      CORRADE_COMPARE(primObjAssetHandle.find(checkStr), std::string::npos);
     }
   }
   // empty vector of handles
@@ -654,12 +656,12 @@ void SimTest::buildingPrimAssetObjectTemplates() {
     primObjAssetHandles = assetAttribsMgr->getTemplateHandlesByPrimType(
         esp::metadata::PrimObjTypes::CYLINDER_SOLID);
     // should only be one handle in this vector
-    CORRADE_VERIFY(1 == primObjAssetHandles.size());
+    CORRADE_COMPARE(primObjAssetHandles.size(), 1);
     // primitive render object uses primitive render asset as handle
     std::string origCylinderHandle = primObjAssetHandles[0];
     primAttr = assetAttribsMgr->getObjectCopyByHandle(origCylinderHandle);
     // verify that the origin handle matches what is expected
-    CORRADE_VERIFY(primAttr->getHandle() == origCylinderHandle);
+    CORRADE_COMPARE(primAttr->getHandle(), origCylinderHandle);
     // get original number of rings for this cylinder
     int origNumRings = primAttr->getNumRings();
     // modify attributes - this will change handle
@@ -667,25 +669,31 @@ void SimTest::buildingPrimAssetObjectTemplates() {
     // verify that internal name of attributes has changed due to essential
     // quantity being modified
     std::string newHandle = primAttr->getHandle();
-    CORRADE_VERIFY(newHandle != origCylinderHandle);
-    // set test label, to validate that copy is reggistered
-    primAttr->setString("test", "test0");
+
+    CORRADE_COMPARE_AS(newHandle, origCylinderHandle,
+                       Cr::TestSuite::Compare::NotEqual);
+    // set bogus file directory, to validate that copy is reggistered
+    primAttr->setFileDirectory("test0");
     // register new attributes
     int idx = assetAttribsMgr->registerObject(primAttr);
+
     CORRADE_VERIFY(idx != esp::ID_UNDEFINED);
     // set new test label, to validate against retrieved copy
-    primAttr->setString("test", "test1");
+    primAttr->setFileDirectory("test1");
     // retrieve registered attributes copy
     AbstractPrimitiveAttributes::ptr primAttr2 =
         assetAttribsMgr->getObjectCopyByHandle(newHandle);
     // verify pre-reg and post-reg are named the same
-    CORRADE_VERIFY(primAttr->getHandle() == primAttr2->getHandle());
+    CORRADE_COMPARE(primAttr->getHandle(), primAttr2->getHandle());
     // verify retrieved attributes is copy, not original
-    CORRADE_VERIFY(primAttr->getString("test") != primAttr2->getString("test"));
+
+    CORRADE_COMPARE_AS(primAttr->getFileDirectory(),
+                       primAttr2->getFileDirectory(),
+                       Cr::TestSuite::Compare::NotEqual);
     // remove modified attributes
     AbstractPrimitiveAttributes::ptr primAttr3 =
         assetAttribsMgr->removeObjectByHandle(newHandle);
-    CORRADE_VERIFY(nullptr != primAttr3);
+    CORRADE_VERIFY(primAttr3);
   }
   // empty vector of handles
   primObjAssetHandles.clear();
@@ -708,9 +716,10 @@ void SimTest::buildingPrimAssetObjectTemplates() {
     // create object template with modified primitive asset attributes, by
     // passing handle.  defaults to register object template
     auto newCylObjAttr = objectAttribsMgr->createObject(newHandle);
-    CORRADE_VERIFY(nullptr != newCylObjAttr);
+    CORRADE_VERIFY(newCylObjAttr);
     // create object with new attributes
     int objectID = simulator->addObjectByHandle(newHandle);
+
     CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
   }
   // empty vector of handles
@@ -724,14 +733,14 @@ void SimTest::addObjectByHandle() {
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, planeStage, esp::NO_LIGHT_KEY);
 
-  int objectId = simulator->addObjectByHandle("invalid_handle");
-  CORRADE_VERIFY(objectId == esp::ID_UNDEFINED);
+  int objectID = simulator->addObjectByHandle("invalid_handle");
+  CORRADE_COMPARE(objectID, esp::ID_UNDEFINED);
 
   // pass valid object_config.json filepath as handle to addObjectByHandle
   const auto validHandle = Cr::Utility::Directory::join(
       TEST_ASSETS, "objects/nested_box.object_config.json");
-  objectId = simulator->addObjectByHandle(validHandle);
-  CORRADE_VERIFY(objectId != esp::ID_UNDEFINED);
+  objectID = simulator->addObjectByHandle(validHandle);
+  CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
 }
 
 void SimTest::addSensorToObject() {
@@ -763,6 +772,7 @@ void SimTest::addSensorToObject() {
 
   auto objs2 = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
   int objectID2 = simulator->addObjectByHandle(objs[0]);
+
   CORRADE_VERIFY(objectID2 != esp::ID_UNDEFINED);
   simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID2);
   esp::scene::SceneNode& objectNode2 =
@@ -832,26 +842,34 @@ void SimTest::createMagnumRenderingOff() {
     // cast a ray at the object to check that the object is actually there
     auto raycastresults = simulator->castRay(
         esp::geo::Ray({10.0, 9.0, 10.0}, {0.0, 1.0, 0.0}), 100.0, 0);
-    CORRADE_VERIFY(raycastresults.hits[0].objectId == objectID);
+    CORRADE_COMPARE(raycastresults.hits[0].objectId, objectID);
     auto point = raycastresults.hits[0].point;
-    CORRADE_VERIFY(distanceBetween(point, {10.0, 9.9, 10.0}) < 0.001);
+    CORRADE_COMPARE_AS(distanceBetween(point, {10.0, 9.9, 10.0}), 0.001,
+                       Cr::TestSuite::Compare::Less);
     raycastresults = simulator->castRay(
         esp::geo::Ray({10.0, 11.0, 10.0}, {0.0, -1.0, 0.0}), 100.0, 0);
-    CORRADE_VERIFY(raycastresults.hits[0].objectId == objectID);
+    CORRADE_COMPARE(raycastresults.hits[0].objectId, objectID);
     point = raycastresults.hits[0].point;
-    CORRADE_VERIFY(distanceBetween(point, {10.0, 10.1, 10.0}) < 0.001);
+    CORRADE_COMPARE_AS(distanceBetween(point, {10.0, 10.1, 10.0}), 0.001,
+                       Cr::TestSuite::Compare::Less);
   };
 
   auto testBoundingBox = [&]() {
     // check that we can still compute bounding box of the object
     Magnum::Range3D meshbb = objectNode->getCumulativeBB();
     float eps = 0.001;
-    CORRADE_VERIFY(abs(meshbb.left() - -0.1) < eps);
-    CORRADE_VERIFY(abs(meshbb.right() - 0.1) < eps);
-    CORRADE_VERIFY(abs(meshbb.bottom() - -0.1) < eps);
-    CORRADE_VERIFY(abs(meshbb.top() - 0.1) < eps);
-    CORRADE_VERIFY(abs(meshbb.back() - -0.1) < eps);
-    CORRADE_VERIFY(abs(meshbb.front() - 0.1) < eps);
+    CORRADE_COMPARE_WITH(meshbb.left(), -0.1,
+                         Cr::TestSuite::Compare::around(eps));
+    CORRADE_COMPARE_WITH(meshbb.right(), 0.1,
+                         Cr::TestSuite::Compare::around(eps));
+    CORRADE_COMPARE_WITH(meshbb.bottom(), -0.1,
+                         Cr::TestSuite::Compare::around(eps));
+    CORRADE_COMPARE_WITH(meshbb.top(), 0.1,
+                         Cr::TestSuite::Compare::around(eps));
+    CORRADE_COMPARE_WITH(meshbb.back(), -0.1,
+                         Cr::TestSuite::Compare::around(eps));
+    CORRADE_COMPARE_WITH(meshbb.front(), 0.1,
+                         Cr::TestSuite::Compare::around(eps));
   };
   // test raycast and bounding box for cubeSolid
   testRaycast();
@@ -880,8 +898,8 @@ void SimTest::createMagnumRenderingOff() {
   Observation observation;
 
   // check that there is no renderer
-  CORRADE_VERIFY(simulator->getRenderer() == nullptr);
-  CORRADE_VERIFY(cameraSensor.getObservation(*simulator, observation) == false);
+  CORRADE_VERIFY(!simulator->getRenderer());
+  CORRADE_VERIFY(!cameraSensor.getObservation(*simulator, observation));
 }
 
 }  // namespace

@@ -46,7 +46,7 @@ std::map<CollisionGroup, CollisionGroups>
         // everything except Noncollidable
         {CollisionGroup::Robot, ~CollisionGroup::Noncollidable},
         // nothing
-        {CollisionGroup::Noncollidable, ~CollisionGroups()},
+        {CollisionGroup::Noncollidable, CollisionGroups()},
 
         // everything except Noncollidable
         {CollisionGroup::UserGroup0, ~CollisionGroup::Noncollidable},
@@ -112,8 +112,8 @@ bool CollisionGroupHelper::setGroupName(CollisionGroup group,
                                         const std::string& newName) {
   auto currentName = getGroupName(group);
   if (collisionGroupNames.count(newName) != 0) {
-    ESP_WARNING() << "CollisionGroupHelper::setGroupName - requested group "
-                     "name is already in use, aborting.";
+    ESP_WARNING() << "Requested group name: " << newName
+                  << "is already in use, aborting.";
     return false;
   }
   collisionGroupNames[newName] = collisionGroupNames.at(currentName);

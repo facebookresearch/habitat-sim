@@ -2,7 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "esp/bindings/bindings.h"
+#include "esp/bindings/Bindings.h"
 #include "esp/physics/PhysicsObjectBase.h"
 #include "esp/physics/RigidBase.h"
 #include "esp/physics/RigidObject.h"
@@ -337,6 +337,9 @@ void declareArticulatedObjectWrapper(py::module& m,
              AbstractManagedPhysicsObject<ArticulatedObject>,
              std::shared_ptr<ManagedArticulatedObject>>(m,
                                                         classStrPrefix.c_str())
+      .def_property_readonly(
+          "global_scale", &ManagedArticulatedObject::getGlobalScale,
+          R"(The uniform global scaling applied to this object during import.)")
       .def("get_link_scene_node", &ManagedArticulatedObject::getLinkSceneNode,
            ("Get the scene node for this " + objType +
             "'s articulated link specified by the passed "

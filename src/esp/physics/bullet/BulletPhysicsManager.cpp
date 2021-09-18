@@ -68,7 +68,8 @@ bool BulletPhysicsManager::initPhysicsFinalize() {
   }
 
   // currently GLB meshes are y-up
-  bWorld_->setGravity(btVector3(physicsManagerAttributes_->getVec3("gravity")));
+  bWorld_->setGravity(
+      btVector3(physicsManagerAttributes_->get<Magnum::Vector3>("gravity")));
 
   //! Create new scene node
   staticStageObject_ = physics::BulletRigidStage::create(
@@ -83,7 +84,7 @@ bool BulletPhysicsManager::initPhysicsFinalize() {
 // https://github.com/mosra/magnum-integration/issues/20
 bool BulletPhysicsManager::addStageFinalize(
     const metadata::attributes::StageAttributes::ptr& initAttributes) {
-  //! Initialize scene
+  //! Initialize BulletRigidStage
   bool sceneSuccess = staticStageObject_->initialize(initAttributes);
 
   return sceneSuccess;
@@ -195,16 +196,11 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
               .first)
           .first;
 
-  ESP_DEBUG() << "BulletPhysicsManager::addArticulatedObjectFromURDF: "
-                 "simpleObjectHandle :"
-              << simpleArtObjHandle;
-
   std::string newArtObjectHandle =
       articulatedObjectManager_->getUniqueHandleFromCandidate(
           simpleArtObjHandle);
-  ESP_DEBUG() << "BulletPhysicsManager::addArticulatedObjectFromURDF: "
-                 "newArtObjectHandle :"
-              << newArtObjectHandle;
+  ESP_DEBUG() << "simpleArtObjHandle :" << simpleArtObjHandle
+              << " | newArtObjectHandle :" << newArtObjectHandle;
 
   existingArticulatedObjects_.at(articulatedObjectID)
       ->setObjectName(newArtObjectHandle);
@@ -356,8 +352,7 @@ bool BulletPhysicsManager::attachLinkGeometry(
         visualSetupSuccess = false;
         break;
       default:
-        ESP_DEBUG() << "BulletPhysicsManager::attachGeometry "
-                       ": Unsupported visual type.";
+        ESP_DEBUG() << "Unsupported visual type.";
         visualSetupSuccess = false;
         break;
     }
@@ -502,7 +497,7 @@ RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
   results.ray = ray;
   double rayLength = static_cast<double>(ray.direction.length());
   if (rayLength == 0) {
-    ESP_ERROR() << "::castRay : Cannot cast ray with zero length, aborting.";
+    ESP_ERROR() << "Cannot cast ray with zero length, aborting.";
     return results;
   }
   btVector3 from(ray.origin);
@@ -881,8 +876,7 @@ void BulletPhysicsManager::removeRigidConstraint(int constraintId) {
     bWorld_->removeConstraint(rigidFixedConstraints_.at(constraintId).get());
     rigidFixedConstraints_.erase(constraintId);
   } else {
-    ESP_ERROR() << "removeRigidConstraint - No constraint with constraintId ="
-                << constraintId;
+    ESP_ERROR() << "No constraint with constraintId =" << constraintId;
     return;
   }
   rigidConstraintSettings_.erase(constraintId);

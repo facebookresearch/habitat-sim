@@ -5,7 +5,7 @@
 #ifndef ESP_GFX_WINDOWLESSCONTEXT_H_
 #define ESP_GFX_WINDOWLESSCONTEXT_H_
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
 namespace esp {
 namespace gfx {

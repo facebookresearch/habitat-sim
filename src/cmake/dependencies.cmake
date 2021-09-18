@@ -10,6 +10,10 @@ if(NOT USE_SYSTEM_MAGNUM)
   # These are enabled by default but we don't need them right now -- disabling
   # for slightly faster builds. If you need any of these, simply delete a line.
   set(WITH_INTERCONNECT OFF CACHE BOOL "" FORCE)
+  # Ensure Corrade should be built statically if Magnum is.
+  set(BUILD_PLUGINS_STATIC ON CACHE BOOL "" FORCE)
+  set(BUILD_STATIC ON CACHE BOOL "" FORCE)
+  set(BUILD_STATIC_PIC ON CACHE BOOL "" FORCE)
   add_subdirectory("${DEPS_DIR}/corrade")
 endif()
 find_package(Corrade REQUIRED Utility)
@@ -168,9 +172,7 @@ endif()
 
 # Magnum. Use a system package, if preferred.
 if(NOT USE_SYSTEM_MAGNUM)
-  set(BUILD_PLUGINS_STATIC ON CACHE BOOL "BUILD_PLUGINS_STATIC" FORCE)
-  set(BUILD_STATIC ON CACHE BOOL "BUILD_STATIC" FORCE)
-  set(BUILD_STATIC_PIC ON CACHE BOOL "BUILD_STATIC_PIC" FORCE)
+  # Magnum is already set to be build statically when Corrade is above.
 
   # These are enabled by default but we don't need them right now -- disabling
   # for slightly faster builds. If you need any of these, simply delete a line.
@@ -219,6 +221,46 @@ if(NOT USE_SYSTEM_MAGNUM)
     # ImageConverter tool for basis
     set(WITH_IMAGECONVERTER ON CACHE BOOL "" FORCE)
     set(WITH_BASISIMAGECONVERTER ON CACHE BOOL "" FORCE)
+  endif()
+
+  # OpenEXR. Use a system package, if preferred.
+  if(NOT USE_SYSTEM_OPENEXR)
+    # Disable unneeded functionality
+    set(PYILMBASE_ENABLE OFF CACHE BOOL "" FORCE)
+    set(IMATH_INSTALL_PKG_CONFIG OFF CACHE BOOL "" FORCE)
+    set(IMATH_INSTALL_SYM_LINK OFF CACHE BOOL "" FORCE)
+    set(OPENEXR_INSTALL OFF CACHE BOOL "" FORCE)
+    set(OPENEXR_INSTALL_DOCS OFF CACHE BOOL "" FORCE)
+    set(OPENEXR_INSTALL_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(OPENEXR_INSTALL_PKG_CONFIG OFF CACHE BOOL "" FORCE)
+    set(OPENEXR_INSTALL_TOOLS OFF CACHE BOOL "" FORCE)
+    set(OPENEXR_BUILD_UTILS OFF CACHE BOOL "" FORCE)
+    # Otherwise OpenEXR uses C++14, and before OpenEXR 3.0.2 also forces C++14
+    # on all libraries that link to it.
+    set(OPENEXR_CXX_STANDARD 11 CACHE STRING "" FORCE)
+    # OpenEXR implicitly bundles Imath. However, without this only the first
+    # CMake run will pass and subsequent runs will fail.
+    set(CMAKE_DISABLE_FIND_PACKAGE_Imath ON)
+    # Disable threading on Emscripten. Brings more problems than is currently
+    # worth-
+    if(CORRADE_TARGET_EMSCRIPTEN)
+      set(OPENEXR_ENABLE_THREADING OFF CACHE BOOL "" FORCE)
+    endif()
+    # These variables may be used by other projects, so ensure they're reset
+    # back to their original values after. OpenEXR forces CMAKE_DEBUG_POSTFIX
+    # to _d, which isn't desired outside of that library.
+    set(_PREV_BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS})
+    set(_PREV_BUILD_TESTING ${BUILD_TESTING})
+    set(BUILD_SHARED_LIBS OFF)
+    set(BUILD_TESTING OFF)
+    set(CMAKE_DEBUG_POSTFIX "" CACHE STRING "" FORCE)
+    add_subdirectory("${DEPS_DIR}/openexr" EXCLUDE_FROM_ALL)
+    set(BUILD_SHARED_LIBS ${_PREV_BUILD_SHARED_LIBS})
+    set(BUILD_TESTING ${_PREV_BUILD_TESTING})
+    unset(CMAKE_DEBUG_POSTFIX CACHE)
+
+    set(WITH_OPENEXRIMPORTER ON CACHE BOOL "" FORCE)
+    set(WITH_OPENEXRIMAGECONVERTER ON CACHE BOOL "" FORCE)
   endif()
 
   if(BUILD_WITH_BULLET)
@@ -283,21 +325,4 @@ endif()
 if(NOT CORRADE_TARGET_EMSCRIPTEN)
   add_library(atomic_wait STATIC ${DEPS_DIR}/atomic_wait/atomic_wait.cpp)
   target_include_directories(atomic_wait PUBLIC ${DEPS_DIR}/atomic_wait)
-endif()
-
-# gtest build
-if(BUILD_TEST)
-  # store build shared libs option
-  set(TEMP_BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS})
-
-  # build gtest static libs and embed into test binaries so no need to install
-  set(BUILD_SHARED_LIBS OFF CACHE BOOL "BUILD_SHARED_LIBS" FORCE)
-  set(BUILD_GTEST ON CACHE BOOL "BUILD_GTEST" FORCE)
-  set(INSTALL_GTEST OFF CACHE BOOL "INSTALL_GTEST" FORCE)
-  set(BUILD_GMOCK OFF CACHE BOOL "BUILD_GMOCK" FORCE)
-  add_subdirectory("${DEPS_DIR}/googletest")
-  include_directories(SYSTEM "${DEPS_DIR}/googletest/googletest/include")
-
-  # restore build shared libs option
-  set(BUILD_SHARED_LIBS ${TEMP_BUILD_SHARED_LIBS})
 endif()

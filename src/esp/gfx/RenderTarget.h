@@ -8,7 +8,7 @@
 #include <Corrade/Containers/EnumSet.h>
 #include <Magnum/Magnum.h>
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
 #include "esp/gfx/DepthUnprojection.h"
 #include "esp/gfx/Renderer.h"

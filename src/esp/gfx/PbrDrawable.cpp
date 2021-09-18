@@ -19,12 +19,14 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
                          ShaderManager& shaderManager,
                          const Mn::ResourceKey& lightSetupKey,
                          const Mn::ResourceKey& materialDataKey,
-                         DrawableGroup* group)
+                         DrawableGroup* group,
+                         PbrImageBasedLighting* pbrIbl)
     : Drawable{node, mesh, DrawableType::Pbr, group},
       shaderManager_{shaderManager},
       lightSetup_{shaderManager.get<LightSetup>(lightSetupKey)},
       materialData_{
-          shaderManager.get<MaterialData, PbrMaterialData>(materialDataKey)} {
+          shaderManager.get<MaterialData, PbrMaterialData>(materialDataKey)},
+      pbrIbl_(pbrIbl) {
   if (materialData_->metallicTexture && materialData_->roughnessTexture) {
     CORRADE_ASSERT(
         materialData_->metallicTexture == materialData_->roughnessTexture,
@@ -66,6 +68,10 @@ PbrDrawable::PbrDrawable(scene::SceneNode& node,
   }
   if (materialData_->doubleSided) {
     flags_ |= PbrShader::Flag::DoubleSided;
+  }
+
+  if (pbrIbl_) {
+    flags_ |= PbrShader::Flag::ImageBasedLighting;
   }
 
   // Defer the shader initialization because at this point, the lightSetup may
@@ -127,6 +133,11 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
       .setMetallic(materialData_->metallic)
       .setEmissiveColor(materialData_->emissiveColor);
 
+  // TODO:
+  // IN PbrShader class, we set the resonable defaults for the
+  // PbrShader::PbrEquationScales. Here we need a smart way to reset it
+  // just in case user would like to do so during the run-time.
+
   if ((flags_ & PbrShader::Flag::BaseColorTexture) &&
       (materialData_->baseColorTexture != nullptr)) {
     shader_->bindBaseColorTexture(*materialData_->baseColorTexture);
@@ -158,6 +169,19 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   if ((flags_ & PbrShader::Flag::TextureTransformation) &&
       (materialData_->textureMatrix != Mn::Matrix3{})) {
     shader_->setTextureMatrix(materialData_->textureMatrix);
+  }
+
+  // setup image based lighting for the shader
+  if (flags_ & PbrShader::Flag::ImageBasedLighting) {
+    CORRADE_INTERNAL_ASSERT(pbrIbl_);
+    shader_->bindIrradianceCubeMap(  // TODO: HDR Color
+        pbrIbl_->getIrradianceMap().getTexture(CubeMap::TextureType::Color));
+    shader_->bindBrdfLUT(pbrIbl_->getBrdfLookupTable());
+    shader_->bindPrefilteredMap(
+        // TODO: HDR Color
+        pbrIbl_->getPrefilteredMap().getTexture(CubeMap::TextureType::Color));
+    shader_->setPrefilteredMapMipLevels(
+        pbrIbl_->getPrefilteredMap().getMipmapLevels());
   }
 
   shader_->draw(getMesh());

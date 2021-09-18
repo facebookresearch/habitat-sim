@@ -6,7 +6,7 @@
 
 #include <Corrade/Utility/String.h>
 
-#include "esp/io/io.h"
+#include "esp/io/Io.h"
 #include "esp/metadata/attributes/ObjectAttributes.h"
 
 namespace esp {
@@ -29,12 +29,11 @@ int getShaderTypeFromJsonDoc(const io::JsonGenericValue& jsonDoc) {
     if (found != attributes::ShaderTypeNamesMap.end()) {
       shader_type = static_cast<int>(found->second);
     } else {
-      ESP_WARNING()
-          << "getShaderTypeFromJsonDoc : `shader_type` value in json  : `"
-          << tmpShaderType << "` -> `" << strToLookFor
-          << "` does not map to a valid "
-             "ObjectInstanceShaderType value, so defaulting "
-             "shader type to ObjectInstanceShaderType::Unknown.";
+      ESP_WARNING() << "`shader_type` value in json  : `" << tmpShaderType
+                    << "` -> `" << strToLookFor
+                    << "` does not map to a valid "
+                       "ObjectInstanceShaderType value, so defaulting "
+                       "shader type to ObjectInstanceShaderType::Unknown.";
     }
   }
   return shader_type;

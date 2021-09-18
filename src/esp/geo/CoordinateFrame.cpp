@@ -4,8 +4,7 @@
 
 #include "CoordinateFrame.h"
 
-#include "esp/geo/geo.h"
-#include "esp/io/json.h"
+#include "esp/geo/Geo.h"
 
 namespace esp {
 namespace geo {
@@ -21,10 +20,6 @@ CoordinateFrame::CoordinateFrame(const quatf& rotation,
                                  const vec3f& origin /* = vec3f(0, 0, 0) */)
     : CoordinateFrame(rotation * ESP_UP, rotation * ESP_FRONT, origin) {}
 
-CoordinateFrame::CoordinateFrame(const std::string& json) {
-  fromJson(json);
-}
-
 quatf CoordinateFrame::rotationWorldToFrame() const {
   const quatf R_frameUp_worldUp = quatf::FromTwoVectors(ESP_UP, up_);
   return quatf::FromTwoVectors(R_frameUp_worldUp * ESP_FRONT, front_) *
@@ -35,24 +30,11 @@ quatf CoordinateFrame::rotationFrameToWorld() const {
   return rotationWorldToFrame().inverse();
 }
 
-std::string CoordinateFrame::toJson() const {
+std::string CoordinateFrame::toString() const {
   std::stringstream ss;
   ss << "{\"up\":" << up() << ",\"front\":" << front()
      << ",\"origin\":" << origin() << "}";
   return ss.str();
-}
-
-void CoordinateFrame::fromJson(const std::string& jsonString) {
-  const auto json = io::parseJsonString(jsonString);
-  const auto up = json["up"].GetArray();
-  const auto front = json["front"].GetArray();
-  const auto origin = json["origin"].GetArray();
-  for (int i = 0; i < 3; ++i) {
-    up_[i] = up[i].GetFloat();
-    front_[i] = front[i].GetFloat();
-    origin_[i] = origin[i].GetFloat();
-  }
-  CORRADE_INTERNAL_ASSERT(up_.isOrthogonal(front_));
 }
 
 bool operator==(const CoordinateFrame& a, const CoordinateFrame& b) {

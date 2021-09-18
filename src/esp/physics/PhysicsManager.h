@@ -160,9 +160,9 @@ Responsible for tracking, updating, and synchronizing the state of the physical
 world and all non-static geometry in the scene as well as interfacing with
 specific physical simulation implementations.
 
-The physical world in this case consists of any objects which can be manipulated
-(kinematically or dynamically) or simulated and anything such objects must be
-aware of (e.g. static scene collision geometry).
+The physical world in this case consists of any objects which can be
+manipulated:addObject : (kinematically or dynamically) or simulated and anything
+such objects must be aware of (e.g. static scene collision geometry).
 
 Will later manager multiple physical scenes, but currently assumes only one
 unique physical world can exist.
@@ -252,11 +252,15 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @param initAttributes The attributes structure defining physical
    * properties of the scene.  Must be a copy of the attributes stored in the
    * Attributes Manager.
+   * @param stageInstanceAttributes The stage instance attributes that was used
+   * to create this stage. Might be empty.
    * @param meshGroup collision meshs for the scene.
    * @return true if successful and false otherwise
    */
   bool addStage(
       const metadata::attributes::StageAttributes::ptr& initAttributes,
+      const metadata::attributes::SceneObjectInstanceAttributes::cptr&
+          stageInstanceAttributes,
       const std::vector<assets::CollisionMeshData>& meshGroup);
 
   /**
@@ -275,7 +279,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
    */
   int addObjectInstance(
-      const esp::metadata::attributes::SceneObjectInstanceAttributes::ptr&
+      const esp::metadata::attributes::SceneObjectInstanceAttributes::cptr&
           objInstAttributes,
       const std::string& attributesHandle,
       bool defaultCOMCorrection = false,
@@ -335,9 +339,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
         resourceManager_.getObjectAttributesManager()->getObjectCopyByHandle(
             attributesHandle);
     if (!attributes) {
-      ESP_ERROR()
-          << "::addObject : Object creation failed due to unknown attributes"
-          << attributesHandle;
+      ESP_ERROR() << "Object creation failed due to unknown attributes handle :"
+                  << attributesHandle;
       return ID_UNDEFINED;
     }
 
@@ -365,8 +368,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
         resourceManager_.getObjectAttributesManager()->getObjectCopyByID(
             attributesID);
     if (!attributes) {
-      ESP_ERROR() << "::addObject : Object creation failed due to unknown "
-                     "attributes ID"
+      ESP_ERROR() << "Object creation failed due to unknown attributes ID :"
                   << attributesID;
       return ID_UNDEFINED;
     }
@@ -470,7 +472,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   int addArticulatedObjectInstance(
       const std::string& filepath,
       const std::shared_ptr<
-          esp::metadata::attributes::SceneAOInstanceAttributes>&
+          const esp::metadata::attributes::SceneAOInstanceAttributes>&
           aObjInstAttributes,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
 
@@ -503,8 +505,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
       CORRADE_UNUSED float massScale = 1.0,
       CORRADE_UNUSED bool forceReload = false,
       CORRADE_UNUSED const std::string& lightSetup = DEFAULT_LIGHTING_KEY) {
-    ESP_DEBUG() << "addArticulatedObjectFromURDF not implemented in base "
-                   "PhysicsManager.";
+    ESP_DEBUG() << "Not implemented in base PhysicsManager.";
     return ID_UNDEFINED;
   }
 
@@ -538,8 +539,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
       CORRADE_UNUSED float massScale = 1.0,
       CORRADE_UNUSED bool forceReload = false,
       CORRADE_UNUSED const std::string& lightSetup = DEFAULT_LIGHTING_KEY) {
-    ESP_DEBUG() << "addArticulatedObjectFromURDF not implemented in base "
-                   "PhysicsManager.";
+    ESP_DEBUG() << "Not implemented in base PhysicsManager.";
     return ID_UNDEFINED;
   }
 
@@ -896,8 +896,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    */
   virtual int createRigidConstraint(
       CORRADE_UNUSED const RigidConstraintSettings& settings) {
-    ESP_ERROR()
-        << "createRigidConstraint not implemented in base PhysicsManager";
+    ESP_ERROR() << "Not implemented in base PhysicsManager.";
     return ID_UNDEFINED;
   }
 
@@ -912,8 +911,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   virtual void updateRigidConstraint(
       CORRADE_UNUSED int constraintId,
       CORRADE_UNUSED const RigidConstraintSettings& settings) {
-    ESP_ERROR()
-        << "updateRigidConstraint not implemented in base PhysicsManager.";
+    ESP_ERROR() << "Not implemented in base PhysicsManager.";
   }
 
   /**
@@ -924,8 +922,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @param constraintId The id of the constraint to remove.
    */
   virtual void removeRigidConstraint(CORRADE_UNUSED int constraintId) {
-    ESP_ERROR()
-        << "removeRigidConstraint not implemented in base PhysicsManager.";
+    ESP_ERROR() << "Not implemented in base PhysicsManager.";
   }
 
   /**
@@ -937,9 +934,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    */
   RigidConstraintSettings getRigidConstraintSettings(int constraintId) const {
     ESP_CHECK(rigidConstraintSettings_.count(constraintId) > 0,
-              "PhysicsManager::getRigidConstraintSettings - No RigidConstraint "
-              "exists with constraintId ="
-                  << constraintId);
+              "No RigidConstraint exists with constraintId =" << constraintId);
     return rigidConstraintSettings_.at(constraintId);
   }
 

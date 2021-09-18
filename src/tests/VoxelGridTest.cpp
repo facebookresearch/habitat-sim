@@ -14,6 +14,8 @@
 namespace Cr = Corrade;
 namespace Mn = Magnum;
 
+namespace {
+
 // Test is not compiled if --vhacd is not enabled
 struct VoxelGridTest : Cr::TestSuite::Tester {
   explicit VoxelGridTest();
@@ -51,7 +53,7 @@ void VoxelGridTest::testVoxelGridWithVHACD() {
       voxelization->getGlobalCoordsFromVoxelIndex(voxelIndex);
   Mn::Vector3i deconvertedVoxelIndex =
       voxelization->getVoxelIndexFromGlobalCoords(globalCoords);
-  CORRADE_VERIFY(voxelIndex == deconvertedVoxelIndex);
+  CORRADE_COMPARE(voxelIndex, deconvertedVoxelIndex);
 
   // "Golden Value Tests" - Verify that certain values return the correct
   // coordinates
@@ -64,10 +66,12 @@ void VoxelGridTest::testVoxelGridWithVHACD() {
       std::vector<Mn::Vector3>{Mn::Vector3(-9.75916, -0.390074, 0.973851),
                                Mn::Vector3(8.89573, 7.07188, 25.5983)};
   for (int i = 0; i < voxel_indices.size(); i++) {
-    CORRADE_VERIFY(voxelization->getGlobalCoordsFromVoxelIndex(
-                       voxel_indices[i]) == global_coords[i]);
-    CORRADE_VERIFY(voxelization->getVoxelIndexFromGlobalCoords(
-                       global_coords[i]) == voxel_indices[i]);
+    CORRADE_COMPARE(
+        voxelization->getGlobalCoordsFromVoxelIndex(voxel_indices[i]),
+        global_coords[i]);
+    CORRADE_COMPARE(
+        voxelization->getVoxelIndexFromGlobalCoords(global_coords[i]),
+        voxel_indices[i]);
   }
 
   // Ensure voxel grid setters and getters work, specifically direct grid
@@ -181,5 +185,6 @@ void VoxelGridTest::testVoxelUtilityFunctions() {
   }
   CORRADE_VERIFY(valuesAreInRange);
 }
+}  // namespace
 
 CORRADE_TEST_MAIN(VoxelGridTest)

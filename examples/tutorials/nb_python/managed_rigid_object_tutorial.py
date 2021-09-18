@@ -12,7 +12,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.11.2
+#       jupytext_version: 1.11.4
 #   kernelspec:
 #     display_name: Python 3
 #     name: python3
@@ -208,7 +208,7 @@ if __name__ == "__main__":
     for k, _ in user_attributes_dict.items():
         print(
             "Sphere Object user attribute : {} : {}".format(
-                k, sphere_obj.user_attributes.get(k)
+                k, sphere_obj.user_attributes.get_as_string(k)
             )
         )
 

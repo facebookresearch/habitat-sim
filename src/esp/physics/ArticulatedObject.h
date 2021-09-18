@@ -12,7 +12,7 @@
  */
 
 #include "RigidBase.h"
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/io/URDFParser.h"
 #include "esp/scene/SceneNode.h"
 
@@ -186,63 +186,68 @@ class ArticulatedLink : public RigidBase {
 
   void setTransformation(
       CORRADE_UNUSED const Magnum::Matrix4& transformation) override {
-    ESP_DEBUG() << "(setTransformation) - ArticulatedLink can't do this.";
+    ESP_DEBUG() << "ArticulatedLink can't do this.";
   }
 
   void setTranslation(CORRADE_UNUSED const Magnum::Vector3& vector) override {
-    ESP_DEBUG() << "(setTranslation) - ArticulatedLink can't do this.";
+    ESP_DEBUG() << "ArticulatedLink can't do this.";
   }
 
   void setRotation(
       CORRADE_UNUSED const Magnum::Quaternion& quaternion) override {
-    ESP_DEBUG() << "(setRotation) - ArticulatedLink can't do this.";
+    ESP_DEBUG() << "ArticulatedLink can't do this.";
   }
 
   void setRigidState(
       CORRADE_UNUSED const core::RigidState& rigidState) override {
-    ESP_DEBUG() << "(setRigidState) - ArticulatedLink can't do this.";
+    ESP_DEBUG() << "ArticulatedLink can't do this.";
   }
 
   void resetTransformation() override {
-    ESP_DEBUG() << "(resetTransformation) - ArticulatedLink can't do this.";
+    ESP_DEBUG() << "ArticulatedLink can't do this.";
   }
 
   void translate(CORRADE_UNUSED const Magnum::Vector3& vector) override {
-    ESP_DEBUG() << "(translate) - ArticulatedLink can't do this.";
+    ESP_DEBUG() << "ArticulatedLink can't do this.";
   }
 
   void translateLocal(CORRADE_UNUSED const Magnum::Vector3& vector) override {
-    ESP_DEBUG() << "(translateLocal) - ArticulatedLink can't do this.";
+    ESP_DEBUG() << "ArticulatedLink can't do this.";
   }
 
   void rotate(CORRADE_UNUSED const Magnum::Rad angleInRad,
               CORRADE_UNUSED const Magnum::Vector3& normalizedAxis) override {
-    ESP_DEBUG() << "(rotate) - ArticulatedLink can't do this.";
+    ESP_DEBUG() << "ArticulatedLink can't do this.";
   }
 
   void rotateLocal(
       CORRADE_UNUSED const Magnum::Rad angleInRad,
       CORRADE_UNUSED const Magnum::Vector3& normalizedAxis) override {
-    ESP_DEBUG() << "(rotateLocal) - ArticulatedLink can't do this.";
+    ESP_DEBUG() << "ArticulatedLink can't do this.";
   }
 
   void rotateX(CORRADE_UNUSED const Magnum::Rad angleInRad) override {
-    ESP_DEBUG() << "(rotateX) - ArticulatedLink can't do this.";
+    ESP_DEBUG() << "ArticulatedLink can't do this.";
   }
+
   void rotateY(CORRADE_UNUSED const Magnum::Rad angleInRad) override {
-    ESP_DEBUG() << "(rotateY) - ArticulatedLink can't do this.";
+    ESP_DEBUG() << "ArticulatedLink can't do this.";
   }
+
   void rotateZ(CORRADE_UNUSED const Magnum::Rad angleInRad) override {
-    ESP_DEBUG() << "(rotateZ) - ArticulatedLink can't do this.";
+    ESP_DEBUG() << "ArticulatedLink can't do this.";
   }
+
   void rotateXLocal(CORRADE_UNUSED const Magnum::Rad angleInRad) override {
-    ESP_DEBUG() << "(rotateXLocal) - ArticulatedLink can't do this.";
+    ESP_DEBUG() << "ArticulatedLink can't do this.";
   }
+
   void rotateYLocal(CORRADE_UNUSED const Magnum::Rad angleInRad) override {
-    ESP_DEBUG() << "(rotateYLocal) - ArticulatedLink can't do this.";
+    ESP_DEBUG() << "ArticulatedLink can't do this.";
   }
+
   void rotateZLocal(CORRADE_UNUSED const Magnum::Rad angleInRad) override {
-    ESP_DEBUG() << "(rotateZLocal) - ArticulatedLink can't do this.";
+    ESP_DEBUG() << "ArticulatedLink can't do this.";
   }
 
   /**
@@ -253,8 +258,7 @@ class ArticulatedLink : public RigidBase {
    */
   void resetStateFromSceneInstanceAttr(
       CORRADE_UNUSED bool defaultCOMCorrection = false) override {
-    ESP_DEBUG()
-        << "(resetStateFromSceneInstanceAttr) - ArticulatedLink can't do this.";
+    ESP_DEBUG() << "ArticulatedLink can't do this.";
   }
 
   std::string linkName = "";
@@ -309,6 +313,12 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
       delete node;
     }
   };
+
+  /**
+   * @brief Get the uniform global scaling applied to this object during import.
+   * @return The global scaling applied to the object.
+   */
+  float getGlobalScale() const { return globalScale_; }
 
   /**
    * @brief Get a const reference to an ArticulatedLink SceneNode for
@@ -751,8 +761,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   virtual std::unordered_map<int, int> createMotorsForAllDofs(
       CORRADE_UNUSED const JointMotorSettings& settings =
           JointMotorSettings()) {
-    ESP_ERROR() << "ArticulatedObject::createMotorsForAllDofs(): - ERROR, "
-                   "SHOULD NOT BE CALLED WITHOUT BULLET";
+    ESP_ERROR() << "ERROR, SHOULD NOT BE CALLED WITHOUT BULLET";
     return std::unordered_map<int, int>();
   }
 
@@ -775,8 +784,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   virtual void updateAllMotorTargets(
       CORRADE_UNUSED const std::vector<float>& stateTargets,
       CORRADE_UNUSED bool velocities = false) {
-    ESP_ERROR() << "ArticulatedObject::updateAllMotorTargets(): - ERROR, "
-                   "SHOULD NOT BE CALLED WITHOUT BULLET";
+    ESP_ERROR() << "ERROR,SHOULD NOT BE CALLED WITHOUT BULLET";
   }
 
   //=========== END - Joint Motor API ===========
@@ -791,10 +799,10 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * @return a copy of the scene instance attributes used to place this object
    * in the scene.
    */
-  std::shared_ptr<metadata::attributes::SceneAOInstanceAttributes>
+  std::shared_ptr<const metadata::attributes::SceneAOInstanceAttributes>
   getSceneInstanceAttributes() const {
     return PhysicsObjectBase::getSceneInstanceAttrInternal<
-        metadata::attributes::SceneAOInstanceAttributes>();
+        const metadata::attributes::SceneAOInstanceAttributes>();
   }
 
  protected:
@@ -825,6 +833,9 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   //! if true, automatically clamp dofs to joint limits before physics
   //! simulation steps
   bool autoClampJointLimits_ = false;
+
+  //! Cache the global scaling from the source model. Set during import.
+  float globalScale_ = 1.0;
 
  public:
   ESP_SMART_POINTERS(ArticulatedObject)

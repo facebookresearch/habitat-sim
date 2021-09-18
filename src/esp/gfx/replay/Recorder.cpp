@@ -5,8 +5,8 @@
 #include "Recorder.h"
 
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
+#include "esp/io/Json.h"
 #include "esp/io/JsonAllTypes.h"
-#include "esp/io/json.h"
 #include "esp/scene/SceneNode.h"
 
 namespace esp {
@@ -68,6 +68,14 @@ void Recorder::onCreateRenderAssetInstance(
 void Recorder::saveKeyframe() {
   updateInstanceStates();
   advanceKeyframe();
+}
+
+const Keyframe& Recorder::getLatestKeyframe() {
+  CORRADE_ASSERT(!savedKeyframes_.empty(),
+                 "Recorder::getLatestKeyframe() : Trying to access latest "
+                 "keyframe when there are none",
+                 savedKeyframes_.back());
+  return savedKeyframes_.back();
 }
 
 void Recorder::addUserTransformToKeyframe(const std::string& name,
@@ -181,6 +189,13 @@ std::string Recorder::writeSavedKeyframesToString() {
   return esp::io::jsonToString(document);
 }
 
+std::string Recorder::keyframeToString(const Keyframe& keyframe) {
+  rapidjson::Document d(rapidjson::kObjectType);
+  rapidjson::Document::AllocatorType& allocator = d.GetAllocator();
+  esp::io::addMember(d, "keyframe", keyframe, allocator);
+  return esp::io::jsonToString(d);
+}
+
 void Recorder::consolidateSavedKeyframes() {
   // consolidate saved keyframes into current keyframe
   addLoadsCreationsDeletions(savedKeyframes_.begin(), savedKeyframes_.end(),
@@ -195,8 +210,7 @@ void Recorder::consolidateSavedKeyframes() {
 
 rapidjson::Document Recorder::writeKeyframesToJsonDocument() {
   if (savedKeyframes_.empty()) {
-    ESP_WARNING() << "Recorder::writeKeyframesToJsonDocument: no saved "
-                     "keyframes to write";
+    ESP_WARNING() << "No saved keyframes to write";
     return rapidjson::Document();
   }
 

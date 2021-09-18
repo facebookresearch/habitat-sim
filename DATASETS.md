@@ -64,3 +64,15 @@ Note: To obtain the best rendering results, use the `<path to replica>/<scene_na
 ## ReplicaCAD
 
 Details and download instructions: [https://aihabitat.org/datasets/replica_cad/](https://aihabitat.org/datasets/replica_cad/).
+
+## ScanNet
+
+The official ScanNet data can be downloaded here: [http://www.scan-net.org/](http://www.scan-net.org/). To use ScanNet scans with habitat-sim, the `scene_*.ply` files need to be converted to glTF format (`*.glb`). For example, using [assimp](https://github.com/assimp/assimp):
+
+```
+assimp export <PLY FILE> <GLB PATH>
+```
+
+The exported `*.glb` files can directly be used with habitat-sim versions >= 2.0.
+
+Note: Depending on the configured radius and height of the agent, certain scans may have no navigable locations on the navmesh (~200). These scenes can be filtered out by checking if `sim.pathfinder.is_loaded` is False.

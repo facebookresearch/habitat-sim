@@ -181,6 +181,12 @@ def test_dynamics():
             len(rigid_obj_mgr.get_object_handles()) == rigid_obj_mgr.get_num_objects()
         )
 
+        obj_dict = rigid_obj_mgr.get_objects_by_handle_substring("cheezit")
+        assert len(obj_dict) == rigid_obj_mgr.get_num_objects()
+        for k, v in obj_dict.items():
+            assert k == v.handle
+            assert v.is_alive
+
         # place the objects over the table in room
         cheezit_box1.translation = [-0.569043, 2.04804, 13.6156]
         cheezit_box2.translation = [-0.569043, 2.04804, 12.6156]
@@ -536,6 +542,11 @@ def test_collision_groups():
             assert not cube_obj1.contact_test()
             assert not cube_obj2.contact_test()
 
+            # test Noncollidable vs Noncollidable
+            cube_obj1.override_collision_group(cg.Noncollidable)
+            assert not cube_obj1.contact_test()
+            assert not cube_obj2.contact_test()
+
 
 def check_articulated_object_root_state(
     articulated_object, target_rigid_state, epsilon=1.0e-4
@@ -643,9 +654,12 @@ def test_articulated_object_add_remove():
         assert robot.object_id == 0  # first robot added
 
         # add a second robot
-        robot2 = art_obj_mgr.add_articulated_object_from_urdf(filepath=robot_file)
+        robot2 = art_obj_mgr.add_articulated_object_from_urdf(
+            filepath=robot_file, global_scale=2.0
+        )
         assert robot2
         assert art_obj_mgr.get_num_objects() == 2
+        assert robot2.global_scale == 2.0
 
         # remove a robot and check that it was removed
         art_obj_mgr.remove_object_by_handle(robot.handle)

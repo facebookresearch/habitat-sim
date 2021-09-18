@@ -1,3 +1,13 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = [
+            "cmake",
+            "ninja",
+            "pip",
+            "setuptools",
+            "wheel",
+           ]
+
 [tool.black]
 exclude = '''
 (

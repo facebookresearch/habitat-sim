@@ -24,6 +24,13 @@ class ManagedArticulatedObject
       : AbstractManagedPhysicsObject<esp::physics::ArticulatedObject>(
             classKey) {}
 
+  float getGlobalScale() const {
+    if (auto sp = getObjectReference()) {
+      return sp->getGlobalScale();
+    }
+    return 1.0;
+  }
+
   scene::SceneNode* getLinkSceneNode(int linkId = -1) const {
     if (auto sp = getObjectReference()) {
       return &const_cast<scene::SceneNode&>(sp->getLinkSceneNode(linkId));
@@ -300,7 +307,7 @@ class ManagedArticulatedObject
 
   std::string getPhyObjInfoHeaderInternal() const override {
     // TODO fill out appropriate reporting values
-    return "# links, ";
+    return "# links";
   }
 
   /**
@@ -310,9 +317,7 @@ class ManagedArticulatedObject
   std::string getPhysObjInfoInternal(
       std::shared_ptr<esp::physics::ArticulatedObject>& sp) const override {
     // TODO fill out appropriate reporting values
-    std::string res = std::to_string(sp->getNumLinks()).append(1, ',');
-
-    return res;
+    return std::to_string(sp->getNumLinks());
   }
 
  public:

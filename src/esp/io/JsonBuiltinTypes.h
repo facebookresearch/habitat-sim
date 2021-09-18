@@ -9,7 +9,7 @@
  * @brief See JsonAllTypes.h. Don't include this header directly in user code.
  */
 
-#include "esp/core/logging.h"
+#include "esp/core/Logging.h"
 
 #include <Corrade/Utility/Macros.h>
 
@@ -75,7 +75,7 @@ JsonGenericValue toJsonValue(const T&, JsonAllocator&) {
 // can be directly constructed from the builtin types.
 
 inline JsonGenericValue toJsonValue(bool x, JsonAllocator&) {
-  return JsonGenericValue(x);
+  return JsonGenericValue(x, nullptr);
 }
 
 inline JsonGenericValue toJsonValue(int x, JsonAllocator&) {

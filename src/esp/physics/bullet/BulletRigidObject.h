@@ -18,7 +18,7 @@
 
 #include "BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h"
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
 #include "esp/physics/CollisionGroupHelper.h"
 #include "esp/physics/RigidObject.h"

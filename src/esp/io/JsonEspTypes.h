@@ -13,7 +13,7 @@
 #include "JsonMagnumTypes.h"
 
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/gfx/replay/Keyframe.h"
 
 namespace esp {
