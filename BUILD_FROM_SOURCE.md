@@ -10,7 +10,7 @@
 ```
 
 - You can also allow pip to compile a specific version of Habitat. First clone the repo, then `pip install .` in the current git root directory
-  to start the compilation process. To quickly compile the latest master, run `pip install git+https://github.com/facebookresearch/habitat-sim`.
+  to start the compilation process. To quickly compile the latest main, run `pip install git+https://github.com/facebookresearch/habitat-sim`.
 
 - Since pip out of tree by default, this process will copy quite a lot of data to your TMPDIR. You can change this location by modifying the TMPDIR env variable.
   It will also not cache previous builds effectively and therefore will be slow. For active develeopment, building using `python setup.py install...` is recommended.
@@ -33,7 +33,7 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
    cd habitat-sim
    ```
 
-   List of stable releases is [available here](https://github.com/facebookresearch/habitat-sim/releases). Master branch contains 'bleeding edge' code and under active development.
+   List of stable releases is [available here](https://github.com/facebookresearch/habitat-sim/releases). Main branch contains 'bleeding edge' code and under active development.
 
 1. Install Dependencies
 
@@ -56,7 +56,7 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
         libjpeg-dev libglm-dev libgl1-mesa-glx libegl1-mesa-dev mesa-utils xorg-dev freeglut3-dev
    ```
 
-   See this [configuration for a full list of dependencies](https://github.com/facebookresearch/habitat-sim/blob/master/.circleci/config.yml#L64) that our CI installs on a clean Ubuntu VM. If you run into build errors later, this is a good place to check if all dependencies are installed.
+   See this [configuration for a full list of dependencies](https://github.com/facebookresearch/habitat-sim/blob/main/.circleci/config.yml#L64) that our CI installs on a clean Ubuntu VM. If you run into build errors later, this is a good place to check if all dependencies are installed.
 
 1. Build Habitat-Sim
 
