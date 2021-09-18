@@ -214,8 +214,11 @@ struct Renderer::Impl {
     Mn::Resource<Mn::GL::AbstractShaderProgram, GaussianFilterShader> shader =
         getShader<GaussianFilterShader>(rendererShaderType);
 
+#if !defined(MAGNUM_TARGET_WEBGL)
     if ((!visualizedTex_) ||
-        visualizedTex_->imageSize(0) != Mn::Vector2i{imageSize, imageSize}) {
+        visualizedTex_->imageSize(0) != Mn::Vector2i{imageSize, imageSize})
+#endif
+    {
       visualizedTex_ = Mn::GL::Texture2D{};
       (*visualizedTex_)
           .setMinificationFilter(Mn::GL::SamplerFilter::Linear)
