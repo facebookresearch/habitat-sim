@@ -1675,3 +1675,55 @@ def test_rigid_constraints():
                 "test_rigid_constraints",
                 open_vid=True,
             )
+
+
+@pytest.mark.skipif(
+    not habitat_sim.built_with_bullet,
+    reason="ArticulatedObject API requires Bullet physics.",
+)
+def test_articulated_object_maintain_link_order():
+    # test that the maintain_link_order option for urdf import
+    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings["scene"] = "NONE"
+    cfg_settings["enable_physics"] = True
+
+    # loading the physical scene
+    hab_cfg = examples.settings.make_cfg(cfg_settings)
+
+    with habitat_sim.Simulator(hab_cfg) as sim:
+        art_obj_mgr = sim.get_articulated_object_manager()
+        amass_file = "data/test_assets/urdf/amass_male.urdf"
+
+        # parse URDF and add a humanoid to the world
+        ao = art_obj_mgr.add_articulated_object_from_urdf(
+            filepath=amass_file, maintain_link_order=True
+        )
+        assert ao
+        assert ao.is_alive
+
+        amass_urdf_link_order = [
+            "lhip",
+            "lknee",
+            "lankle",
+            "rhip",
+            "rknee",
+            "rankle",
+            "lowerback",
+            "upperback",
+            "chest",
+            "lowerneck",
+            "upperneck",
+            "lclavicle",
+            "lshoulder",
+            "lelbow",
+            "lwrist",
+            "rclavicle",
+            "rshoulder",
+            "relbow",
+            "rwrist",
+        ]
+        link_names = []
+        for link_ix in range(ao.num_links):
+            link_names.append(ao.get_link_name(link_ix))
+        # check the link ordering against ground truth
+        assert amass_urdf_link_order == link_names
