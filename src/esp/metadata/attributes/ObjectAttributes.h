@@ -379,11 +379,13 @@ class StageAttributes : public AbstractObjectAttributes {
    * @ref esp::sim::SimulatorConfiguration, is overridden by any value set in
    * json, if exists.
    */
-  void setLightSetup(const std::string& lightSetup) {
-    set("light_setup", lightSetup);
-    setRequiresLighting(lightSetup != NO_LIGHT_KEY);
+  void setLightSetupKey(const std::string& lightSetupKey) {
+    set("light_setup_key", lightSetupKey);
+    setRequiresLighting(lightSetupKey != NO_LIGHT_KEY);
   }
-  std::string getLightSetup() const { return get<std::string>("light_setup"); }
+  std::string getLightSetupKey() const {
+    return get<std::string>("light_setup_key");
+  }
 
   /**
    * @brief set frustum culling for stage.  Default value comes from
@@ -409,7 +411,7 @@ class StageAttributes : public AbstractObjectAttributes {
   std::string getAbstractObjectInfoInternal() const override {
     return Cr::Utility::formatString("{},{},{},{}", getNavmeshAssetHandle(),
                                      getAsString("gravity"),
-                                     getAsString("origin"), getLightSetup());
+                                     getAsString("origin"), getLightSetupKey());
   }
 
  public:

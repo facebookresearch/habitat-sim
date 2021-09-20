@@ -336,7 +336,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   // for this scene instance
   std::string lightSetupKey;
   if (config_.overrideSceneLightDefaults) {
-    lightSetupKey = config_.sceneLightSetup;
+    lightSetupKey = config_.sceneLightSetupKey;
     ESP_DEBUG() << "Using SimulatorConfiguration-specified Light key : -"
                 << lightSetupKey << "-";
   } else {
@@ -355,8 +355,9 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
                                       Mn::ResourceKey{lightSetupKey});
     }
   }
-  // set config's sceneLightSetup to track currently specified light setup key
-  config_.sceneLightSetup = lightSetupKey;
+  // set config's sceneLightSetupKey to track currently specified light setup
+  // key
+  config_.sceneLightSetupKey = lightSetupKey;
   metadataMediator_->setSimulatorConfiguration(config_);
 
   // 4. Load stage specified by Scene Instance Attributes
@@ -413,7 +414,7 @@ bool Simulator::instanceStageForActiveScene(
     stageAttributes->setShaderType(stageShaderType);
   }
   // set lighting key based on curent config value
-  stageAttributes->setLightSetup(config_.sceneLightSetup);
+  stageAttributes->setLightSetupKey(config_.sceneLightSetupKey);
   // set frustum culling from simulator config
   stageAttributes->setFrustumCulling(frustumCulling_);
   // set scaling values for this instance of stage attributes
@@ -519,7 +520,7 @@ bool Simulator::instanceObjectsForActiveScene(
     // objID =
     physicsManager_->addObjectInstance(objInst, objAttrFullHandle,
                                        defaultCOMCorrection, attachmentNode,
-                                       config_.sceneLightSetup);
+                                       config_.sceneLightSetupKey);
   }  // for each object attributes
   return true;
 }  // Simulator::instanceObjectsForActiveScene()
@@ -545,7 +546,7 @@ bool Simulator::instanceArticulatedObjectsForActiveScene(
     // create articulated object
     // aoID =
     physicsManager_->addArticulatedObjectInstance(artObjFilePath, artObjInst,
-                                                  config_.sceneLightSetup);
+                                                  config_.sceneLightSetupKey);
   }  // for each articulated object instance
   return true;
 }  // Simulator::instanceArticulatedObjectsForActiveScene

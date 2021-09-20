@@ -57,7 +57,7 @@ bool MetadataMediator::setSimulatorConfiguration(
   attributes::SceneDatasetAttributes::ptr datasetAttr = getActiveDSAttribs();
   // pass relevant config values to the current dataset
   if (datasetAttr != nullptr) {
-    datasetAttr->setCurrCfgVals(simConfig_.sceneLightSetup,
+    datasetAttr->setCurrCfgVals(simConfig_.sceneLightSetupKey,
                                 simConfig_.frustumCulling);
   } else {
     ESP_ERROR() << "No active dataset exists or has been specified. Aborting";
