@@ -198,7 +198,7 @@ Below are object-specific physical quantities.  These values will override simil
 
 `LightLayoutAttributes`_
 ==========================
-:ref:`LightLayoutAttributes` templates hold descriptive information for light setups into Habitat-Sim.  These file names should be formatted as follows:
+:ref:`LightLayoutAttributes` templates hold descriptive information for light setups to be instanced in Habitat-Sim.  The file names for these JSON should be formatted as follows:
 
      <lightingname>.lighting_config.json
 
@@ -207,7 +207,8 @@ Below are object-specific physical quantities.  These values will override simil
 .. include:: ../../data/test_assets/lights/test_lights.lighting_config.json
     :code: json
 
-The LightLayoutAttributes JSON should contain a single cell named "lights" that references a JSON object consisting of key-value pairs, where each key is a string ID that is unique to the lighting layout and the value is a JSON object containing appropriate combinations of the following data for the light type being described.
+The :ref:`LightLayoutAttributes` JSON should contain a single cell named "lights" that references a JSON object consisting of key-value pairs, where each key is a string ID that is unique to the lighting layout to be used as an identifier,
+ and the value is a JSON object containing appropriate key-value combinations of the following data for the light type being described.
 
 "position"
     - 3-vector
