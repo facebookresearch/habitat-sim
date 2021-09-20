@@ -202,7 +202,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
    */
   int getShaderType() const { return get<int>("shader_type"); }
 
-  // if true use phong illumination model instead of flat shading
+  /** @brief if true use phong illumination model instead of flat shading */
   void setRequiresLighting(bool requiresLighting) {
     set("requires_lighting", requiresLighting);
   }
@@ -251,8 +251,8 @@ class AbstractObjectAttributes : public AbstractAttributes {
 };  // class AbstractObjectAttributes
 
 /**
- * @brief Specific Attributes instance describing an object, constructed with
- * a default set of object-specific required attributes
+ * @brief Specific Attributes instance describing a rigid object, constructed
+ * with a default set of object-specific required attributes.
  */
 class ObjectAttributes : public AbstractObjectAttributes {
  public:
@@ -330,8 +330,8 @@ class ObjectAttributes : public AbstractObjectAttributes {
 // stage attributes
 
 /**
- * @brief Specific Attributes instance describing a stage, constructed with a
- * default set of stage-specific required attributes
+ * @brief Specific Attributes instance describing a rigid stage, constructed
+ * with a default set of stage-specific required attributes
  */
 class StageAttributes : public AbstractObjectAttributes {
  public:
