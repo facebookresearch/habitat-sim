@@ -9,5 +9,5 @@
 	"friction_coefficient": 0.3,
 	"restitution_coefficient": 0.3,
 	"units_to_meters":1.0,
-	"requires_lighting":true
+  "force_flat_shading": false
 }

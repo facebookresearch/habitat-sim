@@ -41,7 +41,7 @@
                 "friction_coefficient": 0.35,
                 "restitution_coefficient": 0.25,
                 "units_to_meters":2.0,
-                "requires_lighting":false
+          "force_flat_shading": true
             }
         }
         ]
