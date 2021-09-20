@@ -104,7 +104,10 @@ void BulletArticulatedObject::initializeFromURDF(
                 return a.m_index < b.m_index;
               });
 
-    for (int i = 0; i < allIndices.size(); i++) {
+    if (allIndices.size() + 1 >= parentTransforms.size()) {
+      parentTransforms.resize(allIndices.size() + 1);
+    }
+    for (size_t i = 0; i < allIndices.size(); ++i) {
       int urdfLinkIndex = allIndices[i].m_index;
       int parentIndex = allIndices[i].m_parentIndex;
       Mn::Matrix4 parentTr = parentIndex >= 0 ? parentTransforms[parentIndex]
@@ -112,9 +115,6 @@ void BulletArticulatedObject::initializeFromURDF(
       Mn::Matrix4 tr = u2b.convertURDF2BulletInternal(
           urdfLinkIndex, parentTr, bWorld_.get(), linkCompoundShapes_,
           linkChildShapes_, recursive);
-      if ((urdfLinkIndex + 1) >= parentTransforms.size()) {
-        parentTransforms.resize(urdfLinkIndex + 1);
-      }
       parentTransforms[urdfLinkIndex] = tr;
     }
   }
