@@ -623,9 +623,6 @@ jobs:
     steps:
       - checkout:
           path: ./habitat-sim
-      - restore_cache:
-          keys:
-            - conda-{{ checksum "habitat-sim/.circleci/config.yml" }}
       - run:
           name: Build conda Linux packages
           no_output_timeout: 240m
