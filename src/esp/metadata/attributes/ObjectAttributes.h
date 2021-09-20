@@ -202,11 +202,14 @@ class AbstractObjectAttributes : public AbstractAttributes {
    */
   int getShaderType() const { return get<int>("shader_type"); }
 
-  /** @brief if true use phong illumination model instead of flat shading */
-  void setRequiresLighting(bool requiresLighting) {
-    set("requires_lighting", requiresLighting);
+  /**
+   * @brief If true then use flat shading regardless of what shader-type is
+   * specified by materials or other configs.
+   */
+  void setForceFlatShading(bool force_flat_shading) {
+    set("force_flat_shading", force_flat_shading);
   }
-  bool getRequiresLighting() const { return get<bool>("requires_lighting"); }
+  bool getForceFlatShading() const { return get<bool>("force_flat_shading"); }
 
   bool getIsDirty() const { return get<bool>("__isDirty"); }
   void setIsClean() { set("__isDirty", false); }
@@ -379,9 +382,9 @@ class StageAttributes : public AbstractObjectAttributes {
    * @ref esp::sim::SimulatorConfiguration, is overridden by any value set in
    * json, if exists.
    */
-  void setLightSetupKey(const std::string& lightSetupKey) {
-    set("light_setup_key", lightSetupKey);
-    setRequiresLighting(lightSetupKey != NO_LIGHT_KEY);
+  void setLightSetup(const std::string& lightSetup) {
+    set("light_setup", lightSetup);
+    setForceFlatShading(lightSetup == NO_LIGHT_KEY);
   }
   std::string getLightSetupKey() const {
     return get<std::string>("light_setup_key");

@@ -153,8 +153,8 @@ def build_dict_of_PhyObj_attrs(phys_obj_template):
         True,
         "string",
     )
-    res_dict["requires_lighting"] = (
-        phys_obj_template.requires_lighting,
+    res_dict["force_flat_shading"] = (
+        phys_obj_template.force_flat_shading,
         True,
         "boolean",
     )
@@ -1250,8 +1250,8 @@ restitution_coefficient = 0.3  # @param {type:"slider", min:0.0, max:1.0, step:0
 new_template.restitution_coefficient = restitution_coefficient
 
 # @markdown Whether the object should be lit via Phong shading.
-requires_lighting = False  # @param {type:"boolean"}
-new_template.requires_lighting = requires_lighting
+force_flat_shading = True  # @param {type:"boolean"}
+new_template.force_flat_shading = force_flat_shading
 
 # @markdown The x,y,z components of the intertia matrix diagonal
 

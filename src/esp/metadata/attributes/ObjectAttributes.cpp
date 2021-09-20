@@ -76,7 +76,8 @@ ObjectAttributes::ObjectAttributes(const std::string& handle)
   // otherwise specified in config
   setShaderType(static_cast<int>(ObjectInstanceShaderType::Unknown));
   // TODO remove this once ShaderType support is complete
-  setRequiresLighting(true);
+  setForceFlatShading(false);
+  setIsVisible(true);
   setSemanticId(0);
 }  // ObjectAttributes ctor
 
@@ -95,7 +96,7 @@ StageAttributes::StageAttributes(const std::string& handle)
   // otherwise specified in config
   setShaderType(static_cast<int>(ObjectInstanceShaderType::Unknown));
   // TODO remove this once ShaderType support is complete
-  setRequiresLighting(false);
+  setForceFlatShading(true);
   // 0 corresponds to esp::assets::AssetType::UNKNOWN->treated as general mesh
   setCollisionAssetType(0);
   // 4 corresponds to esp::assets::AssetType::INSTANCE_MESH

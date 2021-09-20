@@ -1023,7 +1023,7 @@ void AttributesManagersTest::testStageJSONLoad() {
         "margin": 0.9,
         "friction_coefficient": 0.321,
         "restitution_coefficient": 0.456,
-        "requires_lighting": true,
+        "force_flat_shading": false,
         "units_to_meters": 1.1,
         "up":[2.1,0,0],
         "front":[0,2.1,0],
@@ -1058,7 +1058,7 @@ void AttributesManagersTest::testStageJSONLoad() {
   CORRADE_COMPARE(stageAttr->getMargin(), 0.9);
   CORRADE_COMPARE(stageAttr->getFrictionCoefficient(), 0.321);
   CORRADE_COMPARE(stageAttr->getRestitutionCoefficient(), 0.456);
-  CORRADE_VERIFY(stageAttr->getRequiresLighting());
+  CORRADE_VERIFY(!stageAttr->getForceFlatShading());
   CORRADE_COMPARE(stageAttr->getUnitsToMeters(), 1.1);
   CORRADE_COMPARE(stageAttr->getOrientUp(), Magnum::Vector3(2.1, 0, 0));
   CORRADE_COMPARE(stageAttr->getOrientFront(), Magnum::Vector3(0, 2.1, 0));
@@ -1099,7 +1099,7 @@ void AttributesManagersTest::testObjectJSONLoad() {
   "margin": 0.9,
   "friction_coefficient": 0.321,
   "restitution_coefficient": 0.456,
-  "requires_lighting": false,
+  "force_flat_shading": true,
   "units_to_meters": 1.1,
   "up":[2.1,0,0],
   "front":[0,2.1,0],
@@ -1134,7 +1134,7 @@ void AttributesManagersTest::testObjectJSONLoad() {
   CORRADE_COMPARE(objAttr->getMargin(), 0.9);
   CORRADE_COMPARE(objAttr->getFrictionCoefficient(), 0.321);
   CORRADE_COMPARE(objAttr->getRestitutionCoefficient(), 0.456);
-  CORRADE_VERIFY(!objAttr->getRequiresLighting());
+  CORRADE_VERIFY(objAttr->getForceFlatShading());
   CORRADE_COMPARE(objAttr->getUnitsToMeters(), 1.1);
   CORRADE_COMPARE(objAttr->getOrientUp(), Magnum::Vector3(2.1, 0, 0));
   CORRADE_COMPARE(objAttr->getOrientFront(), Magnum::Vector3(0, 2.1, 0));
