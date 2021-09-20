@@ -43,8 +43,6 @@ struct childParentIndex {
   std::string m_link_name;
 };
 
-Mn::Debug& operator<<(Mn::Debug& debug, const childParentIndex cpi);
-
 /**
  * @brief Structure to hold construction time multi-body data.
  */

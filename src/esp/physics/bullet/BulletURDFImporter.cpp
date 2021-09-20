@@ -647,12 +647,5 @@ Mn::Matrix4 BulletURDFImporter::convertURDF2BulletInternal(
   return linkTransformInWorldSpace;
 }
 
-Mn::Debug& operator<<(Mn::Debug& debug, const childParentIndex cpi) {
-  debug << "childParentIndex";
-  return debug << "\nindex: " << cpi.m_index << "\n mbIndex: " << cpi.m_mbIndex
-               << "\n parentIndex: " << cpi.m_parentIndex
-               << "\n parentMBIndex: " << cpi.m_parentMBIndex;
-}
-
 }  // namespace physics
 }  // namespace esp
