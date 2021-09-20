@@ -85,8 +85,9 @@ void initAttributesBindings(py::module& m) {
       // string values, to guarantee essential value type integrity.)
       .def(
           "set",
-          [](AbstractAttributes& self, const std::string& key,
-             const std::string& val) {
+          [](CORRADE_UNUSED AbstractAttributes& self,
+             CORRADE_UNUSED const std::string& key,
+             CORRADE_UNUSED const std::string& val) {
             CORRADE_ASSERT(false,
                            "Attributes should only use named properties or "
                            "subconfigurations to set string values, to "
@@ -95,8 +96,9 @@ void initAttributesBindings(py::module& m) {
           "key"_a, "value"_a)
       .def(
           "set",
-          [](AbstractAttributes& self, const std::string& key,
-             const char* val) {
+          [](CORRADE_UNUSED AbstractAttributes& self,
+             CORRADE_UNUSED const std::string& key,
+             CORRADE_UNUSED const char* val) {
             CORRADE_ASSERT(false,
                            "Attributes should only use named properties or "
                            "subconfigurations to set string values, to "
@@ -105,7 +107,9 @@ void initAttributesBindings(py::module& m) {
           "key"_a, "value"_a)
       .def(
           "set",
-          [](AbstractAttributes& self, const std::string& key, const int val) {
+          [](CORRADE_UNUSED AbstractAttributes& self,
+             CORRADE_UNUSED const std::string& key,
+             CORRADE_UNUSED const int val) {
             CORRADE_ASSERT(false,
                            "Attributes should only use named properties or "
                            "subconfigurations to set integer values, to "
@@ -114,8 +118,9 @@ void initAttributesBindings(py::module& m) {
           "key"_a, "value"_a)
       .def(
           "set",
-          [](AbstractAttributes& self, const std::string& key,
-             const double val) {
+          [](CORRADE_UNUSED AbstractAttributes& self,
+             CORRADE_UNUSED const std::string& key,
+             CORRADE_UNUSED const double val) {
             CORRADE_ASSERT(false,
                            "Attributes should only use named properties or "
                            "subconfigurations to set floating-point values, to "
@@ -124,7 +129,9 @@ void initAttributesBindings(py::module& m) {
           "key"_a, "value"_a)
       .def(
           "set",
-          [](AbstractAttributes& self, const std::string& key, const bool val) {
+          [](CORRADE_UNUSED AbstractAttributes& self,
+             CORRADE_UNUSED const std::string& key,
+             CORRADE_UNUSED const bool val) {
             CORRADE_ASSERT(false,
                            "Attributes should only use named properties or "
                            "subconfigurations to set boolean values, to "
@@ -133,8 +140,9 @@ void initAttributesBindings(py::module& m) {
           "key"_a, "value"_a)
       .def(
           "set",
-          [](AbstractAttributes& self, const std::string& key,
-             const Magnum::Quaternion& val) {
+          [](CORRADE_UNUSED AbstractAttributes& self,
+             CORRADE_UNUSED const std::string& key,
+             CORRADE_UNUSED const Magnum::Quaternion& val) {
             CORRADE_ASSERT(
                 false,
                 "Attributes should only use named properties or "
@@ -144,8 +152,9 @@ void initAttributesBindings(py::module& m) {
           "key"_a, "value"_a)
       .def(
           "set",
-          [](AbstractAttributes& self, const std::string& key,
-             const Magnum::Vector3& val) {
+          [](CORRADE_UNUSED AbstractAttributes& self,
+             CORRADE_UNUSED const std::string& key,
+             CORRADE_UNUSED const Magnum::Vector3& val) {
             CORRADE_ASSERT(
                 false,
                 "Attributes should only use named properties or "
