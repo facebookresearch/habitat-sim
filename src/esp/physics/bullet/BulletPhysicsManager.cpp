@@ -170,7 +170,7 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
   for (size_t urdfLinkIx = 0; urdfLinkIx < u2b->getModel()->m_links.size();
        ++urdfLinkIx) {
     auto urdfLink = u2b->getModel()->getLink(urdfLinkIx);
-    if (urdfLink->m_visualArray.size() > 0) {
+    if (!urdfLink->m_visualArray.empty()) {
       int bulletLinkIx =
           u2b->cache->m_urdfLinkIndices2BulletLinkIndices[urdfLinkIx];
       ArticulatedLink& linkObject = articulatedObject->getLink(bulletLinkIx);
