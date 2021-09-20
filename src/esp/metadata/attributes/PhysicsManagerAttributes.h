@@ -11,7 +11,10 @@ namespace esp {
 namespace metadata {
 namespace attributes {
 
-//! attributes for a single physics manager
+/**
+ * @brief attributes class describing essential and default quantities used to
+ * instantiate a physics manager.
+ */
 class PhysicsManagerAttributes : public AbstractAttributes {
  public:
   explicit PhysicsManagerAttributes(const std::string& handle = "");

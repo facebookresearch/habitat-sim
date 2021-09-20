@@ -757,7 +757,7 @@ Viewer::Viewer(const Arguments& arguments)
   simConfig_.enableGfxReplaySave = !gfxReplayRecordFilepath_.empty();
   if (args.isSet("stage-requires-lighting")) {
     ESP_DEBUG() << "Stage using DEFAULT_LIGHTING_KEY";
-    simConfig_.sceneLightSetup = esp::DEFAULT_LIGHTING_KEY;
+    simConfig_.sceneLightSetupKey = esp::DEFAULT_LIGHTING_KEY;
   }
 
   // setup the PhysicsManager config file

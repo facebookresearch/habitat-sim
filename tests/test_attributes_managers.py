@@ -34,15 +34,21 @@ def perform_general_tests(attr_mgr, search_string):
     assert template0.handle == template1.handle
     assert template0.template_id == template1.template_id
 
-    # modify template, register, then verify that
+    # get each template's user_config
+    tmplt0_user_config = template0.get_user_config()
+    tmplt1_user_config = template1.get_user_config()
+
+    # modify template's user config, register, then verify that
     # retrieved template is not same as previous template
-    template0.set("test_key", "template0_test")
-    template1.set("test_key", "template1_test")
+    tmplt0_user_config.set("test_key", "template0_test")
+    tmplt1_user_config.set("test_key", "template1_test")
 
     # save modified template
     attr_mgr.register_template(template0, template_handle)
     # retrieve registered template
     template2 = attr_mgr.get_template_by_handle(template_handle)
+    # get template2's user_config
+    tmplt2_user_config = template2.get_user_config()
 
     # verify templates have the same identifiers
     assert template1.handle == template2.handle
@@ -50,16 +56,16 @@ def perform_general_tests(attr_mgr, search_string):
 
     # verify the templates hold different data and are not the
     # same object
-    assert template1.get("test_key") != template2.get("test_key")
+    assert tmplt1_user_config.get("test_key") != tmplt2_user_config.get("test_key")
     # verify 0 and 2 hold same user-set value
-    assert template0.get("test_key") == template2.get("test_key")
+    assert tmplt0_user_config.get("test_key") == tmplt2_user_config.get("test_key")
 
-    # change retrieved template, verify it is not same object as template0
-    template2.set("test_key", "template2_test")
+    # change retrieved template's user_config, verify it is not same object as template0
+    tmplt2_user_config.set("test_key", "template2_test")
 
     # verify the templates hold different data and are not the
     # same object
-    assert template0.get("test_key") != template2.get("test_key")
+    assert tmplt0_user_config.get("test_key") != tmplt2_user_config.get("test_key")
 
     # add new template with specified handle
     new_template_handle = "new_template_0"
@@ -145,9 +151,11 @@ def perform_add_blank_template_test(attr_mgr, valid_render_handle=None):
 
     # create new default template, do not register it
     new_template0 = attr_mgr.create_new_template(new_template_handle, False)
+    # get new_template0's user_config
+    new_tmplt0_user_config = new_template0.get_user_config()
 
     # change new template field
-    new_template0.set("test_key", "new_template_test")
+    new_tmplt0_user_config.set("test_key", "new_template_test")
 
     # give new template valid render asset handle, otherwise registration might fail
     if valid_render_handle is not None:
@@ -162,19 +170,27 @@ def perform_add_blank_template_test(attr_mgr, valid_render_handle=None):
 
     # verify new template added properly
     new_template1 = attr_mgr.get_template_by_handle(new_template_handle)
+    # get new_template0's user_config
+    new_tmplt1_user_config = new_template1.get_user_config()
 
     # verify template 0 and template 1 are copies of the same template
     assert new_template0.handle == new_template1.handle
     assert new_template0.template_id == new_template1.template_id
-    assert new_template0.get("test_key") == new_template1.get("test_key")
+    assert new_tmplt0_user_config.get("test_key") == new_tmplt1_user_config.get(
+        "test_key"
+    )
 
     # remove newly added default template
     new_template2 = attr_mgr.remove_template_by_handle(new_template_handle)
+    # get new_template0's user_config
+    new_tmplt2_user_config = new_template2.get_user_config()
 
     # verify added template was one removed
     assert new_template0.handle == new_template2.handle
     assert new_template0.template_id == new_template2.template_id
-    assert new_template0.get("test_key") == new_template2.get("test_key")
+    assert new_tmplt0_user_config.get("test_key") == new_tmplt2_user_config.get(
+        "test_key"
+    )
 
     # test addition of user-configurations and verify values
 
@@ -298,9 +314,7 @@ def test_object_attributes_managers():
         perform_add_blank_template_test(obj_mgr, template0.render_asset_handle)
 
 
-def perform_asset_attrib_mgr_tests(
-    attr_mgr, default_attribs, ctor_mod_field, legalVal, illegalVal
-):
+def perform_asset_attrib_mgr_tests(attr_mgr, default_attribs, legalVal, illegalVal):
     # get size of template library
     orig_num_templates = attr_mgr.get_num_templates()
     # make sure this is same value as size of template handles list
@@ -312,14 +326,13 @@ def perform_asset_attrib_mgr_tests(
     # verify that default_attribs is valid
     assert default_attribs.is_valid_template
 
-    # modify field values that impact primitive construction, if exist
-    if "none" != ctor_mod_field:
-        default_attribs.set(ctor_mod_field, illegalVal)
-        # verify that this is now an illegal template
-        assert not (default_attribs.is_valid_template)
+    # modify segment field values that impact primitive construction, if exist
+    default_attribs.num_segments = illegalVal
+    # verify that this is now an illegal template
+    assert not (default_attribs.is_valid_template)
 
-    # modify to hold legal value
-    default_attribs.set(ctor_mod_field, legalVal)
+    # modify segments to hold legal value
+    default_attribs.num_segments = legalVal
 
     # verify that default_attribs is valid
     assert default_attribs.is_valid_template
@@ -344,7 +357,7 @@ def perform_asset_attrib_mgr_tests(
     new_template = attr_mgr.get_template_by_handle(new_handle)
 
     # verify they do not hold the same values in the important fields
-    assert old_template.get(ctor_mod_field) != new_template.get(ctor_mod_field)
+    assert old_template.num_segments != new_template.num_segments
     # verify we have more templates than when we started
     assert orig_num_templates != attr_mgr.get_num_templates()
 
@@ -377,13 +390,12 @@ def test_asset_attributes_managers():
         perform_asset_attrib_mgr_tests(
             attr_mgr,
             dflt_solid_attribs,
-            "segments",
             legal_mod_val_solid,
             illegal_mod_val_solid,
         )
         dflt_wf_attribs = attr_mgr.get_default_capsule_template(True)
         perform_asset_attrib_mgr_tests(
-            attr_mgr, dflt_wf_attribs, "segments", legal_mod_val_wf, illegal_mod_val_wf
+            attr_mgr, dflt_wf_attribs, legal_mod_val_wf, illegal_mod_val_wf
         )
 
         # cone
@@ -392,13 +404,12 @@ def test_asset_attributes_managers():
         perform_asset_attrib_mgr_tests(
             attr_mgr,
             dflt_solid_attribs,
-            "segments",
             legal_mod_val_solid,
             illegal_mod_val_solid,
         )
         dflt_wf_attribs = attr_mgr.get_default_cone_template(True)
         perform_asset_attrib_mgr_tests(
-            attr_mgr, dflt_wf_attribs, "segments", legal_mod_val_wf, illegal_mod_val_wf
+            attr_mgr, dflt_wf_attribs, legal_mod_val_wf, illegal_mod_val_wf
         )
 
         # cylinder
@@ -407,11 +418,11 @@ def test_asset_attributes_managers():
         )
         dflt_solid_attribs = attr_mgr.get_default_cylinder_template(False)
         perform_asset_attrib_mgr_tests(
-            attr_mgr, dflt_solid_attribs, "segments", 5, illegal_mod_val_solid
+            attr_mgr, dflt_solid_attribs, 5, illegal_mod_val_solid
         )
         dflt_wf_attribs = attr_mgr.get_default_cylinder_template(True)
         perform_asset_attrib_mgr_tests(
-            attr_mgr, dflt_wf_attribs, "segments", legal_mod_val_wf, illegal_mod_val_wf
+            attr_mgr, dflt_wf_attribs, legal_mod_val_wf, illegal_mod_val_wf
         )
 
         # UVSphere
@@ -420,9 +431,9 @@ def test_asset_attributes_managers():
         )
         dflt_solid_attribs = attr_mgr.get_default_UVsphere_template(False)
         perform_asset_attrib_mgr_tests(
-            attr_mgr, dflt_solid_attribs, "segments", 5, illegal_mod_val_solid
+            attr_mgr, dflt_solid_attribs, 5, illegal_mod_val_solid
         )
         dflt_wf_attribs = attr_mgr.get_default_UVsphere_template(True)
         perform_asset_attrib_mgr_tests(
-            attr_mgr, dflt_wf_attribs, "segments", legal_mod_val_wf, illegal_mod_val_wf
+            attr_mgr, dflt_wf_attribs, legal_mod_val_wf, illegal_mod_val_wf
         )
