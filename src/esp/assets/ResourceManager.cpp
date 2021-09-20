@@ -217,7 +217,7 @@ bool ResourceManager::loadStage(
       ((_physicsManager != nullptr) &&
        (_physicsManager->getInitializationAttributes()->getSimulator() !=
         "none"));
-  const std::string renderLightSetupKey(stageAttributes->getLightSetup());
+  const std::string renderLightSetupKey(stageAttributes->getLightSetupKey());
   std::map<std::string, AssetInfo> assetInfoMap =
       createStageAssetInfosFromAttributes(stageAttributes, buildCollisionMesh,
                                           createSemanticMesh);
@@ -910,7 +910,7 @@ void ResourceManager::computeInstanceMeshAbsoluteAABBs(
 std::vector<Mn::Matrix4> ResourceManager::computeAbsoluteTransformations(
     const std::vector<StaticDrawableInfo>& staticDrawableInfo) {
   // sanity check
-  if (staticDrawableInfo.size() == 0) {
+  if (staticDrawableInfo.empty()) {
     return {};
   }
 

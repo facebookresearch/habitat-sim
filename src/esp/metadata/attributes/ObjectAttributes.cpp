@@ -36,6 +36,7 @@ AbstractObjectAttributes::AbstractObjectAttributes(
   setCollisionAssetIsPrimitive(false);
   setUseMeshCollision(true);
   setIsCollidable(true);
+  setIsVisible(true);
   setUnitsToMeters(1.0);
   setRenderAssetHandle("");
   setCollisionAssetHandle("");
@@ -76,7 +77,6 @@ ObjectAttributes::ObjectAttributes(const std::string& handle)
   setShaderType(static_cast<int>(ObjectInstanceShaderType::Unknown));
   // TODO remove this once ShaderType support is complete
   setRequiresLighting(true);
-  setIsVisible(true);
   setSemanticId(0);
 }  // ObjectAttributes ctor
 

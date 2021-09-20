@@ -63,7 +63,7 @@ void initSimBindings(py::module& m) {
           &SimulatorConfiguration::overrideSceneLightDefaults,
           R"(Override scene lighting setup to use with value specified below.)")
       .def_readwrite("scene_light_setup",
-                     &SimulatorConfiguration::sceneLightSetup)
+                     &SimulatorConfiguration::sceneLightSetupKey)
       .def_readwrite("load_semantic_mesh",
                      &SimulatorConfiguration::loadSemanticMesh)
       .def_readwrite(

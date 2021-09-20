@@ -1182,7 +1182,7 @@ class Simulator {
    * @param key The string key of the @ref gfx::LightSetup.
    */
   gfx::LightSetup getCurrentLightSetup() {
-    return *resourceManager_->getLightSetup(config_.sceneLightSetup);
+    return *resourceManager_->getLightSetup(config_.sceneLightSetupKey);
   }
 
   /**

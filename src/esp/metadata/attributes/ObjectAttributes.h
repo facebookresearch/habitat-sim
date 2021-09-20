@@ -89,6 +89,12 @@ class AbstractObjectAttributes : public AbstractAttributes {
    */
   double getUnitsToMeters() const { return get<double>("units_to_meters"); }
 
+  /**
+   * @brief If not visible can add dynamic non-rendered object into a scene
+   * object.  If is not visible then should not add object to drawables.
+   */
+  void setIsVisible(bool isVisible) { set("is_visible", isVisible); }
+  bool getIsVisible() const { return get<bool>("is_visible"); }
   void setFrictionCoefficient(double frictionCoefficient) {
     set("friction_coefficient", frictionCoefficient);
   }
@@ -196,7 +202,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
    */
   int getShaderType() const { return get<int>("shader_type"); }
 
-  // if true use phong illumination model instead of flat shading
+  /** @brief if true use phong illumination model instead of flat shading */
   void setRequiresLighting(bool requiresLighting) {
     set("requires_lighting", requiresLighting);
   }
@@ -245,8 +251,8 @@ class AbstractObjectAttributes : public AbstractAttributes {
 };  // class AbstractObjectAttributes
 
 /**
- * @brief Specific Attributes instance describing an object, constructed with
- * a default set of object-specific required attributes
+ * @brief Specific Attributes instance describing a rigid object, constructed
+ * with a default set of object-specific required attributes.
  */
 class ObjectAttributes : public AbstractObjectAttributes {
  public:
@@ -298,13 +304,6 @@ class ObjectAttributes : public AbstractObjectAttributes {
     return get<bool>("join_collision_meshes");
   }
 
-  /**
-   * @brief If not visible can add dynamic non-rendered object into a scene
-   * object.  If is not visible then should not add object to drawables.
-   */
-  void setIsVisible(bool isVisible) { set("is_visible", isVisible); }
-  bool getIsVisible() const { return get<bool>("is_visible"); }
-
   void setSemanticId(int semanticId) { set("semantic_id", semanticId); }
 
   uint32_t getSemanticId() const { return get<int>("semantic_id"); }
@@ -331,8 +330,8 @@ class ObjectAttributes : public AbstractObjectAttributes {
 // stage attributes
 
 /**
- * @brief Specific Attributes instance describing a stage, constructed with a
- * default set of stage-specific required attributes
+ * @brief Specific Attributes instance describing a rigid stage, constructed
+ * with a default set of stage-specific required attributes
  */
 class StageAttributes : public AbstractObjectAttributes {
  public:
@@ -380,11 +379,13 @@ class StageAttributes : public AbstractObjectAttributes {
    * @ref esp::sim::SimulatorConfiguration, is overridden by any value set in
    * json, if exists.
    */
-  void setLightSetup(const std::string& lightSetup) {
-    set("light_setup", lightSetup);
-    setRequiresLighting(lightSetup != NO_LIGHT_KEY);
+  void setLightSetupKey(const std::string& lightSetupKey) {
+    set("light_setup_key", lightSetupKey);
+    setRequiresLighting(lightSetupKey != NO_LIGHT_KEY);
   }
-  std::string getLightSetup() const { return get<std::string>("light_setup"); }
+  std::string getLightSetupKey() const {
+    return get<std::string>("light_setup_key");
+  }
 
   /**
    * @brief set frustum culling for stage.  Default value comes from
@@ -410,7 +411,7 @@ class StageAttributes : public AbstractObjectAttributes {
   std::string getAbstractObjectInfoInternal() const override {
     return Cr::Utility::formatString("{},{},{},{}", getNavmeshAssetHandle(),
                                      getAsString("gravity"),
-                                     getAsString("origin"), getLightSetup());
+                                     getAsString("origin"), getLightSetupKey());
   }
 
  public:

@@ -20,7 +20,7 @@
 # ---
 
 # %% [markdown]
-# <a href="https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/master/examples/tutorials/colabs/ECCV_2020_Interactivity.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+# <a href="https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/ECCV_2020_Interactivity.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
 # %% [markdown]
 # #Habitat-sim Interactivity
@@ -37,7 +37,7 @@
 # @title Installation { display-mode: "form" }
 # @markdown (double click to show code).
 
-# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/master/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
+# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/main/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
 
 # %%
 # @title Path Setup and Imports { display-mode: "form" }
@@ -533,7 +533,7 @@ make_simulator_from_settings(sim_settings)
 # 3.   Generating Scene Clutter on the NavMesh
 # 4.   Continuous Embodied Navigation
 #
-# For more tutorial examples and details see the [Interactive Rigid Objects tutorial](https://aihabitat.org/docs/habitat-sim/rigid-object-tutorial.html) also available for Colab [here](https://github.com/facebookresearch/habitat-sim/blob/master/examples/tutorials/colabs/rigid_object_tutorial.ipynb).
+# For more tutorial examples and details see the [Interactive Rigid Objects tutorial](https://aihabitat.org/docs/habitat-sim/rigid-object-tutorial.html) also available for Colab [here](https://github.com/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/rigid_object_tutorial.ipynb).
 #
 #
 #

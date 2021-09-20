@@ -269,8 +269,8 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
       success = scene::SemanticScene::loadSemanticSceneDescriptor(
           filenameToUse, *semanticScene_);
       if (success) {
-        ESP_WARNING() << "SSD with SceneAttributes-provided name "
-                      << filenameToUse << "successfully found and loaded";
+        ESP_DEBUG() << "SSD with SceneAttributes-provided name "
+                    << filenameToUse << "successfully found and loaded";
       } else {
         // here if provided file exists but does not correspond to appropriate
         // SSD
@@ -345,7 +345,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   // for this scene instance
   std::string lightSetupKey;
   if (config_.overrideSceneLightDefaults) {
-    lightSetupKey = config_.sceneLightSetup;
+    lightSetupKey = config_.sceneLightSetupKey;
     ESP_DEBUG() << "Using SimulatorConfiguration-specified Light key : -"
                 << lightSetupKey << "-";
   } else {
@@ -364,8 +364,9 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
                                       Mn::ResourceKey{lightSetupKey});
     }
   }
-  // set config's sceneLightSetup to track currently specified light setup key
-  config_.sceneLightSetup = lightSetupKey;
+  // set config's sceneLightSetupKey to track currently specified light setup
+  // key
+  config_.sceneLightSetupKey = lightSetupKey;
   metadataMediator_->setSimulatorConfiguration(config_);
 
   // 4. Load stage specified by Scene Instance Attributes
@@ -422,13 +423,18 @@ bool Simulator::instanceStageForActiveScene(
     stageAttributes->setShaderType(stageShaderType);
   }
   // set lighting key based on curent config value
-  stageAttributes->setLightSetup(config_.sceneLightSetup);
+  stageAttributes->setLightSetupKey(config_.sceneLightSetupKey);
   // set frustum culling from simulator config
   stageAttributes->setFrustumCulling(frustumCulling_);
   // set scaling values for this instance of stage attributes
   stageAttributes->setScale(stageAttributes->getScale() *
                             stageInstanceAttributes->getUniformScale());
-
+  // set visibility if explicitly specified in stage instance configs
+  int visSet = stageInstanceAttributes->getIsInstanceVisible();
+  if (visSet != ID_UNDEFINED) {
+    // specfied in scene instance
+    stageAttributes->setIsVisible(visSet == 1);
+  }
   // create a structure to manage active scene and active semantic scene ID
   // passing to and from loadStage
   std::vector<int> tempIDs{activeSceneID_, activeSemanticSceneID_};
@@ -523,7 +529,7 @@ bool Simulator::instanceObjectsForActiveScene(
     // objID =
     physicsManager_->addObjectInstance(objInst, objAttrFullHandle,
                                        defaultCOMCorrection, attachmentNode,
-                                       config_.sceneLightSetup);
+                                       config_.sceneLightSetupKey);
   }  // for each object attributes
   return true;
 }  // Simulator::instanceObjectsForActiveScene()
@@ -549,7 +555,7 @@ bool Simulator::instanceArticulatedObjectsForActiveScene(
     // create articulated object
     // aoID =
     physicsManager_->addArticulatedObjectInstance(artObjFilePath, artObjInst,
-                                                  config_.sceneLightSetup);
+                                                  config_.sceneLightSetupKey);
   }  // for each articulated object instance
   return true;
 }  // Simulator::instanceArticulatedObjectsForActiveScene
