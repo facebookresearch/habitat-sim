@@ -101,12 +101,6 @@ inline bool fromJsonValue(const JsonGenericValue& obj,
   readMember(obj, "filepath", x.filepath);
   readMember(obj, "frame", x.frame);
   readMember(obj, "virtualUnitToMeters", x.virtualUnitToMeters);
-  // TODO: Eventually delete this.
-  // Temporarily Retain support for old tag to not break existing replay data
-  bool oldRequiresLighting;
-  readMember(obj, "requiresLighting", oldRequiresLighting);
-  x.forceFlatShading = !oldRequiresLighting;
-  //
   readMember(obj, "forceFlatShading", x.forceFlatShading);
   readMember(obj, "splitInstanceMesh", x.splitInstanceMesh);
   readMember(obj, "overridePhongMaterial", x.overridePhongMaterial);
