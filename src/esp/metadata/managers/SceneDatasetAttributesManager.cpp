@@ -403,7 +403,7 @@ void SceneDatasetAttributesManager::readDatasetConfigsJSONCell(
     // verify that a template with this field as the original file was loaded.
     std::vector<std::string> handles =
         attrMgr->getObjectHandlesBySubstring(originalFile, true);
-    if (handles.size() == 0) {
+    if (handles.empty()) {
       ESP_WARNING()
           << "\"" << tag
           << ".configs\" cell element in JSON config specified source file :"

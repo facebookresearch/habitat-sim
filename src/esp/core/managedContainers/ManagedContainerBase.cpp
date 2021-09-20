@@ -74,7 +74,7 @@ std::vector<std::string> getHandlesBySubStringPerTypeInternal(
     bool sorted) {
   std::vector<std::string> res;
   // if empty return empty vector
-  if (mapOfHandles.size() == 0) {
+  if (mapOfHandles.empty()) {
     return res;
   }
   res.reserve(mapOfHandles.size());
@@ -141,7 +141,7 @@ std::vector<std::string> ManagedContainerBase::getObjectInfoStrings(
   std::vector<std::string> handles =
       this->getObjectHandlesBySubstring(subStr, contains, true);
   std::vector<std::string> res(handles.size() + 1);
-  if (handles.size() == 0) {
+  if (handles.empty()) {
     res[0] = "No " + objectType_ + " constructs available.";
     return res;
   }
@@ -206,7 +206,7 @@ std::string ManagedContainerBase::getUniqueHandleFromCandidatePerType(
   // object instance name will be the partition between the name and the count.
   char pivotChar = ':';
 
-  if (objHandles.size() != 0) {
+  if (!objHandles.empty()) {
     // handles exist with passed substring.  Find highest handle increment, add
     // 1 and use for new name 1, build new handle
     for (const std::string& objName : objHandles) {

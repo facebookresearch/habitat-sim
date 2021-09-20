@@ -910,7 +910,7 @@ void ResourceManager::computeInstanceMeshAbsoluteAABBs(
 std::vector<Mn::Matrix4> ResourceManager::computeAbsoluteTransformations(
     const std::vector<StaticDrawableInfo>& staticDrawableInfo) {
   // sanity check
-  if (staticDrawableInfo.size() == 0) {
+  if (staticDrawableInfo.empty()) {
     return {};
   }
 

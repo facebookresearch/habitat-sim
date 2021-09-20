@@ -173,7 +173,7 @@ void BulletRigidStage::setRestitutionCoefficient(
 }
 
 double BulletRigidStage::getFrictionCoefficient() const {
-  if (bStaticCollisionObjects_.size() == 0) {
+  if (bStaticCollisionObjects_.empty()) {
     return 0.0;
   } else {
     // Assume uniform friction in scene parts
@@ -183,7 +183,7 @@ double BulletRigidStage::getFrictionCoefficient() const {
 
 double BulletRigidStage::getRestitutionCoefficient() const {
   // Assume uniform restitution in scene parts
-  if (bStaticCollisionObjects_.size() == 0) {
+  if (bStaticCollisionObjects_.empty()) {
     return 0.0;
   } else {
     return static_cast<double>(
