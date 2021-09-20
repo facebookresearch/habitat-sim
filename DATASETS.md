@@ -2,7 +2,7 @@
 
 ## Habitat-Matterport 3D Research Dataset (HM3D)
 
-Details: [https://aihabitat.org/datasets/hm3d/](https://aihabitat.org/datasets/hm3d/]).
+Details: [https://aihabitat.org/datasets/hm3d/](https://aihabitat.org/datasets/hm3d/).
 
 Getting access: [https://matterport.com/habitat-matterport-3d-research-dataset](https://matterport.com/habitat-matterport-3d-research-dataset)
 
