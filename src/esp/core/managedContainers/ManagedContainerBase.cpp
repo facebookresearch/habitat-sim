@@ -101,7 +101,7 @@ std::vector<std::string> getHandlesBySubStringPerTypeInternal(
       if (found == contains) {
         // if found and searching for contains, or not found and searching for
         // not contains
-        res.emplace_back(rawKey);
+        res.emplace_back(std::move(rawKey));
       }
     }
   }
