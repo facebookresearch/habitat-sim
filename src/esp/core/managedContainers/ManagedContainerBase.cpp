@@ -138,8 +138,8 @@ std::vector<std::string> ManagedContainerBase::getObjectInfoStrings(
     const std::string& subStr,
     bool contains) const {
   // get all handles that match query elements first
-  std::vector<std::string> handles =
-      this->getObjectHandlesBySubstring(subStr, contains, true);
+  std::vector<std::string> handles = getHandlesBySubStringPerTypeInternal<1>(
+      objectLibKeyByID_, subStr, contains, true);
   std::vector<std::string> res(handles.size() + 1);
   if (handles.empty()) {
     res[0] = "No " + objectType_ + " constructs available.";
