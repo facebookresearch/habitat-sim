@@ -382,9 +382,9 @@ class StageAttributes : public AbstractObjectAttributes {
    * @ref esp::sim::SimulatorConfiguration, is overridden by any value set in
    * json, if exists.
    */
-  void setLightSetup(const std::string& lightSetup) {
-    set("light_setup", lightSetup);
-    setForceFlatShading(lightSetup == NO_LIGHT_KEY);
+  void setLightSetupKey(const std::string& light_setup_key) {
+    set("light_setup_key", light_setup_key);
+    setForceFlatShading(light_setup_key == NO_LIGHT_KEY);
   }
   std::string getLightSetupKey() const {
     return get<std::string>("light_setup_key");
