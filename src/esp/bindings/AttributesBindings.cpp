@@ -93,6 +93,9 @@ void initAttributesBindings(py::module& m) {
                       "subconfigurations to set string values, to "
                       "guarantee essential value type integrity.");
           },
+          R"(This method is inherited from Configuration, but should not be used with Attributes due
+          to the possibility of changing the type of a required variable. Use the provided Attributes
+          instead, to change values for this object.)",
           "key"_a, "value"_a)
       .def(
           "set",
@@ -104,6 +107,9 @@ void initAttributesBindings(py::module& m) {
                       "subconfigurations to set string values, to "
                       "guarantee essential value type integrity.");
           },
+          R"(This method is inherited from Configuration, but should not be used with Attributes due
+          to the possibility of changing the type of a required variable. Use the provided Attributes
+          instead, to change values for this object.)",
           "key"_a, "value"_a)
       .def(
           "set",
@@ -115,6 +121,9 @@ void initAttributesBindings(py::module& m) {
                       "subconfigurations to set integer values, to "
                       "guarantee essential value type integrity.");
           },
+          R"(This method is inherited from Configuration, but should not be used with Attributes due
+          to the possibility of changing the type of a required variable. Use the provided Attributes
+          instead, to change values for this object.)",
           "key"_a, "value"_a)
       .def(
           "set",
@@ -126,6 +135,9 @@ void initAttributesBindings(py::module& m) {
                       "subconfigurations to set floating-point values, to "
                       "guarantee essential value type integrity.");
           },
+          R"(This method is inherited from Configuration, but should not be used with Attributes due
+          to the possibility of changing the type of a required variable. Use the provided Attributes
+          instead, to change values for this object.)",
           "key"_a, "value"_a)
       .def(
           "set",
@@ -137,6 +149,9 @@ void initAttributesBindings(py::module& m) {
                       "subconfigurations to set boolean values, to "
                       "guarantee essential value type integrity.");
           },
+          R"(This method is inherited from Configuration, but should not be used with Attributes due
+          to the possibility of changing the type of a required variable. Use the provided Attributes
+          instead, to change values for this object.)",
           "key"_a, "value"_a)
       .def(
           "set",
@@ -148,6 +163,9 @@ void initAttributesBindings(py::module& m) {
                       "subconfigurations to set Nagnum::Quaternion values, to "
                       "guarantee essential value type integrity.");
           },
+          R"(This method is inherited from Configuration, but should not be used with Attributes due
+          to the possibility of changing the type of a required variable. Use the provided Attributes
+          instead, to change values for this object.)",
           "key"_a, "value"_a)
       .def(
           "set",
@@ -159,6 +177,9 @@ void initAttributesBindings(py::module& m) {
                       "subconfigurations to set Magnum::Vector3 values, to "
                       "guarantee essential value type integrity.");
           },
+          R"(This method is inherited from Configuration, but should not be used with Attributes due
+          to the possibility of changing the type of a required variable. Use the provided Attributes
+          instead, to change values for this object.)",
           "key"_a, "value"_a)
 
       ;
