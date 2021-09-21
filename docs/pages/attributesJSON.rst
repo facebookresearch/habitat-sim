@@ -13,13 +13,13 @@ Using JSON Files to configure Attributes
 
 Attributes templates provide a mechanism by which the various constructions in Habitat can be customized and built with user-specified characteristics, either at program start or on the fly.
 
-`Physics Manager Attributes`_
-=============================
-Physics Manager Attributes templates describe quantities pertinent to building the simulation world.  Any source configuration JSON files used to build these attributes should be formatted as follows:
+`PhysicsManagerAttributes`_
+===========================
+:ref:`PhysicsManagerAttributes` templates describe quantities pertinent to building the simulation world.  Any source configuration JSON files used to build these attributes should be formatted as follows:
 
      <worldname>.physics_config.json
 
-`An example of an appropriately configured Physics Manager Attributes file can be found below <../../../data/test_assets/testing.physics_config.json>`_:
+`An example of an appropriately configured Physics Manager Attributes file can be found below <facebookresearch/habitat-sim/blob/master/data/test_assets/testing.physics_config.json>`_:
 
 .. include:: ../../data/test_assets/testing.physics_config.json
     :code: json
@@ -42,17 +42,14 @@ Below are the supported JSON tags for Physics Manager Attributes templates, and 
 "restitution_coefficient"
     - double
     - The default coefficient of restitution. This can be overridden in Stage and Object Attributes.
-"rigid object paths"
-    - list of strings
-    - A list of locations to query for supported object files that should be available to be loaded into the world.
 
-`Stage Attributes`_
-===================
-A stage in Habitat-Sim is a static object consisting of static background scenery wherein an agent acts.  Stage Attributes templates hold relevant information describing a stage's render and collision assets and physical properties.  Any source configuration files used to build these attributes should be named using the following format:
+`StageAttributes`_
+==================
+A stage in Habitat-Sim is a static object consisting of static background scenery wherein an agent acts.  :ref:`StageAttributes` templates hold relevant information describing a stage's render and collision assets and physical properties.  Any source configuration files used to build these attributes should be named using the following format:
 
      <stagename>.stage_config.json
 
-`An example of an appropriately configured Stage Attributes file can be found below <../../../data/test_assets/scenes/stage_floor1.stage_config.json>`_:
+`An example of an appropriately configured Stage Attributes file can be found below <facebookresearch/habitat-sim/blob/master/data/test_assets/scenes/stage_floor1.stage_config.json>`_:
 
 .. include:: ../../data/test_assets/scenes/stage_floor1.stage_config.json
     :code: json
@@ -72,12 +69,6 @@ Below are the handles and descriptors for various mesh assets used by a stage.
 "semantic_asset"
     - string
     - The name of the file describing the stage's semantic mesh.
-"house_filename"
-    - string
-    - The name of the file containing semantic type maps and hierarchy.
-"nav_asset"
-    - string
-    - The name of the file describing the NavMesh for this stage.
 
 Stage Frame and Origin
 ----------------------
@@ -108,6 +99,9 @@ Below are stage-specific physical and object-related quantities.  These values w
 "is_collidable"
     - boolean
     - Whether the stage should be added to the collision and physics simulation world upon instancing.
+"shader_type"
+    - string (one of "material", "flat", "phong", "pbr")
+    - The shader to be used to render the stage. 'material' uses the render asset's specified material, other values force specified shader regardless of asset specification.
 "margin"
     - double
     - Distance margin for collision calculations.
@@ -120,17 +114,14 @@ Below are stage-specific physical and object-related quantities.  These values w
 "units_to_meters"
     - double
     - The conversion of given units to meters.
-"requires_lighting"
-    - boolean
-    - Whether the stage should be rendered with lighting or flat shading.
 
-`Object Attributes`_
-====================
-Object Attributes templates hold descriptive information for instancing rigid objects into Habitat-Sim.  These file names should be formatted as follows:
+`ObjectAttributes`_
+===================
+:ref:`ObjectAttributes` templates hold descriptive information for instancing rigid objects into Habitat-Sim.  These file names should be formatted as follows:
 
      <objectname>.object_config.json
 
-`An example of an appropriately configured Object Attributes file can be found below <../../../data/test_assets/objects/donut.object_config.json>`_:
+`An example of an appropriately configured Object Attributes file can be found below <facebookresearch/habitat-sim/blob/master/data/test_assets/objects/donut.object_config.json>`_:
 
 .. include:: ../../data/test_assets/objects/donut.object_config.json
     :code: json
@@ -146,6 +137,9 @@ Below are the handles and descriptors for various mesh assets used by an object.
 "collision_asset"
     - string
     - The name of the file describing the collision mesh to be used by the object.
+"collision_asset_size"
+    - 3-vector
+    - Size of collision asset, to allow it to be scaled to fit render asset
 
 Object Frame and Origin
 -----------------------
@@ -180,9 +174,9 @@ Below are object-specific physical quantities.  These values will override simil
 "units_to_meters"
     - double
     - The conversion of given units to meters.
-"requires_lighting"
-    - boolean
-    - Whether the object should be rendered with lighting or flat shading.
+"shader_type"
+    - string (one of "material", "flat", "phong", "pbr")
+    - The shader to be used to render the object. 'material' uses the render asset's specified material, other values force specified shader regardless of asset specification.
 "mass"
     - double
     - The mass of the object, for physics calculations.
@@ -202,18 +196,19 @@ Below are object-specific physical quantities.  These values will override simil
     - integer
     - The semantic id assigned to objects made with this configuration.
 
-`Light Setup Attributes`_
-=========================
-Light Setup Attributes templates hold descriptive information for light setups into Habitat-Sim.  These file names should be formatted as follows:
+`LightLayoutAttributes`_
+==========================
+:ref:`LightLayoutAttributes` templates hold descriptive information for light setups to be instanced in Habitat-Sim.  The file names for these JSON should be formatted as follows:
 
      <lightingname>.lighting_config.json
 
-`An example of an appropriately configured Light Setup Attributes file can be found below <../../../data/test_assets/lights/test_lights.lighting_config.json>`_:
+`An example of an appropriately configured LightLayoutAttributes file can be found below <facebookresearch/habitat-sim/blob/master/data/test_assets/lights/test_lights.lighting_config.json>`_:
 
 .. include:: ../../data/test_assets/lights/test_lights.lighting_config.json
     :code: json
 
-The Light Setup attributes JSON should contain a single cell named "lights" that references a JSON object consisting of key-value pairs, where each key is a string ID that is unique to the lighting layout and the value is a JSON object containing appropriate combinations of the following data for the light type being described.
+The :ref:`LightLayoutAttributes` JSON should contain a single cell named "lights" that references a JSON object consisting of key-value pairs, where each key is a string ID that is unique to the lighting layout to be used as an identifier,
+ and the value is a JSON object containing appropriate key-value combinations of the following data for the light type being described.
 
 "position"
     - 3-vector
@@ -232,4 +227,4 @@ The Light Setup attributes JSON should contain a single cell named "lights" that
     - The type of the light.  "point" and "directional" are currently supported.
 "position_model"
   - string
-  - They frame to use to place the light. "global", meaning stage's origin, and "camera", meaning place relative to a (potentially moving) camera, are currently supported.
+  - The frame to use to place the light. "global", meaning stage's origin, and "camera", meaning place relative to a (potentially moving) camera, are currently supported.
