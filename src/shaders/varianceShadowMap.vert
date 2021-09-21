@@ -17,7 +17,7 @@ uniform highp mat4 LightProjectionMatrix;
 
 // ------------ shader -----------------------
 void main() {
-    vec4 lightSpacePosition = LightModelViewMatrix * vertexPosition;
-    position = lightSpacePosition.xyz;
-    gl_Position = LightProjectionMatrix * lightSpacePosition;
+  vec4 lightSpacePosition = LightModelViewMatrix * vertexPosition;
+  position = lightSpacePosition.xyz;
+  gl_Position = LightProjectionMatrix * lightSpacePosition;
 }
