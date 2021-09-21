@@ -43,8 +43,8 @@ using metadata::attributes::SceneObjectInstanceAttributes;
 using metadata::attributes::StageAttributes;
 
 namespace {
-const char* shadowMapDrawableGroupName = "static-shadow-map";
-const char* defaultRenderingGroupName = "";
+constexpr const char* shadowMapDrawableGroupName = "static-shadow-map";
+constexpr const char* defaultRenderingGroupName = "";
 const int shadowMapSize = 1024;
 const int maxNumShadowMaps = 3;  // the max number of point shadow maps
 
