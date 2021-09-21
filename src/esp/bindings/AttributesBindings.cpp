@@ -88,79 +88,98 @@ void initAttributesBindings(py::module& m) {
           [](CORRADE_UNUSED AbstractAttributes& self,
              CORRADE_UNUSED const std::string& key,
              CORRADE_UNUSED const std::string& val) {
-            CORRADE_ASSERT(false,
-                           "Attributes should only use named properties or "
-                           "subconfigurations to set string values, to "
-                           "guarantee essential value type integrity.", );
+            ESP_CHECK(false,
+                      "Attributes should only use named properties or "
+                      "subconfigurations to set string values, to "
+                      "guarantee essential value type integrity.");
           },
+          R"(This method is inherited from Configuration, but should not be used with Attributes due
+          to the possibility of changing the type of a required variable. Use the provided Attributes
+          instead, to change values for this object.)",
           "key"_a, "value"_a)
       .def(
           "set",
           [](CORRADE_UNUSED AbstractAttributes& self,
              CORRADE_UNUSED const std::string& key,
              CORRADE_UNUSED const char* val) {
-            CORRADE_ASSERT(false,
-                           "Attributes should only use named properties or "
-                           "subconfigurations to set string values, to "
-                           "guarantee essential value type integrity.", );
+            ESP_CHECK(false,
+                      "Attributes should only use named properties or "
+                      "subconfigurations to set string values, to "
+                      "guarantee essential value type integrity.");
           },
+          R"(This method is inherited from Configuration, but should not be used with Attributes due
+          to the possibility of changing the type of a required variable. Use the provided Attributes
+          instead, to change values for this object.)",
           "key"_a, "value"_a)
       .def(
           "set",
           [](CORRADE_UNUSED AbstractAttributes& self,
              CORRADE_UNUSED const std::string& key,
              CORRADE_UNUSED const int val) {
-            CORRADE_ASSERT(false,
-                           "Attributes should only use named properties or "
-                           "subconfigurations to set integer values, to "
-                           "guarantee essential value type integrity.", );
+            ESP_CHECK(false,
+                      "Attributes should only use named properties or "
+                      "subconfigurations to set integer values, to "
+                      "guarantee essential value type integrity.");
           },
+          R"(This method is inherited from Configuration, but should not be used with Attributes due
+          to the possibility of changing the type of a required variable. Use the provided Attributes
+          instead, to change values for this object.)",
           "key"_a, "value"_a)
       .def(
           "set",
           [](CORRADE_UNUSED AbstractAttributes& self,
              CORRADE_UNUSED const std::string& key,
              CORRADE_UNUSED const double val) {
-            CORRADE_ASSERT(false,
-                           "Attributes should only use named properties or "
-                           "subconfigurations to set floating-point values, to "
-                           "guarantee essential value type integrity.", );
+            ESP_CHECK(false,
+                      "Attributes should only use named properties or "
+                      "subconfigurations to set floating-point values, to "
+                      "guarantee essential value type integrity.");
           },
+          R"(This method is inherited from Configuration, but should not be used with Attributes due
+          to the possibility of changing the type of a required variable. Use the provided Attributes
+          instead, to change values for this object.)",
           "key"_a, "value"_a)
       .def(
           "set",
           [](CORRADE_UNUSED AbstractAttributes& self,
              CORRADE_UNUSED const std::string& key,
              CORRADE_UNUSED const bool val) {
-            CORRADE_ASSERT(false,
-                           "Attributes should only use named properties or "
-                           "subconfigurations to set boolean values, to "
-                           "guarantee essential value type integrity.", );
+            ESP_CHECK(false,
+                      "Attributes should only use named properties or "
+                      "subconfigurations to set boolean values, to "
+                      "guarantee essential value type integrity.");
           },
+          R"(This method is inherited from Configuration, but should not be used with Attributes due
+          to the possibility of changing the type of a required variable. Use the provided Attributes
+          instead, to change values for this object.)",
           "key"_a, "value"_a)
       .def(
           "set",
           [](CORRADE_UNUSED AbstractAttributes& self,
              CORRADE_UNUSED const std::string& key,
              CORRADE_UNUSED const Magnum::Quaternion& val) {
-            CORRADE_ASSERT(
-                false,
-                "Attributes should only use named properties or "
-                "subconfigurations to set Nagnum::Quaternion values, to "
-                "guarantee essential value type integrity.", );
+            ESP_CHECK(false,
+                      "Attributes should only use named properties or "
+                      "subconfigurations to set Nagnum::Quaternion values, to "
+                      "guarantee essential value type integrity.");
           },
+          R"(This method is inherited from Configuration, but should not be used with Attributes due
+          to the possibility of changing the type of a required variable. Use the provided Attributes
+          instead, to change values for this object.)",
           "key"_a, "value"_a)
       .def(
           "set",
           [](CORRADE_UNUSED AbstractAttributes& self,
              CORRADE_UNUSED const std::string& key,
              CORRADE_UNUSED const Magnum::Vector3& val) {
-            CORRADE_ASSERT(
-                false,
-                "Attributes should only use named properties or "
-                "subconfigurations to set Magnum::Vector3 values, to "
-                "guarantee essential value type integrity.", );
+            ESP_CHECK(false,
+                      "Attributes should only use named properties or "
+                      "subconfigurations to set Magnum::Vector3 values, to "
+                      "guarantee essential value type integrity.");
           },
+          R"(This method is inherited from Configuration, but should not be used with Attributes due
+          to the possibility of changing the type of a required variable. Use the provided Attributes
+          instead, to change values for this object.)",
           "key"_a, "value"_a)
 
       ;
