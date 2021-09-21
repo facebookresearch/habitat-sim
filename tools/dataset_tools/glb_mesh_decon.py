@@ -127,6 +127,9 @@ def build_default_configs():
     # be added to the stage and not spun off as individual objects.
     default_configs["stage_include_obj_substr"] = {}
 
+    # What to consider the origin for the stage - either its COM or an origin local to the stage
+    default_configs["stage_translation_origin"] = "com"
+
     # Objects specified in the "stage_include_obj_substr" dict are, by default, ignored
     # when objects are extracted from the scene graph.  The "obj_override_names"
     # dict will provide lowercase substrs of object node names (for case insensitive
@@ -155,6 +158,12 @@ def build_default_configs():
     # when a dynamic scene is being instantiated.  This is intended to provide
     # an easy override for when all objects are specified to be static
     default_configs["obj_created_dynamic"] = []
+
+    # What to consider the origin for an object - either its COM or an origin local to each object
+    default_configs["obj_translation_origin"] = "COM"
+
+    # Whether or not to traverse to leaf for object mesh building
+    default_configs["obj_recurse_subnodes"] = False
 
     # whether or not to export and save the source scene glbs as gltfs, for diagnostic purposes
     default_configs["export_glbs_as_gltf"] = False
@@ -417,7 +426,7 @@ def extract_stage_from_scene(
     stage_instance_dict = gut.build_instance_config_json(
         stage_name_base, stage_transform
     )
-    stage_instance_dict["translation_origin"] = "COM"
+    stage_instance_dict["translation_origin"] = configs["stage_translation_origin"]
 
     if len(configs["stage_instance_file_tag"]) != 0:
         # mapping is provided to map scene name to prebuilt/predefined stage names
@@ -525,7 +534,7 @@ def extract_objects_from_scene(
                 objects_tag,
                 {},
                 obj_exclude_dict,
-                True,
+                configs["obj_recurse_subnodes"],
             )
             if object_scene is None:
                 continue
@@ -544,7 +553,7 @@ def extract_objects_from_scene(
             calc_scale=False,
         )
         obj_instance_dict["motion_type"] = obj_motion_type_dict[obj_name]
-        obj_instance_dict["translation_origin"] = "COM"
+        obj_instance_dict["translation_origin"] = configs["obj_translation_origin"]
 
         object_instance_configs.append(obj_instance_dict)
 

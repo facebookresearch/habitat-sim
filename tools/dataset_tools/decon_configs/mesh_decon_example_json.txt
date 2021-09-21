@@ -39,6 +39,8 @@
     <list of node name substrings of constructs we wish to create as objects but that should be specified as static>
   ],
   "obj_created_dynamic": [<list of node name substrings of constructs we wish to create as objects and enforce dynamic behavior (to override static default)],
+  "obj_translation_origin" : <string : either "asset_local" or "com", case insensitive, to use as the origin for translations for the objects in the scene>,
+  "obj_recurse_subnodes" : <bool : whether to recurse scene graph to leaf for object meshes>
 
   "export_glbs_as_gltf" : <boolean : whether or not to export and save the source scene glbs as gltfs>
   "gltf_export_subdir" : <subdirectory, relative to dataset_config_dest_dir, to save gltf exported scenes, converted from glbs, if functionality is enabled>
@@ -48,6 +50,7 @@
   "stage_include_obj_substr": [
     <list of node name substrings of constructs found in "objects_tag" subtree that should be added to stage>
   ],
+  "stage_translation_origin" : <string : either "asset_local" or "com", case insensitive, to use as the origin for translations for the stage>,
   "match_object_names": <boolean : whether to match object name refs in object config synth to objects found in obj_glb_dest_subdir.
                             Used when synthesizing scene instances for scenes with existing object glb files>,
   "obj_override_names": [
