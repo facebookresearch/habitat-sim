@@ -46,6 +46,8 @@ namespace {
 const char* shadowMapDrawableGroupName = "static-shadow-map";
 const char* defaultRenderingGroupName = "";
 const int shadowMapSize = 1024;
+const int maxNumShadowMaps = 3;  // the max number of point shadow maps
+
 };  // namespace
 
 Simulator::Simulator(const SimulatorConfiguration& cfg,
@@ -632,18 +634,34 @@ void Simulator::computeShadowMaps(float lightNearPlane, float lightFarPlane) {
   auto& shadowMapKeys = resourceManager_->getShadowMapKeys();
   std::vector<Mn::ResourceKey>& keys = shadowMapKeys[activeSceneID_];
 
-  // XXXXXXXXXXXX
-  // I need John's help. How to get the light positions here??!!
-  // currently the light position is hard coded for a particular replicaCAD
-  // scene
-  Mn::Vector3 lightPos[3] = {Mn::Vector3{2.77, 2.77, 5.16},
-                             Mn::Vector3{-0.69, 2.77, 1.46},
-                             Mn::Vector3{2.77, 2.77, -3.73}};
+  // TODO:
+  // current implementation is for static lights for static scenes
+  // We will have to refactor the code so that in the future dynamic lights and
+  // dynamic scenes can be handled.
+
+  // construct the lights from scene dataset config
+  esp::gfx::LightSetup lightingSetup =
+      metadataMediator_->getLightLayoutAttributesManager()
+          ->createLightSetupFromAttributes(config_.sceneLightSetupKey);
 
   scene::SceneNode& lightNode = sg.getRootNode().createChild();
   gfx::CubeMapCamera camera{lightNode};
 
-  for (int iLight = 0; iLight < 3; ++iLight) {
+  int actualShadowMaps = maxNumShadowMaps <= lightingSetup.size()
+                             ? maxNumShadowMaps
+                             : lightingSetup.size();
+  for (int iLight = 0; iLight < actualShadowMaps; ++iLight) {
+    // sanity checks
+    CORRADE_ASSERT(
+        lightingSetup[iLight].model == esp::gfx::LightPositionModel::Global,
+        "Simulator::computeShadowMaps: To compute the shadow map, the light"
+            << iLight << "should be in `global` mode.", );
+    CORRADE_ASSERT(lightingSetup[iLight].vector.w() == 1,
+                   "Simulator::computeShadowMaps: Only point light shadow is "
+                   "supported. However, the light"
+                       << iLight << "is a directional light.", );
+    Mn::Vector3 lightPos = Mn::Vector3{lightingSetup[iLight].vector.xyz()};
+
     Mn::ResourceKey key(Corrade::Utility::formatString(
         assets::ResourceManager::SHADOW_MAP_KEY_TEMPLATE, activeSceneID_,
         iLight));
@@ -672,7 +690,7 @@ void Simulator::computeShadowMaps(float lightNearPlane, float lightFarPlane) {
 
     // setup a CubeMapCamera in the root of scene graph, and set its position to
     // light global position
-    lightNode.setTranslation(lightPos[iLight]);
+    lightNode.setTranslation(lightPos);
 
     camera.setProjectionMatrix(shadowMapSize,   // width of the square
                                lightNearPlane,  // near plane
