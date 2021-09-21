@@ -72,7 +72,6 @@ void LightLayoutAttributesManager::setValsFromJSONDoc(
 
   if (hasLights) {
     const auto& lightCell = jsonConfig["lights"];
-    size_t numLightConfigs = lightCell.Size();
     int count = 0;
     // iterate through objects
     for (rapidjson::Value::ConstMemberIterator it = lightCell.MemberBegin();
@@ -94,7 +93,7 @@ void LightLayoutAttributesManager::setValsFromJSONDoc(
       lightAttribs->addLightInstance(lightInstanceAttribs);
       ++count;
     }
-    ESP_DEBUG() << "" << count << "of" << numLightConfigs
+    ESP_DEBUG() << "" << count
                 << "LightInstanceAttributes created successfully and added to "
                    "LightLayoutAttributes"
                 << layoutName << ".";
