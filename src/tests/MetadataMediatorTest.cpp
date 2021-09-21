@@ -122,7 +122,7 @@ void MetadataMediatorTest::testDataset0() {
   CORRADE_VERIFY(stageAttr);
   // verify set to values in file
   CORRADE_COMPARE(stageAttr->getScale(), Magnum::Vector3(2, 2, 2));
-  CORRADE_VERIFY(stageAttr->getRequiresLighting());
+  CORRADE_VERIFY(!stageAttr->getForceFlatShading());
   CORRADE_COMPARE(stageAttr->getMargin(), 0.03);
   CORRADE_COMPARE(stageAttr->getFrictionCoefficient(), 0.3);
   CORRADE_COMPARE(stageAttr->getRestitutionCoefficient(), 0.3);
@@ -164,7 +164,7 @@ void MetadataMediatorTest::testDataset0() {
   CORRADE_COMPARE(stageAttr->getFrictionCoefficient(), 0.35);
   CORRADE_COMPARE(stageAttr->getRestitutionCoefficient(), 0.25);
   CORRADE_COMPARE(stageAttr->getUnitsToMeters(), 2.0);
-  CORRADE_VERIFY(!stageAttr->getRequiresLighting());
+  CORRADE_VERIFY(stageAttr->getForceFlatShading());
 
   // get new attributes but don't register
   stageAttr = stageAttributesMgr->createObject("new_default_attributes", false);
@@ -193,7 +193,7 @@ void MetadataMediatorTest::testDataset0() {
   CORRADE_VERIFY(objAttr);
   // verify set to values in file
   CORRADE_COMPARE(objAttr->getScale(), Magnum::Vector3(1, 1, 1));
-  CORRADE_VERIFY(objAttr->getRequiresLighting());
+  CORRADE_VERIFY(!objAttr->getForceFlatShading());
   CORRADE_COMPARE(objAttr->getMargin(), 0.03);
   CORRADE_COMPARE(objAttr->getMass(), 0.038);
   CORRADE_COMPARE(objAttr->getFrictionCoefficient(), 0.5);
@@ -215,7 +215,7 @@ void MetadataMediatorTest::testDataset0() {
   // verify identical to copied object except for override values in
   // dataset_config file
   CORRADE_COMPARE(objAttr->getScale(), Magnum::Vector3(1, 1, 1));
-  CORRADE_VERIFY(objAttr->getRequiresLighting());
+  CORRADE_VERIFY(!objAttr->getForceFlatShading());
   CORRADE_COMPARE(objAttr->getMargin(), 0.03);
   CORRADE_COMPARE(objAttr->getMass(), 3.5);
   CORRADE_COMPARE(objAttr->getFrictionCoefficient(), 0.2);

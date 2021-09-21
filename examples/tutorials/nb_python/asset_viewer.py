@@ -304,8 +304,8 @@ def build_dict_of_PhyObj_attrs(phys_obj_template):
         True,
         "string",
     )
-    res_dict["requires_lighting"] = (
-        phys_obj_template.requires_lighting,
+    res_dict["force_flat_shading"] = (
+        phys_obj_template.force_flat_shading,
         True,
         "boolean",
     )
