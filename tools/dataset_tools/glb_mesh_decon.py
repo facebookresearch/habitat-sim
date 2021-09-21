@@ -367,6 +367,7 @@ def extract_stage_from_scene(
     # export stage mesh result to glb file
     stage_glb_dest_filename = stage_glb_dest_filename_base + ".glb"
 
+    # build stage glb by deconstructing aggregate scene
     if configs["build_stage_glbs"]:
 
         # objects in the objects-tag subgraph that should be included in the stage and not treated as objects
@@ -518,7 +519,13 @@ def extract_objects_from_scene(
             # extract the object "scene" for obj_name object instance in mesh
             # (scene is the mesh + other assets to save for object glb)
             object_scene = gut.extract_obj_mesh_from_scenegraph(
-                scene_graph, obj_name, objects_tag, {}, obj_exclude_dict, False
+                # last arg changed to true for floorplanner, which needs to recurse all the way to the leaf
+                scene_graph,
+                obj_name,
+                objects_tag,
+                {},
+                obj_exclude_dict,
+                True,
             )
             if object_scene is None:
                 continue
@@ -796,6 +803,7 @@ def main():
 
     # get listing of all scene glbs
     file_list = ut.get_files_matching_regex(decon_configs["scenes_src_dir"])
+
     # if we wish to match mesh object instance names with existing object files, get a
     # listing of all the existing object files from the specified object source dir
     existing_obj_dict = {}
@@ -860,8 +868,6 @@ def main():
         # If requested build diagnostic info about scene graph and save
         if decon_configs["save_scenegraph_hierarchy"]:
             build_scene_graph_diagnostic(decon_configs, scene_graph, scene_name_base)
-
-        continue
 
         # Empty string corresponds to default lighting within habitat sim
         lighting_setup_config_name = decon_configs["default_lighting_tag"]

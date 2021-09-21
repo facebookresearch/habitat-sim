@@ -2,7 +2,7 @@
   "dataset_name": "Floorplanner",
   "dataset_src_rel_to_home": true,
   "dataset_src_subdir": "Facebook/Floorplanner",
-  "scenes_src_subdir": "june29_38_scenes/",
+  "scenes_src_subdir": "sample_structure_scene/",
   "objects_src_subdir": "objects/",
   "dataset_dest_rel_to_home": true,
   "dataset_dest_subdir": "Facebook/Floorplanner/scene_dataset/",
@@ -15,17 +15,17 @@
   "obj_config_dest_subdir": "objects/",
   "light_config_dest_subdir": "lighting/",
   "world_tag": "floorplan",
-  "stage_tag": "Structure",
+  "stage_tag": "structure",
   "objects_tag": "furniture",
-  "lighting_tag": "Lighting",
-  "build_dataset_config": false,
-  "build_scene_configs": false,
-  "build_stage_configs": false,
-  "build_object_configs": false,
+  "lighting_tag": "",
+  "build_dataset_config": true,
+  "build_scene_configs": true,
+  "build_stage_configs": true,
+  "build_object_configs": true,
   "build_lighting_configs": false,
-  "build_stage_glbs": false,
-  "build_object_glbs": false,
-  "objects_all_static": false,
+  "build_stage_glbs": true,
+  "build_object_glbs": true,
+  "objects_all_static": true,
   "match_object_names": false,
   "stage_include_obj_substr": [],
   "obj_override_names": [],
@@ -40,7 +40,6 @@
   "save_articulated_object_instances": false,
   "default_attributes": {
     "stages": {
-      "requires_lighting": "true",
       "up": [
         0,
         1,
@@ -58,7 +57,6 @@
       ]
     },
     "objects": {
-      "requires_lighting": "true",
       "up": [
         0,
         1,
