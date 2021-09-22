@@ -278,7 +278,7 @@ void URDFImporter::importURDFAssets() {
     // handle
     for (auto& visual : link->m_visualArray) {
       assets::AssetInfo visualMeshInfo{assets::AssetType::UNKNOWN};
-      visualMeshInfo.requiresLighting = true;
+      visualMeshInfo.forceFlatShading = false;
 
       std::shared_ptr<io::URDF::Material> material =
           visual.m_geometry.m_localMaterial;

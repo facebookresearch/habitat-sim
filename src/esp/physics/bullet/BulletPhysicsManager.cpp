@@ -270,7 +270,7 @@ bool BulletPhysicsManager::attachLinkGeometry(
     const std::shared_ptr<io::URDF::Link>& link,
     gfx::DrawableGroup* drawables,
     const std::string& lightSetup) {
-  const bool reqLighting = (lightSetup != esp::NO_LIGHT_KEY);
+  const bool forceFlatShading = (lightSetup == esp::NO_LIGHT_KEY);
   bool geomSuccess = false;
 
   for (auto& visual : link->m_visualArray) {
@@ -286,7 +286,7 @@ bool BulletPhysicsManager::attachLinkGeometry(
 
     // prep the AssetInfo, overwrite the filepath later
     assets::AssetInfo visualMeshInfo{assets::AssetType::UNKNOWN};
-    visualMeshInfo.requiresLighting = reqLighting;
+    visualMeshInfo.forceFlatShading = forceFlatShading;
 
     // create a modified asset if necessary for material override
     std::shared_ptr<io::URDF::Material> material =
@@ -558,25 +558,6 @@ void BulletPhysicsManager::lookUpObjectIdAndLinkId(
   }
 
   // lookup failed
-}
-int BulletPhysicsManager::getNumActiveContactPoints() {
-  int count = 0;
-  auto* dispatcher = bWorld_->getDispatcher();
-  for (int i = 0; i < dispatcher->getNumManifolds(); i++) {
-    auto* manifold = dispatcher->getManifoldByIndexInternal(i);
-    const btCollisionObject* colObj0 =
-        static_cast<const btCollisionObject*>(manifold->getBody0());
-    const btCollisionObject* colObj1 =
-        static_cast<const btCollisionObject*>(manifold->getBody1());
-
-    // logic copied from btSimulationIslandManager::buildIslands. We want to
-    // count manifolds only if related to non-sleeping bodies.
-    if (((colObj0) && colObj0->getActivationState() != ISLAND_SLEEPING) ||
-        ((colObj1) && colObj1->getActivationState() != ISLAND_SLEEPING)) {
-      count += manifold->getNumContacts();
-    }
-  }
-  return count;
 }
 
 std::vector<ContactPointData> BulletPhysicsManager::getContactPoints() const {

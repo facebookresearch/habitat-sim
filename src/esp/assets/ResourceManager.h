@@ -655,15 +655,15 @@ class ResourceManager {
    * @param objectAttributes the object attributes owning
    * this mesh.
    * @param assetType either "render" or "collision" (for error log output)
-   * @param requiresLighting whether or not this mesh asset responds to
-   * lighting
+   * @param forceFlatShading whether to force this asset to be rendered via flat
+   * shading.
    * @return whether or not the mesh was loaded successfully
    */
   bool loadObjectMeshDataFromFile(
       const std::string& filename,
       const metadata::attributes::ObjectAttributes::ptr& objectAttributes,
       const std::string& meshType,
-      bool requiresLighting);
+      bool forceFlatShading);
 
   /**
    * @brief Build a primitive asset based on passed template parameters.  If

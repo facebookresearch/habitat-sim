@@ -500,6 +500,8 @@ class BulletRigidObject : public BulletBase,
 
   void getWorldTransform(btTransform& worldTrans) const override;
 
+  std::string getCollisionDebugName();
+
   Corrade::Containers::Optional<btTransform> deferredUpdate_ =
       Corrade::Containers::NullOpt;
 

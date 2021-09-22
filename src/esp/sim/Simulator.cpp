@@ -26,6 +26,7 @@
 #include "esp/metadata/attributes/AttributesBase.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/physics/PhysicsManager.h"
+#include "esp/physics/bullet/BulletCollisionHelper.h"
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SemanticScene.h"
 #include "esp/sensor/CameraSensor.h"
