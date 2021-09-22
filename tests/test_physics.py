@@ -1675,3 +1675,95 @@ def test_rigid_constraints():
                 "test_rigid_constraints",
                 open_vid=True,
             )
+
+
+@pytest.mark.skipif(
+    not osp.exists("data/scene_datasets/habitat-test-scenes/apartment_1.glb"),
+    reason="Requires the habitat-test-scenes",
+)
+@pytest.mark.skipif(
+    not habitat_sim.built_with_bullet,
+    reason="ArticulatedObject API requires Bullet physics.",
+)
+def test_bullet_collision_helper():
+    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings["scene"] = "data/scene_datasets/habitat-test-scenes/apartment_1.glb"
+    cfg_settings["enable_physics"] = True
+
+    # loading the physical scene
+    hab_cfg = examples.settings.make_cfg(cfg_settings)
+
+    with habitat_sim.Simulator(hab_cfg) as sim:
+
+        obj_template_mgr = sim.get_object_template_manager()
+        cube_prim_handle = obj_template_mgr.get_template_handles("cube")[0]
+        rigid_obj_mgr = sim.get_rigid_object_manager()
+        cube_obj = rigid_obj_mgr.add_object_by_template_handle(cube_prim_handle)
+        cube_obj.translation = [2.5, 1.5, 2.5]
+
+        sim.step_physics(0.01)
+
+        assert sim.get_physics_num_active_contact_points() == 0
+        assert sim.get_physics_num_active_overlapping_pairs() == 0
+        assert (
+            sim.get_physics_step_collision_summary()
+            == "(no active collision manifolds)\n"
+        )
+
+        sim.step_physics(0.25)
+
+        assert sim.get_physics_num_active_contact_points() == 4
+        assert sim.get_physics_num_active_overlapping_pairs() == 1
+        assert (
+            sim.get_physics_step_collision_summary()
+            == "[RigidObject, cubeSolid, id 0] vs [Stage, subpart 0], 4 points\n"
+        )
+
+        sim.step_physics(3.0)
+
+        assert sim.get_physics_num_active_contact_points() == 0
+        assert sim.get_physics_num_active_overlapping_pairs() == 0
+        assert (
+            sim.get_physics_step_collision_summary()
+            == "(no active collision manifolds)\n"
+        )
+
+        rigid_obj_mgr.remove_object_by_id(cube_obj.object_id)
+
+        art_obj_mgr = sim.get_articulated_object_manager()
+        robot_file = "data/test_assets/urdf/fridge/fridge.urdf"
+
+        # parse URDF and add an ArticulatedObject to the world
+        robot = art_obj_mgr.add_articulated_object_from_urdf(filepath=robot_file)
+        assert robot.is_alive
+
+        robot.translation = mn.Vector3(2.5, 4.0, 2.5)
+        robot.rotation = mn.Quaternion()
+
+        sim.step_physics(0.01)
+
+        assert sim.get_physics_num_active_contact_points() == 0
+        assert sim.get_physics_num_active_overlapping_pairs() == 0
+        assert (
+            sim.get_physics_step_collision_summary()
+            == "(no active collision manifolds)\n"
+        )
+
+        sim.step_physics(0.75)
+
+        assert sim.get_physics_num_active_contact_points() == 2
+        # lots of overlapping pairs due to various fridge links near the stage
+        assert sim.get_physics_num_active_overlapping_pairs() == 5
+        assert (
+            sim.get_physics_step_collision_summary()
+            == "[URDF, fridge, link body] vs [Stage, subpart 0], 2 points\n"
+        )
+
+        sim.step_physics(3.0)
+
+        assert sim.get_physics_num_active_contact_points() == 0
+        assert sim.get_physics_num_active_overlapping_pairs() == 0
+        assert (
+            sim.get_physics_step_collision_summary()
+            == "(no active collision manifolds)\n"
+        )

@@ -61,6 +61,11 @@ class BulletRigidStage : public BulletBase, public RigidStage {
   void constructAndAddCollisionObjects();
 
   /**
+   * @brief used with BulletCollisionHelper
+   */
+  std::string getCollisionDebugName(int subpartId);
+
+  /**
    * @brief Set the stage to collidable or not by adding/removing the static
    * collision shapes from the simulation world.
    */

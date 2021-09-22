@@ -14,6 +14,7 @@
 #include "BulletCollision/CollisionShapes/btConvexTriangleMeshShape.h"
 #include "BulletCollision/Gimpact/btGImpactShape.h"
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
+#include "BulletCollisionHelper.h"
 #include "BulletRigidObject.h"
 
 //!  A Few considerations in construction
@@ -382,6 +383,8 @@ void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
   }
   bObjectRigidBody_ = std::make_unique<btRigidBody>(info);
   collisionObjToObjIds_->emplace(bObjectRigidBody_.get(), objectId_);
+  BulletCollisionHelper::get().mapCollisionObjectTo(bObjectRigidBody_.get(),
+                                                    getCollisionDebugName());
 
   // add the object to the world
   if (mt == MotionType::STATIC) {
@@ -407,6 +410,11 @@ void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
     CORRADE_INTERNAL_ASSERT(!bObjectRigidBody_->isStaticObject());
     CORRADE_INTERNAL_ASSERT(!bObjectRigidBody_->isKinematicObject());
   }
+}
+
+std::string BulletRigidObject::getCollisionDebugName() {
+  return "RigidObject, " + initializationAttributes_->getHandle() + ", id " +
+         std::to_string(objectId_);
 }
 
 void BulletRigidObject::activateCollisionIsland() {
