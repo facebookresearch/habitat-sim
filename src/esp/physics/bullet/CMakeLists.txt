@@ -7,6 +7,8 @@ add_library(
   BulletArticulatedObject.h
   BulletBase.cpp
   BulletBase.h
+  BulletCollisionHelper.cpp
+  BulletCollisionHelper.h
   BulletPhysicsManager.cpp
   BulletPhysicsManager.h
   BulletRigidObject.cpp

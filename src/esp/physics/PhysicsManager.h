@@ -784,6 +784,16 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   virtual int getNumActiveContactPoints() { return -1; }
 
   /**
+   * @brief See BulletPhysicsManager.h getNumActiveOverlappingPairs
+   */
+  virtual int getNumActiveOverlappingPairs() { return -1; }
+
+  /**
+   * @brief See BulletPhysicsManager.h getStepCollisionSummary
+   */
+  virtual std::string getStepCollisionSummary() { return "not implemented"; }
+
+  /**
    * @brief Query physics simulation implementation for contact point data from
    * the most recent collision detection cache.
    *
