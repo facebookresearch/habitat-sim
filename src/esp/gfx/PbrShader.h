@@ -186,7 +186,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
     /**
      * render point light shadows using variance shadow map (VSM)
      */
-    ShadowsVSM = 1 << 14,  // TODO
+    ShadowsVSM = 1 << 14,
 
     /**
      * Enable shader debug mode. Then developer can set the uniform

@@ -740,13 +740,10 @@ void Simulator::setShadowMapsToDrawables() {
     }
     auto& pbrDrawable = const_cast<gfx::PbrDrawable&>(
         static_cast<const gfx::PbrDrawable&>(currentDrawable));
-    gfx::PbrDrawable::ShadowData shadowData;
-    shadowData.shadowMapManger = &shadowManager;
-    shadowData.shadowMapKeys = &shadowMapKeys[activeSceneID_];
-    CORRADE_ASSERT(shadowData.shadowMapKeys && shadowData.shadowMapKeys->size(),
+    CORRADE_ASSERT(shadowMapKeys[activeSceneID_].size(),
                    "Simulator::setShadowMapsToDrawables(): there are no shadow "
                    "maps for the current active scene graph.", );
-    pbrDrawable.setShadowData(shadowData,
+    pbrDrawable.setShadowData(shadowManager, shadowMapKeys[activeSceneID_],
                               esp::gfx::PbrShader::Flag::ShadowsVSM);
   }
 }

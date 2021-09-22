@@ -51,12 +51,10 @@ VarianceShadowMapShader::VarianceShadowMapShader() {
   Mn::GL::Shader vert{glVersion, Mn::GL::Shader::Type::Vertex};
   Mn::GL::Shader frag{glVersion, Mn::GL::Shader::Type::Fragment};
 
-  std::stringstream attributeLocationsStream;
-  attributeLocationsStream << Cr::Utility::formatString(
-      "#define ATTRIBUTE_LOCATION_POSITION {}\n", Position::Location);
-
   // Add macros
-  vert.addSource(attributeLocationsStream.str())
+  vert
+      .addSource(Cr::Utility::formatString(
+          "#define ATTRIBUTE_LOCATION_POSITION {}\n", Position::Location))
       .addSource(rs.get("varianceShadowMap.vert"));
 
   std::stringstream outputAttributeLocationsStream;
@@ -70,16 +68,6 @@ VarianceShadowMapShader::VarianceShadowMapShader() {
   attachShaders({vert, frag});
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(link());
-
-  // bind attributes
-#ifndef MAGNUM_TARGET_GLES
-  if (!Mn::GL::Context::current()
-           .isExtensionSupported<
-               Mn::GL::Extensions::ARB::explicit_attrib_location>(glVersion))
-#endif
-  {
-    bindAttributeLocation(Position::Location, "vertexPosition");
-  }  // if
 
   // setup uniforms
   lightModelViewMatrixUniform_ = uniformLocation("LightModelViewMatrix");

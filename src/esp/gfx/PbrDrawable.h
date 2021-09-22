@@ -17,12 +17,6 @@ namespace gfx {
 
 class PbrDrawable : public Drawable {
  public:
-  struct ShadowData {
-    // all the terms must be set by the user
-    ShadowMapManager* shadowMapManger = nullptr;
-    ShadowMapKeys* shadowMapKeys = nullptr;
-  };
-
   /**
    * @brief Constructor, to create a PbrDrawable for the given object using
    * shader and mesh. Adds drawable to given group and uses provided texture,
@@ -45,10 +39,13 @@ class PbrDrawable : public Drawable {
 
   /**
    * @brief Set the shadow map info
-   * @param[in] shadowData, contains all the data needed in the shadow mapping
+   * @param[in] manager, stores the shadow maps
+   * @param[in] keys, keys to retrieve the shadow maps
    * @param[in] shadowFlag, can only be either ShadowsPCF or ShadowsVSM
    */
-  void setShadowData(const ShadowData& data, PbrShader::Flag shadowFlag);
+  void setShadowData(ShadowMapManager& manager,
+                     ShadowMapKeys& keys,
+                     PbrShader::Flag shadowFlag);
 
   static constexpr const char* SHADER_KEY_TEMPLATE = "PBR-lights={}-flags={}";
 
@@ -103,7 +100,8 @@ class PbrDrawable : public Drawable {
   Magnum::Resource<MaterialData, PbrMaterialData> materialData_;
   Magnum::Resource<LightSetup> lightSetup_;
   PbrImageBasedLighting* pbrIbl_ = nullptr;
-  Corrade::Containers::Optional<ShadowData> shadowData_;
+  ShadowMapManager* shadowMapManger_ = nullptr;
+  ShadowMapKeys* shadowMapKeys_ = nullptr;
 };
 
 }  // namespace gfx

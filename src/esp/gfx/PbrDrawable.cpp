@@ -185,13 +185,13 @@ void PbrDrawable::draw(const Mn::Matrix4& transformationMatrix,
   }
 
   if (flags_ & PbrShader::Flag::ShadowsVSM) {
-    CORRADE_INTERNAL_ASSERT(shadowData_);
-
-    for (int iShadow = 0; iShadow < shadowData_->shadowMapKeys->size();
-         ++iShadow) {
+    CORRADE_INTERNAL_ASSERT(shadowMapManger_ && shadowMapKeys_);
+    CORRADE_ASSERT(shadowMapKeys_->size() <= 3,
+                   "PbrDrawable::draw: the number of shadow maps exceeds the "
+                   "maximum (current it is 3).", );
+    for (int iShadow = 0; iShadow < shadowMapKeys_->size(); ++iShadow) {
       Mn::Resource<CubeMap> shadowMap =
-          (*shadowData_->shadowMapManger)
-              .get<CubeMap>((*shadowData_->shadowMapKeys)[iShadow]);
+          (*shadowMapManger_).get<CubeMap>((*shadowMapKeys_)[iShadow]);
 
       CORRADE_INTERNAL_ASSERT(shadowMap);
 
@@ -280,18 +280,16 @@ PbrDrawable& PbrDrawable::updateShaderLightDirectionParameters(
   return *this;
 }
 
-void PbrDrawable::setShadowData(const ShadowData& shadowData,
+void PbrDrawable::setShadowData(ShadowMapManager& manager,
+                                ShadowMapKeys& keys,
                                 PbrShader::Flag shadowFlag) {
   // sanity check first
   CORRADE_ASSERT(shadowFlag == PbrShader::Flag::ShadowsVSM,
                  "PbrDrawable::setShadowData(): the shadow flag can only be "
                  "ShadowsVSM.", );
 
-  CORRADE_ASSERT(shadowData.shadowMapManger && shadowData.shadowMapKeys,
-                 "PbrDrawable::setShadowData(): failed to enable the "
-                 "shadows. shadow manager or the shadow keys is nullptr.", );
-
-  shadowData_ = shadowData;
+  shadowMapManger_ = &manager;
+  shadowMapKeys_ = &keys;
   flags_ |= shadowFlag;
 }
 

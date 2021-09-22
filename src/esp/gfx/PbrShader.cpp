@@ -142,25 +142,6 @@ PbrShader::PbrShader(Flags originalFlags, unsigned int lightCount)
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(link());
 
-  // bind attributes
-#ifndef MAGNUM_TARGET_GLES
-  if (!Mn::GL::Context::current()
-           .isExtensionSupported<
-               Mn::GL::Extensions::ARB::explicit_attrib_location>(glVersion))
-#endif
-  {
-    bindAttributeLocation(Position::Location, "vertexPosition");
-    if (lightingIsEnabled()) {
-      bindAttributeLocation(Normal::Location, "vertexNormal");
-      if (flags_ & (Flag::NormalTexture | Flag::PrecomputedTangent)) {
-        bindAttributeLocation(Tangent4::Location, "vertexTangent");
-      }
-    }
-    if (isTextured) {
-      bindAttributeLocation(TextureCoordinates::Location, "vertexTexCoord");
-    }
-  }  // if
-
   // set texture binding points in the shader;
   // see PBR vertex, fragment shader code for details
   if (lightingIsEnabled()) {
@@ -381,21 +362,7 @@ PbrShader& PbrShader::bindPointShadowMap(int index,
                  "PbrShader::bindPointShadowMap(): the shader was not "
                  "created with shadows enabled",
                  *this);
-  switch (index) {
-    case 0:
-      texture.bind(pbrTextureUnitSpace::TextureUnit::ShadowMap0);
-      break;
-    case 1:
-      texture.bind(pbrTextureUnitSpace::TextureUnit::ShadowMap1);
-      break;
-    case 2:
-      texture.bind(pbrTextureUnitSpace::TextureUnit::ShadowMap2);
-      break;
-
-    default:
-      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
-      break;
-  }
+  texture.bind(pbrTextureUnitSpace::TextureUnit::ShadowMap0 + index);
   return *this;
 }
 
