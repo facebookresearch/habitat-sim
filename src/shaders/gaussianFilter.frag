@@ -24,8 +24,7 @@ layout(location = OUTPUT_ATTRIBUTE_LOCATION_COLOR) out highp vec4 fragmentColor;
 //
 void main(void) {
   ivec2 dims = textureSize(SourceTexture, 0);  // lod = 0
-  vec2 scale2 = FilterDirection / dims;
-  float scale = max(scale2.x, scale2.y);  // since one of those is always 0
+  vec2 scales = FilterDirection / dims;
 
   const int samples = 3;
   float weight[samples] = float[](0.2270270270, 0.3162162162, 0.0702702703);
@@ -37,7 +36,7 @@ void main(void) {
 
   vec3 result = texture(SourceTexture, textureCoordinates).rgb * weight[0];
   for (int i = 1; i < samples; ++i) {
-    vec2 offset = FilterDirection * scale * i;
+    vec2 offset = scales * i;
     result +=
         texture(SourceTexture, textureCoordinates + offset).rgb * weight[i];
     result +=
