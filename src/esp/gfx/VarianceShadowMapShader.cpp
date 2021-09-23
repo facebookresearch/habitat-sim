@@ -57,10 +57,9 @@ VarianceShadowMapShader::VarianceShadowMapShader() {
           "#define ATTRIBUTE_LOCATION_POSITION {}\n", Position::Location))
       .addSource(rs.get("varianceShadowMap.vert"));
 
-  std::stringstream outputAttributeLocationsStream;
-  outputAttributeLocationsStream << Cr::Utility::formatString(
-      "#define OUTPUT_ATTRIBUTE_LOCATION_COLOR {}\n", ColorOutput);
-  frag.addSource(outputAttributeLocationsStream.str())
+  frag
+      .addSource(Cr::Utility::formatString(
+          "#define OUTPUT_ATTRIBUTE_LOCATION_COLOR {}\n", ColorOutput))
       .addSource(rs.get("varianceShadowMap.frag"));
 
   CORRADE_INTERNAL_ASSERT_OUTPUT(Mn::GL::Shader::compile({vert, frag}));
