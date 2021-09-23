@@ -247,7 +247,10 @@ def build_instance_config_json(
         ]
         # do not save near unit scale
         if not np.allclose(scale, np.ones(3)):
-            json_dict["scale"] = scale
+            if np.allclose(scale / scale[0], np.ones(3)):
+                json_dict["uniform_scale"] = scale[0]
+            else:
+                json_dict["scale"] = scale
     return json_dict
 
 

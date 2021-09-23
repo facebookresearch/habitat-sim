@@ -550,7 +550,7 @@ def extract_objects_from_scene(
             obj_name_base,
             obj_transform,
             reframe_transform=configs["apply_object_transform"],
-            calc_scale=False,
+            calc_scale=True,
         )
         obj_instance_dict["motion_type"] = obj_motion_type_dict[obj_name]
         obj_instance_dict["translation_origin"] = configs["obj_translation_origin"]
@@ -568,6 +568,8 @@ def extract_objects_from_scene(
                 "render_asset": rel_obj_dest_filename,
                 "collision_asset": rel_obj_dest_filename,
             }
+            if "scale" in obj_instance_dict:
+                obj_config_json_dict["scale"] = obj_instance_dict["scale"]
             obj_config_filename_base = os.path.join(
                 configs["obj_config_dest_dir"], obj_name_base
             )
@@ -576,7 +578,9 @@ def extract_objects_from_scene(
             )
             # save object config
             ut.mod_json_val_and_save(("", obj_config_filename, obj_config_json_dict))
-
+        if "scale" in obj_instance_dict:
+            # scale key not supported in object instances
+            del obj_instance_dict["scale"]
     return object_instance_configs
 
 

@@ -2,7 +2,7 @@
   "dataset_name": "Floorplanner",
   "dataset_src_rel_to_home": true,
   "dataset_src_subdir": "Facebook/Floorplanner",
-  "scenes_src_subdir": "sample_structure_scene/",
+  "scenes_src_subdir": "sample_structure_obj_scene/",
   "objects_src_subdir": "objects/",
   "dataset_dest_rel_to_home": true,
   "dataset_dest_subdir": "Facebook/Floorplanner/scene_dataset/",
