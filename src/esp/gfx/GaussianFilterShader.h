@@ -41,7 +41,7 @@ class GaussianFilterShader : public Magnum::GL::AbstractShaderProgram {
   GaussianFilterShader& setFilteringDirection(FilteringDirection dir);
 
  private:
-  GLint filterHorizontallyUniform_ = -1;
+  GLint filterDirectionUniform_ = -1;
 };
 
 }  // namespace gfx

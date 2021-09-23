@@ -12,7 +12,10 @@ in highp vec2 textureCoordinates;
 
 // ------------ uniforms --------------------
 uniform highp sampler2D SourceTexture;
-uniform bool FilterHorizontally;  // true on x or false on y axis
+
+// (1.0, 0.0) for x direction
+// (0.0, 1.0) for y direction
+uniform vec2 FilterDirection;
 
 //------------- output ----------------------
 layout(location = OUTPUT_ATTRIBUTE_LOCATION_COLOR) out highp vec4 fragmentColor;
@@ -21,10 +24,8 @@ layout(location = OUTPUT_ATTRIBUTE_LOCATION_COLOR) out highp vec4 fragmentColor;
 //
 void main(void) {
   ivec2 dims = textureSize(SourceTexture, 0);  // lod = 0
-  float scale = 1.0 / dims.x;
-  if (!FilterHorizontally) {
-    scale = 1.0 / dims.y;
-  }
+  vec2 scale2 = FilterDirection / dims;
+  float scale = max(scale2.x, scale2.y);  // since one of those is always 0
 
   const int samples = 3;
   float weight[samples] = float[](0.2270270270, 0.3162162162, 0.0702702703);
@@ -36,27 +37,11 @@ void main(void) {
 
   vec3 result = texture(SourceTexture, textureCoordinates).rgb * weight[0];
   for (int i = 1; i < samples; ++i) {
-    if (FilterHorizontally) {
-      // x axis
-      result +=
-          texture(SourceTexture, textureCoordinates + vec2(scale * i, 0.0))
-              .rgb *
-          weight[i];
-      result +=
-          texture(SourceTexture, textureCoordinates - vec2(scale * i, 0.0))
-              .rgb *
-          weight[i];
-    } else {
-      // y axis
-      result +=
-          texture(SourceTexture, textureCoordinates + vec2(0.0, scale * i))
-              .rgb *
-          weight[i];
-      result +=
-          texture(SourceTexture, textureCoordinates - vec2(0.0, scale * i))
-              .rgb *
-          weight[i];
-    }
+    vec2 offset = FilterDirection * scale * i;
+    result +=
+        texture(SourceTexture, textureCoordinates + offset).rgb * weight[i];
+    result +=
+        texture(SourceTexture, textureCoordinates - offset).rgb * weight[i];
   }  // for
   fragmentColor = vec4(result, 1.0);
 

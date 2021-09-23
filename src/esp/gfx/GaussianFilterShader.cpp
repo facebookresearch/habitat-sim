@@ -61,8 +61,8 @@ GaussianFilterShader::GaussianFilterShader() {
   setUniform(uniformLocation("SourceTexture"), SourceTextureUnit);
 
   // setup uniforms
-  filterHorizontallyUniform_ = uniformLocation("FilterHorizontally");
-  CORRADE_INTERNAL_ASSERT(filterHorizontallyUniform_ >= 0);
+  filterDirectionUniform_ = uniformLocation("FilterDirection");
+  CORRADE_INTERNAL_ASSERT(filterDirectionUniform_ >= 0);
 }
 
 GaussianFilterShader& GaussianFilterShader::bindTexture(
@@ -74,9 +74,9 @@ GaussianFilterShader& GaussianFilterShader::bindTexture(
 GaussianFilterShader& GaussianFilterShader::setFilteringDirection(
     FilteringDirection dir) {
   if (dir == FilteringDirection::Horizontal) {
-    setUniform(filterHorizontallyUniform_, 1);
+    setUniform(filterDirectionUniform_, Mn::Vector2(1.0, 0.0));
   } else {
-    setUniform(filterHorizontallyUniform_, 0);
+    setUniform(filterDirectionUniform_, Mn::Vector2(0.0, 1.0));
   }
   return *this;
 }
