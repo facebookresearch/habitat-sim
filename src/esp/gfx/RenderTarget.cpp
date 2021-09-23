@@ -66,7 +66,7 @@ struct RenderTarget::Impl {
     }
 
     if (flags_ & Flag::RgbaAttachment) {
-      colorBuffer_.setStorage(Mn::GL::RenderbufferFormat::SRGB8Alpha8, size);
+      colorBuffer_.setStorage(Mn::GL::RenderbufferFormat::RGBA8, size);
     }
     if (flags_ & Flag::ObjectIdAttachment) {
       objectIdTexture_.setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
