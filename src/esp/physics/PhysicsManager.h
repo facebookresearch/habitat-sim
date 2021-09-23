@@ -42,22 +42,25 @@ class Simulator;
 }
 namespace physics {
 
-//! Holds information about one ray hit instance.
+/** @brief Holds information about one ray hit instance. */
 struct RayHitInfo {
-  //! The id of the object hit by this ray. Stage hits are -1.
+  /** @brief The id of the object hit by this ray. Stage hits are -1. */
   int objectId{};
-  //! The first impact point of the ray in world space.
+
+  /** @brief  The first impact point of the ray in world space. */
   Magnum::Vector3 point;
-  //! The collision object normal at the point of impact.
+
+  /** @brief The collision object normal at the point of impact. */
   Magnum::Vector3 normal;
-  //! Distance along the ray direction from the ray origin (in units of ray
-  //! length).
+
+  /** @brief  Distance along the ray direction from the ray origin (in units of
+   * ray length). */
   double rayDistance{};
 
   ESP_SMART_POINTERS(RayHitInfo)
 };
 
-//! Holds information about all ray hit instances from a ray cast.
+/** @brief Holds information about all ray hit instances from a ray cast. */
 struct RaycastResults {
   std::vector<RayHitInfo> hits;
   esp::geo::Ray ray;
@@ -74,7 +77,7 @@ struct RaycastResults {
   ESP_SMART_POINTERS(RaycastResults)
 };
 
-// based on Bullet b3ContactPointData
+/** @brief based on Bullet b3ContactPointData */
 struct ContactPointData {
   int objectIdA = -2;  // stage is -1
   int objectIdB = -2;
@@ -105,77 +108,86 @@ struct ContactPointData {
   ESP_SMART_POINTERS(ContactPointData)
 };
 
-//! describes the type of a rigid constraint.
+/** @brief describes the type of a rigid constraint.*/
 enum class RigidConstraintType {
-  //! lock a point in one frame to a point in another with no orientation
-  //! constraint
+  /** @brief lock a point in one frame to a point in another with no orientation
+   * constraint
+   */
   PointToPoint,
-  //! fix one frame to another constraining relative position and orientation
+  /** @brief fix one frame to another constraining relative position and
+   * orientation
+   */
   Fixed
-};
+};  // enum class RigidConstraintType
 
-/**
- * @brief Stores rigid constraint parameters for creation and updates.
- */
+/** @brief Stores rigid constraint parameters for creation and updates.*/
 struct RigidConstraintSettings {
  public:
   RigidConstraintSettings() = default;
 
-  //! The type of constraint described by these settings. Determines which
-  //! parameters to use for creation and update.
+  /** @brief The type of constraint described by these settings. Determines
+   * which parameters to use for creation and update.
+   */
   RigidConstraintType constraintType = RigidConstraintType::PointToPoint;
 
-  //! The maximum impulse applied by this constraint. Should be tuned relative
-  //! to physics timestep.
+  /** @brief The maximum impulse applied by this constraint. Should be tuned
+   * relative to physics timestep.
+   */
   double maxImpulse = 1000.0;
 
-  //! objectIdA must always be >= 0. For mixed type constraints, objectA must be
-  //! the ArticulatedObject.
+  /** @brief objectIdA must always be >= 0. For mixed type constraints, objectA
+   * must be the ArticulatedObject.
+   */
   int objectIdA = ID_UNDEFINED;
-  //! objectIdB == ID_UNDEFINED indicates "world".
+
+  /** @brief objectIdB == ID_UNDEFINED indicates "world". */
   int objectIdB = ID_UNDEFINED;
 
-  //! link of objectA if articulated. ID_UNDEFINED(-1) refers to base.
+  /** @brief  link of objectA if articulated. ID_UNDEFINED(-1) refers to base.
+   */
   int linkIdA = ID_UNDEFINED;
-  //! link of objectB if articulated. ID_UNDEFINED(-1) refers to base.
+
+  /** @brief link of objectB if articulated. ID_UNDEFINED(-1) refers to base.*/
   int linkIdB = ID_UNDEFINED;
 
-  //! constraint point in local space of respective objects
+  /** @brief constraint point in local space of respective objects*/
   Mn::Vector3 pivotA{}, pivotB{};
 
-  //! constraint orientation frame in local space of respective objects for
-  //! RigidConstraintType::Fixed
+  /** @brief  constraint orientation frame in local space of respective objects
+   * for RigidConstraintType::Fixed
+   */
   Mn::Matrix3x3 frameA{}, frameB{};
 
   ESP_SMART_POINTERS(RigidConstraintSettings)
-};
+};  // struct RigidConstraintSettings
 
 class RigidObjectManager;
 class ArticulatedObjectManager;
 
 /**
-@brief Kinematic and dynamic scene and object manager.
-
-Responsible for tracking, updating, and synchronizing the state of the physical
-world and all non-static geometry in the scene as well as interfacing with
-specific physical simulation implementations.
-
-The physical world in this case consists of any objects which can be
-manipulated:addObject : (kinematically or dynamically) or simulated and anything
-such objects must be aware of (e.g. static scene collision geometry).
-
-Will later manager multiple physical scenes, but currently assumes only one
-unique physical world can exist.
-*/
+ * @brief Kinematic and dynamic scene and object manager. Responsible for
+ * tracking, updating, and synchronizing the state of the physical world and all
+ * non-static geometry in the scene as well as interfacing with specific
+ * physical simulation implementations.
+ *
+ * The physical world in this case consists of any objects which can be
+ * manipulated:addObject : (kinematically or dynamically) or simulated and
+ * anything such objects must be aware of (e.g. static scene collision
+ * geometry).
+ *
+ * May eventually manage multiple physical scenes, but currently
+ * assumes only one unique physical world can exist.
+ */
 class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
  public:
   //! ==== physics engines ====
 
   /**
-  @brief The specific physics implementation used by the current @ref
-  PhysicsManager. Each entry suggests a derived class of @ref PhysicsManager and
-  @ref RigidObject implementing the specific interface to a simulation library.
-  */
+   * @brief The specific physics implementation used by the current @ref
+   * PhysicsManager. Each entry suggests a derived class of @ref PhysicsManager
+   * and @ref RigidObject implementing the specific interface to a simulation
+   * library.
+   */
   enum class PhysicsSimulationLibrary {
 
     /**
@@ -778,6 +790,16 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   virtual int getNumActiveContactPoints() { return -1; }
 
   /**
+   * @brief See BulletPhysicsManager.h getNumActiveOverlappingPairs
+   */
+  virtual int getNumActiveOverlappingPairs() { return -1; }
+
+  /**
+   * @brief See BulletPhysicsManager.h getStepCollisionSummary
+   */
+  virtual std::string getStepCollisionSummary() { return "not implemented"; }
+
+  /**
    * @brief Query physics simulation implementation for contact point data from
    * the most recent collision detection cache.
    *
@@ -1101,7 +1123,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    */
   std::vector<int> recycledObjectIDs_;
 
-  //! maps constraint ids to their settings
+  /** @brief Tmaps constraint ids to their settings */
   std::unordered_map<int, RigidConstraintSettings> rigidConstraintSettings_;
 
   //! Utilities
@@ -1116,7 +1138,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   double fixedTimeStep_ = 1.0 / 240.0;
 
   /** @brief The current simulation time. Tracks the total amount of time
-   * simulated with @ref stepPhysics up to this point. */
+   * simulated with @ref stepPhysics up to this point.
+   */
   double worldTime_ = 0.0;
 
  public:

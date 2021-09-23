@@ -12,11 +12,11 @@
  */
 
 #include "ManagedContainer.h"
+#include "esp/io/Json.h"
 
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/String.h>
-
-#include "esp/io/Json.h"
+#include <typeinfo>
 
 namespace esp {
 namespace core {
@@ -145,7 +145,7 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
     // by here always fail
     ESP_ERROR() << "<" << Magnum::Debug::nospace << this->objectType_
                 << Magnum::Debug::nospace << "> : File" << filename
-                << "failed due to unknown file type.";
+                << "failed due to unsupported file type :" << typeid(U).name();
     return false;
   }  // ManagedContainerBase::verifyLoadDocument
   /**
@@ -202,8 +202,8 @@ std::string ManagedFileBasedContainer<T, Access>::convertFilenameToPassedExt(
   std::string strHandle = Cr::Utility::String::lowercase(filename);
   std::string resHandle(filename);
   // If filename does not already have extension of interest
-  if (std::string::npos ==
-      strHandle.find(Cr::Utility::String::lowercase(fileTypeExt))) {
+  if (strHandle.find(Cr::Utility::String::lowercase(fileTypeExt)) ==
+      std::string::npos) {
     resHandle = Cr::Utility::Directory::splitExtension(filename).first + "." +
                 fileTypeExt;
     ESP_VERY_VERBOSE() << "<" << Magnum::Debug::nospace << this->objectType_

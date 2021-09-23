@@ -88,7 +88,7 @@ inline JsonGenericValue toJsonValue(const esp::assets::AssetInfo& x,
   addMember(obj, "filepath", x.filepath, allocator);
   addMember(obj, "frame", x.frame, allocator);
   addMember(obj, "virtualUnitToMeters", x.virtualUnitToMeters, allocator);
-  addMember(obj, "requiresLighting", x.requiresLighting, allocator);
+  addMember(obj, "forceFlatShading", x.forceFlatShading, allocator);
   addMember(obj, "splitInstanceMesh", x.splitInstanceMesh, allocator);
   addMember(obj, "overridePhongMaterial", x.overridePhongMaterial, allocator);
 
@@ -101,7 +101,7 @@ inline bool fromJsonValue(const JsonGenericValue& obj,
   readMember(obj, "filepath", x.filepath);
   readMember(obj, "frame", x.frame);
   readMember(obj, "virtualUnitToMeters", x.virtualUnitToMeters);
-  readMember(obj, "requiresLighting", x.requiresLighting);
+  readMember(obj, "forceFlatShading", x.forceFlatShading);
   readMember(obj, "splitInstanceMesh", x.splitInstanceMesh);
   readMember(obj, "overridePhongMaterial", x.overridePhongMaterial);
   return true;

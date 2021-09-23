@@ -71,8 +71,7 @@ class ArticulatedObjectManager
    *
    * @return A reference to the created ArticulatedObject
    */
-  std::shared_ptr<ManagedBulletArticulatedObject>
-  addBulletArticulatedObjectFromURDF(
+  std::shared_ptr<ManagedArticulatedObject> addBulletArticulatedObjectFromURDF(
       const std::string& filepath,
       bool fixedBase = false,
       float globalScale = 1.0,
@@ -80,10 +79,16 @@ class ArticulatedObjectManager
       bool forceReload = false,
       bool maintainLinkOrder = false,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY) {
-    return std::static_pointer_cast<ManagedBulletArticulatedObject>(
+    std::shared_ptr<ManagedArticulatedObject> objPtr =
         addArticulatedObjectFromURDF(filepath, fixedBase, globalScale,
                                      massScale, forceReload, maintainLinkOrder,
-                                     lightSetup));
+                                     lightSetup);
+
+    if (std::shared_ptr<ManagedBulletArticulatedObject> castObjPtr =
+            std::dynamic_pointer_cast<ManagedBulletArticulatedObject>(objPtr)) {
+      return castObjPtr;
+    }
+    return objPtr;
   }
 
   /**

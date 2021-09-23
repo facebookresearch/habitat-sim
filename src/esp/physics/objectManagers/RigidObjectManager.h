@@ -44,12 +44,18 @@ class RigidObjectManager
    * existing SceneNode.
    * @return a copy of the instanced object, appropriately cast, or nullptr.
    */
-  std::shared_ptr<ManagedBulletRigidObject> addBulletObjectByHandle(
+  std::shared_ptr<ManagedRigidObject> addBulletObjectByHandle(
       const std::string& attributesHandle,
       scene::SceneNode* attachmentNode = nullptr,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY) {
-    return std::static_pointer_cast<ManagedBulletRigidObject>(
-        addObjectByHandle(attributesHandle, attachmentNode, lightSetup));
+    std::shared_ptr<ManagedRigidObject> objPtr =
+        addObjectByHandle(attributesHandle, attachmentNode, lightSetup);
+
+    if (std::shared_ptr<ManagedBulletRigidObject> castObjPtr =
+            std::dynamic_pointer_cast<ManagedBulletRigidObject>(objPtr)) {
+      return castObjPtr;
+    }
+    return objPtr;
   }
 
   /** @brief Instance a physical object from an object properties template in
@@ -77,12 +83,17 @@ class RigidObjectManager
    * existing SceneNode.
    * @return a copy of the instanced object, appropriately cast, or nullptr.
    */
-  std::shared_ptr<ManagedBulletRigidObject> addBulletObjectByID(
+  std::shared_ptr<ManagedRigidObject> addBulletObjectByID(
       const int attributesID,
       scene::SceneNode* attachmentNode = nullptr,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY) {
-    return std::static_pointer_cast<ManagedBulletRigidObject>(
-        addObjectByID(attributesID, attachmentNode, lightSetup));
+    std::shared_ptr<ManagedRigidObject> objPtr =
+        addObjectByID(attributesID, attachmentNode, lightSetup);
+    if (std::shared_ptr<ManagedBulletRigidObject> castObjPtr =
+            std::dynamic_pointer_cast<ManagedBulletRigidObject>(objPtr)) {
+      return castObjPtr;
+    }
+    return objPtr;
   }
 
   /**

@@ -797,6 +797,20 @@ class Simulator {
   }
 
   /**
+   * @brief See BulletPhysicsManager.h getNumActiveOverlappingPairs
+   */
+  int getPhysicsNumActiveOverlappingPairs() {
+    return physicsManager_->getNumActiveOverlappingPairs();
+  }
+
+  /**
+   * @brief See BulletPhysicsManager.h getStepCollisionSummary
+   */
+  std::string getPhysicsStepCollisionSummary() {
+    return physicsManager_->getStepCollisionSummary();
+  }
+
+  /**
    * @brief Set an object to collidable or not.
    */
   void setObjectIsCollidable(bool collidable, const int objectId) {
@@ -1182,7 +1196,7 @@ class Simulator {
    * @param key The string key of the @ref gfx::LightSetup.
    */
   gfx::LightSetup getCurrentLightSetup() {
-    return *resourceManager_->getLightSetup(config_.sceneLightSetup);
+    return *resourceManager_->getLightSetup(config_.sceneLightSetupKey);
   }
 
   /**

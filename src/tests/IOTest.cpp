@@ -411,7 +411,7 @@ void IOTest::testJsonEspTypes() {
         assetInfo2.frame.origin().isApprox(assetInfo.frame.origin()));
     CORRADE_COMPARE(assetInfo2.virtualUnitToMeters,
                     assetInfo.virtualUnitToMeters);
-    CORRADE_COMPARE(assetInfo2.requiresLighting, assetInfo.requiresLighting);
+    CORRADE_COMPARE(assetInfo2.forceFlatShading, assetInfo.forceFlatShading);
     CORRADE_COMPARE(assetInfo2.splitInstanceMesh, assetInfo.splitInstanceMesh);
     CORRADE_VERIFY(assetInfo2.overridePhongMaterial == Cr::Containers::NullOpt);
     // now test again with override material

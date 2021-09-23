@@ -8,7 +8,7 @@
 	"friction_coefficient": 0.5,
 	"restitution_coefficient": 0.2,
 	"units_to_meters":1.0,
-	"requires_lighting": true,
+	"force_flat_shading": false,
 	"mass": 0.038,
 	"COM" : [0.0,0.0,0.0],
 	"use_bounding_box_for_collision" : false,

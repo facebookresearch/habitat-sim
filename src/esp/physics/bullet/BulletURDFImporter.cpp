@@ -9,6 +9,7 @@
 #include <Corrade/Utility/Directory.h>
 #include <Magnum/BulletIntegration/Integration.h>
 #include "BulletCollision/CollisionShapes/btCompoundShape.h"
+#include "BulletCollisionHelper.h"
 #include "BulletDynamics/Featherstone/btMultiBodyJointLimitConstraint.h"
 #include "BulletDynamics/Featherstone/btMultiBodyLinkCollider.h"
 #include "BulletURDFImporter.h"
@@ -625,6 +626,11 @@ Mn::Matrix4 BulletURDFImporter::convertURDF2BulletInternal(
 
       world1->addCollisionObject(col, collisionFilterGroup,
                                  collisionFilterMask);
+
+      const auto debugModel = getModel();
+      std::string linkDebugName = "URDF, " + debugModel->m_name + ", link " +
+                                  debugModel->getLink(urdfLinkIndex)->m_name;
+      BulletCollisionHelper::get().mapCollisionObjectTo(col, linkDebugName);
     }
   }
 

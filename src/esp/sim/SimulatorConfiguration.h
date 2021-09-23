@@ -76,7 +76,7 @@ struct SimulatorConfiguration {
   bool overrideSceneLightDefaults = false;
 
   /** @brief Light setup key for scene */
-  std::string sceneLightSetup = esp::NO_LIGHT_KEY;
+  std::string sceneLightSetupKey = esp::NO_LIGHT_KEY;
 
   /**
    * @brief setup the image based lighting for pbr rendering

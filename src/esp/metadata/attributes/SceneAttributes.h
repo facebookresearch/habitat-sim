@@ -91,6 +91,16 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
   }
 
   /**
+   * @brief If not visible can add dynamic non-rendered object into a scene
+   * object.  If is not visible then should not add object to drawables.
+   */
+  void setIsInstanceVisible(bool isVisible) {
+    // needs to be int to cover "no specification"
+    set("is_instance_visible", (isVisible ? 1 : 0));
+  }
+  int getIsInstanceVisible() const { return get<int>("is_instance_visible"); }
+
+  /**
    * @brief Set the motion type for the object.  Ignored for stage instances.
    */
   void setMotionType(int motionType) { set("motion_type", motionType); }

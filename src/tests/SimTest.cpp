@@ -71,7 +71,7 @@ struct SimTest : Cr::TestSuite::Tester {
     simConfig.enablePhysics = true;
     simConfig.physicsConfigFile = physicsConfigFile;
     simConfig.overrideSceneLightDefaults = true;
-    simConfig.sceneLightSetup = sceneLightingKey;
+    simConfig.sceneLightSetupKey = sceneLightingKey;
 
     auto sim = Simulator::create_unique(simConfig);
     auto objAttrMgr = sim->getObjectAttributesManager();
@@ -93,7 +93,7 @@ struct SimTest : Cr::TestSuite::Tester {
     simConfig.enablePhysics = true;
     simConfig.physicsConfigFile = physicsConfigFile;
     simConfig.overrideSceneLightDefaults = true;
-    simConfig.sceneLightSetup = sceneLightingKey;
+    simConfig.sceneLightSetupKey = sceneLightingKey;
 
     MetadataMediator::ptr MM = MetadataMediator::create(simConfig);
     auto sim = Simulator::create_unique(simConfig, MM);
@@ -814,7 +814,7 @@ void SimTest::createMagnumRenderingOff() {
   simConfig.physicsConfigFile = physicsConfigFile;
   simConfig.overrideSceneLightDefaults = true;
   simConfig.createRenderer = false;
-  simConfig.sceneLightSetup = "custom_lighting_1";
+  simConfig.sceneLightSetupKey = "custom_lighting_1";
   auto simulator = Simulator::create_unique(simConfig);
 
   // configure objectAttributesManager

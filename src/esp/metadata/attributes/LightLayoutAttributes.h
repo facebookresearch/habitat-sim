@@ -14,7 +14,7 @@ namespace attributes {
 
 /**
  * @brief This class describes an instance of a light -
- * it's template name, location/direction, color, intensity, type and other
+ * its template name, location/direction, color, intensity, type and other
  * parameters if appropriate.
  */
 class LightInstanceAttributes : public AbstractAttributes {
@@ -38,72 +38,88 @@ class LightInstanceAttributes : public AbstractAttributes {
 
   explicit LightInstanceAttributes(const std::string& handle = "");
 
-  /**
-   * @brief Get/Set the position of the light.
-   */
+  /** @brief Set the position of the light. Used for positional lights.  */
   void setPosition(const Magnum::Vector3& position) {
     set("position", position);
   }
+
+  /** @brief Get the position of the light. Used for positional lights. */
   Magnum::Vector3 getPosition() const {
     return get<Magnum::Vector3>("position");
   }
 
-  /**
-   * @brief Get/Set the direction of the light.
-   */
+  /** @brief Set the direction of the light. Used for directional lights. */
   void setDirection(const Magnum::Vector3& direction) {
     set("direction", direction);
   }
+
+  /** @brief Get the direction of the light. Used for directional lights. */
   Magnum::Vector3 getDirection() const {
     return get<Magnum::Vector3>("direction");
   }
 
-  /**
-   * @brief Get/Set the color of the light.
-   */
+  /** @brief Set the color of the light.*/
   void setColor(const Magnum::Vector3& color) { set("color", color); }
+
+  /** @brief Get the color of the light.*/
   Magnum::Vector3 getColor() const { return get<Magnum::Vector3>("color"); }
 
-  /**
-   * @brief Get/Set the color scale of the light.
-   */
+  /** @brief Set the intensity of the light. */
   void setIntensity(double intensity) { set("intensity", intensity); }
+
+  /** @brief Get the intensity of the light. */
   double getIntensity() const { return get<double>("intensity"); }
 
-  /**
-   * @brief Get/Set the type of the light
-   */
+  /** @brief Set the type of the light */
   void setType(int type) { set("type", type); }
+
+  /** @brief Get the type of the light */
   int getType() const { return get<int>("type"); }
 
   /**
-   * @brief Get/Set the position model to use when placing the light - whether
+   * @brief Set the position model to use when placing the light - whether
    * the lights translation should be relative to the camera, the global scene
    * origin, or some object.
    */
   void setPositionModel(int position_model) {
     set("position_model", position_model);
   }
+
+  /**
+   * @brief Get the position model to use when placing the light - whether
+   * the lights translation should be relative to the camera, the global scene
+   * origin, or some object.
+   */
   int getPositionModel() const { return get<int>("position_model"); }
 
   /**
-   * @brief Get/Set inner cone angle for spotlights.  Should be ignored for
+   * @brief Set inner cone angle for spotlights.  Should be ignored for
    * other lights
    */
   void setInnerConeAngle(Magnum::Rad innerConeAngle) {
     set("innerConeAngle", innerConeAngle);
   }
+
+  /**
+   * @brief Get inner cone angle for spotlights.  Should be ignored for
+   * other lights
+   */
   Magnum::Rad getInnerConeAngle() const {
     return get<Magnum::Rad>("innerConeAngle");
   }
 
   /**
-   * @brief Get/Set inner cone angle for spotlights. Should be ignored for other
+   * @brief Set outer cone angle for spotlights. Should be ignored for other
    * lights
    */
   void setOuterConeAngle(Magnum::Rad outerConeAngle) {
     set("outerConeAngle", outerConeAngle);
   }
+
+  /**
+   * @brief Get outer cone angle for spotlights. Should be ignored for other
+   * lights
+   */
   Magnum::Rad getOuterConeAngle() const {
     return get<Magnum::Rad>("outerConeAngle");
   }
@@ -144,6 +160,7 @@ class LightInstanceAttributes : public AbstractAttributes {
     return "Position XYZ,Direction XYZ,Color RGB,Intensity,Light Type,"
            "Light Position Model,";
   }
+
   /**
    * @brief Retrieve a comma-separated informational string about the
    * contents of this managed object.
@@ -160,7 +177,7 @@ class LightInstanceAttributes : public AbstractAttributes {
  public:
   ESP_SMART_POINTERS(LightInstanceAttributes)
 
-};  // namespace attributes
+};  // class LightInstanceAttributes
 
 /**
  * @brief This class describes a lighting layout, consisting of a series of
@@ -249,8 +266,8 @@ class LightLayoutAttributes : public AbstractAttributes {
    * info returned for this managed object, type-specific. The individual light
    * instances return a header for this.
    */
-
   std::string getObjectInfoHeaderInternal() const override { return ","; };
+
   /**
    * @brief Retrieve a comma-separated informational string about the contents
    * of this managed object.
@@ -262,6 +279,7 @@ class LightLayoutAttributes : public AbstractAttributes {
    * configuration is created on LightLayoutAttributes construction.
    */
   std::shared_ptr<Configuration> lightInstConfig_{};
+
   /**
    * @brief Deque holding all released IDs to consume for light instances when
    * one is deleted, before using size of lightInstances_ container.
@@ -270,7 +288,7 @@ class LightLayoutAttributes : public AbstractAttributes {
 
  public:
   ESP_SMART_POINTERS(LightLayoutAttributes)
-};  // namespace attributes
+};  // class LightLayoutAttribute
 }  // namespace attributes
 }  // namespace metadata
 }  // namespace esp

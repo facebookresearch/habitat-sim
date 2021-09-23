@@ -12,6 +12,7 @@
 #include "BulletCollision/CollisionShapes/btConvexTriangleMeshShape.h"
 #include "BulletCollision/Gimpact/btGImpactShape.h"
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
+#include "BulletCollisionHelper.h"
 #include "BulletRigidStage.h"
 #include "esp/physics/CollisionGroupHelper.h"
 
@@ -148,6 +149,9 @@ void BulletRigidStage::constructBulletSceneFromMeshes(
     std::unique_ptr<btRigidBody> sceneCollisionObject =
         std::make_unique<btRigidBody>(cInfo);
     CORRADE_INTERNAL_ASSERT(sceneCollisionObject->isStaticObject());
+    BulletCollisionHelper::get().mapCollisionObjectTo(
+        sceneCollisionObject.get(),
+        getCollisionDebugName(bStaticCollisionObjects_.size()));
     bStageArrays_.emplace_back(std::move(indexedVertexArray));
     bStageShapes_.emplace_back(std::move(meshShape));
     bStaticCollisionObjects_.emplace_back(std::move(sceneCollisionObject));
@@ -173,7 +177,7 @@ void BulletRigidStage::setRestitutionCoefficient(
 }
 
 double BulletRigidStage::getFrictionCoefficient() const {
-  if (bStaticCollisionObjects_.size() == 0) {
+  if (bStaticCollisionObjects_.empty()) {
     return 0.0;
   } else {
     // Assume uniform friction in scene parts
@@ -183,7 +187,7 @@ double BulletRigidStage::getFrictionCoefficient() const {
 
 double BulletRigidStage::getRestitutionCoefficient() const {
   // Assume uniform restitution in scene parts
-  if (bStaticCollisionObjects_.size() == 0) {
+  if (bStaticCollisionObjects_.empty()) {
     return 0.0;
   } else {
     return static_cast<double>(
@@ -210,6 +214,10 @@ Magnum::Range3D BulletRigidStage::getCollisionShapeAabb() const {
   }
   return combinedAABB;
 }  // getCollisionShapeAabb
+
+std::string BulletRigidStage::getCollisionDebugName(int subpartId) {
+  return "Stage, subpart " + std::to_string(subpartId);
+}
 
 }  // namespace physics
 }  // namespace esp

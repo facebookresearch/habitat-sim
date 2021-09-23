@@ -180,7 +180,7 @@ auto AbstractObjectAttributesManager<T, Access>::createObject(
 
   }  // if this is prim else
   if (nullptr != attrs) {
-    ESP_DEBUG() << msg << "" << this->objectType_ << "attributes created"
+    ESP_DEBUG() << msg << this->objectType_ << "attributes created"
                 << (registerTemplate ? "and registered." : ".");
   }
   return attrs;
@@ -228,11 +228,11 @@ auto AbstractObjectAttributesManager<T, Access>::
         attributes->setRestitutionCoefficient(restitution_coefficient);
       });
 
-  // if object will be flat or phong shaded
-  io::jsonIntoSetter<bool>(jsonDoc, "requires_lighting",
-                           [attributes](bool requires_lighting) {
-                             attributes->setRequiresLighting(requires_lighting);
-                           });
+  // if object or stage will be forced to be flat shaded
+  io::jsonIntoSetter<bool>(
+      jsonDoc, "force_flat_shading", [attributes](bool force_flat_shading) {
+        attributes->setForceFlatShading(force_flat_shading);
+      });
 
   // units to meters
   io::jsonIntoSetter<double>(jsonDoc, "units_to_meters",

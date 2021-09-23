@@ -177,8 +177,8 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
 
   // set defaults from SimulatorConfig values; these can also be overridden by
   // json, for example.
-  newAttributes->setLightSetup(cfgLightSetup_);
-  newAttributes->setRequiresLighting(cfgLightSetup_ != NO_LIGHT_KEY);
+  newAttributes->setLightSetupKey(cfgLightSetup_);
+  newAttributes->setForceFlatShading(cfgLightSetup_ == NO_LIGHT_KEY);
   // set value from config so not necessary to be passed as argument
   newAttributes->setFrustumCulling(cfgFrustumCulling_);
 
