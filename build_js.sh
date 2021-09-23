@@ -44,7 +44,7 @@ cmake ../src \
     -DCMAKE_TOOLCHAIN_FILE="../src/deps/corrade/toolchains/generic/Emscripten-wasm.cmake" \
     -DCMAKE_INSTALL_PREFIX="." \
     -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON \
-    -DCMAKE_CXX_FLAGS="-s FORCE_FILESYSTEM=1 -s ALLOW_MEMORY_GROWTH=1 -s ASSERTIONS=0" \
+    -DCMAKE_CXX_FLAGS="-s FORCE_FILESYSTEM=1 -s INITIAL_MEMORY=320MB -s MAXIMUM_MEMORY=1024MB -s ASSERTIONS=0" \
     -DCMAKE_EXE_LINKER_FLAGS="${EXE_LINKER_FLAGS}" \
     -DBUILD_WITH_BULLET="$( if ${BULLET} ; then echo ON ; else echo OFF; fi )" \
     -DBUILD_WEB_APPS="$( if ${WEB_APPS} ; then echo ON ; else echo OFF; fi )"
