@@ -196,7 +196,7 @@ void BulletURDFImporter::getAllIndices(
       parentIndex >= 0 ? cache->getMbIndexFromUrdfIndex(parentIndex) : -1;
   cp.m_parentMBIndex = parentMbIndex;
 
-  allIndices.push_back(cp);
+  allIndices.emplace_back(std::move(cp));
   std::vector<int> urdfChildIndices;
   getLinkChildIndices(urdfLinkIndex, urdfChildIndices);
   int numChildren = urdfChildIndices.size();
