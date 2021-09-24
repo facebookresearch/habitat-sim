@@ -108,6 +108,7 @@ void Simulator::close(const bool destroy) {
 
 void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   // set metadata mediator's cfg  upon creation or reconfigure
+  Mn::Debug{} << "!! Hello World !!";
   if (!metadataMediator_) {
     metadataMediator_ = metadata::MetadataMediator::create(cfg);
   } else {
@@ -187,7 +188,7 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
       renderer_ = gfx::Renderer::create(context_.get(), flags);
     }
-
+    flextGLInit(Magnum::GL::Context::current());
     renderer_->acquireGlContext();
   } else {
     CORRADE_ASSERT(

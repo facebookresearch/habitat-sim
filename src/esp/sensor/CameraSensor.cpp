@@ -116,6 +116,7 @@ void CameraSensor::draw(scene::SceneGraph& sceneGraph,
 
 bool CameraSensor::drawObservation(sim::Simulator& sim) {
   if (!hasRenderTarget()) {
+    Mn::Debug{} << "Camera Obs Debug";
     return false;
   }
 
