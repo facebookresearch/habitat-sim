@@ -420,6 +420,11 @@ def extract_stage_from_scene(
             "render_asset": rel_stage_asset_filename,
             "collision_asset": rel_stage_asset_filename,
         }
+        dflt_stage_dict = configs["default_attributes"]["stages"]
+        # set defaults for stage config
+        for k, v in dflt_stage_dict.items():
+            stage_config_json_dict[k] = v
+
         # save config
         ut.mod_json_val_and_save(("", stage_config_filename, stage_config_json_dict))
     # stage component of scene instance config dict
@@ -451,6 +456,8 @@ def extract_objects_from_scene(
 
     build_glbs = configs["build_object_glbs"]
     build_configs = configs["build_object_configs"]
+    # default object config values
+    dflt_obj_dict = configs["default_attributes"]["objects"]
 
     # init objects
     objects_raw = scene_graph.graph.transforms.children_dict[objects_tag]
@@ -568,6 +575,10 @@ def extract_objects_from_scene(
                 "render_asset": rel_obj_dest_filename,
                 "collision_asset": rel_obj_dest_filename,
             }
+            # set defaults for stage config
+            for k, v in dflt_obj_dict.items():
+                obj_config_json_dict[k] = v
+
             if "scale" in obj_instance_dict:
                 obj_config_json_dict["scale"] = obj_instance_dict["scale"]
             obj_config_filename_base = os.path.join(
