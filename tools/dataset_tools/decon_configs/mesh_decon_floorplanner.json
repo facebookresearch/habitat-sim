@@ -5,7 +5,7 @@
   "scenes_src_subdir": "sample_structure_obj_scene/",
   "objects_src_subdir": "objects/",
   "dataset_dest_rel_to_home": true,
-  "dataset_dest_subdir": "Facebook/Floorplanner/scene_dataset/",
+  "dataset_dest_subdir": "Facebook/habitat-sim/data/scene_datasets/floorplanner",
   "dataset_glb_dest_subdir": ".",
   "stage_glb_dest_subdir": "stages/",
   "obj_glb_dest_subdir": "objects/",
