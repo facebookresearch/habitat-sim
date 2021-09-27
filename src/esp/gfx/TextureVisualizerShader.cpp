@@ -34,7 +34,7 @@ TextureVisualizerShader::TextureVisualizerShader(Flags flags) : flags_(flags) {
   if (flags_ & Flag::DepthTexture) {
     ++countMutuallyExclusive;
   }
-  if (flags & Flag::ObjectIdTexture) {
+  if (flags_ & Flag::ObjectIdTexture) {
     ++countMutuallyExclusive;
   }
   CORRADE_ASSERT(countMutuallyExclusive <= 1,

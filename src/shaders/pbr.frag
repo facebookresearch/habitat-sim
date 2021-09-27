@@ -353,6 +353,8 @@ void main() {
 
   vec3 diffuseContrib = vec3(0.0, 0.0, 0.0);
   vec3 specularContrib = vec3(0.0, 0.0, 0.0);
+
+  const int maxShadowNum = 3;
   // compute contribution of each light using the microfacet model
   // the following part of the code is inspired by the Phong.frag in Magnum
   // library (https://magnum.graphics/)
@@ -397,8 +399,18 @@ void main() {
     microfacetModel(specularReflectance, c_diff, metallic, roughness, v_dot_h,
                     n_dot_l, n_dot_v, n_dot_h, lightRadiance,
                     currentDiffuseContrib, currentSpecularContrib);
-    diffuseContrib += currentDiffuseContrib;
-    specularContrib += currentSpecularContrib;
+
+#if defined(SHADOWS_VSM)
+    float shadow =
+        (iLight < maxShadowNum
+             ? computeShadowVSM(iLight, position, LightDirections[iLight].xyz)
+             : 1.0f);
+#else
+    float shadow = 1.0f;
+#endif
+
+    diffuseContrib += shadow * currentDiffuseContrib;
+    specularContrib += shadow * currentSpecularContrib;
   }  // for lights
 
   diffuseContrib *= ComponentScales[DirectDiffuse];

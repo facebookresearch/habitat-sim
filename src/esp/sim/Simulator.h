@@ -1342,6 +1342,21 @@ class Simulator {
       bool saveChdToObj = false);
 #endif
 
+  /**
+   * @brief For the current active scene, update the shaow map drawable group
+   */
+  void updateShadowMapDrawableGroup();
+  /**
+   * @brief compute the shadow maps for the active scene graph, and store the
+   * results in the resource manager
+   */
+  void computeShadowMaps(float lightNearPlane, float lightFarPlane);
+  /**
+   * @brief propergate shadow maps to the drawables
+   * NOTE: so far only pbr drawable and shader support the shadow maps
+   */
+  void setShadowMapsToDrawables();
+
  protected:
   Simulator() = default;
   /**
