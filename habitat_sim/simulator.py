@@ -619,6 +619,7 @@ class Sensor:
                 "Sensor observation requested but sensor is invalid.\
                  (has it been detached from a scene node?)"
             )
+        # TODO: How do I stop this from binding the sensor render target instead of the default render target?
         self._sim.renderer.draw(self._sensor_object, self._sim)
 
     def _draw_observation_async(self) -> None:
