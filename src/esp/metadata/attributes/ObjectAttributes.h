@@ -120,7 +120,12 @@ class AbstractObjectAttributes : public AbstractAttributes {
   void setRenderAssetIsPrimitive(bool renderAssetIsPrimitive) {
     set("renderAssetIsPrimitive", renderAssetIsPrimitive);
   }
-
+  /**
+   * @brief Get whether this object uses file-based mesh render object or
+   * primitive render shapes
+   * @return whether this object's render asset is a
+   * primitive or not
+   */
   bool getRenderAssetIsPrimitive() const {
     return get<bool>("renderAssetIsPrimitive");
   }
@@ -220,6 +225,9 @@ class AbstractObjectAttributes : public AbstractAttributes {
   void setForceFlatShading(bool force_flat_shading) {
     set("force_flat_shading", force_flat_shading);
   }
+  /**
+   * @brief if true use flat shading instead of phong or pbr shader
+   */
   bool getForceFlatShading() const { return get<bool>("force_flat_shading"); }
 
   bool getIsDirty() const { return get<bool>("__isDirty"); }
