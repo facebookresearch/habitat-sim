@@ -90,6 +90,7 @@ inline JsonGenericValue toJsonValue(const esp::assets::AssetInfo& x,
   addMember(obj, "virtualUnitToMeters", x.virtualUnitToMeters, allocator);
   addMember(obj, "forceFlatShading", x.forceFlatShading, allocator);
   addMember(obj, "splitInstanceMesh", x.splitInstanceMesh, allocator);
+  addMember(obj, "shaderTypeToUse", x.shaderTypeToUse, allocator);
   addMember(obj, "overridePhongMaterial", x.overridePhongMaterial, allocator);
 
   return obj;
@@ -103,6 +104,7 @@ inline bool fromJsonValue(const JsonGenericValue& obj,
   readMember(obj, "virtualUnitToMeters", x.virtualUnitToMeters);
   readMember(obj, "forceFlatShading", x.forceFlatShading);
   readMember(obj, "splitInstanceMesh", x.splitInstanceMesh);
+  readMember(obj, "shaderTypeToUse", x.shaderTypeToUse);
   readMember(obj, "overridePhongMaterial", x.overridePhongMaterial);
   return true;
 }
