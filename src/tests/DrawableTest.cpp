@@ -28,14 +28,6 @@ using esp::scene::SceneManager;
 // printed when you have accidentally unused variables or functions in the test
 namespace {
 
-class ResourceManagerExtended : public ResourceManager {
- public:
-  explicit ResourceManagerExtended(
-      esp::metadata::MetadataMediator::ptr& _metadataMediator)
-      : ResourceManager(_metadataMediator) {}
-  esp::gfx::ShaderManager& getShaderManager() { return shaderManager_; }
-};
-
 struct DrawableTest : Cr::TestSuite::Tester {
   explicit DrawableTest();
   // tests
@@ -46,7 +38,7 @@ struct DrawableTest : Cr::TestSuite::Tester {
   esp::gfx::WindowlessContext::uptr context_ =
       esp::gfx::WindowlessContext::create_unique(0);
   // must declare these in this order due to avoid deallocation errors
-  std::unique_ptr<ResourceManagerExtended> resourceManager_ = nullptr;
+  std::unique_ptr<ResourceManager> resourceManager_ = nullptr;
   SceneManager sceneManager_;
   // must create a GL context which will be used in the resource manager
   int sceneID_ = -1;
@@ -59,7 +51,7 @@ DrawableTest::DrawableTest() {
   cfg.loadSemanticMesh = false;
   cfg.forceSeparateSemanticSceneGraph = false;
   auto MM = MetadataMediator::create(cfg);
-  resourceManager_ = std::make_unique<ResourceManagerExtended>(MM);
+  resourceManager_ = std::make_unique<ResourceManager>(MM);
   //clang-format off
   addTests({&DrawableTest::addRemoveDrawables});
   //clang-format on

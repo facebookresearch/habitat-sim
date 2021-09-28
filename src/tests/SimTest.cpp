@@ -62,6 +62,7 @@ const std::string screenshotDir =
 struct SimTest : Cr::TestSuite::Tester {
   explicit SimTest();
 
+  //! build a simulator via a SimulatorConfiguration alone
   static Simulator::uptr getSimulator(
       SimTest& self,
       const std::string& scene,
@@ -152,11 +153,11 @@ struct {
                      {"built with MetadataMediator", &SimTest::getSimulatorMM}};
 SimTest::SimTest() {
   // clang-format off
-  addTests({&SimTest::basic,
-            &SimTest::reconfigure,
-            &SimTest::reset});
-            //test instances test both mechanisms for constructing simulator
+  //test instances test both mechanisms for constructing simulator
   addInstancedTests({
+            &SimTest::basic,
+            &SimTest::reconfigure,
+            &SimTest::reset,
             &SimTest::getSceneRGBAObservation,
             &SimTest::getSceneWithLightingRGBAObservation,
             &SimTest::getDefaultLightingRGBAObservation,
@@ -172,85 +173,54 @@ SimTest::SimTest() {
             &SimTest::createMagnumRenderingOff}, Cr::Containers::arraySize(SimulatorBuilder) );
   // clang-format on
 }
-
 void SimTest::basic() {
-  SimulatorConfiguration cfg;
-  cfg.activeSceneName = vangogh;
-  Simulator simulator(cfg);
-  PathFinder::ptr pathfinder = simulator.getPathFinder();
+  auto&& data = SimulatorBuilder[testCaseInstanceId()];
+  setTestCaseDescription(data.name);
+  auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
+  PathFinder::ptr pathfinder = simulator->getPathFinder();
   CORRADE_VERIFY(pathfinder);
-
-  // test for MM ctor
-  SimulatorConfiguration cfg_mm;
-  cfg_mm.activeSceneName = vangogh;
-  MetadataMediator::ptr MM = MetadataMediator::create(cfg_mm);
-  Simulator simulator_mm(cfg_mm, MM);
-  PathFinder::ptr pathfinder_mm = simulator_mm.getPathFinder();
-  CORRADE_VERIFY(pathfinder_mm);
 }
 
 void SimTest::reconfigure() {
-  SimulatorConfiguration cfg;
-  cfg.activeSceneName = vangogh;
-  Simulator simulator(cfg);
-  PathFinder::ptr pathfinder = simulator.getPathFinder();
-  simulator.reconfigure(cfg);
-  CORRADE_COMPARE(pathfinder, simulator.getPathFinder());
+  auto&& data = SimulatorBuilder[testCaseInstanceId()];
+  setTestCaseDescription(data.name);
+  auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
+  PathFinder::ptr pathfinder = simulator->getPathFinder();
+  SimulatorConfiguration cfg =
+      simulator->getMetadataMediator()->getSimulatorConfiguration();
+  simulator->reconfigure(cfg);
+  CORRADE_COMPARE(pathfinder, simulator->getPathFinder());
   SimulatorConfiguration cfg2;
   cfg2.activeSceneName = skokloster;
-  simulator.reconfigure(cfg2);
-  CORRADE_VERIFY(pathfinder != simulator.getPathFinder());
-
-  // test using MM ctor
-  SimulatorConfiguration cfg_mm;
-  cfg_mm.activeSceneName = vangogh;
-  MetadataMediator::ptr MM = MetadataMediator::create(cfg_mm);
-  Simulator simulator_mm(cfg_mm, MM);
-  PathFinder::ptr pathfinder_mm = simulator_mm.getPathFinder();
-  simulator_mm.reconfigure(cfg_mm);
-  CORRADE_COMPARE(pathfinder_mm, simulator_mm.getPathFinder());
-  SimulatorConfiguration cfg2_mm;
-  cfg2_mm.activeSceneName = skokloster;
-  simulator_mm.reconfigure(cfg2_mm);
-  CORRADE_VERIFY(pathfinder_mm != simulator_mm.getPathFinder());
+  simulator->reconfigure(cfg2);
+  CORRADE_VERIFY(pathfinder != simulator->getPathFinder());
 }
 
 void SimTest::reset() {
-  CORRADE_VERIFY(true);
-  auto testReset = [&](Simulator& simulator) {
-    PathFinder::ptr pathfinder = simulator.getPathFinder();
-    auto pinholeCameraSpec = CameraSensorSpec::create();
-    pinholeCameraSpec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
-    pinholeCameraSpec->sensorType = SensorType::Color;
-    pinholeCameraSpec->position = {0.0f, 1.5f, 5.0f};
-    pinholeCameraSpec->resolution = {100, 100};
-    AgentConfiguration agentConfig{};
-    agentConfig.sensorSpecifications = {pinholeCameraSpec};
-    auto agent = simulator.addAgent(agentConfig);
+  auto&& data = SimulatorBuilder[testCaseInstanceId()];
+  setTestCaseDescription(data.name);
+  auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
 
-    auto stateOrig = AgentState::create();
-    agent->getState(stateOrig);
+  PathFinder::ptr pathfinder = simulator->getPathFinder();
+  auto pinholeCameraSpec = CameraSensorSpec::create();
+  pinholeCameraSpec->sensorSubType = esp::sensor::SensorSubType::Pinhole;
+  pinholeCameraSpec->sensorType = SensorType::Color;
+  pinholeCameraSpec->position = {0.0f, 1.5f, 5.0f};
+  pinholeCameraSpec->resolution = {100, 100};
+  AgentConfiguration agentConfig{};
+  agentConfig.sensorSpecifications = {pinholeCameraSpec};
+  auto agent = simulator->addAgent(agentConfig);
 
-    simulator.reset();
+  auto stateOrig = AgentState::create();
+  agent->getState(stateOrig);
 
-    auto stateFinal = AgentState::create();
-    agent->getState(stateFinal);
-    CORRADE_COMPARE(stateOrig->position, stateFinal->position);
-    CORRADE_COMPARE(stateOrig->rotation, stateFinal->rotation);
-    CORRADE_COMPARE(pathfinder, simulator.getPathFinder());
-  };
+  simulator->reset();
 
-  SimulatorConfiguration cfg;
-  cfg.activeSceneName = vangogh;
-  Simulator simulator(cfg);
-  testReset(simulator);
-  // build simulator with MM
-
-  SimulatorConfiguration cfg_mm;
-  cfg_mm.activeSceneName = vangogh;
-  MetadataMediator::ptr MM = MetadataMediator::create(cfg_mm);
-  Simulator simulator_mm(cfg_mm, MM);
-  testReset(simulator_mm);
+  auto stateFinal = AgentState::create();
+  agent->getState(stateFinal);
+  CORRADE_COMPARE(stateOrig->position, stateFinal->position);
+  CORRADE_COMPARE(stateOrig->rotation, stateFinal->rotation);
+  CORRADE_COMPARE(pathfinder, simulator->getPathFinder());
 }
 
 void SimTest::checkPinholeCameraRGBAObservation(
