@@ -585,6 +585,20 @@ class ResourceManager {
       const esp::assets::PhongMaterialColor& materialColor);
 
   /**
+   * @brief Creates an asset name appropriately modified based certain
+   * conditions present in passed @p assetInfo.  This function will derive
+   * encodings based on the state of the assetInfo so that different material
+   * configurations can be specified on the same asset.
+   * @param info The AssetInfo that describes the asset being named.
+   * @param materialId [in/out] A string key representing the material to use.
+   * If empty, this will be generated and populated.
+   * @return the modified asset name to be used to save this asset to @p
+   * resourceDict_.
+   */
+  std::string createModifiedAssetName(const AssetInfo& info,
+                                      std::string& materialId);
+
+  /**
    * @brief Load a render asset (if not already loaded) and create a render
    * asset instance.
    *
@@ -842,6 +856,15 @@ class ResourceManager {
    */
   gfx::PbrMaterialData::uptr buildPbrShadedMaterialData(
       const Mn::Trade::PbrMetallicRoughnessMaterialData& material,
+      int textureBaseIndex) const;
+
+  /**
+   * @brief Build a @ref PhongMaterialData from a PBR source material, using
+   * some heuristics. This function is to enable conversion of PBR materials to
+   * phong if the user specifies phong shaders via configurations.
+   */
+  gfx::PhongMaterialData::uptr buildPhongFromPbrMetallicRoughness(
+      const Magnum::Trade::PbrMetallicRoughnessMaterialData& material,
       int textureBaseIndex) const;
 
   /**
@@ -1168,7 +1191,7 @@ class ResourceManager {
   gfx::ShadowMapManager shadowManager_;
   // scene graph id -> keys for the shadow maps
   std::map<int, std::vector<Magnum::ResourceKey>> shadowMapKeys_;
-};  // class ResourceManager
+};  // namespace assets
 
 CORRADE_ENUMSET_OPERATORS(ResourceManager::Flags)
 

@@ -41,7 +41,6 @@
 
 #include "esp/geo/Geo.h"
 #include "esp/gfx/GenericDrawable.h"
-#include "esp/gfx/MaterialUtil.h"
 #include "esp/gfx/PbrDrawable.h"
 #include "esp/gfx/replay/Recorder.h"
 #include "esp/io/Json.h"
@@ -258,10 +257,10 @@ bool ResourceManager::loadStage(
       if (!semanticStageSuccess) {
         ESP_ERROR() << "Semantic Stage mesh load failed.";
         return false;
-      } else {
-        ESP_DEBUG() << "Semantic Stage mesh :" << semanticStageFilename
-                    << "loaded.";
       }
+      ESP_DEBUG() << "Semantic Stage mesh :" << semanticStageFilename
+                  << "loaded.";
+
     } else if (semanticStageFilename !=
                "") {  // semantic file name does not exist but house does
       ESP_ERROR() << "Not loading semantic mesh with File Name :"
@@ -304,7 +303,7 @@ bool ResourceManager::loadStage(
                                              &drawables);  //  drawable group
   if (!renderMeshSuccess) {
     ESP_ERROR()
-        << "Stage render mesh load failed, Aborting scene initialization.";
+        << "Stage render mesh load failed, Aborting stage initialization.";
     return false;
   }
   // declare mesh group variable
@@ -322,7 +321,7 @@ bool ResourceManager::loadStage(
                             nullptr);  // drawable group
 
       if (!collisionMeshSuccess) {
-        ESP_ERROR() << "Stage collision mesh load failed.  Aborting scene "
+        ESP_ERROR() << "Stage collision mesh load failed.  Aborting stage "
                        "initialization.";
         return false;
       }
@@ -349,7 +348,7 @@ bool ResourceManager::loadStage(
         stageAttributes, stageInstanceAttributes, meshGroup);
     if (!sceneSuccess) {
       ESP_ERROR() << "Adding Stage" << stageAttributes->getHandle()
-                  << "to PhysicsManager failed. Aborting scene initialization.";
+                  << "to PhysicsManager failed. Aborting stage initialization.";
       return false;
     }
   }
@@ -415,6 +414,7 @@ ResourceManager::createStageAssetInfosFromAttributes(
       virtualUnitToMeters,                      // virtualUnitToMeters
       stageAttributes->getForceFlatShading()    // forceFlatShading
   };
+  renderInfo.shaderTypeToUse = stageAttributes->getShaderType();
   resMap["render"] = renderInfo;
   if (createCollisionInfo) {
     // create collision asset info if requested
@@ -483,8 +483,8 @@ std::string ResourceManager::createColorMaterial(
     phongMaterial->diffuseColor = materialColor.diffuseColor * 0.175;
     phongMaterial->specularColor = materialColor.specularColor * 0.175;
 
-    std::unique_ptr<gfx::MaterialData> finalMaterial(phongMaterial.release());
-    shaderManager_.set(newMaterialID, finalMaterial.release());
+    shaderManager_.set(newMaterialID, static_cast<gfx::MaterialData*>(
+                                          phongMaterial.release()));
   }
   return newMaterialID;
 }  // ResourceManager::createColorMaterial
@@ -557,10 +557,9 @@ scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
   // copy the const creation info to modify the key if necessary
   RenderAssetInstanceCreationInfo finalCreation(creation);
   if (assetInfo.overridePhongMaterial != Cr::Containers::NullOpt) {
+    std::string materiaId = "";
     // material override is requested so get the id
-    finalCreation.filepath =
-        assetInfo.filepath + "?" +
-        createColorMaterial(*assetInfo.overridePhongMaterial);
+    finalCreation.filepath = createModifiedAssetName(assetInfo, materiaId);
   }
 
   return createRenderAssetInstance(finalCreation, parent, drawables,
@@ -569,7 +568,7 @@ scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
 
 bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
   bool registerMaterialOverride =
-      info.overridePhongMaterial != Cr::Containers::NullOpt;
+      (info.overridePhongMaterial != Cr::Containers::NullOpt);
   bool fileAssetIsLoaded = resourceDict_.count(info.filepath) > 0;
 
   bool meshSuccess = fileAssetIsLoaded;
@@ -613,10 +612,10 @@ bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
   // now handle loading the material override AssetInfo if configured
   if (meshSuccess && registerMaterialOverride) {
     // register or get the override material id
-    std::string materialId = createColorMaterial(*info.overridePhongMaterial);
+    std::string materialId = "";
 
     // construct the unique id for the material modified asset
-    std::string modifiedAssetName = info.filepath + "?" + materialId;
+    std::string modifiedAssetName = createModifiedAssetName(info, materialId);
     const bool matModAssetIsRegistered =
         resourceDict_.count(modifiedAssetName) > 0;
     if (!matModAssetIsRegistered) {
@@ -653,6 +652,23 @@ bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
 
   return meshSuccess;
 }
+
+std::string ResourceManager::createModifiedAssetName(const AssetInfo& info,
+                                                     std::string& materialId) {
+  std::string modifiedAssetName = info.filepath;
+
+  // check materialId
+  if (info.overridePhongMaterial != Cr::Containers::NullOpt) {
+    if (materialId.empty()) {
+      // if passed value is empty, synthesize new color and new materialId
+      // based on this color and values specified in info
+      materialId = createColorMaterial(*info.overridePhongMaterial);
+    }
+    modifiedAssetName += "?" + materialId;
+  }
+  // construct name with materialId specification and desired shader type
+  return modifiedAssetName;
+}  // ResourceManager::createModifiedAssetName
 
 scene::SceneNode* ResourceManager::createRenderAssetInstance(
     const RenderAssetInstanceCreationInfo& creation,
@@ -788,6 +804,7 @@ bool ResourceManager::loadObjectMeshDataFromFile(
   if (!filename.empty()) {
     AssetInfo meshInfo{AssetType::UNKNOWN, filename};
     meshInfo.forceFlatShading = forceFlatShading;
+    meshInfo.shaderTypeToUse = objectAttributes->getShaderType();
     meshInfo.frame = buildFrameFromAttributes(objectAttributes, {0, 0, 0});
     success = loadRenderAsset(meshInfo);
     if (!success) {
@@ -1023,10 +1040,11 @@ void ResourceManager::buildPrimitiveAssetData(
   meshes_.emplace(meshStart, std::move(primMeshData));
 
   // default material for now
-  std::unique_ptr<gfx::MaterialData> phongMaterial =
+  std::unique_ptr<gfx::PhongMaterialData> phongMaterial =
       gfx::PhongMaterialData::create_unique();
 
-  shaderManager_.set(std::to_string(nextMaterialID_), phongMaterial.release());
+  shaderManager_.set(std::to_string(nextMaterialID_),
+                     static_cast<gfx::MaterialData*>(phongMaterial.release()));
 
   meshMetaData.root.meshIDLocal = 0;
   meshMetaData.root.componentID = 0;
@@ -1518,9 +1536,9 @@ bool ResourceManager::buildTrajectoryVisualization(
 
   // make LoadedAssetData corresponding to this asset
   LoadedAssetData loadedAssetData{info, meshMetaData};
-  // TODO : need to free render assets associated with this object if collision
-  // occurs, otherwise leak! (Currently unsupported).
-  // if (resourceDict_.count(trajVisName) != 0) {
+  // TODO : need to free render assets associated with this object if
+  // collision occurs, otherwise leak! (Currently unsupported). if
+  // (resourceDict_.count(trajVisName) != 0) {
   //   resourceDict_.erase(trajVisName);
   // }
   auto inserted =
@@ -1617,14 +1635,13 @@ void ResourceManager::loadMaterials(Importer& importer,
           materialData->as<Mn::Trade::PbrMetallicRoughnessMaterialData>();
 
       if (flags_ & Flag::BuildPhongFromPbr) {
-        finalMaterial = gfx::buildPhongFromPbrMetallicRoughness(
-            pbrMaterialData, textureBaseIndex, textures_);
+        finalMaterial = buildPhongFromPbrMetallicRoughness(pbrMaterialData,
+                                                           textureBaseIndex);
       } else {
         finalMaterial =
             buildPbrShadedMaterialData(pbrMaterialData, textureBaseIndex);
       }
     } else {
-      CORRADE_INTERNAL_ASSERT(materialData);
       if (!(materialData->types() & Magnum::Trade::MaterialType::Phong)) {
         ESP_ERROR() << "Cannot load material, skipping";
         continue;
@@ -1809,7 +1826,78 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
   finalMaterial->doubleSided = material.isDoubleSided();
 
   return finalMaterial;
-}
+}  // ResourceManager::buildPbrShadedMaterialData
+
+gfx::PhongMaterialData::uptr
+ResourceManager::buildPhongFromPbrMetallicRoughness(
+    const Mn::Trade::PbrMetallicRoughnessMaterialData& material,
+    int textureBaseIndex) const {
+  // NOLINTNEXTLINE(google-build-using-namespace)
+  using namespace Mn::Math::Literals;
+
+  auto finalMaterial = gfx::PhongMaterialData::create_unique();
+
+  // If there's a roughness texture, we have no way to use it here. The safest
+  // fallback is to assume roughness == 1, thus producing no spec highlights.
+  const float roughness =
+      material.hasRoughnessTexture() ? 1 : material.roughness();
+
+  // If there's a metalness texture, we have no way to use it here. The safest
+  // fallback is to assume non-metal.
+  const float metalness =
+      material.hasMetalnessTexture() ? 0 : material.metalness();
+
+  // Heuristic to map roughness to spec power.
+  // Higher exponent makes the spec highlight larger (lower power)
+  // https://www.wolframalpha.com/input/?i=5+%2B+%281+-+x%29%5E1.5+*+75+for+x+from+0+to+1
+  // lower power for metal
+  const float maxShininess = Magnum::Math::lerp(250, 120, metalness);
+  finalMaterial->shininess = 1.1 + powf(1 - roughness, 4.5) * maxShininess;
+
+  // Heuristic to map roughness to spec intensity.
+  // higher exponent decreases intensity.
+  // https://www.wolframalpha.com/input/?i=%281-x%29%5E3+from+0+to+1
+  float specIntensity = powf(1 - roughness, 2.5) * 1.4;
+  // increase spec intensity for metal
+  specIntensity *= (1 + 10 * powf(metalness, 1.7));
+
+  // texture transform, if there's none the matrix is an identity
+  finalMaterial->textureMatrix = material.commonTextureMatrix();
+
+  // another heuristic: reduce diffuse intensity for metal
+  float diffuseScale = Magnum::Math::lerp(1.0, 0.2, material.metalness());
+  finalMaterial->diffuseColor = material.baseColor() * diffuseScale;
+  if (material.hasAttribute(Mn::Trade::MaterialAttribute::BaseColorTexture)) {
+    finalMaterial->diffuseTexture =
+        textures_.at(textureBaseIndex + material.baseColorTexture()).get();
+  }
+
+  // Set spec base color to white or material base color, depending on
+  // metalness.
+  Magnum::Color4 specBaseColor =
+      lerp(0xffffffff_rgbaf, material.baseColor(), powf(metalness, 0.5));
+  finalMaterial->specularColor = specBaseColor * specIntensity;
+  if (metalness >= 0.5) {
+    finalMaterial->specularTexture = finalMaterial->diffuseTexture;
+  }
+
+  // set ambient color to match base color
+  finalMaterial->ambientColor = material.baseColor();
+  finalMaterial->ambientTexture = finalMaterial->diffuseTexture;
+
+  // NOTE: This multiplication is a hack to roughly balance the Phong and PBR
+  // light intensity reactions.
+  finalMaterial->diffuseColor *= 0.15;
+  finalMaterial->specularColor *= 0.15;
+
+  // normal mapping
+  if (material.hasAttribute(Mn::Trade::MaterialAttribute::NormalTexture)) {
+    finalMaterial->normalTexture =
+        textures_.at(textureBaseIndex + material.normalTexture()).get();
+  }
+
+  return finalMaterial;
+}  // ResourceManager::buildPhongFromPbrMetallicRoughness
 
 void ResourceManager::loadMeshes(Importer& importer,
                                  LoadedAssetData& loadedAssetData) {
@@ -1898,8 +1986,9 @@ void ResourceManager::loadTextures(Importer& importer,
     }
 
     // Configure the texture
-    Mn::GL::Texture2D& texture = *(textures_.at(textureStart + iTexture).get());
-    texture.setMagnificationFilter(textureData->magnificationFilter())
+    // Mn::GL::Texture2D& texture = *(textures_.at(textureStart +
+    // iTexture).get());
+    currentTexture->setMagnificationFilter(textureData->magnificationFilter())
         .setMinificationFilter(textureData->minificationFilter(),
                                textureData->mipmapFilter())
         .setWrapping(textureData->wrapping().xy());
@@ -1932,26 +2021,30 @@ void ResourceManager::loadTextures(Importer& importer,
         // If there is just one level and the image is not compressed, we'll
         // generate mips ourselves
         if (levelCount == 1 && !image->isCompressed()) {
-          texture.setStorage(Mn::Math::log2(image->size().max()) + 1, format,
-                             image->size());
+          currentTexture->setStorage(Mn::Math::log2(image->size().max()) + 1,
+                                     format, image->size());
           generateMipmap = true;
-        } else
-          texture.setStorage(levelCount, format, image->size());
+        } else {
+          currentTexture->setStorage(levelCount, format, image->size());
+        }
       }
 
-      if (image->isCompressed())
-        texture.setCompressedSubImage(level, {}, *image);
-      else
-        texture.setSubImage(level, {}, *image);
+      if (image->isCompressed()) {
+        currentTexture->setCompressedSubImage(level, {}, *image);
+      } else {
+        currentTexture->setSubImage(level, {}, *image);
+      }
     }
 
     // Mip level loading failed, fail the whole texture
-    if (currentTexture == nullptr)
+    if (currentTexture == nullptr) {
       continue;
+    }
 
     // Generate a mipmap if requested
-    if (generateMipmap)
-      texture.generateMipmap();
+    if (generateMipmap) {
+      currentTexture->generateMipmap();
+    }
   }
 }  // ResourceManager::loadTextures
 
@@ -1965,7 +2058,7 @@ bool ResourceManager::instantiateAssetsOnDemand(
   // if attributes are "dirty" (important values have changed since last
   // registered) then re-register.  Should never return ID_UNDEFINED - this
   // would mean something has corrupted the library.
-  // NOTE : this is called when an new object is being made, but before the
+  // NOTE : this is called when a new object is being made, but before the
   // object has acquired a copy of its parent attributes.  No object should
   // ever have a copy of attributes with isDirty == true - any editing of
   // attributes for objects requires object rebuilding.
@@ -2516,8 +2609,8 @@ void ResourceManager::createConvexHullDecomposition(
                                 Mn::Trade::MeshAttribute::Position,
                                 Cr::Containers::arrayView(positions)}}});
 
-    // Create a GenericMeshData (needsNormals_ = true and uploadBuffersToGPU in
-    // order to render the collision asset)
+    // Create a GenericMeshData (needsNormals_ = true and uploadBuffersToGPU
+    // in order to render the collision asset)
     genCHMeshData = std::make_unique<GenericMeshData>(true);
     genCHMeshData->setMeshData(*std::move(CHMesh));
     genCHMeshData->BB = computeMeshBB(genCHMeshData.get());

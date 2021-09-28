@@ -18,19 +18,7 @@ class PbrMetallicRoughnessMaterialData;
 }  // namespace Magnum
 
 namespace esp {
-namespace gfx {
-
-/**
- * @brief Build a @ref PhongMaterialData from a PBR source material, using
- * some heuristics. This function is temporary and should go away once we have
- * a PBR shader.
- */
-gfx::PhongMaterialData::uptr buildPhongFromPbrMetallicRoughness(
-    const Magnum::Trade::PbrMetallicRoughnessMaterialData& material,
-    int textureBaseIndex,
-    const std::map<int, std::shared_ptr<Magnum::GL::Texture2D>>& textures);
-
-}  // namespace gfx
+namespace gfx {}  // namespace gfx
 }  // namespace esp
 
 #endif  // ESP_GFX_MATERIALUTIL_H_
