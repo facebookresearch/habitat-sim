@@ -145,7 +145,7 @@ void ResourceManager::initDefaultPrimAttributes() {
 
   // by this point, we should have a GL::Context so load the bb primitive.
   // TODO: replace this completely with standard mesh (i.e. treat the bb
-  // wireframe cube no differently than other primivite-based rendered
+  // wireframe cube no differently than other primitive-based rendered
   // objects)
   auto cubeMeshName =
       getAssetAttributesManager()
@@ -361,6 +361,7 @@ bool ResourceManager::loadStage(
 
   return true;
 }  // ResourceManager::loadScene
+
 bool ResourceManager::buildMeshGroups(
     const AssetInfo& info,
     std::vector<CollisionMeshData>& meshGroup) {
@@ -1049,19 +1050,14 @@ void ResourceManager::buildPrimitiveAssetData(
   std::unique_ptr<gfx::PhongMaterialData> phongMaterial =
       gfx::PhongMaterialData::create_unique();
 
-  shaderManager_.set(std::to_string(nextMaterialID_),
+  meshMetaData.root.materialID = std::to_string(nextMaterialID_++);
+  shaderManager_.set(meshMetaData.root.materialID,
                      static_cast<gfx::MaterialData*>(phongMaterial.release()));
-
   meshMetaData.root.meshIDLocal = 0;
   meshMetaData.root.componentID = 0;
-  meshMetaData.root.materialID = std::to_string(nextMaterialID_++);
-  // store the rotation to world frame upon load - currently superfluous
-  const quatf transform = info.frame.rotationFrameToWorld();
-  Magnum::Matrix4 R = Magnum::Matrix4::from(
-      Magnum::Quaternion(transform).toMatrix(), Magnum::Vector3());
-  meshMetaData.root.transformFromLocalToParent =
-      R * meshMetaData.root.transformFromLocalToParent;
 
+  // set the root rotation to world frame upon load
+  meshMetaData.setRootFrameOrientation(info.frame);
   // make LoadedAssetData corresponding to this asset
   LoadedAssetData loadedAssetData{info, meshMetaData};
   auto inserted =
@@ -1098,12 +1094,9 @@ bool ResourceManager::loadRenderAssetPTex(const AssetInfo& info) {
   MeshMetaData& meshMetaData = inserted.first->second.meshMetaData;
   meshMetaData.root.meshIDLocal = 0;
   meshMetaData.root.componentID = 0;
-  // store the rotation to world frame upon load
-  const quatf transform = info.frame.rotationFrameToWorld();
-  Magnum::Matrix4 R = Magnum::Matrix4::from(
-      Magnum::Quaternion(transform).toMatrix(), Magnum::Vector3());
-  meshMetaData.root.transformFromLocalToParent =
-      R * meshMetaData.root.transformFromLocalToParent;
+
+  // set the root rotation to world frame upon load
+  meshMetaData.setRootFrameOrientation(info.frame);
 
   CORRADE_ASSERT(meshMetaData.meshIndex.first == meshMetaData.meshIndex.second,
                  "::loadRenderAssetPTex: ptex mesh is not loaded "
@@ -1273,13 +1266,8 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceIMesh(
   return instanceRoot;
 }  // ResourceManager::createRenderAssetInstanceIMesh
 
-bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
-  CORRADE_INTERNAL_ASSERT(isRenderAssetGeneral(info.type));
-
-  const std::string& filename = info.filepath;
-  const std::string dispFileName = Cr::Utility::Directory::filename(filename);
-  CORRADE_INTERNAL_ASSERT(resourceDict_.count(filename) == 0);
-
+void ResourceManager::ConfigureImporterManager(
+    const std::string& dispFileName) {
   // Preferred plugins, Basis target GPU format
   importerManager_.setPreferredPlugins("GltfImporter", {"TinyGltfImporter"});
 #ifdef ESP_BUILD_ASSIMP_SUPPORT
@@ -1364,6 +1352,17 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
     }
 #endif
   }
+}  // ResourceManager::ConfigureImportManager
+
+bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
+  CORRADE_INTERNAL_ASSERT(isRenderAssetGeneral(info.type));
+
+  const std::string& filename = info.filepath;
+  const std::string dispFileName = Cr::Utility::Directory::filename(filename);
+  CORRADE_INTERNAL_ASSERT(resourceDict_.count(filename) == 0);
+
+  // appropriately configure importerManager_ based on compilation flags
+  ConfigureImporterManager(dispFileName);
 
   if (!fileImporter_->openFile(filename)) {
     ESP_ERROR() << "Cannot open file" << filename;
@@ -1401,12 +1400,7 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
     ESP_ERROR() << "No default scene available and no meshes found, exiting";
     return false;
   }
-
-  const quatf transform = info.frame.rotationFrameToWorld();
-  Magnum::Matrix4 R = Magnum::Matrix4::from(
-      Magnum::Quaternion(transform).toMatrix(), Magnum::Vector3());
-  meshMetaData.root.transformFromLocalToParent =
-      R * meshMetaData.root.transformFromLocalToParent;
+  meshMetaData.setRootFrameOrientation(info.frame);
 
   return true;
 }  // ResourceManager::loadRenderAssetGeneral
@@ -1526,19 +1520,15 @@ bool ResourceManager::buildTrajectoryVisualization(
   phongMaterial->ambientColor = color;
   phongMaterial->diffuseColor = color;
 
-  shaderManager_.set(std::to_string(nextMaterialID_),
+  meshMetaData.root.materialID = std::to_string(nextMaterialID_++);
+  shaderManager_.set(meshMetaData.root.materialID,
                      static_cast<gfx::MaterialData*>(phongMaterial.release()));
 
   meshMetaData.root.meshIDLocal = 0;
   meshMetaData.root.componentID = 0;
-  meshMetaData.root.materialID = std::to_string(nextMaterialID_++);
 
-  // store the rotation to world frame upon load - currently superfluous
-  const quatf transform = info.frame.rotationFrameToWorld();
-  Magnum::Matrix4 R = Magnum::Matrix4::from(
-      Magnum::Quaternion(transform).toMatrix(), Magnum::Vector3());
-  meshMetaData.root.transformFromLocalToParent =
-      R * meshMetaData.root.transformFromLocalToParent;
+  // store the rotation to world frame upon load
+  meshMetaData.setRootFrameOrientation(info.frame);
 
   // make LoadedAssetData corresponding to this asset
   LoadedAssetData loadedAssetData{info, meshMetaData};
@@ -1662,8 +1652,6 @@ void ResourceManager::loadMaterials(Importer& importer,
       Cr::Utility::Directory::filename(loadedAssetData.assetInfo.filepath);
 
   for (int iMaterial = 0; iMaterial < importer.materialCount(); ++iMaterial) {
-    int currentMaterialID = nextMaterialID_++;
-
     // TODO:
     // it seems we have a way to just load the material once in this case,
     // as long as the materialName includes the full path to the material
@@ -1723,7 +1711,7 @@ void ResourceManager::loadMaterials(Importer& importer,
     }
     // for now, just use unique ID for material key. This may change if we
     // expose materials to user for post-load modification
-    shaderManager_.set(std::to_string(currentMaterialID),
+    shaderManager_.set(std::to_string(nextMaterialID_++),
                        finalMaterial.release());
   }
 }  // ResourceManager::loadMaterials
