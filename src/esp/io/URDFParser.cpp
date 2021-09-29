@@ -207,6 +207,7 @@ bool Parser::parseURDF(std::shared_ptr<Model>& urdfModel,
   }
 
   // Get all link elements including shapes
+  int link_index = 0;
   for (const XMLElement* link_xml = robot_xml->FirstChildElement("link");
        link_xml; link_xml = link_xml->NextSiblingElement("link")) {
     std::shared_ptr<Link> link = std::make_shared<Link>();
@@ -238,6 +239,9 @@ bool Parser::parseURDF(std::shared_ptr<Model>& urdfModel,
 
         // register the new link
         urdfModel->m_links[link->m_name] = link;
+        link->m_linkIndex = link_index;
+        urdfModel->m_linkIndicesToNames[link->m_linkIndex] = link->m_name;
+        link_index++;
       }
     } else {
       ESP_ERROR() << "Failed to parse link. Aborting parse/load for"
@@ -935,17 +939,11 @@ bool Parser::initTreeAndRoot(const std::shared_ptr<Model>& model) const {
   }
 
   // search for children that have no parent, those are 'root'
-  int index = 0;
   for (auto itr = model->m_links.begin(); itr != model->m_links.end(); itr++) {
     auto link = itr->second;
-
-    link->m_linkIndex = index;
-    model->m_linkIndicesToNames[link->m_linkIndex] = link->m_name;
-
     if (!link->m_parentLink.lock()) {
       model->m_rootLinks.push_back(link);
     }
-    index++;
   }
 
   if (model->m_rootLinks.size() > 1) {

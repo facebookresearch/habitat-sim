@@ -110,11 +110,12 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
     float globalScale,
     float massScale,
     bool forceReload,
+    bool maintainLinkOrder,
     const std::string& lightSetup) {
   auto& drawables = simulator_->getDrawableGroup();
   return addArticulatedObjectFromURDF(filepath, &drawables, fixedBase,
                                       globalScale, massScale, forceReload,
-                                      lightSetup);
+                                      maintainLinkOrder, lightSetup);
 }
 
 int BulletPhysicsManager::addArticulatedObjectFromURDF(
@@ -124,6 +125,7 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
     float globalScale,
     float massScale,
     bool forceReload,
+    bool maintainLinkOrder,
     const std::string& lightSetup) {
   ESP_CHECK(
       urdfImporter_->loadURDF(filepath, globalScale, massScale, forceReload),
@@ -148,6 +150,9 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
 
   // TODO: set these flags up better
   u2b->flags = 0;
+  if (maintainLinkOrder) {
+    u2b->flags |= CUF_MAINTAIN_LINK_ORDER;
+  }
   u2b->initURDF2BulletCache();
 
   articulatedObject->initializeFromURDF(*urdfImporter_, {}, physicsNode_);
@@ -162,20 +167,20 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
   }
 
   // attach link visual shapes
-  int urdfLinkIx = 0;
-  for (auto& link : urdfImporter_->getModel()->m_links) {
-    if (link.second->m_visualArray.size() > 0) {
+  for (size_t urdfLinkIx = 0; urdfLinkIx < u2b->getModel()->m_links.size();
+       ++urdfLinkIx) {
+    auto urdfLink = u2b->getModel()->getLink(urdfLinkIx);
+    if (!urdfLink->m_visualArray.empty()) {
       int bulletLinkIx =
           u2b->cache->m_urdfLinkIndices2BulletLinkIndices[urdfLinkIx];
       ArticulatedLink& linkObject = articulatedObject->getLink(bulletLinkIx);
       ESP_CHECK(
-          attachLinkGeometry(&linkObject, link.second, drawables, lightSetup),
+          attachLinkGeometry(&linkObject, urdfLink, drawables, lightSetup),
           "BulletPhysicsManager::addArticulatedObjectFromURDF(): Failed to "
           "instance render asset (attachGeometry) for link"
               << urdfLinkIx << ".");
       linkObject.node().computeCumulativeBB();
     }
-    urdfLinkIx++;
   }
 
   // clear the cache
