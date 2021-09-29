@@ -104,7 +104,7 @@ void BulletArticulatedObject::initializeFromURDF(
                 return a.m_index < b.m_index;
               });
 
-    if (allIndices.size() + 1 >= parentTransforms.size()) {
+    if (allIndices.size() + 1 > parentTransforms.size()) {
       parentTransforms.resize(allIndices.size() + 1);
     }
     for (size_t i = 0; i < allIndices.size(); ++i) {
