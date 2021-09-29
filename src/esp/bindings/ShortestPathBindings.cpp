@@ -101,7 +101,7 @@ void initShortestPathBindings(py::module& m) {
            [](PathFinder& self) { return self.getNavMeshData()->vbo; })
       .def("build_navmesh_vertex_indices",
            [](PathFinder& self) { return self.getNavMeshData()->ibo; })
-      .def("load_nav_mesh", &PathFinder::loadNavMesh)
+      .def("load_nav_mesh", &PathFinder::loadNavMesh, "path"_a)
       .def("save_nav_mesh", &PathFinder::saveNavMesh, "path"_a)
       .def("distance_to_closest_obstacle",
            &PathFinder::distanceToClosestObstacle,
