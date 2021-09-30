@@ -685,11 +685,11 @@ jobs:
               NOW=$(date +"%m-%d-%Y")
               git add .
               git diff-index --quiet HEAD || git commit -m "Build habitat-sim and habitat-lab ${NOW}"
-              git push origin master
+              git push origin main
 
               # Deploy to public
               git checkout gh-pages
-              git checkout master published
+              git checkout main published
               sudo apt-get update || true
               sudo apt-get install -yq \
                     rsync
