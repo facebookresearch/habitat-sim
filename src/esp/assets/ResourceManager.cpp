@@ -1717,17 +1717,10 @@ void ResourceManager::loadMaterials(Importer& importer,
     if (checkForPassedShaderType(
             shaderTypeToUse, materialData, ShaderTypeEnum::PBR,
             Mn::Trade::MaterialType::PbrMetallicRoughness)) {
-      // if (flags_ & Flag::BuildPhongFromPbr) {
-      //   ESP_WARNING() << "Building phong from pbr material";
-      //   finalMaterial =
-      //       buildPhongFromPbrMetallicRoughness(materialData,
-      //       textureBaseIndex);
-      // } else
-      {
-        ESP_WARNING() << "Building pbr material";
-        finalMaterial =
-            buildPbrShadedMaterialData(materialData, textureBaseIndex);
-      }
+      ESP_WARNING() << "Building pbr material";
+      finalMaterial =
+          buildPbrShadedMaterialData(materialData, textureBaseIndex);
+
       // phong shader spec, of material-specified and material specifies phong
     } else if (checkForPassedShaderType(shaderTypeToUse, materialData,
                                         ShaderTypeEnum::Phong,
@@ -2137,79 +2130,82 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
   return finalMaterial;
 }  // ResourceManager::buildPbrShadedMaterialData
 
-gfx::PhongMaterialData::uptr
-ResourceManager::buildPhongFromPbrMetallicRoughness(
-    Cr::Containers::Optional<Mn::Trade::MaterialData>& materialData,
-    int textureBaseIndex) const {
-  // NOLINTNEXTLINE(google-build-using-namespace)
-  using namespace Mn::Math::Literals;
-  const auto& material =
-      materialData->as<Mn::Trade::PbrMetallicRoughnessMaterialData>();
+// gfx::PhongMaterialData::uptr
+// ResourceManager::buildPhongFromPbrMetallicRoughness(
+//     Cr::Containers::Optional<Mn::Trade::MaterialData>& materialData,
+//     int textureBaseIndex) const {
+//   // NOLINTNEXTLINE(google-build-using-namespace)
+//   using namespace Mn::Math::Literals;
+//   const auto& material =
+//       materialData->as<Mn::Trade::PbrMetallicRoughnessMaterialData>();
 
-  auto finalMaterial = gfx::PhongMaterialData::create_unique();
+//   auto finalMaterial = gfx::PhongMaterialData::create_unique();
 
-  // If there's a roughness texture, we have no way to use it here. The safest
-  // fallback is to assume roughness == 1, thus producing no spec highlights.
-  const float roughness =
-      material.hasRoughnessTexture() ? 1 : material.roughness();
+//   // If there's a roughness texture, we have no way to use it here. The
+//   safest
+//   // fallback is to assume roughness == 1, thus producing no spec highlights.
+//   const float roughness =
+//       material.hasRoughnessTexture() ? 1 : material.roughness();
 
-  // If there's a metalness texture, we have no way to use it here. The safest
-  // fallback is to assume non-metal.
-  const float metalness =
-      material.hasMetalnessTexture() ? 0 : material.metalness();
+//   // If there's a metalness texture, we have no way to use it here. The
+//   safest
+//   // fallback is to assume non-metal.
+//   const float metalness =
+//       material.hasMetalnessTexture() ? 0 : material.metalness();
 
-  // Heuristic to map roughness to spec power.
-  // Higher exponent makes the spec highlight larger (lower power)
-  // https://www.wolframalpha.com/input/?i=5+%2B+%281+-+x%29%5E1.5+*+75+for+x+from+0+to+1
-  // lower power for metal
-  const float maxShininess = Magnum::Math::lerp(250, 120, metalness);
-  finalMaterial->shininess = 1.1 + powf(1 - roughness, 4.5) * maxShininess;
+//   // Heuristic to map roughness to spec power.
+//   // Higher exponent makes the spec highlight larger (lower power)
+//   //
+//   https://www.wolframalpha.com/input/?i=5+%2B+%281+-+x%29%5E1.5+*+75+for+x+from+0+to+1
+//   // lower power for metal
+//   const float maxShininess = Magnum::Math::lerp(250, 120, metalness);
+//   finalMaterial->shininess = 1.1 + powf(1 - roughness, 4.5) * maxShininess;
 
-  // Heuristic to map roughness to spec intensity.
-  // higher exponent decreases intensity.
-  // https://www.wolframalpha.com/input/?i=%281-x%29%5E3+from+0+to+1
-  float specIntensity = powf(1 - roughness, 2.5) * 1.4;
-  // increase spec intensity for metal
-  specIntensity *= (1 + 10 * powf(metalness, 1.7));
+//   // Heuristic to map roughness to spec intensity.
+//   // higher exponent decreases intensity.
+//   // https://www.wolframalpha.com/input/?i=%281-x%29%5E3+from+0+to+1
+//   float specIntensity = powf(1 - roughness, 2.5) * 1.4;
+//   // increase spec intensity for metal
+//   specIntensity *= (1 + 10 * powf(metalness, 1.7));
 
-  // texture transform, if there's none the matrix is an identity
-  finalMaterial->textureMatrix = material.commonTextureMatrix();
+//   // texture transform, if there's none the matrix is an identity
+//   finalMaterial->textureMatrix = material.commonTextureMatrix();
 
-  // another heuristic: reduce diffuse intensity for metal
-  float diffuseScale = Magnum::Math::lerp(1.0, 0.2, material.metalness());
-  finalMaterial->diffuseColor = material.baseColor() * diffuseScale;
+//   // another heuristic: reduce diffuse intensity for metal
+//   float diffuseScale = Magnum::Math::lerp(1.0, 0.2, material.metalness());
+//   finalMaterial->diffuseColor = material.baseColor() * diffuseScale;
 
-  if (material.hasAttribute(MnMatAttr::BaseColorTexture)) {
-    finalMaterial->diffuseTexture =
-        textures_.at(textureBaseIndex + material.baseColorTexture()).get();
-  }
+//   if (material.hasAttribute(MnMatAttr::BaseColorTexture)) {
+//     finalMaterial->diffuseTexture =
+//         textures_.at(textureBaseIndex + material.baseColorTexture()).get();
+//   }
 
-  // Set spec base color to white or material base color, depending on
-  // metalness.
-  Magnum::Color4 specBaseColor =
-      lerp(0xffffffff_rgbaf, material.baseColor(), powf(metalness, 0.5));
-  finalMaterial->specularColor = specBaseColor * specIntensity;
-  if (metalness >= 0.5) {
-    finalMaterial->specularTexture = finalMaterial->diffuseTexture;
-  }
+//   // Set spec base color to white or material base color, depending on
+//   // metalness.
+//   Magnum::Color4 specBaseColor =
+//       lerp(0xffffffff_rgbaf, material.baseColor(), powf(metalness, 0.5));
+//   finalMaterial->specularColor = specBaseColor * specIntensity;
+//   if (metalness >= 0.5) {
+//     finalMaterial->specularTexture = finalMaterial->diffuseTexture;
+//   }
 
-  // set ambient color to match base color
-  finalMaterial->ambientColor = material.baseColor();
-  finalMaterial->ambientTexture = finalMaterial->diffuseTexture;
+//   // set ambient color to match base color
+//   finalMaterial->ambientColor = material.baseColor();
+//   finalMaterial->ambientTexture = finalMaterial->diffuseTexture;
 
-  // NOTE: This multiplication is a hack to roughly balance the Phong and PBR
-  // light intensity reactions.
-  finalMaterial->diffuseColor *= 0.15;
-  finalMaterial->specularColor *= 0.15;
+//   // NOTE: This multiplication is a hack to roughly balance the Phong and PBR
+//   // light intensity reactions.
+//   finalMaterial->diffuseColor *= 0.15;
+//   finalMaterial->specularColor *= 0.15;
 
-  // normal mapping
-  if (material.hasAttribute(MnMatAttr::NormalTexture)) {
-    finalMaterial->normalTexture =
-        textures_.at(textureBaseIndex + material.normalTexture()).get();
-  }
+//   // normal mapping
+//   if (material.hasAttribute(MnMatAttr::NormalTexture)) {
+//     finalMaterial->normalTexture =
+//         textures_.at(textureBaseIndex + material.normalTexture()).get();
+//   }
 
-  return finalMaterial;
-}  // ResourceManager::buildPhongFromPbrMetallicRoughness
+//   return finalMaterial;
+// }  // ResourceManager::buildPhongFromPbrMetallicRoughness
 
 void ResourceManager::loadMeshes(Importer& importer,
                                  LoadedAssetData& loadedAssetData) {

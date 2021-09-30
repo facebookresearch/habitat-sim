@@ -124,14 +124,9 @@ class ResourceManager {
    */
   enum class Flag : Magnum::UnsignedShort {
     /**
-     * build phong material from PBR material
-     */
-    BuildPhongFromPbr = 1 << 0,
-
-    /**
      * use pbr image based lighting
      */
-    PbrImageBasedLighting = 1 << 1,
+    PbrImageBasedLighting = 1 << 0,
   };
 
   /**
@@ -908,14 +903,15 @@ class ResourceManager {
       Cr::Containers::Optional<Mn::Trade::MaterialData>& material,
       int textureBaseIndex) const;
 
-  /**
-   * @brief Build a @ref PhongMaterialData from a PBR source material, using
-   * some heuristics. This function is to enable conversion of PBR materials to
-   * phong if the user specifies phong shaders via configurations.
-   */
-  gfx::PhongMaterialData::uptr buildPhongFromPbrMetallicRoughness(
-      Cr::Containers::Optional<Mn::Trade::MaterialData>& material,
-      int textureBaseIndex) const;
+  // /**
+  //  * @brief Build a @ref PhongMaterialData from a PBR source material, using
+  //  * some heuristics. This function is to enable conversion of PBR materials
+  //  to
+  //  * phong if the user specifies phong shaders via configurations.
+  //  */
+  // gfx::PhongMaterialData::uptr buildPhongFromPbrMetallicRoughness(
+  //     Cr::Containers::Optional<Mn::Trade::MaterialData>& material,
+  //     int textureBaseIndex) const;
 
   /**
    * @brief Load a mesh describing some scene asset based on the passed
