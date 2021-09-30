@@ -84,6 +84,8 @@ class Model;
 }
 }  // namespace io
 namespace assets {
+// used for shadertype specification
+typedef metadata::attributes::ObjectInstanceShaderType ShaderTypeEnum;
 
 /**
  * @brief Singleton class responsible for
@@ -822,6 +824,54 @@ class ResourceManager {
   void loadMaterials(Importer& importer, LoadedAssetData& loadedAssetData);
 
   /**
+   * @brief Get the appropriate the @ref
+   * esp::metadata::attributes::ObjectInstanceShaderType to use to render the
+   * passed @p material based on specification in passed @p info or the material
+   * itself.
+   * @param info The asset info describing the asset whose material is being
+   * rendered.
+   * @return the @ref esp::metadata::attributes::ObjectInstanceShaderType to use
+   * to render the material.
+   */
+  ShaderTypeEnum getMaterialShaderType(const AssetInfo& info) const;
+
+  /**
+   * @brief Boolean check if @p typeToCheck aligns with passed types explicitly
+   * specified, or type in material
+   * @param typeToCheck The ShaderTypeEnum value beign queried for.
+   * @param materialData The material whose type we are verifying against
+   * @param verificationType The ShaderTypeEnum we are verifying against
+   * @param mnVerificationType The @ref Mn::Trade::MaterialType bitflag that the
+   * passed material's specified type is being verified against.
+   * @return Whether or not the passed @p typeToCheck matches the passed
+   * criteria.
+   */
+  bool checkForPassedShaderType(
+      const ShaderTypeEnum typeToCheck,
+      const Cr::Containers::Optional<Mn::Trade::MaterialData>& materialData,
+      const ShaderTypeEnum verificationType,
+      const Mn::Trade::MaterialType mnVerificationType) const {
+    return (
+        (typeToCheck == verificationType) ||
+        ((typeToCheck == ShaderTypeEnum::Material) &&
+         ((materialData->types() & mnVerificationType) == mnVerificationType)));
+  }
+
+  /**
+   * @brief This function will take an existing Mn::Trade::MaterialData and add
+   * the missing attributes for the types it does not support, so that it will
+   * have attributes for all habitat-supported types. This should only be called
+   * if the user has specified a desired shader type that the material does not
+   * natively support.
+   * @param origMaterialData The original material from the importer
+   * @return The new material with attribute support for all supported shader
+   * types.
+   */
+  Cr::Containers::Optional<Mn::Trade::MaterialData> createUniversalMaterial(
+      const Cr::Containers::Optional<Mn::Trade::MaterialData>&
+          origMaterialData);
+
+  /**
    * @brief Build a @ref PhongMaterialData for use with flat shading
    *
    * Textures must already be loaded for the asset this material belongs to
@@ -830,7 +880,7 @@ class ResourceManager {
    * @param textureBaseIndex Base index of the assets textures in textures_
    */
   gfx::PhongMaterialData::uptr buildFlatShadedMaterialData(
-      const Mn::Trade::PhongMaterialData& material,
+      Cr::Containers::Optional<Mn::Trade::MaterialData>& materialData,
       int textureBaseIndex);
 
   /**
@@ -843,7 +893,7 @@ class ResourceManager {
 
    */
   gfx::PhongMaterialData::uptr buildPhongShadedMaterialData(
-      const Mn::Trade::PhongMaterialData& material,
+      Cr::Containers::Optional<Mn::Trade::MaterialData>& material,
       int textureBaseIndex) const;
 
   /**
@@ -855,7 +905,7 @@ class ResourceManager {
    * @param textureBaseIndex Base index of the assets textures in textures_
    */
   gfx::PbrMaterialData::uptr buildPbrShadedMaterialData(
-      const Mn::Trade::PbrMetallicRoughnessMaterialData& material,
+      Cr::Containers::Optional<Mn::Trade::MaterialData>& material,
       int textureBaseIndex) const;
 
   /**
@@ -864,7 +914,7 @@ class ResourceManager {
    * phong if the user specifies phong shaders via configurations.
    */
   gfx::PhongMaterialData::uptr buildPhongFromPbrMetallicRoughness(
-      const Magnum::Trade::PbrMetallicRoughnessMaterialData& material,
+      Cr::Containers::Optional<Mn::Trade::MaterialData>& material,
       int textureBaseIndex) const;
 
   /**
