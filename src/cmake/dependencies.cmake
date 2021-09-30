@@ -12,7 +12,7 @@ if(NOT USE_SYSTEM_MAGNUM)
   set(WITH_INTERCONNECT OFF CACHE BOOL "" FORCE)
   # Ensure Corrade should be built statically if Magnum is.
   set(BUILD_PLUGINS_STATIC ON CACHE BOOL "" FORCE)
-  set(BUILD_STATIC ON CACHE BOOL "" FORCE)
+  set(BUILD_STATIC OFF CACHE BOOL "" FORCE)
   set(BUILD_STATIC_PIC ON CACHE BOOL "" FORCE)
   add_subdirectory("${DEPS_DIR}/corrade")
 endif()
