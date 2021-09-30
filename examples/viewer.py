@@ -19,6 +19,7 @@ class SkeletonPythonViewer(Application):
         self.sim = habitat_sim.Simulator(self.cfg)
         self.agent_id = sim_settings["default_agent"]
         self.step = -1
+        self.print_help_text()
 
     def draw_event(self):
         gl.default_framebuffer.clear(
@@ -33,41 +34,68 @@ class SkeletonPythonViewer(Application):
 
         self.swap_buffers()
 
+    # TODO: Find out why using a mouse-click to close window doesn't utilize 
+    #       this function, leading to zsh: abort 
+    # Override exit() method to first close the simulator before exiting
+    def exit(self, arg0):
+        self.sim.close(destroy=True)
+        super().exit(arg0)
+
+    def key_press_event(self, event):
+        key = event.key
+        pressed = Application.KeyEvent.Key
+
+        if key == pressed.ESC:
+            self.exit(0)
+            return
+        elif key == pressed.H:
+            self.print_help_text()
+            
+    def print_help_text(self):
+        print(
+'''
+=====================================================
+Welcome to the Habitat-sim Python Viewer application!
+=====================================================
+Key Commands:
+-------------
+esc: Exit the application.
+'h': Display this help message.
+=====================================================
+'''
+        )           
 
 if __name__ == "__main__":
     import argparse
-
     parser = argparse.ArgumentParser()
-    # necessary arguments
-    parser.add_argument(
-        'scene',
-        type=str, 
-        help='scene/stage file to load ("default" for default scene)',
-    )
-
+    
     # optional arguments
+    parser.add_argument(
+        '--scene',
+        default="NONE",
+        type=str, 
+        help='scene/stage file to load (default: "NONE")',
+    )
     parser.add_argument(        
         '--dataset',
+        default='default',
         type=str,
         metavar='DATASET', 
-        help='scene/stage file to load ("default" for default scene)',
+        help='dataset configuration file to use (default: default)',
     )
-
+    
     args = parser.parse_args()
+    
+    # TODO: Find a way to get this to print right before 
+    #       the help text. Currently prints before huge 
+    #       console logging blob
+    # If no arguments are passed, print usage for user
+    if vars(args) == vars(parser.parse_args([])):
+        parser.print_help()
 
     # Setting up sim_settings
     sim_settings = default_sim_settings
     sim_settings['scene'] = args.scene
-    sim_settings['scene_dataset_config_file'] = args.dataset or 'default'
+    sim_settings['scene_dataset_config_file'] = args.dataset
 
-    # 'default' option added for now to make testing easier
-    if args.scene == 'default':
-        sim_settings[
-            'scene'
-        ] = 'data/scene_datasets/habitat-test-scenes/skokloster-castle.glb'
-try:
-    exit(SkeletonPythonViewer(sim_settings).exec())
-except Exception:
-    import traceback
-
-    print(str(traceback.format_exc()))
+SkeletonPythonViewer(sim_settings).exec()
