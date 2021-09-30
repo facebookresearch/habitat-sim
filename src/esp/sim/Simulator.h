@@ -92,10 +92,14 @@ class Simulator {
     return sceneManager_->getSceneGraph(activeSceneID_);
   }
 
+  /** @brief Check to see if there is a SemanticSceneGraph for rendering */
+  bool semanticSceneGraphExists() const {
+    return std::size_t(activeSemanticSceneID_) < sceneID_.size();
+  }
+
   /** @brief get the semantic scene's SceneGraph for rendering */
   scene::SceneGraph& getActiveSemanticSceneGraph() {
-    CORRADE_INTERNAL_ASSERT(std::size_t(activeSemanticSceneID_) <
-                            sceneID_.size());
+    CORRADE_INTERNAL_ASSERT(semanticSceneGraphExists());
     return sceneManager_->getSceneGraph(activeSemanticSceneID_);
   }
   std::shared_ptr<gfx::replay::ReplayManager> getGfxReplayManager() {
