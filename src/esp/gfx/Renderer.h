@@ -6,6 +6,7 @@
 #define ESP_GFX_RENDERER_H_
 
 #include "esp/core/Esp.h"
+#include "esp/gfx/CubeMap.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/WindowlessContext.h"
 #include "esp/scene/SceneGraph.h"
@@ -151,6 +152,19 @@ class Renderer {
    * @param[in] bindingFlags flags, such as to control the bindings
    */
   void bindRenderTarget(sensor::VisualSensor& sensor, Flags bindingFlags = {});
+
+  /**
+   * @brief apply gaussian filtering to source cubemap and store the result in
+   * target cubemap
+   * @param[in,out] target, the target cubemap
+   * @param[in,out] helper, a helper cubemap with the same cube size, and
+   * texture type (e.g., color, variance shadow map)
+   * @param[in] type cubemap texture type, indicating which texture type the
+   * filtering would apply to. It can ONLY be Color, VarianceShadowMap
+   */
+  void applyGaussianFiltering(CubeMap& target,
+                              CubeMap& helper,
+                              CubeMap::TextureType type);
 
   ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(Renderer)
 };

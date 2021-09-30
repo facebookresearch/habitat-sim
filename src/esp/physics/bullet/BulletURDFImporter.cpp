@@ -122,7 +122,7 @@ btCollisionShape* BulletURDFImporter::convertURDFToCollisionShape(
 }
 
 btCompoundShape* BulletURDFImporter::convertLinkCollisionShapes(
-    int linkIndex,
+    int urdfLinkIndex,
     const btTransform& localInertiaFrame,
     std::vector<std::unique_ptr<btCollisionShape>>& linkChildShapes) {
   // TODO: smart pointer
@@ -130,55 +130,39 @@ btCompoundShape* BulletURDFImporter::convertLinkCollisionShapes(
 
   compoundShape->setMargin(gUrdfDefaultCollisionMargin);
 
-  ESP_VERY_VERBOSE() << "num links =" << activeModel_->m_links.size();
+  auto link = activeModel_->getLink(urdfLinkIndex);
 
-  auto itr = activeModel_->m_links.begin();
-  for (int i = 0; (i < linkIndex && itr != activeModel_->m_links.end()); i++) {
-    itr++;
-  }
-  if (itr != activeModel_->m_links.end()) {
-    std::shared_ptr<io::URDF::Link> link = itr->second;
+  for (size_t v = 0; v < link->m_collisionArray.size(); ++v) {
+    const io::URDF::CollisionShape& col = link->m_collisionArray[v];
+    btCollisionShape* childShape =
+        convertURDFToCollisionShape(&col, linkChildShapes);
+    if (childShape) {
+      Magnum::Matrix4 childTrans = col.m_linkLocalFrame;
+      ESP_VERY_VERBOSE() << "col.m_linkLocalFrame:"
+                         << Magnum::Matrix4(col.m_linkLocalFrame);
 
-    for (size_t v = 0; v < link->m_collisionArray.size(); ++v) {
-      const io::URDF::CollisionShape& col = link->m_collisionArray[v];
-      btCollisionShape* childShape =
-          convertURDFToCollisionShape(&col, linkChildShapes);
-      if (childShape) {
-        Magnum::Matrix4 childTrans = col.m_linkLocalFrame;
-        ESP_VERY_VERBOSE() << "col.m_linkLocalFrame:"
-                           << Magnum::Matrix4(col.m_linkLocalFrame);
-
-        compoundShape->addChildShape(
-            localInertiaFrame.inverse() * btTransform(childTrans), childShape);
-      }
+      compoundShape->addChildShape(
+          localInertiaFrame.inverse() * btTransform(childTrans), childShape);
     }
-  } else {
-    ESP_VERY_VERBOSE() << "E - No link:" << linkIndex;
   }
 
   return compoundShape;
 }
 
-int BulletURDFImporter::getCollisionGroupAndMask(int linkIndex,
+int BulletURDFImporter::getCollisionGroupAndMask(int urdfLinkIndex,
                                                  int& colGroup,
                                                  int& colMask) const {
   int result = 0;
-  auto itr = activeModel_->m_links.begin();
-  for (int i = 0; (i < linkIndex && itr != activeModel_->m_links.end()); i++) {
-    itr++;
-  }
-  if (itr != activeModel_->m_links.end()) {
-    std::shared_ptr<io::URDF::Link> link = itr->second;
-    for (size_t v = 0; v < link->m_collisionArray.size(); ++v) {
-      const io::URDF::CollisionShape& col = link->m_collisionArray[v];
-      if ((col.m_flags & io::URDF::HAS_COLLISION_GROUP) != 0) {
-        colGroup = col.m_collisionGroup;
-        result |= io::URDF::HAS_COLLISION_GROUP;
-      }
-      if ((col.m_flags & io::URDF::HAS_COLLISION_MASK) != 0) {
-        colMask = col.m_collisionMask;
-        result |= io::URDF::HAS_COLLISION_MASK;
-      }
+  std::shared_ptr<io::URDF::Link> link = activeModel_->getLink(urdfLinkIndex);
+  for (size_t v = 0; v < link->m_collisionArray.size(); ++v) {
+    const io::URDF::CollisionShape& col = link->m_collisionArray[v];
+    if ((col.m_flags & io::URDF::HAS_COLLISION_GROUP) != 0) {
+      colGroup = col.m_collisionGroup;
+      result |= io::URDF::HAS_COLLISION_GROUP;
+    }
+    if ((col.m_flags & io::URDF::HAS_COLLISION_MASK) != 0) {
+      colMask = col.m_collisionMask;
+      result |= io::URDF::HAS_COLLISION_MASK;
     }
   }
   return result;
@@ -195,6 +179,30 @@ void BulletURDFImporter::computeTotalNumberOfJoints(int linkIndex) {
   for (size_t i = 0; i < childIndices.size(); i++) {
     int childIndex = childIndices[i];
     computeTotalNumberOfJoints(childIndex);
+  }
+}
+
+void BulletURDFImporter::getAllIndices(
+    int urdfLinkIndex,
+    int parentIndex,
+    std::vector<childParentIndex>& allIndices) {
+  childParentIndex cp;
+  cp.m_index = urdfLinkIndex;
+  cp.m_link_name = activeModel_->getLink(urdfLinkIndex)->m_name;
+  int mbIndex = cache->getMbIndexFromUrdfIndex(urdfLinkIndex);
+  cp.m_mbIndex = mbIndex;
+  cp.m_parentIndex = parentIndex;
+  int parentMbIndex =
+      parentIndex >= 0 ? cache->getMbIndexFromUrdfIndex(parentIndex) : -1;
+  cp.m_parentMBIndex = parentMbIndex;
+
+  allIndices.emplace_back(std::move(cp));
+  std::vector<int> urdfChildIndices;
+  getLinkChildIndices(urdfLinkIndex, urdfChildIndices);
+  int numChildren = urdfChildIndices.size();
+  for (int i = 0; i < numChildren; i++) {
+    int urdfChildLinkIndex = urdfChildIndices[i];
+    getAllIndices(urdfChildLinkIndex, urdfLinkIndex, allIndices);
   }
 }
 
@@ -278,9 +286,11 @@ Mn::Matrix4 BulletURDFImporter::convertURDF2BulletInternal(
     btMultiBodyDynamicsWorld* world1,
     std::map<int, std::unique_ptr<btCompoundShape>>& linkCompoundShapes,
     std::map<int, std::vector<std::unique_ptr<btCollisionShape>>>&
-        linkChildShapes) {
+        linkChildShapes,
+    bool recursive) {
   ESP_VERY_VERBOSE() << "++++++++++++++++++++++++++++++++++++++";
   ESP_VERY_VERBOSE() << "convertURDF2BulletInternal...";
+  ESP_VERY_VERBOSE() << "   recursive = " << recursive;
 
   Mn::Matrix4 linkTransformInWorldSpace;
 
@@ -624,18 +634,21 @@ Mn::Matrix4 BulletURDFImporter::convertURDF2BulletInternal(
     }
   }
 
-  ESP_VERY_VERBOSE() << "about to recurse";
+  if (recursive) {
+    ESP_VERY_VERBOSE() << "about to recurse";
 
-  std::vector<int> urdfChildIndices;
-  getLinkChildIndices(urdfLinkIndex, urdfChildIndices);
+    std::vector<int> urdfChildIndices;
+    getLinkChildIndices(urdfLinkIndex, urdfChildIndices);
 
-  int numChildren = urdfChildIndices.size();
+    int numChildren = urdfChildIndices.size();
 
-  for (int i = 0; i < numChildren; i++) {
-    int urdfChildLinkIndex = urdfChildIndices[i];
+    for (int i = 0; i < numChildren; i++) {
+      int urdfChildLinkIndex = urdfChildIndices[i];
 
-    convertURDF2BulletInternal(urdfChildLinkIndex, linkTransformInWorldSpace,
-                               world1, linkCompoundShapes, linkChildShapes);
+      convertURDF2BulletInternal(urdfChildLinkIndex, linkTransformInWorldSpace,
+                                 world1, linkCompoundShapes, linkChildShapes,
+                                 recursive);
+    }
   }
   return linkTransformInWorldSpace;
 }

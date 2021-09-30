@@ -36,10 +36,12 @@ ArticulatedObjectManager::addArticulatedObjectFromURDF(
     float globalScale,
     float massScale,
     bool forceReload,
+    bool maintainLinkOrder,
     const std::string& lightSetup) {
   if (auto physMgr = this->getPhysicsManager()) {
     int newAObjID = physMgr->addArticulatedObjectFromURDF(
-        filepath, fixedBase, globalScale, massScale, forceReload, lightSetup);
+        filepath, fixedBase, globalScale, massScale, forceReload,
+        maintainLinkOrder, lightSetup);
     return this->getObjectCopyByID(newAObjID);
   }
   return nullptr;
@@ -53,11 +55,12 @@ ArticulatedObjectManager::addArticulatedObjectFromURDFWithDrawables(
     float globalScale,
     float massScale,
     bool forceReload,
+    bool maintainLinkOrder,
     const std::string& lightSetup) {
   if (auto physMgr = this->getPhysicsManager()) {
     int newAObjID = physMgr->addArticulatedObjectFromURDF(
         filepath, drawables, fixedBase, globalScale, massScale, forceReload,
-        lightSetup);
+        maintainLinkOrder, lightSetup);
     return this->getObjectCopyByID(newAObjID);
   }
   return nullptr;
