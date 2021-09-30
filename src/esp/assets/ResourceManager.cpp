@@ -1713,29 +1713,36 @@ void ResourceManager::loadMaterials(Importer& importer,
       materialData = createUniversalMaterial(materialData);
     }
 
-    // flat shader spec or material-specified and material specifies flat
-    if (checkForPassedShaderType(shaderTypeToUse, materialData,
-                                 ShaderTypeEnum::Flat,
-                                 Mn::Trade::MaterialType::Flat)) {
-      finalMaterial =
-          buildFlatShadedMaterialData(materialData, textureBaseIndex);
+    // pbr shader spec, of material-specified and material specifies pbr
+    if (checkForPassedShaderType(
+            shaderTypeToUse, materialData, ShaderTypeEnum::PBR,
+            Mn::Trade::MaterialType::PbrMetallicRoughness)) {
+      // if (flags_ & Flag::BuildPhongFromPbr) {
+      //   ESP_WARNING() << "Building phong from pbr material";
+      //   finalMaterial =
+      //       buildPhongFromPbrMetallicRoughness(materialData,
+      //       textureBaseIndex);
+      // } else
+      {
+        ESP_WARNING() << "Building pbr material";
+        finalMaterial =
+            buildPbrShadedMaterialData(materialData, textureBaseIndex);
+      }
       // phong shader spec, of material-specified and material specifies phong
     } else if (checkForPassedShaderType(shaderTypeToUse, materialData,
                                         ShaderTypeEnum::Phong,
                                         Mn::Trade::MaterialType::Phong)) {
+      ESP_WARNING() << "Building phong material";
       finalMaterial =
           buildPhongShadedMaterialData(materialData, textureBaseIndex);
-      // pbr shader spec, of material-specified and material specifies pbr
-    } else if (checkForPassedShaderType(
-                   shaderTypeToUse, materialData, ShaderTypeEnum::PBR,
-                   Mn::Trade::MaterialType::PbrMetallicRoughness)) {
-      if (flags_ & Flag::BuildPhongFromPbr) {
-        finalMaterial =
-            buildPhongFromPbrMetallicRoughness(materialData, textureBaseIndex);
-      } else {
-        finalMaterial =
-            buildPbrShadedMaterialData(materialData, textureBaseIndex);
-      }
+      // flat shader spec or material-specified and material specifies flat
+    } else if (checkForPassedShaderType(shaderTypeToUse, materialData,
+                                        ShaderTypeEnum::Flat,
+                                        Mn::Trade::MaterialType::Flat)) {
+      ESP_WARNING() << "Building flat material";
+      finalMaterial =
+          buildFlatShadedMaterialData(materialData, textureBaseIndex);
+
     } else {
       ESP_ERROR() << "Unhandled ShaderType specification :"
                   << metadata::attributes::getShaderTypeName(
@@ -1969,6 +1976,11 @@ ShaderTypeEnum ResourceManager::getMaterialShaderType(
     // use the material's inherent shadertype
     infoSpecShaderType = ShaderTypeEnum::Material;
   }
+  ESP_WARNING() << "Shadertype being used for file :"
+                << Cr::Utility::Directory::filename(info.filepath)
+                << "| shadertype name :"
+                << metadata::attributes::getShaderTypeName(
+                       static_cast<int>(infoSpecShaderType));
   return infoSpecShaderType;
 }
 
