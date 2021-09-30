@@ -1832,13 +1832,9 @@ ResourceManager::createUniversalMaterial(
     const float specIntensity =
         powf(1.0f - roughness, 2.5f) * 1.4f * specIntensityScale;
 
-    // another heuristic: reduce diffuse intensity for metal
-    // metalness was pbrMaterial.metalness()
-    const float diffuseScale = Mn::Math::lerp(1.0f, 0.2f, metalness);
     // NOTE: The magic-number multiplication at the end is a hack to
     // roughly balance the Phong and PBR light intensity reactions
-    const Mn::Color4 diffuseColor =
-        ambientColor * diffuseScale * magicPhongScaling;
+    const Mn::Color4 diffuseColor = ambientColor * magicPhongScaling;
 
     // Set spec base color to white or material base color, depending on
     // metalness.
@@ -1961,7 +1957,7 @@ ResourceManager::createUniversalMaterial(
   // move into optional container and return
   return Cr::Containers::Optional<Mn::Trade::MaterialData>{
       std::move(newMaterialData)};
-}  // namespace assets
+}  // ResourceManager::createUniversalMaterial
 
 ShaderTypeEnum ResourceManager::getMaterialShaderType(
     const AssetInfo& info) const {
@@ -1982,7 +1978,7 @@ ShaderTypeEnum ResourceManager::getMaterialShaderType(
                 << metadata::attributes::getShaderTypeName(
                        static_cast<int>(infoSpecShaderType));
   return infoSpecShaderType;
-}
+}  // ResourceManager::getMaterialShaderType
 
 gfx::PhongMaterialData::uptr ResourceManager::buildFlatShadedMaterialData(
     Cr::Containers::Optional<Mn::Trade::MaterialData>& materialData,
@@ -2005,7 +2001,7 @@ gfx::PhongMaterialData::uptr ResourceManager::buildFlatShadedMaterialData(
   finalMaterial->specularColor = 0x00000000_rgbaf;
 
   return finalMaterial;
-}
+}  // ResourceManager::buildFlatShadedMaterialData
 
 gfx::PhongMaterialData::uptr ResourceManager::buildPhongShadedMaterialData(
     Cr::Containers::Optional<Mn::Trade::MaterialData>& materialData,
@@ -2047,7 +2043,7 @@ gfx::PhongMaterialData::uptr ResourceManager::buildPhongShadedMaterialData(
         textures_.at(textureBaseIndex + material.normalTexture()).get();
   }
   return finalMaterial;
-}
+}  // ResourceManager::buildPhongShadedMaterialData
 
 gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
     Cr::Containers::Optional<Mn::Trade::MaterialData>& materialData,
