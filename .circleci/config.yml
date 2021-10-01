@@ -12,7 +12,7 @@ commands:
       - run:
           name: Install clang-tidy
           command: |
-              sudo add-apt-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-12 main"
+              sudo add-apt-repository "deb http://apt.llvm.org/groovy/ llvm-toolchain-groovy-12 main"
               sudo apt-get update -y || true
               sudo apt-get install -y clang-tidy-12
               sudo ln -s /usr/bin/clang-tidy-12 /usr/local/bin/clang-tidy
