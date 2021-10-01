@@ -9,6 +9,11 @@ commands:
   install_all_ubuntu_deps:
     description: "Prepares the dependencies"
     steps:
+      - run: &update_ca_certs
+          name: Update CA certs
+          command: |
+              sudo apt update
+              sudo apt install --only-upgrade ca-certificates
       - run:
           name: Install clang-tidy
           command: |
