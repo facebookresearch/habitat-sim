@@ -106,7 +106,7 @@ commands:
           background: true
           command: |
               wget -O - https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/7fa2af80.pub | sudo apt-key add -
-              sudo add-apt-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/"
+              sudo add-apt-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/ /"
               sudo apt update || true
               sudo apt --yes --force-yes install cuda-11-1
               touch ~/cuda_installed
