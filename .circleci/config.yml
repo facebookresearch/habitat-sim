@@ -105,10 +105,10 @@ commands:
           no_output_timeout: 20m
           background: true
           command: |
-              wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/cuda-repo-ubuntu1604_8.0.44-1_amd64.deb
-              sudo dpkg -i cuda-repo-ubuntu1604_8.0.44-1_amd64.deb
-              sudo apt-get update || true
-              sudo apt-get --yes --force-yes install cuda
+              wget -O - https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/7fa2af80.pub | sudo apt-key add -
+              sudo add-apt-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/"
+              sudo apt update || true
+              sudo apt --yes --force-yes install cuda-11-1
               touch ~/cuda_installed
               nvidia-smi
       - restore_cache:
