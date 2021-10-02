@@ -11,7 +11,7 @@
 #include <Magnum/GL/Mesh.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/ResourceManager.h>
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/gfx/CubeMap.h"
 #include "esp/gfx/CubeMapCamera.h"
 #include "esp/gfx/EquirectangularShader.h"

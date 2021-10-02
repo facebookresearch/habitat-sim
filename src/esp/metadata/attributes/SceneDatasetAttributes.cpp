@@ -25,8 +25,8 @@ SceneDatasetAttributes::SceneDatasetAttributes(
 bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
     const attributes::SceneAttributes::ptr& sceneInstance) {
   // info display message prefix
-  const std::string infoPrefix("::addNewSceneInstanceToDataset : Dataset : '" +
-                               getSimplifiedHandle() + "' : ");
+  std::string infoPrefix =
+      Cr::Utility::formatString("Dataset : '{}' : ", getSimplifiedHandle());
 
   const std::string sceneInstanceName = sceneInstance->getHandle();
   // verify stage in sceneInstance (required) exists in SceneDatasetAttributes,
@@ -36,14 +36,16 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
   const std::string fullStageName =
       getFullAttrNameFromStr(stageHandle, stageAttributesManager_);
   if (fullStageName == "") {
-    LOG(INFO)
-        << infoPrefix << "Stage Attributes '" << stageHandle
+    ESP_DEBUG()
+        << infoPrefix << "Stage Attributes '" << Mn::Debug::nospace
+        << stageHandle << Mn::Debug::nospace
         << "' specified in Scene Attributes but does not exist in dataset, so "
            "creating.";
     stageAttributesManager_->createObject(stageHandle, true);
   } else {
-    LOG(INFO) << infoPrefix << "Stage Attributes '" << stageHandle
-              << "' specified in Scene Attributes exists in dataset library.";
+    ESP_DEBUG() << infoPrefix << "Stage Attributes '" << Mn::Debug::nospace
+                << stageHandle << Mn::Debug::nospace
+                << "' specified in Scene Attributes exists in dataset library.";
   }
 
   // verify each object in sceneInstance exists in SceneDatasetAttributes
@@ -53,13 +55,16 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
     const std::string fullObjHandle =
         getFullAttrNameFromStr(objHandle, objectAttributesManager_);
     if (fullObjHandle == "") {
-      LOG(INFO) << infoPrefix << "Object Attributes '" << objHandle
-                << "' specified in Scene Attributes but does not exist in "
-                   "dataset, so creating.";
+      ESP_DEBUG() << infoPrefix << "Object Attributes '" << Mn::Debug::nospace
+                  << objHandle << Mn::Debug::nospace
+                  << "' specified in Scene Attributes but does not exist in "
+                     "dataset, so creating.";
       objectAttributesManager_->createObject(objHandle, true);
     } else {
-      LOG(INFO) << infoPrefix << "Object Attributes '" << objHandle
-                << "' specified in Scene Attributes exists in dataset library.";
+      ESP_DEBUG()
+          << infoPrefix << "Object Attributes '" << Mn::Debug::nospace
+          << objHandle << Mn::Debug::nospace
+          << "' specified in Scene Attributes exists in dataset library.";
     }
   }
 
@@ -76,14 +81,15 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
   const std::string fullLightLayoutAttrName =
       getFullAttrNameFromStr(lightHandle, lightLayoutAttributesManager_);
   if (fullLightLayoutAttrName == "") {
-    LOG(INFO)
-        << infoPrefix << "Lighting Layout Attributes '" << lightHandle
+    ESP_DEBUG()
+        << infoPrefix << "Lighting Layout Attributes '" << Mn::Debug::nospace
+        << lightHandle << Mn::Debug::nospace
         << "' specified in Scene Attributes but does not exist in dataset, so "
            "creating.";
     lightLayoutAttributesManager_->createObject(lightHandle, true);
   } else {
-    LOG(INFO) << infoPrefix << "Lighting Layout Attributes " << lightHandle
-              << " specified in Scene Attributes exists in dataset library.";
+    ESP_DEBUG() << infoPrefix << "Lighting Layout Attributes" << lightHandle
+                << "specified in Scene Attributes exists in dataset library.";
   }
 
   const std::string fullSceneInstanceName =
@@ -91,8 +97,8 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
 
   // add scene attributes to scene attributes manager
   if (fullSceneInstanceName == "") {
-    LOG(INFO) << infoPrefix << "Scene Attributes " << sceneInstanceName
-              << " does not exist in dataset so adding.";
+    ESP_DEBUG() << infoPrefix << "Scene Attributes" << sceneInstanceName
+                << "does not exist in dataset so adding.";
     sceneAttributesManager_->registerObject(sceneInstance);
   }
   return true;
@@ -125,17 +131,18 @@ std::pair<std::string, std::string> SceneDatasetAttributes::addNewValToMap(
           ss << key << "_" << iter++;
           newKey = ss.str();
         } while (map.count(newKey) > 0);
-        LOG(WARNING)
-            << descString << " : Provided key '" << key
+        ESP_WARNING()
+            << descString << ": Provided key '" << Mn::Debug::nospace << key
+            << Mn::Debug::nospace
             << "' already references a different value in "
-               "map. Modifying key to be "
+               "map. Modifying key to be"
             << newKey
             << ". Set overwrite to true to overwrite existing entries.";
       } else {  // overwrite entry
-        LOG(WARNING) << descString
-                     << " : Warning : Overwriting existing map entry "
-                     << map.at(newKey) << " at key " << newKey << " with value "
-                     << path << ".";
+        ESP_WARNING() << descString
+                      << ": Warning : Overwriting existing map entry"
+                      << map.at(newKey) << "at key" << newKey << "with value"
+                      << path << ".";
       }  // overwrite or not
     }    // found entry is desired or not
   }      // key is found
@@ -182,119 +189,94 @@ SceneDatasetAttributes::getNamedObjectAttributesCopy(
   return objectAttributesManager_->getObjectCopyByHandle(fullObjName);
 }  // SceneDatasetAttributes::getNamedObjectAttributesCopy
 
+namespace {
+
+std::string concatStrings(const std::string& header,
+                          const std::vector<std::string>& vec) {
+  // subtract 1 for header row
+  std::string res = Cr::Utility::formatString("\n{} : {} available.\n", header,
+                                              vec.size() - 1);
+  for (const std::string& s : vec) {
+    Cr::Utility::formatInto(res, res.size(), "{}\n", s);
+  }
+  return res;
+}
+
+std::string concatStrings(const std::string& header,
+                          const std::map<std::string, std::string>& map) {
+  std::string res =
+      Cr::Utility::formatString("\n{} : {} available.\n", header, map.size());
+  for (const auto& item : map) {
+    Cr::Utility::formatInto(res, res.size(), "{}, {}\n", item.first,
+                            item.second);
+  }
+  return res;
+}
+
+}  // namespace
+
 std::string SceneDatasetAttributes::getObjectInfoInternal() const {
   // provide a summary for all info for this scene dataset
-  std::string res = "\n";
   // scene instances
-
-  std::vector<std::string> sceneInstAttrInfoAra =
-      sceneAttributesManager_->getObjectInfoStrings();
-  res.append("\nScene Instances : ")
-      .append(std::to_string(sceneInstAttrInfoAra.size() - 1))
-      .append(" loaded.\n");
-
-  for (const std::string& s : sceneInstAttrInfoAra) {
-    res.append(s).append(1, '\n');
-  }
+  std::string res = concatStrings(
+      "Scene Instances", sceneAttributesManager_->getObjectInfoStrings());
 
   // stages
-  std::vector<std::string> stageAttrInfoAra =
-      stageAttributesManager_->getObjectInfoStrings();
-  res.append("\nStage Templates : ")
-      .append(std::to_string(stageAttrInfoAra.size() - 1))
-      .append(" loaded.\n");
-  for (const std::string& s : stageAttrInfoAra) {
-    res.append(s).append(1, '\n');
-  }
+  Cr::Utility::formatInto(
+      res, res.size(), "{}",
+      concatStrings("Stage Templates",
+                    stageAttributesManager_->getObjectInfoStrings()));
 
   // objects
-  std::vector<std::string> objAttrInfoAra =
-      objectAttributesManager_->getObjectInfoStrings();
-  res.append("\nObject Templates : ")
-      .append(std::to_string(objAttrInfoAra.size() - 1))
-      .append(" loaded.\n");
-  for (const std::string& s : objAttrInfoAra) {
-    res.append(s).append(1, '\n');
-  }
+  Cr::Utility::formatInto(
+      res, res.size(), "{}",
+      concatStrings("Object Templates",
+                    objectAttributesManager_->getObjectInfoStrings()));
 
   // articulated objects
-  res.append("\nArticulated Object Models : ")
-      .append(std::to_string(articulatedObjPaths.size()))
-      .append(" loaded.\n");
-
-  for (const auto& item : articulatedObjPaths) {
-    res.append(item.first).append(1, ',').append(item.second).append(1, '\n');
-  }
+  Cr::Utility::formatInto(
+      res, res.size(), "{}",
+      concatStrings("Articulated Object Models", articulatedObjPaths));
 
   // lights
-  std::vector<std::string> lightAttrInfoAra =
-      lightLayoutAttributesManager_->getObjectInfoStrings();
-  res.append("\nLighting Configurations : ")
-      .append(std::to_string(lightAttrInfoAra.size() - 1))
-      .append(" loaded.\n");
-  for (const std::string& s : lightAttrInfoAra) {
-    res.append(s).append(1, '\n');
-  }
+  Cr::Utility::formatInto(
+      res, res.size(), "{}",
+      concatStrings("Lighting Configurations",
+                    lightLayoutAttributesManager_->getObjectInfoStrings()));
 
   // prims
-  std::vector<std::string> primAttrInfoAra =
-      assetAttributesManager_->getObjectInfoStrings();
-  res.append("\nPrimitives Templates : ")
-      .append(std::to_string(primAttrInfoAra.size() - 1))
-      .append(" loaded.\n");
-  for (const std::string& s : primAttrInfoAra) {
-    res.append(s).append(1, '\n');
-  }
+  Cr::Utility::formatInto(
+      res, res.size(), "{}",
+      concatStrings("Primitives Templates",
+                    assetAttributesManager_->getObjectInfoStrings()));
 
   // navmesh
-  res.append("\nNavmeshes : ")
-      .append(std::to_string(navmeshMap_.size()))
-      .append(" loaded.\n");
-  for (const auto& item : navmeshMap_) {
-    res.append(item.first).append(1, ',').append(item.second).append(1, '\n');
-  }
-
+  Cr::Utility::formatInto(res, res.size(), "{}",
+                          concatStrings("Navmeshes", navmeshMap_));
   // SSD entries
-  res.append("\nSemantic Scene Descriptors : ")
-      .append(std::to_string(semanticSceneDescrMap_.size()))
-      .append(" loaded.\n");
-  for (const auto& item : semanticSceneDescrMap_) {
-    res.append(item.first).append(1, ',').append(item.second).append(1, '\n');
-  }
+  Cr::Utility::formatInto(
+      res, res.size(), "{}",
+      concatStrings("Semantic Scene Descriptors", semanticSceneDescrMap_));
 
   return res;
 }
 
 std::string SceneDatasetAttributes::getDatasetSummaryHeader() {
-  return "Dataset Name, Scene Instance Templates, Stage Templates, Object "
-         "Templates, Articulated Object Paths, Lighting Templates, Primitive "
-         "Templates, Navmesh Entries, Semantic Scene Descriptor Entries,";
+  return "Dataset Name,Scene Instance Templates,Stage Templates,Object "
+         "Templates,Articulated Object Paths,Lighting Templates,Primitive "
+         "Templates,Navmesh Entries,Semantic Scene Descriptor Entries,";
 }
 
 std::string SceneDatasetAttributes::getDatasetSummary() const {
-  std::string res{
-      getSimplifiedHandle()
-          .append(1, ',')
-          .append(std::to_string(sceneAttributesManager_->getNumObjects()))
-          .append(1, ',')
-          .append(std::to_string(stageAttributesManager_->getNumObjects()))
-          .append(1, ',')
-          .append(std::to_string(objectAttributesManager_->getNumObjects()))
-          .append(1, ',')
-          .append(std::to_string(articulatedObjPaths.size()))
-          .append(1, ',')
-          .append(
-              std::to_string(lightLayoutAttributesManager_->getNumObjects()))
-          .append(1, ',')
-          .append(std::to_string(assetAttributesManager_->getNumObjects()))
-          .append(1, ',')
-          .append(std::to_string(navmeshMap_.size()))
-          .append(1, ',')
-          .append(std::to_string(semanticSceneDescrMap_.size()))
-          .append(1, ',')};
-  return res;
-
-}  // SceneDatasetAttributes::getDatasetSummary
+  return Cr::Utility::formatString(
+      "{},{},{},{},{},{},{},{},{},", getSimplifiedHandle(),
+      sceneAttributesManager_->getNumObjects(),
+      stageAttributesManager_->getNumObjects(),
+      objectAttributesManager_->getNumObjects(), articulatedObjPaths.size(),
+      lightLayoutAttributesManager_->getNumObjects(),
+      assetAttributesManager_->getNumObjects(), navmeshMap_.size(),
+      semanticSceneDescrMap_.size());
+}  // namespace attributes
 
 }  // namespace attributes
 }  // namespace metadata

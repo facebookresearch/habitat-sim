@@ -2,7 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "esp/bindings/bindings.h"
+#include "esp/bindings/Bindings.h"
 
 #include <Magnum/PythonBindings.h>
 
@@ -51,7 +51,7 @@ void initAttributesBindings(py::module& m) {
 
   // ==== AbstractAttributes ====
   py::class_<AbstractAttributes, esp::core::AbstractFileBasedManagedObject,
-             esp::core::Configuration, AbstractAttributes::ptr>(
+             esp::core::config::Configuration, AbstractAttributes::ptr>(
       m, "AbstractAttributes")
       .def(py::init(
           &AbstractAttributes::create<const std::string&, const std::string&>))
@@ -65,29 +65,12 @@ void initAttributesBindings(py::module& m) {
           "template_id", &AbstractAttributes::getID,
           R"(System-generated ID for template.  Will be unique among templates
           of same type.)")
-      .def("get_user_config_bool",
-           &AbstractAttributes::getUserConfigValue<bool>)
-      .def("get_user_config_string",
-           &AbstractAttributes::getUserConfigValue<std::string>)
-      .def("get_user_config_int", &AbstractAttributes::getUserConfigValue<int>)
-      .def("get_user_config_double",
-           &AbstractAttributes::getUserConfigValue<double>)
-      .def("get_user_config_vec3",
-           &AbstractAttributes::getUserConfigValue<Magnum::Vector3>)
-      .def("get_user_config_quat",
-           &AbstractAttributes::getUserConfigValue<Magnum::Quaternion>)
-      .def("get_user_config_val",
-           &AbstractAttributes::getUserConfigValue<std::string>)
-      .def("set_user_config_val",
-           &AbstractAttributes::setUserConfigValue<std::string>)
-      .def("set_user_config_val", &AbstractAttributes::setUserConfigValue<int>)
-      .def("set_user_config_val",
-           &AbstractAttributes::setUserConfigValue<double>)
-      .def("set_user_config_val", &AbstractAttributes::setUserConfigValue<bool>)
-      .def("set_user_config_val",
-           &AbstractAttributes::setUserConfigValue<Magnum::Vector3>)
-      .def("set_user_config_val",
-           &AbstractAttributes::setUserConfigValue<Magnum::Quaternion>)
+      .def(
+          "get_user_config", &AbstractAttributes::editUserConfiguration,
+          py::return_value_policy::reference_internal,
+          R"(Returns a reference to the User Config object for this attributes, so that it can be
+          viewed or modified. Any changes to the user_config will require the owning
+          attributes to be re-registered.)")
       .def_property_readonly(
           "num_user_configs",
           &AbstractAttributes::getNumUserDefinedConfigurations,
@@ -96,7 +79,110 @@ void initAttributesBindings(py::module& m) {
                              R"(Class name of Attributes template.)")
       .def_property_readonly(
           "csv_info", &AbstractAttributes::getObjectInfo,
-          R"(Comma-separated informational string describing this Attributes template)");
+          R"(Comma-separated informational string describing this Attributes template)")
+
+      // Attributes should only use named properties or subconfigurations to set
+      // string values, to guarantee essential value type integrity.)
+      .def(
+          "set",
+          [](CORRADE_UNUSED AbstractAttributes& self,
+             CORRADE_UNUSED const std::string& key,
+             CORRADE_UNUSED const std::string& val) {
+            ESP_CHECK(false,
+                      "Attributes should only use named properties or "
+                      "subconfigurations to set string values, to "
+                      "guarantee essential value type integrity.");
+          },
+          R"(This method is inherited from Configuration, but should not be used with Attributes due
+          to the possibility of changing the type of a required variable. Use the provided Attributes
+          instead, to change values for this object.)",
+          "key"_a, "value"_a)
+      .def(
+          "set",
+          [](CORRADE_UNUSED AbstractAttributes& self,
+             CORRADE_UNUSED const std::string& key,
+             CORRADE_UNUSED const char* val) {
+            ESP_CHECK(false,
+                      "Attributes should only use named properties or "
+                      "subconfigurations to set string values, to "
+                      "guarantee essential value type integrity.");
+          },
+          R"(This method is inherited from Configuration, but should not be used with Attributes due
+          to the possibility of changing the type of a required variable. Use the provided Attributes
+          instead, to change values for this object.)",
+          "key"_a, "value"_a)
+      .def(
+          "set",
+          [](CORRADE_UNUSED AbstractAttributes& self,
+             CORRADE_UNUSED const std::string& key,
+             CORRADE_UNUSED const int val) {
+            ESP_CHECK(false,
+                      "Attributes should only use named properties or "
+                      "subconfigurations to set integer values, to "
+                      "guarantee essential value type integrity.");
+          },
+          R"(This method is inherited from Configuration, but should not be used with Attributes due
+          to the possibility of changing the type of a required variable. Use the provided Attributes
+          instead, to change values for this object.)",
+          "key"_a, "value"_a)
+      .def(
+          "set",
+          [](CORRADE_UNUSED AbstractAttributes& self,
+             CORRADE_UNUSED const std::string& key,
+             CORRADE_UNUSED const double val) {
+            ESP_CHECK(false,
+                      "Attributes should only use named properties or "
+                      "subconfigurations to set floating-point values, to "
+                      "guarantee essential value type integrity.");
+          },
+          R"(This method is inherited from Configuration, but should not be used with Attributes due
+          to the possibility of changing the type of a required variable. Use the provided Attributes
+          instead, to change values for this object.)",
+          "key"_a, "value"_a)
+      .def(
+          "set",
+          [](CORRADE_UNUSED AbstractAttributes& self,
+             CORRADE_UNUSED const std::string& key,
+             CORRADE_UNUSED const bool val) {
+            ESP_CHECK(false,
+                      "Attributes should only use named properties or "
+                      "subconfigurations to set boolean values, to "
+                      "guarantee essential value type integrity.");
+          },
+          R"(This method is inherited from Configuration, but should not be used with Attributes due
+          to the possibility of changing the type of a required variable. Use the provided Attributes
+          instead, to change values for this object.)",
+          "key"_a, "value"_a)
+      .def(
+          "set",
+          [](CORRADE_UNUSED AbstractAttributes& self,
+             CORRADE_UNUSED const std::string& key,
+             CORRADE_UNUSED const Magnum::Quaternion& val) {
+            ESP_CHECK(false,
+                      "Attributes should only use named properties or "
+                      "subconfigurations to set Nagnum::Quaternion values, to "
+                      "guarantee essential value type integrity.");
+          },
+          R"(This method is inherited from Configuration, but should not be used with Attributes due
+          to the possibility of changing the type of a required variable. Use the provided Attributes
+          instead, to change values for this object.)",
+          "key"_a, "value"_a)
+      .def(
+          "set",
+          [](CORRADE_UNUSED AbstractAttributes& self,
+             CORRADE_UNUSED const std::string& key,
+             CORRADE_UNUSED const Magnum::Vector3& val) {
+            ESP_CHECK(false,
+                      "Attributes should only use named properties or "
+                      "subconfigurations to set Magnum::Vector3 values, to "
+                      "guarantee essential value type integrity.");
+          },
+          R"(This method is inherited from Configuration, but should not be used with Attributes due
+          to the possibility of changing the type of a required variable. Use the provided Attributes
+          instead, to change values for this object.)",
+          "key"_a, "value"_a)
+
+      ;
 
   // ==== AbstractObjectAttributes ====
   py::class_<AbstractObjectAttributes, AbstractAttributes,
@@ -168,9 +254,9 @@ void initAttributesBindings(py::module& m) {
           &AbstractObjectAttributes::setShaderType,
           R"(The shader type [0=material, 1=flat, 2=phong, 3=pbr] to use for this construction)")
       .def_property(
-          "requires_lighting", &AbstractObjectAttributes::getRequiresLighting,
-          &AbstractObjectAttributes::setRequiresLighting,
-          R"(If false, this object will be rendered flat, ignoring shader type settings.)")
+          "force_flat_shading", &AbstractObjectAttributes::getForceFlatShading,
+          &AbstractObjectAttributes::setForceFlatShading,
+          R"(If true, this object will be rendered flat, ignoring shader type settings.)")
       .def_property_readonly(
           "render_asset_is_primitive",
           &AbstractObjectAttributes::getRenderAssetIsPrimitive,

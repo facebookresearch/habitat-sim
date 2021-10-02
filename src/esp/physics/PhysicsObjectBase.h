@@ -62,7 +62,8 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
                     const assets::ResourceManager& resMgr)
       : Magnum::SceneGraph::AbstractFeature3D(*bodyNode),
         objectId_(objectId),
-        resMgr_(resMgr) {}
+        resMgr_(resMgr),
+        userAttributes_(std::make_shared<core::config::Configuration>()) {}
 
   ~PhysicsObjectBase() override = default;
 
@@ -424,16 +425,28 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    */
   virtual std::vector<scene::SceneNode*> getVisualSceneNodes() const = 0;
 
-  core::Configuration::ptr getUserAttributes() const { return userAttributes_; }
+  core::config::Configuration::ptr getUserAttributes() const {
+    return userAttributes_;
+  }
 
   /**
-   * @brief This function will completely overwrite this object's
-   * user-defined attributes.
+   * @brief This function will overwrite this object's existing user-defined
+   * attributes with @p attr.
    * @param attr A ptr to the user defined attributes specified for this object.
    * merge into them.
    */
-  void setUserAttributes(core::Configuration::ptr attr) {
+  void setUserAttributes(core::config::Configuration::ptr attr) {
     userAttributes_ = std::move(attr);
+  }
+
+  /**
+   * @brief This function will merge this object's existing user-defined
+   * attributes with @p attr by overwriting it with @p attr.
+   * @param attr A ptr to the user defined attributes specified for this object.
+   * merge into them.
+   */
+  void mergeUserAttributes(const core::config::Configuration::ptr& attr) {
+    userAttributes_->overwriteWithConfig(attr);
   }
 
  protected:
@@ -491,14 +504,14 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    * internally processed by habitat, but provide a "scratch pad" for the user
    * to access and save important information and metadata.
    */
-  core::Configuration::ptr userAttributes_{};
+  core::config::Configuration::ptr userAttributes_ = nullptr;
 
  private:
   /**
    * @brief This object's instancing attributes, if any were used during its
    * creation.
    */
-  std::shared_ptr<metadata::attributes::SceneObjectInstanceAttributes>
+  std::shared_ptr<const metadata::attributes::SceneObjectInstanceAttributes>
       _sceneInstanceAttributes = nullptr;
 
  public:

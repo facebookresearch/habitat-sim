@@ -6,8 +6,8 @@
 #ifndef ESP_SENSOR_REDWOODNOISEMODEL_H_
 #define ESP_SENSOR_REDWOODNOISEMODEL_H_
 
-#include "esp/core/esp.h"
-#include "esp/core/random.h"
+#include "esp/core/Esp.h"
+#include "esp/core/Random.h"
 
 #include "RedwoodNoiseModel.cuh"
 

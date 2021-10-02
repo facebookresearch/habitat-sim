@@ -2,7 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "esp/bindings/bindings.h"
+#include "esp/bindings/Bindings.h"
 
 #include <Magnum/ImageView.h>
 #include <Magnum/Magnum.h>
@@ -63,7 +63,7 @@ void initSimBindings(py::module& m) {
           &SimulatorConfiguration::overrideSceneLightDefaults,
           R"(Override scene lighting setup to use with value specified below.)")
       .def_readwrite("scene_light_setup",
-                     &SimulatorConfiguration::sceneLightSetup)
+                     &SimulatorConfiguration::sceneLightSetupKey)
       .def_readwrite("load_semantic_mesh",
                      &SimulatorConfiguration::loadSemanticMesh)
       .def_readwrite(
@@ -381,8 +381,16 @@ void initSimBindings(py::module& m) {
           &Simulator::getPhysicsNumActiveContactPoints,
           R"(The number of contact points that were active during the last step. An object resting on another object will involve several active contact points. Once both objects are asleep, the contact points are inactive. This count is a proxy for complexity/cost of collision-handling in the current scene.)")
       .def(
-          "get_physics_contact_points", &Simulator::getPhysicsContactPoints,
-          R"(Return a list of ContactPointData objects describing the contacts from the most recent physics substep.)")
+          "get_physics_num_active_overlapping_pairs",
+          &Simulator::getPhysicsNumActiveOverlappingPairs,
+          R"(The number of active overlapping pairs during the last step. When object bounding boxes overlap and either object is active, additional "narrowphase" collision-detection must be run. This count is a proxy for complexity/cost of collision-handling in the current scene.)")
+      .def(
+          "get_physics_step_collision_summary",
+          &Simulator::getPhysicsStepCollisionSummary,
+          R"(Get a summary of collision-processing from the last physics step.)")
+      .def("get_physics_contact_points", &Simulator::getPhysicsContactPoints,
+           R"(Return a list of ContactPointData "
+          "objects describing the contacts from the most recent physics substep.)")
       .def(
           "perform_discrete_collision_detection",
           &Simulator::performDiscreteCollisionDetection,

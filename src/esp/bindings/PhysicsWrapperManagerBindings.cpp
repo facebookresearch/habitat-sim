@@ -2,7 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "esp/bindings/bindings.h"
+#include "esp/bindings/Bindings.h"
 
 #include "esp/physics/bullet/objectWrappers/ManagedBulletArticulatedObject.h"
 #include "esp/physics/bullet/objectWrappers/ManagedBulletRigidObject.h"
@@ -61,13 +61,13 @@ void declareBaseWrapperManager(py::module& m,
           "handle"_a)
       .def("get_object_handles",
            static_cast<std::vector<std::string> (MgrClass::*)(
-               const std::string&, bool) const>(
+               const std::string&, bool, bool) const>(
                &MgrClass::getObjectHandlesBySubstring),
-           ("Returns a list of " + objType +
+           ("Returns a potentially sorted list of " + objType +
             " handles that either contain or explicitly do not contain the "
             "passed search_str, based on the value of boolean contains.")
                .c_str(),
-           "search_str"_a = "", "contains"_a = true)
+           "search_str"_a = "", "contains"_a = true, "sorted"_a = true)
       .def("get_objects_info", &MgrClass::getObjectInfoStrings,
            ("Returns a list of CSV strings describing each " + objType +
             " whose handles either contain or explicitly do not contain the "
@@ -176,7 +176,17 @@ void declareBaseWrapperManager(py::module& m,
             " specified by the passed handle if it exists, and NULL if it does "
             "not.")
                .c_str(),
-           "handle"_a);
+           "handle"_a)
+      .def("get_objects_by_handle_substring",
+           static_cast<std::unordered_map<std::string, WrapperPtr> (
+               MgrClass::*)(const std::string&, bool)>(
+               &MgrClass::template getObjectsByHandleSubstring<U>),
+           ("Returns a dictionary of " + objType +
+            " objects, keyed by their handles, for all handles that either "
+            "contain or explicitly do not contain the passed search_str, based "
+            "on the value of boolean contains.")
+               .c_str(),
+           "search_str"_a = "", "contains"_a = true);
 }  // declareBaseWrapperManager
 
 template <typename T>
@@ -276,6 +286,7 @@ void initPhysicsWrapperManagerBindings(pybind11::module& m) {
 
           "filepath"_a, "fixed_base"_a = false, "global_scale"_a = 1.0,
           "mass_scale"_a = 1.0, "force_reload"_a = false,
+          "maintain_link_order"_a = false,
           "light_setup_key"_a = DEFAULT_LIGHTING_KEY,
           R"(Load and parse a URDF file using the given 'filepath' into a model,
           then use this model to instantiate an Articulated Object in the world.

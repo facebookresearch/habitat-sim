@@ -36,41 +36,27 @@ AbstractObjectAttributes::AbstractObjectAttributes(
   setCollisionAssetIsPrimitive(false);
   setUseMeshCollision(true);
   setIsCollidable(true);
+  setIsVisible(true);
   setUnitsToMeters(1.0);
   setRenderAssetHandle("");
   setCollisionAssetHandle("");
 }  // AbstractObjectAttributes ctor
 
 std::string AbstractObjectAttributes::getObjectInfoHeaderInternal() const {
-  return "Render Asset Handle, Collision Asset Handle, Scale, Margin, Up XYZ, "
-         "Front XYZ, Units to M, Friction Coefficient, Restitution "
-         "Coefficient, Current Shader "
-         "Type, " +
+  return "Render Asset Handle,Collision Asset Handle,Scale,Margin,Up XYZ,"
+         "Front XYZ,Units to M,Friction Coefficient,Restitution "
+         "Coefficient,Current Shader Type," +
          getAbstractObjectInfoHeaderInternal();
 }
 
 std::string AbstractObjectAttributes::getObjectInfoInternal() const {
-  return getRenderAssetHandle()
-      .append(1, ',')
-      .append(getCollisionAssetHandle())
-      .append(1, ',')
-      .append(cfg.value("scale"))
-      .append(1, ',')
-      .append(cfg.value("margin"))
-      .append(1, ',')
-      .append(cfg.value("orient_up"))
-      .append(1, ',')
-      .append(cfg.value("orient_front"))
-      .append(1, ',')
-      .append(cfg.value("units_to_meters"))
-      .append(1, ',')
-      .append(cfg.value("friction_coefficient"))
-      .append(1, ',')
-      .append(cfg.value("restitution_coefficient"))
-      .append(1, ',')
-      .append(getCurrShaderTypeName())
-      .append(1, ',')
-      .append(getAbstractObjectInfoInternal());
+  return Cr::Utility::formatString(
+      "{},{},{},{},{},{},{},{},{},{},{}", getRenderAssetHandle(),
+      getCollisionAssetHandle(), getAsString("scale"), getAsString("margin"),
+      getAsString("orient_up"), getAsString("orient_front"),
+      getAsString("units_to_meters"), getAsString("friction_coefficient"),
+      getAsString("restitution_coefficient"), getCurrShaderTypeName(),
+      getAbstractObjectInfoInternal());
 }  // AbstractObjectAttributes::getObjectInfoInternal
 
 ObjectAttributes::ObjectAttributes(const std::string& handle)
@@ -90,23 +76,16 @@ ObjectAttributes::ObjectAttributes(const std::string& handle)
   // otherwise specified in config
   setShaderType(static_cast<int>(ObjectInstanceShaderType::Unknown));
   // TODO remove this once ShaderType support is complete
-  setRequiresLighting(true);
+  setForceFlatShading(false);
   setIsVisible(true);
   setSemanticId(0);
 }  // ObjectAttributes ctor
 
 std::string ObjectAttributes::getAbstractObjectInfoInternal() const {
-  return cfg.value("mass")
-      .append(1, ',')
-      .append(cfg.value("COM"))
-      .append(1, ',')
-      .append(cfg.value("inertia"))
-      .append(1, ',')
-      .append(cfg.value("angular_damping"))
-      .append(1, ',')
-      .append(cfg.value("linear_damping"))
-      .append(1, ',')
-      .append(cfg.value("semantic_id"));
+  return Cr::Utility::formatString(
+      "{},{},{},{},{},{}", getAsString("mass"), getAsString("COM"),
+      getAsString("inertia"), getAsString("angular_damping"),
+      getAsString("linear_damping"), getAsString("semantic_id"));
 }
 
 StageAttributes::StageAttributes(const std::string& handle)
@@ -117,11 +96,14 @@ StageAttributes::StageAttributes(const std::string& handle)
   // otherwise specified in config
   setShaderType(static_cast<int>(ObjectInstanceShaderType::Unknown));
   // TODO remove this once ShaderType support is complete
-  setRequiresLighting(false);
+  setForceFlatShading(true);
   // 0 corresponds to esp::assets::AssetType::UNKNOWN->treated as general mesh
   setCollisionAssetType(0);
   // 4 corresponds to esp::assets::AssetType::INSTANCE_MESH
   setSemanticAssetType(4);
+  // set empty defaults for handles
+  set("navmeshAssetHandle", "");
+  set("semantic_asset", "");
 }  // StageAttributes ctor
 
 }  // namespace attributes

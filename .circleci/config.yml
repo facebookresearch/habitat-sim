@@ -20,20 +20,18 @@ commands:
       - run:
           name: Install cmake
           no_output_timeout: 5m
-          # tinyply requires CMake 3.10, so stay at that version. Ubuntu 16.04
-          # has 3.5, so once tinyply is removed, we could go lower (well, if
-          # anybody actually needs that). We also download CMake 3.20, which
+          # OpenEXR requires CMake 3.12. We also download CMake 3.20, which
           # we'll use later for the JS build only.
           command: |
               echo $(git ls-remote https://github.com/facebookresearch/habitat-lab.git HEAD | awk '{ print $1}') > ./hablab_sha
               cat ./hablab_sha
-              wget https://cmake.org/files/v3.10/cmake-3.10.3-Linux-x86_64.sh
+              wget https://cmake.org/files/v3.12/cmake-3.12.4-Linux-x86_64.sh
               wget https://cmake.org/files/v3.20/cmake-3.20.1-linux-x86_64.sh
-              sudo mkdir /opt/cmake310
+              sudo mkdir /opt/cmake312
               sudo mkdir /opt/cmake320
-              sudo sh ./cmake-3.10.3-Linux-x86_64.sh --prefix=/opt/cmake310 --skip-license
+              sudo sh ./cmake-3.12.4-Linux-x86_64.sh --prefix=/opt/cmake312 --skip-license
               sudo sh ./cmake-3.20.1-linux-x86_64.sh --prefix=/opt/cmake320 --skip-license
-              sudo ln -s /opt/cmake310/bin/cmake /usr/local/bin/cmake
+              sudo ln -s /opt/cmake312/bin/cmake /usr/local/bin/cmake
       - run: &install_deps
           name: Install dependencies
           no_output_timeout: 20m
@@ -178,8 +176,9 @@ commands:
             - habitat-lab-{{ checksum "./hablab_sha" }}
       - restore_cache:
           keys:
-            - ccache-{{ arch }}-{{ .Branch }}
-            - ccache-{{ arch }}-master
+            - ccache-{{ arch }}-{{ .Branch }}-{{ .BuildNum }}
+            - ccache-{{ arch }}-{{ .Branch }}-
+            - ccache-{{ arch }}-main-
           paths:
             - /home/circleci/.ccache
       - run:
@@ -207,7 +206,8 @@ jobs:
               sudo rm  llvm-config
               sudo ln -s llvm-config-10 llvm-config
               cd ~/project/
-              pip install -U \
+              pip install -U pip
+              pip install -U --prefer-binary \
                 black \
                 flake8 \
                 flake8-bugbear \
@@ -221,9 +221,8 @@ jobs:
                 numpy \
                 pytest \
                 sphinx \
-                pillow \
                 tqdm
-              pip install -r requirements.txt torch --progress-bar off
+              pip install --prefer-binary -r requirements.txt torch --progress-bar off
       - run:
           name: run black
           command: |
@@ -320,6 +319,7 @@ jobs:
       - run:
           name: Build conda Linux packages for CI
           command: |
+              while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat;
               cd habitat-sim
@@ -352,6 +352,18 @@ jobs:
             git submodule update --init --recursive --jobs 16
             export PYTHONIOENCODING="utf-8"
             python macos_matrix_builder.py --ci_test
+  test_pip_build:
+    <<: *gpu
+    steps:
+      - checkout
+      - run: *install_deps
+      - run:
+          name: pip install
+          command: |
+            pyenv global 3.7.0
+            python3 -m pip install -U pip
+            python3 -m pip install . -v
+            cd ../ && python3 -c "import habitat_sim"
 
   lab_build_habitat:
     <<: *gpu
@@ -469,6 +481,7 @@ jobs:
           name: Build, install habitat-sim and run benchmark
           no_output_timeout: 25m
           command: |
+              while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat;
               cd habitat-sim
@@ -507,9 +520,9 @@ jobs:
               nvm use v11.9.0
               . ~/emsdk/emsdk_env.sh
               CMAKE_GENERATOR=Ninja ./build_js.sh --bullet
-              # switch back to cmake 3.10
+              # switch back to cmake 3.12
               sudo rm /usr/local/bin/cmake
-              sudo ln -s /opt/cmake310/bin/cmake /usr/local/bin/cmake
+              sudo ln -s /opt/cmake312/bin/cmake /usr/local/bin/cmake
       - run:
           name: Run sim benchmark
           command: |
@@ -549,7 +562,7 @@ jobs:
                 --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
 
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
-              pytest -n auto --durations=10 --cov-report=xml --cov=./
+              pytest -n 8 --durations=10 --cov-report=xml --cov=./
 
               #run the marked pytest-benchmark tests and print the results
               pytest -m sim_benchmarks
@@ -565,7 +578,7 @@ jobs:
               # Generate JS CodeConv
               npm run test_with_coverage
       - save_cache:
-          key: ccache-{{ arch }}-{{ .Branch }}
+          key: ccache-{{ arch }}-{{ .Branch }}-{{ .BuildNum }}
           background: true
           paths:
             - /home/circleci/.ccache
@@ -574,21 +587,24 @@ jobs:
           command: |
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat; cd habitat-sim
+
+              curl -Os https://uploader.codecov.io/latest/linux/codecov
+              chmod +x codecov
               #Uploading test coverage for Python code
-              bash <(curl -s https://codecov.io/bash) -f coverage.xml -cF Python
+              ./codecov -f coverage.xml -cF Python
 
               # Uploading test coverage for JS code
-              bash <(curl -s https://codecov.io/bash) -f coverage_js/coverage-final.json -cF JavaScript
+              ./codecov coverage_js/coverage-final.json -cF JavaScript
 
               #Uploading test coverage for C++ code
               lcov --directory . --capture --output-file coverage.info
               # Replaces -1 linecount with zero to prevent lcov from crashing:
               # https://github.com/psycofdj/coverxygen/issues/6
               sed -i -e 's/,-1$/,0/g' coverage.info
-              lcov --remove coverage.info "*/deps/*" --output-file coverage.info > /dev/null
-              lcov --remove coverage.info "*/test/*" --output-file coverage.info > /dev/null
-              lcov --remove coverage.info "*/tests/*" --output-file coverage.info > /dev/null
-              bash <(curl -s https://codecov.io/bash) -f coverage.info -cF CPP
+              #lcov --remove coverage.info "*/deps/*" --output-file coverage.info > /dev/null
+              #lcov --remove coverage.info "*/test/*" --output-file coverage.info > /dev/null
+              #lcov --remove coverage.info "*/tests/*" --output-file coverage.info > /dev/null
+              ./codecov -f coverage.info -cF CPP
 
 
 
@@ -607,17 +623,12 @@ jobs:
     steps:
       - checkout:
           path: ./habitat-sim
-      - restore_cache:
-          keys:
-            - conda-{{ checksum "habitat-sim/.circleci/config.yml" }}
-      - run: *install_conda
-      - run: *install_deps
       - run:
           name: Build conda Linux packages
           no_output_timeout: 240m
           command: |
-              export PATH=$HOME/miniconda/bin:$PATH
-              . activate habitat;
+              # export PATH=$HOME/miniconda/bin:$PATH
+              # . activate habitat;
 
               # Install anaconda to work with packages repo
               curl -O https://repo.anaconda.com/archive/Anaconda3-2020.11-Linux-x86_64.sh
@@ -693,6 +704,7 @@ workflows:
       - lab_build_habitat
       - test_conda_build
       - test_conda_build_osx
+      - test_pip_build
       - install_and_test_ubuntu
       - pre-commit
   nightly:
@@ -701,7 +713,7 @@ workflows:
           cron: "0 7 * * *"
           filters:
             branches:
-              only: master
+              only: main
     jobs:
       - lab_build_habitat
       - install_and_test_ubuntu
@@ -711,7 +723,7 @@ workflows:
             - install_and_test_ubuntu
           filters:
             branches:
-              only: master
+              only: main
       - build_conda_binaries:
           AIHABITAT_CONDA_CHN: aihabitat-nightly
           AIHABITAT_CONDA_CHN_PWD_VAR: AIHABITAT_NIGHTLY_CONDA_PWD
@@ -720,7 +732,7 @@ workflows:
             - install_and_test_ubuntu
           filters:
             branches:
-              only: master
+              only: main
 
   version_conda_release:
     jobs:

@@ -6,7 +6,7 @@
 #define ESP_ASSETS_ASSET_H_
 
 #include <Magnum/Math/Color.h>
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/geo/CoordinateFrame.h"
 
 namespace esp {
@@ -45,7 +45,7 @@ struct AssetInfo {
   std::string filepath = EMPTY_SCENE;  // empty scene
   geo::CoordinateFrame frame{};
   float virtualUnitToMeters = 1.0f;
-  bool requiresLighting = false;
+  bool forceFlatShading = true;
   bool splitInstanceMesh = true;  // only applies to AssetType::INSTANCE_MESH
 
   //! if set, override the asset material with a procedural Phong material

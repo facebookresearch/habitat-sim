@@ -2,8 +2,9 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include <Corrade/TestSuite/Compare/Numeric.h>
+#include <Corrade/TestSuite/Tester.h>
 #include <Corrade/Utility/Directory.h>
-#include <gtest/gtest.h>
 #include <string>
 
 #include "esp/sim/Simulator.h"
@@ -36,28 +37,45 @@ const std::string physicsConfigFile =
     Cr::Utility::Directory::join(SCENE_DATASETS,
                                  "../default.physics_config.json");
 
-class PhysicsManagerTest : public testing::TestWithParam<bool> {
- protected:
-  void SetUp() override{};
+namespace {
+struct PhysicsTest : Cr::TestSuite::Tester {
+  explicit PhysicsTest();
+
+  void close() {
+    physicsManager_ = nullptr;
+
+    sceneManager_ = nullptr;
+
+    resourceManager_ = nullptr;
+
+    context_ = nullptr;
+  }
 
   void resetCreateRendererFlag(bool createRenderer) {
+    close();
     auto cfg = esp::sim::SimulatorConfiguration{};
     cfg.createRenderer = createRenderer;
+    // setting values for stage load
+    cfg.loadSemanticMesh = false;
+    cfg.forceSeparateSemanticSceneGraph = false;
+    cfg.enablePhysics = true;
     metadataMediator_ = MetadataMediator::create(cfg);
+    // get attributes manager for physics world attributes
+    physicsAttributesManager_ =
+        metadataMediator_->getPhysicsAttributesManager();
+
+    sceneManager_ = SceneManager::create_unique();
     resourceManager_ = std::make_unique<ResourceManager>(metadataMediator_);
     if (createRenderer) {
       context_ = esp::gfx::WindowlessContext::create_unique(0);
     }
     resourceManager_->setRequiresTextures(createRenderer);
 
-    sceneID_ = sceneManager_.initSceneGraph();
-    // get attributes manager for physics world attributes
-    physicsAttributesManager_ =
-        metadataMediator_->getPhysicsAttributesManager();
+    sceneID_ = sceneManager_->initSceneGraph();
   }
 
   void initStage(const std::string& stageFile) {
-    auto& sceneGraph = sceneManager_.getSceneGraph(sceneID_);
+    auto& sceneGraph = sceneManager_->getSceneGraph(sceneID_);
     auto& rootNode = sceneGraph.getRootNode();
 
     // construct appropriate physics attributes based on config file
@@ -71,13 +89,13 @@ class PhysicsManagerTest : public testing::TestWithParam<bool> {
     auto stageAttributes = stageAttributesMgr->createObject(stageFile, true);
 
     // construct physics manager based on specifications in attributes
-    resourceManager_->initPhysicsManager(physicsManager_, true, &rootNode,
+    resourceManager_->initPhysicsManager(physicsManager_, &rootNode,
                                          physicsManagerAttributes);
 
     // load scene
     std::vector<int> tempIDs{sceneID_, esp::ID_UNDEFINED};
-    resourceManager_->loadStage(stageAttributes, physicsManager_,
-                                &sceneManager_, tempIDs, false);
+    resourceManager_->loadStage(stageAttributes, nullptr, physicsManager_,
+                                sceneManager_.get(), tempIDs);
 
     rigidObjectManager_ = physicsManager_->getRigidObjectManager();
   }
@@ -86,7 +104,7 @@ class PhysicsManagerTest : public testing::TestWithParam<bool> {
                             esp::gfx::DrawableGroup* drawables = nullptr,
                             esp::scene::SceneNode* attachmentNode = nullptr) {
     if (drawables == nullptr) {
-      drawables = &sceneManager_.getSceneGraph(sceneID_).getDrawables();
+      drawables = &sceneManager_->getSceneGraph(sceneID_).getDrawables();
     }
     int objectId =
         physicsManager_->addObject(objectFile, drawables, attachmentNode);
@@ -102,6 +120,20 @@ class PhysicsManagerTest : public testing::TestWithParam<bool> {
     return objectWrapper;
   }
 
+  // tests
+  void testJoinCompound();
+  void testCollisionBoundingBox();
+  void testDiscreteContactTest();
+  void testBulletCompoundShapeMargins();
+  void testConfigurableScaling();
+  void testVelocityControl();
+  void testSceneNodeAttachment();
+  void testMotionTypes();
+  void testNumActiveContactPoints();
+  void testRemoveSleepingSupport();
+  /////
+
+  esp::logging::LoggingContext loggingContext_;
   // must declare these in this order due to avoid deallocation errors
   esp::gfx::WindowlessContext::uptr context_;
 
@@ -109,29 +141,37 @@ class PhysicsManagerTest : public testing::TestWithParam<bool> {
   std::unique_ptr<ResourceManager> resourceManager_ = nullptr;
 
   AttrMgrs::PhysicsAttributesManager::ptr physicsAttributesManager_;
-  SceneManager sceneManager_;
+  SceneManager::uptr sceneManager_ = nullptr;
   PhysicsManager::ptr physicsManager_;
 
   std::shared_ptr<esp::physics::RigidObjectManager> rigidObjectManager_;
 
   int sceneID_;
-};
+};  // struct PhysicsTest
+const struct {
+  const char* name;
+  bool enabled;
+} RendererEnabledData[]{{"", true}, {"renderer disabled", false}};
 
-// Parameterized tests: for each TEST_P, we run it once with GetParam()==false
-// and again with GetParam()==true.
-INSTANTIATE_TEST_CASE_P(CreateRendererToggle,
-                        PhysicsManagerTest,
-                        testing::Values(false, true));
+PhysicsTest::PhysicsTest() {
+  addInstancedTests(
+      {&PhysicsTest::testJoinCompound, &PhysicsTest::testCollisionBoundingBox,
+       &PhysicsTest::testDiscreteContactTest,
+       &PhysicsTest::testBulletCompoundShapeMargins,
+       &PhysicsTest::testConfigurableScaling, &PhysicsTest::testVelocityControl,
+       &PhysicsTest::testSceneNodeAttachment, &PhysicsTest::testMotionTypes,
+       &PhysicsTest::testNumActiveContactPoints,
+       &PhysicsTest::testRemoveSleepingSupport},
+      Cr::Containers::arraySize(RendererEnabledData));
+}
 
-TEST_P(PhysicsManagerTest, JoinCompound) {
-  LOG(INFO) << "Starting physics test: JoinCompound";
-
-  resetCreateRendererFlag(GetParam());
-
+void PhysicsTest::testJoinCompound() {
   std::string stageFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/scenes/simple_room.glb");
   std::string objectFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/objects/nested_box.glb");
+
+  resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
 
   initStage(stageFile);
 
@@ -176,7 +216,7 @@ TEST_P(PhysicsManagerTest, JoinCompound) {
             Magnum::Quaternion::fromMatrix(R.rotationNormalized()));
         objWrapper->setTranslation(initialPosition);
 
-        ASSERT_EQ(node->absoluteTranslation(), initialPosition);
+        CORRADE_COMPARE(node->absoluteTranslation(), initialPosition);
       }
 
       float timeToSim = 20.0;
@@ -184,38 +224,36 @@ TEST_P(PhysicsManagerTest, JoinCompound) {
         physicsManager_->stepPhysics(0.1);
       }
       int numActiveObjects = physicsManager_->checkActiveObjects();
-      LOG(INFO) << " Number of active objects: " << numActiveObjects
-                << " | Num Total Objects : "
-                << physicsManager_->getNumRigidObjects();
+      ESP_DEBUG() << "Number of active objects:" << numActiveObjects
+                  << "| Num Total Objects :"
+                  << physicsManager_->getNumRigidObjects();
 
       if (i == 1) {
         // when collision meshes are joined, objects should be stable
-        ASSERT_EQ(numActiveObjects, 0);
-        ASSERT_EQ(physicsManager_->getNumActiveContactPoints(), 0);
+        CORRADE_COMPARE(numActiveObjects, 0);
+        CORRADE_COMPARE(physicsManager_->getNumActiveContactPoints(), 0);
       }
 
       rigidObjectManager_->removeAllObjects();
     }
   }
-}
+}  // PhysicsTest::testJoinCompound
 
 #ifdef ESP_BUILD_WITH_BULLET
-TEST_P(PhysicsManagerTest, CollisionBoundingBox) {
-  LOG(INFO) << "Starting physics test: CollisionBoundingBox";
-
-  resetCreateRendererFlag(GetParam());
-
+void PhysicsTest::testCollisionBoundingBox() {
   std::string stageFile =
       Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
   std::string objectFile =
       Cr::Utility::Directory::join(dataDir, "test_assets/objects/sphere.glb");
 
+  resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
+
   initStage(stageFile);
 
   if (physicsManager_->getPhysicsSimulationLibrary() !=
       PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
-    // if we have a simulation implementation then test bounding box vs mesh for
-    // sphere object
+    // if we have a simulation implementation then test bounding box vs mesh
+    // for sphere object
 
     ObjectAttributes::ptr ObjectAttributes = ObjectAttributes::create();
     ObjectAttributes->setRenderAssetHandle(objectFile);
@@ -240,8 +278,8 @@ TEST_P(PhysicsManagerTest, CollisionBoundingBox) {
       physicsManager_->reset();
 
       auto objectWrapper = makeObjectGetWrapper(
-          objectFile, &sceneManager_.getSceneGraph(sceneID_).getDrawables());
-      ASSERT_NE(objectWrapper, nullptr);
+          objectFile, &sceneManager_->getSceneGraph(sceneID_).getDrawables());
+      CORRADE_VERIFY(objectWrapper);
 
       Magnum::Vector3 initialPosition{0.0, 0.25, 0.0};
       objectWrapper->setTranslation(initialPosition);
@@ -258,15 +296,18 @@ TEST_P(PhysicsManagerTest, CollisionBoundingBox) {
         Magnum::Vector3 position = objectWrapper->getTranslation();
 
         // object is being pushed, so should be moving
-        ASSERT_NE(position, prevPosition);
+        CORRADE_COMPARE_AS(position, prevPosition,
+                           Cr::TestSuite::Compare::NotEqual);
         Magnum::Rad q_angle =
             Magnum::Math::angle(orientation, Magnum::Quaternion({0, 0, 0}, 1));
         if (i == 1) {
           // bounding box for collision, so the sphere should not be rolling
-          ASSERT_LE(q_angle, Magnum::Rad{0.1});
+          CORRADE_COMPARE_AS(q_angle, Magnum::Rad{0.1},
+                             Cr::TestSuite::Compare::LessOrEqual);
         } else {
           // no bounding box, so the sphere should be rolling
-          ASSERT_NE(orientation, prevOrientation);
+          CORRADE_COMPARE_AS(orientation, prevOrientation,
+                             Cr::TestSuite::Compare::NotEqual);
         }
 
         prevOrientation = orientation;
@@ -276,18 +317,15 @@ TEST_P(PhysicsManagerTest, CollisionBoundingBox) {
       rigidObjectManager_->removePhysObjectByID(objectWrapper->getID());
     }
   }
-}
+}  // PhysicsTest::testCollisionBoundingBox
 
-TEST_P(PhysicsManagerTest, DiscreteContactTest) {
-  LOG(INFO) << "Starting physics test: DiscreteContactTest";
-
-  resetCreateRendererFlag(GetParam());
-
+void PhysicsTest::testDiscreteContactTest() {
   std::string stageFile =
       Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
   std::string objectFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/objects/transform_box.glb");
 
+  resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
   initStage(stageFile);
 
   if (physicsManager_->getPhysicsSimulationLibrary() !=
@@ -307,72 +345,70 @@ TEST_P(PhysicsManagerTest, DiscreteContactTest) {
     // apart)
     objWrapper0->setTranslation(Magnum::Vector3{0, 1.1, 0});
     objWrapper1->setTranslation(Magnum::Vector3{2.2, 1.1, 0});
-    ASSERT_FALSE(objWrapper0->contactTest());
-    ASSERT_FALSE(objWrapper1->contactTest());
+    CORRADE_VERIFY(!objWrapper0->contactTest());
+    CORRADE_VERIFY(!objWrapper1->contactTest());
 
     // move box 0 into floor
     objWrapper0->setTranslation(Magnum::Vector3{0, 0.9, 0});
-    ASSERT_TRUE(objWrapper0->contactTest());
-    ASSERT_FALSE(objWrapper1->contactTest());
+    CORRADE_VERIFY(objWrapper0->contactTest());
+    CORRADE_VERIFY(!objWrapper1->contactTest());
     // set box 0 STATIC (STATIC vs STATIC stage)
     objWrapper0->setMotionType(esp::physics::MotionType::STATIC);
-    ASSERT_FALSE(objWrapper0->contactTest());
+    CORRADE_VERIFY(!objWrapper0->contactTest());
     // set box 0 KINEMATIC (KINEMATIC vs STATIC stage)
     objWrapper0->setMotionType(esp::physics::MotionType::KINEMATIC);
-    ASSERT_FALSE(objWrapper0->contactTest());
+    CORRADE_VERIFY(!objWrapper0->contactTest());
     // reset to DYNAMIC
     objWrapper0->setMotionType(esp::physics::MotionType::DYNAMIC);
 
     // set stage to non-collidable
-    ASSERT_TRUE(physicsManager_->getStageIsCollidable());
+    CORRADE_VERIFY(physicsManager_->getStageIsCollidable());
     physicsManager_->setStageIsCollidable(false);
-    ASSERT_FALSE(physicsManager_->getStageIsCollidable());
-    ASSERT_FALSE(objWrapper0->contactTest());
+    CORRADE_VERIFY(!physicsManager_->getStageIsCollidable());
+    CORRADE_VERIFY(!objWrapper0->contactTest());
 
     // move box 0 into box 1
     objWrapper0->setTranslation(Magnum::Vector3{1.1, 1.1, 0});
-    ASSERT_TRUE(objWrapper0->contactTest());
-    ASSERT_TRUE(objWrapper1->contactTest());
+    CORRADE_VERIFY(objWrapper0->contactTest());
+    CORRADE_VERIFY(objWrapper1->contactTest());
     // set box 0 STATIC (STATIC vs DYNAMIC)
     objWrapper0->setMotionType(esp::physics::MotionType::STATIC);
-    ASSERT_TRUE(objWrapper0->contactTest());
-    ASSERT_TRUE(objWrapper1->contactTest());
+    CORRADE_VERIFY(objWrapper0->contactTest());
+    CORRADE_VERIFY(objWrapper1->contactTest());
     // set box 1 STATIC (STATIC vs STATIC)
     objWrapper1->setMotionType(esp::physics::MotionType::STATIC);
-    ASSERT_FALSE(objWrapper0->contactTest());
-    ASSERT_FALSE(objWrapper1->contactTest());
+    CORRADE_VERIFY(!objWrapper0->contactTest());
+    CORRADE_VERIFY(!objWrapper1->contactTest());
     // set box 0 KINEMATIC (KINEMATIC vs STATIC)
     objWrapper0->setMotionType(esp::physics::MotionType::KINEMATIC);
-    ASSERT_FALSE(objWrapper0->contactTest());
-    ASSERT_FALSE(objWrapper1->contactTest());
+    CORRADE_VERIFY(!objWrapper0->contactTest());
+    CORRADE_VERIFY(!objWrapper1->contactTest());
     // set box 1 KINEMATIC (KINEMATIC vs KINEMATIC)
     objWrapper1->setMotionType(esp::physics::MotionType::KINEMATIC);
-    ASSERT_FALSE(objWrapper0->contactTest());
-    ASSERT_FALSE(objWrapper1->contactTest());
+    CORRADE_VERIFY(!objWrapper0->contactTest());
+    CORRADE_VERIFY(!objWrapper1->contactTest());
     // reset box 0 DYNAMIC (DYNAMIC vs KINEMATIC)
     objWrapper0->setMotionType(esp::physics::MotionType::DYNAMIC);
-    ASSERT_TRUE(objWrapper0->contactTest());
-    ASSERT_TRUE(objWrapper1->contactTest());
+    CORRADE_VERIFY(objWrapper0->contactTest());
+    CORRADE_VERIFY(objWrapper1->contactTest());
 
     // set box 0 to non-collidable
-    ASSERT_TRUE(objWrapper0->getCollidable());
+    CORRADE_VERIFY(objWrapper0->getCollidable());
     objWrapper0->setCollidable(false);
-    ASSERT_FALSE(objWrapper0->getCollidable());
-    ASSERT_FALSE(objWrapper0->contactTest());
-    ASSERT_FALSE(objWrapper1->contactTest());
+    CORRADE_VERIFY(!objWrapper0->getCollidable());
+    CORRADE_VERIFY(!objWrapper0->contactTest());
+    CORRADE_VERIFY(!objWrapper1->contactTest());
   }
-}
+}  // PhysicsTest::testDiscreteContactTest
 
-TEST_P(PhysicsManagerTest, BulletCompoundShapeMargins) {
+void PhysicsTest::testBulletCompoundShapeMargins() {
   // test that all different construction methods for a simple shape result in
   // the same Aabb for the given margin
-  LOG(INFO) << "Starting physics test: BulletCompoundShapeMargins";
-
-  resetCreateRendererFlag(GetParam());
 
   std::string objectFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/objects/transform_box.glb");
 
+  resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
   initStage(objectFile);
 
   if (physicsManager_->getPhysicsSimulationLibrary() ==
@@ -390,26 +426,26 @@ TEST_P(PhysicsManagerTest, BulletCompoundShapeMargins) {
     ObjectAttributes::ptr objectTemplate =
         objectAttributesManager->getObjectCopyByHandle(objectFile);
 
-    auto* drawables = &sceneManager_.getSceneGraph(sceneID_).getDrawables();
+    auto* drawables = &sceneManager_->getSceneGraph(sceneID_).getDrawables();
 
     // add the unjoined object
     objectTemplate->setJoinCollisionMeshes(false);
     objectAttributesManager->registerObject(objectTemplate);
     auto objectWrapper0 = makeObjectGetWrapper(objectFile, drawables);
-    ASSERT_NE(objectWrapper0, nullptr);
+    CORRADE_VERIFY(objectWrapper0);
 
     // add the joined object
     objectTemplate->setJoinCollisionMeshes(true);
     objectAttributesManager->registerObject(objectTemplate);
 
     auto objectWrapper1 = makeObjectGetWrapper(objectFile, drawables);
-    ASSERT_NE(objectWrapper1, nullptr);
+    CORRADE_VERIFY(objectWrapper1);
 
     // add bounding box object
     objectTemplate->setBoundingBoxCollisions(true);
     objectAttributesManager->registerObject(objectTemplate);
     auto objectWrapper2 = makeObjectGetWrapper(objectFile, drawables);
-    ASSERT_NE(objectWrapper2, nullptr);
+    CORRADE_VERIFY(objectWrapper2);
 
     esp::physics::BulletPhysicsManager* bPhysManager =
         static_cast<esp::physics::BulletPhysicsManager*>(physicsManager_.get());
@@ -424,19 +460,18 @@ TEST_P(PhysicsManagerTest, BulletCompoundShapeMargins) {
     Magnum::Range3D objectGroundTruth({-1.1, -1.1, -1.1}, {1.1, 1.1, 1.1});
     Magnum::Range3D stageGroundTruth({-1.04, -1.04, -1.04}, {1.04, 1.04, 1.04});
 
-    ASSERT_EQ(AabbStage, stageGroundTruth);
-    ASSERT_EQ(AabbOb0, objectGroundTruth);
-    ASSERT_EQ(AabbOb1, objectGroundTruth);
-    ASSERT_EQ(AabbOb2, objectGroundTruth);
+    CORRADE_COMPARE(AabbStage, stageGroundTruth);
+    CORRADE_COMPARE(AabbOb0, objectGroundTruth);
+    CORRADE_COMPARE(AabbOb1, objectGroundTruth);
+    CORRADE_COMPARE(AabbOb2, objectGroundTruth);
   }
-}
+}  // PhysicsTest::testBulletCompoundShapeMargins
 #endif
 
-TEST_P(PhysicsManagerTest, ConfigurableScaling) {
+void PhysicsTest::testConfigurableScaling() {
   // test scaling of objects via template configuration (visual and collision)
-  LOG(INFO) << "Starting physics test: ConfigurableScaling";
 
-  resetCreateRendererFlag(GetParam());
+  resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
 
   std::string stageFile =
       Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
@@ -464,7 +499,7 @@ TEST_P(PhysicsManagerTest, ConfigurableScaling) {
       {0.0, 0.0, 0.0},  {-1.0, -1.0, -1.0}, {-1.0, 1.0, 1.0},
       {4.0, -3.0, 2.0}, {0.1, -0.2, -0.3}};
 
-  auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
+  auto& drawables = sceneManager_->getSceneGraph(sceneID_).getDrawables();
 
   std::vector<int> objectIDs;
   for (auto& testScale : testScales) {
@@ -474,14 +509,14 @@ TEST_P(PhysicsManagerTest, ConfigurableScaling) {
     Magnum::Range3D boundsGroundTruth(-abs(testScale), abs(testScale));
 
     auto objectWrapper = makeObjectGetWrapper(objectFile, &drawables);
-    ASSERT_NE(objectWrapper, nullptr);
+    CORRADE_VERIFY(objectWrapper);
 
     objectIDs.push_back(objectWrapper->getID());
 
     const Magnum::Range3D& visualBounds =
         objectWrapper->getSceneNode()->getCumulativeBB();
 
-    ASSERT_EQ(visualBounds, boundsGroundTruth);
+    CORRADE_COMPARE(visualBounds, boundsGroundTruth);
 
 // Test Bullet collision shape scaling
 #ifdef ESP_BUILD_WITH_BULLET
@@ -489,23 +524,23 @@ TEST_P(PhysicsManagerTest, ConfigurableScaling) {
         PhysicsManager::PhysicsSimulationLibrary::Bullet) {
       Magnum::Range3D aabb = objectWrapper->getCollisionShapeAabb();
 
-      ASSERT_EQ(aabb, boundsGroundTruth);
+      CORRADE_COMPARE(aabb, boundsGroundTruth);
     }
 #endif
   }
 
   // check that scales are stored and queried correctly
   for (size_t ix = 0; ix < objectIDs.size(); ix++) {
-    ASSERT_EQ(rigidObjectManager_->getObjectCopyByID(objectIDs[ix])->getScale(),
-              testScales[ix]);
+    CORRADE_COMPARE(
+        rigidObjectManager_->getObjectCopyByID(objectIDs[ix])->getScale(),
+        testScales[ix]);
   }
-}
+}  // PhysicsTest::testConfigurableScaling
 
-TEST_P(PhysicsManagerTest, TestVelocityControl) {
+void PhysicsTest::testVelocityControl() {
   // test scaling of objects via template configuration (visual and collision)
-  LOG(INFO) << "Starting physics test: TestVelocityControl";
 
-  resetCreateRendererFlag(GetParam());
+  resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
 
   std::string objectFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/objects/transform_box.glb");
@@ -522,10 +557,10 @@ TEST_P(PhysicsManagerTest, TestVelocityControl) {
       metadataMediator_->getObjectAttributesManager();
   objectAttributesManager->registerObject(ObjectAttributes, objectFile);
 
-  auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
+  auto& drawables = sceneManager_->getSceneGraph(sceneID_).getDrawables();
 
   auto objectWrapper = makeObjectGetWrapper(objectFile, &drawables);
-  ASSERT_NE(objectWrapper, nullptr);
+  CORRADE_VERIFY(objectWrapper);
 
   objectWrapper->setTranslation(Magnum::Vector3{0, 1.0, 0});
 
@@ -538,8 +573,8 @@ TEST_P(PhysicsManagerTest, TestVelocityControl) {
     objectWrapper->setLinearVelocity(commandLinVel);
     objectWrapper->setAngularVelocity(commandAngVel);
 
-    ASSERT_EQ(objectWrapper->getLinearVelocity(), commandLinVel);
-    ASSERT_EQ(objectWrapper->getAngularVelocity(), commandAngVel);
+    CORRADE_COMPARE(objectWrapper->getLinearVelocity(), commandLinVel);
+    CORRADE_COMPARE(objectWrapper->getAngularVelocity(), commandAngVel);
 
   } else if (physicsManager_->getPhysicsSimulationLibrary() ==
              PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
@@ -547,8 +582,8 @@ TEST_P(PhysicsManagerTest, TestVelocityControl) {
     objectWrapper->setAngularVelocity(commandAngVel);
 
     // default kinematics always 0 velocity when queried
-    ASSERT_EQ(objectWrapper->getLinearVelocity(), Magnum::Vector3{});
-    ASSERT_EQ(objectWrapper->getAngularVelocity(), Magnum::Vector3{});
+    CORRADE_COMPARE(objectWrapper->getLinearVelocity(), Magnum::Vector3{});
+    CORRADE_COMPARE(objectWrapper->getAngularVelocity(), Magnum::Vector3{});
   }
 
   // test constant velocity control mechanism
@@ -571,12 +606,14 @@ TEST_P(PhysicsManagerTest, TestVelocityControl) {
   Magnum::Quaternion qGroundTruth{{0.842602, 0, 0}, 0.538537};
 
   float errorEps = 0.015;  // fairly loose due to discrete timestep
-  ASSERT_LE((objectWrapper->getTranslation() - posGroundTruth).length(),
-            errorEps);
+  CORRADE_COMPARE_AS(
+      (objectWrapper->getTranslation() - posGroundTruth).length(), errorEps,
+      Cr::TestSuite::Compare::LessOrEqual);
   Magnum::Rad angleError =
       Magnum::Math::angle(objectWrapper->getRotation(), qGroundTruth);
 
-  ASSERT_LE(float(angleError), errorEps);
+  CORRADE_COMPARE_AS(float(angleError), errorEps,
+                     Cr::TestSuite::Compare::LessOrEqual);
 
   if (physicsManager_->getPhysicsSimulationLibrary() ==
       PhysicsManager::PhysicsSimulationLibrary::Bullet) {
@@ -595,19 +632,22 @@ TEST_P(PhysicsManagerTest, TestVelocityControl) {
     while (physicsManager_->getWorldTime() < targetTime) {
       physicsManager_->stepPhysics(physicsManager_->getTimestep());
     }
-    ASSERT_LE((objectWrapper->getTranslation() - kinematicResult.translation)
-                  .length(),
-              errorEps);
+    CORRADE_COMPARE_AS(
+        (objectWrapper->getTranslation() - kinematicResult.translation)
+            .length(),
+        errorEps, Cr::TestSuite::Compare::LessOrEqual);
     angleError = Magnum::Math::angle(objectWrapper->getRotation(),
                                      kinematicResult.rotation);
-    ASSERT_LE(float(angleError), errorEps);
+    CORRADE_COMPARE_AS(float(angleError), errorEps,
+                       Cr::TestSuite::Compare::LessOrEqual);
 
     // should then get blocked by ground plane collision
     targetTime = 2.0;
     while (physicsManager_->getWorldTime() < targetTime) {
       physicsManager_->stepPhysics(physicsManager_->getTimestep());
     }
-    ASSERT_GE(objectWrapper->getTranslation()[1], 1.0 - errorEps);
+    CORRADE_COMPARE_AS(objectWrapper->getTranslation()[1], 1.0 - errorEps,
+                       Cr::TestSuite::Compare::GreaterOrEqual);
   }
 
   // test local velocity
@@ -635,19 +675,20 @@ TEST_P(PhysicsManagerTest, TestVelocityControl) {
   velControl->angVel = Magnum::Vector3{0.0, 0.0, 0.0};
   physicsManager_->stepPhysics(physicsManager_->getTimestep());
 
-  ASSERT_LE((objectWrapper->getTranslation() - posLocalGroundTruth).length(),
-            errorEps);
+  CORRADE_COMPARE_AS(
+      (objectWrapper->getTranslation() - posLocalGroundTruth).length(),
+      errorEps, Cr::TestSuite::Compare::LessOrEqual);
   Magnum::Rad angleErrorLocal =
       Magnum::Math::angle(objectWrapper->getRotation(), qLocalGroundTruth);
 
-  ASSERT_LE(float(angleErrorLocal), errorEps);
-}
+  CORRADE_COMPARE_AS(float(angleErrorLocal), errorEps,
+                     Cr::TestSuite::Compare::LessOrEqual);
+}  // PhysicsTest::testVelocityControl
 
-TEST_P(PhysicsManagerTest, TestSceneNodeAttachment) {
+void PhysicsTest::testSceneNodeAttachment() {
   // test attaching/detaching existing SceneNode to/from physical simulation
-  LOG(INFO) << "Starting physics test: TestSceneNodeAttachment";
 
-  resetCreateRendererFlag(GetParam());
+  resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
 
   std::string objectFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/objects/transform_box.glb");
@@ -664,48 +705,48 @@ TEST_P(PhysicsManagerTest, TestSceneNodeAttachment) {
   objectAttributesManager->registerObject(ObjectAttributes, objectFile);
 
   esp::scene::SceneNode& root =
-      sceneManager_.getSceneGraph(sceneID_).getRootNode();
+      sceneManager_->getSceneGraph(sceneID_).getRootNode();
   esp::scene::SceneNode* newNode = &root.createChild();
-  ASSERT_EQ(root.children().last(), newNode);
+  CORRADE_COMPARE(root.children().last(), newNode);
 
-  auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
+  auto& drawables = sceneManager_->getSceneGraph(sceneID_).getDrawables();
 
   // Test attaching newNode to a RigidBody
 
   auto objectWrapper = makeObjectGetWrapper(objectFile, &drawables, newNode);
-  ASSERT_NE(objectWrapper, nullptr);
+  CORRADE_VERIFY(objectWrapper);
 
-  ASSERT_EQ(objectWrapper->getSceneNode(), newNode);
+  CORRADE_COMPARE(objectWrapper->getSceneNode(), newNode);
 
   // Test updating newNode position with PhysicsManager
   Magnum::Vector3 newPos{1.0, 3.0, 0.0};
   objectWrapper->setTranslation(newPos);
-  ASSERT_EQ(objectWrapper->getTranslation(), newPos);
-  ASSERT_EQ(newNode->translation(), newPos);
+  CORRADE_COMPARE(objectWrapper->getTranslation(), newPos);
+  CORRADE_COMPARE(newNode->translation(), newPos);
 
   // Test leaving newNode without visualNode_ after destroying the RigidBody
   physicsManager_->removeObject(objectWrapper->getID(), false, true);
-  ASSERT(newNode->children().isEmpty());
+  CORRADE_VERIFY(newNode->children().isEmpty());
 
   // Test leaving the visualNode attached to newNode after destroying the
   // RigidBody
   objectWrapper = makeObjectGetWrapper(objectFile, &drawables, newNode);
-  ASSERT_NE(objectWrapper, nullptr);
+  CORRADE_VERIFY(objectWrapper);
   physicsManager_->removeObject(objectWrapper->getID(), false, false);
-  ASSERT(!newNode->children().isEmpty());
+  CORRADE_VERIFY(!newNode->children().isEmpty());
 
   // Test destroying newNode with the RigidBody
   objectWrapper = makeObjectGetWrapper(objectFile, &drawables, newNode);
-  ASSERT_NE(objectWrapper, nullptr);
+  CORRADE_VERIFY(objectWrapper);
   physicsManager_->removeObject(objectWrapper->getID(), true, true);
-  ASSERT_NE(root.children().last(), newNode);
-}
+  CORRADE_COMPARE_AS(root.children().last(), newNode,
+                     Cr::TestSuite::Compare::NotEqual);
+}  // PhysicsTest::testSceneNodeAttachment
 
-TEST_P(PhysicsManagerTest, TestMotionTypes) {
+void PhysicsTest::testMotionTypes() {
   // test setting motion types and expected simulation behaviors
-  LOG(INFO) << "Starting physics test: TestMotionTypes";
 
-  resetCreateRendererFlag(GetParam());
+  resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
 
   std::string objectFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/objects/transform_box.glb");
@@ -734,7 +775,7 @@ TEST_P(PhysicsManagerTest, TestMotionTypes) {
         objectAttributesManager->registerObject(ObjectAttributes, objectFile);
     auto objTemplate = objectAttributesManager->getObjectByID(boxId);
 
-    auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
+    auto& drawables = sceneManager_->getSceneGraph(sceneID_).getDrawables();
 
     float stageCollisionMargin = 0.04;
 
@@ -755,18 +796,19 @@ TEST_P(PhysicsManagerTest, TestMotionTypes) {
           while (physicsManager_->getWorldTime() < 6.0) {
             physicsManager_->stepPhysics(0.1);
           }
-          ASSERT_FALSE(objWrapper0->isActive());
-          ASSERT_FALSE(objWrapper1->isActive());
-          ASSERT_LE(
+          CORRADE_VERIFY(!objWrapper0->isActive());
+          CORRADE_VERIFY(!objWrapper1->isActive());
+          CORRADE_COMPARE_AS(
               (objWrapper0->getTranslation() -
                Magnum::Vector3{0.0, stageCollisionMargin + boxHalfExtent, 0.0})
                   .length(),
-              1.0e-3);
-          ASSERT_LE((objWrapper1->getTranslation() -
-                     Magnum::Vector3{
-                         0.0, stageCollisionMargin + boxHalfExtent * 3, 0.0})
-                        .length(),
-                    1.0e-3);
+              1.0e-3, Cr::TestSuite::Compare::LessOrEqual);
+          CORRADE_COMPARE_AS(
+              (objWrapper1->getTranslation() -
+               Magnum::Vector3{0.0, stageCollisionMargin + boxHalfExtent * 3,
+                               0.0})
+                  .length(),
+              1.0e-3, Cr::TestSuite::Compare::LessOrEqual);
         } break;
         case 1: {
           // test 1: stacking a DYNAMIC object on a STATIC object
@@ -777,15 +819,15 @@ TEST_P(PhysicsManagerTest, TestMotionTypes) {
           while (physicsManager_->getWorldTime() < 6.0) {
             physicsManager_->stepPhysics(0.1);
           }
-          ASSERT_FALSE(objWrapper1->isActive());
-          ASSERT_LE((objWrapper0->getTranslation() -
-                     Magnum::Vector3{0.0, boxHalfExtent * 2, 0.0})
-                        .length(),
-                    1.0e-4);
-          ASSERT_LE((objWrapper1->getTranslation() -
-                     Magnum::Vector3{0.0, boxHalfExtent * 4, 0.0})
-                        .length(),
-                    2.0e-4);
+          CORRADE_VERIFY(!objWrapper1->isActive());
+          CORRADE_COMPARE_AS((objWrapper0->getTranslation() -
+                              Magnum::Vector3{0.0, boxHalfExtent * 2, 0.0})
+                                 .length(),
+                             1.0e-4, Cr::TestSuite::Compare::LessOrEqual);
+          CORRADE_COMPARE_AS((objWrapper1->getTranslation() -
+                              Magnum::Vector3{0.0, boxHalfExtent * 4, 0.0})
+                                 .length(),
+                             2.0e-4, Cr::TestSuite::Compare::LessOrEqual);
         } break;
         case 2: {
           // test 2: stacking a DYNAMIC object on a moving KINEMATIC object
@@ -803,14 +845,14 @@ TEST_P(PhysicsManagerTest, TestMotionTypes) {
             // take single sub-steps for velocity control precision
             physicsManager_->stepPhysics(-1);
           }
-          ASSERT_LE((objWrapper0->getTranslation() -
-                     Magnum::Vector3{0.6, boxHalfExtent * 2, 0.0})
-                        .length(),
-                    1.0e-3);
-          ASSERT_LE((objWrapper1->getTranslation() -
-                     Magnum::Vector3{0.559155, boxHalfExtent * 4, 0.0})
-                        .length(),
-                    2.0e-3);
+          CORRADE_COMPARE_AS((objWrapper0->getTranslation() -
+                              Magnum::Vector3{0.6, boxHalfExtent * 2, 0.0})
+                                 .length(),
+                             1.0e-3, Cr::TestSuite::Compare::LessOrEqual);
+          CORRADE_COMPARE_AS((objWrapper1->getTranslation() -
+                              Magnum::Vector3{0.559155, boxHalfExtent * 4, 0.0})
+                                 .length(),
+                             2.0e-3, Cr::TestSuite::Compare::LessOrEqual);
         } break;
       }
 
@@ -819,18 +861,16 @@ TEST_P(PhysicsManagerTest, TestMotionTypes) {
       physicsManager_->reset();  // time=0
     }
   }
-}
+}  // PhysicsTest::testMotionTypes
 
-TEST_P(PhysicsManagerTest, TestNumActiveContactPoints) {
-  LOG(INFO) << "Starting physics test: TestNumActiveContactPoints";
-
-  resetCreateRendererFlag(GetParam());
+void PhysicsTest::testNumActiveContactPoints() {
+  resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
 
   std::string stageFile = Cr::Utility::Directory::join(
       dataDir, "test_assets/scenes/simple_room.glb");
 
   initStage(stageFile);
-  auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
+  auto& drawables = sceneManager_->getSceneGraph(sceneID_).getDrawables();
 
   // We need dynamics to test this.
   if (physicsManager_->getPhysicsSimulationLibrary() !=
@@ -847,7 +887,10 @@ TEST_P(PhysicsManagerTest, TestNumActiveContactPoints) {
     objWrapper0->setTranslation(stackBase);
 
     // no active contact points at start
-    ASSERT_EQ(physicsManager_->getNumActiveContactPoints(), 0);
+    CORRADE_COMPARE(physicsManager_->getNumActiveContactPoints(), 0);
+    CORRADE_COMPARE(physicsManager_->getNumActiveOverlappingPairs(), 0);
+    CORRADE_COMPARE(physicsManager_->getStepCollisionSummary(),
+                    "(no active collision manifolds)\n");
 
     // simulate to let cube fall and hit the ground
     while (physicsManager_->getWorldTime() < 2.0) {
@@ -856,48 +899,55 @@ TEST_P(PhysicsManagerTest, TestNumActiveContactPoints) {
 
     auto allContactPoints = physicsManager_->getContactPoints();
     // expect 4 active contact points for cube
-    ASSERT_EQ(allContactPoints.size(), 4);
-    ASSERT_EQ(physicsManager_->getNumActiveContactPoints(), 4);
+    CORRADE_COMPARE(allContactPoints.size(), 4);
+    CORRADE_COMPARE(physicsManager_->getNumActiveContactPoints(), 4);
+    // simple_room.glb has multiple subparts and our box is near two of them
+    CORRADE_COMPARE(physicsManager_->getNumActiveOverlappingPairs(), 2);
+    CORRADE_COMPARE(
+        physicsManager_->getStepCollisionSummary(),
+        "[RigidObject, cubeSolid, id 0] vs [Stage, subpart 6], 4 points\n");
+
     float totalNormalForce = 0;
     for (auto& cp : allContactPoints) {
       // contacts are still active
-      ASSERT(cp.isActive);
+      CORRADE_VERIFY(cp.isActive);
       // normal direction is unit Y (world up)
-      ASSERT_LE(
+      CORRADE_COMPARE_AS(
           (cp.contactNormalOnBInWS - Magnum::Vector3{0.0, 1.0, 0.0}).length(),
-          1.0e-4);
+          1.0e-4, Cr::TestSuite::Compare::LessOrEqual);
       // one object is the cube (0), other is the stage (-1)
-      ASSERT_EQ(cp.objectIdA, 0);
-      ASSERT_EQ(cp.objectIdB, -1);
+      CORRADE_COMPARE(cp.objectIdA, 0);
+      CORRADE_COMPARE(cp.objectIdB, -1);
       // accumulate the normal force
       totalNormalForce += cp.normalForce;
       // solver should keep the cube at the contact boundary (~0 penetration)
-      ASSERT_LE(cp.contactDistance, 1.0e-4);
+      CORRADE_COMPARE_AS(cp.contactDistance, 1.0e-4,
+                         Cr::TestSuite::Compare::LessOrEqual);
     }
     // mass 1 cube under gravity should require normal contact force of ~9.8
-    ASSERT_LE(totalNormalForce - 9.8, 3.0e-4);
+    CORRADE_COMPARE_AS(totalNormalForce - 9.8, 3.0e-4,
+                       Cr::TestSuite::Compare::LessOrEqual);
 
     // continue simulation until the cube is stable and sleeping
     while (physicsManager_->getWorldTime() < 4.0) {
       physicsManager_->stepPhysics(0.1);
     }
     // 4 inactive contact points at end
-    ASSERT_EQ(physicsManager_->getContactPoints().size(), 4);
+    CORRADE_COMPARE(physicsManager_->getContactPoints().size(), 4);
     // no active contact points at end
-    ASSERT_EQ(physicsManager_->getNumActiveContactPoints(), 0);
+    CORRADE_COMPARE(physicsManager_->getNumActiveContactPoints(), 0);
+    CORRADE_COMPARE(physicsManager_->getNumActiveOverlappingPairs(), 0);
   }
-}
+}  // PhysicsTest::testNumActiveContactPoints
 
-TEST_P(PhysicsManagerTest, TestRemoveSleepingSupport) {
+void PhysicsTest::testRemoveSleepingSupport() {
   // test that removing a sleeping support object wakes its collision island
-  LOG(INFO) << "Starting physics test: TestRemoveSleepingSupport";
-
-  resetCreateRendererFlag(GetParam());
+  resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
 
   std::string stageFile = "NONE";
 
   initStage(stageFile);
-  auto& drawables = sceneManager_.getSceneGraph(sceneID_).getDrawables();
+  auto& drawables = sceneManager_->getSceneGraph(sceneID_).getDrawables();
 
   // We need dynamics to test this.
   if (physicsManager_->getPhysicsSimulationLibrary() !=
@@ -923,7 +973,8 @@ TEST_P(PhysicsManagerTest, TestRemoveSleepingSupport) {
     for (int testCase = 0; testCase < 2; ++testCase) {
       // reset time to 0, should not otherwise modify state
       physicsManager_->reset();
-      ASSERT(physicsManager_->getNumRigidObjects() > 0);
+      CORRADE_COMPARE_AS(physicsManager_->getNumRigidObjects(), 0,
+                         Cr::TestSuite::Compare::Greater);
 
       // simulate to stabilize the stack and populate collision islands
       while (physicsManager_->getWorldTime() < 4.0) {
@@ -932,15 +983,15 @@ TEST_P(PhysicsManagerTest, TestRemoveSleepingSupport) {
 
       // cubes should be sleeping
       for (auto cube : cubes) {
-        ASSERT(!cube->isActive());
+        CORRADE_VERIFY(!cube->isActive());
       }
 
       // no active contact points
-      ASSERT_EQ(physicsManager_->getNumActiveContactPoints(), 0);
+      CORRADE_COMPARE(physicsManager_->getNumActiveContactPoints(), 0);
 
       if (testCase == 0) {
-        // first remove the bottom-most DYNAMIC object, expecting those above to
-        // fall
+        // first remove the bottom-most DYNAMIC object, expecting those above
+        // to fall
         rigidObjectManager_->removePhysObjectByID(cubes[1]->getID());
         cubes.erase(cubes.begin() + 1);
       } else if (testCase == 1) {
@@ -952,10 +1003,15 @@ TEST_P(PhysicsManagerTest, TestRemoveSleepingSupport) {
       // remaining cubes should now be awake
       for (auto cube : cubes) {
         if (cube->getMotionType() != esp::physics::MotionType::STATIC) {
-          ASSERT(cube->isActive());
+          CORRADE_VERIFY(cube->isActive());
         }
       }
-      ASSERT_GT(physicsManager_->getNumActiveContactPoints(), 0);
+      CORRADE_COMPARE_AS(physicsManager_->getNumActiveContactPoints(), 0,
+                         Cr::TestSuite::Compare::Greater);
     }
   }
-}
+}  // PhysicsTest::testRemoveSleepingSupport
+
+}  // namespace
+
+CORRADE_TEST_MAIN(PhysicsTest)

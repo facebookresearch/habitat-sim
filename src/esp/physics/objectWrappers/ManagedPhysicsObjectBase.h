@@ -128,7 +128,7 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
     return nullptr;
   }  // getSceneNode
 
-  core::Configuration::ptr getUserAttributes() const {
+  core::config::Configuration::ptr getUserAttributes() const {
     if (auto sp = this->getObjectReference()) {
       return sp->getUserAttributes();
     }
@@ -276,30 +276,24 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
    * of this managed object.
    */
   std::string getObjectInfo() const override {
-    std::string res{"unknown " + classKey_};
-    namespace CrUt = Corrade::Utility;
     if (auto sp = this->getObjectReference()) {
-      res.append(classKey_)
-          .append(1, ',')
-          .append(sp->getObjectName())
-          .append(1, ',')
-          .append(std::to_string(sp->getObjectID()))
-          .append(1, ',')
-          .append(CrUt::ConfigurationValue<Mn::Vector3>::toString(
-              sp->getTranslation(), {}))
-          .append(1, ',')
-          .append(CrUt::ConfigurationValue<Magnum::Quaternion>::toString(
-              sp->getRotation(), {}))
-          .append(1, ',')
-          .append(getPhysObjInfoInternal(sp));
+      namespace CrUt = Corrade::Utility;
+      return Cr::Utility::formatString(
+          "{},{},{},{},{},{},", classKey_, sp->getObjectName(),
+          std::to_string(sp->getObjectID()),
+          CrUt::ConfigurationValue<Mn::Vector3>::toString(sp->getTranslation(),
+                                                          {}),
+          CrUt::ConfigurationValue<Magnum::Quaternion>::toString(
+              sp->getRotation(), {}),
+          getPhysObjInfoInternal(sp));
     }
-    return res.append(1, ',');
+    return Cr::Utility::formatString("Unknown classkey {},", classKey_);
   }
 
  protected:
   /**
-   * @brief Retrieve a comma-separated string holding the header values for the
-   * info returned for this managed object, type-specific.
+   * @brief Retrieve a comma-separated string holding the header values for
+   * the info returned for this managed object, type-specific.
    * TODO : once Magnum supports retrieving key-values of configurations, use
    * that to build this data.
    */
@@ -321,7 +315,7 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
     std::shared_ptr<T> sp = weakObjRef_.lock();
     if (!sp) {
       // TODO: Verify object is removed from manager here?
-      LOG(WARNING)
+      ESP_WARNING()
           << "This object no longer exists.  Please delete any variable "
              "references.";
     }
@@ -352,7 +346,7 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
 
  public:
   ESP_SMART_POINTERS(AbstractManagedPhysicsObject<T>)
-};  // class ManagedPhysicsObject
+};  // namespace physics
 
 }  // namespace physics
 }  // namespace esp

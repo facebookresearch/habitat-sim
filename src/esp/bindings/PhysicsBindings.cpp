@@ -1,4 +1,4 @@
-#include "esp/bindings/bindings.h"
+#include "esp/bindings/Bindings.h"
 #include "esp/physics/PhysicsManager.h"
 
 #include "python/corrade/EnumOperators.h"

@@ -21,6 +21,7 @@
 #include <Magnum/GL/TextureFormat.h>
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/MeshTools/Transform.h>
+#include <Magnum/ResourceManager.h>
 #include <Magnum/SceneGraph/MatrixTransformation3D.h>
 #include <Magnum/Trade/Trade.h>
 
@@ -32,10 +33,13 @@
 #include "MeshMetaData.h"
 #include "RenderAssetInstanceCreationInfo.h"
 #include "esp/geo/VoxelGrid.h"
+#include "esp/gfx/CubeMap.h"
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/DrawableGroup.h"
 #include "esp/gfx/MaterialData.h"
+#include "esp/gfx/PbrImageBasedLighting.h"
 #include "esp/gfx/ShaderManager.h"
+#include "esp/gfx/ShadowMapManager.h"
 #include "esp/physics/configure.h"
 #include "esp/scene/SceneManager.h"
 #include "esp/scene/SceneNode.h"
@@ -121,6 +125,11 @@ class ResourceManager {
      * build phong material from PBR material
      */
     BuildPhongFromPbr = 1 << 0,
+
+    /**
+     * use pbr image based lighting
+     */
+    PbrImageBasedLighting = 1 << 1,
   };
 
   /**
@@ -152,8 +161,6 @@ class ResourceManager {
    * attributes
    * @param physicsManager The currently defined @ref physics::PhysicsManager.
    * Will be reseated to the specified physics implementation.
-   * @param isEnabled Whether this PhysicsManager is enabled or not.  Takes the
-   * place of old checks for nullptr.
    * @param parent The @ref scene::SceneNode of which the scene mesh will be
    * added as a child. Typically near the root of the scene. Expected to be
    * static.
@@ -162,7 +169,6 @@ class ResourceManager {
    */
   void initPhysicsManager(
       std::shared_ptr<physics::PhysicsManager>& physicsManager,
-      bool isEnabled,
       scene::SceneNode* parent,
       const metadata::attributes::PhysicsManagerAttributes::ptr&
           physicsManagerAttributes);
@@ -174,28 +180,25 @@ class ResourceManager {
    * If parent and drawables are not specified, the assets are loaded, but no
    * new @ref gfx::Drawable is added for the scene (i.e. it will not be
    * rendered).
-   * @param sceneAttributes The @ref StageAttributes that describes the
-   * scene
+   * @param stageAttributes The @ref StageAttributes that describes the
+   * stage
+   * @param stageInstanceAttributes The @ref SceneObjectInstanceAttributes that
+   * describes this particular instance of the stage.  If nullptr then not
+   * created by SceneInstanceAttributes.
    * @param _physicsManager The currently defined @ref physics::PhysicsManager.
    * @param sceneManagerPtr Pointer to scene manager, to fetch drawables and
    * parent node.
    * @param [out] activeSceneIDs active scene ID is in idx 0, if semantic scene
    * is made, its activeID should be pushed onto vector
-   * @param createSemanticMesh If the semantic mesh should be created, based on
-   * @ref SimulatorConfiguration
-   * @param forceSeparateSemanticSceneGraph Force creation of a separate
-   * semantic scene graph, even when no semantic mesh is loaded for the stage.
-   * This is required to support playback of any replay that includes a
-   * semantic-only render asset instance.
    * @return Whether or not the scene load succeeded.
    */
   bool loadStage(
-      metadata::attributes::StageAttributes::ptr& sceneAttributes,
+      const metadata::attributes::StageAttributes::ptr& stageAttributes,
+      const metadata::attributes::SceneObjectInstanceAttributes::cptr&
+          stageInstanceAttributes,
       const std::shared_ptr<physics::PhysicsManager>& _physicsManager,
       esp::scene::SceneManager* sceneManagerPtr,
-      std::vector<int>& activeSceneIDs,
-      bool createSemanticMesh,
-      bool forceSeparateSemanticSceneGraph = false);
+      std::vector<int>& activeSceneIDs);
 
   /**
    * @brief Construct scene collision mesh group based on name and type of
@@ -237,7 +240,8 @@ class ResourceManager {
    */
   const std::vector<assets::CollisionMeshData>& getCollisionMesh(
       const std::string& collisionAssetHandle) const {
-    CHECK(collisionMeshGroups_.count(collisionAssetHandle) > 0);
+    CORRADE_INTERNAL_ASSERT(collisionMeshGroups_.count(collisionAssetHandle) >
+                            0);
     return collisionMeshGroups_.at(collisionAssetHandle);
   }
 
@@ -312,7 +316,7 @@ class ResourceManager {
    * @return The asset's @ref MeshMetaData object.
    */
   const MeshMetaData& getMeshMetaData(const std::string& metaDataName) const {
-    CHECK(resourceDict_.count(metaDataName) > 0);
+    CORRADE_INTERNAL_ASSERT(resourceDict_.count(metaDataName) > 0);
     return resourceDict_.at(metaDataName).meshMetaData;
   }
 
@@ -335,7 +339,7 @@ class ResourceManager {
    */
   std::shared_ptr<esp::geo::VoxelGrid> getVoxelGrid(
       const std::string& voxelGridName) const {
-    CHECK(voxelGridDict_.count(voxelGridName) > 0);
+    CORRADE_INTERNAL_ASSERT(voxelGridDict_.count(voxelGridName) > 0);
     return voxelGridDict_.at(voxelGridName);
   }
 
@@ -547,7 +551,7 @@ class ResourceManager {
    * and return it
    *
    * @param attribs the attributes to query for the information.
-   * @param origin Either the origin of the sceneAttributes or the COM value of
+   * @param origin Either the origin of the stageAttributes or the COM value of
    * the objectAttributes.
    * @return the coordinate frame of the assets the passed attributes describes.
    */
@@ -622,6 +626,26 @@ class ResourceManager {
    */
   bool loadRenderAsset(const AssetInfo& info);
 
+  /**
+   * @brief get the shader manager
+   */
+  gfx::ShaderManager& getShaderManager() { return shaderManager_; }
+
+  /**
+   * @brief get the shadow map manager
+   */
+  gfx::ShadowMapManager& getShadowMapManger() { return shadowManager_; }
+
+  /**
+   * @brief get the shadow map keys
+   */
+  std::map<int, std::vector<Magnum::ResourceKey>>& getShadowMapKeys() {
+    return shadowMapKeys_;
+  }
+
+  static constexpr const char* SHADOW_MAP_KEY_TEMPLATE =
+      "scene_id={}-light_id={}";
+
  private:
   /**
    * @brief Load the requested mesh info into @ref meshInfo corresponding to
@@ -631,15 +655,15 @@ class ResourceManager {
    * @param objectAttributes the object attributes owning
    * this mesh.
    * @param assetType either "render" or "collision" (for error log output)
-   * @param requiresLighting whether or not this mesh asset responds to
-   * lighting
+   * @param forceFlatShading whether to force this asset to be rendered via flat
+   * shading.
    * @return whether or not the mesh was loaded successfully
    */
   bool loadObjectMeshDataFromFile(
       const std::string& filename,
       const metadata::attributes::ObjectAttributes::ptr& objectAttributes,
       const std::string& meshType,
-      bool requiresLighting);
+      bool forceFlatShading);
 
   /**
    * @brief Build a primitive asset based on passed template parameters.  If
@@ -947,6 +971,19 @@ class ResourceManager {
   void initDefaultLightSetups();
 
   /**
+   * @brief initialize pbr image based lighting
+   * @param[in] hdriImageFilename, the name of the
+   * HDRi image (an equirectangular image), that will be converted to a
+   * environment cube map
+   * NOTE!!! Such an image MUST be SPECIFIED in the
+   * ~/habitat-sim/data/pbr/PbrImages.conf
+   * and be put in that folder.
+   * example image:
+   * ~/habitat-sim/data/pbr/lythwood_room_4k.png
+   */
+  void initPbrImageBasedLighting(const std::string& hdriImageFilename);
+
+  /**
    * @brief initialize default material setups in the current ShaderManager
    */
   void initDefaultMaterials();
@@ -1113,6 +1150,24 @@ class ResourceManager {
    * @brief See @ref setRecorder.
    */
   std::shared_ptr<esp::gfx::replay::Recorder> gfxReplayRecorder_;
+
+  /**
+   * @brief The imaged based lighting for PBR, each is a collection of
+   * an environment map, an irradiance map, a BRDF lookup table (2D texture),
+   * and a pre-fitered map
+   */
+  std::vector<std::unique_ptr<esp::gfx::PbrImageBasedLighting>>
+      pbrImageBasedLightings_;
+
+  int activePbrIbl_ = ID_UNDEFINED;
+
+  /**
+   * @brief shadow map for point lights
+   */
+  // TODO: directional light shadow maps
+  gfx::ShadowMapManager shadowManager_;
+  // scene graph id -> keys for the shadow maps
+  std::map<int, std::vector<Magnum::ResourceKey>> shadowMapKeys_;
 };  // class ResourceManager
 
 CORRADE_ENUMSET_OPERATORS(ResourceManager::Flags)

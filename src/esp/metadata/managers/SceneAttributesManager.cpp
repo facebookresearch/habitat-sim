@@ -8,8 +8,8 @@
 #include "esp/metadata/MetadataUtils.h"
 #include "esp/physics/RigidBase.h"
 
-#include "esp/io/io.h"
-#include "esp/io/json.h"
+#include "esp/io/Io.h"
+#include "esp/io/Json.h"
 
 namespace esp {
 namespace metadata {
@@ -28,8 +28,8 @@ SceneAttributes::ptr SceneAttributesManager::createObject(
       sceneInstanceHandle, msg, registerTemplate);
 
   if (nullptr != attrs) {
-    LOG(INFO) << msg << " scene instance attributes created"
-              << (registerTemplate ? " and registered." : ".");
+    ESP_DEBUG() << msg << "scene instance attributes created"
+                << (registerTemplate ? "and registered." : ".");
   }
   return attrs;
 }  // SceneAttributesManager::createObject
@@ -62,8 +62,8 @@ void SceneAttributesManager::setValsFromJSONDoc(
     attribs->setStageInstance(
         createInstanceAttributesFromJSON(jsonConfig["stage_instance"]));
   } else {
-    LOG(WARNING) << "::setValsFromJSONDoc : No Stage specified for scene "
-                 << attribsDispName << ", or specification error.";
+    ESP_WARNING() << "No Stage specified for scene" << attribsDispName
+                  << ", or specification error.";
   }
 
   // Check for object instances existence
@@ -75,14 +75,13 @@ void SceneAttributesManager::setValsFromJSONDoc(
         if (objCell.IsObject()) {
           attribs->addObjectInstance(createInstanceAttributesFromJSON(objCell));
         } else {
-          LOG(WARNING)
-              << "::setValsFromJSONDoc : Object specification error in scene "
-              << attribsDispName << " at idx : " << i << ".";
+          ESP_WARNING() << "Object specification error in scene"
+                        << attribsDispName << "at idx :" << i << ".";
         }
       }
     } else {
-      LOG(WARNING) << "::setValsFromJSONDoc : No Objects specified for scene "
-                   << attribsDispName << ", or specification error.";
+      ESP_WARNING() << "No Objects specified for scene" << attribsDispName
+                    << ", or specification error.";
     }
   }
 
@@ -98,17 +97,13 @@ void SceneAttributesManager::setValsFromJSONDoc(
         attribs->addArticulatedObjectInstance(
             createAOInstanceAttributesFromJSON(artObjCell));
       } else {
-        LOG(WARNING) << "SceneAttributesManager::setValsFromJSONDoc : "
-                        "Articulated Object "
-                        "specification error in scene "
-                     << attribsDispName << " at idx : " << i << ".";
+        ESP_WARNING() << "Articulated Object specification error in scene"
+                      << attribsDispName << "at idx :" << i << ".";
       }
     }
   } else {
-    LOG(WARNING) << "SceneAttributesManager::setValsFromJSONDoc : No "
-                    "Articulated Objects "
-                    "specified for scene "
-                 << attribsDispName << ", or specification error.";
+    ESP_WARNING() << "No Articulated Objects specified for scene"
+                  << attribsDispName << ", or specification error.";
   }
 
   std::string dfltLighting = "";
@@ -117,9 +112,8 @@ void SceneAttributesManager::setValsFromJSONDoc(
     // if "default lighting" is specified in scene json set value.
     attribs->setLightingHandle(dfltLighting);
   } else {
-    LOG(WARNING) << "::setValsFromJSONDoc : No default_lighting "
-                    "specified for scene "
-                 << attribsDispName << ".";
+    ESP_WARNING() << "No default_lighting specified for scene"
+                  << attribsDispName << ".";
   }
 
   std::string navmeshName = "";
@@ -128,9 +122,8 @@ void SceneAttributesManager::setValsFromJSONDoc(
     // if "navmesh_instance" is specified in scene json set value.
     attribs->setNavmeshHandle(navmeshName);
   } else {
-    LOG(WARNING) << "::setValsFromJSONDoc : No navmesh_instance "
-                    "specified for scene "
-                 << attribsDispName << ".";
+    ESP_WARNING() << "No navmesh_instance specified for scene"
+                  << attribsDispName << ".";
   }
 
   std::string semanticDesc = "";
@@ -139,9 +132,8 @@ void SceneAttributesManager::setValsFromJSONDoc(
     // if "semantic scene instance" is specified in scene json set value.
     attribs->setSemanticSceneHandle(semanticDesc);
   } else {
-    LOG(WARNING) << "::setValsFromJSONDoc : No semantic_scene_instance "
-                    "specified for scene "
-                 << attribsDispName << ".";
+    ESP_WARNING() << "No semantic_scene_instance specified for scene"
+                  << attribsDispName << ".";
   }
   // check for user defined attributes
   this->parseUserDefinedJsonVals(attribs, jsonConfig);
@@ -197,13 +189,14 @@ SceneAttributesManager::createAOInstanceAttributesFromJSON(
     } else if (jCell["initial_joint_pose"].IsObject()) {
       // load values into map
       io::readMember<std::map<std::string, float>>(
-          jCell, "initial_joint_pose", instanceAttrs->getInitJointPose());
+          jCell, "initial_joint_pose", instanceAttrs->copyIntoInitJointPose());
     } else {
-      LOG(WARNING) << "SceneAttributesManager::"
-                      "createAOInstanceAttributesFromJSON : Unknown format for "
-                      "initial_joint_pose specified for instance "
-                   << instanceAttrs->getHandle()
-                   << " in Scene Instance File, so no values are set.";
+      ESP_WARNING()
+          << "SceneAttributesManager::"
+             "createAOInstanceAttributesFromJSON : Unknown format for "
+             "initial_joint_pose specified for instance"
+          << instanceAttrs->getHandle()
+          << "in Scene Instance File, so no values are set.";
     }
   }
   // only used for articulated objects
@@ -223,13 +216,14 @@ SceneAttributesManager::createAOInstanceAttributesFromJSON(
       // load values into map
       io::readMember<std::map<std::string, float>>(
           jCell, "initial_joint_velocities",
-          instanceAttrs->getInitJointVelocities());
+          instanceAttrs->copyIntoInitJointVelocities());
     } else {
-      LOG(WARNING) << "SceneAttributesManager::"
-                      "createAOInstanceAttributesFromJSON : Unknown format for "
-                      "initial_joint_velocities specified for instance "
-                   << instanceAttrs->getHandle()
-                   << " in Scene Instance File, so no values are set.";
+      ESP_WARNING()
+          << "SceneAttributesManager::"
+             "createAOInstanceAttributesFromJSON : Unknown format for "
+             "initial_joint_velocities specified for instance"
+          << instanceAttrs->getHandle()
+          << "in Scene Instance File, so no values are set.";
     }
   }
   return instanceAttrs;
@@ -265,11 +259,12 @@ void SceneAttributesManager::loadAbstractObjectAttributesFromJson(
     if (found != SceneObjectInstanceAttributes::MotionTypeNamesMap.end()) {
       motionTypeVal = static_cast<int>(found->second);
     } else {
-      LOG(WARNING) << "::createInstanceAttributesFromJSON : motion_type value "
-                      "in json  : `"
-                   << tmpVal << "|" << strToLookFor
-                   << "` does not map to a valid physics::MotionType value, so "
-                      "defaulting motion type to MotionType::UNDEFINED.";
+      ESP_WARNING()
+          << "::createInstanceAttributesFromJSON : motion_type value "
+             "in json  : `"
+          << tmpVal << "|" << strToLookFor
+          << "` does not map to a valid physics::MotionType value, so "
+             "defaulting motion type to MotionType::UNDEFINED.";
     }
   }
   instanceAttrs->setMotionType(motionTypeVal);
@@ -288,15 +283,15 @@ void SceneAttributesManager::loadAbstractObjectAttributesFromJson(
       });
 
   // uniform scaling for instance
-  io::jsonIntoSetter<float>(jCell, "uniform_scale",
-                            [instanceAttrs](float uniform_scale) {
-                              instanceAttrs->setUniformScale(uniform_scale);
-                            });
+  io::jsonIntoSetter<double>(jCell, "uniform_scale",
+                             [instanceAttrs](double uniform_scale) {
+                               instanceAttrs->setUniformScale(uniform_scale);
+                             });
   // mass scaling for instance
-  io::jsonIntoSetter<float>(jCell, "mass_scale",
-                            [instanceAttrs](float mass_scale) {
-                              instanceAttrs->setMassScale(mass_scale);
-                            });
+  io::jsonIntoSetter<double>(jCell, "mass_scale",
+                             [instanceAttrs](double mass_scale) {
+                               instanceAttrs->setMassScale(mass_scale);
+                             });
 
   // check for user defined attributes
   this->parseUserDefinedJsonVals(instanceAttrs, jCell);
@@ -319,7 +314,7 @@ int SceneAttributesManager::getTranslationOriginVal(
     if (found != attributes::InstanceTranslationOriginMap.end()) {
       transOrigin = static_cast<int>(found->second);
     } else {
-      LOG(WARNING)
+      ESP_WARNING()
           << "::getTranslationOriginVal : motion_type value in json  : `"
           << tmpTransOriginVal << "|" << strToLookFor
           << "` does not map to a valid "

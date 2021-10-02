@@ -13,14 +13,14 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.11.2
+#       jupytext_version: 1.11.4
 #   kernelspec:
 #     display_name: Python 3
 #     name: python3
 # ---
 
 # %% [markdown]
-# <a href="https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/master/examples/tutorials/colabs/ECCV_2020_Interactivity.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+# <a href="https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/ECCV_2020_Interactivity.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
 # %% [markdown]
 # #Habitat-sim Interactivity
@@ -37,7 +37,7 @@
 # @title Installation { display-mode: "form" }
 # @markdown (double click to show code).
 
-# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/master/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
+# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/main/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
 
 # %%
 # @title Path Setup and Imports { display-mode: "form" }
@@ -125,7 +125,7 @@ def make_cfg(settings):
             settings["height"],
             settings["width"],
         ]
-        color_sensor_1st_person_spec.postition = [0.0, settings["sensor_height"], 0.0]
+        color_sensor_1st_person_spec.position = [0.0, settings["sensor_height"], 0.0]
         color_sensor_1st_person_spec.orientation = [
             settings["sensor_pitch"],
             0.0,
@@ -141,7 +141,7 @@ def make_cfg(settings):
             settings["height"],
             settings["width"],
         ]
-        depth_sensor_1st_person_spec.postition = [0.0, settings["sensor_height"], 0.0]
+        depth_sensor_1st_person_spec.position = [0.0, settings["sensor_height"], 0.0]
         depth_sensor_1st_person_spec.orientation = [
             settings["sensor_pitch"],
             0.0,
@@ -157,7 +157,7 @@ def make_cfg(settings):
             settings["height"],
             settings["width"],
         ]
-        semantic_sensor_1st_person_spec.postition = [
+        semantic_sensor_1st_person_spec.position = [
             0.0,
             settings["sensor_height"],
             0.0,
@@ -179,7 +179,7 @@ def make_cfg(settings):
             settings["height"],
             settings["width"],
         ]
-        color_sensor_3rd_person_spec.postition = [
+        color_sensor_3rd_person_spec.position = [
             0.0,
             settings["sensor_height"] + 0.2,
             0.2,
@@ -488,7 +488,7 @@ def build_widget_ui(obj_attr_mgr, prim_attr_mgr):
     if not HAS_WIDGETS:
         sel_file_obj_handle = file_obj_handles[0]
         sel_prim_obj_handle = prim_obj_handles[0]
-        sel_prim_obj_handle = prim_asset_handles[0]
+        sel_asset_handle = prim_asset_handles[0]
         return
     file_obj_ddl, sel_file_obj_handle = set_handle_ddl_widget(
         file_obj_handles,
@@ -533,7 +533,7 @@ make_simulator_from_settings(sim_settings)
 # 3.   Generating Scene Clutter on the NavMesh
 # 4.   Continuous Embodied Navigation
 #
-# For more tutorial examples and details see the [Interactive Rigid Objects tutorial](https://aihabitat.org/docs/habitat-sim/rigid-object-tutorial.html) also available for Colab [here](https://github.com/facebookresearch/habitat-sim/blob/master/examples/tutorials/colabs/rigid_object_tutorial.ipynb).
+# For more tutorial examples and details see the [Interactive Rigid Objects tutorial](https://aihabitat.org/docs/habitat-sim/rigid-object-tutorial.html) also available for Colab [here](https://github.com/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/rigid_object_tutorial.ipynb).
 #
 #
 #
@@ -956,6 +956,7 @@ if make_video:
         output_path + example_type,
         open_vid=show_video,
     )
+obj_attr_mgr.remove_template_by_handle("scaled_sel_obj")
 rigid_obj_mgr.remove_all_objects()
 sim.navmesh_visualization = False
 

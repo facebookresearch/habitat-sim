@@ -4,8 +4,7 @@
 
 #include "SceneDatasetAttributesManager.h"
 
-#include "esp/io/io.h"
-#include "esp/io/json.h"
+#include "esp/io/Json.h"
 
 namespace esp {
 namespace metadata {
@@ -33,8 +32,8 @@ SceneDatasetAttributes::ptr SceneDatasetAttributesManager::createObject(
       datasetHandle, msg, registerTemplate);
 
   if (nullptr != attrs) {
-    LOG(INFO) << msg << " dataset attributes created"
-              << (registerTemplate ? " and registered." : ".");
+    ESP_DEBUG() << msg << "dataset attributes created"
+                << (registerTemplate ? " and registered." : ".");
   }
   return attrs;
 }  // SceneDatasetAttributesManager::createObject
@@ -79,17 +78,15 @@ void SceneDatasetAttributesManager::setValsFromJSONDoc(
   if (jsonConfig.HasMember(tag)) {
     namespace Dir = Cr::Utility::Directory;
     if (!jsonConfig[tag].IsObject()) {
-      LOG(WARNING)
-          << "::setValsFromJSONDoc : \"" << tag
+      ESP_WARNING()
+          << "\"" << tag
           << "\" cell in JSON config not appropriately configured. Skipping.";
     } else {
       const auto& jCell = jsonConfig[tag];
       if (jCell.HasMember("paths")) {
         if (!jCell["paths"].IsObject()) {
-          LOG(WARNING)
-              << "::setValsFromJSONDoc("
-                 "Articulated Object) : \""
-              << tag
+          ESP_WARNING()
+              << "(Articulated Object) : \"" << tag
               << ".paths\" cell in JSON config unable to be parsed as "
                  "a JSON object to determine search paths so skipping.";
         } else {
@@ -107,10 +104,9 @@ void SceneDatasetAttributesManager::setValsFromJSONDoc(
               // for each entry in ao paths array object
               for (rapidjson::SizeType i = 0; i < aoPathsObj.Size(); ++i) {
                 if (!aoPathsObj[i].IsString()) {
-                  LOG(ERROR) << "::setValsFromJSONDoc("
-                                "Articulated Object) : Invalid path "
-                                "value in file path array element @ idx "
-                             << i << ". Skipping.";
+                  ESP_ERROR() << "(Articulated Object) : Invalid path "
+                                 "value in file path array element @ idx"
+                              << i << ". Skipping.";
                   continue;
                 }
                 // aoPathsObj entry is a string, assumed to be relative to the
@@ -127,10 +123,9 @@ void SceneDatasetAttributesManager::setValsFromJSONDoc(
                   for (const auto& globPath : globPaths) {
                     // load all object templates available as configs in
                     // absolutePath
-                    LOG(WARNING)
-                        << "::setValsFromJSONDoc("
-                           "Articulated Object) : Glob path result for "
-                        << absolutePath << " : " << globPath;
+                    ESP_WARNING()
+                        << "(Articulated Object) : Glob path result for"
+                        << absolutePath << ":" << globPath;
                     // each globPath entry represents real unique entry on disk
 
                     //****replaces call to loadAllConfigsFromPath in AOManager
@@ -138,8 +133,8 @@ void SceneDatasetAttributesManager::setValsFromJSONDoc(
                     // Check if directory
                     const bool dirExists = Dir::isDirectory(globPath);
                     if (dirExists) {
-                      LOG(INFO)
-                          << "::setValsFromJSONDoc(Articulated Object) : "
+                      ESP_DEBUG()
+                          << "(Articulated Object) : "
                              "Parsing articulated object library directory: " +
                                  globPath;
                       for (auto& file :
@@ -155,12 +150,11 @@ void SceneDatasetAttributesManager::setValsFromJSONDoc(
                                                              urdfPathExt)) {
                       aoFilePaths.push_back(globPath);
                     } else {  // neither a directory or a file
-                      LOG(WARNING) << "::setValsFromJSONDoc(Articulated "
-                                      "Object) : Parsing articulated objects "
-                                      " : Cannot find "
-                                   << globPath
-                                   << " as sub directory or as config file. "
-                                      "Aborting parse.";
+                      ESP_WARNING() << "(Articulated Object) : Parsing "
+                                       "articulated objects  : Cannot find"
+                                    << globPath
+                                    << "as sub directory or as config file. "
+                                       "Aborting parse.";
                       continue;
                     }  // if dirExists else
                        //**//** replaces call to loadAllFileBasedTemplates
@@ -170,15 +164,14 @@ void SceneDatasetAttributesManager::setValsFromJSONDoc(
                   // traversing a subdirectory
                   if (aoFilePaths.size() > 0) {
                     std::string ao_dir = Dir::path(aoFilePaths[0]);
-                    LOG(INFO)
-                        << "::setValsFromJSONDoc(Articulated Object) : Loading "
-                        << aoFilePaths.size() << " " << this->objectType_
-                        << " templates found in " << ao_dir;
+                    ESP_DEBUG() << "(Articulated Object) : Loading"
+                                << aoFilePaths.size() << "" << this->objectType_
+                                << "templates found in" << ao_dir;
                     for (int i = 0; i < aoFilePaths.size(); ++i) {
                       auto aoModelFileName = aoFilePaths[i];
-                      LOG(INFO) << "::setValsFromJSONDoc(Articulated Object) : "
-                                   "Found Articulated Object Model file : "
-                                << aoModelFileName;
+                      ESP_DEBUG() << "(Articulated Object) : "
+                                     "Found Articulated Object Model file :"
+                                  << aoModelFileName;
 
                       // set k-v pairs here.
                       auto key =
@@ -193,37 +186,35 @@ void SceneDatasetAttributesManager::setValsFromJSONDoc(
                           key, aoModelFileName);
                     }
                   }
-                  LOG(INFO) << "::loadAllFileBasedTemplates : Specified "
-                            << std::to_string(aoFilePaths.size())
-                            << " articulated object model filenames specified "
-                               "in path GLOB object : "
-                            << absolutePath << ".";
+                  ESP_DEBUG()
+                      << "Specified" << std::to_string(aoFilePaths.size())
+                      << "articulated object model filenames specified "
+                         "in path GLOB object :"
+                      << absolutePath << ".";
 
                   //**//** end call to loadAllFileBasedTemplates
                   //**** end call to loadAllConfigsFromPath in AOManager
 
                 } else {
-                  LOG(WARNING)
-                      << "::setValsFromJSONDoc("
-                         "Articulated Object) : No Glob path result for "
+                  ESP_WARNING()
+                      << "(Articulated Object) : No Glob path result for"
                       << absolutePath;
                   continue;
                 }
               }  // for every path object in list in json
 
-              LOG(INFO) << "::setValsFromJSONDoc("
-                           "Articulated Object) : "
-                        << std::to_string(aoPathsObj.Size())
-                        << " paths specified in JSON doc for articulated "
-                           "object model files.";
+              ESP_DEBUG() << "(Articulated Object) :"
+                          << std::to_string(aoPathsObj.Size())
+                          << "paths specified in JSON doc for articulated "
+                             "object model files.";
               //** end call to buildCfgPathsFromJSONAndLoad in AOManager
             }
           }
 
           if (pathsWarn) {
-            LOG(WARNING)
-                << "::readDatasetJSONCell : \"" << tag << ".paths["
-                << pathsWarnType
+            ESP_WARNING()
+                << "\"" << tag << ".paths[" << Mn::Debug::nospace
+                << pathsWarnType << Mn::Debug::nospace
                 << "] cell in JSON config unable to be parsed as an array to "
                    "determine search paths for json configs so skipping.";
           }
@@ -268,10 +259,9 @@ void SceneDatasetAttributesManager::loadAndValidateMap(
     if (!Cr::Utility::Directory::exists(loc)) {
       std::string newLoc = Cr::Utility::Directory::join(dsDir, loc);
       if (!Cr::Utility::Directory::exists(newLoc)) {
-        LOG(WARNING) << "::loadAndValidateMap : " << jsonTag
-                     << " Value : " << loc
-                     << " not found on disk as absolute path or relative to "
-                     << dsDir;
+        ESP_WARNING() << jsonTag << "Value :" << loc
+                      << "not found on disk as absolute path or relative to"
+                      << dsDir;
       } else {
         // replace value with dataset-augmented absolute path
         map[entry.first] = newLoc;
@@ -289,8 +279,8 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
     const U& attrMgr) {
   if (jsonConfig.HasMember(tag)) {
     if (!jsonConfig[tag].IsObject()) {
-      LOG(WARNING)
-          << "::readDatasetJSONCell : \"" << tag
+      ESP_WARNING()
+          << "\"" << tag
           << "\" cell in JSON config not appropriately configured. Skipping.";
 
     } else {
@@ -300,22 +290,24 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
       // specified type.
       if (jCell.HasMember("default_attributes")) {
         if (!jCell["default_attributes"].IsObject()) {
-          LOG(WARNING) << "::readDatasetJSONCell : \"" << tag
-                       << ".default_attributes\" cell in JSON config unable to "
-                          "be parsed to set default attributes so skipping.";
+          ESP_WARNING()
+              << "\"" << Mn::Debug::nospace << tag << Mn::Debug::nospace
+              << ".default_attributes\" cell in JSON config unable to "
+                 "be parsed to set default attributes so skipping.";
         } else {
           // load attributes as default from file, do not register
           auto attr = attrMgr->buildObjectFromJSONDoc(
               "default_attributes", jCell["default_attributes"]);
           if (nullptr == attr) {
-            LOG(WARNING) << "::readDatasetJSONCell : \"" << tag
-                         << ".default_attributes\" cell failed to successfully "
-                            "create an attributes, so skipping.";
+            ESP_WARNING()
+                << "\"" << tag
+                << ".default_attributes\" cell failed to successfully "
+                   "create an attributes, so skipping.";
           } else {
             // set attributes as defaultObject_ in attrMgr.
             attrMgr->setDefaultObject(attr);
-            LOG(INFO)
-                << "::readDatasetJSONCell : \"" << tag
+            ESP_WARNING()
+                << "\"" << Mn::Debug::nospace << tag << Mn::Debug::nospace
                 << ".default_attributes\" set in Attributes Manager from JSON.";
           }
         }  // if is an object
@@ -325,8 +317,8 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
       // files.
       if (jCell.HasMember("paths")) {
         if (!jCell["paths"].IsObject()) {
-          LOG(WARNING)
-              << "::readDatasetJSONCell : \"" << tag
+          ESP_WARNING()
+              << "\"" << Mn::Debug::nospace << tag << Mn::Debug::nospace
               << ".paths\" cell in JSON config unable to be parsed as "
                  "a JSON object to determine search paths so skipping.";
         } else {
@@ -353,9 +345,9 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
           }
           // TODO support other extension tags
           if (pathsWarn) {
-            LOG(WARNING)
-                << "::readDatasetJSONCell : \"" << tag << ".paths["
-                << pathsWarnType
+            ESP_WARNING()
+                << "\"" << tag << ".paths\"[" << Mn::Debug::nospace
+                << pathsWarnType << Mn::Debug::nospace
                 << "] cell in JSON config unable to be parsed as an array to "
                    "determine search paths for json configs so skipping.";
           }
@@ -365,9 +357,9 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
       // existing attributes.
       if (jCell.HasMember("configs")) {
         if (!jCell["configs"].IsArray()) {
-          LOG(WARNING) << "::readDatasetJSONCell : \"" << tag
-                       << ".configs\" cell in JSON config unable to be parsed "
-                          "as an array to determine search paths so skipping.";
+          ESP_WARNING() << "\"" << tag
+                        << ".configs\" cell in JSON config unable to be parsed "
+                           "as an array to determine search paths so skipping.";
         } else {
           const auto& configsAra = jCell["configs"];
           for (rapidjson::SizeType i = 0; i < configsAra.Size(); i++) {
@@ -388,8 +380,8 @@ void SceneDatasetAttributesManager::readDatasetConfigsJSONCell(
     const U& attrMgr) {
   // every cell within configs array must have an attributes tag
   if ((!jCell.HasMember("attributes")) || (!jCell["attributes"].IsObject())) {
-    LOG(WARNING)
-        << "::readDatasetConfigsJSONCell : \"" << tag
+    ESP_WARNING()
+        << "\"" << tag
         << ".configs\" cell element in JSON config lacks required data to "
            "construct configuration override (an attributes tag and data "
            "describing the overrides is not found), so skipping.";
@@ -411,11 +403,11 @@ void SceneDatasetAttributesManager::readDatasetConfigsJSONCell(
     // verify that a template with this field as the original file was loaded.
     std::vector<std::string> handles =
         attrMgr->getObjectHandlesBySubstring(originalFile, true);
-    if (handles.size() == 0) {
-      LOG(WARNING)
-          << "::readDatasetConfigsJSONCell : \"" << tag
-          << ".configs\" cell element in JSON config specified source file : "
-          << originalFile << " which cannot be found, so skipping.";
+    if (handles.empty()) {
+      ESP_WARNING()
+          << "\"" << tag
+          << ".configs\" cell element in JSON config specified source file :"
+          << originalFile << "which cannot be found, so skipping.";
       return;
     }
     origObjHandle = handles[0];
@@ -434,8 +426,8 @@ void SceneDatasetAttributesManager::readDatasetConfigsJSONCell(
   }
   // if neither handle is specified, cell will fail
   if (!validCell) {
-    LOG(WARNING)
-        << "::readDatasetConfigsJSONCell : \"" << tag
+    ESP_WARNING()
+        << "\"" << tag
         << ".configs\" cell element in JSON config lacks required data to "
            "construct configuration override (either an original_file or a "
            "template_handle must be provided) so skipping.";
@@ -458,15 +450,14 @@ void SceneDatasetAttributesManager::readDatasetConfigsJSONCell(
     // origObjHandle is known to be legitimate file
     auto attr = attrMgr->getObjectCopyByHandle(origObjHandle);
     if (nullptr == attr) {
-      LOG(WARNING) << "::readDatasetConfigsJSONCell : "
-                   << attrMgr->getObjectType()
-                   << " : Attempting to make a copy of " << origObjHandle
-                   << " failing so creating and registering a new object.";
+      ESP_WARNING() << attrMgr->getObjectType()
+                    << ": Attempting to make a copy of" << origObjHandle
+                    << "failing so creating and registering a new object.";
       attr = attrMgr->createObject(origObjHandle, true);
       if (nullptr == attr) {
-        LOG(WARNING)
-            << "::readDatasetConfigsJSONCell : \"" << tag
-            << ".configs\" cell element's original file (" << originalFile
+        ESP_WARNING()
+            << "\"" << tag << ".configs\" cell element's original file ("
+            << originalFile
             << ") failed to successfully create a base attributes to modify, "
                "so skipping.";
         return;
@@ -483,8 +474,8 @@ void SceneDatasetAttributesManager::readDatasetConfigsJSONCell(
     auto attr = attrMgr->createDefaultObject(newTemplateHandle, false);
     // if null then failed for some reason to create a new default object.
     if (nullptr == attr) {
-      LOG(WARNING)
-          << "::readDatasetConfigsJSONCell : \"" << tag
+      ESP_WARNING()
+          << "\"" << tag
           << ".configs\" cell element failed to successfully create an "
              "attributes, so skipping.";
       return;

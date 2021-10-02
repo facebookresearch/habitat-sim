@@ -16,7 +16,7 @@ View Assets in Habitat-Sim
 When composing or editing assets for a habitat dataset, it would be helpful to see how they would be rendered in the Habitat-sim engine.  This can be difficult to accomplish without a lot of setup work, and this is made more difficult if Habitat-sim is not installed.
 This tutorial describes the Asset Viewer tool, which exists as both a `Collab`_, and a pure python utility.
 
-.. _Collab: <https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/master/examples/tutorials/colabs/asset_viewer.ipynb>
+.. _Collab: <https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/asset_viewer.ipynb>
 
 .. code:: shell-session
 

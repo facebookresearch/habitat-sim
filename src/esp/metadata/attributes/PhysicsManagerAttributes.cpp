@@ -14,6 +14,7 @@ PhysicsManagerAttributes::PhysicsManagerAttributes(const std::string& handle)
   setTimestep(0.008);
   setGravity({0, -9.8, 0});
   setFrictionCoefficient(0.4);
+  setRestitutionCoefficient(0.1);
 }  // PhysicsManagerAttributes ctor
 
 }  // namespace attributes

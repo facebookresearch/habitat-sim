@@ -23,6 +23,7 @@
 
 #include "esp/core/Check.h"
 #include "esp/gfx/DepthUnprojection.h"
+#include "esp/gfx/GaussianFilterShader.h"
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/TextureVisualizerShader.h"
 #include "esp/gfx/magnum.h"
@@ -68,7 +69,7 @@ struct Renderer::Impl {
 
   ~Impl() {
     acquireGlContext();
-    LOG(INFO) << "Deconstructing Renderer";
+    ESP_DEBUG() << "Deconstructing Renderer";
   }
 
   void draw(RenderCamera& camera,
@@ -117,8 +118,11 @@ struct Renderer::Impl {
             gfx::Renderer::Impl::RendererShaderType::ObjectIdTextureVisualizer;
       }
 
-      Magnum::Resource<Mn::GL::AbstractShaderProgram, TextureVisualizerShader>
+      Mn::Resource<Mn::GL::AbstractShaderProgram, TextureVisualizerShader>
           shader = getShader<TextureVisualizerShader>(rendererShaderType);
+
+      // shader may has been switched
+      shader->rebindColorMapTexture();
 
       if (type == sensor::SensorType::Depth) {
 #ifdef ENABLE_VISUALIZATION_WORKAROUND_ON_MAC
@@ -170,6 +174,84 @@ struct Renderer::Impl {
     }
   }
 
+  void applyGaussianFiltering(CubeMap& target,
+                              CubeMap& helper,
+                              CubeMap::TextureType type) {
+    CORRADE_ASSERT((type == CubeMap::TextureType::Color) ||
+                       (type == CubeMap::TextureType::VarianceShadowMap),
+                   "Renderer::Impl::applyGaussianFiltering(): type can only be "
+                   "Color or VarianceShadowMap.", );
+
+    if (type == CubeMap::TextureType::Color) {
+      CORRADE_ASSERT((target.getFlags() & CubeMap::Flag::ColorTexture) &&
+                         (helper.getFlags() & CubeMap::Flag::ColorTexture),
+                     "Renderer::Impl::applyGaussianFiltering(): cubemap is not "
+                     "created with specified flag (ColorTexture) enabled.", );
+    } else if (type == CubeMap::TextureType::VarianceShadowMap) {
+      CORRADE_ASSERT(
+          (target.getFlags() & CubeMap::Flag::VarianceShadowMapTexture) &&
+              (helper.getFlags() & CubeMap::Flag::VarianceShadowMapTexture),
+          "Renderer::Impl::applyGaussianFiltering(): cubemap is not "
+          "created with specified flag (VarianceShadowMapTexture) enabled.", );
+    }
+
+    int imageSize = target.getCubeMapSize();
+    if (helper.getCubeMapSize() != imageSize) {
+      helper.reset(imageSize);
+    }
+
+    // get mesh
+    if (!mesh_) {
+      // prepare a big triangle mesh to cover the screen
+      mesh_ = Mn::GL::Mesh{};
+      mesh_->setCount(3);
+    }
+
+    // get shader
+    esp::gfx::Renderer::Impl::RendererShaderType rendererShaderType =
+        esp::gfx::Renderer::Impl::RendererShaderType::GaussianFilter;
+
+    Mn::Resource<Mn::GL::AbstractShaderProgram, GaussianFilterShader> shader =
+        getShader<GaussianFilterShader>(rendererShaderType);
+
+#if !defined(MAGNUM_TARGET_WEBGL)
+    if ((!visualizedTex_) ||
+        visualizedTex_->imageSize(0) != Mn::Vector2i{imageSize, imageSize})
+#endif
+    {
+      visualizedTex_ = Mn::GL::Texture2D{};
+      (*visualizedTex_)
+          .setMinificationFilter(Mn::GL::SamplerFilter::Linear)
+          .setMagnificationFilter(Mn::GL::SamplerFilter::Linear)
+          .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
+          .setStorage(1, Mn::GL::TextureFormat::RG32F, {imageSize, imageSize});
+    }
+    // Round 1, apply gaussian filter horizontally to original cubemap,
+    // store the result in the helper.
+    shader->setFilteringDirection(
+        GaussianFilterShader::FilteringDirection::Horizontal);
+    for (unsigned int iFace = 0; iFace < 6; ++iFace) {
+      target.copySubImage(iFace, type, *visualizedTex_, 0);
+      helper.prepareToDraw(iFace);
+      shader->bindTexture(*visualizedTex_);
+      shader->draw(*mesh_);
+    }
+    // Round 2, apply gaussian filter vertically to helper cubemap,
+    // store the result in the target cubemap.
+    shader->setFilteringDirection(
+        GaussianFilterShader::FilteringDirection::Vertical);
+    for (unsigned int iFace = 0; iFace < 6; ++iFace) {
+      helper.copySubImage(iFace, type, *visualizedTex_, 0);
+      target.prepareToDraw(iFace);
+      shader->bindTexture(*visualizedTex_);
+      shader->draw(*mesh_);
+    }
+
+    if (target.getFlags() & CubeMap::Flag::AutoBuildMipmap) {
+      target.generateMipmap(type);
+    }
+  }
+
 #ifdef ESP_BUILD_WITH_BACKGROUND_RENDERER
   void checkHasBackgroundRenderer() {
     ESP_CHECK(backgroundRenderer_,
@@ -210,7 +292,7 @@ struct Renderer::Impl {
 
   void acquireGlContext() {
     if (!contextIsOwned_) {
-      VLOG(1) << "Renderer:: Main thread acquired GL Context";
+      ESP_VERY_VERBOSE() << "Renderer:: Main thread acquired GL Context";
       backgroundRenderer_->releaseContext();
       context_->makeCurrent();
       contextIsOwned_ = true;
@@ -287,8 +369,8 @@ struct Renderer::Impl {
 #endif
   Cr::Containers::Optional<Mn::GL::Mesh> mesh_;
   Mn::ResourceManager<Mn::GL::AbstractShaderProgram> shaderManager_;
-#ifdef ENABLE_VISUALIZATION_WORKAROUND_ON_MAC
   Cr::Containers::Optional<Mn::GL::Texture2D> visualizedTex_;
+#ifdef ENABLE_VISUALIZATION_WORKAROUND_ON_MAC
   Cr::Containers::Optional<Mn::GL::BufferImage2D> depthBufferImage_;
 #endif
 
@@ -296,6 +378,7 @@ struct Renderer::Impl {
     DepthShader = 0,
     DepthTextureVisualizer = 1,
     ObjectIdTextureVisualizer = 2,
+    GaussianFilter = 3,
   };
   template <typename T>
   Mn::Resource<Mn::GL::AbstractShaderProgram, T> getShader(
@@ -314,6 +397,10 @@ struct Renderer::Impl {
         key = Mn::ResourceKey{"objectIdVisualizer"};
         break;
 
+      case RendererShaderType::GaussianFilter:
+        key = Mn::ResourceKey{"gaussianFilter"};
+        break;
+
       default:
         CORRADE_INTERNAL_ASSERT_UNREACHABLE();
         break;
@@ -326,19 +413,23 @@ struct Renderer::Impl {
         shaderManager_.set<Mn::GL::AbstractShaderProgram>(
             shader.key(),
             new DepthShader{DepthShader::Flag::UnprojectExistingDepth},
-            Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
+            Mn::ResourceDataState::Final, Mn::ResourcePolicy::Resident);
       } else if (type == RendererShaderType::DepthTextureVisualizer) {
         shaderManager_.set<Mn::GL::AbstractShaderProgram>(
             shader.key(),
             new TextureVisualizerShader{
                 {TextureVisualizerShader::Flag::DepthTexture}},
-            Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
+            Mn::ResourceDataState::Final, Mn::ResourcePolicy::Resident);
       } else if (type == RendererShaderType::ObjectIdTextureVisualizer) {
         shaderManager_.set<Mn::GL::AbstractShaderProgram>(
             shader.key(),
             new TextureVisualizerShader{
                 {TextureVisualizerShader::Flag::ObjectIdTexture}},
-            Mn::ResourceDataState::Final, Mn::ResourcePolicy::ReferenceCounted);
+            Mn::ResourceDataState::Final, Mn::ResourcePolicy::Resident);
+      } else if (type == RendererShaderType::GaussianFilter) {
+        shaderManager_.set<Mn::GL::AbstractShaderProgram>(
+            shader.key(), new GaussianFilterShader{},
+            Mn::ResourceDataState::Final, Mn::ResourcePolicy::Resident);
       }
     }
     CORRADE_INTERNAL_ASSERT(shader);
@@ -400,6 +491,12 @@ void Renderer::visualize(sensor::VisualSensor& sensor,
                          float colorMapOffset,
                          float colorMapScale) {
   pimpl_->visualize(sensor, colorMapOffset, colorMapScale);
+}
+
+void Renderer::applyGaussianFiltering(CubeMap& target,
+                                      CubeMap& helper,
+                                      CubeMap::TextureType type) {
+  pimpl_->applyGaussianFiltering(target, helper, type);
 }
 
 }  // namespace gfx

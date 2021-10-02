@@ -29,8 +29,8 @@ bool fromJsonValue(const JsonGenericValue& obj, Magnum::Quaternion& val) {
           val.vector()[i - 1] = obj[i].GetFloat();
         }
       } else {
-        LOG(ERROR)
-            << " Invalid numeric value specified in JSON Quaternion, index :"
+        ESP_ERROR()
+            << "Invalid numeric value specified in JSON Quaternion, index :"
             << i;
         return false;
       }

@@ -8,7 +8,7 @@
 #include <set>
 #include <string>
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/scene/ObjectControls.h"
 #include "esp/scene/SceneNode.h"
 #include "esp/sensor/Sensor.h"
@@ -27,10 +27,6 @@ struct AgentState {
   // interop, replace with quatf when we have custom pybind11 type conversion
   // for quaternions
   vec4f rotation = {0, 0, 0, 1};
-  vec3f velocity;
-  vec3f angularVelocity;
-  vec3f force;
-  vec3f torque;
   ESP_SMART_POINTERS(AgentState)
 };
 
@@ -56,12 +52,6 @@ typedef std::map<std::string, ActionSpec::ptr> ActionSpace;
 struct AgentConfiguration {
   float height = 1.5;
   float radius = 0.1;
-  float mass = 32.0;
-  float linearAcceleration = 20.0;
-  float angularAcceleration = 4 * 3.14;
-  float linearFriction = 0.5;
-  float angularFriction = 1.0;
-  float coefficientOfRestitution = 0.0;
 
   std::vector<sensor::SensorSpec::ptr> sensorSpecifications = {};
 

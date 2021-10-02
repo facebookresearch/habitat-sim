@@ -42,22 +42,25 @@ class Simulator;
 }
 namespace physics {
 
-//! Holds information about one ray hit instance.
+/** @brief Holds information about one ray hit instance. */
 struct RayHitInfo {
-  //! The id of the object hit by this ray. Stage hits are -1.
+  /** @brief The id of the object hit by this ray. Stage hits are -1. */
   int objectId{};
-  //! The first impact point of the ray in world space.
+
+  /** @brief  The first impact point of the ray in world space. */
   Magnum::Vector3 point;
-  //! The collision object normal at the point of impact.
+
+  /** @brief The collision object normal at the point of impact. */
   Magnum::Vector3 normal;
-  //! Distance along the ray direction from the ray origin (in units of ray
-  //! length).
+
+  /** @brief  Distance along the ray direction from the ray origin (in units of
+   * ray length). */
   double rayDistance{};
 
   ESP_SMART_POINTERS(RayHitInfo)
 };
 
-//! Holds information about all ray hit instances from a ray cast.
+/** @brief Holds information about all ray hit instances from a ray cast. */
 struct RaycastResults {
   std::vector<RayHitInfo> hits;
   esp::geo::Ray ray;
@@ -74,7 +77,7 @@ struct RaycastResults {
   ESP_SMART_POINTERS(RaycastResults)
 };
 
-// based on Bullet b3ContactPointData
+/** @brief based on Bullet b3ContactPointData */
 struct ContactPointData {
   int objectIdA = -2;  // stage is -1
   int objectIdB = -2;
@@ -105,77 +108,86 @@ struct ContactPointData {
   ESP_SMART_POINTERS(ContactPointData)
 };
 
-//! describes the type of a rigid constraint.
+/** @brief describes the type of a rigid constraint.*/
 enum class RigidConstraintType {
-  //! lock a point in one frame to a point in another with no orientation
-  //! constraint
+  /** @brief lock a point in one frame to a point in another with no orientation
+   * constraint
+   */
   PointToPoint,
-  //! fix one frame to another constraining relative position and orientation
+  /** @brief fix one frame to another constraining relative position and
+   * orientation
+   */
   Fixed
-};
+};  // enum class RigidConstraintType
 
-/**
- * @brief Stores rigid constraint parameters for creation and updates.
- */
+/** @brief Stores rigid constraint parameters for creation and updates.*/
 struct RigidConstraintSettings {
  public:
   RigidConstraintSettings() = default;
 
-  //! The type of constraint described by these settings. Determines which
-  //! parameters to use for creation and update.
+  /** @brief The type of constraint described by these settings. Determines
+   * which parameters to use for creation and update.
+   */
   RigidConstraintType constraintType = RigidConstraintType::PointToPoint;
 
-  //! The maximum impulse applied by this constraint. Should be tuned relative
-  //! to physics timestep.
+  /** @brief The maximum impulse applied by this constraint. Should be tuned
+   * relative to physics timestep.
+   */
   double maxImpulse = 1000.0;
 
-  //! objectIdA must always be >= 0. For mixed type constraints, objectA must be
-  //! the ArticulatedObject.
+  /** @brief objectIdA must always be >= 0. For mixed type constraints, objectA
+   * must be the ArticulatedObject.
+   */
   int objectIdA = ID_UNDEFINED;
-  //! objectIdB == ID_UNDEFINED indicates "world".
+
+  /** @brief objectIdB == ID_UNDEFINED indicates "world". */
   int objectIdB = ID_UNDEFINED;
 
-  //! link of objectA if articulated. ID_UNDEFINED(-1) refers to base.
+  /** @brief  link of objectA if articulated. ID_UNDEFINED(-1) refers to base.
+   */
   int linkIdA = ID_UNDEFINED;
-  //! link of objectB if articulated. ID_UNDEFINED(-1) refers to base.
+
+  /** @brief link of objectB if articulated. ID_UNDEFINED(-1) refers to base.*/
   int linkIdB = ID_UNDEFINED;
 
-  //! constraint point in local space of respective objects
+  /** @brief constraint point in local space of respective objects*/
   Mn::Vector3 pivotA{}, pivotB{};
 
-  //! constraint orientation frame in local space of respective objects for
-  //! RigidConstraintType::Fixed
+  /** @brief  constraint orientation frame in local space of respective objects
+   * for RigidConstraintType::Fixed
+   */
   Mn::Matrix3x3 frameA{}, frameB{};
 
   ESP_SMART_POINTERS(RigidConstraintSettings)
-};
+};  // struct RigidConstraintSettings
 
 class RigidObjectManager;
 class ArticulatedObjectManager;
 
 /**
-@brief Kinematic and dynamic scene and object manager.
-
-Responsible for tracking, updating, and synchronizing the state of the physical
-world and all non-static geometry in the scene as well as interfacing with
-specific physical simulation implementations.
-
-The physical world in this case consists of any objects which can be manipulated
-(kinematically or dynamically) or simulated and anything such objects must be
-aware of (e.g. static scene collision geometry).
-
-Will later manager multiple physical scenes, but currently assumes only one
-unique physical world can exist.
-*/
+ * @brief Kinematic and dynamic scene and object manager. Responsible for
+ * tracking, updating, and synchronizing the state of the physical world and all
+ * non-static geometry in the scene as well as interfacing with specific
+ * physical simulation implementations.
+ *
+ * The physical world in this case consists of any objects which can be
+ * manipulated:addObject : (kinematically or dynamically) or simulated and
+ * anything such objects must be aware of (e.g. static scene collision
+ * geometry).
+ *
+ * May eventually manage multiple physical scenes, but currently
+ * assumes only one unique physical world can exist.
+ */
 class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
  public:
   //! ==== physics engines ====
 
   /**
-  @brief The specific physics implementation used by the current @ref
-  PhysicsManager. Each entry suggests a derived class of @ref PhysicsManager and
-  @ref RigidObject implementing the specific interface to a simulation library.
-  */
+   * @brief The specific physics implementation used by the current @ref
+   * PhysicsManager. Each entry suggests a derived class of @ref PhysicsManager
+   * and @ref RigidObject implementing the specific interface to a simulation
+   * library.
+   */
   enum class PhysicsSimulationLibrary {
 
     /**
@@ -252,11 +264,15 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @param initAttributes The attributes structure defining physical
    * properties of the scene.  Must be a copy of the attributes stored in the
    * Attributes Manager.
+   * @param stageInstanceAttributes The stage instance attributes that was used
+   * to create this stage. Might be empty.
    * @param meshGroup collision meshs for the scene.
    * @return true if successful and false otherwise
    */
   bool addStage(
       const metadata::attributes::StageAttributes::ptr& initAttributes,
+      const metadata::attributes::SceneObjectInstanceAttributes::cptr&
+          stageInstanceAttributes,
       const std::vector<assets::CollisionMeshData>& meshGroup);
 
   /**
@@ -275,7 +291,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
    */
   int addObjectInstance(
-      const esp::metadata::attributes::SceneObjectInstanceAttributes::ptr&
+      const esp::metadata::attributes::SceneObjectInstanceAttributes::cptr&
           objInstAttributes,
       const std::string& attributesHandle,
       bool defaultCOMCorrection = false,
@@ -335,9 +351,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
         resourceManager_.getObjectAttributesManager()->getObjectCopyByHandle(
             attributesHandle);
     if (!attributes) {
-      LOG(ERROR)
-          << "::addObject : Object creation failed due to unknown attributes "
-          << attributesHandle;
+      ESP_ERROR() << "Object creation failed due to unknown attributes handle :"
+                  << attributesHandle;
       return ID_UNDEFINED;
     }
 
@@ -365,9 +380,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
         resourceManager_.getObjectAttributesManager()->getObjectCopyByID(
             attributesID);
     if (!attributes) {
-      LOG(ERROR) << "::addObject : Object creation failed due to unknown "
-                    "attributes ID "
-                 << attributesID;
+      ESP_ERROR() << "Object creation failed due to unknown attributes ID :"
+                  << attributesID;
       return ID_UNDEFINED;
     }
     return addObject(attributes, drawables, attachmentNode, lightSetup);
@@ -470,7 +484,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   int addArticulatedObjectInstance(
       const std::string& filepath,
       const std::shared_ptr<
-          esp::metadata::attributes::SceneAOInstanceAttributes>&
+          const esp::metadata::attributes::SceneAOInstanceAttributes>&
           aObjInstAttributes,
       const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
 
@@ -491,6 +505,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * the components of the @ref ArticulatedObject.
    * @param forceReload If true, reload the source URDF from file, replacing the
    * cached model.
+   * @param maintainLinkOrder If true, maintain the order of link definitions
+   * from the URDF file as the link indices.
    * @param lightSetup The string name of the desired lighting setup to use.
    *
    * @return A unique id for the @ref BulletArticulatedObject, allocated from
@@ -502,9 +518,9 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
       CORRADE_UNUSED float globalScale = 1.0,
       CORRADE_UNUSED float massScale = 1.0,
       CORRADE_UNUSED bool forceReload = false,
+      CORRADE_UNUSED bool maintainLinkOrder = false,
       CORRADE_UNUSED const std::string& lightSetup = DEFAULT_LIGHTING_KEY) {
-    Magnum::Debug{} << "addArticulatedObjectFromURDF not implemented in base "
-                       "PhysicsManager.";
+    ESP_DEBUG() << "Not implemented in base PhysicsManager.";
     return ID_UNDEFINED;
   }
 
@@ -525,6 +541,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * the components of the @ref ArticulatedObject.
    * @param forceReload If true, reload the source URDF from file, replacing the
    * cached model.
+   * @param maintainLinkOrder If true, maintain the order of link definitions
+   * from the URDF file as the link indices.
    * @param lightSetup The string name of the desired lighting setup to use.
    *
    * @return A unique id for the @ref ArticulatedObject, allocated from the same
@@ -537,9 +555,9 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
       CORRADE_UNUSED float globalScale = 1.0,
       CORRADE_UNUSED float massScale = 1.0,
       CORRADE_UNUSED bool forceReload = false,
+      CORRADE_UNUSED bool maintainLinkOrder = false,
       CORRADE_UNUSED const std::string& lightSetup = DEFAULT_LIGHTING_KEY) {
-    Magnum::Debug{} << "addArticulatedObjectFromURDF not implemented in base "
-                       "PhysicsManager.";
+    ESP_DEBUG() << "Not implemented in base PhysicsManager.";
     return ID_UNDEFINED;
   }
 
@@ -550,7 +568,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   int getNumArticulatedObjects() { return existingArticulatedObjects_.size(); }
 
   ArticulatedObject& getArticulatedObject(int objectId) {
-    CHECK(existingArticulatedObjects_.count(objectId));
+    CORRADE_INTERNAL_ASSERT(existingArticulatedObjects_.count(objectId));
     return *existingArticulatedObjects_.at(objectId).get();
   }
 
@@ -742,8 +760,9 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * enabled objects.
    */
   virtual bool contactTest(const int physObjectID) {
-    CHECK((existingObjects_.count(physObjectID) > 0) ||
-          (existingArticulatedObjects_.count(physObjectID) > 0));
+    CORRADE_INTERNAL_ASSERT(
+        (existingObjects_.count(physObjectID) > 0) ||
+        (existingArticulatedObjects_.count(physObjectID) > 0));
     if (existingObjects_.count(physObjectID) > 0) {
       return existingObjects_.at(physObjectID)->contactTest();
     } else {
@@ -769,6 +788,16 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @return the number of active contact points.
    */
   virtual int getNumActiveContactPoints() { return -1; }
+
+  /**
+   * @brief See BulletPhysicsManager.h getNumActiveOverlappingPairs
+   */
+  virtual int getNumActiveOverlappingPairs() { return -1; }
+
+  /**
+   * @brief See BulletPhysicsManager.h getStepCollisionSummary
+   */
+  virtual std::string getStepCollisionSummary() { return "not implemented"; }
 
   /**
    * @brief Query physics simulation implementation for contact point data from
@@ -895,8 +924,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    */
   virtual int createRigidConstraint(
       CORRADE_UNUSED const RigidConstraintSettings& settings) {
-    LOG(ERROR)
-        << "createRigidConstraint not implemented in base PhysicsManager";
+    ESP_ERROR() << "Not implemented in base PhysicsManager.";
     return ID_UNDEFINED;
   }
 
@@ -911,8 +939,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   virtual void updateRigidConstraint(
       CORRADE_UNUSED int constraintId,
       CORRADE_UNUSED const RigidConstraintSettings& settings) {
-    LOG(ERROR)
-        << "updateRigidConstraint not implemented in base PhysicsManager.";
+    ESP_ERROR() << "Not implemented in base PhysicsManager.";
   }
 
   /**
@@ -923,8 +950,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @param constraintId The id of the constraint to remove.
    */
   virtual void removeRigidConstraint(CORRADE_UNUSED int constraintId) {
-    LOG(ERROR)
-        << "removeRigidConstraint not implemented in base PhysicsManager.";
+    ESP_ERROR() << "Not implemented in base PhysicsManager.";
   }
 
   /**
@@ -936,9 +962,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    */
   RigidConstraintSettings getRigidConstraintSettings(int constraintId) const {
     ESP_CHECK(rigidConstraintSettings_.count(constraintId) > 0,
-              "PhysicsManager::getRigidConstraintSettings - No RigidConstraint "
-              "exists with constraintId = "
-                  << constraintId);
+              "No RigidConstraint exists with constraintId =" << constraintId);
     return rigidConstraintSettings_.at(constraintId);
   }
 
@@ -950,7 +974,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @param physObjectID The object ID to validate.
    */
   virtual void assertRigidIdValidity(const int physObjectID) const {
-    CHECK(isValidRigidObjectId(physObjectID));
+    CORRADE_INTERNAL_ASSERT(isValidRigidObjectId(physObjectID));
   }
 
   /** @brief Check if a particular mesh can be used as a collision mesh for
@@ -1099,7 +1123,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    */
   std::vector<int> recycledObjectIDs_;
 
-  //! maps constraint ids to their settings
+  /** @brief Tmaps constraint ids to their settings */
   std::unordered_map<int, RigidConstraintSettings> rigidConstraintSettings_;
 
   //! Utilities
@@ -1114,7 +1138,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   double fixedTimeStep_ = 1.0 / 240.0;
 
   /** @brief The current simulation time. Tracks the total amount of time
-   * simulated with @ref stepPhysics up to this point. */
+   * simulated with @ref stepPhysics up to this point.
+   */
   double worldTime_ = 0.0;
 
  public:

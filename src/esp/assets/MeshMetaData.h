@@ -10,7 +10,7 @@
  * esp::assets::MeshMetaData
  */
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/gfx/magnum.h"
 
 namespace esp {

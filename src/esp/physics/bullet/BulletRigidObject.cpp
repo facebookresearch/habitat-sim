@@ -14,6 +14,7 @@
 #include "BulletCollision/CollisionShapes/btConvexTriangleMeshShape.h"
 #include "BulletCollision/Gimpact/btGImpactShape.h"
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
+#include "BulletCollisionHelper.h"
 #include "BulletRigidObject.h"
 
 //!  A Few considerations in construction
@@ -259,8 +260,8 @@ void BulletRigidObject::setCollisionFromBB() {
 
 void BulletRigidObject::setMotionType(MotionType mt) {
   if (mt == MotionType::UNDEFINED) {
-    LOG(WARNING) << "::setMotionType : Cannot set motion type "
-                    "to MotionType::UNDEFINED.  Aborting.";
+    ESP_WARNING() << "Cannot set motion type "
+                     "to MotionType::UNDEFINED.  Aborting.";
     return;
   }
   if (mt == objectMotionType_) {
@@ -382,6 +383,8 @@ void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
   }
   bObjectRigidBody_ = std::make_unique<btRigidBody>(info);
   collisionObjToObjIds_->emplace(bObjectRigidBody_.get(), objectId_);
+  BulletCollisionHelper::get().mapCollisionObjectTo(bObjectRigidBody_.get(),
+                                                    getCollisionDebugName());
 
   // add the object to the world
   if (mt == MotionType::STATIC) {
@@ -407,6 +410,11 @@ void BulletRigidObject::constructAndAddRigidBody(MotionType mt) {
     CORRADE_INTERNAL_ASSERT(!bObjectRigidBody_->isStaticObject());
     CORRADE_INTERNAL_ASSERT(!bObjectRigidBody_->isKinematicObject());
   }
+}
+
+std::string BulletRigidObject::getCollisionDebugName() {
+  return "RigidObject, " + initializationAttributes_->getHandle() + ", id " +
+         std::to_string(objectId_);
 }
 
 void BulletRigidObject::activateCollisionIsland() {
@@ -479,8 +487,8 @@ bool BulletRigidObject::contactTest() {
 
 void BulletRigidObject::overrideCollisionGroup(CollisionGroup group) {
   if (!bObjectRigidBody_->isInWorld()) {
-    LOG(ERROR) << "::overrideCollisionGroup failed because "
-                  "the Bullet body hasn't yet been added to the Bullet world.";
+    ESP_ERROR() << "Failed because "
+                   "the Bullet body hasn't yet been added to the Bullet world.";
   }
 
   bWorld_->removeRigidBody(bObjectRigidBody_.get());

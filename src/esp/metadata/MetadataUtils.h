@@ -5,7 +5,7 @@
 #ifndef ESP_METADATA_METADATAUTILS_H_
 #define ESP_METADATA_METADATAUTILS_H_
 
-#include "esp/io/json.h"
+#include "esp/io/Json.h"
 
 namespace esp {
 namespace metadata {

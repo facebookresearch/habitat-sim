@@ -13,7 +13,7 @@
 #include "JsonMagnumTypes.h"
 
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/gfx/replay/Keyframe.h"
 
 namespace esp {
@@ -30,8 +30,8 @@ inline bool fromJsonValue(const JsonGenericValue& obj, esp::vec3f& val) {
       if (obj[i].IsNumber()) {
         val[i] = obj[i].GetDouble();
       } else {
-        LOG(ERROR) << " Invalid numeric value specified in JSON vec3f, index :"
-                   << i;
+        ESP_ERROR() << "Invalid numeric value specified in JSON vec3f, index :"
+                    << i;
         return false;
       }
     }
@@ -88,7 +88,7 @@ inline JsonGenericValue toJsonValue(const esp::assets::AssetInfo& x,
   addMember(obj, "filepath", x.filepath, allocator);
   addMember(obj, "frame", x.frame, allocator);
   addMember(obj, "virtualUnitToMeters", x.virtualUnitToMeters, allocator);
-  addMember(obj, "requiresLighting", x.requiresLighting, allocator);
+  addMember(obj, "forceFlatShading", x.forceFlatShading, allocator);
   addMember(obj, "splitInstanceMesh", x.splitInstanceMesh, allocator);
   addMember(obj, "overridePhongMaterial", x.overridePhongMaterial, allocator);
 
@@ -101,7 +101,7 @@ inline bool fromJsonValue(const JsonGenericValue& obj,
   readMember(obj, "filepath", x.filepath);
   readMember(obj, "frame", x.frame);
   readMember(obj, "virtualUnitToMeters", x.virtualUnitToMeters);
-  readMember(obj, "requiresLighting", x.requiresLighting);
+  readMember(obj, "forceFlatShading", x.forceFlatShading);
   readMember(obj, "splitInstanceMesh", x.splitInstanceMesh);
   readMember(obj, "overridePhongMaterial", x.overridePhongMaterial);
   return true;

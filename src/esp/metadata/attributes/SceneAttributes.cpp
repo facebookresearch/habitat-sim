@@ -14,6 +14,7 @@ const std::map<std::string, esp::physics::MotionType>
         {"kinematic", esp::physics::MotionType::KINEMATIC},
         {"dynamic", esp::physics::MotionType::DYNAMIC},
 };
+
 SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
     const std::string& handle,
     const std::string& type)
@@ -25,14 +26,16 @@ SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
   // defaults to unknown/undefined
   setMotionType(static_cast<int>(esp::physics::MotionType::UNDEFINED));
   // set to no rotation
-  setQuat("rotation", Mn::Quaternion(Mn::Math::IdentityInit));
-  setVec3("translation", Mn::Vector3());
+  set("rotation", Mn::Quaternion(Mn::Math::IdentityInit));
+  set("translation", Mn::Vector3());
+  // don't override attributes-specified visibility.
+  set("is_instance_visible", ID_UNDEFINED);
   // defaults to unknown so that obj instances use scene instance setting
   setTranslationOrigin(
       static_cast<int>(SceneInstanceTranslationOrigin::Unknown));
   // set default multiplicative scaling values
-  setUniformScale(1.0f);
-  setMassScale(1.0f);
+  setUniformScale(1.0);
+  setMassScale(1.0);
 }
 
 std::string SceneObjectInstanceAttributes::getCurrShaderTypeName() const {
@@ -41,27 +44,18 @@ std::string SceneObjectInstanceAttributes::getCurrShaderTypeName() const {
 }
 
 std::string SceneObjectInstanceAttributes::getObjectInfoHeaderInternal() const {
-  return "Translation XYZ, Rotation XYZW, Motion Type, Shader Type, Uniform "
-         "Scale, Mass Scale, Translation Origin, " +
+  return "Translation XYZ,Rotation XYZW,Motion Type,Shader Type,Uniform "
+         "Scale,Mass Scale,Translation Origin," +
          getSceneObjInstanceInfoHeaderInternal();
 }
 
 std::string SceneObjectInstanceAttributes::getObjectInfoInternal() const {
-  return cfg.value("translation")
-      .append(1, ',')
-      .append(cfg.value("rotation"))
-      .append(1, ',')
-      .append(getCurrMotionTypeName())
-      .append(1, ',')
-      .append(getCurrShaderTypeName())
-      .append(1, ',')
-      .append(cfg.value("uniform_scale"))
-      .append(1, ',')
-      .append(cfg.value("mass_scale"))
-      .append(1, ',')
-      .append(getTranslationOriginName(getTranslationOrigin()))
-      .append(1, ',')
-      .append(getSceneObjInstanceInfoInternal());
+  return Cr::Utility::formatString(
+      "{},{},{},{},{},{},{},{}", getAsString("translation"),
+      getAsString("rotation"), getCurrMotionTypeName(), getCurrShaderTypeName(),
+      getAsString("uniform_scale"), getAsString("mass_scale"),
+      getTranslationOriginName(getTranslationOrigin()),
+      getSceneObjInstanceInfoInternal());
 }  // SceneObjectInstanceAttributes::getObjectInfoInternal()
 
 SceneAOInstanceAttributes::SceneAOInstanceAttributes(const std::string& handle)
@@ -74,36 +68,36 @@ SceneAOInstanceAttributes::SceneAOInstanceAttributes(const std::string& handle)
 
 std::string SceneAOInstanceAttributes::getSceneObjInstanceInfoHeaderInternal()
     const {
-  const std::string posePrfx{"Init Pose "};
-  std::string initPoseHdr;
+  std::string infoHdr{"Is Fixed Base?,"};
   int iter = 0;
   for (const auto& it : initJointPose_) {
-    initPoseHdr.append(posePrfx).append(std::to_string(iter++)).append(1, ',');
+    Cr::Utility::formatInto(infoHdr, infoHdr.size(), "Init Pose {},",
+                            std::to_string(iter++));
   }
-  const std::string velPrfx{"Init Vel "};
-  std::string initVelHdr;
   iter = 0;
   for (const auto& it : initJointPose_) {
-    initVelHdr.append(velPrfx).append(std::to_string(iter++)).append(1, ',');
+    Cr::Utility::formatInto(infoHdr, infoHdr.size(), "Init Vel {},",
+                            std::to_string(iter++));
   }
-  std::string res{"Is Fixed Base?, "};
-  res.append(initPoseHdr).append(initVelHdr);
-  return res;
+  return infoHdr;
 }  // SceneAOInstanceAttributes::getSceneObjInstanceInfoHeaderInternal
 
 std::string SceneAOInstanceAttributes::getSceneObjInstanceInfoInternal() const {
-  std::string initJointPose{"["};
+  std::string initPoseStr{"["};
+  Cr::Utility::formatInto(initPoseStr, initPoseStr.size(), "{},",
+                          getAsString("fixed_base"));
   for (const auto& it : initJointPose_) {
-    initJointPose.append(std::to_string(it.second)).append(1, ',');
+    Cr::Utility::formatInto(initPoseStr, initPoseStr.size(), "{},",
+                            std::to_string(it.second));
   }
-  initJointPose.append("]");
-  std::string initJointVels{"["};
+  Cr::Utility::formatInto(initPoseStr, initPoseStr.size(), "],[");
   for (const auto& it : initJointPose_) {
-    initJointVels.append(std::to_string(it.second)).append(1, ',');
+    Cr::Utility::formatInto(initPoseStr, initPoseStr.size(), "{},",
+                            std::to_string(it.second));
   }
-  initJointVels.append("]");
-  return cfg.value("fixed_base").append(1, ',') + initJointPose.append(1, ',') +
-         initJointVels.append(1, ',');
+  Cr::Utility::formatInto(initPoseStr, initPoseStr.size(), "]");
+
+  return initPoseStr;
 }  // SceneAOInstanceAttributes::getSceneObjInstanceInfoInternal()
 
 SceneAttributes::SceneAttributes(const std::string& handle)
@@ -113,56 +107,102 @@ SceneAttributes::SceneAttributes(const std::string& handle)
   // defaults to asset local
   setTranslationOrigin(
       static_cast<int>(SceneInstanceTranslationOrigin::AssetLocal));
+  // get refs to internal subconfigs for object and ao instances
+  objInstConfig_ = editSubconfig<Configuration>("object_instances");
+  artObjInstConfig_ = editSubconfig<Configuration>("ao_instances");
 }
 
+SceneAttributes::SceneAttributes(const SceneAttributes& otr)
+    : AbstractAttributes(otr),
+      availableObjInstIDs_(otr.availableObjInstIDs_),
+      availableArtObjInstIDs_(otr.availableArtObjInstIDs_) {
+  // get refs to internal subconfigs for object and ao instances
+  objInstConfig_ = editSubconfig<Configuration>("object_instances");
+  copySubconfigIntoMe<SceneObjectInstanceAttributes>(otr.objInstConfig_,
+                                                     objInstConfig_);
+  artObjInstConfig_ = editSubconfig<Configuration>("ao_instances");
+  copySubconfigIntoMe<SceneAOInstanceAttributes>(otr.artObjInstConfig_,
+                                                 artObjInstConfig_);
+}
+SceneAttributes::SceneAttributes(SceneAttributes&& otr) noexcept
+    : AbstractAttributes(std::move(static_cast<AbstractAttributes>(otr))),
+      availableObjInstIDs_(std::move(otr.availableObjInstIDs_)),
+      availableArtObjInstIDs_(std::move(otr.availableArtObjInstIDs_)) {
+  // get refs to internal subconfigs for object and ao instances
+  // originals were moved over so should retain full derived class
+  objInstConfig_ = editSubconfig<Configuration>("object_instances");
+  artObjInstConfig_ = editSubconfig<Configuration>("ao_instances");
+}
+
+SceneAttributes& SceneAttributes::operator=(const SceneAttributes& otr) {
+  if (this != &otr) {
+    this->AbstractAttributes::operator=(otr);
+    availableObjInstIDs_ = otr.availableObjInstIDs_;
+    availableArtObjInstIDs_ = otr.availableArtObjInstIDs_;
+    // get refs to internal subconfigs for object and ao instances
+    objInstConfig_ = editSubconfig<Configuration>("object_instances");
+    copySubconfigIntoMe<SceneObjectInstanceAttributes>(otr.objInstConfig_,
+                                                       objInstConfig_);
+    artObjInstConfig_ = editSubconfig<Configuration>("ao_instances");
+    copySubconfigIntoMe<SceneAOInstanceAttributes>(otr.artObjInstConfig_,
+                                                   artObjInstConfig_);
+  }
+  return *this;
+}
+SceneAttributes& SceneAttributes::operator=(SceneAttributes&& otr) noexcept {
+  availableObjInstIDs_ = std::move(otr.availableObjInstIDs_);
+  availableArtObjInstIDs_ = std::move(otr.availableArtObjInstIDs_);
+  this->AbstractAttributes::operator=(
+      std::move(static_cast<AbstractAttributes>(otr)));
+
+  objInstConfig_ = editSubconfig<Configuration>("object_instances");
+  artObjInstConfig_ = editSubconfig<Configuration>("ao_instances");
+  return *this;
+}
 std::string SceneAttributes::getObjectInfoInternal() const {
-  std::string res = "\n";
   // scene-specific info constants
   // default translation origin
-  res.append(
-      "Default Translation Origin, Default Lighting,Navmesh Handle,Semantic "
-      "Scene Descriptor Handle,\n");
 
-  res.append(getTranslationOriginName(getTranslationOrigin()))
-      .append(1, ',')
-      .append(getLightingHandle())
-      .append(1, ',')
-      .append(getNavmeshHandle())
-      .append(1, ',')
-      .append(getSemanticSceneHandle())
-      .append(1, '\n');
+  std::string res = Cr::Utility::formatString(
+      "\nDefault Translation Origin,Default Lighting,Navmesh Handle,Semantic "
+      "Scene Descriptor Handle,\n{},{},{},{}\n",
+      getTranslationOriginName(getTranslationOrigin()), getLightingHandle(),
+      getNavmeshHandle(), getSemanticSceneHandle());
 
+  const SceneObjectInstanceAttributes::cptr stageInstance = getStageInstance();
+  Cr::Utility::formatInto(res, res.size(), "Stage Instance Info :\n{}\n{}\n",
+                          stageInstance->getObjectInfoHeader(),
+                          stageInstance->getObjectInfo());
   // stage instance info
-  res.append("Stage Instance Info :\n");
-  res.append(stageInstance_->getObjectInfoHeader()).append(1, '\n');
-  res.append(stageInstance_->getObjectInfo()).append(1, '\n');
-
   int iter = 0;
   // object instance info
-  for (const auto& objInst : objectInstances_) {
+  const auto& objInstances = getObjectInstances();
+  for (const auto& objInst : objInstances) {
     if (iter == 0) {
-      iter++;
-      res.append("Object Instance Info :\n");
-      res.append(objInst->getObjectInfoHeader()).append(1, '\n');
+      ++iter;
+      Cr::Utility::formatInto(res, res.size(), "Object Instance Info :\n{}\n",
+                              objInst->getObjectInfoHeader());
     }
-    res.append(objInst->getObjectInfo()).append(1, '\n');
+    Cr::Utility::formatInto(res, res.size(), "{}\n", objInst->getObjectInfo());
   }
 
   // articulated object instance info
   iter = 0;
-  for (const auto& artObjInst : articulatedObjectInstances_) {
+  const auto& articulatedObjectInstances = getArticulatedObjectInstances();
+  for (const auto& artObjInst : articulatedObjectInstances) {
     if (iter == 0) {
-      iter++;
-      res.append("Articulated Object Instance Info :\n");
-      res.append(artObjInst->getObjectInfoHeader()).append(1, '\n');
+      ++iter;
+      Cr::Utility::formatInto(res, res.size(),
+                              "Articulated Object Instance Info :\n{}\n",
+                              artObjInst->getObjectInfoHeader());
     }
-    res.append(artObjInst->getObjectInfo()).append(1, '\n');
+    Cr::Utility::formatInto(res, res.size(), "{}\n",
+                            artObjInst->getObjectInfo());
   }
 
-  res.append("End of data for Scene Instance ")
-      .append(getSimplifiedHandle())
-      .append(1, '\n');
-
+  Cr::Utility::formatInto(res, res.size(),
+                          "End of data for Scene Instance {}\n",
+                          getSimplifiedHandle());
   return res;
 }  // SceneAttributes::getObjectInfoInternal
 

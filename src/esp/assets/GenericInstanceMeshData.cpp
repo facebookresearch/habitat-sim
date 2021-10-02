@@ -18,10 +18,9 @@
 #include <Magnum/Shaders/GenericGL.h>
 #include <Magnum/Trade/AbstractImporter.h>
 
-#include "esp/core/esp.h"
-#include "esp/geo/geo.h"
-#include "esp/io/io.h"
-#include "esp/io/json.h"
+#include "esp/core/Esp.h"
+#include "esp/geo/Geo.h"
+#include "esp/io/Json.h"
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
@@ -63,15 +62,15 @@ Cr::Containers::Optional<InstancePlyData> parsePly(
   /* Assuming colors are 8-bit RGB to avoid expanding them to float and then
      packing back */
   if (!meshData->hasAttribute(Mn::Trade::MeshAttribute::Color)) {
-    LOG(ERROR) << "File has no vertex colors";
+    ESP_ERROR() << "File has no vertex colors";
     return Cr::Containers::NullOpt;
   }
   if (meshData->attributeFormat(Mn::Trade::MeshAttribute::Color) !=
       Mn::VertexFormat::Vector3ubNormalized) {
     // TODO: output the format enum directly once glog is gone and we use Debug
-    LOG(ERROR) << "Unexpected vertex color type"
-               << Mn::UnsignedInt(meshData->attributeFormat(
-                      Mn::Trade::MeshAttribute::Color));
+    ESP_ERROR() << "Unexpected vertex color type"
+                << Mn::UnsignedInt(meshData->attributeFormat(
+                       Mn::Trade::MeshAttribute::Color));
     return Cr::Containers::NullOpt;
   }
   data.cpu_cbo.resize(meshData->vertexCount());
@@ -83,13 +82,13 @@ Cr::Containers::Optional<InstancePlyData> parsePly(
   /* Check we actually have object IDs before copying them, and that those are
      in a range we expect them to be */
   if (!meshData->hasAttribute(Mn::Trade::MeshAttribute::ObjectId)) {
-    LOG(ERROR) << "File has no object IDs";
+    ESP_ERROR() << "File has no object IDs";
     return Cr::Containers::NullOpt;
   }
   Cr::Containers::Array<Mn::UnsignedInt> objectIds =
       meshData->objectIdsAsArray();
   if (Mn::Math::max(objectIds) > 65535) {
-    LOG(ERROR) << "Object IDs can't fit into 16 bits";
+    ESP_ERROR() << "Object IDs can't fit into 16 bits";
     return Cr::Containers::NullOpt;
   }
   data.objectIds.resize(meshData->vertexCount());

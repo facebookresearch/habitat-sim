@@ -32,7 +32,7 @@ BulletPhysicsManager::BulletPhysicsManager(
 }
 
 BulletPhysicsManager::~BulletPhysicsManager() {
-  LOG(INFO) << "Deconstructing BulletPhysicsManager";
+  ESP_DEBUG() << "Deconstructing BulletPhysicsManager";
 
   existingObjects_.clear();
   existingArticulatedObjects_.clear();
@@ -68,7 +68,8 @@ bool BulletPhysicsManager::initPhysicsFinalize() {
   }
 
   // currently GLB meshes are y-up
-  bWorld_->setGravity(btVector3(physicsManagerAttributes_->getVec3("gravity")));
+  bWorld_->setGravity(
+      btVector3(physicsManagerAttributes_->get<Magnum::Vector3>("gravity")));
 
   //! Create new scene node
   staticStageObject_ = physics::BulletRigidStage::create(
@@ -83,7 +84,7 @@ bool BulletPhysicsManager::initPhysicsFinalize() {
 // https://github.com/mosra/magnum-integration/issues/20
 bool BulletPhysicsManager::addStageFinalize(
     const metadata::attributes::StageAttributes::ptr& initAttributes) {
-  //! Initialize scene
+  //! Initialize BulletRigidStage
   bool sceneSuccess = staticStageObject_->initialize(initAttributes);
 
   return sceneSuccess;
@@ -109,11 +110,12 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
     float globalScale,
     float massScale,
     bool forceReload,
+    bool maintainLinkOrder,
     const std::string& lightSetup) {
   auto& drawables = simulator_->getDrawableGroup();
   return addArticulatedObjectFromURDF(filepath, &drawables, fixedBase,
                                       globalScale, massScale, forceReload,
-                                      lightSetup);
+                                      maintainLinkOrder, lightSetup);
 }
 
 int BulletPhysicsManager::addArticulatedObjectFromURDF(
@@ -123,10 +125,11 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
     float globalScale,
     float massScale,
     bool forceReload,
+    bool maintainLinkOrder,
     const std::string& lightSetup) {
   ESP_CHECK(
       urdfImporter_->loadURDF(filepath, globalScale, massScale, forceReload),
-      "failed to parse/load URDF file " << filepath);
+      "failed to parse/load URDF file" << filepath);
 
   int articulatedObjectID = allocateObjectID();
 
@@ -147,6 +150,9 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
 
   // TODO: set these flags up better
   u2b->flags = 0;
+  if (maintainLinkOrder) {
+    u2b->flags |= CUF_MAINTAIN_LINK_ORDER;
+  }
   u2b->initURDF2BulletCache();
 
   articulatedObject->initializeFromURDF(*urdfImporter_, {}, physicsNode_);
@@ -161,20 +167,20 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
   }
 
   // attach link visual shapes
-  int urdfLinkIx = 0;
-  for (auto& link : urdfImporter_->getModel()->m_links) {
-    if (link.second->m_visualArray.size() > 0) {
+  for (size_t urdfLinkIx = 0; urdfLinkIx < u2b->getModel()->m_links.size();
+       ++urdfLinkIx) {
+    auto urdfLink = u2b->getModel()->getLink(urdfLinkIx);
+    if (!urdfLink->m_visualArray.empty()) {
       int bulletLinkIx =
           u2b->cache->m_urdfLinkIndices2BulletLinkIndices[urdfLinkIx];
       ArticulatedLink& linkObject = articulatedObject->getLink(bulletLinkIx);
       ESP_CHECK(
-          attachLinkGeometry(&linkObject, link.second, drawables, lightSetup),
+          attachLinkGeometry(&linkObject, urdfLink, drawables, lightSetup),
           "BulletPhysicsManager::addArticulatedObjectFromURDF(): Failed to "
-          "instance render asset (attachGeometry) for link "
+          "instance render asset (attachGeometry) for link"
               << urdfLinkIx << ".");
       linkObject.node().computeCumulativeBB();
     }
-    urdfLinkIx++;
   }
 
   // clear the cache
@@ -195,16 +201,11 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
               .first)
           .first;
 
-  Magnum::Debug{} << "BulletPhysicsManager::addArticulatedObjectFromURDF: "
-                     "simpleObjectHandle : "
-                  << simpleArtObjHandle;
-
   std::string newArtObjectHandle =
       articulatedObjectManager_->getUniqueHandleFromCandidate(
           simpleArtObjHandle);
-  Magnum::Debug{} << "BulletPhysicsManager::addArticulatedObjectFromURDF: "
-                     "newArtObjectHandle : "
-                  << newArtObjectHandle;
+  ESP_DEBUG() << "simpleArtObjHandle :" << simpleArtObjHandle
+              << " | newArtObjectHandle :" << newArtObjectHandle;
 
   existingArticulatedObjects_.at(articulatedObjectID)
       ->setObjectName(newArtObjectHandle);
@@ -244,27 +245,27 @@ bool BulletPhysicsManager::isMeshPrimitiveValid(
   } else {
     switch (meshData.primitive) {
       case Magnum::MeshPrimitive::Lines:
-        LOG(ERROR) << "Invalid primitive: Lines";
+        ESP_ERROR() << "Invalid primitive: Lines";
         break;
       case Magnum::MeshPrimitive::Points:
-        LOG(ERROR) << "Invalid primitive: Points";
+        ESP_ERROR() << "Invalid primitive: Points";
         break;
       case Magnum::MeshPrimitive::LineLoop:
-        LOG(ERROR) << "Invalid primitive Line loop";
+        ESP_ERROR() << "Invalid primitive Line loop";
         break;
       case Magnum::MeshPrimitive::LineStrip:
-        LOG(ERROR) << "Invalid primitive Line Strip";
+        ESP_ERROR() << "Invalid primitive Line Strip";
         break;
       case Magnum::MeshPrimitive::TriangleStrip:
-        LOG(ERROR) << "Invalid primitive Triangle Strip";
+        ESP_ERROR() << "Invalid primitive Triangle Strip";
         break;
       case Magnum::MeshPrimitive::TriangleFan:
-        LOG(ERROR) << "Invalid primitive Triangle Fan";
+        ESP_ERROR() << "Invalid primitive Triangle Fan";
         break;
       default:
-        LOG(ERROR) << "Invalid primitive " << int(meshData.primitive);
+        ESP_ERROR() << "Invalid primitive" << int(meshData.primitive);
     }
-    LOG(ERROR) << "Cannot load collision mesh, skipping";
+    ESP_ERROR() << "Cannot load collision mesh, skipping";
     return false;
   }
 }
@@ -274,7 +275,7 @@ bool BulletPhysicsManager::attachLinkGeometry(
     const std::shared_ptr<io::URDF::Link>& link,
     gfx::DrawableGroup* drawables,
     const std::string& lightSetup) {
-  const bool reqLighting = (lightSetup != esp::NO_LIGHT_KEY);
+  const bool forceFlatShading = (lightSetup == esp::NO_LIGHT_KEY);
   bool geomSuccess = false;
 
   for (auto& visual : link->m_visualArray) {
@@ -290,7 +291,7 @@ bool BulletPhysicsManager::attachLinkGeometry(
 
     // prep the AssetInfo, overwrite the filepath later
     assets::AssetInfo visualMeshInfo{assets::AssetType::UNKNOWN};
-    visualMeshInfo.requiresLighting = reqLighting;
+    visualMeshInfo.forceFlatShading = forceFlatShading;
 
     // create a modified asset if necessary for material override
     std::shared_ptr<io::URDF::Material> material =
@@ -351,14 +352,12 @@ bool BulletPhysicsManager::attachLinkGeometry(
         visualMeshInfo.filepath = visual.m_geometry.m_meshFileName;
       } break;
       case io::URDF::GEOM_PLANE:
-        Corrade::Utility::Debug()
-            << "Trying to add visual plane, not implemented";
+        ESP_DEBUG() << "Trying to add visual plane, not implemented";
         // TODO:
         visualSetupSuccess = false;
         break;
       default:
-        Corrade::Utility::Debug() << "BulletPhysicsManager::attachGeometry "
-                                     ": Unsupported visual type.";
+        ESP_DEBUG() << "Unsupported visual type.";
         visualSetupSuccess = false;
         break;
     }
@@ -503,7 +502,7 @@ RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
   results.ray = ray;
   double rayLength = static_cast<double>(ray.direction.length());
   if (rayLength == 0) {
-    LOG(ERROR) << "::castRay : Cannot cast ray with zero length, aborting. ";
+    ESP_ERROR() << "Cannot cast ray with zero length, aborting.";
     return results;
   }
   btVector3 from(ray.origin);
@@ -538,8 +537,8 @@ void BulletPhysicsManager::lookUpObjectIdAndLinkId(
     const btCollisionObject* colObj,
     int* objectId,
     int* linkId) const {
-  ASSERT(objectId, );
-  ASSERT(linkId, );
+  CORRADE_INTERNAL_ASSERT(objectId);
+  CORRADE_INTERNAL_ASSERT(linkId);
 
   *linkId = -1;
   // If the lookup fails, default to the stage. TODO: better error-handling.
@@ -564,25 +563,6 @@ void BulletPhysicsManager::lookUpObjectIdAndLinkId(
   }
 
   // lookup failed
-}
-int BulletPhysicsManager::getNumActiveContactPoints() {
-  int count = 0;
-  auto* dispatcher = bWorld_->getDispatcher();
-  for (int i = 0; i < dispatcher->getNumManifolds(); i++) {
-    auto* manifold = dispatcher->getManifoldByIndexInternal(i);
-    const btCollisionObject* colObj0 =
-        static_cast<const btCollisionObject*>(manifold->getBody0());
-    const btCollisionObject* colObj1 =
-        static_cast<const btCollisionObject*>(manifold->getBody1());
-
-    // logic copied from btSimulationIslandManager::buildIslands. We want to
-    // count manifolds only if related to non-sleeping bodies.
-    if (((colObj0) && colObj0->getActivationState() != ISLAND_SLEEPING) ||
-        ((colObj1) && colObj1->getActivationState() != ISLAND_SLEEPING)) {
-      count += manifold->getNumContacts();
-    }
-  }
-  return count;
 }
 
 std::vector<ContactPointData> BulletPhysicsManager::getContactPoints() const {
@@ -675,7 +655,7 @@ int BulletPhysicsManager::createRigidConstraint(
     ESP_CHECK(mbA->getNumLinks() > settings.linkIdA,
               "::createRigidConstraint - linkA("
                   << settings.linkIdA
-                  << ") is invalid for ArticulatedObject with "
+                  << ") is invalid for ArticulatedObject with"
                   << mbA->getNumLinks() << " links.");
 
     btMultiBody* mbB = nullptr;
@@ -686,7 +666,7 @@ int BulletPhysicsManager::createRigidConstraint(
       ESP_CHECK(mbA->getNumLinks() > settings.linkIdA,
                 "::createRigidConstraint - linkB("
                     << settings.linkIdB
-                    << ") is invalid for ArticulatedObject with "
+                    << ") is invalid for ArticulatedObject with"
                     << mbB->getNumLinks() << " links.");
       mbB->setCanSleep(false);
     }
@@ -789,33 +769,31 @@ void BulletPhysicsManager::updateRigidConstraint(
     const RigidConstraintSettings& settings) {
   // validate that object and link ids are unchanged for update.
   ESP_CHECK(rigidConstraintSettings_.count(constraintId) > 0,
-            "::updateRigidConstraint - Provided invalid constraintId = "
+            "::updateRigidConstraint - Provided invalid constraintId ="
                 << constraintId);
   auto& cachedSettings = rigidConstraintSettings_.at(constraintId);
   ESP_CHECK(cachedSettings.objectIdA == settings.objectIdA,
             "::updateRigidConstraint - RigidConstraintSettings::objectIdA must "
             "match existing settings ("
-                << settings.objectIdA << " vs. " << cachedSettings.objectIdA
+                << settings.objectIdA << " vs." << cachedSettings.objectIdA
                 << ")");
   ESP_CHECK(cachedSettings.objectIdB == settings.objectIdB,
             "::updateRigidConstraint - RigidConstraintSettings::objectIdB must "
             "match existing settings ("
-                << settings.objectIdB << " vs. " << cachedSettings.objectIdB
+                << settings.objectIdB << " vs." << cachedSettings.objectIdB
                 << ")");
   ESP_CHECK(cachedSettings.linkIdA == settings.linkIdA,
             "::updateRigidConstraint - RigidConstraintSettings::linkIdA must "
             "match existing settings ("
-                << settings.linkIdA << " vs. " << cachedSettings.linkIdA
-                << ")");
+                << settings.linkIdA << " vs." << cachedSettings.linkIdA << ")");
   ESP_CHECK(cachedSettings.linkIdB == settings.linkIdB,
             "::updateRigidConstraint - RigidConstraintSettings::linkIdB must "
             "match existing settings ("
-                << settings.linkIdB << " vs. " << cachedSettings.linkIdB
-                << ")");
+                << settings.linkIdB << " vs." << cachedSettings.linkIdB << ")");
   ESP_CHECK(cachedSettings.constraintType == settings.constraintType,
             "::updateRigidConstraint - RigidConstraintSettings::constraintType "
             "must match existing settings ("
-                << int(settings.constraintType) << " vs. "
+                << int(settings.constraintType) << " vs."
                 << int(cachedSettings.constraintType) << ")");
 
   if (articulatedP2PConstraints_.count(constraintId) > 0) {
@@ -825,8 +803,7 @@ void BulletPhysicsManager::updateRigidConstraint(
               "::updateRigidConstraint - RigidConstraintSettings::pivotA must "
               "match existing settings for multibody P2P constraints. Instead, "
               "remove and create to update this parameter. ("
-                  << settings.pivotA << " vs. " << cachedSettings.pivotA
-                  << ")");
+                  << settings.pivotA << " vs." << cachedSettings.pivotA << ")");
     // TODO: Either fix the Bullet API or do the add/remove for the user here.
     articulatedP2PConstraints_.at(constraintId)
         ->setPivotInB(btVector3(settings.pivotB));
@@ -885,8 +862,7 @@ void BulletPhysicsManager::removeRigidConstraint(int constraintId) {
     bWorld_->removeConstraint(rigidFixedConstraints_.at(constraintId).get());
     rigidFixedConstraints_.erase(constraintId);
   } else {
-    LOG(ERROR) << "removeRigidConstraint - No constraint with constraintId = "
-               << constraintId;
+    ESP_ERROR() << "No constraint with constraintId =" << constraintId;
     return;
   }
   rigidConstraintSettings_.erase(constraintId);

@@ -111,7 +111,7 @@ void BackgroundRenderer::releaseContext() {
 
 int BackgroundRenderer::threadRender() {
   if (!threadOwnsContext_) {
-    VLOG(1) << "BackgroundRenderer:: Background thread acquired GL Context";
+    ESP_VERY_VERBOSE() << "Background thread acquired GL Context";
     context_->makeCurrentPlatform();
     Mn::GL::Context::makeCurrent(threadContext_.get());
     threadOwnsContext_ = true;

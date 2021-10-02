@@ -18,8 +18,8 @@
 #include "esp/assets/GenericInstanceMeshData.h"
 #include "esp/assets/MeshData.h"
 #include "esp/assets/ResourceManager.h"
+#include "esp/core/Esp.h"
 #include "esp/core/RigidState.h"
-#include "esp/core/esp.h"
 #include "esp/scene/SceneNode.h"
 
 #include "esp/physics/RigidBase.h"

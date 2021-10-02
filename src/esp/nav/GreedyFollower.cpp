@@ -3,8 +3,8 @@
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/EigenIntegration/Integration.h>
 
-#include "esp/core/esp.h"
-#include "esp/geo/geo.h"
+#include "esp/core/Esp.h"
+#include "esp/geo/Geo.h"
 
 namespace Mn = Magnum;
 using Mn::EigenIntegration::cast;
@@ -168,7 +168,7 @@ GreedyGeodesicFollowerImpl::CODES GreedyGeodesicFollowerImpl::nextActionAlong(
     thrashingActions_.pop_back();
   } else {
     const auto nextActions = nextBestPrimAlong(start, path);
-    if (nextActions.size() == 0) {
+    if (nextActions.empty()) {
       nextAction = CODES::ERROR;
     } else if (fixThrashing_ && isThrashing()) {
       thrashingActions_ = {nextActions.rbegin(), nextActions.rend()};
@@ -199,7 +199,7 @@ GreedyGeodesicFollowerImpl::findPath(const core::RigidState& start,
     path.requestedEnd = cast<vec3f>(end);
     pathfinder_->findPath(path);
     const auto nextPrim = nextBestPrimAlong(state, path);
-    if (nextPrim.size() == 0) {
+    if (nextPrim.empty()) {
       actions_.emplace_back(CODES::ERROR);
     } else {
       for (const auto nextAction : nextPrim) {
