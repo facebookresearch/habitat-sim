@@ -118,7 +118,7 @@ class MobileManipulator(RobotInterface):
         super().__init__()
         self.urdf_path = urdf_path
         self.params = params
-        self.fix_joint_values: Optional[List[float]] = None
+        self._fix_joint_values: Optional[List[float]] = None
 
         self._sim = sim
         self._limit_robo_joints = limit_robo_joints
@@ -223,8 +223,8 @@ class MobileManipulator(RobotInterface):
                 cam_transform = inv_T @ cam_transform
 
                 sens_obj.node.transformation = cam_transform
-        if self.fix_joint_values is not None:
-            self.arm_joint_pos = self.fix_joint_values
+        if self._fix_joint_values is not None:
+            self.arm_joint_pos = self._fix_joint_values
 
         # Guard against out of limit joints
         # TODO: should auto clamping be enabled instead? How often should we clamp?
@@ -241,7 +241,7 @@ class MobileManipulator(RobotInterface):
         self.sim_obj.clear_joint_states()
 
         self.arm_joint_pos = self.params.arm_init_params
-        self.fix_joint_values = None
+        self._fix_joint_values = None
         self.gripper_joint_pos = self.params.gripper_init_params
 
         self._update_motor_settings_cache()
@@ -368,17 +368,38 @@ class MobileManipulator(RobotInterface):
     @arm_joint_pos.setter
     def arm_joint_pos(self, ctrl: List[float]):
         """Kinematically sets the arm joints and sets the motors to target."""
-        # TODO: Has to be added back in after the Habitat Lab commit goes through.
-        # if len(ctrl) != len(self.params.arm_joints):
-        #    raise ValueError("Control dimension does not match joint dimension")
-        if any(np.isnan(ctrl)):
-            raise ValueError("Control is NaN")
+        self._validate_arm_ctrl_input(ctrl)
 
         joint_positions = self.sim_obj.joint_positions
+        if len(joint_positions) == 0:
+            # TODO: NEED TO FIX THIS HACK, BUT THINGS CRASH OTHERWISE
+            self.reconfigure()
+            self.reset()
+            return
+
         for i, jidx in enumerate(self.params.arm_joints):
             self._set_motor_pos(jidx, ctrl[i])
             joint_positions[self.joint_pos_indices[jidx]] = ctrl[i]
         self.sim_obj.joint_positions = joint_positions
+
+    def _validate_arm_ctrl_input(self, ctrl):
+        """
+        Raises an exception if the control input is NaN or does not match the
+        joint dimensions.
+        """
+        if len(ctrl) != len(self.params.arm_joints):
+            raise ValueError("Control dimension does not match joint dimension")
+        if any(np.isnan(ctrl)):
+            raise ValueError("Control is NaN")
+
+    def set_fixed_arm_joint_pos(self, fix_arm_joint_pos):
+        """
+        Will fix the arm to a desired position at every internal timestep. Can
+        be used for kinematic arm control.
+        """
+        self._validate_arm_ctrl_input(fix_arm_joint_pos)
+        self._fix_joint_values = fix_arm_joint_pos
+        self.arm_joint_pos = fix_arm_joint_pos
 
     @property
     def arm_velocity(self) -> np.ndarray:
@@ -399,10 +420,7 @@ class MobileManipulator(RobotInterface):
     @arm_motor_pos.setter
     def arm_motor_pos(self, ctrl: List[float]) -> None:
         """Set the desired target of the arm joint motors."""
-        if len(ctrl) != len(self.params.arm_joints):
-            raise ValueError("Control dimension does not match joint dimension")
-        if any(np.isnan(ctrl)):
-            raise ValueError("Control is NaN")
+        self._validate_arm_ctrl_input(ctrl)
 
         for i, jidx in enumerate(self.params.arm_joints):
             self._set_motor_pos(jidx, ctrl[i])
