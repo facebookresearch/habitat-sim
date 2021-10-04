@@ -102,15 +102,10 @@ repos:
             - black
             - isort
 
--   repo: local
+-   repo: https://github.com/ssciwr/clang-format-hook
+    rev: v12.0.1
     hooks:
-    - id: clang-format
-      name: Run clang-format
-      exclude: src/deps
-      entry: clang-format -i -style=file
-      types: [text]
-      files: '.*\.(cpp|h|hpp|cu|cuh)$'
-      language: system
+    -   id: clang-format
 
 -   repo: https://github.com/cheshirekow/cmake-format-precommit
     rev: v0.6.13

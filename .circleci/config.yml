@@ -252,8 +252,8 @@ jobs:
           name: setup
           command: |
               sudo apt-get update -y
-              sudo apt-get install -y clang-format-8
-              sudo ln -s /usr/bin/clang-format-8 /usr/bin/clang-format
+              sudo apt-get install -y clang-format-12
+              sudo ln -s /usr/bin/clang-format-12 /usr/bin/clang-format
               clang-format --version
       - run:
           name: run clang-format
