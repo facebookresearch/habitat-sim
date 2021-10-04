@@ -102,7 +102,7 @@ repos:
             - black
             - isort
 
--   repo: https://github.com/ssciwr/clang-format-hook
+-   repo: https://github.com/pre-commit/mirrors-clang-format
     rev: v12.0.1
     hooks:
     -   id: clang-format
