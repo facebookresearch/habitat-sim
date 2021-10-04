@@ -1860,16 +1860,12 @@ Mn::Trade::MaterialData ResourceManager::createUniversalMaterial(
     // identity only copy if we don't already have TextureMatrix
     // attribute (if original pbrMaterial does not have that specific
     // matrix)
-    ESP_WARNING() << "before PBR texture matrix addition";
-
     if (!setTexMatrix &&
         (!pbrMaterial.hasAttribute(MaterialAttribute::TextureMatrix))) {
       arrayAppend(newAttributes, {MaterialAttribute::TextureMatrix,
                                   pbrMaterial.commonTextureMatrix()});
       setTexMatrix = true;
     }
-
-    ESP_WARNING() << "after PBR texture matrix addition";
 
     if (pbrMaterial.hasAttribute(MaterialAttribute::BaseColorTexture)) {
       // only provide texture indices if BaseColorTexture attribute
@@ -1892,6 +1888,10 @@ Mn::Trade::MaterialData ResourceManager::createUniversalMaterial(
     const auto& phongMaterial =
         origMaterialData.as<Mn::Trade::PhongMaterialData>();
 
+    /////////////////
+    // calculate PBR values from Phong material values
+    ////////////////
+
     // derive base color from Phong diffuse or ambient color, depending on which
     // is present.  set to white if neither is present
     const Mn::Color4 baseColor = phongMaterial.diffuseColor();
@@ -1902,15 +1902,17 @@ Mn::Trade::MaterialData ResourceManager::createUniversalMaterial(
 
     // if specColor alpha == 0 then no metalness
     float metalness = 0.0f;
-    // otherwise, this heuristic will derive a value for metalness based on
-    // how non-grayscale the specular color is (HSV Saturation).
+    // otherwise, this hacky heuristic will derive a value for metalness based
+    // on how non-grayscale the specular color is (HSV Saturation).
     if (specColor.a() != 0.0f) {
       metalness = specColor.saturation();
     }
+
     /////////////////
     // set PbrMetallicRoughness attributes appropriately from precalculated
     // values
     ////////////////
+
     // normal mapping is already present in copied array if present in
     // original material.
     appendIfNotPresent(origMaterialData, newAttributes,
@@ -1918,18 +1920,22 @@ Mn::Trade::MaterialData ResourceManager::createUniversalMaterial(
     appendIfNotPresent(origMaterialData, newAttributes,
                        MaterialAttribute::Metalness, metalness);
 
+    // if diffuse texture is present, use as base color texture in pbr.
+    if (phongMaterial.hasAttribute(MaterialAttribute::DiffuseTexture)) {
+      uint32_t bcTextureVal = phongMaterial.diffuseTexture();
+      appendIfNotPresent(origMaterialData, newAttributes,
+                         MaterialAttribute::BaseColorTexture, bcTextureVal);
+    }
     // texture transforms, if there's none the returned matrix is an
     // identity Only copy if we don't already have TextureMatrix attribute
     // (if original phongMaterial does not have that specific attribute)
-
-    ESP_WARNING() << "before Phong texture matrix addition";
     if (!setTexMatrix &&
         (!phongMaterial.hasAttribute(MaterialAttribute::TextureMatrix))) {
       arrayAppend(newAttributes, {MaterialAttribute::TextureMatrix,
                                   phongMaterial.commonTextureMatrix()});
       setTexMatrix = true;
     }
-    ESP_WARNING() << "after Phong texture matrix addition";
+
     // base texture
 
   }  // if no PbrMetallicRoughness material support exists in material
