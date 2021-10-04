@@ -217,6 +217,14 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
 
   metadata::attributes::SceneAttributes::cptr curSceneInstanceAttributes =
       metadataMediator_->getSceneAttributesByName(activeSceneName);
+  // check if attributes is null - should not happen
+  CORRADE_ASSERT(
+      curSceneInstanceAttributes,
+      Cr::Utility::formatString(
+          "Simulator::setSceneInstanceAttributes() : Attempt to load scene "
+          "instance :{} failed due to scene instance not being found. Aborting",
+          activeSceneName),
+      nullptr);
 
   // 1. Load navmesh specified in current scene instance attributes.
   const std::string& navmeshFileLoc = metadataMediator_->getNavmeshPathByHandle(
@@ -405,6 +413,16 @@ bool Simulator::instanceStageForActiveScene(
   const SceneObjectInstanceAttributes::cptr stageInstanceAttributes =
       curSceneInstanceAttributes->getStageInstance();
 
+  // check if attributes is null - should not happen
+  CORRADE_ASSERT(
+      stageInstanceAttributes,
+      Cr::Utility::formatString(
+          "Simulator::instanceStageForActiveScene() : Attempt to load stage "
+          "instance specified in current scene instance :{} failed due to "
+          "stage instance configuration not being found. Aborting",
+          config_.activeSceneName),
+      false);
+
   // Get full library name of StageAttributes
   const std::string stageAttributesHandle =
       metadataMediator_->getStageAttrFullHandle(
@@ -518,17 +536,28 @@ bool Simulator::instanceObjectsForActiveScene(
   // Iterate through instances, create object and implement initial
   // transformation.
   for (const auto& objInst : objectInstances) {
+    // check if attributes is null - should not happen
+    CORRADE_ASSERT(
+        objInst,
+        Cr::Utility::formatString(
+            "Simulator::instanceObjectsForActiveScene() : Attempt to load "
+            "object instance specified in current scene instance :{} failed "
+            "due to object instance configuration not being found. Aborting",
+            config_.activeSceneName),
+        false);
+
     const std::string objAttrFullHandle =
         metadataMediator_->getObjAttrFullHandle(objInst->getHandle());
-    if (objAttrFullHandle == "") {
-      ESP_ERROR() << "Error instancing scene :" << config_.activeSceneName
-                  << ":"
-                  << "Unable to find objectAttributes whose handle contains"
-                  << objInst->getHandle()
-                  << "as specified in object instance attributes.";
-      return false;
-    }
-
+    // make sure full handle is not empty
+    CORRADE_ASSERT(
+        !objAttrFullHandle.empty(),
+        Cr::Utility::formatString(
+            "Simulator::instanceObjectsForActiveScene() : Attempt to load "
+            "object instance specified in current scene instance :{} failed "
+            "due to object instance configuration handle '{}' being empty or "
+            "unknown. Aborting",
+            config_.activeSceneName, objInst->getHandle()),
+        false);
     // objID =
     physicsManager_->addObjectInstance(objInst, objAttrFullHandle,
                                        defaultCOMCorrection, attachmentNode,
@@ -550,10 +579,31 @@ bool Simulator::instanceArticulatedObjectsForActiveScene(
   // Iterate through instances, create object and implement initial
   // transformation.
   for (const auto& artObjInst : artObjInstances) {
+    // check if instance attributes is null - should not happen
+    CORRADE_ASSERT(artObjInst,
+                   Cr::Utility::formatString(
+                       "Simulator::instanceArticulatedObjectsForActiveScene() "
+                       ": Attempt to load articulated object instance "
+                       "specified in current scene instance :{} failed due to "
+                       "AO instance configuration not being found. Aborting",
+                       config_.activeSceneName),
+                   false);
+
     // get model file name
     const std::string artObjFilePath =
         metadataMediator_->getArticulatedObjModelFullHandle(
             artObjInst->getHandle());
+
+    // make sure full handle is not empty
+    CORRADE_ASSERT(
+        !artObjFilePath.empty(),
+        Cr::Utility::formatString(
+            "Simulator::instanceArticulatedObjectsForActiveScene() : Attempt "
+            "to load articualted object instance specified in current scene "
+            "instance :{} failed due to AO instance configuration file handle "
+            "'{}' being empty or unknown. Aborting",
+            config_.activeSceneName, artObjInst->getHandle()),
+        false);
 
     // create articulated object
     // aoID =
