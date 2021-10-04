@@ -245,7 +245,7 @@ jobs:
           command: mypy
   cpp_lint:
     docker:
-      - image: circleci/buildpack-deps:18.04
+      - image: buildpack-deps:trusty
     steps:
       - checkout
       - run:
