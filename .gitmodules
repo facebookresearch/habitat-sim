@@ -15,7 +15,7 @@
 	url = https://github.com/pybind/pybind11.git
 [submodule "src/deps/eigen"]
 	path = src/deps/eigen
-	url = https://gitlab.com/libeigen/eigen.git
+	url = https://gitlab.com/libeigen/eigen-backup.git
 [submodule "src/deps/assimp"]
 	path = src/deps/assimp
 	url = https://github.com/assimp/assimp
