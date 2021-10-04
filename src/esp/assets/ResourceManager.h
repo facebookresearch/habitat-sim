@@ -903,16 +903,6 @@ class ResourceManager {
       Mn::Trade::MaterialData& material,
       int textureBaseIndex) const;
 
-  // /**
-  //  * @brief Build a @ref PhongMaterialData from a PBR source material, using
-  //  * some heuristics. This function is to enable conversion of PBR materials
-  //  to
-  //  * phong if the user specifies phong shaders via configurations.
-  //  */
-  // gfx::PhongMaterialData::uptr buildPhongFromPbrMetallicRoughness(
-  //     Mn::Trade::MaterialData& material,
-  //     int textureBaseIndex) const;
-
   /**
    * @brief Load a mesh describing some scene asset based on the passed
    * assetInfo.
