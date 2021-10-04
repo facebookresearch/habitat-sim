@@ -51,6 +51,8 @@
 #include <VHACD.h>
 #endif
 
+namespace Mn = Magnum;
+
 // forward declarations
 namespace Magnum {
 namespace Trade {
@@ -58,8 +60,6 @@ class AbstractImporter;
 class PhongMaterialData;
 }  // namespace Trade
 }  // namespace Magnum
-
-namespace Mn = Magnum;
 
 namespace esp {
 namespace gfx {
@@ -85,7 +85,7 @@ class Model;
 }  // namespace io
 namespace assets {
 // used for shadertype specification
-typedef metadata::attributes::ObjectInstanceShaderType ShaderTypeEnum;
+using metadata::attributes::ObjectInstanceShaderType;
 
 /**
  * @brief Singleton class responsible for
@@ -828,28 +828,29 @@ class ResourceManager {
    * @return the @ref esp::metadata::attributes::ObjectInstanceShaderType to use
    * to render the material.
    */
-  ShaderTypeEnum getMaterialShaderType(const AssetInfo& info) const;
+  ObjectInstanceShaderType getMaterialShaderType(const AssetInfo& info) const;
 
   /**
    * @brief Boolean check if @p typeToCheck aligns with passed types explicitly
    * specified, or type in material
-   * @param typeToCheck The ShaderTypeEnum value beign queried for.
+   * @param typeToCheck The ObjectInstanceShaderType value beign queried for.
    * @param materialData The material whose type we are verifying against
-   * @param verificationType The ShaderTypeEnum we are verifying against
+   * @param verificationType The ObjectInstanceShaderType we are verifying
+   * against
    * @param mnVerificationType The @ref Mn::Trade::MaterialType bitflag that the
    * passed material's specified type is being verified against.
    * @return Whether or not the passed @p typeToCheck matches the passed
    * criteria.
    */
   bool checkForPassedShaderType(
-      const ShaderTypeEnum typeToCheck,
-      const Cr::Containers::Optional<Mn::Trade::MaterialData>& materialData,
-      const ShaderTypeEnum verificationType,
+      const ObjectInstanceShaderType typeToCheck,
+      const Mn::Trade::MaterialData& materialData,
+      const ObjectInstanceShaderType verificationType,
       const Mn::Trade::MaterialType mnVerificationType) const {
     return (
         (typeToCheck == verificationType) ||
-        ((typeToCheck == ShaderTypeEnum::Material) &&
-         ((materialData->types() & mnVerificationType) == mnVerificationType)));
+        ((typeToCheck == ObjectInstanceShaderType::Material) &&
+         ((materialData.types() & mnVerificationType) == mnVerificationType)));
   }
 
   /**
@@ -862,9 +863,8 @@ class ResourceManager {
    * @return The new material with attribute support for all supported shader
    * types.
    */
-  Cr::Containers::Optional<Mn::Trade::MaterialData> createUniversalMaterial(
-      const Cr::Containers::Optional<Mn::Trade::MaterialData>&
-          origMaterialData);
+  Mn::Trade::MaterialData createUniversalMaterial(
+      const Mn::Trade::MaterialData& origMaterialData);
 
   /**
    * @brief Build a @ref PhongMaterialData for use with flat shading
@@ -875,7 +875,7 @@ class ResourceManager {
    * @param textureBaseIndex Base index of the assets textures in textures_
    */
   gfx::PhongMaterialData::uptr buildFlatShadedMaterialData(
-      Cr::Containers::Optional<Mn::Trade::MaterialData>& materialData,
+      Mn::Trade::MaterialData& materialData,
       int textureBaseIndex);
 
   /**
@@ -888,7 +888,7 @@ class ResourceManager {
 
    */
   gfx::PhongMaterialData::uptr buildPhongShadedMaterialData(
-      Cr::Containers::Optional<Mn::Trade::MaterialData>& material,
+      Mn::Trade::MaterialData& material,
       int textureBaseIndex) const;
 
   /**
@@ -900,7 +900,7 @@ class ResourceManager {
    * @param textureBaseIndex Base index of the assets textures in textures_
    */
   gfx::PbrMaterialData::uptr buildPbrShadedMaterialData(
-      Cr::Containers::Optional<Mn::Trade::MaterialData>& material,
+      Mn::Trade::MaterialData& material,
       int textureBaseIndex) const;
 
   // /**
@@ -910,7 +910,7 @@ class ResourceManager {
   //  * phong if the user specifies phong shaders via configurations.
   //  */
   // gfx::PhongMaterialData::uptr buildPhongFromPbrMetallicRoughness(
-  //     Cr::Containers::Optional<Mn::Trade::MaterialData>& material,
+  //     Mn::Trade::MaterialData& material,
   //     int textureBaseIndex) const;
 
   /**
