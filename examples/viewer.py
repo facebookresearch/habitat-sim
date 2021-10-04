@@ -27,6 +27,17 @@ class SkeletonPythonViewer(Application):
             key.X : False,    key.Z : False
         }
 
+        # Other settings
+        # Temp setting to toggle mouse utility
+        self.mouse_interaction = False
+
+        # Toggle physics simulation on/off
+        self.simulating = True
+
+        # Toggle a single simulation step at the next opportunity if not 
+        # simulating continuously.
+        self. simulate_single_step = False
+
         self.agent_id = sim_settings["default_agent"] # 0
 
         # Configure our sim_settings but then set agent to our default
@@ -55,11 +66,21 @@ class SkeletonPythonViewer(Application):
         # Agent actions should occur at a fixed rate per second
         self.time_since_last_simulation += Timer.prev_frame_duration
         num_agent_actions = (self.time_since_last_simulation * agent_acts_per_sec)
-
         self.move_and_look(int(num_agent_actions)) 
+
+        # Occasionally a frame will pass quicker than 1/60 seconds
         if self.time_since_last_simulation >= 1.0 / 60.0:
+            if self.simulating or self.simulate_single_step:
+                # step physics at a fixed rate
+                # In the interest of frame rate, only a single step is taken,
+                # even if time_since_last_simulation is quite large
+                self.sim.step_world(1.0 / 60.0)
+                self.simulate_single_step = False
+
+            # reset time_since_last_simulation, accounting for potential overflow
             self.time_since_last_simulation = math.fmod(
                     self.time_since_last_simulation, 1.0 / 60.0)
+
         self.sim._sensors["color_sensor"].draw_observation()
         
         # added to use blit_rgba_to_default()
@@ -98,8 +119,21 @@ class SkeletonPythonViewer(Application):
         if key == pressed.ESC:
             self.exit(0)
             return
+
         elif key == pressed.H:
             self.print_help_text()
+
+        elif key == pressed.SPACE:
+            self.simulating = not self.simulating
+            print('Physics Simulating set to ', self.simulating)
+
+        elif key == pressed.PERIOD:
+            self.simulate_single_step = True
+            print('Physics Step Taken')
+        
+        elif key == pressed.M:
+            self.mouse_interaction = not self.mouse_interaction
+            print('Mouse LOOK set to ', self.mouse_interaction)
 
         if key in self.pressed.keys():
             self.pressed[key] = True
@@ -116,7 +150,7 @@ class SkeletonPythonViewer(Application):
         button = Application.MouseMoveEvent.Buttons
 
         # if interactive mode == LOOK
-        if event.buttons == button.LEFT:
+        if event.buttons == button.LEFT and self.mouse_interaction:
             agent = self.sim.agents[self.agent_id]
             delta = event.relative_position
             action = habitat_sim.agent.ObjectControls()
@@ -181,11 +215,16 @@ Key Commands:
 -------------
     esc: Exit the application.
     'h': Display this help message.
+    'm': Toggle mouse mode.
 
     Agent Controls:
     'wasd':         Move the agent's body forward/backward, left/right.
     'zx':           Move the agent's body up/down.
     arrow keys:     Turn the agent's body left/right and camera look up/down.
+
+    Object Interactions:
+    SPACE: Toggle physics simulation on/off
+    '.': Take a single simulation step if not simulating continuously.
 =====================================================
 '''
         )
@@ -235,6 +274,11 @@ if __name__ == "__main__":
         metavar='DATASET', 
         help='dataset configuration file to use (default: default)',
     )
+    parser.add_argument(        
+        '--enable_physics',
+        action="store_true",
+        help='enable physics simulation (default: False)'
+    )
 
     args = parser.parse_args()
     
@@ -249,5 +293,6 @@ if __name__ == "__main__":
     sim_settings = default_sim_settings
     sim_settings['scene'] = args.scene
     sim_settings['scene_dataset_config_file'] = args.dataset
+    sim_settings['enable_physics'] = args.enable_physics
 
 SkeletonPythonViewer(sim_settings).exec()
