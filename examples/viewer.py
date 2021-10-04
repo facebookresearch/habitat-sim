@@ -111,24 +111,47 @@ class SkeletonPythonViewer(Application):
                 self.pressed[key] = False
         self.redraw()
 
+    # Broken Currently
+    def mouse_move_event(self, event):
+        button = Application.MouseMoveEvent.Buttons
+
+        # if interactive mode == LOOK
+        if event.buttons == button.LEFT:
+            agent = self.sim.agents[self.agent_id]
+            delta = event.relative_position
+            action = habitat_sim.agent.ObjectControls()
+            actuation_spec = habitat_sim.agent.ActuationSpec
+
+            # TODO: relative_position in only returning absolute
+            #       postion. This function is set up to work properly
+            #       once the mouse event issue has been resolved
+            action(agent.scene_node, 'turn_right', actuation_spec(delta.x))
+            action(agent.scene_node, 'look_down', actuation_spec(delta.y))
+        
+        self.redraw()
+        event.accepted = True
+
     # Set up our own agent and agent controls
     def default_agent_config(self):
         ActionSpec = habitat_sim.agent.ActionSpec
         ActuationSpec = habitat_sim.agent.ActuationSpec
-        MOVE = 0.07
-        LOOK = 0.9
-        action_space = {
-            'turn_left' : ActionSpec('turn_left', ActuationSpec(amount=LOOK)),
-            'turn_right' : ActionSpec('turn_right', ActuationSpec(amount=LOOK)),
-            'look_up' : ActionSpec('look_up', ActuationSpec(amount=LOOK)),
-            'look_down' : ActionSpec('look_down', ActuationSpec(amount=LOOK)),
-            'move_left' : ActionSpec('move_left', ActuationSpec(amount=MOVE)),
-            'move_right' : ActionSpec('move_right', ActuationSpec(amount=MOVE)),
-            'move_backward' : ActionSpec('move_backward', ActuationSpec(amount=MOVE)),
-            'move_forward' : ActionSpec('move_forward', ActuationSpec(amount=MOVE)),
-            'move_down' : ActionSpec('move_down', ActuationSpec(amount=MOVE)),
-            'move_up' : ActionSpec('move_up', ActuationSpec(amount=MOVE)),
-        }
+        MOVE, LOOK = 0.07, 0.9
+
+        action_list = [
+            "move_left",     "turn_left",
+            "move_right",    "turn_right",
+            "move_backward", "look_up",
+            "move_forward",  "look_down",
+            "move_down",
+            "move_up",
+        ]
+
+        action_space ={}
+
+        for action in action_list:
+            actuation_spec_amt = MOVE if "move"in action else LOOK
+            action_spec= ActionSpec(action, ActuationSpec(actuation_spec_amt))
+            action_space[action] = action_spec
 
         sensor_spec = self.cfg.agents[self.agent_id].sensor_specifications
         
@@ -136,7 +159,7 @@ class SkeletonPythonViewer(Application):
             height = 1.5,
             radius = 0.1,
             sensor_specifications = sensor_spec, # : typing.List[sensor.SensorSpec]
-            action_space = action_space,         #: typing.Dict[typing.Any, ActionSpec]
+            action_space = action_space,         # : typing.Dict[typing.Any, ActionSpec]
             body_type= 'cylinder' 
         )
         return agent_config
