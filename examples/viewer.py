@@ -128,8 +128,11 @@ class SkeletonPythonViewer(Application):
             print('Physics Simulating set to ', self.simulating)
 
         elif key == pressed.PERIOD:
-            self.simulate_single_step = True
-            print('Physics Step Taken')
+            if self.simulating:
+                print('Physic Simulation already running')
+            else:
+                self.simulate_single_step = True
+                print('Physics Step Taken')
         
         elif key == pressed.M:
             self.mouse_interaction = not self.mouse_interaction
@@ -197,6 +200,18 @@ class SkeletonPythonViewer(Application):
             body_type= 'cylinder' 
         )
         return agent_config
+
+    # Works with hard-coded work-around in edge-case
+    # TODO: Expand on this method after sync with Alex
+    def reconfigure_sim(self, new_cfg):        
+        if self.sim is None:
+            self.sim = habitat_sim.Simulator(new_cfg)
+
+        else:
+            if self.sim.config.sim_cfg.scene_id == new_cfg.scene_name:
+                # we need to force a reset, so change the internal config scene name
+                self.sim.config.sim_cfg.scene_id = "NONE"
+            self.sim.reconfigure(new_cfg)
 
     # TODO: Find out why using a mouse-click to close window doesn't utilize 
     #       this function, leading to zsh: abort 
