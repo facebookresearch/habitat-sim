@@ -1652,15 +1652,14 @@ bool compareShaderTypeToMnMatType(const ObjectInstanceShaderType typeToCheck,
                                   const Mn::Trade::MaterialData& materialData) {
   switch (typeToCheck) {
     case ObjectInstanceShaderType::Phong: {
-      bool compRes = ((materialData.types() & Mn::Trade::MaterialType::Phong) ==
-                      Mn::Trade::MaterialType::Phong);
+      bool compRes =
+          bool(materialData.types() & Mn::Trade::MaterialType::Phong);
       ESP_WARNING() << "Forceing to Phong | compare " << compRes;
       return compRes;
     }
     case ObjectInstanceShaderType::PBR: {
-      bool compRes = ((materialData.types() &
-                       Mn::Trade::MaterialType::PbrMetallicRoughness) ==
-                      Mn::Trade::MaterialType::PbrMetallicRoughness);
+      bool compRes = bool(materialData.types() &
+                          Mn::Trade::MaterialType::PbrMetallicRoughness);
       ESP_WARNING() << "Forceing to PBR | compare " << compRes;
       return compRes;
     }
@@ -1771,7 +1770,7 @@ Mn::Trade::MaterialData ResourceManager::createUniversalMaterial(
 
   // whether the MaterialAttribute::TextureMatrix has been set already
   bool setTexMatrix = false;
-  if (~(origMatTypes & Mn::Trade::MaterialType::Phong)) {
+  if (!(origMatTypes & Mn::Trade::MaterialType::Phong)) {
     // add appropriate values for expected attributes to support Phong from
     // PbrMetallicRoughnessMaterialData
 
@@ -1803,22 +1802,24 @@ Mn::Trade::MaterialData ResourceManager::createUniversalMaterial(
     // https://www.wolframalpha.com/input/?i=1.1+%2B+%281+-+x%29%5E4.5+*+180.0+for+x+from+0+to+1
     // lower power for metal
     const float maxShininess = Mn::Math::lerp(250.0f, 120.0f, metalness);
-    const float shininess = 1.1f + powf(1.0f - roughness, 4.5) * maxShininess;
+    const float shininess =
+        1.1f + Mn::Math::pow(1.0f - roughness, 4.5f) * maxShininess;
 
     // increase spec intensity for metal
     // example calc :
     // https://www.wolframalpha.com/input/?i=1.0+%2B+10*%28x%5E1.7%29++from+0+to+1
     const float specIntensityScale =
         (metalness > 0.0f
-             ? (metalness < 1.0f ? (1.0f + 10.0f * powf(metalness, 1.7f))
-                                 : 11.0f)
+             ? (metalness < 1.0f
+                    ? (1.0f + 10.0f * Mn::Math::pow(metalness, 1.7f))
+                    : 11.0f)
              : 1.0f);
     // Heuristic to map roughness to spec intensity.
     // higher exponent decreases intensity.
     // example calc :
     // https://www.wolframalpha.com/input/?i=1.4+*+%281-x%29%5E2.5++from+0+to+1
     const float specIntensity =
-        powf(1.0f - roughness, 2.5f) * 1.4f * specIntensityScale;
+        Mn::Math::pow(1.0f - roughness, 2.5f) * 1.4f * specIntensityScale;
 
     // NOTE: The magic-number multiplication at the end is a hack to
     // roughly balance the Phong and PBR light intensity reactions
@@ -1830,7 +1831,7 @@ Mn::Trade::MaterialData ResourceManager::createUniversalMaterial(
         (metalness > 0.0f
              ? (metalness < 1.0f
                     ? Mn::Math::lerp(0xffffffff_rgbaf, ambientColor,
-                                     powf(metalness, 0.5))
+                                     Mn::Math::pow(metalness, 0.5f))
                     : ambientColor)
              : 0xffffffff_rgbaf);
     // NOTE: The magic-number multiplication at the end is a hack to
@@ -1885,7 +1886,7 @@ Mn::Trade::MaterialData ResourceManager::createUniversalMaterial(
     }
   }  // if no phong material support exists in material
 
-  if (~(origMatTypes & Mn::Trade::MaterialType::PbrMetallicRoughness)) {
+  if (!(origMatTypes & Mn::Trade::MaterialType::PbrMetallicRoughness)) {
     // add appropriate values for expected attributes for PbrMetallicRoughness
     // derived from Phong attributes
     const auto& phongMaterial =
@@ -1904,7 +1905,7 @@ Mn::Trade::MaterialData ResourceManager::createUniversalMaterial(
     // otherwise, this heuristic will derive a value for metalness based on
     // how non-grayscale the specular color is (HSV Saturation).
     if (specColor.a() != 0.0f) {
-      metalness = specColor.toHsv().saturation;
+      metalness = specColor.saturation();
     }
     /////////////////
     // set PbrMetallicRoughness attributes appropriately from precalculated
