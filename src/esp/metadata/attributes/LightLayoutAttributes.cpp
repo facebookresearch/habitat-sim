@@ -28,7 +28,7 @@ LightInstanceAttributes::LightInstanceAttributes(const std::string& handle)
   setColor({1.0, 1.0, 1.0});
   setIntensity(1.0);
   setType(static_cast<int>(esp::gfx::LightType::Point));
-  setPositionModel(static_cast<int>(esp::gfx::LightPositionModel::Global));
+  setPositionModel("global");
   // ignored for all but spot lights
   setInnerConeAngle(0.0_radf);
   setOuterConeAngle(90.0_degf);

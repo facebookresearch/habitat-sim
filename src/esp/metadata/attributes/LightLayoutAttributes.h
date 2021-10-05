@@ -77,20 +77,37 @@ class LightInstanceAttributes : public AbstractAttributes {
   int getType() const { return get<int>("type"); }
 
   /**
-   * @brief Set the position model to use when placing the light - whether
-   * the lights translation should be relative to the camera, the global scene
-   * origin, or some object.
+   * @brief Set the string key to the esp::gfx::LightPositionModel to use when
+   * placing the light - whether the lights translation should be relative to
+   * the camera, the global scene origin, or some object.
    */
-  void setPositionModel(int position_model) {
-    set("position_model", position_model);
+  void setPositionModel(const std::string& position_model) {
+    // force to lowercase before setting
+    const std::string posModelLC =
+        Cr::Utility::String::lowercase(position_model);
+    auto mapIter = LightPositionNamesMap.find(posModelLC);
+    if (mapIter != LightPositionNamesMap.end()) {
+      set("position_model", posModelLC);
+    } else {
+      set("position_model", "global");
+    }
   }
 
   /**
-   * @brief Get the position model to use when placing the light - whether
-   * the lights translation should be relative to the camera, the global scene
-   * origin, or some object.
+   * @brief Get the @ref esp::gfx::LightPositionModel to use when placing the
+   * light - whether the lights translation should be relative to the camera,
+   * the global scene origin, or some object.
    */
-  int getPositionModel() const { return get<int>("position_model"); }
+  esp::gfx::LightPositionModel getPositionModel() const {
+    const std::string val =
+        Cr::Utility::String::lowercase(get<std::string>("position_model"));
+    auto mapIter = LightPositionNamesMap.find(val);
+    if (mapIter != LightPositionNamesMap.end()) {
+      return mapIter->second;
+    }
+    // global is default value
+    return LightPositionNamesMap.at("global");
+  }
 
   /**
    * @brief Set inner cone angle for spotlights.  Should be ignored for
@@ -142,8 +159,7 @@ class LightInstanceAttributes : public AbstractAttributes {
 
   std::string getCurrLightPositionModelName() const {
     // Must always be valid value
-    esp::gfx::LightPositionModel type =
-        static_cast<esp::gfx::LightPositionModel>(getPositionModel());
+    esp::gfx::LightPositionModel type = getPositionModel();
     for (const auto& it : LightPositionNamesMap) {
       if (it.second == type) {
         return it.first;

@@ -747,7 +747,7 @@ void AttributesManagersTest::testLightJSONLoad() {
   CORRADE_COMPARE(lightAttr->getIntensity(), -0.1);
   CORRADE_COMPARE(lightAttr->getType(),
                   static_cast<int>(esp::gfx::LightType::Directional));
-  CORRADE_COMPARE(lightAttr->getPositionModel(),
+  CORRADE_COMPARE(static_cast<int>(lightAttr->getPositionModel()),
                   static_cast<int>(esp::gfx::LightPositionModel::Camera));
   CORRADE_COMPARE(lightAttr->getInnerConeAngle(), -0.75_radf);
   CORRADE_COMPARE(lightAttr->getOuterConeAngle(), -1.57_radf);

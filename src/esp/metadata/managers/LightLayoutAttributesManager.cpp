@@ -142,15 +142,14 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
                              });
 
   // set frame of reference for light transformation
-  int posMdleVal = -1;
+  std::string posMdleVal = "global";
   std::string tmpPosMdleVal = "";
   if (io::readMember<std::string>(jsonConfig, "position_model",
                                   tmpPosMdleVal)) {
     std::string strToLookFor = Cr::Utility::String::lowercase(tmpPosMdleVal);
     if (LightInstanceAttributes::LightPositionNamesMap.count(strToLookFor) !=
         0u) {
-      posMdleVal = static_cast<int>(
-          LightInstanceAttributes::LightPositionNamesMap.at(strToLookFor));
+      posMdleVal = strToLookFor;
     } else {
       ESP_WARNING()
           << "'position_model' Value in JSON : `" << posMdleVal
@@ -158,7 +157,6 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
              "LightInstanceAttributes::LightPositionNamesMap value, so "
              "defaulting LightInfo position model to "
              "esp::gfx::LightPositionModel::Global.";
-      posMdleVal = static_cast<int>(esp::gfx::LightPositionModel::Global);
     }
     lightAttribs->setPositionModel(posMdleVal);
   }  // position model
@@ -290,7 +288,7 @@ gfx::LightSetup LightLayoutAttributesManager::createLightSetupFromAttributes(
         const int type = lightAttr->getType();
         const gfx::LightType typeEnum = static_cast<gfx::LightType>(type);
         const gfx::LightPositionModel posModelEnum =
-            static_cast<gfx::LightPositionModel>(lightAttr->getPositionModel());
+            lightAttr->getPositionModel();
         const Magnum::Color3 color =
             lightAttr->getColor() *
             (lightAttr->getIntensity() > 0 ? posIntensityScale
