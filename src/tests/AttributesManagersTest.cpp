@@ -755,48 +755,72 @@ void AttributesManagersTest::testLightAttrVals(
                             Magnum::Quaternion({0.6f, 0.7f, 0.8f}, 0.5f));
   CORRADE_COMPARE(lightLayoutAttr->getPositiveIntensityScale(), 2.0);
   CORRADE_COMPARE(lightLayoutAttr->getNegativeIntensityScale(), 1.5);
-  auto lightAttr = lightLayoutAttr->getLightInstance("test");
-  // verify that lightAttr exists
-  CORRADE_VERIFY(lightAttr);
+  auto lightAttr0 = lightLayoutAttr->getLightInstance("test0");
+  // verify that lightAttr0 exists
+  CORRADE_VERIFY(lightAttr0);
 
   // match values set in test JSON
 
-  CORRADE_COMPARE(lightAttr->getPosition(), Magnum::Vector3(2.5, 0.1, 3.8));
-  CORRADE_COMPARE(lightAttr->getDirection(), Magnum::Vector3(1.0, -1.0, 1.0));
-  CORRADE_COMPARE(lightAttr->getColor(), Magnum::Vector3(2, 1, -1));
+  CORRADE_COMPARE(lightAttr0->getDirection(), Magnum::Vector3(1.0, -1.0, 1.0));
+  CORRADE_COMPARE(lightAttr0->getColor(), Magnum::Vector3(0.6, 0.7, 0.8));
 
-  CORRADE_COMPARE(lightAttr->getIntensity(), -0.1);
-  CORRADE_COMPARE(lightAttr->getType(),
+  CORRADE_COMPARE(lightAttr0->getIntensity(), -0.1);
+  CORRADE_COMPARE(lightAttr0->getType(),
                   static_cast<int>(esp::gfx::LightType::Directional));
-  CORRADE_COMPARE(lightAttr->getPositionModel(),
+  CORRADE_COMPARE(lightAttr0->getPositionModel(),
                   static_cast<int>(esp::gfx::LightPositionModel::Camera));
-  CORRADE_COMPARE(lightAttr->getInnerConeAngle(), -0.75_radf);
-  CORRADE_COMPARE(lightAttr->getOuterConeAngle(), -1.57_radf);
+  CORRADE_COMPARE(lightAttr0->getInnerConeAngle(), 0.25_radf);
+  CORRADE_COMPARE(lightAttr0->getOuterConeAngle(), -1.57_radf);
+
+  auto lightAttr1 = lightLayoutAttr->getLightInstance("test1");
+  // verify that lightAttr1 exists
+  CORRADE_VERIFY(lightAttr1);
+
+  CORRADE_COMPARE(lightAttr1->getPosition(), Magnum::Vector3(2.5, 0.1, 3.8));
+  CORRADE_COMPARE(lightAttr1->getColor(), Magnum::Vector3(0.5, 0.3, 0.1));
+
+  CORRADE_COMPARE(lightAttr1->getIntensity(), -1.2);
+  CORRADE_COMPARE(lightAttr1->getType(),
+                  static_cast<int>(esp::gfx::LightType::Point));
+  CORRADE_COMPARE(lightAttr1->getPositionModel(),
+                  static_cast<int>(esp::gfx::LightPositionModel::Global));
+  CORRADE_COMPARE(lightAttr1->getInnerConeAngle(), -0.75_radf);
+  CORRADE_COMPARE(lightAttr1->getOuterConeAngle(), -1.7_radf);
 
   // test user defined attributes from light instance
-  testUserDefinedConfigVals(lightAttr->getUserConfiguration(),
+  testUserDefinedConfigVals(lightAttr1->getUserConfiguration(),
                             "light instance defined string", false, 42, 1.2,
                             Magnum::Vector3(0.1, 2.3, 4.5),
                             Magnum::Quaternion({0.2f, 0.3f, 0.4f}, 0.1f));
 
   // remove json-string built attributes added for test
   testRemoveAttributesBuiltJSONString(lightLayoutAttributesManager_,
-                                      lightAttr->getHandle());
+                                      lightLayoutAttr->getHandle());
 }
 void AttributesManagersTest::testLightJSONLoad() {
   // build JSON sample config
   const std::string& jsonString = R"({
   "lights":{
-      "test":{
-        "position": [2.5,0.1,3.8],
+      "test0":{
         "direction": [1.0,-1.0,1.0],
         "intensity": -0.1,
-        "color": [2,1,-1],
+        "color": [0.6,0.7,0.8],
         "type": "directional",
         "position_model" : "camera",
         "spot": {
-          "innerConeAngle": -0.75,
+          "innerConeAngle": 0.25,
           "outerConeAngle": -1.57
+        }
+      },
+      "test1":{
+        "position": [2.5,0.1,3.8],
+        "intensity": -1.2,
+        "color": [0.5,0.3,0.1],
+        "type": "point",
+        "position_model" : "global",
+        "spot": {
+          "innerConeAngle": -0.75,
+          "outerConeAngle": -1.7
         },
         "user_defined" : {
             "user_string" : "light instance defined string",
