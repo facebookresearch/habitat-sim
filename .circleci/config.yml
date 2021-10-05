@@ -1,7 +1,7 @@
 version: 2.1
 gpu: &gpu
   machine:
-    image: ubuntu-1604:201903-01
+    image: ubuntu-1604:202104-01
   resource_class: gpu.small
   environment:
     FPS_THRESHOLD: 900
@@ -9,6 +9,11 @@ commands:
   install_all_ubuntu_deps:
     description: "Prepares the dependencies"
     steps:
+      - run:
+          name: Upgrade Dependencies
+          command: |
+              sudo apt-get update -y || true
+              sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y || true
       - run:
           name: Install clang-tidy
           command: |
@@ -360,7 +365,7 @@ jobs:
       - run:
           name: pip install
           command: |
-            pyenv global 3.7.0
+            pyenv global 3.7.10
             python3 -m pip install -U pip
             python3 -m pip install . -v
             cd ../ && python3 -c "import habitat_sim"
@@ -573,8 +578,8 @@ jobs:
               pytest -n 8 --durations=10 --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
 
               . ~/.bashrc
-              . ~/emsdk/emsdk_env.sh
               nvm use v11.9.0
+              . ~/emsdk/emsdk_env.sh
               # Generate JS CodeConv
               npm run test_with_coverage
       - save_cache:
