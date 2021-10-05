@@ -196,7 +196,7 @@ bool writeConfigurationToJsonFile(
   rapidjson::Document::AllocatorType& allocator = doc.GetAllocator();
   // build Json from passed Configuration
   auto configJson = configToJsonValue(configPtr, allocator);
-  doc.AddMember("", configJson, allocator);
+  doc.Swap(configJson);
 
   // save to file
   bool success = writeJsonToFile(doc, filename, true, 7);

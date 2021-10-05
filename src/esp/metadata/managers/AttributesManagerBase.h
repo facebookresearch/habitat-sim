@@ -430,8 +430,11 @@ bool AttributesManager<T, Access>::saveManagedObjectToFileInternal(
   }
   // construct fully qualified filename
   std::string fullFilename = Dir::join(fileDirectory, filename);
+  ESP_DEBUG() << "Attempting to write file" << fullFilename << " to disk";
   // write configuration to file
   bool success = io::writeConfigurationToJsonFile(fullFilename, attribs);
+  ESP_DEBUG() << "Attempt to write file" << fullFilename
+              << " to disk :" << (success ? "Successful" : "Failed");
 
   return success;
 

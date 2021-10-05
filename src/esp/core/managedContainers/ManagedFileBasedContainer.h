@@ -156,7 +156,7 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
     }
 
     // Managed file-based object to save
-    ManagedFileIOPtr obj = this->getObjectInternal(objectHandle);
+    ManagedFileIOPtr obj = this->template getObjectInternal<T>(objectHandle);
     namespace FileUtil = Cr::Utility::Directory;
 
     std::string fileDirectory = FileUtil::path(fullFilename);
@@ -339,7 +339,7 @@ bool ManagedFileBasedContainer<T, Access>::saveManagedObjectToFile(
   }
   namespace FileUtil = Cr::Utility::Directory;
   // Managed file-based object to save
-  ManagedFileIOPtr obj = this->getObjectInternal(objectHandle);
+  ManagedFileIOPtr obj = this->template getObjectInternal<T>(objectHandle);
   // get file directory
   const std::string fileDirectory = obj->getFileDirectory();
   // get candidate for file name
