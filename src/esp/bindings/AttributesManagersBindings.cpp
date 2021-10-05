@@ -103,8 +103,7 @@ void declareBaseAttributesManager(py::module& m,
           ("Build " + attrType +
            " templates for all JSON files with appropriate extension "
            "that exist in the provided file or directory path. If "
-           "save_as_defaults is true, "
-           "then these " +
+           "save_as_defaults is true, then these " +
            attrType + " templates will be unable to be deleted")
               .c_str(),
           "path"_a, "save_as_defaults"_a = false)
@@ -183,11 +182,8 @@ void declareBaseAttributesManager(py::module& m,
            ("This sets the lock state for all " + attrType +
             " templates whose handles are passed "
             "in list. Returns a list of handles for templates locked by this "
-            "function call. "
-            "Lock == True makes the " +
-            attrType +
-            " template unable to be deleted. Note : "
-            "Locked " +
+            "function call. Lock == True makes the " +
+            attrType + " template unable to be deleted. Note : Locked " +
             attrType + " templates can still be edited.")
                .c_str(),
            "handles"_a, "lock"_a)

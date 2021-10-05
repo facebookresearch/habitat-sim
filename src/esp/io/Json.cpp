@@ -139,7 +139,8 @@ JsonGenericValue configToJsonValue(
       jsonObj.AddMember(name, jsonVal, allocator);
     } else {
       ESP_WARNING() << "Unitialized ConfigValue in Configuration @ key ["
-                    << valIter->first << "]";
+                    << valIter->first
+                    << "], so nothing will be written to JSON for this key.";
     }
   }  // iterate through all values
 
@@ -154,7 +155,7 @@ JsonGenericValue configToJsonValue(
   }  // iterate through all configurations
 
   return jsonObj;
-}  // toJsonValue<core::config::Configuration>
+}  // configToJsonValue
 
 JsonGenericValue cfgValToJsonValue(const core::config::ConfigValue& cfgVal,
                                    JsonAllocator& allocator) {
@@ -186,7 +187,7 @@ JsonGenericValue cfgValToJsonValue(const core::config::ConfigValue& cfgVal,
       CORRADE_ASSERT_UNREACHABLE(
           "Unknown/unsupported Type in io::toJsonValue<ConfigValue>", {});
   }
-}  // toJsonValue<core::config::ConfigValue>
+}  // cfgValToJsonValue
 
 bool writeConfigurationToJsonFile(
     const std::string& filename,
