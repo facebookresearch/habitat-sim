@@ -263,10 +263,11 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
     }
   }  // setFileDirectoryFromHandle
 
-  // ======== Typedefs and Instance Variables ========
+  // ======== Instance Variables ========
   /**
-   * @brief The string extension for json files for this manager's object types
-   * types
+   * @brief The string extension for the JSON configuration file backing this
+   * Manager's @ref esp::core::managedContainers::AbstractFileBasedManagedObject
+   * including the json extension.
    */
   const std::string JSONTypeExt_;
 
