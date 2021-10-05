@@ -10,6 +10,11 @@ commands:
     description: "Prepares the dependencies"
     steps:
       - run:
+          name: Upgrade Dependencies
+          command: |
+              sudo apt-get update -y || true
+              sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y || true
+      - run:
           name: Install clang-tidy
           command: |
               sudo add-apt-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-12 main"
@@ -23,8 +28,6 @@ commands:
           # OpenEXR requires CMake 3.12. We also download CMake 3.20, which
           # we'll use later for the JS build only.
           command: |
-              sudo apt-get update -y || true
-              sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y || true
               echo $(git ls-remote https://github.com/facebookresearch/habitat-lab.git HEAD | awk '{ print $1}') > ./hablab_sha
               cat ./hablab_sha
               wget https://cmake.org/files/v3.12/cmake-3.12.4-Linux-x86_64.sh
@@ -362,7 +365,8 @@ jobs:
       - run:
           name: pip install
           command: |
-            pyenv global 3.7.0
+            pyenv install 3.7.10
+            pyenv global 3.7.10
             python3 -m pip install -U pip
             python3 -m pip install . -v
             cd ../ && python3 -c "import habitat_sim"
