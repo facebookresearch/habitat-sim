@@ -187,6 +187,13 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
     return this->convertFilenameToPassedExt(filename, this->JSONTypeExt_);
   }
 
+  /**
+   * @brief Returns the config file type and file extension used for the files
+   * that build the @ref esp::core::AbstractFileBasedManagedObject managed by
+   * this manager.
+   */
+  std::string getJSONTypeExt() const { return JSONTypeExt_; }
+
  protected:
   //======== Common File-based import and utility functions ========
 
