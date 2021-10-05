@@ -1262,6 +1262,7 @@ void Viewer::drawEvent() {
     timeSinceLastSimulation = fmod(timeSinceLastSimulation, 1.0 / 60.0);
   }
 
+  // JUAN: This is probably for adding objects
   uint32_t visibles = renderCamera_->getPreviousNumVisibleDrawables();
 
   if (visualizeMode_ == VisualizeMode::Depth ||

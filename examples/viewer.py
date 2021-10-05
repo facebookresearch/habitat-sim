@@ -133,6 +133,9 @@ class SkeletonPythonViewer(Application):
             else:
                 self.simulate_single_step = True
                 print('Physics Step Taken')
+
+        elif key == pressed.EIGHT:
+            self.add_primitve_object()
         
         elif key == pressed.M:
             self.mouse_interaction = not self.mouse_interaction
@@ -156,6 +159,7 @@ class SkeletonPythonViewer(Application):
         if event.buttons == button.LEFT and self.mouse_interaction:
             agent = self.sim.agents[self.agent_id]
             delta = event.relative_position
+            print(delta)
             action = habitat_sim.agent.ObjectControls()
             actuation_spec = habitat_sim.agent.ActuationSpec
 
@@ -163,55 +167,10 @@ class SkeletonPythonViewer(Application):
             #       postion. This function is set up to work properly
             #       once the mouse event issue has been resolved
             action(agent.scene_node, 'turn_right', actuation_spec(delta.x))
-            action(agent.scene_node, 'look_down', actuation_spec(delta.y))
+            # action(agent.scene_node, 'look_down', actuation_spec(delta.y))
         
         self.redraw()
         event.accepted = True
-
-    # Set up our own agent and agent controls
-    def default_agent_config(self):
-        ActionSpec = habitat_sim.agent.ActionSpec
-        ActuationSpec = habitat_sim.agent.ActuationSpec
-        MOVE, LOOK = 0.07, 0.9
-
-        action_list = [
-            "move_left",     "turn_left",
-            "move_right",    "turn_right",
-            "move_backward", "look_up",
-            "move_forward",  "look_down",
-            "move_down",
-            "move_up",
-        ]
-
-        action_space ={}
-
-        for action in action_list:
-            actuation_spec_amt = MOVE if "move"in action else LOOK
-            action_spec= ActionSpec(action, ActuationSpec(actuation_spec_amt))
-            action_space[action] = action_spec
-
-        sensor_spec = self.cfg.agents[self.agent_id].sensor_specifications
-        
-        agent_config = habitat_sim.agent.AgentConfiguration(
-            height = 1.5,
-            radius = 0.1,
-            sensor_specifications = sensor_spec, # : typing.List[sensor.SensorSpec]
-            action_space = action_space,         # : typing.Dict[typing.Any, ActionSpec]
-            body_type= 'cylinder' 
-        )
-        return agent_config
-
-    # Works with hard-coded work-around in edge-case
-    # TODO: Expand on this method after sync with Alex
-    def reconfigure_sim(self, new_cfg):        
-        if self.sim is None:
-            self.sim = habitat_sim.Simulator(new_cfg)
-
-        else:
-            if self.sim.config.sim_cfg.scene_id == new_cfg.scene_name:
-                # we need to force a reset, so change the internal config scene name
-                self.sim.config.sim_cfg.scene_id = "NONE"
-            self.sim.reconfigure(new_cfg)
 
     # TODO: Find out why using a mouse-click to close window doesn't utilize 
     #       this function, leading to zsh: abort 
