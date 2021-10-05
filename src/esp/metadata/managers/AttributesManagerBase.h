@@ -351,7 +351,7 @@ auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
            : this->getFormattedJSONFileName(filename));
   // Check if this configuration file exists and if so use it to build
   // attributes
-  bool jsonFileExists = (this->isValidFileName(jsonAttrFileName));
+  bool jsonFileExists = Cr::Utility::Directory::exists(jsonAttrFileName);
   ESP_DEBUG() << "<" << Magnum::Debug::nospace << this->objectType_
               << Magnum::Debug::nospace
               << ">: Proposing JSON name :" << jsonAttrFileName
@@ -367,7 +367,7 @@ auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
     // default attributes.
     attrs = this->createDefaultObject(filename, registerObj);
     // check if original filename is an actual object
-    bool fileExists = (this->isValidFileName(filename));
+    bool fileExists = Cr::Utility::Directory::exists(filename);
     // if filename passed is name of some kind of asset, or if it was not
     // found
     if (fileExists) {
@@ -420,8 +420,8 @@ bool AttributesManager<T, Access>::saveManagedObjectToFileInternal(
     const AttribsPtr& attribs,
     const std::string& filename,
     const std::string& fileDirectory) const {
-  namespace FileUtil = Cr::Utility::Directory;
-  if (!FileUtil::exists(fileDirectory)) {
+  namespace Dir = Cr::Utility::Directory;
+  if (!Dir::exists(fileDirectory)) {
     // output directory not found
     ESP_ERROR() << "<" << this->objectType_ << "> : Destination directory "
                 << fileDirectory << " does not exist to save "
@@ -429,7 +429,7 @@ bool AttributesManager<T, Access>::saveManagedObjectToFileInternal(
     return false;
   }
   // construct fully qualified filename
-  std::string fullFilename = FileUtil::join(fileDirectory, filename);
+  std::string fullFilename = Dir::join(fileDirectory, filename);
   // write configuration to file
   bool success = io::writeConfigurationToJsonFile(fullFilename, attribs);
 

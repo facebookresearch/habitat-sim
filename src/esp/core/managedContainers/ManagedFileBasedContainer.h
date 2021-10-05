@@ -19,6 +19,7 @@
 #include <Corrade/Utility/FormatStl.h>
 #include <Corrade/Utility/String.h>
 #include <typeinfo>
+namespace Cr = Corrade;
 
 namespace esp {
 namespace core {
@@ -45,17 +46,6 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
   explicit ManagedFileBasedContainer(const std::string& metadataType,
                                      const std::string& JSONTypeExt)
       : ManagedContainer<T, Access>(metadataType), JSONTypeExt_(JSONTypeExt) {}
-
-  /**
-   * @brief Utility function to check if passed string represents an existing,
-   * user-accessible file
-   * @param handle the string to check
-   * @return whether the file exists in the file system and whether the user has
-   * access
-   */
-  bool isValidFileName(const std::string& handle) const {
-    return (Corrade::Utility::Directory::exists(handle));
-  }  // ManagedFileBasedContainer::isValidFileName
 
   /**
    * @brief Creates an instance of a managed object from a JSON file.
@@ -164,9 +154,10 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
           << objectHandle << " to save as JSON. Aborting.";
       return false;
     }
-    namespace FileUtil = Cr::Utility::Directory;
+
     // Managed file-based object to save
     ManagedFileIOPtr obj = this->getObjectInternal(objectHandle);
+    namespace FileUtil = Cr::Utility::Directory;
 
     std::string fileDirectory = FileUtil::path(fullFilename);
     // if no directory given then use object's local directory
@@ -228,7 +219,7 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
   template <class U>
   bool verifyLoadDocument(const std::string& filename,
                           CORRADE_UNUSED std::unique_ptr<U>& resDoc) {
-    // by here always fail
+    // by here always fail - means document type U is unsupported
     ESP_ERROR() << "<" << Magnum::Debug::nospace << this->objectType_
                 << Magnum::Debug::nospace << "> : File" << filename
                 << "failed due to unsupported file type :" << typeid(U).name();
@@ -315,7 +306,7 @@ template <class T, ManagedObjectAccess Access>
 bool ManagedFileBasedContainer<T, Access>::verifyLoadDocument(
     const std::string& filename,
     std::unique_ptr<io::JsonDocument>& jsonDoc) {
-  if (isValidFileName(filename)) {
+  if (Cr::Utility::Directory::exists(filename)) {
     try {
       jsonDoc = std::make_unique<io::JsonDocument>(io::parseJsonFile(filename));
     } catch (...) {

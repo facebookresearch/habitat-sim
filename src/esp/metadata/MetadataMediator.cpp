@@ -253,7 +253,7 @@ attributes::SceneAttributes::ptr MetadataMediator::getSceneAttributesByName(
     const std::string sceneFilenameCandidate =
         dsSceneAttrMgr->getFormattedJSONFileName(sceneName);
 
-    if (dsSceneAttrMgr->isValidFileName(sceneFilenameCandidate)) {
+    if (Cr::Utility::Directory::exists(sceneFilenameCandidate)) {
       // 2.  Existing, valid SceneAttributes file on disk, but not in dataset.
       //    If this is the case, then the SceneAttributes should be loaded,
       //    registered, added to the dataset and returned.
