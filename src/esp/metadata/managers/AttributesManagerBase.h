@@ -425,16 +425,16 @@ bool AttributesManager<T, Access>::saveManagedObjectToFileInternal(
     // output directory not found
     ESP_ERROR() << "<" << this->objectType_ << "> : Destination directory "
                 << fileDirectory << " does not exist to save "
-                << attribs->getSimplifiedHandle() << " object. Aborting.";
+                << attribs->getSimplifiedHandle() << "object. Aborting.";
     return false;
   }
   // construct fully qualified filename
   std::string fullFilename = Dir::join(fileDirectory, filename);
-  ESP_DEBUG() << "Attempting to write file" << fullFilename << " to disk";
+  ESP_DEBUG() << "Attempting to write file" << fullFilename << "to disk";
   // write configuration to file
   bool success = io::writeConfigurationToJsonFile(fullFilename, attribs);
   ESP_DEBUG() << "Attempt to write file" << fullFilename
-              << " to disk :" << (success ? "Successful" : "Failed");
+              << "to disk :" << (success ? "Successful" : "Failed");
 
   return success;
 
