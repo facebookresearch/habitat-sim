@@ -578,8 +578,8 @@ jobs:
               pytest -n 8 --durations=10 --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
 
               . ~/.bashrc
-              . ~/emsdk/emsdk_env.sh
               nvm use v11.9.0
+              . ~/emsdk/emsdk_env.sh
               # Generate JS CodeConv
               npm run test_with_coverage
       - save_cache:
