@@ -24,7 +24,7 @@ commands:
           # we'll use later for the JS build only.
           command: |
               sudo apt-get update -y || true
-              sudo apt-get upgrade -y || true
+              sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y || true
               echo $(git ls-remote https://github.com/facebookresearch/habitat-lab.git HEAD | awk '{ print $1}') > ./hablab_sha
               cat ./hablab_sha
               wget https://cmake.org/files/v3.12/cmake-3.12.4-Linux-x86_64.sh
