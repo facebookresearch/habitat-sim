@@ -125,7 +125,7 @@ void declareBaseAttributesManager(py::module& m,
            "handle"_a, "register_template"_a = false)
       .def(
           "is_valid_filename",
-          [](MgrClass& self, const std::string& filename) {
+          [](CORRADE_UNUSED MgrClass& self, const std::string& filename) {
             return Corrade::Utility::Directory::exists(filename);
           },
           R"(Returns whether the passed handle is a valid, existing file.)",
