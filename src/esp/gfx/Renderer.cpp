@@ -89,9 +89,9 @@ struct Renderer::Impl {
     acquireGlContext();
     if (visualSensor.specification()->sensorType ==
         sensor::SensorType::Semantic) {
-      ESP_CHECK(sim.semanticSceneExists(),
+      ESP_CHECK(sim.semanticSceneGraphExists(),
                 "Renderer::Impl::draw(): SemanticSensor observation requested "
-                "but no SemanticScene is loaded");
+                "but no SemanticSceneGraph is loaded");
     }
     visualSensor.drawObservation(sim);
   }
