@@ -61,12 +61,15 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
     const std::string transOriginLC =
         Cr::Utility::String::lowercase(translation_origin);
     auto mapIter = InstanceTranslationOriginMap.find(transOriginLC);
-    if (mapIter != InstanceTranslationOriginMap.end()) {
-      set("translation_origin", translation_origin);
-    } else {
-      set("translation_origin",
-          getTranslationOriginName(SceneInstanceTranslationOrigin::Unknown));
-    }
+
+    ESP_CHECK((mapIter != InstanceTranslationOriginMap.end() ||
+               (transOriginLC == getTranslationOriginName(
+                                     SceneInstanceTranslationOrigin::Unknown))),
+              "Illegal translation_origin value"
+                  << translation_origin
+                  << "attempted to be set in SceneObjectInstanceAttributes :"
+                  << getHandle() << ". Aborting.");
+    set("translation_origin", translation_origin);
   }
 
   /**
@@ -130,11 +133,16 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
     const std::string shaderTypeLC =
         Cr::Utility::String::lowercase(shader_type);
     auto mapIter = ShaderTypeNamesMap.find(shaderTypeLC);
-    if (mapIter != ShaderTypeNamesMap.end()) {
-      set("shader_type", shaderTypeLC);
-    } else {
-      set("shader_type", getShaderTypeName(ObjectInstanceShaderType::Unknown));
-    }
+
+    ESP_CHECK((mapIter != ShaderTypeNamesMap.end() ||
+               (shaderTypeLC ==
+                getShaderTypeName(ObjectInstanceShaderType::Unknown))),
+              "Illegal shader_type value"
+                  << shader_type
+                  << "attempted to be set in SceneObjectInstanceAttributes :"
+                  << getHandle() << ". Aborting.");
+
+    set("shader_type", shader_type);
   }
 
   /**
@@ -325,12 +333,15 @@ class SceneAttributes : public AbstractAttributes {
     const std::string transOriginLC =
         Cr::Utility::String::lowercase(translation_origin);
     auto mapIter = InstanceTranslationOriginMap.find(transOriginLC);
-    if (mapIter != InstanceTranslationOriginMap.end()) {
-      set("translation_origin", translation_origin);
-    } else {
-      set("translation_origin",
-          getTranslationOriginName(SceneInstanceTranslationOrigin::Unknown));
-    }
+
+    ESP_CHECK((mapIter != InstanceTranslationOriginMap.end() ||
+               (transOriginLC == getTranslationOriginName(
+                                     SceneInstanceTranslationOrigin::Unknown))),
+              "Illegal translation_origin value"
+                  << translation_origin
+                  << "attempted to be set in SceneInstanceAttributes :"
+                  << getHandle() << ". Aborting.");
+    set("translation_origin", translation_origin);
   }
 
   /**

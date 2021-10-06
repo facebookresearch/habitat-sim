@@ -199,11 +199,12 @@ class AbstractObjectAttributes : public AbstractAttributes {
     const std::string shaderTypeLC =
         Cr::Utility::String::lowercase(shader_type);
     auto mapIter = ShaderTypeNamesMap.find(shaderTypeLC);
-    if (mapIter != ShaderTypeNamesMap.end()) {
-      set("shader_type", shader_type);
-    } else {
-      set("shader_type", getShaderTypeName(ObjectInstanceShaderType::Unknown));
-    }
+    ESP_CHECK(mapIter != ShaderTypeNamesMap.end(),
+              "Illegal shader_type value"
+                  << shader_type
+                  << "attempted to be set in AbstractObjectAttributes:"
+                  << getHandle() << ". Aborting.");
+    set("shader_type", shader_type);
   }
 
   /**
@@ -217,7 +218,8 @@ class AbstractObjectAttributes : public AbstractAttributes {
     if (mapIter != ShaderTypeNamesMap.end()) {
       return mapIter->second;
     }
-    // global is default value
+    // Unknown is default value - should never be returned since setter verifies
+    // value
     return ObjectInstanceShaderType::Unknown;
   }
 

@@ -58,11 +58,11 @@ class LightInstanceAttributes : public AbstractAttributes {
     // force to lowercase before setting
     const std::string lightType = Cr::Utility::String::lowercase(type);
     auto mapIter = LightTypeNamesMap.find(lightType);
-    if (mapIter != LightTypeNamesMap.end()) {
-      set("type", type);
-    } else {
-      set("type", getLightTypeName(gfx::LightType::Point));
-    }
+    ESP_CHECK(mapIter != LightTypeNamesMap.end(),
+              "Illegal type value"
+                  << type << "attempted to be set in LightInstanceAttributes:"
+                  << getHandle() << ". Aborting.");
+    set("type", type);
   }
 
   /** @brief Get the type of the light */
@@ -73,7 +73,8 @@ class LightInstanceAttributes : public AbstractAttributes {
     if (mapIter != LightTypeNamesMap.end()) {
       return mapIter->second;
     }
-    // point is default value
+    // point is default value - should never be returned since setter verifies
+    // value
     return gfx::LightType::Point;
   }
 
@@ -87,12 +88,12 @@ class LightInstanceAttributes : public AbstractAttributes {
     const std::string posModelLC =
         Cr::Utility::String::lowercase(position_model);
     auto mapIter = LightPositionNamesMap.find(posModelLC);
-    if (mapIter != LightPositionNamesMap.end()) {
-      set("position_model", position_model);
-    } else {
-      set("position_model",
-          getLightPositionModelName(gfx::LightPositionModel::Global));
-    }
+    ESP_CHECK(mapIter != LightPositionNamesMap.end(),
+              "Illegal position_model value"
+                  << position_model
+                  << "attempted to be set in LightInstanceAttributes:"
+                  << getHandle() << ". Aborting.");
+    set("position_model", position_model);
   }
 
   /**
@@ -107,7 +108,8 @@ class LightInstanceAttributes : public AbstractAttributes {
     if (mapIter != LightPositionNamesMap.end()) {
       return mapIter->second;
     }
-    // global is default value
+    // global is default value - should never be returned since setter verifies
+    // value
     return gfx::LightPositionModel::Global;
   }
 
