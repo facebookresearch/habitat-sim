@@ -15,11 +15,10 @@ namespace attributes {
 enum class ObjectInstanceShaderType;
 }
 namespace Cr = Corrade;
-
-int getShaderTypeFromJsonDoc(const io::JsonGenericValue& jsonDoc) {
+std::string getShaderTypeFromJsonDoc(const io::JsonGenericValue& jsonDoc) {
   // Check for shader type to use.  Default to unknown.
-  int shader_type =
-      static_cast<int>(attributes::ObjectInstanceShaderType::Unknown);
+  std::string shader_type =
+      getShaderTypeName(attributes::ObjectInstanceShaderType::Unknown);
   std::string tmpShaderType = "";
   if (io::readMember<std::string>(jsonDoc, "shader_type", tmpShaderType)) {
     // shader_type tag was found, perform check - first convert to
@@ -27,7 +26,7 @@ int getShaderTypeFromJsonDoc(const io::JsonGenericValue& jsonDoc) {
     std::string strToLookFor = Cr::Utility::String::lowercase(tmpShaderType);
     auto found = attributes::ShaderTypeNamesMap.find(strToLookFor);
     if (found != attributes::ShaderTypeNamesMap.end()) {
-      shader_type = static_cast<int>(found->second);
+      shader_type = std::move(strToLookFor);
     } else {
       ESP_WARNING() << "`shader_type` value in json  : `" << tmpShaderType
                     << "` -> `" << strToLookFor

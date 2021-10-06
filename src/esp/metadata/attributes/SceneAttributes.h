@@ -28,15 +28,6 @@ namespace attributes {
 class SceneObjectInstanceAttributes : public AbstractAttributes {
  public:
   /**
-   * @brief Constant static map to provide mappings from string tags to @ref
-   * esp::physics::MotionType values.  This will be used to map values set in
-   * json for mesh type to @ref esp::physics::MotionType.  Keys must be
-   * lowercase.
-   */
-  static const std::map<std::string, esp::physics::MotionType>
-      MotionTypeNamesMap;
-
-  /**
    * @brief SceneObjectInstanceAttributes handle is also the handle of the
    * underlying @ref AbstractObjectAttributes for the object being instanced.
    */
@@ -65,7 +56,19 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
    * This acts as an instance-specific override to the scene-instance-wide
    * setting.
    */
-  void setTranslationOrigin(int translation_origin) {
+  void setTranslationOrigin(const std::string& translation_origin) {
+    // force to lowercase before setting
+    const std::string transOriginLC =
+        Cr::Utility::String::lowercase(translation_origin);
+    auto mapIter = InstanceTranslationOriginMap.find(transOriginLC);
+
+    ESP_CHECK((mapIter != InstanceTranslationOriginMap.end() ||
+               (transOriginLC == getTranslationOriginName(
+                                     SceneInstanceTranslationOrigin::Unknown))),
+              "Illegal translation_origin value"
+                  << translation_origin
+                  << "attempted to be set in SceneObjectInstanceAttributes :"
+                  << getHandle() << ". Aborting.");
     set("translation_origin", translation_origin);
   }
 
@@ -75,7 +78,16 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
    * This acts as an instance-specific override to the scene-instance-wide
    * setting.
    */
-  int getTranslationOrigin() const { return get<int>("translation_origin"); }
+  SceneInstanceTranslationOrigin getTranslationOrigin() const {
+    const std::string val =
+        Cr::Utility::String::lowercase(get<std::string>("translation_origin"));
+    auto mapIter = InstanceTranslationOriginMap.find(val);
+    if (mapIter != InstanceTranslationOriginMap.end()) {
+      return mapIter->second;
+    }
+    // Unknown is default value
+    return SceneInstanceTranslationOrigin::Unknown;
+  }
 
   /**
    * @brief Set the rotation of the object
@@ -103,12 +115,12 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
   /**
    * @brief Set the motion type for the object.  Ignored for stage instances.
    */
-  void setMotionType(int motionType) { set("motion_type", motionType); }
+  void setMotionType(const std::string& motionType);
 
   /**
    * @brief Get the motion type for the object.  Ignored for stage instances.
    */
-  int getMotionType() const { return get<int>("motion_type"); }
+  esp::physics::MotionType getMotionType() const;
 
   /**
    * @brief Set the default shader to use for an object or stage.  Uses values
@@ -116,8 +128,37 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
    * of string values in json to @ref
    * esp::metadata::attributes::ObjectInstanceShaderType int values.
    */
-  void setShaderType(int shader_type) { set("shader_type", shader_type); }
-  int getShaderType() const { return get<int>("shader_type"); }
+  void setShaderType(const std::string& shader_type) {
+    // force to lowercase before setting
+    const std::string shaderTypeLC =
+        Cr::Utility::String::lowercase(shader_type);
+    auto mapIter = ShaderTypeNamesMap.find(shaderTypeLC);
+
+    ESP_CHECK((mapIter != ShaderTypeNamesMap.end() ||
+               (shaderTypeLC ==
+                getShaderTypeName(ObjectInstanceShaderType::Unknown))),
+              "Illegal shader_type value"
+                  << shader_type
+                  << "attempted to be set in SceneObjectInstanceAttributes :"
+                  << getHandle() << ". Aborting.");
+
+    set("shader_type", shader_type);
+  }
+
+  /**
+   * @brief Get the default shader to use for an object or stage.  This may be
+   * overriding a stage or object config specification.
+   */
+  ObjectInstanceShaderType getShaderType() const {
+    const std::string val =
+        Cr::Utility::String::lowercase(get<std::string>("shader_type"));
+    auto mapIter = ShaderTypeNamesMap.find(val);
+    if (mapIter != ShaderTypeNamesMap.end()) {
+      return mapIter->second;
+    }
+    // unknown is default value
+    return ObjectInstanceShaderType::Unknown;
+  }
 
   /**
    * @brief Get or set the uniform scaling of the instanced object.  Want this
@@ -139,28 +180,6 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
   }
   void setMassScale(double mass_scale) { set("mass_scale", mass_scale); }
 
-  /**
-   * @brief Used for info purposes.  Return a string name corresponding to the
-   * currently specified motion type value;
-   */
-  std::string getCurrMotionTypeName() const {
-    // Must always be valid value
-    esp::physics::MotionType motionType =
-        static_cast<esp::physics::MotionType>(getMotionType());
-    for (const auto& it : MotionTypeNamesMap) {
-      if (it.second == motionType) {
-        return it.first;
-      }
-    }
-    return "unspecified";
-  }
-
-  /**
-   * @brief Used for info purposes.  Return a string name corresponding to the
-   * currently specified shader type value;
-   */
-  std::string getCurrShaderTypeName() const;
-
  protected:
   /**
    * @brief Retrieve a comma-separated informational string about the contents
@@ -168,8 +187,8 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
    */
   std::string getObjectInfoInternal() const override;
   /**
-   * @brief Retrieve a comma-separated string holding the header values for the
-   * info returned for this managed object, type-specific.
+   * @brief Retrieve a comma-separated string holding the header values for
+   * the info returned for this managed object, type-specific.
    */
   std::string getObjectInfoHeaderInternal() const override;
 
@@ -192,10 +211,10 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
 };  // class SceneObjectInstanceAttributes
 
 /**
- * @brief This class describes an instance of an articulated object in a scene -
- * along with its template name, translation from the origin, rotation,
- * motiontype, and other values inherited from SceneObjectInstanceAttributes, it
- * also holds initial joint pose and joint velocities.
+ * @brief This class describes an instance of an articulated object in a scene
+ * - along with its template name, translation from the origin, rotation,
+ * motiontype, and other values inherited from SceneObjectInstanceAttributes,
+ * it also holds initial joint pose and joint velocities.
  */
 class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
  public:
@@ -206,8 +225,8 @@ class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
   explicit SceneAOInstanceAttributes(const std::string& handle);
 
   /**
-   * @brief Articulated Object Instance only. Get or set whether or not base is
-   * fixed.
+   * @brief Articulated Object Instance only. Get or set whether or not base
+   * is fixed.
    */
   bool getFixedBase() const { return get<bool>("fixed_base"); }
   void setFixedBase(bool fixed_base) { set("fixed_base", fixed_base); }
@@ -225,8 +244,8 @@ class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
   }
 
   /**
-   * @brief retrieve a mutable reference to this scene attributes joint initial
-   * pose map
+   * @brief retrieve a mutable reference to this scene attributes joint
+   * initial pose map
    */
   const std::map<std::string, float>& getInitJointPose() const {
     return initJointPose_;
@@ -246,8 +265,8 @@ class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
   }
 
   /**
-   * @brief retrieve a mutable reference to this scene attributes joint initial
-   * velocity map
+   * @brief retrieve a mutable reference to this scene attributes joint
+   * initial velocity map
    */
   const std::map<std::string, float>& getInitJointVelocities() const {
     return initJointVelocities_;
@@ -306,16 +325,41 @@ class SceneAttributes : public AbstractAttributes {
   /**
    * @brief Set a value representing the mechanism used to create this scene
    * instance - should map to an enum value in @InstanceTranslationOriginMap.
+   * This acts as an instance-specific override to the scene-instance-wide
+   * setting.
    */
-  void setTranslationOrigin(int translation_origin) {
+  void setTranslationOrigin(const std::string& translation_origin) {
+    // force to lowercase before setting
+    const std::string transOriginLC =
+        Cr::Utility::String::lowercase(translation_origin);
+    auto mapIter = InstanceTranslationOriginMap.find(transOriginLC);
+
+    ESP_CHECK((mapIter != InstanceTranslationOriginMap.end() ||
+               (transOriginLC == getTranslationOriginName(
+                                     SceneInstanceTranslationOrigin::Unknown))),
+              "Illegal translation_origin value"
+                  << translation_origin
+                  << "attempted to be set in SceneInstanceAttributes :"
+                  << getHandle() << ". Aborting.");
     set("translation_origin", translation_origin);
   }
 
   /**
    * @brief Get the value representing the mechanism used to create this scene
    * instance - should map to an enum value in @InstanceTranslationOriginMap.
+   * This acts as an instance-specific override to the scene-instance-wide
+   * setting.
    */
-  int getTranslationOrigin() const { return get<int>("translation_origin"); }
+  SceneInstanceTranslationOrigin getTranslationOrigin() const {
+    const std::string val =
+        Cr::Utility::String::lowercase(get<std::string>("translation_origin"));
+    auto mapIter = InstanceTranslationOriginMap.find(val);
+    if (mapIter != InstanceTranslationOriginMap.end()) {
+      return mapIter->second;
+    }
+    // Unknown is default value
+    return SceneInstanceTranslationOrigin::Unknown;
+  }
 
   /**
    * @brief Set the name of the template that describes the scene's default
@@ -360,8 +404,9 @@ class SceneAttributes : public AbstractAttributes {
   }
 
   /**
-   * @brief Set the description of the stage placement for this scene instance.
-   * Scene instance will always have only 1 stage instance reference.
+   * @brief Set the description of the stage placement for this scene
+   * instance. Scene instance will always have only 1 stage instance
+   * reference.
    */
   void setStageInstance(SceneObjectInstanceAttributes::ptr _stageInstance) {
     _stageInstance->setID(0);
@@ -429,8 +474,8 @@ class SceneAttributes : public AbstractAttributes {
 
  protected:
   /**
-   * @brief Retrieve a comma-separated string holding the header values for the
-   * info returned for this managed object, type-specific.
+   * @brief Retrieve a comma-separated string holding the header values for
+   * the info returned for this managed object, type-specific.
    */
   std::string getObjectInfoHeaderInternal() const override { return ""; }
 
@@ -446,8 +491,8 @@ class SceneAttributes : public AbstractAttributes {
    */
   std::shared_ptr<Configuration> objInstConfig_{};
   /**
-   * @brief Deque holding all released IDs to consume for object instances when
-   * one is deleted, before using size of objectInstances_ container.
+   * @brief Deque holding all released IDs to consume for object instances
+   * when one is deleted, before using size of objectInstances_ container.
    */
   std::deque<int> availableObjInstIDs_;
 

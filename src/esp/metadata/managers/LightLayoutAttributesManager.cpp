@@ -142,29 +142,25 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
                              });
 
   // set frame of reference for light transformation
-  int posMdleVal = -1;
+  std::string posMdleVal = "global";
   std::string tmpPosMdleVal = "";
   if (io::readMember<std::string>(jsonConfig, "position_model",
                                   tmpPosMdleVal)) {
     std::string strToLookFor = Cr::Utility::String::lowercase(tmpPosMdleVal);
-    if (LightInstanceAttributes::LightPositionNamesMap.count(strToLookFor) !=
-        0u) {
-      posMdleVal = static_cast<int>(
-          LightInstanceAttributes::LightPositionNamesMap.at(strToLookFor));
+    if (attributes::LightPositionNamesMap.count(strToLookFor) != 0u) {
+      posMdleVal = std::move(tmpPosMdleVal);
     } else {
-      ESP_WARNING()
-          << "'position_model' Value in JSON : `" << posMdleVal
-          << "` does not map to a valid "
-             "LightInstanceAttributes::LightPositionNamesMap value, so "
-             "defaulting LightInfo position model to "
-             "esp::gfx::LightPositionModel::Global.";
-      posMdleVal = static_cast<int>(esp::gfx::LightPositionModel::Global);
+      ESP_WARNING() << "'position_model' Value in JSON : `" << posMdleVal
+                    << "` does not map to a valid "
+                       "attributes::LightPositionNamesMap value, so "
+                       "defaulting LightInfo position model to "
+                       "esp::gfx::LightPositionModel::Global.";
     }
     lightAttribs->setPositionModel(posMdleVal);
   }  // position model
 
   // type of light - should map to enum values in esp::gfx::LightType
-  int specifiedTypeVal = -1;
+  std::string specifiedTypeVal = "point";
   std::string tmpTypeVal = "";
   if (io::readMember<std::string>(jsonConfig, "type", tmpTypeVal)) {
     std::string strToLookFor = Cr::Utility::String::lowercase(tmpTypeVal);
@@ -173,26 +169,24 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
       ESP_WARNING()
           << "Type spotlight specified in JSON not currently supported, so "
              "defaulting LightInfo type to esp::gfx::LightType::Point.";
-      specifiedTypeVal = static_cast<int>(esp::gfx::LightType::Point);
-    } else if (LightInstanceAttributes::LightTypeNamesMap.count(strToLookFor) !=
-               0u) {
-      specifiedTypeVal = static_cast<int>(
-          LightInstanceAttributes::LightTypeNamesMap.at(strToLookFor));
+    } else if (attributes::LightTypeNamesMap.count(strToLookFor) != 0u) {
+      specifiedTypeVal = std::move(tmpTypeVal);
     } else {
       ESP_WARNING()
           << "Type Value in JSON : `" << tmpTypeVal
           << "` does not map to a valid "
-             "LightInstanceAttributes::LightTypeNamesMap value, so "
+             "attributes::LightTypeNamesMap value, so "
              "defaulting LightInfo type to esp::gfx::LightType::Point.";
-      specifiedTypeVal = static_cast<int>(esp::gfx::LightType::Point);
     }
     lightAttribs->setType(specifiedTypeVal);
   } else if (posIsSet) {
     // if no value found in attributes, attempt to infer desired type based on
     // whether position or direction were set from JSON.
-    lightAttribs->setType(static_cast<int>(esp::gfx::LightType::Point));
+    lightAttribs->setType(
+        attributes::getLightTypeName(esp::gfx::LightType::Point));
   } else if (dirIsSet) {
-    lightAttribs->setType(static_cast<int>(esp::gfx::LightType::Directional));
+    lightAttribs->setType(
+        attributes::getLightTypeName(esp::gfx::LightType::Directional));
   }  // if nothing set by here, will default to constructor defaults
 
   // if the user specifies a type, we will assume that type overrides any
@@ -200,12 +194,12 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
   // vector provided does not match the type specified, we copy the vector into
   // the appropriate location.
   if ((specifiedTypeVal ==
-       static_cast<int>(esp::gfx::LightType::Directional)) &&
+       attributes::getLightTypeName(esp::gfx::LightType::Directional)) &&
       (posIsSet) && !(dirIsSet)) {
     // position set, direction absent, but directional type explicitly specified
     lightAttribs->setDirection(lightAttribs->getPosition());
   } else if ((specifiedTypeVal ==
-              static_cast<int>(esp::gfx::LightType::Point)) &&
+              attributes::getLightTypeName(esp::gfx::LightType::Point)) &&
              (dirIsSet) && !(posIsSet)) {
     // direction set, position absent, but point type explicitly specified
     lightAttribs->setPosition(lightAttribs->getDirection());
@@ -287,10 +281,9 @@ gfx::LightSetup LightLayoutAttributesManager::createLightSetupFromAttributes(
     } else {
       auto lightInstances = lightLayoutAttributes->getLightInstances();
       for (const LightInstanceAttributes::cptr& lightAttr : lightInstances) {
-        const int type = lightAttr->getType();
-        const gfx::LightType typeEnum = static_cast<gfx::LightType>(type);
+        const gfx::LightType typeEnum = lightAttr->getType();
         const gfx::LightPositionModel posModelEnum =
-            static_cast<gfx::LightPositionModel>(lightAttr->getPositionModel());
+            lightAttr->getPositionModel();
         const Magnum::Color3 color =
             lightAttr->getColor() *
             (lightAttr->getIntensity() > 0 ? posIntensityScale
@@ -307,7 +300,8 @@ gfx::LightSetup LightLayoutAttributesManager::createLightSetupFromAttributes(
             break;
           }
           default: {
-            ESP_DEBUG() << "Enum gfx::LightType with val" << type
+            ESP_DEBUG() << "Enum gfx::LightType with val"
+                        << attributes::getLightTypeName(typeEnum)
                         << "is not supported, so defaulting to "
                            "gfx::LightType::Point";
             lightVector = {lightAttr->getPosition(), 1.0f};

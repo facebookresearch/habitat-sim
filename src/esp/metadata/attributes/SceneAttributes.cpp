@@ -7,13 +7,6 @@
 namespace esp {
 namespace metadata {
 namespace attributes {
-// All keys must be lowercase
-const std::map<std::string, esp::physics::MotionType>
-    SceneObjectInstanceAttributes::MotionTypeNamesMap = {
-        {"static", esp::physics::MotionType::STATIC},
-        {"kinematic", esp::physics::MotionType::KINEMATIC},
-        {"dynamic", esp::physics::MotionType::DYNAMIC},
-};
 
 SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
     const std::string& handle,
@@ -21,10 +14,10 @@ SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
     : AbstractAttributes(type, handle) {
   // default to unknown for object instances, to use attributes-specified
   // defaults
-  setShaderType(static_cast<int>(ObjectInstanceShaderType::Unknown));
+  setShaderType(getShaderTypeName(ObjectInstanceShaderType::Unknown));
 
   // defaults to unknown/undefined
-  setMotionType(static_cast<int>(esp::physics::MotionType::UNDEFINED));
+  setMotionType(getMotionTypeName(esp::physics::MotionType::UNDEFINED));
   // set to no rotation
   set("rotation", Mn::Quaternion(Mn::Math::IdentityInit));
   set("translation", Mn::Vector3());
@@ -32,15 +25,10 @@ SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
   set("is_instance_visible", ID_UNDEFINED);
   // defaults to unknown so that obj instances use scene instance setting
   setTranslationOrigin(
-      static_cast<int>(SceneInstanceTranslationOrigin::Unknown));
+      getTranslationOriginName(SceneInstanceTranslationOrigin::Unknown));
   // set default multiplicative scaling values
   setUniformScale(1.0);
   setMassScale(1.0);
-}
-
-std::string SceneObjectInstanceAttributes::getCurrShaderTypeName() const {
-  int shaderTypeVal = getShaderType();
-  return getShaderTypeName(shaderTypeVal);
 }
 
 std::string SceneObjectInstanceAttributes::getObjectInfoHeaderInternal() const {
@@ -52,11 +40,45 @@ std::string SceneObjectInstanceAttributes::getObjectInfoHeaderInternal() const {
 std::string SceneObjectInstanceAttributes::getObjectInfoInternal() const {
   return Cr::Utility::formatString(
       "{},{},{},{},{},{},{},{}", getAsString("translation"),
-      getAsString("rotation"), getCurrMotionTypeName(), getCurrShaderTypeName(),
-      getAsString("uniform_scale"), getAsString("mass_scale"),
+      getAsString("rotation"), getMotionTypeName(getMotionType()),
+      getShaderTypeName(getShaderType()), getAsString("uniform_scale"),
+      getAsString("mass_scale"),
       getTranslationOriginName(getTranslationOrigin()),
       getSceneObjInstanceInfoInternal());
 }  // SceneObjectInstanceAttributes::getObjectInfoInternal()
+
+/**
+ * @brief Set the motion type for the object.  Ignored for stage instances.
+ */
+void SceneObjectInstanceAttributes::setMotionType(
+    const std::string& motionType) {
+  // force to lowercase before setting
+  const std::string motionTypeLC = Cr::Utility::String::lowercase(motionType);
+  auto mapIter = MotionTypeNamesMap.find(motionTypeLC);
+
+  ESP_CHECK(
+      (mapIter != MotionTypeNamesMap.end() ||
+       (motionType == getMotionTypeName(esp::physics::MotionType::UNDEFINED))),
+      "Illegal motion_type value"
+          << motionType
+          << "attempted to be set in SceneObjectInstanceAttributes :"
+          << getHandle() << ". Aborting.");
+  set("motion_type", motionType);
+}
+
+/**
+ * @brief Get the motion type for the object.  Ignored for stage instances.
+ */
+esp::physics::MotionType SceneObjectInstanceAttributes::getMotionType() const {
+  const std::string val =
+      Cr::Utility::String::lowercase(get<std::string>("motion_type"));
+  auto mapIter = MotionTypeNamesMap.find(val);
+  if (mapIter != MotionTypeNamesMap.end()) {
+    return mapIter->second;
+  }
+  // global is default value
+  return esp::physics::MotionType::UNDEFINED;
+}
 
 SceneAOInstanceAttributes::SceneAOInstanceAttributes(const std::string& handle)
     : SceneObjectInstanceAttributes(handle, "SceneAOInstanceAttributes") {
@@ -106,7 +128,7 @@ SceneAttributes::SceneAttributes(const std::string& handle)
   setLightingHandle(NO_LIGHT_KEY);
   // defaults to asset local
   setTranslationOrigin(
-      static_cast<int>(SceneInstanceTranslationOrigin::AssetLocal));
+      getTranslationOriginName(SceneInstanceTranslationOrigin::AssetLocal));
   // get refs to internal subconfigs for object and ao instances
   objInstConfig_ = editSubconfig<Configuration>("object_instances");
   artObjInstConfig_ = editSubconfig<Configuration>("ao_instances");

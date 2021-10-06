@@ -194,13 +194,34 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * @brief Set the default shader to use for an object or stage.  This may be
    * overridden by a scene instance specification.
    */
-  void setShaderType(int shader_type) { set("shader_type", shader_type); }
+  void setShaderType(const std::string& shader_type) {
+    // force to lowercase before setting
+    const std::string shaderTypeLC =
+        Cr::Utility::String::lowercase(shader_type);
+    auto mapIter = ShaderTypeNamesMap.find(shaderTypeLC);
+    ESP_CHECK(mapIter != ShaderTypeNamesMap.end(),
+              "Illegal shader_type value"
+                  << shader_type
+                  << "attempted to be set in AbstractObjectAttributes:"
+                  << getHandle() << ". Aborting.");
+    set("shader_type", shader_type);
+  }
 
   /**
    * @brief Get the default shader to use for an object or stage.  This may be
    * overridden by a scene instance specification.
    */
-  int getShaderType() const { return get<int>("shader_type"); }
+  ObjectInstanceShaderType getShaderType() const {
+    const std::string val =
+        Cr::Utility::String::lowercase(get<std::string>("shader_type"));
+    auto mapIter = ShaderTypeNamesMap.find(val);
+    if (mapIter != ShaderTypeNamesMap.end()) {
+      return mapIter->second;
+    }
+    // Unknown is default value - should never be returned since setter verifies
+    // value
+    return ObjectInstanceShaderType::Unknown;
+  }
 
   /**
    * @brief If true then use flat shading regardless of what shader-type is
@@ -213,15 +234,6 @@ class AbstractObjectAttributes : public AbstractAttributes {
 
   bool getIsDirty() const { return get<bool>("__isDirty"); }
   void setIsClean() { set("__isDirty", false); }
-
-  /**
-   * @brief Used for info purposes.  Return a string name corresponding to the
-   * currently specified shader type value;
-   */
-  std::string getCurrShaderTypeName() const {
-    int shaderTypeVal = getShaderType();
-    return getShaderTypeName(shaderTypeVal);
-  }
 
  protected:
   /**

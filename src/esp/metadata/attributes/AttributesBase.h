@@ -9,8 +9,12 @@
 #include <deque>
 #include "esp/core/Configuration.h"
 #include "esp/core/managedContainers/AbstractManagedObject.h"
+#include "esp/gfx/LightSetup.h"
 
 namespace esp {
+namespace physics {
+enum class MotionType;
+}
 namespace metadata {
 namespace attributes {
 
@@ -57,10 +61,10 @@ enum class ObjectInstanceShaderType {
 const extern std::map<std::string, ObjectInstanceShaderType> ShaderTypeNamesMap;
 
 /**
- * @brief This method will convert an int value to the string key it maps to in
- * the ShaderTypeNamesMap
+ * @brief This method will convert a @ref ObjectInstanceShaderType value to the
+ * string key that maps to it in the ShaderTypeNamesMap
  */
-std::string getShaderTypeName(int shaderTypeVal);
+std::string getShaderTypeName(ObjectInstanceShaderType shaderTypeVal);
 
 /**
  * @brief This enum class describes whether an object instance position is
@@ -75,7 +79,7 @@ enum class SceneInstanceTranslationOrigin {
    * specified scene instance default; in the case of a scene instance, this
    * means do not correct for COM.
    */
-  Unknown = -1,
+  Unknown = ID_UNDEFINED,
   /**
    * @brief Indicates scene instance objects were placed without knowledge of
    * their COM location, and so need to be corrected when placed in scene in
@@ -105,10 +109,53 @@ enum class SceneInstanceTranslationOrigin {
 const extern std::map<std::string, SceneInstanceTranslationOrigin>
     InstanceTranslationOriginMap;
 /**
- * @brief This method will convert an int value to the string key it maps to in
- * the InstanceTranslationOriginMap
+ * @brief This method will convert a @ref SceneInstanceTranslationOrigin value
+ * to the string key that maps to it in the InstanceTranslationOriginMap
  */
-std::string getTranslationOriginName(int translationOrigin);
+std::string getTranslationOriginName(
+    SceneInstanceTranslationOrigin translationOrigin);
+
+/**
+ * @brief Constant static map to provide mappings from string tags to @ref
+ * esp::gfx::LightType values.  This will be used to map values set in json
+ * for light type to @ref esp::gfx::LightType.  Keys must be lowercase - will
+ * support any case values in JSON.
+ */
+const extern std::map<std::string, esp::gfx::LightType> LightTypeNamesMap;
+/**
+ * @brief This method will convert a @ref esp::gfx::LightType value to the
+ * string key it maps to in the LightTypeNamesMap
+ */
+std::string getLightTypeName(esp::gfx::LightType lightTypeEnum);
+
+/**
+ * @brief Constant static map to provide mappings from string tags to @ref
+ * esp::gfx::LightPositionModel values.  This will be used to map values set
+ * in json to specify what translations are measured from for a lighting
+ * instance.
+ */
+const extern std::map<std::string, esp::gfx::LightPositionModel>
+    LightPositionNamesMap;
+/**
+ * @brief This method will convert a @ref esp::gfx::LightPositionModel value to
+ * the string key it maps to in the LightPositionNamesMap
+ */
+std::string getLightPositionModelName(
+    esp::gfx::LightPositionModel lightPositionEnum);
+
+/**
+ * @brief Constant static map to provide mappings from string tags to @ref
+ * esp::physics::MotionType values.  This will be used to map values set in
+ * json for mesh type to @ref esp::physics::MotionType.  Keys must be
+ * lowercase.
+ */
+const extern std::map<std::string, esp::physics::MotionType> MotionTypeNamesMap;
+
+/**
+ * @brief This method will convert a @ref esp::gfx::LightPositionModel value to
+ * the string key it maps to in the LightPositionNamesMap
+ */
+std::string getMotionTypeName(esp::physics::MotionType motionTypeEnum);
 
 /**
  * @brief Base class for all implemented attributes.  Inherits from @ref
@@ -218,6 +265,7 @@ class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
    * of this managed object.
    */
   std::string getObjectInfo() const override {
+    ESP_WARNING() << "Building " << getClassKey() << ":";
     return Cr::Utility::formatString("{},{},{}", getSimplifiedHandle(),
                                      getAsString("ID"),
                                      getObjectInfoInternal());

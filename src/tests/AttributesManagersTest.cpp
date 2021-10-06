@@ -56,19 +56,25 @@ struct AttributesManagersTest : Cr::TestSuite::Tester {
    * @tparam T Class of attributes manager
    * @tparam U Class of attributes
    * @param mgr the Attributes Manager being tested
+   * @param jsonString the json to build the template from
+   * @param tmpltName The name to give the template
    * @return attributes template built from JSON parsed from string
    */
   template <typename T, typename U>
   std::shared_ptr<U> testBuildAttributesFromJSONString(
       std::shared_ptr<T> mgr,
-      const std::string& jsonString);
+      const std::string& jsonString,
+      const std::string& tmpltName = "new_template_from_json");
 
   /**
    * @brief remove added template built from JSON string.
+   * @param tmpltName name of template to remove.
    * @param mgr the Attributes Manager being tested
    */
   template <typename T>
-  void testRemoveAttributesBuiltJSONString(std::shared_ptr<T> mgr);
+  void testRemoveAttributesBuiltJSONString(
+      std::shared_ptr<T> mgr,
+      const std::string& tmpltName = "new_template_from_json");
 
   /**
    * @brief Test creation, copying and removal of templates for Object, Physics
@@ -237,15 +243,15 @@ AttributesManagersTest::AttributesManagersTest() {
 template <typename T, typename U>
 std::shared_ptr<U> AttributesManagersTest::testBuildAttributesFromJSONString(
     std::shared_ptr<T> mgr,
-    const std::string& jsonString) {
-  // create JSON document
+    const std::string& jsonString,
+    const std::string& tmpltName) {  // create JSON document
   try {
     esp::io::JsonDocument tmp = esp::io::parseJsonString(jsonString);
     // io::JsonGenericValue :
     const esp::io::JsonGenericValue jsonDoc = tmp.GetObject();
     // create an empty template
     std::shared_ptr<U> attrTemplate1 =
-        mgr->buildManagedObjectFromDoc("new_template_from_json", jsonDoc);
+        mgr->buildManagedObjectFromDoc(tmpltName, jsonDoc);
 
     return attrTemplate1;
   } catch (...) {
@@ -258,8 +264,11 @@ std::shared_ptr<U> AttributesManagersTest::testBuildAttributesFromJSONString(
 
 template <typename T>
 void AttributesManagersTest::testRemoveAttributesBuiltJSONString(
-    std::shared_ptr<T> mgr) {
-  mgr->removeObjectByHandle("new_template_from_json");
+    std::shared_ptr<T> mgr,
+    const std::string& tmpltName) {
+  if (mgr->getObjectLibHasHandle(tmpltName)) {
+    mgr->removeObjectByHandle(tmpltName);
+  }
 }
 
 /**
@@ -745,9 +754,9 @@ void AttributesManagersTest::testLightJSONLoad() {
   CORRADE_COMPARE(lightAttr->getColor(), Magnum::Vector3(2, 1, -1));
 
   CORRADE_COMPARE(lightAttr->getIntensity(), -0.1);
-  CORRADE_COMPARE(lightAttr->getType(),
+  CORRADE_COMPARE(static_cast<int>(lightAttr->getType()),
                   static_cast<int>(esp::gfx::LightType::Directional));
-  CORRADE_COMPARE(lightAttr->getPositionModel(),
+  CORRADE_COMPARE(static_cast<int>(lightAttr->getPositionModel()),
                   static_cast<int>(esp::gfx::LightPositionModel::Camera));
   CORRADE_COMPARE(lightAttr->getInnerConeAngle(), -0.75_radf);
   CORRADE_COMPARE(lightAttr->getOuterConeAngle(), -1.57_radf);
@@ -874,14 +883,14 @@ void AttributesManagersTest::testSceneInstanceJSONLoad() {
       testBuildAttributesFromJSONString<AttrMgrs::SceneAttributesManager,
                                         Attrs::SceneAttributes>(
           sceneAttributesManager_, jsonString);
-
   // verify exists
   CORRADE_VERIFY(sceneAttr);
 
   // match values set in test JSON
   CORRADE_COMPARE(
-      sceneAttr->getTranslationOrigin(),
+      static_cast<int>(sceneAttr->getTranslationOrigin()),
       static_cast<int>(Attrs::SceneInstanceTranslationOrigin::AssetLocal));
+
   CORRADE_COMPARE(sceneAttr->getLightingHandle(),
                   "test_lighting_configuration");
   CORRADE_COMPARE(sceneAttr->getNavmeshHandle(), "test_navmesh_path1");
@@ -905,7 +914,7 @@ void AttributesManagersTest::testSceneInstanceJSONLoad() {
                             Magnum::Vector3(1.2, 3.4, 5.6),
                             Magnum::Quaternion({0.5f, 0.6f, 0.7f}, 0.4f));
   // make sure that is not default value "flat"
-  CORRADE_COMPARE(stageInstance->getShaderType(),
+  CORRADE_COMPARE(static_cast<int>(stageInstance->getShaderType()),
                   static_cast<int>(Attrs::ObjectInstanceShaderType::PBR));
 
   // verify objects
@@ -913,12 +922,12 @@ void AttributesManagersTest::testSceneInstanceJSONLoad() {
   CORRADE_COMPARE(objectInstanceList.size(), 2);
   auto objInstance = objectInstanceList[0];
   CORRADE_COMPARE(objInstance->getHandle(), "test_object_template0");
-  CORRADE_COMPARE(objInstance->getTranslationOrigin(),
+  CORRADE_COMPARE(static_cast<int>(objInstance->getTranslationOrigin()),
                   static_cast<int>(Attrs::SceneInstanceTranslationOrigin::COM));
   CORRADE_COMPARE(objInstance->getTranslation(), Magnum::Vector3(0, 1, 2));
   CORRADE_COMPARE(objInstance->getRotation(),
                   Magnum::Quaternion({0.3f, 0.4f, 0.5f}, 0.2f));
-  CORRADE_COMPARE(objInstance->getMotionType(),
+  CORRADE_COMPARE(static_cast<int>(objInstance->getMotionType()),
                   static_cast<int>(esp::physics::MotionType::KINEMATIC));
 
   // test object 0 instance attributes-level user config vals
@@ -932,7 +941,7 @@ void AttributesManagersTest::testSceneInstanceJSONLoad() {
   CORRADE_COMPARE(objInstance->getTranslation(), Magnum::Vector3(0, -1, -2));
   CORRADE_COMPARE(objInstance->getRotation(),
                   Magnum::Quaternion({0.6f, 0.7f, 0.8f}, 0.5f));
-  CORRADE_COMPARE(objInstance->getMotionType(),
+  CORRADE_COMPARE(static_cast<int>(objInstance->getMotionType()),
                   static_cast<int>(esp::physics::MotionType::DYNAMIC));
 
   // test object 0 instance attributes-level user config vals
@@ -946,13 +955,13 @@ void AttributesManagersTest::testSceneInstanceJSONLoad() {
   CORRADE_COMPARE(artObjInstances.size(), 2);
   auto artObjInstance = artObjInstances[0];
   CORRADE_COMPARE(artObjInstance->getHandle(), "test_urdf_template0");
-  CORRADE_COMPARE(artObjInstance->getTranslationOrigin(),
+  CORRADE_COMPARE(static_cast<int>(artObjInstance->getTranslationOrigin()),
                   static_cast<int>(Attrs::SceneInstanceTranslationOrigin::COM));
   CORRADE_COMPARE(artObjInstance->getFixedBase(), false);
   CORRADE_VERIFY(artObjInstance->getAutoClampJointLimits());
 
   CORRADE_COMPARE(artObjInstance->getTranslation(), Magnum::Vector3(5, 4, 5));
-  CORRADE_COMPARE(artObjInstance->getMotionType(),
+  CORRADE_COMPARE(static_cast<int>(artObjInstance->getMotionType()),
                   static_cast<int>(esp::physics::MotionType::DYNAMIC));
   // verify init join pose
   const auto& initJointPoseMap = artObjInstance->getInitJointPose();
@@ -990,14 +999,13 @@ void AttributesManagersTest::testSceneInstanceJSONLoad() {
                   Magnum::Vector3(0.1f, 0.2f, 0.3f));
   CORRADE_COMPARE(artObjNestedConfig->template get<Magnum::Vector3>("rotation"),
                   Magnum::Vector3(0.5f, 0.3f, 0.1f));
-  ESP_WARNING() << "Articulated Object test 3";
 
   artObjInstance = artObjInstances[1];
   CORRADE_COMPARE(artObjInstance->getHandle(), "test_urdf_template1");
   CORRADE_VERIFY(artObjInstance->getFixedBase());
   CORRADE_VERIFY(artObjInstance->getAutoClampJointLimits());
   CORRADE_COMPARE(artObjInstance->getTranslation(), Magnum::Vector3(3, 2, 1));
-  CORRADE_COMPARE(artObjInstance->getMotionType(),
+  CORRADE_COMPARE(static_cast<int>(artObjInstance->getMotionType()),
                   static_cast<int>(esp::physics::MotionType::KINEMATIC));
   // test test_urdf_template0 ao instance attributes-level user config vals
   testUserDefinedConfigVals(artObjInstance->getUserConfiguration(),
@@ -1069,7 +1077,7 @@ void AttributesManagersTest::testStageJSONLoad() {
   // stage-specific attributes
   CORRADE_COMPARE(stageAttr->getGravity(), Magnum::Vector3(9, 8, 7));
   // make sure that is not default value "flat"
-  CORRADE_COMPARE(stageAttr->getShaderType(),
+  CORRADE_COMPARE(static_cast<int>(stageAttr->getShaderType()),
                   static_cast<int>(Attrs::ObjectInstanceShaderType::Material));
   CORRADE_COMPARE(stageAttr->getOrigin(), Magnum::Vector3(1, 2, 3));
   CORRADE_COMPARE(stageAttr->getSemanticAssetHandle(),
@@ -1145,7 +1153,7 @@ void AttributesManagersTest::testObjectJSONLoad() {
   CORRADE_COMPARE(objAttr->getSemanticId(), 7);
   // object-specific attributes
   CORRADE_COMPARE(objAttr->getMass(), 9);
-  CORRADE_COMPARE(objAttr->getShaderType(),
+  CORRADE_COMPARE(static_cast<int>(objAttr->getShaderType()),
                   static_cast<int>(Attrs::ObjectInstanceShaderType::Phong));
   CORRADE_VERIFY(objAttr->getBoundingBoxCollisions());
   CORRADE_VERIFY(objAttr->getJoinCollisionMeshes());

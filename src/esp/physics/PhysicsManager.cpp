@@ -109,11 +109,10 @@ int PhysicsManager::addObjectInstance(
     return 0;
   }
   // set shader type to use for stage
-  int objShaderType = objInstAttributes->getShaderType();
+  const auto objShaderType = objInstAttributes->getShaderType();
   if (objShaderType !=
-      static_cast<int>(
-          metadata::attributes::ObjectInstanceShaderType::Unknown)) {
-    objAttributes->setShaderType(objShaderType);
+      metadata::attributes::ObjectInstanceShaderType::Unknown) {
+    objAttributes->setShaderType(getShaderTypeName(objShaderType));
   }
   int objID = 0;
   if (simulator_ != nullptr) {

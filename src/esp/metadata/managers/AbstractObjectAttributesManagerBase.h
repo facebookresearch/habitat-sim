@@ -290,11 +290,12 @@ auto AbstractObjectAttributesManager<T, Access>::
 
   // set attributes shader type to use.  This may be overridden by a scene
   // instance specification.
-  int shaderTypeVal = getShaderTypeFromJsonDoc(jsonDoc);
+  const std::string shaderTypeVal = getShaderTypeFromJsonDoc(jsonDoc);
   // if a known shader type val is specified in json, set that value for the
-  // attributes, overriding constructor defaults.
+  // attributes, overriding constructor defaults.  Do not overwrite anything for
+  // unknown
   if (shaderTypeVal !=
-      static_cast<int>(attributes::ObjectInstanceShaderType::Unknown)) {
+      getShaderTypeName(attributes::ObjectInstanceShaderType::Unknown)) {
     attributes->setShaderType(shaderTypeVal);
   }
 
