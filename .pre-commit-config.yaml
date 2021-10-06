@@ -107,6 +107,8 @@ repos:
     hooks:
     -   id: clang-format
         types_or: [c++, c, c#, cuda] # also run on CUDA
+        additional_dependencies:
+        - pip>=21
 
 -   repo: https://github.com/cheshirekow/cmake-format-precommit
     rev: v0.6.13
