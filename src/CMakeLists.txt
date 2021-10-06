@@ -206,3 +206,8 @@ if(BUILD_GUI_VIEWERS)
   message("Building GUI viewer")
   add_subdirectory(utils/viewer)
 endif()
+
+IF(APPLE)
+# Fix linking on 10.14+. See https://stackoverflow.com/questions/54068035
+LINK_DIRECTORIES(/usr/local/lib)
+ENDIF()
