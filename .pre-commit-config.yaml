@@ -49,7 +49,7 @@ repos:
         exclude: docs/
 
 -   repo: https://github.com/ambv/black
-    rev: 21.7b0
+    rev: 21.9b0
     hooks:
     - id: black
       exclude: ^examples/tutorials/(nb_python|colabs)
@@ -82,7 +82,7 @@ repos:
         - attrs
 
 -   repo: https://github.com/seddonym/import-linter
-    rev: v1.2.4
+    rev: v1.2.6
     hooks:
     -   id: import-linter
 
@@ -92,7 +92,7 @@ repos:
     -   id: nbstripout
 
 -   repo: https://github.com/mwouts/jupytext
-    rev: v1.11.4
+    rev: v1.13.0
     hooks:
     -   id: jupytext
         files: '^examples/tutorials/(colabs|nb_python)/(.*\.py|.*\.ipynb)$'
@@ -102,15 +102,11 @@ repos:
             - black
             - isort
 
--   repo: local
+-   repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: fdd6cd7821ce22929625f134bc97488ed699e256 # frozen: 12.0.1
     hooks:
-    - id: clang-format
-      name: Run clang-format
-      exclude: src/deps
-      entry: clang-format -i -style=file
-      types: [text]
-      files: '.*\.(cpp|h|hpp|cu|cuh)$'
-      language: system
+    -   id: clang-format
+        types_or: [c++, c, c#, cuda] # also run on CUDA
 
 -   repo: https://github.com/cheshirekow/cmake-format-precommit
     rev: v0.6.13
@@ -136,6 +132,6 @@ repos:
     -   id: shellcheck
 
 -   repo: https://github.com/AleksaC/circleci-cli-py
-    rev: v0.1.15824
+    rev: v0.1.15973
     hooks:
     -   id: circle-ci-validator
