@@ -1413,8 +1413,8 @@ void Viewer::drawEvent() {
     std::string modeText =
         "Mouse Interaction Mode: " + mouseModeNames.at(mouseInteractionMode);
     ImGui::Text("%s", modeText.c_str());
+    ImGui::End();
   }
-  ImGui::End();
 
   /* Set appropriate states. If you only draw ImGui, it is sufficient to
      just enable blending and scissor test in the constructor. */
