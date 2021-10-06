@@ -32,8 +32,8 @@ using Attrs::ObjectAttributes;
 using Attrs::PhysicsManagerAttributes;
 using Attrs::StageAttributes;
 using Attrs::UVSpherePrimitiveAttributes;
-using esp::core::AbstractFileBasedManagedObject;
-using esp::core::AbstractManagedObject;
+using esp::core::managedContainers::AbstractFileBasedManagedObject;
+using esp::core::managedContainers::AbstractManagedObject;
 
 namespace esp {
 namespace metadata {
@@ -45,12 +45,12 @@ void initAttributesBindings(py::module& m) {
       m, "AbstractManagedObject");
   // ==== AbstractFileBasedManagedObject ====
   // NOLINTNEXTLINE(bugprone-unused-raii)
-  py::class_<AbstractFileBasedManagedObject, esp::core::AbstractManagedObject,
+  py::class_<AbstractFileBasedManagedObject, AbstractManagedObject,
              AbstractFileBasedManagedObject::ptr>(
       m, "AbstractFileBasedManagedObject");
 
   // ==== AbstractAttributes ====
-  py::class_<AbstractAttributes, esp::core::AbstractFileBasedManagedObject,
+  py::class_<AbstractAttributes, AbstractFileBasedManagedObject,
              esp::core::config::Configuration, AbstractAttributes::ptr>(
       m, "AbstractAttributes")
       .def(py::init(

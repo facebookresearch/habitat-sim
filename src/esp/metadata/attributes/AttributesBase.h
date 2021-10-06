@@ -30,8 +30,9 @@ const extern std::map<std::string, esp::assets::AssetType> AssetTypeNamesMap;
  * esp::core::AbstractFileBasedManagedObject so the attributes can be managed by
  * a @ref esp::core::ManagedContainer.
  */
-class AbstractAttributes : public esp::core::AbstractFileBasedManagedObject,
-                           public esp::core::config::Configuration {
+class AbstractAttributes
+    : public esp::core::managedContainers::AbstractFileBasedManagedObject,
+      public esp::core::config::Configuration {
  public:
   AbstractAttributes(const std::string& attributesClassKey,
                      const std::string& handle);

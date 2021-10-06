@@ -34,6 +34,7 @@ using Attrs::ObjectAttributes;
 using Attrs::PhysicsManagerAttributes;
 using Attrs::StageAttributes;
 using Attrs::UVSpherePrimitiveAttributes;
+using esp::core::managedContainers::ManagedObjectAccess;
 
 namespace esp {
 namespace metadata {
@@ -48,7 +49,7 @@ namespace managers {
  * @param classStrPrefix string prefix for python class name specification.
  */
 
-template <class T, core::ManagedObjectAccess Access>
+template <class T, ManagedObjectAccess Access>
 void declareBaseAttributesManager(py::module& m,
                                   const std::string& attrType,
                                   const std::string& classStrPrefix) {
@@ -267,12 +268,12 @@ void initAttributesManagersBindings(py::module& m) {
 
   // ==== Primitive Asset Attributes Template manager ====
   declareBaseAttributesManager<AbstractPrimitiveAttributes,
-                               core::ManagedObjectAccess::Copy>(
-      m, "Primitive Asset", "BaseAsset");
-  py::class_<AssetAttributesManager,
-             AttributesManager<AbstractPrimitiveAttributes,
-                               core::ManagedObjectAccess::Copy>,
-             AssetAttributesManager::ptr>(m, "AssetAttributesManager")
+                               ManagedObjectAccess::Copy>(m, "Primitive Asset",
+                                                          "BaseAsset");
+  py::class_<
+      AssetAttributesManager,
+      AttributesManager<AbstractPrimitiveAttributes, ManagedObjectAccess::Copy>,
+      AssetAttributesManager::ptr>(m, "AssetAttributesManager")
       // AssetAttributesMangaer-specific bindings
       // return appropriately cast capsule templates
       .def("get_default_capsule_template",
@@ -352,22 +353,20 @@ void initAttributesManagersBindings(py::module& m) {
 
   // ==== Light Layout Attributes Template manager ====
   declareBaseAttributesManager<LightLayoutAttributes,
-                               core::ManagedObjectAccess::Copy>(
-      m, "LightLayout", "BaseLightLayout");
+                               ManagedObjectAccess::Copy>(m, "LightLayout",
+                                                          "BaseLightLayout");
   // NOLINTNEXTLINE(bugprone-unused-raii)
   py::class_<
       LightLayoutAttributesManager,
-      AttributesManager<LightLayoutAttributes, core::ManagedObjectAccess::Copy>,
+      AttributesManager<LightLayoutAttributes, ManagedObjectAccess::Copy>,
       LightLayoutAttributesManager::ptr>(m, "LightLayoutAttributesManager");
   // ==== Object Attributes Template manager ====
-  declareBaseAttributesManager<ObjectAttributes,
-                               core::ManagedObjectAccess::Copy>(
+  declareBaseAttributesManager<ObjectAttributes, ManagedObjectAccess::Copy>(
       m, "ObjectAttributes", "BaseObject");
   // NOLINTNEXTLINE(bugprone-unused-raii)
-  py::class_<
-      ObjectAttributesManager,
-      AttributesManager<ObjectAttributes, core::ManagedObjectAccess::Copy>,
-      ObjectAttributesManager::ptr>(m, "ObjectAttributesManager")
+  py::class_<ObjectAttributesManager,
+             AttributesManager<ObjectAttributes, ManagedObjectAccess::Copy>,
+             ObjectAttributesManager::ptr>(m, "ObjectAttributesManager")
 
       // ObjectAttributesManager-specific bindings
       .def("load_object_configs",
@@ -418,25 +417,23 @@ void initAttributesManagersBindings(py::module& m) {
           template chosen from the existing ObjectAttributes templates being managed.)");
 
   // ==== Stage Attributes Template manager ====
-  declareBaseAttributesManager<StageAttributes,
-                               core::ManagedObjectAccess::Copy>(
+  declareBaseAttributesManager<StageAttributes, ManagedObjectAccess::Copy>(
       m, "StageAttributes", "BaseStage");
   // NOLINTNEXTLINE(bugprone-unused-raii)
-  py::class_<
-      StageAttributesManager,
-      AttributesManager<StageAttributes, core::ManagedObjectAccess::Copy>,
-      StageAttributesManager::ptr>(m, "StageAttributesManager");
+  py::class_<StageAttributesManager,
+             AttributesManager<StageAttributes, ManagedObjectAccess::Copy>,
+             StageAttributesManager::ptr>(m, "StageAttributesManager");
 
   // ==== Physics World/Manager Template manager ====
 
   declareBaseAttributesManager<PhysicsManagerAttributes,
-                               core::ManagedObjectAccess::Copy>(
+                               ManagedObjectAccess::Copy>(
       m, "PhysicsAttributes", "BasePhysics");
   // NOLINTNEXTLINE(bugprone-unused-raii)
-  py::class_<PhysicsAttributesManager,
-             AttributesManager<PhysicsManagerAttributes,
-                               core::ManagedObjectAccess::Copy>,
-             PhysicsAttributesManager::ptr>(m, "PhysicsAttributesManager");
+  py::class_<
+      PhysicsAttributesManager,
+      AttributesManager<PhysicsManagerAttributes, ManagedObjectAccess::Copy>,
+      PhysicsAttributesManager::ptr>(m, "PhysicsAttributesManager");
 
 }  // initAttributesManagersBindings
 }  // namespace managers

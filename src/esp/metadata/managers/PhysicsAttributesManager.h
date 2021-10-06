@@ -17,13 +17,16 @@ namespace Cr = Corrade;
 namespace esp {
 namespace metadata {
 namespace managers {
+using core::managedContainers::ManagedFileBasedContainer;
+using core::managedContainers::ManagedObjectAccess;
+
 class PhysicsAttributesManager
     : public AttributesManager<attributes::PhysicsManagerAttributes,
-                               core::ManagedObjectAccess::Copy> {
+                               ManagedObjectAccess::Copy> {
  public:
   PhysicsAttributesManager()
       : AttributesManager<attributes::PhysicsManagerAttributes,
-                          core::ManagedObjectAccess::Copy>::
+                          ManagedObjectAccess::Copy>::
             AttributesManager("Physics Manager", "physics_config.json") {
     this->copyConstructorMap_["PhysicsManagerAttributes"] =
         &PhysicsAttributesManager::createObjectCopy<

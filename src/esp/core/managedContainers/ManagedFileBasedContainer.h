@@ -23,6 +23,8 @@ namespace Cr = Corrade;
 
 namespace esp {
 namespace core {
+
+namespace managedContainers {
 /**
  * @brief Class template defining file-io-based responsibilities and
  * functionality for managing @ref esp::core::AbstractFileBasedManagedObject
@@ -164,7 +166,8 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
     if (fileDirectory.empty()) {
       fileDirectory = obj->getFileDirectory();
     }
-    // construct filename candidate from given filename
+    // construct filename candidate from given fully qualified filename
+    // This will make sure written file will have appropriate extension
     const std::string fileName =
         FileUtil::splitExtension(
             FileUtil::splitExtension(FileUtil::filename(fullFilename)).first)
@@ -383,7 +386,7 @@ bool ManagedFileBasedContainer<T, Access>::saveManagedObjectToFile(
   }
   return this->saveManagedObjectToFileInternal(obj, fileName, fileDirectory);
 }  // ManagedFileBasedContainer<T, Access>::saveManagedObjectToFile
-
+}  // namespace managedContainers
 }  // namespace core
 }  // namespace esp
 #endif  // ESP_CORE_MANAGEDFILEBASEDCONTAINER_H_
