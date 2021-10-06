@@ -419,7 +419,8 @@ ResourceManager::createStageAssetInfosFromAttributes(
       virtualUnitToMeters,                      // virtualUnitToMeters
       stageAttributes->getForceFlatShading()    // forceFlatShading
   };
-  renderInfo.shaderTypeToUse = stageAttributes->getShaderType();
+  renderInfo.shaderTypeToUse =
+      static_cast<int>(stageAttributes->getShaderType());
   resMap["render"] = renderInfo;
   if (createCollisionInfo) {
     // create collision asset info if requested
@@ -809,7 +810,8 @@ bool ResourceManager::loadObjectMeshDataFromFile(
   if (!filename.empty()) {
     AssetInfo meshInfo{AssetType::UNKNOWN, filename};
     meshInfo.forceFlatShading = forceFlatShading;
-    meshInfo.shaderTypeToUse = objectAttributes->getShaderType();
+    meshInfo.shaderTypeToUse =
+        static_cast<int>(objectAttributes->getShaderType());
     meshInfo.frame = buildFrameFromAttributes(objectAttributes, {0, 0, 0});
     success = loadRenderAsset(meshInfo);
     if (!success) {
@@ -1733,8 +1735,7 @@ void ResourceManager::loadMaterials(Importer& importer,
 
     } else {
       ESP_ERROR() << "Unhandled ShaderType specification :"
-                  << metadata::attributes::getShaderTypeName(
-                         static_cast<int>(shaderTypeToUse))
+                  << metadata::attributes::getShaderTypeName(shaderTypeToUse)
                   << "and/or unmanaged type specified in material @ idx:"
                   << iMaterial << "for asset" << assetName << "so skipping.";
       continue;
@@ -1969,8 +1970,7 @@ ObjectInstanceShaderType ResourceManager::getMaterialShaderType(
   ESP_WARNING() << "Shadertype being used for file :"
                 << Cr::Utility::Directory::filename(info.filepath)
                 << "| shadertype name :"
-                << metadata::attributes::getShaderTypeName(
-                       static_cast<int>(infoSpecShaderType));
+                << metadata::attributes::getShaderTypeName(infoSpecShaderType);
   return infoSpecShaderType;
 }  // ResourceManager::getMaterialShaderType
 
