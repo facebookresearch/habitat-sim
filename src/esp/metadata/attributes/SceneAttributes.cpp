@@ -55,11 +55,15 @@ void SceneObjectInstanceAttributes::setMotionType(
   // force to lowercase before setting
   const std::string motionTypeLC = Cr::Utility::String::lowercase(motionType);
   auto mapIter = MotionTypeNamesMap.find(motionTypeLC);
-  if (mapIter != MotionTypeNamesMap.end()) {
-    set("motion_type", motionType);
-  } else {
-    set("motion_type", getMotionTypeName(esp::physics::MotionType::UNDEFINED));
-  }
+
+  ESP_CHECK(
+      (mapIter != MotionTypeNamesMap.end() ||
+       (motionType == getMotionTypeName(esp::physics::MotionType::UNDEFINED))),
+      "Illegal motion_type value"
+          << motionType
+          << "attempted to be set in SceneObjectInstanceAttributes :"
+          << getHandle() << ". Aborting.");
+  set("motion_type", motionType);
 }
 
 /**
