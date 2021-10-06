@@ -1933,7 +1933,7 @@ Mn::Trade::MaterialData ResourceManager::createUniversalMaterial(
         (!phongMaterial.hasAttribute(MaterialAttribute::TextureMatrix))) {
       arrayAppend(newAttributes, {MaterialAttribute::TextureMatrix,
                                   phongMaterial.commonTextureMatrix()});
-      setTexMatrix = true;
+      // setTexMatrix = true;
     }
 
     // base texture
