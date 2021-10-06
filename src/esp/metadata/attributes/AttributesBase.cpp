@@ -40,6 +40,9 @@ const std::map<std::string, esp::physics::MotionType> MotionTypeNamesMap = {
 };
 
 std::string getLightTypeName(esp::gfx::LightType lightTypeEnum) {
+  // this verifies that enum value being checked is supported by string-keyed
+  // map. The values below should be the minimum and maximum enums supported by
+  // LightTypeNamesMap
   if (lightTypeEnum < esp::gfx::LightType::Point ||
       lightTypeEnum > esp::gfx::LightType::Spot) {
     return "point";
@@ -55,6 +58,9 @@ std::string getLightTypeName(esp::gfx::LightType lightTypeEnum) {
 
 std::string getLightPositionModelName(
     esp::gfx::LightPositionModel lightPositionEnum) {
+  // this verifies that enum value being checked is supported by string-keyed
+  // map. The values below should be the minimum and maximum enums supported by
+  // LightPositionNamesMap
   if (lightPositionEnum < esp::gfx::LightPositionModel::Camera ||
       lightPositionEnum > esp::gfx::LightPositionModel::Object) {
     return "global";
@@ -69,6 +75,9 @@ std::string getLightPositionModelName(
 }
 
 std::string getShaderTypeName(ObjectInstanceShaderType shaderTypeVal) {
+  // this verifies that enum value being checked is supported by string-keyed
+  // map. The values below should be the minimum and maximum enums supported by
+  // ShaderTypeNamesMap
   if (shaderTypeVal <= ObjectInstanceShaderType::Unknown ||
       shaderTypeVal >= ObjectInstanceShaderType::EndShaderType) {
     return "unspecified";
@@ -84,6 +93,9 @@ std::string getShaderTypeName(ObjectInstanceShaderType shaderTypeVal) {
 
 std::string getTranslationOriginName(
     SceneInstanceTranslationOrigin translationOrigin) {
+  // this verifies that enum value being checked is supported by string-keyed
+  // map. The values below should be the minimum and maximum enums supported by
+  // InstanceTranslationOriginMap
   if ((translationOrigin <= SceneInstanceTranslationOrigin::Unknown) ||
       (translationOrigin >= SceneInstanceTranslationOrigin::EndTransOrigin)) {
     return "default";
@@ -98,6 +110,9 @@ std::string getTranslationOriginName(
 }
 
 std::string getMotionTypeName(esp::physics::MotionType motionTypeEnum) {
+  // this verifies that enum value being checked is supported by string-keyed
+  // map. The values below should be the minimum and maximum enums supported by
+  // MotionTypeNamesMap
   if ((motionTypeEnum <= esp::physics::MotionType::UNDEFINED) ||
       (motionTypeEnum > esp::physics::MotionType::DYNAMIC)) {
     return "undefined";

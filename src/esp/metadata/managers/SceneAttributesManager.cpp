@@ -309,7 +309,7 @@ std::string SceneAttributesManager::getTranslationOriginVal(
         Cr::Utility::String::lowercase(tmpTransOriginVal);
     auto found = attributes::InstanceTranslationOriginMap.find(strToLookFor);
     if (found != attributes::InstanceTranslationOriginMap.end()) {
-      transOrigin = tmpTransOriginVal;
+      transOrigin = std::move(tmpTransOriginVal);
     } else {
       ESP_WARNING()
           << "::getTranslationOriginVal : translation_origin value in json  "

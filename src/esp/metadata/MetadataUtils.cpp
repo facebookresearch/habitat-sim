@@ -26,7 +26,7 @@ std::string getShaderTypeFromJsonDoc(const io::JsonGenericValue& jsonDoc) {
     std::string strToLookFor = Cr::Utility::String::lowercase(tmpShaderType);
     auto found = attributes::ShaderTypeNamesMap.find(strToLookFor);
     if (found != attributes::ShaderTypeNamesMap.end()) {
-      shader_type = strToLookFor;
+      shader_type = std::move(strToLookFor);
     } else {
       ESP_WARNING() << "`shader_type` value in json  : `" << tmpShaderType
                     << "` -> `" << strToLookFor
