@@ -248,22 +248,6 @@ jobs:
       - run:
           name: run mypy
           command: mypy
-  cpp_lint:
-    docker:
-      - image: circleci/buildpack-deps:18.04
-    steps:
-      - checkout
-      - run:
-          name: setup
-          command: |
-              sudo apt-get update -y
-              sudo apt-get install -y clang-format-8
-              sudo ln -s /usr/bin/clang-format-8 /usr/bin/clang-format
-              clang-format --version
-      - run:
-          name: run clang-format
-          command: |
-            find . -not -path "*/\.*" -not -path "*/deps/*" -not -path "*/obsolete/*" -not -path "*/build/*" | grep -E ".*\.(cpp|h|cu|hpp|cuh)$" | xargs -I {} bash -c "diff -u <(cat {}) <(clang-format -style=file {})"
 
   js_lint:
     docker:
@@ -309,7 +293,7 @@ jobs:
       - run:
           name: Check Code Style using pre-commit
           command: |
-            SKIP=clang-format,eslint pre-commit run --show-diff-on-failure --all-files
+            SKIP=eslint pre-commit run --show-diff-on-failure --all-files
   test_conda_build:
     <<: *gpu
     steps:
@@ -704,7 +688,6 @@ workflows:
   install_and_test:
     jobs:
       - python_lint
-      - cpp_lint
       - js_lint
       - lab_build_habitat
       - test_conda_build

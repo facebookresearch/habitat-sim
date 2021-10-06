@@ -185,3 +185,8 @@ yarn-debug.log*
 yarn-error.log*
 .npm/
 coverage_js/
+
+# JS hand demo data, bindings, and web assembly
+examples/web_apps/webxr_hand_demo/data/*
+examples/web_apps/webxr_hand_demo/js/hsim_bindings.js
+examples/web_apps/webxr_hand_demo/js/hsim_bindings.wasm
