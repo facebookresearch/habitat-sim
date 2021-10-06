@@ -73,7 +73,7 @@ class LightInstanceAttributes : public AbstractAttributes {
     if (mapIter != LightTypeNamesMap.end()) {
       return mapIter->second;
     }
-    // global is default value
+    // point is default value
     return gfx::LightType::Point;
   }
 
