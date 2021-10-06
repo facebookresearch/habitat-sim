@@ -75,14 +75,15 @@ class SceneAttributesManager
 
  protected:
   /**
-   * @brief Gets the int value of the appropriate enum corresponding to the
+   * @brief Gets the name/key value of the appropriate enum corresponding to the
    * desired Translation Origin used to determine the location of the asset in
    * the scene instance.  The purpose of this value is to know whether to
    * correct placement by location of COM of object when instance is created.
    * @param jsonDoc document where value may be specified.
    * @return the int value to set for translation_origin in instance attributes.
    */
-  int getTranslationOriginVal(const io::JsonGenericValue& jsonDoc) const;
+  std::string getTranslationOriginVal(
+      const io::JsonGenericValue& jsonDoc) const;
 
   /**
    * @brief Used Internally.  Create a @ref

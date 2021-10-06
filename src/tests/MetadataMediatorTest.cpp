@@ -47,25 +47,31 @@ struct MetadataMediatorTest : Cr::TestSuite::Tester {
 
   void initDataset0() {
     auto cfg_0 = esp::sim::SimulatorConfiguration{};
+    ESP_WARNING() << "Starting testDataset0 : initDataset0 0";
     cfg_0.sceneDatasetConfigFile = sceneDatasetConfigFile_0;
     cfg_0.physicsConfigFile = physicsConfigFile;
     MM_->setSimulatorConfiguration(cfg_0);
+    ESP_WARNING() << "Starting testDataset0 : initDataset0 1";
   }
 
   void initDataset1() {
     auto cfg_1 = esp::sim::SimulatorConfiguration{};
+    ESP_WARNING() << "Starting testDataset0 : initDataset1 0";
     cfg_1.sceneDatasetConfigFile = sceneDatasetConfigFile_1;
     cfg_1.physicsConfigFile = physicsConfigFile;
     MM_->setSimulatorConfiguration(cfg_1);
+    ESP_WARNING() << "Starting testDataset0 : initDataset1 1";
   }
 
   void displayDSReports() {
     // display info report
     std::string dsOverView = MM_->getDatasetsOverview();
-    ESP_WARNING() << "\nDataset Overview : \n" << dsOverView << "\n";
+    ESP_WARNING() << "\nDataset Overview : \n"
+                  << dsOverView << "\nDataset Overview Done";
     // display info report
     std::string dsInfoReport = MM_->createDatasetReport();
-    ESP_WARNING() << "\nActive Dataset Details : \n" << dsInfoReport << "\n";
+    ESP_WARNING() << "\nActive Dataset Details : \n"
+                  << dsInfoReport << "\nActive Dataset Done";
   }
 
   // tests
@@ -91,7 +97,8 @@ void MetadataMediatorTest::testDataset0() {
   // setup dataset 0 for test
   initDataset0();
 
-  ESP_DEBUG() << "Starting testDataset0 : test LoadStages";
+  ESP_WARNING() << "Starting testDataset0 : test LoadStages";
+
   const auto& stageAttributesMgr = MM_->getStageAttributesManager();
   int numStageHandles = stageAttributesMgr->getNumObjects();
   // should be 7 - one for default NONE stage, one original JSON, one based on
@@ -175,7 +182,7 @@ void MetadataMediatorTest::testDataset0() {
 
   // end test LoadStages
 
-  ESP_DEBUG() << "Starting test LoadObjects";
+  ESP_WARNING() << "Starting test LoadObjects";
 
   const auto& objectAttributesMgr = MM_->getObjectAttributesManager();
   int numObjHandles = objectAttributesMgr->getNumFileTemplateObjects();
@@ -255,7 +262,7 @@ void MetadataMediatorTest::testDataset0() {
 
   // end test LoadObjects
 
-  ESP_DEBUG() << "Starting test LoadLights";
+  ESP_WARNING() << "Starting test LoadLights";
 
   const auto& lightsLayoutAttributesMgr =
       MM_->getLightLayoutAttributesManager();
@@ -305,7 +312,7 @@ void MetadataMediatorTest::testDataset0() {
 
   // end test LoadLights
 
-  ESP_DEBUG() << "Starting test LoadSceneInstances";
+  ESP_WARNING() << "Starting test LoadSceneInstances";
   //
   // SHOULD NOT BE REFERENCED DIRECTLY IN USER CODE, but rather desired scene
   // instance should be acquired through MM.
@@ -330,7 +337,7 @@ void MetadataMediatorTest::testDataset0() {
   // this should be a scene instance attributes with specific stage and object
   CORRADE_VERIFY(sceneAttrs);
   // verify default value for translation origin
-  CORRADE_COMPARE(sceneAttrs->getTranslationOrigin(),
+  CORRADE_COMPARE(static_cast<int>(sceneAttrs->getTranslationOrigin()),
                   static_cast<int>(Attrs::SceneInstanceTranslationOrigin::COM));
   const int assetLocalInt =
       static_cast<int>(Attrs::SceneInstanceTranslationOrigin::AssetLocal);
@@ -357,7 +364,8 @@ void MetadataMediatorTest::testDataset0() {
   const std::string stageName = stageInstanceAttrs->getHandle();
   CORRADE_VERIFY(stageName.find("modified_test_stage") != std::string::npos);
   // verify translation origin to be asset_local
-  CORRADE_COMPARE(stageInstanceAttrs->getTranslationOrigin(), assetLocalInt);
+  CORRADE_COMPARE(static_cast<int>(stageInstanceAttrs->getTranslationOrigin()),
+                  assetLocalInt);
   // verify translation amount to be expected amount
   CORRADE_COMPARE(stageInstanceAttrs->getTranslation(),
                   Magnum::Vector3(1.1, 2.2, 3.3));
@@ -379,7 +387,8 @@ void MetadataMediatorTest::testDataset0() {
   // translation
   CORRADE_COMPARE(objAttr0->getTranslation(), Magnum::Vector3(0.1, 0.2, 0.3));
   // translation origin
-  CORRADE_COMPARE(objAttr0->getTranslationOrigin(), assetLocalInt);
+  CORRADE_COMPARE(static_cast<int>(objAttr0->getTranslationOrigin()),
+                  assetLocalInt);
 
   // second object instance
   const Attrs::SceneObjectInstanceAttributes::cptr& objAttr1 =
@@ -391,11 +400,12 @@ void MetadataMediatorTest::testDataset0() {
   // translation
   CORRADE_COMPARE(objAttr1->getTranslation(), Magnum::Vector3(0.3, 0.4, 0.5));
   // translation origin
-  CORRADE_COMPARE(objAttr1->getTranslationOrigin(), assetLocalInt);
+  CORRADE_COMPARE(static_cast<int>(objAttr1->getTranslationOrigin()),
+                  assetLocalInt);
 
   // end test LoadSceneInstances
 
-  ESP_DEBUG() << "Starting test LoadNavmesh";
+  ESP_WARNING() << "Starting test LoadNavmesh";
   // get map of navmeshes
   const std::map<std::string, std::string> navmeshMap =
       MM_->getActiveNavmeshMap();
@@ -410,7 +420,7 @@ void MetadataMediatorTest::testDataset0() {
   CORRADE_COMPARE(navmeshMap.at("navmesh_path2"), "test_navmesh_path2");
   // end test LoadNavmesh
 
-  ESP_DEBUG() << "Starting test LoadSemanticScene";
+  ESP_WARNING() << "Starting test LoadSemanticScene";
   // get map of semantic scene instances
   const std::map<std::string, std::string> semanticMap =
       MM_->getActiveSemanticSceneDescriptorMap();
@@ -434,7 +444,7 @@ void MetadataMediatorTest::testDataset1() {
   // primarily testing glob file wildcard loading
   initDataset1();
 
-  ESP_DEBUG() << "Starting testDataset1 : test LoadStages";
+  ESP_WARNING() << "Starting testDataset1 : test LoadStages";
   const auto& stageAttributesMgr = MM_->getStageAttributesManager();
   int numStageHandles = stageAttributesMgr->getNumObjects();
   // shoudld be 6 : one for default NONE stage, glob lookup yields 2 stages +
@@ -442,14 +452,14 @@ void MetadataMediatorTest::testDataset1() {
   CORRADE_COMPARE(numStageHandles, 6);
   // end test LoadStages
 
-  ESP_DEBUG() << "Starting test LoadObjects";
+  ESP_WARNING() << "Starting test LoadObjects";
   const auto& objectAttributesMgr = MM_->getObjectAttributesManager();
   int numObjHandles = objectAttributesMgr->getNumFileTemplateObjects();
   // glob lookup yields 4 files + 2 modified in config
   CORRADE_COMPARE(numObjHandles, 6);
   // end test LoadObjects
 
-  ESP_DEBUG() << "Starting test LoadLights";
+  ESP_WARNING() << "Starting test LoadLights";
   const auto& lightsLayoutAttributesMgr =
       MM_->getLightLayoutAttributesManager();
   // get # of loaded light layout attributes.
@@ -459,7 +469,7 @@ void MetadataMediatorTest::testDataset1() {
 
   // end test LoadLights
 
-  ESP_DEBUG() << "Starting test LoadSceneInstances";
+  ESP_WARNING() << "Starting test LoadSceneInstances";
   //
   // SHOULD NOT BE REFERENCED DIRECTLY IN USER CODE, but rather desired scene
   // instance should be acquired through MM.
@@ -472,7 +482,7 @@ void MetadataMediatorTest::testDataset1() {
 
   // end test LoadSceneInstances
 
-  ESP_DEBUG() << "Starting test LoadArticulatedObjects";
+  ESP_WARNING() << "Starting test LoadArticulatedObjects";
 
   namespace Dir = Cr::Utility::Directory;
   // verify # of urdf filepaths loaded - should be 6;
@@ -502,7 +512,7 @@ void MetadataMediatorTest::testDataset1() {
   }
   // end test LoadArticulatedObjects
 
-  ESP_DEBUG() << "Starting test LoadNavmesh";
+  ESP_WARNING() << "Starting test LoadNavmesh";
   // get map of navmeshes
   const std::map<std::string, std::string> navmeshMap =
       MM_->getActiveNavmeshMap();
@@ -510,7 +520,7 @@ void MetadataMediatorTest::testDataset1() {
   CORRADE_COMPARE(navmeshMap.size(), 3);
   // end test LoadNavmesh
 
-  ESP_DEBUG() << "Starting test LoadSemanticScene";
+  ESP_WARNING() << "Starting test LoadSemanticScene";
   // get map of semantic scene instances
   const std::map<std::string, std::string> semanticMap =
       MM_->getActiveSemanticSceneDescriptorMap();

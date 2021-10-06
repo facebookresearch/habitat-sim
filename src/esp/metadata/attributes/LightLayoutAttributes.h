@@ -19,23 +19,6 @@ namespace attributes {
  */
 class LightInstanceAttributes : public AbstractAttributes {
  public:
-  /**
-   * @brief Constant static map to provide mappings from string tags to @ref
-   * esp::gfx::LightType values.  This will be used to map values set in json
-   * for light type to @ref esp::gfx::LightType.  Keys must be lowercase - will
-   * support any case values in JSON.
-   */
-  static const std::map<std::string, esp::gfx::LightType> LightTypeNamesMap;
-
-  /**
-   * @brief Constant static map to provide mappings from string tags to @ref
-   * esp::gfx::LightPositionModel values.  This will be used to map values set
-   * in json to specify what translations are measured from for a lighting
-   * instance.
-   */
-  static const std::map<std::string, esp::gfx::LightPositionModel>
-      LightPositionNamesMap;
-
   explicit LightInstanceAttributes(const std::string& handle = "");
 
   /** @brief Set the position of the light. Used for positional lights.  */
@@ -71,13 +54,31 @@ class LightInstanceAttributes : public AbstractAttributes {
   double getIntensity() const { return get<double>("intensity"); }
 
   /** @brief Set the type of the light */
-  void setType(int type) { set("type", type); }
+  void setType(const std::string& type) {
+    // force to lowercase before setting
+    const std::string lightType = Cr::Utility::String::lowercase(type);
+    auto mapIter = LightTypeNamesMap.find(lightType);
+    if (mapIter != LightTypeNamesMap.end()) {
+      set("type", type);
+    } else {
+      set("type", getLightTypeName(gfx::LightType::Point));
+    }
+  }
 
   /** @brief Get the type of the light */
-  int getType() const { return get<int>("type"); }
+  gfx::LightType getType() const {
+    const std::string val =
+        Cr::Utility::String::lowercase(get<std::string>("type"));
+    auto mapIter = LightTypeNamesMap.find(val);
+    if (mapIter != LightTypeNamesMap.end()) {
+      return mapIter->second;
+    }
+    // global is default value
+    return gfx::LightType::Point;
+  }
 
   /**
-   * @brief Set the string key to the esp::gfx::LightPositionModel to use when
+   * @brief Set the string key to the gfx::LightPositionModel to use when
    * placing the light - whether the lights translation should be relative to
    * the camera, the global scene origin, or some object.
    */
@@ -87,18 +88,19 @@ class LightInstanceAttributes : public AbstractAttributes {
         Cr::Utility::String::lowercase(position_model);
     auto mapIter = LightPositionNamesMap.find(posModelLC);
     if (mapIter != LightPositionNamesMap.end()) {
-      set("position_model", posModelLC);
+      set("position_model", position_model);
     } else {
-      set("position_model", "global");
+      set("position_model",
+          getLightPositionModelName(gfx::LightPositionModel::Global));
     }
   }
 
   /**
-   * @brief Get the @ref esp::gfx::LightPositionModel to use when placing the
+   * @brief Get the @ref gfx::LightPositionModel to use when placing the
    * light - whether the lights translation should be relative to the camera,
    * the global scene origin, or some object.
    */
-  esp::gfx::LightPositionModel getPositionModel() const {
+  gfx::LightPositionModel getPositionModel() const {
     const std::string val =
         Cr::Utility::String::lowercase(get<std::string>("position_model"));
     auto mapIter = LightPositionNamesMap.find(val);
@@ -106,7 +108,7 @@ class LightInstanceAttributes : public AbstractAttributes {
       return mapIter->second;
     }
     // global is default value
-    return LightPositionNamesMap.at("global");
+    return gfx::LightPositionModel::Global;
   }
 
   /**
@@ -143,31 +145,6 @@ class LightInstanceAttributes : public AbstractAttributes {
 
  protected:
   /**
-   * @brief Used for info purposes.  Return a string name corresponding to the
-   * currently specified light type value;
-   */
-  std::string getCurrLightTypeName() const {
-    // Must always be valid value
-    esp::gfx::LightType type = static_cast<esp::gfx::LightType>(getType());
-    for (const auto& it : LightTypeNamesMap) {
-      if (it.second == type) {
-        return it.first;
-      }
-    }
-    return "unknown light type";
-  }
-
-  std::string getCurrLightPositionModelName() const {
-    // Must always be valid value
-    esp::gfx::LightPositionModel type = getPositionModel();
-    for (const auto& it : LightPositionNamesMap) {
-      if (it.second == type) {
-        return it.first;
-      }
-    }
-    return "unknown position model";
-  }
-  /**
    * @brief Retrieve a comma-separated string holding the header values for the
    * info returned for this managed object, type-specific.
    */
@@ -186,8 +163,9 @@ class LightInstanceAttributes : public AbstractAttributes {
   std::string getObjectInfoInternal() const override {
     return Cr::Utility::formatString(
         "{},{},{},{},{},{},", getAsString("position"), getAsString("direction"),
-        getAsString("color"), getAsString("intensity"), getCurrLightTypeName(),
-        getCurrLightPositionModelName());
+        getAsString("color"), getAsString("intensity"),
+        getLightTypeName(getType()),
+        getLightPositionModelName(getPositionModel()));
   }
 
  public:

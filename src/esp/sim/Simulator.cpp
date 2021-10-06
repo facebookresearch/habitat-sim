@@ -435,11 +435,10 @@ bool Simulator::instanceStageForActiveScene(
   // set shader type to use for stage - if no valid value is specified in
   // instance attributes, this field will be whatever was specified in the
   // stage attributes.
-  int stageShaderType = stageInstanceAttributes->getShaderType();
+  auto stageShaderType = stageInstanceAttributes->getShaderType();
   if (stageShaderType !=
-      static_cast<int>(
-          metadata::attributes::ObjectInstanceShaderType::Unknown)) {
-    stageAttributes->setShaderType(stageShaderType);
+      metadata::attributes::ObjectInstanceShaderType::Unknown) {
+    stageAttributes->setShaderType(getShaderTypeName(stageShaderType));
   }
   // set lighting key based on curent config value
   stageAttributes->setLightSetupKey(config_.sceneLightSetupKey);
@@ -527,8 +526,7 @@ bool Simulator::instanceObjectsForActiveScene(
   // whether or not to correct for COM shift - only do for blender-sourced
   // scene attributes
   bool defaultCOMCorrection =
-      (static_cast<metadata::attributes::SceneInstanceTranslationOrigin>(
-           curSceneInstanceAttributes->getTranslationOrigin()) ==
+      (curSceneInstanceAttributes->getTranslationOrigin() ==
        metadata::attributes::SceneInstanceTranslationOrigin::AssetLocal);
 
   // Iterate through instances, create object and implement initial

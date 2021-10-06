@@ -55,8 +55,8 @@ std::string AbstractObjectAttributes::getObjectInfoInternal() const {
       getCollisionAssetHandle(), getAsString("scale"), getAsString("margin"),
       getAsString("orient_up"), getAsString("orient_front"),
       getAsString("units_to_meters"), getAsString("friction_coefficient"),
-      getAsString("restitution_coefficient"), getCurrShaderTypeName(),
-      getAbstractObjectInfoInternal());
+      getAsString("restitution_coefficient"),
+      getShaderTypeName(getShaderType()), getAbstractObjectInfoInternal());
 }  // AbstractObjectAttributes::getObjectInfoInternal
 
 ObjectAttributes::ObjectAttributes(const std::string& handle)
@@ -74,7 +74,7 @@ ObjectAttributes::ObjectAttributes(const std::string& handle)
   setJoinCollisionMeshes(true);
   // default to Unknown for objects - will use material-derived shader unless
   // otherwise specified in config
-  setShaderType(static_cast<int>(ObjectInstanceShaderType::Unknown));
+  setShaderType(getShaderTypeName(ObjectInstanceShaderType::Unknown));
   // TODO remove this once ShaderType support is complete
   setForceFlatShading(false);
   setIsVisible(true);
@@ -94,7 +94,7 @@ StageAttributes::StageAttributes(const std::string& handle)
   setOrigin({0, 0, 0});
   // default to Unknown for stages - will use material-derived shader unless
   // otherwise specified in config
-  setShaderType(static_cast<int>(ObjectInstanceShaderType::Unknown));
+  setShaderType(getShaderTypeName(ObjectInstanceShaderType::Unknown));
   // TODO remove this once ShaderType support is complete
   setForceFlatShading(true);
   // 0 corresponds to esp::assets::AssetType::UNKNOWN->treated as general mesh
