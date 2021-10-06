@@ -413,9 +413,9 @@ if __name__ == "__main__":
         help="dataset configuration file to use (default: default)",
     )
     parser.add_argument(
-        "--enable_physics",
+        "--disable_physics",
         action="store_true",
-        help="enable physics simulation (default: False)",
+        help="disable physics simulation (default: False)",
     )
 
     args = parser.parse_args()
@@ -424,6 +424,6 @@ if __name__ == "__main__":
     sim_settings: Dict[str, Any] = default_sim_settings
     sim_settings["scene"] = args.scene
     sim_settings["scene_dataset_config_file"] = args.dataset
-    sim_settings["enable_physics"] = args.enable_physics
+    sim_settings["enable_physics"] = not args.disable_physics
 
 HabitatSimInteractiveViewer(sim_settings).exec()
