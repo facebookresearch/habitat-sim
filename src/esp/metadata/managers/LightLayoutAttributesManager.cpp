@@ -21,7 +21,7 @@ LightLayoutAttributes::ptr LightLayoutAttributesManager::createObject(
   bool doRegister = registerTemplate;
   // File based attributes are automatically registered.
   std::string jsonAttrFileName = getFormattedJSONFileName(lightConfigName);
-  bool jsonFileExists = (this->isValidFileName(jsonAttrFileName));
+  bool jsonFileExists = (Cr::Utility::Directory::exists(jsonAttrFileName));
   if (jsonFileExists) {
     // if exists, force registration to be true.
     doRegister = true;
@@ -215,6 +215,7 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
              "Spotlights not currently supported, so cone angle values are "
              "ignored and light will be created as a point light.";
     } else {
+      // sets values in light instance subconfig "spot"
       const auto& spotArea = jsonConfig["spot"];
       // set inner cone angle
       io::jsonIntoSetter<Magnum::Rad>(

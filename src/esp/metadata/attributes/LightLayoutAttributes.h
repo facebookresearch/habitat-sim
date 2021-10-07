@@ -114,35 +114,53 @@ class LightInstanceAttributes : public AbstractAttributes {
   }
 
   /**
-   * @brief Set inner cone angle for spotlights.  Should be ignored for
-   * other lights
+   * @brief Gets a smart pointer reference to a copy of the spotlight
+   * configuration data for this light instance.
+   */
+  std::shared_ptr<Configuration> getSpotlightConfiguration() const {
+    return getSubconfigCopy<Configuration>("spot");
+  }
+
+  /**
+   * @brief Gets a smart pointer reference to the actual spotlight
+   * configuration data for this light instance.
+   */
+  std::shared_ptr<Configuration> editSpotlightConfiguration() {
+    return editSubconfig<Configuration>("spot");
+  }
+
+  /**
+   * @brief Set inner cone angle for spotlights. This value resides in subconfig
+   * 'spot'.  Should be ignored for other lights
    */
   void setInnerConeAngle(Magnum::Rad innerConeAngle) {
-    set("innerConeAngle", innerConeAngle);
+    editSubconfig<Configuration>("spot")->set("innerConeAngle", innerConeAngle);
   }
 
   /**
-   * @brief Get inner cone angle for spotlights.  Should be ignored for
-   * other lights
+   * @brief Get inner cone angle for spotlights.  This value resides in
+   * subconfig 'spot'.  Should be ignored for other lights
    */
   Magnum::Rad getInnerConeAngle() const {
-    return get<Magnum::Rad>("innerConeAngle");
+    const auto spotCfg = getSubconfigCopy<Configuration>("spot");
+    return spotCfg->get<Magnum::Rad>("innerConeAngle");
   }
 
   /**
-   * @brief Set outer cone angle for spotlights. Should be ignored for other
-   * lights
+   * @brief Set outer cone angle for spotlights. This value resides in subconfig
+   * 'spot'.  Should be ignored for other lights
    */
   void setOuterConeAngle(Magnum::Rad outerConeAngle) {
-    set("outerConeAngle", outerConeAngle);
+    editSubconfig<Configuration>("spot")->set("outerConeAngle", outerConeAngle);
   }
 
   /**
-   * @brief Get outer cone angle for spotlights. Should be ignored for other
-   * lights
+   * @brief Get outer cone angle for spotlights. This value resides in subconfig
+   * 'spot'.  Should be ignored for other lights
    */
   Magnum::Rad getOuterConeAngle() const {
-    return get<Magnum::Rad>("outerConeAngle");
+    const auto spotCfg = getSubconfigCopy<Configuration>("spot");
+    return spotCfg->get<Magnum::Rad>("outerConeAngle");
   }
 
  protected:

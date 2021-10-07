@@ -148,7 +148,7 @@ std::vector<std::string> ManagedContainerBase::getObjectInfoStrings(
   int idx = 0;
   for (const std::string& objectHandle : handles) {
     // get the object
-    auto objPtr = getObjectInternal<AbstractManagedObject>(objectHandle);
+    auto objPtr = this->getObjectInternal<AbstractManagedObject>(objectHandle);
     if (idx == 0) {
       Cr::Utility::formatInto(res[idx], res[idx].size(),
                               "{} Full name,Can delete?,Is locked?,{}",
@@ -169,7 +169,8 @@ int ManagedContainerBase::getObjectIDByHandleOrNew(
     const std::string& objectHandle,
     bool getNext) {
   if (getObjectLibHasHandle(objectHandle)) {
-    return getObjectInternal<AbstractManagedObject>(objectHandle)->getID();
+    return this->getObjectInternal<AbstractManagedObject>(objectHandle)
+        ->getID();
   }
   if (!getNext) {
     ESP_ERROR() << "<" << Cr::Utility::Debug::nospace << this->objectType_

@@ -9,6 +9,7 @@
  * @brief See JsonAllTypes.h. Don't include this header directly in user code.
  */
 
+#include <map>
 #include "JsonBuiltinTypes.h"
 
 namespace esp {

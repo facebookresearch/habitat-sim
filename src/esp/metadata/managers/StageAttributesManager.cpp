@@ -63,7 +63,7 @@ int StageAttributesManager::registerObjectFinalize(
     // then setRenderAssetIsPrimitive to true and set map of IDs->Names to
     // physicsSynthObjTmpltLibByID_
     stageAttributes->setRenderAssetIsPrimitive(true);
-  } else if (this->isValidFileName(renderAssetHandle)) {
+  } else if (Cr::Utility::Directory::exists(renderAssetHandle)) {
     // Check if renderAssetHandle is valid file name and is found in file
     // system
     // - if so then setRenderAssetIsPrimitive to false and set map of
@@ -94,7 +94,7 @@ int StageAttributesManager::registerObjectFinalize(
     // If collisionAssetHandle corresponds to valid/existing primitive
     // attributes then setCollisionAssetIsPrimitive to true
     stageAttributes->setCollisionAssetIsPrimitive(true);
-  } else if (this->isValidFileName(collisionAssetHandle)) {
+  } else if (Cr::Utility::Directory::exists(collisionAssetHandle)) {
     // Check if collisionAssetHandle is valid file name and is found in file
     // system - if so then setCollisionAssetIsPrimitive to false
     stageAttributes->setCollisionAssetIsPrimitive(false);

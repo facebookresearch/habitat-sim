@@ -103,8 +103,7 @@ void declareBaseAttributesManager(py::module& m,
           ("Build " + attrType +
            " templates for all JSON files with appropriate extension "
            "that exist in the provided file or directory path. If "
-           "save_as_defaults is true, "
-           "then these " +
+           "save_as_defaults is true, then these " +
            attrType + " templates will be unable to be deleted")
               .c_str(),
           "path"_a, "save_as_defaults"_a = false)
@@ -124,9 +123,13 @@ void declareBaseAttributesManager(py::module& m,
             "it in the library if register_template is True.")
                .c_str(),
            "handle"_a, "register_template"_a = false)
-      .def("is_valid_filename", &MgrClass::isValidFileName, R"(
-             Returns whether the passed handle exists and the user has access.)",
-           "handle"_a)
+      .def(
+          "is_valid_filename",
+          [](CORRADE_UNUSED MgrClass& self, const std::string& filename) {
+            return Corrade::Utility::Directory::exists(filename);
+          },
+          R"(Returns whether the passed handle is a valid, existing file.)",
+          "handle"_a)
       .def("get_num_templates", &MgrClass::getNumObjects,
            ("Returns the number of existing " + attrType +
             " templates being managed.")
@@ -183,11 +186,8 @@ void declareBaseAttributesManager(py::module& m,
            ("This sets the lock state for all " + attrType +
             " templates whose handles are passed "
             "in list. Returns a list of handles for templates locked by this "
-            "function call. "
-            "Lock == True makes the " +
-            attrType +
-            " template unable to be deleted. Note : "
-            "Locked " +
+            "function call. Lock == True makes the " +
+            attrType + " template unable to be deleted. Note : Locked " +
             attrType + " templates can still be edited.")
                .c_str(),
            "handles"_a, "lock"_a)
