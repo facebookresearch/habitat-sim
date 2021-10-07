@@ -245,8 +245,9 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * @brief Write child-class-specific values to json object
    *
    */
-  virtual void writeValuesToJsonInternal(io::JsonGenericValue& jsonObj,
-                                         io::JsonAllocator& allocator) const {}
+  virtual void writeValuesToJsonInternal(
+      CORRADE_UNUSED io::JsonGenericValue& jsonObj,
+      CORRADE_UNUSED io::JsonAllocator& allocator) const {}
   /**
    * @brief Retrieve a comma-separated string holding the header values for the
    * info returned for this managed object, type-specific.
