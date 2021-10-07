@@ -39,14 +39,13 @@
 
 #include <memory>
 
-#include "esp/geo/geo.h"
+#include "esp/geo/Geo.h"
 #include "esp/gfx/GenericDrawable.h"
 #include "esp/gfx/MaterialUtil.h"
 #include "esp/gfx/PbrDrawable.h"
 #include "esp/gfx/replay/Recorder.h"
+#include "esp/io/Json.h"
 #include "esp/io/URDFParser.h"
-#include "esp/io/io.h"
-#include "esp/io/json.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/scene/SceneGraph.h"
 
@@ -218,7 +217,7 @@ bool ResourceManager::loadStage(
       ((_physicsManager != nullptr) &&
        (_physicsManager->getInitializationAttributes()->getSimulator() !=
         "none"));
-  const std::string renderLightSetupKey(stageAttributes->getLightSetup());
+  const std::string renderLightSetupKey(stageAttributes->getLightSetupKey());
   std::map<std::string, AssetInfo> assetInfoMap =
       createStageAssetInfosFromAttributes(stageAttributes, buildCollisionMesh,
                                           createSemanticMesh);
@@ -414,7 +413,7 @@ ResourceManager::createStageAssetInfosFromAttributes(
       stageAttributes->getRenderAssetHandle(),  // file path
       frame,                                    // frame
       virtualUnitToMeters,                      // virtualUnitToMeters
-      stageAttributes->getRequiresLighting()    // requiresLighting
+      stageAttributes->getForceFlatShading()    // forceFlatShading
   };
   resMap["render"] = renderInfo;
   if (createCollisionInfo) {
@@ -426,7 +425,7 @@ ResourceManager::createStageAssetInfosFromAttributes(
         stageAttributes->getCollisionAssetHandle(),  // file path
         frame,                                       // frame
         virtualUnitToMeters,                         // virtualUnitToMeters
-        false                                        // requiresLighting
+        true                                         // forceFlatShading
     };
     resMap["collision"] = collisionInfo;
   }
@@ -439,7 +438,7 @@ ResourceManager::createStageAssetInfosFromAttributes(
         stageAttributes->getSemanticAssetHandle(),  // file path
         frame,                                      // frame
         virtualUnitToMeters,                        // virtualUnitToMeters
-        false,                                      // requiresLighting
+        true,                                       // forceFlatShading
         // only split instance mesh if doing frustum culling
         stageAttributes->getFrustumCulling()  // splitInstanceMesh
     };
@@ -784,11 +783,11 @@ bool ResourceManager::loadObjectMeshDataFromFile(
     const std::string& filename,
     const metadata::attributes::ObjectAttributes::ptr& objectAttributes,
     const std::string& meshType,
-    const bool requiresLighting) {
+    const bool forceFlatShading) {
   bool success = false;
   if (!filename.empty()) {
     AssetInfo meshInfo{AssetType::UNKNOWN, filename};
-    meshInfo.requiresLighting = requiresLighting;
+    meshInfo.forceFlatShading = forceFlatShading;
     meshInfo.frame = buildFrameFromAttributes(objectAttributes, {0, 0, 0});
     success = loadRenderAsset(meshInfo);
     if (!success) {
@@ -911,7 +910,7 @@ void ResourceManager::computeInstanceMeshAbsoluteAABBs(
 std::vector<Mn::Matrix4> ResourceManager::computeAbsoluteTransformations(
     const std::vector<StaticDrawableInfo>& staticDrawableInfo) {
   // sanity check
-  if (staticDrawableInfo.size() == 0) {
+  if (staticDrawableInfo.empty()) {
     return {};
   }
 
@@ -1002,7 +1001,7 @@ void ResourceManager::buildPrimitiveAssetData(
 
   // make assetInfo
   AssetInfo info{AssetType::PRIMITIVE};
-  info.requiresLighting = true;
+  info.forceFlatShading = false;
   // set up primitive mesh
   // make  primitive mesh structure
   auto primMeshData = std::make_unique<GenericMeshData>(false);
@@ -1478,7 +1477,7 @@ bool ResourceManager::buildTrajectoryVisualization(
 
   // make assetInfo
   AssetInfo info{AssetType::PRIMITIVE};
-  info.requiresLighting = true;
+  info.forceFlatShading = false;
   // set up primitive mesh
   // make  primitive mesh structure
   auto visMeshData = std::make_unique<GenericMeshData>(false);
@@ -1611,7 +1610,7 @@ void ResourceManager::loadMaterials(Importer& importer,
     std::unique_ptr<gfx::MaterialData> finalMaterial;
     int textureBaseIndex = loadedAssetData.meshMetaData.textureIndex.first;
 
-    if (loadedAssetData.assetInfo.requiresLighting &&
+    if (!loadedAssetData.assetInfo.forceFlatShading &&
         materialData->types() &
             Magnum::Trade::MaterialType::PbrMetallicRoughness) {
       const auto& pbrMaterialData =
@@ -1633,7 +1632,7 @@ void ResourceManager::loadMaterials(Importer& importer,
 
       const auto& phongMaterialData =
           materialData->as<Mn::Trade::PhongMaterialData>();
-      if (loadedAssetData.assetInfo.requiresLighting) {
+      if (!loadedAssetData.assetInfo.forceFlatShading) {
         finalMaterial =
             buildPhongShadedMaterialData(phongMaterialData, textureBaseIndex);
 
@@ -1822,7 +1821,7 @@ void ResourceManager::loadMeshes(Importer& importer,
   for (int iMesh = 0; iMesh < importer.meshCount(); ++iMesh) {
     // don't need normals if we aren't using lighting
     auto gltfMeshData = std::make_unique<GenericMeshData>(
-        loadedAssetData.assetInfo.requiresLighting);
+        !loadedAssetData.assetInfo.forceFlatShading);
     gltfMeshData->importAndSetMeshData(importer, iMesh);
 
     // compute the mesh bounding box
@@ -1984,7 +1983,7 @@ bool ResourceManager::instantiateAssetsOnDemand(
   // get render asset handle
   std::string renderAssetHandle = objectAttributes->getRenderAssetHandle();
   // whether attributes requires lighting
-  bool requiresLighting = objectAttributes->getRequiresLighting();
+  bool forceFlatShading = objectAttributes->getForceFlatShading();
   bool renderMeshSuccess = false;
   // no resource dict entry exists for renderAssetHandle
   if (resourceDict_.count(renderAssetHandle) == 0) {
@@ -2007,7 +2006,7 @@ bool ResourceManager::instantiateAssetsOnDemand(
     } else {
       // load/check_for render mesh metadata and load assets
       renderMeshSuccess = loadObjectMeshDataFromFile(
-          renderAssetHandle, objectAttributes, "render", requiresLighting);
+          renderAssetHandle, objectAttributes, "render", forceFlatShading);
     }
   }  // if no render asset exists
 
@@ -2020,7 +2019,7 @@ bool ResourceManager::instantiateAssetsOnDemand(
     if (resourceDict_.count(collisionAssetHandle) == 0) {
       bool collisionMeshSuccess = loadObjectMeshDataFromFile(
           collisionAssetHandle, objectAttributes, "collision",
-          !renderMeshSuccess && requiresLighting);
+          !renderMeshSuccess && !forceFlatShading);
 
       if (!collisionMeshSuccess) {
         return false;
@@ -2217,7 +2216,8 @@ bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
       Cr::Utility::Directory::current(), houseInfo.filepath);
   const auto& json = io::parseJsonFile(houseFile);
   const auto& levels = json["levels"].GetArray();
-  std::vector<std::string> pathTokens = io::tokenize(houseFile, "/", 0, true);
+  std::vector<std::string> pathTokens =
+      Cr::Utility::String::splitWithoutEmptyParts(houseFile, '/');
   CORRADE_INTERNAL_ASSERT(pathTokens.size() >= 3);
   pathTokens.pop_back();  // house.json
   const std::string houseId = pathTokens.back();
@@ -2347,7 +2347,7 @@ bool ResourceManager::isLightSetupCompatible(
   // if light setup has lights in it, but asset was loaded in as flat shaded,
   // there may be an error when rendering.
   return lightSetupKey == Mn::ResourceKey{NO_LIGHT_KEY} ||
-         loadedAssetData.assetInfo.requiresLighting;
+         !loadedAssetData.assetInfo.forceFlatShading;
 }
 
 //! recursively join all sub-components of a mesh into a single unified
@@ -2547,7 +2547,7 @@ void ResourceManager::createConvexHullDecomposition(
 
   // make assetInfo
   AssetInfo info{AssetType::PRIMITIVE};
-  info.requiresLighting = true;
+  info.forceFlatShading = false;
 
   // make LoadedAssetData corresponding to this asset
   LoadedAssetData loadedAssetData{info, meshMetaData};

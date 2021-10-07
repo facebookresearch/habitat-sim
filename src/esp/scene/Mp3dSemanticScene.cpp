@@ -11,8 +11,6 @@
 #include <sstream>
 #include <string>
 
-#include "esp/io/io.h"
-
 namespace esp {
 namespace scene {
 
@@ -163,7 +161,8 @@ bool SemanticScene::buildMp3dHouse(std::ifstream& ifs,
     if (line.empty()) {
       continue;
     }
-    const std::vector<std::string> tokens = io::tokenize(line, " ", 0, true);
+    const std::vector<std::string> tokens =
+        Cr::Utility::String::splitWithoutEmptyParts(line, ' ');
     switch (line[0]) {
       case 'H': {  // house
         // H name label #images #panoramas #vertices #surfaces #segments

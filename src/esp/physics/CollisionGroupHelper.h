@@ -12,7 +12,7 @@
 #include <string>
 #include <vector>
 #include "esp/core/Check.h"
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
 /** @file
  * @brief Class @ref esp::physics::CollisionGroupHelper is a convenience class

@@ -10,8 +10,8 @@
 #include <utility>
 #include "esp/agent/Agent.h"
 #include "esp/assets/ResourceManager.h"
-#include "esp/core/esp.h"
-#include "esp/core/random.h"
+#include "esp/core/Esp.h"
+#include "esp/core/Random.h"
 #include "esp/gfx/DebugLineRender.h"
 #include "esp/gfx/RenderTarget.h"
 #include "esp/gfx/WindowlessContext.h"
@@ -92,10 +92,14 @@ class Simulator {
     return sceneManager_->getSceneGraph(activeSceneID_);
   }
 
+  /** @brief Check to see if there is a SemanticSceneGraph for rendering */
+  bool semanticSceneGraphExists() const {
+    return std::size_t(activeSemanticSceneID_) < sceneID_.size();
+  }
+
   /** @brief get the semantic scene's SceneGraph for rendering */
   scene::SceneGraph& getActiveSemanticSceneGraph() {
-    CORRADE_INTERNAL_ASSERT(std::size_t(activeSemanticSceneID_) <
-                            sceneID_.size());
+    CORRADE_INTERNAL_ASSERT(semanticSceneGraphExists());
     return sceneManager_->getSceneGraph(activeSemanticSceneID_);
   }
   std::shared_ptr<gfx::replay::ReplayManager> getGfxReplayManager() {
@@ -797,6 +801,20 @@ class Simulator {
   }
 
   /**
+   * @brief See BulletPhysicsManager.h getNumActiveOverlappingPairs
+   */
+  int getPhysicsNumActiveOverlappingPairs() {
+    return physicsManager_->getNumActiveOverlappingPairs();
+  }
+
+  /**
+   * @brief See BulletPhysicsManager.h getStepCollisionSummary
+   */
+  std::string getPhysicsStepCollisionSummary() {
+    return physicsManager_->getStepCollisionSummary();
+  }
+
+  /**
    * @brief Set an object to collidable or not.
    */
   void setObjectIsCollidable(bool collidable, const int objectId) {
@@ -1182,7 +1200,7 @@ class Simulator {
    * @param key The string key of the @ref gfx::LightSetup.
    */
   gfx::LightSetup getCurrentLightSetup() {
-    return *resourceManager_->getLightSetup(config_.sceneLightSetup);
+    return *resourceManager_->getLightSetup(config_.sceneLightSetupKey);
   }
 
   /**
@@ -1327,6 +1345,21 @@ class Simulator {
       bool renderChd = false,
       bool saveChdToObj = false);
 #endif
+
+  /**
+   * @brief For the current active scene, update the shaow map drawable group
+   */
+  void updateShadowMapDrawableGroup();
+  /**
+   * @brief compute the shadow maps for the active scene graph, and store the
+   * results in the resource manager
+   */
+  void computeShadowMaps(float lightNearPlane, float lightFarPlane);
+  /**
+   * @brief propergate shadow maps to the drawables
+   * NOTE: so far only pbr drawable and shader support the shadow maps
+   */
+  void setShadowMapsToDrawables();
 
  protected:
   Simulator() = default;

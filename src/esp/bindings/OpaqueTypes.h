@@ -13,7 +13,7 @@
 #include <map>
 #include <vector>
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/nav/GreedyFollower.h"
 
 PYBIND11_MAKE_OPAQUE(std::map<std::string, std::string>);

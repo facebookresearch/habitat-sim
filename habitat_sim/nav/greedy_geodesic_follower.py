@@ -6,11 +6,7 @@ import numpy as np
 from habitat_sim import errors, scene
 from habitat_sim.agent.agent import Agent
 from habitat_sim.agent.controls.controls import ActuationSpec
-from habitat_sim.nav import (  # type: ignore
-    GreedyFollowerCodes,
-    GreedyGeodesicFollowerImpl,
-    PathFinder,
-)
+from habitat_sim.nav import GreedyFollowerCodes, GreedyGeodesicFollowerImpl, PathFinder
 from habitat_sim.utils.common import quat_to_magnum
 
 

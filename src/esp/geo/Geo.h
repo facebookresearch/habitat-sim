@@ -7,7 +7,7 @@
 
 #include <vector>
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
 #include <Magnum/Math/CubicHermite.h>
 #include <Magnum/Math/Range.h>

@@ -89,6 +89,12 @@ class AbstractObjectAttributes : public AbstractAttributes {
    */
   double getUnitsToMeters() const { return get<double>("units_to_meters"); }
 
+  /**
+   * @brief If not visible can add dynamic non-rendered object into a scene
+   * object.  If is not visible then should not add object to drawables.
+   */
+  void setIsVisible(bool isVisible) { set("is_visible", isVisible); }
+  bool getIsVisible() const { return get<bool>("is_visible"); }
   void setFrictionCoefficient(double frictionCoefficient) {
     set("friction_coefficient", frictionCoefficient);
   }
@@ -188,31 +194,46 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * @brief Set the default shader to use for an object or stage.  This may be
    * overridden by a scene instance specification.
    */
-  void setShaderType(int shader_type) { set("shader_type", shader_type); }
+  void setShaderType(const std::string& shader_type) {
+    // force to lowercase before setting
+    const std::string shaderTypeLC =
+        Cr::Utility::String::lowercase(shader_type);
+    auto mapIter = ShaderTypeNamesMap.find(shaderTypeLC);
+    ESP_CHECK(mapIter != ShaderTypeNamesMap.end(),
+              "Illegal shader_type value"
+                  << shader_type
+                  << "attempted to be set in AbstractObjectAttributes:"
+                  << getHandle() << ". Aborting.");
+    set("shader_type", shader_type);
+  }
 
   /**
    * @brief Get the default shader to use for an object or stage.  This may be
    * overridden by a scene instance specification.
    */
-  int getShaderType() const { return get<int>("shader_type"); }
-
-  // if true use phong illumination model instead of flat shading
-  void setRequiresLighting(bool requiresLighting) {
-    set("requires_lighting", requiresLighting);
+  ObjectInstanceShaderType getShaderType() const {
+    const std::string val =
+        Cr::Utility::String::lowercase(get<std::string>("shader_type"));
+    auto mapIter = ShaderTypeNamesMap.find(val);
+    if (mapIter != ShaderTypeNamesMap.end()) {
+      return mapIter->second;
+    }
+    // Unknown is default value - should never be returned since setter verifies
+    // value
+    return ObjectInstanceShaderType::Unknown;
   }
-  bool getRequiresLighting() const { return get<bool>("requires_lighting"); }
+
+  /**
+   * @brief If true then use flat shading regardless of what shader-type is
+   * specified by materials or other configs.
+   */
+  void setForceFlatShading(bool force_flat_shading) {
+    set("force_flat_shading", force_flat_shading);
+  }
+  bool getForceFlatShading() const { return get<bool>("force_flat_shading"); }
 
   bool getIsDirty() const { return get<bool>("__isDirty"); }
   void setIsClean() { set("__isDirty", false); }
-
-  /**
-   * @brief Used for info purposes.  Return a string name corresponding to the
-   * currently specified shader type value;
-   */
-  std::string getCurrShaderTypeName() const {
-    int shaderTypeVal = getShaderType();
-    return getShaderTypeName(shaderTypeVal);
-  }
 
  protected:
   /**
@@ -245,8 +266,8 @@ class AbstractObjectAttributes : public AbstractAttributes {
 };  // class AbstractObjectAttributes
 
 /**
- * @brief Specific Attributes instance describing an object, constructed with
- * a default set of object-specific required attributes
+ * @brief Specific Attributes instance describing a rigid object, constructed
+ * with a default set of object-specific required attributes.
  */
 class ObjectAttributes : public AbstractObjectAttributes {
  public:
@@ -298,13 +319,6 @@ class ObjectAttributes : public AbstractObjectAttributes {
     return get<bool>("join_collision_meshes");
   }
 
-  /**
-   * @brief If not visible can add dynamic non-rendered object into a scene
-   * object.  If is not visible then should not add object to drawables.
-   */
-  void setIsVisible(bool isVisible) { set("is_visible", isVisible); }
-  bool getIsVisible() const { return get<bool>("is_visible"); }
-
   void setSemanticId(int semanticId) { set("semantic_id", semanticId); }
 
   uint32_t getSemanticId() const { return get<int>("semantic_id"); }
@@ -331,8 +345,8 @@ class ObjectAttributes : public AbstractObjectAttributes {
 // stage attributes
 
 /**
- * @brief Specific Attributes instance describing a stage, constructed with a
- * default set of stage-specific required attributes
+ * @brief Specific Attributes instance describing a rigid stage, constructed
+ * with a default set of stage-specific required attributes
  */
 class StageAttributes : public AbstractObjectAttributes {
  public:
@@ -380,11 +394,13 @@ class StageAttributes : public AbstractObjectAttributes {
    * @ref esp::sim::SimulatorConfiguration, is overridden by any value set in
    * json, if exists.
    */
-  void setLightSetup(const std::string& lightSetup) {
-    set("light_setup", lightSetup);
-    setRequiresLighting(lightSetup != NO_LIGHT_KEY);
+  void setLightSetupKey(const std::string& light_setup_key) {
+    set("light_setup_key", light_setup_key);
+    setForceFlatShading(light_setup_key == NO_LIGHT_KEY);
   }
-  std::string getLightSetup() const { return get<std::string>("light_setup"); }
+  std::string getLightSetupKey() const {
+    return get<std::string>("light_setup_key");
+  }
 
   /**
    * @brief set frustum culling for stage.  Default value comes from
@@ -410,7 +426,7 @@ class StageAttributes : public AbstractObjectAttributes {
   std::string getAbstractObjectInfoInternal() const override {
     return Cr::Utility::formatString("{},{},{},{}", getNavmeshAssetHandle(),
                                      getAsString("gravity"),
-                                     getAsString("origin"), getLightSetup());
+                                     getAsString("origin"), getLightSetupKey());
   }
 
  public:

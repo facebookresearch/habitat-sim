@@ -12,7 +12,7 @@
  */
 
 #include "RigidBase.h"
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/io/URDFParser.h"
 #include "esp/scene/SceneNode.h"
 

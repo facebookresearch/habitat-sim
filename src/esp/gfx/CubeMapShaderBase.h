@@ -12,7 +12,7 @@
 #include <Magnum/ResourceManager.h>
 #include <Magnum/Shaders/GenericGL.h>
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
 namespace esp {
 namespace gfx {

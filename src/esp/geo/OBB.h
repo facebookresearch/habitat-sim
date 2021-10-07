@@ -5,8 +5,8 @@
 #ifndef ESP_GEO_OBB_H_
 #define ESP_GEO_OBB_H_
 
-#include "esp/core/esp.h"
-#include "esp/geo/geo.h"
+#include "esp/core/Esp.h"
+#include "esp/geo/Geo.h"
 
 namespace esp {
 namespace geo {

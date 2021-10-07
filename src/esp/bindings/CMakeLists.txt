@@ -2,8 +2,8 @@ find_package(MagnumBindings REQUIRED Python)
 
 pybind11_add_module(
   habitat_sim_bindings
-  bindings.h
-  bindings.cpp
+  Bindings.h
+  Bindings.cpp
   AttributesBindings.cpp
   AttributesManagersBindings.cpp
   ConfigBindings.cpp

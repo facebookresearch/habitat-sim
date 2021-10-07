@@ -8,7 +8,7 @@
 #include <Corrade/Containers/EnumSet.h>
 
 #include "CubeMapShaderBase.h"
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
 namespace esp {
 namespace gfx {

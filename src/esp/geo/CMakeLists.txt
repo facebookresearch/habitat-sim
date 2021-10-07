@@ -2,8 +2,8 @@ add_library(
   geo STATIC
   CoordinateFrame.cpp
   CoordinateFrame.h
-  geo.cpp
-  geo.h
+  Geo.cpp
+  Geo.h
   OBB.cpp
   OBB.h
   VoxelGrid.cpp

@@ -166,5 +166,5 @@ def test_physics_object_attributes():
     assert object_template.bounding_box_collisions == True
     object_template.join_collision_meshes = False
     assert object_template.join_collision_meshes == False
-    object_template.requires_lighting = False
-    assert object_template.requires_lighting == False
+    object_template.force_flat_shading = True
+    assert object_template.force_flat_shading == True

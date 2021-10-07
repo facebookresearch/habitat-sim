@@ -13,7 +13,7 @@
 #include <Magnum/GL/GL.h>  // header with all forward declarations for the Mn::GL namespace
 #include <Magnum/Shaders/GenericGL.h>
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
 namespace esp {
 namespace gfx {
@@ -186,7 +186,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
     /**
      * render point light shadows using variance shadow map (VSM)
      */
-    // ShadowsVSM = 1 << 14, // TODO
+    ShadowsVSM = 1 << 14,
 
     /**
      * Enable shader debug mode. Then developer can set the uniform
@@ -289,6 +289,15 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    * @return Reference to self (for method chaining)
    */
   PbrShader& bindPrefilteredMap(Magnum::GL::CubeMapTexture& texture);
+
+  /**
+   * @brief Bind the point shadow map (cubemap texture)
+   * @param[in] idx, the index of the shadow map, can be 0, 1, or 2. (We allow
+   * at most 3 shadow maps.)
+   * NOTE: requires Flag::ShadowsPCF or Flag::ShadowsVSM is set
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& bindPointShadowMap(int idx, Magnum::GL::CubeMapTexture& texture);
 
   // ======== set uniforms ===========
   /**

@@ -11,8 +11,8 @@
 
 #include "esp/assets/Asset.h"
 #include "esp/assets/ResourceManager.h"
-#include "esp/io/io.h"
-#include "esp/io/json.h"
+#include "esp/io/Io.h"
+#include "esp/io/Json.h"
 
 namespace esp {
 using assets::AssetType;
@@ -177,8 +177,8 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
 
   // set defaults from SimulatorConfig values; these can also be overridden by
   // json, for example.
-  newAttributes->setLightSetup(cfgLightSetup_);
-  newAttributes->setRequiresLighting(cfgLightSetup_ != NO_LIGHT_KEY);
+  newAttributes->setLightSetupKey(cfgLightSetup_);
+  newAttributes->setForceFlatShading(cfgLightSetup_ == NO_LIGHT_KEY);
   // set value from config so not necessary to be passed as argument
   newAttributes->setFrustumCulling(cfgFrustumCulling_);
 
@@ -207,7 +207,8 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
 
     // Build default semantic mesh file name
     const std::string semanticMeshFilename =
-        io::removeExtension(houseFilename) + "_semantic.ply";
+        Cr::Utility::Directory::splitExtension(houseFilename).first +
+        "_semantic.ply";
     newAttributes->setSemanticAssetHandle(semanticMeshFilename);
 
     // set default origin and orientation values based on file name

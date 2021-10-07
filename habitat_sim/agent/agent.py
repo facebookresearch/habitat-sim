@@ -81,12 +81,6 @@ class AgentState:
     rotation: Union[qt.quaternion, List, np.ndarray] = attr.ib(
         factory=_default_quaternion, validator=is_unit_length
     )
-    velocity: np.ndarray = attr.ib(factory=_triple_zero, validator=all_is_finite)
-    angular_velocity: np.ndarray = attr.ib(
-        factory=_triple_zero, validator=all_is_finite
-    )
-    force: np.ndarray = attr.ib(factory=_triple_zero, validator=all_is_finite)
-    torque: np.ndarray = attr.ib(factory=_triple_zero, validator=all_is_finite)
     sensor_states: Dict[str, SixDOFPose] = attr.ib(
         factory=dict,
         validator=attr.validators.deep_mapping(
@@ -101,13 +95,7 @@ class AgentState:
 class AgentConfiguration:
     height: float = 1.5
     radius: float = 0.1
-    mass: float = 32.0
-    linear_acceleration: float = 20.0
-    angular_acceleration: float = 4 * np.pi
-    linear_friction: float = 0.5
-    angular_friction: float = 1.0
-    coefficient_of_restitution: float = 0.0
-    sensor_specifications: List[hsim.SensorSpec] = []
+    sensor_specifications: List[hsim.SensorSpec] = attr.Factory(list)
     action_space: Dict[Any, ActionSpec] = attr.Factory(_default_action_space)
     body_type: str = "cylinder"
 

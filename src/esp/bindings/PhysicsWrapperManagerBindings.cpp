@@ -2,7 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "esp/bindings/bindings.h"
+#include "esp/bindings/Bindings.h"
 
 #include "esp/physics/bullet/objectWrappers/ManagedBulletArticulatedObject.h"
 #include "esp/physics/bullet/objectWrappers/ManagedBulletRigidObject.h"
@@ -286,6 +286,7 @@ void initPhysicsWrapperManagerBindings(pybind11::module& m) {
 
           "filepath"_a, "fixed_base"_a = false, "global_scale"_a = 1.0,
           "mass_scale"_a = 1.0, "force_reload"_a = false,
+          "maintain_link_order"_a = false,
           "light_setup_key"_a = DEFAULT_LIGHTING_KEY,
           R"(Load and parse a URDF file using the given 'filepath' into a model,
           then use this model to instantiate an Articulated Object in the world.

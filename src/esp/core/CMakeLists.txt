@@ -40,17 +40,17 @@ add_library(
   Check.h
   Configuration.cpp
   Configuration.h
-  esp.cpp
-  esp.h
-  logging.cpp
-  logging.h
+  Esp.cpp
+  Esp.h
+  Logging.cpp
+  Logging.h
   managedContainers/AbstractManagedObject.h
   managedContainers/ManagedContainer.h
   managedContainers/ManagedContainerBase.cpp
   managedContainers/ManagedContainerBase.h
   managedContainers/ManagedFileBasedContainer.h
-  random.h
-  spimpl.h
+  Random.h
+  Spimpl.h
   Utility.h
 )
 

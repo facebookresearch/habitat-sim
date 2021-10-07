@@ -2,7 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "logging.h"
+#include "Logging.h"
 #include "Check.h"
 
 #include <algorithm>
@@ -14,6 +14,7 @@
 #include <Corrade/Containers/StringStl.h>
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/Format.h>
+#include <Corrade/Utility/FormatStl.h>
 
 namespace Cr = Corrade;
 using Cr::Containers::Literals::operator""_s;
@@ -131,9 +132,9 @@ Cr::Containers::String buildMessagePrefix(Subsystem subsystem,
                                           const std::string& function,
                                           int line) {
   auto baseFileName = Cr::Utility::Directory::filename(filename);
-  return ""_s.join({"["_s, subsystemNames[uint8_t(subsystem)], "] "_s,
-                    baseFileName, "("_s, std::to_string(line), ")::"_s,
-                    function, " : "_s});
+  return Cr::Utility::formatString(
+      "[{}] {}({})::{} : ", subsystemNames[uint8_t(subsystem)], baseFileName,
+      line, function);
 }
 
 }  // namespace logging

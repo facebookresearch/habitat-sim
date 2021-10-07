@@ -888,6 +888,9 @@ void PhysicsTest::testNumActiveContactPoints() {
 
     // no active contact points at start
     CORRADE_COMPARE(physicsManager_->getNumActiveContactPoints(), 0);
+    CORRADE_COMPARE(physicsManager_->getNumActiveOverlappingPairs(), 0);
+    CORRADE_COMPARE(physicsManager_->getStepCollisionSummary(),
+                    "(no active collision manifolds)\n");
 
     // simulate to let cube fall and hit the ground
     while (physicsManager_->getWorldTime() < 2.0) {
@@ -898,6 +901,12 @@ void PhysicsTest::testNumActiveContactPoints() {
     // expect 4 active contact points for cube
     CORRADE_COMPARE(allContactPoints.size(), 4);
     CORRADE_COMPARE(physicsManager_->getNumActiveContactPoints(), 4);
+    // simple_room.glb has multiple subparts and our box is near two of them
+    CORRADE_COMPARE(physicsManager_->getNumActiveOverlappingPairs(), 2);
+    CORRADE_COMPARE(
+        physicsManager_->getStepCollisionSummary(),
+        "[RigidObject, cubeSolid, id 0] vs [Stage, subpart 6], 4 points\n");
+
     float totalNormalForce = 0;
     for (auto& cp : allContactPoints) {
       // contacts are still active
@@ -927,6 +936,7 @@ void PhysicsTest::testNumActiveContactPoints() {
     CORRADE_COMPARE(physicsManager_->getContactPoints().size(), 4);
     // no active contact points at end
     CORRADE_COMPARE(physicsManager_->getNumActiveContactPoints(), 0);
+    CORRADE_COMPARE(physicsManager_->getNumActiveOverlappingPairs(), 0);
   }
 }  // PhysicsTest::testNumActiveContactPoints
 

@@ -4,7 +4,7 @@
 #include <Corrade/TestSuite/Tester.h>
 #include <Corrade/Utility/Directory.h>
 #include <string>
-#include "esp/io/io.h"
+#include "esp/io/Io.h"
 #include "esp/scene/SemanticScene.h"
 #include "esp/sim/Simulator.h"
 
@@ -61,7 +61,7 @@ void GibsonSceneTest::testGibsonScene() {
 
 void GibsonSceneTest::testGibsonSemanticScene() {
   esp::logging::LoggingContext loggingContext;
-  if (!esp::io::exists(gibsonSemanticFilename)) {
+  if (!Cr::Utility::Directory::exists(gibsonSemanticFilename)) {
     std::string skip_message = "Gibson's semantic scene file \"" +
                                gibsonSemanticFilename + "\" wasn't found.";
     CORRADE_SKIP(skip_message.c_str());

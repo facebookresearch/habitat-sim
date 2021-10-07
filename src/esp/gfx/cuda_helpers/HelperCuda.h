@@ -19,7 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <helper_string.h>
+#include <HelperString.h>
 
 #ifndef EXIT_WAIVED
 #define EXIT_WAIVED 2

@@ -13,8 +13,8 @@
 
 #include "PTexMeshShader.h"
 #include "esp/assets/PTexMeshData.h"
-#include "esp/core/esp.h"
-#include "esp/io/io.h"
+#include "esp/core/Esp.h"
+#include "esp/io/Io.h"
 
 // This is to import the "resources" at runtime. // When the resource is
 // compiled into static library, it must be explicitly initialized via this

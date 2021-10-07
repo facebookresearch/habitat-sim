@@ -7,11 +7,11 @@
 #include <Corrade/Utility/Directory.h>
 
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
+#include "esp/io/Io.h"
+#include "esp/io/Json.h"
 #include "esp/io/JsonAllTypes.h"
 #include "esp/io/URDFParser.h"
-#include "esp/io/io.h"
-#include "esp/io/json.h"
 #include "esp/metadata/attributes/ObjectAttributes.h"
 
 #include "configure.h"
@@ -27,13 +27,7 @@ const std::string dataDir =
 
 struct IOTest : Cr::TestSuite::Tester {
   explicit IOTest();
-
-  void fileExistTest();
-  void fileSizeTest();
-  void fileRmExtTest();
   void fileReplaceExtTest();
-  void tokenizeTest();
-
   void parseURDF();
   void testJson();
   void testJsonBuiltinTypes();
@@ -47,45 +41,10 @@ struct IOTest : Cr::TestSuite::Tester {
 };
 
 IOTest::IOTest() {
-  addTests({&IOTest::fileExistTest, &IOTest::fileSizeTest,
-            &IOTest::fileRmExtTest, &IOTest::fileReplaceExtTest,
-            &IOTest::tokenizeTest, &IOTest::parseURDF, &IOTest::testJson,
+  addTests({&IOTest::fileReplaceExtTest, &IOTest::parseURDF, &IOTest::testJson,
             &IOTest::testJsonBuiltinTypes, &IOTest::testJsonStlTypes,
             &IOTest::testJsonMagnumTypes, &IOTest::testJsonEspTypes,
             &IOTest::testJsonUserType});
-}
-
-void IOTest::fileExistTest() {
-  std::string file = FILE_THAT_EXISTS;
-  bool result = esp::io::exists(file);
-  CORRADE_VERIFY(result);
-
-  file = "Foo.bar";
-  result = esp::io::exists(file);
-  CORRADE_VERIFY(!result);
-}
-
-void IOTest::fileSizeTest() {
-  std::string existingFile = FILE_THAT_EXISTS;
-  auto result = esp::io::fileSize(existingFile);
-  CORRADE_VERIFY(result > 0);
-
-  std::string nonexistingFile = "Foo.bar";
-  result = esp::io::fileSize(nonexistingFile);
-  CORRADE_COMPARE(result, 0);
-}
-
-void IOTest::fileRmExtTest() {
-  std::string filename = "/foo/bar.jpeg";
-
-  // rm extension
-  std::string result = esp::io::removeExtension(filename);
-  CORRADE_COMPARE(result, "/foo/bar");
-  CORRADE_COMPARE(filename, "/foo/bar.jpeg");
-
-  std::string filenameNoExt = "/path/to/foobar";
-  result = esp::io::removeExtension(filenameNoExt);
-  CORRADE_COMPARE(result, filenameNoExt);
 }
 
 void IOTest::fileReplaceExtTest() {
@@ -128,16 +87,6 @@ void IOTest::fileReplaceExtTest() {
   cornerCase = ".jpg";
   result = esp::io::changeExtension(cornerCase, cornerCaseExt);
   CORRADE_COMPARE(result, ".jpg.png");
-}
-
-void IOTest::tokenizeTest() {
-  std::string file = ",a,|,bb|c";
-  const auto& t1 = esp::io::tokenize(file, ",");
-  CORRADE_COMPARE((std::vector<std::string>{"", "a", "|", "bb|c"}), t1);
-  const auto& t2 = esp::io::tokenize(file, "|");
-  CORRADE_COMPARE((std::vector<std::string>{",a,", ",bb", "c"}), t2);
-  const auto& t3 = esp::io::tokenize(file, ",|", 0, true);
-  CORRADE_COMPARE((std::vector<std::string>{"", "a", "bb", "c"}), t3);
 }
 
 void IOTest::parseURDF() {
@@ -462,7 +411,7 @@ void IOTest::testJsonEspTypes() {
         assetInfo2.frame.origin().isApprox(assetInfo.frame.origin()));
     CORRADE_COMPARE(assetInfo2.virtualUnitToMeters,
                     assetInfo.virtualUnitToMeters);
-    CORRADE_COMPARE(assetInfo2.requiresLighting, assetInfo.requiresLighting);
+    CORRADE_COMPARE(assetInfo2.forceFlatShading, assetInfo.forceFlatShading);
     CORRADE_COMPARE(assetInfo2.splitInstanceMesh, assetInfo.splitInstanceMesh);
     CORRADE_VERIFY(assetInfo2.overridePhongMaterial == Cr::Containers::NullOpt);
     // now test again with override material

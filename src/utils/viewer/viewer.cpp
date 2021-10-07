@@ -46,10 +46,9 @@
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Renderer.h>
 #include <sophus/so3.hpp>
+#include "esp/core/Esp.h"
 #include "esp/core/Utility.h"
-#include "esp/core/esp.h"
 #include "esp/gfx/Drawable.h"
-#include "esp/io/io.h"
 
 #ifdef ESP_BUILD_WITH_VHACD
 #include "esp/geo/VoxelUtils.h"
@@ -669,6 +668,8 @@ Viewer::Viewer(const Arguments& arguments)
       .addOption("agent-transform-filepath")
       .setHelp("agent-transform-filepath",
                "Specify path to load camera transform from.")
+      .addBooleanOption("shadows")
+      .setHelp("shadows", "Rendering shadows. (only works with PBR rendering.")
       .addBooleanOption("ibl")
       .setHelp("ibl",
                "Image Based Lighting (it works only when PBR models exist in "
@@ -758,7 +759,7 @@ Viewer::Viewer(const Arguments& arguments)
   simConfig_.enableGfxReplaySave = !gfxReplayRecordFilepath_.empty();
   if (args.isSet("stage-requires-lighting")) {
     ESP_DEBUG() << "Stage using DEFAULT_LIGHTING_KEY";
-    simConfig_.sceneLightSetup = esp::DEFAULT_LIGHTING_KEY;
+    simConfig_.sceneLightSetupKey = esp::DEFAULT_LIGHTING_KEY;
   }
 
   // setup the PhysicsManager config file
@@ -844,6 +845,14 @@ Viewer::Viewer(const Arguments& arguments)
 
   // Per frame profiler will average measurements taken over previous 50 frames
   profiler_.setup(profilerValues, 50);
+
+  // shadows
+  if (args.isSet("shadows")) {
+    simulator_->updateShadowMapDrawableGroup();
+    simulator_->computeShadowMaps(0.01f,   // lightNearPlane
+                                  20.0f);  // lightFarPlane
+    simulator_->setShadowMapsToDrawables();
+  }
 
   printHelpText();
 }  // end Viewer::Viewer
@@ -1404,8 +1413,8 @@ void Viewer::drawEvent() {
     std::string modeText =
         "Mouse Interaction Mode: " + mouseModeNames.at(mouseInteractionMode);
     ImGui::Text("%s", modeText.c_str());
+    ImGui::End();
   }
-  ImGui::End();
 
   /* Set appropriate states. If you only draw ImGui, it is sufficient to
      just enable blending and scissor test in the constructor. */

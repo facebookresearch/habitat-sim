@@ -69,9 +69,7 @@ class _Registry:
 
             cls._mapping["move_fn"][
                 _camel_to_snake(controller.__name__) if name is None else name
-            ] = controller(
-                body_action  # type: ignore
-            )
+            ] = controller(body_action)
 
             return controller
 

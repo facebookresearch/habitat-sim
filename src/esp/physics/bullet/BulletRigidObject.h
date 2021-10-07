@@ -18,7 +18,7 @@
 
 #include "BulletDynamics/Featherstone/btMultiBodyDynamicsWorld.h"
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
 #include "esp/physics/CollisionGroupHelper.h"
 #include "esp/physics/RigidObject.h"
@@ -499,6 +499,8 @@ class BulletRigidObject : public BulletBase,
   void setWorldTransform(const btTransform& worldTrans) override;
 
   void getWorldTransform(btTransform& worldTrans) const override;
+
+  std::string getCollisionDebugName();
 
   Corrade::Containers::Optional<btTransform> deferredUpdate_ =
       Corrade::Containers::NullOpt;

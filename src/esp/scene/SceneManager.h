@@ -8,7 +8,7 @@
 #include <memory>
 #include <vector>
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/gfx/magnum.h"
 
 #include "SceneGraph.h"

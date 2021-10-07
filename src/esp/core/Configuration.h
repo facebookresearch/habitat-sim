@@ -10,11 +10,10 @@
 #include <Corrade/Utility/FormatStl.h>
 #include <Magnum/Magnum.h>
 #include <string>
-#include <typeinfo>
 #include <unordered_map>
 
 #include "esp/core/Check.h"
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
@@ -159,17 +158,23 @@ class ConfigValue {
 
   template <class T>
   void set(const T& value) {
-    // this never fails, not a bool anymore
+    // this never fails
     deleteCurrentValue();
-    // this will blow up at compile time if such type is not supported
+    // this will blow up at compile time if given type is not supported
     _type = configStoredTypeFor<T>();
-    // see later
+    // these asserts are checking the integrity of the support for T's type, and
+    // will fire if...
+
+    // ...we added a new type into @ref ConfigStoredType enum improperly
+    // (trivial type added after entry ConfigStoredType::_nonTrivialTypes, or
+    // vice-versa)
     static_assert(isConfigStoredTypeNonTrivial(configStoredTypeFor<T>()) !=
                       std::is_trivially_copyable<T>::value,
-                  "something's off!");
-    // this will blow up if we added new larger types but forgot to update the
-    // storage
+                  "Something's incorrect about enum placement for added type!");
+    // ...we added a new type that is too large for internal storage
     static_assert(sizeof(T) <= sizeof(_data), "internal storage too small");
+    // ...we added a new type whose alignment does not match internal storage
+    // alignment
     static_assert(alignof(T) <= alignof(ConfigValue),
                   "internal storage too unaligned");
 

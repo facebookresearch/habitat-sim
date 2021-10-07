@@ -22,7 +22,7 @@
 #include <limits>
 
 #include "esp/assets/MeshData.h"
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
 #include "DetourNavMesh.h"
 #include "DetourNavMeshBuilder.h"
@@ -1037,7 +1037,7 @@ bool PathFinder::Impl::findPathSetup(MultiGoalShortestPath& path,
     return false;
   }
 
-  if (path.pimpl_->endRefs.size() != 0)
+  if (!path.pimpl_->endRefs.empty())
     return true;
 
   for (const auto& rqEnd : path.getRequestedEnds()) {

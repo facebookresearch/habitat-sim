@@ -93,6 +93,14 @@ int PhysicsManager::addObjectInstance(
   auto objAttributes =
       resourceManager_.getObjectAttributesManager()->getObjectCopyByHandle(
           attributesHandle);
+  // check if an object is being set to be not visible for a particular
+  // instance.
+  int visSet = objInstAttributes->getIsInstanceVisible();
+  if (visSet != ID_UNDEFINED) {
+    // specfied in scene instance
+    objAttributes->setIsVisible(visSet == 1);
+  }
+
   if (!objAttributes) {
     ESP_ERROR() << "Missing/improperly configured objectAttributes"
                 << attributesHandle << ", whose handle contains"
@@ -101,11 +109,10 @@ int PhysicsManager::addObjectInstance(
     return 0;
   }
   // set shader type to use for stage
-  int objShaderType = objInstAttributes->getShaderType();
+  const auto objShaderType = objInstAttributes->getShaderType();
   if (objShaderType !=
-      static_cast<int>(
-          metadata::attributes::ObjectInstanceShaderType::Unknown)) {
-    objAttributes->setShaderType(objShaderType);
+      metadata::attributes::ObjectInstanceShaderType::Unknown) {
+    objAttributes->setShaderType(getShaderTypeName(objShaderType));
   }
   int objID = 0;
   if (simulator_ != nullptr) {
@@ -283,12 +290,21 @@ int PhysicsManager::addArticulatedObjectInstance(
   // Get drawables from simulator. TODO: Support non-existent simulator?
   auto& drawables = simulator_->getDrawableGroup();
 
+  // check if an object is being set to be not visible for a particular
+  // instance.
+  int visSet = aObjInstAttributes->getIsInstanceVisible();
+  if (visSet != ID_UNDEFINED) {
+    // specfied in scene instance
+    // objAttributes->setIsVisible(visSet == 1);
+    // TODO: manage articulated object visibility.
+  }
+
   // call object creation (resides only in physics library-based derived physics
   // managers)
   int aObjID = this->addArticulatedObjectFromURDF(
       filepath, &drawables, aObjInstAttributes->getFixedBase(),
       aObjInstAttributes->getUniformScale(), aObjInstAttributes->getMassScale(),
-      false, lightSetup);
+      false, false, lightSetup);
   if (aObjID == ID_UNDEFINED) {
     // instancing failed for some reason.
     ESP_ERROR() << "Articulated Object create failed for model filepath"

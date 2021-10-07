@@ -8,12 +8,11 @@
 #include <string>
 #include <vector>
 
-#include "esp/assets/GenericInstanceMeshData.h"
-#include "esp/core/esp.h"
-#include "esp/geo/geo.h"
-#include "esp/io/io.h"
-
+#include <Corrade/Utility/Directory.h>
 #include <sophus/so3.hpp>
+#include "esp/assets/GenericInstanceMeshData.h"
+#include "esp/core/Esp.h"
+#include "esp/geo/Geo.h"
 
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
@@ -36,7 +35,7 @@ SceneLoader::SceneLoader()
 
 MeshData SceneLoader::load(const AssetInfo& info) {
   MeshData mesh;
-  if (!esp::io::exists(info.filepath)) {
+  if (!Cr::Utility::Directory::exists(info.filepath)) {
     ESP_ERROR() << "Could not find file" << info.filepath;
     return mesh;
   }

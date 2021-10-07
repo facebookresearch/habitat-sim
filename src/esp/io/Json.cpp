@@ -2,7 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "esp/io/json.h"
+#include "esp/io/Json.h"
 #include <Corrade/Containers/Containers.h>
 #include <Corrade/Containers/Pair.h>
 #include <Corrade/Containers/StringView.h>
@@ -13,7 +13,7 @@
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
 namespace Cr = Corrade;
 
