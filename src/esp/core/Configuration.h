@@ -158,7 +158,7 @@ class ConfigValue {
   bool isValid() const { return _type != ConfigStoredType::Unknown; }
 
   /**
-   * @brief Write this ConfigValue to an appropriately configure json object.
+   * @brief Write this ConfigValue to an appropriately configured json object.
    */
   io::JsonGenericValue writeToJsonValue(io::JsonAllocator& allocator) const;
 
