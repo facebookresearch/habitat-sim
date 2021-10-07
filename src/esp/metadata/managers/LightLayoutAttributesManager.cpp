@@ -215,6 +215,7 @@ void LightLayoutAttributesManager::setLightInstanceValsFromJSONDoc(
              "Spotlights not currently supported, so cone angle values are "
              "ignored and light will be created as a point light.";
     } else {
+      // sets values in light instance subconfig "spot"
       const auto& spotArea = jsonConfig["spot"];
       // set inner cone angle
       io::jsonIntoSetter<Magnum::Rad>(
