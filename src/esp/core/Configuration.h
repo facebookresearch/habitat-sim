@@ -677,9 +677,20 @@ class Configuration {
   virtual void writeConfigsToJson(io::JsonGenericValue& jsonObj,
                                   io::JsonAllocator& allocator) const;
 
+  /**
+   * @brief Take the passed @p key and query the config value for that key,
+   * writing it to @p jsonName within the passed jsonObj.
+   */
   void writeValueToJson(const char* key,
+                        const char* jsonName,
                         io::JsonGenericValue& jsonObj,
                         io::JsonAllocator& allocator) const;
+
+  void writeValueToJson(const char* key,
+                        io::JsonGenericValue& jsonObj,
+                        io::JsonAllocator& allocator) const {
+    writeValueToJson(key, key, jsonObj, allocator);
+  }
 
  protected:
   /**

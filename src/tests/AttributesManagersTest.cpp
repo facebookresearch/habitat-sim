@@ -1200,11 +1200,8 @@ void AttributesManagersTest::testStageAttrVals(
   CORRADE_COMPARE(static_cast<int>(stageAttr->getShaderType()),
                   static_cast<int>(Attrs::ObjectInstanceShaderType::Material));
   CORRADE_COMPARE(stageAttr->getOrigin(), Magnum::Vector3(1, 2, 3));
-  CORRADE_COMPARE(stageAttr->getSemanticAssetHandle(),
-                  "testJSONSemanticAsset.glb");
-  CORRADE_COMPARE(stageAttr->getNavmeshAssetHandle(),
-                  "testJSONNavMeshAsset.glb");
-  CORRADE_COMPARE(stageAttr->getHouseFilename(), "testJSONHouseFileName.glb");
+  CORRADE_COMPARE(stageAttr->getSemanticAssetHandle(), assetPath);
+  CORRADE_COMPARE(stageAttr->getNavmeshAssetHandle(), assetPath);
   // test stage attributes-level user config vals
   testUserDefinedConfigVals(stageAttr->getUserConfiguration(),
                             "stage defined string", false, 3, 0.8,
@@ -1225,8 +1222,8 @@ void AttributesManagersTest::testStageJSONLoad() {
         "restitution_coefficient": 0.456,
         "force_flat_shading": false,
         "units_to_meters": 1.1,
-        "up":[0.0,1.0,0.0],
-        "front":[0,1.0,0],
+        "up":[2.1, 0, 0],
+        "front":[0, 2.1, 0],
         "render_asset": "testJSONRenderAsset.glb",
         "collision_asset": "testJSONCollisionAsset.glb",
         "is_collidable": false,
@@ -1258,6 +1255,8 @@ void AttributesManagersTest::testStageJSONLoad() {
 
   stageAttr->setRenderAssetHandle(stageAsset);
   stageAttr->setCollisionAssetHandle(stageAsset);
+  stageAttr->setSemanticAssetHandle(stageAsset);
+  stageAttr->setNavmeshAssetHandle(stageAsset);
   // now register so can be saved to disk
   stageAttributesManager_->registerObject(stageAttr);
 

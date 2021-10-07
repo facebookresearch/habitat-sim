@@ -330,9 +330,10 @@ int Configuration::loadFromJson(const io::JsonGenericValue& jsonObj) {
 }  // Configuration::loadFromJson
 
 void Configuration::writeValueToJson(const char* key,
+                                     const char* jsonName,
                                      io::JsonGenericValue& jsonObj,
                                      io::JsonAllocator& allocator) const {
-  rapidjson::GenericStringRef<char> name{key};
+  rapidjson::GenericStringRef<char> name{jsonName};
   auto jsonVal = get(key).writeToJsonValue(allocator);
   jsonObj.AddMember(name, jsonVal, allocator);
 }

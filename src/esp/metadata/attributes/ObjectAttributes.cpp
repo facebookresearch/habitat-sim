@@ -56,8 +56,8 @@ void AbstractObjectAttributes::writeValuesToJson(
   writeValueToJson("scale", jsonObj, allocator);
   writeValueToJson("margin", jsonObj, allocator);
   writeValueToJson("is_collidable", jsonObj, allocator);
-  writeValueToJson("orient_up", jsonObj, allocator);
-  writeValueToJson("orient_front", jsonObj, allocator);
+  writeValueToJson("orient_up", "up", jsonObj, allocator);
+  writeValueToJson("orient_front", "front", jsonObj, allocator);
   writeValueToJson("units_to_meters", jsonObj, allocator);
   writeValueToJson("is_visible", jsonObj, allocator);
   writeValueToJson("friction_coefficient", jsonObj, allocator);
