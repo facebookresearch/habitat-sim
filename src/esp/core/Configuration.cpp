@@ -329,9 +329,16 @@ int Configuration::loadFromJson(const io::JsonGenericValue& jsonObj) {
   return numConfigSettings;
 }  // Configuration::loadFromJson
 
-io::JsonGenericValue Configuration::writeToJsonValue(
-    io::JsonAllocator& allocator) {
-  io::JsonGenericValue jsonObj(rapidjson::kObjectType);
+void Configuration::writeValueToJson(const char* key,
+                                     io::JsonGenericValue& jsonObj,
+                                     io::JsonAllocator& allocator) const {
+  rapidjson::GenericStringRef<char> name{key};
+  auto jsonVal = get(key).writeToJsonValue(allocator);
+  jsonObj.AddMember(name, jsonVal, allocator);
+}
+
+void Configuration::writeValuesToJson(io::JsonGenericValue& jsonObj,
+                                      io::JsonAllocator& allocator) const {
   // iterate through all values
   // pair of begin/end const iterators to all values
   auto valIterPair = getValuesIterator();
@@ -350,16 +357,32 @@ io::JsonGenericValue Configuration::writeToJsonValue(
                     << "], so nothing will be written to JSON for this key.";
     }
   }  // iterate through all values
+}  // Configuration::writeValuesToJson
 
+void Configuration::writeConfigsToJson(io::JsonGenericValue& jsonObj,
+                                       io::JsonAllocator& allocator) const {
   // iterate through subconfigs
   // pair of begin/end const iterators to all subconfigurations
   auto cfgIterPair = getSubconfigIterator();
   for (auto& cfgIter = cfgIterPair.first; cfgIter != cfgIterPair.second;
        ++cfgIter) {
     rapidjson::GenericStringRef<char> name{cfgIter->first.c_str()};
-    io::JsonGenericValue subObj = cfgIter->second->writeToJsonValue(allocator);
+    io::JsonGenericValue subObj =
+        cfgIter->second->Configuration::writeToJsonValue(allocator);
     jsonObj.AddMember(name, subObj, allocator);
   }  // iterate through all configurations
+
+}  // Configuration::writeConfigsToJson
+
+io::JsonGenericValue Configuration::writeToJsonValue(
+    io::JsonAllocator& allocator) const {
+  io::JsonGenericValue jsonObj(rapidjson::kObjectType);
+  // iterate through all values - always call base version - this will only ever
+  // be called from subconfigs.
+  Configuration::writeValuesToJson(jsonObj, allocator);
+
+  // iterate through subconfigs
+  Configuration::writeConfigsToJson(jsonObj, allocator);
 
   return jsonObj;
 }  // writeToJsonValue

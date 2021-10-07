@@ -1234,7 +1234,6 @@ void AttributesManagersTest::testStageJSONLoad() {
         "origin":[1,2,3],
         "semantic_asset":"testJSONSemanticAsset.glb",
         "nav_asset":"testJSONNavMeshAsset.glb",
-        "house_filename":"testJSONHouseFileName.glb",
         "shader_type" : "material",
         "user_defined" : {
             "user_string" : "stage defined string",

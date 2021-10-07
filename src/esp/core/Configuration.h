@@ -655,12 +655,36 @@ class Configuration {
    */
   int loadFromJson(const io::JsonGenericValue& jsonObj);
 
-  io::JsonGenericValue writeToJsonValue(io::JsonAllocator& allocator);
+  /**
+   * @brief Build and return a json object holding the values and nested objects
+   * holding the subconfigs of this Configuration.
+   */
+  virtual io::JsonGenericValue writeToJsonValue(
+      io::JsonAllocator& allocator) const;
+
+  /**
+   * @brief Populate a json object with all the first-level values held in this
+   * configuration.  May be overwritten to handle special cases for root-level
+   * configuration.
+   */
+  virtual void writeValuesToJson(io::JsonGenericValue& jsonObj,
+                                 io::JsonAllocator& allocator) const;
+
+  /**
+   * @brief Populate a json object with all the data from the subconfigurations,
+   * held in json sub-objects, for this Configuration.
+   */
+  virtual void writeConfigsToJson(io::JsonGenericValue& jsonObj,
+                                  io::JsonAllocator& allocator) const;
+
+  void writeValueToJson(const char* key,
+                        io::JsonGenericValue& jsonObj,
+                        io::JsonAllocator& allocator) const;
 
  protected:
   /**
-   * @brief Friend function.  Checks if passed @p key is contained in @p config.
-   * Returns the highest level where @p key was found
+   * @brief Friend function.  Checks if passed @p key is contained in @p
+   * config. Returns the highest level where @p key was found
    * @param config The configuration to search for passed key
    * @param key The key to look for
    * @param parentLevel The parent level to the current iteration.  If
