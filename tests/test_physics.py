@@ -103,7 +103,7 @@ def test_kinematics():
         for _ in range(2):
             # do some kinematics here (todo: translating or rotating instead of absolute)
             cheezit_box.translation = np.random.rand(3)
-            T = cheezit_box.transformation  # noqa : F841
+            T = cheezit_box.transformation  # noqa: F841
 
             # test getting observation
             sim.step(random.choice(list(hab_cfg.agents[0].action_space.keys())))
@@ -217,7 +217,7 @@ def test_kinematics_no_physics():
         for _ in range(2):
             # do some kinematics here (todo: translating or rotating instead of absolute)
             cheezit_box.translation = np.random.rand(3)
-            T = cheezit_box.transformation  # noqa : F841
+            T = cheezit_box.transformation  # noqa: F841
 
             # test getting observation
             sim.step(random.choice(list(hab_cfg.agents[0].action_space.keys())))
