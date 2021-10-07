@@ -403,8 +403,7 @@ bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
       const io::JsonGenericValue& jsonObj = jsonConfig[subGroupName.c_str()];
 
       // count number of valid user config settings found
-      int numConfigSettings =
-          io::loadJsonIntoConfiguration(jsonObj, subGroupPtr);
+      int numConfigSettings = subGroupPtr->loadFromJson(jsonObj);
 
       // save as user_defined subgroup configuration
       attribs->setSubconfigPtr("user_defined", subGroupPtr);
@@ -432,7 +431,17 @@ bool AttributesManager<T, Access>::saveManagedObjectToFileInternal(
   std::string fullFilename = Dir::join(fileDirectory, filename);
   ESP_DEBUG() << "Attempting to write file" << fullFilename << "to disk";
   // write configuration to file
-  bool success = io::writeConfigurationToJsonFile(fullFilename, attribs);
+
+  rapidjson::Document doc(rapidjson::kObjectType);
+  rapidjson::Document::AllocatorType& allocator = doc.GetAllocator();
+  // build Json from passed Configuration
+  auto configJson = attribs->writeToJsonValue(allocator);
+  // move constructed config into doc
+  doc.Swap(configJson);
+  // save to file
+  bool success = io::writeJsonToFile(doc, fullFilename, true, 7);
+
+  // bool success = io::writeConfigurationToJsonFile(fullFilename, attribs);
   ESP_DEBUG() << "Attempt to write file" << fullFilename
               << "to disk :" << (success ? "Successful" : "Failed");
 

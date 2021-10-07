@@ -14,6 +14,7 @@
 
 #include "esp/core/Check.h"
 #include "esp/core/Esp.h"
+#include "esp/io/Json.h"
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
@@ -155,6 +156,11 @@ class ConfigValue {
   ConfigValue& operator=(ConfigValue&& otr) noexcept;
 
   bool isValid() const { return _type != ConfigStoredType::Unknown; }
+
+  /**
+   * @brief Write this ConfigValue to an appropriately configure json object.
+   */
+  io::JsonGenericValue writeToJsonValue(io::JsonAllocator& allocator) const;
 
   template <class T>
   void set(const T& value) {
@@ -637,6 +643,19 @@ class Configuration {
   getSubconfigIterator() const {
     return std::make_pair(configMap_.cbegin(), configMap_.cend());
   }
+
+  // ==================== load from and save to json =========================
+
+  /**
+   * @brief Load values into this Configuration from the passed @p jsonObj. Will
+   * recurse for subconfigurations.
+   * @param jsonObj The JSON object to read from for the data for this
+   * configuration.
+   * @return The number of fields successfully read and populated.
+   */
+  int loadFromJson(const io::JsonGenericValue& jsonObj);
+
+  io::JsonGenericValue writeToJsonValue(io::JsonAllocator& allocator);
 
  protected:
   /**

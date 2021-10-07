@@ -13,7 +13,6 @@
 #include <functional>
 #include <string>
 #include <vector>
-#include "esp/core/Configuration.h"
 #include "esp/core/Esp.h"
 
 #include <Magnum/Magnum.h>
@@ -53,52 +52,6 @@ std::string jsonToString(const JsonDocument& d);
 
 //! Return Vec3f coordinates representation of given JsonObject of array type
 esp::vec3f jsonToVec3f(const JsonGenericValue& jsonArray);
-
-/**
- * @brief Recursively load data into a @ref esp::core::Configuration based on a
- * json file.
- * @param jsonObj The source json being read
- * @param configPtr Shared pointer to configuration to populate with the JSON
- * data
- * @return The number of configuration settings successfully read.
- */
-int loadJsonIntoConfiguration(
-    const JsonGenericValue& jsonObj,
-    const std::shared_ptr<esp::core::config::Configuration>& configPtr);
-
-/**
- * @brief Recursively traverse passed @ref esp::core::Configuration to write all
- * values into a JSON document, and save this document to the passed @p
- * filename.
- * @param filename The fully qualified filename to save the document to.
- * @param configPtr Shared pointer to configuration to read into JSON document
- * @return Whether successful or not.
- */
-bool writeConfigurationToJsonFile(
-    const std::string& filename,
-    const std::shared_ptr<esp::core::config::Configuration>& configPtr);
-
-/**
- * @brief Convert a @ref core::config::Configuration to a Json
- * document.  Unable to use toJsonValue<> paradigm due to link errors/cyclic
- * deps.
- * @param config The configuration to build the Json from
- * @param allocator The owning document's allocator.
- * @return The Json object holding the data from the configuration
- */
-JsonGenericValue configToJsonValue(
-    const std::shared_ptr<core::config::Configuration>& configPtr,
-    JsonAllocator& allocator);
-
-/**
- * @brief Convert a @ref core::config::ConfigValue to a
- * Json document.  Unable to use toJsonValue<> paradigm due to link
- * errors/cyclic deps.
- * @param cfgVal The @ref core::config::ConfigValue we want to save in Json
- * @param allocator Allocator for realloc mem.
- */
-JsonGenericValue cfgValToJsonValue(const core::config::ConfigValue& cfgVal,
-                                   JsonAllocator& allocator);
 
 /**
  * @brief Check passed json doc for existence of passed jsonTag as value of
