@@ -382,7 +382,7 @@ class MobileManipulator(RobotInterface):
             joint_positions[self.joint_pos_indices[jidx]] = ctrl[i]
         self.sim_obj.joint_positions = joint_positions
 
-    def _validate_arm_ctrl_input(self, ctrl):
+    def _validate_arm_ctrl_input(self, ctrl: List[float]):
         """
         Raises an exception if the control input is NaN or does not match the
         joint dimensions.
@@ -449,8 +449,10 @@ class MobileManipulator(RobotInterface):
         )
 
     @base_pos.setter
-    def base_pos(self, position):
+    def base_pos(self, position: mn.Vector3):
         """Set the robot base to a desired ground position (e.g. NavMesh point) via configured local offset from origin."""
+        if len(position) != 3:
+            raise ValueError("Base position needs to be three dimensions")
         self.sim_obj.translation = (
             position
             - self.sim_obj.transformation.transform_vector(self.params.base_offset)
