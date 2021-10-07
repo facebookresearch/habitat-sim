@@ -14,7 +14,7 @@ sys.path = [
 ] + sys.path
 
 
-import habitat_sim  # NOQA
+import habitat_sim
 
 # TODO: remove once m.css handles class hierarchies better
 habitat_sim.logging.HabitatSimFormatter.formatStack.__doc__ = ""

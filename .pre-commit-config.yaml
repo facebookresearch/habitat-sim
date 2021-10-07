@@ -42,6 +42,12 @@ repos:
     -   id: pretty-format-toml
         args: [--autofix]
 
+-   repo: https://github.com/pre-commit/pygrep-hooks
+    rev: v1.9.0  # Use the ref you want to point at
+    hooks:
+    -   id: python-check-blanket-noqa
+    -   id: python-check-blanket-type-ignore
+
 -   repo: https://github.com/timothycrosley/isort
     rev: 5.9.3
     hooks:
@@ -51,8 +57,8 @@ repos:
 -   repo: https://github.com/ambv/black
     rev: 21.9b0
     hooks:
-    - id: black
-      exclude: ^examples/tutorials/(nb_python|colabs)
+    -   id: black
+        exclude: ^examples/tutorials/(nb_python|colabs)
 
 -   repo: https://github.com/myint/autoflake
     rev: v1.4

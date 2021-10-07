@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Optional
+from typing import List, Optional
 
 import magnum as mn
 import numpy as np
@@ -14,7 +14,7 @@ from habitat_sim.geo import FRONT
 from habitat_sim.registry import registry
 from habitat_sim.scene import SceneNode
 
-__all__ = []  # type: ignore
+__all__: List[str] = []
 
 
 _X_AXIS = 0
