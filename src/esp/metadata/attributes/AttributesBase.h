@@ -158,6 +158,14 @@ const extern std::map<std::string, esp::physics::MotionType> MotionTypeNamesMap;
 std::string getMotionTypeName(esp::physics::MotionType motionTypeEnum);
 
 /**
+ * @brief Constant static map to provide mappings from string tags to
+ * @ref esp::assets::AssetType values.  This will be used to map values
+ * set in json for mesh type to @ref esp::assets::AssetType.  Keys must
+ * be lowercase.
+ */
+const extern std::map<std::string, esp::assets::AssetType> AssetTypeNamesMap;
+
+/**
  * @brief Base class for all implemented attributes.  Inherits from @ref
  * esp::core::AbstractFileBasedManagedObject so the attributes can be managed by
  * a @ref esp::core::ManagedContainer.

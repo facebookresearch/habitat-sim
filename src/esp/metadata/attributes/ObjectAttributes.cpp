@@ -7,16 +7,6 @@ namespace esp {
 namespace metadata {
 namespace attributes {
 
-// All keys must be lowercase
-const std::map<std::string, esp::assets::AssetType>
-    AbstractObjectAttributes::AssetTypeNamesMap = {
-        {"mp3d", esp::assets::AssetType::MP3D_MESH},
-        {"navmesh", esp::assets::AssetType::NAVMESH},
-        {"ptex", esp::assets::AssetType::FRL_PTEX_MESH},
-        {"semantic", esp::assets::AssetType::INSTANCE_MESH},
-        {"suncg", esp::assets::AssetType::SUNCG_SCENE},
-};
-
 AbstractObjectAttributes::AbstractObjectAttributes(
     const std::string& attributesClassKey,
     const std::string& handle)

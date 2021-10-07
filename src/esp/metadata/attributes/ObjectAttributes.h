@@ -7,8 +7,6 @@
 
 #include "AttributesBase.h"
 
-#include "esp/assets/Asset.h"
-
 namespace esp {
 namespace metadata {
 namespace attributes {
@@ -21,14 +19,6 @@ namespace attributes {
  */
 class AbstractObjectAttributes : public AbstractAttributes {
  public:
-  /**
-   * @brief Constant static map to provide mappings from string tags to
-   * @ref esp::assets::AssetType values.  This will be used to map values
-   * set in json for mesh type to @ref esp::assets::AssetType.  Keys must
-   * be lowercase.
-   */
-  static const std::map<std::string, esp::assets::AssetType> AssetTypeNamesMap;
-
   AbstractObjectAttributes(const std::string& classKey,
                            const std::string& handle);
 
