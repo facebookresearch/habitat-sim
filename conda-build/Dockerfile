@@ -33,5 +33,5 @@ ADD ./common/install_conda.sh install_conda.sh
 RUN bash ./install_conda.sh && rm install_conda.sh
 
 RUN conda create --name py36 python=3.6 -y && conda init bash
-RUN chmod a+rx /opt/conda/etc/profile.d/conda.sh && source ~/.bashrc && conda activate py36 && conda install -y anaconda-client git gitpython ninja conda-build
+RUN chmod -R a+rX /opt/conda/ && source ~/.bashrc && conda activate py36 && conda install -y anaconda-client git gitpython ninja conda-build
 RUN conda config --set anaconda_upload yes
