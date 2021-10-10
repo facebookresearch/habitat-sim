@@ -6,7 +6,7 @@ ENV LANGUAGE en_US.UTF-8
 ARG AIHABITAT_CONDA_CHN
 ARG AIHABITAT_CONDA_CHN_PWD
 
-RUN yum install -y wget curl perl cmake util-linux xz bzip2 git patch which unzip
+RUN yum install -y wget curl perl cmake util-linux xz bzip2 git patch which unzip python3
 RUN yum install -y yum-utils centos-release-scl
 RUN yum-config-manager --enable rhel-server-rhscl-7-rpms
 RUN yum install -y devtoolset-7-gcc devtoolset-7-gcc-c++ devtoolset-7-gcc-gfortran devtoolset-7-binutils
