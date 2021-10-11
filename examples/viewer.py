@@ -1,6 +1,11 @@
+import ctypes
 import math
+import sys
 import time
 from typing import Any, Dict, List
+
+flags = sys.getdlopenflags()
+sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
 from magnum import Vector2i, Vector3, gl
 from magnum.platform.glfw import Application
