@@ -128,6 +128,10 @@ class SkeletonPythonViewer(Application):
             if self.pressed[key.Z]:
                 agent.act("move_up")
 
+    def invert_gravity(self):
+        gravity = self.sim.get_gravity() * -1
+        self.sim.set_gravity(gravity)
+
     def key_press_event(self, event):
         key = event.key
         pressed = Application.KeyEvent.Key
@@ -140,8 +144,11 @@ class SkeletonPythonViewer(Application):
             self.print_help_text()
 
         elif key == pressed.SPACE:
-            self.simulating = not self.simulating
-            print("Physics Simulating set to ", self.simulating)
+            if not self.sim.config.sim_cfg.enable_physics:
+                print("Warning: Physics was not enabled during setup")
+            else:
+                self.simulating = not self.simulating
+                print("Physics Simulating set to ", self.simulating)
 
         elif key == pressed.PERIOD:
             if self.simulating:
@@ -157,6 +164,10 @@ class SkeletonPythonViewer(Application):
         elif key == pressed.R:
             self.reconfigure_sim()
             print("Simulator Re-loaded")
+
+        elif key == pressed.V:
+            self.invert_gravity()
+            print("Gravity inverted")
 
         elif key == pressed.FOUR:
             # Use this key to test functions
@@ -207,21 +218,22 @@ Welcome to the Habitat-sim Python Viewer application!
 =====================================================
 Key Commands:
 -------------
-    esc:         Exit the application.
-    'h':         Display this help message.
-    'm':         Toggle mouse mode.
+    esc:        Exit the application.
+    'h':        Display this help message.
+    'm':        Toggle mouse mode.
 
     Agent Controls:
-    'wasd':      Move the agent's body forward/backward, left/right.
-    'zx':        Move the agent's body up/down.
-    arrow keys:  Turn the agent's body left/right and camera look up/down.
+    'wasd':     Move the agent's body forward/backward, left/right.
+    'zx':       Move the agent's body up/down.
+    arrow keys: Turn the agent's body left/right and camera look up/down.
 
     Utilities:
-    'r':         Reset simulator with most recently loaded scene
+    'r':        Reset simulator with most recently loaded scene
 
     Object Interactions:
-    SPACE: Toggle physics simulation on/off
-    '.': Take a single simulation step if not simulating continuously.
+    SPACE:      Toggle physics simulation on/off
+    '.':        Take a single simulation step if not simulating continuously.
+    'v':        (physics) Invert gravity.
 =====================================================
 """
         )
