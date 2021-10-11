@@ -26,7 +26,7 @@ class HabitatSimInteractiveViewer(Application):
         self.sim_settings["width"] = self.viewport_size[0]
         self.sim_settings["height"] = self.viewport_size[1]
 
-        # set up our movement dict
+        # set up our movement map
         key = Application.KeyEvent.Key
         self.pressed = {
             key.LEFT: False,
@@ -127,7 +127,7 @@ class HabitatSimInteractiveViewer(Application):
 
         action_space: Dict[str, habitat_sim.agent.ActionSpec] = {}
 
-        # build our action space dict
+        # build our action space map
         for action in action_list:
             actuation_spec_amt = MOVE if "move" in action else LOOK
             action_spec = make_action_spec(
@@ -179,36 +179,39 @@ class HabitatSimInteractiveViewer(Application):
     def move_and_look(self, repetitions: int) -> None:
         """
         This method is called continuously with `self.draw_event` to monitor
-        any changes in the movement keys dict `Dict[KeyEvent.key, Bool]`.
-        When a key in the dict is set to `True` the corresponding.
+        any changes in the movement keys map `Dict[KeyEvent.key, Bool]`.
+        When a key in the map is set to `True` the corresponding action is taken.
         """
         key = Application.KeyEvent.Key
         agent = self.sim.agents[self.agent_id]
 
-        for _ in range(int(repetitions)):
-            # non-displacing movement
-            if self.pressed[key.LEFT]:
-                agent.act("turn_left")
-            if self.pressed[key.RIGHT]:
-                agent.act("turn_right")
-            if self.pressed[key.UP]:
-                agent.act("look_up")
-            if self.pressed[key.DOWN]:
-                agent.act("look_down")
+        def checkAndMove(action: str, repetitions: int) -> None:
+            for _ in range(int(repetitions)):
+                agent.act(action)
 
-            # displacing movement
-            if self.pressed[key.A]:
-                agent.act("move_left")
-            if self.pressed[key.D]:
-                agent.act("move_right")
-            if self.pressed[key.S]:
-                agent.act("move_backward")
-            if self.pressed[key.W]:
-                agent.act("move_forward")
-            if self.pressed[key.X]:
-                agent.act("move_down")
-            if self.pressed[key.Z]:
-                agent.act("move_up")
+        # non-displacing movement
+        if self.pressed[key.LEFT]:
+            checkAndMove("turn_left", repetitions)
+        if self.pressed[key.RIGHT]:
+            checkAndMove("turn_right", repetitions)
+        if self.pressed[key.UP]:
+            checkAndMove("look_up", repetitions)
+        if self.pressed[key.DOWN]:
+            checkAndMove("look_down", repetitions)
+
+        # displacing movement
+        if self.pressed[key.A]:
+            checkAndMove("move_left", repetitions)
+        if self.pressed[key.D]:
+            checkAndMove("move_right", repetitions)
+        if self.pressed[key.S]:
+            checkAndMove("move_backward", repetitions)
+        if self.pressed[key.W]:
+            checkAndMove("move_forward", repetitions)
+        if self.pressed[key.X]:
+            checkAndMove("move_down", repetitions)
+        if self.pressed[key.Z]:
+            checkAndMove("move_up", repetitions)
 
     def invert_gravity(self) -> None:
         """
@@ -221,7 +224,7 @@ class HabitatSimInteractiveViewer(Application):
     def key_press_event(self, event: Application.KeyEvent) -> None:
         """
         Handles `Application.KeyEvent` on a key press by performing the corresponding functions.
-        If the key pressed is part of the movement keys dict `Dict[KeyEvent.key, Bool]`, then the
+        If the key pressed is part of the movement keys map `Dict[KeyEvent.key, Bool]`, then the
         key will be set to False for the next `self.move_and_look()` to update the current actions.
         """
         key = event.key
@@ -260,7 +263,7 @@ class HabitatSimInteractiveViewer(Application):
             self.invert_gravity()
             print("Command: gravity inverted")
 
-        # update dict of moving/looking keys which are currently pressed
+        # update map of moving/looking keys which are currently pressed
         if key in self.pressed:
             self.pressed[key] = True
         self.redraw()
@@ -268,12 +271,12 @@ class HabitatSimInteractiveViewer(Application):
     def key_release_event(self, event: Application.KeyEvent) -> None:
         """
         Handles `Application.KeyEvent` on a key release. When a key is released, if it
-        is part of the movement keys dict `Dict[KeyEvent.key, Bool]`, then the key will
+        is part of the movement keys map `Dict[KeyEvent.key, Bool]`, then the key will
         be set to False for the next `self.move_and_look()` to update the current actions.
         """
         key = event.key
 
-        # update dict of moving/looking keys which are currently pressed
+        # update map of moving/looking keys which are currently pressed
         if key in self.pressed:
             self.pressed[key] = False
         self.redraw()
