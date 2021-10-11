@@ -51,16 +51,6 @@ class HabitatSimInteractiveViewer(Application):
         self.sim: habitat_sim.simulator.Simulator = None
         self.reconfigure_sim()
 
-        # Configure our sim_settings but then set agent to our default
-        self.cfg = make_cfg(sim_settings)
-        self.cfg.agents[self.agent_id] = self.default_agent_config()
-        self.sim = habitat_sim.Simulator(self.cfg)
-
-        self.active_scene_graph = self.sim.get_active_scene_graph()
-        self.default_agent = self.sim.get_agent(self.agent_id)
-        self.agent_body_node = self.default_agent.scene_node
-        self.render_camera = self.agent_body_node.node_sensor_suite.get("color_sensor")
-
         self.time_since_last_simulation = 0.0
         self.print_help_text()
 
