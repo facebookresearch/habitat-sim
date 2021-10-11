@@ -1,30 +1,38 @@
+import math
+import time
+
 from magnum import gl
 from magnum.platform.glfw import Application
 from settings import default_sim_settings, make_cfg
 
 import habitat_sim
-import time
-import math
+
 
 class SkeletonPythonViewer(Application):
-    def __init__(self, sim_settings):
+    def __init__(self, sim_setup):
         configuration = self.Configuration()
         configuration.title = "Skeleton Viewer Application"
         Application.__init__(self, configuration)
+        self.sim_settings = sim_setup
 
         # Set proper viewport size
         self.viewport_size = gl.default_framebuffer.viewport.size()
-        sim_settings["width"] = self.viewport_size[0]
-        sim_settings["height"] = self.viewport_size[1]
+        self.sim_settings["width"] = self.viewport_size[0]
+        self.sim_settings["height"] = self.viewport_size[1]
 
         # Set up movement dict
         key = Application.KeyEvent.Key
         self.pressed = {
-            key.LEFT : False, key.RIGHT : False,
-            key.UP : False,   key.DOWN : False,
-            key.A : False,    key.D : False,
-            key.S : False,    key.W : False,
-            key.X : False,    key.Z : False
+            key.LEFT: False,
+            key.RIGHT: False,
+            key.UP: False,
+            key.DOWN: False,
+            key.A: False,
+            key.D: False,
+            key.S: False,
+            key.W: False,
+            key.X: False,
+            key.Z: False,
         }
 
         # Other settings
@@ -34,11 +42,11 @@ class SkeletonPythonViewer(Application):
         # Toggle physics simulation on/off
         self.simulating = True
 
-        # Toggle a single simulation step at the next opportunity if not 
+        # Toggle a single simulation step at the next opportunity if not
         # simulating continuously.
-        self. simulate_single_step = False
+        self.simulate_single_step = False
 
-        self.agent_id = sim_settings["default_agent"] # 0
+        self.agent_id = sim_settings["default_agent"]  # 0
 
         # Configure our sim_settings but then set agent to our default
         self.cfg = make_cfg(sim_settings)
@@ -51,11 +59,8 @@ class SkeletonPythonViewer(Application):
         self.render_camera = self.agent_body_node.node_sensor_suite.get("color_sensor")
 
         self.time_since_last_simulation = 0.0
-        Timer.start()
-
-        self.step = -1
         self.print_help_text()
-     
+
     def draw_event(self):
         agent_acts_per_sec = 60.0
 
@@ -65,8 +70,8 @@ class SkeletonPythonViewer(Application):
 
         # Agent actions should occur at a fixed rate per second
         self.time_since_last_simulation += Timer.prev_frame_duration
-        num_agent_actions = (self.time_since_last_simulation * agent_acts_per_sec)
-        self.move_and_look(int(num_agent_actions)) 
+        num_agent_actions = self.time_since_last_simulation * agent_acts_per_sec
+        self.move_and_look(int(num_agent_actions))
 
         # Occasionally a frame will pass quicker than 1/60 seconds
         if self.time_since_last_simulation >= 1.0 / 60.0:
@@ -79,10 +84,11 @@ class SkeletonPythonViewer(Application):
 
             # reset time_since_last_simulation, accounting for potential overflow
             self.time_since_last_simulation = math.fmod(
-                    self.time_since_last_simulation, 1.0 / 60.0)
+                self.time_since_last_simulation, 1.0 / 60.0
+            )
 
         self.sim._sensors["color_sensor"].draw_observation()
-        
+
         # added to use blit_rgba_to_default()
         sensor_render_target = self.render_camera.render_target
         sensor_render_target.blit_rgba_to_default()
@@ -99,18 +105,28 @@ class SkeletonPythonViewer(Application):
 
         for _ in range(int(repetitions)):
             # No Movement
-            if self.pressed[key.LEFT]:  agent.act('turn_left')
-            if self.pressed[key.RIGHT]: agent.act('turn_right')
-            if self.pressed[key.UP]:    agent.act('look_up')
-            if self.pressed[key.DOWN]:  agent.act('look_down')
+            if self.pressed[key.LEFT]:
+                agent.act("turn_left")
+            if self.pressed[key.RIGHT]:
+                agent.act("turn_right")
+            if self.pressed[key.UP]:
+                agent.act("look_up")
+            if self.pressed[key.DOWN]:
+                agent.act("look_down")
 
             # Yes Movement
-            if self.pressed[key.A]: agent.act('move_left')
-            if self.pressed[key.D]: agent.act('move_right')
-            if self.pressed[key.S]: agent.act('move_backward')
-            if self.pressed[key.W]: agent.act('move_forward')
-            if self.pressed[key.X]: agent.act('move_down')
-            if self.pressed[key.Z]: agent.act('move_up')
+            if self.pressed[key.A]:
+                agent.act("move_left")
+            if self.pressed[key.D]:
+                agent.act("move_right")
+            if self.pressed[key.S]:
+                agent.act("move_backward")
+            if self.pressed[key.W]:
+                agent.act("move_forward")
+            if self.pressed[key.X]:
+                agent.act("move_down")
+            if self.pressed[key.Z]:
+                agent.act("move_up")
 
     def key_press_event(self, event):
         key = event.key
@@ -125,30 +141,31 @@ class SkeletonPythonViewer(Application):
 
         elif key == pressed.SPACE:
             self.simulating = not self.simulating
-            print('Physics Simulating set to ', self.simulating)
+            print("Physics Simulating set to ", self.simulating)
 
         elif key == pressed.PERIOD:
             if self.simulating:
-                print('Physic Simulation already running')
+                print("Physic Simulation already running")
             else:
                 self.simulate_single_step = True
-                print('Physics Step Taken')
+                print("Physics Step Taken")
 
-        elif key == pressed.EIGHT:
-            self.add_primitve_object()
-        
         elif key == pressed.M:
             self.mouse_interaction = not self.mouse_interaction
-            print('Mouse LOOK set to ', self.mouse_interaction)
+            print("Mouse LOOK set to ", self.mouse_interaction)
 
-        if key in self.pressed.keys():
+        elif key == pressed.R:
+            self.reconfigure_sim()
+            print("Reset simulator ")
+
+        if key in self.pressed:
             self.pressed[key] = True
         self.redraw()
 
     def key_release_event(self, event):
         key = event.key
-        if key in self.pressed.keys():
-                self.pressed[key] = False
+        if key in self.pressed:
+            self.pressed[key] = False
         self.redraw()
 
     # Broken Currently
@@ -159,49 +176,49 @@ class SkeletonPythonViewer(Application):
         if event.buttons == button.LEFT and self.mouse_interaction:
             agent = self.sim.agents[self.agent_id]
             delta = event.relative_position
-            print(delta)
             action = habitat_sim.agent.ObjectControls()
             actuation_spec = habitat_sim.agent.ActuationSpec
 
-            # TODO: relative_position in only returning absolute
-            #       postion. This function is set up to work properly
-            #       once the mouse event issue has been resolved
-            action(agent.scene_node, 'turn_right', actuation_spec(delta.x))
-            # action(agent.scene_node, 'look_down', actuation_spec(delta.y))
-        
+            action(agent.scene_node, "turn_right", actuation_spec(delta.x))
+            # TODO: implement action(agent.scene_node, 'look_down', actuation_spec(delta.y))
+
         self.redraw()
         event.accepted = True
 
-    # TODO: Find out why using a mouse-click to close window doesn't utilize 
-    #       this function, leading to zsh: abort 
+    # TODO: Find out why using a mouse-click to close window doesn't utilize
+    #       this function, leading to zsh: abort
     # Override exit() method to first close the simulator before exiting
     def exit(self, arg0):
         self.sim.close(destroy=True)
         super().exit(arg0)
-            
+
     def print_help_text(self):
         print(
-'''
+            """
 =====================================================
 Welcome to the Habitat-sim Python Viewer application!
 =====================================================
 Key Commands:
 -------------
-    esc: Exit the application.
-    'h': Display this help message.
-    'm': Toggle mouse mode.
+    esc:         Exit the application.
+    'h':         Display this help message.
+    'm':         Toggle mouse mode.
 
     Agent Controls:
-    'wasd':         Move the agent's body forward/backward, left/right.
-    'zx':           Move the agent's body up/down.
-    arrow keys:     Turn the agent's body left/right and camera look up/down.
+    'wasd':      Move the agent's body forward/backward, left/right.
+    'zx':        Move the agent's body up/down.
+    arrow keys:  Turn the agent's body left/right and camera look up/down.
+
+    Utilities:
+    'r':         Reset simulator with most recently loaded scene
 
     Object Interactions:
     SPACE: Toggle physics simulation on/off
     '.': Take a single simulation step if not simulating continuously.
 =====================================================
-'''
+"""
         )
+
 
 class Timer:
     start_time = 0.0
@@ -230,34 +247,36 @@ class Timer:
         Timer.prev_frame_duration = time.time() - Timer.prev_frame_time
         Timer.prev_frame_time = time.time()
 
+
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser()
-    
+
     # optional arguments
     parser.add_argument(
-        '--scene',
+        "--scene",
         default="NONE",
-        type=str, 
+        type=str,
         help='scene/stage file to load (default: "NONE")',
     )
-    parser.add_argument(        
-        '--dataset',
-        default='default',
+    parser.add_argument(
+        "--dataset",
+        default="default",
         type=str,
-        metavar='DATASET', 
-        help='dataset configuration file to use (default: default)',
+        metavar="DATASET",
+        help="dataset configuration file to use (default: default)",
     )
-    parser.add_argument(        
-        '--enable_physics',
+    parser.add_argument(
+        "--enable_physics",
         action="store_true",
-        help='enable physics simulation (default: False)'
+        help="enable physics simulation (default: False)",
     )
 
     args = parser.parse_args()
-    
-    # TODO: Find a way to get this to print right before 
-    #       the help text. Currently prints before huge 
+
+    # TODO: Find a way to get this to print right before
+    #       the help text. Currently prints before huge
     #       console logging blob
     # If no arguments are passed, print usage for user
     if vars(args) == vars(parser.parse_args([])):
@@ -265,8 +284,8 @@ if __name__ == "__main__":
 
     # Setting up sim_settings
     sim_settings = default_sim_settings
-    sim_settings['scene'] = args.scene
-    sim_settings['scene_dataset_config_file'] = args.dataset
-    sim_settings['enable_physics'] = args.enable_physics
+    sim_settings["scene"] = args.scene
+    sim_settings["scene_dataset_config_file"] = args.dataset
+    sim_settings["enable_physics"] = args.enable_physics
 
 SkeletonPythonViewer(sim_settings).exec()
