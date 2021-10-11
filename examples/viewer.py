@@ -35,9 +35,9 @@ class SkeletonPythonViewer(Application):
             key.Z: False,
         }
 
-        # Other settings
+        ### Other settings
         # Temp setting to toggle mouse utility
-        self.mouse_interaction = False
+        self.mouse_interaction = True
 
         # Toggle physics simulation on/off
         self.simulating = True
@@ -156,9 +156,12 @@ class SkeletonPythonViewer(Application):
 
         elif key == pressed.R:
             self.reconfigure_sim()
-            print("Reset simulator ")
+            print("Simulator Re-loaded")
 
-        if key in self.pressed:
+        elif key == pressed.FOUR:
+            # Use this key to test functions
+            print("This key is for developer testing")
+
             self.pressed[key] = True
         self.redraw()
 
@@ -168,7 +171,6 @@ class SkeletonPythonViewer(Application):
             self.pressed[key] = False
         self.redraw()
 
-    # Broken Currently
     def mouse_move_event(self, event):
         button = Application.MouseMoveEvent.Buttons
 
@@ -177,10 +179,15 @@ class SkeletonPythonViewer(Application):
             agent = self.sim.agents[self.agent_id]
             delta = event.relative_position
             action = habitat_sim.agent.ObjectControls()
-            actuation_spec = habitat_sim.agent.ActuationSpec
+            act_spec = habitat_sim.agent.ActuationSpec
 
-            action(agent.scene_node, "turn_right", actuation_spec(delta.x))
-            # TODO: implement action(agent.scene_node, 'look_down', actuation_spec(delta.y))
+            # Left/right on agent scene node
+            action(agent.scene_node, "turn_right", act_spec(delta.x))
+
+            # Up/down on cameras' scene nodes
+            action = habitat_sim.agent.ObjectControls()
+            sensors = list(self.agent_body_node.subtree_sensors.values())
+            [action(s.object, "look_down", act_spec(delta.y), False) for s in sensors]
 
         self.redraw()
         event.accepted = True
