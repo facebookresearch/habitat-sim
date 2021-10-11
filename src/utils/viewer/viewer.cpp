@@ -306,7 +306,7 @@ Key Commands:
   'i': Save a screenshot to "./screenshots/year_month_day_hour-minute-second/#.png".
   'r': Write a replay of the recent simulated frames to a file specified by --gfx-replay-record-filepath.
   '[': Save camera position/orientation to "./saved_transformations/camera.year_month_day_hour-minute-second.txt".
-  ']'; Load camera position/orientation from file system (useful when flying camera mode is enabled), or else from last save in current instance.
+  ']': Load camera position/orientation from file system (useful when flying camera mode is enabled), or else from last save in current instance.
 
   Object Interactions:
   SPACE: Toggle physics simulation on/off
@@ -1262,7 +1262,6 @@ void Viewer::drawEvent() {
     timeSinceLastSimulation = fmod(timeSinceLastSimulation, 1.0 / 60.0);
   }
 
-  // JUAN: This is probably for adding objects
   uint32_t visibles = renderCamera_->getPreviousNumVisibleDrawables();
 
   if (visualizeMode_ == VisualizeMode::Depth ||

@@ -55,7 +55,6 @@ class Configuration:
 
     sim_cfg: SimulatorConfiguration
     agents: List[AgentConfiguration]
-    render_to_ui: bool = False
     # An existing Metadata Mediator can also be used to construct a SimulatorBackend
     metadata_mediator: Optional[MetadataMediator] = None
 
@@ -399,17 +398,14 @@ class Simulator(SimulatorBackend):
         for agent_id in agent_ids:
             agent_sensorsuite = self.__sensors[agent_id]
             for _sensor_uuid, sensor in agent_sensorsuite.items():
-                sensor.draw_observation(self.config.render_to_ui)
+                sensor.draw_observation()
 
         # As backport. All Dicts are ordered in Python >= 3.7
         observations: Dict[int, ObservationDict] = OrderedDict()
         for agent_id in agent_ids:
             agent_observations: ObservationDict = {}
             for sensor_uuid, sensor in self.__sensors[agent_id].items():
-                if self.config.render_to_ui:
-                    agent_observations[sensor_uuid] = None
-                else:
-                    agent_observations[sensor_uuid] = sensor.get_observation()
+                agent_observations[sensor_uuid] = sensor.get_observation()
             observations[agent_id] = agent_observations
         if return_single:
             return next(iter(observations.values()))
@@ -610,7 +606,7 @@ class Sensor:
             self._spec.noise_model, self._spec.uuid
         )
 
-    def draw_observation(self, render_to_ui=False) -> None:
+    def draw_observation(self) -> None:
         assert self._sim.renderer is not None
         # see if the sensor is attached to a scene graph, otherwise it is invalid,
         # and cannot make any observation
@@ -619,7 +615,6 @@ class Sensor:
                 "Sensor observation requested but sensor is invalid.\
                  (has it been detached from a scene node?)"
             )
-        # TODO: How do I stop this from binding the sensor render target instead of the default render target?
         self._sim.renderer.draw(self._sensor_object, self._sim)
 
     def _draw_observation_async(self) -> None:

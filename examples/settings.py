@@ -68,7 +68,6 @@ def make_cfg(settings):
         )
     sim_cfg.scene_id = settings["scene"]
 
-
     # define default sensor parameters (see src/esp/Sensor/Sensor.h)
     sensor_specs = []
 

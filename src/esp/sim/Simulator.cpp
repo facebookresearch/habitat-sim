@@ -108,7 +108,6 @@ void Simulator::close(const bool destroy) {
 
 void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
   // set metadata mediator's cfg  upon creation or reconfigure
-
   if (!metadataMediator_) {
     metadataMediator_ = metadata::MetadataMediator::create(cfg);
   } else {
