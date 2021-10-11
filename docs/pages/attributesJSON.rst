@@ -19,7 +19,7 @@ Attributes templates provide a mechanism by which the various constructions in H
 
      <worldname>.physics_config.json
 
-`An example of an appropriately configured Physics Manager Attributes file can be found below <facebookresearch/habitat-sim/blob/master/data/test_assets/testing.physics_config.json>`_:
+`An example of an appropriately configured Physics Manager Attributes file can be found below <facebookresearch/habitat-sim/blob/main/data/test_assets/testing.physics_config.json>`_:
 
 .. include:: ../../data/test_assets/testing.physics_config.json
     :code: json
@@ -49,7 +49,7 @@ A stage in Habitat-Sim is a static object consisting of static background scener
 
      <stagename>.stage_config.json
 
-`An example of an appropriately configured Stage Attributes file can be found below <facebookresearch/habitat-sim/blob/master/data/test_assets/scenes/stage_floor1.stage_config.json>`_:
+`An example of an appropriately configured Stage Attributes file can be found below <facebookresearch/habitat-sim/blob/main/data/test_assets/scenes/stage_floor1.stage_config.json>`_:
 
 .. include:: ../../data/test_assets/scenes/stage_floor1.stage_config.json
     :code: json
@@ -121,7 +121,7 @@ Below are stage-specific physical and object-related quantities.  These values w
 
      <objectname>.object_config.json
 
-`An example of an appropriately configured Object Attributes file can be found below <facebookresearch/habitat-sim/blob/master/data/test_assets/objects/donut.object_config.json>`_:
+`An example of an appropriately configured Object Attributes file can be found below <facebookresearch/habitat-sim/blob/main/data/test_assets/objects/donut.object_config.json>`_:
 
 .. include:: ../../data/test_assets/objects/donut.object_config.json
     :code: json
@@ -202,7 +202,7 @@ Below are object-specific physical quantities.  These values will override simil
 
      <lightingname>.lighting_config.json
 
-`An example of an appropriately configured LightLayoutAttributes file can be found below <facebookresearch/habitat-sim/blob/master/data/test_assets/lights/test_lights.lighting_config.json>`_:
+`An example of an appropriately configured LightLayoutAttributes file can be found below <facebookresearch/habitat-sim/blob/main/data/test_assets/lights/test_lights.lighting_config.json>`_:
 
 .. include:: ../../data/test_assets/lights/test_lights.lighting_config.json
     :code: json

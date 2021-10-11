@@ -7,8 +7,6 @@
 
 #include "AttributesBase.h"
 
-#include "esp/assets/Asset.h"
-
 namespace esp {
 namespace metadata {
 namespace attributes {
@@ -21,14 +19,6 @@ namespace attributes {
  */
 class AbstractObjectAttributes : public AbstractAttributes {
  public:
-  /**
-   * @brief Constant static map to provide mappings from string tags to
-   * @ref esp::assets::AssetType values.  This will be used to map values
-   * set in json for mesh type to @ref esp::assets::AssetType.  Keys must
-   * be lowercase.
-   */
-  static const std::map<std::string, esp::assets::AssetType> AssetTypeNamesMap;
-
   AbstractObjectAttributes(const std::string& classKey,
                            const std::string& handle);
 
@@ -235,7 +225,29 @@ class AbstractObjectAttributes : public AbstractAttributes {
   bool getIsDirty() const { return get<bool>("__isDirty"); }
   void setIsClean() { set("__isDirty", false); }
 
+  /**
+   * @brief Build and return a json object holding the values and nested objects
+   * holding the subconfigs of this Configuration.
+   */
+  io::JsonGenericValue writeToJsonValue(
+      io::JsonAllocator& allocator) const override;
+
+  /**
+   * @brief Populate a json object with all the first-level values held in this
+   * configuration.  May be overwritten to handle special cases for root-level
+   * configuration.
+   */
+  void writeValuesToJson(io::JsonGenericValue& jsonObj,
+                         io::JsonAllocator& allocator) const override;
+
  protected:
+  /**
+   * @brief Write child-class-specific values to json object
+   *
+   */
+  virtual void writeValuesToJsonInternal(
+      CORRADE_UNUSED io::JsonGenericValue& jsonObj,
+      CORRADE_UNUSED io::JsonAllocator& allocator) const {}
   /**
    * @brief Retrieve a comma-separated string holding the header values for the
    * info returned for this managed object, type-specific.
@@ -325,6 +337,12 @@ class ObjectAttributes : public AbstractObjectAttributes {
 
  protected:
   /**
+   * @brief Write object-specific values to json object
+   */
+  void writeValuesToJsonInternal(io::JsonGenericValue& jsonObj,
+                                 io::JsonAllocator& allocator) const override;
+
+  /**
    * @brief get AbstractObject specific info header
    */
   std::string getAbstractObjectInfoHeaderInternal() const override {
@@ -381,12 +399,12 @@ class StageAttributes : public AbstractObjectAttributes {
   }
   bool getLoadSemanticMesh() { return get<bool>("loadSemanticMesh"); }
 
-  void setNavmeshAssetHandle(const std::string& navmeshAssetHandle) {
-    set("navmeshAssetHandle", navmeshAssetHandle);
+  void setNavmeshAssetHandle(const std::string& nav_asset) {
+    set("nav_asset", nav_asset);
     setIsDirty();
   }
   std::string getNavmeshAssetHandle() const {
-    return get<std::string>("navmeshAssetHandle");
+    return get<std::string>("nav_asset");
   }
 
   /**
@@ -413,6 +431,13 @@ class StageAttributes : public AbstractObjectAttributes {
   bool getFrustumCulling() const { return get<bool>("frustum_culling"); }
 
  protected:
+  /**
+   * @brief Write stage-specific values to json object
+   *
+   */
+  void writeValuesToJsonInternal(io::JsonGenericValue& jsonObj,
+                                 io::JsonAllocator& allocator) const override;
+
   /**
    * @brief get AbstractObject specific info header
    */

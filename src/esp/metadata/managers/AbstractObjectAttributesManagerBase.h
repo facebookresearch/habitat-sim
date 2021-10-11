@@ -104,6 +104,7 @@ class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
       const io::JsonGenericValue& jsonDoc);
 
   //======== Internally accessed functions ========
+
   /**
    * @brief Only used by @ref
    * esp::metadata::attributes::AbstractObjectAttributes derived-attributes. Set
@@ -326,8 +327,11 @@ AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
   if (io::readMember<std::string>(jsonDoc, jsonMeshTypeTag, tmpVal)) {
     // tag was found, perform check
     std::string strToLookFor = Cr::Utility::String::lowercase(tmpVal);
-    if (T::AssetTypeNamesMap.count(strToLookFor)) {
-      typeVal = static_cast<int>(T::AssetTypeNamesMap.at(strToLookFor));
+
+    auto found = attributes::AssetTypeNamesMap.find(strToLookFor);
+    if (found != attributes::AssetTypeNamesMap.end()) {
+      typeVal =
+          static_cast<int>(attributes::AssetTypeNamesMap.at(strToLookFor));
     } else {
       ESP_WARNING() << "<" << Magnum::Debug::nospace << this->objectType_
                     << Magnum::Debug::nospace
@@ -357,8 +361,8 @@ AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
           Cr::Utility::Directory::join(propertiesFileDirectory, assetName);
       if ((typeVal == -1) && (oldFName != assetName)) {
         // if file name is different, and type val has not been specified,
-        // perform name-specific mesh type config do not override orientation -
-        // should be specified in json.
+        // perform name-specific mesh type config do not override orientation
+        // - should be specified in json.
         setDefaultAssetNameBasedAttributes(attributes, false, assetName,
                                            meshTypeSetter);
       }

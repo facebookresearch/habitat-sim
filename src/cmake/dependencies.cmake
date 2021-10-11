@@ -69,6 +69,11 @@ if(BUILD_ASSIMP_SUPPORT)
     # prefixed with ASSIMP_, so better set both variants to future-proof this.
     set(INJECT_DEBUG_POSTFIX OFF CACHE BOOL "" FORCE)
     set(ASSIMP_INJECT_DEBUG_POSTFIX OFF CACHE BOOL "" FORCE)
+    # Otherwise Assimp may attempt to find minizip on the filesystem using
+    # pkgconfig, but in a poor way that expects just yelling -lminizip at the
+    # linker without any link directories would work. It won't. (The variable
+    # is not an option() so no need to CACHE it.)
+    set(ASSIMP_BUILD_MINIZIP ON)
     add_subdirectory("${DEPS_DIR}/assimp")
 
     # Help FindAssimp locate everything

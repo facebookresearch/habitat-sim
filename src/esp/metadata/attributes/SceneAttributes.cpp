@@ -32,7 +32,7 @@ SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
 }
 
 std::string SceneObjectInstanceAttributes::getObjectInfoHeaderInternal() const {
-  return "Translation XYZ,Rotation XYZW,Motion Type,Shader Type,Uniform "
+  return "Translation XYZ,Rotation W[XYZ],Motion Type,Shader Type,Uniform "
          "Scale,Mass Scale,Translation Origin," +
          getSceneObjInstanceInfoHeaderInternal();
 }

@@ -44,6 +44,7 @@ add_library(
   Esp.h
   Logging.cpp
   Logging.h
+  managedContainers/AbstractFileBasedManagedObject.h
   managedContainers/AbstractManagedObject.h
   managedContainers/ManagedContainer.h
   managedContainers/ManagedContainerBase.cpp

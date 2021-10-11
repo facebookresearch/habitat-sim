@@ -9,6 +9,17 @@ namespace esp {
 namespace metadata {
 namespace attributes {
 
+// All keys must be lowercase
+const std::map<std::string, esp::assets::AssetType> AssetTypeNamesMap = {
+    {"unknown", esp::assets::AssetType::UNKNOWN},
+    {"sun_obj", esp::assets::AssetType::SUNCG_OBJECT},
+    {"sun_scene", esp::assets::AssetType::SUNCG_SCENE},
+    {"mp3d", esp::assets::AssetType::MP3D_MESH},
+    {"semantic", esp::assets::AssetType::INSTANCE_MESH},
+    {"ptex", esp::assets::AssetType::FRL_PTEX_MESH},
+    {"navmesh", esp::assets::AssetType::NAVMESH},
+};
+
 const std::map<std::string, esp::gfx::LightType> LightTypeNamesMap = {
     {"point", esp::gfx::LightType::Point},
     {"directional", esp::gfx::LightType::Directional},
@@ -38,6 +49,16 @@ const std::map<std::string, esp::physics::MotionType> MotionTypeNamesMap = {
     {"kinematic", esp::physics::MotionType::KINEMATIC},
     {"dynamic", esp::physics::MotionType::DYNAMIC},
 };
+
+std::string getMeshTypeName(esp::assets::AssetType meshTypeEnum) {
+  // Must always be valid value
+  for (const auto& it : AssetTypeNamesMap) {
+    if (it.second == meshTypeEnum) {
+      return it.first;
+    }
+  }
+  return "unknown";
+}
 
 std::string getLightTypeName(esp::gfx::LightType lightTypeEnum) {
   // this verifies that enum value being checked is supported by string-keyed

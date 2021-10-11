@@ -636,6 +636,9 @@ jobs:
       NIGHTLY_FLAG:
         type: string
         default: ""
+      CI_TEST:
+        type: boolean
+        default: false
     steps:
       - checkout:
           path: ./habitat-sim
@@ -646,15 +649,15 @@ jobs:
               # export PATH=$HOME/miniconda/bin:$PATH
               # . activate habitat;
 
+              cd habitat-sim/conda-build
+              <<^ parameters.CI_TEST >>
               # Install anaconda to work with packages repo
               curl -O https://repo.anaconda.com/archive/Anaconda3-2020.11-Linux-x86_64.sh
               bash Anaconda3-2020.11-Linux-x86_64.sh -b -p $HOME/anaconda
               export PATH=$HOME/anaconda/bin:$PATH
 
-              cd habitat-sim/conda-build
-
               # Delete old nightly builds
-              python common/delete_old_night_packages.py --username << parameters.AIHABITAT_CONDA_CHN >>  --password $<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >> << parameters.NIGHTLY_FLAG >>
+              python common/delete_old_night_packages.py --username << parameters.AIHABITAT_CONDA_CHN >>  --password $<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >> << parameters.NIGHTLY_FLAG >> <</ parameters.CI_TEST >>
 
               # install Docker
               curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
@@ -663,8 +666,11 @@ jobs:
               apt-cache policy docker-ce
               sudo apt-get install -y docker-ce
 
-              docker build -t hsim_condabuild_dcontainer -f Dockerfile . --build-arg AIHABITAT_CONDA_CHN_PWD=$<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >> --build-arg AIHABITAT_CONDA_CHN=<< parameters.AIHABITAT_CONDA_CHN >>
-              docker run -it --ipc=host --rm -v $(pwd)/../../:/remote hsim_condabuild_dcontainer /bin/bash -c "source ~/.bashrc && conda activate py36 && cd /remote/habitat-sim/conda-build && python linux_matrix_builder.py --conda_upload << parameters.NIGHTLY_FLAG >>"
+              docker build -t hsim_condabuild_dcontainer -f Dockerfile .
+              docker run -it --ipc=host --rm -v $(pwd)/../../:/remote hsim_condabuild_dcontainer \
+                  /bin/bash -c "source ~/.bashrc && conda activate py36 \
+                                && cd /remote/habitat-sim/conda-build <<^ parameters.CI_TEST >> anaconda login --username << parameters.AIHABITAT_CONDA_CHN >> --password ${<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >>} <</ parameters.CI_TEST >> \
+                                && python linux_matrix_builder.py <<# parameters.CI_TEST >> --ci_test <</ parameters.CI_TEST>> <<^ parameters.CI_TEST >> --conda_upload << parameters.NIGHTLY_FLAG >> <</ parameters.CI_TEST >>"
 
   update_docs:
     docker:
@@ -696,11 +702,11 @@ jobs:
               NOW=$(date +"%m-%d-%Y")
               git add .
               git diff-index --quiet HEAD || git commit -m "Build habitat-sim and habitat-lab ${NOW}"
-              git push origin master
+              git push origin main
 
               # Deploy to public
               git checkout gh-pages
-              git checkout master published
+              git checkout main published
               sudo apt-get update || true
               sudo apt-get install -yq \
                     rsync
@@ -717,11 +723,12 @@ workflows:
       - python_lint
       - js_lint
       - lab_build_habitat
-      - test_conda_build
       - test_conda_build_osx
       - test_pip_build
       - install_and_test_ubuntu
       - pre-commit
+      - build_conda_binaries:
+          CI_TEST: true
   nightly:
     triggers:
       - schedule:
