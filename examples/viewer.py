@@ -303,15 +303,21 @@ class HabitatSimInteractiveViewer(Application):
         self.redraw()
         event.accepted = True
 
-    # TODO: Find out why using a mouse-click to close window doesn't utilize
-    #       this function, leading to zsh: abort
     def exit(self, arg0: int) -> None:
         """
-        Overrides `Application.exit()` in an attempt to perform
-        `habitat_sim.simulator.Simulator.close()` on close window button press
+        Overrides exit to properly close the Simulator before exiting the
+        application. Called when the the ESC key is pressed.
         """
         self.sim.close(destroy=True)
         super().exit(arg0)
+
+    def exit_event(self, event: Application.ExitEvent):
+        """
+        Overrides exit_event to properly close the Simulator before exiting the
+        application. Called when the window exit button is pressed.
+        """
+        self.sim.close(destroy=True)
+        event.accepted = True
 
     def print_help_text(self) -> None:
         """
