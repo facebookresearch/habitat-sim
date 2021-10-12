@@ -219,7 +219,7 @@ class HabitatSimInteractiveViewer(Application):
         pressed = Application.KeyEvent.Key
 
         if key == pressed.ESC:
-            self.exit(0)
+            self.exit_event(Application.ExitEvent)
             return
 
         elif key == pressed.H:
@@ -296,21 +296,14 @@ class HabitatSimInteractiveViewer(Application):
         self.redraw()
         event.accepted = True
 
-    def exit(self, arg0: int) -> None:
-        """
-        Overrides exit to properly close the Simulator before exiting the
-        application. Called when the the ESC key is pressed.
-        """
-        self.sim.close(destroy=True)
-        super().exit(arg0)
-
     def exit_event(self, event: Application.ExitEvent):
         """
         Overrides exit_event to properly close the Simulator before exiting the
-        application. Called when the window exit button is pressed.
+        application.
         """
         self.sim.close(destroy=True)
         event.accepted = True
+        exit(0)
 
     def print_help_text(self) -> None:
         """
