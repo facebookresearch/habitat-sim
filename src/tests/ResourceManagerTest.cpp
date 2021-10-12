@@ -16,6 +16,7 @@
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/WindowlessContext.h"
+#include "esp/metadata/attributes/AttributesBase.h"
 #include "esp/scene/SceneManager.h"
 
 #include "configure.h"
@@ -25,6 +26,7 @@ namespace Mn = Magnum;
 
 using esp::assets::ResourceManager;
 using esp::metadata::MetadataMediator;
+using esp::metadata::attributes::ObjectInstanceShaderType;
 using esp::scene::SceneManager;
 
 namespace {
@@ -44,12 +46,14 @@ struct ResourceManagerTest : Cr::TestSuite::Tester {
   esp::logging::LoggingContext loggingContext;
 };  // struct ResourceManagerTest
 ResourceManagerTest::ResourceManagerTest() {
-  addTests({&ResourceManagerTest::createJoinedCollisionMesh,
+  addTests({
+      &ResourceManagerTest::createJoinedCollisionMesh,
 #ifdef ESP_BUILD_WITH_VHACD
-            &ResourceManagerTest::VHACDUsageTest,
+      &ResourceManagerTest::VHACDUsageTest,
 #endif
-            &ResourceManagerTest::loadAndCreateRenderAssetInstance,
-            &ResourceManagerTest::testShaderTypeSpecification});
+      &ResourceManagerTest::loadAndCreateRenderAssetInstance,
+      &ResourceManagerTest::testShaderTypeSpecification,
+  });
 }
 
 void ResourceManagerTest::createJoinedCollisionMesh() {
@@ -193,6 +197,67 @@ void ResourceManagerTest::loadAndCreateRenderAssetInstance() {
   CORRADE_VERIFY(node);
 }
 
+/**
+ * @brief Recurse through Transform tree to find all material IDs
+ * @param root MeshTransformNode that holds a material id and vector of children
+ * @param matIDs Vector of string material ids to be populated.
+ * @param margin Display aid, to visualize tree structure.
+ */
+void buildMaterialIDs(const esp::assets::MeshTransformNode& root,
+                      std::set<std::string>& matIDs,
+                      const std::string margin = "") {
+  if (!Cr::Utility::String::trim(root.materialID).empty()) {
+    matIDs.emplace(root.materialID);
+  }
+  ESP_DEBUG() << margin << "MMD material ID : " << root.materialID
+              << " # children :" << root.children.size();
+  for (const auto& child : root.children) {
+    buildMaterialIDs(child, matIDs, margin + "\t");
+  }
+}
+
+/**
+ * @brief Test that the material being created is built based on the
+ * info-specified shaderType.
+ * @param specifiedAssetType integer cast of @ref
+ * esp::metadata::attributes::ObjectInstanceShaderType that is expected in the
+ * given material
+ * @param info The AssetInfo describing the material to load
+ * @param MM The @ref esp::metadata::MetadataMediator from which to build
+ * ResourceManager.  We need to rebuild every test so that we force reload of
+ * assets.
+ */
+void testAssetTypeMatch(int specifiedAssetType,
+                        const esp::assets::AssetInfo& info,
+                        std::shared_ptr<esp::metadata::MetadataMediator> MM) {
+  ResourceManager resourceManager(MM);
+  // build a render asset based on the passed info specifications.
+  bool success = resourceManager.loadRenderAsset(info);
+  CORRADE_VERIFY(success);
+  // get the MeshMetaData corresponding to the loaded asset
+  const esp::assets::MeshMetaData& meshMetaData =
+      resourceManager.getMeshMetaData(info.filepath);
+  // vector to hold all material ids in mesh node hierarchy
+  std::set<std::string> matIDs;
+  // traverse mesh node hierarchy to scrap all material ids
+  buildMaterialIDs(meshMetaData.root, matIDs);
+
+  ESP_DEBUG() << "# Materials specified in asset:" << matIDs.size();
+  CORRADE_COMPARE(matIDs.size(), 3);
+
+  // get shaderManager from RM and check material @ material ID
+  auto& shaderManager = resourceManager.getShaderManager();
+  // all materials specified in the hierarchy should match the material for the
+  // desired shadertype.
+  for (const std::string id : matIDs) {
+    int shaderTypeSpec =
+        shaderManager.get<esp::gfx::MaterialData>(id)->shaderTypeSpec;
+    ESP_DEBUG() << "mat ID : " << id << "type spec in mat :" << shaderTypeSpec
+                << " | spec in asset :" << specifiedAssetType;
+    CORRADE_COMPARE(shaderTypeSpec, specifiedAssetType);
+  }
+}  // testAssetTypeMatch
+
 void ResourceManagerTest::testShaderTypeSpecification() {
   esp::gfx::WindowlessContext::uptr context_ =
       esp::gfx::WindowlessContext::create_unique(0);
@@ -201,28 +266,44 @@ void ResourceManagerTest::testShaderTypeSpecification() {
 
   // must declare these in this order due to avoid deallocation errors
   auto MM = MetadataMediator::create();
-  ResourceManager resourceManager(MM);
-  SceneManager sceneManager_;
   std::string boxFile =
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/transform_box.glb");
+  // bogus test for corrade
+  CORRADE_VERIFY(true);
 
-  int sceneID = sceneManager_.initSceneGraph();
-  auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
-  const esp::assets::AssetInfo info = esp::assets::AssetInfo::fromPath(boxFile);
+  esp::assets::AssetInfo info = esp::assets::AssetInfo::fromPath(boxFile);
+  ESP_DEBUG() << "Testing flat via forceFlatShading == true";
+  // force flat shading
+  info.forceFlatShading = true;
+  // object's material type is flat
+  testAssetTypeMatch(static_cast<int>(ObjectInstanceShaderType::Flat), info,
+                     MM);
+  ESP_DEBUG() << "Testing Material type, which is PBR for this asset.";
 
-  const std::string lightSetupKey = "";
-  esp::assets::RenderAssetInstanceCreationInfo::Flags flags;
-  flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsRGBD;
-  flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsSemantic;
-  esp::assets::RenderAssetInstanceCreationInfo creation(
-      boxFile, Corrade::Containers::NullOpt, flags, lightSetupKey);
+  // enable lightig and use material type
+  info.forceFlatShading = false;
+  info.shaderTypeToUse = static_cast<int>(ObjectInstanceShaderType::Material);
+  // object's material type is PBR
+  testAssetTypeMatch(static_cast<int>(ObjectInstanceShaderType::PBR), info, MM);
 
-  std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
-  auto* node = resourceManager.loadAndCreateRenderAssetInstance(
-      info, creation, &sceneManager_, tempIDs);
-  CORRADE_VERIFY(node);
+  ESP_DEBUG() << "Testing PBR explicitly being set.";
+  // force pbr
+  info.shaderTypeToUse = static_cast<int>(ObjectInstanceShaderType::PBR);
+  testAssetTypeMatch(static_cast<int>(ObjectInstanceShaderType::PBR), info, MM);
 
-}  // ResourceManagerTest::testShaderTypeSpecification
+  ESP_DEBUG() << "Testing Phong explicitly being set.";
+  // force phong
+  info.shaderTypeToUse = static_cast<int>(ObjectInstanceShaderType::Phong);
+  testAssetTypeMatch(static_cast<int>(ObjectInstanceShaderType::Phong), info,
+                     MM);
+
+  ESP_DEBUG() << "Testing Flat explicitly being set.";
+  // force flat via shadertype
+  info.shaderTypeToUse = static_cast<int>(ObjectInstanceShaderType::Flat);
+  testAssetTypeMatch(static_cast<int>(ObjectInstanceShaderType::Flat), info,
+                     MM);
+
+}  // ResourceManagerTest::testFlatShaderTypeSpecification
 
 }  // namespace
 
