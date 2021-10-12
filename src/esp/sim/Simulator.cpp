@@ -187,7 +187,9 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
       renderer_ = gfx::Renderer::create(context_.get(), flags);
     }
+#ifndef CORRADE_TARGET_EMSCRIPTEN
     flextGLInit(Magnum::GL::Context::current());
+#endif
     renderer_->acquireGlContext();
   } else {
     CORRADE_ASSERT(
