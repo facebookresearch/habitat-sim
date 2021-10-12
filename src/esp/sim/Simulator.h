@@ -118,6 +118,9 @@ class Simulator {
                    "Simulator::gpuDevice() : cannot get gpu device when "
                    "createRenderer flag is false",
                    0);
+    if (context_ == nullptr) {
+      return 0;
+    }
     return context_->gpuDevice();
   }
 
