@@ -39,6 +39,8 @@ struct ResourceManagerTest : Cr::TestSuite::Tester {
 
   void loadAndCreateRenderAssetInstance();
 
+  void testShaderTypeSpecification();
+
   esp::logging::LoggingContext loggingContext;
 };  // struct ResourceManagerTest
 ResourceManagerTest::ResourceManagerTest() {
@@ -46,7 +48,8 @@ ResourceManagerTest::ResourceManagerTest() {
 #ifdef ESP_BUILD_WITH_VHACD
             &ResourceManagerTest::VHACDUsageTest,
 #endif
-            &ResourceManagerTest::loadAndCreateRenderAssetInstance});
+            &ResourceManagerTest::loadAndCreateRenderAssetInstance,
+            &ResourceManagerTest::testShaderTypeSpecification});
 }
 
 void ResourceManagerTest::createJoinedCollisionMesh() {
@@ -189,6 +192,38 @@ void ResourceManagerTest::loadAndCreateRenderAssetInstance() {
       info, creation, &sceneManager_, tempIDs);
   CORRADE_VERIFY(node);
 }
+
+void ResourceManagerTest::testShaderTypeSpecification() {
+  esp::gfx::WindowlessContext::uptr context_ =
+      esp::gfx::WindowlessContext::create_unique(0);
+
+  std::shared_ptr<esp::gfx::Renderer> renderer_ = esp::gfx::Renderer::create();
+
+  // must declare these in this order due to avoid deallocation errors
+  auto MM = MetadataMediator::create();
+  ResourceManager resourceManager(MM);
+  SceneManager sceneManager_;
+  std::string boxFile =
+      Cr::Utility::Directory::join(TEST_ASSETS, "objects/transform_box.glb");
+
+  int sceneID = sceneManager_.initSceneGraph();
+  auto& sceneGraph = sceneManager_.getSceneGraph(sceneID);
+  const esp::assets::AssetInfo info = esp::assets::AssetInfo::fromPath(boxFile);
+
+  const std::string lightSetupKey = "";
+  esp::assets::RenderAssetInstanceCreationInfo::Flags flags;
+  flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsRGBD;
+  flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsSemantic;
+  esp::assets::RenderAssetInstanceCreationInfo creation(
+      boxFile, Corrade::Containers::NullOpt, flags, lightSetupKey);
+
+  std::vector<int> tempIDs{sceneID, esp::ID_UNDEFINED};
+  auto* node = resourceManager.loadAndCreateRenderAssetInstance(
+      info, creation, &sceneManager_, tempIDs);
+  CORRADE_VERIFY(node);
+
+}  // ResourceManagerTest::testShaderTypeSpecification
+
 }  // namespace
 
 CORRADE_TEST_MAIN(ResourceManagerTest)

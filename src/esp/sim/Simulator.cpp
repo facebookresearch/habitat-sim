@@ -1085,8 +1085,9 @@ void Simulator::sampleRandomAgentState(agent::AgentState& agentState) {
 scene::SceneNode* Simulator::loadAndCreateRenderAssetInstance(
     const assets::AssetInfo& assetInfo,
     const assets::RenderAssetInstanceCreationInfo& creation) {
-  if (renderer_)
+  if (renderer_) {
     renderer_->acquireGlContext();
+  }
   // Note this pattern of passing the scene manager and two scene ids to
   // resource manager. This is similar to ResourceManager::loadStage.
   std::vector<int> tempIDs{activeSceneID_, activeSemanticSceneID_};
