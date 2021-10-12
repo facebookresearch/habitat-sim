@@ -1699,6 +1699,7 @@ void ResourceManager::loadMaterials(Importer& importer,
     }
 
     std::unique_ptr<gfx::MaterialData> finalMaterial;
+
     int textureBaseIndex = loadedAssetData.meshMetaData.textureIndex.first;
     // If we are not using the material's native shadertype, or flat (Which all
     // materials already support), expand the Mn::Trade::MaterialData with
@@ -1725,6 +1726,7 @@ void ResourceManager::loadMaterials(Importer& importer,
       ESP_WARNING() << "Building phong material";
       finalMaterial =
           buildPhongShadedMaterialData(*materialData, textureBaseIndex);
+
       // flat shader spec or material-specified and material specifies flat
     } else if (checkForPassedShaderType(shaderTypeToUse, *materialData,
                                         ObjectInstanceShaderType::Flat,
@@ -1994,6 +1996,9 @@ gfx::PhongMaterialData::uptr ResourceManager::buildFlatShadedMaterialData(
   finalMaterial->diffuseColor = 0x00000000_rgbaf;
   finalMaterial->specularColor = 0x00000000_rgbaf;
 
+  finalMaterial->shaderTypeSpec =
+      static_cast<int>(ObjectInstanceShaderType::Flat);
+
   return finalMaterial;
 }  // ResourceManager::buildFlatShadedMaterialData
 
@@ -2036,6 +2041,10 @@ gfx::PhongMaterialData::uptr ResourceManager::buildPhongShadedMaterialData(
     finalMaterial->normalTexture =
         textures_.at(textureBaseIndex + material.normalTexture()).get();
   }
+
+  finalMaterial->shaderTypeSpec =
+      static_cast<int>(ObjectInstanceShaderType::Phong);
+
   return finalMaterial;
 }  // ResourceManager::buildPhongShadedMaterialData
 
@@ -2127,6 +2136,9 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
 
   // double-sided
   finalMaterial->doubleSided = material.isDoubleSided();
+
+  finalMaterial->shaderTypeSpec =
+      static_cast<int>(ObjectInstanceShaderType::PBR);
 
   return finalMaterial;
 }  // ResourceManager::buildPbrShadedMaterialData
