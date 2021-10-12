@@ -29,16 +29,31 @@ class HabitatSimInteractiveViewer(Application):
         # set up our movement map
         key = Application.KeyEvent.Key
         self.pressed = {
-            key.LEFT: False,
-            key.RIGHT: False,
             key.UP: False,
             key.DOWN: False,
+            key.LEFT: False,
+            key.RIGHT: False,
             key.A: False,
             key.D: False,
             key.S: False,
             key.W: False,
             key.X: False,
             key.Z: False,
+        }
+
+        # set up our movement key bindings map
+        key = Application.KeyEvent.Key
+        self.key_to_action = {
+            key.UP: "look_up",
+            key.DOWN: "look_down",
+            key.LEFT: "turn_left",
+            key.RIGHT: "turn_right",
+            key.A: "move_left",
+            key.D: "move_right",
+            key.S: "move_backward",
+            key.W: "move_forward",
+            key.X: "move_down",
+            key.Z: "move_up",
         }
 
         # toggle mouse utility on/off
@@ -90,13 +105,7 @@ class HabitatSimInteractiveViewer(Application):
             )
 
         self.sim._sensors["color_sensor"].draw_observation()
-
-        # added to use blit_rgba_to_default()
-        sensor_render_target: habitat_sim.gfx.RenderTarget = (
-            self.render_camera.render_target
-        )
-        sensor_render_target.blit_rgba_to_default()
-
+        self.render_camera.render_target.blit_rgba_to_default()
         gl.default_framebuffer.bind()
 
         self.swap_buffers()
@@ -184,34 +193,13 @@ class HabitatSimInteractiveViewer(Application):
         """
         key = Application.KeyEvent.Key
         agent = self.sim.agents[self.agent_id]
+        press: Dict[key.key, bool] = self.pressed
+        act: Dict[key.key, str] = self.key_to_action
 
-        def checkAndMove(action: str, repetitions: int) -> None:
-            for _ in range(int(repetitions)):
-                agent.act(action)
+        action_queue: List[str] = [act[k] for k, v in press.items() if v]
 
-        # non-displacing movement
-        if self.pressed[key.LEFT]:
-            checkAndMove("turn_left", repetitions)
-        if self.pressed[key.RIGHT]:
-            checkAndMove("turn_right", repetitions)
-        if self.pressed[key.UP]:
-            checkAndMove("look_up", repetitions)
-        if self.pressed[key.DOWN]:
-            checkAndMove("look_down", repetitions)
-
-        # displacing movement
-        if self.pressed[key.A]:
-            checkAndMove("move_left", repetitions)
-        if self.pressed[key.D]:
-            checkAndMove("move_right", repetitions)
-        if self.pressed[key.S]:
-            checkAndMove("move_backward", repetitions)
-        if self.pressed[key.W]:
-            checkAndMove("move_forward", repetitions)
-        if self.pressed[key.X]:
-            checkAndMove("move_down", repetitions)
-        if self.pressed[key.Z]:
-            checkAndMove("move_up", repetitions)
+        for _ in range(int(repetitions)):
+            [agent.act(x) for x in action_queue]
 
     def invert_gravity(self) -> None:
         """
@@ -251,6 +239,8 @@ class HabitatSimInteractiveViewer(Application):
                 self.simulate_single_step = True
                 print("Command: physics step taken")
 
+        # TODO: In a future PR, a mouse GRAB interaction mode will be added
+        #       and this key press will be used to toggle between modes
         elif key == pressed.M:
             self.mouse_interaction = not self.mouse_interaction
             print("Command: mouse LOOK set to ", self.mouse_interaction)
