@@ -70,13 +70,15 @@ class BatchedSimulatorTest : public ::testing::Test {};
 TEST_F(BatchedSimulatorTest, basic) {
   esp::logging::LoggingContext loggingContext;
 
-  BatchedSimulator bsim;
+  BatchedSimulatorConfig config{
+      .numEnvs = 1, .sensor0 = {.width = 256, .height = 128, .hfov = 45}};
+  BatchedSimulator bsim(config);
 
-  bsim.calcRewards();
-  bsim.stepPhysics();
-
-  bsim.calcRewards();
-
+  for (int i = 0; i < 100; i++) {
+    bsim.autoResetOrStepPhysics();
+    bsim.getRewards();
+    bsim.getDones();
+  }
   bsim.startRender();
   bsim.waitForFrame();
 
@@ -85,14 +87,14 @@ TEST_F(BatchedSimulatorTest, basic) {
 
   // temp hack copied from BpsWrapper internals
   uint32_t batch_size = 1;
-  glm::u32vec2 out_dim(512, 512);
+  glm::u32vec2 out_dim(config.sensor0.width, config.sensor0.height);
 
-  for (uint32_t batch_idx = 0; batch_idx < batch_size; batch_idx++) {
-    saveFrame(("./out_color_" + std::to_string(batch_idx) + ".bmp").c_str(),
-              base_color_ptr + batch_idx * out_dim.x * out_dim.y * 4, out_dim.x,
+  for (int b = 0; b < config.numEnvs; b++) {
+    saveFrame(("./out_color_" + std::to_string(b) + ".bmp").c_str(),
+              base_color_ptr + b * out_dim.x * out_dim.y * 4, out_dim.x,
               out_dim.y, 4);
-    saveFrame(("./out_depth_" + std::to_string(batch_idx) + ".bmp").c_str(),
-              base_depth_ptr + batch_idx * out_dim.x * out_dim.y, out_dim.x,
-              out_dim.y, 1);
+    saveFrame(("./out_depth_" + std::to_string(b) + ".bmp").c_str(),
+              base_depth_ptr + b * out_dim.x * out_dim.y, out_dim.x, out_dim.y,
+              1);
   }
 }

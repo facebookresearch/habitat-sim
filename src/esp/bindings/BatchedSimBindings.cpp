@@ -24,14 +24,28 @@ py::capsule getColorMemory(BatchedSimulator& bsim, const uint32_t groupIdx) {
 }  // namespace
 
 void initBatchedSimBindings(py::module& m) {
+  py::class_<CameraSensorConfig>(m, "CameraSensorConfig")
+      .def_readwrite("width", &CameraSensorConfig::width, R"(Todo)")
+      .def_readwrite("height", &CameraSensorConfig::height, R"(Todo)")
+      .def_readwrite("hfov", &CameraSensorConfig::hfov, R"(Todo)");
+
+  py::class_<BatchedSimulatorConfig, BatchedSimulatorConfig::ptr>(
+      m, "BatchedSimulatorConfig")
+      .def(py::init(&BatchedSimulatorConfig::create<>))
+      .def_readwrite("num_envs", &BatchedSimulatorConfig::numEnvs, R"(Todo)")
+      .def_readwrite("sensor0", &BatchedSimulatorConfig::sensor0, R"(Todo)");
+
   py::class_<BatchedSimulator, BatchedSimulator::ptr>(m, "BatchedSimulator")
-      .def(py::init(&BatchedSimulator::create<>))
+      .def(py::init(&BatchedSimulator::create<const BatchedSimulatorConfig&>))
       .def("set_actions", &BatchedSimulator::setActions, R"(todo)")
-      .def("step_physics", &BatchedSimulator::stepPhysics, R"(todo)")
-      .def("calc_rewards", &BatchedSimulator::calcRewards, R"(todo)")
+      .def("auto_reset_or_step_physics",
+           &BatchedSimulator::autoResetOrStepPhysics, R"(todo)")
+      // .def("step_physics", &BatchedSimulator::stepPhysics, R"(todo)")
+      .def("get_rewards", &BatchedSimulator::getRewards, R"(todo)")
+      .def("get_dones", &BatchedSimulator::getDones, R"(todo)")
       .def("start_render", &BatchedSimulator::startRender, R"(todo)")
       .def("wait_for_frame", &BatchedSimulator::waitForFrame, R"(todo)")
-
+      // .def("reset", &BatchedSimulator::reset, R"(todo)")
       .def(
           "rgba",
           [](BatchedSimulator& self, const uint32_t groupIdx) {

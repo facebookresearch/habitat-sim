@@ -15,8 +15,14 @@
 namespace esp {
 namespace batched_sim {
 
+struct CameraSensorConfig {
+  int width = -1;
+  int height = -1;
+  float hfov = -1.f;
+};
+
 struct BpsWrapper {
-  BpsWrapper();
+  BpsWrapper(int numEnvs, const CameraSensorConfig& sensor0);
   ~BpsWrapper();
 
   std::shared_ptr<bps3D::Scene> scene_;
@@ -65,6 +71,7 @@ class RobotInstanceSet {
                    RolloutRecord* rollouts);
 
   void updateLinkTransforms(int currRolloutStep);
+  void applyActionPenalties(const std::vector<float>& actions);
 
   Robot* robot_ = nullptr;
   int numEnvs_ = 0;
@@ -76,6 +83,8 @@ class RobotInstanceSet {
   btAlignedObjectArray<btVector3> scratch_m_;
 
   std::vector<bps3D::Environment>* envs_;
+
+  std::vector<float> hackRewards_;
 };
 
 struct RewardCalculationContext {
@@ -95,21 +104,39 @@ struct RewardCalculationContext {
   RolloutRecord* rollouts_ = nullptr;
 };
 
+struct BatchedSimulatorConfig {
+  int numEnvs = -1;
+  CameraSensorConfig sensor0;
+
+  ESP_SMART_POINTERS(BatchedSimulatorConfig);
+};
+
 class BatchedSimulator {
  public:
-  BatchedSimulator();
+  BatchedSimulator(const BatchedSimulatorConfig& config);
 
-  void setActions(std::vector<float>&& actions);
-  void stepPhysics();
   void startRender();
   void waitForFrame();
+
+  void setActions(std::vector<float>&& actions);
+  void autoResetOrStepPhysics();
+
   bps3D::Renderer& getBpsRenderer();
 
-  void calcRewards();
+  const std::vector<float>& getRewards();
+  const std::vector<bool>& getDones();
 
  private:
+  void reset();
+  void stepPhysics();
+
+  void calcRewards();
   void randomizeRobotsForCurrentStep();
 
+  BatchedSimulatorConfig config_;
+  bool isOkToRender_ = false;
+  bool isOkToStep_ = false;
+  bool isRenderStarted_ = false;
   Robot robot_;
   RobotInstanceSet robots_;
   int currRolloutStep_ = -1;
@@ -119,6 +146,7 @@ class BatchedSimulator {
   std::vector<float> actions_;
   int maxRolloutSteps_ = -1;
   RewardCalculationContext rewardContext_;
+  std::vector<bool> hackDones_;
 
   ESP_SMART_POINTERS(BatchedSimulator)
 };

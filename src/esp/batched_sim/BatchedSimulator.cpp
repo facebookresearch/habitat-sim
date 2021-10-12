@@ -141,6 +141,40 @@ RobotInstanceSet::RobotInstanceSet(Robot* robot,
   }
 }
 
+void RobotInstanceSet::applyActionPenalties(const std::vector<float>& actions) {
+  int numEnvs = numEnvs_;
+
+  float yawPenaltyScale = 0.01;
+  float forwardPenaltyScale = 0.01;
+  float jointPosPenaltyScale = 0.01;
+
+  int actionIndex = 0;
+  for (int b = 0; b < numEnvs; b++) {
+    // hackRewards_[b] = 0.f; // hack disable state-based reward
+
+    float deltaYaw = actions[actionIndex++];
+    constexpr float maxDeltaYaw = float(Mn::Rad(Mn::Deg(15.f)));
+    hackRewards_[b] -=
+        Mn::Math::max(0.f, Mn::Math::abs(deltaYaw) - maxDeltaYaw) *
+        yawPenaltyScale;
+
+    float deltaForward = actions[actionIndex++];
+    constexpr float maxDeltaForward = 0.2f;
+    hackRewards_[b] -=
+        Mn::Math::max(0.f, Mn::Math::abs(deltaForward) - maxDeltaForward) *
+        forwardPenaltyScale;
+
+    for (int j = 0; j < robot_->numPosVars; j++) {
+      float deltaJointPos = actions[actionIndex++];
+      constexpr float maxDeltaJointPos = 0.1f;
+      hackRewards_[b] -=
+          Mn::Math::max(0.f, Mn::Math::abs(deltaJointPos) - maxDeltaJointPos) *
+          jointPosPenaltyScale;
+    }
+  }
+  CORRADE_INTERNAL_ASSERT(actionIndex == actions.size());
+}
+
 void RobotInstanceSet::updateLinkTransforms(int currRolloutStep) {
   esp::gfx::replay::Keyframe debugKeyframe;
   int numLinks = robot_->artObj->getNumLinks();
@@ -210,6 +244,20 @@ void RobotInstanceSet::updateLinkTransforms(int currRolloutStep) {
         mat = mat * tmp;
 
         env.updateInstanceTransform(instanceId, toGlmMat4x3(mat));
+
+        // hack calc reward
+        {
+          constexpr int rewardLink = 22;
+          constexpr Mn::Vector3 targetPos(2.5f, 0.25f, 1.f);  // 1.61, 0.98
+
+          if (i == rewardLink) {
+            const Mn::Vector3& pos = mat.translation();
+            float dist = (pos - targetPos).length();
+            hackRewards_[b] = -dist;
+
+            // addition penalty for too-large actions
+          }
+        }
 
 #if 0
         esp::gfx::replay::Transform absTransform{
@@ -302,7 +350,7 @@ Robot::Robot(const std::string& filepath, esp::sim::Simulator* sim) {
   artObj = static_cast<esp::physics::BulletArticulatedObject*>(
       managedObj->hackGetBulletObjectReference().get());
   sceneMapping = BpsSceneMapping::loadFromFile(
-      "/home/eundersander/projects/bps_data/combined_Stage_v3_sc0_staging/"
+      "../data/bps_data/combined_Stage_v3_sc0_staging/"
       "combined_Stage_v3_sc0_staging_trimesh.bps.mapping.json");
 
   jointPositionLimits = artObj->getJointPositionLimits();
@@ -336,18 +384,18 @@ Robot::Robot(const std::string& filepath, esp::sim::Simulator* sim) {
   CORRADE_INTERNAL_ASSERT(numPosVars > 0);
 }
 
-BpsWrapper::BpsWrapper() {
-  uint32_t numEnvs = 128;  // todo: get from python
-  glm::u32vec2 out_dim(256,
-                       256);  // see also rollout_test.py, python/rl/agent.py
+BpsWrapper::BpsWrapper(int numEnvs, const CameraSensorConfig& sensor0) {
+  glm::u32vec2 out_dim(
+      sensor0.width,
+      sensor0.height);  // see also rollout_test.py, python/rl/agent.py
 
   renderer_ = std::make_unique<bps3D::Renderer>(bps3D::RenderConfig{
-      0, 1, numEnvs, out_dim.x, out_dim.y, false,
+      0, 1, uint32_t(numEnvs), out_dim.x, out_dim.y, false,
       bps3D::RenderMode::Depth | bps3D::RenderMode::UnlitRGB});
 
   loader_ = std::make_unique<bps3D::AssetLoader>(renderer_->makeLoader());
   const std::string filepath =
-      "/home/eundersander/projects/bps_data/combined_Stage_v3_sc0_staging/"
+      "../data/bps_data/combined_Stage_v3_sc0_staging/"
       "combined_Stage_v3_sc0_staging_trimesh.bps";
   scene_ = loader_->loadScene(filepath);
 
@@ -357,7 +405,7 @@ BpsWrapper::BpsWrapper() {
 
   for (int b = 0; b < numEnvs; b++) {
     glm::mat4 view = base;
-    auto env = renderer_->makeEnvironment(scene_, view, /*fov*/ 45.f, 0.f, 0.01,
+    auto env = renderer_->makeEnvironment(scene_, view, sensor0.hfov, 0.f, 0.01,
                                           1000.f);
     envs_.emplace_back(std::move(env));
   }
@@ -371,8 +419,9 @@ BpsWrapper::~BpsWrapper() {
   renderer_ = nullptr;
 }
 
-BatchedSimulator::BatchedSimulator() {
-  bpsWrapper_ = std::make_unique<BpsWrapper>();
+BatchedSimulator::BatchedSimulator(const BatchedSimulatorConfig& config) {
+  config_ = config;
+  bpsWrapper_ = std::make_unique<BpsWrapper>(config_.numEnvs, config_.sensor0);
 
   esp::sim::SimulatorConfiguration simConfig{};
   simConfig.activeSceneName = "NONE";
@@ -383,13 +432,13 @@ BatchedSimulator::BatchedSimulator() {
 
   legacySim_ = esp::sim::Simulator::create_unique(simConfig);
 
-  const std::string filepath = "data/URDF/opt_fetch/robots/fetch.urdf";
+  const std::string filepath = "../data/URDF/opt_fetch/robots/fetch.urdf";
 
   robot_ = Robot(filepath, legacySim_.get());
   int numLinks = robot_.artObj->getNumLinks();
   int numNodes = numLinks + 1;  // include base
 
-  const int numEnvs = bpsWrapper_->envs_.size();
+  const int numEnvs = config_.numEnvs;
   robots_ = RobotInstanceSet(&robot_, numEnvs, &bpsWrapper_->envs_, &rollouts_);
 
   // see also python/rl/agent.py
@@ -399,18 +448,19 @@ BatchedSimulator::BatchedSimulator() {
   int batchNumActions = (numJointDegrees + numBaseDegrees) * numEnvs;
   actions_.resize(batchNumActions, 0.f);
 
-  maxRolloutSteps_ = 32;
-  currRolloutStep_ = 0;
+  maxRolloutSteps_ = 50;
   rollouts_ =
       RolloutRecord(maxRolloutSteps_, numEnvs, robot_.numPosVars, numNodes);
 
   rewardContext_ = RewardCalculationContext(&robot_, numEnvs, &rollouts_);
+  robots_.hackRewards_.resize(numEnvs, 0.f);
+  hackDones_.resize(numEnvs, false);
 
-  randomizeRobotsForCurrentStep();
-  robots_.updateLinkTransforms(currRolloutStep_);
-
-  // todo: check that everything is in good state to render (even though we
-  // haven't stepped)
+  currRolloutStep_ =
+      -1;  // trigger auto-reset on first call to autoResetOrStepPhysics
+  isOkToRender_ = false;
+  isOkToStep_ = false;
+  isRenderStarted_ = false;
 }
 
 void BatchedSimulator::setActions(std::vector<float>&& actions) {
@@ -421,7 +471,35 @@ void BatchedSimulator::setActions(std::vector<float>&& actions) {
   actions_ = std::move(actions);
 }
 
+void BatchedSimulator::reset() {
+  CORRADE_INTERNAL_ASSERT(!isRenderStarted_);
+
+  currRolloutStep_ = 0;
+  randomizeRobotsForCurrentStep();
+  robots_.updateLinkTransforms(currRolloutStep_);
+
+  isOkToRender_ = true;
+  isOkToStep_ = true;
+}
+
+void BatchedSimulator::autoResetOrStepPhysics() {
+  if (currRolloutStep_ == -1 || currRolloutStep_ == maxRolloutSteps_ - 1) {
+    // all episodes are done; set done flag and reset
+    std::fill(hackDones_.begin(), hackDones_.end(), true);
+    reset();
+  } else {
+    if (currRolloutStep_ == 0) {
+      std::fill(hackDones_.begin(), hackDones_.end(), false);
+    } else {
+      CORRADE_INTERNAL_ASSERT(!hackDones_[0]);
+    }
+    stepPhysics();
+  }
+}
+
 void BatchedSimulator::stepPhysics() {
+  CORRADE_INTERNAL_ASSERT(isOkToStep_);
+
   int prevRolloutStep = currRolloutStep_;
   currRolloutStep_++;
 
@@ -452,10 +530,9 @@ void BatchedSimulator::stepPhysics() {
   // stepping code
   for (int b = 0; b < numEnvs; b++) {
     yaws[b] = prevYaws[b] +
-              actions_[actionIndex++] * 5.f;  // todo: wrap angle to 360 degrees
+              actions_[actionIndex++];  // todo: wrap angle to 360 degrees
     // note clamp move-forward action to [0,-]
-    constexpr float baseMovementSpeed =
-        0.f;  // temp disable movement so that robot stays on-screen
+    constexpr float baseMovementSpeed = 1.f;
     positions[b] =
         prevPositions[b] + Mn::Vector2(Mn::Math::cos(Mn::Math::Rad(yaws[b])),
                                        -Mn::Math::sin(Mn::Math::Rad(yaws[b]))) *
@@ -476,6 +553,8 @@ void BatchedSimulator::stepPhysics() {
   CORRADE_INTERNAL_ASSERT(actionIndex == actions_.size());
 
   robots_.updateLinkTransforms(currRolloutStep_);
+
+  robots_.applyActionPenalties(actions_);
 }
 
 #if 0
@@ -526,11 +605,17 @@ void BatchedSimulator::stepPhysicsWithReferenceActions() {
 #endif
 
 void BatchedSimulator::startRender() {
+  CORRADE_INTERNAL_ASSERT(isOkToRender_);
   bpsWrapper_->renderer_->render(bpsWrapper_->envs_.data());
+  isOkToRender_ = false;
+  isRenderStarted_ = true;
 }
 
 void BatchedSimulator::waitForFrame() {
+  CORRADE_INTERNAL_ASSERT(isRenderStarted_);
   bpsWrapper_->renderer_->waitForFrame();
+  isRenderStarted_ = false;
+  isOkToRender_ = true;
 }
 
 bps3D::Renderer& BatchedSimulator::getBpsRenderer() {
@@ -544,7 +629,7 @@ RewardCalculationContext::RewardCalculationContext(const Robot* robot,
     : robot_(robot), numEnvs_(numEnvs), rollouts_(rollouts) {
   esp::sim::SimulatorConfiguration simConfig{};
   simConfig.activeSceneName =
-      "data/stages/Stage_v3_sc0_staging_no_textures.glb";
+      "../data/stages/Stage_v3_sc0_staging_no_textures.glb";
   simConfig.enablePhysics = true;
   simConfig.createRenderer = false;
   simConfig.loadRenderAssets =
@@ -554,7 +639,7 @@ RewardCalculationContext::RewardCalculationContext(const Robot* robot,
   legacySim_ = esp::sim::Simulator::create_unique(simConfig);
 
   // todo: avoid code duplication with Robot
-  const std::string filepath = "data/URDF/opt_fetch/robots/fetch.urdf";
+  const std::string filepath = "../data/URDF/opt_fetch/robots/fetch.urdf";
   // todo: delete object on destruction
   auto managedObj = legacySim_->getArticulatedObjectManager()
                         ->addBulletArticulatedObjectFromURDF(filepath);
@@ -620,6 +705,14 @@ void RewardCalculationContext::calcRewards(int currRolloutStep,
 
     rewards[b] = isContact ? -1.f : 1.f;
   }
+}
+
+const std::vector<float>& BatchedSimulator::getRewards() {
+  return robots_.hackRewards_;
+}
+
+const std::vector<bool>& BatchedSimulator::getDones() {
+  return hackDones_;
 }
 
 void BatchedSimulator::calcRewards() {
