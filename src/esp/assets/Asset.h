@@ -53,8 +53,10 @@ struct AssetInfo {
       Cr::Containers::NullOpt;
 
   /**
-   * @brief If set, this specifies the shader type to use for this asset,
-   * overriding any other inferred shader types. See @ref
+   * @brief Defaults to @ref
+   * esp::metadata::attributes::ObjectInstanceShaderType::Unknown (which means
+   * use material's implied shadertype). If set, this specifies the shader type
+   * to use for this asset, overriding any other inferred shader types. See @ref
    * esp::metadata::attributes::ObjectInstanceShaderType
    */
   int shaderTypeToUse = ID_UNDEFINED;
