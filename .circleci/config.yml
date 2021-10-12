@@ -294,29 +294,6 @@ jobs:
           name: Check Code Style using pre-commit
           command: |
             SKIP=eslint pre-commit run --show-diff-on-failure --all-files
-  test_conda_build:
-    <<: *gpu
-    steps:
-      - checkout:
-          path: ./habitat-sim
-      - run:
-          name: CPU info
-          no_output_timeout: 1m
-          command: |
-              cat /proc/cpuinfo
-      - install_all_ubuntu_deps
-      - run:
-          name: Build conda Linux packages for CI
-          command: |
-              while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
-              export PATH=$HOME/miniconda/bin:$PATH
-              . activate habitat;
-              cd habitat-sim
-              pip install gitpython
-              conda install -y anaconda-client git ninja conda-build
-              rm -rf build
-              cd conda-build
-              python linux_matrix_builder.py --ci_test
   test_conda_build_osx:
     macos:
       xcode: 11.3.0
@@ -642,7 +619,7 @@ jobs:
               docker build -t hsim_condabuild_dcontainer -f Dockerfile .
               docker run -it --ipc=host --rm -v $(pwd)/../../:/remote hsim_condabuild_dcontainer \
                   /bin/bash -c "source ~/.bashrc && conda activate py36 \
-                                && cd /remote/habitat-sim/conda-build <<^ parameters.CI_TEST >> anaconda login --username << parameters.AIHABITAT_CONDA_CHN >> --password ${<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >>} <</ parameters.CI_TEST >> \
+                                && cd /remote/habitat-sim/conda-build <<^ parameters.CI_TEST >> && anaconda login --username << parameters.AIHABITAT_CONDA_CHN >> --password ${<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >>} <</ parameters.CI_TEST >> \
                                 && python linux_matrix_builder.py <<# parameters.CI_TEST >> --ci_test <</ parameters.CI_TEST>> <<^ parameters.CI_TEST >> --conda_upload << parameters.NIGHTLY_FLAG >> <</ parameters.CI_TEST >>"
 
   update_docs:
@@ -712,7 +689,6 @@ workflows:
     jobs:
       - lab_build_habitat
       - install_and_test_ubuntu
-      - test_conda_build
       - update_docs:
           requires:
             - install_and_test_ubuntu
@@ -737,8 +713,6 @@ workflows:
               only: /^v[0-9]+(\.[0-9]+)*.*/ # v0.1.5-rc1
             branches:
               ignore: /.*/
-      - test_conda_build:
-          filters: *version_filter
       - install_and_test_ubuntu:
           filters: *version_filter
       - update_docs:
@@ -748,7 +722,6 @@ workflows:
           filters: *version_filter
       - build_conda_binaries:
           requires:
-            - test_conda_build
             - lab_build_habitat
             - install_and_test_ubuntu
           filters: *version_filter
