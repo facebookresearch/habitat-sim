@@ -31,6 +31,7 @@ const std::map<std::string, esp::gfx::LightPositionModel>
                              {"object", esp::gfx::LightPositionModel::Object}};
 
 const std::map<std::string, ObjectInstanceShaderType> ShaderTypeNamesMap = {
+    {"unspecified", ObjectInstanceShaderType::Unknown},
     {"material", ObjectInstanceShaderType::Material},
     {"flat", ObjectInstanceShaderType::Flat},
     {"phong", ObjectInstanceShaderType::Phong},

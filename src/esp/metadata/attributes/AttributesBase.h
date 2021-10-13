@@ -7,50 +7,20 @@
 
 #include <Corrade/Utility/Directory.h>
 #include <deque>
+#include "AttributesEnumMaps.h"
 #include "esp/core/Configuration.h"
 #include "esp/core/managedContainers/AbstractFileBasedManagedObject.h"
 #include "esp/gfx/LightSetup.h"
 
 namespace esp {
+namespace asset {
+enum class AssetType;
+}
 namespace physics {
 enum class MotionType;
 }
 namespace metadata {
 namespace attributes {
-
-/**
- * @brief This enum class defines the possible shader options for rendering
- * instances of objects or stages in Habitat-sim.
- */
-enum class ObjectInstanceShaderType {
-  /**
-   * Represents an unknown/unspecified value for the shader type to use. Resort
-   * to defaults for object type.
-   */
-  Unknown = ID_UNDEFINED,
-  /**
-   * Override any config-specified or default shader-type values to use the
-   * material-specified shader.
-   */
-  Material,
-  /**
-   * Refers to flat shading, pure color and no lighting.  This is often used for
-   * textured objects
-   */
-  Flat,
-  /**
-   * Refers to phong shading with pure diffuse color.
-   */
-  Phong,
-  /**
-   * Refers to using a shader built with physically-based rendering models.
-   */
-  PBR,
-  /**
-   * End cap value - no shader type enums should be defined past this enum.
-   */
-  EndShaderType,
-};
 
 /**
  * @brief Constant map to provide mappings from string tags to @ref
@@ -65,40 +35,6 @@ const extern std::map<std::string, ObjectInstanceShaderType> ShaderTypeNamesMap;
  * string key that maps to it in the ShaderTypeNamesMap
  */
 std::string getShaderTypeName(ObjectInstanceShaderType shaderTypeVal);
-
-/**
- * @brief This enum class describes whether an object instance position is
- * relative to its COM or the asset's local origin.  Depending on this value, we
- * may take certain actions when instantiating a scene described by a scene
- * instance. For example, scene instances exported from Blender will have no
- * conception of an object's configured COM, and so will require adjustment to
- * translations to account for COM location when the object is placed*/
-enum class SceneInstanceTranslationOrigin {
-  /**
-   * @brief Default value - in the case of object instances, this means use the
-   * specified scene instance default; in the case of a scene instance, this
-   * means do not correct for COM.
-   */
-  Unknown = ID_UNDEFINED,
-  /**
-   * @brief Indicates scene instance objects were placed without knowledge of
-   * their COM location, and so need to be corrected when placed in scene in
-   * Habitat. For example, they were exported from an external editor like
-   * Blender.
-   */
-  AssetLocal,
-  /**
-   * @brief Indicates scene instance objects' location were recorded at their
-   * COM location, and so do not need correction.  For example they were
-   * exported from Habitat-sim.
-   */
-  COM,
-  /**
-   * End cap value - no instance translation origin type enums should be defined
-   * past this enum.
-   */
-  EndTransOrigin,
-};
 
 /**
  * @brief Constant map to provide mappings from string tags to @ref

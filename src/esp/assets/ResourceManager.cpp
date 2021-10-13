@@ -421,7 +421,7 @@ ResourceManager::createStageAssetInfosFromAttributes(
       stageAttributes->getForceFlatShading()    // forceFlatShading
   };
   renderInfo.shaderTypeToUse =
-      static_cast<int>(stageAttributes->getShaderType());
+      metadata::attributes::getShaderTypeName(stageAttributes->getShaderType());
   resMap["render"] = renderInfo;
   if (createCollisionInfo) {
     // create collision asset info if requested
@@ -811,8 +811,8 @@ bool ResourceManager::loadObjectMeshDataFromFile(
   if (!filename.empty()) {
     AssetInfo meshInfo{AssetType::UNKNOWN, filename};
     meshInfo.forceFlatShading = forceFlatShading;
-    meshInfo.shaderTypeToUse =
-        static_cast<int>(objectAttributes->getShaderType());
+    meshInfo.shaderTypeToUse = metadata::attributes::getShaderTypeName(
+        objectAttributes->getShaderType());
     meshInfo.frame = buildFrameFromAttributes(objectAttributes, {0, 0, 0});
     success = loadRenderAsset(meshInfo);
     if (!success) {
@@ -1737,8 +1737,17 @@ ObjectInstanceShaderType ResourceManager::getMaterialShaderType(
   if (info.forceFlatShading) {
     return ObjectInstanceShaderType::Flat;
   }
-  ObjectInstanceShaderType infoSpecShaderType =
-      static_cast<ObjectInstanceShaderType>(info.shaderTypeToUse);
+  const std::string shaderTypeLC =
+      Cr::Utility::String::lowercase(info.shaderTypeToUse);
+  auto mapIter = metadata::attributes::ShaderTypeNamesMap.find(shaderTypeLC);
+
+  ESP_CHECK(mapIter != metadata::attributes::ShaderTypeNamesMap.end(),
+            Cr::Utility::formatString(
+                "Illegal shaderTypeToUse value `{}` from {}, specified "
+                "in AssetInfo for asset : {}. Aborting",
+                shaderTypeLC, info.shaderTypeToUse, info.filepath));
+  ObjectInstanceShaderType infoSpecShaderType = mapIter->second;
+
   if (infoSpecShaderType == ObjectInstanceShaderType::Unknown) {
     // use the material's inherent shadertype
     infoSpecShaderType = ObjectInstanceShaderType::Material;

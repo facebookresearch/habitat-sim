@@ -8,8 +8,17 @@
 #include <Magnum/Math/Color.h>
 #include "esp/core/Esp.h"
 #include "esp/geo/CoordinateFrame.h"
+#include "esp/metadata/attributes/AttributesEnumMaps.h"
 
 namespace esp {
+namespace metadata {
+namespace attributes {
+
+// mapping function in esp::metadata::attributes::AttributesBase.h
+std::string getShaderTypeName(ObjectInstanceShaderType shaderTypeVal);
+
+}  // namespace attributes
+}  // namespace metadata
 
 //! Asset management namespace
 namespace assets {
@@ -55,11 +64,12 @@ struct AssetInfo {
   /**
    * @brief Defaults to @ref
    * esp::metadata::attributes::ObjectInstanceShaderType::Unknown (which means
-   * use material's implied shadertype). If set, this specifies the shader type
-   * to use for this asset, overriding any other inferred shader types. See @ref
-   * esp::metadata::attributes::ObjectInstanceShaderType
+   * use material's implied shadertype). If set to other value, this specifies
+   * the shader type to use for this asset, overriding any other inferred shader
+   * types. See @ref esp::metadata::attributes::ObjectInstanceShaderType
    */
-  int shaderTypeToUse = ID_UNDEFINED;
+  std::string shaderTypeToUse = metadata::attributes::getShaderTypeName(
+      metadata::attributes::ObjectInstanceShaderType::Unknown);
 
   //! Populates a preset AssetInfo by matching against known filepaths
   static AssetInfo fromPath(const std::string& filepath);

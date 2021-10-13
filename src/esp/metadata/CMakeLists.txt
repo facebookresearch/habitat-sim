@@ -5,6 +5,7 @@
 set(
   metadata_SOURCES
   attributes/AttributesBase.h
+  attributes/AttributesEnumMaps.h
   attributes/AttributesBase.cpp
   attributes/LightLayoutAttributes.h
   attributes/LightLayoutAttributes.cpp
