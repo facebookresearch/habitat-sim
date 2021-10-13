@@ -1634,7 +1634,7 @@ void appendIfNotPresent(
     const Mn::Trade::MaterialData& material,
     Cr::Containers::Array<Mn::Trade::MaterialAttributeData>& newAttributes,
     const MaterialAttribute& matAttr,
-    T& value) {
+    T value) {
   if (!material.hasAttribute(matAttr)) {
     arrayAppend(newAttributes, {matAttr, std::move(value)});
   }
@@ -1656,13 +1656,15 @@ bool compareShaderTypeToMnMatType(const ObjectInstanceShaderType typeToCheck,
     case ObjectInstanceShaderType::Phong: {
       bool compRes =
           bool(materialData.types() & Mn::Trade::MaterialType::Phong);
-      ESP_WARNING() << "Forceing to Phong | compare " << compRes;
+      ESP_DEBUG() << "Forcing to Phong | Material currently"
+                  << (compRes ? "supports" : "does not support") << "Phong";
       return compRes;
     }
     case ObjectInstanceShaderType::PBR: {
       bool compRes = bool(materialData.types() &
                           Mn::Trade::MaterialType::PbrMetallicRoughness);
-      ESP_WARNING() << "Forceing to PBR | compare " << compRes;
+      ESP_DEBUG() << "Forcing to PBR | Material currently"
+                  << (compRes ? "supports" : "does not support") << "PBR";
       return compRes;
     }
     default: {
@@ -1707,7 +1709,7 @@ void ResourceManager::loadMaterials(Importer& importer,
     if ((shaderTypeToUse != ObjectInstanceShaderType::Material) &&
         (shaderTypeToUse != ObjectInstanceShaderType::Flat) &&
         !(compareShaderTypeToMnMatType(shaderTypeToUse, *materialData))) {
-      ESP_WARNING() << "Building expanded materialData";
+      ESP_DEBUG() << "Building expanded materialData";
       materialData = createUniversalMaterial(*materialData);
     }
 
@@ -1715,7 +1717,7 @@ void ResourceManager::loadMaterials(Importer& importer,
     if (checkForPassedShaderType(
             shaderTypeToUse, *materialData, ObjectInstanceShaderType::PBR,
             Mn::Trade::MaterialType::PbrMetallicRoughness)) {
-      ESP_WARNING() << "Building pbr material";
+      ESP_DEBUG() << "Building pbr material";
       finalMaterial =
           buildPbrShadedMaterialData(*materialData, textureBaseIndex);
 
@@ -1723,7 +1725,7 @@ void ResourceManager::loadMaterials(Importer& importer,
     } else if (checkForPassedShaderType(shaderTypeToUse, *materialData,
                                         ObjectInstanceShaderType::Phong,
                                         Mn::Trade::MaterialType::Phong)) {
-      ESP_WARNING() << "Building phong material";
+      ESP_DEBUG() << "Building phong material";
       finalMaterial =
           buildPhongShadedMaterialData(*materialData, textureBaseIndex);
 
@@ -1731,16 +1733,17 @@ void ResourceManager::loadMaterials(Importer& importer,
     } else if (checkForPassedShaderType(shaderTypeToUse, *materialData,
                                         ObjectInstanceShaderType::Flat,
                                         Mn::Trade::MaterialType::Flat)) {
-      ESP_WARNING() << "Building flat material";
+      ESP_DEBUG() << "Building flat material";
       finalMaterial =
           buildFlatShadedMaterialData(*materialData, textureBaseIndex);
 
     } else {
-      ESP_ERROR() << "Unhandled ShaderType specification :"
-                  << metadata::attributes::getShaderTypeName(shaderTypeToUse)
-                  << "and/or unmanaged type specified in material @ idx:"
-                  << iMaterial << "for asset" << assetName << "so skipping.";
-      continue;
+      ESP_CHECK(false,
+                Cr::Utility::formatString(
+                    "Unhandled ShaderType specification : {} and/or unmanaged "
+                    "type specified in material @ idx: {} for asset {}.",
+                    metadata::attributes::getShaderTypeName(shaderTypeToUse),
+                    iMaterial, assetName));
     }
     // for now, just use unique ID for material key. This may change if we
     // expose materials to user for post-load modification
@@ -1944,14 +1947,12 @@ Mn::Trade::MaterialData ResourceManager::createUniversalMaterial(
   }  // if no PbrMetallicRoughness material support exists in material
 
   // build flags to support all materials
-  const auto flags = Mn::Trade::MaterialType::Flat |
-                     Mn::Trade::MaterialType::Phong |
-                     Mn::Trade::MaterialType::PbrMetallicRoughness;
+  constexpr auto flags = Mn::Trade::MaterialType::Flat |
+                         Mn::Trade::MaterialType::Phong |
+                         Mn::Trade::MaterialType::PbrMetallicRoughness;
 
   // create new material from attributes array
-  ESP_WARNING() << "before building new material";
   Mn::Trade::MaterialData newMaterialData{flags, std::move(newAttributes)};
-  ESP_WARNING() << "after building new material";
 
   return newMaterialData;
 }  // ResourceManager::createUniversalMaterial
@@ -1969,15 +1970,15 @@ ObjectInstanceShaderType ResourceManager::getMaterialShaderType(
     // use the material's inherent shadertype
     infoSpecShaderType = ObjectInstanceShaderType::Material;
   }
-  ESP_WARNING() << "Shadertype being used for file :"
-                << Cr::Utility::Directory::filename(info.filepath)
-                << "| shadertype name :"
-                << metadata::attributes::getShaderTypeName(infoSpecShaderType);
+  ESP_DEBUG() << "Shadertype being used for file :"
+              << Cr::Utility::Directory::filename(info.filepath)
+              << "| shadertype name :"
+              << metadata::attributes::getShaderTypeName(infoSpecShaderType);
   return infoSpecShaderType;
 }  // ResourceManager::getMaterialShaderType
 
 gfx::PhongMaterialData::uptr ResourceManager::buildFlatShadedMaterialData(
-    Mn::Trade::MaterialData& materialData,
+    const Mn::Trade::MaterialData& materialData,
     int textureBaseIndex) {
   // NOLINTNEXTLINE(google-build-using-namespace)
   using namespace Mn::Math::Literals;
@@ -2003,7 +2004,7 @@ gfx::PhongMaterialData::uptr ResourceManager::buildFlatShadedMaterialData(
 }  // ResourceManager::buildFlatShadedMaterialData
 
 gfx::PhongMaterialData::uptr ResourceManager::buildPhongShadedMaterialData(
-    Mn::Trade::MaterialData& materialData,
+    const Mn::Trade::MaterialData& materialData,
     int textureBaseIndex) const {
   // NOLINTNEXTLINE(google-build-using-namespace)
   using namespace Mn::Math::Literals;
@@ -2049,7 +2050,7 @@ gfx::PhongMaterialData::uptr ResourceManager::buildPhongShadedMaterialData(
 }  // ResourceManager::buildPhongShadedMaterialData
 
 gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
-    Mn::Trade::MaterialData& materialData,
+    const Mn::Trade::MaterialData& materialData,
     int textureBaseIndex) const {
   // NOLINTNEXTLINE(google-build-using-namespace)
   using namespace Mn::Math::Literals;

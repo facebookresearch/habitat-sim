@@ -875,7 +875,7 @@ class ResourceManager {
    * @param textureBaseIndex Base index of the assets textures in textures_
    */
   gfx::PhongMaterialData::uptr buildFlatShadedMaterialData(
-      Mn::Trade::MaterialData& materialData,
+      const Mn::Trade::MaterialData& materialData,
       int textureBaseIndex);
 
   /**
@@ -888,7 +888,7 @@ class ResourceManager {
 
    */
   gfx::PhongMaterialData::uptr buildPhongShadedMaterialData(
-      Mn::Trade::MaterialData& material,
+      const Mn::Trade::MaterialData& material,
       int textureBaseIndex) const;
 
   /**
@@ -900,7 +900,7 @@ class ResourceManager {
    * @param textureBaseIndex Base index of the assets textures in textures_
    */
   gfx::PbrMaterialData::uptr buildPbrShadedMaterialData(
-      Mn::Trade::MaterialData& material,
+      const Mn::Trade::MaterialData& material,
       int textureBaseIndex) const;
 
   /**
