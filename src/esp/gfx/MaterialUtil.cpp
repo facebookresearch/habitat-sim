@@ -22,7 +22,7 @@ namespace {
 
 /**
  * @brief Make sure we do not add an attribute that already exists in source
- * material - this will assert.
+ * material - doing this will cause an assertion.
  * @tparam the type of the value to be added
  * @param material Source material for new attributes array
  * @param newAttributes The array of attributes to be used to build a new
@@ -36,9 +36,9 @@ void appendIfNotPresent(
     const Mn::Trade::MaterialData& material,
     Cr::Containers::Array<Mn::Trade::MaterialAttributeData>& newAttributes,
     const MaterialAttribute& matAttr,
-    T value) {
+    const T& value) {
   if (!material.hasAttribute(matAttr)) {
-    arrayAppend(newAttributes, {matAttr, std::move(value)});
+    arrayAppend(newAttributes, {matAttr, value});
   }
 }
 
