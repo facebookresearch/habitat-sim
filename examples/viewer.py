@@ -274,6 +274,10 @@ class HabitatSimInteractiveViewer(Application):
             self.invert_gravity()
             logger.info("Command: gravity inverted")
 
+        elif key == pressed.F:
+            self.test_fairmotion_load()
+            print("Command: fairmotion test")
+
         # update map of moving/looking keys which are currently pressed
         if key in self.pressed:
             self.pressed[key] = True
@@ -508,6 +512,21 @@ class HabitatSimInteractiveViewer(Application):
         self.sim.close(destroy=True)
         event.accepted = True
         exit(0)
+
+    def test_fairmotion_load(self):
+        from fairmotion.data import amass
+
+        amass_fn = "/Users/juanjrodriguez/fairmotion/amass_test_data/CMU/CMU/06/06_14_poses.npz"
+        bm_path = (
+            "/Users/juanjrodriguez/fairmotion/amass_test_data/smplh/male/model.npz"
+        )
+        # bm_path = "/Users/juanjrodriguez/fairmotion/amass_test_data/mano_v1_2/models/SMPLH_male.pkl"
+
+        motion = amass.load(file=amass_fn, bm_path=bm_path)
+        if motion is not None:
+            print(type(motion))
+        else:
+            print("something is not right...")
 
     def print_help_text(self) -> None:
         """
