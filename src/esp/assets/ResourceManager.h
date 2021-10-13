@@ -854,19 +854,6 @@ class ResourceManager {
   }
 
   /**
-   * @brief This function will take an existing Mn::Trade::MaterialData and add
-   * the missing attributes for the types it does not support, so that it will
-   * have attributes for all habitat-supported types. This should only be called
-   * if the user has specified a desired shader type that the material does not
-   * natively support.
-   * @param origMaterialData The original material from the importer
-   * @return The new material with attribute support for all supported shader
-   * types.
-   */
-  Mn::Trade::MaterialData createUniversalMaterial(
-      const Mn::Trade::MaterialData& origMaterialData);
-
-  /**
    * @brief Build a @ref PhongMaterialData for use with flat shading
    *
    * Textures must already be loaded for the asset this material belongs to

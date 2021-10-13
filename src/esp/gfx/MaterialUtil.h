@@ -8,6 +8,8 @@
 
 #include <Magnum/Trade/Trade.h>
 #include "esp/gfx/MaterialData.h"
+
+namespace Mn = Magnum;
 // forward declarations
 namespace Magnum {
 namespace Trade {
@@ -18,7 +20,22 @@ class PbrMetallicRoughnessMaterialData;
 }  // namespace Magnum
 
 namespace esp {
-namespace gfx {}  // namespace gfx
+namespace gfx {
+
+/**
+ * @brief This function will take an existing Mn::Trade::MaterialData and add
+ * the missing attributes for the types it does not support, so that it will
+ * have attributes for all habitat-supported types. This should only be called
+ * if the user has specified a desired shader type that the material does not
+ * natively support.
+ * @param origMaterialData The original material from the importer
+ * @return The new material with attribute support for all supported shader
+ * types.
+ */
+Mn::Trade::MaterialData createUniversalMaterial(
+    const Mn::Trade::MaterialData& origMaterialData);
+
+}  // namespace gfx
 }  // namespace esp
 
 #endif  // ESP_GFX_MATERIALUTIL_H_
