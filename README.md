@@ -50,7 +50,7 @@ If you use the Habitat platform in your research, please cite the [Habitat](http
 @article{szot2021habitat,
   title     =     {Habitat 2.0: Training Home Assistants to Rearrange their Habitat},
   author    =     {Andrew Szot and Alex Clegg and Eric Undersander and Erik Wijmans and Yili Zhao and John Turner and Noah Maestre and Mustafa Mukadam and Devendra Chaplot and Oleksandr Maksymets and Aaron Gokaslan and Vladimir Vondrus and Sameer Dharur and Franziska Meier and Wojciech Galuba and Angel Chang and Zsolt Kira and Vladlen Koltun and Jitendra Malik and Manolis Savva and Dhruv Batra},
-  journal   =     {arXiv preprint arXiv:2106.14405},
+  booktitle =     {Advances in Neural Information Processing Systems (NeurIPS)},
   year      =     {2021}
 }
 
