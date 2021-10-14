@@ -389,7 +389,7 @@ class MobileManipulator(RobotInterface):
         """
         if len(ctrl) != len(self.params.arm_joints):
             raise ValueError("Control dimension does not match joint dimension")
-        if any(np.isnan(ctrl)):
+        if np.any(np.isnan(ctrl)):
             raise ValueError("Control is NaN")
 
     def set_fixed_arm_joint_pos(self, fix_arm_joint_pos):
