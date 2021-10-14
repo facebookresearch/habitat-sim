@@ -191,6 +191,7 @@ class MobileManipulator(RobotInterface):
 
         # set initial states and targets
         self.arm_joint_pos = self.params.arm_init_params
+        self.arm_motor_pos = self.params.arm_init_params
         self.gripper_joint_pos = self.params.gripper_init_params
 
         self._update_motor_settings_cache()
@@ -241,6 +242,7 @@ class MobileManipulator(RobotInterface):
         self.sim_obj.clear_joint_states()
 
         self.arm_joint_pos = self.params.arm_init_params
+        self.arm_motor_pos = self.params.arm_init_params
         self._fix_joint_values = None
         self.gripper_joint_pos = self.params.gripper_init_params
 
