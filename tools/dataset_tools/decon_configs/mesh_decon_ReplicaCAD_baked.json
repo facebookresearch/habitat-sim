@@ -108,6 +108,7 @@
         ]
       },
       "kitchen_counter": {
+        "uniform_scale": 0.98,
         "absolute_translation": [
           0.880730934143066,
           0.03,
@@ -197,6 +198,7 @@
         ]
       },
       "kitchen_counter": {
+        "uniform_scale": 0.98,
         "absolute_translation": [
           -2,
           0.03,
@@ -286,6 +288,7 @@
         ]
       },
       "kitchen_counter": {
+        "uniform_scale": 0.98,
         "absolute_translation": [
           -2,
           0.03,
@@ -375,6 +378,7 @@
         ]
       },
       "kitchen_counter": {
+        "uniform_scale": 0.98,
         "absolute_translation": [
           -2,
           0.03,
@@ -464,6 +468,7 @@
         ]
       },
       "kitchen_counter": {
+        "uniform_scale": 0.98,
         "absolute_translation": [
           2.74135208129882812,
           0.03,

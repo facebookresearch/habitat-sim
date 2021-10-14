@@ -66,6 +66,7 @@
   },
   "default_lighting_tag": "lighting/frl_apartment_stage",
   "apply_object_transform": true,
+  "calc_object_uniform_scale": false,
   "save_articulated_object_instances": true,
   "ao_scene_mapping_obj_names": {
     "fridge": "",
@@ -139,6 +140,7 @@
         ]
       },
       "kitchen_counter": {
+        "uniform_scale": 0.98,
         "absolute_translation": [
           0.880730934143066,
           0.03,
@@ -229,6 +231,7 @@
         ]
       },
       "kitchen_counter": {
+        "uniform_scale": 0.98,
         "absolute_translation": [
           -2,
           0.03,
@@ -319,6 +322,7 @@
         ]
       },
       "kitchen_counter": {
+        "uniform_scale": 0.98,
         "absolute_translation": [
           -2,
           0.03,
@@ -409,6 +413,7 @@
         ]
       },
       "kitchen_counter": {
+        "uniform_scale": 0.98,
         "absolute_translation": [
           -2,
           0.03,
@@ -499,6 +504,7 @@
         ]
       },
       "kitchen_counter": {
+        "uniform_scale": 0.98,
         "absolute_translation": [
           2.74135208129882812,
           0.03,
