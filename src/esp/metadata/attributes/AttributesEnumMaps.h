@@ -6,7 +6,14 @@
 #define ESP_METADATA_ATTRIBUTES_ATTRIBUTESENUMMAPS_H_
 
 #include "esp/core/Esp.h"
+#include "esp/gfx/LightSetup.h"
 namespace esp {
+namespace asset {
+enum class AssetType;
+}
+namespace physics {
+enum class MotionType;
+}
 namespace metadata {
 namespace attributes {
 
@@ -77,6 +84,77 @@ enum class SceneInstanceTranslationOrigin {
    */
   EndTransOrigin,
 };
+
+/**
+ * @brief Constant map to provide mappings from string tags to @ref
+ * ObjectInstanceShaderType values.  This will be used to map values set
+ * in json for translation origin to @ref ObjectInstanceShaderType.  Keys
+ * must be lowercase.
+ */
+const extern std::map<std::string, ObjectInstanceShaderType> ShaderTypeNamesMap;
+
+/**
+ * @brief This method will convert a @ref ObjectInstanceShaderType value to the
+ * string key that maps to it in the ShaderTypeNamesMap
+ */
+std::string getShaderTypeName(ObjectInstanceShaderType shaderTypeVal);
+
+/**
+ * @brief Constant map to provide mappings from string tags to @ref
+ * SceneInstanceTranslationOrigin values.  This will be used to map values set
+ * in json for translation origin to @ref SceneInstanceTranslationOrigin.  Keys
+ * must be lowercase.
+ */
+const extern std::map<std::string, SceneInstanceTranslationOrigin>
+    InstanceTranslationOriginMap;
+/**
+ * @brief This method will convert a @ref SceneInstanceTranslationOrigin value
+ * to the string key that maps to it in the InstanceTranslationOriginMap
+ */
+std::string getTranslationOriginName(
+    SceneInstanceTranslationOrigin translationOrigin);
+
+/**
+ * @brief Constant static map to provide mappings from string tags to @ref
+ * esp::gfx::LightType values.  This will be used to map values set in json
+ * for light type to @ref esp::gfx::LightType.  Keys must be lowercase - will
+ * support any case values in JSON.
+ */
+const extern std::map<std::string, esp::gfx::LightType> LightTypeNamesMap;
+/**
+ * @brief This method will convert a @ref esp::gfx::LightType value to the
+ * string key it maps to in the LightTypeNamesMap
+ */
+std::string getLightTypeName(esp::gfx::LightType lightTypeEnum);
+
+/**
+ * @brief Constant static map to provide mappings from string tags to @ref
+ * esp::gfx::LightPositionModel values.  This will be used to map values set
+ * in json to specify what translations are measured from for a lighting
+ * instance.
+ */
+const extern std::map<std::string, esp::gfx::LightPositionModel>
+    LightPositionNamesMap;
+/**
+ * @brief This method will convert a @ref esp::gfx::LightPositionModel value to
+ * the string key it maps to in the LightPositionNamesMap
+ */
+std::string getLightPositionModelName(
+    esp::gfx::LightPositionModel lightPositionEnum);
+
+/**
+ * @brief Constant static map to provide mappings from string tags to @ref
+ * esp::physics::MotionType values.  This will be used to map values set in
+ * json for mesh type to @ref esp::physics::MotionType.  Keys must be
+ * lowercase.
+ */
+const extern std::map<std::string, esp::physics::MotionType> MotionTypeNamesMap;
+
+/**
+ * @brief This method will convert a @ref esp::gfx::LightPositionModel value to
+ * the string key it maps to in the LightPositionNamesMap
+ */
+std::string getMotionTypeName(esp::physics::MotionType motionTypeEnum);
 
 }  // namespace attributes
 }  // namespace metadata

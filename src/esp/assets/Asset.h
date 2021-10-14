@@ -11,14 +11,6 @@
 #include "esp/metadata/attributes/AttributesEnumMaps.h"
 
 namespace esp {
-namespace metadata {
-namespace attributes {
-
-// mapping function in esp::metadata::attributes::AttributesBase.h
-std::string getShaderTypeName(ObjectInstanceShaderType shaderTypeVal);
-
-}  // namespace attributes
-}  // namespace metadata
 
 //! Asset management namespace
 namespace assets {
