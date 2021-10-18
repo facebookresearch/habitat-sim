@@ -2,7 +2,7 @@
   "dataset_name": "ReplicaCAD",
   "dataset_src_rel_to_home": true,
   "dataset_src_subdir": "Facebook/habitat-sim/data/scene_datasets/replicaCAD/",
-  "scenes_src_subdir": "../replicaCAD_working/replicaCAD_105",
+  "scenes_src_subdir": "../replicaCAD_working/replicaCAD_source_scenes",
   "objects_src_subdir": "objects/",
   "dataset_dest_rel_to_home": true,
   "dataset_dest_subdir": "Facebook/habitat-sim/data/scene_datasets/replicaCAD/",

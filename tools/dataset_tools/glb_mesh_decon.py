@@ -780,18 +780,62 @@ def extract_lighting_from_scene(
 
 
 def build_scene_dataset_config(configs):
+    scene_dataset_dest_dir = os.path.join(
+        configs["dataset_dest_dir"],
+        configs["dataset_name"] + ut.CONFIG_EXTENSIONS["dataset"] + ".json",
+    )
     scene_dataset_config = {
         "stages": {
-            "paths": {".json": [os.path.join(configs["stage_config_dest_dir"], "*")]}
+            "paths": {
+                ".json": [
+                    os.path.join(
+                        ut.transform_path_relative(
+                            configs["stage_config_dest_dir"],
+                            configs["dataset_dest_dir"],
+                        ),
+                        "*",
+                    )
+                ]
+            }
         },
         "objects": {
-            "paths": {".json": [os.path.join(configs["obj_config_dest_dir"], "*")]}
+            "paths": {
+                ".json": [
+                    os.path.join(
+                        ut.transform_path_relative(
+                            configs["obj_config_dest_dir"],
+                            configs["dataset_dest_dir"],
+                        ),
+                        "*",
+                    )
+                ]
+            }
         },
         "light_setups": {
-            "paths": {".json": [os.path.join(configs["light_config_dest_dir"], "*")]}
+            "paths": {
+                ".json": [
+                    os.path.join(
+                        ut.transform_path_relative(
+                            configs["light_config_dest_dir"],
+                            configs["dataset_dest_dir"],
+                        ),
+                        "*",
+                    )
+                ]
+            }
         },
         "scene_instances": {
-            "paths": {".json": [os.path.join(configs["scene_instance_dest_dir"], "*")]}
+            "paths": {
+                ".json": [
+                    os.path.join(
+                        ut.transform_path_relative(
+                            configs["scene_instance_dest_dir"],
+                            configs["dataset_dest_dir"],
+                        ),
+                        "*",
+                    )
+                ]
+            }
         },
     }
     # add default attributes specs if any exist
@@ -802,10 +846,7 @@ def build_scene_dataset_config(configs):
     ut.mod_json_val_and_save(
         (
             "",
-            os.path.join(
-                configs["dataset_dest_dir"],
-                configs["dataset_name"] + ut.CONFIG_EXTENSIONS["dataset"] + ".json",
-            ),
+            scene_dataset_dest_dir,
             scene_dataset_config,
         )
     )
