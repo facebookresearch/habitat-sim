@@ -51,6 +51,8 @@
 #include <VHACD.h>
 #endif
 
+namespace Mn = Magnum;
+
 // forward declarations
 namespace Magnum {
 namespace Trade {
@@ -58,8 +60,6 @@ class AbstractImporter;
 class PhongMaterialData;
 }  // namespace Trade
 }  // namespace Magnum
-
-namespace Mn = Magnum;
 
 namespace esp {
 namespace gfx {
@@ -84,6 +84,8 @@ class Model;
 }
 }  // namespace io
 namespace assets {
+// used for shadertype specification
+using metadata::attributes::ObjectInstanceShaderType;
 
 /**
  * @brief Singleton class responsible for
@@ -122,14 +124,9 @@ class ResourceManager {
    */
   enum class Flag : Magnum::UnsignedShort {
     /**
-     * build phong material from PBR material
-     */
-    BuildPhongFromPbr = 1 << 0,
-
-    /**
      * use pbr image based lighting
      */
-    PbrImageBasedLighting = 1 << 1,
+    PbrImageBasedLighting = 1 << 0,
   };
 
   /**
@@ -585,6 +582,20 @@ class ResourceManager {
       const esp::assets::PhongMaterialColor& materialColor);
 
   /**
+   * @brief Creates an asset name appropriately modified based certain
+   * conditions present in passed @p assetInfo.  This function will derive
+   * encodings based on the state of the assetInfo so that different material
+   * configurations can be specified on the same asset.
+   * @param info The AssetInfo that describes the asset being named.
+   * @param materialId [in/out] A string key representing the material to use.
+   * If empty, this will be generated and populated.
+   * @return the modified asset name to be used to save this asset to @p
+   * resourceDict_.
+   */
+  std::string createModifiedAssetName(const AssetInfo& info,
+                                      std::string& materialId);
+
+  /**
    * @brief Load a render asset (if not already loaded) and create a render
    * asset instance.
    *
@@ -808,6 +819,41 @@ class ResourceManager {
   void loadMaterials(Importer& importer, LoadedAssetData& loadedAssetData);
 
   /**
+   * @brief Get the appropriate the @ref
+   * esp::metadata::attributes::ObjectInstanceShaderType to use to render the
+   * passed @p material based on specification in passed @p info or the material
+   * itself.
+   * @param info The asset info describing the asset whose material is being
+   * rendered.
+   * @return the @ref esp::metadata::attributes::ObjectInstanceShaderType to use
+   * to render the material.
+   */
+  ObjectInstanceShaderType getMaterialShaderType(const AssetInfo& info) const;
+
+  /**
+   * @brief Boolean check if @p typeToCheck aligns with passed types explicitly
+   * specified, or type in material
+   * @param typeToCheck The ObjectInstanceShaderType value beign queried for.
+   * @param materialData The material whose type we are verifying against
+   * @param verificationType The ObjectInstanceShaderType we are verifying
+   * against
+   * @param mnVerificationType The @ref Mn::Trade::MaterialType bitflag that the
+   * passed material's specified type is being verified against.
+   * @return Whether or not the passed @p typeToCheck matches the passed
+   * criteria.
+   */
+  bool checkForPassedShaderType(
+      const ObjectInstanceShaderType typeToCheck,
+      const Mn::Trade::MaterialData& materialData,
+      const ObjectInstanceShaderType verificationType,
+      const Mn::Trade::MaterialType mnVerificationType) const {
+    return (
+        (typeToCheck == verificationType) ||
+        ((typeToCheck == ObjectInstanceShaderType::Material) &&
+         ((materialData.types() & mnVerificationType) == mnVerificationType)));
+  }
+
+  /**
    * @brief Build a @ref PhongMaterialData for use with flat shading
    *
    * Textures must already be loaded for the asset this material belongs to
@@ -816,7 +862,7 @@ class ResourceManager {
    * @param textureBaseIndex Base index of the assets textures in textures_
    */
   gfx::PhongMaterialData::uptr buildFlatShadedMaterialData(
-      const Mn::Trade::PhongMaterialData& material,
+      const Mn::Trade::MaterialData& materialData,
       int textureBaseIndex);
 
   /**
@@ -829,7 +875,7 @@ class ResourceManager {
 
    */
   gfx::PhongMaterialData::uptr buildPhongShadedMaterialData(
-      const Mn::Trade::PhongMaterialData& material,
+      const Mn::Trade::MaterialData& material,
       int textureBaseIndex) const;
 
   /**
@@ -841,7 +887,7 @@ class ResourceManager {
    * @param textureBaseIndex Base index of the assets textures in textures_
    */
   gfx::PbrMaterialData::uptr buildPbrShadedMaterialData(
-      const Mn::Trade::PbrMetallicRoughnessMaterialData& material,
+      const Mn::Trade::MaterialData& material,
       int textureBaseIndex) const;
 
   /**
@@ -1168,7 +1214,7 @@ class ResourceManager {
   gfx::ShadowMapManager shadowManager_;
   // scene graph id -> keys for the shadow maps
   std::map<int, std::vector<Magnum::ResourceKey>> shadowMapKeys_;
-};  // class ResourceManager
+};  // namespace assets
 
 CORRADE_ENUMSET_OPERATORS(ResourceManager::Flags)
 
