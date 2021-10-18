@@ -213,9 +213,9 @@ class AbstractObjectAttributes : public AbstractAttributes {
     if (mapIter != ShaderTypeNamesMap.end()) {
       return mapIter->second;
     }
-    // Unknown is default value - should never be returned since setter verifies
-    // value
-    return ObjectInstanceShaderType::Unknown;
+    // Unspecified is default value - should never be returned since setter
+    // verifies value
+    return ObjectInstanceShaderType::Unspecified;
   }
 
   /**

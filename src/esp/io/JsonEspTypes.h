@@ -90,7 +90,9 @@ inline JsonGenericValue toJsonValue(const esp::assets::AssetInfo& x,
   addMember(obj, "virtualUnitToMeters", x.virtualUnitToMeters, allocator);
   addMember(obj, "forceFlatShading", x.forceFlatShading, allocator);
   addMember(obj, "splitInstanceMesh", x.splitInstanceMesh, allocator);
-  addMember(obj, "shaderTypeToUse", x.shaderTypeToUse, allocator);
+  addMember(obj, "shaderTypeToUse",
+            metadata::attributes::getShaderTypeName(x.shaderTypeToUse),
+            allocator);
   addMember(obj, "overridePhongMaterial", x.overridePhongMaterial, allocator);
 
   return obj;
@@ -104,7 +106,20 @@ inline bool fromJsonValue(const JsonGenericValue& obj,
   readMember(obj, "virtualUnitToMeters", x.virtualUnitToMeters);
   readMember(obj, "forceFlatShading", x.forceFlatShading);
   readMember(obj, "splitInstanceMesh", x.splitInstanceMesh);
-  readMember(obj, "shaderTypeToUse", x.shaderTypeToUse);
+  std::string shaderTypeToUseString;
+  bool shaderTypeSucceess =
+      readMember(obj, "shaderTypeToUse", shaderTypeToUseString);
+  if (shaderTypeSucceess) {
+    const std::string shaderTypeLC =
+        Cr::Utility::String::lowercase(shaderTypeToUseString);
+    auto mapIter = metadata::attributes::ShaderTypeNamesMap.find(shaderTypeLC);
+    ESP_CHECK(mapIter != metadata::attributes::ShaderTypeNamesMap.end(),
+              "Illegal shader_type value"
+                  << shaderTypeToUseString
+                  << "attempted to be used to set AssetInfo.shaderTypeToUse. "
+                     "Aborting.");
+    x.shaderTypeToUse = mapIter->second;
+  }
   readMember(obj, "overridePhongMaterial", x.overridePhongMaterial);
   return true;
 }

@@ -21,7 +21,7 @@ const std::map<std::string, esp::gfx::LightPositionModel>
                              {"object", esp::gfx::LightPositionModel::Object}};
 
 const std::map<std::string, ObjectInstanceShaderType> ShaderTypeNamesMap = {
-    {"unspecified", ObjectInstanceShaderType::Unknown},
+    {"unspecified", ObjectInstanceShaderType::Unspecified},
     {"material", ObjectInstanceShaderType::Material},
     {"flat", ObjectInstanceShaderType::Flat},
     {"phong", ObjectInstanceShaderType::Phong},
@@ -80,7 +80,7 @@ std::string getShaderTypeName(ObjectInstanceShaderType shaderTypeVal) {
   // this verifies that enum value being checked is supported by string-keyed
   // map. The values below should be the minimum and maximum enums supported by
   // ShaderTypeNamesMap
-  if (shaderTypeVal <= ObjectInstanceShaderType::Unknown ||
+  if (shaderTypeVal <= ObjectInstanceShaderType::Unspecified ||
       shaderTypeVal >= ObjectInstanceShaderType::EndShaderType) {
     return "unspecified";
   }

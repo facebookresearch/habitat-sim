@@ -112,7 +112,7 @@ int PhysicsManager::addObjectInstance(
   // specified in object attributes.
   const auto objShaderType = objInstAttributes->getShaderType();
   if (objShaderType !=
-      metadata::attributes::ObjectInstanceShaderType::Unknown) {
+      metadata::attributes::ObjectInstanceShaderType::Unspecified) {
     objAttributes->setShaderType(getShaderTypeName(objShaderType));
   }
   int objID = 0;

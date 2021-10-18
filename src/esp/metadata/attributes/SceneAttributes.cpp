@@ -14,7 +14,7 @@ SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
     : AbstractAttributes(type, handle) {
   // default to unknown for object instances, to use attributes-specified
   // defaults
-  setShaderType(getShaderTypeName(ObjectInstanceShaderType::Unknown));
+  setShaderType(getShaderTypeName(ObjectInstanceShaderType::Unspecified));
 
   // defaults to unknown/undefined
   setMotionType(getMotionTypeName(esp::physics::MotionType::UNDEFINED));

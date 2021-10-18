@@ -282,28 +282,24 @@ void ResourceManagerTest::testShaderTypeSpecification() {
 
   // enable lightig and use material type
   info.forceFlatShading = false;
-  info.shaderTypeToUse = esp::metadata::attributes::getShaderTypeName(
-      ObjectInstanceShaderType::Material);
+  info.shaderTypeToUse = ObjectInstanceShaderType::Material;
   // object's material type is PBR
   testAssetTypeMatch(static_cast<int>(ObjectInstanceShaderType::PBR), info, MM);
 
   ESP_DEBUG() << "Testing PBR explicitly being set.";
   // force pbr
-  info.shaderTypeToUse = esp::metadata::attributes::getShaderTypeName(
-      ObjectInstanceShaderType::PBR);
+  info.shaderTypeToUse = ObjectInstanceShaderType::PBR;
   testAssetTypeMatch(static_cast<int>(ObjectInstanceShaderType::PBR), info, MM);
 
   ESP_DEBUG() << "Testing Phong explicitly being set.";
   // force phong
-  info.shaderTypeToUse = esp::metadata::attributes::getShaderTypeName(
-      ObjectInstanceShaderType::Phong);
+  info.shaderTypeToUse = ObjectInstanceShaderType::Phong;
   testAssetTypeMatch(static_cast<int>(ObjectInstanceShaderType::Phong), info,
                      MM);
 
   ESP_DEBUG() << "Testing Flat explicitly being set.";
   // force flat via shadertype
-  info.shaderTypeToUse = esp::metadata::attributes::getShaderTypeName(
-      ObjectInstanceShaderType::Flat);
+  info.shaderTypeToUse = ObjectInstanceShaderType::Flat;
   testAssetTypeMatch(static_cast<int>(ObjectInstanceShaderType::Flat), info,
                      MM);
 

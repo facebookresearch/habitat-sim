@@ -23,10 +23,10 @@ namespace attributes {
  */
 enum class ObjectInstanceShaderType {
   /**
-   * Represents an unknown/unspecified value for the shader type to use. Resort
+   * Represents the user not specifying which shader type choice to use. Resort
    * to defaults for object type.
    */
-  Unknown = ID_UNDEFINED,
+  Unspecified = ID_UNDEFINED,
   /**
    * Override any config-specified or default shader-type values to use the
    * material-specified shader.

@@ -442,7 +442,7 @@ bool Simulator::instanceStageForActiveScene(
   // stage attributes.
   auto stageShaderType = stageInstanceAttributes->getShaderType();
   if (stageShaderType !=
-      metadata::attributes::ObjectInstanceShaderType::Unknown) {
+      metadata::attributes::ObjectInstanceShaderType::Unspecified) {
     stageAttributes->setShaderType(getShaderTypeName(stageShaderType));
   }
   // set lighting key based on curent config value

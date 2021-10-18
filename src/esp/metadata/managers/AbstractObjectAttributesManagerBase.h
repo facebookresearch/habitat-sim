@@ -296,7 +296,7 @@ auto AbstractObjectAttributesManager<T, Access>::
   // attributes, overriding constructor defaults.  Do not overwrite anything for
   // unknown
   if (shaderTypeVal !=
-      getShaderTypeName(attributes::ObjectInstanceShaderType::Unknown)) {
+      getShaderTypeName(attributes::ObjectInstanceShaderType::Unspecified)) {
     attributes->setShaderType(shaderTypeVal);
   }
 

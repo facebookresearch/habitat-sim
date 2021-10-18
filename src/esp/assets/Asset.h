@@ -52,16 +52,16 @@ struct AssetInfo {
   //! if set, override the asset material with a procedural Phong material
   Cr::Containers::Optional<PhongMaterialColor> overridePhongMaterial =
       Cr::Containers::NullOpt;
-
   /**
    * @brief Defaults to @ref
-   * esp::metadata::attributes::ObjectInstanceShaderType::Unknown (which means
-   * use material's implied shadertype). If set to other value, this specifies
-   * the shader type to use for this asset, overriding any other inferred shader
+   * esp::metadata::attributes::ObjectInstanceShaderType::Unspecified (which
+   * means the user has not specified a shader/material to use, and the assets's
+   * default material should be used). If set to other value, this specifies the
+   * shader type to use for this asset, overriding any other inferred shader
    * types. See @ref esp::metadata::attributes::ObjectInstanceShaderType
    */
-  std::string shaderTypeToUse = metadata::attributes::getShaderTypeName(
-      metadata::attributes::ObjectInstanceShaderType::Unknown);
+  metadata::attributes::ObjectInstanceShaderType shaderTypeToUse =
+      metadata::attributes::ObjectInstanceShaderType::Unspecified;
 
   //! Populates a preset AssetInfo by matching against known filepaths
   static AssetInfo fromPath(const std::string& filepath);

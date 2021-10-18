@@ -420,8 +420,7 @@ ResourceManager::createStageAssetInfosFromAttributes(
       virtualUnitToMeters,                      // virtualUnitToMeters
       stageAttributes->getForceFlatShading()    // forceFlatShading
   };
-  renderInfo.shaderTypeToUse =
-      metadata::attributes::getShaderTypeName(stageAttributes->getShaderType());
+  renderInfo.shaderTypeToUse = stageAttributes->getShaderType();
   resMap["render"] = renderInfo;
   if (createCollisionInfo) {
     // create collision asset info if requested
@@ -811,8 +810,7 @@ bool ResourceManager::loadObjectMeshDataFromFile(
   if (!filename.empty()) {
     AssetInfo meshInfo{AssetType::UNKNOWN, filename};
     meshInfo.forceFlatShading = forceFlatShading;
-    meshInfo.shaderTypeToUse = metadata::attributes::getShaderTypeName(
-        objectAttributes->getShaderType());
+    meshInfo.shaderTypeToUse = objectAttributes->getShaderType();
     meshInfo.frame = buildFrameFromAttributes(objectAttributes, {0, 0, 0});
     success = loadRenderAsset(meshInfo);
     if (!success) {
@@ -1737,18 +1735,9 @@ ObjectInstanceShaderType ResourceManager::getMaterialShaderType(
   if (info.forceFlatShading) {
     return ObjectInstanceShaderType::Flat;
   }
-  const std::string shaderTypeLC =
-      Cr::Utility::String::lowercase(info.shaderTypeToUse);
-  auto mapIter = metadata::attributes::ShaderTypeNamesMap.find(shaderTypeLC);
+  ObjectInstanceShaderType infoSpecShaderType = info.shaderTypeToUse;
 
-  ESP_CHECK(mapIter != metadata::attributes::ShaderTypeNamesMap.end(),
-            Cr::Utility::formatString(
-                "Illegal shaderTypeToUse value `{}` from {}, specified "
-                "in AssetInfo for asset : {}. Aborting",
-                shaderTypeLC, info.shaderTypeToUse, info.filepath));
-  ObjectInstanceShaderType infoSpecShaderType = mapIter->second;
-
-  if (infoSpecShaderType == ObjectInstanceShaderType::Unknown) {
+  if (infoSpecShaderType == ObjectInstanceShaderType::Unspecified) {
     // use the material's inherent shadertype
     infoSpecShaderType = ObjectInstanceShaderType::Material;
   }
