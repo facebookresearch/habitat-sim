@@ -13,9 +13,9 @@ sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
 from magnum import Vector2i, Vector3, gl
 from magnum.platform.glfw import Application
-from settings import default_sim_settings, make_cfg
 
 import habitat_sim
+from examples.settings import default_sim_settings, make_cfg
 
 
 class HabitatSimInteractiveViewer(Application):
@@ -223,6 +223,7 @@ class HabitatSimInteractiveViewer(Application):
         pressed = Application.KeyEvent.Key
 
         if key == pressed.ESC:
+            event.accepted = True
             self.exit_event(Application.ExitEvent)
             return
 
@@ -260,6 +261,7 @@ class HabitatSimInteractiveViewer(Application):
         # update map of moving/looking keys which are currently pressed
         if key in self.pressed:
             self.pressed[key] = True
+        event.accepted = True
         self.redraw()
 
     def key_release_event(self, event: Application.KeyEvent) -> None:
@@ -273,6 +275,7 @@ class HabitatSimInteractiveViewer(Application):
         # update map of moving/looking keys which are currently pressed
         if key in self.pressed:
             self.pressed[key] = False
+        event.accepted = True
         self.redraw()
 
     def mouse_move_event(self, event: Application.MouseEvent) -> None:
@@ -417,4 +420,4 @@ if __name__ == "__main__":
     sim_settings["scene_dataset_config_file"] = args.dataset
     sim_settings["enable_physics"] = not args.disable_physics
 
-HabitatSimInteractiveViewer(sim_settings).exec()
+    HabitatSimInteractiveViewer(sim_settings).exec()
