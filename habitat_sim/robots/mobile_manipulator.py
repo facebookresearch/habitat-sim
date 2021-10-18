@@ -123,6 +123,7 @@ class MobileManipulator(RobotInterface):
         self._sim = sim
         self._limit_robo_joints = limit_robo_joints
         self._fixed_base = fixed_base
+        self.sim_obj = None
 
         self._cameras = defaultdict(list)
         for camera_prefix in self.params.cameras:
@@ -371,11 +372,6 @@ class MobileManipulator(RobotInterface):
         self._validate_arm_ctrl_input(ctrl)
 
         joint_positions = self.sim_obj.joint_positions
-        if len(joint_positions) == 0:
-            # TODO: NEED TO FIX THIS HACK, BUT THINGS CRASH OTHERWISE
-            self.reconfigure()
-            self.reset()
-            return
 
         for i, jidx in enumerate(self.params.arm_joints):
             self._set_motor_pos(jidx, ctrl[i])
