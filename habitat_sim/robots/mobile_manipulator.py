@@ -475,13 +475,21 @@ class MobileManipulator(RobotInterface):
     # HIDDEN
     #############################################
 
+    def _validate_joint_idx(self, joint):
+        if joint not in self.joint_motors:
+            raise ValueError(
+                f"Requested joint {joint} not in joint motors with indices (keys {self.joint_motors.keys()}) and {self.joint_motors}"
+            )
+
     def _set_motor_pos(self, joint, ctrl):
+        self._validate_joint_idx(joint)
         self.joint_motors[joint][1].position_target = ctrl
         self.sim_obj.update_joint_motor(
             self.joint_motors[joint][0], self.joint_motors[joint][1]
         )
 
     def _get_motor_pos(self, joint):
+        self._validate_joint_idx(joint)
         return self.joint_motors[joint][1].position_target
 
     def _set_joint_pos(self, joint_idx, angle):
