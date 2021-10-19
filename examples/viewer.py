@@ -75,6 +75,9 @@ class HabitatSimInteractiveViewer(Application):
         # simulating continuously.
         self.simulate_single_step = False
 
+        # fairmotion init
+        self.fm_demo = FairmotionDemo(viewer=self)
+
         # configure our simulator
         self.cfg: habitat_sim.simulator.Configuration = None
         self.sim: habitat_sim.simulator.Simulator = None
@@ -109,6 +112,9 @@ class HabitatSimInteractiveViewer(Application):
                 # even if time_since_last_simulation is quite large
                 self.sim.step_world(1.0 / 60.0)
                 self.simulate_single_step = False
+                if self.fm_demo.motion is not None:
+                    self.fm_demo.next_pose()
+                    self.fm_demo.next_pose()
 
             # reset time_since_last_simulation, accounting for potential overflow
             self.time_since_last_simulation = math.fmod(
@@ -275,8 +281,8 @@ class HabitatSimInteractiveViewer(Application):
             logger.info("Command: gravity inverted")
 
         elif key == pressed.F:
-            self.test_fairmotion_load()
             print("Command: fairmotion test")
+            self.fm_demo.test_fairmotion_load()
 
         # update map of moving/looking keys which are currently pressed
         if key in self.pressed:
@@ -513,21 +519,6 @@ class HabitatSimInteractiveViewer(Application):
         event.accepted = True
         exit(0)
 
-    def test_fairmotion_load(self):
-        from fairmotion.data import amass
-
-        amass_fn = "/Users/juanjrodriguez/fairmotion/amass_test_data/CMU/CMU/06/06_14_poses.npz"
-        bm_path = (
-            "/Users/juanjrodriguez/fairmotion/amass_test_data/smplh/male/model.npz"
-        )
-        # bm_path = "/Users/juanjrodriguez/fairmotion/amass_test_data/mano_v1_2/models/SMPLH_male.pkl"
-
-        motion = amass.load(file=amass_fn, bm_path=bm_path)
-        if motion is not None:
-            print(type(motion))
-        else:
-            print("something is not right...")
-
     def print_help_text(self) -> None:
         """
         Print the Key Command help text.
@@ -621,6 +612,162 @@ class MouseGrabber:
         self.settings.frame_b = transform.rotation()
         self.settings.pivot_b = transform.translation
         self.simulator.update_rigid_constraint(self.constraint_id, self.settings)
+import random
+
+from fairmotion.core import motion
+from fairmotion.data import amass
+from fairmotion.ops import conversions
+from magnum import Deg, Matrix3x3, Quaternion
+
+
+class FairmotionDemo(HabitatSimInteractiveViewer):
+    def __init__(self, viewer) -> None:
+        self.viewer = viewer
+        self.human: habitat_sim.physics.ManagedArticulatedObject = None
+        self.motion: motion.Motion = None
+
+        # This will count frames for looping the motion
+        self.human_stepper = 0
+
+        # positional offsets
+        self.rotation_offset: Quaternion = Quaternion.rotation(
+            Deg(-90), Vector3.x_axis()
+        ) * Quaternion.rotation(Deg(90), Vector3.z_axis())
+        self.translation_offset: Vector3 = Vector3([2.5, 0.0, 0.7])
+
+    # TODO: Plan to take file paths as input or something for loading
+    #       as well as only loading a new mocap and keeping the same model.
+    def test_fairmotion_load(self) -> None:
+        # remove previous human
+        if self.human:
+            self.viewer.sim.get_articulated_object_manager().remove_object_by_id(
+                self.human.object_id
+            )  # -#
+
+        self.human = None
+        self.motion = None
+
+        def load_amass_motion():
+            # pausing the simulator so that we can setup and add human properly
+            self.viewer.simulating = False  # -#
+
+            # choose random
+            files = [
+                "01",
+                "03",
+                "04",
+                "05",
+                "06",
+                "07",
+                "08",
+                "10",
+                "11",
+                "12",
+                "13",
+                "14",
+                "15",
+            ]
+
+            amass_fn = (
+                "/Users/juanjrodriguez/fairmotion/amass_test_data/CMU/CMU/06/06_"
+                + random.choice(files)
+                + "_poses.npz"
+            )
+            bm_path = (
+                "/Users/juanjrodriguez/fairmotion/amass_test_data/smplh/male/model.npz"
+            )
+            self.motion = amass.load(file=amass_fn, bm_path=bm_path)
+
+        def load_model_into_sim():
+            art_obj_mgr = self.viewer.sim.get_articulated_object_manager()
+            human_file = "/Users/juanjrodriguez/habitat-sim/data/test_assets/urdf/amass_male.urdf"
+
+            # add an ArticulatedObject to the world with a fixed base
+            self.human = art_obj_mgr.add_articulated_object_from_urdf(
+                filepath=human_file, fixed_base=True
+            )
+            assert self.human.is_alive
+
+            # change motion_type to KINEMATIC
+            self.human.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+
+            # translate Human to appear infront of staircase in apt_0
+            self.human.translate(self.translation_offset)
+
+            # move our camera to be infront of Human
+
+            self.viewer.agent_body_node.translate(
+                Vector3([2.44567, 0.119373, 3.42486]) - self.agent_body_node.translation
+            )  # -#
+
+        # Driver Code
+        load_amass_motion()
+        load_model_into_sim()
+
+    def convert_pose(self, pose):
+        new_pose = []
+
+        # Root joint
+        ROOT = 0
+        root_T = pose.get_transform(ROOT, local=False)
+
+        ### adding offsets to root transformation
+        # rotation
+        root_rotation = self.rotation_offset * Quaternion.from_matrix(
+            Matrix3x3(root_T[0:3, 0:3])
+        )
+
+        # translation
+        root_translation = (
+            self.translation_offset
+            + self.rotation_offset.transform_vector(root_T[0:3, 3])
+        )  # correct
+
+        Q, _ = conversions.T2Qp(root_T)
+
+        # Other joints
+        for human_link_id in self.human.get_link_ids():
+            joint_type = self.human.get_link_joint_type(human_link_id)
+            joint_name = self.human.get_link_name(human_link_id)
+            pose_joint_index = pose.skel.index_joint[joint_name]
+
+            # When the target joint do not have dof, we simply ignore it
+            if joint_type == habitat_sim.physics.JointType.Fixed:
+                continue
+
+            # When there is no matching between the given pose and the simulated character,
+            # the character just tries to hold its initial pose
+            if pose_joint_index is None:
+                print("Error: pose data does not have a transform for that joint name")
+                raise NotImplementedError()
+            else:
+                T = pose.get_transform(pose_joint_index, local=True)
+                if joint_type == habitat_sim.physics.JointType.Spherical:
+                    Q, _ = conversions.T2Qp(T)
+                else:
+                    print(f"Error: {joint_type} is not a supported joint type")
+                    raise NotImplementedError()
+            new_pose += list(Q)
+
+        return new_pose, root_translation, root_rotation
+
+    # currently the next_pose method is simply called twice in simulating a frame
+    def next_pose(self):
+        """
+        Use this method to step to next frame in draw event
+        """
+        new_pose, new_root_translate, new_root_rotation = self.convert_pose(
+            self.motion.poses[self.human_stepper]
+        )
+        self.human.joint_positions = new_pose
+        self.human.rotation = new_root_rotation
+        self.human.translation = new_root_translate
+
+        # iterate the frame counter
+        self.human_stepper += 1
+
+        if self.human_stepper >= self.motion.num_frames():
+            self.human_stepper = 0
 
 
 class Timer:
