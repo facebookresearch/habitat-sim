@@ -1,3 +1,7 @@
+{% set headless_build_variant = environ.get('HABITAT_HEADLESS_VARIANT', 'display') %}
+{% set bullet_build_variant = environ.get('HABITAT_BULLET_VARIANT', 'nobullet') %}
+
+
 package:
   name: habitat-sim
   version: "{{ environ.get('VERSION') }}"
@@ -43,6 +47,7 @@ requirements:
     - xorg-libxcursor        # [linux]
 
   run:
+    - habitat-sim-mutex 1.0 {{ headless_build_variant }}_{{ bullet_build_variant }}
     - python x.x
     - smmap<4.0,>=3.0.1
     - gitpython
@@ -66,6 +71,9 @@ requirements:
     - xorg-libxcursor        # [linux]
     {{ environ.get('CONDA_CUDATOOLKIT_CONSTRAINT', '') }}
 
+  run_constrained:
+    - headless {% if headless_build_variant == "display" %} <0 {% endif %}
+    - withbullet {% if bullet_build_variant == "nobullet" %} <0 {% endif %}
 
 build:
   string: "{{ environ.get('HSIM_BUILD_STRING') }}"
@@ -76,10 +84,6 @@ build:
     - WITH_CUDA
     - WITH_BULLET
     - CUDA_VER
-
-  features:
-    {{ environ.get('CONDA_HEADLESS_FEATURE', '') }}
-    {{ environ.get('CONDA_BULLET_FEATURE', '') }}
 
 about:
   home: https://aihabitat.org
