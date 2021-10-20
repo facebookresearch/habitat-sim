@@ -282,10 +282,36 @@ class HabitatSimInteractiveViewer(Application):
             self.invert_gravity()
             logger.info("Command: gravity inverted")
 
+        # Everything below is used for testing
         elif key == pressed.F:
             print("Command: fairmotion test")
             self.fm_demo.load_motion()
             self.fm_demo.load_model()
+
+        elif key == pressed.I:
+            t = self.fm_demo.translation_offset
+            print(f"X is {t[0]}")
+            x = float(input("X <- "))
+            if x:
+                t[0] = x
+            self.fm_demo.next_pose(repeat=True)
+
+        elif key == pressed.J:
+            t = self.fm_demo.translation_offset
+            print(f"Y is {t[0]}")
+            y = float(input("Y <- "))
+            if y:
+                t[1] = y
+            self.fm_demo.next_pose(repeat=True)
+
+        elif key == pressed.K:
+            t = self.fm_demo.translation_offset
+            print(f"Z is {t[0]}")
+            z = float(input("Z <- "))
+            if z:
+                t[2] = z
+            self.fm_demo.next_pose(repeat=True)
+        # End of testing section
 
         # update map of moving/looking keys which are currently pressed
         if key in self.pressed:

@@ -64,6 +64,14 @@ class FairmotionInterface:
         Fetch metadata from a txt file in given file path and sets current metadata
         """
 
+    # [WIP]
+    def set_transform_offsets(
+        self, rotate_offset: Quaternion = None, translate_offset: Vector3 = None
+    ):
+        self.rotation_offset = rotate_offset or self.rotation_offset
+        self.translation_offset = translate_offset or self.translation_offset
+        self.next_pose(repeat=True)
+
     def load_motion(self):
         data = self.metadata["default"]
         self.motion = amass.load(file=data["amass_path"], bm_path=data["bm_path"])
@@ -91,10 +99,14 @@ class FairmotionInterface:
         )  # TEMPORARY HARDCODED
 
     # currently the next_pose method is simply called twice in simulating a frame
-    def next_pose(self):
+    def next_pose(self, repeat=False):
         """
         Use this method to step to next frame in draw event
         """
+        # repeat last frame: used mostly for position state change
+        if repeat:
+            self.motion_stepper = (self.motion_stepper - 1) % self.motion.num_frames
+
         if not self.model or not self.motion:
             return
 
@@ -108,10 +120,7 @@ class FairmotionInterface:
         self.model.translation = new_root_translate
 
         # iterate the frame counter
-        self.motion_stepper += 1
-
-        if self.motion_stepper >= self.motion.num_frames():
-            self.motion_stepper = 0
+        self.motion_stepper = (self.motion_stepper + 1) % self.motion.num_frames()
 
     def convert_CMUamass_single_pose(self, pose):
         """
