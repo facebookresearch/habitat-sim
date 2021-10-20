@@ -17,7 +17,7 @@ sys.path.insert(0, "../")
 import habitat_sim
 
 build_cmd_template = """
-conda mambabuild \
+conda build \
   --python {PY_VER} \
   --channel conda-forge \
   --no-test \
@@ -104,8 +104,8 @@ def main():
 
         if use_bullet:
             build_string += "bullet_"
-            env["HABITAT_BULLET_VARIANT"] = "bullet"
             env["WITH_BULLET"] = "1"
+            env["HABITAT_BULLET_VARIANT"] = "bullet"
         else:
             env["CONDA_BULLET"] = ""
 

@@ -1,6 +1,16 @@
 {% set headless_build_variant = environ.get('HABITAT_HEADLESS_VARIANT', 'display') %}
 {% set bullet_build_variant = environ.get('HABITAT_BULLET_VARIANT', 'nobullet') %}
 
+{% set build_number = 0 %}
+
+{% if headless_build_variant == "display" %}
+  {% set build_number = build_number + 100 %}
+{% endif %}
+
+{% if bullet_build_variant == "nobullet" %}
+  {% set build_number = build_number + 101 %}
+{% endif %}
+
 
 package:
   name: habitat-sim
@@ -76,7 +86,8 @@ requirements:
     - withbullet {% if bullet_build_variant == "nobullet" %} <0 {% endif %}
 
 build:
-  string: "{{ environ.get('HSIM_BUILD_STRING') }}"
+  string: {{ environ.get('HSIM_BUILD_STRING') }}
+  number: {{ build_number }}
   binary_relocation: True
   detect_binary_files_with_prefix: False
   script_env:

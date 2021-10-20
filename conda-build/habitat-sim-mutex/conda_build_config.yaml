@@ -1,5 +1,5 @@
 build_variant:
   - display_nobullet
-  - display_bullet
   - headless_nobullet
+  - display_bullet
   - headless_bullet

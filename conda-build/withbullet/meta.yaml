@@ -9,4 +9,4 @@ build:
 
 requirements:
   run:
-    - habitat-sim-mutex 1.0 *_bullet
+    - habitat-sim-mutex=1.0=*_bullet
