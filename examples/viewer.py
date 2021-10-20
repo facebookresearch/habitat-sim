@@ -9,6 +9,8 @@ import time
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
+from examples.fairmotion_interface import FairmotionInterface
+
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
@@ -75,13 +77,13 @@ class HabitatSimInteractiveViewer(Application):
         # simulating continuously.
         self.simulate_single_step = False
 
-        # fairmotion init
-        self.fm_demo = FairmotionDemo(viewer=self)
-
         # configure our simulator
         self.cfg: habitat_sim.simulator.Configuration = None
         self.sim: habitat_sim.simulator.Simulator = None
         self.reconfigure_sim()
+
+        # fairmotion init
+        self.fm_demo = FairmotionInterface(self)
 
         self.time_since_last_simulation = 0.0
         LoggingContext.reinitialize_from_env()
@@ -282,7 +284,8 @@ class HabitatSimInteractiveViewer(Application):
 
         elif key == pressed.F:
             print("Command: fairmotion test")
-            self.fm_demo.test_fairmotion_load()
+            self.fm_demo.load_motion()
+            self.fm_demo.load_model()
 
         # update map of moving/looking keys which are currently pressed
         if key in self.pressed:
@@ -567,6 +570,7 @@ Key Commands:
         )
 
 
+<<<<<<< python-viewer
 class MouseMode(Enum):
     LOOK = 0
     GRAB = 1
@@ -770,6 +774,8 @@ class FairmotionDemo(HabitatSimInteractiveViewer):
             self.human_stepper = 0
 
 
+=======
+>>>>>>> Move FairmotionInterface to it's own file with initial basic functions
 class Timer:
     """
     Timer class used to keep track of time between buffer swaps
