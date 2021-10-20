@@ -152,12 +152,15 @@ class FairmotionInterface:
                 raise NotImplementedError(
                     "Error: pose data does not have a transform for that joint name"
                 )
+            elif joint_type not in [JointType.Spherical]:
+                raise NotImplementedError(
+                    f"Error: {joint_type} is not a supported joint type"
+                )
             else:
                 T = pose.get_transform(pose_joint_index, local=True)
                 if joint_type == JointType.Spherical:
                     Q, _ = conversions.T2Qp(T)
-                else:
-                    print(f"Error: {joint_type} is not a supported joint type")
+
             new_pose += list(Q)
 
         return new_pose, root_translation, root_rotation
