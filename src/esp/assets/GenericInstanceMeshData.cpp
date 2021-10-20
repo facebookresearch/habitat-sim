@@ -65,19 +65,27 @@ Cr::Containers::Optional<InstancePlyData> parsePly(
     ESP_ERROR() << "File has no vertex colors";
     return Cr::Containers::NullOpt;
   }
-  if (meshData->attributeFormat(Mn::Trade::MeshAttribute::Color) !=
-      Mn::VertexFormat::Vector3ubNormalized) {
-    // TODO: output the format enum directly once glog is gone and we use Debug
-    ESP_ERROR() << "Unexpected vertex color type"
-                << Mn::UnsignedInt(meshData->attributeFormat(
-                       Mn::Trade::MeshAttribute::Color));
+
+  data.cpu_cbo.resize(meshData->vertexCount());
+  const Mn::VertexFormat colorFormat =
+      meshData->attributeFormat(Mn::Trade::MeshAttribute::Color);
+  if (colorFormat == Mn::VertexFormat::Vector3ubNormalized) {
+    Cr::Utility::copy(
+        meshData->attribute<Mn::Color3ub>(Mn::Trade::MeshAttribute::Color),
+        Cr::Containers::arrayCast<Mn::Color3ub>(
+            Cr::Containers::arrayView(data.cpu_cbo)));
+  } else if (colorFormat == Mn::VertexFormat::Vector4ubNormalized) {
+    // retrieve RGB view of RGBA color data and copy into data
+    Cr::Utility::copy(
+        Cr::Containers::arrayCast<const Mn::Color3ub>(
+            meshData->attribute<Mn::Color4ub>(Mn::Trade::MeshAttribute::Color)),
+        Cr::Containers::arrayCast<Mn::Color3ub>(
+            Cr::Containers::arrayView(data.cpu_cbo)));
+
+  } else {
+    ESP_ERROR() << "Unexpected vertex color type" << colorFormat;
     return Cr::Containers::NullOpt;
   }
-  data.cpu_cbo.resize(meshData->vertexCount());
-  Cr::Utility::copy(
-      meshData->attribute<Mn::Color3ub>(Mn::Trade::MeshAttribute::Color),
-      Cr::Containers::arrayCast<Mn::Color3ub>(
-          Cr::Containers::arrayView(data.cpu_cbo)));
 
   /* Check we actually have object IDs before copying them, and that those are
      in a range we expect them to be */
