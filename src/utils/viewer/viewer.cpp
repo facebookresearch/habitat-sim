@@ -1941,7 +1941,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
         ESP_DEBUG() << "... input is not a URDF. Aborting.";
       } else if (Cr::Utility::Directory::exists(urdfFilepath)) {
         auto aom = simulator_->getArticulatedObjectManager();
-        auto ao = aom->addArticulatedObjectFromURDF(urdfFilepath);
+        auto ao = aom->addArticulatedObjectFromURDF(urdfFilepath, true);
         ao->setTranslation(
             defaultAgent_->node().transformation().transformPoint(
                 {0, 1.0, -1.5}));
