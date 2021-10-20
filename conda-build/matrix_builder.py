@@ -52,6 +52,15 @@ def get_platform_string() -> str:
         raise RuntimeError(f"Unknown system: {platform.system()}")
 
 
+def get_headless_mode_for_test() -> bool:
+    if platform.system() == "Darwin":
+        return False
+    elif platform.system() == "Linux":  # noqa: SIM106
+        return True
+    else:
+        raise RuntimeError(f"Unknown system: {platform.system()}")
+
+
 def build_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -78,7 +87,7 @@ def main():
     # For CI test only one package build for test speed interest
     if args.ci_test:
         bullet_modes = [True]
-        headless_modes = [True]
+        headless_modes = [get_headless_mode_for_test()]
         py_vers = ["3.6"]
 
     for py_ver, use_bullet, headless, cuda_ver in itertools.product(
