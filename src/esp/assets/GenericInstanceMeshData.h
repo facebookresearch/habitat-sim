@@ -44,7 +44,7 @@ class GenericInstanceMeshData : public BaseMesh {
   static std::vector<std::unique_ptr<GenericInstanceMeshData>> fromPLY(
       Magnum::Trade::AbstractImporter& importer,
       const std::string& plyFile,
-      const bool splitMesh);
+      bool splitMesh);
 
   // ==== rendering ====
   void uploadBuffersToGPU(bool forceReload = false) override;
