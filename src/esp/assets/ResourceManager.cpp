@@ -1183,21 +1183,13 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
   CORRADE_INTERNAL_ASSERT_OUTPUT(
       importer = importerManager_.loadAndInstantiate("StanfordImporter"));
 
-  std::vector<GenericInstanceMeshData::uptr> instanceMeshes;
-  if (info.splitInstanceMesh) {
-    instanceMeshes =
-        GenericInstanceMeshData::fromPlySplitByObjectId(*importer, filename);
-  } else {
-    GenericInstanceMeshData::uptr meshData =
-        GenericInstanceMeshData::fromPLY(*importer, filename);
-    if (meshData)
-      instanceMeshes.emplace_back(std::move(meshData));
-  }
+  std::vector<GenericInstanceMeshData::uptr> instanceMeshes =
+      GenericInstanceMeshData::fromPLY(*importer, filename,
+                                       info.splitInstanceMesh);
 
-  if (instanceMeshes.empty()) {
-    ESP_ERROR() << "Error loading instance mesh data";
-    return false;
-  }
+  ESP_CHECK(!instanceMeshes.empty(),
+            Cr::Utility::formatString(
+                "Error loading instance mesh data from file {}", filename));
 
   int meshStart = nextMeshID_;
   int meshEnd = meshStart + instanceMeshes.size() - 1;

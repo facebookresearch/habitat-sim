@@ -8,6 +8,7 @@
 #include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/Utility/Algorithms.h>
+#include <Corrade/Utility/FormatStl.h>
 #include <Magnum/Image.h>
 #include <Magnum/ImageView.h>
 #include <Magnum/Math/Functions.h>
@@ -42,7 +43,7 @@ struct InstancePlyData {
    * If so then we assume they can be used to provide islands to split the
    * semantic mesh for better frustum culling.
    */
-  bool objIdsFromPly;
+  bool objIdsFromPly = false;
 };
 
 Cr::Containers::Optional<InstancePlyData> parsePly(
@@ -65,13 +66,12 @@ Cr::Containers::Optional<InstancePlyData> parsePly(
   meshData->positions3DInto(Cr::Containers::arrayCast<Mn::Vector3>(
       Cr::Containers::arrayView(data.cpu_vbo)));
   meshData->indicesInto(data.cpu_ibo);
-
+  const std::string msgPrefix =
+      Cr::Utility::formatString("PLY File {} :", plyFile);
   /* Assuming colors are 8-bit RGB to avoid expanding them to float and then
      packing back */
-  if (!meshData->hasAttribute(Mn::Trade::MeshAttribute::Color)) {
-    ESP_ERROR() << "File has no vertex colors";
-    return Cr::Containers::NullOpt;
-  }
+  ESP_CHECK(meshData->hasAttribute(Mn::Trade::MeshAttribute::Color),
+            msgPrefix << "has no vertex colors defined, which are required.");
 
   data.cpu_cbo.resize(meshData->vertexCount());
   const Mn::VertexFormat colorFormat =
@@ -87,8 +87,8 @@ Cr::Containers::Optional<InstancePlyData> parsePly(
         meshData->attribute<Mn::Color4ub>(Mn::Trade::MeshAttribute::Color));
 
   } else {
-    ESP_ERROR() << "Unexpected vertex color type" << colorFormat;
-    return Cr::Containers::NullOpt;
+    ESP_CHECK(false,
+              msgPrefix << "Unexpected vertex color type " << colorFormat);
   }
 
   Cr::Utility::copy(meshColors, Cr::Containers::arrayCast<Mn::Color3ub>(
@@ -101,10 +101,12 @@ Cr::Containers::Optional<InstancePlyData> parsePly(
   if (meshData->hasAttribute(Mn::Trade::MeshAttribute::ObjectId)) {
     objectIds = meshData->objectIdsAsArray();
     data.objIdsFromPly = true;
-    if (Mn::Math::max(objectIds) > 65535) {
-      ESP_ERROR() << "Object IDs can't fit into 16 bits";
-      return Cr::Containers::NullOpt;
-    }
+    const int maxVal = Mn::Math::max(objectIds);
+    ESP_CHECK(
+        maxVal <= 65535,
+        Cr::Utility::formatString(
+            "{}Object IDs can't be stored into 16 bits : Max ID Value : {}",
+            msgPrefix, maxVal));
   } else {
     // convert color data array to int (idx) for object ID
     // removing duplicates returns array of unique ids for colors
@@ -114,10 +116,6 @@ Cr::Containers::Optional<InstancePlyData> parsePly(
     auto out = Mn::MeshTools::removeDuplicatesInPlace(
         meshData->mutableAttribute(Mn::Trade::MeshAttribute::Color));
     objectIds = std::move(out.first);
-    ESP_WARNING() << "min id: " << Mn::Math::min(objectIds)
-                  << "| max id :" << Mn::Math::max(objectIds);
-    // ESP_ERROR() << "File has no object IDs";
-    // return Cr::Containers::NullOpt;
   }
   Mn::Math::castInto(Cr::Containers::arrayCast<2, Mn::UnsignedInt>(
                          Cr::Containers::stridedArrayView(objectIds)),
@@ -137,18 +135,18 @@ Cr::Containers::Optional<InstancePlyData> parsePly(
 }  // namespace
 
 std::vector<std::unique_ptr<GenericInstanceMeshData>>
-GenericInstanceMeshData::fromPlySplitByObjectId(
-    Mn::Trade::AbstractImporter& importer,
-    const std::string& plyFile) {
+GenericInstanceMeshData::fromPLY(Mn::Trade::AbstractImporter& importer,
+                                 const std::string& plyFile,
+                                 const bool splitMesh) {
   Cr::Containers::Optional<InstancePlyData> parseResult =
       parsePly(importer, plyFile);
   if (!parseResult) {
     return {};
   }
-  const InstancePlyData& data = *parseResult;
 
   std::vector<GenericInstanceMeshData::uptr> splitMeshData;
-  if (parseResult->objIdsFromPly) {
+  if (splitMesh && parseResult->objIdsFromPly) {
+    const InstancePlyData& data = *parseResult;
     std::unordered_map<uint16_t, PerObjectIdMeshBuilder> objectIdToObjectData;
     for (size_t i = 0; i < data.cpu_ibo.size(); ++i) {
       const uint32_t globalIndex = data.cpu_ibo[i];
@@ -162,42 +160,28 @@ GenericInstanceMeshData::fromPlySplitByObjectId(
       objectIdToObjectData.at(objectId).addVertex(
           globalIndex, data.cpu_vbo[globalIndex], data.cpu_cbo[globalIndex]);
     }
+    // Update collision mesh data for each mesh
+    for (size_t i = 0; i < splitMeshData.size(); ++i) {
+      splitMeshData[i]->updateCollisionMeshData();
+    }
   } else {
     // ply should not be split - ids were synthesized
-    auto data = GenericInstanceMeshData::create_unique();
-    data->cpu_vbo_ = std::move(parseResult->cpu_vbo);
-    data->cpu_cbo_ = std::move(parseResult->cpu_cbo);
-    data->cpu_ibo_ = std::move(parseResult->cpu_ibo);
-    data->objectIds_ = std::move(parseResult->objectIds);
-    splitMeshData.emplace_back(std::move(data));
+    auto meshData = GenericInstanceMeshData::create_unique();
+    meshData->cpu_vbo_ = std::move(parseResult->cpu_vbo);
+    meshData->cpu_cbo_ = std::move(parseResult->cpu_cbo);
+    meshData->cpu_ibo_ = std::move(parseResult->cpu_ibo);
+    meshData->objectIds_ = std::move(parseResult->objectIds);
+    // Construct vertices for collsion meshData
+    // Store indices, facd_ids in Magnum MeshData3D format such that
+    // later they can be accessed.
+    // Note that normal and texture data are not stored
+    meshData->collisionMeshData_.primitive = Magnum::MeshPrimitive::Triangles;
+    meshData->updateCollisionMeshData();
+    splitMeshData.emplace_back(std::move(meshData));
   }
-
   return splitMeshData;
-}
 
-std::unique_ptr<GenericInstanceMeshData> GenericInstanceMeshData::fromPLY(
-    Mn::Trade::AbstractImporter& importer,
-    const std::string& plyFile) {
-  Cr::Containers::Optional<InstancePlyData> parseResult =
-      parsePly(importer, plyFile);
-  if (!parseResult) {
-    return nullptr;
-  }
-
-  auto data = GenericInstanceMeshData::create_unique();
-  data->cpu_vbo_ = std::move(parseResult->cpu_vbo);
-  data->cpu_cbo_ = std::move(parseResult->cpu_cbo);
-  data->cpu_ibo_ = std::move(parseResult->cpu_ibo);
-  data->objectIds_ = std::move(parseResult->objectIds);
-
-  // Construct vertices for collsion meshData
-  // Store indices, facd_ids in Magnum MeshData3D format such that
-  // later they can be accessed.
-  // Note that normal and texture data are not stored
-  data->collisionMeshData_.primitive = Magnum::MeshPrimitive::Triangles;
-  data->updateCollisionMeshData();
-  return data;
-}
+}  // GenericInstanceMeshData::fromPLY
 
 void GenericInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
   if (forceReload) {

@@ -71,14 +71,20 @@ void ReplicaSceneTest::testSemanticSceneOBB() {
   CORRADE_INTERNAL_ASSERT(importer =
                               manager.loadAndInstantiate("StanfordImporter"));
 
-  GenericInstanceMeshData::uptr mesh = GenericInstanceMeshData::fromPLY(
-      *importer,
-      Cr::Utility::Directory::join(replicaRoom0, "mesh_semantic.ply"));
-  CORRADE_VERIFY(mesh);
+  // load ply but do not split
+  static std::vector<std::unique_ptr<GenericInstanceMeshData>> meshVec =
+      GenericInstanceMeshData::fromPLY(
+          *importer,
+          Cr::Utility::Directory::join(replicaRoom0, "mesh_semantic.ply"),
+          false);
+  // verify result vector holds a mesh
+  CORRADE_VERIFY(!meshVec.empty());
+  // verify first entry exists
+  CORRADE_VERIFY(meshVec[0]);
 
-  const auto& vbo = mesh->getVertexBufferObjectCPU();
-  const auto& objectIds = mesh->getObjectIdsBufferObjectCPU();
-  const auto& ibo = mesh->getIndexBufferObjectCPU();
+  const auto& vbo = meshVec[0]->getVertexBufferObjectCPU();
+  const auto& objectIds = meshVec[0]->getObjectIdsBufferObjectCPU();
+  const auto& ibo = meshVec[0]->getIndexBufferObjectCPU();
 
   for (const auto& obj : scene.objects()) {
     if (obj == nullptr)
@@ -101,7 +107,7 @@ void ReplicaSceneTest::testSemanticSceneOBB() {
       }
     }
   }
-}
+}  // ReplicaSceneTest::testSemanticSceneOBB()
 
 void ReplicaSceneTest::testSemanticSceneLoading() {
   if (!Cr::Utility::Directory::exists(replicaRoom0)) {
