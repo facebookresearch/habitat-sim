@@ -14,6 +14,7 @@
 #include <Magnum/Math/FunctionsBatch.h>
 #include <Magnum/Math/PackingBatch.h>
 #include <Magnum/MeshTools/Interleave.h>
+#include <Magnum/MeshTools/RemoveDuplicates.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/Shaders/GenericGL.h>
 #include <Magnum/Trade/AbstractImporter.h>
@@ -69,37 +70,46 @@ Cr::Containers::Optional<InstancePlyData> parsePly(
   data.cpu_cbo.resize(meshData->vertexCount());
   const Mn::VertexFormat colorFormat =
       meshData->attributeFormat(Mn::Trade::MeshAttribute::Color);
+  Corrade::Containers::StridedArrayView1D<const Magnum::Color3ub> meshColors;
   if (colorFormat == Mn::VertexFormat::Vector3ubNormalized) {
-    Cr::Utility::copy(
-        meshData->attribute<Mn::Color3ub>(Mn::Trade::MeshAttribute::Color),
-        Cr::Containers::arrayCast<Mn::Color3ub>(
-            Cr::Containers::arrayView(data.cpu_cbo)));
+    meshColors =
+        meshData->attribute<Mn::Color3ub>(Mn::Trade::MeshAttribute::Color);
+
   } else if (colorFormat == Mn::VertexFormat::Vector4ubNormalized) {
     // retrieve RGB view of RGBA color data and copy into data
-    Cr::Utility::copy(
-        Cr::Containers::arrayCast<const Mn::Color3ub>(
-            meshData->attribute<Mn::Color4ub>(Mn::Trade::MeshAttribute::Color)),
-        Cr::Containers::arrayCast<Mn::Color3ub>(
-            Cr::Containers::arrayView(data.cpu_cbo)));
+    meshColors = Cr::Containers::arrayCast<const Mn::Color3ub>(
+        meshData->attribute<Mn::Color4ub>(Mn::Trade::MeshAttribute::Color));
 
   } else {
     ESP_ERROR() << "Unexpected vertex color type" << colorFormat;
     return Cr::Containers::NullOpt;
   }
 
+  Cr::Utility::copy(meshColors, Cr::Containers::arrayCast<Mn::Color3ub>(
+                                    Cr::Containers::arrayView(data.cpu_cbo)));
+
   /* Check we actually have object IDs before copying them, and that those are
      in a range we expect them to be */
-  if (!meshData->hasAttribute(Mn::Trade::MeshAttribute::ObjectId)) {
-    ESP_ERROR() << "File has no object IDs";
-    return Cr::Containers::NullOpt;
-  }
-  Cr::Containers::Array<Mn::UnsignedInt> objectIds =
-      meshData->objectIdsAsArray();
-  if (Mn::Math::max(objectIds) > 65535) {
-    ESP_ERROR() << "Object IDs can't fit into 16 bits";
-    return Cr::Containers::NullOpt;
-  }
   data.objectIds.resize(meshData->vertexCount());
+  Cr::Containers::Array<Mn::UnsignedInt> objectIds;
+  if (meshData->hasAttribute(Mn::Trade::MeshAttribute::ObjectId)) {
+    objectIds = meshData->objectIdsAsArray();
+    if (Mn::Math::max(objectIds) > 65535) {
+      ESP_ERROR() << "Object IDs can't fit into 16 bits";
+      return Cr::Containers::NullOpt;
+    }
+  } else {
+    // convert color data array to int (idx) for object ID
+    // removing duplicates returns array of unique ids for colors
+
+    auto out = Mn::MeshTools::removeDuplicatesInPlace(
+        meshData->mutableAttribute(Mn::Trade::MeshAttribute::Color));
+    objectIds = std::move(out.first);
+    ESP_WARNING() << "min id: " << Mn::Math::min(objectIds)
+                  << "| max id :" << Mn::Math::max(objectIds);
+    // ESP_ERROR() << "File has no object IDs";
+    // return Cr::Containers::NullOpt;
+  }
   Mn::Math::castInto(Cr::Containers::arrayCast<2, Mn::UnsignedInt>(
                          Cr::Containers::stridedArrayView(objectIds)),
                      Cr::Containers::arrayCast<2, Mn::UnsignedShort>(
