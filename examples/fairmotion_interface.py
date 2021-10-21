@@ -15,6 +15,9 @@ DEFAULT_METADATA = {
         "urdf_path": "../habitat-sim/data/test_assets/urdf/amass_male.urdf",
         "amass_path": "../fairmotion/amass_test_data/CMU/CMU/06/06_12_poses.npz",
         "bm_path": "../fairmotion/amass_test_data/smplh/male/model.npz",
+        "rotation": Quaternion.rotation(Deg(-90), Vector3.x_axis())
+        * Quaternion.rotation(Deg(90), Vector3.z_axis()),
+        "translation": Vector3([2.5, 0.0, 0.7]),
     }
 }
 
@@ -30,17 +33,6 @@ class FairmotionInterface:
         self.motion: motion.Motion = None
         self.metadata = {}
         self.motion_stepper = 0
-
-        # positional offsets
-        self.rotation_offset: Quaternion = Quaternion.rotation(
-            Deg(-90), Vector3.x_axis()
-        ) * Quaternion.rotation(
-            Deg(90), Vector3.z_axis()
-        )  # TEMPORARY HARDCODED
-        self.translation_offset: Vector3 = Vector3(
-            [2.5, 0.0, 0.7]
-        )  # TEMPORARY HARDCODED
-
         self.metadata = DEFAULT_METADATA
 
         if metadata is not None:
@@ -48,11 +40,25 @@ class FairmotionInterface:
         else:
             self.set_data(urdf_path=urdf_path, amass_path=amass_path, bm_path=bm_path)
 
-    def set_data(self, name="default", urdf_path=None, amass_path=None, bm_path=None):
+        # positional offsets
+        self.rotation_offset: Quaternion = self.metadata["default"]["rotation"]
+        self.translation_offset: Vector3 = self.metadata["default"]["translation"]
+
+    def set_data(
+        self,
+        name="default",
+        urdf_path=None,
+        amass_path=None,
+        bm_path=None,
+        rotation=None,
+        translation=None,
+    ):
         data = self.metadata[name]
         data["urdf_path"] = urdf_path or self.metadata["default"]["urdf_path"]
         data["amass_path"] = amass_path or self.metadata["default"]["amass_path"]
         data["bm_path"] = bm_path or self.metadata["default"]["bm_path"]
+        data["rotation"] = rotation or self.metadata["default"]["rotation"]
+        data["translation"] = translation or self.metadata["default"]["translation"]
 
     def save_metadata():
         """
@@ -90,11 +96,11 @@ class FairmotionInterface:
 
         # TODO: Make this instead place the model infront of you
         # translate Human to appear infront of staircase in apt_0
-        self.model.translate(self.translation_offset)
+        self.model.translation = self.translation_offset
 
         # TEMPORARY FOR TESTING
-        self.viewer.agent_body_node.translate(
-            Vector3([2.44567, 0.119373, 3.42486])
+        self.viewer.agent_body_node.translation = (
+            Vector3([1.44567, 0.119373, 3.42486])
             - self.viewer.agent_body_node.translation
         )  # TEMPORARY HARDCODED
 
@@ -105,7 +111,7 @@ class FairmotionInterface:
         """
         # repeat last frame: used mostly for position state change
         if repeat:
-            self.motion_stepper = (self.motion_stepper - 1) % self.motion.num_frames
+            self.motion_stepper = (self.motion_stepper - 1) % self.motion.num_frames()
 
         if not self.model or not self.motion:
             return
