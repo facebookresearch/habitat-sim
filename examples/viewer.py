@@ -9,8 +9,6 @@ import time
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
-from examples.fairmotion_interface import FairmotionInterface
-
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
@@ -82,9 +80,6 @@ class HabitatSimInteractiveViewer(Application):
         self.sim: habitat_sim.simulator.Simulator = None
         self.reconfigure_sim()
 
-        # fairmotion init
-        self.fm_demo = FairmotionInterface(self)
-
         self.time_since_last_simulation = 0.0
         LoggingContext.reinitialize_from_env()
         logger.setLevel("INFO")
@@ -114,9 +109,6 @@ class HabitatSimInteractiveViewer(Application):
                 # even if time_since_last_simulation is quite large
                 self.sim.step_world(1.0 / 60.0)
                 self.simulate_single_step = False
-                if self.fm_demo.motion is not None:
-                    self.fm_demo.next_pose()
-                    self.fm_demo.next_pose()
 
             # reset time_since_last_simulation, accounting for potential overflow
             self.time_since_last_simulation = math.fmod(
@@ -281,37 +273,6 @@ class HabitatSimInteractiveViewer(Application):
         elif key == pressed.V:
             self.invert_gravity()
             logger.info("Command: gravity inverted")
-
-        # Everything below is used for testing
-        elif key == pressed.F:
-            print("Command: fairmotion test")
-            self.fm_demo.load_motion()
-            self.fm_demo.load_model()
-
-        elif key == pressed.I:
-            t = self.fm_demo.translation_offset
-            print(f"X is {t[0]}")
-            x = float(input("X <- "))
-            if x:
-                t[0] = x
-            self.fm_demo.next_pose(repeat=True)
-
-        elif key == pressed.J:
-            t = self.fm_demo.translation_offset
-            print(f"Y is {t[0]}")
-            y = float(input("Y <- "))
-            if y:
-                t[1] = y
-            self.fm_demo.next_pose(repeat=True)
-
-        elif key == pressed.K:
-            t = self.fm_demo.translation_offset
-            print(f"Z is {t[0]}")
-            z = float(input("Z <- "))
-            if z:
-                t[2] = z
-            self.fm_demo.next_pose(repeat=True)
-        # End of testing section
 
         # update map of moving/looking keys which are currently pressed
         if key in self.pressed:
@@ -583,10 +544,8 @@ Key Commands:
     'wasd':     Move the agent's body forward/backward and left/right.
     'zx':       Move the agent's body up/down.
     arrow keys: Turn the agent's body left/right and camera look up/down.
-
     Utilities:
     'r':        Reset the simulator with the most recently loaded scene.
-
     Object Interactions:
     SPACE:      Toggle physics simulation on/off.
     '.':        Take a single simulation step if not simulating continuously.
