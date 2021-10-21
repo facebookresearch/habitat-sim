@@ -237,6 +237,11 @@ class Viewer : public Mn::Platform::Application {
   void switchCameraType();
   Mn::Vector3 randomDirection();
 
+  /**
+   * @brief Display information about the currently loaded scene.
+   */
+  void dispMetadataInfo();
+
   esp::agent::AgentConfiguration agentConfig_;
 
   void saveAgentAndSensorTransformToFile();
@@ -1438,6 +1443,12 @@ void Viewer::drawEvent() {
   redraw();
 }
 
+void Viewer::dispMetadataInfo() {  // display info report
+  std::string dsInfoReport = MM_->createDatasetReport();
+  ESP_DEBUG() << "\nActive Dataset Details : \n"
+              << dsInfoReport << "\nActive Dataset Report Details Done";
+}
+
 void Viewer::moveAndLook(int repetitions) {
   for (int i = 0; i < repetitions; i++) {
     if (keysPressed[KeyEvent::Key::Left]) {
@@ -1923,6 +1934,10 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
     case KeyEvent::Key::O:
       addTemplateObject();
+      break;
+    case KeyEvent::Key::Slash:
+      // display current scene's metadata information
+      dispMetadataInfo();
       break;
     case KeyEvent::Key::Q:
       // query the agent state
