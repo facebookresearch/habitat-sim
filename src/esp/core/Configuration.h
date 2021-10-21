@@ -265,7 +265,7 @@ class Configuration {
     if (mapIter != valueMap_.end()) {
       return mapIter->second;
     }
-    ESP_ERROR() << "Key :" << key << "not present in configuration";
+    ESP_WARNING() << "Key :" << key << "not present in configuration";
     return {};
   }
 
