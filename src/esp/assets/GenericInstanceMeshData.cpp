@@ -37,6 +37,12 @@ struct InstancePlyData {
   std::vector<vec3uc> cpu_cbo;
   std::vector<uint32_t> cpu_ibo;
   std::vector<uint16_t> objectIds;
+  /**
+   * @brief Whether or not the objectIds were provided by the source .ply file.
+   * If so then we assume they can be used to provide islands to split the
+   * semantic mesh for better frustum culling.
+   */
+  bool objIdsFromPly;
 };
 
 Cr::Containers::Optional<InstancePlyData> parsePly(
@@ -94,6 +100,7 @@ Cr::Containers::Optional<InstancePlyData> parsePly(
   Cr::Containers::Array<Mn::UnsignedInt> objectIds;
   if (meshData->hasAttribute(Mn::Trade::MeshAttribute::ObjectId)) {
     objectIds = meshData->objectIdsAsArray();
+    data.objIdsFromPly = true;
     if (Mn::Math::max(objectIds) > 65535) {
       ESP_ERROR() << "Object IDs can't fit into 16 bits";
       return Cr::Containers::NullOpt;
@@ -101,7 +108,9 @@ Cr::Containers::Optional<InstancePlyData> parsePly(
   } else {
     // convert color data array to int (idx) for object ID
     // removing duplicates returns array of unique ids for colors
-
+    // These ids should not be used to split the mesh with our current mesh
+    // process
+    data.objIdsFromPly = false;
     auto out = Mn::MeshTools::removeDuplicatesInPlace(
         meshData->mutableAttribute(Mn::Trade::MeshAttribute::Color));
     objectIds = std::move(out.first);
@@ -139,20 +148,30 @@ GenericInstanceMeshData::fromPlySplitByObjectId(
   const InstancePlyData& data = *parseResult;
 
   std::vector<GenericInstanceMeshData::uptr> splitMeshData;
-  std::unordered_map<uint16_t, PerObjectIdMeshBuilder> objectIdToObjectData;
-
-  for (size_t i = 0; i < data.cpu_ibo.size(); ++i) {
-    const uint32_t globalIndex = data.cpu_ibo[i];
-    const uint16_t objectId = data.objectIds[globalIndex];
-    if (objectIdToObjectData.find(objectId) == objectIdToObjectData.end()) {
-      auto instanceMesh = GenericInstanceMeshData::create_unique();
-      objectIdToObjectData.emplace(
-          objectId, PerObjectIdMeshBuilder{*instanceMesh, objectId});
-      splitMeshData.emplace_back(std::move(instanceMesh));
+  if (parseResult->objIdsFromPly) {
+    std::unordered_map<uint16_t, PerObjectIdMeshBuilder> objectIdToObjectData;
+    for (size_t i = 0; i < data.cpu_ibo.size(); ++i) {
+      const uint32_t globalIndex = data.cpu_ibo[i];
+      const uint16_t objectId = data.objectIds[globalIndex];
+      if (objectIdToObjectData.find(objectId) == objectIdToObjectData.end()) {
+        auto instanceMesh = GenericInstanceMeshData::create_unique();
+        objectIdToObjectData.emplace(
+            objectId, PerObjectIdMeshBuilder{*instanceMesh, objectId});
+        splitMeshData.emplace_back(std::move(instanceMesh));
+      }
+      objectIdToObjectData.at(objectId).addVertex(
+          globalIndex, data.cpu_vbo[globalIndex], data.cpu_cbo[globalIndex]);
     }
-    objectIdToObjectData.at(objectId).addVertex(
-        globalIndex, data.cpu_vbo[globalIndex], data.cpu_cbo[globalIndex]);
+  } else {
+    // ply should not be split - ids were synthesized
+    auto data = GenericInstanceMeshData::create_unique();
+    data->cpu_vbo_ = std::move(parseResult->cpu_vbo);
+    data->cpu_cbo_ = std::move(parseResult->cpu_cbo);
+    data->cpu_ibo_ = std::move(parseResult->cpu_ibo);
+    data->objectIds_ = std::move(parseResult->objectIds);
+    splitMeshData.emplace_back(std::move(data));
   }
+
   return splitMeshData;
 }
 
