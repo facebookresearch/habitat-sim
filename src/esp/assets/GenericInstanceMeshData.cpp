@@ -76,7 +76,7 @@ Cr::Containers::Optional<InstancePlyData> parsePly(
   data.cpu_cbo.resize(meshData->vertexCount());
   const Mn::VertexFormat colorFormat =
       meshData->attributeFormat(Mn::Trade::MeshAttribute::Color);
-  Corrade::Containers::StridedArrayView1D<const Magnum::Color3ub> meshColors;
+  Cr::Containers::StridedArrayView1D<const Magnum::Color3ub> meshColors;
   if (colorFormat == Mn::VertexFormat::Vector3ubNormalized) {
     meshColors =
         meshData->attribute<Mn::Color3ub>(Mn::Trade::MeshAttribute::Color);
