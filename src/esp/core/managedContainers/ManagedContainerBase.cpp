@@ -11,6 +11,7 @@ namespace Cr = Corrade;
 namespace esp {
 namespace core {
 
+namespace managedContainers {
 bool ManagedContainerBase::setLock(const std::string& objectHandle, bool lock) {
   // if managed object does not currently exist then do not attempt to modify
   // its lock state
@@ -245,5 +246,6 @@ std::string ManagedContainerBase::getUniqueHandleFromCandidatePerType(
   return name + handleIncrement;
 }  // ManagedContainerBase::getUniqueHandleFromCandidatePerType
 
+}  // namespace managedContainers
 }  // namespace core
 }  // namespace esp

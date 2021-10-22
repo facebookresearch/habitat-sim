@@ -15,9 +15,11 @@
 namespace esp {
 namespace metadata {
 namespace managers {
+using esp::core::managedContainers::ManagedObjectAccess;
+
 class SceneDatasetAttributesManager
     : public AttributesManager<attributes::SceneDatasetAttributes,
-                               core::ManagedObjectAccess::Share> {
+                               ManagedObjectAccess::Share> {
  public:
   explicit SceneDatasetAttributesManager(
       PhysicsAttributesManager::ptr physicsAttributesMgr);
@@ -89,7 +91,7 @@ class SceneDatasetAttributesManager
   /**
    * @brief Verify a particular subcell exists within the
    * dataset_config.JSON file, and if so, handle reading the possible JSON
-   * sub-cells it might hold. using the passed attributesManager for the
+   * sub-cells it might hold, using the passed attributesManager for the
    * dataset being processed.
    * @tparam the type of the attributes manager.
    * @param dsDir The root directory of the dataset attributes being built.

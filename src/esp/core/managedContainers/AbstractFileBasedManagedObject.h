@@ -10,6 +10,8 @@
 
 namespace esp {
 namespace core {
+
+namespace managedContainers {
 class AbstractFileBasedManagedObject : public AbstractManagedObject {
  public:
   /**
@@ -38,7 +40,7 @@ class AbstractFileBasedManagedObject : public AbstractManagedObject {
  public:
   ESP_SMART_POINTERS(AbstractFileBasedManagedObject)
 };  // class AbstractFileBasedManagedObject
-
+}  // namespace managedContainers
 }  // namespace core
 }  // namespace esp
 

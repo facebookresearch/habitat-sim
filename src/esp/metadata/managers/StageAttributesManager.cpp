@@ -16,6 +16,8 @@
 
 namespace esp {
 using assets::AssetType;
+using core::managedContainers::ManagedObjectAccess;
+
 namespace metadata {
 
 using attributes::AbstractObjectAttributes;
@@ -26,7 +28,7 @@ StageAttributesManager::StageAttributesManager(
     ObjectAttributesManager::ptr objectAttributesMgr,
     PhysicsAttributesManager::ptr physicsAttributesManager)
     : AbstractObjectAttributesManager<StageAttributes,
-                                      core::ManagedObjectAccess::Copy>::
+                                      ManagedObjectAccess::Copy>::
           AbstractObjectAttributesManager("Stage", "stage_config.json"),
       objectAttributesMgr_(std::move(objectAttributesMgr)),
       physicsAttributesManager_(std::move(physicsAttributesManager)),

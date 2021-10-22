@@ -21,6 +21,8 @@
 namespace esp {
 namespace metadata {
 namespace attributes {
+using esp::core::managedContainers::ManagedContainerBase;
+
 class SceneDatasetAttributes : public AbstractAttributes {
  public:
   SceneDatasetAttributes(
@@ -354,7 +356,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
    */
   inline std::string getFullAttrNameFromStr(
       const std::string& attrName,
-      const esp::core::ManagedContainerBase::ptr& attrMgr) {
+      const ManagedContainerBase::ptr& attrMgr) {
     auto handleList = attrMgr->getObjectHandlesBySubstring(attrName);
     if (handleList.size() > 0) {
       return handleList[0];

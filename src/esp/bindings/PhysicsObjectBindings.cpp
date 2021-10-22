@@ -18,6 +18,7 @@ namespace py = pybind11;
 using py::literals::operator""_a;
 
 namespace PhysWraps = esp::physics;
+using esp::core::managedContainers::AbstractManagedObject;
 using PhysWraps::ManagedArticulatedObject;
 using PhysWraps::ManagedRigidObject;
 

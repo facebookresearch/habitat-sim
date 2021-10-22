@@ -18,7 +18,8 @@ namespace physics {
  * enable Managed Container access.
  */
 template <class T>
-class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
+class AbstractManagedPhysicsObject
+    : public esp::core::managedContainers::AbstractManagedObject {
  public:
   static_assert(
       std::is_base_of<esp::physics::PhysicsObjectBase, T>::value,
