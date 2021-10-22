@@ -21,7 +21,7 @@ repos:
     -   id: check-toml
     -   id: check-xml
     -   id: check-yaml
-        exclude: ^conda-build/habitat-sim/meta.yaml
+        exclude: ^conda-build/.*/meta.yaml
     -   id: debug-statements
     -   id: mixed-line-ending
         args: ['--fix=lf']
