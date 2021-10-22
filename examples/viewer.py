@@ -544,8 +544,10 @@ Key Commands:
     'wasd':     Move the agent's body forward/backward and left/right.
     'zx':       Move the agent's body up/down.
     arrow keys: Turn the agent's body left/right and camera look up/down.
+
     Utilities:
     'r':        Reset the simulator with the most recently loaded scene.
+
     Object Interactions:
     SPACE:      Toggle physics simulation on/off.
     '.':        Take a single simulation step if not simulating continuously.

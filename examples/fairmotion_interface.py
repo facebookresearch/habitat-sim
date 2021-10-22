@@ -1,3 +1,9 @@
+# Copyright (c) Facebook, Inc. and its affiliates.
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+import math
+
 from fairmotion.core import motion
 from fairmotion.data import amass
 from fairmotion.ops import conversions
@@ -35,6 +41,11 @@ class FairmotionInterface:
         self.motion_stepper = 0
         self.metadata = DEFAULT_METADATA
 
+        self.key_frames = None
+        self.key_frame_models = []
+        self.show_key_frames = False
+        self.traj_id: int = None
+
         if metadata is not None:
             self.metadata = metadata
         else:
@@ -43,6 +54,8 @@ class FairmotionInterface:
         # positional offsets
         self.rotation_offset: Quaternion = self.metadata["default"]["rotation"]
         self.translation_offset: Vector3 = self.metadata["default"]["translation"]
+
+        self.load_motion()
 
     def set_data(
         self,
@@ -60,17 +73,16 @@ class FairmotionInterface:
         data["rotation"] = rotation or self.metadata["default"]["rotation"]
         data["translation"] = translation or self.metadata["default"]["translation"]
 
-    def save_metadata():
+    def save_metadata(self, name):
         """
         Saves the current metadata to a txt file in given file path
         """
 
-    def fetch_metadata():
+    def fetch_metadata(self, name):
         """
         Fetch metadata from a txt file in given file path and sets current metadata
         """
 
-    # [WIP]
     def set_transform_offsets(
         self, rotate_offset: Quaternion = None, translate_offset: Vector3 = None
     ):
@@ -82,7 +94,10 @@ class FairmotionInterface:
         data = self.metadata["default"]
         self.motion = amass.load(file=data["amass_path"], bm_path=data["bm_path"])
 
+        self.setup_key_frames()
+
     def load_model(self):
+        self.hide_model()
         data = self.metadata["default"]
 
         # add an ArticulatedObject to the world with a fixed base
@@ -98,11 +113,9 @@ class FairmotionInterface:
         # translate Human to appear infront of staircase in apt_0
         self.model.translation = self.translation_offset
 
-        # TEMPORARY FOR TESTING
-        self.viewer.agent_body_node.translation = (
-            Vector3([1.44567, 0.119373, 3.42486])
-            - self.viewer.agent_body_node.translation
-        )  # TEMPORARY HARDCODED
+    def hide_model(self):
+        if self.model:
+            self.art_obj_mgr.remove_object_by_handle(self.model.handle)
 
     # currently the next_pose method is simply called twice in simulating a frame
     def next_pose(self, repeat=False):
@@ -120,7 +133,9 @@ class FairmotionInterface:
             new_pose,
             new_root_translate,
             new_root_rotation,
-        ) = self.convert_CMUamass_single_pose(self.motion.poses[self.motion_stepper])
+        ) = self.convert_CMUamass_single_pose(
+            self.motion.poses[self.motion_stepper], self.model
+        )
         self.model.joint_positions = new_pose
         self.model.rotation = new_root_rotation
         self.model.translation = new_root_translate
@@ -128,7 +143,7 @@ class FairmotionInterface:
         # iterate the frame counter
         self.motion_stepper = (self.motion_stepper + 1) % self.motion.num_frames()
 
-    def convert_CMUamass_single_pose(self, pose):
+    def convert_CMUamass_single_pose(self, pose, model):
         """
         This conversion is specific to the datasets from CMU
         """
@@ -140,21 +155,21 @@ class FairmotionInterface:
         ### adding offsets to root transformation
         # rotation
         root_rotation = self.rotation_offset * Quaternion.from_matrix(
-            Matrix3x3(root_T[0:3, 0:3])  # TEMPORARY HARDCODED
+            Matrix3x3(root_T[0:3, 0:3])
         )
 
         # translation
-        root_translation = (  # TEMPORARY HARDCODED
+        root_translation = (
             self.translation_offset
             + self.rotation_offset.transform_vector(root_T[0:3, 3])
-        )  # correct
+        )
 
         Q, _ = conversions.T2Qp(root_T)
 
         # Other joints
-        for model_link_id in self.model.get_link_ids():
-            joint_type = self.model.get_link_joint_type(model_link_id)
-            joint_name = self.model.get_link_name(model_link_id)
+        for model_link_id in model.get_link_ids():
+            joint_type = model.get_link_joint_type(model_link_id)
+            joint_name = model.get_link_name(model_link_id)
             pose_joint_index = pose.skel.index_joint[joint_name]
 
             # When the target joint do not have dof, we simply ignore it
@@ -179,3 +194,101 @@ class FairmotionInterface:
             new_pose += list(Q)
 
         return new_pose, root_translation, root_rotation
+
+    def setup_key_frames(self, num_key_frames=10):
+
+        key_frames = [self.motion.poses[0]]
+
+        # euclidean distance
+        def distance(translation: Vector3):
+            summ = 0
+            for n in translation:
+                summ += n * n
+            return math.sqrt(summ)
+
+        total_dist = 0.0
+        last_key_frame = self.motion.poses[0].get_transform(ROOT, local=False)[0:3, 3]
+
+        # get total distance traveled by motion
+        for pose in self.motion.poses:
+            delta = pose.get_transform(ROOT, local=False)[0:3, 3] - last_key_frame
+            total_dist += distance(delta)
+            last_key_frame = pose.get_transform(ROOT, local=False)[0:3, 3]
+
+        # how much distance should occur between each key frame for the allotted frame count
+        threshold = total_dist / num_key_frames
+        last_key_frame = self.motion.poses[0].get_transform(ROOT, local=False)[0:3, 3]
+
+        for pose in self.motion.poses:
+            delta = pose.get_transform(ROOT, local=False)[0:3, 3] - last_key_frame
+            if distance(delta) >= threshold:
+                key_frames.append(pose)
+                last_key_frame = pose.get_transform(ROOT, local=False)[0:3, 3]
+
+        self.key_frames = key_frames
+
+    def toggle_key_frames(self):
+        """
+        Toggle the display of the key frames preview
+        """
+        self.show_key_frames = not self.show_key_frames
+        if self.show_key_frames:
+            data = self.metadata["default"]
+
+            for k in self.key_frames:
+
+                self.key_frame_models.append(
+                    self.art_obj_mgr.add_articulated_object_from_urdf(
+                        filepath=data["urdf_path"], fixed_base=True
+                    )
+                )
+
+                (
+                    new_pose,
+                    new_root_translate,
+                    new_root_rotation,
+                ) = self.convert_CMUamass_single_pose(k, self.key_frame_models[-1])
+
+                self.key_frame_models[
+                    -1
+                ].motion_type = habitat_sim.physics.MotionType.KINEMATIC
+                self.key_frame_models[-1].joint_positions = new_pose
+                self.key_frame_models[-1].rotation = new_root_rotation
+                self.key_frame_models[-1].translation = new_root_translate
+
+            self.buildTrajectoryVis()
+
+        else:
+            for m in self.key_frame_models:
+                # removes key frames
+                self.art_obj_mgr.remove_object_by_handle(m.handle)
+
+            # removes trajectory
+            self.viewer.sim.get_rigid_object_manager().remove_object_by_id(self.traj_id)
+
+    def buildTrajectoryVis(self):
+        """
+        Build and display the trajectory visuals for the key frames
+        """
+        if len(self.key_frames) >= 2:
+            traj_radius = 0.01
+            traj_offset = self.translation_offset + Vector3(0, 0, 0)
+
+            root_points = [
+                Vector3(x.get_transform(ROOT, local=False)[0:3, 3])
+                for x in self.key_frames
+            ]
+            print(f"root_points[0] = {root_points[0]}")
+            root_points = [
+                traj_offset + self.rotation_offset.transform_vector(x)
+                for x in root_points
+            ]
+
+            self.traj_id = self.viewer.sim.add_trajectory_object(
+                traj_vis_name="key_frame_traj",
+                points=root_points,
+                num_segments=3,
+                radius=traj_radius,
+                smooth=False,
+                num_interpolations=10,
+            )

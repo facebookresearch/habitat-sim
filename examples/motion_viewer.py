@@ -70,13 +70,21 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
 
         key = event.key
         pressed = Application.KeyEvent.Key
+        mod = Application.InputEvent.Modifier
+
+        if key == pressed.F:
+            if event.modifiers == mod.SHIFT:
+                self.fm_demo.hide_model()
+                print("Command: hide model")
+            else:
+                print("Command: load model")
+                self.fm_demo.load_model()
+
+        elif key == pressed.K:
+            # Toggle Key Frames
+            self.fm_demo.toggle_key_frames()
 
         # Everything below is used for testing
-        if key == pressed.F:
-            print("Command: fairmotion test")
-            self.fm_demo.load_motion()
-            self.fm_demo.load_model()
-
         elif key == pressed.I:
             r = self.fm_demo.rotation_offset
             print(f"R is {r}")
@@ -94,17 +102,45 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             if y:
                 t[1] = y
             self.fm_demo.next_pose(repeat=True)
-
-        elif key == pressed.K:
-            t = self.fm_demo.translation_offset
-            print(f"Z is {t[2]}")
-            z = float(input("Z <- "))
-            if z:
-                t[2] = z
-            self.fm_demo.next_pose(repeat=True)
         # End of testing section
 
         super().key_press_event(event)
+
+    def print_help_text(self) -> None:
+        """
+        Print the Key Command help text.
+        """
+        print(
+            """
+=====================================================
+Welcome to the Habitat-sim Python Viewer application!
+=====================================================
+Key Commands:
+-------------
+    esc:        Exit the application.
+    'h':        Display this help message.
+    'm':        Toggle mouse interaction mode.
+
+    Agent Controls:
+    'wasd':     Move the agent's body forward/backward and left/right.
+    'zx':       Move the agent's body up/down.
+    arrow keys: Turn the agent's body left/right and camera look up/down.
+
+    Utilities:
+    'r':        Reset the simulator with the most recently loaded scene.
+
+    Object Interactions:
+    SPACE:      Toggle physics simulation on/off.
+    '.':        Take a single simulation step if not simulating continuously.
+    'v':        (physics) Invert gravity.
+
+    Fairmotion Interface:
+    'f':        Load model with current motion data.
+                [shft] Hide model.
+    'k':        Toggle key fram preview of loaded motion.
+=====================================================
+"""
+        )
 
 
 if __name__ == "__main__":
