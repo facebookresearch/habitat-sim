@@ -1013,9 +1013,9 @@ bool Simulator::isNavMeshVisualizationActive() {
 
 int Simulator::addTrajectoryObject(const std::string& trajVisName,
                                    const std::vector<Mn::Vector3>& pts,
+                                   const std::vector<Mn::Color3>& colorVec,
                                    int numSegments,
                                    float radius,
-                                   const std::vector<Mn::Color3ub>& colorVec,
                                    bool smooth,
                                    int numInterp) {
   if (renderer_) {
@@ -1035,7 +1035,7 @@ int Simulator::addTrajectoryObject(const std::string& trajVisName,
 
   // 1. create trajectory tube asset from points and save it
   bool success = resourceManager_->buildTrajectoryVisualization(
-      trajVisName, uniquePts, numSegments, radius, colorVec, smooth, numInterp);
+      trajVisName, uniquePts, colorVec, numSegments, radius, smooth, numInterp);
   if (!success) {
     ESP_ERROR() << "Failed to create Trajectory visualization mesh for"
                 << trajVisName;
@@ -1070,18 +1070,6 @@ int Simulator::addTrajectoryObject(const std::string& trajVisName,
   return trajVisID;
 
 }  // Simulator::addTrajectoryObject (vector of colors)
-
-int Simulator::addTrajectoryObject(const std::string& trajVisName,
-                                   const std::vector<Mn::Vector3>& pts,
-                                   int numSegments,
-                                   float radius,
-                                   const Magnum::Color4& color,
-                                   bool smooth,
-                                   int numInterp) {
-  return addTrajectoryObject(trajVisName, pts, numSegments, radius,
-                             {Mn::Math::pack<Mn::Color3ub>(color.rgb())},
-                             smooth, numInterp);
-}  // Simulator::showTrajectoryVisualization
 
 // Agents
 void Simulator::sampleRandomAgentState(agent::AgentState& agentState) {

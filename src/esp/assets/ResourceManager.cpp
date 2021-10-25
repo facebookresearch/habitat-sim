@@ -1455,9 +1455,9 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
 bool ResourceManager::buildTrajectoryVisualization(
     const std::string& trajVisName,
     const std::vector<Mn::Vector3>& pts,
+    const std::vector<Mn::Color3>& colorVec,
     int numSegments,
     float radius,
-    const std::vector<Mn::Color3ub>& colorVec,
     bool smooth,
     int numInterp) {
   // enforce required minimum/reasonable values if illegal values specified

@@ -210,7 +210,7 @@ std::vector<float> getPointDistsAlongTrajectory(
 
 Mn::Trade::MeshData buildTrajectoryTubeSolid(
     const std::vector<Mn::Vector3>& pts,
-    const std::vector<Mn::Color3ub>& interpColors,
+    const std::vector<Mn::Color3>& interpColors,
     int numSegments,
     float radius,
     bool smooth,
@@ -232,12 +232,18 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
   std::vector<Mn::Vector3> trajColors;
 
   // temp converter to vector of values in HSV space from RGB color
-  auto convertClrToHSVArray = [](const Mn::Color3ub& clr) -> Mn::Vector3 {
-    Mn::ColorHsv tmpHsv = clr.toHsv();
+  auto convertClrToHSVArray = [](const Mn::Color3& clr) -> Mn::Vector3 {
+    Mn::ColorHsv tmpHsv = Mn::Math::pack<Mn::Color3ub>(clr).toHsv();
     Mn::Vector3 tmpClr(tmpHsv.hue.operator float(), tmpHsv.saturation,
                        tmpHsv.value);
     return tmpClr;
   };
+  // temp converter to RGB color from vector of HSV values
+  auto convertHSVArrayToColor3ub =
+      [](const Mn::Vector3& hsvVec) -> Mn::Color3ub {
+    return Mn::Color3ub::fromHsv({Mn::Deg(hsvVec[0]), hsvVec[1], hsvVec[2]});
+  };
+
   if (numColors == 1) {
     trajColors.reserve(trajSize);
     // interpolate in hsv space - first convert src colors to HSV
@@ -300,11 +306,6 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
   Cr::Containers::StridedArrayView1D<Mn::Color3ub> colors =
       vertices.slice(&Vertex::color);
 
-  // temp converter to RGB color from vector of HSV values
-  auto convertHSVArrayToColor = [](const Mn::Vector3& hsvVec) -> Mn::Color3ub {
-    return Mn::Color3ub::fromHsv({Mn::Deg(hsvVec[0]), hsvVec[1], hsvVec[2]});
-  };
-
   // Beginning Endcap
   Mn::UnsignedInt circlePtIDX = 0;
   Mn::Vector3 tangent = trajectory[1] - trajectory[0];
@@ -317,7 +318,7 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
     // pre-rotated normal for circle is normalized point
     normals[circlePtIDX] =
         tangentOrientation.transformVector(circleNormVerts[i]);
-    colors[circlePtIDX] = convertHSVArrayToColor(trajColors[0]);
+    colors[circlePtIDX] = convertHSVArrayToColor3ub(trajColors[0]);
     ++circlePtIDX;
   }
   // add cap vert at the end of the list
@@ -326,7 +327,7 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
   // pre-rotated normal for circle is normalized point
   normals[vertexCount - 2] =
       tangentOrientation.transformVector({0.0f, 0.0f, -1.0f});
-  colors[vertexCount - 2] = convertHSVArrayToColor(trajColors[0]);
+  colors[vertexCount - 2] = convertHSVArrayToColor3ub(trajColors[0]);
 
   for (Mn::UnsignedInt vertIx = 1; vertIx < trajSize - 1; ++vertIx) {
     const Mn::Vector3& vert = trajectory[vertIx];
@@ -343,7 +344,7 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
       // pre-rotated normal for circle is normalized point
       normals[circlePtIDX] =
           tangentOrientation.transformVector(circleNormVerts[i]);
-      colors[circlePtIDX] = convertHSVArrayToColor(trajColors[vertIx]);
+      colors[circlePtIDX] = convertHSVArrayToColor3ub(trajColors[vertIx]);
       ++circlePtIDX;
     }
   }
@@ -360,7 +361,7 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
     // pre-rotated normal for circle is normalized point
     normals[circlePtIDX] =
         tangentOrientation.transformVector(circleNormVerts[i]);
-    colors[circlePtIDX] = convertHSVArrayToColor(trajColors[idx]);
+    colors[circlePtIDX] = convertHSVArrayToColor3ub(trajColors[idx]);
     ++circlePtIDX;
   }
   // add cap verts
@@ -370,7 +371,7 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
   normals[vertexCount - 1] =
       tangentOrientation.transformVector({0.0f, 0.0f, 1.0f});
 
-  colors[vertexCount - 1] = convertHSVArrayToColor(trajColors[idx]);
+  colors[vertexCount - 1] = convertHSVArrayToColor3ub(trajColors[idx]);
 
   // 4. Create polys between all points
   Cr::Containers::Array<char> indexData{

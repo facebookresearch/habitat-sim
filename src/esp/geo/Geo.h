@@ -124,7 +124,7 @@ std::vector<Mn::Vector3> buildCatmullRomTrajOfPoints(
  */
 Mn::Trade::MeshData buildTrajectoryTubeSolid(
     const std::vector<Mn::Vector3>& pts,
-    const std::vector<Mn::Color3ub>& interpColors,
+    const std::vector<Mn::Color3>& interpColors,
     int numSegments,
     float radius,
     bool smooth,

@@ -422,39 +422,45 @@ void initSimBindings(py::module& m) {
           R"(Decomposite an object into its constituent convex hulls with specified VHACD parameters.)")
 #endif
 
-      .def("add_trajectory_object",
-           static_cast<int (Simulator::*)(
-               const std::string&, const std::vector<Mn::Vector3>&, int, float,
-               const Magnum::Color4&, bool, int)>(
-               &Simulator::addTrajectoryObject),
-           "traj_vis_name"_a, "points"_a, "num_segments"_a = 3,
-           "radius"_a = .001, "color"_a = Mn::Color4{0.9, 0.1, 0.1, 1.0},
-           "smooth"_a = false, "num_interpolations"_a = 10,
-           R"(Build a tube visualization around the passed trajectory of points.
+      .def(
+          "add_trajectory_object",
+          [](Simulator& self, const std::string& name,
+             const std::vector<Mn::Vector3>& pts, int numSegments, float radius,
+             const Magnum::Color4& color, bool smooth, int numInterps) {
+            return self.addTrajectoryObject(
+                name, pts, {Mn::Color3(color.rgb())}, numSegments, radius,
+                smooth, numInterps);
+          },
+          "traj_vis_name"_a, "points"_a, "num_segments"_a = 3,
+          "radius"_a = .001, "color"_a = Mn::Color4{0.9, 0.1, 0.1, 1.0},
+          "smooth"_a = false, "num_interpolations"_a = 10,
+          R"(Build a tube visualization around the passed trajectory of points.
               points : (list of 3-tuples of floats) key point locations to use to create trajectory tube.
               num_segments : (Integer) the number of segments around the tube to be used to make the visualization.
               radius : (Float) the radius of the resultant tube.
               color : (4-tuple of float) the color of the trajectory tube.
               smooth : (Bool) whether or not to smooth trajectory using a Catmull-Rom spline interpolating spline.
               num_interpolations : (Integer) the number of interpolation points to find between successive key points.)")
-      .def(
-          "add_gradient_trajectory_object",
-          static_cast<int (Simulator::*)(
-              const std::string&, const std::vector<Mn::Vector3>&, int, float,
-              const std::vector<Mn::Color3ub>&, bool, int)>(
-              &Simulator::addTrajectoryObject),
-          "traj_vis_name"_a, "points"_a, "num_segments"_a = 3,
-          "radius"_a = .001,
-          "colors"_a = std::vector<Mn::Color3ub>{Mn::Color3ub{220, 25, 25}},
-          "smooth"_a = false, "num_interpolations"_a = 10,
-          R"(Build a tube visualization around the passed trajectory of points, using the passed colors to build
+      .def("add_gradient_trajectory_object",
+           static_cast<int (Simulator::*)(
+               const std::string&, const std::vector<Mn::Vector3>&,
+               const std::vector<Mn::Color3>&, int, float, bool, int)>(
+               &Simulator::addTrajectoryObject),
+           "traj_vis_name"_a, "points"_a, "colors"_a, "num_segments"_a = 3,
+           "radius"_a = .001, "smooth"_a = false, "num_interpolations"_a = 10,
+           R"(Build a tube visualization around the passed trajectory of
+          points, using the passed colors to build
               a gradient along the length of the tube.
-              points : (list of 3-tuples of floats) key point locations to use to create trajectory tube.
-              num_segments : (Integer) the number of segments around the tube to be used to make the visualization.
-              radius : (Float) the radius of the resultant tube.
-              colors : (3-tuple of byte) the colors to build the gradient along the length of the trajectory tube.
-              smooth : (Bool) whether or not to smooth trajectory using a Catmull-Rom spline interpolating spline.
-              num_interpolations : (Integer) the number of interpolation points to find between successive key points.)")
+              points : (list of 3-tuples of floats) key point locations to
+              use to create trajectory tube. num_segments : (Integer) the
+              number of segments around the tube to be used to make the
+              visualization. radius : (Float) the radius of the resultant
+              tube. colors : (List of 3-tuple of byte) the colors to build
+              the gradient along the length of the trajectory tube. smooth :
+              (Bool) whether or not to smooth trajectory using a Catmull-Rom
+              spline interpolating spline. num_interpolations : (Integer) the
+              number of interpolation points to find between successive key
+              points.)")
       .def("get_light_setup", &Simulator::getLightSetup,
            "key"_a = DEFAULT_LIGHTING_KEY,
            R"(Get a copy of the LightSetup registered with a specific key.)")

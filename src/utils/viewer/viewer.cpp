@@ -1071,11 +1071,11 @@ void Viewer::buildTrajectoryVis() {
                      "points, so nothing to build. Aborting.";
     return;
   }
-  std::vector<Mn::Color3ub> clrs;
+  std::vector<Mn::Color3> clrs;
   int numClrs = (singleColorTrajectory_ ? 1 : rand() % 4 + 2);
   clrs.reserve(numClrs);
   for (int i = 0; i < numClrs; ++i) {
-    clrs.emplace_back(Mn::Color3ub{randomDirection() * 255});
+    clrs.emplace_back(Mn::Color3{randomDirection()});
   }
   // synthesize a name for asset based on color, radius, point count
   std::string trajObjName = Cr::Utility::formatString(
@@ -1084,8 +1084,8 @@ void Viewer::buildTrajectoryVis() {
 
   ESP_DEBUG() << "Attempting to build trajectory tube for :"
               << agentLocs_.size() << "points with " << numClrs << "colors.";
-  int trajObjID = simulator_->addTrajectoryObject(
-      trajObjName, agentLocs_, 6, agentTrajRad_, clrs, true, 10);
+  int trajObjID = simulator_->addTrajectoryObject(trajObjName, agentLocs_, clrs,
+                                                  6, agentTrajRad_, true, 10);
   if (trajObjID != esp::ID_UNDEFINED) {
     ESP_DEBUG() << "Success!  Traj Obj Name :" << trajObjName
                 << "has object ID :" << trajObjID;

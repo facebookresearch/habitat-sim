@@ -525,23 +525,22 @@ class ResourceManager {
    * @brief Generate a tube following the passed trajectory of points.
    * @param trajVisName The name to use for the trajectory visualization mesh.
    * @param pts The points of a trajectory, in order
+   * @param colorVec Array of Colors for trajectory tube.
    * @param numSegments The number of the segments around the circumference of
    * the tube. Must be greater than or equal to 3.
    * @param radius The radius of the tube.
-   * @param color Color for trajectory tube.
    * @param smooth Whether to smooth the points in the trajectory or not
    * @param numInterp The number of interpolations between each trajectory
    * point, if smoothing.
    * @return Whether the process was a success or not
    */
-  bool buildTrajectoryVisualization(
-      const std::string& trajVisName,
-      const std::vector<Mn::Vector3>& pts,
-      int numSegments = 3,
-      float radius = .001,
-      const std::vector<Mn::Color3ub>& colorVec = {{220, 25, 25}},
-      bool smooth = false,
-      int numInterp = 10);
+  bool buildTrajectoryVisualization(const std::string& trajVisName,
+                                    const std::vector<Mn::Vector3>& pts,
+                                    const std::vector<Mn::Color3>& colorVec,
+                                    int numSegments = 3,
+                                    float radius = .001,
+                                    bool smooth = false,
+                                    int numInterp = 10);
 
   /**
    * @brief Build a configuration frame from scene or object attributes values
