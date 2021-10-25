@@ -232,7 +232,7 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
   std::vector<Mn::Vector3> trajColors;
 
   // temp converter to vector of values in HSV space from RGB color
-  auto convertClrToHSVArray = [&](const Mn::Color3ub& clr) -> Mn::Vector3 {
+  auto convertClrToHSVArray = [](const Mn::Color3ub& clr) -> Mn::Vector3 {
     Mn::ColorHsv tmpHsv = clr.toHsv();
     Mn::Vector3 tmpClr(tmpHsv.hue.operator float(), tmpHsv.saturation,
                        tmpHsv.value);
@@ -301,7 +301,7 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
       vertices.slice(&Vertex::color);
 
   // temp converter to RGB color from vector of HSV values
-  auto convertHSVArrayToColor = [&](const Mn::Vector3& hsvVec) -> Mn::Color3ub {
+  auto convertHSVArrayToColor = [](const Mn::Vector3& hsvVec) -> Mn::Color3ub {
     return Mn::Color3ub::fromHsv({Mn::Deg(hsvVec[0]), hsvVec[1], hsvVec[2]});
   };
 
