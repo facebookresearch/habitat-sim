@@ -7,16 +7,6 @@ namespace esp {
 namespace metadata {
 namespace attributes {
 
-// All keys must be lowercase
-const std::map<std::string, esp::assets::AssetType>
-    AbstractObjectAttributes::AssetTypeNamesMap = {
-        {"mp3d", esp::assets::AssetType::MP3D_MESH},
-        {"navmesh", esp::assets::AssetType::NAVMESH},
-        {"ptex", esp::assets::AssetType::FRL_PTEX_MESH},
-        {"semantic", esp::assets::AssetType::INSTANCE_MESH},
-        {"suncg", esp::assets::AssetType::SUNCG_SCENE},
-};
-
 AbstractObjectAttributes::AbstractObjectAttributes(
     const std::string& attributesClassKey,
     const std::string& handle)
@@ -55,9 +45,44 @@ std::string AbstractObjectAttributes::getObjectInfoInternal() const {
       getCollisionAssetHandle(), getAsString("scale"), getAsString("margin"),
       getAsString("orient_up"), getAsString("orient_front"),
       getAsString("units_to_meters"), getAsString("friction_coefficient"),
-      getAsString("restitution_coefficient"), getCurrShaderTypeName(),
-      getAbstractObjectInfoInternal());
+      getAsString("restitution_coefficient"),
+      getShaderTypeName(getShaderType()), getAbstractObjectInfoInternal());
 }  // AbstractObjectAttributes::getObjectInfoInternal
+
+void AbstractObjectAttributes::writeValuesToJson(
+    io::JsonGenericValue& jsonObj,
+    io::JsonAllocator& allocator) const {
+  // write AbstractObjectAttributes values to json
+  writeValueToJson("scale", jsonObj, allocator);
+  writeValueToJson("margin", jsonObj, allocator);
+  writeValueToJson("is_collidable", jsonObj, allocator);
+  writeValueToJson("orient_up", "up", jsonObj, allocator);
+  writeValueToJson("orient_front", "front", jsonObj, allocator);
+  writeValueToJson("units_to_meters", jsonObj, allocator);
+  writeValueToJson("is_visible", jsonObj, allocator);
+  writeValueToJson("friction_coefficient", jsonObj, allocator);
+  writeValueToJson("restitution_coefficient", jsonObj, allocator);
+  writeValueToJson("render_asset", jsonObj, allocator);
+  writeValueToJson("collision_asset", jsonObj, allocator);
+  writeValueToJson("collision_asset_size", jsonObj, allocator);
+  writeValueToJson("shader_type", jsonObj, allocator);
+  writeValueToJson("force_flat_shading", jsonObj, allocator);
+
+  // call instance-specific
+  writeValuesToJsonInternal(jsonObj, allocator);
+}  // AbstractObjectAttributes::writeValuesToJson
+
+io::JsonGenericValue AbstractObjectAttributes::writeToJsonValue(
+    io::JsonAllocator& allocator) const {
+  io::JsonGenericValue jsonObj(rapidjson::kObjectType);
+  // only save values that are pertinent for this object or stage.
+  writeValuesToJson(jsonObj, allocator);
+
+  // iterate through subconfigs
+  Configuration::writeConfigsToJson(jsonObj, allocator);
+
+  return jsonObj;
+}  // AbstractObjectAttributes::writeValuesToJson
 
 ObjectAttributes::ObjectAttributes(const std::string& handle)
     : AbstractObjectAttributes("ObjectAttributes", handle) {
@@ -72,9 +97,9 @@ ObjectAttributes::ObjectAttributes(const std::string& handle)
 
   setBoundingBoxCollisions(false);
   setJoinCollisionMeshes(true);
-  // default to Unknown for objects - will use material-derived shader unless
-  // otherwise specified in config
-  setShaderType(static_cast<int>(ObjectInstanceShaderType::Unknown));
+  // default to use material-derived shader unless otherwise specified in config
+  // or instance config
+  setShaderType(getShaderTypeName(ObjectInstanceShaderType::Material));
   // TODO remove this once ShaderType support is complete
   setForceFlatShading(false);
   setIsVisible(true);
@@ -88,13 +113,28 @@ std::string ObjectAttributes::getAbstractObjectInfoInternal() const {
       getAsString("linear_damping"), getAsString("semantic_id"));
 }
 
+void ObjectAttributes::writeValuesToJsonInternal(
+    io::JsonGenericValue& jsonObj,
+    io::JsonAllocator& allocator) const {
+  // write ObjectAttributes values to json
+  writeValueToJson("mass", jsonObj, allocator);
+  writeValueToJson("linear_damping", jsonObj, allocator);
+  writeValueToJson("angular_damping", jsonObj, allocator);
+  writeValueToJson("use_bounding_box_for_collision", jsonObj, allocator);
+  writeValueToJson("COM", jsonObj, allocator);
+  writeValueToJson("inertia", jsonObj, allocator);
+  writeValueToJson("semantic_id", jsonObj, allocator);
+  writeValueToJson("join_collision_meshes", jsonObj, allocator);
+
+}  // ObjectAttributes::writeValuesToJsonInternal
+
 StageAttributes::StageAttributes(const std::string& handle)
     : AbstractObjectAttributes("StageAttributes", handle) {
   setGravity({0, -9.8, 0});
   setOrigin({0, 0, 0});
-  // default to Unknown for stages - will use material-derived shader unless
-  // otherwise specified in config
-  setShaderType(static_cast<int>(ObjectInstanceShaderType::Unknown));
+  // default to use material-derived shader unless otherwise specified in config
+  // or instance config
+  setShaderType(getShaderTypeName(ObjectInstanceShaderType::Material));
   // TODO remove this once ShaderType support is complete
   setForceFlatShading(true);
   // 0 corresponds to esp::assets::AssetType::UNKNOWN->treated as general mesh
@@ -102,9 +142,19 @@ StageAttributes::StageAttributes(const std::string& handle)
   // 4 corresponds to esp::assets::AssetType::INSTANCE_MESH
   setSemanticAssetType(4);
   // set empty defaults for handles
-  set("navmeshAssetHandle", "");
+  set("nav_asset", "");
   set("semantic_asset", "");
 }  // StageAttributes ctor
+
+void StageAttributes::writeValuesToJsonInternal(
+    io::JsonGenericValue& jsonObj,
+    io::JsonAllocator& allocator) const {
+  writeValueToJson("origin", jsonObj, allocator);
+  writeValueToJson("gravity", jsonObj, allocator);
+  writeValueToJson("semantic_asset", jsonObj, allocator);
+  writeValueToJson("nav_asset", jsonObj, allocator);
+
+}  // StageAttributes::writeValuesToJsonInternal
 
 }  // namespace attributes
 }  // namespace metadata

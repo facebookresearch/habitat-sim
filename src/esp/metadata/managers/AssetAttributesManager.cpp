@@ -18,6 +18,7 @@ using attributes::CubePrimitiveAttributes;
 using attributes::CylinderPrimitiveAttributes;
 using attributes::IcospherePrimitiveAttributes;
 using attributes::UVSpherePrimitiveAttributes;
+using core::managedContainers::ManagedObjectAccess;
 namespace managers {
 
 const std::map<PrimObjTypes, const char*>
@@ -37,9 +38,10 @@ const std::map<PrimObjTypes, const char*>
         {PrimObjTypes::END_PRIM_OBJ_TYPES, "NONE DEFINED"}};
 
 AssetAttributesManager::AssetAttributesManager()
-    : AttributesManager<attributes::AbstractPrimitiveAttributes,
-                        core::ManagedObjectAccess::Copy>::
-          AttributesManager("Primitive Asset", "prim_config.json") {
+    : AttributesManager<
+          attributes::AbstractPrimitiveAttributes,
+          ManagedObjectAccess::Copy>::AttributesManager("Primitive Asset",
+                                                        "prim_config.json") {
   // function pointers to asset attributes constructors
   primTypeConstructorMap_["capsule3DSolid"] =
       &AssetAttributesManager::createPrimAttributes<

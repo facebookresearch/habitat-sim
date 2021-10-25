@@ -13,7 +13,6 @@
 #include <functional>
 #include <string>
 #include <vector>
-#include "esp/core/Configuration.h"
 #include "esp/core/Esp.h"
 
 #include <Magnum/Magnum.h>
@@ -53,18 +52,6 @@ std::string jsonToString(const JsonDocument& d);
 
 //! Return Vec3f coordinates representation of given JsonObject of array type
 esp::vec3f jsonToVec3f(const JsonGenericValue& jsonArray);
-
-/**
- * @brief Recursively load data into a @ref esp::core::Configuration based on a
- * json file.
- * @param jsonObj The source json being read
- * @param configPtr Shared pointer to configuration to populate with the JSON
- * data
- * @return The number of configuration settings successfully read.
- */
-int loadJsonIntoConfiguration(
-    const JsonGenericValue& jsonObj,
-    const std::shared_ptr<esp::core::config::Configuration>& configPtr);
 
 /**
  * @brief Check passed json doc for existence of passed jsonTag as value of

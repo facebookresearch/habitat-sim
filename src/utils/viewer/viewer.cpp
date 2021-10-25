@@ -237,6 +237,11 @@ class Viewer : public Mn::Platform::Application {
   void switchCameraType();
   Mn::Vector3 randomDirection();
 
+  /**
+   * @brief Display information about the currently loaded scene.
+   */
+  void dispMetadataInfo();
+
   esp::agent::AgentConfiguration agentConfig_;
 
   void saveAgentAndSensorTransformToFile();
@@ -306,7 +311,7 @@ Key Commands:
   'i': Save a screenshot to "./screenshots/year_month_day_hour-minute-second/#.png".
   'r': Write a replay of the recent simulated frames to a file specified by --gfx-replay-record-filepath.
   '[': Save camera position/orientation to "./saved_transformations/camera.year_month_day_hour-minute-second.txt".
-  ']'; Load camera position/orientation from file system (useful when flying camera mode is enabled), or else from last save in current instance.
+  ']': Load camera position/orientation from file system (useful when flying camera mode is enabled), or else from last save in current instance.
 
   Object Interactions:
   SPACE: Toggle physics simulation on/off
@@ -1413,8 +1418,8 @@ void Viewer::drawEvent() {
     std::string modeText =
         "Mouse Interaction Mode: " + mouseModeNames.at(mouseInteractionMode);
     ImGui::Text("%s", modeText.c_str());
+    ImGui::End();
   }
-  ImGui::End();
 
   /* Set appropriate states. If you only draw ImGui, it is sufficient to
      just enable blending and scissor test in the constructor. */
@@ -1436,6 +1441,12 @@ void Viewer::drawEvent() {
   swapBuffers();
   timeline_.nextFrame();
   redraw();
+}
+
+void Viewer::dispMetadataInfo() {  // display info report
+  std::string dsInfoReport = MM_->createDatasetReport();
+  ESP_DEBUG() << "\nActive Dataset Details : \n"
+              << dsInfoReport << "\nActive Dataset Report Details Done";
 }
 
 void Viewer::moveAndLook(int repetitions) {
@@ -1923,6 +1934,10 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
     case KeyEvent::Key::O:
       addTemplateObject();
+      break;
+    case KeyEvent::Key::Slash:
+      // display current scene's metadata information
+      dispMetadataInfo();
       break;
     case KeyEvent::Key::Q:
       // query the agent state

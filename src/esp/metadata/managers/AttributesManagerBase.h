@@ -18,11 +18,17 @@ namespace Cr = Corrade;
 
 namespace esp {
 namespace core {
+namespace managedContainers {
 enum class ManagedObjectAccess;
 class ManagedFileBasedContainerBase;
+}  // namespace managedContainers
 }  // namespace core
 namespace metadata {
 namespace managers {
+
+using core::config::Configuration;
+using core::managedContainers::ManagedFileBasedContainer;
+using core::managedContainers::ManagedObjectAccess;
 
 /**
  * @brief Class template defining responsibilities and functionality for
@@ -34,9 +40,8 @@ namespace managers {
  * container provides copies of the objects held, or the actual objects
  * themselves.
  */
-template <class T, core::ManagedObjectAccess Access>
-class AttributesManager
-    : public esp::core::ManagedFileBasedContainer<T, Access> {
+template <class T, ManagedObjectAccess Access>
+class AttributesManager : public ManagedFileBasedContainer<T, Access> {
  public:
   static_assert(std::is_base_of<attributes::AbstractAttributes, T>::value,
                 "AttributesManager :: Managed object type must be derived from "
@@ -44,10 +49,19 @@ class AttributesManager
 
   typedef std::shared_ptr<T> AttribsPtr;
 
+  /**
+   * @brief Construct an attributes manager to manage shared pointers of
+   * attributes of type T.
+   * @param attrType A string describing the type of attributes, for
+   * @param JSONTypeExt The attributes JSON file extension, which must be of the
+   * form 'XXXXXX.json', where XXXXXX represents the sub extension specific to
+   * the managed type of attributes (i.e. "stage_config.json" for configurations
+   * describing stages).
+   */
   AttributesManager(const std::string& attrType, const std::string& JSONTypeExt)
-      : esp::core::ManagedFileBasedContainer<T, Access>::
-            ManagedFileBasedContainer(attrType),
-        JSONTypeExt_(JSONTypeExt) {}
+      : ManagedFileBasedContainer<T, Access>::ManagedFileBasedContainer(
+            attrType,
+            JSONTypeExt) {}
   ~AttributesManager() override = default;
 
   /**
@@ -190,19 +204,22 @@ class AttributesManager
       const attributes::AbstractAttributes::ptr& attribs,
       const io::JsonGenericValue& jsonConfig) const;
 
-  /**
-   * @brief Return a properly formated JSON file name for the attributes
-   * managed by this manager.  This will change the extension to the
-   * appropriate json extension.
-   * @param filename The original filename
-   * @return a candidate JSON file name for the attributes managed by this
-   * manager.
-   */
-  std::string getFormattedJSONFileName(const std::string& filename) {
-    return this->convertFilenameToPassedExt(filename, this->JSONTypeExt_);
-  }
-
  protected:
+  /**
+   * @brief Saves @p attributes::AbstractAttributes to a JSON file using the
+   * given @p fileName in the given @p fileDirectory .
+   * @param attribs The name of the object to save. If not found, returns
+   * false.
+   * @param filename The filename of the file to save to.
+   * @param fileDirectory The directory to save to. If the directory does not
+   * exist, will return false.
+   * @return Whether save was successful
+   */
+  bool saveManagedObjectToFileInternal(
+      const AttribsPtr& attribs,
+      const std::string& filename,
+      const std::string& fileDirectory) const override;
+
   /**
    * @brief Called intenrally from createObject.  This will create either a
    * file based AbstractAttributes or a default one based on whether the
@@ -218,13 +235,6 @@ class AttributesManager
                                              std::string& msg,
                                              bool registerObj);
 
-  // ======== Typedefs and Instance Variables ========
-  /**
-   * @brief The string extension for json files for this manager's attributes
-   * types
-   */
-  const std::string JSONTypeExt_;
-
  public:
   ESP_SMART_POINTERS(AttributesManager<T, Access>)
 
@@ -232,7 +242,7 @@ class AttributesManager
 
 /////////////////////////////
 // Class Template Method Definitions
-template <class T, core::ManagedObjectAccess Access>
+template <class T, ManagedObjectAccess Access>
 std::vector<int> AttributesManager<T, Access>::loadAllFileBasedTemplates(
     const std::vector<std::string>& paths,
     bool saveAsDefaults) {
@@ -265,7 +275,7 @@ std::vector<int> AttributesManager<T, Access>::loadAllFileBasedTemplates(
   return templateIndices;
 }  // AttributesManager<T, Access>::loadAllObjectTemplates
 
-template <class T, core::ManagedObjectAccess Access>
+template <class T, ManagedObjectAccess Access>
 std::vector<int> AttributesManager<T, Access>::loadAllTemplatesFromPathAndExt(
     const std::string& path,
     const std::string& extType,
@@ -310,7 +320,7 @@ std::vector<int> AttributesManager<T, Access>::loadAllTemplatesFromPathAndExt(
   return templateIndices;
 }  // AttributesManager<T, Access>::loadAllTemplatesFromPathAndExt
 
-template <class T, core::ManagedObjectAccess Access>
+template <class T, ManagedObjectAccess Access>
 void AttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad(
     const std::string& configDir,
     const std::string& extType,
@@ -342,7 +352,7 @@ void AttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad(
               << "templates.";
 }  // AttributesManager<T, Access>::buildAttrSrcPathsFromJSONAndLoad
 
-template <class T, core::ManagedObjectAccess Access>
+template <class T, ManagedObjectAccess Access>
 auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
     const std::string& filename,
     std::string& msg,
@@ -353,10 +363,10 @@ auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
   std::string jsonAttrFileName =
       (Cr::Utility::String::endsWith(filename, this->JSONTypeExt_)
            ? filename
-           : getFormattedJSONFileName(filename));
+           : this->getFormattedJSONFileName(filename));
   // Check if this configuration file exists and if so use it to build
   // attributes
-  bool jsonFileExists = (this->isValidFileName(jsonAttrFileName));
+  bool jsonFileExists = Cr::Utility::Directory::exists(jsonAttrFileName);
   ESP_DEBUG() << "<" << Magnum::Debug::nospace << this->objectType_
               << Magnum::Debug::nospace
               << ">: Proposing JSON name :" << jsonAttrFileName
@@ -372,7 +382,7 @@ auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
     // default attributes.
     attrs = this->createDefaultObject(filename, registerObj);
     // check if original filename is an actual object
-    bool fileExists = (this->isValidFileName(filename));
+    bool fileExists = Cr::Utility::Directory::exists(filename);
     // if filename passed is name of some kind of asset, or if it was not
     // found
     if (fileExists) {
@@ -386,7 +396,7 @@ auto AttributesManager<T, Access>::createFromJsonOrDefaultInternal(
   return attrs;
 }  // AttributesManager<T, Access>::createFromJsonFileOrDefaultInternal
 
-template <class T, core::ManagedObjectAccess Access>
+template <class T, ManagedObjectAccess Access>
 bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
     const attributes::AbstractAttributes::ptr& attribs,
     const io::JsonGenericValue& jsonConfig) const {
@@ -402,14 +412,13 @@ bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
     } else {
       const std::string subGroupName = "user_defined";
       // get pointer to user_defined subgroup configuration
-      std::shared_ptr<core::config::Configuration> subGroupPtr =
+      std::shared_ptr<Configuration> subGroupPtr =
           attribs->getUserConfiguration();
       // get json object referenced by tag subGroupName
       const io::JsonGenericValue& jsonObj = jsonConfig[subGroupName.c_str()];
 
       // count number of valid user config settings found
-      int numConfigSettings =
-          io::loadJsonIntoConfiguration(jsonObj, subGroupPtr);
+      int numConfigSettings = subGroupPtr->loadFromJson(jsonObj);
 
       // save as user_defined subgroup configuration
       attribs->setSubconfigPtr("user_defined", subGroupPtr);
@@ -419,6 +428,41 @@ bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
   }  // if has user_defined tag
   return false;
 }  // AttributesManager<T, Access>::parseUserDefinedJsonVals
+
+template <class T, ManagedObjectAccess Access>
+bool AttributesManager<T, Access>::saveManagedObjectToFileInternal(
+    const AttribsPtr& attribs,
+    const std::string& filename,
+    const std::string& fileDirectory) const {
+  namespace Dir = Cr::Utility::Directory;
+  if (!Dir::exists(fileDirectory)) {
+    // output directory not found
+    ESP_ERROR() << "<" << this->objectType_ << "> : Destination directory "
+                << fileDirectory << " does not exist to save "
+                << attribs->getSimplifiedHandle() << "object. Aborting.";
+    return false;
+  }
+  // construct fully qualified filename
+  std::string fullFilename = Dir::join(fileDirectory, filename);
+  ESP_DEBUG() << "Attempting to write file" << fullFilename << "to disk";
+  // write configuration to file
+
+  rapidjson::Document doc(rapidjson::kObjectType);
+  rapidjson::Document::AllocatorType& allocator = doc.GetAllocator();
+  // build Json from passed Configuration
+  auto configJson = attribs->writeToJsonValue(allocator);
+  // move constructed config into doc
+  doc.Swap(configJson);
+  // save to file
+  bool success = io::writeJsonToFile(doc, fullFilename, true, 7);
+
+  // bool success = io::writeConfigurationToJsonFile(fullFilename, attribs);
+  ESP_DEBUG() << "Attempt to write file" << fullFilename
+              << "to disk :" << (success ? "Successful" : "Failed");
+
+  return success;
+
+}  // AttributesManager<T, Access>::saveManagedObjectToFileInternal
 
 }  // namespace managers
 }  // namespace metadata

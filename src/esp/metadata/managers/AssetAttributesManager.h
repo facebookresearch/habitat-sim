@@ -75,9 +75,12 @@ enum class PrimObjTypes : uint32_t {
   END_PRIM_OBJ_TYPES
 };
 namespace managers {
+using core::managedContainers::ManagedFileBasedContainer;
+using core::managedContainers::ManagedObjectAccess;
+
 class AssetAttributesManager
     : public AttributesManager<attributes::AbstractPrimitiveAttributes,
-                               core::ManagedObjectAccess::Copy> {
+                               ManagedObjectAccess::Copy> {
  public:
   /**
    * @brief Constant Map holding names of all Magnum 3D primitive classes
@@ -401,8 +404,9 @@ class AssetAttributesManager
 
   /**
    * @brief Set the object to provide default values upon construction of @ref
-   * esp::core::AbstractManagedObject.  Override if object should not have
-   * defaults.  Currently not supported for AbstractPrimitiveAttributes.
+   * esp::core::managedContainers::AbstractManagedObject.  Override if object
+   * should not have defaults.  Currently not supported for
+   * AbstractPrimitiveAttributes.
    * @param _defaultObj the object to use for defaults;
    */
   void setDefaultObject(
@@ -430,7 +434,7 @@ class AssetAttributesManager
    * attributesManager-specific upon template removal, such as removing a
    * specific template handle from the list of file-based template handles in
    * ObjectAttributesManager.  This should only be called @ref
-   * esp::core::ManagedContainerBase.
+   * esp::core::managedContainers::ManagedContainerBase.
    *
    * @param templateID the ID of the template to remove
    * @param templateHandle the string key of the attributes desired.

@@ -52,3 +52,25 @@ def test_unproject():
         assert np.allclose(
             test_ray_2.direction, np.array([0.569653, -0.581161, -0.581161]), atol=0.07
         )
+
+
+@pytest.mark.parametrize(
+    "sensor_type",
+    [
+        habitat_sim.SensorType.COLOR,
+        habitat_sim.SensorType.DEPTH,
+        habitat_sim.SensorType.SEMANTIC,
+    ],
+)
+def test_empty_scene(sensor_type):
+    backend_cfg = habitat_sim.SimulatorConfiguration()
+    backend_cfg.scene_id = "NONE"
+
+    agent_cfg = habitat_sim.AgentConfiguration()
+    agent_cfg.sensor_specifications = [habitat_sim.CameraSensorSpec()]
+    agent_cfg.sensor_specifications[-1].sensor_type = sensor_type
+
+    with habitat_sim.Simulator(
+        habitat_sim.Configuration(backend_cfg, [agent_cfg])
+    ) as sim:
+        _ = sim.get_sensor_observations()

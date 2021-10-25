@@ -7,8 +7,6 @@
 
 #include "AttributesBase.h"
 
-#include "esp/assets/Asset.h"
-
 namespace esp {
 namespace metadata {
 namespace attributes {
@@ -21,14 +19,6 @@ namespace attributes {
  */
 class AbstractObjectAttributes : public AbstractAttributes {
  public:
-  /**
-   * @brief Constant static map to provide mappings from string tags to
-   * @ref esp::assets::AssetType values.  This will be used to map values
-   * set in json for mesh type to @ref esp::assets::AssetType.  Keys must
-   * be lowercase.
-   */
-  static const std::map<std::string, esp::assets::AssetType> AssetTypeNamesMap;
-
   AbstractObjectAttributes(const std::string& classKey,
                            const std::string& handle);
 
@@ -130,7 +120,12 @@ class AbstractObjectAttributes : public AbstractAttributes {
   void setRenderAssetIsPrimitive(bool renderAssetIsPrimitive) {
     set("renderAssetIsPrimitive", renderAssetIsPrimitive);
   }
-
+  /**
+   * @brief Get whether this object uses file-based mesh render object or
+   * primitive render shapes
+   * @return whether this object's render asset is a
+   * primitive or not
+   */
   bool getRenderAssetIsPrimitive() const {
     return get<bool>("renderAssetIsPrimitive");
   }
@@ -194,13 +189,34 @@ class AbstractObjectAttributes : public AbstractAttributes {
    * @brief Set the default shader to use for an object or stage.  This may be
    * overridden by a scene instance specification.
    */
-  void setShaderType(int shader_type) { set("shader_type", shader_type); }
+  void setShaderType(const std::string& shader_type) {
+    // force to lowercase before setting
+    const std::string shaderTypeLC =
+        Cr::Utility::String::lowercase(shader_type);
+    auto mapIter = ShaderTypeNamesMap.find(shaderTypeLC);
+    ESP_CHECK(mapIter != ShaderTypeNamesMap.end(),
+              "Illegal shader_type value"
+                  << shader_type
+                  << "attempted to be set in AbstractObjectAttributes:"
+                  << getHandle() << ". Aborting.");
+    set("shader_type", shader_type);
+  }
 
   /**
    * @brief Get the default shader to use for an object or stage.  This may be
    * overridden by a scene instance specification.
    */
-  int getShaderType() const { return get<int>("shader_type"); }
+  ObjectInstanceShaderType getShaderType() const {
+    const std::string val =
+        Cr::Utility::String::lowercase(get<std::string>("shader_type"));
+    auto mapIter = ShaderTypeNamesMap.find(val);
+    if (mapIter != ShaderTypeNamesMap.end()) {
+      return mapIter->second;
+    }
+    // Unspecified is default value - should never be returned since setter
+    // verifies value
+    return ObjectInstanceShaderType::Unspecified;
+  }
 
   /**
    * @brief If true then use flat shading regardless of what shader-type is
@@ -209,21 +225,37 @@ class AbstractObjectAttributes : public AbstractAttributes {
   void setForceFlatShading(bool force_flat_shading) {
     set("force_flat_shading", force_flat_shading);
   }
+  /**
+   * @brief if true use flat shading instead of phong or pbr shader
+   */
   bool getForceFlatShading() const { return get<bool>("force_flat_shading"); }
 
   bool getIsDirty() const { return get<bool>("__isDirty"); }
   void setIsClean() { set("__isDirty", false); }
 
   /**
-   * @brief Used for info purposes.  Return a string name corresponding to the
-   * currently specified shader type value;
+   * @brief Build and return a json object holding the values and nested objects
+   * holding the subconfigs of this Configuration.
    */
-  std::string getCurrShaderTypeName() const {
-    int shaderTypeVal = getShaderType();
-    return getShaderTypeName(shaderTypeVal);
-  }
+  io::JsonGenericValue writeToJsonValue(
+      io::JsonAllocator& allocator) const override;
+
+  /**
+   * @brief Populate a json object with all the first-level values held in this
+   * configuration.  May be overwritten to handle special cases for root-level
+   * configuration.
+   */
+  void writeValuesToJson(io::JsonGenericValue& jsonObj,
+                         io::JsonAllocator& allocator) const override;
 
  protected:
+  /**
+   * @brief Write child-class-specific values to json object
+   *
+   */
+  virtual void writeValuesToJsonInternal(
+      CORRADE_UNUSED io::JsonGenericValue& jsonObj,
+      CORRADE_UNUSED io::JsonAllocator& allocator) const {}
   /**
    * @brief Retrieve a comma-separated string holding the header values for the
    * info returned for this managed object, type-specific.
@@ -313,6 +345,12 @@ class ObjectAttributes : public AbstractObjectAttributes {
 
  protected:
   /**
+   * @brief Write object-specific values to json object
+   */
+  void writeValuesToJsonInternal(io::JsonGenericValue& jsonObj,
+                                 io::JsonAllocator& allocator) const override;
+
+  /**
    * @brief get AbstractObject specific info header
    */
   std::string getAbstractObjectInfoHeaderInternal() const override {
@@ -369,12 +407,12 @@ class StageAttributes : public AbstractObjectAttributes {
   }
   bool getLoadSemanticMesh() { return get<bool>("loadSemanticMesh"); }
 
-  void setNavmeshAssetHandle(const std::string& navmeshAssetHandle) {
-    set("navmeshAssetHandle", navmeshAssetHandle);
+  void setNavmeshAssetHandle(const std::string& nav_asset) {
+    set("nav_asset", nav_asset);
     setIsDirty();
   }
   std::string getNavmeshAssetHandle() const {
-    return get<std::string>("navmeshAssetHandle");
+    return get<std::string>("nav_asset");
   }
 
   /**
@@ -401,6 +439,13 @@ class StageAttributes : public AbstractObjectAttributes {
   bool getFrustumCulling() const { return get<bool>("frustum_culling"); }
 
  protected:
+  /**
+   * @brief Write stage-specific values to json object
+   *
+   */
+  void writeValuesToJsonInternal(io::JsonGenericValue& jsonObj,
+                                 io::JsonAllocator& allocator) const override;
+
   /**
    * @brief get AbstractObject specific info header
    */

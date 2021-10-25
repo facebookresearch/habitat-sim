@@ -14,6 +14,7 @@
 
 namespace esp {
 namespace core {
+namespace managedContainers {
 
 /**
  * @brief This enum describes how objects held in the @ref ManagedConatainer are
@@ -148,31 +149,6 @@ class ManagedContainer : public ManagedContainerBase {
     return registerObjectFinalize(managedObject, handleToSet,
                                   forceRegistration);
   }  // ManagedContainer::registerObject
-
-  /**
-   * @brief Register managed object and call appropriate ResourceManager method
-   * to execute appropriate post-registration processes due to changes in the
-   * managed object. Use if user wishes to update existing objects built by
-   * managed object with new managed object data and such objects support this
-   * kind of update. Requires the use of managed object's assigned handle in
-   * order to reference existing constructions built from the original version
-   * of this managed object.
-   * @param managedObject The managed object.
-   * @return The unique ID of the managed object being registered, or
-   * ID_UNDEFINED if failed
-   */
-  int registerObjectAndUpdate(ManagedPtr managedObject) {
-    std::string originalHandle = managedObject->getHandle();
-    int ID = this->registerObject(managedObject, originalHandle);
-    // If undefined then some error occurred.
-    if (ID_UNDEFINED == ID) {
-      return ID_UNDEFINED;
-    }
-    // TODO : call Resource Manager for post-registration processing of this
-    // managed object
-
-    return ID;
-  }  // ManagedContainer::registerObjectAndUpdate
 
   /**
    * @brief Get a reference to the managed object identified by the
@@ -721,6 +697,7 @@ auto ManagedContainer<T, Access>::removeObjectInternal(
   return managedObject;
 }  // ManagedContainer::removeObjectInternal
 
+}  // namespace managedContainers
 }  // namespace core
 }  // namespace esp
 

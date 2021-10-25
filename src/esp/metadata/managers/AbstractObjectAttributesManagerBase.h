@@ -28,7 +28,7 @@ namespace managers {
  * of this class works with.  Must inherit from @ref
  * esp::metadata::attributes::AbstractObjectAttributes.
  */
-template <class T, core::ManagedObjectAccess Access>
+template <class T, ManagedObjectAccess Access>
 class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
  public:
   static_assert(std::is_base_of<attributes::AbstractObjectAttributes, T>::value,
@@ -104,6 +104,7 @@ class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
       const io::JsonGenericValue& jsonDoc);
 
   //======== Internally accessed functions ========
+
   /**
    * @brief Only used by @ref
    * esp::metadata::attributes::AbstractObjectAttributes derived-attributes. Set
@@ -162,7 +163,7 @@ class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
 /////////////////////////////
 // Class Template Method Definitions
 
-template <class T, core::ManagedObjectAccess Access>
+template <class T, ManagedObjectAccess Access>
 auto AbstractObjectAttributesManager<T, Access>::createObject(
     const std::string& attributesTemplateHandle,
     bool registerTemplate) -> AbsObjAttrPtr {
@@ -187,7 +188,7 @@ auto AbstractObjectAttributesManager<T, Access>::createObject(
 
 }  // AbstractObjectAttributesManager<T>::createObject
 
-template <class T, core::ManagedObjectAccess Access>
+template <class T, ManagedObjectAccess Access>
 auto AbstractObjectAttributesManager<T, Access>::
     loadAbstractObjectAttributesFromJson(AbsObjAttrPtr attributes,
                                          const io::JsonGenericValue& jsonDoc)
@@ -290,18 +291,19 @@ auto AbstractObjectAttributesManager<T, Access>::
 
   // set attributes shader type to use.  This may be overridden by a scene
   // instance specification.
-  int shaderTypeVal = getShaderTypeFromJsonDoc(jsonDoc);
+  const std::string shaderTypeVal = getShaderTypeFromJsonDoc(jsonDoc);
   // if a known shader type val is specified in json, set that value for the
-  // attributes, overriding constructor defaults.
+  // attributes, overriding constructor defaults.  Do not overwrite anything for
+  // unknown
   if (shaderTypeVal !=
-      static_cast<int>(attributes::ObjectInstanceShaderType::Unknown)) {
+      getShaderTypeName(attributes::ObjectInstanceShaderType::Unspecified)) {
     attributes->setShaderType(shaderTypeVal);
   }
 
   return attributes;
 }  // AbstractObjectAttributesManager<AbsObjAttrPtr>::createObjectAttributesFromJson
 
-template <class T, core::ManagedObjectAccess Access>
+template <class T, ManagedObjectAccess Access>
 std::string
 AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
     AbsObjAttrPtr attributes,
@@ -325,8 +327,11 @@ AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
   if (io::readMember<std::string>(jsonDoc, jsonMeshTypeTag, tmpVal)) {
     // tag was found, perform check
     std::string strToLookFor = Cr::Utility::String::lowercase(tmpVal);
-    if (T::AssetTypeNamesMap.count(strToLookFor)) {
-      typeVal = static_cast<int>(T::AssetTypeNamesMap.at(strToLookFor));
+
+    auto found = attributes::AssetTypeNamesMap.find(strToLookFor);
+    if (found != attributes::AssetTypeNamesMap.end()) {
+      typeVal =
+          static_cast<int>(attributes::AssetTypeNamesMap.at(strToLookFor));
     } else {
       ESP_WARNING() << "<" << Magnum::Debug::nospace << this->objectType_
                     << Magnum::Debug::nospace
@@ -356,8 +361,8 @@ AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
           Cr::Utility::Directory::join(propertiesFileDirectory, assetName);
       if ((typeVal == -1) && (oldFName != assetName)) {
         // if file name is different, and type val has not been specified,
-        // perform name-specific mesh type config do not override orientation -
-        // should be specified in json.
+        // perform name-specific mesh type config do not override orientation
+        // - should be specified in json.
         setDefaultAssetNameBasedAttributes(attributes, false, assetName,
                                            meshTypeSetter);
       }

@@ -8,7 +8,6 @@
 #include "esp/metadata/MetadataUtils.h"
 #include "esp/physics/RigidBase.h"
 
-#include "esp/io/Io.h"
 #include "esp/io/Json.h"
 
 namespace esp {
@@ -249,25 +248,23 @@ void SceneAttributesManager::loadAbstractObjectAttributesFromJson(
   instanceAttrs->setShaderType(getShaderTypeFromJsonDoc(jCell));
 
   // motion type of object.  Ignored for stage.
-  int motionTypeVal = static_cast<int>(physics::MotionType::UNDEFINED);
   std::string tmpVal = "";
   if (io::readMember<std::string>(jCell, "motion_type", tmpVal)) {
     // motion type tag was found, perform check - first convert to lowercase
     std::string strToLookFor = Cr::Utility::String::lowercase(tmpVal);
-    auto found =
-        SceneObjectInstanceAttributes::MotionTypeNamesMap.find(strToLookFor);
-    if (found != SceneObjectInstanceAttributes::MotionTypeNamesMap.end()) {
-      motionTypeVal = static_cast<int>(found->second);
+    auto found = attributes::MotionTypeNamesMap.find(strToLookFor);
+    if (found != attributes::MotionTypeNamesMap.end()) {
+      // only set value if specified in json
+      instanceAttrs->setMotionType(strToLookFor);
     } else {
       ESP_WARNING()
           << "::createInstanceAttributesFromJSON : motion_type value "
              "in json  : `"
           << tmpVal << "|" << strToLookFor
           << "` does not map to a valid physics::MotionType value, so "
-             "defaulting motion type to MotionType::UNDEFINED.";
+             "not setting instance motion type value.";
     }
   }
-  instanceAttrs->setMotionType(motionTypeVal);
 
   // translation from origin
   io::jsonIntoConstSetter<Magnum::Vector3>(
@@ -298,11 +295,11 @@ void SceneAttributesManager::loadAbstractObjectAttributesFromJson(
 
 }  // SceneAttributesManager::loadAbstractObjectAttributesFromJson
 
-int SceneAttributesManager::getTranslationOriginVal(
+std::string SceneAttributesManager::getTranslationOriginVal(
     const io::JsonGenericValue& jsonDoc) const {
   // Check for translation origin.  Default to unknown.
-  int transOrigin =
-      static_cast<int>(attributes::SceneInstanceTranslationOrigin::Unknown);
+  std::string transOrigin = getTranslationOriginName(
+      attributes::SceneInstanceTranslationOrigin::Unknown);
   std::string tmpTransOriginVal = "";
   if (io::readMember<std::string>(jsonDoc, "translation_origin",
                                   tmpTransOriginVal)) {
@@ -312,14 +309,15 @@ int SceneAttributesManager::getTranslationOriginVal(
         Cr::Utility::String::lowercase(tmpTransOriginVal);
     auto found = attributes::InstanceTranslationOriginMap.find(strToLookFor);
     if (found != attributes::InstanceTranslationOriginMap.end()) {
-      transOrigin = static_cast<int>(found->second);
+      transOrigin = std::move(tmpTransOriginVal);
     } else {
       ESP_WARNING()
-          << "::getTranslationOriginVal : motion_type value in json  : `"
+          << "::getTranslationOriginVal : translation_origin value in json  "
+             ": `"
           << tmpTransOriginVal << "|" << strToLookFor
           << "` does not map to a valid "
              "SceneInstanceTranslationOrigin value, so defaulting "
-             "motion type to SceneInstanceTranslationOrigin::Unknown.";
+             "translation origin to SceneInstanceTranslationOrigin::Unknown.";
     }
   }
   return transOrigin;

@@ -138,7 +138,7 @@ class RedwoodDepthNoiseModel(SensorNoiseModel):
                 noisy_depth = torch.empty_like(gt_depth)
                 rows, cols = gt_depth.size()
                 self._impl.simulate_from_gpu(
-                    gt_depth.data_ptr(), rows, cols, noisy_depth.data_ptr()  # type: ignore
+                    gt_depth.data_ptr(), rows, cols, noisy_depth.data_ptr()  # type: ignore[attr-defined]
                 )
                 return noisy_depth
         else:

@@ -44,12 +44,12 @@ MeshData SceneLoader::load(const AssetInfo& info) {
     Cr::Containers::Pointer<Importer> importer;
     CORRADE_INTERNAL_ASSERT_OUTPUT(
         importer = importerManager_.loadAndInstantiate("StanfordImporter"));
-    GenericInstanceMeshData::ptr instanceMeshData =
-        GenericInstanceMeshData::fromPLY(*importer, info.filepath);
+    std::vector<GenericInstanceMeshData::uptr> instanceMeshData =
+        GenericInstanceMeshData::fromPLY(*importer, info.filepath, false);
 
-    const auto& vbo = instanceMeshData->getVertexBufferObjectCPU();
-    const auto& cbo = instanceMeshData->getColorBufferObjectCPU();
-    const auto& ibo = instanceMeshData->getIndexBufferObjectCPU();
+    const auto& vbo = instanceMeshData[0]->getVertexBufferObjectCPU();
+    const auto& cbo = instanceMeshData[0]->getColorBufferObjectCPU();
+    const auto& ibo = instanceMeshData[0]->getIndexBufferObjectCPU();
     mesh.vbo = vbo;
     mesh.ibo = ibo;
     for (const auto& c : cbo) {

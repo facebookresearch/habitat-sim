@@ -95,7 +95,7 @@ class AgentState:
 class AgentConfiguration:
     height: float = 1.5
     radius: float = 0.1
-    sensor_specifications: List[hsim.SensorSpec] = []
+    sensor_specifications: List[hsim.SensorSpec] = attr.Factory(list)
     action_space: Dict[Any, ActionSpec] = attr.Factory(_default_action_space)
     body_type: str = "cylinder"
 

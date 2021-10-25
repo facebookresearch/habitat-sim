@@ -24,7 +24,7 @@ namespace Cr = Corrade;
 
 namespace esp {
 namespace core {
-
+namespace managedContainers {
 /**
  * @brief Base class of Managed Container, holding template-type-independent
  * functionality
@@ -478,6 +478,7 @@ class ManagedContainerBase {
   ESP_SMART_POINTERS(ManagedContainerBase)
 };  // class ManagedContainerBase
 
+}  // namespace managedContainers
 }  // namespace core
 }  // namespace esp
 

@@ -5,6 +5,7 @@
 #include "ResourceManager.h"
 
 #include <Corrade/Containers/ArrayViewStl.h>
+#include <Corrade/Containers/GrowableArray.h>
 #include <Corrade/Containers/PointerStl.h>
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/PluginManager/PluginMetadata.h>
@@ -29,6 +30,7 @@
 #include <Magnum/PixelFormat.h>
 #include <Magnum/SceneGraph/Object.h>
 #include <Magnum/Trade/AbstractImporter.h>
+#include <Magnum/Trade/FlatMaterialData.h>
 #include <Magnum/Trade/ImageData.h>
 #include <Magnum/Trade/MeshObjectData3D.h>
 #include <Magnum/Trade/PbrMetallicRoughnessMaterialData.h>
@@ -70,9 +72,11 @@ namespace Cr = Corrade;
 namespace Mn = Magnum;
 
 namespace esp {
+
 using metadata::attributes::AbstractObjectAttributes;
 using metadata::attributes::CubePrimitiveAttributes;
 using metadata::attributes::ObjectAttributes;
+using metadata::attributes::ObjectInstanceShaderType;
 using metadata::attributes::PhysicsManagerAttributes;
 using metadata::attributes::SceneObjectInstanceAttributes;
 using metadata::attributes::StageAttributes;
@@ -80,6 +84,7 @@ using metadata::managers::AssetAttributesManager;
 using metadata::managers::ObjectAttributesManager;
 using metadata::managers::PhysicsAttributesManager;
 using metadata::managers::StageAttributesManager;
+using Mn::Trade::MaterialAttribute;
 
 namespace assets {
 
@@ -140,7 +145,7 @@ void ResourceManager::initDefaultPrimAttributes() {
 
   // by this point, we should have a GL::Context so load the bb primitive.
   // TODO: replace this completely with standard mesh (i.e. treat the bb
-  // wireframe cube no differently than other primivite-based rendered
+  // wireframe cube no differently than other primitive-based rendered
   // objects)
   auto cubeMeshName =
       getAssetAttributesManager()
@@ -258,10 +263,10 @@ bool ResourceManager::loadStage(
       if (!semanticStageSuccess) {
         ESP_ERROR() << "Semantic Stage mesh load failed.";
         return false;
-      } else {
-        ESP_DEBUG() << "Semantic Stage mesh :" << semanticStageFilename
-                    << "loaded.";
       }
+      ESP_DEBUG() << "Semantic Stage mesh :" << semanticStageFilename
+                  << "loaded.";
+
     } else if (semanticStageFilename !=
                "") {  // semantic file name does not exist but house does
       ESP_ERROR() << "Not loading semantic mesh with File Name :"
@@ -304,7 +309,7 @@ bool ResourceManager::loadStage(
                                              &drawables);  //  drawable group
   if (!renderMeshSuccess) {
     ESP_ERROR()
-        << "Stage render mesh load failed, Aborting scene initialization.";
+        << "Stage render mesh load failed, Aborting stage initialization.";
     return false;
   }
   // declare mesh group variable
@@ -322,7 +327,7 @@ bool ResourceManager::loadStage(
                             nullptr);  // drawable group
 
       if (!collisionMeshSuccess) {
-        ESP_ERROR() << "Stage collision mesh load failed.  Aborting scene "
+        ESP_ERROR() << "Stage collision mesh load failed.  Aborting stage "
                        "initialization.";
         return false;
       }
@@ -349,13 +354,14 @@ bool ResourceManager::loadStage(
         stageAttributes, stageInstanceAttributes, meshGroup);
     if (!sceneSuccess) {
       ESP_ERROR() << "Adding Stage" << stageAttributes->getHandle()
-                  << "to PhysicsManager failed. Aborting scene initialization.";
+                  << "to PhysicsManager failed. Aborting stage initialization.";
       return false;
     }
   }
 
   return true;
 }  // ResourceManager::loadScene
+
 bool ResourceManager::buildMeshGroups(
     const AssetInfo& info,
     std::vector<CollisionMeshData>& meshGroup) {
@@ -415,6 +421,7 @@ ResourceManager::createStageAssetInfosFromAttributes(
       virtualUnitToMeters,                      // virtualUnitToMeters
       stageAttributes->getForceFlatShading()    // forceFlatShading
   };
+  renderInfo.shaderTypeToUse = stageAttributes->getShaderType();
   resMap["render"] = renderInfo;
   if (createCollisionInfo) {
     // create collision asset info if requested
@@ -483,8 +490,8 @@ std::string ResourceManager::createColorMaterial(
     phongMaterial->diffuseColor = materialColor.diffuseColor * 0.175;
     phongMaterial->specularColor = materialColor.specularColor * 0.175;
 
-    std::unique_ptr<gfx::MaterialData> finalMaterial(phongMaterial.release());
-    shaderManager_.set(newMaterialID, finalMaterial.release());
+    shaderManager_.set(newMaterialID, static_cast<gfx::MaterialData*>(
+                                          phongMaterial.release()));
   }
   return newMaterialID;
 }  // ResourceManager::createColorMaterial
@@ -557,10 +564,9 @@ scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
   // copy the const creation info to modify the key if necessary
   RenderAssetInstanceCreationInfo finalCreation(creation);
   if (assetInfo.overridePhongMaterial != Cr::Containers::NullOpt) {
+    std::string materiaId = "";
     // material override is requested so get the id
-    finalCreation.filepath =
-        assetInfo.filepath + "?" +
-        createColorMaterial(*assetInfo.overridePhongMaterial);
+    finalCreation.filepath = createModifiedAssetName(assetInfo, materiaId);
   }
 
   return createRenderAssetInstance(finalCreation, parent, drawables,
@@ -569,7 +575,7 @@ scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
 
 bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
   bool registerMaterialOverride =
-      info.overridePhongMaterial != Cr::Containers::NullOpt;
+      (info.overridePhongMaterial != Cr::Containers::NullOpt);
   bool fileAssetIsLoaded = resourceDict_.count(info.filepath) > 0;
 
   bool meshSuccess = fileAssetIsLoaded;
@@ -613,10 +619,10 @@ bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
   // now handle loading the material override AssetInfo if configured
   if (meshSuccess && registerMaterialOverride) {
     // register or get the override material id
-    std::string materialId = createColorMaterial(*info.overridePhongMaterial);
+    std::string materialId = "";
 
     // construct the unique id for the material modified asset
-    std::string modifiedAssetName = info.filepath + "?" + materialId;
+    std::string modifiedAssetName = createModifiedAssetName(info, materialId);
     const bool matModAssetIsRegistered =
         resourceDict_.count(modifiedAssetName) > 0;
     if (!matModAssetIsRegistered) {
@@ -653,6 +659,23 @@ bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
 
   return meshSuccess;
 }
+
+std::string ResourceManager::createModifiedAssetName(const AssetInfo& info,
+                                                     std::string& materialId) {
+  std::string modifiedAssetName = info.filepath;
+
+  // check materialId
+  if (info.overridePhongMaterial != Cr::Containers::NullOpt) {
+    if (materialId.empty()) {
+      // if passed value is empty, synthesize new color and new materialId
+      // based on this color and values specified in info
+      materialId = createColorMaterial(*info.overridePhongMaterial);
+    }
+    modifiedAssetName += "?" + materialId;
+  }
+  // construct name with materialId specification and desired shader type
+  return modifiedAssetName;
+}  // ResourceManager::createModifiedAssetName
 
 scene::SceneNode* ResourceManager::createRenderAssetInstance(
     const RenderAssetInstanceCreationInfo& creation,
@@ -788,6 +811,7 @@ bool ResourceManager::loadObjectMeshDataFromFile(
   if (!filename.empty()) {
     AssetInfo meshInfo{AssetType::UNKNOWN, filename};
     meshInfo.forceFlatShading = forceFlatShading;
+    meshInfo.shaderTypeToUse = objectAttributes->getShaderType();
     meshInfo.frame = buildFrameFromAttributes(objectAttributes, {0, 0, 0});
     success = loadRenderAsset(meshInfo);
     if (!success) {
@@ -1023,21 +1047,17 @@ void ResourceManager::buildPrimitiveAssetData(
   meshes_.emplace(meshStart, std::move(primMeshData));
 
   // default material for now
-  std::unique_ptr<gfx::MaterialData> phongMaterial =
+  std::unique_ptr<gfx::PhongMaterialData> phongMaterial =
       gfx::PhongMaterialData::create_unique();
 
-  shaderManager_.set(std::to_string(nextMaterialID_), phongMaterial.release());
-
+  meshMetaData.root.materialID = std::to_string(nextMaterialID_++);
+  shaderManager_.set(meshMetaData.root.materialID,
+                     static_cast<gfx::MaterialData*>(phongMaterial.release()));
   meshMetaData.root.meshIDLocal = 0;
   meshMetaData.root.componentID = 0;
-  meshMetaData.root.materialID = std::to_string(nextMaterialID_++);
-  // store the rotation to world frame upon load - currently superfluous
-  const quatf transform = info.frame.rotationFrameToWorld();
-  Magnum::Matrix4 R = Magnum::Matrix4::from(
-      Magnum::Quaternion(transform).toMatrix(), Magnum::Vector3());
-  meshMetaData.root.transformFromLocalToParent =
-      R * meshMetaData.root.transformFromLocalToParent;
 
+  // set the root rotation to world frame upon load
+  meshMetaData.setRootFrameOrientation(info.frame);
   // make LoadedAssetData corresponding to this asset
   LoadedAssetData loadedAssetData{info, meshMetaData};
   auto inserted =
@@ -1074,12 +1094,9 @@ bool ResourceManager::loadRenderAssetPTex(const AssetInfo& info) {
   MeshMetaData& meshMetaData = inserted.first->second.meshMetaData;
   meshMetaData.root.meshIDLocal = 0;
   meshMetaData.root.componentID = 0;
-  // store the rotation to world frame upon load
-  const quatf transform = info.frame.rotationFrameToWorld();
-  Magnum::Matrix4 R = Magnum::Matrix4::from(
-      Magnum::Quaternion(transform).toMatrix(), Magnum::Vector3());
-  meshMetaData.root.transformFromLocalToParent =
-      R * meshMetaData.root.transformFromLocalToParent;
+
+  // set the root rotation to world frame upon load
+  meshMetaData.setRootFrameOrientation(info.frame);
 
   CORRADE_ASSERT(meshMetaData.meshIndex.first == meshMetaData.meshIndex.second,
                  "::loadRenderAssetPTex: ptex mesh is not loaded "
@@ -1159,21 +1176,13 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
   CORRADE_INTERNAL_ASSERT_OUTPUT(
       importer = importerManager_.loadAndInstantiate("StanfordImporter"));
 
-  std::vector<GenericInstanceMeshData::uptr> instanceMeshes;
-  if (info.splitInstanceMesh) {
-    instanceMeshes =
-        GenericInstanceMeshData::fromPlySplitByObjectId(*importer, filename);
-  } else {
-    GenericInstanceMeshData::uptr meshData =
-        GenericInstanceMeshData::fromPLY(*importer, filename);
-    if (meshData)
-      instanceMeshes.emplace_back(std::move(meshData));
-  }
+  std::vector<GenericInstanceMeshData::uptr> instanceMeshes =
+      GenericInstanceMeshData::fromPLY(*importer, filename,
+                                       info.splitInstanceMesh);
 
-  if (instanceMeshes.empty()) {
-    ESP_ERROR() << "Error loading instance mesh data";
-    return false;
-  }
+  ESP_CHECK(!instanceMeshes.empty(),
+            Cr::Utility::formatString(
+                "Error loading instance mesh data from file {}", filename));
 
   int meshStart = nextMeshID_;
   int meshEnd = meshStart + instanceMeshes.size() - 1;
@@ -1249,13 +1258,8 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceIMesh(
   return instanceRoot;
 }  // ResourceManager::createRenderAssetInstanceIMesh
 
-bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
-  CORRADE_INTERNAL_ASSERT(isRenderAssetGeneral(info.type));
-
-  const std::string& filename = info.filepath;
-  const std::string dispFileName = Cr::Utility::Directory::filename(filename);
-  CORRADE_INTERNAL_ASSERT(resourceDict_.count(filename) == 0);
-
+void ResourceManager::ConfigureImporterManager(
+    const std::string& dispFileName) {
   // Preferred plugins, Basis target GPU format
   importerManager_.setPreferredPlugins("GltfImporter", {"TinyGltfImporter"});
 #ifdef ESP_BUILD_ASSIMP_SUPPORT
@@ -1340,6 +1344,17 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
     }
 #endif
   }
+}  // ResourceManager::ConfigureImportManager
+
+bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
+  CORRADE_INTERNAL_ASSERT(isRenderAssetGeneral(info.type));
+
+  const std::string& filename = info.filepath;
+  const std::string dispFileName = Cr::Utility::Directory::filename(filename);
+  CORRADE_INTERNAL_ASSERT(resourceDict_.count(filename) == 0);
+
+  // appropriately configure importerManager_ based on compilation flags
+  ConfigureImporterManager(dispFileName);
 
   if (!fileImporter_->openFile(filename)) {
     ESP_ERROR() << "Cannot open file" << filename;
@@ -1377,12 +1392,7 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
     ESP_ERROR() << "No default scene available and no meshes found, exiting";
     return false;
   }
-
-  const quatf transform = info.frame.rotationFrameToWorld();
-  Magnum::Matrix4 R = Magnum::Matrix4::from(
-      Magnum::Quaternion(transform).toMatrix(), Magnum::Vector3());
-  meshMetaData.root.transformFromLocalToParent =
-      R * meshMetaData.root.transformFromLocalToParent;
+  meshMetaData.setRootFrameOrientation(info.frame);
 
   return true;
 }  // ResourceManager::loadRenderAssetGeneral
@@ -1502,25 +1512,21 @@ bool ResourceManager::buildTrajectoryVisualization(
   phongMaterial->ambientColor = color;
   phongMaterial->diffuseColor = color;
 
-  shaderManager_.set(std::to_string(nextMaterialID_),
+  meshMetaData.root.materialID = std::to_string(nextMaterialID_++);
+  shaderManager_.set(meshMetaData.root.materialID,
                      static_cast<gfx::MaterialData*>(phongMaterial.release()));
 
   meshMetaData.root.meshIDLocal = 0;
   meshMetaData.root.componentID = 0;
-  meshMetaData.root.materialID = std::to_string(nextMaterialID_++);
 
-  // store the rotation to world frame upon load - currently superfluous
-  const quatf transform = info.frame.rotationFrameToWorld();
-  Magnum::Matrix4 R = Magnum::Matrix4::from(
-      Magnum::Quaternion(transform).toMatrix(), Magnum::Vector3());
-  meshMetaData.root.transformFromLocalToParent =
-      R * meshMetaData.root.transformFromLocalToParent;
+  // store the rotation to world frame upon load
+  meshMetaData.setRootFrameOrientation(info.frame);
 
   // make LoadedAssetData corresponding to this asset
   LoadedAssetData loadedAssetData{info, meshMetaData};
-  // TODO : need to free render assets associated with this object if collision
-  // occurs, otherwise leak! (Currently unsupported).
-  // if (resourceDict_.count(trajVisName) != 0) {
+  // TODO : need to free render assets associated with this object if
+  // collision occurs, otherwise leak! (Currently unsupported). if
+  // (resourceDict_.count(trajVisName) != 0) {
   //   resourceDict_.erase(trajVisName);
   // }
   auto inserted =
@@ -1591,11 +1597,53 @@ int ResourceManager::loadNavMeshVisualization(esp::nav::PathFinder& pathFinder,
   return navMeshPrimitiveID;
 }  // ResourceManager::loadNavMeshVisualization
 
+namespace {
+/**
+ * @brief given passed @ref metadata::attributes::ObjectInstanceShaderType @p
+ * typeToCheck and given @ref Magnum::Trade::MaterialData, verify that the
+ * material's intrinsic type is the same as inferred by @p typeToCheck. Ignore
+ * flat, since all shaders already support flat.
+ * @param typeToCheck The type of shader being specified.
+ * @param materialData The imported material to check for type
+ * @return Whether the imported material's supported types include one
+ * congruient with the specified shader type.
+ */
+bool compareShaderTypeToMnMatType(const ObjectInstanceShaderType typeToCheck,
+                                  const Mn::Trade::MaterialData& materialData) {
+  switch (typeToCheck) {
+    case ObjectInstanceShaderType::Phong: {
+      bool compRes =
+          bool(materialData.types() & Mn::Trade::MaterialType::Phong);
+      ESP_DEBUG() << "Forcing to Phong | Material currently"
+                  << (compRes ? "supports" : "does not support") << "Phong";
+      return compRes;
+    }
+    case ObjectInstanceShaderType::PBR: {
+      bool compRes = bool(materialData.types() &
+                          Mn::Trade::MaterialType::PbrMetallicRoughness);
+      ESP_DEBUG() << "Forcing to PBR | Material currently"
+                  << (compRes ? "supports" : "does not support") << "PBR";
+      return compRes;
+    }
+    default: {
+      return false;
+    }
+  }
+}
+
+}  // namespace
+
 void ResourceManager::loadMaterials(Importer& importer,
                                     LoadedAssetData& loadedAssetData) {
-  for (int iMaterial = 0; iMaterial < importer.materialCount(); ++iMaterial) {
-    int currentMaterialID = nextMaterialID_++;
+  // Specify the shaderType to use to render the materials being imported
+  ObjectInstanceShaderType shaderTypeToUse =
+      getMaterialShaderType(loadedAssetData.assetInfo);
 
+  // name of asset, for debugging purposes
+  const std::string assetName =
+      Cr::Utility::Directory::filename(loadedAssetData.assetInfo.filepath);
+
+  for (int iMaterial = 0; iMaterial < importer.materialCount(); ++iMaterial) {
     // TODO:
     // it seems we have a way to just load the material once in this case,
     // as long as the materialName includes the full path to the material
@@ -1603,88 +1651,115 @@ void ResourceManager::loadMaterials(Importer& importer,
         importer.material(iMaterial);
 
     if (!materialData) {
-      ESP_ERROR() << "Cannot load material, skipping";
+      ESP_ERROR() << "Material load failed for material index" << iMaterial
+                  << "so skipping that material.";
       continue;
     }
 
     std::unique_ptr<gfx::MaterialData> finalMaterial;
+
     int textureBaseIndex = loadedAssetData.meshMetaData.textureIndex.first;
+    // If we are not using the material's native shadertype, or flat (Which all
+    // materials already support), expand the Mn::Trade::MaterialData with
+    // appropriate data for all possible shadertypes
+    if ((shaderTypeToUse != ObjectInstanceShaderType::Material) &&
+        (shaderTypeToUse != ObjectInstanceShaderType::Flat) &&
+        !(compareShaderTypeToMnMatType(shaderTypeToUse, *materialData))) {
+      ESP_DEBUG() << "Building expanded materialData";
+      materialData = esp::gfx::createUniversalMaterial(*materialData);
+    }
 
-    if (!loadedAssetData.assetInfo.forceFlatShading &&
-        materialData->types() &
-            Magnum::Trade::MaterialType::PbrMetallicRoughness) {
-      const auto& pbrMaterialData =
-          materialData->as<Mn::Trade::PbrMetallicRoughnessMaterialData>();
+    // pbr shader spec, of material-specified and material specifies pbr
+    if (checkForPassedShaderType(
+            shaderTypeToUse, *materialData, ObjectInstanceShaderType::PBR,
+            Mn::Trade::MaterialType::PbrMetallicRoughness)) {
+      ESP_DEBUG() << "Building pbr material";
+      finalMaterial =
+          buildPbrShadedMaterialData(*materialData, textureBaseIndex);
 
-      if (flags_ & Flag::BuildPhongFromPbr) {
-        finalMaterial = gfx::buildPhongFromPbrMetallicRoughness(
-            pbrMaterialData, textureBaseIndex, textures_);
-      } else {
-        finalMaterial =
-            buildPbrShadedMaterialData(pbrMaterialData, textureBaseIndex);
-      }
+      // phong shader spec, of material-specified and material specifies phong
+    } else if (checkForPassedShaderType(shaderTypeToUse, *materialData,
+                                        ObjectInstanceShaderType::Phong,
+                                        Mn::Trade::MaterialType::Phong)) {
+      ESP_DEBUG() << "Building phong material";
+      finalMaterial =
+          buildPhongShadedMaterialData(*materialData, textureBaseIndex);
+
+      // flat shader spec or material-specified and material specifies flat
+    } else if (checkForPassedShaderType(shaderTypeToUse, *materialData,
+                                        ObjectInstanceShaderType::Flat,
+                                        Mn::Trade::MaterialType::Flat)) {
+      ESP_DEBUG() << "Building flat material";
+      finalMaterial =
+          buildFlatShadedMaterialData(*materialData, textureBaseIndex);
+
     } else {
-      CORRADE_INTERNAL_ASSERT(materialData);
-      if (!(materialData->types() & Magnum::Trade::MaterialType::Phong)) {
-        ESP_ERROR() << "Cannot load material, skipping";
-        continue;
-      }
-
-      const auto& phongMaterialData =
-          materialData->as<Mn::Trade::PhongMaterialData>();
-      if (!loadedAssetData.assetInfo.forceFlatShading) {
-        finalMaterial =
-            buildPhongShadedMaterialData(phongMaterialData, textureBaseIndex);
-
-      } else {
-        finalMaterial =
-            buildFlatShadedMaterialData(phongMaterialData, textureBaseIndex);
-      }
+      ESP_CHECK(false,
+                Cr::Utility::formatString(
+                    "Unhandled ShaderType specification : {} and/or unmanaged "
+                    "type specified in material @ idx: {} for asset {}.",
+                    metadata::attributes::getShaderTypeName(shaderTypeToUse),
+                    iMaterial, assetName));
     }
     // for now, just use unique ID for material key. This may change if we
     // expose materials to user for post-load modification
-    shaderManager_.set(std::to_string(currentMaterialID),
+    shaderManager_.set(std::to_string(nextMaterialID_++),
                        finalMaterial.release());
   }
 }  // ResourceManager::loadMaterials
 
+ObjectInstanceShaderType ResourceManager::getMaterialShaderType(
+    const AssetInfo& info) const {
+  // if specified to be force-flat, then should be flat shaded, regardless of
+  // material or other settings.
+  if (info.forceFlatShading) {
+    return ObjectInstanceShaderType::Flat;
+  }
+  ObjectInstanceShaderType infoSpecShaderType = info.shaderTypeToUse;
+
+  if (infoSpecShaderType == ObjectInstanceShaderType::Unspecified) {
+    // use the material's inherent shadertype
+    infoSpecShaderType = ObjectInstanceShaderType::Material;
+  }
+  ESP_DEBUG() << "Shadertype being used for file :"
+              << Cr::Utility::Directory::filename(info.filepath)
+              << "| shadertype name :"
+              << metadata::attributes::getShaderTypeName(infoSpecShaderType);
+  return infoSpecShaderType;
+}  // ResourceManager::getMaterialShaderType
+
 gfx::PhongMaterialData::uptr ResourceManager::buildFlatShadedMaterialData(
-    const Mn::Trade::PhongMaterialData& material,
+    const Mn::Trade::MaterialData& materialData,
     int textureBaseIndex) {
   // NOLINTNEXTLINE(google-build-using-namespace)
   using namespace Mn::Math::Literals;
 
+  const auto& material = materialData.as<Mn::Trade::FlatMaterialData>();
+
+  // To save on shader switching, a Phong shader with zero lights is used for
+  // flat materials
   auto finalMaterial = gfx::PhongMaterialData::create_unique();
-  finalMaterial->ambientColor = 0xffffffff_rgbaf;
+
+  finalMaterial->ambientColor = material.color();
+  if (material.hasTexture()) {
+    finalMaterial->ambientTexture =
+        textures_.at(textureBaseIndex + material.texture()).get();
+  }
   finalMaterial->diffuseColor = 0x00000000_rgbaf;
   finalMaterial->specularColor = 0x00000000_rgbaf;
 
-  if (material.hasAttribute(Mn::Trade::MaterialAttribute::AmbientTexture)) {
-    finalMaterial->ambientTexture =
-        textures_.at(textureBaseIndex + material.ambientTexture()).get();
-  } else if (material.hasAttribute(
-                 Mn::Trade::MaterialAttribute::DiffuseTexture)) {
-    // if we want to force flat shading, but we don't have ambient texture,
-    // check for diffuse texture and use that instead
-    finalMaterial->ambientTexture =
-        textures_.at(textureBaseIndex + material.diffuseTexture()).get();
-  }
-
-  if (material.hasAttribute(Mn::Trade::MaterialAttribute::DiffuseColor)) {
-    finalMaterial->ambientColor = material.diffuseColor();
-  } else if (material.hasAttribute(
-                 Mn::Trade::MaterialAttribute::AmbientColor)) {
-    finalMaterial->ambientColor = material.ambientColor();
-  }
+  finalMaterial->shaderTypeSpec =
+      static_cast<int>(ObjectInstanceShaderType::Flat);
 
   return finalMaterial;
-}
+}  // ResourceManager::buildFlatShadedMaterialData
 
 gfx::PhongMaterialData::uptr ResourceManager::buildPhongShadedMaterialData(
-    const Mn::Trade::PhongMaterialData& material,
+    const Mn::Trade::MaterialData& materialData,
     int textureBaseIndex) const {
   // NOLINTNEXTLINE(google-build-using-namespace)
   using namespace Mn::Math::Literals;
+  const auto& material = materialData.as<Mn::Trade::PhongMaterialData>();
 
   auto finalMaterial = gfx::PhongMaterialData::create_unique();
   finalMaterial->shininess = material.shininess();
@@ -1694,14 +1769,14 @@ gfx::PhongMaterialData::uptr ResourceManager::buildPhongShadedMaterialData(
 
   // ambient material properties
   finalMaterial->ambientColor = material.ambientColor();
-  if (material.hasAttribute(Mn::Trade::MaterialAttribute::AmbientTexture)) {
+  if (material.hasAttribute(MaterialAttribute::AmbientTexture)) {
     finalMaterial->ambientTexture =
         textures_.at(textureBaseIndex + material.ambientTexture()).get();
   }
 
   // diffuse material properties
   finalMaterial->diffuseColor = material.diffuseColor();
-  if (material.hasAttribute(Mn::Trade::MaterialAttribute::DiffuseTexture)) {
+  if (material.hasAttribute(MaterialAttribute::DiffuseTexture)) {
     finalMaterial->diffuseTexture =
         textures_.at(textureBaseIndex + material.diffuseTexture()).get();
   }
@@ -1714,18 +1789,24 @@ gfx::PhongMaterialData::uptr ResourceManager::buildPhongShadedMaterialData(
   }
 
   // normal mapping
-  if (material.hasAttribute(Mn::Trade::MaterialAttribute::NormalTexture)) {
+  if (material.hasAttribute(MaterialAttribute::NormalTexture)) {
     finalMaterial->normalTexture =
         textures_.at(textureBaseIndex + material.normalTexture()).get();
   }
+
+  finalMaterial->shaderTypeSpec =
+      static_cast<int>(ObjectInstanceShaderType::Phong);
+
   return finalMaterial;
-}
+}  // ResourceManager::buildPhongShadedMaterialData
 
 gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
-    const Mn::Trade::PbrMetallicRoughnessMaterialData& material,
+    const Mn::Trade::MaterialData& materialData,
     int textureBaseIndex) const {
   // NOLINTNEXTLINE(google-build-using-namespace)
   using namespace Mn::Math::Literals;
+  const auto& material =
+      materialData.as<Mn::Trade::PbrMetallicRoughnessMaterialData>();
 
   auto finalMaterial = gfx::PbrMaterialData::create_unique();
 
@@ -1734,13 +1815,13 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
 
   // base color (albedo)
   finalMaterial->baseColor = material.baseColor();
-  if (material.hasAttribute(Mn::Trade::MaterialAttribute::BaseColorTexture)) {
+  if (material.hasAttribute(MaterialAttribute::BaseColorTexture)) {
     finalMaterial->baseColorTexture =
         textures_.at(textureBaseIndex + material.baseColorTexture()).get();
   }
 
   // normal map
-  if (material.hasAttribute(Mn::Trade::MaterialAttribute::NormalTexture)) {
+  if (material.hasAttribute(MaterialAttribute::NormalTexture)) {
     // must be inside the if clause otherwise assertion fails if no normal
     // texture is presented
     finalMaterial->normalTextureScale = material.normalTextureScale();
@@ -1751,10 +1832,10 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
 
   // emission
   finalMaterial->emissiveColor = material.emissiveColor();
-  if (material.hasAttribute(Mn::Trade::MaterialAttribute::EmissiveTexture)) {
+  if (material.hasAttribute(MaterialAttribute::EmissiveTexture)) {
     finalMaterial->emissiveTexture =
         textures_.at(textureBaseIndex + material.emissiveTexture()).get();
-    if (!material.hasAttribute(Mn::Trade::MaterialAttribute::EmissiveColor)) {
+    if (!material.hasAttribute(MaterialAttribute::EmissiveColor)) {
       finalMaterial->emissiveColor = Mn::Vector3{1.0f};
     }
   }
@@ -1789,12 +1870,12 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
        so hasNormalRoughnessMetallicTexture() is not needed here.
 
     */
-    CORRADE_ASSERT(
-        material.hasNoneRoughnessMetallicTexture(),
-        "::buildPbrShadedMaterialData(): if both the metallic "
-        "and roughness texture exist, they must be packed in the same texture "
-        "based on glTF 2.0 Spec.",
-        finalMaterial);
+    CORRADE_ASSERT(material.hasNoneRoughnessMetallicTexture(),
+                   "::buildPbrShadedMaterialData(): if both the metallic "
+                   "and roughness texture exist, they must be packed in the "
+                   "same texture "
+                   "based on glTF 2.0 Spec.",
+                   finalMaterial);
   }
 
   // TODO:
@@ -1808,8 +1889,11 @@ gfx::PbrMaterialData::uptr ResourceManager::buildPbrShadedMaterialData(
   // double-sided
   finalMaterial->doubleSided = material.isDoubleSided();
 
+  finalMaterial->shaderTypeSpec =
+      static_cast<int>(ObjectInstanceShaderType::PBR);
+
   return finalMaterial;
-}
+}  // ResourceManager::buildPbrShadedMaterialData
 
 void ResourceManager::loadMeshes(Importer& importer,
                                  LoadedAssetData& loadedAssetData) {
@@ -1898,8 +1982,9 @@ void ResourceManager::loadTextures(Importer& importer,
     }
 
     // Configure the texture
-    Mn::GL::Texture2D& texture = *(textures_.at(textureStart + iTexture).get());
-    texture.setMagnificationFilter(textureData->magnificationFilter())
+    // Mn::GL::Texture2D& texture = *(textures_.at(textureStart +
+    // iTexture).get());
+    currentTexture->setMagnificationFilter(textureData->magnificationFilter())
         .setMinificationFilter(textureData->minificationFilter(),
                                textureData->mipmapFilter())
         .setWrapping(textureData->wrapping().xy());
@@ -1932,26 +2017,30 @@ void ResourceManager::loadTextures(Importer& importer,
         // If there is just one level and the image is not compressed, we'll
         // generate mips ourselves
         if (levelCount == 1 && !image->isCompressed()) {
-          texture.setStorage(Mn::Math::log2(image->size().max()) + 1, format,
-                             image->size());
+          currentTexture->setStorage(Mn::Math::log2(image->size().max()) + 1,
+                                     format, image->size());
           generateMipmap = true;
-        } else
-          texture.setStorage(levelCount, format, image->size());
+        } else {
+          currentTexture->setStorage(levelCount, format, image->size());
+        }
       }
 
-      if (image->isCompressed())
-        texture.setCompressedSubImage(level, {}, *image);
-      else
-        texture.setSubImage(level, {}, *image);
+      if (image->isCompressed()) {
+        currentTexture->setCompressedSubImage(level, {}, *image);
+      } else {
+        currentTexture->setSubImage(level, {}, *image);
+      }
     }
 
     // Mip level loading failed, fail the whole texture
-    if (currentTexture == nullptr)
+    if (currentTexture == nullptr) {
       continue;
+    }
 
     // Generate a mipmap if requested
-    if (generateMipmap)
-      texture.generateMipmap();
+    if (generateMipmap) {
+      currentTexture->generateMipmap();
+    }
   }
 }  // ResourceManager::loadTextures
 
@@ -1965,7 +2054,7 @@ bool ResourceManager::instantiateAssetsOnDemand(
   // if attributes are "dirty" (important values have changed since last
   // registered) then re-register.  Should never return ID_UNDEFINED - this
   // would mean something has corrupted the library.
-  // NOTE : this is called when an new object is being made, but before the
+  // NOTE : this is called when a new object is being made, but before the
   // object has acquired a copy of its parent attributes.  No object should
   // ever have a copy of attributes with isDirty == true - any editing of
   // attributes for objects requires object rebuilding.
@@ -2516,8 +2605,8 @@ void ResourceManager::createConvexHullDecomposition(
                                 Mn::Trade::MeshAttribute::Position,
                                 Cr::Containers::arrayView(positions)}}});
 
-    // Create a GenericMeshData (needsNormals_ = true and uploadBuffersToGPU in
-    // order to render the collision asset)
+    // Create a GenericMeshData (needsNormals_ = true and uploadBuffersToGPU
+    // in order to render the collision asset)
     genCHMeshData = std::make_unique<GenericMeshData>(true);
     genCHMeshData->setMeshData(*std::move(CHMesh));
     genCHMeshData->BB = computeMeshBB(genCHMeshData.get());

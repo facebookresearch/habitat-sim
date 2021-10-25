@@ -76,9 +76,9 @@ void RigidObject::resetStateFromSceneInstanceAttr(bool defaultCOMCorrection) {
   // params specified in instance attributes
   auto translate = sceneInstanceAttr->getTranslation();
   // get instance override value, if exists
-  auto instanceCOMOrigin =
-      static_cast<metadata::attributes::SceneInstanceTranslationOrigin>(
-          sceneInstanceAttr->getTranslationOrigin());
+  metadata::attributes::SceneInstanceTranslationOrigin instanceCOMOrigin =
+      sceneInstanceAttr->getTranslationOrigin();
+
   if ((defaultCOMCorrection &&
        (instanceCOMOrigin !=
         metadata::attributes::SceneInstanceTranslationOrigin::COM)) ||
