@@ -112,6 +112,8 @@ std::vector<Mn::Vector3> buildCatmullRomTrajOfPoints(
  * smoothed trajectory derived using centripetal Catmull-Rom spline between
  * points in @ref pts.
  * @param pts  The key points of the trajectory, in order
+ * @param interpColors The list of one or more colors to assign in sequence to
+ * vertices along the length of the tube, interpolating if necessary.
  * @param numSegments The number of segments around the circumference of the
  * tube.
  * @param radius The radius of the tube
@@ -122,6 +124,7 @@ std::vector<Mn::Vector3> buildCatmullRomTrajOfPoints(
  */
 Mn::Trade::MeshData buildTrajectoryTubeSolid(
     const std::vector<Mn::Vector3>& pts,
+    const std::vector<Mn::Color3ub>& interpColors,
     int numSegments,
     float radius,
     bool smooth,

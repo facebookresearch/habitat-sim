@@ -1020,6 +1020,15 @@ class Simulator {
                           bool smooth = false,
                           int numInterp = 10);
 
+  int addTrajectoryObject(const std::string& trajVisName,
+                          const std::vector<Mn::Vector3>& pts,
+                          int numSegments = 3,
+                          float radius = .001,
+                          const std::vector<Mn::Color3ub>& colorVec = {{220, 25,
+                                                                        25}},
+                          bool smooth = false,
+                          int numInterp = 10);
+
   /**
    * @brief Remove a trajectory visualization by name.
    * @param trajVisName The name of the trajectory visualization to remove.

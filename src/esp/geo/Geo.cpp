@@ -4,6 +4,7 @@
 
 #include "esp/geo/Geo.h"
 
+#include <Magnum/Math/Color.h>
 #include <Magnum/Math/FunctionsBatch.h>
 #include <Magnum/Primitives/Circle.h>
 #include <Magnum/Trade/MeshData.h>
@@ -12,7 +13,7 @@
 
 namespace Mn = Magnum;
 namespace Cr = Corrade;
-
+using Magnum::Math::Literals::operator""_rgb;
 namespace esp {
 namespace geo {
 
@@ -209,6 +210,7 @@ std::vector<float> getPointDistsAlongTrajectory(
 
 Mn::Trade::MeshData buildTrajectoryTubeSolid(
     const std::vector<Mn::Vector3>& pts,
+    const std::vector<Mn::Color3ub>& interpColors,
     int numSegments,
     float radius,
     bool smooth,
@@ -224,13 +226,46 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
   // size of trajectory
   const Mn::UnsignedInt trajSize = trajectory.size();
 
-  // 2. Build mesh vertex points around each trajectory point at appropriate
+  // 2. Build list of interpolating colors for each ring of trajectory.
+  // want to evenly interpolate between colors provided
+  const Mn::UnsignedInt numColors = interpColors.size();
+  std::vector<Mn::Vector3> trajColors;
+
+  // temp converter to vector of values in HSV space from RGB color
+  auto convertClrToHSVArray = [&](const Mn::Color3ub& clr) -> Mn::Vector3 {
+    Mn::ColorHsv tmpHsv = clr.toHsv();
+    Mn::Vector3 tmpClr(tmpHsv.hue.operator float(), tmpHsv.saturation,
+                       tmpHsv.value);
+    return tmpClr;
+  };
+  if (numColors == 1) {
+    trajColors.reserve(trajSize);
+    // interpolate in hsv space - first convert src colors to HSV
+    for (const auto& pt : trajectory) {
+      trajColors.emplace_back(convertClrToHSVArray(interpColors[0]));
+    }
+
+  } else {
+    // interpolate in hsv space - first convert src colors to HSV
+    std::vector<Mn::Vector3> srcClrs;
+    srcClrs.reserve(numColors);
+    for (const auto& clr : interpColors) {
+      srcClrs.emplace_back(convertClrToHSVArray(clr));
+    }
+    // determine how many interpolations we should have : trajColors should be
+    // trajSize in size
+    int numClrInterp = (trajSize / (numColors - 1)) + 1;
+    // now build interpolated vector of colors
+    trajColors = buildCatmullRomTrajOfPoints(srcClrs, numClrInterp, alpha);
+  }
+
+  // 3. Build mesh vertex points around each trajectory point at appropriate
   // distance (radius). For each point in trajectory, add a wireframe circle
   // centered at that point, appropriately oriented based on tangents
 
   Cr::Containers::Array<Magnum::Vector3> circleVerts =
       Mn::Primitives::circle3DWireframe(numSegments).positions3DAsArray();
-  // normalized verts
+  // normalized verts will provide vert normals.
   Cr::Containers::Array<Magnum::Vector3> circleNormVerts{
       Cr::NoInit, sizeof(Magnum::Vector3) * numSegments};
 
@@ -247,6 +282,8 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
   struct Vertex {
     Mn::Vector3 position;
     Mn::Vector3 normal;
+    // vertex color default to white
+    Mn::Color3ub color = 0xffffff_rgb;
   };
 
   // Vertex data storage
@@ -255,12 +292,20 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
   // Cast memory to be a strided array so it can be accessed via slices.
   Cr::Containers::StridedArrayView1D<Vertex> vertices =
       Cr::Containers::arrayCast<Vertex>(vertexData);
-  // Position and normal views of vertex array
+  // Position, normal and color views of vertex array
   Cr::Containers::StridedArrayView1D<Mn::Vector3> positions =
       vertices.slice(&Vertex::position);
   Cr::Containers::StridedArrayView1D<Mn::Vector3> normals =
       vertices.slice(&Vertex::normal);
+  Cr::Containers::StridedArrayView1D<Mn::Color3ub> colors =
+      vertices.slice(&Vertex::color);
 
+  // temp converter to RGB color from vector of HSV values
+  auto convertHSVArrayToColor = [&](const Mn::Vector3& hsvVec) -> Mn::Color3ub {
+    return Mn::Color3ub::fromHsv({Mn::Deg(hsvVec[0]), hsvVec[1], hsvVec[2]});
+  };
+
+  // Beginning Endcap
   Mn::UnsignedInt circlePtIDX = 0;
   Mn::Vector3 tangent = trajectory[1] - trajectory[0];
   // get the orientation matrix assuming y-up preference
@@ -272,6 +317,7 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
     // pre-rotated normal for circle is normalized point
     normals[circlePtIDX] =
         tangentOrientation.transformVector(circleNormVerts[i]);
+    colors[circlePtIDX] = convertHSVArrayToColor(trajColors[0]);
     ++circlePtIDX;
   }
   // add cap vert at the end of the list
@@ -280,6 +326,7 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
   // pre-rotated normal for circle is normalized point
   normals[vertexCount - 2] =
       tangentOrientation.transformVector({0.0f, 0.0f, -1.0f});
+  colors[vertexCount - 2] = convertHSVArrayToColor(trajColors[0]);
 
   for (Mn::UnsignedInt vertIx = 1; vertIx < trajSize - 1; ++vertIx) {
     const Mn::Vector3& vert = trajectory[vertIx];
@@ -296,9 +343,12 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
       // pre-rotated normal for circle is normalized point
       normals[circlePtIDX] =
           tangentOrientation.transformVector(circleNormVerts[i]);
+      colors[circlePtIDX] = convertHSVArrayToColor(trajColors[vertIx]);
       ++circlePtIDX;
     }
   }
+
+  // Ending Endcap
   int idx = trajSize - 1;
   tangent = trajectory[idx] - trajectory[idx - 1];
   // get the orientation matrix assuming y-up preference
@@ -310,6 +360,7 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
     // pre-rotated normal for circle is normalized point
     normals[circlePtIDX] =
         tangentOrientation.transformVector(circleNormVerts[i]);
+    colors[circlePtIDX] = convertHSVArrayToColor(trajColors[idx]);
     ++circlePtIDX;
   }
   // add cap verts
@@ -319,7 +370,9 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
   normals[vertexCount - 1] =
       tangentOrientation.transformVector({0.0f, 0.0f, 1.0f});
 
-  // 3. Create polys between all points
+  colors[vertexCount - 1] = convertHSVArrayToColor(trajColors[idx]);
+
+  // 4. Create polys between all points
   Cr::Containers::Array<char> indexData{
       Cr::NoInit, 6 * numSegments * trajSize * sizeof(Mn::UnsignedInt)};
   Cr::Containers::ArrayView<Mn::UnsignedInt> indices =
@@ -391,7 +444,8 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
       std::move(vertexData),
       {Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Position,
                                     positions},
-       Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Normal, normals}},
+       Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Normal, normals},
+       Mn::Trade::MeshAttributeData{Mn::Trade::MeshAttribute::Color, colors}},
       static_cast<Mn::UnsignedInt>(positions.size())};
 
   return meshData;

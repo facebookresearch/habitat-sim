@@ -1015,11 +1015,12 @@ int Simulator::addTrajectoryObject(const std::string& trajVisName,
                                    const std::vector<Mn::Vector3>& pts,
                                    int numSegments,
                                    float radius,
-                                   const Magnum::Color4& color,
+                                   const std::vector<Mn::Color3ub>& colorVec,
                                    bool smooth,
                                    int numInterp) {
-  if (renderer_)
+  if (renderer_) {
     renderer_->acquireGlContext();
+  }
 
   // 0. Deduplicate sequential points
   std::vector<Magnum::Vector3> uniquePts;
@@ -1034,7 +1035,7 @@ int Simulator::addTrajectoryObject(const std::string& trajVisName,
 
   // 1. create trajectory tube asset from points and save it
   bool success = resourceManager_->buildTrajectoryVisualization(
-      trajVisName, uniquePts, numSegments, radius, color, smooth, numInterp);
+      trajVisName, uniquePts, numSegments, radius, colorVec, smooth, numInterp);
   if (!success) {
     ESP_ERROR() << "Failed to create Trajectory visualization mesh for"
                 << trajVisName;
@@ -1067,6 +1068,19 @@ int Simulator::addTrajectoryObject(const std::string& trajVisName,
   trajVisNameByID[trajVisID] = trajVisName;
 
   return trajVisID;
+
+}  // Simulator::addTrajectoryObject (vector of colors)
+
+int Simulator::addTrajectoryObject(const std::string& trajVisName,
+                                   const std::vector<Mn::Vector3>& pts,
+                                   int numSegments,
+                                   float radius,
+                                   const Magnum::Color4& color,
+                                   bool smooth,
+                                   int numInterp) {
+  return addTrajectoryObject(trajVisName, pts, numSegments, radius,
+                             {Mn::Math::pack<Mn::Color3ub>(color.rgb())},
+                             smooth, numInterp);
 }  // Simulator::showTrajectoryVisualization
 
 // Agents

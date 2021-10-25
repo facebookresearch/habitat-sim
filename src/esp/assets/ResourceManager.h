@@ -534,14 +534,14 @@ class ResourceManager {
    * point, if smoothing.
    * @return Whether the process was a success or not
    */
-  bool buildTrajectoryVisualization(const std::string& trajVisName,
-                                    const std::vector<Mn::Vector3>& pts,
-                                    int numSegments = 3,
-                                    float radius = .001,
-                                    const Magnum::Color4& color = {0.9, 0.1,
-                                                                   0.1, 1.0},
-                                    bool smooth = false,
-                                    int numInterp = 10);
+  bool buildTrajectoryVisualization(
+      const std::string& trajVisName,
+      const std::vector<Mn::Vector3>& pts,
+      int numSegments = 3,
+      float radius = .001,
+      const std::vector<Mn::Color3ub>& colorVec = {{220, 25, 25}},
+      bool smooth = false,
+      int numInterp = 10);
 
   /**
    * @brief Build a configuration frame from scene or object attributes values

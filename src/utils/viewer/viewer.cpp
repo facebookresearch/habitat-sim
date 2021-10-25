@@ -299,9 +299,10 @@ Key Commands:
   Utilities:
   '1': Toggle recording locations for trajectory visualization.
   '2': Build and display trajectory visualization.
+  '3': Toggle single color/multi-color trajectory.
   '+': Increase trajectory diameter.
   '-': Decrease trajectory diameter.
-  '3': Toggle flying camera mode (user can apply camera transformation loaded from disk).
+  '4': Toggle flying camera mode (user can apply camera transformation loaded from disk).
   '5': Switch ortho/perspective camera.
   '6': Reset ortho camera zoom/perspective camera FOV.
   'l': Override the default lighting setup with configured settings in `default_light_override.lighting_config.json`.
@@ -356,6 +357,7 @@ Key Commands:
   std::vector<Magnum::Vector3> agentLocs_;
   float agentTrajRad_ = .01f;
   bool agentLocRecordOn_ = false;
+  bool singleColorTrajectory_ = true;
 
   /**
    * @brief Set whether agent locations should be recorded or not. If toggling
@@ -1069,19 +1071,21 @@ void Viewer::buildTrajectoryVis() {
                      "points, so nothing to build. Aborting.";
     return;
   }
-  Mn::Color4 color{randomDirection(), 1.0f};
+  std::vector<Mn::Color3ub> clrs;
+  int numClrs = (singleColorTrajectory_ ? 1 : rand() % 4 + 2);
+  clrs.reserve(numClrs);
+  for (int i = 0; i < numClrs; ++i) {
+    clrs.emplace_back(Mn::Color3ub{randomDirection() * 255});
+  }
   // synthesize a name for asset based on color, radius, point count
-  std::ostringstream tmpName;
-  tmpName << "viewerTrajVis_R" << color.r() << "_G" << color.g() << "_B"
-          << color.b() << "_rad" << agentLocs_.size() << "_"
-          << agentLocs_.size() << "_pts";
-  std::string trajObjName(tmpName.str());
+  std::string trajObjName = Cr::Utility::formatString(
+      "viewerTrajVis_R{}_G{}_B{}_clrs_{}_rad_{}_{}_pts", clrs[0].r(),
+      clrs[0].g(), clrs[0].b(), numClrs, agentTrajRad_, agentLocs_.size());
 
-  ESP_DEBUG() << "Attempting to build trajectory "
-                 "tube for :"
-              << agentLocs_.size() << "points.";
+  ESP_DEBUG() << "Attempting to build trajectory tube for :"
+              << agentLocs_.size() << "points with " << numClrs << "colors.";
   int trajObjID = simulator_->addTrajectoryObject(
-      trajObjName, agentLocs_, 6, agentTrajRad_, color, true, 10);
+      trajObjName, agentLocs_, 6, agentTrajRad_, clrs, true, 10);
   if (trajObjID != esp::ID_UNDEFINED) {
     ESP_DEBUG() << "Success!  Traj Obj Name :" << trajObjName
                 << "has object ID :" << trajObjID;
@@ -1838,6 +1842,15 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::Two:
       // agent motion trajectory mesh synthesis with random color
       buildTrajectoryVis();
+      break;
+    case KeyEvent::Key::Three:
+      // toggle between single color and multi-color trajectories
+      singleColorTrajectory_ = !singleColorTrajectory_;
+      ESP_DEBUG() << (singleColorTrajectory_
+                          ? "Building trajectory with multiple random colors "
+                            "changed to single random color."
+                          : "Building trajectory with single random color "
+                            "changed to multiple random colors.");
       break;
     case KeyEvent::Key::Four:
       sensorMode_ = static_cast<VisualSensorMode>(
