@@ -455,21 +455,6 @@ void initSimBindings(py::module& m) {
               colors : (3-tuple of byte) the colors to build the gradient along the length of the trajectory tube.
               smooth : (Bool) whether or not to smooth trajectory using a Catmull-Rom spline interpolating spline.
               num_interpolations : (Integer) the number of interpolation points to find between successive key points.)")
-      // .def("add_trajectory_object", &Simulator::addTrajectoryObject,
-      //      "traj_vis_name"_a, "points"_a, "num_segments"_a = 3,
-      //      "radius"_a = .001, "color"_a = Mn::Color4{0.9, 0.1, 0.1, 1.0},
-      //      "smooth"_a = false, "num_interpolations"_a = 10,
-      //      R"(Build a tube visualization around the passed trajectory of
-      //      points.
-      //         points : (list of 3-tuples of floats) key point locations to
-      //         use to create trajectory tube. num_segments : (Integer) the
-      //         number of segments around the tube to be used to make the
-      //         visualization. radius : (Float) the radius of the resultant
-      //         tube. color : (4-tuple of float) the color of the trajectory
-      //         tube. smooth : (Bool) whether or not to smooth trajectory using
-      //         a Catmull-Rom spline interpolating spline. num_interpolations :
-      //         (Integer) the number of interpolation points to find between
-      //         successive key points.)")
       .def("get_light_setup", &Simulator::getLightSetup,
            "key"_a = DEFAULT_LIGHTING_KEY,
            R"(Get a copy of the LightSetup registered with a specific key.)")
