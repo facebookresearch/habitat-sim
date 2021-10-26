@@ -8,8 +8,6 @@ import sys
 import time
 from typing import Any, Dict, List
 
-import numpy as np
-
 from habitat_sim import physics
 
 flags = sys.getdlopenflags()
@@ -201,6 +199,10 @@ class HabitatSimInteractiveViewer(Application):
         any changes in the movement keys map `Dict[KeyEvent.key, Bool]`.
         When a key in the map is set to `True` the corresponding action is taken.
         """
+        # avoids unecessary updates to grabber's object position
+        if repetitions == 0:
+            return
+
         key = Application.KeyEvent.Key
         agent = self.sim.agents[self.agent_id]
         press: Dict[key.key, bool] = self.pressed
@@ -213,21 +215,8 @@ class HabitatSimInteractiveViewer(Application):
 
         # update the grabber transform when our agent is moved
         if self.mouse_grabber is not None:
-            render_camera = self.render_camera.render_camera
-            ray = render_camera.unproject(self.previous_mouse_point)
-
-            rotation: Matrix3x3 = self.default_agent.scene_node.rotation.to_matrix()
-            translation: Vector3 = (
-                render_camera.node.absolute_translation
-                + ray.direction * self.mouse_grabber.grip_depth
-            )
-            transform = np.empty((4, 4))
-
-            transform[:3, :3] = rotation
-            transform[:3, 3] = translation
-            transform[3, :] = [0, 0, 0, 1]
-
-            self.mouse_grabber.update_transform(Matrix4(transform.tolist()))
+            # update location of grabbed object
+            self.update_grab_position(self.previous_mouse_point)
 
     def invert_gravity(self) -> None:
         """
@@ -272,7 +261,10 @@ class HabitatSimInteractiveViewer(Application):
         #       and this key press will be used to toggle between modes
         elif key == pressed.M:
             self.mouse_interaction = not self.mouse_interaction
-            print("Command: mouse LOOK set to ", self.mouse_interaction)
+            if self.mouse_interaction:
+                print("Command: mouse mode set to GRAB")
+            else:
+                print("Command: mouse mode set to LOOK")
 
         elif key == pressed.R:
             self.reconfigure_sim()
@@ -304,15 +296,15 @@ class HabitatSimInteractiveViewer(Application):
 
     def mouse_move_event(self, event: Application.MouseMoveEvent) -> None:
         """
-        Handles `Application.MouseEvent`. When in mouse interaction mode,
-        enables the left mouse button to steer the agent's facing direction.
+        Handles `Application.MouseMoveEvent`. When in LOOK mode, enables the left
+        mouse button to steer the agent's facing direction. When in GRAB mode,
+        continues to update the grabber's object positiion with our agents position.
         """
         button = Application.MouseMoveEvent.Buttons
-        print("MOVE EVENT TRIGGERED")
         # if interactive mode is False -> LOOK MODE
         if event.buttons == button.LEFT and not self.mouse_interaction:
             agent = self.sim.agents[self.agent_id]
-            delta = event.relative_position
+            delta = self.get_mouse_position(event.relative_position)
             action = habitat_sim.agent.ObjectControls()
             act_spec = habitat_sim.agent.ActuationSpec
 
@@ -324,63 +316,50 @@ class HabitatSimInteractiveViewer(Application):
             sensors = list(self.agent_body_node.subtree_sensors.values())
             [action(s.object, "look_down", act_spec(delta.y), False) for s in sensors]
 
-        # if interactive mode is False -> GRAB MODE
+        # if interactive mode is TRUE -> GRAB MODE
         elif self.mouse_interaction and self.mouse_grabber is not None:
-            render_camera = self.render_camera.render_camera
-            ray = render_camera.unproject(event.position)
+            # update location of grabbed object
+            viewport_point = self.get_mouse_position(event.position)
+            self.update_grab_position(viewport_point)
 
-            rotation: Matrix3x3 = self.default_agent.scene_node.rotation.to_matrix()
-            translation: Vector3 = (
-                render_camera.node.absolute_translation
-                + ray.direction * self.mouse_grabber.grip_depth
-            )
-            transform = np.empty((4, 4))
-
-            transform[:3, :3] = rotation
-            transform[:3, 3] = translation
-            transform[3, :] = [0, 0, 0, 1]
-
-            self.mouse_grabber.update_transform(Matrix4(transform.tolist()))
-
-        self.previous_mouse_point = event.position
+        self.previous_mouse_point = self.get_mouse_position(event.position)
         self.redraw()
         event.accepted = True
 
     def mouse_press_event(self, event: Application.MouseEvent) -> None:
-        """ """
+        """
+        Handles `Application.MouseEvent`. When in GRAB mode, click on
+        objects to drag their position. (right-click for fixed constraints)
+        """
         button = Application.MouseEvent.Button
+        physics_enabled = self.sim.get_physics_simulation_library()
+
         # if interactive mode is True -> GRAB MODE
-        if self.mouse_interaction and self.sim.get_physics_simulation_library():
+        if self.mouse_interaction and physics_enabled:
             render_camera = self.render_camera.render_camera
             ray = render_camera.unproject(self.get_mouse_position(event.position))
             raycast_results = self.sim.cast_ray(ray=ray)
 
             if raycast_results.has_hits():
-                hit_object = -1
-                ao_link = -1
+                hit_object, ao_link = -1, -1
                 hit_info = raycast_results.hits[0]
-                print(f"Raycast has hit -> {hit_info.point}")
 
                 if hit_info.object_id >= 0:
-                    print("we hit an non-staged collision object")
                     # we hit an non-staged collision object
                     ro_mngr = self.sim.get_rigid_object_manager()
                     ao_mngr = self.sim.get_articulated_object_manager()
                     ao = ao_mngr.get_object_by_id(hit_info.object_id)
                     ro = ro_mngr.get_object_by_id(hit_info.object_id)
 
-                    # if grabbed an object
                     if ro:
-                        print(f"we grabbed a RIGID object {type(ro)}")
+                        # if grabbed an object
                         hit_object = hit_info.object_id
                         object_pivot = ro.transformation.inverted().transform_point(
                             hit_info.point
                         )
                         object_frame = ro.rotation.inverted()
-
-                    # if grabbed the base link
                     elif ao:
-                        print(f"we grabbed an articulated object {type(ao)}")
+                        # if grabbed the base link
                         hit_object = hit_info.object_id
                         object_pivot = ao.transformation.inverted().transform_point(
                             hit_info.point
@@ -389,12 +368,11 @@ class HabitatSimInteractiveViewer(Application):
                     else:
                         for ao_handle in ao_mngr.get_objects_by_handle_substring():
                             ao = ao_mngr.get_object_by_handle(ao_handle)
-                            link_to_obj_ids = ao.get_link_ids()
+                            link_to_obj_ids = ao.link_object_ids
 
-                            # if we got a link
-                            print("we got a link")
-                            if link_to_obj_ids.count(hit_info.object_id) > 0:
-                                ao_link = link_to_obj_ids.at(hit_info.object_id)
+                            if hit_info.object_id in link_to_obj_ids:
+                                # if we got a link
+                                ao_link = link_to_obj_ids[hit_info.object_id]
                                 object_pivot = (
                                     ao.get_link_scene_node(ao_link)
                                     .transformation.inverted()
@@ -403,46 +381,36 @@ class HabitatSimInteractiveViewer(Application):
                                 object_frame = ao.get_link_scene_node(
                                     ao_link
                                 ).rotation.inverted()
-                                hit_object = ao.get_id()
+                                hit_object = ao.object_id
                                 break
                     # done checking for AO
-                    print(f"hit_object => {hit_object}")
+
                     if hit_object >= 0:
-                        constraint_settings = (
-                            habitat_sim.physics.RigidConstraintSettings()
-                        )
+                        node = self.agent_body_node
+                        constraint_settings = physics.RigidConstraintSettings()
+
                         constraint_settings.object_id_a = hit_object
                         constraint_settings.link_id_a = ao_link
                         constraint_settings.pivot_a = object_pivot
-                        print(f"object_pivot => {object_pivot}")
                         constraint_settings.frame_a = (
-                            object_frame.to_matrix()
-                            @ self.default_agent.scene_node.rotation.to_matrix()
+                            object_frame.to_matrix() @ node.rotation.to_matrix()
                         )
-                        print(
-                            f"constraint_settings.frame_a => {constraint_settings.frame_a}"
-                        )
-
-                        constraint_settings.frame_b = (
-                            self.default_agent.scene_node.rotation.to_matrix()
-                        )
-                        print(
-                            f"constraint_settings.frame_a => {constraint_settings.frame_a}"
-                        )
-
+                        constraint_settings.frame_b = node.rotation.to_matrix()
                         constraint_settings.pivot_b = hit_info.point
-                        print(f"hit_info.point => {hit_info.point}")
+
                         # by default use a point 2 point constraint
                         if event.button == button.RIGHT:
                             constraint_settings.constraint_type = (
                                 physics.RigidConstraintType.Fixed
                             )
 
+                        grip_depth = (
+                            hit_info.point - render_camera.node.absolute_translation
+                        ).length()
+
                         self.mouse_grabber = MouseGrabber(
                             constraint_settings,
-                            (
-                                hit_info.point - render_camera.node.absolute_translation
-                            ).length(),
+                            grip_depth,
                             self.sim,
                         )
                     else:
@@ -451,21 +419,81 @@ class HabitatSimInteractiveViewer(Application):
             # end has raycast hit
         # end has physics enabled
 
-        self.previous_mouse_point = event.position
+        self.previous_mouse_point = self.get_mouse_position(event.position)
         self.redraw()
         event.accepted = True
 
-    def mouse_release_event(self, arg0: Application.MouseEvent) -> None:
+    def mouse_scroll_event(self, event: Application.MouseScrollEvent) -> None:
+        """
+        Handles `Application.MouseScrollEvent`. When in LOOK mode, enables camera
+        zooming (fine-grained zoom using shift) When in GRAB mode, adjusts the depth
+        of the grabber's object. (larger depth change rate using shift)
+        """
+        scroll_mod_val = (
+            event.offset.y
+            if abs(event.offset.y) > abs(event.offset.x)
+            else event.offset.x
+        )
+        if not scroll_mod_val:
+            return
+
+        # use shift to scale action response
+        shift_pressed = event.modifiers == Application.InputEvent.Modifier.SHIFT
+
+        # if interactive mode is False -> LOOK MODE
+        if not self.mouse_interaction:
+            # use shift for fine-grained zooming
+            mod_val = 1.01 if shift_pressed else 1.1
+            mod = mod_val if scroll_mod_val > 0 else 1.0 / mod_val
+            cam = self.render_camera  # .render_camera
+            cam.zoom(mod)
+            self.redraw()
+
+        elif self.mouse_interaction and self.mouse_grabber:
+            # adjust the depth
+            mod_val = 0.1 if shift_pressed else 0.01
+            self.mouse_grabber.grip_depth += scroll_mod_val * mod_val
+
+            # update location of grabbed object
+            viewport_point = self.get_mouse_position(event.position)
+            self.update_grab_position(viewport_point)
+        event.accepted = True
+
+    def mouse_release_event(self, event: Application.MouseEvent) -> None:
         """
         Release any existing constraints.
         """
-        print("Mouse Grabber RESET")
+        del self.mouse_grabber
         self.mouse_grabber = None
-        arg0.accepted = True
+        event.accepted = True
 
-    def get_mouse_position(self, mouse_event_position):
+    def update_grab_position(self, point: Vector2i) -> None:
+        """
+        Accepts a point derived from a mouse click event and updates the
+        transform of the mouse grabber.
+        """
+        # check mouse grabber
+        if not self.mouse_grabber:
+            return
+
+        render_camera = self.render_camera.render_camera
+        ray = render_camera.unproject(point)
+
+        rotation: Matrix3x3 = self.agent_body_node.rotation.to_matrix()
+        translation: Vector3 = (
+            render_camera.node.absolute_translation
+            + ray.direction * self.mouse_grabber.grip_depth
+        )
+        self.mouse_grabber.update_transform(Matrix4.from_(rotation, translation))
+
+    def get_mouse_position(self, mouse_event_position: Vector2i) -> None:
+        """
+        This function will get a screen-space mouse position appropriately
+        scaled based on framebuffer size and window size.  Generally these would be
+        the same value, but on certain HiDPI displays (Retina displays) they may be
+        different.
+        """
         scaling = Vector2i(self.framebuffer_size) / Vector2i(self.window_size)
-        print(scaling)
         return mouse_event_position * scaling
 
     def exit_event(self, event: Application.ExitEvent):
@@ -486,6 +514,22 @@ class HabitatSimInteractiveViewer(Application):
 =====================================================
 Welcome to the Habitat-sim Python Viewer application!
 =====================================================
+Mouse Functions ('m' to toggle mode):
+----------------
+In LOOK mode (default):
+    LEFT:
+        Click and drag to rotate the agent and look up/down.
+    WHEEL:
+        Modify orthographic camera zoom/perspective camera FOV (+SHIFT for fine grained control)
+
+In GRAB mode (with 'enable-physics'):
+    LEFT:
+        Click and drag to pickup and move an object with a point-to-point constraint (e.g. ball joint).
+    RIGHT:
+        Click and drag to pickup and move an object with a fixed frame constraint.
+    WHEEL (with picked object):
+        Pull gripped object closer or push it away.
+
 Key Commands:
 -------------
     esc:        Exit the application.
@@ -523,13 +567,12 @@ class MouseGrabber:
         self.settings = settings
         self.simulator = sim
 
-        # defines the distance of the grip point from the camera/eye for pivot
-        # updates
+        # defines distance of the grip point from the camera for pivot updates
         self.grip_depth = grip_depth
         self.constraint_id = sim.create_rigid_constraint(settings)
-        print(f"setting => {settings}")
-        print(f"grip_depth => {grip_depth}")
-        print(f"constraint_id => {self.constraint_id}")
+
+    def __del__(self):
+        self.remove_constraint()
 
     def remove_constraint(self):
         """
