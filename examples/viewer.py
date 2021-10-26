@@ -6,7 +6,7 @@ import ctypes
 import math
 import sys
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
@@ -17,6 +17,7 @@ from magnum.platform.glfw import Application
 import habitat_sim
 from examples.settings import default_sim_settings, make_cfg
 from habitat_sim import physics
+from habitat_sim.logging import LoggingContext, logger
 
 
 class HabitatSimInteractiveViewer(Application):
@@ -79,6 +80,7 @@ class HabitatSimInteractiveViewer(Application):
         self.reconfigure_sim()
 
         self.time_since_last_simulation = 0.0
+        LoggingContext.reinitialize_from_env()
         self.print_help_text()
 
     def draw_event(self) -> None:
@@ -244,34 +246,34 @@ class HabitatSimInteractiveViewer(Application):
 
         elif key == pressed.SPACE:
             if not self.sim.config.sim_cfg.enable_physics:
-                print("Warning: physics was not enabled during setup")
+                logger.info("Warning: physics was not enabled during setup")
             else:
                 self.simulating = not self.simulating
-                print("Command: physics simulating set to ", self.simulating)
+                logger.info(f"Command: physics simulating set to {self.simulating}")
 
         elif key == pressed.PERIOD:
             if self.simulating:
-                print("Warning: physic simulation already running")
+                logger.info("Warning: physic simulation already running")
             else:
                 self.simulate_single_step = True
-                print("Command: physics step taken")
+                logger.info("Command: physics step taken")
 
         # TODO: In a future PR, a mouse GRAB interaction mode will be added
         #       and this key press will be used to toggle between modes
         elif key == pressed.M:
             self.mouse_interaction = not self.mouse_interaction
             if self.mouse_interaction:
-                print("Command: mouse mode set to GRAB")
+                logger.info("Command: mouse mode set to GRAB")
             else:
-                print("Command: mouse mode set to LOOK")
+                logger.info("Command: mouse mode set to LOOK")
 
         elif key == pressed.R:
             self.reconfigure_sim()
-            print("Command: simulator re-loaded")
+            logger.info("Command: simulator re-loaded")
 
         elif key == pressed.V:
             self.invert_gravity()
-            print("Command: gravity inverted")
+            logger.info("Command: gravity inverted")
 
         # update map of moving/looking keys which are currently pressed
         if key in self.pressed:
@@ -413,7 +415,7 @@ class HabitatSimInteractiveViewer(Application):
                             self.sim,
                         )
                     else:
-                        print("Oops, couldn't find the hit object. That's odd.")
+                        logger.info("Oops, couldn't find the hit object. That's odd.")
                 # end if didn't hit the scene
             # end has raycast hit
         # end has physics enabled
