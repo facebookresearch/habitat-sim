@@ -1013,13 +1013,14 @@ bool Simulator::isNavMeshVisualizationActive() {
 
 int Simulator::addTrajectoryObject(const std::string& trajVisName,
                                    const std::vector<Mn::Vector3>& pts,
+                                   const std::vector<Mn::Color3>& colorVec,
                                    int numSegments,
                                    float radius,
-                                   const Magnum::Color4& color,
                                    bool smooth,
                                    int numInterp) {
-  if (renderer_)
+  if (renderer_) {
     renderer_->acquireGlContext();
+  }
 
   // 0. Deduplicate sequential points
   std::vector<Magnum::Vector3> uniquePts;
@@ -1034,7 +1035,7 @@ int Simulator::addTrajectoryObject(const std::string& trajVisName,
 
   // 1. create trajectory tube asset from points and save it
   bool success = resourceManager_->buildTrajectoryVisualization(
-      trajVisName, uniquePts, numSegments, radius, color, smooth, numInterp);
+      trajVisName, uniquePts, colorVec, numSegments, radius, smooth, numInterp);
   if (!success) {
     ESP_ERROR() << "Failed to create Trajectory visualization mesh for"
                 << trajVisName;
@@ -1067,7 +1068,8 @@ int Simulator::addTrajectoryObject(const std::string& trajVisName,
   trajVisNameByID[trajVisID] = trajVisName;
 
   return trajVisID;
-}  // Simulator::showTrajectoryVisualization
+
+}  // Simulator::addTrajectoryObject (vector of colors)
 
 // Agents
 void Simulator::sampleRandomAgentState(agent::AgentState& agentState) {

@@ -1455,9 +1455,9 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
 bool ResourceManager::buildTrajectoryVisualization(
     const std::string& trajVisName,
     const std::vector<Mn::Vector3>& pts,
+    const std::vector<Mn::Color3>& colorVec,
     int numSegments,
     float radius,
-    const Magnum::Color4& color,
     bool smooth,
     int numInterp) {
   // enforce required minimum/reasonable values if illegal values specified
@@ -1472,6 +1472,11 @@ bool ResourceManager::buildTrajectoryVisualization(
   if (radius <= 0) {
     radius = .001;
   }
+  if (pts.size() < 2) {
+    ESP_ERROR()
+        << "Cannot build a trajectory from fewer than 2 points. Aborting.";
+    return false;
+  }
 
   ESP_DEBUG() << "Calling trajectoryTubeSolid to build a tube named :"
               << trajVisName << "with" << pts.size()
@@ -1481,7 +1486,7 @@ bool ResourceManager::buildTrajectoryVisualization(
 
   // create mesh tube
   Cr::Containers::Optional<Mn::Trade::MeshData> trajTubeMesh =
-      geo::buildTrajectoryTubeSolid(pts, numSegments, radius, smooth,
+      geo::buildTrajectoryTubeSolid(pts, colorVec, numSegments, radius, smooth,
                                     numInterp);
   ESP_DEBUG() << "Successfully returned from trajectoryTubeSolid";
 
@@ -1509,8 +1514,9 @@ bool ResourceManager::buildTrajectoryVisualization(
   // default material for now
   auto phongMaterial = gfx::PhongMaterialData::create_unique();
   phongMaterial->specularColor = {1.0, 1.0, 1.0, 1.0};
-  phongMaterial->ambientColor = color;
-  phongMaterial->diffuseColor = color;
+  phongMaterial->shininess = 160.f;
+  phongMaterial->ambientColor = {1.0, 1.0, 1.0, 1.0};
+  phongMaterial->perVertexObjectId = true;
 
   meshMetaData.root.materialID = std::to_string(nextMaterialID_++);
   shaderManager_.set(meshMetaData.root.materialID,
@@ -1525,8 +1531,8 @@ bool ResourceManager::buildTrajectoryVisualization(
   // make LoadedAssetData corresponding to this asset
   LoadedAssetData loadedAssetData{info, meshMetaData};
   // TODO : need to free render assets associated with this object if
-  // collision occurs, otherwise leak! (Currently unsupported). if
-  // (resourceDict_.count(trajVisName) != 0) {
+  // collision occurs, otherwise leak! (Currently unsupported).
+  // if (resourceDict_.count(trajVisName) != 0) {
   //   resourceDict_.erase(trajVisName);
   // }
   auto inserted =
