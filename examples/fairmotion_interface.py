@@ -3,6 +3,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import math
+from typing import Any, Dict
 
 from fairmotion.core import motion
 from fairmotion.data import amass
@@ -14,23 +15,12 @@ from habitat_sim.physics import JointType
 
 #### Constants
 ROOT = 0
-
-# I am including an outer key "name" to leave this open to multiple save files
-DEFAULT_METADATA = {
-    "default": {
-        "urdf_path": "../habitat-sim/data/test_assets/urdf/amass_male.urdf",
-        "amass_path": "../fairmotion/amass_test_data/CMU/CMU/06/06_12_poses.npz",
-        "bm_path": "../fairmotion/amass_test_data/smplh/male/model.npz",
-        "rotation": Quaternion.rotation(Deg(-90), Vector3.x_axis())
-        * Quaternion.rotation(Deg(90), Vector3.z_axis()),
-        "translation": Vector3([2.5, 0.0, 0.7]),
-    }
-}
+FILE_SUFFIX = "_fm_data"
 
 
 class FairmotionInterface:
     def __init__(
-        self, viewer, metadata=None, urdf_path=None, amass_path=None, bm_path=None
+        self, viewer, metadata_name=None, urdf_path=None, amass_path=None, bm_path=None
     ) -> None:
 
         self.viewer = viewer
@@ -39,16 +29,32 @@ class FairmotionInterface:
         self.motion: motion.Motion = None
         self.metadata = {}
         self.motion_stepper = 0
-        self.metadata = DEFAULT_METADATA
+        self.setup_default_metadata()
 
         self.key_frames = None
         self.key_frame_models = []
         self.show_key_frames = False
         self.traj_id: int = None
+        self.is_reversed = False
 
-        if metadata is not None:
-            self.metadata = metadata
+        # loading from file if given
+        # if file doesn't exist, make a new set of data with
+        # metadata_name as name
+        if metadata_name is not None:
+            try:
+                self.fetch_metadata(metadata_name)
+                self.set_data(name=metadata_name)
+            except Exception:
+                Exception(f"No file with name {metadata_name}, creating new file.")
+                self.set_data(
+                    name=metadata_name,
+                    urdf_path=urdf_path,
+                    amass_path=amass_path,
+                    bm_path=bm_path,
+                )
+                self.save_metadata(metadata_name)
         else:
+            # This sets the instance defaults with init(args)
             self.set_data(urdf_path=urdf_path, amass_path=amass_path, bm_path=bm_path)
 
         # positional offsets
@@ -56,6 +62,23 @@ class FairmotionInterface:
         self.translation_offset: Vector3 = self.metadata["default"]["translation"]
 
         self.load_motion()
+
+    def setup_default_metadata(self):
+        # I am including an outer key "name" to leave this open to multiple save files
+        METADATA_DEFAULT = {
+            "default": {
+                "urdf_path": "../habitat-sim/data/test_assets/urdf/amass_male.urdf",
+                "amass_path": "../fairmotion/amass_test_data/CMU/CMU/06/06_12_poses.npz",
+                "bm_path": "../fairmotion/amass_test_data/smplh/male/model.npz",
+                "rotation": Quaternion.rotation(Deg(-90), Vector3.x_axis())
+                * Quaternion.rotation(Deg(90), Vector3.z_axis()),
+                "translation": Vector3([2.5, 0.0, 0.7]),
+            }
+        }
+
+        self.metadata["default"] = METADATA_DEFAULT["default"]
+        self.save_metadata("default")
+        self.fetch_metadata("default")
 
     def set_data(
         self,
@@ -66,22 +89,86 @@ class FairmotionInterface:
         rotation=None,
         translation=None,
     ):
-        data = self.metadata[name]
+
+        data = None
+        # if name is default, set data for "default"
+        # else if name is in metadata, set data values to args or default values
+        if name in self.metadata:
+            data = self.metadata[name]
+
+        # else if name not in metadata, build data from name, args, default values, and add to lib
+        else:
+            self.metadata[name] = {}
+            data = self.metadata[name]
+
         data["urdf_path"] = urdf_path or self.metadata["default"]["urdf_path"]
         data["amass_path"] = amass_path or self.metadata["default"]["amass_path"]
         data["bm_path"] = bm_path or self.metadata["default"]["bm_path"]
         data["rotation"] = rotation or self.metadata["default"]["rotation"]
         data["translation"] = translation or self.metadata["default"]["translation"]
 
-    def save_metadata(self, name):
+    def metadata_parser(self, metadata_dict: Dict[str, Any], to_file: bool):
+        """
+        Convert metadata dict to and from a form that is json serializable
+        """
+        data = metadata_dict.copy()
+
+        if to_file:
+            for k, v in data.items():
+                if type(v) == Quaternion:
+                    q_list = [list(v.vector)]
+                    q_list.append(v.scalar)
+                    # Tuple[Tuple[float, float, float], float]
+                    data[k] = q_list
+
+                elif type(v) == Vector3:
+                    data[k] = list(v)
+
+        elif not to_file:
+            for k, v in data.items():
+                if k == "rotation":
+                    # Tuple[Tuple[float, float, float], float]
+                    data[k] = Quaternion(v)
+                elif k == "translation":
+                    data[k] = Vector3(v)
+        return data
+
+    def save_metadata(self, name: str):
         """
         Saves the current metadata to a txt file in given file path
         """
+        import json
+
+        filepath = f"../habitat-sim/examples/fairmotion_data/{name + FILE_SUFFIX}.json"
+        data = {name: self.metadata_parser(self.metadata[name], to_file=True)}
+
+        with open(filepath, "w") as file:
+            json.dump(data, file)
 
     def fetch_metadata(self, name):
         """
-        Fetch metadata from a txt file in given file path and sets current metadata
+        Fetch metadata from a json file in given file name and sets current metadata
         """
+        import json
+
+        if FILE_SUFFIX in name and len(name) > len(FILE_SUFFIX):
+            # if name give is full name of file, truncate FILE_SUFFIX
+            filename = name
+            name = name[: -len(FILE_SUFFIX)]
+            print(f"name of metadata after slice => {name}")
+        else:
+            # including FILE_SUFFIX if not included in name
+            filename = name + FILE_SUFFIX
+
+        filepath = f"../habitat-sim/examples/fairmotion_data/{filename}.json"
+
+        try:
+            with open(filepath, "r") as file:
+                data = json.load(file)
+        except Exception:
+            raise Exception("Error: File does not appear to exist.")
+
+        self.metadata[name] = self.metadata_parser(data[name], to_file=False)
 
     def set_transform_offsets(
         self, rotate_offset: Quaternion = None, translate_offset: Vector3 = None
@@ -112,6 +199,8 @@ class FairmotionInterface:
         # TODO: Make this instead place the model infront of you
         # translate Human to appear infront of staircase in apt_0
         self.model.translation = self.translation_offset
+        self.next_pose()
+        self.motion_stepper -= 1
 
     def hide_model(self):
         if self.model:
@@ -122,9 +211,17 @@ class FairmotionInterface:
         """
         Use this method to step to next frame in draw event
         """
+
+        # This function tracks is_reversed and changes the direction of
+        # the motion accordingly.
+        def sign(i):
+            return -1 * i if self.is_reversed else i
+
         # repeat last frame: used mostly for position state change
         if repeat:
-            self.motion_stepper = (self.motion_stepper - 1) % self.motion.num_frames()
+            self.motion_stepper = (
+                self.motion_stepper - sign(1)
+            ) % self.motion.num_frames()
 
         if not self.model or not self.motion:
             return
@@ -134,14 +231,14 @@ class FairmotionInterface:
             new_root_translate,
             new_root_rotation,
         ) = self.convert_CMUamass_single_pose(
-            self.motion.poses[self.motion_stepper], self.model
+            self.motion.poses[abs(self.motion_stepper)], self.model
         )
         self.model.joint_positions = new_pose
         self.model.rotation = new_root_rotation
         self.model.translation = new_root_translate
 
         # iterate the frame counter
-        self.motion_stepper = (self.motion_stepper + 1) % self.motion.num_frames()
+        self.motion_stepper = (self.motion_stepper + sign(1)) % self.motion.num_frames()
 
     def convert_CMUamass_single_pose(self, pose, model):
         """

@@ -18,7 +18,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         super().__init__(sim_settings)
 
         # fairmotion init
-        self.fm_demo = FairmotionInterface(self)
+        self.fm_demo = FairmotionInterface(self, metadata_name="fm_demo")
 
     def draw_event(self) -> None:
         """
@@ -83,6 +83,10 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         elif key == pressed.K:
             # Toggle Key Frames
             self.fm_demo.toggle_key_frames()
+
+        elif key == pressed.SLASH:
+            # Toggle reverse direction of motion
+            self.fm_demo.is_reversed = not self.fm_demo.is_reversed
 
         # Everything below is used for testing
         elif key == pressed.I:
