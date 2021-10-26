@@ -8,8 +8,6 @@ import sys
 import time
 from typing import Any, Dict, List
 
-from habitat_sim import physics
-
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
@@ -18,6 +16,7 @@ from magnum.platform.glfw import Application
 
 import habitat_sim
 from examples.settings import default_sim_settings, make_cfg
+from habitat_sim import physics
 
 
 class HabitatSimInteractiveViewer(Application):
