@@ -63,7 +63,7 @@ class HabitatSimInteractiveViewer(Application):
 
         # toggle mouse utility toggle; True -> GRAB MODE
         self.mouse_interaction = True
-        self.mouse_grabber: MouseGrabber = None
+        self.mouse_grabber: Optional[MouseGrabber] = None
         self.previous_mouse_point = None
 
         # toggle physics simulation on/off
