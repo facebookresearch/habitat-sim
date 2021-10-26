@@ -1,0 +1,1 @@
+{"default": {"urdf_path": "../habitat-sim/data/test_assets/urdf/amass_male.urdf", "amass_path": "../fairmotion/amass_test_data/CMU/CMU/06/06_12_poses.npz", "bm_path": "../fairmotion/amass_test_data/smplh/male/model.npz", "rotation": [[-0.4999999701976776, 0.4999999701976776, 0.4999999701976776], 0.4999999701976776], "translation": [2.5, 0.0, 0.699999988079071]}}
