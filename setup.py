@@ -322,6 +322,13 @@ class CMakeBuild(build_ext):
             )
         ]
 
+        # temp
+        # cmake_args += ["-DCUDA_TOOLKIT_ROOT_DIR=/public/apps/cuda/11.2"]
+        # cmake_args += ["-DCMAKE_C_COMPILER=/public/apps/gcc/7.3.0/bin/gcc"]
+        # cmake_args += ["-DCMAKE_CXX_COMPILER=/public/apps/gcc/7.3.0/bin/g++"]
+        cmake_args += ["-DCMAKE_CUDA_HOST_COMPILER=/public/apps/gcc/7.3.0/bin/g++"]
+        # cmake_args += ["-DCMAKE_CUDA_COMPILER=/public/apps/cuda/11.2/bin/nvcc"]
+
         env = os.environ.copy()
         env["CXXFLAGS"] = '{} -DVERSION_INFO=\\"{}\\"'.format(
             env.get("CXXFLAGS", ""), self.distribution.get_version()
