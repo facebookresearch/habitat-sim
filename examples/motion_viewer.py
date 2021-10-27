@@ -2,20 +2,29 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import ctypes
 import math
+import sys
+from enum import Enum
 from typing import Any, Dict
+
+flags = sys.getdlopenflags()
+sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
 from magnum import Deg, Quaternion, Vector3, gl
 from magnum.platform.glfw import Application
-from viewer import HabitatSimInteractiveViewer, Timer
+from viewer import HabitatSimInteractiveViewer, MouseGrabber, Timer
 
 from examples.fairmotion_interface import FairmotionInterface
 from examples.settings import default_sim_settings
+from habitat_sim import physics
+from habitat_sim.logging import logger
 
 
 class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
     def __init__(self, sim_settings: Dict[str, Any]) -> None:
         super().__init__(sim_settings)
+        self.mouse_interaction = MouseMode.LOOK
 
         # fairmotion init
         self.fm_demo = FairmotionInterface(self, metadata_name="fm_demo")
@@ -88,6 +97,11 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             # Toggle reverse direction of motion
             self.fm_demo.is_reversed = not self.fm_demo.is_reversed
 
+        elif key == pressed.N:
+            # cycle through mouse modes
+            self.cycle_mouse_mode()
+            print((self.mouse_interaction))
+
         # Everything below is used for testing
         elif key == pressed.I:
             r = self.fm_demo.rotation_offset
@@ -109,6 +123,113 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         # End of testing section
 
         super().key_press_event(event)
+
+    def mouse_press_event(self, event: Application.MouseEvent) -> None:
+        """
+        Handles `Application.MouseEvent`. When in GRAB mode, click on
+        objects to drag their position. (right-click for fixed constraints)
+        """
+
+        button = Application.MouseEvent.Button
+        physics_enabled = self.sim.get_physics_simulation_library()
+
+        # if interactive mode is True -> GRAB MODE
+        if self.mouse_interaction == MouseMode.GRAB and physics_enabled:
+            render_camera = self.render_camera.render_camera
+            ray = render_camera.unproject(self.get_mouse_position(event.position))
+            raycast_results = self.sim.cast_ray(ray=ray)
+
+            if raycast_results.has_hits():
+                hit_object, ao_link = -1, -1
+                hit_info = raycast_results.hits[0]
+
+                if hit_info.object_id >= 0:
+                    # we hit an non-staged collision object
+                    ro_mngr = self.sim.get_rigid_object_manager()
+                    ao_mngr = self.sim.get_articulated_object_manager()
+                    ao = ao_mngr.get_object_by_id(hit_info.object_id)
+                    ro = ro_mngr.get_object_by_id(hit_info.object_id)
+
+                    if ro:
+                        # if grabbed an object
+                        hit_object = hit_info.object_id
+                        object_pivot = ro.transformation.inverted().transform_point(
+                            hit_info.point
+                        )
+                        object_frame = ro.rotation.inverted()
+                    elif ao:
+                        # if grabbed the base link
+                        hit_object = hit_info.object_id
+                        object_pivot = ao.transformation.inverted().transform_point(
+                            hit_info.point
+                        )
+                        object_frame = ao.rotation.inverted()
+                    else:
+                        for ao_handle in ao_mngr.get_objects_by_handle_substring():
+                            ao = ao_mngr.get_object_by_handle(ao_handle)
+                            link_to_obj_ids = ao.link_object_ids
+                            print(ao_handle)
+
+                            if hit_info.object_id in link_to_obj_ids:
+                                # if we got a link
+                                ao_link = link_to_obj_ids[hit_info.object_id]
+                                object_pivot = (
+                                    ao.get_link_scene_node(ao_link)
+                                    .transformation.inverted()
+                                    .transform_point(hit_info.point)
+                                )
+                                object_frame = ao.get_link_scene_node(
+                                    ao_link
+                                ).rotation.inverted()
+                                hit_object = ao.object_id
+                                break
+                    # done checking for AO
+
+                    if hit_object >= 0:
+                        node = self.agent_body_node
+                        constraint_settings = physics.RigidConstraintSettings()
+
+                        constraint_settings.object_id_a = hit_object
+                        constraint_settings.link_id_a = ao_link
+                        constraint_settings.pivot_a = object_pivot
+                        constraint_settings.frame_a = (
+                            object_frame.to_matrix() @ node.rotation.to_matrix()
+                        )
+                        constraint_settings.frame_b = node.rotation.to_matrix()
+                        constraint_settings.pivot_b = hit_info.point
+
+                        # by default use a point 2 point constraint
+                        if event.button == button.RIGHT:
+                            constraint_settings.constraint_type = (
+                                physics.RigidConstraintType.Fixed
+                            )
+
+                        grip_depth = (
+                            hit_info.point - render_camera.node.absolute_translation
+                        ).length()
+
+                        self.mouse_grabber = MouseGrabber(
+                            constraint_settings,
+                            grip_depth,
+                            self.sim,
+                        )
+                    else:
+                        logger.info("Oops, couldn't find the hit object. That's odd.")
+                # end if didn't hit the scene
+            # end has raycast hit
+        # end has physics enabled
+
+        self.previous_mouse_point = self.get_mouse_position(event.position)
+        self.redraw()
+        event.accepted = True
+
+    def cycle_mouse_mode(self):
+        if self.mouse_interaction == MouseMode.LOOK:
+            self.mouse_interaction = MouseMode.GRAB
+        elif self.mouse_interaction == MouseMode.GRAB:
+            self.mouse_interaction = MouseMode.MOTION
+        elif self.mouse_interaction == MouseMode.MOTION:
+            self.mouse_interaction = MouseMode.LOOK
 
     def print_help_text(self) -> None:
         """
@@ -141,10 +262,16 @@ Key Commands:
     Fairmotion Interface:
     'f':        Load model with current motion data.
                 [shft] Hide model.
-    'k':        Toggle key fram preview of loaded motion.
+    'k':        Toggle key fram preview of 1loaded motion.
 =====================================================
 """
         )
+
+
+class MouseMode(Enum):
+    LOOK = 0
+    GRAB = 1
+    MOTION = 2
 
 
 if __name__ == "__main__":

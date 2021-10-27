@@ -8,7 +8,7 @@ from typing import Any, Dict
 from fairmotion.core import motion
 from fairmotion.data import amass
 from fairmotion.ops import conversions
-from magnum import Deg, Matrix3x3, Quaternion, Vector3
+from magnum import Color3, Deg, Matrix3x3, Quaternion, Vector3
 
 import habitat_sim
 from habitat_sim.physics import JointType
@@ -193,6 +193,9 @@ class FairmotionInterface:
         )
         assert self.model.is_alive
 
+        print(f"model = {((self.model.root_scene_node.translation))}")
+        self.model.root_scene_node.translate(Vector3([5, 5, 5]))
+        print(f"model = {((self.model.root_scene_node.translation))}")
         # change motion_type to KINEMATIC
         self.model.motion_type = habitat_sim.physics.MotionType.KINEMATIC
 
@@ -368,7 +371,7 @@ class FairmotionInterface:
         Build and display the trajectory visuals for the key frames
         """
         if len(self.key_frames) >= 2:
-            traj_radius = 0.01
+            traj_radius = 0.02
             traj_offset = self.translation_offset + Vector3(0, 0, 0)
 
             root_points = [
@@ -381,8 +384,16 @@ class FairmotionInterface:
                 for x in root_points
             ]
 
-            self.traj_id = self.viewer.sim.add_trajectory_object(
+            # TODO: This function is not working. It is supposed to produce a gradient
+            #       from RED to YELLOW to GREEN but it is producing a black solely
+            colors = [
+                Color3(255.0, 0.0, 0.0),
+                Color3(255.0, 255.0, 0.0),
+                Color3(0.0, 255.0, 0.0),
+            ]
+            self.traj_id = self.viewer.sim.add_gradient_trajectory_object(
                 traj_vis_name="key_frame_traj",
+                colors=colors,
                 points=root_points,
                 num_segments=3,
                 radius=traj_radius,
