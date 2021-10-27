@@ -10,10 +10,10 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 
 flags = sys.getdlopenflags()
-sys.setdlopenflags(flags | ctypes.RTLD_mn.glOBAL)
+sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
 import magnum as mn
-from magnum.platform.mn.glfw import Application
+from magnum.platform.glfw import Application
 
 import habitat_sim
 from examples.settings import default_sim_settings, make_cfg
@@ -68,12 +68,12 @@ class HabitatSimInteractiveViewer(Application):
         self.mouse_grabber: Optional[MouseGrabber] = None
         self.previous_mouse_point = None
 
-        # togmn.gle physics simulation on/off
+        # toggle physics simulation on/off
         self.simulating = True
 
-        # togmn.gle a sinmn.gle simulation step at the next opportunity if not
+        # toggle a single simulation step at the next opportunity if not
         # simulating continuously.
-        self.simulate_sinmn.gle_step = False
+        self.simulate_single_step = False
 
         # configure our simulator
         self.cfg: habitat_sim.simulator.Configuration = None
@@ -103,12 +103,12 @@ class HabitatSimInteractiveViewer(Application):
 
         # Occasionally a frame will pass quicker than 1/60 seconds
         if self.time_since_last_simulation >= 1.0 / 60.0:
-            if self.simulating or self.simulate_sinmn.gle_step:
+            if self.simulating or self.simulate_single_step:
                 # step physics at a fixed rate
-                # In the interest of frame rate, only a sinmn.gle step is taken,
+                # In the interest of frame rate, only a single step is taken,
                 # even if time_since_last_simulation is quite large
                 self.sim.step_world(1.0 / 60.0)
-                self.simulate_sinmn.gle_step = False
+                self.simulate_single_step = False
 
             # reset time_since_last_simulation, accounting for potential overflow
             self.time_since_last_simulation = math.fmod(
@@ -257,11 +257,11 @@ class HabitatSimInteractiveViewer(Application):
             if self.simulating:
                 logger.warn("Warning: physic simulation already running")
             else:
-                self.simulate_sinmn.gle_step = True
+                self.simulate_single_step = True
                 logger.info("Command: physics step taken")
 
         # TODO: In a future PR, a mouse GRAB interaction mode will be added
-        #       and this key press will be used to togmn.gle between modes
+        #       and this key press will be used to toggle between modes
         elif key == pressed.M:
             self.cycle_mouse_mode()
             logger.info(f"Command: mouse mode set to {self.mouse_interaction}")
@@ -518,7 +518,7 @@ class HabitatSimInteractiveViewer(Application):
 =====================================================
 Welcome to the Habitat-sim Python Viewer application!
 =====================================================
-Mouse Functions ('m' to togmn.gle mode):
+Mouse Functions ('m' to toggle mode):
 ----------------
 In LOOK mode (default):
     LEFT:
@@ -549,8 +549,8 @@ Key Commands:
     'r':        Reset the simulator with the most recently loaded scene.
 
     Object Interactions:
-    SPACE:      Togmn.gle physics simulation on/off.
-    '.':        Take a sinmn.gle simulation step if not simulating continuously.
+    SPACE:      Toggle physics simulation on/off.
+    '.':        Take a single simulation step if not simulating continuously.
     'v':        (physics) Invert gravity.
 =====================================================
 """
