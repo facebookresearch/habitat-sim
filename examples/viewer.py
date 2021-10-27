@@ -368,7 +368,6 @@ class HabitatSimInteractiveViewer(Application):
                         for ao_handle in ao_mngr.get_objects_by_handle_substring():
                             ao = ao_mngr.get_object_by_handle(ao_handle)
                             link_to_obj_ids = ao.link_object_ids
-                            print(ao.object_id)
 
                             if hit_info.object_id in link_to_obj_ids:
                                 # if we got a link
