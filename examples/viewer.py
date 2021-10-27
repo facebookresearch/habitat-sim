@@ -10,10 +10,10 @@ from enum import Enum
 from typing import Any, Dict, List, Optional
 
 flags = sys.getdlopenflags()
-sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
+sys.setdlopenflags(flags | ctypes.RTLD_mn.glOBAL)
 
-from magnum import Matrix3x3, Matrix4, Vector2i, Vector3, gl
-from magnum.platform.glfw import Application
+import magnum as mn
+from magnum.platform.mn.glfw import Application
 
 import habitat_sim
 from examples.settings import default_sim_settings, make_cfg
@@ -29,7 +29,7 @@ class HabitatSimInteractiveViewer(Application):
         self.sim_settings: Dict[str:Any] = sim_settings
 
         # set proper viewport size
-        self.viewport_size: Vector2i = gl.default_framebuffer.viewport.size()
+        self.viewport_size: mn.Vector2i = mn.gl.default_framebuffer.viewport.size()
         self.sim_settings["width"] = self.viewport_size[0]
         self.sim_settings["height"] = self.viewport_size[1]
 
@@ -68,12 +68,12 @@ class HabitatSimInteractiveViewer(Application):
         self.mouse_grabber: Optional[MouseGrabber] = None
         self.previous_mouse_point = None
 
-        # toggle physics simulation on/off
+        # togmn.gle physics simulation on/off
         self.simulating = True
 
-        # toggle a single simulation step at the next opportunity if not
+        # togmn.gle a sinmn.gle simulation step at the next opportunity if not
         # simulating continuously.
-        self.simulate_single_step = False
+        self.simulate_sinmn.gle_step = False
 
         # configure our simulator
         self.cfg: habitat_sim.simulator.Configuration = None
@@ -92,8 +92,8 @@ class HabitatSimInteractiveViewer(Application):
         """
         agent_acts_per_sec = 60.0
 
-        gl.default_framebuffer.clear(
-            gl.FramebufferClear.COLOR | gl.FramebufferClear.DEPTH
+        mn.gl.default_framebuffer.clear(
+            mn.gl.FramebufferClear.COLOR | mn.gl.FramebufferClear.DEPTH
         )
 
         # Agent actions should occur at a fixed rate per second
@@ -103,12 +103,12 @@ class HabitatSimInteractiveViewer(Application):
 
         # Occasionally a frame will pass quicker than 1/60 seconds
         if self.time_since_last_simulation >= 1.0 / 60.0:
-            if self.simulating or self.simulate_single_step:
+            if self.simulating or self.simulate_sinmn.gle_step:
                 # step physics at a fixed rate
-                # In the interest of frame rate, only a single step is taken,
+                # In the interest of frame rate, only a sinmn.gle step is taken,
                 # even if time_since_last_simulation is quite large
                 self.sim.step_world(1.0 / 60.0)
-                self.simulate_single_step = False
+                self.simulate_sinmn.gle_step = False
 
             # reset time_since_last_simulation, accounting for potential overflow
             self.time_since_last_simulation = math.fmod(
@@ -117,7 +117,7 @@ class HabitatSimInteractiveViewer(Application):
 
         self.sim._sensors["color_sensor"].draw_observation()
         self.render_camera.render_target.blit_rgba_to_default()
-        gl.default_framebuffer.bind()
+        mn.gl.default_framebuffer.bind()
 
         self.swap_buffers()
         Timer.next_frame()
@@ -226,7 +226,7 @@ class HabitatSimInteractiveViewer(Application):
         Sets the gravity vector to the negative of it's previous value. This is
         a good method for testing simulation functionality.
         """
-        gravity: Vector3 = self.sim.get_gravity() * -1
+        gravity: mn.Vector3 = self.sim.get_gravity() * -1
         self.sim.set_gravity(gravity)
 
     def key_press_event(self, event: Application.KeyEvent) -> None:
@@ -257,11 +257,11 @@ class HabitatSimInteractiveViewer(Application):
             if self.simulating:
                 logger.warn("Warning: physic simulation already running")
             else:
-                self.simulate_single_step = True
+                self.simulate_sinmn.gle_step = True
                 logger.info("Command: physics step taken")
 
         # TODO: In a future PR, a mouse GRAB interaction mode will be added
-        #       and this key press will be used to toggle between modes
+        #       and this key press will be used to togmn.gle between modes
         elif key == pressed.M:
             self.cycle_mouse_mode()
             logger.info(f"Command: mouse mode set to {self.mouse_interaction}")
@@ -465,7 +465,7 @@ class HabitatSimInteractiveViewer(Application):
         self.mouse_grabber = None
         event.accepted = True
 
-    def update_grab_position(self, point: Vector2i) -> None:
+    def update_grab_position(self, point: mn.Vector2i) -> None:
         """
         Accepts a point derived from a mouse click event and updates the
         transform of the mouse grabber.
@@ -477,21 +477,21 @@ class HabitatSimInteractiveViewer(Application):
         render_camera = self.render_camera.render_camera
         ray = render_camera.unproject(point)
 
-        rotation: Matrix3x3 = self.agent_body_node.rotation.to_matrix()
-        translation: Vector3 = (
+        rotation: mn.Matrix3x3 = self.agent_body_node.rotation.to_matrix()
+        translation: mn.Vector3 = (
             render_camera.node.absolute_translation
             + ray.direction * self.mouse_grabber.grip_depth
         )
-        self.mouse_grabber.update_transform(Matrix4.from_(rotation, translation))
+        self.mouse_grabber.update_transform(mn.Matrix4.from_(rotation, translation))
 
-    def get_mouse_position(self, mouse_event_position: Vector2i) -> None:
+    def get_mouse_position(self, mouse_event_position: mn.Vector2i) -> None:
         """
         This function will get a screen-space mouse position appropriately
         scaled based on framebuffer size and window size.  Generally these would be
         the same value, but on certain HiDPI displays (Retina displays) they may be
         different.
         """
-        scaling = Vector2i(self.framebuffer_size) / Vector2i(self.window_size)
+        scaling = mn.Vector2i(self.framebuffer_size) / mn.Vector2i(self.window_size)
         return mouse_event_position * scaling
 
     def cycle_mouse_mode(self):
@@ -518,7 +518,7 @@ class HabitatSimInteractiveViewer(Application):
 =====================================================
 Welcome to the Habitat-sim Python Viewer application!
 =====================================================
-Mouse Functions ('m' to toggle mode):
+Mouse Functions ('m' to togmn.gle mode):
 ----------------
 In LOOK mode (default):
     LEFT:
@@ -549,8 +549,8 @@ Key Commands:
     'r':        Reset the simulator with the most recently loaded scene.
 
     Object Interactions:
-    SPACE:      Toggle physics simulation on/off.
-    '.':        Take a single simulation step if not simulating continuously.
+    SPACE:      Togmn.gle physics simulation on/off.
+    '.':        Take a sinmn.gle simulation step if not simulating continuously.
     'v':        (physics) Invert gravity.
 =====================================================
 """
@@ -590,15 +590,15 @@ class MouseGrabber:
         """
         self.simulator.remove_rigid_constraint(self.constraint_id)
 
-    def updatePivot(self, pos: Vector3):
+    def updatePivot(self, pos: mn.Vector3):
         self.settings.pivot_b = pos
         self.simulator.update_rigid_constraint(self.constraint_id, self.settings)
 
-    def update_frame(self, frame: Matrix3x3):
+    def update_frame(self, frame: mn.Matrix3x3):
         self.settings.frame_b = frame
         self.simulator.update_rigid_constraint(self.constraint_id, self.settings)
 
-    def update_transform(self, transform: Matrix4):
+    def update_transform(self, transform: mn.Matrix4):
         self.settings.frame_b = transform.rotation()
         self.settings.pivot_b = transform.translation
         self.simulator.update_rigid_constraint(self.constraint_id, self.settings)
