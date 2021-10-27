@@ -304,7 +304,7 @@ class HabitatSimInteractiveViewer(Application):
         # if interactive mode is False -> LOOK MODE
         if event.buttons == button.LEFT and self.mouse_interaction == MouseMode.LOOK:
             agent = self.sim.agents[self.agent_id]
-            delta = event.relative_position
+            delta = self.get_mouse_position(event.relative_position) / 2
             action = habitat_sim.agent.ObjectControls()
             act_spec = habitat_sim.agent.ActuationSpec
 
@@ -319,8 +319,7 @@ class HabitatSimInteractiveViewer(Application):
         # if interactive mode is TRUE -> GRAB MODE
         elif self.mouse_interaction == MouseMode.GRAB and self.mouse_grabber:
             # update location of grabbed object
-            viewport_point = self.get_mouse_position(event.position)
-            self.update_grab_position(viewport_point)
+            self.update_grab_position(self.get_mouse_position(event.position))
 
         self.previous_mouse_point = self.get_mouse_position(event.position)
         self.redraw()
@@ -456,8 +455,7 @@ class HabitatSimInteractiveViewer(Application):
             self.mouse_grabber.grip_depth += scroll_mod_val * mod_val
 
             # update location of grabbed object
-            viewport_point = self.get_mouse_position(event.position)
-            self.update_grab_position(viewport_point)
+            self.update_grab_position(self.get_mouse_position(event.position))
         event.accepted = True
 
     def mouse_release_event(self, event: Application.MouseEvent) -> None:
