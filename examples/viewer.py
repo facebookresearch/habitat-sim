@@ -247,31 +247,31 @@ class HabitatSimInteractiveViewer(Application):
 
         elif key == pressed.SPACE:
             if not self.sim.config.sim_cfg.enable_physics:
-                logger.info("Warning: physics was not enabled during setup")
+                logger.error("Warning: physics was not enabled during setup")
             else:
                 self.simulating = not self.simulating
-                logger.info(f"Command: physics simulating set to {self.simulating}")
+                logger.error(f"Command: physics simulating set to {self.simulating}")
 
         elif key == pressed.PERIOD:
             if self.simulating:
-                logger.info("Warning: physic simulation already running")
+                logger.error("Warning: physic simulation already running")
             else:
                 self.simulate_single_step = True
-                logger.info("Command: physics step taken")
+                logger.error("Command: physics step taken")
 
         # TODO: In a future PR, a mouse GRAB interaction mode will be added
         #       and this key press will be used to toggle between modes
         elif key == pressed.M:
             self.cycle_mouse_mode()
-            logger.info(f"Command: mouse mode set to {self.mouse_interaction}")
+            logger.error(f"Command: mouse mode set to {self.mouse_interaction}")
 
         elif key == pressed.R:
             self.reconfigure_sim()
-            logger.info("Command: simulator re-loaded")
+            logger.error("Command: simulator re-loaded")
 
         elif key == pressed.V:
             self.invert_gravity()
-            logger.info("Command: gravity inverted")
+            logger.error("Command: gravity inverted")
 
         # update map of moving/looking keys which are currently pressed
         if key in self.pressed:
@@ -414,7 +414,7 @@ class HabitatSimInteractiveViewer(Application):
                             self.sim,
                         )
                     else:
-                        logger.info("Oops, couldn't find the hit object. That's odd.")
+                        logger.error("Oops, couldn't find the hit object. That's odd.")
                 # end if didn't hit the scene
             # end has raycast hit
         # end has physics enabled
@@ -515,7 +515,7 @@ class HabitatSimInteractiveViewer(Application):
         """
         Print the Key Command help text.
         """
-        logger.info(
+        logger.error(
             """
 =====================================================
 Welcome to the Habitat-sim Python Viewer application!
@@ -601,7 +601,6 @@ class MouseGrabber:
         self.simulator.update_rigid_constraint(self.constraint_id, self.settings)
 
     def update_transform(self, transform: Matrix4):
-        transform = Matrix4(transform)
         self.settings.frame_b = transform.rotation()
         self.settings.pivot_b = transform.translation
         self.simulator.update_rigid_constraint(self.constraint_id, self.settings)
