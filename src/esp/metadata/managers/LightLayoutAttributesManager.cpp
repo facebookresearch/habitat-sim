@@ -13,6 +13,8 @@ namespace metadata {
 using attributes::LightInstanceAttributes;
 using attributes::LightLayoutAttributes;
 namespace managers {
+using core::managedContainers::ManagedFileBasedContainer;
+using core::managedContainers::ManagedObjectAccess;
 
 LightLayoutAttributes::ptr LightLayoutAttributesManager::createObject(
     const std::string& lightConfigName,

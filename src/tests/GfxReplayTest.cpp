@@ -107,6 +107,10 @@ void GfxReplayTest::testRecorder() {
   // cosntruct an AssetInfo with override color material
   CORRADE_VERIFY(!info.overridePhongMaterial);
   esp::assets::AssetInfo info2(info);
+  // change shadertype to make sure change is registered and retained through
+  // save/read of replay data
+  info2.shaderTypeToUse =
+      esp::metadata::attributes::ObjectInstanceShaderType::Flat;
   info2.overridePhongMaterial = esp::assets::PhongMaterialColor();
   info2.overridePhongMaterial->ambientColor = Mn::Color4(0.1, 0.2, 0.3, 0.4);
   info2.overridePhongMaterial->diffuseColor = Mn::Color4(0.2, 0.3, 0.4, 0.5);

@@ -15,16 +15,19 @@
 namespace esp {
 namespace metadata {
 namespace managers {
+using core::managedContainers::ManagedFileBasedContainer;
+using core::managedContainers::ManagedObjectAccess;
+
 /**
  * @brief single instance class managing templates describing physical objects
  */
 class ObjectAttributesManager
     : public AbstractObjectAttributesManager<attributes::ObjectAttributes,
-                                             core::ManagedObjectAccess::Copy> {
+                                             ManagedObjectAccess::Copy> {
  public:
   ObjectAttributesManager()
       : AbstractObjectAttributesManager<attributes::ObjectAttributes,
-                                        core::ManagedObjectAccess::Copy>::
+                                        ManagedObjectAccess::Copy>::
             AbstractObjectAttributesManager("Object", "object_config.json") {
     // build this manager's copy constructor map
     this->copyConstructorMap_["ObjectAttributes"] =

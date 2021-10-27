@@ -7,6 +7,7 @@
 namespace esp {
 namespace metadata {
 namespace attributes {
+using esp::core::managedContainers::ManagedObjectAccess;
 
 SceneDatasetAttributes::SceneDatasetAttributes(
     const std::string& datasetName,
@@ -25,8 +26,8 @@ SceneDatasetAttributes::SceneDatasetAttributes(
 bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
     const attributes::SceneAttributes::ptr& sceneInstance) {
   // info display message prefix
-  std::string infoPrefix =
-      Cr::Utility::formatString("Dataset : '{}' : ", getSimplifiedHandle());
+  std::string infoPrefix = Cr::Utility::formatString(
+      "Dataset : '{}' : ", this->getSimplifiedHandle());
 
   const std::string sceneInstanceName = sceneInstance->getHandle();
   // verify stage in sceneInstance (required) exists in SceneDatasetAttributes,

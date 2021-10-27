@@ -28,7 +28,7 @@ namespace managers {
  * of this class works with.  Must inherit from @ref
  * esp::metadata::attributes::AbstractObjectAttributes.
  */
-template <class T, core::ManagedObjectAccess Access>
+template <class T, ManagedObjectAccess Access>
 class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
  public:
   static_assert(std::is_base_of<attributes::AbstractObjectAttributes, T>::value,
@@ -163,7 +163,7 @@ class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
 /////////////////////////////
 // Class Template Method Definitions
 
-template <class T, core::ManagedObjectAccess Access>
+template <class T, ManagedObjectAccess Access>
 auto AbstractObjectAttributesManager<T, Access>::createObject(
     const std::string& attributesTemplateHandle,
     bool registerTemplate) -> AbsObjAttrPtr {
@@ -188,7 +188,7 @@ auto AbstractObjectAttributesManager<T, Access>::createObject(
 
 }  // AbstractObjectAttributesManager<T>::createObject
 
-template <class T, core::ManagedObjectAccess Access>
+template <class T, ManagedObjectAccess Access>
 auto AbstractObjectAttributesManager<T, Access>::
     loadAbstractObjectAttributesFromJson(AbsObjAttrPtr attributes,
                                          const io::JsonGenericValue& jsonDoc)
@@ -296,14 +296,14 @@ auto AbstractObjectAttributesManager<T, Access>::
   // attributes, overriding constructor defaults.  Do not overwrite anything for
   // unknown
   if (shaderTypeVal !=
-      getShaderTypeName(attributes::ObjectInstanceShaderType::Unknown)) {
+      getShaderTypeName(attributes::ObjectInstanceShaderType::Unspecified)) {
     attributes->setShaderType(shaderTypeVal);
   }
 
   return attributes;
 }  // AbstractObjectAttributesManager<AbsObjAttrPtr>::createObjectAttributesFromJson
 
-template <class T, core::ManagedObjectAccess Access>
+template <class T, ManagedObjectAccess Access>
 std::string
 AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
     AbsObjAttrPtr attributes,

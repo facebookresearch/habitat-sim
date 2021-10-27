@@ -3,6 +3,7 @@ import builtins
 import itertools
 import os
 import os.path as osp
+import platform
 import shlex
 import subprocess
 import sys
@@ -11,7 +12,7 @@ import time
 import git
 
 builtins.__HSIM_SETUP__ = True
-sys.path.append("../")
+sys.path.insert(0, "../")
 
 import habitat_sim
 
@@ -29,6 +30,35 @@ conda build \
 def call(cmd, env=None):
     cmd = shlex.split(cmd)
     subprocess.check_call(cmd, env=env)
+
+
+def get_default_modes_and_vers():
+    py_vers = ["3.6", "3.7", "3.8"]
+    bullet_modes = [False, True]
+    if platform.system() == "Darwin":
+        return py_vers, bullet_modes, [False], [None]
+    elif platform.system() == "Linux":  # noqa: SIM106
+        return py_vers, bullet_modes, [True, False], [None]
+    else:
+        raise RuntimeError(f"Unknown system: {platform.system()}")
+
+
+def get_platform_string() -> str:
+    if platform.system() == "Darwin":
+        return "macos"
+    elif platform.system() == "Linux":  # noqa: SIM106
+        return "linux"
+    else:
+        raise RuntimeError(f"Unknown system: {platform.system()}")
+
+
+def get_headless_mode_for_test() -> bool:
+    if platform.system() == "Darwin":
+        return False
+    elif platform.system() == "Linux":  # noqa: SIM106
+        return True
+    else:
+        raise RuntimeError(f"Unknown system: {platform.system()}")
 
 
 def build_parser():
@@ -52,15 +82,12 @@ def build_parser():
 
 def main():
     args = build_parser().parse_args()
-    py_vers = ["3.6", "3.7", "3.8"]
-    bullet_modes = [True, False]
-    headless_modes = [True, False]
-    cuda_vers = [None, "9.2", "10.0"][0:1]
+    py_vers, bullet_modes, headless_modes, cuda_vers = get_default_modes_and_vers()
 
     # For CI test only one package build for test speed interest
     if args.ci_test:
         bullet_modes = [True]
-        headless_modes = [True]
+        headless_modes = [get_headless_mode_for_test()]
         py_vers = ["3.6"]
 
     for py_ver, use_bullet, headless, cuda_ver in itertools.product(
@@ -82,12 +109,12 @@ def main():
         if headless:
             build_string += "headless_"
             env["HEADLESS"] = "1"
-            env["CONDA_HEADLESS_FEATURE"] = "- headless"
+            env["HABITAT_HEADLESS_VARIANT"] = "headless"
 
         if use_bullet:
             build_string += "bullet_"
-            env["CONDA_BULLET_FEATURE"] = "- withbullet"
             env["WITH_BULLET"] = "1"
+            env["HABITAT_BULLET_VARIANT"] = "bullet"
         else:
             env["CONDA_BULLET"] = ""
 
@@ -104,7 +131,7 @@ def main():
                     "CONDA_CUDATOOLKIT_CONSTRAINT"
                 ] = "- cudatoolkit >=9.2,<9.3 # [not osx]"
 
-        build_string += "linux"
+        build_string += f"{get_platform_string()}"
 
         # including the commit hash in conda build string
         repo = git.Repo(search_parent_directories=True)
@@ -116,7 +143,7 @@ def main():
         call(
             build_cmd_template.format(
                 PY_VER=py_ver,
-                OUTPUT_FOLDER="hsim-linux",
+                OUTPUT_FOLDER=f"hsim-{get_platform_string()}",
                 ANACONDA_UPLOAD_MODE=""
                 if args.conda_upload
                 else "--no-anaconda-upload",

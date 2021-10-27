@@ -32,23 +32,19 @@ class GenericInstanceMeshData : public BaseMesh {
   ~GenericInstanceMeshData() override = default;
 
   /**
-   * @brief Split a .ply file by objectIDs into different meshes
-   *
-   * @param plyFile .ply file to load and split
-   * @return Mesh data split by objectID
+   * @brief Load a .ply file into one ore more @ref GenericInstanceMeshData,
+   * splitting the result into multiples if specified and if the source file's
+   * objectIds are compatibly configured to do so.
+   * @param importer The importer to use to load the .ply file
+   * @param plyFile Fully qualified filename of .ply file to load
+   * @param splitMesh Whether or not the resultant mesh should be split into
+   * multiple components based on objectIds, for frustum culling.
+   * @return vector holding one or more mesh results from the .ply file.
    */
-  static std::vector<std::unique_ptr<GenericInstanceMeshData>>
-  fromPlySplitByObjectId(Magnum::Trade::AbstractImporter& importer,
-                         const std::string& plyFile);
-
-  /**
-   * @brief Load from a .ply file
-   *
-   * @param plyFile .ply file to load
-   */
-  static std::unique_ptr<GenericInstanceMeshData> fromPLY(
+  static std::vector<std::unique_ptr<GenericInstanceMeshData>> fromPLY(
       Magnum::Trade::AbstractImporter& importer,
-      const std::string& plyFile);
+      const std::string& plyFile,
+      bool splitMesh);
 
   // ==== rendering ====
   void uploadBuffersToGPU(bool forceReload = false) override;
