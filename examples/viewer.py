@@ -6,6 +6,7 @@ import ctypes
 import math
 import sys
 import time
+from enum import Enum
 from typing import Any, Dict, List, Optional
 
 flags = sys.getdlopenflags()
@@ -62,8 +63,8 @@ class HabitatSimInteractiveViewer(Application):
             key.Z: "move_up",
         }
 
-        # toggle mouse utility toggle; True -> GRAB MODE
-        self.mouse_interaction = True
+        # Cycle mouse utilities
+        self.mouse_interaction = MouseMode.LOOK
         self.mouse_grabber: Optional[MouseGrabber] = None
         self.previous_mouse_point = None
 
@@ -261,11 +262,8 @@ class HabitatSimInteractiveViewer(Application):
         # TODO: In a future PR, a mouse GRAB interaction mode will be added
         #       and this key press will be used to toggle between modes
         elif key == pressed.M:
-            self.mouse_interaction = not self.mouse_interaction
-            if self.mouse_interaction:
-                logger.info("Command: mouse mode set to GRAB")
-            else:
-                logger.info("Command: mouse mode set to LOOK")
+            self.cycle_mouse_mode()
+            logger.info(f"Command: mouse mode set to {self.mouse_interaction}")
 
         elif key == pressed.R:
             self.reconfigure_sim()
@@ -303,9 +301,9 @@ class HabitatSimInteractiveViewer(Application):
         """
         button = Application.MouseMoveEvent.Buttons
         # if interactive mode is False -> LOOK MODE
-        if event.buttons == button.LEFT and not self.mouse_interaction:
+        if event.buttons == button.LEFT and self.mouse_interaction == MouseMode.LOOK:
             agent = self.sim.agents[self.agent_id]
-            delta = self.get_mouse_position(event.relative_position)
+            delta = event.relative_position
             action = habitat_sim.agent.ObjectControls()
             act_spec = habitat_sim.agent.ActuationSpec
 
@@ -318,7 +316,7 @@ class HabitatSimInteractiveViewer(Application):
             [action(s.object, "look_down", act_spec(delta.y), False) for s in sensors]
 
         # if interactive mode is TRUE -> GRAB MODE
-        elif self.mouse_interaction and self.mouse_grabber is not None:
+        elif self.mouse_interaction == MouseMode.GRAB and self.mouse_grabber:
             # update location of grabbed object
             viewport_point = self.get_mouse_position(event.position)
             self.update_grab_position(viewport_point)
@@ -336,7 +334,7 @@ class HabitatSimInteractiveViewer(Application):
         physics_enabled = self.sim.get_physics_simulation_library()
 
         # if interactive mode is True -> GRAB MODE
-        if self.mouse_interaction and physics_enabled:
+        if self.mouse_interaction == MouseMode.GRAB and physics_enabled:
             render_camera = self.render_camera.render_camera
             ray = render_camera.unproject(self.get_mouse_position(event.position))
             raycast_results = self.sim.cast_ray(ray=ray)
@@ -370,6 +368,7 @@ class HabitatSimInteractiveViewer(Application):
                         for ao_handle in ao_mngr.get_objects_by_handle_substring():
                             ao = ao_mngr.get_object_by_handle(ao_handle)
                             link_to_obj_ids = ao.link_object_ids
+                            print(ao.object_id)
 
                             if hit_info.object_id in link_to_obj_ids:
                                 # if we got a link
@@ -442,7 +441,7 @@ class HabitatSimInteractiveViewer(Application):
         shift_pressed = event.modifiers == Application.InputEvent.Modifier.SHIFT
 
         # if interactive mode is False -> LOOK MODE
-        if not self.mouse_interaction:
+        if self.mouse_interaction == MouseMode.LOOK:
             # use shift for fine-grained zooming
             mod_val = 1.01 if shift_pressed else 1.1
             mod = mod_val if scroll_mod_val > 0 else 1.0 / mod_val
@@ -450,7 +449,7 @@ class HabitatSimInteractiveViewer(Application):
             cam.zoom(mod)
             self.redraw()
 
-        elif self.mouse_interaction and self.mouse_grabber:
+        elif self.mouse_interaction == MouseMode.GRAB and self.mouse_grabber:
             # adjust the depth
             mod_val = 0.1 if shift_pressed else 0.01
             self.mouse_grabber.grip_depth += scroll_mod_val * mod_val
@@ -497,6 +496,12 @@ class HabitatSimInteractiveViewer(Application):
         scaling = Vector2i(self.framebuffer_size) / Vector2i(self.window_size)
         return mouse_event_position * scaling
 
+    def cycle_mouse_mode(self):
+        if self.mouse_interaction == MouseMode.LOOK:
+            self.mouse_interaction = MouseMode.GRAB
+        elif self.mouse_interaction == MouseMode.GRAB:
+            self.mouse_interaction = MouseMode.LOOK
+
     def exit_event(self, event: Application.ExitEvent):
         """
         Overrides exit_event to properly close the Simulator before exiting the
@@ -510,7 +515,7 @@ class HabitatSimInteractiveViewer(Application):
         """
         Print the Key Command help text.
         """
-        print(
+        logger.info(
             """
 =====================================================
 Welcome to the Habitat-sim Python Viewer application!
@@ -535,7 +540,7 @@ Key Commands:
 -------------
     esc:        Exit the application.
     'h':        Display this help message.
-    'm':        Toggle mouse interaction mode.
+    'm':        Cycle mouse interaction modes.
 
     Agent Controls:
     'wasd':     Move the agent's body forward/backward and left/right.
@@ -552,6 +557,12 @@ Key Commands:
 =====================================================
 """
         )
+
+
+class MouseMode(Enum):
+    LOOK = 0
+    GRAB = 1
+    MOTION = 2
 
 
 class MouseGrabber:
