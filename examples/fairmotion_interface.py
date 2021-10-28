@@ -35,7 +35,7 @@ METADATA_DIR = "../habitat-sim/data/fairmotion/"
 class FairmotionInterface:
     def __init__(
         self,
-        viewer,
+        sim,
         metadata_name=None,
         urdf_path=None,
         amass_path=None,
@@ -43,8 +43,8 @@ class FairmotionInterface:
         metadata_dir=METADATA_DIR,
     ) -> None:
         LoggingContext.reinitialize_from_env()
-        self.viewer = viewer
-        self.art_obj_mgr = self.viewer.sim.get_articulated_object_manager()
+        self.sim = sim
+        self.art_obj_mgr = self.sim.get_articulated_object_manager()
         self.model: habitat_sim.physics.ManagedArticulatedObject = None
         self.motion: motion.Motion = None
         self.metadata = {}
@@ -465,7 +465,7 @@ class FairmotionInterface:
             if not self.traj_ids:
                 for p in points_to_preview:
                     self.traj_ids.append(
-                        self.viewer.sim.add_gradient_trajectory_object(
+                        self.sim.add_gradient_trajectory_object(
                             traj_vis_name="key_frame_traj",
                             colors=colors,
                             points=p,
@@ -479,7 +479,7 @@ class FairmotionInterface:
         elif self.traj_ids:
             # removes trajectory
             for t_id in self.traj_ids:
-                self.viewer.sim.get_rigid_object_manager().remove_object_by_id(t_id)
+                self.sim.get_rigid_object_manager().remove_object_by_id(t_id)
                 self.traj_ids = []
 
     def cycle_model_previews(self) -> None:

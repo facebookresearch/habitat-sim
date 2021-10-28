@@ -28,7 +28,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
 
         # fairmotion init
         self.fm_demo = FairmotionInterface(
-            self,
+            self.sim,
             metadata_name="fm_demo",
             amass_path=fm_settings["amass_path"],
             metadata_dir=fm_settings["metadata_dir"],
@@ -106,7 +106,6 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             # cycle through mouse modes
             super().cycle_mouse_mode()
             logger.info(f"Command: mouse mode set to {self.mouse_interaction}")
-            self.fm_demo.load_model()
             return
 
         elif key == pressed.R:
