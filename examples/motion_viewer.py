@@ -5,7 +5,6 @@
 import ctypes
 import math
 import sys
-from enum import Enum
 from typing import Any, Dict
 
 flags = sys.getdlopenflags()
@@ -151,11 +150,6 @@ Key Commands:
 =========================================================
 """
         )
-
-
-class MouseMode(Enum):
-    LOOK = 0
-    GRAB = 1
 
 
 if __name__ == "__main__":

@@ -2,10 +2,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import math
+import json
 import os
 from enum import Enum
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import magnum as mn
 from fairmotion.core import motion
@@ -40,7 +40,7 @@ class FairmotionInterface:
         urdf_path=None,
         amass_path=None,
         bm_path=None,
-        metadata_dir=METADATA_DIR,
+        metadata_dir=None,
     ) -> None:
         LoggingContext.reinitialize_from_env()
         self.sim = sim
@@ -94,16 +94,15 @@ class FairmotionInterface:
 
         self.metadata["default"] = METADATA_DEFAULT["default"]
         self.save_metadata("default")
-        self.fetch_metadata("default")
 
     def set_data(
         self,
-        name="default",
-        urdf_path=None,
-        amass_path=None,
-        bm_path=None,
-        rotation=None,
-        translation=None,
+        name: Optional[str] = "default",
+        urdf_path: Optional[str] = None,
+        amass_path: Optional[str] = None,
+        bm_path: Optional[str] = None,
+        rotation: Optional[mn.Quaternion] = None,
+        translation: Optional[mn.Vector3] = None,
     ) -> None:
         """
         A method that will take attributes of the model data sets as arguments, filling in
@@ -152,10 +151,8 @@ class FairmotionInterface:
 
     def save_metadata(self, name: str):
         """
-        Saves the current metadata to a txt file in given file path
+        Saves the current metadata to a json file in given file path
         """
-        import json
-
         filepath = f"{self.metadata_dir}{name + FILE_SUFFIX}.json"
         data = {name: self.metadata_parser(self.metadata[name], to_file=True)}
 
@@ -166,8 +163,6 @@ class FairmotionInterface:
         """
         Fetch metadata from a json file in given file name and sets current metadata
         """
-        import json
-
         if FILE_SUFFIX in name and len(name) > len(FILE_SUFFIX):
             # if name give is full name of file, truncate FILE_SUFFIX
             filename = name
@@ -191,7 +186,7 @@ class FairmotionInterface:
     ) -> None:
         """
         This method updates the offset of the model with the positional data passed to it.
-        Use this for changing the locaton and orientation of the model.
+        Use this for changing the location and orientation of the model.
         """
         self.rotation_offset = rotate_offset or self.rotation_offset
         self.translation_offset = translate_offset or self.translation_offset
@@ -208,7 +203,7 @@ class FairmotionInterface:
 
     def load_model(self) -> None:
         """
-        Loads the model currently set my metadata.
+        Loads the model currently set by metadata.
         """
         self.hide_model()
         data = self.metadata["default"]
@@ -222,7 +217,6 @@ class FairmotionInterface:
         # change motion_type to KINEMATIC
         self.model.motion_type = habitat_sim.physics.MotionType.KINEMATIC
 
-        # translate Human to appear infront of staircase in apt_0
         self.model.translation = self.translation_offset
         self.next_pose()
         self.motion_stepper -= 1
@@ -238,7 +232,8 @@ class FairmotionInterface:
     # currently the next_pose method is simply called twice in simulating a frame
     def next_pose(self, repeat=False) -> None:
         """
-        Use this method to step to next frame in draw event
+        Set the model state from the next frame in the motion trajectory. `repeat` is
+        set to `True` when the user would like to repeat the last frame.
         """
 
         # This function tracks is_reversed and changes the direction of
@@ -307,7 +302,7 @@ class FairmotionInterface:
             # When there is no matching between the given pose and the simulated character,
             # the character just tries to hold its initial pose
             if pose_joint_index is None:
-                raise NotImplementedError(
+                raise KeyError(
                     "Error: pose data does not have a transform for that joint name"
                 )
             elif joint_type not in [JointType.Spherical]:
@@ -328,20 +323,13 @@ class FairmotionInterface:
         """
         key_frames = [self.motion.poses[0]]
 
-        # euclidean distance
-        def distance(translation: mn.Vector3) -> float:
-            summ = 0
-            for n in translation:
-                summ += n * n
-            return math.sqrt(summ)
-
         total_dist = 0.0
         last_key_frame = self.motion.poses[0].get_transform(ROOT, local=False)[0:3, 3]
 
         # get total distance traveled by motion
         for pose in self.motion.poses:
             delta = pose.get_transform(ROOT, local=False)[0:3, 3] - last_key_frame
-            total_dist += distance(delta)
+            total_dist += mn.Vector3(delta).length()
             last_key_frame = pose.get_transform(ROOT, local=False)[0:3, 3]
 
         # how much distance should occur between each key frame for the allotted frame count
@@ -350,7 +338,7 @@ class FairmotionInterface:
 
         for pose in self.motion.poses:
             delta = pose.get_transform(ROOT, local=False)[0:3, 3] - last_key_frame
-            if distance(delta) >= threshold:
+            if mn.Vector3(delta).length() >= threshold:
                 key_frames.append(pose)
                 last_key_frame = pose.get_transform(ROOT, local=False)[0:3, 3]
 
@@ -411,14 +399,17 @@ class FairmotionInterface:
             traj_radius = 0.02
             traj_offset = self.translation_offset + mn.Vector3(0, 0.1, 0)
 
+            joint_names = [["rankle", "lankle"], "upperneck"]
+
             def define_preview_points(joint_names: List[str]) -> List[mn.Vector3]:
                 """
-                Pass in a list containing names of joints as strings, where the joints will
-                result in an interpolated trajectory object being built from the mid point of
-                the listed names. This would have more functionality if multiple trajectory
-                objects could be added at once but currently only one can me added at a time.
-                Example: joint_names = ["rankle", "lankle"]
-                         joint_names = ["upperneck"]
+                Pass in a list containing names of joints as strings and/or lists containing
+                multiple names of joints, where the lists will result in an interpolated
+                trajectory object being built from the mid point of the listed names and the
+                single joint names will produce there own trajectory object. The total amount
+                of trajectory objects that are produced is the length of the outer list.
+                Example: joint_names = [["rankle", "lankle"], "upperneck"]
+
 
                 Returns a list of lists of points to build the trajectory objects.
                 """
@@ -451,22 +442,22 @@ class FairmotionInterface:
                     traj_objects.append(midpoints)
                 return traj_objects
 
-            points_to_preview = define_preview_points(["lankle", "rankle"])
+            points_to_preview = define_preview_points(joint_names)
 
         # TODO: This function is not working. It is supposed to produce a gradient
         #       from RED to YELLOW to GREEN but it is producing a black solely
         colors = [
-            mn.Color3(255.0, 0.0, 0.0),
-            mn.Color3(255.0, 255.0, 0.0),
-            mn.Color3(0.0, 255.0, 0.0),
+            mn.Color3(255, 0, 0),
+            mn.Color3(255, 255, 0),
+            mn.Color3(0, 255, 0),
         ]
 
         if self.preview_mode in [Preview.TRAJECTORY, Preview.ALL]:
             if not self.traj_ids:
-                for p in points_to_preview:
+                for i, p in enumerate(points_to_preview):
                     self.traj_ids.append(
                         self.sim.add_gradient_trajectory_object(
-                            traj_vis_name="key_frame_traj",
+                            traj_vis_name=f"{joint_names[i]}",
                             colors=colors,
                             points=p,
                             num_segments=3,
