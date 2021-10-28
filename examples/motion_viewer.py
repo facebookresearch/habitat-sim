@@ -3,16 +3,14 @@
 # LICENSE file in the root directory of this source tree.
 
 import ctypes
-import math
 import sys
-from typing import Any, Dict
+from typing import Any, Callable, Dict, Optional
 
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
-import magnum as mn
 from magnum.platform.glfw import Application
-from viewer import HabitatSimInteractiveViewer, Timer
+from viewer import HabitatSimInteractiveViewer
 
 from examples.fairmotion_interface import FairmotionInterface
 from examples.settings import default_sim_settings
@@ -33,46 +31,19 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             metadata_dir=fm_settings["metadata_dir"],
         )
 
-    def draw_event(self) -> None:
+    def draw_event(self, simulation_call: Optional[Callable] = None) -> None:
         """
         Calls continuously to re-render frames and swap the two frame buffers
-        at a fixed rate.
+        at a fixed rate. Use `simulation_call` to perform method calls during
+        a simulation step.
         """
-        agent_acts_per_sec = 60.0
 
-        mn.gl.default_framebuffer.clear(
-            mn.gl.FramebufferClear.COLOR | mn.gl.FramebufferClear.DEPTH
-        )
+        def play_motion() -> None:
+            if self.fm_demo.motion is not None:
+                self.fm_demo.next_pose()
+                self.fm_demo.next_pose()
 
-        # Agent actions should occur at a fixed rate per second
-        self.time_since_last_simulation += Timer.prev_frame_duration
-        num_agent_actions: int = self.time_since_last_simulation * agent_acts_per_sec
-        self.move_and_look(int(num_agent_actions))
-
-        # Occasionally a frame will pass quicker than 1/60 seconds
-        if self.time_since_last_simulation >= 1.0 / 60.0:
-            if self.simulating or self.simulate_single_step:
-                # step physics at a fixed rate
-                # In the interest of frame rate, only a single step is taken,
-                # even if time_since_last_simulation is quite large
-                self.sim.step_world(1.0 / 60.0)
-                self.simulate_single_step = False
-                if self.fm_demo.motion is not None:
-                    self.fm_demo.next_pose()
-                    self.fm_demo.next_pose()
-
-            # reset time_since_last_simulation, accounting for potential overflow
-            self.time_since_last_simulation = math.fmod(
-                self.time_since_last_simulation, 1.0 / 60.0
-            )
-
-        self.sim._sensors["color_sensor"].draw_observation()
-        self.render_camera.render_target.blit_rgba_to_default()
-        mn.gl.default_framebuffer.bind()
-
-        self.swap_buffers()
-        Timer.next_frame()
-        self.redraw()
+        super().draw_event(simulation_call=play_motion)
 
     def key_press_event(self, event: Application.KeyEvent) -> None:
         """
