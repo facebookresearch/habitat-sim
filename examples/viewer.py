@@ -260,8 +260,6 @@ class HabitatSimInteractiveViewer(Application):
                 self.simulate_single_step = True
                 logger.info("Command: physics step taken")
 
-        # TODO: In a future PR, a mouse GRAB interaction mode will be added
-        #       and this key press will be used to toggle between modes
         elif key == pressed.M:
             self.cycle_mouse_mode()
             logger.info(f"Command: mouse mode set to {self.mouse_interaction}")
@@ -495,10 +493,9 @@ class HabitatSimInteractiveViewer(Application):
         return mouse_event_position * scaling
 
     def cycle_mouse_mode(self):
-        if self.mouse_interaction == MouseMode.LOOK:
-            self.mouse_interaction = MouseMode.GRAB
-        elif self.mouse_interaction == MouseMode.GRAB:
-            self.mouse_interaction = MouseMode.LOOK
+        self.mouse_interaction = MouseMode(
+            (self.mouse_interaction.value + 1) % len(MouseMode)
+        )
 
     def exit_event(self, event: Application.ExitEvent):
         """
@@ -560,7 +557,6 @@ Key Commands:
 class MouseMode(Enum):
     LOOK = 0
     GRAB = 1
-    MOTION = 2
 
 
 class MouseGrabber:

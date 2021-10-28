@@ -11,23 +11,28 @@ from typing import Any, Dict
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
-from magnum import Deg, Quaternion, Vector3, gl
+import magnum as mn
 from magnum.platform.glfw import Application
-from viewer import HabitatSimInteractiveViewer, MouseGrabber, Timer
+from viewer import HabitatSimInteractiveViewer, Timer
 
 from examples.fairmotion_interface import FairmotionInterface
 from examples.settings import default_sim_settings
-from habitat_sim import physics
 from habitat_sim.logging import logger
 
 
 class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
-    def __init__(self, sim_settings: Dict[str, Any]) -> None:
+    def __init__(
+        self, sim_settings: Dict[str, Any], fm_settings: Dict[str, Any]
+    ) -> None:
         super().__init__(sim_settings)
-        self.mouse_interaction = MouseMode.LOOK
 
         # fairmotion init
-        self.fm_demo = FairmotionInterface(self, metadata_name="fm_demo")
+        self.fm_demo = FairmotionInterface(
+            self,
+            metadata_name="fm_demo",
+            amass_path=fm_settings["amass_path"],
+            metadata_dir=fm_settings["metadata_dir"],
+        )
 
     def draw_event(self) -> None:
         """
@@ -36,8 +41,8 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         """
         agent_acts_per_sec = 60.0
 
-        gl.default_framebuffer.clear(
-            gl.FramebufferClear.COLOR | gl.FramebufferClear.DEPTH
+        mn.gl.default_framebuffer.clear(
+            mn.gl.FramebufferClear.COLOR | mn.gl.FramebufferClear.DEPTH
         )
 
         # Agent actions should occur at a fixed rate per second
@@ -64,7 +69,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
 
         self.sim._sensors["color_sensor"].draw_observation()
         self.render_camera.render_target.blit_rgba_to_default()
-        gl.default_framebuffer.bind()
+        mn.gl.default_framebuffer.bind()
 
         self.swap_buffers()
         Timer.next_frame()
@@ -84,167 +89,47 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         if key == pressed.F:
             if event.modifiers == mod.SHIFT:
                 self.fm_demo.hide_model()
-                print("Command: hide model")
+                logger.info("Command: hide model")
             else:
-                print("Command: load model")
+                logger.info("Command: load model")
                 self.fm_demo.load_model()
 
         elif key == pressed.K:
             # Toggle Key Frames
-            self.fm_demo.toggle_key_frames()
+            self.fm_demo.cycle_model_previews()
 
         elif key == pressed.SLASH:
             # Toggle reverse direction of motion
             self.fm_demo.is_reversed = not self.fm_demo.is_reversed
 
-        elif key == pressed.N:
+        elif key == pressed.M:
             # cycle through mouse modes
-            self.cycle_mouse_mode()
-            print((self.mouse_interaction))
+            super().cycle_mouse_mode()
+            logger.info(f"Command: mouse mode set to {self.mouse_interaction}")
+            self.fm_demo.load_model()
+            return
 
-        # Everything below is used for testing
-        elif key == pressed.I:
-            r = self.fm_demo.rotation_offset
-            print(f"R is {r}")
-            x = int(input("Rx (deg) <- "))
-            if x:
-                self.fm_demo.rotation_offset = (
-                    Quaternion.rotation(Deg(x), Vector3.x_axis()) * r
-                )
-            self.fm_demo.next_pose(repeat=True)
-
-        elif key == pressed.J:
-            t = self.fm_demo.translation_offset
-            print(f"Y is {t[1]}")
-            y = float(input("Y <- "))
-            if y:
-                t[1] = y
-            self.fm_demo.next_pose(repeat=True)
-        # End of testing section
+        elif key == pressed.R:
+            super().reconfigure_sim()
+            self.fm_demo = FairmotionInterface(self, metadata_name="fm_demo")
+            logger.info("Command: simulator re-loaded")
 
         super().key_press_event(event)
-
-    def mouse_press_event(self, event: Application.MouseEvent) -> None:
-        """
-        Handles `Application.MouseEvent`. When in GRAB mode, click on
-        objects to drag their position. (right-click for fixed constraints)
-        """
-
-        button = Application.MouseEvent.Button
-        physics_enabled = self.sim.get_physics_simulation_library()
-
-        # if interactive mode is True -> GRAB MODE
-        if self.mouse_interaction == MouseMode.GRAB and physics_enabled:
-            render_camera = self.render_camera.render_camera
-            ray = render_camera.unproject(self.get_mouse_position(event.position))
-            raycast_results = self.sim.cast_ray(ray=ray)
-
-            if raycast_results.has_hits():
-                hit_object, ao_link = -1, -1
-                hit_info = raycast_results.hits[0]
-
-                if hit_info.object_id >= 0:
-                    # we hit an non-staged collision object
-                    ro_mngr = self.sim.get_rigid_object_manager()
-                    ao_mngr = self.sim.get_articulated_object_manager()
-                    ao = ao_mngr.get_object_by_id(hit_info.object_id)
-                    ro = ro_mngr.get_object_by_id(hit_info.object_id)
-
-                    if ro:
-                        # if grabbed an object
-                        hit_object = hit_info.object_id
-                        object_pivot = ro.transformation.inverted().transform_point(
-                            hit_info.point
-                        )
-                        object_frame = ro.rotation.inverted()
-                    elif ao:
-                        # if grabbed the base link
-                        hit_object = hit_info.object_id
-                        object_pivot = ao.transformation.inverted().transform_point(
-                            hit_info.point
-                        )
-                        object_frame = ao.rotation.inverted()
-                    else:
-                        for ao_handle in ao_mngr.get_objects_by_handle_substring():
-                            ao = ao_mngr.get_object_by_handle(ao_handle)
-                            link_to_obj_ids = ao.link_object_ids
-                            print(ao_handle)
-
-                            if hit_info.object_id in link_to_obj_ids:
-                                # if we got a link
-                                ao_link = link_to_obj_ids[hit_info.object_id]
-                                object_pivot = (
-                                    ao.get_link_scene_node(ao_link)
-                                    .transformation.inverted()
-                                    .transform_point(hit_info.point)
-                                )
-                                object_frame = ao.get_link_scene_node(
-                                    ao_link
-                                ).rotation.inverted()
-                                hit_object = ao.object_id
-                                break
-                    # done checking for AO
-
-                    if hit_object >= 0:
-                        node = self.agent_body_node
-                        constraint_settings = physics.RigidConstraintSettings()
-
-                        constraint_settings.object_id_a = hit_object
-                        constraint_settings.link_id_a = ao_link
-                        constraint_settings.pivot_a = object_pivot
-                        constraint_settings.frame_a = (
-                            object_frame.to_matrix() @ node.rotation.to_matrix()
-                        )
-                        constraint_settings.frame_b = node.rotation.to_matrix()
-                        constraint_settings.pivot_b = hit_info.point
-
-                        # by default use a point 2 point constraint
-                        if event.button == button.RIGHT:
-                            constraint_settings.constraint_type = (
-                                physics.RigidConstraintType.Fixed
-                            )
-
-                        grip_depth = (
-                            hit_info.point - render_camera.node.absolute_translation
-                        ).length()
-
-                        self.mouse_grabber = MouseGrabber(
-                            constraint_settings,
-                            grip_depth,
-                            self.sim,
-                        )
-                    else:
-                        logger.info("Oops, couldn't find the hit object. That's odd.")
-                # end if didn't hit the scene
-            # end has raycast hit
-        # end has physics enabled
-
-        self.previous_mouse_point = self.get_mouse_position(event.position)
-        self.redraw()
-        event.accepted = True
-
-    def cycle_mouse_mode(self):
-        if self.mouse_interaction == MouseMode.LOOK:
-            self.mouse_interaction = MouseMode.GRAB
-        elif self.mouse_interaction == MouseMode.GRAB:
-            self.mouse_interaction = MouseMode.MOTION
-        elif self.mouse_interaction == MouseMode.MOTION:
-            self.mouse_interaction = MouseMode.LOOK
 
     def print_help_text(self) -> None:
         """
         Print the Key Command help text.
         """
-        print(
+        logger.info(
             """
-=====================================================
-Welcome to the Habitat-sim Python Viewer application!
-=====================================================
+=========================================================
+Welcome to the Habitat-sim Fairmotion Viewer application!
+=========================================================
 Key Commands:
 -------------
     esc:        Exit the application.
     'h':        Display this help message.
-    'm':        Toggle mouse interaction mode.
+    'm':        Cycle through mouse mode.
 
     Agent Controls:
     'wasd':     Move the agent's body forward/backward and left/right.
@@ -262,8 +147,9 @@ Key Commands:
     Fairmotion Interface:
     'f':        Load model with current motion data.
                 [shft] Hide model.
-    'k':        Toggle key fram preview of 1loaded motion.
-=====================================================
+    'k':        Toggle key frame preview of loaded motion.
+    '/':        Set motion to play in reverse.
+=========================================================
 """
         )
 
@@ -271,7 +157,6 @@ Key Commands:
 class MouseMode(Enum):
     LOOK = 0
     GRAB = 1
-    MOTION = 2
 
 
 if __name__ == "__main__":
@@ -298,6 +183,17 @@ if __name__ == "__main__":
         action="store_true",
         help="disable physics simulation (default: False)",
     )
+    parser.add_argument(
+        "--amass_path",
+        type=str,
+        help="amass motion file path to load motion from (default: None)",
+    )
+    parser.add_argument(
+        "--metadata_dir",
+        type=str,
+        help="directory where metadata files should be saved to (default: None)",
+    )
+    parser
 
     args = parser.parse_args()
 
@@ -307,4 +203,8 @@ if __name__ == "__main__":
     sim_settings["scene_dataset_config_file"] = args.dataset
     sim_settings["enable_physics"] = not args.disable_physics
 
-    FairmotionSimInteractiveViewer(sim_settings).exec()
+    fm_settings: Dict[str, Any] = {}
+    fm_settings["amass_path"] = args.amass_path
+    fm_settings["metadata_dir"] = args.metadata_dir
+
+    FairmotionSimInteractiveViewer(sim_settings, fm_settings).exec()
