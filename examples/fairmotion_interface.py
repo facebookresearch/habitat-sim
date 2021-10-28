@@ -134,11 +134,11 @@ class FairmotionInterface:
 
         if to_file:
             for k, v in data.items():
-                if type(v) == mn.Quaternion:
+                if isinstance(v, mn.Quaternion):
                     q_list = [list(v.vector)]
                     q_list.append(v.scalar)
                     data[k] = q_list
-                elif type(v) == mn.Vector3:
+                elif isinstance(v, mn.Vector3):
                     data[k] = list(v)
 
         elif not to_file:
