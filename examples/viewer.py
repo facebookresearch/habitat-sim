@@ -495,7 +495,7 @@ class HabitatSimInteractiveViewer(Application):
 
     def cycle_mouse_mode(self):
         self.mouse_interaction = MouseMode(
-            (self.mouse_interaction.value + 1) % len(MouseMode)
+            (self.mouse_interaction.value + 1) % len(MouseMode) - 1
         )
 
     def exit_event(self, event: Application.ExitEvent):
@@ -558,6 +558,7 @@ Key Commands:
 class MouseMode(Enum):
     LOOK = 0
     GRAB = 1
+    MOTION = 2
 
 
 class MouseGrabber:
