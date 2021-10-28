@@ -29,7 +29,7 @@ METADATA_DEFAULT = {
         "translation": mn.Vector3([2.5, 0.0, 0.7]),
     }
 }
-METADATA_DIR = "../habitat-sim/examples/fairmotion_data/"
+METADATA_DIR = "../habitat-sim/data/fairmotion/"
 
 
 class FairmotionInterface:
