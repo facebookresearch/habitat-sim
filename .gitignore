@@ -191,6 +191,4 @@ examples/web_apps/webxr_hand_demo/data/*
 examples/web_apps/webxr_hand_demo/js/hsim_bindings.js
 examples/web_apps/webxr_hand_demo/js/hsim_bindings.wasm
 
-
-examples/fairmotion_data/fm_demo_fm_data.json
-examples/fairmotion_data/default_fm_data.json
+data/fairmotion/
