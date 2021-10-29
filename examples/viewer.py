@@ -7,7 +7,7 @@ import math
 import sys
 import time
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
@@ -85,7 +85,7 @@ class HabitatSimInteractiveViewer(Application):
         logger.setLevel("INFO")
         self.print_help_text()
 
-    def draw_event(self) -> None:
+    def draw_event(self, simulation_call: Optional[Callable] = None) -> None:
         """
         Calls continuously to re-render frames and swap the two frame buffers
         at a fixed rate.
@@ -109,6 +109,7 @@ class HabitatSimInteractiveViewer(Application):
                 # even if time_since_last_simulation is quite large
                 self.sim.step_world(1.0 / 60.0)
                 self.simulate_single_step = False
+                simulation_call()
 
             # reset time_since_last_simulation, accounting for potential overflow
             self.time_since_last_simulation = math.fmod(
@@ -260,8 +261,6 @@ class HabitatSimInteractiveViewer(Application):
                 self.simulate_single_step = True
                 logger.info("Command: physics step taken")
 
-        # TODO: In a future PR, a mouse GRAB interaction mode will be added
-        #       and this key press will be used to toggle between modes
         elif key == pressed.M:
             self.cycle_mouse_mode()
             logger.info(f"Command: mouse mode set to {self.mouse_interaction}")
@@ -494,7 +493,10 @@ class HabitatSimInteractiveViewer(Application):
         scaling = mn.Vector2i(self.framebuffer_size) / mn.Vector2i(self.window_size)
         return mouse_event_position * scaling
 
-    def cycle_mouse_mode(self):
+    def cycle_mouse_mode(self) -> None:
+        """
+        This method defines how to cycle through the mouse mode.
+        """
         if self.mouse_interaction == MouseMode.LOOK:
             self.mouse_interaction = MouseMode.GRAB
         elif self.mouse_interaction == MouseMode.GRAB:
