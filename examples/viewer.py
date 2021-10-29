@@ -493,10 +493,14 @@ class HabitatSimInteractiveViewer(Application):
         scaling = mn.Vector2i(self.framebuffer_size) / mn.Vector2i(self.window_size)
         return mouse_event_position * scaling
 
-    def cycle_mouse_mode(self):
-        self.mouse_interaction = MouseMode(
-            (self.mouse_interaction.value + 1) % len(MouseMode) - 1
-        )
+    def cycle_mouse_mode(self) -> None:
+        """
+        This method defines how to cycle through the mouse mode.
+        """
+        if self.mouse_interaction == MouseMode.LOOK:
+            self.mouse_interaction = MouseMode.GRAB
+        elif self.mouse_interaction == MouseMode.GRAB:
+            self.mouse_interaction = MouseMode.LOOK
 
     def exit_event(self, event: Application.ExitEvent):
         """

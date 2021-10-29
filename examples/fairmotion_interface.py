@@ -181,17 +181,6 @@ class FairmotionInterface:
 
         self.metadata[name] = self.metadata_parser(data[name], to_file=False)
 
-    def set_transform_offsets(
-        self, rotate_offset: mn.Quaternion = None, translate_offset: mn.Vector3 = None
-    ) -> None:
-        """
-        This method updates the offset of the model with the positional data passed to it.
-        Use this for changing the location and orientation of the model.
-        """
-        self.rotation_offset = rotate_offset or self.rotation_offset
-        self.translation_offset = translate_offset or self.translation_offset
-        self.next_pose(repeat=True)
-
     def load_motion(self) -> None:
         """
         Loads the motion currently set by metadata.
