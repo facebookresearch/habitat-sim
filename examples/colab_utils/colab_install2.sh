@@ -52,7 +52,7 @@ pip install . #Reinstall to trigger sys.path update
 cd /content/habitat-sim/
 
 #Download Assets
-python habitat_sim/utils/datasets_download.py --uids rearrange_task_assets --replace --data-path data/
+python habitat_sim/utils/datasets_download.py --uids rearrange_task_assets --replace --data-path /content/data/
 
 rm -rf habitat_sim/ # Deletes the habitat_sim folder so it doesn't interfere with import path
 
@@ -60,4 +60,3 @@ rm -rf habitat_sim/ # Deletes the habitat_sim folder so it doesn't interfere wit
 ln -s /content/habitat-sim/data /content/habitat-lab/.
 
 touch /content/habitat_sim_installed
-export HABLAB_INSTALL="/content/habitat-lab"
