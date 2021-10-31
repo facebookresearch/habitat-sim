@@ -37,7 +37,7 @@ fi
 conda install -S -y --prefix /usr/local -c "${CHANNEL}" -c conda-forge habitat-sim headless withbullet "python=${PYTHON_VERSION}" "numpy=${NUMPY_VERSION}" "pillow=${PIL_VERSION}" "cffi=${CFFI_VERSION}" "scipy=${SCIPY_VERSION}" "numba=${NUMBA_VERSION}"
 
 #Shallow GIT clone for speed
-git clone -b hab_suite https://github.com/facebookresearch/habitat-lab --depth 1
+git clone -b class_colab https://github.com/facebookresearch/habitat-lab --depth 1
 git clone -b class_colab https://github.com/facebookresearch/habitat-sim --depth 1
 
 #Install Requirements.
@@ -52,7 +52,7 @@ pip install . #Reinstall to trigger sys.path update
 cd /content/habitat-sim/
 
 #Download Assets
-python habitat_sim/utils/datasets_download.py --uids ci_test_assets --replace --data-path data/
+python habitat_sim/utils/datasets_download.py --uids rearrange_task_assets --replace --data-path data/
 
 rm -rf habitat_sim/ # Deletes the habitat_sim folder so it doesn't interfere with import path
 
@@ -60,3 +60,4 @@ rm -rf habitat_sim/ # Deletes the habitat_sim folder so it doesn't interfere wit
 ln -s /content/habitat-sim/data /content/habitat-lab/.
 
 touch /content/habitat_sim_installed
+export HABLAB_INSTALL="/content/habitat-lab"
