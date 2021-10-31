@@ -27,37 +27,36 @@ wget -c https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh &&
 #Adds the conda libraries directly to the colab path.
 ln -s "/usr/local/lib/python${PYTHON_VERSION}/dist-packages" "/usr/local/lib/python${PYTHON_VERSION}/site-packages"
 
-###Install Habitat-Sim and Magnum binaries
-#conda config --set pip_interop_enabled True
-#NIGHTLY="${NIGHTLY:-false}" #setting the ENV $NIGHTLY to true will install the nightly version from conda
-#CHANNEL="${CHANNEL:-aihabitat}"
-#if ${NIGHTLY}; then
-#  CHANNEL="${CHANNEL}-nightly"
-#fi
-#conda install -S -y --prefix /usr/local -c "${CHANNEL}" -c conda-forge habitat-sim headless withbullet "python=${PYTHON_VERSION}" "numpy=${NUMPY_VERSION}" "pillow=${PIL_VERSION}" "cffi=${CFFI_VERSION}" "scipy=${SCIPY_VERSION}" "numba=${NUMBA_VERSION}"
+##Install Habitat-Sim and Magnum binaries
+conda config --set pip_interop_enabled True
+NIGHTLY="${NIGHTLY:-false}" #setting the ENV $NIGHTLY to true will install the nightly version from conda
+CHANNEL="${CHANNEL:-aihabitat}"
+if ${NIGHTLY}; then
+  CHANNEL="${CHANNEL}-nightly"
+fi
+conda install -S -y --prefix /usr/local -c "${CHANNEL}" -c conda-forge habitat-sim headless withbullet "python=${PYTHON_VERSION}" "numpy=${NUMPY_VERSION}" "pillow=${PIL_VERSION}" "cffi=${CFFI_VERSION}" "scipy=${SCIPY_VERSION}" "numba=${NUMBA_VERSION}"
 
 #Shallow GIT clone for speed
-git clone -b class_colab https://github.com/facebookresearch/habitat-sim
+git clone -b class_colab  https://github.com/facebookresearch/habitat-lab --depth 1
+git clone -b hab_suite https://github.com/facebookresearch/habitat-sim --depth 1
 
-#git clone https://github.com/facebookresearch/habitat-lab --depth 1
-#
-##Install Requirements.
-#cd /content/habitat-lab/
-#set +e
-#pip install -r ./requirements.txt
-#reqs=(./habitat_baselines/**/requirements.txt)
-#pip install "${reqs[@]/#/-r}"
-#set -e
-#python setup.py develop --all
-#pip install . #Reinstall to trigger sys.path update
-#cd /content/habitat-sim/
-#
-##Download Assets
-#python habitat_sim/utils/datasets_download.py --uids ci_test_assets --replace --data-path data/
-#
-#rm -rf habitat_sim/ # Deletes the habitat_sim folder so it doesn't interfere with import path
-#
-##symlink assets appear in habitat-api folder
-#ln -s /content/habitat-sim/data /content/habitat-lab/.
-#
-#touch /content/habitat_sim_installed
+#Install Requirements.
+cd /content/habitat-lab/
+set +e
+pip install -r ./requirements.txt
+reqs=(./habitat_baselines/**/requirements.txt)
+pip install "${reqs[@]/#/-r}"
+set -e
+python setup.py develop --all
+pip install . #Reinstall to trigger sys.path update
+cd /content/habitat-sim/
+
+#Download Assets
+python habitat_sim/utils/datasets_download.py --uids ci_test_assets --replace --data-path data/
+
+rm -rf habitat_sim/ # Deletes the habitat_sim folder so it doesn't interfere with import path
+
+#symlink assets appear in habitat-api folder
+ln -s /content/habitat-sim/data /content/habitat-lab/.
+
+touch /content/habitat_sim_installed
