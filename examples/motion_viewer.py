@@ -33,13 +33,28 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             metadata_dir=fm_settings["metadata_dir"],
         )
 
-        # motion mode attributes
+        # configuring MOTION display objects
+        # selection sphere icon
         obj_tmp_mgr = self.sim.get_object_template_manager()
         self.sphere_template_id = obj_tmp_mgr.load_configs(
             "../habitat-sim/data/test_assets/objects/sphere"
         )[0]
+        sphere_template = obj_tmp_mgr.get_template_by_id(self.sphere_template_id)
+        sphere_template.scale = [0.5, 0.5, 0.5]
+        obj_tmp_mgr.register_template(sphere_template)
+
+        # selection origin box
+        self.box_template_id = obj_tmp_mgr.load_configs(
+            "../habitat-sim/data/test_assets/objects/nested_box"
+        )[0]
+        box_template = obj_tmp_mgr.get_template_by_id(self.box_template_id)
+        box_template.scale = [0.15, 0.025, 2.5]
+        obj_tmp_mgr.register_template(box_template)
+
+        # motion mode attributes
         self.selected_mocap_char: Optional[FairmotionInterface] = None
-        self.select_icon_obj_id: int = -1
+        self.select_sphere_obj_id: int = -1
+        self.select_box_obj_id: int = -1
 
     def draw_event(self, simulation_call: Optional[Callable] = None) -> None:
         """
@@ -68,6 +83,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
 
         if key == pressed.F:
             if event.modifiers == mod.SHIFT:
+                self.remove_selector_obj()
                 self.fm_demo.hide_model()
                 logger.info("Command: hide model")
             else:
@@ -91,6 +107,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             return
 
         elif key == pressed.R:
+            self.remove_selector_obj()
             super().reconfigure_sim()
             self.fm_demo = FairmotionInterface(self, metadata_name="fm_demo")
             logger.info("Command: simulator re-loaded")
@@ -119,7 +136,9 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
     def mouse_press_event(self, event: Application.MouseEvent) -> None:
         """
         Handles `Application.MouseEvent`. When in GRAB mode, click on
-        objects to drag their position. (right-click for fixed constraints)
+        objects to drag their position. (right-click for fixed constraints).
+        When in MOTION mode select Fairmotion characters with left-click,
+        place them in a new location with right-click.
         """
         button = Application.MouseEvent.Button
         physics_enabled = self.sim.get_physics_simulation_library()
@@ -142,9 +161,50 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
                     else:
                         self.remove_selector_obj()
 
-                        # if hit_object >= 0:
-                # end if didn't hit the scene
+                elif event.button == button.RIGHT and self.selected_mocap_char:
+                    point = hit_info.point
+                    self.fm_demo.set_transform_offsets(translate_offset=point)
+                    self.create_selector_obj(self.fm_demo)
             # end has raycast hit
+
+        super().mouse_press_event(event)
+
+    def mouse_scroll_event(self, event: Application.MouseScrollEvent) -> None:
+        """
+        Handles `Application.MouseScrollEvent`. When in LOOK mode, enables camera
+        zooming (fine-grained zoom using shift). When in GRAB mode, adjusts the depth
+        of the grabber's object. (larger depth change rate using shift). When in MOTION
+        mode, rotate them about the floor-normal axis with the scroll wheel. (fine-grained
+        rotate using shift).
+        """
+        if self.mouse_interaction == MouseMode.MOTION and self.selected_mocap_char:
+            physics_enabled = self.sim.get_physics_simulation_library()
+
+            scroll_mod_val = (
+                event.offset.y
+                if abs(event.offset.y) > abs(event.offset.x)
+                else event.offset.x
+            )
+
+            if not scroll_mod_val:
+                return
+
+            # use shift to scale action response
+            shift_pressed = event.modifiers == Application.InputEvent.Modifier.SHIFT
+
+            if (
+                self.mouse_interaction == MouseMode.MOTION
+                and physics_enabled
+                and self.selected_mocap_char
+            ):
+                delta = mn.Quaternion.rotation(
+                    mn.Deg(scroll_mod_val * (1 if shift_pressed else 20)),
+                    mn.Vector3.z_axis(),
+                )
+                self.fm_demo.set_transform_offsets(
+                    rotate_offset=self.fm_demo.rotation_offset * delta
+                )
+            self.create_selector_obj(self.fm_demo)
 
         super().mouse_press_event(event)
 
@@ -156,32 +216,46 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             (self.mouse_interaction.value + 1) % len(MouseMode)
         )
 
-    def create_selector_obj(
-        self, mocap_char: FairmotionInterface, recreate: bool = False
-    ):
+    def create_selector_obj(self, mocap_char: FairmotionInterface):
         """
         Creates the selection icon above the given fairmotion character.
         """
         self.remove_selector_obj()
+
+        # selection sphere icon
         obj = mocap_char.rgd_obj_mgr.add_object_by_template_id(self.sphere_template_id)
         obj.collidable = False
         obj.motion_type = phy.MotionType.KINEMATIC
-        obj.translation = mocap_char.model.translation + mn.Vector3(0, 1.20, 0)
+        obj.translation = mocap_char.model.translation + mn.Vector3(0, 1.15, 0)
+        self.select_sphere_obj_id = obj.object_id
 
-        self.select_icon_obj_id = obj.object_id
+        # selection origin box
+        obj = mocap_char.rgd_obj_mgr.add_object_by_template_id(self.box_template_id)
+        obj.collidable = False
+        obj.motion_type = phy.MotionType.KINEMATIC
+        obj.translation = mocap_char.translation_offset + mn.Vector3(0, 0.8, 0)
+        obj.rotation = mocap_char.rotation_offset
+        self.select_box_obj_id = obj.object_id
+
         self.selected_mocap_char = mocap_char
 
     def remove_selector_obj(self):
         """
         Removes the selection icon from the sim to indicate de-selection.
         """
-        if self.select_icon_obj_id == -1:
-            self.selected_mocap_char = None
-            return
         manager = self.sim.get_rigid_object_manager()
-        manager.remove_object_by_id(self.select_icon_obj_id)
+
+        # selection sphere icon
+        if self.select_sphere_obj_id != -1:
+            manager.remove_object_by_id(self.select_sphere_obj_id)
+            self.select_sphere_obj_id = -1
+
+        # selection origin box
+        if self.select_box_obj_id != -1:
+            manager.remove_object_by_id(self.select_box_obj_id)
+            self.select_box_obj_id = -1
+
         self.selected_mocap_char = None
-        self.select_icon_obj_id = -1
 
     def print_help_text(self) -> None:
         """

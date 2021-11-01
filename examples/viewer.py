@@ -443,7 +443,7 @@ class HabitatSimInteractiveViewer(Application):
             # use shift for fine-grained zooming
             mod_val = 1.01 if shift_pressed else 1.1
             mod = mod_val if scroll_mod_val > 0 else 1.0 / mod_val
-            cam = self.render_camera  # .render_camera
+            cam = self.render_camera
             cam.zoom(mod)
             self.redraw()
 
@@ -454,6 +454,7 @@ class HabitatSimInteractiveViewer(Application):
 
             # update location of grabbed object
             self.update_grab_position(self.get_mouse_position(event.position))
+        self.redraw()
         event.accepted = True
 
     def mouse_release_event(self, event: Application.MouseEvent) -> None:

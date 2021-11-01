@@ -4,6 +4,7 @@
 
 import json
 import os
+import time
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -180,6 +181,25 @@ class FairmotionInterface:
             raise Exception("Error: File does not appear to exist.")
 
         self.metadata[name] = self.metadata_parser(data[name], to_file=False)
+
+    def set_transform_offsets(
+        self, rotate_offset: mn.Quaternion = None, translate_offset: mn.Vector3 = None
+    ) -> None:
+        """
+        This method updates the offset of the model with the positional data passed to it.
+        Use this for changing the location and orientation of the model.
+        """
+        self.rotation_offset = rotate_offset or self.rotation_offset
+        self.translation_offset = translate_offset or self.translation_offset
+        if self.traj_ids:
+            # removes trajectory
+            for t_id in self.traj_ids:
+                self.sim.get_rigid_object_manager().remove_object_by_id(t_id)
+                self.traj_ids = []
+        self.next_pose(repeat=True)
+        self.setup_key_frames()
+        for _ in range(len(Preview)):
+            self.cycle_model_previews()
 
     def load_motion(self) -> None:
         """
@@ -439,7 +459,7 @@ class FairmotionInterface:
                 for i, p in enumerate(points_to_preview):
                     self.traj_ids.append(
                         self.sim.add_gradient_trajectory_object(
-                            traj_vis_name=f"{joint_names[i]}",
+                            traj_vis_name=f"{joint_names[i]}{int(time.time() * 1000)}",
                             colors=colors,
                             points=p,
                             num_segments=3,
