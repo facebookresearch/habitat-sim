@@ -57,8 +57,6 @@ class FairmotionInterface:
         self.preview_mode = Preview.OFF
         self.traj_ids: List[int] = []
         self.is_reversed = False
-        self.is_selected = False
-        self.selected_obj_id = None
 
         # loading from file if given
         # if file doesn't exist, make a new set of data with
@@ -196,8 +194,6 @@ class FairmotionInterface:
         """
         Loads the model currently set by metadata.
         """
-        if self.is_selected:
-            self.toggle_selected()
         self.hide_model()
         data = self.metadata["default"]
 
@@ -228,7 +224,6 @@ class FairmotionInterface:
         Set the model state from the next frame in the motion trajectory. `repeat` is
         set to `True` when the user would like to repeat the last frame.
         """
-
         # This function tracks is_reversed and changes the direction of
         # the motion accordingly.
         def sign(i):
@@ -437,11 +432,7 @@ class FairmotionInterface:
 
         # TODO: This function is not working. It is supposed to produce a gradient
         #       from RED to YELLOW to GREEN but it is producing a black solely
-        colors = [
-            mn.Color3(255, 0, 0),
-            mn.Color3(255, 255, 0),
-            mn.Color3(0, 255, 0),
-        ]
+        colors = [mn.Color3(255, 0, 0), mn.Color3(255, 255, 0), mn.Color3(0, 255, 0)]
 
         if self.preview_mode in [Preview.TRAJECTORY, Preview.ALL]:
             if not self.traj_ids:
@@ -453,7 +444,7 @@ class FairmotionInterface:
                             points=p,
                             num_segments=3,
                             radius=traj_radius,
-                            smooth=False,
+                            smooth=True,
                             num_interpolations=10,
                         )
                     )
@@ -477,42 +468,26 @@ class FairmotionInterface:
         Accepts an object id and returns True if the obj_id belongs to an object
         owned by this Fairmotion character.
         """
-        # checking our model
-        print(f"self.model.get_link_ids() = {self.model.get_link_ids()}")
-        if obj_id in self.model.get_link_ids():
+        # checking our model links
+        if self.model and obj_id in self.model.link_object_ids:
             return True
 
-        print(f"self.key_frame_models[0] = {self.key_frame_models[0]}")
-        # checking all key frame models
-        for ko in self.key_frame_models:
-            print("testing")
-            if obj_id in ko.get_link_ids():
-                return True
+        # checking our model
+        if self.model and obj_id is self.model.object_id:
+            return True
 
-        print(f"self.traj_ids[0] = {self.traj_ids[0]}")
         # checking all key frame models
-        for to in self.traj_ids:
-            print("testing")
-            if obj_id in to.get_link_ids():
-                return True
+        if any(
+            obj_id in ko_ids
+            for ko_ids in [i.link_object_ids.keys() for i in self.key_frame_models]
+        ):
+            return True
+
+        # checking all key frame models
+        if any(obj_id == to for to in self.traj_ids):
+            return True
 
         return False
-
-    def toggle_selected(self) -> None:
-        """
-        When this Fairmotion character is selected, it can be shown with this method
-        that places a icon above the character.
-        """
-        self.is_selected = not self.is_selected
-        if self.is_selected:
-            obj = self.rgd_obj_mgr.add_object_by_template_handle("sphere")
-            obj.collidable = False
-            obj.motion_type = phy.MotionType.KINEMATIC
-            obj.translation = self.model.translation + mn.Vector3(0, 0.5, 0)
-            self.selected_obj_ids.append(obj.object_id)
-            self.rotation_offset
-        else:
-            self.rgd_obj_mgr.remove_object_by_id(self.selected_obj_id)
 
 
 class Preview(Enum):

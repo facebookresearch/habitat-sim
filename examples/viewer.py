@@ -483,7 +483,7 @@ class HabitatSimInteractiveViewer(Application):
         )
         self.mouse_grabber.update_transform(mn.Matrix4.from_(rotation, translation))
 
-    def get_mouse_position(self, mouse_event_position: mn.Vector2i) -> None:
+    def get_mouse_position(self, mouse_event_position: mn.Vector2i) -> mn.Vector2i:
         """
         This function will get a screen-space mouse position appropriately
         scaled based on framebuffer size and window size.  Generally these would be

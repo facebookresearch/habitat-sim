@@ -4,15 +4,16 @@
 
 import ctypes
 import sys
-from enum import Enum
 from typing import Any, Callable, Dict, Optional
 
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
+import magnum as mn
 from magnum.platform.glfw import Application
-from viewer import HabitatSimInteractiveViewer
+from viewer import HabitatSimInteractiveViewer, MouseMode
 
+import habitat_sim.physics as phy
 from examples.fairmotion_interface import FairmotionInterface
 from examples.settings import default_sim_settings
 from habitat_sim.logging import logger
@@ -31,6 +32,10 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             amass_path=fm_settings["amass_path"],
             metadata_dir=fm_settings["metadata_dir"],
         )
+
+        # motion mode attributes
+        self.selected_mocap_char: Optional[FairmotionInterface] = None
+        self.select_icon_obj_id: int = -1
 
     def draw_event(self, simulation_call: Optional[Callable] = None) -> None:
         """
@@ -104,7 +109,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
                 hit_info = raycast_results.hits[0]
 
                 if hit_info.object_id >= 0:
-                    print(f"HIT_OBJECT = {hit_info.object_id}")
+                    print("Looking")
                     # check if the FairmotionInterface Instance owns this hit object
                     if self.fm_demo.belongs_to(hit_info.object_id):
                         print("Found him")
@@ -122,6 +127,30 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         self.mouse_interaction = MouseMode(
             (self.mouse_interaction.value + 1) % len(MouseMode)
         )
+
+    def create_selector_obj(self, mocap_char: FairmotionInterface):
+        """
+        Creates the selection icon above the given fairmotion character.
+        """
+        obj = mocap_char.rgd_obj_mgr.add_object_by_template_handle("sphere")
+        obj.collidable = False
+        obj.motion_type = phy.MotionType.KINEMATIC
+        obj.translation = mocap_char.model.translation + mn.Vector3(0, 0.5, 0)
+
+        self.select_icon_obj_id = obj.object_id
+        self.selected_mocap_char = mocap_char
+
+    def remove_selector_obj(self):
+        """
+        Removes the selection icon from the sim to indicate de-selection.
+        """
+        if self.select_icon_obj_id == -1:
+            self.selected_mocap_char = None
+            return
+        manager = self.sim.get_rigid_object_manager()
+        manager.remove_object_by_id(self.select_icon_obj_id)
+        self.selected_mocap_char = None
+        self.select_icon_obj_id = -1
 
     def print_help_text(self) -> None:
         """
@@ -159,12 +188,6 @@ Key Commands:
 =========================================================
 """
         )
-
-
-class MouseMode(Enum):
-    LOOK = 0
-    GRAB = 1
-    MOTION = 2
 
 
 if __name__ == "__main__":
