@@ -40,7 +40,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             "../habitat-sim/data/test_assets/objects/sphere"
         )[0]
         sphere_template = obj_tmp_mgr.get_template_by_id(self.sphere_template_id)
-        sphere_template.scale = [0.5, 0.5, 0.5]
+        sphere_template.scale = [0.30, 0.30, 0.30]
         obj_tmp_mgr.register_template(sphere_template)
 
         # selection origin box
@@ -206,7 +206,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
                 )
             self.create_selector_obj(self.fm_demo)
 
-        super().mouse_press_event(event)
+        super().mouse_scroll_event(event)
 
     def cycle_mouse_mode(self):
         """
@@ -226,7 +226,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         obj = mocap_char.rgd_obj_mgr.add_object_by_template_id(self.sphere_template_id)
         obj.collidable = False
         obj.motion_type = phy.MotionType.KINEMATIC
-        obj.translation = mocap_char.model.translation + mn.Vector3(0, 1.15, 0)
+        obj.translation = mocap_char.model.translation + mn.Vector3(0, 1.10, 0)
         self.select_sphere_obj_id = obj.object_id
 
         # selection origin box

@@ -46,8 +46,8 @@ class FairmotionInterface:
         self.sim = sim
         self.art_obj_mgr = self.sim.get_articulated_object_manager()
         self.rgd_obj_mgr = self.sim.get_rigid_object_manager()
-        self.model: phy.ManagedArticulatedObject = None
-        self.motion: motion.Motion = None
+        self.model: Optional[phy.ManagedArticulatedObject] = None
+        self.motion: Optional[motion.Motion] = None
         self.metadata = {}
         self.metadata_dir = metadata_dir or METADATA_DIR
         self.motion_stepper = 0
