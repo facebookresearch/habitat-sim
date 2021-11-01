@@ -12,9 +12,8 @@ from fairmotion.core import motion
 from fairmotion.data import amass
 from fairmotion.ops import conversions
 
-import habitat_sim
+import habitat_sim.physics as phy
 from habitat_sim.logging import LoggingContext, logger
-from habitat_sim.physics import JointType
 
 #### Constants
 ROOT = 0
@@ -43,9 +42,10 @@ class FairmotionInterface:
         metadata_dir=None,
     ) -> None:
         LoggingContext.reinitialize_from_env()
-        self.sim = sim
+        self.sim
         self.art_obj_mgr = self.sim.get_articulated_object_manager()
-        self.model: habitat_sim.physics.ManagedArticulatedObject = None
+        self.rgd_obj_mgr = self.sim.get_rigid_object_manager()
+        self.model: phy.ManagedArticulatedObject = None
         self.motion: motion.Motion = None
         self.metadata = {}
         self.metadata_dir = metadata_dir or METADATA_DIR
@@ -57,6 +57,8 @@ class FairmotionInterface:
         self.preview_mode = Preview.OFF
         self.traj_ids: List[int] = []
         self.is_reversed = False
+        self.is_selected = False
+        self.selected_obj_id = None
 
         # loading from file if given
         # if file doesn't exist, make a new set of data with
@@ -194,6 +196,8 @@ class FairmotionInterface:
         """
         Loads the model currently set by metadata.
         """
+        if self.is_selected:
+            self.toggle_selected()
         self.hide_model()
         data = self.metadata["default"]
 
@@ -204,7 +208,7 @@ class FairmotionInterface:
         assert self.model.is_alive
 
         # change motion_type to KINEMATIC
-        self.model.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+        self.model.motion_type = phy.MotionType.KINEMATIC
 
         self.model.translation = self.translation_offset
         self.next_pose()
@@ -285,7 +289,7 @@ class FairmotionInterface:
             pose_joint_index = pose.skel.index_joint[joint_name]
 
             # When the target joint do not have dof, we simply ignore it
-            if joint_type == JointType.Fixed:
+            if joint_type == phy.JointType.Fixed:
                 continue
 
             # When there is no matching between the given pose and the simulated character,
@@ -294,13 +298,13 @@ class FairmotionInterface:
                 raise KeyError(
                     "Error: pose data does not have a transform for that joint name"
                 )
-            elif joint_type not in [JointType.Spherical]:
+            elif joint_type not in [phy.JointType.Spherical]:
                 raise NotImplementedError(
                     f"Error: {joint_type} is not a supported joint type"
                 )
             else:
                 T = pose.get_transform(pose_joint_index, local=True)
-                if joint_type == JointType.Spherical:
+                if joint_type == phy.JointType.Spherical:
                     Q, _ = conversions.T2Qp(T)
 
             new_pose += list(Q)
@@ -361,9 +365,7 @@ class FairmotionInterface:
                     new_root_rotation,
                 ) = self.convert_CMUamass_single_pose(k, self.key_frame_models[-1])
 
-                self.key_frame_models[
-                    -1
-                ].motion_type = habitat_sim.physics.MotionType.KINEMATIC
+                self.key_frame_models[-1].motion_type = phy.MotionType.KINEMATIC
                 self.key_frame_models[-1].joint_positions = new_pose
                 self.key_frame_models[-1].rotation = new_root_rotation
                 self.key_frame_models[-1].translation = new_root_translate
@@ -469,6 +471,48 @@ class FairmotionInterface:
         self.preview_mode = Preview((self.preview_mode.value + 1) % len(Preview))
         self.toggle_key_frames()
         self.build_trajectory_vis()
+
+    def belongs_to(self, obj_id: int) -> bool:
+        """
+        Accepts an object id and returns True if the obj_id belongs to an object
+        owned by this Fairmotion character.
+        """
+        # checking our model
+        print(f"self.model.get_link_ids() = {self.model.get_link_ids()}")
+        if obj_id in self.model.get_link_ids():
+            return True
+
+        print(f"self.key_frame_models[0] = {self.key_frame_models[0]}")
+        # checking all key frame models
+        for ko in self.key_frame_models:
+            print("testing")
+            if obj_id in ko.get_link_ids():
+                return True
+
+        print(f"self.traj_ids[0] = {self.traj_ids[0]}")
+        # checking all key frame models
+        for to in self.traj_ids:
+            print("testing")
+            if obj_id in to.get_link_ids():
+                return True
+
+        return False
+
+    def toggle_selected(self) -> None:
+        """
+        When this Fairmotion character is selected, it can be shown with this method
+        that places a icon above the character.
+        """
+        self.is_selected = not self.is_selected
+        if self.is_selected:
+            obj = self.rgd_obj_mgr.add_object_by_template_handle("sphere")
+            obj.collidable = False
+            obj.motion_type = phy.MotionType.KINEMATIC
+            obj.translation = self.model.translation + mn.Vector3(0, 0.5, 0)
+            self.selected_obj_ids.append(obj.object_id)
+            self.rotation_offset
+        else:
+            self.rgd_obj_mgr.remove_object_by_id(self.selected_obj_id)
 
 
 class Preview(Enum):

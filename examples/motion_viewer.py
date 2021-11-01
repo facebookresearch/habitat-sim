@@ -86,6 +86,35 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
 
         super().key_press_event(event)
 
+    def mouse_press_event(self, event: Application.MouseEvent) -> None:
+        """
+        Handles `Application.MouseEvent`. When in GRAB mode, click on
+        objects to drag their position. (right-click for fixed constraints)
+        """
+        # button = Application.MouseEvent.Button
+        physics_enabled = self.sim.get_physics_simulation_library()
+
+        # if interactive mode is True -> MOTION MODE
+        if self.mouse_interaction == MouseMode.MOTION and physics_enabled:
+            render_camera = self.render_camera.render_camera
+            ray = render_camera.unproject(self.get_mouse_position(event.position))
+            raycast_results = self.sim.cast_ray(ray=ray)
+
+            if raycast_results.has_hits():
+                hit_info = raycast_results.hits[0]
+
+                if hit_info.object_id >= 0:
+                    print(f"HIT_OBJECT = {hit_info.object_id}")
+                    # check if the FairmotionInterface Instance owns this hit object
+                    if self.fm_demo.belongs_to(hit_info.object_id):
+                        print("Found him")
+
+                        # if hit_object >= 0:
+                # end if didn't hit the scene
+            # end has raycast hit
+
+        super().mouse_press_event(event)
+
     def cycle_mouse_mode(self):
         """
         Cycles through mouse modes that belong to the MouseMode emun.
@@ -135,7 +164,7 @@ Key Commands:
 class MouseMode(Enum):
     LOOK = 0
     GRAB = 1
-    MOTION = 3
+    MOTION = 2
 
 
 if __name__ == "__main__":
