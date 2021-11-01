@@ -34,6 +34,10 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         )
 
         # motion mode attributes
+        obj_tmp_mgr = self.sim.get_object_template_manager()
+        self.sphere_template_id = obj_tmp_mgr.load_configs(
+            "../habitat-sim/data/test_assets/objects/sphere"
+        )[0]
         self.selected_mocap_char: Optional[FairmotionInterface] = None
         self.select_icon_obj_id: int = -1
 
@@ -80,6 +84,8 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
 
         elif key == pressed.M:
             # cycle through mouse modes
+            if self.mouse_interaction == MouseMode.MOTION:
+                self.remove_selector_obj()
             self.cycle_mouse_mode()
             logger.info(f"Command: mouse mode set to {self.mouse_interaction}")
             return
@@ -89,6 +95,25 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             self.fm_demo = FairmotionInterface(self, metadata_name="fm_demo")
             logger.info("Command: simulator re-loaded")
 
+        elif key == pressed.SPACE:
+            if not self.sim.config.sim_cfg.enable_physics:
+                logger.warn("Warning: physics was not enabled during setup")
+            else:
+                self.simulating = not self.simulating
+                logger.info(f"Command: physics simulating set to {self.simulating}")
+            if self.simulating:
+                self.remove_selector_obj()
+            return
+
+        elif key == pressed.PERIOD:
+            if self.simulating:
+                logger.warn("Warning: physic simulation already running")
+            else:
+                self.simulate_single_step = True
+                logger.info("Command: physics step taken")
+                self.remove_selector_obj()
+            return
+
         super().key_press_event(event)
 
     def mouse_press_event(self, event: Application.MouseEvent) -> None:
@@ -96,7 +121,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         Handles `Application.MouseEvent`. When in GRAB mode, click on
         objects to drag their position. (right-click for fixed constraints)
         """
-        # button = Application.MouseEvent.Button
+        button = Application.MouseEvent.Button
         physics_enabled = self.sim.get_physics_simulation_library()
 
         # if interactive mode is True -> MOTION MODE
@@ -108,11 +133,14 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             if raycast_results.has_hits():
                 hit_info = raycast_results.hits[0]
 
-                if hit_info.object_id >= 0:
-                    print("Looking")
-                    # check if the FairmotionInterface Instance owns this hit object
+                if event.button == button.LEFT:
                     if self.fm_demo.belongs_to(hit_info.object_id):
-                        print("Found him")
+                        if not self.fm_demo.model:
+                            self.fm_demo.load_model()
+                        self.simulating = False
+                        self.create_selector_obj(self.fm_demo)
+                    else:
+                        self.remove_selector_obj()
 
                         # if hit_object >= 0:
                 # end if didn't hit the scene
@@ -128,14 +156,17 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             (self.mouse_interaction.value + 1) % len(MouseMode)
         )
 
-    def create_selector_obj(self, mocap_char: FairmotionInterface):
+    def create_selector_obj(
+        self, mocap_char: FairmotionInterface, recreate: bool = False
+    ):
         """
         Creates the selection icon above the given fairmotion character.
         """
-        obj = mocap_char.rgd_obj_mgr.add_object_by_template_handle("sphere")
+        self.remove_selector_obj()
+        obj = mocap_char.rgd_obj_mgr.add_object_by_template_id(self.sphere_template_id)
         obj.collidable = False
         obj.motion_type = phy.MotionType.KINEMATIC
-        obj.translation = mocap_char.model.translation + mn.Vector3(0, 0.5, 0)
+        obj.translation = mocap_char.model.translation + mn.Vector3(0, 1.20, 0)
 
         self.select_icon_obj_id = obj.object_id
         self.selected_mocap_char = mocap_char

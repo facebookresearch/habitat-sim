@@ -42,7 +42,7 @@ class FairmotionInterface:
         metadata_dir=None,
     ) -> None:
         LoggingContext.reinitialize_from_env()
-        self.sim
+        self.sim = sim
         self.art_obj_mgr = self.sim.get_articulated_object_manager()
         self.rgd_obj_mgr = self.sim.get_rigid_object_manager()
         self.model: phy.ManagedArticulatedObject = None
