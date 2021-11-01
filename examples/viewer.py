@@ -273,6 +273,9 @@ class HabitatSimInteractiveViewer(Application):
             self.invert_gravity()
             logger.info("Command: gravity inverted")
 
+        elif key == pressed.N:
+            logger.info("Command: toggle navmesh")
+
         # update map of moving/looking keys which are currently pressed
         if key in self.pressed:
             self.pressed[key] = True
