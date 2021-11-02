@@ -28,9 +28,10 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         # fairmotion init
         self.fm_demo = FairmotionInterface(
             self.sim,
-            metadata_name="fm_demo",
             amass_path=fm_settings["amass_path"],
-            metadata_dir=fm_settings["metadata_dir"],
+            urdf_path=fm_settings["urdf_path"],
+            bm_path=fm_settings["bm_path"],
+            metadata_file=fm_settings["metadata_file"],
         )
 
         # configuring MOTION display objects
@@ -120,6 +121,12 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
                 logger.info(f"Command: physics simulating set to {self.simulating}")
             if self.simulating:
                 self.remove_selector_obj()
+            return
+
+        elif key == pressed.P:
+            # ask for user input
+            # if none, generate name and save
+            # else, use name to save
             return
 
         elif key == pressed.PERIOD:
@@ -325,11 +332,20 @@ if __name__ == "__main__":
         help="amass motion file path to load motion from (default: None)",
     )
     parser.add_argument(
-        "--metadata_dir",
+        "--urdf_path",
         type=str,
-        help="directory where metadata files should be saved to (default: None)",
+        help="urdf file path to load model from (default: None)",
     )
-    parser
+    parser.add_argument(
+        "--bm_path",
+        type=str,
+        help="npz type file path to load motion model from (default: None)",
+    )
+    parser.add_argument(
+        "--metadata_file",
+        type=str,
+        help="JSON metadata file that should be used to load the scene and character (default: None)",
+    )
 
     args = parser.parse_args()
 
@@ -341,6 +357,8 @@ if __name__ == "__main__":
 
     fm_settings: Dict[str, Any] = {}
     fm_settings["amass_path"] = args.amass_path
-    fm_settings["metadata_dir"] = args.metadata_dir
+    fm_settings["urdf_path"] = args.urdf_path
+    fm_settings["bm_path"] = args.bm_path
+    fm_settings["metadata_file"] = args.metadata_file
 
     FairmotionSimInteractiveViewer(sim_settings, fm_settings).exec()
