@@ -21,9 +21,9 @@ namespace esp {
 namespace scene {
 
 bool SemanticScene::
-    loadSemanticSceneDescriptor(const std::string& houseFilename, SemanticScene& scene, const quatf& rotation /* = quatf::FromTwoVectors(-vec3f::UnitZ(), geo::ESP_GRAVITY) */) {
+    loadSemanticSceneDescriptor(const std::string& ssdFileName, SemanticScene& scene, const quatf& rotation /* = quatf::FromTwoVectors(-vec3f::UnitZ(), geo::ESP_GRAVITY) */) {
   bool success = false;
-  bool exists = checkFileExists(houseFilename, "loadSemanticSceneDescriptor");
+  bool exists = checkFileExists(ssdFileName, "loadSemanticSceneDescriptor");
   if (exists) {
     // TODO: we need to investigate the possibility of adding an identifying tag
     // to the SSD config files.
@@ -34,18 +34,20 @@ bool SemanticScene::
       // fails
       // open stream and determine house format version
       try {
-        std::ifstream ifs = std::ifstream(houseFilename);
+        std::ifstream ifs = std::ifstream(ssdFileName);
         std::string header;
         std::getline(ifs, header);
         if (header == "ASCII 1.1") {
           success = buildMp3dHouse(ifs, scene, rotation);
+        } else if (header == "HM3D Semantic Annotations") {
+          success = buildHM3DHouse(ifs, scene, rotation);
         }
       } catch (...) {
         success = false;
       }
       if (!success) {
         // if not successful then attempt to load known json files
-        const io::JsonDocument& jsonDoc = io::parseJsonFile(houseFilename);
+        const io::JsonDocument& jsonDoc = io::parseJsonFile(ssdFileName);
         // if no error thrown, then we have loaded a json file of given name
         bool hasCorrectObjects =
             (jsonDoc.HasMember("objects") && jsonDoc["objects"].IsArray());
@@ -73,9 +75,9 @@ bool SemanticScene::
   // should only reach here if not successfully loaded
   namespace FileUtil = Cr::Utility::Directory;
   // check if constructed replica file exists in directory of passed
-  // houseFilename
+  // ssdFileName
   const std::string tmpFName =
-      FileUtil::join(FileUtil::path(houseFilename), "info_semantic.json");
+      FileUtil::join(FileUtil::path(ssdFileName), "info_semantic.json");
   if (FileUtil::exists(tmpFName)) {
     success = scene::SemanticScene::loadReplicaHouse(tmpFName, scene);
   }

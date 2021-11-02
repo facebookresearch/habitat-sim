@@ -802,8 +802,9 @@ int Simulator::addObject(const int objectLibId,
                          const std::string& lightSetupKey,
                          const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
-    if (renderer_)
+    if (renderer_) {
       renderer_->acquireGlContext();
+    }
     // TODO: change implementation to support multi-world and physics worlds
     // to own reference to a sceneGraph to avoid this.
     auto& drawables = getDrawableGroup(sceneID);
@@ -818,8 +819,9 @@ int Simulator::addObjectByHandle(const std::string& objectLibHandle,
                                  const std::string& lightSetupKey,
                                  const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
-    if (renderer_)
+    if (renderer_) {
       renderer_->acquireGlContext();
+    }
     // TODO: change implementation to support multi-world and physics worlds
     // to own reference to a sceneGraph to avoid this.
     auto& drawables = getDrawableGroup(sceneID);
@@ -851,8 +853,9 @@ double Simulator::stepWorld(const double dt) {
   if (physicsManager_ != nullptr) {
     physicsManager_->deferNodesUpdate();
     physicsManager_->stepPhysics(dt);
-    if (renderer_)
+    if (renderer_) {
       renderer_->waitSceneGraph();
+    }
 
     physicsManager_->updateNodes();
   }
@@ -888,8 +891,9 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
   // add STATIC collision objects
   if (includeStaticObjects) {
     // update nodes so SceneNode transforms are up-to-date
-    if (renderer_)
+    if (renderer_) {
       renderer_->waitSceneGraph();
+    }
 
     physicsManager_->updateNodes();
 
@@ -979,8 +983,9 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
 }
 
 bool Simulator::setNavMeshVisualization(bool visualize) {
-  if (renderer_)
+  if (renderer_) {
     renderer_->acquireGlContext();
+  }
   // clean-up the NavMesh visualization if necessary
   if (!visualize && navMeshVisNode_ != nullptr) {
     delete navMeshVisNode_;
