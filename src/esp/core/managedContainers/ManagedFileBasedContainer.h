@@ -201,6 +201,22 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
   //======== Common File-based import and utility functions ========
 
   /**
+   * @brief Returns true if candidate files are found by constructing filenames
+   * based on @p srcFilename and @p extensions . Returns the first fully
+   * qualified filename candidate that is found, if one exists, or an empty
+   * string if not.  This is provided to assist in synthesizing default
+   * filenames that can be expected to exist.
+   * @param srcFilename The source file name to use as a base to build filename
+   * candidates.
+   * @param extensions A list of extensions to search for
+   * @return The fully-qualified filename found to match passed criteria, if
+   * exists, or the empty string if not.
+   */
+  std::string findFilenameUsingCriteria(
+      const std::string& srcFilename,
+      const std::vector<std::string>& extensions) const;
+
+  /**
    * @brief Saves @p managedObject to a JSON file using the given @p
    * fileName in the given @p fileDirectory .
    * @param managedObject The name of the object to save. If not found, returns
@@ -288,6 +304,46 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
 
 /////////////////////////////
 // Class Template Method Definitions
+
+template <class T, ManagedObjectAccess Access>
+std::string ManagedFileBasedContainer<T, Access>::findFilenameUsingCriteria(
+    const std::string& srcFilename,
+    const std::vector<std::string>& extensions) const {
+  // check to see if passed filename already contains extension and exists
+  if (Corrade::Utility::Directory::exists(srcFilename)) {
+    for (const std::string& ext : extensions) {
+      if (srcFilename.find(ext) != std::string::npos) {
+        return srcFilename;
+      }
+    }
+  }
+  std::string resFilename;
+  // split away first extension and 2nd extension (if exists)
+  const std::string rootFilename =
+      Cr::Utility::Directory::splitExtension(srcFilename).first;
+  for (const std::string& ext : extensions) {
+    resFilename = rootFilename + ext;
+    if (Corrade::Utility::Directory::exists(resFilename)) {
+      return resFilename;
+    }
+  }
+
+  const std::string rootFilename2 =
+      Cr::Utility::Directory::splitExtension(rootFilename).first;
+  // check if the src filename has a 2nd extension
+  bool hasTwoExtensions = (rootFilename != rootFilename2);
+  if (hasTwoExtensions) {
+    for (const std::string& ext : extensions) {
+      // try removing second extension
+      resFilename = rootFilename2 + ext;
+      if (Corrade::Utility::Directory::exists(resFilename)) {
+        return resFilename;
+      }
+    }
+  }
+  // by here not found
+  return "";
+}  // ManagedFileBasedContainer<T, Access>::findFilenameUsingCriteria
 
 template <class T, ManagedObjectAccess Access>
 std::string ManagedFileBasedContainer<T, Access>::convertFilenameToPassedExt(

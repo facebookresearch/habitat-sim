@@ -144,6 +144,7 @@ StageAttributes::StageAttributes(const std::string& handle)
   // set empty defaults for handles
   set("nav_asset", "");
   set("semantic_asset", "");
+  set("semantic_descriptor_filename", "");
 }  // StageAttributes ctor
 
 void StageAttributes::writeValuesToJsonInternal(
@@ -153,6 +154,7 @@ void StageAttributes::writeValuesToJsonInternal(
   writeValueToJson("gravity", jsonObj, allocator);
   writeValueToJson("semantic_asset", jsonObj, allocator);
   writeValueToJson("nav_asset", jsonObj, allocator);
+  writeValueToJson("semantic_descriptor_filename", jsonObj, allocator);
 
 }  // StageAttributes::writeValuesToJsonInternal
 

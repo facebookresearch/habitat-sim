@@ -191,27 +191,51 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
     newAttributes->setRenderAssetHandle(attributesHandle);
     newAttributes->setCollisionAssetHandle(attributesHandle);
 
-    // set defaults for navmesh default handles and semantic mesh default
-    // handles
-    std::string navmeshFilename =
-        io::changeExtension(attributesHandle, ".navmesh");
+    if (attributesHandle != "NONE") {
+      // TODO when all datasets have configuration support, get rid of all these
+      // default settings
 
-    if (Corrade::Utility::Directory::exists(navmeshFilename)) {
-      newAttributes->setNavmeshAssetHandle(navmeshFilename);
-    }
-    // Build default semantic descriptor file name
-    std::string houseFilename = io::changeExtension(attributesHandle, ".house");
+      // set defaults for navmesh, semantic mesh and lexicon handles
+      // start with root stage name, including path but without final extension
+      // default navmesh should have .navmesh ext
+      std::string navmeshFilename =
+          this->findFilenameUsingCriteria(attributesHandle, {".navmesh"});
+      // if present, file was found, so set value (overriding attributes
+      // default)
+      if (!navmeshFilename.empty()) {
+        newAttributes->setNavmeshAssetHandle(navmeshFilename);
+      }
 
-    if (!Corrade::Utility::Directory::exists(houseFilename)) {
-      houseFilename = io::changeExtension(attributesHandle, ".scn");
-    }
-    newAttributes->setHouseFilename(houseFilename);
+      // Build default semantic descriptor file name, using extensions of
+      std::string ssdFileName = this->findFilenameUsingCriteria(
+          attributesHandle, {".house", ".scn", "_semantic.txt"});
 
-    // Build default semantic mesh file name
-    const std::string semanticMeshFilename =
-        Cr::Utility::Directory::splitExtension(houseFilename).first +
-        "_semantic.ply";
-    newAttributes->setSemanticAssetHandle(semanticMeshFilename);
+      // if not present, set hacky defaults for back compat expectations.
+      if (ssdFileName.empty()) {
+        if (attributesHandle.find("/replica_dataset") != std::string::npos) {
+          // replica hack until dataset gets appropriate configuration support
+          ssdFileName = Cr::Utility::Directory::join(
+              newAttributes->getFileDirectory(), "info_semantic.json");
+        } else {
+          // hack to support back-compat until configs are implemented for all
+          // datasets
+          ssdFileName =
+              Cr::Utility::Directory::splitExtension(attributesHandle).first +
+              ".scn";
+        }
+      }
+      newAttributes->setSemanticDescriptorFilename(ssdFileName);
+
+      // Build default semantic mesh filename as root stage name ending with
+      // "_semantic.ply", for back-compat with Mp3d
+      std::string semanticMeshFilename =
+          this->findFilenameUsingCriteria(attributesHandle, {"_semantic.ply"});
+      // if present, file was found, so set value (overriding attributes
+      // default)
+      if (!semanticMeshFilename.empty()) {
+        newAttributes->setSemanticAssetHandle(semanticMeshFilename);
+      }
+    }  // do not populate defaults for NONE scene
 
     // set default origin and orientation values based on file name
     // from AssetInfo::fromPath
@@ -316,7 +340,7 @@ void StageAttributesManager::setValsFromJSONDoc(
   // are overridden only if specified in json.
 
   std::string navmeshFName = "";
-  std::string houseFName = "";
+  std::string semanticSceneDescriptor = "";
   std::string lightSetup = "";
 
   // populate semantic mesh type if present
@@ -335,16 +359,27 @@ void StageAttributesManager::setValsFromJSONDoc(
       static_cast<int>(AssetType::INSTANCE_MESH));
 
   if (io::readMember<std::string>(jsonConfig, "nav_asset", navmeshFName)) {
-    navmeshFName = Cr::Utility::Directory::join(stageLocFileDir, navmeshFName);
     // if "nav mesh" is specified in stage json set value (override default).
+    // navmesh filename might already be fully qualified; if not, might just be
+    // file name
+    if (!Corrade::Utility::Directory::exists(navmeshFName)) {
+      navmeshFName =
+          Cr::Utility::Directory::join(stageLocFileDir, navmeshFName);
+    }
     stageAttributes->setNavmeshAssetHandle(navmeshFName);
   }
 
-  if (io::readMember<std::string>(jsonConfig, "house_filename", houseFName)) {
-    houseFName = Cr::Utility::Directory::join(stageLocFileDir, houseFName);
-    // if "house filename" is specified in stage json, set value (override
-    // default).
-    stageAttributes->setHouseFilename(houseFName);
+  if (io::readMember<std::string>(jsonConfig, "semantic_descriptor_filename",
+                                  semanticSceneDescriptor)) {
+    // if "semantic_descriptor_filename" is specified in stage json, set value
+    // (override default).
+    // semanticSceneDescriptor filename might already be fully qualified; if
+    // not, might just be file name
+    if (!Corrade::Utility::Directory::exists(semanticSceneDescriptor)) {
+      semanticSceneDescriptor = Cr::Utility::Directory::join(
+          stageLocFileDir, semanticSceneDescriptor);
+    }
+    stageAttributes->setSemanticDescriptorFilename(semanticSceneDescriptor);
   }
 
   // check for user defined attributes

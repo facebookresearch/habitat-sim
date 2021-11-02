@@ -362,8 +362,8 @@ void initAttributesBindings(py::module& m) {
           R"(Handle of the navmesh asset used for constructions built from
           this template.)")
       .def_property(
-          "house_filename", &StageAttributes::getHouseFilename,
-          &StageAttributes::setHouseFilename,
+          "house_filename", &StageAttributes::getSemanticDescriptorFilename,
+          &StageAttributes::setSemanticDescriptorFilename,
           R"(Handle for file containing semantic type maps and hierarchy for
           constructions built from this template.)")
       .def_property(
