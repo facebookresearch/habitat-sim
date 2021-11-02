@@ -40,7 +40,7 @@ class FairmotionInterface:
         urdf_path=None,
         amass_path=None,
         bm_path=None,
-        metadata_dir=None,
+        metadata_file=None,
     ) -> None:
         LoggingContext.reinitialize_from_env()
         self.sim = sim
@@ -49,7 +49,8 @@ class FairmotionInterface:
         self.model: Optional[phy.ManagedArticulatedObject] = None
         self.motion: Optional[motion.Motion] = None
         self.metadata = {}
-        self.metadata_dir = metadata_dir or METADATA_DIR
+        self.metadata_dir = METADATA_DIR
+        self.last_metadata_file = None
         self.motion_stepper = 0
         self.setup_default_metadata()
 
@@ -59,10 +60,29 @@ class FairmotionInterface:
         self.traj_ids: List[int] = []
         self.is_reversed = False
 
+        if metadata_file:
+            try:
+                self.fetch_metadata(metadata_file)
+                self.set_data(name="user")
+                self.last_metadata_file = metadata_file
+            except Exception:
+                Exception(f"No file with path `{metadata_name}`, creating new file.")
+                self.set_data(
+                    name="user",
+                    urdf_path=urdf_path,
+                    amass_path=amass_path,
+                    bm_path=bm_path,
+                )
+                self.save_metadata(metadata_file)
+        else:
+            # This sets the instance defaults with init(args)
+            self.set_data(urdf_path=urdf_path, amass_path=amass_path, bm_path=bm_path)
+
         # loading from file if given
         # if file doesn't exist, make a new set of data with
         # metadata_name as name
-        if metadata_name is not None:
+        """
+        if metadata_file is not None:
             try:
                 self.fetch_metadata(metadata_name)
                 self.set_data(name=metadata_name)
@@ -76,9 +96,9 @@ class FairmotionInterface:
                 )
                 self.save_metadata(metadata_name)
         else:
-            # This sets the instance defaults with init(args)
+            # This sets the "default" data with init(args) or default settings on None for each
             self.set_data(urdf_path=urdf_path, amass_path=amass_path, bm_path=bm_path)
-
+        """
         # positional offsets
         self.rotation_offset: mn.Quaternion = self.metadata["default"]["rotation"]
         self.translation_offset: mn.Vector3 = self.metadata["default"]["translation"]
@@ -150,37 +170,78 @@ class FairmotionInterface:
                     data[k] = mn.Vector3(v)
         return data
 
-    def save_metadata(self, name: str):
+    def save_metadata(self, file: str):
         """
         Saves the current metadata to a json file in given file path
         """
-        filepath = f"{self.metadata_dir}{name + FILE_SUFFIX}.json"
+        # set key for accessing metadata from dict
+        if "user" in self.metadata:
+            name = "user"
+        else:
+            name = "default"
+
+        if file:
+            # building filepath for saving
+            if file == "default":
+                file = METADATA_DIR + "default.json"
+                name = "user"
+
+            elif os.path.exists(file):
+                file = file
+            elif os.path.exists(METADATA_DIR + file):
+                file = METADATA_DIR + file
+            elif os.path.exists(METADATA_DIR + file + ".json"):
+                file = METADATA_DIR + file + ".json"
+
+            # we are no longer overwriting a file
+            elif "/" not in file:
+                # file is not a file path, we need to aim it at our directory
+                if ".json" not in file:
+                    # add file type
+                    file = file + ".json"
+                file = METADATA_DIR + file
+        else:
+            # generate filename from timestamp
+            file = name + "_" + time.strftime("%Y-%m-%d_%H-%M-%S")
+
+        logger.info(f"\nSaving {name} data to file: {file}\n")
+
         data = {name: self.metadata_parser(self.metadata[name], to_file=True)}
 
-        with open(filepath, "w") as file:
+        with open(file, "w") as file:
             json.dump(data, file)
 
-    def fetch_metadata(self, name):
+    def fetch_metadata(self, file):
         """
         Fetch metadata from a json file in given file name and sets current metadata
         """
-        if FILE_SUFFIX in name and len(name) > len(FILE_SUFFIX):
-            # if name give is full name of file, truncate FILE_SUFFIX
-            filename = name
-            name = name[: -len(FILE_SUFFIX)]
+        # set key for accessing metadata from dict
+        if "user" in self.metadata:
+            name = "user"
         else:
-            # including FILE_SUFFIX if not included in name
-            filename = name + FILE_SUFFIX
+            name = "default"
 
-        filepath = f"{self.metadata_dir}{filename}.json"
+        # building filepath for loading
+        if file == "default":
+            file = METADATA_DIR + "default.json"
+            name = "default"
+        elif os.path.exists(file):
+            file = file
+        elif os.path.exists(METADATA_DIR + file):
+            file = METADATA_DIR + file
+        elif os.path.exists(METADATA_DIR + file + ".json"):
+            file = METADATA_DIR + file + ".json"
 
         try:
-            with open(filepath, "r") as file:
-                data = json.load(file)
+            with open(file, "r") as f:
+                data = json.load(f)
         except Exception:
             raise Exception("Error: File does not appear to exist.")
 
+        # NOTE: I am not sure how to error check this line, mybe a simple if/else
         self.metadata[name] = self.metadata_parser(data[name], to_file=False)
+
+        self.last_metadata_file = file
 
     def set_transform_offsets(
         self, rotate_offset: mn.Quaternion = None, translate_offset: mn.Vector3 = None
