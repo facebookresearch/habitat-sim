@@ -450,9 +450,7 @@ class FairmotionInterface:
 
             points_to_preview = define_preview_points(joint_names)
 
-        # TODO: This function is not working. It is supposed to produce a gradient
-        #       from RED to YELLOW to GREEN but it is producing a black solely
-        colors = [mn.Color3(255, 0, 0), mn.Color3(255, 255, 0), mn.Color3(0, 255, 0)]
+        colors = [mn.Color3.red(), mn.Color3.yellow(), mn.Color3.green()]
 
         if self.preview_mode in [Preview.TRAJECTORY, Preview.ALL]:
             if not self.traj_ids:
@@ -499,7 +497,7 @@ class FairmotionInterface:
         # checking all key frame models
         if any(
             obj_id in ko_ids
-            for ko_ids in [i.link_object_ids.keys() for i in self.key_frame_models]
+            for ko_ids in (i.link_object_ids.keys() for i in self.key_frame_models)
         ):
             return True
 
