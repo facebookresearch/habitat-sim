@@ -109,7 +109,8 @@ class HabitatSimInteractiveViewer(Application):
                 # even if time_since_last_simulation is quite large
                 self.sim.step_world(1.0 / 60.0)
                 self.simulate_single_step = False
-                simulation_call()
+                if simulation_call:
+                    simulation_call()
 
             # reset time_since_last_simulation, accounting for potential overflow
             self.time_since_last_simulation = math.fmod(
