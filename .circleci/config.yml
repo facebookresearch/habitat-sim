@@ -307,7 +307,7 @@ jobs:
           default: False
         AIHABITAT_CONDA_CHN:
           type: string
-          default: "aihabitat-nightly"
+          default: "aihabitat"
         AIHABITAT_CONDA_CHN_PWD_VAR:
           type: string
           default: "AIHABITAT_CONDA_PWD"
@@ -763,4 +763,8 @@ workflows:
           requires:
             - lab_build_habitat
             - install_and_test_ubuntu
+          filters: *version_filter
+      - build_conda_osx:
+          requires:
+            -  build_conda_binaries
           filters: *version_filter
