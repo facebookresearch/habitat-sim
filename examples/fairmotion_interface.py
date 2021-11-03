@@ -44,6 +44,7 @@ class FairmotionInterface:
     ) -> None:
         LoggingContext.reinitialize_from_env()
         self.sim = sim
+        print(sim)
         self.art_obj_mgr = self.sim.get_articulated_object_manager()
         self.rgd_obj_mgr = self.sim.get_rigid_object_manager()
         self.model: Optional[phy.ManagedArticulatedObject] = None
@@ -247,21 +248,28 @@ class FairmotionInterface:
         for _ in range(len(Preview)):
             self.cycle_model_previews()
 
-    def load_motion(self) -> None:
+    def load_motion(self, default=False) -> None:
         """
         Loads the motion currently set by metadata.
         """
-        data = self.metadata["default"]
+        if not default and "user" in self.metadata:
+            data = self.metadata["user"]
+        else:
+            data = self.metadata["default"]
         self.motion = amass.load(file=data["amass_path"], bm_path=data["bm_path"])
         self.setup_key_frames()
         self.build_trajectory_vis()
 
-    def load_model(self) -> None:
+    def load_model(self, default=False) -> None:
         """
         Loads the model currently set by metadata.
         """
         self.hide_model()
-        data = self.metadata["default"]
+
+        if not default and "user" in self.metadata:
+            data = self.metadata["user"]
+        else:
+            data = self.metadata["default"]
 
         # add an ArticulatedObject to the world with a fixed base
         self.model = self.art_obj_mgr.add_articulated_object_from_urdf(

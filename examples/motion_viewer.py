@@ -34,6 +34,9 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             metadata_file=fm_settings["metadata_file"],
         )
 
+        # cache argument values for reconfigure
+        self.fm_settings = fm_settings
+
         # configuring MOTION display objects
         # selection sphere icon
         obj_tmp_mgr = self.sim.get_object_template_manager()
@@ -110,10 +113,13 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             return
 
         elif key == pressed.R:
+            if "user" in self.fm_demo.metadata:
+                name = "user"
+            else:
+                name = "default"
             self.remove_selector_obj()
             super().reconfigure_sim()
-            self.fm_demo = FairmotionInterface(self, metadata_name="fm_demo")
-            logger.info("Command: simulator re-loaded")
+            self.fm_demo = FairmotionInterface(self.sim, self.fm_demo.metadata[name])
 
         elif key == pressed.SPACE:
             if not self.sim.config.sim_cfg.enable_physics:
@@ -130,6 +136,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         elif key == pressed.P:
             if event.modifiers == mod.CTRL:
                 logger.info(f"Last file loaded: {self.fm_demo.last_metadata_file}")
+                logger.info(f"Command: simulator re-loaded {self.fm_demo.model}")
             elif event.modifiers == mod.SHIFT:
                 if self.fm_demo.last_metadata_file is None:
                     logger.warn("Warning: No previous file loaded.")
