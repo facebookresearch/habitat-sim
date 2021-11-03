@@ -3,6 +3,7 @@
 # Copyright (c) Facebook, Inc. and its affiliates.
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
+import importlib.util
 import itertools
 import json
 from os import path as osp
@@ -17,6 +18,9 @@ import habitat_sim
 import habitat_sim.errors
 from examples.settings import make_cfg
 from habitat_sim.utils.common import quat_from_coeffs
+
+torch_spec = importlib.util.find_spec("torch")
+_HAS_TORCH = torch_spec is not None
 
 
 def _render_scene(sim, scene, sensor_type, gpu2gpu):
@@ -152,8 +156,7 @@ def test_sensors(
 ):
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
-
-    if not habitat_sim.cuda_enabled and gpu2gpu:
+    if gpu2gpu and (not habitat_sim.cuda_enabled or not _HAS_TORCH):
         pytest.skip("Skipping GPU->GPU test")
 
     # We only support adding more RGB Sensors if one is already in a scene
@@ -259,8 +262,7 @@ def test_smoke_no_sensors(make_cfg_settings):
 def test_smoke_redwood_noise(scene, gpu2gpu, make_cfg_settings):
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
-
-    if not habitat_sim.cuda_enabled and gpu2gpu:
+    if gpu2gpu and (not habitat_sim.cuda_enabled or not _HAS_TORCH):
         pytest.skip("Skipping GPU->GPU test")
 
     make_cfg_settings["depth_sensor"] = True
