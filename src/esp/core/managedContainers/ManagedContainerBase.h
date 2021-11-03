@@ -232,11 +232,7 @@ class ManagedContainerBase {
    * @param ID the ID to look for
    */
   bool getObjectLibHasID(int ID) const {
-    const std::string handle = getObjectHandleByID(ID);
-    if (handle == "") {
-      return false;
-    }
-    return objectLibrary_.count(handle) > 0;
+    return objectLibKeyByID_.count(ID) > 0;
   }  // ManagedContainerBase::getObjectLibHasHandle
 
   /**

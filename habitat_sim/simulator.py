@@ -344,6 +344,25 @@ class Simulator(SimulatorBackend):
         self.renderer.start_draw_jobs()
         self.step_physics(dt)
 
+    def start_async_render(self, agent_ids: Union[int, List[int]] = 0):
+        if self._async_draw_agent_ids is not None:
+            raise RuntimeError(
+                "start_async_render_and_step_physics was already called.  "
+                "Call get_sensor_observations_async_finish before calling this again.  "
+                "Use step_physics to step physics additional times."
+            )
+
+        self._async_draw_agent_ids = agent_ids
+        if isinstance(agent_ids, int):
+            agent_ids = [agent_ids]
+
+        for agent_id in agent_ids:
+            agent_sensorsuite = self.__sensors[agent_id]
+            for _sensor_uuid, sensor in agent_sensorsuite.items():
+                sensor._draw_observation_async()
+
+        self.renderer.start_draw_jobs()
+
     def get_sensor_observations_async_finish(
         self,
     ) -> Union[
