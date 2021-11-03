@@ -4,6 +4,7 @@
 
 import json
 import os
+import time
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -12,9 +13,8 @@ from fairmotion.core import motion
 from fairmotion.data import amass
 from fairmotion.ops import conversions
 
-import habitat_sim
+import habitat_sim.physics as phy
 from habitat_sim.logging import LoggingContext, logger
-from habitat_sim.physics import JointType
 
 #### Constants
 ROOT = 0
@@ -45,8 +45,9 @@ class FairmotionInterface:
         LoggingContext.reinitialize_from_env()
         self.sim = sim
         self.art_obj_mgr = self.sim.get_articulated_object_manager()
-        self.model: habitat_sim.physics.ManagedArticulatedObject = None
-        self.motion: motion.Motion = None
+        self.rgd_obj_mgr = self.sim.get_rigid_object_manager()
+        self.model: Optional[phy.ManagedArticulatedObject] = None
+        self.motion: Optional[motion.Motion] = None
         self.metadata = {}
         self.metadata_dir = metadata_dir or METADATA_DIR
         self.motion_stepper = 0
@@ -181,6 +182,25 @@ class FairmotionInterface:
 
         self.metadata[name] = self.metadata_parser(data[name], to_file=False)
 
+    def set_transform_offsets(
+        self, rotate_offset: mn.Quaternion = None, translate_offset: mn.Vector3 = None
+    ) -> None:
+        """
+        This method updates the offset of the model with the positional data passed to it.
+        Use this for changing the location and orientation of the model.
+        """
+        self.rotation_offset = rotate_offset or self.rotation_offset
+        self.translation_offset = translate_offset or self.translation_offset
+        if self.traj_ids:
+            # removes trajectory
+            for t_id in self.traj_ids:
+                self.sim.get_rigid_object_manager().remove_object_by_id(t_id)
+                self.traj_ids = []
+        self.next_pose(repeat=True)
+        self.setup_key_frames()
+        for _ in range(len(Preview)):
+            self.cycle_model_previews()
+
     def load_motion(self) -> None:
         """
         Loads the motion currently set by metadata.
@@ -204,7 +224,7 @@ class FairmotionInterface:
         assert self.model.is_alive
 
         # change motion_type to KINEMATIC
-        self.model.motion_type = habitat_sim.physics.MotionType.KINEMATIC
+        self.model.motion_type = phy.MotionType.KINEMATIC
 
         self.model.translation = self.translation_offset
         self.next_pose()
@@ -224,7 +244,6 @@ class FairmotionInterface:
         Set the model state from the next frame in the motion trajectory. `repeat` is
         set to `True` when the user would like to repeat the last frame.
         """
-
         # This function tracks is_reversed and changes the direction of
         # the motion accordingly.
         def sign(i):
@@ -285,7 +304,7 @@ class FairmotionInterface:
             pose_joint_index = pose.skel.index_joint[joint_name]
 
             # When the target joint do not have dof, we simply ignore it
-            if joint_type == JointType.Fixed:
+            if joint_type == phy.JointType.Fixed:
                 continue
 
             # When there is no matching between the given pose and the simulated character,
@@ -294,13 +313,13 @@ class FairmotionInterface:
                 raise KeyError(
                     "Error: pose data does not have a transform for that joint name"
                 )
-            elif joint_type not in [JointType.Spherical]:
+            elif joint_type not in [phy.JointType.Spherical]:
                 raise NotImplementedError(
                     f"Error: {joint_type} is not a supported joint type"
                 )
             else:
                 T = pose.get_transform(pose_joint_index, local=True)
-                if joint_type == JointType.Spherical:
+                if joint_type == phy.JointType.Spherical:
                     Q, _ = conversions.T2Qp(T)
 
             new_pose += list(Q)
@@ -361,9 +380,7 @@ class FairmotionInterface:
                     new_root_rotation,
                 ) = self.convert_CMUamass_single_pose(k, self.key_frame_models[-1])
 
-                self.key_frame_models[
-                    -1
-                ].motion_type = habitat_sim.physics.MotionType.KINEMATIC
+                self.key_frame_models[-1].motion_type = phy.MotionType.KINEMATIC
                 self.key_frame_models[-1].joint_positions = new_pose
                 self.key_frame_models[-1].rotation = new_root_rotation
                 self.key_frame_models[-1].translation = new_root_translate
@@ -433,25 +450,19 @@ class FairmotionInterface:
 
             points_to_preview = define_preview_points(joint_names)
 
-        # TODO: This function is not working. It is supposed to produce a gradient
-        #       from RED to YELLOW to GREEN but it is producing a black solely
-        colors = [
-            mn.Color3(255, 0, 0),
-            mn.Color3(255, 255, 0),
-            mn.Color3(0, 255, 0),
-        ]
+        colors = [mn.Color3.red(), mn.Color3.yellow(), mn.Color3.green()]
 
         if self.preview_mode in [Preview.TRAJECTORY, Preview.ALL]:
             if not self.traj_ids:
                 for i, p in enumerate(points_to_preview):
                     self.traj_ids.append(
                         self.sim.add_gradient_trajectory_object(
-                            traj_vis_name=f"{joint_names[i]}",
+                            traj_vis_name=f"{joint_names[i]}{int(time.time() * 1000)}",
                             colors=colors,
                             points=p,
                             num_segments=3,
                             radius=traj_radius,
-                            smooth=False,
+                            smooth=True,
                             num_interpolations=10,
                         )
                     )
@@ -469,6 +480,32 @@ class FairmotionInterface:
         self.preview_mode = Preview((self.preview_mode.value + 1) % len(Preview))
         self.toggle_key_frames()
         self.build_trajectory_vis()
+
+    def belongs_to(self, obj_id: int) -> bool:
+        """
+        Accepts an object id and returns True if the obj_id belongs to an object
+        owned by this Fairmotion character.
+        """
+        # checking our model links
+        if self.model and obj_id in self.model.link_object_ids:
+            return True
+
+        # checking our model
+        if self.model and obj_id is self.model.object_id:
+            return True
+
+        # checking all key frame models
+        if any(
+            obj_id in ko_ids
+            for ko_ids in (i.link_object_ids.keys() for i in self.key_frame_models)
+        ):
+            return True
+
+        # checking all key frame models
+        if any(obj_id == to for to in self.traj_ids):
+            return True
+
+        return False
 
 
 class Preview(Enum):
