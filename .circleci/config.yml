@@ -702,10 +702,7 @@ workflows:
       - js_lint
       - lab_build_habitat
       - build_conda_osx:
-         AIHABITAT_CONDA_CHN: aihabitat-nightly
-         AIHABITAT_CONDA_CHN_PWD_VAR: AIHABITAT_NIGHTLY_CONDA_PWD
-         nightly: true
-         CI_TEST: false
+         CI_TEST: true
       - test_pip_build
       - install_and_test_ubuntu
       - pre-commit
@@ -733,6 +730,16 @@ workflows:
           NIGHTLY_FLAG: "--nightly"
           requires:
             - install_and_test_ubuntu
+          filters:
+            branches:
+              only: main
+      - build_conda_osx:
+          AIHABITAT_CONDA_CHN: aihabitat-nightly
+          AIHABITAT_CONDA_CHN_PWD_VAR: AIHABITAT_NIGHTLY_CONDA_PWD
+          nightly: true
+          CI_TEST: false
+          requires:
+            - build_conda_binaries
           filters:
             branches:
               only: main
