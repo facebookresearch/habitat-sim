@@ -152,6 +152,8 @@ def test_sensors(
 ):
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
+    if gpu2gpu:
+        torch = pytest.skip("torch")  # noqa: F841
 
     if not habitat_sim.cuda_enabled and gpu2gpu:
         pytest.skip("Skipping GPU->GPU test")
@@ -259,6 +261,8 @@ def test_smoke_no_sensors(make_cfg_settings):
 def test_smoke_redwood_noise(scene, gpu2gpu, make_cfg_settings):
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
+    if gpu2gpu:
+        torch = pytest.skip("torch")  # noqa: F841
 
     if not habitat_sim.cuda_enabled and gpu2gpu:
         pytest.skip("Skipping GPU->GPU test")
