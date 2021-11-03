@@ -109,7 +109,7 @@ class HabitatSimInteractiveViewer(Application):
                 # even if time_since_last_simulation is quite large
                 self.sim.step_world(1.0 / 60.0)
                 self.simulate_single_step = False
-                if simulation_call:
+                if simulation_call is not None:
                     simulation_call()
 
             # reset time_since_last_simulation, accounting for potential overflow
@@ -447,7 +447,7 @@ class HabitatSimInteractiveViewer(Application):
             # use shift for fine-grained zooming
             mod_val = 1.01 if shift_pressed else 1.1
             mod = mod_val if scroll_mod_val > 0 else 1.0 / mod_val
-            cam = self.render_camera  # .render_camera
+            cam = self.render_camera
             cam.zoom(mod)
             self.redraw()
 
@@ -458,6 +458,7 @@ class HabitatSimInteractiveViewer(Application):
 
             # update location of grabbed object
             self.update_grab_position(self.get_mouse_position(event.position))
+        self.redraw()
         event.accepted = True
 
     def mouse_release_event(self, event: Application.MouseEvent) -> None:
@@ -487,7 +488,7 @@ class HabitatSimInteractiveViewer(Application):
         )
         self.mouse_grabber.update_transform(mn.Matrix4.from_(rotation, translation))
 
-    def get_mouse_position(self, mouse_event_position: mn.Vector2i) -> None:
+    def get_mouse_position(self, mouse_event_position: mn.Vector2i) -> mn.Vector2i:
         """
         This function will get a screen-space mouse position appropriately
         scaled based on framebuffer size and window size.  Generally these would be
