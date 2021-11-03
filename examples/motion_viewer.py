@@ -105,6 +105,8 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
                 self.remove_selector_obj()
             self.cycle_mouse_mode()
             logger.info(f"Command: mouse mode set to {self.mouse_interaction}")
+            event.accepted = True
+            self.redraw()
             return
 
         elif key == pressed.R:
@@ -121,13 +123,29 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
                 logger.info(f"Command: physics simulating set to {self.simulating}")
             if self.simulating:
                 self.remove_selector_obj()
+            event.accepted = True
+            self.redraw()
             return
 
         elif key == pressed.P:
-            # ask for user input
-            # if none, generate name and save
-            # else, use name to save
-            return
+            if event.modifiers == mod.CTRL:
+                logger.info(f"Last file loaded: {self.fm_demo.last_metadata_file}")
+            elif event.modifiers == mod.SHIFT:
+                if self.fm_demo.last_metadata_file is None:
+                    logger.warn("Warning: No previous file loaded.")
+                else:
+                    self.fm_demo.save_metadata(self.fm_demo.last_metadata_file)
+            else:
+                # ask for user input
+                fn = input(
+                    "Enter filename/filepath to save to (no input will generate a filename)(type 'esc' to escape saving):"
+                )
+                if fn == "esc":
+                    logger.info("No File Saved.")
+                # if none, generate name and save
+                # else, use name to save
+                else:
+                    self.fm_demo.save_metadata(fn)
 
         elif key == pressed.PERIOD:
             if self.simulating:
@@ -136,6 +154,8 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
                 self.simulate_single_step = True
                 logger.info("Command: physics step taken")
                 self.remove_selector_obj()
+            event.accepted = True
+            self.redraw()
             return
 
         super().key_press_event(event)

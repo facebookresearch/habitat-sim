@@ -52,6 +52,7 @@ class FairmotionInterface:
         self.metadata_dir = METADATA_DIR
         self.last_metadata_file = None
         self.motion_stepper = 0
+        print(f"metadata_file: {metadata_file}")
         self.setup_default_metadata()
 
         self.key_frames = None
@@ -59,12 +60,10 @@ class FairmotionInterface:
         self.preview_mode = Preview.OFF
         self.traj_ids: List[int] = []
         self.is_reversed = False
-
         if metadata_file:
             try:
                 self.fetch_metadata(metadata_file)
                 self.set_data(name="user")
-                self.last_metadata_file = metadata_file
             except Exception:
                 Exception(f"No file with path `{metadata_name}`, creating new file.")
                 self.set_data(
@@ -74,31 +73,15 @@ class FairmotionInterface:
                     bm_path=bm_path,
                 )
                 self.save_metadata(metadata_file)
+                self.last_metadata_file = metadata_file
+
         else:
             # This sets the instance defaults with init(args)
             self.set_data(urdf_path=urdf_path, amass_path=amass_path, bm_path=bm_path)
+            self.save_metadata("default")
 
-        # loading from file if given
-        # if file doesn't exist, make a new set of data with
-        # metadata_name as name
-        """
-        if metadata_file is not None:
-            try:
-                self.fetch_metadata(metadata_name)
-                self.set_data(name=metadata_name)
-            except Exception:
-                Exception(f"No file with name {metadata_name}, creating new file.")
-                self.set_data(
-                    name=metadata_name,
-                    urdf_path=urdf_path,
-                    amass_path=amass_path,
-                    bm_path=bm_path,
-                )
-                self.save_metadata(metadata_name)
-        else:
-            # This sets the "default" data with init(args) or default settings on None for each
-            self.set_data(urdf_path=urdf_path, amass_path=amass_path, bm_path=bm_path)
-        """
+        print(f"self.last_metadata_file: {self.last_metadata_file}")
+
         # positional offsets
         self.rotation_offset: mn.Quaternion = self.metadata["default"]["rotation"]
         self.translation_offset: mn.Vector3 = self.metadata["default"]["translation"]
@@ -184,7 +167,7 @@ class FairmotionInterface:
             # building filepath for saving
             if file == "default":
                 file = METADATA_DIR + "default.json"
-                name = "user"
+                # print() name = "user"
 
             elif os.path.exists(file):
                 file = file
@@ -202,18 +185,19 @@ class FairmotionInterface:
                 file = METADATA_DIR + file
         else:
             # generate filename from timestamp
-            file = name + "_" + time.strftime("%Y-%m-%d_%H-%M-%S")
+            file = METADATA_DIR + name + "_" + time.strftime("%Y-%m-%d_%H-%M-%S")
 
         logger.info(f"\nSaving {name} data to file: {file}\n")
 
         data = {name: self.metadata_parser(self.metadata[name], to_file=True)}
 
-        with open(file, "w") as file:
-            json.dump(data, file)
+        with open(file, "w") as f:
+            json.dump(data, f)
+        print(f"Saved: {file}")
 
     def fetch_metadata(self, file):
         """
-        Fetch metadata from a json file in given file name and sets current metadata
+        Fetch metadata from a json file in given file name and sets metadata
         """
         # set key for accessing metadata from dict
         if "user" in self.metadata:
@@ -242,6 +226,7 @@ class FairmotionInterface:
         self.metadata[name] = self.metadata_parser(data[name], to_file=False)
 
         self.last_metadata_file = file
+        print(f"Fetch: {file}")
 
     def set_transform_offsets(
         self, rotate_offset: mn.Quaternion = None, translate_offset: mn.Vector3 = None
