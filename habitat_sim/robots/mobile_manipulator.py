@@ -34,7 +34,8 @@ class MobileManipulatorParams:
     """Data to configure a mobile manipulator.
     :property arm_joints: The joint ids of the arm joints.
     :property gripper_joints: The habitat sim joint ids of any grippers.
-    :property wheel_joints: The joint ids of the wheels. If the wheels are not controlled, then this should be None
+    :property wheel_joints: The joint ids of the wheels if applicable. If the wheels are not controlled, then this should be None
+    :property leg_joints: The joint ids of the legs if applicable. If the legs are not controlled, then this should be None
 
     :property arm_init_params: The starting joint angles of the arm. If None,
         resets to 0.
@@ -67,12 +68,19 @@ class MobileManipulatorParams:
         there are wheels).
     :property wheel_mtr_max_impulse: The maximum impulse of the wheel motor (if
         there are wheels).
+    :property leg_mtr_pos_gain: The position gain of the leg motor (if
+        there are legs).
+    :property leg_mtr_vel_gain: The velocity gain of the leg motor (if
+        there are legs).
+    :property leg_mtr_max_impulse: The maximum impulse of the leg motor (if
+        there are legs).
     :property base_offset: The offset of the root transform from the center ground point for navmesh kinematic control.
     """
 
     arm_joints: List[int]
     gripper_joints: List[int]
     wheel_joints: Optional[List[int]]
+    leg_joints: Optional[List[int]]
 
     arm_init_params: Optional[List[float]]
     gripper_init_params: Optional[List[float]]
@@ -91,9 +99,13 @@ class MobileManipulatorParams:
     arm_mtr_vel_gain: float
     arm_mtr_max_impulse: float
 
-    wheel_mtr_pos_gain: float
-    wheel_mtr_vel_gain: float
-    wheel_mtr_max_impulse: float
+    wheel_mtr_pos_gain: Optional[float]
+    wheel_mtr_vel_gain: Optional[float]
+    wheel_mtr_max_impulse: Optional[float]
+
+    leg_mtr_pos_gain: Optional[float]
+    leg_mtr_vel_gain: Optional[float]
+    leg_mtr_max_impulse: Optional[float]
 
     base_offset: mn.Vector3
     base_link_names: Set[str]
