@@ -111,6 +111,9 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             super().reconfigure_sim()
             self.fm_demo = FairmotionInterface(self, metadata_name="fm_demo")
             logger.info("Command: simulator re-loaded")
+            self.redraw()
+            event.accepted = True
+            return
 
         elif key == pressed.SPACE:
             if not self.sim.config.sim_cfg.enable_physics:
@@ -266,6 +269,32 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
 =========================================================
 Welcome to the Habitat-sim Fairmotion Viewer application!
 =========================================================
+Mouse Functions ('m' to toggle mode):
+----------------
+In LOOK mode (default):
+    LEFT:
+        Click and drag to rotate the agent and look up/down.
+    WHEEL:
+        Modify orthographic camera zoom/perspective camera FOV
+        (+ SHIFT): for fine-grained control
+
+In GRAB mode (with 'enable-physics'):
+    LEFT:
+        Click and drag to pickup and move an object with a point-to-point constraint (e.g. ball joint).
+    RIGHT:
+        Click and drag to pickup and move an object with a fixed frame constraint.
+    WHEEL (with picked object):
+        Pull gripped object closer or push it away.
+
+In MOTION mode (with 'enable-physics'):
+    LEFT:
+        Click a Fairmotion character to set it as selected or clcik anywhere else to deselect.
+    RIGHT (With selected Fairmotion character):
+        Click anywhere on the scene to translate a selected Fairmotion character to the clicked location.
+    WHEEL (with selected Fairmotion character):
+        Rotate the orientation of a selected Fairmotion character along an axis normal to the floor of the scene.
+        (+ SHIFT): for fine-grained control
+
 Key Commands:
 -------------
     esc:        Exit the application.
