@@ -138,7 +138,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             else:
                 # ask for user input
                 fn = input(
-                    "Enter filename/filepath to save to (no input will generate a filename)(type 'esc' to escape saving):"
+                    "Enter filename/filepath to save to (no input will generate a filename)(type 'esc' to abort save):"
                 )
                 if fn == "esc":
                     logger.info("No File Saved.")
@@ -146,6 +146,13 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
                 # else, use name to save
                 else:
                     self.fm_demo.save_metadata(fn)
+
+        elif key == pressed.L:
+            fn = input("Enter filename/filepath to load metadata file:")
+            if fn in ["", None]:
+                logger.info("No File Loaded.")
+            else:
+                self.fm_demo.fetch_metadata(fn)
 
         elif key == pressed.PERIOD:
             if self.simulating:
