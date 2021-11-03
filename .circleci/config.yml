@@ -339,7 +339,7 @@ jobs:
             cd habitat-sim/conda-build
             git submodule update --init --recursive --jobs 16
             export PYTHONIOENCODING="utf-8"
-            python macos_matrix_builder.py <<# parameters.CI_TEST>> --ci_test <</ parameters.CI_TEST>> <<# parameters.nightly>> --nightly <</ parameters.nightly>>
+            python matrix_builder.py <<# parameters.CI_TEST>> --ci_test <</ parameters.CI_TEST>> <<# parameters.nightly>> --nightly <</ parameters.nightly>>
   test_pip_build:
     <<: *gpu
     steps:
