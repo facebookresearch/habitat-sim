@@ -136,7 +136,7 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
 
     ESP_CHECK((mapIter != ShaderTypeNamesMap.end() ||
                (shaderTypeLC ==
-                getShaderTypeName(ObjectInstanceShaderType::Unknown))),
+                getShaderTypeName(ObjectInstanceShaderType::Unspecified))),
               "Illegal shader_type value"
                   << shader_type
                   << "attempted to be set in SceneObjectInstanceAttributes :"
@@ -156,8 +156,8 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
     if (mapIter != ShaderTypeNamesMap.end()) {
       return mapIter->second;
     }
-    // unknown is default value
-    return ObjectInstanceShaderType::Unknown;
+    // Unspecified is default value
+    return ObjectInstanceShaderType::Unspecified;
   }
 
   /**

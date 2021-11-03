@@ -12,14 +12,15 @@ namespace esp {
 namespace metadata {
 
 namespace managers {
+using esp::core::managedContainers::ManagedObjectAccess;
 
 class SceneAttributesManager
     : public AttributesManager<attributes::SceneAttributes,
-                               core::ManagedObjectAccess::Copy> {
+                               ManagedObjectAccess::Copy> {
  public:
   SceneAttributesManager()
       : AttributesManager<attributes::SceneAttributes,
-                          core::ManagedObjectAccess::Copy>::
+                          ManagedObjectAccess::Copy>::
             AttributesManager("Scene Instance", "scene_instance.json") {
     // build this manager's copy constructor map
     this->copyConstructorMap_["SceneAttributes"] =

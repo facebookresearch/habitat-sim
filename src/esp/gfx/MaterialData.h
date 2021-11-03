@@ -37,6 +37,9 @@ struct MaterialData {
   Magnum::Matrix3 textureMatrix;
 
   bool doubleSided = false;
+
+  // Shader type specified for this material upon load/creation
+  int shaderTypeSpec = -1;
 };
 
 struct PhongMaterialData : public MaterialData {

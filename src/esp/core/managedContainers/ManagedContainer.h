@@ -14,6 +14,7 @@
 
 namespace esp {
 namespace core {
+namespace managedContainers {
 
 /**
  * @brief This enum describes how objects held in the @ref ManagedConatainer are
@@ -696,6 +697,7 @@ auto ManagedContainer<T, Access>::removeObjectInternal(
   return managedObject;
 }  // ManagedContainer::removeObjectInternal
 
+}  // namespace managedContainers
 }  // namespace core
 }  // namespace esp
 

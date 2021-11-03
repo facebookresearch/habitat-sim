@@ -14,13 +14,13 @@ SceneObjectInstanceAttributes::SceneObjectInstanceAttributes(
     : AbstractAttributes(type, handle) {
   // default to unknown for object instances, to use attributes-specified
   // defaults
-  setShaderType(getShaderTypeName(ObjectInstanceShaderType::Unknown));
+  setShaderType(getShaderTypeName(ObjectInstanceShaderType::Unspecified));
 
   // defaults to unknown/undefined
   setMotionType(getMotionTypeName(esp::physics::MotionType::UNDEFINED));
   // set to no rotation
-  set("rotation", Mn::Quaternion(Mn::Math::IdentityInit));
-  set("translation", Mn::Vector3());
+  setRotation(Mn::Quaternion(Mn::Math::IdentityInit));
+  setTranslation(Mn::Vector3());
   // don't override attributes-specified visibility.
   set("is_instance_visible", ID_UNDEFINED);
   // defaults to unknown so that obj instances use scene instance setting
@@ -129,6 +129,8 @@ SceneAttributes::SceneAttributes(const std::string& handle)
   // defaults to asset local
   setTranslationOrigin(
       getTranslationOriginName(SceneInstanceTranslationOrigin::AssetLocal));
+  setNavmeshHandle("");
+  setSemanticSceneHandle("");
   // get refs to internal subconfigs for object and ao instances
   objInstConfig_ = editSubconfig<Configuration>("object_instances");
   artObjInstConfig_ = editSubconfig<Configuration>("ao_instances");

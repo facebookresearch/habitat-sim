@@ -9,6 +9,7 @@
 
 namespace esp {
 namespace core {
+namespace managedContainers {
 /**
  * @brief This abstract base class provides the interface of expected
  * functionality for an object to be manageable by @ref
@@ -71,6 +72,7 @@ class AbstractManagedObject {
   ESP_SMART_POINTERS(AbstractManagedObject)
 };  // class AbstractManagedObject
 
+}  // namespace managedContainers
 }  // namespace core
 }  // namespace esp
 #endif  // ESP_CORE_ABSTRACTMANAGEDOBJECT_H_

@@ -16,9 +16,11 @@ enum class AssetType;
 }  // namespace assets
 namespace metadata {
 namespace managers {
+using esp::core::managedContainers::ManagedObjectAccess;
+
 class StageAttributesManager
     : public AbstractObjectAttributesManager<attributes::StageAttributes,
-                                             core::ManagedObjectAccess::Copy> {
+                                             ManagedObjectAccess::Copy> {
  public:
   StageAttributesManager(
       ObjectAttributesManager::ptr objectAttributesMgr,

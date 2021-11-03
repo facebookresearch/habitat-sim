@@ -7,6 +7,7 @@
 #include "esp/io/Json.h"
 
 namespace esp {
+using core::managedContainers::ManagedObjectAccess;
 namespace metadata {
 
 using attributes::SceneDatasetAttributes;
@@ -14,8 +15,7 @@ namespace managers {
 
 SceneDatasetAttributesManager::SceneDatasetAttributesManager(
     PhysicsAttributesManager::ptr physicsAttributesMgr)
-    : AttributesManager<attributes::SceneDatasetAttributes,
-                        core::ManagedObjectAccess::Share>::
+    : AttributesManager<SceneDatasetAttributes, ManagedObjectAccess::Share>::
           AttributesManager("Dataset", "scene_dataset_config.json"),
       physicsAttributesManager_(std::move(physicsAttributesMgr)) {
   // build this manager's copy ctor map

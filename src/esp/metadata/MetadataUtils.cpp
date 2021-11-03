@@ -18,7 +18,7 @@ namespace Cr = Corrade;
 std::string getShaderTypeFromJsonDoc(const io::JsonGenericValue& jsonDoc) {
   // Check for shader type to use.  Default to unknown.
   std::string shader_type =
-      getShaderTypeName(attributes::ObjectInstanceShaderType::Unknown);
+      getShaderTypeName(attributes::ObjectInstanceShaderType::Unspecified);
   std::string tmpShaderType = "";
   if (io::readMember<std::string>(jsonDoc, "shader_type", tmpShaderType)) {
     // shader_type tag was found, perform check - first convert to
@@ -32,7 +32,7 @@ std::string getShaderTypeFromJsonDoc(const io::JsonGenericValue& jsonDoc) {
                     << "` -> `" << strToLookFor
                     << "` does not map to a valid "
                        "ObjectInstanceShaderType value, so defaulting "
-                       "shader type to ObjectInstanceShaderType::Unknown.";
+                       "shader type to ObjectInstanceShaderType::Unspecified.";
     }
   }
   return shader_type;

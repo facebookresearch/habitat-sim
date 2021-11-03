@@ -187,7 +187,9 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
       renderer_ = gfx::Renderer::create(context_.get(), flags);
     }
-
+#ifndef CORRADE_TARGET_EMSCRIPTEN
+    flextGLInit(Magnum::GL::Context::current());
+#endif
     renderer_->acquireGlContext();
   } else {
     CORRADE_ASSERT(
@@ -355,10 +357,13 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   // for this scene instance
   std::string lightSetupKey;
   if (config_.overrideSceneLightDefaults) {
+    // SimulatorConfiguration set to override any dataset configuration specs
+    // regarding lighting.
     lightSetupKey = config_.sceneLightSetupKey;
     ESP_DEBUG() << "Using SimulatorConfiguration-specified Light key : -"
                 << lightSetupKey << "-";
   } else {
+    // Get dataset/scene instance specified lighting
     lightSetupKey = metadataMediator_->getLightSetupFullHandle(
         curSceneInstanceAttributes->getLightingHandle());
     ESP_DEBUG() << "Using scene instance-specified Light key : -"
@@ -437,7 +442,7 @@ bool Simulator::instanceStageForActiveScene(
   // stage attributes.
   auto stageShaderType = stageInstanceAttributes->getShaderType();
   if (stageShaderType !=
-      metadata::attributes::ObjectInstanceShaderType::Unknown) {
+      metadata::attributes::ObjectInstanceShaderType::Unspecified) {
     stageAttributes->setShaderType(getShaderTypeName(stageShaderType));
   }
   // set lighting key based on curent config value
@@ -1008,13 +1013,14 @@ bool Simulator::isNavMeshVisualizationActive() {
 
 int Simulator::addTrajectoryObject(const std::string& trajVisName,
                                    const std::vector<Mn::Vector3>& pts,
+                                   const std::vector<Mn::Color3>& colorVec,
                                    int numSegments,
                                    float radius,
-                                   const Magnum::Color4& color,
                                    bool smooth,
                                    int numInterp) {
-  if (renderer_)
+  if (renderer_) {
     renderer_->acquireGlContext();
+  }
 
   // 0. Deduplicate sequential points
   std::vector<Magnum::Vector3> uniquePts;
@@ -1029,7 +1035,7 @@ int Simulator::addTrajectoryObject(const std::string& trajVisName,
 
   // 1. create trajectory tube asset from points and save it
   bool success = resourceManager_->buildTrajectoryVisualization(
-      trajVisName, uniquePts, numSegments, radius, color, smooth, numInterp);
+      trajVisName, uniquePts, colorVec, numSegments, radius, smooth, numInterp);
   if (!success) {
     ESP_ERROR() << "Failed to create Trajectory visualization mesh for"
                 << trajVisName;
@@ -1062,7 +1068,8 @@ int Simulator::addTrajectoryObject(const std::string& trajVisName,
   trajVisNameByID[trajVisID] = trajVisName;
 
   return trajVisID;
-}  // Simulator::showTrajectoryVisualization
+
+}  // Simulator::addTrajectoryObject (vector of colors)
 
 // Agents
 void Simulator::sampleRandomAgentState(agent::AgentState& agentState) {
@@ -1080,8 +1087,9 @@ void Simulator::sampleRandomAgentState(agent::AgentState& agentState) {
 scene::SceneNode* Simulator::loadAndCreateRenderAssetInstance(
     const assets::AssetInfo& assetInfo,
     const assets::RenderAssetInstanceCreationInfo& creation) {
-  if (renderer_)
+  if (renderer_) {
     renderer_->acquireGlContext();
+  }
   // Note this pattern of passing the scene manager and two scene ids to
   // resource manager. This is similar to ResourceManager::loadStage.
   std::vector<int> tempIDs{activeSceneID_, activeSemanticSceneID_};

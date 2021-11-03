@@ -118,6 +118,9 @@ class Simulator {
                    "Simulator::gpuDevice() : cannot get gpu device when "
                    "createRenderer flag is false",
                    0);
+    if (context_ == nullptr) {
+      return 0;
+    }
     return context_->gpuDevice();
   }
 
@@ -999,10 +1002,10 @@ class Simulator {
    * @brief Compute a trajectory visualization for the passed points.
    * @param trajVisName The name to use for the trajectory visualization
    * @param pts The points of a trajectory, in order
+   * @param colorVec Array of colors for trajectory tube.
    * @param numSegments The number of the segments around the circumference of
    * the tube. Must be greater than or equal to 3.
    * @param radius The radius of the tube.
-   * @param color Color for trajectory tube.
    * @param smooth Whether to smooth the points in the trajectory or not. Will
    * build a much bigger mesh
    * @param numInterp The number of interpolations between each trajectory
@@ -1011,12 +1014,11 @@ class Simulator {
    */
   int addTrajectoryObject(const std::string& trajVisName,
                           const std::vector<Mn::Vector3>& pts,
+                          const std::vector<Mn::Color3>& colorVec,
                           int numSegments = 3,
                           float radius = .001,
-                          const Magnum::Color4& color = {0.9, 0.1, 0.1, 1.0},
                           bool smooth = false,
                           int numInterp = 10);
-
   /**
    * @brief Remove a trajectory visualization by name.
    * @param trajVisName The name of the trajectory visualization to remove.

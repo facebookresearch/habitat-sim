@@ -9,8 +9,8 @@ from habitat_sim.robots.mobile_manipulator import (
 
 
 class FetchRobot(MobileManipulator):
-    def __init__(self, urdf_path, sim, limit_robo_joints=True, fixed_base=True):
-        fetch_params = MobileManipulatorParams(
+    def _get_fetch_params(self):
+        return MobileManipulatorParams(
             arm_joints=list(range(15, 22)),
             gripper_joints=[23, 24],
             wheel_joints=[2, 4],
@@ -60,7 +60,11 @@ class FetchRobot(MobileManipulator):
                 "torso_fixed_link",
             },
         )
-        super().__init__(fetch_params, urdf_path, sim, limit_robo_joints, fixed_base)
+
+    def __init__(self, urdf_path, sim, limit_robo_joints=True, fixed_base=True):
+        super().__init__(
+            self._get_fetch_params(), urdf_path, sim, limit_robo_joints, fixed_base
+        )
         self.back_joint_id = 6
         self.head_rot_jid = 8
         self.head_tilt_jid = 9
@@ -93,3 +97,20 @@ class FetchRobot(MobileManipulator):
         fix_back_val = 0.15
         self._set_joint_pos(self.back_joint_id, fix_back_val)
         self._set_motor_pos(self.back_joint_id, fix_back_val)
+
+
+class FetchRobotNoWheels(FetchRobot):
+    def __init__(self, urdf_path, sim, limit_robo_joints=True, fixed_base=True):
+        super().__init__(urdf_path, sim, limit_robo_joints, fixed_base)
+        self.back_joint_id -= 2
+        self.head_rot_jid -= 2
+        self.head_tilt_jid -= 2
+
+    def _get_fetch_params(self):
+        params = super()._get_fetch_params()
+        # No wheel control
+        params.arm_joints = [x - 2 for x in params.arm_joints]
+        params.gripper_joints = [x - 2 for x in params.gripper_joints]
+        params.wheel_joints = None
+        params.ee_link -= 2
+        return params

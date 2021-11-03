@@ -15,6 +15,7 @@ namespace Cr = Corrade;
 namespace esp {
 
 using assets::AssetType;
+
 namespace metadata {
 
 using attributes::AbstractObjectAttributes;
