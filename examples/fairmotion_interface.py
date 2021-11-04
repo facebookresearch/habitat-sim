@@ -63,9 +63,7 @@ class FairmotionInterface:
                 self.fetch_metadata(metadata_file)
                 self.set_data()
             except FileNotFoundError:
-                raise FileNotFoundError(
-                    f"No file with path `{metadata_file}`, creating new file."
-                )
+                logger.error(f"No file with path `{metadata_file}`, creating new file.")
                 self.set_data(
                     urdf_path=urdf_path,
                     amass_path=amass_path,
