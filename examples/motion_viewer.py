@@ -4,6 +4,7 @@
 
 import ctypes
 import sys
+import time
 from typing import Any, Callable, Dict, Optional
 
 flags = sys.getdlopenflags()
@@ -13,6 +14,7 @@ import magnum as mn
 from magnum.platform.glfw import Application
 from viewer import HabitatSimInteractiveViewer, MouseMode
 
+import habitat_sim
 import habitat_sim.physics as phy
 from examples.fairmotion_interface import FairmotionInterface
 from examples.settings import default_sim_settings
@@ -56,6 +58,9 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         self.select_sphere_obj_id: int = -1
         self.select_box_obj_id: int = -1
 
+        # shortest path attributes
+        self.path_traj_obj_id = -1
+
     def draw_event(self, simulation_call: Optional[Callable] = None) -> None:
         """
         Calls continuously to re-render frames and swap the two frame buffers
@@ -89,6 +94,13 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             else:
                 logger.info("Command: load model")
                 self.fm_demo.load_model()
+
+        elif key == pressed.J:
+            if not self.sim.pathfinder.is_loaded:
+                logger.warn("Warning: pathfinder not initialized, recompute navmesh")
+            else:
+                logger.info("Command: shortest path between two random points")
+                self.find_short_path_from_two_points()
 
         elif key == pressed.K:
             # Toggle Key Frames
@@ -259,6 +271,48 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             self.select_box_obj_id = -1
 
         self.selected_mocap_char = None
+
+    def find_short_path_from_two_points(self):
+        """
+        Finds two random points on the NavMesh, calculates a shortest path between
+        the two, and creates a trajectory object to visualize the path.
+        """
+        if self.path_traj_obj_id >= 0:
+            self.sim.get_rigid_object_manager().remove_object_by_id(
+                self.path_traj_obj_id
+            )
+        self.path_traj_obj_id = -1
+
+        sample1 = self.sim.pathfinder.get_random_navigable_point()
+        sample2 = self.sim.pathfinder.get_random_navigable_point()
+
+        path = habitat_sim.ShortestPath()
+        path.requested_start = sample1
+        path.requested_end = sample2
+        found_path = self.sim.pathfinder.find_path(path)
+        geodesic_distance = path.geodesic_distance
+        path_points = path.points
+
+        # convert to vectorj
+        for point in path_points:
+            print(point)
+
+        logger.info(
+            f"""
+            found_path :            {str(found_path)}
+            geodesic_distance :     {str(geodesic_distance)}
+            path_points :           {str(path_points)}
+            """
+        )
+
+        colors = [mn.Color3.yellow(), mn.Color3.red()]
+
+        self.path_traj_obj_id = self.sim.add_gradient_trajectory_object(
+            traj_vis_name=f"{time.strftime('%Y-%m-%d_%H-%M-%S')}",
+            colors=colors,
+            points=path_points,
+            radius=0.01,
+        )
 
     def print_help_text(self) -> None:
         """
