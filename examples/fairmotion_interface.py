@@ -21,11 +21,11 @@ ROOT = 0
 FILE_SUFFIX = "_fm_data"
 METADATA_DEFAULT_WHEN_MISSING_FILE = {
     "urdf_path": "../habitat-sim/data/test_assets/urdf/amass_male.urdf",
-    "amass_path": "../fairmotion/amass_test_data/CMU/CMU/06/06_12_poses.npz",
+    "amass_path": "../fairmotion/amass_test_data/CMU/CMU/02/02_01_poses.npz",
     "bm_path": "../fairmotion/amass_test_data/smplh/male/model.npz",
     "rotation": mn.Quaternion.rotation(mn.Deg(-90), mn.Vector3.x_axis())
     * mn.Quaternion.rotation(mn.Deg(90), mn.Vector3.z_axis()),
-    "translation": mn.Vector3([2.5, 0.0, 0.7]),
+    "translation": mn.Vector3([2.5, 0.07, 0.7]),
 }
 METADATA_DIR = "../habitat-sim/data/fairmotion/"
 
@@ -62,8 +62,10 @@ class FairmotionInterface:
             try:
                 self.fetch_metadata(metadata_file)
                 self.set_data()
-            except Exception:
-                Exception(f"No file with path `{metadata_file}`, creating new file.")
+            except FileNotFoundError:
+                FileNotFoundError(
+                    f"No file with path `{metadata_file}`, creating new file."
+                )
                 self.set_data(
                     urdf_path=urdf_path,
                     amass_path=amass_path,
@@ -78,10 +80,10 @@ class FairmotionInterface:
             self.save_metadata("default")
 
         # positional offsets
-        # print( ) NOTE: change this to set_offset if possible
-        self.rotation_offset: mn.Quaternion = self.user_metadata["rotation"]
-        self.translation_offset: mn.Vector3 = self.user_metadata["translation"]
-
+        self.set_transform_offsets(
+            rotate_offset=self.user_metadata["rotation"],
+            translate_offset=self.user_metadata["translation"],
+        )
         self.load_motion()
 
     def setup_default_metadata(self) -> None:
@@ -147,32 +149,27 @@ class FairmotionInterface:
         """
         Saves the current metadata to a json file in given file path
         """
-        # print( ) NOTE: Shrink this section
+        meta_access = [METADATA_DIR + file + ".json", METADATA_DIR + file, file]
+
         if file:
-            # building filepath for saving
-            if file == "default":
-                file = METADATA_DIR + "default.json"
+            # sanitizing file path
+            for filename in meta_access:
+                if os.path.exists(filename):
+                    file = filename
+                    break
 
-            elif os.path.exists(file):
-                file = file
-            elif os.path.exists(METADATA_DIR + file):
-                file = METADATA_DIR + file
-            elif os.path.exists(METADATA_DIR + file + ".json"):
-                file = METADATA_DIR + file + ".json"
-
-            # we are no longer overwriting a file
-            elif "/" not in file:
-                # file is not a file path, we need to aim it at our directory
-                if ".json" not in file:
-                    # add file type
-                    file = file + ".json"
-                file = METADATA_DIR + file
+                # we are no longer overwriting a file
+                elif "/" not in file:
+                    # file is not a file path, we need to aim it at our directory
+                    if ".json" not in file:
+                        # add file type
+                        file = file + ".json"
+                    file = METADATA_DIR + file
         else:
             # generate filename from timestamp
             file = METADATA_DIR + "user_" + time.strftime("%Y-%m-%d_%H-%M-%S")
 
         logger.info(f"Saving data to file: {file}")
-        self.dump("THE SAVE METADATA METHOD")
 
         # updating user_metadata to reflect characters position
         if self.rotation_offset and self.translation_offset:
@@ -184,7 +181,7 @@ class FairmotionInterface:
 
         with open(file, "w") as f:
             json.dump(data, f)
-        print(f"Saved: {file}")
+        logger.info(f"Saved: {file}")
 
     def fetch_metadata(self, file):
         """
@@ -201,10 +198,9 @@ class FairmotionInterface:
         try:
             with open(file, "r") as f:
                 data = json.load(f)
-        except Exception:
-            raise Exception(f"Error: File {file} does not appear to exist.")
+        except FileNotFoundError:
+            raise FileNotFoundError(f"Error: File {file} does not appear to exist.")
 
-        # print( ) NOTE: I am not sure how to error check this line, mybe a simple if/else
         # set data to what was fetched
         self.user_metadata = self.metadata_parser(data, to_file=False)
         logger.info(f"Fetched: {file}")
@@ -237,10 +233,6 @@ class FairmotionInterface:
                 self.traj_ids = []
         self.next_pose(repeat=True)
         self.setup_key_frames()
-        # print( ) NOTE: I need to see if this can be removed
-        # print( ) NOTE: myabe I need to update user_metadata
-        for _ in range(len(Preview)):
-            self.cycle_model_previews()
         self.build_trajectory_vis()
 
     def load_motion(self) -> None:
@@ -558,14 +550,6 @@ class FairmotionInterface:
             return True
 
         return False
-
-    # print( ) REMOVE
-    def dump(self, note=""):
-        print(f"\nNOTE: {note}\n_________________________________________")
-        for attr in dir(self):
-            if "motion_step" in attr:
-                print("self.%s = %r" % (attr, getattr(self, attr)))
-        print("_________________________________________\n\n")
 
 
 class Preview(Enum):

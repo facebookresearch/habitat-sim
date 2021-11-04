@@ -265,7 +265,6 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         """
         Creates the selection icon above the given fairmotion character.
         """
-        # print( ) NOTE: Fix selector icon
         self.remove_selector_obj()
 
         # selection sphere icon
