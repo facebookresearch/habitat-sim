@@ -63,7 +63,7 @@ class FairmotionInterface:
                 self.fetch_metadata(metadata_file)
                 self.set_data()
             except FileNotFoundError:
-                FileNotFoundError(
+                raise FileNotFoundError(
                     f"No file with path `{metadata_file}`, creating new file."
                 )
                 self.set_data(

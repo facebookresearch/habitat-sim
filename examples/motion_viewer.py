@@ -138,7 +138,6 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         elif key == pressed.P:
             if event.modifiers == mod.CTRL:
                 logger.info(f"Last file loaded: {self.fm_demo.last_metadata_file}")
-                logger.info(f"Command: simulator re-loaded {self.fm_demo.model}")
             elif event.modifiers == mod.SHIFT:
                 if self.fm_demo.last_metadata_file is None:
                     logger.warn("Warning: No previous file loaded.")
@@ -157,13 +156,21 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
                     self.fm_demo.save_metadata(fn)
 
         elif key == pressed.L:
-            fn = input(
-                "Enter filename/filepath to load metadata file (enter nothing to abort):"
-            )
-            if fn in ["", None]:
-                logger.info("No File Loaded.")
+            if event.modifiers == mod.CTRL:
+                logger.info(f"Last file loaded: {self.fm_demo.last_metadata_file}")
+            elif event.modifiers == mod.SHIFT:
+                if self.fm_demo.last_metadata_file is None:
+                    logger.warn("Warning: No previous file loaded.")
+                else:
+                    self.fm_demo.fetch_metadata(self.fm_demo.last_metadata_file)
             else:
-                self.fm_demo.fetch_metadata(fn)
+                fn = input(
+                    "Enter filename/filepath to load metadata file (enter nothing to abort):"
+                )
+                if fn in ["", None]:
+                    logger.info("No File Loaded.")
+                else:
+                    self.fm_demo.fetch_metadata(fn)
 
         elif key == pressed.PERIOD:
             if self.simulating:

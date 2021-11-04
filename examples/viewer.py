@@ -192,6 +192,7 @@ class HabitatSimInteractiveViewer(Application):
         self.active_scene_graph = self.sim.get_active_scene_graph()
         self.default_agent = self.sim.get_agent(self.agent_id)
         self.agent_body_node = self.default_agent.scene_node
+        self.agent_body_node.translation = [2.75, 0.5, 4.0]
         self.render_camera = self.agent_body_node.node_sensor_suite.get("color_sensor")
 
         Timer.start()
