@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from habitat_sim.robots.fetch_robot import FetchRobot
+from habitat_sim.robots.fetch_robot import FetchRobot, FetchRobotNoWheels
 from habitat_sim.robots.mobile_manipulator import (
     MobileManipulator,
     MobileManipulatorParams,
@@ -17,5 +17,6 @@ __all__ = [
     "MobileManipulatorParams",
     "MobileManipulator",
     "FetchRobot",
+    "FetchRobotNoWheels",
     "RobotCameraParams",
 ]

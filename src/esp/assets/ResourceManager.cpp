@@ -1505,7 +1505,7 @@ bool ResourceManager::buildTrajectoryVisualization(
   visMeshData->uploadBuffersToGPU(false);
 
   // make MeshMetaData
-  int meshStart = meshes_.size();
+  int meshStart = nextMeshID_++;
   int meshEnd = meshStart;
   MeshMetaData meshMetaData{meshStart, meshEnd};
 
