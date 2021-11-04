@@ -60,6 +60,8 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         self.select_sphere_obj_id: int = -1
         self.select_box_obj_id: int = -1
 
+        self.print_motion_help_text()
+
     def draw_event(self, simulation_call: Optional[Callable] = None) -> None:
         """
         Calls continuously to re-render frames and swap the two frame buffers
@@ -113,13 +115,13 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             return
 
         elif key == pressed.R:
-            if "user" in self.fm_demo.metadata:
-                name = "user"
-            else:
-                name = "default"
             self.remove_selector_obj()
             super().reconfigure_sim()
-            self.fm_demo = FairmotionInterface(self.sim, self.fm_demo.metadata[name])
+            # reset character to default state
+            self.fm_demo = FairmotionInterface(self.sim, metadata_file="default")
+            event.accepted = True
+            self.redraw()
+            return
 
         elif key == pressed.SPACE:
             if not self.sim.config.sim_cfg.enable_physics:
@@ -155,7 +157,9 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
                     self.fm_demo.save_metadata(fn)
 
         elif key == pressed.L:
-            fn = input("Enter filename/filepath to load metadata file:")
+            fn = input(
+                "Enter filename/filepath to load metadata file (enter nothing to abort):"
+            )
             if fn in ["", None]:
                 logger.info("No File Loaded.")
             else:
@@ -261,6 +265,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         """
         Creates the selection icon above the given fairmotion character.
         """
+        # print( ) NOTE: Fix selector icon
         self.remove_selector_obj()
 
         # selection sphere icon
@@ -299,6 +304,9 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         self.selected_mocap_char = None
 
     def print_help_text(self) -> None:
+        return
+
+    def print_motion_help_text(self) -> None:
         """
         Print the Key Command help text.
         """
@@ -307,6 +315,32 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
 =========================================================
 Welcome to the Habitat-sim Fairmotion Viewer application!
 =========================================================
+Mouse Functions ('m' to toggle mode):
+----------------
+In LOOK mode (default):
+    LEFT:
+        Click and drag to rotate the agent and look up/down.
+    WHEEL:
+        Modify orthographic camera zoom/perspective camera FOV
+        (+ SHIFT): for fine-grained control
+
+In GRAB mode (with 'enable-physics'):
+    LEFT:
+        Click and drag to pickup and move an object with a point-to-point constraint (e.g. ball joint).
+    RIGHT:
+        Click and drag to pickup and move an object with a fixed frame constraint.
+    WHEEL (with picked object):
+        Pull gripped object closer or push it away.
+
+In MOTION mode (with 'enable-physics'):
+    LEFT:
+        Click a Fairmotion character to set it as selected or clcik anywhere else to deselect.
+    RIGHT (With selected Fairmotion character):
+        Click anywhere on the scene to translate a selected Fairmotion character to the clicked location.
+    WHEEL (with selected Fairmotion character):
+        Rotate the orientation of a selected Fairmotion character along an axis normal to the floor of the scene.
+        (+ SHIFT): for fine-grained control
+
 Key Commands:
 -------------
     esc:        Exit the application.
@@ -319,7 +353,7 @@ Key Commands:
     arrow keys: Turn the agent's body left/right and camera look up/down.
 
     Utilities:
-    'r':        Reset the simulator with the most recently loaded scene.
+    'r':        Reset the simulator with the most recently loaded scene and default fairmotion character.
 
     Object Interactions:
     SPACE:      Toggle physics simulation on/off.
@@ -331,6 +365,11 @@ Key Commands:
                 [shft] Hide model.
     'k':        Toggle key frame preview of loaded motion.
     '/':        Set motion to play in reverse.
+    'l':        Fetch and load data from a file give by the user's input.
+    'p':        Save current characterdata to a file give by the user's input.
+                (+ SHIFT) Auto save current character data to last file fetched.
+                (+ CTRL) Print the name of the last file fetched.
+    '
 =========================================================
 """
         )

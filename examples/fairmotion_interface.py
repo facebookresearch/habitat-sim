@@ -19,15 +19,13 @@ from habitat_sim.logging import LoggingContext, logger
 #### Constants
 ROOT = 0
 FILE_SUFFIX = "_fm_data"
-METADATA_DEFAULT = {
-    "default": {
-        "urdf_path": "../habitat-sim/data/test_assets/urdf/amass_male.urdf",
-        "amass_path": "../fairmotion/amass_test_data/CMU/CMU/06/06_12_poses.npz",
-        "bm_path": "../fairmotion/amass_test_data/smplh/male/model.npz",
-        "rotation": mn.Quaternion.rotation(mn.Deg(-90), mn.Vector3.x_axis())
-        * mn.Quaternion.rotation(mn.Deg(90), mn.Vector3.z_axis()),
-        "translation": mn.Vector3([2.5, 0.0, 0.7]),
-    }
+METADATA_DEFAULT_WHEN_MISSING_FILE = {
+    "urdf_path": "../habitat-sim/data/test_assets/urdf/amass_male.urdf",
+    "amass_path": "../fairmotion/amass_test_data/CMU/CMU/06/06_12_poses.npz",
+    "bm_path": "../fairmotion/amass_test_data/smplh/male/model.npz",
+    "rotation": mn.Quaternion.rotation(mn.Deg(-90), mn.Vector3.x_axis())
+    * mn.Quaternion.rotation(mn.Deg(90), mn.Vector3.z_axis()),
+    "translation": mn.Vector3([2.5, 0.0, 0.7]),
 }
 METADATA_DIR = "../habitat-sim/data/fairmotion/"
 
@@ -36,7 +34,6 @@ class FairmotionInterface:
     def __init__(
         self,
         sim,
-        metadata_name=None,
         urdf_path=None,
         amass_path=None,
         bm_path=None,
@@ -44,31 +41,30 @@ class FairmotionInterface:
     ) -> None:
         LoggingContext.reinitialize_from_env()
         self.sim = sim
-        print(sim)
         self.art_obj_mgr = self.sim.get_articulated_object_manager()
         self.rgd_obj_mgr = self.sim.get_rigid_object_manager()
         self.model: Optional[phy.ManagedArticulatedObject] = None
         self.motion: Optional[motion.Motion] = None
-        self.metadata = {}
-        self.metadata_dir = METADATA_DIR
+        self.user_metadata = {}
         self.last_metadata_file = None
-        self.motion_stepper = 0
-        print(f"metadata_file: {metadata_file}")
-        self.setup_default_metadata()
+        self.motion_stepper = 1
+        self.rotation_offset: Optional[mn.Quaternion] = None
+        self.translation_offset: Optional[mn.Vector3] = None
 
         self.key_frames = None
         self.key_frame_models = []
         self.preview_mode = Preview.OFF
         self.traj_ids: List[int] = []
         self.is_reversed = False
+        self.setup_default_metadata()
+
         if metadata_file:
             try:
                 self.fetch_metadata(metadata_file)
-                self.set_data(name="user")
+                self.set_data()
             except Exception:
-                Exception(f"No file with path `{metadata_name}`, creating new file.")
+                Exception(f"No file with path `{metadata_file}`, creating new file.")
                 self.set_data(
-                    name="user",
                     urdf_path=urdf_path,
                     amass_path=amass_path,
                     bm_path=bm_path,
@@ -81,11 +77,10 @@ class FairmotionInterface:
             self.set_data(urdf_path=urdf_path, amass_path=amass_path, bm_path=bm_path)
             self.save_metadata("default")
 
-        print(f"self.last_metadata_file: {self.last_metadata_file}")
-
         # positional offsets
-        self.rotation_offset: mn.Quaternion = self.metadata["default"]["rotation"]
-        self.translation_offset: mn.Vector3 = self.metadata["default"]["translation"]
+        # print( ) NOTE: change this to set_offset if possible
+        self.rotation_offset: mn.Quaternion = self.user_metadata["rotation"]
+        self.translation_offset: mn.Vector3 = self.user_metadata["translation"]
 
         self.load_motion()
 
@@ -93,16 +88,21 @@ class FairmotionInterface:
         """
         Called by init(), this method forces the default metadata into the metadata library.
         """
-        # If folder doesn't exist, then create it.
-        if not os.path.isdir(self.metadata_dir):
-            os.makedirs(self.metadata_dir)
+        # if folder doesn't exist, then create it.
+        if not os.path.isdir(METADATA_DIR):
+            os.makedirs(METADATA_DIR)
 
-        self.metadata["default"] = METADATA_DEFAULT["default"]
-        self.save_metadata("default")
+        # if default file isnt in metadata directory, create it from hardcoded metadata
+        if not os.path.exists(METADATA_DIR + "default.json"):
+            self.user_metadata = METADATA_DEFAULT_WHEN_MISSING_FILE
+            self.save_metadata("default")
+
+        # if default file exists, take it from there
+        self.fetch_metadata("default")
+        self.last_metadata_file = None
 
     def set_data(
         self,
-        name: Optional[str] = "default",
         urdf_path: Optional[str] = None,
         amass_path: Optional[str] = None,
         bm_path: Optional[str] = None,
@@ -113,23 +113,12 @@ class FairmotionInterface:
         A method that will take attributes of the model data sets as arguments, filling in
         empty args with the default set of data, and adds the data to the meta_data library.
         """
-
-        data = None
-        # if name is default, set data for "default"
-        # else if name is in metadata, set data values to args or default values
-        if name in self.metadata:
-            data = self.metadata[name]
-
-        # else if name not in metadata, build data from name, args, default values, and add to lib
-        else:
-            self.metadata[name] = {}
-            data = self.metadata[name]
-
-        data["urdf_path"] = urdf_path or self.metadata["default"]["urdf_path"]
-        data["amass_path"] = amass_path or self.metadata["default"]["amass_path"]
-        data["bm_path"] = bm_path or self.metadata["default"]["bm_path"]
-        data["rotation"] = rotation or self.metadata["default"]["rotation"]
-        data["translation"] = translation or self.metadata["default"]["translation"]
+        data = self.user_metadata
+        data["urdf_path"] = urdf_path or data["urdf_path"]
+        data["amass_path"] = amass_path or data["amass_path"]
+        data["bm_path"] = bm_path or data["bm_path"]
+        data["rotation"] = rotation or data["rotation"]
+        data["translation"] = translation or data["translation"]
 
     def metadata_parser(self, metadata_dict: Dict[str, Any], to_file: bool):
         """
@@ -158,17 +147,11 @@ class FairmotionInterface:
         """
         Saves the current metadata to a json file in given file path
         """
-        # set key for accessing metadata from dict
-        if "user" in self.metadata:
-            name = "user"
-        else:
-            name = "default"
-
+        # print( ) NOTE: Shrink this section
         if file:
             # building filepath for saving
             if file == "default":
                 file = METADATA_DIR + "default.json"
-                # print() name = "user"
 
             elif os.path.exists(file):
                 file = file
@@ -186,11 +169,18 @@ class FairmotionInterface:
                 file = METADATA_DIR + file
         else:
             # generate filename from timestamp
-            file = METADATA_DIR + name + "_" + time.strftime("%Y-%m-%d_%H-%M-%S")
+            file = METADATA_DIR + "user_" + time.strftime("%Y-%m-%d_%H-%M-%S")
 
-        logger.info(f"\nSaving {name} data to file: {file}\n")
+        logger.info(f"Saving data to file: {file}")
+        self.dump("THE SAVE METADATA METHOD")
 
-        data = {name: self.metadata_parser(self.metadata[name], to_file=True)}
+        # updating user_metadata to reflect characters position
+        if self.rotation_offset and self.translation_offset:
+            data = self.user_metadata
+            data["rotation"] = self.rotation_offset
+            data["translation"] = self.translation_offset
+
+        data = self.metadata_parser(self.user_metadata, to_file=True)
 
         with open(file, "w") as f:
             json.dump(data, f)
@@ -200,34 +190,35 @@ class FairmotionInterface:
         """
         Fetch metadata from a json file in given file name and sets metadata
         """
-        # set key for accessing metadata from dict
-        if "user" in self.metadata:
-            name = "user"
-        else:
-            name = "default"
+        meta_access = [METADATA_DIR + file + ".json", METADATA_DIR + file, file]
 
-        # building filepath for loading
-        if file == "default":
-            file = METADATA_DIR + "default.json"
-            name = "default"
-        elif os.path.exists(file):
-            file = file
-        elif os.path.exists(METADATA_DIR + file):
-            file = METADATA_DIR + file
-        elif os.path.exists(METADATA_DIR + file + ".json"):
-            file = METADATA_DIR + file + ".json"
+        # sanitizing file path
+        for filename in meta_access:
+            if os.path.exists(filename):
+                file = filename
+                break
 
         try:
             with open(file, "r") as f:
                 data = json.load(f)
         except Exception:
-            raise Exception("Error: File does not appear to exist.")
+            raise Exception(f"Error: File {file} does not appear to exist.")
 
-        # NOTE: I am not sure how to error check this line, mybe a simple if/else
-        self.metadata[name] = self.metadata_parser(data[name], to_file=False)
+        # print( ) NOTE: I am not sure how to error check this line, mybe a simple if/else
+        # set data to what was fetched
+        self.user_metadata = self.metadata_parser(data, to_file=False)
+        logger.info(f"Fetched: {file}")
 
         self.last_metadata_file = file
-        print(f"Fetch: {file}")
+
+        # updating user_metadata to reflect characters position
+        if self.rotation_offset and self.translation_offset:
+            data = self.user_metadata
+            self.rotation_offset = data["rotation"]
+            self.translation_offset = data["translation"]
+
+        self.hide_model()
+        self.load_motion()
 
     def set_transform_offsets(
         self, rotate_offset: mn.Quaternion = None, translate_offset: mn.Vector3 = None
@@ -238,6 +229,7 @@ class FairmotionInterface:
         """
         self.rotation_offset = rotate_offset or self.rotation_offset
         self.translation_offset = translate_offset or self.translation_offset
+
         if self.traj_ids:
             # removes trajectory
             for t_id in self.traj_ids:
@@ -245,31 +237,34 @@ class FairmotionInterface:
                 self.traj_ids = []
         self.next_pose(repeat=True)
         self.setup_key_frames()
+        # print( ) NOTE: I need to see if this can be removed
+        # print( ) NOTE: myabe I need to update user_metadata
         for _ in range(len(Preview)):
             self.cycle_model_previews()
+        self.build_trajectory_vis()
 
-    def load_motion(self, default=False) -> None:
+    def load_motion(self) -> None:
         """
         Loads the motion currently set by metadata.
         """
-        if not default and "user" in self.metadata:
-            data = self.metadata["user"]
-        else:
-            data = self.metadata["default"]
+        # loading text because the setup pauses here during motion load
+        logger.info("Loading...")
+        data = self.user_metadata
         self.motion = amass.load(file=data["amass_path"], bm_path=data["bm_path"])
-        self.setup_key_frames()
-        self.build_trajectory_vis()
+        self.set_transform_offsets(
+            rotate_offset=data["rotation"], translate_offset=data["translation"]
+        )
 
-    def load_model(self, default=False) -> None:
+    def load_model(self) -> None:
         """
         Loads the model currently set by metadata.
         """
+        # loading text because the setup pauses here during motion load
+        logger.info("Loading...")
         self.hide_model()
 
-        if not default and "user" in self.metadata:
-            data = self.metadata["user"]
-        else:
-            data = self.metadata["default"]
+        # keeps the model up to date with current data target
+        data = self.user_metadata
 
         # add an ArticulatedObject to the world with a fixed base
         self.model = self.art_obj_mgr.add_articulated_object_from_urdf(
@@ -281,8 +276,7 @@ class FairmotionInterface:
         self.model.motion_type = phy.MotionType.KINEMATIC
 
         self.model.translation = self.translation_offset
-        self.next_pose()
-        self.motion_stepper -= 1
+        self.next_pose(repeat=True)
 
     def hide_model(self) -> None:
         """
@@ -298,8 +292,13 @@ class FairmotionInterface:
         Set the model state from the next frame in the motion trajectory. `repeat` is
         set to `True` when the user would like to repeat the last frame.
         """
+        if not self.model or not self.motion:
+            return
+
         # This function tracks is_reversed and changes the direction of
         # the motion accordingly.
+        self.dump(f"repeat={repeat} before repeat ")
+
         def sign(i):
             return -1 * i if self.is_reversed else i
 
@@ -308,9 +307,7 @@ class FairmotionInterface:
             self.motion_stepper = (
                 self.motion_stepper - sign(1)
             ) % self.motion.num_frames()
-
-        if not self.model or not self.motion:
-            return
+        self.dump("after repeat before iterate, this will set position")
 
         (
             new_pose,
@@ -325,6 +322,7 @@ class FairmotionInterface:
 
         # iterate the frame counter
         self.motion_stepper = (self.motion_stepper + sign(1)) % self.motion.num_frames()
+        self.dump("after iterate")
 
     def convert_CMUamass_single_pose(
         self, pose, model
@@ -418,7 +416,7 @@ class FairmotionInterface:
             self.preview_mode in [Preview.KEYFRAMES, Preview.ALL]
             and not self.key_frame_models
         ):
-            data = self.metadata["default"]
+            data = self.user_metadata
 
             for k in self.key_frames:
 
@@ -560,6 +558,14 @@ class FairmotionInterface:
             return True
 
         return False
+
+    # print( ) REMOVE
+    def dump(self, note=""):
+        print(f"\nNOTE: {note}\n_________________________________________")
+        for attr in dir(self):
+            if "motion_step" in attr:
+                print("self.%s = %r" % (attr, getattr(self, attr)))
+        print("_________________________________________\n\n")
 
 
 class Preview(Enum):
