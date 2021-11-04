@@ -294,14 +294,30 @@ jobs:
           name: Check Code Style using pre-commit
           command: |
             SKIP=eslint pre-commit run --show-diff-on-failure --all-files
-  test_conda_build_osx:
+  build_conda_osx:
+    description: "Build OSX Conda-Package"
+    parameters:
+        CI_TEST:
+          description: "Do not upload to CONDA_CI_NIGHTLY"
+          type: boolean
+          default: False
+        nightly:
+          description: "Whether to build in nightly mode"
+          type: boolean
+          default: False
+        AIHABITAT_CONDA_CHN:
+          type: string
+          default: "aihabitat"
+        AIHABITAT_CONDA_CHN_PWD_VAR:
+          type: string
+          default: "AIHABITAT_CONDA_PWD"
     macos:
       xcode: 11.3.0
     steps:
       - checkout:
           path: ./habitat-sim
       - run:
-          name: Conda Install
+          name: Conda Install OSX
           command: |
             curl -o ~/miniconda.sh -O https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
             chmod +x ~/miniconda.sh
@@ -309,15 +325,22 @@ jobs:
             rm ~/miniconda.sh
             export PATH=$HOME/miniconda/bin:$PATH
             conda init "$(basename "${SHELL}")"
+      - run:
+          name: Conda OSX build
+          command: |
+            export PATH=$HOME/miniconda/bin:$PATH
             source ~/.bash_profile
             conda activate
             conda install -y anaconda-client ccache cmake git ninja conda-build pip
             echo $(which -a python)
             pip install gitpython
+            <<^ parameters.CI_TEST>> anaconda login --username << parameters.AIHABITAT_CONDA_CHN >>  --password $<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >>
+            conda config --set anaconda_upload yes <</ parameters.CI_TEST>>
             cd habitat-sim/conda-build
             git submodule update --init --recursive --jobs 16
             export PYTHONIOENCODING="utf-8"
-            python matrix_builder.py --ci_test
+            python matrix_builder.py <<# parameters.CI_TEST>> --ci_test <</ parameters.CI_TEST>>  <<^ parameters.CI_TEST >> --conda_upload <<# parameters.nightly>> --nightly <</ parameters.nightly>> <</ parameters.CI_TEST >>
+
   test_pip_build:
     <<: *gpu
     steps:
@@ -678,7 +701,8 @@ workflows:
       - python_lint
       - js_lint
       - lab_build_habitat
-      - test_conda_build_osx
+      - build_conda_osx:
+         CI_TEST: true
       - test_pip_build
       - install_and_test_ubuntu
       - pre-commit
@@ -709,6 +733,16 @@ workflows:
           filters:
             branches:
               only: main
+      - build_conda_osx:
+          AIHABITAT_CONDA_CHN: aihabitat-nightly
+          AIHABITAT_CONDA_CHN_PWD_VAR: AIHABITAT_NIGHTLY_CONDA_PWD
+          nightly: true
+          CI_TEST: false
+          requires:
+            - build_conda_binaries
+          filters:
+            branches:
+              only: main
 
   version_conda_release:
     jobs:
@@ -729,4 +763,8 @@ workflows:
           requires:
             - lab_build_habitat
             - install_and_test_ubuntu
+          filters: *version_filter
+      - build_conda_osx:
+          requires:
+            -  build_conda_binaries
           filters: *version_filter
