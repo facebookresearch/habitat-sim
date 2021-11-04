@@ -313,6 +313,8 @@ Key Commands:
     SPACE:      Toggle physics simulation on/off.
     '.':        Take a single simulation step if not simulating continuously.
     'v':        (physics) Invert gravity.
+    'n':        Show/hide NavMesh wireframe.
+                (+SHIFT) Recompute NavMesh with default settings.
 
     Fairmotion Interface:
     'f':        Load model with current motion data.

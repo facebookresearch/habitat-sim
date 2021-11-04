@@ -33,6 +33,9 @@ class HabitatSimInteractiveViewer(Application):
         self.sim_settings["width"] = self.viewport_size[0]
         self.sim_settings["height"] = self.viewport_size[1]
 
+        # navmesh
+        self.navmesh_success = False
+
         # set up our movement map
         key = Application.KeyEvent.Key
         self.pressed = {
@@ -193,6 +196,7 @@ class HabitatSimInteractiveViewer(Application):
         self.active_scene_graph = self.sim.get_active_scene_graph()
         self.default_agent = self.sim.get_agent(self.agent_id)
         self.agent_body_node = self.default_agent.scene_node
+        self.agent_body_node.translation = [2.65, 0.5, 4.5]
         self.render_camera = self.agent_body_node.node_sensor_suite.get("color_sensor")
 
         Timer.start()
@@ -239,6 +243,7 @@ class HabitatSimInteractiveViewer(Application):
         """
         key = event.key
         pressed = Application.KeyEvent.Key
+        mod = Application.InputEvent.Modifier
 
         if key == pressed.ESC:
             event.accepted = True
@@ -275,7 +280,21 @@ class HabitatSimInteractiveViewer(Application):
             logger.info("Command: gravity inverted")
 
         elif key == pressed.N:
-            logger.info("Command: toggle navmesh")
+            if event.modifiers == mod.SHIFT:
+                logger.info("Command: recompute navmesh")
+                self.navmesh_settings = habitat_sim.NavMeshSettings()
+                self.navmesh_settings.set_defaults()
+                self.navmesh_success = self.sim.recompute_navmesh(
+                    self.sim.pathfinder,
+                    self.navmesh_settings,
+                    include_static_objects=False,
+                )
+            else:
+                if self.navmesh_success:
+                    self.sim.navmesh_visualization = not self.sim.navmesh_visualization
+                    logger.info("Command: toggle navmesh")
+                else:
+                    logger.warn("Warning: recompute navmesh first")
 
         # update map of moving/looking keys which are currently pressed
         if key in self.pressed:
@@ -554,6 +573,8 @@ Key Commands:
 
     Utilities:
     'r':        Reset the simulator with the most recently loaded scene.
+    'n':        Show/hide NavMesh wireframe.
+                (+SHIFT) Recompute NavMesh with default settings.
 
     Object Interactions:
     SPACE:      Toggle physics simulation on/off.
