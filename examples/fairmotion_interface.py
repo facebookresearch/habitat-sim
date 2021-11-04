@@ -289,8 +289,6 @@ class FairmotionInterface:
 
         # This function tracks is_reversed and changes the direction of
         # the motion accordingly.
-        self.dump(f"repeat={repeat} before repeat ")
-
         def sign(i):
             return -1 * i if self.is_reversed else i
 
@@ -299,7 +297,6 @@ class FairmotionInterface:
             self.motion_stepper = (
                 self.motion_stepper - sign(1)
             ) % self.motion.num_frames()
-        self.dump("after repeat before iterate, this will set position")
 
         (
             new_pose,
@@ -314,7 +311,6 @@ class FairmotionInterface:
 
         # iterate the frame counter
         self.motion_stepper = (self.motion_stepper + sign(1)) % self.motion.num_frames()
-        self.dump("after iterate")
 
     def convert_CMUamass_single_pose(
         self, pose, model
