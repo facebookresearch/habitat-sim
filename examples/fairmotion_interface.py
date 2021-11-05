@@ -193,11 +193,8 @@ class FairmotionInterface:
                 file = filename
                 break
 
-        try:
-            with open(file, "r") as f:
-                data = json.load(f)
-        except FileNotFoundError:
-            raise FileNotFoundError(f"Error: File {file} does not appear to exist.")
+        with open(file, "r") as f:
+            data = json.load(f)
 
         # set data to what was fetched
         self.user_metadata = self.metadata_parser(data, to_file=False)
