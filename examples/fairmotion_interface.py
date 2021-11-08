@@ -99,7 +99,7 @@ class FairmotionInterface:
 
         # if default file exists, take it from there
         self.fetch_metadata("default")
-        self.last_metadata_file = None
+        self.last_metadata_file: Optional[str] = None
 
     def set_data(
         self,
