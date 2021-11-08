@@ -409,7 +409,7 @@ Key Commands:
 
     Utilities:
     'r':        Reset the simulator with the most recently loaded scene and default fairmotion character.
-    'j':        Randomly choose two points on the NavMesh and generator and display the shortest path between the two.
+    'j':        Randomly choose two points on the NavMesh and generate|display the shortest path between the two.
 
     Object Interactions:
     SPACE:      Toggle physics simulation on/off.
