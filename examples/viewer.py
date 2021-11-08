@@ -80,6 +80,10 @@ class HabitatSimInteractiveViewer(Application):
         self.sim: habitat_sim.simulator.Simulator = None
         self.reconfigure_sim()
 
+        # compute NavMesh if not already loaded by the scene.
+        if not self.sim.pathfinder.is_loaded:
+            self.navmesh_config_and_recompute()
+
         self.time_since_last_simulation = 0.0
         LoggingContext.reinitialize_from_env()
         logger.setLevel("INFO")
@@ -239,6 +243,7 @@ class HabitatSimInteractiveViewer(Application):
         """
         key = event.key
         pressed = Application.KeyEvent.Key
+        mod = Application.InputEvent.Modifier
 
         if key == pressed.ESC:
             event.accepted = True
@@ -273,6 +278,17 @@ class HabitatSimInteractiveViewer(Application):
         elif key == pressed.V:
             self.invert_gravity()
             logger.info("Command: gravity inverted")
+
+        elif key == pressed.N:
+            if event.modifiers == mod.SHIFT:
+                logger.info("Command: recompute navmesh")
+                self.navmesh_config_and_recompute()
+            else:
+                if self.sim.pathfinder.is_loaded:
+                    self.sim.navmesh_visualization = not self.sim.navmesh_visualization
+                    logger.info("Command: toggle navmesh")
+                else:
+                    logger.warn("Warning: recompute navmesh first")
 
         # update map of moving/looking keys which are currently pressed
         if key in self.pressed:
@@ -504,6 +520,19 @@ class HabitatSimInteractiveViewer(Application):
         elif self.mouse_interaction == MouseMode.GRAB:
             self.mouse_interaction = MouseMode.LOOK
 
+    def navmesh_config_and_recompute(self) -> habitat_sim.NavMeshSettings:
+        """
+        This method is setup to be overridden in for setting config accessibility
+        in inherited classes.
+        """
+        self.navmesh_settings = habitat_sim.NavMeshSettings()
+        self.navmesh_settings.set_defaults()
+        self.sim.recompute_navmesh(
+            self.sim.pathfinder,
+            self.navmesh_settings,
+            include_static_objects=False,
+        )
+
     def exit_event(self, event: Application.ExitEvent):
         """
         Overrides exit_event to properly close the Simulator before exiting the
@@ -551,6 +580,8 @@ Key Commands:
 
     Utilities:
     'r':        Reset the simulator with the most recently loaded scene.
+    'n':        Show/hide NavMesh wireframe.
+                (+SHIFT) Recompute NavMesh with default settings.
 
     Object Interactions:
     SPACE:      Toggle physics simulation on/off.
