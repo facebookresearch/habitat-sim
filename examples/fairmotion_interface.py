@@ -243,6 +243,7 @@ class FairmotionInterface:
         self.set_transform_offsets(
             rotate_offset=data["rotation"], translate_offset=data["translation"]
         )
+        logger.info("Done Loading.")
 
     def load_model(self) -> None:
         """
@@ -266,6 +267,7 @@ class FairmotionInterface:
 
         self.model.translation = self.translation_offset
         self.next_pose(repeat=True)
+        logger.info("Done Loading.")
 
     def hide_model(self) -> None:
         """

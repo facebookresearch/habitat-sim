@@ -65,8 +65,6 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         # shortest path attributes
         self.path_traj_obj_id = -1
 
-        self.print_motion_help_text()
-
     def draw_event(self, simulation_call: Optional[Callable] = None) -> None:
         """
         Calls continuously to re-render frames and swap the two frame buffers
@@ -364,9 +362,6 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         )
 
     def print_help_text(self) -> None:
-        return
-
-    def print_motion_help_text(self) -> None:
         """
         Print the Key Command help text.
         """
