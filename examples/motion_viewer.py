@@ -28,10 +28,14 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         # fairmotion init
         self.fm_demo = FairmotionInterface(
             self.sim,
-            metadata_name="fm_demo",
             amass_path=fm_settings["amass_path"],
-            metadata_dir=fm_settings["metadata_dir"],
+            urdf_path=fm_settings["urdf_path"],
+            bm_path=fm_settings["bm_path"],
+            metadata_file=fm_settings["metadata_file"],
         )
+
+        # cache argument values for reconfigure
+        self.fm_settings = fm_settings
 
         # configuring MOTION display objects
         # selection sphere icon
@@ -104,15 +108,17 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
                 self.remove_selector_obj()
             self.cycle_mouse_mode()
             logger.info(f"Command: mouse mode set to {self.mouse_interaction}")
+            event.accepted = True
+            self.redraw()
             return
 
         elif key == pressed.R:
             self.remove_selector_obj()
             super().reconfigure_sim()
-            self.fm_demo = FairmotionInterface(self, metadata_name="fm_demo")
-            logger.info("Command: simulator re-loaded")
-            self.redraw()
+            # reset character to default state
+            self.fm_demo = FairmotionInterface(self.sim, metadata_file="default")
             event.accepted = True
+            self.redraw()
             return
 
         elif key == pressed.SPACE:
@@ -123,7 +129,46 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
                 logger.info(f"Command: physics simulating set to {self.simulating}")
             if self.simulating:
                 self.remove_selector_obj()
+            event.accepted = True
+            self.redraw()
             return
+
+        elif key == pressed.P:
+            if event.modifiers == mod.CTRL:
+                logger.info(f"Last file loaded: {self.fm_demo.last_metadata_file}")
+            elif event.modifiers == mod.SHIFT:
+                if self.fm_demo.last_metadata_file is None:
+                    logger.warn("Warning: No previous file loaded.")
+                else:
+                    self.fm_demo.save_metadata(self.fm_demo.last_metadata_file)
+            else:
+                # ask for user input
+                fn = input(
+                    "Enter filename/filepath to save to (no input will generate a filename)(type 'esc' to abort save):"
+                )
+                if fn == "esc":
+                    logger.info("No File Saved.")
+                # if none, generate name and save
+                # else, use name to save
+                else:
+                    self.fm_demo.save_metadata(fn)
+
+        elif key == pressed.L:
+            if event.modifiers == mod.CTRL:
+                logger.info(f"Last file loaded: {self.fm_demo.last_metadata_file}")
+            elif event.modifiers == mod.SHIFT:
+                if self.fm_demo.last_metadata_file is None:
+                    logger.warn("Warning: No previous file loaded.")
+                else:
+                    self.fm_demo.fetch_metadata(self.fm_demo.last_metadata_file)
+            else:
+                fn = input(
+                    "Enter filename/filepath to load metadata file (enter nothing to abort):"
+                )
+                if fn in ["", None]:
+                    logger.info("No File Loaded.")
+                else:
+                    self.fm_demo.fetch_metadata(fn)
 
         elif key == pressed.PERIOD:
             if self.simulating:
@@ -132,6 +177,8 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
                 self.simulate_single_step = True
                 logger.info("Command: physics step taken")
                 self.remove_selector_obj()
+            event.accepted = True
+            self.redraw()
             return
 
         super().key_press_event(event)
@@ -307,7 +354,7 @@ Key Commands:
     arrow keys: Turn the agent's body left/right and camera look up/down.
 
     Utilities:
-    'r':        Reset the simulator with the most recently loaded scene.
+    'r':        Reset the simulator with the most recently loaded scene and default fairmotion character.
 
     Object Interactions:
     SPACE:      Toggle physics simulation on/off.
@@ -321,6 +368,12 @@ Key Commands:
                 [shft] Hide model.
     'k':        Toggle key frame preview of loaded motion.
     '/':        Set motion to play in reverse.
+    'l':        Fetch and load data from a file give by the user's input.
+                (+ SHIFT) Auto load current character data from last file fetched.
+                (+ CTRL) Print the name of the last file fetched.
+    'p':        Save current characterdata to a file give by the user's input.
+                (+ SHIFT) Auto save current character data to last file fetched.
+                (+ CTRL) Print the name of the last file fetched.
 =========================================================
 """
         )
@@ -356,11 +409,20 @@ if __name__ == "__main__":
         help="amass motion file path to load motion from (default: None)",
     )
     parser.add_argument(
-        "--metadata_dir",
+        "--urdf_path",
         type=str,
-        help="directory where metadata files should be saved to (default: None)",
+        help="urdf file path to load model from (default: None)",
     )
-    parser
+    parser.add_argument(
+        "--bm_path",
+        type=str,
+        help="npz type file path to load motion model from (default: None)",
+    )
+    parser.add_argument(
+        "--metadata_file",
+        type=str,
+        help="JSON metadata file that should be used to load the scene and character (default: None)",
+    )
 
     args = parser.parse_args()
 
@@ -372,6 +434,8 @@ if __name__ == "__main__":
 
     fm_settings: Dict[str, Any] = {}
     fm_settings["amass_path"] = args.amass_path
-    fm_settings["metadata_dir"] = args.metadata_dir
+    fm_settings["urdf_path"] = args.urdf_path
+    fm_settings["bm_path"] = args.bm_path
+    fm_settings["metadata_file"] = args.metadata_file
 
     FairmotionSimInteractiveViewer(sim_settings, fm_settings).exec()
