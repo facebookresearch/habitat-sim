@@ -18,16 +18,15 @@ from habitat_sim.logging import LoggingContext, logger
 
 #### Constants
 ROOT = 0
-FILE_SUFFIX = "_fm_data"
 METADATA_DEFAULT_WHEN_MISSING_FILE = {
-    "urdf_path": "../habitat-sim/data/test_assets/urdf/amass_male.urdf",
-    "amass_path": "../fairmotion/amass_test_data/CMU/CMU/02/02_01_poses.npz",
-    "bm_path": "../fairmotion/amass_test_data/smplh/male/model.npz",
+    "urdf_path": "data/test_assets/urdf/amass_male.urdf",
+    "amass_path": "data/fairmotion/amass_test_data/CMU/CMU/02/02_01_poses.npz",
+    "bm_path": "data/fairmotion/amass_test_data/smplh/male/model.npz",
     "rotation": mn.Quaternion.rotation(mn.Deg(-90), mn.Vector3.x_axis())
     * mn.Quaternion.rotation(mn.Deg(90), mn.Vector3.z_axis()),
     "translation": mn.Vector3([2.5, 0.07, 0.7]),
 }
-METADATA_DIR = "../habitat-sim/data/fairmotion/"
+METADATA_DIR = "data/fairmotion/"
 
 
 class FairmotionInterface:
@@ -39,6 +38,7 @@ class FairmotionInterface:
         bm_path=None,
         metadata_file=None,
     ) -> None:
+
         LoggingContext.reinitialize_from_env()
         self.sim = sim
         self.art_obj_mgr = self.sim.get_articulated_object_manager()
@@ -46,7 +46,7 @@ class FairmotionInterface:
         self.model: Optional[phy.ManagedArticulatedObject] = None
         self.motion: Optional[motion.Motion] = None
         self.user_metadata = {}
-        self.last_metadata_file = None
+        self.last_metadata_file: Optional[str] = None
         self.motion_stepper = 1
         self.rotation_offset: Optional[mn.Quaternion] = None
         self.translation_offset: Optional[mn.Vector3] = None
@@ -212,7 +212,9 @@ class FairmotionInterface:
         self.load_motion()
 
     def set_transform_offsets(
-        self, rotate_offset: mn.Quaternion = None, translate_offset: mn.Vector3 = None
+        self,
+        rotate_offset: Optional[mn.Quaternion] = None,
+        translate_offset: Optional[mn.Vector3] = None,
     ) -> None:
         """
         This method updates the offset of the model with the positional data passed to it.

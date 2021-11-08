@@ -60,8 +60,6 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         self.select_sphere_obj_id: int = -1
         self.select_box_obj_id: int = -1
 
-        self.print_motion_help_text()
-
     def draw_event(self, simulation_call: Optional[Callable] = None) -> None:
         """
         Calls continuously to re-render frames and swap the two frame buffers
@@ -310,9 +308,6 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         self.selected_mocap_char = None
 
     def print_help_text(self) -> None:
-        return
-
-    def print_motion_help_text(self) -> None:
         """
         Print the Key Command help text.
         """
@@ -372,10 +367,11 @@ Key Commands:
     'k':        Toggle key frame preview of loaded motion.
     '/':        Set motion to play in reverse.
     'l':        Fetch and load data from a file give by the user's input.
+                (+ SHIFT) Auto load current character data from last file fetched.
+                (+ CTRL) Print the name of the last file fetched.
     'p':        Save current characterdata to a file give by the user's input.
                 (+ SHIFT) Auto save current character data to last file fetched.
                 (+ CTRL) Print the name of the last file fetched.
-    '
 =========================================================
 """
         )
