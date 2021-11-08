@@ -33,9 +33,6 @@ class HabitatSimInteractiveViewer(Application):
         self.sim_settings["width"] = self.viewport_size[0]
         self.sim_settings["height"] = self.viewport_size[1]
 
-        # navmesh
-        self.navmesh_success = False
-
         # set up our movement map
         key = Application.KeyEvent.Key
         self.pressed = {
@@ -83,8 +80,9 @@ class HabitatSimInteractiveViewer(Application):
         self.sim: habitat_sim.simulator.Simulator = None
         self.reconfigure_sim()
 
-        # compute NavMesh
-        self.navmesh_config_and_recompute()
+        # compute NavMesh if not already loaded by the scene.
+        if not self.sim.pathfinder.is_loaded:
+            self.navmesh_config_and_recompute()
 
         self.time_since_last_simulation = 0.0
         LoggingContext.reinitialize_from_env()
@@ -199,7 +197,6 @@ class HabitatSimInteractiveViewer(Application):
         self.active_scene_graph = self.sim.get_active_scene_graph()
         self.default_agent = self.sim.get_agent(self.agent_id)
         self.agent_body_node = self.default_agent.scene_node
-        self.agent_body_node.translation = [2.65, 0.5, 4.5]
         self.render_camera = self.agent_body_node.node_sensor_suite.get("color_sensor")
 
         Timer.start()
@@ -287,7 +284,7 @@ class HabitatSimInteractiveViewer(Application):
                 logger.info("Command: recompute navmesh")
                 self.navmesh_config_and_recompute()
             else:
-                if self.navmesh_success:
+                if self.sim.pathfinder.is_loaded:
                     self.sim.navmesh_visualization = not self.sim.navmesh_visualization
                     logger.info("Command: toggle navmesh")
                 else:
@@ -530,7 +527,7 @@ class HabitatSimInteractiveViewer(Application):
         """
         self.navmesh_settings = habitat_sim.NavMeshSettings()
         self.navmesh_settings.set_defaults()
-        self.navmesh_success = self.sim.recompute_navmesh(
+        self.sim.recompute_navmesh(
             self.sim.pathfinder,
             self.navmesh_settings,
             include_static_objects=False,
