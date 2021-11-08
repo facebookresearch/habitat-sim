@@ -33,9 +33,6 @@ class HabitatSimInteractiveViewer(Application):
         self.sim_settings["width"] = self.viewport_size[0]
         self.sim_settings["height"] = self.viewport_size[1]
 
-        # navmesh
-        self.navmesh_success = False
-
         # set up our movement map
         key = Application.KeyEvent.Key
         self.pressed = {

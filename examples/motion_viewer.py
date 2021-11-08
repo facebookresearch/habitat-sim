@@ -340,10 +340,6 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         geodesic_distance = path.geodesic_distance
         path_points = path.points
 
-        # convert to vectorj
-        for point in path_points:
-            print(point)
-
         logger.info(
             f"""
             found_path :            {str(found_path)}
