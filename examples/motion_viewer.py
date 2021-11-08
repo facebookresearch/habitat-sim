@@ -428,10 +428,11 @@ Key Commands:
     'k':        Toggle key frame preview of loaded motion.
     '/':        Set motion to play in reverse.
     'l':        Fetch and load data from a file give by the user's input.
+                (+ SHIFT) Auto load current character data from last file fetched.
+                (+ CTRL) Print the name of the last file fetched.
     'p':        Save current characterdata to a file give by the user's input.
                 (+ SHIFT) Auto save current character data to last file fetched.
                 (+ CTRL) Print the name of the last file fetched.
-    '
 =========================================================
 """
         )

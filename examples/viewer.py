@@ -83,14 +83,9 @@ class HabitatSimInteractiveViewer(Application):
         self.sim: habitat_sim.simulator.Simulator = None
         self.reconfigure_sim()
 
-        # compute NavMesh
-        self.navmesh_settings = habitat_sim.NavMeshSettings()
-        self.navmesh_settings.set_defaults()
-        self.navmesh_success = self.sim.recompute_navmesh(
-            self.sim.pathfinder,
-            self.navmesh_settings,
-            include_static_objects=False,
-        )
+        # compute NavMesh if not already loaded by the scene.
+        if not self.sim.pathfinder.is_loaded:
+            self.navmesh_config_and_recompute()
 
         self.time_since_last_simulation = 0.0
         LoggingContext.reinitialize_from_env()
@@ -291,15 +286,9 @@ class HabitatSimInteractiveViewer(Application):
         elif key == pressed.N:
             if event.modifiers == mod.SHIFT:
                 logger.info("Command: recompute navmesh")
-                self.navmesh_settings = habitat_sim.NavMeshSettings()
-                self.navmesh_settings.set_defaults()
-                self.navmesh_success = self.sim.recompute_navmesh(
-                    self.sim.pathfinder,
-                    self.navmesh_settings,
-                    include_static_objects=False,
-                )
+                self.navmesh_config_and_recompute()
             else:
-                if self.navmesh_success:
+                if self.sim.pathfinder.is_loaded:
                     self.sim.navmesh_visualization = not self.sim.navmesh_visualization
                     logger.info("Command: toggle navmesh")
                 else:
@@ -534,6 +523,19 @@ class HabitatSimInteractiveViewer(Application):
             self.mouse_interaction = MouseMode.GRAB
         elif self.mouse_interaction == MouseMode.GRAB:
             self.mouse_interaction = MouseMode.LOOK
+
+    def navmesh_config_and_recompute(self) -> habitat_sim.NavMeshSettings:
+        """
+        This method is setup to be overridden in for setting config accessibility
+        in inherited classes.
+        """
+        self.navmesh_settings = habitat_sim.NavMeshSettings()
+        self.navmesh_settings.set_defaults()
+        self.sim.recompute_navmesh(
+            self.sim.pathfinder,
+            self.navmesh_settings,
+            include_static_objects=False,
+        )
 
     def exit_event(self, event: Application.ExitEvent):
         """
