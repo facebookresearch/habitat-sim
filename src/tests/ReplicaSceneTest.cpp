@@ -16,12 +16,12 @@
 #include "esp/scene/SemanticScene.h"
 #include "esp/sim/Simulator.h"
 
-#include "esp/assets/GenericInstanceMeshData.h"
+#include "esp/assets/GenericSemanticMeshData.h"
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
 
-using esp::assets::GenericInstanceMeshData;
+using esp::assets::GenericSemanticMeshData;
 
 namespace {
 
@@ -74,8 +74,8 @@ void ReplicaSceneTest::testSemanticSceneOBB() {
   // load ply but do not split
   // dummy colormap
   std::vector<Magnum::Vector3ub> dummyColormap;
-  static std::vector<std::unique_ptr<GenericInstanceMeshData>> meshVec =
-      GenericInstanceMeshData::fromPLY(
+  static std::vector<std::unique_ptr<GenericSemanticMeshData>> meshVec =
+      GenericSemanticMeshData::fromPLY(
           *importer,
           Cr::Utility::Directory::join(replicaRoom0, "mesh_semantic.ply"),
           false, dummyColormap);

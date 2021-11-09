@@ -2,7 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "GenericInstanceMeshData.h"
+#include "GenericSemanticMeshData.h"
 
 #include <Corrade/Containers/Array.h>
 #include <Corrade/Containers/ArrayView.h>
@@ -288,8 +288,8 @@ Cr::Containers::Optional<InstancePlyData> parsePly(
 
 }  // namespace
 
-std::vector<std::unique_ptr<GenericInstanceMeshData>>
-GenericInstanceMeshData::fromPLY(
+std::vector<std::unique_ptr<GenericSemanticMeshData>>
+GenericSemanticMeshData::fromPLY(
     Mn::Trade::AbstractImporter& importer,
     const std::string& plyFile,
     const bool splitMesh,
@@ -302,7 +302,7 @@ GenericInstanceMeshData::fromPLY(
     return {};
   }
 
-  std::vector<GenericInstanceMeshData::uptr> splitMeshData;
+  std::vector<GenericSemanticMeshData::uptr> splitMeshData;
   if (splitMesh &&
       (parseResult->objIdsFromPly || parseResult->objPartitionsFromSSD)) {
     std::vector<uint16_t>& meshPartitionIds = parseResult->objIdsFromPly
@@ -319,7 +319,7 @@ GenericInstanceMeshData::fromPLY(
       // if not found in map to data create new mesh
       if (partitionIdToObjectData.find(partitionId) ==
           partitionIdToObjectData.end()) {
-        auto instanceMesh = GenericInstanceMeshData::create_unique();
+        auto instanceMesh = GenericSemanticMeshData::create_unique();
         partitionIdToObjectData.emplace(
             partitionId, PerPartitionIdMeshBuilder{*instanceMesh, partitionId});
         splitMeshData.emplace_back(std::move(instanceMesh));
@@ -334,7 +334,7 @@ GenericInstanceMeshData::fromPLY(
     }
   } else {
     // ply should not be split - ids were synthesized
-    auto meshData = GenericInstanceMeshData::create_unique();
+    auto meshData = GenericSemanticMeshData::create_unique();
     meshData->cpu_vbo_ = std::move(parseResult->cpu_vbo);
     meshData->cpu_cbo_ = std::move(parseResult->cpu_cbo);
     meshData->cpu_ibo_ = std::move(parseResult->cpu_ibo);
@@ -349,9 +349,9 @@ GenericInstanceMeshData::fromPLY(
   }
   return splitMeshData;
 
-}  // GenericInstanceMeshData::fromPLY
+}  // GenericSemanticMeshData::fromPLY
 
-void GenericInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
+void GenericSemanticMeshData::uploadBuffersToGPU(bool forceReload) {
   if (forceReload) {
     buffersOnGPU_ = false;
   }
@@ -368,7 +368,7 @@ void GenericInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
       Mn::GL::BufferUsage::StaticDraw);
 
   renderingBuffer_ =
-      std::make_unique<GenericInstanceMeshData::RenderingBuffer>();
+      std::make_unique<GenericSemanticMeshData::RenderingBuffer>();
   renderingBuffer_->mesh.setPrimitive(Magnum::GL::MeshPrimitive::Triangles)
       .setCount(cpu_ibo_.size())
       .addVertexBuffer(
@@ -388,21 +388,21 @@ void GenericInstanceMeshData::uploadBuffersToGPU(bool forceReload) {
   buffersOnGPU_ = true;
 }
 
-Magnum::GL::Mesh* GenericInstanceMeshData::getMagnumGLMesh() {
+Magnum::GL::Mesh* GenericSemanticMeshData::getMagnumGLMesh() {
   if (renderingBuffer_ == nullptr) {
     return nullptr;
   }
   return &(renderingBuffer_->mesh);
 }
 
-void GenericInstanceMeshData::updateCollisionMeshData() {
+void GenericSemanticMeshData::updateCollisionMeshData() {
   collisionMeshData_.positions = Cr::Containers::arrayCast<Mn::Vector3>(
       Cr::Containers::arrayView(cpu_vbo_));
   collisionMeshData_.indices = Cr::Containers::arrayCast<Mn::UnsignedInt>(
       Cr::Containers::arrayView(cpu_ibo_));
 }
 
-void GenericInstanceMeshData::PerPartitionIdMeshBuilder::addVertex(
+void GenericSemanticMeshData::PerPartitionIdMeshBuilder::addVertex(
     uint32_t vertexId,
     const vec3f& position,
     const vec3uc& color,

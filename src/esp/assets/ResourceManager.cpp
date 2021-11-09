@@ -59,8 +59,8 @@
 #endif
 
 #include "CollisionMeshData.h"
-#include "GenericInstanceMeshData.h"
 #include "GenericMeshData.h"
+#include "GenericSemanticMeshData.h"
 #include "MeshData.h"
 
 #ifdef ESP_BUILD_PTEX_SUPPORT
@@ -441,7 +441,7 @@ bool ResourceManager::buildMeshGroups(
     if (info.type == AssetType::INSTANCE_MESH) {
       // PLY Instance mesh
       colMeshGroupSuccess =
-          buildStageCollisionMeshGroup<GenericInstanceMeshData>(info.filepath,
+          buildStageCollisionMeshGroup<GenericSemanticMeshData>(info.filepath,
                                                                 meshGroup);
     } else if (info.type == AssetType::MP3D_MESH ||
                info.type == AssetType::UNKNOWN) {
@@ -988,7 +988,7 @@ void ResourceManager::computeInstanceMeshAbsoluteAABBs(
 
     // convert std::vector<vec3f> to std::vector<Mn::Vector3>
     const std::vector<vec3f>& vertexPositions =
-        dynamic_cast<GenericInstanceMeshData&>(*meshes_.at(meshID))
+        dynamic_cast<GenericSemanticMeshData&>(*meshes_.at(meshID))
             .getVertexBufferObjectCPU();
     std::vector<Mn::Vector3> transformedPositions{vertexPositions.begin(),
                                                   vertexPositions.end()};
@@ -1246,8 +1246,8 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
   CORRADE_INTERNAL_ASSERT_OUTPUT(
       importer = importerManager_.loadAndInstantiate("StanfordImporter"));
 
-  std::vector<GenericInstanceMeshData::uptr> instanceMeshes =
-      GenericInstanceMeshData::fromPLY(
+  std::vector<GenericSemanticMeshData::uptr> instanceMeshes =
+      GenericSemanticMeshData::fromPLY(
           *importer, filename, info.splitInstanceMesh,
           semanticColorMapBeingUsed_, semanticScene_);
 

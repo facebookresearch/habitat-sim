@@ -22,20 +22,26 @@ class SemanticScene;
 }  // namespace scene
 namespace assets {
 
-class GenericInstanceMeshData : public BaseMesh {
+/**
+ * @brief Mesh data storage and loading for ply format assets used primarily for
+ * Semantic Scene meshes, including manage vertex colors and vertex IDs for
+ * semantic visualization and rendering. See @ref
+ * ResourceManager::loadRenderAssetIMesh.
+ */
+class GenericSemanticMeshData : public BaseMesh {
  public:
   struct RenderingBuffer {
     Magnum::GL::Mesh mesh;
   };
 
-  explicit GenericInstanceMeshData(SupportedMeshType type) : BaseMesh{type} {};
-  explicit GenericInstanceMeshData()
-      : GenericInstanceMeshData{SupportedMeshType::INSTANCE_MESH} {};
+  explicit GenericSemanticMeshData(SupportedMeshType type) : BaseMesh{type} {};
+  explicit GenericSemanticMeshData()
+      : GenericSemanticMeshData{SupportedMeshType::INSTANCE_MESH} {};
 
-  ~GenericInstanceMeshData() override = default;
+  ~GenericSemanticMeshData() override = default;
 
   /**
-   * @brief Load a .ply file into one ore more @ref GenericInstanceMeshData,
+   * @brief Load a .ply file into one ore more @ref GenericSemanticMeshData,
    * splitting the result into multiples if specified and if the source file's
    * objectIds are compatibly configured to do so.
    * @param importer The importer to use to load the .ply file
@@ -46,7 +52,7 @@ class GenericInstanceMeshData : public BaseMesh {
    * @return vector holding one or more mesh results from the .ply file.
    */
 
-  static std::vector<std::unique_ptr<GenericInstanceMeshData>> fromPLY(
+  static std::vector<std::unique_ptr<GenericSemanticMeshData>> fromPLY(
       Magnum::Trade::AbstractImporter& importer,
       const std::string& plyFile,
       bool splitMesh,
@@ -77,7 +83,7 @@ class GenericInstanceMeshData : public BaseMesh {
  protected:
   class PerPartitionIdMeshBuilder {
    public:
-    PerPartitionIdMeshBuilder(GenericInstanceMeshData& data,
+    PerPartitionIdMeshBuilder(GenericSemanticMeshData& data,
                               uint16_t partitionId)
         : data_{data}, partitionId{partitionId} {}
 
@@ -87,7 +93,7 @@ class GenericInstanceMeshData : public BaseMesh {
                    int objectId);
 
    private:
-    GenericInstanceMeshData& data_;
+    GenericSemanticMeshData& data_;
     uint16_t partitionId;
     std::unordered_map<uint32_t, size_t> vertexIdToVertexIndex_;
   };
@@ -101,7 +107,7 @@ class GenericInstanceMeshData : public BaseMesh {
   std::vector<uint32_t> cpu_ibo_;
   std::vector<uint16_t> objectIds_;
 
-  ESP_SMART_POINTERS(GenericInstanceMeshData)
+  ESP_SMART_POINTERS(GenericSemanticMeshData)
 };
 
 }  // namespace assets

@@ -10,7 +10,7 @@
 
 #include <Corrade/Utility/Directory.h>
 #include <sophus/so3.hpp>
-#include "esp/assets/GenericInstanceMeshData.h"
+#include "esp/assets/GenericSemanticMeshData.h"
 #include "esp/core/Esp.h"
 #include "esp/geo/Geo.h"
 
@@ -46,8 +46,8 @@ MeshData SceneLoader::load(const AssetInfo& info) {
         importer = importerManager_.loadAndInstantiate("StanfordImporter"));
     // dummy colormap
     std::vector<Magnum::Vector3ub> dummyColormap;
-    std::vector<GenericInstanceMeshData::uptr> instanceMeshData =
-        GenericInstanceMeshData::fromPLY(*importer, info.filepath, false,
+    std::vector<GenericSemanticMeshData::uptr> instanceMeshData =
+        GenericSemanticMeshData::fromPLY(*importer, info.filepath, false,
                                          dummyColormap);
 
     const auto& vbo = instanceMeshData[0]->getVertexBufferObjectCPU();
