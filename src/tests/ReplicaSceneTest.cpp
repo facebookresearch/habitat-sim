@@ -72,11 +72,13 @@ void ReplicaSceneTest::testSemanticSceneOBB() {
                               manager.loadAndInstantiate("StanfordImporter"));
 
   // load ply but do not split
+  // dummy colormap
+  std::vector<Magnum::Vector3ub> dummyColormap;
   static std::vector<std::unique_ptr<GenericInstanceMeshData>> meshVec =
       GenericInstanceMeshData::fromPLY(
           *importer,
           Cr::Utility::Directory::join(replicaRoom0, "mesh_semantic.ply"),
-          false);
+          false, dummyColormap);
   // verify result vector holds a mesh
   CORRADE_VERIFY(!meshVec.empty());
   // verify first entry exists

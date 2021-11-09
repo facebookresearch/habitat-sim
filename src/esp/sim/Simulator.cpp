@@ -28,7 +28,6 @@
 #include "esp/physics/PhysicsManager.h"
 #include "esp/physics/bullet/BulletCollisionHelper.h"
 #include "esp/scene/ObjectControls.h"
-#include "esp/scene/SemanticScene.h"
 #include "esp/sensor/CameraSensor.h"
 #include "esp/sensor/SensorFactory.h"
 #include "esp/sensor/VisualSensor.h"
@@ -77,7 +76,6 @@ void Simulator::close(const bool destroy) {
 
   physicsManager_ = nullptr;
   gfxReplayMgr_ = nullptr;
-  semanticScene_ = nullptr;
 
   sceneID_.clear();
   sceneManager_ = nullptr;
@@ -210,8 +208,6 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
 metadata::attributes::SceneAttributes::cptr
 Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
-  namespace FileUtil = Cr::Utility::Directory;
-
   // Get scene instance attributes corresponding to passed active scene name
   // This will retrieve, or construct, an appropriately configured scene
   // instance attributes, depending on what exists in the Scene Dataset library
@@ -235,7 +231,7 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
   // Get name of navmesh and use to create pathfinder and load navmesh
   // create pathfinder and load navmesh if available
   pathfinder_ = nav::PathFinder::create();
-  if (FileUtil::exists(navmeshFileLoc)) {
+  if (Cr::Utility::Directory::exists(navmeshFileLoc)) {
     ESP_DEBUG() << "Loading navmesh from" << navmeshFileLoc;
     bool pfSuccess = pathfinder_->loadNavMesh(navmeshFileLoc);
     ESP_DEBUG() << (pfSuccess ? "Navmesh Loaded." : "Navmesh load error.");
@@ -264,65 +260,8 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
       metadataMediator_->getSemanticSceneDescriptorPathByHandle(
           curSceneInstanceAttributes->getSemanticSceneHandle());
 
-  if (semanticSceneDescFilename != "") {
-    const std::string& filenameToUse = semanticSceneDescFilename;
-    bool success = false;
-    // semantic scene descriptor might not exist, so
-    semanticScene_ = nullptr;
-    semanticScene_ = scene::SemanticScene::create();
-    ESP_DEBUG() << "SceneInstance :" << activeSceneName
-                << "proposed Semantic Scene Descriptor filename :"
-                << filenameToUse;
-
-    bool fileExists = FileUtil::exists(filenameToUse);
-    if (fileExists) {
-      // Attempt to load semantic scene descriptor specified in scene instance
-      // file, agnostic to file type inferred by name, if file exists.
-      success = scene::SemanticScene::loadSemanticSceneDescriptor(
-          filenameToUse, *semanticScene_);
-      if (success) {
-        ESP_DEBUG() << "SSD with SceneAttributes-provided name "
-                    << filenameToUse << "successfully found and loaded";
-      } else {
-        // here if provided file exists but does not correspond to appropriate
-        // SSD
-        ESP_ERROR()
-            << "SSD Load Failure! File with SceneAttributes-provided name "
-            << filenameToUse << "exists but was unable to be loaded.";
-      }
-      // if not success then try to construct a name
-    } else {
-      // attempt to look for specified file failed, attempt to build new file
-      // name by searching in path specified of specified file for
-      // info_semantic.json file for replica dataset
-      const std::string constructedFilename =
-          FileUtil::join(FileUtil::path(filenameToUse), "info_semantic.json");
-      fileExists = FileUtil::exists(constructedFilename);
-      if (fileExists) {
-        success = scene::SemanticScene::loadReplicaHouse(constructedFilename,
-                                                         *semanticScene_);
-        if (success) {
-          ESP_DEBUG() << "SSD for Replica using constructed file :"
-                      << constructedFilename << "in directory with"
-                      << semanticSceneDescFilename << "loaded successfully";
-        } else {
-          // here if constructed file exists but does not correspond to
-          // appropriate SSD or some loading error occurred.
-          ESP_ERROR() << "SSD Load Failure! Replica file with constructed name "
-                      << filenameToUse << "exists but was unable to be loaded.";
-        }
-      } else {
-        // neither provided non-empty filename nor constructed filename
-        // exists. This is probably due to an incorrect naming in the
-        // SceneAttributes
-        ESP_WARNING()
-            << "SSD File Naming Issue! Neither SceneAttributes-provided name :"
-            << filenameToUse
-            << " nor constructed filename :" << constructedFilename
-            << "exist on disk.";
-      }
-    }  // if given SSD file name specifiedd exists
-  }    // if semantic scene descriptor specified in scene instance
+  resourceManager_->loadSemanticSceneDescriptor(semanticSceneDescFilename,
+                                                activeSceneName);
 
   // 3. Specify frustumCulling based on value from config
   frustumCulling_ = config_.frustumCulling;
@@ -452,6 +391,12 @@ bool Simulator::instanceStageForActiveScene(
   // set scaling values for this instance of stage attributes
   stageAttributes->setScale(stageAttributes->getScale() *
                             stageInstanceAttributes->getUniformScale());
+
+  // set stage's ref to ssd file
+  stageAttributes->setSemanticDescriptorFilename(
+      metadataMediator_->getSemanticSceneDescriptorPathByHandle(
+          curSceneInstanceAttributes->getSemanticSceneHandle()));
+
   // set visibility if explicitly specified in stage instance configs
   int visSet = stageInstanceAttributes->getIsInstanceVisible();
   if (visSet != ID_UNDEFINED) {
@@ -472,15 +417,11 @@ bool Simulator::instanceStageForActiveScene(
       stageAttributes, stageInstanceAttributes, physicsManager_,
       sceneManager_.get(), tempIDs);
 
-  if (!loadSuccess) {
-    ESP_ERROR() << "Cannot load stage :" << stageAttributesHandle;
-    // Pass the error to the python through pybind11 allowing graceful exit
-    throw std::invalid_argument("Cannot load: " + stageAttributesHandle);
-    return false;
-  } else {
-    ESP_DEBUG() << "Successfully loaded stage named :"
-                << stageAttributes->getHandle();
-  }
+  ESP_CHECK(loadSuccess, Cr::Utility::formatString("Cannot load stage :{}",
+                                                   stageAttributesHandle));
+  // if successful display debug message
+  ESP_DEBUG() << "Successfully loaded stage named :"
+              << stageAttributes->getHandle();
 
   // refresh the NavMesh visualization if necessary after loading a new
   // SceneGraph

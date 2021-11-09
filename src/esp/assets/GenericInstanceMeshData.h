@@ -17,6 +17,9 @@
 #include "esp/core/Esp.h"
 
 namespace esp {
+namespace scene {
+class SemanticScene;
+}  // namespace scene
 namespace assets {
 
 class GenericInstanceMeshData : public BaseMesh {
@@ -39,12 +42,16 @@ class GenericInstanceMeshData : public BaseMesh {
    * @param plyFile Fully qualified filename of .ply file to load
    * @param splitMesh Whether or not the resultant mesh should be split into
    * multiple components based on objectIds, for frustum culling.
+   * @param semanticScene The SSD for the instance mesh being loaded.
    * @return vector holding one or more mesh results from the .ply file.
    */
+
   static std::vector<std::unique_ptr<GenericInstanceMeshData>> fromPLY(
       Magnum::Trade::AbstractImporter& importer,
       const std::string& plyFile,
-      bool splitMesh);
+      bool splitMesh,
+      std::vector<Magnum::Vector3ub>& colorMapToUse,
+      const std::shared_ptr<scene::SemanticScene>& semanticScene = nullptr);
 
   // ==== rendering ====
   void uploadBuffersToGPU(bool forceReload = false) override;
@@ -68,16 +75,20 @@ class GenericInstanceMeshData : public BaseMesh {
   }
 
  protected:
-  class PerObjectIdMeshBuilder {
+  class PerPartitionIdMeshBuilder {
    public:
-    PerObjectIdMeshBuilder(GenericInstanceMeshData& data, uint16_t objectId)
-        : data_{data}, objectId_{objectId} {}
+    PerPartitionIdMeshBuilder(GenericInstanceMeshData& data,
+                              uint16_t partitionId)
+        : data_{data}, partitionId{partitionId} {}
 
-    void addVertex(uint32_t vertexId, const vec3f& vertex, const vec3uc& color);
+    void addVertex(uint32_t vertexId,
+                   const vec3f& vertex,
+                   const vec3uc& color,
+                   int objectId);
 
    private:
     GenericInstanceMeshData& data_;
-    uint16_t objectId_;
+    uint16_t partitionId;
     std::unordered_map<uint32_t, size_t> vertexIdToVertexIndex_;
   };
 
@@ -85,7 +96,6 @@ class GenericInstanceMeshData : public BaseMesh {
 
   // ==== rendering ====
   std::unique_ptr<RenderingBuffer> renderingBuffer_ = nullptr;
-
   std::vector<vec3f> cpu_vbo_;
   std::vector<vec3uc> cpu_cbo_;
   std::vector<uint32_t> cpu_ibo_;

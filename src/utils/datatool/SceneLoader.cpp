@@ -44,8 +44,11 @@ MeshData SceneLoader::load(const AssetInfo& info) {
     Cr::Containers::Pointer<Importer> importer;
     CORRADE_INTERNAL_ASSERT_OUTPUT(
         importer = importerManager_.loadAndInstantiate("StanfordImporter"));
+    // dummy colormap
+    std::vector<Magnum::Vector3ub> dummyColormap;
     std::vector<GenericInstanceMeshData::uptr> instanceMeshData =
-        GenericInstanceMeshData::fromPLY(*importer, info.filepath, false);
+        GenericInstanceMeshData::fromPLY(*importer, info.filepath, false,
+                                         dummyColormap);
 
     const auto& vbo = instanceMeshData[0]->getVertexBufferObjectCPU();
     const auto& cbo = instanceMeshData[0]->getColorBufferObjectCPU();

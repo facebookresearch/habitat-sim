@@ -17,6 +17,7 @@
 
 #include <Corrade/Containers/EnumSet.h>
 #include <Corrade/Containers/Optional.h>
+#include <Magnum/DebugTools/ColorMap.h>
 #include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/GL/TextureFormat.h>
 #include <Magnum/MeshTools/Compile.h>
@@ -69,8 +70,9 @@ class Recorder;
 }
 }  // namespace gfx
 namespace scene {
+class SemanticScene;
 struct SceneConfiguration;
-}
+}  // namespace scene
 namespace physics {
 class PhysicsManager;
 class RigidObject;
@@ -169,6 +171,36 @@ class ResourceManager {
       scene::SceneNode* parent,
       const metadata::attributes::PhysicsManagerAttributes::ptr&
           physicsManagerAttributes);
+
+  /**
+   * @brief Return the currently loaded @ref esp::scene::SemanticScene .
+   */
+  std::shared_ptr<scene::SemanticScene> getSemanticScene() {
+    return semanticScene_;
+  }
+
+  /**
+   * @brief Return a view of the currently set Semantic scene colormap.
+   */
+  Cr::Containers::ArrayView<const Mn::Vector3ub> getSemanticSceneColormap()
+      const {
+    // return Magnum::DebugTools::ColorMap::plasma();
+    return semanticColorMapBeingUsed_;
+  }
+
+  /** @brief check if the @ref esp::scene::SemanticScene exists.*/
+  bool semanticSceneExists() const { return (semanticScene_ != nullptr); }
+
+  /**
+   * @brief Load semantic scene descriptor file specified by @p ssdFilename ,
+   * for the passed @p activeSceneName .
+   * @param ssdFilename The fully qualified filename candidate for the ssd file.
+   * @param activeSceneName Name of the currently active scene that we will be
+   * loading the SSD for.
+   * @return whether loaded successfully or not.
+   */
+  bool loadSemanticSceneDescriptor(const std::string& ssdFilename,
+                                   const std::string& activeSceneName);
 
   /**
    * @brief Load a scene mesh and add it to the specified @ref DrawableGroup as
@@ -1177,6 +1209,16 @@ class ResourceManager {
    * @brief Importer used to load generic mesh files (AnySceneImporter)
    */
   Corrade::Containers::Pointer<Importer> fileImporter_;
+
+  /**
+   * @brief Reference to the currently loaded semanticScene Descriptor
+   */
+  std::shared_ptr<scene::SemanticScene> semanticScene_ = nullptr;
+
+  /**
+   * @brief Colormap to use for visualizing currently loaded semantic scene.
+   */
+  std::vector<Magnum::Vector3ub> semanticColorMapBeingUsed_{};
 
   // ======== Physical parameter data ========
 
