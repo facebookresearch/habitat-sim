@@ -550,20 +550,15 @@ class FairmotionInterface:
 
         return False
 
-    # Place this when shortest path is generated
-    # TODO: - Clean up code, especially translation
-    #       - wrapping pose iterator with if's
-    #       - wrapping path timeline iterator with if's
-    #       - Rewrite NavMesh function
     def setup_pathfollower(self, path):
         """
-        Prepare REWRITE[lookup dicts for shortest_path timeline queries as well as the
-        model to move along the path.]
+        Prepare the pathfollowing character and any data needed to execute the update function.
         """
-        self.path_timeline = path.geodesic_distance
-        self.path_ptr = 0.0
         self.path_points = path.points
-        self.path_follow_stepper = 0
+        self.path_ptr = 0.0  # tracks position along path
+        self.path_follow_stepper = (
+            0  # tracks pose number NOTE: rename to self.path_motion_stepper
+        )
         self.path_motion = amass.load(
             file="data/fairmotion/amass_test_data/CMU/CMU/02/02_01_poses.npz",
             bm_path="data/fairmotion/amass_test_data/smplh/male/model.npz",
@@ -586,33 +581,43 @@ class FairmotionInterface:
     def update_pathfollower(self, step_size: int = 1):
         """
         When called, this method will update the position and orientation of the
-        path follower. `step_size` is the amount of steps the path_follower should take on this update.
+        path follower. The `step_size` argument is the amount of steps the path_follower
+        should take on this update.
         """
         # Skip function
         if self.puck == None or self.path_points == None:
             return
 
+        curr_frame = (self.path_follow_stepper) % self.path_motion.num_frames()
+        next_frame = (
+            self.path_follow_stepper + step_size
+        ) % self.path_motion.num_frames()
+
+        # wrap motion translation if next_frame is overflowed
+        if next_frame < curr_frame:
+            self.path_follow_stepper = 0
+            curr_frame = (self.path_follow_stepper) % self.path_motion.num_frames()
+            next_frame = (
+                self.path_follow_stepper + step_size
+            ) % self.path_motion.num_frames()
+
         # get current character pose attrs
         (
             curr_pose,
-            curr_root_translate,
-            curr_root_rotation,
+            curr_root_translate,  # rename shorter name
+            curr_root_rotation,  # rename shorter name
         ) = self.convert_CMUamass_single_pose(
-            self.path_motion.poses[
-                (self.path_follow_stepper) % self.path_motion.num_frames()
-            ],
+            self.path_motion.poses[curr_frame],
             self.puck,
         )
 
         # get next character pose attrs
         (
             next_pose,
-            next_root_translate,
-            next_root_rotation,
+            next_root_translate,  # rename shorter name
+            next_root_rotation,  # rename shorter name
         ) = self.convert_CMUamass_single_pose(
-            self.path_motion.poses[
-                (self.path_follow_stepper + step_size) % self.path_motion.num_frames()
-            ],
+            self.path_motion.poses[next_frame],
             self.puck,
         )
 
@@ -632,13 +637,15 @@ class FairmotionInterface:
         for i, _ in enumerate(path_points):
 
             # NOTE: This can also be checked on 1st iteration instead of last: compare geodesic to path_ptr!
-            # If true, this means that the character has passed goal, reset path_ptr to 0.0 and i to 0
+            # Wraps path on true, this means that the character has passed goal, reset path_ptr to 0.0 and i to 0
             if int(i) + 1 == len(path_points):
                 self.path_ptr = 0.0
                 i = 0
 
             segment = mn.Vector3(path_points[i + 1] - path_points[i])
-            segment_len += segment.length()
+            segment_len += (
+                segment.length()
+            )  # rename to relate to timeline or something, maybe not
 
             # if path pointer has not passed a certain point in the path timeline, then we know its location range
             if self.path_ptr < segment_len:
@@ -647,7 +654,7 @@ class FairmotionInterface:
                 look_at_quater = mn.Quaternion.from_matrix(
                     mn.Matrix4.look_at(
                         mn.Vector3.zero_init(),
-                        mn.Vector3(path_points[i + 1] - path_points[i]),
+                        mn.Vector3(segment),
                         mn.Vector3.y_axis(),
                     ).rotation()
                 )
@@ -657,11 +664,11 @@ class FairmotionInterface:
                 self.puck.rotation = look_at_quater * mn.Quaternion.rotation(
                     mn.Deg(180), mn.Vector3.y_axis()
                 )
-                self.puck.translation += (
-                    mn.Vector3(path_points[i + 1] - path_points[i])
-                ).normalized() * delta_P
+                self.puck.translation += (mn.Vector3(segment)).normalized() * delta_P
                 break
 
+        # Currently, this stepper never loops, it isn't necessary because of the modulus usage.
+        # I can loop it in ln 636's if-statement, but I would have to set it to ()
         self.path_follow_stepper = self.path_follow_stepper + step_size
 
 
