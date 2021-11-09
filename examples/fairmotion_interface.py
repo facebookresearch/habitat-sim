@@ -58,6 +58,10 @@ class FairmotionInterface:
         self.is_reversed = False
         self.setup_default_metadata()
 
+        # path follower attrs
+        self.puck: Optional[phy.ManagedArticulatedObject] = None
+        self.path_points: Optional[List[mn.Vector3]] = None
+
         if metadata_file:
             try:
                 self.fetch_metadata(metadata_file)
@@ -545,6 +549,95 @@ class FairmotionInterface:
             return True
 
         return False
+
+    # Place this when shortest path iw generated
+    def setup_pathfollower(self, path):
+        """
+        Prepare lookup dicts for shortest_path timeline queries as well as the
+        model to move along the path.
+        """
+        self.path_timeline = path.geodesic_distance
+        self.path_ptr = 0
+        self.path_points = path.points
+        self.path_motion = amass.load(
+            file="data/fairmotion/amass_test_data/CMU/CMU/02/02_01_poses.npz",
+            bm_path="data/fairmotion/amass_test_data/smplh/male/model.npz",
+        )
+
+        # Load a model to follow path as puck
+        self.puck = self.art_obj_mgr.add_articulated_object_from_urdf(
+            filepath=self.user_metadata["urdf_path"], fixed_base=True
+        )
+        self.puck.motion_type = phy.MotionType.KINEMATIC
+        self.puck.override_collision_group(phy.CollisionGroups.Noncollidable)
+
+        # initialize
+        self.path_follow_stepper = 0
+
+        # TODO: Correctly implement facing the character based on path vectors
+        self.puck.rotation = (
+            mn.Quaternion(mn.Vector3(path.points[1] - path.points[0]))
+            # * mn.Quaternion.rotation(mn.Deg(0), (mn.Vector3(path.points[1] - path.points[0])).normalized())
+        )
+        self.puck.translation = path.points[0] + mn.Vector3(0.0, 1.0, 0.0)
+
+    def update_pathfollower(self):
+        """
+        When called, this method will update the position and orientation of the
+        path follower.
+        """
+        # Skip function
+        if self.puck == None or self.path_points == None:
+            return
+
+        # get current character pose attrs
+        (
+            curr_pose,
+            curr_root_translate,
+            curr_root_rotation,
+        ) = self.convert_CMUamass_single_pose(
+            self.path_motion.poses[
+                (self.path_follow_stepper) % self.path_motion.num_frames()
+            ],
+            self.puck,
+        )
+        print(f"curr_root_translate = {curr_root_translate}")
+
+        # get next character pose attrs
+        (
+            next_pose,
+            next_root_translate,
+            next_root_rotation,
+        ) = self.convert_CMUamass_single_pose(
+            self.path_motion.poses[
+                (self.path_follow_stepper + 1) % self.path_motion.num_frames()
+            ],
+            self.puck,
+        )
+        print(f"next_root_translate = {next_root_translate}")
+
+        # get displacement of next from current, and get its length projected on unit vector of direction
+        delta_p = (next_root_translate - curr_root_translate).length()
+
+        path_points = self.path_points
+        segment_length = 0
+
+        # get orientation
+        for i, _ in enumerate(path_points):
+            if int(i) + 1 == len(path_points):
+                break
+            segment_length += mn.Vector3(path_points[i + 1] - path_points[i]).length()
+            if self.path_ptr < segment_length:
+                # TODO: Correctly implement facing the character based on path vectors
+                self.puck.rotation = mn.Quaternion.rotation(
+                    mn.Deg(180),
+                    (mn.Vector3(path_points[i + 1] - path_points[i])).normalized(),
+                ) * mn.Quaternion(mn.Vector3(path_points[i + 1] - path_points[i]))
+                self.puck.translation += (
+                    mn.Vector3(path_points[i + 1] - path_points[i])
+                ).normalized() * delta_p
+
+            # dist_sum += mn.Vector3(path.points[i + 1] - path.points[i])
 
 
 class Preview(Enum):

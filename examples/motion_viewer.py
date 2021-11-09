@@ -193,6 +193,11 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             self.redraw()
             return
 
+        # Testing!
+        elif key == pressed.EQUAL:
+            self.fm_demo.update_pathfollower()
+            self.fm_demo.update_pathfollower()
+
         super().key_press_event(event)
 
     def mouse_press_event(self, event: Application.MouseEvent) -> None:
@@ -338,13 +343,14 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         path.requested_end = sample2
         found_path = self.sim.pathfinder.find_path(path)
         geodesic_distance = path.geodesic_distance
-        path_points = path.points
+        self.path_points = path.points
+        self.fm_demo.setup_pathfollower(path)
 
         logger.info(
             f"""
             found_path :            {str(found_path)}
             geodesic_distance :     {str(geodesic_distance)}
-            path_points :           {str(path_points)}
+            path_points :           {str(self.path_points)}
             """
         )
 
@@ -353,7 +359,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         self.path_traj_obj_id = self.sim.add_gradient_trajectory_object(
             traj_vis_name=f"{time.strftime('%Y-%m-%d_%H-%M-%S')}",
             colors=colors,
-            points=path_points,
+            points=self.path_points,
             radius=0.01,
         )
 
