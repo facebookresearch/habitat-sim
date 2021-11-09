@@ -569,6 +569,7 @@ class FairmotionInterface:
             filepath=self.user_metadata["urdf_path"], fixed_base=True
         )
         self.puck.motion_type = phy.MotionType.KINEMATIC
+        # TODO: Ask why the collision is possible.
         self.puck.override_collision_group(phy.CollisionGroups.Noncollidable)
 
         # initialize
@@ -629,15 +630,35 @@ class FairmotionInterface:
             segment_length += mn.Vector3(path_points[i + 1] - path_points[i]).length()
             if self.path_ptr < segment_length:
                 # TODO: Correctly implement facing the character based on path vectors
-                self.puck.rotation = mn.Quaternion.rotation(
-                    mn.Deg(180),
-                    (mn.Vector3(path_points[i + 1] - path_points[i])).normalized(),
-                ) * mn.Quaternion(mn.Vector3(path_points[i + 1] - path_points[i]))
+                self.puck.rotation = (
+                    mn.Quaternion.rotation(
+                        mn.Deg(180),
+                        (mn.Vector3(path_points[i + 1] - path_points[i])).normalized(),
+                    )
+                    * mn.Quaternion(mn.Vector3(path_points[i + 1] - path_points[i]))
+                )
                 self.puck.translation += (
                     mn.Vector3(path_points[i + 1] - path_points[i])
                 ).normalized() * delta_p
+                break
 
             # dist_sum += mn.Vector3(path.points[i + 1] - path.points[i])
+
+    """
+    def navmesh_config_and_recompute(self) -> None:
+        ""
+        Overwrite the NavMesh function to compute mor restricted bounds for character.
+        ""
+        # TODO: Rewrite code.
+        # Original CODE
+        self.navmesh_settings = habitat_sim.NavMeshSettings()
+        self.navmesh_settings.set_defaults()
+        self.sim.recompute_navmesh(
+            self.sim.pathfinder,
+            self.navmesh_settings,
+            include_static_objects=False,
+        )
+    """
 
 
 class Preview(Enum):
