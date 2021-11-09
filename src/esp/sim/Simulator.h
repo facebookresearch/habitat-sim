@@ -1160,6 +1160,8 @@ class Simulator {
                             float colorMapOffset,
                             float colorMapScale);
 
+  bool visualizeObservation(int agentId, const std::string& sensorId);
+
   bool getAgentObservation(int agentId,
                            const std::string& sensorId,
                            sensor::Observation& observation);

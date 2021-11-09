@@ -260,6 +260,7 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
       metadataMediator_->getSemanticSceneDescriptorPathByHandle(
           curSceneInstanceAttributes->getSemanticSceneHandle());
 
+  // load semantic scene descriptor
   resourceManager_->loadSemanticSceneDescriptor(semanticSceneDescFilename,
                                                 activeSceneName);
 
@@ -419,6 +420,19 @@ bool Simulator::instanceStageForActiveScene(
 
   ESP_CHECK(loadSuccess, Cr::Utility::formatString("Cannot load stage :{}",
                                                    stageAttributesHandle));
+
+  // get colormap from loading semantic scene mesh
+  Cr::Containers::ArrayView<const Mn::Vector3ub> colorMap =
+      resourceManager_->getSemanticSceneColormap();
+
+  // sending semantic colormap to shader for visualizations.
+  // This map may have color mappings specified in supported semantic screen
+  // descriptor text files with vertex mappings to ids on semantic scene mesh.
+  if (renderer_ && !colorMap.empty()) {
+    // send colormap to TextureVisualizeShader via renderer.
+    renderer_->setSemanticVisualizerColormap(colorMap);
+  }
+
   // if successful display debug message
   ESP_DEBUG() << "Successfully loaded stage named :"
               << stageAttributes->getHandle();
@@ -1194,6 +1208,19 @@ bool Simulator::drawObservation(const int agentId,
     if (sensor.isVisualSensor()) {
       return static_cast<sensor::VisualSensor&>(sensor).drawObservation(*this);
     }
+  }
+  return false;
+}
+
+bool Simulator::visualizeObservation(int agentId, const std::string& sensorId) {
+  agent::Agent::ptr ag = getAgent(agentId);
+
+  if (ag != nullptr) {
+    sensor::Sensor& sensor = ag->getSubtreeSensorSuite().get(sensorId);
+    if (sensor.isVisualSensor()) {
+      renderer_->visualize(static_cast<sensor::VisualSensor&>(sensor));
+    }
+    return true;
   }
   return false;
 }
