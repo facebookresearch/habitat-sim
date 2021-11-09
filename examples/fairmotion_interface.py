@@ -555,10 +555,9 @@ class FairmotionInterface:
         Prepare the pathfollowing character and any data needed to execute the update function.
         """
         self.path_points = path.points
-        self.path_ptr = 0.0  # tracks position along path
-        self.path_follow_stepper = (
-            0  # tracks pose number NOTE: rename to self.path_motion_stepper
-        )
+        self.full_path_length = path.geodesic_distance
+        self.path_ptr: float = 0.0  # tracks position along path
+        self.path_motion_stepper: int = 0  # tracks pose number
         self.path_motion = amass.load(
             file="data/fairmotion/amass_test_data/CMU/CMU/02/02_01_poses.npz",
             bm_path="data/fairmotion/amass_test_data/smplh/male/model.npz",
@@ -585,40 +584,30 @@ class FairmotionInterface:
         should take on this update.
         """
         # Skip function
-        if self.puck == None or self.path_points == None:
+        if self.puck is None or self.path_points is None:
             return
 
-        curr_frame = (self.path_follow_stepper) % self.path_motion.num_frames()
+        curr_frame = (self.path_motion_stepper) % self.path_motion.num_frames()
         next_frame = (
-            self.path_follow_stepper + step_size
+            self.path_motion_stepper + step_size
         ) % self.path_motion.num_frames()
 
         # wrap motion translation if next_frame is overflowed
         if next_frame < curr_frame:
-            self.path_follow_stepper = 0
-            curr_frame = (self.path_follow_stepper) % self.path_motion.num_frames()
+            self.path_motion_stepper = 0
+            curr_frame = (self.path_motion_stepper) % self.path_motion.num_frames()
             next_frame = (
-                self.path_follow_stepper + step_size
+                self.path_motion_stepper + step_size
             ) % self.path_motion.num_frames()
 
         # get current character pose attrs
-        (
-            curr_pose,
-            curr_root_translate,  # rename shorter name
-            curr_root_rotation,  # rename shorter name
-        ) = self.convert_CMUamass_single_pose(
-            self.path_motion.poses[curr_frame],
-            self.puck,
+        curr_pose, curr_root_T, curr_root_R = self.convert_CMUamass_single_pose(
+            self.path_motion.poses[curr_frame], self.puck
         )
 
         # get next character pose attrs
-        (
-            next_pose,
-            next_root_translate,  # rename shorter name
-            next_root_rotation,  # rename shorter name
-        ) = self.convert_CMUamass_single_pose(
-            self.path_motion.poses[next_frame],
-            self.puck,
+        next_pose, next_root_T, next_root_R = self.convert_CMUamass_single_pose(
+            self.path_motion.poses[next_frame], self.puck
         )
 
         # TODO: This is not accurate logic to get displacement between two keyframes. The displacement
@@ -629,24 +618,22 @@ class FairmotionInterface:
         #        * mn.Quaternion.rotation(mn.Deg(180), mn.Vector3.y_axis())` to align it with the
         #        direction the mocap char is facing. Then get the length of this vector projected
         #        unit vector of path direction.
-        delta_P = (next_root_translate - curr_root_translate).length()
+        delta_P = (next_root_T - curr_root_T).length()
         path_points = self.path_points
         segment_len = 0
 
         # Find where we are in the timeline, and set approriate orientation to char, then set translation
         for i, _ in enumerate(path_points):
 
-            # NOTE: This can also be checked on 1st iteration instead of last: compare geodesic to path_ptr!
             # Wraps path on true, this means that the character has passed goal, reset path_ptr to 0.0 and i to 0
-            if int(i) + 1 == len(path_points):
+            if self.path_ptr > self.full_path_length:
                 self.path_ptr = 0.0
                 self.puck.translation = path_points[0] + mn.Vector3(0.0, 1.0, 0.0)
                 i = 0
 
+            # represents the segments of our timeline
             segment = mn.Vector3(path_points[i + 1] - path_points[i])
-            segment_len += (
-                segment.length()
-            )  # rename to relate to timeline or something, maybe not
+            segment_len += segment.length()
 
             # if path pointer has not passed a certain point in the path timeline, then we know its location range
             if self.path_ptr < segment_len:
@@ -672,7 +659,7 @@ class FairmotionInterface:
 
         # Currently, this stepper never loops, it isn't necessary because of the modulus usage.
         # I can loop it in ln 636's if-statement, but I would have to set it to ()
-        self.path_follow_stepper = self.path_follow_stepper + step_size
+        self.path_motion_stepper = self.path_motion_stepper + step_size
 
 
 class Preview(Enum):
