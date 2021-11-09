@@ -65,6 +65,8 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         # shortest path attributes
         self.path_traj_obj_id = -1
 
+        self.navmesh_config_and_recompute()
+
     def draw_event(self, simulation_call: Optional[Callable] = None) -> None:
         """
         Calls continuously to re-render frames and swap the two frame buffers
@@ -361,6 +363,59 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             points=self.path_points,
             radius=0.01,
         )
+
+    def navmesh_config_and_recompute(self) -> None:
+        """
+        Overwrite the NavMesh function to compute mor restricted bounds for character.
+        """
+        art_obj_mgr, art_cache = self.sim.get_articulated_object_manager(), {}
+        rgd_obj_mgr, rgd_cache = self.sim.get_rigid_object_manager(), {}
+
+        # Setting all articulated objects to static
+        for obj_handle in art_obj_mgr.get_object_handles():
+            # save original motion type
+            art_cache[obj_handle] = art_obj_mgr.get_object_by_handle(
+                obj_handle
+            ).motion_type
+
+            # setting object motion_type to static
+            art_obj_mgr.get_object_by_handle(
+                obj_handle
+            ).motion_type = phy.MotionType.STATIC
+
+        # Setting all rigid objects to static
+        for obj_handle in rgd_obj_mgr.get_object_handles():
+            # save original motion type
+            rgd_cache[obj_handle] = rgd_obj_mgr.get_object_by_handle(
+                obj_handle
+            ).motion_type
+
+            # setting object motion_type to static
+            rgd_obj_mgr.get_object_by_handle(
+                obj_handle
+            ).motion_type = phy.MotionType.STATIC
+
+        # compute NavMesh to be wary of Scene Objects
+        self.navmesh_settings = habitat_sim.NavMeshSettings()
+        self.navmesh_settings.set_defaults()
+        self.navmesh_settings.agent_radius = 0.45
+        self.sim.recompute_navmesh(
+            self.sim.pathfinder,
+            self.navmesh_settings,
+            include_static_objects=True,
+        )
+
+        # Set all articulated objects back to original motion_type
+        for obj_handle in art_obj_mgr.get_object_handles():
+            art_obj_mgr.get_object_by_handle(obj_handle).motion_type = art_cache[
+                obj_handle
+            ]
+
+        # Set all rigid objects back to original motion_type
+        for obj_handle in rgd_obj_mgr.get_object_handles():
+            rgd_obj_mgr.get_object_by_handle(obj_handle).motion_type = rgd_cache[
+                obj_handle
+            ]
 
     def print_help_text(self) -> None:
         """
