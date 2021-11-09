@@ -640,6 +640,7 @@ class FairmotionInterface:
             # Wraps path on true, this means that the character has passed goal, reset path_ptr to 0.0 and i to 0
             if int(i) + 1 == len(path_points):
                 self.path_ptr = 0.0
+                self.puck.translation = path_points[0] + mn.Vector3(0.0, 1.0, 0.0)
                 i = 0
 
             segment = mn.Vector3(path_points[i + 1] - path_points[i])
@@ -664,7 +665,9 @@ class FairmotionInterface:
                 self.puck.rotation = look_at_quater * mn.Quaternion.rotation(
                     mn.Deg(180), mn.Vector3.y_axis()
                 )
+                # get normalized vector in segment direction and multiply by change in motion position
                 self.puck.translation += (mn.Vector3(segment)).normalized() * delta_P
+                self.path_ptr += delta_P
                 break
 
         # Currently, this stepper never loops, it isn't necessary because of the modulus usage.

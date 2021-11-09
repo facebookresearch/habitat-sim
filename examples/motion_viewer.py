@@ -412,7 +412,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         # compute NavMesh to be wary of Scene Objects
         self.navmesh_settings = habitat_sim.NavMeshSettings()
         self.navmesh_settings.set_defaults()
-        self.navmesh_settings.agent_radius = 0.45
+        self.navmesh_settings.agent_radius = 0.4
         self.sim.recompute_navmesh(
             self.sim.pathfinder,
             self.navmesh_settings,
