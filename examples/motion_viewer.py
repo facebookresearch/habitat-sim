@@ -126,6 +126,20 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             self.redraw()
             return
 
+        elif key == pressed.N:
+            if event.modifiers == mod.SHIFT:
+                logger.info("Command: recompute navmesh")
+                self.navmesh_config_and_recompute()
+            else:
+                if self.sim.pathfinder.is_loaded:
+                    self.sim.navmesh_visualization = not self.sim.navmesh_visualization
+                    logger.info("Command: toggle navmesh")
+                else:
+                    logger.warn("Warning: recompute navmesh first")
+            event.accepted = True
+            self.redraw()
+            return
+
         elif key == pressed.R:
             self.remove_selector_obj()
             super().reconfigure_sim()
@@ -366,7 +380,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
 
     def navmesh_config_and_recompute(self) -> None:
         """
-        Overwrite the NavMesh function to compute mor restricted bounds for character.
+        Overwrite the NavMesh function to compute more restricted bounds for character.
         """
         art_obj_mgr, art_cache = self.sim.get_articulated_object_manager(), {}
         rgd_obj_mgr, rgd_cache = self.sim.get_rigid_object_manager(), {}
