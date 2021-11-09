@@ -195,8 +195,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
 
         # Testing!
         elif key == pressed.EQUAL:
-            self.fm_demo.update_pathfollower()
-            self.fm_demo.update_pathfollower()
+            self.fm_demo.update_pathfollower(step_size=2)
 
         super().key_press_event(event)
 

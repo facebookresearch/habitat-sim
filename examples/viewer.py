@@ -520,7 +520,7 @@ class HabitatSimInteractiveViewer(Application):
         elif self.mouse_interaction == MouseMode.GRAB:
             self.mouse_interaction = MouseMode.LOOK
 
-    def navmesh_config_and_recompute(self) -> habitat_sim.NavMeshSettings:
+    def navmesh_config_and_recompute(self) -> None:
         """
         This method is setup to be overridden in for setting config accessibility
         in inherited classes.

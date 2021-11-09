@@ -550,15 +550,20 @@ class FairmotionInterface:
 
         return False
 
-    # Place this when shortest path iw generated
+    # Place this when shortest path is generated
+    # TODO: - Clean up code, especially translation
+    #       - wrapping pose iterator with if's
+    #       - wrapping path timeline iterator with if's
+    #       - Rewrite NavMesh function
     def setup_pathfollower(self, path):
         """
-        Prepare lookup dicts for shortest_path timeline queries as well as the
-        model to move along the path.
+        Prepare REWRITE[lookup dicts for shortest_path timeline queries as well as the
+        model to move along the path.]
         """
         self.path_timeline = path.geodesic_distance
-        self.path_ptr = 0
+        self.path_ptr = 0.0
         self.path_points = path.points
+        self.path_follow_stepper = 0
         self.path_motion = amass.load(
             file="data/fairmotion/amass_test_data/CMU/CMU/02/02_01_poses.npz",
             bm_path="data/fairmotion/amass_test_data/smplh/male/model.npz",
@@ -569,23 +574,19 @@ class FairmotionInterface:
             filepath=self.user_metadata["urdf_path"], fixed_base=True
         )
         self.puck.motion_type = phy.MotionType.KINEMATIC
-        # TODO: Ask why the collision is possible.
-        self.puck.override_collision_group(phy.CollisionGroups.Noncollidable)
+        # TODO: Wait for Alex to implement collision groups for articulated objects
+        # self.puck.override_collision_group(phy.CollisionGroups.Noncollidable)
 
-        # initialize
-        self.path_follow_stepper = 0
-
-        # TODO: Correctly implement facing the character based on path vectors
-        self.puck.rotation = (
-            mn.Quaternion(mn.Vector3(path.points[1] - path.points[0]))
-            # * mn.Quaternion.rotation(mn.Deg(0), (mn.Vector3(path.points[1] - path.points[0])).normalized())
-        )
+        # Initialize coordinate position for pathfollower char
         self.puck.translation = path.points[0] + mn.Vector3(0.0, 1.0, 0.0)
 
-    def update_pathfollower(self):
+        # First update with step_size 0 to start character
+        self.update_pathfollower(step_size=0)
+
+    def update_pathfollower(self, step_size: int = 1):
         """
         When called, this method will update the position and orientation of the
-        path follower.
+        path follower. `step_size` is the amount of steps the path_follower should take on this update.
         """
         # Skip function
         if self.puck == None or self.path_points == None:
@@ -602,7 +603,6 @@ class FairmotionInterface:
             ],
             self.puck,
         )
-        print(f"curr_root_translate = {curr_root_translate}")
 
         # get next character pose attrs
         (
@@ -611,54 +611,58 @@ class FairmotionInterface:
             next_root_rotation,
         ) = self.convert_CMUamass_single_pose(
             self.path_motion.poses[
-                (self.path_follow_stepper + 1) % self.path_motion.num_frames()
+                (self.path_follow_stepper + step_size) % self.path_motion.num_frames()
             ],
             self.puck,
         )
-        print(f"next_root_translate = {next_root_translate}")
 
-        # get displacement of next from current, and get its length projected on unit vector of direction
-        delta_p = (next_root_translate - curr_root_translate).length()
-
+        # TODO: This is not accurate logic to get displacement between two keyframes. The displacement
+        #       is mostly never in the direction of the path so we are over estimating and taking
+        #       larger steps.
+        #
+        # SOLVE: Get displacement of next from current, and apply to rotation `look_at_quater
+        #        * mn.Quaternion.rotation(mn.Deg(180), mn.Vector3.y_axis())` to align it with the
+        #        direction the mocap char is facing. Then get the length of this vector projected
+        #        unit vector of path direction.
+        delta_P = (next_root_translate - curr_root_translate).length()
         path_points = self.path_points
-        segment_length = 0
+        segment_len = 0
 
-        # get orientation
+        # Find where we are in the timeline, and set approriate orientation to char, then set translation
         for i, _ in enumerate(path_points):
+
+            # NOTE: This can also be checked on 1st iteration instead of last: compare geodesic to path_ptr!
+            # If true, this means that the character has passed goal, reset path_ptr to 0.0 and i to 0
             if int(i) + 1 == len(path_points):
-                break
-            segment_length += mn.Vector3(path_points[i + 1] - path_points[i]).length()
-            if self.path_ptr < segment_length:
-                # TODO: Correctly implement facing the character based on path vectors
-                self.puck.rotation = (
-                    mn.Quaternion.rotation(
-                        mn.Deg(180),
-                        (mn.Vector3(path_points[i + 1] - path_points[i])).normalized(),
-                    )
-                    * mn.Quaternion(mn.Vector3(path_points[i + 1] - path_points[i]))
+                self.path_ptr = 0.0
+                i = 0
+
+            segment = mn.Vector3(path_points[i + 1] - path_points[i])
+            segment_len += segment.length()
+
+            # if path pointer has not passed a certain point in the path timeline, then we know its location range
+            if self.path_ptr < segment_len:
+
+                # compute Quaternion from target direction and extract rotation matrix
+                look_at_quater = mn.Quaternion.from_matrix(
+                    mn.Matrix4.look_at(
+                        mn.Vector3.zero_init(),
+                        mn.Vector3(path_points[i + 1] - path_points[i]),
+                        mn.Vector3.y_axis(),
+                    ).rotation()
+                )
+
+                # TODO: Face opposite direction
+                # NOTE: Adding `next_root_rotation * ` will include motion's root node rotations
+                self.puck.rotation = look_at_quater * mn.Quaternion.rotation(
+                    mn.Deg(180), mn.Vector3.y_axis()
                 )
                 self.puck.translation += (
                     mn.Vector3(path_points[i + 1] - path_points[i])
-                ).normalized() * delta_p
+                ).normalized() * delta_P
                 break
 
-            # dist_sum += mn.Vector3(path.points[i + 1] - path.points[i])
-
-    """
-    def navmesh_config_and_recompute(self) -> None:
-        ""
-        Overwrite the NavMesh function to compute mor restricted bounds for character.
-        ""
-        # TODO: Rewrite code.
-        # Original CODE
-        self.navmesh_settings = habitat_sim.NavMeshSettings()
-        self.navmesh_settings.set_defaults()
-        self.sim.recompute_navmesh(
-            self.sim.pathfinder,
-            self.navmesh_settings,
-            include_static_objects=False,
-        )
-    """
+        self.path_follow_stepper = self.path_follow_stepper + step_size
 
 
 class Preview(Enum):
