@@ -80,7 +80,7 @@ bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
   };
 
   // temp constructs
-  std::unordered_map<int, TempHM3DObject> objInstance;
+  std::map<int, TempHM3DObject> objInstance;
   std::map<int, TempHM3DRegion> regions;
   std::unordered_map<std::string, TempHM3DCategory> categories;
 
