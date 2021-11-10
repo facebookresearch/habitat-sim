@@ -12,6 +12,7 @@ import magnum as mn
 from fairmotion.core import motion
 from fairmotion.data import amass
 from fairmotion.ops import conversions
+from fairmotion.ops import motion as motion_ops
 
 import habitat_sim.physics as phy
 from habitat_sim.logging import LoggingContext, logger
@@ -568,14 +569,15 @@ class FairmotionInterface:
         """
         Prepare the pathfollowing character and any data needed to execute the update function.
         """
+        if self.puck is not None:
+            self.art_obj_mgr.remove_object_by_handle(self.puck.handle)
+            self.puck = None
+
         self.path_points = path.points
         self.full_path_length = path.geodesic_distance
         self.path_ptr: float = 0.0  # tracks position along path
         self.path_motion_stepper: int = 0  # tracks pose number
-        self.path_motion = amass.load(
-            file="data/fairmotion/amass_test_data/CMU/CMU/02/02_01_poses.npz",
-            bm_path="data/fairmotion/amass_test_data/smplh/male/model.npz",
-        )
+        self.path_motion = Move.walk_to_walk
 
         # Load a model to follow path as puck
         self.puck = self.art_obj_mgr.add_articulated_object_from_urdf(
@@ -632,6 +634,8 @@ class FairmotionInterface:
         #        * mn.Quaternion.rotation(mn.Deg(180), mn.Vector3.y_axis())` to align it with the
         #        direction the mocap char is facing. Then get the length of this vector projected
         #        unit vector of path direction.
+        #
+        #        This also inhibits the application of the root_T for a smoother motion without some insane geometry.
         delta_P = (next_root_T - curr_root_T).length()
         path_points = self.path_points
         segment_len = 0
@@ -674,6 +678,24 @@ class FairmotionInterface:
         # Currently, this stepper never loops, it isn't necessary because of the modulus usage.
         # I can loop it in ln 636's if-statement, but I would have to set it to ()
         self.path_motion_stepper = self.path_motion_stepper + step_size
+
+
+# NOTE: This class will be very useful for holding state motions, but certain motions are
+#       missing from the CMU motion data folders (specifically Subject #16 missing slow
+#       walk to stop data)
+class Move:
+    """
+    The Move class is collection of stats that will hold the different movement motions
+    for the character to use when following a path. The character is left-footed so that
+    is our reference for with step the motions assume first.
+    """
+
+    motion = amass.load(
+        file="data/fairmotion/amass_test_data/CMU/CMU/02/02_01_poses.npz",
+        bm_path="data/fairmotion/amass_test_data/smplh/male/model.npz",
+    )
+
+    walk_to_walk = motion_ops.cut(motion, 147, 279)
 
 
 class Preview(Enum):
