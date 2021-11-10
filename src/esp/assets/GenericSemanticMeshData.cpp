@@ -63,9 +63,13 @@ Cr::Containers::Optional<InstancePlyData> parsePly(
   /* Open the file. On error the importer already prints a diagnostic message,
      so no need to do that here. The importer implicitly converts per-face
      attributes to per-vertex, so nothing extra needs to be done. */
+
   Cr::Containers::Optional<Mn::Trade::MeshData> meshData;
-  if (!importer.openFile(plyFile) || !(meshData = importer.mesh(0)))
+  if (!importer.openFile(plyFile) || !(meshData = importer.mesh(0))) {
+    ESP_ERROR() << "Unable to import semantic .ply file named :" << plyFile
+                << ". Aborting.";
     return Cr::Containers::NullOpt;
+  }
 
   /* Copy attributes to the vectors. Positions and indices can be copied
      directly using the convenience APIs as we store them in the full type.
@@ -162,16 +166,26 @@ Cr::Containers::Optional<InstancePlyData> parsePly(
       // region to move all verts whose region is
 
       int maxRegion = -1;
+      int maxSemanticID = -1;
+      // temporary map keyed by semantic ID and value being actual color for
+      // that ID. We need this since we do not know how many, if any, unique
+      // colors that do not have Semantic Mappings exist on the mesh
+      std::unordered_map<int, Mn::Vector3ub> tmpDestSSDColorMap;
       for (int i = 0; i < numSSDObjs; ++i) {
         const auto& ssdObj =
             static_cast<scene::HM3DObjectInstance&>(*ssdObjs[i]);
-        const uint32_t colorInt = colorAsInt(ssdObj.getColor());
+        const Mn::Vector3ub ssdColor = ssdObj.getColor();
+        const uint32_t colorInt = colorAsInt(ssdColor);
+        int semanticID = ssdObj.getSemanticID();
         int regionIDX =
             static_cast<scene::HM3DSemanticRegion&>(*ssdObj.region())
                 .getIndex();
-        tmpColorMapToSSDidAndRegionIndex[colorInt] = {ssdObj.getSemanticID(),
-                                                      regionIDX};
+        tmpColorMapToSSDidAndRegionIndex[colorInt] = {semanticID, regionIDX};
+
+        tmpDestSSDColorMap[semanticID] = ssdColor;
+
         maxRegion = Mn::Math::max(regionIDX, maxRegion);
+        maxSemanticID = Mn::Math::max(semanticID, maxSemanticID);
       }
 
       // increment maxRegion to use for unknown regions whose colors are not
@@ -181,7 +195,7 @@ Cr::Containers::Optional<InstancePlyData> parsePly(
       // rebuild objectIDs vector (objectID per vertex) based on
       // per vertex colors mapped
       // 1st semantic ID for colors not found in SSD
-      std::size_t nonSSDObjID = tmpColorMapToSSDidAndRegionIndex.size();
+      std::size_t nonSSDObjID = maxSemanticID + 1;
 
       // map regionIDs to affected verts using semantic color provided in
       // SemanticScene, as specified in SSD file.
@@ -193,11 +207,6 @@ Cr::Containers::Optional<InstancePlyData> parsePly(
       // the nonSSDObjID for new colors can be incremented appropriately
       // not using set to avoid extra include
       std::unordered_map<uint32_t, int> nonSSDVertColors;
-
-      // temporary map keyed by semantic ID and value being actual color for
-      // that ID. We need this since we do not know how many, if any, unique
-      // colors that do not have Semantic Mappings exist on the mesh
-      std::unordered_map<int, Mn::Vector3ub> tmpDestSSDColorMap;
 
       // only go through all verts one time
       // derive semantic ID and color and region/room ID for culling
@@ -230,11 +239,13 @@ Cr::Containers::Optional<InstancePlyData> parsePly(
           // map holds that color's nonSSDObjID
           semanticID = nonSSDClrRes.first->second;
           regionID = maxRegion;
+
+          // color for given semantic ID - only necessary to add for unknown
+          // colors
+          tmpDestSSDColorMap[semanticID] = meshColor;
         }
         // semantic ID for vertex
         data.objectIds[vertIdx] = semanticID;
-        // color for
-        tmpDestSSDColorMap[semanticID] = meshColor;
         // partition Ids for each vertex, for multi-mesh construction.
         data.partitionIds[vertIdx] = regionID;
       }
@@ -262,8 +273,8 @@ Cr::Containers::Optional<InstancePlyData> parsePly(
                   stridedArrayView(colorsThatBecomeTheColorMap)));
 
       objectIds = std::move(out.first);
-      colorMapToUse.assign(colorsThatBecomeTheColorMap.begin(),
-                           colorsThatBecomeTheColorMap.end());
+      auto clrMapView = colorsThatBecomeTheColorMap.prefix(out.second);
+      colorMapToUse.assign(clrMapView.begin(), clrMapView.end());
 
       data.objPartitionsFromSSD = false;
     }
