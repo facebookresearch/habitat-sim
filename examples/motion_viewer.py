@@ -127,20 +127,6 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             self.redraw()
             return
 
-        elif key == pressed.N:
-            if event.modifiers == mod.SHIFT:
-                logger.info("Command: recompute navmesh")
-                self.navmesh_config_and_recompute()
-            else:
-                if self.sim.pathfinder.is_loaded:
-                    self.sim.navmesh_visualization = not self.sim.navmesh_visualization
-                    logger.info("Command: toggle navmesh")
-                else:
-                    logger.warn("Warning: recompute navmesh first")
-            event.accepted = True
-            self.redraw()
-            return
-
         elif key == pressed.R:
             self.remove_selector_obj()
             super().reconfigure_sim()
