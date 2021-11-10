@@ -81,6 +81,9 @@ class FairmotionInterface:
             self.set_data(urdf_path=urdf_path, amass_path=amass_path, bm_path=bm_path)
             self.save_metadata("default")
 
+        # TESTING
+        self.last_position = [0.0, 0.0, 0.0]
+
         # positional offsets
         self.set_transform_offsets(
             rotate_offset=self.user_metadata["rotation"],
@@ -249,6 +252,9 @@ class FairmotionInterface:
         )
         logger.info("Done Loading.")
 
+        # TESTING
+        print(f"{[joint.name for joint in self.motion.skel.joints]}")
+
     def load_model(self) -> None:
         """
         Loads the model currently set by metadata.
@@ -290,8 +296,7 @@ class FairmotionInterface:
         if not self.model or not self.motion:
             return
 
-        # This function tracks is_reversed and changes the direction of
-        # the motion accordingly.
+        # tracks is_reversed and changes the direction of the motion accordingly.
         def sign(i):
             return -1 * i if self.is_reversed else i
 
@@ -364,6 +369,15 @@ class FairmotionInterface:
                 T = pose.get_transform(pose_joint_index, local=True)
                 if joint_type == phy.JointType.Spherical:
                     Q, _ = conversions.T2Qp(T)
+
+            # TESTING
+            if joint_name == "lankle":
+                print(
+                    f"Lankle Pos: {pose.get_transform(pose_joint_index, local=False)[0, 3]} keyframe = {self.motion_stepper}"
+                )
+                self.last_position = pose.get_transform(pose_joint_index, local=False)[
+                    1, 3
+                ]
 
             new_pose += list(Q)
         return new_pose, root_translation, root_rotation
@@ -649,12 +663,12 @@ class FairmotionInterface:
 
                 # TODO: Face opposite direction
                 # NOTE: Adding `next_root_rotation * ` will include motion's root node rotations
-                self.puck.rotation = look_at_quater * mn.Quaternion.rotation(
-                    mn.Deg(180), mn.Vector3.y_axis()
-                )
+                self.puck.rotation = look_at_quater
                 # get normalized vector in segment direction and multiply by change in motion position
                 self.puck.translation += (mn.Vector3(segment)).normalized() * delta_P
                 self.path_ptr += delta_P
+                self.puck.joint_positions = curr_pose
+                self.puck.rotation = self.puck.rotation * curr_root_R
                 break
 
         # Currently, this stepper never loops, it isn't necessary because of the modulus usage.
