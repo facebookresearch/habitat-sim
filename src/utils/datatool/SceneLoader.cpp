@@ -9,6 +9,7 @@
 #include <vector>
 
 #include <Corrade/Utility/Directory.h>
+#include <Corrade/Utility/FormatStl.h>
 #include <sophus/so3.hpp>
 #include "esp/assets/GenericSemanticMeshData.h"
 #include "esp/core/Esp.h"
@@ -46,9 +47,16 @@ MeshData SceneLoader::load(const AssetInfo& info) {
         importer = importerManager_.loadAndInstantiate("StanfordImporter"));
     // dummy colormap
     std::vector<Magnum::Vector3ub> dummyColormap;
+    Cr::Containers::Optional<Mn::Trade::MeshData> meshData;
+
+    ESP_CHECK(
+        (importer->openFile(info.filepath) && (meshData = importer->mesh(0))),
+        Cr::Utility::formatString(
+            "Error loading instance mesh data from file {}", info.filepath));
+
     std::vector<GenericSemanticMeshData::uptr> instanceMeshData =
-        GenericSemanticMeshData::fromPLY(*importer, info.filepath, false,
-                                         dummyColormap);
+        GenericSemanticMeshData::buildSemanticMeshData(meshData, info.filepath,
+                                                       false, dummyColormap);
 
     const auto& vbo = instanceMeshData[0]->getVertexBufferObjectCPU();
     const auto& cbo = instanceMeshData[0]->getColorBufferObjectCPU();

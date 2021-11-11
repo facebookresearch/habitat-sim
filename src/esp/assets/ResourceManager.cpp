@@ -1243,12 +1243,23 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
   const std::string& filename = info.filepath;
   CORRADE_INTERNAL_ASSERT(resourceDict_.count(filename) == 0);
   Cr::Containers::Pointer<Importer> importer;
+
+  // TODO : support glb along with ply files as semantic meshes
+
   CORRADE_INTERNAL_ASSERT_OUTPUT(
       importer = importerManager_.loadAndInstantiate("StanfordImporter"));
 
+  /* Open the file. On error the importer already prints a diagnostic message,
+     so no need to do that here. The importer implicitly converts per-face
+     attributes to per-vertex, so nothing extra needs to be done. */
+  Cr::Containers::Optional<Mn::Trade::MeshData> meshData;
+  ESP_CHECK((importer->openFile(filename) && (meshData = importer->mesh(0))),
+            Cr::Utility::formatString(
+                "Error loading instance mesh data from file {}", filename));
+
   std::vector<GenericSemanticMeshData::uptr> instanceMeshes =
-      GenericSemanticMeshData::fromPLY(
-          *importer, filename, info.splitInstanceMesh,
+      GenericSemanticMeshData::buildSemanticMeshData(
+          meshData, filename, info.splitInstanceMesh,
           semanticColorMapBeingUsed_, semanticScene_);
 
   ESP_CHECK(!instanceMeshes.empty(),

@@ -41,10 +41,11 @@ class GenericSemanticMeshData : public BaseMesh {
   ~GenericSemanticMeshData() override = default;
 
   /**
-   * @brief Load a .ply file into one ore more @ref GenericSemanticMeshData,
-   * splitting the result into multiples if specified and if the source file's
-   * objectIds are compatibly configured to do so.
-   * @param importer The importer to use to load the .ply file
+   * @brief Build one ore more @ref GenericSemanticMeshData based on the
+   * contents of the passed @p meshData, splitting the result into multiples if
+   * specified and if the source file's objectIds are compatibly configured to
+   * do so.
+   * @param meshData The imported meshData.
    * @param plyFile Fully qualified filename of .ply file to load
    * @param splitMesh Whether or not the resultant mesh should be split into
    * multiple components based on objectIds, for frustum culling.
@@ -52,9 +53,10 @@ class GenericSemanticMeshData : public BaseMesh {
    * @return vector holding one or more mesh results from the .ply file.
    */
 
-  static std::vector<std::unique_ptr<GenericSemanticMeshData>> fromPLY(
-      Magnum::Trade::AbstractImporter& importer,
-      const std::string& plyFile,
+  static std::vector<std::unique_ptr<GenericSemanticMeshData>>
+  buildSemanticMeshData(
+      const Corrade::Containers::Optional<Magnum::Trade::MeshData>& meshData,
+      const std::string& semanticFilename,
       bool splitMesh,
       std::vector<Magnum::Vector3ub>& colorMapToUse,
       const std::shared_ptr<scene::SemanticScene>& semanticScene = nullptr);
