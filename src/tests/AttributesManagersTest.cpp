@@ -80,7 +80,7 @@ struct AttributesManagersTest : Cr::TestSuite::Tester {
    * @param handle the handle of the attributes to remove
    */
   template <typename T>
-  void testRemoveAttributesBuiltJSONString(
+  void testRemoveAttributesBuiltByJSONString(
       std::shared_ptr<T> mgr,
       const std::string& tmpltName = "new_template_from_json");
 
@@ -126,8 +126,7 @@ struct AttributesManagersTest : Cr::TestSuite::Tester {
    * that registration won't fail.
    */
 
-  // ignore for physics attributes
-
+  // specialization so we can ignore this for physics attributes
   void processTemplateRenderAsset(
       std::shared_ptr<AttrMgrs::PhysicsAttributesManager> mgr,
       std::shared_ptr<Attrs::PhysicsManagerAttributes> newAttrTemplate0,
@@ -284,7 +283,7 @@ std::shared_ptr<U> AttributesManagersTest::testBuildAttributesFromJSONString(
 }  // testBuildAttributesFromJSONString
 
 template <typename T>
-void AttributesManagersTest::testRemoveAttributesBuiltJSONString(
+void AttributesManagersTest::testRemoveAttributesBuiltByJSONString(
     std::shared_ptr<T> mgr,
     const std::string& tmpltName) {
   if (mgr->getObjectLibHasHandle(tmpltName)) {
@@ -686,8 +685,8 @@ void AttributesManagersTest::testPhysicsAttrVals(
                             Magnum::Quaternion({5.2f, 6.2f, 7.2f}, 0.2f));
   // remove added template
   // remove json-string built attributes added for test
-  testRemoveAttributesBuiltJSONString(physicsAttributesManager_,
-                                      physMgrAttr->getHandle());
+  testRemoveAttributesBuiltByJSONString(physicsAttributesManager_,
+                                        physMgrAttr->getHandle());
 }
 
 void AttributesManagersTest::testPhysicsJSONLoad() {
@@ -803,8 +802,8 @@ void AttributesManagersTest::testLightAttrVals(
                             Magnum::Quaternion({0.2f, 0.3f, 0.4f}, 0.1f));
 
   // remove json-string built attributes added for test
-  testRemoveAttributesBuiltJSONString(lightLayoutAttributesManager_,
-                                      lightLayoutAttr->getHandle());
+  testRemoveAttributesBuiltByJSONString(lightLayoutAttributesManager_,
+                                        lightLayoutAttr->getHandle());
 }
 void AttributesManagersTest::testLightJSONLoad() {
   // build JSON sample config
@@ -1028,8 +1027,8 @@ void AttributesManagersTest::testSceneInstanceAttrVals(
                             Magnum::Quaternion({9.22f, 9.26f, 0.21f}, 1.25f));
 
   // remove json-string built attributes added for test
-  testRemoveAttributesBuiltJSONString(sceneAttributesManager_,
-                                      sceneAttr->getHandle());
+  testRemoveAttributesBuiltByJSONString(sceneAttributesManager_,
+                                        sceneAttr->getHandle());
 }
 
 void AttributesManagersTest::testSceneInstanceJSONLoad() {
@@ -1171,7 +1170,7 @@ void AttributesManagersTest::testSceneInstanceJSONLoad() {
   // testSceneInstanceAttrVals(sceneAttr2);
   // ESP_DEBUG() << "Tested saved sceneAttr2 :";
   // delete file-based config
-  Cr::Utility::Directory::rm(newAttrName);
+  // Cr::Utility::Directory::rm(newAttrName);
 
 }  // AttributesManagers_SceneInstanceJSONLoadTest
 
@@ -1209,8 +1208,8 @@ void AttributesManagersTest::testStageAttrVals(
                             Magnum::Quaternion({1.5f, 2.6f, 3.7f}, 0.1f));
 
   // remove json-string built attributes added for test
-  testRemoveAttributesBuiltJSONString(stageAttributesManager_,
-                                      stageAttr->getHandle());
+  testRemoveAttributesBuiltByJSONString(stageAttributesManager_,
+                                        stageAttr->getHandle());
 }  // AttributesManagersTest::testStageAttrVals
 void AttributesManagersTest::testStageJSONLoad() {
   // build JSON sample config
@@ -1326,8 +1325,8 @@ void AttributesManagersTest::testObjectAttrVals(
                             Magnum::Quaternion({5.5f, 6.6f, 7.7f}, 0.7f));
 
   // remove json-string built attributes added for test
-  testRemoveAttributesBuiltJSONString(objectAttributesManager_,
-                                      objAttr->getHandle());
+  testRemoveAttributesBuiltByJSONString(objectAttributesManager_,
+                                        objAttr->getHandle());
 
 }  // AttributesManagersTest::testObjectAttrVals
 
