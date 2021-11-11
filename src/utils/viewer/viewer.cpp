@@ -1661,20 +1661,20 @@ void Viewer::mousePressEvent(MouseEvent& event) {
           simulator_->getAgentObservation(defaultAgentId_, sensorId,
                                           observation);
 
-          uint32_t bufferIdx =
-              4 * (viewportPoint[0] +
-                   (observation.buffer->shape[1] *
-                    (observation.buffer->shape[0] - viewportPoint[1])));
-          uint32_t objIdx = 0;
+          uint32_t desiredIdx =
+              (viewportPoint[0] +
+               (observation.buffer->shape[1] *
+                (observation.buffer->shape[0] - viewportPoint[1])));
+          uint32_t objIdx = Corrade::Containers::arrayCast<int>(
+              observation.buffer->data)[desiredIdx];
+          // TODO : Change core::buffer to magnum image, then we can simplify
+          // access uint32_t objIdx =
+          // observation.buffer->pixels<uint32_t>().flipped<0>()[viewportPoint[1]][viewportPoint[0]];
 
-          // little endian
-          for (int n = sizeof(objIdx) - 1; n >= 0; --n) {
-            objIdx = (objIdx << 8) + observation.buffer->data[n + bufferIdx];
-          }
-          // subtract 1 to align
+          // subtract 1 to align with semanticObject array
           --objIdx;
           std::string tmpStr = "Unknown";
-          if (objIdx < semanticObjects.size()) {
+          if ((objIdx >= 0) && (objIdx < semanticObjects.size())) {
             tmpStr = semanticObjects[objIdx]->id();
           }
           semanticTag_ =
