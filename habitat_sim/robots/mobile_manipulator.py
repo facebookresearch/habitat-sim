@@ -41,12 +41,14 @@ class MobileManipulatorParams:
         resets to 0.
     :property gripper_init_params: The starting joint positions of the gripper. If None,
         resets to 0.
+    :property leg_init_params: The starting joint positions of the leg joints. If None,
+        resets to 0.
 
     :property ee_offset: The 3D offset from the end-effector link to the true
         end-effector position.
     :property ee_link: The Habitat Sim link ID of the end-effector.
-    :property ee_constraint: A (2, N) shaped array specifying the upper and
-        lower limits for each end-effector joint where N is the arm DOF.
+    :property ee_constraint: A (2, 3) shaped array specifying the upper and
+        lower limits for the 3D end-effector position.
 
     :property cameras: The cameras and where they should go. The key is the
         prefix to match in the sensor names. For example, a key of `"robot_head"`
@@ -79,8 +81,6 @@ class MobileManipulatorParams:
 
     arm_joints: List[int]
     gripper_joints: List[int]
-    wheel_joints: Optional[List[int]]
-    leg_joints: Optional[List[int]]
 
     arm_init_params: Optional[List[float]]
     gripper_init_params: Optional[List[float]]
@@ -99,16 +99,20 @@ class MobileManipulatorParams:
     arm_mtr_vel_gain: float
     arm_mtr_max_impulse: float
 
-    wheel_mtr_pos_gain: Optional[float]
-    wheel_mtr_vel_gain: Optional[float]
-    wheel_mtr_max_impulse: Optional[float]
-
-    leg_mtr_pos_gain: Optional[float]
-    leg_mtr_vel_gain: Optional[float]
-    leg_mtr_max_impulse: Optional[float]
-
     base_offset: mn.Vector3
     base_link_names: Set[str]
+
+    wheel_joints: Optional[List[int]] = None
+    leg_joints: Optional[List[int]] = None
+    leg_init_params: Optional[List[float]] = None
+
+    wheel_mtr_pos_gain: Optional[float] = None
+    wheel_mtr_vel_gain: Optional[float] = None
+    wheel_mtr_max_impulse: Optional[float] = None
+
+    leg_mtr_pos_gain: Optional[float] = None
+    leg_mtr_vel_gain: Optional[float] = None
+    leg_mtr_max_impulse: Optional[float] = None
 
 
 class MobileManipulator(RobotInterface):
@@ -161,6 +165,10 @@ class MobileManipulator(RobotInterface):
             self.params.arm_init_params = [
                 0 for i in range(len(self.params.arm_joints))
             ]
+        if self.params.leg_init_params is None and self.params.leg_joints:
+            self.params.leg_init_params = [
+                0 for i in range(len(self.params.leg_joints))
+            ]
 
     def reconfigure(self) -> None:
         """Instantiates the robot the scene. Loads the URDF, sets initial state of parameters, joints, motors, etc..."""
@@ -201,6 +209,20 @@ class MobileManipulator(RobotInterface):
             # pylint: disable=not-an-iterable
             for i in self.params.wheel_joints:
                 self.sim_obj.update_joint_motor(self.joint_motors[i][0], jms)
+
+        # set correct gains for legs
+        if self.params.leg_joints is not None:
+            jms = JointMotorSettings(
+                0,  # position_target
+                self.params.leg_mtr_pos_gain,  # position_gain
+                0,  # velocity_target
+                self.params.leg_mtr_vel_gain,  # velocity_gain
+                self.params.leg_mtr_max_impulse,  # max_impulse
+            )
+            # pylint: disable=not-an-iterable
+            for i in self.params.leg_joints:
+                self.sim_obj.update_joint_motor(self.joint_motors[i][0], jms)
+            self.leg_joint_pos = self.params.leg_init_params
 
         # set initial states and targets
         self.arm_joint_pos = self.params.arm_init_params
@@ -254,6 +276,8 @@ class MobileManipulator(RobotInterface):
         self.sim_obj.clear_joint_states()
 
         self.arm_joint_pos = self.params.arm_init_params
+        if self.params.leg_init_params:
+            self.leg_joint_pos = self.params.leg_init_params
         self._fix_joint_values = None
         self.gripper_joint_pos = self.params.gripper_init_params
 
@@ -381,7 +405,7 @@ class MobileManipulator(RobotInterface):
     @arm_joint_pos.setter
     def arm_joint_pos(self, ctrl: List[float]):
         """Kinematically sets the arm joints and sets the motors to target."""
-        self._validate_arm_ctrl_input(ctrl)
+        self._validate_ctrl_input(ctrl, self.params.arm_joints)
 
         joint_positions = self.sim_obj.joint_positions
 
@@ -390,13 +414,35 @@ class MobileManipulator(RobotInterface):
             joint_positions[self.joint_pos_indices[jidx]] = ctrl[i]
         self.sim_obj.joint_positions = joint_positions
 
-    def _validate_arm_ctrl_input(self, ctrl: List[float]):
+    @property
+    def leg_joint_pos(self) -> np.ndarray:
+        """Get the current arm joint positions."""
+        leg_pos_indices = list(
+            map(lambda x: self.joint_pos_indices[x], self.params.leg_joints)
+        )
+        return [self.sim_obj.joint_positions[i] for i in leg_pos_indices]
+
+    @leg_joint_pos.setter
+    def leg_joint_pos(self, ctrl: List[float]):
+        """Kinematically sets the arm joints and sets the motors to target."""
+        self._validate_ctrl_input(ctrl, self.params.leg_joints)
+
+        joint_positions = self.sim_obj.joint_positions
+
+        for i, jidx in enumerate(self.params.leg_joints):
+            self._set_motor_pos(jidx, ctrl[i])
+            joint_positions[self.joint_pos_indices[jidx]] = ctrl[i]
+        self.sim_obj.joint_positions = joint_positions
+
+    def _validate_ctrl_input(self, ctrl: List[float], joints: List[int]):
         """
         Raises an exception if the control input is NaN or does not match the
         joint dimensions.
         """
-        if len(ctrl) != len(self.params.arm_joints):
-            raise ValueError("Control dimension does not match joint dimension")
+        if len(ctrl) != len(joints):
+            raise ValueError(
+                f"Control dimension does not match joint dimension: {len(ctrl)} vs {len(joints)}"
+            )
         if np.any(np.isnan(ctrl)):
             raise ValueError("Control is NaN")
 
@@ -405,7 +451,7 @@ class MobileManipulator(RobotInterface):
         Will fix the arm to a desired position at every internal timestep. Can
         be used for kinematic arm control.
         """
-        self._validate_arm_ctrl_input(fix_arm_joint_pos)
+        self._validate_ctrl_input(fix_arm_joint_pos, self.params.arm_joints)
         self._fix_joint_values = fix_arm_joint_pos
         self.arm_joint_pos = fix_arm_joint_pos
 
@@ -419,7 +465,7 @@ class MobileManipulator(RobotInterface):
 
     @property
     def arm_motor_pos(self) -> np.ndarray:
-        """Get the current target of the arm joints motors."""
+        """Get the current target of the arm joint motors."""
         motor_targets = np.zeros(len(self.params.arm_init_params))
         for i, jidx in enumerate(self.params.arm_joints):
             motor_targets[i] = self._get_motor_pos(jidx)
@@ -428,9 +474,25 @@ class MobileManipulator(RobotInterface):
     @arm_motor_pos.setter
     def arm_motor_pos(self, ctrl: List[float]) -> None:
         """Set the desired target of the arm joint motors."""
-        self._validate_arm_ctrl_input(ctrl)
+        self._validate_ctrl_input(ctrl, self.params.arm_joints)
 
         for i, jidx in enumerate(self.params.arm_joints):
+            self._set_motor_pos(jidx, ctrl[i])
+
+    @property
+    def leg_motor_pos(self) -> np.ndarray:
+        """Get the current target of the leg joint motors."""
+        motor_targets = np.zeros(len(self.params.leg_init_params))
+        for i, jidx in enumerate(self.params.leg_joints):
+            motor_targets[i] = self._get_motor_pos(jidx)
+        return motor_targets
+
+    @leg_motor_pos.setter
+    def leg_motor_pos(self, ctrl: List[float]) -> None:
+        """Set the desired target of the leg joint motors."""
+        self._validate_ctrl_input(ctrl, self.params.leg_joints)
+
+        for i, jidx in enumerate(self.params.leg_joints):
             self._set_motor_pos(jidx, ctrl[i])
 
     def clip_ee_to_workspace(self, pos: np.ndarray) -> np.ndarray:
