@@ -166,11 +166,10 @@ Cr::Containers::Optional<InstancePlyData> parsePly(
       // region to move all verts whose region is
 
       int maxRegion = -1;
-      int maxSemanticID = -1;
       // temporary map keyed by semantic ID and value being actual color for
       // that ID. We need this since we do not know how many, if any, unique
       // colors that do not have Semantic Mappings exist on the mesh
-      std::unordered_map<int, Mn::Vector3ub> tmpDestSSDColorMap;
+      std::map<int, Mn::Vector3ub> tmpDestSSDColorMap;
       for (int i = 0; i < numSSDObjs; ++i) {
         const auto& ssdObj =
             static_cast<scene::HM3DObjectInstance&>(*ssdObjs[i]);
@@ -185,9 +184,9 @@ Cr::Containers::Optional<InstancePlyData> parsePly(
         tmpDestSSDColorMap[semanticID] = ssdColor;
 
         maxRegion = Mn::Math::max(regionIDX, maxRegion);
-        maxSemanticID = Mn::Math::max(semanticID, maxSemanticID);
       }
-
+      // find largest key in map
+      int maxSemanticID = tmpDestSSDColorMap.rbegin()->first;
       // increment maxRegion to use for unknown regions whose colors are not
       // mapped
       ++maxRegion;
@@ -254,7 +253,7 @@ Cr::Containers::Optional<InstancePlyData> parsePly(
       // provided semantic IDs (so that ID is IDX of semantic color in map) and
       // any overflow colors uniquely map 1-to-1 to an unmapped semantic ID as
       // their index.
-      colorMapToUse.resize(tmpDestSSDColorMap.size());
+      colorMapToUse.resize(tmpDestSSDColorMap.rbegin()->first + 1);
       for (const auto& elem : tmpDestSSDColorMap) {
         colorMapToUse[elem.first] = elem.second;
       }
