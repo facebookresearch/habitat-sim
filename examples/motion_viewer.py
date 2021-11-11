@@ -107,7 +107,8 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
                 logger.warn("Warning: pathfinder not initialized, recompute navmesh")
             else:
                 logger.info("Command: shortest path between two random points")
-                self.find_short_path_from_two_points()
+                path = self.find_short_path_from_two_points()
+                self.fm_demo.setup_pathfollower(path)
 
         elif key == pressed.K:
             # Toggle Key Frames
@@ -326,7 +327,9 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
 
         self.selected_mocap_char = None
 
-    def find_short_path_from_two_points(self):
+    def find_short_path_from_two_points(
+        self, sample1=None, sample2=None
+    ) -> habitat_sim.ShortestPath():
         """
         Finds two random points on the NavMesh, calculates a shortest path between
         the two, and creates a trajectory object to visualize the path.
@@ -337,8 +340,17 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             )
         self.path_traj_obj_id = -1
 
-        sample1 = self.sim.pathfinder.get_random_navigable_point()
-        sample2 = self.sim.pathfinder.get_random_navigable_point()
+        while any([sample1 is None, sample2 is None]):
+            sample1 = sample1 or self.sim.pathfinder.get_random_navigable_point()
+            sample2 = sample2 or self.sim.pathfinder.get_random_navigable_point()
+
+            # constraint points to be on first floor
+            if sample1[1] != sample2[1] or sample1[1] > 2:
+                logger.warn(
+                    "Warning: points are out of acceptable area, replacing with randoms"
+                )
+                sample1, sample2 = None, None
+        print(sample1, sample2)
 
         path = habitat_sim.ShortestPath()
         path.requested_start = sample1
@@ -364,6 +376,8 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             points=self.path_points,
             radius=0.01,
         )
+
+        return path
 
     def navmesh_config_and_recompute(self) -> None:
         """
@@ -466,7 +480,6 @@ Key Commands:
 
     Utilities:
     'r':        Reset the simulator with the most recently loaded scene and default fairmotion character.
-    'j':        Randomly choose two points on the NavMesh and generate|display the shortest path between the two.
 
     Object Interactions:
     SPACE:      Toggle physics simulation on/off.
@@ -478,6 +491,7 @@ Key Commands:
     Fairmotion Interface:
     'f':        Load model with current motion data.
                 [shft] Hide model.
+    'j':        Load model to follow a path between two randomliy chosen pointsRandomly choose two points.
     'k':        Toggle key frame preview of loaded motion.
     '/':        Set motion to play in reverse.
     'l':        Fetch and load data from a file give by the user's input.

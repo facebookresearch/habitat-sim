@@ -39,7 +39,7 @@ class FairmotionInterface:
         bm_path=None,
         metadata_file=None,
     ) -> None:
-
+        # general interface attrs
         LoggingContext.reinitialize_from_env()
         self.sim = sim
         self.art_obj_mgr = self.sim.get_articulated_object_manager()
@@ -51,17 +51,22 @@ class FairmotionInterface:
         self.motion_stepper = 1
         self.rotation_offset: Optional[mn.Quaternion] = None
         self.translation_offset: Optional[mn.Vector3] = None
+        self.is_reversed = False
+        self.activity: Activity = Activity.NONE
 
+        # key frame attrs
         self.key_frames = None
         self.key_frame_models = []
-        self.preview_mode = Preview.OFF
+        self.preview_mode: Preview = Preview.OFF
         self.traj_ids: List[int] = []
-        self.is_reversed = False
+
         self.setup_default_metadata()
 
         # path follower attrs
-        self.puck: Optional[phy.ManagedArticulatedObject] = None
+        self.model: Optional[phy.ManagedArticulatedObject] = None
         self.path_points: Optional[List[mn.Vector3]] = None
+
+        #
 
         if metadata_file:
             try:
@@ -253,9 +258,6 @@ class FairmotionInterface:
         )
         logger.info("Done Loading.")
 
-        # TESTING
-        print(f"{[joint.name for joint in self.motion.skel.joints]}")
-
     def load_model(self) -> None:
         """
         Loads the model currently set by metadata.
@@ -263,6 +265,7 @@ class FairmotionInterface:
         # loading text because the setup pauses here during motion load
         logger.info("Loading...")
         self.hide_model()
+        self.activity = Activity.MOTION_FOLLOW
 
         # keeps the model up to date with current data target
         data = self.user_metadata
@@ -294,7 +297,8 @@ class FairmotionInterface:
         Set the model state from the next frame in the motion trajectory. `repeat` is
         set to `True` when the user would like to repeat the last frame.
         """
-        if not self.model or not self.motion:
+        # precondition
+        if not all([self.model, self.motion, self.activity == Activity.MOTION_FOLLOW]):
             return
 
         # tracks is_reversed and changes the direction of the motion accordingly.
@@ -370,15 +374,6 @@ class FairmotionInterface:
                 T = pose.get_transform(pose_joint_index, local=True)
                 if joint_type == phy.JointType.Spherical:
                     Q, _ = conversions.T2Qp(T)
-
-            # TESTING
-            if joint_name == "lankle":
-                print(
-                    f"Lankle Pos: {pose.get_transform(pose_joint_index, local=False)[0, 3]} keyframe = {self.motion_stepper}"
-                )
-                self.last_position = pose.get_transform(pose_joint_index, local=False)[
-                    1, 3
-                ]
 
             new_pose += list(Q)
         return new_pose, root_translation, root_rotation
@@ -569,9 +564,8 @@ class FairmotionInterface:
         """
         Prepare the pathfollowing character and any data needed to execute the update function.
         """
-        if self.puck is not None:
-            self.art_obj_mgr.remove_object_by_handle(self.puck.handle)
-            self.puck = None
+        self.hide_model()
+        self.activity = Activity.PATH_FOLLOW
 
         self.path_points = path.points
         self.full_path_length = path.geodesic_distance
@@ -580,15 +574,15 @@ class FairmotionInterface:
         self.path_motion = Move.walk_to_walk
 
         # Load a model to follow path as puck
-        self.puck = self.art_obj_mgr.add_articulated_object_from_urdf(
+        self.model = self.art_obj_mgr.add_articulated_object_from_urdf(
             filepath=self.user_metadata["urdf_path"], fixed_base=True
         )
-        self.puck.motion_type = phy.MotionType.KINEMATIC
+        self.model.motion_type = phy.MotionType.KINEMATIC
         # TODO: Wait for Alex to implement collision groups for articulated objects
-        # self.puck.override_collision_group(phy.CollisionGroups.Noncollidable)
+        # self.model.override_collision_group(phy.CollisionGroups.Noncollidable)
 
         # Initialize coordinate position for pathfollower char
-        self.puck.translation = path.points[0] + mn.Vector3(0.0, 1.0, 0.0)
+        self.model.translation = path.points[0] + mn.Vector3(0.0, 1.0, 0.0)
 
         # First update with step_size 0 to start character
         self.update_pathfollower(step_size=0)
@@ -599,8 +593,10 @@ class FairmotionInterface:
         path follower. The `step_size` argument is the amount of steps the path_follower
         should take on this update.
         """
-        # Skip function
-        if self.puck is None or self.path_points is None:
+        # precondition
+        if not all(
+            [self.model, self.path_points, self.activity == Activity.PATH_FOLLOW]
+        ):
             return
 
         curr_frame = (self.path_motion_stepper) % self.path_motion.num_frames()
@@ -618,12 +614,12 @@ class FairmotionInterface:
 
         # get current character pose attrs
         curr_pose, curr_root_T, curr_root_R = self.convert_CMUamass_single_pose(
-            self.path_motion.poses[curr_frame], self.puck
+            self.path_motion.poses[curr_frame], self.model
         )
 
         # get next character pose attrs
         next_pose, next_root_T, next_root_R = self.convert_CMUamass_single_pose(
-            self.path_motion.poses[next_frame], self.puck
+            self.path_motion.poses[next_frame], self.model
         )
 
         # TODO: This is not accurate logic to get displacement between two keyframes. The displacement
@@ -646,7 +642,7 @@ class FairmotionInterface:
             # Wraps path on true, this means that the character has passed goal, reset path_ptr to 0.0 and i to 0
             if self.path_ptr > self.full_path_length:
                 self.path_ptr = 0.0
-                self.puck.translation = path_points[0] + mn.Vector3(0.0, 1.0, 0.0)
+                self.model.translation = path_points[0] + mn.Vector3(0.0, 1.0, 0.0)
                 i = 0
 
             # represents the segments of our timeline
@@ -667,12 +663,12 @@ class FairmotionInterface:
 
                 # TODO: Face opposite direction
                 # NOTE: Adding `next_root_rotation * ` will include motion's root node rotations
-                self.puck.rotation = look_at_quater
+                self.model.rotation = look_at_quater
                 # get normalized vector in segment direction and multiply by change in motion position
-                self.puck.translation += (mn.Vector3(segment)).normalized() * delta_P
+                self.model.translation += (mn.Vector3(segment)).normalized() * delta_P
                 self.path_ptr += delta_P
-                self.puck.joint_positions = curr_pose
-                self.puck.rotation = self.puck.rotation * curr_root_R
+                self.model.joint_positions = curr_pose
+                self.model.rotation = self.model.rotation * curr_root_R
                 break
 
         # Currently, this stepper never loops, it isn't necessary because of the modulus usage.
@@ -703,3 +699,9 @@ class Preview(Enum):
     KEYFRAMES = 1
     TRAJECTORY = 2
     ALL = 3
+
+
+class Activity(Enum):
+    NONE = 0
+    MOTION_FOLLOW = 1
+    PATH_FOLLOW = 2
