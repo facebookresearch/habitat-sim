@@ -1259,7 +1259,7 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
 
   std::vector<GenericSemanticMeshData::uptr> instanceMeshes =
       GenericSemanticMeshData::buildSemanticMeshData(
-          meshData, filename, info.splitInstanceMesh,
+          *meshData, filename, info.splitInstanceMesh,
           semanticColorMapBeingUsed_, semanticScene_);
 
   ESP_CHECK(!instanceMeshes.empty(),

@@ -273,7 +273,7 @@ In LOOK mode (default):
     Read Semantic ID and tag of clicked object (Currently only HM3D);
   SHIFT-RIGHT:
     Click a mesh to highlight it.
-  CTRL-RIGHT:m
+  CTRL-RIGHT:
     (With 'enable-physics') Click on an object to voxelize it and display the voxelization.
   WHEEL:
     Modify orthographic camera zoom/perspective camera FOV (+SHIFT for fine grained control)

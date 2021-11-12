@@ -86,8 +86,8 @@ void ReplicaSceneTest::testSemanticSceneOBB() {
                                 semanticFilename));
 
   static std::vector<std::unique_ptr<GenericSemanticMeshData>> meshVec =
-      GenericSemanticMeshData::buildSemanticMeshData(meshData, semanticFilename,
-                                                     false, dummyColormap);
+      GenericSemanticMeshData::buildSemanticMeshData(
+          *meshData, semanticFilename, false, dummyColormap);
   // verify result vector holds a mesh
   CORRADE_VERIFY(!meshVec.empty());
   // verify first entry exists

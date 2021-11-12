@@ -27,7 +27,7 @@ namespace assets {
 
 std::vector<std::unique_ptr<GenericSemanticMeshData>>
 GenericSemanticMeshData::buildSemanticMeshData(
-    const Cr::Containers::Optional<Mn::Trade::MeshData>& srcMeshData,
+    const Mn::Trade::MeshData& srcMeshData,
     const std::string& semanticFilename,
     const bool splitMesh,
     std::vector<Magnum::Vector3ub>& colorMapToUse,
@@ -38,31 +38,31 @@ GenericSemanticMeshData::buildSemanticMeshData(
      for extra error checking. */
 
   auto semanticData = GenericSemanticMeshData::create_unique();
-  semanticData->cpu_vbo_.resize(srcMeshData->vertexCount());
-  semanticData->cpu_ibo_.resize(srcMeshData->indexCount());
-  srcMeshData->positions3DInto(Cr::Containers::arrayCast<Mn::Vector3>(
+  semanticData->cpu_vbo_.resize(srcMeshData.vertexCount());
+  semanticData->cpu_ibo_.resize(srcMeshData.indexCount());
+  srcMeshData.positions3DInto(Cr::Containers::arrayCast<Mn::Vector3>(
       Cr::Containers::arrayView(semanticData->cpu_vbo_)));
-  srcMeshData->indicesInto(semanticData->cpu_ibo_);
+  srcMeshData.indicesInto(semanticData->cpu_ibo_);
 
   const std::string msgPrefix =
       Cr::Utility::formatString("Parsing Semantic File {} :", semanticFilename);
   /* Assuming colors are 8-bit RGB to avoid expanding them to float and then
      packing back */
-  ESP_CHECK(srcMeshData->hasAttribute(Mn::Trade::MeshAttribute::Color),
+  ESP_CHECK(srcMeshData.hasAttribute(Mn::Trade::MeshAttribute::Color),
             msgPrefix << "has no vertex colors defined, which are required.");
 
-  semanticData->cpu_cbo_.resize(srcMeshData->vertexCount());
+  semanticData->cpu_cbo_.resize(srcMeshData.vertexCount());
   const Mn::VertexFormat colorFormat =
-      srcMeshData->attributeFormat(Mn::Trade::MeshAttribute::Color);
+      srcMeshData.attributeFormat(Mn::Trade::MeshAttribute::Color);
   Cr::Containers::StridedArrayView1D<const Magnum::Color3ub> meshColors;
   if (colorFormat == Mn::VertexFormat::Vector3ubNormalized) {
     meshColors =
-        srcMeshData->attribute<Mn::Color3ub>(Mn::Trade::MeshAttribute::Color);
+        srcMeshData.attribute<Mn::Color3ub>(Mn::Trade::MeshAttribute::Color);
 
   } else if (colorFormat == Mn::VertexFormat::Vector4ubNormalized) {
     // retrieve RGB view of RGBA color data and copy into data
     meshColors = Cr::Containers::arrayCast<const Mn::Color3ub>(
-        srcMeshData->attribute<Mn::Color4ub>(Mn::Trade::MeshAttribute::Color));
+        srcMeshData.attribute<Mn::Color4ub>(Mn::Trade::MeshAttribute::Color));
 
   } else {
     ESP_CHECK(false,
@@ -75,7 +75,7 @@ GenericSemanticMeshData::buildSemanticMeshData(
 
   // Check we actually have object IDs before copying them, and that those are
   // in a range we expect them to be
-  semanticData->objectIds_.resize(srcMeshData->vertexCount());
+  semanticData->objectIds_.resize(srcMeshData.vertexCount());
   Cr::Containers::Array<Mn::UnsignedInt> objectIds;
 
   // Whether or not the objectIds were provided by the source file. If so then
@@ -91,8 +91,8 @@ GenericSemanticMeshData::buildSemanticMeshData(
   // This is used to map every vertex to a particular partition, for culling.
   std::vector<uint16_t> partitionIds;
 
-  if (srcMeshData->hasAttribute(Mn::Trade::MeshAttribute::ObjectId)) {
-    objectIds = srcMeshData->objectIdsAsArray();
+  if (srcMeshData.hasAttribute(Mn::Trade::MeshAttribute::ObjectId)) {
+    objectIds = srcMeshData.objectIdsAsArray();
     objIdsFromFile = true;
     objPartitionsFromSSD = false;
     const int maxVal = Mn::Math::max(objectIds);
@@ -177,10 +177,10 @@ GenericSemanticMeshData::buildSemanticMeshData(
 
       // map regionIDs to affected verts using semantic color provided in
       // SemanticScene, as specified in SSD file.
-      partitionIds.resize(srcMeshData->vertexCount());
+      partitionIds.resize(srcMeshData.vertexCount());
       // map semantic IDs corresponding to colors from SSD file to appropriate
       // verts (via index)
-      semanticData->objectIds_.resize(srcMeshData->vertexCount());
+      semanticData->objectIds_.resize(srcMeshData.vertexCount());
       // temporary holding structure to hold any non-SSD vert colors, so that
       // the nonSSDObjID for new colors can be incremented appropriately
       // not using set to avoid extra include
@@ -190,7 +190,7 @@ GenericSemanticMeshData::buildSemanticMeshData(
       // derive semantic ID and color and region/room ID for culling
       int regionID = 0;
       int semanticID = 0;
-      for (int vertIdx = 0; vertIdx < srcMeshData->vertexCount(); ++vertIdx) {
+      for (int vertIdx = 0; vertIdx < srcMeshData.vertexCount(); ++vertIdx) {
         Mn::Vector3ub meshColor = meshColors[vertIdx];
         // Convert color to an int @ vertex
         const uint32_t meshColorInt = colorAsInt(meshColor);

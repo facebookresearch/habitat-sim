@@ -55,7 +55,7 @@ MeshData SceneLoader::load(const AssetInfo& info) {
             "Error loading instance mesh data from file {}", info.filepath));
 
     std::vector<GenericSemanticMeshData::uptr> instanceMeshData =
-        GenericSemanticMeshData::buildSemanticMeshData(meshData, info.filepath,
+        GenericSemanticMeshData::buildSemanticMeshData(*meshData, info.filepath,
                                                        false, dummyColormap);
 
     const auto& vbo = instanceMeshData[0]->getVertexBufferObjectCPU();

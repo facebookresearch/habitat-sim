@@ -55,7 +55,7 @@ class GenericSemanticMeshData : public BaseMesh {
 
   static std::vector<std::unique_ptr<GenericSemanticMeshData>>
   buildSemanticMeshData(
-      const Corrade::Containers::Optional<Magnum::Trade::MeshData>& meshData,
+      const Magnum::Trade::MeshData& meshData,
       const std::string& semanticFilename,
       bool splitMesh,
       std::vector<Magnum::Vector3ub>& colorMapToUse,
