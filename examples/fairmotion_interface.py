@@ -14,6 +14,7 @@ from fairmotion.data import amass
 from fairmotion.ops import conversions
 from fairmotion.ops import motion as motion_ops
 
+import habitat_sim
 import habitat_sim.physics as phy
 from habitat_sim.logging import LoggingContext, logger
 
@@ -560,7 +561,7 @@ class FairmotionInterface:
 
         return False
 
-    def setup_pathfollower(self, path):
+    def setup_pathfollower(self, path: habitat_sim.ShortestPath()):
         """
         Prepare the pathfollowing character and any data needed to execute the update function.
         """
@@ -571,15 +572,14 @@ class FairmotionInterface:
         self.full_path_length = path.geodesic_distance
         self.path_ptr: float = 0.0  # tracks position along path
         self.path_motion_stepper: int = 0  # tracks pose number
-        self.path_motion = Move.walk_to_walk
 
-        # Load a model to follow path as puck
+        self.path_motion = Move.walk_to_walk.motion
+
+        # Load a model to follow path
         self.model = self.art_obj_mgr.add_articulated_object_from_urdf(
             filepath=self.user_metadata["urdf_path"], fixed_base=True
         )
         self.model.motion_type = phy.MotionType.KINEMATIC
-        # TODO: Wait for Alex to implement collision groups for articulated objects
-        # self.model.override_collision_group(phy.CollisionGroups.Noncollidable)
 
         # Initialize coordinate position for pathfollower char
         self.model.translation = path.points[0] + mn.Vector3(0.0, 1.0, 0.0)
@@ -632,7 +632,29 @@ class FairmotionInterface:
         #        unit vector of path direction.
         #
         #        This also inhibits the application of the root_T for a smoother motion without some insane geometry.
-        delta_P = (next_root_T - curr_root_T).length()
+
+        # vector of position change
+        delta_P = mn.Vector3(next_root_T - curr_root_T)
+        print("original", delta_P, delta_P.length())
+        print(
+            "walk direction",
+            (Move.walk_to_walk.direction),
+            (Move.walk_to_walk.direction).length(),
+        )
+        print(
+            "delta_P",
+            delta_P.projected(Move.walk_to_walk.direction),
+            (delta_P - delta_P.projected(Move.walk_to_walk.direction)).length(),
+        )
+
+        print(
+            "root_T",
+            delta_P - delta_P.projected(Move.walk_to_walk.direction),
+            (delta_P.projected(Move.walk_to_walk.direction)).length(),
+        )
+        root_T = delta_P - delta_P.projected(Move.walk_to_walk.direction)
+        delta_P = (delta_P.projected(Move.walk_to_walk.direction)).length()
+
         path_points = self.path_points
         segment_len = 0
 
@@ -661,24 +683,20 @@ class FairmotionInterface:
                     ).rotation()
                 )
 
-                # TODO: Face opposite direction
-                # NOTE: Adding `next_root_rotation * ` will include motion's root node rotations
+                # NOTE: Adding `next_root_translation` will include motion's root node rotations
                 self.model.rotation = look_at_quater
                 # get normalized vector in segment direction and multiply by change in motion position
-                self.model.translation += (mn.Vector3(segment)).normalized() * delta_P
+                self.model.translation += (
+                    mn.Vector3(segment)
+                ).normalized() * delta_P + root_T
                 self.path_ptr += delta_P
                 self.model.joint_positions = curr_pose
                 self.model.rotation = self.model.rotation * curr_root_R
                 break
 
-        # Currently, this stepper never loops, it isn't necessary because of the modulus usage.
-        # I can loop it in ln 636's if-statement, but I would have to set it to ()
         self.path_motion_stepper = self.path_motion_stepper + step_size
 
 
-# NOTE: This class will be very useful for holding state motions, but certain motions are
-#       missing from the CMU motion data folders (specifically Subject #16 missing slow
-#       walk to stop data)
 class Move:
     """
     The Move class is collection of stats that will hold the different movement motions
@@ -686,12 +704,37 @@ class Move:
     is our reference for with step the motions assume first.
     """
 
+    class Phase:
+        def __init__(self, motion, get_direction=False) -> None:
+            self.motion = motion
+            self.direction = None
+            print(len(motion.poses))
+
+            # get_direction will produce a unit vector from roots of the first and
+            # last frame, only useful with straight motions like walking or running.
+            if get_direction:
+                first = mn.Vector3(
+                    self.motion.poses[0].get_transform(ROOT, local=False)[0:3, 3]
+                )
+                last = mn.Vector3(
+                    self.motion.poses[-1].get_transform(ROOT, local=False)[0:3, 3]
+                )
+                self.direction = (
+                    (last - first) * mn.Vector3(1.0, 0.0, 1.0)
+                ).normalized()
+                print(
+                    f"yo dude self.motion = {self.motion}\nself.direction = {self.direction}"
+                )
+
+        def dataclass_pass():
+            print("HI")
+
     motion = amass.load(
         file="data/fairmotion/amass_test_data/CMU/CMU/02/02_01_poses.npz",
         bm_path="data/fairmotion/amass_test_data/smplh/male/model.npz",
     )
 
-    walk_to_walk = motion_ops.cut(motion, 147, 279)
+    walk_to_walk = Phase(motion_ops.cut(motion, 147, 279), get_direction=True)
 
 
 class Preview(Enum):
