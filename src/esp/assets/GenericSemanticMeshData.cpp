@@ -138,15 +138,15 @@ GenericSemanticMeshData::buildSemanticMeshData(
       };
 
       // build maps of color ints to semantic IDs and color ints to region ids
-      // in SSD
-      // find max regions present, so we can have an "unassigned"/"unknown"
-      // region to move all verts whose region is
+      // in SSD find max regions present, so we can have an
+      // "unassigned"/"unknown" region to move all verts whose region is
 
       int maxRegion = -1;
-      // temporary map keyed by semantic ID and value being actual color for
-      // that ID. We need this since we do not know how many, if any, unique
-      // colors that do not have Semantic Mappings exist on the mesh
-      std::map<int, Mn::Vector3ub> tmpDestSSDColorMap;
+      // build the color map with first maxSemanticID elements in proper order
+      // to match provided semantic IDs (so that ID is IDX of semantic color in
+      // map) and any overflow colors uniquely map 1-to-1 to an unmapped
+      // semantic ID as their index.
+      colorMapToUse.resize(numSSDObjs);
       for (int i = 0; i < numSSDObjs; ++i) {
         const auto& ssdObj =
             static_cast<scene::HM3DObjectInstance&>(*ssdObjs[i]);
@@ -157,13 +157,15 @@ GenericSemanticMeshData::buildSemanticMeshData(
             static_cast<scene::HM3DSemanticRegion&>(*ssdObj.region())
                 .getIndex();
         tmpColorMapToSSDidAndRegionIndex[colorInt] = {semanticID, regionIDX};
-
-        tmpDestSSDColorMap[semanticID] = ssdColor;
+        if (colorMapToUse.size() <= semanticID) {
+          colorMapToUse.resize(semanticID + 1);
+        }
+        colorMapToUse[semanticID] = ssdColor;
 
         maxRegion = Mn::Math::max(regionIDX, maxRegion);
       }
       // find largest key in map
-      int maxSemanticID = tmpDestSSDColorMap.rbegin()->first;
+      int maxSemanticID = colorMapToUse.size();
       // increment maxRegion to use for unknown regions whose colors are not
       // mapped
       ++maxRegion;
@@ -218,21 +220,15 @@ GenericSemanticMeshData::buildSemanticMeshData(
 
           // color for given semantic ID - only necessary to add for unknown
           // colors
-          tmpDestSSDColorMap[semanticID] = meshColor;
+          if (colorMapToUse.size() <= semanticID) {
+            colorMapToUse.resize(semanticID + 1);
+          }
+          colorMapToUse[semanticID] = meshColor;
         }
         // semantic ID for vertex
         semanticData->objectIds_[vertIdx] = semanticID;
         // partition Ids for each vertex, for multi-mesh construction.
         partitionIds[vertIdx] = regionID;
-      }
-
-      // color map with first nonSSDObjID-1 elements in proper order to match
-      // provided semantic IDs (so that ID is IDX of semantic color in map) and
-      // any overflow colors uniquely map 1-to-1 to an unmapped semantic ID as
-      // their index.
-      colorMapToUse.resize(tmpDestSSDColorMap.rbegin()->first + 1);
-      for (const auto& elem : tmpDestSSDColorMap) {
-        colorMapToUse[elem.first] = elem.second;
       }
 
     } else {
