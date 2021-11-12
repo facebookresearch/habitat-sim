@@ -2,6 +2,8 @@ add_library(
   scene STATIC
   GibsonSemanticScene.cpp
   GibsonSemanticScene.h
+  HM3DSemanticScene.cpp
+  HM3DSemanticScene.h
   Mp3dSemanticScene.cpp
   Mp3dSemanticScene.h
   ObjectControls.cpp

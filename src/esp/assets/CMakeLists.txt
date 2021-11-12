@@ -5,8 +5,8 @@ set(
   BaseMesh.cpp
   BaseMesh.h
   CollisionMeshData.h
-  GenericInstanceMeshData.cpp
-  GenericInstanceMeshData.h
+  GenericSemanticMeshData.cpp
+  GenericSemanticMeshData.h
   GenericMeshData.cpp
   GenericMeshData.h
   MeshData.h

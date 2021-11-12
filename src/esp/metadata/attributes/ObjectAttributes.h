@@ -383,12 +383,14 @@ class StageAttributes : public AbstractObjectAttributes {
 
   void setGravity(const Magnum::Vector3& gravity) { set("gravity", gravity); }
   Magnum::Vector3 getGravity() const { return get<Magnum::Vector3>("gravity"); }
-  void setHouseFilename(const std::string& houseFilename) {
-    set("houseFilename", houseFilename);
+
+  void setSemanticDescriptorFilename(
+      const std::string& semantic_descriptor_filename) {
+    set("semantic_descriptor_filename", semantic_descriptor_filename);
     setIsDirty();
   }
-  std::string getHouseFilename() const {
-    return get<std::string>("houseFilename");
+  std::string getSemanticDescriptorFilename() const {
+    return get<std::string>("semantic_descriptor_filename");
   }
   void setSemanticAssetHandle(const std::string& semanticAssetHandle) {
     set("semantic_asset", semanticAssetHandle);

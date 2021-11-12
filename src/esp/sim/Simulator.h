@@ -78,11 +78,13 @@ class Simulator {
 
   std::shared_ptr<gfx::Renderer> getRenderer() { return renderer_; }
   std::shared_ptr<scene::SemanticScene> getSemanticScene() {
-    return semanticScene_;
+    return resourceManager_->getSemanticScene();
   }
 
   /** @brief check if the semantic scene exists.*/
-  bool semanticSceneExists() const { return (semanticScene_ != nullptr); }
+  bool semanticSceneExists() const {
+    return resourceManager_->semanticSceneExists();
+  }
 
   /**
    * @brief get the current active scene graph
@@ -1158,6 +1160,8 @@ class Simulator {
                             float colorMapOffset,
                             float colorMapScale);
 
+  bool visualizeObservation(int agentId, const std::string& sensorId);
+
   bool getAgentObservation(int agentId,
                            const std::string& sensorId,
                            sensor::Observation& observation);
@@ -1493,7 +1497,7 @@ class Simulator {
   int activeSemanticSceneID_ = ID_UNDEFINED;
   std::vector<int> sceneID_;
 
-  std::shared_ptr<scene::SemanticScene> semanticScene_ = nullptr;
+  // std::shared_ptr<scene::SemanticScene> semanticScene_ = nullptr;
 
   std::shared_ptr<physics::PhysicsManager> physicsManager_ = nullptr;
 

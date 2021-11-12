@@ -97,8 +97,8 @@ struct Renderer::Impl {
   }
 
   void visualize(sensor::VisualSensor& visualSensor,
-                 float colorMapOffset,
-                 float colorMapScale) {
+                 float colorMapOffset = -1.0f,
+                 float colorMapScale = -1.0f) {
     acquireGlContext();
     sensor::SensorType& type = visualSensor.specification()->sensorType;
     if (type == sensor::SensorType::Depth ||
@@ -164,7 +164,9 @@ struct Renderer::Impl {
       } else if (type == sensor::SensorType::Semantic) {
         shader->bindObjectIdTexture(tgt.getObjectIdTexture());
       }
-      shader->setColorMapTransformation(colorMapOffset, colorMapScale);
+      if ((colorMapOffset >= 0) && (colorMapScale >= 0)) {
+        shader->setColorMapTransformation(colorMapOffset, colorMapScale);
+      }
       tgt.renderReEnter();
       shader->draw(*mesh_);
       tgt.renderExit();
@@ -172,6 +174,24 @@ struct Renderer::Impl {
       // TODO object id
       Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::DepthTest);
     }
+  }
+
+  /**
+   * @brief Sets the colormap for the @ref TextureVisualizerShader used for
+   * Semantic Scene rendering. Note, these colors are only used for
+   * visualization purposes.
+   * @param colormap The colormap to use, where idxs correspond to per-vertex
+   * semantic IDs.
+   */
+  void setSemanticVisualizerColormap(
+      Cr::Containers::ArrayView<const Mn::Vector3ub> colorMap) {
+    Mn::Resource<Mn::GL::AbstractShaderProgram, TextureVisualizerShader>
+        shader = getShader<TextureVisualizerShader>(
+            gfx::Renderer::Impl::RendererShaderType::ObjectIdTextureVisualizer);
+    int clrSize = colorMap.size();
+    shader->setColorMapTexture(colorMap, 1.0f / (2.0f * clrSize),
+                               1.0f / clrSize, Mn::GL::SamplerWrapping::Repeat,
+                               Mn::GL::SamplerFilter::Nearest);
   }
 
   void applyGaussianFiltering(CubeMap& target,
@@ -475,6 +495,11 @@ void Renderer::startDrawJobs() {
 }
 #endif  // ESP_BUILD_WITH_BACKGROUND_RENDERER
 
+void Renderer::setSemanticVisualizerColormap(
+    Cr::Containers::ArrayView<const Mn::Vector3ub> colorMap) {
+  pimpl_->setSemanticVisualizerColormap(colorMap);
+}
+
 void Renderer::acquireGlContext() {
   pimpl_->acquireGlContext();
 }
@@ -492,7 +517,9 @@ void Renderer::visualize(sensor::VisualSensor& sensor,
                          float colorMapScale) {
   pimpl_->visualize(sensor, colorMapOffset, colorMapScale);
 }
-
+void Renderer::visualize(sensor::VisualSensor& sensor) {
+  pimpl_->visualize(sensor);
+}
 void Renderer::applyGaussianFiltering(CubeMap& target,
                                       CubeMap& helper,
                                       CubeMap::TextureType type) {

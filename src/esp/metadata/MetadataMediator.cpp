@@ -359,7 +359,7 @@ attributes::SceneAttributes::ptr MetadataMediator::makeSceneAndReferenceStage(
   // keyed by the ref that the scene attributes will use.
   std::pair<std::string, std::string> ssdEntry =
       datasetAttr->addSemanticSceneDescrPathEntry(
-          sceneName, stageAttributes->getHouseFilename(), false);
+          sceneName, stageAttributes->getSemanticDescriptorFilename(), false);
   // ssdEntry holds the ssd key in the dataset to use by this scene instance.
   // NOTE : the key may have changed from what was passed if a collision
   // occurred with same key but different value, so we need to add this key to

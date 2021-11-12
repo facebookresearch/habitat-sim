@@ -142,7 +142,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
       const std::string& path,
       bool overwrite = false) {
     return addNewValToMap(key, path, overwrite, semanticSceneDescrMap_,
-                          "<semanticSceneDescriptor");
+                          "<semanticSceneDescriptor>");
   }  // addNavmeshPathEntry
 
   /**

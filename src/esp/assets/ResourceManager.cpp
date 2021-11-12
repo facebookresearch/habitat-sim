@@ -50,6 +50,7 @@
 #include "esp/io/URDFParser.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/scene/SceneGraph.h"
+#include "esp/scene/SemanticScene.h"
 
 #include "esp/nav/PathFinder.h"
 
@@ -58,8 +59,8 @@
 #endif
 
 #include "CollisionMeshData.h"
-#include "GenericInstanceMeshData.h"
 #include "GenericMeshData.h"
+#include "GenericSemanticMeshData.h"
 #include "MeshData.h"
 
 #ifdef ESP_BUILD_PTEX_SUPPORT
@@ -198,6 +199,75 @@ void ResourceManager::initPhysicsManager(
   // initialize the physics simulator
   physicsManager->initPhysics(parent);
 }  // ResourceManager::initPhysicsManager
+
+bool ResourceManager::loadSemanticSceneDescriptor(
+    const std::string& ssdFilename,
+    const std::string& activeSceneName) {
+  namespace FileUtil = Cr::Utility::Directory;
+  semanticScene_ = nullptr;
+  if (ssdFilename != "") {
+    bool success = false;
+    // semantic scene descriptor might not exist
+    semanticScene_ = scene::SemanticScene::create();
+    ESP_DEBUG() << "SceneInstance :" << activeSceneName
+                << "proposed Semantic Scene Descriptor filename :"
+                << ssdFilename;
+
+    bool fileExists = FileUtil::exists(ssdFilename);
+    if (fileExists) {
+      // Attempt to load semantic scene descriptor specified in scene instance
+      // file, agnostic to file type inferred by name, if file exists.
+      success = scene::SemanticScene::loadSemanticSceneDescriptor(
+          ssdFilename, *semanticScene_);
+      if (success) {
+        ESP_DEBUG() << "SSD with SceneAttributes-provided name " << ssdFilename
+                    << "successfully found and loaded";
+      } else {
+        // here if provided file exists but does not correspond to appropriate
+        // SSD
+        ESP_ERROR()
+            << "SSD Load Failure! File with SceneAttributes-provided name "
+            << ssdFilename << "exists but was unable to be loaded.";
+      }
+      return success;
+      // if not success then try to construct a name
+    } else {
+      // attempt to look for specified file failed, attempt to build new file
+      // name by searching in path specified of specified file for
+      // info_semantic.json file for replica dataset
+      const std::string constructedFilename =
+          FileUtil::join(FileUtil::path(ssdFilename), "info_semantic.json");
+      fileExists = FileUtil::exists(constructedFilename);
+      if (fileExists) {
+        success = scene::SemanticScene::loadReplicaHouse(constructedFilename,
+                                                         *semanticScene_);
+        if (success) {
+          ESP_DEBUG() << "SSD for Replica using constructed file :"
+                      << constructedFilename << "in directory with"
+                      << ssdFilename << "loaded successfully";
+        } else {
+          // here if constructed file exists but does not correspond to
+          // appropriate SSD or some loading error occurred.
+          ESP_ERROR() << "SSD Load Failure! Replica file with constructed name "
+                      << ssdFilename << "exists but was unable to be loaded.";
+        }
+        return success;
+      } else {
+        // neither provided non-empty filename nor constructed filename
+        // exists. This is probably due to an incorrect naming in the
+        // SceneAttributes
+        ESP_WARNING()
+            << "SSD File Naming Issue! Neither SceneAttributes-provided name :"
+            << ssdFilename
+            << " nor constructed filename :" << constructedFilename
+            << "exist on disk.";
+        return false;
+      }
+    }  // if given SSD file name specified exists
+  }    // if semantic scene descriptor specified in scene instance
+
+  return false;
+}  // ResourceManager::loadSemanticSceneDescriptor
 
 bool ResourceManager::loadStage(
     const StageAttributes::ptr& stageAttributes,
@@ -371,7 +441,7 @@ bool ResourceManager::buildMeshGroups(
     if (info.type == AssetType::INSTANCE_MESH) {
       // PLY Instance mesh
       colMeshGroupSuccess =
-          buildStageCollisionMeshGroup<GenericInstanceMeshData>(info.filepath,
+          buildStageCollisionMeshGroup<GenericSemanticMeshData>(info.filepath,
                                                                 meshGroup);
     } else if (info.type == AssetType::MP3D_MESH ||
                info.type == AssetType::UNKNOWN) {
@@ -918,7 +988,7 @@ void ResourceManager::computeInstanceMeshAbsoluteAABBs(
 
     // convert std::vector<vec3f> to std::vector<Mn::Vector3>
     const std::vector<vec3f>& vertexPositions =
-        dynamic_cast<GenericInstanceMeshData&>(*meshes_.at(meshID))
+        dynamic_cast<GenericSemanticMeshData&>(*meshes_.at(meshID))
             .getVertexBufferObjectCPU();
     std::vector<Mn::Vector3> transformedPositions{vertexPositions.begin(),
                                                   vertexPositions.end()};
@@ -1173,12 +1243,24 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
   const std::string& filename = info.filepath;
   CORRADE_INTERNAL_ASSERT(resourceDict_.count(filename) == 0);
   Cr::Containers::Pointer<Importer> importer;
+
+  // TODO : support glb along with ply files as semantic meshes
+
   CORRADE_INTERNAL_ASSERT_OUTPUT(
       importer = importerManager_.loadAndInstantiate("StanfordImporter"));
 
-  std::vector<GenericInstanceMeshData::uptr> instanceMeshes =
-      GenericInstanceMeshData::fromPLY(*importer, filename,
-                                       info.splitInstanceMesh);
+  /* Open the file. On error the importer already prints a diagnostic message,
+     so no need to do that here. The importer implicitly converts per-face
+     attributes to per-vertex, so nothing extra needs to be done. */
+  Cr::Containers::Optional<Mn::Trade::MeshData> meshData;
+  ESP_CHECK((importer->openFile(filename) && (meshData = importer->mesh(0))),
+            Cr::Utility::formatString(
+                "Error loading instance mesh data from file {}", filename));
+
+  std::vector<GenericSemanticMeshData::uptr> instanceMeshes =
+      GenericSemanticMeshData::buildSemanticMeshData(
+          *meshData, filename, info.splitInstanceMesh,
+          semanticColorMapBeingUsed_, semanticScene_);
 
   ESP_CHECK(!instanceMeshes.empty(),
             Cr::Utility::formatString(
@@ -1189,6 +1271,9 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
   nextMeshID_ = meshEnd + 1;
   MeshMetaData meshMetaData{meshStart, meshEnd};
   meshMetaData.root.children.resize(instanceMeshes.size());
+
+  // specify colormap to use to build TextureVisualizerShader
+  // If this is true, we want to build a colormap from the vertex colors.
 
   for (int meshIDLocal = 0; meshIDLocal < instanceMeshes.size();
        ++meshIDLocal) {

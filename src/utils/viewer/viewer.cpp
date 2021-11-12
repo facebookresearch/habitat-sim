@@ -49,6 +49,7 @@
 #include "esp/core/Esp.h"
 #include "esp/core/Utility.h"
 #include "esp/gfx/Drawable.h"
+#include "esp/scene/SemanticScene.h"
 
 #ifdef ESP_BUILD_WITH_VHACD
 #include "esp/geo/VoxelUtils.h"
@@ -268,6 +269,8 @@ In LOOK mode (default):
     Click and drag to rotate the agent and look up/down.
   RIGHT:
     (With 'enable-physics') Click a surface to instance a random primitive object at that location.
+  SHIFT-LEFT:
+    Read Semantic ID and tag of clicked object (Currently only HM3D);
   SHIFT-RIGHT:
     Click a mesh to highlight it.
   CTRL-RIGHT:
@@ -358,6 +361,8 @@ Key Commands:
   float agentTrajRad_ = .01f;
   bool agentLocRecordOn_ = false;
   bool singleColorTrajectory_ = true;
+
+  std::string semanticTag_ = "";
 
   /**
    * @brief Set whether agent locations should be recorded or not. If toggling
@@ -1108,7 +1113,6 @@ void Viewer::invertGravity() {
   const Mn::Vector3 invGravity = -1 * gravity;
   simulator_->setGravity(invGravity);
 }
-
 #ifdef ESP_BUILD_WITH_VHACD
 
 void Viewer::displayStageDistanceGradientField() {
@@ -1275,7 +1279,7 @@ void Viewer::drawEvent() {
 
   if (visualizeMode_ == VisualizeMode::Depth ||
       visualizeMode_ == VisualizeMode::Semantic) {
-    // ================ Depth Visualization ==================================
+    // ================ Depth/Semantic Visualization =======================
     std::string sensorId = "depth_camera";
     if (visualizeMode_ == VisualizeMode::Depth) {
       if (sensorMode_ == VisualSensorMode::Fisheye) {
@@ -1300,9 +1304,10 @@ void Viewer::drawEvent() {
                                        1.0f / 512.0f,  // colorMapOffset
                                        1.0f / 12.0f);  // colorMapScale
     } else if (visualizeMode_ == VisualizeMode::Semantic) {
-      simulator_->visualizeObservation(defaultAgentId_, sensorId,
-                                       1.0f / 512.0f,  // colorMapOffset
-                                       1.0f / 50.0f);  // colorMapScale
+      simulator_->visualizeObservation(defaultAgentId_, sensorId);
+      // simulator_->visualizeObservation(defaultAgentId_, sensorId,
+      //                                  1.0f / 512.0f,  // colorMapOffset
+      //                                  1.0f / 50.0f);  // colorMapScale
     }
     sensorRenderTarget->blitRgbaToDefault();
   } else {
@@ -1422,6 +1427,9 @@ void Viewer::drawEvent() {
     std::string modeText =
         "Mouse Interaction Mode: " + mouseModeNames.at(mouseInteractionMode);
     ImGui::Text("%s", modeText.c_str());
+    if (!semanticTag_.empty()) {
+      ImGui::Text("Semantic %s", semanticTag_.c_str());
+    }
     ImGui::End();
   }
 
@@ -1637,7 +1645,45 @@ void Viewer::mousePressEvent(MouseEvent& event) {
                                   existingObjectIDs.back());
         }
       }
-    }  // end add primitive w/ right click
+      // end add primitive w/ right click
+    } else if (event.button() == MouseEvent::Button::Left) {
+      // if shift-click is pressed, display semantic ID and name if exists
+      if (event.modifiers() & MouseEvent::Modifier::Shift) {
+        semanticTag_ = "";
+        // get semantic scene
+        auto semanticScene = simulator_->getSemanticScene();
+        // only enable for HM3D for now
+        if ((semanticScene) && (semanticScene->hasVertColorsDefined())) {
+          auto semanticObjects = semanticScene->objects();
+          std::string sensorId = "semantic_camera";
+          simulator_->drawObservation(defaultAgentId_, sensorId);
+          esp::sensor::Observation observation;
+          simulator_->getAgentObservation(defaultAgentId_, sensorId,
+                                          observation);
+
+          uint32_t desiredIdx =
+              (viewportPoint[0] +
+               (observation.buffer->shape[1] *
+                (observation.buffer->shape[0] - viewportPoint[1])));
+          uint32_t objIdx = Corrade::Containers::arrayCast<int>(
+              observation.buffer->data)[desiredIdx];
+          // TODO : Change core::buffer to magnum image, then we can simplify
+          // access uint32_t objIdx =
+          // observation.buffer->pixels<uint32_t>().flipped<0>()[viewportPoint[1]][viewportPoint[0]];
+
+          // subtract 1 to align with semanticObject array
+          --objIdx;
+          std::string tmpStr = "Unknown";
+          if ((objIdx >= 0) && (objIdx < semanticObjects.size())) {
+            tmpStr = semanticObjects[objIdx]->id();
+          }
+          semanticTag_ =
+              Cr::Utility::formatString("id:{}:{}", (objIdx + 1), tmpStr);
+          ESP_WARNING() << "Data point @ idx : " << objIdx
+                        << ": Object name :" << semanticTag_;
+        }
+      }
+    }
   } else if (mouseInteractionMode == MouseInteractionMode::GRAB) {
     // GRAB mode
     if (simulator_->getPhysicsSimulationLibrary() !=
