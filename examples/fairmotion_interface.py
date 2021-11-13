@@ -317,7 +317,7 @@ class FairmotionInterface:
             new_root_translate,
             new_root_rotation,
         ) = self.convert_CMUamass_single_pose(
-            self.motion.poses[abs(self.motion_stepper)], self.model
+            self.motion.poses[abs(self.motion_stepper)], self.model, raw=False
         )
         self.model.joint_positions = new_pose
         self.model.rotation = new_root_rotation
@@ -327,7 +327,7 @@ class FairmotionInterface:
         self.motion_stepper = (self.motion_stepper + sign(1)) % self.motion.num_frames()
 
     def convert_CMUamass_single_pose(
-        self, pose, model
+        self, pose, model, raw=False
     ) -> Tuple[List[float], mn.Vector3, mn.Quaternion]:
         """
         This conversion is specific to the datasets from CMU
@@ -339,15 +339,21 @@ class FairmotionInterface:
 
         # adding offsets to root transformation
         # rotation
-        root_rotation = self.rotation_offset * mn.Quaternion.from_matrix(
-            mn.Matrix3x3(root_T[0:3, 0:3])
-        )
+        if raw:
+            root_rotation = mn.Quaternion.from_matrix(mn.Matrix3x3(root_T[0:3, 0:3]))
+        else:
+            root_rotation = self.rotation_offset * mn.Quaternion.from_matrix(
+                mn.Matrix3x3(root_T[0:3, 0:3])
+            )
 
         # translation
-        root_translation = (
-            self.translation_offset
-            + self.rotation_offset.transform_vector(root_T[0:3, 3])
-        )
+        if raw:
+            root_translation = root_T[0:3, 3]
+        else:
+            root_translation = (
+                self.translation_offset
+                + self.rotation_offset.transform_vector(root_T[0:3, 3])
+            )
 
         Q, _ = conversions.T2Qp(root_T)
 
@@ -614,46 +620,26 @@ class FairmotionInterface:
 
         # get current character pose attrs
         curr_pose, curr_root_T, curr_root_R = self.convert_CMUamass_single_pose(
-            self.path_motion.poses[curr_frame], self.model
+            self.path_motion.poses[curr_frame], self.model, raw=True
         )
 
         # get next character pose attrs
         next_pose, next_root_T, next_root_R = self.convert_CMUamass_single_pose(
-            self.path_motion.poses[next_frame], self.model
+            self.path_motion.poses[next_frame], self.model, raw=True
         )
 
-        # TODO: This is not accurate logic to get displacement between two keyframes. The displacement
-        #       is mostly never in the direction of the path so we are over estimating and taking
-        #       larger steps.
-        #
-        # SOLVE: Get displacement of next from current, and apply to rotation `look_at_quater
-        #        * mn.Quaternion.rotation(mn.Deg(180), mn.Vector3.y_axis())` to align it with the
-        #        direction the mocap char is facing. Then get the length of this vector projected
-        #        unit vector of path direction.
-        #
-        #        This also inhibits the application of the root_T for a smoother motion without some insane geometry.
+        # translation
+        delta_P_vector = mn.Vector3(next_root_T - curr_root_T)
+        forward_vector = mn.Vector3(Move.walk_to_walk.direction_forward)
+        up_vector = mn.Vector3.z_axis()
 
-        # vector of position change
-        delta_P = mn.Vector3(next_root_T - curr_root_T)
-        print("original", delta_P, delta_P.length())
-        print(
-            "walk direction",
-            (Move.walk_to_walk.direction),
-            (Move.walk_to_walk.direction).length(),
-        )
-        print(
-            "delta_P",
-            delta_P.projected(Move.walk_to_walk.direction),
-            (delta_P - delta_P.projected(Move.walk_to_walk.direction)).length(),
-        )
-
-        print(
-            "root_T",
-            delta_P - delta_P.projected(Move.walk_to_walk.direction),
-            (delta_P.projected(Move.walk_to_walk.direction)).length(),
-        )
-        root_T = delta_P - delta_P.projected(Move.walk_to_walk.direction)
-        delta_P = (delta_P.projected(Move.walk_to_walk.direction)).length()
+        # 1. rotate P->  by Angle(up_v <-> up_sim) around (up_v X up_sim)
+        angle1 = mn.math.angle(up_vector.normalized(), mn.Vector3.y_axis())
+        print(f"1angle = {angle1}")
+        axis1 = mn.math.cross(up_vector.normalized(), mn.Vector3.y_axis())
+        print(f"1axis = {axis1}")
+        rotation1 = mn.Quaternion.rotation(angle1, axis1)
+        delta_P_vector = rotation1.transform_vector(delta_P_vector)
 
         path_points = self.path_points
         segment_len = 0
@@ -674,24 +660,25 @@ class FairmotionInterface:
             # if path pointer has not passed a certain point in the path timeline, then we know its location range
             if self.path_ptr < segment_len:
 
-                # compute Quaternion from target direction and extract rotation matrix
-                look_at_quater = mn.Quaternion.from_matrix(
-                    mn.Matrix4.look_at(
-                        mn.Vector3.zero_init(),
-                        mn.Vector3(segment),
-                        mn.Vector3.y_axis(),
-                    ).rotation()
+                # 2. rotate P->  by Angle(forward_v <-> path_seg) around (up_sim)
+                angle2 = mn.math.angle(
+                    forward_vector.normalized(), segment.normalized()
                 )
+                axis2 = mn.Vector3.y_axis()
+                rotation2 = mn.Quaternion.rotation(angle2, axis2)
+                delta_P_vector = rotation2.transform_vector(delta_P_vector)
 
-                # NOTE: Adding `next_root_translation` will include motion's root node rotations
-                self.model.rotation = look_at_quater
-                # get normalized vector in segment direction and multiply by change in motion position
-                self.model.translation += (
-                    mn.Vector3(segment)
-                ).normalized() * delta_P + root_T
-                self.path_ptr += delta_P
+                # 3. Add P-> to root_translation
+                self.model.translation += delta_P_vector
+
+                # 4. Add length of (P-> projected to path_segment) to path_ptr
+                self.path_ptr += (
+                    delta_P_vector.projected_onto_normalized(segment.normalized())
+                ).length()
+
+                # 5. Apply Pose to Model
                 self.model.joint_positions = curr_pose
-                self.model.rotation = self.model.rotation * curr_root_R
+                self.model.rotation = rotation2 * rotation1 * curr_root_R
                 break
 
         self.path_motion_stepper = self.path_motion_stepper + step_size
@@ -708,7 +695,6 @@ class Move:
         def __init__(self, motion, get_direction=False) -> None:
             self.motion = motion
             self.direction = None
-            print(len(motion.poses))
 
             # get_direction will produce a unit vector from roots of the first and
             # last frame, only useful with straight motions like walking or running.
@@ -719,15 +705,16 @@ class Move:
                 last = mn.Vector3(
                     self.motion.poses[-1].get_transform(ROOT, local=False)[0:3, 3]
                 )
-                self.direction = (
-                    (last - first) * mn.Vector3(1.0, 0.0, 1.0)
+                self.direction_up = mn.Vector3(self.motion.skel.v_up)
+                self.direction_forward = (
+                    (last - first) * (mn.Vector3(1.0, 1.0, 1.0) - self.direction_up)
                 ).normalized()
-                print(
-                    f"yo dude self.motion = {self.motion}\nself.direction = {self.direction}"
-                )
 
         def dataclass_pass():
-            print("HI")
+            print(
+                "I am keeping this here until I figure out how to bypass pre-commit error: Use dataclass."
+            )
+            print("Adding @dataclass annotation is not a solution")
 
     motion = amass.load(
         file="data/fairmotion/amass_test_data/CMU/CMU/02/02_01_poses.npz",
