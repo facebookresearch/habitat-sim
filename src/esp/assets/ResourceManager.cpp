@@ -220,14 +220,14 @@ bool ResourceManager::loadSemanticSceneDescriptor(
       success = scene::SemanticScene::loadSemanticSceneDescriptor(
           ssdFilename, *semanticScene_);
       if (success) {
-        ESP_DEBUG() << "SSD with SceneAttributes-provided name " << ssdFilename
-                    << "successfully found and loaded";
+        ESP_DEBUG() << "SSD with SceneInstanceAttributes-provided name "
+                    << ssdFilename << "successfully found and loaded";
       } else {
         // here if provided file exists but does not correspond to appropriate
         // SSD
-        ESP_ERROR()
-            << "SSD Load Failure! File with SceneAttributes-provided name "
-            << ssdFilename << "exists but was unable to be loaded.";
+        ESP_ERROR() << "SSD Load Failure! File with "
+                       "SceneInstanceAttributes-provided name "
+                    << ssdFilename << "exists but was unable to be loaded.";
       }
       return success;
       // if not success then try to construct a name
@@ -255,12 +255,12 @@ bool ResourceManager::loadSemanticSceneDescriptor(
       } else {
         // neither provided non-empty filename nor constructed filename
         // exists. This is probably due to an incorrect naming in the
-        // SceneAttributes
-        ESP_WARNING()
-            << "SSD File Naming Issue! Neither SceneAttributes-provided name :"
-            << ssdFilename
-            << " nor constructed filename :" << constructedFilename
-            << "exist on disk.";
+        // SceneInstanceAttributes
+        ESP_WARNING() << "SSD File Naming Issue! Neither "
+                         "SceneInstanceAttributes-provided name :"
+                      << ssdFilename
+                      << " nor constructed filename :" << constructedFilename
+                      << "exist on disk.";
         return false;
       }
     }  // if given SSD file name specified exists

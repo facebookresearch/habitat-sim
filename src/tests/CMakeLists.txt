@@ -6,6 +6,16 @@ configure_file(
 )
 
 corrade_add_test(
+  AttributesConfigsTest
+  AttributesConfigsTest.cpp
+  LIBRARIES
+  core
+  assets
+  metadata
+)
+target_include_directories(AttributesConfigsTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
+corrade_add_test(
   AttributesManagersTest
   AttributesManagersTest.cpp
   LIBRARIES

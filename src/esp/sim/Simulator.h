@@ -1371,10 +1371,11 @@ class Simulator {
   Simulator() = default;
   /**
    * @brief Builds a scene instance and populates it with initial object layout,
-   * if appropriate, based on @ref esp::metadata::attributes::SceneAttributes
-   * referenced by @p activeSceneName .
-   * @param activeSceneName The name of the desired SceneAttributes to use to
-   * instantiate a scene.
+   * if appropriate, based on @ref
+   * esp::metadata::attributes::SceneInstanceAttributes referenced by @p
+   * activeSceneName .
+   * @param activeSceneName The name of the desired SceneInstanceAttributes to
+   * use to instantiate a scene.
    * @return Whether successful or not.
    */
   bool createSceneInstance(const std::string& activeSceneName);
@@ -1387,8 +1388,8 @@ class Simulator {
    * specified in Simulator Configuration.
    * @return a constant pointer to the current scene instance attributes.
    */
-  metadata::attributes::SceneAttributes::cptr setSceneInstanceAttributes(
-      const std::string& activeSceneName);
+  metadata::attributes::SceneInstanceAttributes::cptr
+  setSceneInstanceAttributes(const std::string& activeSceneName);
 
   /**
    * @brief Instance the stage for the current scene based on the current active
@@ -1398,7 +1399,7 @@ class Simulator {
    * @return whether stage creation is completed successfully
    */
   bool instanceStageForActiveScene(
-      const metadata::attributes::SceneAttributes::cptr&
+      const metadata::attributes::SceneInstanceAttributes::cptr&
           curSceneInstanceAttributes);
 
   /**
@@ -1409,7 +1410,7 @@ class Simulator {
    * @return whether object creation and placement is completed successfully
    */
   bool instanceObjectsForActiveScene(
-      const metadata::attributes::SceneAttributes::cptr&
+      const metadata::attributes::SceneInstanceAttributes::cptr&
           curSceneInstanceAttributes);
 
   /**
@@ -1421,7 +1422,7 @@ class Simulator {
    * successfully
    */
   bool instanceArticulatedObjectsForActiveScene(
-      const metadata::attributes::SceneAttributes::cptr&
+      const metadata::attributes::SceneInstanceAttributes::cptr&
           curSceneInstanceAttributes);
 
   /**

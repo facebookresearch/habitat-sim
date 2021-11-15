@@ -2,7 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "SceneAttributes.h"
+#include "SceneInstanceAttributes.h"
 #include "esp/physics/RigidBase.h"
 namespace esp {
 namespace metadata {
@@ -122,8 +122,8 @@ std::string SceneAOInstanceAttributes::getSceneObjInstanceInfoInternal() const {
   return initPoseStr;
 }  // SceneAOInstanceAttributes::getSceneObjInstanceInfoInternal()
 
-SceneAttributes::SceneAttributes(const std::string& handle)
-    : AbstractAttributes("SceneAttributes", handle) {
+SceneInstanceAttributes::SceneInstanceAttributes(const std::string& handle)
+    : AbstractAttributes("SceneInstanceAttributes", handle) {
   // defaults to no lights
   setLightingHandle(NO_LIGHT_KEY);
   // defaults to asset local
@@ -136,7 +136,8 @@ SceneAttributes::SceneAttributes(const std::string& handle)
   artObjInstConfig_ = editSubconfig<Configuration>("ao_instances");
 }
 
-SceneAttributes::SceneAttributes(const SceneAttributes& otr)
+SceneInstanceAttributes::SceneInstanceAttributes(
+    const SceneInstanceAttributes& otr)
     : AbstractAttributes(otr),
       availableObjInstIDs_(otr.availableObjInstIDs_),
       availableArtObjInstIDs_(otr.availableArtObjInstIDs_) {
@@ -148,7 +149,8 @@ SceneAttributes::SceneAttributes(const SceneAttributes& otr)
   copySubconfigIntoMe<SceneAOInstanceAttributes>(otr.artObjInstConfig_,
                                                  artObjInstConfig_);
 }
-SceneAttributes::SceneAttributes(SceneAttributes&& otr) noexcept
+SceneInstanceAttributes::SceneInstanceAttributes(
+    SceneInstanceAttributes&& otr) noexcept
     : AbstractAttributes(std::move(static_cast<AbstractAttributes>(otr))),
       availableObjInstIDs_(std::move(otr.availableObjInstIDs_)),
       availableArtObjInstIDs_(std::move(otr.availableArtObjInstIDs_)) {
@@ -158,7 +160,8 @@ SceneAttributes::SceneAttributes(SceneAttributes&& otr) noexcept
   artObjInstConfig_ = editSubconfig<Configuration>("ao_instances");
 }
 
-SceneAttributes& SceneAttributes::operator=(const SceneAttributes& otr) {
+SceneInstanceAttributes& SceneInstanceAttributes::operator=(
+    const SceneInstanceAttributes& otr) {
   if (this != &otr) {
     this->AbstractAttributes::operator=(otr);
     availableObjInstIDs_ = otr.availableObjInstIDs_;
@@ -173,7 +176,8 @@ SceneAttributes& SceneAttributes::operator=(const SceneAttributes& otr) {
   }
   return *this;
 }
-SceneAttributes& SceneAttributes::operator=(SceneAttributes&& otr) noexcept {
+SceneInstanceAttributes& SceneInstanceAttributes::operator=(
+    SceneInstanceAttributes&& otr) noexcept {
   availableObjInstIDs_ = std::move(otr.availableObjInstIDs_);
   availableArtObjInstIDs_ = std::move(otr.availableArtObjInstIDs_);
   this->AbstractAttributes::operator=(
@@ -183,7 +187,7 @@ SceneAttributes& SceneAttributes::operator=(SceneAttributes&& otr) noexcept {
   artObjInstConfig_ = editSubconfig<Configuration>("ao_instances");
   return *this;
 }
-std::string SceneAttributes::getObjectInfoInternal() const {
+std::string SceneInstanceAttributes::getObjectInfoInternal() const {
   // scene-specific info constants
   // default translation origin
 
@@ -228,7 +232,7 @@ std::string SceneAttributes::getObjectInfoInternal() const {
                           "End of data for Scene Instance {}\n",
                           getSimplifiedHandle());
   return res;
-}  // SceneAttributes::getObjectInfoInternal
+}  // SceneInstanceAttributes::getObjectInfoInternal
 
 }  // namespace attributes
 }  // namespace metadata

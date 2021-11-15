@@ -12,7 +12,7 @@
 #include "esp/metadata/attributes/ObjectAttributes.h"
 #include "esp/metadata/attributes/PhysicsManagerAttributes.h"
 #include "esp/metadata/attributes/PrimitiveAssetAttributes.h"
-#include "esp/metadata/attributes/SceneAttributes.h"
+#include "esp/metadata/attributes/SceneInstanceAttributes.h"
 
 namespace py = pybind11;
 using py::literals::operator""_a;

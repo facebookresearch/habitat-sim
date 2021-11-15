@@ -664,8 +664,8 @@ class Configuration {
 
   /**
    * @brief Populate a json object with all the first-level values held in this
-   * configuration.  May be overwritten to handle special cases for root-level
-   * configuration.
+   * configuration.  May be overridden to handle special cases for root-level
+   * configuration of Attributes classes derived from Configuration.
    */
   virtual void writeValuesToJson(io::JsonGenericValue& jsonObj,
                                  io::JsonAllocator& allocator) const;
@@ -680,6 +680,10 @@ class Configuration {
   /**
    * @brief Take the passed @p key and query the config value for that key,
    * writing it to @p jsonName within the passed jsonObj.
+   * @param key The key of the data in the configuration
+   * @param jsonName The tag to use in the json file
+   * @param jsonObj The json object to write to
+   * @param allocator The json allocator to use to build the json object
    */
   void writeValueToJson(const char* key,
                         const char* jsonName,
