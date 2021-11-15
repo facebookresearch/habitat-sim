@@ -242,7 +242,7 @@ MetadataMediator::getSceneInstanceAttributesByName(
   // get list of scene attributes handles that contain sceneName as a substring
   auto sceneList = dsSceneAttrMgr->getObjectHandlesBySubstring(sceneName);
   // sceneName can legally match any one of the following conditions :
-  if (sceneList.size() > 0) {
+  if (!sceneList.empty()) {
     // 1.  Existing, registered SceneInstanceAttributes in current active
     // dataset.
     //    In this case the SceneInstanceAttributes is returned.
@@ -273,7 +273,7 @@ MetadataMediator::getSceneInstanceAttributesByName(
       // get list of stage attributes handles that contain sceneName as a
       // substring
       auto stageList = dsStageAttrMgr->getObjectHandlesBySubstring(sceneName);
-      if (stageList.size() > 0) {
+      if (!stageList.empty()) {
         // 3.  Existing, registered StageAttributes in current active dataset.
         //    In this case, a SceneInstanceAttributes is created amd registered
         //    using sceneName, referencing the StageAttributes of the same name;

@@ -358,7 +358,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
       const std::string& attrName,
       const ManagedContainerBase::ptr& attrMgr) {
     auto handleList = attrMgr->getObjectHandlesBySubstring(attrName);
-    if (handleList.size() > 0) {
+    if (!handleList.empty()) {
       return handleList[0];
     }
     return "";
