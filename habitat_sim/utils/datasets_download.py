@@ -119,8 +119,8 @@ def initialize_test_data_sources(data_path):
             "version": "1.0",
         },
         "rearrange_pick_dataset_v0": {
-            "source": "https://dl.fbaipublicfiles.com/habitat/data/datasets/rearrange_pick/replica_cad/v0/rearrange_pick_replica_cad_v0.zip",
-            "package_name": "rearrange_pick_replica_cad_v0.zip",
+            "source": "https://dl.fbaipublicfiles.com/habitat/data/datasets/rearrange_pick/replica_cad/v0/rearrange_datasets.zip",
+            "package_name": "rearrange_datasets.zip",
             "link": data_path + "datasets/rearrange_pick/replica_cad/v0",
             "version": "1.0",
         },
