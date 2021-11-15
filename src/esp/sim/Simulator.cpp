@@ -206,15 +206,16 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
 }  // Simulator::reconfigure
 
-metadata::attributes::SceneAttributes::cptr
+metadata::attributes::SceneInstanceAttributes::cptr
 Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
   // Get scene instance attributes corresponding to passed active scene name
   // This will retrieve, or construct, an appropriately configured scene
   // instance attributes, depending on what exists in the Scene Dataset library
   // for the current dataset.
 
-  metadata::attributes::SceneAttributes::cptr curSceneInstanceAttributes =
-      metadataMediator_->getSceneAttributesByName(activeSceneName);
+  metadata::attributes::SceneInstanceAttributes::cptr
+      curSceneInstanceAttributes =
+          metadataMediator_->getSceneInstanceAttributesByName(activeSceneName);
   // check if attributes is null - should not happen
   ESP_CHECK(
       curSceneInstanceAttributes,
@@ -277,8 +278,8 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   }
   // 1. initial setup for scene instancing - sets or creates the
   // current scene instance to correspond to the given name.
-  metadata::attributes::SceneAttributes::cptr curSceneInstanceAttributes =
-      setSceneInstanceAttributes(activeSceneName);
+  metadata::attributes::SceneInstanceAttributes::cptr
+      curSceneInstanceAttributes = setSceneInstanceAttributes(activeSceneName);
 
   // 2. (re)seat & (re)init physics manager using the physics manager
   // attributes specified in current simulator configuration held in
@@ -347,7 +348,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
 }  // Simulator::createSceneInstance
 
 bool Simulator::instanceStageForActiveScene(
-    const metadata::attributes::SceneAttributes::cptr&
+    const metadata::attributes::SceneInstanceAttributes::cptr&
         curSceneInstanceAttributes) {
   // Load stage specified by Scene Instance Attributes
   // Get Stage Instance Attributes - contains name of stage and initial
@@ -472,7 +473,7 @@ bool Simulator::instanceStageForActiveScene(
 }  // Simulator::instanceStageForActiveScene()
 
 bool Simulator::instanceObjectsForActiveScene(
-    const metadata::attributes::SceneAttributes::cptr&
+    const metadata::attributes::SceneInstanceAttributes::cptr&
         curSceneInstanceAttributes) {
   // 5. Load object instances as spceified by Scene Instance Attributes.
   // Get all instances of objects described in scene
@@ -521,7 +522,7 @@ bool Simulator::instanceObjectsForActiveScene(
 }  // Simulator::instanceObjectsForActiveScene()
 
 bool Simulator::instanceArticulatedObjectsForActiveScene(
-    const metadata::attributes::SceneAttributes::cptr&
+    const metadata::attributes::SceneInstanceAttributes::cptr&
         curSceneInstanceAttributes) {
   // 6. Load all articulated object instances
   // Get all instances of articulated objects described in scene

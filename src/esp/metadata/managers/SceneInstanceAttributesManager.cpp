@@ -2,7 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include "SceneAttributesManager.h"
+#include "SceneInstanceAttributesManager.h"
 
 #include <Corrade/Utility/FormatStl.h>
 #include "esp/metadata/MetadataUtils.h"
@@ -14,16 +14,16 @@ namespace esp {
 namespace metadata {
 
 using attributes::SceneAOInstanceAttributes;
-using attributes::SceneAttributes;
+using attributes::SceneInstanceAttributes;
 using attributes::SceneObjectInstanceAttributes;
 
 namespace managers {
 
-SceneAttributes::ptr SceneAttributesManager::createObject(
+SceneInstanceAttributes::ptr SceneInstanceAttributesManager::createObject(
     const std::string& sceneInstanceHandle,
     bool registerTemplate) {
   std::string msg;
-  SceneAttributes::ptr attrs = this->createFromJsonOrDefaultInternal(
+  SceneInstanceAttributes::ptr attrs = this->createFromJsonOrDefaultInternal(
       sceneInstanceHandle, msg, registerTemplate);
 
   if (nullptr != attrs) {
@@ -31,25 +31,26 @@ SceneAttributes::ptr SceneAttributesManager::createObject(
                 << (registerTemplate ? "and registered." : ".");
   }
   return attrs;
-}  // SceneAttributesManager::createObject
+}  // SceneInstanceAttributesManager::createObject
 
-SceneAttributes::ptr SceneAttributesManager::initNewObjectInternal(
+SceneInstanceAttributes::ptr
+SceneInstanceAttributesManager::initNewObjectInternal(
     const std::string& sceneInstanceHandle,
     bool) {
-  SceneAttributes::ptr newAttributes =
+  SceneInstanceAttributes::ptr newAttributes =
       this->constructFromDefault(sceneInstanceHandle);
   if (nullptr == newAttributes) {
-    newAttributes = SceneAttributes::create(sceneInstanceHandle);
+    newAttributes = SceneInstanceAttributes::create(sceneInstanceHandle);
   }
   // attempt to set source directory if exists
   this->setFileDirectoryFromHandle(newAttributes);
 
   // any internal default configuration here
   return newAttributes;
-}  // SceneAttributesManager::initNewObjectInternal
+}  // SceneInstanceAttributesManager::initNewObjectInternal
 
-void SceneAttributesManager::setValsFromJSONDoc(
-    SceneAttributes::ptr attribs,
+void SceneInstanceAttributesManager::setValsFromJSONDoc(
+    SceneInstanceAttributes::ptr attribs,
     const io::JsonGenericValue& jsonConfig) {
   const std::string attribsDispName = attribs->getSimplifiedHandle();
   // Check for translation origin.  Default to unknown.
@@ -137,20 +138,20 @@ void SceneAttributesManager::setValsFromJSONDoc(
   // check for user defined attributes
   this->parseUserDefinedJsonVals(attribs, jsonConfig);
 
-}  // SceneAttributesManager::setValsFromJSONDoc
+}  // SceneInstanceAttributesManager::setValsFromJSONDoc
 
 SceneObjectInstanceAttributes::ptr
-SceneAttributesManager::createInstanceAttributesFromJSON(
+SceneInstanceAttributesManager::createInstanceAttributesFromJSON(
     const io::JsonGenericValue& jCell) {
   SceneObjectInstanceAttributes::ptr instanceAttrs =
       createEmptyInstanceAttributes("");
   // populate attributes
   this->loadAbstractObjectAttributesFromJson(instanceAttrs, jCell);
   return instanceAttrs;
-}  // SceneAttributesManager::createInstanceAttributesFromJSON
+}  // SceneInstanceAttributesManager::createInstanceAttributesFromJSON
 
 SceneAOInstanceAttributes::ptr
-SceneAttributesManager::createAOInstanceAttributesFromJSON(
+SceneInstanceAttributesManager::createAOInstanceAttributesFromJSON(
     const io::JsonGenericValue& jCell) {
   SceneAOInstanceAttributes::ptr instanceAttrs =
       createEmptyAOInstanceAttributes("");
@@ -191,7 +192,7 @@ SceneAttributesManager::createAOInstanceAttributesFromJSON(
           jCell, "initial_joint_pose", instanceAttrs->copyIntoInitJointPose());
     } else {
       ESP_WARNING()
-          << "SceneAttributesManager::"
+          << "SceneInstanceAttributesManager::"
              "createAOInstanceAttributesFromJSON : Unknown format for "
              "initial_joint_pose specified for instance"
           << instanceAttrs->getHandle()
@@ -218,7 +219,7 @@ SceneAttributesManager::createAOInstanceAttributesFromJSON(
           instanceAttrs->copyIntoInitJointVelocities());
     } else {
       ESP_WARNING()
-          << "SceneAttributesManager::"
+          << "SceneInstanceAttributesManager::"
              "createAOInstanceAttributesFromJSON : Unknown format for "
              "initial_joint_velocities specified for instance"
           << instanceAttrs->getHandle()
@@ -227,9 +228,9 @@ SceneAttributesManager::createAOInstanceAttributesFromJSON(
   }
   return instanceAttrs;
 
-}  // SceneAttributesManager::createAOInstanceAttributesFromJSON
+}  // SceneInstanceAttributesManager::createAOInstanceAttributesFromJSON
 
-void SceneAttributesManager::loadAbstractObjectAttributesFromJson(
+void SceneInstanceAttributesManager::loadAbstractObjectAttributesFromJson(
     const attributes::SceneObjectInstanceAttributes::ptr& instanceAttrs,
     const io::JsonGenericValue& jCell) const {
   // template handle describing stage/object instance
@@ -293,9 +294,9 @@ void SceneAttributesManager::loadAbstractObjectAttributesFromJson(
   // check for user defined attributes
   this->parseUserDefinedJsonVals(instanceAttrs, jCell);
 
-}  // SceneAttributesManager::loadAbstractObjectAttributesFromJson
+}  // SceneInstanceAttributesManager::loadAbstractObjectAttributesFromJson
 
-std::string SceneAttributesManager::getTranslationOriginVal(
+std::string SceneInstanceAttributesManager::getTranslationOriginVal(
     const io::JsonGenericValue& jsonDoc) const {
   // Check for translation origin.  Default to unknown.
   std::string transOrigin = getTranslationOriginName(
@@ -321,19 +322,19 @@ std::string SceneAttributesManager::getTranslationOriginVal(
     }
   }
   return transOrigin;
-}  // SceneAttributesManager::getTranslationOriginVal
+}  // SceneInstanceAttributesManager::getTranslationOriginVal
 
-int SceneAttributesManager::registerObjectFinalize(
-    SceneAttributes::ptr sceneAttributes,
-    const std::string& sceneAttributesHandle,
+int SceneInstanceAttributesManager::registerObjectFinalize(
+    SceneInstanceAttributes::ptr sceneInstanceAttributes,
+    const std::string& sceneInstanceAttributesHandle,
     bool) {
   // adds template to library, and returns either the ID of the existing
-  // template referenced by sceneAttributesHandle, or the next available ID
-  // if not found.
-  int datasetTemplateID =
-      this->addObjectToLibrary(sceneAttributes, sceneAttributesHandle);
+  // template referenced by sceneInstanceAttributesHandle, or the next available
+  // ID if not found.
+  int datasetTemplateID = this->addObjectToLibrary(
+      sceneInstanceAttributes, sceneInstanceAttributesHandle);
   return datasetTemplateID;
-}  // SceneAttributesManager::registerObjectFinalize
+}  // SceneInstanceAttributesManager::registerObjectFinalize
 
 }  // namespace managers
 }  // namespace metadata

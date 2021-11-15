@@ -34,7 +34,7 @@ using Attrs::CylinderPrimitiveAttributes;
 using Attrs::IcospherePrimitiveAttributes;
 using Attrs::ObjectAttributes;
 using Attrs::PhysicsManagerAttributes;
-using Attrs::SceneAttributes;
+using Attrs::SceneInstanceAttributes;
 using Attrs::StageAttributes;
 using Attrs::UVSpherePrimitiveAttributes;
 
@@ -208,7 +208,8 @@ struct AttributesManagersTest : Cr::TestSuite::Tester {
       nullptr;
   AttrMgrs::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
   AttrMgrs::PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
-  AttrMgrs::SceneAttributesManager::ptr sceneAttributesManager_ = nullptr;
+  AttrMgrs::SceneInstanceAttributesManager::ptr
+      sceneInstanceAttributesManager_ = nullptr;
   AttrMgrs::StageAttributesManager::ptr stageAttributesManager_ = nullptr;
 
 };  // struct AttributesManagersTest
@@ -222,7 +223,7 @@ AttributesManagersTest::AttributesManagersTest() {
   lightLayoutAttributesManager_ = MM->getLightLayoutAttributesManager();
   objectAttributesManager_ = MM->getObjectAttributesManager();
   physicsAttributesManager_ = MM->getPhysicsAttributesManager();
-  sceneAttributesManager_ = MM->getSceneAttributesManager();
+  sceneInstanceAttributesManager_ = MM->getSceneInstanceAttributesManager();
   stageAttributesManager_ = MM->getStageAttributesManager();
 
   addTests({

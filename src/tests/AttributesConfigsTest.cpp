@@ -30,7 +30,7 @@ using esp::physics::MotionType;
 using AttrMgrs::AttributesManager;
 using Attrs::ObjectAttributes;
 using Attrs::PhysicsManagerAttributes;
-using Attrs::SceneAttributes;
+using Attrs::SceneInstanceAttributes;
 using Attrs::StageAttributes;
 using Attrs::UVSpherePrimitiveAttributes;
 
@@ -123,7 +123,7 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
    * JSON loading process is working as expected.
    */
   void testSceneInstanceAttrVals(
-      std::shared_ptr<esp::metadata::attributes::SceneAttributes>
+      std::shared_ptr<esp::metadata::attributes::SceneInstanceAttributes>
           sceneInstAttr);
   /**
    * @brief This test will verify that the Stage attributes' managers' JSON
@@ -160,7 +160,8 @@ struct AttributesConfigsTest : Cr::TestSuite::Tester {
       nullptr;
   AttrMgrs::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
   AttrMgrs::PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
-  AttrMgrs::SceneAttributesManager::ptr sceneAttributesManager_ = nullptr;
+  AttrMgrs::SceneInstanceAttributesManager::ptr
+      sceneInstanceAttributesManager_ = nullptr;
   AttrMgrs::StageAttributesManager::ptr stageAttributesManager_ = nullptr;
 
 };  // struct AttributesConfigsTest
@@ -173,7 +174,7 @@ AttributesConfigsTest::AttributesConfigsTest() {
   lightLayoutAttributesManager_ = MM->getLightLayoutAttributesManager();
   objectAttributesManager_ = MM->getObjectAttributesManager();
   physicsAttributesManager_ = MM->getPhysicsAttributesManager();
-  sceneAttributesManager_ = MM->getSceneAttributesManager();
+  sceneInstanceAttributesManager_ = MM->getSceneInstanceAttributesManager();
   stageAttributesManager_ = MM->getStageAttributesManager();
 
   addTests({
@@ -461,7 +462,8 @@ void AttributesConfigsTest::testLightJSONLoad() {
 }  // AttributesManagers_LightJSONLoadTest
 
 void AttributesConfigsTest::testSceneInstanceAttrVals(
-    std::shared_ptr<esp::metadata::attributes::SceneAttributes> sceneAttr) {
+    std::shared_ptr<esp::metadata::attributes::SceneInstanceAttributes>
+        sceneAttr) {
   // match values set in test JSON
   CORRADE_COMPARE(
       static_cast<int>(sceneAttr->getTranslationOrigin()),
@@ -591,7 +593,7 @@ void AttributesConfigsTest::testSceneInstanceAttrVals(
                             Magnum::Quaternion({9.22f, 9.26f, 0.21f}, 1.25f));
 
   // remove json-string built attributes added for test
-  testRemoveAttributesBuiltByJSONString(sceneAttributesManager_,
+  testRemoveAttributesBuiltByJSONString(sceneInstanceAttributesManager_,
                                         sceneAttr->getHandle());
 }
 
@@ -698,19 +700,18 @@ void AttributesConfigsTest::testSceneInstanceJSONLoad() {
       }
      })";
 
-  auto sceneAttr =
-      testBuildAttributesFromJSONString<AttrMgrs::SceneAttributesManager,
-                                        Attrs::SceneAttributes>(
-          sceneAttributesManager_, jsonString, true);
+  auto sceneAttr = testBuildAttributesFromJSONString<
+      AttrMgrs::SceneInstanceAttributesManager, Attrs::SceneInstanceAttributes>(
+      sceneInstanceAttributesManager_, jsonString, true);
   // verify exists
   CORRADE_VERIFY(sceneAttr);
 
   // before test, save attributes with new name
   std::string newAttrName = Cr::Utility::formatString(
       "{}/testSceneAttrConfig_saved_JSON.{}", testAttrSaveDir,
-      sceneAttributesManager_->getJSONTypeExt());
+      sceneInstanceAttributesManager_->getJSONTypeExt());
 
-  bool success = sceneAttributesManager_->saveManagedObjectToFile(
+  bool success = sceneInstanceAttributesManager_->saveManagedObjectToFile(
       sceneAttr->getHandle(), newAttrName);
 
   // test json string to verify format - this also deletes sceneAttr from
@@ -722,7 +723,7 @@ void AttributesConfigsTest::testSceneInstanceJSONLoad() {
 
   // load attributes from new name and retest
   auto sceneAttr2 =
-      sceneAttributesManager_->createObjectFromJSONFile(newAttrName);
+      sceneInstanceAttributesManager_->createObjectFromJSONFile(newAttrName);
 
   // verify file-based config exists
   CORRADE_VERIFY(sceneAttr2);
@@ -734,7 +735,7 @@ void AttributesConfigsTest::testSceneInstanceJSONLoad() {
   // testSceneInstanceAttrVals(sceneAttr2);
   // ESP_DEBUG() << "Tested saved sceneAttr2 :";
   // delete file-based config
-  // Cr::Utility::Directory::rm(newAttrName);
+  Cr::Utility::Directory::rm(newAttrName);
 
 }  // AttributesManagers_SceneInstanceJSONLoadTest
 

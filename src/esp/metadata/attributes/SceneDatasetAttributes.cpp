@@ -18,13 +18,14 @@ SceneDatasetAttributes::SceneDatasetAttributes(
       managers::LightLayoutAttributesManager::create();
   objectAttributesManager_ = managers::ObjectAttributesManager::create();
   objectAttributesManager_->setAssetAttributesManager(assetAttributesManager_);
-  sceneAttributesManager_ = managers::SceneAttributesManager::create();
+  sceneInstanceAttributesManager_ =
+      managers::SceneInstanceAttributesManager::create();
   stageAttributesManager_ = managers::StageAttributesManager::create(
       objectAttributesManager_, physAttrMgr);
 }  // ctor
 
 bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
-    const attributes::SceneAttributes::ptr& sceneInstance) {
+    const attributes::SceneInstanceAttributes::ptr& sceneInstance) {
   // info display message prefix
   std::string infoPrefix = Cr::Utility::formatString(
       "Dataset : '{}' : ", this->getSimplifiedHandle());
@@ -93,14 +94,14 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
                 << "specified in Scene Attributes exists in dataset library.";
   }
 
-  const std::string fullSceneInstanceName =
-      getFullAttrNameFromStr(sceneInstanceName, sceneAttributesManager_);
+  const std::string fullSceneInstanceName = getFullAttrNameFromStr(
+      sceneInstanceName, sceneInstanceAttributesManager_);
 
   // add scene attributes to scene attributes manager
   if (fullSceneInstanceName == "") {
     ESP_DEBUG() << infoPrefix << "Scene Attributes" << sceneInstanceName
                 << "does not exist in dataset so adding.";
-    sceneAttributesManager_->registerObject(sceneInstance);
+    sceneInstanceAttributesManager_->registerObject(sceneInstance);
   }
   return true;
 }  // SceneDatasetAttributes::addSceneInstanceToDataset
@@ -219,8 +220,9 @@ std::string concatStrings(const std::string& header,
 std::string SceneDatasetAttributes::getObjectInfoInternal() const {
   // provide a summary for all info for this scene dataset
   // scene instances
-  std::string res = concatStrings(
-      "Scene Instances", sceneAttributesManager_->getObjectInfoStrings());
+  std::string res =
+      concatStrings("Scene Instances",
+                    sceneInstanceAttributesManager_->getObjectInfoStrings());
 
   // stages
   Cr::Utility::formatInto(
@@ -271,7 +273,7 @@ std::string SceneDatasetAttributes::getDatasetSummaryHeader() {
 std::string SceneDatasetAttributes::getDatasetSummary() const {
   return Cr::Utility::formatString(
       "{},{},{},{},{},{},{},{},{},", getSimplifiedHandle(),
-      sceneAttributesManager_->getNumObjects(),
+      sceneInstanceAttributesManager_->getNumObjects(),
       stageAttributesManager_->getNumObjects(),
       objectAttributesManager_->getNumObjects(), articulatedObjPaths.size(),
       lightLayoutAttributesManager_->getNumObjects(),

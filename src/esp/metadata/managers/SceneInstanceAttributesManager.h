@@ -2,11 +2,11 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_METADATA_MANAGERS_SCENEATTRIBUTEMANAGER_H_
-#define ESP_METADATA_MANAGERS_SCENEATTRIBUTEMANAGER_H_
+#ifndef ESP_METADATA_MANAGERS_SCENEINSTANCEATTRIBUTEMANAGER_H_
+#define ESP_METADATA_MANAGERS_SCENEINSTANCEATTRIBUTEMANAGER_H_
 
 #include "AttributesManagerBase.h"
-#include "esp/metadata/attributes/SceneAttributes.h"
+#include "esp/metadata/attributes/SceneInstanceAttributes.h"
 
 namespace esp {
 namespace metadata {
@@ -14,17 +14,18 @@ namespace metadata {
 namespace managers {
 using esp::core::managedContainers::ManagedObjectAccess;
 
-class SceneAttributesManager
-    : public AttributesManager<attributes::SceneAttributes,
+class SceneInstanceAttributesManager
+    : public AttributesManager<attributes::SceneInstanceAttributes,
                                ManagedObjectAccess::Copy> {
  public:
-  SceneAttributesManager()
-      : AttributesManager<attributes::SceneAttributes,
+  SceneInstanceAttributesManager()
+      : AttributesManager<attributes::SceneInstanceAttributes,
                           ManagedObjectAccess::Copy>::
             AttributesManager("Scene Instance", "scene_instance.json") {
     // build this manager's copy constructor map
-    this->copyConstructorMap_["SceneAttributes"] =
-        &SceneAttributesManager::createObjectCopy<attributes::SceneAttributes>;
+    this->copyConstructorMap_["SceneInstanceAttributes"] =
+        &SceneInstanceAttributesManager::createObjectCopy<
+            attributes::SceneInstanceAttributes>;
   }
 
   /**
@@ -43,7 +44,7 @@ class SceneAttributesManager
    * template.
    * @return a reference to the newly-created template.
    */
-  attributes::SceneAttributes::ptr createObject(
+  attributes::SceneInstanceAttributes::ptr createObject(
       const std::string& sceneInstanceHandle,
       bool registerTemplate = true) override;
 
@@ -53,7 +54,7 @@ class SceneAttributesManager
    * @param attribs (out) an existing attributes to be modified.
    * @param jsonConfig json document to parse
    */
-  void setValsFromJSONDoc(attributes::SceneAttributes::ptr attribs,
+  void setValsFromJSONDoc(attributes::SceneInstanceAttributes::ptr attribs,
                           const io::JsonGenericValue& jsonConfig) override;
 
   /**
@@ -130,10 +131,10 @@ class SceneAttributesManager
    * attributes
    * @param builtFromConfig Whether this scene is being constructed from a
    * config file or from some other source.
-   * @return Newly created but unregistered SceneAttributes pointer, with only
-   * default values set.
+   * @return Newly created but unregistered SceneInstanceAttributes pointer,
+   * with only default values set.
    */
-  attributes::SceneAttributes::ptr initNewObjectInternal(
+  attributes::SceneInstanceAttributes::ptr initNewObjectInternal(
       const std::string& sceneInstanceHandle,
       bool builtFromConfig) override;
 
@@ -164,16 +165,18 @@ class SceneAttributesManager
    * set properly.  We are doing this since these values can be modified by the
    * user.
    *
-   * @param sceneAttributes The attributes template.
-   * @param sceneAttributesHandle The key for referencing the template in the
+   * @param sceneInstanceAttributes The attributes template.
+   * @param sceneInstanceAttributesHandle The key for referencing the template
+   * in the
    * @ref objectLibrary_.
    * @param forceRegistration Will register object even if conditional
    * registration checks fail.
    * @return The index in the @ref objectLibrary_ of the registered template.
    */
-  int registerObjectFinalize(attributes::SceneAttributes::ptr sceneAttributes,
-                             const std::string& sceneAttributesHandle,
-                             CORRADE_UNUSED bool forceRegistration) override;
+  int registerObjectFinalize(
+      attributes::SceneInstanceAttributes::ptr sceneInstanceAttributes,
+      const std::string& sceneInstanceAttributesHandle,
+      CORRADE_UNUSED bool forceRegistration) override;
 
   /**
    * @brief This function is meaningless for this manager's ManagedObjects.
@@ -186,12 +189,12 @@ class SceneAttributesManager
   }
 
  public:
-  ESP_SMART_POINTERS(SceneAttributesManager)
+  ESP_SMART_POINTERS(SceneInstanceAttributesManager)
 
-};  // class SceneAttributesManager
+};  // class SceneInstanceAttributesManager
 
 }  // namespace managers
 }  // namespace metadata
 }  // namespace esp
 
-#endif  // ESP_METADATA_MANAGERS_SCENEATTRIBUTEMANAGER_H_
+#endif  // ESP_METADATA_MANAGERS_SCENEINSTANCEATTRIBUTEMANAGER_H_

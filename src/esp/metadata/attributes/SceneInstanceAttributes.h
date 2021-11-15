@@ -2,8 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_METADATA_ATTRIBUTES_SCENEATTRIBUTES_H_
-#define ESP_METADATA_ATTRIBUTES_SCENEATTRIBUTES_H_
+#ifndef ESP_METADATA_ATTRIBUTES_SCENEINSTANCEATTRIBUTES_H_
+#define ESP_METADATA_ATTRIBUTES_SCENEINSTANCEATTRIBUTES_H_
 
 #include <deque>
 #include <utility>
@@ -312,15 +312,15 @@ class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
 
 };  // class SceneAOInstanceAttributes
 
-class SceneAttributes : public AbstractAttributes {
+class SceneInstanceAttributes : public AbstractAttributes {
  public:
-  explicit SceneAttributes(const std::string& handle);
+  explicit SceneInstanceAttributes(const std::string& handle);
 
-  SceneAttributes(const SceneAttributes& otr);
-  SceneAttributes(SceneAttributes&& otr) noexcept;
+  SceneInstanceAttributes(const SceneInstanceAttributes& otr);
+  SceneInstanceAttributes(SceneInstanceAttributes&& otr) noexcept;
 
-  SceneAttributes& operator=(const SceneAttributes& otr);
-  SceneAttributes& operator=(SceneAttributes&& otr) noexcept;
+  SceneInstanceAttributes& operator=(const SceneInstanceAttributes& otr);
+  SceneInstanceAttributes& operator=(SceneInstanceAttributes&& otr) noexcept;
 
   /**
    * @brief Set a value representing the mechanism used to create this scene
@@ -487,7 +487,7 @@ class SceneAttributes : public AbstractAttributes {
 
   /**
    * @brief Smartpointer to created object instance configuration. The
-   * configuration is created on SceneAttributes construction.
+   * configuration is created on SceneInstanceAttributes construction.
    */
   std::shared_ptr<Configuration> objInstConfig_{};
   /**
@@ -498,7 +498,7 @@ class SceneAttributes : public AbstractAttributes {
 
   /**
    * @brief Smartpointer to created articulated object instance configuration.
-   * The configuratio is created on SceneAttributes construction.
+   * The configuratio is created on SceneInstanceAttributes construction.
    */
   std::shared_ptr<Configuration> artObjInstConfig_{};
 
@@ -510,11 +510,11 @@ class SceneAttributes : public AbstractAttributes {
   std::deque<int> availableArtObjInstIDs_;
 
  public:
-  ESP_SMART_POINTERS(SceneAttributes)
-};  // class SceneAttributes
+  ESP_SMART_POINTERS(SceneInstanceAttributes)
+};  // class SceneInstanceAttributes
 
 }  // namespace attributes
 }  // namespace metadata
 }  // namespace esp
 
-#endif  // ESP_METADATA_ATTRIBUTES_SCENEATTRIBUTES_H_
+#endif  // ESP_METADATA_ATTRIBUTES_SCENEINSTANCEATTRIBUTES_H_

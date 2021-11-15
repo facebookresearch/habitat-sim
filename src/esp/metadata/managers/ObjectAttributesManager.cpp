@@ -181,7 +181,7 @@ void ObjectAttributesManager::setDefaultAssetNameBasedAttributes(
     attributes->setOrientUp({0, 1, 0});
     attributes->setOrientFront({0, 0, -1});
   }
-}  // SceneAttributesManager::setDefaultAssetNameBasedAttributes
+}  // SceneInstanceAttributesManager::setDefaultAssetNameBasedAttributes
 
 int ObjectAttributesManager::registerObjectFinalize(
     ObjectAttributes::ptr objectTemplate,
