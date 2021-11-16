@@ -67,6 +67,14 @@ class PhysicsManagerAttributes : public AbstractAttributes {
     return get<double>("restitution_coefficient");
   }
 
+  /**
+   * @brief Populate a json object with all the first-level values held in this
+   * configuration.  Default is overridden to handle special cases for
+   * PhysicsManagerAttributes.
+   */
+  void writeValuesToJson(io::JsonGenericValue& jsonObj,
+                         io::JsonAllocator& allocator) const override;
+
  protected:
   /**
    * @brief Retrieve a comma-separated string holding the header values for the

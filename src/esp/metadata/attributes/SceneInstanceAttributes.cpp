@@ -80,6 +80,32 @@ esp::physics::MotionType SceneObjectInstanceAttributes::getMotionType() const {
   return esp::physics::MotionType::UNDEFINED;
 }
 
+void SceneObjectInstanceAttributes::writeValuesToJson(
+    io::JsonGenericValue& jsonObj,
+    io::JsonAllocator& allocator) const {
+  // map "handle" to "template_name" key in json
+  writeValueToJson("handle", "template_name", jsonObj, allocator);
+  writeValueToJson("translation", jsonObj, allocator);
+  writeValueToJson("translation_origin", jsonObj, allocator);
+  writeValueToJson("rotation", jsonObj, allocator);
+  // map "is_instance_visible" to boolean only if not -1, otherwise don't save
+  int visSet = getIsInstanceVisible();
+  if (visSet != ID_UNDEFINED) {
+    // set JSON value based on visSet (0,1) as bool
+    auto jsonVal = io::toJsonValue(static_cast<bool>(visSet), allocator);
+    jsonObj.AddMember("is_instance_visible", jsonVal, allocator);
+  }
+
+  writeValueToJson("motion_type", jsonObj, allocator);
+  writeValueToJson("shader_type", jsonObj, allocator);
+  writeValueToJson("uniform_scale", jsonObj, allocator);
+  writeValueToJson("mass_scale", jsonObj, allocator);
+
+  // take care of child class valeus, if any exist
+  writeValuesToJsonInternal(jsonObj, allocator);
+
+}  // SceneObjectInstanceAttributes::writeValuesToJson
+
 SceneAOInstanceAttributes::SceneAOInstanceAttributes(const std::string& handle)
     : SceneObjectInstanceAttributes(handle, "SceneAOInstanceAttributes") {
   // set default fixed base and auto clamp values (only used for articulated
@@ -122,6 +148,26 @@ std::string SceneAOInstanceAttributes::getSceneObjInstanceInfoInternal() const {
   return initPoseStr;
 }  // SceneAOInstanceAttributes::getSceneObjInstanceInfoInternal()
 
+void SceneAOInstanceAttributes::writeValuesToJsonInternal(
+    io::JsonGenericValue& jsonObj,
+    io::JsonAllocator& allocator) const {
+  writeValueToJson("fixed_base", jsonObj, allocator);
+  writeValueToJson("auto_clamp_joint_limits", jsonObj, allocator);
+
+  // write array for initial_joint_pose
+  // float array keyed by "initial_joint_pose"
+  if (!initJointPose_.empty()) {
+    io::addMember(jsonObj, "initial_joint_pose", initJointPose_, allocator);
+  }
+  // write array for initial_joint_velocities
+  // float array keyed by "initial_joint_velocities"
+  if (!initJointVelocities_.empty()) {
+    io::addMember(jsonObj, "initial_joint_velocities", initJointVelocities_,
+                  allocator);
+  }
+
+}  // SceneAOInstanceAttributes::writeValuesToJsonInternal
+
 SceneInstanceAttributes::SceneInstanceAttributes(const std::string& handle)
     : AbstractAttributes("SceneInstanceAttributes", handle) {
   // defaults to no lights
@@ -159,6 +205,28 @@ SceneInstanceAttributes::SceneInstanceAttributes(
   objInstConfig_ = editSubconfig<Configuration>("object_instances");
   artObjInstConfig_ = editSubconfig<Configuration>("ao_instances");
 }
+
+void SceneInstanceAttributes::writeValuesToJson(
+    io::JsonGenericValue& jsonObj,
+    io::JsonAllocator& allocator) const {
+  writeValueToJson("translation_origin", jsonObj, allocator);
+  writeValueToJson("default_lighting", jsonObj, allocator);
+  writeValueToJson("navmesh_instance", jsonObj, allocator);
+  writeValueToJson("semantic_scene_instance", jsonObj, allocator);
+}  // SceneInstanceAttributes::writeValuesToJson
+
+void SceneInstanceAttributes::writeSubconfigsToJson(
+    io::JsonGenericValue& jsonObj,
+    io::JsonAllocator& allocator) const {
+  // build list of json objs from subconfigs describing object instances and
+  // articulated object instances
+  // object instances
+
+  // ao instances
+
+  // iterate through other subconfigs using standard handling
+  Configuration::writeSubconfigsToJson(jsonObj, allocator);
+}  // SceneInstanceAttributes::writeSubconfigsToJson
 
 SceneInstanceAttributes& SceneInstanceAttributes::operator=(
     const SceneInstanceAttributes& otr) {

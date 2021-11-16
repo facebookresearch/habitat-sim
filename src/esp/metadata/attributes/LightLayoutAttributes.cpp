@@ -22,6 +22,22 @@ LightInstanceAttributes::LightInstanceAttributes(const std::string& handle)
   setOuterConeAngle(90.0_degf);
 }  // ctor
 
+void LightInstanceAttributes::writeValuesToJson(
+    io::JsonGenericValue& jsonObj,
+    io::JsonAllocator& allocator) const {
+  gfx::LightType lightType = getType();
+  if (lightType == gfx::LightType::Directional) {
+    writeValueToJson("direction", jsonObj, allocator);
+
+  } else {
+    writeValueToJson("position", jsonObj, allocator);
+  };
+  writeValueToJson("type", jsonObj, allocator);
+  writeValueToJson("color", jsonObj, allocator);
+  writeValueToJson("intensity", jsonObj, allocator);
+  writeValueToJson("position_model", jsonObj, allocator);
+}  // LightInstanceAttributes::writeValuesToJson
+
 LightLayoutAttributes::LightLayoutAttributes(const std::string& handle)
     : AbstractAttributes("LightLayoutAttributes", handle) {
   // set default scaling for positive and negative intensities to 1.0
@@ -43,6 +59,13 @@ LightLayoutAttributes::LightLayoutAttributes(
       availableLightIDs_(std::move(otr.availableLightIDs_)) {
   lightInstConfig_ = editSubconfig<Configuration>("lights");
 }
+
+void LightLayoutAttributes::writeValuesToJson(
+    io::JsonGenericValue& jsonObj,
+    io::JsonAllocator& allocator) const {
+  writeValueToJson("positive_intensity_scale", jsonObj, allocator);
+  writeValueToJson("negative_intensity_scale", jsonObj, allocator);
+}  // LightLayoutAttributes::writeValuesToJson
 
 LightLayoutAttributes& LightLayoutAttributes::operator=(
     const LightLayoutAttributes& otr) {

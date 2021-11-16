@@ -657,10 +657,11 @@ class Configuration {
 
   /**
    * @brief Build and return a json object holding the values and nested objects
-   * holding the subconfigs of this Configuration.
+   * holding the subconfigs of this Configuration.  Override this function to
+   * call local overrides of writevaluesToJson and/or writeSubconfigsToJson for
+   * root-level configuration.
    */
-  virtual io::JsonGenericValue writeToJsonValue(
-      io::JsonAllocator& allocator) const;
+  io::JsonGenericValue writeToJsonValue(io::JsonAllocator& allocator) const;
 
   /**
    * @brief Populate a json object with all the first-level values held in this
@@ -674,8 +675,8 @@ class Configuration {
    * @brief Populate a json object with all the data from the subconfigurations,
    * held in json sub-objects, for this Configuration.
    */
-  virtual void writeConfigsToJson(io::JsonGenericValue& jsonObj,
-                                  io::JsonAllocator& allocator) const;
+  virtual void writeSubconfigsToJson(io::JsonGenericValue& jsonObj,
+                                     io::JsonAllocator& allocator) const;
 
   /**
    * @brief Take the passed @p key and query the config value for that key,

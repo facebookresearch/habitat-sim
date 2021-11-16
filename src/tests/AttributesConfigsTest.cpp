@@ -958,8 +958,6 @@ void AttributesConfigsTest::testObjectJSONLoad() {
 
   // delete file-based config
   Cr::Utility::Directory::rm(newAttrName);
-
-  // load attributes from new name and retest
 }  // AttributesConfigsTest::testObjectJSONLoadTest
 
 }  // namespace

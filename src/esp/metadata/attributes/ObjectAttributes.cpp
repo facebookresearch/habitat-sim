@@ -72,18 +72,6 @@ void AbstractObjectAttributes::writeValuesToJson(
   writeValuesToJsonInternal(jsonObj, allocator);
 }  // AbstractObjectAttributes::writeValuesToJson
 
-io::JsonGenericValue AbstractObjectAttributes::writeToJsonValue(
-    io::JsonAllocator& allocator) const {
-  io::JsonGenericValue jsonObj(rapidjson::kObjectType);
-  // only save values that are pertinent for this object or stage.
-  writeValuesToJson(jsonObj, allocator);
-
-  // iterate through subconfigs
-  Configuration::writeConfigsToJson(jsonObj, allocator);
-
-  return jsonObj;
-}  // AbstractObjectAttributes::writeValuesToJson
-
 ObjectAttributes::ObjectAttributes(const std::string& handle)
     : AbstractObjectAttributes("ObjectAttributes", handle) {
   // fill necessary attribute defaults
