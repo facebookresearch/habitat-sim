@@ -373,6 +373,10 @@ void Configuration::writeSubconfigsToJson(io::JsonGenericValue& jsonObj,
       io::JsonGenericValue subObj =
           cfgIter->second->writeToJsonValue(allocator);
       jsonObj.AddMember(name, subObj, allocator);
+    } else {
+      ESP_WARNING() << "Unitialized/empty Subconfig in Configuration @ key ["
+                    << cfgIter->first
+                    << "], so nothing will be written to JSON for this key.";
     }
   }  // iterate through all configurations
 

@@ -732,7 +732,7 @@ void AttributesConfigsTest::testSceneInstanceJSONLoad() {
   // registry
   ESP_DEBUG() << "Not testing integrity of saved Scene Attributes.";
   // ESP_DEBUG() << "About to test saved sceneAttr2 :";
-  // testSceneInstanceAttrVals(sceneAttr2);
+  testSceneInstanceAttrVals(sceneAttr2);
   // ESP_DEBUG() << "Tested saved sceneAttr2 :";
   // delete file-based config
   Cr::Utility::Directory::rm(newAttrName);

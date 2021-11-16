@@ -179,7 +179,8 @@ SceneInstanceAttributes::SceneInstanceAttributes(const std::string& handle)
   setSemanticSceneHandle("");
   // get refs to internal subconfigs for object and ao instances
   objInstConfig_ = editSubconfig<Configuration>("object_instances");
-  artObjInstConfig_ = editSubconfig<Configuration>("ao_instances");
+  artObjInstConfig_ =
+      editSubconfig<Configuration>("articulated_object_instances");
 }
 
 SceneInstanceAttributes::SceneInstanceAttributes(
@@ -191,7 +192,8 @@ SceneInstanceAttributes::SceneInstanceAttributes(
   objInstConfig_ = editSubconfig<Configuration>("object_instances");
   copySubconfigIntoMe<SceneObjectInstanceAttributes>(otr.objInstConfig_,
                                                      objInstConfig_);
-  artObjInstConfig_ = editSubconfig<Configuration>("ao_instances");
+  artObjInstConfig_ =
+      editSubconfig<Configuration>("articulated_object_instances");
   copySubconfigIntoMe<SceneAOInstanceAttributes>(otr.artObjInstConfig_,
                                                  artObjInstConfig_);
 }
@@ -203,7 +205,8 @@ SceneInstanceAttributes::SceneInstanceAttributes(
   // get refs to internal subconfigs for object and ao instances
   // originals were moved over so should retain full derived class
   objInstConfig_ = editSubconfig<Configuration>("object_instances");
-  artObjInstConfig_ = editSubconfig<Configuration>("ao_instances");
+  artObjInstConfig_ =
+      editSubconfig<Configuration>("articulated_object_instances");
 }
 
 void SceneInstanceAttributes::writeValuesToJson(
@@ -221,11 +224,55 @@ void SceneInstanceAttributes::writeSubconfigsToJson(
   // build list of json objs from subconfigs describing object instances and
   // articulated object instances
   // object instances
+  auto objCfgIterPair = objInstConfig_->getSubconfigIterator();
+  io::JsonGenericValue objInstArray(rapidjson::kArrayType);
+  for (auto& cfgIter = objCfgIterPair.first; cfgIter != objCfgIterPair.second;
+       ++cfgIter) {
+    objInstArray.PushBack(cfgIter->second->writeToJsonValue(allocator),
+                          allocator);
+  }
+  jsonObj.AddMember("object_instances", objInstArray, allocator);
 
   // ao instances
+  auto AObjCfgIterPair = artObjInstConfig_->getSubconfigIterator();
+  io::JsonGenericValue AObjInstArray(rapidjson::kArrayType);
+  for (auto& cfgIter = AObjCfgIterPair.first; cfgIter != AObjCfgIterPair.second;
+       ++cfgIter) {
+    AObjInstArray.PushBack(cfgIter->second->writeToJsonValue(allocator),
+                           allocator);
+  }
+  jsonObj.AddMember("articulated_object_instances", AObjInstArray, allocator);
+
+  // save stage_instance subconfig
+  SceneObjectInstanceAttributes::cptr stageInstance = getStageInstance();
+  io::JsonGenericValue subObj = stageInstance->writeToJsonValue(allocator);
+  jsonObj.AddMember("stage_instance", subObj, allocator);
 
   // iterate through other subconfigs using standard handling
-  Configuration::writeSubconfigsToJson(jsonObj, allocator);
+  // do not resave ObjectInstances and AObjInstances
+  // iterate through subconfigs
+  // pair of begin/end const iterators to all subconfigurations
+  auto cfgIterPair = getSubconfigIterator();
+  for (auto& cfgIter = cfgIterPair.first; cfgIter != cfgIterPair.second;
+       ++cfgIter) {
+    if ((cfgIter->first == "object_instances") ||
+        (cfgIter->first == "stage_instance") ||
+        (cfgIter->first == "articulated_object_instances")) {
+      continue;
+    }
+    // only save if subconfig has entries
+    if (cfgIter->second->getNumEntries() > 0) {
+      rapidjson::GenericStringRef<char> name{cfgIter->first.c_str()};
+      io::JsonGenericValue subObj =
+          cfgIter->second->writeToJsonValue(allocator);
+      jsonObj.AddMember(name, subObj, allocator);
+    } else {
+      ESP_WARNING() << "Unitialized/empty Subconfig in Configuration @ key ["
+                    << cfgIter->first
+                    << "], so nothing will be written to JSON for this key.";
+    }
+  }  // iterate through all configurations
+
 }  // SceneInstanceAttributes::writeSubconfigsToJson
 
 SceneInstanceAttributes& SceneInstanceAttributes::operator=(
@@ -238,7 +285,8 @@ SceneInstanceAttributes& SceneInstanceAttributes::operator=(
     objInstConfig_ = editSubconfig<Configuration>("object_instances");
     copySubconfigIntoMe<SceneObjectInstanceAttributes>(otr.objInstConfig_,
                                                        objInstConfig_);
-    artObjInstConfig_ = editSubconfig<Configuration>("ao_instances");
+    artObjInstConfig_ =
+        editSubconfig<Configuration>("articulated_object_instances");
     copySubconfigIntoMe<SceneAOInstanceAttributes>(otr.artObjInstConfig_,
                                                    artObjInstConfig_);
   }
@@ -252,7 +300,8 @@ SceneInstanceAttributes& SceneInstanceAttributes::operator=(
       std::move(static_cast<AbstractAttributes>(otr)));
 
   objInstConfig_ = editSubconfig<Configuration>("object_instances");
-  artObjInstConfig_ = editSubconfig<Configuration>("ao_instances");
+  artObjInstConfig_ =
+      editSubconfig<Configuration>("articulated_object_instances");
   return *this;
 }
 std::string SceneInstanceAttributes::getObjectInfoInternal() const {
