@@ -28,7 +28,6 @@ void LightInstanceAttributes::writeValuesToJson(
   gfx::LightType lightType = getType();
   if (lightType == gfx::LightType::Directional) {
     writeValueToJson("direction", jsonObj, allocator);
-
   } else {
     writeValueToJson("position", jsonObj, allocator);
   };

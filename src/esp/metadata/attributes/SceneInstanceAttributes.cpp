@@ -154,13 +154,12 @@ void SceneAOInstanceAttributes::writeValuesToJsonInternal(
   writeValueToJson("fixed_base", jsonObj, allocator);
   writeValueToJson("auto_clamp_joint_limits", jsonObj, allocator);
 
-  // write array for initial_joint_pose
-  // float array keyed by "initial_joint_pose"
+  // write out map where key is joint tag, and value is joint pose value.
   if (!initJointPose_.empty()) {
     io::addMember(jsonObj, "initial_joint_pose", initJointPose_, allocator);
   }
-  // write array for initial_joint_velocities
-  // float array keyed by "initial_joint_velocities"
+
+  // write out map where key is joint tag, and value is joint angular vel value.
   if (!initJointVelocities_.empty()) {
     io::addMember(jsonObj, "initial_joint_velocities", initJointVelocities_,
                   allocator);
