@@ -230,6 +230,7 @@ void AttributesConfigsTest::testUserDefinedConfigVals(
     Magnum::Vector3 vec_val,
     Magnum::Quaternion quat_val) {
   // user defined attributes from light instance
+  ESP_WARNING() << "Testing user defined configs for " << str_val;
   CORRADE_VERIFY(userConfig);
   CORRADE_COMPARE(userConfig->get<std::string>("user_string"), str_val);
   CORRADE_COMPARE(userConfig->get<bool>("user_bool"), bool_val);
@@ -730,10 +731,9 @@ void AttributesConfigsTest::testSceneInstanceJSONLoad() {
 
   // test json string to verify format, this deletes sceneAttr2 from
   // registry
-  ESP_DEBUG() << "Not testing integrity of saved Scene Attributes.";
-  // ESP_DEBUG() << "About to test saved sceneAttr2 :";
+  ESP_DEBUG() << "About to test saved sceneAttr2 :";
   testSceneInstanceAttrVals(sceneAttr2);
-  // ESP_DEBUG() << "Tested saved sceneAttr2 :";
+  ESP_DEBUG() << "Tested saved sceneAttr2 :";
   // delete file-based config
   Cr::Utility::Directory::rm(newAttrName);
 
