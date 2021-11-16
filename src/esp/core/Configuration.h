@@ -657,9 +657,7 @@ class Configuration {
 
   /**
    * @brief Build and return a json object holding the values and nested objects
-   * holding the subconfigs of this Configuration.  Override this function to
-   * call local overrides of writevaluesToJson and/or writeSubconfigsToJson for
-   * root-level configuration.
+   * holding the subconfigs of this Configuration.
    */
   io::JsonGenericValue writeToJsonValue(io::JsonAllocator& allocator) const;
 
