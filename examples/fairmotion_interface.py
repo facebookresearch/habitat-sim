@@ -5,6 +5,7 @@
 import json
 import os
 import time
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -67,8 +68,6 @@ class FairmotionInterface:
         self.model: Optional[phy.ManagedArticulatedObject] = None
         self.path_points: Optional[List[mn.Vector3]] = None
 
-        #
-
         if metadata_file:
             try:
                 self.fetch_metadata(metadata_file)
@@ -87,9 +86,6 @@ class FairmotionInterface:
             # This sets the instance defaults with init(args)
             self.set_data(urdf_path=urdf_path, amass_path=amass_path, bm_path=bm_path)
             self.save_metadata("default")
-
-        # TESTING
-        self.last_position = [0.0, 0.0, 0.0]
 
         # positional offsets
         self.set_transform_offsets(
@@ -635,9 +631,7 @@ class FairmotionInterface:
 
         # 1. rotate P->  by Angle(up_v <-> up_sim) around (up_v X up_sim)
         angle1 = mn.math.angle(up_vector.normalized(), mn.Vector3.y_axis())
-        print(f"1angle = {angle1}")
         axis1 = mn.math.cross(up_vector.normalized(), mn.Vector3.y_axis())
-        print(f"1axis = {axis1}")
         rotation1 = mn.Quaternion.rotation(angle1, axis1)
         delta_P_vector = rotation1.transform_vector(delta_P_vector)
 
@@ -691,37 +685,82 @@ class Move:
     is our reference for with step the motions assume first.
     """
 
-    class Phase:
-        def __init__(self, motion, get_direction=False) -> None:
+    @dataclass
+    class MotionData:
+        """
+        [FILL AFTER NEXT PR REVIEW]
+        """
+
+        def __init__(self, motion) -> None:
+            # plurality in naming usually hints that attr is an frame lookup array
             self.motion = motion
-            self.direction = None
+            self.poses = motion.poses
+            self.num_of_frames: int = len(motion.poses)
+            self.translation_drifts: List[mn.Vector3] = []
+            self.forward_displacements: List[mn.Vector3] = []
+            self.root_orientations: List[mn.Quaternion] = []
 
-            # get_direction will produce a unit vector from roots of the first and
-            # last frame, only useful with straight motions like walking or running.
-            if get_direction:
-                first = mn.Vector3(
-                    self.motion.poses[0].get_transform(ROOT, local=False)[0:3, 3]
-                )
-                last = mn.Vector3(
-                    self.motion.poses[-1].get_transform(ROOT, local=False)[0:3, 3]
-                )
-                self.direction_up = mn.Vector3(self.motion.skel.v_up)
-                self.direction_forward = (
-                    (last - first) * (mn.Vector3(1.0, 1.0, 1.0) - self.direction_up)
-                ).normalized()
-
-        def dataclass_pass():
-            print(
-                "I am keeping this here until I figure out how to bypass pre-commit error: Use dataclass."
+            # this section will produce a unit vector from roots of the first and last frame
+            f = mn.Vector3(
+                self.motion.poses[0].get_transform(ROOT, local=False)[0:3, 3]
             )
-            print("Adding @dataclass annotation is not a solution")
+            l = mn.Vector3(
+                self.motion.poses[-1].get_transform(ROOT, local=False)[0:3, 3]
+            )
+            self.direction_up = mn.Vector3(self.motion.skel.v_up)
+            self.direction_forward = (
+                (l - f) * (mn.Vector3(1.0, 1.0, 1.0) - self.direction_up)
+            ).normalized()
+
+            # fill translation_drifts and forward_displacements
+            for i in range(self.num_of_frames):
+                if i + 1 == self.num_of_frames:
+                    # interpolate forward and drift from nth vectors and 1st vectors and push front
+                    self.forward_displacements.insert(
+                        0,
+                        (
+                            (
+                                self.forward_displacements[-1]
+                                + self.forward_displacements[0]
+                            )
+                            * 0.5
+                        ),
+                    )
+                    self.translation_drifts.insert(
+                        0,
+                        (
+                            (self.translation_drifts[-1] + self.translation_drifts[0])
+                            * 0.5
+                        ),
+                    )
+                    break
+
+                # root translation
+                curr_root_t = motion.poses[i].get_transform(ROOT, local=False)[0:3, 3]
+                next_root_t = motion.poses[i + 1].get_transform(ROOT, local=False)[
+                    0:3, 3
+                ]
+                delta_P_vector = mn.Vector3(next_root_t - curr_root_t)
+                forward_vector = delta_P_vector.projected(self.direction_forward)
+                drift_vector = delta_P_vector - forward_vector
+
+                self.forward_displacements.append(forward_vector)
+                self.translation_drifts.append(drift_vector)
+
+            # fill root_orientations
+            for pose in motion.poses:
+                root_T = pose.get_transform(ROOT, local=False)
+                root_rotation = mn.Quaternion.from_matrix(
+                    mn.Matrix3x3(root_T[0:3, 0:3])
+                )
+                self.root_orientations.append(root_rotation)
 
     motion = amass.load(
         file="data/fairmotion/amass_test_data/CMU/CMU/02/02_01_poses.npz",
         bm_path="data/fairmotion/amass_test_data/smplh/male/model.npz",
     )
 
-    walk_to_walk = Phase(motion_ops.cut(motion, 147, 279), get_direction=True)
+    walk_to_walk = MotionData(motion_ops.cut(motion, 147, 279))
 
 
 class Preview(Enum):
