@@ -168,7 +168,7 @@ inline bool readMember(const JsonGenericValue& d,
  */
 template <typename T>
 void addMember(JsonGenericValue& value,
-               rapidjson::GenericStringRef<char> name,
+               const rapidjson::GenericStringRef<char>& name,
                const std::map<std::string, T>& mapVal,
                JsonAllocator& allocator) {
   if (!mapVal.empty()) {
