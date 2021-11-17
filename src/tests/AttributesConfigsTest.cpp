@@ -489,22 +489,6 @@ void AttributesConfigsTest::testSceneInstanceAttrVals(
                             Magnum::Vector3(12.3, 32.5, 25.07),
                             Magnum::Quaternion({3.2f, 2.6f, 5.1f}, 0.3f));
 
-  // verify stage populated properly
-  auto stageInstance = sceneAttr->getStageInstance();
-  CORRADE_COMPARE(stageInstance->getHandle(), "test_stage_template");
-  CORRADE_COMPARE(stageInstance->getTranslation(), Magnum::Vector3(1, 2, 3));
-  CORRADE_COMPARE(stageInstance->getRotation(),
-                  Magnum::Quaternion({0.2f, 0.3f, 0.4f}, 0.1f));
-  // make sure that is not default value "flat"
-  CORRADE_COMPARE(static_cast<int>(stageInstance->getShaderType()),
-                  static_cast<int>(Attrs::ObjectInstanceShaderType::PBR));
-
-  // test stage instance attributes-level user config vals
-  testUserDefinedConfigVals(stageInstance->getUserConfiguration(),
-                            "stage instance defined string", true, 11, 2.2,
-                            Magnum::Vector3(1.2, 3.4, 5.6),
-                            Magnum::Quaternion({0.5f, 0.6f, 0.7f}, 0.4f));
-
   // verify objects
   auto objectInstanceList = sceneAttr->getObjectInstances();
   CORRADE_COMPARE(objectInstanceList.size(), 2);
@@ -601,6 +585,21 @@ void AttributesConfigsTest::testSceneInstanceAttrVals(
                             false, 21, 11.22,
                             Magnum::Vector3(190.3f, 902.5f, -95.07f),
                             Magnum::Quaternion({9.22f, 9.26f, 0.21f}, 1.25f));
+  // verify stage populated properly
+  auto stageInstance = sceneAttr->getStageInstance();
+  CORRADE_COMPARE(stageInstance->getHandle(), "test_stage_template");
+  CORRADE_COMPARE(stageInstance->getTranslation(), Magnum::Vector3(1, 2, 3));
+  CORRADE_COMPARE(stageInstance->getRotation(),
+                  Magnum::Quaternion({0.2f, 0.3f, 0.4f}, 0.1f));
+  // make sure that is not default value "flat"
+  CORRADE_COMPARE(static_cast<int>(stageInstance->getShaderType()),
+                  static_cast<int>(Attrs::ObjectInstanceShaderType::PBR));
+
+  // test stage instance attributes-level user config vals
+  testUserDefinedConfigVals(stageInstance->getUserConfiguration(),
+                            "stage instance defined string", true, 11, 2.2,
+                            Magnum::Vector3(1.2, 3.4, 5.6),
+                            Magnum::Quaternion({0.5f, 0.6f, 0.7f}, 0.4f));
 
   // remove json-string built attributes added for test
   testRemoveAttributesBuiltByJSONString(sceneInstanceAttributesManager_,
