@@ -78,7 +78,8 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             if self.fm_demo.motion is not None:
                 self.fm_demo.next_pose()
                 self.fm_demo.next_pose()
-                self.fm_demo.update_pathfollower(step_size=2)
+                self.fm_demo.update_pathfollower()
+                self.fm_demo.update_pathfollower()
 
         super().draw_event(simulation_call=play_motion)
 

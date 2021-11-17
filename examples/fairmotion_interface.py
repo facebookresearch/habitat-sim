@@ -10,6 +10,8 @@ from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
 import magnum as mn
+
+# import numpy as np
 from fairmotion.core import motion
 from fairmotion.data import amass
 from fairmotion.ops import conversions
@@ -313,7 +315,7 @@ class FairmotionInterface:
             new_root_translate,
             new_root_rotation,
         ) = self.convert_CMUamass_single_pose(
-            self.motion.poses[abs(self.motion_stepper)], self.model, raw=False
+            self.motion.poses[abs(self.motion_stepper)], self.model
         )
         self.model.joint_positions = new_pose
         self.model.rotation = new_root_rotation
@@ -332,7 +334,7 @@ class FairmotionInterface:
 
         # Root joint
         if raw:
-            root_T = pose.get_transform(ROOT, local=True)
+            root_T = pose.get_transform(ROOT, local=False)
         else:
             root_T = pose.get_transform(ROOT, local=False)
 
@@ -590,14 +592,16 @@ class FairmotionInterface:
         self.model.translation = path.points[0] + mn.Vector3(0.0, 1.0, 0.0)
 
         # First update with step_size 0 to start character
-        self.update_pathfollower(step_size=0)
+        self.update_pathfollower()
 
-    def update_pathfollower(self, step_size: int = 1):
+    def update_pathfollower(self):
         """
         When called, this method will update the position and orientation of the
         path follower. The `step_size` argument is the amount of steps the path_follower
         should take on this update.
         """
+        step_size = 1
+
         # precondition
         if not all(
             [self.model, self.path_points, self.activity == Activity.PATH_FOLLOW]
@@ -623,7 +627,7 @@ class FairmotionInterface:
         )
 
         # translation
-        drift_vector = Move.walk_to_walk.translation_drifts[curr_frame]
+        # drift_vector = Move.walk_to_walk.translation_drifts[curr_frame]
         forward_vector = Move.walk_to_walk.forward_displacements[curr_frame]
         orientation_quat = Move.walk_to_walk.root_orientations[curr_frame]
 
@@ -632,10 +636,13 @@ class FairmotionInterface:
 
         # Wraps path on true, this means that the character has passed goal, reset path_ptr to 0.0 and i to 0
         if self.path_ptr + forward_vector.length() > self.full_path_length:
-            self.path_ptr = 0.0
-            self.model.translation = path_points[0] + mn.Vector3(0.0, 1.0, 0.0)
-
-        self.path_ptr += forward_vector.length()
+            print("endofline")
+            self.path_ptr = (
+                self.path_ptr + forward_vector.length() - self.full_path_length
+            )
+            self.model.translation = self.point_at_path_t(path_points, self.path_ptr)
+        else:
+            self.path_ptr += forward_vector.length()
 
         # Find where we are in the timeline, and set approriate orientation to char, then set translation
         for i, _ in enumerate(path_points):
@@ -648,28 +655,49 @@ class FairmotionInterface:
             if self.path_ptr < sum_segment_len:
 
                 # get point along path where model should be
-                d = self.path_ptr - (sum_segment_len - segment.length())
-                path_pos = mn.Vector3(path_points[i]) + (d * segment)
-                path_pos += mn.Vector3(0.0, 1.0, 0.0)
+                path_pos = self.point_at_path_t(path_points, self.path_ptr)
 
-                look_at = mn.Quaternion.from_matrix(
-                    mn.Matrix4.look_at(
-                        mn.Vector3(path_points[i]),
-                        mn.Vector3(path_points[i + 1]),
-                        mn.Vector3(Move.walk_to_walk.motion.skel.v_up),
-                    ).rotation()
+                # VERIFY
+                look_at = (
+                    mn.Quaternion.from_matrix(
+                        mn.Matrix4.look_at(
+                            mn.Vector3(path_points[i]),
+                            mn.Vector3(path_points[i + 1]),
+                            mn.Vector3.z_axis(),
+                        ).rotation()
+                    )
+                    * mn.Quaternion.rotation(mn.Deg(-90), mn.Vector3.x_axis())
+                    * mn.Quaternion.rotation(mn.Deg(90), mn.Vector3.z_axis())
                 )
 
                 # 3. Add P-> to root_translation
-                self.model.translation = path_pos + look_at.transform_vector(
-                    drift_vector
-                )
+                self.model.translation = path_pos
                 self.model.rotation = look_at * orientation_quat
                 self.model.joint_positions = curr_pose
 
                 break
 
         self.path_motion_stepper = self.path_motion_stepper + step_size
+
+    def point_at_path_t(self, path_points: List[mn.Vector3], t: float) -> mn.Vector3:
+        """
+        Function that give a point on the path at time t.
+        """
+        d = 0.0
+        i = 0
+
+        while i < len(path_points) - 1:
+
+            progress = d + (mn.Vector3(path_points[i + 1] - path_points[i])).length()
+            if t >= progress:
+                d += progress
+                i += 1
+            else:
+                break
+
+        direction = (mn.Vector3(path_points[i + 1] - path_points[i])).normalized()
+        point = path_points[i] + ((t - d) * direction)
+        return mn.Vector3(point) + mn.Vector3(0.0, 1.0, 0.0)
 
 
 class Move:
@@ -701,10 +729,13 @@ class Move:
             l = mn.Vector3(
                 self.motion.poses[-1].get_transform(ROOT, local=False)[0:3, 3]
             )
-            self.direction_up = mn.Vector3(self.motion.skel.v_up)
+            self.direction_up = mn.Vector3.z_axis()
             self.direction_forward = (
-                (l - f) * (mn.Vector3(1.0, 1.0, 1.0) - self.direction_up)
+                (l - f) * (mn.Vector3(1.0, 1.0, 1.0) - mn.Vector3.z_axis())
             ).normalized()
+            print(
+                f"(l - f) * (mn.Vector3(1.0, 1.0, 1.0) - mn.Vector3.z_axis()= {(l - f) * (mn.Vector3(1.0, 1.0, 1.0) - mn.Vector3.z_axis())}"
+            )
 
             # fill translation_drifts and forward_displacements
             for i in range(self.num_of_frames):
@@ -755,6 +786,8 @@ class Move:
     )
 
     walk_to_walk = MotionData(motion_ops.cut(motion, 147, 279))
+
+    # assert False
 
 
 class Preview(Enum):
