@@ -86,7 +86,9 @@ void SceneObjectInstanceAttributes::writeValuesToJson(
   // map "handle" to "template_name" key in json
   writeValueToJson("handle", "template_name", jsonObj, allocator);
   writeValueToJson("translation", jsonObj, allocator);
-  writeValueToJson("translation_origin", jsonObj, allocator);
+  if (getTranslationOrigin() != SceneInstanceTranslationOrigin::Unknown) {
+    writeValueToJson("translation_origin", jsonObj, allocator);
+  }
   writeValueToJson("rotation", jsonObj, allocator);
   // map "is_instance_visible" to boolean only if not -1, otherwise don't save
   int visSet = getIsInstanceVisible();
@@ -95,8 +97,9 @@ void SceneObjectInstanceAttributes::writeValuesToJson(
     auto jsonVal = io::toJsonValue(static_cast<bool>(visSet), allocator);
     jsonObj.AddMember("is_instance_visible", jsonVal, allocator);
   }
-
-  writeValueToJson("motion_type", jsonObj, allocator);
+  if (getMotionType() != esp::physics::MotionType::UNDEFINED) {
+    writeValueToJson("motion_type", jsonObj, allocator);
+  }
   writeValueToJson("shader_type", jsonObj, allocator);
   writeValueToJson("uniform_scale", jsonObj, allocator);
   writeValueToJson("mass_scale", jsonObj, allocator);
@@ -211,7 +214,9 @@ SceneInstanceAttributes::SceneInstanceAttributes(
 void SceneInstanceAttributes::writeValuesToJson(
     io::JsonGenericValue& jsonObj,
     io::JsonAllocator& allocator) const {
-  writeValueToJson("translation_origin", jsonObj, allocator);
+  if (getTranslationOrigin() != SceneInstanceTranslationOrigin::Unknown) {
+    writeValueToJson("translation_origin", jsonObj, allocator);
+  }
   writeValueToJson("default_lighting", jsonObj, allocator);
   writeValueToJson("navmesh_instance", jsonObj, allocator);
   writeValueToJson("semantic_scene_instance", jsonObj, allocator);
@@ -243,8 +248,7 @@ void SceneInstanceAttributes::writeSubconfigsToJson(
   jsonObj.AddMember("articulated_object_instances", AObjInstArray, allocator);
 
   // save stage_instance subconfig
-  SceneObjectInstanceAttributes::cptr stageInstance = getStageInstance();
-  io::JsonGenericValue subObj = stageInstance->writeToJsonValue(allocator);
+  io::JsonGenericValue subObj = getStageInstance()->writeToJsonValue(allocator);
   jsonObj.AddMember("stage_instance", subObj, allocator);
 
   // iterate through other subconfigs using standard handling

@@ -739,7 +739,7 @@ void AttributesConfigsTest::testSceneInstanceJSONLoad() {
 
   // test json string to verify format, this deletes sceneAttr2 from
   // registry
-  ESP_DEBUG() << "About to test saved sceneAttr2 :";
+  ESP_DEBUG() << "About to test saved sceneAttr2 :" << sceneAttr2->getHandle();
   testSceneInstanceAttrVals(sceneAttr2);
   ESP_DEBUG() << "Tested saved sceneAttr2 :";
   // delete file-based config
@@ -852,7 +852,7 @@ void AttributesConfigsTest::testStageJSONLoad() {
 
   // test json string to verify format, this deletes stageAttr2 from
   // registry
-  ESP_DEBUG() << "About to test saved stageAttr2 :";
+  ESP_DEBUG() << "About to test saved stageAttr2 :" << stageAttr2->getHandle();
   testStageAttrVals(stageAttr2, stageAssetFile);
   ESP_DEBUG() << "Tested saved stageAttr2 :";
 
@@ -969,7 +969,7 @@ void AttributesConfigsTest::testObjectJSONLoad() {
 
   // test json string to verify format, this deletes objAttr2 from
   // registry
-  ESP_DEBUG() << "About to test saved stageAttr2 :";
+  ESP_DEBUG() << "About to test saved stageAttr2 :" << objAttr2->getHandle();
   testObjectAttrVals(objAttr2, objAssetFile);
   ESP_DEBUG() << "Tested saved stageAttr2 :";
 

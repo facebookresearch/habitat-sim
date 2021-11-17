@@ -274,7 +274,7 @@ int Configuration::loadFromJson(const io::JsonGenericValue& jsonObj) {
   for (rapidjson::Value::ConstMemberIterator it = jsonObj.MemberBegin();
        it != jsonObj.MemberEnd(); ++it) {
     // for each key, attempt to parse
-    const std::string key = it->name.GetString();
+    const std::string key{it->name.GetString()};
     const auto& obj = it->value;
     // increment, assuming is valid object
     ++numConfigSettings;
