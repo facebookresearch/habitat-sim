@@ -143,10 +143,19 @@ int PhysicsManager::addObjectInstance(
   // attributes, if any exist in scene
   // instance.
   objPtr->mergeUserAttributes(objInstAttributes->getUserConfiguration());
+  // determine and set if this object should be COM Corrected or not
+  metadata::attributes::SceneInstanceTranslationOrigin instanceCOMOrigin =
+      objInstAttributes->getTranslationOrigin();
+  objPtr->setIsCOMCorrected(
+      ((defaultCOMCorrection &&
+        (instanceCOMOrigin !=
+         metadata::attributes::SceneInstanceTranslationOrigin::COM)) ||
+       (instanceCOMOrigin ==
+        metadata::attributes::SceneInstanceTranslationOrigin::AssetLocal)));
 
   // set object's location, rotation and other pertinent state values based on
   // scene object instance attributes set in the object above.
-  objPtr->resetStateFromSceneInstanceAttr(defaultCOMCorrection);
+  objPtr->resetStateFromSceneInstanceAttr();
 
   return objID;
 }  // PhysicsManager::addObjectInstance

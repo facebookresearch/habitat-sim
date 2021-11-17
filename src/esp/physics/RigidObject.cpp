@@ -67,7 +67,7 @@ void RigidObject::setMotionType(MotionType mt) {
   }
 }
 
-void RigidObject::resetStateFromSceneInstanceAttr(bool defaultCOMCorrection) {
+void RigidObject::resetStateFromSceneInstanceAttr() {
   auto sceneInstanceAttr = getInitObjectInstanceAttr();
   if (!sceneInstanceAttr) {
     return;
@@ -75,23 +75,17 @@ void RigidObject::resetStateFromSceneInstanceAttr(bool defaultCOMCorrection) {
   // set object's location and rotation based on translation and rotation
   // params specified in instance attributes
   auto translate = sceneInstanceAttr->getTranslation();
-  // get instance override value, if exists
-  metadata::attributes::SceneInstanceTranslationOrigin instanceCOMOrigin =
-      sceneInstanceAttr->getTranslationOrigin();
-
-  if ((defaultCOMCorrection &&
-       (instanceCOMOrigin !=
-        metadata::attributes::SceneInstanceTranslationOrigin::COM)) ||
-      (instanceCOMOrigin ==
-       metadata::attributes::SceneInstanceTranslationOrigin::AssetLocal)) {
+  auto rotation = sceneInstanceAttr->getRotation();
+  // This was set when object was created, based on whether or not the object
+  // should be centered at COM or via Asset Local origin.
+  if (isCOMCorrected_) {
     // if default COM correction is set and no object-based override, or if
     // Object set to correct for COM.
-    translate -= sceneInstanceAttr->getRotation().transformVector(
-        visualNode_->translation());
+    translate -= rotation.transformVector(visualNode_->translation());
   }
-
   setTranslation(translate);
-  setRotation(sceneInstanceAttr->getRotation());
+  setRotation(rotation);
+
   // set object's motion type if different than set value
   const physics::MotionType attrObjMotionType =
       static_cast<physics::MotionType>(sceneInstanceAttr->getMotionType());

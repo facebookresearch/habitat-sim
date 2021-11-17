@@ -253,11 +253,8 @@ class ArticulatedLink : public RigidBase {
   /**
    * @brief Not used for articulated links.  Set or reset the object's state
    * using the object's specified @p sceneInstanceAttributes_.
-   * @param defaultCOMCorrection The default value of whether COM-based
-   * translation correction needs to occur.
    */
-  void resetStateFromSceneInstanceAttr(
-      CORRADE_UNUSED bool defaultCOMCorrection = false) override {
+  void resetStateFromSceneInstanceAttr() override {
     ESP_DEBUG() << "ArticulatedLink can't do this.";
   }
 

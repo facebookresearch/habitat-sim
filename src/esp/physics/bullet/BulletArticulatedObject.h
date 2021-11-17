@@ -404,8 +404,7 @@ class BulletArticulatedObject : public ArticulatedObject {
    * @param defaultCOMCorrection Not used in AO currently. The default value of
    * whether COM-based translation correction needs to occur.
    */
-  void resetStateFromSceneInstanceAttr(
-      CORRADE_UNUSED bool defaultCOMCorrection = false) override;
+  void resetStateFromSceneInstanceAttr() override;
 
   //! The Bullet multibody structure
   std::unique_ptr<btMultiBody> btMultiBody_;

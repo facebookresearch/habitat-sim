@@ -399,11 +399,8 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
   /**
    * @brief Set or reset the object's state using the object's specified @p
    * sceneInstanceAttributes_.
-   * @param defaultCOMCorrection The default value of whether COM-based
-   * translation correction needs to occur.
    */
-  virtual void resetStateFromSceneInstanceAttr(
-      CORRADE_UNUSED bool defaultCOMCorrection = false) = 0;
+  virtual void resetStateFromSceneInstanceAttr() = 0;
 
   /**
    * @brief Set this object's @ref
