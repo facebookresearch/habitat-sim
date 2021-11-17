@@ -162,6 +162,19 @@ class RigidObject : public RigidBase {
   }
 
   /**
+   * @brief Reverses the COM correction transformation for objects that require
+   * it. Currently a simple passthrough for stages and Articulated Objects.
+   */
+  Magnum::Vector3 getUncorrectedTranslation() const override {
+    auto translation = getTranslation();
+    auto rotation = getRotation();
+    if (isCOMCorrected_) {
+      translation += rotation.transformVector(visualNode_->translation());
+    }
+    return translation;
+  }
+
+  /**
    * @brief Set the @ref MotionType of the object. If the object is @ref
    * ObjectType::SCENE it can only be @ref esp::physics::MotionType::STATIC. If
    * the object is

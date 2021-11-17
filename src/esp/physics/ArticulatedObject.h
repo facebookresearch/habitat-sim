@@ -802,6 +802,22 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
         const metadata::attributes::SceneAOInstanceAttributes>();
   }
 
+  /**
+   * @brief Return a @ref
+   * metadata::attributes::SceneAOInstanceAttributes reflecting the current
+   * state of this Articulated Object.
+   * Note : base PhysicsManager implementation does not support state changes on
+   * ArticulatedObjects, so no change will occur from initialization
+   * InstanceAttributes.
+   * @return a @ref SceneAOInstanceAttributes reflecting this Articulated
+   * Object's current state
+   */
+  virtual std::shared_ptr<metadata::attributes::SceneAOInstanceAttributes>
+  getCurrentStateInstanceAttr() {
+    return PhysicsObjectBase::getCurrentObjectInstanceAttrInternal<
+        metadata::attributes::SceneAOInstanceAttributes>();
+  }
+
  protected:
   /**
    * @brief Used to synchronize simulator's notion of the object state

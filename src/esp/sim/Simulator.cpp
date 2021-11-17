@@ -475,14 +475,13 @@ bool Simulator::instanceStageForActiveScene(
 bool Simulator::instanceObjectsForActiveScene(
     const metadata::attributes::SceneInstanceAttributes::cptr&
         curSceneInstanceAttributes) {
-  // 5. Load object instances as spceified by Scene Instance Attributes.
+  // Load object instances as spceified by Scene Instance Attributes.
   // Get all instances of objects described in scene
   const std::vector<SceneObjectInstanceAttributes::cptr> objectInstances =
       curSceneInstanceAttributes->getObjectInstances();
 
   // node to attach object to
   scene::SceneNode* attachmentNode = nullptr;
-  // int objID = 0;
 
   // whether or not to correct for COM shift - only do for blender-sourced
   // scene attributes

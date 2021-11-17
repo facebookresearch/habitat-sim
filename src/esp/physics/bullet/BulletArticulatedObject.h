@@ -112,6 +112,16 @@ class BulletArticulatedObject : public ArticulatedObject {
   void updateNodes(bool force = false) override;
 
   /**
+   * @brief Return a @ref
+   * metadata::attributes::SceneAOInstanceAttributes reflecting the current
+   * state of this Articulated Object.
+   * @return a @ref SceneAOInstanceAttributes reflecting this Articulated
+   * Object's current state
+   */
+  std::shared_ptr<metadata::attributes::SceneAOInstanceAttributes>
+  getCurrentStateInstanceAttr() override;
+
+  /**
    * @brief Get the linear velocity of the articulated object's root in the
    * global frame.
    *

@@ -248,6 +248,21 @@ class RigidBase : public esp::physics::PhysicsObjectBase {
         const metadata::attributes::SceneObjectInstanceAttributes>();
   }
 
+  /**
+   * @brief Return a @ref
+   * metadata::attributes::SceneObjectInstanceAttributes reflecting the current
+   * state of this Rigid.
+   * @return a @ref metadata::attributes::SceneObjectInstanceAttributes
+   * reflecting this rigid
+   */
+  std::shared_ptr<metadata::attributes::SceneObjectInstanceAttributes>
+  getCurrentStateInstanceAttr() {
+    // retrieve copy of initial SceneObjectInstanceAttributes with appropriate
+    // fields updated based on current state
+    return PhysicsObjectBase::getCurrentObjectInstanceAttrInternal<
+        metadata::attributes::SceneObjectInstanceAttributes>();
+  }
+
   /** @brief Get a copy of the template used to initialize this object
    * or scene.
    * @return A copy of the initialization template used to create this object

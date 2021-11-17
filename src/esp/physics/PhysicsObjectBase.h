@@ -462,6 +462,42 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
   }
 
   /**
+   * @brief Reverses the COM correction transformation for objects that require
+   * it. Currently a simple passthrough for stages and Articulated Objects.
+   */
+  virtual Magnum::Vector3 getUncorrectedTranslation() const {
+    return getTranslation();
+  }
+
+  /** @brief Accessed internally. Get an appropriately cast copy of the @ref
+   * metadata::attributes::SceneObjectInstanceAttributes used to place the
+   * object within the scene, updated to have the c.
+   * @return A copy of the initialization template used to create this object
+   * instance or nullptr if no template exists.
+   */
+  template <class T>
+  std::shared_ptr<T> getCurrentObjectInstanceAttrInternal() {
+    if (!_initObjInstanceAttrs) {
+      return nullptr;
+    }
+    static_assert(
+        std::is_base_of<metadata::attributes::SceneObjectInstanceAttributes,
+                        T>::value,
+        "PhysicsObjectBase : Cast of SceneObjectInstanceAttributes must be to "
+        "class that inherits from SceneObjectInstanceAttributes");
+
+    std::shared_ptr<T> initAttrs = std::const_pointer_cast<T>(
+        T::create(*(static_cast<const T*>(_initObjInstanceAttrs.get()))));
+    // set values
+    initAttrs->setTranslation(getUncorrectedTranslation());
+    initAttrs->setRotation(getRotation());
+    initAttrs->setMotionType(
+        metadata::attributes::getMotionTypeName(objectMotionType_));
+
+    return initAttrs;
+  }
+
+  /**
    * @brief Used to synchronize other simulator's notion of the object state
    * after it was changed kinematically. Must be called automatically on
    * kinematic updates.
