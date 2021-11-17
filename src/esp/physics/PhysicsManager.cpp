@@ -64,13 +64,15 @@ bool PhysicsManager::addStage(
 
   //! Initialize stage
   bool sceneSuccess = addStageFinalize(initAttributes);
-  // add/merge stageInstanceAttributes' copy of user_attributes.
-  if (!stageInstanceAttributes) {
-    ESP_DEBUG() << "Stage built from StageInstanceAttributes";
-    // TODO merge instance attributes into staticStageObject_'s existing
-    // attributes
+  if (sceneSuccess) {
+    // save instance attributes used to create stage
+    staticStageObject_->setSceneInstanceAttr(stageInstanceAttributes);
+    // add/merge stageInstanceAttributes' copy of user_attributes.
+    staticStageObject_->mergeUserAttributes(
+        stageInstanceAttributes->getUserConfiguration());
   }
-  // TODO process any stage transformations here from stageInstanceAttributes
+  // TODO process any stage transformations here from
+  // stageInstanceAttributes
 
   return sceneSuccess;
 }  // PhysicsManager::addStage
