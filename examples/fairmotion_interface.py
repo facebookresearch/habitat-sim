@@ -331,7 +331,10 @@ class FairmotionInterface:
         new_pose = []
 
         # Root joint
-        root_T = pose.get_transform(ROOT, local=False)
+        if raw:
+            root_T = pose.get_transform(ROOT, local=True)
+        else:
+            root_T = pose.get_transform(ROOT, local=False)
 
         # adding offsets to root transformation
         # rotation
@@ -606,7 +609,7 @@ class FairmotionInterface:
             self.path_motion_stepper + step_size
         ) % self.path_motion.num_frames()
 
-        # wrap motion translation if next_frame is overflowed
+        # wrap motion translation if next_frame is overflowed [Refactor!]
         if next_frame < curr_frame:
             self.path_motion_stepper = 0
             curr_frame = (self.path_motion_stepper) % self.path_motion.num_frames()
@@ -615,64 +618,55 @@ class FairmotionInterface:
             ) % self.path_motion.num_frames()
 
         # get current character pose attrs
-        curr_pose, curr_root_T, curr_root_R = self.convert_CMUamass_single_pose(
+        curr_pose, _, _ = self.convert_CMUamass_single_pose(
             self.path_motion.poses[curr_frame], self.model, raw=True
         )
 
-        # get next character pose attrs
-        next_pose, next_root_T, next_root_R = self.convert_CMUamass_single_pose(
-            self.path_motion.poses[next_frame], self.model, raw=True
-        )
-
         # translation
-        delta_P_vector = mn.Vector3(next_root_T - curr_root_T)
-        forward_vector = mn.Vector3(Move.walk_to_walk.direction_forward)
-        up_vector = mn.Vector3.z_axis()
-
-        # 1. rotate P->  by Angle(up_v <-> up_sim) around (up_v X up_sim)
-        angle1 = mn.math.angle(up_vector.normalized(), mn.Vector3.y_axis())
-        axis1 = mn.math.cross(up_vector.normalized(), mn.Vector3.y_axis())
-        rotation1 = mn.Quaternion.rotation(angle1, axis1)
-        delta_P_vector = rotation1.transform_vector(delta_P_vector)
+        drift_vector = Move.walk_to_walk.translation_drifts[curr_frame]
+        forward_vector = Move.walk_to_walk.forward_displacements[curr_frame]
+        orientation_quat = Move.walk_to_walk.root_orientations[curr_frame]
 
         path_points = self.path_points
-        segment_len = 0
+        sum_segment_len = 0
+
+        # Wraps path on true, this means that the character has passed goal, reset path_ptr to 0.0 and i to 0
+        if self.path_ptr + forward_vector.length() > self.full_path_length:
+            self.path_ptr = 0.0
+            self.model.translation = path_points[0] + mn.Vector3(0.0, 1.0, 0.0)
+
+        self.path_ptr += forward_vector.length()
 
         # Find where we are in the timeline, and set approriate orientation to char, then set translation
         for i, _ in enumerate(path_points):
 
-            # Wraps path on true, this means that the character has passed goal, reset path_ptr to 0.0 and i to 0
-            if self.path_ptr > self.full_path_length:
-                self.path_ptr = 0.0
-                self.model.translation = path_points[0] + mn.Vector3(0.0, 1.0, 0.0)
-                i = 0
-
             # represents the segments of our timeline
             segment = mn.Vector3(path_points[i + 1] - path_points[i])
-            segment_len += segment.length()
+            sum_segment_len += segment.length()
 
             # if path pointer has not passed a certain point in the path timeline, then we know its location range
-            if self.path_ptr < segment_len:
+            if self.path_ptr < sum_segment_len:
 
-                # 2. rotate P->  by Angle(forward_v <-> path_seg) around (up_sim)
-                angle2 = mn.math.angle(
-                    forward_vector.normalized(), segment.normalized()
+                # get point along path where model should be
+                d = self.path_ptr - (sum_segment_len - segment.length())
+                path_pos = mn.Vector3(path_points[i]) + (d * segment)
+                path_pos += mn.Vector3(0.0, 1.0, 0.0)
+
+                look_at = mn.Quaternion.from_matrix(
+                    mn.Matrix4.look_at(
+                        mn.Vector3(path_points[i]),
+                        mn.Vector3(path_points[i + 1]),
+                        mn.Vector3(Move.walk_to_walk.motion.skel.v_up),
+                    ).rotation()
                 )
-                axis2 = mn.Vector3.y_axis()
-                rotation2 = mn.Quaternion.rotation(angle2, axis2)
-                delta_P_vector = rotation2.transform_vector(delta_P_vector)
 
                 # 3. Add P-> to root_translation
-                self.model.translation += delta_P_vector
-
-                # 4. Add length of (P-> projected to path_segment) to path_ptr
-                self.path_ptr += (
-                    delta_P_vector.projected_onto_normalized(segment.normalized())
-                ).length()
-
-                # 5. Apply Pose to Model
+                self.model.translation = path_pos + look_at.transform_vector(
+                    drift_vector
+                )
+                self.model.rotation = look_at * orientation_quat
                 self.model.joint_positions = curr_pose
-                self.model.rotation = rotation2 * rotation1 * curr_root_R
+
                 break
 
         self.path_motion_stepper = self.path_motion_stepper + step_size

@@ -491,7 +491,7 @@ Key Commands:
     Fairmotion Interface:
     'f':        Load model with current motion data.
                 [shft] Hide model.
-    'j':        Load model to follow a path between two randomliy chosen pointsRandomly choose two points.
+    'j':        Load model to follow a path between two randomly chosen points.
     'k':        Toggle key frame preview of loaded motion.
     '/':        Set motion to play in reverse.
     'l':        Fetch and load data from a file give by the user's input.
