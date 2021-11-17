@@ -68,7 +68,7 @@ void RigidObject::setMotionType(MotionType mt) {
 }
 
 void RigidObject::resetStateFromSceneInstanceAttr(bool defaultCOMCorrection) {
-  auto sceneInstanceAttr = getSceneInstanceAttributes();
+  auto sceneInstanceAttr = getInitObjectInstanceAttr();
   if (!sceneInstanceAttr) {
     return;
   }

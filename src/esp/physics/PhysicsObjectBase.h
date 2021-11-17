@@ -416,7 +416,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
 
   template <class U>
   void setSceneInstanceAttr(std::shared_ptr<U> instanceAttr) {
-    _sceneInstanceAttributes = std::move(instanceAttr);
+    _initObjInstanceAttrs = std::move(instanceAttr);
   }  // setSceneInstanceAttr
 
   /**
@@ -457,11 +457,11 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    * instance or nullptr if no template exists.
    */
   template <class T>
-  std::shared_ptr<T> getSceneInstanceAttrInternal() const {
-    if (!_sceneInstanceAttributes) {
+  std::shared_ptr<T> getInitObjectInstanceAttrInternal() const {
+    if (!_initObjInstanceAttrs) {
       return nullptr;
     }
-    return T::create(*(static_cast<T*>(_sceneInstanceAttributes.get())));
+    return T::create(*(static_cast<T*>(_initObjInstanceAttrs.get())));
   }
 
   /**
@@ -512,7 +512,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    * creation.
    */
   std::shared_ptr<const metadata::attributes::SceneObjectInstanceAttributes>
-      _sceneInstanceAttributes = nullptr;
+      _initObjInstanceAttrs = nullptr;
 
  public:
   ESP_SMART_POINTERS(PhysicsObjectBase)

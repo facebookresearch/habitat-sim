@@ -262,7 +262,7 @@ void BulletArticulatedObject::updateNodes(bool force) {
 
 void BulletArticulatedObject::resetStateFromSceneInstanceAttr(
     CORRADE_UNUSED bool defaultCOMCorrection) {
-  auto sceneObjInstanceAttr = getSceneInstanceAttributes();
+  auto sceneObjInstanceAttr = getInitObjectInstanceAttr();
   if (!sceneObjInstanceAttr) {
     // if no scene instance attributes specified, no initial state is set
     return;
