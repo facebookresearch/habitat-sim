@@ -89,6 +89,11 @@ class HabitatSimInteractiveViewer(Application):
         logger.setLevel("INFO")
         self.print_help_text()
 
+    def debug_draw(self):
+        """
+        Additional draw commands to be called during draw_event.
+        """
+
     def draw_event(self, simulation_call: Optional[Callable] = None) -> None:
         """
         Calls continuously to re-render frames and swap the two frame buffers
@@ -120,6 +125,8 @@ class HabitatSimInteractiveViewer(Application):
             self.time_since_last_simulation = math.fmod(
                 self.time_since_last_simulation, 1.0 / 60.0
             )
+
+        self.debug_draw()
 
         self.sim._sensors["color_sensor"].draw_observation()
         self.render_camera.render_target.blit_rgba_to_default()

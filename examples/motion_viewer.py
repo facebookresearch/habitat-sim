@@ -67,6 +67,47 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
 
         self.navmesh_config_and_recompute()
 
+    def debug_draw(self):
+        """
+        Additional draw commands to be called during draw_event.
+        """
+
+        def draw_frame():
+            red = mn.Color4(1.0, 0.0, 0.0, 1.0)
+            green = mn.Color4(0.0, 1.0, 0.0, 1.0)
+            blue = mn.Color4(0.0, 0.0, 1.0, 1.0)
+            # yellow = mn.Color4(1.0, 1.0, 0.0, 1.0)
+
+            # x axis
+            self.sim.get_debug_line_render().draw_transformed_line(
+                mn.Vector3(), mn.Vector3(1.0, 0.0, 0.0), red
+            )
+            # y axis
+            self.sim.get_debug_line_render().draw_transformed_line(
+                mn.Vector3(), mn.Vector3(0.0, 1.0, 0.0), green
+            )
+            # z axis
+            self.sim.get_debug_line_render().draw_transformed_line(
+                mn.Vector3(), mn.Vector3(0.0, 0.0, 1.0), blue
+            )
+
+        """
+        if self.fm_demo is not None and self.fm_demo.model is not None:
+            # print(f"model 2 root = {self.fm_demo.model2.transformation}")
+            character_pos = self.fm_demo.model.translation
+            coordinate_transform = mn.Matrix4.rotation(
+                mn.Rad(mn.math.pi), mn.Vector3(0.0, 1.0, 0.0)
+            )
+            look_at_T = mn.Matrix4.look_at(
+                mn.Vector3(), character_pos, mn.Vector3(0.0, 1.0, 0.0)
+            )
+            final_transform = look_at_T.__matmul__(coordinate_transform)
+            # self.fm_demo.model2.transformation = final_transform
+            self.sim.get_debug_line_render().push_transform(final_transform)
+            draw_frame()
+            self.sim.get_debug_line_render().pop_transform()
+        """
+
     def draw_event(self, simulation_call: Optional[Callable] = None) -> None:
         """
         Calls continuously to re-render frames and swap the two frame buffers
@@ -78,8 +119,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             if self.fm_demo.motion is not None:
                 self.fm_demo.next_pose()
                 self.fm_demo.next_pose()
-                self.fm_demo.update_pathfollower()
-                self.fm_demo.update_pathfollower()
+                self.fm_demo.update_pathfollower_sequential()
 
         super().draw_event(simulation_call=play_motion)
 
@@ -341,25 +381,28 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             )
         self.path_traj_obj_id = -1
 
-        while any([sample1 is None, sample2 is None]):
-            sample1 = sample1 or self.sim.pathfinder.get_random_navigable_point()
-            sample2 = sample2 or self.sim.pathfinder.get_random_navigable_point()
+        found_path = False
+        while not found_path:
+            sample1 = None
+            sample2 = None
+            while any([sample1 is None, sample2 is None]):
+                sample1 = sample1 or self.sim.pathfinder.get_random_navigable_point()
+                sample2 = sample2 or self.sim.pathfinder.get_random_navigable_point()
 
-            # constraint points to be on first floor
-            if sample1[1] != sample2[1] or sample1[1] > 2:
-                logger.warn(
-                    "Warning: points are out of acceptable area, replacing with randoms"
-                )
-                sample1, sample2 = None, None
-        print(sample1, sample2)
+                # constraint points to be on first floor
+                if sample1[1] != sample2[1] or sample1[1] > 2:
+                    logger.warn(
+                        "Warning: points are out of acceptable area, replacing with randoms"
+                    )
+                    sample1, sample2 = None, None
+            print(sample1, sample2)
 
-        path = habitat_sim.ShortestPath()
-        path.requested_start = sample1
-        path.requested_end = sample2
-        found_path = self.sim.pathfinder.find_path(path)
-        geodesic_distance = path.geodesic_distance
-        self.path_points = path.points
-        self.fm_demo.setup_pathfollower(path)
+            path = habitat_sim.ShortestPath()
+            path.requested_start = sample1
+            path.requested_end = sample2
+            found_path = self.sim.pathfinder.find_path(path)
+            geodesic_distance = path.geodesic_distance
+            self.path_points = path.points
 
         logger.info(
             f"""
