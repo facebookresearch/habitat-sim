@@ -450,7 +450,7 @@ bool AttributesManager<T, Access>::saveManagedObjectToFileInternal(
   rapidjson::Document doc(rapidjson::kObjectType, nullptr, 1024, nullptr);
   rapidjson::Document::AllocatorType& allocator = doc.GetAllocator();
   // build Json from passed Configuration
-  auto configJson = attribs->writeToJsonValue(allocator);
+  auto configJson = attribs->writeToJsonObject(allocator);
   // move constructed config into doc
   doc.Swap(configJson);
   // save to file

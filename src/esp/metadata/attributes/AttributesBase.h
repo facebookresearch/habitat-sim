@@ -119,7 +119,6 @@ class AbstractAttributes
    * of this managed object.
    */
   std::string getObjectInfo() const override {
-    ESP_WARNING() << "Building " << getClassKey() << ":";
     return Cr::Utility::formatString("{},{},{}", getSimplifiedHandle(),
                                      getAsString("ID"),
                                      getObjectInfoInternal());

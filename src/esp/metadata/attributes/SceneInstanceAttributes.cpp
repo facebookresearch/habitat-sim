@@ -232,7 +232,7 @@ void SceneInstanceAttributes::writeSubconfigsToJson(
   io::JsonGenericValue objInstArray(rapidjson::kArrayType);
   for (auto& cfgIter = objCfgIterPair.first; cfgIter != objCfgIterPair.second;
        ++cfgIter) {
-    objInstArray.PushBack(cfgIter->second->writeToJsonValue(allocator),
+    objInstArray.PushBack(cfgIter->second->writeToJsonObject(allocator),
                           allocator);
   }
   jsonObj.AddMember("object_instances", objInstArray, allocator);
@@ -242,13 +242,14 @@ void SceneInstanceAttributes::writeSubconfigsToJson(
   io::JsonGenericValue AObjInstArray(rapidjson::kArrayType);
   for (auto& cfgIter = AObjCfgIterPair.first; cfgIter != AObjCfgIterPair.second;
        ++cfgIter) {
-    AObjInstArray.PushBack(cfgIter->second->writeToJsonValue(allocator),
+    AObjInstArray.PushBack(cfgIter->second->writeToJsonObject(allocator),
                            allocator);
   }
   jsonObj.AddMember("articulated_object_instances", AObjInstArray, allocator);
 
   // save stage_instance subconfig
-  io::JsonGenericValue subObj = getStageInstance()->writeToJsonValue(allocator);
+  io::JsonGenericValue subObj =
+      getStageInstance()->writeToJsonObject(allocator);
   jsonObj.AddMember("stage_instance", subObj, allocator);
 
   // iterate through other subconfigs using standard handling
@@ -267,7 +268,7 @@ void SceneInstanceAttributes::writeSubconfigsToJson(
     if (cfgIter->second->getNumEntries() > 0) {
       rapidjson::GenericStringRef<char> name{cfgIter->first.c_str()};
       io::JsonGenericValue subObj =
-          cfgIter->second->writeToJsonValue(allocator);
+          cfgIter->second->writeToJsonObject(allocator);
       jsonObj.AddMember(name, subObj, allocator);
     } else {
       ESP_WARNING() << "Unitialized/empty Subconfig in Configuration @ key ["

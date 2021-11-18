@@ -160,7 +160,7 @@ class ConfigValue {
   /**
    * @brief Write this ConfigValue to an appropriately configured json object.
    */
-  io::JsonGenericValue writeToJsonValue(io::JsonAllocator& allocator) const;
+  io::JsonGenericValue writeToJsonObject(io::JsonAllocator& allocator) const;
 
   template <class T>
   void set(const T& value) {
@@ -659,7 +659,7 @@ class Configuration {
    * @brief Build and return a json object holding the values and nested objects
    * holding the subconfigs of this Configuration.
    */
-  io::JsonGenericValue writeToJsonValue(io::JsonAllocator& allocator) const;
+  io::JsonGenericValue writeToJsonObject(io::JsonAllocator& allocator) const;
 
   /**
    * @brief Populate a json object with all the first-level values held in this

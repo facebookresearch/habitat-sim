@@ -199,7 +199,7 @@ std::string ConfigValue::getAsString() const {
   }  // switch
 }  // ConfigValue::getAsString
 
-io::JsonGenericValue ConfigValue::writeToJsonValue(
+io::JsonGenericValue ConfigValue::writeToJsonObject(
     io::JsonAllocator& allocator) const {
   // unknown is checked before this function is called, so does not need support
   switch (getType()) {
@@ -334,7 +334,7 @@ void Configuration::writeValueToJson(const char* key,
                                      io::JsonGenericValue& jsonObj,
                                      io::JsonAllocator& allocator) const {
   rapidjson::GenericStringRef<char> name{jsonName};
-  auto jsonVal = get(key).writeToJsonValue(allocator);
+  auto jsonVal = get(key).writeToJsonObject(allocator);
   jsonObj.AddMember(name, jsonVal, allocator);
 }
 
@@ -350,7 +350,7 @@ void Configuration::writeValuesToJson(io::JsonGenericValue& jsonObj,
     if (valIter->second.isValid()) {
       // make sure value is legal
       rapidjson::GenericStringRef<char> name{valIter->first.c_str()};
-      auto jsonVal = valIter->second.writeToJsonValue(allocator);
+      auto jsonVal = valIter->second.writeToJsonObject(allocator);
       jsonObj.AddMember(name, jsonVal, allocator);
     } else {
       ESP_WARNING() << "Unitialized ConfigValue in Configuration @ key ["
@@ -371,7 +371,7 @@ void Configuration::writeSubconfigsToJson(io::JsonGenericValue& jsonObj,
     if (cfgIter->second->getNumEntries() > 0) {
       rapidjson::GenericStringRef<char> name{cfgIter->first.c_str()};
       io::JsonGenericValue subObj =
-          cfgIter->second->writeToJsonValue(allocator);
+          cfgIter->second->writeToJsonObject(allocator);
       jsonObj.AddMember(name, subObj, allocator);
     } else {
       ESP_WARNING() << "Unitialized/empty Subconfig in Configuration @ key ["
@@ -382,7 +382,7 @@ void Configuration::writeSubconfigsToJson(io::JsonGenericValue& jsonObj,
 
 }  // Configuration::writeSubconfigsToJson
 
-io::JsonGenericValue Configuration::writeToJsonValue(
+io::JsonGenericValue Configuration::writeToJsonObject(
     io::JsonAllocator& allocator) const {
   io::JsonGenericValue jsonObj(rapidjson::kObjectType);
   // iterate through all values - always call base version - this will only ever
@@ -392,7 +392,7 @@ io::JsonGenericValue Configuration::writeToJsonValue(
   writeSubconfigsToJson(jsonObj, allocator);
 
   return jsonObj;
-}  // writeToJsonValue
+}  // writeToJsonObject
 
 /**
  * @brief Retrieves a shared pointer to a copy of the subConfig @ref
