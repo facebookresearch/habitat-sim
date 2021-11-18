@@ -25,13 +25,7 @@ namespace geo {
  * these conversion mechansims.
  */
 enum class ColorSpace {
-  /**
-   * @brief
-   */
   RGBA,
-  /**
-   * @brief
-   */
   sRGBA,
   /**
    * @brief HSV represent Hue, Saturation and Value, where the color space is
