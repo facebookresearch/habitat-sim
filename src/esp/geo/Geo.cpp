@@ -290,19 +290,6 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
   const Mn::UnsignedInt numColors = interpColors.size();
   std::vector<Mn::Vector3> trajColors;
 
-  // // temp converter to vector of values in HSV space from RGB color
-  // auto convertClrToHSVArray = [](const Mn::Color3& clr) -> Mn::Vector3 {
-  //   Mn::ColorHsv tmpHsv = Mn::Math::pack<Mn::Color3ub>(clr).toHsv();
-  //   Mn::Vector3 tmpClr(tmpHsv.hue.operator float(), tmpHsv.saturation,
-  //                      tmpHsv.value);
-  //   return tmpClr;
-  // };
-  // // temp converter to RGB color from vector of HSV values
-  // auto convertHSVArrayToColor3ub =
-  //     [](const Mn::Vector3& hsvVec) -> Mn::Color3ub {
-  //   return Mn::Color3ub::fromHsv({Mn::Deg(hsvVec[0]), hsvVec[1], hsvVec[2]});
-  // };
-
   if (numColors == 1) {
     trajColors.reserve(trajSize);
     // with only 1 color, just make duplicates of color for every trajectory
