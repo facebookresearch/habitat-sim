@@ -144,10 +144,10 @@ void buildCatmullRomTraj4Points(const std::vector<Mn::Vector3>& pts,
   // t values are based on distances between sequential points and type of
   // spline
   float t0 = 0.0f;
-  float t1 = ptKnotVals[stIdx];
-  float t2 = ptKnotVals[stIdx + 1] + t1;
-  float t3 = ptKnotVals[stIdx + 2] + t2;
-  float incr = (t2 - t1) / (1.0f * numInterp);
+  float t1 = ptKnotVals[stIdx + 1];
+  float t2 = ptKnotVals[stIdx + 2] + t1;
+  float t3 = ptKnotVals[stIdx + 3] + t2;
+  float incr = (t2 - t1) / (1.0f * (numInterp - 1));
   for (int i = 0; i < numInterp; ++i) {
     float t = t1 + i * incr;
     // don't allow float error to cause t to go past 3rd interpolated point in
@@ -173,8 +173,11 @@ std::vector<Mn::Vector3> buildCatmullRomTrajOfPoints(
   alpha = clamp(alpha, 0.0f, 1.0f);
   // points in trajectory
   std::vector<Mn::Vector3> trajectory;
+  trajectory.reserve(pts.size() * numInterp);
   std::vector<Mn::Vector3> tmpPoints;
+  tmpPoints.reserve(pts.size() + 2);
   std::vector<float> ptKnotVals;
+  ptKnotVals.reserve(pts.size() + 2);
   // build padded array of points to use to synthesize centripetal catmul-rom
   // trajectory by adding "ghost" point so we start drawing from initial point
   // in trajectory.
@@ -182,8 +185,7 @@ std::vector<Mn::Vector3> buildCatmullRomTrajOfPoints(
   ptKnotVals.emplace_back(calcWeightedDistance(tmpPoints[0], pts[0], alpha));
   for (int i = 0; i < pts.size(); ++i) {
     tmpPoints.emplace_back(pts[i]);
-    ptKnotVals.emplace_back(
-        calcWeightedDistance(tmpPoints[i], tmpPoints[i + 1], alpha));
+    ptKnotVals.emplace_back(calcWeightedDistance(tmpPoints[i], pts[i], alpha));
   }
   // add final ghost point in trajectory
   int lastIdx = pts.size() - 1;
@@ -208,13 +210,70 @@ std::vector<float> getPointDistsAlongTrajectory(
   return dists;
 }  // getPointDistsAlongTrajectory
 
+namespace {
+Mn::Vector3 convertClrToInterpClrVector(const Mn::Color3& clrFloat,
+                                        ColorSpace clrType) {
+  Mn::Color3ub clr = Mn::Math::pack<Mn::Color3ub>(clrFloat);
+  switch (clrType) {
+    case ColorSpace::RGBA: {
+      return Mn::Vector3(clr.r(), clr.g(), clr.b());
+    }
+    case ColorSpace::sRGBA: {
+      return clr.toSrgb();
+    }
+    case ColorSpace::HSV: {
+      Mn::ColorHsv tmpHsv = clr.toHsv();
+      return Mn::Vector3(tmpHsv.hue.operator float(), tmpHsv.saturation,
+                         tmpHsv.value);
+    }
+    case ColorSpace::XYZ: {
+      return clr.toXyz();
+    }
+    default: {
+      CORRADE_ASSERT_UNREACHABLE("Unknown Geo::ColorSpace specified.",
+                                 Mn::Vector3({clr.r(), clr.g(), clr.b()}));
+    }
+  }
+}  // convertClrToInterpClrVector
+
+Mn::Color3ub convertInterpClrVecToUBClr(const Mn::Vector3& clrVec,
+                                        ColorSpace clrType) {
+  Mn::Color3ub resClr(clrVec);
+  switch (clrType) {
+    case ColorSpace::RGBA: {
+      break;
+    }
+    case ColorSpace::sRGBA: {
+      resClr = Mn::Color3ub::fromSrgb(clrVec);
+      break;
+    }
+    case ColorSpace::HSV: {
+      resClr =
+          Mn::Color3ub::fromHsv({Mn::Deg(clrVec[0]), clrVec[1], clrVec[2]});
+      break;
+    }
+    case ColorSpace::XYZ: {
+      resClr = Mn::Color3ub::fromXyz(clrVec);
+      break;
+    }
+    default: {
+      CORRADE_ASSERT_UNREACHABLE("Unknown Geo::ColorSpace specified.",
+                                 {clrVec});
+    }
+  }
+  return resClr;
+}  // convertInterpClrVecToUBClr
+
+}  // namespace
+
 Mn::Trade::MeshData buildTrajectoryTubeSolid(
     const std::vector<Mn::Vector3>& pts,
     const std::vector<Mn::Color3>& interpColors,
     int numSegments,
     float radius,
     bool smooth,
-    int numInterp) {
+    int numInterp,
+    ColorSpace clrSpace) {
   // 1. Build smoothed trajectory through passed points if requested
   // points in trajectory
   // A centripetal CR spline (alpha == .5) will not have cusps, while remaining
@@ -231,24 +290,13 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
   const Mn::UnsignedInt numColors = interpColors.size();
   std::vector<Mn::Vector3> trajColors;
 
-  // temp converter to vector of values in HSV space from RGB color
-  auto convertClrToHSVArray = [](const Mn::Color3& clr) -> Mn::Vector3 {
-    Mn::ColorHsv tmpHsv = Mn::Math::pack<Mn::Color3ub>(clr).toHsv();
-    Mn::Vector3 tmpClr(tmpHsv.hue.operator float(), tmpHsv.saturation,
-                       tmpHsv.value);
-    return tmpClr;
-  };
-  // temp converter to RGB color from vector of HSV values
-  auto convertHSVArrayToColor3ub =
-      [](const Mn::Vector3& hsvVec) -> Mn::Color3ub {
-    return Mn::Color3ub::fromHsv({Mn::Deg(hsvVec[0]), hsvVec[1], hsvVec[2]});
-  };
-
   if (numColors == 1) {
     trajColors.reserve(trajSize);
-    // interpolate in hsv space - first convert src colors to HSV
+    // with only 1 color, just make duplicates of color for every trajectory
+    // point/vertex
     for (const auto& pt : trajectory) {
-      trajColors.emplace_back(convertClrToHSVArray(interpColors[0]));
+      trajColors.emplace_back(
+          convertClrToInterpClrVector(interpColors[0], clrSpace));
     }
 
   } else {
@@ -256,13 +304,18 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
     std::vector<Mn::Vector3> srcClrs;
     srcClrs.reserve(numColors);
     for (const auto& clr : interpColors) {
-      srcClrs.emplace_back(convertClrToHSVArray(clr));
+      srcClrs.emplace_back(convertClrToInterpClrVector(clr, clrSpace));
     }
     // determine how many interpolations we should have : trajColors should be
     // trajSize in size
     int numClrInterp = (trajSize / (numColors - 1)) + 1;
     // now build interpolated vector of colors
     trajColors = buildCatmullRomTrajOfPoints(srcClrs, numClrInterp, alpha);
+    // fill end of trajColors array with final color if smaller than size of
+    // trajectory
+    while (trajColors.size() < trajSize) {
+      trajColors.push_back(trajColors.back());
+    }
   }
 
   // 3. Build mesh vertex points around each trajectory point at appropriate
@@ -318,16 +371,16 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
     // pre-rotated normal for circle is normalized point
     normals[circlePtIDX] =
         tangentOrientation.transformVector(circleNormVerts[i]);
-    colors[circlePtIDX] = convertHSVArrayToColor3ub(trajColors[0]);
+    colors[circlePtIDX] = convertInterpClrVecToUBClr(trajColors[0], clrSpace);
     ++circlePtIDX;
   }
-  // add cap vert at the end of the list
+  // add beginning cap vert at the end of the list
   // build vertex (circleVerts[i] is at radius)
   positions[vertexCount - 2] = trajectory[0];
-  // pre-rotated normal for circle is normalized point
+  // normal points out at beginning cap vert
   normals[vertexCount - 2] =
       tangentOrientation.transformVector({0.0f, 0.0f, -1.0f});
-  colors[vertexCount - 2] = convertHSVArrayToColor3ub(trajColors[0]);
+  colors[vertexCount - 2] = convertInterpClrVecToUBClr(trajColors[0], clrSpace);
 
   for (Mn::UnsignedInt vertIx = 1; vertIx < trajSize - 1; ++vertIx) {
     const Mn::Vector3& vert = trajectory[vertIx];
@@ -344,7 +397,8 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
       // pre-rotated normal for circle is normalized point
       normals[circlePtIDX] =
           tangentOrientation.transformVector(circleNormVerts[i]);
-      colors[circlePtIDX] = convertHSVArrayToColor3ub(trajColors[vertIx]);
+      colors[circlePtIDX] =
+          convertInterpClrVecToUBClr(trajColors[vertIx], clrSpace);
       ++circlePtIDX;
     }
   }
@@ -361,17 +415,17 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
     // pre-rotated normal for circle is normalized point
     normals[circlePtIDX] =
         tangentOrientation.transformVector(circleNormVerts[i]);
-    colors[circlePtIDX] = convertHSVArrayToColor3ub(trajColors[idx]);
+    colors[circlePtIDX] = convertInterpClrVecToUBClr(trajColors[idx], clrSpace);
     ++circlePtIDX;
   }
-  // add cap verts
+  // add end cap vert
   // build vertex (circleVerts[i] is at radius)
   positions[vertexCount - 1] = trajectory[idx];
-  // pre-rotated normal for circle is normalized point
+  // normal points out at end cap vert
   normals[vertexCount - 1] =
       tangentOrientation.transformVector({0.0f, 0.0f, 1.0f});
-
-  colors[vertexCount - 1] = convertHSVArrayToColor3ub(trajColors[idx]);
+  colors[vertexCount - 1] =
+      convertInterpClrVecToUBClr(trajColors[idx], clrSpace);
 
   // 4. Create polys between all points
   Cr::Containers::Array<char> indexData{
