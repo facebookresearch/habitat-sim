@@ -144,10 +144,10 @@ void buildCatmullRomTraj4Points(const std::vector<Mn::Vector3>& pts,
   // t values are based on distances between sequential points and type of
   // spline
   float t0 = 0.0f;
-  float t1 = ptKnotVals[stIdx];
-  float t2 = ptKnotVals[stIdx + 1] + t1;
-  float t3 = ptKnotVals[stIdx + 2] + t2;
-  float incr = (t2 - t1) / (1.0f * numInterp);
+  float t1 = ptKnotVals[stIdx + 1];
+  float t2 = ptKnotVals[stIdx + 2] + t1;
+  float t3 = ptKnotVals[stIdx + 3] + t2;
+  float incr = (t2 - t1) / (1.0f * (numInterp - 1));
   for (int i = 0; i < numInterp; ++i) {
     float t = t1 + i * incr;
     // don't allow float error to cause t to go past 3rd interpolated point in
@@ -173,8 +173,11 @@ std::vector<Mn::Vector3> buildCatmullRomTrajOfPoints(
   alpha = clamp(alpha, 0.0f, 1.0f);
   // points in trajectory
   std::vector<Mn::Vector3> trajectory;
+  trajectory.reserve(pts.size() * numInterp);
   std::vector<Mn::Vector3> tmpPoints;
+  tmpPoints.reserve(pts.size() + 2);
   std::vector<float> ptKnotVals;
+  ptKnotVals.reserve(pts.size() + 2);
   // build padded array of points to use to synthesize centripetal catmul-rom
   // trajectory by adding "ghost" point so we start drawing from initial point
   // in trajectory.
@@ -182,8 +185,7 @@ std::vector<Mn::Vector3> buildCatmullRomTrajOfPoints(
   ptKnotVals.emplace_back(calcWeightedDistance(tmpPoints[0], pts[0], alpha));
   for (int i = 0; i < pts.size(); ++i) {
     tmpPoints.emplace_back(pts[i]);
-    ptKnotVals.emplace_back(
-        calcWeightedDistance(tmpPoints[i], tmpPoints[i + 1], alpha));
+    ptKnotVals.emplace_back(calcWeightedDistance(tmpPoints[i], pts[i], alpha));
   }
   // add final ghost point in trajectory
   int lastIdx = pts.size() - 1;
