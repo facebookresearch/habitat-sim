@@ -611,7 +611,10 @@ class FairmotionInterface:
         ):
             return
 
-        self.path_time = self.path_time + (step_size / 60.0)
+        if path_time:
+            self.path_time = path_time
+        else:
+            self.path_time = self.path_time + (step_size / 60.0)
 
         # compute current frame from self.path_time w/ wrapping
         motion_time_length = Move.walk_to_walk.num_of_frames * (1.0 / 120.0)
@@ -627,19 +630,10 @@ class FairmotionInterface:
 
         # wraps path_time around full_path_length
         if path_displacement > self.full_path_length:
-            print("self.full_path_length ", self.full_path_length)
             self.path_time = math.fmod(self.path_timer, self.full_path_length)
 
         char_pos, forward_direction = self.point_at_path_t(
             self.path_points, path_displacement
-        )
-        print(
-            "self.path_time",
-            self.path_time,
-            " path_displacement ",
-            path_displacement,
-            " char_pos ",
-            char_pos,
         )
 
         new_pose, new_root_t, new_root_r = self.convert_CMUamass_single_pose(
