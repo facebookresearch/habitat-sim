@@ -339,9 +339,7 @@ class FairmotionInterface:
 
         if not raw:
             final_rotation_correction = (
-                self.global_correction_transform(
-                    mn.Vector3.z_axis(), mn.Vector3.x_axis()
-                )
+                self.global_correction_Q(mn.Vector3.z_axis(), mn.Vector3.x_axis())
                 * self.rotation_offset
             )
 
@@ -473,7 +471,6 @@ class FairmotionInterface:
                 single joint names will produce there own trajectory object. The total amount
                 of trajectory objects that are produced is the length of the outer list.
                 Example: joint_names = [["rankle", "lankle"], "upperneck"]
-
 
                 Returns a list of lists of points to build the trajectory objects.
                 """
@@ -617,9 +614,9 @@ class FairmotionInterface:
             self.path_time = self.path_time + (step_size / 60.0)
 
         # compute current frame from self.path_time w/ wrapping
-        motion_time_length = Move.walk_to_walk.num_of_frames * (1.0 / 120.0)
-        mocap_cycles_past = math.floor(self.path_time / motion_time_length)
-        mocap_time_curr = math.fmod(self.path_time, motion_time_length)
+        mocap_time_length = Move.walk_to_walk.num_of_frames * (1.0 / 120.0)
+        mocap_cycles_past = math.floor(self.path_time / mocap_time_length)
+        mocap_time_curr = math.fmod(self.path_time, mocap_time_length)
         mocap_frame = int(mocap_time_curr * 120)
 
         # find distance progressed along shortest path
@@ -632,6 +629,7 @@ class FairmotionInterface:
         if path_displacement > self.full_path_length:
             self.path_time = math.fmod(self.path_timer, self.full_path_length)
 
+        # character's root node position on the line and the forward direction of the path
         char_pos, forward_direction = self.point_at_path_t(
             self.path_points, path_displacement
         )
@@ -640,31 +638,106 @@ class FairmotionInterface:
             self.path_motion.poses[mocap_frame], self.model, raw=True
         )
 
-        # apply joint angles
-        self.model.joint_positions = new_pose
-
-        final_rotation_correction = self.global_correction_transform(
+        global_neutral_correction = self.global_correction_Q(
             mn.Vector3.z_axis(), mn.Vector3.x_axis()
         )
 
-        new_root_r = final_rotation_correction * new_root_r
+        new_root_r = global_neutral_correction * new_root_r
         # look at target transform
-        look_at_T = mn.Matrix4.look_at(
+        look_at_path_T = mn.Matrix4.look_at(
             char_pos, char_pos + forward_direction.normalized(), mn.Vector3.y_axis()
         )
 
         # apply rotation to final transform
-        final_transform = look_at_T.__matmul__(
+        final_transform = look_at_path_T.__matmul__(
             mn.Matrix4.from_(new_root_r.to_matrix(), mn.Vector3())
         )
 
-        # apply mocap root drift to final transform
         local_drift = Move.walk_to_walk.translation_drifts[mocap_frame]
-        global_drift = final_transform.transform_vector(local_drift)
+        global_drift = global_neutral_correction.transform_vector(local_drift)
+        global_drift = look_at_path_T.transform_vector(global_drift)
         final_transform.translation += global_drift
 
-        # move the character up
-        self.model.transformation = final_transform
+        test_direct_transform = mn.Matrix4(
+            Move.walk_to_walk.motion.poses[mocap_frame].get_transform(ROOT, local=True)
+        )
+        test_direct_transform.translation -= Move.walk_to_walk.center_of_root_drift
+
+        print("translation ", test_direct_transform.translation)
+        test_direct_transform = mn.Matrix4.from_(
+            global_neutral_correction.to_matrix(), mn.Vector3()
+        ).__matmul__(test_direct_transform)
+
+        # while transform is facing -Z, remove forward displacement
+        test_direct_transform.translation *= mn.Vector3.x_axis() + mn.Vector3.y_axis()
+
+        test_direct_transform = look_at_path_T.__matmul__(test_direct_transform)
+        # test_direct_transform.translation += char_pos
+
+        print(test_direct_transform.translation, "\n\n\n\n")
+
+        # apply joint angles
+        self.model.joint_positions = new_pose
+        self.model.transformation = test_direct_transform
+
+        def draw_debug_lines(self):
+            # black = mn.Color4((0.0, 0.0, 0.0, 1.0))
+            green = mn.Color4(0.0, 1.0, 0.0, 1.0)
+            blue = mn.Color4(0.0, 0.0, 1.0, 1.0)
+            red = mn.Color4(1.0, 0.0, 0.0, 1.0)
+            # yellow = (red + green) - black
+
+            drift_axis = local_drift * 500
+            forward_axis = Move.walk_to_walk.direction_forward
+            up_axis = Move.walk_to_walk.direction_up
+
+            drift_axis = global_neutral_correction.transform_vector(drift_axis)
+            forward_axis = global_neutral_correction.transform_vector(forward_axis)
+            up_axis = global_neutral_correction.transform_vector(up_axis)
+
+            drift_axis = look_at_path_T.transform_vector(drift_axis)
+            forward_axis = look_at_path_T.transform_vector(forward_axis)
+            up_axis = look_at_path_T.transform_vector(up_axis)
+
+            # drift axis
+            self.sim.get_debug_line_render().draw_transformed_line(
+                char_pos,
+                char_pos + drift_axis,
+                red,
+            )
+            # forward axis
+            self.sim.get_debug_line_render().draw_transformed_line(
+                char_pos,
+                char_pos + forward_axis,
+                green,
+            )
+            # up axis
+            self.sim.get_debug_line_render().draw_transformed_line(
+                char_pos,
+                char_pos + up_axis,
+                blue,
+            )
+
+            # forward axis via point by t
+            self.sim.get_debug_line_render().draw_circle(
+                char_pos, 0.75, red, 24, mn.math.cross(drift_axis, up_axis)
+            )
+
+            # origin
+            # x axis
+            self.sim.get_debug_line_render().draw_transformed_line(
+                mn.Vector3(), mn.Vector3(1.0, 0.0, 0.0), red
+            )
+            # y axis
+            self.sim.get_debug_line_render().draw_transformed_line(
+                mn.Vector3(), mn.Vector3(0.0, 1.0, 0.0), green
+            )
+            # z axis
+            self.sim.get_debug_line_render().draw_transformed_line(
+                mn.Vector3(), mn.Vector3(0.0, 0.0, 1.0), blue
+            )
+
+        draw_debug_lines(self)
 
     def update_pathfollower_positional(self):
         """
@@ -774,12 +847,12 @@ class FairmotionInterface:
         if i == len(path_points):
             return self.point_at_path_t(path_points, math.fmod(t, covered))
 
-        offset = mn.Vector3(0.0, 0.85, 0.0)
+        offset = mn.Vector3(0.0, 0.9, 0.0)
         direction = (mn.Vector3(path_points[i] - path_points[j])).normalized()
         point = mn.Vector3(path_points[j] + ((t - covered) * direction)) + offset
         return point, direction
 
-    def global_correction_transform(
+    def global_correction_Q(
         self, up_v: mn.Vector3, forward_v: mn.Vector3
     ) -> mn.Quaternion:
         """
@@ -811,27 +884,51 @@ class Move:
         [FILL AFTER NEXT PR REVIEW]
         """
 
-        def __init__(self, motion) -> None:
+        def __init__(self, motion_) -> None:
             # plurality in naming usually hints that attr is an frame lookup array
-            self.motion = motion
-            self.poses = motion.poses
-            self.num_of_frames: int = len(motion.poses)
+            self.poses = motion_.poses
+            self.num_of_frames: int = len(motion_.poses)
             self.translation_drifts: List[mn.Vector3] = []
             self.forward_displacements: List[mn.Vector3] = []
             self.root_orientations: List[mn.Quaternion] = []
             self.map_of_total_displacement: float = []
+            self.center_of_root_drift: mn.Vector3 = mn.Vector3()
 
-            # this section will produce a unit vector from roots of the first and last frame
-            f = mn.Vector3(
-                self.motion.poses[0].get_transform(ROOT, local=False)[0:3, 3]
-            )
-            l = mn.Vector3(
-                self.motion.poses[-1].get_transform(ROOT, local=False)[0:3, 3]
-            )
-            self.direction_up = mn.Vector3.z_axis()
-            self.direction_forward = (
-                (l - f) * (mn.Vector3(1.0, 1.0, 1.0) - mn.Vector3.z_axis())
-            ).normalized()
+            # this loop, interpolates between the edge frames and
+
+            for i in range(10):
+                # this section will produce a unit vector from roots of the first and last frame
+                f = mn.Vector3(
+                    motion_.poses[0].get_transform(ROOT, local=False)[0:3, 3]
+                )
+                l = mn.Vector3(
+                    motion_.poses[-1].get_transform(ROOT, local=False)[0:3, 3]
+                )
+                self.direction_up = mn.Vector3.z_axis()
+                forward_V = (l - f) * (mn.Vector3(1.0, 1.0, 1.0) - mn.Vector3.z_axis())
+                self.direction_forward = forward_V.normalized()
+
+                if i == 1:
+                    break
+            """
+                transformF = motion_.poses[0].get_transform(ROOT, local=False)
+                mn.Matrix4(transformF).translation += forward_V
+                poseF = copy.copy(motion_.poses[0])
+                poseF.set_root_transform(np.array(transformF), local=False)
+
+                # interpolate last frame from last and first
+                motion_.poses[-1] = motion.Pose.interpolate(poseF, motion_.poses[-1], 0.64)
+
+                transformL = motion_.poses[-1].get_transform(ROOT, local=False)
+                mn.Matrix4(transformL).translation -= forward_V
+                poseL = copy.copy(motion_.poses[-1])
+                poseL.set_root_transform(np.array(transformF), local=False)
+
+                # interpolate last frame from last and first
+                motion_.poses[0] = motion.Pose.interpolate(poseL, motion_.poses[0], 0.64)
+            """
+
+            self.motion = motion_
 
             # fill translation_drifts and forward_displacements
             for i in range(self.num_of_frames):
@@ -858,8 +955,8 @@ class Move:
                     break
 
                 # root translation
-                curr_root_t = motion.poses[i].get_transform(ROOT, local=False)[0:3, 3]
-                next_root_t = motion.poses[i + 1].get_transform(ROOT, local=False)[
+                curr_root_t = motion_.poses[i].get_transform(ROOT, local=False)[0:3, 3]
+                next_root_t = motion_.poses[i + 1].get_transform(ROOT, local=False)[
                     0:3, 3
                 ]
                 delta_P_vector = mn.Vector3(next_root_t - curr_root_t)
@@ -872,8 +969,8 @@ class Move:
             j, summ = 0, 0
             # fill translation_drifts and forward_displacements
             for i in range(self.num_of_frames):
-                curr_root_t = motion.poses[i].get_transform(ROOT, local=False)[0:3, 3]
-                prev_root_t = motion.poses[j].get_transform(ROOT, local=False)[0:3, 3]
+                curr_root_t = motion_.poses[i].get_transform(ROOT, local=False)[0:3, 3]
+                prev_root_t = motion_.poses[j].get_transform(ROOT, local=False)[0:3, 3]
 
                 # fill map_of_total_displacement
                 summ += (
@@ -885,19 +982,27 @@ class Move:
                 j = i
 
             # fill root_orientations
-            for pose in motion.poses:
+            for pose in motion_.poses:
                 root_T = pose.get_transform(ROOT, local=False)
                 root_rotation = mn.Quaternion.from_matrix(
                     mn.Matrix3x3(root_T[0:3, 0:3])
                 )
                 self.root_orientations.append(root_rotation)
 
-    motion = amass.load(
+            # get center of drift
+            summ = mn.Vector3()
+            for pose in motion_.poses:
+                root_T = mn.Matrix4(pose.get_transform(ROOT, local=False))
+                root_T.translation *= mn.Vector3(1.0, 1.0, 1.0) - forward_vector
+                summ += root_T.translation
+            self.center_of_root_drift = summ / self.num_of_frames
+
+    motion_ = amass.load(
         file="data/fairmotion/amass_test_data/CMU/CMU/02/02_01_poses.npz",
         bm_path="data/fairmotion/amass_test_data/smplh/male/model.npz",
     )
 
-    walk_to_walk = MotionData(motion_ops.cut(motion, 147, 279))
+    walk_to_walk = MotionData(motion_ops.cut(motion_, 111, 246))
 
     # assert False
 
