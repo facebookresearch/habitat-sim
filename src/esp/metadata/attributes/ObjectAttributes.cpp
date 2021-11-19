@@ -138,12 +138,13 @@ StageAttributes::StageAttributes(const std::string& handle)
   // TODO remove this once ShaderType support is complete
   setForceFlatShading(true);
   // 0 corresponds to esp::assets::AssetType::UNKNOWN->treated as general mesh
-  setCollisionAssetType(0);
+  setCollisionAssetType(static_cast<int>(esp::assets::AssetType::UNKNOWN));
   // 4 corresponds to esp::assets::AssetType::INSTANCE_MESH
-  setSemanticAssetType(4);
+  setSemanticAssetType(static_cast<int>(esp::assets::AssetType::INSTANCE_MESH));
   // set empty defaults for handles
   set("nav_asset", "");
   set("semantic_asset", "");
+  set("semantic_descriptor_filename", "");
 }  // StageAttributes ctor
 
 void StageAttributes::writeValuesToJsonInternal(
@@ -153,6 +154,7 @@ void StageAttributes::writeValuesToJsonInternal(
   writeValueToJson("gravity", jsonObj, allocator);
   writeValueToJson("semantic_asset", jsonObj, allocator);
   writeValueToJson("nav_asset", jsonObj, allocator);
+  writeValueToJson("semantic_descriptor_filename", jsonObj, allocator);
 
 }  // StageAttributes::writeValuesToJsonInternal
 

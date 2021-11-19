@@ -242,8 +242,9 @@ class AbstractObjectAttributes : public AbstractAttributes {
 
   /**
    * @brief Populate a json object with all the first-level values held in this
-   * configuration.  May be overwritten to handle special cases for root-level
-   * configuration.
+   * configuration.  Default is overridden to handle special cases for
+   * AbstractObjectAttributes and deriving (ObjectAttributes and
+   * StageAttributes) classes.
    */
   void writeValuesToJson(io::JsonGenericValue& jsonObj,
                          io::JsonAllocator& allocator) const override;
@@ -383,12 +384,24 @@ class StageAttributes : public AbstractObjectAttributes {
 
   void setGravity(const Magnum::Vector3& gravity) { set("gravity", gravity); }
   Magnum::Vector3 getGravity() const { return get<Magnum::Vector3>("gravity"); }
-  void setHouseFilename(const std::string& houseFilename) {
-    set("houseFilename", houseFilename);
+
+  /**
+   * @brief Text file that describes the hierharchy of semantic information
+   * embedded in the Semantic Asset mesh.  May be overridden by value specified
+   * in Scene Instance Attributes.
+   */
+  void setSemanticDescriptorFilename(
+      const std::string& semantic_descriptor_filename) {
+    set("semantic_descriptor_filename", semantic_descriptor_filename);
     setIsDirty();
   }
-  std::string getHouseFilename() const {
-    return get<std::string>("houseFilename");
+  /**
+   * @brief Text file that describes the hierharchy of semantic information
+   * embedded in the Semantic Asset mesh.  May be overridden by value specified
+   * in Scene Instance Attributes.
+   */
+  std::string getSemanticDescriptorFilename() const {
+    return get<std::string>("semantic_descriptor_filename");
   }
   void setSemanticAssetHandle(const std::string& semanticAssetHandle) {
     set("semantic_asset", semanticAssetHandle);
@@ -402,9 +415,12 @@ class StageAttributes : public AbstractObjectAttributes {
   }
   int getSemanticAssetType() { return get<int>("semantic_asset_type"); }
 
+  // Currently not supported
   void setLoadSemanticMesh(bool loadSemanticMesh) {
     set("loadSemanticMesh", loadSemanticMesh);
   }
+
+  // Currently not supported
   bool getLoadSemanticMesh() { return get<bool>("loadSemanticMesh"); }
 
   void setNavmeshAssetHandle(const std::string& nav_asset) {
@@ -432,6 +448,7 @@ class StageAttributes : public AbstractObjectAttributes {
    * @brief set frustum culling for stage.  Default value comes from
    * @ref esp::sim::SimulatorConfiguration, is overridden by any value set in
    * json, if exists.
+   * Currently only set from SimulatorConfiguration
    */
   void setFrustumCulling(bool frustumCulling) {
     set("frustum_culling", frustumCulling);

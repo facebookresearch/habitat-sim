@@ -45,7 +45,7 @@ enum SupportedMeshType {
    * Instance meshes loaded from sources including segmented object
    * identifier data (e.g. semantic data: chair, table, etc...). Sources include
    * .ply files and reconstructions of Matterport scans. Object is likely of
-   * type @ref GenericInstanceMeshData or Mp3dInstanceMeshData.
+   * type @ref GenericSemanticMeshData or Mp3dInstanceMeshData.
    */
   INSTANCE_MESH = 0,
 

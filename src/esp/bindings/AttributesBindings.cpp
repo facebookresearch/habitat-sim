@@ -12,7 +12,7 @@
 #include "esp/metadata/attributes/ObjectAttributes.h"
 #include "esp/metadata/attributes/PhysicsManagerAttributes.h"
 #include "esp/metadata/attributes/PrimitiveAssetAttributes.h"
-#include "esp/metadata/attributes/SceneAttributes.h"
+#include "esp/metadata/attributes/SceneInstanceAttributes.h"
 
 namespace py = pybind11;
 using py::literals::operator""_a;
@@ -362,8 +362,8 @@ void initAttributesBindings(py::module& m) {
           R"(Handle of the navmesh asset used for constructions built from
           this template.)")
       .def_property(
-          "house_filename", &StageAttributes::getHouseFilename,
-          &StageAttributes::setHouseFilename,
+          "house_filename", &StageAttributes::getSemanticDescriptorFilename,
+          &StageAttributes::setSemanticDescriptorFilename,
           R"(Handle for file containing semantic type maps and hierarchy for
           constructions built from this template.)")
       .def_property(

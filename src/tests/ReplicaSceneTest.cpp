@@ -16,12 +16,12 @@
 #include "esp/scene/SemanticScene.h"
 #include "esp/sim/Simulator.h"
 
-#include "esp/assets/GenericInstanceMeshData.h"
+#include "esp/assets/GenericSemanticMeshData.h"
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
 
-using esp::assets::GenericInstanceMeshData;
+using esp::assets::GenericSemanticMeshData;
 
 namespace {
 
@@ -72,11 +72,22 @@ void ReplicaSceneTest::testSemanticSceneOBB() {
                               manager.loadAndInstantiate("StanfordImporter"));
 
   // load ply but do not split
-  static std::vector<std::unique_ptr<GenericInstanceMeshData>> meshVec =
-      GenericInstanceMeshData::fromPLY(
-          *importer,
-          Cr::Utility::Directory::join(replicaRoom0, "mesh_semantic.ply"),
-          false);
+  // dummy colormap
+  std::vector<Magnum::Vector3ub> dummyColormap;
+  const std::string semanticFilename =
+      Cr::Utility::Directory::join(replicaRoom0, "mesh_semantic.ply");
+  /* Open the file. On error the importer already prints a diagnostic message,
+     so no need to do that here. The importer implicitly converts per-face
+     attributes to per-vertex, so nothing extra needs to be done. */
+  Cr::Containers::Optional<Mn::Trade::MeshData> meshData;
+  ESP_CHECK(
+      (importer->openFile(semanticFilename) && (meshData = importer->mesh(0))),
+      Cr::Utility::formatString("Error loading instance mesh data from file {}",
+                                semanticFilename));
+
+  static std::vector<std::unique_ptr<GenericSemanticMeshData>> meshVec =
+      GenericSemanticMeshData::buildSemanticMeshData(
+          *meshData, semanticFilename, false, dummyColormap);
   // verify result vector holds a mesh
   CORRADE_VERIFY(!meshVec.empty());
   // verify first entry exists

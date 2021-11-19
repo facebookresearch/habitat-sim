@@ -18,6 +18,28 @@ namespace Cr = Corrade;
 namespace esp {
 namespace geo {
 
+/**
+ * @brief This enum describes the various colorspaces that colors in Habitat can
+ * occupy.  This is currently governed by the supported color space conversions
+ * built into the Magnum Color types. This is provided for easy user access to
+ * these conversion mechansims.
+ */
+enum class ColorSpace {
+  RGBA,
+  sRGBA,
+  /**
+   * @brief HSV represent Hue, Saturation and Value, where the color space is
+   * modeled on a cylinder, hue is an angle, saturation is a radius and value is
+   * measured along the height of the cylinder.
+   */
+  HSV,
+  /**
+   * @brief CIE XYZ, where Y is luminance, and x-z plane describes chromaticity.
+   */
+  XYZ
+
+};
+
 //! global/world up direction
 static const vec3f ESP_UP = vec3f::UnitY();
 //! global/world gravity (down) direction
@@ -120,6 +142,7 @@ std::vector<Mn::Vector3> buildCatmullRomTrajOfPoints(
  * @param smooth Whether to smooth the points or not
  * @param numInterp The number of interpolations between each trajectory
  * point, if smoothing
+ * @param clrSpace The color space to interpolate the given colrs in
  * @return The resultant meshdata for the tube
  */
 Mn::Trade::MeshData buildTrajectoryTubeSolid(
@@ -128,7 +151,8 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
     int numSegments,
     float radius,
     bool smooth,
-    int numInterp);
+    int numInterp,
+    ColorSpace clrSpace = ColorSpace::HSV);
 
 template <typename T>
 T clamp(const T& n, const T& low, const T& high) {

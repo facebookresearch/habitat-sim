@@ -231,7 +231,7 @@ void SceneDatasetAttributesManager::setValsFromJSONDoc(
 
   // process scene instances - implement handling scene instances
   readDatasetJSONCell(dsDir, "scene_instances", jsonConfig,
-                      dsAttribs->getSceneAttributesManager());
+                      dsAttribs->getSceneInstanceAttributesManager());
 
   // process navmesh instances
   loadAndValidateMap(dsDir, "navmesh_instances", jsonConfig,

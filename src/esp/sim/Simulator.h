@@ -78,11 +78,13 @@ class Simulator {
 
   std::shared_ptr<gfx::Renderer> getRenderer() { return renderer_; }
   std::shared_ptr<scene::SemanticScene> getSemanticScene() {
-    return semanticScene_;
+    return resourceManager_->getSemanticScene();
   }
 
   /** @brief check if the semantic scene exists.*/
-  bool semanticSceneExists() const { return (semanticScene_ != nullptr); }
+  bool semanticSceneExists() const {
+    return resourceManager_->semanticSceneExists();
+  }
 
   /**
    * @brief get the current active scene graph
@@ -1158,6 +1160,8 @@ class Simulator {
                             float colorMapOffset,
                             float colorMapScale);
 
+  bool visualizeObservation(int agentId, const std::string& sensorId);
+
   bool getAgentObservation(int agentId,
                            const std::string& sensorId,
                            sensor::Observation& observation);
@@ -1367,10 +1371,11 @@ class Simulator {
   Simulator() = default;
   /**
    * @brief Builds a scene instance and populates it with initial object layout,
-   * if appropriate, based on @ref esp::metadata::attributes::SceneAttributes
-   * referenced by @p activeSceneName .
-   * @param activeSceneName The name of the desired SceneAttributes to use to
-   * instantiate a scene.
+   * if appropriate, based on @ref
+   * esp::metadata::attributes::SceneInstanceAttributes referenced by @p
+   * activeSceneName .
+   * @param activeSceneName The name of the desired SceneInstanceAttributes to
+   * use to instantiate a scene.
    * @return Whether successful or not.
    */
   bool createSceneInstance(const std::string& activeSceneName);
@@ -1383,8 +1388,8 @@ class Simulator {
    * specified in Simulator Configuration.
    * @return a constant pointer to the current scene instance attributes.
    */
-  metadata::attributes::SceneAttributes::cptr setSceneInstanceAttributes(
-      const std::string& activeSceneName);
+  metadata::attributes::SceneInstanceAttributes::cptr
+  setSceneInstanceAttributes(const std::string& activeSceneName);
 
   /**
    * @brief Instance the stage for the current scene based on the current active
@@ -1394,7 +1399,7 @@ class Simulator {
    * @return whether stage creation is completed successfully
    */
   bool instanceStageForActiveScene(
-      const metadata::attributes::SceneAttributes::cptr&
+      const metadata::attributes::SceneInstanceAttributes::cptr&
           curSceneInstanceAttributes);
 
   /**
@@ -1405,7 +1410,7 @@ class Simulator {
    * @return whether object creation and placement is completed successfully
    */
   bool instanceObjectsForActiveScene(
-      const metadata::attributes::SceneAttributes::cptr&
+      const metadata::attributes::SceneInstanceAttributes::cptr&
           curSceneInstanceAttributes);
 
   /**
@@ -1417,7 +1422,7 @@ class Simulator {
    * successfully
    */
   bool instanceArticulatedObjectsForActiveScene(
-      const metadata::attributes::SceneAttributes::cptr&
+      const metadata::attributes::SceneInstanceAttributes::cptr&
           curSceneInstanceAttributes);
 
   /**
@@ -1493,7 +1498,7 @@ class Simulator {
   int activeSemanticSceneID_ = ID_UNDEFINED;
   std::vector<int> sceneID_;
 
-  std::shared_ptr<scene::SemanticScene> semanticScene_ = nullptr;
+  // std::shared_ptr<scene::SemanticScene> semanticScene_ = nullptr;
 
   std::shared_ptr<physics::PhysicsManager> physicsManager_ = nullptr;
 

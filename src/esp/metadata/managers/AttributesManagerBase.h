@@ -446,8 +446,8 @@ bool AttributesManager<T, Access>::saveManagedObjectToFileInternal(
   std::string fullFilename = Dir::join(fileDirectory, filename);
   ESP_DEBUG() << "Attempting to write file" << fullFilename << "to disk";
   // write configuration to file
-
-  rapidjson::Document doc(rapidjson::kObjectType);
+  // bypassed constructor defaults due to "0 as null" warning they throw
+  rapidjson::Document doc(rapidjson::kObjectType, nullptr, 1024, nullptr);
   rapidjson::Document::AllocatorType& allocator = doc.GetAllocator();
   // build Json from passed Configuration
   auto configJson = attribs->writeToJsonValue(allocator);

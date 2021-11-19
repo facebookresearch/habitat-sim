@@ -17,34 +17,49 @@
 #include "esp/core/Esp.h"
 
 namespace esp {
+namespace scene {
+class SemanticScene;
+}  // namespace scene
 namespace assets {
 
-class GenericInstanceMeshData : public BaseMesh {
+/**
+ * @brief Mesh data storage and loading for ply format assets used primarily for
+ * Semantic Scene meshes, including manage vertex colors and vertex IDs for
+ * semantic visualization and rendering. See @ref
+ * ResourceManager::loadRenderAssetIMesh.
+ */
+class GenericSemanticMeshData : public BaseMesh {
  public:
   struct RenderingBuffer {
     Magnum::GL::Mesh mesh;
   };
 
-  explicit GenericInstanceMeshData(SupportedMeshType type) : BaseMesh{type} {};
-  explicit GenericInstanceMeshData()
-      : GenericInstanceMeshData{SupportedMeshType::INSTANCE_MESH} {};
+  explicit GenericSemanticMeshData(SupportedMeshType type) : BaseMesh{type} {};
+  explicit GenericSemanticMeshData()
+      : GenericSemanticMeshData{SupportedMeshType::INSTANCE_MESH} {};
 
-  ~GenericInstanceMeshData() override = default;
+  ~GenericSemanticMeshData() override = default;
 
   /**
-   * @brief Load a .ply file into one ore more @ref GenericInstanceMeshData,
-   * splitting the result into multiples if specified and if the source file's
-   * objectIds are compatibly configured to do so.
-   * @param importer The importer to use to load the .ply file
+   * @brief Build one ore more @ref GenericSemanticMeshData based on the
+   * contents of the passed @p meshData, splitting the result into multiples if
+   * specified and if the source file's objectIds are compatibly configured to
+   * do so.
+   * @param meshData The imported meshData.
    * @param plyFile Fully qualified filename of .ply file to load
    * @param splitMesh Whether or not the resultant mesh should be split into
    * multiple components based on objectIds, for frustum culling.
+   * @param semanticScene The SSD for the instance mesh being loaded.
    * @return vector holding one or more mesh results from the .ply file.
    */
-  static std::vector<std::unique_ptr<GenericInstanceMeshData>> fromPLY(
-      Magnum::Trade::AbstractImporter& importer,
-      const std::string& plyFile,
-      bool splitMesh);
+
+  static std::vector<std::unique_ptr<GenericSemanticMeshData>>
+  buildSemanticMeshData(
+      const Magnum::Trade::MeshData& meshData,
+      const std::string& semanticFilename,
+      bool splitMesh,
+      std::vector<Magnum::Vector3ub>& colorMapToUse,
+      const std::shared_ptr<scene::SemanticScene>& semanticScene = nullptr);
 
   // ==== rendering ====
   void uploadBuffersToGPU(bool forceReload = false) override;
@@ -68,16 +83,20 @@ class GenericInstanceMeshData : public BaseMesh {
   }
 
  protected:
-  class PerObjectIdMeshBuilder {
+  class PerPartitionIdMeshBuilder {
    public:
-    PerObjectIdMeshBuilder(GenericInstanceMeshData& data, uint16_t objectId)
-        : data_{data}, objectId_{objectId} {}
+    PerPartitionIdMeshBuilder(GenericSemanticMeshData& data,
+                              uint16_t partitionId)
+        : data_{data}, partitionId{partitionId} {}
 
-    void addVertex(uint32_t vertexId, const vec3f& vertex, const vec3uc& color);
+    void addVertex(uint32_t vertexId,
+                   const vec3f& vertex,
+                   const vec3uc& color,
+                   int objectId);
 
    private:
-    GenericInstanceMeshData& data_;
-    uint16_t objectId_;
+    GenericSemanticMeshData& data_;
+    uint16_t partitionId;
     std::unordered_map<uint32_t, size_t> vertexIdToVertexIndex_;
   };
 
@@ -85,13 +104,12 @@ class GenericInstanceMeshData : public BaseMesh {
 
   // ==== rendering ====
   std::unique_ptr<RenderingBuffer> renderingBuffer_ = nullptr;
-
   std::vector<vec3f> cpu_vbo_;
   std::vector<vec3uc> cpu_cbo_;
   std::vector<uint32_t> cpu_ibo_;
   std::vector<uint16_t> objectIds_;
 
-  ESP_SMART_POINTERS(GenericInstanceMeshData)
+  ESP_SMART_POINTERS(GenericSemanticMeshData)
 };
 
 }  // namespace assets

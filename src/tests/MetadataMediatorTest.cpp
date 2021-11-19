@@ -317,14 +317,16 @@ void MetadataMediatorTest::testDataset0() {
   // SHOULD NOT BE REFERENCED DIRECTLY IN USER CODE, but rather desired scene
   // instance should be acquired through MM.
   //
-  const auto& sceneAttributesMgr = MM_->getSceneAttributesManager();
+  const auto& sceneInstanceAttributesMgr =
+      MM_->getSceneInstanceAttributesManager();
   // get # of loaded scene attributes.
-  int numSceneHandles = sceneAttributesMgr->getNumObjects();
+  int numSceneHandles = sceneInstanceAttributesMgr->getNumObjects();
   // should be 1
   CORRADE_COMPARE(numSceneHandles, 1);
   // get handle list matching passed handle
-  auto sceneAttrHandles = sceneAttributesMgr->getObjectHandlesBySubstring(
-      "dataset_test_scene", true);
+  auto sceneAttrHandles =
+      sceneInstanceAttributesMgr->getObjectHandlesBySubstring(
+          "dataset_test_scene", true);
   // make sure there is only 1 matching dataset_test_scene
   CORRADE_COMPARE(sceneAttrHandles.size(), 1);
 
@@ -332,8 +334,9 @@ void MetadataMediatorTest::testDataset0() {
   ESP_WARNING() << "testLoadSceneInstances : Scene instance attr handle :"
                 << activeSceneName;
   // get scene instance attributes ref
-  // metadata::attributes::SceneAttributes::cptr curSceneInstanceAttributes =
-  auto sceneAttrs = MM_->getSceneAttributesByName(activeSceneName);
+  // metadata::attributes::SceneInstanceAttributes::cptr
+  // curSceneInstanceAttributes =
+  auto sceneAttrs = MM_->getSceneInstanceAttributesByName(activeSceneName);
   // this should be a scene instance attributes with specific stage and object
   CORRADE_VERIFY(sceneAttrs);
   // verify default value for translation origin
@@ -474,9 +477,10 @@ void MetadataMediatorTest::testDataset1() {
   // SHOULD NOT BE REFERENCED DIRECTLY IN USER CODE, but rather desired scene
   // instance should be acquired through MM.
   //
-  const auto& sceneAttributesMgr = MM_->getSceneAttributesManager();
+  const auto& sceneInstanceAttributesMgr =
+      MM_->getSceneInstanceAttributesManager();
   // get # of loaded scene attributes.
-  int numSceneHandles = sceneAttributesMgr->getNumObjects();
+  int numSceneHandles = sceneInstanceAttributesMgr->getNumObjects();
   // should be 2 - 2 file based
   CORRADE_COMPARE(numSceneHandles, 2);
 

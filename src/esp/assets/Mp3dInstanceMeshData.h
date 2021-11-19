@@ -13,7 +13,7 @@
 #include <vector>
 
 #include "BaseMesh.h"
-#include "GenericInstanceMeshData.h"
+#include "GenericSemanticMeshData.h"
 #include "esp/core/Esp.h"
 
 namespace esp {
@@ -23,10 +23,10 @@ namespace assets {
  * MP3D object instance segmented mesh
  * Holds a vbo where each vertex is (x, y, z, objectId)
  */
-class Mp3dInstanceMeshData : public GenericInstanceMeshData {
+class Mp3dInstanceMeshData : public GenericSemanticMeshData {
  public:
   Mp3dInstanceMeshData()
-      : GenericInstanceMeshData(SupportedMeshType::INSTANCE_MESH) {}
+      : GenericSemanticMeshData(SupportedMeshType::INSTANCE_MESH) {}
   ~Mp3dInstanceMeshData() override = default;
 
   //! Loads an MP3D house segmentations PLY file

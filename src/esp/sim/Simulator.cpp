@@ -28,7 +28,6 @@
 #include "esp/physics/PhysicsManager.h"
 #include "esp/physics/bullet/BulletCollisionHelper.h"
 #include "esp/scene/ObjectControls.h"
-#include "esp/scene/SemanticScene.h"
 #include "esp/sensor/CameraSensor.h"
 #include "esp/sensor/SensorFactory.h"
 #include "esp/sensor/VisualSensor.h"
@@ -77,7 +76,6 @@ void Simulator::close(const bool destroy) {
 
   physicsManager_ = nullptr;
   gfxReplayMgr_ = nullptr;
-  semanticScene_ = nullptr;
 
   sceneID_.clear();
   sceneManager_ = nullptr;
@@ -208,17 +206,16 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
 }  // Simulator::reconfigure
 
-metadata::attributes::SceneAttributes::cptr
+metadata::attributes::SceneInstanceAttributes::cptr
 Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
-  namespace FileUtil = Cr::Utility::Directory;
-
   // Get scene instance attributes corresponding to passed active scene name
   // This will retrieve, or construct, an appropriately configured scene
   // instance attributes, depending on what exists in the Scene Dataset library
   // for the current dataset.
 
-  metadata::attributes::SceneAttributes::cptr curSceneInstanceAttributes =
-      metadataMediator_->getSceneAttributesByName(activeSceneName);
+  metadata::attributes::SceneInstanceAttributes::cptr
+      curSceneInstanceAttributes =
+          metadataMediator_->getSceneInstanceAttributesByName(activeSceneName);
   // check if attributes is null - should not happen
   ESP_CHECK(
       curSceneInstanceAttributes,
@@ -235,7 +232,7 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
   // Get name of navmesh and use to create pathfinder and load navmesh
   // create pathfinder and load navmesh if available
   pathfinder_ = nav::PathFinder::create();
-  if (FileUtil::exists(navmeshFileLoc)) {
+  if (Cr::Utility::Directory::exists(navmeshFileLoc)) {
     ESP_DEBUG() << "Loading navmesh from" << navmeshFileLoc;
     bool pfSuccess = pathfinder_->loadNavMesh(navmeshFileLoc);
     ESP_DEBUG() << (pfSuccess ? "Navmesh Loaded." : "Navmesh load error.");
@@ -264,65 +261,9 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
       metadataMediator_->getSemanticSceneDescriptorPathByHandle(
           curSceneInstanceAttributes->getSemanticSceneHandle());
 
-  if (semanticSceneDescFilename != "") {
-    const std::string& filenameToUse = semanticSceneDescFilename;
-    bool success = false;
-    // semantic scene descriptor might not exist, so
-    semanticScene_ = nullptr;
-    semanticScene_ = scene::SemanticScene::create();
-    ESP_DEBUG() << "SceneInstance :" << activeSceneName
-                << "proposed Semantic Scene Descriptor filename :"
-                << filenameToUse;
-
-    bool fileExists = FileUtil::exists(filenameToUse);
-    if (fileExists) {
-      // Attempt to load semantic scene descriptor specified in scene instance
-      // file, agnostic to file type inferred by name, if file exists.
-      success = scene::SemanticScene::loadSemanticSceneDescriptor(
-          filenameToUse, *semanticScene_);
-      if (success) {
-        ESP_DEBUG() << "SSD with SceneAttributes-provided name "
-                    << filenameToUse << "successfully found and loaded";
-      } else {
-        // here if provided file exists but does not correspond to appropriate
-        // SSD
-        ESP_ERROR()
-            << "SSD Load Failure! File with SceneAttributes-provided name "
-            << filenameToUse << "exists but was unable to be loaded.";
-      }
-      // if not success then try to construct a name
-    } else {
-      // attempt to look for specified file failed, attempt to build new file
-      // name by searching in path specified of specified file for
-      // info_semantic.json file for replica dataset
-      const std::string constructedFilename =
-          FileUtil::join(FileUtil::path(filenameToUse), "info_semantic.json");
-      fileExists = FileUtil::exists(constructedFilename);
-      if (fileExists) {
-        success = scene::SemanticScene::loadReplicaHouse(constructedFilename,
-                                                         *semanticScene_);
-        if (success) {
-          ESP_DEBUG() << "SSD for Replica using constructed file :"
-                      << constructedFilename << "in directory with"
-                      << semanticSceneDescFilename << "loaded successfully";
-        } else {
-          // here if constructed file exists but does not correspond to
-          // appropriate SSD or some loading error occurred.
-          ESP_ERROR() << "SSD Load Failure! Replica file with constructed name "
-                      << filenameToUse << "exists but was unable to be loaded.";
-        }
-      } else {
-        // neither provided non-empty filename nor constructed filename
-        // exists. This is probably due to an incorrect naming in the
-        // SceneAttributes
-        ESP_WARNING()
-            << "SSD File Naming Issue! Neither SceneAttributes-provided name :"
-            << filenameToUse
-            << " nor constructed filename :" << constructedFilename
-            << "exist on disk.";
-      }
-    }  // if given SSD file name specifiedd exists
-  }    // if semantic scene descriptor specified in scene instance
+  // load semantic scene descriptor
+  resourceManager_->loadSemanticSceneDescriptor(semanticSceneDescFilename,
+                                                activeSceneName);
 
   // 3. Specify frustumCulling based on value from config
   frustumCulling_ = config_.frustumCulling;
@@ -337,8 +278,8 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   }
   // 1. initial setup for scene instancing - sets or creates the
   // current scene instance to correspond to the given name.
-  metadata::attributes::SceneAttributes::cptr curSceneInstanceAttributes =
-      setSceneInstanceAttributes(activeSceneName);
+  metadata::attributes::SceneInstanceAttributes::cptr
+      curSceneInstanceAttributes = setSceneInstanceAttributes(activeSceneName);
 
   // 2. (re)seat & (re)init physics manager using the physics manager
   // attributes specified in current simulator configuration held in
@@ -407,7 +348,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
 }  // Simulator::createSceneInstance
 
 bool Simulator::instanceStageForActiveScene(
-    const metadata::attributes::SceneAttributes::cptr&
+    const metadata::attributes::SceneInstanceAttributes::cptr&
         curSceneInstanceAttributes) {
   // Load stage specified by Scene Instance Attributes
   // Get Stage Instance Attributes - contains name of stage and initial
@@ -452,6 +393,12 @@ bool Simulator::instanceStageForActiveScene(
   // set scaling values for this instance of stage attributes
   stageAttributes->setScale(stageAttributes->getScale() *
                             stageInstanceAttributes->getUniformScale());
+
+  // set stage's ref to ssd file
+  stageAttributes->setSemanticDescriptorFilename(
+      metadataMediator_->getSemanticSceneDescriptorPathByHandle(
+          curSceneInstanceAttributes->getSemanticSceneHandle()));
+
   // set visibility if explicitly specified in stage instance configs
   int visSet = stageInstanceAttributes->getIsInstanceVisible();
   if (visSet != ID_UNDEFINED) {
@@ -472,15 +419,24 @@ bool Simulator::instanceStageForActiveScene(
       stageAttributes, stageInstanceAttributes, physicsManager_,
       sceneManager_.get(), tempIDs);
 
-  if (!loadSuccess) {
-    ESP_ERROR() << "Cannot load stage :" << stageAttributesHandle;
-    // Pass the error to the python through pybind11 allowing graceful exit
-    throw std::invalid_argument("Cannot load: " + stageAttributesHandle);
-    return false;
-  } else {
-    ESP_DEBUG() << "Successfully loaded stage named :"
-                << stageAttributes->getHandle();
+  ESP_CHECK(loadSuccess, Cr::Utility::formatString("Cannot load stage :{}",
+                                                   stageAttributesHandle));
+
+  // get colormap from loading semantic scene mesh
+  Cr::Containers::ArrayView<const Mn::Vector3ub> colorMap =
+      resourceManager_->getSemanticSceneColormap();
+
+  // sending semantic colormap to shader for visualizations.
+  // This map may have color mappings specified in supported semantic screen
+  // descriptor text files with vertex mappings to ids on semantic scene mesh.
+  if (renderer_ && !colorMap.empty()) {
+    // send colormap to TextureVisualizeShader via renderer.
+    renderer_->setSemanticVisualizerColormap(colorMap);
   }
+
+  // if successful display debug message
+  ESP_DEBUG() << "Successfully loaded stage named :"
+              << stageAttributes->getHandle();
 
   // refresh the NavMesh visualization if necessary after loading a new
   // SceneGraph
@@ -517,7 +473,7 @@ bool Simulator::instanceStageForActiveScene(
 }  // Simulator::instanceStageForActiveScene()
 
 bool Simulator::instanceObjectsForActiveScene(
-    const metadata::attributes::SceneAttributes::cptr&
+    const metadata::attributes::SceneInstanceAttributes::cptr&
         curSceneInstanceAttributes) {
   // 5. Load object instances as spceified by Scene Instance Attributes.
   // Get all instances of objects described in scene
@@ -566,7 +522,7 @@ bool Simulator::instanceObjectsForActiveScene(
 }  // Simulator::instanceObjectsForActiveScene()
 
 bool Simulator::instanceArticulatedObjectsForActiveScene(
-    const metadata::attributes::SceneAttributes::cptr&
+    const metadata::attributes::SceneInstanceAttributes::cptr&
         curSceneInstanceAttributes) {
   // 6. Load all articulated object instances
   // Get all instances of articulated objects described in scene
@@ -802,8 +758,9 @@ int Simulator::addObject(const int objectLibId,
                          const std::string& lightSetupKey,
                          const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
-    if (renderer_)
+    if (renderer_) {
       renderer_->acquireGlContext();
+    }
     // TODO: change implementation to support multi-world and physics worlds
     // to own reference to a sceneGraph to avoid this.
     auto& drawables = getDrawableGroup(sceneID);
@@ -818,8 +775,9 @@ int Simulator::addObjectByHandle(const std::string& objectLibHandle,
                                  const std::string& lightSetupKey,
                                  const int sceneID) {
   if (sceneHasPhysics(sceneID)) {
-    if (renderer_)
+    if (renderer_) {
       renderer_->acquireGlContext();
+    }
     // TODO: change implementation to support multi-world and physics worlds
     // to own reference to a sceneGraph to avoid this.
     auto& drawables = getDrawableGroup(sceneID);
@@ -851,8 +809,9 @@ double Simulator::stepWorld(const double dt) {
   if (physicsManager_ != nullptr) {
     physicsManager_->deferNodesUpdate();
     physicsManager_->stepPhysics(dt);
-    if (renderer_)
+    if (renderer_) {
       renderer_->waitSceneGraph();
+    }
 
     physicsManager_->updateNodes();
   }
@@ -888,8 +847,9 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
   // add STATIC collision objects
   if (includeStaticObjects) {
     // update nodes so SceneNode transforms are up-to-date
-    if (renderer_)
+    if (renderer_) {
       renderer_->waitSceneGraph();
+    }
 
     physicsManager_->updateNodes();
 
@@ -979,8 +939,9 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
 }
 
 bool Simulator::setNavMeshVisualization(bool visualize) {
-  if (renderer_)
+  if (renderer_) {
     renderer_->acquireGlContext();
+  }
   // clean-up the NavMesh visualization if necessary
   if (!visualize && navMeshVisNode_ != nullptr) {
     delete navMeshVisNode_;
@@ -1248,6 +1209,19 @@ bool Simulator::drawObservation(const int agentId,
     if (sensor.isVisualSensor()) {
       return static_cast<sensor::VisualSensor&>(sensor).drawObservation(*this);
     }
+  }
+  return false;
+}
+
+bool Simulator::visualizeObservation(int agentId, const std::string& sensorId) {
+  agent::Agent::ptr ag = getAgent(agentId);
+
+  if (ag != nullptr) {
+    sensor::Sensor& sensor = ag->getSubtreeSensorSuite().get(sensorId);
+    if (sensor.isVisualSensor()) {
+      renderer_->visualize(static_cast<sensor::VisualSensor&>(sensor));
+    }
+    return true;
   }
   return false;
 }

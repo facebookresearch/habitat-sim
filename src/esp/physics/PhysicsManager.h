@@ -25,7 +25,7 @@
 #include "esp/assets/Asset.h"
 #include "esp/assets/BaseMesh.h"
 #include "esp/assets/CollisionMeshData.h"
-#include "esp/assets/GenericInstanceMeshData.h"
+#include "esp/assets/GenericSemanticMeshData.h"
 #include "esp/assets/MeshData.h"
 #include "esp/assets/MeshMetaData.h"
 #include "esp/assets/ResourceManager.h"
