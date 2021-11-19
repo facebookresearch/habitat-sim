@@ -12,7 +12,6 @@ flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
 import magnum as mn
-import numpy as np
 from magnum.platform.glfw import Application
 from viewer import HabitatSimInteractiveViewer, MouseMode
 
@@ -21,71 +20,6 @@ import habitat_sim.physics as phy
 from examples.fairmotion_interface import FairmotionInterface
 from examples.settings import default_sim_settings
 from habitat_sim.logging import logger
-
-
-# spline code from https://en.wikipedia.org/wiki/Centripetal_Catmull%E2%80%93Rom_spline
-def CatmullRomSpline(P0, P1, P2, P3, nPoints=100):
-    """
-    P0, P1, P2, and P3 should be (x,y) point pairs that define the Catmull-Rom spline.
-    nPoints is the number of points to include in this curve segment.
-    """
-    # Convert the points to numpy so that we can do array multiplication
-    P0, P1, P2, P3 = map(np.array, [P0, P1, P2, P3])
-
-    # Parametric constant: 0.5 for the centripetal spline, 0.0 for the uniform spline, 1.0 for the chordal spline.
-    alpha = 0.5
-    # Premultiplied power constant for the following tj() function.
-    alpha = alpha / 2
-
-    def tj(ti, Pi, Pj):
-        xi, yi, zi = Pi
-        xj, yj, zj = Pj
-        return ((xj - xi) ** 2 + (yj - yi) ** 2 + (zj - zi) ** 2) ** alpha + ti
-
-    # Calculate t0 to t4
-    t0 = 0
-    t1 = tj(t0, P0, P1)
-    t2 = tj(t1, P1, P2)
-    t3 = tj(t2, P2, P3)
-
-    # Only calculate points between P1 and P2
-    t = np.linspace(t1, t2, nPoints)
-
-    # Reshape so that we can multiply by the points P0 to P3
-    # and get a point for each value of t.
-    t = t.reshape(len(t), 1)
-    print(t)
-    A1 = (t1 - t) / (t1 - t0) * P0 + (t - t0) / (t1 - t0) * P1
-    A2 = (t2 - t) / (t2 - t1) * P1 + (t - t1) / (t2 - t1) * P2
-    A3 = (t3 - t) / (t3 - t2) * P2 + (t - t2) / (t3 - t2) * P3
-    print(A1)
-    print(A2)
-    print(A3)
-    B1 = (t2 - t) / (t2 - t0) * A1 + (t - t0) / (t2 - t0) * A2
-    B2 = (t3 - t) / (t3 - t1) * A2 + (t - t1) / (t3 - t1) * A3
-
-    C = (t2 - t) / (t2 - t1) * B1 + (t - t1) / (t2 - t1) * B2
-    return C
-
-
-# spline code from https://en.wikipedia.org/wiki/Centripetal_Catmull%E2%80%93Rom_spline
-def CatmullRomChain(P):
-    """
-    Calculate Catmull–Rom for a chain of points and return the combined curve.
-    """
-    # add buffer nodes to the ends
-    P.insert(0, P[0] + P[0] - P[1])
-    P.append(P[-1] + P[-1] - P[-2])
-
-    sz = len(P)
-
-    # The curve C will contain an array of (x, y) points.
-    C = []
-    for i in range(sz - 3):
-        c = CatmullRomSpline(P[i], P[i + 1], P[i + 2], P[i + 3])
-        C.extend(c)
-
-    return C
 
 
 class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
@@ -474,7 +408,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             found_path = self.sim.pathfinder.find_path(path)
             self.path_points = path.points
 
-        spline_points = CatmullRomChain(path.points)
+        spline_points = habitat_sim.geo.build_catmull_rom_spline(path.points, 10, 0.5)
         path.points = spline_points
 
         colors_spline = [mn.Color3.blue(), mn.Color3.green()]
