@@ -458,9 +458,14 @@ class FairmotionInterface:
 
         if len(self.key_frames) >= 2:
             traj_radius = 0.02
-            traj_offset = self.translation_offset + mn.Vector3(0, 0.1, 0)
+            traj_offset = self.translation_offset
 
             joint_names = [["rankle", "lankle"], "upperneck"]
+
+            final_rotation_correction = (
+                self.global_correction_quat(mn.Vector3.z_axis(), mn.Vector3.x_axis())
+                * self.rotation_offset
+            )
 
             def define_preview_points(joint_names: List[str]) -> List[mn.Vector3]:
                 """
@@ -497,7 +502,7 @@ class FairmotionInterface:
                         mp /= len(joints)
 
                         midpoints.append(
-                            traj_offset + self.rotation_offset.transform_vector(mp)
+                            traj_offset + final_rotation_correction.transform_vector(mp)
                         )
                     traj_objects.append(midpoints)
                 return traj_objects
@@ -720,7 +725,7 @@ class FairmotionInterface:
             mn.math.cross(mn.Vector3.x_axis(), mn.Vector3.z_axis()),
         )
 
-        # origin
+        ## Origin ##
         # x axis
         self.sim.get_debug_line_render().draw_transformed_line(
             mn.Vector3(), mn.Vector3.x_axis(), red
@@ -856,4 +861,3 @@ class Activity(Enum):
     NONE = 0
     MOTION_FOLLOW = 1
     PATH_FOLLOW_SEQ = 2
-    PATH_FOLLOW_POS = 3
