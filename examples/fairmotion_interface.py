@@ -36,6 +36,7 @@ class FairmotionInterface:
     def __init__(
         self,
         sim,
+        fps,
         urdf_path=None,
         amass_path=None,
         bm_path=None,
@@ -43,14 +44,15 @@ class FairmotionInterface:
     ) -> None:
         # general interface attrs
         LoggingContext.reinitialize_from_env()
-        self.sim = sim
+        self.sim: Optional[habitat_sim.simulator.Simulator] = sim
+        self.fps: float = fps
         self.art_obj_mgr = self.sim.get_articulated_object_manager()
         self.rgd_obj_mgr = self.sim.get_rigid_object_manager()
         self.model: Optional[phy.ManagedArticulatedObject] = None
         self.motion: Optional[motion.Motion] = None
         self.user_metadata = {}
         self.last_metadata_file: Optional[str] = None
-        self.motion_stepper = 1
+        self.motion_stepper = 0
         self.rotation_offset: Optional[mn.Quaternion] = None
         self.translation_offset: Optional[mn.Vector3] = None
         self.is_reversed = False
@@ -289,7 +291,7 @@ class FairmotionInterface:
             self.model = None
 
     # currently the next_pose method is simply called twice in simulating a frame
-    def next_pose(self, repeat=False) -> None:
+    def next_pose(self, repeat=False, step_size=None) -> None:
         """
         Set the model state from the next frame in the motion trajectory. `repeat` is
         set to `True` when the user would like to repeat the last frame.
@@ -302,10 +304,13 @@ class FairmotionInterface:
         def sign(i):
             return -1 * i if self.is_reversed else i
 
-        # repeat last frame: used mostly for position state change
-        if repeat:
+        step_size = step_size or int(self.motion.fps / self.fps)
+
+        # repeat
+        if not repeat:
+            # iterate the frame counter
             self.motion_stepper = (
-                self.motion_stepper - sign(1)
+                self.motion_stepper + sign(step_size)
             ) % self.motion.num_frames()
 
         (
@@ -319,9 +324,6 @@ class FairmotionInterface:
         self.model.joint_positions = new_pose
         self.model.rotation = new_root_rotation
         self.model.translation = new_root_translate
-
-        # iterate the frame counter
-        self.motion_stepper = (self.motion_stepper + sign(1)) % self.motion.num_frames()
 
     def convert_CMUamass_single_pose(
         self, pose, model, raw=False
@@ -575,7 +577,7 @@ class FairmotionInterface:
 
         self.path_points = path.points
         self.path_time: float = 0.0  # tracks time along path
-        self.path_motion = Move.walk_to_walk.motion
+        self.path_motion = Motions.walk_to_walk.motion
 
         # get path length
         i, j, summ = 0, 0, 0.0
@@ -596,9 +598,11 @@ class FairmotionInterface:
 
     def update_pathfollower_sequential(
         self, step_size: int = 1, path_time: Optional[float] = None
-    ):
+    ) -> None:
         """
-        [FILL AFTER IMPLEMENTATION]
+        When this method is called, the path follower model is updated to the next frame
+        of the path following sequence along with the corresponding next frame of the motion
+        cycle that was loaded in with `setup_pathfollower()`.
         """
         # precondition
         if not all(
@@ -606,19 +610,19 @@ class FairmotionInterface:
         ):
             return
 
-        walk = Move.walk_to_walk
+        walk = Motions.walk_to_walk
         global_neutral_correction = self.global_correction_quat(
             mn.Vector3.z_axis(), mn.Vector3.x_axis()
         )
 
         # either take argument value for path_time or continue with cycle
-        self.path_time = path_time or (self.path_time + (step_size / 60.0))
+        self.path_time = path_time or (self.path_time + (step_size / self.fps))
 
         # compute current frame from self.path_time w/ wrapping
-        mocap_time_length = walk.num_of_frames * (1.0 / 120.0)
+        mocap_time_length = walk.num_of_frames * (1.0 / walk.motion.fps)
         mocap_cycles_past = math.floor(self.path_time / mocap_time_length)
         mocap_time_curr = math.fmod(self.path_time, mocap_time_length)
-        mocap_frame = int(mocap_time_curr * 120)
+        mocap_frame = int(mocap_time_curr * walk.motion.fps)
 
         # find distance progressed along shortest path
         path_displacement = (
@@ -648,13 +652,14 @@ class FairmotionInterface:
         full_transform = walk.motion.poses[mocap_frame].get_transform(ROOT, local=True)
         full_transform = mn.Matrix4(full_transform)
         full_transform.translation -= walk.center_of_root_drift
-        full_transform = mn.Matrix4.from_(
-            global_neutral_correction.to_matrix(), mn.Vector3()
-        ).__matmul__(full_transform)
+        full_transform = (
+            mn.Matrix4.from_(global_neutral_correction.to_matrix(), mn.Vector3())
+            @ full_transform
+        )
 
         # while transform is facing -Z, remove forward displacement
         full_transform.translation *= mn.Vector3.x_axis() + mn.Vector3.y_axis()
-        full_transform = look_at_path_T.__matmul__(full_transform)
+        full_transform = look_at_path_T @ full_transform
 
         # apply joint angles
         self.model.joint_positions = new_pose
@@ -708,39 +713,8 @@ class FairmotionInterface:
 
         return rotation2 * rotation1
 
-    def draw_debug_lines(self) -> None:
-        """
-        Utility method for Devs to understand the simulator and motion spaces.
-        """
-        green = mn.Color4(0.0, 1.0, 0.0, 1.0)
-        blue = mn.Color4(0.0, 0.0, 1.0, 1.0)
-        red = mn.Color4(1.0, 0.0, 0.0, 1.0)
 
-        # cross of x and z axis
-        self.sim.get_debug_line_render().draw_circle(
-            mn.Vector3(),
-            0.75,
-            red,
-            24,
-            mn.math.cross(mn.Vector3.x_axis(), mn.Vector3.z_axis()),
-        )
-
-        ## Origin ##
-        # x axis
-        self.sim.get_debug_line_render().draw_transformed_line(
-            mn.Vector3(), mn.Vector3.x_axis(), red
-        )
-        # y axis
-        self.sim.get_debug_line_render().draw_transformed_line(
-            mn.Vector3(), mn.Vector3.y_axis(), green
-        )
-        # z axis
-        self.sim.get_debug_line_render().draw_transformed_line(
-            mn.Vector3(), mn.Vector3.z_axis(), blue
-        )
-
-
-class Move:
+class Motions:
     """
     The Move class is collection of stats that will hold the different movement motions
     for the character to use when following a path. The character is left-footed so that
@@ -750,7 +724,8 @@ class Move:
     @dataclass
     class MotionData:
         """
-        [FILL AFTER NEXT PR REVIEW]
+        A class intended to handle precomputations of utilities of the motion we want to
+        load into the character.
         """
 
         def __init__(self, motion_) -> None:
@@ -846,10 +821,13 @@ class Move:
         file="data/fairmotion/amass_test_data/CMU/CMU/02/02_01_poses.npz",
         bm_path="data/fairmotion/amass_test_data/smplh/male/model.npz",
     )
+    # all motions must have same fps for this implementation, so use first motion to set global
+    fps = motion_.fps
 
     walk_to_walk = MotionData(motion_ops.cut(motion_, 111, 246))
 
 
+# keeps track of the motion key frame preview modes
 class Preview(Enum):
     OFF = 0
     KEYFRAMES = 1
@@ -857,6 +835,7 @@ class Preview(Enum):
     ALL = 3
 
 
+# keeps track of the activity that intances model is  participating in currently
 class Activity(Enum):
     NONE = 0
     MOTION_FOLLOW = 1

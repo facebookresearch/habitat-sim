@@ -32,6 +32,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         # fairmotion init
         self.fm_demo = FairmotionInterface(
             self.sim,
+            self.fps,
             amass_path=fm_settings["amass_path"],
             urdf_path=fm_settings["urdf_path"],
             bm_path=fm_settings["bm_path"],
@@ -104,7 +105,6 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
 
         def play_motion() -> None:
             if self.fm_demo.motion is not None:
-                self.fm_demo.next_pose()
                 self.fm_demo.next_pose()
                 self.fm_demo.update_pathfollower_sequential()
 
@@ -381,7 +381,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         while not found_path:
             sample1 = None
             sample2 = None
-            while any([sample1 is None, sample2 is None]):
+            while sample1 is None or sample2 is None:
                 sample1 = sample1 or self.sim.pathfinder.get_random_navigable_point()
                 sample2 = sample2 or self.sim.pathfinder.get_random_navigable_point()
 
