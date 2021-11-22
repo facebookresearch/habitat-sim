@@ -271,9 +271,10 @@ void SceneInstanceAttributes::writeSubconfigsToJson(
           cfgIter->second->writeToJsonObject(allocator);
       jsonObj.AddMember(name, subObj, allocator);
     } else {
-      ESP_WARNING() << "Unitialized/empty Subconfig in Configuration @ key ["
-                    << cfgIter->first
-                    << "], so nothing will be written to JSON for this key.";
+      ESP_VERY_VERBOSE()
+          << "Unitialized/empty Subconfig in Configuration @ key ["
+          << cfgIter->first
+          << "], so nothing will be written to JSON for this key.";
     }
   }  // iterate through all configurations
 
