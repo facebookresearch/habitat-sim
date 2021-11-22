@@ -75,6 +75,7 @@ void Simulator::close(const bool destroy) {
   agents_.clear();
 
   physicsManager_ = nullptr;
+  curSceneInstanceAttributes_ = nullptr;
   gfxReplayMgr_ = nullptr;
 
   sceneID_.clear();
@@ -206,27 +207,31 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 
 }  // Simulator::reconfigure
 
-metadata::attributes::SceneInstanceAttributes::cptr
-Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
+bool Simulator::createSceneInstance(const std::string& activeSceneName) {
+  if (renderer_) {
+    renderer_->acquireGlContext();
+  }
+  // 1. initial setup for scene instancing - sets or creates the
+  // current scene instance to correspond to the given name.
+
   // Get scene instance attributes corresponding to passed active scene name
   // This will retrieve, or construct, an appropriately configured scene
   // instance attributes, depending on what exists in the Scene Dataset library
   // for the current dataset.
+  curSceneInstanceAttributes_ =
+      metadataMediator_->getSceneInstanceAttributesByName(activeSceneName);
 
-  metadata::attributes::SceneInstanceAttributes::cptr
-      curSceneInstanceAttributes =
-          metadataMediator_->getSceneInstanceAttributesByName(activeSceneName);
   // check if attributes is null - should not happen
   ESP_CHECK(
-      curSceneInstanceAttributes,
+      curSceneInstanceAttributes_,
       Cr::Utility::formatString(
           "Simulator::setSceneInstanceAttributes() : Attempt to load scene "
           "instance :{} failed due to scene instance not being found. Aborting",
           activeSceneName));
 
-  // 1. Load navmesh specified in current scene instance attributes.
+  // 2. Load navmesh specified in current scene instance attributes.
   const std::string& navmeshFileLoc = metadataMediator_->getNavmeshPathByHandle(
-      curSceneInstanceAttributes->getNavmeshHandle());
+      curSceneInstanceAttributes_->getNavmeshHandle());
 
   ESP_DEBUG() << "Navmesh file location in scene instance :" << navmeshFileLoc;
   // Get name of navmesh and use to create pathfinder and load navmesh
@@ -250,38 +255,24 @@ Simulator::setSceneInstanceAttributes(const std::string& activeSceneName) {
   // We need to make a design decision here:
   // when instancing a new scene, shall we delete all of the previous scene
   // graphs?
-
   activeSceneID_ = sceneManager_->initSceneGraph();
   sceneID_.push_back(activeSceneID_);
 
-  // 2. Load the Semantic Scene Descriptor file appropriate for the current
+  // 3. Load the Semantic Scene Descriptor file appropriate for the current
   // scene instance.
   // get name of desired semantic scene descriptor file
   const std::string semanticSceneDescFilename =
       metadataMediator_->getSemanticSceneDescriptorPathByHandle(
-          curSceneInstanceAttributes->getSemanticSceneHandle());
+          curSceneInstanceAttributes_->getSemanticSceneHandle());
 
   // load semantic scene descriptor
   resourceManager_->loadSemanticSceneDescriptor(semanticSceneDescFilename,
                                                 activeSceneName);
 
-  // 3. Specify frustumCulling based on value from config
+  // 4. Specify frustumCulling based on value from config
   frustumCulling_ = config_.frustumCulling;
 
-  // return a const ptr to the cur scene instance attributes
-  return curSceneInstanceAttributes;
-}  // Simulator::setSceneInstanceAttributes
-
-bool Simulator::createSceneInstance(const std::string& activeSceneName) {
-  if (renderer_) {
-    renderer_->acquireGlContext();
-  }
-  // 1. initial setup for scene instancing - sets or creates the
-  // current scene instance to correspond to the given name.
-  metadata::attributes::SceneInstanceAttributes::cptr
-      curSceneInstanceAttributes = setSceneInstanceAttributes(activeSceneName);
-
-  // 2. (re)seat & (re)init physics manager using the physics manager
+  // 5. (re)seat & (re)init physics manager using the physics manager
   // attributes specified in current simulator configuration held in
   // metadataMediator.
   // get rootNode
@@ -293,7 +284,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   // Set PM's reference to this simulator
   physicsManager_->setSimulator(this);
 
-  // 3. Load lighting as specified for scene instance - perform before stage
+  // 6. Load lighting as specified for scene instance - perform before stage
   // load so lighting key can be set appropriately. get name of light setup
   // for this scene instance
   std::string lightSetupKey;
@@ -306,7 +297,7 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   } else {
     // Get dataset/scene instance specified lighting
     lightSetupKey = metadataMediator_->getLightSetupFullHandle(
-        curSceneInstanceAttributes->getLightingHandle());
+        curSceneInstanceAttributes_->getLightingHandle());
     ESP_DEBUG() << "Using scene instance-specified Light key : -"
                 << lightSetupKey << "-";
     if (lightSetupKey != NO_LIGHT_KEY) {
@@ -320,25 +311,26 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
                                       Mn::ResourceKey{lightSetupKey});
     }
   }
-  // set config's sceneLightSetupKey to track currently specified light setup
+  // Set config's sceneLightSetupKey to track currently specified light setup
   // key
   config_.sceneLightSetupKey = lightSetupKey;
+
+  // 7. Update MetadataMediator's copy of SimulatorConfiguration to be in sync.
   metadataMediator_->setSimulatorConfiguration(config_);
 
-  // 4. Load stage specified by Scene Instance Attributes
-  bool success = instanceStageForActiveScene(curSceneInstanceAttributes);
-
-  // 5. Load object instances as spceified by Scene Instance Attributes.
+  // 8. Load stage specified by Scene Instance Attributes
+  bool success = instanceStageForSceneAttributes(curSceneInstanceAttributes_);
+  // 9. Load object instances as spceified by Scene Instance Attributes.
   if (success) {
-    success = instanceObjectsForActiveScene(curSceneInstanceAttributes);
+    success = instanceObjectsForSceneAttributes(curSceneInstanceAttributes_);
     if (success) {
-      // 6. Load articulated object instances as specified by Scene Instance
+      // 10. Load articulated object instances as specified by Scene Instance
       // Attributes.
-      success =
-          instanceArticulatedObjectsForActiveScene(curSceneInstanceAttributes);
+      success = instanceArticulatedObjectsForSceneAttributes(
+          curSceneInstanceAttributes_);
       if (success) {
-        // TODO : reset may eventually have all the scene instance instantiation
-        // code so that scenes can be reset
+        // TODO : reset may eventually have all the scene instantiation code so
+        // that scenes can be reset
         reset();
       }
     }
@@ -347,22 +339,23 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   return success;
 }  // Simulator::createSceneInstance
 
-bool Simulator::instanceStageForActiveScene(
+bool Simulator::instanceStageForSceneAttributes(
     const metadata::attributes::SceneInstanceAttributes::cptr&
-        curSceneInstanceAttributes) {
+        curSceneInstanceAttributes_) {
   // Load stage specified by Scene Instance Attributes
   // Get Stage Instance Attributes - contains name of stage and initial
   // transformation of stage in scene.
   // TODO : need to support stageInstanceAttributes transformation upon
   // creation.
   const SceneObjectInstanceAttributes::cptr stageInstanceAttributes =
-      curSceneInstanceAttributes->getStageInstance();
+      curSceneInstanceAttributes_->getStageInstance();
 
   // check if attributes is null - should not happen
   ESP_CHECK(
       stageInstanceAttributes,
       Cr::Utility::formatString(
-          "Simulator::instanceStageForActiveScene() : Attempt to load stage "
+          "Simulator::instanceStageForSceneAttributes() : Attempt to load "
+          "stage "
           "instance specified in current scene instance :{} failed due to "
           "stage instance configuration not being found. Aborting",
           config_.activeSceneName));
@@ -397,7 +390,7 @@ bool Simulator::instanceStageForActiveScene(
   // set stage's ref to ssd file
   stageAttributes->setSemanticDescriptorFilename(
       metadataMediator_->getSemanticSceneDescriptorPathByHandle(
-          curSceneInstanceAttributes->getSemanticSceneHandle()));
+          curSceneInstanceAttributes_->getSemanticSceneHandle()));
 
   // set visibility if explicitly specified in stage instance configs
   int visSet = stageInstanceAttributes->getIsInstanceVisible();
@@ -470,15 +463,15 @@ bool Simulator::instanceStageForActiveScene(
     }
   }  // if ID has changed - needs to be reset
   return true;
-}  // Simulator::instanceStageForActiveScene()
+}  // Simulator::instanceStageForSceneAttributes()
 
-bool Simulator::instanceObjectsForActiveScene(
+bool Simulator::instanceObjectsForSceneAttributes(
     const metadata::attributes::SceneInstanceAttributes::cptr&
-        curSceneInstanceAttributes) {
+        curSceneInstanceAttributes_) {
   // Load object instances as spceified by Scene Instance Attributes.
   // Get all instances of objects described in scene
   const std::vector<SceneObjectInstanceAttributes::cptr> objectInstances =
-      curSceneInstanceAttributes->getObjectInstances();
+      curSceneInstanceAttributes_->getObjectInstances();
 
   // node to attach object to
   scene::SceneNode* attachmentNode = nullptr;
@@ -486,7 +479,7 @@ bool Simulator::instanceObjectsForActiveScene(
   // whether or not to correct for COM shift - only do for blender-sourced
   // scene attributes
   bool defaultCOMCorrection =
-      (curSceneInstanceAttributes->getTranslationOrigin() ==
+      (curSceneInstanceAttributes_->getTranslationOrigin() ==
        metadata::attributes::SceneInstanceTranslationOrigin::AssetLocal);
 
   // Iterate through instances, create object and implement initial
@@ -496,7 +489,7 @@ bool Simulator::instanceObjectsForActiveScene(
     ESP_CHECK(
         objInst,
         Cr::Utility::formatString(
-            "Simulator::instanceObjectsForActiveScene() : Attempt to load "
+            "Simulator::instanceObjectsForSceneAttributes() : Attempt to load "
             "object instance specified in current scene instance :{} failed "
             "due to object instance configuration not being found. Aborting",
             config_.activeSceneName));
@@ -507,7 +500,7 @@ bool Simulator::instanceObjectsForActiveScene(
     ESP_CHECK(
         !objAttrFullHandle.empty(),
         Cr::Utility::formatString(
-            "Simulator::instanceObjectsForActiveScene() : Attempt to load "
+            "Simulator::instanceObjectsForSceneAttributes() : Attempt to load "
             "object instance specified in current scene instance :{} failed "
             "due to object instance configuration handle '{}' being empty or "
             "unknown. Aborting",
@@ -518,15 +511,15 @@ bool Simulator::instanceObjectsForActiveScene(
                                        config_.sceneLightSetupKey);
   }  // for each object attributes
   return true;
-}  // Simulator::instanceObjectsForActiveScene()
+}  // Simulator::instanceObjectsForSceneAttributes()
 
-bool Simulator::instanceArticulatedObjectsForActiveScene(
+bool Simulator::instanceArticulatedObjectsForSceneAttributes(
     const metadata::attributes::SceneInstanceAttributes::cptr&
-        curSceneInstanceAttributes) {
+        curSceneInstanceAttributes_) {
   // 6. Load all articulated object instances
   // Get all instances of articulated objects described in scene
   const std::vector<SceneAOInstanceAttributes::cptr> artObjInstances =
-      curSceneInstanceAttributes->getArticulatedObjectInstances();
+      curSceneInstanceAttributes_->getArticulatedObjectInstances();
 
   // int aoID = 0;
   auto& drawables = getDrawableGroup();
@@ -536,7 +529,7 @@ bool Simulator::instanceArticulatedObjectsForActiveScene(
     // check if instance attributes is null - should not happen
     ESP_CHECK(artObjInst,
               Cr::Utility::formatString(
-                  "Simulator::instanceArticulatedObjectsForActiveScene() "
+                  "Simulator::instanceArticulatedObjectsForSceneAttributes() "
                   ": Attempt to load articulated object instance "
                   "specified in current scene instance :{} failed due to "
                   "AO instance configuration not being found. Aborting",
@@ -551,7 +544,8 @@ bool Simulator::instanceArticulatedObjectsForActiveScene(
     ESP_CHECK(
         !artObjFilePath.empty(),
         Cr::Utility::formatString(
-            "Simulator::instanceArticulatedObjectsForActiveScene() : Attempt "
+            "Simulator::instanceArticulatedObjectsForSceneAttributes() : "
+            "Attempt "
             "to load articualted object instance specified in current scene "
             "instance :{} failed due to AO instance configuration file handle "
             "'{}' being empty or unknown. Aborting",
@@ -563,7 +557,8 @@ bool Simulator::instanceArticulatedObjectsForActiveScene(
                                                   config_.sceneLightSetupKey);
   }  // for each articulated object instance
   return true;
-}  // Simulator::instanceArticulatedObjectsForActiveScene
+}  // Simulator::instanceArticulatedObjectsForSceneAttributes
+
 void Simulator::reset() {
   if (physicsManager_ != nullptr) {
     // Note: only resets time to 0 by default.
@@ -577,6 +572,16 @@ void Simulator::reset() {
       getActiveSceneGraph().getRootNode().computeCumulativeBB();
   resourceManager_->setLightSetup(gfx::getDefaultLights());
 }  // Simulator::reset()
+
+bool Simulator::saveCurrentSceneInstance(const std::string& saveFilename,
+                                         bool overwrite,
+                                         int sceneID) const {
+  if (sceneHasPhysics(sceneID)) {
+    // TODO either get rid of sceneID or use it in a salientt way
+    // return physicsManager_->getStageInitAttributes();
+  }
+  return false;
+}  // Simulator::saveCurrentSceneInstance
 
 void Simulator::seed(uint32_t newSeed) {
   random_->seed(newSeed);
