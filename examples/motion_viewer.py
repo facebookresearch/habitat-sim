@@ -31,6 +31,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         # fairmotion init
         self.fm_demo = FairmotionInterface(
             self.sim,
+            self.fps,
             amass_path=fm_settings["amass_path"],
             urdf_path=fm_settings["urdf_path"],
             bm_path=fm_settings["bm_path"],
