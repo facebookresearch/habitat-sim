@@ -353,9 +353,10 @@ void Configuration::writeValuesToJson(io::JsonGenericValue& jsonObj,
       auto jsonVal = valIter->second.writeToJsonObject(allocator);
       jsonObj.AddMember(name, jsonVal, allocator);
     } else {
-      ESP_WARNING() << "Unitialized ConfigValue in Configuration @ key ["
-                    << valIter->first
-                    << "], so nothing will be written to JSON for this key.";
+      ESP_VERY_VERBOSE()
+          << "Unitialized ConfigValue in Configuration @ key ["
+          << valIter->first
+          << "], so nothing will be written to JSON for this key.";
     }
   }  // iterate through all values
 }  // Configuration::writeValuesToJson
@@ -374,9 +375,10 @@ void Configuration::writeSubconfigsToJson(io::JsonGenericValue& jsonObj,
           cfgIter->second->writeToJsonObject(allocator);
       jsonObj.AddMember(name, subObj, allocator);
     } else {
-      ESP_WARNING() << "Unitialized/empty Subconfig in Configuration @ key ["
-                    << cfgIter->first
-                    << "], so nothing will be written to JSON for this key.";
+      ESP_VERY_VERBOSE()
+          << "Unitialized/empty Subconfig in Configuration @ key ["
+          << cfgIter->first
+          << "], so nothing will be written to JSON for this key.";
     }
   }  // iterate through all configurations
 
