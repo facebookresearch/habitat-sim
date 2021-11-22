@@ -344,8 +344,8 @@ int PhysicsManager::addArticulatedObjectInstance(
 }  // PhysicsManager::addArticulatedObjectInstance
 
 void PhysicsManager::buildCurrentStateSceneAttributes(
-    metadata::attributes::SceneInstanceAttributes::ptr sceneInstanceAttrs)
-    const {
+    const metadata::attributes::SceneInstanceAttributes::ptr&
+        sceneInstanceAttrs) const {
   // 1. set stage instance
   sceneInstanceAttrs->setStageInstance(
       staticStageObject_->getCurrentStateInstanceAttr());

@@ -974,8 +974,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * overwritten by the current scene state data.
    */
   void buildCurrentStateSceneAttributes(
-      metadata::attributes::SceneInstanceAttributes::ptr sceneInstanceAttrs)
-      const;
+      const metadata::attributes::SceneInstanceAttributes::ptr&
+          sceneInstanceAttrs) const;
 
  protected:
   /** @brief Check that a given object ID is valid (i.e. it refers to an
