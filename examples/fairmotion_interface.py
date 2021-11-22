@@ -291,7 +291,7 @@ class FairmotionInterface:
             self.model = None
 
     # currently the next_pose method is simply called twice in simulating a frame
-    def next_pose(self, repeat=False) -> None:
+    def next_pose(self, repeat=False, step_size=None) -> None:
         """
         Set the model state from the next frame in the motion trajectory. `repeat` is
         set to `True` when the user would like to repeat the last frame.
@@ -304,10 +304,13 @@ class FairmotionInterface:
         def sign(i):
             return -1 * i if self.is_reversed else i
 
-        # repeat last frame: used mostly for position state change
-        if repeat:
+        step_size = step_size or int(self.motion.fps / self.fps)
+
+        # repeat
+        if not repeat:
+            # iterate the frame counter
             self.motion_stepper = (
-                self.motion_stepper - sign(1)
+                self.motion_stepper + sign(step_size)
             ) % self.motion.num_frames()
 
         (
@@ -321,9 +324,6 @@ class FairmotionInterface:
         self.model.joint_positions = new_pose
         self.model.rotation = new_root_rotation
         self.model.translation = new_root_translate
-
-        # iterate the frame counter
-        self.motion_stepper = (self.motion_stepper + sign(1)) % self.motion.num_frames()
 
     def convert_CMUamass_single_pose(
         self, pose, model, raw=False
