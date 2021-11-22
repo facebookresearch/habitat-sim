@@ -19,7 +19,9 @@
 #include <Corrade/Utility/FormatStl.h>
 #include <Corrade/Utility/String.h>
 #include <typeinfo>
+
 namespace Cr = Corrade;
+namespace Mn = Magnum;
 
 namespace esp {
 namespace core {
@@ -65,8 +67,8 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
     std::unique_ptr<io::JsonDocument> docConfig{};
     bool success = this->verifyLoadDocument(filename, docConfig);
     if (!success) {
-      ESP_ERROR() << "<" << Magnum::Debug::nospace << this->objectType_
-                  << Magnum::Debug::nospace
+      ESP_ERROR() << "<" << Mn::Debug::nospace << this->objectType_
+                  << Mn::Debug::nospace
                   << "> : Failure reading document as JSON :" << filename
                   << ". Aborting.";
       return nullptr;
@@ -90,8 +92,7 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
   ManagedFileIOPtr buildManagedObjectFromDoc(const std::string& filename,
                                              CORRADE_UNUSED const U& config) {
     ESP_ERROR()
-        << "<" << Magnum::Debug::nospace << this->objectType_
-        << Magnum::Debug::nospace
+        << "<" << Mn::Debug::nospace << this->objectType_ << Mn::Debug::nospace
         << "> : Failure loading attributes from document of unknown type :"
         << filename << ". Aborting.";
   }
@@ -279,8 +280,8 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
    */
   bool saveManagedObjectToFileInternal(const ManagedFileIOPtr& managedObject,
                                        const std::string& fullFilename) const {
-    ESP_DEBUG() << "<" << Magnum::Debug::nospace << this->objectType_
-                << Magnum::Debug::nospace << ">:Attempting to save object named"
+    ESP_DEBUG() << "<" << Mn::Debug::nospace << this->objectType_
+                << Mn::Debug::nospace << ">:Attempting to save object named"
                 << managedObject->getHandle() << "to Filename:" << fullFilename;
 
     // write AbstractFileBasedManagedObject to JSON file
@@ -294,8 +295,8 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
     // save to file
     bool success = io::writeJsonToFile(doc, fullFilename, true, 7);
 
-    ESP_DEBUG() << "<" << Magnum::Debug::nospace << this->objectType_
-                << Magnum::Debug::nospace
+    ESP_DEBUG() << "<" << Mn::Debug::nospace << this->objectType_
+                << Mn::Debug::nospace
                 << ">:Attempt to save to Filename:" << fullFilename << ":"
                 << (success ? "Successful." : "Failed.");
 
@@ -318,8 +319,8 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
   bool verifyLoadDocument(const std::string& filename,
                           CORRADE_UNUSED std::unique_ptr<U>& resDoc) {
     // by here always fail - means document type U is unsupported
-    ESP_ERROR() << "<" << Magnum::Debug::nospace << this->objectType_
-                << Magnum::Debug::nospace << "> : File" << filename
+    ESP_ERROR() << "<" << Mn::Debug::nospace << this->objectType_
+                << Mn::Debug::nospace << "> : File" << filename
                 << "failed due to unsupported file type :" << typeid(U).name();
     return false;
   }  // ManagedContainerBase::verifyLoadDocument
@@ -429,13 +430,13 @@ std::string ManagedFileBasedContainer<T, Access>::convertFilenameToPassedExt(
       std::string::npos) {
     resHandle = Cr::Utility::Directory::splitExtension(filename).first + "." +
                 fileTypeExt;
-    ESP_VERY_VERBOSE() << "<" << Magnum::Debug::nospace << this->objectType_
-                       << Magnum::Debug::nospace << "> : Filename :" << filename
+    ESP_VERY_VERBOSE() << "<" << Mn::Debug::nospace << this->objectType_
+                       << Mn::Debug::nospace << "> : Filename :" << filename
                        << "changed to proposed" << fileTypeExt
                        << "filename :" << resHandle;
   } else {
-    ESP_VERY_VERBOSE() << "<" << Magnum::Debug::nospace << this->objectType_
-                       << Magnum::Debug::nospace << "> : Filename :" << filename
+    ESP_VERY_VERBOSE() << "<" << Mn::Debug::nospace << this->objectType_
+                       << Mn::Debug::nospace << "> : Filename :" << filename
                        << "contains requested file extension" << fileTypeExt
                        << "already.";
   }
@@ -450,16 +451,16 @@ bool ManagedFileBasedContainer<T, Access>::verifyLoadDocument(
     try {
       jsonDoc = std::make_unique<io::JsonDocument>(io::parseJsonFile(filename));
     } catch (...) {
-      ESP_ERROR() << "<" << Magnum::Debug::nospace << this->objectType_
-                  << Magnum::Debug::nospace << "> : Failed to parse" << filename
+      ESP_ERROR() << "<" << Mn::Debug::nospace << this->objectType_
+                  << Mn::Debug::nospace << "> : Failed to parse" << filename
                   << "as JSON.";
       return false;
     }
     return true;
   } else {
     // by here always fail
-    ESP_ERROR() << "<" << Magnum::Debug::nospace << this->objectType_
-                << Magnum::Debug::nospace << "> : File" << filename
+    ESP_ERROR() << "<" << Mn::Debug::nospace << this->objectType_
+                << Mn::Debug::nospace << "> : File" << filename
                 << "does not exist";
     return false;
   }
@@ -483,11 +484,12 @@ bool ManagedFileBasedContainer<T, Access>::saveManagedObjectToFile(
   } else {
     // directory found, strip it out and leave remainder (including potential
     // subdirs within directory)
-    fileNameRaw = objectHandle.substr(pos + fileDirectory.length());
+    fileNameRaw = objectHandle.substr(pos + fileDirectory.length() + 1);
   }
   std::string fileNameBase =
       FileUtil::splitExtension(FileUtil::splitExtension(fileNameRaw).first)
           .first;
+
   std::string fileName = fileNameBase + "." + this->JSONTypeExt_;
   if (!overwrite) {
     // if not overwrite, then attempt to find a non-conflicting name before
@@ -495,12 +497,13 @@ bool ManagedFileBasedContainer<T, Access>::saveManagedObjectToFile(
     bool nameExists = true;
     int count = 0;
     while (nameExists) {
-      nameExists = FileUtil::exists(FileUtil::join(fileDirectory, fileName));
+      auto tempFullFileName = FileUtil::join(fileDirectory, fileName);
+      nameExists = FileUtil::exists(tempFullFileName);
       if (nameExists) {
         // build a new file name candidate by adding copy plus some integer
         // value
         fileName = Cr::Utility::formatString(
-            "{} (copy {:04d}).{}", fileNameBase, count, this->JSONTypeExt_);
+            "{} (copy {:.04d}).{}", fileNameBase, count, this->JSONTypeExt_);
         ++count;
       }
     }
