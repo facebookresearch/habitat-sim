@@ -3,6 +3,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import ctypes
+import random
 import sys
 import time
 from typing import Any, Callable, Dict, Optional
@@ -30,6 +31,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         # fairmotion init
         self.fm_demo = FairmotionInterface(
             self.sim,
+            self.fps,
             amass_path=fm_settings["amass_path"],
             urdf_path=fm_settings["urdf_path"],
             bm_path=fm_settings["bm_path"],
@@ -63,7 +65,35 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         self.select_box_obj_id: int = -1
 
         # shortest path attributes
-        self.path_traj_obj_id = -1
+        self.spline_path_traj_obj_id = -1
+
+        self.navmesh_config_and_recompute()
+
+    def debug_draw(self):
+        """
+        Additional draw commands to be called during draw_event.
+        """
+
+        def draw_frame():
+            red = mn.Color4(1.0, 0.0, 0.0, 1.0)
+            green = mn.Color4(0.0, 1.0, 0.0, 1.0)
+            blue = mn.Color4(0.0, 0.0, 1.0, 1.0)
+            # yellow = mn.Color4(1.0, 1.0, 0.0, 1.0)
+
+            # x axis
+            self.sim.get_debug_line_render().draw_transformed_line(
+                mn.Vector3(), mn.Vector3(1.0, 0.0, 0.0), red
+            )
+            # y axis
+            self.sim.get_debug_line_render().draw_transformed_line(
+                mn.Vector3(), mn.Vector3(0.0, 1.0, 0.0), green
+            )
+            # z axis
+            self.sim.get_debug_line_render().draw_transformed_line(
+                mn.Vector3(), mn.Vector3(0.0, 0.0, 1.0), blue
+            )
+
+        # draw_frame()
 
     def draw_event(self, simulation_call: Optional[Callable] = None) -> None:
         """
@@ -75,7 +105,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         def play_motion() -> None:
             if self.fm_demo.motion is not None:
                 self.fm_demo.next_pose()
-                self.fm_demo.next_pose()
+                self.fm_demo.update_pathfollower_sequential()
 
         super().draw_event(simulation_call=play_motion)
 
@@ -97,14 +127,25 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
                 logger.info("Command: hide model")
             else:
                 logger.info("Command: load model")
+                self.remove_short_path_traj_obj()
                 self.fm_demo.load_model()
 
         elif key == pressed.J:
-            if not self.sim.pathfinder.is_loaded:
+            if event.modifiers == mod.ALT:
+                self.simulating = False
+                self.fm_demo.update_pathfollower_sequential(
+                    path_time=random.uniform(0.0, 10.0)
+                )
+            elif not self.sim.pathfinder.is_loaded:
                 logger.warn("Warning: pathfinder not initialized, recompute navmesh")
             else:
                 logger.info("Command: shortest path between two random points")
-                self.find_short_path_from_two_points()
+                self.fm_demo.load_model()
+                path = self.find_short_path_from_two_points()
+                self.fm_demo.setup_pathfollower(path)
+            event.accepted = True
+            self.redraw()
+            return
 
         elif key == pressed.K:
             # Toggle Key Frames
@@ -295,8 +336,11 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         obj = mocap_char.rgd_obj_mgr.add_object_by_template_id(self.box_template_id)
         obj.collidable = False
         obj.motion_type = phy.MotionType.KINEMATIC
+        obj.rotation = (
+            mocap_char.global_correction_quat(mn.Vector3.z_axis(), mn.Vector3.x_axis())
+            * mocap_char.rotation_offset
+        )
         obj.translation = mocap_char.translation_offset + mn.Vector3(0, 0.8, 0)
-        obj.rotation = mocap_char.rotation_offset
         self.select_box_obj_id = obj.object_id
 
         self.selected_mocap_char = mocap_char
@@ -319,43 +363,115 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
 
         self.selected_mocap_char = None
 
-    def find_short_path_from_two_points(self):
+    def find_short_path_from_two_points(
+        self, sample1=None, sample2=None
+    ) -> habitat_sim.ShortestPath():
         """
         Finds two random points on the NavMesh, calculates a shortest path between
         the two, and creates a trajectory object to visualize the path.
         """
-        if self.path_traj_obj_id >= 0:
+        if self.spline_path_traj_obj_id >= 0:
             self.sim.get_rigid_object_manager().remove_object_by_id(
-                self.path_traj_obj_id
+                self.spline_path_traj_obj_id
             )
-        self.path_traj_obj_id = -1
+        self.spline_path_traj_obj_id = -1
 
-        sample1 = self.sim.pathfinder.get_random_navigable_point()
-        sample2 = self.sim.pathfinder.get_random_navigable_point()
+        found_path = False
+        while not found_path:
+            sample1 = None
+            sample2 = None
+            while sample1 is None or sample2 is None:
+                sample1 = sample1 or self.sim.pathfinder.get_random_navigable_point()
+                sample2 = sample2 or self.sim.pathfinder.get_random_navigable_point()
 
-        path = habitat_sim.ShortestPath()
-        path.requested_start = sample1
-        path.requested_end = sample2
-        found_path = self.sim.pathfinder.find_path(path)
-        geodesic_distance = path.geodesic_distance
-        path_points = path.points
+                # constraint points to be on first floor
+                if sample1[1] != sample2[1] or sample1[1] > 2:
+                    logger.warn(
+                        "Warning: points are out of acceptable area, replacing with randoms"
+                    )
+                    sample1, sample2 = None, None
 
-        logger.info(
-            f"""
-            found_path :            {str(found_path)}
-            geodesic_distance :     {str(geodesic_distance)}
-            path_points :           {str(path_points)}
-            """
-        )
+            path = habitat_sim.ShortestPath()
+            path.requested_start = sample1
+            path.requested_end = sample2
+            found_path = self.sim.pathfinder.find_path(path)
+            self.path_points = path.points
 
-        colors = [mn.Color3.yellow(), mn.Color3.red()]
+        spline_points = habitat_sim.geo.build_catmull_rom_spline(path.points, 5, 0.5)
+        path.points = spline_points
 
-        self.path_traj_obj_id = self.sim.add_gradient_trajectory_object(
-            traj_vis_name=f"{time.strftime('%Y-%m-%d_%H-%M-%S')}",
-            colors=colors,
-            points=path_points,
+        colors_spline = [mn.Color3.blue(), mn.Color3.green()]
+
+        self.spline_path_traj_obj_id = self.sim.add_gradient_trajectory_object(
+            traj_vis_name=f"spline_{time.strftime('%Y-%m-%d_%H-%M-%S')}",
+            colors=colors_spline,
+            points=spline_points,
             radius=0.01,
         )
+        return path
+
+    def remove_short_path_traj_obj(self) -> None:
+        """
+        Remove shortest path trajectory object if possible.
+        """
+        if self.spline_path_traj_obj_id >= 0:
+            self.sim.get_rigid_object_manager().remove_object_by_id(
+                self.spline_path_traj_obj_id
+            )
+        self.spline_path_traj_obj_id = -1
+
+    def navmesh_config_and_recompute(self) -> None:
+        """
+        Overwrite the NavMesh function to compute more restricted bounds for character.
+        """
+        art_obj_mgr, art_cache = self.sim.get_articulated_object_manager(), {}
+        rgd_obj_mgr, rgd_cache = self.sim.get_rigid_object_manager(), {}
+
+        # Setting all articulated objects to static
+        for obj_handle in art_obj_mgr.get_object_handles():
+            # save original motion type
+            art_cache[obj_handle] = art_obj_mgr.get_object_by_handle(
+                obj_handle
+            ).motion_type
+
+            # setting object motion_type to static
+            art_obj_mgr.get_object_by_handle(
+                obj_handle
+            ).motion_type = phy.MotionType.STATIC
+
+        # Setting all rigid objects to static
+        for obj_handle in rgd_obj_mgr.get_object_handles():
+            # save original motion type
+            rgd_cache[obj_handle] = rgd_obj_mgr.get_object_by_handle(
+                obj_handle
+            ).motion_type
+
+            # setting object motion_type to static
+            rgd_obj_mgr.get_object_by_handle(
+                obj_handle
+            ).motion_type = phy.MotionType.STATIC
+
+        # compute NavMesh to be wary of Scene Objects
+        self.navmesh_settings = habitat_sim.NavMeshSettings()
+        self.navmesh_settings.set_defaults()
+        self.navmesh_settings.agent_radius = 0.4
+        self.sim.recompute_navmesh(
+            self.sim.pathfinder,
+            self.navmesh_settings,
+            include_static_objects=True,
+        )
+
+        # Set all articulated objects back to original motion_type
+        for obj_handle in art_obj_mgr.get_object_handles():
+            art_obj_mgr.get_object_by_handle(obj_handle).motion_type = art_cache[
+                obj_handle
+            ]
+
+        # Set all rigid objects back to original motion_type
+        for obj_handle in rgd_obj_mgr.get_object_handles():
+            rgd_obj_mgr.get_object_by_handle(obj_handle).motion_type = rgd_cache[
+                obj_handle
+            ]
 
     def print_help_text(self) -> None:
         """
@@ -405,7 +521,6 @@ Key Commands:
 
     Utilities:
     'r':        Reset the simulator with the most recently loaded scene and default fairmotion character.
-    'j':        Randomly choose two points on the NavMesh and generate|display the shortest path between the two.
 
     Object Interactions:
     SPACE:      Toggle physics simulation on/off.
@@ -417,6 +532,8 @@ Key Commands:
     Fairmotion Interface:
     'f':        Load model with current motion data.
                 [shft] Hide model.
+    'j':        Load model to follow a path between two randomly chosen points.
+                (+ ALT) Move to random place in path with character.
     'k':        Toggle key frame preview of loaded motion.
     '/':        Set motion to play in reverse.
     'l':        Fetch and load data from a file give by the user's input.

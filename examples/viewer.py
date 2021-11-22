@@ -27,6 +27,7 @@ class HabitatSimInteractiveViewer(Application):
         configuration.title = "Habitat Sim Interactive Viewer"
         Application.__init__(self, configuration)
         self.sim_settings: Dict[str:Any] = sim_settings
+        self.fps: float = 60.0
 
         # set proper viewport size
         self.viewport_size: mn.Vector2i = mn.gl.default_framebuffer.viewport.size()
@@ -76,8 +77,8 @@ class HabitatSimInteractiveViewer(Application):
         self.simulate_single_step = False
 
         # configure our simulator
-        self.cfg: habitat_sim.simulator.Configuration = None
-        self.sim: habitat_sim.simulator.Simulator = None
+        self.cfg: Optional[habitat_sim.simulator.Configuration] = None
+        self.sim: Optional[habitat_sim.simulator.Simulator] = None
         self.reconfigure_sim()
 
         # compute NavMesh if not already loaded by the scene.
@@ -89,12 +90,17 @@ class HabitatSimInteractiveViewer(Application):
         logger.setLevel("INFO")
         self.print_help_text()
 
+    def debug_draw(self):
+        """
+        Additional draw commands to be called during draw_event.
+        """
+
     def draw_event(self, simulation_call: Optional[Callable] = None) -> None:
         """
         Calls continuously to re-render frames and swap the two frame buffers
         at a fixed rate.
         """
-        agent_acts_per_sec = 60.0
+        agent_acts_per_sec = self.fps
 
         mn.gl.default_framebuffer.clear(
             mn.gl.FramebufferClear.COLOR | mn.gl.FramebufferClear.DEPTH
@@ -106,20 +112,22 @@ class HabitatSimInteractiveViewer(Application):
         self.move_and_look(int(num_agent_actions))
 
         # Occasionally a frame will pass quicker than 1/60 seconds
-        if self.time_since_last_simulation >= 1.0 / 60.0:
+        if self.time_since_last_simulation >= 1.0 / self.fps:
             if self.simulating or self.simulate_single_step:
                 # step physics at a fixed rate
                 # In the interest of frame rate, only a single step is taken,
                 # even if time_since_last_simulation is quite large
-                self.sim.step_world(1.0 / 60.0)
+                self.sim.step_world(1.0 / self.fps)
                 self.simulate_single_step = False
                 if simulation_call is not None:
                     simulation_call()
 
             # reset time_since_last_simulation, accounting for potential overflow
             self.time_since_last_simulation = math.fmod(
-                self.time_since_last_simulation, 1.0 / 60.0
+                self.time_since_last_simulation, 1.0 / self.fps
             )
+
+        self.debug_draw()
 
         self.sim._sensors["color_sensor"].draw_observation()
         self.render_camera.render_target.blit_rgba_to_default()
@@ -520,7 +528,7 @@ class HabitatSimInteractiveViewer(Application):
         elif self.mouse_interaction == MouseMode.GRAB:
             self.mouse_interaction = MouseMode.LOOK
 
-    def navmesh_config_and_recompute(self) -> habitat_sim.NavMeshSettings:
+    def navmesh_config_and_recompute(self) -> None:
         """
         This method is setup to be overridden in for setting config accessibility
         in inherited classes.

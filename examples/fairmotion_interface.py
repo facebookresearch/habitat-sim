@@ -3,8 +3,10 @@
 # LICENSE file in the root directory of this source tree.
 
 import json
+import math
 import os
 import time
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -12,18 +14,19 @@ import magnum as mn
 from fairmotion.core import motion
 from fairmotion.data import amass
 from fairmotion.ops import conversions
+from fairmotion.ops import motion as motion_ops
 
+import habitat_sim
 import habitat_sim.physics as phy
 from habitat_sim.logging import LoggingContext, logger
 
-#### Constants
-ROOT = 0
+#### Constants ###
+ROOT, LAST = 0, -1
 METADATA_DEFAULT_WHEN_MISSING_FILE = {
     "urdf_path": "data/test_assets/urdf/amass_male.urdf",
     "amass_path": "data/fairmotion/amass_test_data/CMU/CMU/02/02_01_poses.npz",
     "bm_path": "data/fairmotion/amass_test_data/smplh/male/model.npz",
-    "rotation": mn.Quaternion.rotation(mn.Deg(-90), mn.Vector3.x_axis())
-    * mn.Quaternion.rotation(mn.Deg(90), mn.Vector3.z_axis()),
+    "rotation": mn.Quaternion(),
     "translation": mn.Vector3([2.5, 0.07, 0.7]),
 }
 METADATA_DIR = "data/fairmotion/"
@@ -33,30 +36,39 @@ class FairmotionInterface:
     def __init__(
         self,
         sim,
+        fps,
         urdf_path=None,
         amass_path=None,
         bm_path=None,
         metadata_file=None,
     ) -> None:
-
+        # general interface attrs
         LoggingContext.reinitialize_from_env()
-        self.sim = sim
+        self.sim: Optional[habitat_sim.simulator.Simulator] = sim
+        self.fps: float = fps
         self.art_obj_mgr = self.sim.get_articulated_object_manager()
         self.rgd_obj_mgr = self.sim.get_rigid_object_manager()
         self.model: Optional[phy.ManagedArticulatedObject] = None
         self.motion: Optional[motion.Motion] = None
         self.user_metadata = {}
         self.last_metadata_file: Optional[str] = None
-        self.motion_stepper = 1
+        self.motion_stepper = 0
         self.rotation_offset: Optional[mn.Quaternion] = None
         self.translation_offset: Optional[mn.Vector3] = None
+        self.is_reversed = False
+        self.activity: Activity = Activity.NONE
 
+        # key frame attrs
         self.key_frames = None
         self.key_frame_models = []
-        self.preview_mode = Preview.OFF
+        self.preview_mode: Preview = Preview.OFF
         self.traj_ids: List[int] = []
-        self.is_reversed = False
+
         self.setup_default_metadata()
+
+        # path follower attrs
+        self.model: Optional[phy.ManagedArticulatedObject] = None
+        self.path_points: Optional[List[mn.Vector3]] = None
 
         if metadata_file:
             try:
@@ -252,6 +264,7 @@ class FairmotionInterface:
         # loading text because the setup pauses here during motion load
         logger.info("Loading...")
         self.hide_model()
+        self.activity = Activity.MOTION_FOLLOW
 
         # keeps the model up to date with current data target
         data = self.user_metadata
@@ -278,23 +291,26 @@ class FairmotionInterface:
             self.model = None
 
     # currently the next_pose method is simply called twice in simulating a frame
-    def next_pose(self, repeat=False) -> None:
+    def next_pose(self, repeat=False, step_size=None) -> None:
         """
         Set the model state from the next frame in the motion trajectory. `repeat` is
         set to `True` when the user would like to repeat the last frame.
         """
-        if not self.model or not self.motion:
+        # precondition
+        if not all([self.model, self.motion, self.activity == Activity.MOTION_FOLLOW]):
             return
 
-        # This function tracks is_reversed and changes the direction of
-        # the motion accordingly.
+        # tracks is_reversed and changes the direction of the motion accordingly.
         def sign(i):
             return -1 * i if self.is_reversed else i
 
-        # repeat last frame: used mostly for position state change
-        if repeat:
+        step_size = step_size or int(self.motion.fps / self.fps)
+
+        # repeat
+        if not repeat:
+            # iterate the frame counter
             self.motion_stepper = (
-                self.motion_stepper - sign(1)
+                self.motion_stepper + sign(step_size)
             ) % self.motion.num_frames()
 
         (
@@ -304,15 +320,13 @@ class FairmotionInterface:
         ) = self.convert_CMUamass_single_pose(
             self.motion.poses[abs(self.motion_stepper)], self.model
         )
+
         self.model.joint_positions = new_pose
         self.model.rotation = new_root_rotation
         self.model.translation = new_root_translate
 
-        # iterate the frame counter
-        self.motion_stepper = (self.motion_stepper + sign(1)) % self.motion.num_frames()
-
     def convert_CMUamass_single_pose(
-        self, pose, model
+        self, pose, model, raw=False
     ) -> Tuple[List[float], mn.Vector3, mn.Quaternion]:
         """
         This conversion is specific to the datasets from CMU
@@ -322,16 +336,20 @@ class FairmotionInterface:
         # Root joint
         root_T = pose.get_transform(ROOT, local=False)
 
-        # adding offsets to root transformation
-        # rotation
-        root_rotation = self.rotation_offset * mn.Quaternion.from_matrix(
+        final_rotation_correction = mn.Quaternion()
+
+        if not raw:
+            final_rotation_correction = (
+                self.global_correction_quat(mn.Vector3.z_axis(), mn.Vector3.x_axis())
+                * self.rotation_offset
+            )
+
+        root_rotation = final_rotation_correction * mn.Quaternion.from_matrix(
             mn.Matrix3x3(root_T[0:3, 0:3])
         )
-
-        # translation
         root_translation = (
             self.translation_offset
-            + self.rotation_offset.transform_vector(root_T[0:3, 3])
+            + final_rotation_correction.transform_vector(root_T[0:3, 3])
         )
 
         Q, _ = conversions.T2Qp(root_T)
@@ -417,12 +435,12 @@ class FairmotionInterface:
                     new_pose,
                     new_root_translate,
                     new_root_rotation,
-                ) = self.convert_CMUamass_single_pose(k, self.key_frame_models[-1])
+                ) = self.convert_CMUamass_single_pose(k, self.key_frame_models[LAST])
 
-                self.key_frame_models[-1].motion_type = phy.MotionType.KINEMATIC
-                self.key_frame_models[-1].joint_positions = new_pose
-                self.key_frame_models[-1].rotation = new_root_rotation
-                self.key_frame_models[-1].translation = new_root_translate
+                self.key_frame_models[LAST].motion_type = phy.MotionType.KINEMATIC
+                self.key_frame_models[LAST].joint_positions = new_pose
+                self.key_frame_models[LAST].rotation = new_root_rotation
+                self.key_frame_models[LAST].translation = new_root_translate
 
         elif self.key_frame_models:
             for m in self.key_frame_models:
@@ -442,9 +460,14 @@ class FairmotionInterface:
 
         if len(self.key_frames) >= 2:
             traj_radius = 0.02
-            traj_offset = self.translation_offset + mn.Vector3(0, 0.1, 0)
+            traj_offset = self.translation_offset
 
             joint_names = [["rankle", "lankle"], "upperneck"]
+
+            final_rotation_correction = (
+                self.global_correction_quat(mn.Vector3.z_axis(), mn.Vector3.x_axis())
+                * self.rotation_offset
+            )
 
             def define_preview_points(joint_names: List[str]) -> List[mn.Vector3]:
                 """
@@ -454,7 +477,6 @@ class FairmotionInterface:
                 single joint names will produce there own trajectory object. The total amount
                 of trajectory objects that are produced is the length of the outer list.
                 Example: joint_names = [["rankle", "lankle"], "upperneck"]
-
 
                 Returns a list of lists of points to build the trajectory objects.
                 """
@@ -482,7 +504,7 @@ class FairmotionInterface:
                         mp /= len(joints)
 
                         midpoints.append(
-                            traj_offset + self.rotation_offset.transform_vector(mp)
+                            traj_offset + final_rotation_correction.transform_vector(mp)
                         )
                     traj_objects.append(midpoints)
                 return traj_objects
@@ -546,9 +568,275 @@ class FairmotionInterface:
 
         return False
 
+    def setup_pathfollower(self, path: habitat_sim.ShortestPath()):
+        """
+        Prepare the pathfollowing character and any data needed to execute the update function.
+        """
+        self.hide_model()
+        self.activity = Activity.PATH_FOLLOW_SEQ
 
+        self.path_points = path.points
+        self.path_time: float = 0.0  # tracks time along path
+        self.path_motion = Motions.walk_to_walk.motion
+
+        # get path length
+        i, j, summ = 0, 0, 0.0
+        while i < len(self.path_points):
+            summ += (mn.Vector3(self.path_points[i] - self.path_points[j])).length()
+            j = i
+            i += 1
+        self.full_path_length = summ
+
+        # Load a model to follow path
+        self.model = self.art_obj_mgr.add_articulated_object_from_urdf(
+            filepath=self.user_metadata["urdf_path"], fixed_base=True
+        )
+        self.model.motion_type = phy.MotionType.KINEMATIC
+
+        # First update with step_size 0 to start character
+        self.update_pathfollower_sequential(step_size=0)
+
+    def update_pathfollower_sequential(
+        self, step_size: int = 1, path_time: Optional[float] = None
+    ) -> None:
+        """
+        When this method is called, the path follower model is updated to the next frame
+        of the path following sequence along with the corresponding next frame of the motion
+        cycle that was loaded in with `setup_pathfollower()`.
+        """
+        # precondition
+        if not all(
+            [self.model, self.path_points, self.activity == Activity.PATH_FOLLOW_SEQ]
+        ):
+            return
+
+        walk = Motions.walk_to_walk
+        global_neutral_correction = self.global_correction_quat(
+            mn.Vector3.z_axis(), mn.Vector3.x_axis()
+        )
+
+        # either take argument value for path_time or continue with cycle
+        self.path_time = path_time or (self.path_time + (step_size / self.fps))
+
+        # compute current frame from self.path_time w/ wrapping
+        mocap_time_length = walk.num_of_frames * (1.0 / walk.motion.fps)
+        mocap_cycles_past = math.floor(self.path_time / mocap_time_length)
+        mocap_time_curr = math.fmod(self.path_time, mocap_time_length)
+        mocap_frame = int(mocap_time_curr * walk.motion.fps)
+
+        # find distance progressed along shortest path
+        path_displacement = (
+            mocap_cycles_past * walk.map_of_total_displacement[LAST]
+            + walk.map_of_total_displacement[mocap_frame]
+        )
+
+        # handle wrapping or edgecase for dath displacement passing goal
+        if path_displacement > self.full_path_length:
+            self.path_time = 0.0
+            self.path_displacement = 0.0
+
+        # character's root node position on the line and the forward direction of the path
+        char_pos, forward_direction = self.point_at_path_t(
+            self.path_points, path_displacement
+        )
+
+        new_pose, _, _ = self.convert_CMUamass_single_pose(
+            self.path_motion.poses[mocap_frame], self.model, raw=True
+        )
+
+        # look at target and create transform
+        look_at_path_T = mn.Matrix4.look_at(
+            char_pos, char_pos + forward_direction.normalized(), mn.Vector3.y_axis()
+        )
+
+        full_transform = walk.motion.poses[mocap_frame].get_transform(ROOT, local=True)
+        full_transform = mn.Matrix4(full_transform)
+        full_transform.translation -= walk.center_of_root_drift
+        full_transform = (
+            mn.Matrix4.from_(global_neutral_correction.to_matrix(), mn.Vector3())
+            @ full_transform
+        )
+
+        # while transform is facing -Z, remove forward displacement
+        full_transform.translation *= mn.Vector3.x_axis() + mn.Vector3.y_axis()
+        full_transform = look_at_path_T @ full_transform
+
+        # apply joint angles
+        self.model.joint_positions = new_pose
+        self.model.transformation = full_transform
+
+    def point_at_path_t(
+        self, path_points: List[mn.Vector3], t: float
+    ) -> Tuple[mn.Vector3, mn.Vector3]:
+        """
+        Function that give a point on the path at time t.
+        """
+        covered: float = 0.0
+        i: int = 0
+        j: int = 0
+
+        while i < len(path_points):
+
+            progress: float = (mn.Vector3(path_points[i] - path_points[j])).length()
+            if t >= progress + covered:
+                covered += progress
+                j = i
+                i += 1
+            else:
+                # we are finally pointing to the correct
+                break
+
+        # wrap just in case t is greater than total path length
+        if i == len(path_points):
+            return self.point_at_path_t(path_points, math.fmod(t, covered))
+
+        offset = mn.Vector3(0.0, 0.9, 0.0)
+        direction = (mn.Vector3(path_points[i] - path_points[j])).normalized()
+        point = mn.Vector3(path_points[j] + ((t - covered) * direction)) + offset
+        return point, direction
+
+    def global_correction_quat(
+        self, up_v: mn.Vector3, forward_v: mn.Vector3
+    ) -> mn.Quaternion:
+        """
+        Given the upward direction and the forward direction of a local space frame, this methd produces
+        the correction quaternion to convert the frame to global space (+Y up, -Z forward).
+        """
+        angle1 = mn.math.angle(up_v.normalized(), mn.Vector3.y_axis())
+        axis1 = mn.math.cross(up_v.normalized(), mn.Vector3.y_axis())
+        rotation1 = mn.Quaternion.rotation(angle1, axis1)
+
+        forward_v = forward_v * (mn.Vector3(1.0, 1.0, 1.0) - mn.Vector3.y_axis())
+        angle2 = mn.math.angle(forward_v.normalized(), -1 * mn.Vector3.z_axis())
+        axis2 = mn.Vector3.y_axis()
+        rotation2 = mn.Quaternion.rotation(angle2, axis2)
+
+        return rotation2 * rotation1
+
+
+class Motions:
+    """
+    The Move class is collection of stats that will hold the different movement motions
+    for the character to use when following a path. The character is left-footed so that
+    is our reference for with step the motions assume first.
+    """
+
+    @dataclass
+    class MotionData:
+        """
+        A class intended to handle precomputations of utilities of the motion we want to
+        load into the character.
+        """
+
+        def __init__(self, motion_) -> None:
+            # plurality in naming usually hints that attr is an frame lookup array
+            self.poses = motion_.poses
+            self.num_of_frames: int = len(motion_.poses)
+            self.translation_drifts: List[mn.Vector3] = []
+            self.forward_displacements: List[mn.Vector3] = []
+            self.root_orientations: List[mn.Quaternion] = []
+            self.map_of_total_displacement: float = []
+            self.center_of_root_drift: mn.Vector3 = mn.Vector3()
+
+            # first and last frame root position vectors
+            f = motion_.poses[0].get_transform(ROOT, local=False)[0:3, 3]
+            f = mn.Vector3(f)
+            l = motion_.poses[LAST].get_transform(ROOT, local=False)[0:3, 3]
+            l = mn.Vector3(l)
+
+            # axis that motion uses for up and forward
+            self.direction_up = mn.Vector3.z_axis()
+            forward_V = (l - f) * (mn.Vector3(1.0, 1.0, 1.0) - mn.Vector3.z_axis())
+            self.direction_forward = forward_V.normalized()
+
+            self.motion = motion_
+
+            ### Fill derived data structures ###
+            # fill translation_drifts and forward_displacements
+            for i in range(self.num_of_frames):
+                j = i + 1
+                if j == self.num_of_frames:
+                    # interpolate forward and drift from nth vectors and 1st vectors and push front
+                    self.forward_displacements.insert(
+                        0,
+                        (
+                            (
+                                self.forward_displacements[LAST]
+                                + self.forward_displacements[0]
+                            )
+                            * 0.5
+                        ),
+                    )
+                    self.translation_drifts.insert(
+                        0,
+                        (
+                            (self.translation_drifts[LAST] + self.translation_drifts[0])
+                            * 0.5
+                        ),
+                    )
+                    break
+
+                # root translation
+                curr_root_t = motion_.poses[i].get_transform(ROOT, local=False)[0:3, 3]
+                next_root_t = motion_.poses[j].get_transform(ROOT, local=False)[0:3, 3]
+                delta_P_vector = mn.Vector3(next_root_t - curr_root_t)
+                forward_vector = delta_P_vector.projected(self.direction_forward)
+                drift_vector = delta_P_vector - forward_vector
+
+                self.forward_displacements.append(forward_vector)
+                self.translation_drifts.append(drift_vector)
+
+            j, summ = 0, 0
+            # fill translation_drifts and forward_displacements
+            for i in range(self.num_of_frames):
+                curr_root_t = motion_.poses[i].get_transform(ROOT, local=False)[0:3, 3]
+                prev_root_t = motion_.poses[j].get_transform(ROOT, local=False)[0:3, 3]
+
+                # fill map_of_total_displacement
+                summ += (
+                    mn.Vector3(curr_root_t - prev_root_t)
+                    .projected(self.direction_forward)
+                    .length()
+                )
+                self.map_of_total_displacement.append(summ)
+                j = i
+
+            # fill root_orientations
+            for pose in motion_.poses:
+                root_T = pose.get_transform(ROOT, local=False)
+                root_rotation = mn.Quaternion.from_matrix(
+                    mn.Matrix3x3(root_T[0:3, 0:3])
+                )
+                self.root_orientations.append(root_rotation)
+
+            # get center of drift
+            summ = mn.Vector3()
+            for pose in motion_.poses:
+                root_T = mn.Matrix4(pose.get_transform(ROOT, local=False))
+                root_T.translation *= mn.Vector3(1.0, 1.0, 1.0) - forward_vector
+                summ += root_T.translation
+            self.center_of_root_drift = summ / self.num_of_frames
+
+    motion_ = amass.load(
+        file="data/fairmotion/amass_test_data/CMU/CMU/02/02_01_poses.npz",
+        bm_path="data/fairmotion/amass_test_data/smplh/male/model.npz",
+    )
+    # all motions must have same fps for this implementation, so use first motion to set global
+    fps = motion_.fps
+
+    walk_to_walk = MotionData(motion_ops.cut(motion_, 111, 246))
+
+
+# keeps track of the motion key frame preview modes
 class Preview(Enum):
     OFF = 0
     KEYFRAMES = 1
     TRAJECTORY = 2
     ALL = 3
+
+
+# keeps track of the activity that intances model is  participating in currently
+class Activity(Enum):
+    NONE = 0
+    MOTION_FOLLOW = 1
+    PATH_FOLLOW_SEQ = 2

@@ -10,6 +10,7 @@ from habitat_sim._ext.habitat_sim_bindings.geo import (
     LEFT,
     RIGHT,
     UP,
+    build_catmull_rom_spline,
     compute_gravity_aligned_MOBB,
     get_transformed_bb,
 )
@@ -23,6 +24,7 @@ __all__ = [
     "BACK",
     "LEFT",
     "RIGHT",
+    "build_catmull_rom_spline",
     "compute_gravity_aligned_MOBB",
     "get_transformed_bb",
     "Ray",
