@@ -282,13 +282,40 @@ class Simulator {
    * current scene configuration, and saves it to a JSON file, using @p
    * saveFileName .
    * @param saveFilename The name to use to save the current scene instance.
+   * @return whether successful or not.
+   */
+  bool saveCurrentSceneInstance(const std::string& saveFilename,
+                                int sceneID = 0) const {
+    if (sceneHasPhysics(sceneID)) {
+      ESP_DEBUG() << "Attempting to save current scene layout as "
+                     "SceneInstanceAttributes with filename :"
+                  << saveFilename;
+      return metadataMediator_->getSceneInstanceAttributesManager()
+          ->saveManagedObjectToFile(buildCurrentStateSceneAttributes(),
+                                    saveFilename);
+    }
+    return false;
+  }  // saveCurrentSceneInstance
+
+  /**
+   * @brief Builds a @ref esp::metadata::SceneInstanceAttributes describing
+   * the current scene configuration, and saves it to a JSON file, using the
+   * current scene attributes' filename, or an incremented version if @p
+   * overwrite == false.
    * @param overwrite Whether to overrite an existing file with the same name,
    * should one exist.
    * @return whether successful or not.
    */
-  bool saveCurrentSceneInstance(const std::string& saveFilename,
-                                bool overwrite,
-                                int sceneID = 0) const;
+  bool saveCurrentSceneInstance(bool overwrite = false, int sceneID = 0) const {
+    if (sceneHasPhysics(sceneID)) {
+      ESP_DEBUG() << "Attempting to save current scene layout as "
+                     "SceneInstanceAttributes.";
+      return metadataMediator_->getSceneInstanceAttributesManager()
+          ->saveManagedObjectToFile(buildCurrentStateSceneAttributes(),
+                                    overwrite);
+    }
+    return false;
+  }  // saveCurrentSceneInstance
 
   /**
    * @brief Remove an instanced object by ID. See @ref
@@ -1065,36 +1092,6 @@ class Simulator {
                                         trajVisNameByID.at(trajVisObjID));
   }
 
- protected:
-  /**
-   * @brief if Navemesh visualization is active, reset the visualization.
-   */
-  void resetNavMeshVisIfActive() {
-    if (isNavMeshVisualizationActive()) {
-      // if updating pathfinder_ instance, refresh the visualization.
-      setNavMeshVisualization(false);  // first clear the old instance
-      setNavMeshVisualization(true);
-    }
-  }
-
-  /**
-   * @brief Internal use only. Remove a trajectory object, its mesh, and all
-   * references to it.
-   * @param trajVisObjID The object ID of the trajectory visualization to
-   * remove.
-   * @param trajVisName The name of the trajectory visualization to remove.
-   * @return whether successful or not.
-   */
-  bool removeTrajVisObjectAndAssets(int trajVisObjID,
-                                    const std::string& trajVisName) {
-    removeObject(trajVisObjID);
-    // TODO : support removing asset by removing from resourceDict_ properly
-    // using trajVisName
-    trajVisIDByName.erase(trajVisName);
-    trajVisNameByID.erase(trajVisObjID);
-    return true;
-  }
-
  public:
   agent::Agent::ptr getAgent(int agentId);
 
@@ -1382,9 +1379,39 @@ class Simulator {
 
  protected:
   Simulator() = default;
+
   /**
-   * @brief Builds a scene instance and populates it with initial object layout,
-   * if appropriate, based on @ref
+   * @brief if Navemesh visualization is active, reset the visualization.
+   */
+  void resetNavMeshVisIfActive() {
+    if (isNavMeshVisualizationActive()) {
+      // if updating pathfinder_ instance, refresh the visualization.
+      setNavMeshVisualization(false);  // first clear the old instance
+      setNavMeshVisualization(true);
+    }
+  }
+
+  /**
+   * @brief Internal use only. Remove a trajectory object, its mesh, and all
+   * references to it.
+   * @param trajVisObjID The object ID of the trajectory visualization to
+   * remove.
+   * @param trajVisName The name of the trajectory visualization to remove.
+   * @return whether successful or not.
+   */
+  bool removeTrajVisObjectAndAssets(int trajVisObjID,
+                                    const std::string& trajVisName) {
+    removeObject(trajVisObjID);
+    // TODO : support removing asset by removing from resourceDict_ properly
+    // using trajVisName
+    trajVisIDByName.erase(trajVisName);
+    trajVisNameByID.erase(trajVisObjID);
+    return true;
+  }
+
+  /**
+   * @brief Builds a scene instance and populates it with initial object
+   * layout, if appropriate, based on @ref
    * esp::metadata::attributes::SceneInstanceAttributes referenced by @p
    * activeSceneName .
    * @param activeSceneName The name of the desired SceneInstanceAttributes to
@@ -1429,6 +1456,13 @@ class Simulator {
   bool instanceArticulatedObjectsForSceneAttributes(
       const metadata::attributes::SceneInstanceAttributes::cptr&
           curSceneInstanceAttributes);
+
+  /**
+   * @brief Build a @ref metadata::attributes::SceneInstanceAttributes
+   * describing the current scene's present state.
+   */
+  metadata::attributes::SceneInstanceAttributes::ptr
+  buildCurrentStateSceneAttributes() const;
 
   /**
    * @brief sample a random valid AgentState in passed agentState

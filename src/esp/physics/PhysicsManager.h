@@ -965,6 +965,17 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
               "No RigidConstraint exists with constraintId =" << constraintId);
     return rigidConstraintSettings_.at(constraintId);
   }
+  /**
+   * @brief This will populate the passed @p sceneInstanceAttrs with the current
+   * stage, object and articulated object insttances reflecting the currernt
+   * state of the physics world.
+   * @param sceneInstanceAttrs A copy of the intialization attributes that
+   * created the current scene.  The various object instance attributes will be
+   * overwritten by the current scene state data.
+   */
+  void buildCurrentStateSceneAttributes(
+      metadata::attributes::SceneInstanceAttributes::ptr sceneInstanceAttrs)
+      const;
 
  protected:
   /** @brief Check that a given object ID is valid (i.e. it refers to an

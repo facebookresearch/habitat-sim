@@ -343,6 +343,31 @@ int PhysicsManager::addArticulatedObjectInstance(
   return aObjID;
 }  // PhysicsManager::addArticulatedObjectInstance
 
+void PhysicsManager::buildCurrentStateSceneAttributes(
+    metadata::attributes::SceneInstanceAttributes::ptr sceneInstanceAttrs)
+    const {
+  // 1. set stage instance
+  sceneInstanceAttrs->setStageInstance(
+      staticStageObject_->getCurrentStateInstanceAttr());
+  // 2. Clear existing object instances, and set new ones reflecting current
+  // state
+  sceneInstanceAttrs->clearObjectInstances();
+  // get each object's current state as a SceneObjectInstanceAttributes
+  for (const auto& item : existingObjects_) {
+    sceneInstanceAttrs->addObjectInstance(
+        item.second->getCurrentStateInstanceAttr());
+  }
+  // 3. Clear existing Articulated object instances, and set new ones reflecting
+  // current state
+  sceneInstanceAttrs->clearArticulatedObjectInstances();
+  // get each articulated object's current state as a SceneAOInstanceAttributes
+  for (const auto& item : existingArticulatedObjects_) {
+    sceneInstanceAttrs->addArticulatedObjectInstance(
+        item.second->getCurrentStateInstanceAttr());
+  }
+
+}  // PhysicsManager::buildCurrentStateSceneAttributes
+
 esp::physics::ManagedRigidObject::ptr PhysicsManager::getRigidObjectWrapper() {
   return rigidObjectManager_->createObject("ManagedRigidObject");
 }

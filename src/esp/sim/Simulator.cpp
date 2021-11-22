@@ -355,9 +355,8 @@ bool Simulator::instanceStageForSceneAttributes(
       stageInstanceAttributes,
       Cr::Utility::formatString(
           "Simulator::instanceStageForSceneAttributes() : Attempt to load "
-          "stage "
-          "instance specified in current scene instance :{} failed due to "
-          "stage instance configuration not being found. Aborting",
+          "stage instance specified in current scene instance :{} failed due "
+          "to stage instance configuration not being found. Aborting",
           config_.activeSceneName));
 
   // Get full library name of StageAttributes
@@ -573,15 +572,30 @@ void Simulator::reset() {
   resourceManager_->setLightSetup(gfx::getDefaultLights());
 }  // Simulator::reset()
 
-bool Simulator::saveCurrentSceneInstance(const std::string& saveFilename,
-                                         bool overwrite,
-                                         int sceneID) const {
-  if (sceneHasPhysics(sceneID)) {
-    // TODO either get rid of sceneID or use it in a salientt way
-    // return physicsManager_->getStageInitAttributes();
-  }
-  return false;
-}  // Simulator::saveCurrentSceneInstance
+metadata::attributes::SceneInstanceAttributes::ptr
+Simulator::buildCurrentStateSceneAttributes() const {
+  // 1. Get SceneInstanceAttributes copy corresponding to initial scene setup
+  // Get a ref to current scene dataset's SceneInstanceAttributesManager
+  auto sceneAttrMgr = metadataMediator_->getSceneInstanceAttributesManager();
+  // Get a copy of SceneInstanceAttributes used to create the scene
+  auto initSceneInstanceAttr = sceneAttrMgr->getObjectCopyByHandle(
+      curSceneInstanceAttributes_->getHandle());
+  // Make sure this exists - this should never trigger, all scenes should be
+  // built from SceneInstanceAttributes via reconfigure, and we're just asking
+  // for a copy of curSceneInstanceAttributes_.
+  ESP_CHECK(initSceneInstanceAttr,
+            "Simulator::saveCurrentSceneInstance : SceneInstanceAttributes "
+            "used to initializee current scene never registered or has been "
+            "removed from SceneInstanceAttributesManager. Aborting.");
+
+  // 2. Pass the copy to Physics Manager so that it can be updated with current
+  // scene setup - stage instance, object instances and articulated object
+  // instances
+  physicsManager_->buildCurrentStateSceneAttributes(initSceneInstanceAttr);
+
+  // 3. Return the copy
+  return initSceneInstanceAttr;
+}  // Simulator::buildCurrentStateSceneAttributes
 
 void Simulator::seed(uint32_t newSeed) {
   random_->seed(newSeed);
