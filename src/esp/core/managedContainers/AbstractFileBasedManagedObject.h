@@ -7,6 +7,7 @@
 
 #include <Corrade/Utility/Directory.h>
 #include "AbstractManagedObject.h"
+#include "esp/io/Json.h"
 
 namespace esp {
 namespace core {
@@ -36,6 +37,13 @@ class AbstractFileBasedManagedObject : public AbstractManagedObject {
                    .first)
         .first;
   }
+
+  /**
+   * @brief Build and return a json object holding the pertinent data for this
+   * AbstractFileBasedManagedObject.
+   */
+  virtual io::JsonGenericValue writeToJsonObject(
+      io::JsonAllocator& allocator) const = 0;
 
  public:
   ESP_SMART_POINTERS(AbstractFileBasedManagedObject)

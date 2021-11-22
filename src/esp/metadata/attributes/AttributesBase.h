@@ -39,11 +39,20 @@ class AbstractAttributes
 
   AbstractAttributes(const AbstractAttributes& otr) = default;
   AbstractAttributes(AbstractAttributes&& otr) noexcept = default;
+  ~AbstractAttributes() override = default;
 
   AbstractAttributes& operator=(const AbstractAttributes& otr) = default;
   AbstractAttributes& operator=(AbstractAttributes&& otr) noexcept = default;
 
-  ~AbstractAttributes() override = default;
+  /**
+   * @brief Support writing to JSON object as required by @ref
+   * esp::core::managedContainers::AbstractFileBasedManagedObject
+   */
+  io::JsonGenericValue writeToJsonObject(
+      io::JsonAllocator& allocator) const override {
+    return Configuration::writeToJsonObject(allocator);
+  }
+
   /**
    * @brief Get this attributes' class.  Should only be set from constructor.
    * Used as key in constructor function pointer maps in AttributesManagers.

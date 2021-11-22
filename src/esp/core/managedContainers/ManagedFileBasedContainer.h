@@ -215,9 +215,20 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
             .first +
         "." + this->JSONTypeExt_;
 
-    return this->saveManagedObjectToFileInternal(managedObject, fileName,
-                                                 fileDirectory);
+    if (!FileUtil::exists(fileDirectory)) {
+      // output directory not found
+      ESP_ERROR() << "<" << this->objectType_ << "> : Destination directory "
+                  << fileDirectory << " does not exist to save "
+                  << managedObject->getSimplifiedHandle()
+                  << "object with requested filename" << fileName
+                  << ". Aborting.";
+      return false;
+    }
 
+    // construct fully qualified filename
+    std::string builtFullFilename = FileUtil::join(fileDirectory, fileName);
+    return this->saveManagedObjectToFileInternal(managedObject,
+                                                 builtFullFilename);
   }  // ManagedFileBasedContainer::saveManagedObjectToFile
 
   /**
@@ -263,15 +274,33 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
    * fileName in the given @p fileDirectory .
    * @param managedObject The name of the object to save. If not found,
    * returns false.
-   * @param filename The filename of the file to save to.
-   * @param fileDirectory The directory to save to. If the directory does not
-   * exist, will return false.
+   * @param fullFilename The fully-qualified filename to save to.
    * @return Whether save was successful
    */
-  virtual bool saveManagedObjectToFileInternal(
-      const ManagedFileIOPtr& managedObject,
-      const std::string& filename,
-      const std::string& fileDirectory) const = 0;
+  bool saveManagedObjectToFileInternal(const ManagedFileIOPtr& managedObject,
+                                       const std::string& fullFilename) const {
+    ESP_DEBUG() << "<" << Magnum::Debug::nospace << this->objectType_
+                << Magnum::Debug::nospace << ">:Attempting to save object named"
+                << managedObject->getHandle() << "to Filename:" << fullFilename;
+
+    // write AbstractFileBasedManagedObject to JSON file
+    // bypassed constructor defaults due to "0 as null" warning they throw
+    rapidjson::Document doc(rapidjson::kObjectType, nullptr, 1024, nullptr);
+    rapidjson::Document::AllocatorType& allocator = doc.GetAllocator();
+    // build Json from passed AbstractFileBasedManagedObject
+    auto configJson = managedObject->writeToJsonObject(allocator);
+    // move constructed config into doc
+    doc.Swap(configJson);
+    // save to file
+    bool success = io::writeJsonToFile(doc, fullFilename, true, 7);
+
+    ESP_DEBUG() << "<" << Magnum::Debug::nospace << this->objectType_
+                << Magnum::Debug::nospace
+                << ">:Attempt to save to Filename:" << fullFilename << ":"
+                << (success ? "Successful." : "Failed.");
+
+    return success;
+  }
 
   /**
    * @brief Verify passd @p filename is legal document of type T. Returns
@@ -476,8 +505,10 @@ bool ManagedFileBasedContainer<T, Access>::saveManagedObjectToFile(
       }
     }
   }
-  return this->saveManagedObjectToFileInternal(managedObject, fileName,
-                                               fileDirectory);
+  // construct fully qualified filename
+  std::string builtFullFilename = FileUtil::join(fileDirectory, fileName);
+  return this->saveManagedObjectToFileInternal(managedObject,
+                                               builtFullFilename);
 }  // ManagedFileBasedContainer<T, Access>::saveManagedObjectToFile
 }  // namespace managedContainers
 }  // namespace core
