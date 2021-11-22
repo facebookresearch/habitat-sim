@@ -469,6 +469,13 @@ class SceneInstanceAttributes : public AbstractAttributes {
   int getNumObjInstances() const {
     return getNumSubAttributesInternal("obj_inst_", objInstConfig_);
   }
+  /**
+   * @brief Clears current objInstConfig_ values.
+   */
+  void clearObjectInstances() {
+    this->removeSubconfig("object_instances");
+    objInstConfig_ = editSubconfig<Configuration>("object_instances");
+  }
 
   /**
    * @brief Add a description of an object instance to this scene instance
@@ -495,6 +502,14 @@ class SceneInstanceAttributes : public AbstractAttributes {
    */
   int getNumAOInstances() const {
     return getNumSubAttributesInternal("art_obj_inst_", artObjInstConfig_);
+  }
+  /**
+   * @brief Clears current artObjInstConfig_ values.
+   */
+  void clearArticulatedObjectInstances() {
+    this->removeSubconfig("articulated_object_instances");
+    artObjInstConfig_ =
+        editSubconfig<Configuration>("articulated_object_instances");
   }
 
   /**
@@ -539,7 +554,7 @@ class SceneInstanceAttributes : public AbstractAttributes {
 
   /**
    * @brief Smartpointer to created articulated object instance configuration.
-   * The configuratio is created on SceneInstanceAttributes construction.
+   * The configuration is created on SceneInstanceAttributes construction.
    */
   std::shared_ptr<Configuration> artObjInstConfig_{};
 
