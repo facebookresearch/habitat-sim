@@ -380,7 +380,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         while not found_path:
             sample1 = None
             sample2 = None
-            while any([sample1 is None, sample2 is None]):
+            while sample1 is None or sample2 is None:
                 sample1 = sample1 or self.sim.pathfinder.get_random_navigable_point()
                 sample2 = sample2 or self.sim.pathfinder.get_random_navigable_point()
 

@@ -652,13 +652,14 @@ class FairmotionInterface:
         full_transform = walk.motion.poses[mocap_frame].get_transform(ROOT, local=True)
         full_transform = mn.Matrix4(full_transform)
         full_transform.translation -= walk.center_of_root_drift
-        full_transform = mn.Matrix4.from_(
-            global_neutral_correction.to_matrix(), mn.Vector3()
-        ).__matmul__(full_transform)
+        full_transform = (
+            mn.Matrix4.from_(global_neutral_correction.to_matrix(), mn.Vector3())
+            @ full_transform
+        )
 
         # while transform is facing -Z, remove forward displacement
         full_transform.translation *= mn.Vector3.x_axis() + mn.Vector3.y_axis()
-        full_transform = look_at_path_T.__matmul__(full_transform)
+        full_transform = look_at_path_T @ full_transform
 
         # apply joint angles
         self.model.joint_positions = new_pose
