@@ -713,37 +713,6 @@ class FairmotionInterface:
 
         return rotation2 * rotation1
 
-    def draw_debug_lines(self) -> None:
-        """
-        Utility method for Devs to understand the simulator and motion spaces.
-        """
-        green = mn.Color4(0.0, 1.0, 0.0, 1.0)
-        blue = mn.Color4(0.0, 0.0, 1.0, 1.0)
-        red = mn.Color4(1.0, 0.0, 0.0, 1.0)
-
-        # cross of x and z axis
-        self.sim.get_debug_line_render().draw_circle(
-            mn.Vector3(),
-            0.75,
-            red,
-            24,
-            mn.math.cross(mn.Vector3.x_axis(), mn.Vector3.z_axis()),
-        )
-
-        ## Origin ##
-        # x axis
-        self.sim.get_debug_line_render().draw_transformed_line(
-            mn.Vector3(), mn.Vector3.x_axis(), red
-        )
-        # y axis
-        self.sim.get_debug_line_render().draw_transformed_line(
-            mn.Vector3(), mn.Vector3.y_axis(), green
-        )
-        # z axis
-        self.sim.get_debug_line_render().draw_transformed_line(
-            mn.Vector3(), mn.Vector3.z_axis(), blue
-        )
-
 
 class Motions:
     """
