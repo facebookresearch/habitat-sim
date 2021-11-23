@@ -52,37 +52,37 @@ struct LoggingTest : Cr::TestSuite::Tester {
 
 constexpr const struct {
   const char* envString;
-  const char* dfltDebug;
-  const char* dfltWarning;
+  const char* defaultDebug;
+  const char* defaultWarning;
   const char* simDebug;
   const char* simWarning;
   const char* gfxDebug;
   const char* gfxWarning;
 } EnvVarTestData[]{
-    {nullptr, "[Default] LoggingTest.cpp(103)::envVarTest : DebugDefault",
-     "[Default] LoggingTest.cpp(107)::envVarTest : WarningDefault",
-     "[Sim] LoggingTest.cpp(23)::debug : DebugSim",
-     "[Sim] LoggingTest.cpp(26)::warning : WarningSim",
-     "[Gfx] LoggingTest.cpp(36)::debug : DebugGfx",
-     "[Gfx] LoggingTest.cpp(39)::warning : WarningGfx"},
-    {"debug", "[Default] LoggingTest.cpp(103)::envVarTest : DebugDefault",
-     "[Default] LoggingTest.cpp(107)::envVarTest : WarningDefault",
-     "[Sim] LoggingTest.cpp(23)::debug : DebugSim",
-     "[Sim] LoggingTest.cpp(26)::warning : WarningSim",
-     "[Gfx] LoggingTest.cpp(36)::debug : DebugGfx",
-     "[Gfx] LoggingTest.cpp(39)::warning : WarningGfx"},
+    {nullptr, "[Default] LoggingTest.cpp(103)::envVarTest : DebugDefault\n",
+     "[Default] LoggingTest.cpp(107)::envVarTest : WarningDefault\n",
+     "[Sim] LoggingTest.cpp(23)::debug : DebugSim\n",
+     "[Sim] LoggingTest.cpp(26)::warning : WarningSim\n",
+     "[Gfx] LoggingTest.cpp(36)::debug : DebugGfx\n",
+     "[Gfx] LoggingTest.cpp(39)::warning : WarningGfx\n"},
+    {"debug", "[Default] LoggingTest.cpp(103)::envVarTest : DebugDefault\n",
+     "[Default] LoggingTest.cpp(107)::envVarTest : WarningDefault\n",
+     "[Sim] LoggingTest.cpp(23)::debug : DebugSim\n",
+     "[Sim] LoggingTest.cpp(26)::warning : WarningSim\n",
+     "[Gfx] LoggingTest.cpp(36)::debug : DebugGfx\n",
+     "[Gfx] LoggingTest.cpp(39)::warning : WarningGfx\n"},
     {"quiet", "", "", "", "", "", ""},
     {"error", "", "", "", "", "", ""},
     {"quiet:Sim,Gfx=verbose", "", "",
-     "[Sim] LoggingTest.cpp(23)::debug : DebugSim",
-     "[Sim] LoggingTest.cpp(26)::warning : WarningSim",
-     "[Gfx] LoggingTest.cpp(36)::debug : DebugGfx",
-     "[Gfx] LoggingTest.cpp(39)::warning : WarningGfx"},
+     "[Sim] LoggingTest.cpp(23)::debug : DebugSim\n",
+     "[Sim] LoggingTest.cpp(26)::warning : WarningSim\n",
+     "[Gfx] LoggingTest.cpp(36)::debug : DebugGfx\n",
+     "[Gfx] LoggingTest.cpp(39)::warning : WarningGfx\n"},
     {"warning:Gfx=debug", "",
-     "[Default] LoggingTest.cpp(107)::envVarTest : WarningDefault", "",
-     "[Sim] LoggingTest.cpp(26)::warning : WarningSim",
-     "[Gfx] LoggingTest.cpp(36)::debug : DebugGfx",
-     "[Gfx] LoggingTest.cpp(39)::warning : WarningGfx"},
+     "[Default] LoggingTest.cpp(107)::envVarTest : WarningDefault\n", "",
+     "[Sim] LoggingTest.cpp(26)::warning : WarningSim\n",
+     "[Gfx] LoggingTest.cpp(36)::debug : DebugGfx\n",
+     "[Gfx] LoggingTest.cpp(39)::warning : WarningGfx\n"},
 };  // EnvVarTestData
 
 LoggingTest::LoggingTest() {
@@ -102,11 +102,11 @@ void LoggingTest::envVarTest() {
 
   ESP_DEBUG() << "DebugDefault";
   CORRADE_VERIFY(Cr::Containers::StringView{out.str()}.contains(
-      Cr::Containers::StringView{data.dfltDebug}));
+      Cr::Containers::StringView{data.defaultDebug}));
   out.str("");
   ESP_WARNING() << "WarningDefault";
   CORRADE_VERIFY(Cr::Containers::StringView{out.str()}.contains(
-      Cr::Containers::StringView{data.dfltWarning}));
+      Cr::Containers::StringView{data.defaultWarning}));
   out.str("");
   esp::sim::test::debug("DebugSim");
   CORRADE_VERIFY(Cr::Containers::StringView{out.str()}.contains(
