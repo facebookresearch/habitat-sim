@@ -134,9 +134,9 @@ StageAttributes::ptr StageAttributesManager::createPrimBasedAttributesTemplate(
     bool registerTemplate) {
   // verify that a primitive asset with the given handle exists
   if (!StageAttributesManager::isValidPrimitiveAttributes(primAssetHandle)) {
-    ESP_ERROR() << "No primitive with handle '" << Mn::Debug::nospace
-                << primAssetHandle << Mn::Debug::nospace
-                << "' exists so cannot build physical object.  Aborting.";
+    ESP_ERROR(Mn::Debug::Flag::NoSpace)
+        << "No primitive with handle '" << primAssetHandle
+        << "' exists so cannot build physical object.  Aborting.";
     return nullptr;
   }
 

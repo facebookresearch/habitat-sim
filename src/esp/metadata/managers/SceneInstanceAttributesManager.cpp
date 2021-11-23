@@ -254,12 +254,11 @@ void SceneInstanceAttributesManager::loadAbstractObjectAttributesFromJson(
       // only set value if specified in json
       instanceAttrs->setMotionType(strToLookFor);
     } else {
-      ESP_WARNING()
-          << ": motion_type value in json  : `" << Mn::Debug::nospace << tmpVal
-          << Mn::Debug::nospace << "`|`" << Mn::Debug::nospace << strToLookFor
-          << Mn::Debug::nospace
-          << "` does not map to a valid physics::MotionType value, so "
-             "not setting instance motion type value.";
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
+          << ": motion_type value in json  : `" << tmpVal << "`|`"
+          << strToLookFor
+          << "` does not map to a valid physics::MotionType value, so not "
+             "setting instance motion type value.";
     }
   }
 
@@ -308,13 +307,12 @@ std::string SceneInstanceAttributesManager::getTranslationOriginVal(
     if (found != attributes::InstanceTranslationOriginMap.end()) {
       transOrigin = std::move(tmpTransOriginVal);
     } else {
-      ESP_WARNING()
-          << ": translation_origin value in json :`" << Mn::Debug::nospace
-          << tmpTransOriginVal << Mn::Debug::nospace << "`|`"
-          << Mn::Debug::nospace << strToLookFor << Mn::Debug::nospace
-          << "` does not map to a valid "
-             "SceneInstanceTranslationOrigin value, so defaulting "
-             "translation origin to SceneInstanceTranslationOrigin::Unknown.";
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
+          << ": translation_origin value in json :`" << tmpTransOriginVal
+          << "`|`" << strToLookFor
+          << "` does not map to a valid SceneInstanceTranslationOrigin value, "
+             "so defaulting translation origin to "
+             "SceneInstanceTranslationOrigin::Unknown.";
     }
   }
   return transOrigin;

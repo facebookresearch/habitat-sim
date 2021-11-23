@@ -212,9 +212,8 @@ void SceneDatasetAttributesManager::setValsFromJSONDoc(
           }
 
           if (pathsWarn) {
-            ESP_WARNING()
-                << "\"" << tag << ".paths[" << Mn::Debug::nospace
-                << pathsWarnType << Mn::Debug::nospace
+            ESP_WARNING(Mn::Debug::Flag::NoSpace)
+                << "\"" << tag << ".paths[" << pathsWarnType
                 << "] cell in JSON config unable to be parsed as an array to "
                    "determine search paths for json configs so skipping.";
           }
@@ -279,7 +278,7 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
     const U& attrMgr) {
   if (jsonConfig.HasMember(tag)) {
     if (!jsonConfig[tag].IsObject()) {
-      ESP_WARNING()
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
           << "\"" << tag
           << "\" cell in JSON config not appropriately configured. Skipping.";
 
@@ -290,8 +289,8 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
       // specified type.
       if (jCell.HasMember("default_attributes")) {
         if (!jCell["default_attributes"].IsObject()) {
-          ESP_WARNING()
-              << "\"" << Mn::Debug::nospace << tag << Mn::Debug::nospace
+          ESP_WARNING(Mn::Debug::Flag::NoSpace)
+              << "\"" << tag
               << ".default_attributes\" cell in JSON config unable to "
                  "be parsed to set default attributes so skipping.";
         } else {
@@ -306,8 +305,8 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
           } else {
             // set attributes as defaultObject_ in attrMgr.
             attrMgr->setDefaultObject(attr);
-            ESP_WARNING()
-                << "\"" << Mn::Debug::nospace << tag << Mn::Debug::nospace
+            ESP_WARNING(Mn::Debug::Flag::NoSpace)
+                << "\"" << tag
                 << ".default_attributes\" set in Attributes Manager from JSON.";
           }
         }  // if is an object
@@ -318,7 +317,7 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
       if (jCell.HasMember("paths")) {
         if (!jCell["paths"].IsObject()) {
           ESP_WARNING()
-              << "\"" << Mn::Debug::nospace << tag << Mn::Debug::nospace
+              << "\"" << tag
               << ".paths\" cell in JSON config unable to be parsed as "
                  "a JSON object to determine search paths so skipping.";
         } else {
@@ -345,9 +344,8 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
           }
           // TODO support other extension tags
           if (pathsWarn) {
-            ESP_WARNING()
-                << "\"" << tag << ".paths\"[" << Mn::Debug::nospace
-                << pathsWarnType << Mn::Debug::nospace
+            ESP_WARNING(Mn::Debug::Flag::NoSpace)
+                << "\"" << tag << ".paths\"[" << pathsWarnType
                 << "] cell in JSON config unable to be parsed as an array to "
                    "determine search paths for json configs so skipping.";
           }
