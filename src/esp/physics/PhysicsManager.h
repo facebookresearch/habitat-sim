@@ -967,7 +967,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   }
   /**
    * @brief This will populate the passed @p sceneInstanceAttrs with the current
-   * stage, object and articulated object insttances reflecting the currernt
+   * stage, object and articulated object instances reflecting the current
    * state of the physics world.
    * @param sceneInstanceAttrs A copy of the intialization attributes that
    * created the current scene.  The various object instance attributes will be
