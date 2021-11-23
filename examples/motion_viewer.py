@@ -170,7 +170,9 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             self.remove_selector_obj()
             super().reconfigure_sim()
             # reset character to default state
-            self.fm_demo = FairmotionInterface(self.sim, metadata_file="default")
+            self.fm_demo = FairmotionInterface(
+                self.sim, self.fps, metadata_file="default"
+            )
             event.accepted = True
             self.redraw()
             return

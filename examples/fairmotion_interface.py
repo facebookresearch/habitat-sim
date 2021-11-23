@@ -462,7 +462,7 @@ class FairmotionInterface:
             traj_radius = 0.02
             traj_offset = self.translation_offset
 
-            joint_names = [["rankle", "lankle"], "upperneck"]
+            joint_names = [["rankle", "lankle"], "upperneck", "root"]
 
             final_rotation_correction = (
                 self.global_correction_quat(mn.Vector3.z_axis(), mn.Vector3.x_axis())
@@ -611,9 +611,6 @@ class FairmotionInterface:
             return
 
         walk = Motions.walk_to_walk
-        global_neutral_correction = self.global_correction_quat(
-            mn.Vector3.z_axis(), mn.Vector3.x_axis()
-        )
 
         # either take argument value for path_time or continue with cycle
         self.path_time = path_time or (self.path_time + (step_size / self.fps))
@@ -651,7 +648,12 @@ class FairmotionInterface:
 
         full_transform = walk.motion.poses[mocap_frame].get_transform(ROOT, local=True)
         full_transform = mn.Matrix4(full_transform)
+
         full_transform.translation -= walk.center_of_root_drift
+
+        global_neutral_correction = self.global_correction_quat(
+            mn.Vector3.z_axis(), walk.direction_forward
+        )
         full_transform = (
             mn.Matrix4.from_(global_neutral_correction.to_matrix(), mn.Vector3())
             @ full_transform
@@ -706,6 +708,7 @@ class FairmotionInterface:
         axis1 = mn.math.cross(up_v.normalized(), mn.Vector3.y_axis())
         rotation1 = mn.Quaternion.rotation(angle1, axis1)
 
+        forward_v = rotation1.transform_vector(forward_v)
         forward_v = forward_v * (mn.Vector3(1.0, 1.0, 1.0) - mn.Vector3.y_axis())
         angle2 = mn.math.angle(forward_v.normalized(), -1 * mn.Vector3.z_axis())
         axis2 = mn.Vector3.y_axis()
@@ -779,6 +782,7 @@ class Motions:
                 # root translation
                 curr_root_t = motion_.poses[i].get_transform(ROOT, local=False)[0:3, 3]
                 next_root_t = motion_.poses[j].get_transform(ROOT, local=False)[0:3, 3]
+
                 delta_P_vector = mn.Vector3(next_root_t - curr_root_t)
                 forward_vector = delta_P_vector.projected(self.direction_forward)
                 drift_vector = delta_P_vector - forward_vector
@@ -813,7 +817,7 @@ class Motions:
             summ = mn.Vector3()
             for pose in motion_.poses:
                 root_T = mn.Matrix4(pose.get_transform(ROOT, local=False))
-                root_T.translation *= mn.Vector3(1.0, 1.0, 1.0) - forward_vector
+                root_T.translation *= mn.Vector3(1.0, 1.0, 1.0) - self.direction_forward
                 summ += root_T.translation
             self.center_of_root_drift = summ / self.num_of_frames
 
@@ -824,7 +828,11 @@ class Motions:
     # all motions must have same fps for this implementation, so use first motion to set global
     fps = motion_.fps
 
-    walk_to_walk = MotionData(motion_ops.cut(motion_, 111, 246))
+    start = 125
+    offset = 0 + 1 - 3 + 6 + 2 + 2 + 2 + 1 + 1 + 1
+    length = 145
+
+    walk_to_walk = MotionData(motion_ops.cut(motion_, start + offset, start + length))
 
 
 # keeps track of the motion key frame preview modes
