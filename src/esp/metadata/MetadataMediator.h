@@ -387,7 +387,7 @@ class MetadataMediator {
    * SimulatorConfiguration.
    * @return the boolean flag.
    */
-  bool getCreateRenderer() const;
+  bool getCreateRenderer() const { return simConfig_.createRenderer; }
 
   /**
    * @brief This function returns a list of all the scene datasets currently
@@ -419,14 +419,7 @@ class MetadataMediator {
   std::string getFilePathForHandle(
       const std::string& assetHandle,
       const std::map<std::string, std::string>& assetMapping,
-      const std::string& msgString) {
-    if (assetMapping.count(assetHandle) == 0) {
-      ESP_WARNING() << msgString << ": Unable to find file path for"
-                    << assetHandle << ".  Aborting.";
-      return "";
-    }
-    return assetMapping.at(assetHandle);
-  }  // getFilePathForHandle
+      const std::string& msgString);
 
   /**
    * @brief This will create a new, empty @ref SceneInstanceAttributes with the

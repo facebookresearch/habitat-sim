@@ -180,6 +180,14 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
   }
   void setMassScale(double mass_scale) { set("mass_scale", mass_scale); }
 
+  /**
+   * @brief Populate a json object with all the first-level values held in this
+   * SceneObjectInstanceAttributes.  Default is overridden to handle special
+   * cases for SceneObjectInstanceAttributes.
+   */
+  void writeValuesToJson(io::JsonGenericValue& jsonObj,
+                         io::JsonAllocator& allocator) const override;
+
  protected:
   /**
    * @brief Retrieve a comma-separated informational string about the contents
@@ -205,6 +213,15 @@ class SceneObjectInstanceAttributes : public AbstractAttributes {
   virtual std::string getSceneObjInstanceInfoHeaderInternal() const {
     return "";
   }
+
+  /**
+   * @brief Populate the passed json object with all the first-level values
+   * specific to this SceneObjectInstanceAttributes. This is to facilitate
+   * SceneAOInstanceAttributes-specific values to be written.
+   */
+  virtual void writeValuesToJsonInternal(
+      CORRADE_UNUSED io::JsonGenericValue& jsonObj,
+      CORRADE_UNUSED io::JsonAllocator& allocator) const {}
 
  public:
   ESP_SMART_POINTERS(SceneObjectInstanceAttributes)
@@ -296,6 +313,14 @@ class SceneAOInstanceAttributes : public SceneObjectInstanceAttributes {
    * about the contents of this managed object.
    */
   std::string getSceneObjInstanceInfoHeaderInternal() const override;
+
+  /**
+   * @brief Populate the passed json object with all the first-level values
+   * specific to this SceneObjectInstanceAttributes. This is to facilitate
+   * SceneAOInstanceAttributes-specific values to be written.
+   */
+  void writeValuesToJsonInternal(io::JsonGenericValue& jsonObj,
+                                 io::JsonAllocator& allocator) const override;
 
   /**
    * @brief Map of joint names/idxs to values for initial pose
@@ -444,6 +469,13 @@ class SceneInstanceAttributes : public AbstractAttributes {
   int getNumObjInstances() const {
     return getNumSubAttributesInternal("obj_inst_", objInstConfig_);
   }
+  /**
+   * @brief Clears current objInstConfig_ values.
+   */
+  void clearObjectInstances() {
+    this->removeSubconfig("object_instances");
+    objInstConfig_ = editSubconfig<Configuration>("object_instances");
+  }
 
   /**
    * @brief Add a description of an object instance to this scene instance
@@ -471,6 +503,30 @@ class SceneInstanceAttributes : public AbstractAttributes {
   int getNumAOInstances() const {
     return getNumSubAttributesInternal("art_obj_inst_", artObjInstConfig_);
   }
+  /**
+   * @brief Clears current artObjInstConfig_ values.
+   */
+  void clearArticulatedObjectInstances() {
+    this->removeSubconfig("articulated_object_instances");
+    artObjInstConfig_ =
+        editSubconfig<Configuration>("articulated_object_instances");
+  }
+
+  /**
+   * @brief Populate a json object with all the first-level values held in this
+   * configuration.  Default is overridden to handle special cases for
+   * SceneInstanceAttributes.
+   */
+  void writeValuesToJson(io::JsonGenericValue& jsonObj,
+                         io::JsonAllocator& allocator) const override;
+
+  /**
+   * @brief Populate a json object with all the data from the subconfigurations,
+   * held in json sub-objects, for this SceneInstance. Have special handling for
+   * ao instances and object instances before handling other subConfigs.
+   */
+  void writeSubconfigsToJson(io::JsonGenericValue& jsonObj,
+                             io::JsonAllocator& allocator) const override;
 
  protected:
   /**
@@ -498,7 +554,7 @@ class SceneInstanceAttributes : public AbstractAttributes {
 
   /**
    * @brief Smartpointer to created articulated object instance configuration.
-   * The configuratio is created on SceneInstanceAttributes construction.
+   * The configuration is created on SceneInstanceAttributes construction.
    */
   std::shared_ptr<Configuration> artObjInstConfig_{};
 

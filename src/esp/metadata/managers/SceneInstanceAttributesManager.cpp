@@ -191,12 +191,10 @@ SceneInstanceAttributesManager::createAOInstanceAttributesFromJSON(
       io::readMember<std::map<std::string, float>>(
           jCell, "initial_joint_pose", instanceAttrs->copyIntoInitJointPose());
     } else {
-      ESP_WARNING()
-          << "SceneInstanceAttributesManager::"
-             "createAOInstanceAttributesFromJSON : Unknown format for "
-             "initial_joint_pose specified for instance"
-          << instanceAttrs->getHandle()
-          << "in Scene Instance File, so no values are set.";
+      ESP_WARNING() << ": Unknown format for "
+                       "initial_joint_pose specified for instance"
+                    << instanceAttrs->getHandle()
+                    << "in Scene Instance File, so no values are set.";
     }
   }
   // only used for articulated objects
@@ -218,12 +216,10 @@ SceneInstanceAttributesManager::createAOInstanceAttributesFromJSON(
           jCell, "initial_joint_velocities",
           instanceAttrs->copyIntoInitJointVelocities());
     } else {
-      ESP_WARNING()
-          << "SceneInstanceAttributesManager::"
-             "createAOInstanceAttributesFromJSON : Unknown format for "
-             "initial_joint_velocities specified for instance"
-          << instanceAttrs->getHandle()
-          << "in Scene Instance File, so no values are set.";
+      ESP_WARNING() << ": Unknown format for "
+                       "initial_joint_velocities specified for instance"
+                    << instanceAttrs->getHandle()
+                    << "in Scene Instance File, so no values are set.";
     }
   }
   return instanceAttrs;
@@ -259,9 +255,9 @@ void SceneInstanceAttributesManager::loadAbstractObjectAttributesFromJson(
       instanceAttrs->setMotionType(strToLookFor);
     } else {
       ESP_WARNING()
-          << "::createInstanceAttributesFromJSON : motion_type value "
-             "in json  : `"
-          << tmpVal << "|" << strToLookFor
+          << ": motion_type value in json  : `" << Mn::Debug::nospace << tmpVal
+          << Mn::Debug::nospace << "`|`" << Mn::Debug::nospace << strToLookFor
+          << Mn::Debug::nospace
           << "` does not map to a valid physics::MotionType value, so "
              "not setting instance motion type value.";
     }
@@ -313,9 +309,9 @@ std::string SceneInstanceAttributesManager::getTranslationOriginVal(
       transOrigin = std::move(tmpTransOriginVal);
     } else {
       ESP_WARNING()
-          << "::getTranslationOriginVal : translation_origin value in json  "
-             ": `"
-          << tmpTransOriginVal << "|" << strToLookFor
+          << ": translation_origin value in json :`" << Mn::Debug::nospace
+          << tmpTransOriginVal << Mn::Debug::nospace << "`|`"
+          << Mn::Debug::nospace << strToLookFor << Mn::Debug::nospace
           << "` does not map to a valid "
              "SceneInstanceTranslationOrigin value, so defaulting "
              "translation origin to SceneInstanceTranslationOrigin::Unknown.";

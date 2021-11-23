@@ -449,8 +449,7 @@ void initSimBindings(py::module& m) {
            "traj_vis_name"_a, "points"_a, "colors"_a, "num_segments"_a = 3,
            "radius"_a = .001, "smooth"_a = false, "num_interpolations"_a = 10,
            R"(Build a tube visualization around the passed trajectory of
-          points, using the passed colors to build
-              a gradient along the length of the tube.
+          points, using the passed colors to build a gradient along the length of the tube.
               points : (list of 3-tuples of floats) key point locations to
               use to create trajectory tube. num_segments : (Integer) the
               number of segments around the tube to be used to make the
@@ -461,6 +460,25 @@ void initSimBindings(py::module& m) {
               spline interpolating spline. num_interpolations : (Integer) the
               number of interpolation points to find between successive key
               points.)")
+
+      .def(
+          "save_current_scene_config",
+          static_cast<bool (Simulator::*)(const std::string&, int) const>(
+              &Simulator::saveCurrentSceneInstance),
+          R"(Save the current simulation world's state as a Scene Instance Config JSON
+          using the passed name. This can be used to reload the stage, objects, articulated
+          objects and other values as they currently are.)",
+          "file_name"_a, "scene_id"_a = 0)
+      .def(
+          "save_current_scene_config",
+          static_cast<bool (Simulator::*)(bool, int) const>(
+              &Simulator::saveCurrentSceneInstance),
+          R"(Save the current simulation world's state as a Scene Instance Config JSON
+          using the name of the loaded scene, either overwritten, if overwrite is True, or
+          with an incrementer in the file name of the form (copy xxxx) where xxxx is a number.
+          This can be used to reload the stage, objects, articulated
+          objects and other values as they currently are.)",
+          "overwrite"_a = false, "scene_id"_a = 0)
       .def("get_light_setup", &Simulator::getLightSetup,
            "key"_a = DEFAULT_LIGHTING_KEY,
            R"(Get a copy of the LightSetup registered with a specific key.)")
@@ -469,7 +487,9 @@ void initSimBindings(py::module& m) {
       .def(
           "set_light_setup", &Simulator::setLightSetup, "light_setup"_a,
           "key"_a = DEFAULT_LIGHTING_KEY,
-          R"(Register a LightSetup with a specific key. If a LightSetup is already registered with this key, it will be overridden. All Drawables referencing the key will use the newly registered LightSetup.)")
+          R"(Register a LightSetup with a specific key. If a LightSetup is already registered with
+          this key, it will be overridden. All Drawables referencing the key will use the newly
+          registered LightSetup.)")
       .def("set_object_light_setup", &Simulator::setObjectLightSetup,
            "object_id"_a, "light_setup_key"_a, "scene_id"_a = 0,
            R"(

@@ -260,9 +260,35 @@ void BulletArticulatedObject::updateNodes(bool force) {
 // BulletArticulatedLink
 ////////////////////////////
 
-void BulletArticulatedObject::resetStateFromSceneInstanceAttr(
-    CORRADE_UNUSED bool defaultCOMCorrection) {
-  auto sceneObjInstanceAttr = getSceneInstanceAttributes();
+std::shared_ptr<metadata::attributes::SceneAOInstanceAttributes>
+BulletArticulatedObject::getCurrentStateInstanceAttr() {
+  // get mutable copy of initialization SceneAOInstanceAttributes for this AO
+  auto sceneArtObjInstanceAttr =
+      ArticulatedObject::getCurrentStateInstanceAttr();
+  if (!sceneArtObjInstanceAttr) {
+    // if no scene instance attributes specified, no initial state is set
+    return nullptr;
+  }
+  sceneArtObjInstanceAttr->setAutoClampJointLimits(autoClampJointLimits_);
+
+  const std::vector<float> jointPos = getJointPositions();
+  int i = 0;
+  for (const float& v : jointPos) {
+    const std::string key = Cr::Utility::formatString("joint_{:.02d}", i++);
+    sceneArtObjInstanceAttr->addInitJointPoseVal(key, v);
+  }
+
+  const std::vector<float> jointVels = getJointVelocities();
+  i = 0;
+  for (const float& v : jointVels) {
+    const std::string key = Cr::Utility::formatString("joint_{:.02d}", i++);
+    sceneArtObjInstanceAttr->addInitJointVelocityVal(key, v);
+  }
+  return sceneArtObjInstanceAttr;
+}  // BulletArticulatedObject::getCurrentStateInstanceAttr
+
+void BulletArticulatedObject::resetStateFromSceneInstanceAttr() {
+  auto sceneObjInstanceAttr = getInitObjectInstanceAttr();
   if (!sceneObjInstanceAttr) {
     // if no scene instance attributes specified, no initial state is set
     return;

@@ -325,6 +325,7 @@ Key Commands:
   't': Instance an ArticulatedObject in front of the camera from a URDF file by entering the filepath when prompted.
   'u': Remove most recently instanced rigid object.
   'b': Toggle display of object bounding boxes.
+  'p': Save current simulation state to SceneInstanceAttributes JSON file (with non-colliding filename).
   'v': (physics) Invert gravity.
   'g': (physics) Display a stage's signed distance gradient vector field.
   'k': (physics) Iterate through different ranges of the stage's voxelized signed distance field.
@@ -1993,6 +1994,10 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
     case KeyEvent::Key::O:
       addTemplateObject();
+      break;
+    case KeyEvent::Key::P:
+      // save current sim state
+      simulator_->saveCurrentSceneInstance();
       break;
     case KeyEvent::Key::Slash:
       // display current scene's metadata information

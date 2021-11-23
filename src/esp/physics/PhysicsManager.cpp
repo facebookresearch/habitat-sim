@@ -64,13 +64,15 @@ bool PhysicsManager::addStage(
 
   //! Initialize stage
   bool sceneSuccess = addStageFinalize(initAttributes);
-  // add/merge stageInstanceAttributes' copy of user_attributes.
-  if (!stageInstanceAttributes) {
-    ESP_DEBUG() << "Stage built from StageInstanceAttributes";
-    // TODO merge instance attributes into staticStageObject_'s existing
-    // attributes
+  if (sceneSuccess) {
+    // save instance attributes used to create stage
+    staticStageObject_->setSceneInstanceAttr(stageInstanceAttributes);
+    // add/merge stageInstanceAttributes' copy of user_attributes.
+    staticStageObject_->mergeUserAttributes(
+        stageInstanceAttributes->getUserConfiguration());
   }
-  // TODO process any stage transformations here from stageInstanceAttributes
+  // TODO process any stage transformations here from
+  // stageInstanceAttributes
 
   return sceneSuccess;
 }  // PhysicsManager::addStage
@@ -141,10 +143,19 @@ int PhysicsManager::addObjectInstance(
   // attributes, if any exist in scene
   // instance.
   objPtr->mergeUserAttributes(objInstAttributes->getUserConfiguration());
+  // determine and set if this object should be COM Corrected or not
+  metadata::attributes::SceneInstanceTranslationOrigin instanceCOMOrigin =
+      objInstAttributes->getTranslationOrigin();
+  objPtr->setIsCOMCorrected(
+      ((defaultCOMCorrection &&
+        (instanceCOMOrigin !=
+         metadata::attributes::SceneInstanceTranslationOrigin::COM)) ||
+       (instanceCOMOrigin ==
+        metadata::attributes::SceneInstanceTranslationOrigin::AssetLocal)));
 
   // set object's location, rotation and other pertinent state values based on
   // scene object instance attributes set in the object above.
-  objPtr->resetStateFromSceneInstanceAttr(defaultCOMCorrection);
+  objPtr->resetStateFromSceneInstanceAttr();
 
   return objID;
 }  // PhysicsManager::addObjectInstance
@@ -331,6 +342,31 @@ int PhysicsManager::addArticulatedObjectInstance(
 
   return aObjID;
 }  // PhysicsManager::addArticulatedObjectInstance
+
+void PhysicsManager::buildCurrentStateSceneAttributes(
+    const metadata::attributes::SceneInstanceAttributes::ptr&
+        sceneInstanceAttrs) const {
+  // 1. set stage instance
+  sceneInstanceAttrs->setStageInstance(
+      staticStageObject_->getCurrentStateInstanceAttr());
+  // 2. Clear existing object instances, and set new ones reflecting current
+  // state
+  sceneInstanceAttrs->clearObjectInstances();
+  // get each object's current state as a SceneObjectInstanceAttributes
+  for (const auto& item : existingObjects_) {
+    sceneInstanceAttrs->addObjectInstance(
+        item.second->getCurrentStateInstanceAttr());
+  }
+  // 3. Clear existing Articulated object instances, and set new ones reflecting
+  // current state
+  sceneInstanceAttrs->clearArticulatedObjectInstances();
+  // get each articulated object's current state as a SceneAOInstanceAttributes
+  for (const auto& item : existingArticulatedObjects_) {
+    sceneInstanceAttrs->addArticulatedObjectInstance(
+        item.second->getCurrentStateInstanceAttr());
+  }
+
+}  // PhysicsManager::buildCurrentStateSceneAttributes
 
 esp::physics::ManagedRigidObject::ptr PhysicsManager::getRigidObjectWrapper() {
   return rigidObjectManager_->createObject("ManagedRigidObject");

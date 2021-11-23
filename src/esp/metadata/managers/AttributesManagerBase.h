@@ -206,21 +206,6 @@ class AttributesManager : public ManagedFileBasedContainer<T, Access> {
 
  protected:
   /**
-   * @brief Saves @p attributes::AbstractAttributes to a JSON file using the
-   * given @p fileName in the given @p fileDirectory .
-   * @param attribs The name of the object to save. If not found, returns
-   * false.
-   * @param filename The filename of the file to save to.
-   * @param fileDirectory The directory to save to. If the directory does not
-   * exist, will return false.
-   * @return Whether save was successful
-   */
-  bool saveManagedObjectToFileInternal(
-      const AttribsPtr& attribs,
-      const std::string& filename,
-      const std::string& fileDirectory) const override;
-
-  /**
    * @brief Called intenrally from createObject.  This will create either a
    * file based AbstractAttributes or a default one based on whether the
    * passed file name exists and has appropriate string tag/extension for @ref
@@ -428,41 +413,6 @@ bool AttributesManager<T, Access>::parseUserDefinedJsonVals(
   }  // if has user_defined tag
   return false;
 }  // AttributesManager<T, Access>::parseUserDefinedJsonVals
-
-template <class T, ManagedObjectAccess Access>
-bool AttributesManager<T, Access>::saveManagedObjectToFileInternal(
-    const AttribsPtr& attribs,
-    const std::string& filename,
-    const std::string& fileDirectory) const {
-  namespace Dir = Cr::Utility::Directory;
-  if (!Dir::exists(fileDirectory)) {
-    // output directory not found
-    ESP_ERROR() << "<" << this->objectType_ << "> : Destination directory "
-                << fileDirectory << " does not exist to save "
-                << attribs->getSimplifiedHandle() << "object. Aborting.";
-    return false;
-  }
-  // construct fully qualified filename
-  std::string fullFilename = Dir::join(fileDirectory, filename);
-  ESP_DEBUG() << "Attempting to write file" << fullFilename << "to disk";
-  // write configuration to file
-  // bypassed constructor defaults due to "0 as null" warning they throw
-  rapidjson::Document doc(rapidjson::kObjectType, nullptr, 1024, nullptr);
-  rapidjson::Document::AllocatorType& allocator = doc.GetAllocator();
-  // build Json from passed Configuration
-  auto configJson = attribs->writeToJsonValue(allocator);
-  // move constructed config into doc
-  doc.Swap(configJson);
-  // save to file
-  bool success = io::writeJsonToFile(doc, fullFilename, true, 7);
-
-  // bool success = io::writeConfigurationToJsonFile(fullFilename, attribs);
-  ESP_DEBUG() << "Attempt to write file" << fullFilename
-              << "to disk :" << (success ? "Successful" : "Failed");
-
-  return success;
-
-}  // AttributesManager<T, Access>::saveManagedObjectToFileInternal
 
 }  // namespace managers
 }  // namespace metadata

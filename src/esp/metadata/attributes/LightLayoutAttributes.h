@@ -163,6 +163,15 @@ class LightInstanceAttributes : public AbstractAttributes {
     return spotCfg->get<Magnum::Rad>("outerConeAngle");
   }
 
+  /**
+   * @brief Populate a json object with all the first-level values held in this
+   * configuration.  Default is overridden to handle special cases for
+   * LightInstanceAttributes.
+   */
+
+  void writeValuesToJson(io::JsonGenericValue& jsonObj,
+                         io::JsonAllocator& allocator) const override;
+
  protected:
   /**
    * @brief Retrieve a comma-separated string holding the header values for the
@@ -273,6 +282,14 @@ class LightLayoutAttributes : public AbstractAttributes {
   int getNumLightInstances() const {
     return this->getNumSubAttributesInternal("", lightInstConfig_);
   }
+
+  /**
+   * @brief Populate a json object with all the first-level values held in this
+   * configuration.  Default is overridden to handle special cases for
+   * LightLayoutAttributes.
+   */
+  void writeValuesToJson(io::JsonGenericValue& jsonObj,
+                         io::JsonAllocator& allocator) const override;
 
  protected:
   /**
