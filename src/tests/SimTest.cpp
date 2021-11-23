@@ -295,11 +295,12 @@ void SimTest::getDefaultLightingRGBAObservation() {
   auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
+  auto rigidObjMgr = simulator->getRigidObjectManager();
   auto objs = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
-  int objectID = simulator->addObjectByHandle(objs[0]);
-  CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
-  simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
-
+  auto obj = rigidObjMgr->addObjectByHandle(objs[0]);
+  CORRADE_VERIFY(obj->isAlive());
+  CORRADE_VERIFY(obj->getID() != esp::ID_UNDEFINED);
+  obj->setTranslation({1.0f, 0.5f, -0.5f});
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedDefaultLighting.png", maxThreshold, 0.71f);
 }
@@ -311,11 +312,13 @@ void SimTest::getCustomLightingRGBAObservation() {
   auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
+  auto rigidObjMgr = simulator->getRigidObjectManager();
   auto objs = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
-  int objectID =
-      simulator->addObjectByHandle(objs[0], nullptr, "custom_lighting_1");
-  CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
-  simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
+  auto obj =
+      rigidObjMgr->addObjectByHandle(objs[0], nullptr, "custom_lighting_1");
+  CORRADE_VERIFY(obj->isAlive());
+  CORRADE_VERIFY(obj->getID() != esp::ID_UNDEFINED);
+  obj->setTranslation({1.0f, 0.5f, -0.5f});
 
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedCustomLighting.png", maxThreshold, 0.71f);
@@ -328,11 +331,13 @@ void SimTest::updateLightSetupRGBAObservation() {
   auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
+  auto rigidObjMgr = simulator->getRigidObjectManager();
   // update default lighting
   auto objs = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
-  int objectID = simulator->addObjectByHandle(objs[0]);
-  CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
-  simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
+  auto obj = rigidObjMgr->addObjectByHandle(objs[0]);
+  CORRADE_VERIFY(obj->isAlive());
+  CORRADE_VERIFY(obj->getID() != esp::ID_UNDEFINED);
+  obj->setTranslation({1.0f, 0.5f, -0.5f});
 
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedDefaultLighting.png", maxThreshold, 0.71f);
@@ -340,13 +345,13 @@ void SimTest::updateLightSetupRGBAObservation() {
   simulator->setLightSetup(lightSetup1);
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedCustomLighting.png", maxThreshold, 0.71f);
-  simulator->removeObject(objectID);
+  rigidObjMgr->removePhysObjectByHandle(obj->getHandle());
 
   // update custom lighting
-  objectID =
-      simulator->addObjectByHandle(objs[0], nullptr, "custom_lighting_1");
-  CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
-  simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
+  obj = rigidObjMgr->addObjectByHandle(objs[0], nullptr, "custom_lighting_1");
+  CORRADE_VERIFY(obj->isAlive());
+  CORRADE_VERIFY(obj->getID() != esp::ID_UNDEFINED);
+  obj->setTranslation({1.0f, 0.5f, -0.5f});
 
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedCustomLighting.png", maxThreshold, 0.71f);
@@ -363,20 +368,22 @@ void SimTest::updateObjectLightSetupRGBAObservation() {
   auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
+  auto rigidObjMgr = simulator->getRigidObjectManager();
   auto objs = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
-  int objectID = simulator->addObjectByHandle(objs[0]);
-  CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
-  simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID);
+  auto obj = rigidObjMgr->addObjectByHandle(objs[0]);
+  CORRADE_VERIFY(obj->isAlive());
+  CORRADE_VERIFY(obj->getID() != esp::ID_UNDEFINED);
+  obj->setTranslation({1.0f, 0.5f, -0.5f});
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedDefaultLighting.png", maxThreshold, 0.71f);
 
   // change from default lighting to custom
-  simulator->setObjectLightSetup(objectID, "custom_lighting_1");
+  obj->setLightSetup("custom_lighting_1");
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedCustomLighting.png", maxThreshold, 0.71f);
 
   // change from one custom lighting to another
-  simulator->setObjectLightSetup(objectID, "custom_lighting_2");
+  obj->setLightSetup("custom_lighting_2");
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedCustomLighting2.png", maxThreshold, 0.71f);
 }
@@ -388,17 +395,20 @@ void SimTest::multipleLightingSetupsRGBAObservation() {
   auto simulator = data.creator(*this, planeStage, esp::NO_LIGHT_KEY);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
+  auto rigidObjMgr = simulator->getRigidObjectManager();
   // make sure updates apply to all objects using the light setup
   auto objs = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
-  int objectID =
-      simulator->addObjectByHandle(objs[0], nullptr, "custom_lighting_1");
-  CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
-  simulator->setTranslation({0.0f, 0.5f, -0.5f}, objectID);
+  auto obj =
+      rigidObjMgr->addObjectByHandle(objs[0], nullptr, "custom_lighting_1");
+  CORRADE_VERIFY(obj->isAlive());
+  CORRADE_VERIFY(obj->getID() != esp::ID_UNDEFINED);
+  obj->setTranslation({0.0f, 0.5f, -0.5f});
 
-  int otherObjectID =
-      simulator->addObjectByHandle(objs[0], nullptr, "custom_lighting_1");
-  CORRADE_VERIFY(otherObjectID != esp::ID_UNDEFINED);
-  simulator->setTranslation({2.0f, 0.5f, -0.5f}, otherObjectID);
+  auto otherObj =
+      rigidObjMgr->addObjectByHandle(objs[0], nullptr, "custom_lighting_1");
+  CORRADE_VERIFY(otherObj->isAlive());
+  CORRADE_VERIFY(otherObj->getID() != esp::ID_UNDEFINED);
+  otherObj->setTranslation({2.0f, 0.5f, -0.5f});
 
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedSameLighting.png", maxThreshold, 0.01f);
@@ -409,7 +419,7 @@ void SimTest::multipleLightingSetupsRGBAObservation() {
   simulator->setLightSetup(lightSetup1, "custom_lighting_1");
 
   // make sure we can move a single object to another group
-  simulator->setObjectLightSetup(objectID, "custom_lighting_2");
+  obj->setLightSetup("custom_lighting_2");
   checkPinholeCameraRGBAObservation(
       *simulator, "SimTestExpectedDifferentLighting.png", maxThreshold, 0.01f);
 }
@@ -421,6 +431,7 @@ void SimTest::recomputeNavmeshWithStaticObjects() {
   auto simulator = data.creator(*this, skokloster, esp::NO_LIGHT_KEY);
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
+  auto rigidObjMgr = simulator->getRigidObjectManager();
 
   // compute the initial navmesh
   esp::nav::NavMeshSettings navMeshSettings;
@@ -438,9 +449,9 @@ void SimTest::recomputeNavmeshWithStaticObjects() {
 
   // add static object at a known navigable point
   auto objs = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
-  int objectID = simulator->addObjectByHandle(objs[0]);
-  simulator->setTranslation(Magnum::Vector3{randomNavPoint}, objectID);
-  simulator->setObjectMotionType(esp::physics::MotionType::STATIC, objectID);
+  auto obj = rigidObjMgr->addObjectByHandle(objs[0]);
+  obj->setTranslation(Magnum::Vector3{randomNavPoint});
+  obj->setMotionType(esp::physics::MotionType::STATIC);
   CORRADE_VERIFY(
       simulator->getPathFinder()->isNavigable({randomNavPoint}, 0.1));
 
@@ -454,19 +465,17 @@ void SimTest::recomputeNavmeshWithStaticObjects() {
                               navMeshSettings, false);
   CORRADE_VERIFY(simulator->getPathFinder()->isNavigable(randomNavPoint, 0.1));
 
-  simulator->removeObject(objectID);
+  rigidObjMgr->removePhysObjectByHandle(obj->getHandle());
 
   // test scaling
   ObjectAttributes::ptr objectTemplate = objectAttribsMgr->getObjectCopyByID(0);
   objectTemplate->setScale({0.5, 0.5, 0.5});
   int tmplateID = objectAttribsMgr->registerObject(objectTemplate);
 
-  objectID = simulator->addObjectByHandle(objs[0]);
-  simulator->setTranslation(Magnum::Vector3{randomNavPoint}, objectID);
-  simulator->setTranslation(
-      simulator->getTranslation(objectID) + Magnum::Vector3{0, 0.5, 0},
-      objectID);
-  simulator->setObjectMotionType(esp::physics::MotionType::STATIC, objectID);
+  obj = rigidObjMgr->addObjectByHandle(objs[0]);
+  obj->setTranslation(Magnum::Vector3{randomNavPoint});
+  obj->setTranslation(obj->getTranslation() + Magnum::Vector3{0, 0.5, 0});
+  obj->setMotionType(esp::physics::MotionType::STATIC);
   esp::vec3f offset(0.75, 0, 0);
   CORRADE_VERIFY(simulator->getPathFinder()->isNavigable(randomNavPoint, 0.1));
   CORRADE_VERIFY(
@@ -556,6 +565,7 @@ void SimTest::buildingPrimAssetObjectTemplates() {
   auto assetAttribsMgr = simulator->getAssetAttributesManager();
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
+  auto rigidObjMgr = simulator->getRigidObjectManager();
 
   // get all handles of templates for primitive-based render objects
   std::vector<std::string> primObjAssetHandles =
@@ -688,9 +698,9 @@ void SimTest::buildingPrimAssetObjectTemplates() {
     auto newCylObjAttr = objectAttribsMgr->createObject(newHandle);
     CORRADE_VERIFY(newCylObjAttr);
     // create object with new attributes
-    int objectID = simulator->addObjectByHandle(newHandle);
-
-    CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
+    auto obj = rigidObjMgr->addObjectByHandle(newHandle);
+    CORRADE_VERIFY(obj->isAlive());
+    CORRADE_VERIFY(obj->getID() != esp::ID_UNDEFINED);
   }
   // empty vector of handles
   primObjAssetHandles.clear();
@@ -702,15 +712,17 @@ void SimTest::addObjectByHandle() {
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, planeStage, esp::NO_LIGHT_KEY);
+  auto rigidObjMgr = simulator->getRigidObjectManager();
 
-  int objectID = simulator->addObjectByHandle("invalid_handle");
-  CORRADE_COMPARE(objectID, esp::ID_UNDEFINED);
+  auto obj = rigidObjMgr->addObjectByHandle("invalid_handle");
+  CORRADE_COMPARE(obj, nullptr);
 
   // pass valid object_config.json filepath as handle to addObjectByHandle
   const auto validHandle = Cr::Utility::Directory::join(
       TEST_ASSETS, "objects/nested_box.object_config.json");
-  objectID = simulator->addObjectByHandle(validHandle);
-  CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
+  obj = rigidObjMgr->addObjectByHandle(validHandle);
+  CORRADE_VERIFY(obj->isAlive());
+  CORRADE_VERIFY(obj->getID() != esp::ID_UNDEFINED);
 }
 
 void SimTest::addSensorToObject() {
@@ -718,35 +730,36 @@ void SimTest::addSensorToObject() {
   auto&& data = SimulatorBuilder[testCaseInstanceId()];
   setTestCaseDescription(data.name);
   auto simulator = data.creator(*this, vangogh, esp::NO_LIGHT_KEY);
+  auto rigidObjMgr = simulator->getRigidObjectManager();
   // manager of object attributes
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
   auto objs = objectAttribsMgr->getObjectHandlesBySubstring("icosphereSolid");
-  int objectID = simulator->addObjectByHandle(objs[0]);
-  CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
-  esp::scene::SceneNode& objectNode = *simulator->getObjectSceneNode(objectID);
+  auto obj = rigidObjMgr->addObjectByHandle(objs[0]);
+  CORRADE_VERIFY(obj->isAlive());
+  CORRADE_VERIFY(obj->getID() != esp::ID_UNDEFINED);
+  esp::scene::SceneNode& objectNode = *obj->getSceneNode();
 
   // Add sensor to sphere object
   auto objectSensorSpec = esp::sensor::CameraSensorSpec::create();
-  objectSensorSpec->uuid = std::to_string(objectID);
+  objectSensorSpec->uuid = std::to_string(obj->getID());
   objectSensorSpec->position = {0, 0, 0};
   objectSensorSpec->orientation = {0, 0, 0};
   objectSensorSpec->resolution = {128, 128};
-  simulator->addSensorToObject(objectID, objectSensorSpec);
-  std::string expectedUUID = std::to_string(objectID);
+  simulator->addSensorToObject(obj->getID(), objectSensorSpec);
+  std::string expectedUUID = std::to_string(obj->getID());
   CameraSensor& cameraSensor = dynamic_cast<CameraSensor&>(
       objectNode.getNodeSensorSuite().get(expectedUUID));
   cameraSensor.setTransformationFromSpec();
 
-  simulator->setTranslation({1.0f, 1.5f, 1.0f},
-                            objectID);  // Move camera to same place as agent
+  obj->setTranslation(
+      {1.0f, 1.5f, 1.0f});  // Move camera to same place as agent
 
   auto objs2 = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
-  int objectID2 = simulator->addObjectByHandle(objs[0]);
-
-  CORRADE_VERIFY(objectID2 != esp::ID_UNDEFINED);
-  simulator->setTranslation({1.0f, 0.5f, -0.5f}, objectID2);
-  esp::scene::SceneNode& objectNode2 =
-      *simulator->getObjectSceneNode(objectID2);
+  auto obj2 = rigidObjMgr->addObjectByHandle(objs[0]);
+  CORRADE_VERIFY(obj2->isAlive());
+  CORRADE_VERIFY(obj2->getID() != esp::ID_UNDEFINED);
+  obj2->setTranslation({1.0f, 0.5f, -0.5f});
+  esp::scene::SceneNode& objectNode2 = *obj2->getSceneNode();
 
   Observation observation;
   ObservationSpace obsSpace;
@@ -789,19 +802,23 @@ void SimTest::createMagnumRenderingOff() {
 
   // configure objectAttributesManager
   auto objectAttribsMgr = simulator->getObjectAttributesManager();
+  auto rigidObjMgr = simulator->getRigidObjectManager();
   objectAttribsMgr->loadAllJSONConfigsFromPath(
       Cr::Utility::Directory::join(TEST_ASSETS, "objects/nested_box"), true);
 
   // check that we can load a glb file
   auto objs = objectAttribsMgr->getObjectHandlesBySubstring("nested_box");
-  int objectID = simulator->addObjectByHandle(objs[0]);
-  simulator->setTranslation({-10.0f, -10.0f, -10.0f}, objectID);
+  auto obj = rigidObjMgr->addObjectByHandle(objs[0]);
+  CORRADE_VERIFY(obj->isAlive());
+  CORRADE_VERIFY(obj->getID() != esp::ID_UNDEFINED);
+  obj->setTranslation({-10.0f, -10.0f, -10.0f});
 
   // check that adding a primitive object works
-  objectID = simulator->addObjectByHandle("cubeSolid");
-  simulator->setTranslation({10.0f, 10.0f, 10.0f}, objectID);
-  CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
-  esp::scene::SceneNode* objectNode = simulator->getObjectSceneNode(objectID);
+  obj = rigidObjMgr->addObjectByHandle("cubeSolid");
+  obj->setTranslation({10.0f, 10.0f, 10.0f});
+  CORRADE_VERIFY(obj->isAlive());
+  CORRADE_VERIFY(obj->getID() != esp::ID_UNDEFINED);
+  esp::scene::SceneNode* objectNode = obj->getSceneNode();
 
   auto distanceBetween = [](Mn::Vector3 a, Mn::Vector3 b) {
     Mn::Vector3 d = b - a;
@@ -812,13 +829,13 @@ void SimTest::createMagnumRenderingOff() {
     // cast a ray at the object to check that the object is actually there
     auto raycastresults = simulator->castRay(
         esp::geo::Ray({10.0, 9.0, 10.0}, {0.0, 1.0, 0.0}), 100.0, 0);
-    CORRADE_COMPARE(raycastresults.hits[0].objectId, objectID);
+    CORRADE_COMPARE(raycastresults.hits[0].objectId, obj->getID());
     auto point = raycastresults.hits[0].point;
     CORRADE_COMPARE_AS(distanceBetween(point, {10.0, 9.9, 10.0}), 0.001,
                        Cr::TestSuite::Compare::Less);
     raycastresults = simulator->castRay(
         esp::geo::Ray({10.0, 11.0, 10.0}, {0.0, -1.0, 0.0}), 100.0, 0);
-    CORRADE_COMPARE(raycastresults.hits[0].objectId, objectID);
+    CORRADE_COMPARE(raycastresults.hits[0].objectId, obj->getID());
     point = raycastresults.hits[0].point;
     CORRADE_COMPARE_AS(distanceBetween(point, {10.0, 10.1, 10.0}), 0.001,
                        Cr::TestSuite::Compare::Less);
@@ -846,22 +863,23 @@ void SimTest::createMagnumRenderingOff() {
   testBoundingBox();
 
   // test raycast and bounding box for cubeWireframe
-  simulator->removeObject(objectID);
-  objectID = simulator->addObjectByHandle("cubeWireframe");
-  simulator->setTranslation({10.0f, 10.0f, 10.0f}, objectID);
-  CORRADE_VERIFY(objectID != esp::ID_UNDEFINED);
-  objectNode = simulator->getObjectSceneNode(objectID);
+  rigidObjMgr->removePhysObjectByHandle(obj->getHandle());
+  obj = rigidObjMgr->addObjectByHandle("cubeWireframe");
+  CORRADE_VERIFY(obj->isAlive());
+  CORRADE_VERIFY(obj->getID() != esp::ID_UNDEFINED);
+  obj->setTranslation({10.0f, 10.0f, 10.0f});
+  objectNode = obj->getSceneNode();
   testRaycast();
   testBoundingBox();
 
   // do some sensor stuff to check that nothing errors
   auto objectSensorSpec = esp::sensor::CameraSensorSpec::create();
-  objectSensorSpec->uuid = std::to_string(objectID);
+  objectSensorSpec->uuid = std::to_string(obj->getID());
   objectSensorSpec->position = {0, 0, 0};
   objectSensorSpec->orientation = {0, 0, 0};
   objectSensorSpec->resolution = {128, 128};
-  simulator->addSensorToObject(objectID, objectSensorSpec);
-  std::string expectedUUID = std::to_string(objectID);
+  simulator->addSensorToObject(obj->getID(), objectSensorSpec);
+  std::string expectedUUID = std::to_string(obj->getID());
   CameraSensor& cameraSensor = dynamic_cast<CameraSensor&>(
       objectNode->getNodeSensorSuite().get(expectedUUID));
   cameraSensor.setTransformationFromSpec();
