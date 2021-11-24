@@ -45,7 +45,7 @@ class FairmotionInterface:
         # general interface attrs
         LoggingContext.reinitialize_from_env()
         self.sim: Optional[habitat_sim.simulator.Simulator] = sim
-        self.fps: float = fps
+        self.draw_fps: float = fps
         self.art_obj_mgr = self.sim.get_articulated_object_manager()
         self.rgd_obj_mgr = self.sim.get_rigid_object_manager()
         self.model: Optional[phy.ManagedArticulatedObject] = None
@@ -68,7 +68,7 @@ class FairmotionInterface:
 
         # path follower attrs
         self.model: Optional[phy.ManagedArticulatedObject] = None
-        self.path_points: Optional[List[mn.Vector3]] = None
+        self.path_data: Optional[PathData] = None
 
         if metadata_file:
             try:
@@ -304,7 +304,7 @@ class FairmotionInterface:
         def sign(i):
             return -1 * i if self.is_reversed else i
 
-        step_size = step_size or int(self.motion.fps / self.fps)
+        step_size = step_size or int(self.motion.fps / self.draw_fps)
 
         # repeat
         if not repeat:
@@ -575,23 +575,16 @@ class FairmotionInterface:
         self.hide_model()
         self.activity = Activity.PATH_FOLLOW_SEQ
 
-        self.path_points = path.points
-        self.path_time: float = 0.0  # tracks time along path
-        self.path_motion = Motions.walk_to_walk.motion
-
-        # get path length
-        i, j, summ = 0, 0, 0.0
-        while i < len(self.path_points):
-            summ += (mn.Vector3(self.path_points[i] - self.path_points[j])).length()
-            j = i
-            i += 1
-        self.full_path_length = summ
-
         # Load a model to follow path
         self.model = self.art_obj_mgr.add_articulated_object_from_urdf(
             filepath=self.user_metadata["urdf_path"], fixed_base=True
         )
         self.model.motion_type = phy.MotionType.KINEMATIC
+
+        self.state_motion = Motions.walk_to_walk
+
+        # initiate path data
+        self.path_data = PathData(path.points)
 
         # First update with step_size 0 to start character
         self.update_pathfollower_sequential(step_size=0)
@@ -606,54 +599,47 @@ class FairmotionInterface:
         """
         # precondition
         if not all(
-            [self.model, self.path_points, self.activity == Activity.PATH_FOLLOW_SEQ]
+            [self.model, self.path_data, self.activity == Activity.PATH_FOLLOW_SEQ]
         ):
             return
 
-        walk = Motions.walk_to_walk
+        path_ = self.path_data
+        motion_ = self.state_motion
 
         # either take argument value for path_time or continue with cycle
-        self.path_time = path_time or (self.path_time + (step_size / self.fps))
+        path_.time = path_time or (path_.time + (step_size / self.draw_fps))
 
-        # compute current frame from self.path_time w/ wrapping
-        mocap_time_length = walk.num_of_frames * (1.0 / walk.motion.fps)
-        mocap_cycles_past = math.floor(self.path_time / mocap_time_length)
-        mocap_time_curr = math.fmod(self.path_time, mocap_time_length)
-        mocap_frame = int(mocap_time_curr * walk.motion.fps)
-
-        # find distance progressed along shortest path
-        path_displacement = (
-            mocap_cycles_past * walk.map_of_total_displacement[LAST]
-            + walk.map_of_total_displacement[mocap_frame]
-        )
-
-        # handle wrapping or edgecase for dath displacement passing goal
-        if path_displacement > self.full_path_length:
-            self.path_time = 0.0
-            self.path_displacement = 0.0
-
-        # character's root node position on the line and the forward direction of the path
-        char_pos, forward_direction = self.point_at_path_t(
-            self.path_points, path_displacement
-        )
+        mocap_cycles_past = math.floor(path_.time / motion_.time_length)
+        mocap_time_curr = math.fmod(path_.time, motion_.time_length)
+        mocap_frame = int(mocap_time_curr * motion_.fps)
 
         new_pose, _, _ = self.convert_CMUamass_single_pose(
-            self.path_motion.poses[mocap_frame], self.model, raw=True
+            motion_.poses[mocap_frame], self.model, raw=True
         )
 
-        # look at target and create transform
-        look_at_path_T = mn.Matrix4.look_at(
-            char_pos, char_pos + forward_direction.normalized(), mn.Vector3.y_axis()
+        # [THIS IS GOAL go to next action] handle wrapping or edgecase for dath displacement passing goal
+        # find distance progressed along shortest path
+        path_displacement = (
+            mocap_cycles_past * motion_.map_of_total_displacement[LAST]
+            + motion_.map_of_total_displacement[mocap_frame]
         )
-
-        full_transform = walk.motion.poses[mocap_frame].get_transform(ROOT, local=True)
-        full_transform = mn.Matrix4(full_transform)
-
-        full_transform.translation -= walk.center_of_root_drift
+        if path_displacement > path_.length:
+            path_.time = 0.0
+            self.path_displacement = 0.0
 
         global_neutral_correction = self.global_correction_quat(
-            mn.Vector3.z_axis(), walk.direction_forward
+            mn.Vector3.z_axis(), motion_.direction_forward
         )
+        # character's root node position on the line and the forward direction of the path
+        char_pos, forward_V = self.point_at_path_t(path_.points, path_displacement)
+        # look at target and create transform
+        look_at_path_T = mn.Matrix4.look_at(
+            char_pos, char_pos + forward_V.normalized(), mn.Vector3.y_axis()
+        )
+
+        full_transform = motion_.poses[mocap_frame].get_transform(ROOT, local=True)
+        full_transform = mn.Matrix4(full_transform)
+        full_transform.translation -= motion_.center_of_root_drift
         full_transform = (
             mn.Matrix4.from_(global_neutral_correction.to_matrix(), mn.Vector3())
             @ full_transform
@@ -732,14 +718,19 @@ class Motions:
         """
 
         def __init__(self, motion_) -> None:
-            # plurality in naming usually hints that attr is an frame lookup array
+            # primary
+            self.motion = motion_
             self.poses = motion_.poses
+            self.fps = motion_.fps
             self.num_of_frames: int = len(motion_.poses)
+            self.map_of_total_displacement: float = []
+            self.center_of_root_drift: mn.Vector3 = mn.Vector3()
+            self.time_length = self.num_of_frames * (1.0 / motion_.fps)
+
+            # intermediates
             self.translation_drifts: List[mn.Vector3] = []
             self.forward_displacements: List[mn.Vector3] = []
             self.root_orientations: List[mn.Quaternion] = []
-            self.map_of_total_displacement: float = []
-            self.center_of_root_drift: mn.Vector3 = mn.Vector3()
 
             # first and last frame root position vectors
             f = motion_.poses[0].get_transform(ROOT, local=False)[0:3, 3]
@@ -751,8 +742,6 @@ class Motions:
             self.direction_up = mn.Vector3.z_axis()
             forward_V = (l - f) * (mn.Vector3(1.0, 1.0, 1.0) - mn.Vector3.z_axis())
             self.direction_forward = forward_V.normalized()
-
-            self.motion = motion_
 
             ### Fill derived data structures ###
             # fill translation_drifts and forward_displacements
@@ -833,6 +822,28 @@ class Motions:
     length = 145
 
     walk_to_walk = MotionData(motion_ops.cut(motion_, start + offset, start + length))
+
+
+class PathData:
+    """
+    The PathData class is purposed to instantiate with given path points, and used
+    to manage the path data fro the current path following sequence.
+    """
+
+    def __init__(self, path_points: List[mn.Vector3]) -> None:
+        self.points = path_points
+        self.length = self.calc_path_length(path_points)
+        self.time = 0.0
+
+    # [REFACTOR] I would like to change this to a static method, once I figure out how
+    def calc_path_length(self, path_points: List[mn.Vector3]) -> float:
+        # get path length
+        i, j, summ = 0, 0, 0.0
+        while i < len(path_points):
+            summ += (mn.Vector3(path_points[i] - path_points[j])).length()
+            j = i
+            i += 1
+        return summ
 
 
 # keeps track of the motion key frame preview modes

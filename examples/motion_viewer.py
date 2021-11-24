@@ -20,7 +20,6 @@ import habitat_sim.physics as phy
 from examples.fairmotion_interface import FairmotionInterface
 from examples.settings import default_sim_settings
 from habitat_sim.logging import logger
-from habitat_sim.utils.common import catmull_rom_chain
 
 
 class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
@@ -400,7 +399,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             found_path = self.sim.pathfinder.find_path(path)
             self.path_points = path.points
 
-        spline_points = catmull_rom_chain(path.points)
+        spline_points = habitat_sim.geo.build_catmull_rom_spline(path.points, 10, 0.75)
         path.points = spline_points
 
         colors_spline = [mn.Color3.blue(), mn.Color3.green()]
