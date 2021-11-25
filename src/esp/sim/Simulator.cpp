@@ -770,58 +770,6 @@ void Simulator::setShadowMapsToDrawables() {
 
 // === Physics Simulator Functions ===
 
-int Simulator::addObject(const int objectLibId,
-                         scene::SceneNode* attachmentNode,
-                         const std::string& lightSetupKey,
-                         const int sceneID) {
-  if (sceneHasPhysics(sceneID)) {
-    if (renderer_) {
-      renderer_->acquireGlContext();
-    }
-    // TODO: change implementation to support multi-world and physics worlds
-    // to own reference to a sceneGraph to avoid this.
-    auto& drawables = getDrawableGroup(sceneID);
-    return physicsManager_->addObject(objectLibId, &drawables, attachmentNode,
-                                      lightSetupKey);
-  }
-  return ID_UNDEFINED;
-}
-
-int Simulator::addObjectByHandle(const std::string& objectLibHandle,
-                                 scene::SceneNode* attachmentNode,
-                                 const std::string& lightSetupKey,
-                                 const int sceneID) {
-  if (sceneHasPhysics(sceneID)) {
-    if (renderer_) {
-      renderer_->acquireGlContext();
-    }
-    // TODO: change implementation to support multi-world and physics worlds
-    // to own reference to a sceneGraph to avoid this.
-    auto& drawables = getDrawableGroup(sceneID);
-    return physicsManager_->addObject(objectLibHandle, &drawables,
-                                      attachmentNode, lightSetupKey);
-  }
-  return ID_UNDEFINED;
-}
-
-// remove object objectID instance in sceneID
-void Simulator::removeObject(const int objectID,
-                             bool deleteObjectNode,
-                             bool deleteVisualNode,
-                             const int sceneID) {
-  if (sceneHasPhysics(sceneID)) {
-    physicsManager_->removeObject(objectID, deleteObjectNode, deleteVisualNode);
-    if (trajVisNameByID.count(objectID) > 0) {
-      std::string trajVisAssetName = trajVisNameByID[objectID];
-      trajVisNameByID.erase(objectID);
-      trajVisIDByName.erase(trajVisAssetName);
-      // TODO : if object is trajectory visualization, remove its assets as
-      // well once this is supported.
-      // resourceManager_->removeResourceByName(trajVisAssetName);
-    }
-  }
-}
-
 double Simulator::stepWorld(const double dt) {
   if (physicsManager_ != nullptr) {
     physicsManager_->deferNodesUpdate();
