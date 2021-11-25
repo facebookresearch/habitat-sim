@@ -988,66 +988,6 @@ bool Simulator::isNavMeshVisualizationActive() {
   return (navMeshVisNode_ != nullptr && navMeshVisPrimID_ != ID_UNDEFINED);
 }
 
-int Simulator::addTrajectoryObject(const std::string& trajVisName,
-                                   const std::vector<Mn::Vector3>& pts,
-                                   const std::vector<Mn::Color3>& colorVec,
-                                   int numSegments,
-                                   float radius,
-                                   bool smooth,
-                                   int numInterp) {
-  if (renderer_) {
-    renderer_->acquireGlContext();
-  }
-
-  // 0. Deduplicate sequential points
-  std::vector<Magnum::Vector3> uniquePts;
-  uniquePts.push_back(pts[0]);
-  for (const auto& loc : pts) {
-    if (loc != uniquePts.back()) {
-      uniquePts.push_back(loc);
-    }
-  }
-
-  auto& drawables = getDrawableGroup();
-
-  // 1. create trajectory tube asset from points and save it
-  bool success = resourceManager_->buildTrajectoryVisualization(
-      trajVisName, uniquePts, colorVec, numSegments, radius, smooth, numInterp);
-  if (!success) {
-    ESP_ERROR() << "Failed to create Trajectory visualization mesh for"
-                << trajVisName;
-    return ID_UNDEFINED;
-  }
-  // 2. create object attributes for the trajectory
-  auto objAttrMgr = metadataMediator_->getObjectAttributesManager();
-  auto trajObjAttr = objAttrMgr->createObject(trajVisName, false);
-  // turn off collisions
-  trajObjAttr->setIsCollidable(false);
-  trajObjAttr->setComputeCOMFromShape(false);
-  objAttrMgr->registerObject(trajObjAttr, trajVisName, true);
-
-  // 3. add trajectory object to manager
-  auto trajVisID = physicsManager_->addObject(trajVisName, &drawables);
-  if (trajVisID == ID_UNDEFINED) {
-    // failed to add object - need to delete asset from resourceManager.
-    ESP_ERROR() << "Failed to create Trajectory visualization object for"
-                << trajVisName;
-    // TODO : support removing asset by removing from resourceDict_ properly
-    // using trajVisName
-    return ID_UNDEFINED;
-  }
-  auto trajObj = getRigidObjectManager()->getObjectCopyByID(trajVisID);
-  ESP_DEBUG() << "Trajectory visualization object created with ID" << trajVisID;
-  trajObj->setMotionType(esp::physics::MotionType::KINEMATIC);
-  // add to internal references of object ID and resourceDict name
-  // this is for eventual asset deletion/resource freeing.
-  trajVisIDByName[trajVisName] = trajVisID;
-  trajVisNameByID[trajVisID] = trajVisName;
-
-  return trajVisID;
-
-}  // Simulator::addTrajectoryObject (vector of colors)
-
 // Agents
 void Simulator::sampleRandomAgentState(agent::AgentState& agentState) {
   if (pathfinder_->isLoaded()) {

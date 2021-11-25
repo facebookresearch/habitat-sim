@@ -1067,20 +1067,23 @@ class Simulator {
                           int numSegments = 3,
                           float radius = .001,
                           bool smooth = false,
-                          int numInterp = 10);
+                          int numInterp = 10) {
+    if (sceneHasPhysics(activeSceneID_)) {
+      return physicsManager_->addTrajectoryObject(
+          trajVisName, pts, colorVec, numSegments, radius, smooth, numInterp);
+    }
+    return ID_UNDEFINED;
+  }
   /**
    * @brief Remove a trajectory visualization by name.
    * @param trajVisName The name of the trajectory visualization to remove.
    * @return whether successful or not.
    */
   bool removeTrajVisByName(const std::string& trajVisName) {
-    if (trajVisIDByName.count(trajVisName) == 0) {
-      ESP_DEBUG() << "No trajectory named" << trajVisName
-                  << "exists.  Ignoring.";
-      return false;
+    if (sceneHasPhysics(activeSceneID_)) {
+      return physicsManager_->removeTrajVisByName(trajVisName);
     }
-    return removeTrajVisObjectAndAssets(trajVisIDByName.at(trajVisName),
-                                        trajVisName);
+    return false;
   }
 
   /**
@@ -1090,16 +1093,12 @@ class Simulator {
    * @return whether successful or not.
    */
   bool removeTrajVisByID(int trajVisObjID) {
-    if (trajVisNameByID.count(trajVisObjID) == 0) {
-      ESP_DEBUG() << "No trajectory object with ID:" << trajVisObjID
-                  << "exists.  Ignoring.";
-      return false;
+    if (sceneHasPhysics(activeSceneID_)) {
+      return physicsManager_->removeTrajVisByID(trajVisObjID);
     }
-    return removeTrajVisObjectAndAssets(trajVisObjID,
-                                        trajVisNameByID.at(trajVisObjID));
+    return false;
   }
 
- public:
   agent::Agent::ptr getAgent(int agentId);
 
   agent::Agent::ptr addAgent(const agent::AgentConfiguration& agentConfig,
@@ -1399,24 +1398,6 @@ class Simulator {
   }
 
   /**
-   * @brief Internal use only. Remove a trajectory object, its mesh, and all
-   * references to it.
-   * @param trajVisObjID The object ID of the trajectory visualization to
-   * remove.
-   * @param trajVisName The name of the trajectory visualization to remove.
-   * @return whether successful or not.
-   */
-  bool removeTrajVisObjectAndAssets(int trajVisObjID,
-                                    const std::string& trajVisName) {
-    removeObject(trajVisObjID);
-    // TODO : support removing asset by removing from resourceDict_ properly
-    // using trajVisName
-    trajVisIDByName.erase(trajVisName);
-    trajVisNameByID.erase(trajVisObjID);
-    return true;
-  }
-
-  /**
    * @brief Builds a scene instance and populates it with initial object
    * layout, if appropriate, based on @ref
    * esp::metadata::attributes::SceneInstanceAttributes referenced by @p
@@ -1577,10 +1558,6 @@ class Simulator {
   //! NavMesh visualization variables
   int navMeshVisPrimID_ = esp::ID_UNDEFINED;
   esp::scene::SceneNode* navMeshVisNode_ = nullptr;
-
-  //! Maps holding IDs and Names of trajectory visualizations
-  std::map<std::string, int> trajVisIDByName;
-  std::map<int, std::string> trajVisNameByID;
 
   /**
    * @brief Tracks whether or not the simulator was initialized

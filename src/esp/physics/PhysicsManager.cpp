@@ -371,6 +371,64 @@ void PhysicsManager::buildCurrentStateSceneAttributes(
 
 }  // PhysicsManager::buildCurrentStateSceneAttributes
 
+int PhysicsManager::addTrajectoryObject(const std::string& trajVisName,
+                                        const std::vector<Mn::Vector3>& pts,
+                                        const std::vector<Mn::Color3>& colorVec,
+                                        int numSegments,
+                                        float radius,
+                                        bool smooth,
+                                        int numInterp) {
+  simulator_->getRenderGLContext();
+
+  // 0. Deduplicate sequential points
+  std::vector<Magnum::Vector3> uniquePts;
+  uniquePts.push_back(pts[0]);
+  for (const auto& loc : pts) {
+    if (loc != uniquePts.back()) {
+      uniquePts.push_back(loc);
+    }
+  }
+
+  auto& drawables = simulator_->getDrawableGroup();
+
+  // 1. create trajectory tube asset from points and save it
+  bool success = resourceManager_.buildTrajectoryVisualization(
+      trajVisName, uniquePts, colorVec, numSegments, radius, smooth, numInterp);
+  if (!success) {
+    ESP_ERROR() << "Failed to create Trajectory visualization mesh for"
+                << trajVisName;
+    return ID_UNDEFINED;
+  }
+  // 2. create object attributes for the trajectory
+  auto objAttrMgr = resourceManager_.getObjectAttributesManager();
+  auto trajObjAttr = objAttrMgr->createObject(trajVisName, false);
+  // turn off collisions
+  trajObjAttr->setIsCollidable(false);
+  trajObjAttr->setComputeCOMFromShape(false);
+  objAttrMgr->registerObject(trajObjAttr, trajVisName, true);
+
+  // 3. add trajectory object to manager
+  auto trajVisID = addObject(trajVisName, &drawables);
+  if (trajVisID == ID_UNDEFINED) {
+    // failed to add object - need to delete asset from resourceManager.
+    ESP_ERROR() << "Failed to create Trajectory visualization object for"
+                << trajVisName;
+    // TODO : support removing asset by removing from resourceDict_ properly
+    // using trajVisName
+    return ID_UNDEFINED;
+  }
+  auto trajObj = getRigidObjectManager()->getObjectCopyByID(trajVisID);
+  ESP_DEBUG() << "Trajectory visualization object created with ID" << trajVisID;
+  trajObj->setMotionType(esp::physics::MotionType::KINEMATIC);
+  // add to internal references of object ID and resourceDict name
+  // this is for eventual asset deletion/resource freeing.
+  trajVisIDByName[trajVisName] = trajVisID;
+  trajVisNameByID[trajVisID] = trajVisName;
+
+  return trajVisID;
+
+}  // PhysicsManager::addTrajectoryObject (vector of colors)
+
 esp::physics::ManagedRigidObject::ptr PhysicsManager::getRigidObjectWrapper() {
   return rigidObjectManager_->createObject("ManagedRigidObject");
 }
@@ -399,6 +457,15 @@ void PhysicsManager::removeObject(const int objectId,
   // remove wrapper if one is present
   if (rigidObjectManager_->getObjectLibHasHandle(objName)) {
     rigidObjectManager_->removeObjectByID(objectId);
+  }
+  // remove trajvis
+  if (trajVisNameByID.count(objectId) > 0) {
+    std::string trajVisAssetName = trajVisNameByID[objectId];
+    trajVisNameByID.erase(objectId);
+    trajVisIDByName.erase(trajVisAssetName);
+    // TODO : if object is trajectory visualization, remove its assets as
+    // well once this is supported.
+    // resourceManager_->removeResourceByName(trajVisAssetName);
   }
 }  // PhysicsManager::removeObject
 
