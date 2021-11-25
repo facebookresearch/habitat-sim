@@ -5,12 +5,10 @@
 /* global Module, XRWebGLLayer */
 
 import {
-  getEyeSensorSpecs,
-  updateHeadPose,
-  VIEW_SENSORS,
+  HeadsetUtils,
   initGL,
   drawTextureData
-} from "../lib/habitat-sim-js/vr_utils.js";
+} from "../lib/habitat-sim-js/xr_utils.js";
 import { DataUtils } from "./data_utils.js";
 import { preload } from "../lib/habitat-sim-js/utils.js";
 
@@ -154,7 +152,10 @@ export class VRDemo {
 
     // init agent
     const agentConfigOrig = new Module.AgentConfiguration();
-    agentConfigOrig.sensorSpecifications = getEyeSensorSpecs(1024, 1024);
+    agentConfigOrig.sensorSpecifications = HeadsetUtils.getEyeSensorSpecs(
+      1024,
+      1024
+    );
     this.sim.addAgent(agentConfigOrig);
     this.agentId = 0;
 
@@ -343,7 +344,7 @@ export class VRDemo {
     this.sendHandInfoToWorker(frame);
 
     // Update the camera positions based on the user's head pose.
-    updateHeadPose(pose, agent);
+    HeadsetUtils.updateHeadPose(pose, agent);
 
     // Draw stuff to the canvas.
     const layer = session.renderState.baseLayer;
@@ -353,7 +354,9 @@ export class VRDemo {
       const viewport = layer.getViewport(view);
       this.gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height);
 
-      const sensor = agent.getSubtreeSensors().get(VIEW_SENSORS[iView]);
+      const sensor = agent
+        .getSubtreeSensors()
+        .get(HeadsetUtils.VIEW_SENSORS[iView]);
       const texRes = sensor.specification().resolution;
       const texData = sensor.getObservation(this.sim).getData();
       drawTextureData(this.gl, texRes, texData);

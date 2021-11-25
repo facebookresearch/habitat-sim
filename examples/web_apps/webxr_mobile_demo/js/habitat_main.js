@@ -58,7 +58,7 @@ async function doRun() {
     demo.start();
   } else {
     console.log(
-      "WebXR not supported. Make sure you have the WebXR API Emulator chrome extension if you are not on a headset."
+      "WebXR not supported. Make sure you have the WebXR API Emulator chrome extension if you are not on a device that supports AR."
     );
   }
 }

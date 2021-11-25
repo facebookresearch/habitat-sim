@@ -8,10 +8,10 @@ You may encounter memory access errors on Quest 2 or possibly other VR devices. 
 
 # Installation
 
-1. `cd` to the main `habitat_sim` directory. Create a folder for the data, then download the hand demo data:
+1. `cd` to the main `habitat_sim` directory. Create a folder for the data, then download the webxr demo data:
 ```bash
 $ mkdir examples/web_apps/webxr_hand_demo/data
-$ python -m habitat_sim.utils.datasets_download --uids webxr_hand_demo --data-path examples/web_apps/webxr_hand_demo/data
+$ python -m habitat_sim.utils.datasets_download --uids webxr_demo --data-path examples/web_apps/webxr_hand_demo/data
 ```
 2. Follow [instructions](https://github.com/facebookresearch/habitat-sim/blob/main/DETAILS.md#experimental-emscripten-webgl-and-web-apps) for installing and activating Emscripten, including `source path/to/emsdk_env.sh` or similar to configure env variables.
 1. `cd` to `examples/web_apps/webxr_hand_demo` (this directory). Then run a script to transpile Habitat into JS, copy the resulting files over, and also copy over the JS utils files.
@@ -46,10 +46,10 @@ $ python3 -m http.server
 
 If you encounter Habitat-sim build errors, make sure you have Emscripten properly installed and activated. Delete the build output folders (`habitat-sim/build_corrade-rc` and `habitat-sim/build_js`) and rebuild.
 
-If the VR app fails to load in your desktop browser, look for errors in the browser dev console. Make sure you have data files installed properly, e.g. `habitat-sim/examples/web_apps/webxr_hand_demo/data/webxr_hand_demo_dataset/stages/remake_v0_JustBigStuff_00.glb`. Make sure the WebXR emulator is installed and accessible (e.g. as a tab in Chrome Developer Tools).
+If the VR app fails to load in your desktop browser, look for errors in the browser dev console. Make sure you have data files installed properly, e.g. `habitat-sim/examples/web_apps/webxr_hand_demo/data/webxr_demo_dataset/stages/remake_v0_JustBigStuff_00.glb`. Make sure the WebXR emulator is installed and accessible (e.g. as a tab in Chrome Developer Tools).
 
 # Project folder structure
-- `data/webxr_hand_demo_dataset` contains all the models that are used in the default setup, plus a few extra ReplicaCAD objects
+- `data/webxr_demo_dataset` contains all the models that are used in the default setup, plus a few extra ReplicaCAD objects
     - `default.physics_config.json` contains the physics settings, e.g. gravitational acceleration.
     - `stages` contain the scene `.glb` files and their corresponding `.stage_config.json` files. In order to choose a scene other than `remake_v0_JustBigStuff_00`, you need to add its 2 files here.
     - `objects` contains the hand models as well as the ReplicaCAD objects that can be spawned. It also contains some extra objects you may use.
