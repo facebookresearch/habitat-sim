@@ -119,6 +119,7 @@ int PhysicsManager::addObjectInstance(
   }
   int objID = 0;
   if (simulator_ != nullptr) {
+    simulator_->getRenderGLContext();
     auto& drawables = simulator_->getDrawableGroup();
     objID = addObject(objAttributes, &drawables, attachmentNode, lightSetup);
   } else {
@@ -173,6 +174,7 @@ int PhysicsManager::addObject(const std::string& attributesHandle,
   } else {
     // attributes exist, get drawables if valid simulator accessible
     if (simulator_ != nullptr) {
+      simulator_->getRenderGLContext();
       auto& drawables = simulator_->getDrawableGroup();
       return addObject(attributes, &drawables, attachmentNode, lightSetup);
     } else {
@@ -195,6 +197,7 @@ int PhysicsManager::addObject(const int attributesID,
   } else {
     // attributes exist, get drawables if valid simulator accessible
     if (simulator_ != nullptr) {
+      simulator_->getRenderGLContext();
       auto& drawables = simulator_->getDrawableGroup();
       return addObject(attributes, &drawables, attachmentNode, lightSetup);
     } else {

@@ -67,8 +67,8 @@ Simulator::~Simulator() {
 }
 
 void Simulator::close(const bool destroy) {
-  if (renderer_)
-    renderer_->acquireGlContext();
+  getRenderGLContext();
+
   pathfinder_ = nullptr;
   navMeshVisPrimID_ = esp::ID_UNDEFINED;
   navMeshVisNode_ = nullptr;
@@ -208,9 +208,8 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 }  // Simulator::reconfigure
 
 bool Simulator::createSceneInstance(const std::string& activeSceneName) {
-  if (renderer_) {
-    renderer_->acquireGlContext();
-  }
+  getRenderGLContext();
+
   // 1. initial setup for scene instancing - sets or creates the
   // current scene instance to correspond to the given name.
 
@@ -877,10 +876,10 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
     std::map<std::string,
              std::vector<Eigen::Transform<float, 3, Eigen::Affine>>>
         meshComponentStates;
-
+    auto rigidObjMgr = getRigidObjectManager();
     // collect RigidObject mesh components
     for (auto objectID : physicsManager_->getExistingObjectIDs()) {
-      auto objWrapper = queryRigidObjWrapper(activeSceneID_, objectID);
+      auto objWrapper = rigidObjMgr->getObjectCopyByID(objectID);
       if (objWrapper->getMotionType() == physics::MotionType::STATIC) {
         auto objectTransform = Magnum::EigenIntegration::cast<
             Eigen::Transform<float, 3, Eigen::Affine>>(
@@ -957,9 +956,8 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
 }
 
 bool Simulator::setNavMeshVisualization(bool visualize) {
-  if (renderer_) {
-    renderer_->acquireGlContext();
-  }
+  getRenderGLContext();
+
   // clean-up the NavMesh visualization if necessary
   if (!visualize && navMeshVisNode_ != nullptr) {
     delete navMeshVisNode_;
@@ -1066,9 +1064,8 @@ void Simulator::sampleRandomAgentState(agent::AgentState& agentState) {
 scene::SceneNode* Simulator::loadAndCreateRenderAssetInstance(
     const assets::AssetInfo& assetInfo,
     const assets::RenderAssetInstanceCreationInfo& creation) {
-  if (renderer_) {
-    renderer_->acquireGlContext();
-  }
+  getRenderGLContext();
+
   // Note this pattern of passing the scene manager and two scene ids to
   // resource manager. This is similar to ResourceManager::loadStage.
   std::vector<int> tempIDs{activeSceneID_, activeSemanticSceneID_};
@@ -1183,10 +1180,11 @@ agent::Agent::ptr Simulator::getAgent(const int agentId) {
 esp::sensor::Sensor& Simulator::addSensorToObject(
     const int objectId,
     const esp::sensor::SensorSpec::ptr& sensorSpec) {
-  if (renderer_)
-    renderer_->acquireGlContext();
+  getRenderGLContext();
+
   esp::sensor::SensorSetup sensorSpecifications = {sensorSpec};
-  esp::scene::SceneNode& objectNode = *getObjectSceneNode(objectId);
+  esp::scene::SceneNode& objectNode =
+      *(getRigidObjectManager()->getObjectCopyByID(objectId)->getSceneNode());
   esp::sensor::SensorFactory::createSensors(objectNode, sensorSpecifications);
   return objectNode.getNodeSensorSuite().get(sensorSpec->uuid);
 }

@@ -81,6 +81,14 @@ class Simulator {
     return resourceManager_->getSemanticScene();
   }
 
+  inline void getRenderGLContext() {
+    // acquire GL context from background thread, if background rendering
+    // enabled.
+    if (renderer_) {
+      renderer_->acquireGlContext();
+    }
+  }
+
   /** @brief check if the semantic scene exists.*/
   bool semanticSceneExists() const {
     return resourceManager_->semanticSceneExists();
@@ -681,8 +689,7 @@ class Simulator {
    */
   void setObjectBBDraw(bool drawBB, int objectId, int sceneID = 0) {
     if (sceneHasPhysics(sceneID)) {
-      if (renderer_)
-        renderer_->acquireGlContext();
+      getRenderGLContext();
       auto& drawables = getDrawableGroup(sceneID);
       physicsManager_->setObjectBBDraw(objectId, &drawables, drawBB);
     }
