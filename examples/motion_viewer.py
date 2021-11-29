@@ -98,7 +98,11 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
 
         # draw_frame()
 
-    def draw_event(self, simulation_call: Optional[Callable] = None) -> None:
+    def draw_event(
+        self,
+        simulation_call: Optional[Callable] = None,
+        global_call: Optional[Callable] = None,
+    ) -> None:
         """
         Calls continuously to re-render frames and swap the two frame buffers
         at a fixed rate. Use `simulation_call` to perform method calls during
@@ -106,11 +110,16 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         """
 
         def play_motion() -> None:
-            if self.fm_demo.motion is not None:
-                self.fm_demo.next_pose()
-                self.fm_demo.update_pathfollower_sequential()
+            self.fm_demo.next_pose()
+            self.fm_demo.update_pathfollower_sequential()
+            self.fm_demo.pop_staging_queue_and_pose()
 
-        super().draw_event(simulation_call=play_motion)
+        def run_global() -> None:
+            self.fm_demo.process_action_order()
+            if self.perpetual and len(self.fm_demo.order_queue) < 2:
+                self.fm_demo.push_action_order()
+
+        super().draw_event(simulation_call=play_motion, global_call=run_global)
 
     def key_press_event(self, event: Application.KeyEvent) -> None:
         """
