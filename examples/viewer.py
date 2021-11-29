@@ -95,7 +95,11 @@ class HabitatSimInteractiveViewer(Application):
         Additional draw commands to be called during draw_event.
         """
 
-    def draw_event(self, simulation_call: Optional[Callable] = None) -> None:
+    def draw_event(
+        self,
+        simulation_call: Optional[Callable] = None,
+        global_call: Optional[Callable] = None,
+    ) -> None:
         """
         Calls continuously to re-render frames and swap the two frame buffers
         at a fixed rate.
@@ -121,6 +125,7 @@ class HabitatSimInteractiveViewer(Application):
                 self.simulate_single_step = False
                 if simulation_call is not None:
                     simulation_call()
+            global_call()
 
             # reset time_since_last_simulation, accounting for potential overflow
             self.time_since_last_simulation = math.fmod(

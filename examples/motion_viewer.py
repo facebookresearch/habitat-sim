@@ -67,6 +67,9 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         # shortest path attributes
         self.spline_path_traj_obj_id = -1
 
+        # perpetual motion generator
+        self.perpetual = False
+
         self.navmesh_config_and_recompute()
 
     def debug_draw(self):
@@ -143,6 +146,25 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
                 self.fm_demo.load_model()
                 path = self.find_short_path_from_two_points()
                 self.fm_demo.setup_pathfollower(path)
+            event.accepted = True
+            self.redraw()
+            return
+
+        elif key == pressed.U:
+            if event.modifiers == mod.SHIFT:
+                self.perpetual = not self.perpetual
+                logger.info(
+                    f"Command: perpetual motion generation set to {self.perpetual}"
+                )
+            else:
+                self.fm_demo.push_action_order()
+                event.accepted = True
+                self.redraw()
+                return
+
+        elif key == pressed.I:
+            self.fm_demo.load_model()
+            self.fm_demo.set_activity_to_SEQ()
             event.accepted = True
             self.redraw()
             return
@@ -456,7 +478,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         # compute NavMesh to be wary of Scene Objects
         self.navmesh_settings = habitat_sim.NavMeshSettings()
         self.navmesh_settings.set_defaults()
-        self.navmesh_settings.agent_radius = 0.4
+        self.navmesh_settings.agent_radius = 0.30
         self.sim.recompute_navmesh(
             self.sim.pathfinder,
             self.navmesh_settings,
