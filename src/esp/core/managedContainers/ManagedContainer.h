@@ -128,10 +128,10 @@ class ManagedContainer : public ManagedContainerBase {
                      const std::string& objectHandle = "",
                      bool forceRegistration = false) {
     if (nullptr == managedObject) {
-      ESP_ERROR() << "<" << Corrade::Utility::Debug::nospace
-                  << this->objectType_ << Corrade::Utility::Debug::nospace
-                  << "> : Invalid (null) managed object passed to "
-                     "registration. Aborting.";
+      ESP_ERROR(Magnum::Debug::Flag::NoSpace)
+          << "<" << this->objectType_
+          << "> : Invalid (null) managed object passed to "
+             "registration. Aborting.";
       return ID_UNDEFINED;
     }
     if ("" != objectHandle) {
@@ -140,10 +140,10 @@ class ManagedContainer : public ManagedContainerBase {
     }
     std::string handleToSet = managedObject->getHandle();
     if ("" == handleToSet) {
-      ESP_ERROR() << "<" << Corrade::Utility::Debug::nospace
-                  << this->objectType_ << Corrade::Utility::Debug::nospace
-                  << "> : No valid handle specified for" << objectType_
-                  << "managed object to register. Aborting.";
+      ESP_ERROR(Magnum::Debug::Flag::NoSpace)
+          << "<" << this->objectType_
+          << "> : No valid handle specified to register this "
+          << this->objectType_ << " managed object. Aborting.";
       return ID_UNDEFINED;
     }
     return registerObjectFinalize(managedObject, handleToSet,

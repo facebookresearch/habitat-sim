@@ -6,6 +6,7 @@
 #include "Check.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cstdlib>
 
 #include <Corrade/Containers/Array.h>
@@ -132,9 +133,22 @@ Cr::Containers::String buildMessagePrefix(Subsystem subsystem,
                                           const std::string& function,
                                           int line) {
   auto baseFileName = Cr::Utility::Directory::filename(filename);
+
+  const auto timePassed =
+      std::chrono::high_resolution_clock::now().time_since_epoch();
+  const auto timePassedSeconds =
+      std::chrono::duration_cast<std::chrono::seconds>(timePassed);
+  // for micro time
+  const auto nowMicros = std::chrono::duration_cast<std::chrono::microseconds>(
+      timePassed - timePassedSeconds);
+  std::time_t t = std::time_t(timePassedSeconds.count());
+  // format hour,min, second
+  std::tm timeNow = *std::localtime(&t);
+
   return Cr::Utility::formatString(
-      "[{}] {}({})::{} : ", subsystemNames[uint8_t(subsystem)], baseFileName,
-      line, function);
+      "[{:.02d}:{:.02d}:{:.02d}:{:.06d}]:[{}] {}({})::{} : ", timeNow.tm_hour,
+      timeNow.tm_min, timeNow.tm_sec, nowMicros.count(),
+      subsystemNames[uint8_t(subsystem)], baseFileName, line, function);
 }
 
 }  // namespace logging

@@ -102,9 +102,9 @@ class PhysicsObjectBaseManager
       CORRADE_UNUSED bool builtFromConfig) override {
     // construct a new wrapper based on the passed object
     if (managedObjTypeConstructorMap_.count(objectTypeName) == 0) {
-      ESP_ERROR() << "<" << Magnum::Debug::nospace << this->objectType_
-                  << Magnum::Debug::nospace << "> Unknown constructor type"
-                  << objectTypeName << ".  Aborting.";
+      ESP_ERROR(Mn::Debug::Flag::NoSpace)
+          << "<" << this->objectType_ << "> Unknown constructor type"
+          << objectTypeName << ".  Aborting.";
       return nullptr;
     }
     auto newWrapper = (*this.*managedObjTypeConstructorMap_[objectTypeName])();

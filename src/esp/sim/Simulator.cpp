@@ -242,9 +242,9 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
     bool pfSuccess = pathfinder_->loadNavMesh(navmeshFileLoc);
     ESP_DEBUG() << (pfSuccess ? "Navmesh Loaded." : "Navmesh load error.");
   } else {
-    ESP_WARNING() << "Navmesh file not found, checked at filename : '"
-                  << Mn::Debug::nospace << navmeshFileLoc << Mn::Debug::nospace
-                  << "'";
+    ESP_WARNING(Mn::Debug::Flag::NoSpace)
+        << "Navmesh file not found, checked at filename : '" << navmeshFileLoc
+        << "'";
   }
   // Calling to seeding needs to be done after the pathfinder creation but
   // before anything else.

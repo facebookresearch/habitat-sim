@@ -107,8 +107,7 @@ AssetAttributesManager::AssetAttributesManager()
     this->undeletableObjectNames_.insert(tmpltHandle);
   }
 
-  ESP_DEBUG() << "Built default "
-                 "primitive asset templates :"
+  ESP_DEBUG() << "Built default primitive asset templates :"
               << std::to_string(defaultPrimAttributeHandles_.size());
 }  // AssetAttributesManager::ctor
 

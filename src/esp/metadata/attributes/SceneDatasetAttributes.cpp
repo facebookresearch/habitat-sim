@@ -38,16 +38,15 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
   const std::string fullStageName =
       getFullAttrNameFromStr(stageHandle, stageAttributesManager_);
   if (fullStageName == "") {
-    ESP_DEBUG()
-        << infoPrefix << "Stage Attributes '" << Mn::Debug::nospace
-        << stageHandle << Mn::Debug::nospace
+    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+        << infoPrefix << "Stage Attributes '" << stageHandle
         << "' specified in Scene Attributes but does not exist in dataset, so "
            "creating.";
     stageAttributesManager_->createObject(stageHandle, true);
   } else {
-    ESP_DEBUG() << infoPrefix << "Stage Attributes '" << Mn::Debug::nospace
-                << stageHandle << Mn::Debug::nospace
-                << "' specified in Scene Attributes exists in dataset library.";
+    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+        << infoPrefix << "Stage Attributes '" << stageHandle
+        << "' specified in Scene Attributes exists in dataset library.";
   }
 
   // verify each object in sceneInstance exists in SceneDatasetAttributes
@@ -57,15 +56,14 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
     const std::string fullObjHandle =
         getFullAttrNameFromStr(objHandle, objectAttributesManager_);
     if (fullObjHandle == "") {
-      ESP_DEBUG() << infoPrefix << "Object Attributes '" << Mn::Debug::nospace
-                  << objHandle << Mn::Debug::nospace
-                  << "' specified in Scene Attributes but does not exist in "
-                     "dataset, so creating.";
+      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+          << infoPrefix << "Object Attributes '" << objHandle
+          << "' specified in Scene Attributes but does not exist in "
+             "dataset, so creating.";
       objectAttributesManager_->createObject(objHandle, true);
     } else {
-      ESP_DEBUG()
-          << infoPrefix << "Object Attributes '" << Mn::Debug::nospace
-          << objHandle << Mn::Debug::nospace
+      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+          << infoPrefix << "Object Attributes '" << objHandle
           << "' specified in Scene Attributes exists in dataset library.";
     }
   }
@@ -83,9 +81,8 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
   const std::string fullLightLayoutAttrName =
       getFullAttrNameFromStr(lightHandle, lightLayoutAttributesManager_);
   if (fullLightLayoutAttrName == "") {
-    ESP_DEBUG()
-        << infoPrefix << "Lighting Layout Attributes '" << Mn::Debug::nospace
-        << lightHandle << Mn::Debug::nospace
+    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+        << infoPrefix << "Lighting Layout Attributes '" << lightHandle
         << "' specified in Scene Attributes but does not exist in dataset, so "
            "creating.";
     lightLayoutAttributesManager_->createObject(lightHandle, true);
@@ -133,9 +130,9 @@ std::pair<std::string, std::string> SceneDatasetAttributes::addNewValToMap(
           ss << key << "_" << iter++;
           newKey = ss.str();
         } while (map.count(newKey) > 0);
-        ESP_WARNING()
-            << descString << ": Provided key '" << Mn::Debug::nospace << key
-            << Mn::Debug::nospace
+        ESP_WARNING(Mn::Debug::Flag::NoSpace)
+            << descString << " : Provided key '" << key
+
             << "' already references a different value in "
                "map. Modifying key to be"
             << newKey

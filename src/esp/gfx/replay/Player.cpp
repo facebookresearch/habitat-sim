@@ -117,8 +117,8 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
     const auto& creation = pair.second;
     if (assetInfos_.count(creation.filepath) == 0u) {
       if (failedFilepaths_.count(creation.filepath) == 0u) {
-        ESP_WARNING() << "Missing asset info for [" << Mn::Debug::nospace
-                      << creation.filepath << Mn::Debug::nospace << "]";
+        ESP_WARNING(Mn::Debug::Flag::NoSpace)
+            << "Missing asset info for [" << creation.filepath << "]";
         failedFilepaths_.insert(creation.filepath);
       }
       continue;
@@ -128,8 +128,8 @@ void Player::applyKeyframe(const Keyframe& keyframe) {
         assetInfos_[creation.filepath], creation);
     if (!node) {
       if (failedFilepaths_.count(creation.filepath) == 0u) {
-        ESP_WARNING() << "Load failed for asset [" << Mn::Debug::nospace
-                      << creation.filepath << Mn::Debug::nospace << "]";
+        ESP_WARNING(Mn::Debug::Flag::NoSpace)
+            << "Load failed for asset [" << creation.filepath << "]";
         failedFilepaths_.insert(creation.filepath);
       }
       continue;

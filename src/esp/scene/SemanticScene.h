@@ -178,9 +178,9 @@ class SemanticScene {
   static bool checkFileExists(const std::string& filename,
                               const std::string& srcFunc) {
     if (!Cr::Utility::Directory::exists(filename)) {
-      ESP_WARNING() << "::" << Magnum::Debug::nospace << srcFunc
-                    << Magnum::Debug::nospace << ": File" << filename
-                    << "does not exist.  Aborting load.";
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
+          << "::" << srcFunc << ": File" << filename
+          << "does not exist.  Aborting load.";
       return false;
     }
     return true;
