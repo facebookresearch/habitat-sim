@@ -53,7 +53,7 @@ def create_platform_scene(sim: habitat_sim.Simulator):
 # ---------------------------------------------------------
 def test_load_spot_interface(application):
     sim = application.sim
-    robot_path = "data/robots/spot_arm/urdf/spot_arm.urdf"
+    robot_path = "data/robots/hab_spot_arm/urdf/hab_spot_arm.urdf"
 
     assert os.path.exists(
         robot_path

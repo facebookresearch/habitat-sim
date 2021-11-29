@@ -168,7 +168,7 @@ def test_fetch_robot_wrapper(fixed_base):
 
 
 @pytest.mark.skipif(
-    not osp.exists("data/robots/spot_arm"),
+    not osp.exists("data/robots/hab_spot_arm"),
     reason="Test requires Spot w/ arm robot URDF and assets.",
 )
 @pytest.mark.skipif(
@@ -194,7 +194,7 @@ def test_spot_robot_wrapper(fixed_base):
         sim.agents[0].scene_node.translation = [0.0, -1.0, 2.0]
 
         # add the robot to the world via the wrapper
-        robot_path = "data/robots/spot_arm/urdf/spot_arm.urdf"
+        robot_path = "data/robots/hab_spot_arm/urdf/hab_spot_arm.urdf"
         spot = spot_robot.SpotRobot(robot_path, sim, fixed_base=fixed_base)
         spot.reconfigure()
         assert spot.get_robot_sim_id() == 1  # 0 is the ground plane

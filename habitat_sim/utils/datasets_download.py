@@ -118,6 +118,12 @@ def initialize_test_data_sources(data_path):
             "link": data_path + "robots/hab_fetch",
             "version": "1.0",
         },
+        "hab_spot_arm": {
+            "source": "http://dl.fbaipublicfiles.com/habitat/robots/hab_spot_arm_v1.0.zip",
+            "package_name": "hab_spot_arm_v1.0.zip",
+            "link": data_path + "robots/hab_spot_arm",
+            "version": "1.0",
+        },
         "rearrange_pick_dataset_v0": {
             "source": "https://dl.fbaipublicfiles.com/habitat/data/datasets/rearrange_pick/replica_cad/v0/rearrange_pick_replica_cad_v0.zip",
             "package_name": "rearrange_pick_replica_cad_v0.zip",
