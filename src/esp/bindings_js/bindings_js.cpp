@@ -522,17 +522,18 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
                   return obj;
                 }))
 
-      .function("setObjectMotionType",
-                em::optional_override([](Simulator& self, const int objectId,
-                                         MotionType motionType) {
-                  auto obj =
-                      self.getRigidObjectManager()->getObjectByID(objectId);
-                  if ((obj != nullptr) && (obj->isAlive())) {
-                    obj->setMotionType(motionType);
-                  }
-                }))
+      .function(
+          "setObjectMotionType",
+          em::optional_override([](Simulator& self, MotionType motionType,
+                                   const int objectId, const int sceneID = 0) {
+            auto obj = self.getRigidObjectManager()->getObjectByID(objectId);
+            if ((obj != nullptr) && (obj->isAlive())) {
+              obj->setMotionType(motionType);
+            }
+          }))
       .function("getObjectMotionType",
-                em::optional_override([](Simulator& self, const int objectId) {
+                em::optional_override([](Simulator& self, const int objectId,
+                                         const int sceneID = 0) {
                   auto obj =
                       self.getRigidObjectManager()->getObjectByID(objectId);
                   if ((obj != nullptr) && (obj->isAlive())) {
@@ -540,17 +541,18 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
                   }
                   return MotionType::UNDEFINED;
                 }))
-      .function("setTranslation",
-                em::optional_override([](Simulator& self, const int objectId,
-                                         Magnum::Vector3& trans) {
-                  auto obj =
-                      self.getRigidObjectManager()->getObjectByID(objectId);
-                  if ((obj != nullptr) && (obj->isAlive())) {
-                    obj->setTranslation(trans);
-                  }
-                }))
+      .function(
+          "setTranslation",
+          em::optional_override([](Simulator& self, Magnum::Vector3& trans,
+                                   const int objectId, const int sceneID = 0) {
+            auto obj = self.getRigidObjectManager()->getObjectByID(objectId);
+            if ((obj != nullptr) && (obj->isAlive())) {
+              obj->setTranslation(trans);
+            }
+          }))
       .function("getTranslation",
-                em::optional_override([](Simulator& self, const int objectId) {
+                em::optional_override([](Simulator& self, const int objectId,
+                                         const int sceneID = 0) {
                   auto obj =
                       self.getRigidObjectManager()->getObjectByID(objectId);
                   if ((obj != nullptr) && (obj->isAlive())) {
@@ -558,18 +560,19 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
                   }
                   return Magnum::Vector3{};
                 }))
-      .function("setRotation",
-                em::optional_override([](Simulator& self, const int objectId,
-                                         Magnum::Quaternion& rot) {
-                  auto obj =
-                      self.getRigidObjectManager()->getObjectByID(objectId);
-                  if ((obj != nullptr) && (obj->isAlive())) {
-                    obj->setRotation(rot);
-                  }
-                }))
+      .function(
+          "setRotation",
+          em::optional_override([](Simulator& self, Magnum::Quaternion& rot,
+                                   const int objectId, const int sceneID = 0) {
+            auto obj = self.getRigidObjectManager()->getObjectByID(objectId);
+            if ((obj != nullptr) && (obj->isAlive())) {
+              obj->setRotation(rot);
+            }
+          }))
 
       .function("getRotation",
-                em::optional_override([](Simulator& self, const int objectId) {
+                em::optional_override([](Simulator& self, const int objectId,
+                                         const int sceneID = 0) {
                   auto obj =
                       self.getRigidObjectManager()->getObjectByID(objectId);
                   if ((obj != nullptr) && (obj->isAlive())) {
@@ -579,18 +582,20 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
                 }))
 
       .function("setObjectLightSetup",
-                em::optional_override([](Simulator& self, const int objectId,
-                                         const std::string& lightSetupKey) {
-                  auto obj =
-                      self.getRigidObjectManager()->getObjectByID(objectId);
-                  if ((obj != nullptr) && (obj->isAlive())) {
-                    obj->setLightSetup(lightSetupKey);
-                  }
-                }))
+                em::optional_override(
+                    [](Simulator& self, const std::string& lightSetupKey,
+                       const int objectId, const int sceneID = 0) {
+                      auto obj =
+                          self.getRigidObjectManager()->getObjectByID(objectId);
+                      if ((obj != nullptr) && (obj->isAlive())) {
+                        obj->setLightSetup(lightSetupKey);
+                      }
+                    }))
 
       .function("setLinearVelocity",
                 em::optional_override([](Simulator& self, const int objectId,
-                                         Magnum::Vector3& linVel) {
+                                         Magnum::Vector3& linVel,
+                                         const int sceneID = 0) {
                   auto obj =
                       self.getRigidObjectManager()->getObjectByID(objectId);
                   if ((obj != nullptr) && (obj->isAlive())) {
