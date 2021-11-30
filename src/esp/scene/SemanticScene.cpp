@@ -37,9 +37,10 @@ bool SemanticScene::
         std::ifstream ifs = std::ifstream(ssdFileName);
         std::string header;
         std::getline(ifs, header);
-        if (header == "ASCII 1.1") {
+        if (header.find("ASCII 1.1") != std::string::npos) {
           success = buildMp3dHouse(ifs, scene, rotation);
-        } else if (header == "HM3D Semantic Annotations") {
+        } else if (header.find("HM3D Semantic Annotations") !=
+                   std::string::npos) {
           success = buildHM3DHouse(ifs, scene, rotation);
         }
       } catch (...) {
