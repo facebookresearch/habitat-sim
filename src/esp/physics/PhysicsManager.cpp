@@ -443,6 +443,7 @@ PhysicsManager::getArticulatedObjectWrapper() {
 void PhysicsManager::removeObject(const int objectId,
                                   bool deleteObjectNode,
                                   bool deleteVisualNode) {
+  simulator_->getRenderGLContext();
   assertRigidIdValidity(objectId);
   scene::SceneNode* objectNode = &existingObjects_.at(objectId)->node();
   scene::SceneNode* visualNode = existingObjects_.at(objectId)->visualNode_;
