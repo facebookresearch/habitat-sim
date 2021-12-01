@@ -245,6 +245,7 @@ LightLayoutAttributes::ptr LightLayoutAttributesManager::initNewObjectInternal(
   if (nullptr == newAttributes) {
     newAttributes = attributes::LightLayoutAttributes::create(handleName);
   }
+  this->setFileDirectoryFromHandle(newAttributes);
   return newAttributes;
 }  // LightLayoutAttributesManager::initNewObjectInternal
 

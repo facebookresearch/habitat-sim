@@ -136,13 +136,17 @@ ObjectAttributes::ptr ObjectAttributesManager::initNewObjectInternal(
       this->constructFromDefault(attributesHandle);
   if (nullptr == newAttributes) {
     newAttributes = ObjectAttributes::create(attributesHandle);
+  } else {
+    // default exists and was used to create this attributes - investigate any
+    // filename fields that may have %%USE_FILENAME%% directive specified in the
+    // default attributes.
   }
   this->setFileDirectoryFromHandle(newAttributes);
 
-  // set default render and collision asset handle\
-  // only set handle defaults if attributesHandle is not a config file (which would
-  // never be a valid render or collision asset name).  Otherise, expect handles
-  // and types to be set when config is read.
+  // set default render and collision asset handle
+  // only set handle defaults if attributesHandle is not a config file (which
+  // would never be a valid render or collision asset name).  Otherise, expect
+  // handles and types to be set when config is read.
   if (!builtFromConfig) {
     newAttributes->setRenderAssetHandle(attributesHandle);
     newAttributes->setCollisionAssetHandle(attributesHandle);

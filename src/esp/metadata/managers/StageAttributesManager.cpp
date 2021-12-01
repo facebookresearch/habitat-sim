@@ -169,16 +169,19 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
   bool createNewAttributes = (nullptr == newAttributes);
   if (createNewAttributes) {
     newAttributes = StageAttributes::create(attributesHandle);
+  } else {
+    // default exists and was used to create this attributes - investigate any
+    // filename fields that may have %%USE_FILENAME%% directive specified in the
+    // default attributes.
   }
+
   // attempt to set source directory if exists
   this->setFileDirectoryFromHandle(newAttributes);
 
   // set defaults that config files or other constructive processes might
   // override
-  newAttributes->setUseMeshCollision(true);
 
-  // set defaults from SimulatorConfig values; these can also be overridden by
-  // json, for example.
+  // set defaults from SimulatorConfig values;
   newAttributes->setLightSetupKey(cfgLightSetup_);
   newAttributes->setForceFlatShading(cfgLightSetup_ == NO_LIGHT_KEY);
   // set value from config so not necessary to be passed as argument
