@@ -264,6 +264,10 @@ int PhysicsManager::addArticulatedObjectInstance(
         const esp::metadata::attributes::SceneAOInstanceAttributes>&
         aObjInstAttributes,
     const std::string& lightSetup) {
+  if (simulator_ != nullptr) {
+    // aquire context if available
+    simulator_->getRenderGLContext();
+  }
   // Get drawables from simulator. TODO: Support non-existent simulator?
   auto& drawables = simulator_->getDrawableGroup();
 
@@ -436,6 +440,10 @@ void PhysicsManager::removeObject(const int objectId,
 }  // PhysicsManager::removeObject
 
 void PhysicsManager::removeArticulatedObject(int objectId) {
+  if (simulator_ != nullptr) {
+    // aquire context if available
+    simulator_->getRenderGLContext();
+  }
   CORRADE_INTERNAL_ASSERT(existingArticulatedObjects_.count(objectId));
   scene::SceneNode* objectNode =
       &existingArticulatedObjects_.at(objectId)->node();
