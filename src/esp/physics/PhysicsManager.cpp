@@ -117,15 +117,8 @@ int PhysicsManager::addObjectInstance(
       metadata::attributes::ObjectInstanceShaderType::Unspecified) {
     objAttributes->setShaderType(getShaderTypeName(objShaderType));
   }
-  int objID = 0;
-  if (simulator_ != nullptr) {
-    simulator_->getRenderGLContext();
-    auto& drawables = simulator_->getDrawableGroup();
-    objID = addObject(objAttributes, &drawables, attachmentNode, lightSetup);
-  } else {
-    // support creation when simulator DNE
-    objID = addObject(objAttributes, nullptr, attachmentNode, lightSetup);
-  }
+  int objID =
+      addObjectQueryDrawables(objAttributes, attachmentNode, lightSetup);
 
   if (objID == ID_UNDEFINED) {
     // instancing failed for some reason.
@@ -161,50 +154,19 @@ int PhysicsManager::addObjectInstance(
   return objID;
 }  // PhysicsManager::addObjectInstance
 
-int PhysicsManager::addObject(const std::string& attributesHandle,
-                              scene::SceneNode* attachmentNode,
-                              const std::string& lightSetup) {
-  esp::metadata::attributes::ObjectAttributes::ptr attributes =
-      resourceManager_.getObjectAttributesManager()->getObjectCopyByHandle(
-          attributesHandle);
-  if (!attributes) {
-    ESP_ERROR() << "Object creation failed due to unknown attributes"
-                << attributesHandle;
-    return ID_UNDEFINED;
-  } else {
-    // attributes exist, get drawables if valid simulator accessible
-    if (simulator_ != nullptr) {
-      simulator_->getRenderGLContext();
-      auto& drawables = simulator_->getDrawableGroup();
-      return addObject(attributes, &drawables, attachmentNode, lightSetup);
-    } else {
-      // support creation when simulator DNE
-      return addObject(attributes, nullptr, attachmentNode, lightSetup);
-    }
+int PhysicsManager::addObjectQueryDrawables(
+    const esp::metadata::attributes::ObjectAttributes::ptr& objectAttributes,
+    scene::SceneNode* attachmentNode,
+    const std::string& lightSetup) {
+  // attributes exist, get drawables if valid simulator accessible
+  if (simulator_ != nullptr) {
+    // aquire context if available
+    simulator_->getRenderGLContext();
+    auto& drawables = simulator_->getDrawableGroup();
+    return addObject(objectAttributes, &drawables, attachmentNode, lightSetup);
   }
-}  // PhysicsManager::addObject
-
-int PhysicsManager::addObject(const int attributesID,
-                              scene::SceneNode* attachmentNode,
-                              const std::string& lightSetup) {
-  const esp::metadata::attributes::ObjectAttributes::ptr attributes =
-      resourceManager_.getObjectAttributesManager()->getObjectCopyByID(
-          attributesID);
-  if (!attributes) {
-    ESP_ERROR() << "Object creation failed due to unknown attributes ID"
-                << attributesID;
-    return ID_UNDEFINED;
-  } else {
-    // attributes exist, get drawables if valid simulator accessible
-    if (simulator_ != nullptr) {
-      simulator_->getRenderGLContext();
-      auto& drawables = simulator_->getDrawableGroup();
-      return addObject(attributes, &drawables, attachmentNode, lightSetup);
-    } else {
-      // support creation when simulator DNE
-      return addObject(attributes, nullptr, attachmentNode, lightSetup);
-    }
-  }
+  // support creation when simulator DNE
+  return addObject(objectAttributes, nullptr, attachmentNode, lightSetup);
 }  // PhysicsManager::addObject
 
 int PhysicsManager::addObject(
@@ -378,8 +340,10 @@ int PhysicsManager::addTrajectoryObject(const std::string& trajVisName,
                                         float radius,
                                         bool smooth,
                                         int numInterp) {
-  simulator_->getRenderGLContext();
-
+  if (simulator_ != nullptr) {
+    // aquire context if available
+    simulator_->getRenderGLContext();
+  }
   // 0. Deduplicate sequential points
   std::vector<Magnum::Vector3> uniquePts;
   uniquePts.push_back(pts[0]);
@@ -388,8 +352,6 @@ int PhysicsManager::addTrajectoryObject(const std::string& trajVisName,
       uniquePts.push_back(loc);
     }
   }
-
-  auto& drawables = simulator_->getDrawableGroup();
 
   // 1. create trajectory tube asset from points and save it
   bool success = resourceManager_.buildTrajectoryVisualization(
@@ -408,7 +370,7 @@ int PhysicsManager::addTrajectoryObject(const std::string& trajVisName,
   objAttrMgr->registerObject(trajObjAttr, trajVisName, true);
 
   // 3. add trajectory object to manager
-  auto trajVisID = addObject(trajVisName, &drawables);
+  auto trajVisID = addObjectQueryDrawables(trajObjAttr);
   if (trajVisID == ID_UNDEFINED) {
     // failed to add object - need to delete asset from resourceManager.
     ESP_ERROR() << "Failed to create Trajectory visualization object for"
@@ -443,7 +405,10 @@ PhysicsManager::getArticulatedObjectWrapper() {
 void PhysicsManager::removeObject(const int objectId,
                                   bool deleteObjectNode,
                                   bool deleteVisualNode) {
-  simulator_->getRenderGLContext();
+  if (simulator_ != nullptr) {
+    // aquire context if available
+    simulator_->getRenderGLContext();
+  }
   assertRigidIdValidity(objectId);
   scene::SceneNode* objectNode = &existingObjects_.at(objectId)->node();
   scene::SceneNode* visualNode = existingObjects_.at(objectId)->visualNode_;

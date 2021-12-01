@@ -312,7 +312,18 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    */
   int addObject(const std::string& attributesHandle,
                 scene::SceneNode* attachmentNode = nullptr,
-                const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
+                const std::string& lightSetup = DEFAULT_LIGHTING_KEY) {
+    esp::metadata::attributes::ObjectAttributes::ptr attributes =
+        resourceManager_.getObjectAttributesManager()->getObjectCopyByHandle(
+            attributesHandle);
+    if (!attributes) {
+      ESP_ERROR() << "Object creation failed due to unknown attributes"
+                  << attributesHandle;
+      return ID_UNDEFINED;
+    }
+    // attributes exist, get drawables if valid simulator accessible
+    return addObjectQueryDrawables(attributes, attachmentNode, lightSetup);
+  }  // PhysicsManager::addObject
 
   /** @brief Instance a physical object from an object properties template in
    * the @ref esp::metadata::managers::ObjectAttributesManager by template
@@ -328,64 +339,35 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    */
   int addObject(int attributesID,
                 scene::SceneNode* attachmentNode = nullptr,
-                const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
-
-  /** @brief Instance a physical object from an object properties template in
-   * the @ref esp::metadata::managers::ObjectAttributesManager.
-   *
-   * @param attributesHandle The handle of the object attributes used as the key
-   * to query @ref esp::metadata::managers::ObjectAttributesManager.
-   * @param drawables Reference to the scene graph drawables group to enable
-   * rendering of the newly initialized object.
-   * @param attachmentNode If supplied, attach the new physical object to an
-   * existing SceneNode.
-   * @param lightSetup The string name of the desired lighting setup to use.
-   * @return the instanced object's ID, mapping to it in @ref
-   * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
-   */
-  int addObject(const std::string& attributesHandle,
-                DrawableGroup* drawables,
-                scene::SceneNode* attachmentNode = nullptr,
-                const std::string& lightSetup = DEFAULT_LIGHTING_KEY) {
-    esp::metadata::attributes::ObjectAttributes::ptr attributes =
-        resourceManager_.getObjectAttributesManager()->getObjectCopyByHandle(
-            attributesHandle);
-    if (!attributes) {
-      ESP_ERROR() << "Object creation failed due to unknown attributes handle :"
-                  << attributesHandle;
-      return ID_UNDEFINED;
-    }
-
-    return addObject(attributes, drawables, attachmentNode, lightSetup);
-  }  // addObject
-
-  /** @brief Instance a physical object from an object properties template in
-   * the @ref esp::metadata::managers::ObjectAttributesManager by template
-   * ID.
-   * @param attributesID The ID of the object's template in @ref
-   * esp::metadata::managers::ObjectAttributesManager
-   * @param drawables Reference to the scene graph drawables group to enable
-   * rendering of the newly initialized object.
-   * @param attachmentNode If supplied, attach the new physical object to an
-   * existing SceneNode.
-   * @param lightSetup The string name of the desired lighting setup to use.
-   * @return the instanced object's ID, mapping to it in @ref
-   * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
-   */
-  int addObject(const int attributesID,
-                DrawableGroup* drawables,
-                scene::SceneNode* attachmentNode = nullptr,
                 const std::string& lightSetup = DEFAULT_LIGHTING_KEY) {
     const esp::metadata::attributes::ObjectAttributes::ptr attributes =
         resourceManager_.getObjectAttributesManager()->getObjectCopyByID(
             attributesID);
     if (!attributes) {
-      ESP_ERROR() << "Object creation failed due to unknown attributes ID :"
+      ESP_ERROR() << "Object creation failed due to unknown attributes ID"
                   << attributesID;
       return ID_UNDEFINED;
     }
-    return addObject(attributes, drawables, attachmentNode, lightSetup);
-  }  // addObject
+    // attributes exist, get drawables if valid simulator accessible
+    return addObjectQueryDrawables(attributes, attachmentNode, lightSetup);
+  }  // PhysicsManager::addObject
+
+  /** @brief Queries simulator for drawables, if simulator exists, otherwise
+   * passes nullptr, before instancing a physical object from an object
+   * properties template in the @ref
+   * esp::metadata::managers::ObjectAttributesManager by template handle.
+   * @param objectAttributes The object's template in @ref
+   * esp::metadata::managers::ObjectAttributesManager.
+   * @param attachmentNode If supplied, attach the new physical object to an
+   * existing SceneNode.
+   * @param lightSetup The string name of the desired lighting setup to use.
+   * @return the instanced object's ID, mapping to it in @ref
+   * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
+   */
+  int addObjectQueryDrawables(
+      const esp::metadata::attributes::ObjectAttributes::ptr& objectAttributes,
+      scene::SceneNode* attachmentNode = nullptr,
+      const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
 
   /** @brief Instance a physical object from an object properties template in
    * the @ref esp::metadata::managers::ObjectAttributesManager by template
