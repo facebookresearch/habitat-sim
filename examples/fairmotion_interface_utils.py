@@ -11,8 +11,12 @@ import magnum as mn
 from fairmotion.data import amass
 from fairmotion.ops import motion as motion_ops
 
+from habitat_sim.logging import LoggingContext, logger
+
+LoggingContext.reinitialize_from_env()
+
 #### Constants ###
-ROOT, LAST = 0, -1
+ROOT, FIRST, LAST = 0, 0, -1
 
 
 class MType(Enum):
@@ -34,7 +38,10 @@ class Motions:
         load into the character.
         """
 
-        def __init__(self, motion_, type_) -> None:
+        # transitive motion is necessary for scenic motion build
+        def __init__(self, motion_, type_, transitive_motion_=None) -> None:
+            logger.info("Loading Motion data...")
+            print("Loading Motion data...")
             if type_ == MType.TRANSITIVE:
                 # primary
                 self.motion = motion_
@@ -143,13 +150,29 @@ class Motions:
                 self.center_of_root_drift = summ / self.num_of_frames
 
             if type_ == MType.SCENIC:
+                # must pass in a transitive motion
+                assert transitive_motion_ is not None
+
                 # primary
                 self.motion = motion_
-                self.type = MType.TRANSITIVE
+                self.type = MType.SCENIC
                 self.poses = motion_.poses
                 self.fps = motion_.fps
                 self.num_of_frames: int = len(motion_.poses)
                 self.time_length = self.num_of_frames * (1.0 / motion_.fps)
+                self.transitive_motion_: Motions.MotionData = transitive_motion_
+
+                # axis that motion uses for up and forward
+                self.direction_up = mn.Vector3.z_axis()
+                self.direction_forward = mn.Vector3.x_axis()
+
+                # edge cases
+                self.start_translation = motion_.poses[FIRST].get_transform(
+                    ROOT, local=False
+                )[0:3, 3]
+                self.final_translation = motion_.poses[LAST].get_transform(
+                    ROOT, local=False
+                )[0:3, 3]
 
     ## TRANSITIVE ##
     motion_ = amass.load(
@@ -159,16 +182,22 @@ class Motions:
     # all motions must have same fps for this implementation, so use first motion to set global
     fps = motion_.fps
 
-    """
-    [TESTING]
-    start = 125
-    offset = 0 + 1 - 3 + 6 + 2 + 2 + 2 + 1 + 1 + 1
-    length = 145
-    walk_to_walk = MotionData(motion_ops.cut(motion_, start + offset, start + length))
-    """
-
     # Walk-to-walk cycle
     walk_to_walk = MotionData(motion_ops.cut(motion_, 300, 430), MType.TRANSITIVE)
+
+    motion_ = amass.load(
+        file="data/fairmotion/amass_test_data/CMU/CMU/09/09_01_poses.npz",
+        bm_path="data/fairmotion/amass_test_data/smplh/male/model.npz",
+    )
+    """
+    #[TESTING to find run cycle]
+    start = 3
+    offset = 0
+    length = 87 + 1 + 1
+    run_to_run = MotionData(motion_ops.cut(motion_, start + offset, start + length), MType.TRANSITIVE)
+    """
+    # Run-to-run cycle
+    run_to_run = MotionData(motion_ops.cut(motion_, 3, 89), MType.TRANSITIVE)
 
     # Standing pose that must converted (amass -> habitat joint positions)
     standing_pose = motion_.poses[0]
@@ -178,7 +207,35 @@ class Motions:
         file="data/fairmotion/amass_test_data/CMU/CMU/13/13_08_poses.npz",
         bm_path="data/fairmotion/amass_test_data/smplh/male/model.npz",
     )
-    drink_beverage = MotionData(motion_, MType.SCENIC)
+    drink_beverage = MotionData(motion_, MType.SCENIC, transitive_motion_=walk_to_walk)
+
+    motion_ = amass.load(
+        file="data/fairmotion/amass_test_data/CMU/CMU/13/13_22_poses.npz",
+        bm_path="data/fairmotion/amass_test_data/smplh/male/model.npz",
+    )
+    wash_window = MotionData(
+        motion_ops.cut(motion_, 3040, 4090),
+        MType.SCENIC,
+        transitive_motion_=walk_to_walk,
+    )
+
+    motion_ = amass.load(
+        file="data/fairmotion/amass_test_data/CMU/CMU/13/13_23_poses.npz",
+        bm_path="data/fairmotion/amass_test_data/smplh/male/model.npz",
+    )
+    sweep_floor = MotionData(motion_, MType.SCENIC, transitive_motion_=walk_to_walk)
+
+    motion_ = amass.load(
+        file="data/fairmotion/amass_test_data/CMU/CMU/13/13_29_poses.npz",
+        bm_path="data/fairmotion/amass_test_data/smplh/male/model.npz",
+    )
+    jumping_jacks = MotionData(motion_, MType.SCENIC, transitive_motion_=run_to_run)
+
+    motion_ = amass.load(
+        file="data/fairmotion/amass_test_data/CMU/CMU/13/13_10_poses.npz",
+        bm_path="data/fairmotion/amass_test_data/smplh/male/model.npz",
+    )
+    reach_for = MotionData(motion_, MType.SCENIC, transitive_motion_=walk_to_walk)
 
 
 class PathData:
@@ -216,14 +273,22 @@ class ActionOrder:
     def __init__(
         self,
         motion_data: Motions.MotionData,
-        location: mn.Vector3,
+        location: Optional[mn.Vector3] = None,
         facing: Optional[mn.Vector3] = None,
     ) -> None:
         self.motion_data = motion_data
-        self.location = mn.Vector3(location)
+
+        self.location = None
+        if location is not None:
+            self.location = mn.Vector3(location)
+
         self.facing = None
         if facing is not None:
             self.facing = mn.Vector3(facing)
+
+        # Transitive motions must have a location
+        if motion_data.type == MType.TRANSITIVE:
+            assert location is not None
 
 
 # keeps track of the motion key frame preview modes

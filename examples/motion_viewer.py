@@ -12,6 +12,7 @@ flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
 import magnum as mn
+from fairmotion_interface_utils import Motions
 from magnum.platform.glfw import Application
 from viewer import HabitatSimInteractiveViewer, MouseMode
 
@@ -81,7 +82,10 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             red = mn.Color4(1.0, 0.0, 0.0, 1.0)
             green = mn.Color4(0.0, 1.0, 0.0, 1.0)
             blue = mn.Color4(0.0, 0.0, 1.0, 1.0)
-            # yellow = mn.Color4(1.0, 1.0, 0.0, 1.0)
+            yellow = mn.Color4(1.0, 1.0, 0.0, 1.0)
+            magenta = mn.Color4(1.0, 0.0, 1.0, 1.0)
+            cyan = mn.Color4(0.0, 1.0, 1.0, 1.0)
+            white = mn.Color4(1.0, 1.0, 1.0, 1.0)
 
             # x axis
             self.sim.get_debug_line_render().draw_transformed_line(
@@ -96,7 +100,58 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
                 mn.Vector3(), mn.Vector3(0.0, 0.0, 1.0), blue
             )
 
-        # draw_frame()
+            #### 0
+            # character root node axis
+            root_node = mn.Vector3(0.18236684, 0.25136318, 0.95816715)
+            # character facing axis
+            character_face = root_node + mn.Vector3.x_axis()
+            # Center Position to origin minus Z component
+            start_offs = Motions.drink_beverage.start_translation * (
+                mn.Vector3(1.0, 1.0, 1.0) - Motions.drink_beverage.direction_up
+            )
+
+            #### 1
+            # apply global correction to get face -z up y
+            global_correction = self.fm_demo.global_correction_quat(
+                Motions.drink_beverage.direction_up,
+                Motions.drink_beverage.direction_forward,
+            )
+            root_node = global_correction.transform_vector(root_node)
+            character_face = global_correction.transform_vector(character_face)
+            start_offs = global_correction.transform_vector(start_offs)
+
+            ### 1.5
+            # Apply pos offset
+
+            ### 2
+            last_loc = mn.Vector3(2.74, 0.0, 7.24)
+            motion_facing = mn.Vector3.z_axis()
+            look_at_Transform = mn.Matrix4.look_at(
+                last_loc, last_loc + motion_facing, mn.Vector3.y_axis()
+            )
+
+            root_node = look_at_Transform.transform_vector(root_node)
+            character_face = look_at_Transform.transform_vector(character_face)
+            start_offs = look_at_Transform.transform_vector(start_offs)
+
+            # character root node axis
+            self.sim.get_debug_line_render().draw_transformed_line(
+                mn.Vector3(), root_node, yellow
+            )
+            # floor of character root node axis
+            self.sim.get_debug_line_render().draw_transformed_line(
+                mn.Vector3(), start_offs, cyan
+            )
+            # character facing axis
+            self.sim.get_debug_line_render().draw_transformed_line(
+                root_node, character_face, magenta
+            )
+            # character start_offs facing axis
+            self.sim.get_debug_line_render().draw_transformed_line(
+                start_offs, start_offs + mn.Vector3.y_axis(), white
+            )
+
+        draw_frame()
 
     def draw_event(
         self,
