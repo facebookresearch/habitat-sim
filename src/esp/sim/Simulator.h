@@ -81,6 +81,14 @@ class Simulator {
     return resourceManager_->getSemanticScene();
   }
 
+  inline void getRenderGLContext() {
+    // acquire GL context from background thread, if background rendering
+    // enabled.
+    if (renderer_) {
+      renderer_->acquireGlContext();
+    }
+  }
+
   /** @brief check if the semantic scene exists.*/
   bool semanticSceneExists() const {
     return resourceManager_->semanticSceneExists();
@@ -207,64 +215,6 @@ class Simulator {
   };
 
   /**
-   * @brief Instance an object from a template ID in @ref
-   * esp::metadata::managers::ObjectAttributesManager. See @ref
-   * esp::physics::PhysicsManager::addObject().
-   * @param objectLibId The ID of the object's template in @ref
-   * esp::metadata::managers::ObjectAttributesManager.
-   * @param attachmentNode If provided, attach the RigidObject Feature to this
-   * node instead of creating a new one.
-   * @param lightSetupKey The string key for the @ref gfx::LightSetup to be used
-   * by this object.
-   * @param sceneID !! Not used currently !! Specifies which physical scene to
-   * add an object to.
-   * @return The ID assigned to new object which identifies it in @ref
-   * esp::physics::PhysicsManager::existingObjects_ or @ref esp::ID_UNDEFINED if
-   * instancing fails.
-   */
-  int addObject(int objectLibId,
-                scene::SceneNode* attachmentNode = nullptr,
-                const std::string& lightSetupKey = DEFAULT_LIGHTING_KEY,
-                int sceneID = 0);
-
-  /**
-   * @brief Instance an object from a template ID in @ref
-   * esp::metadata::managers::ObjectAttributesManager. See @ref
-   * esp::physics::PhysicsManager::addObject().
-   * @param objectLibHandle The handle of the object's template in
-   * @ref esp::metadata::managers::ObjectAttributesManager.
-   * @param attachmentNode If provided, attach the RigidObject Feature to this
-   * node instead of creating a new one.
-   * @param lightSetupKey The string key for the @ref gfx::LightSetup to be used
-   * by this object.
-   * @param sceneID !! Not used currently !! Specifies which physical scene to
-   * add an object to.
-   * @return The ID assigned to new object which identifies it in @ref
-   * esp::physics::PhysicsManager::existingObjects_ or @ref esp::ID_UNDEFINED if
-   * instancing fails.
-   */
-  int addObjectByHandle(const std::string& objectLibHandle,
-                        scene::SceneNode* attachmentNode = nullptr,
-                        const std::string& lightSetupKey = DEFAULT_LIGHTING_KEY,
-                        int sceneID = 0);
-
-  /**
-   * @brief Get a static view of a physics object's template when the object
-   * was instanced.
-   *
-   * Use this to query the object's properties when it was initialized.
-   * Object pointed at by pointer is const, and can not be modified.
-   */
-  metadata::attributes::ObjectAttributes::cptr getObjectInitializationTemplate(
-      int objectId,
-      int sceneID = 0) const {
-    if (auto obj = queryRigidObjWrapper(sceneID, objectId)) {
-      return obj->getInitializationAttributes();
-    }
-    return nullptr;
-  }
-
-  /**
    * @brief Get a copy of a stage's template when the stage was instanced.
    *
    * Use this to query the stage's properties when it was initialized.
@@ -318,19 +268,6 @@ class Simulator {
   }  // saveCurrentSceneInstance
 
   /**
-   * @brief Remove an instanced object by ID. See @ref
-   * esp::physics::PhysicsManager::removeObject().
-   * @param objectId The ID of the object identifying it in @ref
-   * esp::physics::PhysicsManager::existingObjects_.
-   * @param sceneID !! Not used currently !! Specifies which physical scene
-   * to remove the object from.
-   */
-  void removeObject(int objectId,
-                    bool deleteObjectNode = true,
-                    bool deleteVisualNode = true,
-                    int sceneID = 0);
-
-  /**
    * @brief Get the IDs of the physics objects instanced in a physical scene.
    * See @ref esp::physics::PhysicsManager::getExistingObjectIDs.
    * @param sceneID !! Not used currently !! Specifies which physical scene to
@@ -343,326 +280,6 @@ class Simulator {
       return physicsManager_->getExistingObjectIDs();
     }
     return std::vector<int>();  // empty if no simulator exists
-  }
-
-  /**
-   * @brief Get the @ref esp::physics::MotionType of an object.
-   * See @ref esp::physics::PhysicsManager::getExistingObjectIDs.
-   * @param objectId The ID of the object identifying it in @ref
-   * esp::physics::PhysicsManager::existingObjects_.
-   * @param sceneID !! Not used currently !! Specifies which physical scene to
-   * query.
-   * @return The @ref esp::physics::MotionType of the object or @ref
-   * esp::physics::MotionType::UNDEFINED if query failed.
-   */
-  esp::physics::MotionType getObjectMotionType(int objectId, int sceneID = 0) {
-    if (auto obj = queryRigidObjWrapper(sceneID, objectId)) {
-      return obj->getMotionType();
-    }
-    return esp::physics::MotionType::UNDEFINED;
-  }
-
-  /**
-   * @brief Set the @ref esp::physics::MotionType of an object.
-   * See @ref esp::physics::PhysicsManager::getExistingObjectIDs.
-   * @param motionType The desired motion type of the object
-   * @param objectId The ID of the object identifying it in @ref
-   * esp::physics::PhysicsManager::existingObjects_.
-   * @param sceneID !! Not used currently !! Specifies which physical scene to
-   * query.
-   */
-  void setObjectMotionType(const esp::physics::MotionType& motionType,
-                           int objectId,
-                           int sceneID = 0) {
-    if (auto obj = queryRigidObjWrapper(sceneID, objectId)) {
-      obj->setMotionType(motionType);
-    }
-  }
-
-  /**@brief Retrieves a shared pointer to the VelocityControl struct for this
-   * object.
-   */
-  physics::VelocityControl::ptr getObjectVelocityControl(
-      int objectId,
-      int sceneID = 0) const {
-    if (auto obj = queryRigidObjWrapper(sceneID, objectId)) {
-      return obj->getVelocityControl();
-    }
-    return nullptr;
-  }
-
-  /**
-   * @brief Apply torque to an object. See @ref
-   * esp::physics::PhysicsManager::applyTorque.
-   * @param tau The desired torque to apply.
-   * @param objectId The ID of the object identifying it in @ref
-   * esp::physics::PhysicsManager::existingObjects_.
-   * @param sceneID !! Not used currently !! Specifies which physical scene of
-   * the object.
-   */
-  void applyTorque(const Magnum::Vector3& tau, int objectId, int sceneID = 0) {
-    if (auto obj = queryRigidObjWrapper(sceneID, objectId)) {
-      obj->applyTorque(tau);
-    }
-  }
-
-  /**
-   * @brief Apply force to an object. See @ref
-   * esp::physics::PhysicsManager::applyForce.
-   * @param force The desired linear force to apply.
-   * @param relPos The desired location relative to the object origin at which
-   * to apply the force.
-   * @param objectId The ID of the object identifying it in @ref
-   * esp::physics::PhysicsManager::existingObjects_.
-   * @param sceneID !! Not used currently !! Specifies which physical scene of
-   * the object.
-   */
-  void applyForce(const Magnum::Vector3& force,
-                  const Magnum::Vector3& relPos,
-                  int objectId,
-                  int sceneID = 0) {
-    if (auto obj = queryRigidObjWrapper(sceneID, objectId)) {
-      obj->applyForce(force, relPos);
-    }
-  }
-
-  /**
-   * @brief Apply an impulse to an object. See @ref
-   * esp::physics::PhysicsManager::applyImpulse. Impulse is applied instantly to
-   * modify object velocity (i.e., not integrated through dynamic equations).
-   * @param impulse The desired linear impulse to apply.
-   * @param relPos The desired location relative to the object origin at which
-   * to apply the impulse.
-   * @param objectId The ID of the object identifying it in @ref
-   * esp::physics::PhysicsManager::existingObjects_.
-   * @param sceneID !! Not used currently !! Specifies which physical scene of
-   * the object.
-   */
-  void applyImpulse(const Magnum::Vector3& impulse,
-                    const Magnum::Vector3& relPos,
-                    int objectId,
-                    int sceneID = 0) {
-    if (auto obj = queryRigidObjWrapper(sceneID, objectId)) {
-      obj->applyImpulse(impulse, relPos);
-    }
-  }
-
-  /**
-   * @brief Get a reference to the object's scene node or nullptr if failed.
-   */
-  scene::SceneNode* getObjectSceneNode(int objectId, int sceneID = 0) {
-    if (auto obj = queryRigidObjWrapper(sceneID, objectId)) {
-      return obj->getSceneNode();
-    }
-    return nullptr;
-  }
-
-  /**
-   * @brief Get references to the object's visual scene nodes or empty if
-   * failed.
-   */
-  std::vector<scene::SceneNode*> getObjectVisualSceneNodes(int objectId,
-                                                           int sceneID = 0) {
-    if (auto obj = queryRigidObjWrapper(sceneID, objectId)) {
-      return obj->getVisualSceneNodes();
-    }
-    return std::vector<scene::SceneNode*>();
-  }
-
-  /**
-   * @brief Get the current 4x4 transformation matrix of an object.
-   * See @ref esp::physics::PhysicsManager::getTransformation.
-   * @param objectId The object ID and key identifying the object in @ref
-   * esp::physics::PhysicsManager::existingObjects_.
-   * @param sceneID !! Not used currently !! Specifies which physical scene of
-   * the object.
-   * @return The 4x4 transform of the object.
-   */
-  Magnum::Matrix4 getTransformation(int objectId, int sceneID = 0) {
-    if (auto obj = queryRigidObjWrapper(sceneID, objectId)) {
-      return obj->getTransformation();
-    }
-    return Magnum::Matrix4::fromDiagonal(Magnum::Vector4(1));
-  }
-
-  /**
-   * @brief Set the 4x4 transformation matrix of an object kinematically.
-   * See @ref esp::physics::PhysicsManager::setTransformation.
-   * @param transform The desired 4x4 transform of the object.
-   * @param  objectID The object ID and key identifying the object in @ref
-   * esp::physics::PhysicsManager::existingObjects_.
-   * @param sceneID !! Not used currently !! Specifies which physical scene of
-   * the object.
-   */
-  void setTransformation(const Magnum::Matrix4& transform,
-                         int objectId,
-                         int sceneID = 0) {
-    if (auto obj = queryRigidObjWrapper(sceneID, objectId)) {
-      obj->setTransformation(transform);
-    }
-  }
-
-  /**
-   * @brief Get the current @ref esp::core::RigidState of an object.
-   * @param objectId The object ID and key identifying the object in @ref
-   * esp::physics::PhysicsManager::existingObjects_.
-   * @param sceneID !! Not used currently !! Specifies which physical scene of
-   * the object.
-   * @return The @ref esp::core::RigidState transform of the object.
-   */
-  esp::core::RigidState getRigidState(int objectId, int sceneID = 0) const {
-    if (auto obj = queryRigidObjWrapper(sceneID, objectId)) {
-      return obj->getRigidState();
-    }
-    return esp::core::RigidState();
-  }
-
-  /**
-   * @brief Set the @ref esp::core::RigidState of an object kinematically.
-   * @param rigidState The desired @ref esp::core::RigidState of the object.
-   * @param  objectID The object ID and key identifying the object in @ref
-   * esp::physics::PhysicsManager::existingObjects_.
-   * @param sceneID !! Not used currently !! Specifies which physical scene of
-   * the object.
-   */
-  void setRigidState(const esp::core::RigidState& rigidState,
-                     int objectId,
-                     int sceneID = 0) {
-    if (auto obj = queryRigidObjWrapper(sceneID, objectId)) {
-      obj->setRigidState(rigidState);
-    }
-  }
-
-  /**
-   * @brief Set the 3D position of an object kinematically.
-   * See @ref esp::physics::PhysicsManager::setTranslation.
-   * @param translation The desired 3D position of the object.
-   * @param objectId The object ID and key identifying the object in @ref
-   * esp::physics::PhysicsManager::existingObjects_.
-   * @param sceneID !! Not used currently !! Specifies which physical scene of
-   * the object.
-   */
-  void setTranslation(const Magnum::Vector3& translation,
-                      int objectId,
-                      int sceneID = 0) {
-    if (auto obj = queryRigidObjWrapper(sceneID, objectId)) {
-      obj->setTranslation(translation);
-    }
-  }
-
-  /**
-   * @brief Get the current 3D position of an object.
-   * See @ref esp::physics::PhysicsManager::getTranslation.
-   * @param objectId The object ID and key identifying the object in @ref
-   * esp::physics::PhysicsManager::existingObjects_.
-   * @param sceneID !! Not used currently !! Specifies which physical scene of
-   * the object.
-   * @return The 3D position of the object.
-   */
-  Magnum::Vector3 getTranslation(int objectId, int sceneID = 0) {
-    if (auto obj = queryRigidObjWrapper(sceneID, objectId)) {
-      return obj->getTranslation();
-    }
-    return Magnum::Vector3();
-  }
-
-  /**
-   * @brief Set the orientation of an object kinematically.
-   * See @ref esp::physics::PhysicsManager::setRotation.
-   * @param rotation The desired orientation of the object.
-   * @param objectId The object ID and key identifying the object in @ref
-   * esp::physics::PhysicsManager::existingObjects_.
-   * @param sceneID !! Not used currently !! Specifies which physical scene of
-   * the object.
-   */
-  void setRotation(const Magnum::Quaternion& rotation,
-                   int objectId,
-                   int sceneID = 0) {
-    if (auto obj = queryRigidObjWrapper(sceneID, objectId)) {
-      obj->setRotation(rotation);
-    }
-  }
-
-  /**
-   * @brief Get the current orientation of an object.
-   * See @ref esp::physics::PhysicsManager::getRotation.
-   * @param objectId The object ID and key identifying the object in @ref
-   * esp::physics::PhysicsManager::existingObjects_.
-   * @param sceneID !! Not used currently !! Specifies which physical scene of
-   * the object.
-   * @return A quaternion representation of the object's orientation.
-   */
-  Magnum::Quaternion getRotation(int objectId, int sceneID = 0) {
-    if (auto obj = queryRigidObjWrapper(sceneID, objectId)) {
-      return obj->getRotation();
-    }
-    return Magnum::Quaternion();
-  }
-
-  /**
-   * @brief Set the Linear Velocity of object.
-   * See @ref esp::physics::PhysicsManager::setLinearVelocity.
-   * @param linVel The desired linear velocity of the object.
-   * @param objectId The object ID and key identifying the object in @ref
-   * esp::physics::PhysicsManager::existingObjects_.
-   * @param sceneID !! Not used currently !! Specifies which physical scene of
-   * the object.
-   */
-  void setLinearVelocity(const Magnum::Vector3& linVel,
-                         int objectId,
-                         int sceneID = 0) {
-    if (auto obj = queryRigidObjWrapper(sceneID, objectId)) {
-      obj->setLinearVelocity(linVel);
-    }
-  }
-
-  /**
-   * @brief Get the Linear Velocity of object.
-   * See @ref esp::physics::PhysicsManager::getLinearVelocity.
-   * @param objectId The object ID and key identifying the object in @ref
-   * esp::physics::PhysicsManager::existingObjects_.
-   * @param sceneID !! Not used currently !! Specifies which physical scene of
-   * the object.
-   * @return A vector3 representation of the object's linear velocity.
-   */
-  Magnum::Vector3 getLinearVelocity(int objectId, int sceneID = 0) {
-    if (auto obj = queryRigidObjWrapper(sceneID, objectId)) {
-      return obj->getLinearVelocity();
-    }
-    return Magnum::Vector3();
-  }
-
-  /**
-   * @brief Set the Angular Velocity of object.
-   * See @ref esp::physics::PhysicsManager::setAngularVelocity.
-   * @param angVel The desired angular velocity of the object.
-   * @param objectId The object ID and key identifying the object in @ref
-   * esp::physics::PhysicsManager::existingObjects_.
-   * @param sceneID !! Not used currently !! Specifies which physical scene of
-   * the object.
-   */
-  void setAngularVelocity(const Magnum::Vector3& angVel,
-                          int objectId,
-                          int sceneID = 0) {
-    if (auto obj = queryRigidObjWrapper(sceneID, objectId)) {
-      obj->setAngularVelocity(angVel);
-    }
-  }
-
-  /**
-   * @brief Get the Angular Velocity of object.
-   * See @ref esp::physics::PhysicsManager::getAngularVelocity.
-   * @param objectId The object ID and key identifying the object in @ref
-   * esp::physics::PhysicsManager::existingObjects_.
-   * @param sceneID !! Not used currently !! Specifies which physical scene of
-   * the object.
-   * @return A vector3 representation of the object's angular velocity.
-   */
-  Magnum::Vector3 getAngularVelocity(int objectId, int sceneID = 0) {
-    if (auto obj = queryRigidObjWrapper(sceneID, objectId)) {
-      return obj->getAngularVelocity();
-    }
-    return Magnum::Vector3();
   }
 
   /**
@@ -681,8 +298,7 @@ class Simulator {
    */
   void setObjectBBDraw(bool drawBB, int objectId, int sceneID = 0) {
     if (sceneHasPhysics(sceneID)) {
-      if (renderer_)
-        renderer_->acquireGlContext();
+      getRenderGLContext();
       auto& drawables = getDrawableGroup(sceneID);
       physicsManager_->setObjectBBDraw(objectId, &drawables, drawBB);
     }
@@ -786,22 +402,6 @@ class Simulator {
                          const std::string& key);
 
   /**
-   * @brief Set the @ref esp::scene:SceneNode::semanticId_ for all visual nodes
-   * belonging to an object.
-   *
-   * @param semanticId The desired semantic id for the object.
-   * @param objectId The object ID and key identifying the object in @ref
-   * esp::physics::PhysicsManager::existingObjects_.
-   * @param sceneID !! Not used currently !! Specifies which physical scene of
-   * the object.
-   */
-  void setObjectSemanticId(uint32_t semanticId, int objectId, int sceneID = 0) {
-    if (auto obj = queryRigidObjWrapper(sceneID, objectId)) {
-      obj->setSemanticId(semanticId);
-    }
-  }
-
-  /**
    * @brief Discrete collision check for contact between an object and the
    * collision world.
    * @param objectId The object ID and key identifying the object in @ref
@@ -857,25 +457,6 @@ class Simulator {
    */
   std::string getPhysicsStepCollisionSummary() {
     return physicsManager_->getStepCollisionSummary();
-  }
-
-  /**
-   * @brief Set an object to collidable or not.
-   */
-  void setObjectIsCollidable(bool collidable, const int objectId) {
-    if (auto obj = queryRigidObjWrapper(activeSceneID_, objectId)) {
-      obj->setCollidable(collidable);
-    }
-  }
-
-  /**
-   * @brief Get whether or not an object is collision active.
-   */
-  bool getObjectIsCollidable(const int objectId) {
-    if (auto obj = queryRigidObjWrapper(activeSceneID_, objectId)) {
-      return obj->getCollidable();
-    }
-    return false;
   }
 
   /**
@@ -1060,20 +641,23 @@ class Simulator {
                           int numSegments = 3,
                           float radius = .001,
                           bool smooth = false,
-                          int numInterp = 10);
+                          int numInterp = 10) {
+    if (sceneHasPhysics(activeSceneID_)) {
+      return physicsManager_->addTrajectoryObject(
+          trajVisName, pts, colorVec, numSegments, radius, smooth, numInterp);
+    }
+    return ID_UNDEFINED;
+  }
   /**
    * @brief Remove a trajectory visualization by name.
    * @param trajVisName The name of the trajectory visualization to remove.
    * @return whether successful or not.
    */
   bool removeTrajVisByName(const std::string& trajVisName) {
-    if (trajVisIDByName.count(trajVisName) == 0) {
-      ESP_DEBUG() << "No trajectory named" << trajVisName
-                  << "exists.  Ignoring.";
-      return false;
+    if (sceneHasPhysics(activeSceneID_)) {
+      return physicsManager_->removeTrajVisByName(trajVisName);
     }
-    return removeTrajVisObjectAndAssets(trajVisIDByName.at(trajVisName),
-                                        trajVisName);
+    return false;
   }
 
   /**
@@ -1083,16 +667,12 @@ class Simulator {
    * @return whether successful or not.
    */
   bool removeTrajVisByID(int trajVisObjID) {
-    if (trajVisNameByID.count(trajVisObjID) == 0) {
-      ESP_DEBUG() << "No trajectory object with ID:" << trajVisObjID
-                  << "exists.  Ignoring.";
-      return false;
+    if (sceneHasPhysics(activeSceneID_)) {
+      return physicsManager_->removeTrajVisByID(trajVisObjID);
     }
-    return removeTrajVisObjectAndAssets(trajVisObjID,
-                                        trajVisNameByID.at(trajVisObjID));
+    return false;
   }
 
- public:
   agent::Agent::ptr getAgent(int agentId);
 
   agent::Agent::ptr addAgent(const agent::AgentConfiguration& agentConfig,
@@ -1231,23 +811,6 @@ class Simulator {
   void setLightSetup(gfx::LightSetup lightSetup,
                      const std::string& key = DEFAULT_LIGHTING_KEY) {
     resourceManager_->setLightSetup(std::move(lightSetup), key);
-  }
-
-  /**
-   * @brief Set the light setup of an object
-   *
-   * @param objectId The object ID and key identifying the object in @ref
-   * esp::physics::PhysicsManager::existingObjects_.
-   * @param lightSetupKey @ref gfx::LightSetup key
-   * @param sceneID !! Not used currently !! Specifies which physical scene
-   * of the object.
-   */
-  void setObjectLightSetup(int objectId,
-                           const std::string& lightSetupKey,
-                           int sceneID = 0) {
-    if (auto obj = queryRigidObjWrapper(sceneID, objectId)) {
-      obj->setLightSetup(lightSetupKey);
-    }
   }
 
   //============= Object Rigid Constraint API =============
@@ -1389,24 +952,6 @@ class Simulator {
       setNavMeshVisualization(false);  // first clear the old instance
       setNavMeshVisualization(true);
     }
-  }
-
-  /**
-   * @brief Internal use only. Remove a trajectory object, its mesh, and all
-   * references to it.
-   * @param trajVisObjID The object ID of the trajectory visualization to
-   * remove.
-   * @param trajVisName The name of the trajectory visualization to remove.
-   * @return whether successful or not.
-   */
-  bool removeTrajVisObjectAndAssets(int trajVisObjID,
-                                    const std::string& trajVisName) {
-    removeObject(trajVisObjID);
-    // TODO : support removing asset by removing from resourceDict_ properly
-    // using trajVisName
-    trajVisIDByName.erase(trajVisName);
-    trajVisNameByID.erase(trajVisObjID);
-    return true;
   }
 
   /**
@@ -1570,10 +1115,6 @@ class Simulator {
   //! NavMesh visualization variables
   int navMeshVisPrimID_ = esp::ID_UNDEFINED;
   esp::scene::SceneNode* navMeshVisNode_ = nullptr;
-
-  //! Maps holding IDs and Names of trajectory visualizations
-  std::map<std::string, int> trajVisIDByName;
-  std::map<int, std::string> trajVisNameByID;
 
   /**
    * @brief Tracks whether or not the simulator was initialized

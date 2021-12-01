@@ -977,7 +977,77 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
       const metadata::attributes::SceneInstanceAttributes::ptr&
           sceneInstanceAttrs) const;
 
+  /**
+   * @brief Compute a trajectory visualization for the passed points.
+   * @param trajVisName The name to use for the trajectory visualization
+   * @param pts The points of a trajectory, in order
+   * @param colorVec Array of colors for trajectory tube.
+   * @param numSegments The number of the segments around the circumference of
+   * the tube. Must be greater than or equal to 3.
+   * @param radius The radius of the tube.
+   * @param smooth Whether to smooth the points in the trajectory or not. Will
+   * build a much bigger mesh
+   * @param numInterp The number of interpolations between each trajectory
+   * point, if smoothed
+   * @return The ID of the object created for the visualization
+   */
+  int addTrajectoryObject(const std::string& trajVisName,
+                          const std::vector<Mn::Vector3>& pts,
+                          const std::vector<Mn::Color3>& colorVec,
+                          int numSegments = 3,
+                          float radius = .001,
+                          bool smooth = false,
+                          int numInterp = 10);
+  /**
+   * @brief Remove a trajectory visualization by name.
+   * @param trajVisName The name of the trajectory visualization to remove.
+   * @return whether successful or not.
+   */
+  bool removeTrajVisByName(const std::string& trajVisName) {
+    if (trajVisIDByName.count(trajVisName) == 0) {
+      ESP_DEBUG() << "No trajectory named" << trajVisName
+                  << "exists.  Ignoring.";
+      return false;
+    }
+    return removeTrajVisObjectAndAssets(trajVisIDByName.at(trajVisName),
+                                        trajVisName);
+  }
+
+  /**
+   * @brief Remove a trajectory visualization by object ID.
+   * @param trajVisObjID The object ID of the trajectory visualization to
+   * remove.
+   * @return whether successful or not.
+   */
+  bool removeTrajVisByID(int trajVisObjID) {
+    if (trajVisNameByID.count(trajVisObjID) == 0) {
+      ESP_DEBUG() << "No trajectory object with ID:" << trajVisObjID
+                  << "exists.  Ignoring.";
+      return false;
+    }
+    return removeTrajVisObjectAndAssets(trajVisObjID,
+                                        trajVisNameByID.at(trajVisObjID));
+  }
+
  protected:
+  /**
+   * @brief Internal use only. Remove a trajectory object, its mesh, and all
+   * references to it.
+   * @param trajVisObjID The object ID of the trajectory visualization to
+   * remove.
+   * @param trajVisName The name of the trajectory visualization to remove.
+   * @return whether successful or not.
+   */
+  bool removeTrajVisObjectAndAssets(int trajVisObjID,
+                                    const std::string& trajVisName) {
+    removeObject(trajVisObjID);
+    // TODO : support removing asset by removing from resourceDict_ properly
+    // using trajVisName
+    trajVisIDByName.erase(trajVisName);
+    trajVisNameByID.erase(trajVisObjID);
+    return true;
+  }
+
   /** @brief Check that a given object ID is valid (i.e. it refers to an
    * existing rigid object). Terminate the program and report an error if not.
    * This function is intended to unify object ID checking for @ref
@@ -1136,6 +1206,10 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
 
   /** @brief Tmaps constraint ids to their settings */
   std::unordered_map<int, RigidConstraintSettings> rigidConstraintSettings_;
+
+  //! Maps holding IDs and Names of trajectory visualizations
+  std::unordered_map<std::string, int> trajVisIDByName;
+  std::unordered_map<int, std::string> trajVisNameByID;
 
   //! Utilities
 

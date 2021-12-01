@@ -67,8 +67,8 @@ Simulator::~Simulator() {
 }
 
 void Simulator::close(const bool destroy) {
-  if (renderer_)
-    renderer_->acquireGlContext();
+  getRenderGLContext();
+
   pathfinder_ = nullptr;
   navMeshVisPrimID_ = esp::ID_UNDEFINED;
   navMeshVisNode_ = nullptr;
@@ -208,9 +208,8 @@ void Simulator::reconfigure(const SimulatorConfiguration& cfg) {
 }  // Simulator::reconfigure
 
 bool Simulator::createSceneInstance(const std::string& activeSceneName) {
-  if (renderer_) {
-    renderer_->acquireGlContext();
-  }
+  getRenderGLContext();
+
   // 1. initial setup for scene instancing - sets or creates the
   // current scene instance to correspond to the given name.
 
@@ -771,58 +770,6 @@ void Simulator::setShadowMapsToDrawables() {
 
 // === Physics Simulator Functions ===
 
-int Simulator::addObject(const int objectLibId,
-                         scene::SceneNode* attachmentNode,
-                         const std::string& lightSetupKey,
-                         const int sceneID) {
-  if (sceneHasPhysics(sceneID)) {
-    if (renderer_) {
-      renderer_->acquireGlContext();
-    }
-    // TODO: change implementation to support multi-world and physics worlds
-    // to own reference to a sceneGraph to avoid this.
-    auto& drawables = getDrawableGroup(sceneID);
-    return physicsManager_->addObject(objectLibId, &drawables, attachmentNode,
-                                      lightSetupKey);
-  }
-  return ID_UNDEFINED;
-}
-
-int Simulator::addObjectByHandle(const std::string& objectLibHandle,
-                                 scene::SceneNode* attachmentNode,
-                                 const std::string& lightSetupKey,
-                                 const int sceneID) {
-  if (sceneHasPhysics(sceneID)) {
-    if (renderer_) {
-      renderer_->acquireGlContext();
-    }
-    // TODO: change implementation to support multi-world and physics worlds
-    // to own reference to a sceneGraph to avoid this.
-    auto& drawables = getDrawableGroup(sceneID);
-    return physicsManager_->addObject(objectLibHandle, &drawables,
-                                      attachmentNode, lightSetupKey);
-  }
-  return ID_UNDEFINED;
-}
-
-// remove object objectID instance in sceneID
-void Simulator::removeObject(const int objectID,
-                             bool deleteObjectNode,
-                             bool deleteVisualNode,
-                             const int sceneID) {
-  if (sceneHasPhysics(sceneID)) {
-    physicsManager_->removeObject(objectID, deleteObjectNode, deleteVisualNode);
-    if (trajVisNameByID.count(objectID) > 0) {
-      std::string trajVisAssetName = trajVisNameByID[objectID];
-      trajVisNameByID.erase(objectID);
-      trajVisIDByName.erase(trajVisAssetName);
-      // TODO : if object is trajectory visualization, remove its assets as
-      // well once this is supported.
-      // resourceManager_->removeResourceByName(trajVisAssetName);
-    }
-  }
-}
-
 double Simulator::stepWorld(const double dt) {
   if (physicsManager_ != nullptr) {
     physicsManager_->deferNodesUpdate();
@@ -877,10 +824,10 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
     std::map<std::string,
              std::vector<Eigen::Transform<float, 3, Eigen::Affine>>>
         meshComponentStates;
-
+    auto rigidObjMgr = getRigidObjectManager();
     // collect RigidObject mesh components
     for (auto objectID : physicsManager_->getExistingObjectIDs()) {
-      auto objWrapper = queryRigidObjWrapper(activeSceneID_, objectID);
+      auto objWrapper = rigidObjMgr->getObjectCopyByID(objectID);
       if (objWrapper->getMotionType() == physics::MotionType::STATIC) {
         auto objectTransform = Magnum::EigenIntegration::cast<
             Eigen::Transform<float, 3, Eigen::Affine>>(
@@ -957,9 +904,8 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
 }
 
 bool Simulator::setNavMeshVisualization(bool visualize) {
-  if (renderer_) {
-    renderer_->acquireGlContext();
-  }
+  getRenderGLContext();
+
   // clean-up the NavMesh visualization if necessary
   if (!visualize && navMeshVisNode_ != nullptr) {
     delete navMeshVisNode_;
@@ -990,66 +936,6 @@ bool Simulator::isNavMeshVisualizationActive() {
   return (navMeshVisNode_ != nullptr && navMeshVisPrimID_ != ID_UNDEFINED);
 }
 
-int Simulator::addTrajectoryObject(const std::string& trajVisName,
-                                   const std::vector<Mn::Vector3>& pts,
-                                   const std::vector<Mn::Color3>& colorVec,
-                                   int numSegments,
-                                   float radius,
-                                   bool smooth,
-                                   int numInterp) {
-  if (renderer_) {
-    renderer_->acquireGlContext();
-  }
-
-  // 0. Deduplicate sequential points
-  std::vector<Magnum::Vector3> uniquePts;
-  uniquePts.push_back(pts[0]);
-  for (const auto& loc : pts) {
-    if (loc != uniquePts.back()) {
-      uniquePts.push_back(loc);
-    }
-  }
-
-  auto& drawables = getDrawableGroup();
-
-  // 1. create trajectory tube asset from points and save it
-  bool success = resourceManager_->buildTrajectoryVisualization(
-      trajVisName, uniquePts, colorVec, numSegments, radius, smooth, numInterp);
-  if (!success) {
-    ESP_ERROR() << "Failed to create Trajectory visualization mesh for"
-                << trajVisName;
-    return ID_UNDEFINED;
-  }
-  // 2. create object attributes for the trajectory
-  auto objAttrMgr = metadataMediator_->getObjectAttributesManager();
-  auto trajObjAttr = objAttrMgr->createObject(trajVisName, false);
-  // turn off collisions
-  trajObjAttr->setIsCollidable(false);
-  trajObjAttr->setComputeCOMFromShape(false);
-  objAttrMgr->registerObject(trajObjAttr, trajVisName, true);
-
-  // 3. add trajectory object to manager
-  auto trajVisID = physicsManager_->addObject(trajVisName, &drawables);
-  if (trajVisID == ID_UNDEFINED) {
-    // failed to add object - need to delete asset from resourceManager.
-    ESP_ERROR() << "Failed to create Trajectory visualization object for"
-                << trajVisName;
-    // TODO : support removing asset by removing from resourceDict_ properly
-    // using trajVisName
-    return ID_UNDEFINED;
-  }
-  auto trajObj = getRigidObjectManager()->getObjectCopyByID(trajVisID);
-  ESP_DEBUG() << "Trajectory visualization object created with ID" << trajVisID;
-  trajObj->setMotionType(esp::physics::MotionType::KINEMATIC);
-  // add to internal references of object ID and resourceDict name
-  // this is for eventual asset deletion/resource freeing.
-  trajVisIDByName[trajVisName] = trajVisID;
-  trajVisNameByID[trajVisID] = trajVisName;
-
-  return trajVisID;
-
-}  // Simulator::addTrajectoryObject (vector of colors)
-
 // Agents
 void Simulator::sampleRandomAgentState(agent::AgentState& agentState) {
   if (pathfinder_->isLoaded()) {
@@ -1066,9 +952,8 @@ void Simulator::sampleRandomAgentState(agent::AgentState& agentState) {
 scene::SceneNode* Simulator::loadAndCreateRenderAssetInstance(
     const assets::AssetInfo& assetInfo,
     const assets::RenderAssetInstanceCreationInfo& creation) {
-  if (renderer_) {
-    renderer_->acquireGlContext();
-  }
+  getRenderGLContext();
+
   // Note this pattern of passing the scene manager and two scene ids to
   // resource manager. This is similar to ResourceManager::loadStage.
   std::vector<int> tempIDs{activeSceneID_, activeSemanticSceneID_};
@@ -1183,10 +1068,11 @@ agent::Agent::ptr Simulator::getAgent(const int agentId) {
 esp::sensor::Sensor& Simulator::addSensorToObject(
     const int objectId,
     const esp::sensor::SensorSpec::ptr& sensorSpec) {
-  if (renderer_)
-    renderer_->acquireGlContext();
+  getRenderGLContext();
+
   esp::sensor::SensorSetup sensorSpecifications = {sensorSpec};
-  esp::scene::SceneNode& objectNode = *getObjectSceneNode(objectId);
+  esp::scene::SceneNode& objectNode =
+      *(getRigidObjectManager()->getObjectCopyByID(objectId)->getSceneNode());
   esp::sensor::SensorFactory::createSensors(objectNode, sensorSpecifications);
   return objectNode.getNodeSensorSuite().get(sensorSpec->uuid);
 }
