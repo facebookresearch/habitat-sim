@@ -151,7 +151,7 @@ class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
       AbsObjAttrPtr attributes,
       bool setFrame,
       const std::string& assetName,
-      std::function<void(int)> meshTypeSetter) = 0;
+      const std::function<void(int)>& meshTypeSetter) = 0;
 
   // ======== Typedefs and Instance Variables ========
 
