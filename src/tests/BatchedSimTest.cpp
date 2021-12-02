@@ -71,7 +71,7 @@ TEST_F(BatchedSimulatorTest, basic) {
   esp::logging::LoggingContext loggingContext;
 
   BatchedSimulatorConfig config{
-      .gpuId = 0, .numEnvs = 1, .sensor0 = {.width = 256, .height = 128, .hfov = 45}};
+      .numEnvs = 1, .gpuId = 0, .sensor0 = {.width = 256, .height = 128, .hfov = 45}};
   BatchedSimulator bsim(config);
 
   for (int i = 0; i < 100; i++) {
