@@ -264,10 +264,12 @@ int PhysicsManager::addArticulatedObjectInstance(
         const esp::metadata::attributes::SceneAOInstanceAttributes>&
         aObjInstAttributes,
     const std::string& lightSetup) {
-  if (simulator_ != nullptr) {
-    // aquire context if available
-    simulator_->getRenderGLContext();
+  if (simulator_ == nullptr) {
+    return ID_UNDEFINED;
   }
+
+  // aquire context if available
+  simulator_->getRenderGLContext();
   // Get drawables from simulator. TODO: Support non-existent simulator?
   auto& drawables = simulator_->getDrawableGroup();
 
