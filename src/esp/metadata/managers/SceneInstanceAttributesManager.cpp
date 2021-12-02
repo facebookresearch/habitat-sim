@@ -42,7 +42,7 @@ SceneInstanceAttributesManager::initNewObjectInternal(
   if (nullptr == newAttributes) {
     newAttributes = SceneInstanceAttributes::create(sceneInstanceHandle);
   }
-  // attempt to set source directory if exists
+  // set the attributes source filedirectory, from the attributes name
   this->setFileDirectoryFromHandle(newAttributes);
 
   // any internal default configuration here

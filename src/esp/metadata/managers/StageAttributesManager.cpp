@@ -169,20 +169,45 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
   bool createNewAttributes = (nullptr == newAttributes);
   if (createNewAttributes) {
     newAttributes = StageAttributes::create(attributesHandle);
-  } else {
+  }
+  // set the attributes source filedirectory, from the attributes name
+  this->setFileDirectoryFromHandle(newAttributes);
+
+  if (!createNewAttributes) {
     // default exists and was used to create this attributes - investigate any
     // filename fields that may have %%USE_FILENAME%% directive specified in the
     // default attributes.
-    const std::string baseAttrHandle = newAttributes->getSimplifiedHandle();
-    if (newAttributes->getRenderAssetHandle().find(USE_BASE_FILENAME) !=
-        std::string::npos) {
-      // replace the component of the string containing the tag with the base
-      // filename/handle, and verify it exists. Otherwise, clear it.
-    }
+    // Render asset handle
+    setHandleFromDefaultTag(newAttributes,
+                            newAttributes->getRenderAssetHandle(),
+                            [newAttributes](const std::string& newHandle) {
+                              newAttributes->setRenderAssetHandle(newHandle);
+                            });
+    // Collision asset handle
+    setHandleFromDefaultTag(newAttributes,
+                            newAttributes->getCollisionAssetHandle(),
+                            [newAttributes](const std::string& newHandle) {
+                              newAttributes->setCollisionAssetHandle(newHandle);
+                            });
+    // navmesh asset handle
+    setHandleFromDefaultTag(newAttributes,
+                            newAttributes->getNavmeshAssetHandle(),
+                            [newAttributes](const std::string& newHandle) {
+                              newAttributes->setNavmeshAssetHandle(newHandle);
+                            });
+    // Semantic Scene Descriptor text filehandle
+    setHandleFromDefaultTag(
+        newAttributes, newAttributes->getSemanticDescriptorFilename(),
+        [newAttributes](const std::string& newHandle) {
+          newAttributes->setSemanticDescriptorFilename(newHandle);
+        });
+    // Semantic Scene asset handle
+    setHandleFromDefaultTag(newAttributes,
+                            newAttributes->getSemanticAssetHandle(),
+                            [newAttributes](const std::string& newHandle) {
+                              newAttributes->setSemanticAssetHandle(newHandle);
+                            });
   }
-
-  // attempt to set source directory if exists
-  this->setFileDirectoryFromHandle(newAttributes);
 
   // set defaults that config files or other constructive processes might
   // override
@@ -297,7 +322,7 @@ void StageAttributesManager::setDefaultAssetNameBasedAttributes(
     StageAttributes::ptr attributes,
     bool setFrame,
     const std::string& fileName,
-    std::function<void(int)> assetTypeSetter) {
+    const std::function<void(int)>& assetTypeSetter) {
   // TODO : support future mesh-name specific type setting?
   using Corrade::Utility::String::endsWith;
 

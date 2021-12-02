@@ -134,14 +134,30 @@ ObjectAttributes::ptr ObjectAttributesManager::initNewObjectInternal(
     bool builtFromConfig) {
   ObjectAttributes::ptr newAttributes =
       this->constructFromDefault(attributesHandle);
-  if (nullptr == newAttributes) {
+  bool createNewAttributes = (nullptr == newAttributes);
+  if (createNewAttributes) {
     newAttributes = ObjectAttributes::create(attributesHandle);
-  } else {
+  }
+  // set the attributes source filedirectory, from the attributes name
+  this->setFileDirectoryFromHandle(newAttributes);
+
+  if (!createNewAttributes) {
     // default exists and was used to create this attributes - investigate any
     // filename fields that may have %%USE_FILENAME%% directive specified in the
     // default attributes.
+    // Render asset handle
+    setHandleFromDefaultTag(newAttributes,
+                            newAttributes->getRenderAssetHandle(),
+                            [newAttributes](const std::string& newHandle) {
+                              newAttributes->setRenderAssetHandle(newHandle);
+                            });
+    // Collision asset handle
+    setHandleFromDefaultTag(newAttributes,
+                            newAttributes->getCollisionAssetHandle(),
+                            [newAttributes](const std::string& newHandle) {
+                              newAttributes->setCollisionAssetHandle(newHandle);
+                            });
   }
-  this->setFileDirectoryFromHandle(newAttributes);
 
   // set default render and collision asset handle
   // only set handle defaults if attributesHandle is not a config file (which
@@ -177,7 +193,7 @@ void ObjectAttributesManager::setDefaultAssetNameBasedAttributes(
     ObjectAttributes::ptr attributes,
     bool setFrame,
     const std::string& meshHandle,
-    std::function<void(int)> assetTypeSetter) {
+    const std::function<void(int)>& assetTypeSetter) {
   if (this->isValidPrimitiveAttributes(meshHandle)) {
     // value is valid primitive, and value is different than existing value
     assetTypeSetter(static_cast<int>(AssetType::PRIMITIVE));
