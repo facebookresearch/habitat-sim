@@ -48,7 +48,7 @@ SceneDatasetAttributesManager::initNewObjectInternal(
     newAttributes = SceneDatasetAttributes::create(datasetFilename,
                                                    physicsAttributesManager_);
   }
-  // attempt to set source directory if exists
+  // set the attributes source filedirectory, from the attributes name
   this->setFileDirectoryFromHandle(newAttributes);
 
   // set the handle of the physics manager that is used for this newly-made
