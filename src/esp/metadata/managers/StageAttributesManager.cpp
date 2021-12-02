@@ -173,6 +173,12 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
     // default exists and was used to create this attributes - investigate any
     // filename fields that may have %%USE_FILENAME%% directive specified in the
     // default attributes.
+    const std::string baseAttrHandle = newAttributes->getSimplifiedHandle();
+    if (newAttributes->getRenderAssetHandle().find(USE_BASE_FILENAME) !=
+        std::string::npos) {
+      // replace the component of the string containing the tag with the base
+      // filename/handle, and verify it exists. Otherwise, clear it.
+    }
   }
 
   // attempt to set source directory if exists
@@ -191,8 +197,12 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
   // would never be a valid render or collision asset name).  Otherise, expect
   // handles to be set when config is read.
   if (!builtFromConfig) {
-    newAttributes->setRenderAssetHandle(attributesHandle);
-    newAttributes->setCollisionAssetHandle(attributesHandle);
+    if (newAttributes->getRenderAssetHandle().empty()) {
+      newAttributes->setRenderAssetHandle(attributesHandle);
+    }
+    if (newAttributes->getCollisionAssetHandle().empty()) {
+      newAttributes->setCollisionAssetHandle(attributesHandle);
+    }
 
     if (attributesHandle != "NONE") {
       // TODO when all datasets have configuration support, get rid of all these
@@ -201,42 +211,48 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
       // set defaults for navmesh, semantic mesh and lexicon handles
       // start with root stage name, including path but without final extension
       // default navmesh should have .navmesh ext
-      std::string navmeshFilename =
-          this->findFilenameUsingCriteria(attributesHandle, {".navmesh"});
-      // if present, file was found, so set value (overriding attributes
-      // default)
-      if (!navmeshFilename.empty()) {
-        newAttributes->setNavmeshAssetHandle(navmeshFilename);
-      }
-
-      // Build default semantic descriptor file name, using extensions of
-      std::string ssdFileName = this->findFilenameUsingCriteria(
-          attributesHandle, {".house", ".scn", "_semantic.txt"});
-
-      // if not present, set hacky defaults for back compat expectations.
-      if (ssdFileName.empty()) {
-        if (attributesHandle.find("/replica_dataset") != std::string::npos) {
-          // replica hack until dataset gets appropriate configuration support
-          ssdFileName = Cr::Utility::Directory::join(
-              newAttributes->getFileDirectory(), "info_semantic.json");
-        } else {
-          // hack to support back-compat until configs are implemented for all
-          // datasets
-          ssdFileName =
-              Cr::Utility::Directory::splitExtension(attributesHandle).first +
-              ".scn";
+      if (newAttributes->getNavmeshAssetHandle().empty()) {
+        std::string navmeshFilename =
+            this->findFilenameUsingCriteria(attributesHandle, {".navmesh"});
+        // if present, file was found, so set value (overriding attributes
+        // default)
+        if (!navmeshFilename.empty()) {
+          newAttributes->setNavmeshAssetHandle(navmeshFilename);
         }
       }
-      newAttributes->setSemanticDescriptorFilename(ssdFileName);
 
-      // Build default semantic mesh filename as root stage name ending with
-      // "_semantic.ply", for back-compat with Mp3d
-      std::string semanticMeshFilename =
-          this->findFilenameUsingCriteria(attributesHandle, {"_semantic.ply"});
-      // if present, file was found, so set value (overriding attributes
-      // default)
-      if (!semanticMeshFilename.empty()) {
-        newAttributes->setSemanticAssetHandle(semanticMeshFilename);
+      if (newAttributes->getSemanticDescriptorFilename().empty()) {
+        // Build default semantic descriptor file name, using extensions of
+        std::string ssdFileName = this->findFilenameUsingCriteria(
+            attributesHandle, {".house", ".scn", "_semantic.txt"});
+
+        // if not present, set hacky defaults for back compat expectations.
+        if (ssdFileName.empty()) {
+          if (attributesHandle.find("/replica_dataset") != std::string::npos) {
+            // replica hack until dataset gets appropriate configuration support
+            ssdFileName = Cr::Utility::Directory::join(
+                newAttributes->getFileDirectory(), "info_semantic.json");
+          } else {
+            // hack to support back-compat until configs are implemented for all
+            // datasets
+            ssdFileName =
+                Cr::Utility::Directory::splitExtension(attributesHandle).first +
+                ".scn";
+          }
+        }
+        newAttributes->setSemanticDescriptorFilename(ssdFileName);
+      }
+
+      if (newAttributes->getSemanticAssetHandle().empty()) {
+        // Build default semantic mesh filename as root stage name ending with
+        // "_semantic.ply", for back-compat with Mp3d
+        std::string semanticMeshFilename = this->findFilenameUsingCriteria(
+            attributesHandle, {"_semantic.ply"});
+        // if present, file was found, so set value (overriding attributes
+        // default)
+        if (!semanticMeshFilename.empty()) {
+          newAttributes->setSemanticAssetHandle(semanticMeshFilename);
+        }
       }
     }  // do not populate defaults for NONE scene
 

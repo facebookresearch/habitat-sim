@@ -148,8 +148,12 @@ ObjectAttributes::ptr ObjectAttributesManager::initNewObjectInternal(
   // would never be a valid render or collision asset name).  Otherise, expect
   // handles and types to be set when config is read.
   if (!builtFromConfig) {
-    newAttributes->setRenderAssetHandle(attributesHandle);
-    newAttributes->setCollisionAssetHandle(attributesHandle);
+    if (newAttributes->getRenderAssetHandle().empty()) {
+      newAttributes->setRenderAssetHandle(attributesHandle);
+    }
+    if (newAttributes->getCollisionAssetHandle().empty()) {
+      newAttributes->setCollisionAssetHandle(attributesHandle);
+    }
 
     // set defaults for passed render asset handles
     this->setDefaultAssetNameBasedAttributes(

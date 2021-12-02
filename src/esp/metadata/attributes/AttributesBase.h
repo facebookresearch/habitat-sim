@@ -16,7 +16,17 @@ namespace asset {
 enum class AssetType;
 }
 namespace metadata {
+/**
+ * @brief A tag to search for in the default_attributes section of the Scene
+ * Dataset JSON configuration files denoting that an implementation of the
+ * attributes should replace this tag with the base filename (minus all paths
+ * and extensions)
+ */
+constexpr char CONFIG_NAME_AS_ASSET_FILENAME[] =
+    "%%CONFIG_NAME_AS_ASSET_FILENAME%%";
+
 namespace attributes {
+
 /**
  * @brief Constant static map to provide mappings from string tags to
  * @ref esp::assets::AssetType values.  This will be used to map values
