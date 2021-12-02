@@ -33,6 +33,7 @@ void initBatchedSimBindings(py::module& m) {
       m, "BatchedSimulatorConfig")
       .def(py::init(&BatchedSimulatorConfig::create<>))
       .def_readwrite("num_envs", &BatchedSimulatorConfig::numEnvs, R"(Todo)")
+      .def_readwrite("gpu_id", &BatchedSimulatorConfig::gpuId, R"(Todo)")
       .def_readwrite("sensor0", &BatchedSimulatorConfig::sensor0, R"(Todo)");
 
   py::class_<BatchedSimulator, BatchedSimulator::ptr>(m, "BatchedSimulator")

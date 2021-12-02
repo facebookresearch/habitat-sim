@@ -22,7 +22,7 @@ struct CameraSensorConfig {
 };
 
 struct BpsWrapper {
-  BpsWrapper(int numEnvs, const CameraSensorConfig& sensor0);
+  BpsWrapper(int gpuId, int numEnvs, const CameraSensorConfig& sensor0);
   ~BpsWrapper();
 
   std::shared_ptr<bps3D::Scene> scene_;
@@ -106,6 +106,7 @@ struct RewardCalculationContext {
 
 struct BatchedSimulatorConfig {
   int numEnvs = -1;
+  int gpuId = -1;
   CameraSensorConfig sensor0;
 
   ESP_SMART_POINTERS(BatchedSimulatorConfig);

@@ -384,13 +384,14 @@ Robot::Robot(const std::string& filepath, esp::sim::Simulator* sim) {
   CORRADE_INTERNAL_ASSERT(numPosVars > 0);
 }
 
-BpsWrapper::BpsWrapper(int numEnvs, const CameraSensorConfig& sensor0) {
+BpsWrapper::BpsWrapper(int gpuId, int numEnvs, const CameraSensorConfig& sensor0) {
   glm::u32vec2 out_dim(
       sensor0.width,
       sensor0.height);  // see also rollout_test.py, python/rl/agent.py
+  CORRADE_INTERNAL_ASSERT(gpuId != -1);
 
   renderer_ = std::make_unique<bps3D::Renderer>(bps3D::RenderConfig{
-      0, 1, uint32_t(numEnvs), out_dim.x, out_dim.y, false,
+      gpuId, 1, uint32_t(numEnvs), out_dim.x, out_dim.y, false,
       bps3D::RenderMode::Depth | bps3D::RenderMode::UnlitRGB});
 
   loader_ = std::make_unique<bps3D::AssetLoader>(renderer_->makeLoader());
@@ -421,7 +422,7 @@ BpsWrapper::~BpsWrapper() {
 
 BatchedSimulator::BatchedSimulator(const BatchedSimulatorConfig& config) {
   config_ = config;
-  bpsWrapper_ = std::make_unique<BpsWrapper>(config_.numEnvs, config_.sensor0);
+  bpsWrapper_ = std::make_unique<BpsWrapper>(config_.gpuId, config_.numEnvs, config_.sensor0);
 
   esp::sim::SimulatorConfiguration simConfig{};
   simConfig.activeSceneName = "NONE";
