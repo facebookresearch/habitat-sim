@@ -686,7 +686,7 @@ double Simulator::getWorldTime() {
 
 double Simulator::getPhysicsTimeStep() {
   if (physicsManager_ != nullptr) {
-    return physicsManager_ -> getTimestep();
+    return physicsManager_->getTimestep();
   }
 }
 

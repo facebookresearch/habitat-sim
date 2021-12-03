@@ -502,8 +502,9 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    *
    * @return Array of torques on each joint
    */
-  virtual std::vector<float> getJointMotorTorques(double fixedTimeStep) { return {}; }
-
+  virtual std::vector<float> getJointMotorTorques(double fixedTimeStep) {
+    return {};
+  }
 
   /**
    * @brief Get position limits for all joints.

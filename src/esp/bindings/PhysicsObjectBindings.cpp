@@ -403,10 +403,9 @@ void declareArticulatedObjectWrapper(py::module& m,
                      "get_link_joint_pos_offset and get_link_num_joint_pos.")
                         .c_str())
       .def("get_joint_motor_torques",
-                    &ManagedArticulatedObject::getJointMotorTorques,
-                    ("Get " + objType +
-                        "'s array of joint torques. ")
-                        .c_str(), "fixedTimeStep"_a)
+           &ManagedArticulatedObject::getJointMotorTorques,
+           ("Get " + objType + "'s array of joint torques. ").c_str(),
+           "fixedTimeStep"_a)
       .def_property_readonly("joint_position_limits",
                              &ManagedArticulatedObject::getJointPositionLimits,
                              ("Get a tuple of lists of this " + objType +
