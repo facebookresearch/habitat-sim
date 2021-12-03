@@ -900,11 +900,11 @@ class Simulator {
    */
   double getWorldTime();
 
-   /**
-  * @brief Get the last physics timestep in seconds
-  * 
-  * @return The timestep. 
-  */
+  /**
+   * @brief Get the last physics timestep in seconds
+   *
+   * @return The timestep.
+   */
   double getPhysicsTimeStep();
 
   /**

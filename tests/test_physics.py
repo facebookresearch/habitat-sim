@@ -1146,10 +1146,15 @@ def test_articulated_object_joint_motors(test_asset):
             sim.step_physics(1.0 / 60.0)
             if produce_debug_video:
                 observations.append(sim.get_sensor_observations())
-        
+
         # check that at rest position torque is low
         if "amass_male" not in test_asset:
-            assert((np.abs(np.array(robot.get_joint_motor_torques(sim.get_physics_time_step()))) < 10).all())
+            assert (
+                np.abs(
+                    np.array(robot.get_joint_motor_torques(sim.get_physics_time_step()))
+                )
+                < 10
+            ).all()
 
         # validate that rest pose is maintained
         # Note: assume all joints for test assets can be actuated
@@ -1252,14 +1257,25 @@ def test_articulated_object_joint_motors(test_asset):
                     continue
                 # create the motor from its settings
                 robot.create_joint_motor(link_id, joint_motor_settings)
-            
-            firstStep=True
+
+            firstStep = True
             target_time += 6.0
             while sim.get_world_time() < target_time:
                 sim.step_physics(1.0 / 60.0)
-                print(np.array(robot.get_joint_motor_torques(sim.get_physics_time_step())))
+                print(
+                    np.array(robot.get_joint_motor_torques(sim.get_physics_time_step()))
+                )
                 if firstStep:
-                    assert((np.abs(np.array(robot.get_joint_motor_torques(sim.get_physics_time_step()))) > 10).any())
+                    assert (
+                        np.abs(
+                            np.array(
+                                robot.get_joint_motor_torques(
+                                    sim.get_physics_time_step()
+                                )
+                            )
+                        )
+                        > 10
+                    ).any()
                     firstStep = False
                 if produce_debug_video:
                     observations.append(sim.get_sensor_observations())
