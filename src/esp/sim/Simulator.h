@@ -900,6 +900,13 @@ class Simulator {
    */
   double getWorldTime();
 
+   /**
+  * @brief Get the last physics timestep in seconds
+  * 
+  * @return The timestep. 
+  */
+  double getPhysicsTimeStep();
+
   /**
    * @brief Set the gravity in a physical scene.
    */

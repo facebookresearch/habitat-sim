@@ -212,6 +212,13 @@ class BulletArticulatedObject : public ArticulatedObject {
   std::vector<float> getJointPositions() override;
 
   /**
+   * @brief Get the torques on each joint
+   *
+   * @return Array of torques on each joint
+   */
+  std::vector<float> getJointMotorTorques(double fixedTimeStep);
+
+  /**
    * @brief Get position limits for all joints. (lower, upper)
    *
    * @return The active joint position limits as a pair of vectors (lower,

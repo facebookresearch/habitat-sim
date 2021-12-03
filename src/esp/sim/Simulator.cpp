@@ -684,6 +684,12 @@ double Simulator::getWorldTime() {
   return NO_TIME;
 }
 
+double Simulator::getPhysicsTimeStep() {
+  if (physicsManager_ != nullptr) {
+    return physicsManager_ -> getTimestep();
+  }
+}
+
 bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
                                  const nav::NavMeshSettings& navMeshSettings,
                                  bool includeStaticObjects) {

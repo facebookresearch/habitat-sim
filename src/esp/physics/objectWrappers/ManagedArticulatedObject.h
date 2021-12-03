@@ -133,6 +133,13 @@ class ManagedArticulatedObject
     }
     return {};
   }
+  
+  std::vector<float> getJointMotorTorques(double fixedTimeStep) {
+    if (auto sp = getObjectReference()) {
+      return sp->getJointMotorTorques(fixedTimeStep);
+    }
+    return {};
+  }
 
   std::pair<std::vector<float>, std::vector<float>> getJointPositionLimits() {
     if (auto sp = getObjectReference()) {

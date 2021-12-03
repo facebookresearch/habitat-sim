@@ -440,6 +440,26 @@ std::vector<float> BulletArticulatedObject::getJointPositions() {
   return positions;
 }
 
+std::vector<float> BulletArticulatedObject::getJointMotorTorques(double fixedTimeStep) {
+  std::vector<float> torques(btMultiBody_->getNumLinks());
+  for (auto& motor : jointMotors_) {
+    btMultibodyLink& btLink = btMultiBody_->getLink(motor.second->index);
+    // int startIndex = velocities ? btLink.m_dofOffset : btLink.m_cfgOffset;
+    auto& settings = motor.second->settings;
+    if (settings.motorType == JointMotorType::SingleDof) {
+      auto& btMotor = articulatedJointMotors.at(motor.first);
+      btScalar impulse = btMotor->getAppliedImpulse(0);
+			btScalar force = impulse / fixedTimeStep;
+      torques[motor.second->index] = force;
+      
+    } else {
+      throw "getJointMotorTorques is not yet implemented for spherical joints.";
+    }
+  }
+
+  return torques;
+}
+
 std::pair<std::vector<float>, std::vector<float>>
 BulletArticulatedObject::getJointPositionLimits() {
   std::vector<float> lowerLimits(btMultiBody_->getNumPosVars(), -INFINITY);
