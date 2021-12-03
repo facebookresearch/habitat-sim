@@ -35,9 +35,12 @@ if [[ $my_hostname =~ "fair" ]]; then
   module load cmake/3.15.3/gcc.7.3.0
 fi
 
-python setup.py build_ext --inplace "${builder_args[@]}"
+here=$(pwd)
+PYTHONPATH=${here}/src_python python setup.py build_ext --inplace "${builder_args[@]}"
 
 if [ "$RUN_TESTS" = true ] ; then
   cd build
-  ctest -V
+  PYTHONPATH=${here}/src_python ctest -V
 fi
+
+echo "Add src_python to PYTHONPATH, i.e. \`export PYTHONPATH=${here}/src_python:\${PYTHONPATH}\`"

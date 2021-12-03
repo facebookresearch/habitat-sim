@@ -551,15 +551,15 @@ jobs:
                 --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
 
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
-              pytest -n 8 --durations=10 --cov-report=xml --cov=./
+              PYTHONPATH=src_python pytest -n 8 --durations=10 --cov-report=xml --cov=./
 
               #run the marked pytest-benchmark tests and print the results
-              pytest -m sim_benchmarks
+              PYTHONPATH=src_python pytest -m sim_benchmarks
 
               #re-build without bullet and cuda and run physics tests again
               #TODO: instead of reinstall, do this with configuration
               ./build.sh --headless --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
-              pytest -n 8 --durations=10 --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
+              PYTHONPATH=src_python pytest -n 8 --durations=10 --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
 
               . ~/.bashrc
               nvm use v11.9.0
