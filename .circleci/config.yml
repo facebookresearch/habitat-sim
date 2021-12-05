@@ -232,19 +232,19 @@ jobs:
           name: run black
           command: |
               black --version
-              black --exclude '/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist)|examples/tutorials/(colabs|nb_python)'  habitat_sim/. examples/. tests/. setup.py --diff
-              black --exclude '/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist)|examples/tutorials/(colabs|nb_python)'  habitat_sim/. examples/. tests/. setup.py --check
+              black --exclude '/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist)|examples/tutorials/(colabs|nb_python)'  src_python/habitat_sim/. examples/. tests/. setup.py --diff
+              black --exclude '/(\.eggs|\.git|\.hg|\.mypy_cache|\.nox|\.tox|\.venv|_build|buck-out|build|dist)|examples/tutorials/(colabs|nb_python)'  src_python/habitat_sim/. examples/. tests/. setup.py --check
       - run:
           name: run isort
           command: |
               isort --version
-              isort habitat_sim/. examples/. tests/. setup.py --diff
-              isort habitat_sim/. examples/. tests/. setup.py --check-only
+              isort src_python/habitat_sim/. examples/. tests/. setup.py --diff
+              isort src_python/habitat_sim/. examples/. tests/. setup.py --check-only
       - run:
           name: run flake8
           command: |
               flake8 --version
-              flake8 habitat_sim/. examples/. tests/. setup.py
+              flake8 src_python/habitat_sim/. examples/. tests/. setup.py
       - run:
           name: run mypy
           command: mypy
@@ -374,7 +374,7 @@ jobs:
               if [ ! -d ./data/scene_datasets/habitat-test-scenes/van-gogh-room.glb ]
               then
                 cd habitat-sim
-                python habitat_sim/utils/datasets_download.py --uids ci_test_assets --replace --data-path data/
+                python src_python/habitat_sim/utils/datasets_download.py --uids ci_test_assets --replace --data-path data/
               fi
 
       - run:
