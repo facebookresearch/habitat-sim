@@ -723,12 +723,11 @@ class ResourceManager {
   void buildPrimitiveAssetData(const std::string& primTemplateHandle);
 
   /**
-   * @brief Configure the importerManager_ appropriately based on compilation
-   * flags, before general assets are imported
-   * @param dispFileName the filename of the asset being imported, used for
-   * informational/debugging purposes only.
+   * @brief Configure the importerManager_ GL Extensions appropriately based on
+   * compilation flags, before any general assets are imported.  This should
+   * only occur if a gl context exists.
    */
-  void ConfigureImporterManager(const std::string& dispFileName);
+  void ConfigureImporterManagerGLExtensions();
 
  protected:
   // ======== Structs and Types only used locally ========

@@ -107,6 +107,7 @@ ResourceManager::ResourceManager(
 #endif
   initDefaultLightSetups();
   initDefaultMaterials();
+  // appropriately configure importerManager_ based on compilation flags
   buildImporters();
 
   if (flags_ & Flag::PbrImageBasedLighting) {
@@ -123,16 +124,26 @@ ResourceManager::~ResourceManager() {
 }
 
 void ResourceManager::buildImporters() {
+  // Preferred plugins, Basis target GPU format
+  importerManager_.setPreferredPlugins("GltfImporter", {"CgltfImporter"});
+#ifdef ESP_BUILD_ASSIMP_SUPPORT
+  importerManager_.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
+  Cr::PluginManager::PluginMetadata* const assimpmetadata =
+      importerManager_.metadata("AssimpImporter");
+  assimpmetadata->configuration().setValue("ImportColladaIgnoreUpDirection",
+                                           "true");
+#endif
+
   // instantiate a primitive importer
   CORRADE_INTERNAL_ASSERT_OUTPUT(
       primitiveImporter_ =
           importerManager_.loadAndInstantiate("PrimitiveImporter"));
   // necessary for importer to be usable
   primitiveImporter_->openData("");
+
   // instantiate importer for file load
   CORRADE_INTERNAL_ASSERT_OUTPUT(
       fileImporter_ = importerManager_.loadAndInstantiate("AnySceneImporter"));
-
 }  // buildImporters
 
 bool ResourceManager::getCreateRenderer() const {
@@ -144,6 +155,7 @@ void ResourceManager::initDefaultPrimAttributes() {
     return;
   }
 
+  ConfigureImporterManagerGLExtensions();
   // by this point, we should have a GL::Context so load the bb primitive.
   // TODO: replace this completely with standard mesh (i.e. treat the bb
   // wireframe cube no differently than other primitive-based rendered
@@ -439,7 +451,7 @@ bool ResourceManager::buildMeshGroups(
     //! Collect collision mesh group
     bool colMeshGroupSuccess = false;
     if (info.type == AssetType::INSTANCE_MESH) {
-      // PLY Instance mesh
+      // PLY Semantic mesh
       colMeshGroupSuccess =
           buildStageCollisionMeshGroup<GenericSemanticMeshData>(info.filepath,
                                                                 meshGroup);
@@ -526,7 +538,7 @@ ResourceManager::createStageAssetInfosFromAttributes(
         frame,                                      // frame
         virtualUnitToMeters,                        // virtualUnitToMeters
         true,                                       // forceFlatShading
-        // only split instance mesh if doing frustum culling
+        // only split semantic mesh if doing frustum culling
         stageAttributes->getFrustumCulling()  // splitInstanceMesh
     };
     resMap["semantic"] = semanticInfo;
@@ -1256,21 +1268,20 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
   CORRADE_INTERNAL_ASSERT(info.type == AssetType::INSTANCE_MESH);
 
   const std::string& filename = info.filepath;
+
   CORRADE_INTERNAL_ASSERT(resourceDict_.count(filename) == 0);
-  Cr::Containers::Pointer<Importer> importer;
-
-  // TODO : support glb along with ply files as semantic meshes
-
-  CORRADE_INTERNAL_ASSERT_OUTPUT(
-      importer = importerManager_.loadAndInstantiate("StanfordImporter"));
+  ESP_DEBUG() << "Frame orientation :" << info.frame.toString()
+              << "instance mesh :" << filename;
 
   /* Open the file. On error the importer already prints a diagnostic message,
      so no need to do that here. The importer implicitly converts per-face
      attributes to per-vertex, so nothing extra needs to be done. */
   Cr::Containers::Optional<Mn::Trade::MeshData> meshData;
-  ESP_CHECK((importer->openFile(filename) && (meshData = importer->mesh(0))),
+  ConfigureImporterManagerGLExtensions();
+  ESP_CHECK((fileImporter_->openFile(filename) &&
+             (meshData = fileImporter_->mesh(0))),
             Cr::Utility::formatString(
-                "Error loading instance mesh data from file {}", filename));
+                "Error loading semantic mesh data from file {}", filename));
 
   std::vector<GenericSemanticMeshData::uptr> instanceMeshes =
       GenericSemanticMeshData::buildSemanticMeshData(
@@ -1279,7 +1290,7 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
 
   ESP_CHECK(!instanceMeshes.empty(),
             Cr::Utility::formatString(
-                "Error loading instance mesh data from file {}", filename));
+                "Error loading semantic mesh data from file {}", filename));
 
   int meshStart = nextMeshID_;
   int meshEnd = meshStart + instanceMeshes.size() - 1;
@@ -1326,7 +1337,8 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceIMesh(
   const bool computeAbsoluteAABBs = creation.isStatic();
 
   std::vector<StaticDrawableInfo> staticDrawableInfo;
-  auto indexPair = getMeshMetaData(creation.filepath).meshIndex;
+  auto meshMetaData = getMeshMetaData(creation.filepath);
+  auto indexPair = meshMetaData.meshIndex;
   int start = indexPair.first;
   int end = indexPair.second;
 
@@ -1363,94 +1375,84 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceIMesh(
 
   return instanceRoot;
 }  // ResourceManager::createRenderAssetInstanceIMesh
+void ResourceManager::ConfigureImporterManagerGLExtensions() {
+  if (!getCreateRenderer()) {
+    return;
+  }
 
-void ResourceManager::ConfigureImporterManager(
-    const std::string& dispFileName) {
-  // Preferred plugins, Basis target GPU format
-  importerManager_.setPreferredPlugins("GltfImporter", {"CgltfImporter"});
-#ifdef ESP_BUILD_ASSIMP_SUPPORT
-  importerManager_.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
-  Cr::PluginManager::PluginMetadata* const assimpmetadata =
-      importerManager_.metadata("AssimpImporter");
-  assimpmetadata->configuration().setValue("ImportColladaIgnoreUpDirection",
-                                           "true");
-#endif
-
-  if (requiresTextures_) {
-    Cr::PluginManager::PluginMetadata* const metadata =
-        importerManager_.metadata("BasisImporter");
-    Mn::GL::Context& context = Mn::GL::Context::current();
+  Cr::PluginManager::PluginMetadata* const metadata =
+      importerManager_.metadata("BasisImporter");
+  Mn::GL::Context& context = Mn::GL::Context::current();
 #ifdef MAGNUM_TARGET_WEBGL
-    if (context.isExtensionSupported<
-            Mn::GL::Extensions::WEBGL::compressed_texture_astc>())
+  if (context.isExtensionSupported<
+          Mn::GL::Extensions::WEBGL::compressed_texture_astc>())
 #else
-    if (context.isExtensionSupported<
-            Mn::GL::Extensions::KHR::texture_compression_astc_ldr>())
+  if (context.isExtensionSupported<
+          Mn::GL::Extensions::KHR::texture_compression_astc_ldr>())
 #endif
-    {
-      ESP_DEBUG() << "Importing Basis files as ASTC 4x4 for" << dispFileName;
-      metadata->configuration().setValue("format", "Astc4x4RGBA");
-    }
+  {
+    ESP_DEBUG() << "Importing Basis files as ASTC 4x4.";
+    metadata->configuration().setValue("format", "Astc4x4RGBA");
+  }
 #ifdef MAGNUM_TARGET_GLES
-    else if (context.isExtensionSupported<
-                 Mn::GL::Extensions::EXT::texture_compression_bptc>())
+  else if (context.isExtensionSupported<
+               Mn::GL::Extensions::EXT::texture_compression_bptc>())
 #else
-    else if (context.isExtensionSupported<
-                 Mn::GL::Extensions::ARB::texture_compression_bptc>())
+  else if (context.isExtensionSupported<
+               Mn::GL::Extensions::ARB::texture_compression_bptc>())
 #endif
-    {
-      ESP_DEBUG() << "Importing Basis files as BC7 for" << dispFileName;
-      metadata->configuration().setValue("format", "Bc7RGBA");
-    }
+  {
+    ESP_DEBUG() << "Importing Basis files as BC7.";
+    metadata->configuration().setValue("format", "Bc7RGBA");
+  }
 #ifdef MAGNUM_TARGET_WEBGL
-    else if (context.isExtensionSupported<
-                 Mn::GL::Extensions::WEBGL::compressed_texture_s3tc>())
+  else if (context.isExtensionSupported<
+               Mn::GL::Extensions::WEBGL::compressed_texture_s3tc>())
 #elif defined(MAGNUM_TARGET_GLES)
-    else if (context.isExtensionSupported<
-                 Mn::GL::Extensions::EXT::texture_compression_s3tc>() ||
-             context.isExtensionSupported<
-                 Mn::GL::Extensions::ANGLE::texture_compression_dxt5>())
+  else if (context.isExtensionSupported<
+               Mn::GL::Extensions::EXT::texture_compression_s3tc>() ||
+           context.isExtensionSupported<
+               Mn::GL::Extensions::ANGLE::texture_compression_dxt5>())
 #else
-    else if (context.isExtensionSupported<
-                 Mn::GL::Extensions::EXT::texture_compression_s3tc>())
+  else if (context.isExtensionSupported<
+               Mn::GL::Extensions::EXT::texture_compression_s3tc>())
 #endif
-    {
-      ESP_DEBUG() << "Importing Basis files as BC3 for" << dispFileName;
-      metadata->configuration().setValue("format", "Bc3RGBA");
-    }
+  {
+    ESP_DEBUG() << "Importing Basis files as BC3.";
+    metadata->configuration().setValue("format", "Bc3RGBA");
+  }
 #ifndef MAGNUM_TARGET_GLES2
-    else
+  else
 #ifndef MAGNUM_TARGET_GLES
-        if (context.isExtensionSupported<
-                Mn::GL::Extensions::ARB::ES3_compatibility>())
+      if (context.isExtensionSupported<
+              Mn::GL::Extensions::ARB::ES3_compatibility>())
 #endif
-    {
-      ESP_DEBUG() << "Importing Basis files as ETC2 for" << dispFileName;
-      metadata->configuration().setValue("format", "Etc2RGBA");
-    }
+  {
+    ESP_DEBUG() << "Importing Basis files as ETC2.";
+    metadata->configuration().setValue("format", "Etc2RGBA");
+  }
 #else /* For ES2, fall back to PVRTC as ETC2 is not available */
-    else
+  else
 #ifdef MAGNUM_TARGET_WEBGL
-        if (context.isExtensionSupported<Mn::WEBGL::compressed_texture_pvrtc>())
+      if (context.isExtensionSupported<Mn::WEBGL::compressed_texture_pvrtc>())
 #else
-        if (context.isExtensionSupported<Mn::IMG::texture_compression_pvrtc>())
+      if (context.isExtensionSupported<Mn::IMG::texture_compression_pvrtc>())
 #endif
-    {
-      ESP_DEBUG() << "Importing Basis files as PVRTC 4bpp for" << dispFileName;
-      metadata->configuration().setValue("format", "PvrtcRGBA4bpp");
-    }
+  {
+    ESP_DEBUG() << "Importing Basis files as PVRTC 4bpp.";
+    metadata->configuration().setValue("format", "PvrtcRGBA4bpp");
+  }
 #endif
 #if defined(MAGNUM_TARGET_GLES2) || !defined(MAGNUM_TARGET_GLES)
-    else /* ES3 has ETC2 always */
-    {
-      ESP_WARNING() << "No supported GPU compressed texture format detected, "
-                       "Basis images will get imported as RGBA8 for"
-                    << dispFileName;
-      metadata->configuration().setValue("format", "RGBA8");
-    }
-#endif
+  else /* ES3 has ETC2 always */
+  {
+    ESP_WARNING() << "No supported GPU compressed texture format detected, "
+                     "Basis images will get imported as RGBA8.";
+    metadata->configuration().setValue("format", "RGBA8");
   }
-}  // ResourceManager::ConfigureImportManager
+#endif
+
+}  // ResourceManager::ConfigureImporterManagerGLExtensions
 
 namespace {
 
@@ -1474,12 +1476,8 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
   CORRADE_INTERNAL_ASSERT(isRenderAssetGeneral(info.type));
 
   const std::string& filename = info.filepath;
-  const std::string dispFileName = Cr::Utility::Directory::filename(filename);
   CORRADE_INTERNAL_ASSERT(resourceDict_.count(filename) == 0);
-
-  // appropriately configure importerManager_ based on compilation flags
-  ConfigureImporterManager(dispFileName);
-
+  ConfigureImporterManagerGLExtensions();
   if (!fileImporter_->openFile(filename)) {
     ESP_ERROR() << "Cannot open file" << filename;
     return false;

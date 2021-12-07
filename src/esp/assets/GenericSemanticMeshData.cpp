@@ -256,8 +256,7 @@ GenericSemanticMeshData::buildSemanticMeshData(
             Cr::Containers::stridedArrayView(semanticData->objectIds_)));
   }
 
-  // TODO make this selectable via argument
-  {
+  if (semanticFilename.find(".ply") != std::string::npos) {
     // Generic Semantic PLY meshes have -Z gravity
     const quatf T_esp_scene =
         quatf::FromTwoVectors(-vec3f::UnitZ(), geo::ESP_GRAVITY);
