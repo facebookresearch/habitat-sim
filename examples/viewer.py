@@ -7,7 +7,7 @@ import math
 import sys
 import time
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
@@ -99,6 +99,7 @@ class HabitatSimInteractiveViewer(Application):
         self,
         simulation_call: Optional[Callable] = None,
         global_call: Optional[Callable] = None,
+        active_agent_id_and_sensor_name: Tuple[int, str] = (0, "color_sensor"),
     ) -> None:
         """
         Calls continuously to re-render frames and swap the two frame buffers
@@ -134,7 +135,11 @@ class HabitatSimInteractiveViewer(Application):
 
         self.debug_draw()
 
-        self.sim._sensors["color_sensor"].draw_observation()
+        keys = active_agent_id_and_sensor_name
+
+        self.sim._Simulator__sensors[keys[0]][keys[1]].draw_observation()
+        agent = self.sim.get_agent(keys[0])
+        self.render_camera = agent.scene_node.node_sensor_suite.get(keys[1])
         self.render_camera.render_target.blit_rgba_to_default()
         mn.gl.default_framebuffer.bind()
 

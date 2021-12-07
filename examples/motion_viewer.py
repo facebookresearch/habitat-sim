@@ -6,19 +6,21 @@ import ctypes
 import random
 import sys
 import time
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, Optional, Tuple
+
+import numpy as np
 
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
 import magnum as mn
 from magnum.platform.glfw import Application
-from viewer import HabitatSimInteractiveViewer, MouseMode
+from viewer import HabitatSimInteractiveViewer, MouseMode, Timer
 
 import habitat_sim
 import habitat_sim.physics as phy
 from examples.fairmotion_interface import FairmotionInterface
-from examples.settings import default_sim_settings
+from examples.settings import default_sim_settings, make_cfg
 from habitat_sim.logging import logger
 
 
@@ -84,10 +86,6 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             red = mn.Color4(1.0, 0.0, 0.0, 1.0)
             green = mn.Color4(0.0, 1.0, 0.0, 1.0)
             blue = mn.Color4(0.0, 0.0, 1.0, 1.0)
-            yellow = mn.Color4(1.0, 1.0, 0.0, 1.0)
-            # magenta = mn.Color4(1.0, 0.0, 1.0, 1.0)
-            # cyan = mn.Color4(0.0, 1.0, 1.0, 1.0)
-            # white = mn.Color4(1.0, 1.0, 1.0, 1.0)
 
             # x axis
             self.sim.get_debug_line_render().draw_transformed_line(
@@ -102,17 +100,68 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
                 mn.Vector3(), mn.Vector3(0.0, 0.0, 1.0), blue
             )
 
-            # agent
-            self.sim.get_debug_line_render().draw_transformed_line(
-                mn.Vector3(), mn.Vector3(1.0, 0.0, 0.0), yellow
-            )
+        draw_frame()
 
-        # draw_frame()
+    def reconfigure_sim(self) -> None:
+        """
+        Utilizes the current `self.sim_settings` to configure and set up a new
+        `habitat_sim.Simulator`, and then either starts a simulation instance, or replaces
+        the current simulator instance, reloading the most recently loaded scene
+        """
+        # configure our sim_settings but then set the agent to our default
+        self.cfg = make_cfg(self.sim_settings)
+        self.agent_id: int = self.sim_settings["default_agent"]
+        self.cfg.agents[self.agent_id] = self.default_agent_config()
+
+        # first person agent
+        camera_sensor_spec = habitat_sim.CameraSensorSpec()
+        camera_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
+        camera_sensor_spec.resolution = [
+            self.sim_settings["height"],
+            self.sim_settings["width"],
+        ]
+        camera_sensor_spec.position = np.array([0, 0, 0])
+        camera_sensor_spec.orientation = np.array([0, 0, 0])
+        camera_sensor_spec.uuid = "fpov_sensor"
+
+        agent_config = habitat_sim.agent.AgentConfiguration(
+            height=0.01,
+            radius=0.01,
+            sensor_specifications=[camera_sensor_spec],
+            body_type="cylinder",
+        )
+        self.fpov_agent_id = len(self.cfg.agents)
+        self.cfg.agents.append(agent_config)
+
+        if self.sim is None:
+            self.sim = habitat_sim.Simulator(self.cfg)
+
+        else:  # edge case
+            if self.sim.config.sim_cfg.scene_id == self.cfg.sim_cfg.scene_id:
+                # we need to force a reset, so change the internal config scene name
+                self.sim.config.sim_cfg.scene_id = "NONE"
+            self.sim.reconfigure(self.cfg)
+
+        self.active_scene_graph = self.sim.get_active_scene_graph()
+        self.default_agent = self.sim.get_agent(self.agent_id)
+        self.agent_body_node = self.default_agent.scene_node
+        self.render_camera = self.agent_body_node.node_sensor_suite.get("color_sensor")
+
+        self.agent_body_node.translation = mn.Vector3(1.0, 0, 3)
+
+        self.fpov_agent = self.sim.get_agent(self.fpov_agent_id)
+        self.fpov_init_rotation = (
+            self.fpov_agent.scene_node.rotation
+        )  # Quaternion({0, 0.263971, 0}, 0.964531)
+
+        Timer.start()
+        self.step = -1
 
     def draw_event(
         self,
         simulation_call: Optional[Callable] = None,
         global_call: Optional[Callable] = None,
+        active_agent_id_and_sensor_name: Tuple[int, str] = (0, "color_sensor"),
     ) -> None:
         """
         Calls continuously to re-render frames and swap the two frame buffers
@@ -126,11 +175,28 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             self.fm_demo.pop_staging_queue_and_pose()
 
         def run_global() -> None:
+
+            # process action orders
             self.fm_demo.process_action_order()
             if self.perpetual and len(self.fm_demo.order_queue) < 2:
                 self.fm_demo.push_action_order()
 
-        super().draw_event(simulation_call=play_motion, global_call=run_global)
+        # choose agent
+        if (
+            self.first_person
+            and self.fpov_agent
+            and self.fm_demo
+            and self.fm_demo.model
+        ):
+            keys = (self.fpov_agent_id, "fpov_sensor")
+        else:
+            keys = active_agent_id_and_sensor_name
+
+        super().draw_event(
+            simulation_call=play_motion,
+            global_call=run_global,
+            active_agent_id_and_sensor_name=keys,
+        )
 
     def key_press_event(self, event: Application.KeyEvent) -> None:
         """
@@ -197,6 +263,10 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             # Toggle reverse direction of motion
             self.fm_demo.is_reversed = not self.fm_demo.is_reversed
 
+        elif key == pressed.G:
+            # Toggle fpov
+            self.first_person = not self.first_person
+
         elif key == pressed.M:
             # cycle through mouse modes
             if self.mouse_interaction == MouseMode.MOTION:
@@ -209,7 +279,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
 
         elif key == pressed.R:
             self.remove_selector_obj()
-            super().reconfigure_sim()
+            self.reconfigure_sim()
             # reset character to default state
             self.fm_demo = FairmotionInterface(
                 self.sim, self.fps, metadata_file="default"
@@ -517,6 +587,43 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
                 obj_handle
             ]
 
+    def render_first_person_pov(self) -> None:
+        """
+        Utilizes the first person agent to render an egocentric perspective of
+        the fairmotion character upon toggle FPOV toggle.
+        """
+        # choose agent
+        if (
+            self.first_person
+            and self.fpov_agent
+            and self.fm_demo
+            and self.fm_demo.model
+        ):
+            self.render_first_person_pov()
+            model = self.fm_demo.model
+            agent = self.fpov_agent
+            fw_axis = mn.Vector3.z_axis()
+            up_axis = mn.Vector3.y_axis()
+
+            head_id = [
+                x for x in model.get_link_ids() if model.get_link_name(x) == "upperneck"
+            ][0]
+
+            head_ScNode = model.get_link_scene_node(head_id)
+
+            fw_axis = head_ScNode.transformation_matrix().transform_vector(fw_axis)
+            up_axis = head_ScNode.transformation_matrix().transform_vector(up_axis)
+
+            # applying scenenode rotation and translation to FPOV
+            agent.scene_node.translation = head_ScNode.absolute_translation
+            agent.scene_node.rotation = mn.Quaternion.from_matrix(
+                mn.Matrix4.look_at(
+                    head_ScNode.absolute_translation,
+                    head_ScNode.absolute_translation + fw_axis,
+                    up_axis,
+                ).rotation()
+            )
+
     def print_help_text(self) -> None:
         """
         Print the Key Command help text.
@@ -586,6 +693,7 @@ Key Commands:
     'p':        Save current characterdata to a file give by the user's input.
                 (+ SHIFT) Auto save current character data to last file fetched.
                 (+ CTRL) Print the name of the last file fetched.
+    'g':        Toggle FPOV of character.
 =========================================================
 """
         )

@@ -1099,11 +1099,14 @@ class FairmotionInterface:
         Given the upward direction and the forward direction of a local space frame, this methd produces
         the correction quaternion to convert the frame to global space (+Y up, -Z forward).
         """
-        angle1 = mn.math.angle(up_v.normalized(), mn.Vector3.y_axis())
-        axis1 = mn.math.cross(up_v.normalized(), mn.Vector3.y_axis())
-        rotation1 = mn.Quaternion.rotation(angle1, axis1)
+        if up_v.normalized() != mn.Vector3.y_axis():
+            angle1 = mn.math.angle(up_v.normalized(), mn.Vector3.y_axis())
+            axis1 = mn.math.cross(up_v.normalized(), mn.Vector3.y_axis())
+            rotation1 = mn.Quaternion.rotation(angle1, axis1)
+            forward_v = rotation1.transform_vector(forward_v)
+        else:
+            rotation1 = mn.Quaternion()
 
-        forward_v = rotation1.transform_vector(forward_v)
         forward_v = forward_v * (mn.Vector3(1.0, 1.0, 1.0) - mn.Vector3.y_axis())
         angle2 = mn.math.angle(forward_v.normalized(), -1 * mn.Vector3.z_axis())
         axis2 = mn.Vector3.y_axis()
