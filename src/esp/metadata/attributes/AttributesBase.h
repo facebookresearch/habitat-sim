@@ -36,6 +36,12 @@ namespace attributes {
 const extern std::map<std::string, esp::assets::AssetType> AssetTypeNamesMap;
 
 /**
+ * @brief Get a string name representing the specified @ref
+ * esp::assets::AssetType enum value.
+ */
+std::string getMeshTypeName(esp::assets::AssetType meshTypeEnum);
+
+/**
  * @brief Base class for all implemented attributes.  Inherits from @ref
  * esp::core::AbstractFileBasedManagedObject so the attributes can be managed by
  * a @ref esp::core::ManagedContainer.
