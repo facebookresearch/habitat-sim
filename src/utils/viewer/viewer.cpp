@@ -325,6 +325,7 @@ Key Commands:
   't': Instance an ArticulatedObject in front of the camera from a URDF file by entering the filepath when prompted.
   'u': Remove most recently instanced rigid object.
   'b': Toggle display of object bounding boxes.
+  'p': Save current simulation state to SceneInstanceAttributes JSON file (with non-colliding filename).
   'v': (physics) Invert gravity.
   'g': (physics) Display a stage's signed distance gradient vector field.
   'k': (physics) Iterate through different ranges of the stage's voxelized signed distance field.
@@ -1040,12 +1041,11 @@ int Viewer::addObject(const std::string& objectAttrHandle) {
   // Relative to agent bodynode
   Mn::Matrix4 T = agentBodyNode_->MagnumObject::transformationMatrix();
   Mn::Vector3 new_pos = T.transformPoint({0.1f, 1.5f, -2.0f});
-
-  int physObjectID = simulator_->addObjectByHandle(objectAttrHandle);
-  simulator_->setTranslation(new_pos, physObjectID);
-  simulator_->setRotation(Mn::Quaternion::fromMatrix(T.rotationNormalized()),
-                          physObjectID);
-  return physObjectID;
+  auto rigidObjMgr = simulator_->getRigidObjectManager();
+  auto obj = rigidObjMgr->addObjectByHandle(objectAttrHandle);
+  obj->setTranslation(new_pos);
+  obj->setRotation(Mn::Quaternion::fromMatrix(T.rotationNormalized()));
+  return obj->getID();
 }  // addObject
 
 // add file-based template derived object from keypress
@@ -1105,7 +1105,8 @@ void Viewer::removeLastObject() {
   if (existingObjectIDs.size() == 0) {
     return;
   }
-  simulator_->removeObject(existingObjectIDs.back());
+  auto rigidObjMgr = simulator_->getRigidObjectManager();
+  rigidObjMgr->removeObjectByID(existingObjectIDs.back());
 }
 
 void Viewer::invertGravity() {
@@ -1626,23 +1627,19 @@ void Viewer::mousePressEvent(MouseEvent& event) {
           }
 #endif
           addPrimitiveObject();
+
           auto existingObjectIDs = simulator_->getExistingObjectIDs();
           // use the bounding box to create a safety margin for adding the
           // object
+          auto rigidObjMgr = simulator_->getRigidObjectManager();
+          auto obj = rigidObjMgr->getObjectByID(existingObjectIDs.back());
           float boundingBuffer =
-              simulator_->getObjectSceneNode(existingObjectIDs.back())
-                      ->computeCumulativeBB()
-                      .size()
-                      .max() /
-                  2.0 +
+              obj->getSceneNode()->computeCumulativeBB().size().max() / 2.0 +
               0.04;
-          simulator_->setTranslation(
-              raycastResults.hits[0].point +
-                  raycastResults.hits[0].normal * boundingBuffer,
-              existingObjectIDs.back());
+          obj->setTranslation(raycastResults.hits[0].point +
+                              raycastResults.hits[0].normal * boundingBuffer);
 
-          simulator_->setRotation(esp::core::randomRotation(),
-                                  existingObjectIDs.back());
+          obj->setRotation(esp::core::randomRotation());
         }
       }
       // end add primitive w/ right click
@@ -1993,6 +1990,10 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
     case KeyEvent::Key::O:
       addTemplateObject();
+      break;
+    case KeyEvent::Key::P:
+      // save current sim state
+      simulator_->saveCurrentSceneInstance();
       break;
     case KeyEvent::Key::Slash:
       // display current scene's metadata information

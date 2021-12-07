@@ -234,13 +234,6 @@ class AbstractObjectAttributes : public AbstractAttributes {
   void setIsClean() { set("__isDirty", false); }
 
   /**
-   * @brief Build and return a json object holding the values and nested objects
-   * holding the subconfigs of this Configuration.
-   */
-  io::JsonGenericValue writeToJsonValue(
-      io::JsonAllocator& allocator) const override;
-
-  /**
    * @brief Populate a json object with all the first-level values held in this
    * configuration.  Default is overridden to handle special cases for
    * AbstractObjectAttributes and deriving (ObjectAttributes and

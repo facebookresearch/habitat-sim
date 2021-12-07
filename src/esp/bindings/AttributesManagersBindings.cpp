@@ -24,16 +24,10 @@ namespace Attrs = esp::metadata::attributes;
 using Attrs::AbstractAttributes;
 using Attrs::AbstractObjectAttributes;
 using Attrs::AbstractPrimitiveAttributes;
-using Attrs::CapsulePrimitiveAttributes;
-using Attrs::ConePrimitiveAttributes;
-using Attrs::CubePrimitiveAttributes;
-using Attrs::CylinderPrimitiveAttributes;
-using Attrs::IcospherePrimitiveAttributes;
 using Attrs::LightLayoutAttributes;
 using Attrs::ObjectAttributes;
 using Attrs::PhysicsManagerAttributes;
 using Attrs::StageAttributes;
-using Attrs::UVSpherePrimitiveAttributes;
 using esp::core::managedContainers::ManagedObjectAccess;
 
 namespace esp {

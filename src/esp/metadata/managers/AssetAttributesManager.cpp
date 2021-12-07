@@ -107,8 +107,7 @@ AssetAttributesManager::AssetAttributesManager()
     this->undeletableObjectNames_.insert(tmpltHandle);
   }
 
-  ESP_DEBUG() << "Built default "
-                 "primitive asset templates :"
+  ESP_DEBUG() << "Built default primitive asset templates :"
               << std::to_string(defaultPrimAttributeHandles_.size());
 }  // AssetAttributesManager::ctor
 
@@ -228,7 +227,7 @@ void AssetAttributesManager::setValsFromJSONDoc(
   // check for user defined attributes
   // this->parseUserDefinedJsonVals(attribs, jsonConfig);
 
-}  // AssetAttributesManager::buildObjectFromJSONDoc
+}  // AssetAttributesManager::setValsFromJSONDoc
 
 }  // namespace managers
 }  // namespace metadata

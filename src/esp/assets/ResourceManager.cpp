@@ -578,9 +578,9 @@ scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
     // nodeType==OBJECT, and they will be drawn for both RGBD and Semantic
     // sensors.
     if (!(creation.isSemantic() && creation.isRGBD())) {
-      ESP_WARNING() << "unsupported instance creation flags for asset ["
-                    << Mn::Debug::nospace << assetInfo.filepath
-                    << Mn::Debug::nospace << "]";
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
+          << "unsupported instance creation flags for asset ["
+          << assetInfo.filepath << "]";
       return nullptr;
     }
     sceneID = activeSceneIDs[0];
@@ -589,9 +589,9 @@ scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
       if (activeSceneIDs[1] != activeSceneIDs[0]) {
         // Because we have a separate semantic scene graph, we can't support a
         // static instance with both isSemantic and isRGBD.
-        ESP_WARNING()
+        ESP_WARNING(Mn::Debug::Flag::NoSpace)
             << "unsupported instance creation flags for asset ["
-            << Mn::Debug::nospace << assetInfo.filepath << Mn::Debug::nospace
+            << assetInfo.filepath
             << "] with "
                "SimulatorConfiguration::forceSeparateSemanticSceneGraph=true.";
         return nullptr;
@@ -601,9 +601,9 @@ scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
       if (activeSceneIDs[1] == activeSceneIDs[0]) {
         // A separate semantic scene graph wasn't constructed, so we can't
         // support a Semantic-only (or RGBD-only) instance.
-        ESP_WARNING()
-            << "unsupported instance creation flags for asset ["
-            << Mn::Debug::nospace << assetInfo.filepath << Mn::Debug::nospace
+        ESP_WARNING(Mn::Debug::Flag::NoSpace)
+            << "Unsupported instance creation flags for asset ["
+            << assetInfo.filepath
             << "] with "
                "SimulatorConfiguration::forceSeparateSemanticSceneGraph=false.";
         return nullptr;

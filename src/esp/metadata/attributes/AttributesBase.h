@@ -16,7 +16,17 @@ namespace asset {
 enum class AssetType;
 }
 namespace metadata {
+/**
+ * @brief A tag to search for in the default_attributes section of the Scene
+ * Dataset JSON configuration files denoting that an implementation of the
+ * attributes should replace this tag with the base filename (minus all paths
+ * and extensions)
+ */
+constexpr char CONFIG_NAME_AS_ASSET_FILENAME[] =
+    "%%CONFIG_NAME_AS_ASSET_FILENAME%%";
+
 namespace attributes {
+
 /**
  * @brief Constant static map to provide mappings from string tags to
  * @ref esp::assets::AssetType values.  This will be used to map values
@@ -39,11 +49,20 @@ class AbstractAttributes
 
   AbstractAttributes(const AbstractAttributes& otr) = default;
   AbstractAttributes(AbstractAttributes&& otr) noexcept = default;
+  ~AbstractAttributes() override = default;
 
   AbstractAttributes& operator=(const AbstractAttributes& otr) = default;
   AbstractAttributes& operator=(AbstractAttributes&& otr) noexcept = default;
 
-  ~AbstractAttributes() override = default;
+  /**
+   * @brief Support writing to JSON object as required by @ref
+   * esp::core::managedContainers::AbstractFileBasedManagedObject
+   */
+  io::JsonGenericValue writeToJsonObject(
+      io::JsonAllocator& allocator) const override {
+    return Configuration::writeToJsonObject(allocator);
+  }
+
   /**
    * @brief Get this attributes' class.  Should only be set from constructor.
    * Used as key in constructor function pointer maps in AttributesManagers.
@@ -119,7 +138,6 @@ class AbstractAttributes
    * of this managed object.
    */
   std::string getObjectInfo() const override {
-    ESP_WARNING() << "Building " << getClassKey() << ":";
     return Cr::Utility::formatString("{},{},{}", getSimplifiedHandle(),
                                      getAsString("ID"),
                                      getObjectInfoInternal());

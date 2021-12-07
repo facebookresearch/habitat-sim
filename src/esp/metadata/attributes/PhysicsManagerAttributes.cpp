@@ -17,6 +17,16 @@ PhysicsManagerAttributes::PhysicsManagerAttributes(const std::string& handle)
   setRestitutionCoefficient(0.1);
 }  // PhysicsManagerAttributes ctor
 
+void PhysicsManagerAttributes::writeValuesToJson(
+    io::JsonGenericValue& jsonObj,
+    io::JsonAllocator& allocator) const {
+  writeValueToJson("physics_simulator", jsonObj, allocator);
+  writeValueToJson("timestep", jsonObj, allocator);
+  writeValueToJson("gravity", jsonObj, allocator);
+  writeValueToJson("friction_coefficient", jsonObj, allocator);
+  writeValueToJson("restitution_coefficient", jsonObj, allocator);
+}  // PhysicsManagerAttributes::writeValuesToJson
+
 }  // namespace attributes
 }  // namespace metadata
 }  // namespace esp

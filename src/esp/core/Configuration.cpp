@@ -199,7 +199,7 @@ std::string ConfigValue::getAsString() const {
   }  // switch
 }  // ConfigValue::getAsString
 
-io::JsonGenericValue ConfigValue::writeToJsonValue(
+io::JsonGenericValue ConfigValue::writeToJsonObject(
     io::JsonAllocator& allocator) const {
   // unknown is checked before this function is called, so does not need support
   switch (getType()) {
@@ -274,7 +274,7 @@ int Configuration::loadFromJson(const io::JsonGenericValue& jsonObj) {
   for (rapidjson::Value::ConstMemberIterator it = jsonObj.MemberBegin();
        it != jsonObj.MemberEnd(); ++it) {
     // for each key, attempt to parse
-    const std::string key = it->name.GetString();
+    const std::string key{it->name.GetString()};
     const auto& obj = it->value;
     // increment, assuming is valid object
     ++numConfigSettings;
@@ -334,7 +334,7 @@ void Configuration::writeValueToJson(const char* key,
                                      io::JsonGenericValue& jsonObj,
                                      io::JsonAllocator& allocator) const {
   rapidjson::GenericStringRef<char> name{jsonName};
-  auto jsonVal = get(key).writeToJsonValue(allocator);
+  auto jsonVal = get(key).writeToJsonObject(allocator);
   jsonObj.AddMember(name, jsonVal, allocator);
 }
 
@@ -350,43 +350,51 @@ void Configuration::writeValuesToJson(io::JsonGenericValue& jsonObj,
     if (valIter->second.isValid()) {
       // make sure value is legal
       rapidjson::GenericStringRef<char> name{valIter->first.c_str()};
-      auto jsonVal = valIter->second.writeToJsonValue(allocator);
+      auto jsonVal = valIter->second.writeToJsonObject(allocator);
       jsonObj.AddMember(name, jsonVal, allocator);
     } else {
-      ESP_WARNING() << "Unitialized ConfigValue in Configuration @ key ["
-                    << valIter->first
-                    << "], so nothing will be written to JSON for this key.";
+      ESP_VERY_VERBOSE()
+          << "Unitialized ConfigValue in Configuration @ key ["
+          << valIter->first
+          << "], so nothing will be written to JSON for this key.";
     }
   }  // iterate through all values
 }  // Configuration::writeValuesToJson
 
-void Configuration::writeConfigsToJson(io::JsonGenericValue& jsonObj,
-                                       io::JsonAllocator& allocator) const {
+void Configuration::writeSubconfigsToJson(io::JsonGenericValue& jsonObj,
+                                          io::JsonAllocator& allocator) const {
   // iterate through subconfigs
   // pair of begin/end const iterators to all subconfigurations
   auto cfgIterPair = getSubconfigIterator();
   for (auto& cfgIter = cfgIterPair.first; cfgIter != cfgIterPair.second;
        ++cfgIter) {
-    rapidjson::GenericStringRef<char> name{cfgIter->first.c_str()};
-    io::JsonGenericValue subObj =
-        cfgIter->second->Configuration::writeToJsonValue(allocator);
-    jsonObj.AddMember(name, subObj, allocator);
+    // only save if subconfig has entries
+    if (cfgIter->second->getNumEntries() > 0) {
+      rapidjson::GenericStringRef<char> name{cfgIter->first.c_str()};
+      io::JsonGenericValue subObj =
+          cfgIter->second->writeToJsonObject(allocator);
+      jsonObj.AddMember(name, subObj, allocator);
+    } else {
+      ESP_VERY_VERBOSE()
+          << "Unitialized/empty Subconfig in Configuration @ key ["
+          << cfgIter->first
+          << "], so nothing will be written to JSON for this key.";
+    }
   }  // iterate through all configurations
 
-}  // Configuration::writeConfigsToJson
+}  // Configuration::writeSubconfigsToJson
 
-io::JsonGenericValue Configuration::writeToJsonValue(
+io::JsonGenericValue Configuration::writeToJsonObject(
     io::JsonAllocator& allocator) const {
   io::JsonGenericValue jsonObj(rapidjson::kObjectType);
   // iterate through all values - always call base version - this will only ever
   // be called from subconfigs.
-  Configuration::writeValuesToJson(jsonObj, allocator);
-
+  writeValuesToJson(jsonObj, allocator);
   // iterate through subconfigs
-  Configuration::writeConfigsToJson(jsonObj, allocator);
+  writeSubconfigsToJson(jsonObj, allocator);
 
   return jsonObj;
-}  // writeToJsonValue
+}  // writeToJsonObject
 
 /**
  * @brief Retrieves a shared pointer to a copy of the subConfig @ref

@@ -153,6 +153,28 @@ class RigidObject : public RigidBase {
 
  public:
   /**
+   * @brief Set whether this object is COM corrected, which determines how the
+   * intial transformation is applied when placing the object.
+   */
+
+  void setIsCOMCorrected(bool _isCOMCorrected) {
+    isCOMCorrected_ = _isCOMCorrected;
+  }
+
+  /**
+   * @brief Reverses the COM correction transformation for objects that require
+   * it. Currently a simple passthrough for stages and Articulated Objects.
+   */
+  Magnum::Vector3 getUncorrectedTranslation() const override {
+    auto translation = getTranslation();
+    auto rotation = getRotation();
+    if (isCOMCorrected_) {
+      translation += rotation.transformVector(visualNode_->translation());
+    }
+    return translation;
+  }
+
+  /**
    * @brief Set the @ref MotionType of the object. If the object is @ref
    * ObjectType::SCENE it can only be @ref esp::physics::MotionType::STATIC. If
    * the object is
@@ -173,13 +195,15 @@ class RigidObject : public RigidBase {
   /**
    * @brief Set the object's state from a @ref
    * esp::metadata::attributes::SceneObjectInstanceAttributes
-   * @param defaultCOMCorrection The default value of whether COM-based
-   * translation correction needs to occur.
    */
-  void resetStateFromSceneInstanceAttr(
-      bool defaultCOMCorrection = false) override;
+  void resetStateFromSceneInstanceAttr() override;
 
  protected:
+  /**
+   * @brief Whether or not this object's placement should be COM corrected.
+   */
+  bool isCOMCorrected_ = false;
+
   /**
    * @brief Convenience variable: specifies a constant control velocity (linear
    * | angular) applied to the rigid body before each step.

@@ -42,7 +42,7 @@ SceneInstanceAttributesManager::initNewObjectInternal(
   if (nullptr == newAttributes) {
     newAttributes = SceneInstanceAttributes::create(sceneInstanceHandle);
   }
-  // attempt to set source directory if exists
+  // set the attributes source filedirectory, from the attributes name
   this->setFileDirectoryFromHandle(newAttributes);
 
   // any internal default configuration here
@@ -191,12 +191,10 @@ SceneInstanceAttributesManager::createAOInstanceAttributesFromJSON(
       io::readMember<std::map<std::string, float>>(
           jCell, "initial_joint_pose", instanceAttrs->copyIntoInitJointPose());
     } else {
-      ESP_WARNING()
-          << "SceneInstanceAttributesManager::"
-             "createAOInstanceAttributesFromJSON : Unknown format for "
-             "initial_joint_pose specified for instance"
-          << instanceAttrs->getHandle()
-          << "in Scene Instance File, so no values are set.";
+      ESP_WARNING() << ": Unknown format for "
+                       "initial_joint_pose specified for instance"
+                    << instanceAttrs->getHandle()
+                    << "in Scene Instance File, so no values are set.";
     }
   }
   // only used for articulated objects
@@ -218,12 +216,10 @@ SceneInstanceAttributesManager::createAOInstanceAttributesFromJSON(
           jCell, "initial_joint_velocities",
           instanceAttrs->copyIntoInitJointVelocities());
     } else {
-      ESP_WARNING()
-          << "SceneInstanceAttributesManager::"
-             "createAOInstanceAttributesFromJSON : Unknown format for "
-             "initial_joint_velocities specified for instance"
-          << instanceAttrs->getHandle()
-          << "in Scene Instance File, so no values are set.";
+      ESP_WARNING() << ": Unknown format for "
+                       "initial_joint_velocities specified for instance"
+                    << instanceAttrs->getHandle()
+                    << "in Scene Instance File, so no values are set.";
     }
   }
   return instanceAttrs;
@@ -258,12 +254,11 @@ void SceneInstanceAttributesManager::loadAbstractObjectAttributesFromJson(
       // only set value if specified in json
       instanceAttrs->setMotionType(strToLookFor);
     } else {
-      ESP_WARNING()
-          << "::createInstanceAttributesFromJSON : motion_type value "
-             "in json  : `"
-          << tmpVal << "|" << strToLookFor
-          << "` does not map to a valid physics::MotionType value, so "
-             "not setting instance motion type value.";
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
+          << ": motion_type value in json  : `" << tmpVal << "`|`"
+          << strToLookFor
+          << "` does not map to a valid physics::MotionType value, so not "
+             "setting instance motion type value.";
     }
   }
 
@@ -312,13 +307,12 @@ std::string SceneInstanceAttributesManager::getTranslationOriginVal(
     if (found != attributes::InstanceTranslationOriginMap.end()) {
       transOrigin = std::move(tmpTransOriginVal);
     } else {
-      ESP_WARNING()
-          << "::getTranslationOriginVal : translation_origin value in json  "
-             ": `"
-          << tmpTransOriginVal << "|" << strToLookFor
-          << "` does not map to a valid "
-             "SceneInstanceTranslationOrigin value, so defaulting "
-             "translation origin to SceneInstanceTranslationOrigin::Unknown.";
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
+          << ": translation_origin value in json :`" << tmpTransOriginVal
+          << "`|`" << strToLookFor
+          << "` does not map to a valid SceneInstanceTranslationOrigin value, "
+             "so defaulting translation origin to "
+             "SceneInstanceTranslationOrigin::Unknown.";
     }
   }
   return transOrigin;

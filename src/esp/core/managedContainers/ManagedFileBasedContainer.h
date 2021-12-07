@@ -19,7 +19,9 @@
 #include <Corrade/Utility/FormatStl.h>
 #include <Corrade/Utility/String.h>
 #include <typeinfo>
+
 namespace Cr = Corrade;
+namespace Mn = Magnum;
 
 namespace esp {
 namespace core {
@@ -65,10 +67,10 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
     std::unique_ptr<io::JsonDocument> docConfig{};
     bool success = this->verifyLoadDocument(filename, docConfig);
     if (!success) {
-      ESP_ERROR() << "<" << Magnum::Debug::nospace << this->objectType_
-                  << Magnum::Debug::nospace
-                  << "> : Failure reading document as JSON :" << filename
-                  << ". Aborting.";
+      ESP_ERROR(Mn::Debug::Flag::NoSpace)
+          << "<" << this->objectType_
+          << "> : Failure reading document as JSON : " << filename
+          << ". Aborting.";
       return nullptr;
     }
     // convert doc to const value
@@ -89,11 +91,10 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
   template <typename U>
   ManagedFileIOPtr buildManagedObjectFromDoc(const std::string& filename,
                                              CORRADE_UNUSED const U& config) {
-    ESP_ERROR()
-        << "<" << Magnum::Debug::nospace << this->objectType_
-        << Magnum::Debug::nospace
-        << "> : Failure loading attributes from document of unknown type :"
-        << filename << ". Aborting.";
+    ESP_ERROR(Mn::Debug::Flag::NoSpace)
+        << "<" << this->objectType_
+        << "> : Failure loading attributes from document :" << filename
+        << " of unknown type :" << typeid(U).name() << ". Aborting.";
   }
   /**
    * @brief Method to load a Managed Object's data from a file.  This is the
@@ -123,7 +124,7 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
   /**
    * @brief Saves the @ref esp::core::AbstractFileBasedManagedObject with handle
    * @p objectHandle to a JSON file using a non-colliding version (if @p
-   * overwrite is false) the object's handle, with appropriate extension
+   * overwrite is false) of the object's handle, with appropriate extension
    * denoting type of JSON, as file name, to the @ref
    * esp::core::AbstractFileBasedManagedObject's specified file directory.
    * @param objectHandle The name of the object to save. If not found, returns
@@ -133,7 +134,33 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
    * @return Whether save was successful
    */
 
-  bool saveManagedObjectToFile(const std::string& objectHandle, bool overwrite);
+  bool saveManagedObjectToFile(const std::string& objectHandle,
+                               bool overwrite) const {
+    if (!this->getObjectLibHasHandle(objectHandle)) {
+      // Object not found
+      ESP_ERROR(Mn::Debug::Flag::NoSpace)
+          << "<" << this->objectType_
+          << ">::saveManagedObjectToFile : No object exists with handle "
+          << objectHandle << " to save as JSON. Aborting.";
+      return false;
+    }
+    // Managed file-based object to save
+    ManagedFileIOPtr obj = this->template getObjectInternal<T>(objectHandle);
+    return this->saveManagedObjectToFile(obj, overwrite);
+  }  // saveManagedObjectToFile
+
+  /**
+   * @brief Saves the passed @p managedObject to a JSON file using a
+   * non-colliding version (if @p overwrite is false) of the object's handle,
+   * with appropriate extension denoting type of JSON, as file name, to the @ref
+   * esp::core::AbstractFileBasedManagedObject's specified file directory.
+   * @param managedObject Theobject to save.
+   * @param overwrite Whether or not an existing json file with the same name
+   * should be overwritten.
+   * @return Whether save was successful
+   */
+  bool saveManagedObjectToFile(const ManagedFileIOPtr& managedObject,
+                               bool overwrite) const;
 
   /**
    * @brief Saves the @ref esp::core::AbstractFileBasedManagedObject with handle
@@ -147,10 +174,10 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
    * @return Whether save was successful
    */
   bool saveManagedObjectToFile(const std::string& objectHandle,
-                               const std::string& fullFilename) {
+                               const std::string& fullFilename) const {
     if (!this->getObjectLibHasHandle(objectHandle)) {
       // Object not found
-      ESP_ERROR()
+      ESP_ERROR(Mn::Debug::Flag::NoSpace)
           << "<" << this->objectType_
           << ">::saveManagedObjectToFile : No object exists with handle "
           << objectHandle << " to save as JSON. Aborting.";
@@ -159,12 +186,27 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
 
     // Managed file-based object to save
     ManagedFileIOPtr obj = this->template getObjectInternal<T>(objectHandle);
-    namespace FileUtil = Cr::Utility::Directory;
+    return this->saveManagedObjectToFile(obj, fullFilename);
+  }
 
+  /**
+   * @brief Saves the passed @p managedObject to a JSON file using the
+   * specified, fully-qualified @p fullFilename, with appropriate type extension
+   * appended if not present. Will overwrite any file with same name found.
+   * @param managedObject Theobject to save.
+   * @param fullFilename The name of the file to save to.  Will overwrite any
+   * file that has the same name.
+   * @return Whether save was successful
+   */
+
+  bool saveManagedObjectToFile(const ManagedFileIOPtr& managedObject,
+                               const std::string& fullFilename) const {
+    namespace FileUtil = Cr::Utility::Directory;
+    // get file directory from passed desired filename.
     std::string fileDirectory = FileUtil::path(fullFilename);
     // if no directory given then use object's local directory
     if (fileDirectory.empty()) {
-      fileDirectory = obj->getFileDirectory();
+      fileDirectory = managedObject->getFileDirectory();
     }
     // construct filename candidate from given fully qualified filename
     // This will make sure written file will have appropriate extension
@@ -174,8 +216,20 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
             .first +
         "." + this->JSONTypeExt_;
 
-    return this->saveManagedObjectToFileInternal(obj, fileName, fileDirectory);
+    if (!FileUtil::exists(fileDirectory)) {
+      // output directory not found
+      ESP_ERROR(Mn::Debug::Flag::NoSpace)
+          << "<" << this->objectType_ << "> : Destination directory "
+          << fileDirectory << " does not exist to save "
+          << managedObject->getSimplifiedHandle()
+          << " object with requested filename :" << fileName << ". Aborting.";
+      return false;
+    }
 
+    // construct fully qualified filename
+    std::string builtFullFilename = FileUtil::join(fileDirectory, fileName);
+    return this->saveManagedObjectToFileInternal(managedObject,
+                                                 builtFullFilename);
   }  // ManagedFileBasedContainer::saveManagedObjectToFile
 
   /**
@@ -201,13 +255,13 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
   //======== Common File-based import and utility functions ========
 
   /**
-   * @brief Returns true if candidate files are found by constructing filenames
-   * based on @p srcFilename and @p extensions . Returns the first fully
-   * qualified filename candidate that is found, if one exists, or an empty
-   * string if not.  This is provided to assist in synthesizing default
+   * @brief Returns true if candidate files are found by constructing
+   * filenames based on @p srcFilename and @p extensions . Returns the first
+   * fully qualified filename candidate that is found, if one exists, or an
+   * empty string if not.  This is provided to assist in synthesizing default
    * filenames that can be expected to exist.
-   * @param srcFilename The source file name to use as a base to build filename
-   * candidates.
+   * @param srcFilename The source file name to use as a base to build
+   * filename candidates.
    * @param extensions A list of extensions to search for
    * @return The fully-qualified filename found to match passed criteria, if
    * exists, or the empty string if not.
@@ -219,23 +273,42 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
   /**
    * @brief Saves @p managedObject to a JSON file using the given @p
    * fileName in the given @p fileDirectory .
-   * @param managedObject The name of the object to save. If not found, returns
-   * false.
-   * @param filename The filename of the file to save to.
-   * @param fileDirectory The directory to save to. If the directory does not
-   * exist, will return false.
+   * @param managedObject The name of the object to save. If not found,
+   * returns false.
+   * @param fullFilename The fully-qualified filename to save to.
    * @return Whether save was successful
    */
-  virtual bool saveManagedObjectToFileInternal(
-      const ManagedFileIOPtr& managedObject,
-      const std::string& filename,
-      const std::string& fileDirectory) const = 0;
+  bool saveManagedObjectToFileInternal(const ManagedFileIOPtr& managedObject,
+                                       const std::string& fullFilename) const {
+    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+        << "<" << this->objectType_ << "> : Attempting to save object named "
+        << managedObject->getHandle() << " to Filename: " << fullFilename;
+
+    // write AbstractFileBasedManagedObject to JSON file
+    // bypassed constructor defaults due to "0 as null" warning they throw
+    rapidjson::Document doc(rapidjson::kObjectType, nullptr, 1024, nullptr);
+    rapidjson::Document::AllocatorType& allocator = doc.GetAllocator();
+    // build Json from passed AbstractFileBasedManagedObject
+    auto configJson = managedObject->writeToJsonObject(allocator);
+    // move constructed config into doc
+    doc.Swap(configJson);
+    // save to file
+    bool success = io::writeJsonToFile(doc, fullFilename, true, 7);
+
+    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+        << "<" << this->objectType_
+        << "> : Attempt to save to Filename: " << fullFilename << " : "
+        << (success ? "Successful." : "Failed.");
+
+    return success;
+  }
 
   /**
-   * @brief Verify passd @p filename is legal document of type T. Returns loaded
-   * document in passed argument if successful. This requires appropriate
-   * specialization for each type name, so if this method is executed it means
-   * no appropriate specialization exists for passed type of document.
+   * @brief Verify passd @p filename is legal document of type T. Returns
+   * loaded document in passed argument if successful. This requires
+   * appropriate specialization for each type name, so if this method is
+   * executed it means no appropriate specialization exists for passed type of
+   * document.
    *
    * @tparam type of document
    * @param filename name of potential document to load
@@ -246,9 +319,10 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
   bool verifyLoadDocument(const std::string& filename,
                           CORRADE_UNUSED std::unique_ptr<U>& resDoc) {
     // by here always fail - means document type U is unsupported
-    ESP_ERROR() << "<" << Magnum::Debug::nospace << this->objectType_
-                << Magnum::Debug::nospace << "> : File" << filename
-                << "failed due to unsupported file type :" << typeid(U).name();
+    ESP_ERROR(Mn::Debug::Flag::NoSpace)
+        << "<" << this->objectType_ << "> : Load file : " << filename
+        << " failed due to unsupported file type : `" << typeid(U).name()
+        << "`";
     return false;
   }  // ManagedContainerBase::verifyLoadDocument
   /**
@@ -263,13 +337,13 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
                           std::unique_ptr<io::JsonDocument>& jsonDoc);
 
   /**
-   * @brief Will build a new file name for @p filename by replacing the existing
-   * extension(s) with the passed @p fileTypeExt, if it is missing.  NOTE : this
-   * does not verify that file exists.
+   * @brief Will build a new file name for @p filename by replacing the
+   * existing extension(s) with the passed @p fileTypeExt, if it is missing.
+   * NOTE : this does not verify that file exists.
    * @param filename The original file name
    * @param fileTypeExt The extension to use for the new filename.
-   * @return The file name changed so that it has the correct @p fileTypeExt if
-   * it was missing.
+   * @return The file name changed so that it has the correct @p fileTypeExt
+   * if it was missing.
    */
   std::string convertFilenameToPassedExt(const std::string& filename,
                                          const std::string& fileTypeExt);
@@ -292,8 +366,9 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
   // ======== Instance Variables ========
   /**
    * @brief The string extension for the JSON configuration file backing this
-   * Manager's @ref esp::core::managedContainers::AbstractFileBasedManagedObject
-   * including the json extension.
+   * Manager's @ref
+   * esp::core::managedContainers::AbstractFileBasedManagedObject including
+   * the json extension.
    */
   const std::string JSONTypeExt_;
 
@@ -356,15 +431,14 @@ std::string ManagedFileBasedContainer<T, Access>::convertFilenameToPassedExt(
       std::string::npos) {
     resHandle = Cr::Utility::Directory::splitExtension(filename).first + "." +
                 fileTypeExt;
-    ESP_VERY_VERBOSE() << "<" << Magnum::Debug::nospace << this->objectType_
-                       << Magnum::Debug::nospace << "> : Filename :" << filename
-                       << "changed to proposed" << fileTypeExt
-                       << "filename :" << resHandle;
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+        << "<" << this->objectType_ << "> : Filename :" << filename
+        << " changed to proposed " << fileTypeExt
+        << " filename : " << resHandle;
   } else {
-    ESP_VERY_VERBOSE() << "<" << Magnum::Debug::nospace << this->objectType_
-                       << Magnum::Debug::nospace << "> : Filename :" << filename
-                       << "contains requested file extension" << fileTypeExt
-                       << "already.";
+    ESP_VERY_VERBOSE(Mn::Debug::Flag::NoSpace)
+        << "<" << this->objectType_ << "> : Filename : " << filename
+        << " contains requested file extension " << fileTypeExt << " already.";
   }
   return resHandle;
 }  // ManagedFileBasedContainer<T, Access>::convertFilenameToPassedExt
@@ -377,37 +451,29 @@ bool ManagedFileBasedContainer<T, Access>::verifyLoadDocument(
     try {
       jsonDoc = std::make_unique<io::JsonDocument>(io::parseJsonFile(filename));
     } catch (...) {
-      ESP_ERROR() << "<" << Magnum::Debug::nospace << this->objectType_
-                  << Magnum::Debug::nospace << "> : Failed to parse" << filename
-                  << "as JSON.";
+      ESP_ERROR(Mn::Debug::Flag::NoSpace)
+          << "<" << this->objectType_ << "> : Failed to parse " << filename
+          << " as JSON.";
       return false;
     }
     return true;
   } else {
     // by here always fail
-    ESP_ERROR() << "<" << Magnum::Debug::nospace << this->objectType_
-                << Magnum::Debug::nospace << "> : File" << filename
-                << "does not exist";
+    ESP_ERROR(Mn::Debug::Flag::NoSpace)
+        << "<" << this->objectType_ << "> : File " << filename
+        << " does not exist";
     return false;
   }
 }  // ManagedFileBasedContainer<T, Access>::verifyLoadDocument
 
 template <class T, ManagedObjectAccess Access>
 bool ManagedFileBasedContainer<T, Access>::saveManagedObjectToFile(
-    const std::string& objectHandle,
-    bool overwrite) {
-  if (!this->getObjectLibHasHandle(objectHandle)) {
-    // Object not found
-    ESP_ERROR() << "<" << this->objectType_
-                << ">::saveManagedObjectToFile : No object exists with handle "
-                << objectHandle << " to save as JSON. Aborting.";
-    return false;
-  }
-  namespace FileUtil = Cr::Utility::Directory;
-  // Managed file-based object to save
-  ManagedFileIOPtr obj = this->template getObjectInternal<T>(objectHandle);
+    const ManagedFileIOPtr& managedObject,
+    bool overwrite) const {
+  const std::string& objectHandle = managedObject->getHandle();
   // get file directory
-  const std::string fileDirectory = obj->getFileDirectory();
+  const std::string fileDirectory = managedObject->getFileDirectory();
+  namespace FileUtil = Cr::Utility::Directory;
   // get candidate for file name
   // first strip object's file directory from objectHandle
   std::size_t pos = objectHandle.find(fileDirectory);
@@ -418,11 +484,12 @@ bool ManagedFileBasedContainer<T, Access>::saveManagedObjectToFile(
   } else {
     // directory found, strip it out and leave remainder (including potential
     // subdirs within directory)
-    fileNameRaw = objectHandle.substr(pos + fileDirectory.length());
+    fileNameRaw = objectHandle.substr(pos + fileDirectory.length() + 1);
   }
   std::string fileNameBase =
       FileUtil::splitExtension(FileUtil::splitExtension(fileNameRaw).first)
           .first;
+
   std::string fileName = fileNameBase + "." + this->JSONTypeExt_;
   if (!overwrite) {
     // if not overwrite, then attempt to find a non-conflicting name before
@@ -430,17 +497,21 @@ bool ManagedFileBasedContainer<T, Access>::saveManagedObjectToFile(
     bool nameExists = true;
     int count = 0;
     while (nameExists) {
-      nameExists = FileUtil::exists(FileUtil::join(fileDirectory, fileName));
+      auto tempFullFileName = FileUtil::join(fileDirectory, fileName);
+      nameExists = FileUtil::exists(tempFullFileName);
       if (nameExists) {
         // build a new file name candidate by adding copy plus some integer
         // value
         fileName = Cr::Utility::formatString(
-            "{} (copy {:04d}).{}", fileNameBase, count, this->JSONTypeExt_);
+            "{} (copy {:.04d}).{}", fileNameBase, count, this->JSONTypeExt_);
         ++count;
       }
     }
   }
-  return this->saveManagedObjectToFileInternal(obj, fileName, fileDirectory);
+  // construct fully qualified filename
+  std::string builtFullFilename = FileUtil::join(fileDirectory, fileName);
+  return this->saveManagedObjectToFileInternal(managedObject,
+                                               builtFullFilename);
 }  // ManagedFileBasedContainer<T, Access>::saveManagedObjectToFile
 }  // namespace managedContainers
 }  // namespace core

@@ -80,6 +80,35 @@ esp::physics::MotionType SceneObjectInstanceAttributes::getMotionType() const {
   return esp::physics::MotionType::UNDEFINED;
 }
 
+void SceneObjectInstanceAttributes::writeValuesToJson(
+    io::JsonGenericValue& jsonObj,
+    io::JsonAllocator& allocator) const {
+  // map "handle" to "template_name" key in json
+  writeValueToJson("handle", "template_name", jsonObj, allocator);
+  writeValueToJson("translation", jsonObj, allocator);
+  if (getTranslationOrigin() != SceneInstanceTranslationOrigin::Unknown) {
+    writeValueToJson("translation_origin", jsonObj, allocator);
+  }
+  writeValueToJson("rotation", jsonObj, allocator);
+  // map "is_instance_visible" to boolean only if not -1, otherwise don't save
+  int visSet = getIsInstanceVisible();
+  if (visSet != ID_UNDEFINED) {
+    // set JSON value based on visSet (0,1) as bool
+    auto jsonVal = io::toJsonValue(static_cast<bool>(visSet), allocator);
+    jsonObj.AddMember("is_instance_visible", jsonVal, allocator);
+  }
+  if (getMotionType() != esp::physics::MotionType::UNDEFINED) {
+    writeValueToJson("motion_type", jsonObj, allocator);
+  }
+  writeValueToJson("shader_type", jsonObj, allocator);
+  writeValueToJson("uniform_scale", jsonObj, allocator);
+  writeValueToJson("mass_scale", jsonObj, allocator);
+
+  // take care of child class valeus, if any exist
+  writeValuesToJsonInternal(jsonObj, allocator);
+
+}  // SceneObjectInstanceAttributes::writeValuesToJson
+
 SceneAOInstanceAttributes::SceneAOInstanceAttributes(const std::string& handle)
     : SceneObjectInstanceAttributes(handle, "SceneAOInstanceAttributes") {
   // set default fixed base and auto clamp values (only used for articulated
@@ -122,6 +151,25 @@ std::string SceneAOInstanceAttributes::getSceneObjInstanceInfoInternal() const {
   return initPoseStr;
 }  // SceneAOInstanceAttributes::getSceneObjInstanceInfoInternal()
 
+void SceneAOInstanceAttributes::writeValuesToJsonInternal(
+    io::JsonGenericValue& jsonObj,
+    io::JsonAllocator& allocator) const {
+  writeValueToJson("fixed_base", jsonObj, allocator);
+  writeValueToJson("auto_clamp_joint_limits", jsonObj, allocator);
+
+  // write out map where key is joint tag, and value is joint pose value.
+  if (!initJointPose_.empty()) {
+    io::addMember(jsonObj, "initial_joint_pose", initJointPose_, allocator);
+  }
+
+  // write out map where key is joint tag, and value is joint angular vel value.
+  if (!initJointVelocities_.empty()) {
+    io::addMember(jsonObj, "initial_joint_velocities", initJointVelocities_,
+                  allocator);
+  }
+
+}  // SceneAOInstanceAttributes::writeValuesToJsonInternal
+
 SceneInstanceAttributes::SceneInstanceAttributes(const std::string& handle)
     : AbstractAttributes("SceneInstanceAttributes", handle) {
   // defaults to no lights
@@ -133,7 +181,8 @@ SceneInstanceAttributes::SceneInstanceAttributes(const std::string& handle)
   setSemanticSceneHandle("");
   // get refs to internal subconfigs for object and ao instances
   objInstConfig_ = editSubconfig<Configuration>("object_instances");
-  artObjInstConfig_ = editSubconfig<Configuration>("ao_instances");
+  artObjInstConfig_ =
+      editSubconfig<Configuration>("articulated_object_instances");
 }
 
 SceneInstanceAttributes::SceneInstanceAttributes(
@@ -145,7 +194,8 @@ SceneInstanceAttributes::SceneInstanceAttributes(
   objInstConfig_ = editSubconfig<Configuration>("object_instances");
   copySubconfigIntoMe<SceneObjectInstanceAttributes>(otr.objInstConfig_,
                                                      objInstConfig_);
-  artObjInstConfig_ = editSubconfig<Configuration>("ao_instances");
+  artObjInstConfig_ =
+      editSubconfig<Configuration>("articulated_object_instances");
   copySubconfigIntoMe<SceneAOInstanceAttributes>(otr.artObjInstConfig_,
                                                  artObjInstConfig_);
 }
@@ -157,8 +207,78 @@ SceneInstanceAttributes::SceneInstanceAttributes(
   // get refs to internal subconfigs for object and ao instances
   // originals were moved over so should retain full derived class
   objInstConfig_ = editSubconfig<Configuration>("object_instances");
-  artObjInstConfig_ = editSubconfig<Configuration>("ao_instances");
+  artObjInstConfig_ =
+      editSubconfig<Configuration>("articulated_object_instances");
 }
+
+void SceneInstanceAttributes::writeValuesToJson(
+    io::JsonGenericValue& jsonObj,
+    io::JsonAllocator& allocator) const {
+  if (getTranslationOrigin() != SceneInstanceTranslationOrigin::Unknown) {
+    writeValueToJson("translation_origin", jsonObj, allocator);
+  }
+  writeValueToJson("default_lighting", jsonObj, allocator);
+  writeValueToJson("navmesh_instance", jsonObj, allocator);
+  writeValueToJson("semantic_scene_instance", jsonObj, allocator);
+}  // SceneInstanceAttributes::writeValuesToJson
+
+void SceneInstanceAttributes::writeSubconfigsToJson(
+    io::JsonGenericValue& jsonObj,
+    io::JsonAllocator& allocator) const {
+  // build list of json objs from subconfigs describing object instances and
+  // articulated object instances
+  // object instances
+  auto objCfgIterPair = objInstConfig_->getSubconfigIterator();
+  io::JsonGenericValue objInstArray(rapidjson::kArrayType);
+  for (auto& cfgIter = objCfgIterPair.first; cfgIter != objCfgIterPair.second;
+       ++cfgIter) {
+    objInstArray.PushBack(cfgIter->second->writeToJsonObject(allocator),
+                          allocator);
+  }
+  jsonObj.AddMember("object_instances", objInstArray, allocator);
+
+  // ao instances
+  auto AObjCfgIterPair = artObjInstConfig_->getSubconfigIterator();
+  io::JsonGenericValue AObjInstArray(rapidjson::kArrayType);
+  for (auto& cfgIter = AObjCfgIterPair.first; cfgIter != AObjCfgIterPair.second;
+       ++cfgIter) {
+    AObjInstArray.PushBack(cfgIter->second->writeToJsonObject(allocator),
+                           allocator);
+  }
+  jsonObj.AddMember("articulated_object_instances", AObjInstArray, allocator);
+
+  // save stage_instance subconfig
+  io::JsonGenericValue subObj =
+      getStageInstance()->writeToJsonObject(allocator);
+  jsonObj.AddMember("stage_instance", subObj, allocator);
+
+  // iterate through other subconfigs using standard handling
+  // do not resave ObjectInstances and AObjInstances
+  // iterate through subconfigs
+  // pair of begin/end const iterators to all subconfigurations
+  auto cfgIterPair = getSubconfigIterator();
+  for (auto& cfgIter = cfgIterPair.first; cfgIter != cfgIterPair.second;
+       ++cfgIter) {
+    if ((cfgIter->first == "object_instances") ||
+        (cfgIter->first == "stage_instance") ||
+        (cfgIter->first == "articulated_object_instances")) {
+      continue;
+    }
+    // only save if subconfig has entries
+    if (cfgIter->second->getNumEntries() > 0) {
+      rapidjson::GenericStringRef<char> name{cfgIter->first.c_str()};
+      io::JsonGenericValue subObj =
+          cfgIter->second->writeToJsonObject(allocator);
+      jsonObj.AddMember(name, subObj, allocator);
+    } else {
+      ESP_VERY_VERBOSE()
+          << "Unitialized/empty Subconfig in Configuration @ key ["
+          << cfgIter->first
+          << "], so nothing will be written to JSON for this key.";
+    }
+  }  // iterate through all configurations
+
+}  // SceneInstanceAttributes::writeSubconfigsToJson
 
 SceneInstanceAttributes& SceneInstanceAttributes::operator=(
     const SceneInstanceAttributes& otr) {
@@ -170,7 +290,8 @@ SceneInstanceAttributes& SceneInstanceAttributes::operator=(
     objInstConfig_ = editSubconfig<Configuration>("object_instances");
     copySubconfigIntoMe<SceneObjectInstanceAttributes>(otr.objInstConfig_,
                                                        objInstConfig_);
-    artObjInstConfig_ = editSubconfig<Configuration>("ao_instances");
+    artObjInstConfig_ =
+        editSubconfig<Configuration>("articulated_object_instances");
     copySubconfigIntoMe<SceneAOInstanceAttributes>(otr.artObjInstConfig_,
                                                    artObjInstConfig_);
   }
@@ -184,7 +305,8 @@ SceneInstanceAttributes& SceneInstanceAttributes::operator=(
       std::move(static_cast<AbstractAttributes>(otr)));
 
   objInstConfig_ = editSubconfig<Configuration>("object_instances");
-  artObjInstConfig_ = editSubconfig<Configuration>("ao_instances");
+  artObjInstConfig_ =
+      editSubconfig<Configuration>("articulated_object_instances");
   return *this;
 }
 std::string SceneInstanceAttributes::getObjectInfoInternal() const {

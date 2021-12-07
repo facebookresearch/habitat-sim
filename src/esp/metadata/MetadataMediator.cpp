@@ -264,9 +264,7 @@ MetadataMediator::getSceneInstanceAttributesByName(
       ESP_DEBUG() << "Dataset :" << activeSceneDataset_
                   << "does not reference a SceneInstanceAttributes named"
                   << sceneName << "but a SceneInstanceAttributes config named"
-                  << sceneFilenameCandidate
-                  << "was found on disk, so "
-                     "loading.";
+                  << sceneFilenameCandidate << "was found on disk, so loading.";
       sceneInstanceAttributes = dsSceneAttrMgr->createObjectFromJSONFile(
           sceneFilenameCandidate, true);
     } else {
@@ -292,18 +290,18 @@ MetadataMediator::getSceneInstanceAttributesByName(
             dsSceneAttrMgr, sceneName);
 
       } else {
-        // 4.  Existing stage config/asset on disk, but not in current dataset.
-        //    In this case, a stage attributes is loaded and registered, then
-        //    added to current dataset, and then 3. is performed.
+        // 4.  Either existing stage config/asset on disk, but not in current
+        // dataset, or no stage config/asset exists with passed name.
+        //    In this case, a stage attributes is loaded/created and registered,
+        //    then added to current dataset, and then 3. is performed.
         ESP_DEBUG() << "Dataset :" << activeSceneDataset_
                     << "has no preloaded SceneInstanceAttributes or "
                        "StageAttributes named :"
                     << sceneName
                     << "so loading/creating a new StageAttributes with this "
                        "name, and then creating a SceneInstanceAttributes with "
-                       "the same name "
-                       "that references this stage.";
-        // create and register stage
+                       "the same name that references this stage.";
+        // create and register stage attributes
         auto stageAttributes = dsStageAttrMgr->createObject(sceneName, true);
         // create a new SceneInstanceAttributes, and give it a
         // SceneObjectInstanceAttributes for the stage with the same name.
@@ -378,9 +376,19 @@ MetadataMediator::makeSceneAndReferenceStage(
   return sceneInstanceAttributes;
 }  // MetadataMediator::makeSceneAndReferenceStage
 
-bool MetadataMediator::getCreateRenderer() const {
-  return simConfig_.createRenderer;
-}
+std::string MetadataMediator::getFilePathForHandle(
+    const std::string& assetHandle,
+    const std::map<std::string, std::string>& assetMapping,
+    const std::string& msgString) {
+  std::map<std::string, std::string>::const_iterator mapIter =
+      assetMapping.find(assetHandle);
+  if (mapIter == assetMapping.end()) {
+    ESP_WARNING() << msgString << ": Unable to find file path for"
+                  << assetHandle << ".  Aborting.";
+    return "";
+  }
+  return mapIter->second;
+}  // MetadataMediator::getFilePathForHandle
 
 std::string MetadataMediator::getDatasetsOverview() const {
   // reserve space for info strings for all scene datasets

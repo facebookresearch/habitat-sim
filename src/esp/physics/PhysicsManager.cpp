@@ -64,13 +64,15 @@ bool PhysicsManager::addStage(
 
   //! Initialize stage
   bool sceneSuccess = addStageFinalize(initAttributes);
-  // add/merge stageInstanceAttributes' copy of user_attributes.
-  if (!stageInstanceAttributes) {
-    ESP_DEBUG() << "Stage built from StageInstanceAttributes";
-    // TODO merge instance attributes into staticStageObject_'s existing
-    // attributes
+  if (sceneSuccess) {
+    // save instance attributes used to create stage
+    staticStageObject_->setSceneInstanceAttr(stageInstanceAttributes);
+    // add/merge stageInstanceAttributes' copy of user_attributes.
+    staticStageObject_->mergeUserAttributes(
+        stageInstanceAttributes->getUserConfiguration());
   }
-  // TODO process any stage transformations here from stageInstanceAttributes
+  // TODO process any stage transformations here from
+  // stageInstanceAttributes
 
   return sceneSuccess;
 }  // PhysicsManager::addStage
@@ -115,14 +117,8 @@ int PhysicsManager::addObjectInstance(
       metadata::attributes::ObjectInstanceShaderType::Unspecified) {
     objAttributes->setShaderType(getShaderTypeName(objShaderType));
   }
-  int objID = 0;
-  if (simulator_ != nullptr) {
-    auto& drawables = simulator_->getDrawableGroup();
-    objID = addObject(objAttributes, &drawables, attachmentNode, lightSetup);
-  } else {
-    // support creation when simulator DNE
-    objID = addObject(objAttributes, nullptr, attachmentNode, lightSetup);
-  }
+  int objID =
+      addObjectQueryDrawables(objAttributes, attachmentNode, lightSetup);
 
   if (objID == ID_UNDEFINED) {
     // instancing failed for some reason.
@@ -141,56 +137,36 @@ int PhysicsManager::addObjectInstance(
   // attributes, if any exist in scene
   // instance.
   objPtr->mergeUserAttributes(objInstAttributes->getUserConfiguration());
+  // determine and set if this object should be COM Corrected or not
+  metadata::attributes::SceneInstanceTranslationOrigin instanceCOMOrigin =
+      objInstAttributes->getTranslationOrigin();
+  objPtr->setIsCOMCorrected(
+      ((defaultCOMCorrection &&
+        (instanceCOMOrigin !=
+         metadata::attributes::SceneInstanceTranslationOrigin::COM)) ||
+       (instanceCOMOrigin ==
+        metadata::attributes::SceneInstanceTranslationOrigin::AssetLocal)));
 
   // set object's location, rotation and other pertinent state values based on
   // scene object instance attributes set in the object above.
-  objPtr->resetStateFromSceneInstanceAttr(defaultCOMCorrection);
+  objPtr->resetStateFromSceneInstanceAttr();
 
   return objID;
 }  // PhysicsManager::addObjectInstance
 
-int PhysicsManager::addObject(const std::string& attributesHandle,
-                              scene::SceneNode* attachmentNode,
-                              const std::string& lightSetup) {
-  esp::metadata::attributes::ObjectAttributes::ptr attributes =
-      resourceManager_.getObjectAttributesManager()->getObjectCopyByHandle(
-          attributesHandle);
-  if (!attributes) {
-    ESP_ERROR() << "Object creation failed due to unknown attributes"
-                << attributesHandle;
-    return ID_UNDEFINED;
-  } else {
-    // attributes exist, get drawables if valid simulator accessible
-    if (simulator_ != nullptr) {
-      auto& drawables = simulator_->getDrawableGroup();
-      return addObject(attributes, &drawables, attachmentNode, lightSetup);
-    } else {
-      // support creation when simulator DNE
-      return addObject(attributes, nullptr, attachmentNode, lightSetup);
-    }
+int PhysicsManager::addObjectQueryDrawables(
+    const esp::metadata::attributes::ObjectAttributes::ptr& objectAttributes,
+    scene::SceneNode* attachmentNode,
+    const std::string& lightSetup) {
+  // attributes exist, get drawables if valid simulator accessible
+  if (simulator_ != nullptr) {
+    // aquire context if available
+    simulator_->getRenderGLContext();
+    auto& drawables = simulator_->getDrawableGroup();
+    return addObject(objectAttributes, &drawables, attachmentNode, lightSetup);
   }
-}  // PhysicsManager::addObject
-
-int PhysicsManager::addObject(const int attributesID,
-                              scene::SceneNode* attachmentNode,
-                              const std::string& lightSetup) {
-  const esp::metadata::attributes::ObjectAttributes::ptr attributes =
-      resourceManager_.getObjectAttributesManager()->getObjectCopyByID(
-          attributesID);
-  if (!attributes) {
-    ESP_ERROR() << "Object creation failed due to unknown attributes ID"
-                << attributesID;
-    return ID_UNDEFINED;
-  } else {
-    // attributes exist, get drawables if valid simulator accessible
-    if (simulator_ != nullptr) {
-      auto& drawables = simulator_->getDrawableGroup();
-      return addObject(attributes, &drawables, attachmentNode, lightSetup);
-    } else {
-      // support creation when simulator DNE
-      return addObject(attributes, nullptr, attachmentNode, lightSetup);
-    }
-  }
+  // support creation when simulator DNE
+  return addObject(objectAttributes, nullptr, attachmentNode, lightSetup);
 }  // PhysicsManager::addObject
 
 int PhysicsManager::addObject(
@@ -288,6 +264,12 @@ int PhysicsManager::addArticulatedObjectInstance(
         const esp::metadata::attributes::SceneAOInstanceAttributes>&
         aObjInstAttributes,
     const std::string& lightSetup) {
+  if (simulator_ == nullptr) {
+    return ID_UNDEFINED;
+  }
+
+  // aquire context if available
+  simulator_->getRenderGLContext();
   // Get drawables from simulator. TODO: Support non-existent simulator?
   auto& drawables = simulator_->getDrawableGroup();
 
@@ -332,6 +314,89 @@ int PhysicsManager::addArticulatedObjectInstance(
   return aObjID;
 }  // PhysicsManager::addArticulatedObjectInstance
 
+void PhysicsManager::buildCurrentStateSceneAttributes(
+    const metadata::attributes::SceneInstanceAttributes::ptr&
+        sceneInstanceAttrs) const {
+  // 1. set stage instance
+  sceneInstanceAttrs->setStageInstance(
+      staticStageObject_->getCurrentStateInstanceAttr());
+  // 2. Clear existing object instances, and set new ones reflecting current
+  // state
+  sceneInstanceAttrs->clearObjectInstances();
+  // get each object's current state as a SceneObjectInstanceAttributes
+  for (const auto& item : existingObjects_) {
+    sceneInstanceAttrs->addObjectInstance(
+        item.second->getCurrentStateInstanceAttr());
+  }
+  // 3. Clear existing Articulated object instances, and set new ones reflecting
+  // current state
+  sceneInstanceAttrs->clearArticulatedObjectInstances();
+  // get each articulated object's current state as a SceneAOInstanceAttributes
+  for (const auto& item : existingArticulatedObjects_) {
+    sceneInstanceAttrs->addArticulatedObjectInstance(
+        item.second->getCurrentStateInstanceAttr());
+  }
+
+}  // PhysicsManager::buildCurrentStateSceneAttributes
+
+int PhysicsManager::addTrajectoryObject(const std::string& trajVisName,
+                                        const std::vector<Mn::Vector3>& pts,
+                                        const std::vector<Mn::Color3>& colorVec,
+                                        int numSegments,
+                                        float radius,
+                                        bool smooth,
+                                        int numInterp) {
+  if (simulator_ != nullptr) {
+    // aquire context if available
+    simulator_->getRenderGLContext();
+  }
+  // 0. Deduplicate sequential points
+  std::vector<Magnum::Vector3> uniquePts;
+  uniquePts.push_back(pts[0]);
+  for (const auto& loc : pts) {
+    if (loc != uniquePts.back()) {
+      uniquePts.push_back(loc);
+    }
+  }
+
+  // 1. create trajectory tube asset from points and save it
+  bool success = resourceManager_.buildTrajectoryVisualization(
+      trajVisName, uniquePts, colorVec, numSegments, radius, smooth, numInterp);
+  if (!success) {
+    ESP_ERROR() << "Failed to create Trajectory visualization mesh for"
+                << trajVisName;
+    return ID_UNDEFINED;
+  }
+  // 2. create object attributes for the trajectory
+  auto objAttrMgr = resourceManager_.getObjectAttributesManager();
+  auto trajObjAttr = objAttrMgr->createObject(trajVisName, false);
+  // turn off collisions
+  trajObjAttr->setIsCollidable(false);
+  trajObjAttr->setComputeCOMFromShape(false);
+  objAttrMgr->registerObject(trajObjAttr, trajVisName, true);
+
+  // 3. add trajectory object to manager
+  auto trajVisID = addObjectQueryDrawables(trajObjAttr);
+  if (trajVisID == ID_UNDEFINED) {
+    // failed to add object - need to delete asset from resourceManager.
+    ESP_ERROR() << "Failed to create Trajectory visualization object for"
+                << trajVisName;
+    // TODO : support removing asset by removing from resourceDict_ properly
+    // using trajVisName
+    return ID_UNDEFINED;
+  }
+  auto trajObj = getRigidObjectManager()->getObjectCopyByID(trajVisID);
+  ESP_DEBUG() << "Trajectory visualization object created with ID" << trajVisID;
+  trajObj->setMotionType(esp::physics::MotionType::KINEMATIC);
+  // add to internal references of object ID and resourceDict name
+  // this is for eventual asset deletion/resource freeing.
+  trajVisIDByName[trajVisName] = trajVisID;
+  trajVisNameByID[trajVisID] = trajVisName;
+
+  return trajVisID;
+
+}  // PhysicsManager::addTrajectoryObject (vector of colors)
+
 esp::physics::ManagedRigidObject::ptr PhysicsManager::getRigidObjectWrapper() {
   return rigidObjectManager_->createObject("ManagedRigidObject");
 }
@@ -346,6 +411,10 @@ PhysicsManager::getArticulatedObjectWrapper() {
 void PhysicsManager::removeObject(const int objectId,
                                   bool deleteObjectNode,
                                   bool deleteVisualNode) {
+  if (simulator_ != nullptr) {
+    // aquire context if available
+    simulator_->getRenderGLContext();
+  }
   assertRigidIdValidity(objectId);
   scene::SceneNode* objectNode = &existingObjects_.at(objectId)->node();
   scene::SceneNode* visualNode = existingObjects_.at(objectId)->visualNode_;
@@ -361,9 +430,22 @@ void PhysicsManager::removeObject(const int objectId,
   if (rigidObjectManager_->getObjectLibHasHandle(objName)) {
     rigidObjectManager_->removeObjectByID(objectId);
   }
+  // remove trajvis
+  if (trajVisNameByID.count(objectId) > 0) {
+    std::string trajVisAssetName = trajVisNameByID[objectId];
+    trajVisNameByID.erase(objectId);
+    trajVisIDByName.erase(trajVisAssetName);
+    // TODO : if object is trajectory visualization, remove its assets as
+    // well once this is supported.
+    // resourceManager_->removeResourceByName(trajVisAssetName);
+  }
 }  // PhysicsManager::removeObject
 
 void PhysicsManager::removeArticulatedObject(int objectId) {
+  if (simulator_ != nullptr) {
+    // aquire context if available
+    simulator_->getRenderGLContext();
+  }
   CORRADE_INTERNAL_ASSERT(existingArticulatedObjects_.count(objectId));
   scene::SceneNode* objectNode =
       &existingArticulatedObjects_.at(objectId)->node();

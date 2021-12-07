@@ -134,9 +134,9 @@ StageAttributes::ptr StageAttributesManager::createPrimBasedAttributesTemplate(
     bool registerTemplate) {
   // verify that a primitive asset with the given handle exists
   if (!StageAttributesManager::isValidPrimitiveAttributes(primAssetHandle)) {
-    ESP_ERROR() << "No primitive with handle '" << Mn::Debug::nospace
-                << primAssetHandle << Mn::Debug::nospace
-                << "' exists so cannot build physical object.  Aborting.";
+    ESP_ERROR(Mn::Debug::Flag::NoSpace)
+        << "No primitive with handle '" << primAssetHandle
+        << "' exists so cannot build physical object.  Aborting.";
     return nullptr;
   }
 
@@ -170,15 +170,49 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
   if (createNewAttributes) {
     newAttributes = StageAttributes::create(attributesHandle);
   }
-  // attempt to set source directory if exists
+  // set the attributes source filedirectory, from the attributes name
   this->setFileDirectoryFromHandle(newAttributes);
+
+  if (!createNewAttributes) {
+    // default exists and was used to create this attributes - investigate any
+    // filename fields that may have %%USE_FILENAME%% directive specified in the
+    // default attributes.
+    // Render asset handle
+    setHandleFromDefaultTag(newAttributes,
+                            newAttributes->getRenderAssetHandle(),
+                            [newAttributes](const std::string& newHandle) {
+                              newAttributes->setRenderAssetHandle(newHandle);
+                            });
+    // Collision asset handle
+    setHandleFromDefaultTag(newAttributes,
+                            newAttributes->getCollisionAssetHandle(),
+                            [newAttributes](const std::string& newHandle) {
+                              newAttributes->setCollisionAssetHandle(newHandle);
+                            });
+    // navmesh asset handle
+    setHandleFromDefaultTag(newAttributes,
+                            newAttributes->getNavmeshAssetHandle(),
+                            [newAttributes](const std::string& newHandle) {
+                              newAttributes->setNavmeshAssetHandle(newHandle);
+                            });
+    // Semantic Scene Descriptor text filehandle
+    setHandleFromDefaultTag(
+        newAttributes, newAttributes->getSemanticDescriptorFilename(),
+        [newAttributes](const std::string& newHandle) {
+          newAttributes->setSemanticDescriptorFilename(newHandle);
+        });
+    // Semantic Scene asset handle
+    setHandleFromDefaultTag(newAttributes,
+                            newAttributes->getSemanticAssetHandle(),
+                            [newAttributes](const std::string& newHandle) {
+                              newAttributes->setSemanticAssetHandle(newHandle);
+                            });
+  }
 
   // set defaults that config files or other constructive processes might
   // override
-  newAttributes->setUseMeshCollision(true);
 
-  // set defaults from SimulatorConfig values; these can also be overridden by
-  // json, for example.
+  // set defaults from SimulatorConfig values;
   newAttributes->setLightSetupKey(cfgLightSetup_);
   newAttributes->setForceFlatShading(cfgLightSetup_ == NO_LIGHT_KEY);
   // set value from config so not necessary to be passed as argument
@@ -188,8 +222,12 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
   // would never be a valid render or collision asset name).  Otherise, expect
   // handles to be set when config is read.
   if (!builtFromConfig) {
-    newAttributes->setRenderAssetHandle(attributesHandle);
-    newAttributes->setCollisionAssetHandle(attributesHandle);
+    if (newAttributes->getRenderAssetHandle().empty()) {
+      newAttributes->setRenderAssetHandle(attributesHandle);
+    }
+    if (newAttributes->getCollisionAssetHandle().empty()) {
+      newAttributes->setCollisionAssetHandle(attributesHandle);
+    }
 
     if (attributesHandle != "NONE") {
       // TODO when all datasets have configuration support, get rid of all these
@@ -198,42 +236,48 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
       // set defaults for navmesh, semantic mesh and lexicon handles
       // start with root stage name, including path but without final extension
       // default navmesh should have .navmesh ext
-      std::string navmeshFilename =
-          this->findFilenameUsingCriteria(attributesHandle, {".navmesh"});
-      // if present, file was found, so set value (overriding attributes
-      // default)
-      if (!navmeshFilename.empty()) {
-        newAttributes->setNavmeshAssetHandle(navmeshFilename);
-      }
-
-      // Build default semantic descriptor file name, using extensions of
-      std::string ssdFileName = this->findFilenameUsingCriteria(
-          attributesHandle, {".house", ".scn", "_semantic.txt"});
-
-      // if not present, set hacky defaults for back compat expectations.
-      if (ssdFileName.empty()) {
-        if (attributesHandle.find("/replica_dataset") != std::string::npos) {
-          // replica hack until dataset gets appropriate configuration support
-          ssdFileName = Cr::Utility::Directory::join(
-              newAttributes->getFileDirectory(), "info_semantic.json");
-        } else {
-          // hack to support back-compat until configs are implemented for all
-          // datasets
-          ssdFileName =
-              Cr::Utility::Directory::splitExtension(attributesHandle).first +
-              ".scn";
+      if (newAttributes->getNavmeshAssetHandle().empty()) {
+        std::string navmeshFilename =
+            this->findFilenameUsingCriteria(attributesHandle, {".navmesh"});
+        // if present, file was found, so set value (overriding attributes
+        // default)
+        if (!navmeshFilename.empty()) {
+          newAttributes->setNavmeshAssetHandle(navmeshFilename);
         }
       }
-      newAttributes->setSemanticDescriptorFilename(ssdFileName);
 
-      // Build default semantic mesh filename as root stage name ending with
-      // "_semantic.ply", for back-compat with Mp3d
-      std::string semanticMeshFilename =
-          this->findFilenameUsingCriteria(attributesHandle, {"_semantic.ply"});
-      // if present, file was found, so set value (overriding attributes
-      // default)
-      if (!semanticMeshFilename.empty()) {
-        newAttributes->setSemanticAssetHandle(semanticMeshFilename);
+      if (newAttributes->getSemanticDescriptorFilename().empty()) {
+        // Build default semantic descriptor file name, using extensions of
+        std::string ssdFileName = this->findFilenameUsingCriteria(
+            attributesHandle, {".house", ".scn", "_semantic.txt"});
+
+        // if not present, set hacky defaults for back compat expectations.
+        if (ssdFileName.empty()) {
+          if (attributesHandle.find("/replica_dataset") != std::string::npos) {
+            // replica hack until dataset gets appropriate configuration support
+            ssdFileName = Cr::Utility::Directory::join(
+                newAttributes->getFileDirectory(), "info_semantic.json");
+          } else {
+            // hack to support back-compat until configs are implemented for all
+            // datasets
+            ssdFileName =
+                Cr::Utility::Directory::splitExtension(attributesHandle).first +
+                ".scn";
+          }
+        }
+        newAttributes->setSemanticDescriptorFilename(ssdFileName);
+      }
+
+      if (newAttributes->getSemanticAssetHandle().empty()) {
+        // Build default semantic mesh filename as root stage name ending with
+        // "_semantic.ply", for back-compat with Mp3d
+        std::string semanticMeshFilename = this->findFilenameUsingCriteria(
+            attributesHandle, {"_semantic.ply"});
+        // if present, file was found, so set value (overriding attributes
+        // default)
+        if (!semanticMeshFilename.empty()) {
+          newAttributes->setSemanticAssetHandle(semanticMeshFilename);
+        }
       }
     }  // do not populate defaults for NONE scene
 
@@ -278,7 +322,7 @@ void StageAttributesManager::setDefaultAssetNameBasedAttributes(
     StageAttributes::ptr attributes,
     bool setFrame,
     const std::string& fileName,
-    std::function<void(int)> assetTypeSetter) {
+    const std::function<void(int)>& assetTypeSetter) {
   // TODO : support future mesh-name specific type setting?
   using Corrade::Utility::String::endsWith;
 

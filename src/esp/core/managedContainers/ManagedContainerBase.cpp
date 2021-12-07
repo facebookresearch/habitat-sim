@@ -174,10 +174,10 @@ int ManagedContainerBase::getObjectIDByHandleOrNew(
         ->getID();
   }
   if (!getNext) {
-    ESP_ERROR() << "<" << Cr::Utility::Debug::nospace << this->objectType_
-                << Cr::Utility::Debug::nospace << "> : No" << objectType_
-                << "managed object with handle" << objectHandle
-                << "exists. Aborting";
+    ESP_ERROR(Magnum::Debug::Flag::NoSpace)
+        << "<" << this->objectType_ << "> : No " << objectType_
+        << " managed object with handle " << objectHandle
+        << " exists. Aborting.";
     return ID_UNDEFINED;
   }
   return getUnusedObjectID();

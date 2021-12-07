@@ -253,11 +253,8 @@ class ArticulatedLink : public RigidBase {
   /**
    * @brief Not used for articulated links.  Set or reset the object's state
    * using the object's specified @p sceneInstanceAttributes_.
-   * @param defaultCOMCorrection The default value of whether COM-based
-   * translation correction needs to occur.
    */
-  void resetStateFromSceneInstanceAttr(
-      CORRADE_UNUSED bool defaultCOMCorrection = false) override {
+  void resetStateFromSceneInstanceAttr() override {
     ESP_DEBUG() << "ArticulatedLink can't do this.";
   }
 
@@ -795,14 +792,30 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   /**
    * @brief Returns the @ref
    * metadata::attributes::SceneAOInstanceAttributes used to place this
-   * Articulated object in the scene.
-   * @return a copy of the scene instance attributes used to place this object
-   * in the scene.
+   * Articulated Object initially in the scene.
+   * @return a read-only copy of the scene instance attributes used to place
+   * this object in the scene.
    */
   std::shared_ptr<const metadata::attributes::SceneAOInstanceAttributes>
-  getSceneInstanceAttributes() const {
-    return PhysicsObjectBase::getSceneInstanceAttrInternal<
+  getInitObjectInstanceAttr() const {
+    return PhysicsObjectBase::getInitObjectInstanceAttrInternal<
         const metadata::attributes::SceneAOInstanceAttributes>();
+  }
+
+  /**
+   * @brief Return a @ref
+   * metadata::attributes::SceneAOInstanceAttributes reflecting the current
+   * state of this Articulated Object.
+   * Note : base PhysicsManager implementation does not support state changes on
+   * ArticulatedObjects, so no change will occur from initialization
+   * InstanceAttributes.
+   * @return a @ref SceneAOInstanceAttributes reflecting this Articulated
+   * Object's current state
+   */
+  virtual std::shared_ptr<metadata::attributes::SceneAOInstanceAttributes>
+  getCurrentStateInstanceAttr() {
+    return PhysicsObjectBase::getCurrentObjectInstanceAttrInternal<
+        metadata::attributes::SceneAOInstanceAttributes>();
   }
 
  protected:
