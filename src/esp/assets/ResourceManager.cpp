@@ -505,6 +505,8 @@ ResourceManager::createStageAssetInfosFromAttributes(
       stageAttributes->getForceFlatShading()    // forceFlatShading
   };
   renderInfo.shaderTypeToUse = stageAttributes->getShaderType();
+  ESP_DEBUG() << "Frame orientation :" << renderInfo.frame.toString()
+              << "instance mesh :" << renderInfo.filepath;
   resMap["render"] = renderInfo;
   if (createCollisionInfo) {
     // create collision asset info if requested
@@ -541,7 +543,13 @@ ResourceManager::createStageAssetInfosFromAttributes(
         // only split semantic mesh if doing frustum culling
         stageAttributes->getFrustumCulling()  // splitInstanceMesh
     };
+    ESP_DEBUG() << "Semantic asset named" << semanticInfo.filepath
+                << "specified to be meshtype"
+                << esp::metadata::attributes::getMeshTypeName(
+                       semanticInfo.type);
     resMap["semantic"] = semanticInfo;
+  } else {
+    ESP_DEBUG() << "Directed to not build Semantic asset info.";
   }
   return resMap;
 }  // ResourceManager::createStageAssetInfosFromAttributes
@@ -679,13 +687,17 @@ bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
     defaultInfo.overridePhongMaterial = Cr::Containers::NullOpt;
 
     if (info.type == AssetType::PRIMITIVE) {
+      ESP_DEBUG() << "Building Prim named:" << info.filepath;
       buildPrimitiveAssetData(info.filepath);
       meshSuccess = true;
     } else if (info.type == AssetType::FRL_PTEX_MESH) {
+      ESP_DEBUG() << "Loading PTEX asset named:" << info.filepath;
       meshSuccess = loadRenderAssetPTex(defaultInfo);
     } else if (info.type == AssetType::INSTANCE_MESH) {
+      ESP_DEBUG() << "Loading InstanceMesh asset named:" << info.filepath;
       meshSuccess = loadRenderAssetIMesh(defaultInfo);
     } else if (isRenderAssetGeneral(info.type)) {
+      ESP_DEBUG() << "Loading general asset named:" << info.filepath;
       meshSuccess = loadRenderAssetGeneral(defaultInfo);
     } else {
       // loadRenderAsset doesn't yet support the requested asset type
@@ -1836,7 +1848,7 @@ void ResourceManager::loadMaterials(Importer& importer,
 
     if (!materialData) {
       ESP_ERROR() << "Material load failed for material index" << iMaterial
-                  << "so skipping that material.";
+                  << "so skipping that material for asset" << assetName << ".";
       continue;
     }
 
@@ -1849,7 +1861,8 @@ void ResourceManager::loadMaterials(Importer& importer,
     if ((shaderTypeToUse != ObjectInstanceShaderType::Material) &&
         (shaderTypeToUse != ObjectInstanceShaderType::Flat) &&
         !(compareShaderTypeToMnMatType(shaderTypeToUse, *materialData))) {
-      ESP_DEBUG() << "Building expanded materialData";
+      ESP_DEBUG() << "Building expanded materialData for material" << assetName
+                  << "@ idx" << iMaterial;
       materialData = esp::gfx::createUniversalMaterial(*materialData);
     }
 
@@ -1857,7 +1870,8 @@ void ResourceManager::loadMaterials(Importer& importer,
     if (checkForPassedShaderType(
             shaderTypeToUse, *materialData, ObjectInstanceShaderType::PBR,
             Mn::Trade::MaterialType::PbrMetallicRoughness)) {
-      ESP_DEBUG() << "Building pbr material";
+      ESP_DEBUG() << "Building pbr material for" << assetName << "@ idx"
+                  << iMaterial;
       finalMaterial =
           buildPbrShadedMaterialData(*materialData, textureBaseIndex);
 
@@ -1865,7 +1879,8 @@ void ResourceManager::loadMaterials(Importer& importer,
     } else if (checkForPassedShaderType(shaderTypeToUse, *materialData,
                                         ObjectInstanceShaderType::Phong,
                                         Mn::Trade::MaterialType::Phong)) {
-      ESP_DEBUG() << "Building phong material";
+      ESP_DEBUG() << "Building phong material for" << assetName << "@ idx"
+                  << iMaterial;
       finalMaterial =
           buildPhongShadedMaterialData(*materialData, textureBaseIndex);
 
@@ -1873,7 +1888,8 @@ void ResourceManager::loadMaterials(Importer& importer,
     } else if (checkForPassedShaderType(shaderTypeToUse, *materialData,
                                         ObjectInstanceShaderType::Flat,
                                         Mn::Trade::MaterialType::Flat)) {
-      ESP_DEBUG() << "Building flat material";
+      ESP_DEBUG() << "Building flat material for" << assetName << "@ idx"
+                  << iMaterial;
       finalMaterial =
           buildFlatShadedMaterialData(*materialData, textureBaseIndex);
 
