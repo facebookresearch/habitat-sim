@@ -303,6 +303,10 @@ StageAttributes::ptr StageAttributesManager::initNewObjectInternal(
         [newAttributes](auto&& PH1) {
           newAttributes->setSemanticAssetType(std::forward<decltype(PH1)>(PH1));
         });
+    // TODO : get rid of this once the hardcoded mesh-type handling is removed,
+    // but for now force all semantic assets to be instance_mesh
+    newAttributes->setSemanticAssetType(
+        static_cast<int>(AssetType::INSTANCE_MESH));
   }
   // set default physical quantities specified in physics manager attributes
   if (physicsAttributesManager_->getObjectLibHasHandle(
