@@ -322,32 +322,26 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
                  "a JSON object to determine search paths so skipping.";
         } else {
           const auto& pathsObj = jCell["paths"];
-          bool pathsWarn = false;
-          std::string pathsWarnType = "";
-          if (pathsObj.HasMember(".json")) {
-            if (!pathsObj[".json"].IsArray()) {
-              pathsWarn = true;
-              pathsWarnType = ".json";
+          // iterate through all provided extensions
+          for (rapidjson::Value::ConstMemberIterator it =
+                   pathsObj.MemberBegin();
+               it != pathsObj.MemberEnd(); ++it) {
+            // for each key, assume it is an extension and attempt to parse
+            const std::string ext{it->name.GetString()};
+            if (!pathsObj[ext.c_str()].IsArray()) {
+              ESP_WARNING(Mn::Debug::Flag::NoSpace)
+                  << "\"" << tag << ".paths\"[" << ext
+                  << "] cell in JSON config unable to be parsed as an array to "
+                     "determine search paths for json configs so skipping.";
+              continue;
             } else {
-              const auto& paths = pathsObj[".json"];
-              attrMgr->buildJSONCfgPathsFromJSONAndLoad(dsDir, paths);
+              const auto& paths = pathsObj[ext.c_str()];
+              if (ext.find(".json") != std::string::npos) {
+                attrMgr->buildJSONCfgPathsFromJSONAndLoad(dsDir, paths);
+              } else {
+                attrMgr->buildAttrSrcPathsFromJSONAndLoad(dsDir, ext, paths);
+              }
             }
-          }
-          if (pathsObj.HasMember(".glb")) {
-            if (!pathsObj[".glb"].IsArray()) {
-              pathsWarn = true;
-              pathsWarnType = ".glb";
-            } else {
-              const auto& paths = pathsObj[".glb"];
-              attrMgr->buildAttrSrcPathsFromJSONAndLoad(dsDir, ".glb", paths);
-            }
-          }
-          // TODO support other extension tags
-          if (pathsWarn) {
-            ESP_WARNING(Mn::Debug::Flag::NoSpace)
-                << "\"" << tag << ".paths\"[" << pathsWarnType
-                << "] cell in JSON config unable to be parsed as an array to "
-                   "determine search paths for json configs so skipping.";
           }
         }  // if paths cell is an object
       }    // if has paths cell
