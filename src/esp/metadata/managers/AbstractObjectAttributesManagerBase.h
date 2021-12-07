@@ -429,8 +429,9 @@ bool AbstractObjectAttributesManager<T, Access>::setHandleFromDefaultTag(
       filenameSetter(tempStr);
       return true;
     }
-    // out of options, reset to original data
-    filenameSetter(srcAssetFilename);
+    // out of options, clear out the wild-card default so that init-based
+    // default is derived and used.
+    filenameSetter("");
   }
   // no tag found - check if existing non-empty field exists.
   return Cr::Utility::Directory::exists(srcAssetFilename);
