@@ -1270,8 +1270,6 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
   const std::string& filename = info.filepath;
 
   CORRADE_INTERNAL_ASSERT(resourceDict_.count(filename) == 0);
-  ESP_DEBUG() << "Frame orientation :" << info.frame.toString()
-              << "instance mesh :" << filename;
 
   /* Open the file. On error the importer already prints a diagnostic message,
      so no need to do that here. The importer implicitly converts per-face
@@ -1317,7 +1315,7 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
       meshMetaData.root.children[meshIDLocal].meshIDLocal = meshIDLocal;
     }
   }
-  // meshMetaData.setRootFrameOrientation(info.frame);
+  meshMetaData.setRootFrameOrientation(info.frame);
   // update the dictionary
   resourceDict_.emplace(filename,
                         LoadedAssetData{info, std::move(meshMetaData)});
@@ -1343,16 +1341,18 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceIMesh(
   int end = indexPair.second;
 
   scene::SceneNode* instanceRoot = &parent->createChild();
+  instanceRoot->MagnumObject::setTransformation(
+      meshMetaData.root.transformFromLocalToParent);
 
   for (int iMesh = start; iMesh <= end; ++iMesh) {
     scene::SceneNode& node = instanceRoot->createChild();
 
-    // Instance mesh does NOT have normal texture, so do not bother to
+    // Semantic mesh does NOT have normal texture, so do not bother to
     // query if the mesh data contain tangent or bitangent.
     gfx::Drawable::Flags meshAttributeFlags{
         gfx::Drawable::Flag::HasVertexColor};
     // WARNING:
-    // This is to initiate drawables for instance mesh, and the instance mesh
+    // This is to initiate drawables for semantic mesh, and the semantic mesh
     // data is NOT stored in the meshData_ in the BaseMesh.
     // That means One CANNOT query the data like e.g.,
     // meshes_.at(iMesh)->getMeshData()->hasAttribute(Mn::Trade::MeshAttribute::Tangent)
