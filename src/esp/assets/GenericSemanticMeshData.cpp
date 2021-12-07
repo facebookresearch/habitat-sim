@@ -54,20 +54,15 @@ GenericSemanticMeshData::buildSemanticMeshData(
   semanticData->cpu_cbo_.resize(srcMeshData.vertexCount());
   const Mn::VertexFormat colorFormat =
       srcMeshData.attributeFormat(Mn::Trade::MeshAttribute::Color);
-  Cr::Containers::StridedArrayView1D<const Magnum::Color3ub> meshColors;
-  if (colorFormat == Mn::VertexFormat::Vector3ubNormalized) {
-    meshColors =
-        srcMeshData.attribute<Mn::Color3ub>(Mn::Trade::MeshAttribute::Color);
 
-  } else if (colorFormat == Mn::VertexFormat::Vector4ubNormalized) {
-    // retrieve RGB view of RGBA color data and copy into data
-    meshColors = Cr::Containers::arrayCast<const Mn::Color3ub>(
-        srcMeshData.attribute<Mn::Color4ub>(Mn::Trade::MeshAttribute::Color));
+  Cr::Containers::Array<Mn::Color3ub> meshColors{Mn::NoInit,
+                                                 srcMeshData.vertexCount()};
 
-  } else {
-    ESP_CHECK(false,
-              msgPrefix << "Unexpected vertex color type " << colorFormat);
-  }
+  Mn::Math::packInto(Cr::Containers::arrayCast<2, float>(
+                         stridedArrayView(srcMeshData.colorsAsArray()))
+                         .except({0, 1}),
+                     Cr::Containers::arrayCast<2, Mn::UnsignedByte>(
+                         stridedArrayView(meshColors)));
 
   Cr::Utility::copy(meshColors,
                     Cr::Containers::arrayCast<Mn::Color3ub>(
@@ -132,7 +127,7 @@ GenericSemanticMeshData::buildSemanticMeshData(
       tmpColorMapToSSDidAndRegionIndex.reserve(numSSDObjs);
       // lambda function to convert a 3-vec representation of a color into an
       // int
-      auto colorAsInt = [](const Mn::Vector3ub& color) -> uint32_t {
+      auto colorAsInt = [](const Mn::Color3ub& color) -> uint32_t {
         return (unsigned(color[0]) << 16) | (unsigned(color[1]) << 8) |
                unsigned(color[2]);
       };
@@ -191,7 +186,7 @@ GenericSemanticMeshData::buildSemanticMeshData(
       int regionID = 0;
       int semanticID = 0;
       for (int vertIdx = 0; vertIdx < srcMeshData.vertexCount(); ++vertIdx) {
-        Mn::Vector3ub meshColor = meshColors[vertIdx];
+        Mn::Color3ub meshColor = meshColors[vertIdx];
         // Convert color to an int @ vertex
         const uint32_t meshColorInt = colorAsInt(meshColor);
 
