@@ -295,7 +295,7 @@ void AttributesConfigsTest::testPhysicsJSONLoad() {
   // verify exists
   CORRADE_VERIFY(physMgrAttr);
 
-  // before test, save attributes with new name
+  // before test, save attributes to disk with new name
   std::string newAttrName = Cr::Utility::formatString(
       "{}/testPhysicsAttrConfig_saved_JSON.{}", testAttrSaveDir,
       physicsAttributesManager_->getJSONTypeExt());
@@ -434,7 +434,7 @@ void AttributesConfigsTest::testLightJSONLoad() {
           lightLayoutAttributesManager_, jsonString, true);
   // verify exists
   CORRADE_VERIFY(lightLayoutAttr);
-  // before test, save attributes with new name
+  // before test, save attributes to disk with new name
   std::string newAttrName = Cr::Utility::formatString(
       "{}/testLightLayoutAttrConfig_saved_JSON.{}", testAttrSaveDir,
       lightLayoutAttributesManager_->getJSONTypeExt());
@@ -712,7 +712,7 @@ void AttributesConfigsTest::testSceneInstanceJSONLoad() {
   // verify exists
   CORRADE_VERIFY(sceneAttr);
 
-  // before test, save attributes with new name
+  // before test, save attributes to disk with new name
   std::string newAttrName = Cr::Utility::formatString(
       "{}/testSceneAttrConfig_saved_JSON.{}", testAttrSaveDir,
       sceneInstanceAttributesManager_->getJSONTypeExt());
@@ -756,6 +756,15 @@ void AttributesConfigsTest::testStageAttrVals(
   CORRADE_COMPARE(stageAttr->getUnitsToMeters(), 1.1);
   CORRADE_COMPARE(stageAttr->getOrientUp(), Magnum::Vector3(2.1, 0, 0));
   CORRADE_COMPARE(stageAttr->getOrientFront(), Magnum::Vector3(0, 2.1, 0));
+
+  // verify that we are set to not use the render asset frame for semantic
+  // meshes.
+  CORRADE_VERIFY(!stageAttr->getUseFrameForAllOrientation());
+  CORRADE_COMPARE(stageAttr->getSemanticOrientFront(),
+                  Magnum::Vector3(2.0, 0.0, 0.0));
+  CORRADE_COMPARE(stageAttr->getSemanticOrientUp(),
+                  Magnum::Vector3(0.0, 2.0, 0.0));
+
   CORRADE_COMPARE(stageAttr->getRenderAssetHandle(), assetPath);
   CORRADE_COMPARE(stageAttr->getCollisionAssetHandle(), assetPath);
   CORRADE_VERIFY(!stageAttr->getIsCollidable());
@@ -813,6 +822,15 @@ void AttributesConfigsTest::testStageJSONLoad() {
           stageAttributesManager_, jsonString, false);
   // verify exists
   CORRADE_VERIFY(stageAttr);
+  // verify that we are set to use the render asset frame for all meshes.
+  CORRADE_VERIFY(stageAttr->getUseFrameForAllOrientation());
+  // set new frame for semantic assets to test functionality
+  stageAttr->setSemanticOrientFront(Magnum::Vector3(2.0, 0.0, 0.0));
+  stageAttr->setSemanticOrientUp(Magnum::Vector3(0.0, 2.0, 0.0));
+  // verify that we are now set to not use the render asset frame for semantic
+  // meshes.
+  CORRADE_VERIFY(!stageAttr->getUseFrameForAllOrientation());
+
   // now need to change the render and collision assets to make sure they are
   // legal so test can proceed (needs to be actual existing file)
   const std::string stageAssetFile =
@@ -825,7 +843,7 @@ void AttributesConfigsTest::testStageJSONLoad() {
   // now register so can be saved to disk
   stageAttributesManager_->registerObject(stageAttr);
 
-  // before test, save attributes with new name
+  // before test, save attributes to disk with new name
   std::string newAttrName = Cr::Utility::formatString(
       "{}/testStageAttrConfig_saved_JSON.{}", testAttrSaveDir,
       stageAttributesManager_->getJSONTypeExt());
@@ -941,7 +959,7 @@ void AttributesConfigsTest::testObjectJSONLoad() {
   // now register so can be saved to disk
   objectAttributesManager_->registerObject(objAttr);
 
-  // before test, save attributes with new name
+  // before test, save attributes to disk with new name
   std::string newAttrName = Cr::Utility::formatString(
       "{}/testObjectAttrConfig_saved_JSON.{}", testAttrSaveDir,
       objectAttributesManager_->getJSONTypeExt());
