@@ -158,11 +158,6 @@ class SemanticScene {
       const quatf& rotation = quatf::FromTwoVectors(-vec3f::UnitZ(),
                                                     geo::ESP_GRAVITY));
 
-  //! load SemanticScene from a SUNCG house format file
-  static bool loadSuncgHouse(const std::string& filename,
-                             SemanticScene& scene,
-                             const quatf& rotation = quatf::Identity());
-
   /**
    * @brief Whether the source file assigns colors to verts for Semantic Mesh.
    */
