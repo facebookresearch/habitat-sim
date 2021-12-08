@@ -380,6 +380,19 @@ void StageAttributesManager::setValsFromJSONDoc(
         stageAttributes->setOrigin(std::forward<decltype(PH1)>(PH1));
       });
 
+  // load stage semantic asset specific up orientation
+  io::jsonIntoConstSetter<Magnum::Vector3>(
+      jsonConfig, "semantic_up", [stageAttributes](const Magnum::Vector3& up) {
+        stageAttributes->setSemanticOrientUp(up);
+      });
+
+  // load stage semantic asset specific front orientation
+  io::jsonIntoConstSetter<Magnum::Vector3>(
+      jsonConfig, "semantic_front",
+      [stageAttributes](const Magnum::Vector3& front) {
+        stageAttributes->setSemanticOrientFront(front);
+      });
+
   // populate specified semantic file name if specified in json - defaults
   // are overridden only if specified in json.
 
