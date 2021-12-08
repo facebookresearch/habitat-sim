@@ -575,16 +575,22 @@ class ResourceManager {
                                     int numInterp = 10);
 
   /**
-   * @brief Build a configuration frame from scene or object attributes values
-   * and return it
+   * @brief Build a configuration frame from specified up and front vectors
+   * and return it.  If up is not orthogonal to front, will return default
+   * frame.
    *
-   * @param attribs the attributes to query for the information.
+   * @param attribName the handle to the attributes the frame is being built
+   * for, for debug purposes.
+   * @param up The up vector to build the frame from
+   * @param front The front vector to build the frame from.
    * @param origin Either the origin of the stageAttributes or the COM value of
    * the objectAttributes.
    * @return the coordinate frame of the assets the passed attributes describes.
    */
   esp::geo::CoordinateFrame buildFrameFromAttributes(
-      const metadata::attributes::AbstractObjectAttributes::ptr& attribs,
+      const std::string& attribName,
+      const Magnum::Vector3& up,
+      const Magnum::Vector3& front,
       const Magnum::Vector3& origin);
 
   /**

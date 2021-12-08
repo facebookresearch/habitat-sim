@@ -18,6 +18,7 @@ AbstractObjectAttributes::AbstractObjectAttributes(
   setMargin(0.04);
   setOrientUp({0, 1, 0});
   setOrientFront({0, 0, -1});
+  setUseFrameForAllOrientation(true);
   // default rendering and collisions will be mesh for physics objects and
   // scenes. Primitive-based objects do not currently support mesh collisions,
   // however, due to issues with how non-triangle meshes (i.e. wireframes) are
@@ -120,6 +121,11 @@ StageAttributes::StageAttributes(const std::string& handle)
     : AbstractObjectAttributes("StageAttributes", handle) {
   setGravity({0, -9.8, 0});
   setOrigin({0, 0, 0});
+  setSemanticOrientUp({0, 1, 0});
+  setSemanticOrientFront({0, 0, -1});
+  // setting defaults for semantic frame will have changed this to false. change
+  // to true so that only used if actually changed.
+  setUseFrameForAllOrientation(true);
   // default to use material-derived shader unless otherwise specified in config
   // or instance config
   setShaderType(getShaderTypeName(ObjectInstanceShaderType::Material));
@@ -140,6 +146,12 @@ void StageAttributes::writeValuesToJsonInternal(
     io::JsonAllocator& allocator) const {
   writeValueToJson("origin", jsonObj, allocator);
   writeValueToJson("gravity", jsonObj, allocator);
+  // only save values if they were actually set specifically
+  if (!getUseFrameForAllOrientation()) {
+    writeValueToJson("semantic_orient_up", "semantic_up", jsonObj, allocator);
+    writeValueToJson("semantic_orient_front", "semantic_front", jsonObj,
+                     allocator);
+  }
   writeValueToJson("semantic_asset", jsonObj, allocator);
   writeValueToJson("nav_asset", jsonObj, allocator);
   writeValueToJson("semantic_descriptor_filename", jsonObj, allocator);

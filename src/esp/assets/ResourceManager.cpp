@@ -478,8 +478,9 @@ ResourceManager::createStageAssetInfosFromAttributes(
     bool createCollisionInfo,
     bool createSemanticInfo) {
   std::map<std::string, AssetInfo> resMap;
-  auto frame =
-      buildFrameFromAttributes(stageAttributes, stageAttributes->getOrigin());
+  auto frame = buildFrameFromAttributes(
+      stageAttributes->getHandle(), stageAttributes->getOrientUp(),
+      stageAttributes->getOrientFront(), stageAttributes->getOrigin());
   float virtualUnitToMeters = stageAttributes->getUnitsToMeters();
   // create render asset info
   auto renderType =
@@ -510,6 +511,15 @@ ResourceManager::createStageAssetInfosFromAttributes(
     // create semantic asset info if requested
     auto semanticType =
         static_cast<AssetType>(stageAttributes->getSemanticAssetType());
+    // This check being false means a specific orientation for semantic meshes
+    // was specified in config file, so they should use -this- orientation
+    // instead of the base render asset orientation.
+    if (!stageAttributes->getUseFrameForAllOrientation()) {
+      frame = buildFrameFromAttributes(
+          stageAttributes->getHandle(), stageAttributes->getSemanticOrientUp(),
+          stageAttributes->getSemanticOrientFront(),
+          stageAttributes->getOrigin());
+    }
     AssetInfo semanticInfo{
         semanticType,                               // type
         stageAttributes->getSemanticAssetHandle(),  // file path
@@ -525,23 +535,23 @@ ResourceManager::createStageAssetInfosFromAttributes(
 }  // ResourceManager::createStageAssetInfosFromAttributes
 
 esp::geo::CoordinateFrame ResourceManager::buildFrameFromAttributes(
-    const AbstractObjectAttributes::ptr& attribs,
+    const std::string& attribName,
+    const Magnum::Vector3& up,
+    const Magnum::Vector3& front,
     const Magnum::Vector3& origin) {
-  const vec3f upEigen{
-      Mn::EigenIntegration::cast<vec3f>(attribs->getOrientUp())};
-  const vec3f frontEigen{
-      Mn::EigenIntegration::cast<vec3f>(attribs->getOrientFront())};
+  const vec3f upEigen{Mn::EigenIntegration::cast<vec3f>(up)};
+  const vec3f frontEigen{Mn::EigenIntegration::cast<vec3f>(front)};
   if (upEigen.isOrthogonal(frontEigen)) {
     const vec3f originEigen{Mn::EigenIntegration::cast<vec3f>(origin)};
     esp::geo::CoordinateFrame frame{upEigen, frontEigen, originEigen};
     return frame;
   } else {
-    ESP_DEBUG() << "Specified frame in Attributes :" << attribs->getHandle()
+    ESP_DEBUG() << "Specified frame in Attributes :" << attribName
                 << "is not orthogonal, so returning default frame.";
     esp::geo::CoordinateFrame frame;
     return frame;
   }
-}  // ResourceManager::buildCoordFrameFromAttribVals
+}  // ResourceManager::buildFrameFromAttributes
 
 std::string ResourceManager::createColorMaterial(
     const esp::assets::PhongMaterialColor& materialColor) {
@@ -882,7 +892,9 @@ bool ResourceManager::loadObjectMeshDataFromFile(
     AssetInfo meshInfo{AssetType::UNKNOWN, filename};
     meshInfo.forceFlatShading = forceFlatShading;
     meshInfo.shaderTypeToUse = objectAttributes->getShaderType();
-    meshInfo.frame = buildFrameFromAttributes(objectAttributes, {0, 0, 0});
+    meshInfo.frame = buildFrameFromAttributes(
+        objectAttributes->getHandle(), objectAttributes->getOrientUp(),
+        objectAttributes->getOrientFront(), {0, 0, 0});
     success = loadRenderAsset(meshInfo);
     if (!success) {
       ESP_ERROR() << "Failed to load a physical object ("

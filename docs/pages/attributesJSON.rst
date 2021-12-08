@@ -69,6 +69,12 @@ Below are the handles and descriptors for various mesh assets used by a stage.
 "semantic_asset"
     - string
     - The name of the file describing the stage's semantic mesh.
+"nav_asset"
+    - string
+    - The name of the file describing the stage's nav mesh.
+"semantic_descriptor_filename"
+    - string
+    - The name of the file describing the semantic mappings for the stage.
 
 Stage Frame and Origin
 ----------------------
@@ -81,6 +87,12 @@ The tags below are used to build a coordinate frame for the stage, and will over
 "front"
     - 3-vector
     - Describes the **forward** direction for the stage in the asset's local space.
+"semantic_up"
+    - 3-vector
+    - Describes the **up** direction for the stage's **semantic mesh** in the asset's local space. If specified, the frame built from this vector will be used instead of the render asset's frame.
+"semantic_front"
+    - 3-vector
+    - Describes the **forward** direction for the stage's **semantic mesh** in the asset's local space. If specified, the frame built from this vector will be used instead of the render asset's frame.
 "origin"
     - 3-vector
     - Describes the **origin** of the stage in the world frame, for alignment purposes.

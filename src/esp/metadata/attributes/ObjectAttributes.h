@@ -242,7 +242,25 @@ class AbstractObjectAttributes : public AbstractAttributes {
   void writeValuesToJson(io::JsonGenericValue& jsonObj,
                          io::JsonAllocator& allocator) const override;
 
+  /**
+   * @brief Whether to use the specified orientation frame for all orientation
+   * tasks for this asset.  This will always be true, except if an overriding
+   * semantic mesh-specific frame is specified for stages.
+   */
+  bool getUseFrameForAllOrientation() const {
+    return get<bool>("use_frame_for_all_orientation");
+  }
+
  protected:
+  /**
+   * @brief Whether to use the specified orientation frame for all orientation
+   * tasks for this asset.  This will always be true, except if an overriding
+   * semantic mesh-specific frame is specified for stages.
+   */
+  void setUseFrameForAllOrientation(bool useFrameForAllOrientation) {
+    set("use_frame_for_all_orientation", useFrameForAllOrientation);
+  }
+
   /**
    * @brief Write child-class-specific values to json object
    *
@@ -379,9 +397,55 @@ class StageAttributes : public AbstractObjectAttributes {
   Magnum::Vector3 getGravity() const { return get<Magnum::Vector3>("gravity"); }
 
   /**
+   * @brief set default up orientation for semantic mesh. This is to support
+   * stage aligning semantic meshes that have different orientations than the
+   * stage render mesh.
+   */
+  void setSemanticOrientUp(const Magnum::Vector3& semanticOrientUp) {
+    set("semantic_orient_up", semanticOrientUp);
+    // specify that semantic meshes should not use base class render asset
+    // orientation
+    setUseFrameForAllOrientation(false);
+  }
+  /**
+   * @brief get default up orientation for semantic mesh. This is to support
+   * stage aligning semantic meshes that have different orientations than the
+   * stage render mesh. Returns render asset up if no value for semantic asset
+   * was specifically set.
+   */
+  Magnum::Vector3 getSemanticOrientUp() const {
+    return (getUseFrameForAllOrientation()
+                ? getOrientUp()
+                : get<Magnum::Vector3>("semantic_orient_up"));
+  }
+
+  /**
+   * @brief set default forward orientation for semantic mesh. This is to
+   * support stage aligning semantic meshes that have different orientations
+   * than the stage render mesh.
+   */
+  void setSemanticOrientFront(const Magnum::Vector3& semanticOrientFront) {
+    set("semantic_orient_front", semanticOrientFront);
+    // specify that semantic meshes should not use base class render asset
+    // orientation
+    setUseFrameForAllOrientation(false);
+  }
+  /**
+   * @brief get default forward orientation for semantic mesh. This is to
+   * support stage aligning semantic meshes that have different orientations
+   * than the stage render mesh. Returns render asset front if no value for
+   * semantic asset was specifically set.
+   */
+  Magnum::Vector3 getSemanticOrientFront() const {
+    return (getUseFrameForAllOrientation()
+                ? getOrientFront()
+                : get<Magnum::Vector3>("semantic_orient_front"));
+  }
+
+  /**
    * @brief Text file that describes the hierharchy of semantic information
-   * embedded in the Semantic Asset mesh.  May be overridden by value specified
-   * in Scene Instance Attributes.
+   * embedded in the Semantic Asset mesh.  May be overridden by value
+   * specified in Scene Instance Attributes.
    */
   void setSemanticDescriptorFilename(
       const std::string& semantic_descriptor_filename) {
@@ -390,8 +454,8 @@ class StageAttributes : public AbstractObjectAttributes {
   }
   /**
    * @brief Text file that describes the hierharchy of semantic information
-   * embedded in the Semantic Asset mesh.  May be overridden by value specified
-   * in Scene Instance Attributes.
+   * embedded in the Semantic Asset mesh.  May be overridden by value
+   * specified in Scene Instance Attributes.
    */
   std::string getSemanticDescriptorFilename() const {
     return get<std::string>("semantic_descriptor_filename");
