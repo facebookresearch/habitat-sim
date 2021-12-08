@@ -52,8 +52,6 @@ GenericSemanticMeshData::buildSemanticMeshData(
             msgPrefix << "has no vertex colors defined, which are required.");
 
   semanticData->cpu_cbo_.resize(srcMeshData.vertexCount());
-  const Mn::VertexFormat colorFormat =
-      srcMeshData.attributeFormat(Mn::Trade::MeshAttribute::Color);
 
   Cr::Containers::Array<Mn::Color3ub> meshColors{Mn::NoInit,
                                                  srcMeshData.vertexCount()};
