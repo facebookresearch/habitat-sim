@@ -49,7 +49,8 @@ GenericSemanticMeshData::buildSemanticMeshData(
   /* Assuming colors are 8-bit RGB to avoid expanding them to float and then
      packing back */
   ESP_CHECK(srcMeshData.hasAttribute(Mn::Trade::MeshAttribute::Color),
-            msgPrefix << "has no vertex colors defined, which are required.");
+            msgPrefix << "has no vertex colors defined, which are required for "
+                         "semantic meshes.");
 
   semanticData->cpu_cbo_.resize(srcMeshData.vertexCount());
 
