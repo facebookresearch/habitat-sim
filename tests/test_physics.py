@@ -1219,14 +1219,12 @@ def test_articulated_object_joint_motors(test_asset):
             if (
                 firstStep and "amass_male" not in test_asset
             ):  # amass_male has spherical joints
-                assert (
-                    np.abs(
-                        np.array(
-                            robot.get_joint_motor_torques(sim.get_physics_time_step())
-                        )
-                    )
-                    > 1.0
-                ).any()
+                joint_motor_torques = np.abs(
+                    np.array(robot.get_joint_motor_torques(sim.get_physics_time_step()))
+                )
+                assert (joint_motor_torques > 1.0).any()
+                assert len(joint_motor_torques) > 0
+                print("PYTORQUES: ", joint_motor_torques)
                 firstStep = False
             if produce_debug_video:
                 observations.append(sim.get_sensor_observations())
