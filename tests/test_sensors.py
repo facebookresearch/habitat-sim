@@ -80,32 +80,49 @@ def _render_and_load_gt(sim, scene, sensor_type, gpu2gpu):
 
 
 _semantic_scenes = [
-    osp.abspath(
-        osp.join(
-            osp.dirname(__file__),
-            "../data/scene_datasets/mp3d/1LXtFkjw3qL/1LXtFkjw3qL.glb",
-        )
+    (
+        osp.abspath(
+            osp.join(
+                osp.dirname(__file__),
+                "../data/scene_datasets/mp3d/1LXtFkjw3qL/1LXtFkjw3qL.glb",
+            )
+        ),
+        "default",
     ),
-    osp.abspath(
-        osp.join(
-            osp.dirname(__file__),
-            "../data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb",
-        )
+    (
+        osp.abspath(
+            osp.join(
+                osp.dirname(__file__),
+                "../data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb",
+            )
+        ),
+        osp.abspath(
+            osp.join(
+                osp.dirname(__file__),
+                "../data/scene_datasets/mp3d_example/mp3d.scene_dataset_config.json",
+            )
+        ),
     ),
 ]
 
 _non_semantic_scenes = [
-    osp.abspath(
-        osp.join(
-            osp.dirname(__file__),
-            "../data/scene_datasets/habitat-test-scenes/skokloster-castle.glb",
-        )
+    (
+        osp.abspath(
+            osp.join(
+                osp.dirname(__file__),
+                "../data/scene_datasets/habitat-test-scenes/skokloster-castle.glb",
+            )
+        ),
+        "default",
     ),
-    osp.abspath(
-        osp.join(
-            osp.dirname(__file__),
-            "../data/scene_datasets/habitat-test-scenes/van-gogh-room.glb",
-        )
+    (
+        osp.abspath(
+            osp.join(
+                osp.dirname(__file__),
+                "../data/scene_datasets/habitat-test-scenes/van-gogh-room.glb",
+            )
+        ),
+        "default",
     ),
 ]
 _test_scenes = _semantic_scenes + _non_semantic_scenes
@@ -135,7 +152,7 @@ all_exotic_semantic_sensor_types = [
 
 @pytest.mark.gfxtest
 @pytest.mark.parametrize(
-    "scene,sensor_type",
+    "scene_and_dataset, sensor_type",
     list(itertools.product(_semantic_scenes, all_base_sensor_types))
     + list(itertools.product(_non_semantic_scenes, all_base_sensor_types[0:2]))
     + list(itertools.product(_test_scenes, all_exotic_sensor_types))
@@ -147,17 +164,19 @@ all_exotic_semantic_sensor_types = [
 @pytest.mark.parametrize("frustum_culling", [True, False])
 @pytest.mark.parametrize("add_sensor_lazy", [True, False])
 def test_sensors(
-    scene,
+    scene_and_dataset,
     sensor_type,
     gpu2gpu,
     frustum_culling,
     add_sensor_lazy,
     make_cfg_settings,
 ):
+    scene = scene_and_dataset[0]
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
     if gpu2gpu and (not habitat_sim.cuda_enabled or not _HAS_TORCH):
         pytest.skip("Skipping GPU->GPU test")
+    scene_dataset_config = scene_and_dataset[1]
 
     # We only support adding more RGB Sensors if one is already in a scene
     # We can add depth sensors whenever
@@ -173,6 +192,7 @@ def test_sensors(
 
     make_cfg_settings[sensor_type] = True
     make_cfg_settings["scene"] = scene
+    make_cfg_settings["scene_dataset_config_file"] = scene_dataset_config
     make_cfg_settings["frustum_culling"] = frustum_culling
 
     cfg = make_cfg(make_cfg_settings)
@@ -203,26 +223,30 @@ def test_sensors(
 
 
 @pytest.mark.gfxtest
-@pytest.mark.parametrize("scene", _test_scenes)
+@pytest.mark.parametrize("scene_and_dataset", _test_scenes)
 @pytest.mark.parametrize("sensor_type", all_base_sensor_types[0:2])
 def test_reconfigure_render(
-    scene,
+    scene_and_dataset,
     sensor_type,
     make_cfg_settings,
 ):
+    scene = scene_and_dataset[0]
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
 
     for sens in all_base_sensor_types:
         make_cfg_settings[sens] = False
+    scene_dataset_config = scene_and_dataset[1]
 
-    make_cfg_settings["scene"] = _test_scenes[-1]
+    make_cfg_settings["scene"] = _test_scenes[-1][0]
+    make_cfg_settings["scene_dataset_config_file"] = _test_scenes[-1][1]
     make_cfg_settings[sensor_type] = True
 
     cfg = make_cfg(make_cfg_settings)
 
     with habitat_sim.Simulator(cfg) as sim:
         make_cfg_settings["scene"] = scene
+        make_cfg_settings["scene_dataset_config_file"] = scene_dataset_config
         sim.reconfigure(make_cfg(make_cfg_settings))
         obs, gt = _render_and_load_gt(sim, scene, sensor_type, False)
 
@@ -239,13 +263,15 @@ def test_reconfigure_render(
 # of the simulator with no sensors
 def test_smoke_no_sensors(make_cfg_settings):
     sims = []
-    for scene in _test_scenes:
+    for scene_and_dataset in _test_scenes:
+        scene = scene_and_dataset[0]
         if not osp.exists(scene):
             continue
-
+        scene_dataset_config = scene_and_dataset[1]
         make_cfg_settings = {k: v for k, v in make_cfg_settings.items()}
         make_cfg_settings["semantic_sensor"] = False
         make_cfg_settings["scene"] = scene
+        make_cfg_settings["scene_dataset_config_file"] = scene_dataset_config
         cfg = make_cfg(make_cfg_settings)
         cfg.agents[0].sensor_specifications = []
         sims.append(habitat_sim.Simulator(cfg))
@@ -255,20 +281,22 @@ def test_smoke_no_sensors(make_cfg_settings):
 
 @pytest.mark.gfxtest
 @pytest.mark.parametrize(
-    "scene",
+    "scene_and_dataset",
     _test_scenes,
 )
 @pytest.mark.parametrize("gpu2gpu", [True, False])
-def test_smoke_redwood_noise(scene, gpu2gpu, make_cfg_settings):
+def test_smoke_redwood_noise(scene_and_dataset, gpu2gpu, make_cfg_settings):
+    scene = scene_and_dataset[0]
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
     if gpu2gpu and (not habitat_sim.cuda_enabled or not _HAS_TORCH):
         pytest.skip("Skipping GPU->GPU test")
-
+    scene_dataset_config = scene_and_dataset[1]
     make_cfg_settings["depth_sensor"] = True
     make_cfg_settings["color_sensor"] = False
     make_cfg_settings["semantic_sensor"] = False
     make_cfg_settings["scene"] = scene
+    make_cfg_settings["scene_dataset_config_file"] = scene_dataset_config
     hsim_cfg = make_cfg(make_cfg_settings)
     hsim_cfg.agents[0].sensor_specifications[0].noise_model = "RedwoodDepthNoiseModel"
     for sensor_spec in hsim_cfg.agents[0].sensor_specifications:
@@ -285,9 +313,10 @@ def test_smoke_redwood_noise(scene, gpu2gpu, make_cfg_settings):
 
 
 @pytest.mark.gfxtest
-@pytest.mark.parametrize("scene", _test_scenes)
+@pytest.mark.parametrize("scene_and_dataset", _test_scenes)
 @pytest.mark.parametrize("sensor_type", all_base_sensor_types[:2])
-def test_initial_hfov(scene, sensor_type, make_cfg_settings):
+def test_initial_hfov(scene_and_dataset, sensor_type, make_cfg_settings):
+    scene = scene_and_dataset[0]
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
     make_cfg_settings["hfov"] = 70
@@ -298,7 +327,7 @@ def test_initial_hfov(scene, sensor_type, make_cfg_settings):
 
 
 @pytest.mark.gfxtest
-@pytest.mark.parametrize("scene", _test_scenes)
+@pytest.mark.parametrize("scene_and_dataset", _test_scenes)
 @pytest.mark.parametrize(
     "model_name",
     [
@@ -308,14 +337,16 @@ def test_initial_hfov(scene, sensor_type, make_cfg_settings):
         "PoissonNoiseModel",
     ],
 )
-def test_rgba_noise(scene, model_name, make_cfg_settings):
+def test_rgba_noise(scene_and_dataset, model_name, make_cfg_settings):
+    scene = scene_and_dataset[0]
     if not osp.exists(scene):
         pytest.skip("Skipping {}".format(scene))
-
+    scene_dataset_config = scene_and_dataset[1]
     make_cfg_settings["depth_sensor"] = False
     make_cfg_settings["color_sensor"] = True
     make_cfg_settings["semantic_sensor"] = False
     make_cfg_settings["scene"] = scene
+    make_cfg_settings["scene_dataset_config_file"] = scene_dataset_config
     hsim_cfg = make_cfg(make_cfg_settings)
     hsim_cfg.agents[0].sensor_specifications[0].noise_model = model_name
 
