@@ -100,7 +100,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
                 mn.Vector3(), mn.Vector3(0.0, 0.0, 1.0), blue
             )
 
-        draw_frame()
+        # draw_frame()
 
     def reconfigure_sim(self) -> None:
         """
@@ -175,6 +175,39 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             self.fm_demo.pop_staging_queue_and_pose()
 
         def run_global() -> None:
+            # choose agent
+            if (
+                self.first_person
+                and self.fpov_agent
+                and self.fm_demo
+                and self.fm_demo.model
+            ):
+                self.render_first_person_pov()
+                model = self.fm_demo.model
+                agent = self.fpov_agent
+                fw_axis = mn.Vector3.z_axis()
+                up_axis = mn.Vector3.y_axis()
+
+                head_id = [
+                    x
+                    for x in model.get_link_ids()
+                    if model.get_link_name(x) == "upperneck"
+                ][0]
+
+                head_ScNode = model.get_link_scene_node(head_id)
+
+                fw_axis = head_ScNode.transformation_matrix().transform_vector(fw_axis)
+                up_axis = head_ScNode.transformation_matrix().transform_vector(up_axis)
+
+                # applying scenenode rotation and translation to FPOV
+                agent.scene_node.translation = head_ScNode.absolute_translation
+                agent.scene_node.rotation = mn.Quaternion.from_matrix(
+                    mn.Matrix4.look_at(
+                        head_ScNode.absolute_translation,
+                        head_ScNode.absolute_translation + fw_axis,
+                        up_axis,
+                    ).rotation()
+                )
 
             # process action orders
             self.fm_demo.process_action_order()
@@ -262,10 +295,14 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         elif key == pressed.SLASH:
             # Toggle reverse direction of motion
             self.fm_demo.is_reversed = not self.fm_demo.is_reversed
+            logger.info(
+                f"Command: staging motion reverse playback set to {self.fm_demo.is_reversed}"
+            )
 
         elif key == pressed.G:
             # Toggle fpov
             self.first_person = not self.first_person
+            logger.info(f"Command: set FPOV to {self.first_person}")
 
         elif key == pressed.M:
             # cycle through mouse modes
@@ -278,12 +315,14 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             return
 
         elif key == pressed.R:
+            logger.info("Command: reconfigure sim")
             self.remove_selector_obj()
             self.reconfigure_sim()
             # reset character to default state
             self.fm_demo = FairmotionInterface(
                 self.sim, self.fps, metadata_file="default"
             )
+            self.navmesh_config_and_recompute()
             event.accepted = True
             self.redraw()
             return
@@ -592,37 +631,6 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         Utilizes the first person agent to render an egocentric perspective of
         the fairmotion character upon toggle FPOV toggle.
         """
-        # choose agent
-        if (
-            self.first_person
-            and self.fpov_agent
-            and self.fm_demo
-            and self.fm_demo.model
-        ):
-            self.render_first_person_pov()
-            model = self.fm_demo.model
-            agent = self.fpov_agent
-            fw_axis = mn.Vector3.z_axis()
-            up_axis = mn.Vector3.y_axis()
-
-            head_id = [
-                x for x in model.get_link_ids() if model.get_link_name(x) == "upperneck"
-            ][0]
-
-            head_ScNode = model.get_link_scene_node(head_id)
-
-            fw_axis = head_ScNode.transformation_matrix().transform_vector(fw_axis)
-            up_axis = head_ScNode.transformation_matrix().transform_vector(up_axis)
-
-            # applying scenenode rotation and translation to FPOV
-            agent.scene_node.translation = head_ScNode.absolute_translation
-            agent.scene_node.rotation = mn.Quaternion.from_matrix(
-                mn.Matrix4.look_at(
-                    head_ScNode.absolute_translation,
-                    head_ScNode.absolute_translation + fw_axis,
-                    up_axis,
-                ).rotation()
-            )
 
     def print_help_text(self) -> None:
         """

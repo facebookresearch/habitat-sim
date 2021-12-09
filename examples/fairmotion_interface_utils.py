@@ -39,9 +39,15 @@ class Motions:
         """
 
         # transitive motion is necessary for scenic motion build
-        def __init__(self, motion_, type_, transitive_motion_=None) -> None:
+        def __init__(
+            self,
+            motion_,
+            type_,
+            transitive_motion_=None,
+            scenic_direction_offset: int = 0,
+        ) -> None:
             logger.info("Loading Motion data...")
-            print("Loading Motion data...")
+            print("Loading Motion data...")  # the logger line above is not printing
             if type_ == MType.TRANSITIVE:
                 # primary
                 self.motion = motion_
@@ -166,6 +172,11 @@ class Motions:
                 self.direction_up = mn.Vector3.z_axis()
                 self.direction_forward = mn.Vector3.x_axis()
 
+                # add scenic_direction offset
+                angle = scenic_direction_offset
+                rotate = mn.Quaternion.rotation(mn.Deg(angle), self.direction_up)
+                self.direction_forward = rotate.transform_vector(self.direction_forward)
+
                 # edge cases
                 self.start_translation = motion_.poses[FIRST].get_transform(
                     ROOT, local=False
@@ -185,24 +196,18 @@ class Motions:
     # Walk-to-walk cycle
     walk_to_walk = MotionData(motion_ops.cut(motion_, 300, 430), MType.TRANSITIVE)
 
+    # Standing pose that must converted (amass -> habitat joint positions)
+    standing_pose = motion_.poses[0]
+
     motion_ = amass.load(
         file="data/fairmotion/amass_test_data/CMU/CMU/09/09_01_poses.npz",
         bm_path="data/fairmotion/amass_test_data/smplh/male/model.npz",
     )
-    """
-    #[TESTING to find run cycle]
-    start = 3
-    offset = 0
-    length = 87 + 1 + 1
-    run_to_run = MotionData(motion_ops.cut(motion_, start + offset, start + length), MType.TRANSITIVE)
-    """
     # Run-to-run cycle
     run_to_run = MotionData(motion_ops.cut(motion_, 3, 89), MType.TRANSITIVE)
 
-    # Standing pose that must converted (amass -> habitat joint positions)
-    standing_pose = motion_.poses[0]
-
     ## SCENIC ##
+
     motion_ = amass.load(
         file="data/fairmotion/amass_test_data/CMU/CMU/13/13_08_poses.npz",
         bm_path="data/fairmotion/amass_test_data/smplh/male/model.npz",
@@ -229,13 +234,20 @@ class Motions:
         file="data/fairmotion/amass_test_data/CMU/CMU/13/13_29_poses.npz",
         bm_path="data/fairmotion/amass_test_data/smplh/male/model.npz",
     )
-    jumping_jacks = MotionData(motion_, MType.SCENIC, transitive_motion_=run_to_run)
+    jumping_jacks = MotionData(
+        motion_, MType.SCENIC, transitive_motion_=run_to_run, scenic_direction_offset=90
+    )
 
     motion_ = amass.load(
         file="data/fairmotion/amass_test_data/CMU/CMU/13/13_10_poses.npz",
         bm_path="data/fairmotion/amass_test_data/smplh/male/model.npz",
     )
-    reach_for = MotionData(motion_, MType.SCENIC, transitive_motion_=walk_to_walk)
+    reach_for = MotionData(
+        motion_,
+        MType.SCENIC,
+        transitive_motion_=walk_to_walk,
+        scenic_direction_offset=-80,
+    )
 
 
 class PathData:
