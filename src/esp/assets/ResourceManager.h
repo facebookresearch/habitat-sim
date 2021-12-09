@@ -766,8 +766,7 @@ class ResourceManager {
    * @return Whether it is a General
    */
   inline bool isRenderAssetGeneral(AssetType type) {
-    return type == AssetType::MP3D_MESH || type == AssetType::UNKNOWN ||
-           type == AssetType::SUNCG_OBJECT;
+    return type == AssetType::MP3D_MESH || type == AssetType::UNKNOWN;
   }
   /**
    * @brief Recursive construction of scene nodes for an asset.
@@ -1041,20 +1040,6 @@ class ResourceManager {
       scene::SceneNode* parent,
       DrawableGroup* drawables,
       std::vector<scene::SceneNode*>* userVisNodeCache);
-
-  /**
-   * @brief Load a SUNCG mesh into assets from a file. !Deprecated! TODO:
-   * remove?
-   *
-   * @param info The @ref AssetInfo for the mesh, already parsed from a file.
-   * @param parent The @ref scene::SceneNode to which the mesh will be added
-   * as a child.
-   * @param drawables The @ref DrawableGroup with which the mesh will be
-   * rendered.
-   */
-  bool loadSUNCGHouseFile(const AssetInfo& info,
-                          scene::SceneNode* parent,
-                          DrawableGroup* drawables);
 
   /**
    * @brief initialize default lighting setups in the current ShaderManager

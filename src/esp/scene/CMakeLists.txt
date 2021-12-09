@@ -18,9 +18,6 @@ add_library(
   SceneNode.h
   SemanticScene.cpp
   SemanticScene.h
-  SuncgObjectCategoryMap.h
-  SuncgSemanticScene.cpp
-  SuncgSemanticScene.h
 )
 
 target_link_libraries(
