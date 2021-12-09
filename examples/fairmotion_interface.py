@@ -98,11 +98,7 @@ class FairmotionInterface:
                 self.save_metadata(metadata_file)
                 self.last_metadata_file = metadata_file
 
-        elif any(
-            [
-                urdf_path is not None,
-            ]
-        ):
+        elif any([urdf_path, amass_path, bm_path]):
             # This sets the instance defaults with init(args)
             self.set_data(urdf_path=urdf_path, amass_path=amass_path, bm_path=bm_path)
             self.save_metadata("default")

@@ -14,6 +14,7 @@ from fairmotion.ops import motion as motion_ops
 from habitat_sim.logging import LoggingContext, logger
 
 LoggingContext.reinitialize_from_env()
+logger.setLevel("INFO")
 
 #### Constants ###
 ROOT, FIRST, LAST = 0, 0, -1
@@ -47,7 +48,6 @@ class Motions:
             scenic_direction_offset: int = 0,
         ) -> None:
             logger.info("Loading Motion data...")
-            print("Loading Motion data...")  # the logger line above is not printing
             if type_ == MType.TRANSITIVE:
                 # primary
                 self.motion = motion_
@@ -185,65 +185,54 @@ class Motions:
                     ROOT, local=False
                 )[0:3, 3]
 
-    ## TRANSITIVE ##
-    motion_ = amass.load(
-        file="data/fairmotion/amass_test_data/CMU/CMU/10/10_04_poses.npz",
-        bm_path="data/fairmotion/amass_test_data/smplh/male/model.npz",
-    )
+    logger.info("Loading Motion data...")
+    motion_files = [
+        "data/fairmotion/amass_test_data/CMU/CMU/10/10_04_poses.npz",  # [0] cycle walk
+        "data/fairmotion/amass_test_data/CMU/CMU/09/09_01_poses.npz",  # [1] cycle run
+        "data/fairmotion/amass_test_data/CMU/CMU/13/13_08_poses.npz",  # [2] drink beverage
+        "data/fairmotion/amass_test_data/CMU/CMU/13/13_22_poses.npz",  # [3] wash window
+        "data/fairmotion/amass_test_data/CMU/CMU/13/13_23_poses.npz",  # [4] sweep floor
+        "data/fairmotion/amass_test_data/CMU/CMU/13/13_29_poses.npz",  # [5] jumping jacks
+        "data/fairmotion/amass_test_data/CMU/CMU/13/13_10_poses.npz",  # [6] reach for
+    ]
+    bm_path = "data/fairmotion/amass_test_data/smplh/male/model.npz"
+    motion_data = amass.load_parallel(motion_files, bm_path=bm_path)
+
+    ### TRANSITIVE ###
     # all motions must have same fps for this implementation, so use first motion to set global
-    fps = motion_.fps
+    fps = motion_data[0].fps
+
+    # Standing pose that must be converted (amass -> habitat joint positions)
+    standing_pose = motion_data[0].poses[0]
 
     # Walk-to-walk cycle
-    walk_to_walk = MotionData(motion_ops.cut(motion_, 300, 430), MType.TRANSITIVE)
-
-    # Standing pose that must converted (amass -> habitat joint positions)
-    standing_pose = motion_.poses[0]
-
-    motion_ = amass.load(
-        file="data/fairmotion/amass_test_data/CMU/CMU/09/09_01_poses.npz",
-        bm_path="data/fairmotion/amass_test_data/smplh/male/model.npz",
+    walk_to_walk = MotionData(
+        motion_ops.cut(motion_data[0], 300, 430), MType.TRANSITIVE
     )
+
     # Run-to-run cycle
-    run_to_run = MotionData(motion_ops.cut(motion_, 3, 89), MType.TRANSITIVE)
+    run_to_run = MotionData(motion_ops.cut(motion_data[1], 3, 89), MType.TRANSITIVE)
 
-    ## SCENIC ##
-
-    motion_ = amass.load(
-        file="data/fairmotion/amass_test_data/CMU/CMU/13/13_08_poses.npz",
-        bm_path="data/fairmotion/amass_test_data/smplh/male/model.npz",
-    )
-    drink_beverage = MotionData(motion_, MType.SCENIC, transitive_motion_=walk_to_walk)
-
-    motion_ = amass.load(
-        file="data/fairmotion/amass_test_data/CMU/CMU/13/13_22_poses.npz",
-        bm_path="data/fairmotion/amass_test_data/smplh/male/model.npz",
+    ### SCENIC ###
+    drink_beverage = MotionData(
+        motion_data[2], MType.SCENIC, transitive_motion_=walk_to_walk
     )
     wash_window = MotionData(
-        motion_ops.cut(motion_, 3040, 4090),
+        motion_ops.cut(motion_data[3], 3040, 4090),
         MType.SCENIC,
         transitive_motion_=walk_to_walk,
     )
-
-    motion_ = amass.load(
-        file="data/fairmotion/amass_test_data/CMU/CMU/13/13_23_poses.npz",
-        bm_path="data/fairmotion/amass_test_data/smplh/male/model.npz",
-    )
-    sweep_floor = MotionData(motion_, MType.SCENIC, transitive_motion_=walk_to_walk)
-
-    motion_ = amass.load(
-        file="data/fairmotion/amass_test_data/CMU/CMU/13/13_29_poses.npz",
-        bm_path="data/fairmotion/amass_test_data/smplh/male/model.npz",
+    sweep_floor = MotionData(
+        motion_data[4], MType.SCENIC, transitive_motion_=walk_to_walk
     )
     jumping_jacks = MotionData(
-        motion_, MType.SCENIC, transitive_motion_=run_to_run, scenic_direction_offset=90
-    )
-
-    motion_ = amass.load(
-        file="data/fairmotion/amass_test_data/CMU/CMU/13/13_10_poses.npz",
-        bm_path="data/fairmotion/amass_test_data/smplh/male/model.npz",
+        motion_data[5],
+        MType.SCENIC,
+        transitive_motion_=run_to_run,
+        scenic_direction_offset=90,
     )
     reach_for = MotionData(
-        motion_,
+        motion_data[6],
         MType.SCENIC,
         transitive_motion_=walk_to_walk,
         scenic_direction_offset=-80,
