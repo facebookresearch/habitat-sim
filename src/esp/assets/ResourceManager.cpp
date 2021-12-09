@@ -505,8 +505,10 @@ ResourceManager::createStageAssetInfosFromAttributes(
       stageAttributes->getForceFlatShading()    // forceFlatShading
   };
   renderInfo.shaderTypeToUse = stageAttributes->getShaderType();
-  ESP_DEBUG() << "Frame orientation :" << renderInfo.frame.toString()
-              << "instance mesh :" << renderInfo.filepath;
+  std::string debugStr = "Frame :";
+  Cr::Utility::formatInto(debugStr, debugStr.size(),
+                          "{} for render mesh named : {}",
+                          renderInfo.frame.toString(), renderInfo.filepath);
   resMap["render"] = renderInfo;
   if (createCollisionInfo) {
     // create collision asset info if requested
@@ -543,14 +545,18 @@ ResourceManager::createStageAssetInfosFromAttributes(
         // only split semantic mesh if doing frustum culling
         stageAttributes->getFrustumCulling()  // splitInstanceMesh
     };
-    ESP_DEBUG() << "Semantic asset named" << semanticInfo.filepath
-                << "specified to be meshtype"
-                << esp::metadata::attributes::getMeshTypeName(
-                       semanticInfo.type);
+
+    Cr::Utility::formatInto(
+        debugStr, debugStr.size(),
+        "|{} for semantic mesh named : {} with type specified as {}",
+        frame.toString(), semanticInfo.filepath,
+        esp::metadata::attributes::getMeshTypeName(semanticInfo.type));
     resMap["semantic"] = semanticInfo;
   } else {
-    ESP_DEBUG() << "Directed to not build Semantic asset info.";
+    Cr::Utility::formatInto(debugStr, debugStr.size(),
+                            "|No Semantic asset info specified.");
   }
+  ESP_DEBUG() << debugStr;
   return resMap;
 }  // ResourceManager::createStageAssetInfosFromAttributes
 
@@ -609,7 +615,7 @@ scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
     // sensors.
     if (!(creation.isSemantic() && creation.isRGBD())) {
       ESP_WARNING(Mn::Debug::Flag::NoSpace)
-          << "unsupported instance creation flags for asset ["
+          << "Unsupported instance creation flags for asset ["
           << assetInfo.filepath << "]";
       return nullptr;
     }
@@ -620,7 +626,7 @@ scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
         // Because we have a separate semantic scene graph, we can't support a
         // static instance with both isSemantic and isRGBD.
         ESP_WARNING(Mn::Debug::Flag::NoSpace)
-            << "unsupported instance creation flags for asset ["
+            << "Unsupported instance creation flags for asset ["
             << assetInfo.filepath
             << "] with "
                "SimulatorConfiguration::forceSeparateSemanticSceneGraph=true.";
@@ -1838,8 +1844,12 @@ void ResourceManager::loadMaterials(Importer& importer,
   // name of asset, for debugging purposes
   const std::string assetName =
       Cr::Utility::Directory::filename(loadedAssetData.assetInfo.filepath);
+  int numMaterials = importer.materialCount();
+  ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+      << "Building " << numMaterials << " materials for asset named '"
+      << assetName << "' : ";
 
-  for (int iMaterial = 0; iMaterial < importer.materialCount(); ++iMaterial) {
+  for (int iMaterial = 0; iMaterial < numMaterials; ++iMaterial) {
     // TODO:
     // it seems we have a way to just load the material once in this case,
     // as long as the materialName includes the full path to the material
@@ -1847,12 +1857,13 @@ void ResourceManager::loadMaterials(Importer& importer,
         importer.material(iMaterial);
 
     if (!materialData) {
-      ESP_ERROR() << "Material load failed for material index" << iMaterial
+      ESP_ERROR() << "Material load failed for index" << iMaterial
                   << "so skipping that material for asset" << assetName << ".";
       continue;
     }
 
     std::unique_ptr<gfx::MaterialData> finalMaterial;
+    std::string debugStr = Cr::Utility::formatString("Idx {:.02d}:", iMaterial);
 
     int textureBaseIndex = loadedAssetData.meshMetaData.textureIndex.first;
     // If we are not using the material's native shadertype, or flat (Which all
@@ -1861,8 +1872,11 @@ void ResourceManager::loadMaterials(Importer& importer,
     if ((shaderTypeToUse != ObjectInstanceShaderType::Material) &&
         (shaderTypeToUse != ObjectInstanceShaderType::Flat) &&
         !(compareShaderTypeToMnMatType(shaderTypeToUse, *materialData))) {
-      ESP_DEBUG() << "Building expanded materialData for material" << assetName
-                  << "@ idx" << iMaterial;
+      Cr::Utility::formatInto(
+          debugStr, debugStr.size(),
+          "(Expanding existing materialData to support requested shaderType `"
+          "{}`) ",
+          metadata::attributes::getShaderTypeName(shaderTypeToUse));
       materialData = esp::gfx::createUniversalMaterial(*materialData);
     }
 
@@ -1870,8 +1884,7 @@ void ResourceManager::loadMaterials(Importer& importer,
     if (checkForPassedShaderType(
             shaderTypeToUse, *materialData, ObjectInstanceShaderType::PBR,
             Mn::Trade::MaterialType::PbrMetallicRoughness)) {
-      ESP_DEBUG() << "Building pbr material for" << assetName << "@ idx"
-                  << iMaterial;
+      Cr::Utility::formatInto(debugStr, debugStr.size(), "PBR.");
       finalMaterial =
           buildPbrShadedMaterialData(*materialData, textureBaseIndex);
 
@@ -1879,8 +1892,7 @@ void ResourceManager::loadMaterials(Importer& importer,
     } else if (checkForPassedShaderType(shaderTypeToUse, *materialData,
                                         ObjectInstanceShaderType::Phong,
                                         Mn::Trade::MaterialType::Phong)) {
-      ESP_DEBUG() << "Building phong material for" << assetName << "@ idx"
-                  << iMaterial;
+      Cr::Utility::formatInto(debugStr, debugStr.size(), "Phong.");
       finalMaterial =
           buildPhongShadedMaterialData(*materialData, textureBaseIndex);
 
@@ -1888,8 +1900,7 @@ void ResourceManager::loadMaterials(Importer& importer,
     } else if (checkForPassedShaderType(shaderTypeToUse, *materialData,
                                         ObjectInstanceShaderType::Flat,
                                         Mn::Trade::MaterialType::Flat)) {
-      ESP_DEBUG() << "Building flat material for" << assetName << "@ idx"
-                  << iMaterial;
+      Cr::Utility::formatInto(debugStr, debugStr.size(), "Flat.");
       finalMaterial =
           buildFlatShadedMaterialData(*materialData, textureBaseIndex);
 
@@ -1901,6 +1912,7 @@ void ResourceManager::loadMaterials(Importer& importer,
                     metadata::attributes::getShaderTypeName(shaderTypeToUse),
                     iMaterial, assetName));
     }
+    ESP_DEBUG() << debugStr;
     // for now, just use unique ID for material key. This may change if we
     // expose materials to user for post-load modification
     shaderManager_.set(std::to_string(nextMaterialID_++),
