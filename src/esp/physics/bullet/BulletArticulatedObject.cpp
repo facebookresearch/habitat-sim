@@ -451,7 +451,7 @@ std::vector<float> BulletArticulatedObject::getJointMotorTorques(
       auto& btMotor = articulatedJointMotors.at(motor.first);
       btScalar impulse = btMotor->getAppliedImpulse(0);
       btScalar force = impulse / fixedTimeStep;
-      torques[motor.second->index] = force;
+      torques[motor.second->index] += force;
 
     } else {
       throw "getJointMotorTorques is not yet implemented for spherical joints.";
