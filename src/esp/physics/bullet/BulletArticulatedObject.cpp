@@ -442,7 +442,7 @@ std::vector<float> BulletArticulatedObject::getJointPositions() {
 
 std::vector<float> BulletArticulatedObject::getJointMotorTorques(
     double fixedTimeStep) {
-  std::vector<float> torques(btMultiBody_->getNumLinks());
+  std::vector<float> torques(btMultiBody_->getNumDofs());
   for (auto& motor : jointMotors_) {
     btMultibodyLink& btLink = btMultiBody_->getLink(motor.second->index);
     // int startIndex = velocities ? btLink.m_dofOffset : btLink.m_cfgOffset;
