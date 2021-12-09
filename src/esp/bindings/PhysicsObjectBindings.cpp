@@ -404,7 +404,10 @@ void declareArticulatedObjectWrapper(py::module& m,
                         .c_str())
       .def("get_joint_motor_torques",
            &ManagedArticulatedObject::getJointMotorTorques,
-           ("Get " + objType + "'s array of joint torques. ").c_str(),
+           ("Get " + objType +
+            "'s array of joint torques given the current physics time step "
+            "fixedTimeStep")
+               .c_str(),
            "fixedTimeStep"_a)
       .def_property_readonly("joint_position_limits",
                              &ManagedArticulatedObject::getJointPositionLimits,

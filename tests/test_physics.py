@@ -1212,73 +1212,28 @@ def test_articulated_object_joint_motors(test_asset):
         # to ensure joint has enough distance to achieve target velocity, reset positions
         robot.clear_joint_states()
 
+        firstStep = True
         target_time += 0.5
         while sim.get_world_time() < target_time:
             sim.step_physics(1.0 / 60.0)
+            if (
+                firstStep and "amass_male" not in test_asset
+            ):  # amass_male has spherical joints
+                assert (
+                    np.abs(
+                        np.array(
+                            robot.get_joint_motor_torques(sim.get_physics_time_step())
+                        )
+                    )
+                    > 1.0
+                ).any()
+                firstStep = False
             if produce_debug_video:
                 observations.append(sim.get_sensor_observations())
 
         # TODO: spherical joint motor velocities are not working correctly
         if "amass_male" not in test_asset:
             assert np.allclose(new_vel_target, robot.joint_velocities, atol=0.06)
-
-            for link_id in robot.get_link_ids():
-                print(
-                    f" L({link_id}): name = {robot.get_link_name(link_id)} | joint_name = {robot.get_link_joint_name(link_id)}"
-                )
-                if (
-                    robot.get_link_joint_type(link_id)
-                    == habitat_sim.physics.JointType.Spherical
-                ):
-                    # construct a spherical JointMotorSettings
-                    joint_motor_settings = habitat_sim.physics.JointMotorSettings(
-                        spherical_position_target=mn.Quaternion(((2, 3, 4), 1)),
-                        position_gain=1.0,
-                        spherical_velocity_target=mn.Vector3(),
-                        velocity_gain=0.1,
-                        max_impulse=10000.0,
-                    )
-                elif (
-                    robot.get_link_joint_type(link_id)
-                    == habitat_sim.physics.JointType.Prismatic
-                    or robot.get_link_joint_type(link_id)
-                    == habitat_sim.physics.JointType.Revolute
-                ):
-                    # construct a single dof JointMotorSettings
-                    joint_motor_settings = habitat_sim.physics.JointMotorSettings(
-                        position_target=2.0,
-                        position_gain=1.0,
-                        velocity_target=0.0,
-                        velocity_gain=0.1,
-                        max_impulse=10000.0,
-                    )
-                else:
-                    # planar or fixed joints are not supported
-                    continue
-                # create the motor from its settings
-                robot.create_joint_motor(link_id, joint_motor_settings)
-
-            firstStep = True
-            target_time += 6.0
-            while sim.get_world_time() < target_time:
-                sim.step_physics(1.0 / 60.0)
-                print(
-                    np.array(robot.get_joint_motor_torques(sim.get_physics_time_step()))
-                )
-                if firstStep:
-                    assert (
-                        np.abs(
-                            np.array(
-                                robot.get_joint_motor_torques(
-                                    sim.get_physics_time_step()
-                                )
-                            )
-                        )
-                        > 10
-                    ).any()
-                    firstStep = False
-                if produce_debug_video:
-                    observations.append(sim.get_sensor_observations())
 
         # produce some test debug video
         if produce_debug_video:

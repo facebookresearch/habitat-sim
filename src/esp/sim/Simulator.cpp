@@ -688,6 +688,7 @@ double Simulator::getPhysicsTimeStep() {
   if (physicsManager_ != nullptr) {
     return physicsManager_->getTimestep();
   }
+  return -1;
 }
 
 bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,

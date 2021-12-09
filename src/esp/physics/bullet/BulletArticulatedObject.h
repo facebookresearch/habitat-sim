@@ -214,6 +214,9 @@ class BulletArticulatedObject : public ArticulatedObject {
   /**
    * @brief Get the torques on each joint
    *
+   * @param fixedTimeStep The physics timestep used by the simulator.  Necessary
+   * to convert impulse into torque.
+   *
    * @return Array of torques on each joint
    */
   std::vector<float> getJointMotorTorques(double fixedTimeStep);
