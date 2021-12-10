@@ -6,19 +6,22 @@ import ctypes
 import random
 import sys
 import time
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, Optional, Tuple
+
+import numpy as np
 
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
 import magnum as mn
 from magnum.platform.glfw import Application
-from viewer import HabitatSimInteractiveViewer, MouseMode
+from viewer import HabitatSimInteractiveViewer, MouseMode, Timer
 
 import habitat_sim
 import habitat_sim.physics as phy
 from examples.fairmotion_interface import FairmotionInterface
-from examples.settings import default_sim_settings
+from examples.fairmotion_interface_utils import Activity
+from examples.settings import default_sim_settings, make_cfg
 from habitat_sim.logging import logger
 
 
@@ -67,6 +70,12 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         # shortest path attributes
         self.spline_path_traj_obj_id = -1
 
+        # perpetual motion generator
+        self.perpetual = False
+
+        # FPOV for farimotion character
+        self.first_person = False
+
         self.navmesh_config_and_recompute()
 
     def debug_draw(self):
@@ -78,7 +87,6 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             red = mn.Color4(1.0, 0.0, 0.0, 1.0)
             green = mn.Color4(0.0, 1.0, 0.0, 1.0)
             blue = mn.Color4(0.0, 0.0, 1.0, 1.0)
-            # yellow = mn.Color4(1.0, 1.0, 0.0, 1.0)
 
             # x axis
             self.sim.get_debug_line_render().draw_transformed_line(
@@ -95,7 +103,67 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
 
         # draw_frame()
 
-    def draw_event(self, simulation_call: Optional[Callable] = None) -> None:
+    def reconfigure_sim(self) -> None:
+        """
+        Utilizes the current `self.sim_settings` to configure and set up a new
+        `habitat_sim.Simulator`, and then either starts a simulation instance, or replaces
+        the current simulator instance, reloading the most recently loaded scene
+        """
+        # configure our sim_settings but then set the agent to our default
+        self.cfg = make_cfg(self.sim_settings)
+        self.agent_id: int = self.sim_settings["default_agent"]
+        self.cfg.agents[self.agent_id] = self.default_agent_config()
+
+        # first person agent
+        camera_sensor_spec = habitat_sim.CameraSensorSpec()
+        camera_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
+        camera_sensor_spec.resolution = [
+            self.sim_settings["height"],
+            self.sim_settings["width"],
+        ]
+        camera_sensor_spec.position = np.array([0, 0, 0])
+        camera_sensor_spec.orientation = np.array([0, 0, 0])
+        camera_sensor_spec.uuid = "fpov_sensor"
+
+        agent_config = habitat_sim.agent.AgentConfiguration(
+            height=0.01,
+            radius=0.01,
+            sensor_specifications=[camera_sensor_spec],
+            body_type="cylinder",
+        )
+        self.fpov_agent_id = len(self.cfg.agents)
+        self.cfg.agents.append(agent_config)
+
+        if self.sim is None:
+            self.sim = habitat_sim.Simulator(self.cfg)
+
+        else:  # edge case
+            if self.sim.config.sim_cfg.scene_id == self.cfg.sim_cfg.scene_id:
+                # we need to force a reset, so change the internal config scene name
+                self.sim.config.sim_cfg.scene_id = "NONE"
+            self.sim.reconfigure(self.cfg)
+
+        self.active_scene_graph = self.sim.get_active_scene_graph()
+        self.default_agent = self.sim.get_agent(self.agent_id)
+        self.agent_body_node = self.default_agent.scene_node
+        self.render_camera = self.agent_body_node.node_sensor_suite.get("color_sensor")
+
+        self.agent_body_node.translation = mn.Vector3(1.0, 0, 3)
+
+        self.fpov_agent = self.sim.get_agent(self.fpov_agent_id)
+        self.fpov_init_rotation = (
+            self.fpov_agent.scene_node.rotation
+        )  # Quaternion({0, 0.263971, 0}, 0.964531)
+
+        Timer.start()
+        self.step = -1
+
+    def draw_event(
+        self,
+        simulation_call: Optional[Callable] = None,
+        global_call: Optional[Callable] = None,
+        active_agent_id_and_sensor_name: Tuple[int, str] = (0, "color_sensor"),
+    ) -> None:
         """
         Calls continuously to re-render frames and swap the two frame buffers
         at a fixed rate. Use `simulation_call` to perform method calls during
@@ -103,11 +171,41 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         """
 
         def play_motion() -> None:
-            if self.fm_demo.motion is not None:
-                self.fm_demo.next_pose()
-                self.fm_demo.update_pathfollower_sequential()
+            self.fm_demo.next_pose()
+            self.fm_demo.update_pathfollower_sequential()
+            self.fm_demo.pop_staging_queue_and_pose()
 
-        super().draw_event(simulation_call=play_motion)
+        def run_global() -> None:
+            # choose agent
+            if (
+                self.first_person
+                and self.fpov_agent
+                and self.fm_demo
+                and self.fm_demo.model
+            ):
+                self.render_first_person_pov()
+
+            # process action orders
+            self.fm_demo.process_action_order()
+            if self.perpetual and len(self.fm_demo.order_queue) < 2:
+                self.fm_demo.push_action_order()
+
+        # choose agent
+        if (
+            self.first_person
+            and self.fpov_agent
+            and self.fm_demo
+            and self.fm_demo.model
+        ):
+            keys = (self.fpov_agent_id, "fpov_sensor")
+        else:
+            keys = active_agent_id_and_sensor_name
+
+        super().draw_event(
+            simulation_call=play_motion,
+            global_call=run_global,
+            active_agent_id_and_sensor_name=keys,
+        )
 
     def key_press_event(self, event: Application.KeyEvent) -> None:
         """
@@ -147,6 +245,25 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             self.redraw()
             return
 
+        elif key == pressed.U:
+            if event.modifiers == mod.SHIFT:
+                self.perpetual = not self.perpetual
+                logger.info(
+                    f"Command: perpetual motion generation set to {self.perpetual}"
+                )
+            else:
+                self.fm_demo.push_action_order()
+                event.accepted = True
+                self.redraw()
+                return
+
+        elif key == pressed.I:
+            self.fm_demo.load_model()
+            self.fm_demo.activity = Activity.SEQUENCE
+            event.accepted = True
+            self.redraw()
+            return
+
         elif key == pressed.K:
             # Toggle Key Frames
             self.fm_demo.cycle_model_previews()
@@ -154,6 +271,14 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         elif key == pressed.SLASH:
             # Toggle reverse direction of motion
             self.fm_demo.is_reversed = not self.fm_demo.is_reversed
+            logger.info(
+                f"Command: staging motion reverse playback set to {self.fm_demo.is_reversed}"
+            )
+
+        elif key == pressed.G:
+            # Toggle fpov
+            self.first_person = not self.first_person
+            logger.info(f"Command: set FPOV to {self.first_person}")
 
         elif key == pressed.M:
             # cycle through mouse modes
@@ -166,10 +291,14 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             return
 
         elif key == pressed.R:
+            logger.info("Command: reconfigure sim")
             self.remove_selector_obj()
-            super().reconfigure_sim()
+            self.reconfigure_sim()
             # reset character to default state
-            self.fm_demo = FairmotionInterface(self.sim, metadata_file="default")
+            self.fm_demo = FairmotionInterface(
+                self.sim, self.fps, metadata_file="default"
+            )
+            self.navmesh_config_and_recompute()
             event.accepted = True
             self.redraw()
             return
@@ -397,7 +526,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             found_path = self.sim.pathfinder.find_path(path)
             self.path_points = path.points
 
-        spline_points = habitat_sim.geo.build_catmull_rom_spline(path.points, 5, 0.5)
+        spline_points = habitat_sim.geo.build_catmull_rom_spline(path.points, 10, 0.75)
         path.points = spline_points
 
         colors_spline = [mn.Color3.blue(), mn.Color3.green()]
@@ -454,7 +583,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         # compute NavMesh to be wary of Scene Objects
         self.navmesh_settings = habitat_sim.NavMeshSettings()
         self.navmesh_settings.set_defaults()
-        self.navmesh_settings.agent_radius = 0.4
+        self.navmesh_settings.agent_radius = 0.30
         self.sim.recompute_navmesh(
             self.sim.pathfinder,
             self.navmesh_settings,
@@ -472,6 +601,35 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
             rgd_obj_mgr.get_object_by_handle(obj_handle).motion_type = rgd_cache[
                 obj_handle
             ]
+
+    def render_first_person_pov(self) -> None:
+        """
+        Utilizes the first person agent to render an egocentric perspective of
+        the fairmotion character upon toggle FPOV toggle.
+        """
+        model = self.fm_demo.model
+        agent = self.fpov_agent
+        fw_axis = mn.Vector3.z_axis()
+        up_axis = mn.Vector3.y_axis()
+
+        head_id = [
+            x for x in model.get_link_ids() if model.get_link_name(x) == "upperneck"
+        ][0]
+
+        head_ScNode = model.get_link_scene_node(head_id)
+
+        fw_axis = head_ScNode.transformation_matrix().transform_vector(fw_axis)
+        up_axis = head_ScNode.transformation_matrix().transform_vector(up_axis)
+
+        # applying scenenode rotation and translation to FPOV
+        agent.scene_node.translation = head_ScNode.absolute_translation
+        agent.scene_node.rotation = mn.Quaternion.from_matrix(
+            mn.Matrix4.look_at(
+                head_ScNode.absolute_translation,
+                head_ScNode.absolute_translation + fw_axis,
+                up_axis,
+            ).rotation()
+        )
 
     def print_help_text(self) -> None:
         """
@@ -527,21 +685,30 @@ Key Commands:
     '.':        Take a single simulation step if not simulating continuously.
     'v':        (physics) Invert gravity.
     'n':        Show/hide NavMesh wireframe.
-                (+SHIFT) Recompute NavMesh with default settings.
+                (+ SHIFT) Recompute NavMesh with default settings.
 
     Fairmotion Interface:
-    'f':        Load model with current motion data.
-                [shft] Hide model.
-    'j':        Load model to follow a path between two randomly chosen points.
-                (+ ALT) Move to random place in path with character.
-    'k':        Toggle key frame preview of loaded motion.
-    '/':        Set motion to play in reverse.
-    'l':        Fetch and load data from a file give by the user's input.
+    'g':        Toggle first-person view from the humanoid model's perspective.
+
+        Motion Staging Tool:
+        'f':    Load model with current motion data.
+                (+ SHIFT) Hide model.
+        'k':    Toggle key frame and trajectory preview of loaded motion.
+        'l':    Fetch and load data from a file give by the user's input.
                 (+ SHIFT) Auto load current character data from last file fetched.
                 (+ CTRL) Print the name of the last file fetched.
-    'p':        Save current characterdata to a file give by the user's input.
+        'p':    Save current characterdata to a file give by the user's input.
                 (+ SHIFT) Auto save current character data to last file fetched.
                 (+ CTRL) Print the name of the last file fetched.
+        '/':    Set motion to play in reverse.
+
+        Path Following Character:
+        'j':    Load model to follow a path between two randomly chosen points.
+                (+ ALT) Move to random place in path with character.
+
+        Action Sequencing:
+        'i':    Load model to playout action orders pendng in order queue.
+        'u':    Push random action orders from Action Order Library to order queue.
 =========================================================
 """
         )

@@ -7,7 +7,7 @@ import math
 import sys
 import time
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
@@ -95,7 +95,12 @@ class HabitatSimInteractiveViewer(Application):
         Additional draw commands to be called during draw_event.
         """
 
-    def draw_event(self, simulation_call: Optional[Callable] = None) -> None:
+    def draw_event(
+        self,
+        simulation_call: Optional[Callable] = None,
+        global_call: Optional[Callable] = None,
+        active_agent_id_and_sensor_name: Tuple[int, str] = (0, "color_sensor"),
+    ) -> None:
         """
         Calls continuously to re-render frames and swap the two frame buffers
         at a fixed rate.
@@ -121,6 +126,7 @@ class HabitatSimInteractiveViewer(Application):
                 self.simulate_single_step = False
                 if simulation_call is not None:
                     simulation_call()
+            global_call()
 
             # reset time_since_last_simulation, accounting for potential overflow
             self.time_since_last_simulation = math.fmod(
@@ -129,7 +135,11 @@ class HabitatSimInteractiveViewer(Application):
 
         self.debug_draw()
 
-        self.sim._sensors["color_sensor"].draw_observation()
+        keys = active_agent_id_and_sensor_name
+
+        self.sim._Simulator__sensors[keys[0]][keys[1]].draw_observation()
+        agent = self.sim.get_agent(keys[0])
+        self.render_camera = agent.scene_node.node_sensor_suite.get(keys[1])
         self.render_camera.render_target.blit_rgba_to_default()
         mn.gl.default_framebuffer.bind()
 
@@ -143,7 +153,7 @@ class HabitatSimInteractiveViewer(Application):
         """
         make_action_spec = habitat_sim.agent.ActionSpec
         make_actuation_spec = habitat_sim.agent.ActuationSpec
-        MOVE, LOOK = 0.07, 0.9
+        MOVE, LOOK = 0.07, 1.5
 
         # all of our possible actions' names
         action_list = [
@@ -325,7 +335,7 @@ class HabitatSimInteractiveViewer(Application):
         continues to update the grabber's object positiion with our agents position.
         """
         button = Application.MouseMoveEvent.Buttons
-        # if interactive mode is False -> LOOK MODE
+        # if interactive mode -> LOOK MODE
         if event.buttons == button.LEFT and self.mouse_interaction == MouseMode.LOOK:
             agent = self.sim.agents[self.agent_id]
             delta = self.get_mouse_position(event.relative_position) / 2
