@@ -153,7 +153,7 @@ class HabitatSimInteractiveViewer(Application):
         """
         make_action_spec = habitat_sim.agent.ActionSpec
         make_actuation_spec = habitat_sim.agent.ActuationSpec
-        MOVE, LOOK = 0.07, 0.9
+        MOVE, LOOK = 0.07, 1.5
 
         # all of our possible actions' names
         action_list = [
@@ -335,7 +335,7 @@ class HabitatSimInteractiveViewer(Application):
         continues to update the grabber's object positiion with our agents position.
         """
         button = Application.MouseMoveEvent.Buttons
-        # if interactive mode is False -> LOOK MODE
+        # if interactive mode -> LOOK MODE
         if event.buttons == button.LEFT and self.mouse_interaction == MouseMode.LOOK:
             agent = self.sim.agents[self.agent_id]
             delta = self.get_mouse_position(event.relative_position) / 2

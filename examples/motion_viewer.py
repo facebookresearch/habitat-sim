@@ -685,22 +685,30 @@ Key Commands:
     '.':        Take a single simulation step if not simulating continuously.
     'v':        (physics) Invert gravity.
     'n':        Show/hide NavMesh wireframe.
-                (+SHIFT) Recompute NavMesh with default settings.
+                (+ SHIFT) Recompute NavMesh with default settings.
 
     Fairmotion Interface:
-    'f':        Load model with current motion data.
+    'g':        Toggle first-person view from the humanoid model's perspective.
+
+        Motion Staging Tool:
+        'f':    Load model with current motion data.
                 (+ SHIFT) Hide model.
-    'j':        Load model to follow a path between two randomly chosen points.
-                (+ ALT) Move to random place in path with character.
-    'k':        Toggle key frame preview of loaded motion.
-    '/':        Set motion to play in reverse.
-    'l':        Fetch and load data from a file give by the user's input.
+        'k':    Toggle key frame and trajectory preview of loaded motion.
+        'l':    Fetch and load data from a file give by the user's input.
                 (+ SHIFT) Auto load current character data from last file fetched.
                 (+ CTRL) Print the name of the last file fetched.
-    'p':        Save current characterdata to a file give by the user's input.
+        'p':    Save current characterdata to a file give by the user's input.
                 (+ SHIFT) Auto save current character data to last file fetched.
                 (+ CTRL) Print the name of the last file fetched.
-    'g':        Toggle first-person view from the humanoid model's perspective.
+        '/':    Set motion to play in reverse.
+
+        Path Following Character:
+        'j':    Load model to follow a path between two randomly chosen points.
+                (+ ALT) Move to random place in path with character.
+
+        Action Sequencing:
+        'i':    Load model to playout action orders pendng in order queue.
+        'u':    Push random action orders from Action Order Library to order queue.
 =========================================================
 """
         )
