@@ -1486,9 +1486,9 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
   if (fileImporter_->defaultScene() == -1) {
     if ((fileImporter_->meshCount() != 0u) &&
         meshes_.at(meshMetaData.meshIndex.first)) {
-      // addMeshToDrawables(metaData, *parent, drawables, 0, 0);
-      CORRADE_ASSERT_UNREACHABLE(
-          "Sorry, this is broken since August 2019 and needs to get fixed", {});
+      meshMetaData.root.children.emplace_back();
+      meshMetaData.root.children.back().meshIDLocal = 0;
+      return true;
     } else {
       ESP_ERROR() << "No default scene available and no meshes found, exiting";
       return false;
