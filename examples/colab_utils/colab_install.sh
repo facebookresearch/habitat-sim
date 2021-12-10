@@ -52,9 +52,7 @@ pip install . #Reinstall to trigger sys.path update
 cd /content/habitat-sim/
 
 #Download Assets
-python habitat_sim/utils/datasets_download.py --uids ci_test_assets --replace --data-path data/
-
-rm -rf habitat_sim/ # Deletes the habitat_sim folder so it doesn't interfere with import path
+python src_python/habitat_sim/utils/datasets_download.py --uids ci_test_assets --replace --data-path data/
 
 #symlink assets appear in habitat-api folder
 ln -s /content/habitat-sim/data /content/habitat-lab/.

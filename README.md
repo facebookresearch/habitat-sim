@@ -205,12 +205,12 @@ To get you started, see the [Lighting Setup tutorial](https://aihabitat.org/docs
 * If you use the noise model from PyRobot, please cite the their [technical report](https://github.com/facebookresearch/pyrobot#citation).
 
 
-    Specifically, the noise model used for the noisy control functions named `pyrobot_*` and defined in `habitat_sim/agent/controls/pyrobot_noisy_controls.py`
+    Specifically, the noise model used for the noisy control functions named `pyrobot_*` and defined in `src_python/habitat_sim/agent/controls/pyrobot_noisy_controls.py`
 
 
 * If you use the Redwood Depth Noise Model, please cite their [paper](http://redwood-data.org/indoor/)
 
-    Specifically, the noise model defined in `habitat_sim/sensors/noise_models/redwood_depth_noise_model.py` and `src/esp/sensor/RedwoodNoiseModel.*`
+    Specifically, the noise model defined in `src_python/habitat_sim/sensors/noise_models/redwood_depth_noise_model.py` and `src/esp/sensor/RedwoodNoiseModel.*`
 
 
 ## License

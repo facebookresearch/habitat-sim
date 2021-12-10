@@ -97,6 +97,7 @@ repos:
     rev: v1.2.6
     hooks:
     -   id: import-linter
+        entry: env PYTHONPATH=src_python lint-imports
 
 -   repo: https://github.com/kynan/nbstripout
     rev: 0.5.0

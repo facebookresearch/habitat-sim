@@ -46,7 +46,7 @@ Please copy and paste the output from the
 You can run the script with:
 ```
 # For security purposes, please check the contents of collect_env.py before running it.
-python habitat_sim/utils/collect_env.py
+python src_python/habitat_sim/utils/collect_env.py
 ```
 
  - OS (e.g., Linux):

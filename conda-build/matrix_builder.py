@@ -12,7 +12,7 @@ import time
 import git
 
 builtins.__HSIM_SETUP__ = True
-sys.path.insert(0, "../")
+sys.path.insert(0, osp.join(osp.dirname(__file__), "..", "src_python"))
 
 import habitat_sim
 
