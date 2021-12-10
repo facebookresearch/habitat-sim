@@ -108,7 +108,45 @@ class FairmotionInterface:
             rotate_offset=self.user_metadata["rotation"],
             translate_offset=self.user_metadata["translation"],
         )
+
         self.load_motion()
+
+        # setup action orders library
+        def snap_to_NM(point) -> mn.Vector3:
+            """
+            Short helper function to place dev's locations on NavMesh properly.
+            """
+            pf = self.sim.pathfinder
+
+            # drop location below NavMesh to guarantee bottom floor snap
+            point = mn.Vector3(point) + mn.Vector3(0.0, -2.0, 0.0)
+
+            # snap point to NavMesh
+            point = pf.snap_point(point)
+
+            return point
+
+        self.action_orders_library = {
+            "clean tv": ActionOrder(
+                Motions.wash_window, snap_to_NM([2.74, 0.0, 7.00]), None
+            ),
+            "exercise hall": ActionOrder(
+                Motions.jumping_jacks,
+                snap_to_NM([-0.95, 0.0, -3.48]),
+                mn.Vector3.x_axis(),
+            ),
+            "reach fridge": ActionOrder(
+                Motions.reach_for,
+                snap_to_NM([-0.93, 0.0, 2.65]),
+                -(mn.Vector3.x_axis()),
+            ),
+            "drink kitchen": ActionOrder(
+                Motions.drink_beverage, snap_to_NM([-1.35, 0.0, 1.56]), None
+            ),
+            "sweep corridor": ActionOrder(
+                Motions.sweep_floor, snap_to_NM([2.79, 0.0, 2.52]), None
+            ),
+        }
 
     def setup_default_metadata(self) -> None:
         """
@@ -278,7 +316,7 @@ class FairmotionInterface:
         # loading text because the setup pauses here during motion load
         logger.info("Loading...")
         self.hide_model()
-        self.activity = Activity.MOTION_FOLLOW
+        self.activity = Activity.MOTION_STAGE
 
         # keeps the model up to date with current data target
         data = self.user_metadata
@@ -311,7 +349,7 @@ class FairmotionInterface:
         set to `True` when the user would like to repeat the last frame.
         """
         # precondition
-        if not all([self.model, self.motion, self.activity == Activity.MOTION_FOLLOW]):
+        if not all([self.model, self.motion, self.activity == Activity.MOTION_STAGE]):
             return
 
         # tracks is_reversed and changes the direction of the motion accordingly.
@@ -583,47 +621,15 @@ class FairmotionInterface:
 
         return False
 
-    def push_action_order(self) -> None:
+    def push_random_action_order(self) -> None:
         """
-        Place an action order at the end of the order queue to be consumed by process_action_order().
+        Place a random action order from our library at the end of the order queue
+        to be consumed by process_action_order().
         """
         queue = self.order_queue
 
-        def snap_to_NM(point) -> mn.Vector3:
-            pf = self.sim.pathfinder
-
-            # drop location below NavMesh to guarantee bottom floor snap
-            point = mn.Vector3(point) + mn.Vector3(0.0, -2.0, 0.0)
-
-            # snap point to NavMesh
-            point = pf.snap_point(point)
-
-            return point
-
-        action_orders_library = {
-            "clean tv": ActionOrder(
-                Motions.wash_window, snap_to_NM([2.74, 0.0, 7.00]), None
-            ),
-            "exercise hall": ActionOrder(
-                Motions.jumping_jacks,
-                snap_to_NM([-0.95, 0.0, -3.48]),
-                mn.Vector3.x_axis(),
-            ),
-            "reach fridge": ActionOrder(
-                Motions.reach_for,
-                snap_to_NM([-0.93, 0.0, 2.65]),
-                -(mn.Vector3.x_axis()),
-            ),
-            "drink kitchen": ActionOrder(
-                Motions.drink_beverage, snap_to_NM([-1.35, 0.0, 1.56]), None
-            ),
-            "sweep corridor": ActionOrder(
-                Motions.sweep_floor, snap_to_NM([2.79, 0.0, 2.52]), None
-            ),
-        }
-
-        # push order queue
-        queue.append(random.choice(list(action_orders_library.values())))
+        # push random order queue
+        queue.append(random.choice(list(self.action_orders_library.values())))
 
     def process_action_order(self) -> None:
         """
@@ -932,11 +938,6 @@ class FairmotionInterface:
         self.model.joint_positions = pose_data[0]
         self.model.transformation = pose_data[1]
 
-    def set_activity_to_SEQ(self):
-        """[TEMPORARY]"""
-        self.activity = Activity.SEQUENCE
-
-    # def interpolate_poses(poseA, poseB, t) -> List[mn.Quaternion]:
     def interpolate_pose(self, poseA, poseB, t) -> List[mn.Quaternion]:
         """
         Pass in two motion pose structs and return them interpolated.
@@ -960,11 +961,9 @@ class FairmotionInterface:
             Q_a = mn.Quaternion(Q_a)
             Q_b = mn.Quaternion(Q_b)
 
-            Q_c = mn.math.lerp(Q_a, Q_b, t)
+            Q_c = mn.math.slerp(Q_a, Q_b, t)
 
-            poseC.append(Q_c.vector.x)
-            poseC.append(Q_c.vector.y)
-            poseC.append(Q_c.vector.z)
+            poseC.extend(Q_c.vector)
             poseC.append(Q_c.scalar)
 
         return poseC

@@ -5,9 +5,11 @@
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Union
 
 import magnum as mn
+import numpy as np
+from fairmotion.core import motion
 from fairmotion.data import amass
 from fairmotion.ops import motion as motion_ops
 
@@ -21,13 +23,21 @@ ROOT, FIRST, LAST = 0, 0, -1
 
 
 class MType(Enum):
+    """
+    This emun class represents the two ways that motion data can be setup and used.
+    Transitive motion data is used to configure and make available cyclical motion data
+    that is needed for the character to traverse paths and displace the character between
+    Scenic actions. Scenic motion data is more performative in nature and is used to
+    configure motion capture data that usually plays out in a specific location.
+    """
+
     TRANSITIVE = 0
     SCENIC = 1
 
 
 class Motions:
     """
-    The Move class is collection of stats that will hold the different movement motions
+    The Motions class is collection of stats that will hold the different movement motions
     for the character to use when following a path. The character is left-footed so that
     is our reference for with step the motions assume first.
     """
@@ -42,8 +52,8 @@ class Motions:
         # transitive motion is necessary for scenic motion build
         def __init__(
             self,
-            motion_,
-            type_,
+            motion_: motion.Motion,
+            type_: MType,
             transitive_motion_=None,
             scenic_direction_offset: int = 0,
         ) -> None:
@@ -239,13 +249,14 @@ class Motions:
     )
 
 
+@dataclass
 class PathData:
     """
     The PathData class is purposed to instantiate with given path points, and used
     to manage the path data fro the current path following sequence.
     """
 
-    def __init__(self, path_points: List[mn.Vector3]) -> None:
+    def __init__(self, path_points) -> None:
         self.points = path_points
         self.length = self.calc_path_length(path_points)
         self.time = 0.0
@@ -274,8 +285,8 @@ class ActionOrder:
     def __init__(
         self,
         motion_data: Motions.MotionData,
-        location: Optional[mn.Vector3] = None,
-        facing: Optional[mn.Vector3] = None,
+        location: Optional[Union[mn.Vector3, np.array]] = None,
+        facing: Optional[Union[mn.Vector3, np.array]] = None,
     ) -> None:
         self.motion_data = motion_data
 
@@ -303,7 +314,7 @@ class Preview(Enum):
 # keeps track of the activity that intances model is  participating in currently
 class Activity(Enum):
     NONE = 0
-    MOTION_FOLLOW = 1
+    MOTION_STAGE = 1
     PATH_FOLLOW_SEQ = 2
     SEQUENCE = 3
 
@@ -323,9 +334,9 @@ class Timer:
         Timer.start_time = time.time()
 
     @staticmethod
-    def check() -> None:
+    def check() -> float:
         """
-        Records previous frame duration and updates the previous frame timestamp
-        to the current time. If the timer is not currently running, perform nothing.
+        Returns time since last call to `start()`. Only accurate if `start()`
+        has been called previously.
         """
         return time.time() - Timer.start_time

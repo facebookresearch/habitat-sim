@@ -20,6 +20,7 @@ from viewer import HabitatSimInteractiveViewer, MouseMode, Timer
 import habitat_sim
 import habitat_sim.physics as phy
 from examples.fairmotion_interface import FairmotionInterface
+from examples.fairmotion_interface_utils import Activity
 from examples.settings import default_sim_settings, make_cfg
 from habitat_sim.logging import logger
 
@@ -183,31 +184,6 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
                 and self.fm_demo.model
             ):
                 self.render_first_person_pov()
-                model = self.fm_demo.model
-                agent = self.fpov_agent
-                fw_axis = mn.Vector3.z_axis()
-                up_axis = mn.Vector3.y_axis()
-
-                head_id = [
-                    x
-                    for x in model.get_link_ids()
-                    if model.get_link_name(x) == "upperneck"
-                ][0]
-
-                head_ScNode = model.get_link_scene_node(head_id)
-
-                fw_axis = head_ScNode.transformation_matrix().transform_vector(fw_axis)
-                up_axis = head_ScNode.transformation_matrix().transform_vector(up_axis)
-
-                # applying scenenode rotation and translation to FPOV
-                agent.scene_node.translation = head_ScNode.absolute_translation
-                agent.scene_node.rotation = mn.Quaternion.from_matrix(
-                    mn.Matrix4.look_at(
-                        head_ScNode.absolute_translation,
-                        head_ScNode.absolute_translation + fw_axis,
-                        up_axis,
-                    ).rotation()
-                )
 
             # process action orders
             self.fm_demo.process_action_order()
@@ -283,7 +259,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
 
         elif key == pressed.I:
             self.fm_demo.load_model()
-            self.fm_demo.set_activity_to_SEQ()
+            self.fm_demo.activity = Activity.SEQUENCE
             event.accepted = True
             self.redraw()
             return
@@ -631,6 +607,29 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         Utilizes the first person agent to render an egocentric perspective of
         the fairmotion character upon toggle FPOV toggle.
         """
+        model = self.fm_demo.model
+        agent = self.fpov_agent
+        fw_axis = mn.Vector3.z_axis()
+        up_axis = mn.Vector3.y_axis()
+
+        head_id = [
+            x for x in model.get_link_ids() if model.get_link_name(x) == "upperneck"
+        ][0]
+
+        head_ScNode = model.get_link_scene_node(head_id)
+
+        fw_axis = head_ScNode.transformation_matrix().transform_vector(fw_axis)
+        up_axis = head_ScNode.transformation_matrix().transform_vector(up_axis)
+
+        # applying scenenode rotation and translation to FPOV
+        agent.scene_node.translation = head_ScNode.absolute_translation
+        agent.scene_node.rotation = mn.Quaternion.from_matrix(
+            mn.Matrix4.look_at(
+                head_ScNode.absolute_translation,
+                head_ScNode.absolute_translation + fw_axis,
+                up_axis,
+            ).rotation()
+        )
 
     def print_help_text(self) -> None:
         """
@@ -690,7 +689,7 @@ Key Commands:
 
     Fairmotion Interface:
     'f':        Load model with current motion data.
-                [shft] Hide model.
+                (+ SHIFT) Hide model.
     'j':        Load model to follow a path between two randomly chosen points.
                 (+ ALT) Move to random place in path with character.
     'k':        Toggle key frame preview of loaded motion.
@@ -701,7 +700,7 @@ Key Commands:
     'p':        Save current characterdata to a file give by the user's input.
                 (+ SHIFT) Auto save current character data to last file fetched.
                 (+ CTRL) Print the name of the last file fetched.
-    'g':        Toggle FPOV of character.
+    'g':        Toggle first-person view from the humanoid model's perspective.
 =========================================================
 """
         )
