@@ -448,10 +448,9 @@ bool Simulator::instanceStageForSceneAttributes(
     } else {  // activeSemanticSceneID_ == activeSceneID_;
       assets::AssetType stageType =
           static_cast<assets::AssetType>(stageAttributes->getRenderAssetType());
-      // instance meshes and suncg houses contain their semantic annotations
+      // instance meshes contain their semantic annotations
       // empty scene has none to worry about
-      if (!(stageType == assets::AssetType::SUNCG_SCENE ||
-            stageType == assets::AssetType::INSTANCE_MESH ||
+      if (!(stageType == assets::AssetType::INSTANCE_MESH ||
             stageAttributesHandle == assets::EMPTY_SCENE)) {
         // TODO: programmatic generation of semantic meshes when no
         // annotations are provided.

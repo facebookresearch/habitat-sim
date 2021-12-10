@@ -347,6 +347,14 @@ void initAttributesBindings(py::module& m) {
           R"(The desired location of the origin of stages built from this
           template.)")
       .def_property(
+          "semantic_orient_up", &StageAttributes::getSemanticOrientUp,
+          &StageAttributes::setSemanticOrientUp,
+          R"(Up direction for semantic stage meshes built from this template.)")
+      .def_property(
+          "semantic_orient_front", &StageAttributes::getSemanticOrientFront,
+          &StageAttributes::setSemanticOrientFront,
+          R"(Forward direction for semantic stage meshes built from this template.)")
+      .def_property(
           "semantic_asset_handle", &StageAttributes::getSemanticAssetHandle,
           &StageAttributes::setSemanticAssetHandle,
           R"(Handle of the asset used for semantic segmentation of stages

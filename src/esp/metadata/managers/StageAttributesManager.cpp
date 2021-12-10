@@ -339,8 +339,6 @@ void StageAttributesManager::setDefaultAssetNameBasedAttributes(
     assetTypeSetter(static_cast<int>(AssetType::FRL_PTEX_MESH));
     up = up2;
     fwd = fwd2;
-  } else if (endsWith(fileName, "house.json")) {
-    assetTypeSetter(static_cast<int>(AssetType::SUNCG_SCENE));
   } else if (endsWith(fileName, ".glb")) {
     // assumes MP3D glb with gravity = -Z
     assetTypeSetter(static_cast<int>(AssetType::MP3D_MESH));
@@ -378,6 +376,19 @@ void StageAttributesManager::setValsFromJSONDoc(
   io::jsonIntoConstSetter<Magnum::Vector3>(
       jsonConfig, "origin", [stageAttributes](auto&& PH1) {
         stageAttributes->setOrigin(std::forward<decltype(PH1)>(PH1));
+      });
+
+  // load stage semantic asset specific up orientation
+  io::jsonIntoConstSetter<Magnum::Vector3>(
+      jsonConfig, "semantic_up", [stageAttributes](const Magnum::Vector3& up) {
+        stageAttributes->setSemanticOrientUp(up);
+      });
+
+  // load stage semantic asset specific front orientation
+  io::jsonIntoConstSetter<Magnum::Vector3>(
+      jsonConfig, "semantic_front",
+      [stageAttributes](const Magnum::Vector3& front) {
+        stageAttributes->setSemanticOrientFront(front);
       });
 
   // populate specified semantic file name if specified in json - defaults

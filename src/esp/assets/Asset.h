@@ -18,8 +18,6 @@ namespace assets {
 //! Supported Asset types
 enum class AssetType {
   UNKNOWN,
-  SUNCG_OBJECT,
-  SUNCG_SCENE,
   MP3D_MESH,
   INSTANCE_MESH,
   FRL_PTEX_MESH,

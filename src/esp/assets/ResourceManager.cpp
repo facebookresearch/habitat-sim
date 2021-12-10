@@ -478,8 +478,9 @@ ResourceManager::createStageAssetInfosFromAttributes(
     bool createCollisionInfo,
     bool createSemanticInfo) {
   std::map<std::string, AssetInfo> resMap;
-  auto frame =
-      buildFrameFromAttributes(stageAttributes, stageAttributes->getOrigin());
+  auto frame = buildFrameFromAttributes(
+      stageAttributes->getHandle(), stageAttributes->getOrientUp(),
+      stageAttributes->getOrientFront(), stageAttributes->getOrigin());
   float virtualUnitToMeters = stageAttributes->getUnitsToMeters();
   // create render asset info
   auto renderType =
@@ -510,6 +511,15 @@ ResourceManager::createStageAssetInfosFromAttributes(
     // create semantic asset info if requested
     auto semanticType =
         static_cast<AssetType>(stageAttributes->getSemanticAssetType());
+    // This check being false means a specific orientation for semantic meshes
+    // was specified in config file, so they should use -this- orientation
+    // instead of the base render asset orientation.
+    if (!stageAttributes->getUseFrameForAllOrientation()) {
+      frame = buildFrameFromAttributes(
+          stageAttributes->getHandle(), stageAttributes->getSemanticOrientUp(),
+          stageAttributes->getSemanticOrientFront(),
+          stageAttributes->getOrigin());
+    }
     AssetInfo semanticInfo{
         semanticType,                               // type
         stageAttributes->getSemanticAssetHandle(),  // file path
@@ -525,23 +535,23 @@ ResourceManager::createStageAssetInfosFromAttributes(
 }  // ResourceManager::createStageAssetInfosFromAttributes
 
 esp::geo::CoordinateFrame ResourceManager::buildFrameFromAttributes(
-    const AbstractObjectAttributes::ptr& attribs,
+    const std::string& attribName,
+    const Magnum::Vector3& up,
+    const Magnum::Vector3& front,
     const Magnum::Vector3& origin) {
-  const vec3f upEigen{
-      Mn::EigenIntegration::cast<vec3f>(attribs->getOrientUp())};
-  const vec3f frontEigen{
-      Mn::EigenIntegration::cast<vec3f>(attribs->getOrientFront())};
+  const vec3f upEigen{Mn::EigenIntegration::cast<vec3f>(up)};
+  const vec3f frontEigen{Mn::EigenIntegration::cast<vec3f>(front)};
   if (upEigen.isOrthogonal(frontEigen)) {
     const vec3f originEigen{Mn::EigenIntegration::cast<vec3f>(origin)};
     esp::geo::CoordinateFrame frame{upEigen, frontEigen, originEigen};
     return frame;
   } else {
-    ESP_DEBUG() << "Specified frame in Attributes :" << attribs->getHandle()
+    ESP_DEBUG() << "Specified frame in Attributes :" << attribName
                 << "is not orthogonal, so returning default frame.";
     esp::geo::CoordinateFrame frame;
     return frame;
   }
-}  // ResourceManager::buildCoordFrameFromAttribVals
+}  // ResourceManager::buildFrameFromAttributes
 
 std::string ResourceManager::createColorMaterial(
     const esp::assets::PhongMaterialColor& materialColor) {
@@ -806,33 +816,28 @@ bool ResourceManager::loadStageInternal(
       ESP_ERROR() << "Cannot find scene file" << filename;
       meshSuccess = false;
     } else {
-      if (info.type == AssetType::SUNCG_SCENE) {
-        meshSuccess = loadSUNCGHouseFile(info, parent, drawables);
+      // load render asset if necessary
+      if (!loadRenderAsset(info)) {
+        return false;
       } else {
-        // load render asset if necessary
-        if (!loadRenderAsset(info)) {
-          return false;
-        } else {
-          if (resourceDict_[filename].assetInfo != info) {
-            // TODO: support color material modified assets by changing the
-            // "creation" filepath to the modified key
+        if (resourceDict_[filename].assetInfo != info) {
+          // TODO: support color material modified assets by changing the
+          // "creation" filepath to the modified key
 
-            // Right now, we only allow for an asset to be loaded with one
-            // configuration, since generated mesh data may be invalid for a new
-            // configuration
-            ESP_ERROR()
-                << "Reloading asset" << filename
-                << "with different configuration not currently supported."
-                << "Asset may not be rendered correctly.";
-          }
+          // Right now, we only allow for an asset to be loaded with one
+          // configuration, since generated mesh data may be invalid for a new
+          // configuration
+          ESP_ERROR() << "Reloading asset" << filename
+                      << "with different configuration not currently supported."
+                      << "Asset may not be rendered correctly.";
         }
-        // create render asset instance if requested
-        if (parent) {
-          CORRADE_INTERNAL_ASSERT(creation);
-          createRenderAssetInstance(*creation, parent, drawables);
-        }
-        return true;
       }
+      // create render asset instance if requested
+      if (parent) {
+        CORRADE_INTERNAL_ASSERT(creation);
+        createRenderAssetInstance(*creation, parent, drawables);
+      }
+      return true;
     }
   } else {
     ESP_DEBUG() << "Loading empty scene for" << filename;
@@ -882,7 +887,9 @@ bool ResourceManager::loadObjectMeshDataFromFile(
     AssetInfo meshInfo{AssetType::UNKNOWN, filename};
     meshInfo.forceFlatShading = forceFlatShading;
     meshInfo.shaderTypeToUse = objectAttributes->getShaderType();
-    meshInfo.frame = buildFrameFromAttributes(objectAttributes, {0, 0, 0});
+    meshInfo.frame = buildFrameFromAttributes(
+        objectAttributes->getHandle(), objectAttributes->getOrientUp(),
+        objectAttributes->getOrientFront(), {0, 0, 0});
     success = loadRenderAsset(meshInfo);
     if (!success) {
       ESP_ERROR() << "Failed to load a physical object ("
@@ -2385,107 +2392,6 @@ void ResourceManager::createDrawable(Mn::GL::Mesh* mesh,
   }
 }  // ResourceManager::createDrawable
 
-bool ResourceManager::loadSUNCGHouseFile(const AssetInfo& houseInfo,
-                                         scene::SceneNode* parent,
-                                         DrawableGroup* drawables) {
-  CORRADE_INTERNAL_ASSERT(parent != nullptr);
-
-  ESP_WARNING() << "SUNCG support is deprecated. This codepath is untested.";
-
-  std::string houseFile = Cr::Utility::Directory::join(
-      Cr::Utility::Directory::current(), houseInfo.filepath);
-  const auto& json = io::parseJsonFile(houseFile);
-  const auto& levels = json["levels"].GetArray();
-  std::vector<std::string> pathTokens =
-      Cr::Utility::String::splitWithoutEmptyParts(houseFile, '/');
-  CORRADE_INTERNAL_ASSERT(pathTokens.size() >= 3);
-  pathTokens.pop_back();  // house.json
-  const std::string houseId = pathTokens.back();
-  pathTokens.pop_back();  // <houseId>
-  pathTokens.pop_back();  // house
-  const std::string basePath = Cr::Utility::String::join(pathTokens, '/');
-
-  // store nodeIds to obtain linearized index for semantic masks
-  std::vector<std::string> nodeIds;
-
-  for (const auto& level : levels) {
-    const auto& nodes = level["nodes"].GetArray();
-    for (const auto& node : nodes) {
-      const std::string nodeId = node["id"].GetString();
-      const std::string nodeType = node["type"].GetString();
-      const int valid = node["valid"].GetInt();
-      if (valid == 0) {
-        continue;
-      }
-
-      // helper for creating object nodes
-      auto createObjectFunc = [&](const AssetInfo& info,
-                                  const std::string& id) -> scene::SceneNode& {
-        scene::SceneNode& objectNode = parent->createChild();
-        const int nodeIndex = nodeIds.size();
-        nodeIds.push_back(id);
-        objectNode.setId(nodeIndex);
-        if (info.type == AssetType::SUNCG_OBJECT) {
-          CORRADE_INTERNAL_ASSERT(loadRenderAsset(info));
-          RenderAssetInstanceCreationInfo::Flags flags;
-          flags |= RenderAssetInstanceCreationInfo::Flag::IsRGBD;
-          flags |= RenderAssetInstanceCreationInfo::Flag::IsSemantic;
-          RenderAssetInstanceCreationInfo objectCreation(
-              info.filepath, Cr::Containers::NullOpt, flags, NO_LIGHT_KEY);
-          createRenderAssetInstance(objectCreation, &objectNode, drawables);
-        }
-        return objectNode;
-      };
-
-      const std::string roomPath =
-          basePath + std::string("/room/").append(houseId).append("/");
-      if (nodeType == "Room") {
-        const std::string roomBase = roomPath + node["modelId"].GetString();
-        const int hideCeiling = node["hideCeiling"].GetInt();
-        const int hideFloor = node["hideFloor"].GetInt();
-        const int hideWalls = node["hideWalls"].GetInt();
-        if (hideCeiling != 1) {
-          createObjectFunc({AssetType::SUNCG_OBJECT, roomBase + "c.glb"},
-                           nodeId + "c");
-        }
-        if (hideWalls != 1) {
-          createObjectFunc({AssetType::SUNCG_OBJECT, roomBase + "w.glb"},
-                           nodeId + "w");
-        }
-        if (hideFloor != 1) {
-          createObjectFunc({AssetType::SUNCG_OBJECT, roomBase + "f.glb"},
-                           nodeId + "f");
-        }
-      } else if (nodeType == "Object") {
-        const std::string modelId = node["modelId"].GetString();
-        // Parse model-to-scene transformation matrix
-        // NOTE: only "Object" nodes have transform, other nodes are directly
-        // specified in scene coordinates
-        std::vector<float> transformVec;
-        io::toFloatVector(node["transform"], &transformVec);
-        mat4f transform(transformVec.data());
-        const AssetInfo info{AssetType::SUNCG_OBJECT,
-                             basePath + std::string("/object/")
-                                            .append(modelId)
-                                            .append("/")
-                                            .append(modelId)
-                                            .append(".glb")};
-        createObjectFunc(info, nodeId)
-            .setTransformation(Magnum::Matrix4{transform});
-      } else if (nodeType == "Box") {
-        // TODO(MS): create Box geometry
-        createObjectFunc({}, nodeId);
-      } else if (nodeType == "Ground") {
-        const std::string roomBase = roomPath + node["modelId"].GetString();
-        const AssetInfo info{AssetType::SUNCG_OBJECT, roomBase + "f.glb"};
-        createObjectFunc(info, nodeId);
-      } else {
-        ESP_ERROR() << "Unrecognized SUNCG house node type" << nodeType;
-      }
-    }
-  }
-  return true;
-}
 void ResourceManager::initDefaultLightSetups() {
   shaderManager_.set(NO_LIGHT_KEY, gfx::LightSetup{});
   shaderManager_.setFallback(gfx::LightSetup{});

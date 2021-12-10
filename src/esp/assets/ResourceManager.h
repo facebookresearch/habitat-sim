@@ -575,16 +575,22 @@ class ResourceManager {
                                     int numInterp = 10);
 
   /**
-   * @brief Build a configuration frame from scene or object attributes values
-   * and return it
+   * @brief Build a configuration frame from specified up and front vectors
+   * and return it.  If up is not orthogonal to front, will return default
+   * frame.
    *
-   * @param attribs the attributes to query for the information.
+   * @param attribName the handle to the attributes the frame is being built
+   * for, for debug purposes.
+   * @param up The up vector to build the frame from
+   * @param front The front vector to build the frame from.
    * @param origin Either the origin of the stageAttributes or the COM value of
    * the objectAttributes.
    * @return the coordinate frame of the assets the passed attributes describes.
    */
   esp::geo::CoordinateFrame buildFrameFromAttributes(
-      const metadata::attributes::AbstractObjectAttributes::ptr& attribs,
+      const std::string& attribName,
+      const Magnum::Vector3& up,
+      const Magnum::Vector3& front,
       const Magnum::Vector3& origin);
 
   /**
@@ -760,8 +766,7 @@ class ResourceManager {
    * @return Whether it is a General
    */
   inline bool isRenderAssetGeneral(AssetType type) {
-    return type == AssetType::MP3D_MESH || type == AssetType::UNKNOWN ||
-           type == AssetType::SUNCG_OBJECT;
+    return type == AssetType::MP3D_MESH || type == AssetType::UNKNOWN;
   }
   /**
    * @brief Recursive construction of scene nodes for an asset.
@@ -1035,20 +1040,6 @@ class ResourceManager {
       scene::SceneNode* parent,
       DrawableGroup* drawables,
       std::vector<scene::SceneNode*>* userVisNodeCache);
-
-  /**
-   * @brief Load a SUNCG mesh into assets from a file. !Deprecated! TODO:
-   * remove?
-   *
-   * @param info The @ref AssetInfo for the mesh, already parsed from a file.
-   * @param parent The @ref scene::SceneNode to which the mesh will be added
-   * as a child.
-   * @param drawables The @ref DrawableGroup with which the mesh will be
-   * rendered.
-   */
-  bool loadSUNCGHouseFile(const AssetInfo& info,
-                          scene::SceneNode* parent,
-                          DrawableGroup* drawables);
 
   /**
    * @brief initialize default lighting setups in the current ShaderManager

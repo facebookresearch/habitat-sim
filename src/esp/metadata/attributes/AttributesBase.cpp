@@ -12,8 +12,6 @@ namespace attributes {
 // All keys must be lowercase
 const std::map<std::string, esp::assets::AssetType> AssetTypeNamesMap = {
     {"unknown", esp::assets::AssetType::UNKNOWN},
-    {"sun_obj", esp::assets::AssetType::SUNCG_OBJECT},
-    {"sun_scene", esp::assets::AssetType::SUNCG_SCENE},
     {"mp3d", esp::assets::AssetType::MP3D_MESH},
     {"semantic", esp::assets::AssetType::INSTANCE_MESH},
     {"ptex", esp::assets::AssetType::FRL_PTEX_MESH},
