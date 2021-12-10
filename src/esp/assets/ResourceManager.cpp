@@ -1528,8 +1528,6 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
 
   // Add mesh indices for objects that have a mesh, again ignoring nodes that
   // are not part of the hierarchy.
-  // TODO: There can be multiple mesh assignments for one object, unfortunately
-  // MeshTransformNode is not capable of that
   for (const Cr::Containers::Pair<
            unsigned, Cr::Containers::Pair<unsigned, int>>& meshMaterial :
        scene->meshesMaterialsAsArray()) {
@@ -1537,6 +1535,16 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
         nodes[meshMaterial.first()];
     if (!node)
       continue;
+
+    // TODO: either drop MeshTransformNode in favor of SceneData or use
+    // Mn::SceneTools::convertToSingleFunctionObjects() when it's exposed
+    if (node->meshIDLocal != -1) {
+      ESP_WARNING() << "Multiple mesh assignments for node"
+                    << meshMaterial.first()
+                    << "which is not supported by MeshTransformNode, using "
+                       "just the first";
+      continue;
+    }
 
     node->meshIDLocal = meshMaterial.second().first();
     if (meshMaterial.second().second() != -1) {
