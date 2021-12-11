@@ -93,7 +93,7 @@ Pick one of the options below depending on your system/needs:
    ```bash
      conda install habitat-sim -c conda-forge -c aihabitat
    ```
-- To install on headless machines (i.e. without an attached display, e.g. in a cluster) and machines with multiple GPUs:
+- To install on headless machines (i.e. without an attached display, e.g. in a cluster) and machines with multiple GPUs (this parameter does *not* work on MacOS):
    ```
    conda install habitat-sim headless -c conda-forge -c aihabitat
    ```
