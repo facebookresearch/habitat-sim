@@ -1316,22 +1316,14 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
 
   // specify colormap to use to build TextureVisualizerShader
   // If this is true, we want to build a colormap from the vertex colors.
-  if (getCreateRenderer()) {
-    for (int meshIDLocal = 0; meshIDLocal < instanceMeshes.size();
-         ++meshIDLocal) {
+  for (int meshIDLocal = 0; meshIDLocal < instanceMeshes.size();
+       ++meshIDLocal) {
+    if (getCreateRenderer()) {
       instanceMeshes[meshIDLocal]->uploadBuffersToGPU(false);
-      meshes_.emplace(meshStart + meshIDLocal,
-                      std::move(instanceMeshes[meshIDLocal]));
-      meshMetaData.root.children[meshIDLocal].meshIDLocal = meshIDLocal;
     }
-  } else {
-    // don't upload to gpu if not creating renderer
-    for (int meshIDLocal = 0; meshIDLocal < instanceMeshes.size();
-         ++meshIDLocal) {
-      meshes_.emplace(meshStart + meshIDLocal,
-                      std::move(instanceMeshes[meshIDLocal]));
-      meshMetaData.root.children[meshIDLocal].meshIDLocal = meshIDLocal;
-    }
+    meshes_.emplace(meshStart + meshIDLocal,
+                    std::move(instanceMeshes[meshIDLocal]));
+    meshMetaData.root.children[meshIDLocal].meshIDLocal = meshIDLocal;
   }
   meshMetaData.setRootFrameOrientation(info.frame);
   // update the dictionary
@@ -1359,6 +1351,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceIMesh(
   int end = indexPair.second;
 
   scene::SceneNode* instanceRoot = &parent->createChild();
+  // transform based on transformNode setting
   instanceRoot->MagnumObject::setTransformation(
       meshMetaData.root.transformFromLocalToParent);
 
@@ -2113,29 +2106,18 @@ void ResourceManager::loadMeshes(Importer& importer,
   int meshEnd = meshStart + importer.meshCount() - 1;
   nextMeshID_ = meshEnd + 1;
   loadedAssetData.meshMetaData.setMeshIndices(meshStart, meshEnd);
-  if (getCreateRenderer()) {
-    for (int iMesh = 0; iMesh < importer.meshCount(); ++iMesh) {
-      // don't need normals if we aren't using lighting
-      auto gltfMeshData = std::make_unique<GenericMeshData>(
-          !loadedAssetData.assetInfo.forceFlatShading);
-      gltfMeshData->importAndSetMeshData(importer, iMesh);
+  for (int iMesh = 0; iMesh < importer.meshCount(); ++iMesh) {
+    // don't need normals if we aren't using lighting
+    auto gltfMeshData = std::make_unique<GenericMeshData>(
+        !loadedAssetData.assetInfo.forceFlatShading);
+    gltfMeshData->importAndSetMeshData(importer, iMesh);
 
-      // compute the mesh bounding box
-      gltfMeshData->BB = computeMeshBB(gltfMeshData.get());
+    // compute the mesh bounding box
+    gltfMeshData->BB = computeMeshBB(gltfMeshData.get());
+    if (getCreateRenderer()) {
       gltfMeshData->uploadBuffersToGPU(false);
-      meshes_.emplace(meshStart + iMesh, std::move(gltfMeshData));
     }
-  } else {
-    // don't upload to buffer if not creating renderer
-    for (int iMesh = 0; iMesh < importer.meshCount(); ++iMesh) {
-      // don't need normals if we aren't using lighting
-      auto gltfMeshData = std::make_unique<GenericMeshData>(
-          !loadedAssetData.assetInfo.forceFlatShading);
-      gltfMeshData->importAndSetMeshData(importer, iMesh);
-      // compute the mesh bounding box
-      gltfMeshData->BB = computeMeshBB(gltfMeshData.get());
-      meshes_.emplace(meshStart + iMesh, std::move(gltfMeshData));
-    }
+    meshes_.emplace(meshStart + iMesh, std::move(gltfMeshData));
   }
 }  // ResourceManager::loadMeshes
 
