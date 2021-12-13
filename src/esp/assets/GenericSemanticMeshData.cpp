@@ -32,6 +32,10 @@ GenericSemanticMeshData::buildSemanticMeshData(
     const bool splitMesh,
     std::vector<Magnum::Vector3ub>& colorMapToUse,
     const std::shared_ptr<scene::SemanticScene>& semanticScene) {
+  // build text prefix used in log messages
+  const std::string msgPrefix =
+      Cr::Utility::formatString("Parsing Semantic File {} :", semanticFilename);
+
   /* Copy attributes to the vectors. Positions and indices can be copied
      directly using the convenience APIs as we store them in the full type.
      The importer always provides an indexed mesh with positions, so no need
@@ -43,9 +47,6 @@ GenericSemanticMeshData::buildSemanticMeshData(
   srcMeshData.positions3DInto(Cr::Containers::arrayCast<Mn::Vector3>(
       Cr::Containers::arrayView(semanticData->cpu_vbo_)));
   srcMeshData.indicesInto(semanticData->cpu_ibo_);
-
-  const std::string msgPrefix =
-      Cr::Utility::formatString("Parsing Semantic File {} :", semanticFilename);
   /* Assuming colors are 8-bit RGB to avoid expanding them to float and then
      packing back */
   ESP_CHECK(srcMeshData.hasAttribute(Mn::Trade::MeshAttribute::Color),
