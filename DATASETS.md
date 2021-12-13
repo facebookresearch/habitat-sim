@@ -39,6 +39,8 @@ Note that this download script requires python 2.7 to run.
 
 You only need the habitat zip archive and not the entire Matterport3D dataset.
 
+Once you have the habitat zip archive, you should download [this SceneDatasetConfig file](http://dl.fbaipublicfiles.com/habitat/mp3d/config_v1/mp3d.scene_dataset_config.json) and place it in the root directory for the Matterport3D dataset (e.g. habitat-sim/data/scene_datasets/mp3d/).
+
 ## Gibson and 3DSceneGraph datasets
 
 - The Gibson dataset for use with Habitat can be downloaded by agreeing to the terms of use in the [Gibson](https://github.com/StanfordVL/GibsonEnv#database) repository.
