@@ -647,6 +647,38 @@ void BulletArticulatedObject::clampJointLimits() {
   }
 }
 
+void BulletArticulatedObject::overrideCollisionGroup(CollisionGroup group) {
+  // for collision object in model:
+  int collisionFilterGroup = int(group);
+  int collisionFilterMask = uint32_t(CollisionGroupHelper::getMaskForGroup(
+      CollisionGroup(collisionFilterGroup)));
+
+  if (bFixedObjectRigidBody_ != nullptr) {
+    // A fixed base shape exists. Overriding with a uniform group could be a
+    // perf issue or cause unexpected contacts
+    ESP_WARNING() << "Overriding all link collision groups for an "
+                     "ArticulatedObject with a STATIC base collision shape "
+                     "defined. Only do this if you understand the risks.";
+    bWorld_->removeRigidBody(bFixedObjectRigidBody_.get());
+    bWorld_->addRigidBody(bFixedObjectRigidBody_.get(), collisionFilterGroup,
+                          collisionFilterMask);
+  }
+
+  // override separate base link object group
+  auto* baseCollider = btMultiBody_->getBaseCollider();
+  bWorld_->btCollisionWorld::removeCollisionObject(baseCollider);
+  bWorld_->addCollisionObject(baseCollider, collisionFilterGroup,
+                              collisionFilterMask);
+
+  // override link collision object groups
+  for (int colIx = 0; colIx < btMultiBody_->getNumLinks(); ++colIx) {
+    auto* linkCollider = btMultiBody_->getLinkCollider(colIx);
+    bWorld_->removeCollisionObject(linkCollider);
+    bWorld_->addCollisionObject(linkCollider, collisionFilterGroup,
+                                collisionFilterMask);
+  }
+}
+
 void BulletArticulatedObject::updateKinematicState() {
   btMultiBody_->forwardKinematics(scratch_q_, scratch_m_);
   btMultiBody_->updateCollisionObjectWorldTransforms(scratch_q_, scratch_m_);

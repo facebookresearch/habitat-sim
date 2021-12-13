@@ -345,6 +345,12 @@ class BulletArticulatedObject : public ArticulatedObject {
   //! clamp current pose to joint limits
   void clampJointLimits() override;
 
+  /**
+   * @brief Manually set the collision group for all links of the object.
+   * @param group The desired CollisionGroup for the object.
+   */
+  void overrideCollisionGroup(CollisionGroup group) override;
+
   //============ Joint Motor Constraints =============
 
   //! Bullet supports vel/pos control joint motors for revolute and prismatic
