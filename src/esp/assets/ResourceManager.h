@@ -821,22 +821,6 @@ class ResourceManager {
   void loadMeshes(Importer& importer, LoadedAssetData& loadedAssetData);
 
   /**
-   * @brief Recursively parse the mesh component transformation hierarchy for
-   * the imported asset.
-   *
-   * @param importer The importer already loaded with information for the
-   * asset.
-   * @param parent The root of the mesh transform hierarchy for the remaining
-   * sub-tree. The generated @ref MeshTransformNode will be added as a child.
-   * Typically the @ref MeshMetaData::root to begin recursion.
-   * @param componentID The next component to add to the hierarchy. Identifies
-   * the component in the @ref Importer.
-   */
-  void loadMeshHierarchy(Importer& importer,
-                         MeshTransformNode& parent,
-                         int componentID);
-
-  /**
    * @brief Recursively build a unified @ref MeshData from loaded assets via a
    * tree of @ref MeshTransformNode.
    *

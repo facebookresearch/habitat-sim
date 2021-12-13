@@ -6,6 +6,7 @@
 
 #include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/Containers/GrowableArray.h>
+#include <Corrade/Containers/Pair.h>
 #include <Corrade/Containers/PointerStl.h>
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/PluginManager/PluginMetadata.h>
@@ -32,7 +33,6 @@
 #include <Magnum/Trade/AbstractImporter.h>
 #include <Magnum/Trade/FlatMaterialData.h>
 #include <Magnum/Trade/ImageData.h>
-#include <Magnum/Trade/MeshObjectData3D.h>
 #include <Magnum/Trade/PbrMetallicRoughnessMaterialData.h>
 #include <Magnum/Trade/PhongMaterialData.h>
 #include <Magnum/Trade/SceneData.h>
@@ -1438,6 +1438,24 @@ void ResourceManager::ConfigureImporterManager(
   }
 }  // ResourceManager::ConfigureImportManager
 
+namespace {
+
+void setMeshTransformNodeChildren(
+    const Mn::Trade::SceneData& scene,
+    Cr::Containers::Array<
+        Cr::Containers::Optional<esp::assets::MeshTransformNode>>& nodes,
+    MeshTransformNode& parent,
+    int parentID) {
+  for (unsigned childObjectID : scene.childrenFor(parentID)) {
+    CORRADE_INTERNAL_ASSERT(nodes[childObjectID]);
+    parent.children.push_back(std::move(*nodes[childObjectID]));
+    setMeshTransformNodeChildren(scene, nodes, parent.children.back(),
+                                 childObjectID);
+  }
+}
+
+}  // namespace
+
 bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
   CORRADE_INTERNAL_ASSERT(isRenderAssetGeneral(info.type));
 
@@ -1463,27 +1481,83 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
   auto inserted = resourceDict_.emplace(filename, std::move(loadedAssetData));
   MeshMetaData& meshMetaData = inserted.first->second.meshMetaData;
 
-  // Register magnum mesh
-  if (fileImporter_->defaultScene() != -1) {
-    Cr::Containers::Optional<Magnum::Trade::SceneData> sceneData =
-        fileImporter_->scene(fileImporter_->defaultScene());
-    if (!sceneData) {
-      ESP_ERROR() << "Cannot load scene, exiting";
+  // no default scene --- standalone OBJ/PLY files, for example
+  // take a wild guess and load the first mesh with the first material
+  if (fileImporter_->defaultScene() == -1) {
+    if ((fileImporter_->meshCount() != 0u) &&
+        meshes_.at(meshMetaData.meshIndex.first)) {
+      meshMetaData.root.children.emplace_back();
+      meshMetaData.root.children.back().meshIDLocal = 0;
+      return true;
+    } else {
+      ESP_ERROR() << "No default scene available and no meshes found, exiting";
       return false;
     }
-    for (unsigned int sceneDataID : sceneData->children3D()) {
-      loadMeshHierarchy(*fileImporter_, meshMetaData.root, sceneDataID);
-    }
-  } else if ((fileImporter_->meshCount() != 0u) &&
-             meshes_.at(meshMetaData.meshIndex.first)) {
-    // no default scene --- standalone OBJ/PLY files, for example
-    // take a wild guess and load the first mesh with the first material
-    // addMeshToDrawables(metaData, *parent, drawables, 0, 0);
-    loadMeshHierarchy(*fileImporter_, meshMetaData.root, 0);
-  } else {
-    ESP_ERROR() << "No default scene available and no meshes found, exiting";
+  }
+
+  /* Load the scene */
+  Cr::Containers::Optional<Mn::Trade::SceneData> scene;
+  if (!(scene = fileImporter_->scene(fileImporter_->defaultScene())) ||
+      !scene->is3D() || !scene->hasField(Mn::Trade::SceneField::Parent)) {
+    ESP_ERROR() << "Cannot load scene, exiting";
     return false;
   }
+
+  // Allocate objects that are part of the hierarchy. Parent / child
+  // relationship handled at the very last because MeshTransformNode stores its
+  // children by-value in a vector inside, which would mean we'd have to move
+  // them out of here
+  Cr::Containers::Array<
+      Cr::Containers::Optional<esp::assets::MeshTransformNode>>
+      nodes{std::size_t(scene->mappingBound())};
+  for (const Cr::Containers::Pair<unsigned, int>& parent :
+       scene->parentsAsArray()) {
+    nodes[parent.first()].emplace();
+    nodes[parent.first()]->componentID = parent.first();
+  }
+
+  // Set transformations. Objects that are not part of the hierarchy are
+  // ignored, nodes that have no transformation entry retain an identity
+  // transformation.
+  for (const Cr::Containers::Pair<unsigned, Mn::Matrix4>& transformation :
+       scene->transformations3DAsArray()) {
+    if (Cr::Containers::Optional<esp::assets::MeshTransformNode>& node =
+            nodes[transformation.first()])
+      node->transformFromLocalToParent = transformation.second();
+  }
+
+  // Add mesh indices for objects that have a mesh, again ignoring nodes that
+  // are not part of the hierarchy.
+  for (const Cr::Containers::Pair<
+           unsigned, Cr::Containers::Pair<unsigned, int>>& meshMaterial :
+       scene->meshesMaterialsAsArray()) {
+    Cr::Containers::Optional<esp::assets::MeshTransformNode>& node =
+        nodes[meshMaterial.first()];
+    if (!node)
+      continue;
+
+    // TODO: either drop MeshTransformNode in favor of SceneData or use
+    // Mn::SceneTools::convertToSingleFunctionObjects() when it's exposed
+    if (node->meshIDLocal != -1) {
+      ESP_WARNING() << "Multiple mesh assignments for node"
+                    << meshMaterial.first()
+                    << "which is not supported by MeshTransformNode, using "
+                       "just the first";
+      continue;
+    }
+
+    node->meshIDLocal = meshMaterial.second().first();
+    if (meshMaterial.second().second() != -1) {
+      node->materialID =
+          std::to_string(meshMaterial.second().second() + nextMaterialID_ -
+                         fileImporter_->materialCount());
+    }
+  }
+
+  // Recursively populate the hierarchy, moving the MeshTransformNode instances
+  // out of the nodes array
+  setMeshTransformNodeChildren(*scene, nodes, meshMetaData.root, -1);
+
   meshMetaData.setRootFrameOrientation(info.frame);
 
   return true;
@@ -2015,48 +2089,6 @@ void ResourceManager::loadMeshes(Importer& importer,
     meshes_.emplace(meshStart + iMesh, std::move(gltfMeshData));
   }
 }  // ResourceManager::loadMeshes
-
-//! Recursively load the transformation chain specified by the mesh file
-void ResourceManager::loadMeshHierarchy(Importer& importer,
-                                        MeshTransformNode& parent,
-                                        int componentID) {
-  std::unique_ptr<Magnum::Trade::ObjectData3D> objectData =
-      importer.object3D(componentID);
-  if (!objectData) {
-    ESP_ERROR() << "Cannot import object" << importer.object3DName(componentID)
-                << ", skipping";
-    return;
-  }
-
-  // Add the new node to the hierarchy and set its transformation
-  parent.children.emplace_back();
-  parent.children.back().transformFromLocalToParent =
-      objectData->transformation();
-  parent.children.back().componentID = componentID;
-
-  const int meshIDLocal = objectData->instance();
-
-  // Add a mesh index
-  if (objectData->instanceType() == Magnum::Trade::ObjectInstanceType3D::Mesh &&
-      meshIDLocal != ID_UNDEFINED) {
-    parent.children.back().meshIDLocal = meshIDLocal;
-    if (requiresTextures_) {
-      auto* mod3D =
-          static_cast<Magnum::Trade::MeshObjectData3D*>(objectData.get());
-      if (mod3D->material() != ID_UNDEFINED) {
-        // we've already loaded the materials, so we can get the global index
-        // from the material count
-        parent.children.back().materialID = std::to_string(
-            mod3D->material() + nextMaterialID_ - importer.materialCount());
-      }
-    }
-  }
-
-  // Recursively add children
-  for (auto childObjectID : objectData->children()) {
-    loadMeshHierarchy(importer, parent.children.back(), childObjectID);
-  }
-}  // ResourceManager::loadMeshHierarchy
 
 void ResourceManager::loadTextures(Importer& importer,
                                    LoadedAssetData& loadedAssetData) {
