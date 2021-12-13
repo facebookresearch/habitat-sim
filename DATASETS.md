@@ -10,7 +10,7 @@ Github page with download links: [https://github.com/matterport/habitat-matterpo
 
 After getting access to the dataset, you can download manually or programmatically via Habitat's data download utility.
 
-## Downloading with the download utility
+### Downloading HM3D with the download utility
 
 First, you will need to generate a matterport API Token:
 
