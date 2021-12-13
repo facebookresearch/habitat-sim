@@ -36,6 +36,11 @@ GenericSemanticMeshData::buildSemanticMeshData(
   const std::string msgPrefix =
       Cr::Utility::formatString("Parsing Semantic File {} :", semanticFilename);
 
+  // Check for required colors.
+  ESP_CHECK(srcMeshData.hasAttribute(Mn::Trade::MeshAttribute::Color),
+            msgPrefix << "has no vertex colors defined, which are required for "
+                         "semantic meshes.");
+
   /* Copy attributes to the vectors. Positions and indices can be copied
      directly using the convenience APIs as we store them in the full type.
      The importer always provides an indexed mesh with positions, so no need
@@ -43,17 +48,15 @@ GenericSemanticMeshData::buildSemanticMeshData(
 
   auto semanticData = GenericSemanticMeshData::create_unique();
   semanticData->cpu_vbo_.resize(srcMeshData.vertexCount());
+  semanticData->cpu_cbo_.resize(srcMeshData.vertexCount());
   semanticData->cpu_ibo_.resize(srcMeshData.indexCount());
+  semanticData->objectIds_.resize(srcMeshData.vertexCount());
+
   srcMeshData.positions3DInto(Cr::Containers::arrayCast<Mn::Vector3>(
       Cr::Containers::arrayView(semanticData->cpu_vbo_)));
   srcMeshData.indicesInto(semanticData->cpu_ibo_);
   /* Assuming colors are 8-bit RGB to avoid expanding them to float and then
      packing back */
-  ESP_CHECK(srcMeshData.hasAttribute(Mn::Trade::MeshAttribute::Color),
-            msgPrefix << "has no vertex colors defined, which are required for "
-                         "semantic meshes.");
-
-  semanticData->cpu_cbo_.resize(srcMeshData.vertexCount());
 
   Cr::Containers::Array<Mn::Color3ub> meshColors{Mn::NoInit,
                                                  srcMeshData.vertexCount()};
@@ -70,7 +73,6 @@ GenericSemanticMeshData::buildSemanticMeshData(
 
   // Check we actually have object IDs before copying them, and that those are
   // in a range we expect them to be
-  semanticData->objectIds_.resize(srcMeshData.vertexCount());
   Cr::Containers::Array<Mn::UnsignedInt> objectIds;
 
   // Whether or not the objectIds were provided by the source file. If so then
@@ -255,6 +257,9 @@ GenericSemanticMeshData::buildSemanticMeshData(
         Cr::Containers::arrayCast<2, Mn::UnsignedShort>(
             Cr::Containers::stridedArrayView(semanticData->objectIds_)));
   }
+  ESP_CHECK(srcMeshData.hasAttribute(Mn::Trade::MeshAttribute::Color),
+            msgPrefix << "has no vertex colors defined, which are required for "
+                         "semantic meshes.");
 
   if (semanticFilename.find(".ply") != std::string::npos) {
     // Generic Semantic PLY meshes have -Z gravity
