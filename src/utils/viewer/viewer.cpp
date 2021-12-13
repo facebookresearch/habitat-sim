@@ -694,6 +694,7 @@ Viewer::Viewer(const Arguments& arguments)
   imgui_ =
       Mn::ImGuiIntegration::Context(Mn::Vector2{windowSize()} / dpiScaling(),
                                     windowSize(), framebufferSize());
+  ImGui::GetIO().IniFilename = nullptr;
 
   /* Set up proper blending to be used by ImGui. There's a great chance
      you'll need this exact behavior for the rest of your scene. If not, set
