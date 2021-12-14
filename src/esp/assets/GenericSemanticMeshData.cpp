@@ -47,10 +47,12 @@ GenericSemanticMeshData::buildSemanticMeshData(
      for extra error checking. */
 
   auto semanticData = GenericSemanticMeshData::create_unique();
-  semanticData->cpu_vbo_.resize(srcMeshData.vertexCount());
-  semanticData->cpu_cbo_.resize(srcMeshData.vertexCount());
+  const auto numVerts = srcMeshData.vertexCount();
+
   semanticData->cpu_ibo_.resize(srcMeshData.indexCount());
-  semanticData->objectIds_.resize(srcMeshData.vertexCount());
+  semanticData->cpu_vbo_.resize(numVerts);
+  semanticData->cpu_cbo_.resize(numVerts);
+  semanticData->objectIds_.resize(numVerts);
 
   srcMeshData.positions3DInto(Cr::Containers::arrayCast<Mn::Vector3>(
       Cr::Containers::arrayView(semanticData->cpu_vbo_)));
@@ -58,8 +60,7 @@ GenericSemanticMeshData::buildSemanticMeshData(
   /* Assuming colors are 8-bit RGB to avoid expanding them to float and then
      packing back */
 
-  Cr::Containers::Array<Mn::Color3ub> meshColors{Mn::NoInit,
-                                                 srcMeshData.vertexCount()};
+  Cr::Containers::Array<Mn::Color3ub> meshColors{Mn::NoInit, numVerts};
 
   Mn::Math::packInto(Cr::Containers::arrayCast<2, float>(
                          stridedArrayView(srcMeshData.colorsAsArray()))
@@ -174,10 +175,10 @@ GenericSemanticMeshData::buildSemanticMeshData(
 
       // map regionIDs to affected verts using semantic color provided in
       // SemanticScene, as specified in SSD file.
-      partitionIds.resize(srcMeshData.vertexCount());
+      partitionIds.resize(numVerts);
       // map semantic IDs corresponding to colors from SSD file to appropriate
       // verts (via index)
-      semanticData->objectIds_.resize(srcMeshData.vertexCount());
+      semanticData->objectIds_.resize(numVerts);
       // temporary holding structure to hold any non-SSD vert colors, so that
       // the nonSSDObjID for new colors can be incremented appropriately
       // not using set to avoid extra include
@@ -187,7 +188,7 @@ GenericSemanticMeshData::buildSemanticMeshData(
       // derive semantic ID and color and region/room ID for culling
       int regionID = 0;
       int semanticID = 0;
-      for (int vertIdx = 0; vertIdx < srcMeshData.vertexCount(); ++vertIdx) {
+      for (int vertIdx = 0; vertIdx < numVerts; ++vertIdx) {
         Mn::Color3ub meshColor = meshColors[vertIdx];
         // Convert color to an int @ vertex
         const uint32_t meshColorInt = colorAsInt(meshColor);
@@ -257,9 +258,6 @@ GenericSemanticMeshData::buildSemanticMeshData(
         Cr::Containers::arrayCast<2, Mn::UnsignedShort>(
             Cr::Containers::stridedArrayView(semanticData->objectIds_)));
   }
-  ESP_CHECK(srcMeshData.hasAttribute(Mn::Trade::MeshAttribute::Color),
-            msgPrefix << "has no vertex colors defined, which are required for "
-                         "semantic meshes.");
 
   if (semanticFilename.find(".ply") != std::string::npos) {
     // Generic Semantic PLY meshes have -Z gravity
