@@ -167,7 +167,7 @@ void ResourceManager::initDefaultPrimAttributes() {
 
   auto wfCube = primitiveImporter_->mesh(cubeMeshName);
   primitive_meshes_[nextPrimitiveMeshId++] =
-      std::make_unique<Magnum::GL::Mesh>(Magnum::MeshTools::compile(*wfCube));
+      std::make_unique<Mn::GL::Mesh>(Mn::MeshTools::compile(*wfCube));
 
 }  // initDefaultPrimAttributes
 
@@ -562,9 +562,9 @@ ResourceManager::createStageAssetInfosFromAttributes(
 
 esp::geo::CoordinateFrame ResourceManager::buildFrameFromAttributes(
     const std::string& attribName,
-    const Magnum::Vector3& up,
-    const Magnum::Vector3& front,
-    const Magnum::Vector3& origin) {
+    const Mn::Vector3& up,
+    const Mn::Vector3& front,
+    const Mn::Vector3& origin) {
   const vec3f upEigen{Mn::EigenIntegration::cast<vec3f>(up)};
   const vec3f frontEigen{Mn::EigenIntegration::cast<vec3f>(front)};
   if (upEigen.isOrthogonal(frontEigen)) {
@@ -930,7 +930,7 @@ bool ResourceManager::loadObjectMeshDataFromFile(
   return success;
 }  // loadObjectMeshDataFromFile
 
-Magnum::Range3D ResourceManager::computeMeshBB(BaseMesh* meshDataGL) {
+Mn::Range3D ResourceManager::computeMeshBB(BaseMesh* meshDataGL) {
   CollisionMeshData& meshData = meshDataGL->getCollisionMeshData();
   return Mn::Math::minmax(meshData.positions);
 }
@@ -978,7 +978,7 @@ void ResourceManager::computeGeneralMeshAbsoluteAABBs(
   for (uint32_t iEntry = 0; iEntry < absTransforms.size(); ++iEntry) {
     const int meshID = staticDrawableInfo[iEntry].meshID;
 
-    Cr::Containers::Optional<Magnum::Trade::MeshData>& meshData =
+    Cr::Containers::Optional<Mn::Trade::MeshData>& meshData =
         meshes_.at(meshID)->getMeshData();
     CORRADE_ASSERT(meshData,
                    "::computeGeneralMeshAbsoluteAABBs: The mesh "
@@ -1072,11 +1072,11 @@ std::vector<Mn::Matrix4> ResourceManager::computeAbsoluteTransformations(
 }
 
 void ResourceManager::translateMesh(BaseMesh* meshDataGL,
-                                    Magnum::Vector3 translation) {
+                                    Mn::Vector3 translation) {
   CollisionMeshData& meshData = meshDataGL->getCollisionMeshData();
 
-  Magnum::Matrix4 transform = Magnum::Matrix4::translation(translation);
-  Magnum::MeshTools::transformPointsInPlace(transform, meshData.positions);
+  Mn::Matrix4 transform = Mn::Matrix4::translation(translation);
+  Mn::MeshTools::transformPointsInPlace(transform, meshData.positions);
   // save the mesh transformation for future query
   meshDataGL->meshTransform_ = transform * meshDataGL->meshTransform_;
 
@@ -1246,7 +1246,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstancePTex(
       for (int jSubmesh = 0; jSubmesh < pTexMeshData->getSize(); ++jSubmesh) {
         scene::SceneNode& node = instanceRoot->createChild();
         const quatf transform = info.frame.rotationFrameToWorld();
-        node.setRotation(Magnum::Quaternion(transform));
+        node.setRotation(Mn::Quaternion(transform));
         node.addFeature<gfx::PTexMeshDrawable>(*pTexMeshData, jSubmesh,
                                                shaderManager_, drawables);
         staticDrawableInfo.emplace_back(StaticDrawableInfo{node, jSubmesh});
@@ -1259,7 +1259,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstancePTex(
       for (int jSubmesh = 0; jSubmesh < pTexMeshData->getSize(); ++jSubmesh) {
         scene::SceneNode& node = instanceRoot->createChild();
         const quatf transform = info.frame.rotationFrameToWorld();
-        node.setRotation(Magnum::Quaternion(transform));
+        node.setRotation(Mn::Quaternion(transform));
         node.addFeature<gfx::PTexMeshDrawable>(*pTexMeshData, jSubmesh,
                                                shaderManager_, drawables);
         staticDrawableInfo.emplace_back(StaticDrawableInfo{node, jSubmesh});
@@ -1744,15 +1744,15 @@ int ResourceManager::loadNavMeshVisualization(esp::nav::PathFinder& pathFinder,
   }
 
   // create the mesh
-  std::vector<Magnum::UnsignedInt> indices;
-  std::vector<Magnum::Vector3> positions;
+  std::vector<Mn::UnsignedInt> indices;
+  std::vector<Mn::Vector3> positions;
 
   const MeshData::ptr navMeshData = pathFinder.getNavMeshData();
 
   // add the vertices
   positions.resize(navMeshData->vbo.size());
   for (size_t vix = 0; vix < navMeshData->vbo.size(); vix++) {
-    positions[vix] = Magnum::Vector3{navMeshData->vbo[vix]};
+    positions[vix] = Mn::Vector3{navMeshData->vbo[vix]};
   }
 
   indices.resize(navMeshData->ibo.size() * 2);
@@ -1780,8 +1780,8 @@ int ResourceManager::loadNavMeshVisualization(esp::nav::PathFinder& pathFinder,
 
   // compile and add the new mesh to the structure
   navMeshPrimitiveID = nextPrimitiveMeshId;
-  primitive_meshes_[nextPrimitiveMeshId++] = std::make_unique<Magnum::GL::Mesh>(
-      Magnum::MeshTools::compile(visualNavMesh));
+  primitive_meshes_[nextPrimitiveMeshId++] =
+      std::make_unique<Mn::GL::Mesh>(Mn::MeshTools::compile(visualNavMesh));
 
   if (parent != nullptr && drawables != nullptr &&
       navMeshPrimitiveID != ID_UNDEFINED) {
@@ -1795,7 +1795,7 @@ int ResourceManager::loadNavMeshVisualization(esp::nav::PathFinder& pathFinder,
 namespace {
 /**
  * @brief given passed @ref metadata::attributes::ObjectInstanceShaderType @p
- * typeToCheck and given @ref Magnum::Trade::MaterialData, verify that the
+ * typeToCheck and given @ref Mn::Trade::MaterialData, verify that the
  * material's intrinsic type is the same as inferred by @p typeToCheck. Ignore
  * flat, since all shaders already support flat.
  * @param typeToCheck The type of shader being specified.
@@ -2130,13 +2130,12 @@ void ResourceManager::loadTextures(Importer& importer,
 
   for (int iTexture = 0; iTexture < importer.textureCount(); ++iTexture) {
     auto currentTextureID = textureStart + iTexture;
-    textures_.emplace(currentTextureID,
-                      std::make_shared<Magnum::GL::Texture2D>());
+    textures_.emplace(currentTextureID, std::make_shared<Mn::GL::Texture2D>());
     auto& currentTexture = textures_.at(currentTextureID);
 
     auto textureData = importer.texture(iTexture);
     if (!textureData ||
-        textureData->type() != Magnum::Trade::TextureType::Texture2D) {
+        textureData->type() != Mn::Trade::TextureType::Texture2D) {
       ESP_ERROR() << "Cannot load texture" << iTexture << "skipping";
       currentTexture = nullptr;
       continue;
@@ -2342,7 +2341,7 @@ void ResourceManager::addComponent(
   // Add a drawable if the object has a mesh and the mesh is loaded
   if (meshIDLocal != ID_UNDEFINED) {
     const int meshID = metaData.meshIndex.first + meshIDLocal;
-    Magnum::GL::Mesh* mesh = meshes_.at(meshID)->getMagnumGLMesh();
+    Mn::GL::Mesh* mesh = meshes_.at(meshID)->getMagnumGLMesh();
     if (getCreateRenderer()) {
       CORRADE_ASSERT(mesh,
                      "::addComponent() : GL mesh expected but not found", );
@@ -2480,7 +2479,7 @@ void ResourceManager::initDefaultMaterials() {
   shaderManager_.set<gfx::MaterialData>(DEFAULT_MATERIAL_KEY,
                                         new gfx::PhongMaterialData{});
   auto* whiteMaterialData = new gfx::PhongMaterialData;
-  whiteMaterialData->ambientColor = Magnum::Color4{1.0};
+  whiteMaterialData->ambientColor = Mn::Color4{1.0};
   shaderManager_.set<gfx::MaterialData>(WHITE_MATERIAL_KEY, whiteMaterialData);
   auto* perVertexObjectId = new gfx::PhongMaterialData{};
   perVertexObjectId->perVertexObjectId = true;
@@ -2492,7 +2491,7 @@ void ResourceManager::initDefaultMaterials() {
 
 bool ResourceManager::isLightSetupCompatible(
     const LoadedAssetData& loadedAssetData,
-    const Magnum::ResourceKey& lightSetupKey) const {
+    const Mn::ResourceKey& lightSetupKey) const {
   // if light setup has lights in it, but asset was loaded in as flat shaded,
   // there may be an error when rendering.
   return lightSetupKey == Mn::ResourceKey{NO_LIGHT_KEY} ||
@@ -2505,8 +2504,8 @@ void ResourceManager::joinHierarchy(
     MeshData& mesh,
     const MeshMetaData& metaData,
     const MeshTransformNode& node,
-    const Magnum::Matrix4& transformFromParentToWorld) const {
-  Magnum::Matrix4 transformFromLocalToWorld =
+    const Mn::Matrix4& transformFromParentToWorld) const {
+  Mn::Matrix4 transformFromLocalToWorld =
       transformFromParentToWorld * node.transformFromLocalToParent;
 
   if (node.meshIDLocal != ID_UNDEFINED) {
@@ -2515,7 +2514,7 @@ void ResourceManager::joinHierarchy(
             ->getCollisionMeshData();
     int lastIndex = mesh.vbo.size();
     for (auto& pos : meshData.positions) {
-      mesh.vbo.push_back(Magnum::EigenIntegration::cast<vec3f>(
+      mesh.vbo.push_back(Mn::EigenIntegration::cast<vec3f>(
           transformFromLocalToWorld.transformPoint(pos)));
     }
     for (auto& index : meshData.indices) {
@@ -2536,7 +2535,7 @@ std::unique_ptr<MeshData> ResourceManager::createJoinedCollisionMesh(
 
   const MeshMetaData& metaData = getMeshMetaData(filename);
 
-  Magnum::Matrix4 identity;
+  Mn::Matrix4 identity;
   joinHierarchy(*mesh, metaData, metaData.root, identity);
 
   return mesh;
@@ -2639,14 +2638,14 @@ void ResourceManager::createConvexHullDecomposition(
     // for each convex hull, transfer the data to a newly created  MeshData
     interfaceVHACD->GetConvexHull(p, ch);
 
-    std::vector<Magnum::Vector3> positions;
+    std::vector<Mn::Vector3> positions;
 
     // add the vertices
     positions.resize(ch.m_nPoints);
     for (size_t vix = 0; vix < ch.m_nPoints; vix++) {
       positions[vix] =
-          Magnum::Vector3(ch.m_points[vix * 3], ch.m_points[vix * 3 + 1],
-                          ch.m_points[vix * 3 + 2]);
+          Mn::Vector3(ch.m_points[vix * 3], ch.m_points[vix * 3 + 1],
+                      ch.m_points[vix * 3 + 2]);
     }
 
     // add indices
@@ -2709,7 +2708,7 @@ void ResourceManager::createConvexHullDecomposition(
       resourceDict_.emplace(chdFilename, std::move(loadedAssetData));
   if (saveChdToObj) {
     std::string objDirectory = Cr::Utility::Directory::join(
-        Corrade::Utility::Directory::current(), "data/VHACD_outputs");
+        Cr::Utility::Directory::current(), "data/VHACD_outputs");
     std::string new_filename =
         Cr::Utility::Directory::filename(
             Cr::Utility::Directory::splitExtension(chdFilename).first) +
