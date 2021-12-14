@@ -26,6 +26,7 @@
 #include <Magnum/Math/Range.h>
 #include <Magnum/Math/Tags.h>
 #include <Magnum/MeshTools/Compile.h>
+#include <Magnum/MeshTools/Concatenate.h>
 #include <Magnum/MeshTools/Interleave.h>
 #include <Magnum/MeshTools/Reference.h>
 #include <Magnum/PixelFormat.h>
@@ -1294,15 +1295,38 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
      attributes to per-vertex, so nothing extra needs to be done. */
   Cr::Containers::Optional<Mn::Trade::MeshData> meshData;
   ConfigureImporterManagerGLExtensions();
-  ESP_CHECK((fileImporter_->openFile(filename) &&
-             (meshData = fileImporter_->mesh(0))),
-            Cr::Utility::formatString(
-                "Error loading semantic mesh data from file {}", filename));
+  ESP_CHECK(
+      (fileImporter_->openFile(filename) && (fileImporter_->meshCount() > 0)),
+      Cr::Utility::formatString("Error loading semantic mesh data from file {}",
+                                filename));
+
+  const auto meshCount = fileImporter_->meshCount();
+  if (meshCount == 1) {
+    // only one mesh, treat as before
+    meshData = fileImporter_->mesh(0);
+  } else {
+    // build list of meshDatas from importer
+    std::vector<Mn::Trade::MeshData> meshVec;
+    meshVec.reserve(meshCount);
+    // build view
+    std::vector<Cr::Containers::Reference<const Mn::Trade::MeshData>> meshView;
+    meshView.reserve(meshCount);
+    for (int i = 0; i < meshCount; ++i) {
+      if (Cr::Containers::Optional<Mn::Trade::MeshData> mesh =
+              fileImporter_->mesh(i)) {
+        meshVec.push_back(std::move(*mesh));
+        meshView.push_back(meshVec.back());
+      }
+    }
+    // build concatenated meshData from container of meshes.
+    meshData = Mn::MeshTools::concatenate(meshView);
+  }
 
   std::vector<GenericSemanticMeshData::uptr> instanceMeshes =
       GenericSemanticMeshData::buildSemanticMeshData(
           *meshData, filename, info.splitInstanceMesh,
-          semanticColorMapBeingUsed_, semanticScene_);
+          semanticColorMapBeingUsed_,
+          (filename.find(".ply") == std::string::npos), semanticScene_);
 
   ESP_CHECK(!instanceMeshes.empty(),
             Cr::Utility::formatString(
