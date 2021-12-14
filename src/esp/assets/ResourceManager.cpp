@@ -26,6 +26,7 @@
 #include <Magnum/Math/Range.h>
 #include <Magnum/Math/Tags.h>
 #include <Magnum/MeshTools/Compile.h>
+#include <Magnum/MeshTools/Concatenate.h>
 #include <Magnum/MeshTools/Interleave.h>
 #include <Magnum/MeshTools/Reference.h>
 #include <Magnum/PixelFormat.h>
@@ -107,6 +108,7 @@ ResourceManager::ResourceManager(
 #endif
   initDefaultLightSetups();
   initDefaultMaterials();
+  // appropriately configure importerManager_ based on compilation flags
   buildImporters();
 
   if (flags_ & Flag::PbrImageBasedLighting) {
@@ -123,16 +125,26 @@ ResourceManager::~ResourceManager() {
 }
 
 void ResourceManager::buildImporters() {
+  // Preferred plugins, Basis target GPU format
+  importerManager_.setPreferredPlugins("GltfImporter", {"CgltfImporter"});
+#ifdef ESP_BUILD_ASSIMP_SUPPORT
+  importerManager_.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
+  Cr::PluginManager::PluginMetadata* const assimpmetadata =
+      importerManager_.metadata("AssimpImporter");
+  assimpmetadata->configuration().setValue("ImportColladaIgnoreUpDirection",
+                                           "true");
+#endif
+
   // instantiate a primitive importer
   CORRADE_INTERNAL_ASSERT_OUTPUT(
       primitiveImporter_ =
           importerManager_.loadAndInstantiate("PrimitiveImporter"));
   // necessary for importer to be usable
   primitiveImporter_->openData("");
+
   // instantiate importer for file load
   CORRADE_INTERNAL_ASSERT_OUTPUT(
       fileImporter_ = importerManager_.loadAndInstantiate("AnySceneImporter"));
-
 }  // buildImporters
 
 bool ResourceManager::getCreateRenderer() const {
@@ -144,6 +156,7 @@ void ResourceManager::initDefaultPrimAttributes() {
     return;
   }
 
+  ConfigureImporterManagerGLExtensions();
   // by this point, we should have a GL::Context so load the bb primitive.
   // TODO: replace this completely with standard mesh (i.e. treat the bb
   // wireframe cube no differently than other primitive-based rendered
@@ -155,7 +168,7 @@ void ResourceManager::initDefaultPrimAttributes() {
 
   auto wfCube = primitiveImporter_->mesh(cubeMeshName);
   primitive_meshes_[nextPrimitiveMeshId++] =
-      std::make_unique<Magnum::GL::Mesh>(Magnum::MeshTools::compile(*wfCube));
+      std::make_unique<Mn::GL::Mesh>(Mn::MeshTools::compile(*wfCube));
 
 }  // initDefaultPrimAttributes
 
@@ -439,7 +452,7 @@ bool ResourceManager::buildMeshGroups(
     //! Collect collision mesh group
     bool colMeshGroupSuccess = false;
     if (info.type == AssetType::INSTANCE_MESH) {
-      // PLY Instance mesh
+      // PLY Semantic mesh
       colMeshGroupSuccess =
           buildStageCollisionMeshGroup<GenericSemanticMeshData>(info.filepath,
                                                                 meshGroup);
@@ -493,6 +506,10 @@ ResourceManager::createStageAssetInfosFromAttributes(
       stageAttributes->getForceFlatShading()    // forceFlatShading
   };
   renderInfo.shaderTypeToUse = stageAttributes->getShaderType();
+  std::string debugStr = "Frame :";
+  Cr::Utility::formatInto(debugStr, debugStr.size(),
+                          "{} for render mesh named : {}",
+                          renderInfo.frame.toString(), renderInfo.filepath);
   resMap["render"] = renderInfo;
   if (createCollisionInfo) {
     // create collision asset info if requested
@@ -526,19 +543,29 @@ ResourceManager::createStageAssetInfosFromAttributes(
         frame,                                      // frame
         virtualUnitToMeters,                        // virtualUnitToMeters
         true,                                       // forceFlatShading
-        // only split instance mesh if doing frustum culling
+        // only split semantic mesh if doing frustum culling
         stageAttributes->getFrustumCulling()  // splitInstanceMesh
     };
+
+    Cr::Utility::formatInto(
+        debugStr, debugStr.size(),
+        "|{} for semantic mesh named : {} with type specified as {}",
+        frame.toString(), semanticInfo.filepath,
+        esp::metadata::attributes::getMeshTypeName(semanticInfo.type));
     resMap["semantic"] = semanticInfo;
+  } else {
+    Cr::Utility::formatInto(debugStr, debugStr.size(),
+                            "|No Semantic asset info specified.");
   }
+  ESP_DEBUG() << debugStr;
   return resMap;
 }  // ResourceManager::createStageAssetInfosFromAttributes
 
 esp::geo::CoordinateFrame ResourceManager::buildFrameFromAttributes(
     const std::string& attribName,
-    const Magnum::Vector3& up,
-    const Magnum::Vector3& front,
-    const Magnum::Vector3& origin) {
+    const Mn::Vector3& up,
+    const Mn::Vector3& front,
+    const Mn::Vector3& origin) {
   const vec3f upEigen{Mn::EigenIntegration::cast<vec3f>(up)};
   const vec3f frontEigen{Mn::EigenIntegration::cast<vec3f>(front)};
   if (upEigen.isOrthogonal(frontEigen)) {
@@ -589,7 +616,7 @@ scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
     // sensors.
     if (!(creation.isSemantic() && creation.isRGBD())) {
       ESP_WARNING(Mn::Debug::Flag::NoSpace)
-          << "unsupported instance creation flags for asset ["
+          << "Unsupported instance creation flags for asset ["
           << assetInfo.filepath << "]";
       return nullptr;
     }
@@ -600,7 +627,7 @@ scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
         // Because we have a separate semantic scene graph, we can't support a
         // static instance with both isSemantic and isRGBD.
         ESP_WARNING(Mn::Debug::Flag::NoSpace)
-            << "unsupported instance creation flags for asset ["
+            << "Unsupported instance creation flags for asset ["
             << assetInfo.filepath
             << "] with "
                "SimulatorConfiguration::forceSeparateSemanticSceneGraph=true.";
@@ -667,13 +694,17 @@ bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
     defaultInfo.overridePhongMaterial = Cr::Containers::NullOpt;
 
     if (info.type == AssetType::PRIMITIVE) {
+      ESP_DEBUG() << "Building Prim named:" << info.filepath;
       buildPrimitiveAssetData(info.filepath);
       meshSuccess = true;
     } else if (info.type == AssetType::FRL_PTEX_MESH) {
+      ESP_DEBUG() << "Loading PTEX asset named:" << info.filepath;
       meshSuccess = loadRenderAssetPTex(defaultInfo);
     } else if (info.type == AssetType::INSTANCE_MESH) {
+      ESP_DEBUG() << "Loading InstanceMesh asset named:" << info.filepath;
       meshSuccess = loadRenderAssetIMesh(defaultInfo);
     } else if (isRenderAssetGeneral(info.type)) {
+      ESP_DEBUG() << "Loading general asset named:" << info.filepath;
       meshSuccess = loadRenderAssetGeneral(defaultInfo);
     } else {
       // loadRenderAsset doesn't yet support the requested asset type
@@ -900,7 +931,7 @@ bool ResourceManager::loadObjectMeshDataFromFile(
   return success;
 }  // loadObjectMeshDataFromFile
 
-Magnum::Range3D ResourceManager::computeMeshBB(BaseMesh* meshDataGL) {
+Mn::Range3D ResourceManager::computeMeshBB(BaseMesh* meshDataGL) {
   CollisionMeshData& meshData = meshDataGL->getCollisionMeshData();
   return Mn::Math::minmax(meshData.positions);
 }
@@ -948,7 +979,7 @@ void ResourceManager::computeGeneralMeshAbsoluteAABBs(
   for (uint32_t iEntry = 0; iEntry < absTransforms.size(); ++iEntry) {
     const int meshID = staticDrawableInfo[iEntry].meshID;
 
-    Cr::Containers::Optional<Magnum::Trade::MeshData>& meshData =
+    Cr::Containers::Optional<Mn::Trade::MeshData>& meshData =
         meshes_.at(meshID)->getMeshData();
     CORRADE_ASSERT(meshData,
                    "::computeGeneralMeshAbsoluteAABBs: The mesh "
@@ -1042,11 +1073,11 @@ std::vector<Mn::Matrix4> ResourceManager::computeAbsoluteTransformations(
 }
 
 void ResourceManager::translateMesh(BaseMesh* meshDataGL,
-                                    Magnum::Vector3 translation) {
+                                    Mn::Vector3 translation) {
   CollisionMeshData& meshData = meshDataGL->getCollisionMeshData();
 
-  Magnum::Matrix4 transform = Magnum::Matrix4::translation(translation);
-  Magnum::MeshTools::transformPointsInPlace(transform, meshData.positions);
+  Mn::Matrix4 transform = Mn::Matrix4::translation(translation);
+  Mn::MeshTools::transformPointsInPlace(transform, meshData.positions);
   // save the mesh transformation for future query
   meshDataGL->meshTransform_ = transform * meshDataGL->meshTransform_;
 
@@ -1209,23 +1240,31 @@ scene::SceneNode* ResourceManager::createRenderAssetInstancePTex(
   std::vector<StaticDrawableInfo> staticDrawableInfo;
 
   scene::SceneNode* instanceRoot = &parent->createChild();
-
-  for (int iMesh = start; iMesh <= end; ++iMesh) {
-    auto* pTexMeshData = dynamic_cast<PTexMeshData*>(meshes_.at(iMesh).get());
-
-    if (getCreateRenderer()) {
+  if (getCreateRenderer()) {
+    for (int iMesh = start; iMesh <= end; ++iMesh) {
+      auto* pTexMeshData = dynamic_cast<PTexMeshData*>(meshes_.at(iMesh).get());
       pTexMeshData->uploadBuffersToGPU(false);
+      for (int jSubmesh = 0; jSubmesh < pTexMeshData->getSize(); ++jSubmesh) {
+        scene::SceneNode& node = instanceRoot->createChild();
+        const quatf transform = info.frame.rotationFrameToWorld();
+        node.setRotation(Mn::Quaternion(transform));
+        node.addFeature<gfx::PTexMeshDrawable>(*pTexMeshData, jSubmesh,
+                                               shaderManager_, drawables);
+        staticDrawableInfo.emplace_back(StaticDrawableInfo{node, jSubmesh});
+      }
     }
-
-    for (int jSubmesh = 0; jSubmesh < pTexMeshData->getSize(); ++jSubmesh) {
-      scene::SceneNode& node = instanceRoot->createChild();
-      const quatf transform = info.frame.rotationFrameToWorld();
-      node.setRotation(Magnum::Quaternion(transform));
-
-      node.addFeature<gfx::PTexMeshDrawable>(*pTexMeshData, jSubmesh,
-                                             shaderManager_, drawables);
-
-      staticDrawableInfo.emplace_back(StaticDrawableInfo{node, jSubmesh});
+  } else {
+    // don't push to gpu if not creating renderer
+    for (int iMesh = start; iMesh <= end; ++iMesh) {
+      auto* pTexMeshData = dynamic_cast<PTexMeshData*>(meshes_.at(iMesh).get());
+      for (int jSubmesh = 0; jSubmesh < pTexMeshData->getSize(); ++jSubmesh) {
+        scene::SceneNode& node = instanceRoot->createChild();
+        const quatf transform = info.frame.rotationFrameToWorld();
+        node.setRotation(Mn::Quaternion(transform));
+        node.addFeature<gfx::PTexMeshDrawable>(*pTexMeshData, jSubmesh,
+                                               shaderManager_, drawables);
+        staticDrawableInfo.emplace_back(StaticDrawableInfo{node, jSubmesh});
+      }
     }
   }
   // we assume a ptex mesh is only used as static
@@ -1248,30 +1287,50 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
   CORRADE_INTERNAL_ASSERT(info.type == AssetType::INSTANCE_MESH);
 
   const std::string& filename = info.filepath;
+
   CORRADE_INTERNAL_ASSERT(resourceDict_.count(filename) == 0);
-  Cr::Containers::Pointer<Importer> importer;
-
-  // TODO : support glb along with ply files as semantic meshes
-
-  CORRADE_INTERNAL_ASSERT_OUTPUT(
-      importer = importerManager_.loadAndInstantiate("StanfordImporter"));
 
   /* Open the file. On error the importer already prints a diagnostic message,
      so no need to do that here. The importer implicitly converts per-face
      attributes to per-vertex, so nothing extra needs to be done. */
   Cr::Containers::Optional<Mn::Trade::MeshData> meshData;
-  ESP_CHECK((importer->openFile(filename) && (meshData = importer->mesh(0))),
-            Cr::Utility::formatString(
-                "Error loading instance mesh data from file {}", filename));
+  ConfigureImporterManagerGLExtensions();
+  ESP_CHECK(
+      (fileImporter_->openFile(filename) && (fileImporter_->meshCount() > 0)),
+      Cr::Utility::formatString("Error loading semantic mesh data from file {}",
+                                filename));
+
+  const auto meshCount = fileImporter_->meshCount();
+  if (meshCount == 1) {
+    // only one mesh, treat as before
+    meshData = fileImporter_->mesh(0);
+  } else {
+    // build list of meshDatas from importer
+    std::vector<Mn::Trade::MeshData> meshVec;
+    meshVec.reserve(meshCount);
+    // build view
+    std::vector<Cr::Containers::Reference<const Mn::Trade::MeshData>> meshView;
+    meshView.reserve(meshCount);
+    for (int i = 0; i < meshCount; ++i) {
+      if (Cr::Containers::Optional<Mn::Trade::MeshData> mesh =
+              fileImporter_->mesh(i)) {
+        meshVec.push_back(std::move(*mesh));
+        meshView.emplace_back(meshVec.back());
+      }
+    }
+    // build concatenated meshData from container of meshes.
+    meshData = Mn::MeshTools::concatenate(meshView);
+  }
 
   std::vector<GenericSemanticMeshData::uptr> instanceMeshes =
       GenericSemanticMeshData::buildSemanticMeshData(
           *meshData, filename, info.splitInstanceMesh,
-          semanticColorMapBeingUsed_, semanticScene_);
+          semanticColorMapBeingUsed_,
+          (filename.find(".ply") == std::string::npos), semanticScene_);
 
   ESP_CHECK(!instanceMeshes.empty(),
             Cr::Utility::formatString(
-                "Error loading instance mesh data from file {}", filename));
+                "Error loading semantic mesh data from file {}", filename));
 
   int meshStart = nextMeshID_;
   int meshEnd = meshStart + instanceMeshes.size() - 1;
@@ -1281,7 +1340,6 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
 
   // specify colormap to use to build TextureVisualizerShader
   // If this is true, we want to build a colormap from the vertex colors.
-
   for (int meshIDLocal = 0; meshIDLocal < instanceMeshes.size();
        ++meshIDLocal) {
     if (getCreateRenderer()) {
@@ -1289,10 +1347,9 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
     }
     meshes_.emplace(meshStart + meshIDLocal,
                     std::move(instanceMeshes[meshIDLocal]));
-
     meshMetaData.root.children[meshIDLocal].meshIDLocal = meshIDLocal;
   }
-
+  meshMetaData.setRootFrameOrientation(info.frame);
   // update the dictionary
   resourceDict_.emplace(filename,
                         LoadedAssetData{info, std::move(meshMetaData)});
@@ -1312,21 +1369,25 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceIMesh(
   const bool computeAbsoluteAABBs = creation.isStatic();
 
   std::vector<StaticDrawableInfo> staticDrawableInfo;
-  auto indexPair = getMeshMetaData(creation.filepath).meshIndex;
+  auto meshMetaData = getMeshMetaData(creation.filepath);
+  auto indexPair = meshMetaData.meshIndex;
   int start = indexPair.first;
   int end = indexPair.second;
 
   scene::SceneNode* instanceRoot = &parent->createChild();
+  // transform based on transformNode setting
+  instanceRoot->MagnumObject::setTransformation(
+      meshMetaData.root.transformFromLocalToParent);
 
   for (int iMesh = start; iMesh <= end; ++iMesh) {
     scene::SceneNode& node = instanceRoot->createChild();
 
-    // Instance mesh does NOT have normal texture, so do not bother to
+    // Semantic mesh does NOT have normal texture, so do not bother to
     // query if the mesh data contain tangent or bitangent.
     gfx::Drawable::Flags meshAttributeFlags{
         gfx::Drawable::Flag::HasVertexColor};
     // WARNING:
-    // This is to initiate drawables for instance mesh, and the instance mesh
+    // This is to initiate drawables for semantic mesh, and the semantic mesh
     // data is NOT stored in the meshData_ in the BaseMesh.
     // That means One CANNOT query the data like e.g.,
     // meshes_.at(iMesh)->getMeshData()->hasAttribute(Mn::Trade::MeshAttribute::Tangent)
@@ -1349,94 +1410,84 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceIMesh(
 
   return instanceRoot;
 }  // ResourceManager::createRenderAssetInstanceIMesh
+void ResourceManager::ConfigureImporterManagerGLExtensions() {
+  if (!getCreateRenderer()) {
+    return;
+  }
 
-void ResourceManager::ConfigureImporterManager(
-    const std::string& dispFileName) {
-  // Preferred plugins, Basis target GPU format
-  importerManager_.setPreferredPlugins("GltfImporter", {"CgltfImporter"});
-#ifdef ESP_BUILD_ASSIMP_SUPPORT
-  importerManager_.setPreferredPlugins("ObjImporter", {"AssimpImporter"});
-  Cr::PluginManager::PluginMetadata* const assimpmetadata =
-      importerManager_.metadata("AssimpImporter");
-  assimpmetadata->configuration().setValue("ImportColladaIgnoreUpDirection",
-                                           "true");
-#endif
-
-  if (requiresTextures_) {
-    Cr::PluginManager::PluginMetadata* const metadata =
-        importerManager_.metadata("BasisImporter");
-    Mn::GL::Context& context = Mn::GL::Context::current();
+  Cr::PluginManager::PluginMetadata* const metadata =
+      importerManager_.metadata("BasisImporter");
+  Mn::GL::Context& context = Mn::GL::Context::current();
 #ifdef MAGNUM_TARGET_WEBGL
-    if (context.isExtensionSupported<
-            Mn::GL::Extensions::WEBGL::compressed_texture_astc>())
+  if (context.isExtensionSupported<
+          Mn::GL::Extensions::WEBGL::compressed_texture_astc>())
 #else
-    if (context.isExtensionSupported<
-            Mn::GL::Extensions::KHR::texture_compression_astc_ldr>())
+  if (context.isExtensionSupported<
+          Mn::GL::Extensions::KHR::texture_compression_astc_ldr>())
 #endif
-    {
-      ESP_DEBUG() << "Importing Basis files as ASTC 4x4 for" << dispFileName;
-      metadata->configuration().setValue("format", "Astc4x4RGBA");
-    }
+  {
+    ESP_DEBUG() << "Importing Basis files as ASTC 4x4.";
+    metadata->configuration().setValue("format", "Astc4x4RGBA");
+  }
 #ifdef MAGNUM_TARGET_GLES
-    else if (context.isExtensionSupported<
-                 Mn::GL::Extensions::EXT::texture_compression_bptc>())
+  else if (context.isExtensionSupported<
+               Mn::GL::Extensions::EXT::texture_compression_bptc>())
 #else
-    else if (context.isExtensionSupported<
-                 Mn::GL::Extensions::ARB::texture_compression_bptc>())
+  else if (context.isExtensionSupported<
+               Mn::GL::Extensions::ARB::texture_compression_bptc>())
 #endif
-    {
-      ESP_DEBUG() << "Importing Basis files as BC7 for" << dispFileName;
-      metadata->configuration().setValue("format", "Bc7RGBA");
-    }
+  {
+    ESP_DEBUG() << "Importing Basis files as BC7.";
+    metadata->configuration().setValue("format", "Bc7RGBA");
+  }
 #ifdef MAGNUM_TARGET_WEBGL
-    else if (context.isExtensionSupported<
-                 Mn::GL::Extensions::WEBGL::compressed_texture_s3tc>())
+  else if (context.isExtensionSupported<
+               Mn::GL::Extensions::WEBGL::compressed_texture_s3tc>())
 #elif defined(MAGNUM_TARGET_GLES)
-    else if (context.isExtensionSupported<
-                 Mn::GL::Extensions::EXT::texture_compression_s3tc>() ||
-             context.isExtensionSupported<
-                 Mn::GL::Extensions::ANGLE::texture_compression_dxt5>())
+  else if (context.isExtensionSupported<
+               Mn::GL::Extensions::EXT::texture_compression_s3tc>() ||
+           context.isExtensionSupported<
+               Mn::GL::Extensions::ANGLE::texture_compression_dxt5>())
 #else
-    else if (context.isExtensionSupported<
-                 Mn::GL::Extensions::EXT::texture_compression_s3tc>())
+  else if (context.isExtensionSupported<
+               Mn::GL::Extensions::EXT::texture_compression_s3tc>())
 #endif
-    {
-      ESP_DEBUG() << "Importing Basis files as BC3 for" << dispFileName;
-      metadata->configuration().setValue("format", "Bc3RGBA");
-    }
+  {
+    ESP_DEBUG() << "Importing Basis files as BC3.";
+    metadata->configuration().setValue("format", "Bc3RGBA");
+  }
 #ifndef MAGNUM_TARGET_GLES2
-    else
+  else
 #ifndef MAGNUM_TARGET_GLES
-        if (context.isExtensionSupported<
-                Mn::GL::Extensions::ARB::ES3_compatibility>())
+      if (context.isExtensionSupported<
+              Mn::GL::Extensions::ARB::ES3_compatibility>())
 #endif
-    {
-      ESP_DEBUG() << "Importing Basis files as ETC2 for" << dispFileName;
-      metadata->configuration().setValue("format", "Etc2RGBA");
-    }
+  {
+    ESP_DEBUG() << "Importing Basis files as ETC2.";
+    metadata->configuration().setValue("format", "Etc2RGBA");
+  }
 #else /* For ES2, fall back to PVRTC as ETC2 is not available */
-    else
+  else
 #ifdef MAGNUM_TARGET_WEBGL
-        if (context.isExtensionSupported<Mn::WEBGL::compressed_texture_pvrtc>())
+      if (context.isExtensionSupported<Mn::WEBGL::compressed_texture_pvrtc>())
 #else
-        if (context.isExtensionSupported<Mn::IMG::texture_compression_pvrtc>())
+      if (context.isExtensionSupported<Mn::IMG::texture_compression_pvrtc>())
 #endif
-    {
-      ESP_DEBUG() << "Importing Basis files as PVRTC 4bpp for" << dispFileName;
-      metadata->configuration().setValue("format", "PvrtcRGBA4bpp");
-    }
+  {
+    ESP_DEBUG() << "Importing Basis files as PVRTC 4bpp.";
+    metadata->configuration().setValue("format", "PvrtcRGBA4bpp");
+  }
 #endif
 #if defined(MAGNUM_TARGET_GLES2) || !defined(MAGNUM_TARGET_GLES)
-    else /* ES3 has ETC2 always */
-    {
-      ESP_WARNING() << "No supported GPU compressed texture format detected, "
-                       "Basis images will get imported as RGBA8 for"
-                    << dispFileName;
-      metadata->configuration().setValue("format", "RGBA8");
-    }
-#endif
+  else /* ES3 has ETC2 always */
+  {
+    ESP_WARNING() << "No supported GPU compressed texture format detected, "
+                     "Basis images will get imported as RGBA8.";
+    metadata->configuration().setValue("format", "RGBA8");
   }
-}  // ResourceManager::ConfigureImportManager
+#endif
+
+}  // ResourceManager::ConfigureImporterManagerGLExtensions
 
 namespace {
 
@@ -1460,12 +1511,8 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
   CORRADE_INTERNAL_ASSERT(isRenderAssetGeneral(info.type));
 
   const std::string& filename = info.filepath;
-  const std::string dispFileName = Cr::Utility::Directory::filename(filename);
   CORRADE_INTERNAL_ASSERT(resourceDict_.count(filename) == 0);
-
-  // appropriately configure importerManager_ based on compilation flags
-  ConfigureImporterManager(dispFileName);
-
+  ConfigureImporterManagerGLExtensions();
   if (!fileImporter_->openFile(filename)) {
     ESP_ERROR() << "Cannot open file" << filename;
     return false;
@@ -1721,15 +1768,15 @@ int ResourceManager::loadNavMeshVisualization(esp::nav::PathFinder& pathFinder,
   }
 
   // create the mesh
-  std::vector<Magnum::UnsignedInt> indices;
-  std::vector<Magnum::Vector3> positions;
+  std::vector<Mn::UnsignedInt> indices;
+  std::vector<Mn::Vector3> positions;
 
   const MeshData::ptr navMeshData = pathFinder.getNavMeshData();
 
   // add the vertices
   positions.resize(navMeshData->vbo.size());
   for (size_t vix = 0; vix < navMeshData->vbo.size(); vix++) {
-    positions[vix] = Magnum::Vector3{navMeshData->vbo[vix]};
+    positions[vix] = Mn::Vector3{navMeshData->vbo[vix]};
   }
 
   indices.resize(navMeshData->ibo.size() * 2);
@@ -1757,8 +1804,8 @@ int ResourceManager::loadNavMeshVisualization(esp::nav::PathFinder& pathFinder,
 
   // compile and add the new mesh to the structure
   navMeshPrimitiveID = nextPrimitiveMeshId;
-  primitive_meshes_[nextPrimitiveMeshId++] = std::make_unique<Magnum::GL::Mesh>(
-      Magnum::MeshTools::compile(visualNavMesh));
+  primitive_meshes_[nextPrimitiveMeshId++] =
+      std::make_unique<Mn::GL::Mesh>(Mn::MeshTools::compile(visualNavMesh));
 
   if (parent != nullptr && drawables != nullptr &&
       navMeshPrimitiveID != ID_UNDEFINED) {
@@ -1772,7 +1819,7 @@ int ResourceManager::loadNavMeshVisualization(esp::nav::PathFinder& pathFinder,
 namespace {
 /**
  * @brief given passed @ref metadata::attributes::ObjectInstanceShaderType @p
- * typeToCheck and given @ref Magnum::Trade::MaterialData, verify that the
+ * typeToCheck and given @ref Mn::Trade::MaterialData, verify that the
  * material's intrinsic type is the same as inferred by @p typeToCheck. Ignore
  * flat, since all shaders already support flat.
  * @param typeToCheck The type of shader being specified.
@@ -1814,8 +1861,12 @@ void ResourceManager::loadMaterials(Importer& importer,
   // name of asset, for debugging purposes
   const std::string assetName =
       Cr::Utility::Directory::filename(loadedAssetData.assetInfo.filepath);
+  int numMaterials = importer.materialCount();
+  ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+      << "Building " << numMaterials << " materials for asset named '"
+      << assetName << "' : ";
 
-  for (int iMaterial = 0; iMaterial < importer.materialCount(); ++iMaterial) {
+  for (int iMaterial = 0; iMaterial < numMaterials; ++iMaterial) {
     // TODO:
     // it seems we have a way to just load the material once in this case,
     // as long as the materialName includes the full path to the material
@@ -1823,12 +1874,13 @@ void ResourceManager::loadMaterials(Importer& importer,
         importer.material(iMaterial);
 
     if (!materialData) {
-      ESP_ERROR() << "Material load failed for material index" << iMaterial
-                  << "so skipping that material.";
+      ESP_ERROR() << "Material load failed for index" << iMaterial
+                  << "so skipping that material for asset" << assetName << ".";
       continue;
     }
 
     std::unique_ptr<gfx::MaterialData> finalMaterial;
+    std::string debugStr = Cr::Utility::formatString("Idx {:.02d}:", iMaterial);
 
     int textureBaseIndex = loadedAssetData.meshMetaData.textureIndex.first;
     // If we are not using the material's native shadertype, or flat (Which all
@@ -1837,7 +1889,11 @@ void ResourceManager::loadMaterials(Importer& importer,
     if ((shaderTypeToUse != ObjectInstanceShaderType::Material) &&
         (shaderTypeToUse != ObjectInstanceShaderType::Flat) &&
         !(compareShaderTypeToMnMatType(shaderTypeToUse, *materialData))) {
-      ESP_DEBUG() << "Building expanded materialData";
+      Cr::Utility::formatInto(
+          debugStr, debugStr.size(),
+          "(Expanding existing materialData to support requested shaderType `"
+          "{}`) ",
+          metadata::attributes::getShaderTypeName(shaderTypeToUse));
       materialData = esp::gfx::createUniversalMaterial(*materialData);
     }
 
@@ -1845,7 +1901,7 @@ void ResourceManager::loadMaterials(Importer& importer,
     if (checkForPassedShaderType(
             shaderTypeToUse, *materialData, ObjectInstanceShaderType::PBR,
             Mn::Trade::MaterialType::PbrMetallicRoughness)) {
-      ESP_DEBUG() << "Building pbr material";
+      Cr::Utility::formatInto(debugStr, debugStr.size(), "PBR.");
       finalMaterial =
           buildPbrShadedMaterialData(*materialData, textureBaseIndex);
 
@@ -1853,7 +1909,7 @@ void ResourceManager::loadMaterials(Importer& importer,
     } else if (checkForPassedShaderType(shaderTypeToUse, *materialData,
                                         ObjectInstanceShaderType::Phong,
                                         Mn::Trade::MaterialType::Phong)) {
-      ESP_DEBUG() << "Building phong material";
+      Cr::Utility::formatInto(debugStr, debugStr.size(), "Phong.");
       finalMaterial =
           buildPhongShadedMaterialData(*materialData, textureBaseIndex);
 
@@ -1861,7 +1917,7 @@ void ResourceManager::loadMaterials(Importer& importer,
     } else if (checkForPassedShaderType(shaderTypeToUse, *materialData,
                                         ObjectInstanceShaderType::Flat,
                                         Mn::Trade::MaterialType::Flat)) {
-      ESP_DEBUG() << "Building flat material";
+      Cr::Utility::formatInto(debugStr, debugStr.size(), "Flat.");
       finalMaterial =
           buildFlatShadedMaterialData(*materialData, textureBaseIndex);
 
@@ -1873,6 +1929,7 @@ void ResourceManager::loadMaterials(Importer& importer,
                     metadata::attributes::getShaderTypeName(shaderTypeToUse),
                     iMaterial, assetName));
     }
+    ESP_DEBUG() << debugStr;
     // for now, just use unique ID for material key. This may change if we
     // expose materials to user for post-load modification
     shaderManager_.set(std::to_string(nextMaterialID_++),
@@ -2073,7 +2130,6 @@ void ResourceManager::loadMeshes(Importer& importer,
   int meshEnd = meshStart + importer.meshCount() - 1;
   nextMeshID_ = meshEnd + 1;
   loadedAssetData.meshMetaData.setMeshIndices(meshStart, meshEnd);
-
   for (int iMesh = 0; iMesh < importer.meshCount(); ++iMesh) {
     // don't need normals if we aren't using lighting
     auto gltfMeshData = std::make_unique<GenericMeshData>(
@@ -2082,7 +2138,6 @@ void ResourceManager::loadMeshes(Importer& importer,
 
     // compute the mesh bounding box
     gltfMeshData->BB = computeMeshBB(gltfMeshData.get());
-
     if (getCreateRenderer()) {
       gltfMeshData->uploadBuffersToGPU(false);
     }
@@ -2099,13 +2154,12 @@ void ResourceManager::loadTextures(Importer& importer,
 
   for (int iTexture = 0; iTexture < importer.textureCount(); ++iTexture) {
     auto currentTextureID = textureStart + iTexture;
-    textures_.emplace(currentTextureID,
-                      std::make_shared<Magnum::GL::Texture2D>());
+    textures_.emplace(currentTextureID, std::make_shared<Mn::GL::Texture2D>());
     auto& currentTexture = textures_.at(currentTextureID);
 
     auto textureData = importer.texture(iTexture);
     if (!textureData ||
-        textureData->type() != Magnum::Trade::TextureType::Texture2D) {
+        textureData->type() != Mn::Trade::TextureType::Texture2D) {
       ESP_ERROR() << "Cannot load texture" << iTexture << "skipping";
       currentTexture = nullptr;
       continue;
@@ -2311,7 +2365,7 @@ void ResourceManager::addComponent(
   // Add a drawable if the object has a mesh and the mesh is loaded
   if (meshIDLocal != ID_UNDEFINED) {
     const int meshID = metaData.meshIndex.first + meshIDLocal;
-    Magnum::GL::Mesh* mesh = meshes_.at(meshID)->getMagnumGLMesh();
+    Mn::GL::Mesh* mesh = meshes_.at(meshID)->getMagnumGLMesh();
     if (getCreateRenderer()) {
       CORRADE_ASSERT(mesh,
                      "::addComponent() : GL mesh expected but not found", );
@@ -2449,7 +2503,7 @@ void ResourceManager::initDefaultMaterials() {
   shaderManager_.set<gfx::MaterialData>(DEFAULT_MATERIAL_KEY,
                                         new gfx::PhongMaterialData{});
   auto* whiteMaterialData = new gfx::PhongMaterialData;
-  whiteMaterialData->ambientColor = Magnum::Color4{1.0};
+  whiteMaterialData->ambientColor = Mn::Color4{1.0};
   shaderManager_.set<gfx::MaterialData>(WHITE_MATERIAL_KEY, whiteMaterialData);
   auto* perVertexObjectId = new gfx::PhongMaterialData{};
   perVertexObjectId->perVertexObjectId = true;
@@ -2461,7 +2515,7 @@ void ResourceManager::initDefaultMaterials() {
 
 bool ResourceManager::isLightSetupCompatible(
     const LoadedAssetData& loadedAssetData,
-    const Magnum::ResourceKey& lightSetupKey) const {
+    const Mn::ResourceKey& lightSetupKey) const {
   // if light setup has lights in it, but asset was loaded in as flat shaded,
   // there may be an error when rendering.
   return lightSetupKey == Mn::ResourceKey{NO_LIGHT_KEY} ||
@@ -2474,8 +2528,8 @@ void ResourceManager::joinHierarchy(
     MeshData& mesh,
     const MeshMetaData& metaData,
     const MeshTransformNode& node,
-    const Magnum::Matrix4& transformFromParentToWorld) const {
-  Magnum::Matrix4 transformFromLocalToWorld =
+    const Mn::Matrix4& transformFromParentToWorld) const {
+  Mn::Matrix4 transformFromLocalToWorld =
       transformFromParentToWorld * node.transformFromLocalToParent;
 
   if (node.meshIDLocal != ID_UNDEFINED) {
@@ -2484,7 +2538,7 @@ void ResourceManager::joinHierarchy(
             ->getCollisionMeshData();
     int lastIndex = mesh.vbo.size();
     for (auto& pos : meshData.positions) {
-      mesh.vbo.push_back(Magnum::EigenIntegration::cast<vec3f>(
+      mesh.vbo.push_back(Mn::EigenIntegration::cast<vec3f>(
           transformFromLocalToWorld.transformPoint(pos)));
     }
     for (auto& index : meshData.indices) {
@@ -2505,7 +2559,7 @@ std::unique_ptr<MeshData> ResourceManager::createJoinedCollisionMesh(
 
   const MeshMetaData& metaData = getMeshMetaData(filename);
 
-  Magnum::Matrix4 identity;
+  Mn::Matrix4 identity;
   joinHierarchy(*mesh, metaData, metaData.root, identity);
 
   return mesh;
@@ -2608,14 +2662,14 @@ void ResourceManager::createConvexHullDecomposition(
     // for each convex hull, transfer the data to a newly created  MeshData
     interfaceVHACD->GetConvexHull(p, ch);
 
-    std::vector<Magnum::Vector3> positions;
+    std::vector<Mn::Vector3> positions;
 
     // add the vertices
     positions.resize(ch.m_nPoints);
     for (size_t vix = 0; vix < ch.m_nPoints; vix++) {
       positions[vix] =
-          Magnum::Vector3(ch.m_points[vix * 3], ch.m_points[vix * 3 + 1],
-                          ch.m_points[vix * 3 + 2]);
+          Mn::Vector3(ch.m_points[vix * 3], ch.m_points[vix * 3 + 1],
+                      ch.m_points[vix * 3 + 2]);
     }
 
     // add indices
@@ -2678,7 +2732,7 @@ void ResourceManager::createConvexHullDecomposition(
       resourceDict_.emplace(chdFilename, std::move(loadedAssetData));
   if (saveChdToObj) {
     std::string objDirectory = Cr::Utility::Directory::join(
-        Corrade::Utility::Directory::current(), "data/VHACD_outputs");
+        Cr::Utility::Directory::current(), "data/VHACD_outputs");
     std::string new_filename =
         Cr::Utility::Directory::filename(
             Cr::Utility::Directory::splitExtension(chdFilename).first) +

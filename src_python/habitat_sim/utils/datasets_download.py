@@ -75,10 +75,10 @@ def initialize_test_data_sources(data_path):
             "version": "0.2",
         },
         "mp3d_example_scene": {
-            "source": "http://dl.fbaipublicfiles.com/habitat/mp3d_example.zip",
-            "package_name": "mp3d_example.zip",
+            "source": "http://dl.fbaipublicfiles.com/habitat/mp3d/mp3d_example_v1.1.zip",
+            "package_name": "mp3d_example_v1.1.zip",
             "link": data_path + "scene_datasets/mp3d_example",
-            "version": "1.0",
+            "version": "1.1",
         },
         "coda_scene": {
             "source": "https://dl.fbaipublicfiles.com/habitat/coda_v1.0.zip",

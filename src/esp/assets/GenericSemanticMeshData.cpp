@@ -31,42 +31,49 @@ GenericSemanticMeshData::buildSemanticMeshData(
     const std::string& semanticFilename,
     const bool splitMesh,
     std::vector<Magnum::Vector3ub>& colorMapToUse,
+    bool convertToSRGB,
     const std::shared_ptr<scene::SemanticScene>& semanticScene) {
+  // build text prefix used in log messages
+  const std::string msgPrefix =
+      Cr::Utility::formatString("Parsing Semantic File {} :", semanticFilename);
+
+  // Check for required colors.
+  ESP_CHECK(srcMeshData.hasAttribute(Mn::Trade::MeshAttribute::Color),
+            msgPrefix << "has no vertex colors defined, which are required for "
+                         "semantic meshes.");
+
   /* Copy attributes to the vectors. Positions and indices can be copied
      directly using the convenience APIs as we store them in the full type.
      The importer always provides an indexed mesh with positions, so no need
      for extra error checking. */
 
   auto semanticData = GenericSemanticMeshData::create_unique();
-  semanticData->cpu_vbo_.resize(srcMeshData.vertexCount());
+  const auto numVerts = srcMeshData.vertexCount();
+
   semanticData->cpu_ibo_.resize(srcMeshData.indexCount());
+  semanticData->cpu_vbo_.resize(numVerts);
+  semanticData->cpu_cbo_.resize(numVerts);
+  semanticData->objectIds_.resize(numVerts);
+
   srcMeshData.positions3DInto(Cr::Containers::arrayCast<Mn::Vector3>(
       Cr::Containers::arrayView(semanticData->cpu_vbo_)));
   srcMeshData.indicesInto(semanticData->cpu_ibo_);
-
-  const std::string msgPrefix =
-      Cr::Utility::formatString("Parsing Semantic File {} :", semanticFilename);
   /* Assuming colors are 8-bit RGB to avoid expanding them to float and then
      packing back */
-  ESP_CHECK(srcMeshData.hasAttribute(Mn::Trade::MeshAttribute::Color),
-            msgPrefix << "has no vertex colors defined, which are required.");
 
-  semanticData->cpu_cbo_.resize(srcMeshData.vertexCount());
-  const Mn::VertexFormat colorFormat =
-      srcMeshData.attributeFormat(Mn::Trade::MeshAttribute::Color);
-  Cr::Containers::StridedArrayView1D<const Magnum::Color3ub> meshColors;
-  if (colorFormat == Mn::VertexFormat::Vector3ubNormalized) {
-    meshColors =
-        srcMeshData.attribute<Mn::Color3ub>(Mn::Trade::MeshAttribute::Color);
+  Cr::Containers::Array<Mn::Color3ub> meshColors{Mn::NoInit, numVerts};
 
-  } else if (colorFormat == Mn::VertexFormat::Vector4ubNormalized) {
-    // retrieve RGB view of RGBA color data and copy into data
-    meshColors = Cr::Containers::arrayCast<const Mn::Color3ub>(
-        srcMeshData.attribute<Mn::Color4ub>(Mn::Trade::MeshAttribute::Color));
-
+  if (convertToSRGB) {
+    auto colors = srcMeshData.colorsAsArray();
+    for (std::size_t i = 0; i != colors.size(); ++i) {
+      meshColors[i] = colors[i].rgb().toSrgb<Mn::UnsignedByte>();
+    }
   } else {
-    ESP_CHECK(false,
-              msgPrefix << "Unexpected vertex color type " << colorFormat);
+    Mn::Math::packInto(Cr::Containers::arrayCast<2, float>(
+                           stridedArrayView(srcMeshData.colorsAsArray()))
+                           .except({0, 1}),
+                       Cr::Containers::arrayCast<2, Mn::UnsignedByte>(
+                           stridedArrayView(meshColors)));
   }
 
   Cr::Utility::copy(meshColors,
@@ -75,7 +82,6 @@ GenericSemanticMeshData::buildSemanticMeshData(
 
   // Check we actually have object IDs before copying them, and that those are
   // in a range we expect them to be
-  semanticData->objectIds_.resize(srcMeshData.vertexCount());
   Cr::Containers::Array<Mn::UnsignedInt> objectIds;
 
   // Whether or not the objectIds were provided by the source file. If so then
@@ -132,7 +138,7 @@ GenericSemanticMeshData::buildSemanticMeshData(
       tmpColorMapToSSDidAndRegionIndex.reserve(numSSDObjs);
       // lambda function to convert a 3-vec representation of a color into an
       // int
-      auto colorAsInt = [](const Mn::Vector3ub& color) -> uint32_t {
+      auto colorAsInt = [](const Mn::Color3ub& color) -> uint32_t {
         return (unsigned(color[0]) << 16) | (unsigned(color[1]) << 8) |
                unsigned(color[2]);
       };
@@ -177,10 +183,10 @@ GenericSemanticMeshData::buildSemanticMeshData(
 
       // map regionIDs to affected verts using semantic color provided in
       // SemanticScene, as specified in SSD file.
-      partitionIds.resize(srcMeshData.vertexCount());
+      partitionIds.resize(numVerts);
       // map semantic IDs corresponding to colors from SSD file to appropriate
       // verts (via index)
-      semanticData->objectIds_.resize(srcMeshData.vertexCount());
+      semanticData->objectIds_.resize(numVerts);
       // temporary holding structure to hold any non-SSD vert colors, so that
       // the nonSSDObjID for new colors can be incremented appropriately
       // not using set to avoid extra include
@@ -190,8 +196,8 @@ GenericSemanticMeshData::buildSemanticMeshData(
       // derive semantic ID and color and region/room ID for culling
       int regionID = 0;
       int semanticID = 0;
-      for (int vertIdx = 0; vertIdx < srcMeshData.vertexCount(); ++vertIdx) {
-        Mn::Vector3ub meshColor = meshColors[vertIdx];
+      for (int vertIdx = 0; vertIdx < numVerts; ++vertIdx) {
+        Mn::Color3ub meshColor = meshColors[vertIdx];
         // Convert color to an int @ vertex
         const uint32_t meshColorInt = colorAsInt(meshColor);
 
@@ -261,8 +267,7 @@ GenericSemanticMeshData::buildSemanticMeshData(
             Cr::Containers::stridedArrayView(semanticData->objectIds_)));
   }
 
-  // TODO make this selectable via argument
-  {
+  if (semanticFilename.find(".ply") != std::string::npos) {
     // Generic Semantic PLY meshes have -Z gravity
     const quatf T_esp_scene =
         quatf::FromTwoVectors(-vec3f::UnitZ(), geo::ESP_GRAVITY);

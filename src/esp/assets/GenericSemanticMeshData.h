@@ -49,6 +49,8 @@ class GenericSemanticMeshData : public BaseMesh {
    * @param plyFile Fully qualified filename of .ply file to load
    * @param splitMesh Whether or not the resultant mesh should be split into
    * multiple components based on objectIds, for frustum culling.
+   * @param convertToSRGB Whether the source vertex colors from the @p meshData
+   * should be converted to SRGB
    * @param semanticScene The SSD for the instance mesh being loaded.
    * @return vector holding one or more mesh results from the .ply file.
    */
@@ -59,6 +61,7 @@ class GenericSemanticMeshData : public BaseMesh {
       const std::string& semanticFilename,
       bool splitMesh,
       std::vector<Magnum::Vector3ub>& colorMapToUse,
+      bool convertToSRGB,
       const std::shared_ptr<scene::SemanticScene>& semanticScene = nullptr);
 
   // ==== rendering ====

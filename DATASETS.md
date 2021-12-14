@@ -10,7 +10,7 @@ Github page with download links: [https://github.com/matterport/habitat-matterpo
 
 After getting access to the dataset, you can download manually or programmatically via Habitat's data download utility.
 
-## Downloading with the download utility
+### Downloading HM3D with the download utility
 
 First, you will need to generate a matterport API Token:
 
@@ -38,6 +38,8 @@ MP3D dataset for use with Habitat can be downloaded using the official [Matterpo
 Note that this download script requires python 2.7 to run.
 
 You only need the habitat zip archive and not the entire Matterport3D dataset.
+
+Once you have the habitat zip archive, you should download [this SceneDatasetConfig file](http://dl.fbaipublicfiles.com/habitat/mp3d/config_v1/mp3d.scene_dataset_config.json) and place it in the root directory for the Matterport3D dataset (e.g. habitat-sim/data/scene_datasets/mp3d/).
 
 ## Gibson and 3DSceneGraph datasets
 
