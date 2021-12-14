@@ -666,7 +666,7 @@ void BulletArticulatedObject::overrideCollisionGroup(CollisionGroup group) {
 
   // override separate base link object group
   auto* baseCollider = btMultiBody_->getBaseCollider();
-  bWorld_->btCollisionWorld::removeCollisionObject(baseCollider);
+  bWorld_->removeCollisionObject(baseCollider);
   bWorld_->addCollisionObject(baseCollider, collisionFilterGroup,
                               collisionFilterMask);
 
