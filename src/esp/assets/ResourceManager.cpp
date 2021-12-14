@@ -1315,7 +1315,7 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
       if (Cr::Containers::Optional<Mn::Trade::MeshData> mesh =
               fileImporter_->mesh(i)) {
         meshVec.push_back(std::move(*mesh));
-        meshView.push_back(meshVec.back());
+        meshView.emplace_back(meshVec.back());
       }
     }
     // build concatenated meshData from container of meshes.
