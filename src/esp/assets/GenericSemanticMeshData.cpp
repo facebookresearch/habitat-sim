@@ -31,6 +31,7 @@ GenericSemanticMeshData::buildSemanticMeshData(
     const std::string& semanticFilename,
     const bool splitMesh,
     std::vector<Magnum::Vector3ub>& colorMapToUse,
+    bool convertToSRGB,
     const std::shared_ptr<scene::SemanticScene>& semanticScene) {
   // build text prefix used in log messages
   const std::string msgPrefix =
@@ -62,11 +63,18 @@ GenericSemanticMeshData::buildSemanticMeshData(
 
   Cr::Containers::Array<Mn::Color3ub> meshColors{Mn::NoInit, numVerts};
 
-  Mn::Math::packInto(Cr::Containers::arrayCast<2, float>(
-                         stridedArrayView(srcMeshData.colorsAsArray()))
-                         .except({0, 1}),
-                     Cr::Containers::arrayCast<2, Mn::UnsignedByte>(
-                         stridedArrayView(meshColors)));
+  if (convertToSRGB) {
+    auto colors = srcMeshData.colorsAsArray();
+    for (std::size_t i = 0; i != colors.size(); ++i) {
+      meshColors[i] = colors[i].rgb().toSrgb<Mn::UnsignedByte>();
+    }
+  } else {
+    Mn::Math::packInto(Cr::Containers::arrayCast<2, float>(
+                           stridedArrayView(srcMeshData.colorsAsArray()))
+                           .except({0, 1}),
+                       Cr::Containers::arrayCast<2, Mn::UnsignedByte>(
+                           stridedArrayView(meshColors)));
+  }
 
   Cr::Utility::copy(meshColors,
                     Cr::Containers::arrayCast<Mn::Color3ub>(
