@@ -101,7 +101,7 @@ find_package(
   AnyImageConverter
 )
 
-find_package(MagnumPlugins REQUIRED StbImageImporter StbImageConverter TinyGltfImporter)
+find_package(MagnumPlugins REQUIRED CgltfImporter StbImageImporter StbImageConverter)
 
 find_package(MagnumIntegration REQUIRED Eigen)
 
@@ -143,9 +143,9 @@ target_link_libraries(
          Magnum::SceneGraph
          Magnum::Shaders
          Magnum::Trade
+         MagnumPlugins::CgltfImporter
          MagnumPlugins::StbImageImporter
          MagnumPlugins::StbImageConverter
-         MagnumPlugins::TinyGltfImporter
          MagnumIntegration::Eigen
          Corrade::Utility
          Magnum::AnyImageConverter

@@ -12,6 +12,7 @@
 #include <rapidjson/prettywriter.h>
 #include <rapidjson/stringbuffer.h>
 #include <rapidjson/writer.h>
+#include "esp/core/Configuration.h"
 
 #include "esp/core/Esp.h"
 
@@ -56,70 +57,6 @@ bool writeJsonToFile(const JsonDocument& document,
 
   return writeSuccess;
 }
-
-int loadJsonIntoConfiguration(
-    const JsonGenericValue& jsonObj,
-    const std::shared_ptr<core::config::Configuration>& config) {
-  // count number of valid user config settings found
-
-  int numConfigSettings = 0;
-  for (rapidjson::Value::ConstMemberIterator it = jsonObj.MemberBegin();
-       it != jsonObj.MemberEnd(); ++it) {
-    // for each key, attempt to parse
-    const std::string key = it->name.GetString();
-    const auto& obj = it->value;
-    // increment, assuming is valid object
-    ++numConfigSettings;
-
-    if (obj.IsDouble()) {
-      config->set(key, obj.GetDouble());
-    } else if (obj.IsNumber()) {
-      config->set(key, obj.GetInt());
-    } else if (obj.IsString()) {
-      config->set(key, obj.GetString());
-    } else if (obj.IsBool()) {
-      config->set(key, obj.GetBool());
-    } else if (obj.IsArray() && obj.Size() > 0 && obj[0].IsNumber()) {
-      // numeric vector or quaternion
-      if (obj.Size() == 3) {
-        Magnum::Vector3 val{};
-        if (io::fromJsonValue(obj, val)) {
-          config->set(key, val);
-        }
-      } else if (obj.Size() == 4) {
-        // assume is quaternion
-        Magnum::Quaternion val{};
-        if (io::fromJsonValue(obj, val)) {
-          config->set(key, val);
-        }
-      } else {
-        // decrement count for key:obj due to not being handled vector
-        --numConfigSettings;
-        // TODO support numeric array in JSON
-        ESP_WARNING() << "Config cell in JSON document contains key" << key
-                      << "referencing an unsupported numeric array of length :"
-                      << obj.Size() << "so skipping.";
-      }
-    } else if (obj.IsObject()) {
-      // support nested objects
-      // create a new subgroup
-      std::shared_ptr<core::config::Configuration> subGroupPtr =
-          config->getSubconfigCopy<core::config::Configuration>(key);
-      numConfigSettings += loadJsonIntoConfiguration(obj, subGroupPtr);
-      // save subgroup's subgroup configuration in original config
-      config->setSubconfigPtr<core::config::Configuration>(key, subGroupPtr);
-      //
-    } else {
-      // TODO support other types?
-      // decrement count for key:obj due to not being handled type
-      --numConfigSettings;
-      ESP_WARNING() << "Config cell in JSON document contains key" << key
-                    << "referencing an unknown/unparsable value type, so "
-                       "skipping this key.";
-    }
-  }
-  return numConfigSettings;
-}  // loadJsonIntoConfigSubgroup
 
 JsonDocument parseJsonFile(const std::string& file) {
   FILE* pFile = fopen(file.c_str(), "rb");

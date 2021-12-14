@@ -1,8 +1,12 @@
 package:
   name: withbullet
-  version: 1.0
+  version: 2.0
 
 build:
   track_features:
       - withbullet
   noarch: generic
+
+requirements:
+  run:
+    - habitat-sim-mutex=1.0=*_bullet

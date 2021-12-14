@@ -21,7 +21,7 @@ namespace metadata {
  * @return The shader type specified in the document, or Unknown, casted to an
  * int.
  */
-int getShaderTypeFromJsonDoc(const io::JsonGenericValue& jsonDoc);
+std::string getShaderTypeFromJsonDoc(const io::JsonGenericValue& jsonDoc);
 
 }  // namespace metadata
 }  // namespace esp

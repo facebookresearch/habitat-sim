@@ -47,10 +47,10 @@ https://user-images.githubusercontent.com/2941091/126080914-36dc8045-01d4-4a68-8
 If you use the Habitat platform in your research, please cite the [Habitat](https://arxiv.org/abs/1904.01201) and [Habitat 2.0](https://arxiv.org/abs/2106.14405) papers:
 
 ```
-@article{szot2021habitat,
+@inproceedings{szot2021habitat,
   title     =     {Habitat 2.0: Training Home Assistants to Rearrange their Habitat},
   author    =     {Andrew Szot and Alex Clegg and Eric Undersander and Erik Wijmans and Yili Zhao and John Turner and Noah Maestre and Mustafa Mukadam and Devendra Chaplot and Oleksandr Maksymets and Aaron Gokaslan and Vladimir Vondrus and Sameer Dharur and Franziska Meier and Wojciech Galuba and Angel Chang and Zsolt Kira and Vladlen Koltun and Jitendra Malik and Manolis Savva and Dhruv Batra},
-  journal   =     {arXiv preprint arXiv:2106.14405},
+  booktitle =     {Advances in Neural Information Processing Systems (NeurIPS)},
   year      =     {2021}
 }
 
@@ -205,14 +205,18 @@ To get you started, see the [Lighting Setup tutorial](https://aihabitat.org/docs
 * If you use the noise model from PyRobot, please cite the their [technical report](https://github.com/facebookresearch/pyrobot#citation).
 
 
-    Specifically, the noise model used for the noisy control functions named `pyrobot_*` and defined in `habitat_sim/agent/controls/pyrobot_noisy_controls.py`
+    Specifically, the noise model used for the noisy control functions named `pyrobot_*` and defined in `src_python/habitat_sim/agent/controls/pyrobot_noisy_controls.py`
 
 
 * If you use the Redwood Depth Noise Model, please cite their [paper](http://redwood-data.org/indoor/)
 
-    Specifically, the noise model defined in `habitat_sim/sensors/noise_models/redwood_depth_noise_model.py` and `src/esp/sensor/RedwoodNoiseModel.*`
+    Specifically, the noise model defined in `src_python/habitat_sim/sensors/noise_models/redwood_depth_noise_model.py` and `src/esp/sensor/RedwoodNoiseModel.*`
 
 
 ## License
 
 Habitat-Sim is MIT licensed. See the [LICENSE](LICENSE) for details.
+
+The WebGL demo and demo scripts use:
+- [The King´s Hall](https://sketchfab.com/3d-models/the-king-s-hall-d18155613363445b9b68c0c67196d98d) by [Skokloster Castle (Skoklosters slott)](https://sketchfab.com/SkoklosterCastle) licensed under [Creative Commons Attribution](http://creativecommons.org/licenses/by/4.0/)
+- [Van Gogh Room](https://sketchfab.com/3d-models/van-gogh-room-311d052a9f034ba8bce55a1a8296b6f9) by [ruslans3d](https://sketchfab.com/ruslans3d) licensed under [Creative Commons Attribution](http://creativecommons.org/licenses/by/4.0/)

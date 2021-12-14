@@ -29,6 +29,7 @@ target_link_libraries(
          scene
          core
          gfx
+         metadata
          nav
          sensor
          physics

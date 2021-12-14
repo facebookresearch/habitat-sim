@@ -16,12 +16,12 @@
 #include "esp/scene/SemanticScene.h"
 #include "esp/sim/Simulator.h"
 
-#include "esp/assets/GenericInstanceMeshData.h"
+#include "esp/assets/GenericSemanticMeshData.h"
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
 
-using esp::assets::GenericInstanceMeshData;
+using esp::assets::GenericSemanticMeshData;
 
 namespace {
 
@@ -71,14 +71,31 @@ void ReplicaSceneTest::testSemanticSceneOBB() {
   CORRADE_INTERNAL_ASSERT(importer =
                               manager.loadAndInstantiate("StanfordImporter"));
 
-  GenericInstanceMeshData::uptr mesh = GenericInstanceMeshData::fromPLY(
-      *importer,
-      Cr::Utility::Directory::join(replicaRoom0, "mesh_semantic.ply"));
-  CORRADE_VERIFY(mesh);
+  // load ply but do not split
+  // dummy colormap
+  std::vector<Magnum::Vector3ub> dummyColormap;
+  const std::string semanticFilename =
+      Cr::Utility::Directory::join(replicaRoom0, "mesh_semantic.ply");
+  /* Open the file. On error the importer already prints a diagnostic message,
+     so no need to do that here. The importer implicitly converts per-face
+     attributes to per-vertex, so nothing extra needs to be done. */
+  Cr::Containers::Optional<Mn::Trade::MeshData> meshData;
+  ESP_CHECK(
+      (importer->openFile(semanticFilename) && (meshData = importer->mesh(0))),
+      Cr::Utility::formatString("Error loading instance mesh data from file {}",
+                                semanticFilename));
 
-  const auto& vbo = mesh->getVertexBufferObjectCPU();
-  const auto& objectIds = mesh->getObjectIdsBufferObjectCPU();
-  const auto& ibo = mesh->getIndexBufferObjectCPU();
+  static std::vector<std::unique_ptr<GenericSemanticMeshData>> meshVec =
+      GenericSemanticMeshData::buildSemanticMeshData(
+          *meshData, semanticFilename, false, dummyColormap);
+  // verify result vector holds a mesh
+  CORRADE_VERIFY(!meshVec.empty());
+  // verify first entry exists
+  CORRADE_VERIFY(meshVec[0]);
+
+  const auto& vbo = meshVec[0]->getVertexBufferObjectCPU();
+  const auto& objectIds = meshVec[0]->getObjectIdsBufferObjectCPU();
+  const auto& ibo = meshVec[0]->getIndexBufferObjectCPU();
 
   for (const auto& obj : scene.objects()) {
     if (obj == nullptr)
@@ -101,7 +118,7 @@ void ReplicaSceneTest::testSemanticSceneOBB() {
       }
     }
   }
-}
+}  // ReplicaSceneTest::testSemanticSceneOBB()
 
 void ReplicaSceneTest::testSemanticSceneLoading() {
   if (!Cr::Utility::Directory::exists(replicaRoom0)) {

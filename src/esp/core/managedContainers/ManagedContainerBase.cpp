@@ -11,6 +11,7 @@ namespace Cr = Corrade;
 namespace esp {
 namespace core {
 
+namespace managedContainers {
 bool ManagedContainerBase::setLock(const std::string& objectHandle, bool lock) {
   // if managed object does not currently exist then do not attempt to modify
   // its lock state
@@ -148,7 +149,7 @@ std::vector<std::string> ManagedContainerBase::getObjectInfoStrings(
   int idx = 0;
   for (const std::string& objectHandle : handles) {
     // get the object
-    auto objPtr = getObjectInternal<AbstractManagedObject>(objectHandle);
+    auto objPtr = this->getObjectInternal<AbstractManagedObject>(objectHandle);
     if (idx == 0) {
       Cr::Utility::formatInto(res[idx], res[idx].size(),
                               "{} Full name,Can delete?,Is locked?,{}",
@@ -169,13 +170,14 @@ int ManagedContainerBase::getObjectIDByHandleOrNew(
     const std::string& objectHandle,
     bool getNext) {
   if (getObjectLibHasHandle(objectHandle)) {
-    return getObjectInternal<AbstractManagedObject>(objectHandle)->getID();
+    return this->getObjectInternal<AbstractManagedObject>(objectHandle)
+        ->getID();
   }
   if (!getNext) {
-    ESP_ERROR() << "<" << Cr::Utility::Debug::nospace << this->objectType_
-                << Cr::Utility::Debug::nospace << "> : No" << objectType_
-                << "managed object with handle" << objectHandle
-                << "exists. Aborting";
+    ESP_ERROR(Magnum::Debug::Flag::NoSpace)
+        << "<" << this->objectType_ << "> : No " << objectType_
+        << " managed object with handle " << objectHandle
+        << " exists. Aborting.";
     return ID_UNDEFINED;
   }
   return getUnusedObjectID();
@@ -244,5 +246,6 @@ std::string ManagedContainerBase::getUniqueHandleFromCandidatePerType(
   return name + handleIncrement;
 }  // ManagedContainerBase::getUniqueHandleFromCandidatePerType
 
+}  // namespace managedContainers
 }  // namespace core
 }  // namespace esp

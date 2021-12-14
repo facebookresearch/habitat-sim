@@ -37,7 +37,10 @@ fi
 
 python setup.py build_ext --inplace "${builder_args[@]}"
 
+here=$(pwd)
 if [ "$RUN_TESTS" = true ] ; then
   cd build
-  ctest -V
+  PYTHONPATH=${here}/src_python ctest -V
 fi
+
+echo "Add src_python to PYTHONPATH, i.e. \`export PYTHONPATH=${here}/src_python:\${PYTHONPATH}\`"

@@ -19,7 +19,7 @@ Attributes templates provide a mechanism by which the various constructions in H
 
      <worldname>.physics_config.json
 
-`An example of an appropriately configured Physics Manager Attributes file can be found below <facebookresearch/habitat-sim/blob/master/data/test_assets/testing.physics_config.json>`_:
+`An example of an appropriately configured Physics Manager Attributes file can be found below <facebookresearch/habitat-sim/blob/main/data/test_assets/testing.physics_config.json>`_:
 
 .. include:: ../../data/test_assets/testing.physics_config.json
     :code: json
@@ -49,7 +49,7 @@ A stage in Habitat-Sim is a static object consisting of static background scener
 
      <stagename>.stage_config.json
 
-`An example of an appropriately configured Stage Attributes file can be found below <facebookresearch/habitat-sim/blob/master/data/test_assets/scenes/stage_floor1.stage_config.json>`_:
+`An example of an appropriately configured Stage Attributes file can be found below <facebookresearch/habitat-sim/blob/main/data/test_assets/scenes/stage_floor1.stage_config.json>`_:
 
 .. include:: ../../data/test_assets/scenes/stage_floor1.stage_config.json
     :code: json
@@ -69,6 +69,12 @@ Below are the handles and descriptors for various mesh assets used by a stage.
 "semantic_asset"
     - string
     - The name of the file describing the stage's semantic mesh.
+"nav_asset"
+    - string
+    - The name of the file describing the stage's nav mesh.
+"semantic_descriptor_filename"
+    - string
+    - The name of the file describing the semantic mappings for the stage.
 
 Stage Frame and Origin
 ----------------------
@@ -81,6 +87,12 @@ The tags below are used to build a coordinate frame for the stage, and will over
 "front"
     - 3-vector
     - Describes the **forward** direction for the stage in the asset's local space.
+"semantic_up"
+    - 3-vector
+    - Describes the **up** direction for the stage's **semantic mesh** in the asset's local space. If specified, the frame built from this vector will be used instead of the render asset's frame.
+"semantic_front"
+    - 3-vector
+    - Describes the **forward** direction for the stage's **semantic mesh** in the asset's local space. If specified, the frame built from this vector will be used instead of the render asset's frame.
 "origin"
     - 3-vector
     - Describes the **origin** of the stage in the world frame, for alignment purposes.
@@ -121,7 +133,7 @@ Below are stage-specific physical and object-related quantities.  These values w
 
      <objectname>.object_config.json
 
-`An example of an appropriately configured Object Attributes file can be found below <facebookresearch/habitat-sim/blob/master/data/test_assets/objects/donut.object_config.json>`_:
+`An example of an appropriately configured Object Attributes file can be found below <facebookresearch/habitat-sim/blob/main/data/test_assets/objects/donut.object_config.json>`_:
 
 .. include:: ../../data/test_assets/objects/donut.object_config.json
     :code: json
@@ -202,7 +214,7 @@ Below are object-specific physical quantities.  These values will override simil
 
      <lightingname>.lighting_config.json
 
-`An example of an appropriately configured LightLayoutAttributes file can be found below <facebookresearch/habitat-sim/blob/master/data/test_assets/lights/test_lights.lighting_config.json>`_:
+`An example of an appropriately configured LightLayoutAttributes file can be found below <facebookresearch/habitat-sim/blob/main/data/test_assets/lights/test_lights.lighting_config.json>`_:
 
 .. include:: ../../data/test_assets/lights/test_lights.lighting_config.json
     :code: json

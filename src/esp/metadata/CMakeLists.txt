@@ -6,6 +6,8 @@ set(
   metadata_SOURCES
   attributes/AttributesBase.h
   attributes/AttributesBase.cpp
+  attributes/AttributesEnumMaps.h
+  attributes/AttributesEnumMaps.cpp
   attributes/LightLayoutAttributes.h
   attributes/LightLayoutAttributes.cpp
   attributes/ObjectAttributes.h
@@ -14,8 +16,8 @@ set(
   attributes/PhysicsManagerAttributes.cpp
   attributes/PrimitiveAssetAttributes.h
   attributes/PrimitiveAssetAttributes.cpp
-  attributes/SceneAttributes.h
-  attributes/SceneAttributes.cpp
+  attributes/SceneInstanceAttributes.h
+  attributes/SceneInstanceAttributes.cpp
   attributes/SceneDatasetAttributes.h
   attributes/SceneDatasetAttributes.cpp
   managers/AttributesManagerBase.h
@@ -28,8 +30,8 @@ set(
   managers/ObjectAttributesManager.cpp
   managers/PhysicsAttributesManager.h
   managers/PhysicsAttributesManager.cpp
-  managers/SceneAttributesManager.h
-  managers/SceneAttributesManager.cpp
+  managers/SceneInstanceAttributesManager.h
+  managers/SceneInstanceAttributesManager.cpp
   managers/SceneDatasetAttributesManager.h
   managers/SceneDatasetAttributesManager.cpp
   managers/StageAttributesManager.h

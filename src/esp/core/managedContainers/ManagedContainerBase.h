@@ -24,7 +24,7 @@ namespace Cr = Corrade;
 
 namespace esp {
 namespace core {
-
+namespace managedContainers {
 /**
  * @brief Base class of Managed Container, holding template-type-independent
  * functionality
@@ -232,11 +232,7 @@ class ManagedContainerBase {
    * @param ID the ID to look for
    */
   bool getObjectLibHasID(int ID) const {
-    const std::string handle = getObjectHandleByID(ID);
-    if (handle == "") {
-      return false;
-    }
-    return objectLibrary_.count(handle) > 0;
+    return objectLibKeyByID_.count(ID) > 0;
   }  // ManagedContainerBase::getObjectLibHasHandle
 
   /**
@@ -482,6 +478,7 @@ class ManagedContainerBase {
   ESP_SMART_POINTERS(ManagedContainerBase)
 };  // class ManagedContainerBase
 
+}  // namespace managedContainers
 }  // namespace core
 }  // namespace esp
 

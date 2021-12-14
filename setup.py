@@ -33,7 +33,7 @@ try:
 except ImportError:
     CMAKE_BIN_DIR = ""
 
-sys.path.insert(0, osp.dirname(__file__))
+sys.path.insert(0, osp.join(osp.dirname(__file__), "src_python"))
 
 ARG_CACHE_BLACKLIST = {"force_cmake", "cache_args", "inplace"}
 
@@ -459,7 +459,8 @@ if __name__ == "__main__":
         author="FAIR A-STAR",
         description="A high performance simulator for training embodied agents",
         long_description="",
-        packages=find_packages(),
+        packages=find_packages(where="src_python"),
+        package_dir={"": "src_python"},
         install_requires=requirements,
         tests_require=["hypothesis", "pytest-benchmark", "pytest"],
         python_requires=">=3.6",

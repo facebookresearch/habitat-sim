@@ -260,9 +260,35 @@ void BulletArticulatedObject::updateNodes(bool force) {
 // BulletArticulatedLink
 ////////////////////////////
 
-void BulletArticulatedObject::resetStateFromSceneInstanceAttr(
-    CORRADE_UNUSED bool defaultCOMCorrection) {
-  auto sceneObjInstanceAttr = getSceneInstanceAttributes();
+std::shared_ptr<metadata::attributes::SceneAOInstanceAttributes>
+BulletArticulatedObject::getCurrentStateInstanceAttr() {
+  // get mutable copy of initialization SceneAOInstanceAttributes for this AO
+  auto sceneArtObjInstanceAttr =
+      ArticulatedObject::getCurrentStateInstanceAttr();
+  if (!sceneArtObjInstanceAttr) {
+    // if no scene instance attributes specified, no initial state is set
+    return nullptr;
+  }
+  sceneArtObjInstanceAttr->setAutoClampJointLimits(autoClampJointLimits_);
+
+  const std::vector<float> jointPos = getJointPositions();
+  int i = 0;
+  for (const float& v : jointPos) {
+    const std::string key = Cr::Utility::formatString("joint_{:.02d}", i++);
+    sceneArtObjInstanceAttr->addInitJointPoseVal(key, v);
+  }
+
+  const std::vector<float> jointVels = getJointVelocities();
+  i = 0;
+  for (const float& v : jointVels) {
+    const std::string key = Cr::Utility::formatString("joint_{:.02d}", i++);
+    sceneArtObjInstanceAttr->addInitJointVelocityVal(key, v);
+  }
+  return sceneArtObjInstanceAttr;
+}  // BulletArticulatedObject::getCurrentStateInstanceAttr
+
+void BulletArticulatedObject::resetStateFromSceneInstanceAttr() {
+  auto sceneObjInstanceAttr = getInitObjectInstanceAttr();
   if (!sceneObjInstanceAttr) {
     // if no scene instance attributes specified, no initial state is set
     return;
@@ -618,6 +644,38 @@ void BulletArticulatedObject::clampJointLimits() {
 
   if (poseModified) {
     setJointPositions(pose);
+  }
+}
+
+void BulletArticulatedObject::overrideCollisionGroup(CollisionGroup group) {
+  // for collision object in model:
+  int collisionFilterGroup = int(group);
+  int collisionFilterMask = uint32_t(CollisionGroupHelper::getMaskForGroup(
+      CollisionGroup(collisionFilterGroup)));
+
+  if (bFixedObjectRigidBody_ != nullptr) {
+    // A fixed base shape exists. Overriding with a uniform group could be a
+    // perf issue or cause unexpected contacts
+    ESP_WARNING() << "Overriding all link collision groups for an "
+                     "ArticulatedObject with a STATIC base collision shape "
+                     "defined. Only do this if you understand the risks.";
+    bWorld_->removeRigidBody(bFixedObjectRigidBody_.get());
+    bWorld_->addRigidBody(bFixedObjectRigidBody_.get(), collisionFilterGroup,
+                          collisionFilterMask);
+  }
+
+  // override separate base link object group
+  auto* baseCollider = btMultiBody_->getBaseCollider();
+  bWorld_->removeCollisionObject(baseCollider);
+  bWorld_->addCollisionObject(baseCollider, collisionFilterGroup,
+                              collisionFilterMask);
+
+  // override link collision object groups
+  for (int colIx = 0; colIx < btMultiBody_->getNumLinks(); ++colIx) {
+    auto* linkCollider = btMultiBody_->getLinkCollider(colIx);
+    bWorld_->removeCollisionObject(linkCollider);
+    bWorld_->addCollisionObject(linkCollider, collisionFilterGroup,
+                                collisionFilterMask);
   }
 }
 

@@ -25,7 +25,7 @@
 #include "esp/assets/Asset.h"
 #include "esp/assets/BaseMesh.h"
 #include "esp/assets/CollisionMeshData.h"
-#include "esp/assets/GenericInstanceMeshData.h"
+#include "esp/assets/GenericSemanticMeshData.h"
 #include "esp/assets/MeshData.h"
 #include "esp/assets/MeshMetaData.h"
 #include "esp/assets/ResourceManager.h"
@@ -312,7 +312,18 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    */
   int addObject(const std::string& attributesHandle,
                 scene::SceneNode* attachmentNode = nullptr,
-                const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
+                const std::string& lightSetup = DEFAULT_LIGHTING_KEY) {
+    esp::metadata::attributes::ObjectAttributes::ptr attributes =
+        resourceManager_.getObjectAttributesManager()->getObjectCopyByHandle(
+            attributesHandle);
+    if (!attributes) {
+      ESP_ERROR() << "Object creation failed due to unknown attributes"
+                  << attributesHandle;
+      return ID_UNDEFINED;
+    }
+    // attributes exist, get drawables if valid simulator accessible
+    return addObjectQueryDrawables(attributes, attachmentNode, lightSetup);
+  }  // PhysicsManager::addObject
 
   /** @brief Instance a physical object from an object properties template in
    * the @ref esp::metadata::managers::ObjectAttributesManager by template
@@ -328,64 +339,35 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    */
   int addObject(int attributesID,
                 scene::SceneNode* attachmentNode = nullptr,
-                const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
-
-  /** @brief Instance a physical object from an object properties template in
-   * the @ref esp::metadata::managers::ObjectAttributesManager.
-   *
-   * @param attributesHandle The handle of the object attributes used as the key
-   * to query @ref esp::metadata::managers::ObjectAttributesManager.
-   * @param drawables Reference to the scene graph drawables group to enable
-   * rendering of the newly initialized object.
-   * @param attachmentNode If supplied, attach the new physical object to an
-   * existing SceneNode.
-   * @param lightSetup The string name of the desired lighting setup to use.
-   * @return the instanced object's ID, mapping to it in @ref
-   * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
-   */
-  int addObject(const std::string& attributesHandle,
-                DrawableGroup* drawables,
-                scene::SceneNode* attachmentNode = nullptr,
-                const std::string& lightSetup = DEFAULT_LIGHTING_KEY) {
-    esp::metadata::attributes::ObjectAttributes::ptr attributes =
-        resourceManager_.getObjectAttributesManager()->getObjectCopyByHandle(
-            attributesHandle);
-    if (!attributes) {
-      ESP_ERROR() << "Object creation failed due to unknown attributes handle :"
-                  << attributesHandle;
-      return ID_UNDEFINED;
-    }
-
-    return addObject(attributes, drawables, attachmentNode, lightSetup);
-  }  // addObject
-
-  /** @brief Instance a physical object from an object properties template in
-   * the @ref esp::metadata::managers::ObjectAttributesManager by template
-   * ID.
-   * @param attributesID The ID of the object's template in @ref
-   * esp::metadata::managers::ObjectAttributesManager
-   * @param drawables Reference to the scene graph drawables group to enable
-   * rendering of the newly initialized object.
-   * @param attachmentNode If supplied, attach the new physical object to an
-   * existing SceneNode.
-   * @param lightSetup The string name of the desired lighting setup to use.
-   * @return the instanced object's ID, mapping to it in @ref
-   * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
-   */
-  int addObject(const int attributesID,
-                DrawableGroup* drawables,
-                scene::SceneNode* attachmentNode = nullptr,
                 const std::string& lightSetup = DEFAULT_LIGHTING_KEY) {
     const esp::metadata::attributes::ObjectAttributes::ptr attributes =
         resourceManager_.getObjectAttributesManager()->getObjectCopyByID(
             attributesID);
     if (!attributes) {
-      ESP_ERROR() << "Object creation failed due to unknown attributes ID :"
+      ESP_ERROR() << "Object creation failed due to unknown attributes ID"
                   << attributesID;
       return ID_UNDEFINED;
     }
-    return addObject(attributes, drawables, attachmentNode, lightSetup);
-  }  // addObject
+    // attributes exist, get drawables if valid simulator accessible
+    return addObjectQueryDrawables(attributes, attachmentNode, lightSetup);
+  }  // PhysicsManager::addObject
+
+  /** @brief Queries simulator for drawables, if simulator exists, otherwise
+   * passes nullptr, before instancing a physical object from an object
+   * properties template in the @ref
+   * esp::metadata::managers::ObjectAttributesManager by template handle.
+   * @param objectAttributes The object's template in @ref
+   * esp::metadata::managers::ObjectAttributesManager.
+   * @param attachmentNode If supplied, attach the new physical object to an
+   * existing SceneNode.
+   * @param lightSetup The string name of the desired lighting setup to use.
+   * @return the instanced object's ID, mapping to it in @ref
+   * PhysicsManager::existingObjects_ if successful, or @ref esp::ID_UNDEFINED.
+   */
+  int addObjectQueryDrawables(
+      const esp::metadata::attributes::ObjectAttributes::ptr& objectAttributes,
+      scene::SceneNode* attachmentNode = nullptr,
+      const std::string& lightSetup = DEFAULT_LIGHTING_KEY);
 
   /** @brief Instance a physical object from an object properties template in
    * the @ref esp::metadata::managers::ObjectAttributesManager by template
@@ -965,8 +947,89 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
               "No RigidConstraint exists with constraintId =" << constraintId);
     return rigidConstraintSettings_.at(constraintId);
   }
+  /**
+   * @brief This will populate the passed @p sceneInstanceAttrs with the current
+   * stage, object and articulated object instances reflecting the current
+   * state of the physics world.
+   * @param sceneInstanceAttrs A copy of the intialization attributes that
+   * created the current scene.  The various object instance attributes will be
+   * overwritten by the current scene state data.
+   */
+  void buildCurrentStateSceneAttributes(
+      const metadata::attributes::SceneInstanceAttributes::ptr&
+          sceneInstanceAttrs) const;
+
+  /**
+   * @brief Compute a trajectory visualization for the passed points.
+   * @param trajVisName The name to use for the trajectory visualization
+   * @param pts The points of a trajectory, in order
+   * @param colorVec Array of colors for trajectory tube.
+   * @param numSegments The number of the segments around the circumference of
+   * the tube. Must be greater than or equal to 3.
+   * @param radius The radius of the tube.
+   * @param smooth Whether to smooth the points in the trajectory or not. Will
+   * build a much bigger mesh
+   * @param numInterp The number of interpolations between each trajectory
+   * point, if smoothed
+   * @return The ID of the object created for the visualization
+   */
+  int addTrajectoryObject(const std::string& trajVisName,
+                          const std::vector<Mn::Vector3>& pts,
+                          const std::vector<Mn::Color3>& colorVec,
+                          int numSegments = 3,
+                          float radius = .001,
+                          bool smooth = false,
+                          int numInterp = 10);
+  /**
+   * @brief Remove a trajectory visualization by name.
+   * @param trajVisName The name of the trajectory visualization to remove.
+   * @return whether successful or not.
+   */
+  bool removeTrajVisByName(const std::string& trajVisName) {
+    if (trajVisIDByName.count(trajVisName) == 0) {
+      ESP_DEBUG() << "No trajectory named" << trajVisName
+                  << "exists.  Ignoring.";
+      return false;
+    }
+    return removeTrajVisObjectAndAssets(trajVisIDByName.at(trajVisName),
+                                        trajVisName);
+  }
+
+  /**
+   * @brief Remove a trajectory visualization by object ID.
+   * @param trajVisObjID The object ID of the trajectory visualization to
+   * remove.
+   * @return whether successful or not.
+   */
+  bool removeTrajVisByID(int trajVisObjID) {
+    if (trajVisNameByID.count(trajVisObjID) == 0) {
+      ESP_DEBUG() << "No trajectory object with ID:" << trajVisObjID
+                  << "exists.  Ignoring.";
+      return false;
+    }
+    return removeTrajVisObjectAndAssets(trajVisObjID,
+                                        trajVisNameByID.at(trajVisObjID));
+  }
 
  protected:
+  /**
+   * @brief Internal use only. Remove a trajectory object, its mesh, and all
+   * references to it.
+   * @param trajVisObjID The object ID of the trajectory visualization to
+   * remove.
+   * @param trajVisName The name of the trajectory visualization to remove.
+   * @return whether successful or not.
+   */
+  bool removeTrajVisObjectAndAssets(int trajVisObjID,
+                                    const std::string& trajVisName) {
+    removeObject(trajVisObjID);
+    // TODO : support removing asset by removing from resourceDict_ properly
+    // using trajVisName
+    trajVisIDByName.erase(trajVisName);
+    trajVisNameByID.erase(trajVisObjID);
+    return true;
+  }
+
   /** @brief Check that a given object ID is valid (i.e. it refers to an
    * existing rigid object). Terminate the program and report an error if not.
    * This function is intended to unify object ID checking for @ref
@@ -1125,6 +1188,10 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
 
   /** @brief Tmaps constraint ids to their settings */
   std::unordered_map<int, RigidConstraintSettings> rigidConstraintSettings_;
+
+  //! Maps holding IDs and Names of trajectory visualizations
+  std::unordered_map<std::string, int> trajVisIDByName;
+  std::unordered_map<int, std::string> trajVisNameByID;
 
   //! Utilities
 

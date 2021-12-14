@@ -7,6 +7,7 @@
 namespace esp {
 namespace metadata {
 namespace attributes {
+using esp::core::managedContainers::ManagedObjectAccess;
 
 SceneDatasetAttributes::SceneDatasetAttributes(
     const std::string& datasetName,
@@ -17,16 +18,17 @@ SceneDatasetAttributes::SceneDatasetAttributes(
       managers::LightLayoutAttributesManager::create();
   objectAttributesManager_ = managers::ObjectAttributesManager::create();
   objectAttributesManager_->setAssetAttributesManager(assetAttributesManager_);
-  sceneAttributesManager_ = managers::SceneAttributesManager::create();
+  sceneInstanceAttributesManager_ =
+      managers::SceneInstanceAttributesManager::create();
   stageAttributesManager_ = managers::StageAttributesManager::create(
       objectAttributesManager_, physAttrMgr);
 }  // ctor
 
 bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
-    const attributes::SceneAttributes::ptr& sceneInstance) {
+    const attributes::SceneInstanceAttributes::ptr& sceneInstance) {
   // info display message prefix
-  std::string infoPrefix =
-      Cr::Utility::formatString("Dataset : '{}' : ", getSimplifiedHandle());
+  std::string infoPrefix = Cr::Utility::formatString(
+      "Dataset : '{}' : ", this->getSimplifiedHandle());
 
   const std::string sceneInstanceName = sceneInstance->getHandle();
   // verify stage in sceneInstance (required) exists in SceneDatasetAttributes,
@@ -36,16 +38,15 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
   const std::string fullStageName =
       getFullAttrNameFromStr(stageHandle, stageAttributesManager_);
   if (fullStageName == "") {
-    ESP_DEBUG()
-        << infoPrefix << "Stage Attributes '" << Mn::Debug::nospace
-        << stageHandle << Mn::Debug::nospace
+    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+        << infoPrefix << "Stage Attributes '" << stageHandle
         << "' specified in Scene Attributes but does not exist in dataset, so "
            "creating.";
     stageAttributesManager_->createObject(stageHandle, true);
   } else {
-    ESP_DEBUG() << infoPrefix << "Stage Attributes '" << Mn::Debug::nospace
-                << stageHandle << Mn::Debug::nospace
-                << "' specified in Scene Attributes exists in dataset library.";
+    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+        << infoPrefix << "Stage Attributes '" << stageHandle
+        << "' specified in Scene Attributes exists in dataset library.";
   }
 
   // verify each object in sceneInstance exists in SceneDatasetAttributes
@@ -55,15 +56,14 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
     const std::string fullObjHandle =
         getFullAttrNameFromStr(objHandle, objectAttributesManager_);
     if (fullObjHandle == "") {
-      ESP_DEBUG() << infoPrefix << "Object Attributes '" << Mn::Debug::nospace
-                  << objHandle << Mn::Debug::nospace
-                  << "' specified in Scene Attributes but does not exist in "
-                     "dataset, so creating.";
+      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+          << infoPrefix << "Object Attributes '" << objHandle
+          << "' specified in Scene Attributes but does not exist in "
+             "dataset, so creating.";
       objectAttributesManager_->createObject(objHandle, true);
     } else {
-      ESP_DEBUG()
-          << infoPrefix << "Object Attributes '" << Mn::Debug::nospace
-          << objHandle << Mn::Debug::nospace
+      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+          << infoPrefix << "Object Attributes '" << objHandle
           << "' specified in Scene Attributes exists in dataset library.";
     }
   }
@@ -81,9 +81,8 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
   const std::string fullLightLayoutAttrName =
       getFullAttrNameFromStr(lightHandle, lightLayoutAttributesManager_);
   if (fullLightLayoutAttrName == "") {
-    ESP_DEBUG()
-        << infoPrefix << "Lighting Layout Attributes '" << Mn::Debug::nospace
-        << lightHandle << Mn::Debug::nospace
+    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+        << infoPrefix << "Lighting Layout Attributes '" << lightHandle
         << "' specified in Scene Attributes but does not exist in dataset, so "
            "creating.";
     lightLayoutAttributesManager_->createObject(lightHandle, true);
@@ -92,14 +91,14 @@ bool SceneDatasetAttributes::addNewSceneInstanceToDataset(
                 << "specified in Scene Attributes exists in dataset library.";
   }
 
-  const std::string fullSceneInstanceName =
-      getFullAttrNameFromStr(sceneInstanceName, sceneAttributesManager_);
+  const std::string fullSceneInstanceName = getFullAttrNameFromStr(
+      sceneInstanceName, sceneInstanceAttributesManager_);
 
   // add scene attributes to scene attributes manager
   if (fullSceneInstanceName == "") {
     ESP_DEBUG() << infoPrefix << "Scene Attributes" << sceneInstanceName
                 << "does not exist in dataset so adding.";
-    sceneAttributesManager_->registerObject(sceneInstance);
+    sceneInstanceAttributesManager_->registerObject(sceneInstance);
   }
   return true;
 }  // SceneDatasetAttributes::addSceneInstanceToDataset
@@ -131,9 +130,9 @@ std::pair<std::string, std::string> SceneDatasetAttributes::addNewValToMap(
           ss << key << "_" << iter++;
           newKey = ss.str();
         } while (map.count(newKey) > 0);
-        ESP_WARNING()
-            << descString << ": Provided key '" << Mn::Debug::nospace << key
-            << Mn::Debug::nospace
+        ESP_WARNING(Mn::Debug::Flag::NoSpace)
+            << descString << " : Provided key '" << key
+
             << "' already references a different value in "
                "map. Modifying key to be"
             << newKey
@@ -218,8 +217,9 @@ std::string concatStrings(const std::string& header,
 std::string SceneDatasetAttributes::getObjectInfoInternal() const {
   // provide a summary for all info for this scene dataset
   // scene instances
-  std::string res = concatStrings(
-      "Scene Instances", sceneAttributesManager_->getObjectInfoStrings());
+  std::string res =
+      concatStrings("Scene Instances",
+                    sceneInstanceAttributesManager_->getObjectInfoStrings());
 
   // stages
   Cr::Utility::formatInto(
@@ -270,7 +270,7 @@ std::string SceneDatasetAttributes::getDatasetSummaryHeader() {
 std::string SceneDatasetAttributes::getDatasetSummary() const {
   return Cr::Utility::formatString(
       "{},{},{},{},{},{},{},{},{},", getSimplifiedHandle(),
-      sceneAttributesManager_->getNumObjects(),
+      sceneInstanceAttributesManager_->getNumObjects(),
       stageAttributesManager_->getNumObjects(),
       objectAttributesManager_->getNumObjects(), articulatedObjPaths.size(),
       lightLayoutAttributesManager_->getNumObjects(),

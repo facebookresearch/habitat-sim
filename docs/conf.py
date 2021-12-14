@@ -9,12 +9,12 @@ import sys
 
 # TODO make this less brittle
 sys.path = [
-    os.path.join(os.path.dirname(__file__), "../"),
+    os.path.join(os.path.dirname(__file__), "..", "src_python"),
     # os.path.join(os.path.dirname(__file__), '../build-bundledmagnum/src/deps/magnum-bindings/src/python/')
 ] + sys.path
 
 
-import habitat_sim  # NOQA
+import habitat_sim
 
 # TODO: remove once m.css handles class hierarchies better
 habitat_sim.logging.HabitatSimFormatter.formatStack.__doc__ = ""

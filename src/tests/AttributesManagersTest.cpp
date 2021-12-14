@@ -13,13 +13,10 @@
 #include "esp/metadata/managers/PhysicsAttributesManager.h"
 #include "esp/metadata/managers/StageAttributesManager.h"
 
-#include "esp/physics/RigidBase.h"
-
 #include "configure.h"
 
 namespace Cr = Corrade;
 
-using Magnum::Math::Literals::operator""_radf;
 namespace AttrMgrs = esp::metadata::managers;
 namespace Attrs = esp::metadata::attributes;
 
@@ -37,7 +34,7 @@ using Attrs::CylinderPrimitiveAttributes;
 using Attrs::IcospherePrimitiveAttributes;
 using Attrs::ObjectAttributes;
 using Attrs::PhysicsManagerAttributes;
-using Attrs::SceneAttributes;
+using Attrs::SceneInstanceAttributes;
 using Attrs::StageAttributes;
 using Attrs::UVSpherePrimitiveAttributes;
 
@@ -46,33 +43,16 @@ const std::string physicsConfigFile =
     Cr::Utility::Directory::join(DATA_DIR,
                                  "test_assets/testing.physics_config.json");
 
+/**
+ * @brief Test attributesManagers' functionality via loading, creating, copying
+ * and deleting Attributes.
+ */
 struct AttributesManagersTest : Cr::TestSuite::Tester {
   explicit AttributesManagersTest();
 
-  // Test helper functions
-
   /**
-   * @brief Test loading from JSON
-   * @tparam T Class of attributes manager
-   * @tparam U Class of attributes
-   * @param mgr the Attributes Manager being tested
-   * @return attributes template built from JSON parsed from string
-   */
-  template <typename T, typename U>
-  std::shared_ptr<U> testBuildAttributesFromJSONString(
-      std::shared_ptr<T> mgr,
-      const std::string& jsonString);
-
-  /**
-   * @brief remove added template built from JSON string.
-   * @param mgr the Attributes Manager being tested
-   */
-  template <typename T>
-  void testRemoveAttributesBuiltJSONString(std::shared_ptr<T> mgr);
-
-  /**
-   * @brief Test creation, copying and removal of templates for Object, Physics
-   * and Stage Attributes Managers
+   * @brief Test creation, copying and removal of templates for Object,
+   * Physics and Stage Attributes Managers
    * @tparam Class of attributes manager
    * @param mgr the Attributes Manager being tested,
    * @param handle the handle of the desired attributes template to work with
@@ -86,7 +66,6 @@ struct AttributesManagersTest : Cr::TestSuite::Tester {
    * @param mgr the Attributes Manager being tested,
    * @param handle the handle of the desired attributes template to work with
    */
-
   void testCreateAndRemoveLights(
       AttrMgrs::LightLayoutAttributesManager::ptr mgr,
       const std::string& handle);
@@ -112,8 +91,7 @@ struct AttributesManagersTest : Cr::TestSuite::Tester {
    * that registration won't fail.
    */
 
-  // ignore for physics attributes
-
+  // specialization so we can ignore this for physics attributes
   void processTemplateRenderAsset(
       std::shared_ptr<AttrMgrs::PhysicsAttributesManager> mgr,
       std::shared_ptr<Attrs::PhysicsManagerAttributes> newAttrTemplate0,
@@ -176,16 +154,50 @@ struct AttributesManagersTest : Cr::TestSuite::Tester {
   void testAssetAttributesTemplateCreateFromHandle(
       const std::string& newTemplateName);
 
-  // actual test functions
-  void testPhysicsJSONLoad();
-  void testLightJSONLoad();
-  void testSceneInstanceJSONLoad();
-  void testStageJSONLoad();
-  void testObjectJSONLoad();
+  /**
+   * @brief This test will test creating, modifying, registering and deleting
+   * Attributes via the AttributesManager for PhysicsManagerAttributes. These
+   * tests should be consistent with most types of future attributes managers
+   * specializing the AttributesManager class template that follow the same
+   * expected behavior paths as extent attributes/attributesManagers.  Note :
+   * PrimitiveAssetAttributes exhibit slightly different behavior and need their
+   * own tests.
+   */
   void testPhysicsAttributesManagersCreate();
+
+  /**
+   * @brief This test will test creating, modifying, registering and deleting
+   * Attributes via the AttributesManager for StageAttributes.  These
+   * tests should be consistent with most types of future attributes managers
+   * specializing the AttributesManager class template that follow the same
+   * expected behavior paths as extent attributes/attributesManagers.  Note :
+   * PrimitiveAssetAttributes exhibit slightly different behavior and need their
+   * own tests.
+   */
   void testStageAttributesManagersCreate();
+
+  /**
+   * @brief This test will test creating, modifying, registering and deleting
+   * Attributes via the AttributesManager for ObjectAttributes.  These
+   * tests should be consistent with most types of future attributes managers
+   * specializing the AttributesManager class template that follow the same
+   * expected behavior paths as extent attributes/attributesManagers.  Note :
+   * PrimitiveAssetAttributes exhibit slightly different behavior and need their
+   * own tests.
+   */
   void testObjectAttributesManagersCreate();
+
+  /**
+   * @brief This test will test creating, modifying, registering and deleting
+   * Attributes via the AttributesManager for LightLayoutsAttributes
+   */
   void testLightLayoutAttributesManager();
+
+  /**
+   * @brief test primitive asset attributes functionality in attirbutes
+   * managers. This includes testing handle auto-gen when relevant fields in
+   * asset attributes are changed.
+   */
   void testPrimitiveAssetAttributes();
 
   // test member vars
@@ -196,7 +208,8 @@ struct AttributesManagersTest : Cr::TestSuite::Tester {
       nullptr;
   AttrMgrs::ObjectAttributesManager::ptr objectAttributesManager_ = nullptr;
   AttrMgrs::PhysicsAttributesManager::ptr physicsAttributesManager_ = nullptr;
-  AttrMgrs::SceneAttributesManager::ptr sceneAttributesManager_ = nullptr;
+  AttrMgrs::SceneInstanceAttributesManager::ptr
+      sceneInstanceAttributesManager_ = nullptr;
   AttrMgrs::StageAttributesManager::ptr stageAttributesManager_ = nullptr;
 
 };  // struct AttributesManagersTest
@@ -210,56 +223,16 @@ AttributesManagersTest::AttributesManagersTest() {
   lightLayoutAttributesManager_ = MM->getLightLayoutAttributesManager();
   objectAttributesManager_ = MM->getObjectAttributesManager();
   physicsAttributesManager_ = MM->getPhysicsAttributesManager();
-  sceneAttributesManager_ = MM->getSceneAttributesManager();
+  sceneInstanceAttributesManager_ = MM->getSceneInstanceAttributesManager();
   stageAttributesManager_ = MM->getStageAttributesManager();
 
   addTests({
-      &AttributesManagersTest::testPhysicsJSONLoad,
-      &AttributesManagersTest::testLightJSONLoad,
-      &AttributesManagersTest::testSceneInstanceJSONLoad,
-      &AttributesManagersTest::testStageJSONLoad,
-      &AttributesManagersTest::testObjectJSONLoad,
       &AttributesManagersTest::testPhysicsAttributesManagersCreate,
       &AttributesManagersTest::testStageAttributesManagersCreate,
       &AttributesManagersTest::testObjectAttributesManagersCreate,
       &AttributesManagersTest::testLightLayoutAttributesManager,
       &AttributesManagersTest::testPrimitiveAssetAttributes,
   });
-}
-
-/**
- * @brief Test loading from JSON
- * @tparam T Class of attributes manager
- * @tparam U Class of attributes
- * @param mgr the Attributes Manager being tested
- * @return attributes template built from JSON parsed from string
- */
-template <typename T, typename U>
-std::shared_ptr<U> AttributesManagersTest::testBuildAttributesFromJSONString(
-    std::shared_ptr<T> mgr,
-    const std::string& jsonString) {
-  // create JSON document
-  try {
-    esp::io::JsonDocument tmp = esp::io::parseJsonString(jsonString);
-    // io::JsonGenericValue :
-    const esp::io::JsonGenericValue jsonDoc = tmp.GetObject();
-    // create an empty template
-    std::shared_ptr<U> attrTemplate1 =
-        mgr->buildManagedObjectFromDoc("new_template_from_json", jsonDoc);
-
-    return attrTemplate1;
-  } catch (...) {
-    CORRADE_FAIL_IF(true, "testBuildAttributesFromJSONString : Failed to parse"
-                              << jsonString << "as JSON.");
-    return nullptr;
-  }
-
-}  // testBuildAttributesFromJSONString
-
-template <typename T>
-void AttributesManagersTest::testRemoveAttributesBuiltJSONString(
-    std::shared_ptr<T> mgr) {
-  mgr->removeObjectByHandle("new_template_from_json");
 }
 
 /**
@@ -353,13 +326,6 @@ void AttributesManagersTest::testCreateAndRemove(std::shared_ptr<T> mgr,
   CORRADE_COMPARE(orignNumTemplates, mgr->getNumObjects());
 
 }  // AttributesManagersTest::testCreateAndRemove
-
-/**
- * @brief Test creation, copying and removal of templates for lights
- * attributes managers.
- * @param mgr the Attributes Manager being tested,
- * @param handle the handle of the desired attributes template to work with
- */
 
 void AttributesManagersTest::testCreateAndRemoveLights(
     AttrMgrs::LightLayoutAttributesManager::ptr mgr,
@@ -498,51 +464,6 @@ void AttributesManagersTest::testCreateAndRemoveDefault(
 
 }  // AttributesManagersTest::testCreateAndRemoveDefault
 
-/**
- * @brief This method will test the user-defined configuration values to see
- * that they match with expected passed values.  The config is expected to
- * hold one of each type that it supports.
- * @param userConfig The configuration object whose contents are to be
- * tested
- * @param str_val Expected string value
- * @param bool_val Expected boolean value
- * @param double_val Exptected double value
- * @param vec_val Expected Magnum::Vector3 value
- * @param quat_val Expected Quaternion value - note that the JSON is read
- * with scalar at idx 0, whereas the quaternion constructor takes the vector
- * component in the first position and the scalar in the second.
- */
-void AttributesManagersTest::testUserDefinedConfigVals(
-    std::shared_ptr<esp::core::config::Configuration> userConfig,
-    const std::string& str_val,
-    bool bool_val,
-    int int_val,
-    double double_val,
-    Magnum::Vector3 vec_val,
-    Magnum::Quaternion quat_val) {
-  // user defined attributes from light instance
-  CORRADE_VERIFY(userConfig);
-  CORRADE_COMPARE(userConfig->get<std::string>("user_string"), str_val);
-  CORRADE_COMPARE(userConfig->get<bool>("user_bool"), bool_val);
-  CORRADE_COMPARE(userConfig->get<int>("user_int"), int_val);
-  CORRADE_COMPARE(userConfig->get<double>("user_double"), double_val);
-  CORRADE_COMPARE(userConfig->get<Magnum::Vector3>("user_vec3"), vec_val);
-  CORRADE_COMPARE(userConfig->get<Magnum::Quaternion>("user_quat"), quat_val);
-
-}  // AttributesManagersTest::testUserDefinedConfigVals
-
-/**
- * @brief Test creation, copying and removal of templates for primitive
- * assets.
- * @tparam Class of attributes being managed
- * @param defaultAttribs the default template of the passed type T
- * @param ctorModField the name of the modified field of type @ref U that
- * impacts the constructor.
- * @param legalVal a legal value of ctorModField; This should be different
- * than template default for @ref ctorModField.
- * @param illegalVal a legal value of ctorModField.  If null ptr then no
- * illegal values possible.
- */
 template <typename T>
 void AttributesManagersTest::testAssetAttributesModRegRemove(
     std::shared_ptr<T> defaultAttribs,
@@ -632,545 +553,6 @@ void AttributesManagersTest::testAssetAttributesTemplateCreateFromHandle(
 
 }  // AttributesManagersTest::testAssetAttributesTemplateCreateFromHandle
 
-/////////////  Begin JSON String-based tests
-
-/**
- * @brief This test will verify that the physics attributes' managers' JSON
- * loading process is working as expected.
- */
-void AttributesManagersTest::testPhysicsJSONLoad() {
-  // build JSON sample config
-  const std::string& jsonString = R"({
-  "physics_simulator": "bullet_test",
-  "timestep": 1.0,
-  "gravity": [1,2,3],
-  "friction_coefficient": 1.4,
-  "restitution_coefficient": 1.1,
-  "user_defined" : {
-      "user_string" : "pm defined string",
-      "user_bool" : true,
-      "user_int" : 15,
-      "user_double" : 12.6,
-      "user_vec3" : [215.4, 217.6, 2110.1],
-      "user_quat" : [0.2, 5.2, 6.2, 7.2]
-  }
-})";
-  auto physMgrAttr =
-      testBuildAttributesFromJSONString<AttrMgrs::PhysicsAttributesManager,
-                                        Attrs::PhysicsManagerAttributes>(
-          physicsAttributesManager_, jsonString);
-  // verify exists
-  CORRADE_VERIFY(physMgrAttr);
-  // match values set in test JSON
-  // TODO : get these values programmatically?
-  CORRADE_COMPARE(physMgrAttr->getGravity(), Magnum::Vector3(1, 2, 3));
-  CORRADE_COMPARE(physMgrAttr->getTimestep(), 1.0);
-  CORRADE_COMPARE(physMgrAttr->getSimulator(), "bullet_test");
-  CORRADE_COMPARE(physMgrAttr->getFrictionCoefficient(), 1.4);
-  CORRADE_COMPARE(physMgrAttr->getRestitutionCoefficient(), 1.1);
-  // test physics manager attributes-level user config vals
-  testUserDefinedConfigVals(physMgrAttr->getUserConfiguration(),
-                            "pm defined string", true, 15, 12.6,
-                            Magnum::Vector3(215.4, 217.6, 2110.1),
-                            Magnum::Quaternion({5.2f, 6.2f, 7.2f}, 0.2f));
-  // remove added template
-  // remove json-string built attributes added for test
-  testRemoveAttributesBuiltJSONString(physicsAttributesManager_);
-
-}  // AttributesManagers_PhysicsJSONLoadTest
-
-/**
- * @brief This test will verify that the Light Attributes' managers' JSON
- * loading process is working as expected.
- */
-void AttributesManagersTest::testLightJSONLoad() {
-  // build JSON sample config
-  const std::string& jsonString = R"({
-  "lights":{
-      "test":{
-        "position": [2.5,0.1,3.8],
-        "direction": [1.0,-1.0,1.0],
-        "intensity": -0.1,
-        "color": [2,1,-1],
-        "type": "directional",
-        "position_model" : "camera",
-        "spot": {
-          "innerConeAngle": -0.75,
-          "outerConeAngle": -1.57
-        },
-        "user_defined" : {
-            "user_string" : "light instance defined string",
-            "user_bool" : false,
-            "user_int" : 42,
-            "user_double" : 1.2,
-            "user_vec3" : [0.1, 2.3, 4.5],
-            "user_quat" : [0.1, 0.2, 0.3, 0.4]
-        }
-      }
-    },
-    "user_defined" : {
-        "user_string" : "light attribs defined string",
-        "user_bool" : true,
-        "user_int" : 23,
-        "user_double" : 2.3,
-        "user_vec3" : [1.1, 3.3, 5.5],
-        "user_quat" : [0.5, 0.6, 0.7, 0.8]
-    },
-    "positive_intensity_scale" : 2.0,
-    "negative_intensity_scale" : 1.5
-  })";
-
-  auto lightLayoutAttr =
-      testBuildAttributesFromJSONString<AttrMgrs::LightLayoutAttributesManager,
-                                        Attrs::LightLayoutAttributes>(
-          lightLayoutAttributesManager_, jsonString);
-
-  // verify exists
-  CORRADE_VERIFY(lightLayoutAttr);
-  // test light layout attributes-level user config vals
-  testUserDefinedConfigVals(lightLayoutAttr->getUserConfiguration(),
-                            "light attribs defined string", true, 23, 2.3,
-                            Magnum::Vector3(1.1, 3.3, 5.5),
-                            Magnum::Quaternion({0.6f, 0.7f, 0.8f}, 0.5f));
-  CORRADE_COMPARE(lightLayoutAttr->getPositiveIntensityScale(), 2.0);
-  CORRADE_COMPARE(lightLayoutAttr->getNegativeIntensityScale(), 1.5);
-  auto lightAttr = lightLayoutAttr->getLightInstance("test");
-  // verify that lightAttr exists
-  CORRADE_VERIFY(lightAttr);
-
-  // match values set in test JSON
-  // TODO : get these values programmatically?
-  CORRADE_COMPARE(lightAttr->getPosition(), Magnum::Vector3(2.5, 0.1, 3.8));
-  CORRADE_COMPARE(lightAttr->getDirection(), Magnum::Vector3(1.0, -1.0, 1.0));
-  CORRADE_COMPARE(lightAttr->getColor(), Magnum::Vector3(2, 1, -1));
-
-  CORRADE_COMPARE(lightAttr->getIntensity(), -0.1);
-  CORRADE_COMPARE(lightAttr->getType(),
-                  static_cast<int>(esp::gfx::LightType::Directional));
-  CORRADE_COMPARE(lightAttr->getPositionModel(),
-                  static_cast<int>(esp::gfx::LightPositionModel::Camera));
-  CORRADE_COMPARE(lightAttr->getInnerConeAngle(), -0.75_radf);
-  CORRADE_COMPARE(lightAttr->getOuterConeAngle(), -1.57_radf);
-
-  // test user defined attributes from light instance
-  testUserDefinedConfigVals(lightAttr->getUserConfiguration(),
-                            "light instance defined string", false, 42, 1.2,
-                            Magnum::Vector3(0.1, 2.3, 4.5),
-                            Magnum::Quaternion({0.2f, 0.3f, 0.4f}, 0.1f));
-
-  // remove json-string built attributes added for test
-  testRemoveAttributesBuiltJSONString(lightLayoutAttributesManager_);
-
-}  // AttributesManagers_LightJSONLoadTest
-
-/**
- * @brief This test will verify that the Scene Instance attributes' managers'
- * JSON loading process is working as expected.
- */
-void AttributesManagersTest::testSceneInstanceJSONLoad() {
-  // build JSON sample config
-  const std::string& jsonString = R"({
-  "translation_origin" : "Asset_Local",
-  "stage_instance":{
-      "template_name": "test_stage_template",
-      "translation": [1,2,3],
-      "rotation": [0.1, 0.2, 0.3, 0.4],
-      "shader_type" : "pbr",
-      "user_defined" : {
-          "user_string" : "stage instance defined string",
-          "user_bool" : true,
-          "user_int" : 11,
-          "user_double" : 2.2,
-          "user_vec3" : [1.2, 3.4, 5.6],
-          "user_quat" : [0.4, 0.5, 0.6, 0.7]
-      }
-  },
-  "object_instances": [
-      {
-          "template_name": "test_object_template0",
-          "translation_origin": "COM",
-          "translation": [0,1,2],
-          "rotation": [0.2, 0.3, 0.4, 0.5],
-          "motion_type": "KINEMATIC",
-          "user_defined" : {
-              "user_string" : "obj0 instance defined string",
-              "user_bool" : false,
-              "user_int" : 12,
-              "user_double" : 2.3,
-              "user_vec3" : [1.3, 3.5, 5.7],
-              "user_quat" : [0.3, 0.2, 0.6, 0.1]
-          }
-      },
-      {
-          "template_name": "test_object_template1",
-          "translation": [0,-1,-2],
-          "rotation": [0.5, 0.6, 0.7, 0.8],
-          "motion_type": "DYNAMIC",
-          "user_defined" : {
-              "user_string" : "obj1 instance defined string",
-              "user_bool" : false,
-              "user_int" : 1,
-              "user_double" : 1.1,
-              "user_vec3" : [10.3, 30.5, -5.07],
-              "user_quat" : [1.3, 1.2, 1.6, 1.1]
-          }
-      }
-      ],
-      "articulated_object_instances": [
-          {
-              "template_name": "test_urdf_template0",
-              "translation_origin": "COM",
-              "fixed_base": false,
-              "auto_clamp_joint_limits" : true,
-              "translation": [5,4,5],
-              "rotation": [0.2, 0.3, 0.4, 0.5],
-              "initial_joint_pose": [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6],
-              "initial_joint_velocities": [1.0, 2.1, 3.2, 4.3, 5.4, 6.5, 7.6],
-              "motion_type": "DYNAMIC",
-              "user_defined" : {
-                  "user_string" : "test_urdf_template0 instance defined string",
-                  "user_bool" : false,
-                  "user_int" : 2,
-                  "user_double" : 1.22,
-                  "user_vec3" : [120.3, 302.5, -25.07],
-                  "user_quat" : [1.23, 1.22, 1.26, 1.21],
-                  "user_def_obj" : {
-                      "position" : [0.1, 0.2, 0.3],
-                      "rotation" : [0.5, 0.3, 0.1]
-                  }
-              }
-          },
-          {
-              "template_name": "test_urdf_template1",
-              "fixed_base" : true,
-              "auto_clamp_joint_limits" : true,
-              "translation": [3, 2, 1],
-              "rotation": [0.5, 0.6, 0.7, 0.8],
-              "motion_type": "KINEMATIC",
-              "user_defined" : {
-                  "user_string" : "test_urdf_template1 instance defined string",
-                  "user_bool" : false,
-                  "user_int" : 21,
-                  "user_double" : 11.22,
-                  "user_vec3" : [190.3, 902.5, -95.07],
-                  "user_quat" : [1.25, 9.22, 9.26, 0.21]
-              }
-          }
-      ],
-      "default_lighting":  "test_lighting_configuration",
-      "navmesh_instance": "test_navmesh_path1",
-      "semantic_scene_instance": "test_semantic_descriptor_path1",
-      "user_defined" : {
-          "user_string" : "scene instance defined string",
-          "user_bool" : true,
-          "user_int" : 99,
-          "user_double" : 9.1,
-          "user_vec3" : [12.3, 32.5, 25.07],
-          "user_quat" : [0.3, 3.2, 2.6, 5.1]
-      }
-     })";
-
-  auto sceneAttr =
-      testBuildAttributesFromJSONString<AttrMgrs::SceneAttributesManager,
-                                        Attrs::SceneAttributes>(
-          sceneAttributesManager_, jsonString);
-
-  // verify exists
-  CORRADE_VERIFY(sceneAttr);
-
-  // match values set in test JSON
-  CORRADE_COMPARE(
-      sceneAttr->getTranslationOrigin(),
-      static_cast<int>(Attrs::SceneInstanceTranslationOrigin::AssetLocal));
-  CORRADE_COMPARE(sceneAttr->getLightingHandle(),
-                  "test_lighting_configuration");
-  CORRADE_COMPARE(sceneAttr->getNavmeshHandle(), "test_navmesh_path1");
-  CORRADE_COMPARE(sceneAttr->getSemanticSceneHandle(),
-                  "test_semantic_descriptor_path1");
-  // test scene instance attributes-level user config vals
-  testUserDefinedConfigVals(sceneAttr->getUserConfiguration(),
-                            "scene instance defined string", true, 99, 9.1,
-                            Magnum::Vector3(12.3, 32.5, 25.07),
-                            Magnum::Quaternion({3.2f, 2.6f, 5.1f}, 0.3f));
-
-  // verify stage populated properly
-  auto stageInstance = sceneAttr->getStageInstance();
-  CORRADE_COMPARE(stageInstance->getHandle(), "test_stage_template");
-  CORRADE_COMPARE(stageInstance->getTranslation(), Magnum::Vector3(1, 2, 3));
-  CORRADE_COMPARE(stageInstance->getRotation(),
-                  Magnum::Quaternion({0.2f, 0.3f, 0.4f}, 0.1f));
-  // test stage instance attributes-level user config vals
-  testUserDefinedConfigVals(stageInstance->getUserConfiguration(),
-                            "stage instance defined string", true, 11, 2.2,
-                            Magnum::Vector3(1.2, 3.4, 5.6),
-                            Magnum::Quaternion({0.5f, 0.6f, 0.7f}, 0.4f));
-  // make sure that is not default value "flat"
-  CORRADE_COMPARE(stageInstance->getShaderType(),
-                  static_cast<int>(Attrs::ObjectInstanceShaderType::PBR));
-
-  // verify objects
-  auto objectInstanceList = sceneAttr->getObjectInstances();
-  CORRADE_COMPARE(objectInstanceList.size(), 2);
-  auto objInstance = objectInstanceList[0];
-  CORRADE_COMPARE(objInstance->getHandle(), "test_object_template0");
-  CORRADE_COMPARE(objInstance->getTranslationOrigin(),
-                  static_cast<int>(Attrs::SceneInstanceTranslationOrigin::COM));
-  CORRADE_COMPARE(objInstance->getTranslation(), Magnum::Vector3(0, 1, 2));
-  CORRADE_COMPARE(objInstance->getRotation(),
-                  Magnum::Quaternion({0.3f, 0.4f, 0.5f}, 0.2f));
-  CORRADE_COMPARE(objInstance->getMotionType(),
-                  static_cast<int>(esp::physics::MotionType::KINEMATIC));
-
-  // test object 0 instance attributes-level user config vals
-  testUserDefinedConfigVals(objInstance->getUserConfiguration(),
-                            "obj0 instance defined string", false, 12, 2.3,
-                            Magnum::Vector3(1.3, 3.5, 5.7),
-                            Magnum::Quaternion({0.2f, 0.6f, 0.1f}, 0.3f));
-
-  objInstance = objectInstanceList[1];
-  CORRADE_COMPARE(objInstance->getHandle(), "test_object_template1");
-  CORRADE_COMPARE(objInstance->getTranslation(), Magnum::Vector3(0, -1, -2));
-  CORRADE_COMPARE(objInstance->getRotation(),
-                  Magnum::Quaternion({0.6f, 0.7f, 0.8f}, 0.5f));
-  CORRADE_COMPARE(objInstance->getMotionType(),
-                  static_cast<int>(esp::physics::MotionType::DYNAMIC));
-
-  // test object 0 instance attributes-level user config vals
-  testUserDefinedConfigVals(objInstance->getUserConfiguration(),
-                            "obj1 instance defined string", false, 1, 1.1,
-                            Magnum::Vector3(10.3, 30.5, -5.07),
-                            Magnum::Quaternion({1.2f, 1.6f, 1.1f}, 1.3f));
-
-  // verify articulated object instances
-  auto artObjInstances = sceneAttr->getArticulatedObjectInstances();
-  CORRADE_COMPARE(artObjInstances.size(), 2);
-  auto artObjInstance = artObjInstances[0];
-  CORRADE_COMPARE(artObjInstance->getHandle(), "test_urdf_template0");
-  CORRADE_COMPARE(artObjInstance->getTranslationOrigin(),
-                  static_cast<int>(Attrs::SceneInstanceTranslationOrigin::COM));
-  CORRADE_COMPARE(artObjInstance->getFixedBase(), false);
-  CORRADE_VERIFY(artObjInstance->getAutoClampJointLimits());
-
-  CORRADE_COMPARE(artObjInstance->getTranslation(), Magnum::Vector3(5, 4, 5));
-  CORRADE_COMPARE(artObjInstance->getMotionType(),
-                  static_cast<int>(esp::physics::MotionType::DYNAMIC));
-  // verify init join pose
-  const auto& initJointPoseMap = artObjInstance->getInitJointPose();
-  const std::vector<float> jtPoseVals{0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6};
-  int idx = 0;
-  for (std::map<std::string, float>::const_iterator iter =
-           initJointPoseMap.begin();
-       iter != initJointPoseMap.end(); ++iter) {
-    CORRADE_COMPARE(iter->second, jtPoseVals[idx++]);
-  }
-  // verify init joint vels
-  const auto& initJoinVelMap = artObjInstance->getInitJointVelocities();
-  const std::vector<float> jtVelVals{1.0, 2.1, 3.2, 4.3, 5.4, 6.5, 7.6};
-  idx = 0;
-  for (std::map<std::string, float>::const_iterator iter =
-           initJoinVelMap.begin();
-       iter != initJoinVelMap.end(); ++iter) {
-    CORRADE_COMPARE(iter->second, jtVelVals[idx++]);
-  }
-
-  // test test_urdf_template0 ao instance attributes-level user config vals
-  testUserDefinedConfigVals(artObjInstance->getUserConfiguration(),
-                            "test_urdf_template0 instance defined string",
-                            false, 2, 1.22,
-                            Magnum::Vector3(120.3f, 302.5f, -25.07f),
-                            Magnum::Quaternion({1.22f, 1.26f, 1.21f}, 1.23f));
-
-  // test nested configuration
-  auto artObjNestedConfig =
-      artObjInstance->getUserConfiguration()
-          ->getSubconfigCopy<esp::core::config::Configuration>("user_def_obj");
-  CORRADE_VERIFY(artObjNestedConfig);
-  CORRADE_VERIFY(artObjNestedConfig->getNumEntries() > 0);
-  CORRADE_COMPARE(artObjNestedConfig->template get<Magnum::Vector3>("position"),
-                  Magnum::Vector3(0.1f, 0.2f, 0.3f));
-  CORRADE_COMPARE(artObjNestedConfig->template get<Magnum::Vector3>("rotation"),
-                  Magnum::Vector3(0.5f, 0.3f, 0.1f));
-  ESP_WARNING() << "Articulated Object test 3";
-
-  artObjInstance = artObjInstances[1];
-  CORRADE_COMPARE(artObjInstance->getHandle(), "test_urdf_template1");
-  CORRADE_VERIFY(artObjInstance->getFixedBase());
-  CORRADE_VERIFY(artObjInstance->getAutoClampJointLimits());
-  CORRADE_COMPARE(artObjInstance->getTranslation(), Magnum::Vector3(3, 2, 1));
-  CORRADE_COMPARE(artObjInstance->getMotionType(),
-                  static_cast<int>(esp::physics::MotionType::KINEMATIC));
-  // test test_urdf_template0 ao instance attributes-level user config vals
-  testUserDefinedConfigVals(artObjInstance->getUserConfiguration(),
-                            "test_urdf_template1 instance defined string",
-                            false, 21, 11.22,
-                            Magnum::Vector3(190.3f, 902.5f, -95.07f),
-                            Magnum::Quaternion({9.22f, 9.26f, 0.21f}, 1.25f));
-
-  // remove json-string built attributes added for test
-  testRemoveAttributesBuiltJSONString(sceneAttributesManager_);
-
-}  // AttributesManagers_SceneInstanceJSONLoadTest
-
-/**
- * @brief This test will verify that the Stage attributes' managers' JSON
- * loading process is working as expected.
- */
-void AttributesManagersTest::testStageJSONLoad() {
-  // build JSON sample config
-  const std::string& jsonString =
-      R"({
-        "scale":[2,3,4],
-        "margin": 0.9,
-        "friction_coefficient": 0.321,
-        "restitution_coefficient": 0.456,
-        "force_flat_shading": false,
-        "units_to_meters": 1.1,
-        "up":[2.1,0,0],
-        "front":[0,2.1,0],
-        "render_asset": "testJSONRenderAsset.glb",
-        "collision_asset": "testJSONCollisionAsset.glb",
-        "is_collidable": false,
-        "gravity": [9,8,7],
-        "origin":[1,2,3],
-        "semantic_asset":"testJSONSemanticAsset.glb",
-        "nav_asset":"testJSONNavMeshAsset.glb",
-        "house_filename":"testJSONHouseFileName.glb",
-        "shader_type" : "material",
-        "user_defined" : {
-            "user_string" : "stage defined string",
-            "user_bool" : false,
-            "user_int" : 3,
-            "user_double" : 0.8,
-            "user_vec3" : [5.4, 7.6, 10.1],
-            "user_quat" : [0.1, 1.5, 2.6, 3.7]
-        }
-      })";
-
-  auto stageAttr =
-      testBuildAttributesFromJSONString<AttrMgrs::StageAttributesManager,
-                                        Attrs::StageAttributes>(
-          stageAttributesManager_, jsonString);
-  // verify exists
-  CORRADE_VERIFY(stageAttr);
-  // match values set in test JSON
-  // TODO : get these values programmatically?
-  CORRADE_COMPARE(stageAttr->getScale(), Magnum::Vector3(2, 3, 4));
-  CORRADE_COMPARE(stageAttr->getMargin(), 0.9);
-  CORRADE_COMPARE(stageAttr->getFrictionCoefficient(), 0.321);
-  CORRADE_COMPARE(stageAttr->getRestitutionCoefficient(), 0.456);
-  CORRADE_VERIFY(!stageAttr->getForceFlatShading());
-  CORRADE_COMPARE(stageAttr->getUnitsToMeters(), 1.1);
-  CORRADE_COMPARE(stageAttr->getOrientUp(), Magnum::Vector3(2.1, 0, 0));
-  CORRADE_COMPARE(stageAttr->getOrientFront(), Magnum::Vector3(0, 2.1, 0));
-  CORRADE_COMPARE(stageAttr->getRenderAssetHandle(), "testJSONRenderAsset.glb");
-  CORRADE_COMPARE(stageAttr->getCollisionAssetHandle(),
-                  "testJSONCollisionAsset.glb");
-  CORRADE_VERIFY(!stageAttr->getIsCollidable());
-  // stage-specific attributes
-  CORRADE_COMPARE(stageAttr->getGravity(), Magnum::Vector3(9, 8, 7));
-  // make sure that is not default value "flat"
-  CORRADE_COMPARE(stageAttr->getShaderType(),
-                  static_cast<int>(Attrs::ObjectInstanceShaderType::Material));
-  CORRADE_COMPARE(stageAttr->getOrigin(), Magnum::Vector3(1, 2, 3));
-  CORRADE_COMPARE(stageAttr->getSemanticAssetHandle(),
-                  "testJSONSemanticAsset.glb");
-  CORRADE_COMPARE(stageAttr->getNavmeshAssetHandle(),
-                  "testJSONNavMeshAsset.glb");
-  CORRADE_COMPARE(stageAttr->getHouseFilename(), "testJSONHouseFileName.glb");
-  // test stage attributes-level user config vals
-  testUserDefinedConfigVals(stageAttr->getUserConfiguration(),
-                            "stage defined string", false, 3, 0.8,
-                            Magnum::Vector3(5.4, 7.6, 10.1),
-                            Magnum::Quaternion({1.5f, 2.6f, 3.7f}, 0.1f));
-
-  // remove json-string built attributes added for test
-  testRemoveAttributesBuiltJSONString(stageAttributesManager_);
-
-}  // AttributesManagers_StageJSONLoadTest
-
-/**
- * @brief This test will verify that the Object attributes' managers' JSON
- * loading process is working as expected.
- */
-void AttributesManagersTest::testObjectJSONLoad() {
-  // build JSON sample config
-  const std::string& jsonString = R"({
-  "scale":[2,3,4],
-  "margin": 0.9,
-  "friction_coefficient": 0.321,
-  "restitution_coefficient": 0.456,
-  "force_flat_shading": true,
-  "units_to_meters": 1.1,
-  "up":[2.1,0,0],
-  "front":[0,2.1,0],
-  "render_asset": "testJSONRenderAsset.glb",
-  "collision_asset": "testJSONCollisionAsset.glb",
-  "is_collidable": false,
-  "mass": 9,
-  "use_bounding_box_for_collision": true,
-  "join_collision_meshes":true,
-  "inertia": [1.1, 0.9, 0.3],
-  "semantic_id" : 7,
-  "COM": [0.1,0.2,0.3],
-  "shader_type" : "phong",
-  "user_defined" : {
-      "user_string" : "object defined string",
-      "user_bool" : true,
-      "user_int" : 5,
-      "user_double" : 2.6,
-      "user_vec3" : [15.4, 17.6, 110.1],
-      "user_quat" : [0.7, 5.5, 6.6, 7.7]
-  }
-})";
-  auto objAttr =
-      testBuildAttributesFromJSONString<AttrMgrs::ObjectAttributesManager,
-                                        Attrs::ObjectAttributes>(
-          objectAttributesManager_, jsonString);
-  // verify exists
-  CORRADE_VERIFY(objAttr);
-  // match values set in test JSON
-  // TODO : get these values programmatically?
-  CORRADE_COMPARE(objAttr->getScale(), Magnum::Vector3(2, 3, 4));
-  CORRADE_COMPARE(objAttr->getMargin(), 0.9);
-  CORRADE_COMPARE(objAttr->getFrictionCoefficient(), 0.321);
-  CORRADE_COMPARE(objAttr->getRestitutionCoefficient(), 0.456);
-  CORRADE_VERIFY(objAttr->getForceFlatShading());
-  CORRADE_COMPARE(objAttr->getUnitsToMeters(), 1.1);
-  CORRADE_COMPARE(objAttr->getOrientUp(), Magnum::Vector3(2.1, 0, 0));
-  CORRADE_COMPARE(objAttr->getOrientFront(), Magnum::Vector3(0, 2.1, 0));
-  CORRADE_COMPARE(objAttr->getRenderAssetHandle(), "testJSONRenderAsset.glb");
-  CORRADE_COMPARE(objAttr->getCollisionAssetHandle(),
-                  "testJSONCollisionAsset.glb");
-  CORRADE_VERIFY(!objAttr->getIsCollidable());
-  CORRADE_COMPARE(objAttr->getSemanticId(), 7);
-  // object-specific attributes
-  CORRADE_COMPARE(objAttr->getMass(), 9);
-  CORRADE_COMPARE(objAttr->getShaderType(),
-                  static_cast<int>(Attrs::ObjectInstanceShaderType::Phong));
-  CORRADE_VERIFY(objAttr->getBoundingBoxCollisions());
-  CORRADE_VERIFY(objAttr->getJoinCollisionMeshes());
-  CORRADE_COMPARE(objAttr->getInertia(), Magnum::Vector3(1.1, 0.9, 0.3));
-  CORRADE_COMPARE(objAttr->getCOM(), Magnum::Vector3(0.1, 0.2, 0.3));
-  // test object attributes-level user config vals
-  testUserDefinedConfigVals(objAttr->getUserConfiguration(),
-                            "object defined string", true, 5, 2.6,
-                            Magnum::Vector3(15.4, 17.6, 110.1),
-                            Magnum::Quaternion({5.5f, 6.6f, 7.7f}, 0.7f));
-
-  // remove json-string built attributes added for test
-  testRemoveAttributesBuiltJSONString(objectAttributesManager_);
-
-}  // AttributesManagersTest::testObjectJSONLoadTest
-
-/**
- * @brief This test will test creating, modifying, registering and deleting
- * Attributes via Attributes Mangers for PhysicsManagerAttributes. These
- * tests should be consistent with most types of future attributes managers
- * specializing the AttributesManager class template that follow the same
- * expected behavior paths as extent attributes/attributesManagers.  Note :
- * PrimitiveAssetAttributes exhibit slightly different behavior and need their
- * own tests.
- */
 void AttributesManagersTest::testPhysicsAttributesManagersCreate() {
   CORRADE_INFO(
       "Start Test : Create, Edit, Remove Attributes for "
@@ -1184,15 +566,6 @@ void AttributesManagersTest::testPhysicsAttributesManagersCreate() {
       physicsAttributesManager_, physicsConfigFile, false);
 }  // AttributesManagersTest::PhysicsAttributesManagersCreate
 
-/**
- * @brief This test will test creating, modifying, registering and deleting
- * Attributes via Attributes Mangers for StageAttributes.  These
- * tests should be consistent with most types of future attributes managers
- * specializing the AttributesManager class template that follow the same
- * expected behavior paths as extent attributes/attributesManagers.  Note :
- * PrimitiveAssetAttributes exhibit slightly different behavior and need their
- * own tests.
- */
 void AttributesManagersTest::testStageAttributesManagersCreate() {
   std::string stageConfigFile = Cr::Utility::Directory::join(
       DATA_DIR, "test_assets/scenes/simple_room.glb");
@@ -1210,15 +583,6 @@ void AttributesManagersTest::testStageAttributesManagersCreate() {
 
 }  // AttributesManagersTest::StageAttributesManagersCreate
 
-/**
- * @brief This test will test creating, modifying, registering and deleting
- * Attributes via Attributes Mangers for ObjectAttributes.  These
- * tests should be consistent with most types of future attributes managers
- * specializing the AttributesManager class template that follow the same
- * expected behavior paths as extent attributes/attributesManagers.  Note :
- * PrimitiveAssetAttributes exhibit slightly different behavior and need their
- * own tests.
- */
 void AttributesManagersTest::testObjectAttributesManagersCreate() {
   std::string objectConfigFile = Cr::Utility::Directory::join(
       DATA_DIR, "test_assets/objects/chair.object_config.json");
@@ -1273,11 +637,6 @@ void AttributesManagersTest::testLightLayoutAttributesManager() {
 
 }  // AttributesManagersTest::LightLayoutAttributesManagerTest
 
-/**
- * @brief test primitive asset attributes functionality in attirbutes
- * managers. This includes testing handle auto-gen when relevant fields in
- * asset attributes are changed.
- */
 void AttributesManagersTest::testPrimitiveAssetAttributes() {
   /**
    * Primitive asset attributes require slightly different testing since a

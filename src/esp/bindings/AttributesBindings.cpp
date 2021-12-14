@@ -12,7 +12,7 @@
 #include "esp/metadata/attributes/ObjectAttributes.h"
 #include "esp/metadata/attributes/PhysicsManagerAttributes.h"
 #include "esp/metadata/attributes/PrimitiveAssetAttributes.h"
-#include "esp/metadata/attributes/SceneAttributes.h"
+#include "esp/metadata/attributes/SceneInstanceAttributes.h"
 
 namespace py = pybind11;
 using py::literals::operator""_a;
@@ -32,8 +32,8 @@ using Attrs::ObjectAttributes;
 using Attrs::PhysicsManagerAttributes;
 using Attrs::StageAttributes;
 using Attrs::UVSpherePrimitiveAttributes;
-using esp::core::AbstractFileBasedManagedObject;
-using esp::core::AbstractManagedObject;
+using esp::core::managedContainers::AbstractFileBasedManagedObject;
+using esp::core::managedContainers::AbstractManagedObject;
 
 namespace esp {
 namespace metadata {
@@ -45,12 +45,12 @@ void initAttributesBindings(py::module& m) {
       m, "AbstractManagedObject");
   // ==== AbstractFileBasedManagedObject ====
   // NOLINTNEXTLINE(bugprone-unused-raii)
-  py::class_<AbstractFileBasedManagedObject, esp::core::AbstractManagedObject,
+  py::class_<AbstractFileBasedManagedObject, AbstractManagedObject,
              AbstractFileBasedManagedObject::ptr>(
       m, "AbstractFileBasedManagedObject");
 
   // ==== AbstractAttributes ====
-  py::class_<AbstractAttributes, esp::core::AbstractFileBasedManagedObject,
+  py::class_<AbstractAttributes, AbstractFileBasedManagedObject,
              esp::core::config::Configuration, AbstractAttributes::ptr>(
       m, "AbstractAttributes")
       .def(py::init(
@@ -347,6 +347,14 @@ void initAttributesBindings(py::module& m) {
           R"(The desired location of the origin of stages built from this
           template.)")
       .def_property(
+          "semantic_orient_up", &StageAttributes::getSemanticOrientUp,
+          &StageAttributes::setSemanticOrientUp,
+          R"(Up direction for semantic stage meshes built from this template.)")
+      .def_property(
+          "semantic_orient_front", &StageAttributes::getSemanticOrientFront,
+          &StageAttributes::setSemanticOrientFront,
+          R"(Forward direction for semantic stage meshes built from this template.)")
+      .def_property(
           "semantic_asset_handle", &StageAttributes::getSemanticAssetHandle,
           &StageAttributes::setSemanticAssetHandle,
           R"(Handle of the asset used for semantic segmentation of stages
@@ -362,8 +370,8 @@ void initAttributesBindings(py::module& m) {
           R"(Handle of the navmesh asset used for constructions built from
           this template.)")
       .def_property(
-          "house_filename", &StageAttributes::getHouseFilename,
-          &StageAttributes::setHouseFilename,
+          "house_filename", &StageAttributes::getSemanticDescriptorFilename,
+          &StageAttributes::setSemanticDescriptorFilename,
           R"(Handle for file containing semantic type maps and hierarchy for
           constructions built from this template.)")
       .def_property(

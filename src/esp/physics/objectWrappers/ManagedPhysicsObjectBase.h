@@ -18,7 +18,8 @@ namespace physics {
  * enable Managed Container access.
  */
 template <class T>
-class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
+class AbstractManagedPhysicsObject
+    : public esp::core::managedContainers::AbstractManagedObject {
  public:
   static_assert(
       std::is_base_of<esp::physics::PhysicsObjectBase, T>::value,
@@ -267,7 +268,7 @@ class AbstractManagedPhysicsObject : public esp::core::AbstractManagedObject {
    * info returned for this managed object.
    */
   std::string getObjectInfoHeader() const override {
-    return "Type, Name, ID, Translation XYZ, Rotation XYZW, " +
+    return "Type, Name, ID, Translation XYZ, Rotation W[XYZ], " +
            getPhyObjInfoHeaderInternal();
   }
 

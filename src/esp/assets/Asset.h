@@ -8,6 +8,7 @@
 #include <Magnum/Math/Color.h>
 #include "esp/core/Esp.h"
 #include "esp/geo/CoordinateFrame.h"
+#include "esp/metadata/attributes/AttributesEnumMaps.h"
 
 namespace esp {
 
@@ -17,8 +18,6 @@ namespace assets {
 //! Supported Asset types
 enum class AssetType {
   UNKNOWN,
-  SUNCG_OBJECT,
-  SUNCG_SCENE,
   MP3D_MESH,
   INSTANCE_MESH,
   FRL_PTEX_MESH,
@@ -51,6 +50,16 @@ struct AssetInfo {
   //! if set, override the asset material with a procedural Phong material
   Cr::Containers::Optional<PhongMaterialColor> overridePhongMaterial =
       Cr::Containers::NullOpt;
+  /**
+   * @brief Defaults to @ref
+   * esp::metadata::attributes::ObjectInstanceShaderType::Unspecified (which
+   * means the user has not specified a shader/material to use, and the assets's
+   * default material should be used). If set to other value, this specifies the
+   * shader type to use for this asset, overriding any other inferred shader
+   * types. See @ref esp::metadata::attributes::ObjectInstanceShaderType
+   */
+  metadata::attributes::ObjectInstanceShaderType shaderTypeToUse =
+      metadata::attributes::ObjectInstanceShaderType::Unspecified;
 
   //! Populates a preset AssetInfo by matching against known filepaths
   static AssetInfo fromPath(const std::string& filepath);

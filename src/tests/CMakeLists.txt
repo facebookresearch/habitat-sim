@@ -6,6 +6,16 @@ configure_file(
 )
 
 corrade_add_test(
+  AttributesConfigsTest
+  AttributesConfigsTest.cpp
+  LIBRARIES
+  core
+  assets
+  metadata
+)
+target_include_directories(AttributesConfigsTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
+corrade_add_test(
   AttributesManagersTest
   AttributesManagersTest.cpp
   LIBRARIES
@@ -107,9 +117,6 @@ corrade_add_test(
 )
 target_include_directories(SimTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-corrade_add_test(SuncgTest SuncgTest.cpp LIBRARIES scene)
-target_include_directories(SuncgTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-
 if(BUILD_WITH_VHACD)
   corrade_add_test(
     VoxelGridTest
@@ -136,6 +143,5 @@ set_tests_properties(
   ReplicaSceneTest
   ResourceManagerTest
   SimTest
-  SuncgTest
   PROPERTIES ENVIRONMENT "HABITAT_SIM_LOG=quiet;MAGNUM_LOG=QUIET"
 )

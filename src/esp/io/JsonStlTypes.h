@@ -9,6 +9,7 @@
  * @brief See JsonAllTypes.h. Don't include this header directly in user code.
  */
 
+#include <map>
 #include "JsonBuiltinTypes.h"
 
 namespace esp {
@@ -160,6 +161,26 @@ inline bool readMember(const JsonGenericValue& d,
   }  // if has tag
   return false;
 }  //  readMember<std::map<std::string, float>>
+
+/**
+ * @brief Manage string-keyed map of type @p T to json Object
+ * @tparam Type of map value
+ */
+template <typename T>
+void addMember(JsonGenericValue& value,
+               const rapidjson::GenericStringRef<char>& name,
+               const std::map<std::string, T>& mapVal,
+               JsonAllocator& allocator) {
+  if (!mapVal.empty()) {
+    JsonGenericValue objectData(rapidjson::kObjectType);
+    for (const auto& elem : mapVal) {
+      rapidjson::GenericStringRef<char> key(elem.first.c_str());
+      addMember(objectData, key, toJsonValue(elem.second, allocator),
+                allocator);
+    }
+    addMember(value, name, objectData, allocator);
+  }
+}
 
 }  // namespace io
 }  // namespace esp

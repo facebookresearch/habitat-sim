@@ -127,6 +127,10 @@ int BulletPhysicsManager::addArticulatedObjectFromURDF(
     bool forceReload,
     bool maintainLinkOrder,
     const std::string& lightSetup) {
+  if (simulator_ != nullptr) {
+    // aquire context if available
+    simulator_->getRenderGLContext();
+  }
   ESP_CHECK(
       urdfImporter_->loadURDF(filepath, globalScale, massScale, forceReload),
       "failed to parse/load URDF file" << filepath);

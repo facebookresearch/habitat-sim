@@ -14,6 +14,7 @@
 
 namespace esp {
 namespace core {
+namespace managedContainers {
 
 /**
  * @brief This enum describes how objects held in the @ref ManagedConatainer are
@@ -127,10 +128,10 @@ class ManagedContainer : public ManagedContainerBase {
                      const std::string& objectHandle = "",
                      bool forceRegistration = false) {
     if (nullptr == managedObject) {
-      ESP_ERROR() << "<" << Corrade::Utility::Debug::nospace
-                  << this->objectType_ << Corrade::Utility::Debug::nospace
-                  << "> : Invalid (null) managed object passed to "
-                     "registration. Aborting.";
+      ESP_ERROR(Magnum::Debug::Flag::NoSpace)
+          << "<" << this->objectType_
+          << "> : Invalid (null) managed object passed to "
+             "registration. Aborting.";
       return ID_UNDEFINED;
     }
     if ("" != objectHandle) {
@@ -139,40 +140,15 @@ class ManagedContainer : public ManagedContainerBase {
     }
     std::string handleToSet = managedObject->getHandle();
     if ("" == handleToSet) {
-      ESP_ERROR() << "<" << Corrade::Utility::Debug::nospace
-                  << this->objectType_ << Corrade::Utility::Debug::nospace
-                  << "> : No valid handle specified for" << objectType_
-                  << "managed object to register. Aborting.";
+      ESP_ERROR(Magnum::Debug::Flag::NoSpace)
+          << "<" << this->objectType_
+          << "> : No valid handle specified to register this "
+          << this->objectType_ << " managed object. Aborting.";
       return ID_UNDEFINED;
     }
     return registerObjectFinalize(managedObject, handleToSet,
                                   forceRegistration);
   }  // ManagedContainer::registerObject
-
-  /**
-   * @brief Register managed object and call appropriate ResourceManager method
-   * to execute appropriate post-registration processes due to changes in the
-   * managed object. Use if user wishes to update existing objects built by
-   * managed object with new managed object data and such objects support this
-   * kind of update. Requires the use of managed object's assigned handle in
-   * order to reference existing constructions built from the original version
-   * of this managed object.
-   * @param managedObject The managed object.
-   * @return The unique ID of the managed object being registered, or
-   * ID_UNDEFINED if failed
-   */
-  int registerObjectAndUpdate(ManagedPtr managedObject) {
-    std::string originalHandle = managedObject->getHandle();
-    int ID = this->registerObject(managedObject, originalHandle);
-    // If undefined then some error occurred.
-    if (ID_UNDEFINED == ID) {
-      return ID_UNDEFINED;
-    }
-    // TODO : call Resource Manager for post-registration processing of this
-    // managed object
-
-    return ID;
-  }  // ManagedContainer::registerObjectAndUpdate
 
   /**
    * @brief Get a reference to the managed object identified by the
@@ -721,6 +697,7 @@ auto ManagedContainer<T, Access>::removeObjectInternal(
   return managedObject;
 }  // ManagedContainer::removeObjectInternal
 
+}  // namespace managedContainers
 }  // namespace core
 }  // namespace esp
 

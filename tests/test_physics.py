@@ -103,7 +103,7 @@ def test_kinematics():
         for _ in range(2):
             # do some kinematics here (todo: translating or rotating instead of absolute)
             cheezit_box.translation = np.random.rand(3)
-            T = cheezit_box.transformation  # noqa : F841
+            T = cheezit_box.transformation  # noqa: F841
 
             # test getting observation
             sim.step(random.choice(list(hab_cfg.agents[0].action_space.keys())))
@@ -217,7 +217,7 @@ def test_kinematics_no_physics():
         for _ in range(2):
             # do some kinematics here (todo: translating or rotating instead of absolute)
             cheezit_box.translation = np.random.rand(3)
-            T = cheezit_box.transformation  # noqa : F841
+            T = cheezit_box.transformation  # noqa: F841
 
             # test getting observation
             sim.step(random.choice(list(hab_cfg.agents[0].action_space.keys())))
@@ -581,6 +581,7 @@ def test_collision_groups():
         # get the rigid object manager, which provides direct
         # access to objects
         rigid_obj_mgr = sim.get_rigid_object_manager()
+        ao_mgr = sim.get_articulated_object_manager()
 
         if (
             sim.get_physics_simulation_library()
@@ -617,6 +618,21 @@ def test_collision_groups():
             cube_obj1.override_collision_group(cg.UserGroup1)
             assert not cube_obj1.contact_test()
             assert not cube_obj2.contact_test()
+
+            # add an ArticulatedObject in contact with cube 2
+            ao = ao_mgr.add_articulated_object_from_urdf(
+                filepath="data/test_assets/urdf/amass_male.urdf"
+            )
+            ao.translation = [1.1, 0.0, 4.6]
+            assert ao.contact_test()
+            assert cube_obj2.contact_test()
+            assert not cube_obj1.contact_test()
+            # set to non-collidable and check no contacts
+            ao.override_collision_group(cg.Noncollidable)
+            assert not ao.contact_test()
+            assert not cube_obj2.contact_test()
+            assert not cube_obj1.contact_test()
+
             # override cube2 to a new group and configure custom mask to interact with it
             cgh.set_mask_for_group(cg.UserGroup1, new_user_group_1_mask | cg.UserGroup2)
             # NOTE: changing group settings requires overriding object group again

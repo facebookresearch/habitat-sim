@@ -86,7 +86,23 @@ struct PhysicsTest : Cr::TestSuite::Tester {
       stageAttributesMgr->setCurrPhysicsManagerAttributesHandle(
           physicsManagerAttributes->getHandle());
     }
-    auto stageAttributes = stageAttributesMgr->createObject(stageFile, true);
+    // create scene instance attributes
+    esp::metadata::attributes::SceneInstanceAttributes::cptr
+        curSceneInstanceAttributes =
+            metadataMediator_->getSceneInstanceAttributesByName(stageFile);
+
+    const esp::metadata::attributes::SceneObjectInstanceAttributes::cptr
+        stageInstanceAttributes =
+            curSceneInstanceAttributes->getStageInstance();
+
+    // Get full library name of StageAttributes
+    const std::string stageAttributesHandle =
+        metadataMediator_->getStageAttrFullHandle(
+            stageInstanceAttributes->getHandle());
+    // Get StageAttributes copy
+    auto stageAttributes =
+        metadataMediator_->getStageAttributesManager()->getObjectCopyByHandle(
+            stageAttributesHandle);
 
     // construct physics manager based on specifications in attributes
     resourceManager_->initPhysicsManager(physicsManager_, &rootNode,
@@ -94,8 +110,9 @@ struct PhysicsTest : Cr::TestSuite::Tester {
 
     // load scene
     std::vector<int> tempIDs{sceneID_, esp::ID_UNDEFINED};
-    resourceManager_->loadStage(stageAttributes, nullptr, physicsManager_,
-                                sceneManager_.get(), tempIDs);
+    auto stageInstanceAttrs = resourceManager_->loadStage(
+        stageAttributes, stageInstanceAttributes, physicsManager_,
+        sceneManager_.get(), tempIDs);
 
     rigidObjectManager_ = physicsManager_->getRigidObjectManager();
   }
@@ -106,8 +123,12 @@ struct PhysicsTest : Cr::TestSuite::Tester {
     if (drawables == nullptr) {
       drawables = &sceneManager_->getSceneGraph(sceneID_).getDrawables();
     }
+    auto objAttr =
+        metadataMediator_->getObjectAttributesManager()->getObjectCopyByHandle(
+            objectFile);
+
     int objectId =
-        physicsManager_->addObject(objectFile, drawables, attachmentNode);
+        physicsManager_->addObject(objAttr, drawables, attachmentNode);
 #ifdef ESP_BUILD_WITH_BULLET
     esp::physics::ManagedBulletRigidObject::ptr objectWrapper =
         rigidObjectManager_

@@ -144,7 +144,8 @@ bool Model::loadJsonAttributes(const std::string& filename) {
     // get json object referenced by tag subGroupName
     const io::JsonGenericValue& jsonObj = jsonConfig[subGroupName.c_str()];
     // count number of valid user config settings found
-    int numConfigSettings = io::loadJsonIntoConfiguration(jsonObj, subGroupPtr);
+
+    int numConfigSettings = subGroupPtr->loadFromJson(jsonObj);
 
     // save as user_defined subgroup configuration
     jsonAttributes_->setSubconfigPtr(subGroupName, subGroupPtr);

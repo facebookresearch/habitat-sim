@@ -28,7 +28,7 @@ namespace managers {
  * of this class works with.  Must inherit from @ref
  * esp::metadata::attributes::AbstractObjectAttributes.
  */
-template <class T, core::ManagedObjectAccess Access>
+template <class T, ManagedObjectAccess Access>
 class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
  public:
   static_assert(std::is_base_of<attributes::AbstractObjectAttributes, T>::value,
@@ -104,6 +104,7 @@ class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
       const io::JsonGenericValue& jsonDoc);
 
   //======== Internally accessed functions ========
+
   /**
    * @brief Only used by @ref
    * esp::metadata::attributes::AbstractObjectAttributes derived-attributes. Set
@@ -150,8 +151,35 @@ class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
       AbsObjAttrPtr attributes,
       bool setFrame,
       const std::string& assetName,
-      std::function<void(int)> meshTypeSetter) = 0;
+      const std::function<void(int)>& meshTypeSetter) = 0;
 
+  /**
+   * @brief Set a filename attribute to hold the appropriate data if the
+   * existing attribute's given path contains the sentinel tag value defined at
+   * @ref esp::metadata::CONFIG_NAME_AS_ASSET_FILENAME.  This will be used in
+   * the Scene Dataset configuration file in the "default_attributes" tag for
+   * stage or object attributes to specify that the name specified as the
+   * instanced attributes should also be used to build the name of the specified
+   * asset.  The tag value will be replaced by the attributes object's
+   * simplified handle.
+   *
+   * This will only be called from the specified manager's initNewObjectInternal
+   * function, where the attributes is initially built from a default attributes
+   * (if such an attributes exists).
+   * @param attributers The AbstractObjectAttributes being worked with.
+   * @param srcAssetFilename The given asset's stored filename to be queried for
+   * the specified tag.  If the tag exists, replace it to build the  with the
+   * simplified handle given by the attributes (hence copy).  If this DNE on
+   * disk, add file directory.
+   * @param filenameSetter The function to set the filename appropriately for
+   * the given asset.
+   * @return Whether or not the final value residing within the attribute's
+   * asset filename exists or not.
+   */
+  bool setHandleFromDefaultTag(
+      AbsObjAttrPtr attributes,
+      const std::string& srcAssetFilename,
+      const std::function<void(const std::string&)>& filenameSetter);
   // ======== Typedefs and Instance Variables ========
 
  public:
@@ -162,7 +190,7 @@ class AbstractObjectAttributesManager : public AttributesManager<T, Access> {
 /////////////////////////////
 // Class Template Method Definitions
 
-template <class T, core::ManagedObjectAccess Access>
+template <class T, ManagedObjectAccess Access>
 auto AbstractObjectAttributesManager<T, Access>::createObject(
     const std::string& attributesTemplateHandle,
     bool registerTemplate) -> AbsObjAttrPtr {
@@ -187,7 +215,7 @@ auto AbstractObjectAttributesManager<T, Access>::createObject(
 
 }  // AbstractObjectAttributesManager<T>::createObject
 
-template <class T, core::ManagedObjectAccess Access>
+template <class T, ManagedObjectAccess Access>
 auto AbstractObjectAttributesManager<T, Access>::
     loadAbstractObjectAttributesFromJson(AbsObjAttrPtr attributes,
                                          const io::JsonGenericValue& jsonDoc)
@@ -290,18 +318,19 @@ auto AbstractObjectAttributesManager<T, Access>::
 
   // set attributes shader type to use.  This may be overridden by a scene
   // instance specification.
-  int shaderTypeVal = getShaderTypeFromJsonDoc(jsonDoc);
+  const std::string shaderTypeVal = getShaderTypeFromJsonDoc(jsonDoc);
   // if a known shader type val is specified in json, set that value for the
-  // attributes, overriding constructor defaults.
+  // attributes, overriding constructor defaults.  Do not overwrite anything for
+  // unknown
   if (shaderTypeVal !=
-      static_cast<int>(attributes::ObjectInstanceShaderType::Unknown)) {
+      getShaderTypeName(attributes::ObjectInstanceShaderType::Unspecified)) {
     attributes->setShaderType(shaderTypeVal);
   }
 
   return attributes;
 }  // AbstractObjectAttributesManager<AbsObjAttrPtr>::createObjectAttributesFromJson
 
-template <class T, core::ManagedObjectAccess Access>
+template <class T, ManagedObjectAccess Access>
 std::string
 AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
     AbsObjAttrPtr attributes,
@@ -325,16 +354,18 @@ AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
   if (io::readMember<std::string>(jsonDoc, jsonMeshTypeTag, tmpVal)) {
     // tag was found, perform check
     std::string strToLookFor = Cr::Utility::String::lowercase(tmpVal);
-    if (T::AssetTypeNamesMap.count(strToLookFor)) {
-      typeVal = static_cast<int>(T::AssetTypeNamesMap.at(strToLookFor));
+
+    auto found = attributes::AssetTypeNamesMap.find(strToLookFor);
+    if (found != attributes::AssetTypeNamesMap.end()) {
+      typeVal =
+          static_cast<int>(attributes::AssetTypeNamesMap.at(strToLookFor));
     } else {
-      ESP_WARNING() << "<" << Magnum::Debug::nospace << this->objectType_
-                    << Magnum::Debug::nospace
-                    << "> : Value in json @ tag :" << jsonMeshTypeTag << ": `"
-                    << tmpVal
-                    << "` does not map to a valid "
-                       "AbstractObjectAttributes::AssetTypeNamesMap value, so "
-                       "defaulting mesh type to AssetType::UNKNOWN.";
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
+          << "<" << this->objectType_
+          << "> : Value in json @ tag :" << jsonMeshTypeTag << ": `" << tmpVal
+          << "` does not map to a valid "
+             "AbstractObjectAttributes::AssetTypeNamesMap value, so "
+             "defaulting mesh type to AssetType::UNKNOWN.";
       typeVal = static_cast<int>(esp::assets::AssetType::UNKNOWN);
     }
     // value found so override current value, otherwise do not.
@@ -356,8 +387,8 @@ AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
           Cr::Utility::Directory::join(propertiesFileDirectory, assetName);
       if ((typeVal == -1) && (oldFName != assetName)) {
         // if file name is different, and type val has not been specified,
-        // perform name-specific mesh type config do not override orientation -
-        // should be specified in json.
+        // perform name-specific mesh type config do not override orientation
+        // - should be specified in json.
         setDefaultAssetNameBasedAttributes(attributes, false, assetName,
                                            meshTypeSetter);
       }
@@ -367,6 +398,44 @@ AbstractObjectAttributesManager<T, Access>::setJSONAssetHandleAndType(
   // handle value is not present in JSON or is specified but does not change
   return oldFName;
 }  // AbstractObjectAttributesManager<AbsObjAttrPtr>::setJSONAssetHandleAndType
+
+template <class T, ManagedObjectAccess Access>
+bool AbstractObjectAttributesManager<T, Access>::setHandleFromDefaultTag(
+    AbsObjAttrPtr attributes,
+    const std::string& srcAssetFilename,
+    const std::function<void(const std::string&)>& filenameSetter) {
+  if (srcAssetFilename.empty()) {
+    return false;
+  }
+  std::string tempStr(srcAssetFilename);
+  const auto loc = srcAssetFilename.find(CONFIG_NAME_AS_ASSET_FILENAME);
+  if (loc != std::string::npos) {
+    // sentinel tag is found - replace tag with simplified handle of
+    // attributes and use filenameSetter and return whether this file exists or
+    // not.
+    tempStr.replace(loc, strlen(CONFIG_NAME_AS_ASSET_FILENAME),
+                    attributes->getSimplifiedHandle());
+    if (Cr::Utility::Directory::exists(tempStr)) {
+      // replace the component of the string containing the tag with the base
+      // filename/handle, and verify it exists. Otherwise, clear it.
+      filenameSetter(tempStr);
+      return true;
+    }
+    tempStr =
+        Cr::Utility::Directory::join(attributes->getFileDirectory(), tempStr);
+    if (Cr::Utility::Directory::exists(tempStr)) {
+      // replace the component of the string containing the tag with the base
+      // filename/handle, and verify it exists. Otherwise, clear it.
+      filenameSetter(tempStr);
+      return true;
+    }
+    // out of options, clear out the wild-card default so that init-based
+    // default is derived and used.
+    filenameSetter("");
+  }
+  // no tag found - check if existing non-empty field exists.
+  return Cr::Utility::Directory::exists(srcAssetFilename);
+}  // AbstractObjectAttributesManager<T, Access>::setHandleFromDefaultTag
 
 }  // namespace managers
 }  // namespace metadata

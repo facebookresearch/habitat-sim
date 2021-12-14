@@ -92,8 +92,13 @@ class Renderer {
    * semantic
    */
   void visualize(sensor::VisualSensor& visualSensor,
-                 float colorMapOffset = 1.0f / 512.0f,
-                 float colorMapScale = 1.0f / 256.0f);
+                 float colorMapOffset,
+                 float colorMapScale);
+  /**
+   * @brief visualize the observation of a non-rgb visual sensor, e.g., depth,
+   * semantic, using already-specified offset and scale.
+   */
+  void visualize(sensor::VisualSensor& visualSensor);
 
 #ifdef ESP_BUILD_WITH_BACKGROUND_RENDERER
   /**
@@ -122,6 +127,15 @@ class Renderer {
    */
   void waitDrawJobs();
 #endif
+  /**
+   * @brief Sets the colormap for the @ref TextureVisualizerShader used for
+   * Semantic Scene rendering. Note, these colors are only used for
+   * visualization purposes.
+   * @param colormap The colormap to use, where idxs correspond to per-vertex
+   * semantic IDs.
+   */
+  void setSemanticVisualizerColormap(
+      Cr::Containers::ArrayView<const Mn::Vector3ub> colorMap);
 
   /**
    * @brief Acquires ownership of the scene graph from the background render

@@ -15,12 +15,14 @@
 #include "esp/metadata/managers/AssetAttributesManager.h"
 #include "esp/metadata/managers/LightLayoutAttributesManager.h"
 #include "esp/metadata/managers/ObjectAttributesManager.h"
-#include "esp/metadata/managers/SceneAttributesManager.h"
+#include "esp/metadata/managers/SceneInstanceAttributesManager.h"
 #include "esp/metadata/managers/StageAttributesManager.h"
 
 namespace esp {
 namespace metadata {
 namespace attributes {
+using esp::core::managedContainers::ManagedContainerBase;
+
 class SceneDatasetAttributes : public AbstractAttributes {
  public:
   SceneDatasetAttributes(
@@ -34,7 +36,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
     assetAttributesManager_ = nullptr;
     lightLayoutAttributesManager_ = nullptr;
     objectAttributesManager_ = nullptr;
-    sceneAttributesManager_ = nullptr;
+    sceneInstanceAttributesManager_ = nullptr;
     stageAttributesManager_ = nullptr;
     navmeshMap_.clear();
     semanticSceneDescrMap_.clear();
@@ -67,9 +69,9 @@ class SceneDatasetAttributes : public AbstractAttributes {
   /**
    * @brief Return manager for construction and access to scene attributes.
    */
-  const managers::SceneAttributesManager::ptr& getSceneAttributesManager()
-      const {
-    return sceneAttributesManager_;
+  const managers::SceneInstanceAttributesManager::ptr&
+  getSceneInstanceAttributesManager() const {
+    return sceneInstanceAttributesManager_;
   }
 
   /**
@@ -140,7 +142,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
       const std::string& path,
       bool overwrite = false) {
     return addNewValToMap(key, path, overwrite, semanticSceneDescrMap_,
-                          "<semanticSceneDescriptor");
+                          "<semanticSceneDescriptor>");
   }  // addNavmeshPathEntry
 
   /**
@@ -180,7 +182,7 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * @return whether this sceneInstance was successfully added to the dataset.
    */
   bool addNewSceneInstanceToDataset(
-      const attributes::SceneAttributes::ptr& sceneInstance);
+      const attributes::SceneInstanceAttributes::ptr& sceneInstance);
 
   /**
    * @brief Returns stage attributes corresponding to passed handle as
@@ -354,9 +356,9 @@ class SceneDatasetAttributes : public AbstractAttributes {
    */
   inline std::string getFullAttrNameFromStr(
       const std::string& attrName,
-      const esp::core::ManagedContainerBase::ptr& attrMgr) {
+      const ManagedContainerBase::ptr& attrMgr) {
     auto handleList = attrMgr->getObjectHandlesBySubstring(attrName);
-    if (handleList.size() > 0) {
+    if (!handleList.empty()) {
       return handleList[0];
     }
     return "";
@@ -415,7 +417,8 @@ class SceneDatasetAttributes : public AbstractAttributes {
    * @brief Manages all construction and access to scene instance attributes
    * from this dataset.
    */
-  managers::SceneAttributesManager::ptr sceneAttributesManager_ = nullptr;
+  managers::SceneInstanceAttributesManager::ptr
+      sceneInstanceAttributesManager_ = nullptr;
 
   /**
    * @brief Manages all construction and access to stage attributes from this

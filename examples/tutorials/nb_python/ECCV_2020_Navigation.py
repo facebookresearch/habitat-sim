@@ -13,7 +13,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.11.4
+#       jupytext_version: 1.13.0
 #   kernelspec:
 #     display_name: Python 3
 #     name: python3
@@ -517,7 +517,7 @@ else:
     sim_topdown_map = sim.pathfinder.get_topdown_view(meters_per_pixel, height)
 
     if display:
-        # @markdown Alternatively, you can process the map using the Habitat-Lab [maps module](https://github.com/facebookresearch/habitat-lab/blob/master/habitat/utils/visualizations/maps.py)
+        # @markdown Alternatively, you can process the map using the Habitat-Lab [maps module](https://github.com/facebookresearch/habitat-lab/blob/main/habitat/utils/visualizations/maps.py)
         hablab_topdown_map = maps.get_topdown_map(
             sim.pathfinder, height, meters_per_pixel=meters_per_pixel
         )

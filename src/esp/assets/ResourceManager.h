@@ -17,6 +17,7 @@
 
 #include <Corrade/Containers/EnumSet.h>
 #include <Corrade/Containers/Optional.h>
+#include <Magnum/DebugTools/ColorMap.h>
 #include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/GL/TextureFormat.h>
 #include <Magnum/MeshTools/Compile.h>
@@ -51,6 +52,8 @@
 #include <VHACD.h>
 #endif
 
+namespace Mn = Magnum;
+
 // forward declarations
 namespace Magnum {
 namespace Trade {
@@ -58,8 +61,6 @@ class AbstractImporter;
 class PhongMaterialData;
 }  // namespace Trade
 }  // namespace Magnum
-
-namespace Mn = Magnum;
 
 namespace esp {
 namespace gfx {
@@ -69,8 +70,9 @@ class Recorder;
 }
 }  // namespace gfx
 namespace scene {
+class SemanticScene;
 struct SceneConfiguration;
-}
+}  // namespace scene
 namespace physics {
 class PhysicsManager;
 class RigidObject;
@@ -84,6 +86,8 @@ class Model;
 }
 }  // namespace io
 namespace assets {
+// used for shadertype specification
+using metadata::attributes::ObjectInstanceShaderType;
 
 /**
  * @brief Singleton class responsible for
@@ -122,14 +126,9 @@ class ResourceManager {
    */
   enum class Flag : Magnum::UnsignedShort {
     /**
-     * build phong material from PBR material
-     */
-    BuildPhongFromPbr = 1 << 0,
-
-    /**
      * use pbr image based lighting
      */
-    PbrImageBasedLighting = 1 << 1,
+    PbrImageBasedLighting = 1 << 0,
   };
 
   /**
@@ -172,6 +171,36 @@ class ResourceManager {
       scene::SceneNode* parent,
       const metadata::attributes::PhysicsManagerAttributes::ptr&
           physicsManagerAttributes);
+
+  /**
+   * @brief Return the currently loaded @ref esp::scene::SemanticScene .
+   */
+  std::shared_ptr<scene::SemanticScene> getSemanticScene() {
+    return semanticScene_;
+  }
+
+  /**
+   * @brief Return a view of the currently set Semantic scene colormap.
+   */
+  Cr::Containers::ArrayView<const Mn::Vector3ub> getSemanticSceneColormap()
+      const {
+    // return Magnum::DebugTools::ColorMap::plasma();
+    return semanticColorMapBeingUsed_;
+  }
+
+  /** @brief check if the @ref esp::scene::SemanticScene exists.*/
+  bool semanticSceneExists() const { return (semanticScene_ != nullptr); }
+
+  /**
+   * @brief Load semantic scene descriptor file specified by @p ssdFilename ,
+   * for the passed @p activeSceneName .
+   * @param ssdFilename The fully qualified filename candidate for the ssd file.
+   * @param activeSceneName Name of the currently active scene that we will be
+   * loading the SSD for.
+   * @return whether loaded successfully or not.
+   */
+  bool loadSemanticSceneDescriptor(const std::string& ssdFilename,
+                                   const std::string& activeSceneName);
 
   /**
    * @brief Load a scene mesh and add it to the specified @ref DrawableGroup as
@@ -528,10 +557,10 @@ class ResourceManager {
    * @brief Generate a tube following the passed trajectory of points.
    * @param trajVisName The name to use for the trajectory visualization mesh.
    * @param pts The points of a trajectory, in order
+   * @param colorVec Array of Colors for trajectory tube.
    * @param numSegments The number of the segments around the circumference of
    * the tube. Must be greater than or equal to 3.
    * @param radius The radius of the tube.
-   * @param color Color for trajectory tube.
    * @param smooth Whether to smooth the points in the trajectory or not
    * @param numInterp The number of interpolations between each trajectory
    * point, if smoothing.
@@ -539,24 +568,29 @@ class ResourceManager {
    */
   bool buildTrajectoryVisualization(const std::string& trajVisName,
                                     const std::vector<Mn::Vector3>& pts,
+                                    const std::vector<Mn::Color3>& colorVec,
                                     int numSegments = 3,
                                     float radius = .001,
-                                    const Magnum::Color4& color = {0.9, 0.1,
-                                                                   0.1, 1.0},
                                     bool smooth = false,
                                     int numInterp = 10);
 
   /**
-   * @brief Build a configuration frame from scene or object attributes values
-   * and return it
+   * @brief Build a configuration frame from specified up and front vectors
+   * and return it.  If up is not orthogonal to front, will return default
+   * frame.
    *
-   * @param attribs the attributes to query for the information.
+   * @param attribName the handle to the attributes the frame is being built
+   * for, for debug purposes.
+   * @param up The up vector to build the frame from
+   * @param front The front vector to build the frame from.
    * @param origin Either the origin of the stageAttributes or the COM value of
    * the objectAttributes.
    * @return the coordinate frame of the assets the passed attributes describes.
    */
   esp::geo::CoordinateFrame buildFrameFromAttributes(
-      const metadata::attributes::AbstractObjectAttributes::ptr& attribs,
+      const std::string& attribName,
+      const Magnum::Vector3& up,
+      const Magnum::Vector3& front,
       const Magnum::Vector3& origin);
 
   /**
@@ -583,6 +617,20 @@ class ResourceManager {
    */
   std::string createColorMaterial(
       const esp::assets::PhongMaterialColor& materialColor);
+
+  /**
+   * @brief Creates an asset name appropriately modified based certain
+   * conditions present in passed @p assetInfo.  This function will derive
+   * encodings based on the state of the assetInfo so that different material
+   * configurations can be specified on the same asset.
+   * @param info The AssetInfo that describes the asset being named.
+   * @param materialId [in/out] A string key representing the material to use.
+   * If empty, this will be generated and populated.
+   * @return the modified asset name to be used to save this asset to @p
+   * resourceDict_.
+   */
+  std::string createModifiedAssetName(const AssetInfo& info,
+                                      std::string& materialId);
 
   /**
    * @brief Load a render asset (if not already loaded) and create a render
@@ -674,6 +722,14 @@ class ResourceManager {
    */
   void buildPrimitiveAssetData(const std::string& primTemplateHandle);
 
+  /**
+   * @brief Configure the importerManager_ appropriately based on compilation
+   * flags, before general assets are imported
+   * @param dispFileName the filename of the asset being imported, used for
+   * informational/debugging purposes only.
+   */
+  void ConfigureImporterManager(const std::string& dispFileName);
+
  protected:
   // ======== Structs and Types only used locally ========
   /**
@@ -710,8 +766,7 @@ class ResourceManager {
    * @return Whether it is a General
    */
   inline bool isRenderAssetGeneral(AssetType type) {
-    return type == AssetType::MP3D_MESH || type == AssetType::UNKNOWN ||
-           type == AssetType::SUNCG_OBJECT;
+    return type == AssetType::MP3D_MESH || type == AssetType::UNKNOWN;
   }
   /**
    * @brief Recursive construction of scene nodes for an asset.
@@ -766,22 +821,6 @@ class ResourceManager {
   void loadMeshes(Importer& importer, LoadedAssetData& loadedAssetData);
 
   /**
-   * @brief Recursively parse the mesh component transformation hierarchy for
-   * the imported asset.
-   *
-   * @param importer The importer already loaded with information for the
-   * asset.
-   * @param parent The root of the mesh transform hierarchy for the remaining
-   * sub-tree. The generated @ref MeshTransformNode will be added as a child.
-   * Typically the @ref MeshMetaData::root to begin recursion.
-   * @param componentID The next component to add to the hierarchy. Identifies
-   * the component in the @ref Importer.
-   */
-  void loadMeshHierarchy(Importer& importer,
-                         MeshTransformNode& parent,
-                         int componentID);
-
-  /**
    * @brief Recursively build a unified @ref MeshData from loaded assets via a
    * tree of @ref MeshTransformNode.
    *
@@ -808,6 +847,41 @@ class ResourceManager {
   void loadMaterials(Importer& importer, LoadedAssetData& loadedAssetData);
 
   /**
+   * @brief Get the appropriate the @ref
+   * esp::metadata::attributes::ObjectInstanceShaderType to use to render the
+   * passed @p material based on specification in passed @p info or the material
+   * itself.
+   * @param info The asset info describing the asset whose material is being
+   * rendered.
+   * @return the @ref esp::metadata::attributes::ObjectInstanceShaderType to use
+   * to render the material.
+   */
+  ObjectInstanceShaderType getMaterialShaderType(const AssetInfo& info) const;
+
+  /**
+   * @brief Boolean check if @p typeToCheck aligns with passed types explicitly
+   * specified, or type in material
+   * @param typeToCheck The ObjectInstanceShaderType value beign queried for.
+   * @param materialData The material whose type we are verifying against
+   * @param verificationType The ObjectInstanceShaderType we are verifying
+   * against
+   * @param mnVerificationType The @ref Mn::Trade::MaterialType bitflag that the
+   * passed material's specified type is being verified against.
+   * @return Whether or not the passed @p typeToCheck matches the passed
+   * criteria.
+   */
+  bool checkForPassedShaderType(
+      const ObjectInstanceShaderType typeToCheck,
+      const Mn::Trade::MaterialData& materialData,
+      const ObjectInstanceShaderType verificationType,
+      const Mn::Trade::MaterialType mnVerificationType) const {
+    return (
+        (typeToCheck == verificationType) ||
+        ((typeToCheck == ObjectInstanceShaderType::Material) &&
+         ((materialData.types() & mnVerificationType) == mnVerificationType)));
+  }
+
+  /**
    * @brief Build a @ref PhongMaterialData for use with flat shading
    *
    * Textures must already be loaded for the asset this material belongs to
@@ -816,7 +890,7 @@ class ResourceManager {
    * @param textureBaseIndex Base index of the assets textures in textures_
    */
   gfx::PhongMaterialData::uptr buildFlatShadedMaterialData(
-      const Mn::Trade::PhongMaterialData& material,
+      const Mn::Trade::MaterialData& materialData,
       int textureBaseIndex);
 
   /**
@@ -829,7 +903,7 @@ class ResourceManager {
 
    */
   gfx::PhongMaterialData::uptr buildPhongShadedMaterialData(
-      const Mn::Trade::PhongMaterialData& material,
+      const Mn::Trade::MaterialData& material,
       int textureBaseIndex) const;
 
   /**
@@ -841,7 +915,7 @@ class ResourceManager {
    * @param textureBaseIndex Base index of the assets textures in textures_
    */
   gfx::PbrMaterialData::uptr buildPbrShadedMaterialData(
-      const Mn::Trade::PbrMetallicRoughnessMaterialData& material,
+      const Mn::Trade::MaterialData& material,
       int textureBaseIndex) const;
 
   /**
@@ -950,20 +1024,6 @@ class ResourceManager {
       scene::SceneNode* parent,
       DrawableGroup* drawables,
       std::vector<scene::SceneNode*>* userVisNodeCache);
-
-  /**
-   * @brief Load a SUNCG mesh into assets from a file. !Deprecated! TODO:
-   * remove?
-   *
-   * @param info The @ref AssetInfo for the mesh, already parsed from a file.
-   * @param parent The @ref scene::SceneNode to which the mesh will be added
-   * as a child.
-   * @param drawables The @ref DrawableGroup with which the mesh will be
-   * rendered.
-   */
-  bool loadSUNCGHouseFile(const AssetInfo& info,
-                          scene::SceneNode* parent,
-                          DrawableGroup* drawables);
 
   /**
    * @brief initialize default lighting setups in the current ShaderManager
@@ -1125,6 +1185,16 @@ class ResourceManager {
    */
   Corrade::Containers::Pointer<Importer> fileImporter_;
 
+  /**
+   * @brief Reference to the currently loaded semanticScene Descriptor
+   */
+  std::shared_ptr<scene::SemanticScene> semanticScene_ = nullptr;
+
+  /**
+   * @brief Colormap to use for visualizing currently loaded semantic scene.
+   */
+  std::vector<Magnum::Vector3ub> semanticColorMapBeingUsed_{};
+
   // ======== Physical parameter data ========
 
   //! tracks primitive mesh ids
@@ -1168,7 +1238,7 @@ class ResourceManager {
   gfx::ShadowMapManager shadowManager_;
   // scene graph id -> keys for the shadow maps
   std::map<int, std::vector<Magnum::ResourceKey>> shadowMapKeys_;
-};  // class ResourceManager
+};  // namespace assets
 
 CORRADE_ENUMSET_OPERATORS(ResourceManager::Flags)
 

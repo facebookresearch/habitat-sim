@@ -14,6 +14,7 @@
 
 #include "esp/core/Check.h"
 #include "esp/core/Esp.h"
+#include "esp/io/Json.h"
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
@@ -156,6 +157,11 @@ class ConfigValue {
 
   bool isValid() const { return _type != ConfigStoredType::Unknown; }
 
+  /**
+   * @brief Write this ConfigValue to an appropriately configured json object.
+   */
+  io::JsonGenericValue writeToJsonObject(io::JsonAllocator& allocator) const;
+
   template <class T>
   void set(const T& value) {
     // this never fails
@@ -265,7 +271,7 @@ class Configuration {
     if (mapIter != valueMap_.end()) {
       return mapIter->second;
     }
-    ESP_ERROR() << "Key :" << key << "not present in configuration";
+    ESP_WARNING() << "Key :" << key << "not present in configuration";
     return {};
   }
 
@@ -638,10 +644,61 @@ class Configuration {
     return std::make_pair(configMap_.cbegin(), configMap_.cend());
   }
 
+  // ==================== load from and save to json =========================
+
+  /**
+   * @brief Load values into this Configuration from the passed @p jsonObj. Will
+   * recurse for subconfigurations.
+   * @param jsonObj The JSON object to read from for the data for this
+   * configuration.
+   * @return The number of fields successfully read and populated.
+   */
+  int loadFromJson(const io::JsonGenericValue& jsonObj);
+
+  /**
+   * @brief Build and return a json object holding the values and nested objects
+   * holding the subconfigs of this Configuration.
+   */
+  io::JsonGenericValue writeToJsonObject(io::JsonAllocator& allocator) const;
+
+  /**
+   * @brief Populate a json object with all the first-level values held in this
+   * configuration.  May be overridden to handle special cases for root-level
+   * configuration of Attributes classes derived from Configuration.
+   */
+  virtual void writeValuesToJson(io::JsonGenericValue& jsonObj,
+                                 io::JsonAllocator& allocator) const;
+
+  /**
+   * @brief Populate a json object with all the data from the subconfigurations,
+   * held in json sub-objects, for this Configuration.
+   */
+  virtual void writeSubconfigsToJson(io::JsonGenericValue& jsonObj,
+                                     io::JsonAllocator& allocator) const;
+
+  /**
+   * @brief Take the passed @p key and query the config value for that key,
+   * writing it to @p jsonName within the passed jsonObj.
+   * @param key The key of the data in the configuration
+   * @param jsonName The tag to use in the json file
+   * @param jsonObj The json object to write to
+   * @param allocator The json allocator to use to build the json object
+   */
+  void writeValueToJson(const char* key,
+                        const char* jsonName,
+                        io::JsonGenericValue& jsonObj,
+                        io::JsonAllocator& allocator) const;
+
+  void writeValueToJson(const char* key,
+                        io::JsonGenericValue& jsonObj,
+                        io::JsonAllocator& allocator) const {
+    writeValueToJson(key, key, jsonObj, allocator);
+  }
+
  protected:
   /**
-   * @brief Friend function.  Checks if passed @p key is contained in @p config.
-   * Returns the highest level where @p key was found
+   * @brief Friend function.  Checks if passed @p key is contained in @p
+   * config. Returns the highest level where @p key was found
    * @param config The configuration to search for passed key
    * @param key The key to look for
    * @param parentLevel The parent level to the current iteration.  If

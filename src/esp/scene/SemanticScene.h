@@ -85,7 +85,8 @@ class SemanticScene {
 
   /**
    * @brief Attempt to load SemanticScene descriptor from an unknown file type.
-   * @param filename the name of the house file to attempt to load
+   * @param filename the name of the semantic scene descriptor (house file) to
+   * attempt to load
    * @param scene reference to sceneNode to assign semantic scene to
    * @param rotation rotation to apply to semantic scene upon load.
    * @return successfully loaded
@@ -99,7 +100,8 @@ class SemanticScene {
   /**
    * @brief Attempt to load SemanticScene from a Gibson dataset house format
    * file
-   * @param filename the name of the house file to attempt to load
+   * @param filename the name of the semantic scene descriptor (house file) to
+   * attempt to load
    * @param scene reference to sceneNode to assign semantic scene to
    * @param rotation rotation to apply to semantic scene upon load.
    * @return successfully loaded
@@ -109,10 +111,28 @@ class SemanticScene {
       SemanticScene& scene,
       const quatf& rotation = quatf::FromTwoVectors(-vec3f::UnitZ(),
                                                     geo::ESP_GRAVITY));
+
+  /**
+   * @brief Attempt to load SemanticScene from a HM3D dataset house
+   * format file
+   * @param filename the name of the semantic scene descriptor (house file) to
+   * attempt to load
+   * @param scene reference to sceneNode to assign semantic scene to
+   * @param rotation rotation to apply to semantic scene upon load (currently
+   * not used for HM3D)
+   * @return successfully loaded
+   */
+  static bool loadHM3DHouse(const std::string& filename,
+                            SemanticScene& scene,
+                            CORRADE_UNUSED const quatf& rotation =
+                                quatf::FromTwoVectors(-vec3f::UnitZ(),
+                                                      geo::ESP_GRAVITY));
+
   /**
    * @brief Attempt to load SemanticScene from a Matterport3D dataset house
    * format file
-   * @param filename the name of the house file to attempt to load
+   * @param filename the name of the semantic scene descriptor (house file) to
+   * attempt to load
    * @param scene reference to sceneNode to assign semantic scene to
    * @param rotation rotation to apply to semantic scene upon load.
    * @return successfully loaded
@@ -126,7 +146,8 @@ class SemanticScene {
   /**
    * @brief Attempt to load SemanticScene from a Replica dataset house format
    * file
-   * @param filename the name of the house file to attempt to load
+   * @param filename the name of the semantic scene descriptor (house file) to
+   * attempt to load
    * @param scene reference to sceneNode to assign semantic scene to
    * @param rotation rotation to apply to semantic scene upon load.
    * @return successfully loaded
@@ -137,10 +158,10 @@ class SemanticScene {
       const quatf& rotation = quatf::FromTwoVectors(-vec3f::UnitZ(),
                                                     geo::ESP_GRAVITY));
 
-  //! load SemanticScene from a SUNCG house format file
-  static bool loadSuncgHouse(const std::string& filename,
-                             SemanticScene& scene,
-                             const quatf& rotation = quatf::Identity());
+  /**
+   * @brief Whether the source file assigns colors to verts for Semantic Mesh.
+   */
+  bool hasVertColorsDefined() const { return hasVertColors_; }
 
  protected:
   /**
@@ -152,14 +173,29 @@ class SemanticScene {
   static bool checkFileExists(const std::string& filename,
                               const std::string& srcFunc) {
     if (!Cr::Utility::Directory::exists(filename)) {
-      ESP_WARNING() << "::" << Magnum::Debug::nospace << srcFunc
-                    << Magnum::Debug::nospace << ": File" << filename
-                    << "does not exist.  Aborting load.";
+      ESP_WARNING(Mn::Debug::Flag::NoSpace)
+          << "::" << srcFunc << ": File" << filename
+          << "does not exist.  Aborting load.";
       return false;
     }
     return true;
   }  // checkFileExists
 
+  /**
+   * @brief Build the HM3D semantic data from the passed file stream.  File
+   * being streamed is expected to be appropriate format.
+   * @param ifs The opened file stream describing the HM3D semantic annotations.
+   * @param scene reference to sceneNode to assign semantic scene to
+   * @param rotation rotation to apply to semantic scene upon load (currently
+   * not used for HM3D)
+   * @return successfully built. Currently only returns true, but retaining
+   * return value for future support.
+   */
+  static bool buildHM3DHouse(std::ifstream& ifs,
+                             SemanticScene& scene,
+                             CORRADE_UNUSED const quatf& rotation =
+                                 quatf::FromTwoVectors(-vec3f::UnitZ(),
+                                                       geo::ESP_GRAVITY));
   /**
    * @brief Build the mp3 semantic data from the passed file stream. File being
    * streamed is expected to be appropriate format.
@@ -208,6 +244,8 @@ class SemanticScene {
       const quatf& rotation = quatf::FromTwoVectors(-vec3f::UnitZ(),
                                                     geo::ESP_GRAVITY));
 
+  // Currently only supported by HM3D semantic files.
+  bool hasVertColors_ = false;
   std::string name_;
   std::string label_;
   box3f bbox_;
