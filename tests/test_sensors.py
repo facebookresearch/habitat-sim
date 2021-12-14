@@ -79,6 +79,9 @@ def _render_and_load_gt(sim, scene, sensor_type, gpu2gpu):
     return obs, gt
 
 
+# List of tuples holding scene ID and Scene Dataset Configuration to use.
+# Scene Dataset Config is required to provide transform for semantic mesh,
+# which, in Mp3d dataset, is oriented orthogonally to the render mesh
 _semantic_scenes = [
     (
         osp.abspath(
@@ -87,7 +90,12 @@ _semantic_scenes = [
                 "../data/scene_datasets/mp3d/1LXtFkjw3qL/1LXtFkjw3qL.glb",
             )
         ),
-        "default",
+        osp.abspath(
+            osp.join(
+                osp.dirname(__file__),
+                "../data/scene_datasets/mp3d/mp3d.scene_dataset_config.json",
+            )
+        ),
     ),
     (
         osp.abspath(
@@ -105,6 +113,7 @@ _semantic_scenes = [
     ),
 ]
 
+# Non-semantic meshes can use default, built-in scene dataset config
 _non_semantic_scenes = [
     (
         osp.abspath(
