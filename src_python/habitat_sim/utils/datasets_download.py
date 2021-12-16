@@ -124,6 +124,12 @@ def initialize_test_data_sources(data_path):
             "link": data_path + "datasets/rearrange_pick/replica_cad/v0",
             "version": "1.0",
         },
+        "hab2_bench_assets": {
+            "source": "https://dl.fbaipublicfiles.com/habitat/ReplicaCAD/hab2_bench_assets.zip",
+            "package_name": "hab2_bench_assets.zip",
+            "link": data_path + "hab2_bench_assets",
+            "version": "1.0",
+        },
     }
 
     data_sources.update(
