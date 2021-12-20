@@ -5,6 +5,14 @@
 set(DEPS_DIR "${CMAKE_CURRENT_LIST_DIR}/../deps")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_LIST_DIR}")
 
+# RapidJSON. Use a system package, if preferred.
+if(USE_SYSTEM_RAPIDJSON)
+  find_package(RapidJSON CONFIG REQUIRED)
+  include_directories(SYSTEM ${RapidJSON_INCLUDE_DIR})
+else()
+  include_directories(SYSTEM "${DEPS_DIR}/rapidjson/include")
+endif()
+
 include_directories("${DEPS_DIR}/bps3D")
 add_subdirectory("${DEPS_DIR}/bps3D")
 
@@ -44,14 +52,6 @@ include_directories(SYSTEM "${DEPS_DIR}/Sophus")
 # tinyxml2
 include_directories("${DEPS_DIR}/tinyxml2")
 add_subdirectory("${DEPS_DIR}/tinyxml2")
-
-# RapidJSON. Use a system package, if preferred.
-if(USE_SYSTEM_RAPIDJSON)
-  find_package(RapidJSON CONFIG REQUIRED)
-  include_directories(SYSTEM ${RapidJSON_INCLUDE_DIR})
-else()
-  include_directories(SYSTEM "${DEPS_DIR}/rapidjson/include")
-endif()
 
 # Why all the weird options in the set() calls below?
 # See https://stackoverflow.com/questions/3766740/overriding-a-default-option-value-in-cmake-from-a-parent-cmakelists-txt
