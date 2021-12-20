@@ -14,19 +14,18 @@ class BpsSceneMapping {
  public:
   static BpsSceneMapping loadFromFile(const std::string& filepath);
 
-  std::pair<int, int> findMeshIndexMaterialIndex(const std::string& meshName,
-                                                 const std::string& mtrlName);
-
   std::tuple<int, int, float> findMeshIndexMaterialIndexScale(
       const std::string& nodeName);
 
-  std::vector<std::string> materials;
-  std::vector<std::string> meshes;
+  struct MeshMapping {
+      std::string name;
+      int meshIdx;
+      int mtrlIdx;
+  };
+  std::vector<MeshMapping> meshMappings;
 };
 
-esp::io::JsonGenericValue toJsonValue(const BpsSceneMapping& x,
-                                      esp::io::JsonAllocator& allocator);
-
+bool fromJsonValue(const esp::io::JsonGenericValue& obj, BpsSceneMapping::MeshMapping& x);
 bool fromJsonValue(const esp::io::JsonGenericValue& obj, BpsSceneMapping& x);
 
 }  // namespace batched_sim

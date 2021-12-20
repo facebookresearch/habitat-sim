@@ -16,74 +16,30 @@ BpsSceneMapping BpsSceneMapping::loadFromFile(const std::string& filepath) {
   return mapping;
 }
 
-esp::io::JsonGenericValue toJsonValue(const BpsSceneMapping& x,
-                                      esp::io::JsonAllocator& allocator) {
-  esp::io::JsonGenericValue obj(rapidjson::kObjectType);
-  esp::io::addMember(obj, "materials", x.materials, allocator);
-  esp::io::addMember(obj, "meshes", x.meshes, allocator);
-  return obj;
-}
-
-bool fromJsonValue(const esp::io::JsonGenericValue& obj, BpsSceneMapping& x) {
-  esp::io::readMember(obj, "materials", x.materials);
-  esp::io::readMember(obj, "meshes", x.meshes);
+bool fromJsonValue(const esp::io::JsonGenericValue& obj, BpsSceneMapping::MeshMapping& x) {
+  esp::io::readMember(obj, "name", x.name);
+  esp::io::readMember(obj, "meshIdx", x.meshIdx);
+  esp::io::readMember(obj, "mtrlIdx", x.mtrlIdx);
   return true;
 }
 
-std::pair<int, int> BpsSceneMapping::findMeshIndexMaterialIndex(
-    const std::string& meshName,
-    const std::string& mtrlName) {
-  auto it = std::find(meshes.begin(), meshes.end(), meshName);
-  CORRADE_INTERNAL_ASSERT(it != meshes.end());
-  int meshIndex = it - meshes.begin();
-
-  it = std::find(materials.begin(), materials.end(), mtrlName);
-  CORRADE_INTERNAL_ASSERT(it != materials.end());
-  int mtrlIndex = it - materials.begin();
-
-  return {meshIndex, mtrlIndex};
+bool fromJsonValue(const esp::io::JsonGenericValue& obj, BpsSceneMapping& x) {
+  esp::io::readMember(obj, "meshMappings", x.meshMappings);
+  return true;
 }
 
 std::tuple<int, int, float> BpsSceneMapping::findMeshIndexMaterialIndexScale(
     const std::string& nodeName) {
-  std::vector<std::pair<std::string, std::string> > nodeMeshesMaterials = {
-      {"base_link", "material0"},
-      {"elbow_flex_link", "material0.001"},
-      {"gripper_link", "material0.002"},
-      {"forearm_roll_link", "material0.003"},
-      {"head_pan_link", "material0.004"},
-      {"head_tilt_link", "material0.005"},
-      {"shoulder_lift_link", "material0.006"},
-      {"shoulder_pan_link", "material0.007"},
-      {"torso_fixed_link", "material0.008"},
-      {"upperarm_roll_link", "material0.009"},
-      {"wrist_flex_link", "material0.010"},
-      {"wrist_roll_link", "material0.011"},
-      {"r_wheel_link", "r_l_wheel_link"},
-      {"l_wheel_link", "r_l_wheel_link"},
-      {"r_gripper_finger_link", "r_l_gripper_finger_link"},
-      {"l_gripper_finger_link", "r_l_gripper_finger_link"},
-      {"bellows_link", "Material.005"},
-      {"laser_link", "Material.007"},
-      {"torso_lift_link", "material0.012"},
-      {"estop_link", "Material_001"}};
+  
+  for (const auto& meshMapping : meshMappings) {
 
-  const std::string meshName = nodeName;
-  bool found = false;
-  std::string mtrlName;
-  for (const auto& pair : nodeMeshesMaterials) {
-    if (pair.first == meshName) {
-      mtrlName = pair.second;
-      found = true;
-      break;
+    if (meshMapping.name == nodeName) {
+      constexpr float scale = 1.f;
+      return std::make_tuple(meshMapping.meshIdx, meshMapping.mtrlIdx, scale);
     }
   }
-  CORRADE_INTERNAL_ASSERT(found);
 
-  auto [meshIndex, mtrlIndex] = findMeshIndexMaterialIndex(meshName, mtrlName);
-  constexpr float scale = 1.f;
-
-  return std::make_tuple(meshIndex, mtrlIndex, scale);
+  CORRADE_INTERNAL_ASSERT_UNREACHABLE();
 }
 
 }  // namespace batched_sim

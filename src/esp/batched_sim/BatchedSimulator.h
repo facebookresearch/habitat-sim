@@ -32,13 +32,13 @@ struct BpsWrapper {
 };
 
 struct Robot {
-  Robot(const std::string& filepath, esp::sim::Simulator* sim);
+  Robot(const std::string& filepath, esp::sim::Simulator* sim, BpsSceneMapping* sceneMapping);
   Robot() = default;
 
   int numPosVars = -1;
   // todo: delete artObj
   esp::physics::BulletArticulatedObject* artObj = nullptr;
-  BpsSceneMapping sceneMapping;
+  BpsSceneMapping* sceneMapping_ = nullptr;
   std::vector<Magnum::Matrix4> nodeTransformFixups;
   std::pair<std::vector<float>, std::vector<float>> jointPositionLimits;
 };
@@ -60,6 +60,13 @@ struct RolloutRecord {
       nodeTransforms_;  // [numRolloutSteps * numEnvs * numNodes]
 
   std::vector<float> rewards_;  // [numRolloutSteps * numEnvs]
+};
+
+// represents stage and non-robot objects
+class Scene {
+ public:
+  bps3D::Environment* env_ = nullptr;
+  int stageInstance_ = -1;
 };
 
 class RobotInstanceSet {
@@ -127,12 +134,17 @@ class BatchedSimulator {
   const std::vector<float>& getRewards();
   const std::vector<bool>& getDones();
 
+  // For debugging. Sets camera for all envs.
+  void setCamera(const Mn::Vector3& camPos, const Mn::Quaternion& camRot);
+
  private:
   void reset();
   void stepPhysics();
 
   void calcRewards();
   void randomizeRobotsForCurrentStep();
+
+  void initScenes();
 
   BatchedSimulatorConfig config_;
   bool isOkToRender_ = false;
@@ -148,6 +160,8 @@ class BatchedSimulator {
   int maxRolloutSteps_ = -1;
   RewardCalculationContext rewardContext_;
   std::vector<bool> hackDones_;
+  std::vector<Scene> envScenes_;
+  BpsSceneMapping sceneMapping_;
 
   ESP_SMART_POINTERS(BatchedSimulator)
 };

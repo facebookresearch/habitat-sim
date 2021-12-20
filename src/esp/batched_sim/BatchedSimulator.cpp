@@ -103,8 +103,7 @@ RobotInstanceSet::RobotInstanceSet(Robot* robot,
 
   const auto* mb = robot_->artObj->btMultiBody_.get();
 
-  glm::mat4x3 identityMat(1.f, 0.f, 0.f, 1.f, 1.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f,
-                          0.f);
+  glm::mat4x3 identityMat = toGlmMat4x3(Mn::Matrix4(Mn::Math::IdentityInit));
 
   int baseInstanceIndex = 0;
   for (auto& env : *envs_) {
@@ -122,7 +121,7 @@ RobotInstanceSet::RobotInstanceSet(Robot* robot,
         const std::string nodeName =
             getMeshNameFromURDFVisualFilepath(linkVisualFilepath);
         const auto [meshIndex, mtrlIndex, scale] =
-            robot_->sceneMapping.findMeshIndexMaterialIndexScale(nodeName);
+            robot_->sceneMapping_->findMeshIndexMaterialIndexScale(nodeName);
         CORRADE_INTERNAL_ASSERT(scale == 1.f);
 
         instanceId = env.addInstance(meshIndex, mtrlIndex, identityMat);
@@ -341,17 +340,16 @@ void RobotInstanceSet::updateLinkTransforms(int currRolloutStep) {
 #endif
 }
 
-Robot::Robot(const std::string& filepath, esp::sim::Simulator* sim) {
+Robot::Robot(const std::string& filepath, esp::sim::Simulator* sim, BpsSceneMapping* sceneMapping) {
   // todo: delete object on destruction
   auto managedObj =
       sim->getArticulatedObjectManager()->addBulletArticulatedObjectFromURDF(
           filepath);
 
+  sceneMapping_ = sceneMapping;
+
   artObj = static_cast<esp::physics::BulletArticulatedObject*>(
       managedObj->hackGetBulletObjectReference().get());
-  sceneMapping = BpsSceneMapping::loadFromFile(
-      "../data/bps_data/combined_Stage_v3_sc0_staging/"
-      "combined_Stage_v3_sc0_staging_trimesh.bps.mapping.json");
 
   jointPositionLimits = artObj->getJointPositionLimits();
 
@@ -396,8 +394,7 @@ BpsWrapper::BpsWrapper(int gpuId, int numEnvs, const CameraSensorConfig& sensor0
 
   loader_ = std::make_unique<bps3D::AssetLoader>(renderer_->makeLoader());
   const std::string filepath =
-      "../data/bps_data/combined_Stage_v3_sc0_staging/"
-      "combined_Stage_v3_sc0_staging_trimesh.bps";
+      "../data/bps_data/replicacad_composite/replicacad_composite.bps";
   scene_ = loader_->loadScene(filepath);
 
   const Mn::Vector3 camPos{-1.61004, 1.5, 3.5455};
@@ -422,7 +419,13 @@ BpsWrapper::~BpsWrapper() {
 
 BatchedSimulator::BatchedSimulator(const BatchedSimulatorConfig& config) {
   config_ = config;
+
+  sceneMapping_ = BpsSceneMapping::loadFromFile(
+      "../data/bps_data/replicacad_composite/replicacad_composite.bps.mapping.json");
+
   bpsWrapper_ = std::make_unique<BpsWrapper>(config_.gpuId, config_.numEnvs, config_.sensor0);
+
+  initScenes();
 
   esp::sim::SimulatorConfiguration simConfig{};
   simConfig.activeSceneName = "NONE";
@@ -435,7 +438,7 @@ BatchedSimulator::BatchedSimulator(const BatchedSimulatorConfig& config) {
 
   const std::string filepath = "../data/URDF/opt_fetch/robots/fetch.urdf";
 
-  robot_ = Robot(filepath, legacySim_.get());
+  robot_ = Robot(filepath, legacySim_.get(), &sceneMapping_);
   int numLinks = robot_.artObj->getNumLinks();
   int numNodes = numLinks + 1;  // include base
 
@@ -462,6 +465,47 @@ BatchedSimulator::BatchedSimulator(const BatchedSimulatorConfig& config) {
   isOkToRender_ = false;
   isOkToStep_ = false;
   isRenderStarted_ = false;
+}
+
+void BatchedSimulator::setCamera(const Mn::Vector3& camPos, const Mn::Quaternion& camRot) {
+
+  const int numEnvs = config_.numEnvs;
+
+  glm::mat4 world_to_camera(glm::inverse(toGlmMat4(camPos, camRot)));
+
+  for (int b = 0; b < numEnvs; b++) {
+    auto& env = bpsWrapper_->envs_[b];
+    env.setCameraView(world_to_camera);
+  }
+}
+
+void BatchedSimulator::initScenes() {
+  std::array<std::string, 2> stageNames = {
+    "Baked_sc0_staging_00",
+    "Baked_sc0_staging_01"
+  };
+
+  std::array<std::pair<int, int>, 2> stageMeshMtrlIndices;
+
+  for (int i = 0; i < stageNames.size(); i++) {
+    const auto& stageName = stageNames[i];
+    auto [meshIdx, mtrlIdx, scale] = sceneMapping_.findMeshIndexMaterialIndexScale(stageName);
+    CORRADE_INTERNAL_ASSERT(scale == 1.f);
+    stageMeshMtrlIndices[i] = std::make_pair(meshIdx, mtrlIdx);
+  }
+
+  const int numEnvs = config_.numEnvs;
+
+  glm::mat4x3 identityMat = toGlmMat4x3(Mn::Matrix4(Mn::Math::IdentityInit));
+
+  envScenes_.reserve(config_.numEnvs);
+  for (int b = 0; b < numEnvs; b++) {
+    auto& env = bpsWrapper_->envs_[b];
+    const auto stageId = b * stageNames.size() / numEnvs;
+    CORRADE_INTERNAL_ASSERT(stageId < stageNames.size());
+    auto [meshIdx, mtrlIdx] = stageMeshMtrlIndices[stageId];
+    envScenes_[b].stageInstance_ = env.addInstance(meshIdx, mtrlIdx, identityMat);
+  } 
 }
 
 void BatchedSimulator::setActions(std::vector<float>&& actions) {
@@ -629,8 +673,7 @@ RewardCalculationContext::RewardCalculationContext(const Robot* robot,
                                                    RolloutRecord* rollouts)
     : robot_(robot), numEnvs_(numEnvs), rollouts_(rollouts) {
   esp::sim::SimulatorConfiguration simConfig{};
-  simConfig.activeSceneName =
-      "../data/stages/Stage_v3_sc0_staging_no_textures.glb";
+  simConfig.activeSceneName = "NONE";
   simConfig.enablePhysics = true;
   simConfig.createRenderer = false;
   simConfig.loadRenderAssets =
