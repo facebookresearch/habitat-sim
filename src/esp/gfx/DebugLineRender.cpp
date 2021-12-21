@@ -259,6 +259,19 @@ void DebugLineRender::drawCircle(const Magnum::Vector3& pos,
   popTransform();
 }
 
+void DebugLineRender::drawSphere(const Mn::Vector3& pos, float radius, 
+                const Magnum::Color4& color,
+                int numSegments) {
+  static const std::array<Mn::Vector3, 3> normals{
+    Mn::Vector3(1.f, 0.f, 0.f),
+    {0.f, 1.f, 0.f},
+    {0.f, 0.f, 1.f}};
+
+  for (const auto& normal : normals) {
+    drawCircle(pos, radius, color, numSegments, normal);
+  }
+}
+
 void DebugLineRender::drawPathWithEndpointCircles(
     Mn::Containers::ArrayView<const Mn::Vector3> points,
     float radius,

@@ -129,6 +129,10 @@ class DebugLineRender {
                                                                   1.0,
                                                                   0.0));
 
+  void drawSphere(const Magnum::Vector3& pos, float radius, 
+                  const Magnum::Color4& color,
+                  int numSegments = 24);
+
   /**
    * @brief Draw a sequence of line segments with circles at the two endpoints.
    * In world-space or local-space (see pushTransform).
