@@ -888,6 +888,20 @@ class Simulator {
     return esp::physics::RaycastResults();
   }
 
+  bool contactTestSphere(const Magnum::Vector3& origin, float radius) {
+    if (sceneHasPhysics(0)) {
+      return physicsManager_->contactTestSphere(origin, radius);
+    }
+    return false;
+  }
+
+  Mn::Range3D getCollisionExtents() {
+    if (sceneHasPhysics(0)) {
+      return physicsManager_->getCollisionExtents();
+    }
+    return Mn::Range3D();
+  }
+
   /**
    * @brief the physical world has a notion of time which passes during
    * animation/simulation/action/etc... Step the physical world forward in time

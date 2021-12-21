@@ -257,6 +257,10 @@ class BulletPhysicsManager : public PhysicsManager {
                             float radius,
                             double maxDistance = 100.0) override;
 
+  bool contactTestSphere(const Magnum::Vector3& origin, float radius);
+
+  Mn::Range3D getCollisionExtents() const;
+
   /**
    * @brief Query the number of contact points that were active during the
    * collision detection check.
@@ -401,6 +405,7 @@ class BulletPhysicsManager : public PhysicsManager {
   int recentNumSubStepsTaken_ = -1;
 
   std::unique_ptr<btSphereShape> sphereShape_;
+  std::unique_ptr<btRigidBody> sphereRigidBody_;
 
  private:
   /** @brief Check if a particular mesh can be used as a collision mesh for

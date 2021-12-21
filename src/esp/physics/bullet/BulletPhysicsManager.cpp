@@ -541,6 +541,70 @@ RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
   return results;
 }
 
+
+bool BulletPhysicsManager::contactTestSphere(const Mn::Vector3& origin, float radius) {
+
+  if (!sphereShape_) {
+    sphereShape_ = std::make_unique<btSphereShape>(radius);
+  } else {
+    sphereShape_->setUnscaledRadius(radius);
+  }
+
+  if (!sphereRigidBody_) {
+    auto info =
+        btRigidBody::btRigidBodyConstructionInfo(0.f, nullptr,
+                                                sphereShape_.get(), btVector3(1.0, 1.0, 1.0));
+    sphereRigidBody_ = std::make_unique<btRigidBody>(info);
+  }
+
+  CORRADE_INTERNAL_ASSERT(sphereRigidBody_->isStaticObject());
+  bWorld_->addRigidBody(sphereRigidBody_.get(), int(CollisionGroup::Default),
+                        uint32_t(CollisionGroupHelper::getMaskForGroup(
+                            CollisionGroup::Default)));
+
+  btTransform worldTrans;
+  worldTrans.setIdentity();
+  worldTrans.setOrigin(btVector3(origin));
+
+  sphereRigidBody_->setWorldTransform(worldTrans);
+
+  SimulationContactResultCallback src;
+  src.m_collisionFilterGroup =
+      sphereRigidBody_->getBroadphaseHandle()->m_collisionFilterGroup;
+  src.m_collisionFilterMask =
+      sphereRigidBody_->getBroadphaseHandle()->m_collisionFilterMask;
+  bWorld_->getCollisionWorld()->contactTest(sphereRigidBody_.get(), src);
+
+  bWorld_->removeRigidBody(sphereRigidBody_.get());
+
+  return src.bCollision;
+}
+
+Mn::Range3D BulletPhysicsManager::getCollisionExtents() const {
+
+  Mn::Range3D worldExtent;
+
+  const auto& colObjects = bWorld_->getCollisionObjectArray();
+
+  CORRADE_ASSERT(colObjects.size(), "no collision objects present", Mn::Range3D());
+
+  for (int i = 0; i < colObjects.size(); i++) {
+
+    const auto* colObject = colObjects[i];
+    Mn::Range3D objExtent(
+      Mn::Vector3(colObject->getBroadphaseHandle()->m_aabbMin), 
+      Mn::Vector3(colObject->getBroadphaseHandle()->m_aabbMax));
+    if (i == 0) {
+      worldExtent = objExtent;
+    } else {
+      worldExtent = Mn::Math::join(worldExtent, objExtent);
+    }
+  }
+
+  return worldExtent;
+}
+
+
 RaycastResults BulletPhysicsManager::castSphere(const esp::geo::Ray& ray,
                                                 float radius,
                                                 double maxDistance) {
@@ -548,8 +612,7 @@ RaycastResults BulletPhysicsManager::castSphere(const esp::geo::Ray& ray,
   results.ray = ray;
   double rayLength = static_cast<double>(ray.direction.length());
   if (rayLength == 0) {
-    LOG(ERROR)
-        << "::castSphere : Cannot cast sphere with zero length, aborting. ";
+    ESP_ERROR() << "::castSphere : Cannot cast sphere with zero length, aborting. ";
     return results;
   }
   btTransform from;
@@ -567,7 +630,8 @@ RaycastResults BulletPhysicsManager::castSphere(const esp::geo::Ray& ray,
 
   btCollisionWorld::ClosestConvexResultCallback closestResult(from.getOrigin(),
                                                               to.getOrigin());
-  bWorld_->convexSweepTest(sphereShape_.get(), from, to, closestResult);
+  bWorld_->convexSweepTest(sphereShape_.get(), from, to, closestResult, 
+    /*allowedCcdPenetration*/ 0.f);
 
   // convert to RaycastResults
   if (closestResult.hasHit()) {

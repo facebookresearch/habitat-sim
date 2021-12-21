@@ -847,11 +847,19 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   }
 
   virtual RaycastResults castSphere(const esp::geo::Ray& ray,
-                                    float radius,
+                                    CORRADE_UNUSED float radius,
                                     CORRADE_UNUSED double maxDistance = 100.0) {
     RaycastResults results;
     results.ray = ray;
     return results;
+  }
+
+  virtual bool contactTestSphere(CORRADE_UNUSED const Magnum::Vector3& origin, CORRADE_UNUSED float radius) {
+    return false;
+  }
+
+  virtual Mn::Range3D getCollisionExtents() const {
+    return Mn::Range3D();
   }
 
   /**

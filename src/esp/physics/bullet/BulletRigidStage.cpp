@@ -131,7 +131,10 @@ void BulletRigidStage::constructBulletSceneFromMeshes(
     std::unique_ptr<btBvhTriangleMeshShape> meshShape =
         std::make_unique<btBvhTriangleMeshShape>(indexedVertexArray.get(),
                                                  true);
-    meshShape->setMargin(initializationAttributes_->getMargin());
+    if (initializationAttributes_->getMargin() > 0.f) {
+      ESP_WARNING() << "Ignoring non-zero collision margin for stage. Forcing to zero for gala kinematic tools build";
+    }
+    meshShape->setMargin(0.f);
     meshShape->setLocalScaling(
         btVector3{transformFromLocalToWorld
                       .scaling()});  // scale is a property of the shape
