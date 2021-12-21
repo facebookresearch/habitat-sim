@@ -208,9 +208,9 @@ TEST_F(BatchedSimulatorTest, basic) {
       saveFrame(("./out_color_" + std::to_string(b) + ".bmp").c_str(),
                 base_color_ptr + b * out_dim.x * out_dim.y * 4, out_dim.x,
                 out_dim.y, 4);
-      saveFrame(("./out_depth_" + std::to_string(b) + ".bmp").c_str(),
-                base_depth_ptr + b * out_dim.x * out_dim.y, out_dim.x, out_dim.y,
-                1);
+      // saveFrame(("./out_depth_" + std::to_string(b) + ".bmp").c_str(),
+      //           base_depth_ptr + b * out_dim.x * out_dim.y, out_dim.x, out_dim.y,
+      //           1);
     }
 
     int key = key_press();
