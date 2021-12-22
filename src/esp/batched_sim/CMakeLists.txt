@@ -7,6 +7,10 @@ add_library(
   BatchedSimulator.h
   BpsSceneMapping.cpp
   BpsSceneMapping.h
+  ColumnGrid.cpp
+  ColumnGrid.h
+  ColumnGridBuilder.cpp
+  ColumnGridBuilder.h
   GlmUtils.cpp
   GlmUtils.h
 )
