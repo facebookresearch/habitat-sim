@@ -178,7 +178,7 @@ TEST_F(BatchedSimulatorTest, basic) {
   esp::logging::LoggingContext loggingContext;
 
   BatchedSimulatorConfig config{
-      .numEnvs = 1, .gpuId = 0, .sensor0 = {.width = 768, .height = 768, .hfov = 60}};
+      .numEnvs = 32, .gpuId = 0, .sensor0 = {.width = 512, .height = 512, .hfov = 60}};
   BatchedSimulator bsim(config);
 
   Mn::Vector3 camPos{-1.61004, 1.5, 3.5455};
@@ -188,8 +188,8 @@ TEST_F(BatchedSimulatorTest, basic) {
   float moveSpeed = 0.5f;
 
   const int envIndex = 0;
-  int sphereGreenInstance = bsim.addInstance("sphere_green", envIndex);
-  int sphereOrangeInstance = bsim.addInstance("sphere_orange", envIndex);
+  int sphereGreenInstance = bsim.addDebugInstance("sphere_green", envIndex);
+  int sphereOrangeInstance = bsim.addDebugInstance("sphere_orange", envIndex);
   auto& bpsEnv = bsim.getBpsEnvironment(0);
 
   esp::batched_sim::ColumnGridSource source;
@@ -198,8 +198,15 @@ TEST_F(BatchedSimulatorTest, basic) {
   std::cout << "Open ./out_color_0.bmp in VS Code or another viewer that supports hot-reload." << std::endl;
   std::cout << "Press WASDQE/arrow keys to move/look, +/- to adjust speed, or ESC to quit." << std::endl;
 
+  std::vector<float> actions(17 * config.numEnvs);
+  for (int b = 0; b < config.numEnvs; b++) {
+    actions[b * 17 + 0] = (b % 2 == 0) ? 0.1f : -0.1f; // base rotate
+    actions[b * 17 + 1] = 0.1f; // base forward
+  }
+
   while (true) {
     for (int i = 0; i < 1; i++) {
+      bsim.setActions(std::vector<float>(actions));
       bsim.autoResetOrStepPhysics();
       bsim.getRewards();
       bsim.getDones();
@@ -255,6 +262,7 @@ TEST_F(BatchedSimulatorTest, basic) {
 
     bsim.setCamera(camPos, camRot);    
 
+    #if 0 // test columnGrid collision
     {
       constexpr float sphereDist = 1.f;
       constexpr float sphereRadius = 0.1f; // todo: get from ColumnGrid
@@ -273,5 +281,6 @@ TEST_F(BatchedSimulatorTest, basic) {
       bpsEnv.updateInstanceTransform(instanceToHide, 
         toGlmMat4x3(Mn::Matrix4::translation({1000.f, 1000.f, 1000.f})));
     }
+    #endif
   }
 }

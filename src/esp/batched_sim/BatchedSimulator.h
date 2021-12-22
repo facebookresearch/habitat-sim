@@ -5,10 +5,10 @@
 #ifndef ESP_BATCHEDSIM_BATCHED_SIMULATOR_H_
 #define ESP_BATCHEDSIM_BATCHED_SIMULATOR_H_
 
-#include "BpsSceneMapping.h"
-
 #include "esp/physics/bullet/BulletArticulatedObject.h"
 #include "esp/sim/Simulator.h"
+#include "esp/batched_sim/ColumnGrid.h"
+#include "esp/batched_sim/BpsSceneMapping.h"
 
 #include <bps3D.hpp>
 
@@ -36,11 +36,16 @@ struct Robot {
   Robot() = default;
 
   int numPosVars = -1;
+  int numInstances_ = -1;
+  int numCollisionSpheres_ = -1;
+
   // todo: delete artObj
   esp::physics::BulletArticulatedObject* artObj = nullptr;
   BpsSceneMapping* sceneMapping_ = nullptr;
   std::vector<Magnum::Matrix4> nodeTransformFixups;
   std::pair<std::vector<float>, std::vector<float>> jointPositionLimits;
+
+  std::vector<std::vector<Magnum::Vector3>> collisionSphereLocalOriginsByNode_;
 };
 
 struct RolloutRecord {
@@ -65,6 +70,13 @@ struct RolloutRecord {
 // represents stage and non-robot objects
 class Scene {
  public:
+  int stageIndex = -1;
+  esp::batched_sim::ColumnGridSource columnGrid_;
+};
+
+class SceneInstance {
+ public:
+  int sceneIndex_ = -1;
   bps3D::Environment* env_ = nullptr;
   int stageInstance_ = -1;
 };
@@ -84,7 +96,19 @@ class RobotInstanceSet {
   int numEnvs_ = 0;
   RolloutRecord* rollouts_ = nullptr;
 
+  // perf todo: try array of structs for items accessed together
+  // size = num robot instances * robot num nodes (num nodes = num links + 1)
   std::vector<int> nodeInstanceIds_;
+  // perf todo: try bullet aligned object array
+   // size = num robot instances * robot num collision spheres
+  std::vector<Mn::Vector3> collisionSphereWorldOrigins_;
+  // don't try to pack this with other structs anywhere because it's int8
+  std::vector<esp::batched_sim::ColumnGridSource::QueryCacheValue> collisionSphereQueryCaches_;
+  // size = num robot instances * robot num instances
+  std::vector<glm::mat4x3> nodeNewTransforms_;
+  // size = num robot instances
+  std::vector<bool> collisionResults_;
+  bool areCollisionResultsValid_ = false;
 
   btAlignedObjectArray<btQuaternion> scratch_q_;
   btAlignedObjectArray<btVector3> scratch_m_;
@@ -138,12 +162,19 @@ class BatchedSimulator {
   void setCamera(const Mn::Vector3& camPos, const Mn::Quaternion& camRot);
 
   bps3D::Environment& getBpsEnvironment(int envIndex);
-  int addInstance(const std::string& name, int envIndex);
 
+  void deleteDebugInstances(); // probably call at start of frame render
+  // probably add these every frame ("immediate mode", not persistent)
+  int addDebugInstance(const std::string& name, int envIndex, 
+    const Magnum::Matrix4& transform=Magnum::Matrix4(Mn::Math::IdentityInit));
 
  private:
   void reset();
   void stepPhysics();
+  void updateCollision();
+  // for each robot, update instances for new pose OR undo action
+  void postCollisionUpdate(bool useCollisionResults);
+  void reverseActionsForEnvironment(int b);
 
   void calcRewards();
   void randomizeRobotsForCurrentStep();
@@ -157,6 +188,7 @@ class BatchedSimulator {
   Robot robot_;
   RobotInstanceSet robots_;
   int currRolloutStep_ = -1;
+  int prevRolloutStep_ = -1;
   RolloutRecord rollouts_;
   std::unique_ptr<esp::sim::Simulator> legacySim_;
   std::unique_ptr<BpsWrapper> bpsWrapper_;
@@ -164,8 +196,10 @@ class BatchedSimulator {
   int maxRolloutSteps_ = -1;
   RewardCalculationContext rewardContext_;
   std::vector<bool> hackDones_;
-  std::vector<Scene> envScenes_;
+  std::vector<Scene> scenes_;
+  std::vector<SceneInstance> envSceneInstances_;
   BpsSceneMapping sceneMapping_;
+  std::vector<std::vector<int>> debugInstancesByEnv_;
 
   ESP_SMART_POINTERS(BatchedSimulator)
 };

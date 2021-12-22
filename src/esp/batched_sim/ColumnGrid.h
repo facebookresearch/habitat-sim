@@ -65,7 +65,7 @@ class ColumnGridSource {
   void save(const std::string& filepath);
 
   bool contactTest(const Magnum::Vector3& pos,
-    ColumnGridSource::QueryCacheValue* queryCache);
+    ColumnGridSource::QueryCacheValue* queryCache) const;
 
   void ensureLayer(int layerIdx) {
     // sanity-check: this data structure shouldn't have too many layers
@@ -123,13 +123,13 @@ class ColumnGridSource {
     return cellZ * dimX + cellX; // todo: more clever memory layout
   }
 
-  int getLocalCellIndex(int localCellX, int localCellZ) {
+  int getLocalCellIndex(int localCellX, int localCellZ) const  {
     // temp: just index based on entire grid dim
     CORRADE_INTERNAL_ASSERT(patches.size() == 1);
     return getCellIndex(localCellX, localCellZ);
   }
 
-  int getPatchIndex(int patchX, int patchZ) {
+  int getPatchIndex(int patchX, int patchZ) const {
     CORRADE_INTERNAL_ASSERT(patchX == 0 && patchZ == 0);
     return 0;
   }
@@ -141,7 +141,7 @@ class ColumnGridSource {
 
   static constexpr int globalToLocalCellMask = 0xFFFFFFFF;
 
-  Column& getColumn(const Patch& patch, int localCellIdx, int layerIndex) {
+  const Column& getColumn(const Patch& patch, int localCellIdx, int layerIndex) const {
     // temp: just index based on entire grid dim
     CORRADE_INTERNAL_ASSERT(patches.size() == 1);
     CORRADE_INTERNAL_ASSERT(layerIndex >= 0 && layerIndex < layers.size());

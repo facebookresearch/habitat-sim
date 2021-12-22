@@ -74,15 +74,16 @@ void BatchedSimulator::randomizeRobotsForCurrentStep() {
   float* jointPositions =
       &rollouts_.jointPositions_[currRolloutStep_ * numEnvs * numPosVars];
 
-  auto random = core::Random(/*seed*/ 0);
+  auto random = core::Random(/*seed*/ 1);
+
   for (int b = 0; b < numEnvs; b++) {
     yaws[b] = random.uniform_float(-float(Mn::Rad(Mn::Deg(90.f))), 0.f);
     positions[b] =
-        Mn::Vector2(1.61, 0.98) + Mn::Vector2(random.uniform_float(-0.1, 0.1f),
-                                              random.uniform_float(-0.1, 0.1f));
+        Mn::Vector2(1.61, 0.98) + Mn::Vector2(random.uniform_float(-0.2, 0.2f),
+                                              random.uniform_float(-0.2, 0.2f));
     for (int j = 0; j < robot_.numPosVars; j++) {
       auto& pos = jointPositions[b * robot_.numPosVars + j];
-      pos = random.uniform_float(-0.1, 0.2f);
+      pos = random.uniform_float(-0.2, 0.4f);
       pos = Mn::Math::clamp(pos, robot_.jointPositionLimits.first[j],
                             robot_.jointPositionLimits.second[j]);
     }
@@ -100,6 +101,9 @@ RobotInstanceSet::RobotInstanceSet(Robot* robot,
   int batchNumNodes = numNodes * numEnvs;
 
   nodeInstanceIds_.resize(batchNumNodes, -1);
+  nodeNewTransforms_.resize(batchNumNodes);
+  collisionSphereWorldOrigins_.resize(robot->numCollisionSpheres_ * numEnvs);
+  collisionSphereQueryCaches_.resize(robot->numCollisionSpheres_ * numEnvs, 0);
 
   const auto* mb = robot_->artObj->btMultiBody_.get();
 
@@ -138,6 +142,8 @@ RobotInstanceSet::RobotInstanceSet(Robot* robot,
 
     baseInstanceIndex += numNodes;
   }
+
+  collisionResults_.resize(robot_->numCollisionSpheres_ * numEnvs, false);
 }
 
 void RobotInstanceSet::applyActionPenalties(const std::vector<float>& actions) {
@@ -174,12 +180,40 @@ void RobotInstanceSet::applyActionPenalties(const std::vector<float>& actions) {
   CORRADE_INTERNAL_ASSERT(actionIndex == actions.size());
 }
 
+void BatchedSimulator::reverseActionsForEnvironment(int b) {
+  const int numEnvs = config_.numEnvs;
+  const int numPosVars = robot_.numPosVars;
+
+  const float* prevYaws = &rollouts_.yaws_[prevRolloutStep_ * numEnvs];
+  float* yaws = &rollouts_.yaws_[currRolloutStep_ * numEnvs];
+  const Mn::Vector2* prevPositions =
+      &rollouts_.positions_[prevRolloutStep_ * numEnvs];
+  Mn::Vector2* positions = &rollouts_.positions_[currRolloutStep_ * numEnvs];
+  Mn::Matrix4* rootTransforms =
+      &rollouts_.rootTransforms_[currRolloutStep_ * numEnvs];
+  const float* prevJointPositions =
+      &rollouts_.jointPositions_[prevRolloutStep_ * numEnvs * numPosVars];
+  float* jointPositions =
+      &rollouts_.jointPositions_[currRolloutStep_ * numEnvs * numPosVars];
+
+  yaws[b] = prevYaws[b];
+  positions[b] = prevPositions[b];
+  int baseJointIndex = b * robot_.numPosVars;
+  for (int j = 0; j < robot_.numPosVars; j++) {
+    auto& pos = jointPositions[baseJointIndex + j];
+    const auto& prevPos = prevJointPositions[baseJointIndex + j];
+    pos = prevPos;
+  }
+}
+
 void RobotInstanceSet::updateLinkTransforms(int currRolloutStep) {
   esp::gfx::replay::Keyframe debugKeyframe;
   int numLinks = robot_->artObj->getNumLinks();
   int numNodes = numLinks + 1;
   int numEnvs = numEnvs_;
   int numPosVars = robot_->numPosVars;
+
+  areCollisionResultsValid_ = false;
 
   auto* mb = robot_->artObj->btMultiBody_.get();
   int posCount = 0;
@@ -217,6 +251,8 @@ void RobotInstanceSet::updateLinkTransforms(int currRolloutStep) {
 
     auto& env = (*envs_)[b];
     int baseInstanceIndex = b * numNodes;
+    const int baseSphereIndex = b * robot_->numCollisionSpheres_;
+    int sphereIndex = baseSphereIndex;
 
     // extract link transforms
     // todo: update base node
@@ -241,8 +277,15 @@ void RobotInstanceSet::updateLinkTransforms(int currRolloutStep) {
         // const float scale = (float)b / (numEnvs_ - 1);
         // tmp[3] = Mn::Vector4(vec.xyz() * scale, 1.f);
         mat = mat * tmp;
+        // perf todo: loop through collision spheres (and look up link id), instead of this sparse way here
+        // compute collision sphere transforms
+        for (const auto& localOrigin : robot_->collisionSphereLocalOriginsByNode_[nodeIndex]) {
+          collisionSphereWorldOrigins_[sphereIndex++] = 
+            mat.transformPoint(localOrigin);
+        }
 
-        env.updateInstanceTransform(instanceId, toGlmMat4x3(mat));
+        CORRADE_INTERNAL_ASSERT(instanceIndex < nodeNewTransforms_.size());
+        nodeNewTransforms_[instanceIndex] = toGlmMat4x3(mat);
 
         // hack calc reward
         {
@@ -271,61 +314,9 @@ void RobotInstanceSet::updateLinkTransforms(int currRolloutStep) {
         debugKeyframe.stateUpdates.emplace_back(instanceId, state);
 #endif
       }
+
+      CORRADE_INTERNAL_ASSERT(sphereIndex == baseSphereIndex + robot_->numCollisionSpheres_);
     }
-
-#if 0
-    if (b == 0) {
-      std::ostringstream ss;
-      auto* mb = robot_->artObj->btMultiBody_.get();
-
-      int numLinks = robot_->artObj->getNumLinks();
-      for (int i = -1; i < numLinks; i++) {
-        const auto nodeIndex = i + 1;                   // 0 is base
-        const auto& link = robot_->artObj->getLink(i);  // -1 gets base link
-        const auto& visualAttachments = link.visualAttachments_;
-        if (!visualAttachments.empty()) {
-          const std::string linkVisualFilepath = visualAttachments[0].second;
-          ss << linkVisualFilepath << "\n";
-
-          // ss << "m_cachedWorldTransform: ";
-          const auto btTrans = i == -1 ? mb->getBaseWorldTransform()
-                                       : mb->getLink(i).m_cachedWorldTransform;
-          for (int i = 0; i < 3; i++) {
-            ss << btTrans.getBasis().getRow(i).x() << " ";
-            ss << btTrans.getBasis().getRow(i).y() << " ";
-            ss << btTrans.getBasis().getRow(i).z() << "\n";
-          }
-          ss << btTrans.getOrigin().x() << " ";
-          ss << btTrans.getOrigin().y() << " ";
-          ss << btTrans.getOrigin().z() << " ";
-          ss << "\n";
-
-          Mn::Matrix4 mat = toMagnumMatrix4(btTrans);
-
-          const auto& tmp = robot_->nodeTransformFixups[nodeIndex];
-
-          auto printTransform = [](const Mn::Matrix4& mat,
-                                   std::ostringstream& ss) {
-            for (int i = 0; i < 4; i++) {
-              ss << mat[i][0] << " ";
-              ss << mat[i][1] << " ";
-              ss << mat[i][2] << "\n";
-            }
-          };
-
-          ss << "fixup:\n";
-          printTransform(tmp, ss);
-
-          mat = mat * tmp;
-          ss << "mat with fixup:\n";
-          printTransform(mat, ss);
-        }
-      }
-
-      ss << "\n";
-      LOG(WARNING) << ss.str();
-    }
-#endif
   }
 
 #if 0
@@ -338,6 +329,99 @@ void RobotInstanceSet::updateLinkTransforms(int currRolloutStep) {
     }
   }
 #endif
+
+}
+
+void BatchedSimulator::updateCollision() {
+
+  const int numEnvs = config_.numEnvs;
+
+  CORRADE_INTERNAL_ASSERT(!robots_.areCollisionResultsValid_);
+  CORRADE_INTERNAL_ASSERT(robots_.collisionResults_.size() == robot_.numCollisionSpheres_ * numEnvs);
+
+  robots_.areCollisionResultsValid_ = true;
+
+  for (int b = 0; b < numEnvs; b++) {
+
+    auto& sceneInstance = envSceneInstances_[b];
+    const auto& scene = scenes_[sceneInstance.sceneIndex_];
+    const auto& columnGrid = scene.columnGrid_;
+    const int baseSphereIndex = b * robot_.numCollisionSpheres_;
+
+    bool hit = false;
+    for (int s = 0; s < robot_.numCollisionSpheres_; s++) {
+      const int sphereIndex = baseSphereIndex + s;
+      auto& queryCache = robots_.collisionSphereQueryCaches_[sphereIndex];
+      const auto& spherePos = robots_.collisionSphereWorldOrigins_[sphereIndex];
+
+      if (columnGrid.contactTest(spherePos, &queryCache)) {
+        hit = true;
+        break;
+      }
+    }
+
+    robots_.collisionResults_[b] = hit;
+  }
+
+  for (int b = 0; b < numEnvs; b++) {
+
+    auto& sceneInstance = envSceneInstances_[b];
+    const auto& scene = scenes_[sceneInstance.sceneIndex_];
+    const auto& columnGrid = scene.columnGrid_;
+    const int baseSphereIndex = b * robot_.numCollisionSpheres_;
+
+    for (int s = 0; s < robot_.numCollisionSpheres_; s++) {
+      const int sphereIndex = baseSphereIndex + s;
+      const auto& spherePos = robots_.collisionSphereWorldOrigins_[sphereIndex];
+
+      constexpr float sphereRadius = 0.1f; // todo: get from Robot
+      Mn::Matrix4 mat = Mn::Matrix4::translation(spherePos)
+        * Mn::Matrix4::scaling(Mn::Vector3(sphereRadius, sphereRadius, sphereRadius));
+
+      // redo the query here since we didn't save collision results per sphere
+      esp::batched_sim::ColumnGridSource::QueryCacheValue queryCache = 0;
+      bool sphereHit = columnGrid.contactTest(spherePos, &queryCache);
+
+      addDebugInstance(sphereHit ? "sphere_orange" : "sphere_green", b, mat);
+    }
+  }
+}
+
+void BatchedSimulator::postCollisionUpdate(bool useCollisionResults) {
+
+  const int numEnvs = config_.numEnvs;
+  int numLinks = robot_.artObj->getNumLinks();
+  int numNodes = numLinks + 1;  // include base
+
+  if (useCollisionResults) {
+    CORRADE_INTERNAL_ASSERT(robots_.areCollisionResultsValid_);
+  }
+
+  for (int b = 0; b < numEnvs; b++) {
+
+    if (useCollisionResults && robots_.collisionResults_[b]) {
+      reverseActionsForEnvironment(b);
+
+    } else {
+      // no collision, so let's update the robot instance instances
+
+      int baseInstanceIndex = b * numNodes;
+      auto& env = bpsWrapper_->envs_[b];
+
+      for (int i = -1; i < numLinks; i++) {
+        const auto nodeIndex = i + 1;  // 0 is base
+        const auto instanceIndex = baseInstanceIndex + nodeIndex;
+
+        int instanceId = robots_.nodeInstanceIds_[instanceIndex];
+        if (instanceId == -1) {
+          continue;
+        }
+
+        const auto& glMat = robots_.nodeNewTransforms_[instanceIndex];
+        env.updateInstanceTransform(instanceId, glMat);
+      }
+    }
+  }
 }
 
 Robot::Robot(const std::string& filepath, esp::sim::Simulator* sim, BpsSceneMapping* sceneMapping) {
@@ -362,12 +446,18 @@ Robot::Robot(const std::string& filepath, esp::sim::Simulator* sim, BpsSceneMapp
   const auto globalFixup =
       Mn::Matrix4::rotation(Mn::Deg(90.f), {1.f, 0.f, 0.f});
 
+  auto linkIds = artObj->getLinkIds();
+  int numInstances = 0;
+
+  collisionSphereLocalOriginsByNode_.resize(numNodes);
+  int numCollisionSpheres = 0;
+
   for (int i = -1; i < numLinks; i++) {
     const auto nodeIndex = i + 1;           // 0 is base
+    CORRADE_INTERNAL_ASSERT(i == -1 || i == linkIds[i]);
     const auto& link = artObj->getLink(i);  // -1 gets base link
     const auto& visualAttachments = link.visualAttachments_;
     CORRADE_INTERNAL_ASSERT(visualAttachments.size() <= 1);
-    int instanceId = -1;
     if (!visualAttachments.empty()) {
       const auto* sceneNode = visualAttachments[0].first;
       int nodeIndex = i + 1;  // 0 for base
@@ -375,8 +465,18 @@ Robot::Robot(const std::string& filepath, esp::sim::Simulator* sim, BpsSceneMapp
       // it is essentially an additional transform to apply to the visual mesh.
       const auto tmp = sceneNode->transformation();
       nodeTransformFixups[nodeIndex] = tmp * globalFixup;
+      numInstances++;
+    }
+
+    // temp hard-coded spheres
+    if (link.linkName == "gripper_link" || link.linkName == "elbow_flex_link") {
+      collisionSphereLocalOriginsByNode_[nodeIndex].push_back({0.f, 0.f, 0.f});
+      numCollisionSpheres++;
     }
   }
+
+  numInstances_ = numInstances;
+  numCollisionSpheres_ = numCollisionSpheres;
 
   numPosVars = artObj->getJointPositions().size();
   CORRADE_INTERNAL_ASSERT(numPosVars > 0);
@@ -425,6 +525,8 @@ BatchedSimulator::BatchedSimulator(const BatchedSimulatorConfig& config) {
 
   bpsWrapper_ = std::make_unique<BpsWrapper>(config_.gpuId, config_.numEnvs, config_.sensor0);
 
+  debugInstancesByEnv_.resize(config_.numEnvs);
+
   initScenes();
 
   esp::sim::SimulatorConfiguration simConfig{};
@@ -462,6 +564,7 @@ BatchedSimulator::BatchedSimulator(const BatchedSimulatorConfig& config) {
 
   currRolloutStep_ =
       -1;  // trigger auto-reset on first call to autoResetOrStepPhysics
+  prevRolloutStep_ = -1;
   isOkToRender_ = false;
   isOkToStep_ = false;
   isRenderStarted_ = false;
@@ -484,17 +587,9 @@ bps3D::Environment& BatchedSimulator::getBpsEnvironment(int envIndex) {
   return bpsWrapper_->envs_[envIndex];
 }
 
-int BatchedSimulator::addInstance(const std::string& name, int envIndex) {
-  glm::mat4x3 identityMat = toGlmMat4x3(Mn::Matrix4(Mn::Math::IdentityInit));
-  const auto [meshIndex, mtrlIndex, scale] =
-    sceneMapping_.findMeshIndexMaterialIndexScale(name);
-  CORRADE_INTERNAL_ASSERT(scale == 1.f);
-  CORRADE_INTERNAL_ASSERT(envIndex < config_.numEnvs);
-  auto& env = getBpsEnvironment(envIndex);
-  return env.addInstance(meshIndex, mtrlIndex, identityMat);
-}
-
 void BatchedSimulator::initScenes() {
+  constexpr int numScenes = 2;
+
   std::array<std::string, 2> stageNames = {
     "Baked_sc0_staging_00",
     "Baked_sc0_staging_01"
@@ -509,17 +604,31 @@ void BatchedSimulator::initScenes() {
     stageMeshMtrlIndices[i] = std::make_pair(meshIdx, mtrlIdx);
   }
 
-  const int numEnvs = config_.numEnvs;
+  // init scenes
+  scenes_.resize(numScenes);
+  for (int i = 0; i < numScenes; i++) {
+    auto& scene = scenes_[i];
+    scene.stageIndex = i; // unique stage per scene right now
+    std::string columnGridFilepath = "../data/columngrids/" 
+      + stageNames[scene.stageIndex] + "_stage_only.columngrid";
+    scene.columnGrid_.load(columnGridFilepath);
+  }
 
+  // init scene instances
+  const int numEnvs = config_.numEnvs;
   glm::mat4x3 identityMat = toGlmMat4x3(Mn::Matrix4(Mn::Math::IdentityInit));
 
-  envScenes_.reserve(config_.numEnvs);
+  envSceneInstances_.reserve(config_.numEnvs);
   for (int b = 0; b < numEnvs; b++) {
+    auto& sceneInstance = envSceneInstances_[b];
+    const auto sceneIndex = b * numScenes / numEnvs; // distribute scenes across instances
+    sceneInstance.sceneIndex_ = sceneIndex;
+
     auto& env = bpsWrapper_->envs_[b];
-    const auto stageId = b * stageNames.size() / numEnvs;
-    CORRADE_INTERNAL_ASSERT(stageId < stageNames.size());
-    auto [meshIdx, mtrlIdx] = stageMeshMtrlIndices[stageId];
-    envScenes_[b].stageInstance_ = env.addInstance(meshIdx, mtrlIdx, identityMat);
+    int stageIndex = scenes_[sceneIndex].stageIndex;
+    CORRADE_INTERNAL_ASSERT(stageIndex < stageNames.size());
+    auto [meshIdx, mtrlIdx] = stageMeshMtrlIndices[stageIndex];
+    sceneInstance.stageInstance_ = env.addInstance(meshIdx, mtrlIdx, identityMat);
   } 
 }
 
@@ -535,14 +644,19 @@ void BatchedSimulator::reset() {
   CORRADE_INTERNAL_ASSERT(!isRenderStarted_);
 
   currRolloutStep_ = 0;
+  prevRolloutStep_ = -1;
   randomizeRobotsForCurrentStep();
   robots_.updateLinkTransforms(currRolloutStep_);
+  postCollisionUpdate(/*useCollisionResults*/false);
 
   isOkToRender_ = true;
   isOkToStep_ = true;
 }
 
 void BatchedSimulator::autoResetOrStepPhysics() {
+
+  deleteDebugInstances();
+
   if (currRolloutStep_ == -1 || currRolloutStep_ == maxRolloutSteps_ - 1) {
     // all episodes are done; set done flag and reset
     std::fill(hackDones_.begin(), hackDones_.end(), true);
@@ -560,7 +674,7 @@ void BatchedSimulator::autoResetOrStepPhysics() {
 void BatchedSimulator::stepPhysics() {
   CORRADE_INTERNAL_ASSERT(isOkToStep_);
 
-  int prevRolloutStep = currRolloutStep_;
+  prevRolloutStep_ = currRolloutStep_;
   currRolloutStep_++;
 
   // temp reset rollout
@@ -575,15 +689,15 @@ void BatchedSimulator::stepPhysics() {
 
   int actionIndex = 0;
 
-  const float* prevYaws = &rollouts_.yaws_[prevRolloutStep * numEnvs];
+  const float* prevYaws = &rollouts_.yaws_[prevRolloutStep_ * numEnvs];
   float* yaws = &rollouts_.yaws_[currRolloutStep_ * numEnvs];
   const Mn::Vector2* prevPositions =
-      &rollouts_.positions_[prevRolloutStep * numEnvs];
+      &rollouts_.positions_[prevRolloutStep_ * numEnvs];
   Mn::Vector2* positions = &rollouts_.positions_[currRolloutStep_ * numEnvs];
   Mn::Matrix4* rootTransforms =
       &rollouts_.rootTransforms_[currRolloutStep_ * numEnvs];
   const float* prevJointPositions =
-      &rollouts_.jointPositions_[prevRolloutStep * numEnvs * numPosVars];
+      &rollouts_.jointPositions_[prevRolloutStep_ * numEnvs * numPosVars];
   float* jointPositions =
       &rollouts_.jointPositions_[currRolloutStep_ * numEnvs * numPosVars];
 
@@ -613,6 +727,10 @@ void BatchedSimulator::stepPhysics() {
   CORRADE_INTERNAL_ASSERT(actionIndex == actions_.size());
 
   robots_.updateLinkTransforms(currRolloutStep_);
+
+  updateCollision();
+
+  postCollisionUpdate(/*useCollisionResults*/true);
 
   robots_.applyActionPenalties(actions_);
 }
@@ -904,6 +1022,34 @@ void The_Pool::Add_Job(function<void()> New_Job)
     condition.notify_one();
 }
 #endif
+
+void BatchedSimulator::deleteDebugInstances() {
+  const int numEnvs = config_.numEnvs;
+  for (int b = 0; b < numEnvs; b++) {
+
+    auto& env = bpsWrapper_->envs_[b];
+    for (int instanceId : debugInstancesByEnv_[b]) {
+
+      env.deleteInstance(instanceId);
+    }
+
+    debugInstancesByEnv_[b].clear();
+  }
+}
+
+int BatchedSimulator::addDebugInstance(const std::string& name, int envIndex, 
+  const Magnum::Matrix4& transform) {
+  glm::mat4x3 glMat = toGlmMat4x3(transform);
+  const auto [meshIndex, mtrlIndex, scale] =
+    sceneMapping_.findMeshIndexMaterialIndexScale(name);
+  CORRADE_INTERNAL_ASSERT(scale == 1.f);
+  CORRADE_INTERNAL_ASSERT(envIndex < config_.numEnvs);
+  auto& env = getBpsEnvironment(envIndex);
+  int instanceId = env.addInstance(meshIndex, mtrlIndex, glMat);
+  debugInstancesByEnv_[envIndex].push_back(instanceId);
+  return instanceId;
+}
+
 
 }  // namespace batched_sim
 }  // namespace esp

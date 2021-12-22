@@ -38,7 +38,7 @@ struct FileHeader {
 
 // perf todo: vector version (takes array of pos)
 bool ColumnGridSource::contactTest(const Mn::Vector3& pos,
-  ColumnGridSource::QueryCacheValue* queryCache) {
+  ColumnGridSource::QueryCacheValue* queryCache) const {
 
   // todo: think about this more (for objects vs interiors)
   constexpr bool outsideVolumeRetVal = true;
