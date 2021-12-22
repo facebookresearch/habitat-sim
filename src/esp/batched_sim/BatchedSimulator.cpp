@@ -479,6 +479,21 @@ void BatchedSimulator::setCamera(const Mn::Vector3& camPos, const Mn::Quaternion
   }
 }
 
+bps3D::Environment& BatchedSimulator::getBpsEnvironment(int envIndex) {
+  CORRADE_INTERNAL_ASSERT(envIndex < config_.numEnvs);
+  return bpsWrapper_->envs_[envIndex];
+}
+
+int BatchedSimulator::addInstance(const std::string& name, int envIndex) {
+  glm::mat4x3 identityMat = toGlmMat4x3(Mn::Matrix4(Mn::Math::IdentityInit));
+  const auto [meshIndex, mtrlIndex, scale] =
+    sceneMapping_.findMeshIndexMaterialIndexScale(name);
+  CORRADE_INTERNAL_ASSERT(scale == 1.f);
+  CORRADE_INTERNAL_ASSERT(envIndex < config_.numEnvs);
+  auto& env = getBpsEnvironment(envIndex);
+  return env.addInstance(meshIndex, mtrlIndex, identityMat);
+}
+
 void BatchedSimulator::initScenes() {
   std::array<std::string, 2> stageNames = {
     "Baked_sc0_staging_00",

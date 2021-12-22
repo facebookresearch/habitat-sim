@@ -137,6 +137,10 @@ class BatchedSimulator {
   // For debugging. Sets camera for all envs.
   void setCamera(const Mn::Vector3& camPos, const Mn::Quaternion& camRot);
 
+  bps3D::Environment& getBpsEnvironment(int envIndex);
+  int addInstance(const std::string& name, int envIndex);
+
+
  private:
   void reset();
   void stepPhysics();
