@@ -90,7 +90,8 @@ corrade_add_test(SensorTest SensorTest.cpp LIBRARIES sensor sim)
 target_include_directories(SensorTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 test(BatchedSimTest batched_sim)
-target_include_directories(GfxReplayTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
+test(ColumnGridTest batched_sim)
 
 # Some tests are LOUD, we don't want to include their full log (but OTOH we
 # want to have full log from others, so this is a compromise)
