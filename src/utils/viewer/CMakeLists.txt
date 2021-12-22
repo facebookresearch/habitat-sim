@@ -17,6 +17,7 @@ target_link_libraries(
           geo
           Magnum::DebugTools
           MagnumIntegration::ImGui
+          batched_sim
 )
 
 # copy JS/HTML/CSS scaffolding for WebGL build

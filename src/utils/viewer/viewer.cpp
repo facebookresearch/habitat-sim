@@ -60,10 +60,11 @@
 #include "esp/sensor/EquirectangularSensor.h"
 #include "esp/sensor/FisheyeSensor.h"
 #include "esp/sim/Simulator.h"
+#include "esp/batched_sim/ColumnGridBuilder.h"
 
 #include "ObjectPickingHelper.h"
 
-constexpr float moveSensitivity = 0.07f;
+constexpr float moveSensitivity = 0.025f;
 constexpr float lookSensitivity = 0.9f;
 constexpr float rgbSensorHeight = 1.5f;
 constexpr float agentActionsPerSecond = 60.0f;
@@ -72,9 +73,49 @@ constexpr float agentActionsPerSecond = 60.0f;
 namespace Cr = Corrade;
 namespace Mn = Magnum;
 
+using esp::batched_sim::ColumnGridSource;
+using esp::batched_sim::ColumnGridBuilder;
+
 namespace {
 
 esp::physics::ManagedArticulatedObject::ptr g_ao;
+
+ColumnGridSource columnGrid_;
+
+void drawColumnGridSource(const ColumnGridSource& source, esp::gfx::DebugLineRender& lineRender) {
+
+  for (int layerIdx = 0; layerIdx < source.layers.size(); layerIdx++) {
+    for (int cellZ = 0; cellZ < source.dimZ; cellZ++) {
+      for (int cellX = 0; cellX < source.dimX; cellX++) {
+        auto col = source.debugGetColumn(cellX, cellZ, layerIdx);
+        if (col.freeMinY == source.INVALID_Y) {
+          continue;
+        }
+        Mn::Vector3 colBottom(
+          source.minX + cellX * source.gridSpacing,
+          col.freeMinY,
+          source.minZ + cellZ * source.gridSpacing);
+        Mn::Vector3 colTop(
+          colBottom.x(),
+          col.freeMaxY,
+          colBottom.z());
+
+        #if 0
+        constexpr int numSegments = 16;
+        lineRender.drawSphere(colBottom, source.sphereRadius, Magnum::Color4::red(), numSegments);
+        lineRender.drawSphere(colTop, source.sphereRadius, Magnum::Color4::green(), numSegments);
+        lineRender.drawLine(colBottom, colTop, Magnum::Color4::red(), Magnum::Color4::green());
+        #else
+        constexpr int numSegments = 4;
+        lineRender.drawCircle(colBottom, source.gridSpacing / 2, Magnum::Color4::red(), numSegments);
+        lineRender.drawCircle(colTop, source.gridSpacing / 2, Magnum::Color4::green(), numSegments);
+        #endif
+      }
+    }
+  }
+};
+
+
 
 //! return current time as string in format
 //! "year_month_day_hour-minutes-seconds"
@@ -840,6 +881,32 @@ Viewer::Viewer(const Arguments& arguments)
   // Per frame profiler will average measurements taken over previous 50 frames
   profiler_.setup(profilerValues, 50);
 
+  // load or build column grid on startup
+  { 
+
+    const std::string baseName = Cr::Utility::Directory::splitExtension(
+      Cr::Utility::Directory::splitExtension(
+      Cr::Utility::Directory::filename(simConfig_.activeSceneName)).first).first;
+
+    const std::string filepath = "../data/columngrids/" + baseName + ".columngrid";
+
+    if (Cr::Utility::Directory::exists(filepath)) {
+      ESP_DEBUG() << "loading ColumnGrid from " << filepath;
+      columnGrid_.load(filepath);
+    } else {
+
+      ESP_DEBUG() << "building ColumnGrid...";
+      const auto extents = simulator_->getCollisionExtents();
+      constexpr float sphereRadius = 0.1;
+      constexpr float gridSpacing = 0.03;
+      ColumnGridBuilder builder;
+      columnGrid_ = builder.build(*simulator_.get(), extents, sphereRadius, gridSpacing);
+
+      ESP_DEBUG() << "Done. Saving ColumnGrid to " << filepath;
+      columnGrid_.save(filepath);
+    }
+  }
+
   printHelpText();
 }  // end Viewer::Viewer
 
@@ -1260,6 +1327,13 @@ void Viewer::drawEvent() {
     }
   }
 
+  {
+    const auto extents = simulator_->getCollisionExtents();
+    simulator_->getDebugLineRender()->drawBox(extents.min(), extents.max(), Mn::Color4::yellow());
+  }
+
+  drawColumnGridSource(columnGrid_, *simulator_->getDebugLineRender().get());
+
   uint32_t visibles = renderCamera_->getPreviousNumVisibleDrawables();
 
   if (visualizeMode_ == VisualizeMode::Depth ||
@@ -1591,6 +1665,20 @@ void Viewer::mousePressEvent(MouseEvent& event) {
         esp::physics::RaycastResults raycastResults = simulator_->castRay(ray);
 
         if (raycastResults.hasHits()) {
+
+          {
+            const auto& gridCenter = raycastResults.hits[0].point;
+            static const Mn::Vector3 gridHalfSize(1.0, 2.5f, 1.0);
+            static float gridSpacing = 0.03f;
+            static float sphereRadius = 0.03;
+
+            auto gridAabb = Mn::Range3D(gridCenter - gridHalfSize, gridCenter + gridHalfSize);
+
+            ColumnGridBuilder builder;
+            columnGrid_ = builder.build(*simulator_.get(), gridAabb, sphereRadius, gridSpacing);
+            return;
+          }
+
           // If VHACD is enabled, and Ctrl + Right Click is used, voxelized
           // the object clicked on.
 #ifdef ESP_BUILD_WITH_VHACD
