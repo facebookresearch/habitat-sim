@@ -5,6 +5,7 @@
 #include "esp/batched_sim/BatchedSimulator.h"
 #include "esp/batched_sim/BpsSceneMapping.h"
 #include "esp/batched_sim/GlmUtils.h"
+#include "esp/batched_sim/ColumnGrid.h"
 
 #include <cuda_runtime.h>
 #include <gtest/gtest.h>
@@ -186,6 +187,14 @@ TEST_F(BatchedSimulatorTest, basic) {
   float rotSpeed = 20.f;
   float moveSpeed = 0.5f;
 
+  const int envIndex = 0;
+  int sphereGreenInstance = bsim.addInstance("sphere_green", envIndex);
+  int sphereOrangeInstance = bsim.addInstance("sphere_orange", envIndex);
+  auto& bpsEnv = bsim.getBpsEnvironment(0);
+
+  esp::batched_sim::ColumnGridSource source;
+  source.load("../data/columngrids/Baked_sc0_staging_00_stage_only.columngrid");
+
   std::cout << "Open ./out_color_0.bmp in VS Code or another viewer that supports hot-reload." << std::endl;
   std::cout << "Press WASDQE/arrow keys to move/look, +/- to adjust speed, or ESC to quit." << std::endl;
 
@@ -245,5 +254,24 @@ TEST_F(BatchedSimulatorTest, basic) {
     }
 
     bsim.setCamera(camPos, camRot);    
+
+    {
+      constexpr float sphereDist = 1.f;
+      constexpr float sphereRadius = 0.1f; // todo: get from ColumnGrid
+      Mn::Vector3 spherePos = camPos + camRot.transformVector(Mn::Vector3(0.f, 0.f, -sphereDist));
+
+      esp::batched_sim::ColumnGridSource::QueryCacheValue queryCache = 0;
+      bool contact = source.contactTest(spherePos, &queryCache);
+
+      Mn::Matrix4 mat = Mn::Matrix4::translation(spherePos)
+        * Mn::Matrix4::scaling(Mn::Vector3(sphereRadius, sphereRadius, sphereRadius));
+      
+      int instanceToShow = contact ? sphereOrangeInstance : sphereGreenInstance;
+      int instanceToHide = contact ? sphereGreenInstance : sphereOrangeInstance;
+
+      bpsEnv.updateInstanceTransform(instanceToShow, toGlmMat4x3(mat));
+      bpsEnv.updateInstanceTransform(instanceToHide, 
+        toGlmMat4x3(Mn::Matrix4::translation({1000.f, 1000.f, 1000.f})));
+    }
   }
 }
