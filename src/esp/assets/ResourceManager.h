@@ -14,6 +14,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <cstdint>
 
 #include <Corrade/Containers/EnumSet.h>
 #include <Corrade/Containers/Optional.h>
@@ -443,6 +444,21 @@ class ResourceManager {
   std::unique_ptr<MeshData> createJoinedCollisionMesh(
       const std::string& filename) const;
 
+  /**
+   * @brief Construct a unified @ref MeshData from a loaded asset's semantic
+   * meshes.
+   *
+   * See @ref joinHierarchy.
+   * @param[out] objectIds vector of uint16_t, will be populated with the object ids
+   * of the semantic mesh
+   * @param filename The identifying string key for the asset. See @ref
+   * resourceDict_ and @ref meshes_.
+   * @return The unified @ref MeshData object for the asset.
+   */
+  std::unique_ptr<MeshData> createJoinedSemanticCollisionMesh(
+      std::vector<std::uint16_t>& objectIds,
+      const std::string& filename) const;
+
 #ifdef ESP_BUILD_WITH_VHACD
   /**
    * @brief Converts a MeshMetaData into a obj file.
@@ -867,6 +883,24 @@ class ResourceManager {
                      const MeshMetaData& metaData,
                      const MeshTransformNode& node,
                      const Mn::Matrix4& transformFromParentToWorld) const;
+
+  /**
+   * @brief Recursively build a unified @ref MeshData from loaded semantic assets via a
+   * tree of @ref MeshTransformNode.
+   *
+   * @param[in,out] mesh The @ref MeshData being constructed.
+   * @param[out] meshObjectIds The object ids
+   * @param metaData The @ref MeshMetaData for the object hierarchy being
+   * joined.
+   * @param node The current @ref MeshTransformNode in the recursion.
+   * @param transformFromParentToWorld The cumulative transformation up to but
+   * not including the current @ref MeshTransformNode.
+   */
+  void joinSemanticHierarchy(MeshData& mesh,
+                             std::vector<uint16_t>& meshObjectIds,
+                             const MeshMetaData& metaData,
+                             const MeshTransformNode& node,
+                             const Mn::Matrix4& transformFromParentToWorld) const;
 
   /**
    * @brief Load materials from importer into assets, and update metaData for

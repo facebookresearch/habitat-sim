@@ -2919,6 +2919,62 @@ void ResourceManager::joinHierarchy(
   }
 }
 
+//! recursively join all sub-components of the semantic mesh into a single unified
+//! MeshData.
+void ResourceManager::joinSemanticHierarchy(
+  MeshData& mesh,
+  std::vector<uint16_t>& meshObjectIds,
+  const MeshMetaData& metaData,
+  const MeshTransformNode& node,
+  const Mn::Matrix4& transformFromParentToWorld) const {
+
+  Magnum::Matrix4 transformFromLocalToWorld =
+      transformFromParentToWorld * node.transformFromLocalToParent;
+
+  // If the mesh local id is not -1, populate the mesh data.
+  if (node.meshIDLocal != ID_UNDEFINED) {
+
+    std::shared_ptr<BaseMesh> baseMeshData = meshes_.at(node.meshIDLocal + metaData.meshIndex.first);
+    std::shared_ptr<GenericSemanticMeshData> meshData = std::dynamic_pointer_cast<GenericSemanticMeshData>(baseMeshData);
+
+    if (!meshData) {
+      ESP_ERROR() << "Could not get the GenericSemanticMeshData";
+      return;
+    }
+
+    const std::vector<vec3f>& vertices = meshData->getVertexBufferObjectCPU();
+    const std::vector<uint32_t>& indices = meshData->getIndexBufferObjectCPU();
+    const std::vector<uint16_t>& objectIds = meshData->getObjectIdsBufferObjectCPU();
+    // Note : The color is not being used currently
+
+    int lastIndex = mesh.vbo.size();
+
+    // Save the vertices
+    for (auto& pos : vertices) {
+      Magnum::Vector3 p(pos(0), pos(1), pos(2));
+
+      mesh.vbo.push_back(
+        Magnum::EigenIntegration::cast<vec3f>(
+          transformFromLocalToWorld.transformPoint(p)));
+    }
+
+    // Save the indices
+    for (auto& index : indices) {
+      mesh.ibo.push_back(index + lastIndex);
+    }
+
+    // Save the object ids
+    for (const auto ids: objectIds) {
+      meshObjectIds.push_back(ids);
+    }
+  }
+
+  // for all the children of the node, recurse
+  for (const auto& child : node.children) {
+      joinSemanticHierarchy(mesh, meshObjectIds, metaData, child, transformFromLocalToWorld);
+  }
+}
+
 std::unique_ptr<MeshData> ResourceManager::createJoinedCollisionMesh(
     const std::string& filename) const {
   std::unique_ptr<MeshData> mesh = std::make_unique<MeshData>();
@@ -2927,6 +2983,21 @@ std::unique_ptr<MeshData> ResourceManager::createJoinedCollisionMesh(
 
   Mn::Matrix4 identity;
   joinHierarchy(*mesh, metaData, metaData.root, identity);
+
+  return mesh;
+}
+
+std::unique_ptr<MeshData> ResourceManager::createJoinedSemanticCollisionMesh(
+    std::vector<std::uint16_t>& objectIds,
+    const std::string& filename) const {
+  std::unique_ptr<MeshData> mesh = std::make_unique<MeshData>();
+
+  CORRADE_INTERNAL_ASSERT(resourceDict_.count(filename) > 0);
+
+  const MeshMetaData& metaData = getMeshMetaData(filename);
+
+  Magnum::Matrix4 identity;
+  joinSemanticHierarchy(*mesh, objectIds, metaData, metaData.root, identity);
 
   return mesh;
 }

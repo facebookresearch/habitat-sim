@@ -20,6 +20,11 @@ if(BUILD_WITH_CUDA)
   list(APPEND sensor_SOURCES RedwoodNoiseModel.cpp RedwoodNoiseModel.h)
 endif()
 
+if(BUILD_WITH_AUDIO)
+  include_directories(${DEPS_DIR}/audio/HabitatAcousticsPkg/headers)
+  list(APPEND sensor_SOURCES AudioSensor.cpp AudioSensor.h)
+endif()
+
 add_library(
   sensor STATIC
   ${sensor_SOURCES}
@@ -46,4 +51,9 @@ if(BUILD_WITH_CUDA)
 
   target_link_libraries(sensor PUBLIC noise_model_kernels)
   target_include_directories(sensor PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+endif()
+
+if(BUILD_WITH_AUDIO)
+  target_link_directories(sensor PUBLIC "${DEPS_DIR}/audio/HabitatAcousticsPkg/libs")
+  target_link_libraries(sensor PUBLIC HabitatAcoustics)
 endif()
