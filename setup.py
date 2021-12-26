@@ -105,6 +105,12 @@ Use "CMAKE_ARGS="..." pip install ." to set cmake args with pip""",
         help="CMake configuration to build with (Release, Debug, etc...)",
     )
     parser.add_argument(
+        "--build-temp",
+        dest="build_temp",
+        default="build",
+        help="build directory (default is build)",
+    )    
+    parser.add_argument(
         "--no-lto",
         dest="lto",
         default=None,
@@ -227,6 +233,9 @@ class CMakeBuild(build_ext):
             with open(args_cache_file, "w") as f:
                 json.dump(cache, f, indent=4, sort_keys=True)
 
+        self.build_temp = args.build_temp
+        print("self.build_temp: ", self.build_temp)
+
         if not os.path.exists(self.build_temp):
             os.makedirs(self.build_temp)
         # Save the CMake build directory -- that's where the generated setup.py
@@ -263,6 +272,7 @@ class CMakeBuild(build_ext):
             "-DPYTHON_EXECUTABLE=" + sys.executable,
             "-DCMAKE_EXPORT_COMPILE_COMMANDS={}".format("OFF" if is_pip() else "ON"),
         ]
+        print("lto optimization: ", args.lto)
         if args.lto is not None:
             cmake_args += [
                 "-DCMAKE_INTERPROCEDURAL_OPTIMIZATION={}".format(
@@ -278,6 +288,7 @@ class CMakeBuild(build_ext):
         if build_type is None:
             build_type = "Debug" if self.debug else "RelWithDebInfo"
         build_args = ["--config", build_type]
+        print("build_type: ", build_type)
 
         cmake_args += ["-DCMAKE_BUILD_TYPE=" + build_type]
 
