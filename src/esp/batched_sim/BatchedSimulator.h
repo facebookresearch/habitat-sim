@@ -9,6 +9,7 @@
 #include "esp/sim/Simulator.h"
 #include "esp/batched_sim/ColumnGrid.h"
 #include "esp/batched_sim/BpsSceneMapping.h"
+#include "esp/batched_sim/EpisodeSet.h"
 
 #include <bps3D.hpp>
 
@@ -67,19 +68,6 @@ struct RolloutRecord {
   std::vector<float> rewards_;  // [numRolloutSteps * numEnvs]
 };
 
-// represents stage and non-robot objects
-class Scene {
- public:
-  int stageIndex = -1;
-  esp::batched_sim::ColumnGridSource columnGrid_;
-};
-
-class SceneInstance {
- public:
-  int sceneIndex_ = -1;
-  bps3D::Environment* env_ = nullptr;
-  int stageInstance_ = -1;
-};
 
 class RobotInstanceSet {
  public:
@@ -179,7 +167,8 @@ class BatchedSimulator {
   void calcRewards();
   void randomizeRobotsForCurrentStep();
 
-  void initScenes();
+  void initEpisodeSet();
+  EpisodeInstance instantiateEpisode(int b, int episodeIndex);
 
   BatchedSimulatorConfig config_;
   bool isOkToRender_ = false;
@@ -196,8 +185,10 @@ class BatchedSimulator {
   int maxRolloutSteps_ = -1;
   RewardCalculationContext rewardContext_;
   std::vector<bool> hackDones_;
-  std::vector<Scene> scenes_;
-  std::vector<SceneInstance> envSceneInstances_;
+
+  EpisodeSet episodeSet_;
+  EpisodeInstanceSet episodeInstanceSet_;
+
   BpsSceneMapping sceneMapping_;
   std::vector<std::vector<int>> debugInstancesByEnv_;
 

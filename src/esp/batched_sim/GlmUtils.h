@@ -12,12 +12,31 @@
 #include <Magnum/Math/Matrix4.h>
 #include <Magnum/Math/Quaternion.h>
 
+// for inlines
+#include "esp/batched_sim/BatchedSimAssert.h"
+#include <Magnum/Math/Range.h>
+
 namespace esp {
 namespace batched_sim {
 
 glm::mat4 toGlmMat4(const Magnum::Vector3& pos, const Magnum::Quaternion& rot);
 
 glm::mat4x3 toGlmMat4x3(const Magnum::Matrix4& m);
+
+
+Magnum::Vector3 inverseTransformPoint(const glm::mat4x3& glMat, const Magnum::Vector3& pos);
+
+bool sphereBoxContactTest(const Magnum::Vector3& sphereOrigin, float sphereRadiusSq, const Magnum::Range3D& aabb);
+
+template<int maxTests, bool numTestsIsMaxTests>
+bool batchSphereOrientedBoxContactTest(const glm::mat4x3** orientedBoxTransforms, 
+  const Magnum::Vector3** positions,
+  float sphereRadiusSq, const Magnum::Range3D** boxRanges, int numTests);
+
+
+
+/*
+*/
 
 }  // namespace batched_sim
 }  // namespace esp

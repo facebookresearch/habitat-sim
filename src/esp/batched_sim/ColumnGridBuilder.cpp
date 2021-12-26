@@ -3,10 +3,12 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "ColumnGridBuilder.h"
+#include "esp/batched_sim/BatchedSimAssert.h"
 #include "esp/sim/Simulator.h"
 #include "esp/geo/geo.h"
 #include "esp/physics/PhysicsManager.h"
 #include "esp/core/logging.h"
+
 
 #include <Corrade/Utility/Assert.h>
 #include <Magnum/Math/Range.h>
@@ -20,8 +22,8 @@ namespace batched_sim {
 
 ColumnGridSource ColumnGridBuilder::build(esp::sim::Simulator& sim, const Mn::Range3D& aabb, 
     float sphereRadius, float gridSpacing) {
-  CORRADE_INTERNAL_ASSERT(gridSpacing > 0.f);
-  CORRADE_INTERNAL_ASSERT(sphereRadius > 0.f);
+  BATCHED_SIM_ASSERT(gridSpacing > 0.f);
+  BATCHED_SIM_ASSERT(sphereRadius > 0.f);
 
   constexpr float searchStepSize = 0.01;
   Mn::Range3D adjustedAabb = aabb.padded(Mn::Vector3(
@@ -39,8 +41,8 @@ ColumnGridSource ColumnGridBuilder::build(esp::sim::Simulator& sim, const Mn::Ra
   #if 1
   source.dimX = int(adjustedAabb.sizeX() / gridSpacing) + 1;
   source.dimZ = int(adjustedAabb.sizeZ() / gridSpacing) + 1;
-  CORRADE_INTERNAL_ASSERT(source.dimX * gridSpacing >= adjustedAabb.sizeX());
-  CORRADE_INTERNAL_ASSERT(source.dimZ * gridSpacing >= adjustedAabb.sizeZ());
+  BATCHED_SIM_ASSERT(source.dimX * gridSpacing >= adjustedAabb.sizeX());
+  BATCHED_SIM_ASSERT(source.dimZ * gridSpacing >= adjustedAabb.sizeZ());
   #else
   source.dimX = 1; // temp int(adjustedAabb.sizeX() / gridSpacing) + 1;
   source.dimZ = 1; // temp int(adjustedAabb.sizeZ() / gridSpacing) + 1;
@@ -84,10 +86,10 @@ ColumnGridSource ColumnGridBuilder::build(esp::sim::Simulator& sim, const Mn::Ra
         // we have the bottom of a free column, so up-cast to find the top
         if (freeMinY != ColumnGridSource::INVALID_Y) {
           float distToMaxZ = adjustedAabb.max().y() - rayOrigin.y();
-          CORRADE_INTERNAL_ASSERT(distToMaxZ > 0.f);
+          BATCHED_SIM_ASSERT(distToMaxZ > 0.f);
           esp::geo::Ray ray(rayOrigin, upVec);
           esp::physics::RaycastResults upResults = sim.castSphere(ray, sphereRadius, distToMaxZ);
-          CORRADE_INTERNAL_ASSERT(upResults.hits.size() <= 1);
+          BATCHED_SIM_ASSERT(upResults.hits.size() <= 1);
           if (!upResults.hasHits()) {
             // End the last free column and we're done with this cell.
             freeMaxY = adjustedAabb.max().y();
@@ -117,11 +119,11 @@ ColumnGridSource ColumnGridBuilder::build(esp::sim::Simulator& sim, const Mn::Ra
           } else {
               
             float distDownToFreeColumnMaxZ = rayOrigin.y() - freeMaxY;
-            CORRADE_INTERNAL_ASSERT(distDownToFreeColumnMaxZ > 0.f);
+            BATCHED_SIM_ASSERT(distDownToFreeColumnMaxZ > 0.f);
             esp::geo::Ray ray(rayOrigin, downVec);
             esp::physics::RaycastResults downResults = sim.castSphere(
               ray, sphereRadius, distDownToFreeColumnMaxZ);
-            CORRADE_INTERNAL_ASSERT(downResults.hits.size() <= 1);
+            BATCHED_SIM_ASSERT(downResults.hits.size() <= 1);
 
             const auto& downHit = downResults.hits.front();
 
@@ -136,7 +138,7 @@ ColumnGridSource ColumnGridBuilder::build(esp::sim::Simulator& sim, const Mn::Ra
               break;
             }
 
-            CORRADE_INTERNAL_ASSERT(downHit.rayDistance > 0.f);
+            BATCHED_SIM_ASSERT(downHit.rayDistance > 0.f);
             if (downHit.rayDistance == 0.f) {
               // todo: get rid of this if. See assert above.
               // I think this happens because of collision margin (different result
@@ -145,7 +147,7 @@ ColumnGridSource ColumnGridBuilder::build(esp::sim::Simulator& sim, const Mn::Ra
             } else {
 
               if (freeMinY != ColumnGridSource::INVALID_Y) {
-                CORRADE_INTERNAL_ASSERT(freeMaxY != ColumnGridSource::INVALID_Y);
+                BATCHED_SIM_ASSERT(freeMaxY != ColumnGridSource::INVALID_Y);
                 // we've validated the recent obstacle (hitting from the bottom *and*
                 // the top), so let's add the free column.
                 source.appendColumn(cellX, cellZ, freeMinY, freeMaxY);
@@ -158,7 +160,7 @@ ColumnGridSource ColumnGridBuilder::build(esp::sim::Simulator& sim, const Mn::Ra
             }
           }
 
-          CORRADE_INTERNAL_ASSERT(stillInCollision);          
+          BATCHED_SIM_ASSERT(stillInCollision);          
           // Try the clearance tests again from slightly higher.
           rayOrigin.y() += searchStepSize;
           if (rayOrigin.y() >= adjustedAabb.max().y()) {
@@ -185,8 +187,8 @@ ColumnGridSource ColumnGridBuilder::build(esp::sim::Simulator& sim, const Mn::Ra
         }
 
         // continue with next up-cast to find next column
-        CORRADE_INTERNAL_ASSERT(freeMinY != ColumnGridSource::INVALID_Y);
-        CORRADE_INTERNAL_ASSERT(rayOrigin.y() > freeMinY);
+        BATCHED_SIM_ASSERT(freeMinY != ColumnGridSource::INVALID_Y);
+        BATCHED_SIM_ASSERT(rayOrigin.y() > freeMinY);
       }
     }
   }

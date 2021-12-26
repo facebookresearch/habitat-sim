@@ -3,7 +3,8 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "BatchedSimulator.h"
-#include "GlmUtils.h"
+#include "esp/batched_sim/GlmUtils.h"
+#include "esp/batched_sim/BatchedSimAssert.h"
 
 #include "esp/gfx/replay/Keyframe.h"
 #include "esp/io/json.h"
@@ -14,10 +15,20 @@
 
 #include <mutex>
 
+#ifndef NDEBUG
+// #define ENABLE_DEBUG_INSTANCES
+#endif
+
 namespace esp {
 namespace batched_sim {
 
 namespace {
+
+static constexpr glm::mat4x3 identityGlMat_ = glm::mat4x3(
+  1.f, 0.f, 0.f,
+  0.f, 1.f, 0.f,
+  0.f, 0.f, 1.f, 
+  0.f, 0.f, 0.f);
 
 Mn::Vector3 toMagnumVector3(const btVector3& src) {
   return {src.x(), src.y(), src.z()};
@@ -56,7 +67,7 @@ std::string getMeshNameFromURDFVisualFilepath(const std::string& filepath) {
     // this is okay; the substring will start at 0
   }
   auto index1 = filepath.rfind('.');
-  CORRADE_INTERNAL_ASSERT(index1 != -1);
+  BATCHED_SIM_ASSERT(index1 != -1);
 
   auto retval = filepath.substr(index0 + 1, index1 - index0 - 1);
   return retval;
@@ -65,14 +76,14 @@ std::string getMeshNameFromURDFVisualFilepath(const std::string& filepath) {
 }  // namespace
 
 void BatchedSimulator::randomizeRobotsForCurrentStep() {
-  CORRADE_INTERNAL_ASSERT(currRolloutStep_ >= 0);
+  BATCHED_SIM_ASSERT(currRolloutStep_ >= 0);
   int numEnvs = bpsWrapper_->envs_.size();
   int numPosVars = robot_.numPosVars;
 
-  float* yaws = &rollouts_.yaws_[currRolloutStep_ * numEnvs];
-  Mn::Vector2* positions = &rollouts_.positions_[currRolloutStep_ * numEnvs];
+  float* yaws = &safeVectorGet(rollouts_.yaws_, currRolloutStep_ * numEnvs);
+  Mn::Vector2* positions = &safeVectorGet(rollouts_.positions_,currRolloutStep_ * numEnvs);
   float* jointPositions =
-      &rollouts_.jointPositions_[currRolloutStep_ * numEnvs * numPosVars];
+      &safeVectorGet(rollouts_.jointPositions_,currRolloutStep_ * numEnvs * numPosVars);
 
   auto random = core::Random(/*seed*/ 1);
 
@@ -83,10 +94,17 @@ void BatchedSimulator::randomizeRobotsForCurrentStep() {
                                               random.uniform_float(-0.2, 0.2f));
     for (int j = 0; j < robot_.numPosVars; j++) {
       auto& pos = jointPositions[b * robot_.numPosVars + j];
-      pos = random.uniform_float(-0.2, 0.4f);
+      pos = 0.f;
       pos = Mn::Math::clamp(pos, robot_.jointPositionLimits.first[j],
                             robot_.jointPositionLimits.second[j]);
     }
+
+    // 7 shoulder, + is down
+    // 8 twist, + is twist to right
+    // 9 elbow, + is down
+    // 10 elbow twist, + is twst to right
+    // 11 wrist, + is down
+    jointPositions[b * robot_.numPosVars + 9] = float(Mn::Rad(Mn::Deg(-90.f)));
   }
 }
 
@@ -107,8 +125,6 @@ RobotInstanceSet::RobotInstanceSet(Robot* robot,
 
   const auto* mb = robot_->artObj->btMultiBody_.get();
 
-  glm::mat4x3 identityMat = toGlmMat4x3(Mn::Matrix4(Mn::Math::IdentityInit));
-
   int baseInstanceIndex = 0;
   for (auto& env : *envs_) {
     // sloppy: pass -1 to getLinkVisualSceneNodes to get base
@@ -117,18 +133,18 @@ RobotInstanceSet::RobotInstanceSet(Robot* robot,
 
       const auto& visualAttachments = link.visualAttachments_;
 
-      CORRADE_INTERNAL_ASSERT(visualAttachments.size() <= 1);
+      BATCHED_SIM_ASSERT(visualAttachments.size() <= 1);
 
       int instanceId = -1;
       if (!visualAttachments.empty()) {
         const std::string linkVisualFilepath = visualAttachments[0].second;
         const std::string nodeName =
             getMeshNameFromURDFVisualFilepath(linkVisualFilepath);
-        const auto [meshIndex, mtrlIndex, scale] =
-            robot_->sceneMapping_->findMeshIndexMaterialIndexScale(nodeName);
-        CORRADE_INTERNAL_ASSERT(scale == 1.f);
+        auto instanceBlueprint =
+            robot_->sceneMapping_->findInstanceBlueprint(nodeName);
 
-        instanceId = env.addInstance(meshIndex, mtrlIndex, identityMat);
+        instanceId = env.addInstance(instanceBlueprint.meshIdx_, 
+          instanceBlueprint.mtrlIdx_, identityGlMat_);
       } else {
         // these are camera links
         // sloppy: we should avoid having these items in the nodeInstanceIds_
@@ -177,7 +193,7 @@ void RobotInstanceSet::applyActionPenalties(const std::vector<float>& actions) {
           jointPosPenaltyScale;
     }
   }
-  CORRADE_INTERNAL_ASSERT(actionIndex == actions.size());
+  BATCHED_SIM_ASSERT(actionIndex == actions.size());
 }
 
 void BatchedSimulator::reverseActionsForEnvironment(int b) {
@@ -207,7 +223,7 @@ void BatchedSimulator::reverseActionsForEnvironment(int b) {
 }
 
 void RobotInstanceSet::updateLinkTransforms(int currRolloutStep) {
-  esp::gfx::replay::Keyframe debugKeyframe;
+  // esp::gfx::replay::Keyframe debugKeyframe;
   int numLinks = robot_->artObj->getNumLinks();
   int numNodes = numLinks + 1;
   int numEnvs = numEnvs_;
@@ -284,7 +300,7 @@ void RobotInstanceSet::updateLinkTransforms(int currRolloutStep) {
             mat.transformPoint(localOrigin);
         }
 
-        CORRADE_INTERNAL_ASSERT(instanceIndex < nodeNewTransforms_.size());
+        BATCHED_SIM_ASSERT(instanceIndex < nodeNewTransforms_.size());
         nodeNewTransforms_[instanceIndex] = toGlmMat4x3(mat);
 
         // hack calc reward
@@ -315,7 +331,7 @@ void RobotInstanceSet::updateLinkTransforms(int currRolloutStep) {
 #endif
       }
 
-      CORRADE_INTERNAL_ASSERT(sphereIndex == baseSphereIndex + robot_->numCollisionSpheres_);
+      BATCHED_SIM_ASSERT(sphereIndex == baseSphereIndex + robot_->numCollisionSpheres_);
     }
   }
 
@@ -336,19 +352,21 @@ void BatchedSimulator::updateCollision() {
 
   const int numEnvs = config_.numEnvs;
 
-  CORRADE_INTERNAL_ASSERT(!robots_.areCollisionResultsValid_);
-  CORRADE_INTERNAL_ASSERT(robots_.collisionResults_.size() == robot_.numCollisionSpheres_ * numEnvs);
+  BATCHED_SIM_ASSERT(!robots_.areCollisionResultsValid_);
+  BATCHED_SIM_ASSERT(robots_.collisionResults_.size() == robot_.numCollisionSpheres_ * numEnvs);
 
   robots_.areCollisionResultsValid_ = true;
 
   for (int b = 0; b < numEnvs; b++) {
 
-    auto& sceneInstance = envSceneInstances_[b];
-    const auto& scene = scenes_[sceneInstance.sceneIndex_];
-    const auto& columnGrid = scene.columnGrid_;
+    const auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
+    const auto& episode = safeVectorGet(episodeSet_.episodes_, episodeInstance.episodeIndex_);
+    const auto& stageFixedObject = safeVectorGet(episodeSet_.fixedObjects_, episode.stageFixedObjIndex);
+    const auto& columnGrid = stageFixedObject.columnGrid_;
     const int baseSphereIndex = b * robot_.numCollisionSpheres_;
-
     bool hit = false;
+
+    // perf todo: if there was a hit last frame, cache that sphere and test it first here
     for (int s = 0; s < robot_.numCollisionSpheres_; s++) {
       const int sphereIndex = baseSphereIndex + s;
       auto& queryCache = robots_.collisionSphereQueryCaches_[sphereIndex];
@@ -363,16 +381,118 @@ void BatchedSimulator::updateCollision() {
     robots_.collisionResults_[b] = hit;
   }
 
+#define UPDATE_COLLISION_USE_BATCH_TEST
+#ifdef UPDATE_COLLISION_USE_BATCH_TEST
+
+// bool batchSphereOrientedBoxContactTest(const glm::mat4x3* orientedBoxTransforms, const Magnum::Vector3* positions,
+//  float sphereRadiusSq, const Magnum::Range3D* boxRanges);
+
+  constexpr int contactTestBatchSize = 64;
+  std::array<const glm::mat4x3*, contactTestBatchSize> orientedBoxTransforms;
+  std::array<const Magnum::Vector3*, contactTestBatchSize> spherePositions;
+  std::array<const Magnum::Range3D*, contactTestBatchSize> boxRanges;
+  int numCollectedTests = 0;
+#endif
+
   for (int b = 0; b < numEnvs; b++) {
 
-    auto& sceneInstance = envSceneInstances_[b];
-    const auto& scene = scenes_[sceneInstance.sceneIndex_];
-    const auto& columnGrid = scene.columnGrid_;
+    if (robots_.collisionResults_[b]) {
+      continue;
+    }
+
+    const auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
+    const auto& episode = safeVectorGet(episodeSet_.episodes_, episodeInstance.episodeIndex_);
+    const int baseSphereIndex = b * robot_.numCollisionSpheres_;
+    bool hit = false;
+    auto& env = bpsWrapper_->envs_[b];
+
+    // perf todo: if there was a hit last frame, cache that sphere and test it first here
+    for (int s = 0; s < robot_.numCollisionSpheres_; s++) {
+      const int sphereIndex = baseSphereIndex + s;
+      auto& queryCache = robots_.collisionSphereQueryCaches_[sphereIndex];
+      const auto& spherePos = robots_.collisionSphereWorldOrigins_[sphereIndex];
+
+      // todo: get pre-culled list of objects from a spatial data structure
+      for (int i = 0; i < episode.numFreeObjectSpawns_; i++) {
+
+        int globalFreeObjectIndex = b * episodeSet_.maxFreeObjects_ + i;
+
+        // perf todo: consider storing 
+        const auto& freeObjectSpawn = safeVectorGet(episodeSet_.freeObjectSpawns_, 
+          episode.firstFreeObjectSpawnIndex_ + i);
+        const auto& freeObject = safeVectorGet(episodeSet_.freeObjects_, freeObjectSpawn.freeObjIndex_);
+
+        auto instanceId = safeVectorGet(episodeInstanceSet_.freeObjectInstanceIds_, globalFreeObjectIndex);
+        const glm::mat4x3& glMat = env.getInstanceTransform(instanceId);
+
+        constexpr float sphereRadiusSq = 0.1f * 0.1f; // todo: get from Robot
+
+#ifdef ENABLE_DEBUG_INSTANCES
+        if (s == 0) {
+          const auto& rotation = safeVectorGet(freeObject.startRotations_, freeObjectSpawn.startRotationIndex_);
+          Mn::Matrix4 mat = Mn::Matrix4::from(
+              rotation, freeObjectSpawn.startPos_);
+
+          Mn::Matrix4 localToBox = Mn::Matrix4::translation(freeObject.aabb_.center())
+            * Mn::Matrix4::scaling(freeObject.aabb_.size() * 0.5);
+          auto adjustedMat = mat * localToBox;
+          addDebugInstance("cube_green", b, adjustedMat);
+        }
+#endif
+
+#ifdef UPDATE_COLLISION_USE_BATCH_TEST
+        orientedBoxTransforms[numCollectedTests] = &glMat;
+        spherePositions[numCollectedTests] = &spherePos;
+        boxRanges[numCollectedTests] = &freeObject.aabb_;
+        numCollectedTests++;
+        bool isLastTestForRobot = (s == (robot_.numCollisionSpheres_ - 1)
+          && i == episode.numFreeObjectSpawns_ - 1);
+        if (numCollectedTests == contactTestBatchSize || isLastTestForRobot) {
+
+          hit = numCollectedTests != contactTestBatchSize
+            ? batchSphereOrientedBoxContactTest<contactTestBatchSize, false>(&orientedBoxTransforms[0],
+            &spherePositions[0], sphereRadiusSq, &boxRanges[0], numCollectedTests)
+            : batchSphereOrientedBoxContactTest<contactTestBatchSize, true>(&orientedBoxTransforms[0],
+            &spherePositions[0], sphereRadiusSq, &boxRanges[0], numCollectedTests);
+          numCollectedTests = 0;
+          if (hit) {
+            break;
+          }
+        }
+#else
+        auto posLocal = inverseTransformPoint(glMat, spherePos);
+
+        if (sphereBoxContactTest(posLocal, sphereRadiusSq, freeObject.aabb_)) {
+          hit = true;
+          break;
+        }
+#endif        
+      }
+
+      if (hit) {
+        break;
+      }
+    }
+
+    robots_.collisionResults_[b] = hit;
+  }
+
+#ifdef ENABLE_DEBUG_INSTANCES
+  for (int b = 0; b < numEnvs; b++) {
+
+    const auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
+    const auto& episode = safeVectorGet(episodeSet_.episodes_, episodeInstance.episodeIndex_);
+    const auto& stageFixedObject = safeVectorGet(episodeSet_.fixedObjects_, episode.stageFixedObjIndex);
+    const auto& columnGrid = stageFixedObject.columnGrid_;
     const int baseSphereIndex = b * robot_.numCollisionSpheres_;
 
     for (int s = 0; s < robot_.numCollisionSpheres_; s++) {
       const int sphereIndex = baseSphereIndex + s;
-      const auto& spherePos = robots_.collisionSphereWorldOrigins_[sphereIndex];
+      auto spherePos = robots_.collisionSphereWorldOrigins_[sphereIndex];
+
+      // temp hack raise in y to help visualize
+      constexpr float hackOffsetY = 0.0f;
+      spherePos.y() += hackOffsetY;
 
       constexpr float sphereRadius = 0.1f; // todo: get from Robot
       Mn::Matrix4 mat = Mn::Matrix4::translation(spherePos)
@@ -382,9 +502,11 @@ void BatchedSimulator::updateCollision() {
       esp::batched_sim::ColumnGridSource::QueryCacheValue queryCache = 0;
       bool sphereHit = columnGrid.contactTest(spherePos, &queryCache);
 
-      addDebugInstance(sphereHit ? "sphere_orange" : "sphere_green", b, mat);
+      //addDebugInstance(sphereHit ? "sphere_orange" : "sphere_green", b, mat);
+      addDebugInstance((s % 2 == 0) ? "sphere_orange" : "sphere_green", b, mat);
     }
   }
+#endif
 }
 
 void BatchedSimulator::postCollisionUpdate(bool useCollisionResults) {
@@ -394,7 +516,7 @@ void BatchedSimulator::postCollisionUpdate(bool useCollisionResults) {
   int numNodes = numLinks + 1;  // include base
 
   if (useCollisionResults) {
-    CORRADE_INTERNAL_ASSERT(robots_.areCollisionResultsValid_);
+    BATCHED_SIM_ASSERT(robots_.areCollisionResultsValid_);
   }
 
   for (int b = 0; b < numEnvs; b++) {
@@ -452,12 +574,36 @@ Robot::Robot(const std::string& filepath, esp::sim::Simulator* sim, BpsSceneMapp
   collisionSphereLocalOriginsByNode_.resize(numNodes);
   int numCollisionSpheres = 0;
 
+  std::vector<std::string> armLinks = {
+    "shoulder_lift_link",
+    "shoulder_pan_link",
+    "upperarm_roll_link",
+    "elbow_flex_link",
+    "forearm_roll_link",
+    "wrist_flex_link",
+    "wrist_roll_link",
+    "gripper_link"
+  };
+
+  constexpr int numArmLinkSpheres = 4;
+  constexpr float armLinkLength = 0.15f;
+
+  std::vector<std::string> bodyLinks = {
+    "torso_lift_link",
+    "base_link"
+  };
+
+  constexpr int numBodyLinkSpheres = 16;
+  constexpr float bodyRingRadius = 0.28f;
+  constexpr float bodyRingLocalHeight = 0.6f;
+  constexpr float bodyOffsetX = -0.2f;
+
   for (int i = -1; i < numLinks; i++) {
     const auto nodeIndex = i + 1;           // 0 is base
-    CORRADE_INTERNAL_ASSERT(i == -1 || i == linkIds[i]);
+    BATCHED_SIM_ASSERT(i == -1 || i == linkIds[i]);
     const auto& link = artObj->getLink(i);  // -1 gets base link
     const auto& visualAttachments = link.visualAttachments_;
-    CORRADE_INTERNAL_ASSERT(visualAttachments.size() <= 1);
+    BATCHED_SIM_ASSERT(visualAttachments.size() <= 1);
     if (!visualAttachments.empty()) {
       const auto* sceneNode = visualAttachments[0].first;
       int nodeIndex = i + 1;  // 0 for base
@@ -469,24 +615,38 @@ Robot::Robot(const std::string& filepath, esp::sim::Simulator* sim, BpsSceneMapp
     }
 
     // temp hard-coded spheres
-    if (link.linkName == "gripper_link" || link.linkName == "elbow_flex_link") {
-      collisionSphereLocalOriginsByNode_[nodeIndex].push_back({0.f, 0.f, 0.f});
-      numCollisionSpheres++;
+    if (std::find(armLinks.begin(), armLinks.end(), link.linkName) != armLinks.end()) {
+      for (int j = 0; j < numArmLinkSpheres; j++) {
+        float offset = (float)j / numArmLinkSpheres * armLinkLength;
+        collisionSphereLocalOriginsByNode_[nodeIndex].push_back({offset, 0.f, 0.f});
+        numCollisionSpheres++;
+      }
     }
+
+    else if (std::find(bodyLinks.begin(), bodyLinks.end(), link.linkName) != bodyLinks.end()) {
+      // add spheres in a circle
+      for (int j = 0; j < numBodyLinkSpheres; j++) {
+        Mn::Deg angle = (float)j / numBodyLinkSpheres * Mn::Deg(360);
+        collisionSphereLocalOriginsByNode_[nodeIndex].push_back(
+          Mn::Vector3(Mn::Math::sin(angle) + bodyOffsetX, bodyRingLocalHeight, Mn::Math::cos(angle)) * bodyRingRadius);
+        numCollisionSpheres++;
+      }
+    }
+
   }
 
   numInstances_ = numInstances;
   numCollisionSpheres_ = numCollisionSpheres;
 
   numPosVars = artObj->getJointPositions().size();
-  CORRADE_INTERNAL_ASSERT(numPosVars > 0);
+  BATCHED_SIM_ASSERT(numPosVars > 0);
 }
 
 BpsWrapper::BpsWrapper(int gpuId, int numEnvs, const CameraSensorConfig& sensor0) {
   glm::u32vec2 out_dim(
       sensor0.width,
       sensor0.height);  // see also rollout_test.py, python/rl/agent.py
-  CORRADE_INTERNAL_ASSERT(gpuId != -1);
+  BATCHED_SIM_ASSERT(gpuId != -1);
 
   renderer_ = std::make_unique<bps3D::Renderer>(bps3D::RenderConfig{
       gpuId, 1, uint32_t(numEnvs), out_dim.x, out_dim.y, false,
@@ -525,9 +685,11 @@ BatchedSimulator::BatchedSimulator(const BatchedSimulatorConfig& config) {
 
   bpsWrapper_ = std::make_unique<BpsWrapper>(config_.gpuId, config_.numEnvs, config_.sensor0);
 
+#ifdef ENABLE_DEBUG_INSTANCES
   debugInstancesByEnv_.resize(config_.numEnvs);
+#endif
 
-  initScenes();
+  initEpisodeSet();
 
   esp::sim::SimulatorConfiguration simConfig{};
   simConfig.activeSceneName = "NONE";
@@ -583,53 +745,61 @@ void BatchedSimulator::setCamera(const Mn::Vector3& camPos, const Mn::Quaternion
 }
 
 bps3D::Environment& BatchedSimulator::getBpsEnvironment(int envIndex) {
-  CORRADE_INTERNAL_ASSERT(envIndex < config_.numEnvs);
+  BATCHED_SIM_ASSERT(envIndex < config_.numEnvs);
   return bpsWrapper_->envs_[envIndex];
 }
 
-void BatchedSimulator::initScenes() {
-  constexpr int numScenes = 2;
+EpisodeInstance BatchedSimulator::instantiateEpisode(int b, int episodeIndex) {
 
-  std::array<std::string, 2> stageNames = {
-    "Baked_sc0_staging_00",
-    "Baked_sc0_staging_01"
-  };
+  auto& env = getBpsEnvironment(b);
 
-  std::array<std::pair<int, int>, 2> stageMeshMtrlIndices;
+  EpisodeInstance epInstance;
+  epInstance.episodeIndex_ = episodeIndex;
 
-  for (int i = 0; i < stageNames.size(); i++) {
-    const auto& stageName = stageNames[i];
-    auto [meshIdx, mtrlIdx, scale] = sceneMapping_.findMeshIndexMaterialIndexScale(stageName);
-    CORRADE_INTERNAL_ASSERT(scale == 1.f);
-    stageMeshMtrlIndices[i] = std::make_pair(meshIdx, mtrlIdx);
+  const auto& episode = safeVectorGet(episodeSet_.episodes_, episodeIndex);
+  const auto& stageBlueprint = 
+    safeVectorGet(episodeSet_.fixedObjects_, episode.stageFixedObjIndex).instanceBlueprint_;
+  epInstance.stageFixedObjectInstanceId_ = env.addInstance(
+    stageBlueprint.meshIdx_, stageBlueprint.mtrlIdx_, identityGlMat_);
+
+  for (int i = 0; i < episode.numFreeObjectSpawns_; i++) {
+
+    int globalFreeObjectIndex = b * episodeSet_.maxFreeObjects_ + i;
+
+    const auto& freeObjectSpawn = safeVectorGet(episodeSet_.freeObjectSpawns_, 
+      episode.firstFreeObjectSpawnIndex_ + i);
+
+    const auto& freeObject = safeVectorGet(episodeSet_.freeObjects_, freeObjectSpawn.freeObjIndex_);
+    const auto& blueprint = freeObject.instanceBlueprint_;
+
+    const auto& rotation = safeVectorGet(freeObject.startRotations_, freeObjectSpawn.startRotationIndex_);
+    Mn::Matrix4 mat = Mn::Matrix4::from(
+        rotation, freeObjectSpawn.startPos_);
+    glm::mat4x3 glMat = toGlmMat4x3(mat); 
+
+    safeVectorGet(episodeInstanceSet_.freeObjectInstanceIds_, globalFreeObjectIndex) = env.addInstance(
+      blueprint.meshIdx_, blueprint.mtrlIdx_, glMat);
   }
 
-  // init scenes
-  scenes_.resize(numScenes);
-  for (int i = 0; i < numScenes; i++) {
-    auto& scene = scenes_[i];
-    scene.stageIndex = i; // unique stage per scene right now
-    std::string columnGridFilepath = "../data/columngrids/" 
-      + stageNames[scene.stageIndex] + "_stage_only.columngrid";
-    scene.columnGrid_.load(columnGridFilepath);
-  }
+  return epInstance;
+}
 
-  // init scene instances
+void BatchedSimulator::initEpisodeSet() {
+
   const int numEnvs = config_.numEnvs;
-  glm::mat4x3 identityMat = toGlmMat4x3(Mn::Matrix4(Mn::Math::IdentityInit));
 
-  envSceneInstances_.reserve(config_.numEnvs);
+  // generate exactly as many episodes as envs (this is not required)
+  episodeSet_ = generateBenchmarkEpisodeSet(numEnvs, sceneMapping_);
+
+  constexpr int invalidInstanceId = -1;
+  episodeInstanceSet_.freeObjectInstanceIds_.resize(numEnvs * episodeSet_.maxFreeObjects_, invalidInstanceId);
+
+  episodeInstanceSet_.episodeInstanceByEnv_.reserve(numEnvs);
   for (int b = 0; b < numEnvs; b++) {
-    auto& sceneInstance = envSceneInstances_[b];
-    const auto sceneIndex = b * numScenes / numEnvs; // distribute scenes across instances
-    sceneInstance.sceneIndex_ = sceneIndex;
-
-    auto& env = bpsWrapper_->envs_[b];
-    int stageIndex = scenes_[sceneIndex].stageIndex;
-    CORRADE_INTERNAL_ASSERT(stageIndex < stageNames.size());
-    auto [meshIdx, mtrlIdx] = stageMeshMtrlIndices[stageIndex];
-    sceneInstance.stageInstance_ = env.addInstance(meshIdx, mtrlIdx, identityMat);
-  } 
+    const auto episodeIndex = b * episodeSet_.episodes_.size() / numEnvs; // distribute episodes across instances
+    EpisodeInstance epInstance = instantiateEpisode(b, episodeIndex);
+    episodeInstanceSet_.episodeInstanceByEnv_.emplace_back(std::move(epInstance));
+  }
 }
 
 void BatchedSimulator::setActions(std::vector<float>&& actions) {
@@ -641,7 +811,7 @@ void BatchedSimulator::setActions(std::vector<float>&& actions) {
 }
 
 void BatchedSimulator::reset() {
-  CORRADE_INTERNAL_ASSERT(!isRenderStarted_);
+  BATCHED_SIM_ASSERT(!isRenderStarted_);
 
   currRolloutStep_ = 0;
   prevRolloutStep_ = -1;
@@ -665,14 +835,14 @@ void BatchedSimulator::autoResetOrStepPhysics() {
     if (currRolloutStep_ == 0) {
       std::fill(hackDones_.begin(), hackDones_.end(), false);
     } else {
-      CORRADE_INTERNAL_ASSERT(!hackDones_[0]);
+      BATCHED_SIM_ASSERT(!hackDones_[0]);
     }
     stepPhysics();
   }
 }
 
 void BatchedSimulator::stepPhysics() {
-  CORRADE_INTERNAL_ASSERT(isOkToStep_);
+  BATCHED_SIM_ASSERT(isOkToStep_);
 
   prevRolloutStep_ = currRolloutStep_;
   currRolloutStep_++;
@@ -724,7 +894,7 @@ void BatchedSimulator::stepPhysics() {
       // todo: clamp to joint limits
     }
   }
-  CORRADE_INTERNAL_ASSERT(actionIndex == actions_.size());
+  BATCHED_SIM_ASSERT(actionIndex == actions_.size());
 
   robots_.updateLinkTransforms(currRolloutStep_);
 
@@ -783,21 +953,21 @@ void BatchedSimulator::stepPhysicsWithReferenceActions() {
 #endif
 
 void BatchedSimulator::startRender() {
-  CORRADE_INTERNAL_ASSERT(isOkToRender_);
+  BATCHED_SIM_ASSERT(isOkToRender_);
   bpsWrapper_->renderer_->render(bpsWrapper_->envs_.data());
   isOkToRender_ = false;
   isRenderStarted_ = true;
 }
 
 void BatchedSimulator::waitForFrame() {
-  CORRADE_INTERNAL_ASSERT(isRenderStarted_);
+  BATCHED_SIM_ASSERT(isRenderStarted_);
   bpsWrapper_->renderer_->waitForFrame();
   isRenderStarted_ = false;
   isOkToRender_ = true;
 }
 
 bps3D::Renderer& BatchedSimulator::getBpsRenderer() {
-  CORRADE_INTERNAL_ASSERT(bpsWrapper_->renderer_.get());
+  BATCHED_SIM_ASSERT(bpsWrapper_->renderer_.get());
   return *bpsWrapper_->renderer_.get();
 }
 
@@ -915,115 +1085,8 @@ RolloutRecord::RolloutRecord(int numRolloutSteps,
   rewards_.resize(numRolloutSteps * numEnvs, NAN);
 }
 
-#if 0
-class ThreadPool {
-
-  struct Job {
-    int currRolloutStep,
-    int bStart,
-    int bEnd
-  };
-
-  void createThreadPool();
-  void loopFunction(int workerThread);
-  void onResetRollouts() {
-    {
-      unique_lock<mutex> lock(threadpool_mutex_);
-      CORRADE_INTERNAL_ASSERT(jobStack_.empty());
-      // todo: assert not waiting for jobs to finish
-    }
-    numQueuedSteps_ = 0;
-  }
-
-  std::mutex threadpool_mutex_;
-  bool terminate_pool_; // protect with mutex
-
-  std::vector<Job> jobStack_;
-  std::vector<RewardCalculationContext> rewardContextPerThread_;
-  int numQueuedSteps_ = 0;
-  int numActiveJobs_ = 0; // protect with mutex
-};
-
-
-void ThreadPool::createThreadPool() {
-  int numThreads = thread::hardware_concurrency();
-  vector<thread> pool;
-  for(int ii = 0; ii < numThreads; ii++) {
-    pool.push_back(thread(ThreadPool::loopFunction, ii));
-  }
-}
-
-// runs on main thread
-void ThreadPool::tryQueueWork(int currRolloutStep) {
-
-  // todo: check for off-by-one
-  if (currRolloutStep == numQueuedSteps_) {
-    return;
-  }
-
-  {
-    unique_lock<mutex> lock(threadpool_mutex_);
-    while (currRolloutStep > numQueuedSteps_) {
-      // temp: for now, queue all envs for one step as single job
-      jobStack_.push_back(Job{numQueuedSteps_, 0, numEnvs_});
-      numQueuedSteps_++;
-    }
-
-
-}
-
-void ThreadPool::~ThreadPool() {
-{
-  {
-    unique_lock<mutex> lock(threadpool_mutex_);
-    terminate_pool_ = true; // use this flag in condition.wait
-  }
-  condition.notify_all(); // wake up all threads.
-
-  // Join all threads.
-  for(std::thread &every_thread : thread_vector) {
-    every_thread.join();
-  }
-
-  thread_vector.clear();
-  stopped = true; // use this flag in destructor, if not set, call shutdown()
-
-}
-
-void issueCalculateRewardJobs() {
-
-  Pool_Obj.Add_Job(std::bind(&Some_Class::Some_Method, &Some_object));
-
-}
-
-void ThreadPool::loopFunction(int threadIndex)
-{
-  while(true)
-  {
-    {
-        unique_lock<mutex> lock(threadpool_mutex_);
-        condition.wait(lock, [this](){return !Queue.empty() || terminate_pool_;});
-        if (terminate_pool_) {
-          break;
-        }
-        Job = Queue.front();
-        Queue.pop();
-    }
-    Job(); // function<void()> type
-  }
-};
-
-void The_Pool::Add_Job(function<void()> New_Job)
-{
-    {
-         unique_lock<mutex> lock(Queue_Mutex);
-         Queue.push(New_Job);
-    }
-    condition.notify_one();
-}
-#endif
-
 void BatchedSimulator::deleteDebugInstances() {
+#ifdef ENABLE_DEBUG_INSTANCES
   const int numEnvs = config_.numEnvs;
   for (int b = 0; b < numEnvs; b++) {
 
@@ -1035,21 +1098,23 @@ void BatchedSimulator::deleteDebugInstances() {
 
     debugInstancesByEnv_[b].clear();
   }
+#endif
 }
 
 int BatchedSimulator::addDebugInstance(const std::string& name, int envIndex, 
   const Magnum::Matrix4& transform) {
+#ifdef ENABLE_DEBUG_INSTANCES
   glm::mat4x3 glMat = toGlmMat4x3(transform);
-  const auto [meshIndex, mtrlIndex, scale] =
-    sceneMapping_.findMeshIndexMaterialIndexScale(name);
-  CORRADE_INTERNAL_ASSERT(scale == 1.f);
-  CORRADE_INTERNAL_ASSERT(envIndex < config_.numEnvs);
+  const auto& blueprint = sceneMapping_.findInstanceBlueprint(name);
+  BATCHED_SIM_ASSERT(envIndex < config_.numEnvs);
   auto& env = getBpsEnvironment(envIndex);
-  int instanceId = env.addInstance(meshIndex, mtrlIndex, glMat);
+  int instanceId = env.addInstance(blueprint.meshIdx_, blueprint.mtrlIdx_, glMat);
   debugInstancesByEnv_[envIndex].push_back(instanceId);
   return instanceId;
+#else
+  return -1;
+#endif
 }
-
 
 }  // namespace batched_sim
 }  // namespace esp

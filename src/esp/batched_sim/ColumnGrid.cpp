@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "ColumnGrid.h"
+#include "esp/batched_sim/BatchedSimAssert.h"
 #include "esp/core/logging.h"
 
 #include <Corrade/Utility/Assert.h>
@@ -58,14 +59,14 @@ bool ColumnGridSource::contactTest(const Mn::Vector3& pos,
   float queryY = pos.y();
 
   // consider allowing a margin and then clamping, to account for numeric imprecision
-  CORRADE_INTERNAL_ASSERT(cellFloatX >= 0.f && cellFloatX < (float)dimX);
-  CORRADE_INTERNAL_ASSERT(cellFloatX < (float)MAX_INTEGER_MATH_COORD);
+  BATCHED_SIM_ASSERT(cellFloatX >= 0.f && cellFloatX < (float)dimX);
+  BATCHED_SIM_ASSERT(cellFloatX < (float)MAX_INTEGER_MATH_COORD);
   const int globalCellX = int(cellFloatX); // note truncation, not founding
-  CORRADE_INTERNAL_ASSERT(globalCellX >= 0 && globalCellX <= MAX_INTEGER_MATH_COORD);
+  BATCHED_SIM_ASSERT(globalCellX >= 0 && globalCellX <= MAX_INTEGER_MATH_COORD);
 
-  CORRADE_INTERNAL_ASSERT(cellFloatZ >= 0.f && cellFloatZ < (float)dimZ);
+  BATCHED_SIM_ASSERT(cellFloatZ >= 0.f && cellFloatZ < (float)dimZ);
   const int globalCellZ = int(cellFloatZ);
-  CORRADE_INTERNAL_ASSERT(globalCellZ >= 0 && globalCellZ <= MAX_INTEGER_MATH_COORD);
+  BATCHED_SIM_ASSERT(globalCellZ >= 0 && globalCellZ <= MAX_INTEGER_MATH_COORD);
 
   const int patchX = globalCellX >> patchShift;
   const int patchZ = globalCellZ >> patchShift;
@@ -157,10 +158,10 @@ void ColumnGridSource::load(const std::string& filepath) {
   minZ = header.minZ;
   sphereRadius = header.sphereRadius;
 
-  CORRADE_INTERNAL_ASSERT(dimX > 0);
-  CORRADE_INTERNAL_ASSERT(dimZ > 0);
-  CORRADE_INTERNAL_ASSERT(sphereRadius > 0.f);
-  CORRADE_INTERNAL_ASSERT(gridSpacing > 0.f);
+  BATCHED_SIM_ASSERT(dimX > 0);
+  BATCHED_SIM_ASSERT(dimZ > 0);
+  BATCHED_SIM_ASSERT(sphereRadius > 0.f);
+  BATCHED_SIM_ASSERT(gridSpacing > 0.f);
   invGridSpacing = 1.f / gridSpacing;
   ensureLayer(header.numLayers - 1);
 

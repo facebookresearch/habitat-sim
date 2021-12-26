@@ -5,6 +5,8 @@
 #ifndef ESP_BATCHEDSIM_COLUMNGRID_H_
 #define ESP_BATCHEDSIM_COLUMNGRID_H_
 
+#include "esp/batched_sim/BatchedSimAssert.h"
+
 #include <Corrade/Utility/Assert.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Vector3.h>
@@ -69,7 +71,7 @@ class ColumnGridSource {
 
   void ensureLayer(int layerIdx) {
     // sanity-check: this data structure shouldn't have too many layers
-    CORRADE_INTERNAL_ASSERT(layerIdx < 24);
+    BATCHED_SIM_ASSERT(layerIdx < 24);
     if (layers.size() < layerIdx + 1) {
       // only increase capacity minimally
       layers.reserve(layerIdx + 1);
@@ -79,14 +81,14 @@ class ColumnGridSource {
       for (int i = oldSize; i < layers.size(); i++) {
         layers[i].columns.resize(dimX * dimZ);
       }
-      CORRADE_INTERNAL_ASSERT(patches.size() == 1);
+      BATCHED_SIM_ASSERT(patches.size() == 1);
       patches[0].numLayers = layers.size();
     }
   }
 
   Column debugGetColumn(int cellX, int cellZ, int layerIdx) const {
     // temp: just index based on entire grid dim
-    CORRADE_INTERNAL_ASSERT(patches.size() == 1);
+    BATCHED_SIM_ASSERT(patches.size() == 1);
     int cellIdx = getCellIndex(cellX, cellZ);
     if (layerIdx >= layers.size()) {
       return Column{INVALID_Y, INVALID_Y};
@@ -95,7 +97,7 @@ class ColumnGridSource {
   }
 
   void appendColumn(int cellX, int cellZ, float freeMinY, float freeMaxY) {
-    CORRADE_INTERNAL_ASSERT(freeMaxY > freeMinY);
+    BATCHED_SIM_ASSERT(freeMaxY > freeMinY);
     int cellIdx = getCellIndex(cellX, cellZ);
     int layerIdx = 0;
     // search for a layer that has an empty/invalid column at this cell
@@ -108,9 +110,9 @@ class ColumnGridSource {
         col.freeMaxY = freeMaxY;
         break;
       } else {
-        CORRADE_INTERNAL_ASSERT(col.freeMinY != INVALID_Y);
+        BATCHED_SIM_ASSERT(col.freeMinY != INVALID_Y);
         // new column should be higher than existing columns
-        CORRADE_INTERNAL_ASSERT(freeMinY > col.freeMaxY);
+        BATCHED_SIM_ASSERT(freeMinY > col.freeMaxY);
         layerIdx++;
       }
     }
@@ -118,19 +120,19 @@ class ColumnGridSource {
 
  public: // temp everything public
   int getCellIndex(int cellX, int cellZ) const {
-    CORRADE_INTERNAL_ASSERT(cellX >= 0 && cellX < dimX);
-    CORRADE_INTERNAL_ASSERT(cellZ >= 0 && cellZ < dimZ);
+    BATCHED_SIM_ASSERT(cellX >= 0 && cellX < dimX);
+    BATCHED_SIM_ASSERT(cellZ >= 0 && cellZ < dimZ);
     return cellZ * dimX + cellX; // todo: more clever memory layout
   }
 
   int getLocalCellIndex(int localCellX, int localCellZ) const  {
     // temp: just index based on entire grid dim
-    CORRADE_INTERNAL_ASSERT(patches.size() == 1);
+    BATCHED_SIM_ASSERT(patches.size() == 1);
     return getCellIndex(localCellX, localCellZ);
   }
 
   int getPatchIndex(int patchX, int patchZ) const {
-    CORRADE_INTERNAL_ASSERT(patchX == 0 && patchZ == 0);
+    BATCHED_SIM_ASSERT(patchX == 0 && patchZ == 0);
     return 0;
   }
 
@@ -143,9 +145,9 @@ class ColumnGridSource {
 
   const Column& getColumn(const Patch& patch, int localCellIdx, int layerIndex) const {
     // temp: just index based on entire grid dim
-    CORRADE_INTERNAL_ASSERT(patches.size() == 1);
-    CORRADE_INTERNAL_ASSERT(layerIndex >= 0 && layerIndex < layers.size());
-    CORRADE_INTERNAL_ASSERT(localCellIdx >= 0 && localCellIdx < layers[layerIndex].columns.size());
+    BATCHED_SIM_ASSERT(patches.size() == 1);
+    BATCHED_SIM_ASSERT(layerIndex >= 0 && layerIndex < layers.size());
+    BATCHED_SIM_ASSERT(localCellIdx >= 0 && localCellIdx < layers[layerIndex].columns.size());
     return layers[layerIndex].columns[localCellIdx];
   }
 };

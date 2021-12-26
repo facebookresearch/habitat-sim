@@ -3,6 +3,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED 17)
 
 add_library(
   batched_sim STATIC
+  BatchedSimAssert.h
   BatchedSimulator.cpp
   BatchedSimulator.h
   BpsSceneMapping.cpp
@@ -11,6 +12,8 @@ add_library(
   ColumnGrid.h
   ColumnGridBuilder.cpp
   ColumnGridBuilder.h
+  EpisodeSet.cpp
+  EpisodeSet.h
   GlmUtils.cpp
   GlmUtils.h
 )

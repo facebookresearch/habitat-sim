@@ -2,6 +2,7 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
+#include "esp/batched_sim/BatchedSimAssert.h"
 #include "esp/batched_sim/BatchedSimulator.h"
 #include "esp/batched_sim/BpsSceneMapping.h"
 #include "esp/batched_sim/GlmUtils.h"
@@ -175,10 +176,11 @@ int key_press() { // not working: ¹ (251), num lock (-144), caps lock (-20), wi
 class BatchedSimulatorTest : public ::testing::Test {};
 
 TEST_F(BatchedSimulatorTest, basic) {
+
   esp::logging::LoggingContext loggingContext;
 
   BatchedSimulatorConfig config{
-      .numEnvs = 32, .gpuId = 0, .sensor0 = {.width = 512, .height = 512, .hfov = 60}};
+      .numEnvs = 4, .gpuId = 0, .sensor0 = {.width = 768, .height = 768, .hfov = 60}};
   BatchedSimulator bsim(config);
 
   Mn::Vector3 camPos{-1.61004, 1.5, 3.5455};
@@ -198,18 +200,31 @@ TEST_F(BatchedSimulatorTest, basic) {
   std::cout << "Open ./out_color_0.bmp in VS Code or another viewer that supports hot-reload." << std::endl;
   std::cout << "Press WASDQE/arrow keys to move/look, +/- to adjust speed, or ESC to quit." << std::endl;
 
-  std::vector<float> actions(17 * config.numEnvs);
+  std::vector<float> actions(17 * config.numEnvs, 0.f);
   for (int b = 0; b < config.numEnvs; b++) {
-    actions[b * 17 + 0] = (b % 2 == 0) ? 0.1f : -0.1f; // base rotate
-    actions[b * 17 + 1] = 0.1f; // base forward
+    //actions[b * 17 + 0] = (b % 2 == 0) ? 0.1f : -0.1f; // base rotate
+    actions[b * 17 + 1] = 0.05f; // base forward
+
+    int jointForThisEnv = ((b / 2) % 15);
+    actions[b * 17 + 2 + jointForThisEnv] = (b % 2 == 0) ? 0.03f : -0.03f;
+
+    // for (int i = 2; i < 17; i++) {
+    //   const float jointAction = (b % 2 == 0) ? 0.01f : -0.01f;
+    //   actions[b * 17 + i] = jointAction;
+    // }
   }
 
+  bool doAdvanceSim = false;
+
+  bsim.autoResetOrStepPhysics();
+
   while (true) {
-    for (int i = 0; i < 1; i++) {
+    if (doAdvanceSim) {
       bsim.setActions(std::vector<float>(actions));
       bsim.autoResetOrStepPhysics();
       bsim.getRewards();
       bsim.getDones();
+      doAdvanceSim = false;
     }
     bsim.startRender();
     bsim.waitForFrame();
@@ -258,6 +273,8 @@ TEST_F(BatchedSimulatorTest, basic) {
       camPos.y() += moveSpeed;
     } else if (key == 'q') {
       camPos.y() += -moveSpeed;
+    } else if (key == ' ') {
+      doAdvanceSim = true;
     }
 
     bsim.setCamera(camPos, camRot);    
@@ -277,6 +294,7 @@ TEST_F(BatchedSimulatorTest, basic) {
       int instanceToShow = contact ? sphereOrangeInstance : sphereGreenInstance;
       int instanceToHide = contact ? sphereGreenInstance : sphereOrangeInstance;
 
+      CORRADE_INTERNAL_ASSERT(instanceToShow != -1);
       bpsEnv.updateInstanceTransform(instanceToShow, toGlmMat4x3(mat));
       bpsEnv.updateInstanceTransform(instanceToHide, 
         toGlmMat4x3(Mn::Matrix4::translation({1000.f, 1000.f, 1000.f})));

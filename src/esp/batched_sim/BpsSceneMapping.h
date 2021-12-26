@@ -12,15 +12,19 @@ namespace batched_sim {
 
 class BpsSceneMapping {
  public:
+  class InstanceBlueprint {
+   public:
+    int meshIdx_;
+    int mtrlIdx_;
+  };
   static BpsSceneMapping loadFromFile(const std::string& filepath);
 
-  std::tuple<int, int, float> findMeshIndexMaterialIndexScale(
-      const std::string& nodeName);
+  InstanceBlueprint findInstanceBlueprint(const std::string& nodeName) const;
 
   struct MeshMapping {
-      std::string name;
-      int meshIdx;
-      int mtrlIdx;
+    std::string name;
+    int meshIdx;
+    int mtrlIdx;
   };
   std::vector<MeshMapping> meshMappings;
 };

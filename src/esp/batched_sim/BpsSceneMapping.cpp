@@ -28,14 +28,14 @@ bool fromJsonValue(const esp::io::JsonGenericValue& obj, BpsSceneMapping& x) {
   return true;
 }
 
-std::tuple<int, int, float> BpsSceneMapping::findMeshIndexMaterialIndexScale(
-    const std::string& nodeName) {
+BpsSceneMapping::InstanceBlueprint BpsSceneMapping::findInstanceBlueprint(
+    const std::string& nodeName) const {
   
   for (const auto& meshMapping : meshMappings) {
 
     if (meshMapping.name == nodeName) {
       constexpr float scale = 1.f;
-      return std::make_tuple(meshMapping.meshIdx, meshMapping.mtrlIdx, scale);
+      return InstanceBlueprint{meshMapping.meshIdx, meshMapping.mtrlIdx};
     }
   }
 
