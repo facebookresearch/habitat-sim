@@ -34,25 +34,32 @@ void initBatchedSimBindings(py::module& m) {
       .def(py::init(&BatchedSimulatorConfig::create<>))
       .def_readwrite("num_envs", &BatchedSimulatorConfig::numEnvs, R"(Todo)")
       .def_readwrite("gpu_id", &BatchedSimulatorConfig::gpuId, R"(Todo)")
-      .def_readwrite("sensor0", &BatchedSimulatorConfig::sensor0, R"(Todo)");
-
+      .def_readwrite("sensor0", &BatchedSimulatorConfig::sensor0, R"(Todo)")
+      .def_readwrite("force_random_actions", &BatchedSimulatorConfig::forceRandomActions, R"(Todo)")
+      .def_readwrite("do_async_physics_step", &BatchedSimulatorConfig::doAsyncPhysicsStep, R"(Todo)");
+    
   py::class_<BatchedSimulator, BatchedSimulator::ptr>(m, "BatchedSimulator")
       .def(py::init(&BatchedSimulator::create<const BatchedSimulatorConfig&>))
       .def("set_actions", &BatchedSimulator::setActions, R"(todo)")
       .def("auto_reset_or_step_physics",
            &BatchedSimulator::autoResetOrStepPhysics, R"(todo)")
-      // .def("step_physics", &BatchedSimulator::stepPhysics, R"(todo)")
+      .def("auto_reset_or_start_async_step_physics",
+           &BatchedSimulator::autoResetOrStartAsyncStepPhysics, R"(todo)")
+      .def("wait_for_frame", &BatchedSimulator::waitForFrame, R"(todo)")
+      .def("wait_async_step_physics", &BatchedSimulator::waitAsyncStepPhysics, R"(todo)")
       .def("get_rewards", &BatchedSimulator::getRewards, R"(todo)")
       .def("get_dones", &BatchedSimulator::getDones, R"(todo)")
       .def("start_render", &BatchedSimulator::startRender, R"(todo)")
       .def("wait_for_frame", &BatchedSimulator::waitForFrame, R"(todo)")
+      .def("close", &BatchedSimulator::close, R"(todo)")
       // .def("reset", &BatchedSimulator::reset, R"(todo)")
       .def(
           "rgba",
           [](BatchedSimulator& self, const uint32_t groupIdx) {
             return getColorMemory(self, groupIdx);
           },
-          R"(todo)");
+          R"(todo)")
+      .def("get_recent_collision_fraction_and_reset", &BatchedSimulator::getRecentCollisionFractionAndReset, R"(todo)");
 }
 
 }  // namespace batched_sim

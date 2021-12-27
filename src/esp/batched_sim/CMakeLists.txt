@@ -10,6 +10,8 @@ add_library(
   BpsSceneMapping.h
   ColumnGrid.cpp
   ColumnGrid.h
+  CollisionBroadphaseGrid.cpp
+  CollisionBroadphaseGrid.h
   ColumnGridBuilder.cpp
   ColumnGridBuilder.h
   EpisodeSet.cpp

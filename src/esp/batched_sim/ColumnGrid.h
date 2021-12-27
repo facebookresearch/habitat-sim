@@ -43,6 +43,13 @@ class ColumnGridSource {
     }
   };
 
+  float getMaxX() const {
+    return minX + dimX * gridSpacing;
+  }
+  float getMaxZ() const {
+    return minZ + dimZ * gridSpacing;
+  }
+
   struct Patch {
     int localCellShift = 0;
     int numLayers = 0;

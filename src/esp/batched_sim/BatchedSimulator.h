@@ -10,8 +10,12 @@
 #include "esp/batched_sim/ColumnGrid.h"
 #include "esp/batched_sim/BpsSceneMapping.h"
 #include "esp/batched_sim/EpisodeSet.h"
+#include "esp/core/random.h"
 
 #include <bps3D.hpp>
+
+#include <thread>
+#include <condition_variable>
 
 namespace esp {
 namespace batched_sim {
@@ -127,6 +131,8 @@ struct BatchedSimulatorConfig {
   int numEnvs = -1;
   int gpuId = -1;
   CameraSensorConfig sensor0;
+  bool forceRandomActions = false;
+  bool doAsyncPhysicsStep = false;
 
   ESP_SMART_POINTERS(BatchedSimulatorConfig);
 };
@@ -134,12 +140,15 @@ struct BatchedSimulatorConfig {
 class BatchedSimulator {
  public:
   BatchedSimulator(const BatchedSimulatorConfig& config);
+  void close();
 
   void startRender();
   void waitForFrame();
 
   void setActions(std::vector<float>&& actions);
   void autoResetOrStepPhysics();
+  void autoResetOrStartAsyncStepPhysics();
+  void waitAsyncStepPhysics();
 
   bps3D::Renderer& getBpsRenderer();
 
@@ -147,21 +156,27 @@ class BatchedSimulator {
   const std::vector<bool>& getDones();
 
   // For debugging. Sets camera for all envs.
+  // todo: threadsafe or guard
   void setCamera(const Mn::Vector3& camPos, const Mn::Quaternion& camRot);
 
   bps3D::Environment& getBpsEnvironment(int envIndex);
 
   void deleteDebugInstances(); // probably call at start of frame render
   // probably add these every frame ("immediate mode", not persistent)
+  // beware: probably not threadsafe
   int addDebugInstance(const std::string& name, int envIndex, 
     const Magnum::Matrix4& transform=Magnum::Matrix4(Mn::Math::IdentityInit));
+
+  float getRecentCollisionFractionAndReset() const; // todo: threadsafe
 
  private:
   void reset();
   void stepPhysics();
   void updateCollision();
-  // for each robot, update instances for new pose OR undo action
-  void postCollisionUpdate(bool useCollisionResults);
+  // for each robot, undo action if collision
+  void postCollisionUpdate();
+  // update robot link instances
+  void updateRenderInstances(bool useCollisionResults);
   void reverseActionsForEnvironment(int b);
 
   void calcRewards();
@@ -169,6 +184,10 @@ class BatchedSimulator {
 
   void initEpisodeSet();
   EpisodeInstance instantiateEpisode(int b, int episodeIndex);
+
+  void physicsThreadFunc(int startEnvIndex, int numEnvs);
+  void signalStepPhysics();
+  void signalKillPhysicsThread();
 
   BatchedSimulatorConfig config_;
   bool isOkToRender_ = false;
@@ -191,6 +210,17 @@ class BatchedSimulator {
 
   BpsSceneMapping sceneMapping_;
   std::vector<std::vector<int>> debugInstancesByEnv_;
+  mutable int numRecentSteps_ = 0;
+  mutable int numRecentStepsInCollision_ = 0;
+  esp::core::Random random_{0};
+
+  std::thread physicsThread_;
+  std::mutex physicsMutex_;
+  std::condition_variable physicsCondVar_; 
+  bool signalStepPhysics_ = false;
+  bool signalKillPhysicsThread_ = false;
+  bool isAsyncStepPhysicsFinished_ = true;
+  bool areRenderInstancesUpdated_ = false;
 
   ESP_SMART_POINTERS(BatchedSimulator)
 };

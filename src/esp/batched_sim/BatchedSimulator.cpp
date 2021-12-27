@@ -16,7 +16,7 @@
 #include <mutex>
 
 #ifndef NDEBUG
-// #define ENABLE_DEBUG_INSTANCES
+#define ENABLE_DEBUG_INSTANCES
 #endif
 
 namespace esp {
@@ -303,20 +303,6 @@ void RobotInstanceSet::updateLinkTransforms(int currRolloutStep) {
         BATCHED_SIM_ASSERT(instanceIndex < nodeNewTransforms_.size());
         nodeNewTransforms_[instanceIndex] = toGlmMat4x3(mat);
 
-        // hack calc reward
-        {
-          constexpr int rewardLink = 22;
-          constexpr Mn::Vector3 targetPos(2.5f, 0.25f, 1.f);  // 1.61, 0.98
-
-          if (i == rewardLink) {
-            const Mn::Vector3& pos = mat.translation();
-            float dist = (pos - targetPos).length();
-            hackRewards_[b] = -dist;
-
-            // addition penalty for too-large actions
-          }
-        }
-
 #if 0
         esp::gfx::replay::Transform absTransform{
             mat.translation(),
@@ -374,14 +360,27 @@ void BatchedSimulator::updateCollision() {
 
       if (columnGrid.contactTest(spherePos, &queryCache)) {
         hit = true;
+
+#ifdef ENABLE_DEBUG_INSTANCES
+        constexpr float sphereRadius = 0.1f; // todo: get from Robot
+        auto mat = Mn::Matrix4::translation(spherePos)
+          * Mn::Matrix4::scaling(Mn::Vector3(sphereRadius, sphereRadius, sphereRadius));
+
+        addDebugInstance("sphere_orange", b, mat);
+#endif
         break;
       }
     }
 
     robots_.collisionResults_[b] = hit;
+    if (hit) {
+      numRecentStepsInCollision_++;
+    }
   }
 
-#define UPDATE_COLLISION_USE_BATCH_TEST
+// batch API didn't prove to be any faster, so we aren't using it
+// #define UPDATE_COLLISION_USE_BATCH_TEST
+#define USE_COLLISION_BROADPHASE_GRID
 #ifdef UPDATE_COLLISION_USE_BATCH_TEST
 
 // bool batchSphereOrientedBoxContactTest(const glm::mat4x3* orientedBoxTransforms, const Magnum::Vector3* positions,
@@ -409,8 +408,34 @@ void BatchedSimulator::updateCollision() {
     // perf todo: if there was a hit last frame, cache that sphere and test it first here
     for (int s = 0; s < robot_.numCollisionSpheres_; s++) {
       const int sphereIndex = baseSphereIndex + s;
-      auto& queryCache = robots_.collisionSphereQueryCaches_[sphereIndex];
       const auto& spherePos = robots_.collisionSphereWorldOrigins_[sphereIndex];
+
+#ifdef USE_COLLISION_BROADPHASE_GRID
+      if (episodeInstance.colGrid_.contactTest(spherePos)) {
+#ifdef ENABLE_DEBUG_INSTANCES
+        {
+          auto lastContact = episodeInstance.colGrid_.getLastContact();
+          Mn::Matrix4 mat = Mn::Matrix4::from(
+              lastContact.obsRotation.toMatrix(), lastContact.obsPos);
+
+          // temp hack negative scale so the box back faces are rendered. Makes it easier to see contained object
+          Mn::Matrix4 localToBox = Mn::Matrix4::translation(lastContact.obsLocalAabb.center())
+            * Mn::Matrix4::scaling(-lastContact.obsLocalAabb.size() * 0.5);
+          auto adjustedMat = mat * localToBox;
+          addDebugInstance("cube_green", b, adjustedMat);
+
+          constexpr float sphereRadius = 0.1f; // todo: get from Robot
+          mat = Mn::Matrix4::translation(spherePos)
+            * Mn::Matrix4::scaling(Mn::Vector3(sphereRadius, sphereRadius, sphereRadius));
+
+          addDebugInstance("sphere_orange", b, mat);
+                    
+        }
+#endif
+        hit = true;
+        break;
+      }
+#else
 
       // todo: get pre-culled list of objects from a spatial data structure
       for (int i = 0; i < episode.numFreeObjectSpawns_; i++) {
@@ -423,6 +448,7 @@ void BatchedSimulator::updateCollision() {
         const auto& freeObject = safeVectorGet(episodeSet_.freeObjects_, freeObjectSpawn.freeObjIndex_);
 
         auto instanceId = safeVectorGet(episodeInstanceSet_.freeObjectInstanceIds_, globalFreeObjectIndex);
+#error this does not work with multithreading
         const glm::mat4x3& glMat = env.getInstanceTransform(instanceId);
 
         constexpr float sphereRadiusSq = 0.1f * 0.1f; // todo: get from Robot
@@ -461,24 +487,34 @@ void BatchedSimulator::updateCollision() {
         }
 #else
         auto posLocal = inverseTransformPoint(glMat, spherePos);
-
         if (sphereBoxContactTest(posLocal, sphereRadiusSq, freeObject.aabb_)) {
           hit = true;
           break;
         }
 #endif        
       }
-
       if (hit) {
         break;
       }
+#endif
     }
 
     robots_.collisionResults_[b] = hit;
+    if (hit) {
+      numRecentStepsInCollision_++;
+    }
   }
 
+  numRecentSteps_ += numEnvs;
+
+// draw all collision spheres
 #ifdef ENABLE_DEBUG_INSTANCES
   for (int b = 0; b < numEnvs; b++) {
+
+    // only draw spheres for robots not in collision
+    if (robots_.collisionResults_[b]) {
+      continue;
+    }
 
     const auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
     const auto& episode = safeVectorGet(episodeSet_.episodes_, episodeInstance.episodeIndex_);
@@ -503,13 +539,28 @@ void BatchedSimulator::updateCollision() {
       bool sphereHit = columnGrid.contactTest(spherePos, &queryCache);
 
       //addDebugInstance(sphereHit ? "sphere_orange" : "sphere_green", b, mat);
-      addDebugInstance((s % 2 == 0) ? "sphere_orange" : "sphere_green", b, mat);
+      addDebugInstance("sphere_green", b, mat);
     }
   }
 #endif
 }
 
-void BatchedSimulator::postCollisionUpdate(bool useCollisionResults) {
+void BatchedSimulator::postCollisionUpdate() {
+
+  const int numEnvs = config_.numEnvs;
+
+  BATCHED_SIM_ASSERT(robots_.areCollisionResultsValid_);
+
+  for (int b = 0; b < numEnvs; b++) {
+    if (robots_.collisionResults_[b]) {
+      reverseActionsForEnvironment(b);
+    } else {
+      // nothing to do
+    }
+  }
+}
+
+void BatchedSimulator::updateRenderInstances(bool useCollisionResults) {
 
   const int numEnvs = config_.numEnvs;
   int numLinks = robot_.artObj->getNumLinks();
@@ -522,7 +573,7 @@ void BatchedSimulator::postCollisionUpdate(bool useCollisionResults) {
   for (int b = 0; b < numEnvs; b++) {
 
     if (useCollisionResults && robots_.collisionResults_[b]) {
-      reverseActionsForEnvironment(b);
+      // nothing to do
 
     } else {
       // no collision, so let's update the robot instance instances
@@ -544,6 +595,8 @@ void BatchedSimulator::postCollisionUpdate(bool useCollisionResults) {
       }
     }
   }
+
+  areRenderInstancesUpdated_ = true;
 }
 
 Robot::Robot(const std::string& filepath, esp::sim::Simulator* sim, BpsSceneMapping* sceneMapping) {
@@ -730,7 +783,24 @@ BatchedSimulator::BatchedSimulator(const BatchedSimulatorConfig& config) {
   isOkToRender_ = false;
   isOkToStep_ = false;
   isRenderStarted_ = false;
+
+  if (config_.doAsyncPhysicsStep) {
+    physicsThread_ = std::thread(&BatchedSimulator::physicsThreadFunc, this, 0, config_.numEnvs);
+    areRenderInstancesUpdated_ = false;
+  }
 }
+
+void BatchedSimulator::close() {
+  if (config_.doAsyncPhysicsStep) {
+    if (physicsThread_.joinable()) {
+      waitAsyncStepPhysics();
+      signalKillPhysicsThread();
+      physicsThread_.join();
+    }
+  }
+  // todo: more close stuff?
+}
+
 
 void BatchedSimulator::setCamera(const Mn::Vector3& camPos, const Mn::Quaternion& camRot) {
 
@@ -762,6 +832,21 @@ EpisodeInstance BatchedSimulator::instantiateEpisode(int b, int episodeIndex) {
   epInstance.stageFixedObjectInstanceId_ = env.addInstance(
     stageBlueprint.meshIdx_, stageBlueprint.mtrlIdx_, identityGlMat_);
 
+  {
+    const auto& stageFixedObject = safeVectorGet(episodeSet_.fixedObjects_, episode.stageFixedObjIndex);
+    const auto& columnGrid = stageFixedObject.columnGrid_;
+
+    // todo: find extents for entire EpisodeSet, not just this specific columnGrid
+    constexpr int maxBytes = 1000 * 1024;
+    // this is tuned assuming a building-scale simulation with household-object-scale obstacles
+    constexpr float maxGridSpacing = 0.5f;
+    constexpr float sphereRadius = 0.1f; // todo: get from robot_
+    epInstance.colGrid_ = CollisionBroadphaseGrid(sphereRadius, 
+      columnGrid.minX, columnGrid.minZ,
+      columnGrid.getMaxX(), columnGrid.getMaxZ(),
+      maxBytes, maxGridSpacing);
+  }
+
   for (int i = 0; i < episode.numFreeObjectSpawns_; i++) {
 
     int globalFreeObjectIndex = b * episodeSet_.maxFreeObjects_ + i;
@@ -779,6 +864,10 @@ EpisodeInstance BatchedSimulator::instantiateEpisode(int b, int episodeIndex) {
 
     safeVectorGet(episodeInstanceSet_.freeObjectInstanceIds_, globalFreeObjectIndex) = env.addInstance(
       blueprint.meshIdx_, blueprint.mtrlIdx_, glMat);
+
+    // temp sloppy convert to quat here
+    const auto rotationQuat = Mn::Quaternion::fromMatrix(rotation);
+    epInstance.colGrid_.insertObstacle(freeObjectSpawn.startPos_, rotationQuat, freeObject.aabb_);
   }
 
   return epInstance;
@@ -807,17 +896,27 @@ void BatchedSimulator::setActions(std::vector<float>&& actions) {
             "BatchedSimulator::setActions: input dimension should be " +
                 std::to_string(actions_.size()) + ", not " +
                 std::to_string(actions.size()));
-  actions_ = std::move(actions);
+
+  if (config_.forceRandomActions) {
+    for (auto& action : actions_) {
+      action = random_.uniform_float(-1.f, 1.f);
+    }
+  } else {
+    actions_ = std::move(actions);
+  }
 }
 
 void BatchedSimulator::reset() {
-  BATCHED_SIM_ASSERT(!isRenderStarted_);
+
+  BATCHED_SIM_ASSERT(isAsyncStepPhysicsFinished_);
+  BATCHED_SIM_ASSERT(!signalStepPhysics_);
 
   currRolloutStep_ = 0;
   prevRolloutStep_ = -1;
   randomizeRobotsForCurrentStep();
   robots_.updateLinkTransforms(currRolloutStep_);
-  postCollisionUpdate(/*useCollisionResults*/false);
+  std::fill(robots_.hackRewards_.begin(), robots_.hackRewards_.end(), 0.f);
+  updateRenderInstances(/*useCollisionResults*/false);
 
   isOkToRender_ = true;
   isOkToStep_ = true;
@@ -825,7 +924,7 @@ void BatchedSimulator::reset() {
 
 void BatchedSimulator::autoResetOrStepPhysics() {
 
-  deleteDebugInstances();
+  BATCHED_SIM_ASSERT(!config_.doAsyncPhysicsStep);
 
   if (currRolloutStep_ == -1 || currRolloutStep_ == maxRolloutSteps_ - 1) {
     // all episodes are done; set done flag and reset
@@ -838,6 +937,31 @@ void BatchedSimulator::autoResetOrStepPhysics() {
       BATCHED_SIM_ASSERT(!hackDones_[0]);
     }
     stepPhysics();
+    calcRewards();
+    updateRenderInstances(/*useCollisionResults*/true);
+  }
+}
+
+void BatchedSimulator::autoResetOrStartAsyncStepPhysics() {
+
+  BATCHED_SIM_ASSERT(config_.doAsyncPhysicsStep);
+
+  if (currRolloutStep_ == -1 || currRolloutStep_ == maxRolloutSteps_ - 1) {
+    // all episodes are done; set done flag and reset
+    std::fill(hackDones_.begin(), hackDones_.end(), true);
+    reset();
+  } else {
+    if (currRolloutStep_ == 0) {
+      std::fill(hackDones_.begin(), hackDones_.end(), false);
+    } else {
+      BATCHED_SIM_ASSERT(!hackDones_[0]);
+    }
+
+    BATCHED_SIM_ASSERT(isAsyncStepPhysicsFinished_);
+    BATCHED_SIM_ASSERT(!signalStepPhysics_);
+
+    // send message to physicsThread_
+    signalStepPhysics();
   }
 }
 
@@ -873,21 +997,22 @@ void BatchedSimulator::stepPhysics() {
 
   // stepping code
   for (int b = 0; b < numEnvs; b++) {
-    yaws[b] = prevYaws[b] +
-              actions_[actionIndex++];  // todo: wrap angle to 360 degrees
-    // note clamp move-forward action to [0,-]
-    constexpr float baseMovementSpeed = 1.f;
+    constexpr float maxAbsAngle = float(-Mn::Rad(Mn::Deg(10.f)));
+    const float clampedBaseYawAction = Mn::Math::clamp(actions_[actionIndex++], -maxAbsAngle, maxAbsAngle);
+    yaws[b] = prevYaws[b] + clampedBaseYawAction; // todo: wrap angle to 360 degrees
+    float clampedBaseMovementAction = Mn::Math::clamp(actions_[actionIndex++], -0.1f, 0.2f);
     positions[b] =
-        prevPositions[b] + Mn::Vector2(Mn::Math::cos(Mn::Math::Rad(yaws[b])),
-                                       -Mn::Math::sin(Mn::Math::Rad(yaws[b]))) *
-                               Mn::Math::max(actions_[actionIndex++], 0.f) *
-                               baseMovementSpeed;
+        prevPositions[b] + 
+        Mn::Vector2(Mn::Math::cos(Mn::Math::Rad(yaws[b])), -Mn::Math::sin(Mn::Math::Rad(yaws[b]))) 
+        * clampedBaseMovementAction;
 
     int baseJointIndex = b * robot_.numPosVars;
     for (int j = 0; j < robot_.numPosVars; j++) {
       auto& pos = jointPositions[baseJointIndex + j];
       const auto& prevPos = prevJointPositions[baseJointIndex + j];
-      pos = prevPos + actions_[actionIndex++];
+      constexpr float maxAbsAngle = float(-Mn::Rad(Mn::Deg(15.f)));
+      const float clampedJointMovementAction = Mn::Math::clamp(actions_[actionIndex++], -maxAbsAngle, maxAbsAngle);
+      pos = prevPos + clampedJointMovementAction;
       pos = Mn::Math::clamp(pos, robot_.jointPositionLimits.first[j],
                             robot_.jointPositionLimits.second[j]);
 
@@ -900,9 +1025,9 @@ void BatchedSimulator::stepPhysics() {
 
   updateCollision();
 
-  postCollisionUpdate(/*useCollisionResults*/true);
+  postCollisionUpdate();
 
-  robots_.applyActionPenalties(actions_);
+  // robots_.applyActionPenalties(actions_);
 }
 
 #if 0
@@ -957,6 +1082,8 @@ void BatchedSimulator::startRender() {
   bpsWrapper_->renderer_->render(bpsWrapper_->envs_.data());
   isOkToRender_ = false;
   isRenderStarted_ = true;
+
+  deleteDebugInstances();
 }
 
 void BatchedSimulator::waitForFrame() {
@@ -1063,9 +1190,17 @@ const std::vector<bool>& BatchedSimulator::getDones() {
 }
 
 void BatchedSimulator::calcRewards() {
-  int numEnvs = bpsWrapper_->envs_.size();
 
-  rewardContext_.calcRewards(currRolloutStep_, 0, numEnvs);
+  BATCHED_SIM_ASSERT(robots_.areCollisionResultsValid_);
+
+  // update rewards on main thread
+  const int numEnvs = config_.numEnvs;
+  for (int b = 0; b < numEnvs; b++) {
+    robots_.hackRewards_[b] = robots_.collisionResults_[b] ? -1.f : 0.f;
+  }
+
+  // int numEnvs = bpsWrapper_->envs_.size();
+  // rewardContext_.calcRewards(currRolloutStep_, 0, numEnvs);
 }
 
 RolloutRecord::RolloutRecord(int numRolloutSteps,
@@ -1114,6 +1249,72 @@ int BatchedSimulator::addDebugInstance(const std::string& name, int envIndex,
 #else
   return -1;
 #endif
+}
+
+float BatchedSimulator::getRecentCollisionFractionAndReset() const {
+  float retVal = numRecentSteps_ > 0 ? (float)numRecentStepsInCollision_ / numRecentSteps_ : -1.f;
+  numRecentSteps_ = 0;
+  numRecentStepsInCollision_ = 0;
+  return retVal;
+}
+
+void BatchedSimulator::signalStepPhysics() {
+  std::lock_guard<std::mutex> lck(physicsMutex_);
+  signalStepPhysics_ = true;
+  isAsyncStepPhysicsFinished_ = false;
+  areRenderInstancesUpdated_ = false;
+  physicsCondVar_.notify_one(); // notify_all?
+}
+
+void BatchedSimulator::signalKillPhysicsThread() {
+  std::lock_guard<std::mutex> lck(physicsMutex_);
+  signalKillPhysicsThread_ = true;
+  physicsCondVar_.notify_one(); // notify_all?
+}
+
+
+void BatchedSimulator::waitAsyncStepPhysics() {
+
+  if (areRenderInstancesUpdated_) {
+    return;
+  }
+
+  {
+    std::unique_lock<std::mutex> lck(physicsMutex_);
+    physicsCondVar_.wait(lck, [&]{ return isAsyncStepPhysicsFinished_; });
+  }
+
+  calcRewards();
+
+  updateRenderInstances(/*useCollisionResults*/true);
+}
+
+void BatchedSimulator::physicsThreadFunc(int startEnvIndex, int numEnvs) {
+
+  while (true) {
+    {
+      std::unique_lock<std::mutex> lck(physicsMutex_);
+      physicsCondVar_.wait(lck, [&]{ return signalStepPhysics_ || signalKillPhysicsThread_; });
+    }
+
+    if (signalKillPhysicsThread_) {
+      break;
+    }
+
+    BATCHED_SIM_ASSERT(startEnvIndex == 0 && numEnvs == config_.numEnvs);
+    // BATCHED_SIM_ASSERT(startEnvIndex >= 0 && startEnvIndex);
+    // BATCHED_SIM_ASSERT(numEnvs > 0);
+    // BATCHED_SIM_ASSERT(startEnvIndex + numEnvs <= config_.numEnvs);
+
+    stepPhysics();
+
+    {
+      std::lock_guard<std::mutex> lck(physicsMutex_);
+      isAsyncStepPhysicsFinished_ = true;
+      signalStepPhysics_ = false;
+      physicsCondVar_.notify_one(); // notify_all?
+    }
+  }
 }
 
 }  // namespace batched_sim

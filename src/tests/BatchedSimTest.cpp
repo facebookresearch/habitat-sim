@@ -179,8 +179,10 @@ TEST_F(BatchedSimulatorTest, basic) {
 
   esp::logging::LoggingContext loggingContext;
 
+  constexpr bool doOverlapPhysics = true;
   BatchedSimulatorConfig config{
-      .numEnvs = 4, .gpuId = 0, .sensor0 = {.width = 768, .height = 768, .hfov = 60}};
+      .numEnvs = 8, .gpuId = 0, .sensor0 = {.width = 768, .height = 768, .hfov = 60},
+      .doAsyncPhysicsStep = doOverlapPhysics};
   BatchedSimulator bsim(config);
 
   Mn::Vector3 camPos{-1.61004, 1.5, 3.5455};
@@ -216,18 +218,32 @@ TEST_F(BatchedSimulatorTest, basic) {
 
   bool doAdvanceSim = false;
 
-  bsim.autoResetOrStepPhysics();
+  if (doOverlapPhysics) {
+    bsim.autoResetOrStartAsyncStepPhysics();
+  } else {
+    bsim.autoResetOrStepPhysics();
+  }
 
   while (true) {
-    if (doAdvanceSim) {
-      bsim.setActions(std::vector<float>(actions));
-      bsim.autoResetOrStepPhysics();
-      bsim.getRewards();
-      bsim.getDones();
-      doAdvanceSim = false;
+
+    if (doOverlapPhysics) {
+      bsim.waitAsyncStepPhysics();
+      if (doAdvanceSim) {
+        bsim.setActions(std::vector<float>(actions));
+        bsim.autoResetOrStartAsyncStepPhysics();
+        doAdvanceSim = false;
+      }
+      bsim.startRender();
+      bsim.waitForFrame();
+    } else {
+      if (doAdvanceSim) {
+        bsim.setActions(std::vector<float>(actions));
+        bsim.autoResetOrStepPhysics();
+        doAdvanceSim = false;
+      }
+      bsim.startRender();
+      bsim.waitForFrame();
     }
-    bsim.startRender();
-    bsim.waitForFrame();
 
     uint8_t* base_color_ptr = bsim.getBpsRenderer().getColorPointer();
     float* base_depth_ptr = bsim.getBpsRenderer().getDepthPointer();
@@ -301,4 +317,7 @@ TEST_F(BatchedSimulatorTest, basic) {
     }
     #endif
   }
+
+  bsim.close();
+  bsim.close(); // try a redundant close
 }

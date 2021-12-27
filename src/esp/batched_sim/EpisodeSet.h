@@ -7,6 +7,7 @@
 
 #include "esp/batched_sim/BatchedSimAssert.h"
 #include "esp/batched_sim/ColumnGrid.h"
+#include "esp/batched_sim/CollisionBroadphaseGrid.h"
 #include "esp/batched_sim/BpsSceneMapping.h"
 
 #include <Magnum/Magnum.h>
@@ -26,7 +27,7 @@ class FreeObject {
   std::string name_;
   BpsSceneMapping::InstanceBlueprint instanceBlueprint_;
   Magnum::Range3D aabb_;
-  float boundingSphereRadiusSq_ = 0.f;
+  // float boundingSphereRadiusSq_ = 0.f; // unused
   // std::vector<Magnum::Vector3> collisionSphereLocalOrigins_;
   std::vector<Magnum::Matrix3x3> startRotations_;
 };
@@ -58,7 +59,7 @@ class EpisodeSet {
  public:
   std::vector<Episode> episodes_; // ~50,000
   std::vector<FixedObject> fixedObjects_; // ~100, max 32K
-  std::vector<FreeObjectSpawn> freeObjectSpawns_; // ~5,000,000
+  std::vector<FreeObjectSpawn> freeObjectSpawns_; // num episodes * num-spawns-per-episode, ~5,000,000
   std::vector<FreeObject> freeObjects_; // ~100, max 32K
   int maxFreeObjects_ = 0;
 };
@@ -68,11 +69,13 @@ class EpisodeInstance {
   int32_t episodeIndex_ = -1;
   int32_t stageFixedObjectInstanceId_ = -1;
   // free obj instance ids stored in freeObjectInstanceIds_
+  CollisionBroadphaseGrid colGrid_;
 };
 
 class EpisodeInstanceSet {
  public:
-  std::vector<EpisodeInstance> episodeInstanceByEnv_; // num envs, ~10,000
+  std::vector<EpisodeInstance> episodeInstanceByEnv_; // num envs, ~1,000
+  // todo: move this back into EpisodeInstance?
   std::vector<int16_t> freeObjectInstanceIds_; // num envs * maxFreeObjects, ~100,000
 };
 
