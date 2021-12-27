@@ -1569,8 +1569,9 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
   for (const Cr::Containers::Pair<unsigned, Mn::Matrix4>& transformation :
        scene->transformations3DAsArray()) {
     if (Cr::Containers::Optional<esp::assets::MeshTransformNode>& node =
-            nodes[transformation.first()])
+            nodes[transformation.first()]) {
       node->transformFromLocalToParent = transformation.second();
+    }
   }
 
   // Add mesh indices for objects that have a mesh, again ignoring nodes that
@@ -1580,22 +1581,23 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
        scene->meshesMaterialsAsArray()) {
     Cr::Containers::Optional<esp::assets::MeshTransformNode>& node =
         nodes[meshMaterial.first()];
-    if (!node)
-      continue;
-
-    // TODO: either drop MeshTransformNode in favor of SceneData or use
-    // Mn::SceneTools::convertToSingleFunctionObjects() when it's exposed
-    if (node->meshIDLocal != -1) {
-      ESP_WARNING() << "Multiple mesh assignments for node"
-                    << meshMaterial.first()
-                    << "which is not supported by MeshTransformNode, using "
-                       "just the first";
+    if (!node) {
       continue;
     }
 
-    node->meshIDLocal = meshMaterial.second().first();
+    // If meshIDLocal != -1 then we have multiple meshes assigned to the same
+    // MeshTransformNode.  We make subsequent meshes children of the first mesh
+    // we've seen, and give them identity trasnforms.
+    esp::assets::MeshTransformNode* tmpNode = &*node;
+    if (node->meshIDLocal != -1) {
+      node->children.emplace_back();
+      tmpNode = &node->children.back();
+      tmpNode->componentID = meshMaterial.first();
+    }
+
+    tmpNode->meshIDLocal = meshMaterial.second().first();
     if (meshMaterial.second().second() != -1) {
-      node->materialID =
+      tmpNode->materialID =
           std::to_string(meshMaterial.second().second() + nextMaterialID_ -
                          fileImporter_->materialCount());
     }
