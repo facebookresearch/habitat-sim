@@ -28,8 +28,9 @@ class FreeObject {
   BpsSceneMapping::InstanceBlueprint instanceBlueprint_;
   Magnum::Range3D aabb_;
   // float boundingSphereRadiusSq_ = 0.f; // unused
-  // std::vector<Magnum::Vector3> collisionSphereLocalOrigins_;
   std::vector<Magnum::Matrix3x3> startRotations_;
+  // todo: Sphere struct
+  std::vector<Magnum::Vector3> collisionSphereLocalOrigins_;
 };
 
 class FixedObject {
@@ -70,13 +71,17 @@ class EpisodeInstance {
   int32_t stageFixedObjectInstanceId_ = -1;
   // free obj instance ids stored in freeObjectInstanceIds_
   CollisionBroadphaseGrid colGrid_;
+  int debugNumColGridObstacleInstances_ = 0;
+  // todo: more robust storage for moved free objects
+  static constexpr int MAX_MOVED_FREE_OBJECTS = 6;
+  // todo: better memory management
+  std::vector<int16_t> movedFreeObjectIndexes_;
+  int firstFreeObjectInstanceId_ = -1;
 };
 
 class EpisodeInstanceSet {
  public:
   std::vector<EpisodeInstance> episodeInstanceByEnv_; // num envs, ~1,000
-  // todo: move this back into EpisodeInstance?
-  std::vector<int16_t> freeObjectInstanceIds_; // num envs * maxFreeObjects, ~100,000
 };
 
 // todo: move to separate file

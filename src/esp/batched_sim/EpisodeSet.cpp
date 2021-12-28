@@ -4,6 +4,7 @@
 
 #include "esp/batched_sim/EpisodeSet.h"
 #include "esp/batched_sim/BatchedSimAssert.h"
+#include "esp/batched_sim/PlacementHelper.h"
 
 #include "esp/core/random.h"
 
@@ -43,6 +44,11 @@ void addFreeObject(EpisodeSet& set, const std::string& name, const Magnum::Range
   freeObj.aabb_ = aabb;
  //  freeObj.boundingSphereRadiusSq_ = getOriginBoundingSphereRadiusSquaredForAABB(aabb);
 
+  // add one collision sphere at base of aabb
+  constexpr float sphereRadius = 0.1f; // temp
+  freeObj.collisionSphereLocalOrigins_.push_back(
+    {aabb.center().x(), aabb.center().y(), aabb.min().z() + sphereRadius});
+
   // all YCB objects needs this to be upright
   const auto baseRot = Mn::Quaternion::rotation(Mn::Deg(-90), Mn::Vector3(1.f, 0.f, 0.f));
 
@@ -63,16 +69,37 @@ void addEpisode(EpisodeSet& set, int stageFixedObjectIndex, core::Random& random
   episode.firstFreeObjectSpawnIndex_ = set.freeObjectSpawns_.size();
 
   // keep object count close to 28 (from Hab 2.0 benchmark), but include variation
-  episode.numFreeObjectSpawns_ = random.uniform_int(28, 33);
-  set.maxFreeObjects_ = Mn::Math::max(set.maxFreeObjects_, episode.numFreeObjectSpawns_);
+  int targetNumSpawns = random.uniform_int(28, 33);
+  episode.numFreeObjectSpawns_ = 0;
 
   //Mn::Range3D spawnRange({-1.f, 0.05f, 0.f}, {3.f, 0.05, 3.f});
-  Mn::Range3D spawnRange({-1.f, 0.05f, -0.5f}, {4.f, 1.5f, 3.f});
+  Mn::Range3D spawnRange({-1.f, 0.15f, -0.5f}, {4.f, 2.f, 3.f});
   const auto robotStartPos = Mn::Vector3(1.61, 0.f, 0.98);
   const auto pad = Mn::Vector3(0.9f, 2.f, 0.9);
   const auto exclusionRange = Mn::Range3D(robotStartPos - pad, robotStartPos + pad);
 
-  for (int i = 0; i < episode.numFreeObjectSpawns_; i++) {
+  const auto& stageFixedObject = safeVectorGet(set.fixedObjects_, episode.stageFixedObjIndex);
+  const auto& columnGrid = stageFixedObject.columnGrid_;      
+  // perf todo: re-use this across entire set (have extents for set)
+  CollisionBroadphaseGrid colGrid;
+  {
+    // todo: find extents for entire EpisodeSet, not just this specific columnGrid
+    constexpr int maxBytes = 100 * 1024;
+    // this is tuned assuming a building-scale simulation with household-object-scale obstacles
+    constexpr float maxGridSpacing = 0.5f;
+    constexpr float sphereRadius = 0.1f; // todo: get from robot_
+    colGrid = CollisionBroadphaseGrid(sphereRadius, 
+      columnGrid.minX, columnGrid.minZ,
+      columnGrid.getMaxX(), columnGrid.getMaxZ(),
+      maxBytes, maxGridSpacing);
+  }
+
+  constexpr int maxFailedPlacements = 3;
+  PlacementHelper placementHelper(stageFixedObject.columnGrid_, 
+    colGrid, random, maxFailedPlacements);
+
+  int numSpawnAttempts = 1000;
+  for (int i = 0; i < numSpawnAttempts; i++) {
 
     FreeObjectSpawn spawn;
     spawn.freeObjIndex_ = random.uniform_int(0, set.freeObjects_.size());
@@ -94,10 +121,27 @@ void addEpisode(EpisodeSet& set, int stageFixedObjectIndex, core::Random& random
       BATCHED_SIM_ASSERT(numAttempts < 1000);
     }
 
-    spawn.startPos_ = randomPos;
+    const auto rotation = freeObject.startRotations_[spawn.startRotationIndex_];
+    Mn::Matrix4 mat = Mn::Matrix4::from(
+        rotation, randomPos);
 
-    set.freeObjectSpawns_.emplace_back(std::move(spawn));
+    if (placementHelper.place(mat, freeObject)) {
+      if (!spawnRange.contains(mat.translation())) {
+        continue;
+      }
+      spawn.startPos_ = mat.translation();
+      set.freeObjectSpawns_.emplace_back(std::move(spawn));
+      episode.numFreeObjectSpawns_++;
+      if (episode.numFreeObjectSpawns_ == targetNumSpawns) {
+        break;
+      }
+
+      // add to colGrid so future spawns don't intersect this one
+      colGrid.insertObstacle(spawn.startPos_, Mn::Quaternion::fromMatrix(rotation), &freeObject.aabb_);
+    }
   }
+
+  set.maxFreeObjects_ = Mn::Math::max(set.maxFreeObjects_, episode.numFreeObjectSpawns_);
 
   set.episodes_.emplace_back(std::move(episode));
 }

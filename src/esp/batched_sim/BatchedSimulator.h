@@ -16,6 +16,7 @@
 
 #include <thread>
 #include <condition_variable>
+#include <unordered_map>
 
 namespace esp {
 namespace batched_sim {
@@ -51,6 +52,14 @@ struct Robot {
   std::pair<std::vector<float>, std::vector<float>> jointPositionLimits;
 
   std::vector<std::vector<Magnum::Vector3>> collisionSphereLocalOriginsByNode_;
+
+  int gripperLink_ = -1;
+  Magnum::Vector3 gripperQueryOffset_; /// let's also use this as the position for the gripped obj
+  float gripperQueryRadius_ = 0.f;
+
+  std::unordered_map<std::string, int> linkIndexByName_;
+  int cameraAttachNode_ = -1; // beware off-by-one with links
+  Magnum::Matrix4 cameraAttachTransform_;
 };
 
 struct RolloutRecord {
@@ -72,6 +81,17 @@ struct RolloutRecord {
   std::vector<float> rewards_;  // [numRolloutSteps * numEnvs]
 };
 
+// todo: move fields from RobotInstanceSet into here
+class RobotInstance {
+ public:
+  bool doAttemptGrip_ = false;
+  bool doAttemptDrop_ = false;
+  // std::vector<Magnum::Vector3> grippedObjCollisionSphereWorldOrigins_;
+  Magnum::Matrix4 cachedGripperLinkMat_; // sloppy: also in newNodeTransforms at glMat
+  int grippedFreeObjectIndex_ = -1;
+  // glm::mat4 cameraNewInvTransform_;
+  Magnum::Matrix4 cameraAttachNodeTransform_;
+};
 
 class RobotInstanceSet {
  public:
@@ -108,6 +128,8 @@ class RobotInstanceSet {
   std::vector<bps3D::Environment>* envs_;
 
   std::vector<float> hackRewards_;
+
+  std::vector<RobotInstance> robotInstances_;
 };
 
 struct RewardCalculationContext {
@@ -133,6 +155,7 @@ struct BatchedSimulatorConfig {
   CameraSensorConfig sensor0;
   bool forceRandomActions = false;
   bool doAsyncPhysicsStep = false;
+  int maxEpisodeLength = 50;
 
   ESP_SMART_POINTERS(BatchedSimulatorConfig);
 };
@@ -158,6 +181,7 @@ class BatchedSimulator {
   // For debugging. Sets camera for all envs.
   // todo: threadsafe or guard
   void setCamera(const Mn::Vector3& camPos, const Mn::Quaternion& camRot);
+  void attachCameraToLink(const std::string& linkName, const Magnum::Matrix4& mat);
 
   bps3D::Environment& getBpsEnvironment(int envIndex);
 
@@ -176,18 +200,32 @@ class BatchedSimulator {
   // for each robot, undo action if collision
   void postCollisionUpdate();
   // update robot link instances
-  void updateRenderInstances(bool useCollisionResults);
+  void updateRenderInstances(bool forceUpdate);
   void reverseActionsForEnvironment(int b);
+  void updateGripping();
+
+  // uses episode spawn location
+  void spawnFreeObject(int b, int freeObjectIndex, bool reinsert);
+  // remember to update your bps instance after calling this!
+  void removeFreeObjectFromCollisionGrid(int b, int freeObjectIndex);
+  void reinsertFreeObject(int b, int freeObjectIndex,
+    const Magnum::Vector3& pos, const Magnum::Quaternion& rotation);
 
   void calcRewards();
   void randomizeRobotsForCurrentStep();
 
   void initEpisodeSet();
-  EpisodeInstance instantiateEpisode(int b, int episodeIndex);
+  void instantiateEpisode(int b, int episodeIndex);
+  // We don't yet support changing the episode for an env. You can only reset to the
+  // same episode.
+  void resetEpisodeInstance(int b);
 
   void physicsThreadFunc(int startEnvIndex, int numEnvs);
   void signalStepPhysics();
   void signalKillPhysicsThread();
+
+  int getFreeObjectBpsInstanceId(int b, int freeObjectIndex) const;
+  Magnum::Matrix4 getHeldObjectTransform(int b) const;
 
   BatchedSimulatorConfig config_;
   bool isOkToRender_ = false;

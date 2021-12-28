@@ -18,6 +18,8 @@ add_library(
   EpisodeSet.h
   GlmUtils.cpp
   GlmUtils.h
+  PlacementHelper.cpp
+  PlacementHelper.h
 )
 
 target_link_libraries(

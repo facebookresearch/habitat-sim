@@ -325,7 +325,7 @@ void ColumnGridTest::testCollisionBroadphaseGrid() {
   };
 
   {
-    CollisionBroadphaseGrid cgrid(sphereRadius, 0.f, 0.f, 30.f, 40.f);
+    CollisionBroadphaseGrid cgrid(sphereRadius, 0.f, 0.f, 10.f, 15.f);
 
     for (int gridIndex : {0, 1, 2, 3}) {
       CORRADE_COMPARE(cgrid.findPointGridCellXZ(gridIndex, 0.f, 0.f), std::make_pair(0, 0));
@@ -357,41 +357,51 @@ void ColumnGridTest::testCollisionBroadphaseGrid() {
     CORRADE_COMPARE(cgrid.findSphereGridCellIndex(0.75f + eps, 0.75f - eps), std::make_pair(1, cgrid.getCellIndex(1, 0)));
     CORRADE_COMPARE(cgrid.findSphereGridCellIndex(0.75f - eps, 0.75f + eps), std::make_pair(2, cgrid.getCellIndex(0, 1)));
     CORRADE_COMPARE(cgrid.findSphereGridCellIndex(0.75f + eps, 0.75f + eps), std::make_pair(3, cgrid.getCellIndex(1, 1)));
+  }
+
+  {
+    CollisionBroadphaseGrid cgrid(sphereRadius, -5.f, -5.f, 5.f, 5.f);
 
     esp::core::Random random(/*seed*/0);
     constexpr int numTests = 100;
     for (int i = 0; i < numTests; i++) {
 
+      constexpr float maxHalfSide = 1.f;
       const auto aabb = Mn::Range3D(
         Mn::Vector3(
-          random.uniform_float(-1.f, 0.f),
-          random.uniform_float(-1.f, 0.f),
-          random.uniform_float(-1.f, 0.f)),
+          random.uniform_float(-maxHalfSide, 0.f),
+          random.uniform_float(-maxHalfSide, 0.f),
+          random.uniform_float(-maxHalfSide, 0.f)),
         Mn::Vector3(
-          random.uniform_float(0.01f, 1.f),
-          random.uniform_float(0.01f, 1.f),
-          random.uniform_float(0.01f, 1.f)));
+          random.uniform_float(0.01f, maxHalfSide),
+          random.uniform_float(0.01f, maxHalfSide),
+          random.uniform_float(0.01f, maxHalfSide)));
 
       const auto rot = getRandomRotation(random);
+      const auto pos = getRandomPoint(random, 5.f - sphereRadius - maxHalfSide);
 
-      auto pair = cgrid.getUnrotatedRangeMinMax(aabb, rot);
+      int id = cgrid.insertObstacle(pos, rot, &aabb);
+      auto range = cgrid.getWorldRange(id);
 
-      CORRADE_VERIFY(pair.first.x() < pair.second.x());
-      CORRADE_VERIFY(pair.first.y() < pair.second.y());
-      CORRADE_VERIFY(pair.first.z() < pair.second.z());
+      CORRADE_VERIFY(range.min().x() < range.max().x());
+      CORRADE_VERIFY(range.min().y() < range.max().y());
+      CORRADE_VERIFY(range.min().z() < range.max().z());
 
+      cgrid.disableObstacle(id);
     }
   }
 
   {
-    CollisionBroadphaseGrid cgrid2(sphereRadius, -100.f, -100.f, 100.f, 100.f);
+    CollisionBroadphaseGrid cgrid2(sphereRadius, -10.f, -10.f, 10.f, 10.f);
 
     // insert point obstacles
     const auto aabb = Mn::Range3D(
       Mn::Vector3(-0.0f, -0.0f, -0.0f),
       Mn::Vector3(0.0f, 0.0f, 0.0f));
-    cgrid2.insertObstacle({0.f, 0.f, 0.f}, Mn::Quaternion(Mn::Math::IdentityInit), aabb);
-    cgrid2.insertObstacle({0.f, 1.f, 0.f}, Mn::Quaternion(Mn::Math::IdentityInit), aabb);
+    auto boxId0 = cgrid2.insertObstacle({0.f, 0.f, 0.f}, Mn::Quaternion(Mn::Math::IdentityInit), &aabb);
+    CORRADE_COMPARE(boxId0, 0);
+    auto boxId1 = cgrid2.insertObstacle({0.f, 1.f, 0.f}, Mn::Quaternion(Mn::Math::IdentityInit), &aabb);
+    CORRADE_COMPARE(boxId1, 1);
 
     CORRADE_COMPARE(cgrid2.getCell(cgrid2.findSphereGridCellIndex(0.0f, 0.f)).numObstacles, 2);
     CORRADE_COMPARE(cgrid2.getCell(cgrid2.findSphereGridCellIndex(0.25f + eps, 0.f)).numObstacles, 2);
@@ -399,18 +409,24 @@ void ColumnGridTest::testCollisionBroadphaseGrid() {
 
     CORRADE_COMPARE(cgrid2.getCell(cgrid2.findSphereGridCellIndex(0.75f + eps, 0.f)).numObstacles, 0);
 
-    CORRADE_COMPARE(cgrid2.contactTest({0.f, 0.f, 0.f}), true); // hit box 0
-    CORRADE_COMPARE(cgrid2.contactTest({0.f, 0.25f - eps, 0.f}), true); // hit box 0
-    CORRADE_COMPARE(cgrid2.contactTest({0.f, 0.25f + eps, 0.f}), false);
-    CORRADE_COMPARE(cgrid2.contactTest({0.f, 0.75f - eps, 0.f}), false);
-    CORRADE_COMPARE(cgrid2.contactTest({0.f, 0.75f + eps, 0.f}), true); // hit box 1
-    CORRADE_COMPARE(cgrid2.contactTest({0.f, 1.25f - eps, 0.f}), true); // hit box 1
-    CORRADE_COMPARE(cgrid2.contactTest({0.f, 1.25f + eps, 0.f}), false);
+    CORRADE_COMPARE(cgrid2.contactTest({0.f, 0.f, 0.f}, sphereRadius), 0); // hit box 0
+    CORRADE_COMPARE(cgrid2.contactTest({0.f, 0.25f - eps, 0.f}, sphereRadius), 0); // hit box 0
+    CORRADE_COMPARE(cgrid2.contactTest({0.f, 0.25f + eps, 0.f}, sphereRadius), -1);
+    CORRADE_COMPARE(cgrid2.contactTest({0.f, 0.75f - eps, 0.f}, sphereRadius), -1);
+    CORRADE_COMPARE(cgrid2.contactTest({0.f, 0.75f + eps, 0.f}, sphereRadius), 1); // hit box 1
+    CORRADE_COMPARE(cgrid2.contactTest({0.f, 1.25f - eps, 0.f}, sphereRadius), 1); // hit box 1
+    CORRADE_COMPARE(cgrid2.contactTest({0.f, 1.25f + eps, 0.f}, sphereRadius), -1);
 
-    CORRADE_COMPARE(cgrid2.contactTest({0.f, 0.f, 0.25f - eps}), true); // hit box 0
-    CORRADE_COMPARE(cgrid2.contactTest({0.f, 0.f, 0.25f + eps}), false);
-    CORRADE_COMPARE(cgrid2.contactTest({0.f, 1.f, 0.25f - eps}), true); // hit box 1
-    CORRADE_COMPARE(cgrid2.contactTest({0.f, 1.f, 0.25f + eps}), false);
+    CORRADE_COMPARE(cgrid2.contactTest({0.f, 0.f, 0.25f - eps}, sphereRadius), 0); // hit box 0
+    CORRADE_COMPARE(cgrid2.contactTest({0.f, 0.f, 0.25f + eps}, sphereRadius), -1);
+
+    // remove box 0
+    cgrid2.disableObstacle(0);
+
+    CORRADE_COMPARE(cgrid2.contactTest({0.f, 0.f, 0.f}, sphereRadius), -1);
+
+    CORRADE_COMPARE(cgrid2.contactTest({0.f, 1.f, 0.25f - eps}, sphereRadius), 1); // hit box 1
+    CORRADE_COMPARE(cgrid2.contactTest({0.f, 1.f, 0.25f + eps}, sphereRadius), -1);
   }
 
   {
@@ -436,7 +452,7 @@ void ColumnGridTest::testCollisionBroadphaseGrid() {
       CollisionBroadphaseGrid cgrid(sphereRadius, cgridMinX, cgridMinZ, cgridMaxX, cgridMaxZ);
 
       const auto obsRotation = getRandomRotation(random);
-      cgrid.insertObstacle(obsPos, obsRotation, obsAabb);
+      int id = cgrid.insertObstacle(obsPos, obsRotation, &obsAabb);
 
       for (int j = 0; j < numContactTestsPerGrid; j++) {
           
@@ -451,7 +467,7 @@ void ColumnGridTest::testCollisionBroadphaseGrid() {
           directTestResult1 = esp::batched_sim::sphereBoxContactTest(posLocal, sphereRadiusSq - eps, obsAabb);
           directTestResult2 = esp::batched_sim::sphereBoxContactTest(posLocal, sphereRadiusSq + eps, obsAabb);
         }
-        bool cgridTestResult = cgrid.contactTest(spherePos);
+        bool cgridTestResult = (cgrid.contactTest(spherePos, sphereRadius) != -1);
         // we expect contactTest result to vary between the two methods due to numeric imprecision.
         // one of the two direct-result tests should give the same result as the cgrid test.
         CORRADE_VERIFY(directTestResult1 == cgridTestResult || directTestResult2 == cgridTestResult);
@@ -459,6 +475,8 @@ void ColumnGridTest::testCollisionBroadphaseGrid() {
           numHits++;
         }
       }
+
+      cgrid.disableObstacle(id);
     }
     const int totalNumTests = numTestGrids * numContactTestsPerGrid;
     // assert that between 10% and 90% of contact tests were hits

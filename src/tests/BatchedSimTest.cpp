@@ -179,14 +179,32 @@ TEST_F(BatchedSimulatorTest, basic) {
 
   esp::logging::LoggingContext loggingContext;
 
-  constexpr bool doOverlapPhysics = true;
+  constexpr bool doOverlapPhysics = false;
+  constexpr bool doFreeCam = false;
+
   BatchedSimulatorConfig config{
-      .numEnvs = 8, .gpuId = 0, .sensor0 = {.width = 768, .height = 768, .hfov = 60},
-      .doAsyncPhysicsStep = doOverlapPhysics};
+      .numEnvs = 2, .gpuId = 0, .sensor0 = {.width = 768, .height = 768, .hfov = 60},
+      .doAsyncPhysicsStep = doOverlapPhysics,
+      .maxEpisodeLength = 1000
+      };
   BatchedSimulator bsim(config);
 
   Mn::Vector3 camPos{-1.61004, 1.5, 3.5455};
   Mn::Quaternion camRot{{0, -0.529178, 0}, 0.848511};
+  std::string cameraAttachLinkName;
+
+  if (!doFreeCam) {
+    // over-the-shoulder cam
+    camPos = {-1.18, 2.5, 0.79};
+    camRot = {{-0.254370272, -0.628166556, -0.228633955}, 0.6988765};
+    const auto cameraMat = Mn::Matrix4::from(camRot.toMatrix(), camPos);
+    cameraAttachLinkName = "base_link";
+    bsim.attachCameraToLink(cameraAttachLinkName, cameraMat);
+  } else {
+    camPos = {-1.61004, 1.5, 3.5455};
+    camRot = {{0, -0.529178, 0}, 0.848511};
+    bsim.setCamera(camPos, camRot);    
+  }
 
   float rotSpeed = 20.f;
   float moveSpeed = 0.5f;
@@ -202,18 +220,16 @@ TEST_F(BatchedSimulatorTest, basic) {
   std::cout << "Open ./out_color_0.bmp in VS Code or another viewer that supports hot-reload." << std::endl;
   std::cout << "Press WASDQE/arrow keys to move/look, +/- to adjust speed, or ESC to quit." << std::endl;
 
-  std::vector<float> actions(17 * config.numEnvs, 0.f);
-  for (int b = 0; b < config.numEnvs; b++) {
-    //actions[b * 17 + 0] = (b % 2 == 0) ? 0.1f : -0.1f; // base rotate
-    actions[b * 17 + 1] = 0.05f; // base forward
-
-    int jointForThisEnv = ((b / 2) % 15);
-    actions[b * 17 + 2 + jointForThisEnv] = (b % 2 == 0) ? 0.03f : -0.03f;
-
-    // for (int i = 2; i < 17; i++) {
-    //   const float jointAction = (b % 2 == 0) ? 0.01f : -0.01f;
-    //   actions[b * 17 + i] = jointAction;
-    // }
+  constexpr int actionDim = 18;
+  std::vector<float> actions(actionDim * config.numEnvs, 0.f);
+  if (doFreeCam) {
+    for (int b = 0; b < config.numEnvs; b++) {
+      actions[b * actionDim + 0] = 1.f; // attempt grip
+      //actions[b * actionDim + 1] = (b % 2 == 0) ? 0.1f : -0.1f; // base rotate
+      actions[b * actionDim + 2] = 0.05f; // base forward
+      int jointForThisEnv = ((b / 2) % 15);
+      actions[b * actionDim + 3 + jointForThisEnv] = (b % 2 == 0) ? 0.03f : -0.03f;
+    }
   }
 
   bool doAdvanceSim = false;
@@ -263,37 +279,99 @@ TEST_F(BatchedSimulatorTest, basic) {
     int key = key_press();
     if (key == 27) { // ESC
       break;
-    } else if (key == -38) { // up
-      camRot = camRot * Mn::Quaternion::rotation(Mn::Deg(rotSpeed), Mn::Vector3(1.f, 0.f, 0.f));
-    } else if (key == -40) { // down
-      camRot = camRot * Mn::Quaternion::rotation(Mn::Deg(-rotSpeed), Mn::Vector3(1.f, 0.f, 0.f));
-    } else if (key == -37) { // left
-      camRot = Mn::Quaternion::rotation(Mn::Deg(rotSpeed), Mn::Vector3(0.f, 1.f, 0.f)) * camRot;
-    } else if (key == -39) { // right
-      camRot = Mn::Quaternion::rotation(Mn::Deg(-rotSpeed), Mn::Vector3(0.f, 1.f, 0.f)) * camRot;
-    } else if (key == '=') { // +
-      rotSpeed *= 1.25f;
-      moveSpeed *= 1.5f;
-    } else if (key == '-') {
-      rotSpeed /= 1.25f;
-      moveSpeed /= 1.5f;
-    } else if (key == 'w') {
-      camPos += camRot.transformVector(Mn::Vector3(0.f, 0.f, -1.f)) * moveSpeed;
-    } else if (key == 's') {
-      camPos += camRot.transformVector(Mn::Vector3(0.f, 0.f, 1.f)) * moveSpeed;
-    } else if (key == 'a') {
-      camPos += camRot.transformVector(Mn::Vector3(-1.f, 0.f, 0.f)) * moveSpeed;
-    } else if (key == 'd') {
-      camPos += camRot.transformVector(Mn::Vector3(1.f, 0.f, 0.f)) * moveSpeed;      
-    } else if (key == 'e') {
-      camPos.y() += moveSpeed;
-    } else if (key == 'q') {
-      camPos.y() += -moveSpeed;
-    } else if (key == ' ') {
-      doAdvanceSim = true;
     }
+    
+    if (!doFreeCam) {
+      
+      static bool doHold = false;
+      float targetUpDown = 0.f;
+      float targetLeftRight = 0.f;
+      float baseYaw = 0.f;
+      float baseForward = 0.f;
 
-    bsim.setCamera(camPos, camRot);    
+      if (key == -38) { // up
+        targetUpDown += 1.f;
+      } else if (key == -40) { // down
+        targetUpDown -= 1.f;
+      } else if (key == -37) { // left
+        targetLeftRight += 1.f;
+      } else if (key == -39) { // right
+        targetLeftRight -= 1.f;
+      } else if (key == 'w') {
+        baseForward += 1.f;
+      } else if (key == 's') {
+        baseForward -= 1.f;
+      } else if (key == 'a') {
+        baseYaw += float(Mn::Rad(Mn::Deg(15.f)));
+      } else if (key == 'd') {
+        baseYaw -= float(Mn::Rad(Mn::Deg(15.f)));
+      }else if (key == '=') { // +
+        rotSpeed *= 1.25f;
+        moveSpeed *= 1.5f;
+      } else if (key == '-') {
+        rotSpeed /= 1.25f;
+        moveSpeed /= 1.5f;
+      } else if (key == 'e') {
+        doHold = !doHold;
+      }
+
+      doAdvanceSim = true;
+
+      for (int b = 0; b < config.numEnvs; b++) {
+        float* actionsForEnv = &actions[b * actionDim];
+        actionsForEnv[0] = doHold ? 1.f : -1.f;
+        actionsForEnv[1] = baseYaw * rotSpeed;
+        actionsForEnv[2] = baseForward * moveSpeed;
+
+        // 7 shoulder, + is down
+        // 8 twist, + is twist to right
+        // 9 elbow, + is down
+        // 10 elbow twist, + is twst to right
+        // 11 wrist, + is down
+        actionsForEnv[3 + 8] = -targetLeftRight * rotSpeed;
+        actionsForEnv[3 + 9] = -targetUpDown * rotSpeed;
+        actionsForEnv[3 + 11] = targetUpDown * rotSpeed;
+      }
+
+      if (false) { // if we updated the camera transform...
+        const auto cameraMat = Mn::Matrix4::from(camRot.toMatrix(), camPos);
+        bsim.attachCameraToLink(cameraAttachLinkName, cameraMat);
+      }
+
+    } else {
+      // free camera with spacebar to advance sim
+      if (key == -38) { // up
+        camRot = camRot * Mn::Quaternion::rotation(Mn::Deg(rotSpeed), Mn::Vector3(1.f, 0.f, 0.f));
+      } else if (key == -40) { // down
+        camRot = camRot * Mn::Quaternion::rotation(Mn::Deg(-rotSpeed), Mn::Vector3(1.f, 0.f, 0.f));
+      } else if (key == -37) { // left
+        camRot = Mn::Quaternion::rotation(Mn::Deg(rotSpeed), Mn::Vector3(0.f, 1.f, 0.f)) * camRot;
+      } else if (key == -39) { // right
+        camRot = Mn::Quaternion::rotation(Mn::Deg(-rotSpeed), Mn::Vector3(0.f, 1.f, 0.f)) * camRot;
+      } else if (key == '=') { // +
+        rotSpeed *= 1.25f;
+        moveSpeed *= 1.5f;
+      } else if (key == '-') {
+        rotSpeed /= 1.25f;
+        moveSpeed /= 1.5f;
+      } else if (key == 'w') {
+        camPos += camRot.transformVector(Mn::Vector3(0.f, 0.f, -1.f)) * moveSpeed;
+      } else if (key == 's') {
+        camPos += camRot.transformVector(Mn::Vector3(0.f, 0.f, 1.f)) * moveSpeed;
+      } else if (key == 'a') {
+        camPos += camRot.transformVector(Mn::Vector3(-1.f, 0.f, 0.f)) * moveSpeed;
+      } else if (key == 'd') {
+        camPos += camRot.transformVector(Mn::Vector3(1.f, 0.f, 0.f)) * moveSpeed;      
+      } else if (key == 'e') {
+        camPos.y() += moveSpeed;
+      } else if (key == 'q') {
+        camPos.y() += -moveSpeed;
+      } else if (key == ' ') {
+        doAdvanceSim = true;
+      }
+
+      bsim.setCamera(camPos, camRot);
+    }
 
     #if 0 // test columnGrid collision
     {

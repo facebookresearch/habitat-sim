@@ -19,6 +19,14 @@ glm::mat4 toGlmMat4(const Mn::Vector3& pos, const Mn::Quaternion& rot) {
                    pos.z(), 1.f);
 }
 
+glm::mat4 toGlmMat4(const Magnum::Matrix4& m) {
+  return glm::mat4(
+    m[0][0], m[0][1], m[0][2], 0.f, 
+    m[1][0], m[1][1], m[1][2], 0.f, 
+    m[2][0], m[2][1], m[2][2], 0.f, 
+    m[3][0], m[3][1], m[3][2], 1.f);
+}
+
 glm::mat4x3 toGlmMat4x3(const Magnum::Matrix4& m) {
   return glm::mat4x3(m[0][0], m[0][1], m[0][2], m[1][0], m[1][1], m[1][2],
                      m[2][0], m[2][1], m[2][2], m[3][0], m[3][1], m[3][2]);
@@ -26,6 +34,10 @@ glm::mat4x3 toGlmMat4x3(const Magnum::Matrix4& m) {
   //   m[0][0], m[1][0], m[2][0], m[3][0],
   //   m[0][1], m[1][1], m[2][1], m[3][1],
   //   m[0][2], m[1][2], m[2][2], m[3][2]);
+}
+
+Mn::Vector3 getMagnumTranslation(const glm::mat4x3& glMat) {
+  return Mn::Vector3(glMat[3][0], glMat[3][1], glMat[3][2]);
 }
 
 Magnum::Vector3 inverseTransformPoint(const glm::mat4x3& glMat, const Magnum::Vector3& pos) {

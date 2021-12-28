@@ -20,9 +20,10 @@ namespace esp {
 namespace batched_sim {
 
 glm::mat4 toGlmMat4(const Magnum::Vector3& pos, const Magnum::Quaternion& rot);
+glm::mat4 toGlmMat4(const Magnum::Matrix4& m);
 
 glm::mat4x3 toGlmMat4x3(const Magnum::Matrix4& m);
-
+Magnum::Vector3 getMagnumTranslation(const glm::mat4x3& glMat);
 
 Magnum::Vector3 inverseTransformPoint(const glm::mat4x3& glMat, const Magnum::Vector3& pos);
 

@@ -36,7 +36,9 @@ void initBatchedSimBindings(py::module& m) {
       .def_readwrite("gpu_id", &BatchedSimulatorConfig::gpuId, R"(Todo)")
       .def_readwrite("sensor0", &BatchedSimulatorConfig::sensor0, R"(Todo)")
       .def_readwrite("force_random_actions", &BatchedSimulatorConfig::forceRandomActions, R"(Todo)")
-      .def_readwrite("do_async_physics_step", &BatchedSimulatorConfig::doAsyncPhysicsStep, R"(Todo)");
+      .def_readwrite("do_async_physics_step", &BatchedSimulatorConfig::doAsyncPhysicsStep, R"(Todo)")
+      .def_readwrite("max_episode_length", &BatchedSimulatorConfig::maxEpisodeLength, R"(Todo)");
+      
     
   py::class_<BatchedSimulator, BatchedSimulator::ptr>(m, "BatchedSimulator")
       .def(py::init(&BatchedSimulator::create<const BatchedSimulatorConfig&>))

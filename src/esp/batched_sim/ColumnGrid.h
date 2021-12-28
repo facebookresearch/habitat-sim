@@ -76,6 +76,11 @@ class ColumnGridSource {
   bool contactTest(const Magnum::Vector3& pos,
     ColumnGridSource::QueryCacheValue* queryCache) const;
 
+  // returns distance down to contact (or up to contact-free)
+  // positive indicates contact-free; negative indicates distance up to be contact-free
+  float castDownTest(const Magnum::Vector3& pos,
+    ColumnGridSource::QueryCacheValue* queryCache) const;
+
   void ensureLayer(int layerIdx) {
     // sanity-check: this data structure shouldn't have too many layers
     BATCHED_SIM_ASSERT(layerIdx < 24);

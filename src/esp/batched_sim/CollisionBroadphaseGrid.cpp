@@ -9,6 +9,7 @@
 #include <Magnum/Math/Range.h>
 
 #include <vector>
+#include <cmath>
 
 namespace Mn = Magnum;
 
@@ -70,13 +71,13 @@ void CollisionBroadphaseGrid::findObstacleGridCellIndices(float queryMinX, float
 std::pair<int, int> CollisionBroadphaseGrid::findSphereGridCellIndex(float x, float z) const {
 
   // use the max corner of the sphere to do lookup
-  const float halfCellFloatX = (x + sphereRadius_ - minX_) * invGridSpacing_ * 2.f;
+  const float halfCellFloatX = (x + maxSphereRadius_ - minX_) * invGridSpacing_ * 2.f;
   if (halfCellFloatX < 0.f || halfCellFloatX >= (float)(dimX_ * 2)) {
     BATCHED_SIM_ASSERT(false);
     return std::make_pair(-1, -1);
   }
 
-  const float halfCellFloatZ = (z + sphereRadius_ - minZ_) * invGridSpacing_ * 2.f;
+  const float halfCellFloatZ = (z + maxSphereRadius_ - minZ_) * invGridSpacing_ * 2.f;
   if (halfCellFloatZ < 0.f || halfCellFloatZ >= (float)(dimZ_ * 2)) {
     BATCHED_SIM_ASSERT(false);
     return std::make_pair(-1, -1);
@@ -97,10 +98,10 @@ std::pair<int, int> CollisionBroadphaseGrid::findSphereGridCellIndex(float x, fl
 }
 
 CollisionBroadphaseGrid::CollisionBroadphaseGrid(float sphereRadius, float minX, float minZ, 
-  float maxX, float maxZ, int maxBytes, float maxGridSpacing)
+  float maxX, float maxZ, int maxBytes, float maxGridSpacing, int numObstaclesToReserve)
   : minX_(minX)
   , minZ_(minZ)
-  , sphereRadius_(sphereRadius) {
+  , maxSphereRadius_(sphereRadius) {
 
   // For each cell in a grid, we cache all the obstacles that overlap it. Obstacles
   // generally span multiple cells.
@@ -122,14 +123,14 @@ CollisionBroadphaseGrid::CollisionBroadphaseGrid(float sphereRadius, float minX,
   // - be 4x slower to insert/remove obstacles (but this operation is infrequent)
   // - allow a single fast lookup with no merging/deduplicating
 
-  gridSpacing_ = sphereRadius_ * 4.f;
+  gridSpacing_ = maxSphereRadius_ * 4.f;
   while (true) {
     // note +2; we need +1 to "round up", and we need another +1 because we want an
     // additional row/column for our grids that are offset (that don't start at minX/minZ).
     dimX_ = int((maxX - minX) / gridSpacing_) + 2;
     dimZ_ = int((maxZ - minZ) / gridSpacing_) + 2;
     const int numCells = dimX_ * dimZ_ * NUM_GRIDS;
-    const int bytes = sizeof(Cell) * numCells;
+    const int bytes = sizeof(Cell) * numCells + sizeof(Obstacle) * numObstaclesToReserve;
 
     if (bytes > maxBytes) {
       gridSpacing_ *= 1.1f;
@@ -137,8 +138,11 @@ CollisionBroadphaseGrid::CollisionBroadphaseGrid(float sphereRadius, float minX,
       break;
     }
   }
-  // if you hit this, you need to reconsider MAX_OBSTACLES_PER_CELL, maxBytes, and/or maxGridSpacing
-  BATCHED_SIM_ASSERT(gridSpacing_ <= maxGridSpacing);
+  if (maxGridSpacing > 0.f) {
+    // if you hit this, you need to reconsider MAX_OBSTACLES_PER_CELL, maxBytes, 
+    // numObstaclesToReserve, and/or maxGridSpacing
+    BATCHED_SIM_ASSERT(gridSpacing_ <= maxGridSpacing);
+  }
   invGridSpacing_ = 1.f / gridSpacing_;
 
   // if we hit this, we should adapt the minGridSpacing logic above to avoid too-large grids
@@ -150,37 +154,19 @@ CollisionBroadphaseGrid::CollisionBroadphaseGrid(float sphereRadius, float minX,
   }
 
   gridCellIndicesStorage_.reserve(MAX_OBSTACLES_PER_CELL);
+
+  if (numObstaclesToReserve != -1) {
+    BATCHED_SIM_ASSERT(numObstaclesToReserve > 0);
+    obstacles_.reserve(numObstaclesToReserve);
+  }
 }
 
-std::pair<Mn::Vector3, Mn::Vector3> CollisionBroadphaseGrid::getUnrotatedRangeMinMax(
-  const Magnum::Range3D& aabb,
-  const Magnum::Quaternion& rotation) {
+Mn::Range3D CollisionBroadphaseGrid::getWorldRange(int16_t obsIndex) const {
 
-#if 0
-  const auto oneVector = Mn::Vector3(1.f, 1.f, 1.f);
-  const auto invRotation = rotation.invertedNormalized();
+  const auto& obs = safeVectorGet(obstacles_, obsIndex);
 
-  Mn::Vector3 signVector = invRotation.transformVectorNormalized(oneVector);
-
-  Mn::Vector3 minCornerLocal(
-    signVector.x() > 0.f ? aabb.min().x() : aabb.max().x(),
-    signVector.y() > 0.f ? aabb.min().y() : aabb.max().y(),
-    signVector.z() > 0.f ? aabb.min().z() : aabb.max().z());
-
-  Mn::Vector3 maxCornerLocal(
-    signVector.x() > 0.f ? aabb.max().x() : aabb.min().x(),
-    signVector.y() > 0.f ? aabb.max().y() : aabb.min().y(),
-    signVector.z() > 0.f ? aabb.max().z() : aabb.min().z());
-
-  Mn::Vector3 minCornerUnrotated = rotation.transformVectorNormalized(minCornerLocal);
-  Mn::Vector3 maxCornerUnrotated = rotation.transformVectorNormalized(maxCornerLocal);
-
-  BATCHED_SIM_ASSERT(maxCornerUnrotated.x() >= minCornerUnrotated.x());
-  BATCHED_SIM_ASSERT(maxCornerUnrotated.y() >= minCornerUnrotated.y());
-  BATCHED_SIM_ASSERT(maxCornerUnrotated.z() >= minCornerUnrotated.z());
-
-  return std::make_pair(minCornerUnrotated, maxCornerUnrotated);
-#endif
+  auto rotation = obs.invRotation.invertedNormalized();
+  const auto& aabb = *obs.aabb;
 
   std::array<Mn::Vector3, 8> corners = {
     aabb.backBottomLeft(),
@@ -196,22 +182,22 @@ std::pair<Mn::Vector3, Mn::Vector3> CollisionBroadphaseGrid::getUnrotatedRangeMi
   Mn::Vector3 min = rotation.transformVectorNormalized(corners[0]);
   Mn::Vector3 max = min;
   for (int i = 1; i < 8; i++) {
-    const auto worldCorner = rotation.transformVectorNormalized(corners[i]);
+    const auto rotatedCorner = rotation.transformVectorNormalized(corners[i]);
     min = Mn::Vector3(
-      Mn::Math::min(min.x(), worldCorner.x()),
-      Mn::Math::min(min.y(), worldCorner.y()),
-      Mn::Math::min(min.z(), worldCorner.z()));
+      Mn::Math::min(min.x(), rotatedCorner.x()),
+      Mn::Math::min(min.y(), rotatedCorner.y()),
+      Mn::Math::min(min.z(), rotatedCorner.z()));
     max = Mn::Vector3(
-      Mn::Math::max(max.x(), worldCorner.x()),
-      Mn::Math::max(max.y(), worldCorner.y()),
-      Mn::Math::max(max.z(), worldCorner.z()));
+      Mn::Math::max(max.x(), rotatedCorner.x()),
+      Mn::Math::max(max.y(), rotatedCorner.y()),
+      Mn::Math::max(max.z(), rotatedCorner.z()));
   }
 
   BATCHED_SIM_ASSERT(min.x() <= max.x());
   BATCHED_SIM_ASSERT(min.y() <= max.y());
   BATCHED_SIM_ASSERT(min.z() <= max.z());
 
-  return std::make_pair(min, max);
+  return Mn::Range3D(obs.pos + min, obs.pos + max);
 }
 
 CollisionBroadphaseGrid::Cell& CollisionBroadphaseGrid::getCell(std::pair<int, int> gridCellIndex) {
@@ -228,68 +214,125 @@ const CollisionBroadphaseGrid::Cell& CollisionBroadphaseGrid::getCell(std::pair<
   return cell;
 }
 
-void CollisionBroadphaseGrid::insertObstacle(const Magnum::Vector3& pos, 
-  const Magnum::Quaternion& rotation, const Magnum::Range3D& aabb) {
+int16_t CollisionBroadphaseGrid::insertObstacle(const Magnum::Vector3& pos, const Magnum::Quaternion& rotation,
+  const Magnum::Range3D* aabb) {
 
-  auto pair = getUnrotatedRangeMinMax(aabb, rotation);
-  Mn::Vector3 minWorld = pos + pair.first;
-  Mn::Vector3 maxWorld = pos + pair.second;
+  int16_t obsIndex = obstacles_.size();
+  obstacles_.push_back(Obstacle());
+  auto& obs = obstacles_.back();
+  obs.aabb = aabb;
+  obs.pos.x() = NAN;
 
-  Obstacle obsToInsert;
-  obsToInsert.boxDim = aabb.size();
-  BATCHED_SIM_ASSERT(obsToInsert.boxDim.x() >= 0.f && obsToInsert.boxDim.y() >= 0.f && obsToInsert.boxDim.z() >= 0.f);
-  obsToInsert.boxOrigin = pos + rotation.transformVectorNormalized(aabb.min());
-  obsToInsert.invRotation = rotation.invertedNormalized();
-  obsToInsert.worldMinY = minWorld.y();
-  obsToInsert.worldMaxY = maxWorld.y();
+  reinsertObstacle(obsIndex, pos, rotation);
+
+  return obsIndex;
+}
+
+void CollisionBroadphaseGrid::reinsertObstacle(int16_t obsIndex, const Magnum::Vector3& pos, 
+  const Magnum::Quaternion& rotation) {
+
+  BATCHED_SIM_ASSERT(isObstacleDisabled(obsIndex));
+  auto& obs = safeVectorGet(obstacles_, obsIndex);
+  obs.pos = pos;
+  obs.invRotation = rotation.invertedNormalized();
+
+  insertRemoveObstacleHelper(obsIndex, /*remove*/false);
+}
+
+void CollisionBroadphaseGrid::disableObstacle(int16_t obsIndex) {
+
+  insertRemoveObstacleHelper(obsIndex, /*remove*/true);
+
+  auto& obs = safeVectorGet(obstacles_, obsIndex);
+  obs.pos.x() = NAN; // mark as uninserted
+
+}
+
+bool CollisionBroadphaseGrid::isObstacleDisabled(int16_t obsIndex) const {
+  const auto& obs = safeVectorGet(obstacles_, obsIndex);
+  return std::isnan(obs.pos.x());
+}
+
+const CollisionBroadphaseGrid::Obstacle& CollisionBroadphaseGrid::getObstacle(int obsIndex) const {
+  const auto& obs = safeVectorGet(obstacles_, obsIndex);
+  return obs;
+}
+
+
+void CollisionBroadphaseGrid::insertRemoveObstacleHelper(int16_t obsIndex, bool remove) {
+
+  auto& obs = safeVectorGet(obstacles_, obsIndex);
+
+  auto range = getWorldRange(obsIndex);
+  Mn::Vector3 minWorld = range.min();
+  Mn::Vector3 maxWorld = range.max();
+
+  obs.worldMinY = minWorld.y();
+  obs.worldMaxY = maxWorld.y();
 
   findObstacleGridCellIndices(minWorld.x(), minWorld.z(), maxWorld.x(), 
     maxWorld.z(), gridCellIndicesStorage_);
 
   for (const auto& gridCellIndex : gridCellIndicesStorage_) {
     auto& cell = getCell(gridCellIndex);
-    BATCHED_SIM_ASSERT(cell.numObstacles < MAX_OBSTACLES_PER_CELL);
-    cell.obstacles[cell.numObstacles] = obsToInsert;
-    cell.numObstacles++;
+    if (remove) {
+      // linear search for removal
+      bool found = false;
+      for (int i = 0; i < cell.numObstacles; i++) {
+        auto& otherObsIndex = cell.obstacles[i];
+        if (otherObsIndex == obsIndex) {
+          if (i < cell.numObstacles - 1) {
+            // backfill
+            otherObsIndex = cell.obstacles[cell.numObstacles - 1];
+          }
+          cell.numObstacles--;
+          numObstacleInstances_--;
+          found = true;
+          break;
+        }
+      }
+      BATCHED_SIM_ASSERT(found);
+    } else {
+      BATCHED_SIM_ASSERT(cell.numObstacles < MAX_OBSTACLES_PER_CELL);
+      cell.obstacles[cell.numObstacles] = obsIndex;
+      cell.numObstacles++;
+      numObstacleInstances_++;
+    }
   }
 
 }
 
-bool CollisionBroadphaseGrid::contactTest(const Magnum::Vector3& spherePos) const {
+int CollisionBroadphaseGrid::contactTest(const Magnum::Vector3& spherePos, float sphereRadius) const {
 
-  const float sphereRadiusSq = sphereRadius_ * sphereRadius_;
+  BATCHED_SIM_ASSERT(sphereRadius <= maxSphereRadius_);
+
+  const float sphereRadiusSq = sphereRadius * sphereRadius;
   const auto& cell = getCell(findSphereGridCellIndex(spherePos.x(), spherePos.z()));
 
-  Mn::Range3D aabb(
-    Mn::Vector3(Mn::Math::ZeroInit),
-    Mn::Vector3(Mn::Math::ZeroInit));
-
   for (int i = 0; i < cell.numObstacles; i++) {
-    const auto& obs = cell.obstacles[i];
+    int16_t obsIndex = cell.obstacles[i];
+    const auto& obs = safeVectorGet(obstacles_, obsIndex);
 
     // test y extents
-    if (obs.worldMaxY < spherePos.y() - sphereRadius_
-      || obs.worldMinY > spherePos.y() + sphereRadius_) {
+    if (obs.worldMaxY < spherePos.y() - sphereRadius
+      || obs.worldMinY > spherePos.y() + sphereRadius) {
       continue;
     }
 
-    const auto posLocal = obs.invRotation.transformVectorNormalized(spherePos - obs.boxOrigin);
-
-    // aabb.min is origin
-    aabb.max() = obs.boxDim;
+    const auto posLocal = obs.invRotation.transformVectorNormalized(spherePos - obs.pos);
 
     //bool sphereBoxContactTest(const Magnum::Vector3& sphereOrigin, float sphereRadiusSq, const Magnum::Range3D& aabb);
-    if (sphereBoxContactTest(posLocal, sphereRadiusSq, aabb)) {
+    if (sphereBoxContactTest(posLocal, sphereRadiusSq, *obs.aabb)) {
 #ifdef COLLISIONBROADPHASEGRID_ENABLE_DEBUG  
-      debugLastContact_.obsPos = obs.boxOrigin;
-      debugLastContact_.obsLocalAabb = Mn::Range3D(Mn::Vector3(Mn::Math::ZeroInit), obs.boxDim);
+      debugLastContact_.obsPos = obs.pos;
+      debugLastContact_.obsLocalAabb = *obs.aabb;
       debugLastContact_.obsRotation = obs.invRotation.invertedNormalized();
 #endif
-      return true;
+      return obsIndex;
     }
   }
 
-  return false;
+  return -1;
 
 }
 

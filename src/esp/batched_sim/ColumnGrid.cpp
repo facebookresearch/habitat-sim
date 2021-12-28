@@ -37,12 +37,17 @@ struct FileHeader {
 
 }
 
-// perf todo: vector version (takes array of pos)
 bool ColumnGridSource::contactTest(const Mn::Vector3& pos,
   ColumnGridSource::QueryCacheValue* queryCache) const {
 
+  return castDownTest(pos, queryCache) < 0.f;
+}
+
+float ColumnGridSource::castDownTest(const Mn::Vector3& pos,
+  ColumnGridSource::QueryCacheValue* queryCache) const {
+
   // todo: think about this more (for objects vs interiors)
-  constexpr bool outsideVolumeRetVal = true;
+  constexpr float outsideVolumeRetVal = -INVALID_Y;
 
   const float cellFloatX = (pos.x() - minX) * invGridSpacing;
   if (cellFloatX < 0.f || cellFloatX >= (float)dimX) { // perf todo: pre-cache float dimX
@@ -88,7 +93,7 @@ bool ColumnGridSource::contactTest(const Mn::Vector3& pos,
   if (queryY >= col.freeMinY) {
     if (queryY <= col.freeMaxY) {
       *queryCache = layerIndex;
-      return false;
+      return queryY - col.freeMinY;
     }
     // search up
     while (true) {
@@ -100,15 +105,16 @@ bool ColumnGridSource::contactTest(const Mn::Vector3& pos,
       const auto& col = getColumn(patch, localCellIdx, layerIndex);
       if (queryY < col.freeMinY) {
         *queryCache = layerIndex;
-        return true; // in between two free columns
+        return queryY - col.freeMinY; // in between two free columns
       }
       if (queryY <= col.freeMaxY) {
         *queryCache = layerIndex;
-        return false;
+        return queryY - col.freeMinY;
       }
     }
   } else {
     // search down
+    float prevColFreeMinY = col.freeMinY;
     while (true) {
       layerIndex--;
       if (layerIndex < 0) {
@@ -116,14 +122,16 @@ bool ColumnGridSource::contactTest(const Mn::Vector3& pos,
         return outsideVolumeRetVal;
       }
       const auto& col = getColumn(patch, localCellIdx, layerIndex);
-      if (queryY > col.freeMaxY) {
+      if (queryY > col.freeMaxY) { // in between two free columns
         *queryCache = layerIndex;
-        return true;
+        BATCHED_SIM_ASSERT(queryY < prevColFreeMinY);
+        return queryY - prevColFreeMinY;
       }
       if (queryY >= col.freeMinY) {
         *queryCache = layerIndex;
-        return false;
+        return queryY - col.freeMinY;
       }
+      prevColFreeMinY = col.freeMinY;
     }
   }
 

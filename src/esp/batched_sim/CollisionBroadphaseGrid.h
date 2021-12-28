@@ -34,10 +34,19 @@ class CollisionBroadphaseGrid {
   };
 #endif
 
+  // perf todo: make smaller
+  struct Obstacle {
+    float worldMinY = 0.f;
+    float worldMaxY = 0.f;
+    Magnum::Quaternion invRotation;
+    Magnum::Vector3 pos;
+    const Magnum::Range3D* aabb = nullptr;
+  };
+
   CollisionBroadphaseGrid() = default;
   CollisionBroadphaseGrid(float sphereRadius, float minX, float minZ, 
     float maxX, float maxZ, 
-    int maxBytes=1024*1024, float maxGridSpacing=1.0);
+    int maxBytes=1024*1024, float maxGridSpacing=0.f, int numObstaclesToReserve=-1);
 
   static constexpr int NUM_GRIDS = 4;
 
@@ -46,34 +55,34 @@ class CollisionBroadphaseGrid {
   //   uint8_t obstacleIndexes[NUM_GRIDS] = {255, 255, 255, 255};
   // };
 
-  bool contactTest(const Magnum::Vector3& spherePos) const; // see sphereRadius arg to constructor
+  int contactTest(const Magnum::Vector3& spherePos, float sphereRadius) const; // see sphereRadius arg to constructor
 
-  void insertObstacle(const Magnum::Vector3& pos, const Magnum::Quaternion& rotation,
-    const Magnum::Range3D& aabb);
+  // return obstacleIndex
+  // note aabb is expected to be persistent (don't pass in a temporary!)
+  int16_t insertObstacle(const Magnum::Vector3& pos, const Magnum::Quaternion& rotation,
+    const Magnum::Range3D* aabb);
 
+  void disableObstacle(int16_t obstacleIndex);
+  bool isObstacleDisabled(int16_t obsIndex) const;
+  void reinsertObstacle(int16_t obstacleIndex, const Magnum::Vector3& pos, const Magnum::Quaternion& rotation);  
+
+  // todo: get rid of this; sharing obstacle is enough
 #ifdef COLLISIONBROADPHASEGRID_ENABLE_DEBUG
   const DebugContact& getLastContact() const { return debugLastContact_; }
 #endif
+  int getNumObstacleInstances() { return numObstacleInstances_; }
+
+  const Obstacle& getObstacle(int obsIndex) const;
 
   //// private API exposed only for testing ////
  public:
 
-  static constexpr int MAX_OBSTACLES_PER_CELL = 8;
+  static constexpr int MAX_OBSTACLES_PER_CELL = 12;
 
-  struct Obstacle {
-    float worldMinY = 0.f;
-    float worldMaxY = 0.f;
-    // perf todo: consider storing index into rotations array
-    Magnum::Quaternion invRotation;
-    // the position of the min box corner in world space.
-    // beware, this is generally not the same as the obstacle model's origin
-    Magnum::Vector3 boxOrigin;
-    Magnum::Vector3 boxDim;
-  };
 
   struct Cell {
-    int numObstacles = 0;
-    std::array<Obstacle, MAX_OBSTACLES_PER_CELL> obstacles;
+    int16_t numObstacles = 0;
+    std::array<int16_t, MAX_OBSTACLES_PER_CELL> obstacles;
   };
 
   struct Grid {
@@ -90,26 +99,28 @@ class CollisionBroadphaseGrid {
   void findObstacleGridCellIndices(float queryMinX, float queryMinZ, float queryMaxX, 
     float queryMaxZ, std::vector<std::pair<int, int>>& gridCellIndices) const;
 
-  std::pair<Magnum::Vector3, Magnum::Vector3> getUnrotatedRangeMinMax(
-    const Magnum::Range3D& aabb,
-    const Magnum::Quaternion& rotation);
+  Magnum::Range3D getWorldRange(int16_t obsIndex) const;
 
   Cell& getCell(std::pair<int, int> gridCellIndex);
   const Cell& getCell(std::pair<int, int> gridCellIndex) const;
+
+  void insertRemoveObstacleHelper(int16_t obsIndex, bool remove);
 
   // private members exposed only for testing
  public:
 
 
-  float sphereRadius_ = 0.f;
+  float maxSphereRadius_ = 0.f;
   float minX_ = 0.f;
   float minZ_ = 0.f;
   float gridSpacing_ = 0.f;
   float invGridSpacing_ = 0.f;
   int dimX_ = 0;
   int dimZ_ = 0;
+  std::vector<Obstacle> obstacles_;
   std::array<Grid, NUM_GRIDS> grids_;
   std::vector<std::pair<int, int>> gridCellIndicesStorage_;
+  int numObstacleInstances_ = 0;
 
 #ifdef COLLISIONBROADPHASEGRID_ENABLE_DEBUG
   mutable DebugContact debugLastContact_;
