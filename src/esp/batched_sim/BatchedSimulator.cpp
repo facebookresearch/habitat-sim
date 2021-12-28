@@ -91,10 +91,10 @@ void BatchedSimulator::randomizeRobotsForCurrentStep() {
   auto random = core::Random(/*seed*/ 1);
 
   for (int b = 0; b < numEnvs; b++) {
-    yaws[b] = random.uniform_float(-float(Mn::Rad(Mn::Deg(90.f))), 0.f);
-    positions[b] =
-        Mn::Vector2(1.61, 0.98) + Mn::Vector2(random.uniform_float(-0.2, 0.2f),
-                                              random.uniform_float(-0.2, 0.2f));
+    // hand-authored start location and yaw range that works for stages 0-12
+    positions[b] = Mn::Vector2(2.39f, 0.f);
+    yaws[b] = random.uniform_float(-float(Mn::Rad(Mn::Deg(180.f))), float(Mn::Rad(Mn::Deg(0.f))));
+        
     // temp move robot out of scene (hide/disable robot)
     // positions[b].y() -= 1000.f;
 
@@ -637,6 +637,8 @@ void BatchedSimulator::updateCollision() {
 
     robots_.collisionResults_[b] = hit;
     if (hit) {
+      // todo: more robust handling of this, maybe at episode-load time
+      ESP_CHECK(currRolloutStep_ > 1, "The robot is in collision on the first step of the episode.");
       recentStats_.numStepsInCollision_++;
     }
   }

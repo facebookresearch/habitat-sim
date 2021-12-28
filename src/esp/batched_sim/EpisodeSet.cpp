@@ -74,7 +74,7 @@ void addEpisode(EpisodeSet& set, int stageFixedObjectIndex, core::Random& random
 
   //Mn::Range3D spawnRange({-1.f, 0.05f, 0.f}, {3.f, 0.05, 3.f});
   Mn::Range3D spawnRange({-1.f, 0.15f, -0.5f}, {4.f, 2.f, 3.f});
-  const auto robotStartPos = Mn::Vector3(1.61, 0.f, 0.98);
+  const auto robotStartPos = Mn::Vector3(2.39, 0.f, 0.f);
   const auto pad = Mn::Vector3(0.9f, 2.f, 0.9);
   const auto exclusionRange = Mn::Range3D(robotStartPos - pad, robotStartPos + pad);
 
@@ -159,7 +159,18 @@ EpisodeSet generateBenchmarkEpisodeSet(int numEpisodes, const BpsSceneMapping& s
   
   std::vector<std::string> replicaCadBakedStages = {
     "Baked_sc0_staging_00",
-    "Baked_sc0_staging_01"
+    "Baked_sc0_staging_01",
+    "Baked_sc0_staging_02",
+    "Baked_sc0_staging_03",
+    "Baked_sc0_staging_04",
+    "Baked_sc0_staging_05",
+    "Baked_sc0_staging_06",
+    "Baked_sc0_staging_07",
+    "Baked_sc0_staging_08",
+    "Baked_sc0_staging_09",
+    "Baked_sc0_staging_10",
+    "Baked_sc0_staging_11",
+    "Baked_sc0_staging_12",
   };
 
   for (const auto& stageName : replicaCadBakedStages) {
