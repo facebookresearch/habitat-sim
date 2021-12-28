@@ -13,6 +13,8 @@
 // #include <bps3D.hpp>
 
 #include <iostream>
+#include <sstream>
+#include <iomanip>
 
 #include <mutex>
 
@@ -93,6 +95,9 @@ void BatchedSimulator::randomizeRobotsForCurrentStep() {
     positions[b] =
         Mn::Vector2(1.61, 0.98) + Mn::Vector2(random.uniform_float(-0.2, 0.2f),
                                               random.uniform_float(-0.2, 0.2f));
+    // temp move robot out of scene (hide/disable robot)
+    // positions[b].y() -= 1000.f;
+
     for (int j = 0; j < robot_.numPosVars; j++) {
       auto& pos = jointPositions[b * robot_.numPosVars + j];
       pos = 0.f;
@@ -105,7 +110,7 @@ void BatchedSimulator::randomizeRobotsForCurrentStep() {
     // 9 elbow, + is down
     // 10 elbow twist, + is twst to right
     // 11 wrist, + is down
-    jointPositions[b * robot_.numPosVars + 9] = float(Mn::Rad(Mn::Deg(-90.f)));
+    jointPositions[b * robot_.numPosVars + 9] = float(Mn::Rad(Mn::Deg(90.f)));
   }
 }
 
@@ -305,8 +310,7 @@ void RobotInstanceSet::updateLinkTransforms(int currRolloutStep) {
             mat.transformPoint(localOrigin);
         }
 
-        if ((robotInstance.doAttemptGrip_ || robotInstance.grippedFreeObjectIndex_ != -1) 
-          && robot_->gripperLink_ == i) {
+        if (robot_->gripperLink_ == i) {
           robotInstance.cachedGripperLinkMat_ = mat;
         }
 
@@ -349,6 +353,26 @@ void RobotInstanceSet::updateLinkTransforms(int currRolloutStep) {
 
 }
 
+void BatchedSimulator::addSphereDebugInstance(const std::string& name, int b, const Magnum::Vector3& spherePos, float radius) {
+  auto mat = Mn::Matrix4::translation(spherePos)
+    * Mn::Matrix4::scaling(Mn::Vector3(radius, radius, radius));
+  addDebugInstance(name, b, mat);
+}
+
+void BatchedSimulator::addBoxDebugInstance(const std::string& name, int b, const Magnum::Vector3& pos, 
+  const Magnum::Quaternion& rotation, const Magnum::Range3D& aabb, float pad, bool showBackfaces) {
+
+  auto adjustedAabb = aabb.padded({pad, pad, pad});
+
+  Mn::Matrix4 mat = Mn::Matrix4::from(rotation.toMatrix(), pos);
+  Mn::Matrix4 localToBox = Mn::Matrix4::translation(adjustedAabb.center())
+    * Mn::Matrix4::scaling(adjustedAabb.size() * 0.5 * (showBackfaces ? -1.f : 1.f));
+  auto adjustedMat = mat * localToBox;
+  addDebugInstance(name, b, adjustedMat);
+}
+
+
+
 void BatchedSimulator::updateGripping() {
 
   const int numEnvs = config_.numEnvs;
@@ -365,6 +389,28 @@ void BatchedSimulator::updateGripping() {
       continue;
     }
 
+#ifdef ENABLE_DEBUG_INSTANCES
+    if (robotInstance.grippedFreeObjectIndex_ == -1) {
+      const auto& gripperMat = robotInstance.cachedGripperLinkMat_;
+
+      auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
+
+      const auto gripperQueryWorldOrigin = gripperMat.transformPoint(robot_.gripperQueryOffset_);
+      const auto gripperQueryRadius = robot_.gripperQueryRadius_;
+      
+      int grippedFreeObjectIndex = episodeInstance.colGrid_.contactTest(gripperQueryWorldOrigin, gripperQueryRadius);
+      if (grippedFreeObjectIndex != -1) {
+        const auto& obs = episodeInstance.colGrid_.getObstacle(grippedFreeObjectIndex);
+        addBoxDebugInstance("cube_green_wireframe", b, obs.pos, 
+          obs.invRotation.invertedNormalized(), *obs.aabb, 0.02f);
+      }
+
+      addSphereDebugInstance(
+          robotInstance.doAttemptGrip_ ? "sphere_pink_wireframe" : "sphere_orange_wireframe",
+           b, gripperQueryWorldOrigin, gripperQueryRadius);
+    }
+#endif          
+
     if (robotInstance.doAttemptGrip_) {
       // sloppy: doing this gripping logic here since it's the only time we have access to
       // the link transform as a Matrix4.
@@ -377,19 +423,22 @@ void BatchedSimulator::updateGripping() {
       const auto gripperQueryWorldOrigin = gripperMat.transformPoint(robot_.gripperQueryOffset_);
       const auto gripperQueryRadius = robot_.gripperQueryRadius_;
       
-#ifdef ENABLE_DEBUG_INSTANCES
-      auto mat = Mn::Matrix4::translation(gripperQueryWorldOrigin)
-        * Mn::Matrix4::scaling(Mn::Vector3(gripperQueryRadius, gripperQueryRadius, gripperQueryRadius));
-      addDebugInstance("sphere_green", b, mat);
-#endif          
-
       int grippedFreeObjectIndex = episodeInstance.colGrid_.contactTest(gripperQueryWorldOrigin, gripperQueryRadius);
       if (grippedFreeObjectIndex != -1) {
+
+#ifdef ENABLE_DEBUG_INSTANCES
+        // draw box at old location
+        const auto& obs = episodeInstance.colGrid_.getObstacle(grippedFreeObjectIndex);
+        addBoxDebugInstance("cube_orange_wireframe", b, obs.pos, obs.invRotation.invertedNormalized(), *obs.aabb, 0.02f);
+#endif
 
         removeFreeObjectFromCollisionGrid(b, grippedFreeObjectIndex);
         robotInstance.grippedFreeObjectIndex_ = grippedFreeObjectIndex;
         episodeInstance.movedFreeObjectIndexes_.push_back(grippedFreeObjectIndex);
+
+        recentStats_.numGrips_++;
       }
+      recentStats_.numGripAttempts_++;
     }
 
     if (robotInstance.doAttemptDrop_ && robotInstance.grippedFreeObjectIndex_ != -1) {
@@ -426,8 +475,12 @@ void BatchedSimulator::updateGripping() {
         const auto glMat = toGlmMat4x3(Mn::Matrix4::translation({0.f, -10000.f, 0.f})); 
         int instanceId = getFreeObjectBpsInstanceId(b, freeObjectIndex);
         env.updateInstanceTransform(instanceId, glMat);
+
+        recentStats_.numFailedDrops_++;
       }
       robotInstance.grippedFreeObjectIndex_ = -1;
+
+      recentStats_.numDrops_++;
     }
   }
 }
@@ -460,11 +513,8 @@ void BatchedSimulator::updateCollision() {
 
       if (columnGrid.contactTest(spherePos, &queryCache)) {
         hit = true;
-
 #ifdef ENABLE_DEBUG_INSTANCES
-        auto mat = Mn::Matrix4::translation(spherePos)
-          * Mn::Matrix4::scaling(Mn::Vector3(sphereRadius, sphereRadius, sphereRadius));
-        addDebugInstance("sphere_orange", b, mat);
+        addSphereDebugInstance("sphere_orange_wireframe", b, spherePos, sphereRadius);
 #endif
         break;
       }
@@ -472,7 +522,7 @@ void BatchedSimulator::updateCollision() {
 
     robots_.collisionResults_[b] = hit;
     if (hit) {
-      numRecentStepsInCollision_++;
+      recentStats_.numStepsInCollision_++;
     }
   }
 
@@ -509,24 +559,13 @@ void BatchedSimulator::updateCollision() {
       const auto& spherePos = robots_.collisionSphereWorldOrigins_[sphereIndex];
 
 #ifdef USE_COLLISION_BROADPHASE_GRID
-      if (episodeInstance.colGrid_.contactTest(spherePos, sphereRadius) != -1) {
+      int hitFreeObjectIndex = episodeInstance.colGrid_.contactTest(spherePos, sphereRadius);
+      if (hitFreeObjectIndex != -1) {
 #ifdef ENABLE_DEBUG_INSTANCES
         {
-          auto lastContact = episodeInstance.colGrid_.getLastContact();
-          Mn::Matrix4 mat = Mn::Matrix4::from(
-              lastContact.obsRotation.toMatrix(), lastContact.obsPos);
-
-          // temp hack negative scale so the box back faces are rendered. Makes it easier to see contained object
-          Mn::Matrix4 localToBox = Mn::Matrix4::translation(lastContact.obsLocalAabb.center())
-            * Mn::Matrix4::scaling(-lastContact.obsLocalAabb.size() * 0.5);
-          auto adjustedMat = mat * localToBox;
-          addDebugInstance("cube_green", b, adjustedMat);
-
-          mat = Mn::Matrix4::translation(spherePos)
-            * Mn::Matrix4::scaling(Mn::Vector3(sphereRadius, sphereRadius, sphereRadius));
-
-          addDebugInstance("sphere_orange", b, mat);
-                    
+          const auto& obs = episodeInstance.colGrid_.getObstacle(hitFreeObjectIndex);
+          addBoxDebugInstance("cube_green_wireframe", b, obs.pos, obs.invRotation.invertedNormalized(), *obs.aabb, 0.02f);
+          addSphereDebugInstance("sphere_pink_wireframe", b, spherePos, sphereRadius);
         }
 #endif
         hit = true;
@@ -598,11 +637,11 @@ void BatchedSimulator::updateCollision() {
 
     robots_.collisionResults_[b] = hit;
     if (hit) {
-      numRecentStepsInCollision_++;
+      recentStats_.numStepsInCollision_++;
     }
   }
 
-  numRecentSteps_ += numEnvs;
+  recentStats_.numSteps_ += numEnvs;
 
 // draw all collision spheres
 #if 0 // #ifdef ENABLE_DEBUG_INSTANCES
@@ -635,8 +674,8 @@ void BatchedSimulator::updateCollision() {
       esp::batched_sim::ColumnGridSource::QueryCacheValue queryCache = 0;
       bool sphereHit = columnGrid.contactTest(spherePos, &queryCache);
 
-      //addDebugInstance(sphereHit ? "sphere_orange" : "sphere_green", b, mat);
-      addDebugInstance("sphere_green", b, mat);
+      //addDebugInstance(sphereHit ? "sphere_orange" : "sphere_green_wireframe", b, mat);
+      addDebugInstance("sphere_green_wireframe", b, mat);
     }
   }
 #endif
@@ -891,12 +930,12 @@ BpsWrapper::BpsWrapper(int gpuId, int numEnvs, const CameraSensorConfig& sensor0
       "../data/bps_data/replicacad_composite/replicacad_composite.bps";
   scene_ = loader_->loadScene(filepath);
 
-  const Mn::Vector3 camPos{-1.61004, 1.5, 3.5455};
-  const Mn::Quaternion camRot{{0, -0.529178, 0}, 0.848511};
-  glm::mat4 base(glm::inverse(toGlmMat4(camPos, camRot)));
+  const Mn::Vector3 camPos(Mn::Math::ZeroInit);
+  const Mn::Quaternion camRot(Mn::Math::IdentityInit);
+  glm::mat4 world_to_camera(glm::inverse(toGlmMat4(camPos, camRot)));
 
   for (int b = 0; b < numEnvs; b++) {
-    glm::mat4 view = base;
+    glm::mat4 view = world_to_camera;
     auto env = renderer_->makeEnvironment(scene_, view, sensor0.hfov, 0.f, 0.01,
                                           1000.f);
     envs_.emplace_back(std::move(env));
@@ -965,6 +1004,15 @@ BatchedSimulator::BatchedSimulator(const BatchedSimulatorConfig& config) {
   isOkToRender_ = false;
   isOkToStep_ = false;
   isRenderStarted_ = false;
+
+  // default camera
+  {
+    std::string cameraAttachLinkName = "torso_lift_link";
+    Mn::Vector3 camPos = {-0.536559, 1.16173, 0.568379};
+    Mn::Quaternion camRot = {{-0.26714, -0.541109, -0.186449}, 0.775289};
+    const auto cameraMat = Mn::Matrix4::from(camRot.toMatrix(), camPos);
+    attachCameraToLink(cameraAttachLinkName, cameraMat);
+  }
 
   if (config_.doAsyncPhysicsStep) {
     physicsThread_ = std::thread(&BatchedSimulator::physicsThreadFunc, this, 0, config_.numEnvs);
@@ -1093,11 +1141,14 @@ void BatchedSimulator::resetEpisodeInstance(int b) {
   }
   episodeInstance.movedFreeObjectIndexes_.clear();
 
+  // sloppy: reset robotInstance here
   if (robotInstance.grippedFreeObjectIndex_ != -1) {
     // nothing to do here.
     // held free object was already in movedFreeObjectIndexes_
     robotInstance.grippedFreeObjectIndex_ = -1;
   }
+  robotInstance.doAttemptDrop_ = false;
+  robotInstance.doAttemptGrip_ = false;
 
   // todo: ensure spawnFreeObject also updates bps instance
 
@@ -1218,6 +1269,7 @@ void BatchedSimulator::reset() {
 
   isOkToRender_ = true;
   isOkToStep_ = true;
+  recentStats_.numEpisodes_ += numEnvs;
 }
 
 void BatchedSimulator::autoResetOrStepPhysics() {
@@ -1266,6 +1318,12 @@ void BatchedSimulator::autoResetOrStartAsyncStepPhysics() {
 void BatchedSimulator::stepPhysics() {
   BATCHED_SIM_ASSERT(isOkToStep_);
 
+  constexpr float stickyGrabDropThreshold = 0.85f;
+  constexpr float minBaseMovement = -0.05f;
+  constexpr float maxBaseMovement = 0.1f;
+  constexpr float maxAbsYawAngle = float(Mn::Rad(Mn::Deg(5.f)));
+  constexpr float maxAbsJointAngle = float(Mn::Rad(Mn::Deg(5.f)));
+
   prevRolloutStep_ = currRolloutStep_;
   currRolloutStep_++;
 
@@ -1297,15 +1355,21 @@ void BatchedSimulator::stepPhysics() {
   for (int b = 0; b < numEnvs; b++) {
     auto& robotInstance = robots_.robotInstances_[b];
     const float grabDropAction = actions_[actionIndex++];
-    robotInstance.doAttemptGrip_ = grabDropAction > 0.f 
-      && robotInstance.grippedFreeObjectIndex_ == -1;
-    robotInstance.doAttemptDrop_ = grabDropAction <= 0.f 
-      && robotInstance.grippedFreeObjectIndex_ != -1;
 
-    constexpr float maxAbsAngle = float(Mn::Rad(Mn::Deg(10.f)));
-    const float clampedBaseYawAction = Mn::Math::clamp(actions_[actionIndex++], -maxAbsAngle, maxAbsAngle);
+    // sticky grip behavior
+    if (robotInstance.grippedFreeObjectIndex_ == -1) {
+      if (robotInstance.doAttemptGrip_ && grabDropAction < -stickyGrabDropThreshold) {
+        robotInstance.doAttemptGrip_ = false;
+      } else if (!robotInstance.doAttemptGrip_ && grabDropAction > stickyGrabDropThreshold) {
+        robotInstance.doAttemptGrip_ = true;
+      }
+    } else {
+      robotInstance.doAttemptDrop_ = (grabDropAction < -stickyGrabDropThreshold);
+    }
+
+    const float clampedBaseYawAction = Mn::Math::clamp(actions_[actionIndex++], -maxAbsYawAngle, maxAbsYawAngle);
     yaws[b] = prevYaws[b] + clampedBaseYawAction; // todo: wrap angle to 360 degrees
-    float clampedBaseMovementAction = Mn::Math::clamp(actions_[actionIndex++], -0.1f, 0.2f);
+    float clampedBaseMovementAction = Mn::Math::clamp(actions_[actionIndex++], minBaseMovement, maxBaseMovement);
     positions[b] =
         prevPositions[b] + 
         Mn::Vector2(Mn::Math::cos(Mn::Math::Rad(yaws[b])), -Mn::Math::sin(Mn::Math::Rad(yaws[b]))) 
@@ -1315,8 +1379,7 @@ void BatchedSimulator::stepPhysics() {
     for (int j = 0; j < robot_.numPosVars; j++) {
       auto& pos = jointPositions[baseJointIndex + j];
       const auto& prevPos = prevJointPositions[baseJointIndex + j];
-      constexpr float maxAbsAngle = float(Mn::Rad(Mn::Deg(15.f)));
-      const float clampedJointMovementAction = Mn::Math::clamp(actions_[actionIndex++], -maxAbsAngle, maxAbsAngle);
+      const float clampedJointMovementAction = Mn::Math::clamp(actions_[actionIndex++], -maxAbsJointAngle, maxAbsJointAngle);
       pos = prevPos + clampedJointMovementAction;
       pos = Mn::Math::clamp(pos, robot_.jointPositionLimits.first[j],
                             robot_.jointPositionLimits.second[j]);
@@ -1543,25 +1606,44 @@ void BatchedSimulator::deleteDebugInstances() {
 }
 
 int BatchedSimulator::addDebugInstance(const std::string& name, int envIndex, 
-  const Magnum::Matrix4& transform) {
+  const Magnum::Matrix4& transform, bool persistent) {
 #ifdef ENABLE_DEBUG_INSTANCES
   glm::mat4x3 glMat = toGlmMat4x3(transform);
   const auto& blueprint = sceneMapping_.findInstanceBlueprint(name);
   BATCHED_SIM_ASSERT(envIndex < config_.numEnvs);
   auto& env = getBpsEnvironment(envIndex);
   int instanceId = env.addInstance(blueprint.meshIdx_, blueprint.mtrlIdx_, glMat);
-  debugInstancesByEnv_[envIndex].push_back(instanceId);
+  if (!persistent) {
+    debugInstancesByEnv_[envIndex].push_back(instanceId);
+  }
   return instanceId;
 #else
   return -1;
 #endif
 }
 
-float BatchedSimulator::getRecentCollisionFractionAndReset() const {
-  float retVal = numRecentSteps_ > 0 ? (float)numRecentStepsInCollision_ / numRecentSteps_ : -1.f;
-  numRecentSteps_ = 0;
-  numRecentStepsInCollision_ = 0;
-  return retVal;
+std::string BatchedSimulator::getRecentStatsAndReset() const {
+  if (recentStats_.numSteps_ == 0) {
+    return "no recent steps";
+  } else if (recentStats_.numEpisodes_ == 0) {
+    return "no recent episodes";
+  }
+  float collisionFraction = recentStats_.numSteps_ > 0 ? (float)recentStats_.numStepsInCollision_ / recentStats_.numSteps_ : -1.f;
+  float gripAttemptsPerEpisode = (float)recentStats_.numGripAttempts_ / recentStats_.numEpisodes_;
+  float gripsPerEpisode = (float)recentStats_.numGrips_ / recentStats_.numEpisodes_;
+  float dropsPerEpisode = (float)recentStats_.numDrops_ / recentStats_.numEpisodes_;
+  float failedDropsPerEpisode = (float)recentStats_.numFailedDrops_ / recentStats_.numEpisodes_;
+
+  recentStats_ = StatRecord();
+
+  std::stringstream ss;
+  ss << "collisionFraction " << std::setprecision(5) << collisionFraction << ", "
+    << "gripAttemptsPerEpisode " << std::setprecision(5) << gripAttemptsPerEpisode << ", "
+    << "gripsPerEpisode " << std::setprecision(5) << gripsPerEpisode << ", "
+    << "dropsPerEpisode " << std::setprecision(5) << dropsPerEpisode << ", "
+    << "failedDropsPerEpisode " << std::setprecision(5) << failedDropsPerEpisode;
+
+  return ss.str();
 }
 
 void BatchedSimulator::signalStepPhysics() {
@@ -1622,6 +1704,68 @@ void BatchedSimulator::physicsThreadFunc(int startEnvIndex, int numEnvs) {
     }
   }
 }
+
+
+void BatchedSimulator::debugRenderColumnGrids(int minProgress, int maxProgress) const {
+#ifdef ENABLE_DEBUG_INSTANCES
+  int numEnvs = bpsWrapper_->envs_.size();
+  for (int b = 0; b < numEnvs; b++) {
+
+    auto& env = bpsWrapper_->envs_[b];
+    const auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
+    const auto& episode = safeVectorGet(episodeSet_.episodes_, episodeInstance.episodeIndex_);
+    const auto& stageFixedObject = safeVectorGet(episodeSet_.fixedObjects_, episode.stageFixedObjIndex);
+    const auto& source = stageFixedObject.columnGrid_;
+
+    const auto& blueprint = sceneMapping_.findInstanceBlueprint("cube_gray_shaded");
+
+    // note off by one
+    const float maxOccludedY = 3.f;
+    for (int layerIdx = 0; layerIdx < source.layers.size() - 1; layerIdx++) {
+      // temp
+      for (int cellZ = 0; cellZ < source.dimZ; cellZ++) {
+        for (int cellX = 0; cellX < source.dimX; cellX++) {
+
+          int progress = cellX + cellZ;
+          if (progress < minProgress || progress >= maxProgress) {
+            continue;
+          }
+
+          auto col0 = source.debugGetColumn(cellX, cellZ, layerIdx);
+          auto col1 = source.debugGetColumn(cellX, cellZ, layerIdx + 1);
+          if (col0.freeMinY == source.INVALID_Y) {
+            continue;
+          }
+          if (col0.freeMaxY >= maxOccludedY) {
+            continue;
+          }
+          float occludedMinY = col0.freeMaxY;
+          float occludedMaxY = (col1.freeMinY == source.INVALID_Y)
+            ? maxOccludedY
+            : col1.freeMinY;
+
+          Mn::Range3D aabb(
+            Mn::Vector3(
+              source.minX + cellX * source.gridSpacing,
+              occludedMinY,
+              source.minZ + cellZ * source.gridSpacing),
+            Mn::Vector3(
+              source.minX + (cellX + 1) * source.gridSpacing,
+              occludedMaxY,
+              source.minZ + (cellZ + 1) * source.gridSpacing));
+
+          Mn::Matrix4 localToBox = Mn::Matrix4::translation(aabb.center())
+            * Mn::Matrix4::scaling(aabb.size() * 0.5);
+
+          glm::mat4x3 glMat = toGlmMat4x3(localToBox);
+          int instanceId = env.addInstance(blueprint.meshIdx_, blueprint.mtrlIdx_, glMat);
+        }
+      }
+    }
+  }
+#endif
+}
+
 
 }  // namespace batched_sim
 }  // namespace esp

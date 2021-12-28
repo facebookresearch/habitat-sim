@@ -189,11 +189,30 @@ class BatchedSimulator {
   // probably add these every frame ("immediate mode", not persistent)
   // beware: probably not threadsafe
   int addDebugInstance(const std::string& name, int envIndex, 
-    const Magnum::Matrix4& transform=Magnum::Matrix4(Mn::Math::IdentityInit));
+    const Magnum::Matrix4& transform=Magnum::Matrix4(Mn::Math::IdentityInit), bool persistent=false);
 
-  float getRecentCollisionFractionAndReset() const; // todo: threadsafe
+  void addSphereDebugInstance(const std::string& name, int b, 
+    const Magnum::Vector3& spherePos, float radius);
+  void addBoxDebugInstance(const std::string& name, int b, 
+    const Magnum::Vector3& pos, const Magnum::Quaternion& rotation, 
+    const Magnum::Range3D& aabb, float pad=0.f, bool showBackfaces=false);
+
+  std::string getRecentStatsAndReset() const; // todo: threadsafe
+
+  void debugRenderColumnGrids(int minProgress, int maxProgress) const;
 
  private:
+
+  struct StatRecord {
+    int numSteps_ = 0;
+    int numEpisodes_ = 0;
+    int numStepsInCollision_ = 0;
+    int numGripAttempts_ = 0;
+    int numGrips_ = 0;
+    int numDrops_ = 0;
+    int numFailedDrops_ = 0;
+  };
+
   void reset();
   void stepPhysics();
   void updateCollision();
@@ -248,8 +267,7 @@ class BatchedSimulator {
 
   BpsSceneMapping sceneMapping_;
   std::vector<std::vector<int>> debugInstancesByEnv_;
-  mutable int numRecentSteps_ = 0;
-  mutable int numRecentStepsInCollision_ = 0;
+  mutable StatRecord recentStats_;
   esp::core::Random random_{0};
 
   std::thread physicsThread_;

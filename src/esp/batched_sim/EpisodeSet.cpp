@@ -101,6 +101,10 @@ void addEpisode(EpisodeSet& set, int stageFixedObjectIndex, core::Random& random
   int numSpawnAttempts = 1000;
   for (int i = 0; i < numSpawnAttempts; i++) {
 
+    if (episode.numFreeObjectSpawns_ == targetNumSpawns) {
+      break;
+    }
+
     FreeObjectSpawn spawn;
     spawn.freeObjIndex_ = random.uniform_int(0, set.freeObjects_.size());
     const auto& freeObject = safeVectorGet(set.freeObjects_, spawn.freeObjIndex_);
@@ -132,9 +136,6 @@ void addEpisode(EpisodeSet& set, int stageFixedObjectIndex, core::Random& random
       spawn.startPos_ = mat.translation();
       set.freeObjectSpawns_.emplace_back(std::move(spawn));
       episode.numFreeObjectSpawns_++;
-      if (episode.numFreeObjectSpawns_ == targetNumSpawns) {
-        break;
-      }
 
       // add to colGrid so future spawns don't intersect this one
       colGrid.insertObstacle(spawn.startPos_, Mn::Quaternion::fromMatrix(rotation), &freeObject.aabb_);

@@ -61,7 +61,7 @@ void initBatchedSimBindings(py::module& m) {
             return getColorMemory(self, groupIdx);
           },
           R"(todo)")
-      .def("get_recent_collision_fraction_and_reset", &BatchedSimulator::getRecentCollisionFractionAndReset, R"(todo)");
+      .def("get_recent_stats_and_reset", &BatchedSimulator::getRecentStatsAndReset, R"(todo)");
 }
 
 }  // namespace batched_sim

@@ -7,6 +7,7 @@
 #include "esp/batched_sim/BpsSceneMapping.h"
 #include "esp/batched_sim/GlmUtils.h"
 #include "esp/batched_sim/ColumnGrid.h"
+#include "esp/core/logging.h"
 
 #include <cuda_runtime.h>
 #include <gtest/gtest.h>
@@ -21,9 +22,12 @@
 #include <sys/ioctl.h>
 #include <termios.h>
 
-using namespace esp::batched_sim;
+#include <sstream>
 
 namespace Mn = Magnum;
+
+namespace esp {
+namespace batched_sim {
 
 namespace {
 template <typename T>
@@ -62,13 +66,19 @@ void saveFrame(const char* fname,
 }
 
 void saveFrame(const char* fname,
+               const char* fname2,
                const uint8_t* dev_ptr,
                uint32_t width,
                uint32_t height,
                uint32_t num_channels) {
   auto buffer = copyToHost(dev_ptr, width, height, num_channels);
 
-  stbi_write_bmp(fname, width, height, num_channels, buffer.data());
+  if (fname) {
+    stbi_write_bmp(fname, width, height, num_channels, buffer.data());
+  }
+  if (fname2) {
+    stbi_write_bmp(fname2, width, height, num_channels, buffer.data());
+  }
 }
 
 // Hacky way to get keypresses at the terminal. Linux only.
@@ -181,24 +191,36 @@ TEST_F(BatchedSimulatorTest, basic) {
 
   constexpr bool doOverlapPhysics = false;
   constexpr bool doFreeCam = false;
+  constexpr bool doTuneRobotCam = false;
+  constexpr bool doSaveAllFramesForVideo = false; // see make_video_from_image_files.py
+  constexpr bool forceRandomActions = doFreeCam || doTuneRobotCam;
 
   BatchedSimulatorConfig config{
-      .numEnvs = 2, .gpuId = 0, .sensor0 = {.width = 768, .height = 768, .hfov = 60},
+      // for video: 2048 x 1024, fov 80
+      .numEnvs = 4, .gpuId = 0, .sensor0 = {.width = 768, .height = 768, .hfov = 60},
+      .forceRandomActions = forceRandomActions,
       .doAsyncPhysicsStep = doOverlapPhysics,
-      .maxEpisodeLength = 1000
+      .maxEpisodeLength = 100
       };
   BatchedSimulator bsim(config);
 
-  Mn::Vector3 camPos{-1.61004, 1.5, 3.5455};
-  Mn::Quaternion camRot{{0, -0.529178, 0}, 0.848511};
+  Mn::Vector3 camPos;
+  Mn::Quaternion camRot;
   std::string cameraAttachLinkName;
 
   if (!doFreeCam) {
     // over-the-shoulder cam
-    camPos = {-1.18, 2.5, 0.79};
-    camRot = {{-0.254370272, -0.628166556, -0.228633955}, 0.6988765};
+
+    // cameraAttachLinkName = "torso_lift_link";
+    // camPos = {-1.18, 2.5, 0.79};
+    // camRot = {{-0.254370272, -0.628166556, -0.228633955}, 0.6988765};
+
+    // closer over-the-shoulder
+    cameraAttachLinkName = "torso_lift_link";
+    camPos = {-0.536559, 1.16173, 0.568379};
+    camRot = {{-0.26714, -0.541109, -0.186449}, 0.775289};
+
     const auto cameraMat = Mn::Matrix4::from(camRot.toMatrix(), camPos);
-    cameraAttachLinkName = "base_link";
     bsim.attachCameraToLink(cameraAttachLinkName, cameraMat);
   } else {
     camPos = {-1.61004, 1.5, 3.5455};
@@ -210,15 +232,21 @@ TEST_F(BatchedSimulatorTest, basic) {
   float moveSpeed = 0.5f;
 
   const int envIndex = 0;
-  int sphereGreenInstance = bsim.addDebugInstance("sphere_green", envIndex);
-  int sphereOrangeInstance = bsim.addDebugInstance("sphere_orange", envIndex);
+  //int sphereGreenInstance = bsim.addDebugInstance("sphere_green_wireframe", envIndex);
+  //int sphereOrangeInstance = bsim.addDebugInstance("sphere_orange_wireframe", envIndex);
+  // int testModelInstance = bsim.addDebugInstance("cube_gray_shaded", envIndex, 
+  //   Mn::Matrix4(Mn::Math::IdentityInit), /*persistent*/true);
   auto& bpsEnv = bsim.getBpsEnvironment(0);
 
-  esp::batched_sim::ColumnGridSource source;
-  source.load("../data/columngrids/Baked_sc0_staging_00_stage_only.columngrid");
+  // esp::batched_sim::ColumnGridSource source;
+  // source.load("../data/columngrids/Baked_sc0_staging_00_stage_only.columngrid");
 
-  std::cout << "Open ./out_color_0.bmp in VS Code or another viewer that supports hot-reload." << std::endl;
-  std::cout << "Press WASDQE/arrow keys to move/look, +/- to adjust speed, or ESC to quit." << std::endl;
+  std::cout << "Open ./latest_env0.bmp in VS Code or another viewer that supports hot-reload." << std::endl;
+  if (doFreeCam || doTuneRobotCam) {
+    std::cout << "Camera controls: press WASDQE/arrow keys to move/look, +/- to adjust speed, or ESC to quit." << std::endl;
+  } else {
+    std::cout << "Robot controls: press WASD/arrow keys to move, E to grab/drop, +/- to adjust speed, or ESC to quit." << std::endl;
+  }
 
   constexpr int actionDim = 18;
   std::vector<float> actions(actionDim * config.numEnvs, 0.f);
@@ -239,6 +267,10 @@ TEST_F(BatchedSimulatorTest, basic) {
   } else {
     bsim.autoResetOrStepPhysics();
   }
+
+  int frameIdx = 0;
+  bool isAutoplay = false;
+  int autoplayProgress = -1;
 
   while (true) {
 
@@ -268,7 +300,12 @@ TEST_F(BatchedSimulatorTest, basic) {
     glm::u32vec2 out_dim(config.sensor0.width, config.sensor0.height);
 
     for (int b = 0; b < config.numEnvs; b++) {
-      saveFrame(("./out_color_" + std::to_string(b) + ".bmp").c_str(),
+      std::stringstream ss;
+      ss << "./env" << b << "_frame"
+        << std::setfill('0') << std::setw(4) << frameIdx << ".bmp";
+
+      saveFrame(doSaveAllFramesForVideo ? ss.str().c_str() : nullptr,
+                ("./latest_env" + std::to_string(b) + ".bmp").c_str(),
                 base_color_ptr + b * out_dim.x * out_dim.y * 4, out_dim.x,
                 out_dim.y, 4);
       // saveFrame(("./out_depth_" + std::to_string(b) + ".bmp").c_str(),
@@ -276,12 +313,17 @@ TEST_F(BatchedSimulatorTest, basic) {
       //           1);
     }
 
-    int key = key_press();
+    int key = 0;
+    bool doStartAnimation = false;
+    if (!isAutoplay) {
+      key = key_press();
+    }
+
     if (key == 27) { // ESC
       break;
     }
     
-    if (!doFreeCam) {
+    if (!(doFreeCam || doTuneRobotCam)) {
       
       static bool doHold = false;
       float targetUpDown = 0.f;
@@ -306,10 +348,10 @@ TEST_F(BatchedSimulatorTest, basic) {
       } else if (key == 'd') {
         baseYaw -= float(Mn::Rad(Mn::Deg(15.f)));
       }else if (key == '=') { // +
-        rotSpeed *= 1.25f;
+        rotSpeed *= 1.5f;
         moveSpeed *= 1.5f;
       } else if (key == '-') {
-        rotSpeed /= 1.25f;
+        rotSpeed /= 1.5f;
         moveSpeed /= 1.5f;
       } else if (key == 'e') {
         doHold = !doHold;
@@ -349,10 +391,10 @@ TEST_F(BatchedSimulatorTest, basic) {
       } else if (key == -39) { // right
         camRot = Mn::Quaternion::rotation(Mn::Deg(-rotSpeed), Mn::Vector3(0.f, 1.f, 0.f)) * camRot;
       } else if (key == '=') { // +
-        rotSpeed *= 1.25f;
+        rotSpeed *= 1.5f;
         moveSpeed *= 1.5f;
       } else if (key == '-') {
-        rotSpeed /= 1.25f;
+        rotSpeed /= 1.5f;
         moveSpeed /= 1.5f;
       } else if (key == 'w') {
         camPos += camRot.transformVector(Mn::Vector3(0.f, 0.f, -1.f)) * moveSpeed;
@@ -368,9 +410,38 @@ TEST_F(BatchedSimulatorTest, basic) {
         camPos.y() += -moveSpeed;
       } else if (key == ' ') {
         doAdvanceSim = true;
+      } else if (key == 't') {
+        doStartAnimation = true;
       }
 
+      if (doFreeCam) {
+        bsim.setCamera(camPos, camRot);
+      } else {
+        const auto cameraMat = Mn::Matrix4::from(camRot.toMatrix(), camPos);
+        ESP_DEBUG() << "camPos: " << camPos << ", camRot: " << camRot;
+        bsim.attachCameraToLink(cameraAttachLinkName, cameraMat);
+      }
+    }
+
+    if (doStartAnimation) {
+      isAutoplay = true;
+      autoplayProgress = 0;
+    }
+    if (isAutoplay) {
+
+      constexpr int animDuration = 50;
+      constexpr int renderInc = (250 + 450) / animDuration;
+      int prevProgress = autoplayProgress;
+      autoplayProgress++;
+      bsim.debugRenderColumnGrids(prevProgress * renderInc, autoplayProgress * renderInc);
+
+      // move camera slightly
+      camPos.y() -= 0.01f;
       bsim.setCamera(camPos, camRot);
+
+      if (autoplayProgress >= animDuration) {
+        isAutoplay = false;
+      }
     }
 
     #if 0 // test columnGrid collision
@@ -394,8 +465,16 @@ TEST_F(BatchedSimulatorTest, basic) {
         toGlmMat4x3(Mn::Matrix4::translation({1000.f, 1000.f, 1000.f})));
     }
     #endif
+
+    frameIdx++;
+    if (frameIdx % 20 == 0) {
+      ESP_DEBUG() << "batched_sim stats: " << bsim.getRecentStatsAndReset();          
+    }
   }
 
   bsim.close();
   bsim.close(); // try a redundant close
+}
+
+}
 }
