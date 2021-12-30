@@ -13,12 +13,18 @@
 
 #include <vector>
 #include <limits>
+#include <unordered_map>
 
 namespace esp {
 namespace batched_sim {
 
 class ColumnGridSource {
  public:
+
+  // disallow copy
+  ColumnGridSource(const ColumnGridSource& rhs) = delete;
+  ColumnGridSource(ColumnGridSource&& rhs) = default;
+  ColumnGridSource& operator=(ColumnGridSource&&) = default;
 
   // todo: make this a struct so it can get initialized to 0 or whatever
   using QueryCacheValue = int8_t;
@@ -162,6 +168,33 @@ class ColumnGridSource {
     BATCHED_SIM_ASSERT(localCellIdx >= 0 && localCellIdx < layers[layerIndex].columns.size());
     return layers[layerIndex].columns[localCellIdx];
   }
+};
+
+class ColumnGridSet {
+ public:
+
+  ColumnGridSet() = default;
+  // disallow copy
+  ColumnGridSet(const ColumnGridSet& rhs) = delete;
+  ColumnGridSet(ColumnGridSet&& rhs) = default;
+  ColumnGridSet& operator=(ColumnGridSet&&) = default;
+
+  void load(const std::string& filepathBase);
+  
+  int getRadiusIndex(float radius) const;
+
+  const ColumnGridSource& getColumnGrid(int radiusIdx) const;
+
+  bool contactTest(int radiusIdx, const Magnum::Vector3& pos,
+    ColumnGridSource::QueryCacheValue* queryCache) const;
+
+  // returns distance down to contact (or up to contact-free)
+  // positive indicates contact-free; negative indicates distance up to be contact-free
+  float castDownTest(int radiusIdx, const Magnum::Vector3& pos,
+    ColumnGridSource::QueryCacheValue* queryCache) const;
+ private:
+  std::vector<ColumnGridSource> columnGrids_;
+  std::unordered_map<float, int> radiusToIndexMap_;
 };
 
 }  // namespace batched_sim

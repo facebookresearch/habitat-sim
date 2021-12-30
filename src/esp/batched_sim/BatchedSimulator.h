@@ -10,6 +10,7 @@
 #include "esp/batched_sim/ColumnGrid.h"
 #include "esp/batched_sim/BpsSceneMapping.h"
 #include "esp/batched_sim/EpisodeSet.h"
+#include "esp/batched_sim/SerializeCollection.h"
 #include "esp/core/random.h"
 
 #include <bps3D.hpp>
@@ -27,6 +28,19 @@ struct CameraSensorConfig {
   float hfov = -1.f;
 };
 
+struct BatchedSimulatorConfig {
+  int numEnvs = -1;
+  int gpuId = -1;
+  CameraSensorConfig sensor0;
+  bool forceRandomActions = false;
+  bool doAsyncPhysicsStep = false;
+  int maxEpisodeLength = 50;
+  // if enabled, for every odd env, we don't render any visuals except debug stuff, 
+  // e.g. collision visualization. We should keep even and odd envs in sync (e.g. same actions).
+  bool doPairedDebugEnvs = false;
+  ESP_SMART_POINTERS(BatchedSimulatorConfig);
+};
+
 struct BpsWrapper {
   BpsWrapper(int gpuId, int numEnvs, const CameraSensorConfig& sensor0);
   ~BpsWrapper();
@@ -38,8 +52,10 @@ struct BpsWrapper {
 };
 
 struct Robot {
-  Robot(const std::string& filepath, esp::sim::Simulator* sim, BpsSceneMapping* sceneMapping);
+  Robot(const serialize::Collection& serializeCollection, esp::sim::Simulator* sim, BpsSceneMapping* sceneMapping);
   Robot() = default;
+
+  void updateFromSerializeCollection(const serialize::Collection& serializeCollection);
 
   int numPosVars = -1;
   int numInstances_ = -1;
@@ -51,7 +67,8 @@ struct Robot {
   std::vector<Magnum::Matrix4> nodeTransformFixups;
   std::pair<std::vector<float>, std::vector<float>> jointPositionLimits;
 
-  std::vector<std::vector<Magnum::Vector3>> collisionSphereLocalOriginsByNode_;
+  std::vector<std::vector<int>> collisionSpheresByNode_;
+  std::vector<CollisionSphere> collisionSpheres_;
 
   int gripperLink_ = -1;
   Magnum::Vector3 gripperQueryOffset_; /// let's also use this as the position for the gripped obj
@@ -97,7 +114,7 @@ class RobotInstanceSet {
  public:
   RobotInstanceSet() = default;
   RobotInstanceSet(Robot* robot,
-                   int numEnvs,
+                   const BatchedSimulatorConfig* config,
                    std::vector<bps3D::Environment>* envs,
                    RolloutRecord* rollouts);
 
@@ -105,7 +122,7 @@ class RobotInstanceSet {
   void applyActionPenalties(const std::vector<float>& actions);
 
   Robot* robot_ = nullptr;
-  int numEnvs_ = 0;
+  const BatchedSimulatorConfig* config_ = nullptr;
   RolloutRecord* rollouts_ = nullptr;
 
   // perf todo: try array of structs for items accessed together
@@ -149,17 +166,6 @@ struct RewardCalculationContext {
   RolloutRecord* rollouts_ = nullptr;
 };
 
-struct BatchedSimulatorConfig {
-  int numEnvs = -1;
-  int gpuId = -1;
-  CameraSensorConfig sensor0;
-  bool forceRandomActions = false;
-  bool doAsyncPhysicsStep = false;
-  int maxEpisodeLength = 50;
-
-  ESP_SMART_POINTERS(BatchedSimulatorConfig);
-};
-
 class BatchedSimulator {
  public:
   BatchedSimulator(const BatchedSimulatorConfig& config);
@@ -172,6 +178,9 @@ class BatchedSimulator {
   void autoResetOrStepPhysics();
   void autoResetOrStartAsyncStepPhysics();
   void waitAsyncStepPhysics();
+
+  // for interactive debugging; works a bit like undo, but doesn't undo grabs/drops
+  void reverseRobotMovementActions();
 
   bps3D::Renderer& getBpsRenderer();
 
@@ -199,7 +208,9 @@ class BatchedSimulator {
 
   std::string getRecentStatsAndReset() const; // todo: threadsafe
 
-  void debugRenderColumnGrids(int minProgress, int maxProgress) const;
+  void debugRenderColumnGrids(int b, int minProgress=0, int maxProgress=-1) const;
+
+  void reloadSerializeCollection();
 
  private:
 
@@ -247,6 +258,7 @@ class BatchedSimulator {
   Magnum::Matrix4 getHeldObjectTransform(int b) const;
 
   BatchedSimulatorConfig config_;
+  serialize::Collection serializeCollection_;
   bool isOkToRender_ = false;
   bool isOkToStep_ = false;
   bool isRenderStarted_ = false;
@@ -257,6 +269,7 @@ class BatchedSimulator {
   RolloutRecord rollouts_;
   std::unique_ptr<esp::sim::Simulator> legacySim_;
   std::unique_ptr<BpsWrapper> bpsWrapper_;
+  int actionDim_ = -1;
   std::vector<float> actions_;
   int maxRolloutSteps_ = -1;
   RewardCalculationContext rewardContext_;

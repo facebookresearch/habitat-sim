@@ -888,22 +888,26 @@ Viewer::Viewer(const Arguments& arguments)
       Cr::Utility::Directory::splitExtension(
       Cr::Utility::Directory::filename(simConfig_.activeSceneName)).first).first;
 
-    const std::string filepath = "../data/columngrids/" + baseName + ".columngrid";
+    std::array<float, 3> sphereRadii = {0.015, 0.05, 0.12};
+    for (int i = 0; i < sphereRadii.size(); i++) {
 
-    if (Cr::Utility::Directory::exists(filepath)) {
-      ESP_DEBUG() << "loading ColumnGrid from " << filepath;
-      columnGrid_.load(filepath);
-    } else {
+      const std::string filepath = "../data/columngrids/" + baseName + std::to_string(i) + ".columngrid";
 
-      ESP_DEBUG() << "building ColumnGrid...";
-      const auto extents = simulator_->getCollisionExtents();
-      constexpr float sphereRadius = 0.1;
-      constexpr float gridSpacing = 0.03;
-      ColumnGridBuilder builder;
-      columnGrid_ = builder.build(*simulator_.get(), extents, sphereRadius, gridSpacing);
+      if (Cr::Utility::Directory::exists(filepath)) {
+        ESP_DEBUG() << "loading ColumnGrid from " << filepath;
+        columnGrid_.load(filepath);
+      } else {
 
-      ESP_DEBUG() << "Done. Saving ColumnGrid to " << filepath;
-      columnGrid_.save(filepath);
+        ESP_DEBUG() << "building ColumnGrid...";
+        const auto extents = simulator_->getCollisionExtents();
+        const float sphereRadius = sphereRadii[i];
+        constexpr float gridSpacing = 0.02;
+        ColumnGridBuilder builder;
+        columnGrid_ = builder.build(*simulator_.get(), extents, sphereRadius, gridSpacing);
+
+        ESP_DEBUG() << "Done. Saving ColumnGrid to " << filepath;
+        columnGrid_.save(filepath);
+      }
     }
   }
 

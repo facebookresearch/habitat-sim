@@ -190,17 +190,20 @@ TEST_F(BatchedSimulatorTest, basic) {
   esp::logging::LoggingContext loggingContext;
 
   constexpr bool doOverlapPhysics = false;
-  constexpr bool doFreeCam = false;
-  constexpr bool doTuneRobotCam = false;
+  constexpr bool doFreeCam = true;
+  bool doTuneRobotCam = false;
   constexpr bool doSaveAllFramesForVideo = false; // see make_video_from_image_files.py
-  constexpr bool forceRandomActions = doFreeCam || doTuneRobotCam;
+  constexpr bool doPairedDebugEnvs = true;
+
+  const bool forceRandomActions = doFreeCam || doTuneRobotCam;
 
   BatchedSimulatorConfig config{
       // for video: 2048 x 1024, fov 80
-      .numEnvs = 4, .gpuId = 0, .sensor0 = {.width = 768, .height = 768, .hfov = 60},
+      .numEnvs = 8, .gpuId = 0, .sensor0 = {.width = 768, .height = 768, .hfov = 70},
       .forceRandomActions = forceRandomActions,
       .doAsyncPhysicsStep = doOverlapPhysics,
-      .maxEpisodeLength = 100
+      .maxEpisodeLength = 2000,
+      .doPairedDebugEnvs = doPairedDebugEnvs
       };
   BatchedSimulator bsim(config);
 
@@ -236,7 +239,7 @@ TEST_F(BatchedSimulatorTest, basic) {
   //int sphereOrangeInstance = bsim.addDebugInstance("sphere_orange_wireframe", envIndex);
   // int testModelInstance = bsim.addDebugInstance("cube_gray_shaded", envIndex, 
   //   Mn::Matrix4(Mn::Math::IdentityInit), /*persistent*/true);
-  auto& bpsEnv = bsim.getBpsEnvironment(0);
+  // auto& bpsEnv = bsim.getBpsEnvironment(0);
 
   // esp::batched_sim::ColumnGridSource source;
   // source.load("../data/columngrids/Baked_sc0_staging_00_stage_only.columngrid");
@@ -330,6 +333,10 @@ TEST_F(BatchedSimulatorTest, basic) {
       float targetLeftRight = 0.f;
       float baseYaw = 0.f;
       float baseForward = 0.f;
+      int jointPosIdx = 12;
+      float jointPlusMinus = 0.f;
+
+      doAdvanceSim = true;
 
       if (key == -38) { // up
         targetUpDown += 1.f;
@@ -339,6 +346,10 @@ TEST_F(BatchedSimulatorTest, basic) {
         targetLeftRight += 1.f;
       } else if (key == -39) { // right
         targetLeftRight -= 1.f;
+      } else if (key >= '1' && key <= '8') {
+        int keyIdx = key - '1';
+        jointPosIdx = 7 + keyIdx / 2;
+        jointPlusMinus = (keyIdx % 2 == 1) ? -1.f : 1.f;
       } else if (key == 'w') {
         baseForward += 1.f;
       } else if (key == 's') {
@@ -355,12 +366,17 @@ TEST_F(BatchedSimulatorTest, basic) {
         moveSpeed /= 1.5f;
       } else if (key == 'e') {
         doHold = !doHold;
+      } else if (key == 'c') {
+        doTuneRobotCam = !doTuneRobotCam;
       }
-
-      doAdvanceSim = true;
 
       for (int b = 0; b < config.numEnvs; b++) {
         float* actionsForEnv = &actions[b * actionDim];
+
+        for (int j = 0; j < actionDim; j++) {
+          actionsForEnv[j] = 0.f;
+        }
+
         actionsForEnv[0] = doHold ? 1.f : -1.f;
         actionsForEnv[1] = baseYaw * rotSpeed;
         actionsForEnv[2] = baseForward * moveSpeed;
@@ -370,14 +386,16 @@ TEST_F(BatchedSimulatorTest, basic) {
         // 9 elbow, + is down
         // 10 elbow twist, + is twst to right
         // 11 wrist, + is down
-        actionsForEnv[3 + 8] = -targetLeftRight * rotSpeed;
-        actionsForEnv[3 + 9] = -targetUpDown * rotSpeed;
-        actionsForEnv[3 + 11] = targetUpDown * rotSpeed;
-      }
+        // 12 wrist twise, + is right
+        //actionsForEnv[3 + 8] = -targetLeftRight * rotSpeed;
+        actionsForEnv[3 + 11] = -targetUpDown * rotSpeed;
+        actionsForEnv[3 + 12] = -targetLeftRight * rotSpeed;
 
-      if (false) { // if we updated the camera transform...
-        const auto cameraMat = Mn::Matrix4::from(camRot.toMatrix(), camPos);
-        bsim.attachCameraToLink(cameraAttachLinkName, cameraMat);
+        actionsForEnv[3 + jointPosIdx] = jointPlusMinus;
+
+        // always have grippers open
+        actionsForEnv[3 + 13] = 1.f;
+        actionsForEnv[3 + 14] = 1.f;
       }
 
     } else {
@@ -412,6 +430,15 @@ TEST_F(BatchedSimulatorTest, basic) {
         doAdvanceSim = true;
       } else if (key == 't') {
         doStartAnimation = true;
+      } else if (key == 'u') {
+        if (frameIdx > 0) {
+          bsim.reverseRobotMovementActions();
+          frameIdx -= 2; // undoing two keypresses (the last one, and this 'u')
+        }
+      } else if (key == 'c') {
+        doTuneRobotCam = !doTuneRobotCam;
+      } else if (key == 'r') {
+        bsim.reloadSerializeCollection();
       }
 
       if (doFreeCam) {

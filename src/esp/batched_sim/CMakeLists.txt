@@ -20,12 +20,15 @@ add_library(
   GlmUtils.h
   PlacementHelper.cpp
   PlacementHelper.h
+  SerializeCollection.cpp
+  SerializeCollection.h
 )
 
 target_link_libraries(
   batched_sim
   PUBLIC core
          sim
+         io
          bps3D
          bps3D_core
          bps3D_vulkan

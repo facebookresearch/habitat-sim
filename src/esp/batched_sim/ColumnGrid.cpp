@@ -5,10 +5,12 @@
 #include "ColumnGrid.h"
 #include "esp/batched_sim/BatchedSimAssert.h"
 #include "esp/core/logging.h"
+#include "esp/core/Check.h"
 
 #include <Corrade/Utility/Assert.h>
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Vector3.h>
+#include <Corrade/Utility/Directory.h>
 
 #include <cstdio>
 
@@ -209,6 +211,51 @@ void ColumnGridSource::save(const std::string& filepath) {
 
   fclose(fp);
 }
+
+void ColumnGridSet::load(const std::string& filepathBase) {
+
+  int columnGridFilepathNumber = 0;
+  while (true) {
+    // hacky naming convention for ReplicaCAD baked scenes which just contain a stage
+    std::string columnGridFilepath = filepathBase + std::to_string(columnGridFilepathNumber++) + ".columngrid";
+    // sloppy: we should know what files we're loading ahead of time
+    if (Cr::Utility::Directory::exists(columnGridFilepath)) {
+      ColumnGridSource columnGrid;
+      columnGrid.load(columnGridFilepath);
+      BATCHED_SIM_ASSERT(radiusToIndexMap_.count(columnGrid.sphereRadius) == 0);
+      radiusToIndexMap_[columnGrid.sphereRadius] = columnGrids_.size();
+      columnGrids_.push_back(std::move(columnGrid));
+    } else {
+      break;
+    }
+  }
+  ESP_CHECK(!columnGrids_.empty(), "no .columngrid files found for " << filepathBase);
+}
+
+int ColumnGridSet::getRadiusIndex(float radius) const {
+  BATCHED_SIM_ASSERT(radiusToIndexMap_.count(radius));
+  return radiusToIndexMap_.at(radius);
+}
+
+const ColumnGridSource& ColumnGridSet::getColumnGrid(int radiusIdx) const {
+  const auto& source = safeVectorGet(columnGrids_, radiusIdx);
+  return source;
+}
+
+bool ColumnGridSet::contactTest(int radiusIdx, const Magnum::Vector3& pos,
+  ColumnGridSource::QueryCacheValue* queryCache) const {
+  const auto& source = safeVectorGet(columnGrids_, radiusIdx);
+  return source.contactTest(pos, queryCache);
+}
+
+// returns distance down to contact (or up to contact-free)
+// positive indicates contact-free; negative indicates distance up to be contact-free
+float ColumnGridSet::castDownTest(int radiusIdx, const Magnum::Vector3& pos,
+  ColumnGridSource::QueryCacheValue* queryCache) const {
+  const auto& source = safeVectorGet(columnGrids_, radiusIdx);
+  return source.castDownTest(pos, queryCache);
+}
+
 
 }  // namespace batched_sim
 }  // namespace esp

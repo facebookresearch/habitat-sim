@@ -44,6 +44,11 @@ class CollisionBroadphaseGrid {
   };
 
   CollisionBroadphaseGrid() = default;
+  // disallow copy
+  CollisionBroadphaseGrid(const CollisionBroadphaseGrid& rhs) = delete;
+  CollisionBroadphaseGrid(CollisionBroadphaseGrid&& rhs) = default;
+  CollisionBroadphaseGrid& operator=(CollisionBroadphaseGrid&&) = default;
+
   CollisionBroadphaseGrid(float sphereRadius, float minX, float minZ, 
     float maxX, float maxZ, 
     int maxBytes=1024*1024, float maxGridSpacing=0.f, int numObstaclesToReserve=-1);
@@ -77,7 +82,7 @@ class CollisionBroadphaseGrid {
   //// private API exposed only for testing ////
  public:
 
-  static constexpr int MAX_OBSTACLES_PER_CELL = 12;
+  static constexpr int MAX_OBSTACLES_PER_CELL = 64; // 12;
 
 
   struct Cell {

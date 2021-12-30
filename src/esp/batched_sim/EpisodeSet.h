@@ -9,6 +9,7 @@
 #include "esp/batched_sim/ColumnGrid.h"
 #include "esp/batched_sim/CollisionBroadphaseGrid.h"
 #include "esp/batched_sim/BpsSceneMapping.h"
+#include "esp/batched_sim/SerializeCollection.h"
 
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Vector3.h>
@@ -22,24 +23,25 @@ namespace batched_sim {
 
 // todo: more careful namespace or nested classes
 
+struct CollisionSphere {
+  Magnum::Vector3 origin;
+  int radiusIdx = -1; // see BatchedSimulator::getCollisionRadius()
+};
+
 class FreeObject {
  public:
   std::string name_;
   BpsSceneMapping::InstanceBlueprint instanceBlueprint_;
   Magnum::Range3D aabb_;
-  // float boundingSphereRadiusSq_ = 0.f; // unused
   std::vector<Magnum::Matrix3x3> startRotations_;
-  // todo: Sphere struct
-  std::vector<Magnum::Vector3> collisionSphereLocalOrigins_;
+  std::vector<CollisionSphere> collisionSpheres_;
 };
 
 class FixedObject {
  public:
   std::string name_;
   BpsSceneMapping::InstanceBlueprint instanceBlueprint_;
-  esp::batched_sim::ColumnGridSource columnGrid_;
-  // temp: only used for stage right now
-  // todo: bounding box and transform/invTransform
+  esp::batched_sim::ColumnGridSet columnGridSet_;
 };
 
 class FreeObjectSpawn {
@@ -84,8 +86,11 @@ class EpisodeInstanceSet {
   std::vector<EpisodeInstance> episodeInstanceByEnv_; // num envs, ~1,000
 };
 
+void updateFromSerializeCollection(EpisodeSet& set, const serialize::Collection& collection);
+
 // todo: move to separate file
-EpisodeSet generateBenchmarkEpisodeSet(int numEpisodes, const BpsSceneMapping& sceneMapping);
+EpisodeSet generateBenchmarkEpisodeSet(int numEpisodes, 
+  const BpsSceneMapping& sceneMapping, const serialize::Collection& collection);
 
 }  // namespace batched_sim
 }  // namespace esp
