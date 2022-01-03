@@ -131,7 +131,7 @@ commands:
                 export PATH=$HOME/miniconda/bin:$PATH
                 conda create -y -n habitat python=3.6
                 . activate habitat
-                conda install -q -y -c conda-forge ninja numpy pytest pytest-cov ccache hypothesis
+                conda install -q -y -c conda-forge ninja numpy pytest pytest-cov ccache hypothesis=6.29.3
                 pip install pytest-sugar pytest-xdist pytest-benchmark
               fi
       - run:
@@ -220,9 +220,9 @@ jobs:
                 flake8-comprehensions \
                 flake8-return \
                 flake8-simplify \
-                hypothesis \
+                hypothesis==6.29.3 \
                 isort \
-                mypy \
+                mypy==v0.910 \
                 numpy \
                 pytest \
                 sphinx \
