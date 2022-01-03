@@ -7,6 +7,7 @@
 
 #include <Magnum/Magnum.h>
 #include <Magnum/Math/Vector3.h>
+#include <Magnum/Math/Tags.h>
 
 #include <string>
 #include <vector>
@@ -33,8 +34,15 @@ struct FixedObject {
 struct FreeObject {
   std::string name; // this is also the render asset name
   CollisionBox collisionBox;
+  int heldRotationIndex = 0; // temp hack index into startRotations
   std::vector<Sphere> collisionSpheres;
   std::string generateCollisionSpheresTechnique = ""; // "uprightCylinder", "box"
+};
+
+struct RobotGripper {
+  std::string attachLinkName;
+  Magnum::Vector3 offset{Magnum::Math::ZeroInit};
+  float radius = 0.f;
 };
 
 struct RobotLink {
@@ -44,6 +52,7 @@ struct RobotLink {
 
 struct Robot {
   std::string urdfFilepath;
+  RobotGripper gripper;
   std::vector<RobotLink> links;  
 };
 

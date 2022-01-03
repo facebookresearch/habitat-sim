@@ -62,7 +62,6 @@ void addFreeObject(EpisodeSet& set, const std::string& name, const BpsSceneMappi
     freeObj.startRotations_.push_back((rotAboutUpAxis * baseRot).toMatrix());
   }
 
-
   set.freeObjects_.emplace_back(std::move(freeObj));  
 }
 
@@ -72,7 +71,7 @@ void addEpisode(EpisodeSet& set, const serialize::Collection& collection, int st
   episode.firstFreeObjectSpawnIndex_ = set.freeObjectSpawns_.size();
 
   // keep object count close to 28 (from Hab 2.0 benchmark), but include variation
-  int targetNumSpawns = 64; // random.uniform_int(28, 33);
+  int targetNumSpawns = random.uniform_int(28, 33);
   episode.numFreeObjectSpawns_ = 0;
 
   // good for area around staircase and living room
@@ -157,7 +156,7 @@ EpisodeSet generateBenchmarkEpisodeSet(int numEpisodes,
   const BpsSceneMapping& sceneMapping, 
   const serialize::Collection& collection) {
 
-  core::Random random(/*seed*/0);
+  core::Random random(/*seed*/5); // 5 is hand-picked for a demo
 
   EpisodeSet set;
 
@@ -223,6 +222,7 @@ void updateFromSerializeCollection(EpisodeSet& set, const serialize::Collection&
 
     auto& freeObject = *it;
     freeObject.aabb_ = Mn::Range3D(serFreeObject.collisionBox.min, serFreeObject.collisionBox.max);
+    freeObject.heldRotationIndex_ = serFreeObject.heldRotationIndex;
     freeObject.collisionSpheres_.clear();
     std::vector<serialize::Sphere> generatedSpheres;
     const std::vector<serialize::Sphere>* serializeCollisionSpheres = nullptr;

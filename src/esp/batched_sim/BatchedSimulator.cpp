@@ -68,10 +68,10 @@ bool isPairedDebugEnv(const BatchedSimulatorConfig& config, int b) {
 }
 
 bool shouldDrawDebugForEnv(const BatchedSimulatorConfig& config, int b) {
-  return true;
+  return isPairedDebugEnv(config, b);
 }
 bool shouldDrawColumnGridDebugForEnv(const BatchedSimulatorConfig& config, int b) {
-  return false; // temp isPairedDebugEnv(config, b);
+  return isPairedDebugEnv(config, b);
 }
 
 bool disableVisualsForEnv(const BatchedSimulatorConfig& config, int b) {
@@ -419,6 +419,42 @@ void BatchedSimulator::updateGripping() {
     auto& env = bpsWrapper_->envs_[b];
     auto& robotInstance = robots_.robotInstances_[b];
 
+    if (shouldDrawDebugForEnv(config_, b)) {
+
+      const auto& gripperMat = robotInstance.cachedGripperLinkMat_;
+      auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
+      const auto gripperQueryWorldOrigin = gripperMat.transformPoint(
+        robot_.gripperQueryOffset_);
+      const auto gripperQueryRadius = robot_.gripperQueryRadius_;
+      
+      // draw preview of grip attempt
+      if (robotInstance.grippedFreeObjectIndex_ == -1) {
+
+        int grippedFreeObjectIndex = episodeInstance.colGrid_.contactTest(
+          gripperQueryWorldOrigin, gripperQueryRadius);
+        
+        // highlight the object that could be gripped if we attempted
+        if (grippedFreeObjectIndex != -1) {
+          const auto& obs = episodeInstance.colGrid_.getObstacle(grippedFreeObjectIndex);
+          addBoxDebugInstance(
+            "cube_blue_wireframe",
+            b, obs.pos, obs.invRotation.invertedNormalized(), *obs.aabb, 0.01);
+        }
+
+        // show query sphere
+        addSphereDebugInstance(
+            "sphere_blue_wireframe",
+            b, gripperQueryWorldOrigin, gripperQueryRadius);
+      }
+
+      // draw line down from gripper query or held object
+      constexpr float w = 0.005f;
+      addBoxDebugInstance(
+        "cube_blue",
+        b, gripperQueryWorldOrigin, Mn::Quaternion(Mn::Math::IdentityInit),
+        Mn::Range3D({-w, -1.f, -w}, {w, -0.04, w}));
+    }
+
     // don't attempt grip if there was a collision (there's currently a bug where
     // cachedGripperLinkMat_ is wrong)
     // sloppy: not clear if this field is up-to-date or one-frame-stale
@@ -431,44 +467,28 @@ void BatchedSimulator::updateGripping() {
       // the link transform as a Matrix4.
 
       // todo: assert this is valid
+      BATCHED_SIM_ASSERT(robotInstance.grippedFreeObjectIndex_ == -1);
       const auto& gripperMat = robotInstance.cachedGripperLinkMat_;
-
       auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
-
       const auto gripperQueryWorldOrigin = gripperMat.transformPoint(
         robot_.gripperQueryOffset_);
       const auto gripperQueryRadius = robot_.gripperQueryRadius_;
-      
       int grippedFreeObjectIndex = episodeInstance.colGrid_.contactTest(
         gripperQueryWorldOrigin, gripperQueryRadius);
       if (grippedFreeObjectIndex != -1) {
-
-// #ifdef ENABLE_DEBUG_INSTANCES
-//         // draw box at old location
-//         const auto& obs = episodeInstance.colGrid_.getObstacle(grippedFreeObjectIndex);
-//         addBoxDebugInstance("cube_orange_wireframe", b, obs.pos, obs.invRotation.invertedNormalized(), *obs.aabb, 0.02f);
-// #endif
-
         removeFreeObjectFromCollisionGrid(b, grippedFreeObjectIndex);
         robotInstance.grippedFreeObjectIndex_ = grippedFreeObjectIndex;
+        robotInstance.doAttemptGrip_ = false;
         episodeInstance.movedFreeObjectIndexes_.push_back(grippedFreeObjectIndex);
 
         recentStats_.numGrips_++;
       }
 
-      if (shouldDrawDebugForEnv(config_, b)) {
-        if (grippedFreeObjectIndex == -1) {
-          // show query sphere on failed grip
-          addSphereDebugInstance(
-              "sphere_blue_wireframe",
-              b, gripperQueryWorldOrigin, gripperQueryRadius);
-        }
-      }
-
       recentStats_.numGripAttempts_++;
     }
 
-    if (robotInstance.doAttemptDrop_ && robotInstance.grippedFreeObjectIndex_ != -1) {
+    if (robotInstance.doAttemptDrop_) {
+      BATCHED_SIM_ASSERT(robotInstance.grippedFreeObjectIndex_ != -1);
 
       // defer this: making object upright on drop
       //// find nearest up axis from list stored in freeObject
@@ -486,6 +506,7 @@ void BatchedSimulator::updateGripping() {
       const auto& stageFixedObject = safeVectorGet(episodeSet_.fixedObjects_, episode.stageFixedObjIndex);
       const auto& columnGridSet = stageFixedObject.columnGridSet_;
       auto heldObjMat = getHeldObjectTransform(b);
+      
       const auto& freeObjectSpawn = safeVectorGet(episodeSet_.freeObjectSpawns_, 
         episode.firstFreeObjectSpawnIndex_ + freeObjectIndex);
       const auto& freeObject = safeVectorGet(episodeSet_.freeObjects_, freeObjectSpawn.freeObjIndex_);
@@ -509,6 +530,7 @@ void BatchedSimulator::updateGripping() {
         recentStats_.numFailedDrops_++;
       }
       robotInstance.grippedFreeObjectIndex_ = -1;
+      robotInstance.doAttemptDrop_ = false;
 
       recentStats_.numDrops_++;
     }
@@ -525,7 +547,8 @@ void BatchedSimulator::updateCollision() {
 
   robots_.areCollisionResultsValid_ = true;
 
-  std::vector<bool> sphereHits(robot_.numCollisionSpheres_, false);
+  std::vector<bool> sphereHits(robot_.numCollisionSpheres_ * numEnvs, false);
+  std::vector<bool> heldObjectHits(numEnvs, false);
   std::vector<bool> freeObjectHits(episodeSet_.maxFreeObjects_, false);
 
   for (int b = 0; b < numEnvs; b++) {
@@ -535,11 +558,13 @@ void BatchedSimulator::updateCollision() {
     const auto& stageFixedObject = safeVectorGet(episodeSet_.fixedObjects_, episode.stageFixedObjIndex);
     const auto& columnGridSet = stageFixedObject.columnGridSet_;
     const int baseSphereIndex = b * robot_.numCollisionSpheres_;
+    const auto& robotInstance = robots_.robotInstances_[b];
     bool hit = false;
 
     // perf todo: if there was a hit last frame, cache that sphere and test it first here
     for (int s = 0; s < robot_.numCollisionSpheres_; s++) {
       const int sphereIndex = baseSphereIndex + s;
+      // perf todo: reconsider query cache usage; maybe one per link or one per robot
       auto& queryCache = robots_.collisionSphereQueryCaches_[sphereIndex];
       const auto& spherePos = robots_.collisionSphereWorldOrigins_[sphereIndex];
       const int radiusIdx = robot_.collisionSpheres_[s].radiusIdx;
@@ -554,26 +579,34 @@ void BatchedSimulator::updateCollision() {
       if (thisSphereHit) {
         hit = true;
         if (shouldDrawDebugForEnv(config_, b)) {
-          sphereHits[s] = thisSphereHit;
+          sphereHits[baseSphereIndex + s] = thisSphereHit;
         } else {
           break;
         }
       }
     }
 
-    // render collision spheres for debug env, colored by collision result
-    if (shouldDrawDebugForEnv(config_, b)) {
-      const int baseSphereIndex = b * robot_.numCollisionSpheres_;
-      for (int s = 0; s < robot_.numCollisionSpheres_; s++) {
-        const int sphereIndex = baseSphereIndex + s;
-        const auto& spherePos = safeVectorGet(robots_.collisionSphereWorldOrigins_, sphereIndex);
-        const int radiusIdx = safeVectorGet(robot_.collisionSpheres_, s).radiusIdx;
-        const auto sphereRadius = getCollisionRadius(serializeCollection_, radiusIdx);
-        addSphereDebugInstance(sphereHits[s] ? "sphere_pink_wireframe" : "sphere_green_wireframe",
-          b, spherePos, sphereRadius);    
-        sphereHits[s] = false; // clear for next env
+    if (!hit && robotInstance.grippedFreeObjectIndex_ != -1) {
+      ColumnGridSource::QueryCacheValue grippedObjectQueryCache = 0;
+      auto mat = getHeldObjectTransform(b);
+      const auto& freeObjectSpawn = safeVectorGet(episodeSet_.freeObjectSpawns_, 
+        episode.firstFreeObjectSpawnIndex_ + robotInstance.grippedFreeObjectIndex_);
+      const auto& freeObject = safeVectorGet(episodeSet_.freeObjects_, freeObjectSpawn.freeObjIndex_);
+      for (const auto& sphere : freeObject.collisionSpheres_) {
+        const auto& sphereLocalOrigin = sphere.origin;
+        auto sphereWorldOrigin = mat.transformPoint(sphereLocalOrigin);
+        bool thisSphereHit = columnGridSet.contactTest(sphere.radiusIdx, sphereWorldOrigin, &grippedObjectQueryCache);
+        // todo: proper debug-drawing of hits for held object spheres
+        if (thisSphereHit) {
+          hit = true;
+          if (shouldDrawDebugForEnv(config_, b)) {
+            heldObjectHits[b] = thisSphereHit;
+          } else {
+            break;
+          }
+        }
       }
-    }
+    }    
 
     robots_.collisionResults_[b] = hit;
   }
@@ -591,6 +624,7 @@ void BatchedSimulator::updateCollision() {
     const int baseSphereIndex = b * robot_.numCollisionSpheres_;
     bool hit = false;
     auto& env = bpsWrapper_->envs_[b];
+    const auto& robotInstance = robots_.robotInstances_[b];
 
     // perf todo: if there was a hit last frame, cache that sphere and test it first here
     for (int s = 0; s < robot_.numCollisionSpheres_; s++) {
@@ -603,13 +637,37 @@ void BatchedSimulator::updateCollision() {
       if (hitFreeObjectIndex != -1) {
         hit = true;
         if (shouldDrawDebugForEnv(config_, b)) {
-          sphereHits[s] = true;
+          sphereHits[baseSphereIndex + s] = true;
           freeObjectHits[hitFreeObjectIndex] = true;
         } else {
           break;
         }
       }
     }
+
+    if (!hit && robotInstance.grippedFreeObjectIndex_ != -1) {
+      int grippedObjectQueryCache = 0;
+      auto mat = getHeldObjectTransform(b);
+      const auto& freeObjectSpawn = safeVectorGet(episodeSet_.freeObjectSpawns_, 
+        episode.firstFreeObjectSpawnIndex_ + robotInstance.grippedFreeObjectIndex_);
+      const auto& freeObject = safeVectorGet(episodeSet_.freeObjects_, freeObjectSpawn.freeObjIndex_);
+      for (const auto& sphere : freeObject.collisionSpheres_) {
+        const auto& sphereLocalOrigin = sphere.origin;
+        auto sphereWorldOrigin = mat.transformPoint(sphereLocalOrigin);
+        const auto sphereRadius = getCollisionRadius(serializeCollection_, sphere.radiusIdx);
+
+        int hitFreeObjectIndex = episodeInstance.colGrid_.contactTest(sphereWorldOrigin, sphereRadius);
+        if (hitFreeObjectIndex != -1) {
+          hit = true;
+          if (shouldDrawDebugForEnv(config_, b)) {
+            heldObjectHits[b] = true;
+            freeObjectHits[hitFreeObjectIndex] = true;
+          } else {
+            break;
+          }
+        }       
+      } 
+    }    
 
     // render free objects to debug env, colored by collision result
     if (shouldDrawDebugForEnv(config_, b)) {
@@ -622,6 +680,7 @@ void BatchedSimulator::updateCollision() {
           freeObjectHits[freeObjectIndex] ? "cube_pink_wireframe" : "cube_orange_wireframe",
           b, obs.pos, obs.invRotation.invertedNormalized(), *obs.aabb);
 
+        #if 0
         // render collision spheres
         const auto& freeObjectSpawn = safeVectorGet(episodeSet_.freeObjectSpawns_, 
           episode.firstFreeObjectSpawnIndex_ + freeObjectIndex);
@@ -634,6 +693,7 @@ void BatchedSimulator::updateCollision() {
           auto sphereWorldOrigin = mat.transformPoint(sphereLocalOrigin);
           addSphereDebugInstance("sphere_blue_wireframe", b, sphereWorldOrigin, sphereRadius);
         }
+        #endif
         
 
         freeObjectHits[freeObjectIndex] = false; // clear for next env
@@ -644,6 +704,40 @@ void BatchedSimulator::updateCollision() {
   }
 
   for (int b = 0; b < numEnvs; b++) {
+    // render collision spheres for debug env, colored by collision result
+    if (shouldDrawDebugForEnv(config_, b)) {
+      const auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
+      const auto& episode = safeVectorGet(episodeSet_.episodes_, episodeInstance.episodeIndex_);
+      const auto& robotInstance = robots_.robotInstances_[b];
+
+      const int baseSphereIndex = b * robot_.numCollisionSpheres_;
+      for (int s = 0; s < robot_.numCollisionSpheres_; s++) {
+        const int sphereIndex = baseSphereIndex + s;
+        const auto& spherePos = safeVectorGet(robots_.collisionSphereWorldOrigins_, sphereIndex);
+        const int radiusIdx = safeVectorGet(robot_.collisionSpheres_, s).radiusIdx;
+        const auto sphereRadius = getCollisionRadius(serializeCollection_, radiusIdx);
+        addSphereDebugInstance(sphereHits[baseSphereIndex + s] ? "sphere_pink_wireframe" : "sphere_green_wireframe",
+          b, spherePos, sphereRadius);    
+        sphereHits[baseSphereIndex + s] = false; // clear for next env
+      }
+
+      if (robotInstance.grippedFreeObjectIndex_ != -1) {
+        int grippedObjectQueryCache = 0;
+        auto mat = getHeldObjectTransform(b);
+        const auto& freeObjectSpawn = safeVectorGet(episodeSet_.freeObjectSpawns_, 
+          episode.firstFreeObjectSpawnIndex_ + robotInstance.grippedFreeObjectIndex_);
+        const auto& freeObject = safeVectorGet(episodeSet_.freeObjects_, freeObjectSpawn.freeObjIndex_);
+        for (const auto& sphere : freeObject.collisionSpheres_) {
+          const auto& sphereLocalOrigin = sphere.origin;
+          auto sphereWorldOrigin = mat.transformPoint(sphereLocalOrigin);
+          const auto sphereRadius = getCollisionRadius(serializeCollection_, sphere.radiusIdx);
+          addSphereDebugInstance(
+            heldObjectHits[b] ? "sphere_pink_wireframe" : "sphere_blue_wireframe", 
+            b, sphereWorldOrigin, sphereRadius);    
+        }
+      }
+    }
+
     if (robots_.collisionResults_[b]) {
       // todo: more robust handling of this, maybe at episode-load time
       ESP_CHECK(currRolloutStep_ > 1, "The robot is in collision on the first step of the episode.");
@@ -767,12 +861,13 @@ void BatchedSimulator::updateRenderInstances(bool forceUpdate) {
 }
 
 
-Magnum::Matrix4 BatchedSimulator::getHeldObjectTransform(int b) const {
+Mn::Matrix4 BatchedSimulator::getHeldObjectTransform(int b) const {
+
+  auto& robotInstance = robots_.robotInstances_[b];
+  BATCHED_SIM_ASSERT(robotInstance.grippedFreeObjectIndex_ != -1);
 
   auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
   const auto& episode = safeVectorGet(episodeSet_.episodes_, episodeInstance.episodeIndex_);
-  auto& robotInstance = robots_.robotInstances_[b];
-  BATCHED_SIM_ASSERT(robotInstance.grippedFreeObjectIndex_ != -1);
 
   const int freeObjectIndex = robotInstance.grippedFreeObjectIndex_;
 
@@ -780,12 +875,16 @@ Magnum::Matrix4 BatchedSimulator::getHeldObjectTransform(int b) const {
     episode.firstFreeObjectSpawnIndex_ + freeObjectIndex);
   const auto& freeObject = safeVectorGet(episodeSet_.freeObjects_, freeObjectSpawn.freeObjIndex_);
 
-  // todo: decide how to orient gripped object. For now, we use startRotation #0 relative to gripper link
-  constexpr int startRotationIndex = 0;
+  // todo: better decide how to orient gripped object
+  const int startRotationIndex = freeObject.heldRotationIndex_;
   const auto& rotation = safeVectorGet(freeObject.startRotations_, startRotationIndex);
-  Mn::Matrix4 localToGripper = Mn::Matrix4::from(
-      rotation, robot_.gripperQueryOffset_);
-  auto mat = robotInstance.cachedGripperLinkMat_ * localToGripper;
+
+  Mn::Matrix4 linkToGripper = Mn::Matrix4::translation(robot_.gripperQueryOffset_);
+  Mn::Matrix4 toOrientedObject = Mn::Matrix4::from(rotation, Mn::Vector3(Mn::Math::ZeroInit));
+  // todo: offset to a few centimeters from the edge, instead of the center
+  Mn::Matrix4 toObjectCenter = Mn::Matrix4::translation(-freeObject.aabb_.center());
+
+  auto mat = robotInstance.cachedGripperLinkMat_ * linkToGripper * toOrientedObject * toObjectCenter;
   return mat;
 }
 
@@ -838,14 +937,6 @@ Robot::Robot(const serialize::Collection& serializeCollection, esp::sim::Simulat
       nodeTransformFixups[nodeIndex] = tmp * globalFixup;
       numInstances++;
     }
-
-    // todo: move this to load from serializeRobot
-    if (link.linkName == "gripper_link") {
-      gripperLink_ = i;
-      gripperQueryOffset_ = Mn::Vector3(0.3f, 0.f, 0.f);
-      gripperQueryRadius_ = 0.1f;
-    }
-
   }
 
   numInstances_ = numInstances;
@@ -859,6 +950,14 @@ Robot::Robot(const serialize::Collection& serializeCollection, esp::sim::Simulat
 void Robot::updateFromSerializeCollection(const serialize::Collection& serializeCollection) {
 
   const auto& serializeRobot = serializeCollection.robots.front();
+
+  ESP_CHECK(linkIndexByName_.count(serializeRobot.gripper.attachLinkName), 
+    "gripper attach link " << serializeRobot.gripper.attachLinkName 
+    << " from collection.json not found in robot URDF");
+
+  gripperLink_ = linkIndexByName_.at(serializeRobot.gripper.attachLinkName);
+  gripperQueryOffset_ = serializeRobot.gripper.offset;
+  gripperQueryRadius_ = serializeRobot.gripper.radius;
 
   int numLinks = artObj->getNumLinks();
   int numNodes = numLinks + 1;  // include base
@@ -1386,6 +1485,7 @@ void BatchedSimulator::stepPhysics() {
   constexpr float stickyGrabDropThreshold = 0.85f;
   constexpr float minBaseMovement = -0.05f;
   constexpr float maxBaseMovement = 0.1f;
+  // beware not all joints are angular
   constexpr float maxAbsYawAngle = float(Mn::Rad(Mn::Deg(5.f)));
   constexpr float maxAbsJointAngle = float(Mn::Rad(Mn::Deg(5.f)));
 
@@ -1444,7 +1544,8 @@ void BatchedSimulator::stepPhysics() {
     for (int j = 0; j < robot_.numPosVars; j++) {
       auto& pos = jointPositions[baseJointIndex + j];
       const auto& prevPos = prevJointPositions[baseJointIndex + j];
-      const float clampedJointMovementAction = Mn::Math::clamp(actions_[actionIndex++], -maxAbsJointAngle, maxAbsJointAngle);
+      const float clampedJointMovementAction = Mn::Math::clamp(actions_[actionIndex++], 
+        -maxAbsJointAngle, maxAbsJointAngle);
       pos = prevPos + clampedJointMovementAction;
       pos = Mn::Math::clamp(pos, robot_.jointPositionLimits.first[j],
                             robot_.jointPositionLimits.second[j]);

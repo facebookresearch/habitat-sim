@@ -190,7 +190,7 @@ TEST_F(BatchedSimulatorTest, basic) {
   esp::logging::LoggingContext loggingContext;
 
   constexpr bool doOverlapPhysics = false;
-  constexpr bool doFreeCam = true;
+  constexpr bool doFreeCam = false;
   bool doTuneRobotCam = false;
   constexpr bool doSaveAllFramesForVideo = false; // see make_video_from_image_files.py
   constexpr bool doPairedDebugEnvs = true;
@@ -231,8 +231,7 @@ TEST_F(BatchedSimulatorTest, basic) {
     bsim.setCamera(camPos, camRot);    
   }
 
-  float rotSpeed = 20.f;
-  float moveSpeed = 0.5f;
+  float moveSpeed = 1.f;
 
   const int envIndex = 0;
   //int sphereGreenInstance = bsim.addDebugInstance("sphere_green_wireframe", envIndex);
@@ -333,7 +332,8 @@ TEST_F(BatchedSimulatorTest, basic) {
       float targetLeftRight = 0.f;
       float baseYaw = 0.f;
       float baseForward = 0.f;
-      int jointPosIdx = 12;
+      float baseUpDown = 0.f;
+      int jointPosIdx = -1;
       float jointPlusMinus = 0.f;
 
       doAdvanceSim = true;
@@ -358,16 +358,25 @@ TEST_F(BatchedSimulatorTest, basic) {
         baseYaw += float(Mn::Rad(Mn::Deg(15.f)));
       } else if (key == 'd') {
         baseYaw -= float(Mn::Rad(Mn::Deg(15.f)));
+      } else if (key == 'e') {
+        baseUpDown = 0.1f;
+      } else if (key == 'q') {
+        baseUpDown = -0.1f;
       }else if (key == '=') { // +
-        rotSpeed *= 1.5f;
         moveSpeed *= 1.5f;
       } else if (key == '-') {
-        rotSpeed /= 1.5f;
         moveSpeed /= 1.5f;
-      } else if (key == 'e') {
+      } else if (key == 'g') {
         doHold = !doHold;
       } else if (key == 'c') {
         doTuneRobotCam = !doTuneRobotCam;
+      } else if (key == 'r') {
+        bsim.reloadSerializeCollection();
+      } else if (key == 'u') {
+        if (frameIdx > 0) {
+          bsim.reverseRobotMovementActions();
+          frameIdx -= 2; // undoing two keypresses (the last one, and this 'u')
+        }
       }
 
       for (int b = 0; b < config.numEnvs; b++) {
@@ -378,9 +387,10 @@ TEST_F(BatchedSimulatorTest, basic) {
         }
 
         actionsForEnv[0] = doHold ? 1.f : -1.f;
-        actionsForEnv[1] = baseYaw * rotSpeed;
+        actionsForEnv[1] = baseYaw * moveSpeed;
         actionsForEnv[2] = baseForward * moveSpeed;
 
+        // 2 is torso up/down
         // 7 shoulder, + is down
         // 8 twist, + is twist to right
         // 9 elbow, + is down
@@ -388,10 +398,13 @@ TEST_F(BatchedSimulatorTest, basic) {
         // 11 wrist, + is down
         // 12 wrist twise, + is right
         //actionsForEnv[3 + 8] = -targetLeftRight * rotSpeed;
-        actionsForEnv[3 + 11] = -targetUpDown * rotSpeed;
-        actionsForEnv[3 + 12] = -targetLeftRight * rotSpeed;
+        actionsForEnv[3 + 2] = baseUpDown * moveSpeed;
+        actionsForEnv[3 + 11] = -targetUpDown * moveSpeed;
+        actionsForEnv[3 + 12] = -targetLeftRight * moveSpeed;
 
-        actionsForEnv[3 + jointPosIdx] = jointPlusMinus;
+        if (jointPosIdx != -1) {
+          actionsForEnv[3 + jointPosIdx] = jointPlusMinus;
+        }
 
         // always have grippers open
         actionsForEnv[3 + 13] = 1.f;
@@ -399,33 +412,33 @@ TEST_F(BatchedSimulatorTest, basic) {
       }
 
     } else {
+      const float camMoveSpeed = 0.2f * moveSpeed;
+      const float camRotateSpeed = 20.f * moveSpeed;
       // free camera with spacebar to advance sim
       if (key == -38) { // up
-        camRot = camRot * Mn::Quaternion::rotation(Mn::Deg(rotSpeed), Mn::Vector3(1.f, 0.f, 0.f));
+        camRot = camRot * Mn::Quaternion::rotation(Mn::Deg(camRotateSpeed), Mn::Vector3(1.f, 0.f, 0.f));
       } else if (key == -40) { // down
-        camRot = camRot * Mn::Quaternion::rotation(Mn::Deg(-rotSpeed), Mn::Vector3(1.f, 0.f, 0.f));
+        camRot = camRot * Mn::Quaternion::rotation(Mn::Deg(-camRotateSpeed), Mn::Vector3(1.f, 0.f, 0.f));
       } else if (key == -37) { // left
-        camRot = Mn::Quaternion::rotation(Mn::Deg(rotSpeed), Mn::Vector3(0.f, 1.f, 0.f)) * camRot;
+        camRot = Mn::Quaternion::rotation(Mn::Deg(camRotateSpeed), Mn::Vector3(0.f, 1.f, 0.f)) * camRot;
       } else if (key == -39) { // right
-        camRot = Mn::Quaternion::rotation(Mn::Deg(-rotSpeed), Mn::Vector3(0.f, 1.f, 0.f)) * camRot;
+        camRot = Mn::Quaternion::rotation(Mn::Deg(-camRotateSpeed), Mn::Vector3(0.f, 1.f, 0.f)) * camRot;
       } else if (key == '=') { // +
-        rotSpeed *= 1.5f;
         moveSpeed *= 1.5f;
       } else if (key == '-') {
-        rotSpeed /= 1.5f;
         moveSpeed /= 1.5f;
       } else if (key == 'w') {
-        camPos += camRot.transformVector(Mn::Vector3(0.f, 0.f, -1.f)) * moveSpeed;
+        camPos += camRot.transformVector(Mn::Vector3(0.f, 0.f, -1.f)) * camMoveSpeed;
       } else if (key == 's') {
-        camPos += camRot.transformVector(Mn::Vector3(0.f, 0.f, 1.f)) * moveSpeed;
+        camPos += camRot.transformVector(Mn::Vector3(0.f, 0.f, 1.f)) * camMoveSpeed;
       } else if (key == 'a') {
-        camPos += camRot.transformVector(Mn::Vector3(-1.f, 0.f, 0.f)) * moveSpeed;
+        camPos += camRot.transformVector(Mn::Vector3(-1.f, 0.f, 0.f)) * camMoveSpeed;
       } else if (key == 'd') {
-        camPos += camRot.transformVector(Mn::Vector3(1.f, 0.f, 0.f)) * moveSpeed;      
+        camPos += camRot.transformVector(Mn::Vector3(1.f, 0.f, 0.f)) * camMoveSpeed;      
       } else if (key == 'e') {
-        camPos.y() += moveSpeed;
+        camPos.y() += camMoveSpeed;
       } else if (key == 'q') {
-        camPos.y() += -moveSpeed;
+        camPos.y() += -camMoveSpeed;
       } else if (key == ' ') {
         doAdvanceSim = true;
       } else if (key == 't') {

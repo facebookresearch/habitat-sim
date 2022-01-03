@@ -44,8 +44,17 @@ bool fromJsonValue(const esp::io::JsonGenericValue& obj,
                    FreeObject& val) {
   readMember(obj, "name", val.name);
   readMember(obj, "collisionBox", val.collisionBox);
+  readMember(obj, "heldRotationIndex", val.heldRotationIndex);
   readMember(obj, "collisionSpheres", val.collisionSpheres);
   readMember(obj, "generateCollisionSpheresTechnique", val.generateCollisionSpheresTechnique);
+  return true;
+}
+
+bool fromJsonValue(const esp::io::JsonGenericValue& obj,
+                   RobotGripper& val) {
+  readMember(obj, "attachLinkName", val.attachLinkName);
+  readMember(obj, "offset", val.offset);
+  readMember(obj, "radius", val.radius);
   return true;
 }
 
@@ -59,6 +68,7 @@ bool fromJsonValue(const esp::io::JsonGenericValue& obj,
 bool fromJsonValue(const esp::io::JsonGenericValue& obj,
                    Robot& val) {
   readMember(obj, "urdfFilepath", val.urdfFilepath);
+  readMember(obj, "gripper", val.gripper);
   readMember(obj, "links", val.links);
   return true;
 }
@@ -92,7 +102,7 @@ int getCollisionRadiusIndex(const serialize::Collection& collection, float radiu
   ESP_CHECK(it != collisionRadiusWorkingSet.end(), "robot collisionSphere radius " 
     << radius << " not found in collection.json collisionRadiusWorkingSet");
   int radiusIdx = it - collisionRadiusWorkingSet.begin();
-
+  return radiusIdx;
 }
 
 float getCollisionRadius(const serialize::Collection& collection, int radiusIdx) {

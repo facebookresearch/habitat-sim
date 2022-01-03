@@ -34,6 +34,7 @@ class FreeObject {
   BpsSceneMapping::InstanceBlueprint instanceBlueprint_;
   Magnum::Range3D aabb_;
   std::vector<Magnum::Matrix3x3> startRotations_;
+  int heldRotationIndex_; // index into startRotations_
   std::vector<CollisionSphere> collisionSpheres_;
 };
 
