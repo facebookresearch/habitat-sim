@@ -1588,6 +1588,8 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
     // If meshIDLocal != -1 then we have multiple meshes assigned to the same
     // MeshTransformNode.  We make subsequent meshes children of the first mesh
     // we've seen, and give them identity trasnforms.
+    // TODO: either drop MeshTransformNode in favor of SceneData or use
+    // Mn::SceneTools::convertToSingleFunctionObjects() when it's exposed.
     esp::assets::MeshTransformNode* tmpNode = &*node;
     if (node->meshIDLocal != -1) {
       node->children.emplace_back();
