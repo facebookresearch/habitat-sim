@@ -41,6 +41,7 @@ class GaussianNoiseModel(SensorNoiseModel):
     intensity_constant: float = 0.2
     mean: int = 0
     sigma: int = 1
+    _impl: GaussianNoiseModelCPUImpl = None
 
     def __attrs_post_init__(self) -> None:
         self._impl = GaussianNoiseModelCPUImpl(

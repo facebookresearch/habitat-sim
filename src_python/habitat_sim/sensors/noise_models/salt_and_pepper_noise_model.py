@@ -43,6 +43,7 @@ class SaltAndPepperNoiseModelCPUImpl:
 class SaltAndPepperNoiseModel(SensorNoiseModel):
     s_vs_p: float = 0.5
     amount: float = 0.05
+    _impl: SaltAndPepperNoiseModelCPUImpl = None
 
     def __attrs_post_init__(self) -> None:
         self._impl = SaltAndPepperNoiseModelCPUImpl(self.s_vs_p, self.amount)

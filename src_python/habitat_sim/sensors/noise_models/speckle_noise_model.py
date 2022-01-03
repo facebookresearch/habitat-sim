@@ -42,6 +42,7 @@ class SpeckleNoiseModel(SensorNoiseModel):
     intensity_constant: float = 0.2
     mean: int = 0
     sigma: int = 1
+    _impl: SpeckleNoiseModelCPUImpl = None
 
     def __attrs_post_init__(self) -> None:
         self._impl = SpeckleNoiseModelCPUImpl(
