@@ -263,10 +263,15 @@ def depth_to_rgb(depth_image: np.ndarray, clip_max: float = 10.0) -> np.ndarray:
 
     :return: Clipped grayscale depth image data.
     """
+    if len(depth_image.shape) == 3:
+        assert(depth_image.shape[2] == 1)
+        depth_image = depth_image.squeeze()
+
     d_im = np.clip(depth_image, 0, clip_max)
     d_im /= clip_max
     rgb_d_im = (d_im * 255).astype(np.uint8)
-    return np.asarray(rgb_d_im)
+    np_array = np.asarray(rgb_d_im)
+    return np.uint8(np_array)
 
 
 def semantic_to_rgb(semantic_image: np.ndarray) -> np.ndarray:

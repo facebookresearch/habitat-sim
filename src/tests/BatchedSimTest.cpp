@@ -194,15 +194,21 @@ TEST_F(BatchedSimulatorTest, basic) {
   bool doTuneRobotCam = false;
   constexpr bool doSaveAllFramesForVideo = false; // see make_video_from_image_files.py
   constexpr bool doPairedDebugEnvs = true;
+  constexpr bool includeDepth = false;
+  constexpr bool includeColor = true;
 
   const bool forceRandomActions = doFreeCam || doTuneRobotCam;
 
   BatchedSimulatorConfig config{
       // for video: 2048 x 1024, fov 80
-      .numEnvs = 8, .gpuId = 0, .sensor0 = {.width = 768, .height = 768, .hfov = 70},
+      .numEnvs = 2, .gpuId = 0, 
+      .includeDepth = includeDepth,
+      .includeColor = includeColor,
+      .sensor0 = {.width = 768, .height = 768, .hfov = 70},
       .forceRandomActions = forceRandomActions,
       .doAsyncPhysicsStep = doOverlapPhysics,
-      .maxEpisodeLength = 2000,
+      .maxEpisodeLength = 500,
+      .numSubsteps = 1,
       .doPairedDebugEnvs = doPairedDebugEnvs
       };
   BatchedSimulator bsim(config);
@@ -213,7 +219,6 @@ TEST_F(BatchedSimulatorTest, basic) {
 
   if (!doFreeCam) {
     // over-the-shoulder cam
-
     // cameraAttachLinkName = "torso_lift_link";
     // camPos = {-1.18, 2.5, 0.79};
     // camRot = {{-0.254370272, -0.628166556, -0.228633955}, 0.6988765};
@@ -226,8 +231,15 @@ TEST_F(BatchedSimulatorTest, basic) {
     const auto cameraMat = Mn::Matrix4::from(camRot.toMatrix(), camPos);
     bsim.attachCameraToLink(cameraAttachLinkName, cameraMat);
   } else {
-    camPos = {-1.61004, 1.5, 3.5455};
-    camRot = {{0, -0.529178, 0}, 0.848511};
+    if (config.sensor0.hfov == 70.f) {
+      camPos = {-1.61004, 1.5, 3.5455};
+      camRot = {{0, -0.529178, 0}, 0.848511};
+    } else if (config.sensor0.hfov == 25.f) {
+      camRot = {{-0.339537084, -0.484963357, -0.211753935}, 0.777615011};
+      camPos = {-4.61396408, 9.11192417, 4.26546907};
+    } else {
+      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+    }
     bsim.setCamera(camPos, camRot);    
   }
 

@@ -31,10 +31,13 @@ struct CameraSensorConfig {
 struct BatchedSimulatorConfig {
   int numEnvs = -1;
   int gpuId = -1;
+  bool includeDepth = true;
+  bool includeColor = true;
   CameraSensorConfig sensor0;
   bool forceRandomActions = false;
   bool doAsyncPhysicsStep = false;
   int maxEpisodeLength = 50;
+  int numSubsteps = 1;
   // if enabled, for every odd env, we don't render any visuals except debug stuff, 
   // e.g. collision visualization. We should keep even and odd envs in sync (e.g. same actions).
   bool doPairedDebugEnvs = false;
@@ -42,7 +45,7 @@ struct BatchedSimulatorConfig {
 };
 
 struct BpsWrapper {
-  BpsWrapper(int gpuId, int numEnvs, const CameraSensorConfig& sensor0);
+  BpsWrapper(int gpuId, int numEnvs, bool includeDepth, bool includeColor, const CameraSensorConfig& sensor0);
   ~BpsWrapper();
 
   std::shared_ptr<bps3D::Scene> scene_;
@@ -81,21 +84,21 @@ struct Robot {
 
 struct RolloutRecord {
   RolloutRecord() = default;
-  RolloutRecord(int numRolloutSteps,
+  RolloutRecord(int numRolloutSubsteps,
                 int numEnvs,
                 int numJointVars,
                 int numNodes);
 
-  int numRolloutSteps_ = 0;
+  int numRolloutSubsteps_ = 0;
   std::vector<float>
-      jointPositions_;       // [numRolloutSteps * numEnvs * numJointVars]
-  std::vector<float> yaws_;  // [numRolloutSteps * numEnvs]
-  std::vector<Mn::Vector2> positions_;           // [numRolloutSteps * numEnvs]
-  std::vector<Magnum::Matrix4> rootTransforms_;  // [numRolloutSteps * numEnvs]
+      jointPositions_;       // [numRolloutSubsteps * numEnvs * numJointVars]
+  std::vector<float> yaws_;  // [numRolloutSubsteps * numEnvs]
+  std::vector<Mn::Vector2> positions_;           // [numRolloutSubsteps * numEnvs]
+  std::vector<Magnum::Matrix4> rootTransforms_;  // [numRolloutSubsteps * numEnvs]
   std::vector<Magnum::Matrix4>
-      nodeTransforms_;  // [numRolloutSteps * numEnvs * numNodes]
+      nodeTransforms_;  // [numRolloutSubsteps * numEnvs * numNodes]
 
-  std::vector<float> rewards_;  // [numRolloutSteps * numEnvs]
+  std::vector<float> rewards_;  // [numRolloutSubsteps * numEnvs]
 };
 
 // todo: move fields from RobotInstanceSet into here
@@ -118,7 +121,7 @@ class RobotInstanceSet {
                    std::vector<bps3D::Environment>* envs,
                    RolloutRecord* rollouts);
 
-  void updateLinkTransforms(int currRolloutStep);
+  void updateLinkTransforms(int currRolloutSubstep, bool updateforPhysics, bool updateForRender);
   void applyActionPenalties(const std::vector<float>& actions);
 
   Robot* robot_ = nullptr;
@@ -155,7 +158,7 @@ struct RewardCalculationContext {
                            int numEnvs,
                            RolloutRecord* rollouts);
 
-  void calcRewards(int currRolloutStep, int bStart, int bEnd);
+  void calcRewards(int currRolloutSubstep, int bStart, int bEnd);
 
   esp::physics::BulletArticulatedObject* artObj_ = nullptr;
   std::unique_ptr<esp::sim::Simulator> legacySim_;
@@ -226,6 +229,7 @@ class BatchedSimulator {
 
   void reset();
   void stepPhysics();
+  void substepPhysics();
   void updateCollision();
   // for each robot, undo action if collision
   void postCollisionUpdate();
@@ -264,14 +268,14 @@ class BatchedSimulator {
   bool isRenderStarted_ = false;
   Robot robot_;
   RobotInstanceSet robots_;
-  int currRolloutStep_ = -1;
-  int prevRolloutStep_ = -1;
+  int currRolloutSubstep_ = -1;
+  int prevRolloutSubstep_ = -1;
   RolloutRecord rollouts_;
   std::unique_ptr<esp::sim::Simulator> legacySim_;
   std::unique_ptr<BpsWrapper> bpsWrapper_;
   int actionDim_ = -1;
   std::vector<float> actions_;
-  int maxRolloutSteps_ = -1;
+  int maxRolloutSubsteps_ = -1;
   RewardCalculationContext rewardContext_;
   std::vector<bool> hackDones_;
 

@@ -896,17 +896,20 @@ Viewer::Viewer(const Arguments& arguments)
       if (Cr::Utility::Directory::exists(filepath)) {
         ESP_DEBUG() << "loading ColumnGrid from " << filepath;
         columnGrid_.load(filepath);
+        // temp
+        exit(0);
       } else {
 
         ESP_DEBUG() << "building ColumnGrid...";
         const auto extents = simulator_->getCollisionExtents();
         const float sphereRadius = sphereRadii[i];
-        constexpr float gridSpacing = 0.02;
+        constexpr float gridSpacing = 0.03;
         ColumnGridBuilder builder;
         columnGrid_ = builder.build(*simulator_.get(), extents, sphereRadius, gridSpacing);
 
         ESP_DEBUG() << "Done. Saving ColumnGrid to " << filepath;
         columnGrid_.save(filepath);
+        exit(0);
       }
     }
   }

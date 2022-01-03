@@ -67,10 +67,10 @@ bool isPairedDebugEnv(const BatchedSimulatorConfig& config, int b) {
   return config.doPairedDebugEnvs && (b % 2 == 1);
 }
 
-bool shouldDrawDebugForEnv(const BatchedSimulatorConfig& config, int b) {
-  return isPairedDebugEnv(config, b);
+bool shouldDrawDebugForEnv(const BatchedSimulatorConfig& config, int b, int substep) {
+  return isPairedDebugEnv(config, b) && (substep % config.numSubsteps == 0);
 }
-bool shouldDrawColumnGridDebugForEnv(const BatchedSimulatorConfig& config, int b) {
+bool shouldAddColumnGridDebugVisualsForEnv(const BatchedSimulatorConfig& config, int b) {
   return isPairedDebugEnv(config, b);
 }
 
@@ -78,17 +78,17 @@ bool disableVisualsForEnv(const BatchedSimulatorConfig& config, int b) {
   return isPairedDebugEnv(config, b);
 }
 #else
-bool isPairedDebugEnv(const BatchedSimulatorConfig& config, int b) {
+constexpr bool isPairedDebugEnv(const BatchedSimulatorConfig&, int) {
   return false;
 }
-bool shouldDrawDebugForEnv(const BatchedSimulatorConfig& config, int b) {
+constexpr bool shouldDrawDebugForEnv(const BatchedSimulatorConfig&, int, int) {
   return false;
 }
-bool shouldDrawColumnGridDebugForEnv(const BatchedSimulatorConfig& config, int b) {
+constexpr bool shouldAddColumnGridDebugVisualsForEnv(const BatchedSimulatorConfig&, int) {
   return false;
 }
 
-bool disableVisualsForEnv(const BatchedSimulatorConfig& config, int b) {
+constexpr bool disableVisualsForEnv(const BatchedSimulatorConfig&, int) {
   return false;
 }
 #endif
@@ -97,21 +97,21 @@ bool disableVisualsForEnv(const BatchedSimulatorConfig& config, int b) {
 }  // namespace
 
 void BatchedSimulator::randomizeRobotsForCurrentStep() {
-  BATCHED_SIM_ASSERT(currRolloutStep_ >= 0);
+  BATCHED_SIM_ASSERT(currRolloutSubstep_ >= 0);
   int numEnvs = bpsWrapper_->envs_.size();
   int numPosVars = robot_.numPosVars;
 
-  float* yaws = &safeVectorGet(rollouts_.yaws_, currRolloutStep_ * numEnvs);
-  Mn::Vector2* positions = &safeVectorGet(rollouts_.positions_,currRolloutStep_ * numEnvs);
+  float* yaws = &safeVectorGet(rollouts_.yaws_, currRolloutSubstep_ * numEnvs);
+  Mn::Vector2* positions = &safeVectorGet(rollouts_.positions_,currRolloutSubstep_ * numEnvs);
   float* jointPositions =
-      &safeVectorGet(rollouts_.jointPositions_,currRolloutStep_ * numEnvs * numPosVars);
+      &safeVectorGet(rollouts_.jointPositions_,currRolloutSubstep_ * numEnvs * numPosVars);
 
-  auto random = core::Random(/*seed*/ 1);
+  auto random = core::Random(/*seed*/ 3);
 
   for (int b = 0; b < numEnvs; b++) {
     // hand-authored start location and yaw range that works for stages 0-12
-    positions[b] = Mn::Vector2(2.39f, 0.f);
-    yaws[b] = random.uniform_float(-float(Mn::Rad(Mn::Deg(180.f))), float(Mn::Rad(Mn::Deg(0.f))));
+    positions[b] = Mn::Vector2(2.59f, 0.f);
+    yaws[b] = random.uniform_float(-float(Mn::Rad(Mn::Deg(135.f))), -float(Mn::Rad(Mn::Deg(45.f))));
         
     // temp move robot out of scene (hide/disable robot)
     // positions[b].y() -= 1000.f;
@@ -243,21 +243,21 @@ void RobotInstanceSet::applyActionPenalties(const std::vector<float>& actions) {
 }
 
 void BatchedSimulator::reverseActionsForEnvironment(int b) {
-  BATCHED_SIM_ASSERT(prevRolloutStep_ != -1);
+  BATCHED_SIM_ASSERT(prevRolloutSubstep_ != -1);
   const int numEnvs = config_.numEnvs;
   const int numPosVars = robot_.numPosVars;
 
-  const float* prevYaws = &rollouts_.yaws_[prevRolloutStep_ * numEnvs];
-  float* yaws = &rollouts_.yaws_[currRolloutStep_ * numEnvs];
+  const float* prevYaws = &rollouts_.yaws_[prevRolloutSubstep_ * numEnvs];
+  float* yaws = &rollouts_.yaws_[currRolloutSubstep_ * numEnvs];
   const Mn::Vector2* prevPositions =
-      &rollouts_.positions_[prevRolloutStep_ * numEnvs];
-  Mn::Vector2* positions = &rollouts_.positions_[currRolloutStep_ * numEnvs];
+      &rollouts_.positions_[prevRolloutSubstep_ * numEnvs];
+  Mn::Vector2* positions = &rollouts_.positions_[currRolloutSubstep_ * numEnvs];
   Mn::Matrix4* rootTransforms =
-      &rollouts_.rootTransforms_[currRolloutStep_ * numEnvs];
+      &rollouts_.rootTransforms_[currRolloutSubstep_ * numEnvs];
   const float* prevJointPositions =
-      &rollouts_.jointPositions_[prevRolloutStep_ * numEnvs * numPosVars];
+      &rollouts_.jointPositions_[prevRolloutSubstep_ * numEnvs * numPosVars];
   float* jointPositions =
-      &rollouts_.jointPositions_[currRolloutStep_ * numEnvs * numPosVars];
+      &rollouts_.jointPositions_[currRolloutSubstep_ * numEnvs * numPosVars];
 
   yaws[b] = prevYaws[b];
   positions[b] = prevPositions[b];
@@ -269,25 +269,30 @@ void BatchedSimulator::reverseActionsForEnvironment(int b) {
   }
 }
 
-void RobotInstanceSet::updateLinkTransforms(int currRolloutStep) {
+void RobotInstanceSet::updateLinkTransforms(int currRolloutSubstep, bool updateForPhysics, bool updateForRender) {
+
+  BATCHED_SIM_ASSERT(updateForPhysics || updateForRender);
+  
   // esp::gfx::replay::Keyframe debugKeyframe;
   int numLinks = robot_->artObj->getNumLinks();
   int numNodes = numLinks + 1;
   int numEnvs = config_->numEnvs;
   int numPosVars = robot_->numPosVars;
 
-  areCollisionResultsValid_ = false;
+  if (updateForPhysics) {
+    areCollisionResultsValid_ = false;
+  }
 
   auto* mb = robot_->artObj->btMultiBody_.get();
   int posCount = 0;
 
-  const float* yaws = &rollouts_->yaws_[currRolloutStep * numEnvs];
+  const float* yaws = &rollouts_->yaws_[currRolloutSubstep * numEnvs];
   const Mn::Vector2* positions =
-      &rollouts_->positions_[currRolloutStep * numEnvs];
+      &rollouts_->positions_[currRolloutSubstep * numEnvs];
   const float* jointPositions =
-      &rollouts_->jointPositions_[currRolloutStep * numEnvs * numPosVars];
+      &rollouts_->jointPositions_[currRolloutSubstep * numEnvs * numPosVars];
   Mn::Matrix4* rootTransforms =
-      &rollouts_->rootTransforms_[currRolloutStep * numEnvs];
+      &rollouts_->rootTransforms_[currRolloutSubstep * numEnvs];
 
   for (int b = 0; b < config_->numEnvs; b++) {
 
@@ -331,6 +336,13 @@ void RobotInstanceSet::updateLinkTransforms(int currRolloutStep) {
           continue;
         }
 
+        if (!updateForRender) {
+          if (robot_->collisionSpheresByNode_[nodeIndex].empty()
+            && robot_->gripperLink_ != i) {
+            continue;
+          }
+        }
+
         // todo: avoid btTransform copy for case of i != -1
         const auto btTrans = i == -1 ? mb->getBaseWorldTransform()
                                      : mb->getLink(i).m_cachedWorldTransform;
@@ -341,26 +353,29 @@ void RobotInstanceSet::updateLinkTransforms(int currRolloutStep) {
         // const float scale = (float)b / (numEnvs_ - 1);
         // tmp[3] = Mn::Vector4(vec.xyz() * scale, 1.f);
         mat = mat * tmp;
-        // perf todo: loop through collision spheres (and look up link id), instead of this sparse way here
-        // compute collision sphere transforms
-        for (const auto& localSphereIdx : robot_->collisionSpheresByNode_[nodeIndex]) {
-          const auto& sphere = safeVectorGet(robot_->collisionSpheres_, localSphereIdx);
-          collisionSphereWorldOrigins_[baseSphereIndex + localSphereIdx] = 
-            mat.transformPoint(sphere.origin);
+
+        if (updateForPhysics) {
+          // perf todo: loop through collision spheres (and look up link id), instead of this sparse way here
+          // compute collision sphere transforms
+          for (const auto& localSphereIdx : robot_->collisionSpheresByNode_[nodeIndex]) {
+            const auto& sphere = safeVectorGet(robot_->collisionSpheres_, localSphereIdx);
+            collisionSphereWorldOrigins_[baseSphereIndex + localSphereIdx] = 
+              mat.transformPoint(sphere.origin);
+          }
+
+          if (robot_->gripperLink_ == i) {
+            robotInstance.cachedGripperLinkMat_ = mat;
+          }
         }
 
-        if (robot_->gripperLink_ == i) {
-          robotInstance.cachedGripperLinkMat_ = mat;
+        if (updateForRender) {
+          BATCHED_SIM_ASSERT(instanceIndex < nodeNewTransforms_.size());
+          nodeNewTransforms_[instanceIndex] = toGlmMat4x3(mat);
+
+          if (robot_->cameraAttachNode_ == nodeIndex) {
+            robotInstance.cameraAttachNodeTransform_ = mat;
+          }
         }
-
-        BATCHED_SIM_ASSERT(instanceIndex < nodeNewTransforms_.size());
-        nodeNewTransforms_[instanceIndex] = toGlmMat4x3(mat);
-
-
-        if (robot_->cameraAttachNode_ == nodeIndex) {
-          robotInstance.cameraAttachNodeTransform_ = mat;
-        }
-
 #if 0
         esp::gfx::replay::Transform absTransform{
             mat.translation(),
@@ -419,7 +434,7 @@ void BatchedSimulator::updateGripping() {
     auto& env = bpsWrapper_->envs_[b];
     auto& robotInstance = robots_.robotInstances_[b];
 
-    if (shouldDrawDebugForEnv(config_, b)) {
+    if (shouldDrawDebugForEnv(config_, b, currRolloutSubstep_)) {
 
       const auto& gripperMat = robotInstance.cachedGripperLinkMat_;
       auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
@@ -578,7 +593,7 @@ void BatchedSimulator::updateCollision() {
       // spheres in collision)
       if (thisSphereHit) {
         hit = true;
-        if (shouldDrawDebugForEnv(config_, b)) {
+        if (shouldDrawDebugForEnv(config_, b, currRolloutSubstep_)) {
           sphereHits[baseSphereIndex + s] = thisSphereHit;
         } else {
           break;
@@ -599,7 +614,7 @@ void BatchedSimulator::updateCollision() {
         // todo: proper debug-drawing of hits for held object spheres
         if (thisSphereHit) {
           hit = true;
-          if (shouldDrawDebugForEnv(config_, b)) {
+          if (shouldDrawDebugForEnv(config_, b, currRolloutSubstep_)) {
             heldObjectHits[b] = thisSphereHit;
           } else {
             break;
@@ -614,7 +629,7 @@ void BatchedSimulator::updateCollision() {
   // test against free objects
   for (int b = 0; b < numEnvs; b++) {
 
-    if (robots_.collisionResults_[b] && !shouldDrawDebugForEnv(config_, b)) {
+    if (robots_.collisionResults_[b] && !shouldDrawDebugForEnv(config_, b, currRolloutSubstep_)) {
       // already had a hit against column grid so don't test free objects
       continue;
     }
@@ -636,7 +651,7 @@ void BatchedSimulator::updateCollision() {
       int hitFreeObjectIndex = episodeInstance.colGrid_.contactTest(spherePos, sphereRadius);
       if (hitFreeObjectIndex != -1) {
         hit = true;
-        if (shouldDrawDebugForEnv(config_, b)) {
+        if (shouldDrawDebugForEnv(config_, b, currRolloutSubstep_)) {
           sphereHits[baseSphereIndex + s] = true;
           freeObjectHits[hitFreeObjectIndex] = true;
         } else {
@@ -659,7 +674,7 @@ void BatchedSimulator::updateCollision() {
         int hitFreeObjectIndex = episodeInstance.colGrid_.contactTest(sphereWorldOrigin, sphereRadius);
         if (hitFreeObjectIndex != -1) {
           hit = true;
-          if (shouldDrawDebugForEnv(config_, b)) {
+          if (shouldDrawDebugForEnv(config_, b, currRolloutSubstep_)) {
             heldObjectHits[b] = true;
             freeObjectHits[hitFreeObjectIndex] = true;
           } else {
@@ -670,7 +685,7 @@ void BatchedSimulator::updateCollision() {
     }    
 
     // render free objects to debug env, colored by collision result
-    if (shouldDrawDebugForEnv(config_, b)) {
+    if (shouldDrawDebugForEnv(config_, b, currRolloutSubstep_)) {
       for (int freeObjectIndex = 0; freeObjectIndex < episode.numFreeObjectSpawns_; freeObjectIndex++) {
         if (episodeInstance.colGrid_.isObstacleDisabled(freeObjectIndex)) {
           continue;
@@ -705,7 +720,7 @@ void BatchedSimulator::updateCollision() {
 
   for (int b = 0; b < numEnvs; b++) {
     // render collision spheres for debug env, colored by collision result
-    if (shouldDrawDebugForEnv(config_, b)) {
+    if (shouldDrawDebugForEnv(config_, b, currRolloutSubstep_)) {
       const auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
       const auto& episode = safeVectorGet(episodeSet_.episodes_, episodeInstance.episodeIndex_);
       const auto& robotInstance = robots_.robotInstances_[b];
@@ -740,7 +755,7 @@ void BatchedSimulator::updateCollision() {
 
     if (robots_.collisionResults_[b]) {
       // todo: more robust handling of this, maybe at episode-load time
-      ESP_CHECK(currRolloutStep_ > 1, "The robot is in collision on the first step of the episode.");
+      ESP_CHECK(currRolloutSubstep_ > 1, "For env " << b << ", the robot is in collision on the first step of the episode.");
       recentStats_.numStepsInCollision_++;
     }
   }
@@ -778,7 +793,10 @@ void BatchedSimulator::updateRenderInstances(bool forceUpdate) {
     auto& robotInstance = robots_.robotInstances_[b];
     auto& env = bpsWrapper_->envs_[b];
 
-    bool didRobotMove = forceUpdate || !robots_.collisionResults_[b];
+    // temp hack: we don't currently have bookeeping to know if a robot moved over
+    // several substeps, so we assume it did here. perf todo: fix this
+    bool didRobotMove = forceUpdate || 
+      (!robots_.collisionResults_[b] || config_.numSubsteps > 1);
 
     // update robot links and camera
     if (didRobotMove) {
@@ -810,7 +828,7 @@ void BatchedSimulator::updateRenderInstances(bool forceUpdate) {
     }
 
     // update gripped free object
-    if (didRobotMove && robotInstance.grippedFreeObjectIndex_ != -1 && didRobotMove) {
+    if (didRobotMove && robotInstance.grippedFreeObjectIndex_ != -1) {
 
       if (!disableVisualsForEnv(config_, b)) {
         int freeObjectIndex = robotInstance.grippedFreeObjectIndex_;
@@ -1045,15 +1063,23 @@ void Robot::updateFromSerializeCollection(const serialize::Collection& serialize
   numCollisionSpheres_ = numCollisionSpheres;
 }
 
-BpsWrapper::BpsWrapper(int gpuId, int numEnvs, const CameraSensorConfig& sensor0) {
+BpsWrapper::BpsWrapper(int gpuId, int numEnvs, bool includeDepth, bool includeColor, 
+  const CameraSensorConfig& sensor0) {
   glm::u32vec2 out_dim(
       sensor0.width,
       sensor0.height);  // see also rollout_test.py, python/rl/agent.py
   BATCHED_SIM_ASSERT(gpuId != -1);
 
+  bps3D::RenderMode mode {};
+  if (includeDepth) {
+      mode |= bps3D::RenderMode::Depth;
+  }
+  if (includeColor) {
+      mode |= bps3D::RenderMode::UnlitRGB;
+  }
+
   renderer_ = std::make_unique<bps3D::Renderer>(bps3D::RenderConfig{
-      gpuId, 1, uint32_t(numEnvs), out_dim.x, out_dim.y, false,
-      bps3D::RenderMode::Depth | bps3D::RenderMode::UnlitRGB});
+      gpuId, 1, uint32_t(numEnvs), out_dim.x, out_dim.y, false, mode});
 
   loader_ = std::make_unique<bps3D::AssetLoader>(renderer_->makeLoader());
   const std::string filepath =
@@ -1088,7 +1114,8 @@ BatchedSimulator::BatchedSimulator(const BatchedSimulatorConfig& config) {
 
   serializeCollection_ = serialize::Collection::loadFromFile(serializeCollectionFilepath_);
 
-  bpsWrapper_ = std::make_unique<BpsWrapper>(config_.gpuId, config_.numEnvs, config_.sensor0);
+  bpsWrapper_ = std::make_unique<BpsWrapper>(config_.gpuId, config_.numEnvs, 
+    config_.includeDepth, config_.includeColor, config_.sensor0);
 
 #ifdef ENABLE_DEBUG_INSTANCES
   debugInstancesByEnv_.resize(config_.numEnvs);
@@ -1122,17 +1149,20 @@ BatchedSimulator::BatchedSimulator(const BatchedSimulatorConfig& config) {
   int batchNumActions = (actionDim_) * numEnvs;
   actions_.resize(batchNumActions, 0.f);
 
-  maxRolloutSteps_ = config_.maxEpisodeLength;
+  ESP_CHECK(config_.maxEpisodeLength > 1, "BatchedSimulatorConfig::maxEpisodeLength must be > 1");
+  // For an episode length of 2, we produce an observation immediately after resetting,
+  // then we take one step (config_.numSubsteps substeps), and we produce one more observation.
+  maxRolloutSubsteps_ = (config_.maxEpisodeLength - 1) * config_.numSubsteps + 1;
   rollouts_ =
-      RolloutRecord(maxRolloutSteps_, numEnvs, robot_.numPosVars, numNodes);
+      RolloutRecord(maxRolloutSubsteps_, numEnvs, robot_.numPosVars, numNodes);
 
   rewardContext_ = RewardCalculationContext(&robot_, numEnvs, &rollouts_);
   robots_.hackRewards_.resize(numEnvs, 0.f);
   hackDones_.resize(numEnvs, false);
 
-  currRolloutStep_ =
+  currRolloutSubstep_ =
       -1;  // trigger auto-reset on first call to autoResetOrStepPhysics
-  prevRolloutStep_ = -1;
+  prevRolloutSubstep_ = -1;
   isOkToRender_ = false;
   isOkToStep_ = false;
   isRenderStarted_ = false;
@@ -1153,7 +1183,7 @@ BatchedSimulator::BatchedSimulator(const BatchedSimulatorConfig& config) {
 
   if (config_.doPairedDebugEnvs) {
     for (int b = 0; b < numEnvs; b++) {
-      if (shouldDrawColumnGridDebugForEnv(config_, b)) {
+      if (shouldAddColumnGridDebugVisualsForEnv(config_, b)) {
         debugRenderColumnGrids(b);
       }
     }
@@ -1417,10 +1447,10 @@ void BatchedSimulator::reset() {
   BATCHED_SIM_ASSERT(isAsyncStepPhysicsFinished_);
   BATCHED_SIM_ASSERT(!signalStepPhysics_);
 
-  currRolloutStep_ = 0;
-  prevRolloutStep_ = -1;
+  currRolloutSubstep_ = 0;
+  prevRolloutSubstep_ = -1;
   randomizeRobotsForCurrentStep();
-  robots_.updateLinkTransforms(currRolloutStep_);
+  robots_.updateLinkTransforms(currRolloutSubstep_, /*updateforPhysics*/ false, /*updateForRender*/ true);
   std::fill(robots_.hackRewards_.begin(), robots_.hackRewards_.end(), 0.f);
   for (int b = 0; b < numEnvs; b++) {
     resetEpisodeInstance(b);
@@ -1438,12 +1468,12 @@ void BatchedSimulator::autoResetOrStepPhysics() {
 
   deleteDebugInstances();
 
-  if (currRolloutStep_ == -1 || currRolloutStep_ == maxRolloutSteps_ - 1) {
+  if (currRolloutSubstep_ == -1 || currRolloutSubstep_ == maxRolloutSubsteps_ - 1) {
     // all episodes are done; set done flag and reset
     std::fill(hackDones_.begin(), hackDones_.end(), true);
     reset();
   } else {
-    if (currRolloutStep_ == 0) {
+    if (currRolloutSubstep_ == 0) {
       std::fill(hackDones_.begin(), hackDones_.end(), false);
     } else {
       BATCHED_SIM_ASSERT(!hackDones_[0]);
@@ -1460,12 +1490,12 @@ void BatchedSimulator::autoResetOrStartAsyncStepPhysics() {
 
   deleteDebugInstances();
 
-  if (currRolloutStep_ == -1 || currRolloutStep_ == maxRolloutSteps_ - 1) {
+  if (currRolloutSubstep_ == -1 || currRolloutSubstep_ == maxRolloutSubsteps_ - 1) {
     // all episodes are done; set done flag and reset
     std::fill(hackDones_.begin(), hackDones_.end(), true);
     reset();
   } else {
-    if (currRolloutStep_ == 0) {
+    if (currRolloutSubstep_ == 0) {
       std::fill(hackDones_.begin(), hackDones_.end(), false);
     } else {
       BATCHED_SIM_ASSERT(!hackDones_[0]);
@@ -1480,6 +1510,16 @@ void BatchedSimulator::autoResetOrStartAsyncStepPhysics() {
 }
 
 void BatchedSimulator::stepPhysics() {
+
+  BATCHED_SIM_ASSERT(config_.numSubsteps > 0);
+  for (int i = 0; i < config_.numSubsteps; i++) {
+    substepPhysics();
+  }
+
+  robots_.updateLinkTransforms(currRolloutSubstep_, /*updateforPhysics*/ false, /*updateForRender*/ true);
+}
+
+void BatchedSimulator::substepPhysics() {
   BATCHED_SIM_ASSERT(isOkToStep_);
 
   constexpr float stickyGrabDropThreshold = 0.85f;
@@ -1489,13 +1529,9 @@ void BatchedSimulator::stepPhysics() {
   constexpr float maxAbsYawAngle = float(Mn::Rad(Mn::Deg(5.f)));
   constexpr float maxAbsJointAngle = float(Mn::Rad(Mn::Deg(5.f)));
 
-  prevRolloutStep_ = currRolloutStep_;
-  currRolloutStep_++;
-
-  // temp reset rollout
-  if (currRolloutStep_ == maxRolloutSteps_) {
-    currRolloutStep_ = 0;
-  }
+  BATCHED_SIM_ASSERT(currRolloutSubstep_ < maxRolloutSubsteps_ - 1);
+  prevRolloutSubstep_ = currRolloutSubstep_;
+  currRolloutSubstep_++;
 
   int numEnvs = bpsWrapper_->envs_.size();
   int numPosVars = robot_.numPosVars;
@@ -1504,17 +1540,17 @@ void BatchedSimulator::stepPhysics() {
 
   int actionIndex = 0;
 
-  const float* prevYaws = &rollouts_.yaws_[prevRolloutStep_ * numEnvs];
-  float* yaws = &rollouts_.yaws_[currRolloutStep_ * numEnvs];
+  const float* prevYaws = &rollouts_.yaws_[prevRolloutSubstep_ * numEnvs];
+  float* yaws = &rollouts_.yaws_[currRolloutSubstep_ * numEnvs];
   const Mn::Vector2* prevPositions =
-      &rollouts_.positions_[prevRolloutStep_ * numEnvs];
-  Mn::Vector2* positions = &rollouts_.positions_[currRolloutStep_ * numEnvs];
+      &rollouts_.positions_[prevRolloutSubstep_ * numEnvs];
+  Mn::Vector2* positions = &rollouts_.positions_[currRolloutSubstep_ * numEnvs];
   Mn::Matrix4* rootTransforms =
-      &rollouts_.rootTransforms_[currRolloutStep_ * numEnvs];
+      &rollouts_.rootTransforms_[currRolloutSubstep_ * numEnvs];
   const float* prevJointPositions =
-      &rollouts_.jointPositions_[prevRolloutStep_ * numEnvs * numPosVars];
+      &rollouts_.jointPositions_[prevRolloutSubstep_ * numEnvs * numPosVars];
   float* jointPositions =
-      &rollouts_.jointPositions_[currRolloutStep_ * numEnvs * numPosVars];
+      &rollouts_.jointPositions_[currRolloutSubstep_ * numEnvs * numPosVars];
 
   // stepping code
   for (int b = 0; b < numEnvs; b++) {
@@ -1554,7 +1590,7 @@ void BatchedSimulator::stepPhysics() {
   }
   BATCHED_SIM_ASSERT(actionIndex == actions_.size());
 
-  robots_.updateLinkTransforms(currRolloutStep_);
+  robots_.updateLinkTransforms(currRolloutSubstep_, /*updateforPhysics*/ true, /*updateForRender*/ false);
 
   updateCollision();
 
@@ -1567,7 +1603,7 @@ void BatchedSimulator::stepPhysics() {
 
 void BatchedSimulator::reverseRobotMovementActions() {
 
-  if (prevRolloutStep_ == -1) {
+  if (prevRolloutSubstep_ == -1) {
     return;
   }
 
@@ -1584,10 +1620,10 @@ void BatchedSimulator::reverseRobotMovementActions() {
     robotInstance.doAttemptGrip_ = false;
   }
 
-  currRolloutStep_--;
-  prevRolloutStep_--;
+  currRolloutSubstep_--;
+  prevRolloutSubstep_--;
 
-  robots_.updateLinkTransforms(currRolloutStep_);
+  robots_.updateLinkTransforms(currRolloutSubstep_, /*updateforPhysics*/ false, /*updateForRender*/ true);
   // updateGripping();
   // calcRewards(); // this doesn't work
   updateRenderInstances(true);
@@ -1683,7 +1719,7 @@ RewardCalculationContext::RewardCalculationContext(const Robot* robot,
       managedObj->hackGetBulletObjectReference().get());
 }
 
-void RewardCalculationContext::calcRewards(int currRolloutStep,
+void RewardCalculationContext::calcRewards(int currRolloutSubstep,
                                            int bStart,
                                            int bEnd) {
   const Robot* robot = robot_;
@@ -1695,15 +1731,15 @@ void RewardCalculationContext::calcRewards(int currRolloutStep,
   int numEnvs = numEnvs_;
   int numLinks = robot->artObj->getNumLinks();
 
-  const float* yaws = &rollouts.yaws_[currRolloutStep * numEnvs];
+  const float* yaws = &rollouts.yaws_[currRolloutSubstep * numEnvs];
   const Mn::Vector2* positions =
-      &rollouts.positions_[currRolloutStep * numEnvs];
+      &rollouts.positions_[currRolloutSubstep * numEnvs];
   const float* jointPositions =
-      &rollouts.jointPositions_[currRolloutStep * numEnvs * numPosVars];
+      &rollouts.jointPositions_[currRolloutSubstep * numEnvs * numPosVars];
   const Mn::Matrix4* rootTransforms =
-      &rollouts_->rootTransforms_[currRolloutStep * numEnvs];
+      &rollouts_->rootTransforms_[currRolloutSubstep * numEnvs];
 
-  float* rewards = &rollouts.rewards_[currRolloutStep * numEnvs];
+  float* rewards = &rollouts.rewards_[currRolloutSubstep * numEnvs];
 
   int posCount = bStart * numPosVars;
 
@@ -1735,7 +1771,7 @@ void RewardCalculationContext::calcRewards(int currRolloutStep,
 
     bool isContact = artObj->contactTest();
     // if (isContact) {
-    //   ESP_WARNING() << "collision, step " << currRolloutStep << ", env " <<
+    //   ESP_WARNING() << "collision, step " << currRolloutSubstep << ", env " <<
     //   b;
     // }
 
@@ -1762,24 +1798,24 @@ void BatchedSimulator::calcRewards() {
   }
 
   // int numEnvs = bpsWrapper_->envs_.size();
-  // rewardContext_.calcRewards(currRolloutStep_, 0, numEnvs);
+  // rewardContext_.calcRewards(currRolloutSubstep_, 0, numEnvs);
 }
 
-RolloutRecord::RolloutRecord(int numRolloutSteps,
+RolloutRecord::RolloutRecord(int numRolloutSubsteps,
                              int numEnvs,
                              int numPosVars,
                              int numNodes)
-    : numRolloutSteps_(numRolloutSteps) {
+    : numRolloutSubsteps_(numRolloutSubsteps) {
   Magnum::Matrix4 nanMat(NAN);
   Mn::Vector2 nanVec(NAN);
 
-  jointPositions_.resize(numRolloutSteps * numEnvs * numPosVars, NAN);
-  yaws_.resize(numRolloutSteps * numEnvs, NAN);
-  positions_.resize(numRolloutSteps * numEnvs, nanVec);
-  rootTransforms_.resize(numRolloutSteps * numEnvs, nanMat);
-  nodeTransforms_.resize(numRolloutSteps * numEnvs * numNodes, nanMat);
+  jointPositions_.resize(numRolloutSubsteps * numEnvs * numPosVars, NAN);
+  yaws_.resize(numRolloutSubsteps * numEnvs, NAN);
+  positions_.resize(numRolloutSubsteps * numEnvs, nanVec);
+  rootTransforms_.resize(numRolloutSubsteps * numEnvs, nanMat);
+  nodeTransforms_.resize(numRolloutSubsteps * numEnvs * numNodes, nanMat);
 
-  rewards_.resize(numRolloutSteps * numEnvs, NAN);
+  rewards_.resize(numRolloutSubsteps * numEnvs, NAN);
 }
 
 void BatchedSimulator::deleteDebugInstances() {

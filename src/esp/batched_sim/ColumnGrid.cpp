@@ -222,19 +222,13 @@ void ColumnGridSet::load(const std::string& filepathBase) {
     if (Cr::Utility::Directory::exists(columnGridFilepath)) {
       ColumnGridSource columnGrid;
       columnGrid.load(columnGridFilepath);
-      BATCHED_SIM_ASSERT(radiusToIndexMap_.count(columnGrid.sphereRadius) == 0);
-      radiusToIndexMap_[columnGrid.sphereRadius] = columnGrids_.size();
+      sphereRadii_.push_back(columnGrid.sphereRadius);
       columnGrids_.push_back(std::move(columnGrid));
     } else {
       break;
     }
   }
   ESP_CHECK(!columnGrids_.empty(), "no .columngrid files found for " << filepathBase);
-}
-
-int ColumnGridSet::getRadiusIndex(float radius) const {
-  BATCHED_SIM_ASSERT(radiusToIndexMap_.count(radius));
-  return radiusToIndexMap_.at(radius);
 }
 
 const ColumnGridSource& ColumnGridSet::getColumnGrid(int radiusIdx) const {

@@ -13,7 +13,6 @@
 
 #include <vector>
 #include <limits>
-#include <unordered_map>
 
 namespace esp {
 namespace batched_sim {
@@ -180,9 +179,8 @@ class ColumnGridSet {
   ColumnGridSet& operator=(ColumnGridSet&&) = default;
 
   void load(const std::string& filepathBase);
-  
-  int getRadiusIndex(float radius) const;
 
+  const std::vector<float>& getSphereRadii() const { return sphereRadii_; }
   const ColumnGridSource& getColumnGrid(int radiusIdx) const;
 
   bool contactTest(int radiusIdx, const Magnum::Vector3& pos,
@@ -194,7 +192,7 @@ class ColumnGridSet {
     ColumnGridSource::QueryCacheValue* queryCache) const;
  private:
   std::vector<ColumnGridSource> columnGrids_;
-  std::unordered_map<float, int> radiusToIndexMap_;
+  std::vector<float> sphereRadii_;
 };
 
 }  // namespace batched_sim

@@ -21,6 +21,11 @@ py::capsule getColorMemory(BatchedSimulator& bsim, const uint32_t groupIdx) {
   return py::capsule(bsim.getBpsRenderer().getColorPointer(groupIdx));
 }
 
+py::capsule getDepthMemory(BatchedSimulator& bsim, const uint32_t groupIdx)
+{
+    return py::capsule(bsim.getBpsRenderer().getDepthPointer(groupIdx));
+}
+
 }  // namespace
 
 void initBatchedSimBindings(py::module& m) {
@@ -34,9 +39,12 @@ void initBatchedSimBindings(py::module& m) {
       .def(py::init(&BatchedSimulatorConfig::create<>))
       .def_readwrite("num_envs", &BatchedSimulatorConfig::numEnvs, R"(Todo)")
       .def_readwrite("gpu_id", &BatchedSimulatorConfig::gpuId, R"(Todo)")
+      .def_readwrite("include_depth", &BatchedSimulatorConfig::includeDepth, R"(Todo)")
+      .def_readwrite("include_color", &BatchedSimulatorConfig::includeColor, R"(Todo)")
       .def_readwrite("sensor0", &BatchedSimulatorConfig::sensor0, R"(Todo)")
       .def_readwrite("force_random_actions", &BatchedSimulatorConfig::forceRandomActions, R"(Todo)")
       .def_readwrite("do_async_physics_step", &BatchedSimulatorConfig::doAsyncPhysicsStep, R"(Todo)")
+      .def_readwrite("num_physics_substeps", &BatchedSimulatorConfig::numSubsteps, R"(Todo)")
       .def_readwrite("max_episode_length", &BatchedSimulatorConfig::maxEpisodeLength, R"(Todo)");
       
     
@@ -59,6 +67,12 @@ void initBatchedSimBindings(py::module& m) {
           "rgba",
           [](BatchedSimulator& self, const uint32_t groupIdx) {
             return getColorMemory(self, groupIdx);
+          },
+          R"(todo)")
+      .def(
+          "depth",
+          [](BatchedSimulator& self, const uint32_t groupIdx) {
+            return getDepthMemory(self, groupIdx);
           },
           R"(todo)")
       .def("get_recent_stats_and_reset", &BatchedSimulator::getRecentStatsAndReset, R"(todo)");

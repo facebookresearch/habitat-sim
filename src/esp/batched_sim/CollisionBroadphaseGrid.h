@@ -82,7 +82,7 @@ class CollisionBroadphaseGrid {
   //// private API exposed only for testing ////
  public:
 
-  static constexpr int MAX_OBSTACLES_PER_CELL = 64; // 12;
+  static constexpr int MAX_OBSTACLES_PER_CELL = 12;
 
 
   struct Cell {
