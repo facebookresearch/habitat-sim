@@ -37,6 +37,8 @@ class PoissonNoiseModelCPUImpl:
 @registry.register_noise_model
 @attr.s(auto_attribs=True, kw_only=True, slots=True)
 class PoissonNoiseModel(SensorNoiseModel):
+    _impl: PoissonNoiseModelCPUImpl = None
+
     def __attrs_post_init__(self) -> None:
         self._impl = PoissonNoiseModelCPUImpl()
 
