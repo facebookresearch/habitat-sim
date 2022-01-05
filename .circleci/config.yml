@@ -312,7 +312,7 @@ jobs:
           type: string
           default: "AIHABITAT_CONDA_PWD"
     macos:
-      xcode: 11.3.0
+      xcode: 13.0.0
     steps:
       - checkout:
           path: ./habitat-sim
@@ -327,6 +327,7 @@ jobs:
             conda init "$(basename "${SHELL}")"
       - run:
           name: Conda OSX build
+          no_output_timeout: 20m
           command: |
             export PATH=$HOME/miniconda/bin:$PATH
             source ~/.bash_profile
