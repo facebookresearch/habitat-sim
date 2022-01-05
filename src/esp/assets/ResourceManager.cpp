@@ -1072,18 +1072,6 @@ std::vector<Mn::Matrix4> ResourceManager::computeAbsoluteTransformations(
   return absTransforms;
 }
 
-void ResourceManager::translateMesh(BaseMesh* meshDataGL,
-                                    Mn::Vector3 translation) {
-  CollisionMeshData& meshData = meshDataGL->getCollisionMeshData();
-
-  Mn::Matrix4 transform = Mn::Matrix4::translation(translation);
-  Mn::MeshTools::transformPointsInPlace(transform, meshData.positions);
-  // save the mesh transformation for future query
-  meshDataGL->meshTransform_ = transform * meshDataGL->meshTransform_;
-
-  meshDataGL->BB = meshDataGL->BB.translated(translation);
-}  // ResourceManager::translateMesh
-
 void ResourceManager::buildPrimitiveAssetData(
     const std::string& primTemplateHandle) {
   // retrieves -actual- template, not a copy
