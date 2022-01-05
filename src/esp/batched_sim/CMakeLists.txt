@@ -20,6 +20,8 @@ add_library(
   GlmUtils.h
   PlacementHelper.cpp
   PlacementHelper.h
+  ProfilingScope.cpp
+  ProfilingScope.h
   SerializeCollection.cpp
   SerializeCollection.h
 )

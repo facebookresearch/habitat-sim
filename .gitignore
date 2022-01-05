@@ -185,3 +185,6 @@ yarn-debug.log*
 yarn-error.log*
 .npm/
 coverage_js/
+
+# temp build folders like build_debug, build_release
+build_*/
