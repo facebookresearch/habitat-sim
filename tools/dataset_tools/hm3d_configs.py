@@ -6,6 +6,9 @@
 # Dataset Configs that use wildecards to support all the scenes
 # within a particular partition.
 
+# NOTE : due to the addition of glob/wildcard support to the
+# metadata subsystem in Habitat, these configs are not necessary for HM3D.
+
 import os
 import re
 from os.path import join
@@ -19,7 +22,7 @@ HM3D_BASE_DIR = "/Users/jmturner/Documents/HM3D/habitat"
 # data partition names/subdirs
 HM3D_DATA_PARTITIONS = ["minival", "test", "train", "val"]
 
-# numeric spans of each data patrition.  The directoriues
+# numeric spans of each data partition.  The directoriues
 # holding the scene data are prefixed by numbers in these ranges
 HM3D_DATA_PARTITIONS = {
     "minival": (800, 809),

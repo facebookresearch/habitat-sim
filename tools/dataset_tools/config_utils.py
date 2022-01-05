@@ -227,7 +227,8 @@ def get_files_matching_regex(
     :param src_dir: Directory to walk
     :param regex_str: String describing regex to match when building file list.
     If unspecified or empty, return all files, optional.
-    :param debug: Whether to display files not matching given regex in src_dir.
+    :param debug: Whether to display files not matching given regex in src_dir
+    and count of results found.
     :return: List of tuples containing path, dirname and file name for each result.
     """
     res_list = []
@@ -251,11 +252,12 @@ def get_files_matching_regex(
                             fname, regex_str
                         )
                     )
-    print(
-        "get_files_matching_regex : Found and matched {} of {} files in {}. If inaccurate, set debug=True".format(
-            len(res_list), found_count, src_dir
+    if debug:
+        print(
+            "get_files_matching_regex : Found and matched {} of {} files in {}".format(
+                len(res_list), found_count, src_dir
+            )
         )
-    )
     return res_list
 
 
@@ -312,7 +314,8 @@ def get_directories_matching_regex(
     :param src_dir: Directory to walk
     :param regex_str: String describing regex to match when building subdirectories list.
     If unspecified or empty, return all subdirectories, optional.
-    :param debug: Whether to display subdirectories not matching given regex in src_dir.
+    :param debug: Whether to display subdirectories not matching given regex in src_dir
+    and count of results found.
     :return: List of tuples containing path and subdirectory name each result.
     """
     res_list = []
@@ -336,9 +339,10 @@ def get_directories_matching_regex(
                             dirname, regex_str
                         )
                     )
-    print(
-        "get_directories_matching_regex : Found and matched {} of {} directories in {}. If inaccurate, set debug=True".format(
-            len(res_list), found_count, src_dir
+    if debug:
+        print(
+            "get_directories_matching_regex : Found and matched {} of {} directories in {}".format(
+                len(res_list), found_count, src_dir
+            )
         )
-    )
     return res_list
