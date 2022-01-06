@@ -261,6 +261,8 @@ class BatchedSimulator {
   int getFreeObjectBpsInstanceId(int b, int freeObjectIndex) const;
   Magnum::Matrix4 getHeldObjectTransform(int b) const;
 
+  bool isPhysicsThreadActive() const;
+
   BatchedSimulatorConfig config_;
   serialize::Collection serializeCollection_;
   bool isOkToRender_ = false;

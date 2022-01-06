@@ -290,12 +290,12 @@ TEST_F(BatchedSimulatorTest, basic) {
 
     if (doOverlapPhysics) {
       bsim.waitAsyncStepPhysics();
+      bsim.startRender();
       if (doAdvanceSim) {
         bsim.setActions(std::vector<float>(actions));
         bsim.autoResetOrStartAsyncStepPhysics();
         doAdvanceSim = false;
       }
-      bsim.startRender();
       bsim.waitForFrame();
     } else {
       if (doAdvanceSim) {

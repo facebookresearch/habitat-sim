@@ -1469,10 +1469,9 @@ void BatchedSimulator::setActions(std::vector<float>&& actions) {
 void BatchedSimulator::reset() {
   ProfilingScope scope("BSim reset");
 
-  int numEnvs = bpsWrapper_->envs_.size();
+  BATCHED_SIM_ASSERT(!isPhysicsThreadActive());
 
-  BATCHED_SIM_ASSERT(isAsyncStepPhysicsFinished_);
-  BATCHED_SIM_ASSERT(!signalStepPhysics_);
+  int numEnvs = bpsWrapper_->envs_.size();
 
   currRolloutSubstep_ = 0;
   prevRolloutSubstep_ = -1;
@@ -1515,6 +1514,7 @@ void BatchedSimulator::autoResetOrStepPhysics() {
 void BatchedSimulator::autoResetOrStartAsyncStepPhysics() {
   ProfilingScope scope("BSim autoResetOrStartAsyncStepPhysics");
 
+  BATCHED_SIM_ASSERT(!isPhysicsThreadActive());
   BATCHED_SIM_ASSERT(config_.doAsyncPhysicsStep);
 
   deleteDebugInstances();
@@ -1529,9 +1529,6 @@ void BatchedSimulator::autoResetOrStartAsyncStepPhysics() {
     } else {
       BATCHED_SIM_ASSERT(!hackDones_[0]);
     }
-
-    BATCHED_SIM_ASSERT(isAsyncStepPhysicsFinished_);
-    BATCHED_SIM_ASSERT(!signalStepPhysics_);
 
     // send message to physicsThread_
     signalStepPhysics();
@@ -1707,7 +1704,13 @@ void BatchedSimulator::stepPhysicsWithReferenceActions() {
 }
 #endif
 
+bool BatchedSimulator::isPhysicsThreadActive() const {
+  return config_.doAsyncPhysicsStep &&
+    (!isAsyncStepPhysicsFinished_ || signalStepPhysics_);
+}
+
 void BatchedSimulator::startRender() {
+  BATCHED_SIM_ASSERT(!isPhysicsThreadActive());
   ProfilingScope scope("BSim startRender");
   BATCHED_SIM_ASSERT(isOkToRender_);
   bpsWrapper_->renderer_->render(bpsWrapper_->envs_.data());
@@ -1927,18 +1930,15 @@ void BatchedSimulator::signalKillPhysicsThread() {
 void BatchedSimulator::waitAsyncStepPhysics() {
   ProfilingScope scope("BSim waitAsyncStepPhysics");
 
-  if (areRenderInstancesUpdated_) {
-    return;
-  }
-
   {
     std::unique_lock<std::mutex> lck(physicsMutex_);
     physicsCondVar_.wait(lck, [&]{ return isAsyncStepPhysicsFinished_; });
   }
 
-  calcRewards();
-
-  updateRenderInstances(/*forceUpdate*/false);
+  // sloppy: don't calc rewards if we just did a reset
+  if (currRolloutSubstep_ != 0) {
+    calcRewards();
+  }
 }
 
 void BatchedSimulator::physicsThreadFunc(int startEnvIndex, int numEnvs) {
@@ -1961,6 +1961,8 @@ void BatchedSimulator::physicsThreadFunc(int startEnvIndex, int numEnvs) {
     // BATCHED_SIM_ASSERT(startEnvIndex + numEnvs <= config_.numEnvs);
 
     stepPhysics();
+
+    updateRenderInstances(/*forceUpdate*/false);
 
     {
       ProfilingScope scope("physicsThreadFunc notify after step");
