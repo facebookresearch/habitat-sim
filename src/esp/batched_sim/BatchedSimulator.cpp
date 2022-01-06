@@ -281,7 +281,7 @@ void BatchedSimulator::reverseActionsForEnvironment(int b) {
 }
 
 void RobotInstanceSet::updateLinkTransforms(int currRolloutSubstep, bool updateForPhysics, bool updateForRender) {
-  ProfilingScope scope("BSim updateLinkTransforms");
+  //ProfilingScope scope("BSim updateLinkTransforms");
 
   BATCHED_SIM_ASSERT(updateForPhysics || updateForRender);
   
@@ -438,7 +438,7 @@ void BatchedSimulator::addBoxDebugInstance(const std::string& name, int b, const
 
 
 void BatchedSimulator::updateGripping() {
-  ProfilingScope scope("BSim updateGripping");
+  //ProfilingScope scope("BSim updateGripping");
 
   const int numEnvs = config_.numEnvs;
 
@@ -567,7 +567,7 @@ void BatchedSimulator::updateGripping() {
 
 
 void BatchedSimulator::updateCollision() {
-  ProfilingScope scope("BSim updateCollision");
+  //ProfilingScope scope("BSim updateCollision");
 
   const int numEnvs = config_.numEnvs;
 
@@ -784,7 +784,7 @@ void BatchedSimulator::updateCollision() {
 }
 
 void BatchedSimulator::postCollisionUpdate() {
-  ProfilingScope scope("BSim postCollisionUpdate");
+  //ProfilingScope scope("BSim postCollisionUpdate");
 
   const int numEnvs = config_.numEnvs;
 
@@ -800,7 +800,7 @@ void BatchedSimulator::postCollisionUpdate() {
 }
 
 void BatchedSimulator::updateRenderInstances(bool forceUpdate) {
-  ProfilingScope scope("BSim updateRenderInstances");
+  //ProfilingScope scope("BSim updateRenderInstances");
 
   const int numEnvs = config_.numEnvs;
   int numLinks = robot_.artObj->getNumLinks();
@@ -1314,7 +1314,7 @@ void BatchedSimulator::instantiateEpisode(int b, int episodeIndex) {
 
 
 void BatchedSimulator::resetEpisodeInstance(int b) {
-  ProfilingScope scope("BSim resetEpisodeInstance");
+  //ProfilingScope scope("BSim resetEpisodeInstance");
 
   auto& env = getBpsEnvironment(b);
 
@@ -1438,7 +1438,7 @@ void BatchedSimulator::initEpisodeSet() {
 }
 
 void BatchedSimulator::setActions(std::vector<float>&& actions) {
-  ProfilingScope scope("BSim setActions");
+  //ProfilingScope scope("BSim setActions");
 
   ESP_CHECK(actions.size() == actions_.size(),
             "BatchedSimulator::setActions: input dimension should be " +
@@ -1467,7 +1467,7 @@ void BatchedSimulator::setActions(std::vector<float>&& actions) {
 }
 
 void BatchedSimulator::reset() {
-  ProfilingScope scope("BSim reset");
+  ProfilingScope scope("reset episodes");
 
   BATCHED_SIM_ASSERT(!isPhysicsThreadActive());
 
@@ -1489,7 +1489,7 @@ void BatchedSimulator::reset() {
 }
 
 void BatchedSimulator::autoResetOrStepPhysics() {
-  ProfilingScope scope("BSim autoResetOrStepPhysics");
+  // ProfilingScope scope("BSim autoResetOrStepPhysics");
 
   BATCHED_SIM_ASSERT(!config_.doAsyncPhysicsStep);
 
@@ -1512,7 +1512,7 @@ void BatchedSimulator::autoResetOrStepPhysics() {
 }
 
 void BatchedSimulator::autoResetOrStartAsyncStepPhysics() {
-  ProfilingScope scope("BSim autoResetOrStartAsyncStepPhysics");
+  ProfilingScope scope("auto-reset or start async physics");
 
   BATCHED_SIM_ASSERT(!isPhysicsThreadActive());
   BATCHED_SIM_ASSERT(config_.doAsyncPhysicsStep);
@@ -1536,7 +1536,7 @@ void BatchedSimulator::autoResetOrStartAsyncStepPhysics() {
 }
 
 void BatchedSimulator::stepPhysics() {
-  ProfilingScope scope("BSim stepPhysics");
+  ProfilingScope scope("step physics");
 
   BATCHED_SIM_ASSERT(config_.numSubsteps > 0);
   for (int i = 0; i < config_.numSubsteps; i++) {
@@ -1547,6 +1547,7 @@ void BatchedSimulator::stepPhysics() {
 }
 
 void BatchedSimulator::substepPhysics() {
+  ProfilingScope scope("substep");
   BATCHED_SIM_ASSERT(isOkToStep_);
 
   constexpr float stickyGrabDropThreshold = 0.85f;
@@ -1711,7 +1712,7 @@ bool BatchedSimulator::isPhysicsThreadActive() const {
 
 void BatchedSimulator::startRender() {
   BATCHED_SIM_ASSERT(!isPhysicsThreadActive());
-  ProfilingScope scope("BSim startRender");
+  ProfilingScope scope("start render");
   BATCHED_SIM_ASSERT(isOkToRender_);
   bpsWrapper_->renderer_->render(bpsWrapper_->envs_.data());
   isOkToRender_ = false;
@@ -1719,7 +1720,7 @@ void BatchedSimulator::startRender() {
 }
 
 void BatchedSimulator::waitForFrame() {
-  ProfilingScope scope("BSim waitForFrame");
+  ProfilingScope scope("wait for GPU render");
   BATCHED_SIM_ASSERT(isRenderStarted_);
   bpsWrapper_->renderer_->waitForFrame();
   isRenderStarted_ = false;
@@ -1911,7 +1912,7 @@ std::string BatchedSimulator::getRecentStatsAndReset() const {
 }
 
 void BatchedSimulator::signalStepPhysics() {
-  ProfilingScope scope("BSim signalStepPhysics");
+  //ProfilingScope scope("BSim signalStepPhysics");
   
   std::lock_guard<std::mutex> lck(physicsMutex_);
   signalStepPhysics_ = true;
@@ -1928,7 +1929,7 @@ void BatchedSimulator::signalKillPhysicsThread() {
 
 
 void BatchedSimulator::waitAsyncStepPhysics() {
-  ProfilingScope scope("BSim waitAsyncStepPhysics");
+  //ProfilingScope scope("BSim waitAsyncStepPhysics");
 
   {
     std::unique_lock<std::mutex> lck(physicsMutex_);
@@ -1942,11 +1943,11 @@ void BatchedSimulator::waitAsyncStepPhysics() {
 }
 
 void BatchedSimulator::physicsThreadFunc(int startEnvIndex, int numEnvs) {
-  ProfilingScope scope("BSim physicsThreadFunc");
+  ProfilingScope scope("physics background thread");
 
   while (true) {
     {
-      ProfilingScope scope("idle wait for signal");
+      ProfilingScope scope("wait for main thread");
       std::unique_lock<std::mutex> lck(physicsMutex_);
       physicsCondVar_.wait(lck, [&]{ return signalStepPhysics_ || signalKillPhysicsThread_; });
     }
@@ -1965,7 +1966,7 @@ void BatchedSimulator::physicsThreadFunc(int startEnvIndex, int numEnvs) {
     updateRenderInstances(/*forceUpdate*/false);
 
     {
-      ProfilingScope scope("physicsThreadFunc notify after step");
+      // ProfilingScope scope("physicsThreadFunc notify after step");
       std::lock_guard<std::mutex> lck(physicsMutex_);
       isAsyncStepPhysicsFinished_ = true;
       signalStepPhysics_ = false;
