@@ -74,8 +74,13 @@ bool shouldDrawDebugForEnv(const BatchedSimulatorConfig& config, int b, int subs
 bool shouldAddColumnGridDebugVisualsForEnv(const BatchedSimulatorConfig& config, int b) {
   return isPairedDebugEnv(config, b);
 }
-
-bool disableVisualsForEnv(const BatchedSimulatorConfig& config, int b) {
+bool disableRobotVisualsForEnv(const BatchedSimulatorConfig& config, int b) {
+  return isPairedDebugEnv(config, b);
+}
+bool disableFreeObjectVisualsForEnv(const BatchedSimulatorConfig& config, int b) {
+  return isPairedDebugEnv(config, b);
+}
+bool disableStageVisualsForEnv(const BatchedSimulatorConfig& config, int b) {
   return isPairedDebugEnv(config, b);
 }
 #else
@@ -88,9 +93,14 @@ constexpr bool shouldDrawDebugForEnv(const BatchedSimulatorConfig&, int, int) {
 constexpr bool shouldAddColumnGridDebugVisualsForEnv(const BatchedSimulatorConfig&, int) {
   return false;
 }
-
-constexpr bool disableVisualsForEnv(const BatchedSimulatorConfig&, int) {
+constexpr bool disableRobotVisualsForEnv(const BatchedSimulatorConfig&, int) {
   return false;
+}
+constexpr bool disableFreeObjectVisualsForEnv(const BatchedSimulatorConfig&, int) {
+  return false;
+}
+constexpr bool disableStageVisualsForEnv(const BatchedSimulatorConfig&, int) {
+  return false; // false;
 }
 #endif
 
@@ -183,7 +193,7 @@ RobotInstanceSet::RobotInstanceSet(Robot* robot,
         auto instanceBlueprint =
             robot_->sceneMapping_->findInstanceBlueprint(nodeName);
 
-        if (!isPairedDebugEnv(*config_, b)) {
+        if (!disableRobotVisualsForEnv(*config_, b)) {
           instanceId = env.addInstance(instanceBlueprint.meshIdx_, 
             instanceBlueprint.mtrlIdx_, identityGlMat_);
         } else {
@@ -538,7 +548,7 @@ void BatchedSimulator::updateGripping() {
         const auto rotationQuat = Mn::Quaternion::fromMatrix(heldObjMat.rotation());
         reinsertFreeObject(b, freeObjectIndex, heldObjMat.translation(), rotationQuat);
       } else {
-        if (!disableVisualsForEnv(config_, b)) {
+        if (!disableFreeObjectVisualsForEnv(config_, b)) {
           // hack: remove object from scene visually
           const auto glMat = toGlmMat4x3(Mn::Matrix4::translation({0.f, -10000.f, 0.f})); 
           int instanceId = getFreeObjectBpsInstanceId(b, freeObjectIndex);
@@ -825,7 +835,7 @@ void BatchedSimulator::updateRenderInstances(bool forceUpdate) {
           continue;
         }
 
-        if (!disableVisualsForEnv(config_, b)) {
+        if (!disableRobotVisualsForEnv(config_, b)) {
           const auto& glMat = robots_.nodeNewTransforms_[instanceIndex];
           env.updateInstanceTransform(instanceId, glMat);
         }
@@ -842,7 +852,7 @@ void BatchedSimulator::updateRenderInstances(bool forceUpdate) {
     // update gripped free object
     if (didRobotMove && robotInstance.grippedFreeObjectIndex_ != -1) {
 
-      if (!disableVisualsForEnv(config_, b)) {
+      if (!disableFreeObjectVisualsForEnv(config_, b)) {
         int freeObjectIndex = robotInstance.grippedFreeObjectIndex_;
         auto mat = getHeldObjectTransform(b);
         glm::mat4x3 glMat = toGlmMat4x3(mat); 
@@ -1266,7 +1276,7 @@ void BatchedSimulator::instantiateEpisode(int b, int episodeIndex) {
   const auto& episode = safeVectorGet(episodeSet_.episodes_, episodeIndex);
   const auto& stageBlueprint = 
     safeVectorGet(episodeSet_.fixedObjects_, episode.stageFixedObjIndex).instanceBlueprint_;
-  if (!disableVisualsForEnv(config_, b)) {
+  if (!disableStageVisualsForEnv(config_, b)) {
     episodeInstance.stageFixedObjectInstanceId_ = env.addInstance(
       stageBlueprint.meshIdx_, stageBlueprint.mtrlIdx_, identityGlMat_);
   }
@@ -1360,7 +1370,7 @@ void BatchedSimulator::spawnFreeObject(int b, int freeObjectIndex, bool reinsert
     Mn::Matrix4 mat = Mn::Matrix4::from(
         rotation, freeObjectSpawn.startPos_);
     glm::mat4x3 glMat = toGlmMat4x3(mat); 
-    if (!disableVisualsForEnv(config_, b)) {
+    if (!disableFreeObjectVisualsForEnv(config_, b)) {
       int instanceId = env.addInstance(blueprint.meshIdx_, blueprint.mtrlIdx_, glMat);
       // store the first free object's bps instanceId and assume the rest will be contiguous
       if (freeObjectIndex == 0) {
@@ -1400,7 +1410,7 @@ void BatchedSimulator::reinsertFreeObject(int b, int freeObjectIndex,
   auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
   episodeInstance.colGrid_.reinsertObstacle(freeObjectIndex, pos, rotation);
 
-  if (!disableVisualsForEnv(config_, b)) {
+  if (!disableFreeObjectVisualsForEnv(config_, b)) {
     // sloppy quat to Matrix3x3
     Mn::Matrix4 mat = Mn::Matrix4::from(
         rotation.toMatrix(), pos);
