@@ -189,6 +189,17 @@ class MetadataMediator {
   }
 
   /**
+   * @brief Get a list of all stage attributes available in the currently active
+   * dataset. This is useful if current dataset does not have scene instances
+   * defined, and instead builds them on the fly for each stage.
+   */
+  std::vector<std::string> getAllStageAttributesHandles() {
+    return getActiveDSAttribs()
+        ->getStageAttributesManager()
+        ->getObjectHandlesBySubstring();
+  }
+
+  /**
    * @brief Return copy of map of current active dataset's navmesh handles.
    */
   std::map<std::string, std::string> getActiveNavmeshMap() {
