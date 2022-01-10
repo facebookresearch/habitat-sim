@@ -888,6 +888,13 @@ Viewer::Viewer(const Arguments& arguments)
 }  // end Viewer::Viewer
 
 void Viewer::initSimPostReconfigure() {
+  const auto sceneInstName = simulator_->getCurSceneInstanceName();
+  if (sceneInstName == "NONE") {
+    setWindowTitle("Viewer");
+  } else {
+    setWindowTitle("Viewer @ Scene : " + sceneInstName);
+  }
+
   // NavMesh customization options
   if (disableNavmesh_) {
     if (simulator_->getPathFinder()->isLoaded()) {
@@ -1260,6 +1267,9 @@ void Viewer::setSceneInstanceFromListAndShow(int nextSceneInstanceIDX) {
 
   // initialize sim navmesh, agent, sensors after creation/reconfigure
   initSimPostReconfigure();
+  // run this in case we are currently displaying something other than visual
+  // sensor
+  bindRenderTarget();
 }  // Viewer::setSceneInstanceFromListAndShow
 
 float timeSinceLastSimulation = 0.0;

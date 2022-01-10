@@ -549,6 +549,18 @@ class Simulator {
   double getWorldTime();
 
   /**
+   * @brief Get the simplified name of the @ref
+   * esp::metadata::attributes::SceneInstanceAttributes used to create the scene
+   * currently being simulated/displayed.
+   */
+  const std::string getCurSceneInstanceName() {
+    if (curSceneInstanceAttributes_ == nullptr) {
+      return "NONE";
+    }
+    return curSceneInstanceAttributes_->getSimplifiedHandle();
+  }
+
+  /**
    * @brief Set the gravity in a physical scene.
    */
   void setGravity(const Magnum::Vector3& gravity, int sceneID = 0) {
