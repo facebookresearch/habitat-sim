@@ -894,7 +894,8 @@ void Viewer::initSimPostReconfigure() {
   } else {
     setWindowTitle("Viewer @ Scene : " + sceneInstName);
   }
-
+  // clear any semantic tags from previoius scene
+  semanticTag_ = "";
   // NavMesh customization options
   if (disableNavmesh_) {
     if (simulator_->getPathFinder()->isLoaded()) {
