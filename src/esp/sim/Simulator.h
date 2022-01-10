@@ -553,7 +553,7 @@ class Simulator {
    * esp::metadata::attributes::SceneInstanceAttributes used to create the scene
    * currently being simulated/displayed.
    */
-  const std::string getCurSceneInstanceName() {
+  std::string getCurSceneInstanceName() const {
     if (curSceneInstanceAttributes_ == nullptr) {
       return "NONE";
     }
