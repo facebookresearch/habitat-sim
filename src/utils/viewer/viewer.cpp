@@ -799,14 +799,30 @@ Viewer::Viewer(const Arguments& arguments)
   // create simulator instance
   simulator_ = esp::sim::Simulator::create_unique(simConfig_, MM_);
 
+  ////////////////////////////
+  // Build list of scenes/stages in specified scene dataset to cycle through
   // get list of all scenes
   curSceneInstances_ = MM_->getAllSceneInstanceHandles();
+  // check if any scene instances exist - some datasets might only have stages
+  // defined and not scene instances
+  std::size_t numInstances = curSceneInstances_.size();
+  // if only 1 scene instance, then get all available stages in dataset to cycle
+  // through, if more than 1
+  if (numInstances == 1) {
+    const std::size_t numStages =
+        MM_->getStageAttributesManager()->getNumObjects();
+    if (numStages > 1) {
+      numInstances = numStages;
+      curSceneInstances_ = MM_->getAllStageAttributesHandles();
+    }
+  }
+
   // To handle cycling through scene instances, set first scene to be first in
   // list of current scene dataset's scene instances
   // Set this to index in curSceneInstances where args.value("scene") can be
   // found.
   curSceneInstanceIDX_ = 0;
-  for (int i = 0; i < curSceneInstances_.size(); ++i) {
+  for (int i = 0; i < numInstances; ++i) {
     if (curSceneInstances_[i].find(simConfig_.activeSceneName) !=
         std::string::npos) {
       curSceneInstanceIDX_ = i;
@@ -898,7 +914,7 @@ void Viewer::initSimPostReconfigure() {
   agentBodyNode_ = &defaultAgent_->node();
   renderCamera_ = getAgentCamera().getRenderCamera();
   timeline_.start();
-}  // processNavmesh}
+}  // initSimPostReconfigure
 
 void Viewer::switchCameraType() {
   auto& cam = getAgentCamera();
@@ -1222,8 +1238,7 @@ Mn::Vector3 Viewer::randomDirection() {
 
 void Viewer::setSceneInstanceFromListAndShow(int nextSceneInstanceIDX) {
   // set current to be passed idx, making sure it is in bounds of scene list
-  curSceneInstanceIDX_ =
-      (nextSceneInstanceIDX % this->curSceneInstances_.size());
+  curSceneInstanceIDX_ = (nextSceneInstanceIDX % curSceneInstances_.size());
   // Set scene instance in SimConfig
   simConfig_.activeSceneName = curSceneInstances_[curSceneInstanceIDX_];
 
@@ -1307,9 +1322,6 @@ void Viewer::drawEvent() {
                                        1.0f / 12.0f);  // colorMapScale
     } else if (visualizeMode_ == VisualizeMode::Semantic) {
       simulator_->visualizeObservation(defaultAgentId_, sensorId);
-      // simulator_->visualizeObservation(defaultAgentId_, sensorId,
-      //                                  1.0f / 512.0f,  // colorMapOffset
-      //                                  1.0f / 50.0f);  // colorMapScale
     }
     sensorRenderTarget->blitRgbaToDefault();
   } else {
@@ -1455,7 +1467,7 @@ void Viewer::drawEvent() {
   swapBuffers();
   timeline_.nextFrame();
   redraw();
-}
+}  // Viewer::drawEvent()
 
 void Viewer::dispMetadataInfo() {  // display info report
   std::string dsInfoReport = MM_->createDatasetReport();
