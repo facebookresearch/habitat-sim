@@ -43,4 +43,9 @@ if [ "$RUN_TESTS" = true ] ; then
   PYTHONPATH=${here}/src_python ctest -V
 fi
 
-echo "Add src_python to PYTHONPATH, i.e. \`export PYTHONPATH=${here}/src_python:\${PYTHONPATH}\`"
+# Check if src_python has been added to python path, otherwise remind user
+if [[ "$PYTHONPATH" == *"src_python"* ]]; then
+  echo "\`src_python\` subdir found in PYTHONPATH : \`$PYTHONPATH\`"
+else
+  echo "Add src_python to PYTHONPATH, i.e. \`export PYTHONPATH=${here}/src_python:\${PYTHONPATH}\`"
+fi
