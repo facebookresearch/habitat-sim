@@ -1293,6 +1293,29 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
     // only one mesh, treat as before
     meshData = fileImporter_->mesh(0);
   } else {
+    // Cr::Containers::Optional<Mn::Trade::SceneData> scene =
+    //     fileImporter_->scene(fileImporter_->defaultScene());
+    // // build list of meshDatas from importer
+    // std::vector<Mn::Trade::MeshData> meshVec;
+    // meshVec.reserve(meshCount);
+    // // build view
+    // std::vector<Cr::Containers::Reference<const Mn::Trade::MeshData>>
+    // meshView; meshView.reserve(meshCount);
+
+    // Cr::Containers::Array<Mn::Trade::MeshData> flattenedMeshes;
+    // for (const Cr::Containers::Triple<Mn::UnsignedInt, Mn::Int, Mn::Matrix4>&
+    //          meshTransformation :
+    //      Mn::SceneTools::flattenMeshHierarchy3D(scene)) {
+    //   if (Cr::Containers::Optional<Mn::Trade::MeshData> mesh =
+    //           fileImporter_->mesh(meshTransformation.first())) {
+    //     arrayAppend(flattenedMeshes, Mn::MeshTools::transform3D(
+    //                                      mesh, meshTransformation.third()));
+
+    //     meshVec.push_back(std::move(*mesh));
+    //     meshView.emplace_back(meshVec.back());
+    //   }
+    // }
+
     // build list of meshDatas from importer
     std::vector<Mn::Trade::MeshData> meshVec;
     meshVec.reserve(meshCount);
