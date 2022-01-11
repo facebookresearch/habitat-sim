@@ -323,19 +323,6 @@ class ResourceManager {
   }
 
   /**
-   * @brief Retrieve the composition of all transforms applied to a mesh
-   * since it was loaded.
-   *
-   * See @ref translateMesh.
-   * @param meshIndex Index of the mesh in @ref meshes_.
-   * @return The transformation matrix mapping from the original state to
-   * its current state.
-   */
-  const Mn::Matrix4& getMeshTransformation(const int meshIndex) const {
-    return meshes_.at(meshIndex)->meshTransform_;
-  }
-
-  /**
    * @brief Retrieve the meta data for a particular asset.
    *
    * This includes identifiers for meshes, textures, materials, and a
@@ -1054,15 +1041,6 @@ class ResourceManager {
                               const Mn::ResourceKey& lightSetupKey) const;
 
   // ======== Geometry helper functions, data structures ========
-
-  /**
-   * @brief Apply a translation to the vertices of a mesh asset and store that
-   * transformation in @ref BaseMesh::meshTransform_.
-   *
-   * @param meshDataGL The mesh data.
-   * @param translation The translation transform to apply.
-   */
-  void translateMesh(BaseMesh* meshDataGL, Mn::Vector3 translation);
 
   /**
    * @brief Compute and return the axis aligned bounding box of a mesh in mesh

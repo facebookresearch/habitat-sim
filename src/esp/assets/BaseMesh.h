@@ -137,14 +137,6 @@ class BaseMesh {
   }
 
   /**
-   * @brief Any transformations applied to the original mesh after loading are
-   * stored here.
-   *
-   * See @ref ResourceManager::translateMesh.
-   */
-  Magnum::Matrix4 meshTransform_;
-
-  /**
    * @brief Axis aligned bounding box of the mesh.
    *
    * Computed automatically on mesh load. See @ref

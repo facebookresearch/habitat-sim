@@ -391,17 +391,6 @@ class Simulator {
   }
 
   /**
-   * @brief Registers a voxel wrapper in a dictionary. This ensures that two
-   * assets with the same render asset handle and voxelization resolution share
-   * the same underlying Voxel Grid.
-   *
-   * @param voxelWrapper The voxel wrapper to be registered.
-   * @param key The name underwhich to register the voxel wrapper
-   */
-  void registerVoxelGrid(esp::geo::VoxelWrapper& voxelWrapper,
-                         const std::string& key);
-
-  /**
    * @brief Discrete collision check for contact between an object and the
    * collision world.
    * @param objectId The object ID and key identifying the object in @ref
