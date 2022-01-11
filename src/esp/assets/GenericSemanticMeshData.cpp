@@ -158,7 +158,7 @@ GenericSemanticMeshData::buildSemanticMeshData(
             static_cast<scene::HM3DObjectInstance&>(*ssdObjs[i]);
         const Mn::Vector3ub ssdColor = ssdObj.getColor();
         const uint32_t colorInt = colorAsInt(ssdColor);
-        int semanticID = ssdObj.getSemanticID();
+        int semanticID = ssdObj.semanticID();
         int regionIDX =
             static_cast<scene::HM3DSemanticRegion&>(*ssdObj.region())
                 .getIndex();

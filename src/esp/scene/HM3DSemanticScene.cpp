@@ -43,16 +43,11 @@ namespace {
 
 struct TempHM3DObject {
   int objInstanceID;
+  int objCatID;
   std::string categoryName;
   std::string objInstanceName;
   Mn::Vector3ub color;
   std::shared_ptr<SemanticRegion> region;
-
-  void setObjInstanceAndName(int _objInstanceID) {
-    objInstanceID = _objInstanceID;
-    objInstanceName =
-        Cr::Utility::formatString("{}_{}", categoryName, objInstanceID);
-  }
 };
 
 struct TempHM3DRegion {
@@ -95,7 +90,7 @@ bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
     // Line :
     // Unique Instance ID (int), color (hex RGB), category name
     // (string), room/region ID (int)
-    // instance ID is first token
+    // unique instance ID is first token
     int instanceID = std::stoi(tokens[0]);
     // semantic color is 2nd token, as hex string
     auto colorVec = getVec3ub(tokens[1]);
@@ -107,7 +102,10 @@ bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
     // room/region
     int regionID = std::stoi(tokens[3]);
     // build initial temp object
-    TempHM3DObject obj{0, objCategoryName, "", colorVec};
+    TempHM3DObject obj{
+        instanceID, 0, objCategoryName,
+        Cr::Utility::formatString("{}_{}", objCategoryName, instanceID),
+        colorVec};
     objInstance[instanceID] = obj;
     // find category, build if dne
     TempHM3DCategory tmpCat{
@@ -126,7 +124,7 @@ bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
     std::vector<TempHM3DObject*>& objsWithCat = item.second.objInstances;
     int objCatIdx = 0;
     for (TempHM3DObject* objItem : objsWithCat) {
-      objItem->setObjInstanceAndName(objCatIdx++);
+      objItem->objCatID = objCatIdx++;
     }
     // build category item and place within temp map
     item.second.category_ = std::make_shared<HM3DObjectCategory>(
@@ -160,7 +158,7 @@ bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
   for (auto& item : objInstance) {
     TempHM3DObject obj = item.second;
     auto objPtr = std::make_shared<HM3DObjectInstance>(HM3DObjectInstance(
-        item.first, obj.objInstanceID, obj.objInstanceName, obj.color));
+        obj.objInstanceID, obj.objCatID, obj.objInstanceName, obj.color));
     objPtr->category_ = categories[obj.categoryName].category_;
     // set region
     objPtr->parentIndex_ = obj.region->index_;
