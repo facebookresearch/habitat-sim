@@ -335,6 +335,11 @@ class SemanticObject {
     }
   }
 
+  /**
+   * @brief Retrieve the unique semantic ID corresponding to this object
+   */
+  int semanticID() const { return index_; }
+
   SemanticRegion::ptr region() const { return region_; }
 
   box3f aabb() const { return obb_.toAABB(); }
@@ -344,7 +349,14 @@ class SemanticObject {
   SemanticCategory::ptr category() const { return category_; }
 
  protected:
+  /**
+   * @brief The unique semantic ID corresponding to this object
+   */
   int index_{};
+
+  /**
+   * @brief References the parent region for this object
+   */
   int parentIndex_{};
   std::shared_ptr<SemanticCategory> category_;
   geo::OBB obb_;

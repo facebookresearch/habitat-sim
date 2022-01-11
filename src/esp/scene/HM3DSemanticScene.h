@@ -39,22 +39,20 @@ class HM3DSemanticRegion : public SemanticRegion {
 
 class HM3DObjectInstance : public SemanticObject {
  public:
-  HM3DObjectInstance(int id,
-                     int objInstanceId,
+  HM3DObjectInstance(int objInstanceID,
+                     int objCatID,
                      const std::string& name,
                      const Mn::Vector3ub& clr)
-      : id_(id), objInstanceId_(objInstanceId), name_(name), color_(clr) {}
+      : SemanticObject(), objCatID_(objCatID), name_(name), color_(clr) {
+    index_ = objInstanceID;
+  }
   Mn::Vector3ub getColor() const { return color_; }
 
   std::string id() const override { return name_; }
 
-  int getSemanticID() const { return id_; }
-
  protected:
-  // semantic ID of the object instance in the file
-  const int id_;
-  // instance ID of this particular instance within the category it belongs in
-  const int objInstanceId_;
+  // idx of this particular object instance within the category it belongs in
+  const int objCatID_;
   // unique name for this instance
   const std::string name_;
   // specified color for this object instance.

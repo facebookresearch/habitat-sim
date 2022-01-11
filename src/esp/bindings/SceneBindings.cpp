@@ -172,6 +172,7 @@ void initSceneBindings(py::module& m) {
       .def_property_readonly("id", &SemanticObject::id,
                              "The ID of the object, of the form "
                              "``<level_id>_<region_id>_<object_id>``")
+      .def_property_readonly("semantic_id", &SemanticObject::semanticID)
       .def_property_readonly("region", &SemanticObject::region)
       .def_property_readonly("aabb", &SemanticObject::aabb)
       .def_property_readonly("obb", &SemanticObject::obb)
