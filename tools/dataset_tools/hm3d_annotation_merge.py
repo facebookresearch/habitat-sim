@@ -74,13 +74,48 @@ HM3D_DATA_PARTITIONS = {
 HM3D_SSD_STRING = "HM3D Semantic Annotations"
 
 
+# Validate source semantic txt files' format
+# Each line should have the following format :
+# 1,4035BC,"ceiling corridor",2
+# positive int, hex color, string, positive int
+def validate_src_SSD(line):
+    lineItems = line.split(",")
+    if len(lineItems) != 4:
+        return "Incorrect # of items : should be 4, is {}".format(len(lineItems))
+    if not lineItems[0].strip().isdigit():
+        return "First entry (unique ID) is not positive integer : {}".format(
+            lineItems[0]
+        )
+    if not re.compile("^[A-F0-9]{6}$").match(lineItems[1].strip()):
+        return "Second entry (color) is not 6 digit hex value : {}".format(lineItems[1])
+    if len(lineItems[2].strip()) == 0:
+        return "Third entry (category) cannot be an empty string"
+    if not lineItems[3].strip().isdigit():
+        return "Forth entry (region) is not non-negative integer : {}".format(
+            lineItems[3]
+        )
+    if not lineItems[0].strip().isdigit():
+        return "First entry is not positive integer; is : {}".format(lineItems[0])
+    return "fine"
+
+
 # Modify the given semantic text file to include the necessary sentinel string at the
 # beginning that Habitat-Sim expects, and then save to appropriate dest directory
 def modify_and_copy_SSD(src_filename: str, dest_filename: str):
     with open(dest_filename, "w") as dest, open(src_filename, "r") as src:
         dest.write("{}\n".format(HM3D_SSD_STRING))
+        i = 0
         for line in src:
+            if i > 0:
+                valid_res = validate_src_SSD(line)
+                if valid_res != "fine":
+                    print(
+                        "!!!! Error in source SSD `{}` on line {} : {} has format error : `{}`".format(
+                            src_filename, i, line, valid_res
+                        )
+                    )
             dest.write("{}".format(line))
+            i += 1
 
 
 def buildFileListing():
