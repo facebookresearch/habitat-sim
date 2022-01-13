@@ -545,6 +545,9 @@ class HabitatSimInteractiveViewer(Application):
         """
         self.navmesh_settings = habitat_sim.NavMeshSettings()
         self.navmesh_settings.set_defaults()
+        self.navmesh_settings.agent_height = self.cfg.agents[self.agent_id].height
+        self.navmesh_settings.agent_radius = self.cfg.agents[self.agent_id].radius
+
         self.sim.recompute_navmesh(
             self.sim.pathfinder,
             self.navmesh_settings,
