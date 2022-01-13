@@ -611,7 +611,7 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig, bool isOrtho) {
         sensorType == esp::sensor::SensorType::Semantic) {
       spec->channels = 1;
     }
-    spec->position = {0.0f, 1.5f, 0.0f};
+    spec->position = {0.0f, rgbSensorHeight, 0.0f};
     spec->orientation = {0, 0, 0};
     spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
   };
@@ -977,6 +977,8 @@ void Viewer::initSimPostReconfigure() {
     }
   } else if (recomputeNavmesh_) {
     esp::nav::NavMeshSettings navMeshSettings;
+    navMeshSettings.agentHeight = agentConfig_.height;
+    navMeshSettings.agentRadius = agentConfig_.radius;
     simulator_->recomputeNavMesh(*simulator_->getPathFinder().get(),
                                  navMeshSettings, true);
   } else if (!navmeshFilename_.empty()) {
