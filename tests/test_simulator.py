@@ -4,6 +4,7 @@ from os import path as osp
 
 import magnum as mn
 import numpy as np
+import pytest
 
 import examples.settings
 import habitat_sim
@@ -251,3 +252,11 @@ def test_object_template_editing():
 
             obj_init_template = obj.creation_attributes
             assert obj_init_template.render_asset_handle.endswith("sphere.glb")
+
+
+def test_no_config():
+    # This will cause a warning that
+    # self._initialized does not exist
+    # but that is fine/expected.
+    with pytest.raises(TypeError):
+        _ = habitat_sim.Simulator()  # type: ignore[call-arg]
