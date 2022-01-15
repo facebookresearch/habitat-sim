@@ -128,6 +128,13 @@ class Simulator(SimulatorBackend):
             destroyed if async rendering was used.  If async rendering wasn't used,
             this has no effect.
         """
+        # NB: Python still still call __del__ (and thus)
+        # close even if __init__ errors. We don't
+        # have anything to close if we aren't initialized so
+        # we can just return.
+        if not self._initialized:
+            return
+
         if self.renderer is not None:
             self.renderer.acquire_gl_context()
 
