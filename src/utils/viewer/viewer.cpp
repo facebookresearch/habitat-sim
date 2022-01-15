@@ -86,7 +86,7 @@ std::string getCurrentTimeString() {
 }
 
 using namespace Mn::Math::Literals;
-using Magnum::Math::Literals::operator""_degf;
+using Mn::Math::Literals::operator""_degf;
 
 //! Define different UI roles for the mouse
 enum MouseInteractionMode {
@@ -121,19 +121,19 @@ struct MouseGrabber {
   virtual ~MouseGrabber() { sim_.removeRigidConstraint(constraintId); }
 
   //! update global pivot position for the constraint
-  virtual void updatePivot(const Magnum::Vector3& pos) {
+  virtual void updatePivot(const Mn::Vector3& pos) {
     settings_.pivotB = pos;
     sim_.updateRigidConstraint(constraintId, settings_);
   }
 
   //! update global rotation frame for the constraint
-  virtual void updateFrame(const Magnum::Matrix3x3& frame) {
+  virtual void updateFrame(const Mn::Matrix3x3& frame) {
     settings_.frameB = frame;
     sim_.updateRigidConstraint(constraintId, settings_);
   }
 
   //! update global rotation frame and pivot position for the constraint
-  virtual void updateTransform(const Magnum::Matrix4& transform) {
+  virtual void updateTransform(const Mn::Matrix4& transform) {
     settings_.frameB = transform.rotation();
     settings_.pivotB = transform.translation();
     sim_.updateRigidConstraint(constraintId, settings_);
@@ -431,7 +431,7 @@ Key Commands:
    * @brief vector holding past agent locations to build trajectory
    * visualization
    */
-  std::vector<Magnum::Vector3> agentLocs_;
+  std::vector<Mn::Vector3> agentLocs_;
   float agentTrajRad_ = .01f;
   bool agentLocRecordOn_ = false;
   bool singleColorTrajectory_ = true;
@@ -460,7 +460,7 @@ Key Commands:
   inline void recAgentLocation() {
     if (agentLocRecordOn_) {
       auto pt = agentBodyNode_->translation() +
-                Magnum::Vector3{0, (2.0f * agentTrajRad_), 0};
+                Mn::Vector3{0, (2.0f * agentTrajRad_), 0};
       agentLocs_.push_back(pt);
       ESP_DEBUG() << "Recording agent location : {" << pt.x() << "," << pt.y()
                   << "," << pt.z() << "}";
