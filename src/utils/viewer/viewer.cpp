@@ -590,8 +590,20 @@ Key Commands:
   };
   VisualSensorMode sensorMode_ = VisualSensorMode::Camera;
 
+  /**
+   * @brief Set the sensorVisID_ string used to determine which sensor to pull
+   * an observation from.  Should be set whenever visualizeMode_ or sensorMode_
+   * change.
+   */
+  void setSensorVisID();
+
+  /**
+   * @brief String key used to determine which sensor from a suite of sensors to
+   * pull an observation from.
+   */
+  std::string sensorVisID_ = "rgba_camera";
   void bindRenderTarget();
-};
+};  // class viewer declaration
 
 void addSensors(esp::agent::AgentConfiguration& agentConfig, bool isOrtho) {
   const auto viewportSize = Mn::GL::defaultFramebuffer.viewport().size();
@@ -1349,6 +1361,52 @@ void Viewer::setSceneInstanceFromListAndShow(int nextSceneInstanceIDX) {
   bindRenderTarget();
 }  // Viewer::setSceneInstanceFromListAndShow
 
+/**
+ * @brief Set the sensorVisID_ string used to determine which sensor to pull an
+ * observation from.  Should be set whenever visualizeMode_ or sensorMode_
+ * change.
+ */
+void Viewer::setSensorVisID() {
+  std::string prefix = "rgba";
+  switch (visualizeMode_) {
+    case VisualizeMode::RGBA: {
+      prefix = "rgba";
+      break;
+    }
+    case VisualizeMode::Depth: {
+      prefix = "depth";
+      break;
+    }
+    case VisualizeMode::Semantic: {
+      prefix = "semantic";
+      break;
+    }
+    default:
+      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+  }  // switch on visualize mode
+  std::string suffix = "camera";
+  switch (sensorMode_) {
+    case VisualSensorMode::Camera: {
+      suffix = "camera";
+      break;
+    }
+    case VisualSensorMode::Fisheye: {
+      suffix = "fisheye";
+      break;
+    }
+    case VisualSensorMode::Equirectangular: {
+      suffix = "equirectangular";
+      break;
+    }
+    default:
+      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+  }  // switch on sensor mode
+  sensorVisID_ = Cr::Utility::formatString("{}_{}", prefix, suffix);
+  ESP_DEBUG() << Cr::Utility::formatString(
+      "Visualizing {} {} sensor. Sensor Suite Key : {}", prefix, suffix,
+      sensorVisID_);
+}  // Viewer::setSensorVisID
+
 float timeSinceLastSimulation = 0.0;
 void Viewer::drawEvent() {
   // Wrap profiler measurements around all methods to render images from
@@ -1381,111 +1439,78 @@ void Viewer::drawEvent() {
 
   uint32_t visibles = renderCamera_->getPreviousNumVisibleDrawables();
 
-  if (visualizeMode_ == VisualizeMode::Depth ||
-      visualizeMode_ == VisualizeMode::Semantic) {
-    // ================ Depth/Semantic Visualization =======================
-    std::string sensorId = "depth_camera";
-    if (visualizeMode_ == VisualizeMode::Depth) {
-      if (sensorMode_ == VisualSensorMode::Fisheye) {
-        sensorId = "depth_fisheye";
-      } else if (sensorMode_ == VisualSensorMode::Equirectangular) {
-        sensorId = "depth_equirectangular";
-      }
-    } else if (visualizeMode_ == VisualizeMode::Semantic) {
-      sensorId = "semantic_camera";
-      if (sensorMode_ == VisualSensorMode::Fisheye) {
-        sensorId = "semantic_fisheye";
-      } else if (sensorMode_ == VisualSensorMode::Equirectangular) {
-        sensorId = "semantic_equirectangular";
-      }
+  if ((visualizeMode_ == VisualizeMode::RGBA) &&
+      (sensorMode_ == VisualSensorMode::Camera)) {
+    // Visualizing RGBA pinhole camera
+    if (mouseGrabber_ != nullptr) {
+      mouseGrabber_->renderDebugLines();
     }
 
-    simulator_->drawObservation(defaultAgentId_, sensorId);
+    // ============= regular RGB with object picking =================
+    // using polygon offset to increase mesh depth to avoid z-fighting with
+    // debug draw (since lines will not respond to offset).
+    Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
+    Mn::GL::Renderer::setPolygonOffset(1.0f, 0.1f);
+
+    // ONLY draw the content to the frame buffer but not immediately blit the
+    // result to the default main buffer
+    // (this is the reason we do not call displayObservation)
+    simulator_->drawObservation(defaultAgentId_, sensorVisID_);
+    // TODO: enable other sensors to be displayed
+
+    Mn::GL::Renderer::setDepthFunction(
+        Mn::GL::Renderer::DepthFunction::LessOrEqual);
+    if (debugBullet_) {
+      Mn::Matrix4 camM(renderCamera_->cameraMatrix());
+      Mn::Matrix4 projM(renderCamera_->projectionMatrix());
+
+      simulator_->physicsDebugDraw(projM * camM);
+    }
+    Mn::GL::Renderer::setDepthFunction(Mn::GL::Renderer::DepthFunction::Less);
+    Mn::GL::Renderer::setPolygonOffset(0.0f, 0.0f);
+    Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
+
+    visibles = renderCamera_->getPreviousNumVisibleDrawables();
     esp::gfx::RenderTarget* sensorRenderTarget =
-        simulator_->getRenderTarget(defaultAgentId_, sensorId);
-    if (visualizeMode_ == VisualizeMode::Depth) {
-      simulator_->visualizeObservation(defaultAgentId_, sensorId,
-                                       1.0f / 512.0f,  // colorMapOffset
-                                       1.0f / 12.0f);  // colorMapScale
-    } else if (visualizeMode_ == VisualizeMode::Semantic) {
-      simulator_->visualizeObservation(defaultAgentId_, sensorId);
+        simulator_->getRenderTarget(defaultAgentId_, sensorVisID_);
+    CORRADE_ASSERT(sensorRenderTarget,
+                   "Error in Viewer::drawEvent: sensor's rendering target "
+                   "cannot be nullptr.", );
+    if (objectPickingHelper_->isObjectPicked()) {
+      // we need to immediately draw picked object to the SAME frame buffer
+      // so bind it first
+      // bind the framebuffer
+      sensorRenderTarget->renderReEnter();
+
+      // setup blending function
+      Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::Blending);
+
+      // render the picked object on top of the existing contents
+      esp::gfx::RenderCamera::Flags flags;
+      if (simulator_->isFrustumCullingEnabled()) {
+        flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
+      }
+      renderCamera_->draw(objectPickingHelper_->getDrawables(), flags);
+
+      Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
     }
     sensorRenderTarget->blitRgbaToDefault();
   } else {
-    if (sensorMode_ == VisualSensorMode::Camera) {
-      if (mouseGrabber_ != nullptr) {
-        mouseGrabber_->renderDebugLines();
-      }
-
-      // ============= regular RGB with object picking =================
-      // using polygon offset to increase mesh depth to avoid z-fighting with
-      // debug draw (since lines will not respond to offset).
-      Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
-      Mn::GL::Renderer::setPolygonOffset(1.0f, 0.1f);
-
-      // ONLY draw the content to the frame buffer but not immediately blit the
-      // result to the default main buffer
-      // (this is the reason we do not call displayObservation)
-      simulator_->drawObservation(defaultAgentId_, "rgba_camera");
-      // TODO: enable other sensors to be displayed
-
-      Mn::GL::Renderer::setDepthFunction(
-          Mn::GL::Renderer::DepthFunction::LessOrEqual);
-      if (debugBullet_) {
-        Mn::Matrix4 camM(renderCamera_->cameraMatrix());
-        Mn::Matrix4 projM(renderCamera_->projectionMatrix());
-
-        simulator_->physicsDebugDraw(projM * camM);
-      }
-      Mn::GL::Renderer::setDepthFunction(Mn::GL::Renderer::DepthFunction::Less);
-      Mn::GL::Renderer::setPolygonOffset(0.0f, 0.0f);
-      Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
-
-      visibles = renderCamera_->getPreviousNumVisibleDrawables();
-      esp::gfx::RenderTarget* sensorRenderTarget =
-          simulator_->getRenderTarget(defaultAgentId_, "rgba_camera");
-      CORRADE_ASSERT(sensorRenderTarget,
-                     "Error in Viewer::drawEvent: sensor's rendering target "
-                     "cannot be nullptr.", );
-      if (objectPickingHelper_->isObjectPicked()) {
-        // we need to immediately draw picked object to the SAME frame buffer
-        // so bind it first
-        // bind the framebuffer
-        sensorRenderTarget->renderReEnter();
-
-        // setup blending function
-        Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::Blending);
-
-        // render the picked object on top of the existing contents
-        esp::gfx::RenderCamera::Flags flags;
-        if (simulator_->isFrustumCullingEnabled()) {
-          flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
-        }
-        renderCamera_->draw(objectPickingHelper_->getDrawables(), flags);
-
-        Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
-      }
-      sensorRenderTarget->blitRgbaToDefault();
-    } else {
-      // ================ NON-regular RGB sensor ==================
-      std::string sensorId = "";
-      if (sensorMode_ == VisualSensorMode::Fisheye) {
-        sensorId = "rgba_fisheye";
-      } else if (sensorMode_ == VisualSensorMode::Equirectangular) {
-        sensorId = "rgba_equirectangular";
-      } else {
-        CORRADE_INTERNAL_ASSERT_UNREACHABLE();
-      }
-      CORRADE_INTERNAL_ASSERT(!sensorId.empty());
-
-      simulator_->drawObservation(defaultAgentId_, sensorId);
-      esp::gfx::RenderTarget* sensorRenderTarget =
-          simulator_->getRenderTarget(defaultAgentId_, sensorId);
-      CORRADE_ASSERT(sensorRenderTarget,
-                     "Error in Viewer::drawEvent: sensor's rendering target "
-                     "cannot be nullptr.", );
-      sensorRenderTarget->blitRgbaToDefault();
+    // Depth Or Semantic, or Non-pinhole RGBA
+    simulator_->drawObservation(defaultAgentId_, sensorVisID_);
+    esp::gfx::RenderTarget* sensorRenderTarget =
+        simulator_->getRenderTarget(defaultAgentId_, sensorVisID_);
+    CORRADE_ASSERT(sensorRenderTarget,
+                   "Error in Viewer::drawEvent: sensor's rendering target "
+                   "cannot be nullptr.", );
+    if (visualizeMode_ == VisualizeMode::Depth) {
+      simulator_->visualizeObservation(defaultAgentId_, sensorVisID_,
+                                       1.0f / 512.0f,  // colorMapOffset
+                                       1.0f / 12.0f);  // colorMapScale
+    } else if (visualizeMode_ == VisualizeMode::Semantic) {
+      simulator_->visualizeObservation(defaultAgentId_, sensorVisID_);
     }
+    sensorRenderTarget->blitRgbaToDefault();
   }
 
   // Immediately bind the main buffer back so that the "imgui" below can work
@@ -2025,7 +2050,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       sensorMode_ = static_cast<VisualSensorMode>(
           (uint8_t(sensorMode_) + 1) %
           uint8_t(VisualSensorMode::VisualSensorModeCount));
-      ESP_DEBUG() << "Sensor mode is set to" << int(sensorMode_);
+      setSensorVisID();
       break;
     case KeyEvent::Key::Five:
       // switch camera between ortho and perspective
@@ -2039,21 +2064,8 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       visualizeMode_ = static_cast<VisualizeMode>(
           (uint8_t(visualizeMode_) + 1) %
           uint8_t(VisualizeMode::VisualizeModeCount));
+      setSensorVisID();
       bindRenderTarget();
-      switch (visualizeMode_) {
-        case VisualizeMode::RGBA:
-          ESP_DEBUG() << "Visualizing COLOR sensor observation.";
-          break;
-        case VisualizeMode::Depth:
-          ESP_DEBUG() << "Visualizing DEPTH sensor observation.";
-          break;
-        case VisualizeMode::Semantic:
-          ESP_DEBUG() << "Visualizing SEMANTIC sensor observation.";
-          break;
-        default:
-          CORRADE_INTERNAL_ASSERT_UNREACHABLE();
-          break;
-      }
       break;
     case KeyEvent::Key::Eight:
       addPrimitiveObject();
