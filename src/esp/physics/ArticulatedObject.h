@@ -502,7 +502,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    *
    * @return Vector of torques on each joint
    */
-  virtual std::vector<float> getJointMotorTorques(double fixedTimeStep) {
+  virtual std::vector<float> getJointMotorTorques(CORRADE_UNUSED double fixedTimeStep) {
     return {};
   }
 
