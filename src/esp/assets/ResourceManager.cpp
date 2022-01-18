@@ -1311,10 +1311,10 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
     }
 
     // build view
-    std::vector<Cr::Containers::Reference<const Mn::Trade::MeshData>> meshView;
-    meshView.reserve(meshCount);
+    Cr::Containers::Array<Cr::Containers::Reference<const Mn::Trade::MeshData>>
+        meshView;
     for (const auto& mesh : flattenedMeshes) {
-      meshView.emplace_back(mesh);
+      arrayAppend(meshView, mesh);
     }
     // build concatenated meshData from container of meshes.
     meshData = Mn::MeshTools::concatenate(meshView);
