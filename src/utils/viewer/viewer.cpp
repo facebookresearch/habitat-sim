@@ -355,7 +355,8 @@ Key Commands:
   esc: Exit the application.
   'H': Display this help message.
   'm': Toggle mouse mode (LOOK | GRAB).
-  TAB/Shift-TAB : Cycle to next/previous scene in scene dataset
+  TAB/Shift-TAB : Cycle to next/previous scene in scene dataset.
+  ALT+TAB: Reload the current scene.
 
   Agent Controls:
   'wasd': Move the agent's body forward/backward, left/right.
@@ -2007,13 +2008,17 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       exit(0);
       break;
     case KeyEvent::Key::Tab:
-      ESP_DEBUG() << "Cycling to"
-                  << ((event.modifiers() & MouseEvent::Modifier::Shift)
-                          ? "previous"
-                          : "next")
-                  << "SceneInstance";
-      setSceneInstanceFromListAndShow(getNextSceneInstanceIDX(
-          (event.modifiers() & MouseEvent::Modifier::Shift) ? -1 : 1));
+      if (event.modifiers() & MouseEvent::Modifier::Alt) {
+        setSceneInstanceFromListAndShow(curSceneInstanceIDX_);
+      } else {
+        ESP_DEBUG() << "Cycling to"
+                    << ((event.modifiers() & MouseEvent::Modifier::Shift)
+                            ? "previous"
+                            : "next")
+                    << "SceneInstance";
+        setSceneInstanceFromListAndShow(getNextSceneInstanceIDX(
+            (event.modifiers() & MouseEvent::Modifier::Shift) ? -1 : 1));
+      }
       break;
     case KeyEvent::Key::Space:
       simulating_ = !simulating_;
