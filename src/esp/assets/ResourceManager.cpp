@@ -1313,6 +1313,7 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
     // build view
     Cr::Containers::Array<Cr::Containers::Reference<const Mn::Trade::MeshData>>
         meshView;
+    Cr::Containers::arrayReserve(meshView, flattenedMeshes.size());
     for (const auto& mesh : flattenedMeshes) {
       arrayAppend(meshView, mesh);
     }
