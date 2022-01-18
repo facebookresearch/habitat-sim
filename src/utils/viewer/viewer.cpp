@@ -979,7 +979,6 @@ void Viewer::initSimPostReconfigure() {
     esp::nav::NavMeshSettings navMeshSettings;
     navMeshSettings.agentHeight = agentConfig_.height;
     navMeshSettings.agentRadius = agentConfig_.radius;
-    navMeshSettings.agentMaxSlope = 55.0f;
     simulator_->recomputeNavMesh(*simulator_->getPathFinder().get(),
                                  navMeshSettings, true);
   } else if (!navmeshFilename_.empty()) {
