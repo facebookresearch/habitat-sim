@@ -59,8 +59,8 @@ void SensorFactory::deleteSubtreeSensor(scene::SceneNode& node,
   // If sensor does not exist, SensorFactory will log a message but proceed
   // without errors thrown
   if (node.getSubtreeSensors().count(uuid) == 0) {
-    LOG(INFO) << "SensorFactory::deleteSubtreeSensor(): Sensor with uuid "
-              << uuid << " does not exist at node" << node.getId();
+    ESP_DEBUG() << "Sensor with uuid" << uuid << "does not exist at node"
+                << node.getId();
     return;
   }
   deleteSensor(node.getSubtreeSensorSuite().get(uuid));

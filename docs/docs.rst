@@ -109,13 +109,13 @@
     ``move_forward``.  See `registry.register_move_fn`, `SceneNodeControl`,
     and `ActuationSpec`
 
-    .. include:: ../habitat_sim/agent/controls/default_controls.py
+    .. include:: ../src_python/habitat_sim/agent/controls/default_controls.py
         :code: py
         :start-line: 38
 
     And noisy actions from PyRobot.  See `PyRobotNoisyActuationSpec`
 
-    .. include:: ../habitat_sim/agent/controls/pyrobot_noisy_controls.py
+    .. include:: ../src_python/habitat_sim/agent/controls/pyrobot_noisy_controls.py
         :code: py
         :start-line: 244
 
@@ -170,7 +170,7 @@
 
     Same as `d3_40_colors_rgb`, but in a hexadecimal representation.
 
-    .. include:: ../habitat_sim/utils/common.py
+    .. include:: ../src_python/habitat_sim/utils/common.py
         :code: py
         :start-after: # [d3_40_colors_hex]
         :end-before: # [/d3_40_colors_hex]

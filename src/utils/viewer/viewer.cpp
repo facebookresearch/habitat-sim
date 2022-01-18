@@ -46,10 +46,10 @@
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Renderer.h>
 #include <sophus/so3.hpp>
+#include "esp/core/Esp.h"
 #include "esp/core/Utility.h"
-#include "esp/core/esp.h"
 #include "esp/gfx/Drawable.h"
-#include "esp/io/io.h"
+#include "esp/scene/SemanticScene.h"
 
 #ifdef ESP_BUILD_WITH_VHACD
 #include "esp/geo/VoxelUtils.h"
@@ -238,6 +238,11 @@ class Viewer : public Mn::Platform::Application {
   void switchCameraType();
   Mn::Vector3 randomDirection();
 
+  /**
+   * @brief Display information about the currently loaded scene.
+   */
+  void dispMetadataInfo();
+
   esp::agent::AgentConfiguration agentConfig_;
 
   void saveAgentAndSensorTransformToFile();
@@ -264,6 +269,8 @@ In LOOK mode (default):
     Click and drag to rotate the agent and look up/down.
   RIGHT:
     (With 'enable-physics') Click a surface to instance a random primitive object at that location.
+  SHIFT-LEFT:
+    Read Semantic ID and tag of clicked object (Currently only HM3D);
   SHIFT-RIGHT:
     Click a mesh to highlight it.
   CTRL-RIGHT:
@@ -295,9 +302,10 @@ Key Commands:
   Utilities:
   '1': Toggle recording locations for trajectory visualization.
   '2': Build and display trajectory visualization.
+  '3': Toggle single color/multi-color trajectory.
   '+': Increase trajectory diameter.
   '-': Decrease trajectory diameter.
-  '3': Toggle flying camera mode (user can apply camera transformation loaded from disk).
+  '4': Toggle flying camera mode (user can apply camera transformation loaded from disk).
   '5': Switch ortho/perspective camera.
   '6': Reset ortho camera zoom/perspective camera FOV.
   'l': Override the default lighting setup with configured settings in `default_light_override.lighting_config.json`.
@@ -307,7 +315,7 @@ Key Commands:
   'i': Save a screenshot to "./screenshots/year_month_day_hour-minute-second/#.png".
   'r': Write a replay of the recent simulated frames to a file specified by --gfx-replay-record-filepath.
   '[': Save camera position/orientation to "./saved_transformations/camera.year_month_day_hour-minute-second.txt".
-  ']'; Load camera position/orientation from file system (useful when flying camera mode is enabled), or else from last save in current instance.
+  ']': Load camera position/orientation from file system (useful when flying camera mode is enabled), or else from last save in current instance.
 
   Object Interactions:
   SPACE: Toggle physics simulation on/off
@@ -317,6 +325,7 @@ Key Commands:
   't': Instance an ArticulatedObject in front of the camera from a URDF file by entering the filepath when prompted.
   'u': Remove most recently instanced rigid object.
   'b': Toggle display of object bounding boxes.
+  'p': Save current simulation state to SceneInstanceAttributes JSON file (with non-colliding filename).
   'v': (physics) Invert gravity.
   'g': (physics) Display a stage's signed distance gradient vector field.
   'k': (physics) Iterate through different ranges of the stage's voxelized signed distance field.
@@ -324,7 +333,7 @@ Key Commands:
   )";
 
   //! Print viewer help text to terminal output.
-  void printHelpText() { Mn::Debug{} << helpText; };
+  void printHelpText() { ESP_DEBUG() << helpText; };
 
   // single inline for logging agent state msgs, so can be easily modified
   inline void showAgentStateMsg(bool showPos, bool showOrient) {
@@ -341,7 +350,7 @@ Key Commands:
 
     auto str = strDat.str();
     if (str.size() > 0) {
-      LOG(INFO) << str;
+      ESP_DEBUG() << str;
     }
   }
 
@@ -352,6 +361,9 @@ Key Commands:
   std::vector<Magnum::Vector3> agentLocs_;
   float agentTrajRad_ = .01f;
   bool agentLocRecordOn_ = false;
+  bool singleColorTrajectory_ = true;
+
+  std::string semanticTag_ = "";
 
   /**
    * @brief Set whether agent locations should be recorded or not. If toggling
@@ -365,8 +377,8 @@ Key Commands:
         recAgentLocation();
       }
     }
-    LOG(INFO) << "Agent location recording "
-              << (agentLocRecordOn_ ? "on" : "off");
+    ESP_DEBUG() << "Agent location recording"
+                << (agentLocRecordOn_ ? "on" : "off");
   }  // setAgentLocationRecord
 
   /**
@@ -377,8 +389,8 @@ Key Commands:
       auto pt = agentBodyNode_->translation() +
                 Magnum::Vector3{0, (2.0f * agentTrajRad_), 0};
       agentLocs_.push_back(pt);
-      LOG(INFO) << "Recording agent location : {" << pt.x() << "," << pt.y()
-                << "," << pt.z() << "}";
+      ESP_DEBUG() << "Recording agent location : {" << pt.x() << "," << pt.y()
+                  << "," << pt.z() << "}";
     }
   }
 
@@ -400,9 +412,10 @@ Key Commands:
       }
     }
     esp::geo::clamp(agentTrajRad_, 0.001f, 1.0f);
-    LOG(INFO) << "Agent Trajectory Radius " << mod << ": " << agentTrajRad_;
+    ESP_DEBUG() << "Agent Trajectory Radius" << mod << ":" << agentTrajRad_;
   }
 
+  esp::logging::LoggingContext loggingContext_;
   // Configuration to use to set up simulator_
   esp::sim::SimulatorConfiguration simConfig_;
 
@@ -623,6 +636,7 @@ Viewer::Viewer(const Arguments& arguments)
                                     .setColorBufferSize(
                                         Mn::Vector4i(8, 8, 8, 8))
                                     .setSampleCount(4)},
+      loggingContext_{},
       simConfig_(),
       MM_(std::make_shared<esp::metadata::MetadataMediator>(simConfig_)),
       curSceneInstances_{} {
@@ -667,6 +681,12 @@ Viewer::Viewer(const Arguments& arguments)
       .addOption("agent-transform-filepath")
       .setHelp("agent-transform-filepath",
                "Specify path to load camera transform from.")
+      .addBooleanOption("shadows")
+      .setHelp("shadows", "Rendering shadows. (only works with PBR rendering.")
+      .addBooleanOption("ibl")
+      .setHelp("ibl",
+               "Image Based Lighting (it works only when PBR models exist in "
+               "the scene.")
       .parse(arguments.argc, arguments.argv);
 
   const auto viewportSize = Mn::GL::defaultFramebuffer.viewport().size();
@@ -674,6 +694,7 @@ Viewer::Viewer(const Arguments& arguments)
   imgui_ =
       Mn::ImGuiIntegration::Context(Mn::Vector2{windowSize()} / dpiScaling(),
                                     windowSize(), framebufferSize());
+  ImGui::GetIO().IniFilename = nullptr;
 
   /* Set up proper blending to be used by ImGui. There's a great chance
      you'll need this exact behavior for the rest of your scene. If not, set
@@ -751,15 +772,15 @@ Viewer::Viewer(const Arguments& arguments)
   simConfig_.requiresTextures = true;
   simConfig_.enableGfxReplaySave = !gfxReplayRecordFilepath_.empty();
   if (args.isSet("stage-requires-lighting")) {
-    Mn::Debug{} << "Stage using DEFAULT_LIGHTING_KEY";
-    simConfig_.sceneLightSetup = esp::DEFAULT_LIGHTING_KEY;
+    ESP_DEBUG() << "Stage using DEFAULT_LIGHTING_KEY";
+    simConfig_.sceneLightSetupKey = esp::DEFAULT_LIGHTING_KEY;
   }
 
   // setup the PhysicsManager config file
   std::string physicsConfig = Cr::Utility::Directory::join(
       Corrade::Utility::Directory::current(), args.value("physics-config"));
   if (Cr::Utility::Directory::exists(physicsConfig)) {
-    Mn::Debug{} << "Using PhysicsManager config: " << physicsConfig;
+    ESP_DEBUG() << "Using PhysicsManager config:" << physicsConfig;
     simConfig_.physicsConfigFile = physicsConfig;
   }
 
@@ -768,21 +789,40 @@ Viewer::Viewer(const Arguments& arguments)
   objectAttrManager_ = MM_->getObjectAttributesManager();
   objectAttrManager_->loadAllJSONConfigsFromPath(args.value("object-dir"));
 
-  LOG(INFO) << "Scene Dataset Configuration file location : "
-            << simConfig_.sceneDatasetConfigFile
-            << " | Loading Scene : " << simConfig_.activeSceneName;
+  ESP_DEBUG() << "Scene Dataset Configuration file location :"
+              << simConfig_.sceneDatasetConfigFile
+              << "| Loading Scene :" << simConfig_.activeSceneName;
+
+  // image based lighting (PBR)
+  simConfig_.pbrImageBasedLighting = args.isSet("ibl");
 
   // create simulator instance
   simulator_ = esp::sim::Simulator::create_unique(simConfig_, MM_);
 
+  ////////////////////////////
+  // Build list of scenes/stages in specified scene dataset to cycle through
   // get list of all scenes
   curSceneInstances_ = MM_->getAllSceneInstanceHandles();
+  // check if any scene instances exist - some datasets might only have stages
+  // defined and not scene instances
+  std::size_t numInstances = curSceneInstances_.size();
+  // if only 1 scene instance, then get all available stages in dataset to cycle
+  // through, if more than 1
+  if (numInstances == 1) {
+    const std::size_t numStages =
+        MM_->getStageAttributesManager()->getNumObjects();
+    if (numStages > 1) {
+      numInstances = numStages;
+      curSceneInstances_ = MM_->getAllStageAttributesHandles();
+    }
+  }
+
   // To handle cycling through scene instances, set first scene to be first in
   // list of current scene dataset's scene instances
   // Set this to index in curSceneInstances where args.value("scene") can be
   // found.
   curSceneInstanceIDX_ = 0;
-  for (int i = 0; i < curSceneInstances_.size(); ++i) {
+  for (int i = 0; i < numInstances; ++i) {
     if (curSceneInstances_[i].find(simConfig_.activeSceneName) !=
         std::string::npos) {
       curSceneInstanceIDX_ = i;
@@ -836,10 +876,26 @@ Viewer::Viewer(const Arguments& arguments)
   // Per frame profiler will average measurements taken over previous 50 frames
   profiler_.setup(profilerValues, 50);
 
+  // shadows
+  if (args.isSet("shadows")) {
+    simulator_->updateShadowMapDrawableGroup();
+    simulator_->computeShadowMaps(0.01f,   // lightNearPlane
+                                  20.0f);  // lightFarPlane
+    simulator_->setShadowMapsToDrawables();
+  }
+
   printHelpText();
 }  // end Viewer::Viewer
 
 void Viewer::initSimPostReconfigure() {
+  const auto sceneInstName = simulator_->getCurSceneInstanceName();
+  if (sceneInstName == "NONE") {
+    setWindowTitle("Viewer");
+  } else {
+    setWindowTitle("Viewer @ Scene : " + sceneInstName);
+  }
+  // clear any semantic tags from previoius scene
+  semanticTag_ = "";
   // NavMesh customization options
   if (disableNavmesh_) {
     if (simulator_->getPathFinder()->isLoaded()) {
@@ -866,7 +922,7 @@ void Viewer::initSimPostReconfigure() {
   agentBodyNode_ = &defaultAgent_->node();
   renderCamera_ = getAgentCamera().getRenderCamera();
   timeline_.start();
-}  // processNavmesh}
+}  // initSimPostReconfigure
 
 void Viewer::switchCameraType() {
   auto& cam = getAgentCamera();
@@ -900,7 +956,7 @@ void saveTransformToFile(const std::string& filename,
                          const Mn::Matrix4 sensorTransform) {
   std::ofstream file(filename);
   if (!file.good()) {
-    LOG(ERROR) << "Cannot open " << filename << " to output data.";
+    ESP_ERROR() << "Cannot open" << filename << "to output data.";
     return;
   }
 
@@ -910,8 +966,8 @@ void saveTransformToFile(const std::string& filename,
     for (int i = 0; i < 16; ++i) {
       file << t[i] << " ";
     }
-    LOG(INFO) << "Transformation matrix saved to " << filename << " : "
-              << Eigen::Map<const esp::mat4f>(transform.data());
+    ESP_DEBUG() << "Transformation matrix saved to" << filename << ":"
+                << Eigen::Map<const esp::mat4f>(transform.data());
   };
   save(agentTransform);
   save(sensorTransform);
@@ -940,7 +996,7 @@ bool loadTransformFromFile(const std::string& filename,
                            Mn::Matrix4& sensorTransform) {
   std::ifstream file(filename);
   if (!file.good()) {
-    LOG(ERROR) << "Cannot open " << filename << " to load data.";
+    ESP_ERROR() << "Cannot open" << filename << "to load data.";
     return false;
   }
 
@@ -954,13 +1010,13 @@ bool loadTransformFromFile(const std::string& filename,
     }
     Mn::Matrix4 temp{cols[0], cols[1], cols[2], cols[3]};
     if (!temp.isRigidTransformation()) {
-      LOG(WARNING) << "Data loaded from " << filename
-                   << " is not a valid rigid transformation.";
+      ESP_WARNING() << "Data loaded from" << filename
+                    << "is not a valid rigid transformation.";
       return false;
     }
     transform = temp;
-    LOG(INFO) << "Transformation matrix loaded from " << filename << " : "
-              << Eigen::Map<esp::mat4f>(transform.data());
+    ESP_DEBUG() << "Transformation matrix loaded from" << filename << ":"
+                << Eigen::Map<esp::mat4f>(transform.data());
     return true;
   };
   // NOTE: load Agent first!!
@@ -980,13 +1036,14 @@ void Viewer::loadAgentAndSensorTransformFromFile() {
     savedSensorTransform_ = sensorMtx;
   } else {
     // attempting to load from last temporary save
-    LOG(INFO)
+    ESP_DEBUG()
         << "Camera transform file not specified, attempting to load from "
            "current instance. Use --agent-transform-filepath to specify file "
            "to load from.";
     if (!savedAgentTransform_ || !savedSensorTransform_) {
-      LOG(INFO) << "Well, no transformation saved in current instance. nothing "
-                   "is changed.";
+      ESP_DEBUG()
+          << "Well, no transformation saved in current instance. nothing "
+             "is changed.";
       return;
     }
   }
@@ -995,7 +1052,7 @@ void Viewer::loadAgentAndSensorTransformFromFile() {
   for (const auto& p : defaultAgent_->node().getNodeSensors()) {
     p.second.get().object().setTransformation(*savedSensorTransform_);
   }
-  LOG(INFO)
+  ESP_DEBUG()
       << "Transformation matrices are loaded to the agent and the sensors.";
 }
 
@@ -1009,12 +1066,11 @@ int Viewer::addObject(const std::string& objectAttrHandle) {
   // Relative to agent bodynode
   Mn::Matrix4 T = agentBodyNode_->MagnumObject::transformationMatrix();
   Mn::Vector3 new_pos = T.transformPoint({0.1f, 1.5f, -2.0f});
-
-  int physObjectID = simulator_->addObjectByHandle(objectAttrHandle);
-  simulator_->setTranslation(new_pos, physObjectID);
-  simulator_->setRotation(Mn::Quaternion::fromMatrix(T.rotationNormalized()),
-                          physObjectID);
-  return physObjectID;
+  auto rigidObjMgr = simulator_->getRigidObjectManager();
+  auto obj = rigidObjMgr->addObjectByHandle(objectAttrHandle);
+  obj->setTranslation(new_pos);
+  obj->setRotation(Mn::Quaternion::fromMatrix(T.rotationNormalized()));
+  return obj->getID();
 }  // addObject
 
 // add file-based template derived object from keypress
@@ -1023,7 +1079,7 @@ int Viewer::addTemplateObject() {
   if (numObjTemplates > 0) {
     return addObject(objectAttrManager_->getRandomFileTemplateHandle());
   } else {
-    LOG(WARNING) << "No objects loaded, can't add any";
+    ESP_WARNING() << "No objects loaded, can't add any";
     return esp::ID_UNDEFINED;
   }
 }  // addTemplateObject
@@ -1034,37 +1090,38 @@ int Viewer::addPrimitiveObject() {
   if (numObjPrims > 0) {
     return addObject(objectAttrManager_->getRandomSynthTemplateHandle());
   } else {
-    LOG(WARNING) << "No primitive templates available, can't add any objects";
+    ESP_WARNING() << "No primitive templates available, can't add any objects";
     return esp::ID_UNDEFINED;
   }
 }  // addPrimitiveObject
 
 void Viewer::buildTrajectoryVis() {
   if (agentLocs_.size() < 2) {
-    LOG(WARNING) << "::buildTrajectoryVis : No recorded trajectory "
-                    "points, so nothing to build. Aborting.";
+    ESP_WARNING() << "No recorded trajectory "
+                     "points, so nothing to build. Aborting.";
     return;
   }
-  Mn::Color4 color{randomDirection(), 1.0f};
+  std::vector<Mn::Color3> clrs;
+  int numClrs = (singleColorTrajectory_ ? 1 : rand() % 4 + 2);
+  clrs.reserve(numClrs);
+  for (int i = 0; i < numClrs; ++i) {
+    clrs.emplace_back(Mn::Color3{randomDirection()});
+  }
   // synthesize a name for asset based on color, radius, point count
-  std::ostringstream tmpName;
-  tmpName << "viewerTrajVis_R" << color.r() << "_G" << color.g() << "_B"
-          << color.b() << "_rad" << agentLocs_.size() << "_"
-          << agentLocs_.size() << "_pts";
-  std::string trajObjName(tmpName.str());
+  std::string trajObjName = Cr::Utility::formatString(
+      "viewerTrajVis_R{}_G{}_B{}_clrs_{}_rad_{}_{}_pts", clrs[0].r(),
+      clrs[0].g(), clrs[0].b(), numClrs, agentTrajRad_, agentLocs_.size());
 
-  LOG(INFO) << "::buildTrajectoryVis : Attempting to build trajectory "
-               "tube for :"
-            << agentLocs_.size() << " points.";
-  int trajObjID = simulator_->addTrajectoryObject(
-      trajObjName, agentLocs_, 6, agentTrajRad_, color, true, 10);
+  ESP_DEBUG() << "Attempting to build trajectory tube for :"
+              << agentLocs_.size() << "points with " << numClrs << "colors.";
+  int trajObjID = simulator_->addTrajectoryObject(trajObjName, agentLocs_, clrs,
+                                                  6, agentTrajRad_, true, 10);
   if (trajObjID != esp::ID_UNDEFINED) {
-    LOG(INFO) << "::buildTrajectoryVis : Success!  Traj Obj Name : "
-              << trajObjName << " has object ID : " << trajObjID;
+    ESP_DEBUG() << "Success!  Traj Obj Name :" << trajObjName
+                << "has object ID :" << trajObjID;
   } else {
-    LOG(WARNING) << "::buildTrajectoryVis : Attempt to build trajectory "
-                    "visualization "
-                 << trajObjName << " failed; Returned ID_UNDEFINED.";
+    ESP_WARNING() << "Attempt to build trajectory visualization" << trajObjName
+                  << "failed; Returned ID_UNDEFINED.";
   }
 }  // buildTrajectoryVis
 
@@ -1073,7 +1130,8 @@ void Viewer::removeLastObject() {
   if (existingObjectIDs.size() == 0) {
     return;
   }
-  simulator_->removeObject(existingObjectIDs.back());
+  auto rigidObjMgr = simulator_->getRigidObjectManager();
+  rigidObjMgr->removeObjectByID(existingObjectIDs.back());
 }
 
 void Viewer::invertGravity() {
@@ -1081,7 +1139,6 @@ void Viewer::invertGravity() {
   const Mn::Vector3 invGravity = -1 * gravity;
   simulator_->setGravity(invGravity);
 }
-
 #ifdef ESP_BUILD_WITH_VHACD
 
 void Viewer::displayStageDistanceGradientField() {
@@ -1091,21 +1148,21 @@ void Viewer::displayStageDistanceGradientField() {
 
   // if the object hasn't been voxelized, do that and generate an SDF as
   // well
-  !Mn::Debug();
+  !ESP_DEBUG();
   if (stageVoxelization == nullptr) {
     simulator_->createStageVoxelization(2000000);
     stageVoxelization = simulator_->getStageVoxelization();
     esp::geo::generateEuclideanDistanceSDF(stageVoxelization,
                                            "ESignedDistanceField");
   }
-  !Mn::Debug();
+  !ESP_DEBUG();
 
   // generate a vector field for the SDF gradient
   esp::geo::generateScalarGradientField(
       stageVoxelization, "ESignedDistanceField", "GradientField");
   // generate a mesh of the vector field with boolean isVectorField set to
   // true
-  !Mn::Debug();
+  !ESP_DEBUG();
 
   stageVoxelization->generateMesh("GradientField");
 
@@ -1189,16 +1246,15 @@ Mn::Vector3 Viewer::randomDirection() {
 
 void Viewer::setSceneInstanceFromListAndShow(int nextSceneInstanceIDX) {
   // set current to be passed idx, making sure it is in bounds of scene list
-  curSceneInstanceIDX_ =
-      (nextSceneInstanceIDX % this->curSceneInstances_.size());
+  curSceneInstanceIDX_ = (nextSceneInstanceIDX % curSceneInstances_.size());
   // Set scene instance in SimConfig
   simConfig_.activeSceneName = curSceneInstances_[curSceneInstanceIDX_];
 
   // update MM's config with new active scene name
   MM_->setSimulatorConfiguration(simConfig_);
   // close and reconfigure simulator - is this really necessary?
-  LOG(INFO) << "Active Scene Dataset : " << MM_->getActiveSceneDatasetName()
-            << " | Loading Scene : " << simConfig_.activeSceneName;
+  ESP_DEBUG() << "Active Scene Dataset :" << MM_->getActiveSceneDatasetName()
+              << "| Loading Scene :" << simConfig_.activeSceneName;
 
   renderCamera_ = nullptr;
   agentBodyNode_ = nullptr;
@@ -1212,6 +1268,9 @@ void Viewer::setSceneInstanceFromListAndShow(int nextSceneInstanceIDX) {
 
   // initialize sim navmesh, agent, sensors after creation/reconfigure
   initSimPostReconfigure();
+  // run this in case we are currently displaying something other than visual
+  // sensor
+  bindRenderTarget();
 }  // Viewer::setSceneInstanceFromListAndShow
 
 float timeSinceLastSimulation = 0.0;
@@ -1248,7 +1307,7 @@ void Viewer::drawEvent() {
 
   if (visualizeMode_ == VisualizeMode::Depth ||
       visualizeMode_ == VisualizeMode::Semantic) {
-    // ================ Depth Visualization ==================================
+    // ================ Depth/Semantic Visualization =======================
     std::string sensorId = "depth_camera";
     if (visualizeMode_ == VisualizeMode::Depth) {
       if (sensorMode_ == VisualSensorMode::Fisheye) {
@@ -1273,9 +1332,7 @@ void Viewer::drawEvent() {
                                        1.0f / 512.0f,  // colorMapOffset
                                        1.0f / 12.0f);  // colorMapScale
     } else if (visualizeMode_ == VisualizeMode::Semantic) {
-      simulator_->visualizeObservation(defaultAgentId_, sensorId,
-                                       1.0f / 512.0f,  // colorMapOffset
-                                       1.0f / 50.0f);  // colorMapScale
+      simulator_->visualizeObservation(defaultAgentId_, sensorId);
     }
     sensorRenderTarget->blitRgbaToDefault();
   } else {
@@ -1392,11 +1449,14 @@ void Viewer::drawEvent() {
         break;
     }
     ImGui::Text("%s", profiler_.statistics().c_str());
+    std::string modeText =
+        "Mouse Interaction Mode: " + mouseModeNames.at(mouseInteractionMode);
+    ImGui::Text("%s", modeText.c_str());
+    if (!semanticTag_.empty()) {
+      ImGui::Text("Semantic %s", semanticTag_.c_str());
+    }
+    ImGui::End();
   }
-  std::string modeText =
-      "Mouse Interaction Mode: " + mouseModeNames.at(mouseInteractionMode);
-  ImGui::Text("%s", modeText.c_str());
-  ImGui::End();
 
   /* Set appropriate states. If you only draw ImGui, it is sufficient to
      just enable blending and scissor test in the constructor. */
@@ -1418,6 +1478,12 @@ void Viewer::drawEvent() {
   swapBuffers();
   timeline_.nextFrame();
   redraw();
+}  // Viewer::drawEvent()
+
+void Viewer::dispMetadataInfo() {  // display info report
+  std::string dsInfoReport = MM_->createDatasetReport();
+  ESP_DEBUG() << "\nActive Dataset Details : \n"
+              << dsInfoReport << "\nActive Dataset Report Details Done";
 }
 
 void Viewer::moveAndLook(int repetitions) {
@@ -1585,26 +1651,60 @@ void Viewer::mousePressEvent(MouseEvent& event) {
           }
 #endif
           addPrimitiveObject();
+
           auto existingObjectIDs = simulator_->getExistingObjectIDs();
           // use the bounding box to create a safety margin for adding the
           // object
+          auto rigidObjMgr = simulator_->getRigidObjectManager();
+          auto obj = rigidObjMgr->getObjectByID(existingObjectIDs.back());
           float boundingBuffer =
-              simulator_->getObjectSceneNode(existingObjectIDs.back())
-                      ->computeCumulativeBB()
-                      .size()
-                      .max() /
-                  2.0 +
+              obj->getSceneNode()->computeCumulativeBB().size().max() / 2.0 +
               0.04;
-          simulator_->setTranslation(
-              raycastResults.hits[0].point +
-                  raycastResults.hits[0].normal * boundingBuffer,
-              existingObjectIDs.back());
+          obj->setTranslation(raycastResults.hits[0].point +
+                              raycastResults.hits[0].normal * boundingBuffer);
 
-          simulator_->setRotation(esp::core::randomRotation(),
-                                  existingObjectIDs.back());
+          obj->setRotation(esp::core::randomRotation());
         }
       }
-    }  // end add primitive w/ right click
+      // end add primitive w/ right click
+    } else if (event.button() == MouseEvent::Button::Left) {
+      // if shift-click is pressed, display semantic ID and name if exists
+      if (event.modifiers() & MouseEvent::Modifier::Shift) {
+        semanticTag_ = "";
+        // get semantic scene
+        auto semanticScene = simulator_->getSemanticScene();
+        // only enable for HM3D for now
+        if ((semanticScene) && (semanticScene->hasVertColorsDefined())) {
+          auto semanticObjects = semanticScene->objects();
+          std::string sensorId = "semantic_camera";
+          simulator_->drawObservation(defaultAgentId_, sensorId);
+          esp::sensor::Observation observation;
+          simulator_->getAgentObservation(defaultAgentId_, sensorId,
+                                          observation);
+
+          uint32_t desiredIdx =
+              (viewportPoint[0] +
+               (observation.buffer->shape[1] *
+                (observation.buffer->shape[0] - viewportPoint[1])));
+          uint32_t objIdx = Corrade::Containers::arrayCast<int>(
+              observation.buffer->data)[desiredIdx];
+          // TODO : Change core::buffer to magnum image, then we can simplify
+          // access uint32_t objIdx =
+          // observation.buffer->pixels<uint32_t>().flipped<0>()[viewportPoint[1]][viewportPoint[0]];
+
+          // subtract 1 to align with semanticObject array
+          --objIdx;
+          std::string tmpStr = "Unknown";
+          if ((objIdx >= 0) && (objIdx < semanticObjects.size())) {
+            tmpStr = semanticObjects[objIdx]->id();
+          }
+          semanticTag_ =
+              Cr::Utility::formatString("id:{}:{}", (objIdx + 1), tmpStr);
+          ESP_WARNING() << "Data point @ idx : " << objIdx
+                        << ": Object name :" << semanticTag_;
+        }
+      }
+    }
   } else if (mouseInteractionMode == MouseInteractionMode::GRAB) {
     // GRAB mode
     if (simulator_->getPhysicsSimulationLibrary() !=
@@ -1678,7 +1778,7 @@ void Viewer::mousePressEvent(MouseEvent& event) {
                     .length(),
                 *simulator_);
           } else {
-            Mn::Debug{} << "Oops, couldn't find the hit object. That's odd.";
+            ESP_DEBUG() << "Oops, couldn't find the hit object. That's odd.";
           }
         }  // end didn't hit the scene
       }    // end has raycast hit
@@ -1781,18 +1881,18 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       exit(0);
       break;
     case KeyEvent::Key::Tab:
-      Mn::Debug{} << "Cycling to "
+      ESP_DEBUG() << "Cycling to"
                   << ((event.modifiers() & MouseEvent::Modifier::Shift)
                           ? "previous"
                           : "next")
-                  << " SceneInstance";
+                  << "SceneInstance";
       setSceneInstanceFromListAndShow(getNextSceneInstanceIDX(
           (event.modifiers() & MouseEvent::Modifier::Shift) ? -1 : 1));
       break;
     case KeyEvent::Key::Space:
       simulating_ = !simulating_;
-      Mn::Debug{} << "Physics Simulation cycling from " << !simulating_
-                  << " to " << simulating_;
+      ESP_DEBUG() << "Physics Simulation cycling from" << !simulating_ << "to"
+                  << simulating_;
       break;
     case KeyEvent::Key::Period:
       // also `>` key
@@ -1810,11 +1910,20 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       // agent motion trajectory mesh synthesis with random color
       buildTrajectoryVis();
       break;
+    case KeyEvent::Key::Three:
+      // toggle between single color and multi-color trajectories
+      singleColorTrajectory_ = !singleColorTrajectory_;
+      ESP_DEBUG() << (singleColorTrajectory_
+                          ? "Building trajectory with multiple random colors "
+                            "changed to single random color."
+                          : "Building trajectory with single random color "
+                            "changed to multiple random colors.");
+      break;
     case KeyEvent::Key::Four:
       sensorMode_ = static_cast<VisualSensorMode>(
           (uint8_t(sensorMode_) + 1) %
           uint8_t(VisualSensorMode::VisualSensorModeCount));
-      LOG(INFO) << "Sensor mode is set to " << int(sensorMode_);
+      ESP_DEBUG() << "Sensor mode is set to" << int(sensorMode_);
       break;
     case KeyEvent::Key::Five:
       // switch camera between ortho and perspective
@@ -1831,13 +1940,13 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       bindRenderTarget();
       switch (visualizeMode_) {
         case VisualizeMode::RGBA:
-          LOG(INFO) << "Visualizing COLOR sensor observation.";
+          ESP_DEBUG() << "Visualizing COLOR sensor observation.";
           break;
         case VisualizeMode::Depth:
-          LOG(INFO) << "Visualizing DEPTH sensor observation.";
+          ESP_DEBUG() << "Visualizing DEPTH sensor observation.";
           break;
         case VisualizeMode::Semantic:
-          LOG(INFO) << "Visualizing SEMANTIC sensor observation.";
+          ESP_DEBUG() << "Visualizing SEMANTIC sensor observation.";
           break;
         default:
           CORRADE_INTERNAL_ASSERT_UNREACHABLE();
@@ -1862,13 +1971,13 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       break;
     case KeyEvent::Key::Equal: {
       // increase trajectory tube diameter
-      LOG(INFO) << "Bigger";
+      ESP_DEBUG() << "Bigger";
       modTrajRad(true);
       break;
     }
     case KeyEvent::Key::Minus: {
       // decrease trajectory tube diameter
-      LOG(INFO) << "Smaller";
+      ESP_DEBUG() << "Smaller";
       modTrajRad(false);
       break;
     }
@@ -1906,24 +2015,32 @@ void Viewer::keyPressEvent(KeyEvent& event) {
     case KeyEvent::Key::O:
       addTemplateObject();
       break;
+    case KeyEvent::Key::P:
+      // save current sim state
+      simulator_->saveCurrentSceneInstance();
+      break;
+    case KeyEvent::Key::Slash:
+      // display current scene's metadata information
+      dispMetadataInfo();
+      break;
     case KeyEvent::Key::Q:
       // query the agent state
       showAgentStateMsg(true, true);
       break;
     case KeyEvent::Key::T: {
       // add an ArticulatedObject from provided filepath
-      Mn::Debug{} << "Load URDF: provide a URDF filepath.";
+      ESP_DEBUG() << "Load URDF: provide a URDF filepath.";
       std::string urdfFilepath;
       std::cin >> urdfFilepath;
 
       if (urdfFilepath.empty()) {
-        Mn::Debug{} << "... no input provided. Aborting.";
+        ESP_DEBUG() << "... no input provided. Aborting.";
       } else if (!Cr::Utility::String::endsWith(urdfFilepath, ".urdf") &&
                  !Cr::Utility::String::endsWith(urdfFilepath, ".URDF")) {
-        Mn::Debug{} << "... input is not a URDF. Aborting.";
+        ESP_DEBUG() << "... input is not a URDF. Aborting.";
       } else if (Cr::Utility::Directory::exists(urdfFilepath)) {
         auto aom = simulator_->getArticulatedObjectManager();
-        auto ao = aom->addArticulatedObjectFromURDF(urdfFilepath);
+        auto ao = aom->addArticulatedObjectFromURDF(urdfFilepath, true);
         ao->setTranslation(
             defaultAgent_->node().transformation().transformPoint(
                 {0, 1.0, -1.5}));

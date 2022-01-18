@@ -13,7 +13,7 @@ You may encounter memory access errors on Quest 2 or possibly other VR devices. 
 $ mkdir examples/web_apps/webxr_hand_demo/data
 $ python -m habitat_sim.utils.datasets_download --uids webxr_hand_demo --data-path examples/web_apps/webxr_hand_demo/data
 ```
-2. Follow [instructions](https://github.com/facebookresearch/habitat-sim#experimental-emscripten-webgl-and-web-apps) for installing and activating Emscripten, including `source path/to/emsdk_env.sh` or similar to configure env variables.
+2. Follow [instructions](https://github.com/facebookresearch/habitat-sim/blob/main/DETAILS.md#experimental-emscripten-webgl-and-web-apps) for installing and activating Emscripten, including `source path/to/emsdk_env.sh` or similar to configure env variables.
 1. `cd` to `examples/web_apps/webxr_hand_demo` (this directory). Then run a script to transpile Habitat into JS, copy the resulting files over, and also copy over the JS utils files.
 ```bash
 $ chmod +x build_and_install_habitat_sim_js.sh
@@ -38,7 +38,7 @@ $ python3 -m http.server
 1. Observe the logged head poses in the html textarea.
 
 ## VR on Quest 2 (or other headset)
-1. Using a modification of either method above, serve the content at a public URL. For example, you could upload the `task/server_files/habitat_vr_app` folder to Amazon S3 or any web host. [todo: explain how to do this for AWS]
+1. Serve the content at a public URL. This has to be an HTTPS address because that is a requirement for WebXR (just serving it locally won't cut it either). You could upload this `webxr_hand_demo` folder to Amazon S3 or any web host. You might experience some issues uploading the files in `webxr_hand_demo/data` because they are symlinked. If that happens, upload the actual source files, then adjust the file structure to match `webxr_hand_demo/data`. [todo: step through how to host on AWS]
 1. On Quest 2, open the browser and navigate to the URL. Use the Quest controller to click "Enter VR".
 1. Exit immersive VR with the Quest 2 controller's home button.
 
@@ -53,8 +53,8 @@ If the VR app fails to load in your desktop browser, look for errors in the brow
     - `default.physics_config.json` contains the physics settings, e.g. gravitational acceleration.
     - `stages` contain the scene `.glb` files and their corresponding `.stage_config.json` files. In order to choose a scene other than `remake_v0_JustBigStuff_00`, you need to add its 2 files here.
     - `objects` contains the hand models as well as the ReplicaCAD objects that can be spawned. It also contains some extra objects you may use.
-- `js` contains the JS source code of the hand demo site.
-- `lib` contains the JS transpiled version of Habitat-sim, as well as some general use utils JS files. This folder is what gets modified when you run `build_and_install_habitat_sim_js.sh`.
+- `js` contains the JS source code of the hand demo site, as well as the JS transpiled version of Habitat-sim. These transpiled files need to be here (rather than `lib`, which would be more intuitive) due to some quirks in how `physics_worker_setup.js` loads `hsim_bindings.js`. Essentially, `importScripts` is being used to load `hsim_bindings.js`, which is basically equivalent to copying all the `hsim_bindings.js` code into `physics_worker_setup.js`. The `hsim_bindings.js` always code tries to get `hsim_bindings.wasm` from the same directory it is in, but since it's running from `js/`, it can't locate the file.
+- `lib` contains some general use utils JS files that are copied over when you run `build_and_install_habitat_sim_js.sh`.
 - `index.html` is the hosted site, and `style.css` is its stylesheet.
 
 # Habitat-sim JS build

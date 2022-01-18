@@ -62,7 +62,8 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
                     const assets::ResourceManager& resMgr)
       : Magnum::SceneGraph::AbstractFeature3D(*bodyNode),
         objectId_(objectId),
-        resMgr_(resMgr) {}
+        resMgr_(resMgr),
+        userAttributes_(std::make_shared<core::config::Configuration>()) {}
 
   ~PhysicsObjectBase() override = default;
 
@@ -398,11 +399,8 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
   /**
    * @brief Set or reset the object's state using the object's specified @p
    * sceneInstanceAttributes_.
-   * @param defaultCOMCorrection The default value of whether COM-based
-   * translation correction needs to occur.
    */
-  virtual void resetStateFromSceneInstanceAttr(
-      CORRADE_UNUSED bool defaultCOMCorrection = false) = 0;
+  virtual void resetStateFromSceneInstanceAttr() = 0;
 
   /**
    * @brief Set this object's @ref
@@ -415,7 +413,7 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
 
   template <class U>
   void setSceneInstanceAttr(std::shared_ptr<U> instanceAttr) {
-    _sceneInstanceAttributes = std::move(instanceAttr);
+    _initObjInstanceAttrs = std::move(instanceAttr);
   }  // setSceneInstanceAttr
 
   /**
@@ -424,16 +422,28 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    */
   virtual std::vector<scene::SceneNode*> getVisualSceneNodes() const = 0;
 
-  core::Configuration::ptr getUserAttributes() const { return userAttributes_; }
+  core::config::Configuration::ptr getUserAttributes() const {
+    return userAttributes_;
+  }
 
   /**
-   * @brief This function will completely overwrite this object's
-   * user-defined attributes.
+   * @brief This function will overwrite this object's existing user-defined
+   * attributes with @p attr.
    * @param attr A ptr to the user defined attributes specified for this object.
    * merge into them.
    */
-  void setUserAttributes(core::Configuration::ptr attr) {
+  void setUserAttributes(core::config::Configuration::ptr attr) {
     userAttributes_ = std::move(attr);
+  }
+
+  /**
+   * @brief This function will merge this object's existing user-defined
+   * attributes with @p attr by overwriting it with @p attr.
+   * @param attr A ptr to the user defined attributes specified for this object.
+   * merge into them.
+   */
+  void mergeUserAttributes(const core::config::Configuration::ptr& attr) {
+    userAttributes_->overwriteWithConfig(attr);
   }
 
  protected:
@@ -444,11 +454,47 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    * instance or nullptr if no template exists.
    */
   template <class T>
-  std::shared_ptr<T> getSceneInstanceAttrInternal() const {
-    if (!_sceneInstanceAttributes) {
+  std::shared_ptr<T> getInitObjectInstanceAttrInternal() const {
+    if (!_initObjInstanceAttrs) {
       return nullptr;
     }
-    return T::create(*(static_cast<T*>(_sceneInstanceAttributes.get())));
+    return T::create(*(static_cast<T*>(_initObjInstanceAttrs.get())));
+  }
+
+  /**
+   * @brief Reverses the COM correction transformation for objects that require
+   * it. Currently a simple passthrough for stages and Articulated Objects.
+   */
+  virtual Magnum::Vector3 getUncorrectedTranslation() const {
+    return getTranslation();
+  }
+
+  /** @brief Accessed internally. Get an appropriately cast copy of the @ref
+   * metadata::attributes::SceneObjectInstanceAttributes used to place the
+   * object within the scene, updated to have the c.
+   * @return A copy of the initialization template used to create this object
+   * instance or nullptr if no template exists.
+   */
+  template <class T>
+  std::shared_ptr<T> getCurrentObjectInstanceAttrInternal() {
+    if (!_initObjInstanceAttrs) {
+      return nullptr;
+    }
+    static_assert(
+        std::is_base_of<metadata::attributes::SceneObjectInstanceAttributes,
+                        T>::value,
+        "PhysicsObjectBase : Cast of SceneObjectInstanceAttributes must be to "
+        "class that inherits from SceneObjectInstanceAttributes");
+
+    std::shared_ptr<T> initAttrs = std::const_pointer_cast<T>(
+        T::create(*(static_cast<const T*>(_initObjInstanceAttrs.get()))));
+    // set values
+    initAttrs->setTranslation(getUncorrectedTranslation());
+    initAttrs->setRotation(getRotation());
+    initAttrs->setMotionType(
+        metadata::attributes::getMotionTypeName(objectMotionType_));
+
+    return initAttrs;
   }
 
   /**
@@ -491,15 +537,15 @@ class PhysicsObjectBase : public Magnum::SceneGraph::AbstractFeature3D {
    * internally processed by habitat, but provide a "scratch pad" for the user
    * to access and save important information and metadata.
    */
-  core::Configuration::ptr userAttributes_{};
+  core::config::Configuration::ptr userAttributes_ = nullptr;
 
  private:
   /**
    * @brief This object's instancing attributes, if any were used during its
    * creation.
    */
-  std::shared_ptr<metadata::attributes::SceneObjectInstanceAttributes>
-      _sceneInstanceAttributes = nullptr;
+  std::shared_ptr<const metadata::attributes::SceneObjectInstanceAttributes>
+      _initObjInstanceAttrs = nullptr;
 
  public:
   ESP_SMART_POINTERS(PhysicsObjectBase)

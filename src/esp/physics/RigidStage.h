@@ -77,19 +77,16 @@ class RigidStage : public RigidBase {
   /**
    * @brief Currently not supported. Set or reset the stages's state using the
    * object's specified @p sceneInstanceAttributes_.
-   * @param defaultCOMCorrection The default value of whether COM-based
-   * translation correction needs to occur.
    */
-  void resetStateFromSceneInstanceAttr(
-      CORRADE_UNUSED bool defaultCOMCorrection = false) override {}
+  void resetStateFromSceneInstanceAttr() override {}
 
   /**
    * @brief Currently ignored for stage objects.
    * @param mt The desirved @ref MotionType.
    */
   void setMotionType(CORRADE_UNUSED MotionType mt) override {
-    LOG(WARNING) << "::setMotionType : Stages cannot have their "
-                    "motion type changed from MotionType::STATIC.  Aborting.";
+    ESP_WARNING() << "Stages cannot have their "
+                     "motion type changed from MotionType::STATIC.  Aborting.";
   }
 
  public:

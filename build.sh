@@ -37,7 +37,15 @@ fi
 
 python setup.py build_ext --inplace "${builder_args[@]}"
 
+here=$(pwd)
 if [ "$RUN_TESTS" = true ] ; then
   cd build
-  ctest -V
+  PYTHONPATH=${here}/src_python ctest -V
+fi
+
+# Check if src_python has been added to python path, otherwise remind user
+if [[ "$PYTHONPATH" == *"src_python"* ]]; then
+  echo "\`src_python\` subdir found in PYTHONPATH : \`$PYTHONPATH\`"
+else
+  echo "Add src_python to PYTHONPATH, i.e. \`export PYTHONPATH=${here}/src_python:\${PYTHONPATH}\`"
 fi

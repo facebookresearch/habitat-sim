@@ -16,9 +16,11 @@ enum class AssetType;
 }  // namespace assets
 namespace metadata {
 namespace managers {
+using esp::core::managedContainers::ManagedObjectAccess;
+
 class StageAttributesManager
     : public AbstractObjectAttributesManager<attributes::StageAttributes,
-                                             core::ManagedObjectAccess::Copy> {
+                                             ManagedObjectAccess::Copy> {
  public:
   StageAttributesManager(
       ObjectAttributesManager::ptr objectAttributesMgr,
@@ -110,7 +112,7 @@ class StageAttributesManager
       attributes::StageAttributes::ptr attributes,
       bool setFrame,
       const std::string& meshHandle,
-      std::function<void(int)> assetTypeSetter) override;
+      const std::function<void(int)>& assetTypeSetter) override;
   /**
    * @brief Used Internally.  Create and configure newly-created attributes with
    * any default values, before any specific values are set.

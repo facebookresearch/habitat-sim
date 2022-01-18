@@ -19,8 +19,8 @@
 
 #include "esp/assets/MeshData.h"
 #include "esp/assets/MeshMetaData.h"
-#include "esp/core/esp.h"
-#include "esp/geo/geo.h"
+#include "esp/core/Esp.h"
+#include "esp/geo/Geo.h"
 #include "esp/gfx/Drawable.h"
 #include "esp/gfx/magnum.h"
 
@@ -109,7 +109,7 @@ class VoxelGrid {
 
     if (grids_.find(gridName) != grids_.end()) {
       // grid exists, simply overwrite
-      Magnum::Debug() << gridName << "exists, overwriting.";
+      ESP_DEBUG() << gridName << "exists, overwriting.";
 
       grids_[gridName].data = Corrade::Containers::Array<char>(
           Corrade::ValueInit, gridSize() * sizeof(T));

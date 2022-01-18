@@ -21,11 +21,18 @@ repos:
     -   id: check-toml
     -   id: check-xml
     -   id: check-yaml
-        exclude: ^conda-build/habitat-sim/meta.yaml
+        exclude: ^conda-build/.*/meta.yaml
     -   id: debug-statements
     -   id: mixed-line-ending
         args: ['--fix=lf']
     -   id: requirements-txt-fixer
+
+    # Changes tabs to spaces
+-   repo: https://github.com/Lucas-C/pre-commit-hooks
+    rev: v1.1.10
+    hooks:
+    -   id: remove-tabs
+        exclude: "(^(.git|setup.cfg))|(.(json|scn)$)"
 
 -   repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
     rev: v2.1.0
@@ -35,17 +42,23 @@ repos:
     -   id: pretty-format-toml
         args: [--autofix]
 
+-   repo: https://github.com/pre-commit/pygrep-hooks
+    rev: v1.9.0  # Use the ref you want to point at
+    hooks:
+    -   id: python-check-blanket-noqa
+    -   id: python-check-blanket-type-ignore
+
 -   repo: https://github.com/timothycrosley/isort
-    rev: 5.8.0
+    rev: 5.9.3
     hooks:
     -   id: isort
         exclude: docs/
 
 -   repo: https://github.com/ambv/black
-    rev: 21.5b2
+    rev: 21.9b0
     hooks:
-    - id: black
-      exclude: ^examples/tutorials/(nb_python|colabs)
+    -   id: black
+        exclude: ^examples/tutorials/(nb_python|colabs)
 
 -   repo: https://github.com/myint/autoflake
     rev: v1.4
@@ -59,15 +72,21 @@ repos:
     hooks:
     -   id: flake8
         exclude: docs/
-        additional_dependencies:
-        - flake8-bugbear==21.4.3
+        additional_dependencies: &flake8_dependencies
+        - flake8-bugbear==21.9.2
         - flake8-builtins==1.5.3
-        - flake8-comprehensions==3.4.0
-        - flake8-return==1.1.2
-        - flake8-simplify==0.14.1
+        - flake8-comprehensions==3.6.1
+        - flake8-return==1.1.3
+        - flake8-simplify==0.14.2
+
+-   repo: https://github.com/asottile/yesqa
+    rev: v1.2.3
+    hooks:
+    -   id: yesqa
+        additional_dependencies: *flake8_dependencies
 
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: 'v0.901'
+    rev: 'v0.910'
     hooks:
     -   id: mypy
         pass_filenames: false
@@ -75,17 +94,18 @@ repos:
         - attrs
 
 -   repo: https://github.com/seddonym/import-linter
-    rev: v1.2.1
+    rev: v1.2.6
     hooks:
     -   id: import-linter
+        entry: env PYTHONPATH=src_python lint-imports
 
 -   repo: https://github.com/kynan/nbstripout
-    rev: 0.4.0
+    rev: 0.5.0
     hooks:
     -   id: nbstripout
 
 -   repo: https://github.com/mwouts/jupytext
-    rev: v1.11.2
+    rev: v1.13.0
     hooks:
     -   id: jupytext
         files: '^examples/tutorials/(colabs|nb_python)/(.*\.py|.*\.ipynb)$'
@@ -95,15 +115,13 @@ repos:
             - black
             - isort
 
--   repo: local
+-   repo: https://github.com/pre-commit/mirrors-clang-format
+    rev: fdd6cd7821ce22929625f134bc97488ed699e256 # frozen: 12.0.1
     hooks:
-    - id: clang-format
-      name: Run clang-format
-      exclude: src/deps
-      entry: clang-format -i -style=file
-      types: [text]
-      files: '.*\.(cpp|h|hpp|cu|cuh)$'
-      language: system
+    -   id: clang-format
+        types_or: [c++, c, c#, cuda] # also run on CUDA
+        additional_dependencies:
+            - pip>=21
 
 -   repo: https://github.com/cheshirekow/cmake-format-precommit
     rev: v0.6.13
@@ -112,7 +130,7 @@ repos:
         exclude: (^src/(cmake/Find|deps)|configure\.h\.cmake$)
 
 -   repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v7.28.0
+    rev: v7.32.0
     hooks:
     -   id: eslint
         args: [--fix, --ext .html,.js]
@@ -129,6 +147,6 @@ repos:
     -   id: shellcheck
 
 -   repo: https://github.com/AleksaC/circleci-cli-py
-    rev: v0.1.15224
+    rev: v0.1.15973
     hooks:
     -   id: circle-ci-validator

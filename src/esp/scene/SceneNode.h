@@ -11,7 +11,7 @@
 #include <Corrade/Containers/Optional.h>
 #include <Magnum/Math/Range.h>
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/gfx/magnum.h"
 
 // This class provides routines to:

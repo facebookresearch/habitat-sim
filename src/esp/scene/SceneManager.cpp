@@ -3,7 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "SceneManager.h"
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
 namespace esp {
 namespace scene {
@@ -15,12 +15,12 @@ int SceneManager::initSceneGraph() {
 }
 
 SceneGraph& SceneManager::getSceneGraph(int sceneID) {
-  ASSERT(sceneID >= 0 && sceneID < sceneGraphs_.size());
+  CORRADE_INTERNAL_ASSERT(sceneID >= 0 && sceneID < sceneGraphs_.size());
   return (*(sceneGraphs_[sceneID].get()));
 }
 
 const SceneGraph& SceneManager::getSceneGraph(int sceneID) const {
-  ASSERT(sceneID >= 0 && sceneID < sceneGraphs_.size());
+  CORRADE_INTERNAL_ASSERT(sceneID >= 0 && sceneID < sceneGraphs_.size());
   return (*(sceneGraphs_[sceneID].get()));
 }
 

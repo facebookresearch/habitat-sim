@@ -10,12 +10,12 @@
 #include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/EnumSet.h>
 #include <Magnum/GL/AbstractShaderProgram.h>
+#include <Magnum/GL/GL.h>  // header with all forward declarations for the Mn::GL namespace
 #include <Magnum/Shaders/GenericGL.h>
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
 namespace esp {
-
 namespace gfx {
 
 class PbrShader : public Magnum::GL::AbstractShaderProgram {
@@ -74,7 +74,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    *
    * @see @ref Flags, @ref flags()
    */
-  enum class Flag : Magnum::UnsignedShort {
+  enum class Flag : Magnum::UnsignedInt {
     /**
      * Multiply base color with the baseColor texture.
      * @see @ref setBaseColor(), @ref bindBaseColorTexture()
@@ -170,6 +170,7 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      * Enable object ID output.
      */
     ObjectId = 1 << 11,
+
     /**
      * Enable double-sided rendering.
      * (Temporarily STOP supporting this functionality. See comments in
@@ -177,6 +178,21 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
      */
     DoubleSided = 1 << 12,
 
+    /**
+     * Enable image based lighting
+     */
+    ImageBasedLighting = 1 << 13,
+
+    /**
+     * render point light shadows using variance shadow map (VSM)
+     */
+    ShadowsVSM = 1 << 14,
+
+    /**
+     * Enable shader debug mode. Then developer can set the uniform
+     * PbrDebugDisplay in the fragment shader for debugging
+     */
+    DebugDisplay = 1 << 15,
     /*
      * TODO: alphaMask
      */
@@ -254,6 +270,35 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    */
   PbrShader& bindEmissiveTexture(Magnum::GL::Texture2D& texture);
 
+  /**
+   * @brief Bind the irradiance cubemap texture
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& bindIrradianceCubeMap(Magnum::GL::CubeMapTexture& texture);
+
+  /**
+   * @brief Bind the BRDF LUT texture
+   * NOTE: requires Flag::ImageBasedLighting is set
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& bindBrdfLUT(Magnum::GL::Texture2D& texture);
+
+  /**
+   * @brief Bind the prefiltered environment map (cubemap texture)
+   * NOTE: requires Flag::ImageBasedLighting is set
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& bindPrefilteredMap(Magnum::GL::CubeMapTexture& texture);
+
+  /**
+   * @brief Bind the point shadow map (cubemap texture)
+   * @param[in] idx, the index of the shadow map, can be 0, 1, or 2. (We allow
+   * at most 3 shadow maps.)
+   * NOTE: requires Flag::ShadowsPCF or Flag::ShadowsVSM is set
+   * @return Reference to self (for method chaining)
+   */
+  PbrShader& bindPointShadowMap(int idx, Magnum::GL::CubeMapTexture& texture);
+
   // ======== set uniforms ===========
   /**
    * @brief set the texture transformation matrix
@@ -320,6 +365,13 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    *  @return Reference to self (for method chaining)
    */
   PbrShader& setCameraWorldPosition(const Magnum::Vector3& cameraWorldPos);
+
+  /**
+   *  @brief Set total mipmap levels of the prefiltered environment map to the
+   * uniform on GPU
+   *  @return Reference to self (for method chaining)
+   */
+  PbrShader& setPrefilteredMapMipLevels(unsigned int mipLevels);
 
   /**
    * @brief Set light positions or directions
@@ -434,6 +486,37 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
    */
   PbrShader& setNormalTextureScale(float scale);
 
+  /**
+   * Toggles that control contributions from different components
+   */
+  struct PbrEquationScales {
+    float directDiffuse = 1.0f;
+    float directSpecular = 1.0f;
+    float iblDiffuse = 1.0f;
+    float iblSpecular = 1.0f;
+  };
+
+  /**
+   *  @brief Set the scales for differenct components in the pbr equation
+   *  @param scales
+   *  @return Reference to self (for method chaining)
+   */
+  PbrShader& setPbrEquationScales(const PbrEquationScales& scales);
+
+  enum class PbrDebugDisplay : uint8_t {
+    None = 0,
+    DirectDiffuse = 1,
+    DirectSpecular = 2,
+    IblDiffuse = 3,
+    IblSpecular = 4,
+    Normal = 5,
+    Shadow0 = 6,
+  };
+  /**
+   *@brief debug display visualization
+   */
+  PbrShader& setDebugDisplay(PbrDebugDisplay index);
+
  protected:
   Flags flags_;
   unsigned int lightCount_;
@@ -462,6 +545,16 @@ class PbrShader : public Magnum::GL::AbstractShaderProgram {
   int lightDirectionsUniform_ = ID_UNDEFINED;
 
   int cameraWorldPosUniform_ = ID_UNDEFINED;
+  int prefilteredMapMipLevelsUniform_ = ID_UNDEFINED;
+
+  // scales
+  int componentScalesUniform_ = ID_UNDEFINED;
+
+  // pbr debug info
+  int pbrDebugDisplayUniform_ = ID_UNDEFINED;
+
+  /** @brief return true if direct lights or image based lighting is enabled. */
+  inline bool lightingIsEnabled() const;
 };
 
 CORRADE_ENUMSET_OPERATORS(PbrShader::Flags)

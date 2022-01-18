@@ -7,16 +7,6 @@ namespace esp {
 namespace metadata {
 namespace attributes {
 
-// All keys must be lowercase
-const std::map<std::string, esp::assets::AssetType>
-    AbstractObjectAttributes::AssetTypeNamesMap = {
-        {"mp3d", esp::assets::AssetType::MP3D_MESH},
-        {"navmesh", esp::assets::AssetType::NAVMESH},
-        {"ptex", esp::assets::AssetType::FRL_PTEX_MESH},
-        {"semantic", esp::assets::AssetType::INSTANCE_MESH},
-        {"suncg", esp::assets::AssetType::SUNCG_SCENE},
-};
-
 AbstractObjectAttributes::AbstractObjectAttributes(
     const std::string& attributesClassKey,
     const std::string& handle)
@@ -28,6 +18,7 @@ AbstractObjectAttributes::AbstractObjectAttributes(
   setMargin(0.04);
   setOrientUp({0, 1, 0});
   setOrientFront({0, 0, -1});
+  setUseFrameForAllOrientation(true);
   // default rendering and collisions will be mesh for physics objects and
   // scenes. Primitive-based objects do not currently support mesh collisions,
   // however, due to issues with how non-triangle meshes (i.e. wireframes) are
@@ -36,42 +27,51 @@ AbstractObjectAttributes::AbstractObjectAttributes(
   setCollisionAssetIsPrimitive(false);
   setUseMeshCollision(true);
   setIsCollidable(true);
+  setIsVisible(true);
   setUnitsToMeters(1.0);
   setRenderAssetHandle("");
   setCollisionAssetHandle("");
 }  // AbstractObjectAttributes ctor
 
 std::string AbstractObjectAttributes::getObjectInfoHeaderInternal() const {
-  return "Render Asset Handle, Collision Asset Handle, Scale, Margin, Up XYZ, "
-         "Front XYZ, Units to M, Friction Coefficient, Restitution "
-         "Coefficient, Current Shader "
-         "Type, " +
+  return "Render Asset Handle,Collision Asset Handle,Scale,Margin,Up XYZ,"
+         "Front XYZ,Units to M,Friction Coefficient,Restitution "
+         "Coefficient,Current Shader Type," +
          getAbstractObjectInfoHeaderInternal();
 }
 
 std::string AbstractObjectAttributes::getObjectInfoInternal() const {
-  return getRenderAssetHandle()
-      .append(1, ',')
-      .append(getCollisionAssetHandle())
-      .append(1, ',')
-      .append(cfg.value("scale"))
-      .append(1, ',')
-      .append(cfg.value("margin"))
-      .append(1, ',')
-      .append(cfg.value("orient_up"))
-      .append(1, ',')
-      .append(cfg.value("orient_front"))
-      .append(1, ',')
-      .append(cfg.value("units_to_meters"))
-      .append(1, ',')
-      .append(cfg.value("friction_coefficient"))
-      .append(1, ',')
-      .append(cfg.value("restitution_coefficient"))
-      .append(1, ',')
-      .append(getCurrShaderTypeName())
-      .append(1, ',')
-      .append(getAbstractObjectInfoInternal());
+  return Cr::Utility::formatString(
+      "{},{},{},{},{},{},{},{},{},{},{}", getRenderAssetHandle(),
+      getCollisionAssetHandle(), getAsString("scale"), getAsString("margin"),
+      getAsString("orient_up"), getAsString("orient_front"),
+      getAsString("units_to_meters"), getAsString("friction_coefficient"),
+      getAsString("restitution_coefficient"),
+      getShaderTypeName(getShaderType()), getAbstractObjectInfoInternal());
 }  // AbstractObjectAttributes::getObjectInfoInternal
+
+void AbstractObjectAttributes::writeValuesToJson(
+    io::JsonGenericValue& jsonObj,
+    io::JsonAllocator& allocator) const {
+  // write AbstractObjectAttributes values to json
+  writeValueToJson("scale", jsonObj, allocator);
+  writeValueToJson("margin", jsonObj, allocator);
+  writeValueToJson("is_collidable", jsonObj, allocator);
+  writeValueToJson("orient_up", "up", jsonObj, allocator);
+  writeValueToJson("orient_front", "front", jsonObj, allocator);
+  writeValueToJson("units_to_meters", jsonObj, allocator);
+  writeValueToJson("is_visible", jsonObj, allocator);
+  writeValueToJson("friction_coefficient", jsonObj, allocator);
+  writeValueToJson("restitution_coefficient", jsonObj, allocator);
+  writeValueToJson("render_asset", jsonObj, allocator);
+  writeValueToJson("collision_asset", jsonObj, allocator);
+  writeValueToJson("collision_asset_size", jsonObj, allocator);
+  writeValueToJson("shader_type", jsonObj, allocator);
+  writeValueToJson("force_flat_shading", jsonObj, allocator);
+
+  // call instance-specific
+  writeValuesToJsonInternal(jsonObj, allocator);
+}  // AbstractObjectAttributes::writeValuesToJson
 
 ObjectAttributes::ObjectAttributes(const std::string& handle)
     : AbstractObjectAttributes("ObjectAttributes", handle) {
@@ -86,43 +86,77 @@ ObjectAttributes::ObjectAttributes(const std::string& handle)
 
   setBoundingBoxCollisions(false);
   setJoinCollisionMeshes(true);
-  // default to Unknown for objects - will use material-derived shader unless
-  // otherwise specified in config
-  setShaderType(static_cast<int>(ObjectInstanceShaderType::Unknown));
+  // default to use material-derived shader unless otherwise specified in config
+  // or instance config
+  setShaderType(getShaderTypeName(ObjectInstanceShaderType::Material));
   // TODO remove this once ShaderType support is complete
-  setRequiresLighting(true);
+  setForceFlatShading(false);
   setIsVisible(true);
   setSemanticId(0);
 }  // ObjectAttributes ctor
 
 std::string ObjectAttributes::getAbstractObjectInfoInternal() const {
-  return cfg.value("mass")
-      .append(1, ',')
-      .append(cfg.value("COM"))
-      .append(1, ',')
-      .append(cfg.value("inertia"))
-      .append(1, ',')
-      .append(cfg.value("angular_damping"))
-      .append(1, ',')
-      .append(cfg.value("linear_damping"))
-      .append(1, ',')
-      .append(cfg.value("semantic_id"));
+  return Cr::Utility::formatString(
+      "{},{},{},{},{},{}", getAsString("mass"), getAsString("COM"),
+      getAsString("inertia"), getAsString("angular_damping"),
+      getAsString("linear_damping"), getAsString("semantic_id"));
 }
+
+void ObjectAttributes::writeValuesToJsonInternal(
+    io::JsonGenericValue& jsonObj,
+    io::JsonAllocator& allocator) const {
+  // write ObjectAttributes values to json
+  writeValueToJson("mass", jsonObj, allocator);
+  writeValueToJson("linear_damping", jsonObj, allocator);
+  writeValueToJson("angular_damping", jsonObj, allocator);
+  writeValueToJson("use_bounding_box_for_collision", jsonObj, allocator);
+  writeValueToJson("COM", jsonObj, allocator);
+  writeValueToJson("inertia", jsonObj, allocator);
+  writeValueToJson("semantic_id", jsonObj, allocator);
+  writeValueToJson("join_collision_meshes", jsonObj, allocator);
+
+}  // ObjectAttributes::writeValuesToJsonInternal
 
 StageAttributes::StageAttributes(const std::string& handle)
     : AbstractObjectAttributes("StageAttributes", handle) {
   setGravity({0, -9.8, 0});
   setOrigin({0, 0, 0});
-  // default to Unknown for stages - will use material-derived shader unless
-  // otherwise specified in config
-  setShaderType(static_cast<int>(ObjectInstanceShaderType::Unknown));
+  setSemanticOrientUp({0, 1, 0});
+  setSemanticOrientFront({0, 0, -1});
+  // setting defaults for semantic frame will have changed this to false. change
+  // to true so that only used if actually changed.
+  setUseFrameForAllOrientation(true);
+  // default to use material-derived shader unless otherwise specified in config
+  // or instance config
+  setShaderType(getShaderTypeName(ObjectInstanceShaderType::Material));
   // TODO remove this once ShaderType support is complete
-  setRequiresLighting(false);
+  setForceFlatShading(true);
   // 0 corresponds to esp::assets::AssetType::UNKNOWN->treated as general mesh
-  setCollisionAssetType(0);
+  setCollisionAssetType(static_cast<int>(esp::assets::AssetType::UNKNOWN));
   // 4 corresponds to esp::assets::AssetType::INSTANCE_MESH
-  setSemanticAssetType(4);
+  setSemanticAssetType(static_cast<int>(esp::assets::AssetType::INSTANCE_MESH));
+  // set empty defaults for handles
+  set("nav_asset", "");
+  set("semantic_asset", "");
+  set("semantic_descriptor_filename", "");
 }  // StageAttributes ctor
+
+void StageAttributes::writeValuesToJsonInternal(
+    io::JsonGenericValue& jsonObj,
+    io::JsonAllocator& allocator) const {
+  writeValueToJson("origin", jsonObj, allocator);
+  writeValueToJson("gravity", jsonObj, allocator);
+  // only save values if they were actually set specifically
+  if (!getUseFrameForAllOrientation()) {
+    writeValueToJson("semantic_orient_up", "semantic_up", jsonObj, allocator);
+    writeValueToJson("semantic_orient_front", "semantic_front", jsonObj,
+                     allocator);
+  }
+  writeValueToJson("semantic_asset", jsonObj, allocator);
+  writeValueToJson("nav_asset", jsonObj, allocator);
+  writeValueToJson("semantic_descriptor_filename", jsonObj, allocator);
+
+}  // StageAttributes::writeValuesToJsonInternal
 
 }  // namespace attributes
 }  // namespace metadata

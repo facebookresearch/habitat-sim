@@ -10,7 +10,8 @@
  * esp::assets::MeshMetaData
  */
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
+#include "esp/geo/CoordinateFrame.h"
 #include "esp/gfx/magnum.h"
 
 namespace esp {
@@ -112,6 +113,17 @@ struct MeshMetaData {
   void setTextureIndices(int textureStart, int textureEnd) {
     textureIndex.first = textureStart;
     textureIndex.second = textureEnd;
+  }
+
+  /**
+   * @brief Set the root frame orientation based on passed frame
+   * @param frame target frame in world space
+   */
+  void setRootFrameOrientation(const geo::CoordinateFrame& frame) {
+    const quatf& transform = frame.rotationFrameToWorld();
+    Magnum::Matrix4 R = Magnum::Matrix4::from(
+        Magnum::Quaternion(transform).toMatrix(), Magnum::Vector3());
+    root.transformFromLocalToParent = R * root.transformFromLocalToParent;
   }
 };
 

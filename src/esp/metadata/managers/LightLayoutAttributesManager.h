@@ -15,13 +15,17 @@ namespace Cr = Corrade;
 namespace esp {
 namespace metadata {
 namespace managers {
+
+using core::managedContainers::ManagedFileBasedContainer;
+using core::managedContainers::ManagedObjectAccess;
+
 class LightLayoutAttributesManager
     : public AttributesManager<attributes::LightLayoutAttributes,
-                               core::ManagedObjectAccess::Copy> {
+                               ManagedObjectAccess::Copy> {
  public:
   LightLayoutAttributesManager()
       : AttributesManager<attributes::LightLayoutAttributes,
-                          core::ManagedObjectAccess::Copy>::
+                          ManagedObjectAccess::Copy>::
             AttributesManager("Lighting Layout", "lighting_config.json") {
     // build this manager's copy constructor map
     this->copyConstructorMap_["LightLayoutAttributes"] =
@@ -98,7 +102,7 @@ class LightLayoutAttributesManager
   /**
    * @brief This method will perform any necessary updating that is
    * attributesManager-specific upon template removal.  This should only be
-   * called from @ref esp::core::ManagedContainerBase.
+   * called from @ref esp::core::managedContainers::ManagedContainerBase.
    *
    * @param templateID the ID of the template to remove
    * @param templateHandle the string key of the attributes desired.

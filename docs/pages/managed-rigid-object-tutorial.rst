@@ -15,7 +15,7 @@ Interactive Rigid Objects via PhysicsObjectManager
 
 The example code below is available on `Collab`_, or runnable via:
 
-.. _Collab: <https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/master/examples/tutorials/colabs/managed_rigid_object_tutorial.ipynb>
+.. _Collab: <https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/managed_rigid_object_tutorial.ipynb>
 
 .. code:: shell-session
 
@@ -188,7 +188,7 @@ These functions return a reference to the added object instance. In the case of 
 
 By default, a new :ref:`SceneNode` will be created when an object is instanced. However, the object can be attached to an existing :ref:`SceneNode` (e.g. that of the :ref:`Agent`) if provided. This is demonstrated in `Embodied Agents`_.
 
-Object instances can be removed by id with :ref:`habitat_sim.physics.RigidObjectManager.remove_object_by_ID` or by handle with :ref:`habitat_sim.physics.RigidObjectManager.remove_object_by_handle`.
+Object instances can be removed by id with :ref:`habitat_sim.physics.RigidObjectManager.remove_object_by_id` or by handle with :ref:`habitat_sim.physics.RigidObjectManager.remove_object_by_handle`.
 Optionally, the object's :ref:`SceneNode` can be left behind in the :ref:`SceneGraph` when it is removed (e.g. to prevent deletion of an embodied :ref:`Agent`'s :ref:`SceneNode`).
 
 :ref:`habitat_sim.physics.RigidObjectManager.get_object_handles` will return a list of the string handles for all the existing objects in the scene.

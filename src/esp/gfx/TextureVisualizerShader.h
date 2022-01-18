@@ -8,7 +8,6 @@
 #include <Magnum/GL/AbstractShaderProgram.h>
 #include <Magnum/GL/Texture.h>
 #include <Magnum/Shaders/GenericGL.h>
-#include "esp/core/esp.h"
 
 namespace esp {
 namespace gfx {
@@ -48,11 +47,31 @@ class TextureVisualizerShader : public Magnum::GL::AbstractShaderProgram {
   explicit TextureVisualizerShader(Flags flags);
 
   /**
+   * @brief Build the colorMapTexture_ based on the passed @p colorMap of
+   * colors.
+   *
+   * @param colorMap The map of colors to use
+   * @param sampleWrapHandling Whether queries exceeding the length of @p
+   * colorMap will use the final color, or will wrap around on the texture.
+   * @param filterType Type of filter to use for when pxl size is incompatible
+   * with texture size. Options are @ref Magnum::GL::SamplerFilter::Nearest or
+   * @ref Magnum::GL::SamplerFilter::Linear.
+   * @return Reference to self (for method chaining)
+   */
+  TextureVisualizerShader& setColorMapTexture(
+      Corrade::Containers::ArrayView<const Magnum::Vector3ub> colorMap,
+      float offset,
+      float scale,
+      Magnum::GL::SamplerWrapping sampleWrapHandling,
+      Magnum::GL::SamplerFilter filterType);
+
+  /**
    * @brief
    * Offset and scale applied to each input pixel value from depth texture or
    * the ObjectId texture, resulting value is then used to fetch a color from a
-   * color map bound with bindColorMapTexture(). Here we use the Magnum built-in
-   * color map: Magnum::DebugTools::ColorMap::turbo();
+   * color map bound with bindColorMapTexture(). Here we use either the Magnum
+   * built-in color map: Magnum::DebugTools::ColorMap::turbo(), or a synthesized
+   * map based on semantic scene descriptor-specified vertex colors;
    *
    * Default Value (set in the constructor):
    * For depth texture, the initial value is 1.0f/512.0f and 1.0 / 1000.f.
@@ -93,6 +112,13 @@ class TextureVisualizerShader : public Magnum::GL::AbstractShaderProgram {
    */
   TextureVisualizerShader& setDepthUnprojection(
       const Magnum::Vector2& depthUnprojection);
+
+  /**
+   * @brief rebind internal color map texture.
+   * NOTE: this must be called when shaders have been switched.
+   * @return Reference to self (for method chaining)
+   */
+  TextureVisualizerShader& rebindColorMapTexture();
 
  protected:
   Flags flags_;

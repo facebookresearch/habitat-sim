@@ -74,7 +74,7 @@ def simulate(sim, dt=1.0, get_frames=True, data=None):
 
 try:
     def_params = habitat_sim.VHACDParameters()
-except BaseException:
+except AttributeError:
     def_params = None
 
 

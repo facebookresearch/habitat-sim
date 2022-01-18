@@ -4,9 +4,14 @@
 
 #include "ManagedContainerBase.h"
 #include <Corrade/Utility/FormatStl.h>
+#include <algorithm>
+
+namespace Cr = Corrade;
+
 namespace esp {
 namespace core {
 
+namespace managedContainers {
 bool ManagedContainerBase::setLock(const std::string& objectHandle, bool lock) {
   // if managed object does not currently exist then do not attempt to modify
   // its lock state
@@ -24,20 +29,19 @@ bool ManagedContainerBase::setLock(const std::string& objectHandle, bool lock) {
   return true;
 }  // ManagedContainerBase::setLock
 std::string ManagedContainerBase::getRandomObjectHandlePerType(
-    const std::map<int, std::string>& mapOfHandles,
+    const std::unordered_map<int, std::string>& mapOfHandles,
     const std::string& type) const {
   std::size_t numVals = mapOfHandles.size();
   if (numVals == 0) {
-    LOG(ERROR) << "::getRandomObjectHandlePerType : Attempting to get a random "
-               << type << objectType_
-               << " managed object handle but none are loaded; Aboring";
+    ESP_ERROR() << "Attempting to get a random" << type << objectType_
+                << "managed object handle but none are loaded; Aboring";
     return "";
   }
   int randIDX = rand() % numVals;
 
   std::string res;
-  for (std::pair<std::map<int, std::string>::const_iterator, int> iter(
-           mapOfHandles.begin(), 0);
+  for (std::pair<std::unordered_map<int, std::string>::const_iterator, int>
+           iter(mapOfHandles.begin(), 0);
        (iter.first != mapOfHandles.end() && iter.second <= randIDX);
        ++iter.first, ++iter.second) {
     res = iter.first->second;
@@ -45,114 +49,119 @@ std::string ManagedContainerBase::getRandomObjectHandlePerType(
   return res;
 }  // ManagedContainerBase::getRandomObjectHandlePerType
 
-std::vector<std::string>
-ManagedContainerBase::getObjectHandlesBySubStringPerType(
-    const std::map<int, std::string>& mapOfHandles,
+namespace {
+/**
+ * @brief This function will find the strings in the @p mapOfHandles that match,
+ * or strictly do not match, the passed @p subStr search criteria.
+ * @tparam The index in the pair of map elements to be searched. (non-type
+ * param)
+ * @tparam The class of the keys in the passed map
+ * @tparam The class of the values in the passed map
+ * @param mapOfHandles The map to search
+ * @param subStr The substring to find within the requested index (key or value)
+ * in the map elements
+ * @param contains Whether @p subStr should be found or excluded in the results
+ * returned
+ * @param sorted Whether the results should be sorted.
+ * @return A vector of strings that either match, or explicitly do not match,
+ * the passed @p subStr in the passed @p mapOfHandles.
+ */
+
+template <int Idx, class T, class U>
+std::vector<std::string> getHandlesBySubStringPerTypeInternal(
+    const std::unordered_map<T, U>& mapOfHandles,
     const std::string& subStr,
-    bool contains) const {
+    bool contains,
+    bool sorted) {
   std::vector<std::string> res;
   // if empty return empty vector
-  if (mapOfHandles.size() == 0) {
+  if (mapOfHandles.empty()) {
     return res;
   }
+  res.reserve(mapOfHandles.size());
   // if search string is empty, return all values
   if (subStr.length() == 0) {
     for (const auto& elem : mapOfHandles) {
-      res.push_back(elem.second);
+      res.emplace_back(std::get<Idx>(elem));
     }
-    return res;
+  } else {
+    // build search criteria for reverse map
+    std::string strToLookFor = Cr::Utility::String::lowercase(subStr);
+    std::size_t strSize = strToLookFor.length();
+    for (typename std::unordered_map<T, U>::const_iterator iter =
+             mapOfHandles.begin();
+         iter != mapOfHandles.end(); ++iter) {
+      std::string rawKey = std::get<Idx>(*iter);
+      std::string key = Cr::Utility::String::lowercase(rawKey);
+      // be sure that key is big enough to search in (otherwise find has
+      // undefined behavior)
+      if (key.length() < strSize) {
+        continue;
+      }
+      bool found = (std::string::npos != key.find(strToLookFor));
+      if (found == contains) {
+        // if found and searching for contains, or not found and searching for
+        // not contains
+        res.emplace_back(std::move(rawKey));
+      }
+    }
   }
-  // build search criteria
-  std::string strToLookFor = Cr::Utility::String::lowercase(subStr);
-
-  std::size_t strSize = strToLookFor.length();
-
-  for (std::map<int, std::string>::const_iterator iter = mapOfHandles.begin();
-       iter != mapOfHandles.end(); ++iter) {
-    std::string key = Cr::Utility::String::lowercase(iter->second);
-    // be sure that key is big enough to search in (otherwise find has undefined
-    // behavior)
-    if (key.length() < strSize) {
-      continue;
-    }
-    bool found = (std::string::npos != key.find(strToLookFor));
-    if (found == contains) {
-      // if found and searching for contains, or not found and searching for not
-      // contains
-      res.push_back(iter->second);
-    }
+  if (sorted) {
+    std::sort(res.begin(), res.end());
   }
   return res;
+}
+}  // namespace
+
+std::vector<std::string>
+ManagedContainerBase::getObjectHandlesBySubStringPerType(
+    const std::unordered_map<int, std::string>& mapOfHandles,
+    const std::string& subStr,
+    bool contains,
+    bool sorted) const {
+  // get second element of pair in map entries (string)
+  return getHandlesBySubStringPerTypeInternal<1>(mapOfHandles, subStr, contains,
+                                                 sorted);
 }  // ManagedContainerBase::getObjectHandlesBySubStringPerType
 
 std::vector<std::string>
 ManagedContainerBase::getObjectHandlesBySubStringPerType(
-    const std::map<std::string, std::set<std::string>>& mapOfHandles,
+    const std::unordered_map<std::string, std::set<std::string>>& mapOfHandles,
     const std::string& subStr,
-    bool contains) const {
-  std::vector<std::string> res;
-  // if empty return empty vector
-  if (mapOfHandles.size() == 0) {
-    return res;
-  }
-  // if search string is empty, return all values
-  if (subStr.length() == 0) {
-    for (const auto& elem : mapOfHandles) {
-      res.push_back(elem.first);
-    }
-    return res;
-  }
-  // build search criteria
-  std::string strToLookFor = Cr::Utility::String::lowercase(subStr);
-
-  std::size_t strSize = strToLookFor.length();
-
-  for (std::map<std::string, std::set<std::string>>::const_iterator iter =
-           mapOfHandles.begin();
-       iter != mapOfHandles.end(); ++iter) {
-    std::string key = Cr::Utility::String::lowercase(iter->first);
-    // be sure that key is big enough to search in (otherwise find has undefined
-    // behavior)
-    if (key.length() < strSize) {
-      continue;
-    }
-    bool found = (std::string::npos != key.find(strToLookFor));
-    if (found == contains) {
-      // if found and searching for contains, or not found and searching for not
-      // contains
-      res.push_back(iter->first);
-    }
-  }
-  return res;
+    bool contains,
+    bool sorted) const {
+  // get first element of pair in map entries (string)
+  return getHandlesBySubStringPerTypeInternal<0>(mapOfHandles, subStr, contains,
+                                                 sorted);
 }  // ManagedContainerBase::getObjectHandlesBySubStringPerType
 
 std::vector<std::string> ManagedContainerBase::getObjectInfoStrings(
     const std::string& subStr,
     bool contains) const {
   // get all handles that match query elements first
-  std::vector<std::string> handles =
-      getObjectHandlesBySubstring(subStr, contains);
+  std::vector<std::string> handles = getHandlesBySubStringPerTypeInternal<1>(
+      objectLibKeyByID_, subStr, contains, true);
   std::vector<std::string> res(handles.size() + 1);
-  if (handles.size() == 0) {
+  if (handles.empty()) {
     res[0] = "No " + objectType_ + " constructs available.";
     return res;
   }
   int idx = 0;
   for (const std::string& objectHandle : handles) {
     // get the object
-    auto objPtr = getObjectInternal<AbstractManagedObject>(objectHandle);
+    auto objPtr = this->getObjectInternal<AbstractManagedObject>(objectHandle);
     if (idx == 0) {
-      res[idx++]
-          .append(objectType_)
-          .append(" Full name, Can delete?, Is locked?, ")
-          .append(objPtr->getObjectInfoHeader());
+      Cr::Utility::formatInto(res[idx], res[idx].size(),
+                              "{} Full name,Can delete?,Is locked?,{}",
+                              objectType_, objPtr->getObjectInfoHeader());
+      ++idx;
     }
-    res[idx++]
-        .append(objectHandle)
-        .append(1, ',')
-        .append(((this->getIsUndeletable(objectHandle)) ? "False, " : "True, "))
-        .append(((this->getIsUserLocked(objectHandle)) ? "True, " : "False, "))
-        .append(objPtr->getObjectInfo());
+    Cr::Utility::formatInto(
+        res[idx], res[idx].size(), "{},{},{},{}", objectHandle,
+        (this->getIsUndeletable(objectHandle) ? "False" : "True"),
+        (this->getIsUserLocked(objectHandle) ? "True" : "False"),
+        objPtr->getObjectInfo());
+    ++idx;
   }
   return res;
 }  // ManagedContainerBase::getObjectInfoStrings
@@ -161,13 +170,14 @@ int ManagedContainerBase::getObjectIDByHandleOrNew(
     const std::string& objectHandle,
     bool getNext) {
   if (getObjectLibHasHandle(objectHandle)) {
-    return getObjectInternal<AbstractManagedObject>(objectHandle)->getID();
+    return this->getObjectInternal<AbstractManagedObject>(objectHandle)
+        ->getID();
   }
   if (!getNext) {
-    LOG(ERROR) << "<" << this->objectType_
-               << ">::getObjectIDByHandleOrNew : No " << objectType_
-               << " managed object with handle " << objectHandle
-               << "exists. Aborting";
+    ESP_ERROR(Magnum::Debug::Flag::NoSpace)
+        << "<" << this->objectType_ << "> : No " << objectType_
+        << " managed object with handle " << objectHandle
+        << " exists. Aborting.";
     return ID_UNDEFINED;
   }
   return getUnusedObjectID();
@@ -179,26 +189,26 @@ std::string ManagedContainerBase::getObjectInfoCSVString(
   std::vector<std::string> infoAra = getObjectInfoStrings(subStr, contains);
   std::string res;
   for (std::string& s : infoAra) {
-    res += s.append(1, '\n');
+    Cr::Utility::formatInto(res, res.size(), "{}\n", s);
   }
   return res;
 }  // ManagedContainerBase::getObjectInfoCSVString
 
 std::string ManagedContainerBase::getUniqueHandleFromCandidatePerType(
-    const std::map<int, std::string>& mapOfHandles,
+    const std::unordered_map<int, std::string>& mapOfHandles,
     const std::string& name) const {
   // find all existing values with passed name - these should be a list
   // of existing instances of this object name.  We are going to go through
   // all of these names and find the "last" instance, meaning the highest count.
   std::vector<std::string> objHandles =
-      this->getObjectHandlesBySubStringPerType(mapOfHandles, name, true);
+      this->getObjectHandlesBySubStringPerType(mapOfHandles, name, true, true);
 
   int incr = 0;
   // use this as pivot character - the last instance of this character in any
   // object instance name will be the partition between the name and the count.
   char pivotChar = ':';
 
-  if (objHandles.size() != 0) {
+  if (!objHandles.empty()) {
     // handles exist with passed substring.  Find highest handle increment, add
     // 1 and use for new name 1, build new handle
     for (const std::string& objName : objHandles) {
@@ -236,5 +246,6 @@ std::string ManagedContainerBase::getUniqueHandleFromCandidatePerType(
   return name + handleIncrement;
 }  // ManagedContainerBase::getUniqueHandleFromCandidatePerType
 
+}  // namespace managedContainers
 }  // namespace core
 }  // namespace esp

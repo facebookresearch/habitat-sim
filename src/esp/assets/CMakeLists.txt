@@ -5,8 +5,8 @@ set(
   BaseMesh.cpp
   BaseMesh.h
   CollisionMeshData.h
-  GenericInstanceMeshData.cpp
-  GenericInstanceMeshData.h
+  GenericSemanticMeshData.cpp
+  GenericSemanticMeshData.h
   GenericMeshData.cpp
   GenericMeshData.h
   MeshData.h
@@ -40,11 +40,11 @@ find_package(
   MagnumPlugins
   REQUIRED
   BasisImporter
+  CgltfImporter
   PrimitiveImporter
   StanfordImporter
   StbImageImporter
   StbImageConverter
-  TinyGltfImporter
 )
 
 if(BUILD_ASSIMP_SUPPORT)
@@ -73,11 +73,11 @@ target_link_libraries(
          Magnum::Trade
          Magnum::Primitives
          MagnumPlugins::BasisImporter
+         MagnumPlugins::CgltfImporter
          MagnumPlugins::PrimitiveImporter
          MagnumPlugins::StanfordImporter
          MagnumPlugins::StbImageImporter
          MagnumPlugins::StbImageConverter
-         MagnumPlugins::TinyGltfImporter
   PRIVATE geo io
 )
 

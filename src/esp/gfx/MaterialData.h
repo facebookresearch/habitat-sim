@@ -10,7 +10,7 @@
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/Matrix3.h>
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
 namespace esp {
 namespace gfx {
@@ -37,6 +37,9 @@ struct MaterialData {
   Magnum::Matrix3 textureMatrix;
 
   bool doubleSided = false;
+
+  // Shader type specified for this material upon load/creation
+  int shaderTypeSpec = -1;
 };
 
 struct PhongMaterialData : public MaterialData {
