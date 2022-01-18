@@ -367,9 +367,10 @@ Key Commands:
   ']': Load agent position/orientation from file system, or else from last save in current instance.
 
   Camera Settings
-  '4': Cycle through rendering modes (RGB, depth, semantic)
+  '4': Cycle through camera modes (Camera, Fisheye, Equirectangular)
   '5': Switch ortho/perspective camera.
   '6': Reset ortho camera zoom/perspective camera FOV.
+  '7': Cycle through rendering modes (RGB, depth, semantic)
 
   Visualization Utilities:
   'l': Override the default lighting setup with configured settings in `default_light_override.lighting_config.json`.
@@ -2018,6 +2019,21 @@ void Viewer::keyPressEvent(KeyEvent& event) {
                             "changed to multiple random colors.");
       break;
     case KeyEvent::Key::Four:
+      // switch between camera types (Camera, Fisheye, Equirectangular)
+      sensorMode_ = static_cast<VisualSensorMode>(
+          (uint8_t(sensorMode_) + 1) %
+          uint8_t(VisualSensorMode::VisualSensorModeCount));
+      ESP_DEBUG() << "Sensor mode is set to" << int(sensorMode_);
+      break;
+    case KeyEvent::Key::Five:
+      // switch camera between ortho and perspective
+      switchCameraType();
+      break;
+    case KeyEvent::Key::Six:
+      // reset camera zoom
+      getAgentCamera().resetZoom();
+      break;
+    case KeyEvent::Key::Seven:
       visualizeMode_ = static_cast<VisualizeMode>(
           (uint8_t(visualizeMode_) + 1) %
           uint8_t(VisualizeMode::VisualizeModeCount));
@@ -2036,14 +2052,6 @@ void Viewer::keyPressEvent(KeyEvent& event) {
           CORRADE_INTERNAL_ASSERT_UNREACHABLE();
           break;
       }
-      break;
-    case KeyEvent::Key::Five:
-      // switch camera between ortho and perspective
-      switchCameraType();
-      break;
-    case KeyEvent::Key::Six:
-      // reset camera zoom
-      getAgentCamera().resetZoom();
       break;
     case KeyEvent::Key::Eight:
       addPrimitiveObject();
