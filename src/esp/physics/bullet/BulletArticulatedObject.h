@@ -227,7 +227,7 @@ class BulletArticulatedObject : public ArticulatedObject {
    *
    * @return Array of torques on each joint
    */
-  std::vector<float> getJointMotorTorques(double fixedTimeStep);
+  std::vector<float> getJointMotorTorques(double fixedTimeStep) override;
 
   /**
    * @brief Get position limits for all joints. (lower, upper)
