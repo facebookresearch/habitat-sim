@@ -69,6 +69,7 @@ target_link_libraries(
          Magnum::Magnum
          Magnum::MeshTools
          Magnum::SceneGraph
+         Magnum::SceneTools
          Magnum::Shaders
          Magnum::Trade
          Magnum::Primitives

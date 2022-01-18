@@ -8,6 +8,7 @@
 #include <Corrade/Containers/GrowableArray.h>
 #include <Corrade/Containers/Pair.h>
 #include <Corrade/Containers/PointerStl.h>
+#include <Corrade/Containers/Triple.h>
 #include <Corrade/PluginManager/Manager.h>
 #include <Corrade/PluginManager/PluginMetadata.h>
 #include <Corrade/Utility/Assert.h>
@@ -31,6 +32,7 @@
 #include <Magnum/MeshTools/Reference.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/SceneGraph/Object.h>
+#include <Magnum/SceneTools/FlattenMeshHierarchy.h>
 #include <Magnum/Trade/AbstractImporter.h>
 #include <Magnum/Trade/FlatMaterialData.h>
 #include <Magnum/Trade/ImageData.h>
@@ -1293,41 +1295,26 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
     // only one mesh, treat as before
     meshData = fileImporter_->mesh(0);
   } else {
-    // Cr::Containers::Optional<Mn::Trade::SceneData> scene =
-    //     fileImporter_->scene(fileImporter_->defaultScene());
-    // // build list of meshDatas from importer
+    Cr::Containers::Optional<Mn::Trade::SceneData> scene =
+        fileImporter_->scene(fileImporter_->defaultScene());
     // std::vector<Mn::Trade::MeshData> meshVec;
     // meshVec.reserve(meshCount);
-    // // build view
-    // std::vector<Cr::Containers::Reference<const Mn::Trade::MeshData>>
-    // meshView; meshView.reserve(meshCount);
+    Cr::Containers::Array<Mn::Trade::MeshData> flattenedMeshes;
+    for (const Cr::Containers::Triple<Mn::UnsignedInt, Mn::Int, Mn::Matrix4>&
+             meshTransformation :
+         Mn::SceneTools::flattenMeshHierarchy3D(*scene)) {
+      if (Cr::Containers::Optional<Mn::Trade::MeshData> mesh =
+              fileImporter_->mesh(meshTransformation.first())) {
+        arrayAppend(flattenedMeshes, Mn::MeshTools::transform3D(
+                                         *mesh, meshTransformation.third()));
+      }
+    }
 
-    // Cr::Containers::Array<Mn::Trade::MeshData> flattenedMeshes;
-    // for (const Cr::Containers::Triple<Mn::UnsignedInt, Mn::Int, Mn::Matrix4>&
-    //          meshTransformation :
-    //      Mn::SceneTools::flattenMeshHierarchy3D(scene)) {
-    //   if (Cr::Containers::Optional<Mn::Trade::MeshData> mesh =
-    //           fileImporter_->mesh(meshTransformation.first())) {
-    //     arrayAppend(flattenedMeshes, Mn::MeshTools::transform3D(
-    //                                      mesh, meshTransformation.third()));
-
-    //     meshVec.push_back(std::move(*mesh));
-    //     meshView.emplace_back(meshVec.back());
-    //   }
-    // }
-
-    // build list of meshDatas from importer
-    std::vector<Mn::Trade::MeshData> meshVec;
-    meshVec.reserve(meshCount);
     // build view
     std::vector<Cr::Containers::Reference<const Mn::Trade::MeshData>> meshView;
     meshView.reserve(meshCount);
-    for (int i = 0; i < meshCount; ++i) {
-      if (Cr::Containers::Optional<Mn::Trade::MeshData> mesh =
-              fileImporter_->mesh(i)) {
-        meshVec.push_back(std::move(*mesh));
-        meshView.emplace_back(meshVec.back());
-      }
+    for (const auto& mesh : flattenedMeshes) {
+      meshView.emplace_back(mesh);
     }
     // build concatenated meshData from container of meshes.
     meshData = Mn::MeshTools::concatenate(meshView);
