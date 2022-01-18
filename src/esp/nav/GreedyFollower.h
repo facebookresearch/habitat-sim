@@ -5,8 +5,8 @@
 #ifndef ESP_NAV_GREEDYFOLLOWER_H_
 #define ESP_NAV_GREEDYFOLLOWER_H_
 
+#include "esp/core/Esp.h"
 #include "esp/core/RigidState.h"
-#include "esp/core/esp.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/scene/SceneGraph.h"
 #include "esp/scene/SceneNode.h"

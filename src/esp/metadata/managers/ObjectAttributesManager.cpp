@@ -8,14 +8,14 @@
 #include <Corrade/Utility/String.h>
 
 #include "esp/assets/Asset.h"
-#include "esp/io/io.h"
-#include "esp/io/json.h"
+#include "esp/io/Json.h"
 
 namespace Cr = Corrade;
 
 namespace esp {
 
 using assets::AssetType;
+
 namespace metadata {
 
 using attributes::AbstractObjectAttributes;
@@ -28,9 +28,8 @@ ObjectAttributesManager::createPrimBasedAttributesTemplate(
     bool registerTemplate) {
   // verify that a primitive asset with the given handle exists
   if (!this->isValidPrimitiveAttributes(primAttrTemplateHandle)) {
-    LOG(ERROR)
-        << "::createPrimBasedAttributesTemplate : No primitive with handle '"
-        << primAttrTemplateHandle
+    ESP_ERROR(Mn::Debug::Flag::NoSpace)
+        << "No primitive with handle '" << primAttrTemplateHandle
         << "' exists so cannot build physical object.  Aborting.";
     return nullptr;
   }
@@ -135,18 +134,42 @@ ObjectAttributes::ptr ObjectAttributesManager::initNewObjectInternal(
     bool builtFromConfig) {
   ObjectAttributes::ptr newAttributes =
       this->constructFromDefault(attributesHandle);
-  if (nullptr == newAttributes) {
+  bool createNewAttributes = (nullptr == newAttributes);
+  if (createNewAttributes) {
     newAttributes = ObjectAttributes::create(attributesHandle);
   }
+  // set the attributes source filedirectory, from the attributes name
   this->setFileDirectoryFromHandle(newAttributes);
 
-  // set default render and collision asset handle\
-  // only set handle defaults if attributesHandle is not a config file (which would
-  // never be a valid render or collision asset name).  Otherise, expect handles
-  // and types to be set when config is read.
+  if (!createNewAttributes) {
+    // default exists and was used to create this attributes - investigate any
+    // filename fields that may have %%USE_FILENAME%% directive specified in the
+    // default attributes.
+    // Render asset handle
+    setHandleFromDefaultTag(newAttributes,
+                            newAttributes->getRenderAssetHandle(),
+                            [newAttributes](const std::string& newHandle) {
+                              newAttributes->setRenderAssetHandle(newHandle);
+                            });
+    // Collision asset handle
+    setHandleFromDefaultTag(newAttributes,
+                            newAttributes->getCollisionAssetHandle(),
+                            [newAttributes](const std::string& newHandle) {
+                              newAttributes->setCollisionAssetHandle(newHandle);
+                            });
+  }
+
+  // set default render and collision asset handle
+  // only set handle defaults if attributesHandle is not a config file (which
+  // would never be a valid render or collision asset name).  Otherise, expect
+  // handles and types to be set when config is read.
   if (!builtFromConfig) {
-    newAttributes->setRenderAssetHandle(attributesHandle);
-    newAttributes->setCollisionAssetHandle(attributesHandle);
+    if (newAttributes->getRenderAssetHandle().empty()) {
+      newAttributes->setRenderAssetHandle(attributesHandle);
+    }
+    if (newAttributes->getCollisionAssetHandle().empty()) {
+      newAttributes->setCollisionAssetHandle(attributesHandle);
+    }
 
     // set defaults for passed render asset handles
     this->setDefaultAssetNameBasedAttributes(
@@ -170,7 +193,7 @@ void ObjectAttributesManager::setDefaultAssetNameBasedAttributes(
     ObjectAttributes::ptr attributes,
     bool setFrame,
     const std::string& meshHandle,
-    std::function<void(int)> assetTypeSetter) {
+    const std::function<void(int)>& assetTypeSetter) {
   if (this->isValidPrimitiveAttributes(meshHandle)) {
     // value is valid primitive, and value is different than existing value
     assetTypeSetter(static_cast<int>(AssetType::PRIMITIVE));
@@ -182,21 +205,22 @@ void ObjectAttributesManager::setDefaultAssetNameBasedAttributes(
     attributes->setOrientUp({0, 1, 0});
     attributes->setOrientFront({0, 0, -1});
   }
-}  // SceneAttributesManager::setDefaultAssetNameBasedAttributes
+}  // SceneInstanceAttributesManager::setDefaultAssetNameBasedAttributes
 
 int ObjectAttributesManager::registerObjectFinalize(
     ObjectAttributes::ptr objectTemplate,
     const std::string& objectTemplateHandle,
     bool forceRegistration) {
   if (objectTemplate->getRenderAssetHandle() == "") {
-    LOG(ERROR)
-        << "::registerObjectFinalize : Attributes template named "
-        << objectTemplateHandle
-        << " does not have a valid render asset handle specified. Aborting.";
+    ESP_ERROR()
+        << "Attributes template named" << objectTemplateHandle
+        << "does not have a valid render asset handle specified. Aborting.";
     return ID_UNDEFINED;
   }
 
-  std::map<int, std::string>* mapToUse = nullptr;
+  // create a ref to the partition map of either prims or file-based objects to
+  // place a ref to the object template being regsitered
+  std::unordered_map<int, std::string>* mapToUse = nullptr;
   // Handles for rendering and collision assets
   std::string renderAssetHandle = objectTemplate->getRenderAssetHandle();
   std::string collisionAssetHandle = objectTemplate->getCollisionAssetHandle();
@@ -207,7 +231,7 @@ int ObjectAttributesManager::registerObjectFinalize(
     // physicsSynthObjTmpltLibByID_
     objectTemplate->setRenderAssetIsPrimitive(true);
     mapToUse = &physicsSynthObjTmpltLibByID_;
-  } else if (this->isValidFileName(renderAssetHandle)) {
+  } else if (Cr::Utility::Directory::exists(renderAssetHandle)) {
     // Check if renderAssetHandle is valid file name and is found in file system
     // - if so then setRenderAssetIsPrimitive to false and set map of IDs->Names
     // to physicsFileObjTmpltLibByID_ - verify file  exists
@@ -215,23 +239,21 @@ int ObjectAttributesManager::registerObjectFinalize(
     mapToUse = &physicsFileObjTmpltLibByID_;
   } else if (forceRegistration) {
     // Forcing registration in case of computationaly generated assets
-    LOG(WARNING)
-        << "::registerObjectFinalize : Render asset template handle : "
-        << renderAssetHandle << " specified in object template with handle : "
-        << objectTemplateHandle
-        << " does not correspond to any existing file or primitive render "
-           "asset.  Objects created from this template may fail. ";
+    ESP_WARNING()
+        << "Render asset template handle :" << renderAssetHandle
+        << "specified in object template with handle :" << objectTemplateHandle
+        << "does not correspond to any existing file or primitive render "
+           "asset.  Objects created from this template may fail.";
     objectTemplate->setRenderAssetIsPrimitive(false);
   } else {
     // If renderAssetHandle is neither valid file name nor existing primitive
     // attributes template hande, fail
     // by here always fail
-    LOG(ERROR)
-        << "::registerObjectFinalize : Render asset template handle : "
-        << renderAssetHandle << " specified in object template with handle : "
-        << objectTemplateHandle
-        << " does not correspond to any existing file or primitive render "
-           "asset.  Aborting. ";
+    ESP_ERROR()
+        << "Render asset template handle :" << renderAssetHandle
+        << "specified in object template with handle :" << objectTemplateHandle
+        << "does not correspond to any existing file or primitive render "
+           "asset.  Aborting.";
     return ID_UNDEFINED;
   }
 
@@ -239,20 +261,18 @@ int ObjectAttributesManager::registerObjectFinalize(
     // If collisionAssetHandle corresponds to valid/existing primitive
     // attributes then setCollisionAssetIsPrimitive to true
     objectTemplate->setCollisionAssetIsPrimitive(true);
-  } else if (this->isValidFileName(collisionAssetHandle)) {
+  } else if (Cr::Utility::Directory::exists(collisionAssetHandle)) {
     // Check if collisionAssetHandle is valid file name and is found in file
     // system - if so then setCollisionAssetIsPrimitive to false
     objectTemplate->setCollisionAssetIsPrimitive(false);
   } else {
     // Else, means no collision data specified, use specified render data
-    LOG(INFO)
-        << "::registerObjectFinalize : Collision asset template handle : "
-        << collisionAssetHandle
-        << " specified in object template with handle : "
-        << objectTemplateHandle
-        << " does not correspond to any existing file or primitive render "
-           "asset.  Overriding with given render asset handle : "
-        << renderAssetHandle << ". ";
+    ESP_DEBUG()
+        << "Collision asset template handle :" << collisionAssetHandle
+        << "specified in object template with handle :" << objectTemplateHandle
+        << "does not correspond to any existing file or primitive render "
+           "asset.  Overriding with given render asset handle :"
+        << renderAssetHandle << ".";
 
     objectTemplate->setCollisionAssetHandle(renderAssetHandle);
     objectTemplate->setCollisionAssetIsPrimitive(

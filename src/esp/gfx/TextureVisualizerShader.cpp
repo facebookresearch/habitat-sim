@@ -14,8 +14,6 @@
 #include <Magnum/ImageView.h>
 #include <Magnum/PixelFormat.h>
 
-#include "esp/core/esp.h"
-
 namespace Cr = Corrade;
 namespace Mn = Magnum;
 
@@ -36,7 +34,7 @@ TextureVisualizerShader::TextureVisualizerShader(Flags flags) : flags_(flags) {
   if (flags_ & Flag::DepthTexture) {
     ++countMutuallyExclusive;
   }
-  if (flags & Flag::ObjectIdTexture) {
+  if (flags_ & Flag::ObjectIdTexture) {
     ++countMutuallyExclusive;
   }
   CORRADE_ASSERT(countMutuallyExclusive <= 1,
@@ -89,26 +87,45 @@ TextureVisualizerShader::TextureVisualizerShader(Flags flags) : flags_(flags) {
 
   // setup color map texture
   const auto map = Mn::DebugTools::ColorMap::turbo();
-  const Mn::Vector2i size{int(map.size()), 1};
-  colorMapTexture_.setMinificationFilter(Mn::GL::SamplerFilter::Linear)
-      .setMagnificationFilter(Mn::GL::SamplerFilter::Linear)
-      .setStorage(1, Mn::GL::TextureFormat::SRGB8Alpha8, size)
-      .setSubImage(0, {},
-                   Mn::ImageView2D{Mn::PixelFormat::RGB8Srgb, size, map});
-  if (flags_ & Flag::DepthTexture) {
-    colorMapTexture_.setWrapping(Mn::GL::SamplerWrapping::ClampToEdge);
-  } else if (flags_ & Flag::ObjectIdTexture) {
-    colorMapTexture_.setWrapping(Mn::GL::SamplerWrapping::Repeat);
-  }
-  colorMapTexture_.bind(ColorMapTextureUnit);
 
   // set default offset, scale based on flags
   if (flags_ & Flag::DepthTexture) {
-    setColorMapTransformation(1.0f / 512.0f, 1.0f / 1000.0f);
-  } else if (flags & Flag::ObjectIdTexture) {
-    setColorMapTransformation(1.0f / 512.0f,
-                              1.0f / 108.0f);  // initial guess: 108 objects
+    setColorMapTexture(map, 1.0f / 512.0f, 1.0f / 1000.0f,
+                       Mn::GL::SamplerWrapping::ClampToEdge,
+                       Mn::GL::SamplerFilter::Linear);
+  } else if (flags_ & Flag::ObjectIdTexture) {
+    // initial guess: 108 objects so set scale to wrap after that many object
+    // types/semantic IDs
+    setColorMapTexture(map, 1.0f / 512.0f, 1.0f / 108.0f,
+                       Mn::GL::SamplerWrapping::Repeat,
+                       Mn::GL::SamplerFilter::Nearest);
   }
+}
+
+TextureVisualizerShader& TextureVisualizerShader::setColorMapTexture(
+    Cr::Containers::ArrayView<const Mn::Vector3ub> colorMap,
+    float offset,
+    float scale,
+    Mn::GL::SamplerWrapping sampleWrapHandling,
+    Mn::GL::SamplerFilter filterType) {
+  const Mn::Vector2i size{int(colorMap.size()), 1};
+  colorMapTexture_ = Mn::GL::Texture2D{};
+  colorMapTexture_.setMinificationFilter(filterType)
+      .setMagnificationFilter(filterType)
+      .setStorage(1, Mn::GL::TextureFormat::SRGB8Alpha8, size)
+      .setSubImage(0, {},
+                   Mn::ImageView2D{Mn::PixelStorage{}.setAlignment(1),
+                                   Mn::PixelFormat::RGB8Srgb, size, colorMap});
+  colorMapTexture_.setWrapping(sampleWrapHandling);
+
+  rebindColorMapTexture();
+  setColorMapTransformation(offset, scale);
+  return *this;
+}
+
+TextureVisualizerShader& TextureVisualizerShader::rebindColorMapTexture() {
+  colorMapTexture_.bind(ColorMapTextureUnit);
+  return *this;
 }
 
 TextureVisualizerShader& TextureVisualizerShader::setColorMapTransformation(

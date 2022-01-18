@@ -9,7 +9,7 @@
 #include <Magnum/Math/Color.h>
 
 #include "esp/core/Check.h"
-#include "esp/core/logging.h"
+#include "esp/core/Logging.h"
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
@@ -81,11 +81,8 @@ void DebugLineRender::setLineWidth(float lineWidth) {
   // This is derived from experiments with glLineWidth on Nvidia hardware.
   const float maxLineWidth = 20.f;
   if (lineWidth > maxLineWidth) {
-    LOG(WARNING) << "DebugLineRender::setLineWidth: requested lineWidth of "
-                 << lineWidth
-                 << " is greater than "
-                    "max supported width of "
-                 << maxLineWidth;
+    ESP_WARNING() << "Requested lineWidth of" << lineWidth
+                  << "is greater than max supported width of" << maxLineWidth;
     lineWidth = maxLineWidth;
   }
   _internalLineWidth = lineWidth / 2;  // see also DebugLineRender::flushLines
@@ -97,6 +94,10 @@ void DebugLineRender::flushLines(const Magnum::Matrix4& camMatrix,
   CORRADE_ASSERT(_glResources,
                  "DebugLineRender::flushLines: no GL resources; see "
                  "also releaseGLResources", );
+
+  if (_verts.empty()) {
+    return;
+  }
 
   bool doToggleBlend = !glIsEnabled(GL_BLEND);
 

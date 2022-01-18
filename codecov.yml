@@ -1,0 +1,6 @@
+ignore:
+  - "build/**"
+  - "src/deps/**"
+  - "src/tests/**"
+  - "test/**"
+  - "**/test/**"

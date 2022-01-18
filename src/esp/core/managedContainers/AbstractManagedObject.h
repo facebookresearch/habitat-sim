@@ -5,10 +5,11 @@
 #ifndef ESP_CORE_ABSTRACTMANAGEDOBJECT_H_
 #define ESP_CORE_ABSTRACTMANAGEDOBJECT_H_
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 
 namespace esp {
 namespace core {
+namespace managedContainers {
 /**
  * @brief This abstract base class provides the interface of expected
  * functionality for an object to be manageable by @ref
@@ -71,18 +72,7 @@ class AbstractManagedObject {
   ESP_SMART_POINTERS(AbstractManagedObject)
 };  // class AbstractManagedObject
 
-class AbstractFileBasedManagedObject : public AbstractManagedObject {
- public:
-  /**
-   * @brief directory where files used to construct ManagedObject can be found.
-   */
-  virtual void setFileDirectory(const std::string& fileDirectory) = 0;
-  virtual std::string getFileDirectory() const = 0;
-
- public:
-  ESP_SMART_POINTERS(AbstractFileBasedManagedObject)
-};  // class AbstractFileBasedManagedObject
-
+}  // namespace managedContainers
 }  // namespace core
 }  // namespace esp
 #endif  // ESP_CORE_ABSTRACTMANAGEDOBJECT_H_

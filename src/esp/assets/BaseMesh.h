@@ -20,7 +20,7 @@
 #include <Magnum/Trade/MeshData.h>
 #include "CollisionMeshData.h"
 #include "MeshData.h"
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "esp/gfx/magnum.h"
 
 namespace esp {
@@ -45,7 +45,7 @@ enum SupportedMeshType {
    * Instance meshes loaded from sources including segmented object
    * identifier data (e.g. semantic data: chair, table, etc...). Sources include
    * .ply files and reconstructions of Matterport scans. Object is likely of
-   * type @ref GenericInstanceMeshData or Mp3dInstanceMeshData.
+   * type @ref GenericSemanticMeshData or Mp3dInstanceMeshData.
    */
   INSTANCE_MESH = 0,
 
@@ -135,14 +135,6 @@ class BaseMesh {
   virtual CollisionMeshData& getCollisionMeshData() {
     return collisionMeshData_;
   }
-
-  /**
-   * @brief Any transformations applied to the original mesh after loading are
-   * stored here.
-   *
-   * See @ref ResourceManager::translateMesh.
-   */
-  Magnum::Matrix4 meshTransform_;
 
   /**
    * @brief Axis aligned bounding box of the mesh.

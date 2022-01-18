@@ -6,8 +6,9 @@
 #define ESP_GFX_DRAWABLE_H_
 
 #include <Corrade/Containers/EnumSet.h>
+#include <Corrade/Utility/Assert.h>
 
-#include "esp/core/esp.h"
+#include "esp/core/Esp.h"
 #include "magnum.h"
 
 namespace esp {

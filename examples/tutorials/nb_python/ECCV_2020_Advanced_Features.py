@@ -18,14 +18,14 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.11.2
+#       jupytext_version: 1.13.0
 #   kernelspec:
 #     display_name: Python 3
 #     name: python3
 # ---
 
 # %% [markdown]
-# <a href="https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/master/examples/tutorials/colabs/ECCV_2020_Advanced_Features.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+# <a href="https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/ECCV_2020_Advanced_Features.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
 # %% [markdown]
 # #Habitat-sim Advanced Features
@@ -41,7 +41,7 @@
 # @title Installation { display-mode: "form" }
 # @markdown (double click to show code).
 
-# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/master/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
+# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/main/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
 
 # %%
 # @title Path Setup and Imports { display-mode: "form" }
@@ -153,8 +153,8 @@ def build_dict_of_PhyObj_attrs(phys_obj_template):
         True,
         "string",
     )
-    res_dict["requires_lighting"] = (
-        phys_obj_template.requires_lighting,
+    res_dict["force_flat_shading"] = (
+        phys_obj_template.force_flat_shading,
         True,
         "boolean",
     )
@@ -424,7 +424,7 @@ def make_cfg(settings):
             settings["height"],
             settings["width"],
         ]
-        color_sensor_1st_person_spec.postition = [0.0, settings["sensor_height"], 0.0]
+        color_sensor_1st_person_spec.position = [0.0, settings["sensor_height"], 0.0]
         color_sensor_1st_person_spec.orientation = [
             settings["sensor_pitch"],
             0.0,
@@ -440,7 +440,7 @@ def make_cfg(settings):
             settings["height"],
             settings["width"],
         ]
-        depth_sensor_1st_person_spec.postition = [0.0, settings["sensor_height"], 0.0]
+        depth_sensor_1st_person_spec.position = [0.0, settings["sensor_height"], 0.0]
         depth_sensor_1st_person_spec.orientation = [
             settings["sensor_pitch"],
             0.0,
@@ -456,7 +456,7 @@ def make_cfg(settings):
             settings["height"],
             settings["width"],
         ]
-        semantic_sensor_1st_person_spec.postition = [
+        semantic_sensor_1st_person_spec.position = [
             0.0,
             settings["sensor_height"],
             0.0,
@@ -478,7 +478,7 @@ def make_cfg(settings):
             settings["height"],
             settings["width"],
         ]
-        color_sensor_3rd_person_spec.postition = [
+        color_sensor_3rd_person_spec.position = [
             0.0,
             settings["sensor_height"] + 0.2,
             0.2,
@@ -815,7 +815,7 @@ def build_widget_ui(obj_attr_mgr, prim_attr_mgr):
     if not HAS_WIDGETS:
         sel_file_obj_handle = file_obj_handles[0]
         sel_prim_obj_handle = prim_obj_handles[0]
-        sel_prim_obj_handle = prim_asset_handles[0]
+        sel_asset_handle = prim_asset_handles[0]
         return
 
     # Build widgets
@@ -1250,8 +1250,8 @@ restitution_coefficient = 0.3  # @param {type:"slider", min:0.0, max:1.0, step:0
 new_template.restitution_coefficient = restitution_coefficient
 
 # @markdown Whether the object should be lit via Phong shading.
-requires_lighting = False  # @param {type:"boolean"}
-new_template.requires_lighting = requires_lighting
+force_flat_shading = True  # @param {type:"boolean"}
+new_template.force_flat_shading = force_flat_shading
 
 # @markdown The x,y,z components of the intertia matrix diagonal
 

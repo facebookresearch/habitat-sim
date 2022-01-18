@@ -29,12 +29,15 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
     setPrimObjType(primObjType);
     setPrimObjClassName(primObjClassName);
     setFileDirectory("none");
-
+    // initialize so empty values are present
+    set("halfLength", 0.0);
+    set("segments", 0);
+    set("rings", 0);
     if (!isWireframe) {  // solid
       // do not call setters since they call buildHandle, which does not
       // exist - is abstract in base class
-      setBool("textureCoordinates", false);
-      setBool("tangents", false);
+      set("textureCoordinates", false);
+      set("tangents", false);
     }
 
   }  // ctor
@@ -46,52 +49,56 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
   // setting externally is prohibited
   void setHandle(const std::string&) override {}
 
-  bool getIsWireframe() const { return getBool("isWireframe"); }
+  bool getIsWireframe() const { return get<bool>("isWireframe"); }
 
   // only solid prims can use texture coords
   void setUseTextureCoords(bool useTextureCoords) {
     if (!getIsWireframe()) {  // check if solid
-      setBool("textureCoordinates", useTextureCoords);
+      set("textureCoordinates", useTextureCoords);
       buildHandle();  // build handle based on config
     }
   }
-  bool getUseTextureCoords() const { return getBool("textureCoordinates"); }
+  bool getUseTextureCoords() const { return get<bool>("textureCoordinates"); }
 
   // only solid prims have option to use tangents
   void setUseTangents(bool tangents) {
     if (!getIsWireframe()) {  // check if solid
-      setBool("tangents", tangents);
+      set("tangents", tangents);
       buildHandle();  // build handle based on config
     }
   }
-  bool getUseTangents() const { return getBool("tangents"); }
+  bool getUseTangents() const { return get<bool>("tangents"); }
 
   // only circular prims set number of rings - NOTE : capsule sets rings
   // separately for hemispheres and cylinder
   // set virtual so cannot be deleted in capsule attributes
   void setNumRings(int rings) {
-    setInt("rings", rings);
+    set("rings", rings);
     buildHandle();  // build handle based on config
   }
-  int getNumRings() const { return getInt("rings"); }
+  int getNumRings() const { return get<int>("rings"); }
 
   void setNumSegments(int segments) {
-    setInt("segments", segments);
+    set("segments", segments);
     buildHandle();  // build handle based on config
   }
-  int getNumSegments() const { return getInt("segments"); }
+  int getNumSegments() const { return get<int>("segments"); }
   // capsule, cone and cylinder use halfLength
   void setHalfLength(double halfLength) {
-    setDouble("halfLength", halfLength);
+    set("halfLength", halfLength);
     buildHandle();
   }
-  double getHalfLength() const { return getDouble("halfLength"); }
+  double getHalfLength() const { return get<double>("halfLength"); }
 
   std::string getPrimObjClassName() const {
-    return getString("primObjClassName");
+    return get<std::string>("primObjClassName");
   }
 
-  int getPrimObjType() const { return getInt("primObjType"); }
+  /**
+   * @brief The integer representation of the @ref esp::metadata::PrimObjTypes
+   * this primitive represents,
+   */
+  int getPrimObjType() const { return get<int>("primObjType"); }
   /**
    * @brief This will determine if the stated template has the required
    * quantities needed to instantiate a primitive properly of desired type.
@@ -110,7 +117,7 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
   void buildHandle() {
     std::ostringstream oHndlStrm;
     oHndlStrm << getPrimObjClassName() << buildHandleDetail();
-    setString("handle", oHndlStrm.str());
+    set("handle", oHndlStrm.str());
   }
 
   /**
@@ -177,8 +184,8 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
                                    const std::string& configStr) {
     std::size_t keyLoc = configStr.find(key);
     if (keyLoc == std::string::npos) {
-      LOG(WARNING) << "Key " << key << " not found in configStr " << configStr
-                   << ". Aborting.";
+      ESP_WARNING() << "Key" << key << "not found in configStr" << configStr
+                    << ". Aborting.";
       return "";
     }
     std::size_t keyLen = key.length(), keyEnd = keyLoc + keyLen;
@@ -198,9 +205,9 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
       setter(stoi(conv));
       return true;
     } catch (...) {
-      LOG(WARNING) << "Failed due to -" << conv << "- value for key -" << key
-                   << "- in format string -" << configStr
-                   << "- not being recognized as an int.";
+      ESP_WARNING() << "Failed due to -" << conv << "- value for key -" << key
+                    << "- in format string -" << configStr
+                    << "- not being recognized as an int.";
       return false;
     }
   }
@@ -213,9 +220,9 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
       setter(stod(conv));
       return true;
     } catch (...) {
-      LOG(WARNING) << "Failed due to -" << conv << "- value for key -" << key
-                   << "- in format string -" << configStr
-                   << "- not being recognized as a double.";
+      ESP_WARNING() << "Failed due to -" << conv << "- value for key -" << key
+                    << "- in format string -" << configStr
+                    << "- not being recognized as a double.";
       return false;
     }
   }
@@ -227,15 +234,15 @@ class AbstractPrimitiveAttributes : public AbstractAttributes {
  private:
   // Should never change, only set by ctor
   void setPrimObjClassName(const std::string& primObjClassName) {
-    setString("primObjClassName", primObjClassName);
+    set("primObjClassName", primObjClassName);
   }
 
   // Should never change, only set by ctor
-  void setPrimObjType(int primObjType) { setInt("primObjType", primObjType); }
+  void setPrimObjType(int primObjType) { set("primObjType", primObjType); }
 
   // not used to construct prim mesh, so setting this does not require
   // modification to handle.  Should never change, only set by ctor
-  void setIsWireframe(bool isWireframe) { setBool("isWireframe", isWireframe); }
+  void setIsWireframe(bool isWireframe) { set("isWireframe", isWireframe); }
 
  public:
   ESP_SMART_POINTERS(AbstractPrimitiveAttributes)
@@ -249,16 +256,16 @@ class CapsulePrimitiveAttributes : public AbstractPrimitiveAttributes {
                              const std::string& primObjClassName);
 
   void setHemisphereRings(int hemisphereRings) {
-    setInt("hemisphereRings", hemisphereRings);
+    set("hemisphereRings", hemisphereRings);
     buildHandle();  // build handle based on config
   }
-  int getHemisphereRings() const { return getInt("hemisphereRings"); }
+  int getHemisphereRings() const { return get<int>("hemisphereRings"); }
 
   void setCylinderRings(int cylinderRings) {
-    setInt("cylinderRings", cylinderRings);
+    set("cylinderRings", cylinderRings);
     buildHandle();  // build handle based on config
   }
-  int getCylinderRings() const { return getInt("cylinderRings"); }
+  int getCylinderRings() const { return get<int>("cylinderRings"); }
 
   /**
    * @brief This will determine if the stated template has the required
@@ -302,10 +309,10 @@ class ConePrimitiveAttributes : public AbstractPrimitiveAttributes {
 
   // only solid cones can have end capped
   void setCapEnd(bool capEnd) {
-    setBool("capEnd", capEnd);
+    set("capEnd", capEnd);
     buildHandle();  // build handle based on config
   }
-  bool getCapEnd() const { return getBool("capEnd"); }
+  bool getCapEnd() const { return get<bool>("capEnd"); }
 
   /**
    * @brief This will determine if the stated template has the required
@@ -382,10 +389,10 @@ class CylinderPrimitiveAttributes : public AbstractPrimitiveAttributes {
 
   // only solid culinders can have ends capped
   void setCapEnds(bool capEnds) {
-    setBool("capEnds", capEnds);
+    set("capEnds", capEnds);
     buildHandle();  // build handle based on config
   }
-  bool getCapEnds() const { return getBool("capEnds"); }
+  bool getCapEnds() const { return get<bool>("capEnds"); }
 
   /**
    * @brief This will determine if the stated template has the required
@@ -431,17 +438,17 @@ class IcospherePrimitiveAttributes : public AbstractPrimitiveAttributes {
                                     "IcospherePrimitiveAttributes") {
     // setting manually because wireframe icosphere does not currently support
     // subdiv > 1 and setSubdivisions checks for wireframe
-    setInt("subdivisions", 1);
+    set("subdivisions", 1);
     buildHandle();  // build handle based on config
   }
   // only solid icospheres will support subdivision - wireframes default to 1
   void setSubdivisions(int subdivisions) {
     if (!getIsWireframe()) {
-      setInt("subdivisions", subdivisions);
+      set("subdivisions", subdivisions);
       buildHandle();  // build handle based on config
     }
   }
-  int getSubdivisions() const { return getInt("subdivisions"); }
+  int getSubdivisions() const { return get<int>("subdivisions"); }
 
   /**
    * @brief This will determine if the stated template has the required

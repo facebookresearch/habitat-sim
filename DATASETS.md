@@ -2,7 +2,7 @@
 
 ## Habitat-Matterport 3D Research Dataset (HM3D)
 
-Details: [https://aihabitat.org/datasets/hm3d/](https://aihabitat.org/datasets/hm3d/]).
+Details: [https://aihabitat.org/datasets/hm3d/](https://aihabitat.org/datasets/hm3d/).
 
 Getting access: [https://matterport.com/habitat-matterport-3d-research-dataset](https://matterport.com/habitat-matterport-3d-research-dataset)
 
@@ -10,7 +10,7 @@ Github page with download links: [https://github.com/matterport/habitat-matterpo
 
 After getting access to the dataset, you can download manually or programmatically via Habitat's data download utility.
 
-## Downloading with the download utility
+### Downloading HM3D with the download utility
 
 First, you will need to generate a matterport API Token:
 
@@ -39,6 +39,8 @@ Note that this download script requires python 2.7 to run.
 
 You only need the habitat zip archive and not the entire Matterport3D dataset.
 
+Once you have the habitat zip archive, you should download [this SceneDatasetConfig file](http://dl.fbaipublicfiles.com/habitat/mp3d/config_v1/mp3d.scene_dataset_config.json) and place it in the root directory for the Matterport3D dataset (e.g. habitat-sim/data/scene_datasets/mp3d/).
+
 ## Gibson and 3DSceneGraph datasets
 
 - The Gibson dataset for use with Habitat can be downloaded by agreeing to the terms of use in the [Gibson](https://github.com/StanfordVL/GibsonEnv#database) repository.
@@ -64,3 +66,15 @@ Note: To obtain the best rendering results, use the `<path to replica>/<scene_na
 ## ReplicaCAD
 
 Details and download instructions: [https://aihabitat.org/datasets/replica_cad/](https://aihabitat.org/datasets/replica_cad/).
+
+## ScanNet
+
+The official ScanNet data can be downloaded here: [http://www.scan-net.org/](http://www.scan-net.org/). To use ScanNet scans with habitat-sim, the `scene_*.ply` files need to be converted to glTF format (`*.glb`). For example, using [assimp](https://github.com/assimp/assimp):
+
+```
+assimp export <PLY FILE> <GLB PATH>
+```
+
+The exported `*.glb` files can directly be used with habitat-sim versions >= 2.0.
+
+Note: Depending on the configured radius and height of the agent, certain scans may have no navigable locations on the navmesh (~200). These scenes can be filtered out by checking if `sim.pathfinder.is_loaded` is False.

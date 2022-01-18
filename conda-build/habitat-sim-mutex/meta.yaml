@@ -1,0 +1,24 @@
+# The default is whatever has the highest build number, so
+# prefer things with less tracker packages
+{% if build_variant == "display_nobullet" %}
+  {% set build_number = 201 %}
+{% elif build_variant == "headless_nobullet" %}
+  {% set build_number = 101 %}
+{% elif build_variant == "display_bullet" %}
+  {% set build_number = 100 %}
+{% elif build_variant == "headless_bullet" %}
+  {% set build_number = 0 %}
+{% endif %}
+
+
+package:
+  name: habitat-sim-mutex
+  version: 1.0
+build:
+  number: {{ build_number }}
+  string: {{ build_variant }}
+
+  noarch: generic
+
+  run_exports:
+    - {{ pin_subpackage('habitat-sim-mutex', exact=True) }}

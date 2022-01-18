@@ -14,10 +14,12 @@ RigidStage::RigidStage(scene::SceneNode* rigidBodyNode,
 bool RigidStage::initialize(
     metadata::attributes::AbstractObjectAttributes::ptr initAttributes) {
   if (initializationAttributes_ != nullptr) {
-    LOG(ERROR) << "Cannot initialize a RigidStage more than once";
+    ESP_ERROR() << "Cannot initialize a RigidStage more than once";
     return false;
   }
   objectMotionType_ = MotionType::STATIC;
+  objectName_ = Cr::Utility::formatString(
+      "Stage from {}", initAttributes->getSimplifiedHandle());
   // save the copy of the template used to create the object at initialization
   // time
   setUserAttributes(initAttributes->getUserConfiguration());

@@ -1,6 +1,6 @@
 [![CircleCI](https://circleci.com/gh/facebookresearch/habitat-sim.svg?style=shield)](https://circleci.com/gh/facebookresearch/habitat-sim)
-[![codecov](https://codecov.io/gh/facebookresearch/habitat-sim/branch/master/graph/badge.svg)](https://codecov.io/gh/facebookresearch/habitat-sim)
-[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/facebookresearch/habitat-sim/blob/master/LICENSE)
+[![codecov](https://codecov.io/gh/facebookresearch/habitat-sim/branch/main/graph/badge.svg)](https://codecov.io/gh/facebookresearch/habitat-sim)
+[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/facebookresearch/habitat-sim/blob/main/LICENSE)
 [![Conda Version Badge](https://img.shields.io/conda/vn/aihabitat/habitat-sim?color=blue&label=conda%20version)](https://anaconda.org/aihabitat/habitat-sim)
 [![Conda Platforms support Badge](https://img.shields.io/conda/pn/aihabitat/habitat-sim?color=orange&label=platforms)](https://anaconda.org/aihabitat/habitat-sim)
 [![Documentation](https://img.shields.io/badge/docs-automated-green.svg)](https://aihabitat.org/docs/habitat-sim/)
@@ -47,10 +47,10 @@ https://user-images.githubusercontent.com/2941091/126080914-36dc8045-01d4-4a68-8
 If you use the Habitat platform in your research, please cite the [Habitat](https://arxiv.org/abs/1904.01201) and [Habitat 2.0](https://arxiv.org/abs/2106.14405) papers:
 
 ```
-@article{szot2021habitat,
+@inproceedings{szot2021habitat,
   title     =     {Habitat 2.0: Training Home Assistants to Rearrange their Habitat},
   author    =     {Andrew Szot and Alex Clegg and Eric Undersander and Erik Wijmans and Yili Zhao and John Turner and Noah Maestre and Mustafa Mukadam and Devendra Chaplot and Oleksandr Maksymets and Aaron Gokaslan and Vladimir Vondrus and Sameer Dharur and Franziska Meier and Wojciech Galuba and Angel Chang and Zsolt Kira and Vladlen Koltun and Jitendra Malik and Manolis Savva and Dhruv Batra},
-  journal   =     {arXiv preprint arXiv:2106.14405},
+  booktitle =     {Advances in Neural Information Processing Systems (NeurIPS)},
   year      =     {2021}
 }
 
@@ -70,8 +70,9 @@ for a list of what was externally contributed and the corresponding work/citatio
 
 Habitat-Sim can be installed in 3 ways:
 1. Via Conda - Recommended method for most users. Stable release and nightly builds.
-2. Via Docker - Updated approximately once per year for [Habitat Challenge](https://aihabitat.org/challenge/).  Read [habitat-docker-setup](https://github.com/facebookresearch/habitat-lab#docker-setup).
-3. Via Source - For active development. Read [build instructions and common build issues](BUILD_FROM_SOURCE.md).
+1. [Experimental] Via PIP - `pip install .` to compile the latest headless build with Bullet. Read [build instructions and common build issues](BUILD_FROM_SOURCE.md).
+1. Via Docker - Updated approximately once per year for [Habitat Challenge](https://aihabitat.org/challenge/).  Read [habitat-docker-setup](https://github.com/facebookresearch/habitat-lab#docker-setup).
+1. Via Source - For active development. Read [build instructions and common build issues](BUILD_FROM_SOURCE.md).
 
 ### [Recommended] Conda Packages
 
@@ -108,7 +109,7 @@ Pick one of the options below depending on your system/needs:
 
 Conda packages for older versions can installed by explicitly specifying the version, e.g. `conda install habitat-sim=0.1.6 -c conda-forge -c aihabitat`.
 
-We also provide a [nightly conda build for the master branch](https://anaconda.org/aihabitat-nightly). However, this should only be used if you need a specific feature not yet in the latest release version. To get the nightly build of the latest master, simply swap `-c aihabitat` for `-c aihabitat-nightly`.
+We also provide a [nightly conda build for the main branch](https://anaconda.org/aihabitat-nightly). However, this should only be used if you need a specific feature not yet in the latest release version. To get the nightly build of the latest main, simply swap `-c aihabitat` for `-c aihabitat-nightly`.
 
 ## Testing
 
@@ -204,14 +205,18 @@ To get you started, see the [Lighting Setup tutorial](https://aihabitat.org/docs
 * If you use the noise model from PyRobot, please cite the their [technical report](https://github.com/facebookresearch/pyrobot#citation).
 
 
-    Specifically, the noise model used for the noisy control functions named `pyrobot_*` and defined in `habitat_sim/agent/controls/pyrobot_noisy_controls.py`
+    Specifically, the noise model used for the noisy control functions named `pyrobot_*` and defined in `src_python/habitat_sim/agent/controls/pyrobot_noisy_controls.py`
 
 
 * If you use the Redwood Depth Noise Model, please cite their [paper](http://redwood-data.org/indoor/)
 
-    Specifically, the noise model defined in `habitat_sim/sensors/noise_models/redwood_depth_noise_model.py` and `src/esp/sensor/RedwoodNoiseModel.*`
+    Specifically, the noise model defined in `src_python/habitat_sim/sensors/noise_models/redwood_depth_noise_model.py` and `src/esp/sensor/RedwoodNoiseModel.*`
 
 
 ## License
 
 Habitat-Sim is MIT licensed. See the [LICENSE](LICENSE) for details.
+
+The WebGL demo and demo scripts use:
+- [The King´s Hall](https://sketchfab.com/3d-models/the-king-s-hall-d18155613363445b9b68c0c67196d98d) by [Skokloster Castle (Skoklosters slott)](https://sketchfab.com/SkoklosterCastle) licensed under [Creative Commons Attribution](http://creativecommons.org/licenses/by/4.0/)
+- [Van Gogh Room](https://sketchfab.com/3d-models/van-gogh-room-311d052a9f034ba8bce55a1a8296b6f9) by [ruslans3d](https://sketchfab.com/ruslans3d) licensed under [Creative Commons Attribution](http://creativecommons.org/licenses/by/4.0/)

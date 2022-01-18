@@ -13,7 +13,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.11.2
+#       jupytext_version: 1.13.0
 #   kernelspec:
 #     display_name: Python 3
 #     name: python3
@@ -38,7 +38,7 @@
 # %%
 # @title Installation
 
-# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/master/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
+# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/main/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
 
 # %%
 # @title Colab Setup and Imports { display-mode: "form" }
@@ -315,7 +315,7 @@ def make_cfg(settings):
     color_sensor_spec.uuid = "color_sensor"
     color_sensor_spec.sensor_type = habitat_sim.SensorType.COLOR
     color_sensor_spec.resolution = [settings["height"], settings["width"]]
-    color_sensor_spec.postition = [0.0, settings["sensor_height"], 0.0]
+    color_sensor_spec.position = [0.0, settings["sensor_height"], 0.0]
     color_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
     sensor_specs.append(color_sensor_spec)
 
@@ -323,7 +323,7 @@ def make_cfg(settings):
     depth_sensor_spec.uuid = "depth_sensor"
     depth_sensor_spec.sensor_type = habitat_sim.SensorType.DEPTH
     depth_sensor_spec.resolution = [settings["height"], settings["width"]]
-    depth_sensor_spec.postition = [0.0, settings["sensor_height"], 0.0]
+    depth_sensor_spec.position = [0.0, settings["sensor_height"], 0.0]
     depth_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
     sensor_specs.append(depth_sensor_spec)
 
@@ -331,7 +331,7 @@ def make_cfg(settings):
     semantic_sensor_spec.uuid = "semantic_sensor"
     semantic_sensor_spec.sensor_type = habitat_sim.SensorType.SEMANTIC
     semantic_sensor_spec.resolution = [settings["height"], settings["width"]]
-    semantic_sensor_spec.postition = [0.0, settings["sensor_height"], 0.0]
+    semantic_sensor_spec.position = [0.0, settings["sensor_height"], 0.0]
     semantic_sensor_spec.sensor_subtype = habitat_sim.SensorSubType.PINHOLE
     sensor_specs.append(semantic_sensor_spec)
 
@@ -517,7 +517,7 @@ else:
     sim_topdown_map = sim.pathfinder.get_topdown_view(meters_per_pixel, height)
 
     if display:
-        # @markdown Alternatively, you can process the map using the Habitat-Lab [maps module](https://github.com/facebookresearch/habitat-api/blob/master/habitat/utils/visualizations/maps.py)
+        # @markdown Alternatively, you can process the map using the Habitat-Lab [maps module](https://github.com/facebookresearch/habitat-lab/blob/main/habitat/utils/visualizations/maps.py)
         hablab_topdown_map = maps.get_topdown_map(
             sim.pathfinder, height, meters_per_pixel=meters_per_pixel
         )

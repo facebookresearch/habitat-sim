@@ -15,8 +15,10 @@
 
 namespace esp {
 namespace core {
+namespace managedContainers {
 enum class ManagedObjectAccess;
 class ManagedContainerBase;
+}  // namespace managedContainers
 }  // namespace core
 namespace physics {
 
@@ -30,11 +32,15 @@ namespace physics {
  */
 template <class T>
 class PhysicsObjectBaseManager
-    : public esp::core::ManagedContainer<T, core::ManagedObjectAccess::Copy> {
+    : public esp::core::managedContainers::ManagedContainer<
+          T,
+          core::managedContainers::ManagedObjectAccess::Copy> {
  public:
   typedef std::shared_ptr<T> ObjWrapperPtr;
   explicit PhysicsObjectBaseManager(const std::string& objType)
-      : esp::core::ManagedContainer<T, core::ManagedObjectAccess::Copy>::
+      : core::managedContainers::ManagedContainer<
+            T,
+            core::managedContainers::ManagedObjectAccess::Copy>::
             ManagedContainer(objType) {}
   ~PhysicsObjectBaseManager() override = default;
 
@@ -42,7 +48,7 @@ class PhysicsObjectBaseManager
    * @brief set the weak reference to the physics manager that owns this wrapper
    * manager
    */
-  void setPhysicsManager(std::weak_ptr<esp::physics::PhysicsManager> physMgr) {
+  void setPhysicsManager(std::weak_ptr<physics::PhysicsManager> physMgr) {
     weakPhysManager_ = std::move(physMgr);
   }
 
@@ -96,9 +102,9 @@ class PhysicsObjectBaseManager
       CORRADE_UNUSED bool builtFromConfig) override {
     // construct a new wrapper based on the passed object
     if (managedObjTypeConstructorMap_.count(objectTypeName) == 0) {
-      LOG(ERROR) << "<" << this->objectType_ << ">::initNewObjectInternal ("
-                 << this->objectType_ << ") Unknown constructor type "
-                 << objectTypeName << ".  Aborting.";
+      ESP_ERROR(Mn::Debug::Flag::NoSpace)
+          << "<" << this->objectType_ << "> Unknown constructor type"
+          << objectTypeName << ".  Aborting.";
       return nullptr;
     }
     auto newWrapper = (*this.*managedObjTypeConstructorMap_[objectTypeName])();
@@ -133,8 +139,8 @@ class PhysicsObjectBaseManager
     if (!sp) {
       // This warning message is for python-bound refs to the manager that
       // persist after Simulator/PhysicsManager have been deleted.
-      LOG(WARNING) << "This object manager is no longer valid.  Please delete "
-                      "any variable references.";
+      ESP_WARNING() << "This object manager is no longer valid.  Please delete "
+                       "any variable references.";
     }
     return sp;
   }  // getPhysicsManager

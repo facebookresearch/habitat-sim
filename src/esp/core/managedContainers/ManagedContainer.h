@@ -14,6 +14,7 @@
 
 namespace esp {
 namespace core {
+namespace managedContainers {
 
 /**
  * @brief This enum describes how objects held in the @ref ManagedConatainer are
@@ -127,9 +128,10 @@ class ManagedContainer : public ManagedContainerBase {
                      const std::string& objectHandle = "",
                      bool forceRegistration = false) {
     if (nullptr == managedObject) {
-      LOG(ERROR) << "<" << this->objectType_
-                 << ">::registerObject : Invalid "
-                    "(null) managed object passed to registration. Aborting.";
+      ESP_ERROR(Magnum::Debug::Flag::NoSpace)
+          << "<" << this->objectType_
+          << "> : Invalid (null) managed object passed to "
+             "registration. Aborting.";
       return ID_UNDEFINED;
     }
     if ("" != objectHandle) {
@@ -138,40 +140,15 @@ class ManagedContainer : public ManagedContainerBase {
     }
     std::string handleToSet = managedObject->getHandle();
     if ("" == handleToSet) {
-      LOG(ERROR) << "<" << this->objectType_
-                 << ">::registerObject : No "
-                    "valid handle specified for "
-                 << objectType_ << " managed object to register. Aborting.";
+      ESP_ERROR(Magnum::Debug::Flag::NoSpace)
+          << "<" << this->objectType_
+          << "> : No valid handle specified to register this "
+          << this->objectType_ << " managed object. Aborting.";
       return ID_UNDEFINED;
     }
     return registerObjectFinalize(managedObject, handleToSet,
                                   forceRegistration);
   }  // ManagedContainer::registerObject
-
-  /**
-   * @brief Register managed object and call appropriate ResourceManager method
-   * to execute appropriate post-registration processes due to changes in the
-   * managed object. Use if user wishes to update existing objects built by
-   * managed object with new managed object data and such objects support this
-   * kind of update. Requires the use of managed object's assigned handle in
-   * order to reference existing constructions built from the original version
-   * of this managed object.
-   * @param managedObject The managed object.
-   * @return The unique ID of the managed object being registered, or
-   * ID_UNDEFINED if failed
-   */
-  int registerObjectAndUpdate(ManagedPtr managedObject) {
-    std::string originalHandle = managedObject->getHandle();
-    int ID = this->registerObject(managedObject, originalHandle);
-    // If undefined then some error occurred.
-    if (ID_UNDEFINED == ID) {
-      return ID_UNDEFINED;
-    }
-    // TODO : call Resource Manager for post-registration processing of this
-    // managed object
-
-    return ID;
-  }  // ManagedContainer::registerObjectAndUpdate
 
   /**
    * @brief Get a reference to the managed object identified by the
@@ -212,6 +189,70 @@ class ManagedContainer : public ManagedContainerBase {
     }
     return getObjectInternal<T>(objectHandle);
   }  // ManagedContainer::getObject
+
+  /**
+   * @brief Retrieve a map of key= std::string handle; value = copy of
+   * ManagedPtr object where the handles match the passed @p .  See @ref
+   * ManagedContainerBase::getObjectHandlesBySubStringPerType.
+   * @param subStr substring key to search for within existing managed objects.
+   * @param contains whether to search for keys containing, or excluding,
+   * passed @p subStr
+   * @return a map of the objects whose keys match the specified substring
+   * search.
+   */
+  std::unordered_map<std::string, ManagedPtr> getObjectsByHandleSubstring(
+      const std::string& subStr = "",
+      bool contains = true) {
+    std::vector<std::string> keys = this->getObjectHandlesBySubStringPerType(
+        objectLibKeyByID_, subStr, contains, false);
+
+    std::unordered_map<std::string, ManagedPtr> res;
+    res.reserve(keys.size());
+    if (Access == ManagedObjectAccess::Copy) {
+      for (const auto& key : keys) {
+        res[key] = this->getObjectCopyByHandle(key);
+      }
+    } else {
+      for (const auto& key : keys) {
+        res[key] = this->getObjectByHandle(key);
+      }
+    }
+    return res;
+  }
+
+  /**
+   * @brief Templated version. Retrieve a map of key= std::string handle; value
+   * = copy of ManagedPtr object where the handles match the passed @p .  See
+   * @ref ManagedContainerBase::getObjectHandlesBySubStringPerType.
+   *
+   * @tparam Desired downcast class that inerheits from this ManagedContainer's
+   * ManagedObject type.
+   * @param subStr substring key to search for within existing managed objects.
+   * @param contains whether to search for keys containing, or excluding,
+   * passed @p subStr
+   * @return a map of the objects whose keys match the specified substring
+   * search.
+   */
+  template <class U>
+  std::unordered_map<std::string, std::shared_ptr<U>>
+  getObjectsByHandleSubstring(const std::string& subStr = "",
+                              bool contains = true) {
+    std::vector<std::string> keys = this->getObjectHandlesBySubStringPerType(
+        objectLibKeyByID_, subStr, contains, false);
+
+    std::unordered_map<std::string, std::shared_ptr<U>> res;
+    res.reserve(keys.size());
+    if (Access == ManagedObjectAccess::Copy) {
+      for (const auto& key : keys) {
+        res[key] = this->getObjectCopyByHandle<U>(key);
+      }
+    } else {
+      for (const auto& key : keys) {
+        res[key] = std::dynamic_pointer_cast<U>(this->getObjectByHandle(key));
+      }
+    }
+    return res;
+  }
 
   /**
    * @brief Remove the managed object referenced by the passed string handle.
@@ -391,6 +432,8 @@ class ManagedContainer : public ManagedContainerBase {
    * by the @p managedObjectID, casted to the appropriate derived managed object
    * class.
    *
+   * @tparam Desired downcast class that inerheits from this ManagedContainer's
+   * ManagedObject type.
    * @param managedObjectID The ID of the managed object. Is mapped to the key
    * referencing the asset in @ref ManagedContainerBase::objectLibrary_.
    * @return A mutable reference to a copy of the managed object casted to the
@@ -504,7 +547,8 @@ class ManagedContainer : public ManagedContainerBase {
 
   /**
    * @brief Build a shared pointer to a copy of a the passed managed object,
-   * of appropriate managed object type for passed object type.
+   * of appropriate managed object type for passed object type.  This is the
+   * function called by the copy constructor map.
    * @tparam U Type of managed object being created - must be a derived class
    * of ManagedPtr
    * @param orig original object of type ManagedPtr being copied
@@ -579,8 +623,9 @@ class ManagedContainer : public ManagedContainerBase {
    * @brief Define a map type referencing function pointers to @ref
    * createObjectCopy keyed by string names of classes being instanced,
    */
-  typedef std::map<std::string,
-                   ManagedPtr (ManagedContainer<T, Access>::*)(ManagedPtr&)>
+  typedef std::unordered_map<std::string,
+                             ManagedPtr (ManagedContainer<T, Access>::*)(
+                                 ManagedPtr&)>
       Map_Of_CopyCtors;
 
   /**
@@ -614,9 +659,8 @@ auto ManagedContainer<T, Access>::removeObjectsBySubstring(
       getObjectHandlesBySubstring(subStr, contains);
   for (const std::string& objectHandle : handles) {
     int objID = this->getObjectIDByHandle(objectHandle);
-    ManagedPtr ptr = removeObjectInternal(
-        objID, objectHandle,
-        "<" + this->objectType_ + ">::removeObjectsBySubstring");
+    ManagedPtr ptr = removeObjectInternal(objID, objectHandle,
+                                          "<" + this->objectType_ + ">");
     if (nullptr != ptr) {
       res.push_back(ptr);
     }
@@ -630,8 +674,8 @@ auto ManagedContainer<T, Access>::removeObjectInternal(
     const std::string& objectHandle,
     const std::string& sourceStr) -> ManagedPtr {
   if (!checkExistsWithMessage(objectHandle, sourceStr)) {
-    LOG(INFO) << sourceStr << " : Unable to remove " << objectType_
-              << " managed object " << objectHandle << " : Does not exist.";
+    ESP_DEBUG() << sourceStr << ": Unable to remove" << objectType_
+                << "managed object" << objectHandle << ": Does not exist.";
     return nullptr;
   }
   std::string msg;
@@ -641,8 +685,8 @@ auto ManagedContainer<T, Access>::removeObjectInternal(
     msg = "User-locked Object.  To delete managed object, unlock it";
   }
   if (msg.length() != 0) {
-    LOG(INFO) << sourceStr << " : Unable to remove " << objectType_
-              << " managed object " << objectHandle << " : " << msg << ".";
+    ESP_DEBUG() << sourceStr << ": Unable to remove" << objectType_
+                << "managed object" << objectHandle << ":" << msg << ".";
     return nullptr;
   }
   ManagedPtr managedObject = getObjectInternal<T>(objectHandle);
@@ -653,6 +697,7 @@ auto ManagedContainer<T, Access>::removeObjectInternal(
   return managedObject;
 }  // ManagedContainer::removeObjectInternal
 
+}  // namespace managedContainers
 }  // namespace core
 }  // namespace esp
 

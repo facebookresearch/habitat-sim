@@ -41,15 +41,13 @@ class BulletArticulatedLink : public ArticulatedLink, public BulletBase {
 
   Magnum::Range3D getCollisionShapeAabb() const override {
     // TODO: collision object should be linked here
-    Mn::Warning{}
-        << "BulletArticulatedLink::getCollisionShapeAabb : Not implemented.";
+    ESP_WARNING() << "Not implemented.";
     return Magnum::Range3D();
   }
 
   //! link can't do this.
   void setMotionType(CORRADE_UNUSED MotionType mt) override {
-    Mn::Warning{} << "BulletArticulatedLink::setMotionType : Cannot set "
-                     "MotionType individually for links.";
+    ESP_WARNING() << "Cannot set MotionType individually for links.";
   }
 
  protected:
@@ -112,6 +110,16 @@ class BulletArticulatedObject : public ArticulatedObject {
 
   //! update the SceneNode state to match the simulation state
   void updateNodes(bool force = false) override;
+
+  /**
+   * @brief Return a @ref
+   * metadata::attributes::SceneAOInstanceAttributes reflecting the current
+   * state of this Articulated Object.
+   * @return a @ref SceneAOInstanceAttributes reflecting this Articulated
+   * Object's current state
+   */
+  std::shared_ptr<metadata::attributes::SceneAOInstanceAttributes>
+  getCurrentStateInstanceAttr() override;
 
   /**
    * @brief Get the linear velocity of the articulated object's root in the
@@ -347,6 +355,12 @@ class BulletArticulatedObject : public ArticulatedObject {
   //! clamp current pose to joint limits
   void clampJointLimits() override;
 
+  /**
+   * @brief Manually set the collision group for all links of the object.
+   * @param group The desired CollisionGroup for the object.
+   */
+  void overrideCollisionGroup(CollisionGroup group) override;
+
   //============ Joint Motor Constraints =============
 
   //! Bullet supports vel/pos control joint motors for revolute and prismatic
@@ -416,8 +430,7 @@ class BulletArticulatedObject : public ArticulatedObject {
    * @param defaultCOMCorrection Not used in AO currently. The default value of
    * whether COM-based translation correction needs to occur.
    */
-  void resetStateFromSceneInstanceAttr(
-      CORRADE_UNUSED bool defaultCOMCorrection = false) override;
+  void resetStateFromSceneInstanceAttr() override;
 
   //! The Bullet multibody structure
   std::unique_ptr<btMultiBody> btMultiBody_;

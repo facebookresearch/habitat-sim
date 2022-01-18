@@ -5,7 +5,7 @@
 #ifndef ESP_METADATA_METADATAUTILS_H_
 #define ESP_METADATA_METADATAUTILS_H_
 
-#include "esp/io/json.h"
+#include "esp/io/Json.h"
 
 namespace esp {
 namespace metadata {
@@ -21,7 +21,7 @@ namespace metadata {
  * @return The shader type specified in the document, or Unknown, casted to an
  * int.
  */
-int getShaderTypeFromJsonDoc(const io::JsonGenericValue& jsonDoc);
+std::string getShaderTypeFromJsonDoc(const io::JsonGenericValue& jsonDoc);
 
 }  // namespace metadata
 }  // namespace esp

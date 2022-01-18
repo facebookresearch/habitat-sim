@@ -30,36 +30,46 @@ namespace Cr = Corrade;
 namespace esp {
 namespace gfx {
 
+namespace {
 const Mn::GL::Framebuffer::ColorAttachment rgbaAttachment =
     Mn::GL::Framebuffer::ColorAttachment{0};
 const Mn::GL::Framebuffer::ColorAttachment objectIdAttachment =
     Mn::GL::Framebuffer::ColorAttachment{1};
+// vsm = variance shadow map
+const Mn::GL::Framebuffer::ColorAttachment vsmAttachment =
+    Mn::GL::Framebuffer::ColorAttachment{2};
 
 /**
  * @brief check if the class instance is created with corresponding texture
  * enabled
  */
-void textureTypeSanityCheck(CubeMap::Flags& flag,
-                            CubeMap::TextureType type,
-                            const std::string& functionNameStr) {
+void textureTypeSanityCheck(const char* functionNameStr,
+                            CubeMap::Flags& flag,
+                            CubeMap::TextureType type) {
   switch (type) {
     case CubeMap::TextureType::Color:
       CORRADE_ASSERT(flag & CubeMap::Flag::ColorTexture,
-                     functionNameStr.c_str()
-                         << "instance was not created with color "
-                            "texture output enabled.", );
+                     functionNameStr << "instance was not created with color "
+                                        "texture output enabled.", );
       return;
       break;
     case CubeMap::TextureType::Depth:
       CORRADE_ASSERT(flag & CubeMap::Flag::DepthTexture,
-                     functionNameStr.c_str()
-                         << "instance was not created with depth "
-                            "texture output enabled.", );
+                     functionNameStr << "instance was not created with depth "
+                                        "texture output enabled.", );
       return;
     case CubeMap::TextureType::ObjectId:
       CORRADE_ASSERT(flag & CubeMap::Flag::ObjectIdTexture,
-                     functionNameStr.c_str()
+                     functionNameStr
                          << "instance was not created with object id"
+                            "texture output enabled.", );
+      return;
+      break;
+
+    case CubeMap::TextureType::VarianceShadowMap:
+      CORRADE_ASSERT(flag & CubeMap::Flag::VarianceShadowMapTexture,
+                     functionNameStr
+                         << "instance was not created with variance shadow map"
                             "texture output enabled.", );
       return;
       break;
@@ -68,6 +78,30 @@ void textureTypeSanityCheck(CubeMap::Flags& flag,
       break;
   }
   CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+}
+
+/** @brief do a couple of sanity checks based on mipLevel value */
+void mipLevelSanityCheck(const char* msgPrefix,
+                         CubeMap::Flags& flags,
+                         unsigned int mipLevel,
+                         unsigned int mipmapLevels) {
+  if (mipLevel > 0) {
+    // sanity check
+    CORRADE_ASSERT(flags & CubeMap::Flag::ManuallyBuildMipmap,
+                   msgPrefix << "CubeMap is not created with "
+                                "Flag::ManuallyBuildMipmap specified. ", );
+    // TODO: HDR!!
+    CORRADE_ASSERT((flags & CubeMap::Flag::ColorTexture) ||
+                       (flags & CubeMap::Flag::VarianceShadowMapTexture),
+                   msgPrefix
+                       << "CubeMap is not created with Flag::ColorTexture or "
+                          "VarianceShadowMapTexture specified.", );
+
+    CORRADE_ASSERT(mipLevel < mipmapLevels,
+                   msgPrefix << "mip level" << mipLevel
+                             << "is illegal. It must smaller than"
+                             << mipmapLevels, );
+  }
 }
 
 /**
@@ -99,6 +133,9 @@ const char* getTextureTypeFilenameString(CubeMap::TextureType type) {
     case CubeMap::TextureType::ObjectId:
       return "objectId";
       break;
+    case CubeMap::TextureType::VarianceShadowMap:
+      return "varianceShadowMap";
+      break;
     case CubeMap::TextureType::Count:
       break;
   }
@@ -120,11 +157,15 @@ Mn::PixelFormat getPixelFormat(CubeMap::TextureType type) {
     case CubeMap::TextureType::ObjectId:
       return Mn::PixelFormat::R32UI;
       break;
+    case CubeMap::TextureType::VarianceShadowMap:
+      return Mn::PixelFormat::RG32F;
+      break;
     case CubeMap::TextureType::Count:
       break;
   }
   CORRADE_INTERNAL_ASSERT_UNREACHABLE();
 }
+}  // namespace
 
 Magnum::GL::CubeMapTexture& CubeMap::texture(TextureType type) {
   CORRADE_INTERNAL_ASSERT(uint8_t(type) < Cr::Containers::arraySize(textures_));
@@ -151,10 +192,11 @@ bool CubeMap::reset(int imageSize) {
   recreateTexture();
 
   // prepare frame buffer and render buffer
-  recreateFramebuffer();
-
-  // attach render buffer to frame buffer
-  attachFramebufferRenderbuffer();
+  for (unsigned int iSide = 0; iSide < 6; ++iSide) {
+    recreateFramebuffer(iSide, imageSize_);
+    // attach render buffer to frame buffer
+    attachFramebufferRenderbuffer(iSide, 0);
+  }
 
   return true;
 }
@@ -171,12 +213,34 @@ void CubeMap::recreateTexture() {
                                Mn::GL::SamplerMipmap::Linear)
         .setMagnificationFilter(Mn::GL::SamplerFilter::Linear);
 
-    if (flags_ & Flag::BuildMipmap) {
+    if ((flags_ & Flag::AutoBuildMipmap) ||
+        (flags_ & Flag::ManuallyBuildMipmap)) {
       // RGBA8 is for the LDR. Use RGBA16F for the HDR (TODO)
-      colorTexture.setStorage(Mn::Math::log2(imageSize_) + 1,
-                              Mn::GL::TextureFormat::RGBA8, size);
+      mipmapLevels_ = Mn::Math::log2(imageSize_) + 1;
+      colorTexture.setStorage(mipmapLevels_, Mn::GL::TextureFormat::RGBA8,
+                              size);  // TODO: HDR!!
     } else {
       colorTexture.setStorage(1, Mn::GL::TextureFormat::RGBA8, size);
+    }
+  }
+
+  // variance shadow map
+  if (flags_ & Flag::VarianceShadowMapTexture) {
+    auto& vsmTexture = texture(TextureType::VarianceShadowMap);
+    vsmTexture = Mn::GL::CubeMapTexture{};
+    vsmTexture
+        .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge)
+        // it is used to store linear depth
+        .setMinificationFilter(Mn::GL::SamplerFilter::Linear,
+                               Mn::GL::SamplerMipmap::Linear)
+        .setMagnificationFilter(Mn::GL::SamplerFilter::Linear);
+
+    if ((flags_ & Flag::AutoBuildMipmap) ||
+        (flags_ & Flag::ManuallyBuildMipmap)) {
+      mipmapLevels_ = Mn::Math::log2(imageSize_) + 1;
+      vsmTexture.setStorage(mipmapLevels_, Mn::GL::TextureFormat::RG32F, size);
+    } else {
+      vsmTexture.setStorage(1, Mn::GL::TextureFormat::RG32F, size);
     }
   }
 
@@ -201,55 +265,74 @@ void CubeMap::recreateTexture() {
   }
 }
 
-void CubeMap::recreateFramebuffer() {
-  Mn::Vector2i viewportSize{imageSize_, imageSize_};
-  for (int iFbo = 0; iFbo < 6; ++iFbo) {
-    frameBuffer_[iFbo] = Mn::GL::Framebuffer{{{}, viewportSize}};
-  }
+void CubeMap::recreateFramebuffer(unsigned int cubeSideIndex,
+                                  int framebufferSize) {
+  Mn::Vector2i viewportSize{framebufferSize};  // at mip level 0
+  frameBuffer_[cubeSideIndex] = Mn::GL::Framebuffer{{{}, viewportSize}};
 
   // optional depth buffer is 24-bit integer pixel, which is different from the
   // depth texture (32-bit float)
   if (!(flags_ & CubeMap::Flag::DepthTexture)) {
-    for (int index = 0; index < 6; ++index) {
-      optionalDepthBuffer_[index] = Mn::GL::Renderbuffer{};
-      optionalDepthBuffer_[index].setStorage(
-          Mn::GL::RenderbufferFormat::DepthComponent24, viewportSize);
-    }
+    optionalDepthBuffer_[cubeSideIndex] = Mn::GL::Renderbuffer{};
+    optionalDepthBuffer_[cubeSideIndex].setStorage(
+        Mn::GL::RenderbufferFormat::DepthComponent24, viewportSize);
   }
 }
 
-void CubeMap::attachFramebufferRenderbuffer() {
-  for (unsigned int index = 0; index < 6; ++index) {
-    Magnum::GL::CubeMapCoordinate cubeMapCoord =
-        convertFaceIndexToCubeMapCoordinate(index);
+void CubeMap::attachFramebufferRenderbuffer(unsigned int cubeSideIndex,
+                                            unsigned int mipLevel) {
+  Magnum::GL::CubeMapCoordinate cubeMapCoord =
+      convertFaceIndexToCubeMapCoordinate(cubeSideIndex);
 
-    if (flags_ & Flag::ColorTexture) {
-      frameBuffer_[index].attachCubeMapTexture(
-          rgbaAttachment, texture(TextureType::Color), cubeMapCoord, 0);
-    }
+  if (flags_ & Flag::ColorTexture) {
+    frameBuffer_[cubeSideIndex].attachCubeMapTexture(
+        rgbaAttachment, texture(TextureType::Color), cubeMapCoord,
+        int(mipLevel));
+  }
 
-    if (flags_ & Flag::DepthTexture) {
-      frameBuffer_[index].attachCubeMapTexture(
-          Mn::GL::Framebuffer::BufferAttachment::Depth,
-          texture(TextureType::Depth), cubeMapCoord, 0);
-    } else {
-      frameBuffer_[index].attachRenderbuffer(
-          Mn::GL::Framebuffer::BufferAttachment::Depth,
-          optionalDepthBuffer_[index]);
-    }
+  if (flags_ & Flag::VarianceShadowMapTexture) {
+    frameBuffer_[cubeSideIndex].attachCubeMapTexture(
+        vsmAttachment, texture(TextureType::VarianceShadowMap), cubeMapCoord,
+        int(mipLevel));
+  }
 
-    if (flags_ & Flag::ObjectIdTexture) {
-      frameBuffer_[index].attachCubeMapTexture(
-          objectIdAttachment, texture(TextureType::ObjectId), cubeMapCoord, 0);
-    }
+  // does NOT make any sense to talk about mip level for depth or object id
+  // texture. so the mipLevel is always 0 for both.
+  if (flags_ & Flag::DepthTexture) {
+    frameBuffer_[cubeSideIndex].attachCubeMapTexture(
+        Mn::GL::Framebuffer::BufferAttachment::Depth,
+        texture(TextureType::Depth), cubeMapCoord, 0);
+  } else {
+    frameBuffer_[cubeSideIndex].attachRenderbuffer(
+        Mn::GL::Framebuffer::BufferAttachment::Depth,
+        optionalDepthBuffer_[cubeSideIndex]);
+  }
+
+  if (flags_ & Flag::ObjectIdTexture) {
+    frameBuffer_[cubeSideIndex].attachCubeMapTexture(
+        objectIdAttachment, texture(TextureType::ObjectId), cubeMapCoord, 0);
   }
 }
 
 void CubeMap::prepareToDraw(unsigned int cubeSideIndex,
-                            RenderCamera::Flags renderCameraFlags) {
+                            RenderCamera::Flags renderCameraFlags,
+                            unsigned int mipLevel) {
+  mipLevelSanityCheck("CubeMap::prepareToDraw():", flags_, mipLevel,
+                      mipmapLevels_);
+
+  if ((flags_ & Flag::ManuallyBuildMipmap) && (flags_ & Flag::ColorTexture)) {
+    int size = imageSize_ / (1 << mipLevel);
+    frameBuffer_[cubeSideIndex].setViewport({{}, {size, size}});
+    recreateFramebuffer(cubeSideIndex, size);
+    attachFramebufferRenderbuffer(cubeSideIndex, mipLevel);
+  }
+
+  bindFramebuffer(cubeSideIndex);
+
   // Note: we ONLY need to map shader output to color attachment when necessary,
   // which means in depth texture mode, we do NOT need to do this
   if (flags_ & CubeMap::Flag::ColorTexture ||
+      flags_ & CubeMap::Flag::VarianceShadowMapTexture ||
       flags_ & CubeMap::Flag::ObjectIdTexture) {
     mapForDraw(cubeSideIndex);
   }
@@ -257,8 +340,8 @@ void CubeMap::prepareToDraw(unsigned int cubeSideIndex,
   if (flags_ & CubeMap::Flag::ColorTexture &&
       renderCameraFlags & RenderCamera::Flag::ClearColor) {
     frameBuffer_[cubeSideIndex].clearColor(
-        0,                      // color attachment
-        Mn::Color4{0, 0, 0, 1}  // clear color
+        0,                                  // color attachment
+        Mn::Color4{0.0f, 0.0f, 0.0f, 1.0f}  // clear color
     );
   }
 
@@ -276,20 +359,31 @@ void CubeMap::prepareToDraw(unsigned int cubeSideIndex,
                           Mn::GL::Framebuffer::Status::Complete);
 }
 
+unsigned int CubeMap::getMipmapLevels() const {
+  return mipmapLevels_;
+}
+
+void CubeMap::bindFramebuffer(unsigned int cubeSideIndex) {
+  CORRADE_INTERNAL_ASSERT(cubeSideIndex < 6);
+  frameBuffer_[cubeSideIndex].bind();
+}
+
 void CubeMap::mapForDraw(unsigned int index) {
   frameBuffer_[index].mapForDraw(
-      {{Mn::Shaders::GenericGL3D::ColorOutput,
-        (flags_ & CubeMap::Flag::ColorTexture
-             ? rgbaAttachment
-             : Mn::GL::Framebuffer::DrawAttachment::None)},
-       {Mn::Shaders::GenericGL3D::ObjectIdOutput,
-        (flags_ & CubeMap::Flag::ObjectIdTexture
-             ? objectIdAttachment
+      {{ColorOutput, (flags_ & CubeMap::Flag::ColorTexture
+                          ? rgbaAttachment
+                          : Mn::GL::Framebuffer::DrawAttachment::None)},
+       {ObjectIdOutput, (flags_ & CubeMap::Flag::ObjectIdTexture
+                             ? objectIdAttachment
+                             : Mn::GL::Framebuffer::DrawAttachment::None)},
+       {VarianceShadowMapOutput,
+        (flags_ & CubeMap::Flag::VarianceShadowMapTexture
+             ? vsmAttachment
              : Mn::GL::Framebuffer::DrawAttachment::None)}});
 }
 
 Mn::GL::CubeMapTexture& CubeMap::getTexture(TextureType type) {
-  textureTypeSanityCheck(flags_, type, "CubeMap::getTexture():");
+  textureTypeSanityCheck("CubeMap::getTexture():", flags_, type);
   return textures_[static_cast<uint8_t>(type)];
 }
 
@@ -297,8 +391,11 @@ Mn::GL::CubeMapTexture& CubeMap::getTexture(TextureType type) {
 // because Mn::Image2D image = textures_[type]->image(...)
 // requires desktop OpenGL
 bool CubeMap::saveTexture(TextureType type,
-                          const std::string& imageFilePrefix) {
-  textureTypeSanityCheck(flags_, type, "CubeMap::saveTexture():");
+                          const std::string& imageFilePrefix,
+                          unsigned int mipLevel) {
+  textureTypeSanityCheck("CubeMap::saveTexture():", flags_, type);
+  mipLevelSanityCheck("CubeMap::saveTexture():", flags_, mipLevel,
+                      mipmapLevels_);
 
   Cr::PluginManager::Manager<Mn::Trade::AbstractImageConverter> manager;
   Cr::Containers::Pointer<Mn::Trade::AbstractImageConverter> converter;
@@ -313,11 +410,11 @@ bool CubeMap::saveTexture(TextureType type,
     switch (type) {
       case TextureType::Color: {
         Mn::Image2D image =
-            tex.image(convertFaceIndexToCubeMapCoordinate(iFace), 0,
+            tex.image(convertFaceIndexToCubeMapCoordinate(iFace), mipLevel,
                       {getPixelFormat(type)});
-        filename = Cr::Utility::formatString("{}.{}.{}.png", imageFilePrefix,
-                                             getTextureTypeFilenameString(type),
-                                             coordStrings[iFace]);
+        filename = Cr::Utility::formatString(
+            "{}.{}.mip_{}.{}.png", imageFilePrefix,
+            getTextureTypeFilenameString(type), mipLevel, coordStrings[iFace]);
         if (!converter->convertToFile(image, filename)) {
           return false;
         }
@@ -341,6 +438,11 @@ bool CubeMap::saveTexture(TextureType type,
         // TODO: save object Id texture
         break;
         */
+      /*
+      case CubeMap::TextureType::VarianceShadowMap:
+        // TODO: save vsm texture
+        break;
+        */
       case CubeMap::TextureType::Count:
         break;
 
@@ -351,7 +453,7 @@ bool CubeMap::saveTexture(TextureType type,
     CORRADE_ASSERT(!filename.empty(),
                    "CubeMap::saveTexture(): Unknown texture type.", false);
 
-    LOG(INFO) << "Saved image " << iFace << " to " << filename;
+    ESP_DEBUG() << "Saved image" << iFace << "to" << filename;
   }  // for
 
   return true;
@@ -361,7 +463,7 @@ bool CubeMap::saveTexture(TextureType type,
 void CubeMap::loadTexture(TextureType type,
                           const std::string& imageFilePrefix,
                           const std::string& imageFileExtension) {
-  textureTypeSanityCheck(flags_, type, "CubeMap::loadTexture():");
+  textureTypeSanityCheck("CubeMap::loadTexture():", flags_, type);
 
   // set the alias of the texture
   Mn::GL::CubeMapTexture& tex = texture(type);
@@ -430,20 +532,83 @@ void CubeMap::loadTexture(TextureType type,
         CORRADE_INTERNAL_ASSERT_UNREACHABLE();
         break;
 
+      case TextureType::VarianceShadowMap:
+        // TODO: vsm texture
+        CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+        break;
+
       case TextureType::Count:
         CORRADE_INTERNAL_ASSERT_UNREACHABLE();
         break;
     }  // switch
-    LOG(INFO) << "Loaded image " << iFace << " from " << filename;
+    ESP_DEBUG() << "Loaded image" << iFace << "from" << filename;
   }
-  // Color texture ONLY, NOT for depth
-  if ((flags_ & Flag::BuildMipmap) && (flags_ & Flag::ColorTexture)) {
+  // sanity check is within the function
+  generateMipmap(type);
+}
+
+void CubeMap::generateMipmap(TextureType type) {
+  CORRADE_INTERNAL_ASSERT(type == TextureType::Color ||
+                          type == TextureType::VarianceShadowMap);
+  if (type == TextureType::Color) {
+    CORRADE_INTERNAL_ASSERT(flags_ & Flag::ColorTexture);
+  } else if (type == TextureType::VarianceShadowMap) {
+    CORRADE_INTERNAL_ASSERT(flags_ & Flag::VarianceShadowMapTexture);
+  }
+  if ((flags_ & Flag::AutoBuildMipmap) ||
+      (flags_ & Flag::ManuallyBuildMipmap)) {
+    Mn::GL::CubeMapTexture& tex = texture(type);
     tex.generateMipmap();
   }
 }
 
+void CubeMap::copySubImage(unsigned int cubeSideIndex,
+                           TextureType type,
+                           Magnum::GL::Texture2D& texture,
+                           unsigned int mipLevel) {
+  CORRADE_INTERNAL_ASSERT(cubeSideIndex < 6);
+
+  if (mipLevel > 0) {
+    mipLevelSanityCheck("CubeMap::CopyToTexture2D():", flags_, mipLevel,
+                        mipmapLevels_);
+  }
+
+  int size = imageSize_ / (1 << mipLevel);
+
+#ifndef MAGNUM_TARGET_WEBGL
+  CORRADE_ASSERT(texture.imageSize(0) == Mn::Vector2i(size),
+                 "CubeMap::CopyToTexture2D(): the texture size does not match "
+                 "the cubemap size.", );
+#endif
+  // map for read
+  switch (type) {
+    case TextureType::Color:
+      frameBuffer_[cubeSideIndex].mapForRead(rgbaAttachment);
+      break;
+
+    case TextureType::VarianceShadowMap:
+      frameBuffer_[cubeSideIndex].mapForRead(vsmAttachment);
+      break;
+
+    case TextureType::ObjectId:
+      frameBuffer_[cubeSideIndex].mapForRead(objectIdAttachment);
+      break;
+
+    default:
+      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+      break;
+  }
+
+  frameBuffer_[cubeSideIndex].copySubImage(
+      Mn::Range2Di{{0, 0}, {size, size}},  // rectangle area
+      texture,                             // destination
+      mipLevel,                            // mip level
+      {0, 0});                             // offset
+}
+
 void CubeMap::renderToTexture(CubeMapCamera& camera,
                               scene::SceneGraph& sceneGraph,
+                              const char* drawableGroupName,
                               RenderCamera::Flags renderCameraFlags) {
   CORRADE_ASSERT(camera.isInSceneGraph(sceneGraph),
                  "CubeMap::renderToTexture(): camera is NOT attached to the "
@@ -466,21 +631,18 @@ void CubeMap::renderToTexture(CubeMapCamera& camera,
   // the camera node before calling this function, original viewing matrix of
   // the camera MUST be updated as well.
   camera.updateOriginalViewingMatrix();
+
   for (int iFace = 0; iFace < 6; ++iFace) {
-    frameBuffer_[iFace].bind();
     camera.switchToFace(iFace);
     prepareToDraw(iFace, renderCameraFlags);
 
     // TODO:
-    // camera should have renderCameraFlags so that it can do "low quality"
+    // should have different drawable groups that can do "low quality"
     // rendering, e.g., no normal maps, no specular lighting, low-poly meshes,
     // low-quality textures.
-
-    for (auto& it : sceneGraph.getDrawableGroups()) {
-      if (it.second.prepareForDraw(camera)) {
-        camera.draw(it.second, renderCameraFlags);
-      }
-    }
+    DrawableGroup& group = sceneGraph.getDrawables(drawableGroupName);
+    group.prepareForDraw(camera);
+    camera.draw(group, renderCameraFlags);
   }  // iFace
 
   // CAREFUL!!!
@@ -491,9 +653,13 @@ void CubeMap::renderToTexture(CubeMapCamera& camera,
   // transformation of this camera node must be reset.
   camera.restoreTransformation();
 
-  // Color texture ONLY, NOT for depth
-  if ((flags_ & Flag::BuildMipmap) && (flags_ & Flag::ColorTexture)) {
-    texture(TextureType::Color).generateMipmap();
+  // NOT for depth
+  if (flags_ & Flag::AutoBuildMipmap) {
+    if (flags_ & Flag::ColorTexture) {
+      texture(TextureType::Color).generateMipmap();
+    } else if (flags_ & Flag::VarianceShadowMapTexture) {
+      texture(TextureType::VarianceShadowMap).generateMipmap();
+    }
   }
 }
 

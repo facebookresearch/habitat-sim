@@ -14,14 +14,14 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.11.2
+#       jupytext_version: 1.13.0
 #   kernelspec:
 #     display_name: Python 3
 #     name: python3
 # ---
 
 # %% [markdown]
-# <a href="https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/master/examples/tutorials/colabs/ReplicaCAD_quickstart.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+# <a href="https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/ReplicaCAD_quickstart.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 
 # %% [markdown]
 # #Habitat-sim ReplicaCAD Quickstart
@@ -33,7 +33,7 @@
 # @title Installation { display-mode: "form" }
 # @markdown (double click to show code).
 
-# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/master/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
+# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/main/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
 
 # %%
 # @title Path Setup and Imports { display-mode: "form" }
@@ -122,7 +122,7 @@ def make_cfg(settings):
         settings["height"],
         settings["width"],
     ]
-    color_sensor_1st_person_spec.postition = [0.0, settings["sensor_height"], 0.0]
+    color_sensor_1st_person_spec.position = [0.0, settings["sensor_height"], 0.0]
     color_sensor_1st_person_spec.orientation = [
         settings["sensor_pitch"],
         0.0,

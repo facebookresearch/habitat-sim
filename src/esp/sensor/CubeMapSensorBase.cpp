@@ -120,6 +120,7 @@ bool CubeMapSensorBase::renderToCubemapTexture(sim::Simulator& sim) {
   }
 
   // generate the cubemap texture
+  const char* defaultDrawableGroupName = "";
   if (cubeMapSensorBaseSpec_->sensorType == SensorType::Semantic) {
     bool twoSceneGraphs =
         (&sim.getActiveSemanticSceneGraph() != &sim.getActiveSceneGraph());
@@ -127,10 +128,12 @@ bool CubeMapSensorBase::renderToCubemapTexture(sim::Simulator& sim) {
     if (twoSceneGraphs) {
       VisualSensor::MoveSemanticSensorNodeHelper helper(*this, sim);
       cubeMap_->renderToTexture(*cubeMapCamera_,
-                                sim.getActiveSemanticSceneGraph(), flags);
+                                sim.getActiveSemanticSceneGraph(),
+                                defaultDrawableGroupName, flags);
     } else {
       cubeMap_->renderToTexture(*cubeMapCamera_,
-                                sim.getActiveSemanticSceneGraph(), flags);
+                                sim.getActiveSemanticSceneGraph(),
+                                defaultDrawableGroupName, flags);
     }
 
     if (twoSceneGraphs) {
@@ -142,11 +145,11 @@ bool CubeMapSensorBase::renderToCubemapTexture(sim::Simulator& sim) {
       flags &= ~gfx::RenderCamera::Flag::ClearDepth;
       flags &= ~gfx::RenderCamera::Flag::ClearObjectId;
       cubeMap_->renderToTexture(*cubeMapCamera_, sim.getActiveSceneGraph(),
-                                flags);
+                                defaultDrawableGroupName, flags);
     }
   } else {
     cubeMap_->renderToTexture(*cubeMapCamera_, sim.getActiveSceneGraph(),
-                              flags);
+                              defaultDrawableGroupName, flags);
   }
 
   return true;
