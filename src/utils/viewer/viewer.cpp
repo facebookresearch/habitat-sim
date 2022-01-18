@@ -86,7 +86,7 @@ std::string getCurrentTimeString() {
 }
 
 using namespace Mn::Math::Literals;
-using Magnum::Math::Literals::operator""_degf;
+using Mn::Math::Literals::operator""_degf;
 
 //! Define different UI roles for the mouse
 enum MouseInteractionMode {
@@ -120,18 +120,80 @@ struct MouseGrabber {
 
   virtual ~MouseGrabber() { sim_.removeRigidConstraint(constraintId); }
 
-  virtual void updatePivot(const Magnum::Vector3& pos) {
+  //! update global pivot position for the constraint
+  virtual void updatePivot(const Mn::Vector3& pos) {
     settings_.pivotB = pos;
     sim_.updateRigidConstraint(constraintId, settings_);
   }
-  virtual void updateFrame(const Magnum::Matrix3x3& frame) {
+
+  //! update global rotation frame for the constraint
+  virtual void updateFrame(const Mn::Matrix3x3& frame) {
     settings_.frameB = frame;
     sim_.updateRigidConstraint(constraintId, settings_);
   }
-  virtual void updateTransform(const Magnum::Matrix4& transform) {
+
+  //! update global rotation frame and pivot position for the constraint
+  virtual void updateTransform(const Mn::Matrix4& transform) {
     settings_.frameB = transform.rotation();
     settings_.pivotB = transform.translation();
     sim_.updateRigidConstraint(constraintId, settings_);
+  }
+
+  //! rotate the object's local constraint frame with a global angle axis input
+  virtual void rotateLocalFrameByGlobalAngleAxis(const Mn::Vector3 axis,
+                                                 const Mn::Rad angle) {
+    Mn::Matrix4 objectTransform;
+    auto rom = sim_.getRigidObjectManager();
+    auto aom = sim_.getArticulatedObjectManager();
+    if (rom->getObjectLibHasID(settings_.objectIdA)) {
+      objectTransform =
+          rom->getObjectByID(settings_.objectIdA)->getTransformation();
+    } else {
+      objectTransform = aom->getObjectByID(settings_.objectIdA)
+                            ->getLinkSceneNode(settings_.linkIdA)
+                            ->transformation();
+    }
+    // convert the axis into the object local space
+    Mn::Vector3 localAxis = objectTransform.inverted().transformVector(axis);
+    // create a rotation matrix
+    Mn::Matrix4 R = Mn::Matrix4::rotation(angle, localAxis.normalized());
+    // apply to the frame
+    settings_.frameA = R.rotation() * settings_.frameA;
+    sim_.updateRigidConstraint(constraintId, settings_);
+  }
+
+  //! Render a downward projection of the grasped object's COM
+  virtual void renderDebugLines() {
+    // cast a ray downward from COM to determine approximate landing point
+    Mn::Matrix4 objectTransform;
+    auto rom = sim_.getRigidObjectManager();
+    auto aom = sim_.getArticulatedObjectManager();
+    std::vector<int> objectRelatedIds(1, settings_.objectIdA);
+    if (rom->getObjectLibHasID(settings_.objectIdA)) {
+      objectTransform =
+          rom->getObjectByID(settings_.objectIdA)->getTransformation();
+    } else {
+      auto ao = aom->getObjectByID(settings_.objectIdA);
+      objectTransform =
+          ao->getLinkSceneNode(settings_.linkIdA)->transformation();
+      for (const auto& entry : ao->getLinkObjectIds()) {
+        objectRelatedIds.push_back(entry.first);
+      }
+    }
+    esp::physics::RaycastResults raycastResults = sim_.castRay(
+        esp::geo::Ray(objectTransform.translation(), Mn::Vector3(0, -1, 0)));
+    float lineLength = 9999.9;
+    for (auto& hit : raycastResults.hits) {
+      if (!std::count(objectRelatedIds.begin(), objectRelatedIds.end(),
+                      hit.objectId)) {
+        lineLength = hit.rayDistance;
+        break;
+      }
+    }
+    sim_.getDebugLineRender()->drawLine(
+        objectTransform.translation(),
+        objectTransform.translation() + Mn::Vector3(0, -lineLength, 0),
+        Mn::Color4::green());
   }
 };
 
@@ -268,13 +330,13 @@ In LOOK mode (default):
   LEFT:
     Click and drag to rotate the agent and look up/down.
   RIGHT:
-    (With 'enable-physics') Click a surface to instance a random primitive object at that location.
+    (physics) Click a surface to instance a random primitive object at that location.
   SHIFT-LEFT:
     Read Semantic ID and tag of clicked object (Currently only HM3D);
   SHIFT-RIGHT:
     Click a mesh to highlight it.
   CTRL-RIGHT:
-    (With 'enable-physics') Click on an object to voxelize it and display the voxelization.
+    (physics) Click on an object to voxelize it and display the voxelization.
   WHEEL:
     Modify orthographic camera zoom/perspective camera FOV (+SHIFT for fine grained control)
 In GRAB mode (with 'enable-physics'):
@@ -284,13 +346,16 @@ In GRAB mode (with 'enable-physics'):
     Click and drag to pickup and move an object with a fixed frame constraint.
   WHEEL (with picked object):
     Pull gripped object closer or push it away.
+    + ALT: rotate object fixed constraint frame (yaw)
+    + CTRL: rotate object fixed constraint frame (pitch)
+    + ALT+CTRL: rotate object fixed constraint frame (roll)
 
 Key Commands:
 -------------
   esc: Exit the application.
   'H': Display this help message.
-  'm': Toggle mouse mode.
-  TAB/Shift-TAB : Cycle to next/previous scene in scene datsaet
+  'm': Toggle mouse mode (LOOK | GRAB).
+  TAB/Shift-TAB : Cycle to next/previous scene in scene dataset
 
   Agent Controls:
   'wasd': Move the agent's body forward/backward, left/right.
@@ -298,37 +363,46 @@ Key Commands:
   arrow keys: Turn the agent's body left/right and camera look up/down.
   '9': Randomly place agent on NavMesh (if loaded).
   'q': Query the agent's state and print to terminal.
+  '[': Save agent position/orientation to "./saved_transformations/camera.year_month_day_hour-minute-second.txt".
+  ']': Load agent position/orientation from file system, or else from last save in current instance.
 
-  Utilities:
-  '1': Toggle recording locations for trajectory visualization.
-  '2': Build and display trajectory visualization.
-  '3': Toggle single color/multi-color trajectory.
-  '+': Increase trajectory diameter.
-  '-': Decrease trajectory diameter.
-  '4': Toggle flying camera mode (user can apply camera transformation loaded from disk).
+  Camera Settings
+  '4': Cycle through camera modes (Camera, Fisheye, Equirectangular)
   '5': Switch ortho/perspective camera.
   '6': Reset ortho camera zoom/perspective camera FOV.
+  '7': Cycle through rendering modes (RGB, depth, semantic)
+
+  Visualization Utilities:
   'l': Override the default lighting setup with configured settings in `default_light_override.lighting_config.json`.
   'e': Enable/disable frustum culling.
-  'c': Show/hide FPS overlay.
+  'c': Show/hide UI overlay.
   'n': Show/hide NavMesh wireframe.
   'i': Save a screenshot to "./screenshots/year_month_day_hour-minute-second/#.png".
-  'r': Write a replay of the recent simulated frames to a file specified by --gfx-replay-record-filepath.
-  '[': Save camera position/orientation to "./saved_transformations/camera.year_month_day_hour-minute-second.txt".
-  ']': Load camera position/orientation from file system (useful when flying camera mode is enabled), or else from last save in current instance.
+  ',': Render a Bullet collision shape debug wireframe overlay (white=active, green=sleeping, blue=wants sleeping, red=can't sleep)
 
   Object Interactions:
   SPACE: Toggle physics simulation on/off
   '.': Take a single simulation step if not simulating continuously.
   '8': Instance a random primitive object in front of the agent.
   'o': Instance a random file-based object in front of the agent.
-  't': Instance an ArticulatedObject in front of the camera from a URDF file by entering the filepath when prompted.
   'u': Remove most recently instanced rigid object.
+  't': Instance an ArticulatedObject in front of the camera from a URDF file by entering the filepath when prompted.
   'b': Toggle display of object bounding boxes.
   'p': Save current simulation state to SceneInstanceAttributes JSON file (with non-colliding filename).
   'v': (physics) Invert gravity.
   'g': (physics) Display a stage's signed distance gradient vector field.
   'k': (physics) Iterate through different ranges of the stage's voxelized signed distance field.
+
+  Additional Utilities:
+  'r': Write a replay of the recent simulated frames to a file specified by --gfx-replay-record-filepath.
+  '/': Write the current scene's metadata information to console.
+
+  Nav Trajectory Visualization:
+  '1': Toggle recording locations for trajectory visualization.
+  '2': Build and display trajectory visualization.
+  '3': Toggle single color/multi-color trajectory.
+  '+': Increase trajectory diameter.
+  '-': Decrease trajectory diameter.
   ==================================================
   )";
 
@@ -358,7 +432,7 @@ Key Commands:
    * @brief vector holding past agent locations to build trajectory
    * visualization
    */
-  std::vector<Magnum::Vector3> agentLocs_;
+  std::vector<Mn::Vector3> agentLocs_;
   float agentTrajRad_ = .01f;
   bool agentLocRecordOn_ = false;
   bool singleColorTrajectory_ = true;
@@ -387,7 +461,7 @@ Key Commands:
   inline void recAgentLocation() {
     if (agentLocRecordOn_) {
       auto pt = agentBodyNode_->translation() +
-                Magnum::Vector3{0, (2.0f * agentTrajRad_), 0};
+                Mn::Vector3{0, (2.0f * agentTrajRad_), 0};
       agentLocs_.push_back(pt);
       ESP_DEBUG() << "Recording agent location : {" << pt.x() << "," << pt.y()
                   << "," << pt.z() << "}";
@@ -1064,7 +1138,7 @@ int Viewer::addObject(int ID) {
 
 int Viewer::addObject(const std::string& objectAttrHandle) {
   // Relative to agent bodynode
-  Mn::Matrix4 T = agentBodyNode_->MagnumObject::transformationMatrix();
+  Mn::Matrix4 T = agentBodyNode_->transformationMatrix();
   Mn::Vector3 new_pos = T.transformPoint({0.1f, 1.5f, -2.0f});
   auto rigidObjMgr = simulator_->getRigidObjectManager();
   auto obj = rigidObjMgr->addObjectByHandle(objectAttrHandle);
@@ -1337,6 +1411,10 @@ void Viewer::drawEvent() {
     sensorRenderTarget->blitRgbaToDefault();
   } else {
     if (sensorMode_ == VisualSensorMode::Camera) {
+      if (mouseGrabber_ != nullptr) {
+        mouseGrabber_->renderDebugLines();
+      }
+
       // ============= regular RGB with object picking =================
       // using polygon offset to increase mesh depth to avoid z-fighting with
       // debug draw (since lines will not respond to offset).
@@ -1807,6 +1885,8 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
   }
   // Use shift to scale action response
   auto shiftPressed = event.modifiers() & MouseEvent::Modifier::Shift;
+  auto altPressed = event.modifiers() & MouseEvent::Modifier::Alt;
+  auto ctrlPressed = event.modifiers() & MouseEvent::Modifier::Ctrl;
   if (mouseInteractionMode == MouseInteractionMode::LOOK) {
     // Use shift for fine-grained zooming
     float modVal = shiftPressed ? 1.01 : 1.1;
@@ -1819,12 +1899,31 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
     auto viewportPoint = getMousePosition(event.position());
     // adjust the depth
     float modVal = shiftPressed ? 0.1 : 0.01;
-    auto ray = renderCamera_->unproject(viewportPoint);
-    mouseGrabber_->gripDepth += scrollModVal * modVal;
-    mouseGrabber_->updateTransform(
-        Mn::Matrix4::from(defaultAgent_->node().rotation().toMatrix(),
-                          renderCamera_->node().absoluteTranslation() +
-                              ray.direction * mouseGrabber_->gripDepth));
+    float scrollDelta = scrollModVal * modVal;
+    if (altPressed || ctrlPressed) {
+      // rotate the object's local constraint frame
+      auto agentT = agentBodyNode_->transformationMatrix();
+
+      // ALT - yaw
+      Mn::Vector3 rotationAxis = agentT.transformVector(Mn::Vector3(0, 1, 0));
+      if (altPressed && ctrlPressed) {
+        // ALT+CTRL - roll
+        rotationAxis = agentT.transformVector(Mn::Vector3(0, 0, -1));
+      } else if (ctrlPressed) {
+        // CTRL - pitch
+        rotationAxis = agentT.transformVector(Mn::Vector3(1, 0, 0));
+      }
+      mouseGrabber_->rotateLocalFrameByGlobalAngleAxis(rotationAxis,
+                                                       Mn::Rad(scrollDelta));
+    } else {
+      // translate the object forward/backward
+      auto ray = renderCamera_->unproject(viewportPoint);
+      mouseGrabber_->gripDepth += scrollDelta;
+      mouseGrabber_->updateTransform(
+          Mn::Matrix4::from(defaultAgent_->node().rotation().toMatrix(),
+                            renderCamera_->node().absoluteTranslation() +
+                                ray.direction * mouseGrabber_->gripDepth));
+    }
   }
 
   event.setAccepted();
@@ -1920,6 +2019,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
                             "changed to multiple random colors.");
       break;
     case KeyEvent::Key::Four:
+      // switch between camera types (Camera, Fisheye, Equirectangular)
       sensorMode_ = static_cast<VisualSensorMode>(
           (uint8_t(sensorMode_) + 1) %
           uint8_t(VisualSensorMode::VisualSensorModeCount));
@@ -2044,6 +2144,8 @@ void Viewer::keyPressEvent(KeyEvent& event) {
         ao->setTranslation(
             defaultAgent_->node().transformation().transformPoint(
                 {0, 1.0, -1.5}));
+      } else {
+        ESP_DEBUG() << "... input file not found. Aborting.";
       }
     } break;
     case KeyEvent::Key::L: {
