@@ -543,7 +543,7 @@ class Simulator {
    * @return The timestep.
    */
   double getPhysicsTimeStep();
-  
+
   /**
    * @brief Get the simplified name of the @ref
    * esp::metadata::attributes::SceneInstanceAttributes used to create the scene
