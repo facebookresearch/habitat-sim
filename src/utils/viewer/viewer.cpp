@@ -247,6 +247,9 @@ class Viewer : public Mn::Platform::Application {
   // exists if a mouse grabbing constraint is active, destroyed on release
   std::unique_ptr<MouseGrabber> mouseGrabber_ = nullptr;
 
+  //! Most recently custom loaded URDF ('t' key)
+  std::string cachedURDF_ = "";
+
   /**
    * @brief Instance an object from an ObjectAttributes.
    * @param configHandle The handle referencing the object's template in the
@@ -388,6 +391,8 @@ Key Commands:
   'o': Instance a random file-based object in front of the agent.
   'u': Remove most recently instanced rigid object.
   't': Instance an ArticulatedObject in front of the camera from a URDF file by entering the filepath when prompted.
+    +ALT: Import the object with a fixed base.
+    +SHIFT Quick-reload the previously specified URDF.
   'b': Toggle display of object bounding boxes.
   'p': Save current simulation state to SceneInstanceAttributes JSON file (with non-colliding filename).
   'v': (physics) Invert gravity.
@@ -2147,10 +2152,20 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       showAgentStateMsg(true, true);
       break;
     case KeyEvent::Key::T: {
+      //+ALT for fixedBase
+      bool fixedBase = bool(event.modifiers() & MouseEvent::Modifier::Alt);
+
       // add an ArticulatedObject from provided filepath
-      ESP_DEBUG() << "Load URDF: provide a URDF filepath.";
       std::string urdfFilepath;
-      std::cin >> urdfFilepath;
+      if (event.modifiers() & MouseEvent::Modifier::Shift &&
+          !cachedURDF_.empty()) {
+        // quick-reload the most recently loaded URDF
+        ESP_DEBUG() << "URDF quick-reload: " << cachedURDF_;
+        urdfFilepath = cachedURDF_;
+      } else {
+        ESP_DEBUG() << "Load URDF: provide a URDF filepath.";
+        std::cin >> urdfFilepath;
+      }
 
       if (urdfFilepath.empty()) {
         ESP_DEBUG() << "... no input provided. Aborting.";
@@ -2158,8 +2173,11 @@ void Viewer::keyPressEvent(KeyEvent& event) {
                  !Cr::Utility::String::endsWith(urdfFilepath, ".URDF")) {
         ESP_DEBUG() << "... input is not a URDF. Aborting.";
       } else if (Cr::Utility::Directory::exists(urdfFilepath)) {
+        // cache the file for quick-reload with SHIFT-T
+        cachedURDF_ = urdfFilepath;
         auto aom = simulator_->getArticulatedObjectManager();
-        auto ao = aom->addArticulatedObjectFromURDF(urdfFilepath, true);
+        auto ao = aom->addArticulatedObjectFromURDF(urdfFilepath, fixedBase,
+                                                    1.0, 1.0, true);
         ao->setTranslation(
             defaultAgent_->node().transformation().transformPoint(
                 {0, 1.0, -1.5}));
