@@ -643,7 +643,12 @@ In GRAB mode (with 'enable-physics'):
     RIGHT:
         Click and drag to pickup and move an object with a fixed frame constraint.
     WHEEL (with picked object):
-        Pull gripped object closer or push it away.
+        default - Pull gripped object closer or push it away.
+        (+ALT) rotate object fixed constraint frame (yaw)
+        (+CTRL) rotate object fixed constraint frame (pitch)
+        (+ALT+CTRL) rotate object fixed constraint frame (roll)
+        (+SHIFT) amplify scroll magnitude
+
 
 Key Commands:
 -------------
@@ -666,6 +671,9 @@ Key Commands:
     SPACE:      Toggle physics simulation on/off.
     '.':        Take a single simulation step if not simulating continuously.
     'v':        (physics) Invert gravity.
+    't':        Load URDF from filepath
+                (+SHIFT) quick re-load the previously specified URDF
+                (+ALT) load the URDF with fixed base
 =====================================================
 """
         )
