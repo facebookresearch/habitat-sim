@@ -29,6 +29,7 @@ find_package(
   GL
   MeshTools
   SceneGraph
+  SceneTools
   Shaders
   Trade
   Primitives
