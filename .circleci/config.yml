@@ -327,7 +327,7 @@ jobs:
             conda init "$(basename "${SHELL}")"
       - run:
           name: Conda OSX build
-          no_output_timeout: 20m
+          no_output_timeout: 30m
           command: |
             export PATH=$HOME/miniconda/bin:$PATH
             source ~/.bash_profile
