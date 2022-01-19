@@ -105,6 +105,7 @@ void initSimBindings(py::module& m) {
       .def(
           "close", &Simulator::close, "destroy"_a = true,
           R"(Free all loaded assets and GPU contexts. Use destroy=true except where noted in tutorials/async_rendering.py.)")
+      .def("debug_draw", &Simulator::physicsDebugDraw, "projMat"_a)
       .def_property("pathfinder", &Simulator::getPathFinder,
                     &Simulator::setPathFinder)
       .def_property(

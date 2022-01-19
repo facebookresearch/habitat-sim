@@ -28,6 +28,7 @@ class HabitatSimInteractiveViewer(Application):
         Application.__init__(self, configuration)
         self.sim_settings: Dict[str:Any] = sim_settings
         self.fps: float = 60.0
+        self.debug_bullet_draw = False
 
         # set proper viewport size
         self.viewport_size: mn.Vector2i = mn.gl.default_framebuffer.viewport.size()
@@ -94,6 +95,10 @@ class HabitatSimInteractiveViewer(Application):
         """
         Additional draw commands to be called during draw_event.
         """
+        if self.debug_bullet_draw:
+            render_cam = self.render_camera.render_camera
+            proj_mat = render_cam.projection_matrix.__matmul__(render_cam.camera_matrix)
+            self.sim.debug_draw(proj_mat)
 
     def draw_event(
         self,
@@ -126,20 +131,20 @@ class HabitatSimInteractiveViewer(Application):
                 self.simulate_single_step = False
                 if simulation_call is not None:
                     simulation_call()
-            global_call()
+            if global_call is not None:
+                global_call()
 
             # reset time_since_last_simulation, accounting for potential overflow
             self.time_since_last_simulation = math.fmod(
                 self.time_since_last_simulation, 1.0 / self.fps
             )
 
-        self.debug_draw()
-
         keys = active_agent_id_and_sensor_name
 
         self.sim._Simulator__sensors[keys[0]][keys[1]].draw_observation()
         agent = self.sim.get_agent(keys[0])
         self.render_camera = agent.scene_node.node_sensor_suite.get(keys[1])
+        self.debug_draw()
         self.render_camera.render_target.blit_rgba_to_default()
         mn.gl.default_framebuffer.bind()
 
@@ -284,6 +289,10 @@ class HabitatSimInteractiveViewer(Application):
             else:
                 self.simulate_single_step = True
                 logger.info("Command: physics step taken")
+
+        elif key == pressed.COMMA:
+            self.debug_bullet_draw = not self.debug_bullet_draw
+            logger.info(f"Command: toggle Bullet debug draw: {self.debug_bullet_draw}")
 
         elif key == pressed.M:
             self.cycle_mouse_mode()
@@ -603,6 +612,7 @@ Key Commands:
     'r':        Reset the simulator with the most recently loaded scene.
     'n':        Show/hide NavMesh wireframe.
                 (+SHIFT) Recompute NavMesh with default settings.
+    ',':        Render a Bullet collision shape debug wireframe overlay (white=active, green=sleeping, blue=wants sleeping, red=can't sleep)
 
     Object Interactions:
     SPACE:      Toggle physics simulation on/off.
