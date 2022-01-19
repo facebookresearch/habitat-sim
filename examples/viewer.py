@@ -4,6 +4,7 @@
 
 import ctypes
 import math
+import os
 import sys
 import time
 from enum import Enum
@@ -29,6 +30,8 @@ class HabitatSimInteractiveViewer(Application):
         self.sim_settings: Dict[str:Any] = sim_settings
         self.fps: float = 60.0
         self.debug_bullet_draw = False
+        # cache most recently loaded URDF file for quick-reload
+        self.cached_urdf = ""
 
         # set proper viewport size
         self.viewport_size: mn.Vector2i = mn.gl.default_framebuffer.viewport.size()
@@ -268,6 +271,9 @@ class HabitatSimInteractiveViewer(Application):
         pressed = Application.KeyEvent.Key
         mod = Application.InputEvent.Modifier
 
+        shift_pressed = bool(event.modifiers & mod.SHIFT)
+        alt_pressed = bool(event.modifiers & mod.ALT)
+
         if key == pressed.ESC:
             event.accepted = True
             self.exit_event(Application.ExitEvent)
@@ -294,6 +300,31 @@ class HabitatSimInteractiveViewer(Application):
             self.debug_bullet_draw = not self.debug_bullet_draw
             logger.info(f"Command: toggle Bullet debug draw: {self.debug_bullet_draw}")
 
+        elif key == pressed.T:
+            # load URDF
+            fixed_base = alt_pressed
+            urdf_file_path = ""
+            if shift_pressed and self.cached_urdf:
+                urdf_file_path = self.cached_urdf
+            else:
+                urdf_file_path = input("Load URDF: provide a URDF filepath:").strip()
+
+            if not urdf_file_path:
+                logger.warn("Load URDF: no input provided. Aborting.")
+            elif not urdf_file_path.endswith((".URDF", ".urdf")):
+                logger.warn("Load URDF: input is not a URDF. Aborting.")
+            elif os.path.exists(urdf_file_path):
+                self.cached_urdf = urdf_file_path
+                aom = self.sim.get_articulated_object_manager()
+                ao = aom.add_articulated_object_from_urdf(
+                    urdf_file_path, fixed_base, 1.0, 1.0, True
+                )
+                ao.translation = self.agent_body_node.transformation.transform_point(
+                    [0.0, 1.0, -1.5]
+                )
+            else:
+                logger.warn("Load URDF: input file not found. Aborting.")
+
         elif key == pressed.M:
             self.cycle_mouse_mode()
             logger.info(f"Command: mouse mode set to {self.mouse_interaction}")
@@ -307,7 +338,7 @@ class HabitatSimInteractiveViewer(Application):
             logger.info("Command: gravity inverted")
 
         elif key == pressed.N:
-            if event.modifiers == mod.SHIFT:
+            if shift_pressed:
                 logger.info("Command: recompute navmesh")
                 self.navmesh_config_and_recompute()
             else:
