@@ -339,6 +339,11 @@ void StageAttributesManager::setDefaultAssetNameBasedAttributes(
   fwd = fwd1;
   if (endsWith(fileName, "_semantic.ply")) {
     assetTypeSetter(static_cast<int>(AssetType::INSTANCE_MESH));
+  } else if (endsWith(fileName, ".semantic.glb")) {
+    // temporary support for HM3D semantic glbs as render meshes
+    assetTypeSetter(static_cast<int>(AssetType::UNKNOWN));
+    up = up2;
+    fwd = fwd2;
   } else if (endsWith(fileName, "mesh.ply")) {
     assetTypeSetter(static_cast<int>(AssetType::FRL_PTEX_MESH));
     up = up2;
