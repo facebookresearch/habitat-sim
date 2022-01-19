@@ -1462,7 +1462,6 @@ void Viewer::drawEvent() {
     // result to the default main buffer
     // (this is the reason we do not call displayObservation)
     simulator_->drawObservation(defaultAgentId_, sensorVisID_);
-    // TODO: enable other sensors to be displayed
 
     Mn::GL::Renderer::setDepthFunction(
         Mn::GL::Renderer::DepthFunction::LessOrEqual);
