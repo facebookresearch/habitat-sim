@@ -480,7 +480,9 @@ class HabitatSimInteractiveViewer(Application):
             return
 
         # use shift to scale action response
-        shift_pressed = event.modifiers == Application.InputEvent.Modifier.SHIFT
+        shift_pressed = bool(event.modifiers & Application.InputEvent.Modifier.SHIFT)
+        alt_pressed = bool(event.modifiers & Application.InputEvent.Modifier.ALT)
+        ctrl_pressed = bool(event.modifiers & Application.InputEvent.Modifier.CTRL)
 
         # if interactive mode is False -> LOOK MODE
         if self.mouse_interaction == MouseMode.LOOK:
@@ -494,10 +496,25 @@ class HabitatSimInteractiveViewer(Application):
         elif self.mouse_interaction == MouseMode.GRAB and self.mouse_grabber:
             # adjust the depth
             mod_val = 0.1 if shift_pressed else 0.01
-            self.mouse_grabber.grip_depth += scroll_mod_val * mod_val
-
-            # update location of grabbed object
-            self.update_grab_position(self.get_mouse_position(event.position))
+            scroll_delta = scroll_mod_val * mod_val
+            if alt_pressed or ctrl_pressed:
+                # rotate the object's local constraint frame
+                agent_t = self.agent_body_node.transformation_matrix()
+                # ALT - yaw
+                rotation_axis = agent_t.transform_vector(mn.Vector3(0, 1, 0))
+                if alt_pressed and ctrl_pressed:
+                    # ALT+CTRL - roll
+                    rotation_axis = agent_t.transform_vector(mn.Vector3(0, 0, -1))
+                elif ctrl_pressed:
+                    # CTRL - pitch
+                    rotation_axis = agent_t.transform_vector(mn.Vector3(1, 0, 0))
+                self.mouse_grabber.rotate_local_frame_by_global_angle_axis(
+                    rotation_axis, mn.Rad(scroll_delta)
+                )
+            else:
+                # update location of grabbed object
+                self.mouse_grabber.grip_depth += scroll_delta
+                self.update_grab_position(self.get_mouse_position(event.position))
         self.redraw()
         event.accepted = True
 
@@ -650,23 +667,46 @@ class MouseGrabber:
     def __del__(self):
         self.remove_constraint()
 
-    def remove_constraint(self):
+    def remove_constraint(self) -> None:
         """
         Remove a rigid constraint by id.
         """
         self.simulator.remove_rigid_constraint(self.constraint_id)
 
-    def updatePivot(self, pos: mn.Vector3):
+    def updatePivot(self, pos: mn.Vector3) -> None:
         self.settings.pivot_b = pos
         self.simulator.update_rigid_constraint(self.constraint_id, self.settings)
 
-    def update_frame(self, frame: mn.Matrix3x3):
+    def update_frame(self, frame: mn.Matrix3x3) -> None:
         self.settings.frame_b = frame
         self.simulator.update_rigid_constraint(self.constraint_id, self.settings)
 
-    def update_transform(self, transform: mn.Matrix4):
+    def update_transform(self, transform: mn.Matrix4) -> None:
         self.settings.frame_b = transform.rotation()
         self.settings.pivot_b = transform.translation
+        self.simulator.update_rigid_constraint(self.constraint_id, self.settings)
+
+    def rotate_local_frame_by_global_angle_axis(
+        self, axis: mn.Vector3, angle: mn.Rad
+    ) -> None:
+        """rotate the object's local constraint frame with a global angle axis input."""
+        object_transform = mn.Matrix4()
+        rom = self.simulator.get_rigid_object_manager()
+        aom = self.simulator.get_articulated_object_manager()
+        if rom.get_library_has_id(self.settings.object_id_a):
+            object_transform = rom.get_object_by_id(
+                self.settings.object_id_a
+            ).transformation
+        else:
+            # must be an ao
+            object_transform = (
+                aom.get_object_by_id(self.settings.object_id_a)
+                .get_link_scene_node(self.settings.link_id_a)
+                .transformation
+            )
+        local_axis = object_transform.inverted().transform_vector(axis)
+        R = mn.Matrix4.rotation(angle, local_axis.normalized())
+        self.settings.frame_a = R.rotation().__matmul__(self.settings.frame_a)
         self.simulator.update_rigid_constraint(self.constraint_id, self.settings)
 
 
