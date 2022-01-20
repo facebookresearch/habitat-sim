@@ -222,10 +222,13 @@ GenericSemanticMeshData::buildSemanticMeshData(
       // list of per-ssObj/color vertex Aggregations and counts
       std::vector<esp::vec3f> vertAggregate(semanticIDToSSOBJid.size(),
                                             {0, 0, 0});
-      std::vector<esp::vec3f> vertMax(semanticIDToSSOBJid.size(),
-                                      {-1000.0f, -1000.0f, -1000.0f});
-      std::vector<esp::vec3f> vertMin(semanticIDToSSOBJid.size(),
-                                      {1000.0f, 1000.0f, 1000.0f});
+      std::vector<esp::vec3f> vertMax(
+          semanticIDToSSOBJid.size(),
+          {-Mn::Constants::inf(), -Mn::Constants::inf(),
+           -Mn::Constants::inf()});
+      std::vector<esp::vec3f> vertMin(
+          semanticIDToSSOBJid.size(),
+          {Mn::Constants::inf(), Mn::Constants::inf(), Mn::Constants::inf()});
       std::vector<int> vertCounts(semanticIDToSSOBJid.size());
       std::vector<esp::vec3f> kahanC(semanticIDToSSOBJid.size(), {0, 0, 0});
 
