@@ -795,9 +795,8 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
                                  bool includeStaticObjects) {
   CORRADE_ASSERT(config_.createRenderer,
                  "::recomputeNavMesh: "
-                 "SimulatorConfiguration::createRenderer is "
-                 "false. Scene geometry is required to recompute navmesh. No "
-                 "geometry is "
+                 "SimulatorConfiguration::createRenderer is false. Scene "
+                 "geometry is required to recompute navmesh. No geometry is "
                  "loaded without renderer initialization.",
                  false);
 
@@ -888,6 +887,13 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
       }
     }
   }
+  CORRADE_ASSERT(
+      joinedMesh->vbo.size() > 0,
+      "::recomputeNavMesh: "
+      "Unable to compute a navmesh upon a non-existent mesh - "
+      "the underlying joined collision mesh has no vertices. This is "
+      "probably due to the current scene being NONE.",
+      false);
 
   if (!pathfinder.build(navMeshSettings, *joinedMesh)) {
     ESP_ERROR() << "Failed to build navmesh";
