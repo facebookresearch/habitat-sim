@@ -164,6 +164,9 @@ GenericSemanticMeshData::buildSemanticMeshData(
       // map) and any overflow colors uniquely map 1-to-1 to an unmapped
       // semantic ID as their index.
       colorMapToUse.resize(numSSDObjs);
+      // TEMP FOR VERT-BASED OBB CALC
+      // no semantic ID 0
+      std::vector<int> semanticIDToSSOBJid(numSSDObjs + 1);
       for (int i = 0; i < numSSDObjs; ++i) {
         const auto& ssdObj =
             static_cast<scene::HM3DObjectInstance&>(*ssdObjs[i]);
@@ -178,6 +181,11 @@ GenericSemanticMeshData::buildSemanticMeshData(
           colorMapToUse.resize(semanticID + 1);
         }
         colorMapToUse[semanticID] = ssdColor;
+        // TEMP FOR VERT-BASED OBB CALC
+        if (semanticIDToSSOBJid.size() <= semanticID) {
+          semanticIDToSSOBJid.resize(semanticID + 1);
+        }
+        semanticIDToSSOBJid[semanticID] = i;
 
         maxRegion = Mn::Math::max(regionIDX, maxRegion);
       }
@@ -207,6 +215,15 @@ GenericSemanticMeshData::buildSemanticMeshData(
       // derive semantic ID and color and region/room ID for culling
       int regionID = 0;
       int semanticID = 0;
+
+      // TEMP FOR VERT-BASED OBB CALC
+
+      // list of per-ssObj/color vertex Aggregations and counts
+      std::vector<esp::vec3f> vertAggregate(numSSDObjs, {0, 0, 0});
+      std::vector<esp::vec3f> vertMax(numSSDObjs, {0, 0, 0});
+      std::vector<esp::vec3f> vertMin(numSSDObjs, {0, 0, 0});
+      std::vector<int> vertCounts(numSSDObjs);
+
       for (int vertIdx = 0; vertIdx < numVerts; ++vertIdx) {
         Mn::Color3ub meshColor = meshColors[vertIdx];
         // Convert color to an int @ vertex
@@ -221,6 +238,15 @@ GenericSemanticMeshData::buildSemanticMeshData(
           // color is found in ssd mapping, so is legal color
           semanticID = ssdColorToIDAndRegionIter->second.first;
           regionID = ssdColorToIDAndRegionIter->second.second;
+
+          // TEMP FOR VERT-BASED OBB CALC
+          // aggregate
+          auto vert = semanticData->cpu_vbo_[vertIdx];
+          vertAggregate[semanticID] += vert;
+          vertMax[semanticID] = vertMax[semanticID].cwiseMax(vert);
+          vertMin[semanticID] = vertMin[semanticID].cwiseMin(vert);
+          vertCounts[semanticID] += 1;
+
         } else {
           // color is not found in ssd mapping, so not legal color
           // check if we've assigned a semantic ID to this color before, and if
@@ -242,10 +268,36 @@ GenericSemanticMeshData::buildSemanticMeshData(
           }
           colorMapToUse[semanticID] = meshColor;
         }
+
         // semantic ID for vertex
         semanticData->objectIds_[vertIdx] = semanticID;
         // partition Ids for each vertex, for multi-mesh construction.
         partitionIds[vertIdx] = regionID;
+      }  // for each vertex
+
+      // give each ssObj the values to build its OBB
+      for (int semanticID = 1; semanticID < semanticIDToSSOBJid.size();
+           ++semanticID) {
+        // get object with given semantic ID
+        auto& ssdObj = static_cast<scene::HM3DObjectInstance&>(
+            *ssdObjs[semanticIDToSSOBJid[semanticID]]);
+        esp::vec3f center{};
+        esp::vec3f dims{};
+        if (vertCounts[semanticID] == 0) {
+          ESP_DEBUG() << Cr::Utility::formatString(
+              "In mesh {}, no verts have semantic ID {} : {}", semanticFilename,
+              semanticID, ssdObj.id());
+        } else {
+          center = vertAggregate[semanticID] / vertCounts[semanticID];
+          dims = vertMax[semanticID] - vertMin[semanticID];
+          // ESP_DEBUG() << Cr::Utility::formatString(
+          //     "In mesh {}, object : {} has examples {} center "
+          //     "[{},{},{}] dims [{},{},{}]",
+          //     semanticFilename, ssdObj.id(), vertCounts[semanticID],
+          //     center.x(), center.y(), center.z(), dims.x(), dims.y(),
+          //     dims.z());
+        }
+        ssdObj.setObb(center, dims);
       }
 
     } else {
