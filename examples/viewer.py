@@ -219,11 +219,13 @@ class HabitatSimInteractiveViewer(Application):
                 # we need to force a reset, so change the internal config scene name
                 self.sim.config.sim_cfg.scene_id = "NONE"
             self.sim.reconfigure(self.cfg)
-
+        # post reconfigure
         self.active_scene_graph = self.sim.get_active_scene_graph()
         self.default_agent = self.sim.get_agent(self.agent_id)
         self.agent_body_node = self.default_agent.scene_node
         self.render_camera = self.agent_body_node.node_sensor_suite.get("color_sensor")
+        # set sim_settings scene name as actual loaded scene
+        self.sim_settings["scene"] = self.sim.curr_scene_name
 
         Timer.start()
         self.step = -1
