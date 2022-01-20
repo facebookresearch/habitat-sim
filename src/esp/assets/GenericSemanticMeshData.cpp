@@ -10,6 +10,7 @@
 #include <Corrade/Utility/Algorithms.h>
 #include <Corrade/Utility/FormatStl.h>
 #include <Magnum/DebugTools/ColorMap.h>
+#include <Magnum/Math/Algorithms/KahanSum.h>
 #include <Magnum/Math/FunctionsBatch.h>
 #include <Magnum/Math/PackingBatch.h>
 #include <Magnum/MeshTools/Interleave.h>
@@ -220,9 +221,11 @@ GenericSemanticMeshData::buildSemanticMeshData(
 
       // list of per-ssObj/color vertex Aggregations and counts
       std::vector<esp::vec3f> vertAggregate(numSSDObjs, {0, 0, 0});
-      std::vector<esp::vec3f> vertMax(numSSDObjs, {0, 0, 0});
-      std::vector<esp::vec3f> vertMin(numSSDObjs, {0, 0, 0});
+      std::vector<esp::vec3f> vertMax(numSSDObjs,
+                                      {-1000.0f, -1000.0f, -1000.0f});
+      std::vector<esp::vec3f> vertMin(numSSDObjs, {1000.0f, 1000.0f, 1000.0f});
       std::vector<int> vertCounts(numSSDObjs);
+      std::vector<esp::vec3f> kahanC(numSSDObjs);
 
       for (int vertIdx = 0; vertIdx < numVerts; ++vertIdx) {
         Mn::Color3ub meshColor = meshColors[vertIdx];
@@ -242,7 +245,10 @@ GenericSemanticMeshData::buildSemanticMeshData(
           // TEMP FOR VERT-BASED OBB CALC
           // aggregate
           auto vert = semanticData->cpu_vbo_[vertIdx];
-          vertAggregate[semanticID] += vert;
+          // Kahan sum
+          vertAggregate[semanticID] = Mn::Math::Algorithms::kahanSum(
+              &vert, &vert + 1, vertAggregate[semanticID], &kahanC[semanticID]);
+          // vertAggregate[semanticID] += vert;
           vertMax[semanticID] = vertMax[semanticID].cwiseMax(vert);
           vertMin[semanticID] = vertMin[semanticID].cwiseMin(vert);
           vertCounts[semanticID] += 1;
