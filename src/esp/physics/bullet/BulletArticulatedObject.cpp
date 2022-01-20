@@ -499,7 +499,7 @@ std::vector<float> BulletArticulatedObject::getJointMotorTorques(
     if (settings.motorType == JointMotorType::SingleDof) {
       auto& btMotor = articulatedJointMotors.at(motor.first);
       btScalar impulse = btMotor->getAppliedImpulse(0);
-      double force = impulse / fixedTimeStep;
+      float force = impulse / fixedTimeStep;
       torques[motor.second->index] += force;
 
     } else {
