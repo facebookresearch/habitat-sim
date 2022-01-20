@@ -887,13 +887,11 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
       }
     }
   }
-  CORRADE_ASSERT(
-      joinedMesh->vbo.size() > 0,
-      "::recomputeNavMesh: "
-      "Unable to compute a navmesh upon a non-existent mesh - "
-      "the underlying joined collision mesh has no vertices. This is "
-      "probably due to the current scene being NONE.",
-      false);
+  ESP_CHECK(joinedMesh->vbo.size() > 0,
+            "::recomputeNavMesh: "
+            "Unable to compute a navmesh upon a non-existent mesh - "
+            "the underlying joined collision mesh has no vertices. This is "
+            "probably due to the current scene being NONE. Aborting");
 
   if (!pathfinder.build(navMeshSettings, *joinedMesh)) {
     ESP_ERROR() << "Failed to build navmesh";
