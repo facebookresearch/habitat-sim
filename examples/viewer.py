@@ -219,11 +219,13 @@ class HabitatSimInteractiveViewer(Application):
                 # we need to force a reset, so change the internal config scene name
                 self.sim.config.sim_cfg.scene_id = "NONE"
             self.sim.reconfigure(self.cfg)
-
+        # post reconfigure
         self.active_scene_graph = self.sim.get_active_scene_graph()
         self.default_agent = self.sim.get_agent(self.agent_id)
         self.agent_body_node = self.default_agent.scene_node
         self.render_camera = self.agent_body_node.node_sensor_suite.get("color_sensor")
+        # set sim_settings scene name as actual loaded scene
+        self.sim_settings["scene"] = self.sim.curr_scene_name
 
         Timer.start()
         self.step = -1
@@ -282,6 +284,37 @@ class HabitatSimInteractiveViewer(Application):
         elif key == pressed.H:
             self.print_help_text()
 
+        elif key == pressed.TAB:
+            # NOTE: (+ALT) - reconfigure without cycling scenes
+            if not alt_pressed:
+                # cycle the active scene from the set available in MetadataMediator
+                inc = -1 if shift_pressed else 1
+                scene_ids = self.sim.metadata_mediator.get_scene_handles()
+                cur_scene_index = 0
+                if self.sim_settings["scene"] not in scene_ids:
+                    matching_scenes = [
+                        (ix, x)
+                        for ix, x in enumerate(scene_ids)
+                        if self.sim_settings["scene"] in x
+                    ]
+                    if not matching_scenes:
+                        logger.warning(
+                            f"The current scene, '{self.sim_settings['scene']}', is not in the list, starting cycle at index 0."
+                        )
+                    else:
+                        cur_scene_index = matching_scenes[0][0]
+                else:
+                    cur_scene_index = scene_ids.index(self.sim_settings["scene"])
+
+                next_scene_index = min(
+                    max(cur_scene_index + inc, 0), len(scene_ids) - 1
+                )
+                self.sim_settings["scene"] = scene_ids[next_scene_index]
+            self.reconfigure_sim()
+            logger.info(
+                f"Reconfigured simulator for scene: {self.sim_settings['scene']}"
+            )
+
         elif key == pressed.SPACE:
             if not self.sim.config.sim_cfg.enable_physics:
                 logger.warn("Warning: physics was not enabled during setup")
@@ -328,10 +361,6 @@ class HabitatSimInteractiveViewer(Application):
         elif key == pressed.M:
             self.cycle_mouse_mode()
             logger.info(f"Command: mouse mode set to {self.mouse_interaction}")
-
-        elif key == pressed.R:
-            self.reconfigure_sim()
-            logger.info("Command: simulator re-loaded")
 
         elif key == pressed.V:
             self.invert_gravity()

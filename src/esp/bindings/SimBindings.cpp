@@ -114,6 +114,9 @@ void initSimBindings(py::module& m) {
           R"(Enable or disable wireframe visualization of current pathfinder's NavMesh.)")
       .def_property_readonly("gpu_device", &Simulator::gpuDevice)
       .def_property_readonly("random", &Simulator::random)
+      .def_property_readonly(
+          "curr_scene_name", &Simulator::getCurSceneInstanceName,
+          R"(The simplified, but unique, name of the currently loaded scene.)")
       .def_property("frustum_culling", &Simulator::isFrustumCullingEnabled,
                     &Simulator::setFrustumCullingEnabled,
                     R"(Enable or disable the frustum culling)")
