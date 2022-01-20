@@ -348,6 +348,12 @@ class SemanticObject {
 
   SemanticCategory::ptr category() const { return category_; }
 
+  void setObb(const esp::vec3f& center,
+              const esp::vec3f& dimensions,
+              const esp::quatf& rotation = quatf::Identity()) {
+    obb_ = geo::OBB{center, dimensions, rotation};
+  }
+
  protected:
   /**
    * @brief The unique semantic ID corresponding to this object
