@@ -30,7 +30,7 @@ GenericSemanticMeshData::buildSemanticMeshData(
     const Mn::Trade::MeshData& srcMeshData,
     const std::string& semanticFilename,
     const bool splitMesh,
-    std::vector<Magnum::Vector3ub>& colorMapToUse,
+    std::vector<Mn::Vector3ub>& colorMapToUse,
     bool convertToSRGB,
     const std::shared_ptr<scene::SemanticScene>& semanticScene) {
   // build text prefix used in log messages
@@ -315,14 +315,13 @@ GenericSemanticMeshData::buildSemanticMeshData(
     // Store indices, facd_ids in Magnum MeshData3D format such that
     // later they can be accessed.
     // Note that normal and texture data are not stored
-    semanticData->collisionMeshData_.primitive =
-        Magnum::MeshPrimitive::Triangles;
+    semanticData->collisionMeshData_.primitive = Mn::MeshPrimitive::Triangles;
     semanticData->updateCollisionMeshData();
     splitMeshData.emplace_back(std::move(semanticData));
   }
   return splitMeshData;
 
-}  // GenericSemanticMeshData::loadSemanticMeshData
+}  // namespace assets
 
 void GenericSemanticMeshData::uploadBuffersToGPU(bool forceReload) {
   if (forceReload) {
@@ -342,7 +341,7 @@ void GenericSemanticMeshData::uploadBuffersToGPU(bool forceReload) {
 
   renderingBuffer_ =
       std::make_unique<GenericSemanticMeshData::RenderingBuffer>();
-  renderingBuffer_->mesh.setPrimitive(Magnum::GL::MeshPrimitive::Triangles)
+  renderingBuffer_->mesh.setPrimitive(Mn::GL::MeshPrimitive::Triangles)
       .setCount(cpu_ibo_.size())
       .addVertexBuffer(
           std::move(vertices), 0, Mn::Shaders::GenericGL3D::Position{},
@@ -361,7 +360,7 @@ void GenericSemanticMeshData::uploadBuffersToGPU(bool forceReload) {
   buffersOnGPU_ = true;
 }
 
-Magnum::GL::Mesh* GenericSemanticMeshData::getMagnumGLMesh() {
+Mn::GL::Mesh* GenericSemanticMeshData::getMagnumGLMesh() {
   if (renderingBuffer_ == nullptr) {
     return nullptr;
   }
