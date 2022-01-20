@@ -220,12 +220,14 @@ GenericSemanticMeshData::buildSemanticMeshData(
       // TEMP FOR VERT-BASED OBB CALC
 
       // list of per-ssObj/color vertex Aggregations and counts
-      std::vector<esp::vec3f> vertAggregate(numSSDObjs, {0, 0, 0});
-      std::vector<esp::vec3f> vertMax(numSSDObjs,
+      std::vector<esp::vec3f> vertAggregate(semanticIDToSSOBJid.size(),
+                                            {0, 0, 0});
+      std::vector<esp::vec3f> vertMax(semanticIDToSSOBJid.size(),
                                       {-1000.0f, -1000.0f, -1000.0f});
-      std::vector<esp::vec3f> vertMin(numSSDObjs, {1000.0f, 1000.0f, 1000.0f});
-      std::vector<int> vertCounts(numSSDObjs);
-      std::vector<esp::vec3f> kahanC(numSSDObjs);
+      std::vector<esp::vec3f> vertMin(semanticIDToSSOBJid.size(),
+                                      {1000.0f, 1000.0f, 1000.0f});
+      std::vector<int> vertCounts(semanticIDToSSOBJid.size());
+      std::vector<esp::vec3f> kahanC(semanticIDToSSOBJid.size(), {0, 0, 0});
 
       for (int vertIdx = 0; vertIdx < numVerts; ++vertIdx) {
         Mn::Color3ub meshColor = meshColors[vertIdx];
@@ -379,7 +381,7 @@ GenericSemanticMeshData::buildSemanticMeshData(
   }
   return splitMeshData;
 
-}  // namespace assets
+}  // GenericSemanticMeshData::buildSemanticMeshData
 
 void GenericSemanticMeshData::uploadBuffersToGPU(bool forceReload) {
   if (forceReload) {
