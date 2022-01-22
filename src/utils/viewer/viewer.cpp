@@ -626,7 +626,7 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig, bool isOrtho) {
                                   : esp::sensor::SensorSubType::Pinhole;
     spec->sensorType = sensorType;
     if (sensorType == esp::sensor::SensorType::Depth ||
-        sensorType == esp::sensor::SensorType::Semantic) {
+        false) { // temp sensorType == esp::sensor::SensorType::Semantic) {
       spec->channels = 1;
     }
     spec->position = {0.0f, rgbSensorHeight, 0.0f};
@@ -655,7 +655,7 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig, bool isOrtho) {
     spec->uuid = uuid;
     spec->sensorType = sensorType;
     if (sensorType == esp::sensor::SensorType::Depth ||
-        sensorType == esp::sensor::SensorType::Semantic) {
+        false) { // sensorType == esp::sensor::SensorType::Semantic) {
       spec->channels = 1;
     }
     spec->sensorSubType = esp::sensor::SensorSubType::Fisheye;
@@ -701,7 +701,7 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig, bool isOrtho) {
     spec->uuid = uuid;
     spec->sensorType = sensorType;
     if (sensorType == esp::sensor::SensorType::Depth ||
-        sensorType == esp::sensor::SensorType::Semantic) {
+        false) { // temp sensorType == esp::sensor::SensorType::Semantic) {
       spec->channels = 1;
     }
     spec->sensorSubType = esp::sensor::SensorSubType::Equirectangular;
@@ -1445,7 +1445,7 @@ void Viewer::drawEvent() {
 
   uint32_t visibles = renderCamera_->getPreviousNumVisibleDrawables();
 
-  if ((visualizeMode_ == VisualizeMode::RGBA) &&
+  if ((visualizeMode_ == VisualizeMode::RGBA || visualizeMode_ == VisualizeMode::Semantic) &&
       (sensorMode_ == VisualSensorMode::Camera)) {
     // Visualizing RGBA pinhole camera
     if (mouseGrabber_ != nullptr) {
@@ -1660,7 +1660,7 @@ void Viewer::bindRenderTarget() {
       esp::sensor::VisualSensor& visualSensor =
           static_cast<esp::sensor::VisualSensor&>(it.second.get());
       if (visualizeMode_ == VisualizeMode::Depth ||
-          visualizeMode_ == VisualizeMode::Semantic) {
+          false) { // temp visualizeMode_ == VisualizeMode::Semantic) {
         simulator_->getRenderer()->bindRenderTarget(
             visualSensor, {esp::gfx::Renderer::Flag::VisualizeTexture});
       } else {
