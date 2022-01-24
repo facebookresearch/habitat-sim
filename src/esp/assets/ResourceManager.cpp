@@ -1291,22 +1291,27 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
                                 filename));
 
   const auto meshCount = fileImporter_->meshCount();
+  // Transform meshData by reframing rotation.  Doing this here so that
+  // transformation is caught in OBB calc.
+  Magnum::Matrix4 reframeTransform = Magnum::Matrix4::from(
+      Magnum::Quaternion(info.frame.rotationFrameToWorld()).toMatrix(),
+      Magnum::Vector3());
   if (meshCount == 1) {
     // only one mesh, treat as before
-    meshData = fileImporter_->mesh(0);
+    meshData =
+        Mn::MeshTools::transform3D(*fileImporter_->mesh(0), reframeTransform);
   } else {
     Cr::Containers::Optional<Mn::Trade::SceneData> scene =
         fileImporter_->scene(fileImporter_->defaultScene());
-    // std::vector<Mn::Trade::MeshData> meshVec;
-    // meshVec.reserve(meshCount);
     Cr::Containers::Array<Mn::Trade::MeshData> flattenedMeshes;
     for (const Cr::Containers::Triple<Mn::UnsignedInt, Mn::Int, Mn::Matrix4>&
              meshTransformation :
          Mn::SceneTools::flattenMeshHierarchy3D(*scene)) {
       if (Cr::Containers::Optional<Mn::Trade::MeshData> mesh =
               fileImporter_->mesh(meshTransformation.first())) {
-        arrayAppend(flattenedMeshes, Mn::MeshTools::transform3D(
-                                         *mesh, meshTransformation.third()));
+        const auto transform = reframeTransform * meshTransformation.third();
+        arrayAppend(flattenedMeshes,
+                    Mn::MeshTools::transform3D(*mesh, transform));
       }
     }
 
@@ -1320,6 +1325,8 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
     // build concatenated meshData from container of meshes.
     meshData = Mn::MeshTools::concatenate(meshView);
   }
+
+  // meshData = Mn::MeshTools::transform3D(*meshData, reframeTransform);
 
   std::vector<GenericSemanticMeshData::uptr> instanceMeshes =
       GenericSemanticMeshData::buildSemanticMeshData(
@@ -1348,7 +1355,9 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
                     std::move(instanceMeshes[meshIDLocal]));
     meshMetaData.root.children[meshIDLocal].meshIDLocal = meshIDLocal;
   }
-  meshMetaData.setRootFrameOrientation(info.frame);
+  // reframe transform happened already - do not reapply
+  // meshMetaData.setRootFrameOrientation(info.frame);
+
   // update the dictionary
   resourceDict_.emplace(filename,
                         LoadedAssetData{info, std::move(meshMetaData)});
