@@ -61,6 +61,9 @@ struct AssetInfo {
   metadata::attributes::ObjectInstanceShaderType shaderTypeToUse =
       metadata::attributes::ObjectInstanceShaderType::Unspecified;
 
+  // asset will be used for semantic-as-RGB observations
+  bool isSemanticRGB = false;
+
   //! Populates a preset AssetInfo by matching against known filepaths
   static AssetInfo fromPath(const std::string& filepath);
 

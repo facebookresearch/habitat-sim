@@ -549,6 +549,12 @@ ResourceManager::createStageAssetInfosFromAttributes(
         stageAttributes->getFrustumCulling()  // splitInstanceMesh
     };
 
+    ESP_CHECK(semanticInfo.filepath.find(".semantic.glb") != std::string::npos,
+      "Annotated HM3D stage has wrong semantic asset: " << semanticInfo.filepath);
+
+    semanticInfo.type = AssetType::UNKNOWN;
+    semanticInfo.isSemanticRGB = true; // true for annotated HM3D
+
     Cr::Utility::formatInto(
         debugStr, debugStr.size(),
         "|{} for semantic mesh named : {} with type specified as {}",
@@ -2168,17 +2174,31 @@ void ResourceManager::loadTextures(Importer& importer,
       continue;
     }
 
-    // Configure the texture
-    // Mn::GL::Texture2D& texture = *(textures_.at(textureStart +
-    // iTexture).get());
-    currentTexture->setMagnificationFilter(textureData->magnificationFilter())
-        .setMinificationFilter(textureData->minificationFilter(),
-                               textureData->mipmapFilter())
-        .setWrapping(textureData->wrapping().xy());
+    std::uint32_t levelCount = 0;
 
-    // Load all mip levels
-    const std::uint32_t levelCount =
-        importer.image2DLevelCount(textureData->image());
+    if (loadedAssetData.assetInfo.isSemanticRGB) {
+      // For semantic RGB assets, we we can't interpolate/blend color. We also disable
+      // higher mips, because in general these were probably generated incorrectly
+      // (by downsampling, which blends colors).
+      currentTexture->setMaxLevel(0);
+      currentTexture->setMagnificationFilter(Mn::SamplerFilter::Nearest);
+      currentTexture->setMinificationFilter(Mn::SamplerFilter::Nearest);
+      levelCount = 1;
+    } else {
+
+      // Configure the texture
+      // Mn::GL::Texture2D& texture = *(textures_.at(textureStart +
+      // iTexture).get());
+      currentTexture->setMagnificationFilter(textureData->magnificationFilter())
+          .setMinificationFilter(textureData->minificationFilter(),
+                                textureData->mipmapFilter())
+          .setWrapping(textureData->wrapping().xy());
+
+      // Load all mip levels
+      levelCount =
+          importer.image2DLevelCount(textureData->image());
+    }
+        
     bool generateMipmap = false;
     for (std::uint32_t level = 0; level != levelCount; ++level) {
       // TODO:

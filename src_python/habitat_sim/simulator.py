@@ -591,13 +591,28 @@ class Sensor:
         else:
             size = self._sensor_object.framebuffer_size
             if self._spec.sensor_type == SensorType.SEMANTIC:
+                # temp hack: semantic as RGB
                 self._buffer = np.empty(
-                    (self._spec.resolution[0], self._spec.resolution[1]),
-                    dtype=np.uint32,
+                    (
+                        self._spec.resolution[0],
+                        self._spec.resolution[1],
+                        self._spec.channels,
+                    ),
+                    dtype=np.uint8,
                 )
                 self.view = mn.MutableImageView2D(
-                    mn.PixelFormat.R32UI, size, self._buffer
+                    mn.PixelFormat.RGBA8_UNORM,
+                    size,
+                    self._buffer.reshape(self._spec.resolution[0], -1),
                 )
+
+                # self._buffer = np.empty(
+                #     (self._spec.resolution[0], self._spec.resolution[1]),
+                #     dtype=np.uint32,
+                # )
+                # self.view = mn.MutableImageView2D(
+                #     mn.PixelFormat.R32UI, size, self._buffer
+                # )
             elif self._spec.sensor_type == SensorType.DEPTH:
                 self._buffer = np.empty(
                     (self._spec.resolution[0], self._spec.resolution[1]),
@@ -714,7 +729,9 @@ class Sensor:
                 obs = self._buffer.flip(0)  # type: ignore[union-attr]
         else:
             if self._spec.sensor_type == SensorType.SEMANTIC:
-                tgt.read_frame_object_id(self.view)
+                # tgt.read_frame_object_id(self.view)
+                # temp hack: semantic as RGB
+                tgt.read_frame_rgba(self.view)
             elif self._spec.sensor_type == SensorType.DEPTH:
                 tgt.read_frame_depth(self.view)
             else:

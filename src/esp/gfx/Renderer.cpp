@@ -360,10 +360,12 @@ struct Renderer::Impl {
         break;
 
       case sensor::SensorType::Semantic:
-        if (bindingFlags & Flag::VisualizeTexture) {
-          renderTargetFlags |= RenderTarget::Flag::RgbaAttachment;
-        }
-        renderTargetFlags |= RenderTarget::Flag::ObjectIdAttachment;
+        // if (bindingFlags & Flag::VisualizeTexture) {
+        //   renderTargetFlags |= RenderTarget::Flag::RgbaAttachment;
+        // }
+        // renderTargetFlags |= RenderTarget::Flag::ObjectIdAttachment;
+        // temp hack: semantic as RGB
+        renderTargetFlags |= RenderTarget::Flag::RgbaAttachment;
         break;
 
       default:
