@@ -1289,20 +1289,23 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
       (fileImporter_->openFile(filename) && (fileImporter_->meshCount() > 0)),
       Cr::Utility::formatString("Error loading semantic mesh data from file {}",
                                 filename));
-
-  const auto meshCount = fileImporter_->meshCount();
   // Transform meshData by reframing rotation.  Doing this here so that
   // transformation is caught in OBB calc.
   Magnum::Matrix4 reframeTransform = Magnum::Matrix4::from(
       Magnum::Quaternion(info.frame.rotationFrameToWorld()).toMatrix(),
       Magnum::Vector3());
-  if (meshCount == 1) {
-    // only one mesh, treat as before
+
+  auto sceneID = fileImporter_->defaultScene();
+  if (sceneID == -1) {
+    // no default scene --- standalone OBJ/PLY files, for example
+    // already verified at least one mesh exists, this means only one mesh,
+    // treat as before
     meshData =
         Mn::MeshTools::transform3D(*fileImporter_->mesh(0), reframeTransform);
   } else {
     Cr::Containers::Optional<Mn::Trade::SceneData> scene =
-        fileImporter_->scene(fileImporter_->defaultScene());
+        fileImporter_->scene(sceneID);
+
     Cr::Containers::Array<Mn::Trade::MeshData> flattenedMeshes;
     for (const Cr::Containers::Triple<Mn::UnsignedInt, Mn::Int, Mn::Matrix4>&
              meshTransformation :
