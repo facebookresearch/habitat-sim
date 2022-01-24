@@ -447,13 +447,12 @@ Key Commands:
 
   // Wireframe bounding box around semantic region
   int semanticBBID_ = -1;
-  // Sphere prim at semantic region center
-  int semanticCenterSphereID_ = -1;
 
   /**
    * @brief Build semantic region prims.
    */
   void buildSemanticPrims(int semanticID,
+                          const std::string& semanticTag,
                           const Mn::Vector3 semanticCtr,
                           const Mn::Vector3 semanticSize);
 
@@ -1001,7 +1000,6 @@ void Viewer::initSimPostReconfigure() {
   // clear any semantic tags from previoius scene
   semanticTag_ = "";
   semanticBBID_ = -1;
-  semanticCenterSphereID_ = -1;
   // NavMesh customization options
   if (disableNavmesh_) {
     if (simulator_->getPathFinder()->isLoaded()) {
@@ -1728,6 +1726,7 @@ void Viewer::createPickedObjectVisualizer(unsigned int objectId) {
 }
 
 void Viewer::buildSemanticPrims(int semanticID,
+                                const std::string& objTag,
                                 const Mn::Vector3 semanticCtr,
                                 const Mn::Vector3 semanticSize) {
   auto rigidObjMgr = simulator_->getRigidObjectManager();
@@ -1742,15 +1741,8 @@ void Viewer::buildSemanticPrims(int semanticID,
     rigidObjMgr->removeObjectByID(semanticBBID_);
     semanticBBID_ = -1;
   }
-  if (semanticCenterSphereID_ != -1) {
-    // delete semantic region center sphere if it exists
-    // returns nullptr if dne
-    rigidObjMgr->removeObjectByID(semanticCenterSphereID_);
-
-    semanticCenterSphereID_ = -1;
-  }
-
-  ESP_WARNING() << "Center : [" << semanticCtr.x() << "," << semanticCtr.y()
+  ESP_WARNING() << "Object ID : " << semanticID << " Tag : " << objTag
+                << " : Center : [" << semanticCtr.x() << "," << semanticCtr.y()
                 << "," << semanticCtr.z() << "] | size : [" << semanticSize.x()
                 << "," << semanticSize.y() << "," << semanticSize.z() << "]";
   // // build semantic wireframe bounding box
@@ -1770,10 +1762,6 @@ void Viewer::buildSemanticPrims(int semanticID,
   bbWfObj->setTranslation(semanticCtr);
   bbWfObj->setMotionType(esp::physics::MotionType::STATIC);
   semanticBBID_ = bbWfObj->getID();
-  // // build semantic region center sphere
-
-  // semanticCenterSphereID_ = -1;
-
 }  // Viewer::buildSemanticPrims
 
 void Viewer::mousePressEvent(MouseEvent& event) {
@@ -1855,11 +1843,6 @@ void Viewer::mousePressEvent(MouseEvent& event) {
           esp::sensor::Observation observation;
           simulator_->getAgentObservation(defaultAgentId_, sensorId,
                                           observation);
-          // // build semantic wireframe bounding box
-
-          // semanticBBID_ = -1;
-          // // build semantic region center sphere
-          // semanticCenterSphereID_ = -1;
 
           uint32_t desiredIdx =
               (viewportPoint[0] +
@@ -1874,19 +1857,17 @@ void Viewer::mousePressEvent(MouseEvent& event) {
           // subtract 1 to align with semanticObject array
           --objIdx;
           std::string tmpStr = "Unknown";
-          const auto& semanticObj = semanticObjects[objIdx];
-          // get center and scale of bb and use to build visualization reps
-          buildSemanticPrims((objIdx + 1),
-                             Mn::Vector3{semanticObj->obb().center()},
-                             Mn::Vector3{semanticObj->obb().sizes()});
 
           if ((objIdx >= 0) && (objIdx < semanticObjects.size())) {
+            const auto& semanticObj = semanticObjects[objIdx];
             tmpStr = semanticObj->id();
+            // get center and scale of bb and use to build visualization reps
+            buildSemanticPrims((objIdx + 1), tmpStr,
+                               Mn::Vector3{semanticObj->obb().center()},
+                               Mn::Vector3{semanticObj->obb().sizes()});
           }
           semanticTag_ =
               Cr::Utility::formatString("id:{}:{}", (objIdx + 1), tmpStr);
-          ESP_WARNING() << "Data point @ idx : " << objIdx
-                        << ": Object name :" << semanticTag_;
         }
       }
     }

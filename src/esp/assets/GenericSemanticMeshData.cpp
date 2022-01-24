@@ -302,11 +302,12 @@ GenericSemanticMeshData::buildSemanticMeshData(
         } else {
           center = .5f * (vertMax[semanticID] + vertMin[semanticID]);
           dims = vertMax[semanticID] - vertMin[semanticID];
-          ESP_DEBUG() << Cr::Utility::formatString(
-              "In mesh {}, idx : {} -> object : {} has examples {} center "
-              "[{},{},{}] dims [{},{},{}]",
-              semanticFilename, semanticID, ssdObj.id(), vertCounts[semanticID],
-              center.x(), center.y(), center.z(), dims.x(), dims.y(), dims.z());
+          // ESP_DEBUG() << Cr::Utility::formatString(
+          //     "In mesh {}, idx : {} -> object : {} has examples {} center "
+          //     "[{},{},{}] dims [{},{},{}]",
+          //     semanticFilename, semanticID, ssdObj.id(),
+          //     vertCounts[semanticID], center.x(), center.y(), center.z(),
+          //     dims.x(), dims.y(), dims.z());
         }
         ssdObj.setObb(center, dims);
       }
