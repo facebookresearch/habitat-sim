@@ -10,7 +10,7 @@
 #include <Corrade/Utility/Algorithms.h>
 #include <Corrade/Utility/FormatStl.h>
 #include <Magnum/DebugTools/ColorMap.h>
-#include <Magnum/Math/Algorithms/KahanSum.h>
+//#include <Magnum/Math/Algorithms/KahanSum.h>
 #include <Magnum/Math/FunctionsBatch.h>
 #include <Magnum/Math/PackingBatch.h>
 #include <Magnum/MeshTools/Interleave.h>
@@ -220,8 +220,8 @@ GenericSemanticMeshData::buildSemanticMeshData(
       // TEMP FOR VERT-BASED OBB CALC
 
       // list of per-ssObj/color vertex Aggregations and counts
-      std::vector<esp::vec3f> vertAggregate(semanticIDToSSOBJid.size(),
-                                            {0, 0, 0});
+      // std::vector<esp::vec3f> vertAggregate(semanticIDToSSOBJid.size(),
+      //                                       {0, 0, 0});
       std::vector<esp::vec3f> vertMax(
           semanticIDToSSOBJid.size(),
           {-Mn::Constants::inf(), -Mn::Constants::inf(),
@@ -230,7 +230,7 @@ GenericSemanticMeshData::buildSemanticMeshData(
           semanticIDToSSOBJid.size(),
           {Mn::Constants::inf(), Mn::Constants::inf(), Mn::Constants::inf()});
       std::vector<int> vertCounts(semanticIDToSSOBJid.size());
-      std::vector<esp::vec3f> kahanC(semanticIDToSSOBJid.size(), {0, 0, 0});
+      // std::vector<esp::vec3f> kahanC(semanticIDToSSOBJid.size(), {0, 0, 0});
 
       for (int vertIdx = 0; vertIdx < numVerts; ++vertIdx) {
         Mn::Color3ub meshColor = meshColors[vertIdx];
@@ -251,8 +251,9 @@ GenericSemanticMeshData::buildSemanticMeshData(
           // aggregate
           auto vert = semanticData->cpu_vbo_[vertIdx];
           // Kahan sum
-          vertAggregate[semanticID] = Mn::Math::Algorithms::kahanSum(
-              &vert, &vert + 1, vertAggregate[semanticID], &kahanC[semanticID]);
+          // vertAggregate[semanticID] = Mn::Math::Algorithms::kahanSum(
+          //     &vert, &vert + 1, vertAggregate[semanticID],
+          //     &kahanC[semanticID]);
           // vertAggregate[semanticID] += vert;
           vertMax[semanticID] = vertMax[semanticID].cwiseMax(vert);
           vertMin[semanticID] = vertMin[semanticID].cwiseMin(vert);
@@ -299,14 +300,13 @@ GenericSemanticMeshData::buildSemanticMeshData(
               "In mesh {}, no verts have semantic ID {} : {}", semanticFilename,
               semanticID, ssdObj.id());
         } else {
-          center = vertAggregate[semanticID] / vertCounts[semanticID];
+          center = .5f * (vertMax[semanticID] + vertMin[semanticID]);
           dims = vertMax[semanticID] - vertMin[semanticID];
-          // ESP_DEBUG() << Cr::Utility::formatString(
-          //     "In mesh {}, object : {} has examples {} center "
-          //     "[{},{},{}] dims [{},{},{}]",
-          //     semanticFilename, ssdObj.id(), vertCounts[semanticID],
-          //     center.x(), center.y(), center.z(), dims.x(), dims.y(),
-          //     dims.z());
+          ESP_DEBUG() << Cr::Utility::formatString(
+              "In mesh {}, idx : {} -> object : {} has examples {} center "
+              "[{},{},{}] dims [{},{},{}]",
+              semanticFilename, semanticID, ssdObj.id(), vertCounts[semanticID],
+              center.x(), center.y(), center.z(), dims.x(), dims.y(), dims.z());
         }
         ssdObj.setObb(center, dims);
       }
