@@ -170,13 +170,14 @@ class BaseMesh {
    * mesh, both known in semantic scene descriptor, and unknown.  Known IDs are
    * expected to start at 1 and be contiguous, followed by unknown semantic IDs
    * @param ssdObjs The known semantic scene descriptor objects for the mesh
-   * @param msgPrefix Debug message prefix denoting caller.
+   * @param debugMsgs Debug messages documenting whether each ssdObj is present
+   * in mesh or not.
    */
   void buildSemanticOBBs(
       const std::vector<vec3f>& vertices,
       const std::vector<uint16_t>& vertSemanticIDs,
       const std::vector<std::shared_ptr<esp::scene::SemanticObject>>& ssdObjs,
-      const std::string& msgPrefix = "") const;
+      std::vector<std::string>& debugMsgs) const;
 
   /**
    * @brief Identifies the derived type of this object and the format of the

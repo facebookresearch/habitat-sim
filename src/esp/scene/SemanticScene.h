@@ -354,11 +354,17 @@ class SemanticObject {
     obb_ = geo::OBB{center, dimensions, rotation};
   }
 
+  Mn::Vector3ub getColor() const { return color_; }
+  std::string getColorAsString() const;
+  void setColor(Mn::Vector3ub _color) { color_ = _color; }
+
  protected:
   /**
    * @brief The unique semantic ID corresponding to this object
    */
   int index_{};
+  // specified color for this object instance.
+  Mn::Vector3ub color_{};
 
   /**
    * @brief References the parent region for this object

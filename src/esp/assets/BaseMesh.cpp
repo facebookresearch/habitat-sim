@@ -49,7 +49,7 @@ void BaseMesh::buildSemanticOBBs(
     const std::vector<vec3f>& vertices,
     const std::vector<uint16_t>& vertSemanticIDs,
     const std::vector<std::shared_ptr<esp::scene::SemanticObject>>& ssdObjs,
-    const std::string& msgPrefix) const {
+    std::vector<std::string>& debugMsgs) const {
   // build per-SSD object vector of known semantic IDs
   std::size_t numSSDObjs = ssdObjs.size();
   // no semantic ID 0
@@ -92,6 +92,7 @@ void BaseMesh::buildSemanticOBBs(
 
   // with mins/maxs per ID, map to objs
   // give each ssdObj the values to build its OBB
+  debugMsgs.reserve(semanticIDToSSOBJidx.size());
   for (int semanticID = 1; semanticID < semanticIDToSSOBJidx.size();
        ++semanticID) {
     // get object with given semantic ID
@@ -99,19 +100,21 @@ void BaseMesh::buildSemanticOBBs(
     esp::vec3f center{};
     esp::vec3f dims{};
     const std::string debugStr = Cr::Utility::formatString(
-        "{} Semantic ID : {} : SSD object tag : {} present in {} verts | ",
-        msgPrefix, semanticID, ssdObj.id(), vertCounts[semanticID]);
+        "Semantic ID : {} : color : {} tag : {} present in {} verts | ",
+        semanticID, ssdObj.getColorAsString(), ssdObj.id(),
+        vertCounts[semanticID]);
     std::string infoStr;
     if (vertCounts[semanticID] == 0) {
-      infoStr = "No verts have specified Semantic ID.";
+      infoStr = Cr::Utility::formatString(
+          "{}No verts have specified Semantic ID.", debugStr);
     } else {
       center = .5f * (vertMax[semanticID] + vertMin[semanticID]);
       dims = vertMax[semanticID] - vertMin[semanticID];
       infoStr = Cr::Utility::formatString(
-          "BB Center [{},{},{}] Dims [{},{},{}]", center.x(), center.y(),
-          center.z(), dims.x(), dims.y(), dims.z());
+          "{}BB Center [{},{},{}] Dims [{},{},{}]", debugStr, center.x(),
+          center.y(), center.z(), dims.x(), dims.y(), dims.z());
     }
-    ESP_DEBUG() << debugStr << infoStr;
+    debugMsgs.emplace_back(infoStr);
 
     ssdObj.setObb(center, dims);
   }

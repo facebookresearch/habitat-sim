@@ -37,10 +37,10 @@ class HM3DObjectInstance : public SemanticObject {
                      int objCatID,
                      const std::string& name,
                      const Mn::Vector3ub& clr)
-      : SemanticObject(), objCatID_(objCatID), name_(name), color_(clr) {
+      : SemanticObject(), objCatID_(objCatID), name_(name) {
     index_ = objInstanceID;
+    color_ = clr;
   }
-  Mn::Vector3ub getColor() const { return color_; }
 
   std::string id() const override { return name_; }
 
@@ -49,8 +49,7 @@ class HM3DObjectInstance : public SemanticObject {
   const int objCatID_;
   // unique name for this instance
   const std::string name_;
-  // specified color for this object instance.
-  const Mn::Vector3ub color_;
+
   ESP_SMART_POINTERS(HM3DObjectInstance)
 };
 
