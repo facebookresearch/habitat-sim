@@ -57,6 +57,17 @@ GenericSemanticMeshData::buildSemanticMeshData(
 
   srcMeshData.positions3DInto(Cr::Containers::arrayCast<Mn::Vector3>(
       Cr::Containers::arrayView(semanticData->cpu_vbo_)));
+
+  if (semanticFilename.find(".ply") != std::string::npos) {
+    // Generic Semantic PLY meshes have -Z gravity
+    const quatf T_esp_scene =
+        quatf::FromTwoVectors(-vec3f::UnitZ(), geo::ESP_GRAVITY);
+
+    for (auto& xyz : semanticData->cpu_vbo_) {
+      xyz = T_esp_scene * xyz;
+    }
+  }
+
   srcMeshData.indicesInto(semanticData->cpu_ibo_);
   /* Assuming colors are 8-bit RGB to avoid expanding them to float and then
      packing back */
@@ -265,16 +276,6 @@ GenericSemanticMeshData::buildSemanticMeshData(
             Cr::Containers::stridedArrayView(objectIds)),
         Cr::Containers::arrayCast<2, Mn::UnsignedShort>(
             Cr::Containers::stridedArrayView(semanticData->objectIds_)));
-  }
-
-  if (semanticFilename.find(".ply") != std::string::npos) {
-    // Generic Semantic PLY meshes have -Z gravity
-    const quatf T_esp_scene =
-        quatf::FromTwoVectors(-vec3f::UnitZ(), geo::ESP_GRAVITY);
-
-    for (auto& xyz : semanticData->cpu_vbo_) {
-      xyz = T_esp_scene * xyz;
-    }
   }
 
   // build output vector of meshdata unique pointers

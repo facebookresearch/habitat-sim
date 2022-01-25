@@ -86,7 +86,7 @@ std::string getCurrentTimeString() {
 }
 
 using namespace Mn::Math::Literals;
-using Magnum::Math::Literals::operator""_degf;
+using Mn::Math::Literals::operator""_degf;
 
 //! Define different UI roles for the mouse
 enum MouseInteractionMode {
@@ -120,18 +120,80 @@ struct MouseGrabber {
 
   virtual ~MouseGrabber() { sim_.removeRigidConstraint(constraintId); }
 
-  virtual void updatePivot(const Magnum::Vector3& pos) {
+  //! update global pivot position for the constraint
+  virtual void updatePivot(const Mn::Vector3& pos) {
     settings_.pivotB = pos;
     sim_.updateRigidConstraint(constraintId, settings_);
   }
-  virtual void updateFrame(const Magnum::Matrix3x3& frame) {
+
+  //! update global rotation frame for the constraint
+  virtual void updateFrame(const Mn::Matrix3x3& frame) {
     settings_.frameB = frame;
     sim_.updateRigidConstraint(constraintId, settings_);
   }
-  virtual void updateTransform(const Magnum::Matrix4& transform) {
+
+  //! update global rotation frame and pivot position for the constraint
+  virtual void updateTransform(const Mn::Matrix4& transform) {
     settings_.frameB = transform.rotation();
     settings_.pivotB = transform.translation();
     sim_.updateRigidConstraint(constraintId, settings_);
+  }
+
+  //! rotate the object's local constraint frame with a global angle axis input
+  virtual void rotateLocalFrameByGlobalAngleAxis(const Mn::Vector3 axis,
+                                                 const Mn::Rad angle) {
+    Mn::Matrix4 objectTransform;
+    auto rom = sim_.getRigidObjectManager();
+    auto aom = sim_.getArticulatedObjectManager();
+    if (rom->getObjectLibHasID(settings_.objectIdA)) {
+      objectTransform =
+          rom->getObjectByID(settings_.objectIdA)->getTransformation();
+    } else {
+      objectTransform = aom->getObjectByID(settings_.objectIdA)
+                            ->getLinkSceneNode(settings_.linkIdA)
+                            ->transformation();
+    }
+    // convert the axis into the object local space
+    Mn::Vector3 localAxis = objectTransform.inverted().transformVector(axis);
+    // create a rotation matrix
+    Mn::Matrix4 R = Mn::Matrix4::rotation(angle, localAxis.normalized());
+    // apply to the frame
+    settings_.frameA = R.rotation() * settings_.frameA;
+    sim_.updateRigidConstraint(constraintId, settings_);
+  }
+
+  //! Render a downward projection of the grasped object's COM
+  virtual void renderDebugLines() {
+    // cast a ray downward from COM to determine approximate landing point
+    Mn::Matrix4 objectTransform;
+    auto rom = sim_.getRigidObjectManager();
+    auto aom = sim_.getArticulatedObjectManager();
+    std::vector<int> objectRelatedIds(1, settings_.objectIdA);
+    if (rom->getObjectLibHasID(settings_.objectIdA)) {
+      objectTransform =
+          rom->getObjectByID(settings_.objectIdA)->getTransformation();
+    } else {
+      auto ao = aom->getObjectByID(settings_.objectIdA);
+      objectTransform =
+          ao->getLinkSceneNode(settings_.linkIdA)->transformation();
+      for (const auto& entry : ao->getLinkObjectIds()) {
+        objectRelatedIds.push_back(entry.first);
+      }
+    }
+    esp::physics::RaycastResults raycastResults = sim_.castRay(
+        esp::geo::Ray(objectTransform.translation(), Mn::Vector3(0, -1, 0)));
+    float lineLength = 9999.9;
+    for (auto& hit : raycastResults.hits) {
+      if (!std::count(objectRelatedIds.begin(), objectRelatedIds.end(),
+                      hit.objectId)) {
+        lineLength = hit.rayDistance;
+        break;
+      }
+    }
+    sim_.getDebugLineRender()->drawLine(
+        objectTransform.translation(),
+        objectTransform.translation() + Mn::Vector3(0, -lineLength, 0),
+        Mn::Color4::green());
   }
 };
 
@@ -184,6 +246,9 @@ class Viewer : public Mn::Platform::Application {
   }
   // exists if a mouse grabbing constraint is active, destroyed on release
   std::unique_ptr<MouseGrabber> mouseGrabber_ = nullptr;
+
+  //! Most recently custom loaded URDF ('t' key)
+  std::string cachedURDF_ = "";
 
   /**
    * @brief Instance an object from an ObjectAttributes.
@@ -268,13 +333,13 @@ In LOOK mode (default):
   LEFT:
     Click and drag to rotate the agent and look up/down.
   RIGHT:
-    (With 'enable-physics') Click a surface to instance a random primitive object at that location.
+    (physics) Click a surface to instance a random primitive object at that location.
   SHIFT-LEFT:
     Read Semantic ID and tag of clicked object (Currently only HM3D);
   SHIFT-RIGHT:
     Click a mesh to highlight it.
   CTRL-RIGHT:
-    (With 'enable-physics') Click on an object to voxelize it and display the voxelization.
+    (physics) Click on an object to voxelize it and display the voxelization.
   WHEEL:
     Modify orthographic camera zoom/perspective camera FOV (+SHIFT for fine grained control)
 In GRAB mode (with 'enable-physics'):
@@ -284,13 +349,17 @@ In GRAB mode (with 'enable-physics'):
     Click and drag to pickup and move an object with a fixed frame constraint.
   WHEEL (with picked object):
     Pull gripped object closer or push it away.
+    + ALT: rotate object fixed constraint frame (yaw)
+    + CTRL: rotate object fixed constraint frame (pitch)
+    + ALT+CTRL: rotate object fixed constraint frame (roll)
 
 Key Commands:
 -------------
   esc: Exit the application.
   'H': Display this help message.
-  'm': Toggle mouse mode.
-  TAB/Shift-TAB : Cycle to next/previous scene in scene datsaet
+  'm': Toggle mouse mode (LOOK | GRAB).
+  TAB/Shift-TAB : Cycle to next/previous scene in scene dataset.
+  ALT+TAB: Reload the current scene.
 
   Agent Controls:
   'wasd': Move the agent's body forward/backward, left/right.
@@ -298,37 +367,48 @@ Key Commands:
   arrow keys: Turn the agent's body left/right and camera look up/down.
   '9': Randomly place agent on NavMesh (if loaded).
   'q': Query the agent's state and print to terminal.
+  '[': Save agent position/orientation to "./saved_transformations/camera.year_month_day_hour-minute-second.txt".
+  ']': Load agent position/orientation from file system, or else from last save in current instance.
 
-  Utilities:
-  '1': Toggle recording locations for trajectory visualization.
-  '2': Build and display trajectory visualization.
-  '3': Toggle single color/multi-color trajectory.
-  '+': Increase trajectory diameter.
-  '-': Decrease trajectory diameter.
-  '4': Toggle flying camera mode (user can apply camera transformation loaded from disk).
+  Camera Settings
+  '4': Cycle through camera modes (Camera, Fisheye, Equirectangular)
   '5': Switch ortho/perspective camera.
   '6': Reset ortho camera zoom/perspective camera FOV.
+  '7': Cycle through rendering modes (RGB, depth, semantic)
+
+  Visualization Utilities:
   'l': Override the default lighting setup with configured settings in `default_light_override.lighting_config.json`.
   'e': Enable/disable frustum culling.
-  'c': Show/hide FPS overlay.
+  'c': Show/hide UI overlay.
   'n': Show/hide NavMesh wireframe.
   'i': Save a screenshot to "./screenshots/year_month_day_hour-minute-second/#.png".
-  'r': Write a replay of the recent simulated frames to a file specified by --gfx-replay-record-filepath.
-  '[': Save camera position/orientation to "./saved_transformations/camera.year_month_day_hour-minute-second.txt".
-  ']': Load camera position/orientation from file system (useful when flying camera mode is enabled), or else from last save in current instance.
+  ',': Render a Bullet collision shape debug wireframe overlay (white=active, green=sleeping, blue=wants sleeping, red=can't sleep)
 
   Object Interactions:
   SPACE: Toggle physics simulation on/off
   '.': Take a single simulation step if not simulating continuously.
   '8': Instance a random primitive object in front of the agent.
   'o': Instance a random file-based object in front of the agent.
-  't': Instance an ArticulatedObject in front of the camera from a URDF file by entering the filepath when prompted.
   'u': Remove most recently instanced rigid object.
+  't': Instance an ArticulatedObject in front of the camera from a URDF file by entering the filepath when prompted.
+    +ALT: Import the object with a fixed base.
+    +SHIFT Quick-reload the previously specified URDF.
   'b': Toggle display of object bounding boxes.
   'p': Save current simulation state to SceneInstanceAttributes JSON file (with non-colliding filename).
   'v': (physics) Invert gravity.
   'g': (physics) Display a stage's signed distance gradient vector field.
   'k': (physics) Iterate through different ranges of the stage's voxelized signed distance field.
+
+  Additional Utilities:
+  'r': Write a replay of the recent simulated frames to a file specified by --gfx-replay-record-filepath.
+  '/': Write the current scene's metadata information to console.
+
+  Nav Trajectory Visualization:
+  '1': Toggle recording locations for trajectory visualization.
+  '2': Build and display trajectory visualization.
+  '3': Toggle single color/multi-color trajectory.
+  '+': Increase trajectory diameter.
+  '-': Decrease trajectory diameter.
   ==================================================
   )";
 
@@ -358,7 +438,7 @@ Key Commands:
    * @brief vector holding past agent locations to build trajectory
    * visualization
    */
-  std::vector<Magnum::Vector3> agentLocs_;
+  std::vector<Mn::Vector3> agentLocs_;
   float agentTrajRad_ = .01f;
   bool agentLocRecordOn_ = false;
   bool singleColorTrajectory_ = true;
@@ -387,7 +467,7 @@ Key Commands:
   inline void recAgentLocation() {
     if (agentLocRecordOn_) {
       auto pt = agentBodyNode_->translation() +
-                Magnum::Vector3{0, (2.0f * agentTrajRad_), 0};
+                Mn::Vector3{0, (2.0f * agentTrajRad_), 0};
       agentLocs_.push_back(pt);
       ESP_DEBUG() << "Recording agent location : {" << pt.x() << "," << pt.y()
                   << "," << pt.z() << "}";
@@ -516,8 +596,20 @@ Key Commands:
   };
   VisualSensorMode sensorMode_ = VisualSensorMode::Camera;
 
+  /**
+   * @brief Set the sensorVisID_ string used to determine which sensor to pull
+   * an observation from.  Should be set whenever visualizeMode_ or sensorMode_
+   * change.
+   */
+  void setSensorVisID();
+
+  /**
+   * @brief String key used to determine which sensor from a suite of sensors to
+   * pull an observation from.
+   */
+  std::string sensorVisID_ = "rgba_camera";
   void bindRenderTarget();
-};
+};  // class viewer declaration
 
 void addSensors(esp::agent::AgentConfiguration& agentConfig, bool isOrtho) {
   const auto viewportSize = Mn::GL::defaultFramebuffer.viewport().size();
@@ -537,7 +629,7 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig, bool isOrtho) {
         sensorType == esp::sensor::SensorType::Semantic) {
       spec->channels = 1;
     }
-    spec->position = {0.0f, 1.5f, 0.0f};
+    spec->position = {0.0f, rgbSensorHeight, 0.0f};
     spec->orientation = {0, 0, 0};
     spec->resolution = esp::vec2i(viewportSize[1], viewportSize[0]);
   };
@@ -903,6 +995,8 @@ void Viewer::initSimPostReconfigure() {
     }
   } else if (recomputeNavmesh_) {
     esp::nav::NavMeshSettings navMeshSettings;
+    navMeshSettings.agentHeight = agentConfig_.height;
+    navMeshSettings.agentRadius = agentConfig_.radius;
     simulator_->recomputeNavMesh(*simulator_->getPathFinder().get(),
                                  navMeshSettings, true);
   } else if (!navmeshFilename_.empty()) {
@@ -1064,7 +1158,7 @@ int Viewer::addObject(int ID) {
 
 int Viewer::addObject(const std::string& objectAttrHandle) {
   // Relative to agent bodynode
-  Mn::Matrix4 T = agentBodyNode_->MagnumObject::transformationMatrix();
+  Mn::Matrix4 T = agentBodyNode_->transformationMatrix();
   Mn::Vector3 new_pos = T.transformPoint({0.1f, 1.5f, -2.0f});
   auto rigidObjMgr = simulator_->getRigidObjectManager();
   auto obj = rigidObjMgr->addObjectByHandle(objectAttrHandle);
@@ -1273,6 +1367,52 @@ void Viewer::setSceneInstanceFromListAndShow(int nextSceneInstanceIDX) {
   bindRenderTarget();
 }  // Viewer::setSceneInstanceFromListAndShow
 
+/**
+ * @brief Set the sensorVisID_ string used to determine which sensor to pull an
+ * observation from.  Should be set whenever visualizeMode_ or sensorMode_
+ * change.
+ */
+void Viewer::setSensorVisID() {
+  std::string prefix = "rgba";
+  switch (visualizeMode_) {
+    case VisualizeMode::RGBA: {
+      prefix = "rgba";
+      break;
+    }
+    case VisualizeMode::Depth: {
+      prefix = "depth";
+      break;
+    }
+    case VisualizeMode::Semantic: {
+      prefix = "semantic";
+      break;
+    }
+    default:
+      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+  }  // switch on visualize mode
+  std::string suffix = "camera";
+  switch (sensorMode_) {
+    case VisualSensorMode::Camera: {
+      suffix = "camera";
+      break;
+    }
+    case VisualSensorMode::Fisheye: {
+      suffix = "fisheye";
+      break;
+    }
+    case VisualSensorMode::Equirectangular: {
+      suffix = "equirectangular";
+      break;
+    }
+    default:
+      CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+  }  // switch on sensor mode
+  sensorVisID_ = Cr::Utility::formatString("{}_{}", prefix, suffix);
+  ESP_DEBUG() << Cr::Utility::formatString(
+      "Visualizing {} {} sensor. Sensor Suite Key : {}", prefix, suffix,
+      sensorVisID_);
+}  // Viewer::setSensorVisID
+
 float timeSinceLastSimulation = 0.0;
 void Viewer::drawEvent() {
   // Wrap profiler measurements around all methods to render images from
@@ -1305,107 +1445,77 @@ void Viewer::drawEvent() {
 
   uint32_t visibles = renderCamera_->getPreviousNumVisibleDrawables();
 
-  if (visualizeMode_ == VisualizeMode::Depth ||
-      visualizeMode_ == VisualizeMode::Semantic) {
-    // ================ Depth/Semantic Visualization =======================
-    std::string sensorId = "depth_camera";
-    if (visualizeMode_ == VisualizeMode::Depth) {
-      if (sensorMode_ == VisualSensorMode::Fisheye) {
-        sensorId = "depth_fisheye";
-      } else if (sensorMode_ == VisualSensorMode::Equirectangular) {
-        sensorId = "depth_equirectangular";
-      }
-    } else if (visualizeMode_ == VisualizeMode::Semantic) {
-      sensorId = "semantic_camera";
-      if (sensorMode_ == VisualSensorMode::Fisheye) {
-        sensorId = "semantic_fisheye";
-      } else if (sensorMode_ == VisualSensorMode::Equirectangular) {
-        sensorId = "semantic_equirectangular";
-      }
+  if ((visualizeMode_ == VisualizeMode::RGBA) &&
+      (sensorMode_ == VisualSensorMode::Camera)) {
+    // Visualizing RGBA pinhole camera
+    if (mouseGrabber_ != nullptr) {
+      mouseGrabber_->renderDebugLines();
     }
 
-    simulator_->drawObservation(defaultAgentId_, sensorId);
+    // ============= regular RGB with object picking =================
+    // using polygon offset to increase mesh depth to avoid z-fighting with
+    // debug draw (since lines will not respond to offset).
+    Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
+    Mn::GL::Renderer::setPolygonOffset(1.0f, 0.1f);
+
+    // ONLY draw the content to the frame buffer but not immediately blit the
+    // result to the default main buffer
+    // (this is the reason we do not call displayObservation)
+    simulator_->drawObservation(defaultAgentId_, sensorVisID_);
+
+    Mn::GL::Renderer::setDepthFunction(
+        Mn::GL::Renderer::DepthFunction::LessOrEqual);
+    if (debugBullet_) {
+      Mn::Matrix4 camM(renderCamera_->cameraMatrix());
+      Mn::Matrix4 projM(renderCamera_->projectionMatrix());
+
+      simulator_->physicsDebugDraw(projM * camM);
+    }
+    Mn::GL::Renderer::setDepthFunction(Mn::GL::Renderer::DepthFunction::Less);
+    Mn::GL::Renderer::setPolygonOffset(0.0f, 0.0f);
+    Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
+
+    visibles = renderCamera_->getPreviousNumVisibleDrawables();
     esp::gfx::RenderTarget* sensorRenderTarget =
-        simulator_->getRenderTarget(defaultAgentId_, sensorId);
-    if (visualizeMode_ == VisualizeMode::Depth) {
-      simulator_->visualizeObservation(defaultAgentId_, sensorId,
-                                       1.0f / 512.0f,  // colorMapOffset
-                                       1.0f / 12.0f);  // colorMapScale
-    } else if (visualizeMode_ == VisualizeMode::Semantic) {
-      simulator_->visualizeObservation(defaultAgentId_, sensorId);
+        simulator_->getRenderTarget(defaultAgentId_, sensorVisID_);
+    CORRADE_ASSERT(sensorRenderTarget,
+                   "Error in Viewer::drawEvent: sensor's rendering target "
+                   "cannot be nullptr.", );
+    if (objectPickingHelper_->isObjectPicked()) {
+      // we need to immediately draw picked object to the SAME frame buffer
+      // so bind it first
+      // bind the framebuffer
+      sensorRenderTarget->renderReEnter();
+
+      // setup blending function
+      Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::Blending);
+
+      // render the picked object on top of the existing contents
+      esp::gfx::RenderCamera::Flags flags;
+      if (simulator_->isFrustumCullingEnabled()) {
+        flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
+      }
+      renderCamera_->draw(objectPickingHelper_->getDrawables(), flags);
+
+      Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
     }
     sensorRenderTarget->blitRgbaToDefault();
   } else {
-    if (sensorMode_ == VisualSensorMode::Camera) {
-      // ============= regular RGB with object picking =================
-      // using polygon offset to increase mesh depth to avoid z-fighting with
-      // debug draw (since lines will not respond to offset).
-      Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
-      Mn::GL::Renderer::setPolygonOffset(1.0f, 0.1f);
-
-      // ONLY draw the content to the frame buffer but not immediately blit the
-      // result to the default main buffer
-      // (this is the reason we do not call displayObservation)
-      simulator_->drawObservation(defaultAgentId_, "rgba_camera");
-      // TODO: enable other sensors to be displayed
-
-      Mn::GL::Renderer::setDepthFunction(
-          Mn::GL::Renderer::DepthFunction::LessOrEqual);
-      if (debugBullet_) {
-        Mn::Matrix4 camM(renderCamera_->cameraMatrix());
-        Mn::Matrix4 projM(renderCamera_->projectionMatrix());
-
-        simulator_->physicsDebugDraw(projM * camM);
-      }
-      Mn::GL::Renderer::setDepthFunction(Mn::GL::Renderer::DepthFunction::Less);
-      Mn::GL::Renderer::setPolygonOffset(0.0f, 0.0f);
-      Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::PolygonOffsetFill);
-
-      visibles = renderCamera_->getPreviousNumVisibleDrawables();
-      esp::gfx::RenderTarget* sensorRenderTarget =
-          simulator_->getRenderTarget(defaultAgentId_, "rgba_camera");
-      CORRADE_ASSERT(sensorRenderTarget,
-                     "Error in Viewer::drawEvent: sensor's rendering target "
-                     "cannot be nullptr.", );
-      if (objectPickingHelper_->isObjectPicked()) {
-        // we need to immediately draw picked object to the SAME frame buffer
-        // so bind it first
-        // bind the framebuffer
-        sensorRenderTarget->renderReEnter();
-
-        // setup blending function
-        Mn::GL::Renderer::enable(Mn::GL::Renderer::Feature::Blending);
-
-        // render the picked object on top of the existing contents
-        esp::gfx::RenderCamera::Flags flags;
-        if (simulator_->isFrustumCullingEnabled()) {
-          flags |= esp::gfx::RenderCamera::Flag::FrustumCulling;
-        }
-        renderCamera_->draw(objectPickingHelper_->getDrawables(), flags);
-
-        Mn::GL::Renderer::disable(Mn::GL::Renderer::Feature::Blending);
-      }
-      sensorRenderTarget->blitRgbaToDefault();
-    } else {
-      // ================ NON-regular RGB sensor ==================
-      std::string sensorId = "";
-      if (sensorMode_ == VisualSensorMode::Fisheye) {
-        sensorId = "rgba_fisheye";
-      } else if (sensorMode_ == VisualSensorMode::Equirectangular) {
-        sensorId = "rgba_equirectangular";
-      } else {
-        CORRADE_INTERNAL_ASSERT_UNREACHABLE();
-      }
-      CORRADE_INTERNAL_ASSERT(!sensorId.empty());
-
-      simulator_->drawObservation(defaultAgentId_, sensorId);
-      esp::gfx::RenderTarget* sensorRenderTarget =
-          simulator_->getRenderTarget(defaultAgentId_, sensorId);
-      CORRADE_ASSERT(sensorRenderTarget,
-                     "Error in Viewer::drawEvent: sensor's rendering target "
-                     "cannot be nullptr.", );
-      sensorRenderTarget->blitRgbaToDefault();
+    // Depth Or Semantic, or Non-pinhole RGBA
+    simulator_->drawObservation(defaultAgentId_, sensorVisID_);
+    esp::gfx::RenderTarget* sensorRenderTarget =
+        simulator_->getRenderTarget(defaultAgentId_, sensorVisID_);
+    CORRADE_ASSERT(sensorRenderTarget,
+                   "Error in Viewer::drawEvent: sensor's rendering target "
+                   "cannot be nullptr.", );
+    if (visualizeMode_ == VisualizeMode::Depth) {
+      simulator_->visualizeObservation(defaultAgentId_, sensorVisID_,
+                                       1.0f / 512.0f,  // colorMapOffset
+                                       1.0f / 12.0f);  // colorMapScale
+    } else if (visualizeMode_ == VisualizeMode::Semantic) {
+      simulator_->visualizeObservation(defaultAgentId_, sensorVisID_);
     }
+    sensorRenderTarget->blitRgbaToDefault();
   }
 
   // Immediately bind the main buffer back so that the "imgui" below can work
@@ -1807,6 +1917,8 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
   }
   // Use shift to scale action response
   auto shiftPressed = event.modifiers() & MouseEvent::Modifier::Shift;
+  auto altPressed = event.modifiers() & MouseEvent::Modifier::Alt;
+  auto ctrlPressed = event.modifiers() & MouseEvent::Modifier::Ctrl;
   if (mouseInteractionMode == MouseInteractionMode::LOOK) {
     // Use shift for fine-grained zooming
     float modVal = shiftPressed ? 1.01 : 1.1;
@@ -1819,12 +1931,31 @@ void Viewer::mouseScrollEvent(MouseScrollEvent& event) {
     auto viewportPoint = getMousePosition(event.position());
     // adjust the depth
     float modVal = shiftPressed ? 0.1 : 0.01;
-    auto ray = renderCamera_->unproject(viewportPoint);
-    mouseGrabber_->gripDepth += scrollModVal * modVal;
-    mouseGrabber_->updateTransform(
-        Mn::Matrix4::from(defaultAgent_->node().rotation().toMatrix(),
-                          renderCamera_->node().absoluteTranslation() +
-                              ray.direction * mouseGrabber_->gripDepth));
+    float scrollDelta = scrollModVal * modVal;
+    if (altPressed || ctrlPressed) {
+      // rotate the object's local constraint frame
+      auto agentT = agentBodyNode_->transformationMatrix();
+
+      // ALT - yaw
+      Mn::Vector3 rotationAxis = agentT.transformVector(Mn::Vector3(0, 1, 0));
+      if (altPressed && ctrlPressed) {
+        // ALT+CTRL - roll
+        rotationAxis = agentT.transformVector(Mn::Vector3(0, 0, -1));
+      } else if (ctrlPressed) {
+        // CTRL - pitch
+        rotationAxis = agentT.transformVector(Mn::Vector3(1, 0, 0));
+      }
+      mouseGrabber_->rotateLocalFrameByGlobalAngleAxis(rotationAxis,
+                                                       Mn::Rad(scrollDelta));
+    } else {
+      // translate the object forward/backward
+      auto ray = renderCamera_->unproject(viewportPoint);
+      mouseGrabber_->gripDepth += scrollDelta;
+      mouseGrabber_->updateTransform(
+          Mn::Matrix4::from(defaultAgent_->node().rotation().toMatrix(),
+                            renderCamera_->node().absoluteTranslation() +
+                                ray.direction * mouseGrabber_->gripDepth));
+    }
   }
 
   event.setAccepted();
@@ -1881,13 +2012,17 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       exit(0);
       break;
     case KeyEvent::Key::Tab:
-      ESP_DEBUG() << "Cycling to"
-                  << ((event.modifiers() & MouseEvent::Modifier::Shift)
-                          ? "previous"
-                          : "next")
-                  << "SceneInstance";
-      setSceneInstanceFromListAndShow(getNextSceneInstanceIDX(
-          (event.modifiers() & MouseEvent::Modifier::Shift) ? -1 : 1));
+      if (event.modifiers() & MouseEvent::Modifier::Alt) {
+        setSceneInstanceFromListAndShow(curSceneInstanceIDX_);
+      } else {
+        ESP_DEBUG() << "Cycling to"
+                    << ((event.modifiers() & MouseEvent::Modifier::Shift)
+                            ? "previous"
+                            : "next")
+                    << "SceneInstance";
+        setSceneInstanceFromListAndShow(getNextSceneInstanceIDX(
+            (event.modifiers() & MouseEvent::Modifier::Shift) ? -1 : 1));
+      }
       break;
     case KeyEvent::Key::Space:
       simulating_ = !simulating_;
@@ -1920,10 +2055,11 @@ void Viewer::keyPressEvent(KeyEvent& event) {
                             "changed to multiple random colors.");
       break;
     case KeyEvent::Key::Four:
+      // switch between camera types (Camera, Fisheye, Equirectangular)
       sensorMode_ = static_cast<VisualSensorMode>(
           (uint8_t(sensorMode_) + 1) %
           uint8_t(VisualSensorMode::VisualSensorModeCount));
-      ESP_DEBUG() << "Sensor mode is set to" << int(sensorMode_);
+      setSensorVisID();
       break;
     case KeyEvent::Key::Five:
       // switch camera between ortho and perspective
@@ -1937,21 +2073,8 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       visualizeMode_ = static_cast<VisualizeMode>(
           (uint8_t(visualizeMode_) + 1) %
           uint8_t(VisualizeMode::VisualizeModeCount));
+      setSensorVisID();
       bindRenderTarget();
-      switch (visualizeMode_) {
-        case VisualizeMode::RGBA:
-          ESP_DEBUG() << "Visualizing COLOR sensor observation.";
-          break;
-        case VisualizeMode::Depth:
-          ESP_DEBUG() << "Visualizing DEPTH sensor observation.";
-          break;
-        case VisualizeMode::Semantic:
-          ESP_DEBUG() << "Visualizing SEMANTIC sensor observation.";
-          break;
-        default:
-          CORRADE_INTERNAL_ASSERT_UNREACHABLE();
-          break;
-      }
       break;
     case KeyEvent::Key::Eight:
       addPrimitiveObject();
@@ -2028,10 +2151,20 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       showAgentStateMsg(true, true);
       break;
     case KeyEvent::Key::T: {
+      //+ALT for fixedBase
+      bool fixedBase = bool(event.modifiers() & MouseEvent::Modifier::Alt);
+
       // add an ArticulatedObject from provided filepath
-      ESP_DEBUG() << "Load URDF: provide a URDF filepath.";
       std::string urdfFilepath;
-      std::cin >> urdfFilepath;
+      if (event.modifiers() & MouseEvent::Modifier::Shift &&
+          !cachedURDF_.empty()) {
+        // quick-reload the most recently loaded URDF
+        ESP_DEBUG() << "URDF quick-reload: " << cachedURDF_;
+        urdfFilepath = cachedURDF_;
+      } else {
+        ESP_DEBUG() << "Load URDF: provide a URDF filepath.";
+        std::cin >> urdfFilepath;
+      }
 
       if (urdfFilepath.empty()) {
         ESP_DEBUG() << "... no input provided. Aborting.";
@@ -2039,11 +2172,16 @@ void Viewer::keyPressEvent(KeyEvent& event) {
                  !Cr::Utility::String::endsWith(urdfFilepath, ".URDF")) {
         ESP_DEBUG() << "... input is not a URDF. Aborting.";
       } else if (Cr::Utility::Directory::exists(urdfFilepath)) {
+        // cache the file for quick-reload with SHIFT-T
+        cachedURDF_ = urdfFilepath;
         auto aom = simulator_->getArticulatedObjectManager();
-        auto ao = aom->addArticulatedObjectFromURDF(urdfFilepath, true);
+        auto ao = aom->addArticulatedObjectFromURDF(urdfFilepath, fixedBase,
+                                                    1.0, 1.0, true);
         ao->setTranslation(
             defaultAgent_->node().transformation().transformPoint(
                 {0, 1.0, -1.5}));
+      } else {
+        ESP_DEBUG() << "... input file not found. Aborting.";
       }
     } break;
     case KeyEvent::Key::L: {
