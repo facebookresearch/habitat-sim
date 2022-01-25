@@ -4,6 +4,7 @@
 
 import ctypes
 import math
+import os
 import sys
 import time
 from enum import Enum
@@ -28,6 +29,9 @@ class HabitatSimInteractiveViewer(Application):
         Application.__init__(self, configuration)
         self.sim_settings: Dict[str:Any] = sim_settings
         self.fps: float = 60.0
+        self.debug_bullet_draw = False
+        # cache most recently loaded URDF file for quick-reload
+        self.cached_urdf = ""
 
         # set proper viewport size
         self.viewport_size: mn.Vector2i = mn.gl.default_framebuffer.viewport.size()
@@ -94,6 +98,10 @@ class HabitatSimInteractiveViewer(Application):
         """
         Additional draw commands to be called during draw_event.
         """
+        if self.debug_bullet_draw:
+            render_cam = self.render_camera.render_camera
+            proj_mat = render_cam.projection_matrix.__matmul__(render_cam.camera_matrix)
+            self.sim.debug_draw(proj_mat)
 
     def draw_event(
         self,
@@ -126,20 +134,20 @@ class HabitatSimInteractiveViewer(Application):
                 self.simulate_single_step = False
                 if simulation_call is not None:
                     simulation_call()
-            global_call()
+            if global_call is not None:
+                global_call()
 
             # reset time_since_last_simulation, accounting for potential overflow
             self.time_since_last_simulation = math.fmod(
                 self.time_since_last_simulation, 1.0 / self.fps
             )
 
-        self.debug_draw()
-
         keys = active_agent_id_and_sensor_name
 
         self.sim._Simulator__sensors[keys[0]][keys[1]].draw_observation()
         agent = self.sim.get_agent(keys[0])
         self.render_camera = agent.scene_node.node_sensor_suite.get(keys[1])
+        self.debug_draw()
         self.render_camera.render_target.blit_rgba_to_default()
         mn.gl.default_framebuffer.bind()
 
@@ -211,11 +219,13 @@ class HabitatSimInteractiveViewer(Application):
                 # we need to force a reset, so change the internal config scene name
                 self.sim.config.sim_cfg.scene_id = "NONE"
             self.sim.reconfigure(self.cfg)
-
+        # post reconfigure
         self.active_scene_graph = self.sim.get_active_scene_graph()
         self.default_agent = self.sim.get_agent(self.agent_id)
         self.agent_body_node = self.default_agent.scene_node
         self.render_camera = self.agent_body_node.node_sensor_suite.get("color_sensor")
+        # set sim_settings scene name as actual loaded scene
+        self.sim_settings["scene"] = self.sim.curr_scene_name
 
         Timer.start()
         self.step = -1
@@ -263,6 +273,9 @@ class HabitatSimInteractiveViewer(Application):
         pressed = Application.KeyEvent.Key
         mod = Application.InputEvent.Modifier
 
+        shift_pressed = bool(event.modifiers & mod.SHIFT)
+        alt_pressed = bool(event.modifiers & mod.ALT)
+
         if key == pressed.ESC:
             event.accepted = True
             self.exit_event(Application.ExitEvent)
@@ -270,6 +283,37 @@ class HabitatSimInteractiveViewer(Application):
 
         elif key == pressed.H:
             self.print_help_text()
+
+        elif key == pressed.TAB:
+            # NOTE: (+ALT) - reconfigure without cycling scenes
+            if not alt_pressed:
+                # cycle the active scene from the set available in MetadataMediator
+                inc = -1 if shift_pressed else 1
+                scene_ids = self.sim.metadata_mediator.get_scene_handles()
+                cur_scene_index = 0
+                if self.sim_settings["scene"] not in scene_ids:
+                    matching_scenes = [
+                        (ix, x)
+                        for ix, x in enumerate(scene_ids)
+                        if self.sim_settings["scene"] in x
+                    ]
+                    if not matching_scenes:
+                        logger.warning(
+                            f"The current scene, '{self.sim_settings['scene']}', is not in the list, starting cycle at index 0."
+                        )
+                    else:
+                        cur_scene_index = matching_scenes[0][0]
+                else:
+                    cur_scene_index = scene_ids.index(self.sim_settings["scene"])
+
+                next_scene_index = min(
+                    max(cur_scene_index + inc, 0), len(scene_ids) - 1
+                )
+                self.sim_settings["scene"] = scene_ids[next_scene_index]
+            self.reconfigure_sim()
+            logger.info(
+                f"Reconfigured simulator for scene: {self.sim_settings['scene']}"
+            )
 
         elif key == pressed.SPACE:
             if not self.sim.config.sim_cfg.enable_physics:
@@ -285,20 +329,45 @@ class HabitatSimInteractiveViewer(Application):
                 self.simulate_single_step = True
                 logger.info("Command: physics step taken")
 
+        elif key == pressed.COMMA:
+            self.debug_bullet_draw = not self.debug_bullet_draw
+            logger.info(f"Command: toggle Bullet debug draw: {self.debug_bullet_draw}")
+
+        elif key == pressed.T:
+            # load URDF
+            fixed_base = alt_pressed
+            urdf_file_path = ""
+            if shift_pressed and self.cached_urdf:
+                urdf_file_path = self.cached_urdf
+            else:
+                urdf_file_path = input("Load URDF: provide a URDF filepath:").strip()
+
+            if not urdf_file_path:
+                logger.warn("Load URDF: no input provided. Aborting.")
+            elif not urdf_file_path.endswith((".URDF", ".urdf")):
+                logger.warn("Load URDF: input is not a URDF. Aborting.")
+            elif os.path.exists(urdf_file_path):
+                self.cached_urdf = urdf_file_path
+                aom = self.sim.get_articulated_object_manager()
+                ao = aom.add_articulated_object_from_urdf(
+                    urdf_file_path, fixed_base, 1.0, 1.0, True
+                )
+                ao.translation = self.agent_body_node.transformation.transform_point(
+                    [0.0, 1.0, -1.5]
+                )
+            else:
+                logger.warn("Load URDF: input file not found. Aborting.")
+
         elif key == pressed.M:
             self.cycle_mouse_mode()
             logger.info(f"Command: mouse mode set to {self.mouse_interaction}")
-
-        elif key == pressed.R:
-            self.reconfigure_sim()
-            logger.info("Command: simulator re-loaded")
 
         elif key == pressed.V:
             self.invert_gravity()
             logger.info("Command: gravity inverted")
 
         elif key == pressed.N:
-            if event.modifiers == mod.SHIFT:
+            if shift_pressed:
                 logger.info("Command: recompute navmesh")
                 self.navmesh_config_and_recompute()
             else:
@@ -471,7 +540,9 @@ class HabitatSimInteractiveViewer(Application):
             return
 
         # use shift to scale action response
-        shift_pressed = event.modifiers == Application.InputEvent.Modifier.SHIFT
+        shift_pressed = bool(event.modifiers & Application.InputEvent.Modifier.SHIFT)
+        alt_pressed = bool(event.modifiers & Application.InputEvent.Modifier.ALT)
+        ctrl_pressed = bool(event.modifiers & Application.InputEvent.Modifier.CTRL)
 
         # if interactive mode is False -> LOOK MODE
         if self.mouse_interaction == MouseMode.LOOK:
@@ -485,10 +556,25 @@ class HabitatSimInteractiveViewer(Application):
         elif self.mouse_interaction == MouseMode.GRAB and self.mouse_grabber:
             # adjust the depth
             mod_val = 0.1 if shift_pressed else 0.01
-            self.mouse_grabber.grip_depth += scroll_mod_val * mod_val
-
-            # update location of grabbed object
-            self.update_grab_position(self.get_mouse_position(event.position))
+            scroll_delta = scroll_mod_val * mod_val
+            if alt_pressed or ctrl_pressed:
+                # rotate the object's local constraint frame
+                agent_t = self.agent_body_node.transformation_matrix()
+                # ALT - yaw
+                rotation_axis = agent_t.transform_vector(mn.Vector3(0, 1, 0))
+                if alt_pressed and ctrl_pressed:
+                    # ALT+CTRL - roll
+                    rotation_axis = agent_t.transform_vector(mn.Vector3(0, 0, -1))
+                elif ctrl_pressed:
+                    # CTRL - pitch
+                    rotation_axis = agent_t.transform_vector(mn.Vector3(1, 0, 0))
+                self.mouse_grabber.rotate_local_frame_by_global_angle_axis(
+                    rotation_axis, mn.Rad(scroll_delta)
+                )
+            else:
+                # update location of grabbed object
+                self.mouse_grabber.grip_depth += scroll_delta
+                self.update_grab_position(self.get_mouse_position(event.position))
         self.redraw()
         event.accepted = True
 
@@ -545,6 +631,9 @@ class HabitatSimInteractiveViewer(Application):
         """
         self.navmesh_settings = habitat_sim.NavMeshSettings()
         self.navmesh_settings.set_defaults()
+        self.navmesh_settings.agent_height = self.cfg.agents[self.agent_id].height
+        self.navmesh_settings.agent_radius = self.cfg.agents[self.agent_id].radius
+
         self.sim.recompute_navmesh(
             self.sim.pathfinder,
             self.navmesh_settings,
@@ -583,7 +672,12 @@ In GRAB mode (with 'enable-physics'):
     RIGHT:
         Click and drag to pickup and move an object with a fixed frame constraint.
     WHEEL (with picked object):
-        Pull gripped object closer or push it away.
+        default - Pull gripped object closer or push it away.
+        (+ALT) rotate object fixed constraint frame (yaw)
+        (+CTRL) rotate object fixed constraint frame (pitch)
+        (+ALT+CTRL) rotate object fixed constraint frame (roll)
+        (+SHIFT) amplify scroll magnitude
+
 
 Key Commands:
 -------------
@@ -600,11 +694,15 @@ Key Commands:
     'r':        Reset the simulator with the most recently loaded scene.
     'n':        Show/hide NavMesh wireframe.
                 (+SHIFT) Recompute NavMesh with default settings.
+    ',':        Render a Bullet collision shape debug wireframe overlay (white=active, green=sleeping, blue=wants sleeping, red=can't sleep)
 
     Object Interactions:
     SPACE:      Toggle physics simulation on/off.
     '.':        Take a single simulation step if not simulating continuously.
     'v':        (physics) Invert gravity.
+    't':        Load URDF from filepath
+                (+SHIFT) quick re-load the previously specified URDF
+                (+ALT) load the URDF with fixed base
 =====================================================
 """
         )
@@ -637,23 +735,46 @@ class MouseGrabber:
     def __del__(self):
         self.remove_constraint()
 
-    def remove_constraint(self):
+    def remove_constraint(self) -> None:
         """
         Remove a rigid constraint by id.
         """
         self.simulator.remove_rigid_constraint(self.constraint_id)
 
-    def updatePivot(self, pos: mn.Vector3):
+    def updatePivot(self, pos: mn.Vector3) -> None:
         self.settings.pivot_b = pos
         self.simulator.update_rigid_constraint(self.constraint_id, self.settings)
 
-    def update_frame(self, frame: mn.Matrix3x3):
+    def update_frame(self, frame: mn.Matrix3x3) -> None:
         self.settings.frame_b = frame
         self.simulator.update_rigid_constraint(self.constraint_id, self.settings)
 
-    def update_transform(self, transform: mn.Matrix4):
+    def update_transform(self, transform: mn.Matrix4) -> None:
         self.settings.frame_b = transform.rotation()
         self.settings.pivot_b = transform.translation
+        self.simulator.update_rigid_constraint(self.constraint_id, self.settings)
+
+    def rotate_local_frame_by_global_angle_axis(
+        self, axis: mn.Vector3, angle: mn.Rad
+    ) -> None:
+        """rotate the object's local constraint frame with a global angle axis input."""
+        object_transform = mn.Matrix4()
+        rom = self.simulator.get_rigid_object_manager()
+        aom = self.simulator.get_articulated_object_manager()
+        if rom.get_library_has_id(self.settings.object_id_a):
+            object_transform = rom.get_object_by_id(
+                self.settings.object_id_a
+            ).transformation
+        else:
+            # must be an ao
+            object_transform = (
+                aom.get_object_by_id(self.settings.object_id_a)
+                .get_link_scene_node(self.settings.link_id_a)
+                .transformation
+            )
+        local_axis = object_transform.inverted().transform_vector(axis)
+        R = mn.Matrix4.rotation(angle, local_axis.normalized())
+        self.settings.frame_a = R.rotation().__matmul__(self.settings.frame_a)
         self.simulator.update_rigid_constraint(self.constraint_id, self.settings)
 
 

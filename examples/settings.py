@@ -49,10 +49,7 @@ def make_cfg(settings):
     sim_cfg = habitat_sim.SimulatorConfiguration()
     if "scene_dataset_config_file" in settings:
         sim_cfg.scene_dataset_config_file = settings["scene_dataset_config_file"]
-    if "frustum_culling" in settings:
-        sim_cfg.frustum_culling = settings["frustum_culling"]
-    else:
-        sim_cfg.frustum_culling = False
+    sim_cfg.frustum_culling = settings.get("frustum_culling", False)
     if "enable_physics" in settings:
         sim_cfg.enable_physics = settings["enable_physics"]
     if "physics_config_file" in settings:

@@ -105,6 +105,7 @@ void initSimBindings(py::module& m) {
       .def(
           "close", &Simulator::close, "destroy"_a = true,
           R"(Free all loaded assets and GPU contexts. Use destroy=true except where noted in tutorials/async_rendering.py.)")
+      .def("debug_draw", &Simulator::physicsDebugDraw, "projMat"_a)
       .def_property("pathfinder", &Simulator::getPathFinder,
                     &Simulator::setPathFinder)
       .def_property(
@@ -113,6 +114,9 @@ void initSimBindings(py::module& m) {
           R"(Enable or disable wireframe visualization of current pathfinder's NavMesh.)")
       .def_property_readonly("gpu_device", &Simulator::gpuDevice)
       .def_property_readonly("random", &Simulator::random)
+      .def_property_readonly(
+          "curr_scene_name", &Simulator::getCurSceneInstanceName,
+          R"(The simplified, but unique, name of the currently loaded scene.)")
       .def_property("frustum_culling", &Simulator::isFrustumCullingEnabled,
                     &Simulator::setFrustumCullingEnabled,
                     R"(Enable or disable the frustum culling)")
