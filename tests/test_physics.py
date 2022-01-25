@@ -1343,6 +1343,15 @@ def test_articulated_object_joint_motors(test_asset):
             if produce_debug_video:
                 observations.append(sim.get_sensor_observations())
 
+        # check that at rest position torque is low
+        if "amass_male" not in test_asset:
+            assert (
+                np.abs(
+                    np.array(robot.get_joint_motor_torques(sim.get_physics_time_step()))
+                )
+                < 10
+            ).all()
+
         # validate that rest pose is maintained
         # Note: assume all joints for test assets can be actuated
         target_positions = getRestPositions(robot)
@@ -1399,9 +1408,20 @@ def test_articulated_object_joint_motors(test_asset):
         # to ensure joint has enough distance to achieve target velocity, reset positions
         robot.clear_joint_states()
 
+        firstStep = True
         target_time += 0.5
         while sim.get_world_time() < target_time:
             sim.step_physics(1.0 / 60.0)
+            if (
+                firstStep and "amass_male" not in test_asset
+            ):  # amass_male has spherical joints
+                joint_motor_torques = np.abs(
+                    np.array(robot.get_joint_motor_torques(sim.get_physics_time_step()))
+                )
+                assert (joint_motor_torques > 1.0).any()
+                assert len(joint_motor_torques) > 0
+                print("PYTORQUES: ", joint_motor_torques)
+                firstStep = False
             if produce_debug_video:
                 observations.append(sim.get_sensor_observations())
 

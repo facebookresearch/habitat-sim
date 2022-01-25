@@ -538,6 +538,13 @@ class Simulator {
   double getWorldTime();
 
   /**
+   * @brief Get the last physics timestep in seconds
+   *
+   * @return The timestep.
+   */
+  double getPhysicsTimeStep();
+
+  /**
    * @brief Get the simplified name of the @ref
    * esp::metadata::attributes::SceneInstanceAttributes used to create the scene
    * currently being simulated/displayed.

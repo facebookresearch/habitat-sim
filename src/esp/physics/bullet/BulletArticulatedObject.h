@@ -220,6 +220,16 @@ class BulletArticulatedObject : public ArticulatedObject {
   std::vector<float> getJointPositions() override;
 
   /**
+   * @brief Get the torques on each joint
+   *
+   * @param fixedTimeStep The physics timestep used by the simulator.  Necessary
+   * to convert impulse into torque.
+   *
+   * @return Array of torques on each joint
+   */
+  std::vector<float> getJointMotorTorques(double fixedTimeStep) override;
+
+  /**
    * @brief Get position limits for all joints. (lower, upper)
    *
    * @return The active joint position limits as a pair of vectors (lower,

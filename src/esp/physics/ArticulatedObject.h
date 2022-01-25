@@ -495,6 +495,19 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
   virtual std::vector<float> getJointPositions() { return {}; }
 
   /**
+   * @brief Get the torques on each joint
+   *
+   * @param fixedTimeStep The physics timestep used by the simulator.  Necessary
+   * to convert impulse into torque.
+   *
+   * @return Vector of torques on each joint
+   */
+  virtual std::vector<float> getJointMotorTorques(
+      CORRADE_UNUSED double fixedTimeStep) {
+    return {};
+  }
+
+  /**
    * @brief Get position limits for all joints.
    *
    * @return The active joint position limits. Default implementation returns
