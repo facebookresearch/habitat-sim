@@ -260,17 +260,17 @@ GenericSemanticMeshData::buildSemanticMeshData(
       debugMsgs.reserve(debugMsgs.size() + nonSSDVertColorIDs.size() + 1);
       // colors found on vertices not found in semantic lexicon :
       if (nonSSDVertColorIDs.size() == 0) {
-        debugMsgs.emplace_back(Cr::Utility::formatString(
-            "No unexpected colors found mapped to mesh verts."));
+        debugMsgs.emplace_back(
+            "No unexpected colors found mapped to mesh verts.");
       } else {
-        debugMsgs.emplace_back(Cr::Utility::formatString(
+        debugMsgs.emplace_back(std::move(Cr::Utility::formatString(
             "{} unexpected/unknown colors found mapped to mesh verts.",
-            nonSSDVertColorIDs.size()));
+            nonSSDVertColorIDs.size())));
         for (const std::pair<const uint32_t, int>& elem : nonSSDVertColorIDs) {
-          debugMsgs.emplace_back(Cr::Utility::formatString(
+          debugMsgs.emplace_back(std::move(Cr::Utility::formatString(
               "\t\tColor {} | # verts {} | applied Semantic ID {}.",
               colorAsStr(static_cast<Mn::Color3ub>(colorMapToUse[elem.second])),
-              nonSSDVertColorCounts.at(elem.first), elem.second));
+              nonSSDVertColorCounts.at(elem.first), elem.second)));
         }
       }
 

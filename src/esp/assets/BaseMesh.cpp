@@ -114,7 +114,7 @@ void BaseMesh::buildSemanticOBBs(
           "{}BB Center [{},{},{}] Dims [{},{},{}]", debugStr, center.x(),
           center.y(), center.z(), dims.x(), dims.y(), dims.z());
     }
-    debugMsgs.emplace_back(infoStr);
+    debugMsgs.emplace_back(std::move(infoStr));
 
     ssdObj.setObb(center, dims);
   }
