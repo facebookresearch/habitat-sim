@@ -503,7 +503,9 @@ std::vector<float> BulletArticulatedObject::getJointMotorTorques(
       torques[motor.second->index] += force;
 
     } else {
-      throw "getJointMotorTorques is not yet implemented for spherical joints.";
+      ESP_CHECK(
+          false,
+          "getJointMotorTorques is not yet implemented for spherical joints.");
     }
   }
 
