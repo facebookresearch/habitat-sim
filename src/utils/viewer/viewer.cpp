@@ -453,8 +453,8 @@ Key Commands:
    */
   void buildSemanticPrims(int semanticID,
                           const std::string& semanticTag,
-                          const Mn::Vector3 semanticCtr,
-                          const Mn::Vector3 semanticSize);
+                          const Mn::Vector3& semanticCtr,
+                          const Mn::Vector3& semanticSize);
 
   /**
    * @brief Set whether agent locations should be recorded or not. If toggling
@@ -1727,8 +1727,8 @@ void Viewer::createPickedObjectVisualizer(unsigned int objectId) {
 
 void Viewer::buildSemanticPrims(int semanticID,
                                 const std::string& objTag,
-                                const Mn::Vector3 semanticCtr,
-                                const Mn::Vector3 semanticSize) {
+                                const Mn::Vector3& semanticCtr,
+                                const Mn::Vector3& semanticSize) {
   auto rigidObjMgr = simulator_->getRigidObjectManager();
   if (semanticBBID_ != -1) {
     // delete semantic wireframe bounding box if it exists
@@ -1742,9 +1742,8 @@ void Viewer::buildSemanticPrims(int semanticID,
     semanticBBID_ = -1;
   }
   ESP_WARNING() << "Object ID : " << semanticID << " Tag : " << objTag
-                << " : Center : [" << semanticCtr.x() << "," << semanticCtr.y()
-                << "," << semanticCtr.z() << "] | size : [" << semanticSize.x()
-                << "," << semanticSize.y() << "," << semanticSize.z() << "]";
+                << " : Center : " << semanticCtr
+                << " | Size : " << semanticSize;
   // // build semantic wireframe bounding box
 
   auto bbWfObjTemplate = objectAttrManager_->getObjectCopyByHandle(

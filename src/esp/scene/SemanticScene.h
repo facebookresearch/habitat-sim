@@ -355,7 +355,6 @@ class SemanticObject {
   }
 
   Mn::Vector3ub getColor() const { return color_; }
-  std::string getColorAsString() const;
   void setColor(Mn::Vector3ub _color) { color_ = _color; }
 
  protected:

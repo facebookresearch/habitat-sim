@@ -45,11 +45,26 @@ void BaseMesh::buildMeshColors(
   }
 }  // BaseMesh::buildMeshColors
 
+namespace {
+// TODO remove when/if Magnum ever supports this function for Color3ub
+constexpr const char Hex[]{"0123456789abcdef"};
+}  // namespace
+std::string BaseMesh::getColorAsString(Magnum::Color3ub color) const {
+  char out[] = "#______";
+  out[1] = Hex[(color.r() >> 4) & 0xf];
+  out[2] = Hex[(color.r() >> 0) & 0xf];
+  out[3] = Hex[(color.g() >> 4) & 0xf];
+  out[4] = Hex[(color.g() >> 0) & 0xf];
+  out[5] = Hex[(color.b() >> 4) & 0xf];
+  out[6] = Hex[(color.b() >> 0) & 0xf];
+  return std::string(out);
+}
+
 void BaseMesh::buildSemanticOBBs(
     const std::vector<vec3f>& vertices,
     const std::vector<uint16_t>& vertSemanticIDs,
     const std::vector<std::shared_ptr<esp::scene::SemanticObject>>& ssdObjs,
-    std::vector<std::string>& debugMsgs) const {
+    const std::string& msgPrefix) const {
   // build per-SSD object vector of known semantic IDs
   std::size_t numSSDObjs = ssdObjs.size();
   // no semantic ID 0
@@ -92,17 +107,18 @@ void BaseMesh::buildSemanticOBBs(
 
   // with mins/maxs per ID, map to objs
   // give each ssdObj the values to build its OBB
-  debugMsgs.reserve(semanticIDToSSOBJidx.size());
   for (int semanticID = 1; semanticID < semanticIDToSSOBJidx.size();
        ++semanticID) {
     // get object with given semantic ID
     auto& ssdObj = *ssdObjs[semanticIDToSSOBJidx[semanticID]];
     esp::vec3f center{};
     esp::vec3f dims{};
+
     const std::string debugStr = Cr::Utility::formatString(
-        "Semantic ID : {} : color : {} tag : {} present in {} verts | ",
-        semanticID, ssdObj.getColorAsString(), ssdObj.id(),
-        vertCounts[semanticID]);
+        "{}Semantic ID : {} : color : {} tag : {} present in {} verts | ",
+        msgPrefix, semanticID,
+        getColorAsString(static_cast<Mn::Color3ub>(ssdObj.getColor())),
+        ssdObj.id(), vertCounts[semanticID]);
     std::string infoStr;
     if (vertCounts[semanticID] == 0) {
       infoStr = Cr::Utility::formatString(
@@ -114,7 +130,7 @@ void BaseMesh::buildSemanticOBBs(
           "{}BB Center [{},{},{}] Dims [{},{},{}]", debugStr, center.x(),
           center.y(), center.z(), dims.x(), dims.y(), dims.z());
     }
-    debugMsgs.emplace_back(std::move(infoStr));
+    ESP_DEBUG() << infoStr;
 
     ssdObj.setObb(center, dims);
   }

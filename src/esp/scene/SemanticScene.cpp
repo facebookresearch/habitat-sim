@@ -85,20 +85,5 @@ bool SemanticScene::
 
 }  // SemanticScene::loadSemanticSceneDescriptor
 
-namespace {
-// TODO remove when/if Magnum ever supports this
-constexpr const char Hex[]{"0123456789abcdef"};
-}  // namespace
-std::string SemanticObject::getColorAsString() const {
-  char out[] = "#______";
-  out[1] = Hex[(color_.r() >> 4) & 0xf];
-  out[2] = Hex[(color_.r() >> 0) & 0xf];
-  out[3] = Hex[(color_.g() >> 4) & 0xf];
-  out[4] = Hex[(color_.g() >> 0) & 0xf];
-  out[5] = Hex[(color_.b() >> 4) & 0xf];
-  out[6] = Hex[(color_.b() >> 0) & 0xf];
-  return std::string(out);
-}
-
 }  // namespace scene
 }  // namespace esp

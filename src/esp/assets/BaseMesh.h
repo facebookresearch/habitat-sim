@@ -150,6 +150,8 @@ class BaseMesh {
   Magnum::Range3D BB;
 
  protected:
+  std::string getColorAsString(Magnum::Color3ub color) const;
+
   /**
    * @brief Build an array of colors found in the source mesh.
    * Generally used for semantic processing/rendering.
@@ -170,14 +172,13 @@ class BaseMesh {
    * mesh, both known in semantic scene descriptor, and unknown.  Known IDs are
    * expected to start at 1 and be contiguous, followed by unknown semantic IDs
    * @param ssdObjs The known semantic scene descriptor objects for the mesh
-   * @param debugMsgs Debug messages documenting whether each ssdObj is present
-   * in mesh or not.
+   * @param msgPrefix Debug message prefix, referencing caller.
    */
   void buildSemanticOBBs(
       const std::vector<vec3f>& vertices,
       const std::vector<uint16_t>& vertSemanticIDs,
       const std::vector<std::shared_ptr<esp::scene::SemanticObject>>& ssdObjs,
-      std::vector<std::string>& debugMsgs) const;
+      const std::string& msgPrefix) const;
 
   /**
    * @brief Identifies the derived type of this object and the format of the

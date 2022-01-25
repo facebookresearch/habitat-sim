@@ -140,17 +140,6 @@ GenericSemanticMeshData::buildSemanticMeshData(
         return (unsigned(color[0]) << 16) | (unsigned(color[1]) << 8) |
                unsigned(color[2]);
       };
-      constexpr const char Hex[]{"0123456789abcdef"};
-      auto colorAsStr = [](const Mn::Color3ub& color) -> std::string {
-        char out[] = "#______";
-        out[1] = Hex[(color.r() >> 4) & 0xf];
-        out[2] = Hex[(color.r() >> 0) & 0xf];
-        out[3] = Hex[(color.g() >> 4) & 0xf];
-        out[4] = Hex[(color.g() >> 0) & 0xf];
-        out[5] = Hex[(color.b() >> 4) & 0xf];
-        out[6] = Hex[(color.b() >> 0) & 0xf];
-        return std::string(out);
-      };
 
       // build maps of color ints to semantic IDs and color ints to
       // region ids in SSD find max regions present, so we can have an
@@ -251,31 +240,30 @@ GenericSemanticMeshData::buildSemanticMeshData(
         // partition Ids for each vertex, for multi-mesh construction.
         partitionIds[vertIdx] = regionID;
       }  // for each vertex
-      std::vector<std::string> debugMsgs;
       // FOR VERT-BASED OBB CALC
       // build semantic OBBs here
       semanticData->buildSemanticOBBs(
-          semanticData->cpu_vbo_, semanticData->objectIds_, ssdObjs, debugMsgs);
-      // add unknown colors to debug messages
-      debugMsgs.reserve(debugMsgs.size() + nonSSDVertColorIDs.size() + 1);
+          semanticData->cpu_vbo_, semanticData->objectIds_, ssdObjs, msgPrefix);
+
       // colors found on vertices not found in semantic lexicon :
       if (nonSSDVertColorIDs.size() == 0) {
-        debugMsgs.emplace_back(
-            "No unexpected colors found mapped to mesh verts.");
+        ESP_DEBUG() << msgPrefix
+                    << "No unexpected colors found mapped to mesh verts.";
       } else {
-        debugMsgs.emplace_back(std::move(Cr::Utility::formatString(
-            "{} unexpected/unknown colors found mapped to mesh verts.",
-            nonSSDVertColorIDs.size())));
+        ESP_DEBUG()
+            << msgPrefix
+            << Cr::Utility::formatString(
+                   "{} unexpected/unknown colors found mapped to mesh verts.",
+                   nonSSDVertColorIDs.size());
         for (const std::pair<const uint32_t, int>& elem : nonSSDVertColorIDs) {
-          debugMsgs.emplace_back(std::move(Cr::Utility::formatString(
-              "\t\tColor {} | # verts {} | applied Semantic ID {}.",
-              colorAsStr(static_cast<Mn::Color3ub>(colorMapToUse[elem.second])),
-              nonSSDVertColorCounts.at(elem.first), elem.second)));
+          ESP_DEBUG()
+              << msgPrefix
+              << Cr::Utility::formatString(
+                     "\t\tColor {} | # verts {} | applied Semantic ID {}.",
+                     semanticData->getColorAsString(
+                         static_cast<Mn::Color3ub>(colorMapToUse[elem.second])),
+                     nonSSDVertColorCounts.at(elem.first), elem.second);
         }
-      }
-
-      for (const auto& msg : debugMsgs) {
-        ESP_DEBUG() << msgPrefix << msg;
       }
 
     } else {
