@@ -23,7 +23,12 @@
 #include "esp/core/Esp.h"
 #include "esp/gfx/magnum.h"
 
+namespace Cr = Corrade;
+namespace Mn = Magnum;
 namespace esp {
+namespace scene {
+class SemanticObject;
+}  // namespace scene
 namespace assets {
 
 /**
@@ -145,6 +150,34 @@ class BaseMesh {
   Magnum::Range3D BB;
 
  protected:
+  /**
+   * @brief Build an array of colors found in the source mesh.
+   * Generally used for semantic processing/rendering.
+   * @param srcMeshData The source mesh data to read for the colors
+   * @param convertToSRGB Whether the source vertex colors from the @p
+   * srcMeshData should be converted to SRGB
+   * @param [out] meshColors The per-vertex array of colors to be built.
+   * @return a properly configured array of colors found in the mesh
+   */
+  void buildMeshColors(const Mn::Trade::MeshData& srcMeshData,
+                       bool convertToSRGB,
+                       Cr::Containers::Array<Mn::Color3ub>& meshColors) const;
+
+  /**
+   * @brief Build semantic OBBs based on presence of semantic IDs on vertices.
+   * @param vertices Ref to vertex array
+   * @param vertSemanticIDs Ref to per-vertex semantic IDs persent on source
+   * mesh, both known in semantic scene descriptor, and unknown.  Known IDs are
+   * expected to start at 1 and be contiguous, followed by unknown semantic IDs
+   * @param ssdObjs The known semantic scene descriptor objects for the mesh
+   * @param msgPrefix Debug message prefix denoting caller.
+   */
+  void buildSemanticOBBs(
+      const std::vector<vec3f>& vertices,
+      const std::vector<uint16_t>& vertSemanticIDs,
+      const std::vector<std::shared_ptr<esp::scene::SemanticObject>>& ssdObjs,
+      const std::string& msgPrefix = "") const;
+
   /**
    * @brief Identifies the derived type of this object and the format of the
    * asset.
