@@ -1291,7 +1291,7 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
                                 filename));
   // Transform meshData by reframing rotation.  Doing this here so that
   // transformation is caught in OBB calc.
-  Magnum::Matrix4 reframeTransform = Magnum::Matrix4::from(
+  const Magnum::Matrix4 reframeTransform = Magnum::Matrix4::from(
       Magnum::Quaternion(info.frame.rotationFrameToWorld()).toMatrix(),
       Magnum::Vector3());
 
@@ -1327,14 +1327,12 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
     }
     // build concatenated meshData from container of meshes.
     meshData = Mn::MeshTools::concatenate(meshView);
-  }
-
-  // meshData = Mn::MeshTools::transform3D(*meshData, reframeTransform);
+  }  // flatten/reframe src meshes
 
   std::vector<GenericSemanticMeshData::uptr> instanceMeshes =
       GenericSemanticMeshData::buildSemanticMeshData(
-          *meshData, filename, info.splitInstanceMesh,
-          semanticColorMapBeingUsed_,
+          *meshData, Cr::Utility::Directory::filename(filename),
+          info.splitInstanceMesh, semanticColorMapBeingUsed_,
           (filename.find(".ply") == std::string::npos), semanticScene_);
 
   ESP_CHECK(!instanceMeshes.empty(),

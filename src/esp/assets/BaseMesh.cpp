@@ -98,19 +98,21 @@ void BaseMesh::buildSemanticOBBs(
     auto& ssdObj = *ssdObjs[semanticIDToSSOBJidx[semanticID]];
     esp::vec3f center{};
     esp::vec3f dims{};
+    const std::string debugStr = Cr::Utility::formatString(
+        "{} Semantic ID : {} : SSD object tag : {} present in {} verts | ",
+        msgPrefix, semanticID, ssdObj.id(), vertCounts[semanticID]);
+    std::string infoStr;
     if (vertCounts[semanticID] == 0) {
-      ESP_DEBUG() << Cr::Utility::formatString(
-          "{}No verts have semantic ID {} : {}", msgPrefix, semanticID,
-          ssdObj.id());
+      infoStr = "No verts have specified Semantic ID.";
     } else {
       center = .5f * (vertMax[semanticID] + vertMin[semanticID]);
       dims = vertMax[semanticID] - vertMin[semanticID];
-      ESP_DEBUG() << Cr::Utility::formatString(
-          "{} idx : {} -> object : {} present in {} verts : BB Center "
-          "[{},{},{}] Dims [{},{},{}]",
-          msgPrefix, semanticID, ssdObj.id(), vertCounts[semanticID],
-          center.x(), center.y(), center.z(), dims.x(), dims.y(), dims.z());
+      infoStr = Cr::Utility::formatString(
+          "BB Center [{},{},{}] Dims [{},{},{}]", center.x(), center.y(),
+          center.z(), dims.x(), dims.y(), dims.z());
     }
+    ESP_DEBUG() << debugStr << infoStr;
+
     ssdObj.setObb(center, dims);
   }
 

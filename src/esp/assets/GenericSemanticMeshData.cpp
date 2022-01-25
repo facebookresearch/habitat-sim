@@ -167,16 +167,18 @@ GenericSemanticMeshData::buildSemanticMeshData(
         colorMapToUse[semanticID] = ssdColor;
         maxRegion = Mn::Math::max(regionIDX, maxRegion);
       }
-      // largest possible known semanticID will be size of colorMapToUse
+      // largest possible known semanticID will be size of colorMapToUse at this
+      // point.  If unknown/unmapped colors are present in mesh, colorMapToUse
+      // will grow to hold them in subsequent step.
       int maxSemanticID = colorMapToUse.size();
-      // increment maxRegion to use largest as unknown region for objects whose
-      // colors are not mapped in given ssd data.
+      // increment maxRegion to use largest value as unknown region for objects
+      // whose colors are not mapped in given ssd data.
       ++maxRegion;
 
-      // rebuild objectIDs vector (objectID per vertex) based on
+      // (re)build mesh objectIDs vector (objectID per vertex) based on
       // per vertex colors mapped
 
-      // 1st semantic ID for colors not found in SSD
+      // 1st semantic ID for colors not found in SSD objects
       std::size_t nonSSDObjID = maxSemanticID + 1;
 
       // map regionIDs to affected verts using semantic color provided in
@@ -187,7 +189,8 @@ GenericSemanticMeshData::buildSemanticMeshData(
       semanticData->objectIds_.resize(numVerts);
       // temporary holding structure to hold any non-SSD vert colors, so that
       // the nonSSDObjID for new colors can be incremented appropriately
-      // not using set to avoid extra include
+      // not using set to avoid extra include. Key is color, value is semantic
+      // ID assigned for unknown color
       std::unordered_map<uint32_t, int> nonSSDVertColors;
 
       // only go through all verts one time
@@ -196,7 +199,6 @@ GenericSemanticMeshData::buildSemanticMeshData(
       int semanticID = 0;
 
       for (int vertIdx = 0; vertIdx < numVerts; ++vertIdx) {
-        const auto vert = semanticData->cpu_vbo_[vertIdx];
         Mn::Color3ub meshColor = meshColors[vertIdx];
         // Convert color to an int @ vertex
         const uint32_t meshColorInt = colorAsInt(meshColor);
@@ -225,8 +227,7 @@ GenericSemanticMeshData::buildSemanticMeshData(
           semanticID = nonSSDClrRes.first->second;
           regionID = maxRegion;
 
-          // color for given semantic ID - only necessary to add for unknown
-          // colors
+          // color for given semantic ID
           if (colorMapToUse.size() <= semanticID) {
             colorMapToUse.resize(semanticID + 1);
           }
@@ -256,7 +257,7 @@ GenericSemanticMeshData::buildSemanticMeshData(
           Mn::MeshTools::removeDuplicatesInPlace(
               Cr::Containers::arrayCast<2, char>(
                   stridedArrayView(colorsThatBecomeTheColorMap)));
-
+      // per-vertex object IDs reflect per-vertex color assignments
       objectIds = std::move(out.first);
       auto clrMapView = colorsThatBecomeTheColorMap.prefix(out.second);
       colorMapToUse.assign(clrMapView.begin(), clrMapView.end());
