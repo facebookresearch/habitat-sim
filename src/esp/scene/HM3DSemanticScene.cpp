@@ -143,7 +143,7 @@ bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
   scene.regions_.clear();
   scene.regions_.reserve(regions.size());
   for (auto& regionItem : regions) {
-    auto regionPtr = HM3DSemanticRegion::create();
+    auto regionPtr = SemanticRegion::create();
     regionPtr->index_ = regionItem.second.regionID;
     for (TempHM3DObject* objItem : regionItem.second.objInstances) {
       objItem->region = regionPtr;

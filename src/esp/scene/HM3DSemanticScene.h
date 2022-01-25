@@ -31,12 +31,6 @@ class HM3DObjectCategory : public SemanticCategory {
   ESP_SMART_POINTERS(HM3DObjectCategory)
 };
 
-class HM3DSemanticRegion : public SemanticRegion {
- public:
-  int getIndex() const { return index_; }
-  ESP_SMART_POINTERS(HM3DSemanticRegion)
-};  // class HM3DSemanticRegion
-
 class HM3DObjectInstance : public SemanticObject {
  public:
   HM3DObjectInstance(int objInstanceID,

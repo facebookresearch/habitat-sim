@@ -298,7 +298,7 @@ class SemanticRegion {
       return "_" + std::to_string(index_);
     }
   }
-
+  int getIndex() const { return index_; }
   SemanticLevel::ptr level() const { return level_; }
 
   const std::vector<std::shared_ptr<SemanticObject>>& objects() const {
