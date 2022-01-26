@@ -500,8 +500,8 @@ std::vector<float> BulletArticulatedObject::getJointMotorTorques(
       auto& btMotor = articulatedJointMotors.at(motor.first);
       btScalar impulse = btMotor->getAppliedImpulse(0);
       float force = impulse / float(fixedTimeStep);
-      torques[motor.second->index] += force;
-
+      int link_dof = btMultiBody_->getLink(motor.second->index).m_dofOffset;
+      torques[link_dof] += force;
     } else {
       ESP_CHECK(
           false,
