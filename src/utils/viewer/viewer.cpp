@@ -1368,9 +1368,9 @@ void Viewer::setSceneInstanceFromListAndShow(int nextSceneInstanceIDX) {
   activeSceneGraph_ = nullptr;
 
   // close and reconfigure
-  simulator_->close();
-  simulator_ = esp::sim::Simulator::create_unique(simConfig_, MM_);
-  // simulator_->reconfigure(simConfig_);
+  simulator_->close(false);
+  // simulator_ = esp::sim::Simulator::create_unique(simConfig_, MM_);
+  simulator_->reconfigure(simConfig_);
 
   // initialize sim navmesh, agent, sensors after creation/reconfigure
   initSimPostReconfigure();
