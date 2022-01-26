@@ -6,14 +6,43 @@
 #include <string>
 
 #include "esp/scene/SemanticScene.h"
+#include "esp/sim/Simulator.h"
 
 #include "configure.h"
 
 namespace Cr = Corrade;
+namespace Mn = Magnum;
 
+using esp::sim::Simulator;
+using esp::sim::SimulatorConfiguration;
 namespace {
 
+// Scene dataset config directly references test scene locations, along with
+// providing default values for stage configuration, obviating the need for
+// per-scene/per-stage configs.
+const std::string HM3DTestConfigLoc = Cr::Utility::Directory::join(
+    SCENE_DATASETS,
+    "habitat-test-scenes/hm3d_habitat_annotated_testdata/"
+    "hm3d_annotated_testdata.scene_dataset_config.json");
+
+// TODO : support all free/sample scenes once they have their annotations
+// complete.  Make sure above config references additional scenes, and then
+// just add scene hash to array.
+const std::string HM3DTestScenes[] = {"GLAQ4DNUx5U"};
+
 struct HM3DSceneTest : Cr::TestSuite::Tester {
+  Simulator::uptr getSimulatorWithScene(const std::string& scene) {
+    // change config to be using new scene
+    auto cfg =
+        esp::sim::SimulatorConfiguration{MM_->getSimulatorConfiguration()};
+    ESP_DEBUG() << "Cfg made";
+    cfg.activeSceneName = scene;
+    // create simulator with new scene and loaded MM holding dataset info
+    auto sim = Simulator::create_unique(cfg, MM_);
+
+    return sim;
+  }
+
   explicit HM3DSceneTest();
 
   void testHM3DScene();
@@ -22,17 +51,41 @@ struct HM3DSceneTest : Cr::TestSuite::Tester {
 
   esp::logging::LoggingContext loggingContext;
 
+  // The MetadataMediator can exist independent of simulator
+  // and provides access to all managers for currently active scene dataset
+  std::shared_ptr<esp::metadata::MetadataMediator> MM_ = nullptr;
 };  // struct HM3DSceneTest
+
+const struct {
+  const char* name;
+
+  // index in HM3DTestScenes array for scene
+  int testSceneIDX;
+
+} TestHM3DScenes[]{{"GLAQ4DNUx5U", 0}};
+
 HM3DSceneTest::HM3DSceneTest() {
-  addTests(
-      {&HM3DSceneTest::testHM3DScene, &HM3DSceneTest::testHM3DSemanticScene});
+  // set up a default simulation config to initialize MM
+  auto cfg = esp::sim::SimulatorConfiguration{};
+  cfg.sceneDatasetConfigFile = HM3DTestConfigLoc;
+  // build metadata mediator and initialize with cfg, loading test dataset info
+  MM_ = esp::metadata::MetadataMediator::create(cfg);
+  addInstancedTests(
+      {&HM3DSceneTest::testHM3DScene, &HM3DSceneTest::testHM3DSemanticScene},
+      Cr::Containers::arraySize(TestHM3DScenes));
 }
 
 void HM3DSceneTest::testHM3DScene() {
+  auto&& testData = TestHM3DScenes[testCaseInstanceId()];
+  setTestCaseDescription(testData.name);
+  auto simulator = getSimulatorWithScene(HM3DTestScenes[testData.testSceneIDX]);
   CORRADE_COMPARE(0, 0);
 }
 
 void HM3DSceneTest::testHM3DSemanticScene() {
+  auto&& testData = TestHM3DScenes[testCaseInstanceId()];
+  setTestCaseDescription(testData.name);
+  auto simulator = getSimulatorWithScene(HM3DTestScenes[testData.testSceneIDX]);
   CORRADE_COMPARE(0, 0);
 }
 

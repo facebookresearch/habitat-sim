@@ -139,6 +139,7 @@ endif()
 # want to have full log from others, so this is a compromise)
 set_tests_properties(
   GfxReplayTest
+  HM3DSceneTest
   MetadataMediatorTest
   Mp3dTest
   NavTest
