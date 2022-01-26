@@ -35,8 +35,8 @@ struct HM3DSceneTest : Cr::TestSuite::Tester {
     // change config to be using new scene
     auto cfg =
         esp::sim::SimulatorConfiguration{MM_->getSimulatorConfiguration()};
-    ESP_DEBUG() << "Cfg made";
     cfg.activeSceneName = scene;
+    cfg.sceneDatasetConfigFile = HM3DTestConfigLoc;
     // create simulator with new scene and loaded MM holding dataset info
     auto sim = Simulator::create_unique(cfg, MM_);
 
@@ -67,7 +67,6 @@ const struct {
 HM3DSceneTest::HM3DSceneTest() {
   // set up a default simulation config to initialize MM
   auto cfg = esp::sim::SimulatorConfiguration{};
-  cfg.sceneDatasetConfigFile = HM3DTestConfigLoc;
   // build metadata mediator and initialize with cfg, loading test dataset info
   MM_ = esp::metadata::MetadataMediator::create(cfg);
   addInstancedTests(
@@ -76,6 +75,10 @@ HM3DSceneTest::HM3DSceneTest() {
 }
 
 void HM3DSceneTest::testHM3DScene() {
+  // If scene dataset does not exist, skip test for now
+  if (!Cr::Utility::Directory::exists(HM3DTestConfigLoc)) {
+    CORRADE_SKIP("HM3D dataset not found.");
+  }
   auto&& testData = TestHM3DScenes[testCaseInstanceId()];
   setTestCaseDescription(testData.name);
   auto simulator = getSimulatorWithScene(HM3DTestScenes[testData.testSceneIDX]);
@@ -83,6 +86,10 @@ void HM3DSceneTest::testHM3DScene() {
 }
 
 void HM3DSceneTest::testHM3DSemanticScene() {
+  // If scene dataset does not exist, skip test for now
+  if (!Cr::Utility::Directory::exists(HM3DTestConfigLoc)) {
+    CORRADE_SKIP("HM3D dataset not found.");
+  }
   auto&& testData = TestHM3DScenes[testCaseInstanceId()];
   setTestCaseDescription(testData.name);
   auto simulator = getSimulatorWithScene(HM3DTestScenes[testData.testSceneIDX]);
