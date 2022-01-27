@@ -145,7 +145,7 @@ void ReplicaSceneTest::testSemanticSceneLoading() {
   // center:[3.52103,-1.00543,-1.02705]
   // halfextents:[0.169882,0.160166,0.01264]
   // rotational quat coefficients:[-0.70592,0.0131598,0.0157815,0.707994]
-  // Sophus calc:
+  // Old Sophus calc:
   // {c:[3.52103,-1.00543,-1.02705],h:[0.169882,0.160166,0.01264],r:[-0.70592,0.0131598,0.0157815,0.707994]}
 
   CORRADE_VERIFY(
