@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <ctime>
 #include <fstream>
+#include <iostream>
 
 #include <Magnum/configure.h>
 #include <Magnum/ImGuiIntegration/Context.hpp>
@@ -45,7 +46,6 @@
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/GL/DefaultFramebuffer.h>
 #include <Magnum/GL/Renderer.h>
-#include <sophus/so3.hpp>
 #include "esp/core/Esp.h"
 #include "esp/core/Utility.h"
 #include "esp/gfx/Drawable.h"

@@ -10,7 +10,6 @@
 #include <algorithm>
 #include <fstream>
 #include <map>
-#include <sophus/se3.hpp>
 #include <sstream>
 #include <string>
 

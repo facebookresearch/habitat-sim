@@ -39,9 +39,6 @@ if(NOT IMGUI_DIR)
   set(IMGUI_DIR "${DEPS_DIR}/imgui")
 endif()
 
-# sophus
-include_directories(SYSTEM "${DEPS_DIR}/Sophus")
-
 # tinyxml2
 include_directories("${DEPS_DIR}/tinyxml2")
 add_subdirectory("${DEPS_DIR}/tinyxml2")

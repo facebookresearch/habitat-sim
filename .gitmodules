@@ -22,9 +22,6 @@
 [submodule "src/deps/glfw"]
 	path = src/deps/glfw
 	url = https://github.com/glfw/glfw
-[submodule "src/deps/Sophus"]
-	path = src/deps/Sophus
-	url = https://github.com/strasdat/Sophus
 [submodule "src/deps/recastnavigation"]
 	path = src/deps/recastnavigation
 	url = https://github.com/erikwijmans/recastnavigation.git
