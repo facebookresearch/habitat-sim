@@ -161,7 +161,7 @@ void VoxelGrid::addVoxelToMeshPrimitives(
   Corrade::Containers::StridedArrayView1D<const Magnum::Vector3> cubeNormals =
       cubeData.attribute<Mn::Vector3>(Mn::Trade::MeshAttribute::Normal);
   Cr::Containers::ArrayView<const Mn::UnsignedShort> cubeIndices =
-      cubeData.indices<Mn::UnsignedShort>();
+      cubeData.indices<Mn::UnsignedShort>().asContiguous();
   for (std::size_t i = 0; i != cubeData.vertexCount(); ++i) {
     arrayAppend(vertexData, Cr::InPlaceInit,
                 cubePositions[i] * m_voxelSize / 2 + mid,
@@ -195,7 +195,7 @@ void VoxelGrid::addVectorToMeshPrimitives(
   Corrade::Containers::StridedArrayView1D<const Magnum::Vector3> coneNormals =
       coneData.attribute<Mn::Vector3>(Mn::Trade::MeshAttribute::Normal);
   Cr::Containers::ArrayView<const Mn::UnsignedInt> coneIndices =
-      coneData.indices<Mn::UnsignedInt>();
+      coneData.indices<Mn::UnsignedInt>().asContiguous();
   // Get rotation quaternion
   Mn::Rad angle = Mn::Math::angle(vec.normalized(), Mn::Vector3(0, 1, 0));
 
@@ -231,7 +231,7 @@ void VoxelGrid::addVectorToMeshPrimitives(
       cylinderNormals =
           cylinderData.attribute<Mn::Vector3>(Mn::Trade::MeshAttribute::Normal);
   Cr::Containers::ArrayView<const Mn::UnsignedInt> cylinderIndices =
-      cylinderData.indices<Mn::UnsignedInt>();
+      cylinderData.indices<Mn::UnsignedInt>().asContiguous();
 
   for (std::size_t i = 0; i != cylinderData.vertexCount(); ++i) {
     arrayAppend(vertexData, Cr::InPlaceInit,
