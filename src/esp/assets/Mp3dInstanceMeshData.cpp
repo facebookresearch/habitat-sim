@@ -8,8 +8,6 @@
 #include <sstream>
 #include <vector>
 
-#include <sophus/so3.hpp>
-
 #include <Corrade/Containers/Array.h>
 #include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/ArrayViewStl.h>

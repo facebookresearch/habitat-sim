@@ -10,7 +10,6 @@
 
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/FormatStl.h>
-#include <sophus/so3.hpp>
 #include "esp/assets/GenericSemanticMeshData.h"
 #include "esp/core/Esp.h"
 #include "esp/geo/Geo.h"
