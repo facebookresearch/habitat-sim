@@ -6,7 +6,6 @@
 #include "SemanticScene.h"
 
 #include <map>
-#include <sophus/se3.hpp>
 #include <string>
 
 #include "esp/io/Json.h"
@@ -76,6 +75,9 @@ bool SemanticScene::buildReplicaHouse(const io::JsonDocument& jsonDoc,
   // objects
   const auto& objects = jsonDoc["objects"].GetArray();
   scene.elementCounts_["objects"] = objects.Size();
+
+  // construct rotation matrix to be used to construct transform
+  const Eigen::Isometry3f worldRotationMat{worldRotation.normalized()};
   for (const auto& jsonObject : objects) {
     SemanticObject::ptr object = SemanticObject::create();
     int id = jsonObject["id"].GetInt();
@@ -108,12 +110,15 @@ bool SemanticScene::buildReplicaHouse(const io::JsonDocument& jsonDoc,
                       &rotationBoxToWorldCoeffs);
     const Eigen::Map<quatf> rotationBoxToWorld(rotationBoxToWorldCoeffs.data());
 
-    const auto transformBoxToWorld =
-        Sophus::SE3f{worldRotation, vec3f::Zero()} *
-        Sophus::SE3f{rotationBoxToWorld, translationBoxToWorld};
+    Eigen::Isometry3f transformBox{rotationBoxToWorld.normalized()};
+    transformBox *= Eigen::Translation3f(translationBoxToWorld);
+
+    const Eigen::Isometry3f transformBoxToWorld{worldRotationMat *
+                                                transformBox};
 
     object->obb_ = geo::OBB{transformBoxToWorld * aabbCenter, aabbSizes,
-                            transformBoxToWorld.so3().unit_quaternion()};
+                            quatf{transformBoxToWorld.linear()}.normalized()};
+
     scene.objects_[id] = std::move(object);
   }
 
