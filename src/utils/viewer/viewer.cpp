@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <ctime>
 #include <fstream>
+#include <iostream>
 
 #include <Magnum/configure.h>
 #include <Magnum/ImGuiIntegration/Context.hpp>
