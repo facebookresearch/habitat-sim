@@ -136,13 +136,28 @@ void ReplicaSceneTest::testSemanticSceneLoading() {
   CORRADE_VERIFY(scene);
   CORRADE_COMPARE(scene->objects().size(), 94);
 
-  CORRADE_VERIFY(scene->objects()[12]);
-  CORRADE_COMPARE(scene->objects()[12]->id(), "_12");
+  const auto obj12 = scene->objects()[12];
 
-  CORRADE_VERIFY(scene->objects()[12]->category());
+  CORRADE_VERIFY(obj12);
+  CORRADE_COMPARE(obj12->id(), "_12");
+  // obj12's obb
+  // Eigen Calc
+  // center:[3.52103,-1.00543,-1.02705]
+  // halfextents:[0.169882,0.160166,0.01264]
+  // rotational quat coefficients:[-0.70592,0.0131598,0.0157815,0.707994]
+  // Sophus calc:
+  // {c:[3.52103,-1.00543,-1.02705],h:[0.169882,0.160166,0.01264],r:[-0.70592,0.0131598,0.0157815,0.707994]}
 
-  CORRADE_COMPARE(scene->objects()[12]->category()->index(), 13);
-  CORRADE_COMPARE(scene->objects()[12]->category()->name(), "book");
+  CORRADE_VERIFY(
+      obj12->obb().center().isApprox(esp::vec3f{3.52103, -1.00543, -1.02705}));
+  CORRADE_VERIFY(obj12->obb().halfExtents().isApprox(
+      esp::vec3f{0.169882, 0.160166, 0.01264}));
+  CORRADE_VERIFY(obj12->obb().rotation().coeffs().isApprox(
+      esp::vec4f{-0.70592, 0.0131598, 0.0157815, 0.707994}));
+
+  CORRADE_VERIFY(obj12->category());
+  CORRADE_COMPARE(obj12->category()->index(), 13);
+  CORRADE_COMPARE(obj12->category()->name(), "book");
 }
 
 void ReplicaSceneTest::testSemanticSceneDescriptorReplicaCAD() {
