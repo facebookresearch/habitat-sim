@@ -121,6 +121,7 @@ def modify_and_copy_SSD(src_filename: str, dest_filename: str):
 def buildFileListing():
     # go through annotation directory, find paths to all files of
     # interest (annotated glbs and semantic lexicon/text files)
+    # and match to desired destination in HM3D install directory
 
     # directory name pattern to find annotation files
     annotation_dir_pattern = re.compile(HM3D_ANNOTATION_SUBDIR_RE)
@@ -217,6 +218,8 @@ def verify_file(filename: str, src_dir: str, type_key: str, failures: Dict):
 
 
 def build_annotation_configs(part_file_list_dict: Dict, output_files: List):
+    print("build_annotation_configs:")
+
     def modify_paths_tag(
         paths: Dict, file_ext_key: str, path_glob_file: str, rel_file_dirs: List
     ):
@@ -270,37 +273,86 @@ def build_annotation_configs(part_file_list_dict: Dict, output_files: List):
         dest_config_filename = new_config_filenames[config_key]
         scene_path_list = new_filepaths_for_config[config_key]
         print(
-            "{} # files : {} : \n\t{}\n\t{}\n\tfiles:".format(
+            "{} # files : {} : \n\t{}\n\t{}".format(
                 config_key,
                 len(scene_path_list),
                 src_config_filename,
                 dest_config_filename,
             )
         )
-        for pathname in scene_path_list:
-            print("\t\t{}".format(pathname))
+        # print("\n\tfiles:")
+        # for pathname in scene_path_list:
+        #     print("\t\t{}".format(pathname))
 
         # load each existing json config, appropriately modify it, and then save as new configs
-        src_json_config = ut.load_json_into_dict(src_config_filename)
-        for key, json_obj in src_json_config.items():
-            if "paths" in json_obj:
-                # Modify both stages and
-                # this is the dictionary of lists of places to look for specified config type files
-                paths_dict = src_json_config[key]["paths"]
-                for path_type_key, lu_path_list in paths_dict.items():
-                    # assume the list has at least one element
-                    lu_glob_file = lu_path_list[0].split(os_sep)[-1]
-                    modify_paths_tag(
-                        paths_dict, path_type_key, lu_glob_file, scene_path_list
-                    )
-        ut.save_json_to_file(src_json_config, dest_config_filename)
+        if BUILD_SD_CONFIGS:
+            src_json_config = ut.load_json_into_dict(src_config_filename)
+            for key, json_obj in src_json_config.items():
+                if "paths" in json_obj:
+                    # Modify both stages and
+                    # this is the dictionary of lists of places to look for specified config type files
+                    paths_dict = src_json_config[key]["paths"]
+                    for path_type_key, lu_path_list in paths_dict.items():
+                        # assume the list has at least one element
+                        lu_glob_file = lu_path_list[0].split(os_sep)[-1]
+                        modify_paths_tag(
+                            paths_dict, path_type_key, lu_glob_file, scene_path_list
+                        )
+            ut.save_json_to_file(src_json_config, dest_config_filename)
 
         # add subdirectory-qualified file paths to new configs to output_files list so that they will
         # be included in zip file
         rel_config_filename = dest_config_filename.split(HM3D_DEST_DIR)[-1].split(
             os_sep, 1
         )[-1]
+        print(
+            "Adding rel_config_filename : {} to output_files.".format(
+                rel_config_filename
+            )
+        )
         output_files.append(rel_config_filename)
+
+
+def save_annotated_file_lists(output_files: List):
+    print("save_annotated_file_lists:")
+    # write text files that hold listings of appropriate relative filepaths for
+    # annotated files as well as for each partition for all scenes that have annotations
+
+    # all annotated files (annotated glb and txt only)
+    with open(os_join(HM3D_DEST_DIR, "HM3D_annotation_files.txt"), "w") as dest:
+        dest.write("\n".join(output_files))
+
+    # save listing for each partition
+    # each entry is a tuple with idx 0 == dest filename; idx 1 == list of paths
+    partition_lists = {}
+    for part in HM3D_DATA_PARTITIONS:
+        partition_lists[part] = (
+            os_join(HM3D_DEST_DIR, "HM3D_annotation_{}_dataset.txt".format(part)),
+            [],
+        )
+    # for each entry in output_files list, check which partition it belongs to
+    # all partition files should have hm3d-<partition>-habitat as the lowest
+    # relative directory
+    for filename in output_files:
+        fileparts = filename.split(os_sep)
+        if len(fileparts) < 2:
+            # filename is root level and not part of a partition
+            continue
+        file_part_key = fileparts[0].split("-")[1].strip()
+        partition_lists[file_part_key][1].append(filename)
+        # add base files
+        if ".semantic.glb" in filename:
+            filename_base = filename.split(".semantic.glb")[0]
+            partition_lists[file_part_key][1].append(
+                "{}.basis.glb".format(filename_base)
+            )
+            partition_lists[file_part_key][1].append(
+                "{}.basis.navmesh".format(filename_base)
+            )
+    # write each per-partition file listing to build per-partition annotated-only datasets
+    for _, v in partition_lists.items():
+        with open(v[0], "w") as dest:
+            dest.write("\n".join(v[1]))
 
 
 def main():
@@ -355,13 +407,12 @@ def main():
     #     for filename in files:
     #         print("\t{}".format(filename))
 
-    # If requesting to build scene dataset configs, build them
-    if BUILD_SD_CONFIGS:
-        build_annotation_configs(part_file_list_dict, output_files)
+    # If requesting to build scene dataset configs, build them, and also get relative paths to all 5 annotation configs
 
-    # save filenames of files that have been written, so that the archive can be used to create a zip
-    with open(os_join(HM3D_DEST_DIR, "HM3D_annotation_files.txt"), "w") as dest:
-        dest.write("\n".join(output_files))
+    build_annotation_configs(part_file_list_dict, output_files)
+
+    # save filenames of the annotation files that have been written, to facilitate archiving
+    save_annotated_file_lists(output_files)
 
     # display failures if they have occurred
     if len(failures) > 0:
