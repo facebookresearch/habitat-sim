@@ -21,6 +21,10 @@ from habitat_sim._ext.habitat_sim_bindings import (
     SensorType,
     VisualSensor,
     VisualSensorSpec,
+    AudioSensorSpec,
+    AudioSensor,
+    HabitatAcousticsChannelLayout,
+    HabitatAcousticsConfiguration,
 )
 
 __all__ = [
@@ -42,4 +46,8 @@ __all__ = [
     "SensorType",
     "VisualSensor",
     "VisualSensorSpec",
+    "AudioSensorSpec",
+    "AudioSensor",
+    "HabitatAcousticsChannelLayout",
+    "HabitatAcousticsConfiguration",
 ]

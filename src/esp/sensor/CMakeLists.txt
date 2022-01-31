@@ -21,7 +21,7 @@ if(BUILD_WITH_CUDA)
 endif()
 
 if(BUILD_WITH_AUDIO)
-  include_directories(${DEPS_DIR}/audio/HabitatAcousticsPkg/headers)
+  set(ESP_BUILD_WITH_AUDIO ON)
   list(APPEND sensor_SOURCES AudioSensor.cpp AudioSensor.h)
 endif()
 
@@ -54,6 +54,7 @@ if(BUILD_WITH_CUDA)
 endif()
 
 if(BUILD_WITH_AUDIO)
-  target_link_directories(sensor PUBLIC "${DEPS_DIR}/audio/HabitatAcousticsPkg/libs")
-  target_link_libraries(sensor PUBLIC HabitatAcoustics)
+  include_directories(${DEPS_DIR}/audio/HabitatAcousticsPkg/headers)
+  find_library(HabitatAcoustics_LIBRARY HabitatAcoustics PATHS ${DEPS_DIR}/audio/HabitatAcousticsPkg/libs)
+  target_link_libraries(sensor PUBLIC ${HabitatAcoustics_LIBRARY})
 endif()

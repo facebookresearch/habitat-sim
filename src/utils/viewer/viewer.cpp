@@ -796,7 +796,7 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig, bool isOrtho) {
     // Set the audio sensor configs
     spec->acousticsConfig_.dumpWaveFiles = true;
     spec->acousticsConfig_.enableMaterials = false;
-    spec->acousticsConfig_.writeIrToFile = true;// todo sangarg : Figure out if we have a debug flag
+    spec->acousticsConfig_.writeIrToFile = true;
     // Set the output directory
     spec->outputDirectory_ = "/home/sangarg/AudioSimulation";
     // Set the output channel layout

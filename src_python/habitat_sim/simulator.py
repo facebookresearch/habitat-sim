@@ -575,6 +575,9 @@ class Sensor:
 
         self._spec = self._sensor_object.specification()
 
+        if self._spec.sensor_type == SensorType.AUDIO:
+            return
+
         if self._sim.renderer is not None:
             self._sim.renderer.bind_render_target(self._sensor_object)
 
@@ -642,72 +645,93 @@ class Sensor:
         )
 
     def draw_observation(self) -> None:
-        assert self._sim.renderer is not None
-        # see if the sensor is attached to a scene graph, otherwise it is invalid,
-        # and cannot make any observation
-        if not self._sensor_object.object:
-            raise habitat_sim.errors.InvalidAttachedObject(
-                "Sensor observation requested but sensor is invalid.\
-                 (has it been detached from a scene node?)"
-            )
-        self._sim.renderer.draw(self._sensor_object, self._sim)
+        if self._spec.sensor_type == SensorType.AUDIO:
+            # do nothing in draw observation, get_observation will be called after this
+            # run the simulation there
+            print("simulation.py: In audio draw observations")
+        else:
+            assert self._sim.renderer is not None
+            # see if the sensor is attached to a scene graph, otherwise it is invalid,
+            # and cannot make any observation
+            if not self._sensor_object.object:
+                raise habitat_sim.errors.InvalidAttachedObject(
+                    "Sensor observation requested but sensor is invalid.\
+                    (has it been detached from a scene node?)"
+                )
+            self._sim.renderer.draw(self._sensor_object, self._sim)
 
     def _draw_observation_async(self) -> None:
-        assert self._sim.renderer is not None
-        if (
-            self._spec.sensor_type == SensorType.SEMANTIC
-            and self._sim.get_active_scene_graph()
-            is not self._sim.get_active_semantic_scene_graph()
-        ):
-            raise RuntimeError(
-                "Async drawing doesn't support semantic rendering when there are multiple scene graphs"
-            )
-        # TODO: sync this path with renderer changes as above (render from sensor object)
-
-        # see if the sensor is attached to a scene graph, otherwise it is invalid,
-        # and cannot make any observation
-        if not self._sensor_object.object:
-            raise habitat_sim.errors.InvalidAttachedObject(
-                "Sensor observation requested but sensor is invalid.\
-                 (has it been detached from a scene node?)"
-            )
-
-        # get the correct scene graph based on application
-        if self._spec.sensor_type == SensorType.SEMANTIC:
-            if self._sim.semantic_scene is None:
+        if self._spec.sensor_type == SensorType.AUDIO:
+            # do nothing in draw observation, get_observation will be called after this
+            # run the simulation there
+            print("simulation.py: In audio _draw_observation_async")
+        else:
+            assert self._sim.renderer is not None
+            if (
+                self._spec.sensor_type == SensorType.SEMANTIC
+                and self._sim.get_active_scene_graph()
+                is not self._sim.get_active_semantic_scene_graph()
+            ):
                 raise RuntimeError(
-                    "SemanticSensor observation requested but no SemanticScene is loaded"
+                    "Async drawing doesn't support semantic rendering when there are multiple scene graphs"
                 )
-            scene = self._sim.get_active_semantic_scene_graph()
-        else:  # SensorType is DEPTH or any other type
-            scene = self._sim.get_active_scene_graph()
+            # TODO: sync this path with renderer changes as above (render from sensor object)
 
-        # now, connect the agent to the root node of the current scene graph
+            # see if the sensor is attached to a scene graph, otherwise it is invalid,
+            # and cannot make any observation
+            if not self._sensor_object.object:
+                raise habitat_sim.errors.InvalidAttachedObject(
+                    "Sensor observation requested but sensor is invalid.\
+                    (has it been detached from a scene node?)"
+                )
 
-        # sanity check is not needed on agent:
-        # because if a sensor is attached to a scene graph,
-        # it implies the agent is attached to the same scene graph
-        # (it assumes backend simulator will guarantee it.)
+            # get the correct scene graph based on application
+            if self._spec.sensor_type == SensorType.SEMANTIC:
+                if self._sim.semantic_scene is None:
+                    raise RuntimeError(
+                        "SemanticSensor observation requested but no SemanticScene is loaded"
+                    )
+                scene = self._sim.get_active_semantic_scene_graph()
+            else:  # SensorType is DEPTH or any other type
+                scene = self._sim.get_active_scene_graph()
 
-        agent_node = self._agent.scene_node
-        agent_node.parent = scene.get_root_node()
+            # now, connect the agent to the root node of the current scene graph
 
-        # get the correct scene graph based on application
-        if self._spec.sensor_type == SensorType.SEMANTIC:
-            scene = self._sim.get_active_semantic_scene_graph()
-        else:  # SensorType is DEPTH or any other type
-            scene = self._sim.get_active_scene_graph()
+            # sanity check is not needed on agent:
+            # because if a sensor is attached to a scene graph,
+            # it implies the agent is attached to the same scene graph
+            # (it assumes backend simulator will guarantee it.)
 
-        render_flags = habitat_sim.gfx.Camera.Flags.NONE
+            agent_node = self._agent.scene_node
+            agent_node.parent = scene.get_root_node()
 
-        if self._sim.frustum_culling:
-            render_flags |= habitat_sim.gfx.Camera.Flags.FRUSTUM_CULLING
+            # get the correct scene graph based on application
+            if self._spec.sensor_type == SensorType.SEMANTIC:
+                scene = self._sim.get_active_semantic_scene_graph()
+            else:  # SensorType is DEPTH or any other type
+                scene = self._sim.get_active_scene_graph()
 
-        self._sim.renderer.enqueue_async_draw_job(
-            self._sensor_object, scene, self.view, render_flags
-        )
+            render_flags = habitat_sim.gfx.Camera.Flags.NONE
+
+            if self._sim.frustum_culling:
+                render_flags |= habitat_sim.gfx.Camera.Flags.FRUSTUM_CULLING
+
+            self._sim.renderer.enqueue_async_draw_job(
+                self._sensor_object, scene, self.view, render_flags
+            )
 
     def get_observation(self) -> Union[ndarray, "Tensor"]:
+        if self._spec.sensor_type == SensorType.AUDIO:
+            audio_sensor = self._agent._sensors["audio_sensor"]
+            # tell the audio sensor about the agent location
+            rot = self._agent.state.rotation
+            audio_sensor.setAudioListenerTransform(self._agent.state.position, np.array([rot.w, rot.x, rot.y, rot.z]))
+            # run the simulation
+            audio_sensor.runSimulation(self._sim)
+            # todo sangarg : Add code to copy the IR and return it
+            print("simulation.py: ------- In audio get observations")
+            return
+
         assert self._sim.renderer is not None
         tgt = self._sensor_object.render_target
 
@@ -734,6 +758,17 @@ class Sensor:
         return self._noise_model(obs)
 
     def _get_observation_async(self) -> Union[ndarray, "Tensor"]:
+        if self._spec.sensor_type == SensorType.AUDIO:
+            audio_sensor = self._agent._sensors["audio_sensor"]
+            # tell the audio sensor about the agent location
+            rot = self._agent.state.rotation
+            audio_sensor.setAudioListenerTransform(self._agent.state.position, np.array([rot.w, rot.x, rot.y, rot.z]))
+            # run the simulation
+            audio_sensor.runSimulation(self._sim)
+
+            print("simulation.py: ------- In audio get observations")
+            return
+
         if self._spec.gpu2gpu_transfer:
             obs = self._buffer.flip(0)  # type: ignore[union-attr]
         else:

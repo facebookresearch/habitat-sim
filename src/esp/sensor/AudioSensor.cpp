@@ -41,6 +41,7 @@ AudioSensor::AudioSensor(scene::SceneNode& node, AudioSensorSpec::ptr spec)
 
   // If the output directory is not defined, use /home/AudioSimulation
   if (audioSensorSpec_->outputDirectory_.size() == 0) {
+      ESP_DEBUG() << logHeader_ << "output directory not provided, will use /home/AudioSimulation";
       audioSensorSpec_->outputDirectory_ = "/home/AudioSimulation";
   }
   ESP_DEBUG() << logHeader_ << "OutputDirectory : " << audioSensorSpec_->outputDirectory_;
@@ -161,8 +162,7 @@ bool AudioSensor::getObservation(sim::Simulator& sim, Observation& obs) {
 bool AudioSensor::getObservationSpace(ObservationSpace& obsSpace) {
   CORRADE_ASSERT(audioSimulator_, "getObservationSpace: audioSimulator_ should exist", false);
 
-  // todo sangarg : Check if we need a new observation space type, it is not being used currently
-  obsSpace.spaceType = ObservationSpaceType::None;
+  obsSpace.spaceType = ObservationSpaceType::Tensor;
 
   // shape is a 2 ints
   //    index 0 = channel count
@@ -214,64 +214,6 @@ void AudioSensor::loadSemanticMesh(sim::Simulator& sim) {
 
   const std::vector<std::shared_ptr<scene::SemanticCategory>>& categories = semanticScene->categories();
   const std::vector<std::shared_ptr<scene::SemanticObject>>& objects = semanticScene->objects();
-
-  // todo sangarg : Do we have a debug flag???
-  // Debug related stuff
-  {
-    // ESP_DEBUG() << "LOG --------------- Category size : " << categories.size();
-    // ESP_DEBUG() << "LOG --------------- Objects size : " << objects.size();
-    // ESP_DEBUG() << "LOG --------------- objectIds size : " << objectIds.size();
-    // ESP_DEBUG() << "LOG --------------- sceneMesh vbo size : " << sceneMesh_->vbo.size();
-    // ESP_DEBUG() << "LOG --------------- sceneMesh ibo size : " << sceneMesh_->ibo.size();
-    // ESP_DEBUG() << "LOG --------------- sceneMesh cbo size : " << sceneMesh_->cbo.size();
-
-    // std::unordered_map<int, std::string> uniqCategories;
-    // std::unordered_map<std::string, int> catToCatId;
-
-    // // Get uniq categories for debugging
-    // for (const auto category: categories) {
-    //   auto itr = uniqCategories.find(category->index());
-    //   if (itr != uniqCategories.end())
-    //   {
-    //     if (itr->second != category->name())
-    //       ESP_DEBUG() << "ERRROOOORRRR --------------- Incorrect category mapping, incoming mapping <"
-    //         << category->index() << ", " << category->name() << ">"
-    //         << "; existing <" << itr->first << ", " << itr->second << ">";
-    //   }
-    //   else {
-    //     uniqCategories.insert({category->index(), category->name()});
-    //     catToCatId.insert({ category->name(), category->index()});
-    //     ESP_DEBUG() << "LOG --------------- Category names : " <<  category->index() << ", " << category->name();
-    //   }
-    // }
-
-    // std::unordered_set<uint16_t> uniqObjIds;
-    // std::unordered_map<std::string, std::unordered_set<uint16_t>> categoryNameToObjecIds;
-    // for (auto objIds : objectIds)
-    // {
-    //   if (uniqObjIds.insert(objIds).second)
-    //   {
-    //     categoryNameToObjecIds[objects[objIds]->category()->name()].insert(objIds);
-    //   }
-    // }
-    // ESP_DEBUG() << "LOG --------------- Uniq ObjectId size : " << uniqObjIds.size();
-
-    // for (auto catToObjId: categoryNameToObjecIds)
-    // {
-    //   std::stringstream ss;
-    //   ss << "LOG -------------------- categoryName to ids : " << catToObjId.first << " -> ";
-    //   for (auto i : catToObjId.second)
-    //   {
-    //     ss << i << ", ";
-    //   }
-    //   ESP_DEBUG() << ss.str();
-
-    //   if (catToCatId.find(catToObjId.first) == catToCatId.end())
-    //   {
-    //     ESP_DEBUG() << "ERRRROOOORRRRRR ------------------- found cat name that was not seen earlier : " << catToObjId.first;
-    //   }
-    // }
-  } // Debug related stuff
 
   HabitatAcoustics::VertexData vertices;
 
@@ -360,10 +302,10 @@ void AudioSensor::loadSemanticMesh(sim::Simulator& sim) {
     totalIndicesLoaded += indices.indexCount;
   }
 
-  // todo sangarg : This could be an assert
   if (totalIndicesLoaded != sceneMesh_->ibo.size())
   {
     ESP_ERROR() << logHeader_ << "totalIndicesLoaded != sceneMesh_->ibo.size() : (" << totalIndicesLoaded << " != " << sceneMesh_->ibo.size() << ")";
+    CORRADE_ASSERT(false, "totalIndicesLoaded != sceneMesh_->ibo.size()", );
   }
 }
 
@@ -405,7 +347,6 @@ void AudioSensor::writeIRFile(const Observation& obs) {
     file.open(fileName);
 
     for (std::size_t sampleIndex = 0; sampleIndex < obs.buffer->shape[1]; ++sampleIndex) {
-      // todo sangarg: Check if this is correct
       file << sampleIndex << "\t" << *(float*)(obs.buffer->data + bufIndex) << std::endl;
       bufIndex += sizeof(float);
     }

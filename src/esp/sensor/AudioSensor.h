@@ -12,7 +12,7 @@
 #include "esp/assets/MeshData.h"
 #include "esp/scene/SemanticScene.h"
 
-// todo sangarg : Cleanup header include. Not sure why we need the full path
+// todo sangarg : Check if we can cleanup the path, find the correct cmake file for include_directory
 #include "audio/HabitatAcousticsPkg/headers/HabitatAcoustics.h"
 
 #ifndef ESP_SENSOR_AUDIOSENSOR_H_
