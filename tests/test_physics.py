@@ -1704,13 +1704,10 @@ def test_rigid_constraints():
         assert np.allclose(global_connect_a, global_connect_b, atol=0.08)
 
         # check that relative frames of objects near 0
-        assert (
-            mn.math.angle(
-                cube_obj.rotation,
-                robot.get_link_scene_node(constraint_settings_2.link_id_a).rotation,
-            )
-            < mn.Rad(0.1)
-        )
+        assert mn.math.angle(
+            cube_obj.rotation,
+            robot.get_link_scene_node(constraint_settings_2.link_id_a).rotation,
+        ) < mn.Rad(0.1)
 
         # counter rotate object frames pi/4
         local_target_frame_1 = mn.Quaternion.rotation(
@@ -1725,13 +1722,10 @@ def test_rigid_constraints():
 
         observations += simulate(sim, 4.0, produce_debug_video)
         # check frames align
-        angle_error = (
-            mn.math.angle(
-                cube_obj.rotation,
-                robot.get_link_scene_node(constraint_settings_2.link_id_a).rotation,
-            )
-            - mn.Rad(mn.math.pi / 4.0)
-        )
+        angle_error = mn.math.angle(
+            cube_obj.rotation,
+            robot.get_link_scene_node(constraint_settings_2.link_id_a).rotation,
+        ) - mn.Rad(mn.math.pi / 4.0)
         assert abs(float(angle_error)) < 0.05
 
         # remove cube and AO should fall
@@ -1778,13 +1772,10 @@ def test_rigid_constraints():
         assert np.allclose(global_connect_a, constraint_settings_2.pivot_b, atol=0.08)
 
         # check frames align
-        angle_error = (
-            mn.math.angle(
-                local_target_frame_2,
-                robot.get_link_scene_node(constraint_settings_2.link_id_a).rotation,
-            )
-            - mn.Rad(mn.math.pi / 4.0)
-        )
+        angle_error = mn.math.angle(
+            local_target_frame_2,
+            robot.get_link_scene_node(constraint_settings_2.link_id_a).rotation,
+        ) - mn.Rad(mn.math.pi / 4.0)
         assert abs(float(angle_error)) < 0.2
 
         # hang the object from its base link
