@@ -1,0 +1,8 @@
+
+networkx==2.5.1         # requirement for trimesh only. Once we migrate to magnum will not be required
+pyembree==0.1.6         # requirement for trimesh only. Once we migrate to magnum will not be required
+pygltflib==1.14.3       # this requirement is to accurately convert a glb to a gltf.  When magnum libs are used for this functionality this will not be required
+rtree==0.9.7            # requirement for trimesh only. Once we migrate to magnum will not be required
+scikit-image==0.17.2    # requirement for trimesh only. Once we migrate to magnum will not be required
+shapely==1.7,1          # requirement for trimesh only. Once we migrate to magnum will not be required
+trimesh==3.9.16         # no guarantee that any version of trimesh other than specified will work. trimesh seems to experience breaking changes regularly
