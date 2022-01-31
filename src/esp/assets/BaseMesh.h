@@ -50,7 +50,7 @@ enum SupportedMeshType {
    * Instance meshes loaded from sources including segmented object
    * identifier data (e.g. semantic data: chair, table, etc...). Sources include
    * .ply files and reconstructions of Matterport scans. Object is likely of
-   * type @ref GenericSemanticMeshData or Mp3dInstanceMeshData.
+   * type @ref GenericSemanticMeshData.
    */
   INSTANCE_MESH = 0,
 
@@ -153,17 +153,16 @@ class BaseMesh {
   std::string getColorAsString(Magnum::Color3ub color) const;
 
   /**
-   * @brief Build an array of colors found in the source mesh.
-   * Generally used for semantic processing/rendering.
-   * @param srcMeshData The source mesh data to read for the colors
+   * @brief Populate an array of colors of the correct type from the given
+   * @p srcColors. Generally used for semantic processing/rendering.
+   * @param srcColors The source colors
    * @param convertToSRGB Whether the source vertex colors from the @p
    * srcMeshData should be converted to SRGB
-   * @param [out] meshColors The per-vertex array of colors to be built.
-   * @return a properly configured array of colors found in the mesh
+   * @param [out] destColors The per-element array of colors to be built.
    */
-  void buildMeshColors(const Mn::Trade::MeshData& srcMeshData,
-                       bool convertToSRGB,
-                       Cr::Containers::Array<Mn::Color3ub>& meshColors) const;
+  void convertMeshColors(const Mn::Trade::MeshData& srcMeshData,
+                         bool convertToSRGB,
+                         Cr::Containers::Array<Mn::Color3ub>& destColors) const;
 
   /**
    * @brief Build semantic OBBs based on presence of semantic IDs on vertices.

@@ -24,24 +24,23 @@ bool BaseMesh::setMeshType(SupportedMeshType type) {
   return true;
 }
 
-void BaseMesh::buildMeshColors(
+void BaseMesh::convertMeshColors(
     const Mn::Trade::MeshData& srcMeshData,
     bool convertToSRGB,
     Cr::Containers::Array<Mn::Color3ub>& meshColors) const {
   /* Assuming colors are 8-bit RGB to avoid expanding them to float and then
      packing back */
-
+  auto colors = srcMeshData.colorsAsArray();
   if (convertToSRGB) {
-    auto colors = srcMeshData.colorsAsArray();
     for (std::size_t i = 0; i != colors.size(); ++i) {
       meshColors[i] = colors[i].rgb().toSrgb<Mn::UnsignedByte>();
     }
   } else {
-    Mn::Math::packInto(Cr::Containers::arrayCast<2, float>(
-                           stridedArrayView(srcMeshData.colorsAsArray()))
-                           .except({0, 1}),
-                       Cr::Containers::arrayCast<2, Mn::UnsignedByte>(
-                           stridedArrayView(meshColors)));
+    Mn::Math::packInto(
+        Cr::Containers::arrayCast<2, float>(stridedArrayView(colors))
+            .except({0, 1}),
+        Cr::Containers::arrayCast<2, Mn::UnsignedByte>(
+            stridedArrayView(meshColors)));
   }
 }  // BaseMesh::buildMeshColors
 
@@ -67,11 +66,12 @@ void BaseMesh::buildSemanticOBBs(
     const std::string& msgPrefix) const {
   // build per-SSD object vector of known semantic IDs
   std::size_t numSSDObjs = ssdObjs.size();
-  // no semantic ID 0
+  // no semantic ID 0 so add 1 to size
   std::vector<int> semanticIDToSSOBJidx(numSSDObjs + 1);
   for (int i = 0; i < numSSDObjs; ++i) {
     const auto& ssdObj = *ssdObjs[i];
     int semanticID = ssdObj.semanticID();
+    // should not happen unless semantic ids are not sequential
     if (semanticIDToSSOBJidx.size() <= semanticID) {
       semanticIDToSSOBJidx.resize(semanticID + 1);
     }
@@ -119,19 +119,16 @@ void BaseMesh::buildSemanticOBBs(
         msgPrefix, semanticID,
         getColorAsString(static_cast<Mn::Color3ub>(ssdObj.getColor())),
         ssdObj.id(), vertCounts[semanticID]);
-    std::string infoStr;
     if (vertCounts[semanticID] == 0) {
-      infoStr = Cr::Utility::formatString(
+      ESP_DEBUG() << Cr::Utility::formatString(
           "{}No verts have specified Semantic ID.", debugStr);
     } else {
       center = .5f * (vertMax[semanticID] + vertMin[semanticID]);
       dims = vertMax[semanticID] - vertMin[semanticID];
-      infoStr = Cr::Utility::formatString(
+      ESP_DEBUG() << Cr::Utility::formatString(
           "{}BB Center [{},{},{}] Dims [{},{},{}]", debugStr, center.x(),
           center.y(), center.z(), dims.x(), dims.y(), dims.z());
     }
-    ESP_DEBUG() << infoStr;
-
     ssdObj.setObb(center, dims);
   }
 

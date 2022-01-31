@@ -34,13 +34,14 @@ GenericSemanticMeshData::buildSemanticMeshData(
     bool convertToSRGB,
     const std::shared_ptr<scene::SemanticScene>& semanticScene) {
   // build text prefix used in log messages
-  const std::string msgPrefix =
+  const std::string dbgMsgPrefix =
       Cr::Utility::formatString("Parsing Semantic File {} :", semanticFilename);
 
   // Check for required colors.
-  ESP_CHECK(srcMeshData.hasAttribute(Mn::Trade::MeshAttribute::Color),
-            msgPrefix << "has no vertex colors defined, which are required for "
-                         "semantic meshes.");
+  ESP_CHECK(
+      srcMeshData.hasAttribute(Mn::Trade::MeshAttribute::Color),
+      dbgMsgPrefix << "has no vertex colors defined, which are required for "
+                      "semantic meshes.");
 
   /* Copy attributes to the vectors. Positions and indices can be copied
      directly using the convenience APIs as we store them in the full type.
@@ -73,7 +74,7 @@ GenericSemanticMeshData::buildSemanticMeshData(
   // initialize per-vertex color array
   Cr::Containers::Array<Mn::Color3ub> meshColors{Mn::NoInit, numVerts};
   // build color array from colors present in mesh
-  semanticData->buildMeshColors(srcMeshData, convertToSRGB, meshColors);
+  semanticData->convertMeshColors(srcMeshData, convertToSRGB, meshColors);
 
   Cr::Utility::copy(meshColors,
                     Cr::Containers::arrayCast<Mn::Color3ub>(
@@ -104,7 +105,7 @@ GenericSemanticMeshData::buildSemanticMeshData(
     ESP_CHECK(maxVal <= 65535, Cr::Utility::formatString(
                                    "{}Object IDs can't be stored into 16 bits "
                                    ": Max ID Value found in data : {}",
-                                   msgPrefix, maxVal));
+                                   dbgMsgPrefix, maxVal));
     colorMapToUse.assign(Mn::DebugTools::ColorMap::turbo().begin(),
                          Mn::DebugTools::ColorMap::turbo().end());
   } else {
@@ -242,22 +243,23 @@ GenericSemanticMeshData::buildSemanticMeshData(
       }  // for each vertex
       // FOR VERT-BASED OBB CALC
       // build semantic OBBs here
-      semanticData->buildSemanticOBBs(
-          semanticData->cpu_vbo_, semanticData->objectIds_, ssdObjs, msgPrefix);
+      semanticData->buildSemanticOBBs(semanticData->cpu_vbo_,
+                                      semanticData->objectIds_, ssdObjs,
+                                      dbgMsgPrefix);
 
       // colors found on vertices not found in semantic lexicon :
       if (nonSSDVertColorIDs.size() == 0) {
-        ESP_DEBUG() << msgPrefix
+        ESP_DEBUG() << dbgMsgPrefix
                     << "No unexpected colors found mapped to mesh verts.";
       } else {
         ESP_DEBUG()
-            << msgPrefix
+            << dbgMsgPrefix
             << Cr::Utility::formatString(
                    "{} unexpected/unknown colors found mapped to mesh verts.",
                    nonSSDVertColorIDs.size());
         for (const std::pair<const uint32_t, int>& elem : nonSSDVertColorIDs) {
           ESP_DEBUG()
-              << msgPrefix
+              << dbgMsgPrefix
               << Cr::Utility::formatString(
                      "\t\tColor {} | # verts {} | applied Semantic ID {}.",
                      semanticData->getColorAsString(

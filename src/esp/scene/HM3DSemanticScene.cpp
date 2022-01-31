@@ -27,7 +27,8 @@ bool SemanticScene::loadHM3DHouse(
   std::ifstream ifs = std::ifstream(houseFilename);
   std::string header;
   std::getline(ifs, header);
-  if (header != "HM3D Semantic Annotations") {
+
+  if (header.find("HM3D Semantic Annotations") == std::string::npos) {
     ESP_ERROR() << "Unsupported HM3D House format header" << header
                 << "in file name" << houseFilename;
     return false;

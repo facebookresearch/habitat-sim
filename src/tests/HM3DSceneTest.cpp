@@ -35,8 +35,8 @@ struct HM3DSceneTest : Cr::TestSuite::Tester {
     // change config to be using new scene
     auto cfg =
         esp::sim::SimulatorConfiguration{MM_->getSimulatorConfiguration()};
+    // scene should exist in scene dataset
     cfg.activeSceneName = scene;
-    cfg.sceneDatasetConfigFile = HM3DTestConfigLoc;
     // create simulator with new scene and loaded MM holding dataset info
     auto sim = Simulator::create_unique(cfg, MM_);
 
@@ -51,22 +51,26 @@ struct HM3DSceneTest : Cr::TestSuite::Tester {
 
   esp::logging::LoggingContext loggingContext;
 
-  // The MetadataMediator can exist independent of simulator
+  // The MetadataMediator can exist independently of simulator
   // and provides access to all managers for currently active scene dataset
+  // It loads all the necessary metadata for a dataset only once, speeding
+  // up asset load upon sim.reconfigure calls.
   std::shared_ptr<esp::metadata::MetadataMediator> MM_ = nullptr;
 };  // struct HM3DSceneTest
 
 const struct {
-  const char* name;
+  const char* sceneName;
 
   // index in HM3DTestScenes array for scene
   int testSceneIDX;
 
-} TestHM3DScenes[]{{"GLAQ4DNUx5U", 0}};
+} TestHM3DScenes[]{{"00861-GLAQ4DNUx5U", 0}};
 
 HM3DSceneTest::HM3DSceneTest() {
   // set up a default simulation config to initialize MM
   auto cfg = esp::sim::SimulatorConfiguration{};
+  // initialize with scene dataset name
+  cfg.sceneDatasetConfigFile = HM3DTestConfigLoc;
   // build metadata mediator and initialize with cfg, loading test dataset info
   MM_ = esp::metadata::MetadataMediator::create(cfg);
   addInstancedTests(
@@ -80,7 +84,7 @@ void HM3DSceneTest::testHM3DScene() {
     CORRADE_SKIP("HM3D dataset not found.");
   }
   auto&& testData = TestHM3DScenes[testCaseInstanceId()];
-  setTestCaseDescription(testData.name);
+  setTestCaseDescription(testData.sceneName);
   auto simulator = getSimulatorWithScene(HM3DTestScenes[testData.testSceneIDX]);
   CORRADE_COMPARE(0, 0);
 }
@@ -91,7 +95,7 @@ void HM3DSceneTest::testHM3DSemanticScene() {
     CORRADE_SKIP("HM3D dataset not found.");
   }
   auto&& testData = TestHM3DScenes[testCaseInstanceId()];
-  setTestCaseDescription(testData.name);
+  setTestCaseDescription(testData.sceneName);
   auto simulator = getSimulatorWithScene(HM3DTestScenes[testData.testSceneIDX]);
   CORRADE_COMPARE(0, 0);
 }
