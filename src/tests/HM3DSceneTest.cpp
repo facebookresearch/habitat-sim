@@ -86,12 +86,6 @@ void HM3DSceneTest::testHM3DScene() {
   auto&& testData = TestHM3DScenes[testCaseInstanceId()];
   setTestCaseDescription(testData.sceneName);
   auto simulator = getSimulatorWithScene(HM3DTestScenes[testData.testSceneIDX]);
-  auto colorList = simulator->getSemanticSceneColormap();
-  // ESP_DEBUG() << "Size of color list for scene" << testData.sceneName << ":"
-  //             << colorList.size();
-  // for (const auto& colorVec : colorList) {
-  //   ESP_DEBUG() << "\t" << static_cast<Mn::Color3ub>(colorVec);
-  // }
   CORRADE_COMPARE(0, 0);
 }
 
@@ -103,7 +97,26 @@ void HM3DSceneTest::testHM3DSemanticScene() {
   auto&& testData = TestHM3DScenes[testCaseInstanceId()];
   setTestCaseDescription(testData.sceneName);
   auto simulator = getSimulatorWithScene(HM3DTestScenes[testData.testSceneIDX]);
-  CORRADE_COMPARE(0, 0);
+
+  // semantic color list
+  auto colorList = simulator->getSemanticSceneColormap();
+  CORRADE_VERIFY(colorList.size() > 0);
+  // semantic scene
+  auto semanticScene = simulator->getSemanticScene();
+  // unknown colors in colorlist will not have semantic objects in semantic
+  // scene
+  CORRADE_VERIFY(semanticScene);
+  auto semanticObjects = semanticScene->objects();
+  // verify there are at least as many colors defined as there are
+  // semanticObjects, plus one more for colorList's idx 0.
+  CORRADE_VERIFY(semanticObjects.size() < colorList.size());
+  // verify all colors in colormap correspond to expected colors in semantic
+  // scene descriptor objects
+  for (int i = 0; i < semanticObjects.size(); ++i) {
+    auto ssdObj = semanticObjects[i];
+    int semanticID = ssdObj->semanticID();
+    CORRADE_COMPARE(colorList[semanticID], ssdObj->getColor());
+  }
 }
 
 }  // namespace
