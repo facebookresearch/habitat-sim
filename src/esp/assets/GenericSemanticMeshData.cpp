@@ -166,18 +166,19 @@ GenericSemanticMeshData::buildSemanticMeshData(
         maxRegion = Mn::Math::max(regionIDX, maxRegion);
       }
       // largest possible known semanticID will be size of colorMapToUse at this
-      // point.  If unknown/unmapped colors are present in mesh, colorMapToUse
-      // will grow to hold them in subsequent step.
-      int maxSemanticID = colorMapToUse.size();
+      // point -1 due to idx 0 not being a valid map.  If unknown/unmapped
+      // colors are present in mesh, colorMapToUse will grow to hold them in
+      // subsequent step.
+      // 1st semantic ID for colors not found in SSD objects ==> 1 more than the
+      // current highest id in the colormap
+      std::size_t nonSSDObjID = colorMapToUse.size();
+
       // increment maxRegion to use largest value as unknown region for objects
       // whose colors are not mapped in given ssd data.
       ++maxRegion;
 
       // (re)build mesh objectIDs vector (objectID per vertex) based on
       // per vertex colors mapped
-
-      // 1st semantic ID for colors not found in SSD objects
-      std::size_t nonSSDObjID = maxSemanticID + 1;
 
       // map regionIDs to affected verts using semantic color provided in
       // SemanticScene, as specified in SSD file.
@@ -219,6 +220,9 @@ GenericSemanticMeshData::buildSemanticMeshData(
           auto nonSSDClrRes =
               nonSSDVertColorIDs.insert({meshColorInt, nonSSDObjID});
           if (nonSSDClrRes.second) {
+            ESP_DEBUG() << dbgMsgPrefix << "Inserted Unknown Color" << meshColor
+                        << "in map w/ nonSSDObjID ="
+                        << nonSSDClrRes.first->second;
             // inserted, so increment nonSSDObjID
             ++nonSSDObjID;
             nonSSDVertColorCounts.insert({meshColorInt, 1});
@@ -246,7 +250,6 @@ GenericSemanticMeshData::buildSemanticMeshData(
       semanticData->buildSemanticOBBs(semanticData->cpu_vbo_,
                                       semanticData->objectIds_, ssdObjs,
                                       dbgMsgPrefix);
-
       // colors found on vertices not found in semantic lexicon :
       if (nonSSDVertColorIDs.size() == 0) {
         ESP_DEBUG() << dbgMsgPrefix

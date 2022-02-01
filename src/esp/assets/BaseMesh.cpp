@@ -95,7 +95,7 @@ void BaseMesh::buildSemanticOBBs(
     // semantic ID on vertex - valid values are 1->semanticIDToSSOBJidx.size().
     // Invalid/unknown semantic ids are > semanticIDToSSOBJidx.size()
     const auto semanticID = vertSemanticIDs[vertIdx];
-    if ((semanticID > 0) && (semanticID <= semanticIDToSSOBJidx.size())) {
+    if ((semanticID > 0) && (semanticID < semanticIDToSSOBJidx.size())) {
       const auto vert = vertices[vertIdx];
       // FOR VERT-BASED OBB CALC
       // only support bbs for known colors that map to semantic objects
@@ -115,7 +115,8 @@ void BaseMesh::buildSemanticOBBs(
     esp::vec3f dims{};
 
     const std::string debugStr = Cr::Utility::formatString(
-        "{}Semantic ID : {} : color : {} tag : {} present in {} verts | ",
+        "{} Semantic ID : {} : color : {} tag : {} present in {} "
+        "verts | ",
         msgPrefix, semanticID,
         getColorAsString(static_cast<Mn::Color3ub>(ssdObj.getColor())),
         ssdObj.id(), vertCounts[semanticID]);
@@ -131,7 +132,6 @@ void BaseMesh::buildSemanticOBBs(
     }
     ssdObj.setObb(center, dims);
   }
-
 }  // BaseMesh::buildSemanticOBBs
 
 }  // namespace assets

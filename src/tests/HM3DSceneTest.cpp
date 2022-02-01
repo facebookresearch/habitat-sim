@@ -86,6 +86,12 @@ void HM3DSceneTest::testHM3DScene() {
   auto&& testData = TestHM3DScenes[testCaseInstanceId()];
   setTestCaseDescription(testData.sceneName);
   auto simulator = getSimulatorWithScene(HM3DTestScenes[testData.testSceneIDX]);
+  auto colorList = simulator->getSemanticSceneColormap();
+  // ESP_DEBUG() << "Size of color list for scene" << testData.sceneName << ":"
+  //             << colorList.size();
+  // for (const auto& colorVec : colorList) {
+  //   ESP_DEBUG() << "\t" << static_cast<Mn::Color3ub>(colorVec);
+  // }
   CORRADE_COMPARE(0, 0);
 }
 
