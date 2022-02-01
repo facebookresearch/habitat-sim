@@ -184,7 +184,6 @@ class ResourceManager {
    */
   Cr::Containers::ArrayView<const Mn::Vector3ub> getSemanticSceneColormap()
       const {
-    // return Magnum::DebugTools::ColorMap::plasma();
     return semanticColorMapBeingUsed_;
   }
 
