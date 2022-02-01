@@ -286,7 +286,7 @@ bool SemanticScene::buildMp3dHouse(std::ifstream& ifs,
       }
     }
   }
-
+  scene.hasVertColors_ = true;
   return true;
 
 }  // SemanticScene::buildMp3dHouse
