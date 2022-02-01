@@ -79,8 +79,9 @@ bool Mp3dInstanceMeshData::loadMp3dPLY(const std::string& plyFile) {
   cpu_cbo_.reserve(nVertex);
   cpu_vbo_.clear();
   cpu_vbo_.reserve(nVertex);
-  cpu_ibo_.clear();
-  cpu_ibo_.reserve(nFace);
+  // per-face vert idxs
+  perFaceIdxs_.clear();
+  perFaceIdxs_.reserve(nFace);
 
   for (int i = 0; i < nVertex; ++i) {
     vec3f position;
@@ -109,23 +110,11 @@ bool Mp3dInstanceMeshData::loadMp3dPLY(const std::string& plyFile) {
     ifs.read(reinterpret_cast<char*>(&materialId), sizeof(materialId));
     ifs.read(reinterpret_cast<char*>(&segmentId), sizeof(segmentId));
     ifs.read(reinterpret_cast<char*>(&categoryId), sizeof(categoryId));
-    cpu_ibo_.emplace_back(indices);
+    perFaceIdxs_.emplace_back(indices);
     materialIds_.emplace_back(materialId);
     segmentIds_.emplace_back(segmentId);
     categoryIds_.emplace_back(categoryId);
   }
-
-  // Construct vertices for meshData
-  // Store indices, facd_ids in Magnum MeshData3D format such that
-  // later they can be accessed.
-  // Note that normal and texture data are not stored
-  collisionMeshData_.primitive = Magnum::MeshPrimitive::Triangles;
-  collisionMeshData_.positions =
-      Corrade::Containers::arrayCast<Magnum::Vector3>(
-          Corrade::Containers::arrayView(cpu_vbo_.data(), cpu_vbo_.size()));
-  collisionMeshData_.indices =
-      Corrade::Containers::arrayCast<Magnum::UnsignedInt>(
-          Corrade::Containers::arrayView(cpu_ibo_.data(), cpu_ibo_.size()));
 
   return true;
 }
@@ -134,7 +123,7 @@ bool Mp3dInstanceMeshData::saveSemMeshPLY(
     const std::string& plyFile,
     const std::unordered_map<int, int>& segmentIdToObjectIdMap) {
   const int nVertex = cpu_vbo_.size();
-  const int nFace = cpu_ibo_.size();
+  const int nFace = perFaceIdxs_.size();
 
   std::ofstream f(plyFile, std::ios::out | std::ios::binary);
   f << "ply" << std::endl;
@@ -158,9 +147,9 @@ bool Mp3dInstanceMeshData::saveSemMeshPLY(
     f.write(reinterpret_cast<const char*>(rgb.data()), 3 * sizeof(uint8_t));
   }
 
-  for (int iFace = 0; iFace < cpu_ibo_.size(); ++iFace) {
+  for (int iFace = 0; iFace < perFaceIdxs_.size(); ++iFace) {
     const uint8_t nIndices = 3;
-    const vec3ui& indices = cpu_ibo_[iFace];
+    const vec3ui& indices = perFaceIdxs_[iFace];
     // The materialId corresponds to the segmentId from the .house file
     const int32_t segmentId = materialIds_[iFace];
     int32_t objectId = ID_UNDEFINED;

@@ -1,4 +1,4 @@
-set(Datatool_SOURCES Datatool.cpp SceneLoader.cpp)
+set(Datatool_SOURCES Datatool.cpp SceneLoader.cpp Mp3dInstanceMeshData.cpp)
 
 add_executable(Datatool ${Datatool_SOURCES})
 set(DEPS_DIR "${CMAKE_CURRENT_LIST_DIR}/../../deps")

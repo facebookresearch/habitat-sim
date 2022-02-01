@@ -2,8 +2,8 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#ifndef ESP_ASSETS_MP3DINSTANCEDATA_H_
-#define ESP_ASSETS_MP3DINSTANCEDATA_H_
+#ifndef ESP_UTILS_DATATOOL_MP3DINSTANCEDATA_H_
+#define ESP_UTILS_DATATOOL_MP3DINSTANCEDATA_H_
 
 #include <Magnum/GL/Buffer.h>
 #include <Magnum/GL/Mesh.h>
@@ -12,8 +12,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include "BaseMesh.h"
-#include "GenericSemanticMeshData.h"
 #include "esp/core/Esp.h"
 
 namespace esp {
@@ -23,11 +21,10 @@ namespace assets {
  * MP3D object instance segmented mesh
  * Holds a vbo where each vertex is (x, y, z, objectId)
  */
-class Mp3dInstanceMeshData : public GenericSemanticMeshData {
+class Mp3dInstanceMeshData {
  public:
-  Mp3dInstanceMeshData()
-      : GenericSemanticMeshData(SupportedMeshType::INSTANCE_MESH) {}
-  ~Mp3dInstanceMeshData() override = default;
+  Mp3dInstanceMeshData() {}
+  ~Mp3dInstanceMeshData() = default;
 
   //! Loads an MP3D house segmentations PLY file
   bool loadMp3dPLY(const std::string& plyFile);
@@ -38,7 +35,9 @@ class Mp3dInstanceMeshData : public GenericSemanticMeshData {
       const std::unordered_map<int, int>& segmentIdToObjectIdMap);
 
  protected:
-  std::vector<vec3ui> cpu_ibo_;
+  std::vector<vec3f> cpu_vbo_;
+  std::vector<vec3uc> cpu_cbo_;
+  std::vector<vec3ui> perFaceIdxs_;
   std::vector<int> materialIds_;
   std::vector<int> segmentIds_;
   std::vector<int> categoryIds_;
@@ -47,4 +46,4 @@ class Mp3dInstanceMeshData : public GenericSemanticMeshData {
 }  // namespace assets
 }  // namespace esp
 
-#endif  // ESP_ASSETS_MP3DINSTANCEDATA_H_
+#endif  // ESP_UTILS_DATATOOL_MP3DINSTANCEDATA_H_
