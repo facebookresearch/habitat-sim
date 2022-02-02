@@ -129,7 +129,7 @@ commands:
                 ~/miniconda.sh -b -p $HOME/miniconda
                 rm ~/miniconda.sh
                 export PATH=$HOME/miniconda/bin:$PATH
-                conda create -y -n habitat python=3.6
+                conda create -y -n habitat python=3.7
                 . activate habitat
                 conda install -q -y -c conda-forge ninja numpy pytest pytest-cov=3.0 ccache hypothesis=6.29.3
                 pip install pytest-sugar pytest-xdist pytest-benchmark
@@ -198,7 +198,7 @@ commands:
 jobs:
   python_lint:
     docker:
-      - image: cimg/python:3.6
+      - image: cimg/python:3.7
     steps:
       - checkout
       - run:
@@ -265,7 +265,7 @@ jobs:
 
   pre-commit:
     docker:
-      - image: cimg/python:3.6
+      - image: cimg/python:3.7
     working_directory: ~/repo/
 
     steps:
