@@ -77,6 +77,11 @@ class AudioSensor : public Sensor {
    * */
   void runSimulation(sim::Simulator& sim);
 
+  /**
+   * @brief Return the last impulse response.
+   * */
+  std::vector<std::vector<float>> getIR();
+
  // Sensor class overrides
  public:
   bool getObservation(sim::Simulator& sim, Observation& obs) override;
@@ -126,6 +131,8 @@ private:
   bool newSource_ = false;
 
   const std::string logHeader_ = "[Audio] ";
+
+  std::vector<std::vector<float>> impulseResponse_;
 
  public:
   ESP_SMART_POINTERS(AudioSensor)

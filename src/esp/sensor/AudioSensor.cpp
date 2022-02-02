@@ -50,10 +50,12 @@ AudioSensor::AudioSensor(scene::SceneNode& node, AudioSensorSpec::ptr spec)
 AudioSensor::~AudioSensor() {
   ESP_DEBUG() << logHeader_ << "Destroying the audio sensor";
   audioSimulator_ = nullptr;
+  impulseResponse_.clear();
 }
 
 void AudioSensor::reset() {
   audioSimulator_ = nullptr;
+  impulseResponse_.clear();
 }
 
 void AudioSensor::setAudioSourceTransform(const vec3f& sourcePos) {
@@ -122,6 +124,28 @@ void AudioSensor::runSimulation(sim::Simulator& sim) {
   const std::string simFolder = getSimulationFolder();
   ESP_DEBUG() << "Running simulation, folder : " << simFolder;
   audioSimulator_->RunSimulation(simFolder);
+
+  // Each time simulation is run, clear the impulse response
+  impulseResponse_.clear();
+}
+
+std::vector<std::vector<float>> AudioSensor::getIR() {
+
+  if (impulseResponse_.size() == 0) {
+    ObservationSpace obsSpace;
+    getObservationSpace(obsSpace);
+
+    impulseResponse_.resize(obsSpace.shape[0], std::vector<float>(obsSpace.shape[1], 0.0));
+
+    for (std::size_t channelIndex = 0; channelIndex < obsSpace.shape[0]; ++channelIndex) {
+        const float* ir = audioSimulator_->GetImpulseResponseForChannel(channelIndex);
+        for (std::size_t sampleIndex = 0; sampleIndex < obsSpace.shape[1]; ++sampleIndex) {
+          impulseResponse_[channelIndex][sampleIndex] = ir[sampleIndex];
+        }
+    }
+  }
+
+  return impulseResponse_;
 }
 
 bool AudioSensor::getObservation(sim::Simulator& sim, Observation& obs) {
@@ -296,8 +320,7 @@ void AudioSensor::loadSemanticMesh(sim::Simulator& sim) {
     // Send all indices for this particular category
     audioSimulator_->LoadMeshIndices(
       indices,
-      catToIndices.first,
-      lastUpdate);
+      catToIndices.first);
 
     totalIndicesLoaded += indices.indexCount;
   }
@@ -307,6 +330,8 @@ void AudioSensor::loadSemanticMesh(sim::Simulator& sim) {
     ESP_ERROR() << logHeader_ << "totalIndicesLoaded != sceneMesh_->ibo.size() : (" << totalIndicesLoaded << " != " << sceneMesh_->ibo.size() << ")";
     CORRADE_ASSERT(false, "totalIndicesLoaded != sceneMesh_->ibo.size()", );
   }
+
+  audioSimulator_->UploadMesh();
 }
 
 void AudioSensor::loadMesh(sim::Simulator& sim) {

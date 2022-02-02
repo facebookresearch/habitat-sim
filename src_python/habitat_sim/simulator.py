@@ -37,6 +37,7 @@ from habitat_sim.sensors.noise_models import make_sensor_noise_model
 from habitat_sim.sim import SimulatorBackend, SimulatorConfiguration
 from habitat_sim.utils.common import quat_from_angle_axis
 
+
 # TODO maybe clean up types with TypeVars
 ObservationDict = Dict[str, Union[bool, np.ndarray, "Tensor"]]
 
@@ -722,15 +723,15 @@ class Sensor:
 
     def get_observation(self) -> Union[ndarray, "Tensor"]:
         if self._spec.sensor_type == SensorType.AUDIO:
+            print("simulation.py: ------- In audio get observations")
             audio_sensor = self._agent._sensors["audio_sensor"]
             # tell the audio sensor about the agent location
             rot = self._agent.state.rotation
             audio_sensor.setAudioListenerTransform(self._agent.state.position, np.array([rot.w, rot.x, rot.y, rot.z]))
             # run the simulation
             audio_sensor.runSimulation(self._sim)
-            # todo sangarg : Add code to copy the IR and return it
-            print("simulation.py: ------- In audio get observations")
-            return
+            obs = audio_sensor.getIR()
+            return obs
 
         assert self._sim.renderer is not None
         tgt = self._sensor_object.render_target
@@ -765,9 +766,8 @@ class Sensor:
             audio_sensor.setAudioListenerTransform(self._agent.state.position, np.array([rot.w, rot.x, rot.y, rot.z]))
             # run the simulation
             audio_sensor.runSimulation(self._sim)
-
-            print("simulation.py: ------- In audio get observations")
-            return
+            obs = audio_sensor.getIR()
+            return obs
 
         if self._spec.gpu2gpu_transfer:
             obs = self._buffer.flip(0)  # type: ignore[union-attr]

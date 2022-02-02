@@ -24,7 +24,7 @@ def main():
         "data/scene_datasets/mp3d_example/17DRP5sb8fy/17DRP5sb8fy.glb"
     )
     backend_cfg.scene_dataset_config_file = ("data/scene_datasets/mp3d_example/17DRP5sb8fy/scene_dataset_config.json")
-    backend_cfg.enable_physics = True
+    backend_cfg.enable_physics = False
 
     agent_config = habitat_sim.AgentConfiguration()
 
@@ -46,7 +46,7 @@ def main():
     # create the Audio sensor specs
     audio_sensor_spec = habitat_sim.AudioSensorSpec()
     audio_sensor_spec.uuid = "audio_sensor"
-    audio_sensor_spec.outputFolderPath = "/home/sangarg/AudioSimulation"
+    audio_sensor_spec.outputDirectory = "/home/sangarg/AudioSimulation"
     audio_sensor_spec.acousticsConfig = acoustics_config
     audio_sensor_spec.channelLayout = channel_layout
 
@@ -64,20 +64,10 @@ def main():
         print(i)
         print("Start Time : ")
         printTime()
-        # p = audio_sensor_spec.outputFolderPath + str(i) + "/ir";
         obs = sim.get_sensor_observations()["audio_sensor"]
-        print (obs)
-        # # get the simulation results
-        # channelCount = audio_sensor.getChannelCount()
-        # sampleCount = audio_sensor.getSampleCount()
 
-        # for channelIndex in range (0, channelCount):
-        #     filePath = p + str(channelIndex) + ".txt"
-        #     f = open(filePath, "w")
-        #     print("Writing file : ", filePath)
-        #     for sampleIndex in range (0, sampleCount):
-        #         f.write(str(sampleIndex) + "\t" + str(audio_sensor.getImpulseResponse(channelIndex, sampleIndex)) + "\n")
-        #     f.close()
+        # print the audio observations
+        print (obs)
 
         print("End Time : ")
         printTime()
