@@ -5,7 +5,7 @@ default_language_version:
 
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.1.0
+    rev: v4.0.1
     hooks:
     -   id: trailing-whitespace
     -   id: check-added-large-files
@@ -21,7 +21,7 @@ repos:
     -   id: check-toml
     -   id: check-xml
     -   id: check-yaml
-        exclude: ^conda-build/.*/meta.yaml
+        exclude: ^conda-build/habitat-sim/meta.yaml
     -   id: debug-statements
     -   id: mixed-line-ending
         args: ['--fix=lf']
@@ -29,36 +29,30 @@ repos:
 
     # Changes tabs to spaces
 -   repo: https://github.com/Lucas-C/pre-commit-hooks
-    rev: v1.1.11
+    rev: v1.1.10
     hooks:
     -   id: remove-tabs
         exclude: "(^(.git|setup.cfg))|(.(json|scn)$)"
 
 -   repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
-    rev: v2.2.0
+    rev: v2.1.0
     hooks:
     -   id: pretty-format-ini
         args: [--autofix]
     -   id: pretty-format-toml
         args: [--autofix]
 
--   repo: https://github.com/pre-commit/pygrep-hooks
-    rev: v1.9.0  # Use the ref you want to point at
-    hooks:
-    -   id: python-check-blanket-noqa
-    -   id: python-check-blanket-type-ignore
-
 -   repo: https://github.com/timothycrosley/isort
-    rev: 5.10.1
+    rev: 5.9.3
     hooks:
     -   id: isort
         exclude: docs/
 
 -   repo: https://github.com/ambv/black
-    rev: 22.1.0
+    rev: 21.7b0
     hooks:
-    -   id: black
-        exclude: ^examples/tutorials/(nb_python|colabs)
+    - id: black
+      exclude: ^examples/tutorials/(nb_python|colabs)
 
 -   repo: https://github.com/myint/autoflake
     rev: v1.4
@@ -68,25 +62,19 @@ repos:
         exclude: docs/
 
 -   repo: https://github.com/pycqa/flake8
-    rev: 4.0.1
+    rev: 3.9.2
     hooks:
     -   id: flake8
         exclude: docs/
-        additional_dependencies: &flake8_dependencies
-        - flake8-bugbear==22.1.11
+        additional_dependencies:
+        - flake8-bugbear==21.4.3
         - flake8-builtins==1.5.3
-        - flake8-comprehensions==3.8.0
-        - flake8-return==1.1.3
-        - flake8-simplify==0.15.1
-
--   repo: https://github.com/asottile/yesqa
-    rev: v1.3.0
-    hooks:
-    -   id: yesqa
-        additional_dependencies: *flake8_dependencies
+        - flake8-comprehensions==3.4.0
+        - flake8-return==1.1.2
+        - flake8-simplify==0.14.1
 
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: 'v0.931'
+    rev: 'v0.910'
     hooks:
     -   id: mypy
         pass_filenames: false
@@ -94,10 +82,9 @@ repos:
         - attrs
 
 -   repo: https://github.com/seddonym/import-linter
-    rev: v1.2.6
+    rev: v1.2.4
     hooks:
     -   id: import-linter
-        entry: env PYTHONPATH=src_python lint-imports
 
 -   repo: https://github.com/kynan/nbstripout
     rev: 0.5.0
@@ -105,7 +92,7 @@ repos:
     -   id: nbstripout
 
 -   repo: https://github.com/mwouts/jupytext
-    rev: v1.13.6
+    rev: v1.11.4
     hooks:
     -   id: jupytext
         files: '^examples/tutorials/(colabs|nb_python)/(.*\.py|.*\.ipynb)$'
@@ -115,13 +102,15 @@ repos:
             - black
             - isort
 
--   repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: v13.0.0
+-   repo: local
     hooks:
-    -   id: clang-format
-        types_or: [c++, c, c#, cuda] # also run on CUDA
-        additional_dependencies:
-            - pip>=21
+    - id: clang-format
+      name: Run clang-format
+      exclude: src/deps
+      entry: clang-format -i -style=file
+      types: [text]
+      files: '.*\.(cpp|h|hpp|cu|cuh)$'
+      language: system
 
 -   repo: https://github.com/cheshirekow/cmake-format-precommit
     rev: v0.6.13
@@ -130,7 +119,7 @@ repos:
         exclude: (^src/(cmake/Find|deps)|configure\.h\.cmake$)
 
 -   repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v8.8.0
+    rev: v7.32.0
     hooks:
     -   id: eslint
         args: [--fix, --ext .html,.js]
@@ -142,11 +131,11 @@ repos:
         - prettier@1.18.2
 
 -   repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.8.0.3
+    rev: v0.7.2.1
     hooks:
     -   id: shellcheck
 
 -   repo: https://github.com/AleksaC/circleci-cli-py
-    rev: v0.1.16535
+    rev: v0.1.15824
     hooks:
     -   id: circle-ci-validator

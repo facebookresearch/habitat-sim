@@ -222,7 +222,7 @@ jobs:
                 flake8-simplify \
                 hypothesis==6.29.3 \
                 isort \
-                mypy==v0.910 \
+                mypy \
                 numpy \
                 pytest \
                 sphinx \
