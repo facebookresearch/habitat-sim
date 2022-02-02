@@ -14,8 +14,10 @@ class FetchRobot(MobileManipulator):
             arm_joints=list(range(15, 22)),
             gripper_joints=[23, 24],
             wheel_joints=[2, 4],
-            arm_init_params=[-0.45, -1.08, 0.1, 0.935, -0.001, 1.573, 0.005],
-            gripper_init_params=[0.00, 0.00],
+            arm_init_params=np.array(
+                [-0.45, -1.08, 0.1, 0.935, -0.001, 1.573, 0.005], dtype=np.float32
+            ),
+            gripper_init_params=np.array([0.00, 0.00], dtype=np.float32),
             ee_offset=mn.Vector3(0.08, 0, 0),
             ee_link=22,
             ee_constraint=np.array([[0.4, 1.2], [-0.7, 0.7], [0.25, 1.5]]),
@@ -38,8 +40,8 @@ class FetchRobot(MobileManipulator):
                     attached_link_id=-1,
                 ),
             },
-            gripper_closed_state=[0.0, 0.0],
-            gripper_open_state=[0.04, 0.04],
+            gripper_closed_state=np.array([0.0, 0.0], dtype=np.float32),
+            gripper_open_state=np.array([0.04, 0.04], dtype=np.float32),
             gripper_state_eps=0.001,
             arm_mtr_pos_gain=0.3,
             arm_mtr_vel_gain=0.3,

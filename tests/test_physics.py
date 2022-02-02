@@ -279,7 +279,7 @@ def test_dynamics():
         obj_template_mgr = sim.get_object_template_manager()
         obj_template_mgr.load_configs("data/objects/example_objects/", True)
         # make the simulation deterministic (C++ seed is set in reconfigure)
-        np.random.seed(cfg_settings["seed"])
+        np.random.seed(cfg_settings["seed"])  # type: ignore[arg-type]
         assert obj_template_mgr.get_num_templates() > 0
         # get the rigid object manager, which provides direct
         # access to objects
@@ -1434,7 +1434,7 @@ def test_articulated_object_joint_motors(test_asset):
             from habitat_sim.utils import viz_utils as vut
 
             vut.make_video(
-                observations,
+                observations,  # type: ignore[arg-type]
                 "color_sensor",
                 "color",
                 "test_articulated_object_joint_motors__" + test_asset.split("/")[-1],

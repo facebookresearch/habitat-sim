@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, Set, Tuple
 import attr
 import magnum as mn
 import numpy as np
+import numpy.typing as npt
 
 from habitat_sim.physics import JointMotorSettings
 from habitat_sim.robots.robot_interface import RobotInterface
@@ -74,8 +75,8 @@ class MobileManipulatorParams:
     gripper_joints: List[int]
     wheel_joints: Optional[List[int]]
 
-    arm_init_params: Optional[List[float]]
-    gripper_init_params: Optional[List[float]]
+    arm_init_params: Optional[npt.NDArray[np.float32]]
+    gripper_init_params: Optional[npt.NDArray[np.float32]]
 
     ee_offset: mn.Vector3
     ee_link: int
@@ -83,8 +84,8 @@ class MobileManipulatorParams:
 
     cameras: Dict[str, RobotCameraParams]
 
-    gripper_closed_state: List[float]
-    gripper_open_state: List[float]
+    gripper_closed_state: npt.NDArray[np.float32]
+    gripper_open_state: npt.NDArray[np.float32]
     gripper_state_eps: float
 
     arm_mtr_pos_gain: float
@@ -118,7 +119,7 @@ class MobileManipulator(RobotInterface):
         super().__init__()
         self.urdf_path = urdf_path
         self.params = params
-        self._fix_joint_values: Optional[List[float]] = None
+        self._fix_joint_values: Optional[npt.NDArray[np.float32]] = None
 
         self._sim = sim
         self._limit_robo_joints = limit_robo_joints
@@ -142,13 +143,13 @@ class MobileManipulator(RobotInterface):
 
         # defaults for optional params
         if self.params.gripper_init_params is None:
-            self.params.gripper_init_params = [
-                0 for i in range(len(self.params.gripper_joints))
-            ]
+            self.params.gripper_init_params = np.zeros(
+                len(self.params.gripper_joints), dtype=np.float32
+            )
         if self.params.arm_init_params is None:
-            self.params.arm_init_params = [
-                0 for i in range(len(self.params.arm_joints))
-            ]
+            self.params.arm_init_params = np.zeros(
+                len(self.params.arm_joints), dtype=np.float32
+            )
 
     def reconfigure(self) -> None:
         """Instantiates the robot the scene. Loads the URDF, sets initial state of parameters, joints, motors, etc..."""
@@ -256,8 +257,12 @@ class MobileManipulator(RobotInterface):
             map(lambda x: self.joint_pos_indices[x], self.params.arm_joints)
         )
 
-        lower_lims = [self.joint_limits[0][i] for i in arm_pos_indices]
-        upper_lims = [self.joint_limits[1][i] for i in arm_pos_indices]
+        lower_lims = np.array(
+            [self.joint_limits[0][i] for i in arm_pos_indices], dtype=np.float32
+        )
+        upper_lims = np.array(
+            [self.joint_limits[1][i] for i in arm_pos_indices], dtype=np.float32
+        )
         return lower_lims, upper_lims
 
     @property
@@ -301,10 +306,13 @@ class MobileManipulator(RobotInterface):
     @property
     def gripper_joint_pos(self) -> np.ndarray:
         """Get the current gripper joint positions."""
-        gripper_pos_indices = list(
-            map(lambda x: self.joint_pos_indices[x], self.params.gripper_joints)
+        gripper_pos_indices = map(
+            lambda x: self.joint_pos_indices[x], self.params.gripper_joints
         )
-        return [self.sim_obj.joint_positions[i] for i in gripper_pos_indices]
+        return np.array(
+            [self.sim_obj.joint_positions[i] for i in gripper_pos_indices],
+            dtype=np.float32,
+        )
 
     @gripper_joint_pos.setter
     def gripper_joint_pos(self, ctrl: List[float]):
@@ -359,10 +367,12 @@ class MobileManipulator(RobotInterface):
     @property
     def arm_joint_pos(self) -> np.ndarray:
         """Get the current arm joint positions."""
-        arm_pos_indices = list(
-            map(lambda x: self.joint_pos_indices[x], self.params.arm_joints)
+        arm_pos_indices = map(
+            lambda x: self.joint_pos_indices[x], self.params.arm_joints
         )
-        return [self.sim_obj.joint_positions[i] for i in arm_pos_indices]
+        return np.array(
+            [self.sim_obj.joint_positions[i] for i in arm_pos_indices], dtype=np.float32
+        )
 
     @arm_joint_pos.setter
     def arm_joint_pos(self, ctrl: List[float]):
@@ -398,10 +408,13 @@ class MobileManipulator(RobotInterface):
     @property
     def arm_velocity(self) -> np.ndarray:
         """Get the velocity of the arm joints."""
-        arm_dof_indices = list(
-            map(lambda x: self.joint_dof_indices[x], self.params.arm_joints)
+        arm_dof_indices = map(
+            lambda x: self.joint_dof_indices[x], self.params.arm_joints
         )
-        return [self.sim_obj.joint_velocities[i] for i in arm_dof_indices]
+        return np.array(
+            [self.sim_obj.joint_velocities[i] for i in arm_dof_indices],
+            dtype=np.float32,
+        )
 
     @property
     def arm_motor_pos(self) -> np.ndarray:

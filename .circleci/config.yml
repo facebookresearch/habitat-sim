@@ -129,7 +129,7 @@ commands:
                 ~/miniconda.sh -b -p $HOME/miniconda
                 rm ~/miniconda.sh
                 export PATH=$HOME/miniconda/bin:$PATH
-                conda create -y -n habitat python=3.6
+                conda create -y -n habitat python=3.7
                 . activate habitat
                 conda install -q -y -c conda-forge ninja numpy pytest pytest-cov=3.0 ccache hypothesis=6.29.3
                 pip install pytest-sugar pytest-xdist pytest-benchmark
@@ -198,7 +198,7 @@ commands:
 jobs:
   python_lint:
     docker:
-      - image: cimg/python:3.6
+      - image: cimg/python:3.7
     steps:
       - checkout
       - run:
@@ -222,7 +222,7 @@ jobs:
                 flake8-simplify \
                 hypothesis==6.29.3 \
                 isort \
-                mypy==v0.910 \
+                mypy \
                 numpy \
                 pytest \
                 sphinx \
@@ -265,7 +265,7 @@ jobs:
 
   pre-commit:
     docker:
-      - image: cimg/python:3.6
+      - image: cimg/python:3.7
     working_directory: ~/repo/
 
     steps:
@@ -644,7 +644,7 @@ jobs:
               docker run -it --ipc=host --rm -v $(pwd)/../../:/remote \
                   <<^ parameters.CI_TEST >> --env << parameters.AIHABITAT_CONDA_CHN_PWD_VAR >> <</ parameters.CI_TEST >> \
                   hsim_condabuild_dcontainer \
-                  /bin/bash -c "source ~/.bashrc && conda activate py36 \
+                  /bin/bash -c "source ~/.bashrc && conda activate py37 \
                                 && cd /remote/habitat-sim/conda-build \
                                 <<^ parameters.CI_TEST >> && anaconda login --username << parameters.AIHABITAT_CONDA_CHN >> --password \${<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >>} <</ parameters.CI_TEST >> \
                                 && python matrix_builder.py \
