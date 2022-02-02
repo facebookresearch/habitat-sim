@@ -253,7 +253,7 @@ GenericSemanticMeshData::buildSemanticMeshData(
                                       semanticData->objectIds_, ssdObjs,
                                       dbgMsgPrefix);
       // colors found on vertices not found in semantic lexicon :
-      if (nonSSDVertColorIDs.size() == 0) {
+      if (nonSSDVertColorIDs.empty()) {
         ESP_DEBUG() << dbgMsgPrefix
                     << "No unexpected colors found mapped to mesh verts.";
       } else {
