@@ -463,7 +463,7 @@ if __name__ == "__main__":
         package_dir={"": "src_python"},
         install_requires=requirements,
         tests_require=["hypothesis", "pytest-benchmark", "pytest"],
-        python_requires=">=7",
+        python_requires=">=3.7",
         # add extension module
         ext_modules=[CMakeExtension("habitat_sim._ext.habitat_sim_bindings", "src")],
         # add custom build_ext command
