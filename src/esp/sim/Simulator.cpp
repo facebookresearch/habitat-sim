@@ -836,7 +836,8 @@ bool Simulator::recomputeNavMesh(nav::PathFinder& pathfinder,
   return true;
 }
 
-assets::MeshData::ptr Simulator::getJoinedMesh(const bool includeStaticObjects) {
+assets::MeshData::ptr Simulator::getJoinedMesh(
+    const bool includeStaticObjects) {
   assets::MeshData::ptr joinedMesh = assets::MeshData::create();
   auto stageInitAttrs = physicsManager_->getStageInitAttributes();
   if (stageInitAttrs != nullptr) {
@@ -933,13 +934,13 @@ assets::MeshData::ptr Simulator::getJoinedMesh(const bool includeStaticObjects) 
   return joinedMesh;
 }
 
-assets::MeshData::ptr Simulator::getJoinedSemanticMesh(std::vector<std::uint16_t>& objectIds) {
+assets::MeshData::ptr Simulator::getJoinedSemanticMesh(
+    std::vector<std::uint16_t>& objectIds) {
   assets::MeshData::ptr joinedSemanticMesh = assets::MeshData::create();
   auto stageInitAttrs = physicsManager_->getStageInitAttributes();
   if (stageInitAttrs != nullptr) {
     joinedSemanticMesh = resourceManager_->createJoinedSemanticCollisionMesh(
-        objectIds,
-        stageInitAttrs->getSemanticAssetHandle());
+        objectIds, stageInitAttrs->getSemanticAssetHandle());
   }
 
   return joinedSemanticMesh;

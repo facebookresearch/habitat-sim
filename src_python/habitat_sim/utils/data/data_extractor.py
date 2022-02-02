@@ -262,7 +262,7 @@ class ImageExtractor:
             "color_sensor": True,  # RGBA sensor
             "semantic_sensor": True,  # Semantic sensor
             "depth_sensor": True,  # Depth sensor
-            "audio_sensor": True, # Audio sensor
+            "audio_sensor": True,  # Audio sensor
             "silent": True,
         }
 

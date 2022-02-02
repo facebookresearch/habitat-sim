@@ -37,7 +37,6 @@ from habitat_sim.sensors.noise_models import make_sensor_noise_model
 from habitat_sim.sim import SimulatorBackend, SimulatorConfiguration
 from habitat_sim.utils.common import quat_from_angle_axis
 
-
 # TODO maybe clean up types with TypeVars
 ObservationDict = Dict[str, Union[bool, np.ndarray, "Tensor"]]
 
@@ -649,7 +648,8 @@ class Sensor:
         if self._spec.sensor_type == SensorType.AUDIO:
             # do nothing in draw observation, get_observation will be called after this
             # run the simulation there
-            print("simulation.py: In audio draw observations")
+            print("NO-OP -- Nothing to draw for audio")
+            return
         else:
             assert self._sim.renderer is not None
             # see if the sensor is attached to a scene graph, otherwise it is invalid,
@@ -665,7 +665,8 @@ class Sensor:
         if self._spec.sensor_type == SensorType.AUDIO:
             # do nothing in draw observation, get_observation will be called after this
             # run the simulation there
-            print("simulation.py: In audio _draw_observation_async")
+            print("NO-OP -- Nothing to draw for audio")
+            return
         else:
             assert self._sim.renderer is not None
             if (
@@ -674,7 +675,7 @@ class Sensor:
                 is not self._sim.get_active_semantic_scene_graph()
             ):
                 raise RuntimeError(
-                    "Async drawing doesn't support semantic rendering when there are multiple scene graphs"
+                    "SemanticSensor observation requested but no SemanticScene is loaded"
                 )
             # TODO: sync this path with renderer changes as above (render from sensor object)
 
@@ -727,7 +728,9 @@ class Sensor:
             audio_sensor = self._agent._sensors["audio_sensor"]
             # tell the audio sensor about the agent location
             rot = self._agent.state.rotation
-            audio_sensor.setAudioListenerTransform(self._agent.state.position, np.array([rot.w, rot.x, rot.y, rot.z]))
+            audio_sensor.setAudioListenerTransform(
+                self._agent.state.position, np.array([rot.w, rot.x, rot.y, rot.z])
+            )
             # run the simulation
             audio_sensor.runSimulation(self._sim)
             obs = audio_sensor.getIR()
@@ -763,7 +766,9 @@ class Sensor:
             audio_sensor = self._agent._sensors["audio_sensor"]
             # tell the audio sensor about the agent location
             rot = self._agent.state.rotation
-            audio_sensor.setAudioListenerTransform(self._agent.state.position, np.array([rot.w, rot.x, rot.y, rot.z]))
+            audio_sensor.setAudioListenerTransform(
+                self._agent.state.position, np.array([rot.w, rot.x, rot.y, rot.z])
+            )
             # run the simulation
             audio_sensor.runSimulation(self._sim)
             obs = audio_sensor.getIR()

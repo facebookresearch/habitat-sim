@@ -330,7 +330,7 @@ class Viewer : public Mn::Platform::Application {
 #ifdef ESP_BUILD_WITH_AUDIO
   esp::sensor::AudioSensor& getAgentAudioSensor() {
     esp::sensor::Sensor& audioSensor =
-      agentBodyNode_->getNodeSensorSuite().get("audio");
+        agentBodyNode_->getNodeSensorSuite().get("audio");
     return static_cast<esp::sensor::AudioSensor&>(audioSensor);
   }
 #endif
@@ -660,17 +660,17 @@ Key Commands:
   void bindRenderTarget();
 
 #ifdef ESP_BUILD_WITH_AUDIO
-   /**
+  /**
    * @brief Add an audio source to the scene
    *  The source is added in front of the agent
    */
   void addAudioSource();
-   /**
+  /**
    * @brief Run the audio simulation and get the observations
    */
   void runAudioSimulation();
 #endif
-}; // class viewer declaration
+};  // class viewer declaration
 
 void addSensors(esp::agent::AgentConfiguration& agentConfig, bool isOrtho) {
   const auto viewportSize = Mn::GL::defaultFramebuffer.viewport().size();
@@ -778,17 +778,17 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig, bool isOrtho) {
   addEquirectangularSensor("semantic_equirectangular",
                            esp::sensor::SensorType::Semantic);
 
-  // add audio sensor
-  #ifdef ESP_BUILD_WITH_AUDIO
+// add audio sensor
+#ifdef ESP_BUILD_WITH_AUDIO
   ESP_DEBUG() << "Adding audio sendor";
 
   auto addAudioSensor = [&](const std::string& uuid,
                             esp::sensor::SensorType sensorType,
                             esp::sensor::SensorSubType sensorSubType) {
     agentConfig.sensorSpecifications.emplace_back(
-      esp::sensor::AudioSensorSpec::create());
+        esp::sensor::AudioSensorSpec::create());
     auto spec = static_cast<esp::sensor::AudioSensorSpec*>(
-      agentConfig.sensorSpecifications.back().get());
+        agentConfig.sensorSpecifications.back().get());
     spec->uuid = uuid;
     spec->sensorType = sensorType;
     spec->sensorSubType = sensorSubType;
@@ -801,12 +801,12 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig, bool isOrtho) {
     spec->outputDirectory_ = "/home/sangarg/AudioSimulation";
     // Set the output channel layout
     spec->channelLayout_.channelCount = 2;
-    spec->channelLayout_.channelType = HabitatAcoustics::ChannelLayoutType::Binaural;
+    spec->channelLayout_.channelType =
+        HabitatAcoustics::ChannelLayoutType::Binaural;
   };
-  addAudioSensor("audio",
-                  esp::sensor::SensorType::Audio,
-                  esp::sensor::SensorSubType::ImpulseResponse);
-  #endif
+  addAudioSensor("audio", esp::sensor::SensorType::Audio,
+                 esp::sensor::SensorSubType::ImpulseResponse);
+#endif
 }  // addSensors
 
 Viewer::Viewer(const Arguments& arguments)
@@ -2482,36 +2482,38 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       invertGravity();
       break;
     case KeyEvent::Key::K: {
-      #ifdef ESP_BUILD_WITH_VHACD
-        iterateAndDisplaySignedDistanceField();
-        // Increase the distance visualized for next time (Pressing L
-        // repeatedly will visualize different distances)
-        ++voxelDistance++;
-      #endif
+#ifdef ESP_BUILD_WITH_VHACD
+      iterateAndDisplaySignedDistanceField();
+      // Increase the distance visualized for next time (Pressing L
+      // repeatedly will visualize different distances)
+      voxelDistance++;
+#endif
       break;
     }
     case KeyEvent::Key::G: {
-      #ifdef ESP_BUILD_WITH_VHACD
-        displayStageDistanceGradientField();
-      #endif
+#ifdef ESP_BUILD_WITH_VHACD
+      displayStageDistanceGradientField();
+#endif
       break;
     }
     case KeyEvent::Key::J: {
-      #ifdef ESP_BUILD_WITH_AUDIO
-        // Add an audio source
-        addAudioSource();
-      #else
-        ESP_DEBUG() << "[Audio] ESP_BUILD_WITH_AUDIO is not set, skipping adding audio source";
-      #endif
+#ifdef ESP_BUILD_WITH_AUDIO
+      // Add an audio source
+      addAudioSource();
+#else
+      ESP_DEBUG() << "[Audio] ESP_BUILD_WITH_AUDIO is not set, skipping adding "
+                     "audio source";
+#endif
       break;
     }
     case KeyEvent::Key::Y: {
-      #ifdef ESP_BUILD_WITH_AUDIO
-        // Run audio simulation
-        runAudioSimulation();
-      #else
-        ESP_DEBUG() << "[Audio] ESP_BUILD_WITH_AUDIO is not set, skipping running audio simulation";
-      #endif
+#ifdef ESP_BUILD_WITH_AUDIO
+      // Run audio simulation
+      runAudioSimulation();
+#else
+      ESP_DEBUG() << "[Audio] ESP_BUILD_WITH_AUDIO is not set, skipping "
+                     "running audio simulation";
+#endif
       break;
     }
   }
@@ -2549,41 +2551,41 @@ void Viewer::screenshot() {
 }  // Viewer::screenshot
 
 #ifdef ESP_BUILD_WITH_AUDIO
-  void Viewer::addAudioSource() {
-    ESP_DEBUG() << "[Audio] Adding audio source";
-    // Add an audio source in front of the agent
-    addPrimitiveObject();
-    Mn::Matrix4 T = agentBodyNode_->MagnumObject::transformationMatrix();
-    Mn::Vector3 new_pos = T.transformPoint({0.1f, 1.5f, -2.0f});
+void Viewer::addAudioSource() {
+  ESP_DEBUG() << "[Audio] Adding audio source";
+  // Add an audio source in front of the agent
+  addPrimitiveObject();
+  Mn::Matrix4 T = agentBodyNode_->MagnumObject::transformationMatrix();
+  Mn::Vector3 new_pos = T.transformPoint({0.1f, 1.5f, -2.0f});
 
-    esp::sensor::AudioSensor& audioSensor = getAgentAudioSensor();
+  esp::sensor::AudioSensor& audioSensor = getAgentAudioSensor();
 
-    audioSensor.setAudioSourceTransform({new_pos[0], new_pos[1], new_pos[2]});
+  audioSensor.setAudioSourceTransform({new_pos[0], new_pos[1], new_pos[2]});
+}
+
+void Viewer::runAudioSimulation() {
+  ESP_DEBUG() << "[Audio] Running audio simulation";
+  // Run the audio simulation code to generate the impulse response
+  Mn::Matrix4 T = agentBodyNode_->MagnumObject::transformationMatrix();
+  Mn::Vector3 pos = T.transformPoint({0.0f, 0.0f, 0.0f});
+  auto rotScalar = agentBodyNode_->rotation().scalar();
+  auto rotVec = agentBodyNode_->rotation().vector();
+
+  esp::sensor::AudioSensor& audioSensor = getAgentAudioSensor();
+  audioSensor.setAudioListenerTransform(
+      {pos[0], pos[1], pos[2]}, {rotScalar, rotVec[0], rotVec[1], rotVec[2]});
+  audioSensor.runSimulation(*simulator_);
+  esp::sensor::Observation obs;
+  const bool success = audioSensor.getObservation(*simulator_, obs);
+
+  if (success) {
+    // obs should be populated, log the sizes to sanity check everything works
+    ESP_DEBUG() << "[Audio] RESULTS : Observation Space : "
+                << obs.buffer->shape[0] << ", " << obs.buffer->shape[1];
+  } else {
+    ESP_ERROR() << "[Audio] Audio simulation was unsuccessful";
   }
-
-  void Viewer::runAudioSimulation() {
-    ESP_DEBUG() << "[Audio] Running audio simulation";
-    // Run the audio simulation code to generate the impulse response
-    Mn::Matrix4 T = agentBodyNode_->MagnumObject::transformationMatrix();
-    Mn::Vector3 pos = T.transformPoint({0.0f, 0.0f, 0.0f});
-    auto rotScalar = agentBodyNode_->rotation().scalar();
-    auto rotVec = agentBodyNode_->rotation().vector();
-
-    esp::sensor::AudioSensor& audioSensor = getAgentAudioSensor();
-    audioSensor.setAudioListenerTransform(
-      {pos[0], pos[1], pos[2]},
-      {rotScalar, rotVec[0], rotVec[1], rotVec[2]});
-    audioSensor.runSimulation(*simulator_);
-    esp::sensor::Observation obs;
-    const bool success = audioSensor.getObservation(*simulator_, obs);
-
-    if (success) {
-      // obs should be populated, log the sizes to sanity check everything works
-      ESP_DEBUG() << "[Audio] RESULTS : Observation Space : " << obs.buffer->shape[0] << ", " << obs.buffer->shape[1];
-    } else {
-      ESP_ERROR() << "[Audio] Audio simulation was unsuccessful";
-    }
-  }
+}
 #endif
 
 }  // namespace

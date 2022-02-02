@@ -2919,23 +2919,23 @@ void ResourceManager::joinHierarchy(
   }
 }
 
-//! recursively join all sub-components of the semantic mesh into a single unified
-//! MeshData.
+//! recursively join all sub-components of the semantic mesh into a single
+//! unified MeshData.
 void ResourceManager::joinSemanticHierarchy(
-  MeshData& mesh,
-  std::vector<uint16_t>& meshObjectIds,
-  const MeshMetaData& metaData,
-  const MeshTransformNode& node,
-  const Mn::Matrix4& transformFromParentToWorld) const {
-
+    MeshData& mesh,
+    std::vector<uint16_t>& meshObjectIds,
+    const MeshMetaData& metaData,
+    const MeshTransformNode& node,
+    const Mn::Matrix4& transformFromParentToWorld) const {
   Magnum::Matrix4 transformFromLocalToWorld =
       transformFromParentToWorld * node.transformFromLocalToParent;
 
   // If the mesh local id is not -1, populate the mesh data.
   if (node.meshIDLocal != ID_UNDEFINED) {
-
-    std::shared_ptr<BaseMesh> baseMeshData = meshes_.at(node.meshIDLocal + metaData.meshIndex.first);
-    std::shared_ptr<GenericSemanticMeshData> meshData = std::dynamic_pointer_cast<GenericSemanticMeshData>(baseMeshData);
+    std::shared_ptr<BaseMesh> baseMeshData =
+        meshes_.at(node.meshIDLocal + metaData.meshIndex.first);
+    std::shared_ptr<GenericSemanticMeshData> meshData =
+        std::dynamic_pointer_cast<GenericSemanticMeshData>(baseMeshData);
 
     if (!meshData) {
       ESP_ERROR() << "Could not get the GenericSemanticMeshData";
@@ -2944,7 +2944,8 @@ void ResourceManager::joinSemanticHierarchy(
 
     const std::vector<vec3f>& vertices = meshData->getVertexBufferObjectCPU();
     const std::vector<uint32_t>& indices = meshData->getIndexBufferObjectCPU();
-    const std::vector<uint16_t>& objectIds = meshData->getObjectIdsBufferObjectCPU();
+    const std::vector<uint16_t>& objectIds =
+        meshData->getObjectIdsBufferObjectCPU();
     // Note : The color is not being used currently
 
     int lastIndex = mesh.vbo.size();
@@ -2953,8 +2954,7 @@ void ResourceManager::joinSemanticHierarchy(
     for (auto& pos : vertices) {
       Magnum::Vector3 p(pos(0), pos(1), pos(2));
 
-      mesh.vbo.push_back(
-        Magnum::EigenIntegration::cast<vec3f>(
+      mesh.vbo.push_back(Magnum::EigenIntegration::cast<vec3f>(
           transformFromLocalToWorld.transformPoint(p)));
     }
 
@@ -2964,14 +2964,15 @@ void ResourceManager::joinSemanticHierarchy(
     }
 
     // Save the object ids
-    for (const auto ids: objectIds) {
+    for (const auto ids : objectIds) {
       meshObjectIds.push_back(ids);
     }
   }
 
   // for all the children of the node, recurse
   for (const auto& child : node.children) {
-      joinSemanticHierarchy(mesh, meshObjectIds, metaData, child, transformFromLocalToWorld);
+    joinSemanticHierarchy(mesh, meshObjectIds, metaData, child,
+                          transformFromLocalToWorld);
   }
 }
 

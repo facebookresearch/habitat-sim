@@ -3,6 +3,8 @@
 # LICENSE file in the root directory of this source tree.
 
 from habitat_sim._ext.habitat_sim_bindings import (
+    AudioSensor,
+    AudioSensorSpec,
     CameraSensor,
     CameraSensorSpec,
     CubeMapSensorBase,
@@ -13,6 +15,8 @@ from habitat_sim._ext.habitat_sim_bindings import (
     FisheyeSensorDoubleSphereSpec,
     FisheyeSensorModelType,
     FisheyeSensorSpec,
+    HabitatAcousticsChannelLayout,
+    HabitatAcousticsConfiguration,
     Observation,
     Sensor,
     SensorFactory,
@@ -21,10 +25,6 @@ from habitat_sim._ext.habitat_sim_bindings import (
     SensorType,
     VisualSensor,
     VisualSensorSpec,
-    AudioSensorSpec,
-    AudioSensor,
-    HabitatAcousticsChannelLayout,
-    HabitatAcousticsConfiguration,
 )
 
 __all__ = [

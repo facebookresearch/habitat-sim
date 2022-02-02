@@ -192,3 +192,5 @@ examples/web_apps/webxr_hand_demo/js/hsim_bindings.js
 examples/web_apps/webxr_hand_demo/js/hsim_bindings.wasm
 
 data/fairmotion/
+
+pre-commit-deps.txt

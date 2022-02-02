@@ -2,17 +2,16 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include <memory>
-#include <vector>
 #include <cstdint>
 #include <fstream>
+#include <memory>
+#include <vector>
 
-#include "esp/core/Esp.h"
-#include "esp/sensor/Sensor.h"
 #include "esp/assets/MeshData.h"
+#include "esp/core/Esp.h"
 #include "esp/scene/SemanticScene.h"
+#include "esp/sensor/Sensor.h"
 
-// todo sangarg : Check if we can cleanup the path, find the correct cmake file for include_directory
 #include "audio/HabitatAcousticsPkg/headers/HabitatAcoustics.h"
 
 #ifndef ESP_SENSOR_AUDIOSENSOR_H_
@@ -52,7 +51,7 @@ class AudioSensor : public Sensor {
    */
   bool isVisualSensor() const override { return false; }
 
-  // functions to implement the audio sensor
+  // ------- functions to implement the audio sensor ------
 
   /**
    * @brief Clear the audio simulator object
@@ -70,10 +69,12 @@ class AudioSensor : public Sensor {
    * @param agentPos = vec3 agent position
    * @param agentRotQuat = vec4 agent rotation quaternion
    * */
-  void setAudioListenerTransform(const vec3f& agentPos, const vec4f& agentRotQuat);
+  void setAudioListenerTransform(const vec3f& agentPos,
+                                 const vec4f& agentRotQuat);
 
   /**
-   * @brief Run the audio simulation. This will run the HabitatAcoustics code to get the impulse response
+   * @brief Run the audio simulation. This will run the HabitatAcoustics code to
+   * get the impulse response
    * */
   void runSimulation(sim::Simulator& sim);
 
@@ -82,14 +83,15 @@ class AudioSensor : public Sensor {
    * */
   std::vector<std::vector<float>> getIR();
 
- // Sensor class overrides
+  // ------ Sensor class overrides ------
  public:
   bool getObservation(sim::Simulator& sim, Observation& obs) override;
   bool getObservationSpace(ObservationSpace& obsSpace) override;
+
  private:
   bool displayObservation(sim::Simulator& sim) override;
 
-private:
+ private:
   /**
    * @brief Create the audio simulator object
    * */
@@ -107,7 +109,8 @@ private:
 
   /**
    * @brief Get the simulation folder path.
-   * This path is based on the AudioSensorSpec->outputDirectoryPrefix and the current simulation count
+   * This path is based on the AudioSensorSpec->outputDirectoryPrefix and the
+   * current simulation count
    * */
   std::string getSimulationFolder();
 
@@ -116,16 +119,16 @@ private:
    * */
   void writeIRFile(const Observation& obs);
 
-private:
+ private:
   AudioSensorSpec::ptr audioSensorSpec_ =
       std::dynamic_pointer_cast<AudioSensorSpec>(spec_);
   std::unique_ptr<HabitatAcoustics::Simulator> audioSimulator_ = nullptr;
   esp::assets::MeshData::ptr sceneMesh_;
 
-  std::int32_t currentSimCount_ = -1; // track the number of simulations
-  vec3f lastSourcePos_; // track the source position
-  vec3f lastAgentPos_; // track the agent orientation
-  vec4f lastAgentRot_; // track the agent rotation
+  std::int32_t currentSimCount_ = -1;  // track the number of simulations
+  vec3f lastSourcePos_;                // track the source position
+  vec3f lastAgentPos_;                 // track the agent orientation
+  vec4f lastAgentRot_;                 // track the agent rotation
 
   bool newInitialization_ = false;
   bool newSource_ = false;
@@ -138,7 +141,7 @@ private:
   ESP_SMART_POINTERS(AudioSensor)
 };  // class AudioSensor
 
-} // namespace sensor
-} // namespace esp
+}  // namespace sensor
+}  // namespace esp
 
 #endif  // ESP_SENSOR_AUDIOSENSOR_H_

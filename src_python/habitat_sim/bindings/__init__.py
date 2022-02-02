@@ -8,6 +8,8 @@
 #   with existing code
 
 from habitat_sim._ext.habitat_sim_bindings import (
+    AudioSensor,
+    AudioSensorSpec,
     CameraSensor,
     CameraSensorSpec,
     ConfigStoredType,
@@ -22,6 +24,8 @@ from habitat_sim._ext.habitat_sim_bindings import (
     FisheyeSensorSpec,
     GreedyFollowerCodes,
     GreedyGeodesicFollowerImpl,
+    HabitatAcousticsChannelLayout,
+    HabitatAcousticsConfiguration,
     MultiGoalShortestPath,
     PathFinder,
     RigidState,
@@ -34,10 +38,6 @@ from habitat_sim._ext.habitat_sim_bindings import (
     SensorSubType,
     SensorType,
     ShortestPath,
-    AudioSensorSpec,
-    AudioSensor,
-    HabitatAcousticsChannelLayout,
-    HabitatAcousticsConfiguration,
 )
 from habitat_sim._ext.habitat_sim_bindings import Simulator as SimulatorBackend
 from habitat_sim._ext.habitat_sim_bindings import (

@@ -42,24 +42,24 @@ SensorFactory::createSensors(scene::SceneNode& node,
 
           // TODO: implement Panorama sensor
         default:
-          ESP_ERROR()
-            << "Unreachable code : Cannot add the specified visual sensorType: "
-            << static_cast<std::uint32_t>(spec->sensorType);
+          ESP_ERROR() << "Unreachable code : Cannot add the specified visual "
+                         "sensorType: "
+                      << static_cast<std::uint32_t>(spec->sensorType);
           CORRADE_INTERNAL_ASSERT_UNREACHABLE();
           break;
       }
     } else if (!spec->isVisualSensorSpec()) {
-       switch (spec->sensorType) {
-        #ifdef ESP_BUILD_WITH_AUDIO
+      switch (spec->sensorType) {
+#ifdef ESP_BUILD_WITH_AUDIO
         case sensor::SensorType::Audio:
           sensorNode.addFeature<sensor::AudioSensor>(
               std::dynamic_pointer_cast<AudioSensorSpec>(spec));
-        break;
-        #endif
+          break;
+#endif
         default:
-          ESP_ERROR()
-            << "Unreachable code : Cannot add the specified non-visual sensorType:"
-            << static_cast<std::uint32_t>(spec->sensorType);
+          ESP_ERROR() << "Unreachable code : Cannot add the specified "
+                         "non-visual sensorType:"
+                      << static_cast<std::uint32_t>(spec->sensorType);
           CORRADE_INTERNAL_ASSERT_UNREACHABLE();
           break;
       }

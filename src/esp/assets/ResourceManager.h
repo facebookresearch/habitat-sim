@@ -9,12 +9,12 @@
  * @brief Class @ref esp::assets::ResourceManager
  */
 
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
-#include <cstdint>
 
 #include <Corrade/Containers/EnumSet.h>
 #include <Corrade/Containers/Optional.h>
@@ -449,8 +449,8 @@ class ResourceManager {
    * meshes.
    *
    * See @ref joinHierarchy.
-   * @param[out] objectIds vector of uint16_t, will be populated with the object ids
-   * of the semantic mesh
+   * @param[out] objectIds vector of uint16_t, will be populated with the object
+   * ids of the semantic mesh
    * @param filename The identifying string key for the asset. See @ref
    * resourceDict_ and @ref meshes_.
    * @return The unified @ref MeshData object for the asset.
@@ -885,8 +885,8 @@ class ResourceManager {
                      const Mn::Matrix4& transformFromParentToWorld) const;
 
   /**
-   * @brief Recursively build a unified @ref MeshData from loaded semantic assets via a
-   * tree of @ref MeshTransformNode.
+   * @brief Recursively build a unified @ref MeshData from loaded semantic
+   * assets via a tree of @ref MeshTransformNode.
    *
    * @param[in,out] mesh The @ref MeshData being constructed.
    * @param[out] meshObjectIds The object ids
@@ -896,11 +896,12 @@ class ResourceManager {
    * @param transformFromParentToWorld The cumulative transformation up to but
    * not including the current @ref MeshTransformNode.
    */
-  void joinSemanticHierarchy(MeshData& mesh,
-                             std::vector<uint16_t>& meshObjectIds,
-                             const MeshMetaData& metaData,
-                             const MeshTransformNode& node,
-                             const Mn::Matrix4& transformFromParentToWorld) const;
+  void joinSemanticHierarchy(
+      MeshData& mesh,
+      std::vector<uint16_t>& meshObjectIds,
+      const MeshMetaData& metaData,
+      const MeshTransformNode& node,
+      const Mn::Matrix4& transformFromParentToWorld) const;
 
   /**
    * @brief Load materials from importer into assets, and update metaData for

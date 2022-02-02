@@ -632,21 +632,24 @@ class Simulator {
    */
   bool recomputeNavMesh(nav::PathFinder& pathfinder,
                         const nav::NavMeshSettings& navMeshSettings,
-                        const bool includeStaticObjects = false);
+                        bool includeStaticObjects = false);
 
   /**
    * @brief Get the joined mesh data for all objects in the scene
    * @param includeStaticObjects flag to include static objects
    * @return A shared ptr assets::MeshData with required mesh
    */
-  assets::MeshData::ptr getJoinedMesh(const bool includeStaticObjects = false);
+  assets::MeshData::ptr getJoinedMesh(bool includeStaticObjects = false);
 
   /**
    * @brief Get the joined semantic mesh data for all objects in the scene
-   * @param[out] objectIds will be populated with the object ids for the semantic mesh
-   * @return A shared ptr assets::MeshData with required mesh and populate the objectIds
+   * @param[out] objectIds will be populated with the object ids for the
+   * semantic mesh
+   * @return A shared ptr assets::MeshData with required mesh and populate the
+   * objectIds
    */
-  assets::MeshData::ptr getJoinedSemanticMesh(std::vector<std::uint16_t>& objectIds);
+  assets::MeshData::ptr getJoinedSemanticMesh(
+      std::vector<std::uint16_t>& objectIds);
 
   /**
    * @brief Set visualization of the current NavMesh @ref pathfinder_ on or off.

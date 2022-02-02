@@ -2,9 +2,9 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include <unordered_set>
-#include <unordered_map>
 #include <sstream>
+#include <unordered_map>
+#include <unordered_set>
 
 #include "AudioSensor.h"
 #include "esp/sim/Simulator.h"
@@ -13,7 +13,7 @@ namespace esp {
 namespace sensor {
 
 AudioSensorSpec::AudioSensorSpec() : SensorSpec() {
-  ESP_DEBUG() << logHeader_ <<  "AudioSensorSpec constructor";
+  ESP_DEBUG() << logHeader_ << "AudioSensorSpec constructor";
   uuid = "audio";
   sensorType = SensorType::Audio;
   sensorSubType = SensorSubType::ImpulseResponse;
@@ -23,28 +23,32 @@ void AudioSensorSpec::sanityCheck() const {
   ESP_DEBUG() << logHeader_ << "SanityCheck the audio sensor spec";
   SensorSpec::sanityCheck();
 
-  CORRADE_ASSERT(
-    sensorType == SensorType::Audio,
-    "AudioSensorSpec::sanityCheck(): sensorType must be Audio", );
+  CORRADE_ASSERT(sensorType == SensorType::Audio,
+                 "AudioSensorSpec::sanityCheck(): sensorType must be Audio", );
 
   CORRADE_ASSERT(
-    sensorSubType == SensorSubType::ImpulseResponse,
-    "AudioSensorSpec::sanityCheck(): sensorSubType must be Audio", );
+      sensorSubType == SensorSubType::ImpulseResponse,
+      "AudioSensorSpec::sanityCheck(): sensorSubType must be Audio", );
 }
 
 AudioSensor::AudioSensor(scene::SceneNode& node, AudioSensorSpec::ptr spec)
     : Sensor{node, std::move(spec)} {
   ESP_DEBUG() << logHeader_ << "AudioSensor constructor";
   audioSensorSpec_->sanityCheck();
-  ESP_DEBUG() << logHeader_ << "Acoustics Configs : " << audioSensorSpec_->acousticsConfig_;
-  ESP_DEBUG() << logHeader_ << "Channel Layout : " << audioSensorSpec_->channelLayout_;
+  ESP_DEBUG() << logHeader_
+              << "Acoustics Configs : " << audioSensorSpec_->acousticsConfig_;
+  ESP_DEBUG() << logHeader_
+              << "Channel Layout : " << audioSensorSpec_->channelLayout_;
 
   // If the output directory is not defined, use /home/AudioSimulation
   if (audioSensorSpec_->outputDirectory_.size() == 0) {
-      ESP_DEBUG() << logHeader_ << "output directory not provided, will use /home/AudioSimulation";
-      audioSensorSpec_->outputDirectory_ = "/home/AudioSimulation";
+    ESP_DEBUG()
+        << logHeader_
+        << "output directory not provided, will use /home/AudioSimulation";
+    audioSensorSpec_->outputDirectory_ = "/home/AudioSimulation";
   }
-  ESP_DEBUG() << logHeader_ << "OutputDirectory : " << audioSensorSpec_->outputDirectory_;
+  ESP_DEBUG() << logHeader_
+              << "OutputDirectory : " << audioSensorSpec_->outputDirectory_;
 }
 
 AudioSensor::~AudioSensor() {
@@ -59,65 +63,72 @@ void AudioSensor::reset() {
 }
 
 void AudioSensor::setAudioSourceTransform(const vec3f& sourcePos) {
-  ESP_DEBUG() << logHeader_ << "Setting the audio source position : " << sourcePos << "]";
+  ESP_DEBUG() << logHeader_
+              << "Setting the audio source position : " << sourcePos << "]";
   lastSourcePos_ = sourcePos;
   // track if the source has changed
   newSource_ = true;
 }
 
-void AudioSensor::setAudioListenerTransform(const vec3f& agentPos, const vec4f& agentRotQuat) {
-  ESP_DEBUG()
-    << logHeader_
-    << "Setting the agent transform : position [" << agentPos
-    << "], rotQuat[" << agentRotQuat << "]";
+void AudioSensor::setAudioListenerTransform(const vec3f& agentPos,
+                                            const vec4f& agentRotQuat) {
+  ESP_DEBUG() << logHeader_ << "Setting the agent transform : position ["
+              << agentPos << "], rotQuat[" << agentRotQuat << "]";
 
   createAudioSimulator();
 
-  CORRADE_ASSERT(audioSimulator_, "setAudioListenerTransform : audioSimulator_ should exist", );
+  CORRADE_ASSERT(audioSimulator_,
+                 "setAudioListenerTransform : audioSimulator_ should exist", );
 
-  // If its a new simulation object or the agent position or orientation changed,
+  // If its a new simulation object or the agent position or orientation
+  // changed,
   //    add a listener
-  if (newInitialization_ || (lastAgentPos_ != agentPos) || !(lastAgentRot_.isApprox(agentRotQuat)))
-  {
+  if (newInitialization_ || (lastAgentPos_ != agentPos) ||
+      !(lastAgentRot_.isApprox(agentRotQuat))) {
     audioSimulator_->AddListener(
-      HabitatAcoustics::Vector3f{agentPos(0), agentPos(1), agentPos(2)},
-      HabitatAcoustics::Quaternion{agentRotQuat(0), agentRotQuat(1), agentRotQuat(2), agentRotQuat(3)},
-      audioSensorSpec_->channelLayout_);
+        HabitatAcoustics::Vector3f{agentPos(0), agentPos(1), agentPos(2)},
+        HabitatAcoustics::Quaternion{agentRotQuat(0), agentRotQuat(1),
+                                     agentRotQuat(2), agentRotQuat(3)},
+        audioSensorSpec_->channelLayout_);
   }
 }
 
 void AudioSensor::runSimulation(sim::Simulator& sim) {
-  CORRADE_ASSERT(audioSimulator_, "runSimulation: audioSimulator_ should exist", );
+  CORRADE_ASSERT(audioSimulator_,
+                 "runSimulation: audioSimulator_ should exist", );
   ESP_DEBUG() << logHeader_ << "Running the audio simulator";
 
-  if (newInitialization_)
-  {
+  if (newInitialization_) {
     // If its a new initialization, upload the geometry
     newInitialization_ = false;
-    ESP_DEBUG() << logHeader_ << "New initialization, will upload geometry and add the source at position : " << lastSourcePos_;
+    ESP_DEBUG() << logHeader_
+                << "New initialization, will upload geometry and add the "
+                   "source at position : "
+                << lastSourcePos_;
 
-    if (audioSensorSpec_->acousticsConfig_.enableMaterials && sim.semanticSceneExists())
-    {
+    if (audioSensorSpec_->acousticsConfig_.enableMaterials &&
+        sim.semanticSceneExists()) {
       ESP_DEBUG() << logHeader_ << "Loading semantic scene";
       loadSemanticMesh(sim);
-    }
-    else
-    {
+    } else {
       // load the normal render mesh without any material info
-      ESP_DEBUG() << logHeader_ << "Semantic scene does not exist or materials are disabled, will use default material";
+      ESP_DEBUG() << logHeader_
+                  << "Semantic scene does not exist or materials are disabled, "
+                     "will use default material";
       loadMesh(sim);
     }
   }
 
-  if (newSource_)
-  {
+  if (newSource_) {
     // [NOTE] Currently, only one source is supported
     // If its a new source, add/replace the audio source.
     // A new initialization should always come with a new source
     // Mark that the source has been added
     newSource_ = false;
-    ESP_DEBUG() << logHeader_ << "Adding source at position : " << lastSourcePos_;
-    audioSimulator_->AddSource(HabitatAcoustics::Vector3f{lastSourcePos_(0), lastSourcePos_(1), lastSourcePos_(2)});
+    ESP_DEBUG() << logHeader_
+                << "Adding source at position : " << lastSourcePos_;
+    audioSimulator_->AddSource(HabitatAcoustics::Vector3f{
+        lastSourcePos_(0), lastSourcePos_(1), lastSourcePos_(2)});
   }
 
   // Run the audio simulation
@@ -130,18 +141,21 @@ void AudioSensor::runSimulation(sim::Simulator& sim) {
 }
 
 std::vector<std::vector<float>> AudioSensor::getIR() {
-
   if (impulseResponse_.size() == 0) {
     ObservationSpace obsSpace;
     getObservationSpace(obsSpace);
 
-    impulseResponse_.resize(obsSpace.shape[0], std::vector<float>(obsSpace.shape[1], 0.0));
+    impulseResponse_.resize(obsSpace.shape[0],
+                            std::vector<float>(obsSpace.shape[1], 0.0));
 
-    for (std::size_t channelIndex = 0; channelIndex < obsSpace.shape[0]; ++channelIndex) {
-        const float* ir = audioSimulator_->GetImpulseResponseForChannel(channelIndex);
-        for (std::size_t sampleIndex = 0; sampleIndex < obsSpace.shape[1]; ++sampleIndex) {
-          impulseResponse_[channelIndex][sampleIndex] = ir[sampleIndex];
-        }
+    for (std::size_t channelIndex = 0; channelIndex < obsSpace.shape[0];
+         ++channelIndex) {
+      const float* ir =
+          audioSimulator_->GetImpulseResponseForChannel(channelIndex);
+      for (std::size_t sampleIndex = 0; sampleIndex < obsSpace.shape[1];
+           ++sampleIndex) {
+        impulseResponse_[channelIndex][sampleIndex] = ir[sampleIndex];
+      }
     }
   }
 
@@ -149,14 +163,15 @@ std::vector<std::vector<float>> AudioSensor::getIR() {
 }
 
 bool AudioSensor::getObservation(sim::Simulator& sim, Observation& obs) {
-  CORRADE_ASSERT(audioSimulator_, "getObservation : audioSimulator_ should exist", false);
+  CORRADE_ASSERT(audioSimulator_,
+                 "getObservation : audioSimulator_ should exist", false);
 
   ObservationSpace obsSpace;
   getObservationSpace(obsSpace);
 
   if (obsSpace.shape[0] == 0 || obsSpace.shape[1] == 0) {
-      ESP_ERROR() << "Channel count or sample count is 0, no IR to return.";
-      return false;
+    ESP_ERROR() << "Channel count or sample count is 0, no IR to return.";
+    return false;
   }
 
   if (buffer_ == nullptr) {
@@ -169,11 +184,13 @@ bool AudioSensor::getObservation(sim::Simulator& sim, Observation& obs) {
   const std::size_t sizeToCopy = sizeof(float) * obsSpace.shape[1];
   // write the simulation output to the observation buffer
   // IR samples are packed per channel
-  for (std::size_t channelIndex = 0; channelIndex < obsSpace.shape[0]; ++channelIndex) {
-      const float* ir = audioSimulator_->GetImpulseResponseForChannel(channelIndex);
-      // Copy the ir for the specific channel into the data buffer
-      memcpy(obs.buffer->data + bufIndex, ir, sizeToCopy);
-      bufIndex += sizeToCopy;
+  for (std::size_t channelIndex = 0; channelIndex < obsSpace.shape[0];
+       ++channelIndex) {
+    const float* ir =
+        audioSimulator_->GetImpulseResponseForChannel(channelIndex);
+    // Copy the ir for the specific channel into the data buffer
+    memcpy(obs.buffer->data + bufIndex, ir, sizeToCopy);
+    bufIndex += sizeToCopy;
   }
 
   if (audioSensorSpec_->acousticsConfig_.writeIrToFile) {
@@ -184,7 +201,8 @@ bool AudioSensor::getObservation(sim::Simulator& sim, Observation& obs) {
 }
 
 bool AudioSensor::getObservationSpace(ObservationSpace& obsSpace) {
-  CORRADE_ASSERT(audioSimulator_, "getObservationSpace: audioSimulator_ should exist", false);
+  CORRADE_ASSERT(audioSimulator_,
+                 "getObservationSpace: audioSimulator_ should exist", false);
 
   obsSpace.spaceType = ObservationSpaceType::Tensor;
 
@@ -192,27 +210,29 @@ bool AudioSensor::getObservationSpace(ObservationSpace& obsSpace) {
   //    index 0 = channel count
   //    index 1 = sample count
   obsSpace.shape = {audioSimulator_->GetChannelCount(),
-                 audioSimulator_->GetSampleCount()};
+                    audioSimulator_->GetSampleCount()};
 
   obsSpace.dataType = core::DataType::DT_FLOAT;
 
-  ESP_DEBUG()
-    << logHeader_
-    << "getObservationSpace -> [ChannelCount] : " << obsSpace.shape[0]
-    << ", [SampleCount] : " << obsSpace.shape[1];
+  ESP_DEBUG() << logHeader_
+              << "getObservationSpace -> [ChannelCount] : " << obsSpace.shape[0]
+              << ", [SampleCount] : " << obsSpace.shape[1];
 
   return true;
 }
 
 bool AudioSensor::displayObservation(sim::Simulator& sim) {
-  ESP_ERROR() << logHeader_ << "Display observation for audio sensor is not used. This function should be unreachable";
+  ESP_ERROR() << logHeader_
+              << "Display observation for audio sensor is not used. This "
+                 "function should be unreachable";
   CORRADE_INTERNAL_ASSERT_UNREACHABLE();
   return false;
 }
 
 void AudioSensor::createAudioSimulator() {
   ++currentSimCount_;
-  ESP_DEBUG() << logHeader_ << "Create audio simulator iteration: " << currentSimCount_;
+  ESP_DEBUG() << logHeader_
+              << "Create audio simulator iteration: " << currentSimCount_;
 
   // If the audio simulator already exists, no need to create it
   if (audioSimulator_)
@@ -228,7 +248,8 @@ void AudioSensor::createAudioSimulator() {
 void AudioSensor::loadSemanticMesh(sim::Simulator& sim) {
   ESP_DEBUG() << logHeader_ << "Loading semantic mesh";
 
-  CORRADE_ASSERT(audioSimulator_, "loadSemanticMesh: audioSimulator_ should exist",);
+  CORRADE_ASSERT(audioSimulator_,
+                 "loadSemanticMesh: audioSimulator_ should exist", );
 
   std::vector<std::uint16_t> objectIds;
 
@@ -236,8 +257,10 @@ void AudioSensor::loadSemanticMesh(sim::Simulator& sim) {
 
   std::shared_ptr<scene::SemanticScene> semanticScene = sim.getSemanticScene();
 
-  const std::vector<std::shared_ptr<scene::SemanticCategory>>& categories = semanticScene->categories();
-  const std::vector<std::shared_ptr<scene::SemanticObject>>& objects = semanticScene->objects();
+  const std::vector<std::shared_ptr<scene::SemanticCategory>>& categories =
+      semanticScene->categories();
+  const std::vector<std::shared_ptr<scene::SemanticObject>>& objects =
+      semanticScene->objects();
 
   HabitatAcoustics::VertexData vertices;
 
@@ -252,39 +275,36 @@ void AudioSensor::loadSemanticMesh(sim::Simulator& sim) {
   std::unordered_map<std::string, std::vector<uint32_t>> categoryNameToIndices;
 
   auto& ibo = sceneMesh_->ibo;
-  for (std::size_t iboIdx = 0; iboIdx < ibo.size(); iboIdx += 3)
-  {
+  for (std::size_t iboIdx = 0; iboIdx < ibo.size(); iboIdx += 3) {
     // For each index in the ibo
     //  get the object id
     //    get the object using the id
     //      get the category name from the object
-    const std::string cat1 = objects[objectIds[ibo[iboIdx]]]->category()->name();
-    const std::string cat2 = objects[objectIds[ibo[iboIdx + 1]]]->category()->name();
-    const std::string cat3 = objects[objectIds[ibo[iboIdx + 2]]]->category()->name();
+    const std::string cat1 =
+        objects[objectIds[ibo[iboIdx]]]->category()->name();
+    const std::string cat2 =
+        objects[objectIds[ibo[iboIdx + 1]]]->category()->name();
+    const std::string cat3 =
+        objects[objectIds[ibo[iboIdx + 2]]]->category()->name();
     std::string catToUse;
 
-    if (cat1 == cat2 && cat1 == cat3)
-    {
-      // If all 3 categories are the same, save the indices to cat1 in the categoryNameToIndices map
+    if (cat1 == cat2 && cat1 == cat3) {
+      // If all 3 categories are the same, save the indices to cat1 in the
+      // categoryNameToIndices map
       catToUse = cat1;
-    }
-    else if (cat1 != cat2 && cat1 != cat3)
-    {
+    } else if (cat1 != cat2 && cat1 != cat3) {
       // If cat1 != 2 and 3
       // then either all 3 are different, or cat1 is different while 2==3
       // Either case, use 1
       // reason : if all 3 are different, we cant determine which one is correct
-      // if this is the odd one out, then the triangle is actually of this category
+      // if this is the odd one out, then the triangle is actually of this
+      // category
       catToUse = cat1;
-    }
-    else if (cat1 == cat2)
-    {
+    } else if (cat1 == cat2) {
       // if we reach here, cat 1 == 2 but != 3
       // use 3
       catToUse = cat3;
-    }
-    else
-    {
+    } else {
       // else 1 == 3 but != 2
       // use 2
       catToUse = cat2;
@@ -299,8 +319,7 @@ void AudioSensor::loadSemanticMesh(sim::Simulator& sim) {
   std::size_t totalIndicesLoaded = 0;
 
   // Send indices by category
-  for (auto catToIndices : categoryNameToIndices)
-  {
+  for (auto catToIndices : categoryNameToIndices) {
     HabitatAcoustics::IndexData indices;
 
     indices.indices = catToIndices.second.data();
@@ -310,24 +329,22 @@ void AudioSensor::loadSemanticMesh(sim::Simulator& sim) {
     ++indicesLoaded;
     const bool lastUpdate = (indicesLoaded == categoryNameToIndices.size());
 
-    ESP_DEBUG()
-      << logHeader_
-      << "Vertex count : " << vertices.vertexCount
-      << ", Index count : " << indices.indexCount
-      << ", Material : " << catToIndices.first
-      << ", LastUpdate : " << lastUpdate;
+    ESP_DEBUG() << logHeader_ << "Vertex count : " << vertices.vertexCount
+                << ", Index count : " << indices.indexCount
+                << ", Material : " << catToIndices.first
+                << ", LastUpdate : " << lastUpdate;
 
     // Send all indices for this particular category
-    audioSimulator_->LoadMeshIndices(
-      indices,
-      catToIndices.first);
+    audioSimulator_->LoadMeshIndices(indices, catToIndices.first);
 
     totalIndicesLoaded += indices.indexCount;
   }
 
-  if (totalIndicesLoaded != sceneMesh_->ibo.size())
-  {
-    ESP_ERROR() << logHeader_ << "totalIndicesLoaded != sceneMesh_->ibo.size() : (" << totalIndicesLoaded << " != " << sceneMesh_->ibo.size() << ")";
+  if (totalIndicesLoaded != sceneMesh_->ibo.size()) {
+    ESP_ERROR() << logHeader_
+                << "totalIndicesLoaded != sceneMesh_->ibo.size() : ("
+                << totalIndicesLoaded << " != " << sceneMesh_->ibo.size()
+                << ")";
     CORRADE_ASSERT(false, "totalIndicesLoaded != sceneMesh_->ibo.size()", );
   }
 
@@ -336,7 +353,7 @@ void AudioSensor::loadSemanticMesh(sim::Simulator& sim) {
 
 void AudioSensor::loadMesh(sim::Simulator& sim) {
   ESP_DEBUG() << logHeader_ << "Loading non-semantic mesh";
-  CORRADE_ASSERT(audioSimulator_, "loadMesh: audioSimulator_ should exist",);
+  CORRADE_ASSERT(audioSimulator_, "loadMesh: audioSimulator_ should exist", );
   sceneMesh_ = sim.getJoinedMesh(true);
 
   HabitatAcoustics::VertexData vertices;
@@ -352,7 +369,8 @@ void AudioSensor::loadMesh(sim::Simulator& sim) {
   indices.byteOffset = 0;
   indices.indexCount = sceneMesh_->ibo.size();
 
-  ESP_DEBUG() << "Vertex count : " << vertices.vertexCount << ", Index count : " << indices.indexCount;
+  ESP_DEBUG() << "Vertex count : " << vertices.vertexCount
+              << ", Index count : " << indices.indexCount;
   audioSimulator_->LoadMeshData(vertices, indices);
 }
 
@@ -362,17 +380,21 @@ std::string AudioSensor::getSimulationFolder() {
 
 void AudioSensor::writeIRFile(const Observation& obs) {
   ESP_DEBUG() << logHeader_ << "Write IR samples to file";
-  CORRADE_ASSERT(audioSimulator_, "loadMesh: audioSimulator_ should exist",);
+  CORRADE_ASSERT(audioSimulator_, "loadMesh: audioSimulator_ should exist", );
 
   const std::string folderPath = getSimulationFolder();
   std::size_t bufIndex = 0;
-  for (std::size_t channelIndex = 0; channelIndex < obs.buffer->shape[0]; ++channelIndex) {
+  for (std::size_t channelIndex = 0; channelIndex < obs.buffer->shape[0];
+       ++channelIndex) {
     std::ofstream file;
-    std::string fileName = folderPath + "/ir" + std::to_string(channelIndex) + ".txt";
+    std::string fileName =
+        folderPath + "/ir" + std::to_string(channelIndex) + ".txt";
     file.open(fileName);
 
-    for (std::size_t sampleIndex = 0; sampleIndex < obs.buffer->shape[1]; ++sampleIndex) {
-      file << sampleIndex << "\t" << *(float*)(obs.buffer->data + bufIndex) << std::endl;
+    for (std::size_t sampleIndex = 0; sampleIndex < obs.buffer->shape[1];
+         ++sampleIndex) {
+      file << sampleIndex << "\t" << *(float*)(obs.buffer->data + bufIndex)
+           << std::endl;
       bufIndex += sizeof(float);
     }
 
@@ -381,5 +403,5 @@ void AudioSensor::writeIRFile(const Observation& obs) {
   }
 }
 
-} // namespace sensor
-} // namespace esp
+}  // namespace sensor
+}  // namespace esp

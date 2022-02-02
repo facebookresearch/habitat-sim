@@ -76,22 +76,22 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
     )
     from habitat_sim.registry import registry
     from habitat_sim.sensor import (
+        AudioSensor,
+        AudioSensorSpec,
         CameraSensorSpec,
         EquirectangularSensor,
         EquirectangularSensorSpec,
         FisheyeSensorDoubleSphereSpec,
         FisheyeSensorModelType,
         FisheyeSensorSpec,
+        HabitatAcousticsChannelLayout,
+        HabitatAcousticsConfiguration,
         Sensor,
         SensorFactory,
         SensorSpec,
         SensorSubType,
         SensorType,
         VisualSensorSpec,
-        AudioSensorSpec,
-        AudioSensor,
-        HabitatAcousticsChannelLayout,
-        HabitatAcousticsConfiguration,
     )
     from habitat_sim.simulator import Configuration, Simulator  # noqa: F401
 

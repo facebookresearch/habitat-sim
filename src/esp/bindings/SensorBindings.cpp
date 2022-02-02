@@ -66,7 +66,8 @@ void initSensorBindings(py::module& m) {
       .value("ORTHOGRAPHIC", SensorSubType::Orthographic)
       .value("FISHEYE", SensorSubType::Fisheye)
       .value("EQUIRECTANGULAR", SensorSubType::Equirectangular)
-      .value("IMPULSERESPONSE", SensorSubType::ImpulseResponse);;
+      .value("IMPULSERESPONSE", SensorSubType::ImpulseResponse);
+  ;
 
   py::enum_<FisheyeSensorModelType>(m, "FisheyeSensorModelType")
       .value("DOUBLE_SPHERE", FisheyeSensorModelType::DoubleSphere);
@@ -288,47 +289,67 @@ void initSensorBindings(py::module& m) {
       });
 #endif
 
-// #ifdef ESP_BUILD_WITH_AUDIO
+  // #ifdef ESP_BUILD_WITH_AUDIO
   // ==== HabitatAcoustics::Config ====
-  py::class_<HabitatAcoustics::Configuration>(m, "HabitatAcousticsConfiguration")
-    .def(py::init<>())
-    .def_readwrite("sampleRate", &HabitatAcoustics::Configuration::sampleRate)
-    .def_readwrite("frequencyBands", &HabitatAcoustics::Configuration::frequencyBands)
-    .def_readwrite("directSHOrder", &HabitatAcoustics::Configuration::directSHOrder)
-    .def_readwrite("indirectSHOrder", &HabitatAcoustics::Configuration::indirectSHOrder)
-    .def_readwrite("threadCount", &HabitatAcoustics::Configuration::threadCount)
-    .def_readwrite("updateDt", &HabitatAcoustics::Configuration::updateDt)
-    .def_readwrite("irTime", &HabitatAcoustics::Configuration::irTime)
-    .def_readwrite("unitScale", &HabitatAcoustics::Configuration::unitScale)
-    .def_readwrite("globalVolume", &HabitatAcoustics::Configuration::globalVolume)
-    .def_readwrite("indirectRayCount", &HabitatAcoustics::Configuration::indirectRayCount)
-    .def_readwrite("indirectRayDepth", &HabitatAcoustics::Configuration::indirectRayDepth)
-    .def_readwrite("sourceRayCount", &HabitatAcoustics::Configuration::sourceRayCount)
-    .def_readwrite("sourceRayDepth", &HabitatAcoustics::Configuration::sourceRayDepth)
-    .def_readwrite("maxDiffractionOrder", &HabitatAcoustics::Configuration::maxDiffractionOrder)
-    .def_readwrite("direct", &HabitatAcoustics::Configuration::direct)
-    .def_readwrite("indirect", &HabitatAcoustics::Configuration::indirect)
-    .def_readwrite("diffraction", &HabitatAcoustics::Configuration::diffraction)
-    .def_readwrite("transmission", &HabitatAcoustics::Configuration::transmission)
-    .def_readwrite("dumpWaveFiles", &HabitatAcoustics::Configuration::dumpWaveFiles)
-    .def_readwrite("enableMaterials", &HabitatAcoustics::Configuration::enableMaterials)
-    .def_readwrite("writeIrToFile", &HabitatAcoustics::Configuration::writeIrToFile);
+  py::class_<HabitatAcoustics::Configuration>(m,
+                                              "HabitatAcousticsConfiguration")
+      .def(py::init<>())
+      .def_readwrite("sampleRate", &HabitatAcoustics::Configuration::sampleRate)
+      .def_readwrite("frequencyBands",
+                     &HabitatAcoustics::Configuration::frequencyBands)
+      .def_readwrite("directSHOrder",
+                     &HabitatAcoustics::Configuration::directSHOrder)
+      .def_readwrite("indirectSHOrder",
+                     &HabitatAcoustics::Configuration::indirectSHOrder)
+      .def_readwrite("threadCount",
+                     &HabitatAcoustics::Configuration::threadCount)
+      .def_readwrite("updateDt", &HabitatAcoustics::Configuration::updateDt)
+      .def_readwrite("irTime", &HabitatAcoustics::Configuration::irTime)
+      .def_readwrite("unitScale", &HabitatAcoustics::Configuration::unitScale)
+      .def_readwrite("globalVolume",
+                     &HabitatAcoustics::Configuration::globalVolume)
+      .def_readwrite("indirectRayCount",
+                     &HabitatAcoustics::Configuration::indirectRayCount)
+      .def_readwrite("indirectRayDepth",
+                     &HabitatAcoustics::Configuration::indirectRayDepth)
+      .def_readwrite("sourceRayCount",
+                     &HabitatAcoustics::Configuration::sourceRayCount)
+      .def_readwrite("sourceRayDepth",
+                     &HabitatAcoustics::Configuration::sourceRayDepth)
+      .def_readwrite("maxDiffractionOrder",
+                     &HabitatAcoustics::Configuration::maxDiffractionOrder)
+      .def_readwrite("direct", &HabitatAcoustics::Configuration::direct)
+      .def_readwrite("indirect", &HabitatAcoustics::Configuration::indirect)
+      .def_readwrite("diffraction",
+                     &HabitatAcoustics::Configuration::diffraction)
+      .def_readwrite("transmission",
+                     &HabitatAcoustics::Configuration::transmission)
+      .def_readwrite("dumpWaveFiles",
+                     &HabitatAcoustics::Configuration::dumpWaveFiles)
+      .def_readwrite("enableMaterials",
+                     &HabitatAcoustics::Configuration::enableMaterials)
+      .def_readwrite("writeIrToFile",
+                     &HabitatAcoustics::Configuration::writeIrToFile);
 
-  py::enum_<HabitatAcoustics::ChannelLayoutType>(m, "HabitatAcousticsChannelLayoutType")
-    .value("Unknown", HabitatAcoustics::ChannelLayoutType::Unknown)
-    .value("Mono", HabitatAcoustics::ChannelLayoutType::Mono)
-    .value("Stereo", HabitatAcoustics::ChannelLayoutType::Stereo)
-    .value("Binaural", HabitatAcoustics::ChannelLayoutType::Binaural)
-    .value("Quad", HabitatAcoustics::ChannelLayoutType::Quad)
-    .value("Surround_5_1", HabitatAcoustics::ChannelLayoutType::Surround_5_1)
-    .value("Surround_7_1", HabitatAcoustics::ChannelLayoutType::Surround_7_1)
-    .value("Ambisonics", HabitatAcoustics::ChannelLayoutType::Ambisonics);
+  py::enum_<HabitatAcoustics::ChannelLayoutType>(
+      m, "HabitatAcousticsChannelLayoutType")
+      .value("Unknown", HabitatAcoustics::ChannelLayoutType::Unknown)
+      .value("Mono", HabitatAcoustics::ChannelLayoutType::Mono)
+      .value("Stereo", HabitatAcoustics::ChannelLayoutType::Stereo)
+      .value("Binaural", HabitatAcoustics::ChannelLayoutType::Binaural)
+      .value("Quad", HabitatAcoustics::ChannelLayoutType::Quad)
+      .value("Surround_5_1", HabitatAcoustics::ChannelLayoutType::Surround_5_1)
+      .value("Surround_7_1", HabitatAcoustics::ChannelLayoutType::Surround_7_1)
+      .value("Ambisonics", HabitatAcoustics::ChannelLayoutType::Ambisonics);
 
   // ==== HabitatAcoustics::ChannelLayout ====
-  py::class_<HabitatAcoustics::ChannelLayout>(m, "HabitatAcousticsChannelLayout")
-    .def(py::init<>())
-    .def_readwrite("channelType", &HabitatAcoustics::ChannelLayout::channelType)
-    .def_readwrite("channelCount", &HabitatAcoustics::ChannelLayout::channelCount);
+  py::class_<HabitatAcoustics::ChannelLayout>(m,
+                                              "HabitatAcousticsChannelLayout")
+      .def(py::init<>())
+      .def_readwrite("channelType",
+                     &HabitatAcoustics::ChannelLayout::channelType)
+      .def_readwrite("channelCount",
+                     &HabitatAcoustics::ChannelLayout::channelCount);
 
   // ==== AudioSensorSpec ====
   py::class_<AudioSensorSpec, AudioSensorSpec::ptr, SensorSpec>(
@@ -339,9 +360,8 @@ void initSensorBindings(py::module& m) {
       .def_readwrite("channelLayout", &AudioSensorSpec::channelLayout_);
 
   // ==== AudioSensor ====
-  py::class_<AudioSensor, Magnum::SceneGraph::PyFeature<AudioSensor>,
-             Sensor, Magnum::SceneGraph::PyFeatureHolder<AudioSensor>>(
-      m, "AudioSensor")
+  py::class_<AudioSensor, Magnum::SceneGraph::PyFeature<AudioSensor>, Sensor,
+             Magnum::SceneGraph::PyFeatureHolder<AudioSensor>>(m, "AudioSensor")
       .def(py::init_alias<std::reference_wrapper<scene::SceneNode>,
                           const AudioSensorSpec::ptr&>())
       .def("setAudioSourceTransform", &AudioSensor::setAudioSourceTransform)
@@ -349,7 +369,7 @@ void initSensorBindings(py::module& m) {
       .def("runSimulation", &AudioSensor::runSimulation)
       .def("getIR", &AudioSensor::getIR)
       .def("reset", &AudioSensor::reset);
-// #endif
+  // #endif
 }
 
 }  // namespace sensor
