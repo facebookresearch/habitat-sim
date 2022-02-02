@@ -454,7 +454,8 @@ Key Commands:
   void buildSemanticPrims(int semanticID,
                           const std::string& semanticTag,
                           const Mn::Vector3& semanticCtr,
-                          const Mn::Vector3& semanticSize);
+                          const Mn::Vector3& semanticSize,
+                          const Mn::Quaternion& rotation);
 
   /**
    * @brief Set whether agent locations should be recorded or not. If toggling
@@ -1728,7 +1729,8 @@ void Viewer::createPickedObjectVisualizer(unsigned int objectId) {
 void Viewer::buildSemanticPrims(int semanticID,
                                 const std::string& objTag,
                                 const Mn::Vector3& semanticCtr,
-                                const Mn::Vector3& semanticSize) {
+                                const Mn::Vector3& semanticSize,
+                                const Mn::Quaternion& rotation) {
   auto rigidObjMgr = simulator_->getRigidObjectManager();
   if (semanticBBID_ != -1) {
     // delete semantic wireframe bounding box if it exists
@@ -1759,6 +1761,7 @@ void Viewer::buildSemanticPrims(int semanticID,
   // create bounding box wireframe
   auto bbWfObj = rigidObjMgr->addObjectByHandle(bbWfObjTemplate->getHandle());
   bbWfObj->setTranslation(semanticCtr);
+  bbWfObj->setRotation(rotation);
   bbWfObj->setMotionType(esp::physics::MotionType::STATIC);
   semanticBBID_ = bbWfObj->getID();
 }  // Viewer::buildSemanticPrims
@@ -1860,10 +1863,11 @@ void Viewer::mousePressEvent(MouseEvent& event) {
           if ((objIdx >= 0) && (objIdx < semanticObjects.size())) {
             const auto& semanticObj = semanticObjects[objIdx];
             tmpStr = semanticObj->id();
+            const auto obb = semanticObj->obb();
             // get center and scale of bb and use to build visualization reps
-            buildSemanticPrims((objIdx + 1), tmpStr,
-                               Mn::Vector3{semanticObj->obb().center()},
-                               Mn::Vector3{semanticObj->obb().sizes()});
+            buildSemanticPrims((objIdx + 1), tmpStr, Mn::Vector3{obb.center()},
+                               Mn::Vector3{obb.sizes()},
+                               Mn::Quaternion{obb.rotation()});
           }
           semanticTag_ =
               Cr::Utility::formatString("id:{}:{}", (objIdx + 1), tmpStr);
