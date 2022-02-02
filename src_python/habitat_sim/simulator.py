@@ -726,7 +726,7 @@ class Sensor:
 
     def _get_observation_async(self) -> Union[ndarray, "Tensor"]:
         if self._spec.gpu2gpu_transfer:
-            obs = self._buffer.flip(0)
+            obs = self._buffer.flip(0)  # type: ignore[union-attr]
         else:
             obs = np.flip(self._buffer, axis=0)
 
