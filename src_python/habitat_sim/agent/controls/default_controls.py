@@ -40,11 +40,7 @@ def _rotate_local(
         rotation = scene_node.rotation
 
         if abs(float(rotation.angle())) > 0:
-            ref_vector = mn.Vector3()
-            ref_vector[axis] = 1
-            abs_rotation_axis = mn.Vector3(np.abs(rotation.axis().normalized()))
-
-            if mn.math.angle(ref_vector, abs_rotation_axis) > mn.Rad(1e-3):
+            if 1.0 - abs(rotation.axis().normalized()[axis]) > 1e-3:
                 raise RuntimeError(
                     "Constrained look only works for a singular look action type"
                 )
