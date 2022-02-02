@@ -33,5 +33,5 @@ ADD ./common/install_conda.sh install_conda.sh
 RUN bash ./install_conda.sh && rm install_conda.sh
 
 RUN conda init bash && conda create --name py37 python=3.7 -y
-RUN source ~/.bashrc && conda activate py36 && conda install -y anaconda-client git gitpython ninja conda-build
+RUN source ~/.bashrc && conda activate py37 && conda install -y anaconda-client git gitpython ninja conda-build
 RUN conda config --set anaconda_upload yes
