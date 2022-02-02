@@ -4,6 +4,7 @@
 
 #include "OBB.h"
 
+#include <array>
 #include <vector>
 
 #include "esp/geo/Geo.h"
@@ -129,6 +130,7 @@ OBB computeGravityAlignedMOBB(const vec3f& gravity,
   };
 
   std::vector<vec2f> in_plane_points;
+  in_plane_points.reserve(points.size());
   for (const auto& pt : points) {
     vec3f aligned_pt = align_gravity * pt;
     in_plane_points.emplace_back(aligned_pt[0], aligned_pt[1]);
@@ -138,6 +140,7 @@ OBB computeGravityAlignedMOBB(const vec3f& gravity,
   CORRADE_INTERNAL_ASSERT(hull.size() > 0);
 
   std::vector<vec2f> edge_dirs;
+  edge_dirs.reserve(hull.size());
   for (size_t i = 0; i < hull.size(); ++i) {
     edge_dirs.emplace_back(
         (hull[(i + 1) % hull.size()] - hull[i]).normalized());
@@ -174,7 +177,7 @@ OBB computeGravityAlignedMOBB(const vec3f& gravity,
   float best_area = 1e10;
   vec2f best_bottom_dir = vec2f(NAN, NAN);
   for (size_t i = 0; i < hull.size(); ++i) {
-    const std::vector<float> angles(
+    const std::array<float, 4> angles(
         {std::acos(left_dir.dot(edge_dirs[left_idx])),
          std::acos(right_dir.dot(edge_dirs[right_idx])),
          std::acos(top_dir.dot(edge_dirs[top_idx])),
