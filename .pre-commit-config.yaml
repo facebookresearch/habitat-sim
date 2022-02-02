@@ -5,7 +5,7 @@ default_language_version:
 
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.0.1
+    rev: v4.1.0
     hooks:
     -   id: trailing-whitespace
     -   id: check-added-large-files
@@ -29,13 +29,13 @@ repos:
 
     # Changes tabs to spaces
 -   repo: https://github.com/Lucas-C/pre-commit-hooks
-    rev: v1.1.10
+    rev: v1.1.11
     hooks:
     -   id: remove-tabs
         exclude: "(^(.git|setup.cfg))|(.(json|scn)$)"
 
 -   repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
-    rev: v2.1.0
+    rev: v2.2.0
     hooks:
     -   id: pretty-format-ini
         args: [--autofix]
@@ -49,7 +49,7 @@ repos:
     -   id: python-check-blanket-type-ignore
 
 -   repo: https://github.com/timothycrosley/isort
-    rev: 5.9.3
+    rev: 5.10.1
     hooks:
     -   id: isort
         exclude: docs/
@@ -68,25 +68,25 @@ repos:
         exclude: docs/
 
 -   repo: https://github.com/pycqa/flake8
-    rev: 3.9.2
+    rev: 4.0.1
     hooks:
     -   id: flake8
         exclude: docs/
         additional_dependencies: &flake8_dependencies
-        - flake8-bugbear==21.9.2
+        - flake8-bugbear==22.1.11
         - flake8-builtins==1.5.3
-        - flake8-comprehensions==3.6.1
+        - flake8-comprehensions==3.8.0
         - flake8-return==1.1.3
-        - flake8-simplify==0.14.2
+        - flake8-simplify==0.15.1
 
 -   repo: https://github.com/asottile/yesqa
-    rev: v1.2.3
+    rev: v1.3.0
     hooks:
     -   id: yesqa
         additional_dependencies: *flake8_dependencies
 
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: 'v0.910'
+    rev: 'v0.931'
     hooks:
     -   id: mypy
         pass_filenames: false
@@ -105,7 +105,7 @@ repos:
     -   id: nbstripout
 
 -   repo: https://github.com/mwouts/jupytext
-    rev: v1.13.0
+    rev: v1.13.6
     hooks:
     -   id: jupytext
         files: '^examples/tutorials/(colabs|nb_python)/(.*\.py|.*\.ipynb)$'
@@ -116,7 +116,7 @@ repos:
             - isort
 
 -   repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: fdd6cd7821ce22929625f134bc97488ed699e256 # frozen: 12.0.1
+    rev: v13.0.0
     hooks:
     -   id: clang-format
         types_or: [c++, c, c#, cuda] # also run on CUDA
@@ -130,7 +130,7 @@ repos:
         exclude: (^src/(cmake/Find|deps)|configure\.h\.cmake$)
 
 -   repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v7.32.0
+    rev: v8.8.0
     hooks:
     -   id: eslint
         args: [--fix, --ext .html,.js]
@@ -142,11 +142,11 @@ repos:
         - prettier@1.18.2
 
 -   repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.7.2.1
+    rev: v0.8.0.3
     hooks:
     -   id: shellcheck
 
 -   repo: https://github.com/AleksaC/circleci-cli-py
-    rev: v0.1.15973
+    rev: v0.1.16535
     hooks:
     -   id: circle-ci-validator
