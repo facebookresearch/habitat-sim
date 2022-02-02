@@ -11,7 +11,7 @@
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 
-#include "esp/assets/Mp3dInstanceMeshData.h"
+#include "Mp3dInstanceMeshData.h"
 #include "esp/core/Esp.h"
 #include "esp/nav/PathFinder.h"
 #include "esp/scene/SemanticScene.h"
