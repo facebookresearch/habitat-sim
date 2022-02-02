@@ -90,14 +90,6 @@ if(BUILD_WITH_VHACD)
   add_subdirectory("${DEPS_DIR}/v-hacd/src/VHACD_Lib")
 endif()
 
-# # todo sangarg : Add audio stuff
-# if(BUILD_WITH_AUDIO)
-#   #set(NO_OPENCL ON CACHE BOOL "NO_OPENCL" FORCE)
-#   #set(NO_OPENMP ON CACHE BOOL "NO_OPENMP" FORCE)
-#   ## adding /src/VHACD_Lib instead of /src since /src contains unneccesary test files
-#   add_subdirectory("${DEPS_DIR}/audio/HabitatAcousticsPkg/libs")
-# endif()
-
 # recast
 set(RECASTNAVIGATION_DEMO OFF CACHE BOOL "RECASTNAVIGATION_DEMO" FORCE)
 set(RECASTNAVIGATION_TESTS OFF CACHE BOOL "RECASTNAVIGATION_TESTS" FORCE)
