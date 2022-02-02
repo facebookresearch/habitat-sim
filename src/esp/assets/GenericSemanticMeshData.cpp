@@ -215,32 +215,34 @@ GenericSemanticMeshData::buildSemanticMeshData(
 
         } else {
           // color is not found in ssd mapping, so not legal color
-          // check if we've assigned a semantic ID to this color before, and if
-          // not do so
-          auto nonSSDClrRes =
-              nonSSDVertColorIDs.insert({meshColorInt, nonSSDObjID});
-          if (nonSSDClrRes.second) {
-            ESP_DEBUG() << dbgMsgPrefix << "Inserted Unknown Color" << meshColor
-                        << "in map w/ nonSSDObjID ="
-                        << nonSSDClrRes.first->second;
-            // inserted, so increment nonSSDObjID
-            ++nonSSDObjID;
-            nonSSDVertColorCounts.insert({meshColorInt, 1});
-          } else {
-            ++nonSSDVertColorCounts.at(meshColorInt);
-          }
-          // map holds that color's nonSSDObjID
-          semanticID = nonSSDClrRes.first->second;
+          // use currently assigned unknown color's semantic ID for this vertex
+          semanticID = nonSSDObjID;
           regionID = maxRegion;
 
-          // color for given semantic ID
-          if (colorMapToUse.size() <= semanticID) {
-            colorMapToUse.resize(semanticID + 1);
+          // check if we've assigned a semantic ID to this color before, and if
+          // not do so
+
+          auto nonSSDClrCountRes =
+              nonSSDVertColorCounts.insert({meshColorInt, 1});
+          if (nonSSDClrCountRes.second) {
+            // unknown color has not been seen before
+            ESP_DEBUG() << dbgMsgPrefix << "Inserted Unknown semantic Color"
+                        << meshColor << "in map w/ nonSSDObjID =" << semanticID;
+            nonSSDVertColorIDs.insert({meshColorInt, nonSSDObjID});
+            // inserted, so increment nonSSDObjID tracking expanded semantic IDs
+            // for future unknown color
+            ++nonSSDObjID;
+            // add color for given semantic ID to map
+            if (colorMapToUse.size() <= semanticID) {
+              colorMapToUse.resize(semanticID + 1);
+            }
+            colorMapToUse[semanticID] = meshColor;
+          } else {
+            ++nonSSDClrCountRes.first->second;
           }
-          colorMapToUse[semanticID] = meshColor;
         }
 
-        // semantic ID for vertex
+        // assign semantic ID for vertex
         semanticData->objectIds_[vertIdx] = semanticID;
         // partition Ids for each vertex, for multi-mesh construction.
         partitionIds[vertIdx] = regionID;
@@ -270,7 +272,6 @@ GenericSemanticMeshData::buildSemanticMeshData(
                      nonSSDVertColorCounts.at(elem.first), elem.second);
         }
       }
-
     } else {
       // no remapping provided by SSD so just use what is synthesized
       Cr::Containers::Array<Mn::Color3ub> colorsThatBecomeTheColorMap{
