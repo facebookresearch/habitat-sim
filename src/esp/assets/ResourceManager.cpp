@@ -1283,7 +1283,6 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
   /* Open the file. On error the importer already prints a diagnostic message,
      so no need to do that here. The importer implicitly converts per-face
      attributes to per-vertex, so nothing extra needs to be done. */
-  Cr::Containers::Optional<Mn::Trade::MeshData> meshData;
   ConfigureImporterManagerGLExtensions();
   ESP_CHECK(
       (fileImporter_->openFile(filename) && (fileImporter_->meshCount() > 0)),
@@ -1296,6 +1295,9 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
       Magnum::Vector3());
 
   auto sceneID = fileImporter_->defaultScene();
+
+  Cr::Containers::Optional<Mn::Trade::MeshData> meshData;
+
   if (sceneID == -1) {
     // no default scene --- standalone OBJ/PLY files, for example
     // already verified at least one mesh exists, this means only one mesh,
@@ -1522,10 +1524,11 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
   const std::string& filename = info.filepath;
   CORRADE_INTERNAL_ASSERT(resourceDict_.count(filename) == 0);
   ConfigureImporterManagerGLExtensions();
-  if (!fileImporter_->openFile(filename)) {
-    ESP_ERROR() << "Cannot open file" << filename;
-    return false;
-  }
+
+  ESP_CHECK(
+      (fileImporter_->openFile(filename) && (fileImporter_->meshCount() > 0)),
+      Cr::Utility::formatString("Error loading general mesh data from file {}",
+                                filename));
 
   // load file and add it to the dictionary
   LoadedAssetData loadedAssetData{info};
