@@ -22,7 +22,7 @@
 
 ## Build from Source
 
-We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Anaconda](https://www.anaconda.com/distribution/#download-section) environment (note: python>=3.6 is required). Once you have Anaconda installed, here are the instructions.
+We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/miniconda.html) or [Anaconda](https://www.anaconda.com/distribution/#download-section) environment (note: python>=3.7 is required). Once you have Anaconda installed, here are the instructions.
 
 
 1. Clone this github repository.
@@ -40,8 +40,8 @@ We highly recommend installing a [miniconda](https://docs.conda.io/en/latest/min
     Common
 
    ```bash
-   # We require python>=3.6 and cmake>=3.10
-   conda create -n habitat python=3.6 cmake=3.14.0
+   # We require python>=3.7 and cmake>=3.10
+   conda create -n habitat python=3.7 cmake=3.14.0
    conda activate habitat
    pip install -r requirements.txt
    ```
