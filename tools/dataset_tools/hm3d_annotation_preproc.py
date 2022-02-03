@@ -55,6 +55,10 @@ HM3D_ANNOTATION_SUBDIR_RE = r"(?i)[0-9]{5}-[a-z0-9]{11}\.semantic$"
 # Whether or not to build annotation scene dataset configs.
 BUILD_SD_CONFIGS = True
 
+#
+# Prefix for config - leave empty string for none. Use this to build configs on a
+# subset of scenes for testing without having to view all scenes
+CONFIG_PREFIX = ""
 
 ##############################################################################
 ## You should not need to modify anything below here
@@ -250,6 +254,7 @@ def build_annotation_configs(part_file_list_dict: Dict, output_files: List):
     new_config_filenames = {}
     new_filepaths_for_config = {}
     # build new filenames for annotation configs
+    new_config_file_prefix = "hm3d_annotated_" + CONFIG_PREFIX
     for config in src_json_configs:
         filename = os_join(config[0], config[-1])
         # want to overwrite old versions
@@ -259,7 +264,7 @@ def build_annotation_configs(part_file_list_dict: Dict, output_files: List):
         json_filename = config[-1]
         config_filenames[json_filename] = filename
         new_config_filenames[json_filename] = filename.replace(
-            "hm3d_", "hm3d_annotated_"
+            "hm3d_", new_config_file_prefix
         )
 
         # set default path list
@@ -407,8 +412,7 @@ def main():
     #     for filename in files:
     #         print("\t{}".format(filename))
 
-    # If requesting to build scene dataset configs, build them, and also get relative paths to all 5 annotation configs
-
+    # Get relative paths to all 5 annotation configs, as well as build scene dataset configs,if requested
     build_annotation_configs(part_file_list_dict, output_files)
 
     # save filenames of the annotation files that have been written, to facilitate archiving
