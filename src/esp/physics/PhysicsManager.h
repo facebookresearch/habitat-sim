@@ -26,7 +26,6 @@
 #include "esp/assets/BaseMesh.h"
 #include "esp/assets/CollisionMeshData.h"
 #include "esp/assets/GenericSemanticMeshData.h"
-#include "esp/assets/MeshData.h"
 #include "esp/assets/MeshMetaData.h"
 #include "esp/assets/ResourceManager.h"
 #include "esp/gfx/DrawableGroup.h"
