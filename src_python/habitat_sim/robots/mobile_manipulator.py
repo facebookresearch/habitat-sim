@@ -4,7 +4,6 @@ from typing import Dict, List, Optional, Set, Tuple
 import attr
 import magnum as mn
 import numpy as np
-import numpy.typing as npt
 
 from habitat_sim.physics import JointMotorSettings
 from habitat_sim.robots.robot_interface import RobotInterface
@@ -75,8 +74,8 @@ class MobileManipulatorParams:
     gripper_joints: List[int]
     wheel_joints: Optional[List[int]]
 
-    arm_init_params: Optional[npt.NDArray[np.float32]]
-    gripper_init_params: Optional[npt.NDArray[np.float32]]
+    arm_init_params: Optional[np.ndarray]
+    gripper_init_params: Optional[np.ndarray]
 
     ee_offset: mn.Vector3
     ee_link: int
@@ -84,8 +83,8 @@ class MobileManipulatorParams:
 
     cameras: Dict[str, RobotCameraParams]
 
-    gripper_closed_state: npt.NDArray[np.float32]
-    gripper_open_state: npt.NDArray[np.float32]
+    gripper_closed_state: np.ndarray
+    gripper_open_state: np.ndarray
     gripper_state_eps: float
 
     arm_mtr_pos_gain: float
@@ -119,7 +118,7 @@ class MobileManipulator(RobotInterface):
         super().__init__()
         self.urdf_path = urdf_path
         self.params = params
-        self._fix_joint_values: Optional[npt.NDArray[np.float32]] = None
+        self._fix_joint_values: Optional[np.ndarray] = None
 
         self._sim = sim
         self._limit_robo_joints = limit_robo_joints
