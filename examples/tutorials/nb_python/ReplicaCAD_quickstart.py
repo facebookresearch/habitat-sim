@@ -22,6 +22,7 @@
 
 # %% [markdown]
 # <a href="https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/ReplicaCAD_quickstart.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+
 # %% [markdown]
 # #Habitat-sim ReplicaCAD Quickstart
 #
@@ -38,10 +39,10 @@
 # @title Path Setup and Imports { display-mode: "form" }
 # @markdown (double click to show code).
 
-# %cd /content/habitat-sim
-## [setup]
 from __future__ import annotations
 
+# %cd /content/habitat-sim
+## [setup]
 import os
 import sys
 

@@ -76,9 +76,7 @@ for _i in range(1):
     print(
         " %d x %d, total time %0.2f s,"
         % (settings["width"], settings["height"], perf["total_time"]),
-        "frame time {:0.3f} ms ({:0.1f} FPS)".format(
-            perf["frame_time"] * 1000.0, perf["fps"]
-        ),
+        "frame time %0.3f ms (%0.1f FPS)" % (perf["frame_time"] * 1000.0, perf["fps"]),
     )
     print(" ============================================================== ")
 

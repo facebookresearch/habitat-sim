@@ -13,7 +13,7 @@ from functools import partial
 if "google.colab" in sys.modules:
     os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
 
-from typing import Any
+from typing import Any, Dict, List, Optional, Tuple
 
 import imageio
 import numpy as np
@@ -111,7 +111,7 @@ def display_video(video_file: str, height: int = 400):
 def observation_to_image(
     observation_image: np.ndarray,
     observation_type: str,
-    depth_clip: float | None = 10.0,
+    depth_clip: Optional[float] = 10.0,
 ):
     """Generate an rgb image from a sensor observation. Supported types are: "color", "depth", "semantic"
 
@@ -206,15 +206,15 @@ def make_video_frame(
 
 
 def make_video(
-    observations: list[np.ndarray],
+    observations: List[np.ndarray],
     primary_obs: str,
     primary_obs_type: str,
     video_file: str,
     fps: int = 60,
     open_vid: bool = True,
-    video_dims: tuple[int] | None = None,
-    overlay_settings: list[dict[str, Any]] | None = None,
-    depth_clip: float | None = 10.0,
+    video_dims: Optional[Tuple[int]] = None,
+    overlay_settings: Optional[List[Dict[str, Any]]] = None,
+    depth_clip: Optional[float] = 10.0,
     observation_to_image=observation_to_image,
 ):
     """Build a video from a passed observations array, with some images optionally overlayed.

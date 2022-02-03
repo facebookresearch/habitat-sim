@@ -7,13 +7,13 @@ from __future__ import annotations
 
 import argparse
 import json
-from typing import Any
+from typing import Any, Dict
 
 import numpy as np
 
 
 # Convert ndarrays to python lists so that we can serialize.
-def listify(entry: dict[str, Any]) -> None:
+def listify(entry: Dict[str, Any]) -> None:
     for key in entry.keys():
         if type(entry[key]) is np.ndarray:
             entry[key] = entry[key].tolist()

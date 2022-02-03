@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from typing import Dict, List, Optional, Set, Tuple
 
 import attr
 import magnum as mn
@@ -71,18 +72,18 @@ class MobileManipulatorParams:
     :property base_offset: The offset of the root transform from the center ground point for navmesh kinematic control.
     """
 
-    arm_joints: list[int]
-    gripper_joints: list[int]
-    wheel_joints: list[int] | None
+    arm_joints: List[int]
+    gripper_joints: List[int]
+    wheel_joints: Optional[List[int]]
 
-    arm_init_params: np.ndarray | None
-    gripper_init_params: np.ndarray | None
+    arm_init_params: Optional[np.ndarray]
+    gripper_init_params: Optional[np.ndarray]
 
     ee_offset: mn.Vector3
     ee_link: int
     ee_constraint: np.ndarray
 
-    cameras: dict[str, RobotCameraParams]
+    cameras: Dict[str, RobotCameraParams]
 
     gripper_closed_state: np.ndarray
     gripper_open_state: np.ndarray
@@ -97,7 +98,7 @@ class MobileManipulatorParams:
     wheel_mtr_max_impulse: float
 
     base_offset: mn.Vector3
-    base_link_names: set[str]
+    base_link_names: Set[str]
 
 
 class MobileManipulator(RobotInterface):
@@ -119,7 +120,7 @@ class MobileManipulator(RobotInterface):
         super().__init__()
         self.urdf_path = urdf_path
         self.params = params
-        self._fix_joint_values: np.ndarray | None = None
+        self._fix_joint_values: Optional[np.ndarray] = None
 
         self._sim = sim
         self._limit_robo_joints = limit_robo_joints
@@ -134,12 +135,12 @@ class MobileManipulator(RobotInterface):
 
         # NOTE: the follow members cache static info for improved efficiency over querying the API
         # maps joint ids to motor settings for convenience
-        self.joint_motors: dict[int, tuple[int, JointMotorSettings]] = {}
+        self.joint_motors: Dict[int, Tuple[int, JointMotorSettings]] = {}
         # maps joint ids to position index
-        self.joint_pos_indices: dict[int, int] = {}
+        self.joint_pos_indices: Dict[int, int] = {}
         # maps joint ids to velocity index
-        self.joint_dof_indices: dict[int, int] = {}
-        self.joint_limits: tuple[np.ndarray, np.ndarray] = None
+        self.joint_dof_indices: Dict[int, int] = {}
+        self.joint_limits: Tuple[np.ndarray, np.ndarray] = None
 
         # defaults for optional params
         if self.params.gripper_init_params is None:
@@ -251,7 +252,7 @@ class MobileManipulator(RobotInterface):
     # ARM RELATED
     #############################################
     @property
-    def arm_joint_limits(self) -> tuple[np.ndarray, np.ndarray]:
+    def arm_joint_limits(self) -> Tuple[np.ndarray, np.ndarray]:
         """Get the arm joint limits in radians"""
         arm_pos_indices = list(
             map(lambda x: self.joint_pos_indices[x], self.params.arm_joints)
@@ -315,7 +316,7 @@ class MobileManipulator(RobotInterface):
         )
 
     @gripper_joint_pos.setter
-    def gripper_joint_pos(self, ctrl: list[float]):
+    def gripper_joint_pos(self, ctrl: List[float]):
         """Kinematically sets the gripper joints and sets the motors to target."""
         joint_positions = self.sim_obj.joint_positions
         for i, jidx in enumerate(self.params.gripper_joints):
@@ -375,7 +376,7 @@ class MobileManipulator(RobotInterface):
         )
 
     @arm_joint_pos.setter
-    def arm_joint_pos(self, ctrl: list[float]):
+    def arm_joint_pos(self, ctrl: List[float]):
         """Kinematically sets the arm joints and sets the motors to target."""
         self._validate_arm_ctrl_input(ctrl)
 
@@ -386,7 +387,7 @@ class MobileManipulator(RobotInterface):
             joint_positions[self.joint_pos_indices[jidx]] = ctrl[i]
         self.sim_obj.joint_positions = joint_positions
 
-    def _validate_arm_ctrl_input(self, ctrl: list[float]):
+    def _validate_arm_ctrl_input(self, ctrl: List[float]):
         """
         Raises an exception if the control input is NaN or does not match the
         joint dimensions.
@@ -425,7 +426,7 @@ class MobileManipulator(RobotInterface):
         return motor_targets
 
     @arm_motor_pos.setter
-    def arm_motor_pos(self, ctrl: list[float]) -> None:
+    def arm_motor_pos(self, ctrl: List[float]) -> None:
         """Set the desired target of the arm joint motors."""
         self._validate_arm_ctrl_input(ctrl)
 

@@ -49,7 +49,7 @@ import sqlite3
 from argparse import ArgumentParser, Namespace
 from collections import defaultdict
 from sqlite3 import Connection
-from typing import Any, DefaultDict
+from typing import Any, DefaultDict, Dict, List, Optional, Set, Union
 
 import attr
 
@@ -74,10 +74,10 @@ class SummaryItem:
     count: int = 0
 
 
-def get_sqlite_events(conn: Connection) -> list[Event]:
+def get_sqlite_events(conn: Connection) -> List[Event]:
     """Parse an sqlite database containing an NVTX_EVENTS table and return a
     list of Events."""
-    events: list[Event] = []
+    events: List[Event] = []
 
     # check if table exists
     cursor = conn.execute(
@@ -96,7 +96,7 @@ def get_sqlite_events(conn: Connection) -> list[Event]:
     return events
 
 
-def create_summary_from_events(events: list[Event]) -> DefaultDict[str, SummaryItem]:
+def create_summary_from_events(events: List[Event]) -> DefaultDict[str, SummaryItem]:
     """From a list of events, group by name and create summary items. Returns a
     dictionary of items keyed by name."""
     # sort by start time (ascending). For ties, sort by end time (descending). In this way,
@@ -119,11 +119,11 @@ def create_summary_from_events(events: list[Event]) -> DefaultDict[str, SummaryI
         # iterate chronologically through later events. Our accumulated
         #  "exclusive duration" is time during which we aren't inside any
         #  overlapping, same-thread event ("child event").
-        recent_exclusive_start_time: int | None = event.start
-        child_end_times: set[int] = set()
+        recent_exclusive_start_time: Optional[int] = event.start
+        child_end_times: Set[int] = set()
         for j in range(i + 1, len(events) + 1):  # note one extra iteration
 
-            other_event: Event | None = None if j == len(events) else events[j]
+            other_event: Optional[Event] = None if j == len(events) else events[j]
             if other_event:
                 if other_event.thread_id != event.thread_id:
                     continue
@@ -171,9 +171,9 @@ def _display_time_ms(time: int, args: Namespace, show_sign: bool = False) -> str
 
 
 def print_summaries(
-    summaries: list[DefaultDict[str, SummaryItem]] | list[DefaultDict[Any, Any]],
+    summaries: Union[List[DefaultDict[str, SummaryItem]], List[DefaultDict[Any, Any]]],
     args: Namespace,
-    labels: list[str] | None = None,
+    labels: Optional[List[str]] = None,
 ) -> None:
     """Print a dictionary of summaries to stdout. See create_arg_parser for
     formatting options available in the args object. See also
@@ -185,7 +185,7 @@ def print_summaries(
         print("no summaries to print")
         return
 
-    all_names_with_times: dict[str, int] = {}
+    all_names_with_times: Dict[str, int] = {}
     max_name_len = 0
     for summary in summaries:
         for name in summary:

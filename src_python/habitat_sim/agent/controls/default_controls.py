@@ -6,6 +6,8 @@
 
 from __future__ import annotations
 
+from typing import List, Optional
+
 import magnum as mn
 import numpy as np
 
@@ -14,7 +16,7 @@ from habitat_sim.geo import FRONT
 from habitat_sim.registry import registry
 from habitat_sim.scene import SceneNode
 
-__all__: list[str] = []
+__all__: List[str] = []
 
 
 _X_AXIS = 0
@@ -34,7 +36,7 @@ def _move_along(scene_node: SceneNode, distance: float, axis: int) -> None:
 
 
 def _rotate_local(
-    scene_node: SceneNode, theta: float, axis: int, constraint: float | None = None
+    scene_node: SceneNode, theta: float, axis: int, constraint: Optional[float] = None
 ) -> None:
     if constraint is not None:
         rotation = scene_node.rotation

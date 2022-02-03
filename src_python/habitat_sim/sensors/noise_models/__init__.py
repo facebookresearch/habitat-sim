@@ -22,7 +22,7 @@ from habitat_sim.sensors.noise_models.sensor_noise_model import SensorNoiseModel
 from habitat_sim.sensors.noise_models.speckle_noise_model import SpeckleNoiseModel
 
 
-def make_sensor_noise_model(name: str, kwargs: dict[str, Any]) -> SensorNoiseModel:
+def make_sensor_noise_model(name: str, kwargs: Dict[str, Any]) -> SensorNoiseModel:
     r"""Constructs a noise model using the given name and keyword arguments
 
     :param name: The name of the noise model in the `habitat_sim.registry`

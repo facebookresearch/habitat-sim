@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Dict, List, Optional, Tuple
 
 import attr
 import numpy as np
@@ -28,24 +28,24 @@ class GreedyGeodesicFollower:
 
     pathfinder: PathFinder
     agent: Agent
-    goal_radius: float | None
-    action_mapping: dict[GreedyFollowerCodes, Any]
+    goal_radius: Optional[float]
+    action_mapping: Dict[GreedyFollowerCodes, Any]
     impl: GreedyGeodesicFollowerImpl
     forward_spec: ActuationSpec
     left_spec: ActuationSpec
     right_spec: ActuationSpec
-    last_goal: np.ndarray | None
+    last_goal: Optional[np.ndarray]
 
     def __init__(
         self,
         pathfinder: PathFinder,
         agent: Agent,
-        goal_radius: float | None = None,
+        goal_radius: Optional[float] = None,
         *,
-        stop_key: Any | None = None,
-        forward_key: Any | None = None,
-        left_key: Any | None = None,
-        right_key: Any | None = None,
+        stop_key: Optional[Any] = None,
+        forward_key: Optional[Any] = None,
+        left_key: Optional[Any] = None,
+        right_key: Optional[Any] = None,
         fix_thrashing: bool = True,
         thrashing_threshold: int = 16,
     ) -> None:
@@ -120,7 +120,7 @@ class GreedyGeodesicFollower:
             thrashing_threshold,
         )
 
-    def _find_action(self, name: str) -> tuple[str, ActuationSpec]:
+    def _find_action(self, name: str) -> Tuple[str, ActuationSpec]:
         candidates = list(
             filter(
                 lambda kv: kv[1].name == name,
@@ -164,7 +164,7 @@ class GreedyGeodesicFollower:
         else:
             return self.action_mapping[next_act]
 
-    def find_path(self, goal_pos: np.ndarray) -> list[Any]:
+    def find_path(self, goal_pos: np.ndarray) -> List[Any]:
         r"""Finds the sequence actions that greedily follow the geodesic
         shortest path from the agent's current position to get to the goal
 

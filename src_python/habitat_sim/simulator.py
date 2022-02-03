@@ -12,7 +12,7 @@ from collections.abc import MutableMapping
 from os import path as osp
 from typing import Any, Dict, List
 from typing import MutableMapping as MutableMapping_T
-from typing import Union, cast, overload
+from typing import Optional, Union, cast, overload
 
 import attr
 import magnum as mn
@@ -56,9 +56,9 @@ class Configuration:
     """
 
     sim_cfg: SimulatorConfiguration
-    agents: list[AgentConfiguration]
+    agents: List[AgentConfiguration]
     # An existing Metadata Mediator can also be used to construct a SimulatorBackend
-    metadata_mediator: MetadataMediator | None = None
+    metadata_mediator: Optional[MetadataMediator] = None
 
 
 @attr.s(auto_attribs=True)
@@ -73,16 +73,16 @@ class Simulator(SimulatorBackend):
     """
 
     config: Configuration
-    agents: list[Agent] = attr.ib(factory=list, init=False)
+    agents: List[Agent] = attr.ib(factory=list, init=False)
     _num_total_frames: int = attr.ib(default=0, init=False)
     _default_agent_id: int = attr.ib(default=0, init=False)
-    __sensors: list[dict[str, Sensor]] = attr.ib(factory=list, init=False)
+    __sensors: List[Dict[str, Sensor]] = attr.ib(factory=list, init=False)
     _initialized: bool = attr.ib(default=False, init=False)
     _previous_step_time: float = attr.ib(
         default=0.0, init=False
     )  # track the compute time of each step
-    _async_draw_agent_ids: int | list[int] | None = None
-    __last_state: dict[int, AgentState] = attr.ib(factory=dict, init=False)
+    _async_draw_agent_ids: Optional[Union[int, List[int]]] = None
+    __last_state: Dict[int, AgentState] = attr.ib(factory=dict, init=False)
 
     @staticmethod
     def _sanitize_config(config: Configuration) -> None:
@@ -168,16 +168,16 @@ class Simulator(SimulatorBackend):
         self.pathfinder.seed(new_seed)
 
     @overload
-    def reset(self, agent_ids: list[int]) -> dict[int, ObservationDict]:
+    def reset(self, agent_ids: List[int]) -> Dict[int, ObservationDict]:
         ...
 
     @overload
-    def reset(self, agent_ids: int | None = None) -> ObservationDict:
+    def reset(self, agent_ids: Optional[int] = None) -> ObservationDict:
         ...
 
     def reset(
-        self, agent_ids: int | None | list[int] = None
-    ) -> ObservationDict | dict[int, ObservationDict]:
+        self, agent_ids: Union[Optional[int], List[int]] = None
+    ) -> Union[ObservationDict, Dict[int, ObservationDict],]:
         super().reset()
         for i in range(len(self.agents)):
             self.reset_agent(i)
@@ -269,7 +269,7 @@ class Simulator(SimulatorBackend):
 
         self._default_agent_id = config.sim_cfg.default_agent_id
 
-        self.__sensors: list[dict[str, Sensor]] = [
+        self.__sensors: List[Dict[str, Sensor]] = [
             dict() for i in range(len(config.agents))
         ]
         self.__last_state = dict()
@@ -283,7 +283,9 @@ class Simulator(SimulatorBackend):
             sim=self, agent=self.get_agent(agent_id), sensor_id=uuid
         )
 
-    def add_sensor(self, sensor_spec: SensorSpec, agent_id: int | None = None) -> None:
+    def add_sensor(
+        self, sensor_spec: SensorSpec, agent_id: Optional[int] = None
+    ) -> None:
         if (
             (
                 not self.config.sim_cfg.load_semantic_mesh
@@ -314,7 +316,7 @@ class Simulator(SimulatorBackend):
         return self.agents[agent_id]
 
     def initialize_agent(
-        self, agent_id: int, initial_state: AgentState | None = None
+        self, agent_id: int, initial_state: Optional[AgentState] = None
     ) -> Agent:
         agent = self.get_agent(agent_id=agent_id)
         if initial_state is None:
@@ -330,7 +332,7 @@ class Simulator(SimulatorBackend):
         return agent
 
     def start_async_render_and_step_physics(
-        self, dt: float, agent_ids: int | list[int] = 0
+        self, dt: float, agent_ids: Union[int, List[int]] = 0
     ):
         if self._async_draw_agent_ids is not None:
             raise RuntimeError(
@@ -351,7 +353,7 @@ class Simulator(SimulatorBackend):
         self.renderer.start_draw_jobs()
         self.step_physics(dt)
 
-    def start_async_render(self, agent_ids: int | list[int] = 0):
+    def start_async_render(self, agent_ids: Union[int, List[int]] = 0):
         if self._async_draw_agent_ids is not None:
             raise RuntimeError(
                 "start_async_render_and_step_physics was already called.  "
@@ -372,7 +374,10 @@ class Simulator(SimulatorBackend):
 
     def get_sensor_observations_async_finish(
         self,
-    ) -> (dict[str, ndarray | Tensor] | dict[int, dict[str, ndarray | Tensor]]):
+    ) -> Union[
+        Dict[str, Union[ndarray, Tensor]],
+        Dict[int, Dict[str, Union[ndarray, Tensor]]],
+    ]:
         if self._async_draw_agent_ids is None:
             raise RuntimeError(
                 "get_sensor_observations_async_finish was called before calling start_async_render_and_step_physics."
@@ -388,9 +393,9 @@ class Simulator(SimulatorBackend):
 
         self.renderer.wait_draw_jobs()
         # As backport. All Dicts are ordered in Python >= 3.7
-        observations: dict[int, dict[str, ndarray | Tensor]] = OrderedDict()
+        observations: Dict[int, Dict[str, Union[ndarray, Tensor]]] = OrderedDict()
         for agent_id in agent_ids:
-            agent_observations: dict[str, ndarray | Tensor] = {}
+            agent_observations: Dict[str, Union[ndarray, Tensor]] = {}
             for sensor_uuid, sensor in self.__sensors[agent_id].items():
                 agent_observations[sensor_uuid] = sensor._get_observation_async()
 
@@ -405,13 +410,13 @@ class Simulator(SimulatorBackend):
 
     @overload
     def get_sensor_observations(
-        self, agent_ids: list[int]
-    ) -> dict[int, ObservationDict]:
+        self, agent_ids: List[int]
+    ) -> Dict[int, ObservationDict]:
         ...
 
     def get_sensor_observations(
-        self, agent_ids: int | list[int] = 0
-    ) -> ObservationDict | dict[int, ObservationDict]:
+        self, agent_ids: Union[int, List[int]] = 0
+    ) -> Union[ObservationDict, Dict[int, ObservationDict],]:
         if isinstance(agent_ids, int):
             agent_ids = [agent_ids]
             return_single = True
@@ -424,7 +429,7 @@ class Simulator(SimulatorBackend):
                 sensor.draw_observation()
 
         # As backport. All Dicts are ordered in Python >= 3.7
-        observations: dict[int, ObservationDict] = OrderedDict()
+        observations: Dict[int, ObservationDict] = OrderedDict()
         for agent_id in agent_ids:
             agent_observations: ObservationDict = {}
             for sensor_uuid, sensor in self.__sensors[agent_id].items():
@@ -450,37 +455,37 @@ class Simulator(SimulatorBackend):
         self.__last_state[self._default_agent_id] = state
 
     @property
-    def _sensors(self) -> dict[str, Sensor]:
+    def _sensors(self) -> Dict[str, Sensor]:
         # TODO Deprecate and remove
         return self.__sensors[self._default_agent_id]
 
-    def last_state(self, agent_id: int | None = None) -> AgentState:
+    def last_state(self, agent_id: Optional[int] = None) -> AgentState:
         if agent_id is None:
             agent_id = self._default_agent_id
         return self.__last_state[agent_id]
 
     @overload
-    def step(self, action: str | int, dt: float = 1.0 / 60.0) -> ObservationDict:
+    def step(self, action: Union[str, int], dt: float = 1.0 / 60.0) -> ObservationDict:
         ...
 
     @overload
     def step(
-        self, action: MutableMapping_T[int, str | int], dt: float = 1.0 / 60.0
-    ) -> dict[int, ObservationDict]:
+        self, action: MutableMapping_T[int, Union[str, int]], dt: float = 1.0 / 60.0
+    ) -> Dict[int, ObservationDict]:
         ...
 
     def step(
         self,
-        action: str | int | MutableMapping_T[int, str | int],
+        action: Union[str, int, MutableMapping_T[int, Union[str, int]]],
         dt: float = 1.0 / 60.0,
-    ) -> ObservationDict | dict[int, ObservationDict]:
+    ) -> Union[ObservationDict, Dict[int, ObservationDict],]:
         self._num_total_frames += 1
         if isinstance(action, MutableMapping):
             return_single = False
         else:
             action = cast(Dict[int, Union[str, int]], {self._default_agent_id: action})
             return_single = True
-        collided_dict: dict[int, bool] = {}
+        collided_dict: Dict[int, bool] = {}
         for agent_id, agent_act in action.items():
             agent = self.get_agent(agent_id)
             collided_dict[agent_id] = agent.act(agent_act)
@@ -500,13 +505,13 @@ class Simulator(SimulatorBackend):
 
     def make_greedy_follower(
         self,
-        agent_id: int | None = None,
+        agent_id: Optional[int] = None,
         goal_radius: float = None,
         *,
-        stop_key: Any | None = None,
-        forward_key: Any | None = None,
-        left_key: Any | None = None,
-        right_key: Any | None = None,
+        stop_key: Optional[Any] = None,
+        forward_key: Optional[Any] = None,
+        left_key: Optional[Any] = None,
+        right_key: Optional[Any] = None,
         fix_thrashing: bool = True,
         thrashing_threshold: int = 16,
     ):
@@ -574,7 +579,7 @@ class Sensor:
 
             resolution = self._spec.resolution
             if self._spec.sensor_type == SensorType.SEMANTIC:
-                self._buffer: np.ndarray | Tensor = torch.empty(
+                self._buffer: Union[np.ndarray, Tensor] = torch.empty(
                     resolution[0], resolution[1], dtype=torch.int32, device=device
                 )
             elif self._spec.sensor_type == SensorType.DEPTH:
@@ -695,7 +700,7 @@ class Sensor:
             self._sensor_object, scene, self.view, render_flags
         )
 
-    def get_observation(self) -> ndarray | Tensor:
+    def get_observation(self) -> Union[ndarray, Tensor]:
         assert self._sim.renderer is not None
         tgt = self._sensor_object.render_target
 
@@ -721,7 +726,7 @@ class Sensor:
 
         return self._noise_model(obs)
 
-    def _get_observation_async(self) -> ndarray | Tensor:
+    def _get_observation_async(self) -> Union[ndarray, Tensor]:
         if self._spec.gpu2gpu_transfer:
             obs = self._buffer.flip(0)  # type: ignore[union-attr]
         else:

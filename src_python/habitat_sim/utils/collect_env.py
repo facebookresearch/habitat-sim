@@ -4,6 +4,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+#
+# A script to capture the running environment information for debugging
+# purposes.
+# Please, run this script and provide it's output when reporting a bug.
+#
+
 from __future__ import annotations
 
 import locale
@@ -11,12 +17,6 @@ import os
 import platform
 import subprocess
 import sys
-
-#
-# A script to capture the running environment information for debugging
-# purposes.
-# Please, run this script and provide it's output when reporting a bug.
-#
 
 
 def run_command(command: str) -> str:

@@ -26,6 +26,7 @@
 
 # %% [markdown]
 # <a href="https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/ECCV_2020_Advanced_Features.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
+
 # %% [markdown]
 # #Habitat-sim Advanced Features
 #
@@ -46,10 +47,10 @@
 # @title Path Setup and Imports { display-mode: "form" }
 # @markdown (double click to show code).
 
-# %cd /content/habitat-sim
-## [setup]
 from __future__ import annotations
 
+# %cd /content/habitat-sim
+## [setup]
 import math
 import os
 import random

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import collections
+from typing import List, Tuple, Union
 
 import attr
 import numpy as np
@@ -38,7 +39,7 @@ class PoseExtractor:
 
     def __init__(
         self,
-        topdown_views: list[tuple[TopdownView, str, tuple[float32, float32, float32]]],
+        topdown_views: List[Tuple[TopdownView, str, Tuple[float32, float32, float32]]],
         meters_per_pixel: float = 0.1,
     ) -> None:
         self.tdv_fp_ref_triples = topdown_views
@@ -61,7 +62,7 @@ class PoseExtractor:
 
     def extract_poses(
         self, view: np.ndarray, fp: str
-    ) -> list[tuple[tuple[int, int], tuple[int, int], str]]:
+    ) -> List[Tuple[Tuple[int, int], Tuple[int, int], str]]:
         r"""Extracts poses according to a programatic rule.
 
         :property view: 2D numpy array representing the topdown view of the scene.
@@ -73,8 +74,8 @@ class PoseExtractor:
         return view[row][col] == 1.0
 
     def _is_point_of_interest(
-        self, point: tuple[int, int], labels: list[float], view: ndarray
-    ) -> tuple[bool, float64]:
+        self, point: Tuple[int, int], labels: List[float], view: ndarray
+    ) -> Tuple[bool, float64]:
         r, c = point
         is_interesting = False
         if view[r][c] in labels:
@@ -88,9 +89,9 @@ class PoseExtractor:
 
     def _convert_to_scene_coordinate_system(
         self,
-        poses: list[tuple[tuple[int, int], tuple[int, int], str]],
-        ref_point: tuple[float32, float32, float32],
-    ) -> list[tuple[tuple[int, int], quaternion, str]]:
+        poses: List[Tuple[Tuple[int, int], Tuple[int, int], str]],
+        ref_point: Tuple[float32, float32, float32],
+    ) -> List[Tuple[Tuple[int, int], quaternion, str]]:
         # Convert from topdown map coordinate system to that of the scene
         startw, starty, starth = ref_point
         for i, pose in enumerate(poses):
@@ -113,7 +114,7 @@ class PoseExtractor:
             )
             cam_normal = new_cpi - new_pos
             new_rot = self._compute_quat(cam_normal)
-            new_pos_t: tuple[int, int] = tuple(new_pos)  # type: ignore[assignment]
+            new_pos_t: Tuple[int, int] = tuple(new_pos)  # type: ignore[assignment]
             poses[i] = (new_pos_t, new_rot, filepath)
 
         return poses
@@ -123,14 +124,14 @@ class PoseExtractor:
 class ClosestPointExtractor(PoseExtractor):
     def __init__(
         self,
-        topdown_views: list[tuple[TopdownView, str, tuple[float32, float32, float32]]],
+        topdown_views: List[Tuple[TopdownView, str, Tuple[float32, float32, float32]]],
         meters_per_pixel: float = 0.1,
     ) -> None:
         super().__init__(topdown_views, meters_per_pixel)
 
     def extract_poses(
         self, view: ndarray, fp: str
-    ) -> list[tuple[tuple[int, int], tuple[int, int], str]]:
+    ) -> List[Tuple[Tuple[int, int], Tuple[int, int], str]]:
         # Determine the physical spacing between each camera position
         height, width = view.shape
         dist = min(height, width) // 10  # We can modify this to be user-defined later
@@ -162,8 +163,8 @@ class ClosestPointExtractor(PoseExtractor):
         return poses
 
     def _bfs(
-        self, point: tuple[int, int], labels: list[float], view: ndarray, dist: int
-    ) -> tuple[tuple[int, int], float64] | tuple[None, None]:
+        self, point: Tuple[int, int], labels: List[float], view: ndarray, dist: int
+    ) -> Union[Tuple[Tuple[int, int], float64], Tuple[None, None]]:
         step = 3  # making this larger really speeds up BFS
 
         def get_neighbors(p):
@@ -217,14 +218,14 @@ class ClosestPointExtractor(PoseExtractor):
 class PanoramaExtractor(PoseExtractor):
     def __init__(
         self,
-        topdown_views: list[tuple[TopdownView, str, tuple[float32, float32, float32]]],
+        topdown_views: List[Tuple[TopdownView, str, Tuple[float32, float32, float32]]],
         meters_per_pixel: float = 0.1,
     ) -> None:
         super().__init__(topdown_views, meters_per_pixel)
 
     def extract_poses(
         self, view: ndarray, fp: str
-    ) -> list[tuple[tuple[int, int], tuple[int, int], str]]:
+    ) -> List[Tuple[Tuple[int, int], Tuple[int, int], str]]:
         # Determine the physical spacing between each camera position
         height, width = view.shape
         dist = min(height, width) // 10  # We can modify this to be user-defined later
@@ -253,8 +254,8 @@ class PanoramaExtractor(PoseExtractor):
         return poses
 
     def _panorama_extraction(
-        self, point: tuple[int, int], view: ndarray, dist: int
-    ) -> list[tuple[tuple[int, int], float]]:
+        self, point: Tuple[int, int], view: ndarray, dist: int
+    ) -> List[Tuple[Tuple[int, int], float]]:
         in_bounds_of_topdown_view = lambda row, col: 0 <= row < len(
             view
         ) and 0 <= col < len(view[0])

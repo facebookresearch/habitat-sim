@@ -2,6 +2,7 @@ r"""A simple Google-style logging wrapper.
 
 Taken from https://github.com/benley/python-glog and adapted
 """
+
 from __future__ import annotations
 
 import logging
@@ -33,7 +34,7 @@ def format_message(record: LogRecord) -> str:
 
 class HabitatSimFormatter(logging.Formatter):
     def format(self, record: LogRecord) -> str:
-        record_message = f"[Sim] {format_message(record)}"
+        record_message = "[Sim] %s" % (format_message(record),)
         record.getMessage = lambda: record_message  # type:ignore[assignment]
         return logging.Formatter.format(self, record)
 

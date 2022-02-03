@@ -8,6 +8,7 @@ from __future__ import annotations
 
 # contains validators for attrs
 from contextlib import ContextDecorator
+from typing import Optional
 
 import attr
 import magnum as mn
@@ -20,7 +21,7 @@ class NoAttrValidationContext(ContextDecorator):
     r"""Ensures validators are not run within this context.
     Useful for function where we generate an attr validated object.
     """
-    original_state: bool | None = None
+    original_state: Optional[bool] = None
 
     def __enter__(self) -> NoAttrValidationContext:
         self.original_state = attr.get_run_validators()

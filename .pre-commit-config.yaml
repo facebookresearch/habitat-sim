@@ -64,7 +64,10 @@ repos:
     rev: v2.31.0
     hooks:
     -   id: pyupgrade
-        args: ["--py37-plus"]
+        args:
+          - "--py37-plus"
+          - "--keep-percent-format"
+          - "--keep-runtime-typing"
         exclude: "^setup.py$"
 
 -   repo: https://github.com/myint/autoflake

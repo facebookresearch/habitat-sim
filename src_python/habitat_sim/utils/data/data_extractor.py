@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable
+from typing import Callable, List, Union
 
 import numpy as np
 
@@ -61,10 +61,10 @@ class ImageExtractor:
 
     def __init__(
         self,
-        scene_filepath: str | list[str],
-        labels: list[float] = None,
+        scene_filepath: Union[str, List[str]],
+        labels: List[float] = None,
         img_size: tuple = (512, 512),
-        output: list[str] = None,
+        output: List[str] = None,
         pose_extractor_name: str = "closest_point_extractor",
         sim=None,
         shuffle: bool = True,
@@ -206,7 +206,7 @@ class ImageExtractor:
 
         self.mode = mymode
 
-    def get_semantic_class_names(self) -> list[str]:
+    def get_semantic_class_names(self) -> List[str]:
         r"""Returns a list of english class names in the scene(s). E.g. ['wall', 'ceiling', 'chair']"""
         class_names = list(set(self.instance_id_to_name.values()))
         return class_names

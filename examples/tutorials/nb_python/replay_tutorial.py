@@ -18,9 +18,6 @@
 #     name: python3
 # ---
 
-# %%
-from __future__ import annotations
-
 # %% [markdown]
 # #Gfx Replay Tutorial
 #
@@ -39,10 +36,13 @@ from __future__ import annotations
 # - sim.gfx_replay_manager.read_keyframes_from_file
 # - player.set_keyframe_index
 # - player.get_user_transform
+
 # %%
 # !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/main/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
 
 # %%
+from __future__ import annotations
+
 # %cd /content/habitat-sim
 import os
 import sys

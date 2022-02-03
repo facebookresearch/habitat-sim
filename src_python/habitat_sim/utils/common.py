@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import math
 from io import BytesIO
-from typing import Sequence
+from typing import List, Sequence, Tuple, Union
 from urllib.request import urlopen
 from zipfile import ZipFile
 
@@ -17,7 +17,7 @@ import numpy as np
 import quaternion as qt
 
 
-def quat_from_coeffs(coeffs: Sequence[float] | np.ndarray) -> qt.quaternion:
+def quat_from_coeffs(coeffs: Union[Sequence[float], np.ndarray]) -> qt.quaternion:
     r"""Creates a quaternion from the coeffs returned by the simulator backend
 
     :param coeffs: Coefficients of a quaternion in :py:`[b, c, d, a]` format,
@@ -54,7 +54,7 @@ def quat_from_magnum(quat: mn.Quaternion) -> qt.quaternion:
     return a
 
 
-def quat_to_angle_axis(quat: qt.quaternion) -> tuple[np.floating, np.ndarray]:
+def quat_to_angle_axis(quat: qt.quaternion) -> Tuple[np.floating, np.ndarray]:
     r"""Converts a quaternion to angle axis format
 
     :param quat: The quaternion
@@ -230,7 +230,7 @@ d3_40_colors_rgb: np.ndarray = np.array(
 
 
 # [d3_40_colors_hex]
-d3_40_colors_hex: list[str] = [
+d3_40_colors_hex: List[str] = [
     "0x1f77b4",
     "0xaec7e8",
     "0xff7f0e",

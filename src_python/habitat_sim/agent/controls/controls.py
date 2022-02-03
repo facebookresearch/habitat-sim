@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import abc
+from typing import Optional
 
 import attr
 
@@ -27,7 +28,7 @@ class ActuationSpec:
     """
 
     amount: float
-    constraint: float | None = None
+    constraint: Optional[float] = None
 
 
 @attr.s(auto_attribs=True)

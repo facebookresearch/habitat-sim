@@ -9,7 +9,7 @@ import importlib.util
 import itertools
 import json
 from os import path as osp
-from typing import Any
+from typing import Any, Dict
 
 import magnum as mn
 import numpy as np
@@ -215,7 +215,7 @@ def test_sensors(
 
     with habitat_sim.Simulator(cfg) as sim:
         if add_sensor_lazy:
-            obs: dict[str, Any] = sim.reset()
+            obs: Dict[str, Any] = sim.reset()
             assert len(obs) == 1, "Other sensors were not removed"
             for sensor_spec in additional_sensors:
                 sim.add_sensor(sensor_spec)
