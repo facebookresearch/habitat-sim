@@ -20,9 +20,6 @@
 #     name: python3
 # ---
 
-# %%
-from __future__ import annotations
-
 # %% [markdown]
 # <a href="https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/ReplicaCAD_quickstart.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
 # %% [markdown]
@@ -43,6 +40,8 @@ from __future__ import annotations
 
 # %cd /content/habitat-sim
 ## [setup]
+from __future__ import annotations
+
 import os
 import sys
 

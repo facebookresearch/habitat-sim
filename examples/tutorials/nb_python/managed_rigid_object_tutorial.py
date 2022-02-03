@@ -19,12 +19,12 @@
 # ---
 
 # %%
-from __future__ import annotations
-
 # !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/main/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
 # %%
 # %cd /content/habitat-sim
 ## [setup]
+from __future__ import annotations
+
 import os
 import random
 import sys

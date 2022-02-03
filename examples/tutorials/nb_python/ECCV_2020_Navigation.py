@@ -19,9 +19,6 @@
 #     name: python3
 # ---
 
-# %%
-from __future__ import annotations
-
 # %% [markdown]
 # #Habitat-sim Basics for Navigation
 #
@@ -45,6 +42,7 @@ from __future__ import annotations
 # %%
 # @title Colab Setup and Imports { display-mode: "form" }
 # @markdown (double click to see the code)
+from __future__ import annotations
 
 import math
 import os
