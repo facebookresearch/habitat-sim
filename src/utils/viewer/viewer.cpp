@@ -445,6 +445,18 @@ Key Commands:
 
   std::string semanticTag_ = "";
 
+  // Wireframe bounding box around semantic region
+  int semanticBBID_ = -1;
+
+  /**
+   * @brief Build semantic region prims.
+   */
+  void buildSemanticPrims(int semanticID,
+                          const std::string& semanticTag,
+                          const Mn::Vector3& semanticCtr,
+                          const Mn::Vector3& semanticSize,
+                          const Mn::Quaternion& rotation);
+
   /**
    * @brief Set whether agent locations should be recorded or not. If toggling
    * on then clear old locations
@@ -988,6 +1000,7 @@ void Viewer::initSimPostReconfigure() {
   }
   // clear any semantic tags from previoius scene
   semanticTag_ = "";
+  semanticBBID_ = -1;
   // NavMesh customization options
   if (disableNavmesh_) {
     if (simulator_->getPathFinder()->isLoaded()) {
@@ -1356,9 +1369,9 @@ void Viewer::setSceneInstanceFromListAndShow(int nextSceneInstanceIDX) {
   activeSceneGraph_ = nullptr;
 
   // close and reconfigure
-  simulator_->close();
-  simulator_ = esp::sim::Simulator::create_unique(simConfig_, MM_);
-  // simulator_->reconfigure(simConfig_);
+  simulator_->close(false);
+  // simulator_ = esp::sim::Simulator::create_unique(simConfig_, MM_);
+  simulator_->reconfigure(simConfig_);
 
   // initialize sim navmesh, agent, sensors after creation/reconfigure
   initSimPostReconfigure();
@@ -1713,6 +1726,46 @@ void Viewer::createPickedObjectVisualizer(unsigned int objectId) {
   }
 }
 
+void Viewer::buildSemanticPrims(int semanticID,
+                                const std::string& objTag,
+                                const Mn::Vector3& semanticCtr,
+                                const Mn::Vector3& semanticSize,
+                                const Mn::Quaternion& rotation) {
+  auto rigidObjMgr = simulator_->getRigidObjectManager();
+  if (semanticBBID_ != -1) {
+    // delete semantic wireframe bounding box if it exists
+    // returns nullptr if dne
+    auto obj = rigidObjMgr->getObjectOrCopyByID(semanticBBID_);
+    // delete object template used to create bounding box
+    objectAttrManager_->removeObjectByHandle(
+        obj->getInitializationAttributes()->getHandle());
+
+    rigidObjMgr->removeObjectByID(semanticBBID_);
+    semanticBBID_ = -1;
+  }
+  ESP_WARNING() << "Object ID : " << semanticID << " Tag : " << objTag
+                << " : Center : " << semanticCtr
+                << " | Size : " << semanticSize;
+  // // build semantic wireframe bounding box
+
+  auto bbWfObjTemplate = objectAttrManager_->getObjectCopyByHandle(
+      MM_->getAssetAttributesManager()
+          ->getDefaultCubeTemplate(true)
+          ->getHandle());
+  // modify template to have appropriate scale and new handle, and then register
+  bbWfObjTemplate->setScale(semanticSize * .5f);
+  bbWfObjTemplate->setHandle(Cr::Utility::formatString(
+      "{}_semanticBB_{}", bbWfObjTemplate->getHandle(), semanticID));
+  bbWfObjTemplate->setIsCollidable(false);
+  objectAttrManager_->registerObject(bbWfObjTemplate);
+  // create bounding box wireframe
+  auto bbWfObj = rigidObjMgr->addObjectByHandle(bbWfObjTemplate->getHandle());
+  bbWfObj->setTranslation(semanticCtr);
+  bbWfObj->setRotation(rotation);
+  bbWfObj->setMotionType(esp::physics::MotionType::STATIC);
+  semanticBBID_ = bbWfObj->getID();
+}  // Viewer::buildSemanticPrims
+
 void Viewer::mousePressEvent(MouseEvent& event) {
   // get mouse position, appropriately scaled for Retina Displays
   auto viewportPoint = getMousePosition(event.position());
@@ -1781,6 +1834,7 @@ void Viewer::mousePressEvent(MouseEvent& event) {
       // if shift-click is pressed, display semantic ID and name if exists
       if (event.modifiers() & MouseEvent::Modifier::Shift) {
         semanticTag_ = "";
+
         // get semantic scene
         auto semanticScene = simulator_->getSemanticScene();
         // only enable for HM3D for now
@@ -1805,13 +1859,18 @@ void Viewer::mousePressEvent(MouseEvent& event) {
           // subtract 1 to align with semanticObject array
           --objIdx;
           std::string tmpStr = "Unknown";
+
           if ((objIdx >= 0) && (objIdx < semanticObjects.size())) {
-            tmpStr = semanticObjects[objIdx]->id();
+            const auto& semanticObj = semanticObjects[objIdx];
+            tmpStr = semanticObj->id();
+            const auto obb = semanticObj->obb();
+            // get center and scale of bb and use to build visualization reps
+            buildSemanticPrims((objIdx + 1), tmpStr, Mn::Vector3{obb.center()},
+                               Mn::Vector3{obb.sizes()},
+                               Mn::Quaternion{obb.rotation()});
           }
           semanticTag_ =
               Cr::Utility::formatString("id:{}:{}", (objIdx + 1), tmpStr);
-          ESP_WARNING() << "Data point @ idx : " << objIdx
-                        << ": Object name :" << semanticTag_;
         }
       }
     }

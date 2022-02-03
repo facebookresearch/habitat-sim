@@ -23,7 +23,12 @@
 #include "esp/core/Esp.h"
 #include "esp/gfx/magnum.h"
 
+namespace Cr = Corrade;
+namespace Mn = Magnum;
 namespace esp {
+namespace scene {
+class SemanticObject;
+}  // namespace scene
 namespace assets {
 
 /**
@@ -45,7 +50,7 @@ enum SupportedMeshType {
    * Instance meshes loaded from sources including segmented object
    * identifier data (e.g. semantic data: chair, table, etc...). Sources include
    * .ply files and reconstructions of Matterport scans. Object is likely of
-   * type @ref GenericSemanticMeshData or Mp3dInstanceMeshData.
+   * type @ref GenericSemanticMeshData.
    */
   INSTANCE_MESH = 0,
 
@@ -145,6 +150,35 @@ class BaseMesh {
   Magnum::Range3D BB;
 
  protected:
+  std::string getColorAsString(Magnum::Color3ub color) const;
+
+  /**
+   * @brief Populate an array of colors of the correct type from the given
+   * @p srcColors. Generally used for semantic processing/rendering.
+   * @param srcColors The source colors
+   * @param convertToSRGB Whether the source vertex colors from the @p
+   * srcMeshData should be converted to SRGB
+   * @param [out] destColors The per-element array of colors to be built.
+   */
+  void convertMeshColors(const Mn::Trade::MeshData& srcMeshData,
+                         bool convertToSRGB,
+                         Cr::Containers::Array<Mn::Color3ub>& destColors) const;
+
+  /**
+   * @brief Build semantic OBBs based on presence of semantic IDs on vertices.
+   * @param vertices Ref to vertex array
+   * @param vertSemanticIDs Ref to per-vertex semantic IDs persent on source
+   * mesh, both known in semantic scene descriptor, and unknown.  Known IDs are
+   * expected to start at 1 and be contiguous, followed by unknown semantic IDs
+   * @param ssdObjs The known semantic scene descriptor objects for the mesh
+   * @param msgPrefix Debug message prefix, referencing caller.
+   */
+  void buildSemanticOBBs(
+      const std::vector<vec3f>& vertices,
+      const std::vector<uint16_t>& vertSemanticIDs,
+      const std::vector<std::shared_ptr<esp::scene::SemanticObject>>& ssdObjs,
+      const std::string& msgPrefix) const;
+
   /**
    * @brief Identifies the derived type of this object and the format of the
    * asset.

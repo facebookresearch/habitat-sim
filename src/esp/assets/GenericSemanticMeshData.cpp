@@ -17,7 +17,7 @@
 #include <Magnum/PixelFormat.h>
 #include <Magnum/Shaders/GenericGL.h>
 
-#include "esp/scene/HM3DSemanticScene.h"
+#include "esp/scene/SemanticScene.h"
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
@@ -30,17 +30,18 @@ GenericSemanticMeshData::buildSemanticMeshData(
     const Mn::Trade::MeshData& srcMeshData,
     const std::string& semanticFilename,
     const bool splitMesh,
-    std::vector<Magnum::Vector3ub>& colorMapToUse,
+    std::vector<Mn::Vector3ub>& colorMapToUse,
     bool convertToSRGB,
     const std::shared_ptr<scene::SemanticScene>& semanticScene) {
   // build text prefix used in log messages
-  const std::string msgPrefix =
+  const std::string dbgMsgPrefix =
       Cr::Utility::formatString("Parsing Semantic File {} :", semanticFilename);
 
   // Check for required colors.
-  ESP_CHECK(srcMeshData.hasAttribute(Mn::Trade::MeshAttribute::Color),
-            msgPrefix << "has no vertex colors defined, which are required for "
-                         "semantic meshes.");
+  ESP_CHECK(
+      srcMeshData.hasAttribute(Mn::Trade::MeshAttribute::Color),
+      dbgMsgPrefix << "has no vertex colors defined, which are required for "
+                      "semantic meshes.");
 
   /* Copy attributes to the vectors. Positions and indices can be copied
      directly using the convenience APIs as we store them in the full type.
@@ -69,23 +70,11 @@ GenericSemanticMeshData::buildSemanticMeshData(
   }
 
   srcMeshData.indicesInto(semanticData->cpu_ibo_);
-  /* Assuming colors are 8-bit RGB to avoid expanding them to float and then
-     packing back */
 
+  // initialize per-vertex color array
   Cr::Containers::Array<Mn::Color3ub> meshColors{Mn::NoInit, numVerts};
-
-  if (convertToSRGB) {
-    auto colors = srcMeshData.colorsAsArray();
-    for (std::size_t i = 0; i != colors.size(); ++i) {
-      meshColors[i] = colors[i].rgb().toSrgb<Mn::UnsignedByte>();
-    }
-  } else {
-    Mn::Math::packInto(Cr::Containers::arrayCast<2, float>(
-                           stridedArrayView(srcMeshData.colorsAsArray()))
-                           .except({0, 1}),
-                       Cr::Containers::arrayCast<2, Mn::UnsignedByte>(
-                           stridedArrayView(meshColors)));
-  }
+  // build color array from colors present in mesh
+  semanticData->convertMeshColors(srcMeshData, convertToSRGB, meshColors);
 
   Cr::Utility::copy(meshColors,
                     Cr::Containers::arrayCast<Mn::Color3ub>(
@@ -113,11 +102,10 @@ GenericSemanticMeshData::buildSemanticMeshData(
     objIdsFromFile = true;
     objPartitionsFromSSD = false;
     const int maxVal = Mn::Math::max(objectIds);
-    ESP_CHECK(
-        maxVal <= 65535,
-        Cr::Utility::formatString(
-            "{}Object IDs can't be stored into 16 bits : Max ID Value : {}",
-            msgPrefix, maxVal));
+    ESP_CHECK(maxVal <= 65535, Cr::Utility::formatString(
+                                   "{}Object IDs can't be stored into 16 bits "
+                                   ": Max ID Value found in data : {}",
+                                   dbgMsgPrefix, maxVal));
     colorMapToUse.assign(Mn::DebugTools::ColorMap::turbo().begin(),
                          Mn::DebugTools::ColorMap::turbo().end());
   } else {
@@ -154,8 +142,8 @@ GenericSemanticMeshData::buildSemanticMeshData(
                unsigned(color[2]);
       };
 
-      // build maps of color ints to semantic IDs and color ints to region ids
-      // in SSD find max regions present, so we can have an
+      // build maps of color ints to semantic IDs and color ints to
+      // region ids in SSD find max regions present, so we can have an
       // "unassigned"/"unknown" region to move all verts whose region is
 
       int maxRegion = -1;
@@ -165,32 +153,32 @@ GenericSemanticMeshData::buildSemanticMeshData(
       // semantic ID as their index.
       colorMapToUse.resize(numSSDObjs);
       for (int i = 0; i < numSSDObjs; ++i) {
-        const auto& ssdObj =
-            static_cast<scene::HM3DObjectInstance&>(*ssdObjs[i]);
-        const Mn::Vector3ub ssdColor = ssdObj.getColor();
+        const auto& ssdObj = ssdObjs[i];
+        const Mn::Vector3ub ssdColor = ssdObj->getColor();
         const uint32_t colorInt = colorAsInt(ssdColor);
-        int semanticID = ssdObj.semanticID();
-        int regionIDX =
-            static_cast<scene::HM3DSemanticRegion&>(*ssdObj.region())
-                .getIndex();
+        int semanticID = ssdObj->semanticID();
+        int regionIDX = ssdObj->region()->getIndex();
         tmpColorMapToSSDidAndRegionIndex[colorInt] = {semanticID, regionIDX};
         if (colorMapToUse.size() <= semanticID) {
           colorMapToUse.resize(semanticID + 1);
         }
         colorMapToUse[semanticID] = ssdColor;
-
         maxRegion = Mn::Math::max(regionIDX, maxRegion);
       }
-      // find largest key in map
-      int maxSemanticID = colorMapToUse.size();
-      // increment maxRegion to use for unknown regions whose colors are not
-      // mapped
+      // largest possible known semanticID will be size of colorMapToUse at this
+      // point -1 due to idx 0 not being a valid map.  If unknown/unmapped
+      // colors are present in mesh, colorMapToUse will grow to hold them in
+      // subsequent step.
+      // 1st semantic ID for colors not found in SSD objects ==> 1 more than the
+      // current highest id in the colormap
+      std::size_t nonSSDObjID = colorMapToUse.size();
+
+      // increment maxRegion to use largest value as unknown region for objects
+      // whose colors are not mapped in given ssd data.
       ++maxRegion;
 
-      // rebuild objectIDs vector (objectID per vertex) based on
+      // (re)build mesh objectIDs vector (objectID per vertex) based on
       // per vertex colors mapped
-      // 1st semantic ID for colors not found in SSD
-      std::size_t nonSSDObjID = maxSemanticID + 1;
 
       // map regionIDs to affected verts using semantic color provided in
       // SemanticScene, as specified in SSD file.
@@ -200,13 +188,16 @@ GenericSemanticMeshData::buildSemanticMeshData(
       semanticData->objectIds_.resize(numVerts);
       // temporary holding structure to hold any non-SSD vert colors, so that
       // the nonSSDObjID for new colors can be incremented appropriately
-      // not using set to avoid extra include
-      std::unordered_map<uint32_t, int> nonSSDVertColors;
+      // not using set to avoid extra include. Key is color, value is semantic
+      // ID assigned for unknown color
+      std::unordered_map<uint32_t, int> nonSSDVertColorIDs;
+      std::unordered_map<uint32_t, int> nonSSDVertColorCounts;
 
       // only go through all verts one time
       // derive semantic ID and color and region/room ID for culling
       int regionID = 0;
       int semanticID = 0;
+
       for (int vertIdx = 0; vertIdx < numVerts; ++vertIdx) {
         Mn::Color3ub meshColor = meshColors[vertIdx];
         // Convert color to an int @ vertex
@@ -221,33 +212,66 @@ GenericSemanticMeshData::buildSemanticMeshData(
           // color is found in ssd mapping, so is legal color
           semanticID = ssdColorToIDAndRegionIter->second.first;
           regionID = ssdColorToIDAndRegionIter->second.second;
+
         } else {
           // color is not found in ssd mapping, so not legal color
-          // check if we've assigned a semantic ID to this color before, and if
-          // not do so
-          auto nonSSDClrRes =
-              nonSSDVertColors.insert({meshColorInt, nonSSDObjID});
-          if (nonSSDClrRes.second) {
-            // inserted, so increment nonSSDObjID
-            ++nonSSDObjID;
-          }
-          // map holds that color's nonSSDObjID
-          semanticID = nonSSDClrRes.first->second;
+          // use currently assigned unknown color's semantic ID for this vertex
+          semanticID = nonSSDObjID;
           regionID = maxRegion;
 
-          // color for given semantic ID - only necessary to add for unknown
-          // colors
-          if (colorMapToUse.size() <= semanticID) {
-            colorMapToUse.resize(semanticID + 1);
+          // check if we've assigned a semantic ID to this color before, and if
+          // not do so
+
+          auto nonSSDClrCountRes =
+              nonSSDVertColorCounts.insert({meshColorInt, 1});
+          if (nonSSDClrCountRes.second) {
+            // unknown color has not been seen before
+            ESP_DEBUG() << dbgMsgPrefix << "Inserted Unknown semantic Color"
+                        << meshColor << "in map w/ nonSSDObjID =" << semanticID;
+            nonSSDVertColorIDs.insert({meshColorInt, nonSSDObjID});
+            // inserted, so increment nonSSDObjID tracking expanded semantic IDs
+            // for future unknown color
+            ++nonSSDObjID;
+            // add color for given semantic ID to map
+            if (colorMapToUse.size() <= semanticID) {
+              colorMapToUse.resize(semanticID + 1);
+            }
+            colorMapToUse[semanticID] = meshColor;
+          } else {
+            ++nonSSDClrCountRes.first->second;
           }
-          colorMapToUse[semanticID] = meshColor;
         }
-        // semantic ID for vertex
+
+        // assign semantic ID for vertex
         semanticData->objectIds_[vertIdx] = semanticID;
         // partition Ids for each vertex, for multi-mesh construction.
         partitionIds[vertIdx] = regionID;
+      }  // for each vertex
+      // FOR VERT-BASED OBB CALC
+      // build semantic OBBs here
+      semanticData->buildSemanticOBBs(semanticData->cpu_vbo_,
+                                      semanticData->objectIds_, ssdObjs,
+                                      dbgMsgPrefix);
+      // colors found on vertices not found in semantic lexicon :
+      if (nonSSDVertColorIDs.empty()) {
+        ESP_DEBUG() << dbgMsgPrefix
+                    << "No unexpected colors found mapped to mesh verts.";
+      } else {
+        ESP_DEBUG()
+            << dbgMsgPrefix
+            << Cr::Utility::formatString(
+                   "{} unexpected/unknown colors found mapped to mesh verts.",
+                   nonSSDVertColorIDs.size());
+        for (const std::pair<const uint32_t, int>& elem : nonSSDVertColorIDs) {
+          ESP_DEBUG()
+              << dbgMsgPrefix
+              << Cr::Utility::formatString(
+                     "\t\tColor {} | # verts {} | applied Semantic ID {}.",
+                     semanticData->getColorAsString(
+                         static_cast<Mn::Color3ub>(colorMapToUse[elem.second])),
+                     nonSSDVertColorCounts.at(elem.first), elem.second);
+        }
       }
-
     } else {
       // no remapping provided by SSD so just use what is synthesized
       Cr::Containers::Array<Mn::Color3ub> colorsThatBecomeTheColorMap{
@@ -260,7 +284,7 @@ GenericSemanticMeshData::buildSemanticMeshData(
           Mn::MeshTools::removeDuplicatesInPlace(
               Cr::Containers::arrayCast<2, char>(
                   stridedArrayView(colorsThatBecomeTheColorMap)));
-
+      // per-vertex object IDs reflect per-vertex color assignments
       objectIds = std::move(out.first);
       auto clrMapView = colorsThatBecomeTheColorMap.prefix(out.second);
       colorMapToUse.assign(clrMapView.begin(), clrMapView.end());
@@ -315,14 +339,13 @@ GenericSemanticMeshData::buildSemanticMeshData(
     // Store indices, facd_ids in Magnum MeshData3D format such that
     // later they can be accessed.
     // Note that normal and texture data are not stored
-    semanticData->collisionMeshData_.primitive =
-        Magnum::MeshPrimitive::Triangles;
+    semanticData->collisionMeshData_.primitive = Mn::MeshPrimitive::Triangles;
     semanticData->updateCollisionMeshData();
     splitMeshData.emplace_back(std::move(semanticData));
   }
   return splitMeshData;
 
-}  // GenericSemanticMeshData::loadSemanticMeshData
+}  // GenericSemanticMeshData::buildSemanticMeshData
 
 void GenericSemanticMeshData::uploadBuffersToGPU(bool forceReload) {
   if (forceReload) {
@@ -342,7 +365,7 @@ void GenericSemanticMeshData::uploadBuffersToGPU(bool forceReload) {
 
   renderingBuffer_ =
       std::make_unique<GenericSemanticMeshData::RenderingBuffer>();
-  renderingBuffer_->mesh.setPrimitive(Magnum::GL::MeshPrimitive::Triangles)
+  renderingBuffer_->mesh.setPrimitive(Mn::GL::MeshPrimitive::Triangles)
       .setCount(cpu_ibo_.size())
       .addVertexBuffer(
           std::move(vertices), 0, Mn::Shaders::GenericGL3D::Position{},
@@ -361,7 +384,7 @@ void GenericSemanticMeshData::uploadBuffersToGPU(bool forceReload) {
   buffersOnGPU_ = true;
 }
 
-Magnum::GL::Mesh* GenericSemanticMeshData::getMagnumGLMesh() {
+Mn::GL::Mesh* GenericSemanticMeshData::getMagnumGLMesh() {
   if (renderingBuffer_ == nullptr) {
     return nullptr;
   }

@@ -81,7 +81,7 @@ bool SemanticScene::buildGibsonHouse(const io::JsonDocument& jsonDoc,
         ESP_WARNING() << "Object size from" << categoryName
                       << "isn't provided.";
       }
-      object->obb_ = geo::OBB(center, size, quatf::Identity());
+      object->setObb(center, size, quatf::Identity());
     } else {
       ESP_WARNING() << "Object center coordinates from" << categoryName
                     << "aren't provided.";

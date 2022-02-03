@@ -59,6 +59,9 @@ target_include_directories(GfxReplayTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 corrade_add_test(GibsonSceneTest GibsonSceneTest.cpp LIBRARIES scene sim)
 target_include_directories(GibsonSceneTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
+corrade_add_test(HM3DSceneTest HM3DSceneTest.cpp LIBRARIES scene sim)
+target_include_directories(HM3DSceneTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
 corrade_add_test(IOTest IOTest.cpp LIBRARIES io metadata)
 target_include_directories(IOTest PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
@@ -136,6 +139,7 @@ endif()
 # want to have full log from others, so this is a compromise)
 set_tests_properties(
   GfxReplayTest
+  HM3DSceneTest
   MetadataMediatorTest
   Mp3dTest
   NavTest

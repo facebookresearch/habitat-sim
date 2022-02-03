@@ -117,6 +117,10 @@ void initSimBindings(py::module& m) {
       .def_property_readonly(
           "curr_scene_name", &Simulator::getCurSceneInstanceName,
           R"(The simplified, but unique, name of the currently loaded scene.)")
+      .def_property_readonly(
+          "semantic_color_map", &Simulator::getSemanticSceneColormap,
+          R"(The list of semantic colors being used for semantic rendering. The index
+            in the list corresponds to the semantic ID.)")
       .def_property("frustum_culling", &Simulator::isFrustumCullingEnabled,
                     &Simulator::setFrustumCullingEnabled,
                     R"(Enable or disable the frustum culling)")

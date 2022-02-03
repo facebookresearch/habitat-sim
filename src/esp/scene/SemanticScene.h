@@ -298,7 +298,7 @@ class SemanticRegion {
       return "_" + std::to_string(index_);
     }
   }
-
+  int getIndex() const { return index_; }
   SemanticLevel::ptr level() const { return level_; }
 
   const std::vector<std::shared_ptr<SemanticObject>>& objects() const {
@@ -348,11 +348,22 @@ class SemanticObject {
 
   SemanticCategory::ptr category() const { return category_; }
 
+  void setObb(const esp::vec3f& center,
+              const esp::vec3f& dimensions,
+              const esp::quatf& rotation = quatf::Identity()) {
+    obb_ = geo::OBB{center, dimensions, rotation};
+  }
+
+  Mn::Vector3ub getColor() const { return color_; }
+  void setColor(Mn::Vector3ub _color) { color_ = _color; }
+
  protected:
   /**
    * @brief The unique semantic ID corresponding to this object
    */
   int index_{};
+  // specified color for this object instance.
+  Mn::Vector3ub color_{};
 
   /**
    * @brief References the parent region for this object

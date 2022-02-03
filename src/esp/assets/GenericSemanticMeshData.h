@@ -46,7 +46,7 @@ class GenericSemanticMeshData : public BaseMesh {
    * specified and if the source file's objectIds are compatibly configured to
    * do so.
    * @param meshData The imported meshData.
-   * @param plyFile Fully qualified filename of .ply file to load
+   * @param semanticFilename Path-less Filename of source mesh.
    * @param splitMesh Whether or not the resultant mesh should be split into
    * multiple components based on objectIds, for frustum culling.
    * @param convertToSRGB Whether the source vertex colors from the @p meshData

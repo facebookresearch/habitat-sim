@@ -81,6 +81,14 @@ class Simulator {
     return resourceManager_->getSemanticScene();
   }
 
+  /**
+   * @brief Return a view of the currently set Semantic scene colormap.
+   */
+  Cr::Containers::ArrayView<const Mn::Vector3ub> getSemanticSceneColormap()
+      const {
+    return resourceManager_->getSemanticSceneColormap();
+  }
+
   inline void getRenderGLContext() {
     // acquire GL context from background thread, if background rendering
     // enabled.
@@ -1096,8 +1104,6 @@ class Simulator {
   int activeSceneID_ = ID_UNDEFINED;
   int activeSemanticSceneID_ = ID_UNDEFINED;
   std::vector<int> sceneID_;
-
-  // std::shared_ptr<scene::SemanticScene> semanticScene_ = nullptr;
 
   std::shared_ptr<physics::PhysicsManager> physicsManager_ = nullptr;
 

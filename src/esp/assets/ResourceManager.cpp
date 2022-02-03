@@ -1283,30 +1283,40 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
   /* Open the file. On error the importer already prints a diagnostic message,
      so no need to do that here. The importer implicitly converts per-face
      attributes to per-vertex, so nothing extra needs to be done. */
-  Cr::Containers::Optional<Mn::Trade::MeshData> meshData;
   ConfigureImporterManagerGLExtensions();
   ESP_CHECK(
       (fileImporter_->openFile(filename) && (fileImporter_->meshCount() > 0)),
       Cr::Utility::formatString("Error loading semantic mesh data from file {}",
                                 filename));
+  // Transform meshData by reframing rotation.  Doing this here so that
+  // transformation is caught in OBB calc.
+  const Magnum::Matrix4 reframeTransform = Magnum::Matrix4::from(
+      Magnum::Quaternion(info.frame.rotationFrameToWorld()).toMatrix(),
+      Magnum::Vector3());
 
-  const auto meshCount = fileImporter_->meshCount();
-  if (meshCount == 1) {
-    // only one mesh, treat as before
-    meshData = fileImporter_->mesh(0);
+  auto sceneID = fileImporter_->defaultScene();
+
+  Cr::Containers::Optional<Mn::Trade::MeshData> meshData;
+
+  if (sceneID == -1) {
+    // no default scene --- standalone OBJ/PLY files, for example
+    // already verified at least one mesh exists, this means only one mesh,
+    // treat as before
+    meshData =
+        Mn::MeshTools::transform3D(*fileImporter_->mesh(0), reframeTransform);
   } else {
     Cr::Containers::Optional<Mn::Trade::SceneData> scene =
-        fileImporter_->scene(fileImporter_->defaultScene());
-    // std::vector<Mn::Trade::MeshData> meshVec;
-    // meshVec.reserve(meshCount);
+        fileImporter_->scene(sceneID);
+
     Cr::Containers::Array<Mn::Trade::MeshData> flattenedMeshes;
     for (const Cr::Containers::Triple<Mn::UnsignedInt, Mn::Int, Mn::Matrix4>&
              meshTransformation :
          Mn::SceneTools::flattenMeshHierarchy3D(*scene)) {
       if (Cr::Containers::Optional<Mn::Trade::MeshData> mesh =
               fileImporter_->mesh(meshTransformation.first())) {
-        arrayAppend(flattenedMeshes, Mn::MeshTools::transform3D(
-                                         *mesh, meshTransformation.third()));
+        const auto transform = reframeTransform * meshTransformation.third();
+        arrayAppend(flattenedMeshes,
+                    Mn::MeshTools::transform3D(*mesh, transform));
       }
     }
 
@@ -1319,12 +1329,12 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
     }
     // build concatenated meshData from container of meshes.
     meshData = Mn::MeshTools::concatenate(meshView);
-  }
+  }  // flatten/reframe src meshes
 
   std::vector<GenericSemanticMeshData::uptr> instanceMeshes =
       GenericSemanticMeshData::buildSemanticMeshData(
-          *meshData, filename, info.splitInstanceMesh,
-          semanticColorMapBeingUsed_,
+          *meshData, Cr::Utility::Directory::filename(filename),
+          info.splitInstanceMesh, semanticColorMapBeingUsed_,
           (filename.find(".ply") == std::string::npos), semanticScene_);
 
   ESP_CHECK(!instanceMeshes.empty(),
@@ -1348,7 +1358,9 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
                     std::move(instanceMeshes[meshIDLocal]));
     meshMetaData.root.children[meshIDLocal].meshIDLocal = meshIDLocal;
   }
-  meshMetaData.setRootFrameOrientation(info.frame);
+  // reframe transform happened already - do not reapply
+  // meshMetaData.setRootFrameOrientation(info.frame);
+
   // update the dictionary
   resourceDict_.emplace(filename,
                         LoadedAssetData{info, std::move(meshMetaData)});
@@ -1512,10 +1524,11 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
   const std::string& filename = info.filepath;
   CORRADE_INTERNAL_ASSERT(resourceDict_.count(filename) == 0);
   ConfigureImporterManagerGLExtensions();
-  if (!fileImporter_->openFile(filename)) {
-    ESP_ERROR() << "Cannot open file" << filename;
-    return false;
-  }
+
+  ESP_CHECK(
+      (fileImporter_->openFile(filename) && (fileImporter_->meshCount() > 0)),
+      Cr::Utility::formatString("Error loading general mesh data from file {}",
+                                filename));
 
   // load file and add it to the dictionary
   LoadedAssetData loadedAssetData{info};
