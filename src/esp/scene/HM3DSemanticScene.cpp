@@ -85,23 +85,32 @@ bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
     if (line.empty()) {
       continue;
     }
-    const std::vector<std::string> tokens =
-        Cr::Utility::String::splitWithoutEmptyParts(line, ',');
+
     // Each line corresponds to a single instance of an annotated object.
     // Line :
-    // Unique Instance ID (int), color (hex RGB), category name
-    // (string), room/region ID (int)
-    // unique instance ID is first token
-    int instanceID = std::stoi(tokens[0]);
+    // Unique Instance ID (int), color (hex RGB), category name (may be multiple
+    // tokens) (string), room/region ID (int) unique instance ID is first token
+
+    // NOTE : label (idx 2) can include commas, so split on quotes, which will
+    // always be around category name
+    // idx 0 will be "<ID>,<color>,"
+    // idx 1 will be "<category with possible commas>"
+    // idx 2 will be ",<region ID>"
+    const std::vector<std::string> tokens =
+        Cr::Utility::String::splitWithoutEmptyParts(line, '"');
+    // sub tokens are ID and color
+    const std::vector<std::string> subtokens =
+        Cr::Utility::String::splitWithoutEmptyParts(tokens[0], ',');
+    // ID is integer
+    int instanceID = std::stoi(Cr::Utility::String::trim(subtokens[0]));
     // semantic color is 2nd token, as hex string
-    auto colorVec = getVec3ub(tokens[1]);
-    // object category name
-    // construct instance name by counting instances of same category
-    // get rid of quotes
-    std::string objCategoryName =
-        Cr::Utility::String::replaceAll(tokens[2], "\"", "");
-    // room/region
-    int regionID = std::stoi(tokens[3]);
+    auto colorVec = getVec3ub(Cr::Utility::String::trim(subtokens[1]));
+    // object category will possibly have commas
+    const std::string objCategoryName = tokens[1];
+    // room/region is always fr token - get rid of first comma
+    int regionID =
+        std::stoi(Cr::Utility::String::trim(tokens[tokens.size() - 1], " ,"));
+
     // build initial temp object
     TempHM3DObject obj{
         instanceID, 0, objCategoryName,
