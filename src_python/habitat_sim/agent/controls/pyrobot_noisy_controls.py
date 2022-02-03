@@ -12,7 +12,9 @@ https://github.com/facebookresearch/pyrobot
 Please cite PyRobot if you use this noise model
 """
 
-from typing import Any, List, Optional, Sequence, Tuple
+from __future__ import annotations
+
+from typing import Any, Sequence
 
 import attr
 import magnum as mn
@@ -43,9 +45,7 @@ class _TruncatedMultivariateGaussian:
 
     def sample(
         self,
-        truncation: Optional[
-            List[Optional[Tuple[Optional[Any], Optional[Any]]]]
-        ] = None,
+        truncation: None | (list[tuple[Any | None, Any | None] | None]) = None,
     ) -> ndarray:
         if truncation is not None:
             assert len(truncation) == len(self.mean)

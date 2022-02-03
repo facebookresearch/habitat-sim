@@ -4,7 +4,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Any, Dict, List, Optional, Union
+from __future__ import annotations
+
+from typing import Any
 
 import attr
 import magnum as mn
@@ -42,10 +44,10 @@ class ActionSpec:
     :property actuation: Arguments that will be passed to the function
     """
     name: str
-    actuation: Optional[ActuationSpec] = None
+    actuation: ActuationSpec | None = None
 
 
-def _default_action_space() -> Dict[str, ActionSpec]:
+def _default_action_space() -> dict[str, ActionSpec]:
     return dict(
         move_forward=ActionSpec("move_forward", ActuationSpec(amount=0.25)),
         turn_left=ActionSpec("turn_left", ActuationSpec(amount=10.0)),
@@ -70,7 +72,7 @@ class SixDOFPose:
     """
 
     position: np.ndarray = attr.ib(factory=_triple_zero, validator=all_is_finite)
-    rotation: Union[qt.quaternion, List] = attr.ib(
+    rotation: qt.quaternion | list = attr.ib(
         factory=_default_quaternion, validator=is_unit_length
     )
 
@@ -78,10 +80,10 @@ class SixDOFPose:
 @attr.s(auto_attribs=True, slots=True)
 class AgentState:
     position: np.ndarray = attr.ib(factory=_triple_zero, validator=all_is_finite)
-    rotation: Union[qt.quaternion, List, np.ndarray] = attr.ib(
+    rotation: qt.quaternion | list | np.ndarray = attr.ib(
         factory=_default_quaternion, validator=is_unit_length
     )
-    sensor_states: Dict[str, SixDOFPose] = attr.ib(
+    sensor_states: dict[str, SixDOFPose] = attr.ib(
         factory=dict,
         validator=attr.validators.deep_mapping(
             key_validator=attr.validators.instance_of(str),
@@ -95,8 +97,8 @@ class AgentState:
 class AgentConfiguration:
     height: float = 1.5
     radius: float = 0.1
-    sensor_specifications: List[hsim.SensorSpec] = attr.Factory(list)
-    action_space: Dict[Any, ActionSpec] = attr.Factory(_default_action_space)
+    sensor_specifications: list[hsim.SensorSpec] = attr.Factory(list)
+    action_space: dict[Any, ActionSpec] = attr.Factory(_default_action_space)
     body_type: str = "cylinder"
 
 
@@ -128,9 +130,9 @@ class Agent:
     def __init__(
         self,
         scene_node: hsim.SceneNode,
-        agent_config: Optional[AgentConfiguration] = None,
-        _sensors: Optional[SensorSuite] = None,
-        controls: Optional[ObjectControls] = None,
+        agent_config: AgentConfiguration | None = None,
+        _sensors: SensorSuite | None = None,
+        controls: ObjectControls | None = None,
     ) -> None:
         self.agent_config = agent_config if agent_config else AgentConfiguration()
         self._sensors = _sensors if _sensors else SensorSuite()
@@ -138,7 +140,7 @@ class Agent:
         self.body = mn.scenegraph.AbstractFeature3D(scene_node)
         scene_node.type = hsim.SceneNodeType.AGENT
         self.reconfigure(self.agent_config)
-        self.initial_state: Optional[AgentState] = None
+        self.initial_state: AgentState | None = None
 
     def reconfigure(
         self, agent_config: AgentConfiguration, reconfigure_sensors: bool = True

@@ -4,6 +4,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from __future__ import annotations
+
 from typing import Any, Dict
 
 from habitat_sim.registry import registry
@@ -20,7 +22,7 @@ from habitat_sim.sensors.noise_models.sensor_noise_model import SensorNoiseModel
 from habitat_sim.sensors.noise_models.speckle_noise_model import SpeckleNoiseModel
 
 
-def make_sensor_noise_model(name: str, kwargs: Dict[str, Any]) -> SensorNoiseModel:
+def make_sensor_noise_model(name: str, kwargs: dict[str, Any]) -> SensorNoiseModel:
     r"""Constructs a noise model using the given name and keyword arguments
 
     :param name: The name of the noise model in the `habitat_sim.registry`
@@ -28,7 +30,7 @@ def make_sensor_noise_model(name: str, kwargs: Dict[str, Any]) -> SensorNoiseMod
     """
 
     model = registry.get_noise_model(name)
-    assert model is not None, "Could not find a noise model for name '{}'".format(name)
+    assert model is not None, f"Could not find a noise model for name '{name}'"
 
     return model(**kwargs)
 

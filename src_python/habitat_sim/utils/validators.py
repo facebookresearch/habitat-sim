@@ -4,9 +4,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from __future__ import annotations
+
 # contains validators for attrs
 from contextlib import ContextDecorator
-from typing import Optional
 
 import attr
 import magnum as mn
@@ -19,9 +20,9 @@ class NoAttrValidationContext(ContextDecorator):
     r"""Ensures validators are not run within this context.
     Useful for function where we generate an attr validated object.
     """
-    original_state: Optional[bool] = None
+    original_state: bool | None = None
 
-    def __enter__(self) -> "NoAttrValidationContext":
+    def __enter__(self) -> NoAttrValidationContext:
         self.original_state = attr.get_run_validators()
         attr.set_run_validators(False)
         return self

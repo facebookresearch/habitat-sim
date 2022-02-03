@@ -2,12 +2,14 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from __future__ import annotations
+
 import json
 import math
 import os
 import random
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import magnum as mn
 from fairmotion.core import motion
@@ -51,16 +53,16 @@ class FairmotionInterface:
     ) -> None:
         # general interface attrs
         LoggingContext.reinitialize_from_env()
-        self.sim: Optional[habitat_sim.simulator.Simulator] = sim
+        self.sim: habitat_sim.simulator.Simulator | None = sim
         self.draw_fps: float = fps
         self.art_obj_mgr = self.sim.get_articulated_object_manager()
         self.rgd_obj_mgr = self.sim.get_rigid_object_manager()
-        self.motion: Optional[motion.Motion] = None
+        self.motion: motion.Motion | None = None
         self.user_metadata = {}
-        self.last_metadata_file: Optional[str] = None
+        self.last_metadata_file: str | None = None
         self.motion_stepper = 0
-        self.rotation_offset: Optional[mn.Quaternion] = None
-        self.translation_offset: Optional[mn.Vector3] = None
+        self.rotation_offset: mn.Quaternion | None = None
+        self.translation_offset: mn.Vector3 | None = None
         self.is_reversed = False
         self.activity: Activity = Activity.NONE
 
@@ -68,19 +70,19 @@ class FairmotionInterface:
         self.key_frames = None
         self.key_frame_models = []
         self.preview_mode: Preview = Preview.OFF
-        self.traj_ids: List[int] = []
+        self.traj_ids: list[int] = []
 
         # path follower attrs
-        self.model: Optional[phy.ManagedArticulatedObject] = None
-        self.path_data: Optional[PathData] = None
+        self.model: phy.ManagedArticulatedObject | None = None
+        self.path_data: PathData | None = None
 
         # sequence attrs
-        self.order_queue: List[ActionOrder] = []
-        self.staging_queue: List[Tuple] = []
+        self.order_queue: list[ActionOrder] = []
+        self.staging_queue: list[tuple] = []
         self.last_seq_location: mn.Vector3 = mn.Vector3(
             -1.15, 0.0, -3.48
         )  # cupboard under the staircase
-        self.incomplete_order: List[Any] = []
+        self.incomplete_order: list[Any] = []
 
         self.setup_default_metadata()
 
@@ -163,15 +165,15 @@ class FairmotionInterface:
 
         # if default file exists, take it from there
         self.fetch_metadata("default")
-        self.last_metadata_file: Optional[str] = None
+        self.last_metadata_file: str | None = None
 
     def set_data(
         self,
-        urdf_path: Optional[str] = None,
-        amass_path: Optional[str] = None,
-        bm_path: Optional[str] = None,
-        rotation: Optional[mn.Quaternion] = None,
-        translation: Optional[mn.Vector3] = None,
+        urdf_path: str | None = None,
+        amass_path: str | None = None,
+        bm_path: str | None = None,
+        rotation: mn.Quaternion | None = None,
+        translation: mn.Vector3 | None = None,
     ) -> None:
         """
         A method that will take attributes of the model data sets as arguments, filling in
@@ -184,7 +186,7 @@ class FairmotionInterface:
         data["rotation"] = rotation or data["rotation"]
         data["translation"] = translation or data["translation"]
 
-    def metadata_parser(self, metadata_dict: Dict[str, Any], to_file: bool):
+    def metadata_parser(self, metadata_dict: dict[str, Any], to_file: bool):
         """
         Convert metadata dict to and from a form that is json serializable
         """
@@ -257,7 +259,7 @@ class FairmotionInterface:
                 file = filename
                 break
 
-        with open(file, "r") as f:
+        with open(file) as f:
             data = json.load(f)
 
         # set data to what was fetched
@@ -277,8 +279,8 @@ class FairmotionInterface:
 
     def set_transform_offsets(
         self,
-        rotate_offset: Optional[mn.Quaternion] = None,
-        translate_offset: Optional[mn.Vector3] = None,
+        rotate_offset: mn.Quaternion | None = None,
+        translate_offset: mn.Vector3 | None = None,
     ) -> None:
         """
         This method updates the offset of the model with the positional data passed to it.
@@ -379,7 +381,7 @@ class FairmotionInterface:
 
     def convert_CMUamass_single_pose(
         self, pose, model, raw=False
-    ) -> Tuple[List[float], mn.Vector3, mn.Quaternion]:
+    ) -> tuple[list[float], mn.Vector3, mn.Quaternion]:
         """
         This conversion is specific to the datasets from CMU
         """
@@ -522,7 +524,7 @@ class FairmotionInterface:
                 * self.rotation_offset
             )
 
-            def define_preview_points(joint_names: List[str]) -> List[mn.Vector3]:
+            def define_preview_points(joint_names: list[str]) -> list[mn.Vector3]:
                 """
                 Pass in a list containing names of joints as strings and/or lists containing
                 multiple names of joints, where the lists will result in an interpolated
@@ -938,7 +940,7 @@ class FairmotionInterface:
         self.model.joint_positions = pose_data[0]
         self.model.transformation = pose_data[1]
 
-    def interpolate_pose(self, poseA, poseB, t) -> List[mn.Quaternion]:
+    def interpolate_pose(self, poseA, poseB, t) -> list[mn.Quaternion]:
         """
         Pass in two motion pose structs and return them interpolated.
         """
@@ -989,7 +991,7 @@ class FairmotionInterface:
         self.update_pathfollower_sequential(step_size=0)
 
     def update_pathfollower_sequential(
-        self, step_size: int = 1, path_time: Optional[float] = None
+        self, step_size: int = 1, path_time: float | None = None
     ) -> None:
         """
         When this method is called, the path follower model is updated to the next frame
@@ -1053,8 +1055,8 @@ class FairmotionInterface:
         self.model.transformation = full_transform
 
     def point_at_path_t(
-        self, path_points: List[mn.Vector3], t: float
-    ) -> Tuple[mn.Vector3, mn.Vector3]:
+        self, path_points: list[mn.Vector3], t: float
+    ) -> tuple[mn.Vector3, mn.Vector3]:
         """
         Function that give a point on the path at time t.
         """

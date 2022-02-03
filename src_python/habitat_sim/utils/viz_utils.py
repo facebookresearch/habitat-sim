@@ -2,8 +2,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from __future__ import annotations
+
 import base64
-import io
 import os
 import subprocess
 import sys
@@ -12,7 +13,7 @@ from functools import partial
 if "google.colab" in sys.modules:
     os.environ["IMAGEIO_FFMPEG_EXE"] = "/usr/bin/ffmpeg"
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import imageio
 import numpy as np
@@ -87,7 +88,8 @@ def display_video(video_file: str, height: int = 400):
         from IPython.display import HTML
 
         ext = os.path.splitext(video_file)[-1][1:]
-        video = io.open(video_file, "r+b").read()
+        with open(video_file, "r+b") as f:
+            video = f.read()
         ipythondisplay.display(
             HTML(
                 data="""<video alt="test" autoplay
@@ -109,7 +111,7 @@ def display_video(video_file: str, height: int = 400):
 def observation_to_image(
     observation_image: np.ndarray,
     observation_type: str,
-    depth_clip: Optional[float] = 10.0,
+    depth_clip: float | None = 10.0,
 ):
     """Generate an rgb image from a sensor observation. Supported types are: "color", "depth", "semantic"
 
@@ -204,15 +206,15 @@ def make_video_frame(
 
 
 def make_video(
-    observations: List[np.ndarray],
+    observations: list[np.ndarray],
     primary_obs: str,
     primary_obs_type: str,
     video_file: str,
     fps: int = 60,
     open_vid: bool = True,
-    video_dims: Optional[Tuple[int]] = None,
-    overlay_settings: Optional[List[Dict[str, Any]]] = None,
-    depth_clip: Optional[float] = 10.0,
+    video_dims: tuple[int] | None = None,
+    overlay_settings: list[dict[str, Any]] | None = None,
+    depth_clip: float | None = 10.0,
     observation_to_image=observation_to_image,
 ):
     """Build a video from a passed observations array, with some images optionally overlayed.

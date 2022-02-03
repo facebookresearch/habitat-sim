@@ -19,8 +19,9 @@
 # ---
 
 # %%
-# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/main/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
+from __future__ import annotations
 
+# !curl -L https://raw.githubusercontent.com/facebookresearch/habitat-sim/main/examples/colab_utils/colab_install.sh | NIGHTLY=true bash -s
 # %%
 # %cd /content/habitat-sim
 ## [setup]
@@ -456,7 +457,7 @@ if __name__ == "__main__":
     rigid_obj_mgr.remove_object_by_id(locobot.object_id, delete_object_node=False)
 
     # demonstrate that the locobot object does not now exist'
-    print("Locobot is still alive : {}".format(locobot.is_alive))
+    print(f"Locobot is still alive : {locobot.is_alive}")
 
     # video rendering with embedded 1st person view
     if make_video:

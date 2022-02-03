@@ -24,9 +24,11 @@
 #     name: python3
 # ---
 
+# %%
+from __future__ import annotations
+
 # %% [markdown]
 # <a href="https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/ECCV_2020_Advanced_Features.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
-
 # %% [markdown]
 # #Habitat-sim Advanced Features
 #
@@ -389,7 +391,7 @@ def set_template_properties_from_dict(template, template_dict):
 # This will display all the properties of an attributes template
 def show_template_properties(template):
     template_dict = build_dict_from_template(template)
-    print("Template {} has : ".format(template.handle))
+    print(f"Template {template.handle} has : ")
     for k, v in template_dict.items():
         print(
             "\tProperty {} has value {} of type {} that is editable : {}".format(
@@ -1161,9 +1163,7 @@ for i in range(5):
 # Get all modified template handles through keyword search
 mod_template_handles = obj_attr_mgr.get_template_handles("_new_")
 # Show number of modified templates
-print(
-    "Before delete, there are {} modified templates.".format(len(mod_template_handles))
-)
+print(f"Before delete, there are {len(mod_template_handles)} modified templates.")
 # Display modified template handles
 print(*mod_template_handles, sep="\n")
 # Remove modified templates
@@ -1417,7 +1417,7 @@ def register_prim_template_if_valid(
             )
     else:
         dict_of_handles[handle_key] = prim_attr_mgr.get_template_handles(handle_key)[0]
-        print("Default Primitive Template used at key {}.".format(handle_key))
+        print(f"Default Primitive Template used at key {handle_key}.")
 
 
 # Build a dictionary of templates to use to construct objects
@@ -1761,7 +1761,7 @@ for solidHandle in solid_handles_to_use.values():
     # Create object template with passed handle
     obj_template = obj_attr_mgr.create_template(solidHandle)
     # Create object from object template handle
-    print("Solid Object being made using handle :{}".format(solidHandle))
+    print(f"Solid Object being made using handle :{solidHandle}")
     obj_solid = rigid_obj_mgr.add_object_by_template_handle(solidHandle)
     objs_to_sim.append(obj_solid)
     # Place object in scene relative to agent
@@ -1775,7 +1775,7 @@ for wireframeHandle in wireframe_handles_to_use.values():
     # Create object template with passed handle
     obj_template = obj_attr_mgr.create_template(wireframeHandle)
     # Create object from object template handle
-    print("Wireframe Object being made using handle :{}".format(wireframeHandle))
+    print(f"Wireframe Object being made using handle :{wireframeHandle}")
     obj_wf = rigid_obj_mgr.add_object_by_template_handle(wireframeHandle)
     objs_to_sim.append(obj_wf)
     # Place object in scene relative to agent

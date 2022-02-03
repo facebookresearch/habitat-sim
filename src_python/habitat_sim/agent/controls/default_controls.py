@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import List, Optional
+from __future__ import annotations
 
 import magnum as mn
 import numpy as np
@@ -14,7 +14,7 @@ from habitat_sim.geo import FRONT
 from habitat_sim.registry import registry
 from habitat_sim.scene import SceneNode
 
-__all__: List[str] = []
+__all__: list[str] = []
 
 
 _X_AXIS = 0
@@ -34,7 +34,7 @@ def _move_along(scene_node: SceneNode, distance: float, axis: int) -> None:
 
 
 def _rotate_local(
-    scene_node: SceneNode, theta: float, axis: int, constraint: Optional[float] = None
+    scene_node: SceneNode, theta: float, axis: int, constraint: float | None = None
 ) -> None:
     if constraint is not None:
         rotation = scene_node.rotation

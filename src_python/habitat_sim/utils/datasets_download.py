@@ -4,6 +4,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from __future__ import annotations
+
 import argparse
 import gzip
 import itertools
@@ -17,13 +19,12 @@ import sys
 import tarfile
 import traceback
 import zipfile
-from typing import List, Optional
 
 data_sources = {}
 data_groups = {}
 
 
-def hm3d_train_configs_post(extract_dir: str) -> List[str]:
+def hm3d_train_configs_post(extract_dir: str) -> list[str]:
     all_scene_dataset_cfg = os.path.join(
         extract_dir, "hm3d_basis.scene_dataset_config.json"
     )
@@ -316,9 +317,9 @@ def clean_data(uid, data_path):
 def download_and_place(
     uid,
     data_path,
-    username: Optional[str] = None,
-    password: Optional[str] = None,
-    replace: Optional[bool] = None,
+    username: str | None = None,
+    password: str | None = None,
+    replace: bool | None = None,
 ):
     r"""Data-source download function. Validates uid, handles existing data version, downloads data, unpacks, writes version, cleans up."""
     if not data_sources.get(uid):

@@ -5,6 +5,8 @@
 # LICENSE file in the root directory of this source tree.
 
 
+from __future__ import annotations
+
 from habitat_sim import registry as registry  # noqa: F401
 from habitat_sim.utils.data import data_extractor, data_structures, pose_extractor
 from habitat_sim.utils.data.data_extractor import ImageExtractor

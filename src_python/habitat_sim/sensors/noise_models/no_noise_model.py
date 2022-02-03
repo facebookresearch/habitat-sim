@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Union
+from __future__ import annotations
 
 import attr
 import numpy as np
@@ -27,9 +27,7 @@ class NoSensorNoiseModel(SensorNoiseModel):
     def is_valid_sensor_type(sensor_type: SensorType) -> bool:
         return True
 
-    def apply(
-        self, x: Union[ndarray, "torch.Tensor"]
-    ) -> Union[ndarray, "torch.Tensor"]:
+    def apply(self, x: ndarray | torch.Tensor) -> ndarray | torch.Tensor:
         if isinstance(x, np.ndarray):
             return x.copy()
         elif torch is not None and torch.is_tensor(x):

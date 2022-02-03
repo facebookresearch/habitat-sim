@@ -31,6 +31,8 @@ exclude = '''
 '''
 
 [tool.isort]
+add_imports = "from __future__ import annotations"
+append_only = true
 skip_glob = ["*/deps/*", "*/build/*", "*/obselete/*"]
 known_first_party = ["habitat_sim"]
 profile = 'black'

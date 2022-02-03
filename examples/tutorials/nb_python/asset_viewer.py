@@ -20,9 +20,11 @@
 #     name: python3
 # ---
 
+# %%
+from __future__ import annotations
+
 # %% [markdown]
 # <a href="https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/asset_viewer.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
-
 # %% [markdown]
 # #Habitat-sim Asset Viewer
 #
@@ -539,7 +541,7 @@ def set_template_properties_from_dict(template, template_dict):
 # This will display all the properties of an attributes template
 def show_template_properties(template):
     template_dict = build_dict_from_template(template)
-    print("Template {} has : ".format(template.handle))
+    print(f"Template {template.handle} has : ")
     for k, v in template_dict.items():
         print(
             "\tProperty {} has value {} of type {} that is editable : {}".format(
@@ -554,7 +556,7 @@ def show_template_properties(template):
 # @markdown - simulate
 def simulate(sim, dt=1.0, get_frames=True):
     # simulate dt seconds at 60Hz to the nearest fixed timestep
-    print("Simulating {:.3f} world seconds.".format(dt))
+    print(f"Simulating {dt:.3f} world seconds.")
     observations = []
     start_time = sim.get_world_time()
     while sim.get_world_time() < start_time + dt:

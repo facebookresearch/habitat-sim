@@ -20,9 +20,11 @@
 #     name: python3
 # ---
 
+# %%
+from __future__ import annotations
+
 # %% [markdown]
 # <a href="https://colab.research.google.com/github/facebookresearch/habitat-sim/blob/main/examples/tutorials/colabs/ReplicaCAD_quickstart.ipynb" target="_parent"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/></a>
-
 # %% [markdown]
 # #Habitat-sim ReplicaCAD Quickstart
 #
@@ -192,7 +194,7 @@ def make_simulator_from_settings(sim_settings):
 # @markdown (double click to show code)
 def simulate(sim, dt=1.0, get_frames=True):
     # simulate dt seconds at 60Hz to the nearest fixed timestep
-    print("Simulating {:.3f} world seconds.".format(dt))
+    print(f"Simulating {dt:.3f} world seconds.")
     observations = []
     start_time = sim.get_world_time()
     while sim.get_world_time() < start_time + dt:

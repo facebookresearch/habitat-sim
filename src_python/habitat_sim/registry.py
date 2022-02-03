@@ -4,9 +4,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from __future__ import annotations
+
 import collections
 import re
-from typing import DefaultDict, Optional, Type
+from typing import DefaultDict
 
 __all__ = ["registry"]
 
@@ -35,10 +37,10 @@ class _Registry:
     @classmethod
     def register_move_fn(
         cls,
-        controller: Optional[Type] = None,
+        controller: type | None = None,
         *,
-        name: Optional[str] = None,
-        body_action: Optional[bool] = None,
+        name: str | None = None,
+        body_action: bool | None = None,
     ):
         r"""Registers a new control with Habitat-Sim. Registered controls can
         then be retrieved via `get_move_fn()`
@@ -62,7 +64,7 @@ class _Registry:
         ), "body_action must be explicitly set to True or False"
         from habitat_sim.agent.controls.controls import SceneNodeControl
 
-        def _wrapper(controller: Type[SceneNodeControl]):
+        def _wrapper(controller: type[SceneNodeControl]):
             assert issubclass(
                 controller, SceneNodeControl
             ), "All controls must inherit from habitat_sim.agent.SceneNodeControl"
@@ -80,7 +82,7 @@ class _Registry:
 
     @classmethod
     def register_noise_model(
-        cls, noise_model: Optional[Type] = None, *, name: Optional[str] = None
+        cls, noise_model: type | None = None, *, name: str | None = None
     ):
         r"""Registers a new sensor noise model with Habitat-Sim
 
@@ -91,7 +93,7 @@ class _Registry:
         """
         from habitat_sim.sensors.noise_models.sensor_noise_model import SensorNoiseModel
 
-        def _wrapper(noise_model: Type[SensorNoiseModel]):
+        def _wrapper(noise_model: type[SensorNoiseModel]):
             assert issubclass(
                 noise_model, SensorNoiseModel
             ), "All noise_models must inherit from habitat_sim.sensor.SensorNoiseModel"
@@ -109,7 +111,7 @@ class _Registry:
 
     @classmethod
     def register_pose_extractor(
-        cls, pose_extractor: Optional[Type] = None, *, name: Optional[str] = None
+        cls, pose_extractor: type | None = None, *, name: str | None = None
     ):
         r"""Registers a new pose extractor model with Habitat-Sim
 
@@ -120,7 +122,7 @@ class _Registry:
         """
         from habitat_sim.utils.data.pose_extractor import PoseExtractor
 
-        def _wrapper(pose_extractor: Type[PoseExtractor]):
+        def _wrapper(pose_extractor: type[PoseExtractor]):
             assert issubclass(
                 pose_extractor, PoseExtractor
             ), "All pose_extractors must inherit from habitat_sim.utils.data.PoseExtractor"

@@ -2,10 +2,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from __future__ import annotations
+
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import List, Optional, Union
 
 import magnum as mn
 import numpy as np
@@ -70,9 +71,9 @@ class Motions:
                 self.time_length = self.num_of_frames * (1.0 / motion_.fps)
 
                 # intermediates
-                self.translation_drifts: List[mn.Vector3] = []
-                self.forward_displacements: List[mn.Vector3] = []
-                self.root_orientations: List[mn.Quaternion] = []
+                self.translation_drifts: list[mn.Vector3] = []
+                self.forward_displacements: list[mn.Vector3] = []
+                self.root_orientations: list[mn.Quaternion] = []
 
                 # first and last frame root position vectors
                 f = motion_.poses[0].get_transform(ROOT, local=False)[0:3, 3]
@@ -262,7 +263,7 @@ class PathData:
         self.time = 0.0
 
     # [REFACTOR] I would like to change this to a static method, once I figure out how
-    def calc_path_length(self, path_points: List[mn.Vector3]) -> float:
+    def calc_path_length(self, path_points: list[mn.Vector3]) -> float:
         # get path length
         i, j, summ = 0, 0, 0.0
         while i < len(path_points):
@@ -285,8 +286,8 @@ class ActionOrder:
     def __init__(
         self,
         motion_data: Motions.MotionData,
-        location: Optional[Union[mn.Vector3, np.array]] = None,
-        facing: Optional[Union[mn.Vector3, np.array]] = None,
+        location: mn.Vector3 | np.array | None = None,
+        facing: mn.Vector3 | np.array | None = None,
     ) -> None:
         self.motion_data = motion_data
 

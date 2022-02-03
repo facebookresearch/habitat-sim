@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import magnum as mn
 import numpy as np
 

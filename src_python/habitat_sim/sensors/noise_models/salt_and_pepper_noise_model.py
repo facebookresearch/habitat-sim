@@ -5,6 +5,8 @@
 # LICENSE file in the root directory of this source tree.
 
 
+from __future__ import annotations
+
 import attr
 import numpy as np
 from numpy import ndarray

@@ -60,6 +60,13 @@ repos:
     -   id: black
         exclude: ^examples/tutorials/(nb_python|colabs)
 
+-   repo: https://github.com/asottile/pyupgrade
+    rev: v2.31.0
+    hooks:
+    -   id: pyupgrade
+        args: ["--py37-plus"]
+        exclude: "^setup.py$"
+
 -   repo: https://github.com/myint/autoflake
     rev: v1.4
     hooks:
@@ -92,6 +99,8 @@ repos:
         pass_filenames: false
         additional_dependencies:
         - attrs
+        - numpy
+        - numpy-quaternion
 
 -   repo: https://github.com/seddonym/import-linter
     rev: v1.2.6

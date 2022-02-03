@@ -4,6 +4,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from __future__ import annotations
+
 from os import path as osp
 
 import pytest
@@ -32,7 +34,7 @@ _test_scenes = [
 @pytest.mark.parametrize("scene", _test_scenes)
 def test_semantic_scene(scene, make_cfg_settings):
     if not osp.exists(scene):
-        pytest.skip("Skipping {}".format(scene))
+        pytest.skip(f"Skipping {scene}")
 
     make_cfg_settings = {k: v for k, v in make_cfg_settings.items()}
     make_cfg_settings["semantic_sensor"] = False

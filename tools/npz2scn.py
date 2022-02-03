@@ -3,15 +3,17 @@
 # npz2scn - tool for extracting semantic scene information from 3dscenegraph
 #           dataset (https://3dscenegraph.stanford.edu/)
 
+from __future__ import annotations
+
 import argparse
 import json
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 
 
 # Convert ndarrays to python lists so that we can serialize.
-def listify(entry: Dict[str, Any]) -> None:
+def listify(entry: dict[str, Any]) -> None:
     for key in entry.keys():
         if type(entry[key]) is np.ndarray:
             entry[key] = entry[key].tolist()

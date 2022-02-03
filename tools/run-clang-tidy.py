@@ -33,7 +33,7 @@ Compilation database setup:
 http://clang.llvm.org/docs/HowToSetupToolingForLLVM.html
 """
 
-from __future__ import print_function
+from __future__ import annotations
 
 import argparse
 import glob
@@ -123,7 +123,7 @@ def merge_replacement_files(tmpdir, mergefile):
     mergekey = "Diagnostics"
     merged = []
     for replacefile in glob.iglob(os.path.join(tmpdir, "*.yaml")):
-        content = yaml.safe_load(open(replacefile, "r"))
+        content = yaml.safe_load(open(replacefile))
         if not content:
             continue  # Skip empty files.
         merged.extend(content.get(mergekey, []))

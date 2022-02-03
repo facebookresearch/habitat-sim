@@ -2,13 +2,15 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from __future__ import annotations
+
 import ctypes
 import math
 import os
 import sys
 import time
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable
 
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
@@ -23,11 +25,11 @@ from habitat_sim.logging import LoggingContext, logger
 
 
 class HabitatSimInteractiveViewer(Application):
-    def __init__(self, sim_settings: Dict[str, Any]) -> None:
+    def __init__(self, sim_settings: dict[str, Any]) -> None:
         configuration = self.Configuration()
         configuration.title = "Habitat Sim Interactive Viewer"
         Application.__init__(self, configuration)
-        self.sim_settings: Dict[str:Any] = sim_settings
+        self.sim_settings: dict[str:Any] = sim_settings
         self.fps: float = 60.0
         self.debug_bullet_draw = False
         # cache most recently loaded URDF file for quick-reload
@@ -70,7 +72,7 @@ class HabitatSimInteractiveViewer(Application):
 
         # Cycle mouse utilities
         self.mouse_interaction = MouseMode.LOOK
-        self.mouse_grabber: Optional[MouseGrabber] = None
+        self.mouse_grabber: MouseGrabber | None = None
         self.previous_mouse_point = None
 
         # toggle physics simulation on/off
@@ -81,8 +83,8 @@ class HabitatSimInteractiveViewer(Application):
         self.simulate_single_step = False
 
         # configure our simulator
-        self.cfg: Optional[habitat_sim.simulator.Configuration] = None
-        self.sim: Optional[habitat_sim.simulator.Simulator] = None
+        self.cfg: habitat_sim.simulator.Configuration | None = None
+        self.sim: habitat_sim.simulator.Simulator | None = None
         self.reconfigure_sim()
 
         # compute NavMesh if not already loaded by the scene.
@@ -105,9 +107,9 @@ class HabitatSimInteractiveViewer(Application):
 
     def draw_event(
         self,
-        simulation_call: Optional[Callable] = None,
-        global_call: Optional[Callable] = None,
-        active_agent_id_and_sensor_name: Tuple[int, str] = (0, "color_sensor"),
+        simulation_call: Callable | None = None,
+        global_call: Callable | None = None,
+        active_agent_id_and_sensor_name: tuple[int, str] = (0, "color_sensor"),
     ) -> None:
         """
         Calls continuously to re-render frames and swap the two frame buffers
@@ -177,7 +179,7 @@ class HabitatSimInteractiveViewer(Application):
             "move_up",
         ]
 
-        action_space: Dict[str, habitat_sim.agent.ActionSpec] = {}
+        action_space: dict[str, habitat_sim.agent.ActionSpec] = {}
 
         # build our action space map
         for action in action_list:
@@ -187,7 +189,7 @@ class HabitatSimInteractiveViewer(Application):
             )
             action_space[action] = action_spec
 
-        sensor_spec: List[habitat_sim.sensor.SensorSpec] = self.cfg.agents[
+        sensor_spec: list[habitat_sim.sensor.SensorSpec] = self.cfg.agents[
             self.agent_id
         ].sensor_specifications
 
@@ -242,10 +244,10 @@ class HabitatSimInteractiveViewer(Application):
 
         key = Application.KeyEvent.Key
         agent = self.sim.agents[self.agent_id]
-        press: Dict[key.key, bool] = self.pressed
-        act: Dict[key.key, str] = self.key_to_action
+        press: dict[key.key, bool] = self.pressed
+        act: dict[key.key, str] = self.key_to_action
 
-        action_queue: List[str] = [act[k] for k, v in press.items() if v]
+        action_queue: list[str] = [act[k] for k, v in press.items() if v]
 
         for _ in range(int(repetitions)):
             [agent.act(x) for x in action_queue]
@@ -849,7 +851,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Setting up sim_settings
-    sim_settings: Dict[str, Any] = default_sim_settings
+    sim_settings: dict[str, Any] = default_sim_settings
     sim_settings["scene"] = args.scene
     sim_settings["scene_dataset_config_file"] = args.dataset
     sim_settings["enable_physics"] = not args.disable_physics

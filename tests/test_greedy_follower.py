@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import glob
 from os import path as osp
 
@@ -155,7 +157,7 @@ def test_greedy_follower(test_navmesh, move_filter_fn, action_noise, pbar):
 
             agent.act(next_action)
 
-            agent_distance += np.linalg.norm(last_xyz - agent.state.position)
+            agent_distance += np.linalg.norm(last_xyz - agent.state.position)  # type: ignore[assignment]
             last_xyz = agent.state.position
 
             num_acts += 1

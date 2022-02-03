@@ -2,11 +2,13 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from __future__ import annotations
+
 import ctypes
 import random
 import sys
 import time
-from typing import Any, Callable, Dict, Optional, Tuple
+from typing import Any, Callable
 
 import numpy as np
 
@@ -27,7 +29,7 @@ from habitat_sim.logging import logger
 
 class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
     def __init__(
-        self, sim_settings: Dict[str, Any], fm_settings: Dict[str, Any]
+        self, sim_settings: dict[str, Any], fm_settings: dict[str, Any]
     ) -> None:
         super().__init__(sim_settings)
 
@@ -63,7 +65,7 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
         obj_tmp_mgr.register_template(box_template)
 
         # motion mode attributes
-        self.selected_mocap_char: Optional[FairmotionInterface] = None
+        self.selected_mocap_char: FairmotionInterface | None = None
         self.select_sphere_obj_id: int = -1
         self.select_box_obj_id: int = -1
 
@@ -160,9 +162,9 @@ class FairmotionSimInteractiveViewer(HabitatSimInteractiveViewer):
 
     def draw_event(
         self,
-        simulation_call: Optional[Callable] = None,
-        global_call: Optional[Callable] = None,
-        active_agent_id_and_sensor_name: Tuple[int, str] = (0, "color_sensor"),
+        simulation_call: Callable | None = None,
+        global_call: Callable | None = None,
+        active_agent_id_and_sensor_name: tuple[int, str] = (0, "color_sensor"),
     ) -> None:
         """
         Calls continuously to re-render frames and swap the two frame buffers
@@ -762,12 +764,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Setting up sim_settings
-    sim_settings: Dict[str, Any] = default_sim_settings
+    sim_settings: dict[str, Any] = default_sim_settings
     sim_settings["scene"] = args.scene
     sim_settings["scene_dataset_config_file"] = args.dataset
     sim_settings["enable_physics"] = not args.disable_physics
 
-    fm_settings: Dict[str, Any] = {}
+    fm_settings: dict[str, Any] = {}
     fm_settings["amass_path"] = args.amass_path
     fm_settings["urdf_path"] = args.urdf_path
     fm_settings["bm_path"] = args.bm_path

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import collections
 import math
 import sys
@@ -49,7 +51,7 @@ def train_one_epoch(
     model.train()
     metric_logger = utils.MetricLogger(delimiter="  ")
     metric_logger.add_meter("lr", utils.SmoothedValue(window_size=1, fmt="{value:.6f}"))
-    header = "Epoch: [{}]".format(epoch)
+    header = f"Epoch: [{epoch}]"
     epoch_losses = collections.defaultdict(int)
     total_loss = 0
     num_examples = len(data_loader)
@@ -68,7 +70,7 @@ def train_one_epoch(
             epoch_losses[loss_name] += loss_val
 
         if not math.isfinite(loss_value):
-            print("Loss is {}, stopping training".format(loss_value))
+            print(f"Loss is {loss_value}, stopping training")
             print(loss_dict_reduced)
             sys.exit(1)
 

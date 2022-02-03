@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import habitat_sim
 from examples.settings import make_cfg
 from habitat_sim.gfx import (

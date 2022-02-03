@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import collections
 
 
@@ -9,7 +11,7 @@ class ExtractorLRUCache:
 
     def __getitem__(self, key):
         if not self.__contains__(key):
-            raise KeyError("Key {} not in extractor cache".format(key))
+            raise KeyError(f"Key {key} not in extractor cache")
         else:
             # Accessing the data should move it to front of cache
             k, data = self._order.pop(key)

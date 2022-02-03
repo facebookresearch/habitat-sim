@@ -53,6 +53,8 @@ path/to/nvidia/nsight-systems/bin/nsys profile --sample=none --trace=cuda,nvtx
 "habitat_capture_range" --output=my_profile python my_program.py
 # look for my_profile.qdrep in working directory
 """
+from __future__ import annotations
+
 import os
 from contextlib import ContextDecorator
 
@@ -63,7 +65,7 @@ from habitat_sim.logging import logger
 _env_var = os.environ.get("HABITAT_PROFILING", "0")
 _enable_profiling = _env_var != "0"
 if _enable_profiling:
-    logger.info("HABITAT_PROFILING={}".format(_env_var))
+    logger.info(f"HABITAT_PROFILING={_env_var}")
     logger.info("profiling_utils.py range_push/range_pop annotation is enabled")
     from torch.cuda import nvtx
 
@@ -168,7 +170,7 @@ class RangeContext(ContextDecorator):
     def __init__(self, msg: str) -> None:
         self._msg = msg
 
-    def __enter__(self) -> "RangeContext":
+    def __enter__(self) -> RangeContext:
         range_push(self._msg)
         return self
 

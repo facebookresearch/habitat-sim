@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import argparse
 import glob
 import itertools
@@ -8,7 +10,7 @@ import os.path as osp
 import shlex
 import shutil
 import subprocess
-from typing import Any, Callable, List, Optional, Tuple
+from typing import Any, Callable
 
 import tqdm
 
@@ -24,7 +26,7 @@ IMAGE_CONVERTER_DEFAULT = "build/utils/imageconverter/magnum-imageconverter"
 
 
 def build_parser(
-    parser: Optional[argparse.ArgumentParser] = None,
+    parser: argparse.ArgumentParser | None = None,
 ) -> argparse.ArgumentParser:
     if parser is None:
         parser = argparse.ArgumentParser(
@@ -102,7 +104,7 @@ def img_name_to_basis(img: str) -> str:
     return osp.splitext(img)[0] + ".basis"
 
 
-def convert_image_to_basis(args: Tuple[str, str, int]) -> None:
+def convert_image_to_basis(args: tuple[str, str, int]) -> None:
     img, imageconverter, compression_level = args
     basis_img = img_name_to_basis(img)
 
@@ -117,7 +119,7 @@ def convert_image_to_basis(args: Tuple[str, str, int]) -> None:
 
 def _gltf2unlit(gltf_name: str):
     assert osp.exists(gltf_name)
-    with open(gltf_name, "r") as f:
+    with open(gltf_name) as f:
         json_data = json.load(f)
     # add references to the KHR_materials_unlit extension in
     # gltf root-level tags
@@ -154,7 +156,7 @@ def _gltf2unlit(gltf_name: str):
         f.write(json.dumps(json_data, indent=2).encode("utf-8"))
 
 
-def package_meshes(args: Tuple[str, bool]) -> None:
+def package_meshes(args: tuple[str, bool]) -> None:
     mesh_name, convert_to_unlit = args
     output_dir = osp.splitext(mesh_name)[0] + "_hab_basis_tool"
     base_mesh_name = osp.splitext(osp.basename(mesh_name))[0]
@@ -192,13 +194,13 @@ def finalize(output_folder: str, rename_basis: bool) -> None:
             shutil.move(basis_mesh, mesh_name)
 
 
-def _map_all_and_wait(pool: multiprocessing.Pool, func: Callable, inputs: List[Any]):
+def _map_all_and_wait(pool: multiprocessing.Pool, func: Callable, inputs: list[Any]):
     with tqdm.tqdm(total=len(inputs)) as pbar:
         for _ in pool.imap_unordered(func, inputs):
             pbar.update()
 
 
-def _clean(lst: List[str]) -> None:
+def _clean(lst: list[str]) -> None:
     if len(lst) > 0:
         print("Cleaning...")
 

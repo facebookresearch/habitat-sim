@@ -19,6 +19,9 @@
 #     name: python3
 # ---
 
+# %%
+from __future__ import annotations
+
 # %% [markdown]
 # #Habitat-sim Basics for Navigation
 #
@@ -34,7 +37,6 @@
 # - configuration of a Simulator, Sensors, and Agents.
 # - taking actions and retrieving observations
 # - pathfinding and navigation on the NavMesh
-
 # %%
 # @title Installation
 
