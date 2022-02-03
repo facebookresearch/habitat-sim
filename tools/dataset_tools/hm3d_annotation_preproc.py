@@ -84,7 +84,12 @@ HM3D_SSD_STRING = "HM3D Semantic Annotations"
 # positive int, hex color, string, positive int
 def validate_src_SSD(line):
     lineItems = line.split(",")
-    if len(lineItems) != 4:
+    # each line should be 4 elements, but element 2 might contain one or more commas
+    if (
+        len(lineItems) != 4
+        and lineItems[2].count('"') != 1
+        and lineItems[-2].count('"') != 1
+    ):
         return "Incorrect # of items : should be 4, is {}".format(len(lineItems))
     if not lineItems[0].strip().isdigit():
         return "First entry (unique ID) is not positive integer : {}".format(
@@ -94,9 +99,9 @@ def validate_src_SSD(line):
         return "Second entry (color) is not 6 digit hex value : {}".format(lineItems[1])
     if len(lineItems[2].strip()) == 0:
         return "Third entry (category) cannot be an empty string"
-    if not lineItems[3].strip().isdigit():
-        return "Forth entry (region) is not non-negative integer : {}".format(
-            lineItems[3]
+    if not lineItems[-1].strip().isdigit():
+        return "Last entry (region) is not non-negative integer : {}".format(
+            lineItems[-1]
         )
     if not lineItems[0].strip().isdigit():
         return "First entry is not positive integer; is : {}".format(lineItems[0])
