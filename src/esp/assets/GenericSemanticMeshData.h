@@ -49,10 +49,13 @@ class GenericSemanticMeshData : public BaseMesh {
    * @param semanticFilename Path-less Filename of source mesh.
    * @param splitMesh Whether or not the resultant mesh should be split into
    * multiple components based on objectIds, for frustum culling.
+   * @param [out] colorMapToUse An array holding the semantic colors to use for
+   * visualization or matching to semantic IDs.
    * @param convertToSRGB Whether the source vertex colors from the @p meshData
    * should be converted to SRGB
    * @param semanticScene The SSD for the instance mesh being loaded.
-   * @return vector holding one or more mesh results from the .ply file.
+   * @return vector holding one or more mesh results from the semantic asset
+   * file.
    */
 
   static std::vector<std::unique_ptr<GenericSemanticMeshData>>
