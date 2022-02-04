@@ -84,8 +84,7 @@ class Simulator {
   /**
    * @brief Return a view of the currently set Semantic scene colormap.
    */
-  Cr::Containers::ArrayView<const Mn::Vector3ub> getSemanticSceneColormap()
-      const {
+  const std::vector<Mn::Vector3ub>& getSemanticSceneColormap() const {
     return resourceManager_->getSemanticSceneColormap();
   }
 

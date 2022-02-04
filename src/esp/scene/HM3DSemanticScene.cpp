@@ -72,7 +72,7 @@ bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
   auto getVec3ub = [](const std::string& hexValStr) -> Mn::Vector3ub {
     const unsigned val = std::stoul(hexValStr, nullptr, 16);
     return {uint8_t((val >> 16) & 0xff), uint8_t((val >> 8) & 0xff),
-            uint8_t((val >> 0) & 0xff)};
+            uint8_t(val & 0xff)};
   };
 
   // temp constructs
