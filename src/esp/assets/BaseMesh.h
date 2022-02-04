@@ -174,7 +174,7 @@ class BaseMesh {
    * @param msgPrefix Debug message prefix, referencing caller.
    */
   void buildSemanticOBBs(
-      const std::vector<vec3f>& vertices,
+      const std::vector<Mn::Vector3>& vertices,
       const std::vector<uint16_t>& vertSemanticIDs,
       const std::vector<std::shared_ptr<esp::scene::SemanticObject>>& ssdObjs,
       const std::string& msgPrefix) const;

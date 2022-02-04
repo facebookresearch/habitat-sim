@@ -61,11 +61,11 @@ GenericSemanticMeshData::buildSemanticMeshData(
 
   if (semanticFilename.find(".ply") != std::string::npos) {
     // Generic Semantic PLY meshes have -Z gravity
-    const quatf T_esp_scene =
-        quatf::FromTwoVectors(-vec3f::UnitZ(), geo::ESP_GRAVITY);
+    const Mn::Quaternion T_esp_scene = Mn::Quaternion{
+        quatf::FromTwoVectors(-vec3f::UnitZ(), geo::ESP_GRAVITY)};
 
     for (auto& xyz : semanticData->cpu_vbo_) {
-      xyz = T_esp_scene * xyz;
+      xyz = T_esp_scene.toMatrix() * xyz;
     }
   }
 
@@ -77,8 +77,7 @@ GenericSemanticMeshData::buildSemanticMeshData(
   semanticData->convertMeshColors(srcMeshData, convertToSRGB, meshColors);
 
   Cr::Utility::copy(meshColors,
-                    Cr::Containers::arrayCast<Mn::Color3ub>(
-                        Cr::Containers::arrayView(semanticData->cpu_cbo_)));
+                    Cr::Containers::arrayView(semanticData->cpu_cbo_));
 
   // Check we actually have object IDs before copying them, and that those are
   // in a range we expect them to be
@@ -392,16 +391,14 @@ Mn::GL::Mesh* GenericSemanticMeshData::getMagnumGLMesh() {
 }
 
 void GenericSemanticMeshData::updateCollisionMeshData() {
-  collisionMeshData_.positions = Cr::Containers::arrayCast<Mn::Vector3>(
-      Cr::Containers::arrayView(cpu_vbo_));
-  collisionMeshData_.indices = Cr::Containers::arrayCast<Mn::UnsignedInt>(
-      Cr::Containers::arrayView(cpu_ibo_));
+  collisionMeshData_.positions = Cr::Containers::arrayView(cpu_vbo_);
+  collisionMeshData_.indices = Cr::Containers::arrayView(cpu_ibo_);
 }
 
 void GenericSemanticMeshData::PerPartitionIdMeshBuilder::addVertex(
     uint32_t vertexId,
-    const vec3f& position,
-    const vec3uc& color,
+    const Mn::Vector3& position,
+    const Mn::Color3ub& color,
     int objectId) {
   // if we haven't seen this vertex, add it to the local vertex/color buffer
   auto result = vertexIdToVertexIndex_.emplace(vertexId, data_.cpu_vbo_.size());

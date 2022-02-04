@@ -4,6 +4,7 @@
 
 #include "BaseMesh.h"
 #include <Corrade/Utility/FormatStl.h>
+#include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/Math/PackingBatch.h>
 #include <Magnum/MeshTools/Compile.h>
 #include "esp/scene/SemanticScene.h"
@@ -60,7 +61,7 @@ std::string BaseMesh::getColorAsString(Magnum::Color3ub color) const {
 }
 
 void BaseMesh::buildSemanticOBBs(
-    const std::vector<vec3f>& vertices,
+    const std::vector<Mn::Vector3>& vertices,
     const std::vector<uint16_t>& vertSemanticIDs,
     const std::vector<std::shared_ptr<esp::scene::SemanticObject>>& ssdObjs,
     const std::string& msgPrefix) const {
@@ -79,10 +80,10 @@ void BaseMesh::buildSemanticOBBs(
   }
 
   // aggegates of per-semantic ID mins and maxes
-  std::vector<esp::vec3f> vertMax(
+  std::vector<Mn::Vector3> vertMax(
       semanticIDToSSOBJidx.size(),
       {-Mn::Constants::inf(), -Mn::Constants::inf(), -Mn::Constants::inf()});
-  std::vector<esp::vec3f> vertMin(
+  std::vector<Mn::Vector3> vertMin(
       semanticIDToSSOBJidx.size(),
       {Mn::Constants::inf(), Mn::Constants::inf(), Mn::Constants::inf()});
   std::vector<int> vertCounts(semanticIDToSSOBJidx.size());
@@ -99,8 +100,8 @@ void BaseMesh::buildSemanticOBBs(
       const auto vert = vertices[vertIdx];
       // FOR VERT-BASED OBB CALC
       // only support bbs for known colors that map to semantic objects
-      vertMax[semanticID] = vertMax[semanticID].cwiseMax(vert);
-      vertMin[semanticID] = vertMin[semanticID].cwiseMin(vert);
+      vertMax[semanticID] = Mn::Math::max(vertMax[semanticID], vert);
+      vertMin[semanticID] = Mn::Math::min(vertMin[semanticID], vert);
       vertCounts[semanticID] += 1;
     }
   }
@@ -111,8 +112,8 @@ void BaseMesh::buildSemanticOBBs(
        ++semanticID) {
     // get object with given semantic ID
     auto& ssdObj = *ssdObjs[semanticIDToSSOBJidx[semanticID]];
-    esp::vec3f center{};
-    esp::vec3f dims{};
+    Mn::Vector3 center{};
+    Mn::Vector3 dims{};
 
     const std::string debugStr = Cr::Utility::formatString(
         "{} Semantic ID : {} : color : {} tag : {} present in {} "
@@ -130,7 +131,8 @@ void BaseMesh::buildSemanticOBBs(
           "{}BB Center [{},{},{}] Dims [{},{},{}]", debugStr, center.x(),
           center.y(), center.z(), dims.x(), dims.y(), dims.z());
     }
-    ssdObj.setObb(center, dims);
+    ssdObj.setObb(Mn::EigenIntegration::cast<esp::vec3f>(center),
+                  Mn::EigenIntegration::cast<esp::vec3f>(dims));
   }
 }  // BaseMesh::buildSemanticOBBs
 

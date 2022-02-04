@@ -1027,11 +1027,15 @@ void ResourceManager::computeInstanceMeshAbsoluteAABBs(
     const int meshID = staticDrawableInfo[iEntry].meshID;
 
     // convert std::vector<vec3f> to std::vector<Mn::Vector3>
-    const std::vector<vec3f>& vertexPositions =
+    // const std::vector<vec3f>& vertexPositions =
+    //     dynamic_cast<GenericSemanticMeshData&>(*meshes_.at(meshID))
+    //         .getVertexBufferObjectCPU();
+    // std::vector<Mn::Vector3> transformedPositions{vertexPositions.begin(),
+    //                                               vertexPositions.end()};
+
+    std::vector<Mn::Vector3> transformedPositions =
         dynamic_cast<GenericSemanticMeshData&>(*meshes_.at(meshID))
             .getVertexBufferObjectCPU();
-    std::vector<Mn::Vector3> transformedPositions{vertexPositions.begin(),
-                                                  vertexPositions.end()};
 
     Mn::MeshTools::transformPointsInPlace(absTransforms[iEntry],
                                           transformedPositions);
