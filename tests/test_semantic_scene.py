@@ -40,7 +40,8 @@ def test_semantic_scene(scene, make_cfg_settings):
     cfg = make_cfg(make_cfg_settings)
     cfg.agents[0].sensor_specifications = []
     sim = habitat_sim.Simulator(cfg)
-
+    # verify color map access
+    sim.semantic_color_map
     scene = sim.semantic_scene
     for obj in scene.objects:
         obj.aabb
