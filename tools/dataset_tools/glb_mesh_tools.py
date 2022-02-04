@@ -49,9 +49,7 @@ def load_glb_as_gltf(glb_file_name: str):
         from pygltflib import GLTF2
     except ImportError:
         print(
-            "pygltflib must be installed to access the JSON in the glb file {}. Aborting".format(
-                glb_file_name
-            )
+            f"pygltflib must be installed to access the JSON in the glb file {glb_file_name}. Aborting"
         )
         return {}
 
@@ -67,9 +65,7 @@ def extract_json_from_glb(glb_file_name: str):
         from pygltflib import GLTF2  # , delete_empty_keys, gltf_asdict
     except ImportError:
         print(
-            "pygltflib must be installed to access the JSON in the glb file {}. Aborting".format(
-                glb_file_name
-            )
+            f"pygltflib must be installed to access the JSON in the glb file {glb_file_name}. Aborting"
         )
         return {}
 
@@ -116,9 +112,7 @@ def load_glb_as_scene(src_scene_filename: str):
             scene_graph.graph.transforms.children_dict = children_dict
     except BaseException:
         print(
-            "Unable to load file {} - not recognized as valid mesh file. Error thrown : {}. Aborting".format(
-                src_scene_filename, sys.exc_info()
-            )
+            f"Unable to load file {src_scene_filename} - not recognized as valid mesh file. Error thrown : {sys.exc_info()}. Aborting"
         )
         return None
     return scene_graph
@@ -357,20 +351,16 @@ def get_objects_in_scenes(
 
     if debug:
         for scene_name, obj_in_scene_dict in each_scene_obj_dict.items():
-            print("\nScene {}\nObjects and counts : ".format(scene_name))
+            print(f"\nScene {scene_name}\nObjects and counts : ")
             for obj in obj_in_scene_dict:
                 print(
-                    "\t{} | Translation List : {}".format(
-                        obj, obj_per_scene_transforms[obj][scene_name]
-                    )
+                    f"\t{obj} | Translation List : {obj_per_scene_transforms[obj][scene_name]}"
                 )
 
         print("\nTotals:\n")
         for obj, transforms in all_scene_transforms.items():
             print(
-                "Object : {} | Total counts across all scenes : {}  ".format(
-                    obj, len(transforms)
-                )
+                f"Object : {obj} | Total counts across all scenes : {len(transforms)}  "
             )
         print("\n")
     return obj_per_scene_transforms, obj_max_per_scene_counts
@@ -391,15 +381,15 @@ def calc_stats(pop_data: List[np.ndarray]):
 
 
 def show_edges_geometry(edge_types: str, edges: List[Tuple[str, str, Dict[str, Any]]]):
-    print("\n\n{} has geometry:".format(edge_types))
+    print(f"\n\n{edge_types} has geometry:")
     for e in edges:
         if "geometry" in e[2]:
-            print("Edge : {}".format(e))
+            print(f"Edge : {e}")
 
-    print("\n\n{} does not have geometry:".format(edge_types))
+    print(f"\n\n{edge_types} does not have geometry:")
     for e in edges:
         if "geometry" not in e[2]:
-            print("Edge : {}".format(e))
+            print(f"Edge : {e}")
 
 
 def get_nodes_that_match_set(
@@ -439,13 +429,13 @@ def get_nodes_that_match_set(
         # display node names matching substrings under
         # each parent node in scene graph
         for k, v in tag_dict.items():
-            print("Parent node : {} Substr to match : {}".format(k, v))
+            print(f"Parent node : {k} Substr to match : {v}")
 
-        print("Node Matches : {}".format(len(match_node_names)))
+        print(f"Node Matches : {len(match_node_names)}")
         for k, v in res_dict.items():
-            print("\nFor parent object : {}".format(k))
+            print(f"\nFor parent object : {k}")
             for n in v:
-                print("\t{}".format(n))
+                print(f"\t{n}")
 
     return res_dict
 
@@ -496,9 +486,9 @@ def extract_obj_mesh_from_scenegraph(
     else:
         sub_nodes = set(transforms_tree.children_dict[scene_object_tag])
     sub_nodes.add(scene_object_tag)
-    # print("{}# of subnodes : {}".format(scene_object_tag,len(sub_nodes)))
+    # print(f"{scene_object_tag} # of subnodes : {len(sub_nodes)}")
     # for n in sub_nodes:
-    #     print("\t{}".format(n))
+    #     print(f"\t{n}")
 
     # remove any excluded node names
     if len(exclude_nodes) > 0:
@@ -560,7 +550,7 @@ def extract_obj_mesh_from_scenegraph(
             ]
             edges.extend(include_edges_reparent)
 
-    # show_edges_geometry("{} After include edges".format(scene_object_tag), edges)
+    # show_edges_geometry(f"{scene_object_tag} After include edges", edges)
 
     # build a transformation graqh representing all the components of the object
     g = trimesh.scene.transforms.SceneGraph(base_frame=parent_node_name)
@@ -580,9 +570,9 @@ def extract_obj_mesh_from_scenegraph(
         scene_object_tag, frame_from=parent_node_name, matrix=np.identity(4)
     )
 
-    assert new_scene.is_valid, "Constructed {} scene object is not valid!".format(
-        scene_object_tag
-    )
+    assert (
+        new_scene.is_valid
+    ), f"Constructed {scene_object_tag} scene object is not valid!"
     return new_scene
 
 
@@ -624,10 +614,10 @@ def get_node_dict_recurse(transforms_tree, root_node):
 def print_node_dict_recurse(res_dict: Dict[str, Any], tab_space: str):
     for k, v in res_dict.items():
         if isinstance(v, dict):
-            print("{}{} :".format(tab_space, k))
+            print(f"{tab_space}{k} :")
             print_node_dict_recurse(v, tab_space + "\t")
         else:
-            print("{}{} : {}".format(tab_space, k, v))
+            print(f"{tab_space}{k} : {v}")
 
 
 def extract_ligthing_from_scenegraph(
@@ -664,15 +654,15 @@ def extract_ligthing_from_scenegraph(
         if k in sub_nodes:
             if len(v) == 0:
                 continue
-            print("k : {} | size of map : {}".format(k, len(v)))
+            print(f"k : {k} | size of map : {len(v)}")
             res_dict1 = {}
             for k1, v1 in v.items():
                 res_dict2 = {}
                 if k1 in sub_nodes:
-                    print("\tk1 : {} | size of map : {}".format(k1, len(v1)))
+                    print(f"\tk1 : {k1} | size of map : {len(v1)}")
                     for k2, v2 in v1.items():
                         if "matrix" in k2.lower():
-                            print("\t\tk2 : {} | node : {}".format(k2, v2))
+                            print(f"\t\tk2 : {k2} | node : {v2}")
                             res_dict2[k2] = v2
                     if len(res_dict2) > 0:
                         res_dict1[k1] = res_dict2
@@ -709,7 +699,7 @@ def extract_light_from_json(
         # this would indicate a named sub-grouping of lights
         obj_name = data_dict["name"].lower().replace(" ", "_")
 
-        # print("{}:{} : {}".format(level_name, obj_name, data_dict))
+        # print(f"{level_name}:{obj_name} : {data_dict}")
         if "children" in data_dict:
             child_idxs = data_dict["children"]
             child_res_dict[obj_name] = extract_light_from_json(
@@ -740,9 +730,7 @@ def extract_lighting_from_gltf(scene_filename_glb: str, lights_tag: str):
     # Get json from glb file
     # TODO : translation/rotation information for lights to our format of position/direction
     print(
-        "glb_mesh_tools.extract_lighting_from_gltf (Still WIP) : {}".format(
-            scene_filename_glb
-        )
+        f"glb_mesh_tools.extract_lighting_from_gltf (Still WIP) : {scene_filename_glb}"
     )
     base_json = extract_json_from_glb(scene_filename_glb)
     # if nothing found, return empty res
@@ -750,31 +738,31 @@ def extract_lighting_from_gltf(scene_filename_glb: str, lights_tag: str):
         return {}
     for k, v in base_json.items():
         if hasattr(v, "__len__"):
-            print("K: {} : len V : {}".format(k, len(v)))
+            print(f"K: {k} : len V : {len(v)}")
         else:
-            print("K: {} : V : {}".format(k, v))
+            print(f"K: {k} : V : {v}")
     # list of lights - accessed in scene_graph by idx
     lights_list = base_json["extensions"]["KHR_lights_punctual"]["lights"]
-    # print("Number of lights: {}".format(len(lights_list)))
+    # print(f"Number of lights: {len(lights_list)}")
     # for light in lights_list :
-    #     print("{}".format(light))
+    #     print(f"{light}")
 
     # get the list of node idxs of the root of the scene
     scene_root_nodes = base_json["scenes"][base_json["scene"]]["nodes"]
 
-    # print("Scene root nodes : {}\n".format(scene_root_nodes))
+    # print(f"Scene root nodes : {scene_root_nodes}\n")
     nodes_list = base_json["nodes"]
     # find node index list corresponding to children of lighting node
     for idx in scene_root_nodes:
         if lights_tag in nodes_list[idx]["name"]:
             lighting_nodes = nodes_list[idx]["children"]
             break
-    # print("Light root nodes : {}\n".format(lighting_nodes))
+    # print(f"Light root nodes : {lighting_nodes}\n")
 
     # iterate through all known idxs to find hierarchy
 
     # for idx in lighting_nodes:
-    #     print("{} : {}".format(idx, nodes_list[idx]))
+    #     print(f"{idx} : {nodes_list[idx]}")
 
     lighting_dict_res = extract_light_from_json(
         nodes_list, lights_list, lighting_nodes, "Lighting"
@@ -862,9 +850,7 @@ def conv_glb_to_gltf(src_glb_file, dest_json_file, dest_bin_file):
     def pad_size_32b(size):
         return (4 - size % 4) % 4
 
-    print(
-        "Converting {} to {} and {}".format(src_glb_file, dest_json_file, dest_bin_file)
-    )
+    print(f"Converting {src_glb_file} to {dest_json_file} and {dest_bin_file}")
 
     with open(src_glb_file, "rb") as f:
         data: bytes = f.read()
@@ -1013,7 +999,7 @@ def conv_gltf_to_glb(src_gltf_file, dest_glb_file):
     def pad_size_32b(size):
         return (4 - size % 4) % 4
 
-    print("Converting {} to {}".format(src_gltf_file, dest_glb_file))
+    print(f"Converting {src_gltf_file} to {dest_glb_file}")
 
     with open(src_gltf_file) as f:
         data = json.load(f)
@@ -1125,18 +1111,18 @@ def save_glb_as_unlit_old(src_filename_glb: str, dest_filename_glb: str):
     # get JSON data as dict
     base_data_dict = json.loads(gltf.gltf_to_json())
 
-    print("Json from glb source {} : \n{}".format(src_filename_glb, base_data_dict))
+    print(f"Json from glb source {src_filename_glb} : \n{base_data_dict}")
 
     for material in base_data_dict["materials"]:
         if "pbrMetallicRoughness" in material:
             # Drop everything except base color and base color texture
             pbrMetallicRoughness = material["pbrMetallicRoughness"]
             for key in list(pbrMetallicRoughness.keys()):
-                print("Key : {}".format(key))
+                print(f"Key : {key}")
                 if key not in ["baseColorFactor", "baseColorTexture"]:
                     del pbrMetallicRoughness[key]
             for k, v in pbrMetallicRoughness.items():
-                print("Key {} : Val {}".format(k, v))
+                print(f"Key {k} : Val {v}")
 
         for key in [
             "normalTexture",
@@ -1153,17 +1139,13 @@ def save_glb_as_unlit_old(src_filename_glb: str, dest_filename_glb: str):
         material["extensions"]["KHR_materials_unlit"] = {}
 
     print(
-        "New data dict {} :\n{}".format(
-            type(base_data_dict), ut.dict_to_disp_string(base_data_dict, "")
-        )
+        f"New data dict {type(base_data_dict)} :\n{ut.dict_to_disp_string(base_data_dict, '')}"
     )
 
     gltf = gltf.from_json(json.dumps(base_data_dict), infer_missing=False)
 
     print(
-        "After editing JSON info for glb to be saved at {} : \n{}".format(
-            dest_filename_glb, gltf.gltf_to_json()
-        )
+        f"After editing JSON info for glb to be saved at {dest_filename_glb} : \n{ gltf.gltf_to_json()}"
     )
 
     success = gltf.save_binary(dest_filename_glb)

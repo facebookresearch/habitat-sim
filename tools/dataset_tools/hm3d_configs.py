@@ -74,10 +74,10 @@ def hm3d_build_stage_config(partition, path_and_dir):
         navemesh_asset = scene_name + HM3D_NAVMESH_EXT
         abs_navmesh_asset = join(scene_dir, navemesh_asset)
         if os.path.isfile(abs_navmesh_asset):
-            # print("Navmesh Found : {}".format(navemesh_asset))
+            # print(f"Navmesh Found : {navemesh_asset}")
             json_dict["navmesh"] = navemesh_asset
         else:
-            print("Navmesh Not Found : {}".format(navemesh_asset))
+            print(f"Navmesh Not Found : {navemesh_asset}")
             abs_navmesh_asset = ""
     else:
         abs_navmesh_asset = ""
@@ -86,7 +86,7 @@ def hm3d_build_stage_config(partition, path_and_dir):
     for k, v in HM3D_JSON_MOD_VALS.items():
         json_dict[k] = v
 
-    # print("{} - {} | {} | {} ".format(scene_dir, scene_name, stage_render_asset, navemesh_asset))
+    # print(f"{scene_dir} - {scene_name} | {stage_render_asset} | {navemesh_asset} ")
     stage_config_filename = scene_name + ut.CONFIG_EXTENSIONS["stage"] + ".json"
     abs_stage_config_filename = join(scene_dir, stage_config_filename)
     # compose and save JSON file
@@ -100,7 +100,7 @@ def build_scene_config():
 
 def main():
     # file name pattern to find for modification
-    config_file_pattern = re.compile("{}".format(HM3D_SCENE_SUBDIR_RE))
+    config_file_pattern = re.compile(f"{HM3D_SCENE_SUBDIR_RE}")
     # file listings for each partition
     file_listings = {}
     for partition in HM3D_DATA_PARTITIONS:
@@ -113,15 +113,15 @@ def main():
         )
 
     for partition, path_and_dir_list in file_listings.items():
-        print("Size of partition : {}".format(len(path_and_dir_list)))
+        print(f"Size of partition : {len(path_and_dir_list)}")
         # for each partition, we want a dictionary of the scene hash (which will
         # be used as an access tag in scene dataset config) as well as stage config location and navmesh location
         scene_dataset_vals = {}
         scene_dataset_config_name = join(
             HM3D_BASE_DIR,
-            "HM3D_{}_data{}.json".format(partition, ut.CONFIG_EXTENSIONS["dataset"]),
+            f'HM3D_{partition}_data{ut.CONFIG_EXTENSIONS["dataset"]}.json',
         )
-        print("Scene dataset config name : {}".format(scene_dataset_config_name))
+        print(f"Scene dataset config name : {scene_dataset_config_name}")
         # go through every scene
         for path_and_dir in path_and_dir_list:
             # build an individual stage config and return scene hash,
@@ -137,20 +137,16 @@ def main():
                 "navmesh_path": rel_navmesh_path,
             }
             # print(
-            #     "Stage config vals returned : Scene : {}\nBase scene dataset dir:{}\nConverted config rel path : {}\nConverted navmesh rel path : {}".format(
-            #         stage_vals[0],
-            #         HM3D_BASE_DIR,
-            #         rel_stage_config_path,
-            #         rel_navmesh_path,
-            #     )
+            #    f"Stage config vals returned : Scene : {stage_vals[0]}\n"
+            #    f"Base scene dataset dir:{HM3D_BASE_DIR}\n"
+            #    f"Converted config rel path : {rel_stage_config_path}\n"
+            #    f"Converted navmesh rel path : {rel_navmesh_path}"
             # )
         print(
-            "{} partition complete : scene dataset size {}".format(
-                partition, len(scene_dataset_vals)
-            )
+            f"{partition} partition complete : scene dataset size {len(scene_dataset_vals)}"
         )
         for k, v in scene_dataset_vals.items():
-            print("Scene : {} | Data : {}".format(k, v))
+            print(f"Scene : {k} | Data : {v}")
         # TODO create scene dataset for each partition
 
     # # build dictionary of 4-element tuples to modify json values
@@ -160,7 +156,7 @@ def main():
 
     # for k in sorted_key_list:
     #     v = res_dict[k]
-    #     #print("file:{} | src loc:{} | dest file:{} | json tag:{} | json val:{}".format(k, v[0], v[1], v[2], v[3]))
+    #     print(f"file:{k} | src loc:{v[0]} | dest file:{v[1]} | json tag:{v[2]} | json val:{v[3]}")
     #     mod_json_val_and_save(v)
 
 

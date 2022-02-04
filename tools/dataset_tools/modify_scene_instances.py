@@ -40,7 +40,7 @@ def main():
     # get all files in specified directory whose names match passed regex string
     # returns list of tuples of path,dirnames, file names
     file_list = ut.get_files_matching_regex(
-        SCENE_INSTANCE_SRC_DIR, "{}.json".format(SCENE_INSTANCE_FILE_RE)
+        SCENE_INSTANCE_SRC_DIR, f"{SCENE_INSTANCE_FILE_RE}.json"
     )
 
     with open(OBJECT_MOD_FILENAME, "r") as f:
@@ -63,7 +63,7 @@ def main():
         for obj_instance in orig_scene_instance["object_instances"]:
             obj_name = obj_instance["template_name"].split("/")[-1].strip()
             if obj_name not in mod_dict:
-                print("Unable to find {} in modification dictionary".format(obj_name))
+                print(f"Unable to find {obj_name} in modification dictionary")
                 continue
             orig_trans = list(obj_instance["translation"])
             orig_rotation = list(obj_instance["rotation"])
@@ -76,9 +76,7 @@ def main():
 
         # save to new file location
         new_file = join(MOD_OBJS_OUTPUT, filename)
-        print(
-            "Scene Instance : {} modified and saved to {} \n".format(src_file, new_file)
-        )
+        print(f"Scene Instance : {src_file} modified and saved to {new_file}\n")
 
         ut.mod_json_val_and_save(("", new_file, orig_scene_instance, False))
 

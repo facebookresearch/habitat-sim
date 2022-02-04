@@ -29,7 +29,7 @@ def main():
         src_filename = os.path.join(path, filename)
         src_file_exists = os.path.exists(src_filename)
         if not src_file_exists:
-            print("!!!!!! {} does not exist, skipping.".format(src_filename))
+            print(f"!!!!!! {src_filename} does not exist, skipping.")
             continue
 
         dest_path = dest_path_dict[path]
@@ -41,12 +41,8 @@ def main():
 
         dest_filename = os.path.join(dest_path, filename)
         print(
-            "Src File exists : \t{} | Src Filename : {}\n\tDest Path exists : {} | Dest Filename : {}".format(
-                src_file_exists,
-                src_filename,
-                dest_path_exists,
-                dest_filename,
-            )
+            f"Src File exists : \t{src_file_exists} | Src Filename : {src_filename}\n"
+            f"\tDest Path exists : {dest_path_exists} | Dest Filename : {dest_filename}"
         )
 
         gut.convert_file_to_unlit(src_filename, dest_filename)

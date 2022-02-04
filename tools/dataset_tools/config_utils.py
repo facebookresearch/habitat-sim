@@ -64,13 +64,11 @@ def build_config_src_dest_dict(
     }
     if (len(config_json_dict)) == 0:
         print(
-            "build_config_src_dest_dict( config_src_dir : {}, config_dest_dir : {}) : No files found/mapped!".format(
-                config_src_dir, config_dest_dir
-            )
+            f"build_config_src_dest_dict( config_src_dir : {config_src_dir}, config_dest_dir : {config_dest_dir}) : No files found/mapped!"
         )
     if debug:
         for k, v in config_json_dict.items():
-            print("Basename : {} : value : {}".format(k, v))
+            print(f"Basename : {k} : value : {v}")
     return config_json_dict
 
 
@@ -109,21 +107,17 @@ def mod_config_paths_rel_dest(
             old_file_name = json_data[tag]
             abs_old_file = os.path.normpath(os.path.join(asset_base_dir, old_file_name))
             base_string = (
-                "Attempting to modify {} config to have asset relative"
-                ' filepath "{}" changed to absolute "{}" (with config moved to Dest dir {}) and this'
-                " filepath ".format(src_file, old_file_name, abs_old_file, dest_dir)
+                f"Attempting to modify {src_file} config to have asset relative filepath "
+                f'"{old_file_name}" changed to absolute "{abs_old_file}" (with config '
+                f"moved to Dest dir {dest_dir}) and this filepath"
             )
             if os.path.isfile(abs_old_file):
                 new_file_name = os.path.relpath(abs_old_file, start=dest_dir)
                 json_data[tag] = new_file_name
                 if debug:
-                    print(
-                        "{} found! Relative path used {}".format(
-                            base_string, new_file_name
-                        )
-                    )
+                    print(f"{base_string} found! Relative path used {new_file_name}")
             else:
-                print("{} not found, so no changes were made.".format(base_string))
+                print(f"{base_string} not found, so no changes were made.")
 
 
 def update_dict_recurse(dest_dict, update_dict):
@@ -147,9 +141,7 @@ def load_json_into_dict(filename: str) -> Dict[str, Any]:
     file_list = glob(os.path.join("**", filename), recursive=True)
     if len(file_list) == 0:
         print(
-            "JSON File {} not found, so no configuration data loaded. Aborting. ".format(
-                filename
-            )
+            f"JSON File {filename} not found, so no configuration data loaded. Aborting. "
         )
         return {}
     src_file = file_list[0]
@@ -214,8 +206,8 @@ def mod_json_val_and_save(
         save_json_to_file(json_data, dest_file, indent)
     else:
         print(
-            "mod_json_val_and_save (dry run) : JSON data to be written :"
-            "\n{}\n to file named : {}".format(json_data, dest_file)
+            f"mod_json_val_and_save (dry run) : JSON data to be written :"
+            f"\n{json_data}\n to file named : {dest_file}"
         )
 
 
@@ -226,17 +218,13 @@ def build_disp_string_elem(k: str, v: Any, tab: str, new_tab: str):
     res = ""
     k_disp_str = ""
     if len(k) > 0:
-        k_disp_str = "{} : ".format(k)
+        k_disp_str = f"{k} : "
     if isinstance(v, dict):
-        res += tab + "{}({}\n{}{}),\n".format(
-            k_disp_str, tab, dict_to_disp_string(v, new_tab), tab
-        )
+        res += f"{tab}{k_disp_str}({tab}\n{ dict_to_disp_string(v, new_tab)}{tab}),\n"
     elif isinstance(v, list):
-        res += tab + "{}[\n{}{}],\n".format(
-            k_disp_str, list_to_disp_string(v, new_tab), tab
-        )
+        res += f"{tab}{k_disp_str}[\n{ list_to_disp_string(v, new_tab)}{tab}],\n"
     else:
-        res += tab + "{}{},\n".format(k_disp_str, v)
+        res += f"{tab}{k_disp_str}{v},\n"
     return res
 
 
@@ -291,15 +279,11 @@ def get_files_matching_regex(
                     res_list.append((path, dirnames, fname))
                 elif debug:
                     print(
-                        "get_files_matching_regex : {} not match regex {}".format(
-                            fname, regex_str
-                        )
+                        f"get_files_matching_regex : {fname} not match regex {regex_str}"
                     )
     if debug:
         print(
-            "get_files_matching_regex : Found and matched {} of {} files in {}".format(
-                len(res_list), found_count, src_dir
-            )
+            f"get_files_matching_regex : Found and matched {len(res_list)} of {found_count} files in {src_dir}"
         )
     return res_list
 
@@ -333,14 +317,10 @@ def get_directories_matching_regex(
                     res_list.append((path, dirname))
                 elif debug:
                     print(
-                        "get_directories_matching_regex : {} not match regex {}".format(
-                            dirname, regex_str
-                        )
+                        f"get_directories_matching_regex : {dirname} not match regex {regex_str}"
                     )
     if debug:
         print(
-            "get_directories_matching_regex : Found and matched {} of {} directories in {}".format(
-                len(res_list), found_count, src_dir
-            )
+            f"get_directories_matching_regex : Found and matched {len(res_list)} of {found_count} directories in {src_dir}"
         )
     return res_list

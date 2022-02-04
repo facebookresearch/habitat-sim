@@ -34,13 +34,8 @@ def calc_object_stats(obj_per_scene_transforms, obj_max_per_scene_counts):
                 "object_stats": [obj_location_stats],
             }
             print(
-                "Object : {} : # of scenes present : {} max per scene : {} mean location : {} location std : {}".format(
-                    obj,
-                    len(scene_dict),
-                    obj_max_per_scene_counts[obj],
-                    obj_location_stats["mean"],
-                    obj_location_stats["std"],
-                )
+                f"Object : {obj} : # of scenes present : {len(scene_dict)} max per scene : {obj_max_per_scene_counts[obj]} "
+                f"mean location : { obj_location_stats['mean']} location std : {obj_location_stats['std']}"
             )
         else:
             # harder stats, need to do clustering to build correct
@@ -97,9 +92,7 @@ def calc_object_stats(obj_per_scene_transforms, obj_max_per_scene_counts):
                 else:
                     # doesn't happen
                     print(
-                        "Object {} in scene {} Weird result {} ".format(
-                            obj, scene, len(translations)
-                        )
+                        f"Object {obj} in scene {scene} Weird result {len(translations)} "
                     )
                     continue
             obj_0_stats = gut.calc_stats(obj_0_location)
@@ -111,14 +104,9 @@ def calc_object_stats(obj_per_scene_transforms, obj_max_per_scene_counts):
             }
 
             print(
-                "\nObject : {} : # of scenes present : {}  | max per scene : {} | Counts : {} | mean locations : {} location stds : {}\n".format(
-                    obj,
-                    len(scene_dict),
-                    obj_max_per_scene_counts[obj],
-                    [obj_0_stats["num_entries"], obj_1_stats["num_entries"]],
-                    [obj_0_stats["mean"], obj_1_stats["mean"]],
-                    [obj_0_stats["std"], obj_1_stats["std"]],
-                )
+                f"\nObject : {obj} : # of scenes present : {len(scene_dict)}  | max per scene : {obj_max_per_scene_counts[obj]} | "
+                f"Counts : {[obj_0_stats['num_entries'], obj_1_stats['num_entries']]} | "
+                f"mean locations : {[obj_0_stats['mean'], obj_1_stats['mean']]} location stds : { [obj_0_stats['std'], obj_1_stats['std']]}\n"
             )
 
     return all_obj_location_stats

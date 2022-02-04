@@ -368,7 +368,7 @@ def extract_stage_from_scene(
     # world-space transformation of stage node
     stage_transform = scene_graph.graph.get(stage_tag)[0]
 
-    # print("Stage global transform \n{}".format(stage_transform))
+    # print(f"Stage global transform \n{stage_transform}")
     # base stage name - fully qualified directories + stub
     stage_name_base = scene_name_base  # + "_stage"
 
@@ -418,7 +418,7 @@ def extract_stage_from_scene(
         stage_config_filename = (
             stage_config_dest_filename_base + ut.CONFIG_EXTENSIONS["stage"] + ".json"
         )
-        # print("Relative stage path :{}".format(rel_stage_asset_filename))
+        # print(f"Relative stage path :{rel_stage_asset_filename}")
         stage_config_json_dict = {
             "render_asset": rel_stage_asset_filename,
             "collision_asset": rel_stage_asset_filename,
@@ -532,7 +532,7 @@ def extract_objects_from_scene(
         )
         # build file names for output
         obj_glb_dest_filename = obj_glb_dest_filename_base + ".glb"
-        # print("Object dest filename : {}".format(obj_dest_filename))
+        # print(f"Object dest filename : {obj_glb_dest_filename}")
 
         if build_glbs:
             # extract the object "scene" for obj_name object instance in mesh
@@ -676,9 +676,7 @@ def extract_articulated_objects_from_scene(
                             "absolute_rotation"
                         ]
                     print(
-                        "\tArticulated Object {} placed using absolute transforms in JSON.".format(
-                            ao_name
-                        )
+                        f"\tArticulated Object {ao_name} placed using absolute transforms in JSON."
                     )
 
                 else:
@@ -725,9 +723,7 @@ def extract_articulated_objects_from_scene(
                     art_obj_instance_dict["rotation"] = list(new_rot)
 
                     print(
-                        "\tArticulated Object {} made from existing object transformation.".format(
-                            ao_name
-                        )
+                        f"\tArticulated Object {ao_name} made from existing object transformation."
                     )
             ao_res_list.append(art_obj_instance_dict)
 
@@ -754,10 +750,10 @@ def extract_lighting_from_scene(
             if isinstance(v, list):
                 i = 0
                 for elem in v:
-                    print("\t{}[{}] : {}".format(k, i, elem))
+                    print(f"\t{k}[{i}] : {elem}")
                     i += 1
             else:
-                print("\t{} : {}".format(k, v))
+                print(f"\t{k} : {v}")
 
     # base stage name - fully qualified directories + stub
     lighting_name_base = scene_name_base + "_lighting"
@@ -856,10 +852,10 @@ def build_scene_dataset_config(configs):
 def build_scene_graph_diagnostic(configs, scene_graph, scene_name_base):
     # get node graph dictionary
     sg_node_dict = gut.build_glb_scene_graph_dict(scene_graph, configs["world_tag"])
-    # print("{}".format(sg_node_dict))
+    # print(f"{sg_node_dict}")
     # build file name
     abs_sg_diagnostic_filename = os.path.join(
-        configs["scenegraph_diagnostics_out_dir"], scene_name_base + "_sg_layout.json"
+        configs["scenegraph_diagnostics_out_dir"], f"{scene_name_base}_sg_layout.json"
     )
     # save node graph dictionary as json
     ut.mod_json_val_and_save(("", abs_sg_diagnostic_filename, sg_node_dict))
@@ -907,11 +903,7 @@ def main():
             decon_configs["scene_instance_dest_dir"],
             scene_name_base + ut.CONFIG_EXTENSIONS["scene"] + ".json",
         )
-        print(
-            "Scene {} Scene Instance name {}".format(
-                scene_name, abs_scene_instance_filename
-            )
-        )
+        print(f"Scene {scene_name} Scene Instance name {abs_scene_instance_filename}")
 
         # Save individual stage and objects extracted from scene and
         # construct scene instance json based on layout
@@ -928,9 +920,7 @@ def main():
                 src_scene_filename, gltf_scene_name, True
             )
             print(
-                "\t{} {}successfully converted.".format(
-                    src_scene_filename, ("" if convert_success else "not ")
-                )
+                f"\t{src_scene_filename} {('' if convert_success else 'not ')}successfully converted."
             )
 
         # If requested build diagnostic info about scene graph and save

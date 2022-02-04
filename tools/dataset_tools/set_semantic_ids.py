@@ -93,7 +93,7 @@ def set_object_semantic_ids(config_json_dict, lex_dict):
             unmapped_configs[k] = v
 
     for k, _ in unmapped_configs.items():
-        print('"{}"'.format(k))
+        print(f'"{k}"')
     print("\n")
 
     # the objects below were not named appropriately and so matches were not found
@@ -140,24 +140,20 @@ def semantic_id_mapping_report(info_dict, lex_dict):
     for k, v in info_dict.items():
         semantic_id = v[2]["semantic_id"]
         semantic_class = lex_inverse_dict[semantic_id]
-        print(
-            "{} | k: {} : Semantic ID: {} : class: {}".format(
-                itr, k, semantic_id, semantic_class
-            )
-        )
+        print(f"{itr} | k: {k} : Semantic ID: {semantic_id} : class: {semantic_class}")
         mapped_classes[semantic_class] += 1
         itr += 1
 
-    print("\n{} Total Object configuration files processed\n".format(itr))
+    print(f"\n{itr} Total Object configuration files processed\n")
 
     print("\nMapped and Unmapped classes to existing object configs:\n")
     for k, v in mapped_classes.items():
         if v != 0:
-            print("mapped class : {} : ID: {} count : {}".format(k, lex_dict[k], v))
+            print(f"mapped class : {k} : ID: {lex_dict[k]} count : {v}")
     print("\n")
     for k, v in mapped_classes.items():
         if v == 0:
-            print("unmapped class : {} : ID: {} ".format(k, lex_dict[k]))
+            print(f"unmapped class : {k} : ID: {lex_dict[k]} ")
 
 
 def save_modified_json_files(info_dict):
@@ -182,7 +178,7 @@ def load_replicaCAD_scene_instances(stats_output_dir):
     )
 
     for k, v in scene_json_dict.items():
-        print("k : {} | v : {}".format(k, v))
+        print(f"k : {k} | v : {v}")
 
     return scene_json_dict
 

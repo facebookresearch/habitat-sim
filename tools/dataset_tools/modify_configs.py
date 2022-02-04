@@ -39,9 +39,7 @@ def main():
 
     # get all files in specified directory whose names match passed regex string
     # returns list of tuples of path,dirnames, file names
-    file_list = ut.get_files_matching_regex(
-        CONFIG_BASE_DIR, "{}.json".format(CONFIG_FILE_RE)
-    )
+    file_list = ut.get_files_matching_regex(CONFIG_BASE_DIR, f"{CONFIG_FILE_RE}.json")
     # build dictionary of 4-element tuples to modify json values
     res_dict = {}
     for path, _, filename in file_list:
@@ -66,17 +64,12 @@ def main():
             for json_tag, json_val in new_json_vals.items():
                 if type(json_val) is list:
                     mod_val_strs.append(
-                        "{}_[{}]".format(
-                            json_tag,
-                            (",").join(str(x).replace(".", "-") for x in json_val),
-                        )
+                        f'{json_tag}_[{(",").join(str(x).replace(".", "-") for x in json_val)}]'
                     )
                 else:
-                    mod_val_strs.append("{}_{}".format(json_tag, json_val))
+                    mod_val_strs.append(f"{json_tag}_{json_val}")
 
-            dest_name = "{}_{}.{}.json".format(
-                file_name, ("_").join(mod_val_strs), config_type
-            )
+            dest_name = f'{file_name}_{("_").join(mod_val_strs)}.{config_type}.json'
         dest_file = join(dest_path, dest_name)
         res_dict[filename] = (src_file, dest_file, new_json_vals, ABSOLUTE_ASSET_PATHS)
 
@@ -84,7 +77,7 @@ def main():
 
     for k in sorted_key_list:
         v = res_dict[k]
-        # print("file:{} | src loc:{} | dest file:{} | json tag & val :{} ".format(k, v[0], v[1], v[2]))
+        # print(f"file:{k} | src loc:{v[0]} | dest file:{v[1]} | json tag & val :{v[2]} ")
         ut.mod_json_val_and_save(v)
 
 

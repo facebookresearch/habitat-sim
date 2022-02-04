@@ -85,26 +85,21 @@ HM3D_SSD_STRING = "HM3D Semantic Annotations"
 def validate_src_SSD(line):
     lineItems = line.split(",")
     # each line should be 4 elements, but element 2 might contain one or more commas
-    if (
-        len(lineItems) != 4
+    # so check if there are 4 items, or there are more
+    if (len(lineItems) < 4) or (
+        len(lineItems) > 4
         and lineItems[2].count('"') != 1
         and lineItems[-2].count('"') != 1
     ):
-        return "Incorrect # of items : should be 4, is {}".format(len(lineItems))
+        return f"Incorrect # of items : should be 4, is {len(lineItems)}"
     if not lineItems[0].strip().isdigit():
-        return "First entry (unique ID) is not positive integer : {}".format(
-            lineItems[0]
-        )
+        return f"First entry (unique ID) is not positive integer : {lineItems[0]}"
     if not re.compile("^[A-F0-9]{6}$").match(lineItems[1].strip()):
-        return "Second entry (color) is not 6 digit hex value : {}".format(lineItems[1])
+        return f"Second entry (color) is not 6 digit hex value : {lineItems[1]}"
     if len(lineItems[2].strip()) == 0:
         return "Third entry (category) cannot be an empty string"
     if not lineItems[-1].strip().isdigit():
-        return "Last entry (region) is not non-negative integer : {}".format(
-            lineItems[-1]
-        )
-    if not lineItems[0].strip().isdigit():
-        return "First entry is not positive integer; is : {}".format(lineItems[0])
+        return f"Last entry (region) is not non-negative integer : {lineItems[-1]}"
     return "fine"
 
 
@@ -112,18 +107,16 @@ def validate_src_SSD(line):
 # beginning that Habitat-Sim expects, and then save to appropriate dest directory
 def modify_and_copy_SSD(src_filename: str, dest_filename: str):
     with open(dest_filename, "w") as dest, open(src_filename, "r") as src:
-        dest.write("{}\n".format(HM3D_SSD_STRING))
+        dest.write(f"{HM3D_SSD_STRING}\n")
         i = 0
         for line in src:
             if i > 0:
                 valid_res = validate_src_SSD(line)
                 if valid_res != "fine":
                     print(
-                        "!!!! Error in source SSD `{}` on line {} : {} has format error : `{}`".format(
-                            src_filename, i, line, valid_res
-                        )
+                        f"!!!! Error in source SSD `{src_filename}` on line {i} : {line} has format error : `{valid_res}`"
                     )
-            dest.write("{}".format(line))
+            dest.write(f"{line}")
             i += 1
 
 
@@ -151,9 +144,7 @@ def buildFileListing():
         )
         if len(src_file_list) != 2:
             print(
-                "Problem with source dir files {} : Unable to find 2 source files ({} instead) so skipping this source dir.".format(
-                    dirname_full, len(src_file_list)
-                )
+                f"Problem with source dir files {dirname_full} : Unable to find 2 source files ({len(src_file_list)} instead) so skipping this source dir."
             )
             continue
         # find appropriate destination directory for given source scene
@@ -197,12 +188,11 @@ def buildFileListing():
 
         else:
             print(
-                "Problem with source dir {} : Unable to find destination dir due to {} matching destinations in current HM3D dataset so skipping this source dir.".format(
-                    dirname_full, len(dest_dir_list)
-                )
+                f"Problem with source dir {dirname_full} : Unable to find destination dir due to {len(dest_dir_list)} "
+                f"matching destinations in current HM3D dataset so skipping this source dir."
             )
             for bad_dest in dest_dir_list:
-                print("\t{}".format(bad_dest))
+                print(f"\t{bad_dest}")
 
             continue
 
@@ -219,9 +209,7 @@ def verify_file(filename: str, src_dir: str, type_key: str, failures: Dict):
             failures[src_dir] = {}
         failures[src_dir][type_key] = filename
     print(
-        "\t\t{} File {} been successfully modified and copied to {}".format(
-            type_key, proc, filename
-        )
+        f"\t\t{type_key} File {proc} been successfully modified and copied to {filename}"
     )
     return success
 
@@ -283,16 +271,11 @@ def build_annotation_configs(part_file_list_dict: Dict, output_files: List):
         dest_config_filename = new_config_filenames[config_key]
         scene_path_list = new_filepaths_for_config[config_key]
         print(
-            "{} # files : {} : \n\t{}\n\t{}".format(
-                config_key,
-                len(scene_path_list),
-                src_config_filename,
-                dest_config_filename,
-            )
+            f"{config_key} # files : {len(scene_path_list)} : \n\t{src_config_filename}\n\t{dest_config_filename}"
         )
         # print("\n\tfiles:")
         # for pathname in scene_path_list:
-        #     print("\t\t{}".format(pathname))
+        #     print(f"\t\t{pathname}")
 
         # load each existing json config, appropriately modify it, and then save as new configs
         if BUILD_SD_CONFIGS:
@@ -315,11 +298,7 @@ def build_annotation_configs(part_file_list_dict: Dict, output_files: List):
         rel_config_filename = dest_config_filename.split(HM3D_DEST_DIR)[-1].split(
             os_sep, 1
         )[-1]
-        print(
-            "Adding rel_config_filename : {} to output_files.".format(
-                rel_config_filename
-            )
-        )
+        print(f"Adding rel_config_filename : {rel_config_filename} to output_files.")
         output_files.append(rel_config_filename)
 
 
@@ -337,7 +316,7 @@ def save_annotated_file_lists(output_files: List):
     partition_lists = {}
     for part in HM3D_DATA_PARTITIONS:
         partition_lists[part] = (
-            os_join(HM3D_DEST_DIR, "HM3D_annotation_{}_dataset.txt".format(part)),
+            os_join(HM3D_DEST_DIR, f"HM3D_annotation_{part}_dataset.txt"),
             [],
         )
     # for each entry in output_files list, check which partition it belongs to
@@ -353,12 +332,8 @@ def save_annotated_file_lists(output_files: List):
         # add base files
         if ".semantic.glb" in filename:
             filename_base = filename.split(".semantic.glb")[0]
-            partition_lists[file_part_key][1].append(
-                "{}.basis.glb".format(filename_base)
-            )
-            partition_lists[file_part_key][1].append(
-                "{}.basis.navmesh".format(filename_base)
-            )
+            partition_lists[file_part_key][1].append(f"{filename_base}.basis.glb")
+            partition_lists[file_part_key][1].append(f"{filename_base}.basis.navmesh")
     # write each per-partition file listing to build per-partition annotated-only datasets
     for _, v in partition_lists.items():
         with open(v[0], "w") as dest:
@@ -378,13 +353,11 @@ def main():
     output_files = []
     # move semantic glbs and scene descriptor text files
     for src_dir, data_dict_list in file_names_and_paths.items():
-        # print("Src : {} : # of data_dicts : {} ".format(src_dir, len(data_dict_list)))
+        # print(f"Src : {src_dir} : # of data_dicts : {len(data_dict_list)} ")
         for data_dict in data_dict_list:
             partition_tag = data_dict["dest_part_tag"]
             # print(
-            #     "\tDest subdir under HM3D directory : {} | partition tag : {}".format(
-            #         data_dict["dest_subdir"], partition_tag
-            #     )
+            #     f"\tDest subdir under HM3D directory : {data_dict['dest_subdir']} | partition tag : {partition_tag}"
             # )
             # modify src SSD and save to dest
             dest_ssd_filename = data_dict["dest_path_ssdfile"]
@@ -408,14 +381,12 @@ def main():
                 )
 
     print(
-        "# of src files processed : {} | # of dest files written : {} | # of failures : {} ".format(
-            len(file_names_and_paths), len(output_files), len(failures)
-        )
+        f"# of src files processed : {len(file_names_and_paths)} | # of dest files written : {len(output_files)} | # of failures : {len(failures)} "
     )
     # for part, files in part_file_list_dict.items():
-    #     print("Partition : {} | # files {}".format(part, len(files)))
+    #     print(f"Partition : {part} | # files {len(files)}")
     #     for filename in files:
-    #         print("\t{}".format(filename))
+    #         print(f"\t{filename}")
 
     # Get relative paths to all 5 annotation configs, as well as build scene dataset configs,if requested
     build_annotation_configs(part_file_list_dict, output_files)
@@ -429,9 +400,7 @@ def main():
         for src_dir, fail_dict in failures.items():
             for file_type, file_name in fail_dict.items():
                 print(
-                    "Src : {} :\n\tType : {} | Filename : {} ".format(
-                        src_dir, file_type, file_name
-                    )
+                    f"Src : {src_dir} :\n\tType : {file_type} | Filename : {file_name} "
                 )
 
 
