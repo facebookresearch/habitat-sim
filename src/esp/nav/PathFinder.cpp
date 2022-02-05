@@ -227,6 +227,9 @@ struct PathFinder::Impl {
   bool build(const NavMeshSettings& bs, const esp::assets::MeshData& mesh);
 
   vec3f getRandomNavigablePoint(int maxTries);
+  vec3f getRandomNavigablePointAroundSphere(const vec3f& circleCenter,
+                                            float radius,
+                                            int maxTries);
 
   bool findPath(ShortestPath& path);
   bool findPath(MultiGoalShortestPath& path);
@@ -951,6 +954,43 @@ vec3f PathFinder::Impl::getRandomNavigablePoint(const int maxTries /*= 10*/) {
   }
 }
 
+vec3f PathFinder::Impl::getRandomNavigablePointAroundSphere(
+    const vec3f& circleCenter,
+    const float radius,
+    const int maxTries) {
+  if (getNavigableArea() <= 0.0)
+    throw std::runtime_error(
+        "NavMesh has no navigable area, this indicates an issue with the "
+        "NavMesh");
+
+  vec3f pt;
+  dtPolyRef start_ref;  // ID to start our search
+  dtStatus status = navQuery_->findNearestPoly(
+      circleCenter.data(), vec3f{radius, radius, radius}.data(), filter_.get(),
+      &start_ref, pt.data());
+  if (!dtStatusSucceed(status)) {
+    ESP_ERROR()
+        << "Failed to getRandomNavigablePoint. No polygon found within radius";
+    return vec3f::Constant(Mn::Constants::nan());
+  }
+  int i = 0;
+  for (; i < maxTries; ++i) {
+    dtPolyRef rand_ref = 0;
+    status = navQuery_->findRandomPointAroundCircle(
+        start_ref, circleCenter.data(), radius, filter_.get(), frand, &rand_ref,
+        pt.data());
+    if (dtStatusSucceed(status)) {
+      break;
+    }
+  }
+  if (i == maxTries) {
+    ESP_ERROR() << "Failed to getRandomNavigablePoint.  Try increasing max "
+                   "tries if the navmesh is fine but just hard to sample from";
+    return vec3f::Constant(Mn::Constants::nan());
+  }
+  return pt;
+}
+
 namespace {
 float pathLength(const std::vector<vec3f>& points) {
   CORRADE_INTERNAL_ASSERT(points.size() > 0);
@@ -1347,6 +1387,13 @@ bool PathFinder::build(const NavMeshSettings& bs,
 
 vec3f PathFinder::getRandomNavigablePoint(const int maxTries /*= 10*/) {
   return pimpl_->getRandomNavigablePoint(maxTries);
+}
+
+vec3f PathFinder::getRandomNavigablePointAroundSphere(const vec3f& circleCenter,
+                                                      const float radius,
+                                                      const int maxTries) {
+  return pimpl_->getRandomNavigablePointAroundSphere(circleCenter, radius,
+                                                     maxTries);
 }
 
 bool PathFinder::findPath(ShortestPath& path) {

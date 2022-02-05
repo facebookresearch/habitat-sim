@@ -193,6 +193,10 @@ class PathFinder {
    */
   vec3f getRandomNavigablePoint(int maxTries = 10);
 
+  vec3f getRandomNavigablePointAroundSphere(const vec3f& circleCenter,
+                                            float radius,
+                                            int maxTries = 10);
+
   /**
    * @brief Finds the shortest path between two points on the navigation mesh
    *

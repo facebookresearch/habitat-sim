@@ -80,6 +80,8 @@ void initShortestPathBindings(py::module& m) {
            "meters_per_pixel"_a, "height"_a)
       .def("get_random_navigable_point", &PathFinder::getRandomNavigablePoint,
            "max_tries"_a = 10)
+      .def("get_random_navigable_point_near",
+           &PathFinder::getRandomNavigablePointAroundSphere)
       .def("find_path", py::overload_cast<ShortestPath&>(&PathFinder::findPath),
            "path"_a)
       .def("find_path",

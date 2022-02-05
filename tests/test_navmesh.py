@@ -1,6 +1,7 @@
 import math
 from os import path as osp
 
+import numpy as np
 import pytest
 
 import examples.settings
@@ -48,10 +49,20 @@ def test_recompute_navmesh(test_scene):
         # generate random point pairs
         num_samples = 100
         samples = []
+        distance = 5.0
         for _ in range(num_samples):
+            point = sim.pathfinder.get_random_navigable_point()
+            new_point = sim.pathfinder.get_random_navigable_point_near(
+                point, distance, 10
+            )
+            assert (
+                # TODO Fix
+                np.linalg.norm(point - new_point)
+                < distance * 2
+            ), "Point is not near enough"
             samples.append(
                 (
-                    sim.pathfinder.get_random_navigable_point(),
+                    new_point,
                     sim.pathfinder.get_random_navigable_point(),
                 )
             )
