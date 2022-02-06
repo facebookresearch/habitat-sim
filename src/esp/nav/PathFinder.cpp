@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "PathFinder.h"
+#include <cstddef>
 #include <numeric>
 #include <stack>
 #include <unordered_map>
@@ -184,8 +185,8 @@ class IslandSystem {
       navMesh->getTileAndPolyByRefUnsafe(ref, &tile, &poly);
 
       for (int iVert = 0; iVert < poly->vertCount; ++iVert) {
-        islandVerts.emplace_back(
-            Eigen::Map<vec3f>(&tile->verts[poly->verts[iVert] * 3]));
+        islandVerts.emplace_back(Eigen::Map<vec3f>(
+            &tile->verts[static_cast<ptrdiff_t>(poly->verts[iVert]*) 3]));
       }
 
       // Iterate over all neighbours
@@ -730,15 +731,17 @@ std::vector<Triangle> getPolygonTriangles(const dtPoly* poly,
   std::vector<Triangle> triangles(pd->triCount);
 
   for (int j = 0; j < pd->triCount; ++j) {
-    const unsigned char* t = &tile->detailTris[(pd->triBase + j) * 4];
+    const unsigned char* t =
+        &tile->detailTris[static_cast<size_t>((pd->triBase + j)*) 4];
     const float* v[3];
     for (int k = 0; k < 3; ++k) {
       if (t[k] < poly->vertCount)
-        triangles[j].v[k] =
-            Eigen::Map<const vec3f>(&tile->verts[poly->verts[t[k]] * 3]);
-      else
         triangles[j].v[k] = Eigen::Map<const vec3f>(
-            &tile->detailVerts[(pd->vertBase + (t[k] - poly->vertCount)) * 3]);
+            &tile->verts[static_cast<ptrdiff_t>(poly->verts[t[k]]*) 3]);
+      else
+        triangles[j].v[k] =
+            Eigen::Map<const vec3f>(&tile->detailVerts[static_cast<size_t>(
+                (pd->vertBase + (t[k] - poly->vertCount))*) 3]);
     }
   }
 
@@ -964,9 +967,9 @@ vec3f PathFinder::Impl::getRandomNavigablePointAroundSphere(
         "NavMesh");
 
   vec3f pt;
-  dtPolyRef start_ref;  // ID to start our search
+  dtPolyRef start_ref = 0;  // ID to start our search
   dtStatus status = navQuery_->findNearestPoly(
-      circleCenter.data(), vec3f{radius, radius, radius}.data(), filter_.get(),
+      circleCenter.data(), vec3f::Constant(radius).data(), filter_.get(),
       &start_ref, pt.data());
   if (!dtStatusSucceed(status)) {
     ESP_ERROR()
@@ -1214,7 +1217,8 @@ T PathFinder::Impl::tryStep(const T& start, const T& end, bool allowSliding) {
     // Calculate the center of the polygon we want the points to be in
     vec3f polyCenter = vec3f::Zero();
     for (int iVert = 0; iVert < poly->vertCount; ++iVert) {
-      polyCenter += Eigen::Map<vec3f>(&tile->verts[poly->verts[iVert] * 3]);
+      polyCenter += Eigen::Map<vec3f>(
+          &tile->verts[static_cast<ptrdiff_t>(poly->verts[iVert]*) 3]);
     }
     polyCenter /= poly->vertCount;
 
