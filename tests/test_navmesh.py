@@ -59,7 +59,7 @@ def test_recompute_navmesh(test_scene):
                 new_point
             ), f"{new_point} is not navigable. Derived from {point}"
             assert (
-                np.linalg.norm(point - new_point) < distance
+                np.linalg.norm(point - new_point) <= distance
             ), f"Point is not near enough: {point}, {new_point}"
             samples.append(
                 (
