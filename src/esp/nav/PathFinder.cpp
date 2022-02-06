@@ -737,7 +737,7 @@ std::vector<Triangle> getPolygonTriangles(const dtPoly* poly,
     for (int k = 0; k < 3; ++k) {
       if (t[k] < poly->vertCount)
         triangles[j].v[k] = Eigen::Map<const vec3f>(
-            &tile->verts[static_cast<ptrdiff_t>(poly->verts[t[k]]) * 3]);
+            &tile->verts[static_cast<size_t>(poly->verts[t[k]]) * 3]);
       else
         triangles[j].v[k] = Eigen::Map<const vec3f>(
             &tile->detailVerts[static_cast<size_t>(
