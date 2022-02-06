@@ -967,12 +967,13 @@ vec3f PathFinder::Impl::getRandomNavigablePointAroundSphere(
         "NavMesh has no navigable area, this indicates an issue with the "
         "NavMesh");
 
-  vec3f pt;
+  vec3f pt = vec3f::Constant(Mn::Constants::nan());
   dtPolyRef start_ref = 0;  // ID to start our search
   dtStatus status = navQuery_->findNearestPoly(
       circleCenter.data(), vec3f{radius, radius, radius}.data(), filter_.get(),
       &start_ref, pt.data());
-  if (!dtStatusSucceed(status)) {
+  if (!dtStatusSucceed(status) || std::isnan(pt[0]) ||
+      (pt - circleCenter).norm() > radius) {
     ESP_ERROR()
         << "Failed to getRandomNavigablePoint. No polygon found within radius";
     return vec3f::Constant(Mn::Constants::nan());
@@ -983,7 +984,7 @@ vec3f PathFinder::Impl::getRandomNavigablePointAroundSphere(
     status = navQuery_->findRandomPointAroundCircle(
         start_ref, circleCenter.data(), radius, filter_.get(), frand, &rand_ref,
         pt.data());
-    if (dtStatusSucceed(status)) {
+    if (dtStatusSucceed(status) && (pt - circleCenter).norm() <= radius) {
       break;
     }
   }

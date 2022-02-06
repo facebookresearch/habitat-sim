@@ -55,11 +55,15 @@ def test_recompute_navmesh(test_scene):
             new_point = sim.pathfinder.get_random_navigable_point_near(
                 point, distance, 10
             )
+            assert sim.pathfinder.is_navigable(new_point), (
+                f"{new_point} is not navigable."
+                + "Derived from navigable point {point}"
+            )
             assert (
                 # TODO Fix
                 np.linalg.norm(point - new_point)
                 < distance * 2
-            ), "Point is not near enough"
+            ), f"Point is not near enough: {point}, {new_point}"
             samples.append(
                 (
                     new_point,
