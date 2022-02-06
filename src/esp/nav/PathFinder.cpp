@@ -186,7 +186,7 @@ class IslandSystem {
 
       for (int iVert = 0; iVert < poly->vertCount; ++iVert) {
         islandVerts.emplace_back(Eigen::Map<vec3f>(
-            &tile->verts[static_cast<ptrdiff_t>(poly->verts[iVert]) * 3]));
+            &tile->verts[static_cast<size_t>(poly->verts[iVert]) * 3]));
       }
 
       // Iterate over all neighbours
@@ -1219,7 +1219,7 @@ T PathFinder::Impl::tryStep(const T& start, const T& end, bool allowSliding) {
     vec3f polyCenter = vec3f::Zero();
     for (int iVert = 0; iVert < poly->vertCount; ++iVert) {
       polyCenter += Eigen::Map<vec3f>(
-          &tile->verts[static_cast<ptrdiff_t>(poly->verts[iVert]) * 3]);
+          &tile->verts[static_cast<size_t>(poly->verts[iVert]) * 3]);
     }
     polyCenter /= poly->vertCount;
 
