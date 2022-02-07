@@ -2150,6 +2150,7 @@ void ResourceManager::loadMeshes(Importer& importer,
   int meshEnd = meshStart + importer.meshCount() - 1;
   nextMeshID_ = meshEnd + 1;
   loadedAssetData.meshMetaData.setMeshIndices(meshStart, meshEnd);
+
   for (int iMesh = 0; iMesh < importer.meshCount(); ++iMesh) {
     // don't need normals if we aren't using lighting
     auto gltfMeshData = std::make_unique<GenericMeshData>(

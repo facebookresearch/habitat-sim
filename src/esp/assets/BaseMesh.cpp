@@ -3,10 +3,14 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "BaseMesh.h"
+#include <Corrade/Containers/ArrayView.h>
+#include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/Utility/FormatStl.h>
+#include <Magnum/DebugTools/ColorMap.h>
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/Math/PackingBatch.h>
 #include <Magnum/MeshTools/Compile.h>
+#include <Magnum/MeshTools/RemoveDuplicates.h>
 #include "esp/scene/SemanticScene.h"
 
 namespace Cr = Corrade;
@@ -43,7 +47,38 @@ void BaseMesh::convertMeshColors(
         Cr::Containers::arrayCast<2, Mn::UnsignedByte>(
             stridedArrayView(meshColors)));
   }
-}  // BaseMesh::buildMeshColors
+}  // BaseMesh::convertMeshColors
+
+void BaseMesh::buildColorMapToUse(
+    Cr::Containers::Array<Magnum::UnsignedInt>& vertIDs,
+    const Cr::Containers::Array<Mn::Color3ub>& vertColors,
+    bool useVertexColors,
+    std::vector<Mn::Vector3ub>& colorMapToUse) const {
+  if (useVertexColors) {
+    // removeDuplicates returns array of unique idxs for ids, to
+    // be used on meshColors to provide mappings for colorMapToUse
+    std::pair<Cr::Containers::Array<Mn::UnsignedInt>, std::size_t> out =
+        Mn::MeshTools::removeDuplicates(
+            Cr::Containers::arrayCast<2, char>(stridedArrayView(vertIDs)));
+
+    // out holds index array of object IDs.  query
+
+    // color map exists so build colorMapToUse by going through every
+    // add 1 to account for no assigned 0 value
+    colorMapToUse.resize(out.second + 1);
+    // set semanticID 0 == black
+    colorMapToUse[0] = Mn::Color3ub{};
+    for (const auto& vertIdx : out.first) {
+      // find objectID @ vert idx and color @ vert idx
+      int semanticID = vertIDs[vertIdx];
+      colorMapToUse[semanticID] = vertColors[vertIdx];
+    }
+  } else {
+    colorMapToUse.assign(Mn::DebugTools::ColorMap::turbo().begin(),
+                         Mn::DebugTools::ColorMap::turbo().end());
+  }
+
+}  // BaseMesh::buildColorMapToUse
 
 namespace {
 // TODO remove when/if Magnum ever supports this function for Color3ub
