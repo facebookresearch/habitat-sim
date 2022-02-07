@@ -1026,13 +1026,6 @@ void ResourceManager::computeInstanceMeshAbsoluteAABBs(
   for (size_t iEntry = 0; iEntry < absTransforms.size(); ++iEntry) {
     const int meshID = staticDrawableInfo[iEntry].meshID;
 
-    // convert std::vector<vec3f> to std::vector<Mn::Vector3>
-    // const std::vector<vec3f>& vertexPositions =
-    //     dynamic_cast<GenericSemanticMeshData&>(*meshes_.at(meshID))
-    //         .getVertexBufferObjectCPU();
-    // std::vector<Mn::Vector3> transformedPositions{vertexPositions.begin(),
-    //                                               vertexPositions.end()};
-
     std::vector<Mn::Vector3> transformedPositions =
         dynamic_cast<GenericSemanticMeshData&>(*meshes_.at(meshID))
             .getVertexBufferObjectCPU();

@@ -1857,7 +1857,7 @@ void Viewer::mousePressEvent(MouseEvent& event) {
           // observation.buffer->pixels<uint32_t>().flipped<0>()[viewportPoint[1]][viewportPoint[0]];
 
           // subtract 1 to align with semanticObject array
-          --objIdx;
+          //--objIdx;
           std::string tmpStr = "Unknown";
 
           if ((objIdx >= 0) && (objIdx < semanticObjects.size())) {
@@ -1865,12 +1865,11 @@ void Viewer::mousePressEvent(MouseEvent& event) {
             tmpStr = semanticObj->id();
             const auto obb = semanticObj->obb();
             // get center and scale of bb and use to build visualization reps
-            buildSemanticPrims((objIdx + 1), tmpStr, Mn::Vector3{obb.center()},
+            buildSemanticPrims(objIdx, tmpStr, Mn::Vector3{obb.center()},
                                Mn::Vector3{obb.sizes()},
                                Mn::Quaternion{obb.rotation()});
           }
-          semanticTag_ =
-              Cr::Utility::formatString("id:{}:{}", (objIdx + 1), tmpStr);
+          semanticTag_ = Cr::Utility::formatString("id:{}:{}", objIdx, tmpStr);
         }
       }
     }

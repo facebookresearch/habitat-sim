@@ -102,8 +102,7 @@ void BaseMesh::buildSemanticOBBs(
     const std::string& msgPrefix) const {
   // build per-SSD object vector of known semantic IDs
   std::size_t numSSDObjs = ssdObjs.size();
-  // no semantic ID 0 so add 1 to size
-  std::vector<int> semanticIDToSSOBJidx(numSSDObjs + 1);
+  std::vector<int> semanticIDToSSOBJidx(numSSDObjs, -1);
   for (int i = 0; i < numSSDObjs; ++i) {
     const auto& ssdObj = *ssdObjs[i];
     int semanticID = ssdObj.semanticID();
@@ -131,7 +130,7 @@ void BaseMesh::buildSemanticOBBs(
     // semantic ID on vertex - valid values are 1->semanticIDToSSOBJidx.size().
     // Invalid/unknown semantic ids are > semanticIDToSSOBJidx.size()
     const auto semanticID = vertSemanticIDs[vertIdx];
-    if ((semanticID > 0) && (semanticID < semanticIDToSSOBJidx.size())) {
+    if ((semanticID >= 0) && (semanticID < semanticIDToSSOBJidx.size())) {
       const auto vert = vertices[vertIdx];
       // FOR VERT-BASED OBB CALC
       // only support bbs for known colors that map to semantic objects
@@ -143,10 +142,14 @@ void BaseMesh::buildSemanticOBBs(
 
   // with mins/maxs per ID, map to objs
   // give each ssdObj the values to build its OBB
-  for (int semanticID = 1; semanticID < semanticIDToSSOBJidx.size();
+  for (int semanticID = 0; semanticID < semanticIDToSSOBJidx.size();
        ++semanticID) {
+    int objIdx = semanticIDToSSOBJidx[semanticID];
+    if (objIdx == -1) {
+      continue;
+    }
     // get object with given semantic ID
-    auto& ssdObj = *ssdObjs[semanticIDToSSOBJidx[semanticID]];
+    auto& ssdObj = *ssdObjs[objIdx];
     Mn::Vector3 center{};
     Mn::Vector3 dims{};
 
