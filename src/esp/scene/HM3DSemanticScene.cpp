@@ -180,8 +180,7 @@ bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
   // build all object instances
   // object instances
   scene.objects_.clear();
-  scene.objects_.reserve(objInstance.size() + 1);
-
+  scene.objects_.reserve(objInstance.size());
   for (auto& item : objInstance) {
     TempHM3DObject obj = item.second;
     auto objPtr = std::make_shared<HM3DObjectInstance>(HM3DObjectInstance(
@@ -194,6 +193,21 @@ bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
     scene.objects_.emplace_back(objPtr);
   }
   scene.hasVertColors_ = true;
+
+  // build colormap from colors defined in ssd
+  scene.semanticColorMapBeingUsed_.clear();
+  scene.semanticColorMapBeingUsed_.reserve(objInstance.size());
+  // build the color map with first maxSemanticID elements in proper order
+  // to match provided semantic IDs (so that ID is IDX of semantic color in
+  // map).  Any overflow colors will be uniquely mapped 1-to-1 to unmapped
+  // semantic IDs as their index.
+  for (const auto& objPtr : scene.objects_) {
+    int idx = objPtr->semanticID();
+    if (scene.semanticColorMapBeingUsed_.size() <= idx) {
+      scene.semanticColorMapBeingUsed_.resize(idx + 1);
+    }
+    scene.semanticColorMapBeingUsed_[idx] = objPtr->getColor();
+  }
 
   scene.levels_.clear();  // Not used for Hm3d currently
 

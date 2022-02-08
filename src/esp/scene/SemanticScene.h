@@ -163,6 +163,10 @@ class SemanticScene {
    */
   bool hasVertColorsDefined() const { return hasVertColors_; }
 
+  const std::vector<Mn::Vector3ub>& getSemanticColorMap() const {
+    return semanticColorMapBeingUsed_;
+  }
+
  protected:
   /**
    * @brief Verify a requested file exists.
@@ -256,6 +260,11 @@ class SemanticScene {
   std::vector<std::shared_ptr<SemanticObject>> objects_;
   //! map from combined region-segment id to objectIndex for semantic mesh
   std::unordered_map<int, int> segmentToObjectIndex_;
+  /**
+   * @brief List of mapped vertex colors, where index corresponds to object
+   * Index/semantic ID (HM3D only currently)
+   */
+  std::vector<Mn::Vector3ub> semanticColorMapBeingUsed_{};
 
   ESP_SMART_POINTERS(SemanticScene)
 };

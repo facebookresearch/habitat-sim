@@ -186,6 +186,12 @@ class ResourceManager {
     return semanticColorMapBeingUsed_;
   }
 
+  /**
+   * @brief Build the color map from a semantic scene descriptor, by iterating
+   * through the objects and mapping their color values to their semantic ids.
+   */
+  void buildSemanticColorMap();
+
   /** @brief check if the @ref esp::scene::SemanticScene exists.*/
   bool semanticSceneExists() const { return (semanticScene_ != nullptr); }
 
@@ -1168,7 +1174,7 @@ class ResourceManager {
   /**
    * @brief Colormap to use for visualizing currently loaded semantic scene.
    */
-  std::vector<Magnum::Vector3ub> semanticColorMapBeingUsed_{};
+  std::vector<Mn::Vector3ub> semanticColorMapBeingUsed_{};
 
   // ======== Physical parameter data ========
 

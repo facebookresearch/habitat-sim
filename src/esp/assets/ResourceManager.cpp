@@ -284,6 +284,24 @@ bool ResourceManager::loadSemanticSceneDescriptor(
   return false;
 }  // ResourceManager::loadSemanticSceneDescriptor
 
+void ResourceManager::buildSemanticColorMap() {
+  CORRADE_ASSERT(semanticScene_,
+                 "Unable to build Semantic Color map due to no semanticScene "
+                 "being loaded.", );
+
+  semanticColorMapBeingUsed_.clear();
+  const auto& ssdClrMap = semanticScene_->getSemanticColorMap();
+  if (ssdClrMap.size() == 0) {
+    return;
+  }
+  // The color map was built with first maxSemanticID elements in proper order
+  // to match provided semantic IDs (so that ID is IDX of semantic color in
+  // map).  Any overflow colors will be uniquely mapped 1-to-1 to unmapped
+  // semantic IDs as their index.
+  semanticColorMapBeingUsed_.assign(ssdClrMap.begin(), ssdClrMap.end());
+
+}  // ResourceManager::buildSemanticColorMap
+
 bool ResourceManager::loadStage(
     const StageAttributes::ptr& stageAttributes,
     const SceneObjectInstanceAttributes::cptr& stageInstanceAttributes,
@@ -553,9 +571,11 @@ ResourceManager::createStageAssetInfosFromAttributes(
 
     Cr::Utility::formatInto(
         debugStr, debugStr.size(),
-        "|{} for semantic mesh named : {} with type specified as {}",
+        "|{} for semantic mesh named : {} with type specified as {}|Semantic "
+        "Txtrs : {}",
         frame.toString(), semanticInfo.filepath,
-        esp::metadata::attributes::getMeshTypeName(semanticInfo.type));
+        esp::metadata::attributes::getMeshTypeName(semanticInfo.type),
+        (semanticInfo.isSemanticRGB ? "True" : "False"));
     resMap["semantic"] = semanticInfo;
   } else {
     Cr::Utility::formatInto(debugStr, debugStr.size(),
@@ -1329,6 +1349,11 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
     // build concatenated meshData from container of meshes.
     meshData = Mn::MeshTools::concatenate(meshView);
   }  // flatten/reframe src meshes
+
+  // build semanticColorMapBeingUsed_ if semanticScene_ is not nullptr
+  if (semanticScene_) {
+    buildSemanticColorMap();
+  }
 
   std::vector<GenericSemanticMeshData::uptr> instanceMeshes =
       GenericSemanticMeshData::buildSemanticMeshData(

@@ -154,24 +154,13 @@ GenericSemanticMeshData::buildSemanticMeshData(
       // build maps of color ints to semantic IDs and color ints to
       // region ids in SSD find max regions present, so we can have an
       // "unassigned"/"unknown" region to move all verts whose region is
-
       int maxRegion = -1;
-      // build the color map with first maxSemanticID elements in proper order
-      // to match provided semantic IDs (so that ID is IDX of semantic color in
-      // map) and any overflow colors uniquely map 1-to-1 to an unmapped
-      // semantic ID as their index.
-      colorMapToUse.resize(numSSDObjs);
       for (int i = 0; i < numSSDObjs; ++i) {
         const auto& ssdObj = ssdObjs[i];
-        const Mn::Vector3ub ssdColor = ssdObj->getColor();
-        const uint32_t colorInt = colorAsInt(ssdColor);
+        const uint32_t colorInt = colorAsInt(ssdObj->getColor());
         int semanticID = ssdObj->semanticID();
         int regionIDX = ssdObj->region()->getIndex();
         tmpColorMapToSSDidAndRegionIndex[colorInt] = {semanticID, regionIDX};
-        if (colorMapToUse.size() <= semanticID) {
-          colorMapToUse.resize(semanticID + 1);
-        }
-        colorMapToUse[semanticID] = ssdColor;
         maxRegion = Mn::Math::max(regionIDX, maxRegion);
       }
       // largest possible known semanticID will be size of colorMapToUse at this
