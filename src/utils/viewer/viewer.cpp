@@ -1841,7 +1841,6 @@ void Viewer::mousePressEvent(MouseEvent& event) {
         if ((semanticScene) && (semanticScene->hasVertColorsDefined())) {
           auto semanticObjects = semanticScene->objects();
           std::string sensorId = "semantic_camera";
-          simulator_->drawObservation(defaultAgentId_, sensorId);
           esp::sensor::Observation observation;
           simulator_->getAgentObservation(defaultAgentId_, sensorId,
                                           observation);
