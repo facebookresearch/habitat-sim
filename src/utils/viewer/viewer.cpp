@@ -1837,7 +1837,7 @@ void Viewer::mousePressEvent(MouseEvent& event) {
 
         // get semantic scene
         auto semanticScene = simulator_->getSemanticScene();
-        // only enable for HM3D for now
+        // only enable for HM3D, MP3D and Replica for now
         if ((semanticScene) && (semanticScene->hasVertColorsDefined())) {
           auto semanticObjects = semanticScene->objects();
           std::string sensorId = "semantic_camera";

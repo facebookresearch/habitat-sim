@@ -121,7 +121,7 @@ bool SemanticScene::buildReplicaHouse(const io::JsonDocument& jsonDoc,
 
     scene.objects_[id] = std::move(object);
   }
-
+  scene.hasVertColors_ = true;
   return true;
 }
 
