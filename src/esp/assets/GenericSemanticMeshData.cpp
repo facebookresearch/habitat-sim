@@ -61,11 +61,11 @@ GenericSemanticMeshData::buildSemanticMeshData(
 
   if (semanticFilename.find(".ply") != std::string::npos) {
     // Generic Semantic PLY meshes have -Z gravity
-    const Mn::Quaternion T_esp_scene = Mn::Quaternion{
-        quatf::FromTwoVectors(-vec3f::UnitZ(), geo::ESP_GRAVITY)};
-
+    const auto T_esp_scene =
+        Mn::Quaternion{quatf::FromTwoVectors(-vec3f::UnitZ(), geo::ESP_GRAVITY)}
+            .toMatrix();
     for (auto& xyz : semanticData->cpu_vbo_) {
-      xyz = T_esp_scene.toMatrix() * xyz;
+      xyz = T_esp_scene * xyz;
     }
   }
 
