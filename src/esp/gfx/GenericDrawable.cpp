@@ -55,6 +55,9 @@ GenericDrawable::GenericDrawable(scene::SceneNode& node,
   if (materialData_->perVertexObjectId) {
     flags_ |= Mn::Shaders::PhongGL::Flag::InstancedObjectId;
   }
+  if (materialData_->textureObjectId) {
+    flags_ |= Mn::Shaders::PhongGL::Flag::ObjectIdTexture;
+  }
   if (meshAttributeFlags & Drawable::Flag::HasVertexColor) {
     flags_ |= Mn::Shaders::PhongGL::Flag::VertexColor;
   }

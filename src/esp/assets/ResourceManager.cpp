@@ -2551,6 +2551,14 @@ void ResourceManager::initDefaultMaterials() {
   perVertexObjectId->ambientColor = Mn::Color4{1.0};
   shaderManager_.set<gfx::MaterialData>(PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
                                         perVertexObjectId);
+
+  // build default material for texture-based annotations
+  auto* textureObjectId = new gfx::PhongMaterialData();
+  // has texture-based semantic annotations
+  textureObjectId->textureObjectId = true;
+  textureObjectId->ambientColor = Mn::Color4{1.0};
+  shaderManager_.set<gfx::MaterialData>(TEXTURE_OBJECT_ID_MATERIAL_KEY,
+                                        textureObjectId);
   shaderManager_.setFallback<gfx::MaterialData>(new gfx::PhongMaterialData{});
 }
 
