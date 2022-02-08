@@ -54,6 +54,7 @@ void BaseMesh::buildColorMapToUse(
     const Cr::Containers::Array<Mn::Color3ub>& vertColors,
     bool useVertexColors,
     std::vector<Mn::Vector3ub>& colorMapToUse) const {
+  colorMapToUse.clear();
   if (useVertexColors) {
     // removeDuplicates returns array of unique idxs for ids, to
     // be used on meshColors to provide mappings for colorMapToUse
