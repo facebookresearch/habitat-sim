@@ -236,12 +236,6 @@ constexpr char WHITE_MATERIAL_KEY[] = "ambient_white";
  */
 constexpr char PER_VERTEX_OBJECT_ID_MATERIAL_KEY[] = "per_vertex_object_id";
 
-/**
- *@brief The @ref ShaderManager key for @ref MaterialInfo with texture
- * object ID
- */
-constexpr char TEXTURE_OBJECT_ID_MATERIAL_KEY[] = "texture_object_id";
-
 template <typename T>
 inline bool equal(const std::vector<std::shared_ptr<T>>& a,
                   const std::vector<std::shared_ptr<T>>& b) {

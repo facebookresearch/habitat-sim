@@ -1427,13 +1427,6 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceIMesh(
   instanceRoot->MagnumObject::setTransformation(
       meshMetaData.root.transformFromLocalToParent);
 
-  Mn::ResourceKey materialKey;
-  if (creation.isTextureBasedSemantic()) {
-    materialKey = TEXTURE_OBJECT_ID_MATERIAL_KEY;
-  } else {
-    materialKey = PER_VERTEX_OBJECT_ID_MATERIAL_KEY;
-  }
-
   for (int iMesh = start; iMesh <= end; ++iMesh) {
     scene::SceneNode& node = instanceRoot->createChild();
 
@@ -1448,11 +1441,11 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceIMesh(
     // meshes_.at(iMesh)->getMeshData()->hasAttribute(Mn::Trade::MeshAttribute::Tangent)
     // It will SEGFAULT!
     createDrawable(meshes_.at(iMesh)->getMagnumGLMesh(),  // render mesh
-                   meshAttributeFlags,      // mesh attribute flags
-                   node,                    // scene node
-                   creation.lightSetupKey,  // lightSetup key
-                   materialKey,             // material key
-                   drawables);              // drawable group
+                   meshAttributeFlags,                 // mesh attribute flags
+                   node,                               // scene node
+                   creation.lightSetupKey,             // lightSetup key
+                   PER_VERTEX_OBJECT_ID_MATERIAL_KEY,  // material key
+                   drawables);                         // drawable group
 
     if (computeAbsoluteAABBs) {
       staticDrawableInfo.emplace_back(StaticDrawableInfo{node, iMesh});
@@ -1908,7 +1901,7 @@ bool compareShaderTypeToMnMatType(const ObjectInstanceShaderType typeToCheck,
       return false;
     }
   }
-}
+}  // compareShaderTypeToMnMatType
 
 }  // namespace
 
@@ -1926,74 +1919,113 @@ void ResourceManager::loadMaterials(Importer& importer,
       << "Building " << numMaterials << " materials for asset named '"
       << assetName << "' : ";
 
-  for (int iMaterial = 0; iMaterial < numMaterials; ++iMaterial) {
-    // TODO:
-    // it seems we have a way to just load the material once in this case,
-    // as long as the materialName includes the full path to the material
-    Cr::Containers::Optional<Mn::Trade::MaterialData> materialData =
-        importer.material(iMaterial);
-
-    if (!materialData) {
-      ESP_ERROR() << "Material load failed for index" << iMaterial
-                  << "so skipping that material for asset" << assetName << ".";
-      continue;
-    }
-
-    std::unique_ptr<gfx::MaterialData> finalMaterial;
-    std::string debugStr = Cr::Utility::formatString("Idx {:.02d}:", iMaterial);
-
+  if (loadedAssetData.assetInfo.isSemanticRGB) {
     int textureBaseIndex = loadedAssetData.meshMetaData.textureIndex.first;
-    // If we are not using the material's native shadertype, or flat (Which all
-    // materials already support), expand the Mn::Trade::MaterialData with
-    // appropriate data for all possible shadertypes
-    if ((shaderTypeToUse != ObjectInstanceShaderType::Material) &&
-        (shaderTypeToUse != ObjectInstanceShaderType::Flat) &&
-        !(compareShaderTypeToMnMatType(shaderTypeToUse, *materialData))) {
-      Cr::Utility::formatInto(
-          debugStr, debugStr.size(),
-          "(Expanding existing materialData to support requested shaderType `"
-          "{}`) ",
-          metadata::attributes::getShaderTypeName(shaderTypeToUse));
-      materialData = esp::gfx::createUniversalMaterial(*materialData);
+    // TODO: Verify this is correct process for building individual materials
+    // for each semantic int texture.
+    for (int iMaterial = 0; iMaterial < numMaterials; ++iMaterial) {
+      Cr::Containers::Optional<Mn::Trade::MaterialData> materialData =
+          importer.material(iMaterial);
+
+      if (!materialData) {
+        ESP_ERROR() << "Material load failed for index" << iMaterial
+                    << "so skipping that material for asset" << assetName
+                    << ".";
+        continue;
+      }
+      // Semantic texture-based
+      std::unique_ptr<gfx::PhongMaterialData> finalMaterial =
+          gfx::PhongMaterialData::create_unique();
+
+      // const auto& material = materialData->as<Mn::Trade::FlatMaterialData>();
+
+      finalMaterial->ambientColor = Mn::Color4{1.0};
+      finalMaterial->diffuseColor = Mn::Color4{};
+      finalMaterial->specularColor = Mn::Color4{};
+      finalMaterial->shaderTypeSpec =
+          static_cast<int>(ObjectInstanceShaderType::Flat);
+      // has texture-based semantic annotations
+      finalMaterial->textureObjectId = true;
+      // get semantic int texture
+      finalMaterial->objectIdTexture =
+          textures_.at(textureBaseIndex + iMaterial).get();
+
+      shaderManager_.set<gfx::MaterialData>(std::to_string(nextMaterialID_++),
+                                            finalMaterial.release());
     }
+  } else {
+    for (int iMaterial = 0; iMaterial < numMaterials; ++iMaterial) {
+      // TODO:
+      // it seems we have a way to just load the material once in this case,
+      // as long as the materialName includes the full path to the material
+      Cr::Containers::Optional<Mn::Trade::MaterialData> materialData =
+          importer.material(iMaterial);
 
-    // pbr shader spec, of material-specified and material specifies pbr
-    if (checkForPassedShaderType(
-            shaderTypeToUse, *materialData, ObjectInstanceShaderType::PBR,
-            Mn::Trade::MaterialType::PbrMetallicRoughness)) {
-      Cr::Utility::formatInto(debugStr, debugStr.size(), "PBR.");
-      finalMaterial =
-          buildPbrShadedMaterialData(*materialData, textureBaseIndex);
+      if (!materialData) {
+        ESP_ERROR() << "Material load failed for index" << iMaterial
+                    << "so skipping that material for asset" << assetName
+                    << ".";
+        continue;
+      }
 
-      // phong shader spec, of material-specified and material specifies phong
-    } else if (checkForPassedShaderType(shaderTypeToUse, *materialData,
-                                        ObjectInstanceShaderType::Phong,
-                                        Mn::Trade::MaterialType::Phong)) {
-      Cr::Utility::formatInto(debugStr, debugStr.size(), "Phong.");
-      finalMaterial =
-          buildPhongShadedMaterialData(*materialData, textureBaseIndex);
+      std::unique_ptr<gfx::MaterialData> finalMaterial;
+      std::string debugStr =
+          Cr::Utility::formatString("Idx {:.02d}:", iMaterial);
 
-      // flat shader spec or material-specified and material specifies flat
-    } else if (checkForPassedShaderType(shaderTypeToUse, *materialData,
-                                        ObjectInstanceShaderType::Flat,
-                                        Mn::Trade::MaterialType::Flat)) {
-      Cr::Utility::formatInto(debugStr, debugStr.size(), "Flat.");
-      finalMaterial =
-          buildFlatShadedMaterialData(*materialData, textureBaseIndex);
+      int textureBaseIndex = loadedAssetData.meshMetaData.textureIndex.first;
+      // If we are not using the material's native shadertype, or flat (Which
+      // all materials already support), expand the Mn::Trade::MaterialData with
+      // appropriate data for all possible shadertypes
+      if ((shaderTypeToUse != ObjectInstanceShaderType::Material) &&
+          (shaderTypeToUse != ObjectInstanceShaderType::Flat) &&
+          !(compareShaderTypeToMnMatType(shaderTypeToUse, *materialData))) {
+        Cr::Utility::formatInto(
+            debugStr, debugStr.size(),
+            "(Expanding existing materialData to support requested shaderType `"
+            "{}`) ",
+            metadata::attributes::getShaderTypeName(shaderTypeToUse));
+        materialData = esp::gfx::createUniversalMaterial(*materialData);
+      }
 
-    } else {
-      ESP_CHECK(false,
-                Cr::Utility::formatString(
-                    "Unhandled ShaderType specification : {} and/or unmanaged "
-                    "type specified in material @ idx: {} for asset {}.",
-                    metadata::attributes::getShaderTypeName(shaderTypeToUse),
-                    iMaterial, assetName));
+      // pbr shader spec, of material-specified and material specifies pbr
+      if (checkForPassedShaderType(
+              shaderTypeToUse, *materialData, ObjectInstanceShaderType::PBR,
+              Mn::Trade::MaterialType::PbrMetallicRoughness)) {
+        Cr::Utility::formatInto(debugStr, debugStr.size(), "PBR.");
+        finalMaterial =
+            buildPbrShadedMaterialData(*materialData, textureBaseIndex);
+
+        // phong shader spec, of material-specified and material specifies phong
+      } else if (checkForPassedShaderType(shaderTypeToUse, *materialData,
+                                          ObjectInstanceShaderType::Phong,
+                                          Mn::Trade::MaterialType::Phong)) {
+        Cr::Utility::formatInto(debugStr, debugStr.size(), "Phong.");
+        finalMaterial =
+            buildPhongShadedMaterialData(*materialData, textureBaseIndex);
+
+        // flat shader spec or material-specified and material specifies flat
+      } else if (checkForPassedShaderType(shaderTypeToUse, *materialData,
+                                          ObjectInstanceShaderType::Flat,
+                                          Mn::Trade::MaterialType::Flat)) {
+        Cr::Utility::formatInto(debugStr, debugStr.size(), "Flat.");
+        finalMaterial =
+            buildFlatShadedMaterialData(*materialData, textureBaseIndex);
+
+      } else {
+        ESP_CHECK(
+            false,
+            Cr::Utility::formatString(
+                "Unhandled ShaderType specification : {} and/or unmanaged "
+                "type specified in material @ idx: {} for asset {}.",
+                metadata::attributes::getShaderTypeName(shaderTypeToUse),
+                iMaterial, assetName));
+      }
+      ESP_DEBUG() << debugStr;
+      // for now, just use unique ID for material key. This may change if we
+      // expose materials to user for post-load modification
+      shaderManager_.set(std::to_string(nextMaterialID_++),
+                         finalMaterial.release());
     }
-    ESP_DEBUG() << debugStr;
-    // for now, just use unique ID for material key. This may change if we
-    // expose materials to user for post-load modification
-    shaderManager_.set(std::to_string(nextMaterialID_++),
-                       finalMaterial.release());
   }
 }  // ResourceManager::loadMaterials
 
@@ -2249,6 +2281,7 @@ void ResourceManager::loadTextures(Importer& importer,
   nextTextureID_ = textureEnd + 1;
   loadedAssetData.meshMetaData.setTextureIndices(textureStart, textureEnd);
   if (loadedAssetData.assetInfo.isSemanticRGB) {
+    // assuming that the only textures that exist are the RGB
     // build table of colors
     // Object IDs for ALL POSSIBLE COLORS IN EXISTENCE. Unknown entries have
     // semantic id 0xffff .
@@ -2657,14 +2690,6 @@ void ResourceManager::initDefaultMaterials() {
   perVertexObjectId->ambientColor = Mn::Color4{1.0};
   shaderManager_.set<gfx::MaterialData>(PER_VERTEX_OBJECT_ID_MATERIAL_KEY,
                                         perVertexObjectId);
-
-  // build default material for texture-based annotations
-  auto* textureObjectId = new gfx::PhongMaterialData();
-  // has texture-based semantic annotations
-  textureObjectId->textureObjectId = true;
-  textureObjectId->ambientColor = Mn::Color4{1.0};
-  shaderManager_.set<gfx::MaterialData>(TEXTURE_OBJECT_ID_MATERIAL_KEY,
-                                        textureObjectId);
   shaderManager_.setFallback<gfx::MaterialData>(new gfx::PhongMaterialData{});
 }
 
