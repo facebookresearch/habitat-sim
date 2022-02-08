@@ -126,6 +126,9 @@ StageAttributes::StageAttributes(const std::string& handle)
   // setting defaults for semantic frame will have changed this to false. change
   // to true so that only used if actually changed.
   setUseFrameForAllOrientation(true);
+  // setting default for semantic assets having semantically painted textures to
+  // false
+  setHasSemanticTextures(false);
   // default to use material-derived shader unless otherwise specified in config
   // or instance config
   setShaderType(getShaderTypeName(ObjectInstanceShaderType::Material));
@@ -152,11 +155,42 @@ void StageAttributes::writeValuesToJsonInternal(
     writeValueToJson("semantic_orient_front", "semantic_front", jsonObj,
                      allocator);
   }
+  writeValueToJson("has_semantic_textures", jsonObj, allocator);
   writeValueToJson("semantic_asset", jsonObj, allocator);
   writeValueToJson("nav_asset", jsonObj, allocator);
   writeValueToJson("semantic_descriptor_filename", jsonObj, allocator);
 
 }  // StageAttributes::writeValuesToJsonInternal
+
+std::string StageAttributes::getAbstractObjectInfoHeaderInternal() const {
+  std::string res = "Gravity XYZ,Origin XYZ,";
+  if (!getUseFrameForAllOrientation()) {
+    Cr::Utility::formatInto(res, res.length(), "{}",
+                            "Semantic Up XYZ,Semantic Front XYZ");
+  }
+
+  Cr::Utility::formatInto(
+      res, res.length(), "{}",
+      "Has Semantic Texture,Navmesh Handle,Semantic Asset Handle,Semantic "
+      "Descriptor Filename,Light Setup,");
+  return res;
+}
+
+std::string StageAttributes::getAbstractObjectInfoInternal() const {
+  std::string res = Cr::Utility::formatString("{},{},", getAsString("gravity"),
+                                              getAsString("origin"));
+
+  if (!getUseFrameForAllOrientation()) {
+    Cr::Utility::formatInto(res, res.length(), "{},{}",
+                            getAsString("semantic_orient_up"),
+                            getAsString("semantic_orient_front"));
+  }
+  Cr::Utility::formatInto(res, res.length(), "{},{},{},{},{}",
+                          getAsString("has_semantic_textures"),
+                          getNavmeshAssetHandle(), getSemanticAssetHandle(),
+                          getSemanticDescriptorFilename(), getLightSetupKey());
+  return res;
+}
 
 }  // namespace attributes
 }  // namespace metadata

@@ -1026,12 +1026,9 @@ void ResourceManager::computeInstanceMeshAbsoluteAABBs(
   for (size_t iEntry = 0; iEntry < absTransforms.size(); ++iEntry) {
     const int meshID = staticDrawableInfo[iEntry].meshID;
 
-    // convert std::vector<vec3f> to std::vector<Mn::Vector3>
-    const std::vector<vec3f>& vertexPositions =
+    std::vector<Mn::Vector3> transformedPositions =
         dynamic_cast<GenericSemanticMeshData&>(*meshes_.at(meshID))
             .getVertexBufferObjectCPU();
-    std::vector<Mn::Vector3> transformedPositions{vertexPositions.begin(),
-                                                  vertexPositions.end()};
 
     Mn::MeshTools::transformPointsInPlace(absTransforms[iEntry],
                                           transformedPositions);
@@ -2146,6 +2143,7 @@ void ResourceManager::loadMeshes(Importer& importer,
   int meshEnd = meshStart + importer.meshCount() - 1;
   nextMeshID_ = meshEnd + 1;
   loadedAssetData.meshMetaData.setMeshIndices(meshStart, meshEnd);
+
   for (int iMesh = 0; iMesh < importer.meshCount(); ++iMesh) {
     // don't need normals if we aren't using lighting
     auto gltfMeshData = std::make_unique<GenericMeshData>(

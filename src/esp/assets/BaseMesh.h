@@ -153,6 +153,22 @@ class BaseMesh {
   std::string getColorAsString(Magnum::Color3ub color) const;
 
   /**
+   * @brief Build a colormap to use either from mapping given list of per-vertex
+   * object IDs to per-vertex Colors, or through a mapping of a Magnum-provided
+   * color map depending on value of @p useVertexColors .
+   * @param vertIDs Per-vertex ids from mesh
+   * @param vertColors Per-vertex colors from mesh
+   * @param useVertexColors Whether or not to use vertex colors in mesh for
+   * color map
+   * @param [out] colorMapToUse The mapping of semantic ID to color
+   */
+  void buildColorMapToUse(
+      Corrade::Containers::Array<Magnum::UnsignedInt>& vertIDs,
+      const Cr::Containers::Array<Mn::Color3ub>& vertColors,
+      bool useVertexColors,
+      std::vector<Mn::Vector3ub>& colorMapToUse) const;
+
+  /**
    * @brief Populate an array of colors of the correct type from the given
    * @p srcColors. Generally used for semantic processing/rendering.
    * @param srcColors The source colors
@@ -174,7 +190,7 @@ class BaseMesh {
    * @param msgPrefix Debug message prefix, referencing caller.
    */
   void buildSemanticOBBs(
-      const std::vector<vec3f>& vertices,
+      const std::vector<Mn::Vector3>& vertices,
       const std::vector<uint16_t>& vertSemanticIDs,
       const std::vector<std::shared_ptr<esp::scene::SemanticObject>>& ssdObjs,
       const std::string& msgPrefix) const;

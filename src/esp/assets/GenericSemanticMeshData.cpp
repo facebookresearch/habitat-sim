@@ -37,7 +37,7 @@ GenericSemanticMeshData::buildSemanticMeshData(
   const std::string dbgMsgPrefix =
       Cr::Utility::formatString("Parsing Semantic File {} :", semanticFilename);
 
-  // Check for required colors.
+  // Check for required colors - all semantic meshes must have vertex colors
   ESP_CHECK(
       srcMeshData.hasAttribute(Mn::Trade::MeshAttribute::Color),
       dbgMsgPrefix << "has no vertex colors defined, which are required for "
@@ -61,9 +61,9 @@ GenericSemanticMeshData::buildSemanticMeshData(
 
   if (semanticFilename.find(".ply") != std::string::npos) {
     // Generic Semantic PLY meshes have -Z gravity
-    const quatf T_esp_scene =
-        quatf::FromTwoVectors(-vec3f::UnitZ(), geo::ESP_GRAVITY);
-
+    const auto T_esp_scene =
+        Mn::Quaternion{quatf::FromTwoVectors(-vec3f::UnitZ(), geo::ESP_GRAVITY)}
+            .toMatrix();
     for (auto& xyz : semanticData->cpu_vbo_) {
       xyz = T_esp_scene * xyz;
     }
@@ -77,8 +77,7 @@ GenericSemanticMeshData::buildSemanticMeshData(
   semanticData->convertMeshColors(srcMeshData, convertToSRGB, meshColors);
 
   Cr::Utility::copy(meshColors,
-                    Cr::Containers::arrayCast<Mn::Color3ub>(
-                        Cr::Containers::arrayView(semanticData->cpu_cbo_)));
+                    Cr::Containers::arrayView(semanticData->cpu_cbo_));
 
   // Check we actually have object IDs before copying them, and that those are
   // in a range we expect them to be
@@ -98,6 +97,8 @@ GenericSemanticMeshData::buildSemanticMeshData(
   std::vector<uint16_t> partitionIds;
 
   if (srcMeshData.hasAttribute(Mn::Trade::MeshAttribute::ObjectId)) {
+    // Per-mesh vertex semantic object ids are provided - this will override any
+    // vertex colors provided in file
     objectIds = srcMeshData.objectIdsAsArray();
     objIdsFromFile = true;
     objPartitionsFromSSD = false;
@@ -106,9 +107,17 @@ GenericSemanticMeshData::buildSemanticMeshData(
                                    "{}Object IDs can't be stored into 16 bits "
                                    ": Max ID Value found in data : {}",
                                    dbgMsgPrefix, maxVal));
-    colorMapToUse.assign(Mn::DebugTools::ColorMap::turbo().begin(),
-                         Mn::DebugTools::ColorMap::turbo().end());
+
+    // build colorMapToUse for meshes with pre-populated objectIDs, either using
+    // provided vertex colors (NOTE : There must be 1-to-1 map between ID and
+    // vert colors - if unsure do not use these) or a magnum color map
+
+    semanticData->buildColorMapToUse(objectIds, meshColors, false,
+                                     colorMapToUse);
   } else {
+    // No Object IDs defined - assign them based on colors at verts, if they
+    // exist
+
     // If object IDs are lacking, use vertex color to infer objectIDs, where
     // each unique color corresponds to a unique objectID.
     // These ids should probably not be used to split the mesh into submeshes
@@ -273,6 +282,10 @@ GenericSemanticMeshData::buildSemanticMeshData(
         }
       }
     } else {
+      // Per vertex colors provided, but no semantic scene provided to provide
+      // color->id mapping, so build a mapping based on colors at vertices -
+      // first time we see a color gets first id, etc.
+
       // no remapping provided by SSD so just use what is synthesized
       Cr::Containers::Array<Mn::Color3ub> colorsThatBecomeTheColorMap{
           Mn::NoInit, meshColors.size()};
@@ -392,16 +405,14 @@ Mn::GL::Mesh* GenericSemanticMeshData::getMagnumGLMesh() {
 }
 
 void GenericSemanticMeshData::updateCollisionMeshData() {
-  collisionMeshData_.positions = Cr::Containers::arrayCast<Mn::Vector3>(
-      Cr::Containers::arrayView(cpu_vbo_));
-  collisionMeshData_.indices = Cr::Containers::arrayCast<Mn::UnsignedInt>(
-      Cr::Containers::arrayView(cpu_ibo_));
+  collisionMeshData_.positions = Cr::Containers::arrayView(cpu_vbo_);
+  collisionMeshData_.indices = Cr::Containers::arrayView(cpu_ibo_);
 }
 
 void GenericSemanticMeshData::PerPartitionIdMeshBuilder::addVertex(
     uint32_t vertexId,
-    const vec3f& position,
-    const vec3uc& color,
+    const Mn::Vector3& position,
+    const Mn::Color3ub& color,
     int objectId) {
   // if we haven't seen this vertex, add it to the local vertex/color buffer
   auto result = vertexIdToVertexIndex_.emplace(vertexId, data_.cpu_vbo_.size());

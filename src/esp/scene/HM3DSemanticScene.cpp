@@ -63,6 +63,31 @@ struct TempHM3DCategory {
   std::shared_ptr<HM3DObjectCategory> category_;
 };
 
+void buildInstanceRegionCategory(
+    int instanceID,
+    const Mn::Vector3ub colorVec,
+    const std::string& objCategoryName,
+    int regionID,
+    std::map<int, TempHM3DObject>& objInstance,
+    std::map<int, TempHM3DRegion>& regions,
+    std::unordered_map<std::string, TempHM3DCategory>& categories) {
+  // build initial temp object
+  TempHM3DObject obj{
+      instanceID, 0, objCategoryName,
+      Cr::Utility::formatString("{}_{}", objCategoryName, instanceID),
+      colorVec};
+  objInstance[instanceID] = obj;
+  // find category, build if dne
+  TempHM3DCategory tmpCat{
+      static_cast<int>(categories.size()), objCategoryName, {}};
+  auto categoryIter = categories.emplace(objCategoryName, tmpCat);
+  categoryIter.first->second.objInstances.push_back(&objInstance[instanceID]);
+  // find region, build if dne
+  TempHM3DRegion tmpRegion{regionID, {}};
+  auto regionIter = regions.emplace(regionID, tmpRegion);
+  regionIter.first->second.objInstances.push_back(&objInstance[instanceID]);
+}  // buildInstanceRegionCategory
+
 }  // namespace
 
 bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
@@ -79,6 +104,9 @@ bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
   std::map<int, TempHM3DObject> objInstance;
   std::map<int, TempHM3DRegion> regions;
   std::unordered_map<std::string, TempHM3DCategory> categories;
+  // build an unknown object
+  buildInstanceRegionCategory(0, Mn::Vector3ub{}, "Unknown", -1, objInstance,
+                              regions, categories);
 
   std::string line;
   while (std::getline(ifs, line)) {
@@ -107,25 +135,13 @@ bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
     auto colorVec = getVec3ub(Cr::Utility::String::trim(subtokens[1]));
     // object category will possibly have commas
     const std::string objCategoryName = tokens[1];
-    // room/region is always fr token - get rid of first comma
+    // room/region is always last token - get rid of first comma
     int regionID =
         std::stoi(Cr::Utility::String::trim(tokens[tokens.size() - 1], " ,"));
 
-    // build initial temp object
-    TempHM3DObject obj{
-        instanceID, 0, objCategoryName,
-        Cr::Utility::formatString("{}_{}", objCategoryName, instanceID),
-        colorVec};
-    objInstance[instanceID] = obj;
-    // find category, build if dne
-    TempHM3DCategory tmpCat{
-        static_cast<int>(categories.size()), objCategoryName, {}};
-    auto categoryIter = categories.emplace(objCategoryName, tmpCat);
-    categoryIter.first->second.objInstances.push_back(&objInstance[instanceID]);
-    // find region, build if dne
-    TempHM3DRegion tmpRegion{regionID, {}};
-    auto regionIter = regions.emplace(regionID, tmpRegion);
-    regionIter.first->second.objInstances.push_back(&objInstance[instanceID]);
+    buildInstanceRegionCategory(instanceID, colorVec, objCategoryName, regionID,
+                                objInstance, regions, categories);
+
   }  // while
 
   // construct object instance names for each object instance, by setting the
@@ -164,7 +180,8 @@ bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
   // build all object instances
   // object instances
   scene.objects_.clear();
-  scene.objects_.reserve(objInstance.size());
+  scene.objects_.reserve(objInstance.size() + 1);
+
   for (auto& item : objInstance) {
     TempHM3DObject obj = item.second;
     auto objPtr = std::make_shared<HM3DObjectInstance>(HM3DObjectInstance(
