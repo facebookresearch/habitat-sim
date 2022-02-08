@@ -352,6 +352,10 @@ bool ResourceManager::loadStage(
         // only treat as static if doing culling
         flags |= RenderAssetInstanceCreationInfo::Flag::IsStatic;
       }
+      // if texture-based semantic mesh specify in creation
+      if (semanticInfo.isSemanticRGB) {
+        flags |= RenderAssetInstanceCreationInfo::Flag::IsTextureBasedSemantic;
+      }
       RenderAssetInstanceCreationInfo creation(
           semanticStageFilename, Cr::Containers::NullOpt, flags, NO_LIGHT_KEY);
 
@@ -1414,6 +1418,13 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceIMesh(
   instanceRoot->MagnumObject::setTransformation(
       meshMetaData.root.transformFromLocalToParent);
 
+  Mn::ResourceKey materialKey;
+  if (creation.isTextureBasedSemantic()) {
+    materialKey = TEXTURE_OBJECT_ID_MATERIAL_KEY;
+  } else {
+    materialKey = PER_VERTEX_OBJECT_ID_MATERIAL_KEY;
+  }
+
   for (int iMesh = start; iMesh <= end; ++iMesh) {
     scene::SceneNode& node = instanceRoot->createChild();
 
@@ -1428,11 +1439,11 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceIMesh(
     // meshes_.at(iMesh)->getMeshData()->hasAttribute(Mn::Trade::MeshAttribute::Tangent)
     // It will SEGFAULT!
     createDrawable(meshes_.at(iMesh)->getMagnumGLMesh(),  // render mesh
-                   meshAttributeFlags,                 // mesh attribute flags
-                   node,                               // scene node
-                   creation.lightSetupKey,             // lightSetup key
-                   PER_VERTEX_OBJECT_ID_MATERIAL_KEY,  // material key
-                   drawables);                         // drawable group
+                   meshAttributeFlags,      // mesh attribute flags
+                   node,                    // scene node
+                   creation.lightSetupKey,  // lightSetup key
+                   materialKey,             // material key
+                   drawables);              // drawable group
 
     if (computeAbsoluteAABBs) {
       staticDrawableInfo.emplace_back(StaticDrawableInfo{node, iMesh});
