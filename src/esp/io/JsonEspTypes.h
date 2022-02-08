@@ -92,6 +92,7 @@ inline JsonGenericValue toJsonValue(const esp::assets::AssetInfo& x,
   addMember(obj, "splitInstanceMesh", x.splitInstanceMesh, allocator);
   addMember(obj, "shaderTypeToUse", x.shaderTypeToUse, allocator);
   addMember(obj, "overridePhongMaterial", x.overridePhongMaterial, allocator);
+  addMember(obj, "isSemanticRGB", x.isSemanticRGB, allocator);
 
   return obj;
 }
@@ -106,6 +107,7 @@ inline bool fromJsonValue(const JsonGenericValue& obj,
   readMember(obj, "splitInstanceMesh", x.splitInstanceMesh);
   readMember(obj, "shaderTypeToUse", x.shaderTypeToUse);
   readMember(obj, "overridePhongMaterial", x.overridePhongMaterial);
+  readMember(obj, "isSemanticRGB", x.isSemanticRGB);
   return true;
 }
 

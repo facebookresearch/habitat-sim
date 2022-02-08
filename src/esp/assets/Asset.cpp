@@ -33,6 +33,7 @@ AssetInfo AssetInfo::fromPath(const std::string& path) {
 bool operator==(const AssetInfo& a, const AssetInfo& b) {
   return a.type == b.type && a.filepath == b.filepath && a.frame == b.frame &&
          a.shaderTypeToUse == b.shaderTypeToUse &&
+         a.isSemanticRGB == b.isSemanticRGB &&
          a.virtualUnitToMeters == b.virtualUnitToMeters &&
          a.forceFlatShading == b.forceFlatShading;
 }

@@ -548,6 +548,8 @@ ResourceManager::createStageAssetInfosFromAttributes(
         // only split semantic mesh if doing frustum culling
         stageAttributes->getFrustumCulling()  // splitInstanceMesh
     };
+    // specify whether the semantic asset has semantically annotated textures.
+    semanticInfo.isSemanticRGB = stageAttributes->getHasSemanticTextures();
 
     Cr::Utility::formatInto(
         debugStr, debugStr.size(),
