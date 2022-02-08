@@ -290,15 +290,24 @@ void ResourceManager::buildSemanticColorMap() {
                  "being loaded.", );
 
   semanticColorMapBeingUsed_.clear();
+  semanticColorAsInt_.clear();
   const auto& ssdClrMap = semanticScene_->getSemanticColorMap();
   if (ssdClrMap.size() == 0) {
     return;
   }
+
   // The color map was built with first maxSemanticID elements in proper order
   // to match provided semantic IDs (so that ID is IDX of semantic color in
   // map).  Any overflow colors will be uniquely mapped 1-to-1 to unmapped
   // semantic IDs as their index.
   semanticColorMapBeingUsed_.assign(ssdClrMap.begin(), ssdClrMap.end());
+  // build listing of colors as ints, with idx being semantic ID
+  std::transform(ssdClrMap.cbegin(), ssdClrMap.cend(),
+                 std::back_inserter(semanticColorAsInt_),
+                 [](const Mn::Color3ub& color) -> uint32_t {
+                   return (unsigned(color[0]) << 16) |
+                          (unsigned(color[1]) << 8) | unsigned(color[2]);
+                 });
 
 }  // ResourceManager::buildSemanticColorMap
 
@@ -1313,9 +1322,9 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
                                 filename));
   // Transform meshData by reframing rotation.  Doing this here so that
   // transformation is caught in OBB calc.
-  const Magnum::Matrix4 reframeTransform = Magnum::Matrix4::from(
-      Magnum::Quaternion(info.frame.rotationFrameToWorld()).toMatrix(),
-      Magnum::Vector3());
+  const Mn::Matrix4 reframeTransform = Mn::Matrix4::from(
+      Mn::Quaternion(info.frame.rotationFrameToWorld()).toMatrix(),
+      Mn::Vector3());
 
   auto sceneID = fileImporter_->defaultScene();
 
@@ -2197,6 +2206,51 @@ void ResourceManager::loadMeshes(Importer& importer,
   }
 }  // ResourceManager::loadMeshes
 
+Mn::Image2D ResourceManager::convertRGBToSemanticId(
+    const Mn::ImageView2D& srcImage) {
+  // convert image to semantic image here
+
+  // build table of colors
+  /* Object IDs for ALL POSSIBLE COLORS IN EXISTENCE. Unknown entries have
+     0xffff . */
+  Cr::Containers::Array<Mn::UnsignedShort> map{Mn::DirectInit, 256 * 256 * 256,
+                                               0xffff};
+
+  for (Mn::UnsignedShort i = 0; i < semanticColorAsInt_.size(); ++i) {
+    map[semanticColorAsInt_[i]] = i;
+  }
+
+  const Mn::Vector2i size = srcImage.size();
+  // construct empty integer image
+  Mn::Image2D resImage{
+      Mn::PixelFormat::R16UI, size,
+      Cr::Containers::Array<char>{
+          Mn::NoInit,
+          std::size_t(size.product() * pixelSize(Mn::PixelFormat::R16UI))}};
+
+  Cr::Containers::StridedArrayView2D<const Mn::Color3ub> input =
+      srcImage.pixels<Mn::Color3ub>();
+  Cr::Containers::StridedArrayView2D<Mn::UnsignedShort> output =
+      resImage.pixels<Mn::UnsignedShort>();
+  for (std::size_t y = 0; y != size.y(); ++y) {
+    Cr::Containers::StridedArrayView1D<const Mn::Color3ub> inputRow = input[y];
+    Cr::Containers::StridedArrayView1D<Mn::UnsignedShort> outputRow = output[y];
+    for (std::size_t x = 0; x != size.x(); ++x) {
+      /* Fugly. Sorry. Needs better API on Magnum side. */
+      const Mn::Color3ub color = inputRow[x];
+
+      const Mn::UnsignedInt colorInt =
+          color.r() << 16 | color.g() << 8 | color.b();
+      outputRow[x] = map[colorInt];
+    }
+  }
+
+  // upload the `integer` image to an integer Texture2D and then use as
+
+  // a semantic texture in the shader
+
+  return resImage;
+}  // ResourceManager::convertRGBToSemanticId
 void ResourceManager::loadTextures(Importer& importer,
                                    LoadedAssetData& loadedAssetData) {
   int textureStart = nextTextureID_;
@@ -2217,66 +2271,90 @@ void ResourceManager::loadTextures(Importer& importer,
       continue;
     }
 
-    // Configure the texture
-    // Mn::GL::Texture2D& texture = *(textures_.at(textureStart +
-    // iTexture).get());
-    currentTexture->setMagnificationFilter(textureData->magnificationFilter())
-        .setMinificationFilter(textureData->minificationFilter(),
-                               textureData->mipmapFilter())
-        .setWrapping(textureData->wrapping().xy());
+    if (loadedAssetData.assetInfo.isSemanticRGB) {
+      // texture will end up being semantic IDs
+      currentTexture->setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
+          .setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
+          .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge);
 
-    // Load all mip levels
-    const std::uint32_t levelCount =
-        importer.image2DLevelCount(textureData->image());
-    bool generateMipmap = false;
-    for (std::uint32_t level = 0; level != levelCount; ++level) {
-      // TODO:
-      // it seems we have a way to just load the image once in this case,
-      // as long as the image2DName include the full path to the image
+      // load only first level of textures for semantic annotations
       Cr::Containers::Optional<Mn::Trade::ImageData2D> image =
-          importer.image2D(textureData->image(), level);
+          importer.image2D(textureData->image(), 0);
       if (!image) {
         ESP_ERROR() << "Cannot load texture image, skipping";
         currentTexture = nullptr;
-        break;
+        continue;
       }
+      // Convert color-based image to semantic image here
+      auto newImage = convertRGBToSemanticId(*image);
 
-      Mn::GL::TextureFormat format;
-      if (image->isCompressed()) {
-        format = Mn::GL::textureFormat(image->compressedFormat());
-      } else {
-        format = Mn::GL::textureFormat(image->format());
-      }
+      currentTexture
+          ->setStorage(1, Mn::GL::TextureFormat::R16UI, newImage.size())
+          .setSubImage(0, {}, newImage);
 
-      // For the very first level, allocate the texture
-      if (level == 0) {
-        // If there is just one level and the image is not compressed, we'll
-        // generate mips ourselves
-        if (levelCount == 1 && !image->isCompressed()) {
-          currentTexture->setStorage(Mn::Math::log2(image->size().max()) + 1,
-                                     format, image->size());
-          generateMipmap = true;
+    } else {
+      // Configure the texture
+      // Mn::GL::Texture2D& texture = *(textures_.at(textureStart +
+      // iTexture).get());
+      currentTexture->setMagnificationFilter(textureData->magnificationFilter())
+          .setMinificationFilter(textureData->minificationFilter(),
+                                 textureData->mipmapFilter())
+          .setWrapping(textureData->wrapping().xy());
+
+      // Load all mip levels
+      const std::uint32_t levelCount =
+          importer.image2DLevelCount(textureData->image());
+
+      bool generateMipmap = false;
+      for (std::uint32_t level = 0; level != levelCount; ++level) {
+        // TODO:
+        // it seems we have a way to just load the image once in this case,
+        // as long as the image2DName include the full path to the image
+        Cr::Containers::Optional<Mn::Trade::ImageData2D> image =
+            importer.image2D(textureData->image(), level);
+        if (!image) {
+          ESP_ERROR() << "Cannot load texture image, skipping";
+          currentTexture = nullptr;
+          break;
+        }
+
+        Mn::GL::TextureFormat format;
+        if (image->isCompressed()) {
+          format = Mn::GL::textureFormat(image->compressedFormat());
         } else {
-          currentTexture->setStorage(levelCount, format, image->size());
+          format = Mn::GL::textureFormat(image->format());
+        }
+
+        // For the very first level, allocate the texture
+        if (level == 0) {
+          // If there is just one level and the image is not compressed, we'll
+          // generate mips ourselves
+          if (levelCount == 1 && !image->isCompressed()) {
+            currentTexture->setStorage(Mn::Math::log2(image->size().max()) + 1,
+                                       format, image->size());
+            generateMipmap = true;
+          } else {
+            currentTexture->setStorage(levelCount, format, image->size());
+          }
+        }
+
+        if (image->isCompressed()) {
+          currentTexture->setCompressedSubImage(level, {}, *image);
+        } else {
+          currentTexture->setSubImage(level, {}, *image);
         }
       }
 
-      if (image->isCompressed()) {
-        currentTexture->setCompressedSubImage(level, {}, *image);
-      } else {
-        currentTexture->setSubImage(level, {}, *image);
+      // Mip level loading failed, fail the whole texture
+      if (currentTexture == nullptr) {
+        continue;
       }
-    }
 
-    // Mip level loading failed, fail the whole texture
-    if (currentTexture == nullptr) {
-      continue;
-    }
-
-    // Generate a mipmap if requested
-    if (generateMipmap) {
-      currentTexture->generateMipmap();
-    }
+      // Generate a mipmap if requested
+      if (generateMipmap) {
+        currentTexture->generateMipmap();
+      }
+    }  // Whether semantic RGB or not
   }
 }  // ResourceManager::loadTextures
 

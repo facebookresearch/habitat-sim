@@ -192,6 +192,14 @@ class ResourceManager {
    */
   void buildSemanticColorMap();
 
+  /**
+   * @brief Remap a semantic annotation texture to have the semantic IDs per
+   * pxl.
+   * @param srcImage The source texture with the semantic colors.
+   * @return An image of the semantic IDs, with the ID mapped
+   */
+  Mn::Image2D convertRGBToSemanticId(const Mn::ImageView2D& srcImage);
+
   /** @brief check if the @ref esp::scene::SemanticScene exists.*/
   bool semanticSceneExists() const { return (semanticScene_ != nullptr); }
 
@@ -1175,6 +1183,7 @@ class ResourceManager {
    * @brief Colormap to use for visualizing currently loaded semantic scene.
    */
   std::vector<Mn::Vector3ub> semanticColorMapBeingUsed_{};
+  std::vector<uint32_t> semanticColorAsInt_{};
 
   // ======== Physical parameter data ========
 
