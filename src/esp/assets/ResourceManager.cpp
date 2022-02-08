@@ -2207,18 +2207,9 @@ void ResourceManager::loadMeshes(Importer& importer,
 }  // ResourceManager::loadMeshes
 
 Mn::Image2D ResourceManager::convertRGBToSemanticId(
-    const Mn::ImageView2D& srcImage) {
+    const Mn::ImageView2D& srcImage,
+    Cr::Containers::Array<Mn::UnsignedShort>& clrToSemanticId) {
   // convert image to semantic image here
-
-  // build table of colors
-  /* Object IDs for ALL POSSIBLE COLORS IN EXISTENCE. Unknown entries have
-     0xffff . */
-  Cr::Containers::Array<Mn::UnsignedShort> map{Mn::DirectInit, 256 * 256 * 256,
-                                               0xffff};
-
-  for (Mn::UnsignedShort i = 0; i < semanticColorAsInt_.size(); ++i) {
-    map[semanticColorAsInt_[i]] = i;
-  }
 
   const Mn::Vector2i size = srcImage.size();
   // construct empty integer image
@@ -2241,7 +2232,7 @@ Mn::Image2D ResourceManager::convertRGBToSemanticId(
 
       const Mn::UnsignedInt colorInt =
           color.r() << 16 | color.g() << 8 | color.b();
-      outputRow[x] = map[colorInt];
+      outputRow[x] = clrToSemanticId[colorInt];
     }
   }
 
@@ -2257,21 +2248,31 @@ void ResourceManager::loadTextures(Importer& importer,
   int textureEnd = textureStart + importer.textureCount() - 1;
   nextTextureID_ = textureEnd + 1;
   loadedAssetData.meshMetaData.setTextureIndices(textureStart, textureEnd);
+  if (loadedAssetData.assetInfo.isSemanticRGB) {
+    // build table of colors
+    // Object IDs for ALL POSSIBLE COLORS IN EXISTENCE. Unknown entries have
+    // semantic id 0xffff .
+    Cr::Containers::Array<Mn::UnsignedShort> clrToSemanticId{
+        Mn::DirectInit, 256 * 256 * 256, Mn::UnsignedShort(0xffff)};
 
-  for (int iTexture = 0; iTexture < importer.textureCount(); ++iTexture) {
-    auto currentTextureID = textureStart + iTexture;
-    textures_.emplace(currentTextureID, std::make_shared<Mn::GL::Texture2D>());
-    auto& currentTexture = textures_.at(currentTextureID);
-
-    auto textureData = importer.texture(iTexture);
-    if (!textureData ||
-        textureData->type() != Mn::Trade::TextureType::Texture2D) {
-      ESP_ERROR() << "Cannot load texture" << iTexture << "skipping";
-      currentTexture = nullptr;
-      continue;
+    for (std::size_t i = 0; i < semanticColorAsInt_.size(); ++i) {
+      clrToSemanticId[semanticColorAsInt_[i]] =
+          static_cast<Mn::UnsignedShort>(i);
     }
 
-    if (loadedAssetData.assetInfo.isSemanticRGB) {
+    for (int iTexture = 0; iTexture < importer.textureCount(); ++iTexture) {
+      auto currentTextureID = textureStart + iTexture;
+      textures_.emplace(currentTextureID,
+                        std::make_shared<Mn::GL::Texture2D>());
+      auto& currentTexture = textures_.at(currentTextureID);
+
+      auto textureData = importer.texture(iTexture);
+      if (!textureData ||
+          textureData->type() != Mn::Trade::TextureType::Texture2D) {
+        ESP_ERROR() << "Cannot load texture" << iTexture << "skipping";
+        currentTexture = nullptr;
+        continue;
+      }
       // texture will end up being semantic IDs
       currentTexture->setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
           .setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
@@ -2286,13 +2287,29 @@ void ResourceManager::loadTextures(Importer& importer,
         continue;
       }
       // Convert color-based image to semantic image here
-      auto newImage = convertRGBToSemanticId(*image);
+      auto newImage = convertRGBToSemanticId(*image, clrToSemanticId);
 
       currentTexture
           ->setStorage(1, Mn::GL::TextureFormat::R16UI, newImage.size())
           .setSubImage(0, {}, newImage);
 
-    } else {
+      // Whether semantic RGB or not
+    }
+  } else {
+    for (int iTexture = 0; iTexture < importer.textureCount(); ++iTexture) {
+      auto currentTextureID = textureStart + iTexture;
+      textures_.emplace(currentTextureID,
+                        std::make_shared<Mn::GL::Texture2D>());
+      auto& currentTexture = textures_.at(currentTextureID);
+
+      auto textureData = importer.texture(iTexture);
+      if (!textureData ||
+          textureData->type() != Mn::Trade::TextureType::Texture2D) {
+        ESP_ERROR() << "Cannot load texture" << iTexture << "skipping";
+        currentTexture = nullptr;
+        continue;
+      }
+
       // Configure the texture
       // Mn::GL::Texture2D& texture = *(textures_.at(textureStart +
       // iTexture).get());
@@ -2354,8 +2371,8 @@ void ResourceManager::loadTextures(Importer& importer,
       if (generateMipmap) {
         currentTexture->generateMipmap();
       }
-    }  // Whether semantic RGB or not
-  }
+    }
+  }  // Whether semantic RGB or not
 }  // ResourceManager::loadTextures
 
 bool ResourceManager::instantiateAssetsOnDemand(

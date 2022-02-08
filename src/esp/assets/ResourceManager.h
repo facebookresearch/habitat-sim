@@ -196,9 +196,13 @@ class ResourceManager {
    * @brief Remap a semantic annotation texture to have the semantic IDs per
    * pxl.
    * @param srcImage The source texture with the semantic colors.
+   * @param clrToSemanticId Large table of all possible colors to their semantic
+   * IDs. initialized to 0xffff
    * @return An image of the semantic IDs, with the ID mapped
    */
-  Mn::Image2D convertRGBToSemanticId(const Mn::ImageView2D& srcImage);
+  Mn::Image2D convertRGBToSemanticId(
+      const Mn::ImageView2D& srcImage,
+      Cr::Containers::Array<Mn::UnsignedShort>& clrToSemanticId);
 
   /** @brief check if the @ref esp::scene::SemanticScene exists.*/
   bool semanticSceneExists() const { return (semanticScene_ != nullptr); }
