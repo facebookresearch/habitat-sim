@@ -44,7 +44,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
   bool getIsCollidable() const { return get<bool>("is_collidable"); }
 
   /**
-   * @brief set default up orientation for object/stage mesh
+   * @brief Set default up orientation for object/stage mesh
    */
   void setOrientUp(const Magnum::Vector3& orientUp) {
     set("orient_up", orientUp);
@@ -56,7 +56,7 @@ class AbstractObjectAttributes : public AbstractAttributes {
     return get<Magnum::Vector3>("orient_up");
   }
   /**
-   * @brief set default forward orientation for object/stage mesh
+   * @brief Set default forward orientation for object/stage mesh
    */
   void setOrientFront(const Magnum::Vector3& orientFront) {
     set("orient_front", orientFront);
@@ -397,7 +397,7 @@ class StageAttributes : public AbstractObjectAttributes {
   Magnum::Vector3 getGravity() const { return get<Magnum::Vector3>("gravity"); }
 
   /**
-   * @brief set default up orientation for semantic mesh. This is to support
+   * @brief Set default up orientation for semantic mesh. This is to support
    * stage aligning semantic meshes that have different orientations than the
    * stage render mesh.
    */
@@ -420,7 +420,7 @@ class StageAttributes : public AbstractObjectAttributes {
   }
 
   /**
-   * @brief set default forward orientation for semantic mesh. This is to
+   * @brief Set default forward orientation for semantic mesh. This is to
    * support stage aligning semantic meshes that have different orientations
    * than the stage render mesh.
    */
@@ -470,7 +470,19 @@ class StageAttributes : public AbstractObjectAttributes {
   void setSemanticAssetType(int semanticAssetType) {
     set("semantic_asset_type", semanticAssetType);
   }
-  int getSemanticAssetType() { return get<int>("semantic_asset_type"); }
+  int getSemanticAssetType() const { return get<int>("semantic_asset_type"); }
+
+  /**
+   * @brief Set whether or not the semantic asset for this stage supports
+   * texture semantics.
+   */
+  void setHasSemanticTextures(bool hasSemanticTextures) {
+    set("has_semantic_textures", hasSemanticTextures);
+  }
+
+  bool getHasSemanticTextures() const {
+    return get<bool>("has_semantic_textures");
+  }
 
   // Currently not supported
   void setLoadSemanticMesh(bool loadSemanticMesh) {
@@ -489,7 +501,7 @@ class StageAttributes : public AbstractObjectAttributes {
   }
 
   /**
-   * @brief set lighting setup for stage.  Default value comes from
+   * @brief Set lighting setup for stage.  Default value comes from
    * @ref esp::sim::SimulatorConfiguration, is overridden by any value set in
    * json, if exists.
    */
@@ -502,7 +514,7 @@ class StageAttributes : public AbstractObjectAttributes {
   }
 
   /**
-   * @brief set frustum culling for stage.  Default value comes from
+   * @brief Set frustum culling for stage.  Default value comes from
    * @ref esp::sim::SimulatorConfiguration, is overridden by any value set in
    * json, if exists.
    * Currently only set from SimulatorConfiguration
@@ -523,18 +535,12 @@ class StageAttributes : public AbstractObjectAttributes {
   /**
    * @brief get AbstractObject specific info header
    */
-  std::string getAbstractObjectInfoHeaderInternal() const override {
-    return "Navmesh Handle,Gravity XYZ,Origin XYZ,Light Setup,";
-  }
+  std::string getAbstractObjectInfoHeaderInternal() const override;
 
   /**
    * @brief get AbstractObject specific info for csv string
    */
-  std::string getAbstractObjectInfoInternal() const override {
-    return Cr::Utility::formatString("{},{},{},{}", getNavmeshAssetHandle(),
-                                     getAsString("gravity"),
-                                     getAsString("origin"), getLightSetupKey());
-  }
+  std::string getAbstractObjectInfoInternal() const override;
 
  public:
   ESP_SMART_POINTERS(StageAttributes)
