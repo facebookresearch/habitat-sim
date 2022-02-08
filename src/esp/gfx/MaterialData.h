@@ -32,6 +32,12 @@ struct MaterialData {
 
   bool perVertexObjectId = false;
 
+  // This denotes a material with texture-based annotations
+  bool textureObjectId = false;
+
+  // This references the texture of ObjectID values
+  Magnum::GL::Texture2D* objectIdTexture = nullptr;
+
   // construct it using the default constructor. NO initial values, such as
   // identity matrix
   Magnum::Matrix3 textureMatrix;
@@ -44,9 +50,6 @@ struct MaterialData {
 
 struct PhongMaterialData : public MaterialData {
   PhongMaterialData() : MaterialData(MaterialDataType::Phong){};
-
-  // This denotes a material with texture-based annotations
-  bool textureObjectId = false;
   Magnum::Float shininess = 80.f;
   Magnum::Color4 ambientColor{0.1};
   // NOTE: This multiplication is a hack to roughly balance the Phong and PBR
