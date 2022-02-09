@@ -6,6 +6,7 @@
 
 import re
 import shutil
+from collections import defaultdict
 from os.path import exists as os_exists
 from os.path import isfile as os_isfile
 from os.path import join as os_join
@@ -53,6 +54,10 @@ HM3D_ANNOTATION_SUBDIR_RE = r"(?i)[0-9]{5}-[a-z0-9]{11}\.semantic$"
 #
 # Whether or not to build annotation scene dataset configs.
 BUILD_SD_CONFIGS = True
+
+#
+# Perform color count on semantic colors and print bad results instead of modifying and moving assets.
+COUNT_SEMANTIC_COLORS_PER_SCENE = False
 
 #
 # Prefix for config - leave empty string for none. Use this to build configs on a
@@ -350,68 +355,109 @@ def save_annotated_file_lists(output_files: List):
             dest.write("\n".join(v[1]))
 
 
+def count_SSD_colors(ssd_filename):
+    counts_dict = defaultdict(lambda: {"count": 0, "names": []})
+    # count the # of occurrences of colors in each scene. SHOULD ONLY BE 1 PER COLOR!
+    with open(ssd_filename, "r") as src:
+        for line in src:
+            items = line.split(",")
+            color = items[1].strip()
+            tag = line.split('"')[1].strip()
+            name = f"{tag}_{items[0]}"
+            counts_dict[color]["names"].append(name)
+            if not re.compile("^[A-F0-9]{6}$").match(color):
+                counts_dict[color]["count"] = -9999
+            else:
+                counts_dict[color]["count"] += 1
+
+    return counts_dict
+
+
 def main():
     # build dictionary of src and dest file names and paths
     file_names_and_paths = buildFileListing()
-    # Failures here will be files that did not get copied (or modified if appropriate)
-    failures = {}
     # dictionary keyed by partition valued by list of partition subdir and filename of written file
     part_file_list_dict = {}
     for key in HM3D_DATA_PARTITIONS:
         part_file_list_dict[key] = []
-    # fully qualified paths to all output files
-    output_files = []
-    # move semantic glbs and scene descriptor text files
-    for src_dir, data_dict_list in file_names_and_paths.items():
-        # print(f"Src : {src_dir} : # of data_dicts : {len(data_dict_list)} ")
-        for data_dict in data_dict_list:
-            partition_tag = data_dict["dest_part_tag"]
-            # print(
-            #     f"\tDest subdir under HM3D directory : {data_dict['dest_subdir']} | partition tag : {partition_tag}"
-            # )
-            # modify src SSD and save to dest
-            dest_ssd_filename = data_dict["dest_path_ssdfile"]
-            modify_and_copy_SSD(data_dict["src_path_ssdfile"], dest_ssd_filename)
-            # verify success
-            ssd_success = verify_file(dest_ssd_filename, src_dir, "SSD", failures)
-            if ssd_success:
-                output_files.append(data_dict["dest_subdir_ssdfile"])
-                part_file_list_dict[partition_tag].append(
-                    data_dict["dest_subdir_ssdfile"].replace(partition_tag, "*", 1)
-                )
-            # Copy glb file to appropriate location
-            dest_glb_filename = data_dict["dest_path_glbfile"]
-            shutil.copy(data_dict["src_path_glbfile"], dest_glb_filename)
-            # verify success
-            glb_success = verify_file(dest_glb_filename, src_dir, "GLB", failures)
-            if glb_success:
-                output_files.append(data_dict["dest_subdir_glbfile"])
-                part_file_list_dict[partition_tag].append(
-                    data_dict["dest_subdir_glbfile"].replace(partition_tag, "*", 1)
-                )
 
-    print(
-        f"# of src files processed : {len(file_names_and_paths)} | # of dest files written : {len(output_files)} | # of failures : {len(failures)} "
-    )
-    # for part, files in part_file_list_dict.items():
-    #     print(f"Partition : {part} | # files {len(files)}")
-    #     for filename in files:
-    #         print(f"\t{filename}")
+    if COUNT_SEMANTIC_COLORS_PER_SCENE:
+        # go through every semantic annotation file and perform a count of each color present.
+        per_scene_counts = {}
+        for _, data_dict_list in file_names_and_paths.items():
+            for data_dict in data_dict_list:
+                ssd_filename = data_dict["src_path_ssdfile"]
+                tmp_dict = count_SSD_colors(ssd_filename)
+                dict_key = ssd_filename.split(HM3D_ANNOTATION_SRC_DIR)[-1].split(
+                    ".semantic/Output"
+                )[0]
+                per_scene_counts[dict_key] = tmp_dict
+        # display results
+        for scenename, count_dict in per_scene_counts.items():
+            for color, count_and_names in count_dict.items():
+                count = count_and_names["count"]
+                names = count_and_names["names"]
+                if count > 1:
+                    print(
+                        f"!!! In scene {scenename} : Bad Color Count : '{color}' is present {count} times : {names}"
+                    )
 
-    # Get relative paths to all 5 annotation configs, as well as build scene dataset configs,if requested
-    build_annotation_configs(part_file_list_dict, output_files)
+    else:
+        # Failures here will be files that did not get copied (or modified if appropriate)
+        failures = {}
+        # fully qualified paths to all output files
+        output_files = []
+        # move semantic glbs and scene descriptor text files
+        for src_dir, data_dict_list in file_names_and_paths.items():
+            # print(f"Src : {src_dir} : # of data_dicts : {len(data_dict_list)} ")
+            for data_dict in data_dict_list:
+                partition_tag = data_dict["dest_part_tag"]
+                # print(
+                #     f"\tDest subdir under HM3D directory : {data_dict['dest_subdir']} | partition tag : {partition_tag}"
+                # )
+                # modify src SSD and save to dest
+                dest_ssd_filename = data_dict["dest_path_ssdfile"]
+                modify_and_copy_SSD(data_dict["src_path_ssdfile"], dest_ssd_filename)
+                # verify success
+                ssd_success = verify_file(dest_ssd_filename, src_dir, "SSD", failures)
+                if ssd_success:
+                    output_files.append(data_dict["dest_subdir_ssdfile"])
+                    part_file_list_dict[partition_tag].append(
+                        data_dict["dest_subdir_ssdfile"].replace(partition_tag, "*", 1)
+                    )
+                # Copy glb file to appropriate location
+                dest_glb_filename = data_dict["dest_path_glbfile"]
+                shutil.copy(data_dict["src_path_glbfile"], dest_glb_filename)
+                # verify success
+                glb_success = verify_file(dest_glb_filename, src_dir, "GLB", failures)
+                if glb_success:
+                    output_files.append(data_dict["dest_subdir_glbfile"])
+                    part_file_list_dict[partition_tag].append(
+                        data_dict["dest_subdir_glbfile"].replace(partition_tag, "*", 1)
+                    )
 
-    # save filenames of the annotation files that have been written, to facilitate archiving
-    save_annotated_file_lists(output_files)
+        print(
+            f"# of src files processed : {len(file_names_and_paths)} | # of dest files written : {len(output_files)} | # of failures : {len(failures)} "
+        )
+        # for part, files in part_file_list_dict.items():
+        #     print(f"Partition : {part} | # files {len(files)}")
+        #     for filename in files:
+        #         print(f"\t{filename}")
 
-    # display failures if they have occurred
-    if len(failures) > 0:
-        print("!!!!! The following files failed to be written : ")
-        for src_dir, fail_dict in failures.items():
-            for file_type, file_name in fail_dict.items():
-                print(
-                    f"Src : {src_dir} :\n\tType : {file_type} | Filename : {file_name} "
-                )
+        # Get relative paths to all 5 annotation configs, as well as build scene dataset configs,if requested
+        build_annotation_configs(part_file_list_dict, output_files)
+
+        # save filenames of the annotation files that have been written, to facilitate archiving
+        save_annotated_file_lists(output_files)
+
+        # display failures if they have occurred
+        if len(failures) > 0:
+            print("!!!!! The following files failed to be written : ")
+            for src_dir, fail_dict in failures.items():
+                for file_type, file_name in fail_dict.items():
+                    print(
+                        f"Src : {src_dir} :\n\tType : {file_type} | Filename : {file_name} "
+                    )
 
 
 if __name__ == "__main__":
