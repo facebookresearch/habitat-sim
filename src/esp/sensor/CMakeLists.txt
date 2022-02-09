@@ -55,9 +55,5 @@ endif()
 
 if(BUILD_WITH_AUDIO)
   include_directories(${DEPS_DIR}/audio/HabitatAcousticsPkg/headers)
-  find_library(
-    HabitatAcoustics_LIBRARY HabitatAcoustics
-    PATHS ${DEPS_DIR}/audio/HabitatAcousticsPkg/libs
-  )
   target_link_libraries(sensor PUBLIC ${HabitatAcoustics_LIBRARY})
 endif()

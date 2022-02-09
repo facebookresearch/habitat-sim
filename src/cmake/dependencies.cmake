@@ -90,6 +90,14 @@ if(BUILD_WITH_VHACD)
   add_subdirectory("${DEPS_DIR}/v-hacd/src/VHACD_Lib")
 endif()
 
+# audio
+if(BUILD_WITH_AUDIO)
+  find_library(
+    HabitatAcoustics_LIBRARY HabitatAcoustics
+    PATHS ${DEPS_DIR}/audio/HabitatAcousticsPkg/libs
+  )
+endif()
+
 # recast
 set(RECASTNAVIGATION_DEMO OFF CACHE BOOL "RECASTNAVIGATION_DEMO" FORCE)
 set(RECASTNAVIGATION_TESTS OFF CACHE BOOL "RECASTNAVIGATION_TESTS" FORCE)

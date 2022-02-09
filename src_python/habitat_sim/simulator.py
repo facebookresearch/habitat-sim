@@ -724,17 +724,7 @@ class Sensor:
 
     def get_observation(self) -> Union[ndarray, "Tensor"]:
         if self._spec.sensor_type == SensorType.AUDIO:
-            print("simulation.py: ------- In audio get observations")
-            audio_sensor = self._agent._sensors["audio_sensor"]
-            # tell the audio sensor about the agent location
-            rot = self._agent.state.rotation
-            audio_sensor.setAudioListenerTransform(
-                self._agent.state.position, np.array([rot.w, rot.x, rot.y, rot.z])
-            )
-            # run the simulation
-            audio_sensor.runSimulation(self._sim)
-            obs = audio_sensor.getIR()
-            return obs
+            return self._get_audio_observation()
 
         assert self._sim.renderer is not None
         tgt = self._sensor_object.render_target
@@ -763,16 +753,7 @@ class Sensor:
 
     def _get_observation_async(self) -> Union[ndarray, "Tensor"]:
         if self._spec.sensor_type == SensorType.AUDIO:
-            audio_sensor = self._agent._sensors["audio_sensor"]
-            # tell the audio sensor about the agent location
-            rot = self._agent.state.rotation
-            audio_sensor.setAudioListenerTransform(
-                self._agent.state.position, np.array([rot.w, rot.x, rot.y, rot.z])
-            )
-            # run the simulation
-            audio_sensor.runSimulation(self._sim)
-            obs = audio_sensor.getIR()
-            return obs
+            return self._get_audio_observation()
 
         if self._spec.gpu2gpu_transfer:
             obs = self._buffer.flip(0)  # type: ignore[union-attr]
@@ -780,6 +761,19 @@ class Sensor:
             obs = np.flip(self._buffer, axis=0)
 
         return self._noise_model(obs)
+
+    def _get_audio_observation(self) -> Union[ndarray, "Tensor"]:
+        assert self._spec.sensor_type == SensorType.AUDIO
+        audio_sensor = self._agent._sensors["audio_sensor"]
+        # tell the audio sensor about the agent location
+        rot = self._agent.state.rotation
+        audio_sensor.setAudioListenerTransform(
+            self._agent.state.position, np.array([rot.w, rot.x, rot.y, rot.z])
+        )
+        # run the simulation
+        audio_sensor.runSimulation(self._sim)
+        obs = audio_sensor.getIR()
+        return obs
 
     def close(self) -> None:
         self._sim = None

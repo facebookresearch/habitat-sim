@@ -42,7 +42,7 @@ if(BUILD_WITH_AUDIO)
     POST_BUILD
     COMMAND
       ${CMAKE_COMMAND} -E copy_if_different
-      ${DEPS_DIR}/audio/HabitatAcousticsPkg/libs/libHabitatAcoustics.so
+      ${HabitatAcoustics_LIBRARY}
       $<TARGET_FILE_DIR:habitat_sim_bindings>
   )
 endif()

@@ -75,6 +75,17 @@ def main():
         # print the audio observations
         print(obs)
 
+        # write the observations to a file
+        p = audio_sensor_spec.outputDirectory + str(i) + "/ir";
+
+        for channelIndex in range (0, len(obs)):
+            filePath = p + str(channelIndex) + ".txt"
+            f = open(filePath, "w")
+            print("Writing file : ", filePath)
+            for sampleIndex in range (0, len(obs[channelIndex])):
+                f.write(str(sampleIndex) + "\t" + str(obs[channelIndex][sampleIndex]) + "\n")
+            f.close()
+
         print("End Time : ")
         printTime()
 
