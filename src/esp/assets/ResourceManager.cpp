@@ -421,6 +421,12 @@ bool ResourceManager::loadStage(
   if (!isSeparateSemanticScene) {
     flags |= RenderAssetInstanceCreationInfo::Flag::IsSemantic;
   }
+  // if texture-based semantic mesh specify in creation
+  // TODO: Currently do not support single mesh texture-based semantic and
+  // render stages
+  // if (renderInfo.isSemanticRGB) {
+  //   flags |= RenderAssetInstanceCreationInfo::Flag::IsTextureBasedSemantic;
+  // }
   RenderAssetInstanceCreationInfo renderCreation(
       renderInfo.filepath, Cr::Containers::NullOpt, flags, renderLightSetupKey);
   ESP_DEBUG() << "Start load render asset" << renderInfo.filepath << ".";
@@ -2308,9 +2314,7 @@ Mn::Image2D ResourceManager::convertRGBToSemanticId(
       outputRow[x] = clrToSemanticId[colorInt];
     }
   }
-
   // upload the `integer` image to an integer Texture2D and then use as
-
   // a semantic texture in the shader
 
   return resImage;
@@ -2322,6 +2326,11 @@ void ResourceManager::loadTextures(Importer& importer,
   nextTextureID_ = textureEnd + 1;
   loadedAssetData.meshMetaData.setTextureIndices(textureStart, textureEnd);
   if (loadedAssetData.assetInfo.isSemanticRGB) {
+    // build semanticColorMapBeingUsed_ if semanticScene_ is not nullptr
+    if (semanticScene_) {
+      buildSemanticColorMap();
+    }
+
     // assuming that the only textures that exist are the RGB
     // build table of colors
     // Object IDs for ALL POSSIBLE COLORS IN EXISTENCE. Unknown entries have
@@ -2330,6 +2339,11 @@ void ResourceManager::loadTextures(Importer& importer,
         Mn::DirectInit, 256 * 256 * 256, Mn::UnsignedShort(0xffff)};
 
     for (std::size_t i = 0; i < semanticColorAsInt_.size(); ++i) {
+      // skip '0x0' (black) color.
+      if (semanticColorAsInt_[i] == 0) {
+        continue;
+      }
+      // assign semantic ID to list at colorAsInt idx
       clrToSemanticId[semanticColorAsInt_[i]] =
           static_cast<Mn::UnsignedShort>(i);
     }

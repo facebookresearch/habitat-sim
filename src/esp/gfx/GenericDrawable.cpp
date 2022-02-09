@@ -41,6 +41,7 @@ GenericDrawable::GenericDrawable(scene::SceneNode& node,
   if (materialData_->specularTexture) {
     flags_ |= Mn::Shaders::PhongGL::Flag::SpecularTexture;
   }
+
   if (materialData_->normalTexture) {
     if (meshAttributeFlags & Drawable::Flag::HasTangent) {
       flags_ |= Mn::Shaders::PhongGL::Flag::NormalTexture;
@@ -130,9 +131,10 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
       // uploaded to GPU so simply pass 0 to the uniform "objectId" in the
       // fragment shader
       .setObjectId(
-          static_cast<RenderCamera&>(camera).useDrawableIds()
-              ? drawableId_
-              : (materialData_->perVertexObjectId ? 0 : node_.getSemanticId()))
+          static_cast<RenderCamera&>(camera).useDrawableIds() ? drawableId_
+          : (materialData_->perVertexObjectId || materialData_->textureObjectId)
+              ? 0
+              : node_.getSemanticId())
       .setTransformationMatrix(transformationMatrix)
       .setProjectionMatrix(camera.projectionMatrix())
       .setNormalMatrix(transformationMatrix.normalMatrix());
@@ -153,6 +155,9 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
   }
   if (flags_ & Mn::Shaders::PhongGL::Flag::NormalTexture) {
     shader_->bindNormalTexture(*(materialData_->normalTexture));
+  }
+  if (flags_ & Mn::Shaders::PhongGL::Flag::ObjectIdTexture) {
+    shader_->bindObjectIdTexture(*(materialData_->objectIdTexture));
   }
 
   shader_->draw(getMesh());
