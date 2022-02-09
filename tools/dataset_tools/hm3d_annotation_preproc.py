@@ -48,7 +48,6 @@ HM3D_ANNOTATION_SRC_DIR = "/home/john/Datasets In Progress/HM3D_Semantic/Appen_S
 # Appen annotation source scene directory regex.
 # This regex describes the format of the per-scene directories in the Appen work,
 # and may change depending on whether the format we receive from Appen changes.
-
 HM3D_ANNOTATION_SUBDIR_RE = r"(?i)[0-9]{5}-[a-z0-9]{11}\.semantic$"
 
 #
@@ -144,7 +143,8 @@ def buildFileListing():
         )
         if len(src_file_list) != 2:
             print(
-                f"Problem with source dir files {dirname_full} : Unable to find 2 source files ({len(src_file_list)} instead) so skipping this source dir."
+                f"Problem with source dir files {dirname_full} : Unable to find 2 source files "
+                f"({len(src_file_list)} files instead) so skipping this source dir."
             )
             continue
         # find appropriate destination directory for given source scene
@@ -281,8 +281,9 @@ def build_annotation_configs(part_file_list_dict: Dict, output_files: List):
         if BUILD_SD_CONFIGS:
             src_json_config = ut.load_json_into_dict(src_config_filename)
             for key, json_obj in src_json_config.items():
+                # Modify only those configs that hold paths
                 if "paths" in json_obj:
-                    # Modify both stages and
+                    # Modify both stages and scene instance configs
                     # this is the dictionary of lists of places to look for specified config type files
                     paths_dict = src_json_config[key]["paths"]
                     for path_type_key, lu_path_list in paths_dict.items():
@@ -291,6 +292,12 @@ def build_annotation_configs(part_file_list_dict: Dict, output_files: List):
                         modify_paths_tag(
                             paths_dict, path_type_key, lu_glob_file, scene_path_list
                         )
+                # add tag/value in stages dflt attributes denoting the
+                # annotation dataset supports texture semantics
+                if "stages" in key:
+                    dflt_attribs = src_json_config[key]["default_attributes"]
+                    dflt_attribs["has_semantic_textures"] = True
+
             ut.save_json_to_file(src_json_config, dest_config_filename)
 
         # add subdirectory-qualified file paths to new configs to output_files list so that they will
@@ -305,13 +312,15 @@ def build_annotation_configs(part_file_list_dict: Dict, output_files: List):
 def save_annotated_file_lists(output_files: List):
     print("save_annotated_file_lists:")
     # write text files that hold listings of appropriate relative filepaths for
-    # annotated files as well as for each partition for all scenes that have annotations
+    # annotated files as well as for each partition's configs for all scenes that
+    # have annotations
 
-    # all annotated files (annotated glb and txt only)
+    # single file listing holding all annotated file filenames (annotated glb and txt only)
+    # and annotated config filenames
     with open(os_join(HM3D_DEST_DIR, "HM3D_annotation_files.txt"), "w") as dest:
         dest.write("\n".join(output_files))
 
-    # save listing for each partition
+    # save listing of all files (semantic, render, navmesh) for each partition:
     # each entry is a tuple with idx 0 == dest filename; idx 1 == list of paths
     partition_lists = {}
     for part in HM3D_DATA_PARTITIONS:
@@ -329,12 +338,13 @@ def save_annotated_file_lists(output_files: List):
             continue
         file_part_key = fileparts[0].split("-")[1].strip()
         partition_lists[file_part_key][1].append(filename)
-        # add base files
+        # add base file filenames to filelisting
         if ".semantic.glb" in filename:
             filename_base = filename.split(".semantic.glb")[0]
             partition_lists[file_part_key][1].append(f"{filename_base}.basis.glb")
             partition_lists[file_part_key][1].append(f"{filename_base}.basis.navmesh")
-    # write each per-partition file listing to build per-partition annotated-only datasets
+    # write each per-partition file listing to build per-partition annotated-only dataset archives
+    # (holding semantic, render and navmesh assets)
     for _, v in partition_lists.items():
         with open(v[0], "w") as dest:
             dest.write("\n".join(v[1]))
