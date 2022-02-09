@@ -384,7 +384,9 @@ bool Simulator::instanceStageForSceneAttributes(
   // set scaling values for this instance of stage attributes
   stageAttributes->setScale(stageAttributes->getScale() *
                             stageInstanceAttributes->getUniformScale());
-
+  // this will only be true if semantic textures have been set to be available
+  // from the dataset config
+  stageAttributes->setUseSemanticTextures(config_.useSemanticTexturesIfFound);
   // set stage's ref to ssd file
   stageAttributes->setSemanticDescriptorFilename(
       metadataMediator_->getSemanticSceneDescriptorPathByHandle(

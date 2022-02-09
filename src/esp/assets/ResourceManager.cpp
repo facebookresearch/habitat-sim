@@ -580,7 +580,10 @@ ResourceManager::createStageAssetInfosFromAttributes(
         stageAttributes->getFrustumCulling()  // splitInstanceMesh
     };
     // specify whether the semantic asset has semantically annotated textures.
-    semanticInfo.isSemanticRGB = stageAttributes->getHasSemanticTextures();
+    // this is only true if the assets are available (as specified in the
+    // dataset config) and if the  user has requested them (via
+    // SimulatorConfiguration::useSemanticTexturesIfFound)
+    semanticInfo.isSemanticRGB = stageAttributes->useSemanticTextures();
 
     Cr::Utility::formatInto(
         debugStr, debugStr.size(),

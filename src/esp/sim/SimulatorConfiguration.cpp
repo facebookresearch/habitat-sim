@@ -24,6 +24,7 @@ bool operator==(const SimulatorConfiguration& a,
          a.requiresTextures == b.requiresTextures &&
          a.leaveContextWithBackgroundRenderer ==
              b.leaveContextWithBackgroundRenderer &&
+         a.useSemanticTexturesIfFound == b.useSemanticTexturesIfFound &&
          a.sceneDatasetConfigFile == b.sceneDatasetConfigFile &&
          a.physicsConfigFile == b.physicsConfigFile &&
          a.overrideSceneLightDefaults == b.overrideSceneLightDefaults &&

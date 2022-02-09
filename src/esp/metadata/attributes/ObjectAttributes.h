@@ -484,6 +484,25 @@ class StageAttributes : public AbstractObjectAttributes {
     return get<bool>("has_semantic_textures");
   }
 
+  /**
+   * @brief Only set internally if we should use semantic textures for semantic
+   * asset loading/rendering. Should only be true if "has_semantic_textures" is
+   * true and user has specified to use semantic textures via
+   * SimulatorConfiguration.
+   */
+  bool useSemanticTextures() const {
+    return get<bool>("use_textures_for_semantic_rendering");
+  }
+
+  /**
+   * @brief Only should be called when simulator::reconfigure is called, based
+   * on setting
+   */
+  void setUseSemanticTextures(bool useSemanticTextures) {
+    set("use_textures_for_semantic_rendering",
+        (useSemanticTextures && getHasSemanticTextures()));
+  }
+
   // Currently not supported
   void setLoadSemanticMesh(bool loadSemanticMesh) {
     set("loadSemanticMesh", loadSemanticMesh);
