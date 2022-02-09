@@ -57,7 +57,7 @@ BUILD_SD_CONFIGS = True
 
 #
 # Perform color count on semantic colors and print bad results instead of modifying and moving assets.
-COUNT_SEMANTIC_COLORS_PER_SCENE = False
+COUNT_SEMANTIC_COLORS_PER_SCENE = True
 
 #
 # Prefix for config - leave empty string for none. Use this to build configs on a
@@ -387,21 +387,25 @@ def main():
         for _, data_dict_list in file_names_and_paths.items():
             for data_dict in data_dict_list:
                 ssd_filename = data_dict["src_path_ssdfile"]
+                print(f"{ssd_filename}")
                 tmp_dict = count_SSD_colors(ssd_filename)
                 dict_key = ssd_filename.split(HM3D_ANNOTATION_SRC_DIR)[-1].split(
                     ".semantic/Output"
                 )[0]
                 per_scene_counts[dict_key] = tmp_dict
+        print(f"\n\n{len(per_scene_counts)} items\n\n")
         # display results
+        total_items = 0
         for scenename, count_dict in per_scene_counts.items():
             for color, count_and_names in count_dict.items():
                 count = count_and_names["count"]
+                total_items += count
                 names = count_and_names["names"]
                 if count > 1:
                     print(
                         f"!!! In scene {scenename} : Bad Color Count : '{color}' is present {count} times : {names}"
                     )
-
+        print(f"Total Items :{total_items}")
     else:
         # Failures here will be files that did not get copied (or modified if appropriate)
         failures = {}
