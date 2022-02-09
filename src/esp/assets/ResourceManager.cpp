@@ -490,13 +490,15 @@ bool ResourceManager::buildMeshGroups(
   if (collisionMeshGroups_.count(info.filepath) == 0) {
     //! Collect collision mesh group
     bool colMeshGroupSuccess = false;
-    if (info.type == AssetType::INSTANCE_MESH) {
+    if ((info.type == AssetType::INSTANCE_MESH) && !info.isSemanticRGB) {
       // PLY Semantic mesh
       colMeshGroupSuccess =
           buildStageCollisionMeshGroup<GenericSemanticMeshData>(info.filepath,
                                                                 meshGroup);
-    } else if (info.type == AssetType::MP3D_MESH ||
-               info.type == AssetType::UNKNOWN) {
+    } else if ((info.type == AssetType::MP3D_MESH ||
+                info.type == AssetType::UNKNOWN) ||
+               ((info.type == AssetType::INSTANCE_MESH) &&
+                info.isSemanticRGB)) {
       // GLB Mesh
       colMeshGroupSuccess = buildStageCollisionMeshGroup<GenericMeshData>(
           info.filepath, meshGroup);
