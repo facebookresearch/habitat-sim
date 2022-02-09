@@ -187,10 +187,20 @@ class ResourceManager {
   }
 
   /**
-   * @brief Build the color map from a semantic scene descriptor, by iterating
-   * through the objects and mapping their color values to their semantic ids.
+   * @brief Build @ref semanticColorMapBeingUsed_ holding the semantic colors
+   * defined from a semantic scene descriptor, by iterating through the objects
+   * and mapping their color values to their semantic ids.
    */
   void buildSemanticColorMap();
+
+  /**
+   * @brief Build @ref semanticColorAsInt_ (array of colors as integers) from
+   * the current @ref semanticColorMapBeingUsed_ map. The @ref
+   * semanticColorAsInt_ is used when building the color matrix for conversion
+   * of colors found in semantic textures to their semantic IDs. When semantic
+   * textures are preprocessed, this will not need to be performed.
+   */
+  void buildSemanticColorAsIntMap();
 
   /**
    * @brief Remap a semantic annotation texture to have the semantic IDs per

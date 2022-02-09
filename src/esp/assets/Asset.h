@@ -62,8 +62,8 @@ struct AssetInfo {
       metadata::attributes::ObjectInstanceShaderType::Unspecified;
 
   /**
-   * @brief Asset will be used for semantic information using semantically
-   * annotated textures with a flat shader.
+   * @brief Asset is a semantic mesh that uses textures (instead of vertices)
+   * for annotation information.
    */
   bool isSemanticRGB = false;
 

@@ -301,15 +301,21 @@ void ResourceManager::buildSemanticColorMap() {
   // map).  Any overflow colors will be uniquely mapped 1-to-1 to unmapped
   // semantic IDs as their index.
   semanticColorMapBeingUsed_.assign(ssdClrMap.begin(), ssdClrMap.end());
+  buildSemanticColorAsIntMap();
+
+}  // ResourceManager::buildSemanticColorMap
+
+void ResourceManager::buildSemanticColorAsIntMap() {
+  semanticColorAsInt_.clear();
   // build listing of colors as ints, with idx being semantic ID
-  std::transform(ssdClrMap.cbegin(), ssdClrMap.cend(),
+  std::transform(semanticColorMapBeingUsed_.cbegin(),
+                 semanticColorMapBeingUsed_.cend(),
                  std::back_inserter(semanticColorAsInt_),
                  [](const Mn::Color3ub& color) -> uint32_t {
                    return (unsigned(color[0]) << 16) |
                           (unsigned(color[1]) << 8) | unsigned(color[2]);
                  });
-
-}  // ResourceManager::buildSemanticColorMap
+}
 
 bool ResourceManager::loadStage(
     const StageAttributes::ptr& stageAttributes,
@@ -697,6 +703,23 @@ scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
                                           &drawables);
 }  // ResourceManager::loadAndCreateRenderAssetInstance
 
+std::string ResourceManager::createModifiedAssetName(const AssetInfo& info,
+                                                     std::string& materialId) {
+  std::string modifiedAssetName = info.filepath;
+
+  // check materialId
+  if (info.overridePhongMaterial != Cr::Containers::NullOpt) {
+    if (materialId.empty()) {
+      // if passed value is empty, synthesize new color and new materialId
+      // based on this color and values specified in info
+      materialId = createColorMaterial(*info.overridePhongMaterial);
+    }
+    modifiedAssetName += "?" + materialId;
+  }
+  // construct name with materialId specification and desired shader type
+  return modifiedAssetName;
+}  // ResourceManager::createModifiedAssetName
+
 scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
     const AssetInfo& assetInfo,
     const RenderAssetInstanceCreationInfo& creation,
@@ -778,14 +801,13 @@ bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
         resourceDict_.count(modifiedAssetName) > 0;
     if (!matModAssetIsRegistered) {
       // first register the copied metaData
-      resourceDict_.emplace(modifiedAssetName,
-                            LoadedAssetData(resourceDict_.at(info.filepath)));
+      auto res = resourceDict_.emplace(
+          modifiedAssetName, LoadedAssetData(resourceDict_.at(info.filepath)));
       // Replace the AssetInfo
-      resourceDict_.at(modifiedAssetName).assetInfo = info;
+      res.first->second.assetInfo = info;
       // Modify the MeshMetaData local material ids for all components
       std::vector<MeshTransformNode*> nodeQueue;
-      nodeQueue.push_back(
-          &resourceDict_.at(modifiedAssetName).meshMetaData.root);
+      nodeQueue.push_back(&res.first->second.meshMetaData.root);
       while (!nodeQueue.empty()) {
         MeshTransformNode* node = nodeQueue.back();
         nodeQueue.pop_back();
@@ -807,26 +829,8 @@ bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
       }
     }
   }
-
   return meshSuccess;
-}
-
-std::string ResourceManager::createModifiedAssetName(const AssetInfo& info,
-                                                     std::string& materialId) {
-  std::string modifiedAssetName = info.filepath;
-
-  // check materialId
-  if (info.overridePhongMaterial != Cr::Containers::NullOpt) {
-    if (materialId.empty()) {
-      // if passed value is empty, synthesize new color and new materialId
-      // based on this color and values specified in info
-      materialId = createColorMaterial(*info.overridePhongMaterial);
-    }
-    modifiedAssetName += "?" + materialId;
-  }
-  // construct name with materialId specification and desired shader type
-  return modifiedAssetName;
-}  // ResourceManager::createModifiedAssetName
+}  // ResourceManager::loadRenderAsset
 
 scene::SceneNode* ResourceManager::createRenderAssetInstance(
     const RenderAssetInstanceCreationInfo& creation,
@@ -1320,7 +1324,7 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
      attributes to per-vertex, so nothing extra needs to be done. */
   ConfigureImporterManagerGLExtensions();
   ESP_CHECK(
-      (fileImporter_->openFile(filename) && (fileImporter_->meshCount() > 0)),
+      (fileImporter_->openFile(filename) && (fileImporter_->meshCount() > 0u)),
       Cr::Utility::formatString("Error loading semantic mesh data from file {}",
                                 filename));
   // Transform meshData by reframing rotation.  Doing this here so that
@@ -1376,6 +1380,11 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
           *meshData, Cr::Utility::Directory::filename(filename),
           info.splitInstanceMesh, semanticColorMapBeingUsed_,
           (filename.find(".ply") == std::string::npos), semanticScene_);
+
+  // augment colors as int if un-expected colors have been found in mesh verts.
+  if (semanticScene_) {
+    buildSemanticColorAsIntMap();
+  }
 
   ESP_CHECK(!instanceMeshes.empty(),
             Cr::Utility::formatString(
@@ -1461,6 +1470,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceIMesh(
 
   return instanceRoot;
 }  // ResourceManager::createRenderAssetInstanceIMesh
+
 void ResourceManager::ConfigureImporterManagerGLExtensions() {
   if (!getCreateRenderer()) {
     return;
@@ -1566,7 +1576,7 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
   ConfigureImporterManagerGLExtensions();
 
   ESP_CHECK(
-      (fileImporter_->openFile(filename) && (fileImporter_->meshCount() > 0)),
+      (fileImporter_->openFile(filename) && (fileImporter_->meshCount() > 0u)),
       Cr::Utility::formatString("Error loading general mesh data from file {}",
                                 filename));
 
