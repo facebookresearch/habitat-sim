@@ -398,8 +398,10 @@ bool ResourceManager::loadStage(
     esp::scene::SceneManager* sceneManagerPtr,
     std::vector<int>& activeSceneIDs) {
   // If the semantic mesh should be created, based on SimulatorConfiguration
-  const bool createSemanticMesh =
-      metadataMediator_->getSimulatorConfiguration().loadSemanticMesh;
+  // todo sangarg : Fix this, the config.json file seems to be incorrect
+  //    the semantic mesh is not working if this is false
+  const bool createSemanticMesh = true;
+      //metadataMediator_->getSimulatorConfiguration().loadSemanticMesh;
 
   // Force creation of a separate semantic scene graph, even when no semantic
   // mesh is loaded for the stage.  This is required to support playback of any
@@ -2942,7 +2944,7 @@ void ResourceManager::joinSemanticHierarchy(
       return;
     }
 
-    const std::vector<vec3f>& vertices = meshData->getVertexBufferObjectCPU();
+    const std::vector<Mn::Vector3>& vertices = meshData->getVertexBufferObjectCPU();
     const std::vector<uint32_t>& indices = meshData->getIndexBufferObjectCPU();
     const std::vector<uint16_t>& objectIds =
         meshData->getObjectIdsBufferObjectCPU();
@@ -2952,10 +2954,8 @@ void ResourceManager::joinSemanticHierarchy(
 
     // Save the vertices
     for (auto& pos : vertices) {
-      Magnum::Vector3 p(pos(0), pos(1), pos(2));
-
       mesh.vbo.push_back(Magnum::EigenIntegration::cast<vec3f>(
-          transformFromLocalToWorld.transformPoint(p)));
+          transformFromLocalToWorld.transformPoint(pos)));
     }
 
     // Save the indices
