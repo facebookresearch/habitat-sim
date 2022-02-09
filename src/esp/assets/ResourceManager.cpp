@@ -764,8 +764,8 @@ bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
       ESP_DEBUG() << "Loading PTEX asset named:" << info.filepath;
       meshSuccess = loadRenderAssetPTex(defaultInfo);
     } else if (info.type == AssetType::INSTANCE_MESH) {
-      ESP_DEBUG() << "Loading InstanceMesh asset named:" << info.filepath;
-      meshSuccess = loadRenderAssetIMesh(defaultInfo);
+      ESP_DEBUG() << "Loading Semantic Mesh asset named:" << info.filepath;
+      meshSuccess = loadSemanticRenderAsset(defaultInfo);
     } else if (isRenderAssetGeneral(info.type)) {
       ESP_DEBUG() << "Loading general asset named:" << info.filepath;
       meshSuccess = loadRenderAssetGeneral(defaultInfo);
@@ -860,7 +860,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstance(
     CORRADE_ASSERT(!visNodeCache,
                    "createRenderAssetInstanceIMesh doesn't support this",
                    nullptr);
-    newNode = createRenderAssetInstanceIMesh(creation, parent, drawables);
+    newNode = createSemanticRenderAssetInstance(creation, parent, drawables);
   } else if (isRenderAssetGeneral(info.type) ||
              info.type == AssetType::PRIMITIVE) {
     newNode = createRenderAssetInstanceGeneralPrimitive(
@@ -1312,6 +1312,28 @@ scene::SceneNode* ResourceManager::createRenderAssetInstancePTex(
 #endif
 }  // ResourceManager::createRenderAssetInstancePTex
 
+bool ResourceManager::loadSemanticRenderAsset(const AssetInfo& info) {
+  if (info.isSemanticRGB) {
+    // use loadRenderAssetGeneral
+    return loadRenderAssetGeneral(info);
+  } else {
+    return loadRenderAssetIMesh(info);
+  }
+}  // ResourceManager::loadSemanticRenderAsset
+
+scene::SceneNode* ResourceManager::createSemanticRenderAssetInstance(
+    const RenderAssetInstanceCreationInfo& creation,
+    scene::SceneNode* parent,
+    DrawableGroup* drawables) {
+  if (creation.isTextureBasedSemantic()) {
+    return createRenderAssetInstanceGeneralPrimitive(creation, parent,
+                                                     drawables, nullptr);
+  } else {
+    return createRenderAssetInstanceIMesh(creation, parent, drawables);
+  }
+
+}  // ResourceManager::createSemanticRenderAssetInstance
+
 bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
   CORRADE_INTERNAL_ASSERT(info.type == AssetType::INSTANCE_MESH);
 
@@ -1569,7 +1591,11 @@ void setMeshTransformNodeChildren(
 }  // namespace
 
 bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
-  CORRADE_INTERNAL_ASSERT(isRenderAssetGeneral(info.type));
+  // verify either is general render asset, or else is semantic/instance asset
+  // w/texture annotations
+  CORRADE_INTERNAL_ASSERT(
+      isRenderAssetGeneral(info.type) ||
+      ((info.type == AssetType::INSTANCE_MESH) && info.isSemanticRGB));
 
   const std::string& filename = info.filepath;
   CORRADE_INTERNAL_ASSERT(resourceDict_.count(filename) == 0);
