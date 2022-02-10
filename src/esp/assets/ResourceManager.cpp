@@ -723,7 +723,7 @@ std::string ResourceManager::createModifiedAssetName(const AssetInfo& info,
       // based on this color and values specified in info
       materialId = createColorMaterial(*info.overridePhongMaterial);
     }
-    modifiedAssetName += "?" + materialId;
+    modifiedAssetName += '?' + materialId;
   }
   // construct name with materialId specification and desired shader type
   return modifiedAssetName;
@@ -1325,10 +1325,9 @@ bool ResourceManager::loadSemanticRenderAsset(const AssetInfo& info) {
   if (info.hasSemanticTextures) {
     // use loadRenderAssetGeneral for texture-based semantics
     return loadRenderAssetGeneral(info);
-  } else {
-    // special handling for vertex-based semantics
-    return loadRenderAssetIMesh(info);
   }
+  // special handling for vertex-based semantics
+  return loadRenderAssetIMesh(info);
 }  // ResourceManager::loadSemanticRenderAsset
 
 scene::SceneNode* ResourceManager::createSemanticRenderAssetInstance(
@@ -1339,10 +1338,10 @@ scene::SceneNode* ResourceManager::createSemanticRenderAssetInstance(
     // Treat texture-based semantic meshes as General/Primitves.
     return createRenderAssetInstanceGeneralPrimitive(creation, parent,
                                                      drawables, nullptr);
-  } else {
-    // Special handling for vertex-based semantics
-    return createRenderAssetInstanceIMesh(creation, parent, drawables);
   }
+  // Special handling for vertex-based semantics
+  return createRenderAssetInstanceIMesh(creation, parent, drawables);
+
 }  // ResourceManager::createSemanticRenderAssetInstance
 
 GenericSemanticMeshData::uptr
