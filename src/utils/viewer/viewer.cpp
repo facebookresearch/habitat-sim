@@ -1517,16 +1517,20 @@ void Viewer::drawEvent() {
   } else {
     // Depth Or Semantic, or Non-pinhole RGBA
     simulator_->drawObservation(defaultAgentId_, sensorVisID_);
+
     esp::gfx::RenderTarget* sensorRenderTarget =
         simulator_->getRenderTarget(defaultAgentId_, sensorVisID_);
     CORRADE_ASSERT(sensorRenderTarget,
                    "Error in Viewer::drawEvent: sensor's rendering target "
                    "cannot be nullptr.", );
+
     if (visualizeMode_ == VisualizeMode::Depth) {
       simulator_->visualizeObservation(defaultAgentId_, sensorVisID_,
                                        1.0f / 512.0f,  // colorMapOffset
                                        1.0f / 12.0f);  // colorMapScale
     } else if (visualizeMode_ == VisualizeMode::Semantic) {
+      Mn::GL::defaultFramebuffer.clear(Mn::GL::FramebufferClear::Color |
+                                       Mn::GL::FramebufferClear::Depth);
       simulator_->visualizeObservation(defaultAgentId_, sensorVisID_);
     }
     sensorRenderTarget->blitRgbaToDefault();
