@@ -1274,7 +1274,7 @@ HitRecord PathFinder::Impl::closestObstacleSurfacePoint(
             std::numeric_limits<float>::infinity()};
   }
   vec3f hitPos, hitNormal;
-  float hitDist = NAN;
+  float hitDist = Mn::Constants::nan();
   navQuery_->findDistanceToWall(ptRef, polyPt.data(), maxSearchRadius,
                                 filter_.get(), &hitDist, hitPos.data(),
                                 hitNormal.data());
