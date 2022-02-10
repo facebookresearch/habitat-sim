@@ -30,6 +30,7 @@
 #include "BaseMesh.h"
 #include "CollisionMeshData.h"
 #include "GenericMeshData.h"
+#include "GenericSemanticMeshData.h"
 #include "MeshData.h"
 #include "MeshMetaData.h"
 #include "RenderAssetInstanceCreationInfo.h"
@@ -983,6 +984,19 @@ class ResourceManager {
    * @brief PTex Mesh backend for loadRenderAsset
    */
   bool loadRenderAssetPTex(const AssetInfo& info);
+
+  /**
+   * @brief Build @ref GenericSemanticMeshData from a single, flattened Magnum
+   * Meshdata, built from the meshes provided by the importer, preserving all
+   * transformations.  This building process will also synthesize bounding boxes
+   * if requested from the @ref semanticScene_ .
+   * @param fileImporter Importer used to load the scene.
+   * @param info AssetInfo describing asset.
+   * @return The GenericSemanticMeshData being built.
+   */
+  GenericSemanticMeshData::uptr flattenImportedMeshAndBuildSemantic(
+      Importer& fileImporter,
+      const AssetInfo& info);
 
   /**
    * @brief Semantic Mesh backend for loadRenderAsset.  Either use

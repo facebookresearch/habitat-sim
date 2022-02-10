@@ -307,6 +307,7 @@ void ResourceManager::buildSemanticColorMap() {
 
 void ResourceManager::buildSemanticColorAsIntMap() {
   semanticColorAsInt_.clear();
+  semanticColorAsInt_.reserve(semanticColorMapBeingUsed_.size());
   // build listing of colors as ints, with idx being semantic ID
   std::transform(semanticColorMapBeingUsed_.cbegin(),
                  semanticColorMapBeingUsed_.cend(),
@@ -1322,9 +1323,10 @@ scene::SceneNode* ResourceManager::createRenderAssetInstancePTex(
 
 bool ResourceManager::loadSemanticRenderAsset(const AssetInfo& info) {
   if (info.isSemanticRGB) {
-    // use loadRenderAssetGeneral
+    // use loadRenderAssetGeneral for texture-based semantics
     return loadRenderAssetGeneral(info);
   } else {
+    // special handling for vertex-based semantics
     return loadRenderAssetIMesh(info);
   }
 }  // ResourceManager::loadSemanticRenderAsset
@@ -1334,37 +1336,28 @@ scene::SceneNode* ResourceManager::createSemanticRenderAssetInstance(
     scene::SceneNode* parent,
     DrawableGroup* drawables) {
   if (creation.isTextureBasedSemantic()) {
+    // Treat texture-based semantic meshes as General/Primitves.
     return createRenderAssetInstanceGeneralPrimitive(creation, parent,
                                                      drawables, nullptr);
   } else {
+    // Special handling for vertex-based semantics
     return createRenderAssetInstanceIMesh(creation, parent, drawables);
   }
-
 }  // ResourceManager::createSemanticRenderAssetInstance
 
-bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
-  CORRADE_INTERNAL_ASSERT(info.type == AssetType::INSTANCE_MESH);
-
+GenericSemanticMeshData::uptr
+ResourceManager::flattenImportedMeshAndBuildSemantic(Importer& fileImporter,
+                                                     const AssetInfo& info) {
   const std::string& filename = info.filepath;
 
-  CORRADE_INTERNAL_ASSERT(resourceDict_.count(filename) == 0);
-
-  /* Open the file. On error the importer already prints a diagnostic message,
-     so no need to do that here. The importer implicitly converts per-face
-     attributes to per-vertex, so nothing extra needs to be done. */
-  ConfigureImporterManagerGLExtensions();
-  ESP_CHECK(
-      (fileImporter_->openFile(filename) && (fileImporter_->meshCount() > 0u)),
-      Cr::Utility::formatString("Error loading semantic mesh data from file {}",
-                                filename));
-  // Transform meshData by reframing rotation.  Doing this here so that
+  // Transform meshData by reframing frame rotation.  Doing this here so that
   // transformation is caught in OBB calc.
   const Mn::Matrix4 reframeTransform = Mn::Matrix4::from(
       Mn::Quaternion(info.frame.rotationFrameToWorld()).toMatrix(),
       Mn::Vector3());
 
-  auto sceneID = fileImporter_->defaultScene();
-
+  auto sceneID = fileImporter.defaultScene();
+  // The meshData to build
   Cr::Containers::Optional<Mn::Trade::MeshData> meshData;
 
   if (sceneID == -1) {
@@ -1372,17 +1365,20 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
     // already verified at least one mesh exists, this means only one mesh,
     // treat as before
     meshData =
-        Mn::MeshTools::transform3D(*fileImporter_->mesh(0), reframeTransform);
+        Mn::MeshTools::transform3D(*fileImporter.mesh(0), reframeTransform);
   } else {
+    // flatten multi-submesh source meshes, since GenericSemanticMeshData
+    // re-partitions based on ID.
     Cr::Containers::Optional<Mn::Trade::SceneData> scene =
-        fileImporter_->scene(sceneID);
+        fileImporter.scene(sceneID);
 
     Cr::Containers::Array<Mn::Trade::MeshData> flattenedMeshes;
     for (const Cr::Containers::Triple<Mn::UnsignedInt, Mn::Int, Mn::Matrix4>&
              meshTransformation :
          Mn::SceneTools::flattenMeshHierarchy3D(*scene)) {
+      int iMesh = meshTransformation.first();
       if (Cr::Containers::Optional<Mn::Trade::MeshData> mesh =
-              fileImporter_->mesh(meshTransformation.first())) {
+              fileImporter.mesh(iMesh)) {
         const auto transform = reframeTransform * meshTransformation.third();
         arrayAppend(flattenedMeshes,
                     Mn::MeshTools::transform3D(*mesh, transform));
@@ -1404,16 +1400,48 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
   if (semanticScene_) {
     buildSemanticColorMap();
   }
-
-  std::vector<GenericSemanticMeshData::uptr> instanceMeshes =
+  GenericSemanticMeshData::uptr semanticMeshData =
       GenericSemanticMeshData::buildSemanticMeshData(
           *meshData, Cr::Utility::Directory::filename(filename),
-          info.splitInstanceMesh, semanticColorMapBeingUsed_,
+          semanticColorMapBeingUsed_,
           (filename.find(".ply") == std::string::npos), semanticScene_);
 
-  // augment colors as int if un-expected colors have been found in mesh verts.
+  // augment colors_as_int array to handle if un-expected colors have been found
+  // in mesh verts.
   if (semanticScene_) {
     buildSemanticColorAsIntMap();
+  }
+  return semanticMeshData;
+}  // ResourceManager::loadAndFlattenImportedMeshData
+
+bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
+  CORRADE_INTERNAL_ASSERT(info.type == AssetType::INSTANCE_MESH);
+
+  const std::string& filename = info.filepath;
+
+  CORRADE_INTERNAL_ASSERT(resourceDict_.count(filename) == 0);
+  ConfigureImporterManagerGLExtensions();
+
+  /* Open the file. On error the importer already prints a diagnostic message,
+     so no need to do that here. The importer implicitly converts per-face
+     attributes to per-vertex, so nothing extra needs to be done. */
+  ESP_CHECK(
+      (fileImporter_->openFile(filename) && (fileImporter_->meshCount() > 0u)),
+      Cr::Utility::formatString("Error loading semantic mesh data from file {}",
+                                filename));
+
+  // flatten source meshes, preserving transforms, build semanticMeshData and
+  // construct vertex-based semantic bboxes, if requested for dataset.
+  GenericSemanticMeshData::uptr semanticMeshData =
+      flattenImportedMeshAndBuildSemantic(*fileImporter_, info);
+
+  // partition semantic mesh for culling
+  std::vector<GenericSemanticMeshData::uptr> instanceMeshes;
+  if (info.splitInstanceMesh && semanticMeshData->meshCanBePartitioned()) {
+    instanceMeshes =
+        GenericSemanticMeshData::partitionSemanticMeshData(semanticMeshData);
+  } else {
+    instanceMeshes.emplace_back(std::move(semanticMeshData));
   }
 
   ESP_CHECK(!instanceMeshes.empty(),
@@ -2326,10 +2354,13 @@ void ResourceManager::loadTextures(Importer& importer,
   nextTextureID_ = textureEnd + 1;
   loadedAssetData.meshMetaData.setTextureIndices(textureStart, textureEnd);
   if (loadedAssetData.assetInfo.isSemanticRGB) {
-    // build semanticColorMapBeingUsed_ if semanticScene_ is not nullptr
-    if (semanticScene_) {
-      buildSemanticColorMap();
-    }
+    // build semantic BBoxes and semanticColorMapBeingUsed_ if semanticScene_
+    flattenImportedMeshAndBuildSemantic(importer, loadedAssetData.assetInfo);
+
+    // // build semanticColorMapBeingUsed_ if semanticScene_ is not nullptr
+    // if (semanticScene_) {
+    //   buildSemanticColorMap();
+    // }
 
     // assuming that the only textures that exist are the RGB
     // build table of colors
