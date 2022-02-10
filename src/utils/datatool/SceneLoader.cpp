@@ -57,13 +57,13 @@ MeshData SceneLoader::load(const AssetInfo& info) {
         Cr::Utility::formatString(
             "Error loading instance mesh data from file {}", info.filepath));
 
-    std::vector<GenericSemanticMeshData::uptr> instanceMeshData =
-        GenericSemanticMeshData::buildSemanticMeshData(
-            *meshData, info.filepath, false, dummyColormap, false);
+    GenericSemanticMeshData::uptr instanceMeshData =
+        GenericSemanticMeshData::buildSemanticMeshData(*meshData, info.filepath,
+                                                       dummyColormap, false);
 
-    const auto& vbo = instanceMeshData[0]->getVertexBufferObjectCPU();
-    const auto& cbo = instanceMeshData[0]->getColorBufferObjectCPU();
-    const auto& ibo = instanceMeshData[0]->getIndexBufferObjectCPU();
+    const auto& vbo = instanceMeshData->getVertexBufferObjectCPU();
+    const auto& cbo = instanceMeshData->getColorBufferObjectCPU();
+    const auto& ibo = instanceMeshData->getIndexBufferObjectCPU();
 
     mesh.vbo.resize(vbo.size());
     Cr::Utility::copy(vbo, Cr::Containers::arrayCast<Mn::Vector3>(
