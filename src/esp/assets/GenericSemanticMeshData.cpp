@@ -141,37 +141,22 @@ GenericSemanticMeshData::buildSemanticMeshData(
 
       // map of colors as ints as key, where value is objectID and regionID from
       // ssd
-      std::unordered_map<uint32_t, std::pair<int, int>>
-          tmpColorMapToSSDidAndRegionIndex;
-      tmpColorMapToSSDidAndRegionIndex.reserve(numSSDObjs);
-      // lambda function to convert a 3-vec representation of a color into an
-      // int
-      auto colorAsInt = [](const Mn::Color3ub& color) -> uint32_t {
-        return (unsigned(color[0]) << 16) | (unsigned(color[1]) << 8) |
-               unsigned(color[2]);
-      };
+      const std::unordered_map<uint32_t, std::pair<int, int>>
+          tmpColorMapToSSDidAndRegionIndex =
+              semanticScene->getSemanticColorToIdAndRegionMap();
 
-      // build maps of color ints to semantic IDs and color ints to
-      // region ids in SSD find max regions present, so we can have an
-      // "unassigned"/"unknown" region to move all verts whose region is
+      // find max regions present, so we can have a specific region to move all
+      // verts whose region/color is "unassigned"/"unknown"
       int maxRegion = -1;
       for (int i = 0; i < numSSDObjs; ++i) {
-        const auto& ssdObj = ssdObjs[i];
-        const uint32_t colorInt = colorAsInt(ssdObj->getColor());
-        int semanticID = ssdObj->semanticID();
-        int regionIDX = ssdObj->region()->getIndex();
-        tmpColorMapToSSDidAndRegionIndex[colorInt] = {semanticID, regionIDX};
-        maxRegion = Mn::Math::max(regionIDX, maxRegion);
+        maxRegion = Mn::Math::max(ssdObjs[i]->region()->getIndex(), maxRegion);
       }
-      // largest possible known semanticID will be size of colorMapToUse at this
-      // point -1 due to idx 0 not being a valid map.  If unknown/unmapped
-      // colors are present in mesh, colorMapToUse will grow to hold them in
-      // subsequent step.
-      // 1st semantic ID for colors not found in SSD objects ==> 1 more than the
-      // current highest id in the colormap
+      // If unknown/unmapped colors are present in mesh, colorMapToUse will grow
+      // to hold them in subsequent step. 1st semantic ID for colors not found
+      // in SSD objects ==> 1 more than the current highest id in the colormap
       std::size_t nonSSDObjID = colorMapToUse.size();
 
-      // increment maxRegion to use largest value as unknown region for objects
+      // increment maxRegion to use as value for unknown region for objects
       // whose colors are not mapped in given ssd data.
       ++maxRegion;
 
@@ -199,7 +184,9 @@ GenericSemanticMeshData::buildSemanticMeshData(
       for (int vertIdx = 0; vertIdx < numVerts; ++vertIdx) {
         Mn::Color3ub meshColor = meshColors[vertIdx];
         // Convert color to an int @ vertex
-        const uint32_t meshColorInt = colorAsInt(meshColor);
+        const uint32_t meshColorInt = (unsigned(meshColor[0]) << 16) |
+                                      (unsigned(meshColor[1]) << 8) |
+                                      unsigned(meshColor[2]);
 
         std::unordered_map<uint32_t, std::pair<int, int>>::const_iterator
             ssdColorToIDAndRegionIter =
