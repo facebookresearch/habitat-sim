@@ -211,7 +211,7 @@ bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
     }
     scene.semanticColorMapBeingUsed_[idx] = objPtr->getColor();
     scene.semanticColorToIdAndRegion_.insert(
-        std::make_pair<uint32_t, std::pair<int, int>>(
+        std::pair<uint32_t, std::pair<int, int>>(
             objPtr->getColorAsInt(),
             {objPtr->semanticID(), objPtr->region()->getIndex()}));
   }
