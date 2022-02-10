@@ -2,7 +2,7 @@ version: 2.1
 gpu: &gpu
   machine:
     image: ubuntu-1604:202104-01
-  resource_class: gpu.small
+  resource_class: gpu.nvidia.medium
   environment:
     FPS_THRESHOLD: 900
 commands:
