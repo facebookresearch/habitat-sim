@@ -425,6 +425,7 @@ class Simulator(SimulatorBackend):
             agent_sensorsuite = self.__sensors[agent_id]
             for _sensor_uuid, sensor in agent_sensorsuite.items():
                 sensor.draw_observation()
+                self.debug_draw()
 
         # As backport. All Dicts are ordered in Python >= 3.7
         observations: Dict[int, ObservationDict] = OrderedDict()
@@ -436,6 +437,9 @@ class Simulator(SimulatorBackend):
         if return_single:
             return next(iter(observations.values()))
         return observations
+
+    def debug_draw(self):
+        pass
 
     @property
     def _default_agent(self) -> Agent:
