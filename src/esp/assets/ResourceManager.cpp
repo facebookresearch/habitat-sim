@@ -369,7 +369,7 @@ bool ResourceManager::loadStage(
         flags |= RenderAssetInstanceCreationInfo::Flag::IsStatic;
       }
       // if texture-based semantic mesh specify in creation
-      if (semanticInfo.isSemanticRGB) {
+      if (semanticInfo.hasSemanticTextures) {
         flags |= RenderAssetInstanceCreationInfo::Flag::IsTextureBasedSemantic;
       }
       RenderAssetInstanceCreationInfo creation(
@@ -425,7 +425,7 @@ bool ResourceManager::loadStage(
   // if texture-based semantic mesh specify in creation
   // TODO: Currently do not support single mesh texture-based semantic and
   // render stages
-  // if (renderInfo.isSemanticRGB) {
+  // if (renderInfo.hasSemanticTextures) {
   //   flags |= RenderAssetInstanceCreationInfo::Flag::IsTextureBasedSemantic;
   // }
   RenderAssetInstanceCreationInfo renderCreation(
@@ -497,7 +497,7 @@ bool ResourceManager::buildMeshGroups(
   if (collisionMeshGroups_.count(info.filepath) == 0) {
     //! Collect collision mesh group
     bool colMeshGroupSuccess = false;
-    if ((info.type == AssetType::INSTANCE_MESH) && !info.isSemanticRGB) {
+    if ((info.type == AssetType::INSTANCE_MESH) && !info.hasSemanticTextures) {
       // PLY Semantic mesh
       colMeshGroupSuccess =
           buildStageCollisionMeshGroup<GenericSemanticMeshData>(info.filepath,
@@ -505,7 +505,7 @@ bool ResourceManager::buildMeshGroups(
     } else if ((info.type == AssetType::MP3D_MESH ||
                 info.type == AssetType::UNKNOWN) ||
                ((info.type == AssetType::INSTANCE_MESH) &&
-                info.isSemanticRGB)) {
+                info.hasSemanticTextures)) {
       // GLB Mesh
       colMeshGroupSuccess = buildStageCollisionMeshGroup<GenericMeshData>(
           info.filepath, meshGroup);
@@ -598,7 +598,7 @@ ResourceManager::createStageAssetInfosFromAttributes(
     // this is only true if the assets are available (as specified in the
     // dataset config) and if the  user has requested them (via
     // SimulatorConfiguration::useSemanticTexturesIfFound)
-    semanticInfo.isSemanticRGB = stageAttributes->useSemanticTextures();
+    semanticInfo.hasSemanticTextures = stageAttributes->useSemanticTextures();
 
     Cr::Utility::formatInto(
         debugStr, debugStr.size(),
@@ -606,7 +606,7 @@ ResourceManager::createStageAssetInfosFromAttributes(
         "Txtrs : {}",
         frame.toString(), semanticInfo.filepath,
         esp::metadata::attributes::getMeshTypeName(semanticInfo.type),
-        (semanticInfo.isSemanticRGB ? "True" : "False"));
+        (semanticInfo.hasSemanticTextures ? "True" : "False"));
     resMap["semantic"] = semanticInfo;
   } else {
     Cr::Utility::formatInto(debugStr, debugStr.size(),
@@ -1322,7 +1322,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstancePTex(
 }  // ResourceManager::createRenderAssetInstancePTex
 
 bool ResourceManager::loadSemanticRenderAsset(const AssetInfo& info) {
-  if (info.isSemanticRGB) {
+  if (info.hasSemanticTextures) {
     // use loadRenderAssetGeneral for texture-based semantics
     return loadRenderAssetGeneral(info);
   } else {
@@ -1631,7 +1631,7 @@ bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
   // w/texture annotations
   CORRADE_INTERNAL_ASSERT(
       isRenderAssetGeneral(info.type) ||
-      ((info.type == AssetType::INSTANCE_MESH) && info.isSemanticRGB));
+      ((info.type == AssetType::INSTANCE_MESH) && info.hasSemanticTextures));
 
   const std::string& filename = info.filepath;
   CORRADE_INTERNAL_ASSERT(resourceDict_.count(filename) == 0);
@@ -1994,7 +1994,7 @@ void ResourceManager::loadMaterials(Importer& importer,
       << "Building " << numMaterials << " materials for asset named '"
       << assetName << "' : ";
 
-  if (loadedAssetData.assetInfo.isSemanticRGB) {
+  if (loadedAssetData.assetInfo.hasSemanticTextures) {
     int textureBaseIndex = loadedAssetData.meshMetaData.textureIndex.first;
     // TODO: Verify this is correct process for building individual materials
     // for each semantic int texture.
@@ -2353,7 +2353,7 @@ void ResourceManager::loadTextures(Importer& importer,
   int textureEnd = textureStart + importer.textureCount() - 1;
   nextTextureID_ = textureEnd + 1;
   loadedAssetData.meshMetaData.setTextureIndices(textureStart, textureEnd);
-  if (loadedAssetData.assetInfo.isSemanticRGB) {
+  if (loadedAssetData.assetInfo.hasSemanticTextures) {
     // build semantic BBoxes and semanticColorMapBeingUsed_ if semanticScene_
     flattenImportedMeshAndBuildSemantic(importer, loadedAssetData.assetInfo);
 

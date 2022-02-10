@@ -1002,7 +1002,7 @@ class ResourceManager {
    * @brief Semantic Mesh backend for loadRenderAsset.  Either use
    * loadRenderAssetIMesh if semantic mesh has vertex annotations only, or
    * loadRenderAssetGeneral if semantic mesh has texture-based annotations. This
-   * choice is governed by info.isSemanticRGB.
+   * choice is governed by info.hasSemanticTextures.
    */
   bool loadSemanticRenderAsset(const AssetInfo& info);
 
