@@ -971,8 +971,7 @@ vec3f PathFinder::Impl::getRandomNavigablePointAroundSphere(
   dtStatus status = navQuery_->findNearestPoly(
       circleCenter.data(), vec3f{radius, radius, radius}.data(), filter_.get(),
       &start_ref, pt.data());
-  if (!dtStatusSucceed(status) || std::isnan(pt[0]) ||
-      (pt - circleCenter).norm() > radius) {
+  if (!dtStatusSucceed(status) || std::isnan(pt[0])) {
     ESP_ERROR()
         << "Failed to getRandomNavigablePoint. No polygon found within radius";
     return vec3f::Constant(Mn::Constants::nan());
