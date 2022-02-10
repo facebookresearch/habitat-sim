@@ -32,6 +32,31 @@ def get_shortest_path(sim, samples):
 
 
 @pytest.mark.parametrize("test_scene", test_scenes)
+def test_sample_near(test_scene):
+    if not osp.exists(test_scene):
+        pytest.skip(f"{test_scene} not found")
+
+    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings["scene"] = test_scene
+    hab_cfg = examples.settings.make_cfg(cfg_settings)
+
+    with habitat_sim.Simulator(hab_cfg) as sim:
+        distance = 5.0
+        num_samples = 100
+        for _ in range(num_samples):
+            point = sim.pathfinder.get_random_navigable_point()
+            new_point = sim.pathfinder.get_random_navigable_point_near(
+                point, distance, 10
+            )
+            assert sim.pathfinder.is_navigable(
+                new_point
+            ), f"{new_point} is not navigable. Derived from {point}"
+            assert (
+                np.linalg.norm(point - new_point) <= distance
+            ), f"Point is not near enough: {point}, {new_point}"
+
+
+@pytest.mark.parametrize("test_scene", test_scenes)
 def test_recompute_navmesh(test_scene):
     if not osp.exists(test_scene):
         pytest.skip(f"{test_scene} not found")
@@ -49,21 +74,10 @@ def test_recompute_navmesh(test_scene):
         # generate random point pairs
         num_samples = 100
         samples = []
-        distance = 5.0
         for _ in range(num_samples):
-            point = sim.pathfinder.get_random_navigable_point()
-            new_point = sim.pathfinder.get_random_navigable_point_near(
-                point, distance, 10
-            )
-            assert sim.pathfinder.is_navigable(
-                new_point
-            ), f"{new_point} is not navigable. Derived from {point}"
-            assert (
-                np.linalg.norm(point - new_point) <= distance
-            ), f"Point is not near enough: {point}, {new_point}"
             samples.append(
                 (
-                    new_point,
+                    sim.pathfinder.get_random_navigable_point(),
                     sim.pathfinder.get_random_navigable_point(),
                 )
             )
