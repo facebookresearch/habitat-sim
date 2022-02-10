@@ -769,11 +769,13 @@ void AttributesConfigsTest::testStageAttrVals(
   CORRADE_COMPARE(stageAttr->getCollisionAssetHandle(), assetPath);
   CORRADE_VERIFY(!stageAttr->getIsCollidable());
   // stage-specific attributes
+  CORRADE_COMPARE(stageAttr->getOrigin(), Magnum::Vector3(1, 2, 3));
   CORRADE_COMPARE(stageAttr->getGravity(), Magnum::Vector3(9, 8, 7));
+  CORRADE_VERIFY(stageAttr->getHasSemanticTextures());
+
   // make sure that is not default value "flat"
   CORRADE_COMPARE(static_cast<int>(stageAttr->getShaderType()),
                   static_cast<int>(Attrs::ObjectInstanceShaderType::Material));
-  CORRADE_COMPARE(stageAttr->getOrigin(), Magnum::Vector3(1, 2, 3));
   CORRADE_COMPARE(stageAttr->getSemanticAssetHandle(), assetPath);
   CORRADE_COMPARE(stageAttr->getNavmeshAssetHandle(), assetPath);
   // test stage attributes-level user config vals
@@ -798,6 +800,7 @@ void AttributesConfigsTest::testStageJSONLoad() {
         "units_to_meters": 1.1,
         "up":[2.1, 0, 0],
         "front":[0, 2.1, 0],
+        "has_semantic_textures":true,
         "render_asset": "testJSONRenderAsset.glb",
         "collision_asset": "testJSONCollisionAsset.glb",
         "is_collidable": false,

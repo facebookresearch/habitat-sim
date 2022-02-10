@@ -73,10 +73,10 @@ class GenericSemanticMeshData : public BaseMesh {
 
   Magnum::GL::Mesh* getMagnumGLMesh() override;
 
-  const std::vector<vec3f>& getVertexBufferObjectCPU() const {
+  const std::vector<Mn::Vector3>& getVertexBufferObjectCPU() const {
     return cpu_vbo_;
   }
-  const std::vector<vec3uc>& getColorBufferObjectCPU() const {
+  const std::vector<Mn::Color3ub>& getColorBufferObjectCPU() const {
     return cpu_cbo_;
   }
 
@@ -96,8 +96,8 @@ class GenericSemanticMeshData : public BaseMesh {
         : data_{data}, partitionId{partitionId} {}
 
     void addVertex(uint32_t vertexId,
-                   const vec3f& vertex,
-                   const vec3uc& color,
+                   const Mn::Vector3& vertex,
+                   const Mn::Color3ub& color,
                    int objectId);
 
    private:
@@ -110,8 +110,8 @@ class GenericSemanticMeshData : public BaseMesh {
 
   // ==== rendering ====
   std::unique_ptr<RenderingBuffer> renderingBuffer_ = nullptr;
-  std::vector<vec3f> cpu_vbo_;
-  std::vector<vec3uc> cpu_cbo_;
+  std::vector<Mn::Vector3> cpu_vbo_;
+  std::vector<Mn::Color3ub> cpu_cbo_;
   std::vector<uint32_t> cpu_ibo_;
   std::vector<uint16_t> objectIds_;
 

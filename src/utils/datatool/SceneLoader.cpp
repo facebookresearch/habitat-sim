@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 
+#include <Corrade/Containers/ArrayViewStl.h>
+#include <Corrade/Utility/Algorithms.h>
 #include <Corrade/Utility/Directory.h>
 #include <Corrade/Utility/FormatStl.h>
 #include "esp/assets/GenericSemanticMeshData.h"
@@ -18,6 +20,8 @@
 #include <assimp/scene.h>
 #include <assimp/Importer.hpp>
 
+#include <Magnum/EigenIntegration/GeometryIntegration.h>
+#include <Magnum/EigenIntegration/Integration.h>
 #include <Magnum/Trade/AbstractImporter.h>
 
 namespace Cr = Corrade;
@@ -60,10 +64,14 @@ MeshData SceneLoader::load(const AssetInfo& info) {
     const auto& vbo = instanceMeshData[0]->getVertexBufferObjectCPU();
     const auto& cbo = instanceMeshData[0]->getColorBufferObjectCPU();
     const auto& ibo = instanceMeshData[0]->getIndexBufferObjectCPU();
-    mesh.vbo = vbo;
+
+    mesh.vbo.resize(vbo.size());
+    Cr::Utility::copy(vbo, Cr::Containers::arrayCast<Mn::Vector3>(
+                               Cr::Containers::arrayView(mesh.vbo)));
     mesh.ibo = ibo;
     for (const auto& c : cbo) {
-      mesh.cbo.emplace_back(c.cast<float>() / 255.0f);
+      auto clr = Mn::EigenIntegration::cast<esp::vec3uc>(c);
+      mesh.cbo.emplace_back(clr.cast<float>() / 255.0f);
     }
   } else {
     const aiScene* scene;

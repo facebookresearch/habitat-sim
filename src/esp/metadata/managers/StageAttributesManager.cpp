@@ -395,6 +395,14 @@ void StageAttributesManager::setValsFromJSONDoc(
         stageAttributes->setSemanticOrientFront(front);
       });
 
+  // load whether the semantic asset for this stage has semantically annotated
+  // textures
+  io::jsonIntoSetter<bool>(
+      jsonConfig, "has_semantic_textures",
+      [stageAttributes](bool has_semantic_textures) {
+        stageAttributes->setHasSemanticTextures(has_semantic_textures);
+      });
+
   // populate specified semantic file name if specified in json - defaults
   // are overridden only if specified in json.
 

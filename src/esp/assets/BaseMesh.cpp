@@ -3,9 +3,14 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "BaseMesh.h"
+#include <Corrade/Containers/ArrayView.h>
+#include <Corrade/Containers/ArrayViewStl.h>
 #include <Corrade/Utility/FormatStl.h>
+#include <Magnum/DebugTools/ColorMap.h>
+#include <Magnum/EigenIntegration/GeometryIntegration.h>
 #include <Magnum/Math/PackingBatch.h>
 #include <Magnum/MeshTools/Compile.h>
+#include <Magnum/MeshTools/RemoveDuplicates.h>
 #include "esp/scene/SemanticScene.h"
 
 namespace Cr = Corrade;
@@ -42,7 +47,38 @@ void BaseMesh::convertMeshColors(
         Cr::Containers::arrayCast<2, Mn::UnsignedByte>(
             stridedArrayView(meshColors)));
   }
-}  // BaseMesh::buildMeshColors
+}  // BaseMesh::convertMeshColors
+
+void BaseMesh::buildColorMapToUse(
+    Cr::Containers::Array<Magnum::UnsignedInt>& vertIDs,
+    const Cr::Containers::Array<Mn::Color3ub>& vertColors,
+    bool useVertexColors,
+    std::vector<Mn::Vector3ub>& colorMapToUse) const {
+  if (useVertexColors) {
+    // removeDuplicates returns array of unique idxs for ids, to
+    // be used on meshColors to provide mappings for colorMapToUse
+    std::pair<Cr::Containers::Array<Mn::UnsignedInt>, std::size_t> out =
+        Mn::MeshTools::removeDuplicates(
+            Cr::Containers::arrayCast<2, char>(stridedArrayView(vertIDs)));
+
+    // out holds index array of object IDs.  query
+
+    // color map exists so build colorMapToUse by going through every
+    // add 1 to account for no assigned 0 value
+    colorMapToUse.resize(out.second + 1);
+    // set semanticID 0 == black
+    colorMapToUse[0] = Mn::Color3ub{};
+    for (const auto& vertIdx : out.first) {
+      // find objectID @ vert idx and color @ vert idx
+      int semanticID = vertIDs[vertIdx];
+      colorMapToUse[semanticID] = vertColors[vertIdx];
+    }
+  } else {
+    colorMapToUse.assign(Mn::DebugTools::ColorMap::turbo().begin(),
+                         Mn::DebugTools::ColorMap::turbo().end());
+  }
+
+}  // BaseMesh::buildColorMapToUse
 
 namespace {
 // TODO remove when/if Magnum ever supports this function for Color3ub
@@ -60,14 +96,13 @@ std::string BaseMesh::getColorAsString(Magnum::Color3ub color) const {
 }
 
 void BaseMesh::buildSemanticOBBs(
-    const std::vector<vec3f>& vertices,
+    const std::vector<Mn::Vector3>& vertices,
     const std::vector<uint16_t>& vertSemanticIDs,
     const std::vector<std::shared_ptr<esp::scene::SemanticObject>>& ssdObjs,
     const std::string& msgPrefix) const {
   // build per-SSD object vector of known semantic IDs
   std::size_t numSSDObjs = ssdObjs.size();
-  // no semantic ID 0 so add 1 to size
-  std::vector<int> semanticIDToSSOBJidx(numSSDObjs + 1);
+  std::vector<int> semanticIDToSSOBJidx(numSSDObjs, -1);
   for (int i = 0; i < numSSDObjs; ++i) {
     const auto& ssdObj = *ssdObjs[i];
     int semanticID = ssdObj.semanticID();
@@ -79,10 +114,10 @@ void BaseMesh::buildSemanticOBBs(
   }
 
   // aggegates of per-semantic ID mins and maxes
-  std::vector<esp::vec3f> vertMax(
+  std::vector<Mn::Vector3> vertMax(
       semanticIDToSSOBJidx.size(),
       {-Mn::Constants::inf(), -Mn::Constants::inf(), -Mn::Constants::inf()});
-  std::vector<esp::vec3f> vertMin(
+  std::vector<Mn::Vector3> vertMin(
       semanticIDToSSOBJidx.size(),
       {Mn::Constants::inf(), Mn::Constants::inf(), Mn::Constants::inf()});
   std::vector<int> vertCounts(semanticIDToSSOBJidx.size());
@@ -95,24 +130,28 @@ void BaseMesh::buildSemanticOBBs(
     // semantic ID on vertex - valid values are 1->semanticIDToSSOBJidx.size().
     // Invalid/unknown semantic ids are > semanticIDToSSOBJidx.size()
     const auto semanticID = vertSemanticIDs[vertIdx];
-    if ((semanticID > 0) && (semanticID < semanticIDToSSOBJidx.size())) {
+    if ((semanticID >= 0) && (semanticID < semanticIDToSSOBJidx.size())) {
       const auto vert = vertices[vertIdx];
       // FOR VERT-BASED OBB CALC
       // only support bbs for known colors that map to semantic objects
-      vertMax[semanticID] = vertMax[semanticID].cwiseMax(vert);
-      vertMin[semanticID] = vertMin[semanticID].cwiseMin(vert);
+      vertMax[semanticID] = Mn::Math::max(vertMax[semanticID], vert);
+      vertMin[semanticID] = Mn::Math::min(vertMin[semanticID], vert);
       vertCounts[semanticID] += 1;
     }
   }
 
   // with mins/maxs per ID, map to objs
   // give each ssdObj the values to build its OBB
-  for (int semanticID = 1; semanticID < semanticIDToSSOBJidx.size();
+  for (int semanticID = 0; semanticID < semanticIDToSSOBJidx.size();
        ++semanticID) {
+    int objIdx = semanticIDToSSOBJidx[semanticID];
+    if (objIdx == -1) {
+      continue;
+    }
     // get object with given semantic ID
-    auto& ssdObj = *ssdObjs[semanticIDToSSOBJidx[semanticID]];
-    esp::vec3f center{};
-    esp::vec3f dims{};
+    auto& ssdObj = *ssdObjs[objIdx];
+    Mn::Vector3 center{};
+    Mn::Vector3 dims{};
 
     const std::string debugStr = Cr::Utility::formatString(
         "{} Semantic ID : {} : color : {} tag : {} present in {} "
@@ -130,7 +169,8 @@ void BaseMesh::buildSemanticOBBs(
           "{}BB Center [{},{},{}] Dims [{},{},{}]", debugStr, center.x(),
           center.y(), center.z(), dims.x(), dims.y(), dims.z());
     }
-    ssdObj.setObb(center, dims);
+    ssdObj.setObb(Mn::EigenIntegration::cast<esp::vec3f>(center),
+                  Mn::EigenIntegration::cast<esp::vec3f>(dims));
   }
 }  // BaseMesh::buildSemanticOBBs
 

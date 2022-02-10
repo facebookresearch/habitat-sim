@@ -108,13 +108,14 @@ void ReplicaSceneTest::testSemanticSceneOBB() {
     for (uint64_t fid = 0; fid < ibo.size(); fid += 6) {
       CORRADE_ITERATION(fid);
       if (objectIds[ibo[fid]] == id) {
-        esp::vec3f quadCenter = esp::vec3f::Zero();
+        Mn::Vector3 quadCenter{};
         // Mesh was converted from quads to tris
         for (int i = 0; i < 6; ++i) {
           quadCenter += vbo[ibo[fid + i]] / 6;
         }
 
-        CORRADE_VERIFY(obj->obb().contains(quadCenter, 5e-2));
+        CORRADE_VERIFY(
+            obj->obb().contains(esp::vec3f{quadCenter.data()}, 5e-2));
       }
     }
   }

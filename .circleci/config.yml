@@ -2,7 +2,7 @@ version: 2.1
 gpu: &gpu
   machine:
     image: ubuntu-1604:202104-01
-  resource_class: gpu.small
+  resource_class: gpu.nvidia.medium
   environment:
     FPS_THRESHOLD: 900
 commands:
@@ -389,7 +389,7 @@ jobs:
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
               pip install -r requirements.txt --progress-bar off
               pip install imageio imageio-ffmpeg
-              conda install -y -c conda-forge doxygen==1.8.16
+              conda install -y -c conda-forge doxygen
               conda install -y  jinja2 pygments docutils
               while [ ! -f ~/cuda_installed ]; do sleep 2; done # wait for CUDA
               sudo apt install --allow-change-held-packages \
@@ -443,7 +443,7 @@ jobs:
               python setup.py develop --all
 
               cd docs
-              conda install -y -c conda-forge doxygen==1.8.16
+              conda install -y -c conda-forge doxygen
               conda install -y  jinja2 pygments docutils
               ./build-public.sh
       - save_cache:

@@ -108,8 +108,9 @@ void HM3DSceneTest::testHM3DSemanticScene() {
   CORRADE_VERIFY(semanticScene);
   auto semanticObjects = semanticScene->objects();
   // verify there are at least as many colors defined as there are
-  // semanticObjects, plus one more for colorList's idx 0.
-  CORRADE_VERIFY(semanticObjects.size() < colorList.size());
+  // semanticObjects. There may be more if there are unmapped colors in the
+  // source scene
+  CORRADE_VERIFY(semanticObjects.size() <= colorList.size());
   // verify all colors in colormap correspond to expected colors in semantic
   // scene descriptor objects
   for (int i = 0; i < semanticObjects.size(); ++i) {
