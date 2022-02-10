@@ -45,9 +45,7 @@ def test_sample_near(test_scene):
         num_samples = 100
         for _ in range(num_samples):
             point = sim.pathfinder.get_random_navigable_point()
-            new_point = sim.pathfinder.get_random_navigable_point_near(
-                point, distance, 10
-            )
+            new_point = sim.pathfinder.get_random_navigable_point_near(point, distance)
             assert sim.pathfinder.is_navigable(
                 new_point
             ), f"{new_point} is not navigable. Derived from {point}"
