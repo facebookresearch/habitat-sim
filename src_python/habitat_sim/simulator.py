@@ -89,9 +89,10 @@ class Simulator(SimulatorBackend):
                 "Config has not agents specified.  Must specify at least 1 agent"
             )
 
-        config.sim_cfg.create_renderer = any(
-            map(lambda cfg: len(cfg.sensor_specifications) > 0, config.agents)
-        )
+        config.sim_cfg.create_renderer = True
+        # any(
+        #     map(lambda cfg: len(cfg.sensor_specifications) > 0, config.agents)
+        # )
         config.sim_cfg.load_semantic_mesh = any(
             map(
                 lambda cfg: any(
