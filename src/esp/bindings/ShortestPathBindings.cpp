@@ -82,7 +82,7 @@ void initShortestPathBindings(py::module& m) {
            "max_tries"_a = 10)
       .def("get_random_navigable_point_near",
            &PathFinder::getRandomNavigablePointAroundSphere, "circle_center"_a,
-           "radius"_a, "max_tries"_a = 10)
+           "radius"_a, "max_tries"_a = 100)
       .def("find_path", py::overload_cast<ShortestPath&>(&PathFinder::findPath),
            "path"_a)
       .def("find_path",
