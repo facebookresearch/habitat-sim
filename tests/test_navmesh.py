@@ -1,6 +1,7 @@
 import math
 from os import path as osp
 
+import numpy as np
 import pytest
 
 import examples.settings
@@ -28,6 +29,31 @@ def get_shortest_path(sim, samples):
         path_results.append((found_path, path.geodesic_distance, path.points))
 
     return path_results
+
+
+@pytest.mark.parametrize("test_scene", test_scenes)
+def test_sample_near(test_scene):
+    if not osp.exists(test_scene):
+        pytest.skip(f"{test_scene} not found")
+
+    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings["scene"] = test_scene
+    hab_cfg = examples.settings.make_cfg(cfg_settings)
+
+    with habitat_sim.Simulator(hab_cfg) as sim:
+        distance = 5.0
+        num_samples = 100
+        for _ in range(num_samples):
+            point = sim.pathfinder.get_random_navigable_point()
+            new_point = sim.pathfinder.get_random_navigable_point_near(
+                point, distance, max_tries=100
+            )
+            assert sim.pathfinder.is_navigable(
+                new_point
+            ), f"{new_point} is not navigable. Derived from {point}"
+            assert (
+                np.linalg.norm(point - new_point) <= distance
+            ), f"Point is not near enough: {point}, {new_point}"
 
 
 @pytest.mark.parametrize("test_scene", test_scenes)

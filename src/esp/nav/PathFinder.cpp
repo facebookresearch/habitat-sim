@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "PathFinder.h"
+#include <cstddef>
 #include <numeric>
 #include <stack>
 #include <unordered_map>
@@ -184,8 +185,8 @@ class IslandSystem {
       navMesh->getTileAndPolyByRefUnsafe(ref, &tile, &poly);
 
       for (int iVert = 0; iVert < poly->vertCount; ++iVert) {
-        islandVerts.emplace_back(
-            Eigen::Map<vec3f>(&tile->verts[poly->verts[iVert] * 3]));
+        islandVerts.emplace_back(Eigen::Map<vec3f>(
+            &tile->verts[static_cast<size_t>(poly->verts[iVert]) * 3]));
       }
 
       // Iterate over all neighbours
@@ -227,6 +228,9 @@ struct PathFinder::Impl {
   bool build(const NavMeshSettings& bs, const esp::assets::MeshData& mesh);
 
   vec3f getRandomNavigablePoint(int maxTries);
+  vec3f getRandomNavigablePointAroundSphere(const vec3f& circleCenter,
+                                            float radius,
+                                            int maxTries);
 
   bool findPath(ShortestPath& path);
   bool findPath(MultiGoalShortestPath& path);
@@ -727,15 +731,18 @@ std::vector<Triangle> getPolygonTriangles(const dtPoly* poly,
   std::vector<Triangle> triangles(pd->triCount);
 
   for (int j = 0; j < pd->triCount; ++j) {
-    const unsigned char* t = &tile->detailTris[(pd->triBase + j) * 4];
+    const unsigned char* t =
+        &tile->detailTris[static_cast<size_t>((pd->triBase + j)) * 4];
     const float* v[3];
     for (int k = 0; k < 3; ++k) {
       if (t[k] < poly->vertCount)
-        triangles[j].v[k] =
-            Eigen::Map<const vec3f>(&tile->verts[poly->verts[t[k]] * 3]);
+        triangles[j].v[k] = Eigen::Map<const vec3f>(
+            &tile->verts[static_cast<size_t>(poly->verts[t[k]]) * 3]);
       else
         triangles[j].v[k] = Eigen::Map<const vec3f>(
-            &tile->detailVerts[(pd->vertBase + (t[k] - poly->vertCount)) * 3]);
+            &tile->detailVerts[static_cast<size_t>(
+                                   (pd->vertBase + (t[k] - poly->vertCount))) *
+                               3]);
     }
   }
 
@@ -946,9 +953,45 @@ vec3f PathFinder::Impl::getRandomNavigablePoint(const int maxTries /*= 10*/) {
     ESP_ERROR() << "Failed to getRandomNavigablePoint.  Try increasing max "
                    "tries if the navmesh is fine but just hard to sample from";
     return vec3f::Constant(Mn::Constants::nan());
-  } else {
-    return pt;
   }
+  return pt;
+}
+
+vec3f PathFinder::Impl::getRandomNavigablePointAroundSphere(
+    const vec3f& circleCenter,
+    const float radius,
+    const int maxTries) {
+  if (getNavigableArea() <= 0.0)
+    throw std::runtime_error(
+        "NavMesh has no navigable area, this indicates an issue with the "
+        "NavMesh");
+
+  vec3f pt = vec3f::Constant(Mn::Constants::nan());
+  dtPolyRef start_ref = 0;  // ID to start our search
+  dtStatus status = navQuery_->findNearestPoly(
+      circleCenter.data(), vec3f{radius, radius, radius}.data(), filter_.get(),
+      &start_ref, pt.data());
+  if (!dtStatusSucceed(status) || std::isnan(pt[0])) {
+    ESP_ERROR()
+        << "Failed to getRandomNavigablePoint. No polygon found within radius";
+    return vec3f::Constant(Mn::Constants::nan());
+  }
+  int i = 0;
+  for (; i < maxTries; ++i) {
+    dtPolyRef rand_ref = 0;
+    status = navQuery_->findRandomPointAroundCircle(
+        start_ref, circleCenter.data(), radius, filter_.get(), frand, &rand_ref,
+        pt.data());
+    if (dtStatusSucceed(status) && (pt - circleCenter).norm() <= radius) {
+      break;
+    }
+  }
+  if (i == maxTries) {
+    ESP_ERROR() << "Failed to getRandomNavigablePoint.  Try increasing max "
+                   "tries if the navmesh is fine but just hard to sample from";
+    return vec3f::Constant(Mn::Constants::nan());
+  }
+  return pt;
 }
 
 namespace {
@@ -1174,7 +1217,8 @@ T PathFinder::Impl::tryStep(const T& start, const T& end, bool allowSliding) {
     // Calculate the center of the polygon we want the points to be in
     vec3f polyCenter = vec3f::Zero();
     for (int iVert = 0; iVert < poly->vertCount; ++iVert) {
-      polyCenter += Eigen::Map<vec3f>(&tile->verts[poly->verts[iVert] * 3]);
+      polyCenter += Eigen::Map<vec3f>(
+          &tile->verts[static_cast<size_t>(poly->verts[iVert]) * 3]);
     }
     polyCenter /= poly->vertCount;
 
@@ -1196,9 +1240,8 @@ T PathFinder::Impl::snapPoint(const T& pt) {
 
   if (dtStatusSucceed(status)) {
     return T{projectedPt};
-  } else {
-    return {Mn::Constants::nan(), Mn::Constants::nan(), Mn::Constants::nan()};
   }
+  return {Mn::Constants::nan(), Mn::Constants::nan(), Mn::Constants::nan()};
 }
 
 float PathFinder::Impl::islandRadius(const vec3f& pt) const {
@@ -1208,9 +1251,8 @@ float PathFinder::Impl::islandRadius(const vec3f& pt) const {
       projectToPoly(pt, navQuery_.get(), filter_.get());
   if (status != DT_SUCCESS || ptRef == 0) {
     return 0.0;
-  } else {
-    return islandSystem_->islandRadius(ptRef);
   }
+  return islandSystem_->islandRadius(ptRef);
 }
 
 float PathFinder::Impl::distanceToClosestObstacle(
@@ -1230,14 +1272,13 @@ HitRecord PathFinder::Impl::closestObstacleSurfacePoint(
   if (status != DT_SUCCESS || ptRef == 0) {
     return {vec3f(0, 0, 0), vec3f(0, 0, 0),
             std::numeric_limits<float>::infinity()};
-  } else {
-    vec3f hitPos, hitNormal;
-    float hitDist = NAN;
-    navQuery_->findDistanceToWall(ptRef, polyPt.data(), maxSearchRadius,
-                                  filter_.get(), &hitDist, hitPos.data(),
-                                  hitNormal.data());
-    return {hitPos, hitNormal, hitDist};
   }
+  vec3f hitPos, hitNormal;
+  float hitDist = Mn::Constants::nan();
+  navQuery_->findDistanceToWall(ptRef, polyPt.data(), maxSearchRadius,
+                                filter_.get(), &hitDist, hitPos.data(),
+                                hitNormal.data());
+  return {hitPos, hitNormal, hitDist};
 }
 
 bool PathFinder::Impl::isNavigable(const vec3f& pt,
@@ -1347,6 +1388,13 @@ bool PathFinder::build(const NavMeshSettings& bs,
 
 vec3f PathFinder::getRandomNavigablePoint(const int maxTries /*= 10*/) {
   return pimpl_->getRandomNavigablePoint(maxTries);
+}
+
+vec3f PathFinder::getRandomNavigablePointAroundSphere(const vec3f& circleCenter,
+                                                      const float radius,
+                                                      const int maxTries) {
+  return pimpl_->getRandomNavigablePointAroundSphere(circleCenter, radius,
+                                                     maxTries);
 }
 
 bool PathFinder::findPath(ShortestPath& path) {
