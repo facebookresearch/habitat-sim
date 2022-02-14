@@ -82,7 +82,7 @@ class GenericSemanticMeshData : public BaseMesh {
 
   static std::vector<std::unique_ptr<GenericSemanticMeshData>>
   partitionSemanticMeshData(
-      std::unique_ptr<GenericSemanticMeshData>& semanticMeshData);
+      const std::unique_ptr<GenericSemanticMeshData>& semanticMeshData);
 
   // ==== rendering ====
   void uploadBuffersToGPU(bool forceReload = false) override;

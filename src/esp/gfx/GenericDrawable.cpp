@@ -156,8 +156,7 @@ void GenericDrawable::draw(const Mn::Matrix4& transformationMatrix,
   if (flags_ & Mn::Shaders::PhongGL::Flag::NormalTexture) {
     shader_->bindNormalTexture(*(materialData_->normalTexture));
   }
-  if ((flags_ & Mn::Shaders::PhongGL::Flag::ObjectIdTexture) ==
-      Mn::Shaders::PhongGL::Flag::ObjectIdTexture) {
+  if (flags_ >= Mn::Shaders::PhongGL::Flag::ObjectIdTexture) {
     shader_->bindObjectIdTexture(*(materialData_->objectIdTexture));
   }
 

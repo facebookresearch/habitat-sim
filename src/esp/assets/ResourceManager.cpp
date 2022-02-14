@@ -2333,17 +2333,13 @@ Mn::Image2D ResourceManager::convertRGBToSemanticId(
     Cr::Containers::StridedArrayView1D<const Mn::Color3ub> inputRow = input[y];
     Cr::Containers::StridedArrayView1D<Mn::UnsignedShort> outputRow = output[y];
     for (std::size_t x = 0; x != size.x(); ++x) {
-      /* Fugly. Sorry. Needs better API on Magnum side. */
       const Mn::Color3ub color = inputRow[x];
-
+      /* Fugly. Sorry. Needs better API on Magnum side. */
       const Mn::UnsignedInt colorInt =
           color.r() << 16 | color.g() << 8 | color.b();
       outputRow[x] = clrToSemanticId[colorInt];
     }
   }
-  // upload the `integer` image to an integer Texture2D and then use as
-  // a semantic texture in the shader
-
   return resImage;
 }  // ResourceManager::convertRGBToSemanticId
 void ResourceManager::loadTextures(Importer& importer,
@@ -2356,15 +2352,12 @@ void ResourceManager::loadTextures(Importer& importer,
     // build semantic BBoxes and semanticColorMapBeingUsed_ if semanticScene_
     flattenImportedMeshAndBuildSemantic(importer, loadedAssetData.assetInfo);
 
-    // // build semanticColorMapBeingUsed_ if semanticScene_ is not nullptr
-    // if (semanticScene_) {
-    //   buildSemanticColorMap();
-    // }
-
-    // assuming that the only textures that exist are the RGB
-    // build table of colors
-    // Object IDs for ALL POSSIBLE COLORS IN EXISTENCE. Unknown entries have
-    // semantic id 0xffff .
+    // We are assuming that the only textures that exist are the semantic
+    // textures. We build table of all possible colors holding ushorts
+    // representing semantic IDs for those colors. We then assign known semantic
+    // IDs to table entries corresponding the ID's specified color. Unknown
+    // entries have semantic id 0xffff.
+    //
     Cr::Containers::Array<Mn::UnsignedShort> clrToSemanticId{
         Mn::DirectInit, 256 * 256 * 256, Mn::UnsignedShort(0xffff)};
 

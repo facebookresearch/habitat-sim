@@ -771,10 +771,10 @@ Viewer::Viewer(const Arguments& arguments)
       .setHelp("object-dir",
                "Provide a directory to search for object config files "
                "(relative to habitat-sim directory).")
-      .addBooleanOption("semanticTextures")
-      .setHelp("semanticTextures",
-               "If specified, use texture-based semantic annotations if the "
-               "scene/dataset support them.")
+      .addBooleanOption("no-semantic-textures")
+      .setHelp("no-semantic-textures",
+               "If specified, force vertex semantic annotations even if the "
+               "scene/dataset support texture-based.")
       .addBooleanOption("disable-navmesh")
       .setHelp("disable-navmesh",
                "Disable the navmesh, disabling agent navigation constraints.")
@@ -875,7 +875,7 @@ Viewer::Viewer(const Arguments& arguments)
   simConfig_.frustumCulling = true;
   simConfig_.requiresTextures = true;
   simConfig_.enableGfxReplaySave = !gfxReplayRecordFilepath_.empty();
-  simConfig_.useSemanticTexturesIfFound = args.isSet("semanticTextures");
+  simConfig_.useSemanticTexturesIfFound = !args.isSet("no-semantic-textures");
   if (args.isSet("stage-requires-lighting")) {
     ESP_DEBUG() << "Stage using DEFAULT_LIGHTING_KEY";
     simConfig_.sceneLightSetupKey = esp::DEFAULT_LIGHTING_KEY;

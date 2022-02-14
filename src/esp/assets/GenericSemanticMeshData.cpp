@@ -300,7 +300,7 @@ GenericSemanticMeshData::buildSemanticMeshData(
 
 std::vector<std::unique_ptr<GenericSemanticMeshData>>
 GenericSemanticMeshData::partitionSemanticMeshData(
-    std::unique_ptr<GenericSemanticMeshData>& semanticMeshData) {
+    const std::unique_ptr<GenericSemanticMeshData>& semanticMeshData) {
   // build output vector of meshdata unique pointers
   std::vector<GenericSemanticMeshData::uptr> splitMeshData;
   std::unordered_map<uint16_t, PerPartitionIdMeshBuilder>
