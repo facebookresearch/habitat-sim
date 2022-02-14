@@ -291,8 +291,7 @@ class DemoRunner:
             total_frames += 1
 
         end_time = time.time()
-        perf = {}
-        perf["total_time"] = end_time - start_time
+        perf = {"total_time": end_time - start_time}
         perf["frame_time"] = perf["total_time"] / total_frames
         perf["fps"] = 1.0 / perf["frame_time"]
         perf["time_per_step"] = time_per_step
