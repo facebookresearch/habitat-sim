@@ -18,7 +18,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.13.6
+#       jupytext_version: 1.13.7
 #   kernelspec:
 #     display_name: Python 3
 #     name: python3
@@ -116,12 +116,13 @@ if "sim" not in globals():
 # first entry being the value and the second being whether the property is
 # editable and the third being the type.
 def build_dict_of_Default_attrs(template):
-    res_dict = {}
-    res_dict["handle"] = (template.handle, True, "string")
-    # Read-only values
-    res_dict["template_id"] = (template.template_id, False, "int")
-    res_dict["template_class"] = (template.template_class, False, "string")
-    res_dict["file_directory"] = (template.file_directory, False, "string")
+    res_dict = {
+        "handle": (template.handle, True, "string"),
+        # Read-only values
+        "template_id": (template.template_id, False, "int"),
+        "template_class": (template.template_class, False, "string"),
+        "file_directory": (template.file_directory, False, "string"),
+    }
     return res_dict
 
 
@@ -1422,13 +1423,11 @@ def register_prim_template_if_valid(
 
 # Build a dictionary of templates to use to construct objects
 # Configure dictionaries to hold handles of attributes to use to build objects
-solid_handles_to_use = {}
 # Solid and Wireframe cube primitives lack customizable attributes, as does wireframe icosphere
-solid_handles_to_use["cubeSolid"] = prim_attr_mgr.get_template_handles("cubeSolid")[0]
-wireframe_handles_to_use = {}
-wireframe_handles_to_use["cubeWireframe"] = prim_attr_mgr.get_template_handles(
-    "cubeWireframe"
-)[0]
+solid_handles_to_use = {"cubeSolid": prim_attr_mgr.get_template_handles("cubeSolid")[0]}
+wireframe_handles_to_use = {
+    "cubeWireframe": prim_attr_mgr.get_template_handles("cubeWireframe")[0]
+}
 wireframe_handles_to_use["icosphereWireframe"] = prim_attr_mgr.get_template_handles(
     "icosphereWireframe"
 )[0]
