@@ -86,7 +86,7 @@ struct SimulatorConfiguration {
    * @brief use texture-based semantics if the specified asset/dataset support
    * them.
    */
-  bool useSemanticTexturesIfFound = false;
+  bool useSemanticTexturesIfFound = true;
 
   ESP_SMART_POINTERS(SimulatorConfiguration)
 };
