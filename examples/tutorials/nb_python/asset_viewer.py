@@ -266,13 +266,14 @@ def make_simulator_from_settings(sim_settings):
 # first entry being the value and the second being whether the property is
 # editable and the third being the type.
 def build_dict_of_Default_attrs(template):
-    res_dict = {}
-    res_dict["handle"] = (template.handle, True, "string")
-    # Read-only values
-    res_dict["template_id"] = (template.template_id, False, "int")
-    res_dict["template_class"] = (template.template_class, False, "string")
-    res_dict["file_directory"] = (template.file_directory, False, "string")
-    res_dict["num_user_configs"] = (template.num_user_configs, False, "int")
+    res_dict = {
+        "handle": (template.handle, True, "string"),
+        # Read-only values
+        "template_id": (template.template_id, False, "int"),
+        "template_class": (template.template_class, False, "string"),
+        "file_directory": (template.file_directory, False, "string"),
+        "num_user_configs": (template.num_user_configs, False, "int"),
+    }
     return res_dict
 
 
