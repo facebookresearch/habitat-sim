@@ -2356,13 +2356,14 @@ void ResourceManager::loadTextures(Importer& importer,
     // textures. We build table of all possible colors holding ushorts
     // representing semantic IDs for those colors. We then assign known semantic
     // IDs to table entries corresponding the ID's specified color. Unknown
-    // entries have semantic id 0xffff.
+    // entries have semantic id 0x0 (corresponding to Unknown object in semantic
+    // scene).
     //
     Cr::Containers::Array<Mn::UnsignedShort> clrToSemanticId{
-        Mn::DirectInit, 256 * 256 * 256, Mn::UnsignedShort(0xffff)};
+        Mn::DirectInit, 256 * 256 * 256, Mn::UnsignedShort(0x0)};
 
     for (std::size_t i = 0; i < semanticColorAsInt_.size(); ++i) {
-      // skip '0x0' (black) color.
+      // skip '0x0' (black) color - already mapped 0
       if (semanticColorAsInt_[i] == 0) {
         continue;
       }
