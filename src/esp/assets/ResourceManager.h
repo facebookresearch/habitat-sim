@@ -30,6 +30,7 @@
 #include "BaseMesh.h"
 #include "CollisionMeshData.h"
 #include "GenericMeshData.h"
+#include "GenericSemanticMeshData.h"
 #include "MeshData.h"
 #include "MeshMetaData.h"
 #include "RenderAssetInstanceCreationInfo.h"
@@ -185,6 +186,34 @@ class ResourceManager {
   const std::vector<Mn::Vector3ub>& getSemanticSceneColormap() const {
     return semanticColorMapBeingUsed_;
   }
+
+  /**
+   * @brief Build @ref semanticColorMapBeingUsed_ holding the semantic colors
+   * defined from a semantic scene descriptor, by iterating through the objects
+   * and mapping their color values to their semantic ids.
+   */
+  void buildSemanticColorMap();
+
+  /**
+   * @brief Build @ref semanticColorAsInt_ (array of colors as integers) from
+   * the current @ref semanticColorMapBeingUsed_ map. The @ref
+   * semanticColorAsInt_ is used when building the color matrix for conversion
+   * of colors found in semantic textures to their semantic IDs. When semantic
+   * textures are preprocessed, this will not need to be performed.
+   */
+  void buildSemanticColorAsIntMap();
+
+  /**
+   * @brief Remap a semantic annotation texture to have the semantic IDs per
+   * pxl.
+   * @param srcImage The source texture with the semantic colors.
+   * @param clrToSemanticId Large table of all possible colors to their semantic
+   * IDs. initialized to 0xffff
+   * @return An image of the semantic IDs, with the ID mapped
+   */
+  Mn::Image2D convertRGBToSemanticId(
+      const Mn::ImageView2D& srcImage,
+      Cr::Containers::Array<Mn::UnsignedShort>& clrToSemanticId);
 
   /** @brief check if the @ref esp::scene::SemanticScene exists.*/
   bool semanticSceneExists() const { return (semanticScene_ != nullptr); }
@@ -957,7 +986,28 @@ class ResourceManager {
   bool loadRenderAssetPTex(const AssetInfo& info);
 
   /**
-   * @brief Instance Mesh backend for loadRenderAsset
+   * @brief Build @ref GenericSemanticMeshData from a single, flattened Magnum
+   * Meshdata, built from the meshes provided by the importer, preserving all
+   * transformations.  This building process will also synthesize bounding boxes
+   * if requested from the @ref semanticScene_ .
+   * @param fileImporter Importer used to load the scene.
+   * @param info AssetInfo describing asset.
+   * @return The GenericSemanticMeshData being built.
+   */
+  GenericSemanticMeshData::uptr flattenImportedMeshAndBuildSemantic(
+      Importer& fileImporter,
+      const AssetInfo& info);
+
+  /**
+   * @brief Semantic Mesh backend for loadRenderAsset.  Either use
+   * loadRenderAssetIMesh if semantic mesh has vertex annotations only, or
+   * loadRenderAssetGeneral if semantic mesh has texture-based annotations. This
+   * choice is governed by info.hasSemanticTextures.
+   */
+  bool loadSemanticRenderAsset(const AssetInfo& info);
+
+  /**
+   * @brief Semantic (vertex-annotated) Mesh backend for loadRenderAsset
    */
   bool loadRenderAssetIMesh(const AssetInfo& info);
 
@@ -992,7 +1042,20 @@ class ResourceManager {
       DrawableGroup* drawables);
 
   /**
-   * @brief Instance Mesh backend for createRenderAssetInstance
+   * @brief Semantic Mesh backend for create Either use
+   * createRenderAssetInstanceIMesh if semantic mesh has vertex annotations
+   * only, or createRenderAssetInstanceGeneralPrimitive if semantic mesh has
+   * texture-based annotations. This choice is governed by
+   * creation.isTextureBasedSemantic().
+   */
+  scene::SceneNode* createSemanticRenderAssetInstance(
+      const RenderAssetInstanceCreationInfo& creation,
+      scene::SceneNode* parent,
+      DrawableGroup* drawables);
+
+  /**
+   * @brief Semantic Mesh (vertex-annotated) backend for
+   * createRenderAssetInstance
    */
   scene::SceneNode* createRenderAssetInstanceIMesh(
       const RenderAssetInstanceCreationInfo& creation,
@@ -1168,7 +1231,8 @@ class ResourceManager {
   /**
    * @brief Colormap to use for visualizing currently loaded semantic scene.
    */
-  std::vector<Magnum::Vector3ub> semanticColorMapBeingUsed_{};
+  std::vector<Mn::Vector3ub> semanticColorMapBeingUsed_{};
+  std::vector<uint32_t> semanticColorAsInt_{};
 
   // ======== Physical parameter data ========
 

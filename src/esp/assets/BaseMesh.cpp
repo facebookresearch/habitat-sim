@@ -54,6 +54,7 @@ void BaseMesh::buildColorMapToUse(
     const Cr::Containers::Array<Mn::Color3ub>& vertColors,
     bool useVertexColors,
     std::vector<Mn::Vector3ub>& colorMapToUse) const {
+  colorMapToUse.clear();
   if (useVertexColors) {
     // removeDuplicates returns array of unique idxs for ids, to
     // be used on meshColors to provide mappings for colorMapToUse
@@ -156,9 +157,8 @@ void BaseMesh::buildSemanticOBBs(
     const std::string debugStr = Cr::Utility::formatString(
         "{} Semantic ID : {} : color : {} tag : {} present in {} "
         "verts | ",
-        msgPrefix, semanticID,
-        getColorAsString(static_cast<Mn::Color3ub>(ssdObj.getColor())),
-        ssdObj.id(), vertCounts[semanticID]);
+        msgPrefix, semanticID, ssdObj.getColorAsInt(), ssdObj.id(),
+        vertCounts[semanticID]);
     if (vertCounts[semanticID] == 0) {
       ESP_DEBUG() << Cr::Utility::formatString(
           "{}No verts have specified Semantic ID.", debugStr);

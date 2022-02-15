@@ -85,17 +85,15 @@ void ReplicaSceneTest::testSemanticSceneOBB() {
       Cr::Utility::formatString("Error loading instance mesh data from file {}",
                                 semanticFilename));
 
-  static std::vector<std::unique_ptr<GenericSemanticMeshData>> meshVec =
+  static std::unique_ptr<GenericSemanticMeshData> semanticMesh =
       GenericSemanticMeshData::buildSemanticMeshData(
-          *meshData, semanticFilename, false, dummyColormap, false);
-  // verify result vector holds a mesh
-  CORRADE_VERIFY(!meshVec.empty());
+          *meshData, semanticFilename, dummyColormap, false);
   // verify first entry exists
-  CORRADE_VERIFY(meshVec[0]);
+  CORRADE_VERIFY(semanticMesh);
 
-  const auto& vbo = meshVec[0]->getVertexBufferObjectCPU();
-  const auto& objectIds = meshVec[0]->getObjectIdsBufferObjectCPU();
-  const auto& ibo = meshVec[0]->getIndexBufferObjectCPU();
+  const auto& vbo = semanticMesh->getVertexBufferObjectCPU();
+  const auto& objectIds = semanticMesh->getObjectIdsBufferObjectCPU();
+  const auto& ibo = semanticMesh->getIndexBufferObjectCPU();
 
   for (const auto& obj : scene.objects()) {
     if (obj == nullptr)

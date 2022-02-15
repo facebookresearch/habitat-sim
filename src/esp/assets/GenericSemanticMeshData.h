@@ -47,6 +47,28 @@ class GenericSemanticMeshData : public BaseMesh {
    * do so.
    * @param meshData The imported meshData.
    * @param semanticFilename Path-less Filename of source mesh.
+   * @param [out] colorMapToUse An array holding the semantic colors to use for
+   * visualization or matching to semantic IDs.
+   * @param convertToSRGB Whether the source vertex colors from the @p meshData
+   * should be converted to SRGB
+   * @param semanticScene The SSD for the instance mesh being loaded.
+   * @return vector holding one or more mesh results from the semantic asset
+   * file.
+   */
+  static std::unique_ptr<GenericSemanticMeshData> buildSemanticMeshData(
+      const Magnum::Trade::MeshData& meshData,
+      const std::string& semanticFilename,
+      std::vector<Magnum::Vector3ub>& colorMapToUse,
+      bool convertToSRGB,
+      const std::shared_ptr<scene::SemanticScene>& semanticScene = nullptr);
+
+  /**
+   * @brief Build one ore more @ref GenericSemanticMeshData based on the
+   * contents of the passed @p meshData, splitting the result into multiples if
+   * specified and if the source file's objectIds are compatibly configured to
+   * do so.
+   * @param meshData The imported meshData.
+   * @param semanticFilename Path-less Filename of source mesh.
    * @param splitMesh Whether or not the resultant mesh should be split into
    * multiple components based on objectIds, for frustum culling.
    * @param [out] colorMapToUse An array holding the semantic colors to use for
@@ -59,13 +81,8 @@ class GenericSemanticMeshData : public BaseMesh {
    */
 
   static std::vector<std::unique_ptr<GenericSemanticMeshData>>
-  buildSemanticMeshData(
-      const Magnum::Trade::MeshData& meshData,
-      const std::string& semanticFilename,
-      bool splitMesh,
-      std::vector<Magnum::Vector3ub>& colorMapToUse,
-      bool convertToSRGB,
-      const std::shared_ptr<scene::SemanticScene>& semanticScene = nullptr);
+  partitionSemanticMeshData(
+      const std::unique_ptr<GenericSemanticMeshData>& semanticMeshData);
 
   // ==== rendering ====
   void uploadBuffersToGPU(bool forceReload = false) override;
@@ -88,7 +105,39 @@ class GenericSemanticMeshData : public BaseMesh {
     return objectIds_;
   }
 
+  /**
+   * @brief Either return separate partition IDs or objectIDs, depending on
+   * which were available when mesh was initially configured.  These are used to
+   * partition mesh for culling.
+   */
+  const std::vector<uint16_t>& getPartitionIDs() const {
+    if (meshHasSeparatePartitionIDs) {
+      return partitionIds_;
+    }
+    return objectIds_;
+  }
+  /**
+   * @brief This mesh can be partitioned - either object IDs were found in
+   * vertices or per-vert region partition values were found from semantic
+   * descriptor file.
+   */
+  bool meshCanBePartitioned() const { return meshHasPartitionIDXs; }
+
  protected:
+  /**
+   * @brief Whether or not this mesh can be partitioned - either object IDs were
+   * found in vertices or per-vert region partition values were found from
+   * semantic descriptor file.
+   */
+  bool meshHasPartitionIDXs = false;
+
+  /**
+   * @brief This mesh has separate partition IDs. If false, uses the objectIDs
+   * for the partitioning, if true means region IDs were provided in semantic
+   * scene descriptor.
+   */
+  bool meshHasSeparatePartitionIDs = false;
+
   class PerPartitionIdMeshBuilder {
    public:
     PerPartitionIdMeshBuilder(GenericSemanticMeshData& data,
@@ -114,6 +163,8 @@ class GenericSemanticMeshData : public BaseMesh {
   std::vector<Mn::Color3ub> cpu_cbo_;
   std::vector<uint32_t> cpu_ibo_;
   std::vector<uint16_t> objectIds_;
+  // only for mesh paritioning - either points to objectIds_ or to new data
+  std::vector<uint16_t> partitionIds_{};
 
   ESP_SMART_POINTERS(GenericSemanticMeshData)
 };

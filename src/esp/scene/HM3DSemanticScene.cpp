@@ -47,7 +47,7 @@ struct TempHM3DObject {
   int objCatID;
   std::string categoryName;
   std::string objInstanceName;
-  Mn::Vector3ub color;
+  unsigned colorInt;
   std::shared_ptr<SemanticRegion> region;
 };
 
@@ -65,7 +65,7 @@ struct TempHM3DCategory {
 
 void buildInstanceRegionCategory(
     int instanceID,
-    const Mn::Vector3ub colorVec,
+    const unsigned colorInt,
     const std::string& objCategoryName,
     int regionID,
     std::map<int, TempHM3DObject>& objInstance,
@@ -75,7 +75,7 @@ void buildInstanceRegionCategory(
   TempHM3DObject obj{
       instanceID, 0, objCategoryName,
       Cr::Utility::formatString("{}_{}", objCategoryName, instanceID),
-      colorVec};
+      colorInt};
   objInstance[instanceID] = obj;
   // find category, build if dne
   TempHM3DCategory tmpCat{
@@ -93,20 +93,13 @@ void buildInstanceRegionCategory(
 bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
                                    SemanticScene& scene,
                                    const quatf& /*rotation*/) {
-  // convert a hex string containing 3 bytes to a vector3ub (represents a color)
-  auto getVec3ub = [](const std::string& hexValStr) -> Mn::Vector3ub {
-    const unsigned val = std::stoul(hexValStr, nullptr, 16);
-    return {uint8_t((val >> 16) & 0xff), uint8_t((val >> 8) & 0xff),
-            uint8_t(val & 0xff)};
-  };
-
   // temp constructs
   std::map<int, TempHM3DObject> objInstance;
   std::map<int, TempHM3DRegion> regions;
   std::unordered_map<std::string, TempHM3DCategory> categories;
   // build an unknown object
-  buildInstanceRegionCategory(0, Mn::Vector3ub{}, "Unknown", -1, objInstance,
-                              regions, categories);
+  buildInstanceRegionCategory(0, 0, "Unknown", -1, objInstance, regions,
+                              categories);
 
   std::string line;
   while (std::getline(ifs, line)) {
@@ -132,14 +125,20 @@ bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
     // ID is integer
     int instanceID = std::stoi(Cr::Utility::String::trim(subtokens[0]));
     // semantic color is 2nd token, as hex string
-    auto colorVec = getVec3ub(Cr::Utility::String::trim(subtokens[1]));
+    const unsigned colorInt =
+        std::stoul(Cr::Utility::String::trim(subtokens[1]), nullptr, 16);
+    // convert a hex string containing 3 bytes to a vector3ub (represents a
+    // color)
+    Mn::Vector3ub colorVec = {uint8_t((colorInt >> 16) & 0xff),
+                              uint8_t((colorInt >> 8) & 0xff),
+                              uint8_t(colorInt & 0xff)};
     // object category will possibly have commas
     const std::string objCategoryName = tokens[1];
     // room/region is always last token - get rid of first comma
     int regionID =
         std::stoi(Cr::Utility::String::trim(tokens[tokens.size() - 1], " ,"));
 
-    buildInstanceRegionCategory(instanceID, colorVec, objCategoryName, regionID,
+    buildInstanceRegionCategory(instanceID, colorInt, objCategoryName, regionID,
                                 objInstance, regions, categories);
 
   }  // while
@@ -180,12 +179,11 @@ bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
   // build all object instances
   // object instances
   scene.objects_.clear();
-  scene.objects_.reserve(objInstance.size() + 1);
-
+  scene.objects_.reserve(objInstance.size());
   for (auto& item : objInstance) {
     TempHM3DObject obj = item.second;
     auto objPtr = std::make_shared<HM3DObjectInstance>(HM3DObjectInstance(
-        obj.objInstanceID, obj.objCatID, obj.objInstanceName, obj.color));
+        obj.objInstanceID, obj.objCatID, obj.objInstanceName, obj.colorInt));
     objPtr->category_ = categories[obj.categoryName].category_;
     // set region
     objPtr->parentIndex_ = obj.region->index_;
@@ -195,6 +193,30 @@ bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
   }
   scene.hasVertColors_ = true;
 
+  // build colormap from colors defined in ssd
+  scene.semanticColorMapBeingUsed_.clear();
+  scene.semanticColorMapBeingUsed_.reserve(objInstance.size());
+  scene.semanticColorToIdAndRegion_.clear();
+  scene.semanticColorToIdAndRegion_.reserve(objInstance.size());
+  // build the color map with first maxSemanticID elements in proper order
+  // to match provided semantic IDs (so that ID is IDX of semantic color in
+  // map).  Any overflow colors will be uniquely mapped 1-to-1 to unmapped
+  // semantic IDs as their index.
+  for (const auto& objPtr : scene.objects_) {
+    int idx = objPtr->semanticID();
+    if (scene.semanticColorMapBeingUsed_.size() <= idx) {
+      // both are same size, so resize both at same time
+      scene.semanticColorMapBeingUsed_.resize(idx + 1);
+      scene.semanticColorToIdAndRegion_.reserve(idx + 1);
+    }
+    scene.semanticColorMapBeingUsed_[idx] = objPtr->getColor();
+    scene.semanticColorToIdAndRegion_.insert(
+        std::make_pair<uint32_t, std::pair<int, int>>(
+            objPtr->getColorAsInt(),
+            {objPtr->semanticID(), objPtr->region()->getIndex()}));
+  }
+  // we need to build the bbox on load for each semantic annotation
+  scene.needBBoxFromVertColors = true;
   scene.levels_.clear();  // Not used for Hm3d currently
 
   return true;

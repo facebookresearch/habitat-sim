@@ -53,6 +53,11 @@ void initSimBindings(py::module& m) {
       .def_readwrite("frustum_culling", &SimulatorConfiguration::frustumCulling)
       .def_readwrite("enable_physics", &SimulatorConfiguration::enablePhysics)
       .def_readwrite(
+          "use_semantic_textures",
+          &SimulatorConfiguration::useSemanticTexturesIfFound,
+          R"(If the loaded scene/dataset supports semantically annotated textures, use these for
+      semantic rendering. Defaults to True)")
+      .def_readwrite(
           "enable_gfx_replay_save",
           &SimulatorConfiguration::enableGfxReplaySave,
           R"(Enable replay recording. See sim.gfx_replay.save_keyframe.)")

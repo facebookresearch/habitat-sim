@@ -284,6 +284,40 @@ bool ResourceManager::loadSemanticSceneDescriptor(
   return false;
 }  // ResourceManager::loadSemanticSceneDescriptor
 
+void ResourceManager::buildSemanticColorMap() {
+  CORRADE_ASSERT(semanticScene_,
+                 "Unable to build Semantic Color map due to no semanticScene "
+                 "being loaded.", );
+
+  semanticColorMapBeingUsed_.clear();
+  semanticColorAsInt_.clear();
+  const auto& ssdClrMap = semanticScene_->getSemanticColorMap();
+  if (ssdClrMap.size() == 0) {
+    return;
+  }
+
+  // The color map was built with first maxSemanticID elements in proper order
+  // to match provided semantic IDs (so that ID is IDX of semantic color in
+  // map).  Any overflow colors will be uniquely mapped 1-to-1 to unmapped
+  // semantic IDs as their index.
+  semanticColorMapBeingUsed_.assign(ssdClrMap.begin(), ssdClrMap.end());
+  buildSemanticColorAsIntMap();
+
+}  // ResourceManager::buildSemanticColorMap
+
+void ResourceManager::buildSemanticColorAsIntMap() {
+  semanticColorAsInt_.clear();
+  semanticColorAsInt_.reserve(semanticColorMapBeingUsed_.size());
+  // build listing of colors as ints, with idx being semantic ID
+  std::transform(semanticColorMapBeingUsed_.cbegin(),
+                 semanticColorMapBeingUsed_.cend(),
+                 std::back_inserter(semanticColorAsInt_),
+                 [](const Mn::Color3ub& color) -> uint32_t {
+                   return (unsigned(color[0]) << 16) |
+                          (unsigned(color[1]) << 8) | unsigned(color[2]);
+                 });
+}
+
 bool ResourceManager::loadStage(
     const StageAttributes::ptr& stageAttributes,
     const SceneObjectInstanceAttributes::cptr& stageInstanceAttributes,
@@ -333,6 +367,10 @@ bool ResourceManager::loadStage(
       if (stageAttributes->getFrustumCulling()) {
         // only treat as static if doing culling
         flags |= RenderAssetInstanceCreationInfo::Flag::IsStatic;
+      }
+      // if texture-based semantic mesh specify in creation
+      if (semanticInfo.hasSemanticTextures) {
+        flags |= RenderAssetInstanceCreationInfo::Flag::IsTextureBasedSemantic;
       }
       RenderAssetInstanceCreationInfo creation(
           semanticStageFilename, Cr::Containers::NullOpt, flags, NO_LIGHT_KEY);
@@ -384,6 +422,12 @@ bool ResourceManager::loadStage(
   if (!isSeparateSemanticScene) {
     flags |= RenderAssetInstanceCreationInfo::Flag::IsSemantic;
   }
+  // if texture-based semantic mesh specify in creation
+  // TODO: Currently do not support single mesh texture-based semantic and
+  // render stages
+  // if (renderInfo.hasSemanticTextures) {
+  //   flags |= RenderAssetInstanceCreationInfo::Flag::IsTextureBasedSemantic;
+  // }
   RenderAssetInstanceCreationInfo renderCreation(
       renderInfo.filepath, Cr::Containers::NullOpt, flags, renderLightSetupKey);
   ESP_DEBUG() << "Start load render asset" << renderInfo.filepath << ".";
@@ -453,13 +497,15 @@ bool ResourceManager::buildMeshGroups(
   if (collisionMeshGroups_.count(info.filepath) == 0) {
     //! Collect collision mesh group
     bool colMeshGroupSuccess = false;
-    if (info.type == AssetType::INSTANCE_MESH) {
+    if ((info.type == AssetType::INSTANCE_MESH) && !info.hasSemanticTextures) {
       // PLY Semantic mesh
       colMeshGroupSuccess =
           buildStageCollisionMeshGroup<GenericSemanticMeshData>(info.filepath,
                                                                 meshGroup);
-    } else if (info.type == AssetType::MP3D_MESH ||
-               info.type == AssetType::UNKNOWN) {
+    } else if ((info.type == AssetType::MP3D_MESH ||
+                info.type == AssetType::UNKNOWN) ||
+               ((info.type == AssetType::INSTANCE_MESH) &&
+                info.hasSemanticTextures)) {
       // GLB Mesh
       colMeshGroupSuccess = buildStageCollisionMeshGroup<GenericMeshData>(
           info.filepath, meshGroup);
@@ -548,12 +594,19 @@ ResourceManager::createStageAssetInfosFromAttributes(
         // only split semantic mesh if doing frustum culling
         stageAttributes->getFrustumCulling()  // splitInstanceMesh
     };
+    // specify whether the semantic asset has semantically annotated textures.
+    // this is only true if the assets are available (as specified in the
+    // dataset config) and if the  user has requested them (via
+    // SimulatorConfiguration::useSemanticTexturesIfFound)
+    semanticInfo.hasSemanticTextures = stageAttributes->useSemanticTextures();
 
     Cr::Utility::formatInto(
         debugStr, debugStr.size(),
-        "|{} for semantic mesh named : {} with type specified as {}",
+        "|{} for semantic mesh named : {} with type specified as {}|Semantic "
+        "Txtrs : {}",
         frame.toString(), semanticInfo.filepath,
-        esp::metadata::attributes::getMeshTypeName(semanticInfo.type));
+        esp::metadata::attributes::getMeshTypeName(semanticInfo.type),
+        (semanticInfo.hasSemanticTextures ? "True" : "False"));
     resMap["semantic"] = semanticInfo;
   } else {
     Cr::Utility::formatInto(debugStr, debugStr.size(),
@@ -659,6 +712,23 @@ scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
                                           &drawables);
 }  // ResourceManager::loadAndCreateRenderAssetInstance
 
+std::string ResourceManager::createModifiedAssetName(const AssetInfo& info,
+                                                     std::string& materialId) {
+  std::string modifiedAssetName = info.filepath;
+
+  // check materialId
+  if (info.overridePhongMaterial != Cr::Containers::NullOpt) {
+    if (materialId.empty()) {
+      // if passed value is empty, synthesize new color and new materialId
+      // based on this color and values specified in info
+      materialId = createColorMaterial(*info.overridePhongMaterial);
+    }
+    modifiedAssetName += '?' + materialId;
+  }
+  // construct name with materialId specification and desired shader type
+  return modifiedAssetName;
+}  // ResourceManager::createModifiedAssetName
+
 scene::SceneNode* ResourceManager::loadAndCreateRenderAssetInstance(
     const AssetInfo& assetInfo,
     const RenderAssetInstanceCreationInfo& creation,
@@ -703,8 +773,8 @@ bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
       ESP_DEBUG() << "Loading PTEX asset named:" << info.filepath;
       meshSuccess = loadRenderAssetPTex(defaultInfo);
     } else if (info.type == AssetType::INSTANCE_MESH) {
-      ESP_DEBUG() << "Loading InstanceMesh asset named:" << info.filepath;
-      meshSuccess = loadRenderAssetIMesh(defaultInfo);
+      ESP_DEBUG() << "Loading Semantic Mesh asset named:" << info.filepath;
+      meshSuccess = loadSemanticRenderAsset(defaultInfo);
     } else if (isRenderAssetGeneral(info.type)) {
       ESP_DEBUG() << "Loading general asset named:" << info.filepath;
       meshSuccess = loadRenderAssetGeneral(defaultInfo);
@@ -740,14 +810,13 @@ bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
         resourceDict_.count(modifiedAssetName) > 0;
     if (!matModAssetIsRegistered) {
       // first register the copied metaData
-      resourceDict_.emplace(modifiedAssetName,
-                            LoadedAssetData(resourceDict_.at(info.filepath)));
+      auto res = resourceDict_.emplace(
+          modifiedAssetName, LoadedAssetData(resourceDict_.at(info.filepath)));
       // Replace the AssetInfo
-      resourceDict_.at(modifiedAssetName).assetInfo = info;
+      res.first->second.assetInfo = info;
       // Modify the MeshMetaData local material ids for all components
       std::vector<MeshTransformNode*> nodeQueue;
-      nodeQueue.push_back(
-          &resourceDict_.at(modifiedAssetName).meshMetaData.root);
+      nodeQueue.push_back(&res.first->second.meshMetaData.root);
       while (!nodeQueue.empty()) {
         MeshTransformNode* node = nodeQueue.back();
         nodeQueue.pop_back();
@@ -769,26 +838,8 @@ bool ResourceManager::loadRenderAsset(const AssetInfo& info) {
       }
     }
   }
-
   return meshSuccess;
-}
-
-std::string ResourceManager::createModifiedAssetName(const AssetInfo& info,
-                                                     std::string& materialId) {
-  std::string modifiedAssetName = info.filepath;
-
-  // check materialId
-  if (info.overridePhongMaterial != Cr::Containers::NullOpt) {
-    if (materialId.empty()) {
-      // if passed value is empty, synthesize new color and new materialId
-      // based on this color and values specified in info
-      materialId = createColorMaterial(*info.overridePhongMaterial);
-    }
-    modifiedAssetName += "?" + materialId;
-  }
-  // construct name with materialId specification and desired shader type
-  return modifiedAssetName;
-}  // ResourceManager::createModifiedAssetName
+}  // ResourceManager::loadRenderAsset
 
 scene::SceneNode* ResourceManager::createRenderAssetInstance(
     const RenderAssetInstanceCreationInfo& creation,
@@ -818,7 +869,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstance(
     CORRADE_ASSERT(!visNodeCache,
                    "createRenderAssetInstanceIMesh doesn't support this",
                    nullptr);
-    newNode = createRenderAssetInstanceIMesh(creation, parent, drawables);
+    newNode = createSemanticRenderAssetInstance(creation, parent, drawables);
   } else if (isRenderAssetGeneral(info.type) ||
              info.type == AssetType::PRIMITIVE) {
     newNode = createRenderAssetInstanceGeneralPrimitive(
@@ -1270,29 +1321,42 @@ scene::SceneNode* ResourceManager::createRenderAssetInstancePTex(
 #endif
 }  // ResourceManager::createRenderAssetInstancePTex
 
-bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
-  CORRADE_INTERNAL_ASSERT(info.type == AssetType::INSTANCE_MESH);
+bool ResourceManager::loadSemanticRenderAsset(const AssetInfo& info) {
+  if (info.hasSemanticTextures) {
+    // use loadRenderAssetGeneral for texture-based semantics
+    return loadRenderAssetGeneral(info);
+  }
+  // special handling for vertex-based semantics
+  return loadRenderAssetIMesh(info);
+}  // ResourceManager::loadSemanticRenderAsset
 
+scene::SceneNode* ResourceManager::createSemanticRenderAssetInstance(
+    const RenderAssetInstanceCreationInfo& creation,
+    scene::SceneNode* parent,
+    DrawableGroup* drawables) {
+  if (creation.isTextureBasedSemantic()) {
+    // Treat texture-based semantic meshes as General/Primitves.
+    return createRenderAssetInstanceGeneralPrimitive(creation, parent,
+                                                     drawables, nullptr);
+  }
+  // Special handling for vertex-based semantics
+  return createRenderAssetInstanceIMesh(creation, parent, drawables);
+
+}  // ResourceManager::createSemanticRenderAssetInstance
+
+GenericSemanticMeshData::uptr
+ResourceManager::flattenImportedMeshAndBuildSemantic(Importer& fileImporter,
+                                                     const AssetInfo& info) {
   const std::string& filename = info.filepath;
 
-  CORRADE_INTERNAL_ASSERT(resourceDict_.count(filename) == 0);
-
-  /* Open the file. On error the importer already prints a diagnostic message,
-     so no need to do that here. The importer implicitly converts per-face
-     attributes to per-vertex, so nothing extra needs to be done. */
-  ConfigureImporterManagerGLExtensions();
-  ESP_CHECK(
-      (fileImporter_->openFile(filename) && (fileImporter_->meshCount() > 0)),
-      Cr::Utility::formatString("Error loading semantic mesh data from file {}",
-                                filename));
-  // Transform meshData by reframing rotation.  Doing this here so that
+  // Transform meshData by reframing frame rotation.  Doing this here so that
   // transformation is caught in OBB calc.
-  const Magnum::Matrix4 reframeTransform = Magnum::Matrix4::from(
-      Magnum::Quaternion(info.frame.rotationFrameToWorld()).toMatrix(),
-      Magnum::Vector3());
+  const Mn::Matrix4 reframeTransform = Mn::Matrix4::from(
+      Mn::Quaternion(info.frame.rotationFrameToWorld()).toMatrix(),
+      Mn::Vector3());
 
-  auto sceneID = fileImporter_->defaultScene();
-
+  auto sceneID = fileImporter.defaultScene();
+  // The meshData to build
   Cr::Containers::Optional<Mn::Trade::MeshData> meshData;
 
   if (sceneID == -1) {
@@ -1300,17 +1364,20 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
     // already verified at least one mesh exists, this means only one mesh,
     // treat as before
     meshData =
-        Mn::MeshTools::transform3D(*fileImporter_->mesh(0), reframeTransform);
+        Mn::MeshTools::transform3D(*fileImporter.mesh(0), reframeTransform);
   } else {
+    // flatten multi-submesh source meshes, since GenericSemanticMeshData
+    // re-partitions based on ID.
     Cr::Containers::Optional<Mn::Trade::SceneData> scene =
-        fileImporter_->scene(sceneID);
+        fileImporter.scene(sceneID);
 
     Cr::Containers::Array<Mn::Trade::MeshData> flattenedMeshes;
     for (const Cr::Containers::Triple<Mn::UnsignedInt, Mn::Int, Mn::Matrix4>&
              meshTransformation :
          Mn::SceneTools::flattenMeshHierarchy3D(*scene)) {
+      int iMesh = meshTransformation.first();
       if (Cr::Containers::Optional<Mn::Trade::MeshData> mesh =
-              fileImporter_->mesh(meshTransformation.first())) {
+              fileImporter.mesh(iMesh)) {
         const auto transform = reframeTransform * meshTransformation.third();
         arrayAppend(flattenedMeshes,
                     Mn::MeshTools::transform3D(*mesh, transform));
@@ -1328,11 +1395,53 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
     meshData = Mn::MeshTools::concatenate(meshView);
   }  // flatten/reframe src meshes
 
-  std::vector<GenericSemanticMeshData::uptr> instanceMeshes =
+  // build semanticColorMapBeingUsed_ if semanticScene_ is not nullptr
+  if (semanticScene_) {
+    buildSemanticColorMap();
+  }
+  GenericSemanticMeshData::uptr semanticMeshData =
       GenericSemanticMeshData::buildSemanticMeshData(
           *meshData, Cr::Utility::Directory::filename(filename),
-          info.splitInstanceMesh, semanticColorMapBeingUsed_,
+          semanticColorMapBeingUsed_,
           (filename.find(".ply") == std::string::npos), semanticScene_);
+
+  // augment colors_as_int array to handle if un-expected colors have been found
+  // in mesh verts.
+  if (semanticScene_) {
+    buildSemanticColorAsIntMap();
+  }
+  return semanticMeshData;
+}  // ResourceManager::loadAndFlattenImportedMeshData
+
+bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
+  CORRADE_INTERNAL_ASSERT(info.type == AssetType::INSTANCE_MESH);
+
+  const std::string& filename = info.filepath;
+
+  CORRADE_INTERNAL_ASSERT(resourceDict_.count(filename) == 0);
+  ConfigureImporterManagerGLExtensions();
+
+  /* Open the file. On error the importer already prints a diagnostic message,
+     so no need to do that here. The importer implicitly converts per-face
+     attributes to per-vertex, so nothing extra needs to be done. */
+  ESP_CHECK(
+      (fileImporter_->openFile(filename) && (fileImporter_->meshCount() > 0u)),
+      Cr::Utility::formatString("Error loading semantic mesh data from file {}",
+                                filename));
+
+  // flatten source meshes, preserving transforms, build semanticMeshData and
+  // construct vertex-based semantic bboxes, if requested for dataset.
+  GenericSemanticMeshData::uptr semanticMeshData =
+      flattenImportedMeshAndBuildSemantic(*fileImporter_, info);
+
+  // partition semantic mesh for culling
+  std::vector<GenericSemanticMeshData::uptr> instanceMeshes;
+  if (info.splitInstanceMesh && semanticMeshData->meshCanBePartitioned()) {
+    instanceMeshes =
+        GenericSemanticMeshData::partitionSemanticMeshData(semanticMeshData);
+  } else {
+    instanceMeshes.emplace_back(std::move(semanticMeshData));
+  }
 
   ESP_CHECK(!instanceMeshes.empty(),
             Cr::Utility::formatString(
@@ -1418,6 +1527,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceIMesh(
 
   return instanceRoot;
 }  // ResourceManager::createRenderAssetInstanceIMesh
+
 void ResourceManager::ConfigureImporterManagerGLExtensions() {
   if (!getCreateRenderer()) {
     return;
@@ -1516,14 +1626,18 @@ void setMeshTransformNodeChildren(
 }  // namespace
 
 bool ResourceManager::loadRenderAssetGeneral(const AssetInfo& info) {
-  CORRADE_INTERNAL_ASSERT(isRenderAssetGeneral(info.type));
+  // verify either is general render asset, or else is semantic/instance asset
+  // w/texture annotations
+  CORRADE_INTERNAL_ASSERT(
+      isRenderAssetGeneral(info.type) ||
+      ((info.type == AssetType::INSTANCE_MESH) && info.hasSemanticTextures));
 
   const std::string& filename = info.filepath;
   CORRADE_INTERNAL_ASSERT(resourceDict_.count(filename) == 0);
   ConfigureImporterManagerGLExtensions();
 
   ESP_CHECK(
-      (fileImporter_->openFile(filename) && (fileImporter_->meshCount() > 0)),
+      (fileImporter_->openFile(filename) && (fileImporter_->meshCount() > 0u)),
       Cr::Utility::formatString("Error loading general mesh data from file {}",
                                 filename));
 
@@ -1861,7 +1975,7 @@ bool compareShaderTypeToMnMatType(const ObjectInstanceShaderType typeToCheck,
       return false;
     }
   }
-}
+}  // compareShaderTypeToMnMatType
 
 }  // namespace
 
@@ -1879,74 +1993,113 @@ void ResourceManager::loadMaterials(Importer& importer,
       << "Building " << numMaterials << " materials for asset named '"
       << assetName << "' : ";
 
-  for (int iMaterial = 0; iMaterial < numMaterials; ++iMaterial) {
-    // TODO:
-    // it seems we have a way to just load the material once in this case,
-    // as long as the materialName includes the full path to the material
-    Cr::Containers::Optional<Mn::Trade::MaterialData> materialData =
-        importer.material(iMaterial);
-
-    if (!materialData) {
-      ESP_ERROR() << "Material load failed for index" << iMaterial
-                  << "so skipping that material for asset" << assetName << ".";
-      continue;
-    }
-
-    std::unique_ptr<gfx::MaterialData> finalMaterial;
-    std::string debugStr = Cr::Utility::formatString("Idx {:.02d}:", iMaterial);
-
+  if (loadedAssetData.assetInfo.hasSemanticTextures) {
     int textureBaseIndex = loadedAssetData.meshMetaData.textureIndex.first;
-    // If we are not using the material's native shadertype, or flat (Which all
-    // materials already support), expand the Mn::Trade::MaterialData with
-    // appropriate data for all possible shadertypes
-    if ((shaderTypeToUse != ObjectInstanceShaderType::Material) &&
-        (shaderTypeToUse != ObjectInstanceShaderType::Flat) &&
-        !(compareShaderTypeToMnMatType(shaderTypeToUse, *materialData))) {
-      Cr::Utility::formatInto(
-          debugStr, debugStr.size(),
-          "(Expanding existing materialData to support requested shaderType `"
-          "{}`) ",
-          metadata::attributes::getShaderTypeName(shaderTypeToUse));
-      materialData = esp::gfx::createUniversalMaterial(*materialData);
+    // TODO: Verify this is correct process for building individual materials
+    // for each semantic int texture.
+    for (int iMaterial = 0; iMaterial < numMaterials; ++iMaterial) {
+      Cr::Containers::Optional<Mn::Trade::MaterialData> materialData =
+          importer.material(iMaterial);
+
+      if (!materialData) {
+        ESP_ERROR() << "Material load failed for index" << iMaterial
+                    << "so skipping that material for asset" << assetName
+                    << ".";
+        continue;
+      }
+      // Semantic texture-based
+      std::unique_ptr<gfx::PhongMaterialData> finalMaterial =
+          gfx::PhongMaterialData::create_unique();
+
+      // const auto& material = materialData->as<Mn::Trade::FlatMaterialData>();
+
+      finalMaterial->ambientColor = Mn::Color4{1.0};
+      finalMaterial->diffuseColor = Mn::Color4{};
+      finalMaterial->specularColor = Mn::Color4{};
+      finalMaterial->shaderTypeSpec =
+          static_cast<int>(ObjectInstanceShaderType::Flat);
+      // has texture-based semantic annotations
+      finalMaterial->textureObjectId = true;
+      // get semantic int texture
+      finalMaterial->objectIdTexture =
+          textures_.at(textureBaseIndex + iMaterial).get();
+
+      shaderManager_.set<gfx::MaterialData>(std::to_string(nextMaterialID_++),
+                                            finalMaterial.release());
     }
+  } else {
+    for (int iMaterial = 0; iMaterial < numMaterials; ++iMaterial) {
+      // TODO:
+      // it seems we have a way to just load the material once in this case,
+      // as long as the materialName includes the full path to the material
+      Cr::Containers::Optional<Mn::Trade::MaterialData> materialData =
+          importer.material(iMaterial);
 
-    // pbr shader spec, of material-specified and material specifies pbr
-    if (checkForPassedShaderType(
-            shaderTypeToUse, *materialData, ObjectInstanceShaderType::PBR,
-            Mn::Trade::MaterialType::PbrMetallicRoughness)) {
-      Cr::Utility::formatInto(debugStr, debugStr.size(), "PBR.");
-      finalMaterial =
-          buildPbrShadedMaterialData(*materialData, textureBaseIndex);
+      if (!materialData) {
+        ESP_ERROR() << "Material load failed for index" << iMaterial
+                    << "so skipping that material for asset" << assetName
+                    << ".";
+        continue;
+      }
 
-      // phong shader spec, of material-specified and material specifies phong
-    } else if (checkForPassedShaderType(shaderTypeToUse, *materialData,
-                                        ObjectInstanceShaderType::Phong,
-                                        Mn::Trade::MaterialType::Phong)) {
-      Cr::Utility::formatInto(debugStr, debugStr.size(), "Phong.");
-      finalMaterial =
-          buildPhongShadedMaterialData(*materialData, textureBaseIndex);
+      std::unique_ptr<gfx::MaterialData> finalMaterial;
+      std::string debugStr =
+          Cr::Utility::formatString("Idx {:.02d}:", iMaterial);
 
-      // flat shader spec or material-specified and material specifies flat
-    } else if (checkForPassedShaderType(shaderTypeToUse, *materialData,
-                                        ObjectInstanceShaderType::Flat,
-                                        Mn::Trade::MaterialType::Flat)) {
-      Cr::Utility::formatInto(debugStr, debugStr.size(), "Flat.");
-      finalMaterial =
-          buildFlatShadedMaterialData(*materialData, textureBaseIndex);
+      int textureBaseIndex = loadedAssetData.meshMetaData.textureIndex.first;
+      // If we are not using the material's native shadertype, or flat (Which
+      // all materials already support), expand the Mn::Trade::MaterialData with
+      // appropriate data for all possible shadertypes
+      if ((shaderTypeToUse != ObjectInstanceShaderType::Material) &&
+          (shaderTypeToUse != ObjectInstanceShaderType::Flat) &&
+          !(compareShaderTypeToMnMatType(shaderTypeToUse, *materialData))) {
+        Cr::Utility::formatInto(
+            debugStr, debugStr.size(),
+            "(Expanding existing materialData to support requested shaderType `"
+            "{}`) ",
+            metadata::attributes::getShaderTypeName(shaderTypeToUse));
+        materialData = esp::gfx::createUniversalMaterial(*materialData);
+      }
 
-    } else {
-      ESP_CHECK(false,
-                Cr::Utility::formatString(
-                    "Unhandled ShaderType specification : {} and/or unmanaged "
-                    "type specified in material @ idx: {} for asset {}.",
-                    metadata::attributes::getShaderTypeName(shaderTypeToUse),
-                    iMaterial, assetName));
+      // pbr shader spec, of material-specified and material specifies pbr
+      if (checkForPassedShaderType(
+              shaderTypeToUse, *materialData, ObjectInstanceShaderType::PBR,
+              Mn::Trade::MaterialType::PbrMetallicRoughness)) {
+        Cr::Utility::formatInto(debugStr, debugStr.size(), "PBR.");
+        finalMaterial =
+            buildPbrShadedMaterialData(*materialData, textureBaseIndex);
+
+        // phong shader spec, of material-specified and material specifies phong
+      } else if (checkForPassedShaderType(shaderTypeToUse, *materialData,
+                                          ObjectInstanceShaderType::Phong,
+                                          Mn::Trade::MaterialType::Phong)) {
+        Cr::Utility::formatInto(debugStr, debugStr.size(), "Phong.");
+        finalMaterial =
+            buildPhongShadedMaterialData(*materialData, textureBaseIndex);
+
+        // flat shader spec or material-specified and material specifies flat
+      } else if (checkForPassedShaderType(shaderTypeToUse, *materialData,
+                                          ObjectInstanceShaderType::Flat,
+                                          Mn::Trade::MaterialType::Flat)) {
+        Cr::Utility::formatInto(debugStr, debugStr.size(), "Flat.");
+        finalMaterial =
+            buildFlatShadedMaterialData(*materialData, textureBaseIndex);
+
+      } else {
+        ESP_CHECK(
+            false,
+            Cr::Utility::formatString(
+                "Unhandled ShaderType specification : {} and/or unmanaged "
+                "type specified in material @ idx: {} for asset {}.",
+                metadata::attributes::getShaderTypeName(shaderTypeToUse),
+                iMaterial, assetName));
+      }
+      ESP_DEBUG() << debugStr;
+      // for now, just use unique ID for material key. This may change if we
+      // expose materials to user for post-load modification
+      shaderManager_.set(std::to_string(nextMaterialID_++),
+                         finalMaterial.release());
     }
-    ESP_DEBUG() << debugStr;
-    // for now, just use unique ID for material key. This may change if we
-    // expose materials to user for post-load modification
-    shaderManager_.set(std::to_string(nextMaterialID_++),
-                       finalMaterial.release());
   }
 }  // ResourceManager::loadMaterials
 
@@ -2159,87 +2312,179 @@ void ResourceManager::loadMeshes(Importer& importer,
   }
 }  // ResourceManager::loadMeshes
 
+Mn::Image2D ResourceManager::convertRGBToSemanticId(
+    const Mn::ImageView2D& srcImage,
+    Cr::Containers::Array<Mn::UnsignedShort>& clrToSemanticId) {
+  // convert image to semantic image here
+
+  const Mn::Vector2i size = srcImage.size();
+  // construct empty integer image
+  Mn::Image2D resImage{
+      Mn::PixelFormat::R16UI, size,
+      Cr::Containers::Array<char>{
+          Mn::NoInit,
+          std::size_t(size.product() * pixelSize(Mn::PixelFormat::R16UI))}};
+
+  Cr::Containers::StridedArrayView2D<const Mn::Color3ub> input =
+      srcImage.pixels<Mn::Color3ub>();
+  Cr::Containers::StridedArrayView2D<Mn::UnsignedShort> output =
+      resImage.pixels<Mn::UnsignedShort>();
+  for (std::size_t y = 0; y != size.y(); ++y) {
+    Cr::Containers::StridedArrayView1D<const Mn::Color3ub> inputRow = input[y];
+    Cr::Containers::StridedArrayView1D<Mn::UnsignedShort> outputRow = output[y];
+    for (std::size_t x = 0; x != size.x(); ++x) {
+      const Mn::Color3ub color = inputRow[x];
+      /* Fugly. Sorry. Needs better API on Magnum side. */
+      const Mn::UnsignedInt colorInt =
+          color.r() << 16 | color.g() << 8 | color.b();
+      outputRow[x] = clrToSemanticId[colorInt];
+    }
+  }
+  return resImage;
+}  // ResourceManager::convertRGBToSemanticId
 void ResourceManager::loadTextures(Importer& importer,
                                    LoadedAssetData& loadedAssetData) {
   int textureStart = nextTextureID_;
   int textureEnd = textureStart + importer.textureCount() - 1;
   nextTextureID_ = textureEnd + 1;
   loadedAssetData.meshMetaData.setTextureIndices(textureStart, textureEnd);
+  if (loadedAssetData.assetInfo.hasSemanticTextures) {
+    // build semantic BBoxes and semanticColorMapBeingUsed_ if semanticScene_
+    flattenImportedMeshAndBuildSemantic(importer, loadedAssetData.assetInfo);
 
-  for (int iTexture = 0; iTexture < importer.textureCount(); ++iTexture) {
-    auto currentTextureID = textureStart + iTexture;
-    textures_.emplace(currentTextureID, std::make_shared<Mn::GL::Texture2D>());
-    auto& currentTexture = textures_.at(currentTextureID);
+    // We are assuming that the only textures that exist are the semantic
+    // textures. We build table of all possible colors holding ushorts
+    // representing semantic IDs for those colors. We then assign known semantic
+    // IDs to table entries corresponding the ID's specified color. Unknown
+    // entries have semantic id 0x0 (corresponding to Unknown object in semantic
+    // scene).
+    //
+    Cr::Containers::Array<Mn::UnsignedShort> clrToSemanticId{
+        Mn::DirectInit, 256 * 256 * 256, Mn::UnsignedShort(0x0)};
 
-    auto textureData = importer.texture(iTexture);
-    if (!textureData ||
-        textureData->type() != Mn::Trade::TextureType::Texture2D) {
-      ESP_ERROR() << "Cannot load texture" << iTexture << "skipping";
-      currentTexture = nullptr;
-      continue;
+    for (std::size_t i = 0; i < semanticColorAsInt_.size(); ++i) {
+      // skip '0x0' (black) color - already mapped 0
+      if (semanticColorAsInt_[i] == 0) {
+        continue;
+      }
+      // assign semantic ID to list at colorAsInt idx
+      clrToSemanticId[semanticColorAsInt_[i]] =
+          static_cast<Mn::UnsignedShort>(i);
     }
 
-    // Configure the texture
-    // Mn::GL::Texture2D& texture = *(textures_.at(textureStart +
-    // iTexture).get());
-    currentTexture->setMagnificationFilter(textureData->magnificationFilter())
-        .setMinificationFilter(textureData->minificationFilter(),
-                               textureData->mipmapFilter())
-        .setWrapping(textureData->wrapping().xy());
+    for (int iTexture = 0; iTexture < importer.textureCount(); ++iTexture) {
+      auto currentTextureID = textureStart + iTexture;
+      textures_.emplace(currentTextureID,
+                        std::make_shared<Mn::GL::Texture2D>());
+      auto& currentTexture = textures_.at(currentTextureID);
 
-    // Load all mip levels
-    const std::uint32_t levelCount =
-        importer.image2DLevelCount(textureData->image());
-    bool generateMipmap = false;
-    for (std::uint32_t level = 0; level != levelCount; ++level) {
-      // TODO:
-      // it seems we have a way to just load the image once in this case,
-      // as long as the image2DName include the full path to the image
+      auto textureData = importer.texture(iTexture);
+      if (!textureData ||
+          textureData->type() != Mn::Trade::TextureType::Texture2D) {
+        ESP_ERROR() << "Cannot load texture" << iTexture << "skipping";
+        currentTexture = nullptr;
+        continue;
+      }
+      // texture will end up being semantic IDs
+      currentTexture->setMagnificationFilter(Mn::GL::SamplerFilter::Nearest)
+          .setMinificationFilter(Mn::GL::SamplerFilter::Nearest)
+          .setWrapping(Mn::GL::SamplerWrapping::ClampToEdge);
+
+      // load only first level of textures for semantic annotations
       Cr::Containers::Optional<Mn::Trade::ImageData2D> image =
-          importer.image2D(textureData->image(), level);
+          importer.image2D(textureData->image(), 0);
       if (!image) {
         ESP_ERROR() << "Cannot load texture image, skipping";
         currentTexture = nullptr;
-        break;
+        continue;
+      }
+      // Convert color-based image to semantic image here
+      auto newImage = convertRGBToSemanticId(*image, clrToSemanticId);
+
+      currentTexture
+          ->setStorage(1, Mn::GL::TextureFormat::R16UI, newImage.size())
+          .setSubImage(0, {}, newImage);
+
+      // Whether semantic RGB or not
+    }
+  } else {
+    for (int iTexture = 0; iTexture < importer.textureCount(); ++iTexture) {
+      auto currentTextureID = textureStart + iTexture;
+      textures_.emplace(currentTextureID,
+                        std::make_shared<Mn::GL::Texture2D>());
+      auto& currentTexture = textures_.at(currentTextureID);
+
+      auto textureData = importer.texture(iTexture);
+      if (!textureData ||
+          textureData->type() != Mn::Trade::TextureType::Texture2D) {
+        ESP_ERROR() << "Cannot load texture" << iTexture << "skipping";
+        currentTexture = nullptr;
+        continue;
       }
 
-      Mn::GL::TextureFormat format;
-      if (image->isCompressed()) {
-        format = Mn::GL::textureFormat(image->compressedFormat());
-      } else {
-        format = Mn::GL::textureFormat(image->format());
-      }
+      // Configure the texture
+      // Mn::GL::Texture2D& texture = *(textures_.at(textureStart +
+      // iTexture).get());
+      currentTexture->setMagnificationFilter(textureData->magnificationFilter())
+          .setMinificationFilter(textureData->minificationFilter(),
+                                 textureData->mipmapFilter())
+          .setWrapping(textureData->wrapping().xy());
 
-      // For the very first level, allocate the texture
-      if (level == 0) {
-        // If there is just one level and the image is not compressed, we'll
-        // generate mips ourselves
-        if (levelCount == 1 && !image->isCompressed()) {
-          currentTexture->setStorage(Mn::Math::log2(image->size().max()) + 1,
-                                     format, image->size());
-          generateMipmap = true;
+      // Load all mip levels
+      const std::uint32_t levelCount =
+          importer.image2DLevelCount(textureData->image());
+
+      bool generateMipmap = false;
+      for (std::uint32_t level = 0; level != levelCount; ++level) {
+        // TODO:
+        // it seems we have a way to just load the image once in this case,
+        // as long as the image2DName include the full path to the image
+        Cr::Containers::Optional<Mn::Trade::ImageData2D> image =
+            importer.image2D(textureData->image(), level);
+        if (!image) {
+          ESP_ERROR() << "Cannot load texture image, skipping";
+          currentTexture = nullptr;
+          break;
+        }
+
+        Mn::GL::TextureFormat format;
+        if (image->isCompressed()) {
+          format = Mn::GL::textureFormat(image->compressedFormat());
         } else {
-          currentTexture->setStorage(levelCount, format, image->size());
+          format = Mn::GL::textureFormat(image->format());
+        }
+
+        // For the very first level, allocate the texture
+        if (level == 0) {
+          // If there is just one level and the image is not compressed, we'll
+          // generate mips ourselves
+          if (levelCount == 1 && !image->isCompressed()) {
+            currentTexture->setStorage(Mn::Math::log2(image->size().max()) + 1,
+                                       format, image->size());
+            generateMipmap = true;
+          } else {
+            currentTexture->setStorage(levelCount, format, image->size());
+          }
+        }
+
+        if (image->isCompressed()) {
+          currentTexture->setCompressedSubImage(level, {}, *image);
+        } else {
+          currentTexture->setSubImage(level, {}, *image);
         }
       }
 
-      if (image->isCompressed()) {
-        currentTexture->setCompressedSubImage(level, {}, *image);
-      } else {
-        currentTexture->setSubImage(level, {}, *image);
+      // Mip level loading failed, fail the whole texture
+      if (currentTexture == nullptr) {
+        continue;
+      }
+
+      // Generate a mipmap if requested
+      if (generateMipmap) {
+        currentTexture->generateMipmap();
       }
     }
-
-    // Mip level loading failed, fail the whole texture
-    if (currentTexture == nullptr) {
-      continue;
-    }
-
-    // Generate a mipmap if requested
-    if (generateMipmap) {
-      currentTexture->generateMipmap();
-    }
-  }
+  }  // Whether semantic RGB or not
 }  // ResourceManager::loadTextures
 
 bool ResourceManager::instantiateAssetsOnDemand(

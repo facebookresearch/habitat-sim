@@ -163,6 +163,31 @@ class SemanticScene {
    */
   bool hasVertColorsDefined() const { return hasVertColors_; }
 
+  /**
+   * @brief return a read-only reference to the semantic color map, where value
+   * is annotation color and index corresponds to id for that color. (HM3D only
+   * currently)
+   */
+  const std::vector<Mn::Vector3ub>& getSemanticColorMap() const {
+    return semanticColorMapBeingUsed_;
+  }
+
+  /**
+   * @brief return a read-only reference to a mapping of semantic
+   * color-as-integer to id and region id.(HM3D only currently)
+   */
+  const std::unordered_map<uint32_t, std::pair<int, int>>&
+  getSemanticColorToIdAndRegionMap() const {
+    return semanticColorToIdAndRegion_;
+  }
+
+  /**
+   * @Brief whether or not we should build bounding boxes around vertex
+   * annotations on semantic asset load. Currently used for HM3D.
+   */
+
+  bool buildBBoxFromVertColors() const { return needBBoxFromVertColors; }
+
  protected:
   /**
    * @brief Verify a requested file exists.
@@ -246,6 +271,12 @@ class SemanticScene {
 
   // Currently only supported by HM3D semantic files.
   bool hasVertColors_ = false;
+
+  /**
+   * @Brief whether or not we should build bounding boxes around vertex
+   * annotations on semantic asset load. Currently used for HM3D.
+   */
+  bool needBBoxFromVertColors = false;
   std::string name_;
   std::string label_;
   box3f bbox_;
@@ -256,6 +287,17 @@ class SemanticScene {
   std::vector<std::shared_ptr<SemanticObject>> objects_;
   //! map from combined region-segment id to objectIndex for semantic mesh
   std::unordered_map<int, int> segmentToObjectIndex_;
+  /**
+   * @brief List of mapped vertex colors, where index corresponds to object
+   * Index/semantic ID (HM3D only currently)
+   */
+  std::vector<Mn::Vector3ub> semanticColorMapBeingUsed_{};
+  /**
+   * @brief Map of integer color to segment and region ids. Used for
+   * transforming provided vertex colors. (HM3D only currently)
+   */
+  std::unordered_map<uint32_t, std::pair<int, int>>
+      semanticColorToIdAndRegion_{};
 
   ESP_SMART_POINTERS(SemanticScene)
 };
@@ -355,7 +397,22 @@ class SemanticObject {
   }
 
   Mn::Vector3ub getColor() const { return color_; }
-  void setColor(Mn::Vector3ub _color) { color_ = _color; }
+
+  void setColor(Mn::Vector3ub _color) {
+    color_ = _color;
+    // update colorAsInt_
+    colorAsInt_ = (unsigned(color_[0]) << 16) | (unsigned(color_[1]) << 8) |
+                  unsigned(color_[2]);
+  }
+
+  unsigned getColorAsInt() const { return colorAsInt_; }
+
+  void setColorAsInt(const unsigned _colorAsInt) {
+    colorAsInt_ = _colorAsInt;
+    // update color_ vector
+    color_ = {uint8_t((colorAsInt_ >> 16) & 0xff),
+              uint8_t((colorAsInt_ >> 8) & 0xff), uint8_t(colorAsInt_ & 0xff)};
+  }
 
  protected:
   /**
@@ -364,6 +421,8 @@ class SemanticObject {
   int index_{};
   // specified color for this object instance.
   Mn::Vector3ub color_{};
+  // specified color as unsigned int
+  unsigned colorAsInt_{};
 
   /**
    * @brief References the parent region for this object

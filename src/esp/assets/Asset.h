@@ -61,6 +61,12 @@ struct AssetInfo {
   metadata::attributes::ObjectInstanceShaderType shaderTypeToUse =
       metadata::attributes::ObjectInstanceShaderType::Unspecified;
 
+  /**
+   * @brief Asset is a semantic mesh that uses textures (instead of vertices)
+   * for annotation information.
+   */
+  bool hasSemanticTextures = false;
+
   //! Populates a preset AssetInfo by matching against known filepaths
   static AssetInfo fromPath(const std::string& filepath);
 

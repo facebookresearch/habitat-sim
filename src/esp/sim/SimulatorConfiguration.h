@@ -82,6 +82,11 @@ struct SimulatorConfiguration {
    * @brief setup the image based lighting for pbr rendering
    */
   bool pbrImageBasedLighting = false;
+  /**
+   * @brief use texture-based semantics if the specified asset/dataset support
+   * them.
+   */
+  bool useSemanticTexturesIfFound = true;
 
   ESP_SMART_POINTERS(SimulatorConfiguration)
 };

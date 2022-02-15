@@ -36,10 +36,11 @@ class HM3DObjectInstance : public SemanticObject {
   HM3DObjectInstance(int objInstanceID,
                      int objCatID,
                      const std::string& name,
-                     const Mn::Vector3ub& clr)
+                     const unsigned colorInt)
       : SemanticObject(), objCatID_(objCatID), name_(name) {
     index_ = objInstanceID;
-    color_ = clr;
+    // sets both colorAsInt_ and updates color_ vector to match
+    setColorAsInt(colorInt);
   }
 
   std::string id() const override { return name_; }

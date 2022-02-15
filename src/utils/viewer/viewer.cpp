@@ -771,9 +771,10 @@ Viewer::Viewer(const Arguments& arguments)
       .setHelp("object-dir",
                "Provide a directory to search for object config files "
                "(relative to habitat-sim directory).")
-      .addBooleanOption("orthographic")
-      .setHelp("orthographic",
-               "If specified, use orthographic camera to view scene.")
+      .addBooleanOption("no-semantic-textures")
+      .setHelp("no-semantic-textures",
+               "If specified, force vertex semantic annotations even if the "
+               "scene/dataset support texture-based.")
       .addBooleanOption("disable-navmesh")
       .setHelp("disable-navmesh",
                "Disable the navmesh, disabling agent navigation constraints.")
@@ -817,7 +818,6 @@ Viewer::Viewer(const Arguments& arguments)
     debugBullet_ = true;
   }
 
-  isOrtho_ = args.isSet("orthographic");
   agentTransformLoadPath_ = args.value("agent-transform-filepath");
   gfxReplayRecordFilepath_ = args.value("gfx-replay-record-filepath");
 
@@ -875,6 +875,7 @@ Viewer::Viewer(const Arguments& arguments)
   simConfig_.frustumCulling = true;
   simConfig_.requiresTextures = true;
   simConfig_.enableGfxReplaySave = !gfxReplayRecordFilepath_.empty();
+  simConfig_.useSemanticTexturesIfFound = !args.isSet("no-semantic-textures");
   if (args.isSet("stage-requires-lighting")) {
     ESP_DEBUG() << "Stage using DEFAULT_LIGHTING_KEY";
     simConfig_.sceneLightSetupKey = esp::DEFAULT_LIGHTING_KEY;
@@ -1516,16 +1517,20 @@ void Viewer::drawEvent() {
   } else {
     // Depth Or Semantic, or Non-pinhole RGBA
     simulator_->drawObservation(defaultAgentId_, sensorVisID_);
+
     esp::gfx::RenderTarget* sensorRenderTarget =
         simulator_->getRenderTarget(defaultAgentId_, sensorVisID_);
     CORRADE_ASSERT(sensorRenderTarget,
                    "Error in Viewer::drawEvent: sensor's rendering target "
                    "cannot be nullptr.", );
+
     if (visualizeMode_ == VisualizeMode::Depth) {
       simulator_->visualizeObservation(defaultAgentId_, sensorVisID_,
                                        1.0f / 512.0f,  // colorMapOffset
                                        1.0f / 12.0f);  // colorMapScale
     } else if (visualizeMode_ == VisualizeMode::Semantic) {
+      Mn::GL::defaultFramebuffer.clear(Mn::GL::FramebufferClear::Color |
+                                       Mn::GL::FramebufferClear::Depth);
       simulator_->visualizeObservation(defaultAgentId_, sensorVisID_);
     }
     sensorRenderTarget->blitRgbaToDefault();

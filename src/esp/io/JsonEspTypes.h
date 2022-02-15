@@ -92,6 +92,7 @@ inline JsonGenericValue toJsonValue(const esp::assets::AssetInfo& x,
   addMember(obj, "splitInstanceMesh", x.splitInstanceMesh, allocator);
   addMember(obj, "shaderTypeToUse", x.shaderTypeToUse, allocator);
   addMember(obj, "overridePhongMaterial", x.overridePhongMaterial, allocator);
+  addMember(obj, "hasSemanticTextures", x.hasSemanticTextures, allocator);
 
   return obj;
 }
@@ -106,6 +107,7 @@ inline bool fromJsonValue(const JsonGenericValue& obj,
   readMember(obj, "splitInstanceMesh", x.splitInstanceMesh);
   readMember(obj, "shaderTypeToUse", x.shaderTypeToUse);
   readMember(obj, "overridePhongMaterial", x.overridePhongMaterial);
+  readMember(obj, "hasSemanticTextures", x.hasSemanticTextures);
   return true;
 }
 
@@ -145,6 +147,7 @@ inline JsonGenericValue toJsonValue(
   addMember(obj, "isStatic", x.isStatic(), allocator);
   addMember(obj, "isRGBD", x.isRGBD(), allocator);
   addMember(obj, "isSemantic", x.isSemantic(), allocator);
+  addMember(obj, "isTextureSemantic", x.isTextureBasedSemantic(), allocator);
   addMember(obj, "lightSetupKey", x.lightSetupKey, allocator);
   return obj;
 }
@@ -159,6 +162,8 @@ inline bool fromJsonValue(const JsonGenericValue& obj,
   readMember(obj, "isRGBD", isRGBD);
   bool isSemantic = false;
   readMember(obj, "isSemantic", isSemantic);
+  bool isTextureSemantic = false;
+  readMember(obj, "isTextureSemantic", isTextureSemantic);
   if (isStatic) {
     x.flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsStatic;
   }
@@ -168,6 +173,11 @@ inline bool fromJsonValue(const JsonGenericValue& obj,
   if (isSemantic) {
     x.flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::IsSemantic;
   }
+  if (isTextureSemantic) {
+    x.flags |= esp::assets::RenderAssetInstanceCreationInfo::Flag::
+        IsTextureBasedSemantic;
+  }
+
   readMember(obj, "lightSetupKey", x.lightSetupKey);
   return true;
 }
