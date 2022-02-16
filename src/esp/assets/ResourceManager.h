@@ -712,7 +712,8 @@ class ResourceManager {
    * @brief Build data for a report for semantic mesh connected components based
    * on color/id.
    */
-  void buildSemanticCCReport(
+  std::unordered_map<std::string, std::vector<std::pair<int, esp::geo::OBB>>>
+  buildSemanticCCReport(
       const metadata::attributes::StageAttributes::ptr& stageAttributes);
 
  private:

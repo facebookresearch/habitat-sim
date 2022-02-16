@@ -217,7 +217,8 @@ void ResourceManager::initPhysicsManager(
   physicsManager->initPhysics(parent);
 }  // ResourceManager::initPhysicsManager
 
-void ResourceManager::buildSemanticCCReport(
+std::unordered_map<std::string, std::vector<std::pair<int, esp::geo::OBB>>>
+ResourceManager::buildSemanticCCReport(
     const StageAttributes::ptr& stageAttributes) {
   std::map<std::string, AssetInfo> assetInfoMap =
       createStageAssetInfosFromAttributes(stageAttributes, false, true);
@@ -238,9 +239,9 @@ void ResourceManager::buildSemanticCCReport(
   GenericSemanticMeshData::uptr semanticMeshData =
       flattenImportedMeshAndBuildSemantic(*fileImporter_, semanticInfo);
 
-  // return connectivity query results - per color multi-map of vert idxs in
-  // semanticMeshData
-  auto ccCalcRes = semanticMeshData->findConnectedComponentsByColor();
+  // return connectivity query results - per color map of vectors of pairs of
+  // vert counts and OBBs
+  return semanticMeshData->buildSemanticCCReportData();
 
 }  // ResourceManager::buildSemanticCCReport
 
@@ -1450,10 +1451,6 @@ ResourceManager::flattenImportedMeshAndBuildSemantic(Importer& fileImporter,
   if (semanticScene_) {
     buildSemanticColorAsIntMap();
   }
-
-  // return connectivity query results - per color multi-map of vert idxs in
-  // semanticMeshData
-  auto ccCalcRes = semanticMeshData->findConnectedComponentsByColor();
   return semanticMeshData;
 }  // ResourceManager::loadAndFlattenImportedMeshData
 
