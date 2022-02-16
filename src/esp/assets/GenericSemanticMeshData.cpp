@@ -351,7 +351,7 @@ std::pair<int, esp::geo::OBB> buildOBBAndCountForSetOfVerts(
   for (uint32_t idx : setOfIDXs) {
     Mn::Vector3 vert = verts[idx];
     vertMax = Mn::Math::max(vertMax, vert);
-    vertMin = Mn::Math::max(vertMin, vert);
+    vertMin = Mn::Math::min(vertMin, vert);
   }
 
   Mn::Vector3 center = .5f * (vertMax + vertMin);
@@ -408,12 +408,7 @@ GenericSemanticMeshData::findConnectedComponentsByColor() {
         findIter = clrsToComponents.insert({colorKey, {}}).first;
       }
       findIter->second.push_back(setOfVerts);
-      // clrsToComponents.insert({colorKey, setOfVerts});
     }
-  }
-  for (const auto& clrAndVec : clrsToComponents) {
-    ESP_DEBUG() << "Clr :" << clrAndVec.first << " : # sets "
-                << clrAndVec.second.size();
   }
 
   return clrsToComponents;
@@ -425,9 +420,19 @@ GenericSemanticMeshData::buildSemanticCCReportData() {
       clrsToComponents = findConnectedComponentsByColor();
   // 1 entry per color
   std::unordered_map<std::string, std::vector<std::pair<int, esp::geo::OBB>>>
-      results(cpu_cbo_.size());
-  // build OBB for each box
+      results(clrsToComponents.size());
   for (const auto& elem : clrsToComponents) {
+    const std::string colorKey = elem.first;
+    const std::vector<std::set<uint32_t>>& vectorOfSets = elem.second;
+    auto findIter = results.find(colorKey);
+    if (findIter == results.end()) {
+      // not found already
+      findIter = results.insert({colorKey, {}}).first;
+    }
+    for (const std::set<uint32_t>& vertSet : vectorOfSets) {
+      findIter->second.push_back(
+          buildOBBAndCountForSetOfVerts(cpu_vbo_, vertSet));
+    }
   }
 
   return results;

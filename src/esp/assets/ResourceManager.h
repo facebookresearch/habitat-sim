@@ -708,6 +708,13 @@ class ResourceManager {
   static constexpr const char* SHADOW_MAP_KEY_TEMPLATE =
       "scene_id={}-light_id={}";
 
+  /**
+   * @brief Build data for a report for semantic mesh connected components based
+   * on color/id.
+   */
+  void buildSemanticCCReport(
+      const metadata::attributes::StageAttributes::ptr& stageAttributes);
+
  private:
   /**
    * @brief Load the requested mesh info into @ref meshInfo corresponding to
@@ -717,8 +724,8 @@ class ResourceManager {
    * @param objectAttributes the object attributes owning
    * this mesh.
    * @param assetType either "render" or "collision" (for error log output)
-   * @param forceFlatShading whether to force this asset to be rendered via flat
-   * shading.
+   * @param forceFlatShading whether to force this asset to be rendered via
+   * flat shading.
    * @return whether or not the mesh was loaded successfully
    */
   bool loadObjectMeshDataFromFile(

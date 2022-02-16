@@ -217,6 +217,33 @@ void ResourceManager::initPhysicsManager(
   physicsManager->initPhysics(parent);
 }  // ResourceManager::initPhysicsManager
 
+void ResourceManager::buildSemanticCCReport(
+    const StageAttributes::ptr& stageAttributes) {
+  std::map<std::string, AssetInfo> assetInfoMap =
+      createStageAssetInfosFromAttributes(stageAttributes, false, true);
+
+  AssetInfo semanticInfo = assetInfoMap.at("semantic");
+
+  const std::string& filename = semanticInfo.filepath;
+  /* Open the file. On error the importer already prints a diagnostic message,
+     so no need to do that here. The importer implicitly converts per-face
+     attributes to per-vertex, so nothing extra needs to be done. */
+  ESP_CHECK(
+      (fileImporter_->openFile(filename) && (fileImporter_->meshCount() > 0u)),
+      Cr::Utility::formatString("Error loading semantic mesh data from file {}",
+                                filename));
+
+  // flatten source meshes, preserving transforms, build semanticMeshData and
+  // construct vertex-based semantic bboxes, if requested for dataset.
+  GenericSemanticMeshData::uptr semanticMeshData =
+      flattenImportedMeshAndBuildSemantic(*fileImporter_, semanticInfo);
+
+  // return connectivity query results - per color multi-map of vert idxs in
+  // semanticMeshData
+  auto ccCalcRes = semanticMeshData->findConnectedComponentsByColor();
+
+}  // ResourceManager::buildSemanticCCReport
+
 bool ResourceManager::loadSemanticSceneDescriptor(
     const std::string& ssdFilename,
     const std::string& activeSceneName) {
@@ -1417,14 +1444,16 @@ ResourceManager::flattenImportedMeshAndBuildSemantic(Importer& fileImporter,
           *meshData, Cr::Utility::Directory::filename(filename),
           semanticColorMapBeingUsed_,
           (filename.find(".ply") == std::string::npos), semanticScene_);
-  // connectivity query
-  auto ccByColorMap = semanticMeshData->findConnectedComponentsByColor();
 
   // augment colors_as_int array to handle if un-expected colors have been found
   // in mesh verts.
   if (semanticScene_) {
     buildSemanticColorAsIntMap();
   }
+
+  // return connectivity query results - per color multi-map of vert idxs in
+  // semanticMeshData
+  auto ccCalcRes = semanticMeshData->findConnectedComponentsByColor();
   return semanticMeshData;
 }  // ResourceManager::loadAndFlattenImportedMeshData
 

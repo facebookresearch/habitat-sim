@@ -166,7 +166,7 @@ void BaseMesh::buildSemanticOBBs(
       center = .5f * (vertMax[semanticID] + vertMin[semanticID]);
       dims = vertMax[semanticID] - vertMin[semanticID];
       ESP_DEBUG() << Cr::Utility::formatString(
-          "{}BB Center [{},{},{}] Dims [{},{},{}]", debugStr, center.x(),
+          "{}BB Center [{} {} {}] Dims [{} {} {}]", debugStr, center.x(),
           center.y(), center.z(), dims.x(), dims.y(), dims.z());
     }
     ssdObj.setObb(Mn::EigenIntegration::cast<esp::vec3f>(center),
