@@ -4,6 +4,8 @@
 
 #include "GenericSemanticMeshData.h"
 
+#include <set>
+
 #include <Corrade/Containers/Array.h>
 #include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/ArrayViewStl.h>
@@ -33,8 +35,9 @@ GenericSemanticMeshData::buildSemanticMeshData(
     bool convertToSRGB,
     const std::shared_ptr<scene::SemanticScene>& semanticScene) {
   // build text prefix used in log messages
-  const std::string dbgMsgPrefix =
-      Cr::Utility::formatString("Parsing Semantic File {} :", semanticFilename);
+  const std::string dbgMsgPrefix = Cr::Utility::formatString(
+      "Parsing Semantic File {} w/prim:{} :", semanticFilename,
+      static_cast<Mn::UnsignedInt>(srcMeshData.primitive()));
 
   // Check for required colors - all semantic meshes must have vertex colors
   ESP_CHECK(
@@ -327,10 +330,89 @@ GenericSemanticMeshData::partitionSemanticMeshData(
   for (size_t i = 0; i < splitMeshData.size(); ++i) {
     splitMeshData[i]->updateCollisionMeshData();
   }
-
   return splitMeshData;
 
 }  // GenericSemanticMeshData::partitionSemanticMeshData
+
+namespace {
+
+/**
+ * @brief Build a connected component recursively on an unconnected graph (i.e.
+ * mesh vertices), building from passed @p vIDX from adjecent verts that match
+ * the passed @p clr value.
+ * @tparam The type of the conditioning variable.
+ * @param adjList A reference to the mesh's adjacency list.  IDX of list is src
+ * vert index in owning vert list, value is dest vert index in vert list.
+ * @param clrVec A reference to the per-vertex identifiers used to condition the
+ * CC.
+ * @param vIDX The index of the src vertex of this part of the CC.
+ * @param visited Per-vertex visitation record.
+ * @param clr The CC's identifying "color", to be matched by adjacent verts for
+ * membership.
+ * @param setOfVerts Aggregation of verts in the CC.
+ */
+template <class T>
+void conditionalDFS(const std::vector<std::set<uint32_t>>& adjList,
+                    const std::vector<T>& clrVec,
+                    uint32_t vIDX,
+                    std::vector<bool>& visited,
+                    const T& clr,
+                    std::set<uint32_t>& setOfVerts) {
+  setOfVerts.insert(vIDX);
+  visited[vIDX] = true;
+  // for every adjacent vertex
+  for (auto it = adjList[vIDX].begin(); it != adjList[vIDX].end(); it++) {
+    // make sure not visited and color matches
+    if ((!visited[*it]) && (clrVec[*it] == clr)) {
+      conditionalDFS(adjList, clrVec, *it, visited, clr, setOfVerts);
+    }
+  }
+}  // conditionalDFS
+}  // namespace
+
+/**
+ * @brief Calculate mesh connectivity based color.
+ * @return unordered multi-map of connected components, keyed by color.
+ */
+
+std::unordered_multimap<std::string, std::set<uint32_t>>
+GenericSemanticMeshData::findConnectedComponentsByColor() {
+  // build adj list
+  std::vector<std::set<uint32_t>> adjList(cpu_vbo_.size(),
+                                          std::set<uint32_t>{});
+  for (size_t i = 0; i < cpu_ibo_.size(); i += 3) {
+    // find idxs of triangle
+    const uint32_t idx0 = cpu_ibo_[i];
+    const uint32_t idx1 = cpu_ibo_[i + 1];
+    const uint32_t idx2 = cpu_ibo_[i + 2];
+    // save adjacency info for triangle
+    adjList[idx0].insert(idx1);
+    adjList[idx1].insert(idx0);
+    adjList[idx0].insert(idx2);
+    adjList[idx2].insert(idx0);
+    adjList[idx1].insert(idx2);
+    adjList[idx2].insert(idx1);
+  }
+  std::vector<bool> visited(cpu_vbo_.size(), false);
+  std::unordered_multimap<std::string, std::set<uint32_t>> clrsToComponents(
+      cpu_cbo_.size());
+  std::set<std::string> colorKeySet{};
+  for (uint32_t vIDX = 0; vIDX < cpu_vbo_.size(); ++vIDX) {
+    if (!visited[vIDX]) {
+      std::set<uint32_t> setOfVerts{};
+      // vert's color
+      const auto vertColor = cpu_cbo_[vIDX];
+      // each call to dfs here creates a new cc
+      conditionalDFS(adjList, cpu_cbo_, vIDX, visited, vertColor, setOfVerts);
+      const std::string colorKey = getColorAsString(vertColor);
+      // build multi-map keyed by color of vert set for cc
+      clrsToComponents.insert({colorKey, setOfVerts});
+      colorKeySet.insert(colorKey);
+    }
+  }
+
+  return clrsToComponents;
+}  // findConnectedComponentsByColor
 
 void GenericSemanticMeshData::uploadBuffersToGPU(bool forceReload) {
   if (forceReload) {

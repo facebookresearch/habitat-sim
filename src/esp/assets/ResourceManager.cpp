@@ -28,8 +28,10 @@
 #include <Magnum/Math/Tags.h>
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/MeshTools/Concatenate.h>
+#include <Magnum/MeshTools/FilterAttributes.h>
 #include <Magnum/MeshTools/Interleave.h>
 #include <Magnum/MeshTools/Reference.h>
+#include <Magnum/MeshTools/RemoveDuplicates.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/SceneGraph/Object.h>
 #include <Magnum/SceneTools/FlattenMeshHierarchy.h>
@@ -1393,17 +1395,30 @@ ResourceManager::flattenImportedMeshAndBuildSemantic(Importer& fileImporter,
     }
     // build concatenated meshData from container of meshes.
     meshData = Mn::MeshTools::concatenate(meshView);
+    // filter out texture coords and remove duplicate verts
+    meshData =
+        Mn::MeshTools::removeDuplicates(Mn::MeshTools::filterOnlyAttributes(
+            *meshData, {
+                           Mn::Trade::MeshAttribute::Position,
+                           Mn::Trade::MeshAttribute::Color,
+                           Mn::Trade::MeshAttribute::ObjectId
+                           // filtering out UV/texture coords
+                       }));
+
   }  // flatten/reframe src meshes
 
   // build semanticColorMapBeingUsed_ if semanticScene_ is not nullptr
   if (semanticScene_) {
     buildSemanticColorMap();
   }
+
   GenericSemanticMeshData::uptr semanticMeshData =
       GenericSemanticMeshData::buildSemanticMeshData(
           *meshData, Cr::Utility::Directory::filename(filename),
           semanticColorMapBeingUsed_,
           (filename.find(".ply") == std::string::npos), semanticScene_);
+  // connectivity query
+  auto ccByColorMap = semanticMeshData->findConnectedComponentsByColor();
 
   // augment colors_as_int array to handle if un-expected colors have been found
   // in mesh verts.

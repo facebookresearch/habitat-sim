@@ -157,7 +157,7 @@ void BaseMesh::buildSemanticOBBs(
     const std::string debugStr = Cr::Utility::formatString(
         "{} Semantic ID : {} : color : {} tag : {} present in {} "
         "verts | ",
-        msgPrefix, semanticID, ssdObj.getColorAsInt(), ssdObj.id(),
+        msgPrefix, semanticID, getColorAsString(ssdObj.getColor()), ssdObj.id(),
         vertCounts[semanticID]);
     if (vertCounts[semanticID] == 0) {
       ESP_DEBUG() << Cr::Utility::formatString(

@@ -9,6 +9,7 @@
 #include <Magnum/GL/Buffer.h>
 #include <Magnum/GL/Mesh.h>
 #include <memory>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -83,6 +84,14 @@ class GenericSemanticMeshData : public BaseMesh {
   static std::vector<std::unique_ptr<GenericSemanticMeshData>>
   partitionSemanticMeshData(
       const std::unique_ptr<GenericSemanticMeshData>& semanticMeshData);
+
+  /**
+   * @brief Calculate mesh connectivity based color.
+   * @return unordered multi-map of connected components, keyed by color.
+   */
+
+  std::unordered_multimap<std::string, std::set<uint32_t>>
+  findConnectedComponentsByColor();
 
   // ==== rendering ====
   void uploadBuffersToGPU(bool forceReload = false) override;

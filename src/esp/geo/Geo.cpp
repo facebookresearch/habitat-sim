@@ -504,7 +504,7 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
       static_cast<Mn::UnsignedInt>(positions.size())};
 
   return meshData;
-}  // ResourceManager::trajectoryTubeSolid
+}  // buildTrajectoryTubeSolid
 
 }  // namespace geo
 }  // namespace esp
