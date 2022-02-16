@@ -92,14 +92,14 @@ class GenericSemanticMeshData : public BaseMesh {
    * color.
    */
 
-  std::unordered_map<std::string, std::vector<std::set<uint32_t>>>
+  std::unordered_map<uint32_t, std::vector<std::set<uint32_t>>>
   findConnectedComponentsByColor();
 
   /**
    * @build a per-color map of all bounding boxes for each CC found in the mesh,
    * and the count of verts responsible for each.
    */
-  std::unordered_map<std::string, std::vector<std::pair<int, esp::geo::OBB>>>
+  std::unordered_map<uint32_t, std::vector<std::pair<int, esp::geo::OBB>>>
   buildSemanticCCReportData();
 
   // ==== rendering ====

@@ -364,6 +364,11 @@ std::pair<int, esp::geo::OBB> buildOBBAndCountForSetOfVerts(
 
 }  // buildOBBForSetOfVerts
 
+uint32_t getColorAsInt(const Mn::Color3ub& color) {
+  return (unsigned(color[0]) << 16) | (unsigned(color[1]) << 8) |
+         unsigned(color[2]);
+};
+
 }  // namespace
 
 /**
@@ -371,7 +376,7 @@ std::pair<int, esp::geo::OBB> buildOBBAndCountForSetOfVerts(
  * @return unordered multi-map of connected components, keyed by color.
  */
 
-std::unordered_map<std::string, std::vector<std::set<uint32_t>>>
+std::unordered_map<uint32_t, std::vector<std::set<uint32_t>>>
 GenericSemanticMeshData::findConnectedComponentsByColor() {
   // build adj list
   std::vector<std::set<uint32_t>> adjList(cpu_vbo_.size(),
@@ -390,7 +395,7 @@ GenericSemanticMeshData::findConnectedComponentsByColor() {
     adjList[idx2].insert(idx1);
   }
   std::vector<bool> visited(cpu_vbo_.size(), false);
-  std::unordered_map<std::string, std::vector<std::set<uint32_t>>>
+  std::unordered_map<uint32_t, std::vector<std::set<uint32_t>>>
       clrsToComponents(cpu_cbo_.size());
   for (uint32_t vIDX = 0; vIDX < cpu_vbo_.size(); ++vIDX) {
     if (!visited[vIDX]) {
@@ -400,7 +405,7 @@ GenericSemanticMeshData::findConnectedComponentsByColor() {
       // each call to dfs here creates a new cc
       geo::conditionalDFS(adjList, cpu_cbo_, vIDX, visited, vertColor,
                           setOfVerts);
-      const std::string colorKey = getColorAsString(vertColor);
+      const uint32_t colorKey = getColorAsInt(vertColor);
       // build map keyed by color of vert set for cc
       auto findIter = clrsToComponents.find(colorKey);
       if (findIter == clrsToComponents.end()) {
@@ -414,15 +419,15 @@ GenericSemanticMeshData::findConnectedComponentsByColor() {
   return clrsToComponents;
 }  // findConnectedComponentsByColor
 
-std::unordered_map<std::string, std::vector<std::pair<int, esp::geo::OBB>>>
+std::unordered_map<uint32_t, std::vector<std::pair<int, esp::geo::OBB>>>
 GenericSemanticMeshData::buildSemanticCCReportData() {
-  std::unordered_map<std::string, std::vector<std::set<uint32_t>>>
+  std::unordered_map<uint32_t, std::vector<std::set<uint32_t>>>
       clrsToComponents = findConnectedComponentsByColor();
   // 1 entry per color
-  std::unordered_map<std::string, std::vector<std::pair<int, esp::geo::OBB>>>
+  std::unordered_map<uint32_t, std::vector<std::pair<int, esp::geo::OBB>>>
       results(clrsToComponents.size());
   for (const auto& elem : clrsToComponents) {
-    const std::string colorKey = elem.first;
+    const uint32_t colorKey = elem.first;
     const std::vector<std::set<uint32_t>>& vectorOfSets = elem.second;
     auto findIter = results.find(colorKey);
     if (findIter == results.end()) {

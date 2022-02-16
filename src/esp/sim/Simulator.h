@@ -238,7 +238,7 @@ class Simulator {
    * @brief Build a connectivity report for current stage's semantic scene
    * vertex annotation regions.
    */
-  std::unordered_map<std::string, std::vector<std::pair<int, esp::geo::OBB>>>
+  std::unordered_map<uint32_t, std::vector<std::pair<int, esp::geo::OBB>>>
   buildSemanticCCReport() {
     // build report with current stage attributes
     return resourceManager_->buildSemanticCCReport(
