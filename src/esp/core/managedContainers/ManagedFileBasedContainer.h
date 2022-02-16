@@ -478,7 +478,7 @@ bool ManagedFileBasedContainer<T, Access>::saveManagedObjectToFile(
   // first strip object's file directory from objectHandle
   std::size_t pos = objectHandle.find(fileDirectory);
   std::string fileNameRaw;
-  if (pos == std::string::npos) {
+  if ((fileDirectory.empty()) || (pos == std::string::npos)) {
     // directory not found, construct filename from simplified object handle
     fileNameRaw = FileUtil::filename(objectHandle);
   } else {
