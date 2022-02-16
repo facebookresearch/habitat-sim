@@ -19,6 +19,7 @@
 #include <Magnum/PixelFormat.h>
 #include <Magnum/Shaders/GenericGL.h>
 
+#include "esp/geo/Geo.h"
 #include "esp/scene/SemanticScene.h"
 
 namespace Cr = Corrade;
@@ -337,37 +338,32 @@ GenericSemanticMeshData::partitionSemanticMeshData(
 namespace {
 
 /**
- * @brief Build a connected component recursively on an unconnected graph (i.e.
- * mesh vertices), building from passed @p vIDX from adjecent verts that match
- * the passed @p clr value.
- * @tparam The type of the conditioning variable.
- * @param adjList A reference to the mesh's adjacency list.  IDX of list is src
- * vert index in owning vert list, value is dest vert index in vert list.
- * @param clrVec A reference to the per-vertex identifiers used to condition the
- * CC.
- * @param vIDX The index of the src vertex of this part of the CC.
- * @param visited Per-vertex visitation record.
- * @param clr The CC's identifying "color", to be matched by adjacent verts for
- * membership.
- * @param setOfVerts Aggregation of verts in the CC.
+ * @brief Build a vector of OBBs, one per set of verts in passed vector
  */
-template <class T>
-void conditionalDFS(const std::vector<std::set<uint32_t>>& adjList,
-                    const std::vector<T>& clrVec,
-                    uint32_t vIDX,
-                    std::vector<bool>& visited,
-                    const T& clr,
-                    std::set<uint32_t>& setOfVerts) {
-  setOfVerts.insert(vIDX);
-  visited[vIDX] = true;
-  // for every adjacent vertex
-  for (auto it = adjList[vIDX].begin(); it != adjList[vIDX].end(); it++) {
-    // make sure not visited and color matches
-    if ((!visited[*it]) && (clrVec[*it] == clr)) {
-      conditionalDFS(adjList, clrVec, *it, visited, clr, setOfVerts);
-    }
+std::pair<int, esp::geo::OBB> buildOBBAndCountForSetOfVerts(
+    const std::vector<Mn::Vector3>& verts,
+    const std::set<uint32_t>& setOfIDXs) {
+  Mn::Vector3 vertMax{-Mn::Constants::inf(), -Mn::Constants::inf(),
+                      -Mn::Constants::inf()};
+  Mn::Vector3 vertMin{Mn::Constants::inf(), Mn::Constants::inf(),
+                      Mn::Constants::inf()};
+
+  for (uint32_t idx : setOfIDXs) {
+    Mn::Vector3 vert = verts[idx];
+    vertMax = Mn::Math::max(vertMax, vert);
+    vertMin = Mn::Math::max(vertMin, vert);
   }
-}  // conditionalDFS
+
+  Mn::Vector3 center = .5f * (vertMax + vertMin);
+  Mn::Vector3 dims = vertMax - vertMin;
+
+  return std::make_pair<int, esp::geo::OBB>(
+      setOfIDXs.size(), geo::OBB{Mn::EigenIntegration::cast<esp::vec3f>(center),
+                                 Mn::EigenIntegration::cast<esp::vec3f>(dims),
+                                 quatf::Identity()});
+
+}  // buildOBBForSetOfVerts
+
 }  // namespace
 
 /**
@@ -375,7 +371,7 @@ void conditionalDFS(const std::vector<std::set<uint32_t>>& adjList,
  * @return unordered multi-map of connected components, keyed by color.
  */
 
-std::unordered_multimap<std::string, std::set<uint32_t>>
+std::unordered_map<std::string, std::vector<std::set<uint32_t>>>
 GenericSemanticMeshData::findConnectedComponentsByColor() {
   // build adj list
   std::vector<std::set<uint32_t>> adjList(cpu_vbo_.size(),
@@ -394,25 +390,48 @@ GenericSemanticMeshData::findConnectedComponentsByColor() {
     adjList[idx2].insert(idx1);
   }
   std::vector<bool> visited(cpu_vbo_.size(), false);
-  std::unordered_multimap<std::string, std::set<uint32_t>> clrsToComponents(
-      cpu_cbo_.size());
-  std::set<std::string> colorKeySet{};
+  std::unordered_map<std::string, std::vector<std::set<uint32_t>>>
+      clrsToComponents(cpu_cbo_.size());
   for (uint32_t vIDX = 0; vIDX < cpu_vbo_.size(); ++vIDX) {
     if (!visited[vIDX]) {
       std::set<uint32_t> setOfVerts{};
       // vert's color
       const auto vertColor = cpu_cbo_[vIDX];
       // each call to dfs here creates a new cc
-      conditionalDFS(adjList, cpu_cbo_, vIDX, visited, vertColor, setOfVerts);
+      geo::conditionalDFS(adjList, cpu_cbo_, vIDX, visited, vertColor,
+                          setOfVerts);
       const std::string colorKey = getColorAsString(vertColor);
-      // build multi-map keyed by color of vert set for cc
-      clrsToComponents.insert({colorKey, setOfVerts});
-      colorKeySet.insert(colorKey);
+      // build map keyed by color of vert set for cc
+      auto findIter = clrsToComponents.find(colorKey);
+      if (findIter == clrsToComponents.end()) {
+        // not found already
+        findIter = clrsToComponents.insert({colorKey, {}}).first;
+      }
+      findIter->second.push_back(setOfVerts);
+      // clrsToComponents.insert({colorKey, setOfVerts});
     }
+  }
+  for (const auto& clrAndVec : clrsToComponents) {
+    ESP_DEBUG() << "Clr :" << clrAndVec.first << " : # sets "
+                << clrAndVec.second.size();
   }
 
   return clrsToComponents;
 }  // findConnectedComponentsByColor
+
+std::unordered_map<std::string, std::vector<std::pair<int, esp::geo::OBB>>>
+GenericSemanticMeshData::buildSemanticCCReportData() {
+  std::unordered_map<std::string, std::vector<std::set<uint32_t>>>
+      clrsToComponents = findConnectedComponentsByColor();
+  // 1 entry per color
+  std::unordered_map<std::string, std::vector<std::pair<int, esp::geo::OBB>>>
+      results(cpu_cbo_.size());
+  // build OBB for each box
+  for (const auto& elem : clrsToComponents) {
+  }
+
+  return results;
+}  // GenericSemanticMeshData::buildSemanticCCReportData
 
 void GenericSemanticMeshData::uploadBuffersToGPU(bool forceReload) {
   if (forceReload) {

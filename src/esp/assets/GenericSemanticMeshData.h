@@ -16,6 +16,7 @@
 
 #include "BaseMesh.h"
 #include "esp/core/Esp.h"
+#include "esp/geo/OBB.h"
 
 namespace esp {
 namespace scene {
@@ -87,11 +88,19 @@ class GenericSemanticMeshData : public BaseMesh {
 
   /**
    * @brief Calculate mesh connectivity based color.
-   * @return unordered multi-map of connected components, keyed by color.
+   * @return unordered map of vectors of connected component vert idxs, keyed by
+   * color.
    */
 
-  std::unordered_multimap<std::string, std::set<uint32_t>>
+  std::unordered_map<std::string, std::vector<std::set<uint32_t>>>
   findConnectedComponentsByColor();
+
+  /**
+   * @build a per-color map of all bounding boxes for each CC found in the mesh,
+   * and the count of verts responsible for each.
+   */
+  std::unordered_map<std::string, std::vector<std::pair<int, esp::geo::OBB>>>
+  buildSemanticCCReportData();
 
   // ==== rendering ====
   void uploadBuffersToGPU(bool forceReload = false) override;

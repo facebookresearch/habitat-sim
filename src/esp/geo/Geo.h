@@ -5,6 +5,7 @@
 #ifndef ESP_GEO_GEO_H_
 #define ESP_GEO_GEO_H_
 
+#include <set>
 #include <vector>
 
 #include "esp/core/Esp.h"
@@ -153,6 +154,41 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
     bool smooth,
     int numInterp,
     ColorSpace clrSpace = ColorSpace::HSV);
+
+/**
+ * @brief Build a connected component recursively on an unconnected graph
+ * (i.e. mesh vertices), building from passed @p vIDX from adjecent verts
+ * that match the passed @p clr value.
+ *
+ * @tparam The type of the conditioning variable.
+ * @param adjList A reference to the mesh's adjacency list.  IDX of list is
+ * src vert index in owning vert list, value is dest vert index in vert
+ * list.
+ * @param clrVec A reference to the per-vertex identifiers used to condition
+ * the CC.
+ * @param vIDX The index of the src vertex of this part of the CC.
+ * @param visited Per-vertex visitation record.
+ * @param clr The CC's identifying "color", to be matched by adjacent verts
+ * for membership.
+ * @param setOfVerts Aggregation of verts in the CC.
+ */
+template <class T>
+void conditionalDFS(const std::vector<std::set<uint32_t>>& adjList,
+                    const std::vector<T>& clrVec,
+                    uint32_t vIDX,
+                    std::vector<bool>& visited,
+                    const T& clr,
+                    std::set<uint32_t>& setOfVerts) {
+  setOfVerts.insert(vIDX);
+  visited[vIDX] = true;
+  // for every adjacent vertex
+  for (auto it = adjList[vIDX].begin(); it != adjList[vIDX].end(); it++) {
+    // make sure not visited and color matches
+    if ((!visited[*it]) && (clrVec[*it] == clr)) {
+      conditionalDFS(adjList, clrVec, *it, visited, clr, setOfVerts);
+    }
+  }
+}  // conditionalDFS
 
 template <typename T>
 T clamp(const T& n, const T& low, const T& high) {
