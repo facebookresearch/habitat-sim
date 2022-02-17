@@ -412,7 +412,7 @@ GenericSemanticMeshData::findConnectedComponentsByColor() {
         // not found already
         findIter = clrsToComponents.insert({colorKey, {}}).first;
       }
-      findIter->second.push_back(setOfVerts);
+      findIter->second.push_back(std::move(setOfVerts));
     }
   }
 
@@ -432,10 +432,13 @@ GenericSemanticMeshData::buildSemanticCCReportData() {
     auto findIter = results.find(colorKey);
     if (findIter == results.end()) {
       // not found already
-      findIter = results.insert({colorKey, {}}).first;
+      findIter =
+          results
+              .emplace(colorKey, std::vector<std::pair<int, esp::geo::OBB>>{})
+              .first;
     }
     for (const std::set<uint32_t>& vertSet : vectorOfSets) {
-      findIter->second.push_back(
+      findIter->second.emplace_back(
           buildOBBAndCountForSetOfVerts(cpu_vbo_, vertSet));
     }
   }

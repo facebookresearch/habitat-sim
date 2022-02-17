@@ -246,6 +246,7 @@ ResourceManager::buildSemanticCCReport(
   const auto& semanticObjs = semanticScene_->objects();
 
   std::unordered_map<uint32_t, uint32_t> mapColorIntsToSemanticObjIDXs;
+  mapColorIntsToSemanticObjIDXs.reserve(mapColorIntsToSemanticObjIDXs.size());
   for (uint32_t i = 0; i < semanticObjs.size(); ++i) {
     const auto obj = semanticObjs[i];
     mapColorIntsToSemanticObjIDXs.insert({obj->getColorAsInt(), i});
@@ -258,7 +259,7 @@ ResourceManager::buildSemanticCCReport(
     const auto colorAsInt = elem.first;
     auto mapEntry = semanticRes.find(colorAsInt);
     if (mapEntry != semanticRes.end()) {
-      results.insert({objID, std::move(mapEntry->second)});
+      results.emplace(objID, std::move(mapEntry->second));
     }
   }
   return results;

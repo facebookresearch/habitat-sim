@@ -1194,7 +1194,7 @@ void Viewer::generateAndSaveSemanticCCReport() {
           obb.center().y(), obb.center().z(), obb.sizes().x(), obb.sizes().y(),
           obb.sizes().z());
       ESP_DEBUG() << dataString;
-      file << dataString << "\n";
+      file << dataString << '\n';
     }
   }
 
