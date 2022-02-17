@@ -124,6 +124,12 @@ def initialize_test_data_sources(data_path):
             "link": data_path + "datasets/rearrange_pick/replica_cad/v0",
             "version": "1.0",
         },
+        "rearrange_dataset_v1": {
+            "source": "https://dl.fbaipublicfiles.com/habitat/data/datasets/replica_cad/v1.zip",
+            "package_name": "v1.zip",
+            "link": data_path + "datasets/replica_cad/rearrange",
+            "version": "1.0",
+        },
         "hab2_bench_assets": {
             "source": "https://dl.fbaipublicfiles.com/habitat/ReplicaCAD/hab2_bench_assets.zip",
             "package_name": "hab2_bench_assets.zip",
@@ -202,6 +208,7 @@ def initialize_test_data_sources(data_path):
             "hab_fetch",
             "ycb",
             "rearrange_pick_dataset_v0",
+            "rearrange_dataset_v1",
         ],
         "hm3d_example": ["hm3d_example_habitat", "hm3d_example_configs"],
         "hm3d_val": ["hm3d_val_habitat", "hm3d_val_configs"],
