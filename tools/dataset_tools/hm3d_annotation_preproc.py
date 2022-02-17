@@ -44,7 +44,7 @@ HM3D_DEST_DIR = "/home/john/Facebook/habitat-sim/data/scene_datasets/HM3D"
 #        semantic annotations.
 
 HM3D_ANNOTATION_SRC_DIR = "/home/john/Datasets In Progress/HM3D_Semantic/Appen_Scenes"
-
+# HM3D_ANNOTATION_SRC_DIR = "/home/john/Datasets In Progress/HM3D_Semantic/Appen_29_scenes_redo_feb_14"
 #
 # Appen annotation source scene directory regex.
 # This regex describes the format of the per-scene directories in the Appen work,
@@ -56,8 +56,12 @@ HM3D_ANNOTATION_SUBDIR_RE = r"(?i)[0-9]{5}-[a-z0-9]{11}\.semantic$"
 BUILD_SD_CONFIGS = True
 
 #
+# Whether or not to save source file names in annotation file lists for individual partitions
+SAVE_FILELISTS_WITH_SOURCE = True
+
+#
 # Perform color count on semantic colors and print bad results instead of modifying and moving assets.
-COUNT_SEMANTIC_COLORS_PER_SCENE = True
+COUNT_SEMANTIC_COLORS_PER_SCENE = False
 
 #
 # Prefix for config - leave empty string for none. Use this to build configs on a
@@ -252,7 +256,10 @@ def build_annotation_configs(part_file_list_dict: Dict, output_files: List):
     new_config_filenames = {}
     new_filepaths_for_config = {}
     # build new filenames for annotation configs
-    new_config_file_prefix = "hm3d_annotated_" + CONFIG_PREFIX
+    if len(CONFIG_PREFIX) == 0:
+        new_config_file_prefix = "hm3d_annotated_"
+    else:
+        new_config_file_prefix = f"hm3d_annotated_{CONFIG_PREFIX}"
     for config in src_json_configs:
         filename = os_join(config[0], config[-1])
         # want to overwrite old versions
@@ -275,6 +282,8 @@ def build_annotation_configs(part_file_list_dict: Dict, output_files: List):
     for config_key, src_config_filename in config_filenames.items():
         dest_config_filename = new_config_filenames[config_key]
         scene_path_list = new_filepaths_for_config[config_key]
+        if len(scene_path_list) == 0:
+            continue
         print(
             f"{config_key} # files : {len(scene_path_list)} : \n\t{src_config_filename}\n\t{dest_config_filename}"
         )
@@ -322,7 +331,16 @@ def save_annotated_file_lists(output_files: List):
 
     # single file listing holding all annotated file filenames (annotated glb and txt only)
     # and annotated config filenames
-    with open(os_join(HM3D_DEST_DIR, "HM3D_annotation_files.txt"), "w") as dest:
+    if SAVE_FILELISTS_WITH_SOURCE:
+        use_src_prfx = "_and_src"
+    else:
+        use_src_prfx = ""
+    if len(CONFIG_PREFIX) == 0:
+        new_file_list_prefix = f"HM3D_annotation{use_src_prfx}"
+    else:
+        new_file_list_prefix = f"HM3D_annotation{use_src_prfx}_{CONFIG_PREFIX}"
+
+    with open(os_join(HM3D_DEST_DIR, f"{new_file_list_prefix}_files.txt"), "w") as dest:
         dest.write("\n".join(output_files))
 
     # save listing of all files (semantic, render, navmesh) for each partition:
@@ -330,7 +348,7 @@ def save_annotated_file_lists(output_files: List):
     partition_lists = {}
     for part in HM3D_DATA_PARTITIONS:
         partition_lists[part] = (
-            os_join(HM3D_DEST_DIR, f"HM3D_annotation_{part}_dataset.txt"),
+            os_join(HM3D_DEST_DIR, f"{new_file_list_prefix}_{part}_dataset.txt"),
             [],
         )
     # for each entry in output_files list, check which partition it belongs to
@@ -343,14 +361,16 @@ def save_annotated_file_lists(output_files: List):
             continue
         file_part_key = fileparts[0].split("-")[1].strip()
         partition_lists[file_part_key][1].append(filename)
-        # add base file filenames to filelisting
-        if ".semantic.glb" in filename:
+        # add source file filenames to filelisting if desired
+        if SAVE_FILELISTS_WITH_SOURCE and ".semantic.glb" in filename:
             filename_base = filename.split(".semantic.glb")[0]
             partition_lists[file_part_key][1].append(f"{filename_base}.basis.glb")
             partition_lists[file_part_key][1].append(f"{filename_base}.basis.navmesh")
     # write each per-partition file listing to build per-partition annotated-only dataset archives
     # (holding semantic, render and navmesh assets)
     for _, v in partition_lists.items():
+        if len(v[1]) == 0:
+            continue
         with open(v[0], "w") as dest:
             dest.write("\n".join(v[1]))
 
