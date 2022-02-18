@@ -7,6 +7,9 @@
 #include "esp/geo/Geo.h"
 #include "esp/geo/OBB.h"
 
+#include <Magnum/EigenIntegration/GeometryIntegration.h>
+
+namespace Mn = Magnum;
 namespace py = pybind11;
 using py::literals::operator""_a;
 
@@ -25,12 +28,20 @@ void initGeoBindings(py::module& m) {
 
   // ==== OBB ====
   py::class_<OBB>(m, "OBB")
-      .def(py::init<const vec3f&, const vec3f&, const quatf&>())
+      .def(py::init([](const vec3f& center, const vec3f& dimensions,
+                       const Mn::Quaternion& rotation) {
+        return OBB(center, dimensions,
+                   Mn::EigenIntegration::cast<quatf>(rotation));
+      }))
       .def(py::init<box3f&>())
       .def("contains", &OBB::contains)
       .def("closest_point", &OBB::closestPoint)
       .def("distance", &OBB::distance)
       .def("to_aabb", &OBB::toAABB)
+      .def("rotate",
+           [](OBB& self, const Mn::Quaternion& rotation) {
+             return self.rotate(Mn::EigenIntegration::cast<quatf>(rotation));
+           })
       .def_property_readonly("center", &OBB::center)
       .def_property_readonly("sizes", &OBB::sizes)
       .def_property_readonly("half_extents", &OBB::halfExtents)
