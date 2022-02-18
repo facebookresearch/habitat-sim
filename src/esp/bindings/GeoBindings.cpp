@@ -2,7 +2,6 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-#include <Magnum/Magnum.h>
 #include "esp/bindings/Bindings.h"
 
 #include "esp/geo/Geo.h"
@@ -10,6 +9,7 @@
 
 #include <Magnum/EigenIntegration/GeometryIntegration.h>
 
+namespace Mn = Magnum;
 namespace py = pybind11;
 using py::literals::operator""_a;
 
@@ -29,9 +29,9 @@ void initGeoBindings(py::module& m) {
   // ==== OBB ====
   py::class_<OBB>(m, "OBB")
       .def(py::init([](const vec3f& center, const vec3f& dimensions,
-                       const Magnum::Quaternion& rotation) {
+                       const Mn::Quaternion& rotation) {
         return OBB(center, dimensions,
-                   Magnum::EigenIntegration::cast<quatf>(rotation));
+                   Mn::EigenIntegration::cast<quatf>(rotation));
       }))
       .def(py::init<box3f&>())
       .def("contains", &OBB::contains)
