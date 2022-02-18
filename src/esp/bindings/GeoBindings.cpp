@@ -38,6 +38,10 @@ void initGeoBindings(py::module& m) {
       .def("closest_point", &OBB::closestPoint)
       .def("distance", &OBB::distance)
       .def("to_aabb", &OBB::toAABB)
+      .def("rotate",
+           [](OBB& self, const Mn::Quaternion& rotation) {
+             return self.rotate(Mn::EigenIntegration::cast<quatf>(rotation));
+           })
       .def_property_readonly("center", &OBB::center)
       .def_property_readonly("sizes", &OBB::sizes)
       .def_property_readonly("half_extents", &OBB::halfExtents)
