@@ -269,7 +269,7 @@ def test_mesh_point_extraction():
 
     with habitat_sim.Simulator(hab_cfg) as sim:
         # Try getting a list of mesh IDs
-        keys = sim.get_mesh_keys()
+        keys = sim.get_instance_mesh_keys()
         assert len(keys) == 68
 
         # Test getting information on mesh 0
@@ -292,7 +292,7 @@ def test_mesh_point_extraction_when_not_instance():
 
     with habitat_sim.Simulator(hab_cfg) as sim:
         # The scene has 6 meshes
-        keys = sim.get_mesh_keys()
+        keys = sim.get_instance_mesh_keys()
         assert len(keys) == 7
 
         # The other mesh data extraction methods should throw an exception

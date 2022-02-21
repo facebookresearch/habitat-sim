@@ -1011,7 +1011,9 @@ class Simulator {
    * @brief Return a vector of the integer IDs of existing meshes.
    * @return a vector of existing mesh IDs.
    */
-  std::vector<int> getMeshKeys() { return resourceManager_->getMeshKeys(); }
+  std::vector<int> getInstanceMeshKeys() {
+    return resourceManager_->getInstanceMeshKeys();
+  }
 
  protected:
   Simulator() = default;

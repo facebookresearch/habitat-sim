@@ -341,7 +341,7 @@ void initSimBindings(py::module& m) {
       .def("get_object_ids", &Simulator::getObjectIds, "ID"_a,
            pybind11::return_value_policy::reference,
            R"(Return the object IDs for each vertex in a given mesh.)")
-      .def("get_mesh_keys", &Simulator::getMeshKeys,
+      .def("get_instance_mesh_keys", &Simulator::getInstanceMeshKeys,
            pybind11::return_value_policy::reference,
            R"(Return a list of the IDs of existing meshes.)")
       /* --- P2P/Fixed Constraints API --- */

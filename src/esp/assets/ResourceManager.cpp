@@ -2691,11 +2691,13 @@ std::vector<uint16_t> getObjectIds(int id) {
 }
 
 
-std::vector<int> getMeshKeys() {
+std::vector<int> getInstanceMeshKeys() {
   std::vector<int> r;
   for (auto const& m : meshes_) {
-    int id = m.first;
-    r.push_back(id);
+    if (mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH) {
+      int id = m.first;
+      r.push_back(id);
+    }
   }
   return r;
 }
