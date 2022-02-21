@@ -3,6 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "esp/geo/Geo.h"
+#include "esp/geo/OBB.h"
 
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/FunctionsBatch.h>
@@ -505,6 +506,119 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
 
   return meshData;
 }  // buildTrajectoryTubeSolid
+
+namespace {
+/**
+ * @brief Build an AABB for a given set of vertex indices in @p verts list, and
+ * return in a std::pair, along with the count of verts used to build the AABB.
+ * @param verts The mesh's vertex buffer.
+ * @param setOfIDXs set of vertex IDXs in the vertex buffer being used to build
+ * the resultant AABB.
+ */
+std::pair<int, esp::geo::OBB> buildOBBAndCountForSetOfVerts(
+    const std::vector<Mn::Vector3>& verts,
+    const std::set<uint32_t>& setOfIDXs) {
+  Mn::Vector3 vertMax{-Mn::Constants::inf(), -Mn::Constants::inf(),
+                      -Mn::Constants::inf()};
+  Mn::Vector3 vertMin{Mn::Constants::inf(), Mn::Constants::inf(),
+                      Mn::Constants::inf()};
+
+  for (uint32_t idx : setOfIDXs) {
+    Mn::Vector3 vert = verts[idx];
+    vertMax = Mn::Math::max(vertMax, vert);
+    vertMin = Mn::Math::min(vertMin, vert);
+  }
+
+  Mn::Vector3 center = .5f * (vertMax + vertMin);
+  Mn::Vector3 dims = vertMax - vertMin;
+
+  return std::make_pair<int, esp::geo::OBB>(
+      setOfIDXs.size(), geo::OBB{Mn::EigenIntegration::cast<esp::vec3f>(center),
+                                 Mn::EigenIntegration::cast<esp::vec3f>(dims),
+                                 quatf::Identity()});
+
+}  // buildOBBForSetOfVerts
+}  // namespace
+
+std::unordered_map<uint32_t, std::vector<std::pair<int, esp::geo::OBB>>>
+buildCCBasedBBoxes(
+    const std::vector<Mn::Vector3>& verts,
+    const std::unordered_map<uint32_t, std::vector<std::set<uint32_t>>>&
+        clrsToComponents) {
+  // build color-keyed map of lists of pairs of vert-count/bboxes
+  std::unordered_map<uint32_t, std::vector<std::pair<int, esp::geo::OBB>>>
+      results(clrsToComponents.size());
+  for (const auto& elem : clrsToComponents) {
+    const uint32_t colorKey = elem.first;
+    const std::vector<std::set<uint32_t>>& vectorOfSets = elem.second;
+    auto findIter = results.find(colorKey);
+    if (findIter == results.end()) {
+      // not found already - initialize new entry
+      findIter =
+          results
+              .emplace(colorKey, std::vector<std::pair<int, esp::geo::OBB>>{})
+              .first;
+    }
+    for (const std::set<uint32_t>& vertSet : vectorOfSets) {
+      findIter->second.emplace_back(
+          buildOBBAndCountForSetOfVerts(verts, vertSet));
+    }
+  }
+
+  return results;
+
+}  // buildCCBasedSemanticBBoxes
+
+namespace {
+// TODO remove when/if Magnum ever supports this function for Color3ub
+constexpr const char Hex[]{"0123456789abcdef"};
+}  // namespace
+std::string getColorAsString(const Magnum::Color3ub& color) {
+  char out[] = "#______";
+  out[1] = Hex[(color.r() >> 4) & 0xf];
+  out[2] = Hex[(color.r() >> 0) & 0xf];
+  out[3] = Hex[(color.g() >> 4) & 0xf];
+  out[4] = Hex[(color.g() >> 0) & 0xf];
+  out[5] = Hex[(color.b() >> 4) & 0xf];
+  out[6] = Hex[(color.b() >> 0) & 0xf];
+  return std::string(out);
+}
+
+std::vector<std::set<uint32_t>> buildAdjList(
+    int numVerts,
+    const std::vector<uint32_t>& indexBuffer) {
+  // build adj list by assuming that each sequence of 3 indices in index list
+  // denote a triangle.  Idx matches vertex index in vert list, value is set of
+  // verts that are adjacent
+  std::vector<std::set<uint32_t>> adjList(numVerts, std::set<uint32_t>{});
+  for (size_t i = 0; i < indexBuffer.size(); i += 3) {
+    // find idxs of triangle
+    const uint32_t idx0 = indexBuffer[i];
+    const uint32_t idx1 = indexBuffer[i + 1];
+    const uint32_t idx2 = indexBuffer[i + 2];
+    // save adjacency info for triangle
+    adjList[idx0].insert(idx1);
+    adjList[idx1].insert(idx0);
+    adjList[idx0].insert(idx2);
+    adjList[idx2].insert(idx0);
+    adjList[idx1].insert(idx2);
+    adjList[idx2].insert(idx1);
+  }
+  return adjList;
+
+}  // buildAdjList
+
+uint32_t getValueAsUInt(const Mn::Color3ub& color) {
+  return (unsigned(color[0]) << 16) | (unsigned(color[1]) << 8) |
+         unsigned(color[2]);
+}
+uint32_t getValueAsUInt(const Mn::Color4ub& color) {
+  return (unsigned(color[0]) << 24) | (unsigned(color[1]) << 16) |
+         unsigned(color[2] << 8) | (unsigned(color[3]));
+}
+uint32_t getValueAsUInt(int color) {
+  return static_cast<uint32_t>(color);
+}
 
 }  // namespace geo
 }  // namespace esp

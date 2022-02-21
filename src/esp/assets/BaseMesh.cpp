@@ -81,21 +81,6 @@ void BaseMesh::buildColorMapToUse(
 
 }  // BaseMesh::buildColorMapToUse
 
-namespace {
-// TODO remove when/if Magnum ever supports this function for Color3ub
-constexpr const char Hex[]{"0123456789abcdef"};
-}  // namespace
-std::string BaseMesh::getColorAsString(Magnum::Color3ub color) const {
-  char out[] = "#______";
-  out[1] = Hex[(color.r() >> 4) & 0xf];
-  out[2] = Hex[(color.r() >> 0) & 0xf];
-  out[3] = Hex[(color.g() >> 4) & 0xf];
-  out[4] = Hex[(color.g() >> 0) & 0xf];
-  out[5] = Hex[(color.b() >> 4) & 0xf];
-  out[6] = Hex[(color.b() >> 0) & 0xf];
-  return std::string(out);
-}
-
 void BaseMesh::buildSemanticOBBs(
     const std::vector<Mn::Vector3>& vertices,
     const std::vector<uint16_t>& vertSemanticIDs,
@@ -154,20 +139,21 @@ void BaseMesh::buildSemanticOBBs(
     Mn::Vector3 center{};
     Mn::Vector3 dims{};
 
-    const std::string debugStr = Cr::Utility::formatString(
-        "{} Semantic ID : {} : color : {} tag : {} present in {} "
-        "verts | ",
-        msgPrefix, semanticID, getColorAsString(ssdObj.getColor()), ssdObj.id(),
-        vertCounts[semanticID]);
     if (vertCounts[semanticID] == 0) {
       ESP_DEBUG() << Cr::Utility::formatString(
-          "{}No verts have specified Semantic ID.", debugStr);
+          "{} Semantic ID : {} : color : {} tag : {} present in {} "
+          "verts | No verts have specified Semantic ID.",
+          msgPrefix, semanticID, geo::getColorAsString(ssdObj.getColor()),
+          ssdObj.id(), vertCounts[semanticID]);
     } else {
       center = .5f * (vertMax[semanticID] + vertMin[semanticID]);
       dims = vertMax[semanticID] - vertMin[semanticID];
       ESP_DEBUG() << Cr::Utility::formatString(
-          "{}BB Center [{} {} {}] Dims [{} {} {}]", debugStr, center.x(),
-          center.y(), center.z(), dims.x(), dims.y(), dims.z());
+          "{} Semantic ID : {} : color : {} tag : {} present in {} verts | BB "
+          "Center [{} {} {}] Dims [{} {} {}]",
+          msgPrefix, semanticID, geo::getColorAsString(ssdObj.getColor()),
+          ssdObj.id(), vertCounts[semanticID], center.x(), center.y(),
+          center.z(), dims.x(), dims.y(), dims.z());
     }
     ssdObj.setObb(Mn::EigenIntegration::cast<esp::vec3f>(center),
                   Mn::EigenIntegration::cast<esp::vec3f>(dims));

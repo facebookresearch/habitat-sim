@@ -87,20 +87,11 @@ class GenericSemanticMeshData : public BaseMesh {
       const std::unique_ptr<GenericSemanticMeshData>& semanticMeshData);
 
   /**
-   * @brief Calculate mesh connectivity based color.
-   * @return unordered map of vectors of connected component vert idxs, keyed by
-   * color.
-   */
-
-  std::unordered_map<uint32_t, std::vector<std::set<uint32_t>>>
-  findConnectedComponentsByColor();
-
-  /**
    * @build a per-color map of all bounding boxes for each CC found in the mesh,
    * and the count of verts responsible for each.
    */
   std::unordered_map<uint32_t, std::vector<std::pair<int, esp::geo::OBB>>>
-  buildSemanticCCReportData();
+  buildCCBasedSemanticBBoxes();
 
   // ==== rendering ====
   void uploadBuffersToGPU(bool forceReload = false) override;

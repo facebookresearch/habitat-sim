@@ -247,8 +247,7 @@ GenericSemanticMeshData::buildSemanticMeshData(
               << dbgMsgPrefix
               << Cr::Utility::formatString(
                      "\t\tColor {} | # verts {} | applied Semantic ID {}.",
-                     semanticMeshData->getColorAsString(
-                         static_cast<Mn::Color3ub>(colorMapToUse[elem.second])),
+                     geo::getColorAsString(colorMapToUse[elem.second]),
                      nonSSDVertColorCounts.at(elem.first), elem.second);
         }
       }
@@ -335,116 +334,17 @@ GenericSemanticMeshData::partitionSemanticMeshData(
 
 }  // GenericSemanticMeshData::partitionSemanticMeshData
 
-namespace {
-
-/**
- * @brief Build a vector of OBBs, one per set of verts in passed vector
- */
-std::pair<int, esp::geo::OBB> buildOBBAndCountForSetOfVerts(
-    const std::vector<Mn::Vector3>& verts,
-    const std::set<uint32_t>& setOfIDXs) {
-  Mn::Vector3 vertMax{-Mn::Constants::inf(), -Mn::Constants::inf(),
-                      -Mn::Constants::inf()};
-  Mn::Vector3 vertMin{Mn::Constants::inf(), Mn::Constants::inf(),
-                      Mn::Constants::inf()};
-
-  for (uint32_t idx : setOfIDXs) {
-    Mn::Vector3 vert = verts[idx];
-    vertMax = Mn::Math::max(vertMax, vert);
-    vertMin = Mn::Math::min(vertMin, vert);
-  }
-
-  Mn::Vector3 center = .5f * (vertMax + vertMin);
-  Mn::Vector3 dims = vertMax - vertMin;
-
-  return std::make_pair<int, esp::geo::OBB>(
-      setOfIDXs.size(), geo::OBB{Mn::EigenIntegration::cast<esp::vec3f>(center),
-                                 Mn::EigenIntegration::cast<esp::vec3f>(dims),
-                                 quatf::Identity()});
-
-}  // buildOBBForSetOfVerts
-
-uint32_t getColorAsInt(const Mn::Color3ub& color) {
-  return (unsigned(color[0]) << 16) | (unsigned(color[1]) << 8) |
-         unsigned(color[2]);
-};
-
-}  // namespace
-
-/**
- * @brief Calculate mesh connectivity based color.
- * @return unordered multi-map of connected components, keyed by color.
- */
-
-std::unordered_map<uint32_t, std::vector<std::set<uint32_t>>>
-GenericSemanticMeshData::findConnectedComponentsByColor() {
-  // build adj list
-  std::vector<std::set<uint32_t>> adjList(cpu_vbo_.size(),
-                                          std::set<uint32_t>{});
-  for (size_t i = 0; i < cpu_ibo_.size(); i += 3) {
-    // find idxs of triangle
-    const uint32_t idx0 = cpu_ibo_[i];
-    const uint32_t idx1 = cpu_ibo_[i + 1];
-    const uint32_t idx2 = cpu_ibo_[i + 2];
-    // save adjacency info for triangle
-    adjList[idx0].insert(idx1);
-    adjList[idx1].insert(idx0);
-    adjList[idx0].insert(idx2);
-    adjList[idx2].insert(idx0);
-    adjList[idx1].insert(idx2);
-    adjList[idx2].insert(idx1);
-  }
-  std::vector<bool> visited(cpu_vbo_.size(), false);
-  std::unordered_map<uint32_t, std::vector<std::set<uint32_t>>>
-      clrsToComponents(cpu_cbo_.size());
-  for (uint32_t vIDX = 0; vIDX < cpu_vbo_.size(); ++vIDX) {
-    if (!visited[vIDX]) {
-      std::set<uint32_t> setOfVerts{};
-      // vert's color
-      const auto vertColor = cpu_cbo_[vIDX];
-      // each call to dfs here creates a new cc
-      geo::conditionalDFS(adjList, cpu_cbo_, vIDX, visited, vertColor,
-                          setOfVerts);
-      const uint32_t colorKey = getColorAsInt(vertColor);
-      // build map keyed by color of vert set for cc
-      auto findIter = clrsToComponents.find(colorKey);
-      if (findIter == clrsToComponents.end()) {
-        // not found already
-        findIter = clrsToComponents.insert({colorKey, {}}).first;
-      }
-      findIter->second.push_back(std::move(setOfVerts));
-    }
-  }
-
-  return clrsToComponents;
-}  // findConnectedComponentsByColor
-
 std::unordered_map<uint32_t, std::vector<std::pair<int, esp::geo::OBB>>>
-GenericSemanticMeshData::buildSemanticCCReportData() {
+GenericSemanticMeshData::buildCCBasedSemanticBBoxes() {
+  // build adj list
+  std::vector<std::set<uint32_t>> adjList =
+      geo::buildAdjList(cpu_vbo_.size(), cpu_ibo_);
+  // find all connected components based on vertex color.
   std::unordered_map<uint32_t, std::vector<std::set<uint32_t>>>
-      clrsToComponents = findConnectedComponentsByColor();
-  // 1 entry per color
-  std::unordered_map<uint32_t, std::vector<std::pair<int, esp::geo::OBB>>>
-      results(clrsToComponents.size());
-  for (const auto& elem : clrsToComponents) {
-    const uint32_t colorKey = elem.first;
-    const std::vector<std::set<uint32_t>>& vectorOfSets = elem.second;
-    auto findIter = results.find(colorKey);
-    if (findIter == results.end()) {
-      // not found already
-      findIter =
-          results
-              .emplace(colorKey, std::vector<std::pair<int, esp::geo::OBB>>{})
-              .first;
-    }
-    for (const std::set<uint32_t>& vertSet : vectorOfSets) {
-      findIter->second.emplace_back(
-          buildOBBAndCountForSetOfVerts(cpu_vbo_, vertSet));
-    }
-  }
+      clrsToComponents = geo::findCCsByGivenColor(adjList, cpu_cbo_);
 
-  return results;
-}  // GenericSemanticMeshData::buildSemanticCCReportData
+  return geo::buildCCBasedBBoxes(cpu_vbo_, clrsToComponents);
+}  // GenericSemanticMeshData::buildCCBasedSemanticBBoxes
 
 void GenericSemanticMeshData::uploadBuffersToGPU(bool forceReload) {
   if (forceReload) {

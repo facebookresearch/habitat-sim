@@ -216,7 +216,9 @@ bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
             {objPtr->semanticID(), objPtr->region()->getIndex()}));
   }
   // we need to build the bbox on load for each semantic annotation
-  scene.needBBoxFromVertColors = true;
+  // TODO eventually BBoxes will be pre-generated and stored in semantic text
+  // file.
+  scene.needBBoxFromVertColors_ = true;
   scene.levels_.clear();  // Not used for Hm3d currently
 
   return true;

@@ -150,8 +150,6 @@ class BaseMesh {
   Magnum::Range3D BB;
 
  protected:
-  std::string getColorAsString(Magnum::Color3ub color) const;
-
   /**
    * @brief Build a colormap to use either from mapping given list of per-vertex
    * object IDs to per-vertex Colors, or through a mapping of a Magnum-provided

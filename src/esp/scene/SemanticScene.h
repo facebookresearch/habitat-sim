@@ -182,11 +182,11 @@ class SemanticScene {
   }
 
   /**
-   * @Brief whether or not we should build bounding boxes around vertex
+   * @brief whether or not we should build bounding boxes around vertex
    * annotations on semantic asset load. Currently used for HM3D.
    */
 
-  bool buildBBoxFromVertColors() const { return needBBoxFromVertColors; }
+  bool buildBBoxFromVertColors() const { return needBBoxFromVertColors_; }
 
  protected:
   /**
@@ -276,7 +276,7 @@ class SemanticScene {
    * @Brief whether or not we should build bounding boxes around vertex
    * annotations on semantic asset load. Currently used for HM3D.
    */
-  bool needBBoxFromVertColors = false;
+  bool needBBoxFromVertColors_ = false;
   std::string name_;
   std::string label_;
   box3f bbox_;

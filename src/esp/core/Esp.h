@@ -133,6 +133,8 @@ typedef Eigen::Vector4ul vec4ul;
 typedef Eigen::VectorXi vecXi;
 typedef Eigen::AlignedBox3f box3f;
 
+typedef Eigen::Transform<float, 3, Eigen::Affine, Eigen::DontAlign> Transform;
+
 //! Write box3f into ostream in JSON string format
 inline std::ostream& operator<<(std::ostream& os, const box3f& bbox) {
   return os << "{min:" << bbox.min() << ",max:" << bbox.max() << "}";

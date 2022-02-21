@@ -241,7 +241,7 @@ ResourceManager::buildSemanticCCReport(
 
   // return connectivity query results - per color map of vectors of pairs of
   // vert counts and OBBs
-  auto semanticRes = semanticMeshData->buildSemanticCCReportData();
+  auto semanticRes = semanticMeshData->buildCCBasedSemanticBBoxes();
   // build temp map of colors to SemanticObject IDs
   const auto& semanticObjs = semanticScene_->objects();
 
@@ -362,13 +362,13 @@ void ResourceManager::buildSemanticColorAsIntMap() {
     return;
   }
   semanticColorAsInt_.reserve(semanticColorMapBeingUsed_.size());
+
   // build listing of colors as ints, with idx being semantic ID
   std::transform(semanticColorMapBeingUsed_.cbegin(),
                  semanticColorMapBeingUsed_.cend(),
                  std::back_inserter(semanticColorAsInt_),
                  [](const Mn::Color3ub& color) -> uint32_t {
-                   return (unsigned(color[0]) << 16) |
-                          (unsigned(color[1]) << 8) | unsigned(color[2]);
+                   return geo::getValueAsUInt(color);
                  });
 }
 
@@ -2403,8 +2403,7 @@ Mn::Image2D ResourceManager::convertRGBToSemanticId(
     for (std::size_t x = 0; x != size.x(); ++x) {
       const Mn::Color3ub color = inputRow[x];
       /* Fugly. Sorry. Needs better API on Magnum side. */
-      const Mn::UnsignedInt colorInt =
-          color.r() << 16 | color.g() << 8 | color.b();
+      const Mn::UnsignedInt colorInt = geo::getValueAsUInt(color);
       outputRow[x] = clrToSemanticId[colorInt];
     }
   }

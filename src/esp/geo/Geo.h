@@ -6,8 +6,11 @@
 #define ESP_GEO_GEO_H_
 
 #include <set>
+#include <typeinfo>
+#include <unordered_map>
 #include <vector>
 
+#include "OBB.h"
 #include "esp/core/Esp.h"
 
 #include <Magnum/Math/CubicHermite.h>
@@ -18,6 +21,7 @@ namespace Cr = Corrade;
 
 namespace esp {
 namespace geo {
+class OBB;
 
 /**
  * @brief This enum describes the various colorspaces that colors in Habitat can
@@ -49,8 +53,6 @@ static const vec3f ESP_GRAVITY = -ESP_UP;
 static const vec3f ESP_FRONT = -vec3f::UnitZ();
 //! global/world back direction
 static const vec3f ESP_BACK = -ESP_FRONT;
-
-typedef Eigen::Transform<float, 3, Eigen::Affine, Eigen::DontAlign> Transform;
 
 // compute convex hull of 2D points and return as vector of vertices
 std::vector<vec2f> convexHull2D(const std::vector<vec2f>& points);
@@ -156,20 +158,70 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
     ColorSpace clrSpace = ColorSpace::HSV);
 
 /**
+ * @brief Returns a nicely formatted hex string representation of @p color.
+ * @param color Color to build string from.
+ */
+std::string getColorAsString(const Magnum::Color3ub& color);
+
+/**
+ * @brief Return an unsigned int encoding of passed @p color value
+ */
+template <class T>
+uint32_t getValueAsUInt(T color) {
+  ESP_ERROR() << "Unsupported type for conversion to uint32_t :"
+              << typeid(color).name() << "Aborting.";
+  // returning max value for unsupported types
+  return ~uint32_t(0);
+}
+
+/**
+ * @brief Return an unsigned int encoding of passed @p color for type
+ * Mn::Color3ub.
+ */
+uint32_t getValueAsUInt(const Mn::Color3ub& color);
+
+/**
+ * @brief Return an unsigned int encoding of passed @p color for type
+ * Mn::Color4ub.
+ */
+uint32_t getValueAsUInt(const Mn::Color4ub& color);
+
+/**
+ * @brief Return an unsigned int encoding of passed @p color for type
+ * int - provided to support vector of per-vertex IDs .
+ */
+uint32_t getValueAsUInt(int color);
+
+/**
+ * @brief Build an adjacency list using the passed index buffer.  Assumes each
+ * sequence of 3 indices describesd a poly.
+ * @param numVerts Number of verts found in mesh.
+ * @param indices Index buffer.
+ * @return vector of sets, where each set's index corresponds to the src vert in
+ * the vertex buffer, and each element is a set containing the indices of the
+ * adjacent verts.
+ */
+
+std::vector<std::set<uint32_t>> buildAdjList(
+    int numVerts,
+    const std::vector<uint32_t>& indexBuffer);
+
+/**
  * @brief Build a connected component recursively on an unconnected graph
  * (i.e. mesh vertices), building from passed @p vIDX from adjecent verts
- * that match the passed @p clr value.
+ * that match the passed @p clr value, which can be any per-vertex identifier
+ * or tag.
  *
  * @tparam The type of the conditioning variable.
  * @param adjList A reference to the mesh's adjacency list.  IDX of list is
  * src vert index in owning vert list, value is dest vert index in vert
  * list.
  * @param clrVec A reference to the per-vertex identifiers used to condition
- * the CC.
+ * the CC (not necessarily a color).
  * @param vIDX The index of the src vertex of this part of the CC.
  * @param visited Per-vertex visitation record.
- * @param clr The CC's identifying "color", to be matched by adjacent verts
- * for membership.
+ * @param clr The CC's identifying "color"/tag, to be matched by adjacent
+ * verts for membership in CC.
  * @param setOfVerts Aggregation of verts in the CC.
  */
 template <class T>
@@ -189,6 +241,76 @@ void conditionalDFS(const std::vector<std::set<uint32_t>>& adjList,
     }
   }
 }  // conditionalDFS
+
+/**
+ * @brief Find and return all connected components in a graph (represented by
+ * the @p adjList ), that match some specified per-vertex tag/"color".
+ * @tparam The type of the CC conditioning variable.
+ * @param adjList A reference to the mesh's per-vertex adjacency list.  IDX of
+ * list is src vert index in owning vert list, value is dest vert index in
+ * vert list.
+ * @param clrVec A reference to the per-vertex identifiers used to condition
+ * the CC (not necessarily a color).
+ * @return an unordered map, keyed by tag/color value encoded as int, where
+ * the value is a vector of all sets of CCs consisting of verts with specified
+ * tag/"color".
+ */
+template <class T>
+std::unordered_map<uint32_t, std::vector<std::set<uint32_t>>>
+findCCsByGivenColor(const std::vector<std::set<uint32_t>>& adjList,
+                    const std::vector<T>& clrVec) {
+  // standard dfs implementation of CC builder, with added conditioning on
+  // some per-vert characteristic (in this case, vertex color)
+  int numVerts = adjList.size();
+  std::vector<bool> visited(numVerts, false);
+  std::unordered_map<uint32_t, std::vector<std::set<uint32_t>>>
+      clrsToComponents(numVerts);
+  for (uint32_t vIDX = 0; vIDX < numVerts; ++vIDX) {
+    if (!visited[vIDX]) {
+      // initialize CC's set of member verts
+      std::set<uint32_t> setOfVerts{};
+      // vert's color for membership in CC
+      const auto vertColor = clrVec[vIDX];
+      // build CC of connected verts that share vertColor
+      conditionalDFS(adjList, clrVec, vIDX, visited, vertColor, setOfVerts);
+      // convert color/tag to key for map
+      const uint32_t colorKey = getValueAsUInt(vertColor);
+      if (colorKey == ~uint32_t(0)) {
+        return {};
+      }
+      // find or build map entry keyed by color of vert set for CC
+      auto findIter = clrsToComponents.find(colorKey);
+      if (findIter == clrsToComponents.end()) {
+        // not found already, so add new entry
+        findIter = clrsToComponents.insert({colorKey, {}}).first;
+      }
+      // move set to map entry of CC sets with specified color
+      findIter->second.push_back(std::move(setOfVerts));
+    }
+  }
+  return clrsToComponents;
+}  // findCCsByGivenColor
+
+/**
+ * @brief Builds a mapping of connected component-driven bounding boxes, keyed
+ * by criteria used to decide connectivity (the per-vertex attribute suche as
+ * color).
+ * @param verts the vertex buffer holding all vertex positions in the mesh.
+ * @param clrsToComponents an unordered map, keyed by tag/color value encoded as
+ * uint, where the value is a vector of all sets of CCs consisting of verts with
+ * specified tag/"color". (see @ref findCCsByGivenColor).
+ * @return A map keyed by a representattion of the per-vertex "color" where each
+ * entry contains a vector of values for all the CCs of verts having the "color"
+ * attribute specified by the key.  Each element in the vector is a pair, with
+ * the first entry being the size of the CC and the 2nd entry being an AABB
+ * built from the CC.
+ */
+
+std::unordered_map<uint32_t, std::vector<std::pair<int, esp::geo::OBB>>>
+buildCCBasedBBoxes(
+    const std::vector<Mn::Vector3>& verts,
+    const std::unordered_map<uint32_t, std::vector<std::set<uint32_t>>>&
+        clrsToComponents);
 
 template <typename T>
 T clamp(const T& n, const T& low, const T& high) {
