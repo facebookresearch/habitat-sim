@@ -401,8 +401,7 @@ class SemanticObject {
   void setColor(Mn::Vector3ub _color) {
     color_ = _color;
     // update colorAsInt_
-    colorAsInt_ = (unsigned(color_[0]) << 16) | (unsigned(color_[1]) << 8) |
-                  unsigned(color_[2]);
+    colorAsInt_ = geo::getValueAsUInt(color_);
   }
 
   unsigned getColorAsInt() const { return colorAsInt_; }
