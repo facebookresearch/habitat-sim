@@ -259,6 +259,7 @@ def test_no_config():
     with pytest.raises(TypeError):
         _ = habitat_sim.Simulator()  # type: ignore[call-arg]
 
+
 @pytest.mark.skip(reason="the test requires data not present on the repository")
 def test_mesh_point_extraction():
     """Test the interface for retrieving mesh data from instance meshes"""
