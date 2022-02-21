@@ -349,59 +349,19 @@ class ResourceManager {
    * @param id The number index of a mesh.
    * @return A vector of vertex positions.
    */
-  std::vector<vec3f> getVertices(int id) {
-    BaseMesh& mesh = *meshes_.at(id);
-    if (mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH) {
-      // It is an instance mesh and it is possible to return the vertex data
-      const GenericInstanceMeshData& instMesh =
-          dynamic_cast<GenericInstanceMeshData&>(mesh);
-      std::vector<vec3f> vertexPositions = instMesh.getVertexBufferObjectCPU();
-      return vertexPositions;
-
-    } else {
-      // The mesh is not an instance mesh
-      throw "Error in getVertices. The mesh is not an instance mesh.";
-      const std::vector<vec3f> vertexPositions;
-    }
-  }
+  std::vector<vec3f> getVertices(int id);
 
   /**
    * @brief Return a vector of the surface indexes for a specific mesh in the
    * scene.
    */
-  std::vector<uint32_t> getSurfIndexes(int id) {
-    BaseMesh& mesh = *meshes_.at(id);
-    if (mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH) {
-      // It is an instance mesh and it is possible to return the vertex data
-      const GenericInstanceMeshData& instMesh =
-          dynamic_cast<GenericInstanceMeshData&>(mesh);
-      std::vector<uint32_t> surfIndexes = instMesh.getIndexBufferObjectCPU();
-      return surfIndexes;
-
-    } else {
-      // The mesh is not an instance mesh
-      throw "Error in getSurfIndexes. The mesh is not an instance mesh.";
-    }
-  }
+  std::vector<uint32_t> getSurfIndexes(int id);
 
   /**
    * @brief Return a vector of color per vertex for a specific mesh in the
    * scene.
    */
-  std::vector<vec3uc> getVerticesColor(int id) {
-    BaseMesh& mesh = *meshes_.at(id);
-    if (mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH) {
-      // It is an instance mesh and it is possible to return the vertex data
-      const GenericInstanceMeshData& instMesh =
-          dynamic_cast<GenericInstanceMeshData&>(mesh);
-      std::vector<vec3uc> colors = instMesh.getColorBufferObjectCPU();
-      return colors;
-
-    } else {
-      // The mesh is not an instance mesh
-      throw "Error in getSurfIndexes. The mesh is not an instance mesh.";
-    }
-  }
+  std::vector<vec3uc> getVerticesColor(int id);
 
   /**
    * @brief Return a vector of object IDs for each vertex in a given mesh.
@@ -411,20 +371,7 @@ class ResourceManager {
    * @param id The number index of a mesh.
    * @return A vector of object IDs.
    */
-  std::vector<uint16_t> getObjectIds(int id) {
-    BaseMesh& mesh = *meshes_.at(id);
-    if (mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH) {
-      // It is an instance mesh and it is possible to return the vertex data
-      const GenericInstanceMeshData& instMesh =
-          dynamic_cast<GenericInstanceMeshData&>(mesh);
-      std::vector<uint16_t> objIds = instMesh.getObjectIdsBufferObjectCPU();
-      return objIds;
-
-    } else {
-      // The mesh is not an instance mesh
-      throw "Error in getSurfIndexes. The mesh is not an instance mesh.";
-    }
-  }
+  std::vector<uint16_t> getObjectIds(int id);
 
   /**
    * @brief Return a vector of the integer IDs of existing meshes.
@@ -432,14 +379,7 @@ class ResourceManager {
    * Return a vector of the integer IDs of existing meshes.
    * @return a vector of existing mesh IDs.
    */
-  std::vector<int> getMeshKeys() {
-    std::vector<int> r;
-    for (auto const& m : meshes_) {
-      int id = m.first;
-      r.push_back(id);
-    }
-    return r;
-  }
+  std::vector<int> getMeshKeys();
 
   /**
    * @brief Set a reference to the current @ref metadataMediator_.  Perform any
