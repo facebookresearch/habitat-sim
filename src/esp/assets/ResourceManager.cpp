@@ -358,6 +358,9 @@ void ResourceManager::buildSemanticColorMap() {
 
 void ResourceManager::buildSemanticColorAsIntMap() {
   semanticColorAsInt_.clear();
+  if (semanticColorMapBeingUsed_.size() == 0) {
+    return;
+  }
   semanticColorAsInt_.reserve(semanticColorMapBeingUsed_.size());
   // build listing of colors as ints, with idx being semantic ID
   std::transform(semanticColorMapBeingUsed_.cbegin(),
@@ -918,7 +921,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstance(
     newNode = createRenderAssetInstancePTex(creation, parent, drawables);
   } else if (info.type == AssetType::INSTANCE_MESH) {
     CORRADE_ASSERT(!visNodeCache,
-                   "createRenderAssetInstanceIMesh doesn't support this",
+                   "createRenderAssetInstanceVertSemantic doesn't support this",
                    nullptr);
     newNode = createSemanticRenderAssetInstance(creation, parent, drawables);
   } else if (isRenderAssetGeneral(info.type) ||
@@ -946,9 +949,11 @@ bool ResourceManager::loadStageInternal(
   const std::string& filename = info.filepath;
   ESP_DEBUG() << "Attempting to load stage" << filename << "";
   bool meshSuccess = true;
-  if (info.filepath != EMPTY_SCENE) {
+  if (filename != EMPTY_SCENE) {
     if (!Cr::Utility::Directory::exists(filename)) {
-      ESP_ERROR() << "Cannot find scene file" << filename;
+      ESP_ERROR(Mn::Debug::Flag::NoSpace)
+          << "Attempting to load stage but cannot find specified asset file : '"
+          << filename << "'. Aborting.";
       meshSuccess = false;
     } else {
       // load render asset if necessary
@@ -975,7 +980,8 @@ bool ResourceManager::loadStageInternal(
       return true;
     }
   } else {
-    ESP_DEBUG() << "Loading empty scene for" << filename;
+    ESP_DEBUG() << "Loading empty scene since" << filename
+                << "specified as filename.";
     // EMPTY_SCENE (ie. "NONE") string indicates desire for an empty scene (no
     // scene mesh): welcome to the void
   }
@@ -1378,7 +1384,7 @@ bool ResourceManager::loadSemanticRenderAsset(const AssetInfo& info) {
     return loadRenderAssetGeneral(info);
   }
   // special handling for vertex-based semantics
-  return loadRenderAssetIMesh(info);
+  return loadRenderAssetSemantic(info);
 }  // ResourceManager::loadSemanticRenderAsset
 
 scene::SceneNode* ResourceManager::createSemanticRenderAssetInstance(
@@ -1391,7 +1397,7 @@ scene::SceneNode* ResourceManager::createSemanticRenderAssetInstance(
                                                      drawables, nullptr);
   }
   // Special handling for vertex-based semantics
-  return createRenderAssetInstanceIMesh(creation, parent, drawables);
+  return createRenderAssetInstanceVertSemantic(creation, parent, drawables);
 
 }  // ResourceManager::createSemanticRenderAssetInstance
 
@@ -1475,7 +1481,7 @@ ResourceManager::flattenImportedMeshAndBuildSemantic(Importer& fileImporter,
   return semanticMeshData;
 }  // ResourceManager::loadAndFlattenImportedMeshData
 
-bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
+bool ResourceManager::loadRenderAssetSemantic(const AssetInfo& info) {
   CORRADE_INTERNAL_ASSERT(info.type == AssetType::INSTANCE_MESH);
 
   const std::string& filename = info.filepath;
@@ -1534,9 +1540,9 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
                         LoadedAssetData{info, std::move(meshMetaData)});
 
   return true;
-}  // ResourceManager::loadRenderAssetIMesh
+}  // ResourceManager::loadRenderAssetSemantic
 
-scene::SceneNode* ResourceManager::createRenderAssetInstanceIMesh(
+scene::SceneNode* ResourceManager::createRenderAssetInstanceVertSemantic(
     const RenderAssetInstanceCreationInfo& creation,
     scene::SceneNode* parent,
     DrawableGroup* drawables) {
@@ -1588,7 +1594,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceIMesh(
   }
 
   return instanceRoot;
-}  // ResourceManager::createRenderAssetInstanceIMesh
+}  // ResourceManager::createRenderAssetInstanceVertSemantic
 
 void ResourceManager::ConfigureImporterManagerGLExtensions() {
   if (!getCreateRenderer()) {
