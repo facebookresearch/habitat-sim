@@ -265,21 +265,21 @@ def test_mesh_point_extraction():
     cfg_settings = examples.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "office_0/habitat/mesh_semantic.ply"
     hab_cfg = examples.settings.make_cfg(cfg_settings)
-    sim = habitat_sim.Simulator(hab_cfg)
 
-    # Try getting a list of mesh IDs
-    keys = sim.get_mesh_keys()
-    assert len(keys) == 68
+    with habitat_sim.Simulator(hab_cfg) as sim:
+        # Try getting a list of mesh IDs
+        keys = sim.get_mesh_keys()
+        assert len(keys) == 68
 
-    # Test getting information on mesh 0
-    vertices = sim.get_vertices(0)
-    assert len(vertices) == 13431
-    vertices_color = sim.get_vertices_color(0)
-    assert len(vertices_color) == 13431
-    vertices = sim.get_object_ids(0)
-    assert len(vertices) == 13431
-    surface_ids = sim.get_surface_ids(0)
-    assert len(surface_ids) == 76908
+        # Test getting information on mesh 0
+        vertices = sim.get_vertices(0)
+        assert len(vertices) == 13431
+        vertices_color = sim.get_vertices_color(0)
+        assert len(vertices_color) == 13431
+        vertices = sim.get_object_ids(0)
+        assert len(vertices) == 13431
+        surface_ids = sim.get_surface_ids(0)
+        assert len(surface_ids) == 76908
 
 
 def test_mesh_point_extraction_when_not_instance():
@@ -288,18 +288,18 @@ def test_mesh_point_extraction_when_not_instance():
     cfg_settings = examples.settings.default_sim_settings.copy()
     cfg_settings["scene"] = "data/test_assets/scenes/simple_room.glb"
     hab_cfg = examples.settings.make_cfg(cfg_settings)
-    sim = habitat_sim.Simulator(hab_cfg)
 
-    # The scene has 6 meshes
-    keys = sim.get_mesh_keys()
-    assert len(keys) == 7
+    with habitat_sim.Simulator(hab_cfg) as sim:
+        # The scene has 6 meshes
+        keys = sim.get_mesh_keys()
+        assert len(keys) == 7
 
-    # The other mesh data extraction methods should throw an exception
-    with pytest.raises(Exception):
-        sim.get_vertices(0)
-    with pytest.raises(Exception):
-        sim.get_vertices_color(0)
-    with pytest.raises(Exception):
-        sim.get_object_ids(0)
-    with pytest.raises(Exception):
-        sim.get_surface_ids(0)
+        # The other mesh data extraction methods should throw an exception
+        with pytest.raises(Exception):
+            sim.get_vertices(0)
+        with pytest.raises(Exception):
+            sim.get_vertices_color(0)
+        with pytest.raises(Exception):
+            sim.get_object_ids(0)
+        with pytest.raises(Exception):
+            sim.get_surface_ids(0)
