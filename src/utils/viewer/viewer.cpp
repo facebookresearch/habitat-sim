@@ -1179,7 +1179,7 @@ void Viewer::generateAndSaveSemanticCCReport() {
   }
 
   file << "Obj IDX, Object ID, Color RGB, # Verts in partition, BBOX "
-          "Center XYZ, BBOX Dims XYZ\n";
+          "Center XYZ, BBOX Dims XYZ, BBOX Vol\n";
 
   for (const auto& elem : results) {
     const uint32_t objIDX = elem.first;
@@ -1189,10 +1189,10 @@ void Viewer::generateAndSaveSemanticCCReport() {
     for (const std::pair<int, esp::geo::OBB>& elem : listOfObbs) {
       const auto& obb = elem.second;
       const std::string dataString = Cr::Utility::formatString(
-          "{},{},{} {} {},{},{} {} {}, {} {} {}", objIDX, baseObj->id(),
+          "{},{},{} {} {},{},{} {} {}, {} {} {},{}", objIDX, baseObj->id(),
           clr.r(), clr.g(), clr.b(), elem.first, obb.center().x(),
           obb.center().y(), obb.center().z(), obb.sizes().x(), obb.sizes().y(),
-          obb.sizes().z());
+          obb.sizes().z(), obb.volume());
       ESP_DEBUG() << dataString;
       file << dataString << '\n';
     }
