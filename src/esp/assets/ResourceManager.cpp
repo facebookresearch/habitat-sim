@@ -2626,8 +2626,8 @@ bool ResourceManager::instantiateAssetsOnDemand(
 }  // ResourceManager::instantiateAssetsOnDemand
 
 
-std::vector<vec3f> getVertices(int id) {
-  BaseMesh& mesh = *meshes_.at(id);
+std::vector<vec3f> getVertices(int mesh_key) {
+  BaseMesh& mesh = *meshes_.at(mesh_key);
 
   ESP_CHECK( mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH,
              "Error in getSurfIndexes. The mesh is not an instance mesh.");
@@ -2640,8 +2640,8 @@ std::vector<vec3f> getVertices(int id) {
 }
 
 
-std::vector<uint32_t> getSurfIndexes(int id) {
-  BaseMesh& mesh = *meshes_.at(id);
+std::vector<uint32_t> getSurfIndexes(int mesh_key) {
+  BaseMesh& mesh = *meshes_.at(mesh_key);
 
   ESP_CHECK( mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH,
              "Error in getSurfIndexes. The mesh is not an instance mesh.");
@@ -2654,8 +2654,8 @@ std::vector<uint32_t> getSurfIndexes(int id) {
 }
 
 
-std::vector<vec3uc> getVerticesColor(int id) {
-  BaseMesh& mesh = *meshes_.at(id);
+std::vector<vec3uc> getVerticesColor(int mesh_key) {
+  BaseMesh& mesh = *meshes_.at(mesh_key);
 
   ESP_CHECK( mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH,
              "Error in getVerticesColor. The mesh is not an instance mesh.");
@@ -2668,8 +2668,8 @@ std::vector<vec3uc> getVerticesColor(int id) {
 }
 
 
-std::vector<uint16_t> getObjectIds(int id) {
-  BaseMesh& mesh = *meshes_.at(id);
+std::vector<uint16_t> getObjectIds(int mesh_key) {
+  BaseMesh& mesh = *meshes_.at(mesh_key);
 
   ESP_CHECK( mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH,
              "Error in getObjectIds. The mesh is not an instance mesh.");

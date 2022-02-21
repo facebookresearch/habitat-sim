@@ -327,23 +327,23 @@ void initSimBindings(py::module& m) {
           "get_num_active_contact_points",
           &Simulator::getNumActiveContactPoints,
           R"(The number of contact points that were active during the last step. An object resting on another object will involve several active contact points. Once both objects are asleep, the contact points are inactive. This count can be used as a metric for the complexity/cost of collision-handling in the current scene.)")
-      .def("get_vertices", &Simulator::getVertices, "ID"_a,
+      .def("get_vertices", &Simulator::getVertices, "mesh_key"_a,
            pybind11::return_value_policy::reference,
            R"(Return a vector of the vertex locations on a given mesh.)")
       .def(
-          "get_vertices_color", &Simulator::getVerticesColor, "ID"_a,
+          "get_vertices_color", &Simulator::getVerticesColor, "mesh_key"_a,
           pybind11::return_value_policy::reference,
           R"(Return a vector of color per vertex for a specific mesh in the scene.)")
       .def(
-          "get_surface_ids", &Simulator::getSurfIndexes, "ID"_a,
+          "get_surface_ids", &Simulator::getSurfIndexes, "mesh_key"_a,
           pybind11::return_value_policy::reference,
           R"(Return a vector of the surface indexes for a specific mesh in the scene.)")
-      .def("get_object_ids", &Simulator::getObjectIds, "ID"_a,
+      .def("get_object_ids", &Simulator::getObjectIds, "mesh_key"_a,
            pybind11::return_value_policy::reference,
            R"(Return the object IDs for each vertex in a given mesh.)")
       .def("get_instance_mesh_keys", &Simulator::getInstanceMeshKeys,
            pybind11::return_value_policy::reference,
-           R"(Return a list of the IDs of existing meshes.)")
+           R"(Return a list of the mesh keys of existing meshes.)")
       /* --- P2P/Fixed Constraints API --- */
       .def(
           "create_rigid_constraint", &Simulator::createRigidConstraint,

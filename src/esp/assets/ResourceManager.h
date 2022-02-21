@@ -346,32 +346,36 @@ class ResourceManager {
    *
    * Given the integer ID of a semantic mesh, get the vertex positions in that
    * mesh.
-   * @param id The number index of a mesh.
+   * @param mesh_key The number index of a mesh.
    * @return A vector of vertex positions.
    */
-  std::vector<vec3f> getVertices(int id);
+  std::vector<vec3f> getVertices(int mesh_key);
 
   /**
    * @brief Return a vector of the surface indexes for a specific mesh in the
    * scene.
+   * @param mesh_key The number index of a mesh.
+   * @return A vector of surface indexes.
    */
-  std::vector<uint32_t> getSurfIndexes(int id);
+  std::vector<uint32_t> getSurfIndexes(int mesh_key);
 
   /**
    * @brief Return a vector of color per vertex for a specific mesh in the
    * scene.
-   */
-  std::vector<vec3uc> getVerticesColor(int id);
+   * @param mesh_key The number index of a mesh.
+   * @return A vector of vertex colors.
+  */
+  std::vector<vec3uc> getVerticesColor(int mesh_key);
 
   /**
    * @brief Return a vector of object IDs for each vertex in a given mesh.
    *
    * Given the integer ID of a mesh, get the object IDs of each vertex in
    * the mesh.
-   * @param id The number index of a mesh.
+   * @param mesh_key The number index of a mesh.
    * @return A vector of object IDs.
    */
-  std::vector<uint16_t> getObjectIds(int id);
+  std::vector<uint16_t> getObjectIds(int mesh_key);
 
   /**
    * @brief Return a vector of the integer IDs of existing meshes.

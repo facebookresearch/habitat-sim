@@ -974,24 +974,24 @@ class Simulator {
    * @param id The integer ID of a mesh.
    * @return A vector of vertex locations in the given mesh.
    */
-  std::vector<vec3f> getVertices(int id) {
-    return resourceManager_->getVertices(id);
+  std::vector<vec3f> getVertices(int mesh_key) {
+    return resourceManager_->getVertices(mesh_key);
   }
 
   /**
    * @brief Return a vector of color per vertex for a specific mesh in the
    * scene.
    */
-  std::vector<vec3uc> getVerticesColor(int id) {
-    return resourceManager_->getVerticesColor(id);
+  std::vector<vec3uc> getVerticesColor(int mesh_key) {
+    return resourceManager_->getVerticesColor(mesh_key);
   }
 
   /**
    * @brief Return a vector of the surface indexes for a specific mesh in the
    * scene.
    */
-  std::vector<uint32_t> getSurfIndexes(int id) {
-    return resourceManager_->getSurfIndexes(id);
+  std::vector<uint32_t> getSurfIndexes(int mesh_key) {
+    return resourceManager_->getSurfIndexes(mesh_key);
   }
 
   /**
@@ -1003,8 +1003,8 @@ class Simulator {
    * @param id The integer ID of a mesh.
    * @return A vector of object IDs in the given mesh.
    */
-  std::vector<uint16_t> getObjectIds(int id) {
-    return resourceManager_->getObjectIds(id);
+  std::vector<uint16_t> getObjectIds(int mesh_key) {
+    return resourceManager_->getObjectIds(mesh_key);
   }
 
   /**
