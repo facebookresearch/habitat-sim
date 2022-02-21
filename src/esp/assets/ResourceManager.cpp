@@ -2628,66 +2628,57 @@ bool ResourceManager::instantiateAssetsOnDemand(
 
 std::vector<vec3f> getVertices(int id) {
   BaseMesh& mesh = *meshes_.at(id);
-  if (mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH) {
-    // It is an instance mesh and it is possible to return the vertex data
-    const GenericInstanceMeshData& instMesh =
-        dynamic_cast<GenericInstanceMeshData&>(mesh);
-    std::vector<vec3f> vertexPositions = instMesh.getVertexBufferObjectCPU();
-    return vertexPositions;
 
-  } else {
-    // The mesh is not an instance mesh
-    throw "Error in getVertices. The mesh is not an instance mesh.";
-    const std::vector<vec3f> vertexPositions;
-  }
+  ESP_CHECK( mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH,
+             "Error in getSurfIndexes. The mesh is not an instance mesh.");
+
+  // It is an instance mesh and it is possible to return the vertex data
+  const GenericInstanceMeshData& instMesh =
+    dynamic_cast<GenericInstanceMeshData&>(mesh);
+  std::vector<vec3f> vertexPositions = instMesh.getVertexBufferObjectCPU();
+  return vertexPositions;
 }
 
 
 std::vector<uint32_t> getSurfIndexes(int id) {
   BaseMesh& mesh = *meshes_.at(id);
-  if (mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH) {
-    // It is an instance mesh and it is possible to return the vertex data
-    const GenericInstanceMeshData& instMesh =
-        dynamic_cast<GenericInstanceMeshData&>(mesh);
-    std::vector<uint32_t> surfIndexes = instMesh.getIndexBufferObjectCPU();
-    return surfIndexes;
 
-  } else {
-    // The mesh is not an instance mesh
-    throw "Error in getSurfIndexes. The mesh is not an instance mesh.";
-  }
+  ESP_CHECK( mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH,
+             "Error in getSurfIndexes. The mesh is not an instance mesh.");
+
+  // It is an instance mesh and it is possible to return the vertex data
+  const GenericInstanceMeshData& instMesh =
+    dynamic_cast<GenericInstanceMeshData&>(mesh);
+  std::vector<uint32_t> surfIndexes = instMesh.getIndexBufferObjectCPU();
+  return surfIndexes;
 }
 
 
 std::vector<vec3uc> getVerticesColor(int id) {
   BaseMesh& mesh = *meshes_.at(id);
-  if (mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH) {
-    // It is an instance mesh and it is possible to return the vertex data
-    const GenericInstanceMeshData& instMesh =
-        dynamic_cast<GenericInstanceMeshData&>(mesh);
-    std::vector<vec3uc> colors = instMesh.getColorBufferObjectCPU();
-    return colors;
 
-  } else {
-    // The mesh is not an instance mesh
-    throw "Error in getSurfIndexes. The mesh is not an instance mesh.";
-  }
+  ESP_CHECK( mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH,
+             "Error in getVerticesColor. The mesh is not an instance mesh.");
+
+  // It is an instance mesh and it is possible to return the vertex data
+  const GenericInstanceMeshData& instMesh =
+    dynamic_cast<GenericInstanceMeshData&>(mesh);
+  std::vector<vec3uc> colors = instMesh.getColorBufferObjectCPU();
+  return colors;
 }
 
 
 std::vector<uint16_t> getObjectIds(int id) {
   BaseMesh& mesh = *meshes_.at(id);
-  if (mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH) {
-    // It is an instance mesh and it is possible to return the vertex data
-    const GenericInstanceMeshData& instMesh =
-        dynamic_cast<GenericInstanceMeshData&>(mesh);
-    std::vector<uint16_t> objIds = instMesh.getObjectIdsBufferObjectCPU();
-    return objIds;
 
-  } else {
-    // The mesh is not an instance mesh
-    throw "Error in getSurfIndexes. The mesh is not an instance mesh.";
-  }
+  ESP_CHECK( mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH,
+             "Error in getObjectIds. The mesh is not an instance mesh.");
+
+  // It is an instance mesh and it is possible to return the vertex data
+  const GenericInstanceMeshData& instMesh =
+    dynamic_cast<GenericInstanceMeshData&>(mesh);
+  std::vector<uint16_t> objIds = instMesh.getObjectIdsBufferObjectCPU();
+  return objIds;
 }
 
 
