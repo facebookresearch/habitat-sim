@@ -116,14 +116,24 @@ def validate_src_SSD(line):
 def modify_and_copy_SSD(src_filename: str, dest_filename: str):
     with open(dest_filename, "w") as dest, open(src_filename, "r") as src:
         dest.write(f"{HM3D_SSD_STRING}\n")
-        i = 0
+        i = 1
+        printFileOffset = True
+        fileIsOffset = False
         for line in src:
-            if i > 0:
-                valid_res = validate_src_SSD(line)
-                if valid_res != "fine":
-                    print(
-                        f"!!!! Error in source SSD `{src_filename}` on line {i} : {line} has format error : `{valid_res}`"
-                    )
+            valid_res = validate_src_SSD(line)
+            if valid_res != "fine":
+                print(
+                    f"!!!! Error in source SSD `{src_filename}` on line {i} : {line} has format error : `{valid_res}`"
+                )
+            line_parts = line.split(",", 1)
+            if int(line_parts[0].strip()) != i:
+                fileIsOffset = True
+                line = f"{i},{line_parts[-1]}"
+
+            if fileIsOffset and printFileOffset:
+                print(f"erroneous line corrected {i} : {line}", end="")
+                fileIsOffset = False
+                printFileOffset = False
             dest.write(f"{line}")
             i += 1
 
@@ -198,10 +208,11 @@ def buildFileListing():
         else:
             print(
                 f"Problem with source dir {dirname_full} : Unable to find destination dir due to {len(dest_dir_list)} "
-                f"matching destinations in current HM3D dataset so skipping this source dir."
+                f"matching destinations in current HM3D dataset so skipping this source dir.",
+                end="",
             )
             for bad_dest in dest_dir_list:
-                print(f"\t{bad_dest}")
+                print(f"\t{bad_dest}", end="")
 
             continue
 
@@ -289,7 +300,7 @@ def build_annotation_configs(part_file_list_dict: Dict, output_files: List):
         )
         # print("\n\tfiles:")
         # for pathname in scene_path_list:
-        #     print(f"\t\t{pathname}")
+        #     print(f"\t\t{pathname}", end="")
 
         # load each existing json config, appropriately modify it, and then save as new configs
         if BUILD_SD_CONFIGS:
@@ -319,7 +330,10 @@ def build_annotation_configs(part_file_list_dict: Dict, output_files: List):
         rel_config_filename = dest_config_filename.split(HM3D_DEST_DIR)[-1].split(
             os_sep, 1
         )[-1]
-        print(f"Adding rel_config_filename : {rel_config_filename} to output_files.")
+        print(
+            f"Adding rel_config_filename : {rel_config_filename} to output_files.",
+            end="",
+        )
         output_files.append(rel_config_filename)
 
 
@@ -407,7 +421,7 @@ def main():
         for _, data_dict_list in file_names_and_paths.items():
             for data_dict in data_dict_list:
                 ssd_filename = data_dict["src_path_ssdfile"]
-                print(f"{ssd_filename}")
+                print(f"{ssd_filename}", end="")
                 tmp_dict = count_SSD_colors(ssd_filename)
                 dict_key = ssd_filename.split(HM3D_ANNOTATION_SRC_DIR)[-1].split(
                     ".semantic/Output"
@@ -423,9 +437,10 @@ def main():
                 names = count_and_names["names"]
                 if count > 1:
                     print(
-                        f"!!! In scene {scenename} : Bad Color Count : '{color}' is present {count} times : {names}"
+                        f"!!! In scene {scenename} : Bad Color Count : '{color}' is present {count} times : {names}",
+                        end="",
                     )
-        print(f"Total Items :{total_items}")
+        print(f"Total Items :{total_items}", end="")
     else:
         # Failures here will be files that did not get copied (or modified if appropriate)
         failures = {}
@@ -433,11 +448,11 @@ def main():
         output_files = []
         # move semantic glbs and scene descriptor text files
         for src_dir, data_dict_list in file_names_and_paths.items():
-            # print(f"Src : {src_dir} : # of data_dicts : {len(data_dict_list)} ")
+            # print(f"Src : {src_dir} : # of data_dicts : {len(data_dict_list)} ", end="")
             for data_dict in data_dict_list:
                 partition_tag = data_dict["dest_part_tag"]
                 # print(
-                #     f"\tDest subdir under HM3D directory : {data_dict['dest_subdir']} | partition tag : {partition_tag}"
+                #     f"\tDest subdir under HM3D directory : {data_dict['dest_subdir']} | partition tag : {partition_tag}", end=""
                 # )
                 # modify src SSD and save to dest
                 dest_ssd_filename = data_dict["dest_path_ssdfile"]
@@ -461,12 +476,13 @@ def main():
                     )
 
         print(
-            f"# of src files processed : {len(file_names_and_paths)} | # of dest files written : {len(output_files)} | # of failures : {len(failures)} "
+            f"# of src files processed : {len(file_names_and_paths)} | # of dest files written : {len(output_files)} | # of failures : {len(failures)} ",
+            end="",
         )
         # for part, files in part_file_list_dict.items():
-        #     print(f"Partition : {part} | # files {len(files)}")
+        #     print(f"Partition : {part} | # files {len(files)}", end="")
         #     for filename in files:
-        #         print(f"\t{filename}")
+        #         print(f"\t{filename}", end="")
 
         # Get relative paths to all 5 annotation configs, as well as build scene dataset configs,if requested
         build_annotation_configs(part_file_list_dict, output_files)
@@ -476,11 +492,12 @@ def main():
 
         # display failures if they have occurred
         if len(failures) > 0:
-            print("!!!!! The following files failed to be written : ")
+            print("\n!!!!! The following files failed to be written : ", end="")
             for src_dir, fail_dict in failures.items():
                 for file_type, file_name in fail_dict.items():
                     print(
-                        f"Src : {src_dir} :\n\tType : {file_type} | Filename : {file_name} "
+                        f"Src : {src_dir} :\n\tType : {file_type} | Filename : {file_name} ",
+                        end="",
                     )
 
 
