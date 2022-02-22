@@ -321,7 +321,7 @@ void ResourceManager::buildSemanticColorMap() {
   semanticColorMapBeingUsed_.clear();
   semanticColorAsInt_.clear();
   const auto& ssdClrMap = semanticScene_->getSemanticColorMap();
-  if (ssdClrMap.size() == 0) {
+  if (ssdClrMap.empty()) {
     return;
   }
 
@@ -336,7 +336,7 @@ void ResourceManager::buildSemanticColorMap() {
 
 void ResourceManager::buildSemanticColorAsIntMap() {
   semanticColorAsInt_.clear();
-  if (semanticColorMapBeingUsed_.size() == 0) {
+  if (semanticColorMapBeingUsed_.empty()) {
     return;
   }
   semanticColorAsInt_.reserve(semanticColorMapBeingUsed_.size());

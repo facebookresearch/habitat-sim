@@ -235,7 +235,7 @@ void SemanticScene::buildSemanticOBBsFromCCs(
         semanticCCsPerID = perIDMapOfCCSemanticObjs.find(objIdx);
 
     if ((semanticCCsPerID == perIDMapOfCCSemanticObjs.end()) ||
-        (semanticCCsPerID->second.size() == 0)) {
+        (semanticCCsPerID->second.empty())) {
       ESP_DEBUG() << msgPrefix << "\n!!!!!!Note : ID :" << objIdx
                   << "has no corresponding CC; therefore, this semantic object "
                      "will have no BBox since its color is not present in the "
