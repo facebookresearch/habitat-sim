@@ -190,12 +190,6 @@ void SemanticScene::buildSemanticOBBsFromCCs(
   const auto& ssdObjs = semanticScene->objects();
   std::multimap<float, std::shared_ptr<CCSemanticObject>> perSemanticObjCCs;
   for (const auto& ccObj : perIDMapOfCCSemanticObjs) {
-    // get vector of CCSemanticObjs
-    const auto& vecOfCCSemanticObjs = ccObj.second;
-    // if only one element, skip
-    if (vecOfCCSemanticObjs.size() == 1) {
-      continue;
-    }
     uint32_t objIdx = ccObj.first;
     // do not process Unknown
     if (objIdx == 0) {
@@ -203,25 +197,35 @@ void SemanticScene::buildSemanticOBBsFromCCs(
     }
     // get object with given semantic ID
     auto& ssdObj = *ssdObjs[objIdx];
-    // build temp multimap keyed by volume
-    perSemanticObjCCs.clear();
-    for (const auto& CCObj : vecOfCCSemanticObjs) {
-      perSemanticObjCCs.emplace(CCObj->obb().volume(), CCObj);
-    }
-    // after all are emplaced, reverse order will be in order of decreasing
-    // volume
+
+    // get vector of CCSemanticObjs
+    const auto& vecOfCCSemanticObjs = ccObj.second;
     ESP_DEBUG() << Cr::Utility::formatString(
-        "\nmap size {} : vec size {} Displaying elements in decreasing order "
+        "vec size {} Displaying elements in decreasing order "
         "for objIDX : {} | name : {} | vol : {}",
-        perSemanticObjCCs.size(), vecOfCCSemanticObjs.size(), objIdx,
-        ssdObj.id(), ssdObj.obb().volume());
-    for (auto elem = perSemanticObjCCs.crbegin();
-         elem != perSemanticObjCCs.crend(); ++elem) {
+        vecOfCCSemanticObjs.size(), objIdx, ssdObj.id(), ssdObj.obb().volume());
+    if (vecOfCCSemanticObjs.size() == 1) {
+      // if only one element, just use specified element
+      ssdObj.setObb(vecOfCCSemanticObjs[0]->obb());
+    } else {
+      // build temp multimap keyed by volume
+      perSemanticObjCCs.clear();
+      for (const auto& CCObj : vecOfCCSemanticObjs) {
+        perSemanticObjCCs.emplace(CCObj->obb().volume(), CCObj);
+      }
+      // after all are emplaced, reverse order will be in order of decreasing
+      // volume
+      for (auto elem = perSemanticObjCCs.crbegin();
+           elem != perSemanticObjCCs.crend(); ++elem) {
+        ESP_DEBUG() << Cr::Utility::formatString(
+            "\tvol:{} : #pts {}", elem->first, elem->second->getNumSrcVerts());
+      }
+      // Set Largest volume element as new OBB
+      ssdObj.setObb(perSemanticObjCCs.crbegin()->second->obb());
       ESP_DEBUG() << Cr::Utility::formatString(
-          "\tvol:{} : #pts {}", elem->first, elem->second->getNumSrcVerts());
+          "After setting from largest cc, obj {} volume :{}", ssdObj.id(),
+          ssdObj.obb().volume());
     }
-    // Set Largest volume element as new OBB
-    ssdObj.setObb(perSemanticObjCCs.crbegin()->second->obb());
   }
 
 }  // SemanticScene::buildSemanticOBBsFromCCs
