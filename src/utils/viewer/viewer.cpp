@@ -1183,16 +1183,19 @@ void Viewer::generateAndSaveSemanticCCReport() {
 
   for (const auto& elem : results) {
     const uint32_t objIDX = elem.first;
-    const std::vector<std::pair<int, esp::geo::OBB>>& listOfObbs = elem.second;
+    const std::vector<std::shared_ptr<esp::scene::CCSemanticObject>>&
+        listOfObbs = elem.second;
     const auto baseObj = semanticObjs[objIDX];
-    const auto clr = baseObj->getColor();
-    for (const std::pair<int, esp::geo::OBB>& elem : listOfObbs) {
-      const auto& obb = elem.second;
+    for (const std::shared_ptr<esp::scene::CCSemanticObject>& ccObj :
+         listOfObbs) {
+      const auto obb = ccObj->obb();
+      const auto clr = ccObj->getColor();
+      const auto ctr = obb.center();
+      const auto sizes = obb.sizes();
       const std::string dataString = Cr::Utility::formatString(
           "{},{},{} {} {},{},{} {} {}, {} {} {},{}", objIDX, baseObj->id(),
-          clr.r(), clr.g(), clr.b(), elem.first, obb.center().x(),
-          obb.center().y(), obb.center().z(), obb.sizes().x(), obb.sizes().y(),
-          obb.sizes().z(), obb.volume());
+          clr.r(), clr.g(), clr.b(), ccObj->getNumSrcVerts(), ctr.x(), ctr.y(),
+          ctr.z(), sizes.x(), sizes.y(), sizes.z(), obb.volume());
       ESP_DEBUG() << dataString;
       file << dataString << '\n';
     }

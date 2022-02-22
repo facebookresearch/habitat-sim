@@ -217,7 +217,7 @@ void ResourceManager::initPhysicsManager(
   physicsManager->initPhysics(parent);
 }  // ResourceManager::initPhysicsManager
 
-std::unordered_map<uint32_t, std::vector<std::pair<int, esp::geo::OBB>>>
+std::unordered_map<uint32_t, std::vector<scene::CCSemanticObject::ptr>>
 ResourceManager::buildSemanticCCReport(
     const StageAttributes::ptr& stageAttributes) {
   std::map<std::string, AssetInfo> assetInfoMap =
@@ -239,32 +239,10 @@ ResourceManager::buildSemanticCCReport(
   GenericSemanticMeshData::uptr semanticMeshData =
       flattenImportedMeshAndBuildSemantic(*fileImporter_, semanticInfo);
 
-  // return connectivity query results - per color map of vectors of pairs of
-  // vert counts and OBBs
-  auto semanticRes = semanticMeshData->buildCCBasedSemanticBBoxes();
-  // build temp map of colors to SemanticObject IDs
-  const auto& semanticObjs = semanticScene_->objects();
-
-  std::unordered_map<uint32_t, uint32_t> mapColorIntsToSemanticObjIDXs;
-  mapColorIntsToSemanticObjIDXs.reserve(mapColorIntsToSemanticObjIDXs.size());
-  for (uint32_t i = 0; i < semanticObjs.size(); ++i) {
-    const auto obj = semanticObjs[i];
-    mapColorIntsToSemanticObjIDXs.insert({obj->getColorAsInt(), i});
-  }
-  // build map with key being semanticObject IDX in semantic Objects array
-  std::unordered_map<uint32_t, std::vector<std::pair<int, esp::geo::OBB>>>
-      results;
-  for (auto& elem : mapColorIntsToSemanticObjIDXs) {
-    const auto objID = elem.second;
-    const auto colorAsInt = elem.first;
-    auto mapEntry = semanticRes.find(colorAsInt);
-    if (mapEntry != semanticRes.end()) {
-      results.emplace(objID, std::move(mapEntry->second));
-    }
-  }
-  return results;
-
-}  // namespace assets
+  // return connectivity query results - per color map of vectors of CC-based
+  // Semantic objects.
+  return semanticMeshData->buildCCBasedSemanticObjs(semanticScene_);
+}  // ResourceManager::buildSemanticCCReport
 
 bool ResourceManager::loadSemanticSceneDescriptor(
     const std::string& ssdFilename,

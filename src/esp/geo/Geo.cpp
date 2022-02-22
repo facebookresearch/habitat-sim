@@ -3,7 +3,6 @@
 // LICENSE file in the root directory of this source tree.
 
 #include "esp/geo/Geo.h"
-#include "esp/geo/OBB.h"
 
 #include <Magnum/Math/Color.h>
 #include <Magnum/Math/FunctionsBatch.h>
@@ -506,68 +505,6 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
 
   return meshData;
 }  // buildTrajectoryTubeSolid
-
-namespace {
-/**
- * @brief Build an AABB for a given set of vertex indices in @p verts list, and
- * return in a std::pair, along with the count of verts used to build the AABB.
- * @param verts The mesh's vertex buffer.
- * @param setOfIDXs set of vertex IDXs in the vertex buffer being used to build
- * the resultant AABB.
- */
-std::pair<int, esp::geo::OBB> buildOBBAndCountForSetOfVerts(
-    const std::vector<Mn::Vector3>& verts,
-    const std::set<uint32_t>& setOfIDXs) {
-  Mn::Vector3 vertMax{-Mn::Constants::inf(), -Mn::Constants::inf(),
-                      -Mn::Constants::inf()};
-  Mn::Vector3 vertMin{Mn::Constants::inf(), Mn::Constants::inf(),
-                      Mn::Constants::inf()};
-
-  for (uint32_t idx : setOfIDXs) {
-    Mn::Vector3 vert = verts[idx];
-    vertMax = Mn::Math::max(vertMax, vert);
-    vertMin = Mn::Math::min(vertMin, vert);
-  }
-
-  Mn::Vector3 center = .5f * (vertMax + vertMin);
-  Mn::Vector3 dims = vertMax - vertMin;
-
-  return std::make_pair<int, esp::geo::OBB>(
-      setOfIDXs.size(), geo::OBB{Mn::EigenIntegration::cast<esp::vec3f>(center),
-                                 Mn::EigenIntegration::cast<esp::vec3f>(dims),
-                                 quatf::Identity()});
-
-}  // buildOBBForSetOfVerts
-}  // namespace
-
-std::unordered_map<uint32_t, std::vector<std::pair<int, esp::geo::OBB>>>
-buildCCBasedBBoxes(
-    const std::vector<Mn::Vector3>& verts,
-    const std::unordered_map<uint32_t, std::vector<std::set<uint32_t>>>&
-        clrsToComponents) {
-  // build color-keyed map of lists of pairs of vert-count/bboxes
-  std::unordered_map<uint32_t, std::vector<std::pair<int, esp::geo::OBB>>>
-      results(clrsToComponents.size());
-  for (const auto& elem : clrsToComponents) {
-    const uint32_t colorKey = elem.first;
-    const std::vector<std::set<uint32_t>>& vectorOfSets = elem.second;
-    auto findIter = results.find(colorKey);
-    if (findIter == results.end()) {
-      // not found already - initialize new entry
-      findIter =
-          results
-              .emplace(colorKey, std::vector<std::pair<int, esp::geo::OBB>>{})
-              .first;
-    }
-    for (const std::set<uint32_t>& vertSet : vectorOfSets) {
-      findIter->second.emplace_back(
-          buildOBBAndCountForSetOfVerts(verts, vertSet));
-    }
-  }
-
-  return results;
-
-}  // buildCCBasedSemanticBBoxes
 
 namespace {
 // TODO remove when/if Magnum ever supports this function for Color3ub

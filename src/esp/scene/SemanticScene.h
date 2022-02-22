@@ -33,6 +33,10 @@ class SemanticCategory {
 
 // forward declarations
 class SemanticObject;
+
+// semantic object only used to represent characteristics of Connected
+// Components of mesh verts conditioned on semantic ID/color.
+class CCSemanticObject;
 class SemanticRegion;
 class SemanticLevel;
 
@@ -159,7 +163,72 @@ class SemanticScene {
                                                     geo::ESP_GRAVITY));
 
   /**
-   * @brief Whether the source file assigns colors to verts for Semantic Mesh.
+   * @brief Builds a mapping of connected component-driven bounding boxes (via
+   * @ref CCSemanticObject), keyed by criteria used to decide connectivity (the
+   * per-vertex attribute suche as color).  If a @p semanticScene is passed, key
+   * for resultant map will be semanticID of object with specified color,
+   * otherwise key is hex color value.
+   * @param verts Ref to the vertex buffer holding all vertex positions in the
+   * mesh.
+   * @param clrsToComponents an unordered map, keyed by tag/color value encoded
+   * as uint, where the value is a vector of all sets of CCs consisting of verts
+   * with specified tag/"color". (see @ref findCCsByGivenColor).
+   * @param semanticScene The SSD for the current semantic mesh.  Used to query
+   * semantic objs. If nullptr, this function returns hex-color-keyed map,
+   * otherwise returns SemanticID-keyed map.
+   * @return A map keyed by a representattion of the per-vertex "color" where
+   * each entry contains a vector of values for all the CCs of verts having the
+   * "color" attribute specified by the key.  Each element in the vector is a
+   * smart pointer to a @ref CCSemanticObject, being used to facilitate
+   * collecting pertinent data.
+   */
+  static std::unordered_map<uint32_t,
+                            std::vector<std::shared_ptr<CCSemanticObject>>>
+  buildCCBasedSemanticObjs(
+      const std::vector<Mn::Vector3>& verts,
+      const std::unordered_map<uint32_t, std::vector<std::set<uint32_t>>>&
+          clrsToComponents,
+      const std::shared_ptr<SemanticScene>& semanticScene);
+
+  /**
+   * @brief Build semantic OBBs based on presence of semantic IDs on vertices.
+   * @param verts Ref to the vertex buffer holding all vertex positions in the
+   * mesh.
+   * @param vertSemanticIDs Ref to per-vertex semantic IDs persent on source
+   * mesh, both known in semantic scene descriptor, and unknown.  Known IDs are
+   * expected to start at 1 and be contiguous, followed by unknown semantic IDs
+   * @param ssdObjs The known semantic scene descriptor objects for the mesh
+   * @param msgPrefix Debug message prefix, referencing caller.
+   */
+  static void buildSemanticOBBs(
+      const std::vector<Mn::Vector3>& verts,
+      const std::vector<uint16_t>& vertSemanticIDs,
+      const std::vector<std::shared_ptr<SemanticObject>>& ssdObjs,
+      const std::string& msgPrefix);
+
+  /**
+   * @brief Build semantic object OBBs based on the accumulated
+   * per-semantic-color CCs, and some criteria specified in @p semanticScene .
+   * @param verts Ref to the vertex buffer holding all vertex positions in the
+   * mesh.
+   * @param clrsToComponents an unordered map, keyed by tag/color value encoded
+   * as uint, where the value is a vector of all sets of CCs consisting of verts
+   * with specified tag/"color". (see @ref findCCsByGivenColor).
+   * @param semanticScene The SSD for the current semantic mesh.  Used to query
+   * semantic objs. If nullptr, this function returns hex-color-keyed map,
+   * otherwise returns SemanticID-keyed map.
+   * @param msgPrefix Debug message prefix, referencing caller.
+   */
+  static void buildSemanticOBBsFromCCs(
+      const std::vector<Mn::Vector3>& verts,
+      const std::unordered_map<uint32_t, std::vector<std::set<uint32_t>>>&
+          clrsToComponents,
+      const std::shared_ptr<SemanticScene>& semanticScene,
+      const std::string& msgPrefix);
+
+  /**
+   * @brief Whether the source file assigns colors to verts for Semantic
+   * Mesh.
    */
   bool hasVertColorsDefined() const { return hasVertColors_; }
 
@@ -187,6 +256,16 @@ class SemanticScene {
    */
 
   bool buildBBoxFromVertColors() const { return needBBoxFromVertColors_; }
+
+  /**
+   * @brief What fraction of largest connected component bbox to use
+   * for bbox generation.  Will always use single largest, along with this
+   * fraction of remaining. If set to 0.0, use all CCs (i.e. will bypass CC calc
+   * and just use naive vert position mechanism for bbox), if set to 1.0, only
+   * use single CC with largest volume.  Only used if @ref
+   * needBBoxFromVertColors_ is true.
+   */
+  float CCFractionToUseForBBox() const { return ccLargestVolToUseForBBox_; }
 
  protected:
   /**
@@ -277,6 +356,13 @@ class SemanticScene {
    * annotations on semantic asset load. Currently used for HM3D.
    */
   bool needBBoxFromVertColors_ = false;
+
+  /**
+   * @brief Fraction of vert count for largest CC to use for BBox synth.  0->use
+   * all (bypass CC calc), 1->use only largest CC.
+   */
+  float ccLargestVolToUseForBBox_ = 0.0f;
+
   std::string name_;
   std::string label_;
   box3f bbox_;
@@ -395,7 +481,7 @@ class SemanticObject {
               const esp::quatf& rotation = quatf::Identity()) {
     obb_ = geo::OBB{center, dimensions, rotation};
   }
-
+  void setObb(const geo::OBB& otr) { obb_ = geo::OBB{otr}; }
   Mn::Vector3ub getColor() const { return color_; }
 
   void setColor(Mn::Vector3ub _color) {
@@ -404,9 +490,9 @@ class SemanticObject {
     colorAsInt_ = geo::getValueAsUInt(color_);
   }
 
-  unsigned getColorAsInt() const { return colorAsInt_; }
+  uint32_t getColorAsInt() const { return colorAsInt_; }
 
-  void setColorAsInt(const unsigned _colorAsInt) {
+  void setColorAsInt(const uint32_t _colorAsInt) {
     colorAsInt_ = _colorAsInt;
     // update color_ vector
     color_ = {uint8_t((colorAsInt_ >> 16) & 0xff),
@@ -418,11 +504,14 @@ class SemanticObject {
    * @brief The unique semantic ID corresponding to this object
    */
   int index_{};
-  // specified color for this object instance.
+  /**
+   * @brief specified color for this object instance.
+   */
   Mn::Vector3ub color_{};
-  // specified color as unsigned int
-  unsigned colorAsInt_{};
-
+  /**
+   * @brief  specified color as unsigned int
+   */
+  uint32_t colorAsInt_{};
   /**
    * @brief References the parent region for this object
    */
@@ -432,7 +521,34 @@ class SemanticObject {
   std::shared_ptr<SemanticRegion> region_;
   friend SemanticScene;
   ESP_SMART_POINTERS(SemanticObject)
-};
+};  // class SemanticObject
+
+/**
+ * @brief This class exists to facilitate semantic object data access for bboxes
+ * derived from connected component analysis.
+ */
+
+class CCSemanticObject : public SemanticObject {
+ public:
+  CCSemanticObject(uint32_t _numSrcVerts, uint32_t _colorInt)
+      : SemanticObject(), numSrcVerts_(_numSrcVerts) {
+    // need to set index manually when mapping from color/colorInt is known
+    index_ = ID_UNDEFINED;
+    // sets both colorAsInt_ and updates color_ vector to match
+    setColorAsInt(_colorInt);
+  }
+
+  void setIndex(int _index) { index_ = _index; }
+  uint32_t getNumSrcVerts() { return numSrcVerts_; }
+
+ protected:
+  /**
+   * @brief Number of verts in source mesh of CC used for this Semantic Object
+   */
+  uint32_t numSrcVerts_;
+
+  ESP_SMART_POINTERS(CCSemanticObject)
+};  // class CCSemanticObject
 
 }  // namespace scene
 }  // namespace esp

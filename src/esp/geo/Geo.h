@@ -10,7 +10,6 @@
 #include <unordered_map>
 #include <vector>
 
-#include "OBB.h"
 #include "esp/core/Esp.h"
 
 #include <Magnum/Math/CubicHermite.h>
@@ -290,27 +289,6 @@ findCCsByGivenColor(const std::vector<std::set<uint32_t>>& adjList,
   }
   return clrsToComponents;
 }  // findCCsByGivenColor
-
-/**
- * @brief Builds a mapping of connected component-driven bounding boxes, keyed
- * by criteria used to decide connectivity (the per-vertex attribute suche as
- * color).
- * @param verts the vertex buffer holding all vertex positions in the mesh.
- * @param clrsToComponents an unordered map, keyed by tag/color value encoded as
- * uint, where the value is a vector of all sets of CCs consisting of verts with
- * specified tag/"color". (see @ref findCCsByGivenColor).
- * @return A map keyed by a representattion of the per-vertex "color" where each
- * entry contains a vector of values for all the CCs of verts having the "color"
- * attribute specified by the key.  Each element in the vector is a pair, with
- * the first entry being the size of the CC and the 2nd entry being an AABB
- * built from the CC.
- */
-
-std::unordered_map<uint32_t, std::vector<std::pair<int, esp::geo::OBB>>>
-buildCCBasedBBoxes(
-    const std::vector<Mn::Vector3>& verts,
-    const std::unordered_map<uint32_t, std::vector<std::set<uint32_t>>>&
-        clrsToComponents);
 
 template <typename T>
 T clamp(const T& n, const T& low, const T& high) {

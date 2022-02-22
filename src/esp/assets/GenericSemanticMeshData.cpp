@@ -291,15 +291,36 @@ GenericSemanticMeshData::buildSemanticMeshData(
   semanticMeshData->updateCollisionMeshData();
 
   if (semanticScene && (semanticScene->buildBBoxFromVertColors())) {
-    // FOR VERT-BASED OBB CALC build semantic (actually AABBs currently)
-    semanticMeshData->buildSemanticOBBs(semanticMeshData->cpu_vbo_,
-                                        semanticMeshData->objectIds_,
-                                        semanticScene->objects(), dbgMsgPrefix);
-  }
+    float fractionOfMaxBBoxSize = semanticScene->CCFractionToUseForBBox();
+    if (fractionOfMaxBBoxSize > 0.0f) {
+      // temp
+      scene::SemanticScene::buildSemanticOBBs(
+          semanticMeshData->cpu_vbo_, semanticMeshData->objectIds_,
+          semanticScene->objects(), dbgMsgPrefix);
 
-  ////
+      // build adj list
+      std::vector<std::set<uint32_t>> adjList = geo::buildAdjList(
+          semanticMeshData->cpu_vbo_.size(), semanticMeshData->cpu_ibo_);
+      // find all connected components based on vertex color.
+      std::unordered_map<uint32_t, std::vector<std::set<uint32_t>>>
+          clrsToComponents =
+              geo::findCCsByGivenColor(adjList, semanticMeshData->cpu_cbo_);
+
+      // FOR VERT-BASED OBB CALC build semantic (actually AABBs currently)
+      // only use CCs that have some fraction of largest CC's bbox volume.
+      scene::SemanticScene::buildSemanticOBBsFromCCs(
+          semanticMeshData->cpu_vbo_, clrsToComponents, semanticScene,
+          dbgMsgPrefix);
+    } else {
+      // FOR VERT-BASED OBB CALC build semantic (actually AABBs currently)
+      // uses all vertex annotations, including disconnected components.
+      scene::SemanticScene::buildSemanticOBBs(
+          semanticMeshData->cpu_vbo_, semanticMeshData->objectIds_,
+          semanticScene->objects(), dbgMsgPrefix);
+    }
+  }
   return semanticMeshData;
-}
+}  // GenericSemanticMeshData::buildSemanticMeshData
 
 std::vector<std::unique_ptr<GenericSemanticMeshData>>
 GenericSemanticMeshData::partitionSemanticMeshData(
@@ -334,8 +355,9 @@ GenericSemanticMeshData::partitionSemanticMeshData(
 
 }  // GenericSemanticMeshData::partitionSemanticMeshData
 
-std::unordered_map<uint32_t, std::vector<std::pair<int, esp::geo::OBB>>>
-GenericSemanticMeshData::buildCCBasedSemanticBBoxes() {
+std::unordered_map<uint32_t, std::vector<scene::CCSemanticObject::ptr>>
+GenericSemanticMeshData::buildCCBasedSemanticObjs(
+    const std::shared_ptr<scene::SemanticScene>& semanticScene) {
   // build adj list
   std::vector<std::set<uint32_t>> adjList =
       geo::buildAdjList(cpu_vbo_.size(), cpu_ibo_);
@@ -343,8 +365,9 @@ GenericSemanticMeshData::buildCCBasedSemanticBBoxes() {
   std::unordered_map<uint32_t, std::vector<std::set<uint32_t>>>
       clrsToComponents = geo::findCCsByGivenColor(adjList, cpu_cbo_);
 
-  return geo::buildCCBasedBBoxes(cpu_vbo_, clrsToComponents);
-}  // GenericSemanticMeshData::buildCCBasedSemanticBBoxes
+  return scene::SemanticScene::buildCCBasedSemanticObjs(
+      cpu_vbo_, clrsToComponents, semanticScene);
+}  // GenericSemanticMeshData::buildCCBasedSemanticObjs
 
 void GenericSemanticMeshData::uploadBuffersToGPU(bool forceReload) {
   if (forceReload) {

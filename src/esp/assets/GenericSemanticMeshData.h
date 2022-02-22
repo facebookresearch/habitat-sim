@@ -16,7 +16,7 @@
 
 #include "BaseMesh.h"
 #include "esp/core/Esp.h"
-#include "esp/geo/OBB.h"
+#include "esp/scene/SemanticScene.h"
 
 namespace esp {
 namespace scene {
@@ -53,7 +53,7 @@ class GenericSemanticMeshData : public BaseMesh {
    * visualization or matching to semantic IDs.
    * @param convertToSRGB Whether the source vertex colors from the @p meshData
    * should be converted to SRGB
-   * @param semanticScene The SSD for the instance mesh being loaded.
+   * @param semanticScene The SSD for the semantic mesh being loaded.
    * @return vector holding one or more mesh results from the semantic asset
    * file.
    */
@@ -77,7 +77,7 @@ class GenericSemanticMeshData : public BaseMesh {
    * visualization or matching to semantic IDs.
    * @param convertToSRGB Whether the source vertex colors from the @p meshData
    * should be converted to SRGB
-   * @param semanticScene The SSD for the instance mesh being loaded.
+   * @param semanticScene The SSD for the semantic mesh being loaded.
    * @return vector holding one or more mesh results from the semantic asset
    * file.
    */
@@ -87,11 +87,16 @@ class GenericSemanticMeshData : public BaseMesh {
       const std::unique_ptr<GenericSemanticMeshData>& semanticMeshData);
 
   /**
-   * @build a per-color map of all bounding boxes for each CC found in the mesh,
-   * and the count of verts responsible for each.
+   * @build a per-color/per-semantic ID map of all bounding boxes for each CC
+   * found in the mesh, and the count of verts responsible for each.
+   * @param semanticScene The SSD for the current semantic mesh.  Used to query
+   * semantic objs. If nullptr, this function returns hex-color-keyed map,
+   * otherwise returns SemanticID-keyed map.
    */
-  std::unordered_map<uint32_t, std::vector<std::pair<int, esp::geo::OBB>>>
-  buildCCBasedSemanticBBoxes();
+  std::unordered_map<uint32_t,
+                     std::vector<std::shared_ptr<scene::CCSemanticObject>>>
+  buildCCBasedSemanticObjs(
+      const std::shared_ptr<scene::SemanticScene>& semanticScene);
 
   // ==== rendering ====
   void uploadBuffersToGPU(bool forceReload = false) override;

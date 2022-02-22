@@ -713,7 +713,8 @@ class ResourceManager {
    * on color/id.  Returns map of data keyed by SemanticObject index in
    * SemanticObjs array.
    */
-  std::unordered_map<uint32_t, std::vector<std::pair<int, esp::geo::OBB>>>
+  std::unordered_map<uint32_t,
+                     std::vector<std::shared_ptr<scene::CCSemanticObject>>>
   buildSemanticCCReport(
       const metadata::attributes::StageAttributes::ptr& stageAttributes);
 

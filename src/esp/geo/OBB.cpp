@@ -16,7 +16,6 @@ OBB::OBB() {
   center_.setZero();
   halfExtents_.setZero();
   rotation_.setIdentity();
-  box3f box;
 }
 
 OBB::OBB(const vec3f& center, const vec3f& dimensions, const quatf& rotation)
