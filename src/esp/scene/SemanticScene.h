@@ -539,7 +539,7 @@ class CCSemanticObject : public SemanticObject {
   }
 
   void setIndex(int _index) { index_ = _index; }
-  uint32_t getNumSrcVerts() { return numSrcVerts_; }
+  uint32_t getNumSrcVerts() const { return numSrcVerts_; }
 
  protected:
   /**

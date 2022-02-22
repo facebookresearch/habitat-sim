@@ -102,7 +102,6 @@ bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
                               categories);
 
   std::string line;
-  int oldInstanceID = 0;
   while (std::getline(ifs, line)) {
     if (line.empty()) {
       continue;
@@ -142,13 +141,6 @@ bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
     buildInstanceRegionCategory(instanceID, colorInt, objCategoryName, regionID,
                                 objInstance, regions, categories);
 
-    // ESP_CHECK(
-    //     oldInstanceID == instanceID - 1,
-    //     Cr::Utility::formatString("\nError loading semantic mesh data - "
-    //                               "oldInstanceID : {} new instance ID :
-    //                               {}\n", oldInstanceID, instanceID));
-
-    oldInstanceID = instanceID;
   }  // while
 
   // construct object instance names for each object instance, by setting the
@@ -224,10 +216,11 @@ bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
             {objPtr->semanticID(), objPtr->region()->getIndex()}));
   }
   // we need to build the bbox on load for each semantic annotation
-  // TODO eventually BBoxes will be pre-generated and stored in semantic text
+  // TODO: eventually BBoxes will be pre-generated and stored in semantic text
   // file.
   scene.needBBoxFromVertColors_ = true;
   // use only largest volume bbox
+  // TODO: eventually drive this via customizable config value.
   scene.ccLargestVolToUseForBBox_ = 1.0f;
   scene.levels_.clear();  // Not used for Hm3d currently
 

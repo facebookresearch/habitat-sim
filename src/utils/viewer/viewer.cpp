@@ -1167,7 +1167,7 @@ void Viewer::generateAndSaveSemanticCCReport() {
           Cr::Utility::Directory::splitExtension(
               Cr::Utility::Directory::filename(simConfig_.activeSceneName))
               .first));
-  ESP_DEBUG() << "Full Path File name :" << filename;
+  ESP_DEBUG() << "Fully qualified destination file name :" << filename;
   auto semanticScene = simulator_->getSemanticScene();
 
   const auto& semanticObjs = semanticScene->objects();
@@ -1196,7 +1196,7 @@ void Viewer::generateAndSaveSemanticCCReport() {
           "{},{},{} {} {},{},{} {} {}, {} {} {},{}", objIDX, baseObj->id(),
           clr.r(), clr.g(), clr.b(), ccObj->getNumSrcVerts(), ctr.x(), ctr.y(),
           ctr.z(), sizes.x(), sizes.y(), sizes.z(), obb.volume());
-      ESP_DEBUG() << dataString;
+      ESP_VERY_VERBOSE() << dataString;
       file << dataString << '\n';
     }
   }

@@ -121,6 +121,27 @@ CCSemanticObject::ptr buildCCSemanticObjForSetOfVerts(
   return obj;
 }  // buildCCSemanticObjForSetOfVerts
 
+/**
+ * @brief build per-SSD object vector of known semantic IDs - doing this in case
+ * semanticIDs are not contiguous.
+ */
+
+std::vector<int> getObjsIdxToIDMap(
+    const std::vector<std::shared_ptr<esp::scene::SemanticObject>>& ssdObjs) {
+  std::size_t numSSDObjs = ssdObjs.size();
+  std::vector<int> semanticIDToSSOBJidx(numSSDObjs, -1);
+  for (int i = 0; i < numSSDObjs; ++i) {
+    const auto& ssdObj = *ssdObjs[i];
+    int semanticID = ssdObj.semanticID();
+    // should not happen unless semantic ids are not sequential
+    if (semanticIDToSSOBJidx.size() <= semanticID) {
+      semanticIDToSSOBJidx.resize(semanticID + 1);
+    }
+    semanticIDToSSOBJidx[semanticID] = i;
+  }
+  return semanticIDToSSOBJidx;
+}
+
 }  // namespace
 
 std::unordered_map<uint32_t, std::vector<CCSemanticObject::ptr>>
@@ -188,19 +209,44 @@ void SemanticScene::buildSemanticOBBsFromCCs(
 
   // get all semantic objects
   const auto& ssdObjs = semanticScene->objects();
+
+  // build per-SSD object vector of known semantic IDs
+  // doing this in case semanticIDs are not contiguous.
+  std::vector<int> semanticIDToSSOBJidx = getObjsIdxToIDMap(ssdObjs);
+
   std::multimap<float, std::shared_ptr<CCSemanticObject>> perSemanticObjCCs;
-  for (const auto& ccObj : perIDMapOfCCSemanticObjs) {
-    uint32_t objIdx = ccObj.first;
-    // do not process Unknown
-    if (objIdx == 0) {
+  for (int semanticID = 0; semanticID < semanticIDToSSOBJidx.size();
+       ++semanticID) {
+    if (semanticIDToSSOBJidx[semanticID] == -1) {
       continue;
     }
+
+    uint32_t objIdx = semanticIDToSSOBJidx[semanticID];
     // get object with given semantic ID
     auto& ssdObj = *ssdObjs[objIdx];
+    // do not process Unknown
+    // if (objIdx == 0) {
+    //   continue;
+    // }
 
-    // get vector of CCSemanticObjs
-    const auto& vecOfCCSemanticObjs = ccObj.second;
-    ESP_DEBUG() << Cr::Utility::formatString(
+    // get vector of CCSemanticObjs for given ID
+    const std::unordered_map<uint32_t,
+                             std::vector<CCSemanticObject::ptr>>::const_iterator
+        semanticCCsPerID = perIDMapOfCCSemanticObjs.find(objIdx);
+
+    if ((semanticCCsPerID == perIDMapOfCCSemanticObjs.end()) ||
+        (semanticCCsPerID->second.size() == 0)) {
+      ESP_DEBUG() << msgPrefix << "\n!!!!!!Note : ID :" << objIdx
+                  << "has no corresponding CC; therefore, this semantic object "
+                     "will have no BBox since its color is not present in the "
+                     "vertices on the mesh.";
+      continue;
+    }
+
+    std::vector<CCSemanticObject::ptr> vecOfCCSemanticObjs =
+        semanticCCsPerID->second;
+
+    ESP_VERY_VERBOSE() << Cr::Utility::formatString(
         "vec size {} Displaying elements in decreasing order "
         "for objIDX : {} | name : {} | vol : {}",
         vecOfCCSemanticObjs.size(), objIdx, ssdObj.id(), ssdObj.obb().volume());
@@ -217,17 +263,16 @@ void SemanticScene::buildSemanticOBBsFromCCs(
       // volume
       for (auto elem = perSemanticObjCCs.crbegin();
            elem != perSemanticObjCCs.crend(); ++elem) {
-        ESP_DEBUG() << Cr::Utility::formatString(
+        ESP_VERY_VERBOSE() << Cr::Utility::formatString(
             "\tvol:{} : #pts {}", elem->first, elem->second->getNumSrcVerts());
       }
       // Set Largest volume element as new OBB
       ssdObj.setObb(perSemanticObjCCs.crbegin()->second->obb());
-      ESP_DEBUG() << Cr::Utility::formatString(
+      ESP_VERY_VERBOSE() << Cr::Utility::formatString(
           "After setting from largest cc, obj {} volume :{}", ssdObj.id(),
           ssdObj.obb().volume());
     }
   }
-
 }  // SemanticScene::buildSemanticOBBsFromCCs
 
 void SemanticScene::buildSemanticOBBs(
@@ -237,17 +282,7 @@ void SemanticScene::buildSemanticOBBs(
     const std::string& msgPrefix) {
   // build per-SSD object vector of known semantic IDs
   // doing this in case semanticIDs are not contiguous.
-  std::size_t numSSDObjs = ssdObjs.size();
-  std::vector<int> semanticIDToSSOBJidx(numSSDObjs, -1);
-  for (int i = 0; i < numSSDObjs; ++i) {
-    const auto& ssdObj = *ssdObjs[i];
-    int semanticID = ssdObj.semanticID();
-    // should not happen unless semantic ids are not sequential
-    if (semanticIDToSSOBJidx.size() <= semanticID) {
-      semanticIDToSSOBJidx.resize(semanticID + 1);
-    }
-    semanticIDToSSOBJidx[semanticID] = i;
-  }
+  std::vector<int> semanticIDToSSOBJidx = getObjsIdxToIDMap(ssdObjs);
 
   // aggegates of per-semantic ID mins and maxes
   std::vector<Mn::Vector3> vertMax(
@@ -280,10 +315,11 @@ void SemanticScene::buildSemanticOBBs(
   // give each ssdObj the values to build its OBB
   for (int semanticID = 0; semanticID < semanticIDToSSOBJidx.size();
        ++semanticID) {
-    int objIdx = semanticIDToSSOBJidx[semanticID];
-    if (objIdx == -1) {
+    if (semanticIDToSSOBJidx[semanticID] == -1) {
       continue;
     }
+
+    uint32_t objIdx = semanticIDToSSOBJidx[semanticID];
     // get object with given semantic ID
     auto& ssdObj = *ssdObjs[objIdx];
     Mn::Vector3 center{};
@@ -298,7 +334,7 @@ void SemanticScene::buildSemanticOBBs(
     } else {
       center = .5f * (vertMax[semanticID] + vertMin[semanticID]);
       dims = vertMax[semanticID] - vertMin[semanticID];
-      ESP_DEBUG() << Cr::Utility::formatString(
+      ESP_VERY_VERBOSE() << Cr::Utility::formatString(
           "{} Semantic ID : {} : color : {} tag : {} present in {} verts | BB "
           "Center [{} {} {}] Dims [{} {} {}]",
           msgPrefix, semanticID, geo::getColorAsString(ssdObj.getColor()),
