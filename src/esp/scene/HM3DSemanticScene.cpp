@@ -142,11 +142,11 @@ bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
     buildInstanceRegionCategory(instanceID, colorInt, objCategoryName, regionID,
                                 objInstance, regions, categories);
 
-    ESP_CHECK(
-        oldInstanceID == instanceID - 1,
-        Cr::Utility::formatString("\nError loading semantic mesh data - "
-                                  "oldInstanceID : {} new instance ID : {}\n",
-                                  oldInstanceID, instanceID));
+    // ESP_CHECK(
+    //     oldInstanceID == instanceID - 1,
+    //     Cr::Utility::formatString("\nError loading semantic mesh data - "
+    //                               "oldInstanceID : {} new instance ID :
+    //                               {}\n", oldInstanceID, instanceID));
 
     oldInstanceID = instanceID;
   }  // while
