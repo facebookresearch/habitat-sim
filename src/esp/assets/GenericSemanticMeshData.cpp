@@ -293,11 +293,6 @@ GenericSemanticMeshData::buildSemanticMeshData(
   if (semanticScene && (semanticScene->buildBBoxFromVertColors())) {
     float fractionOfMaxBBoxSize = semanticScene->CCFractionToUseForBBox();
     if (fractionOfMaxBBoxSize > 0.0f) {
-      // temp
-      scene::SemanticScene::buildSemanticOBBs(
-          semanticMeshData->cpu_vbo_, semanticMeshData->objectIds_,
-          semanticScene->objects(), dbgMsgPrefix);
-
       // build adj list
       std::vector<std::set<uint32_t>> adjList = geo::buildAdjList(
           semanticMeshData->cpu_vbo_.size(), semanticMeshData->cpu_ibo_);
@@ -308,6 +303,7 @@ GenericSemanticMeshData::buildSemanticMeshData(
 
       // FOR VERT-BASED OBB CALC build semantic (actually AABBs currently)
       // only use CCs that have some fraction of largest CC's bbox volume.
+      // Currently uses only max volume CC bbox for disjoint semantic regions.
       scene::SemanticScene::buildSemanticOBBsFromCCs(
           semanticMeshData->cpu_vbo_, clrsToComponents, semanticScene,
           dbgMsgPrefix);
