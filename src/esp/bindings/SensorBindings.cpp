@@ -324,6 +324,10 @@ void initSensorBindings(py::module& m) {
                      &HabitatAcoustics::Configuration::diffraction)
       .def_readwrite("transmission",
                      &HabitatAcoustics::Configuration::transmission)
+      .def_readwrite("meshSimplification",
+                     &HabitatAcoustics::Configuration::meshSimplification)
+      .def_readwrite("temporalCoherence",
+                     &HabitatAcoustics::Configuration::temporalCoherence)
       .def_readwrite("dumpWaveFiles",
                      &HabitatAcoustics::Configuration::dumpWaveFiles)
       .def_readwrite("enableMaterials",
