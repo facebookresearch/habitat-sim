@@ -261,7 +261,7 @@ findCCsByGivenColor(const std::vector<std::set<uint32_t>>& adjList,
                     const std::vector<T>& clrVec) {
   // standard dfs implementation of CC builder, with added conditioning on
   // some per-vert characteristic (in this case, vertex color)
-  int numVerts = adjList.size();
+  auto numVerts = adjList.size();
   std::vector<bool> visited(numVerts, false);
   std::unordered_map<uint32_t, std::vector<std::set<uint32_t>>>
       clrsToComponents(numVerts);
