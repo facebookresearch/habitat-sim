@@ -25,6 +25,10 @@ if(BUILD_WITH_AUDIO)
   list(APPEND sensor_SOURCES AudioSensor.cpp AudioSensor.h)
 endif()
 
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/configure.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/configure.h
+)
+
 add_library(
   sensor STATIC
   ${sensor_SOURCES}

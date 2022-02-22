@@ -21,13 +21,14 @@
 #ifdef ESP_BUILD_WITH_CUDA
 #include "esp/sensor/RedwoodNoiseModel.h"
 #endif
-// todo sangarg : check flag
-// #ifdef ESP_BUILD_WITH_AUDIO
-#include "esp/sensor/AudioSensor.h"
-// #endif
+
 #include "esp/sensor/Sensor.h"
 #include "esp/sensor/SensorFactory.h"
 #include "esp/sim/Simulator.h"
+
+#ifdef ESP_BUILD_WITH_AUDIO
+#include "esp/sensor/AudioSensor.h"
+#endif // ESP_BUILD_WITH_AUDIO
 
 namespace py = pybind11;
 using py::literals::operator""_a;
@@ -289,7 +290,7 @@ void initSensorBindings(py::module& m) {
       });
 #endif
 
-  // #ifdef ESP_BUILD_WITH_AUDIO
+  #ifdef ESP_BUILD_WITH_AUDIO
   // ==== HabitatAcoustics::Config ====
   py::class_<HabitatAcoustics::Configuration>(m,
                                               "HabitatAcousticsConfiguration")
@@ -373,7 +374,7 @@ void initSensorBindings(py::module& m) {
       .def("runSimulation", &AudioSensor::runSimulation)
       .def("getIR", &AudioSensor::getIR)
       .def("reset", &AudioSensor::reset);
-  // #endif
+  #endif // ESP_BUILD_WITH_AUDIO
 }
 
 }  // namespace sensor

@@ -26,6 +26,7 @@
 #include <Magnum/Shaders/Shaders.h>
 #include <Magnum/Timeline.h>
 #include "esp/core/configure.h"
+#include "esp/sensor/configure.h"
 #include "esp/gfx/RenderCamera.h"
 #include "esp/gfx/Renderer.h"
 #include "esp/gfx/replay/Recorder.h"
@@ -57,7 +58,7 @@
 
 #ifdef ESP_BUILD_WITH_AUDIO
 #include "esp/sensor/AudioSensor.h"
-#endif
+#endif // ESP_BUILD_WITH_AUDIO
 
 #include "esp/physics/configure.h"
 #include "esp/sensor/CameraSensor.h"
@@ -333,7 +334,7 @@ class Viewer : public Mn::Platform::Application {
         agentBodyNode_->getNodeSensorSuite().get("audio");
     return static_cast<esp::sensor::AudioSensor&>(audioSensor);
   }
-#endif
+#endif // ESP_BUILD_WITH_AUDIO
 
   std::string helpText = R"(
 ==================================================
@@ -669,7 +670,7 @@ Key Commands:
    * @brief Run the audio simulation and get the observations
    */
   void runAudioSimulation();
-#endif
+#endif // ESP_BUILD_WITH_AUDIO
 };  // class viewer declaration
 
 void addSensors(esp::agent::AgentConfiguration& agentConfig, bool isOrtho) {
@@ -806,7 +807,7 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig, bool isOrtho) {
   };
   addAudioSensor("audio", esp::sensor::SensorType::Audio,
                  esp::sensor::SensorSubType::ImpulseResponse);
-#endif
+#endif // ESP_BUILD_WITH_AUDIO
 }  // addSensors
 
 Viewer::Viewer(const Arguments& arguments)
@@ -2503,7 +2504,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
 #else
       ESP_DEBUG() << "[Audio] ESP_BUILD_WITH_AUDIO is not set, skipping adding "
                      "audio source";
-#endif
+#endif // ESP_BUILD_WITH_AUDIO
       break;
     }
     case KeyEvent::Key::Y: {
@@ -2513,7 +2514,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
 #else
       ESP_DEBUG() << "[Audio] ESP_BUILD_WITH_AUDIO is not set, skipping "
                      "running audio simulation";
-#endif
+#endif // ESP_BUILD_WITH_AUDIO
       break;
     }
   }
@@ -2586,7 +2587,7 @@ void Viewer::runAudioSimulation() {
     ESP_ERROR() << "[Audio] Audio simulation was unsuccessful";
   }
 }
-#endif
+#endif // ESP_BUILD_WITH_AUDIO
 
 }  // namespace
 
