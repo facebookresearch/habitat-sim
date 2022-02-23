@@ -14,8 +14,8 @@ import glb_mesh_tools as gut
 ###
 # JSON Configuration file for running this application.
 # MESH_DECON_CONFIG_JSON_FILENAME = "mesh_decon_AI2Thor.json"
-# MESH_DECON_CONFIG_JSON_FILENAME = "mesh_decon_ReplicaCAD.json"
-MESH_DECON_CONFIG_JSON_FILENAME = "mesh_decon_ReplicaCAD_baked.json"
+MESH_DECON_CONFIG_JSON_FILENAME = "mesh_decon_ReplicaCAD.json"
+# MESH_DECON_CONFIG_JSON_FILENAME = "mesh_decon_ReplicaCAD_baked.json"
 # MESH_DECON_CONFIG_JSON_FILENAME = "mesh_decon_floorplanner.json"
 
 
@@ -895,6 +895,8 @@ def main():
         scene_name = path_file_tuple[-1]
         # test this scene
         # scene_name = "FloorPlan320_physics.glb"
+        if ".glb" not in scene_name.lower():
+            continue
         scene_name_base = scene_name.split(".glb")[0]
 
         src_scene_filename = os.path.join(decon_configs["scenes_src_dir"], scene_name)
