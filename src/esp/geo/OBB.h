@@ -26,6 +26,13 @@ class OBB {
   //! Returns the dimensions of this OBB in its own frame of reference
   vec3f sizes() const { return halfExtents_ * 2; }
 
+  /**
+   * @brief Return the volume of this bbox
+   */
+  float volume() const {
+    return halfExtents_.x() * halfExtents_.y() * halfExtents_.z() * 8.0f;
+  }
+
   //! Returns half-extents of this OBB (dimensions)
   vec3f halfExtents() const { return halfExtents_; }
 

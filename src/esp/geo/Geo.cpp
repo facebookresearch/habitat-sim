@@ -504,7 +504,58 @@ Mn::Trade::MeshData buildTrajectoryTubeSolid(
       static_cast<Mn::UnsignedInt>(positions.size())};
 
   return meshData;
-}  // ResourceManager::trajectoryTubeSolid
+}  // buildTrajectoryTubeSolid
+
+namespace {
+// TODO remove when/if Magnum ever supports this function for Color3ub
+constexpr const char Hex[]{"0123456789abcdef"};
+}  // namespace
+std::string getColorAsString(const Magnum::Color3ub& color) {
+  char out[] = "#______";
+  out[1] = Hex[(color.r() >> 4) & 0xf];
+  out[2] = Hex[(color.r() >> 0) & 0xf];
+  out[3] = Hex[(color.g() >> 4) & 0xf];
+  out[4] = Hex[(color.g() >> 0) & 0xf];
+  out[5] = Hex[(color.b() >> 4) & 0xf];
+  out[6] = Hex[(color.b() >> 0) & 0xf];
+  return std::string(out);
+}
+
+std::vector<std::set<uint32_t>> buildAdjList(
+    int numVerts,
+    const std::vector<uint32_t>& indexBuffer) {
+  // build adj list by assuming that each sequence of 3 indices in index list
+  // denote a triangle.  Idx matches vertex index in vert list, value is set of
+  // verts that are adjacent
+  std::vector<std::set<uint32_t>> adjList(numVerts, std::set<uint32_t>{});
+  for (size_t i = 0; i < indexBuffer.size(); i += 3) {
+    // find idxs of triangle
+    const uint32_t idx0 = indexBuffer[i];
+    const uint32_t idx1 = indexBuffer[i + 1];
+    const uint32_t idx2 = indexBuffer[i + 2];
+    // save adjacency info for triangle
+    adjList[idx0].insert(idx1);
+    adjList[idx1].insert(idx0);
+    adjList[idx0].insert(idx2);
+    adjList[idx2].insert(idx0);
+    adjList[idx1].insert(idx2);
+    adjList[idx2].insert(idx1);
+  }
+  return adjList;
+
+}  // buildAdjList
+
+uint32_t getValueAsUInt(const Mn::Color3ub& color) {
+  return (unsigned(color[0]) << 16) | (unsigned(color[1]) << 8) |
+         unsigned(color[2]);
+}
+uint32_t getValueAsUInt(const Mn::Color4ub& color) {
+  return (unsigned(color[0]) << 24) | (unsigned(color[1]) << 16) |
+         unsigned(color[2] << 8) | (unsigned(color[3]));
+}
+uint32_t getValueAsUInt(int color) {
+  return static_cast<uint32_t>(color);
+}
 
 }  // namespace geo
 }  // namespace esp

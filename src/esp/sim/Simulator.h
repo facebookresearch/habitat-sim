@@ -235,6 +235,17 @@ class Simulator {
   }
 
   /**
+   * @brief Build a connectivity report for current stage's semantic scene
+   * vertex annotation regions.
+   */
+  std::unordered_map<uint32_t, std::vector<scene::CCSemanticObject::ptr>>
+  buildSemanticCCReport() {
+    // build report with current stage attributes
+    return resourceManager_->buildSemanticCCReport(
+        physicsManager_->getStageInitAttributes());
+  }
+
+  /**
    * @brief Builds a @ref esp::metadata::SceneInstanceAttributes describing the
    * current scene configuration, and saves it to a JSON file, using @p
    * saveFileName .

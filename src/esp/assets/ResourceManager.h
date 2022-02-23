@@ -708,6 +708,16 @@ class ResourceManager {
   static constexpr const char* SHADOW_MAP_KEY_TEMPLATE =
       "scene_id={}-light_id={}";
 
+  /**
+   * @brief Build data for a report for semantic mesh connected components based
+   * on color/id.  Returns map of data keyed by SemanticObject index in
+   * SemanticObjs array.
+   */
+  std::unordered_map<uint32_t,
+                     std::vector<std::shared_ptr<scene::CCSemanticObject>>>
+  buildSemanticCCReport(
+      const metadata::attributes::StageAttributes::ptr& stageAttributes);
+
  private:
   /**
    * @brief Load the requested mesh info into @ref meshInfo corresponding to
@@ -717,8 +727,8 @@ class ResourceManager {
    * @param objectAttributes the object attributes owning
    * this mesh.
    * @param assetType either "render" or "collision" (for error log output)
-   * @param forceFlatShading whether to force this asset to be rendered via flat
-   * shading.
+   * @param forceFlatShading whether to force this asset to be rendered via
+   * flat shading.
    * @return whether or not the mesh was loaded successfully
    */
   bool loadObjectMeshDataFromFile(
@@ -1000,7 +1010,7 @@ class ResourceManager {
 
   /**
    * @brief Semantic Mesh backend for loadRenderAsset.  Either use
-   * loadRenderAssetIMesh if semantic mesh has vertex annotations only, or
+   * loadRenderAssetSemantic if semantic mesh has vertex annotations only, or
    * loadRenderAssetGeneral if semantic mesh has texture-based annotations. This
    * choice is governed by info.hasSemanticTextures.
    */
@@ -1009,7 +1019,7 @@ class ResourceManager {
   /**
    * @brief Semantic (vertex-annotated) Mesh backend for loadRenderAsset
    */
-  bool loadRenderAssetIMesh(const AssetInfo& info);
+  bool loadRenderAssetSemantic(const AssetInfo& info);
 
   /**
    * @brief General Mesh backend for loadRenderAsset
@@ -1042,10 +1052,10 @@ class ResourceManager {
       DrawableGroup* drawables);
 
   /**
-   * @brief Semantic Mesh backend for create Either use
-   * createRenderAssetInstanceIMesh if semantic mesh has vertex annotations
-   * only, or createRenderAssetInstanceGeneralPrimitive if semantic mesh has
-   * texture-based annotations. This choice is governed by
+   * @brief Semantic Mesh backend creation. Either use
+   * createRenderAssetInstanceVertSemantic if semantic mesh has vertex
+   * annotations only, or createRenderAssetInstanceGeneralPrimitive if semantic
+   * mesh has texture-based annotations. This choice is governed by
    * creation.isTextureBasedSemantic().
    */
   scene::SceneNode* createSemanticRenderAssetInstance(
@@ -1057,7 +1067,7 @@ class ResourceManager {
    * @brief Semantic Mesh (vertex-annotated) backend for
    * createRenderAssetInstance
    */
-  scene::SceneNode* createRenderAssetInstanceIMesh(
+  scene::SceneNode* createRenderAssetInstanceVertSemantic(
       const RenderAssetInstanceCreationInfo& creation,
       scene::SceneNode* parent,
       DrawableGroup* drawables);

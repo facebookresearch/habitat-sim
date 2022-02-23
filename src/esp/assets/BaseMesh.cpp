@@ -11,7 +11,6 @@
 #include <Magnum/Math/PackingBatch.h>
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/MeshTools/RemoveDuplicates.h>
-#include "esp/scene/SemanticScene.h"
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
@@ -80,99 +79,6 @@ void BaseMesh::buildColorMapToUse(
   }
 
 }  // BaseMesh::buildColorMapToUse
-
-namespace {
-// TODO remove when/if Magnum ever supports this function for Color3ub
-constexpr const char Hex[]{"0123456789abcdef"};
-}  // namespace
-std::string BaseMesh::getColorAsString(Magnum::Color3ub color) const {
-  char out[] = "#______";
-  out[1] = Hex[(color.r() >> 4) & 0xf];
-  out[2] = Hex[(color.r() >> 0) & 0xf];
-  out[3] = Hex[(color.g() >> 4) & 0xf];
-  out[4] = Hex[(color.g() >> 0) & 0xf];
-  out[5] = Hex[(color.b() >> 4) & 0xf];
-  out[6] = Hex[(color.b() >> 0) & 0xf];
-  return std::string(out);
-}
-
-void BaseMesh::buildSemanticOBBs(
-    const std::vector<Mn::Vector3>& vertices,
-    const std::vector<uint16_t>& vertSemanticIDs,
-    const std::vector<std::shared_ptr<esp::scene::SemanticObject>>& ssdObjs,
-    const std::string& msgPrefix) const {
-  // build per-SSD object vector of known semantic IDs
-  std::size_t numSSDObjs = ssdObjs.size();
-  std::vector<int> semanticIDToSSOBJidx(numSSDObjs, -1);
-  for (int i = 0; i < numSSDObjs; ++i) {
-    const auto& ssdObj = *ssdObjs[i];
-    int semanticID = ssdObj.semanticID();
-    // should not happen unless semantic ids are not sequential
-    if (semanticIDToSSOBJidx.size() <= semanticID) {
-      semanticIDToSSOBJidx.resize(semanticID + 1);
-    }
-    semanticIDToSSOBJidx[semanticID] = i;
-  }
-
-  // aggegates of per-semantic ID mins and maxes
-  std::vector<Mn::Vector3> vertMax(
-      semanticIDToSSOBJidx.size(),
-      {-Mn::Constants::inf(), -Mn::Constants::inf(), -Mn::Constants::inf()});
-  std::vector<Mn::Vector3> vertMin(
-      semanticIDToSSOBJidx.size(),
-      {Mn::Constants::inf(), Mn::Constants::inf(), Mn::Constants::inf()});
-  std::vector<int> vertCounts(semanticIDToSSOBJidx.size());
-
-  // for each vertex, map vert min and max for each known semantic ID
-  // Known semantic IDs are expected to be contiguous, and correspond to the
-  // number of unique ssdObjs mappings.
-
-  for (int vertIdx = 0; vertIdx < vertSemanticIDs.size(); ++vertIdx) {
-    // semantic ID on vertex - valid values are 1->semanticIDToSSOBJidx.size().
-    // Invalid/unknown semantic ids are > semanticIDToSSOBJidx.size()
-    const auto semanticID = vertSemanticIDs[vertIdx];
-    if ((semanticID >= 0) && (semanticID < semanticIDToSSOBJidx.size())) {
-      const auto vert = vertices[vertIdx];
-      // FOR VERT-BASED OBB CALC
-      // only support bbs for known colors that map to semantic objects
-      vertMax[semanticID] = Mn::Math::max(vertMax[semanticID], vert);
-      vertMin[semanticID] = Mn::Math::min(vertMin[semanticID], vert);
-      vertCounts[semanticID] += 1;
-    }
-  }
-
-  // with mins/maxs per ID, map to objs
-  // give each ssdObj the values to build its OBB
-  for (int semanticID = 0; semanticID < semanticIDToSSOBJidx.size();
-       ++semanticID) {
-    int objIdx = semanticIDToSSOBJidx[semanticID];
-    if (objIdx == -1) {
-      continue;
-    }
-    // get object with given semantic ID
-    auto& ssdObj = *ssdObjs[objIdx];
-    Mn::Vector3 center{};
-    Mn::Vector3 dims{};
-
-    const std::string debugStr = Cr::Utility::formatString(
-        "{} Semantic ID : {} : color : {} tag : {} present in {} "
-        "verts | ",
-        msgPrefix, semanticID, ssdObj.getColorAsInt(), ssdObj.id(),
-        vertCounts[semanticID]);
-    if (vertCounts[semanticID] == 0) {
-      ESP_DEBUG() << Cr::Utility::formatString(
-          "{}No verts have specified Semantic ID.", debugStr);
-    } else {
-      center = .5f * (vertMax[semanticID] + vertMin[semanticID]);
-      dims = vertMax[semanticID] - vertMin[semanticID];
-      ESP_DEBUG() << Cr::Utility::formatString(
-          "{}BB Center [{},{},{}] Dims [{},{},{}]", debugStr, center.x(),
-          center.y(), center.z(), dims.x(), dims.y(), dims.z());
-    }
-    ssdObj.setObb(Mn::EigenIntegration::cast<esp::vec3f>(center),
-                  Mn::EigenIntegration::cast<esp::vec3f>(dims));
-  }
-}  // BaseMesh::buildSemanticOBBs
 
 }  // namespace assets
 }  // namespace esp

@@ -449,6 +449,16 @@ Key Commands:
   int semanticBBID_ = -1;
 
   /**
+   * @brief Generate and save semantic CC reports for all scenes in dataset
+   */
+  void generateAndSaveAllSemanticCCReports();
+
+  /**
+   * @brief Generate and save semantic CC report
+   */
+  void generateAndSaveSemanticCCReport();
+
+  /**
    * @brief Build semantic region prims.
    */
   void buildSemanticPrims(int semanticID,
@@ -1131,6 +1141,67 @@ bool loadTransformFromFile(const std::string& filename,
   bool status = load(agentTransform) && load(sensorTransform);
   file.close();
   return status;
+}
+
+void Viewer::generateAndSaveAllSemanticCCReports() {
+  for (int idx = 0; idx < curSceneInstances_.size(); ++idx) {
+    if (std::string::npos != curSceneInstances_[idx].find("NONE")) {
+      continue;
+    }
+    setSceneInstanceFromListAndShow(idx);
+    generateAndSaveSemanticCCReport();
+  }
+}
+void Viewer::generateAndSaveSemanticCCReport() {
+  const auto results = simulator_->buildSemanticCCReport();
+  const std::string fileDir = Cr::Utility::Directory::join(
+      {Cr::Utility::Directory::path(MM_->getActiveSceneDatasetName()),
+       "Semantic_CC_Reports"});
+
+  Cr::Utility::Directory::mkpath(fileDir);
+
+  const std::string filename = Cr::Utility::Directory::join(
+      fileDir,
+      Cr::Utility::formatString(
+          "{}_CC_report.csv",
+          Cr::Utility::Directory::splitExtension(
+              Cr::Utility::Directory::filename(simConfig_.activeSceneName))
+              .first));
+  ESP_DEBUG() << "Fully qualified destination file name :" << filename;
+  auto semanticScene = simulator_->getSemanticScene();
+
+  const auto& semanticObjs = semanticScene->objects();
+
+  std::ofstream file(filename);
+  if (!file.good()) {
+    ESP_ERROR() << "Cannot open" << filename << "to output CC report data.";
+    return;
+  }
+
+  file << "Obj IDX, Object ID, Color RGB, # Verts in partition, BBOX "
+          "Center XYZ, BBOX Dims XYZ, BBOX Vol\n";
+
+  for (const auto& elem : results) {
+    const uint32_t objIDX = elem.first;
+    const std::vector<std::shared_ptr<esp::scene::CCSemanticObject>>&
+        listOfObbs = elem.second;
+    const auto baseObj = semanticObjs[objIDX];
+    for (const std::shared_ptr<esp::scene::CCSemanticObject>& ccObj :
+         listOfObbs) {
+      const auto obb = ccObj->obb();
+      const auto clr = ccObj->getColor();
+      const auto ctr = obb.center();
+      const auto sizes = obb.sizes();
+      const std::string dataString = Cr::Utility::formatString(
+          "{},{},{} {} {},{},{} {} {}, {} {} {},{}", objIDX, baseObj->id(),
+          clr.r(), clr.g(), clr.b(), ccObj->getNumSrcVerts(), ctr.x(), ctr.y(),
+          ctr.z(), sizes.x(), sizes.y(), sizes.z(), obb.volume());
+      ESP_VERY_VERBOSE() << dataString;
+      file << dataString << '\n';
+    }
+  }
+
+  file.close();
 }
 
 void Viewer::loadAgentAndSensorTransformFromFile() {
@@ -2212,6 +2283,15 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       // query the agent state
       showAgentStateMsg(true, true);
       break;
+    case KeyEvent::Key::J: {
+      if (event.modifiers() & MouseEvent::Modifier::Alt) {
+        generateAndSaveAllSemanticCCReports();
+      } else {
+        // generate and save semantic CC report
+        generateAndSaveSemanticCCReport();
+      }
+      break;
+    }
     case KeyEvent::Key::T: {
       //+ALT for fixedBase
       bool fixedBase = bool(event.modifiers() & MouseEvent::Modifier::Alt);

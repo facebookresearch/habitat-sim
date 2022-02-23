@@ -28,8 +28,10 @@
 #include <Magnum/Math/Tags.h>
 #include <Magnum/MeshTools/Compile.h>
 #include <Magnum/MeshTools/Concatenate.h>
+#include <Magnum/MeshTools/FilterAttributes.h>
 #include <Magnum/MeshTools/Interleave.h>
 #include <Magnum/MeshTools/Reference.h>
+#include <Magnum/MeshTools/RemoveDuplicates.h>
 #include <Magnum/PixelFormat.h>
 #include <Magnum/SceneGraph/Object.h>
 #include <Magnum/SceneTools/FlattenMeshHierarchy.h>
@@ -215,6 +217,33 @@ void ResourceManager::initPhysicsManager(
   physicsManager->initPhysics(parent);
 }  // ResourceManager::initPhysicsManager
 
+std::unordered_map<uint32_t, std::vector<scene::CCSemanticObject::ptr>>
+ResourceManager::buildSemanticCCReport(
+    const StageAttributes::ptr& stageAttributes) {
+  std::map<std::string, AssetInfo> assetInfoMap =
+      createStageAssetInfosFromAttributes(stageAttributes, false, true);
+
+  AssetInfo semanticInfo = assetInfoMap.at("semantic");
+
+  const std::string& filename = semanticInfo.filepath;
+  /* Open the file. On error the importer already prints a diagnostic message,
+     so no need to do that here. The importer implicitly converts per-face
+     attributes to per-vertex, so nothing extra needs to be done. */
+  ESP_CHECK(
+      (fileImporter_->openFile(filename) && (fileImporter_->meshCount() > 0u)),
+      Cr::Utility::formatString("Error loading semantic mesh data from file {}",
+                                filename));
+
+  // flatten source meshes, preserving transforms, build semanticMeshData and
+  // construct vertex-based semantic bboxes, if requested for dataset.
+  GenericSemanticMeshData::uptr semanticMeshData =
+      flattenImportedMeshAndBuildSemantic(*fileImporter_, semanticInfo);
+
+  // return connectivity query results - per color map of vectors of CC-based
+  // Semantic objects.
+  return semanticMeshData->buildCCBasedSemanticObjs(semanticScene_);
+}  // ResourceManager::buildSemanticCCReport
+
 bool ResourceManager::loadSemanticSceneDescriptor(
     const std::string& ssdFilename,
     const std::string& activeSceneName) {
@@ -292,7 +321,7 @@ void ResourceManager::buildSemanticColorMap() {
   semanticColorMapBeingUsed_.clear();
   semanticColorAsInt_.clear();
   const auto& ssdClrMap = semanticScene_->getSemanticColorMap();
-  if (ssdClrMap.size() == 0) {
+  if (ssdClrMap.empty()) {
     return;
   }
 
@@ -307,14 +336,17 @@ void ResourceManager::buildSemanticColorMap() {
 
 void ResourceManager::buildSemanticColorAsIntMap() {
   semanticColorAsInt_.clear();
+  if (semanticColorMapBeingUsed_.empty()) {
+    return;
+  }
   semanticColorAsInt_.reserve(semanticColorMapBeingUsed_.size());
+
   // build listing of colors as ints, with idx being semantic ID
   std::transform(semanticColorMapBeingUsed_.cbegin(),
                  semanticColorMapBeingUsed_.cend(),
                  std::back_inserter(semanticColorAsInt_),
                  [](const Mn::Color3ub& color) -> uint32_t {
-                   return (unsigned(color[0]) << 16) |
-                          (unsigned(color[1]) << 8) | unsigned(color[2]);
+                   return geo::getValueAsUInt(color);
                  });
 }
 
@@ -867,7 +899,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstance(
     newNode = createRenderAssetInstancePTex(creation, parent, drawables);
   } else if (info.type == AssetType::INSTANCE_MESH) {
     CORRADE_ASSERT(!visNodeCache,
-                   "createRenderAssetInstanceIMesh doesn't support this",
+                   "createRenderAssetInstanceVertSemantic doesn't support this",
                    nullptr);
     newNode = createSemanticRenderAssetInstance(creation, parent, drawables);
   } else if (isRenderAssetGeneral(info.type) ||
@@ -895,9 +927,11 @@ bool ResourceManager::loadStageInternal(
   const std::string& filename = info.filepath;
   ESP_DEBUG() << "Attempting to load stage" << filename << "";
   bool meshSuccess = true;
-  if (info.filepath != EMPTY_SCENE) {
+  if (filename != EMPTY_SCENE) {
     if (!Cr::Utility::Directory::exists(filename)) {
-      ESP_ERROR() << "Cannot find scene file" << filename;
+      ESP_ERROR(Mn::Debug::Flag::NoSpace)
+          << "Attempting to load stage but cannot find specified asset file : '"
+          << filename << "'. Aborting.";
       meshSuccess = false;
     } else {
       // load render asset if necessary
@@ -924,7 +958,8 @@ bool ResourceManager::loadStageInternal(
       return true;
     }
   } else {
-    ESP_DEBUG() << "Loading empty scene for" << filename;
+    ESP_DEBUG() << "Loading empty scene since" << filename
+                << "specified as filename.";
     // EMPTY_SCENE (ie. "NONE") string indicates desire for an empty scene (no
     // scene mesh): welcome to the void
   }
@@ -1327,7 +1362,7 @@ bool ResourceManager::loadSemanticRenderAsset(const AssetInfo& info) {
     return loadRenderAssetGeneral(info);
   }
   // special handling for vertex-based semantics
-  return loadRenderAssetIMesh(info);
+  return loadRenderAssetSemantic(info);
 }  // ResourceManager::loadSemanticRenderAsset
 
 scene::SceneNode* ResourceManager::createSemanticRenderAssetInstance(
@@ -1340,7 +1375,7 @@ scene::SceneNode* ResourceManager::createSemanticRenderAssetInstance(
                                                      drawables, nullptr);
   }
   // Special handling for vertex-based semantics
-  return createRenderAssetInstanceIMesh(creation, parent, drawables);
+  return createRenderAssetInstanceVertSemantic(creation, parent, drawables);
 
 }  // ResourceManager::createSemanticRenderAssetInstance
 
@@ -1393,12 +1428,23 @@ ResourceManager::flattenImportedMeshAndBuildSemantic(Importer& fileImporter,
     }
     // build concatenated meshData from container of meshes.
     meshData = Mn::MeshTools::concatenate(meshView);
+    // filter out texture coords and remove duplicate verts
+    meshData =
+        Mn::MeshTools::removeDuplicates(Mn::MeshTools::filterOnlyAttributes(
+            *meshData, {
+                           Mn::Trade::MeshAttribute::Position,
+                           Mn::Trade::MeshAttribute::Color,
+                           Mn::Trade::MeshAttribute::ObjectId
+                           // filtering out UV/texture coords
+                       }));
+
   }  // flatten/reframe src meshes
 
   // build semanticColorMapBeingUsed_ if semanticScene_ is not nullptr
   if (semanticScene_) {
     buildSemanticColorMap();
   }
+
   GenericSemanticMeshData::uptr semanticMeshData =
       GenericSemanticMeshData::buildSemanticMeshData(
           *meshData, Cr::Utility::Directory::filename(filename),
@@ -1413,7 +1459,7 @@ ResourceManager::flattenImportedMeshAndBuildSemantic(Importer& fileImporter,
   return semanticMeshData;
 }  // ResourceManager::loadAndFlattenImportedMeshData
 
-bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
+bool ResourceManager::loadRenderAssetSemantic(const AssetInfo& info) {
   CORRADE_INTERNAL_ASSERT(info.type == AssetType::INSTANCE_MESH);
 
   const std::string& filename = info.filepath;
@@ -1472,9 +1518,9 @@ bool ResourceManager::loadRenderAssetIMesh(const AssetInfo& info) {
                         LoadedAssetData{info, std::move(meshMetaData)});
 
   return true;
-}  // ResourceManager::loadRenderAssetIMesh
+}  // ResourceManager::loadRenderAssetSemantic
 
-scene::SceneNode* ResourceManager::createRenderAssetInstanceIMesh(
+scene::SceneNode* ResourceManager::createRenderAssetInstanceVertSemantic(
     const RenderAssetInstanceCreationInfo& creation,
     scene::SceneNode* parent,
     DrawableGroup* drawables) {
@@ -1526,7 +1572,7 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceIMesh(
   }
 
   return instanceRoot;
-}  // ResourceManager::createRenderAssetInstanceIMesh
+}  // ResourceManager::createRenderAssetInstanceVertSemantic
 
 void ResourceManager::ConfigureImporterManagerGLExtensions() {
   if (!getCreateRenderer()) {
@@ -2335,8 +2381,7 @@ Mn::Image2D ResourceManager::convertRGBToSemanticId(
     for (std::size_t x = 0; x != size.x(); ++x) {
       const Mn::Color3ub color = inputRow[x];
       /* Fugly. Sorry. Needs better API on Magnum side. */
-      const Mn::UnsignedInt colorInt =
-          color.r() << 16 | color.g() << 8 | color.b();
+      const Mn::UnsignedInt colorInt = geo::getValueAsUInt(color);
       outputRow[x] = clrToSemanticId[colorInt];
     }
   }
