@@ -5,7 +5,7 @@ import os
 import re
 from glob import glob
 from os.path import basename, join
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Callable, Dict, Optional, Tuple
 
 # sub-extensions used with json config files to denote the type
 # of configuration.  Append ".json" to make full file name
@@ -45,7 +45,7 @@ def transform_path_relative(
 def build_config_src_dest_dict(
     config_src_dir: str,
     config_dest_dir: str,
-    predicate: Optional[Any] = lambda x: True,
+    predicate: Optional[Callable] = lambda x: True,
     debug: Optional[bool] = False,
 ) -> Dict[str, Tuple[str, str]]:
     """Build a dictionary keyed by config file name where value is a tuple holding the fully
