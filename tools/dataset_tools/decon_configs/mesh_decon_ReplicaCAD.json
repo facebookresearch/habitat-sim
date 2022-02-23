@@ -5,7 +5,7 @@
   "scenes_src_subdir": "../replicaCAD_working/replicaCAD_source_scenes",
   "objects_src_subdir": "objects/",
   "dataset_dest_rel_to_home": true,
-  "dataset_dest_subdir": "Facebook/habitat-sim/data/scene_datasets/replicaCAD/",
+  "dataset_dest_subdir": "Facebook/habitat-sim/data/scene_datasets/replicaCAD_temp2/",
   "dataset_glb_dest_subdir": ".",
   "stage_glb_dest_subdir": "stages/",
   "obj_glb_dest_subdir": "objects/",
@@ -96,7 +96,7 @@
         "uniform_scale": 0.4,
         "translation_override_y": 0.0,
         "relative_translation": [
-          0.07,
+          0.0,
           0.0,
           0.0
         ],
@@ -129,7 +129,7 @@
       "fridge": {
         "absolute_translation": [
           0.6818168997764587,
-          0.9755649566650391,
+          1.01,
           4.4597649574279785
         ],
         "absolute_rotation": [
@@ -187,7 +187,7 @@
         "uniform_scale": 0.4,
         "translation_override_y": 0.0,
         "relative_translation": [
-          0.07,
+          0.0,
           0.0,
           0.0
         ],
@@ -278,7 +278,7 @@
         "uniform_scale": 0.4,
         "translation_override_y": 0.0,
         "relative_translation": [
-          0.07,
+          0.0,
           0.0,
           0.0
         ],
@@ -311,7 +311,7 @@
       "fridge": {
         "absolute_translation": [
           -2.1782121658325195,
-          0.9755649566650391,
+          1.01,
           -0.24
         ],
         "absolute_rotation": [
@@ -369,7 +369,7 @@
         "uniform_scale": 0.4,
         "translation_override_y": 0.0,
         "relative_translation": [
-          0.07,
+          0.0,
           0.0,
           0.0
         ],
@@ -402,7 +402,7 @@
       "fridge": {
         "absolute_translation": [
           -2.1782121658325195,
-          0.9755649566650391,
+          1.01,
           3.6299728393554688
         ],
         "absolute_rotation": [
@@ -460,7 +460,7 @@
         "uniform_scale": 0.4,
         "translation_override_y": 0.0,
         "relative_translation": [
-          0.07,
+          0.0,
           0.0,
           0.0
         ],
@@ -493,7 +493,7 @@
       "fridge": {
         "absolute_translation": [
           0.8183235287666321,
-          0.9755649566650391,
+          1.01,
           7.551066970825195
         ],
         "absolute_rotation": [
