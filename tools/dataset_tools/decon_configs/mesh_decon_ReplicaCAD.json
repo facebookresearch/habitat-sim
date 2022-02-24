@@ -5,7 +5,7 @@
   "scenes_src_subdir": "../replicaCAD_working/replicaCAD_source_scenes",
   "objects_src_subdir": "objects/",
   "dataset_dest_rel_to_home": true,
-  "dataset_dest_subdir": "Facebook/habitat-sim/data/scene_datasets/replicaCAD_temp2/",
+  "dataset_dest_subdir": "Facebook/habitat-sim/data/scene_datasets/replicaCAD/",
   "dataset_glb_dest_subdir": ".",
   "stage_glb_dest_subdir": "stages/",
   "obj_glb_dest_subdir": "objects/",
@@ -128,7 +128,7 @@
       },
       "fridge": {
         "absolute_translation": [
-          0.6818168997764587,
+          0.535,
           1.01,
           4.4597649574279785
         ],
@@ -142,7 +142,7 @@
       "kitchen_counter": {
         "uniform_scale": 0.98,
         "absolute_translation": [
-          0.880730934143066,
+          0.735,
           0.03,
           6.373764820098877
         ],
@@ -156,7 +156,7 @@
       "kitchenCupboard_01": {
         "uniform_scale": 0.38,
         "absolute_translation": [
-          0.580730934143066,
+          0.435,
           1.53,
           6.373764820098877
         ],
@@ -220,7 +220,7 @@
       "fridge": {
         "absolute_translation": [
           -2.1782121658325195,
-          0.9755649566650391,
+          1.01,
           -1.04
         ],
         "absolute_rotation": [

@@ -14,8 +14,8 @@ import glb_mesh_tools as gut
 ###
 # JSON Configuration file for running this application.
 # MESH_DECON_CONFIG_JSON_FILENAME = "mesh_decon_AI2Thor.json"
-MESH_DECON_CONFIG_JSON_FILENAME = "mesh_decon_ReplicaCAD.json"
-# MESH_DECON_CONFIG_JSON_FILENAME = "mesh_decon_ReplicaCAD_baked.json"
+# MESH_DECON_CONFIG_JSON_FILENAME = "mesh_decon_ReplicaCAD.json"
+MESH_DECON_CONFIG_JSON_FILENAME = "mesh_decon_ReplicaCAD_baked.json"
 # MESH_DECON_CONFIG_JSON_FILENAME = "mesh_decon_floorplanner.json"
 
 
@@ -990,6 +990,7 @@ def main():
         ut.mod_json_val_and_save(
             ("", object_instance_count_filename, object_instance_ordered_dict)
         )
+    print("Done!")
 
 
 if __name__ == "__main__":
