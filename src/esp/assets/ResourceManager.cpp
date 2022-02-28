@@ -2625,7 +2625,7 @@ bool ResourceManager::instantiateAssetsOnDemand(
   return true;
 }  // ResourceManager::instantiateAssetsOnDemand
 
-std::vector<vec3f> getVertices(int mesh_key) {
+std::vector<vec3f> ResourceManager::getVertices(int mesh_key) {
   BaseMesh& mesh = *meshes_.at(mesh_key);
 
   ESP_CHECK(mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH,
@@ -2638,7 +2638,7 @@ std::vector<vec3f> getVertices(int mesh_key) {
   return vertexPositions;
 }
 
-std::vector<uint32_t> getSurfIndexes(int mesh_key) {
+std::vector<uint32_t> ResourceManager::getSurfIndexes(int mesh_key) {
   BaseMesh& mesh = *meshes_.at(mesh_key);
 
   ESP_CHECK(mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH,
@@ -2651,7 +2651,7 @@ std::vector<uint32_t> getSurfIndexes(int mesh_key) {
   return surfIndexes;
 }
 
-std::vector<vec3uc> getVerticesColor(int mesh_key) {
+std::vector<vec3uc> ResourceManager::getVerticesColor(int mesh_key) {
   BaseMesh& mesh = *meshes_.at(mesh_key);
 
   ESP_CHECK(mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH,
@@ -2664,7 +2664,7 @@ std::vector<vec3uc> getVerticesColor(int mesh_key) {
   return colors;
 }
 
-std::vector<uint16_t> getObjectIds(int mesh_key) {
+std::vector<uint16_t> ResourceManager::getObjectIds(int mesh_key) {
   BaseMesh& mesh = *meshes_.at(mesh_key);
 
   ESP_CHECK(mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH,
@@ -2677,7 +2677,7 @@ std::vector<uint16_t> getObjectIds(int mesh_key) {
   return objIds;
 }
 
-std::vector<int> getInstanceMeshKeys() {
+std::vector<int> ResourceManager::getInstanceMeshKeys() {
   std::vector<int> r;
   for (auto const& m : meshes_) {
     if (mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH) {
