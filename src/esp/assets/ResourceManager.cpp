@@ -2634,7 +2634,8 @@ std::vector<Mn::Vector3> ResourceManager::getVertices(int mesh_key) {
   // It is an instance mesh and it is possible to return the vertex data
   const GenericSemanticMeshData& instMesh =
       dynamic_cast<GenericSemanticMeshData&>(mesh);
-  std::vector<Mn::Vector3> vertexPositions = instMesh.getVertexBufferObjectCPU();
+  std::vector<Mn::Vector3> vertexPositions =
+      instMesh.getVertexBufferObjectCPU();
   return vertexPositions;
 }
 
