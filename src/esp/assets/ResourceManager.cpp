@@ -2625,7 +2625,7 @@ bool ResourceManager::instantiateAssetsOnDemand(
   return true;
 }  // ResourceManager::instantiateAssetsOnDemand
 
-std::vector<vec3f> ResourceManager::getVertices(int mesh_key) {
+std::vector<Mn::Vector3> ResourceManager::getVertices(int mesh_key) {
   BaseMesh& mesh = *meshes_.at(mesh_key);
 
   ESP_CHECK(mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH,
@@ -2634,7 +2634,7 @@ std::vector<vec3f> ResourceManager::getVertices(int mesh_key) {
   // It is an instance mesh and it is possible to return the vertex data
   const GenericSemanticMeshData& instMesh =
       dynamic_cast<GenericSemanticMeshData&>(mesh);
-  std::vector<vec3f> vertexPositions = instMesh.getVertexBufferObjectCPU();
+  std::vector<Mn::Vector3> vertexPositions = instMesh.getVertexBufferObjectCPU();
   return vertexPositions;
 }
 
@@ -2651,7 +2651,7 @@ std::vector<uint32_t> ResourceManager::getSurfIndexes(int mesh_key) {
   return surfIndexes;
 }
 
-std::vector<vec3uc> ResourceManager::getVerticesColor(int mesh_key) {
+std::vector<Mn::Color3ub> ResourceManager::getVerticesColor(int mesh_key) {
   BaseMesh& mesh = *meshes_.at(mesh_key);
 
   ESP_CHECK(mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH,
@@ -2660,7 +2660,7 @@ std::vector<vec3uc> ResourceManager::getVerticesColor(int mesh_key) {
   // It is an instance mesh and it is possible to return the vertex data
   const GenericSemanticMeshData& instMesh =
       dynamic_cast<GenericSemanticMeshData&>(mesh);
-  std::vector<vec3uc> colors = instMesh.getColorBufferObjectCPU();
+  std::vector<Mn::Color3ub> colors = instMesh.getColorBufferObjectCPU();
   return colors;
 }
 
@@ -2680,6 +2680,7 @@ std::vector<uint16_t> ResourceManager::getObjectIds(int mesh_key) {
 std::vector<int> ResourceManager::getInstanceMeshKeys() {
   std::vector<int> r;
   for (auto const& m : meshes_) {
+    BaseMesh& mesh = *m.second;
     if (mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH) {
       int id = m.first;
       r.push_back(id);

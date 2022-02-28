@@ -348,7 +348,7 @@ class ResourceManager {
    * @param mesh_key The number index of a mesh.
    * @return A vector of vertex positions.
    */
-  std::vector<vec3f> getVertices(int mesh_key);
+  std::vector<Mn::Vector3> getVertices(int mesh_key);
 
   /**
    * @brief Return a vector of the surface indexes for a specific mesh in the
@@ -364,7 +364,7 @@ class ResourceManager {
    * @param mesh_key The number index of a mesh.
    * @return A vector of vertex colors.
    */
-  std::vector<vec3uc> getVerticesColor(int mesh_key);
+  std::vector<Mn::Color3ub> getVerticesColor(int mesh_key);
 
   /**
    * @brief Return a vector of object IDs for each vertex in a given mesh.
@@ -382,7 +382,7 @@ class ResourceManager {
    * Return a vector of the integer IDs of existing meshes.
    * @return a vector of existing mesh IDs.
    */
-  std::vector<int> getMeshKeys();
+  std::vector<int> getInstanceMeshKeys();
 
   /**
    * @brief Set a reference to the current @ref metadataMediator_.  Perform any
