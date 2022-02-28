@@ -363,7 +363,7 @@ class ResourceManager {
    * scene.
    * @param mesh_key The number index of a mesh.
    * @return A vector of vertex colors.
-  */
+   */
   std::vector<vec3uc> getVerticesColor(int mesh_key);
 
   /**
