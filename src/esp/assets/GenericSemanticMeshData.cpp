@@ -293,11 +293,14 @@ GenericSemanticMeshData::buildSemanticMeshData(
   if (semanticScene && (semanticScene->buildBBoxFromVertColors())) {
     float fractionOfMaxBBoxSize = semanticScene->CCFractionToUseForBBox();
     if (fractionOfMaxBBoxSize > 0.0f) {
-      // build adj list
-      std::vector<std::set<uint32_t>> adjList = geo::buildAdjList(
+      // build adj list to use to derive CCs
+      // Assumes that index buffer defines triangle polys in sequential groups
+      // of 3 vert idxs
+      const std::vector<std::set<uint32_t>> adjList = geo::buildAdjList(
           semanticMeshData->cpu_vbo_.size(), semanticMeshData->cpu_ibo_);
-      // find all connected components based on vertex color.
-      std::unordered_map<uint32_t, std::vector<std::set<uint32_t>>>
+
+      // find all connected components based on adj list and vertex color.
+      const std::unordered_map<uint32_t, std::vector<std::set<uint32_t>>>
           clrsToComponents =
               geo::findCCsByGivenColor(adjList, semanticMeshData->cpu_cbo_);
 

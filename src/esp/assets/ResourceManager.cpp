@@ -1397,7 +1397,7 @@ ResourceManager::flattenImportedMeshAndBuildSemantic(Importer& fileImporter,
   if (sceneID == -1) {
     // no default scene --- standalone OBJ/PLY files, for example
     // already verified at least one mesh exists, this means only one mesh,
-    // treat as before
+    // so no need to merge/flatten anything
     meshData =
         Mn::MeshTools::transform3D(*fileImporter.mesh(0), reframeTransform);
   } else {
@@ -1428,7 +1428,8 @@ ResourceManager::flattenImportedMeshAndBuildSemantic(Importer& fileImporter,
     }
     // build concatenated meshData from container of meshes.
     meshData = Mn::MeshTools::concatenate(meshView);
-    // filter out texture coords and remove duplicate verts
+    // filter out all unnecessary attributes (i.e. texture coords) in order to
+    // remove duplicate verts
     meshData =
         Mn::MeshTools::removeDuplicates(Mn::MeshTools::filterOnlyAttributes(
             *meshData, {

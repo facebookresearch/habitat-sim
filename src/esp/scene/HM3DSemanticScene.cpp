@@ -195,7 +195,7 @@ bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
 
   // build colormap from colors defined in ssd
   scene.semanticColorMapBeingUsed_.clear();
-  scene.semanticColorMapBeingUsed_.reserve(objInstance.size());
+  scene.semanticColorMapBeingUsed_.resize(objInstance.size());
   scene.semanticColorToIdAndRegion_.clear();
   scene.semanticColorToIdAndRegion_.reserve(objInstance.size());
   // build the color map with first maxSemanticID elements in proper order
@@ -219,11 +219,21 @@ bool SemanticScene::buildHM3DHouse(std::ifstream& ifs,
   // TODO: eventually BBoxes will be pre-generated and stored in semantic text
   // file.
   scene.needBBoxFromVertColors_ = true;
-  // use only largest volume bbox
-  // TODO: eventually drive this via customizable config value.
-  scene.ccLargestVolToUseForBBox_ = 1.0f;
-  scene.levels_.clear();  // Not used for Hm3d currently
 
+  // TODO: eventually set this via customizable config value.
+  // TODO: Using float to potentially allow for this value to include multiple
+  // CC's verts via their BBox volume, where float value denotes fraction of
+  // largest bbox's volume to include in final BBox.
+
+  // Currently, if this value is > 0.0f, semantic BBox is
+  // an AABB in world space built by largest CC vertset by volume sharing
+  // semantic color annotation; if 0.0, it uses all verts assigned specific
+  // color annotations. Using a float value to
+  //
+  scene.ccLargestVolToUseForBBox_ = 1.0f;
+
+  // Not used for Hm3d currently
+  scene.levels_.clear();
   return true;
 
 }  // SemanticScene::buildHM3DHouse

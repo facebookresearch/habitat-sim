@@ -203,6 +203,14 @@ void SemanticScene::buildSemanticOBBsFromCCs(
         clrsToComponents,
     const std::shared_ptr<SemanticScene>& semanticScene,
     const std::string& msgPrefix) {
+  // Semantic scene is required to map color annotations to semantic objects
+  if (!semanticScene) {
+    ESP_WARNING() << "Attempting to build CC-based semantic bboxes but no "
+                     "Semantic Scene Descriptor is provided, so skipping. NO "
+                     "SEMANTIC BBOXES WILL BE CREATED.";
+    return;
+  }
+
   // get map of semantic ID to vector of CCSemanticObjs.
   const auto perIDMapOfCCSemanticObjs =
       buildCCBasedSemanticObjs(verts, clrsToComponents, semanticScene);
@@ -224,10 +232,6 @@ void SemanticScene::buildSemanticOBBsFromCCs(
     uint32_t objIdx = semanticIDToSSOBJidx[semanticID];
     // get object with given semantic ID
     auto& ssdObj = *ssdObjs[objIdx];
-    // do not process Unknown
-    // if (objIdx == 0) {
-    //   continue;
-    // }
 
     // get vector of CCSemanticObjs for given ID
     const std::unordered_map<uint32_t,
@@ -236,10 +240,11 @@ void SemanticScene::buildSemanticOBBsFromCCs(
 
     if ((semanticCCsPerID == perIDMapOfCCSemanticObjs.end()) ||
         (semanticCCsPerID->second.empty())) {
-      ESP_DEBUG() << msgPrefix << "\n!!!!!!Note : ID :" << objIdx
-                  << "has no corresponding CC; therefore, this semantic object "
-                     "will have no BBox since its color is not present in the "
-                     "vertices on the mesh.";
+      ESP_DEBUG() << "\n\t\t!!!!!!" << msgPrefix
+                  << "Note : Semantic Scene Annotation ID :" << objIdx
+                  << "is not present in the mesh - there are no vertices with "
+                     "this annotation's color assigned to them; therefore, "
+                     "this semantic object will have no BBox.";
       continue;
     }
 
@@ -247,13 +252,15 @@ void SemanticScene::buildSemanticOBBsFromCCs(
         semanticCCsPerID->second;
 
     ESP_VERY_VERBOSE() << Cr::Utility::formatString(
-        "vec size {} Displaying elements in decreasing order "
+        "Semantic CC vec size {} Displaying elements in decreasing order "
         "for objIDX : {} | name : {} | vol : {}",
         vecOfCCSemanticObjs.size(), objIdx, ssdObj.id(), ssdObj.obb().volume());
     if (vecOfCCSemanticObjs.size() == 1) {
-      // if only one element, just use specified element
+      // if only one element, always use specified CC's bbox, built off all
+      // verts with semantic annotation
       ssdObj.setObb(vecOfCCSemanticObjs[0]->obb());
     } else {
+      // Multiple elements, use some fraction of CCs based on volume
       // build temp multimap keyed by volume
       perSemanticObjCCs.clear();
       for (const auto& CCObj : vecOfCCSemanticObjs) {
@@ -272,7 +279,7 @@ void SemanticScene::buildSemanticOBBsFromCCs(
           "After setting from largest cc, obj {} volume :{}", ssdObj.id(),
           ssdObj.obb().volume());
     }
-  }
+  }  // for each semantic ID currently defined
 }  // SemanticScene::buildSemanticOBBsFromCCs
 
 void SemanticScene::buildSemanticOBBs(
