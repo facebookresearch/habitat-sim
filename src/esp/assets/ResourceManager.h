@@ -29,7 +29,6 @@
 #include "Asset.h"
 #include "BaseMesh.h"
 #include "CollisionMeshData.h"
-#include "GenericInstanceMeshData.h"
 #include "GenericMeshData.h"
 #include "GenericSemanticMeshData.h"
 #include "MeshData.h"

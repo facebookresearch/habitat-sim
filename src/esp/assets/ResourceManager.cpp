@@ -2633,8 +2633,8 @@ std::vector<vec3f> getVertices(int mesh_key) {
              "Error in getSurfIndexes. The mesh is not an instance mesh.");
 
   // It is an instance mesh and it is possible to return the vertex data
-  const GenericInstanceMeshData& instMesh =
-    dynamic_cast<GenericInstanceMeshData&>(mesh);
+  const GenericSemanticMeshData& instMesh =
+    dynamic_cast<GenericSemanticMeshData&>(mesh);
   std::vector<vec3f> vertexPositions = instMesh.getVertexBufferObjectCPU();
   return vertexPositions;
 }
@@ -2647,8 +2647,8 @@ std::vector<uint32_t> getSurfIndexes(int mesh_key) {
              "Error in getSurfIndexes. The mesh is not an instance mesh.");
 
   // It is an instance mesh and it is possible to return the vertex data
-  const GenericInstanceMeshData& instMesh =
-    dynamic_cast<GenericInstanceMeshData&>(mesh);
+  const GenericSemanticMeshData& instMesh =
+    dynamic_cast<GenericSemanticMeshData&>(mesh);
   std::vector<uint32_t> surfIndexes = instMesh.getIndexBufferObjectCPU();
   return surfIndexes;
 }
@@ -2661,8 +2661,8 @@ std::vector<vec3uc> getVerticesColor(int mesh_key) {
              "Error in getVerticesColor. The mesh is not an instance mesh.");
 
   // It is an instance mesh and it is possible to return the vertex data
-  const GenericInstanceMeshData& instMesh =
-    dynamic_cast<GenericInstanceMeshData&>(mesh);
+  const GenericSemanticMeshData& instMesh =
+    dynamic_cast<GenericSemanticMeshData&>(mesh);
   std::vector<vec3uc> colors = instMesh.getColorBufferObjectCPU();
   return colors;
 }
@@ -2675,8 +2675,8 @@ std::vector<uint16_t> getObjectIds(int mesh_key) {
              "Error in getObjectIds. The mesh is not an instance mesh.");
 
   // It is an instance mesh and it is possible to return the vertex data
-  const GenericInstanceMeshData& instMesh =
-    dynamic_cast<GenericInstanceMeshData&>(mesh);
+  const GenericSemanticMeshData& instMesh =
+    dynamic_cast<GenericSemanticMeshData&>(mesh);
   std::vector<uint16_t> objIds = instMesh.getObjectIdsBufferObjectCPU();
   return objIds;
 }
