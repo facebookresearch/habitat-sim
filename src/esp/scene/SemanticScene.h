@@ -199,8 +199,10 @@ class SemanticScene {
    * expected to start at 1 and be contiguous, followed by unknown semantic IDs
    * @param ssdObjs The known semantic scene descriptor objects for the mesh
    * @param msgPrefix Debug message prefix, referencing caller.
+   * @return vector of semantic object IDXs that have no vertex mapping/presence
+   * in the source mesh.
    */
-  static void buildSemanticOBBs(
+  static std::vector<uint32_t> buildSemanticOBBs(
       const std::vector<Mn::Vector3>& verts,
       const std::vector<uint16_t>& vertSemanticIDs,
       const std::vector<std::shared_ptr<SemanticObject>>& ssdObjs,
@@ -217,13 +219,18 @@ class SemanticScene {
    * @param semanticScene The SSD for the current semantic mesh.  Used to query
    * semantic objs. If nullptr, this function returns hex-color-keyed map,
    * otherwise returns SemanticID-keyed map.
+   * @param maxVolFraction Fraction of maximum volume bbox CC to include in bbox
+   * calc.
    * @param msgPrefix Debug message prefix, referencing caller.
+   * @return vector of semantic object IDXs that have no vertex mapping/presence
+   * in the source mesh.
    */
-  static void buildSemanticOBBsFromCCs(
+  static std::vector<uint32_t> buildSemanticOBBsFromCCs(
       const std::vector<Mn::Vector3>& verts,
       const std::unordered_map<uint32_t, std::vector<std::set<uint32_t>>>&
           clrsToComponents,
       const std::shared_ptr<SemanticScene>& semanticScene,
+      const float maxVolFraction,
       const std::string& msgPrefix);
 
   /**
@@ -530,8 +537,8 @@ class SemanticObject {
 
 class CCSemanticObject : public SemanticObject {
  public:
-  CCSemanticObject(uint32_t _numSrcVerts, uint32_t _colorInt)
-      : SemanticObject(), numSrcVerts_(_numSrcVerts) {
+  CCSemanticObject(uint32_t _colorInt, const std::set<uint32_t>& _vertSet)
+      : SemanticObject(), vertSet_(_vertSet), numSrcVerts_(vertSet_.size()) {
     // need to set index manually when mapping from color/colorInt is known
     index_ = ID_UNDEFINED;
     // sets both colorAsInt_ and updates color_ vector to match
@@ -541,7 +548,12 @@ class CCSemanticObject : public SemanticObject {
   void setIndex(int _index) { index_ = _index; }
   uint32_t getNumSrcVerts() const { return numSrcVerts_; }
 
+  const std::set<uint32_t>& getVertSet() const { return vertSet_; }
+
  protected:
+  // reference to vertex set used to build this CCSemantic object
+  const std::set<uint32_t>& vertSet_;
+
   /**
    * @brief Number of verts in source mesh of CC used for this Semantic Object
    */

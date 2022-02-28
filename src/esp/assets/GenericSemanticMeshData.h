@@ -125,7 +125,7 @@ class GenericSemanticMeshData : public BaseMesh {
    * partition mesh for culling.
    */
   const std::vector<uint16_t>& getPartitionIDs() const {
-    if (meshHasSeparatePartitionIDs) {
+    if (meshUsesSSDPartitionIDs) {
       return partitionIds_;
     }
     return objectIds_;
@@ -146,11 +146,11 @@ class GenericSemanticMeshData : public BaseMesh {
   bool meshHasPartitionIDXs = false;
 
   /**
-   * @brief This mesh has separate partition IDs. If false, uses the objectIDs
-   * for the partitioning, if true means region IDs were provided in semantic
-   * scene descriptor.
+   * @brief This mesh has separate partition IDs, provided by Semantic Scene
+   * Descriptor file. If false, uses the objectIDs for the partitioning, if true
+   * means region IDs were provided in semantic scene descriptor.
    */
-  bool meshHasSeparatePartitionIDs = false;
+  bool meshUsesSSDPartitionIDs = false;
 
   class PerPartitionIdMeshBuilder {
    public:

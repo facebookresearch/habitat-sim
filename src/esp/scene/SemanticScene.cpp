@@ -113,8 +113,8 @@ CCSemanticObject::ptr buildCCSemanticObjForSetOfVerts(
   Mn::Vector3 center = .5f * (vertMax + vertMin);
   Mn::Vector3 dims = vertMax - vertMin;
 
-  auto obj = std::make_shared<CCSemanticObject>(
-      CCSemanticObject(setOfIDXs.size(), colorInt));
+  auto obj =
+      std::make_shared<CCSemanticObject>(CCSemanticObject(colorInt, setOfIDXs));
   // set obj's bounding box
   obj->setObb(Mn::EigenIntegration::cast<esp::vec3f>(center),
               Mn::EigenIntegration::cast<esp::vec3f>(dims), quatf::Identity());
@@ -197,18 +197,19 @@ SemanticScene::buildCCBasedSemanticObjs(
   return results;
 }  // SemanticScene::buildCCBasedBBoxes
 
-void SemanticScene::buildSemanticOBBsFromCCs(
+std::vector<uint32_t> SemanticScene::buildSemanticOBBsFromCCs(
     const std::vector<Mn::Vector3>& verts,
     const std::unordered_map<uint32_t, std::vector<std::set<uint32_t>>>&
         clrsToComponents,
     const std::shared_ptr<SemanticScene>& semanticScene,
+    const float maxVolFraction,
     const std::string& msgPrefix) {
   // Semantic scene is required to map color annotations to semantic objects
   if (!semanticScene) {
     ESP_WARNING() << "Attempting to build CC-based semantic bboxes but no "
                      "Semantic Scene Descriptor is provided, so skipping. NO "
                      "SEMANTIC BBOXES WILL BE CREATED.";
-    return;
+    return {};
   }
 
   // get map of semantic ID to vector of CCSemanticObjs.
@@ -222,9 +223,13 @@ void SemanticScene::buildSemanticOBBsFromCCs(
   // doing this in case semanticIDs are not contiguous.
   std::vector<int> semanticIDToSSOBJidx = getObjsIdxToIDMap(ssdObjs);
 
+  std::vector<uint32_t> unMappedObjectIDXs;
+
   std::multimap<float, std::shared_ptr<CCSemanticObject>> perSemanticObjCCs;
+  std::multimap<float, uint32_t> semanticObjVolToSetIDX;
   for (int semanticID = 0; semanticID < semanticIDToSSOBJidx.size();
        ++semanticID) {
+    // no index corresponds with given semantic ID
     if (semanticIDToSSOBJidx[semanticID] == -1) {
       continue;
     }
@@ -240,21 +245,25 @@ void SemanticScene::buildSemanticOBBsFromCCs(
 
     if ((semanticCCsPerID == perIDMapOfCCSemanticObjs.end()) ||
         (semanticCCsPerID->second.empty())) {
-      ESP_DEBUG() << "\n\t\t!!!!!!" << msgPrefix
-                  << "Note : Semantic Scene Annotation ID :" << objIdx
-                  << "is not present in the mesh - there are no vertices with "
-                     "this annotation's color assigned to them; therefore, "
-                     "this semantic object will have no BBox.";
+      // keep a record of semantic IDs without any corresponding verts
+      unMappedObjectIDXs.emplace_back(objIdx);
+      // ESP_DEBUG() << "\n\t\t!!!!!!" << msgPrefix
+      //             << "Note : Semantic Scene Annotation ID :" << objIdx
+      //             << "is not present in the mesh - there are no vertices "
+      //             << "with this annotation's color assigned to them; "
+      //             << "therefore, this semantic object will have no BBox.";
       continue;
     }
 
     std::vector<CCSemanticObject::ptr> vecOfCCSemanticObjs =
         semanticCCsPerID->second;
-
     ESP_VERY_VERBOSE() << Cr::Utility::formatString(
-        "Semantic CC vec size {} Displaying elements in decreasing order "
-        "for objIDX : {} | name : {} | vol : {}",
-        vecOfCCSemanticObjs.size(), objIdx, ssdObj.id(), ssdObj.obb().volume());
+        "{}Semantic CC vec size {} Displaying elements in decreasing order "
+        "for objIDX : {} | name : {} | current (pre-CC calc) vol : {} | "
+        "Fraction of max vol to use "
+        "{}",
+        msgPrefix, vecOfCCSemanticObjs.size(), objIdx, ssdObj.id(),
+        ssdObj.obb().volume(), maxVolFraction);
     if (vecOfCCSemanticObjs.size() == 1) {
       // if only one element, always use specified CC's bbox, built off all
       // verts with semantic annotation
@@ -263,26 +272,77 @@ void SemanticScene::buildSemanticOBBsFromCCs(
       // Multiple elements, use some fraction of CCs based on volume
       // build temp multimap keyed by volume
       perSemanticObjCCs.clear();
-      for (const auto& CCObj : vecOfCCSemanticObjs) {
-        perSemanticObjCCs.emplace(CCObj->obb().volume(), CCObj);
+      semanticObjVolToSetIDX.clear();
+      for (uint32_t idx = 0; idx < vecOfCCSemanticObjs.size(); ++idx) {
+        const auto& CCObj = vecOfCCSemanticObjs[idx];
+        const float vol = CCObj->obb().volume();
+        perSemanticObjCCs.emplace(vol, CCObj);
+        semanticObjVolToSetIDX.emplace(vol, idx);
       }
-      // after all are emplaced, reverse order will be in order of decreasing
-      // volume
-      for (auto elem = perSemanticObjCCs.crbegin();
-           elem != perSemanticObjCCs.crend(); ++elem) {
-        ESP_VERY_VERBOSE() << Cr::Utility::formatString(
-            "\tvol:{} : #pts {}", elem->first, elem->second->getNumSrcVerts());
+      auto largestElement = perSemanticObjCCs.crbegin();
+      // the OBB/AABB to use for the specified semantic object
+      auto obbToUse = largestElement->second->obb();
+      if (maxVolFraction == 1.0f) {
+        // Only use largest CC for semantic bbox
+        // after all are emplaced, reverse order will be in order of
+        // decreasing volume
+        for (auto elem = largestElement; elem != perSemanticObjCCs.crend();
+             ++elem) {
+          ESP_VERY_VERBOSE()
+              << Cr::Utility::formatString("\tvol:{} : #pts {}", elem->first,
+                                           elem->second->getNumSrcVerts());
+        }
+
+      } else {
+        // TODO determine which collection of CC bboxes to merge to build the
+        // final bbox.
+        // use some subset of the sets of verts to determine OBB/AABB
+        float maxVol = largestElement->first;
+        int numElems = perSemanticObjCCs.size();
+        int currElemNum = 1;
+        // after all are emplaced, reverse order will be in order of
+        // decreasing volume
+
+        std::set<uint32_t> setOfIDXs = largestElement->second->getVertSet();
+        const uint32_t clrOfVerts = largestElement->second->getColorAsInt();
+
+        for (auto elem = std::next(largestElement);
+             elem != perSemanticObjCCs.crend(); ++elem) {
+          float fraction = elem->first / maxVol;
+          if (fraction < maxVolFraction) {
+            ESP_VERY_VERBOSE() << Cr::Utility::formatString(
+                "\tCC Built using {} of {} elements. Remaining CCs' volumes "
+                "too small, so skipping.",
+                currElemNum, numElems);
+            break;
+          }
+          ESP_VERY_VERBOSE() << Cr::Utility::formatString(
+              "\tCC Vol:{} : #pts {} : fraction of max vol : {}", elem->first,
+              elem->second->getNumSrcVerts(), fraction);
+          setOfIDXs.insert(elem->second->getVertSet().begin(),
+                           elem->second->getVertSet().end());
+          ++currElemNum;
+        }
+
+        // build CCSemanticObj, which will build
+        auto ccObbPtr =
+            buildCCSemanticObjForSetOfVerts(clrOfVerts, verts, setOfIDXs);
+        // get merged sets' obb
+        obbToUse = ccObbPtr->obb();
       }
-      // Set Largest volume element as new OBB
-      ssdObj.setObb(perSemanticObjCCs.crbegin()->second->obb());
+      // Set Largest volume element, or aggregate element, as new OBB
+      ssdObj.setObb(obbToUse);
+
       ESP_VERY_VERBOSE() << Cr::Utility::formatString(
           "After setting from largest cc, obj {} volume :{}", ssdObj.id(),
           ssdObj.obb().volume());
     }
-  }  // for each semantic ID currently defined
+  }  // for each semantic ID currently mapped to a vector of CCs
+  // return listing of semantic object idxs that have no presence in the mesh
+  return unMappedObjectIDXs;
 }  // SemanticScene::buildSemanticOBBsFromCCs
 
-void SemanticScene::buildSemanticOBBs(
+std::vector<uint32_t> SemanticScene::buildSemanticOBBs(
     const std::vector<Mn::Vector3>& vertices,
     const std::vector<uint16_t>& vertSemanticIDs,
     const std::vector<std::shared_ptr<esp::scene::SemanticObject>>& ssdObjs,
@@ -318,10 +378,13 @@ void SemanticScene::buildSemanticOBBs(
     }
   }
 
+  std::vector<uint32_t> unMappedObjectIDXs;
+
   // with mins/maxs per ID, map to objs
   // give each ssdObj the values to build its OBB
   for (int semanticID = 0; semanticID < semanticIDToSSOBJidx.size();
        ++semanticID) {
+    // no index corresponds with given semantic ID
     if (semanticIDToSSOBJidx[semanticID] == -1) {
       continue;
     }
@@ -333,11 +396,12 @@ void SemanticScene::buildSemanticOBBs(
     Mn::Vector3 dims{};
 
     if (vertCounts[semanticID] == 0) {
-      ESP_DEBUG() << Cr::Utility::formatString(
-          "{} Semantic ID : {} : color : {} tag : {} present in {} "
-          "verts | No verts have specified Semantic ID.",
-          msgPrefix, semanticID, geo::getColorAsString(ssdObj.getColor()),
-          ssdObj.id(), vertCounts[semanticID]);
+      // keep a record of semantic IDs without any corresponding verts
+      unMappedObjectIDXs.emplace_back(objIdx);
+      // ESP_DEBUG() << Cr::Utility::formatString(
+      //     "{} Semantic ID : {} : color : {} tag : {} | No verts have color
+      //     for " "specified Semantic ID.", msgPrefix, semanticID,
+      //     geo::getColorAsString(ssdObj.getColor()), ssdObj.id());
     } else {
       center = .5f * (vertMax[semanticID] + vertMin[semanticID]);
       dims = vertMax[semanticID] - vertMin[semanticID];
@@ -351,6 +415,8 @@ void SemanticScene::buildSemanticOBBs(
     ssdObj.setObb(Mn::EigenIntegration::cast<esp::vec3f>(center),
                   Mn::EigenIntegration::cast<esp::vec3f>(dims));
   }
+  // return listing of semantic object idxs that have no presence in the mesh
+  return unMappedObjectIDXs;
 }  // SemanticScene::buildSemanticOBBs
 
 }  // namespace scene
