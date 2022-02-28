@@ -974,7 +974,7 @@ class Simulator {
    * @param id The integer ID of a mesh.
    * @return A vector of vertex locations in the given mesh.
    */
-  std::vector<vec3f> getVertices(int mesh_key) {
+  std::vector<Mn::Vector3> getVertices(int mesh_key) {
     return resourceManager_->getVertices(mesh_key);
   }
 
@@ -982,7 +982,7 @@ class Simulator {
    * @brief Return a vector of color per vertex for a specific mesh in the
    * scene.
    */
-  std::vector<vec3uc> getVerticesColor(int mesh_key) {
+  std::vector<Mn::Color3ub> getVerticesColor(int mesh_key) {
     return resourceManager_->getVerticesColor(mesh_key);
   }
 
