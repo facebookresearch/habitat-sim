@@ -348,7 +348,7 @@ class ResourceManager {
    * @param mesh_key The number index of a mesh.
    * @return A vector of vertex positions.
    */
-  std::vector<Mn::Vector3> getVertices(int mesh_key);
+  std::vector<vec3f> getVertices(int mesh_key);
 
   /**
    * @brief Return a vector of the surface indexes for a specific mesh in the
@@ -364,7 +364,7 @@ class ResourceManager {
    * @param mesh_key The number index of a mesh.
    * @return A vector of vertex colors.
    */
-  std::vector<Mn::Color3ub> getVerticesColor(int mesh_key);
+  std::vector<vec3f> getVerticesColor(int mesh_key);
 
   /**
    * @brief Return a vector of object IDs for each vertex in a given mesh.

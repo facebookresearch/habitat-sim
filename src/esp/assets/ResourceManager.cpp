@@ -2625,8 +2625,9 @@ bool ResourceManager::instantiateAssetsOnDemand(
   return true;
 }  // ResourceManager::instantiateAssetsOnDemand
 
-std::vector<Mn::Vector3> ResourceManager::getVertices(int mesh_key) {
+std::vector<vec3f> ResourceManager::getVertices(int mesh_key) {
   BaseMesh& mesh = *meshes_.at(mesh_key);
+  std::vector<vec3f> vertexPositions;
 
   ESP_CHECK(mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH,
             "Error in getSurfIndexes. The mesh is not an instance mesh.");
@@ -2634,8 +2635,11 @@ std::vector<Mn::Vector3> ResourceManager::getVertices(int mesh_key) {
   // It is an instance mesh and it is possible to return the vertex data
   const GenericSemanticMeshData& instMesh =
       dynamic_cast<GenericSemanticMeshData&>(mesh);
-  std::vector<Mn::Vector3> vertexPositions =
-      instMesh.getVertexBufferObjectCPU();
+  const auto& vbo = instMesh.getVertexBufferObjectCPU();
+  vertexPositions.reserve(vbo.size());
+  for (const auto& v : vbo) {
+    vertexPositions.push_back(vec3f(v.x(), v.y(), v.z()));
+  }
   return vertexPositions;
 }
 
@@ -2652,8 +2656,9 @@ std::vector<uint32_t> ResourceManager::getSurfIndexes(int mesh_key) {
   return surfIndexes;
 }
 
-std::vector<Mn::Color3ub> ResourceManager::getVerticesColor(int mesh_key) {
+std::vector<vec3f> ResourceManager::getVerticesColor(int mesh_key) {
   BaseMesh& mesh = *meshes_.at(mesh_key);
+  std::vector<vec3f> colors;
 
   ESP_CHECK(mesh.getMeshType() == SupportedMeshType::INSTANCE_MESH,
             "Error in getVerticesColor. The mesh is not an instance mesh.");
@@ -2661,7 +2666,12 @@ std::vector<Mn::Color3ub> ResourceManager::getVerticesColor(int mesh_key) {
   // It is an instance mesh and it is possible to return the vertex data
   const GenericSemanticMeshData& instMesh =
       dynamic_cast<GenericSemanticMeshData&>(mesh);
-  std::vector<Mn::Color3ub> colors = instMesh.getColorBufferObjectCPU();
+  const auto& cbo = instMesh.getColorBufferObjectCPU();
+  colors.reserve(cbo.size());
+  for (const auto& c : cbo) {
+    auto clr = Mn::EigenIntegration::cast<esp::vec3uc>(c);
+    colors.push_back((clr.cast<float>() / 255.0f));
+  }
   return colors;
 }
 
