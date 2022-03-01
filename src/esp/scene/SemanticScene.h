@@ -230,7 +230,7 @@ class SemanticScene {
       const std::unordered_map<uint32_t, std::vector<std::set<uint32_t>>>&
           clrsToComponents,
       const std::shared_ptr<SemanticScene>& semanticScene,
-      const float maxVolFraction,
+      float maxVolFraction,
       const std::string& msgPrefix);
 
   /**

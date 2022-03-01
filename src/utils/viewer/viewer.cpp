@@ -1161,6 +1161,7 @@ void Viewer::generateAndSaveAllVertColorMapReports() {
     setSceneInstanceFromListAndShow(idx);
     generateAndSaveVertColorMapReports();
   }
+  ESP_DEBUG() << "All reports done!";
 }
 
 /**
@@ -1203,6 +1204,7 @@ void Viewer::generateAndSaveAllSemanticCCReports() {
     setSceneInstanceFromListAndShow(idx);
     generateAndSaveSemanticCCReport();
   }
+  ESP_DEBUG() << "All reports done!";
 }
 
 void Viewer::generateAndSaveSemanticCCReport() {
