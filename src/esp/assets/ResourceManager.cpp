@@ -2638,7 +2638,7 @@ std::vector<vec3f> ResourceManager::getVertices(int mesh_key) {
   const auto& vbo = instMesh.getVertexBufferObjectCPU();
   vertexPositions.reserve(vbo.size());
   for (const auto& v : vbo) {
-    vertexPositions.push_back(vec3f(v.x(), v.y(), v.z()));
+    vertexPositions.emplace_back(vec3f(v.x(), v.y(), v.z()));
   }
   return vertexPositions;
 }
@@ -2670,7 +2670,7 @@ std::vector<vec3f> ResourceManager::getVerticesColor(int mesh_key) {
   colors.reserve(cbo.size());
   for (const auto& c : cbo) {
     auto clr = Mn::EigenIntegration::cast<esp::vec3uc>(c);
-    colors.push_back((clr.cast<float>() / 255.0f));
+    colors.emplace_back((clr.cast<float>() / 255.0f));
   }
   return colors;
 }
