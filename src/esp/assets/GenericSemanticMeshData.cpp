@@ -368,7 +368,7 @@ std::vector<std::string> GenericSemanticMeshData::getVertColorSSDReport(
   results.emplace_back(Cr::Utility::formatString(
       "{} : Colors from semantic objects not found on any mesh verts : ",
       semanticFilename));
-  if (unMappedObjectIDXs.size() == 0) {
+  if (unMappedObjectIDXs.empty()) {
     results.emplace_back("All semantic object colors are found on mesh.");
     return results;
   }
