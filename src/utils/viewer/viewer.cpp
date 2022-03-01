@@ -457,6 +457,16 @@ Key Commands:
    * @brief Generate and save semantic CC report
    */
   void generateAndSaveSemanticCCReport();
+  /**
+   * @brief Generate and save vertex-color-semantic object mapping reports for
+   * all scenes.
+   */
+  void generateAndSaveAllVertColorMapReports();
+
+  /**
+   * @brief Generate and save vertex-color-semantic object mapping reports
+   */
+  void generateAndSaveVertColorMapReports();
 
   /**
    * @brief Build semantic region prims.
@@ -1143,6 +1153,48 @@ bool loadTransformFromFile(const std::string& filename,
   return status;
 }
 
+void Viewer::generateAndSaveAllVertColorMapReports() {
+  for (int idx = 0; idx < curSceneInstances_.size(); ++idx) {
+    if (std::string::npos != curSceneInstances_[idx].find("NONE")) {
+      continue;
+    }
+    setSceneInstanceFromListAndShow(idx);
+    generateAndSaveVertColorMapReports();
+  }
+}
+
+/**
+ * @brief Generate and save vertex-color-semantic object mapping reports
+ */
+void Viewer::generateAndSaveVertColorMapReports() {
+  const auto results = simulator_->buildVertexColorMapReport();
+  const std::string fileDir = Cr::Utility::Directory::join(
+      {Cr::Utility::Directory::path(MM_->getActiveSceneDatasetName()),
+       "Vertex_Color_Reports"});
+
+  Cr::Utility::Directory::mkpath(fileDir);
+
+  const std::string filename = Cr::Utility::Directory::join(
+      fileDir,
+      Cr::Utility::formatString(
+          "{}_vert_color_report.txt",
+          Cr::Utility::Directory::splitExtension(
+              Cr::Utility::Directory::filename(simConfig_.activeSceneName))
+              .first));
+  ESP_DEBUG() << "Fully qualified destination file name :" << filename;
+  std::ofstream file(filename);
+  if (!file.good()) {
+    ESP_ERROR() << "Cannot open" << filename
+                << "to output vert-color-semantic object mapping report data.";
+    return;
+  }
+  for (const std::string& line : results) {
+    ESP_DEBUG() << line;
+    file << line << '\n';
+  }
+  file.close();
+}  // Viewer::generateAndSaveVertColorMapReports
+
 void Viewer::generateAndSaveAllSemanticCCReports() {
   for (int idx = 0; idx < curSceneInstances_.size(); ++idx) {
     if (std::string::npos != curSceneInstances_[idx].find("NONE")) {
@@ -1152,6 +1204,7 @@ void Viewer::generateAndSaveAllSemanticCCReports() {
     generateAndSaveSemanticCCReport();
   }
 }
+
 void Viewer::generateAndSaveSemanticCCReport() {
   const auto results = simulator_->buildSemanticCCReport();
   const std::string fileDir = Cr::Utility::Directory::join(
@@ -2289,6 +2342,15 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       } else {
         // generate and save semantic CC report
         generateAndSaveSemanticCCReport();
+      }
+      break;
+    }
+    case KeyEvent::Key::Y: {
+      if (event.modifiers() & MouseEvent::Modifier::Alt) {
+        generateAndSaveAllVertColorMapReports();
+      } else {
+        // generate and save semantic CC report
+        generateAndSaveVertColorMapReports();
       }
       break;
     }

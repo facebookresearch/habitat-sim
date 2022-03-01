@@ -137,7 +137,27 @@ class GenericSemanticMeshData : public BaseMesh {
    */
   bool meshCanBePartitioned() const { return meshHasPartitionIDXs; }
 
+  /**
+   * @brief build a string array holding mapping information for colors found on
+   * verts and colors found in semantic scene descriptor aggregated during load.
+   */
+
+  std::vector<std::string> getVertColorSSDReport(
+      const std::string& semanticFilename,
+      const std::vector<Mn::Vector3ub>& colorMapToUse,
+      const std::shared_ptr<scene::SemanticScene>& semanticScene);
+
  protected:
+  // temporary holding structures to hold any non-SSD vert colors, so that
+  // the nonSSDObjID for new colors can be incremented appropriately
+  // not using set to avoid extra include. Key is color, value is semantic
+  // ID assigned for unknown color
+  std::unordered_map<uint32_t, int> nonSSDVertColorIDs{};
+  std::unordered_map<uint32_t, int> nonSSDVertColorCounts{};
+
+  // record of semantic object IDXs with no presence in any verts
+  std::vector<uint32_t> unMappedObjectIDXs{};
+
   /**
    * @brief Whether or not this mesh can be partitioned - either object IDs were
    * found in vertices or per-vert region partition values were found from

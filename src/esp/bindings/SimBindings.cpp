@@ -189,6 +189,13 @@ void initSimBindings(py::module& m) {
           color where each value is a list of tuples, where the
           first element is the number of verts in the CC and the
           second is the AABB)")
+      .def(
+          "build_vertex_color_map_report",
+          &Simulator::buildVertexColorMapReport,
+          R"(Get a list of strings describing first each color found on vertices in the
+          semantic mesh that is not present in the loaded semantic scene descriptor file,
+          and then a list of each semantic object whose specified color is not found on
+          any vertex in the mesh.)")
 
       /* --- Kinematics and dynamics --- */
       .def(

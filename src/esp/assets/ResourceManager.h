@@ -718,6 +718,15 @@ class ResourceManager {
   buildSemanticCCReport(
       const metadata::attributes::StageAttributes::ptr& stageAttributes);
 
+  /**
+   * @brief Build data for a report for vertex color mapping to semantic scene
+   * objects - this list of strings will disclose which colors are found in
+   * vertices but not in semantic scene descirptors, and which semantic objects
+   * do not have their colors mapped in mesh verts.
+   */
+  std::vector<std::string> buildVertexColorMapReport(
+      const metadata::attributes::StageAttributes::ptr& stageAttributes);
+
  private:
   /**
    * @brief Load the requested mesh info into @ref meshInfo corresponding to
