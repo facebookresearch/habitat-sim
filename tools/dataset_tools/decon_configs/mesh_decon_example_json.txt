@@ -4,12 +4,12 @@
   "dataset_src_subdir": <source dataset directory, either relative to home dir or cwd>,
   "scenes_src_subdir": <subdirectory within dataset_src_subdir holding raw aggregate scenes to be queried for glbs and/or configs>,
   "objects_src_subdir":  <subdirectory within dataset_src_subdir holding existing objets to be used as sources for scene instance naming. Ignored if "match_object_names" is False>,
-
   "dataset_dest_rel_to_home":<boolean : whether user specified paths are relative to home dir or cwd for the source data used by the script>,
   "dataset_dest_subdir": <destination dataset directory for writing output, either relative to home dir or cwd>,
 
   "dataset_glb_dest_subdir": <destination subdirectory, within dataset_dest_subdir, where to write extracted glbs outputs>,
   "stage_glb_dest_subdir" : <subdirectory within dataset_glb_dest_subdir to write extracted stage glb files>,
+  "navmeshes_dest_subdir" : <subdirectory within dataset_glb_dest_subdir holding existing pre-computed navmeshes, to be referenced in scene instances and dataset config>
   "obj_glb_dest_subdir":  <subdirectory within dataset_glb_dest_subdir to write extracted object glb files>,
 
   "dataset_config_dest_subdir": <destination subdirectory, within dataset_dest_subdir, where to write config outputs, including scene dataset>,
@@ -30,6 +30,27 @@
 
   "build_stage_glbs" : <boolean : whether or not to build the extracted stage glbs. Defaults to true>,
   "build_object_glbs" : <boolean : whether or not to build the extracted object glbs. Defaults to true>,
+
+  "map_navmesh_tag_to_file": [
+    <boolean : whether or not to map the scene instance config name as the tag to use to access the navmesh, which must have
+    the same base name on disk. (i.e. the scene instance named "my_scene.scene_instance_config.json" would have
+    "navmesh_instance":"my_scene" which would then refer to the following entry in the scene dataset config :
+     "navmesh_instances": {
+          ...,
+         "my_scene" : "<navmesh_relpath>/my_scene.navmesh",
+          ...
+      }
+     Only pertinent if generating either scene instance configs, scene dataset configs or both.
+     If generating scene instance configs, will add a tag at the end of the config :
+       "navmesh_instance":"<scene_config_name>", where <scene_config_name> is the name of the scene config without
+                  identifying tag extensions.
+     Will add an entry in the navmesh_instances object in the scene dataset config for each scene :
+        "<scene_config_name>":"<relative_path_to_scene_navmesh>", where <scene_config_name> is the navmesh_instance
+          tag used in the scene instance of the same name, and <relative_path_to_scene_navmesh> is the relative
+          path and file name of the associated navmesh asset.  This requires accurately setting navmeshes_dest_subdir,
+          and all navmeshes being named the same as the scene instance configs that use them.>
+  ],
+
 
   "save_object_instances" : <boolean : if false, do not save any object instance data within the scene instance configs being written>,
 

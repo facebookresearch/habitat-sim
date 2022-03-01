@@ -59,6 +59,8 @@ def build_default_configs():
     default_configs["build_object_glbs"] = True
     # subdirectory within dataset_glb_dest_subdir for object glbs
     default_configs["obj_glb_dest_subdir"] = "objects/"
+    # the subdirectory for where pre-computed navmeshes exist, relative to dataset_glb_dest_subdir
+    default_configs["navmeshes_dest_subdir"] = "navmeshes/"
 
     # whether or not to build the scene dataset config
     default_configs["build_dataset_config"] = True
@@ -89,6 +91,25 @@ def build_default_configs():
     # whether to match object name refs in object config synth to objects found in obj_glb_dest_subdir.
     # Used when synthesizing scene instances for scenes with existing object glb files,
     default_configs["match_object_names"] = False
+
+    # whether or not to map the scene instance config name as the tag to use to access the navmesh, which must have
+    # the same base name on disk. (i.e. the scene instance named "my_scene.scene_instance_config.json" would have
+    # "navmesh_instance":"my_scene" which would then refer to the following entry in the scene dataset config :
+    #  "navmesh_instances": {
+    #       ...,
+    #      "my_scene" : "<navmesh_relpath>/my_scene.navmesh",
+    #       ...
+    #   }
+    #  Only pertinent if generating either scene instance configs, scene dataset configs or both.
+    #  If generating scene instance configs, will add a tag at the end of the config :
+    #    "navmesh_instance":"<scene_config_name>", where <scene_config_name> is the name of the scene config without
+    #               identifying tag extensions.
+    #  Will add an entry in the navmesh_instances object in the scene dataset config for each scene :
+    #     "<scene_config_name>":"<relative_path_to_scene_navmesh>", where <scene_config_name> is the navmesh_instance
+    #       tag used in the scene instance of the same name, and <relative_path_to_scene_navmesh> is the relative
+    #       path and file name of the associated navmesh asset.  This requires accurately setting navmeshes_dest_subdir,
+    #       and all navmeshes being named the same as the scene instance configs that use them.
+    default_configs["map_navmesh_tag_to_file"] = False
 
     # dictionary keyed by some substring of file name, value is stage names to use for stage
     # instance refs in scene instance files. Search for the keys within scene name,
@@ -202,6 +223,11 @@ def build_default_configs():
     # default attributes values to be used for types in the scene dataset config
     default_configs["default_attributes"] = tmp_dflt_attrs
 
+    # build default scene dataset config json file path and name
+    default_configs["scene_dataset_dest_path"] = os.path.join(
+        os.path.join(os.path.expanduser("~"), default_configs["dataset_dest_subdir"]),
+        default_configs["dataset_name"] + ut.CONFIG_EXTENSIONS["dataset"] + ".json",
+    )
     return default_configs
 
 
@@ -242,7 +268,7 @@ def load_decon_global_config_values(config_json: str):
 
     #######################
     # build appropriate source directory and subdirs
-    if "dataset_src_rel_to_home" in configs:
+    if configs["dataset_src_rel_to_home"]:
         configs["dataset_src_dir"] = os.path.join(
             os.path.expanduser("~"), configs["dataset_src_subdir"]
         )
@@ -261,7 +287,7 @@ def load_decon_global_config_values(config_json: str):
     ##########################
     # build appropriate destination directory and other subdirs
     # and create them on disk if appropriate
-    if "dataset_dest_rel_to_home" in configs:
+    if configs["dataset_dest_rel_to_home"]:
         configs["dataset_dest_dir"] = os.path.join(
             os.path.expanduser("~"), configs["dataset_dest_subdir"]
         )
@@ -270,6 +296,12 @@ def load_decon_global_config_values(config_json: str):
 
     # Build destination directory, if dne
     os.makedirs(configs["dataset_dest_dir"], exist_ok=True)
+
+    # Build scene dataset config file name
+    configs["scene_dataset_dest_path"] = os.path.join(
+        configs["dataset_dest_dir"],
+        configs["dataset_name"] + ut.CONFIG_EXTENSIONS["dataset"] + ".json",
+    )
 
     ##########################
     # output directories creation
@@ -280,6 +312,12 @@ def load_decon_global_config_values(config_json: str):
     if configs["build_stage_glbs"] or configs["build_object_glbs"]:
         # only attempt to make directory if we will be writing glb files
         os.makedirs(configs["dataset_glb_dest_dir"], exist_ok=True)
+
+    # Navmesh source is for listing of existing navmeshes that are part of the
+    # dataset, so that references can be added to the scene dataset config properly
+    configs["navmeshes_dest_dir"] = os.path.join(
+        configs["dataset_glb_dest_dir"], configs["navmeshes_dest_subdir"]
+    )
 
     # stage glbs dir
     configs["stage_glb_dest_dir"] = os.path.join(
@@ -776,10 +814,6 @@ def extract_lighting_from_scene(
 
 
 def build_scene_dataset_config(configs):
-    scene_dataset_dest_dir = os.path.join(
-        configs["dataset_dest_dir"],
-        configs["dataset_name"] + ut.CONFIG_EXTENSIONS["dataset"] + ".json",
-    )
     scene_dataset_config = {
         "stages": {
             "paths": {
@@ -842,7 +876,45 @@ def build_scene_dataset_config(configs):
     ut.mod_json_val_and_save(
         (
             "",
-            scene_dataset_dest_dir,
+            configs["scene_dataset_dest_path"],
+            scene_dataset_config,
+        )
+    )
+
+
+def build_navmesh_tag_filename_dict(configs):
+    navmesh_name_to_path = {}
+    navmesh_filelist = ut.get_files_matching_regex(configs["navmeshes_dest_dir"])
+    for navmesh in navmesh_filelist:
+        key = navmesh[-1].split(".navmesh")[0]
+
+        val = os.path.join(
+            ut.transform_path_relative(
+                configs["navmeshes_dest_dir"],
+                configs["dataset_dest_dir"],
+            ),
+            navmesh[-1],
+        )
+        navmesh_name_to_path[key] = val
+    return navmesh_name_to_path
+
+
+# add dictionary of navmeshes to existing scene dataset config
+def add_navmesh_scene_dataset_config(configs, navmesh_name_to_path):
+    scene_dataset_config = ut.load_json_into_dict(configs["scene_dataset_dest_path"])
+    navmesh_instance_dict = {}
+    if "navmesh_instances" in scene_dataset_config:
+        navmesh_instance_dict = scene_dataset_config["navmesh_instances"]
+
+    for n_key, n_path in sorted(navmesh_name_to_path.items()):
+        navmesh_instance_dict[n_key] = n_path
+
+    scene_dataset_config["navmesh_instances"] = navmesh_instance_dict
+
+    ut.mod_json_val_and_save(
+        (
+            "",
+            configs["scene_dataset_dest_path"],
             scene_dataset_config,
         )
     )
@@ -889,15 +961,25 @@ def main():
         decon_configs["dataset_config_dest_dir"],
         decon_configs["dataset_name"] + "_object_counts.json",
     )
+    # build scene tag to navmesh relative path/filename for dataset config
+    if decon_configs["map_navmesh_tag_to_file"]:
+        navmesh_name_to_path = build_navmesh_tag_filename_dict(decon_configs)
+        # if mapping navmesh tags to files, load scene dataset config and modify to include
+        # list of values mapped to paths
+        add_navmesh_scene_dataset_config(decon_configs, navmesh_name_to_path)
 
     # Go through every scene glb file
     for path_file_tuple in file_list:
         scene_name = path_file_tuple[-1]
         # test this scene
         # scene_name = "FloorPlan320_physics.glb"
-        if ".glb" not in scene_name.lower():
+        # Currently only support source scenes being either glbs or gltfs
+        if ".glb" in scene_name.lower():
+            scene_name_base = scene_name.split(".glb")[0]
+        elif ".gltf" in scene_name.lower():
+            scene_name_base = scene_name.split(".gltf")[0]
+        else:
             continue
-        scene_name_base = scene_name.split(".glb")[0]
 
         src_scene_filename = os.path.join(decon_configs["scenes_src_dir"], scene_name)
         # build scene instance config file
@@ -964,6 +1046,12 @@ def main():
                 "stage_instance": stage_instance_config,
                 "default_lighting": lighting_setup_config_name,
             }
+            if decon_configs["map_navmesh_tag_to_file"]:
+                if scene_name_base not in navmesh_name_to_path:
+                    print(
+                        f"!!!!! Attempting to map navmesh key :{scene_name_base} in scene instance but key not present in dict of known navmeshes."
+                    )
+                scene_instance_dict["navmesh_instance"] = scene_name_base
 
             if decon_configs["save_object_instances"]:
                 scene_instance_dict["object_instances"] = obj_instance_config_list
@@ -990,6 +1078,7 @@ def main():
         ut.mod_json_val_and_save(
             ("", object_instance_count_filename, object_instance_ordered_dict)
         )
+
     print("Done!")
 
 
