@@ -287,13 +287,13 @@ def test_mesh_point_extraction_when_not_instance():
     """Run the mesh extraction methods when the mesh is not
     an instance mesh. This should result in an exception."""
     cfg_settings = examples.settings.default_sim_settings.copy()
-    cfg_settings["scene"] = "data/test_assets/scenes/simple_room.glb"
+    cfg_settings["scene"] = "data/scene_datasets/habitat-test-scenes/van-gogh-room.glb"
     hab_cfg = examples.settings.make_cfg(cfg_settings)
 
     with habitat_sim.Simulator(hab_cfg) as sim:
-        # The scene has 6 meshes
+        # get_instance_mesh_keys should return no keys
         keys = sim.get_instance_mesh_keys()
-        assert len(keys) == 7
+        assert len(keys) == 0
 
         # The other mesh data extraction methods should throw an exception
         with pytest.raises(Exception):
