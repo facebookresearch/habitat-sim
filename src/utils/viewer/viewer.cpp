@@ -1208,7 +1208,7 @@ void Viewer::generateAndSaveAllSemanticCCReports() {
 }
 
 void Viewer::generateAndSaveSemanticCCReport() {
-  const auto results = simulator_->buildSemanticCCReport();
+  const auto results = simulator_->buildSemanticCCObjects();
   const std::string fileDir = Cr::Utility::Directory::join(
       {Cr::Utility::Directory::path(MM_->getActiveSceneDatasetName()),
        "Semantic_CC_Reports"});

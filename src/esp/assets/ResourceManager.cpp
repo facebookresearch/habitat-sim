@@ -218,7 +218,7 @@ void ResourceManager::initPhysicsManager(
 }  // ResourceManager::initPhysicsManager
 
 std::unordered_map<uint32_t, std::vector<scene::CCSemanticObject::ptr>>
-ResourceManager::buildSemanticCCReport(
+ResourceManager::buildSemanticCCObjects(
     const StageAttributes::ptr& stageAttributes) {
   std::map<std::string, AssetInfo> assetInfoMap =
       createStageAssetInfosFromAttributes(stageAttributes, false, true);
@@ -226,46 +226,56 @@ ResourceManager::buildSemanticCCReport(
   AssetInfo semanticInfo = assetInfoMap.at("semantic");
 
   const std::string& filename = semanticInfo.filepath;
-  /* Open the file. On error the importer already prints a diagnostic message,
-     so no need to do that here. The importer implicitly converts per-face
-     attributes to per-vertex, so nothing extra needs to be done. */
-  ESP_CHECK(
-      (fileImporter_->openFile(filename) && (fileImporter_->meshCount() > 0u)),
-      Cr::Utility::formatString("Error loading semantic mesh data from file {}",
-                                filename));
+  if (!infoSemanticMeshData_) {
+    /* Open the file. On error the importer already prints a diagnostic message,
+   so no need to do that here. The importer implicitly converts per-face
+   attributes to per-vertex, so nothing extra needs to be done. */
+    ESP_CHECK((fileImporter_->openFile(filename) &&
+               (fileImporter_->meshCount() > 0u)),
+              Cr::Utility::formatString(
+                  "Error loading semantic mesh data from file {}", filename));
 
-  // flatten source meshes, preserving transforms, build semanticMeshData and
-  // construct vertex-based semantic bboxes, if requested for dataset.
-  GenericSemanticMeshData::uptr semanticMeshData =
-      flattenImportedMeshAndBuildSemantic(*fileImporter_, semanticInfo);
+    // flatten source meshes, preserving transforms, build semanticMeshData and
+    // construct vertex-based semantic bboxes, if requested for dataset.
+    infoSemanticMeshData_ =
+        flattenImportedMeshAndBuildSemantic(*fileImporter_, semanticInfo);
+  }
 
   // return connectivity query results - per color map of vectors of CC-based
   // Semantic objects.
-  return semanticMeshData->buildCCBasedSemanticObjs(semanticScene_);
-}  // ResourceManager::buildSemanticCCReport
+  return infoSemanticMeshData_->buildCCBasedSemanticObjs(semanticScene_);
+}  // ResourceManager::buildSemanticCCObjects
 
 std::vector<std::string> ResourceManager::buildVertexColorMapReport(
     const metadata::attributes::StageAttributes::ptr& stageAttributes) {
+  if (!semanticScene_) {
+    // must have a semantic scene for this report to make sense.
+    return {
+        "Unable to evaluate vertex-to-semantic object color mapping due to "
+        "semantic scene being null."};
+  }
   std::map<std::string, AssetInfo> assetInfoMap =
       createStageAssetInfosFromAttributes(stageAttributes, false, true);
 
   AssetInfo semanticInfo = assetInfoMap.at("semantic");
 
   const std::string& filename = semanticInfo.filepath;
-  /* Open the file. On error the importer already prints a diagnostic message,
-     so no need to do that here. The importer implicitly converts per-face
-     attributes to per-vertex, so nothing extra needs to be done. */
-  ESP_CHECK(
-      (fileImporter_->openFile(filename) && (fileImporter_->meshCount() > 0u)),
-      Cr::Utility::formatString("Error loading semantic mesh data from file {}",
-                                filename));
+  if (!infoSemanticMeshData_) {
+    /* Open the file. On error the importer already prints a diagnostic message,
+       so no need to do that here. The importer implicitly converts per-face
+       attributes to per-vertex, so nothing extra needs to be done. */
+    ESP_CHECK((fileImporter_->openFile(filename) &&
+               (fileImporter_->meshCount() > 0u)),
+              Cr::Utility::formatString(
+                  "Error loading semantic mesh data from file {}", filename));
 
-  // flatten source meshes, preserving transforms, build semanticMeshData and
-  // construct vertex-based semantic bboxes, if requested for dataset.
-  GenericSemanticMeshData::uptr semanticMeshData =
-      flattenImportedMeshAndBuildSemantic(*fileImporter_, semanticInfo);
+    // flatten source meshes, preserving transforms, build semanticMeshData and
+    // construct vertex-based semantic bboxes, if requested for dataset.
+    infoSemanticMeshData_ =
+        flattenImportedMeshAndBuildSemantic(*fileImporter_, semanticInfo);
+  }
 
-  return semanticMeshData->getVertColorSSDReport(
+  return infoSemanticMeshData_->getVertColorSSDReport(
       Cr::Utility::Directory::filename(filename), semanticColorMapBeingUsed_,
       semanticScene_);
 }  // ResourceManager::buildVertexColorMapReport
@@ -2422,7 +2432,10 @@ void ResourceManager::loadTextures(Importer& importer,
   loadedAssetData.meshMetaData.setTextureIndices(textureStart, textureEnd);
   if (loadedAssetData.assetInfo.hasSemanticTextures) {
     // build semantic BBoxes and semanticColorMapBeingUsed_ if semanticScene_
-    flattenImportedMeshAndBuildSemantic(importer, loadedAssetData.assetInfo);
+    // and save results to informational SemanticMeshData, to facilitate future
+    // reporting
+    infoSemanticMeshData_ = flattenImportedMeshAndBuildSemantic(
+        importer, loadedAssetData.assetInfo);
 
     // We are assuming that the only textures that exist are the semantic
     // textures. We build table of all possible colors holding ushorts

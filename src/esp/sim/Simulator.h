@@ -235,13 +235,13 @@ class Simulator {
   }
 
   /**
-   * @brief Build a connectivity report for current stage's semantic scene
-   * vertex annotation regions.
+   * @brief Build a map keyed by semantic color/id referencing a vector
+   * connected component-based Semantic objects.
    */
   std::unordered_map<uint32_t, std::vector<scene::CCSemanticObject::ptr>>
-  buildSemanticCCReport() const {
+  buildSemanticCCObjects() const {
     // build report with current stage attributes
-    return resourceManager_->buildSemanticCCReport(
+    return resourceManager_->buildSemanticCCObjects(
         physicsManager_->getStageInitAttributes());
   }
 
