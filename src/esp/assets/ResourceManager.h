@@ -715,7 +715,16 @@ class ResourceManager {
    */
   std::unordered_map<uint32_t,
                      std::vector<std::shared_ptr<scene::CCSemanticObject>>>
-  buildSemanticCCReport(
+  buildSemanticCCObjects(
+      const metadata::attributes::StageAttributes::ptr& stageAttributes);
+
+  /**
+   * @brief Build data for a report for vertex color mapping to semantic scene
+   * objects - this list of strings will disclose which colors are found in
+   * vertices but not in semantic scene descirptors, and which semantic objects
+   * do not have their colors mapped in mesh verts.
+   */
+  std::vector<std::string> buildVertexColorMapReport(
       const metadata::attributes::StageAttributes::ptr& stageAttributes);
 
  private:
@@ -1220,6 +1229,17 @@ class ResourceManager {
    * to load asset data
    */
   Corrade::PluginManager::Manager<Importer> importerManager_;
+
+  /**
+   * @brief This @ref GenericSemanticMeshData unique pointer is not used to
+   * actually create a mesh, but rather for reporting and color annotations (for
+   * texture-based semantics processing). We retain this so we do not need to
+   * re-load from scratch for future reporting functionality.
+   * NOTE : We must not use this to retain a semantic mesh that is actually
+   * being rendered, since that mesh will have its components moved into actual
+   * render mesh constructs.
+   */
+  GenericSemanticMeshData::uptr infoSemanticMeshData_{};
 
   /**
    * @brief Importer used to synthesize Magnum Primitives (PrimitiveImporter).
