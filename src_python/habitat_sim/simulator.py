@@ -648,7 +648,6 @@ class Sensor:
         if self._spec.sensor_type == SensorType.AUDIO:
             # do nothing in draw observation, get_observation will be called after this
             # run the simulation there
-            print("NO-OP -- Nothing to draw for audio")
             return
         else:
             assert self._sim.renderer is not None
@@ -665,7 +664,6 @@ class Sensor:
         if self._spec.sensor_type == SensorType.AUDIO:
             # do nothing in draw observation, get_observation will be called after this
             # run the simulation there
-            print("NO-OP -- Nothing to draw for audio")
             return
         else:
             assert self._sim.renderer is not None

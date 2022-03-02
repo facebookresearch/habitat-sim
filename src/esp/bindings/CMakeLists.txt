@@ -42,7 +42,7 @@ if(BUILD_WITH_AUDIO)
     POST_BUILD
     COMMAND
       ${CMAKE_COMMAND} -E copy_if_different
-      ${HabitatAcoustics_LIBRARY}
+      ${RLRAudioPropagation_LIBRARY}
       $<TARGET_FILE_DIR:habitat_sim_bindings>
   )
 endif()

@@ -291,70 +291,70 @@ void initSensorBindings(py::module& m) {
 #endif
 
   #ifdef ESP_BUILD_WITH_AUDIO
-  // ==== HabitatAcoustics::Config ====
-  py::class_<HabitatAcoustics::Configuration>(m,
-                                              "HabitatAcousticsConfiguration")
+  // ==== RLRAudioPropagation::Config ====
+  py::class_<RLRAudioPropagation::Configuration>(m,
+                                              "RLRAudioPropagationConfiguration")
       .def(py::init<>())
-      .def_readwrite("sampleRate", &HabitatAcoustics::Configuration::sampleRate)
+      .def_readwrite("sampleRate", &RLRAudioPropagation::Configuration::sampleRate)
       .def_readwrite("frequencyBands",
-                     &HabitatAcoustics::Configuration::frequencyBands)
+                     &RLRAudioPropagation::Configuration::frequencyBands)
       .def_readwrite("directSHOrder",
-                     &HabitatAcoustics::Configuration::directSHOrder)
+                     &RLRAudioPropagation::Configuration::directSHOrder)
       .def_readwrite("indirectSHOrder",
-                     &HabitatAcoustics::Configuration::indirectSHOrder)
+                     &RLRAudioPropagation::Configuration::indirectSHOrder)
       .def_readwrite("threadCount",
-                     &HabitatAcoustics::Configuration::threadCount)
-      .def_readwrite("updateDt", &HabitatAcoustics::Configuration::updateDt)
-      .def_readwrite("irTime", &HabitatAcoustics::Configuration::irTime)
-      .def_readwrite("unitScale", &HabitatAcoustics::Configuration::unitScale)
+                     &RLRAudioPropagation::Configuration::threadCount)
+      .def_readwrite("updateDt", &RLRAudioPropagation::Configuration::updateDt)
+      .def_readwrite("irTime", &RLRAudioPropagation::Configuration::irTime)
+      .def_readwrite("unitScale", &RLRAudioPropagation::Configuration::unitScale)
       .def_readwrite("globalVolume",
-                     &HabitatAcoustics::Configuration::globalVolume)
+                     &RLRAudioPropagation::Configuration::globalVolume)
       .def_readwrite("indirectRayCount",
-                     &HabitatAcoustics::Configuration::indirectRayCount)
+                     &RLRAudioPropagation::Configuration::indirectRayCount)
       .def_readwrite("indirectRayDepth",
-                     &HabitatAcoustics::Configuration::indirectRayDepth)
+                     &RLRAudioPropagation::Configuration::indirectRayDepth)
       .def_readwrite("sourceRayCount",
-                     &HabitatAcoustics::Configuration::sourceRayCount)
+                     &RLRAudioPropagation::Configuration::sourceRayCount)
       .def_readwrite("sourceRayDepth",
-                     &HabitatAcoustics::Configuration::sourceRayDepth)
+                     &RLRAudioPropagation::Configuration::sourceRayDepth)
       .def_readwrite("maxDiffractionOrder",
-                     &HabitatAcoustics::Configuration::maxDiffractionOrder)
-      .def_readwrite("direct", &HabitatAcoustics::Configuration::direct)
-      .def_readwrite("indirect", &HabitatAcoustics::Configuration::indirect)
+                     &RLRAudioPropagation::Configuration::maxDiffractionOrder)
+      .def_readwrite("direct", &RLRAudioPropagation::Configuration::direct)
+      .def_readwrite("indirect", &RLRAudioPropagation::Configuration::indirect)
       .def_readwrite("diffraction",
-                     &HabitatAcoustics::Configuration::diffraction)
+                     &RLRAudioPropagation::Configuration::diffraction)
       .def_readwrite("transmission",
-                     &HabitatAcoustics::Configuration::transmission)
+                     &RLRAudioPropagation::Configuration::transmission)
       .def_readwrite("meshSimplification",
-                     &HabitatAcoustics::Configuration::meshSimplification)
+                     &RLRAudioPropagation::Configuration::meshSimplification)
       .def_readwrite("temporalCoherence",
-                     &HabitatAcoustics::Configuration::temporalCoherence)
+                     &RLRAudioPropagation::Configuration::temporalCoherence)
       .def_readwrite("dumpWaveFiles",
-                     &HabitatAcoustics::Configuration::dumpWaveFiles)
+                     &RLRAudioPropagation::Configuration::dumpWaveFiles)
       .def_readwrite("enableMaterials",
-                     &HabitatAcoustics::Configuration::enableMaterials)
+                     &RLRAudioPropagation::Configuration::enableMaterials)
       .def_readwrite("writeIrToFile",
-                     &HabitatAcoustics::Configuration::writeIrToFile);
+                     &RLRAudioPropagation::Configuration::writeIrToFile);
 
-  py::enum_<HabitatAcoustics::ChannelLayoutType>(
-      m, "HabitatAcousticsChannelLayoutType")
-      .value("Unknown", HabitatAcoustics::ChannelLayoutType::Unknown)
-      .value("Mono", HabitatAcoustics::ChannelLayoutType::Mono)
-      .value("Stereo", HabitatAcoustics::ChannelLayoutType::Stereo)
-      .value("Binaural", HabitatAcoustics::ChannelLayoutType::Binaural)
-      .value("Quad", HabitatAcoustics::ChannelLayoutType::Quad)
-      .value("Surround_5_1", HabitatAcoustics::ChannelLayoutType::Surround_5_1)
-      .value("Surround_7_1", HabitatAcoustics::ChannelLayoutType::Surround_7_1)
-      .value("Ambisonics", HabitatAcoustics::ChannelLayoutType::Ambisonics);
+  py::enum_<RLRAudioPropagation::ChannelLayoutType>(
+      m, "RLRAudioPropagationChannelLayoutType")
+      .value("Unknown", RLRAudioPropagation::ChannelLayoutType::Unknown)
+      .value("Mono", RLRAudioPropagation::ChannelLayoutType::Mono)
+      .value("Stereo", RLRAudioPropagation::ChannelLayoutType::Stereo)
+      .value("Binaural", RLRAudioPropagation::ChannelLayoutType::Binaural)
+      .value("Quad", RLRAudioPropagation::ChannelLayoutType::Quad)
+      .value("Surround_5_1", RLRAudioPropagation::ChannelLayoutType::Surround_5_1)
+      .value("Surround_7_1", RLRAudioPropagation::ChannelLayoutType::Surround_7_1)
+      .value("Ambisonics", RLRAudioPropagation::ChannelLayoutType::Ambisonics);
 
-  // ==== HabitatAcoustics::ChannelLayout ====
-  py::class_<HabitatAcoustics::ChannelLayout>(m,
-                                              "HabitatAcousticsChannelLayout")
+  // ==== RLRAudioPropagation::ChannelLayout ====
+  py::class_<RLRAudioPropagation::ChannelLayout>(m,
+                                              "RLRAudioPropagationChannelLayout")
       .def(py::init<>())
       .def_readwrite("channelType",
-                     &HabitatAcoustics::ChannelLayout::channelType)
+                     &RLRAudioPropagation::ChannelLayout::channelType)
       .def_readwrite("channelCount",
-                     &HabitatAcoustics::ChannelLayout::channelCount);
+                     &RLRAudioPropagation::ChannelLayout::channelCount);
 
   // ==== AudioSensorSpec ====
   py::class_<AudioSensorSpec, AudioSensorSpec::ptr, SensorSpec>(

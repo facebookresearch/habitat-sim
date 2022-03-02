@@ -86,8 +86,8 @@ void AudioSensor::setAudioListenerTransform(const vec3f& agentPos,
   if (newInitialization_ || (lastAgentPos_ != agentPos) ||
       !(lastAgentRot_.isApprox(agentRotQuat))) {
     audioSimulator_->AddListener(
-        HabitatAcoustics::Vector3f{agentPos(0), agentPos(1), agentPos(2)},
-        HabitatAcoustics::Quaternion{agentRotQuat(0), agentRotQuat(1),
+        RLRAudioPropagation::Vector3f{agentPos(0), agentPos(1), agentPos(2)},
+        RLRAudioPropagation::Quaternion{agentRotQuat(0), agentRotQuat(1),
                                      agentRotQuat(2), agentRotQuat(3)},
         audioSensorSpec_->channelLayout_);
   }
@@ -127,7 +127,7 @@ void AudioSensor::runSimulation(sim::Simulator& sim) {
     newSource_ = false;
     ESP_DEBUG() << logHeader_
                 << "Adding source at position : " << lastSourcePos_;
-    audioSimulator_->AddSource(HabitatAcoustics::Vector3f{
+    audioSimulator_->AddSource(RLRAudioPropagation::Vector3f{
         lastSourcePos_(0), lastSourcePos_(1), lastSourcePos_(2)});
   }
 
@@ -140,7 +140,7 @@ void AudioSensor::runSimulation(sim::Simulator& sim) {
   impulseResponse_.clear();
 }
 
-std::vector<std::vector<float>> AudioSensor::getIR() {
+const std::vector<std::vector<float>>& AudioSensor::getIR() {
   if (impulseResponse_.size() == 0) {
     ObservationSpace obsSpace;
     getObservationSpace(obsSpace);
@@ -239,7 +239,7 @@ void AudioSensor::createAudioSimulator() {
     return;
 
   newInitialization_ = true;
-  audioSimulator_ = std::make_unique<HabitatAcoustics::Simulator>();
+  audioSimulator_ = std::make_unique<RLRAudioPropagation::Simulator>();
   lastAgentPos_ = {__FLT_MIN__, __FLT_MIN__, __FLT_MIN__};
 
   audioSimulator_->Configure(audioSensorSpec_->acousticsConfig_);
@@ -262,7 +262,7 @@ void AudioSensor::loadSemanticMesh(sim::Simulator& sim) {
   const std::vector<std::shared_ptr<scene::SemanticObject>>& objects =
       semanticScene->objects();
 
-  HabitatAcoustics::VertexData vertices;
+  RLRAudioPropagation::VertexData vertices;
 
   vertices.vertices = sceneMesh_->vbo.data();
   vertices.byteOffset = 0;
@@ -320,7 +320,7 @@ void AudioSensor::loadSemanticMesh(sim::Simulator& sim) {
 
   // Send indices by category
   for (auto catToIndices : categoryNameToIndices) {
-    HabitatAcoustics::IndexData indices;
+    RLRAudioPropagation::IndexData indices;
 
     indices.indices = catToIndices.second.data();
     indices.byteOffset = 0;
@@ -356,14 +356,14 @@ void AudioSensor::loadMesh(sim::Simulator& sim) {
   CORRADE_ASSERT(audioSimulator_, "loadMesh: audioSimulator_ should exist", );
   sceneMesh_ = sim.getJoinedMesh(true);
 
-  HabitatAcoustics::VertexData vertices;
+  RLRAudioPropagation::VertexData vertices;
 
   vertices.vertices = sceneMesh_->vbo.data();
   vertices.byteOffset = 0;
   vertices.vertexCount = sceneMesh_->vbo.size();
   vertices.vertexStride = 0;
 
-  HabitatAcoustics::IndexData indices;
+  RLRAudioPropagation::IndexData indices;
 
   indices.indices = sceneMesh_->ibo.data();
   indices.byteOffset = 0;

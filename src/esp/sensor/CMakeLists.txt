@@ -58,6 +58,6 @@ if(BUILD_WITH_CUDA)
 endif()
 
 if(BUILD_WITH_AUDIO)
-  include_directories(${DEPS_DIR}/audio/HabitatAcousticsPkg/headers)
-  target_link_libraries(sensor PUBLIC ${HabitatAcoustics_LIBRARY})
+  include_directories(${DEPS_DIR}/audio/RLRAudioPropagationPkg/headers)
+  target_link_libraries(sensor PUBLIC ${RLRAudioPropagation_LIBRARY})
 endif()

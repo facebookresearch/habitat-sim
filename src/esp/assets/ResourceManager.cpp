@@ -400,8 +400,8 @@ bool ResourceManager::loadStage(
   // If the semantic mesh should be created, based on SimulatorConfiguration
   // todo sangarg : Fix this, the config.json file seems to be incorrect
   //    the semantic mesh is not working if this is false
-  const bool createSemanticMesh = true;
-      //metadataMediator_->getSimulatorConfiguration().loadSemanticMesh;
+  const bool createSemanticMesh =
+      metadataMediator_->getSimulatorConfiguration().loadSemanticMesh;
 
   // Force creation of a separate semantic scene graph, even when no semantic
   // mesh is loaded for the stage.  This is required to support playback of any

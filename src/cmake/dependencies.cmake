@@ -93,8 +93,8 @@ endif()
 # audio
 if(BUILD_WITH_AUDIO)
   find_library(
-    HabitatAcoustics_LIBRARY HabitatAcoustics
-    PATHS ${DEPS_DIR}/audio/HabitatAcousticsPkg/libs
+    RLRAudioPropagation_LIBRARY RLRAudioPropagation
+    PATHS ${DEPS_DIR}/audio/RLRAudioPropagationPkg/libs
   )
 endif()
 

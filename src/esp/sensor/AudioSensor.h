@@ -12,7 +12,7 @@
 #include "esp/scene/SemanticScene.h"
 #include "esp/sensor/Sensor.h"
 
-#include "audio/HabitatAcousticsPkg/headers/HabitatAcoustics.h"
+#include "audio/RLRAudioPropagationPkg/headers/RLRAudioPropagation.h"
 
 #ifndef ESP_SENSOR_AUDIOSENSOR_H_
 #define ESP_SENSOR_AUDIOSENSOR_H_
@@ -28,8 +28,8 @@ struct AudioSensorSpec : public SensorSpec {
 
  public:
   // Data
-  HabitatAcoustics::Configuration acousticsConfig_;
-  HabitatAcoustics::ChannelLayout channelLayout_;
+  RLRAudioPropagation::Configuration acousticsConfig_;
+  RLRAudioPropagation::ChannelLayout channelLayout_;
   std::string outputDirectory_;
 
  public:
@@ -73,7 +73,7 @@ class AudioSensor : public Sensor {
                                  const vec4f& agentRotQuat);
 
   /**
-   * @brief Run the audio simulation. This will run the HabitatAcoustics code to
+   * @brief Run the audio simulation. This will run the RLRAudioPropagation code to
    * get the impulse response
    * */
   void runSimulation(sim::Simulator& sim);
@@ -81,7 +81,7 @@ class AudioSensor : public Sensor {
   /**
    * @brief Return the last impulse response.
    * */
-  std::vector<std::vector<float>> getIR();
+  const std::vector<std::vector<float>>& getIR();
 
   // ------ Sensor class overrides ------
  public:
@@ -122,7 +122,7 @@ class AudioSensor : public Sensor {
  private:
   AudioSensorSpec::ptr audioSensorSpec_ =
       std::dynamic_pointer_cast<AudioSensorSpec>(spec_);
-  std::unique_ptr<HabitatAcoustics::Simulator> audioSimulator_ = nullptr;
+  std::unique_ptr<RLRAudioPropagation::Simulator> audioSimulator_ = nullptr;
   esp::assets::MeshData::ptr sceneMesh_;
 
   std::int32_t currentSimCount_ = -1;  // track the number of simulations

@@ -37,15 +37,15 @@ def main():
     sim = habitat_sim.Simulator(cfg)
 
     # create the acoustic configs
-    acoustics_config = hsim_bindings.HabitatAcousticsConfiguration()
+    acoustics_config = hsim_bindings.RLRAudioPropagationConfiguration()
     acoustics_config.dumpWaveFiles = True
     acoustics_config.enableMaterials = True
     acoustics_config.writeIrToFile = True
 
     # create channel layout
-    channel_layout = hsim_bindings.HabitatAcousticsChannelLayout()
+    channel_layout = hsim_bindings.RLRAudioPropagationChannelLayout()
     channel_layout.channelType = (
-        hsim_bindings.HabitatAcousticsChannelLayoutType.Binaural
+        hsim_bindings.RLRAudioPropagationChannelLayoutType.Binaural
     )
     channel_layout.channelCount = 2
 
@@ -73,7 +73,7 @@ def main():
         obs = sim.get_sensor_observations()["audio_sensor"]
 
         # print the audio observations
-        print(obs)
+        # print(obs)
 
         # write the observations to a file
         p = audio_sensor_spec.outputDirectory + str(i) + "/ir";

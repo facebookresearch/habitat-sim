@@ -28,7 +28,7 @@ class SemanticCategory {
   //! Return name of SemanticCategory under given mapping
   virtual std::string name(const std::string& mapping = "") const = 0;
 
-  ESP_SMART_POINTERS(SemanticCategory);
+  ESP_SMART_POINTERS(SemanticCategory)
 };
 
 // forward declarations

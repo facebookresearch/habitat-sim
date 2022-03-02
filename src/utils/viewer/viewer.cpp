@@ -423,8 +423,8 @@ Key Commands:
   '+': Increase trajectory diameter.
   '-': Decrease trajectory diameter.
 
-  'j': (audio) Add audio source in front of the agent
-  'y': (audio) Run audio simulation
+  'F': (audio) Add audio source in front of the agent
+  '0': (audio) Run audio simulation
   ==================================================
   )";
 
@@ -799,11 +799,11 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig, bool isOrtho) {
     spec->acousticsConfig_.enableMaterials = false;
     spec->acousticsConfig_.writeIrToFile = true;
     // Set the output directory
-    spec->outputDirectory_ = "/home/sangarg/AudioSimulation";
+    spec->outputDirectory_ = "/tmp/AudioSimulation";
     // Set the output channel layout
     spec->channelLayout_.channelCount = 2;
     spec->channelLayout_.channelType =
-        HabitatAcoustics::ChannelLayoutType::Binaural;
+        RLRAudioPropagation::ChannelLayoutType::Binaural;
   };
   addAudioSensor("audio", esp::sensor::SensorType::Audio,
                  esp::sensor::SensorSubType::ImpulseResponse);
@@ -2497,7 +2497,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
 #endif
       break;
     }
-    case KeyEvent::Key::J: {
+    case KeyEvent::Key::F: {
 #ifdef ESP_BUILD_WITH_AUDIO
       // Add an audio source
       addAudioSource();
@@ -2507,7 +2507,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
 #endif // ESP_BUILD_WITH_AUDIO
       break;
     }
-    case KeyEvent::Key::Y: {
+    case KeyEvent::Key::Zero: {
 #ifdef ESP_BUILD_WITH_AUDIO
       // Run audio simulation
       runAudioSimulation();
