@@ -252,7 +252,7 @@ def build_widget_ui(metadata_mediator):
     scene_handles = metadata_mediator.get_scene_handles()
     # If not using widgets, set as first available handle
     if not HAS_WIDGETS:
-        selected_scene = scene_handles[0]
+        selected_scene = "apt_1"
         return
 
     # Build widgets
