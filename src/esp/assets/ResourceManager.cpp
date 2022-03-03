@@ -220,6 +220,12 @@ void ResourceManager::initPhysicsManager(
 std::unordered_map<uint32_t, std::vector<scene::CCSemanticObject::ptr>>
 ResourceManager::buildSemanticCCObjects(
     const StageAttributes::ptr& stageAttributes) {
+  if (!metadataMediator_->getSimulatorConfiguration().loadSemanticMesh) {
+    ESP_WARNING() << "Unable to create semantic CC Objects due to no semantic "
+                     "scene being loaded/existing.";
+    return {};
+  }
+
   std::map<std::string, AssetInfo> assetInfoMap =
       createStageAssetInfosFromAttributes(stageAttributes, false, true);
 

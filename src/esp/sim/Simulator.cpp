@@ -99,6 +99,7 @@ void Simulator::close(const bool destroy) {
 
   activeSceneID_ = ID_UNDEFINED;
   activeSemanticSceneID_ = ID_UNDEFINED;
+  semanticSceneMeshLoaded_ = false;
   config_ = SimulatorConfiguration{};
 
   frustumCulling_ = true;
@@ -442,6 +443,9 @@ bool Simulator::instanceStageForSceneAttributes(
   // the semantic scene mesh is loaded.
 
   if (activeSemanticSceneID_ != tempIDs[1]) {
+    // check if semantic scene mesh has been loaded
+    // assume it has if tempIDs[1] is different
+    semanticSceneMeshLoaded_ = true;
     // id has changed so act - if ID has not changed, do nothing
     activeSemanticSceneID_ = tempIDs[1];
     if ((activeSemanticSceneID_ != ID_UNDEFINED) &&
@@ -454,10 +458,12 @@ bool Simulator::instanceStageForSceneAttributes(
       // empty scene has none to worry about
       if (!(stageType == assets::AssetType::INSTANCE_MESH ||
             stageAttributesHandle == assets::EMPTY_SCENE)) {
+        semanticSceneMeshLoaded_ = false;
         // TODO: programmatic generation of semantic meshes when no
         // annotations are provided.
         ESP_WARNING() << "\n---\nThe active scene does not contain semantic "
-                         "annotations. \n---";
+                         "annotations : activeSemanticSceneID_ ="
+                      << activeSemanticSceneID_ << " \n---";
       }
     }
   }  // if ID has changed - needs to be reset

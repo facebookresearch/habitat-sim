@@ -209,7 +209,7 @@ class Simulator {
   const esp::physics::PhysicsManager::PhysicsSimulationLibrary&
   getPhysicsSimulationLibrary() const {
     return physicsManager_->getPhysicsSimulationLibrary();
-  };
+  }
 
   /** @brief Render any debugging visualizations provided by the underlying
    * physics simulator implementation. By default does nothing. See @ref
@@ -219,7 +219,7 @@ class Simulator {
    */
   void physicsDebugDraw(const Magnum::Matrix4& projTrans) const {
     physicsManager_->debugDraw(projTrans);
-  };
+  }
 
   /**
    * @brief Get a copy of a stage's template when the stage was instanced.
@@ -241,8 +241,13 @@ class Simulator {
   std::unordered_map<uint32_t, std::vector<scene::CCSemanticObject::ptr>>
   buildSemanticCCObjects() const {
     // build report with current stage attributes
-    return resourceManager_->buildSemanticCCObjects(
-        physicsManager_->getStageInitAttributes());
+    if (semanticSceneMeshLoaded_) {
+      return resourceManager_->buildSemanticCCObjects(
+          physicsManager_->getStageInitAttributes());
+    }
+    ESP_WARNING()
+        << "Unable to build semantic CC objects since no semantic mesh exists.";
+    return {};
   }
 
   /**
@@ -251,8 +256,13 @@ class Simulator {
    * any semantic object colors are not present in the mesh.
    */
   std::vector<std::string> buildVertexColorMapReport() const {
-    return resourceManager_->buildVertexColorMapReport(
-        physicsManager_->getStageInitAttributes());
+    if (semanticSceneMeshLoaded_) {
+      return resourceManager_->buildVertexColorMapReport(
+          physicsManager_->getStageInitAttributes());
+    }
+    ESP_WARNING() << "Unable to build vertex-to-color mapping report since no "
+                     "semantic mesh exists.";
+    return {};
   }
 
   /**
@@ -1123,6 +1133,12 @@ class Simulator {
 
   int activeSceneID_ = ID_UNDEFINED;
   int activeSemanticSceneID_ = ID_UNDEFINED;
+
+  /**
+   * @brief Whether or not the loaded scene has a semantic scene mesh loaded.
+   */
+  bool semanticSceneMeshLoaded_ = false;
+
   std::vector<int> sceneID_;
 
   std::shared_ptr<physics::PhysicsManager> physicsManager_ = nullptr;
