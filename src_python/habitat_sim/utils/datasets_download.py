@@ -210,7 +210,21 @@ def initialize_test_data_sources(data_path):
                 "use_curl": True,
                 "post_extract_fn": None,
             }
-            for split in ["train", "val", "example"]
+            for split in ["train", "val"]
+        }
+    )
+
+    data_sources.update(
+        {
+            "hm3d_example_semantics_v0.1": {
+                "source": "https://api.matterport.com/resources/habitat/hm3d-example-semantic-annots-v0.1.tar.gz",
+                "package_name": "hm3d-example-semantic-annots-v0.1.tar.gz",
+                "link": data_path + "scene_datasets/hm3d",
+                "version": "1.0",
+                "version_dir": "hm3d-{version}/hm3d",
+                "extract_postfix": "example",
+                "downloaded_file_list": "hm3d-{{version}}/example-semantic-annot-files.json.gz",
+            }
         }
     )
 
