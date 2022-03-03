@@ -217,7 +217,6 @@ def on_scene_ddl_change(ddl_values):
 
 # Build a dropdown list holding obj_handles and set its event handler
 def set_handle_ddl_widget(scene_handles, sel_handle, on_change):
-    sel_handle = scene_handles[0]
     descStr = "Available Scenes:"
     style = {"description_width": "300px"}
     obj_ddl = widgets.Dropdown(
@@ -245,16 +244,24 @@ def set_button_launcher(desc):
 def build_widget_ui(metadata_mediator):
     # Holds the user's desired scene
     global selected_scene
-    selected_scene = "NONE"
 
-    # Construct DDLs and assign event handlers
     # All file-based object template handles
     scene_handles = metadata_mediator.get_scene_handles()
-    # If not using widgets, set as first available handle
+    # Set default as first available valid handle, or NONE scene if none are available
+    if len(scene_handles) == 0:
+        selected_scene = "NONE"
+    else:
+        # Set default selection to be first valid non-NONE scene (for python consumers)
+        for scene_handle in scene_handles:
+            if "NONE" not in scene_handle:
+                selected_scene = scene_handle
+                break
+
     if not HAS_WIDGETS:
-        selected_scene = scene_handles[0]
+        # If no widgets present, return, using default
         return
 
+    # Construct DDLs and assign event handlers
     # Build widgets
     scene_obj_ddl, selected_scene = set_handle_ddl_widget(
         scene_handles,
