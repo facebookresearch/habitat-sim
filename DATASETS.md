@@ -26,6 +26,9 @@ Now, you are ready to download. For example, to download the minival split, use:
 python -m habitat_sim.utils.datasets_download --username <api-token-id> --password <api-token-secret> --uids hm3d_minival
 ```
 
+By default, downloading the data for train/val/example scenes also pulls in the semantic annotations for [HM3D-Semantics v0.1](https://aihabitat.org/datasets/hm3d-semantics/). To download only the semantic annotations for these splits, use the uid `hm3d_<split>_semantics_0.1`.
+
+
 By default the download script will only download what is needed for habitat-sim.  You can add `_full` to the uid to download the raw glbs and the obj+mtl's in addition to what is needed for use with habitat-sim.
 
 ## Matterport3D (MP3D) dataset

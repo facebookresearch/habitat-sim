@@ -223,7 +223,7 @@ def initialize_test_data_sources(data_path):
                 "version": "1.0",
                 "version_dir": "hm3d-{version}/hm3d",
                 "extract_postfix": "example",
-                "downloaded_file_list": "hm3d-{{version}}/example-semantic-annot-files.json.gz",
+                "downloaded_file_list": "hm3d-{version}/example-semantic-annot-files.json.gz",
             }
         }
     )
