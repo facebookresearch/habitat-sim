@@ -16,6 +16,7 @@ CurandStates* getCurandStates();
 void freeCurandStates(CurandStates* curandStates);
 
 void simulateFromCPU(const int maxThreadsPerBlock,
+                     const int warpSize,
                      const float* __restrict__ depth,
                      const int H,
                      const int W,
@@ -25,6 +26,7 @@ void simulateFromCPU(const int maxThreadsPerBlock,
                      float* __restrict__ noisyDepth);
 
 void simulateFromGPU(const int maxThreadsPerBlock,
+                     const int warpSize,
                      const float* __restrict__ devDepth,
                      const int H,
                      const int W,

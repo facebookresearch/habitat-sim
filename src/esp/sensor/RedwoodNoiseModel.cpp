@@ -45,6 +45,13 @@ RedwoodNoiseModelGPUImpl::RedwoodNoiseModelGPUImpl(
 
         return maxThreadsPerBlock;
       }()},
+      warpSize_{[gpuDeviceId]() -> int {
+        int warpSize;
+        cudaDeviceGetAttribute(&warpSize, cudaDeviceAttr::cudaDevAttrWarpSize,
+                               gpuDeviceId);
+
+        return warpSize;
+      }()},
       noiseMultiplier_{noiseMultiplier} {
   CudaDeviceContext ctx{gpuDeviceId_};
 
@@ -69,8 +76,8 @@ Eigen::RowMatrixXf RedwoodNoiseModelGPUImpl::simulateFromCPU(
 
   Eigen::RowMatrixXf noisyDepth(depth.rows(), depth.cols());
 
-  impl::simulateFromCPU(maxThreadsPerBlock_, depth.data(), depth.rows(),
-                        depth.cols(), devModel_, curandStates_,
+  impl::simulateFromCPU(maxThreadsPerBlock_, warpSize_, depth.data(),
+                        depth.rows(), depth.cols(), devModel_, curandStates_,
                         noiseMultiplier_, noisyDepth.data());
   return noisyDepth;
 }
@@ -80,8 +87,9 @@ void RedwoodNoiseModelGPUImpl::simulateFromGPU(const float* devDepth,
                                                const int cols,
                                                float* devNoisyDepth) {
   CudaDeviceContext ctx{gpuDeviceId_};
-  impl::simulateFromGPU(maxThreadsPerBlock_, devDepth, rows, cols, devModel_,
-                        curandStates_, noiseMultiplier_, devNoisyDepth);
+  impl::simulateFromGPU(maxThreadsPerBlock_, warpSize_, devDepth, rows, cols,
+                        devModel_, curandStates_, noiseMultiplier_,
+                        devNoisyDepth);
 }
 
 }  // namespace sensor

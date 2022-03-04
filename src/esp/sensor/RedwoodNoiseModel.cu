@@ -151,6 +151,7 @@ void freeCurandStates(CurandStates* curandStates) {
 }
 
 void simulateFromGPU(const int maxThreadsPerBlock,
+                     const int warpSize,
                      const float* __restrict__ devDepth,
                      const int H,
                      const int W,
@@ -160,7 +161,7 @@ void simulateFromGPU(const int maxThreadsPerBlock,
                      float* __restrict__ devNoisyDepth) {
   const int totalConcurrency = std::ceil(static_cast<float>(H * W) / 4.0f);
   const int nThreads =
-      std::min(std::max(roundToNearestMultiple(totalConcurrency, 32), 1),
+      std::min(std::max(roundToNearestMultiple(totalConcurrency, warpSize), 1),
                maxThreadsPerBlock);
   const int nBlocks =
       std::ceil(static_cast<float>(totalConcurrency) / nThreads);
@@ -172,6 +173,7 @@ void simulateFromGPU(const int maxThreadsPerBlock,
 }
 
 void simulateFromCPU(const int maxThreadsPerBlock,
+                     const int warpSize,
                      const float* __restrict__ depth,
                      const int H,
                      const int W,
@@ -185,8 +187,8 @@ void simulateFromCPU(const int maxThreadsPerBlock,
 
   cudaMemcpy(devDepth, depth, H * W * sizeof(float), cudaMemcpyHostToDevice);
 
-  simulateFromGPU(maxThreadsPerBlock, devDepth, H, W, devModel, curandStates,
-                  noiseMultiplier, devNoisyDepth);
+  simulateFromGPU(maxThreadsPerBlock, warpSize, devDepth, H, W, devModel,
+                  curandStates, noiseMultiplier, devNoisyDepth);
 
   cudaMemcpy(noisyDepth, devNoisyDepth, H * W * sizeof(float),
              cudaMemcpyDeviceToHost);
