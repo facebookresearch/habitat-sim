@@ -102,7 +102,7 @@ __global__ void curandStatesSetupKernel(curandState_t* states,
                                         int n) {
   const int ID = blockIdx.x * blockDim.x + threadIdx.x;
   if (ID < n) {
-    curand_init(seed, id + 1, 0, &states[ID]);
+    curand_init(seed, ID + 1, 0, &states[ID]);
   }
 }
 
@@ -118,8 +118,8 @@ struct CurandStates {
     if (nStates > nStates_) {
       release();
       cudaMalloc(&devStates, nStates * sizeof(curandState_t));
-      const int nBlocks = static_cast<int>(
-          std::ceil(static_cast<float>(nStates) / maxThreadsPerBlock));
+      const int nBlocks =
+          std::ceil(static_cast<float>(nStates) / maxThreadsPerBlock);
       curandStatesSetupKernel<<<nBlocks, maxThreadsPerBlock>>>(devStates,
                                                                rand(), nStates);
       nStates_ = nStates;
@@ -185,8 +185,8 @@ void simulateFromCPU(const int maxThreadsPerBlock,
 
   cudaMemcpy(devDepth, depth, H * W * sizeof(float), cudaMemcpyHostToDevice);
 
-  simulateFromGPU(devDepth, H, W, devModel, curandStates, noiseMultiplier,
-                  devNoisyDepth);
+  simulateFromGPU(maxThreadsPerBlock, devDepth, H, W, devModel, curandStates,
+                  noiseMultiplier, devNoisyDepth);
 
   cudaMemcpy(noisyDepth, devNoisyDepth, H * W * sizeof(float),
              cudaMemcpyDeviceToHost);

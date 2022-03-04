@@ -103,7 +103,7 @@ class RedwoodNoiseModelCPUImpl:
     noise_multiplier: float
 
     def __attrs_post_init__(self):
-        self.model = self.model.reshape(self.model.shape[0], 80, 5)
+        self.model = self.model.reshape(80, 80, 5)
 
     def simulate(self, gt_depth):
         return _simulate(gt_depth, self.model, self.noise_multiplier)
