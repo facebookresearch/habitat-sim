@@ -455,8 +455,9 @@ Key Commands:
 
   /**
    * @brief Generate and save semantic CC report
+   * @return Whether successful or not.
    */
-  void generateAndSaveSemanticCCReport();
+  bool generateAndSaveSemanticCCReport();
   /**
    * @brief Generate and save vertex-color-semantic object mapping reports for
    * all scenes.
@@ -465,8 +466,9 @@ Key Commands:
 
   /**
    * @brief Generate and save vertex-color-semantic object mapping reports
+   * @return Whether successful or not.
    */
-  void generateAndSaveVertColorMapReports();
+  bool generateAndSaveVertColorMapReports();
 
   /**
    * @brief Build semantic region prims.
@@ -1159,16 +1161,22 @@ void Viewer::generateAndSaveAllVertColorMapReports() {
       continue;
     }
     setSceneInstanceFromListAndShow(idx);
-    generateAndSaveVertColorMapReports();
+    bool success = generateAndSaveVertColorMapReports();
+    if (!success) {
+      ESP_DEBUG() << "Report failed. Aborting!";
+    }
   }
   ESP_DEBUG() << "All reports done!";
-}
+}  // Viewer::generateAndSaveAllVertColorMapReports
 
 /**
  * @brief Generate and save vertex-color-semantic object mapping reports
  */
-void Viewer::generateAndSaveVertColorMapReports() {
+bool Viewer::generateAndSaveVertColorMapReports() {
   const auto results = simulator_->buildVertexColorMapReport();
+  if (results.empty()) {
+    return false;
+  }
   const std::string fileDir = Cr::Utility::Directory::join(
       {Cr::Utility::Directory::path(MM_->getActiveSceneDatasetName()),
        "Vertex_Color_Reports"});
@@ -1187,13 +1195,14 @@ void Viewer::generateAndSaveVertColorMapReports() {
   if (!file.good()) {
     ESP_ERROR() << "Cannot open" << filename
                 << "to output vert-color-semantic object mapping report data.";
-    return;
+    return false;
   }
   for (const std::string& line : results) {
     ESP_DEBUG() << line;
     file << line << '\n';
   }
   file.close();
+  return true;
 }  // Viewer::generateAndSaveVertColorMapReports
 
 void Viewer::generateAndSaveAllSemanticCCReports() {
@@ -1202,13 +1211,19 @@ void Viewer::generateAndSaveAllSemanticCCReports() {
       continue;
     }
     setSceneInstanceFromListAndShow(idx);
-    generateAndSaveSemanticCCReport();
+    bool success = generateAndSaveSemanticCCReport();
+    if (!success) {
+      ESP_DEBUG() << "Report failed. Aborting!";
+    }
   }
   ESP_DEBUG() << "All reports done!";
-}
+}  // Viewer::generateAndSaveAllSemanticCCReports
 
-void Viewer::generateAndSaveSemanticCCReport() {
+bool Viewer::generateAndSaveSemanticCCReport() {
   const auto results = simulator_->buildSemanticCCObjects();
+  if (results.empty()) {
+    return false;
+  }
   const std::string fileDir = Cr::Utility::Directory::join(
       {Cr::Utility::Directory::path(MM_->getActiveSceneDatasetName()),
        "Semantic_CC_Reports"});
@@ -1230,7 +1245,7 @@ void Viewer::generateAndSaveSemanticCCReport() {
   std::ofstream file(filename);
   if (!file.good()) {
     ESP_ERROR() << "Cannot open" << filename << "to output CC report data.";
-    return;
+    return false;
   }
 
   file << "Obj IDX, Object ID, Color RGB, # Verts in partition, BBOX "
@@ -1257,7 +1272,8 @@ void Viewer::generateAndSaveSemanticCCReport() {
   }
 
   file.close();
-}
+  return true;
+}  // Viewer::generateAndSaveSemanticCCReport
 
 void Viewer::loadAgentAndSensorTransformFromFile() {
   if (!agentTransformLoadPath_.empty()) {
