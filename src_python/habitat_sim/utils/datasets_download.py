@@ -217,7 +217,7 @@ def initialize_test_data_sources(data_path):
     data_sources.update(
         {
             "hm3d_example_semantics_v0.1": {
-                "source": "https://api.matterport.com/resources/habitat/hm3d-example-semantic-annots-v0.1.tar.gz",
+                "source": "https://github.com/matterport/habitat-matterport-3dresearch/raw/main/example/hm3d-example-semantic-annots-v0.1.tar.gz",
                 "package_name": "hm3d-example-semantic-annots-v0.1.tar.gz",
                 "link": data_path + "scene_datasets/hm3d",
                 "version": "1.0",
