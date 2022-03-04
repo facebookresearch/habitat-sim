@@ -131,9 +131,9 @@ We also provide a [nightly conda build for the main branch](https://anaconda.org
    #C++
    # ./build/viewer if compiling locally
    habitat-viewer /path/to/data/scene_datasets/habitat-test-scenes/skokloster-castle.glb
-   
+
    #Python
-   #NOTE: depending on your choice of installation, you may need to add '/path/to/habitat-sim' to your PYTHONPATH. 
+   #NOTE: depending on your choice of installation, you may need to add '/path/to/habitat-sim' to your PYTHONPATH.
    #e.g. from 'habitat-sim/' directory run 'export PYTHONPATH=$(pwd)'
    python examples/viewer.py --scene /path/to/data/scene_datasets/habitat-test-scenes/skokloster-castle.glb
    ```
@@ -144,9 +144,9 @@ We also provide a [nightly conda build for the main branch](https://anaconda.org
 
 1. **Physical interactions**: Habitat-sim provides rigid and articulated dynamics simulation via integration with [Bullet physics](https://pybullet.org/).
    Try it out now with our interactive viewer functionality in C++ or python.
-   
+
    First, download our fully interactive [ReplicaCAD apartment dataset](https://aihabitat.org/datasets/replica_cad/) (140 MB):
-   
+
    ```bash
    #NOTE: by default, data will be downloaded into habitat-sim/data/. Optionally modify the data path by adding:  `--data-path /path/to/data/`
    # with conda install
@@ -155,21 +155,21 @@ We also provide a [nightly conda build for the main branch](https://anaconda.org
    # with source (from inside habitat_sim/)
    python src_python/habitat_sim/utils/datasets_download.py --uids replica_cad_dataset
    ```
-   
+
    Then load a ReplicaCAD scene in the viewer application with physics enabled. If you modified the data path above, also modify it in viewer calls below.
-   
+
    ```bash
    #C++
    # ./build/viewer if compiling locally
    habitat-viewer --enable-physics --dataset data/replica_cad/replicaCAD.scene_dataset_config.json -- apt_1
-   
+
    #python
    #NOTE: habitat-sim/ directory must be on your `PYTHONPATH`
    python examples/viewer.py --dataset data/replica_cad/replicaCAD.scene_dataset_config.json --scene apt_1
    ```
 
    The viewer application outputs the full list of keyboard and mouse interface options to the console at runtime.
-   
+
    Quickstart Example:
    - `WASD` to move
    - `LEFT` click and drag the mouse to look around
