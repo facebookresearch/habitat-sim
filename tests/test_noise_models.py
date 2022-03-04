@@ -37,7 +37,7 @@ def test_compare_gpu_cpu_redwood_depth(noise_multiplier: float, tolerance: float
         noise_multiplier=noise_multiplier,
     )
 
-    NUM_SIMS = 20
+    NUM_SIMS = 100
     cuda_depths = [cuda_impl(depth) for _ in range(NUM_SIMS)]
     cpu_depths = [cpu_impl.simulate(depth) for _ in range(NUM_SIMS)]
 

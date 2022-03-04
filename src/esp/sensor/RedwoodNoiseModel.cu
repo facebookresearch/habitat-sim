@@ -5,13 +5,18 @@
 #include "RedwoodNoiseModel.cuh"
 
 #include <algorithm>
+#include <cmath>
 
 #include <cuda_runtime.h>
 #include <curand_kernel.h>
 
 namespace {
-const int MODEL_N_DIMS = 4;
-const int MODEL_N_COLS = 100;
+int roundToNearestMultiple(int num, int base) {
+  return std::round(static_cast<float>(num) / static_cast<float>(base)) * base;
+}
+
+const int MODEL_N_DIMS = 5;
+const int MODEL_N_COLS = 80;
 
 // Read about the noise model here: http://www.alexteichman.com/octo/clams/
 // Original source code: http://redwood-data.org/indoor/data/simdepth.py
@@ -30,7 +35,7 @@ __device__ float undistort(const int _x,
           model[(y * MODEL_N_COLS + x) * MODEL_N_DIMS + min(max(i1, 0), 4)] +
       a * model[(y * MODEL_N_COLS + x) * MODEL_N_DIMS + min(i2, 4)];
 
-  if (f < 1e-5)
+  if (f < 1e-5f)
     return 0.0f;
   else
     return z / f;
@@ -39,67 +44,65 @@ __device__ float undistort(const int _x,
 __global__ void redwoodNoiseModelKernel(const float* __restrict__ depth,
                                         const int H,
                                         const int W,
-                                        curandState_t* states,
+                                        curandState_t* __restrict__ states,
                                         const float* __restrict__ model,
                                         const float noiseMultiplier,
                                         float* __restrict__ noisyDepth) {
-  const int TID = threadIdx.x;
-  const int BID = blockIdx.x;
+  const int ID = blockIdx.x * blockDim.x + threadIdx.x;
+  const int STRIDE = gridDim.x * blockDim.x;
 
-  // curandStates are thread-safe, so all threads in a block share the same
-  // state. They are NOT block safe however
-  curandState_t curandState = states[BID];
+  curandState_t curandState = states[ID];
 
   const float ymax = H - 1;
   const float xmax = W - 1;
+  for (int idx = ID; idx < H * W; idx += STRIDE) {
+    // Shuffle pixels
+    const int y = min(max((idx / W) + curand_normal(&curandState) * 0.25f *
+                                          noiseMultiplier,
+                          0.0f),
+                      ymax) +
+                  0.5f;
+    const int x = min(max((idx % W) + curand_normal(&curandState) * 0.25f *
+                                          noiseMultiplier,
+                          0.0f),
+                      xmax) +
+                  0.5f;
 
-  for (int j = BID; j < H; j += gridDim.x) {
-    for (int i = TID; i < W; i += blockDim.x) {
-      // Shuffle pixels
-      const int y =
-          min(max(j + curand_normal(&curandState) * 0.25f * noiseMultiplier,
-                  0.0f),
-              ymax) +
-          0.5f;
-      const int x =
-          min(max(i + curand_normal(&curandState) * 0.25f * noiseMultiplier,
-                  0.0f),
-              xmax) +
-          0.5f;
+    // downsample
+    const float d = depth[(y - y % 2) * W + x - x % 2];
+    // If depth is greater than 10m, the sensor will just return a zero
+    if (d >= 10.0f) {
+      noisyDepth[idx] = 0.0f;
+    } else {
+      // Distortion
+      // The noise model was originally made for a 640x480 sensor,
+      // so re-map our arbitrarily sized sensor to that size!
+      const float undistorted_d =
+          undistort(static_cast<float>(x) / xmax * 639.0f + 0.5f,
+                    static_cast<float>(y) / ymax * 479.0f + 0.5f, d, model);
 
-      // downsample
-      const float d = depth[(y - y % 2) * W + x - x % 2];
-      // If depth is greater than 10m, the sensor will just return a zero
-      if (d >= 10.0f) {
-        noisyDepth[j * W + i] = 0.0f;
+      // quantization and high freq noise
+      if (undistorted_d == 0.0f) {
+        noisyDepth[idx] = 0.0f;
       } else {
-        // Distortion
-        // The noise model was originally made for a 640x480 sensor,
-        // so re-map our arbitrarily sized sensor to that size!
-        const float undistorted_d =
-            undistort(static_cast<float>(x) / xmax * 639.0f + 0.5f,
-                      static_cast<float>(y) / ymax * 479.0f + 0.5f, d, model);
-
-        // quantization and high freq noise
-        if (undistorted_d == 0.0f) {
-          noisyDepth[j * W + i] = 0.0f;
-        } else {
-          const float denom = round(
-              (35.130f / static_cast<double>(undistorted_d) +
-               curand_normal(&curandState) * 0.027778f * noiseMultiplier) *
-              8.0f);
-          noisyDepth[j * W + i] =
-              denom > 1e-5 ? (35.130f * 8.0f / denom) : 0.0f;
-        }
+        const float denom =
+            round((35.130f / static_cast<double>(undistorted_d) +
+                   curand_normal(&curandState) * 0.027778f * noiseMultiplier) *
+                  8.0f);
+        noisyDepth[idx] = denom > 1e-5 ? (35.130f * 8.0f / denom) : 0.0f;
       }
     }
   }
+
+  states[ID] = curandState;
 }
 
-__global__ void curandStatesSetupKernel(curandState_t* state, int seed, int n) {
-  int id = threadIdx.x + blockIdx.x * 64;
-  if (id < n) {
-    curand_init(seed, id + 1, 0, &state[id]);
+__global__ void curandStatesSetupKernel(curandState_t* states,
+                                        int seed,
+                                        int n) {
+  const int ID = blockIdx.x * blockDim.x + threadIdx.x;
+  if (ID < n) {
+    curand_init(seed, id + 1, 0, &states[ID]);
   }
 }
 
@@ -110,14 +113,16 @@ namespace sensor {
 namespace impl {
 
 struct CurandStates {
-  CurandStates() : devStates(0), n_blocks_(0) {}
-  void alloc(const int n_blocks) {
-    if (n_blocks > n_blocks_) {
+  CurandStates() : devStates(0), nStates_(0) {}
+  void alloc(const int nStates, const int maxThreadsPerBlock) {
+    if (nStates > nStates_) {
       release();
-      cudaMalloc(&devStates, n_blocks * sizeof(curandState_t));
-      curandStatesSetupKernel<<<std::max(n_blocks / 64, 1), 64>>>(
-          devStates, rand(), n_blocks);
-      n_blocks_ = n_blocks;
+      cudaMalloc(&devStates, nStates * sizeof(curandState_t));
+      const int nBlocks = static_cast<int>(
+          std::ceil(static_cast<float>(nStates) / maxThreadsPerBlock));
+      curandStatesSetupKernel<<<nBlocks, maxThreadsPerBlock>>>(devStates,
+                                                               rand(), nStates);
+      nStates_ = nStates;
     }
   }
 
@@ -125,7 +130,7 @@ struct CurandStates {
     if (devStates != 0) {
       cudaFree(devStates);
       devStates = 0;
-      n_blocks_ = 0;
+      nStates_ = 0;
     }
   }
 
@@ -134,7 +139,7 @@ struct CurandStates {
   curandState_t* devStates;
 
  private:
-  int n_blocks_;
+  int nStates_;
 };
 
 CurandStates* getCurandStates() {
@@ -145,23 +150,29 @@ void freeCurandStates(CurandStates* curandStates) {
     delete curandStates;
 }
 
-void simulateFromGPU(const float* __restrict__ devDepth,
+void simulateFromGPU(const int maxThreadsPerBlock,
+                     const float* __restrict__ devDepth,
                      const int H,
                      const int W,
                      const float* __restrict__ devModel,
                      CurandStates* curandStates,
                      const float noiseMultiplier,
                      float* __restrict__ devNoisyDepth) {
-  const int n_threads = std::min(std::max(W / 4, 1), 256);
-  const int n_blocks = std::max(H / 8, 1);
+  const int totalConcurrency = std::ceil(static_cast<float>(H * W) / 4.0f);
+  const int nThreads =
+      std::min(std::max(roundToNearestMultiple(totalConcurrency, 32), 1),
+               maxThreadsPerBlock);
+  const int nBlocks =
+      std::ceil(static_cast<float>(totalConcurrency) / nThreads);
 
-  curandStates->alloc(n_blocks);
-  redwoodNoiseModelKernel<<<n_blocks, n_threads>>>(
+  curandStates->alloc(nBlocks * nThreads, maxThreadsPerBlock);
+  redwoodNoiseModelKernel<<<nBlocks, nThreads>>>(
       devDepth, H, W, curandStates->devStates, devModel, noiseMultiplier,
       devNoisyDepth);
 }
 
-void simulateFromCPU(const float* __restrict__ depth,
+void simulateFromCPU(const int maxThreadsPerBlock,
+                     const float* __restrict__ depth,
                      const int H,
                      const int W,
                      const float* __restrict__ devModel,

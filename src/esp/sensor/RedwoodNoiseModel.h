@@ -77,7 +77,7 @@ struct RedwoodNoiseModelGPUImpl {
   ~RedwoodNoiseModelGPUImpl();
 
  private:
-  const int gpuDeviceId_;
+  const int gpuDeviceId_, maxThreadsPerBlock_;
   const float noiseMultiplier_;
   float* devModel_ = nullptr;
   impl::CurandStates* curandStates_ = nullptr;
