@@ -126,25 +126,63 @@ We also provide a [nightly conda build for the main branch](https://anaconda.org
       python -m habitat_sim.utils.datasets_download --uids habitat_example_objects --data-path /path/to/data/
       ```
 
-1. **Interactive testing**: Use the interactive viewer included with Habitat-Sim
+1. **Interactive testing**: Use the interactive viewer included with Habitat-Sim in either C++ or python:
    ```bash
+   #C++
    # ./build/viewer if compiling locally
    habitat-viewer /path/to/data/scene_datasets/habitat-test-scenes/skokloster-castle.glb
+   
+   #Python
+   #NOTE: depending on your choice of installation, you may need to add '/path/to/habitat-sim' to your PYTHONPATH. 
+   #e.g. from 'habitat-sim/' directory run 'export PYTHONPATH=$(pwd)'
+   python examples/viewer.py --scene /path/to/data/scene_datasets/habitat-test-scenes/skokloster-castle.glb
    ```
    You should be able to control an agent in this test scene.
-   Use W/A/S/D keys to move forward/left/backward/right and arrow keys or mouse to control gaze direction (look up/down/left/right).
+   Use W/A/S/D keys to move forward/left/backward/right and arrow keys or mouse (LEFT click) to control gaze direction (look up/down/left/right).
    Try to find the picture of a woman surrounded by a wreath.
    Have fun!
 
-1. **Physical interactions**: Use the interactive viewer with physics enabled:
+1. **Physical interactions**: Habitat-sim provides rigid and articulated dynamics simulation via integration with [Bullet physics](https://pybullet.org/).
+   Try it out now with our interactive viewer functionality in C++ or python.
+   
+   First, download our fully interactive [ReplicaCAD apartment dataset](https://aihabitat.org/datasets/replica_cad/) (140 MB):
+   
    ```bash
+   #NOTE: by default, data will be downloaded into habitat-sim/data/. Optionally modify the data path by adding:  `--data-path /path/to/data/`
+   # with conda install
+   python -m habitat_sim.utils.datasets_download --uids replica_cad_dataset
+
+   # with source (from inside habitat_sim/)
+   python src_python/habitat_sim/utils/datasets_download.py --uids replica_cad_dataset
+   ```
+   
+   Then load a ReplicaCAD scene in the viewer application with physics enabled. If you modified the data path above, also modify it in viewer calls below.
+   
+   ```bash
+   #C++
    # ./build/viewer if compiling locally
-   habitat-viewer --enable-physics --object-dir data/objects/example_objects -- data/scene_datasets/habitat-test-scenes/apartment_1.glb
+   habitat-viewer --enable-physics --dataset data/replica_cad/replicaCAD.scene_dataset_config.json -- apt_1
+   
+   #python
+   #NOTE: habitat-sim/ directory must be on your `PYTHONPATH`
+   python examples/viewer.py --dataset data/replica_cad/replicaCAD.scene_dataset_config.json --scene apt_1
    ```
 
-   You should be able to insert objects into the scene by pressing 'o'. The viewer application outputs the full list of keyboard shortcuts to the console at runtime.
+   The viewer application outputs the full list of keyboard and mouse interface options to the console at runtime.
+   
+   Quickstart Example:
+   - `WASD` to move
+   - `LEFT` click and drag the mouse to look around
+   - press `SPACE` to toggle simulation off/on (default on)
+   - press `'m'` to switch to "GRAB" mouse mode
+    - now `LEFT` or `RIGHT` click and drag to move objects or open doors/drawers and release to drop the object
+    - with an object gripped, scroll the mouse wheel to:
+      - (default): move it closer or farther away
+      - (+`ALT`): rotate object fixed constraint frame (yaw)
+      - (+`CTRL`): rotate object fixed constraint frame (pitch)
+      - (+`ALT`+`CTRL`): rotate object fixed constraint frame (roll)
 
-1. **Non-interactive testing**: Run the example script:
+1. **Non-interactive testing** (e.g. for headless systems): Run the example script:
    ```bash
    python /path/to/habitat-sim/examples/example.py --scene /path/to/data/scene_datasets/habitat-test-scenes/skokloster-castle.glb
    ```
