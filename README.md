@@ -155,6 +155,7 @@ We also provide a [nightly conda build for the main branch](https://anaconda.org
    # with source (from inside habitat_sim/)
    python src_python/habitat_sim/utils/datasets_download.py --uids replica_cad_dataset
    ```
+   - Alternatively, 105 scene variations with pre-baked lighting are available via `--uids replica_cad_baked_lighting` (480 MB).
 
    Then load a ReplicaCAD scene in the viewer application with physics enabled. If you modified the data path above, also modify it in viewer calls below.
 
@@ -167,6 +168,7 @@ We also provide a [nightly conda build for the main branch](https://anaconda.org
    #NOTE: habitat-sim/ directory must be on your `PYTHONPATH`
    python examples/viewer.py --dataset data/replica_cad/replicaCAD.scene_dataset_config.json --scene apt_1
    ```
+   - Using scenes with pre-baked lighting instead? Use `--dataset data/replica_cad_baked_lighting/replicaCAD_baked.scene_dataset_config.json --scene Baked_sc1_staging_00`
 
    The viewer application outputs the full list of keyboard and mouse interface options to the console at runtime.
 
