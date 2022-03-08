@@ -131,7 +131,10 @@ def modify_and_copy_SSD(src_filename: str, dest_filename: str):
                 line = f"{i},{line_parts[-1]}"
 
             if fileIsOffset and printFileOffset:
-                print(f"erroneous line corrected {i} : {line}", end="")
+                print(
+                    f"Erroneous line in source SSD `{src_filename}` corrected {i} : {line}",
+                    end="",
+                )
                 fileIsOffset = False
                 printFileOffset = False
             dest.write(f"{line}")
@@ -330,15 +333,12 @@ def build_annotation_configs(part_file_list_dict: Dict, output_files: List):
         rel_config_filename = dest_config_filename.split(HM3D_DEST_DIR)[-1].split(
             os_sep, 1
         )[-1]
-        print(
-            f"Adding rel_config_filename : {rel_config_filename} to output_files.",
-            end="",
-        )
+        print(f"Adding rel_config_filename : {rel_config_filename} to output_files.")
         output_files.append(rel_config_filename)
 
 
 def save_annotated_file_lists(output_files: List):
-    print("save_annotated_file_lists:")
+    print("save_annotated_file_lists: ", end="")
     # write text files that hold listings of appropriate relative filepaths for
     # annotated files as well as for each partition's configs for all scenes that
     # have annotations
@@ -387,6 +387,7 @@ def save_annotated_file_lists(output_files: List):
             continue
         with open(v[0], "w") as dest:
             dest.write("\n".join(v[1]))
+    print("Success!!")
 
 
 def count_SSD_colors(ssd_filename):
@@ -421,7 +422,7 @@ def main():
         for _, data_dict_list in file_names_and_paths.items():
             for data_dict in data_dict_list:
                 ssd_filename = data_dict["src_path_ssdfile"]
-                print(f"{ssd_filename}", end="")
+                print(f"{ssd_filename}")
                 tmp_dict = count_SSD_colors(ssd_filename)
                 dict_key = ssd_filename.split(HM3D_ANNOTATION_SRC_DIR)[-1].split(
                     ".semantic/Output"
@@ -437,8 +438,7 @@ def main():
                 names = count_and_names["names"]
                 if count > 1:
                     print(
-                        f"!!! In scene {scenename} : Bad Color Count : '{color}' is present {count} times : {names}",
-                        end="",
+                        f"!!! In scene {scenename} : Bad Color Count : '{color}' is present {count} times : {names}"
                     )
         print(f"Total Items :{total_items}", end="")
     else:
