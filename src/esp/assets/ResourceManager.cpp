@@ -2224,6 +2224,14 @@ gfx::PhongMaterialData::uptr ResourceManager::buildFlatShadedMaterialData(
   // flat materials
   auto finalMaterial = gfx::PhongMaterialData::create_unique();
 
+  // texture transform, if the material has a texture; if there's none the
+  // matrix is an identity
+  // TODO this check shouldn't be needed, remove when this no longer asserts
+  // in magnum for untextured materials
+  if (material.hasTexture()) {
+    finalMaterial->textureMatrix = material.textureMatrix();
+  }
+
   finalMaterial->ambientColor = material.color();
   if (material.hasTexture()) {
     finalMaterial->ambientTexture =
