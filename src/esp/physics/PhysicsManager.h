@@ -741,13 +741,17 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * enabled objects.
    */
   virtual bool contactTest(const int physObjectID) {
+    const auto existingObjsIter = existingObjects_.find(physObjectID);
+    bool existingObjFound = (existingObjsIter != existingObjects_.end());
+    const auto existingArtObjsIter =
+        existingArticulatedObjects_.find(physObjectID);
     CORRADE_INTERNAL_ASSERT(
-        (existingObjects_.count(physObjectID) > 0) ||
-        (existingArticulatedObjects_.count(physObjectID) > 0));
-    if (existingObjects_.count(physObjectID) > 0) {
-      return existingObjects_.at(physObjectID)->contactTest();
+        existingObjFound ||
+        (existingArtObjsIter != existingArticulatedObjects_.end()));
+    if (existingObjFound) {
+      return existingObjsIter->second->contactTest();
     } else {
-      return existingArticulatedObjects_.at(physObjectID)->contactTest();
+      return existingArtObjsIter->second->contactTest();
     }
     return false;
   }
