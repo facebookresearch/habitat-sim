@@ -41,7 +41,9 @@ def hm3d_semantic_configs_post(extract_dir: str) -> List[str]:
     )
     assert os.path.exists(all_scene_dataset_cfg)
 
-    dst_name = os.path.join(extract_dir, "..", "hm3d_annotated_basis.scene_dataset_config.json")
+    dst_name = os.path.join(
+        extract_dir, "..", "hm3d_annotated_basis.scene_dataset_config.json"
+    )
     os.replace(all_scene_dataset_cfg, dst_name)
 
     return [dst_name]
@@ -225,7 +227,8 @@ def initialize_test_data_sources(data_path):
                 "requires_auth": True,
                 "use_curl": True,
                 "post_extract_fn": hm3d_semantic_configs_post
-                if  data_format == "configs" else None,
+                if data_format == "configs"
+                else None,
             }
             for split, data_format in itertools.product(
                 ["minival", "train", "val"],
