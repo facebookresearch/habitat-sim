@@ -41,10 +41,10 @@ def hm3d_semantic_configs_post(extract_dir: str) -> List[str]:
     )
     assert os.path.exists(all_scene_dataset_cfg)
 
-    link_name = os.path.join(extract_dir, "..", "hm3d_annotated_basis.scene_dataset_config.json")
-    os.symlink(all_scene_dataset_cfg, link_name)
+    dst_name = os.path.join(extract_dir, "..", "hm3d_annotated_basis.scene_dataset_config.json")
+    os.replace(all_scene_dataset_cfg, dst_name)
 
-    return [link_name]
+    return [dst_name]
 
 
 def initialize_test_data_sources(data_path):
