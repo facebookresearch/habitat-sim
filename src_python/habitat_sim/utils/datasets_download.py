@@ -35,6 +35,18 @@ def hm3d_train_configs_post(extract_dir: str) -> List[str]:
     return [link_name]
 
 
+def hm3d_semantic_train_configs_post(extract_dir: str) -> List[str]:
+    all_scene_dataset_cfg = os.path.join(
+        extract_dir, "hm3d_annotated_basis.scene_dataset_config.json"
+    )
+    assert os.path.exists(all_scene_dataset_cfg)
+
+    link_name = os.path.join(extract_dir, "..", "hm3d_annotated_basis.scene_dataset_config.json")
+    os.symlink(all_scene_dataset_cfg, link_name)
+
+    return [link_name]
+
+
 def initialize_test_data_sources(data_path):
     global data_sources
     global data_groups
@@ -193,38 +205,54 @@ def initialize_test_data_sources(data_path):
 
     data_sources.update(
         {
-            f"hm3d_{split}_semantics_v0.1": {
-                "source": "https://api.matterport.com/resources/habitat/hm3d-{split}-semantic-annots-v0.1.tar.gz".format(
+            f"hm3d_{split}_semantic_{data_format}_v0.1": {
+                "source": "https://api.matterport.com/resources/habitat/hm3d-{split}-semantic-{data_format}-v0.1.tar{ext}".format(
+                    ext=".gz" if data_format == "annots" else "",
                     split=split,
+                    data_format=data_format,
                 ),
                 "download_pre_args": "--location",
-                "package_name": "hm3d-{split}-semantic-annots-v0.1.tar.gz".format(
+                "package_name": "hm3d-{split}-semantic-{data_format}-v0.1.tar{ext}".format(
+                    ext=".gz" if data_format == "annots" else "",
                     split=split,
+                    data_format=data_format,
                 ),
                 "link": data_path + "scene_datasets/hm3d",
                 "version": "1.0",
                 "version_dir": "hm3d-{version}/hm3d",
                 "extract_postfix": f"{split}",
-                "downloaded_file_list": f"hm3d-{{version}}/{split}-semantic-annot-files.json.gz",
+                "downloaded_file_list": f"hm3d-{{version}}/{split}-semantic-{data_format}-files.json.gz",
                 "requires_auth": True,
                 "use_curl": True,
-                "post_extract_fn": None,
+                "post_extract_fn": hm3d_semantic_train_configs_post
+                if split == "train" and data_format == "configs"
+                else None,
             }
-            for split in ["train", "val"]
+            for split, data_format in itertools.product(
+                ["minival", "train", "val"],
+                ["annots", "configs"],
+            )
         }
     )
 
     data_sources.update(
         {
-            "hm3d_example_semantics_v0.1": {
-                "source": "https://github.com/matterport/habitat-matterport-3dresearch/raw/main/example/hm3d-example-semantic-annots-v0.1.tar.gz",
-                "package_name": "hm3d-example-semantic-annots-v0.1.tar.gz",
+            f"hm3d_example_semantic_{data_format}_v0.1": {
+                "source": "https://github.com/matterport/habitat-matterport-3dresearch/raw/main/example/hm3d-example-semantic-{data_format}-v0.1.tar{ext}".format(
+                    ext=".gz" if data_format == "annots" else "",
+                    data_format=data_format,
+                ),
+                "package_name": "hm3d-example-semantic-{data_format}-v0.1.tar{ext}".format(
+                    ext=".gz" if data_format == "annots" else "",
+                    data_format=data_format,
+                ),
                 "link": data_path + "scene_datasets/hm3d",
                 "version": "1.0",
                 "version_dir": "hm3d-{version}/hm3d",
                 "extract_postfix": "example",
-                "downloaded_file_list": "hm3d-{version}/example-semantic-annot-files.json.gz",
+                "downloaded_file_list": f"hm3d-{{version}}/example-semantic-{data_format}-files.json.gz",
             }
+            for data_format in ["annots", "configs"]
         }
     )
 
@@ -250,19 +278,36 @@ def initialize_test_data_sources(data_path):
         "hm3d_example": [
             "hm3d_example_habitat",
             "hm3d_example_configs",
-            "hm3d_example_semantics_v0.1",
+            "hm3d_example_semantic_annots_v0.1",
+            "hm3d_example_semantic_configs_v0.1",
         ],
-        "hm3d_val": ["hm3d_val_habitat", "hm3d_val_configs", "hm3d_val_semantics_v0.1"],
+        "hm3d_val": [
+            "hm3d_val_habitat",
+            "hm3d_val_configs",
+            "hm3d_val_semantic_annots_v0.1",
+            "hm3d_val_semantic_configs_v0.1",
+        ],
         "hm3d_train": [
             "hm3d_train_habitat",
             "hm3d_train_configs",
-            "hm3d_train_semantics_v0.1",
+            "hm3d_train_semantic_annots_v0.1",
+            "hm3d_train_semantic_configs_v0.1",
         ],
-        "hm3d_minival": ["hm3d_minival_habitat", "hm3d_minival_configs"],
+        "hm3d_minival": [
+            "hm3d_minival_habitat",
+            "hm3d_minival_configs",
+            "hm3d_minival_semantic_annots_v0.1",
+            "hm3d_minival_semantic_configs_v0.1",
+        ],
         "hm3d_semantics": [
-            "hm3d_train_semantics_v0.1",
-            "hm3d_val_semantics_v0.1",
-            "hm3d_example_semantics_v0.1",
+            "hm3d_example_semantic_annots_v0.1",
+            "hm3d_example_semantic_configs_v0.1",
+            "hm3d_val_semantic_annots_v0.1",
+            "hm3d_val_semantic_configs_v0.1",
+            "hm3d_train_semantic_annots_v0.1",
+            "hm3d_train_semantic_configs_v0.1",
+            "hm3d_minival_semantic_annots_v0.1",
+            "hm3d_minival_semantic_configs_v0.1",
         ],
         "hm3d_full": list(filter(lambda k: k.startswith("hm3d_"), data_sources.keys())),
     }
