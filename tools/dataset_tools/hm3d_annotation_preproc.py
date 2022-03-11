@@ -42,9 +42,13 @@ HM3D_DEST_DIR = "/home/john/Facebook/habitat-sim/data/scene_datasets/HM3D"
 #        colors to labels and regions
 #   .glb is the mesh file for the scene holding both vertex-color-based and texture-based
 #        semantic annotations.
+# All the scenes from Appen
+# HM3D_ANNOTATION_SRC_DIR = "/home/john/Datasets In Progress/HM3D_Semantic/Appen_Scenes"
 
-HM3D_ANNOTATION_SRC_DIR = "/home/john/Datasets In Progress/HM3D_Semantic/Appen_Scenes"
-# HM3D_ANNOTATION_SRC_DIR = "/home/john/Datasets In Progress/HM3D_Semantic/Appen_29_scenes_redo_feb_14"
+# The scenes used for the challenge (151)
+HM3D_ANNOTATION_SRC_DIR = (
+    "/home/john/Datasets In Progress/HM3D_Semantic/Appen_Scenes_Challenge"
+)
 #
 # Appen annotation source scene directory regex.
 # This regex describes the format of the per-scene directories in the Appen work,
@@ -178,7 +182,7 @@ def buildFileListing():
             for dest_dir in dest_dir_list:
                 scene_dest_dir = os_join(dest_dir[0], dest_dir[1])
                 partition_subdir = dest_dir[0].split(os_sep)[-1]
-                partition_tag = partition_subdir.split("-")[1].strip()
+                partition_tag = partition_subdir
                 scene_dest_subdir = os_join(partition_subdir, dest_dir[1])
                 src_files = {}
                 for src_full_dir, _, src_filename in src_file_list:
@@ -260,7 +264,8 @@ def build_annotation_configs(part_file_list_dict: Dict, output_files: List):
         tmp_file_dirs = set()
         for filename in part_file_list_dict[key]:
             path_no_filename = os_split(filename)[0] + os_sep
-            tmp_file_dirs.add(path_no_filename.split("hm3d-*-habitat/")[-1])
+            tmp_file_dir = path_no_filename.split(f"{key}/")[-1]
+            tmp_file_dirs.add(tmp_file_dir)
             tmp_glbl_filedirs.add(path_no_filename)
         file_dirs_for_config[key] = sorted(tmp_file_dirs)
 
@@ -354,8 +359,13 @@ def save_annotated_file_lists(output_files: List):
     else:
         new_file_list_prefix = f"HM3D_annotation{use_src_prfx}_{CONFIG_PREFIX}"
 
-    with open(os_join(HM3D_DEST_DIR, f"{new_file_list_prefix}_files.txt"), "w") as dest:
-        dest.write("\n".join(output_files))
+    with open(
+        os_join(
+            HM3D_DEST_DIR, f"{new_file_list_prefix.replace(use_src_prfx, '')}_files.txt"
+        ),
+        "w",
+    ) as dest:
+        dest.write("\n".join(sorted(output_files)))
 
     # save listing of all files (semantic, render, navmesh) for each partition:
     # each entry is a tuple with idx 0 == dest filename; idx 1 == list of paths
@@ -368,12 +378,12 @@ def save_annotated_file_lists(output_files: List):
     # for each entry in output_files list, check which partition it belongs to
     # all partition files should have hm3d-<partition>-habitat as the lowest
     # relative directory
-    for filename in output_files:
+    for filename in sorted(output_files):
         fileparts = filename.split(os_sep)
         if len(fileparts) < 2:
             # filename is root level and not part of a partition
             continue
-        file_part_key = fileparts[0].split("-")[1].strip()
+        file_part_key = fileparts[0]  # .split("-")[1].strip()
         partition_lists[file_part_key][1].append(filename)
         # add source file filenames to filelisting if desired
         if SAVE_FILELISTS_WITH_SOURCE and ".semantic.glb" in filename:
@@ -411,6 +421,7 @@ def count_SSD_colors(ssd_filename):
 def main():
     # build dictionary of src and dest file names and paths
     file_names_and_paths = buildFileListing()
+
     # dictionary keyed by partition valued by list of partition subdir and filename of written file
     part_file_list_dict = {}
     for key in HM3D_DATA_PARTITIONS:
@@ -462,7 +473,7 @@ def main():
                 if ssd_success:
                     output_files.append(data_dict["dest_subdir_ssdfile"])
                     part_file_list_dict[partition_tag].append(
-                        data_dict["dest_subdir_ssdfile"].replace(partition_tag, "*", 1)
+                        data_dict["dest_subdir_ssdfile"]
                     )
                 # Copy glb file to appropriate location
                 dest_glb_filename = data_dict["dest_path_glbfile"]
@@ -472,7 +483,7 @@ def main():
                 if glb_success:
                     output_files.append(data_dict["dest_subdir_glbfile"])
                     part_file_list_dict[partition_tag].append(
-                        data_dict["dest_subdir_glbfile"].replace(partition_tag, "*", 1)
+                        data_dict["dest_subdir_glbfile"]
                     )
 
         print(
