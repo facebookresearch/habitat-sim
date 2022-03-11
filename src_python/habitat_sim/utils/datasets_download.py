@@ -35,7 +35,7 @@ def hm3d_train_configs_post(extract_dir: str) -> List[str]:
     return [link_name]
 
 
-def hm3d_semantic_train_configs_post(extract_dir: str) -> List[str]:
+def hm3d_semantic_configs_post(extract_dir: str) -> List[str]:
     all_scene_dataset_cfg = os.path.join(
         extract_dir, "hm3d_annotated_basis.scene_dataset_config.json"
     )
@@ -224,9 +224,8 @@ def initialize_test_data_sources(data_path):
                 "downloaded_file_list": f"hm3d-{{version}}/{split}-semantic-{data_format}-files.json.gz",
                 "requires_auth": True,
                 "use_curl": True,
-                "post_extract_fn": hm3d_semantic_train_configs_post
-                if split == "train" and data_format == "configs"
-                else None,
+                "post_extract_fn": hm3d_semantic_configs_post
+                if  data_format == "configs" else None,
             }
             for split, data_format in itertools.product(
                 ["minival", "train", "val"],
