@@ -17,7 +17,8 @@ commands:
       - run:
           name: Install clang-tidy
           command: |
-              sudo add-apt-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-12 main"
+              sudo apt-key adv --fetch-keys "https://apt.llvm.org/llvm-snapshot.gpg.key"
+              sudo add-apt-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-12 main"
               sudo apt-get update -y || true
               sudo apt-get install -y clang-tidy-12
               sudo ln -s /usr/bin/clang-tidy-12 /usr/local/bin/clang-tidy
@@ -109,8 +110,8 @@ commands:
           no_output_timeout: 20m
           background: true
           command: |
-              wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/cuda-repo-ubuntu1604_8.0.44-1_amd64.deb
-              sudo dpkg -i cuda-repo-ubuntu1604_8.0.44-1_amd64.deb
+              sudo apt-key adv --fetch-keys "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/7fa2af80.pub"
+              sudo apt-add-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64 /"
               sudo apt-get update || true
               sudo apt-get --yes --force-yes install cuda
               touch ~/cuda_installed
@@ -350,6 +351,7 @@ jobs:
       - run:
           name: pip install
           command: |
+            pyenv install 3.7.10
             pyenv global 3.7.10
             python3 -m pip install -U pip
             python3 -m pip install . -v
