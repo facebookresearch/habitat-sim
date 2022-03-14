@@ -4,6 +4,8 @@
 
 #include "GenericSemanticMeshData.h"
 
+#include <set>
+
 #include <Corrade/Containers/Array.h>
 #include <Corrade/Containers/ArrayView.h>
 #include <Corrade/Containers/ArrayViewStl.h>
@@ -17,6 +19,7 @@
 #include <Magnum/PixelFormat.h>
 #include <Magnum/Shaders/GenericGL.h>
 
+#include "esp/geo/Geo.h"
 #include "esp/scene/SemanticScene.h"
 
 namespace Cr = Corrade;
@@ -33,8 +36,9 @@ GenericSemanticMeshData::buildSemanticMeshData(
     bool convertToSRGB,
     const std::shared_ptr<scene::SemanticScene>& semanticScene) {
   // build text prefix used in log messages
-  const std::string dbgMsgPrefix =
-      Cr::Utility::formatString("Parsing Semantic File {} :", semanticFilename);
+  const std::string dbgMsgPrefix = Cr::Utility::formatString(
+      "Parsing Semantic File {} w/prim:{} :", semanticFilename,
+      static_cast<Mn::UnsignedInt>(srcMeshData.primitive()));
 
   // Check for required colors - all semantic meshes must have vertex colors
   ESP_CHECK(
@@ -90,7 +94,11 @@ GenericSemanticMeshData::buildSemanticMeshData(
   // Whether or not region partitions are provided in the SSD file. If so then
   // we assume they can be used to provide islands to split the semantic mesh
   // for better frustum culling.
-  semanticMeshData->meshHasSeparatePartitionIDs = false;
+  semanticMeshData->meshUsesSSDPartitionIDs = false;
+
+  // clear holding objects for debug date pertaining to mesh being built.
+  semanticMeshData->nonSSDVertColorIDs.clear();
+  semanticMeshData->nonSSDVertColorCounts.clear();
 
   if (srcMeshData.hasAttribute(Mn::Trade::MeshAttribute::ObjectId)) {
     // Per-mesh vertex semantic object ids are provided - this will override any
@@ -126,7 +134,7 @@ GenericSemanticMeshData::buildSemanticMeshData(
     if (semanticScene && semanticScene->hasVertColorsDefined()) {
       // built partion IDs from SSD regions, to split mesh for culling, instead
       // of objectIDs
-      semanticMeshData->meshHasSeparatePartitionIDs = true;
+      semanticMeshData->meshUsesSSDPartitionIDs = true;
 
       // from SSD's objects_ array - this is the number of defined semantic
       // descriptors corresponding to object instances.
@@ -164,12 +172,6 @@ GenericSemanticMeshData::buildSemanticMeshData(
       // map semantic IDs corresponding to colors from SSD file to appropriate
       // verts (via index)
       semanticMeshData->objectIds_.resize(numVerts);
-      // temporary holding structure to hold any non-SSD vert colors, so that
-      // the nonSSDObjID for new colors can be incremented appropriately
-      // not using set to avoid extra include. Key is color, value is semantic
-      // ID assigned for unknown color
-      std::unordered_map<uint32_t, int> nonSSDVertColorIDs;
-      std::unordered_map<uint32_t, int> nonSSDVertColorCounts;
 
       // only go through all verts one time
       // derive semantic ID and color and region/room ID for culling
@@ -203,12 +205,13 @@ GenericSemanticMeshData::buildSemanticMeshData(
           // not do so
 
           auto nonSSDClrCountRes =
-              nonSSDVertColorCounts.insert({meshColorInt, 1});
+              semanticMeshData->nonSSDVertColorCounts.insert({meshColorInt, 1});
           if (nonSSDClrCountRes.second) {
             // unknown color has not been seen before
             ESP_DEBUG() << dbgMsgPrefix << "Inserted Unknown semantic Color"
                         << meshColor << "in map w/ nonSSDObjID =" << semanticID;
-            nonSSDVertColorIDs.insert({meshColorInt, nonSSDObjID});
+            semanticMeshData->nonSSDVertColorIDs.insert(
+                {meshColorInt, nonSSDObjID});
             // inserted, so increment nonSSDObjID tracking expanded semantic IDs
             // for future unknown color
             ++nonSSDObjID;
@@ -228,31 +231,11 @@ GenericSemanticMeshData::buildSemanticMeshData(
         semanticMeshData->partitionIds_[vertIdx] = regionID;
       }  // for each vertex
 
-      // colors found on vertices not found in semantic lexicon :
-      if (nonSSDVertColorIDs.empty()) {
-        ESP_DEBUG() << dbgMsgPrefix
-                    << "No unexpected colors found mapped to mesh verts.";
-      } else {
-        ESP_DEBUG()
-            << dbgMsgPrefix
-            << Cr::Utility::formatString(
-                   "{} unexpected/unknown colors found mapped to mesh verts.",
-                   nonSSDVertColorIDs.size());
-        for (const std::pair<const uint32_t, int>& elem : nonSSDVertColorIDs) {
-          ESP_DEBUG()
-              << dbgMsgPrefix
-              << Cr::Utility::formatString(
-                     "\t\tColor {} | # verts {} | applied Semantic ID {}.",
-                     semanticMeshData->getColorAsString(
-                         static_cast<Mn::Color3ub>(colorMapToUse[elem.second])),
-                     nonSSDVertColorCounts.at(elem.first), elem.second);
-        }
-      }
-
     } else {
       // Per vertex colors provided, but no semantic scene provided to provide
-      // color->id mapping, so build a mapping based on colors at vertices -
-      // first time we see a color gets first id, etc.
+      // color->id mapping, or no viable mapping from color to semantic ID
+      // provided within semantic scene so build a mapping based on colors at
+      // vertices - first time we see a color gets first id, etc.
 
       // no remapping provided by SSD so just use what is synthesized
       Cr::Containers::Array<Mn::Color3ub> colorsThatBecomeTheColorMap{
@@ -271,9 +254,10 @@ GenericSemanticMeshData::buildSemanticMeshData(
       colorMapToUse.assign(clrMapView.begin(), clrMapView.end());
     }
   }
-  if (!semanticMeshData->meshHasSeparatePartitionIDs) {
-    // if objPartitionsFromSSD then semanticMeshData->objectIds were
-    // populated directly while partition IDs were derived
+  if (!semanticMeshData->meshUsesSSDPartitionIDs) {
+    // if meshUsesSSDPartitionIDs then semanticMeshData->objectIds were
+    // populated directly while partition IDs were derived based on color
+    // mapping
     Mn::Math::castInto(
         Cr::Containers::arrayCast<2, Mn::UnsignedInt>(
             Cr::Containers::stridedArrayView(objectIds)),
@@ -281,22 +265,49 @@ GenericSemanticMeshData::buildSemanticMeshData(
             Cr::Containers::stridedArrayView(semanticMeshData->objectIds_)));
   }
 
+  // Mesh has partition IDXs if they were provided as per-vert values or via SSD
+  // color->region mappings
   semanticMeshData->meshHasPartitionIDXs =
-      (objIdsFromSrcMesh || semanticMeshData->meshHasSeparatePartitionIDs);
+      (objIdsFromSrcMesh || semanticMeshData->meshUsesSSDPartitionIDs);
 
   semanticMeshData->collisionMeshData_.primitive = Mn::MeshPrimitive::Triangles;
   semanticMeshData->updateCollisionMeshData();
 
   if (semanticScene && (semanticScene->buildBBoxFromVertColors())) {
-    // FOR VERT-BASED OBB CALC build semantic (actually AABBs currently)
-    semanticMeshData->buildSemanticOBBs(semanticMeshData->cpu_vbo_,
-                                        semanticMeshData->objectIds_,
-                                        semanticScene->objects(), dbgMsgPrefix);
-  }
+    float fractionOfMaxBBoxSize = semanticScene->CCFractionToUseForBBox();
 
-  ////
+    if (fractionOfMaxBBoxSize > 0.0f) {
+      // build adj list to use to derive CCs
+      // Assumes that index buffer defines triangle polys in sequential groups
+      // of 3 vert idxs
+      const std::vector<std::set<uint32_t>> adjList = geo::buildAdjList(
+          semanticMeshData->cpu_vbo_.size(), semanticMeshData->cpu_ibo_);
+
+      // find all connected components based on adj list and vertex color.
+      const std::unordered_map<uint32_t, std::vector<std::set<uint32_t>>>
+          clrsToComponents =
+              geo::findCCsByGivenColor(adjList, semanticMeshData->cpu_cbo_);
+
+      // FOR VERT-BASED OBB CALC build semantic (actually AABBs currently)
+      // only use CCs that have some fraction of largest CC's bbox volume.
+      // Currently uses only max volume CC bbox for disjoint semantic regions.
+      semanticMeshData->unMappedObjectIDXs =
+          scene::SemanticScene::buildSemanticOBBsFromCCs(
+              semanticMeshData->cpu_vbo_, clrsToComponents, semanticScene,
+              fractionOfMaxBBoxSize, dbgMsgPrefix);
+    } else {
+      // FOR VERT-BASED OBB CALC build semantic (actually AABBs currently)
+      // uses all vertex annotations, including disconnected components.
+      semanticMeshData->unMappedObjectIDXs =
+          scene::SemanticScene::buildSemanticOBBs(
+              semanticMeshData->cpu_vbo_, semanticMeshData->objectIds_,
+              semanticScene->objects(), dbgMsgPrefix);
+    }
+  }
+  // display or save report denoting presence of semantic object-defined colors
+  // in mesh
   return semanticMeshData;
-}
+}  // GenericSemanticMeshData::buildSemanticMeshData
 
 std::vector<std::unique_ptr<GenericSemanticMeshData>>
 GenericSemanticMeshData::partitionSemanticMeshData(
@@ -327,10 +338,69 @@ GenericSemanticMeshData::partitionSemanticMeshData(
   for (size_t i = 0; i < splitMeshData.size(); ++i) {
     splitMeshData[i]->updateCollisionMeshData();
   }
-
   return splitMeshData;
 
 }  // GenericSemanticMeshData::partitionSemanticMeshData
+
+std::vector<std::string> GenericSemanticMeshData::getVertColorSSDReport(
+    const std::string& semanticFilename,
+    const std::vector<Mn::Vector3ub>& colorMapToUse,
+    const std::shared_ptr<scene::SemanticScene>& semanticScene) {
+  std::vector<std::string> results;
+  results.emplace_back(Cr::Utility::formatString(
+      "{} : Colors in mesh not found in semantic scene descriptor objects :",
+      semanticFilename));
+  // colors found on vertices not found in semantic lexicon :
+  if (nonSSDVertColorIDs.empty()) {
+    results.emplace_back("No unexpected colors found mapped to mesh verts.");
+  } else {
+    results.reserve(nonSSDVertColorIDs.size() + 1);
+    results.emplace_back(Cr::Utility::formatString(
+        "{} unexpected/unknown colors found mapped to mesh verts.",
+        nonSSDVertColorIDs.size()));
+    for (const std::pair<const uint32_t, int>& elem : nonSSDVertColorIDs) {
+      results.emplace_back(Cr::Utility::formatString(
+          "Color {} | # verts {} | applied Semantic ID {}.",
+          geo::getColorAsString(colorMapToUse[elem.second]),
+          nonSSDVertColorCounts.at(elem.first), elem.second));
+    }
+  }
+  results.emplace_back(Cr::Utility::formatString(
+      "{} : Colors from semantic objects not found on any mesh verts : ",
+      semanticFilename));
+  if (unMappedObjectIDXs.empty()) {
+    results.emplace_back("All semantic object colors are found on mesh.");
+    return results;
+  }
+  /// now process unMappedObjectIDXs
+  // get all semantic objects
+  const auto& ssdObjs = semanticScene->objects();
+  for (int idx = 0; idx < unMappedObjectIDXs.size(); ++idx) {
+    int objIdx = unMappedObjectIDXs[idx];
+    // get object with given semantic ID
+    auto& ssdObj = *ssdObjs[objIdx];
+    results.emplace_back(Cr::Utility::formatString(
+        "Semantic ID : {} : color : {} tag : {} | No verts have color for "
+        "specified Semantic ID.",
+        ssdObj.semanticID(), geo::getColorAsString(ssdObj.getColor()),
+        ssdObj.id()));
+  }
+  return results;
+}  // GenericSemanticMeshData::getVertColorSSDReport
+
+std::unordered_map<uint32_t, std::vector<scene::CCSemanticObject::ptr>>
+GenericSemanticMeshData::buildCCBasedSemanticObjs(
+    const std::shared_ptr<scene::SemanticScene>& semanticScene) {
+  // build adj list
+  std::vector<std::set<uint32_t>> adjList =
+      geo::buildAdjList(cpu_vbo_.size(), cpu_ibo_);
+  // find all connected components based on vertex color.
+  std::unordered_map<uint32_t, std::vector<std::set<uint32_t>>>
+      clrsToComponents = geo::findCCsByGivenColor(adjList, cpu_cbo_);
+
+  return scene::SemanticScene::buildCCBasedSemanticObjs(
+      cpu_vbo_, clrsToComponents, semanticScene);
+}  // GenericSemanticMeshData::buildCCBasedSemanticObjs
 
 void GenericSemanticMeshData::uploadBuffersToGPU(bool forceReload) {
   if (forceReload) {

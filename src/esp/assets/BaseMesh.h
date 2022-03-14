@@ -150,8 +150,6 @@ class BaseMesh {
   Magnum::Range3D BB;
 
  protected:
-  std::string getColorAsString(Magnum::Color3ub color) const;
-
   /**
    * @brief Build a colormap to use either from mapping given list of per-vertex
    * object IDs to per-vertex Colors, or through a mapping of a Magnum-provided
@@ -179,21 +177,6 @@ class BaseMesh {
   void convertMeshColors(const Mn::Trade::MeshData& srcMeshData,
                          bool convertToSRGB,
                          Cr::Containers::Array<Mn::Color3ub>& destColors) const;
-
-  /**
-   * @brief Build semantic OBBs based on presence of semantic IDs on vertices.
-   * @param vertices Ref to vertex array
-   * @param vertSemanticIDs Ref to per-vertex semantic IDs persent on source
-   * mesh, both known in semantic scene descriptor, and unknown.  Known IDs are
-   * expected to start at 1 and be contiguous, followed by unknown semantic IDs
-   * @param ssdObjs The known semantic scene descriptor objects for the mesh
-   * @param msgPrefix Debug message prefix, referencing caller.
-   */
-  void buildSemanticOBBs(
-      const std::vector<Mn::Vector3>& vertices,
-      const std::vector<uint16_t>& vertSemanticIDs,
-      const std::vector<std::shared_ptr<esp::scene::SemanticObject>>& ssdObjs,
-      const std::string& msgPrefix) const;
 
   /**
    * @brief Identifies the derived type of this object and the format of the

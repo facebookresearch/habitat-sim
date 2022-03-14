@@ -449,6 +449,28 @@ Key Commands:
   int semanticBBID_ = -1;
 
   /**
+   * @brief Generate and save semantic CC reports for all scenes in dataset
+   */
+  void generateAndSaveAllSemanticCCReports();
+
+  /**
+   * @brief Generate and save semantic CC report
+   * @return Whether successful or not.
+   */
+  bool generateAndSaveSemanticCCReport();
+  /**
+   * @brief Generate and save vertex-color-semantic object mapping reports for
+   * all scenes.
+   */
+  void generateAndSaveAllVertColorMapReports();
+
+  /**
+   * @brief Generate and save vertex-color-semantic object mapping reports
+   * @return Whether successful or not.
+   */
+  bool generateAndSaveVertColorMapReports();
+
+  /**
    * @brief Build semantic region prims.
    */
   void buildSemanticPrims(int semanticID,
@@ -1132,6 +1154,126 @@ bool loadTransformFromFile(const std::string& filename,
   file.close();
   return status;
 }
+
+void Viewer::generateAndSaveAllVertColorMapReports() {
+  for (int idx = 0; idx < curSceneInstances_.size(); ++idx) {
+    if (std::string::npos != curSceneInstances_[idx].find("NONE")) {
+      continue;
+    }
+    setSceneInstanceFromListAndShow(idx);
+    bool success = generateAndSaveVertColorMapReports();
+    if (!success) {
+      ESP_DEBUG() << "Report failed. Aborting!";
+    }
+  }
+  ESP_DEBUG() << "All reports done!";
+}  // Viewer::generateAndSaveAllVertColorMapReports
+
+/**
+ * @brief Generate and save vertex-color-semantic object mapping reports
+ */
+bool Viewer::generateAndSaveVertColorMapReports() {
+  const auto results = simulator_->buildVertexColorMapReport();
+  if (results.empty()) {
+    return false;
+  }
+  const std::string fileDir = Cr::Utility::Directory::join(
+      {Cr::Utility::Directory::path(MM_->getActiveSceneDatasetName()),
+       "Vertex_Color_Reports"});
+
+  Cr::Utility::Directory::mkpath(fileDir);
+
+  const std::string filename = Cr::Utility::Directory::join(
+      fileDir,
+      Cr::Utility::formatString(
+          "{}_vert_color_report.txt",
+          Cr::Utility::Directory::splitExtension(
+              Cr::Utility::Directory::filename(simConfig_.activeSceneName))
+              .first));
+  ESP_DEBUG() << "Fully qualified destination file name :" << filename;
+  std::ofstream file(filename);
+  if (!file.good()) {
+    ESP_ERROR() << "Cannot open" << filename
+                << "to output vert-color-semantic object mapping report data.";
+    return false;
+  }
+  for (const std::string& line : results) {
+    ESP_DEBUG() << line;
+    file << line << '\n';
+  }
+  file.close();
+  return true;
+}  // Viewer::generateAndSaveVertColorMapReports
+
+void Viewer::generateAndSaveAllSemanticCCReports() {
+  for (int idx = 0; idx < curSceneInstances_.size(); ++idx) {
+    if (std::string::npos != curSceneInstances_[idx].find("NONE")) {
+      continue;
+    }
+    setSceneInstanceFromListAndShow(idx);
+    bool success = generateAndSaveSemanticCCReport();
+    if (!success) {
+      ESP_DEBUG() << "Report failed. Aborting!";
+    }
+  }
+  ESP_DEBUG() << "All reports done!";
+}  // Viewer::generateAndSaveAllSemanticCCReports
+
+bool Viewer::generateAndSaveSemanticCCReport() {
+  const auto results = simulator_->buildSemanticCCObjects();
+  if (results.empty()) {
+    return false;
+  }
+  const std::string fileDir = Cr::Utility::Directory::join(
+      {Cr::Utility::Directory::path(MM_->getActiveSceneDatasetName()),
+       "Semantic_CC_Reports"});
+
+  Cr::Utility::Directory::mkpath(fileDir);
+
+  const std::string filename = Cr::Utility::Directory::join(
+      fileDir,
+      Cr::Utility::formatString(
+          "{}_CC_report.csv",
+          Cr::Utility::Directory::splitExtension(
+              Cr::Utility::Directory::filename(simConfig_.activeSceneName))
+              .first));
+  ESP_DEBUG() << "Fully qualified destination file name :" << filename;
+  auto semanticScene = simulator_->getSemanticScene();
+
+  const auto& semanticObjs = semanticScene->objects();
+
+  std::ofstream file(filename);
+  if (!file.good()) {
+    ESP_ERROR() << "Cannot open" << filename << "to output CC report data.";
+    return false;
+  }
+
+  file << "Obj IDX, Object ID, Color RGB, # Verts in partition, BBOX "
+          "Center XYZ, BBOX Dims XYZ, BBOX Vol\n";
+
+  for (const auto& elem : results) {
+    const uint32_t objIDX = elem.first;
+    const std::vector<std::shared_ptr<esp::scene::CCSemanticObject>>&
+        listOfObbs = elem.second;
+    const auto baseObj = semanticObjs[objIDX];
+    for (const std::shared_ptr<esp::scene::CCSemanticObject>& ccObj :
+         listOfObbs) {
+      const auto obb = ccObj->obb();
+      const auto clr = ccObj->getColor();
+      const auto ctr = obb.center();
+      const auto sizes = obb.sizes();
+      const std::string dataString = Cr::Utility::formatString(
+          "{},{},{} {} {},{},{} {} {}, {} {} {},{}", objIDX, baseObj->id(),
+          clr.r(), clr.g(), clr.b(), ccObj->getNumSrcVerts(), ctr.x(), ctr.y(),
+          ctr.z(), sizes.x(), sizes.y(), sizes.z(), obb.volume());
+      ESP_VERY_VERBOSE() << dataString;
+      file << dataString << '\n';
+    }
+  }
+
+  file.close();
+  return true;
+}  // Viewer::generateAndSaveSemanticCCReport
 
 void Viewer::loadAgentAndSensorTransformFromFile() {
   if (!agentTransformLoadPath_.empty()) {
@@ -2212,6 +2354,24 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       // query the agent state
       showAgentStateMsg(true, true);
       break;
+    case KeyEvent::Key::J: {
+      if (event.modifiers() & MouseEvent::Modifier::Alt) {
+        generateAndSaveAllSemanticCCReports();
+      } else {
+        // generate and save semantic CC report
+        generateAndSaveSemanticCCReport();
+      }
+      break;
+    }
+    case KeyEvent::Key::Y: {
+      if (event.modifiers() & MouseEvent::Modifier::Alt) {
+        generateAndSaveAllVertColorMapReports();
+      } else {
+        // generate and save semantic CC report
+        generateAndSaveVertColorMapReports();
+      }
+      break;
+    }
     case KeyEvent::Key::T: {
       //+ALT for fixedBase
       bool fixedBase = bool(event.modifiers() & MouseEvent::Modifier::Alt);

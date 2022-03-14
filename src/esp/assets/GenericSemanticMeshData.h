@@ -9,12 +9,14 @@
 #include <Magnum/GL/Buffer.h>
 #include <Magnum/GL/Mesh.h>
 #include <memory>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
 #include "BaseMesh.h"
 #include "esp/core/Esp.h"
+#include "esp/scene/SemanticScene.h"
 
 namespace esp {
 namespace scene {
@@ -51,7 +53,7 @@ class GenericSemanticMeshData : public BaseMesh {
    * visualization or matching to semantic IDs.
    * @param convertToSRGB Whether the source vertex colors from the @p meshData
    * should be converted to SRGB
-   * @param semanticScene The SSD for the instance mesh being loaded.
+   * @param semanticScene The SSD for the semantic mesh being loaded.
    * @return vector holding one or more mesh results from the semantic asset
    * file.
    */
@@ -75,7 +77,7 @@ class GenericSemanticMeshData : public BaseMesh {
    * visualization or matching to semantic IDs.
    * @param convertToSRGB Whether the source vertex colors from the @p meshData
    * should be converted to SRGB
-   * @param semanticScene The SSD for the instance mesh being loaded.
+   * @param semanticScene The SSD for the semantic mesh being loaded.
    * @return vector holding one or more mesh results from the semantic asset
    * file.
    */
@@ -83,6 +85,18 @@ class GenericSemanticMeshData : public BaseMesh {
   static std::vector<std::unique_ptr<GenericSemanticMeshData>>
   partitionSemanticMeshData(
       const std::unique_ptr<GenericSemanticMeshData>& semanticMeshData);
+
+  /**
+   * @build a per-color/per-semantic ID map of all bounding boxes for each CC
+   * found in the mesh, and the count of verts responsible for each.
+   * @param semanticScene The SSD for the current semantic mesh.  Used to query
+   * semantic objs. If nullptr, this function returns hex-color-keyed map,
+   * otherwise returns SemanticID-keyed map.
+   */
+  std::unordered_map<uint32_t,
+                     std::vector<std::shared_ptr<scene::CCSemanticObject>>>
+  buildCCBasedSemanticObjs(
+      const std::shared_ptr<scene::SemanticScene>& semanticScene);
 
   // ==== rendering ====
   void uploadBuffersToGPU(bool forceReload = false) override;
@@ -111,7 +125,7 @@ class GenericSemanticMeshData : public BaseMesh {
    * partition mesh for culling.
    */
   const std::vector<uint16_t>& getPartitionIDs() const {
-    if (meshHasSeparatePartitionIDs) {
+    if (meshUsesSSDPartitionIDs) {
       return partitionIds_;
     }
     return objectIds_;
@@ -123,7 +137,27 @@ class GenericSemanticMeshData : public BaseMesh {
    */
   bool meshCanBePartitioned() const { return meshHasPartitionIDXs; }
 
+  /**
+   * @brief build a string array holding mapping information for colors found on
+   * verts and colors found in semantic scene descriptor aggregated during load.
+   */
+
+  std::vector<std::string> getVertColorSSDReport(
+      const std::string& semanticFilename,
+      const std::vector<Mn::Vector3ub>& colorMapToUse,
+      const std::shared_ptr<scene::SemanticScene>& semanticScene);
+
  protected:
+  // temporary holding structures to hold any non-SSD vert colors, so that
+  // the nonSSDObjID for new colors can be incremented appropriately
+  // not using set to avoid extra include. Key is color, value is semantic
+  // ID assigned for unknown color
+  std::unordered_map<uint32_t, int> nonSSDVertColorIDs{};
+  std::unordered_map<uint32_t, int> nonSSDVertColorCounts{};
+
+  // record of semantic object IDXs with no presence in any verts
+  std::vector<uint32_t> unMappedObjectIDXs{};
+
   /**
    * @brief Whether or not this mesh can be partitioned - either object IDs were
    * found in vertices or per-vert region partition values were found from
@@ -132,11 +166,11 @@ class GenericSemanticMeshData : public BaseMesh {
   bool meshHasPartitionIDXs = false;
 
   /**
-   * @brief This mesh has separate partition IDs. If false, uses the objectIDs
-   * for the partitioning, if true means region IDs were provided in semantic
-   * scene descriptor.
+   * @brief This mesh has separate partition IDs, provided by Semantic Scene
+   * Descriptor file. If false, uses the objectIDs for the partitioning, if true
+   * means region IDs were provided in semantic scene descriptor.
    */
-  bool meshHasSeparatePartitionIDs = false;
+  bool meshUsesSSDPartitionIDs = false;
 
   class PerPartitionIdMeshBuilder {
    public:

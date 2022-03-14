@@ -7,6 +7,7 @@
 #include <array>
 #include <vector>
 
+#include "esp/core/Check.h"
 #include "esp/geo/Geo.h"
 
 namespace esp {
@@ -16,7 +17,6 @@ OBB::OBB() {
   center_.setZero();
   halfExtents_.setZero();
   rotation_.setIdentity();
-  box3f box;
 }
 
 OBB::OBB(const vec3f& center, const vec3f& dimensions, const quatf& rotation)
@@ -42,9 +42,13 @@ box3f OBB::toAABB() const {
 }
 
 void OBB::recomputeTransforms() {
-  CORRADE_INTERNAL_ASSERT(center_.allFinite());
-  CORRADE_INTERNAL_ASSERT(halfExtents_.allFinite());
-  CORRADE_INTERNAL_ASSERT(rotation_.coeffs().allFinite());
+  ESP_CHECK(center_.allFinite(),
+            "Illegal center for OBB. Cannot recompute transformations.");
+  ESP_CHECK(halfExtents_.allFinite(),
+            "Illegal size values for OBB. Cannot recompute transformations.");
+  ESP_CHECK(
+      rotation_.coeffs().allFinite(),
+      "Illegal rotation quaternion for OBB. Cannot recompute transformations.");
 
   // TODO(MS): these can be composed more efficiently and directly
   const mat3f R = rotation_.matrix();

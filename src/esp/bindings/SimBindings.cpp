@@ -183,6 +183,18 @@ void initSimBindings(py::module& m) {
           &Simulator::getStageInitializationTemplate, "scene_id"_a = 0,
           R"(Get a copy of the StageAttributes template used to instance a scene's stage or None if it does not exist.)")
 
+      .def("build_semantic_CC_objects", &Simulator::buildSemanticCCObjects,
+           R"(Get a dictionary of the current semantic scene's connected
+          components keyed by color or id, where each value is a list of Semantic Objects
+          corresponding to an individual connected component.")
+      .def(
+          "build_vertex_color_map_report",
+          &Simulator::buildVertexColorMapReport,
+          R"(Get a list of strings describing first each color found on vertices in the
+          semantic mesh that is not present in the loaded semantic scene descriptor file,
+          and then a list of each semantic object whose specified color is not found on
+          any vertex in the mesh.)")
+
       /* --- Kinematics and dynamics --- */
       .def(
           "step_world", &Simulator::stepWorld, "dt"_a = 1.0 / 60.0,
