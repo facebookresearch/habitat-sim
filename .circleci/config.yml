@@ -20,7 +20,7 @@ commands:
           name: Install clang-tidy
           command: |
               sudo apt-key adv --fetch-keys "https://apt.llvm.org/llvm-snapshot.gpg.key"
-              sudo add-apt-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-12 main"
+              sudo add-apt-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-13 main"
               sudo apt-get update -y || true
               sudo apt-get install -y clang-tidy-13
               sudo ln -s /usr/bin/clang-tidy-13 /usr/local/bin/clang-tidy
