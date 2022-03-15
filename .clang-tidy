@@ -88,7 +88,8 @@ WarningsAsErrors: '
 -clang-diagnostic-deprecated-declarations,
 -clang-analyzer-cplusplus.PlacementNew,
 -cppcoreguidelines-pro-type-member-init,
--optin.cplusplus.UninitializedObject
+-optin.cplusplus.UninitializedObject,
+-bugprone-easily-swappable-parameters,
 '
 
 HeaderFilterRegex: "src/esp/"
