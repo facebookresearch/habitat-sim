@@ -1,8 +1,9 @@
 version: 2.1
 gpu: &gpu
   machine:
-    # Available images: https://circleci.com/docs/2.0/configuration-reference/#available-machine-images
-    image: ubuntu-2004:202111-02
+    # Available images:
+    # https://circleci.com/docs/2.0/configuration-reference/#available-linux-gpu-images
+    image: ubuntu-2004-cuda-11.2:202103-01
   resource_class: gpu.nvidia.medium
   environment:
     FPS_THRESHOLD: 900
@@ -10,6 +11,7 @@ commands:
   install_all_ubuntu_deps:
     description: "Prepares the dependencies"
     steps:
+      - run: nvidia-smi
       - run:
           name: Upgrade Dependencies
           command: |
@@ -111,10 +113,10 @@ commands:
           no_output_timeout: 20m
           background: true
           command: |
-              sudo apt-key adv --fetch-keys "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/7fa2af80.pub"
-              sudo apt-add-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64 /"
-              sudo apt-get update || true
-              sudo apt-get --yes --force-yes install cuda-11-1
+              # sudo apt-key adv --fetch-keys "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/7fa2af80.pub"
+              # sudo apt-add-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64 /"
+              # sudo apt-get update || true
+              # sudo apt-get --yes --force-yes install cuda-11-1
               touch ~/cuda_installed
               nvidia-smi
       - restore_cache:
