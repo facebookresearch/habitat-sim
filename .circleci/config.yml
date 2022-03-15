@@ -114,7 +114,7 @@ commands:
               sudo apt-key adv --fetch-keys "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/7fa2af80.pub"
               sudo apt-add-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64 /"
               sudo apt-get update || true
-              sudo apt-get --yes --force-yes install cuda-11
+              sudo apt-get --yes --force-yes install cuda-11-1
               touch ~/cuda_installed
               nvidia-smi
       - restore_cache:
