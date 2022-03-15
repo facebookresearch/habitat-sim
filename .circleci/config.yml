@@ -11,20 +11,6 @@ commands:
   install_all_ubuntu_deps:
     description: "Prepares the dependencies"
     steps:
-      # - run:
-          # name: Upgrade Dependencies
-          # command: |
-              # sudo apt-get update -y || true
-              # sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y || true
-      - run:
-          name: Install clang-tidy
-          command: |
-              sudo apt-key adv --fetch-keys "https://apt.llvm.org/llvm-snapshot.gpg.key"
-              sudo add-apt-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-12 main"
-              sudo apt-get update -y || true
-              sudo apt-get install -y clang-tidy-12
-              sudo ln -s /usr/bin/clang-tidy-12 /usr/local/bin/clang-tidy
-              clang-tidy --version
       - run:
           name: Install cmake
           no_output_timeout: 5m
@@ -336,6 +322,42 @@ jobs:
             export PYTHONIOENCODING="utf-8"
             python matrix_builder.py <<# parameters.CI_TEST>> --ci_test <</ parameters.CI_TEST>>  <<^ parameters.CI_TEST >> --conda_upload <<# parameters.nightly>> --nightly <</ parameters.nightly>> <</ parameters.CI_TEST >>
 
+  clang_tidy:
+    machine:
+      # Available images:
+      # https://circleci.com/docs/2.0/configuration-reference/#available-linux-gpu-images
+      image: ubuntu-1604:202104-01
+    resource_class: xlarge
+    steps:
+      - checkout
+      - install_all_ubuntu_deps
+      - run:
+          name: Install clang-tidy
+          command: |
+              sudo apt-key adv --fetch-keys "https://apt.llvm.org/llvm-snapshot.gpg.key"
+              sudo add-apt-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-12 main"
+              sudo apt-get update -y || true
+              sudo apt-get install -y clang-tidy-12
+              sudo ln -s /usr/bin/clang-tidy-12 /usr/local/bin/clang-tidy
+              clang-tidy --version
+      - run:
+          name: Build sim
+          no_output_timeout: 25m
+          command: |
+              export PATH=$HOME/miniconda/bin:$PATH
+              . activate habitat;
+              cd habitat-sim
+              pip install -r requirements.txt --progress-bar off
+              git submodule update --init --recursive --jobs 8
+              python -u setup.py install --build-type "Release" --no-lto --headless --vhacd --bullet
+      - run:
+          name: run clang-tidy
+          command: |
+              export PATH=$HOME/miniconda/bin:$PATH
+              . activate habitat;
+              cd habitat-sim
+              python tools/run-clang-tidy.py -header-filter=src/esp src/esp
+
   test_pip_build:
     <<: *gpu
     steps:
@@ -472,13 +494,6 @@ jobs:
               pip install imageio imageio-ffmpeg
               git submodule update --init --recursive --jobs 8
               python -u setup.py install --build-type "Release" --lto --headless --vhacd --bullet
-      # - run:
-          # name: run clang-tidy
-          # command: |
-              # export PATH=$HOME/miniconda/bin:$PATH
-              # . activate habitat;
-              # cd habitat-sim
-              # python tools/run-clang-tidy.py -header-filter=src/esp src/esp
       - run:
           name: Ccache stats
           when: always
