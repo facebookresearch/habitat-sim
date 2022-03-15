@@ -716,6 +716,7 @@ workflows:
       - pre-commit
       - build_conda_binaries:
           CI_TEST: true
+      - clang_tidy
   nightly:
     triggers:
       - schedule:
