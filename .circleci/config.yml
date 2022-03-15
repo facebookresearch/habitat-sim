@@ -482,7 +482,7 @@ jobs:
               pip install -r requirements.txt --progress-bar off
               pip install imageio imageio-ffmpeg
               git submodule update --init --recursive --jobs 8
-              python -u setup.py install --build-type "Release" --lto --headless --vhacd --bullet
+              python -u setup.py install --build-type "Release" --no-lto --headless --vhacd --bullet
       - run:
           name: run clang-tidy
           command: |
