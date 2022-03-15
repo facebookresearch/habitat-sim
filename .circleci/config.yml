@@ -22,8 +22,8 @@ commands:
               sudo apt-key adv --fetch-keys "https://apt.llvm.org/llvm-snapshot.gpg.key"
               sudo add-apt-repository "deb http://apt.llvm.org/focal/ llvm-toolchain-focal-12 main"
               sudo apt-get update -y || true
-              sudo apt-get install -y clang-tidy-12
-              sudo ln -s /usr/bin/clang-tidy-12 /usr/local/bin/clang-tidy
+              sudo apt-get install -y clang-tidy-13
+              sudo ln -s /usr/bin/clang-tidy-13 /usr/local/bin/clang-tidy
               clang-tidy --version
       - run:
           name: Install cmake
@@ -163,7 +163,7 @@ commands:
                 export PATH=$HOME/miniconda/bin:$PATH
                 . activate habitat;
                 conda install -c  conda-forge opencv -y
-                conda install -y pytorch torchvision  cudatoolkit=10.0 -c pytorch
+                conda install -y pytorch torchvision  cudatoolkit=11.3 -c pytorch
               fi
               touch ~/miniconda/pytorch_installed
       - run:
@@ -338,10 +338,10 @@ jobs:
             conda install -y anaconda-client ccache cmake git ninja conda-build pip
             echo $(which -a python)
             pip install gitpython
-            <<^ parameters.CI_TEST>> anaconda login --username << parameters.AIHABITAT_CONDA_CHN >>  --password $<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >>
+            <<^ parameters.CI_TEST>> anaconda login --username << parameters.AIHABITAT_CONDA_CHN >>  --password $<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >> --hostname "aihabitat-conda-ci-builder-macos"
             conda config --set anaconda_upload yes <</ parameters.CI_TEST>>
             cd habitat-sim/conda-build
-            git submodule update --init --recursive --jobs 16
+            git submodule update --init --recursive --jobs 8
             export PYTHONIOENCODING="utf-8"
             python matrix_builder.py <<# parameters.CI_TEST>> --ci_test <</ parameters.CI_TEST>>  <<^ parameters.CI_TEST >> --conda_upload <<# parameters.nightly>> --nightly <</ parameters.nightly>> <</ parameters.CI_TEST >>
 
@@ -389,7 +389,7 @@ jobs:
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat;
               cd habitat-sim
-              git submodule update --init --recursive --jobs 16
+              git submodule update --init --recursive --jobs 8
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
               pip install -r requirements.txt --progress-bar off
               pip install imageio imageio-ffmpeg
@@ -481,7 +481,7 @@ jobs:
               cd habitat-sim
               pip install -r requirements.txt --progress-bar off
               pip install imageio imageio-ffmpeg
-              git submodule update --init --recursive --jobs 16
+              git submodule update --init --recursive --jobs 8
               python -u setup.py install --build-type "Release" --lto --headless --vhacd --bullet
       - run:
           name: run clang-tidy
@@ -556,7 +556,7 @@ jobs:
                 --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
 
               while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
-              PYTHONPATH=src_python pytest -n 8 --durations=10 --cov-report=xml --cov=./
+              PYTHONPATH=src_python pytest -n 4 --durations=10 --cov-report=xml --cov=./
 
               #run the marked pytest-benchmark tests and print the results
               PYTHONPATH=src_python pytest -m sim_benchmarks
@@ -564,7 +564,7 @@ jobs:
               #re-build without bullet and cuda and run physics tests again
               #TODO: instead of reinstall, do this with configuration
               ./build.sh --headless --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
-              PYTHONPATH=src_python pytest -n 8 --durations=10 --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
+              PYTHONPATH=src_python pytest -n 4 --durations=10 --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
 
               . ~/.bashrc
               nvm use v11.9.0
@@ -650,7 +650,7 @@ jobs:
                   hsim_condabuild_dcontainer \
                   /bin/bash -c "source ~/.bashrc && conda activate py37 \
                                 && cd /remote/habitat-sim/conda-build \
-                                <<^ parameters.CI_TEST >> && anaconda login --username << parameters.AIHABITAT_CONDA_CHN >> --password \${<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >>} <</ parameters.CI_TEST >> \
+                                <<^ parameters.CI_TEST >> && anaconda login --username << parameters.AIHABITAT_CONDA_CHN >> --password \${<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >>} <</ parameters.CI_TEST >> --hostname "aihabitat-conda-ci-builder-linux" \
                                 && python matrix_builder.py \
                                   <<# parameters.CI_TEST >> --ci_test <</ parameters.CI_TEST>> \
                                   <<^ parameters.CI_TEST >> --conda_upload << parameters.NIGHTLY_FLAG >> <</ parameters.CI_TEST >>"
