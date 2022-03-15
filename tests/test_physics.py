@@ -1740,7 +1740,7 @@ def test_rigid_constraints():
             habitat_sim.physics.RigidConstraintType.PointToPoint
         )
         constraint_id_2 = sim.create_rigid_constraint(constraint_settings_2)
-        observations += simulate(sim, 5.0, produce_debug_video)
+        observations += simulate(sim, 7.0, produce_debug_video)
 
         # check pivots are aligned
         global_connect_a = robot.get_link_scene_node(

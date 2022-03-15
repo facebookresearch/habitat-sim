@@ -135,7 +135,9 @@ commands:
                 export PATH=$HOME/miniconda/bin:$PATH
                 conda create -y -n habitat python=3.7
                 . activate habitat
-                conda install -y pytorch torchvision cudatoolkit=11.3 -c pytorch
+                # For whatever reason we have to install pytorch first. If it isn't
+                # it installs the 1.4 cpuonly version. Which is no good.
+                conda install -q -y pytorch torchvision cudatoolkit=11.3 -c pytorch
                 conda install -q -y -c conda-forge ninja numpy pytest pytest-cov ccache hypothesis
                 pip install pytest-sugar pytest-xdist pytest-benchmark opencv-python
               fi
@@ -469,7 +471,7 @@ jobs:
               pip install -r requirements.txt --progress-bar off
               pip install imageio imageio-ffmpeg
               git submodule update --init --recursive --jobs 8
-              python -u setup.py install --build-type "Release" --no-lto --headless --vhacd --bullet
+              python -u setup.py install --build-type "Release" --lto --headless --vhacd --bullet
       # - run:
           # name: run clang-tidy
           # command: |
