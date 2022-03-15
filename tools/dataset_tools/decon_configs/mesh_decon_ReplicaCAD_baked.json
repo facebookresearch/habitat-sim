@@ -1,11 +1,11 @@
 {
   "dataset_name": "replicaCAD_baked",
   "dataset_src_rel_to_home": true,
-  "dataset_src_subdir": "Facebook/habitat-sim/data/scene_datasets/replicaCAD_working/process_baked/",
-  "scenes_src_subdir": "repivot_stages/",
+  "dataset_src_subdir": "Facebook/habitat-sim/data/scene_datasets/replicaCAD_working/new_source_scenes/",
+  "scenes_src_subdir": "",
   "objects_src_subdir": "objects/",
   "dataset_dest_rel_to_home": true,
-  "dataset_dest_subdir": "Facebook/habitat-sim/data/scene_datasets/replicaCAD_baked_2/",
+  "dataset_dest_subdir": "Facebook/habitat-sim/data/scene_datasets/replicaCAD_baked_newSource/",
   "dataset_glb_dest_subdir": ".",
   "stage_glb_dest_subdir": "stages/",
   "obj_glb_dest_subdir": "objects/",
@@ -36,6 +36,9 @@
   "obj_created_dynamic": [],
   "save_scenegraph_hierarchy": false,
   "stage_instance_file_tag": {},
+  "scene_instance_file_tag": {
+    "Source_": "Baked_"
+  },
   "default_lighting_tag": "no_lights",
   "apply_object_transform": true,
   "save_articulated_object_instances": true,

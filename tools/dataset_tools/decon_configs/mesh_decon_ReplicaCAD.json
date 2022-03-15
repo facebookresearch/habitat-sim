@@ -2,10 +2,10 @@
   "dataset_name": "replicaCAD",
   "dataset_src_rel_to_home": true,
   "dataset_src_subdir": "Facebook/habitat-sim/data/scene_datasets/replicaCAD/",
-  "scenes_src_subdir": "../replicaCAD_working/replicaCAD_source_scenes",
+  "scenes_src_subdir": "../replicaCAD_working/new_source_scenes",
   "objects_src_subdir": "objects/",
   "dataset_dest_rel_to_home": true,
-  "dataset_dest_subdir": "Facebook/habitat-sim/data/scene_datasets/replicaCAD_temp/",
+  "dataset_dest_subdir": "Facebook/habitat-sim/data/scene_datasets/replicaCAD_newSource/",
   "dataset_glb_dest_subdir": ".",
   "stage_glb_dest_subdir": "stages/",
   "obj_glb_dest_subdir": "objects/",
@@ -65,6 +65,9 @@
     "v3_sc2_staging": "Stage_v3_sc2_staging",
     "v3_sc3_staging": "Stage_v3_sc3_staging",
     "v3_sc4_staging": "Stage_v3_sc4_staging"
+  },
+  "scene_instance_file_tag": {
+    "Source_": "v3_"
   },
   "default_lighting_tag": "lighting/frl_apartment_stage",
   "apply_object_transform": true,

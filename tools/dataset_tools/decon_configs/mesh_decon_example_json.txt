@@ -89,6 +89,7 @@
   ],
 
   "stage_instance_file_tag": <stage names to use for stage instance refs in scene instance files. Search for the keys within scene name, and use the values as the stage to ref>,
+  "scene_instance_file_tag":<scene names to use for scene instance refs - used to bypass hard-coded names of source scenes used to build configs.  Search for the keys within source scene name, and replace with specified value>,
   "default_lighting_tag":<tag to insert in every scene instance attributes to reference the default lighting>
   "apply_object_transform":<boolean : if provided, apply a transformation to the object's transformation before calculating translation and rotation>,
   "calc_object_uniform_scale": <boolean : if provided, this is used determien whether or not to add uniform scale to an object instance. Defaults to true>,

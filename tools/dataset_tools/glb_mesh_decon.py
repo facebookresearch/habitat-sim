@@ -116,6 +116,10 @@ def build_default_configs():
     # and use the values as the stage to ref
     default_configs["stage_instance_file_tag"] = {}
 
+    # dictionary keyed by some substring of source scene file name, value is scene names to use for scene
+    # instance refs. Search for the keys within source scene name, and replace with given values
+    default_configs["scene_instance_file_tag"] = {}
+
     # tag to insert in every scene instance attributes to reference the default lighting
     default_configs["default_lighting_tag"] = ""
 
@@ -982,6 +986,16 @@ def main():
             continue
 
         src_scene_filename = os.path.join(decon_configs["scenes_src_dir"], scene_name)
+
+        # replace dest scene name with appropriate prefix
+        if len(decon_configs["scene_instance_file_tag"]) != 0:
+            # mapping is provided to map scene name to prebuilt/predefined stage names
+            replace_scene_dict = decon_configs["scene_instance_file_tag"]
+            for k, v in replace_scene_dict.items():
+                if k in scene_name_base:
+                    scene_name_base = scene_name_base.replace(k, v)
+                    break
+
         # build scene instance config file
         abs_scene_instance_filename = os.path.join(
             decon_configs["scene_instance_dest_dir"],
