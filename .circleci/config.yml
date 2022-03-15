@@ -104,7 +104,7 @@ commands:
               # sudo apt-get update || true
               # sudo apt-get --yes --force-yes install cuda-11-1
               touch ~/cuda_installed
-              nvidia-smi
+              # nvidia-smi
       - restore_cache:
           keys:
             - conda-{{ checksum "habitat-sim/.circleci/config.yml" }}
