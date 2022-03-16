@@ -11,7 +11,7 @@ commands:
   install_all_ubuntu_deps:
     description: "Prepares the dependencies"
     steps:
-      - run:
+      - run: &install_cmake
           name: Install cmake
           no_output_timeout: 5m
           # OpenEXR requires CMake 3.12. We also download CMake 3.20, which
@@ -104,7 +104,7 @@ commands:
               # sudo apt-get update || true
               # sudo apt-get --yes --force-yes install cuda-11-1
               touch ~/cuda_installed
-              # nvidia-smi
+              if command -v nvidia-smi; then nvidia-smi; fi
       - restore_cache:
           keys:
             - conda-{{ checksum "habitat-sim/.circleci/config.yml" }}
@@ -159,7 +159,7 @@ commands:
       - restore_cache:
           keys:
             - habitat-lab-{{ checksum "./hablab_sha" }}
-      - restore_cache:
+      - restore_cache: &ccache_cache
           keys:
             - ccache-{{ arch }}-{{ .Branch }}-{{ .BuildNum }}
             - ccache-{{ arch }}-{{ .Branch }}-
@@ -331,7 +331,10 @@ jobs:
     steps:
       - checkout:
           path: ./habitat-sim
-      - install_all_ubuntu_deps
+      - run: *install_cmake
+      - run: *install_deps
+      - run: *install_conda
+      - restore_cache: *ccache_cache
       - run:
           name: Install clang-tidy
           command: |
