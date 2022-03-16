@@ -13,6 +13,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
+import numpy as np
 import magnum as mn
 from magnum.platform.glfw import Application
 
@@ -20,6 +21,8 @@ import habitat_sim
 from examples.settings import default_sim_settings, make_cfg
 from habitat_sim import physics
 from habitat_sim.logging import LoggingContext, logger
+import habitat_sim.utils.sim_utils as sutils
+from habitat_sim.utils.common import quat_from_angle_axis
 
 
 class HabitatSimInteractiveViewer(Application):
@@ -86,7 +89,7 @@ class HabitatSimInteractiveViewer(Application):
         self.reconfigure_sim()
 
         # compute NavMesh if not already loaded by the scene.
-        if not self.sim.pathfinder.is_loaded:
+        if not self.sim.pathfinder.is_loaded and self.cfg.sim_cfg.scene_id != "NONE":
             self.navmesh_config_and_recompute()
 
         self.time_since_last_simulation = 0.0
@@ -275,6 +278,7 @@ class HabitatSimInteractiveViewer(Application):
 
         shift_pressed = bool(event.modifiers & mod.SHIFT)
         alt_pressed = bool(event.modifiers & mod.ALT)
+        #warning: ctrl doesn't always pass through with other key-presses
 
         if key == pressed.ESC:
             event.accepted = True
@@ -333,6 +337,19 @@ class HabitatSimInteractiveViewer(Application):
             self.debug_bullet_draw = not self.debug_bullet_draw
             logger.info(f"Command: toggle Bullet debug draw: {self.debug_bullet_draw}")
 
+        elif key == pressed.C:
+            #contact point debug drawing
+            if shift_pressed:
+                # with SHIFT, perform discrete collision detection and log/show the result
+                # Tip: pause the simulator to check specific states
+                self.sim.perform_discrete_collision_detection()
+                self.contact_debug_draw = True
+            else:
+                self.contact_debug_draw = not self.debug_bullet_draw
+            logger.info(
+                f"Command: toggle contact debug draw: {self.contact_debug_draw}"
+            )
+
         elif key == pressed.T:
             # load URDF
             fixed_base = alt_pressed
@@ -367,7 +384,23 @@ class HabitatSimInteractiveViewer(Application):
             logger.info("Command: gravity inverted")
 
         elif key == pressed.N:
-            if shift_pressed:
+            # (default) - toggle navmesh visualization
+            # NOTE: (+ALT) - re-sample the agent position on the NavMesh
+            # NOTE: (+SHIFT) - re-compute the NavMesh
+            if alt_pressed:
+                logger.info("Command: resample agent state from navmesh")
+                if self.sim.pathfinder.is_loaded:
+                    new_agent_state = habitat_sim.AgentState()
+                    new_agent_state.position = self.sim.pathfinder.get_random_navigable_point()
+                    new_agent_state.rotation = quat_from_angle_axis(
+                        self.sim.random.uniform_float(0, 2.0 * np.pi), np.array([0, 1, 0])
+                    )
+                    self.default_agent.set_state(new_agent_state)
+                else:
+                    logger.warning(
+                            f"NavMesh is not initialized. Cannot sample new agent state."
+                        )
+            elif shift_pressed:
                 logger.info("Command: recompute navmesh")
                 self.navmesh_config_and_recompute()
             else:
@@ -447,6 +480,12 @@ class HabitatSimInteractiveViewer(Application):
                 hit_info = raycast_results.hits[0]
 
                 if hit_info.object_id >= 0:
+                    hit_object_info = sutils.get_sim_object(self.sim, hit_info.object_id)
+                    if hit_object_info is not None:
+                        hit_object = hit_object_info[0]
+
+                        print(f"hit_object.type = {hit_object.template_class}")
+
                     # we hit an non-staged collision object
                     ro_mngr = self.sim.get_rigid_object_manager()
                     ao_mngr = self.sim.get_articulated_object_manager()
@@ -582,6 +621,12 @@ class HabitatSimInteractiveViewer(Application):
         """
         Release any existing constraints.
         """
+        if self.mouse_grabber is not None:
+            gripped_object = sutils.get_sim_object(self.sim, self.mouse_grabber.settings.object_id_a)[0]
+            if self.mouse_grabber.settings.link_id_a >= 0:
+                gripped_link_name = gripped_object.get_link_name(self.mouse_grabber.settings.link_id_a)
+                gripped_link_state = gripped_object.joint_positions[gripped_object.get_link_joint_pos_offset(self.mouse_grabber.settings.link_id_a)]
+                print(f"Released grip on {gripped_object.handle} link {gripped_link_name} state {gripped_link_state}")
         del self.mouse_grabber
         self.mouse_grabber = None
         event.accepted = True
@@ -637,7 +682,7 @@ class HabitatSimInteractiveViewer(Application):
         self.sim.recompute_navmesh(
             self.sim.pathfinder,
             self.navmesh_settings,
-            include_static_objects=False,
+            include_static_objects=True,
         )
 
     def exit_event(self, event: Application.ExitEvent):

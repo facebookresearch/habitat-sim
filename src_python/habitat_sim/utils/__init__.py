@@ -10,7 +10,7 @@
 # fixed
 
 
-from habitat_sim.utils import common, manager_utils, validators, viz_utils
+from habitat_sim.utils import common, manager_utils, validators, viz_utils, sim_utils
 from habitat_sim.utils.common import quat_from_angle_axis, quat_rotate_vector
 
 __all__ = [
@@ -18,5 +18,6 @@ __all__ = [
     "quat_rotate_vector",
     "common",
     "viz_utils",
+    "sim_utils",
     "validators",
 ]
