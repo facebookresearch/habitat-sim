@@ -1,7 +1,9 @@
 version: 2.1
 gpu: &gpu
   machine:
-    image: ubuntu-1604:202104-01
+    # Available images:
+    # https://circleci.com/docs/2.0/configuration-reference/#available-linux-gpu-images
+    image: ubuntu-2004-cuda-11.4:202110-01
   resource_class: gpu.nvidia.medium
   environment:
     FPS_THRESHOLD: 900
@@ -9,20 +11,7 @@ commands:
   install_all_ubuntu_deps:
     description: "Prepares the dependencies"
     steps:
-      - run:
-          name: Upgrade Dependencies
-          command: |
-              sudo apt-get update -y || true
-              sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y || true
-      - run:
-          name: Install clang-tidy
-          command: |
-              sudo add-apt-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-12 main"
-              sudo apt-get update -y || true
-              sudo apt-get install -y clang-tidy-12
-              sudo ln -s /usr/bin/clang-tidy-12 /usr/local/bin/clang-tidy
-              clang-tidy --version
-      - run:
+      - run: &install_cmake
           name: Install cmake
           no_output_timeout: 5m
           # OpenEXR requires CMake 3.12. We also download CMake 3.20, which
@@ -59,6 +48,7 @@ commands:
                   zip \
                   lcov\
                   libhdf5-dev \
+                  libomp-dev \
                   unzip || true
       - run:
           name: Install Headless Chrome dependencies
@@ -109,12 +99,12 @@ commands:
           no_output_timeout: 20m
           background: true
           command: |
-              wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1604/x86_64/cuda-repo-ubuntu1604_8.0.44-1_amd64.deb
-              sudo dpkg -i cuda-repo-ubuntu1604_8.0.44-1_amd64.deb
-              sudo apt-get update || true
-              sudo apt-get --yes --force-yes install cuda
+              # sudo apt-key adv --fetch-keys "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/7fa2af80.pub"
+              # sudo apt-add-repository "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64 /"
+              # sudo apt-get update || true
+              # sudo apt-get --yes --force-yes install cuda-11-1
               touch ~/cuda_installed
-              nvidia-smi
+              if command -v nvidia-smi; then nvidia-smi; fi
       - restore_cache:
           keys:
             - conda-{{ checksum "habitat-sim/.circleci/config.yml" }}
@@ -131,8 +121,11 @@ commands:
                 export PATH=$HOME/miniconda/bin:$PATH
                 conda create -y -n habitat python=3.7
                 . activate habitat
+                # For whatever reason we have to install pytorch first. If it isn't
+                # it installs the 1.4 cpuonly version. Which is no good.
+                conda install -q -y pytorch torchvision cudatoolkit=11.3 -c pytorch
                 conda install -q -y -c conda-forge ninja numpy pytest pytest-cov ccache hypothesis
-                pip install pytest-sugar pytest-xdist pytest-benchmark
+                pip install pytest-sugar pytest-xdist pytest-benchmark opencv-python
               fi
       - run:
           name: Install emscripten
@@ -151,19 +144,6 @@ commands:
                 touch ~/emscripten_installed
               fi
       - run:
-          name: Install pytorch
-          no_output_timeout: 20m
-          background: true
-          command: |
-              if [ ! -f ~/miniconda/pytorch_installed ]
-              then
-                export PATH=$HOME/miniconda/bin:$PATH
-                . activate habitat;
-                conda install -c  conda-forge opencv -y
-                conda install -y pytorch torchvision  cudatoolkit=10.0 -c pytorch
-              fi
-              touch ~/miniconda/pytorch_installed
-      - run:
           name: Install JavaScript dependencies
           background: true
           command: |
@@ -179,7 +159,7 @@ commands:
       - restore_cache:
           keys:
             - habitat-lab-{{ checksum "./hablab_sha" }}
-      - restore_cache:
+      - restore_cache: &ccache_cache
           keys:
             - ccache-{{ arch }}-{{ .Branch }}-{{ .BuildNum }}
             - ccache-{{ arch }}-{{ .Branch }}-
@@ -335,12 +315,53 @@ jobs:
             conda install -y anaconda-client ccache cmake git ninja conda-build pip
             echo $(which -a python)
             pip install gitpython
-            <<^ parameters.CI_TEST>> anaconda login --username << parameters.AIHABITAT_CONDA_CHN >>  --password $<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >>
+            <<^ parameters.CI_TEST>> anaconda login --username << parameters.AIHABITAT_CONDA_CHN >>  --password $<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >> --hostname "aihabitat-conda-ci-builder-macos"
             conda config --set anaconda_upload yes <</ parameters.CI_TEST>>
             cd habitat-sim/conda-build
-            git submodule update --init --recursive --jobs 16
+            git submodule update --init --recursive --jobs 8
             export PYTHONIOENCODING="utf-8"
             python matrix_builder.py <<# parameters.CI_TEST>> --ci_test <</ parameters.CI_TEST>>  <<^ parameters.CI_TEST >> --conda_upload <<# parameters.nightly>> --nightly <</ parameters.nightly>> <</ parameters.CI_TEST >>
+
+  clang_tidy:
+    machine:
+      # Available images:
+      # https://circleci.com/docs/2.0/configuration-reference/#available-linux-gpu-images
+      image: ubuntu-1604:202104-01
+    resource_class: xlarge
+    steps:
+      - checkout:
+          path: ./habitat-sim
+      - run: *install_cmake
+      - run: *install_deps
+      - run: *install_conda
+      - restore_cache: *ccache_cache
+      - run:
+          name: Install clang-tidy
+          command: |
+              # Bellow is only needed for Ubuntu 20
+              # sudo apt-key adv --fetch-keys "https://apt.llvm.org/llvm-snapshot.gpg.key"
+              sudo add-apt-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-12 main"
+              sudo apt-get update -y || true
+              sudo apt-get install -y clang-tidy-12
+              sudo ln -s /usr/bin/clang-tidy-12 /usr/local/bin/clang-tidy
+              clang-tidy --version
+      - run:
+          name: Build sim
+          no_output_timeout: 25m
+          command: |
+              export PATH=$HOME/miniconda/bin:$PATH
+              . activate habitat;
+              cd habitat-sim
+              pip install -r requirements.txt --progress-bar off
+              git submodule update --init --recursive --jobs 8
+              python -u setup.py install --build-type "Release" --no-lto --headless --vhacd --bullet
+      - run:
+          name: run clang-tidy
+          command: |
+              export PATH=$HOME/miniconda/bin:$PATH
+              . activate habitat;
+              cd habitat-sim
+              python tools/run-clang-tidy.py -header-filter=src/esp src/esp
 
   test_pip_build:
     <<: *gpu
@@ -350,6 +371,7 @@ jobs:
       - run:
           name: pip install
           command: |
+            pyenv install 3.7.10
             pyenv global 3.7.10
             python3 -m pip install -U pip
             python3 -m pip install . -v
@@ -385,8 +407,7 @@ jobs:
               export PATH=$HOME/miniconda/bin:/usr/local/cuda/bin:$PATH
               . activate habitat;
               cd habitat-sim
-              git submodule update --init --recursive --jobs 16
-              while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
+              git submodule update --init --recursive --jobs 8
               pip install -r requirements.txt --progress-bar off
               pip install imageio imageio-ffmpeg
               conda install -y -c conda-forge doxygen
@@ -471,21 +492,13 @@ jobs:
           name: Build, install habitat-sim and run benchmark
           no_output_timeout: 25m
           command: |
-              while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
               export PATH=$HOME/miniconda/bin:$PATH
               . activate habitat;
               cd habitat-sim
               pip install -r requirements.txt --progress-bar off
               pip install imageio imageio-ffmpeg
-              git submodule update --init --recursive --jobs 16
+              git submodule update --init --recursive --jobs 8
               python -u setup.py install --build-type "Release" --lto --headless --vhacd --bullet
-      - run:
-          name: run clang-tidy
-          command: |
-              export PATH=$HOME/miniconda/bin:$PATH
-              . activate habitat;
-              cd habitat-sim
-              python tools/run-clang-tidy.py -header-filter=src/esp src/esp
       - run:
           name: Ccache stats
           when: always
@@ -551,8 +564,7 @@ jobs:
                 --no-lto \
                 --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
 
-              while [ ! -f ~/miniconda/pytorch_installed ]; do sleep 2; done # wait for Pytorch
-              PYTHONPATH=src_python pytest -n 8 --durations=10 --cov-report=xml --cov=./
+              PYTHONPATH=src_python pytest -n 4 --durations=10 --cov-report=xml --cov=./
 
               #run the marked pytest-benchmark tests and print the results
               PYTHONPATH=src_python pytest -m sim_benchmarks
@@ -560,7 +572,7 @@ jobs:
               #re-build without bullet and cuda and run physics tests again
               #TODO: instead of reinstall, do this with configuration
               ./build.sh --headless --cmake-args='-DCMAKE_CXX_FLAGS="--coverage"'
-              PYTHONPATH=src_python pytest -n 8 --durations=10 --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
+              PYTHONPATH=src_python pytest -n 4 --durations=10 --cov-report=xml --cov=./ --cov-append tests/test_physics.py tests/test_sensors.py
 
               . ~/.bashrc
               nvm use v11.9.0
@@ -646,7 +658,7 @@ jobs:
                   hsim_condabuild_dcontainer \
                   /bin/bash -c "source ~/.bashrc && conda activate py37 \
                                 && cd /remote/habitat-sim/conda-build \
-                                <<^ parameters.CI_TEST >> && anaconda login --username << parameters.AIHABITAT_CONDA_CHN >> --password \${<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >>} <</ parameters.CI_TEST >> \
+                                <<^ parameters.CI_TEST >> && anaconda login --username << parameters.AIHABITAT_CONDA_CHN >> --password \${<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >>} <</ parameters.CI_TEST >> --hostname "aihabitat-conda-ci-builder-linux" \
                                 && python matrix_builder.py \
                                   <<# parameters.CI_TEST >> --ci_test <</ parameters.CI_TEST>> \
                                   <<^ parameters.CI_TEST >> --conda_upload << parameters.NIGHTLY_FLAG >> <</ parameters.CI_TEST >>"
@@ -709,6 +721,7 @@ workflows:
       - pre-commit
       - build_conda_binaries:
           CI_TEST: true
+      - clang_tidy
   nightly:
     triggers:
       - schedule:

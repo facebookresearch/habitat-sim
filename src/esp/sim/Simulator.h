@@ -70,11 +70,11 @@ class Simulator {
    */
   void close(bool destroy = true);
 
-  virtual void reconfigure(const SimulatorConfiguration& cfg);
+  void reconfigure(const SimulatorConfiguration& cfg);
 
-  virtual void reset();
+  void reset();
 
-  virtual void seed(uint32_t newSeed);
+  void seed(uint32_t newSeed);
 
   std::shared_ptr<gfx::Renderer> getRenderer() { return renderer_; }
   std::shared_ptr<scene::SemanticScene> getSemanticScene() {

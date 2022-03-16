@@ -62,6 +62,7 @@ readability-uniqueptr-delete-release,
 -modernize-avoid-c-arrays,
 -modernize-use-auto,
 -modernize-use-trailing-return-type,
+-bugprone-easily-swappable-parameters,
 '
 
 CheckOptions:
@@ -88,7 +89,7 @@ WarningsAsErrors: '
 -clang-diagnostic-deprecated-declarations,
 -clang-analyzer-cplusplus.PlacementNew,
 -cppcoreguidelines-pro-type-member-init,
--optin.cplusplus.UninitializedObject
+-optin.cplusplus.UninitializedObject,
 '
 
 HeaderFilterRegex: "src/esp/"
