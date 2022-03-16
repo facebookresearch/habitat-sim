@@ -329,12 +329,14 @@ jobs:
       image: ubuntu-1604:202104-01
     resource_class: xlarge
     steps:
-      - checkout
+      - checkout:
+          path: ./habitat-sim
       - install_all_ubuntu_deps
       - run:
           name: Install clang-tidy
           command: |
-              sudo apt-key adv --fetch-keys "https://apt.llvm.org/llvm-snapshot.gpg.key"
+              # Bellow is only needed for Ubuntu 20
+              # sudo apt-key adv --fetch-keys "https://apt.llvm.org/llvm-snapshot.gpg.key"
               sudo add-apt-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-12 main"
               sudo apt-get update -y || true
               sudo apt-get install -y clang-tidy-12
