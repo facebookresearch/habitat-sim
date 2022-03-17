@@ -116,8 +116,6 @@ struct RolloutRecord {
   std::vector<Magnum::Matrix4> rootTransforms_;  // [numRolloutSubsteps * numEnvs]
   std::vector<Magnum::Matrix4>
       nodeTransforms_;  // [numRolloutSubsteps * numEnvs * numNodes]
-
-  std::vector<float> rewards_;  // [numRolloutSubsteps * numEnvs]
 };
 
 // todo: move fields from RobotInstanceSet into here
@@ -166,27 +164,9 @@ class RobotInstanceSet {
 
   std::vector<bps3D::Environment>* envs_;
 
-  std::vector<float> hackRewards_;
-
   std::vector<RobotInstance> robotInstances_;
 };
 
-struct RewardCalculationContext {
-  RewardCalculationContext() = default;
-  RewardCalculationContext(const Robot* robot,
-                           int numEnvs,
-                           RolloutRecord* rollouts);
-
-  void calcRewards(int currRolloutSubstep, int bStart, int bEnd);
-
-  esp::physics::BulletArticulatedObject* artObj_ = nullptr;
-  std::unique_ptr<esp::sim::Simulator> legacySim_;
-  btAlignedObjectArray<btQuaternion> scratch_q_;
-  btAlignedObjectArray<btVector3> scratch_m_;
-  const Robot* robot_ = nullptr;
-  int numEnvs_ = -1;
-  RolloutRecord* rollouts_ = nullptr;
-};
 
 class BatchedSimulator {
  public:
@@ -206,9 +186,6 @@ class BatchedSimulator {
   void reverseRobotMovementActions();
 
   bps3D::Renderer& getBpsRenderer();
-
-  const std::vector<float>& getRewards();
-  const std::vector<bool>& getDones();
 
   // For debugging. Sets camera for all envs.
   // todo: threadsafe or guard
@@ -266,7 +243,6 @@ class BatchedSimulator {
   void reinsertFreeObject(int b, int freeObjectIndex,
     const Magnum::Vector3& pos, const Magnum::Quaternion& rotation);
 
-  void calcRewards();
   void randomizeRobotsForCurrentStep();
 
   void initEpisodeSet();
@@ -299,8 +275,6 @@ class BatchedSimulator {
   int actionDim_ = -1;
   std::vector<float> actions_;
   int maxRolloutSubsteps_ = -1;
-  RewardCalculationContext rewardContext_;
-  std::vector<bool> hackDones_;
   std::vector<PythonEnvironmentState> pythonEnvStates_;
 
   EpisodeSet episodeSet_;

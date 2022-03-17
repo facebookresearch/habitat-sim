@@ -219,40 +219,6 @@ RobotInstanceSet::RobotInstanceSet(Robot* robot,
   robotInstances_.resize(numEnvs);
 }
 
-void RobotInstanceSet::applyActionPenalties(const std::vector<float>& actions) {
-  int numEnvs = config_->numEnvs;
-
-  float yawPenaltyScale = 0.01;
-  float forwardPenaltyScale = 0.01;
-  float jointPosPenaltyScale = 0.01;
-
-  int actionIndex = 0;
-  for (int b = 0; b < numEnvs; b++) {
-    // hackRewards_[b] = 0.f; // hack disable state-based reward
-
-    float deltaYaw = actions[actionIndex++];
-    constexpr float maxDeltaYaw = float(Mn::Rad(Mn::Deg(15.f)));
-    hackRewards_[b] -=
-        Mn::Math::max(0.f, Mn::Math::abs(deltaYaw) - maxDeltaYaw) *
-        yawPenaltyScale;
-
-    float deltaForward = actions[actionIndex++];
-    constexpr float maxDeltaForward = 0.2f;
-    hackRewards_[b] -=
-        Mn::Math::max(0.f, Mn::Math::abs(deltaForward) - maxDeltaForward) *
-        forwardPenaltyScale;
-
-    for (int j = 0; j < robot_->numPosVars; j++) {
-      float deltaJointPos = actions[actionIndex++];
-      constexpr float maxDeltaJointPos = 0.1f;
-      hackRewards_[b] -=
-          Mn::Math::max(0.f, Mn::Math::abs(deltaJointPos) - maxDeltaJointPos) *
-          jointPosPenaltyScale;
-    }
-  }
-  BATCHED_SIM_ASSERT(actionIndex == actions.size());
-}
-
 void BatchedSimulator::reverseActionsForEnvironment(int b) {
   BATCHED_SIM_ASSERT(prevRolloutSubstep_ != -1);
   const int numEnvs = config_.numEnvs;
@@ -1207,9 +1173,6 @@ BatchedSimulator::BatchedSimulator(const BatchedSimulatorConfig& config) {
   rollouts_ =
       RolloutRecord(maxRolloutSubsteps_, numEnvs, robot_.numPosVars, numNodes);
 
-  rewardContext_ = RewardCalculationContext(&robot_, numEnvs, &rollouts_);
-  robots_.hackRewards_.resize(numEnvs, 0.f);
-  hackDones_.resize(numEnvs, false);
   pythonEnvStates_.resize(numEnvs);
 
   currRolloutSubstep_ =
@@ -1503,16 +1466,12 @@ void BatchedSimulator::reset() {
   ESP_CHECK(!isPhysicsThreadActive(), "Don't call reset during async physics step");
   ESP_CHECK(!isRenderStarted_, "Don't call reset during async render");
 
-  // all episodes are done; set done flag and reset
-  std::fill(hackDones_.begin(), hackDones_.end(), true);
-
   int numEnvs = bpsWrapper_->envs_.size();
 
   currRolloutSubstep_ = 0;
   prevRolloutSubstep_ = -1;
   randomizeRobotsForCurrentStep();
   robots_.updateLinkTransforms(currRolloutSubstep_, /*updateforPhysics*/ false, /*updateForRender*/ true);
-  std::fill(robots_.hackRewards_.begin(), robots_.hackRewards_.end(), 0.f);
   for (int b = 0; b < numEnvs; b++) {
     resetEpisodeInstance(b);
   }
@@ -1537,13 +1496,7 @@ void BatchedSimulator::autoResetOrStepPhysics() {
     // all episodes are done; set done flag and reset
     reset();
   } else {
-    if (currRolloutSubstep_ == 0) {
-      std::fill(hackDones_.begin(), hackDones_.end(), false);
-    } else {
-      BATCHED_SIM_ASSERT(!hackDones_[0]);
-    }
     stepPhysics();
-    calcRewards();
     updateRenderInstances(/*forceUpdate*/false);
   }
 }
@@ -1562,12 +1515,6 @@ void BatchedSimulator::startAsyncStepPhysics(std::vector<float>&& actions) {
   setActions(std::move(actions));
 
   deleteDebugInstances();
-
-  if (currRolloutSubstep_ == 0) {
-    std::fill(hackDones_.begin(), hackDones_.end(), false);
-  } else {
-    BATCHED_SIM_ASSERT(!hackDones_[0]);
-  }
 
   // send message to physicsThread_
   signalStepPhysics();
@@ -1691,7 +1638,6 @@ void BatchedSimulator::reverseRobotMovementActions() {
 
   robots_.updateLinkTransforms(currRolloutSubstep_, /*updateforPhysics*/ false, /*updateForRender*/ true);
   // updateGripping();
-  // calcRewards(); // this doesn't work
   updateRenderInstances(true);
 }
 
@@ -1770,110 +1716,6 @@ bps3D::Renderer& BatchedSimulator::getBpsRenderer() {
   return *bpsWrapper_->renderer_.get();
 }
 
-RewardCalculationContext::RewardCalculationContext(const Robot* robot,
-                                                   int numEnvs,
-                                                   RolloutRecord* rollouts)
-    : robot_(robot), numEnvs_(numEnvs), rollouts_(rollouts) {
-  esp::sim::SimulatorConfiguration simConfig{};
-  simConfig.activeSceneName = "NONE";
-  simConfig.enablePhysics = true;
-  simConfig.createRenderer = false;
-  simConfig.loadRenderAssets =
-      false;  // todo: avoid creating render assets for stage
-  // simConfig.physicsConfigFile = physicsConfigFile;
-
-  legacySim_ = esp::sim::Simulator::create_unique(simConfig);
-
-  // todo: avoid code duplication with Robot
-  const std::string filepath = "../data/URDF/opt_fetch/robots/fetch.urdf";
-  // todo: delete object on destruction
-  auto managedObj = legacySim_->getArticulatedObjectManager()
-                        ->addBulletArticulatedObjectFromURDF(filepath);
-  artObj_ = static_cast<esp::physics::BulletArticulatedObject*>(
-      managedObj->hackGetBulletObjectReference().get());
-}
-
-void RewardCalculationContext::calcRewards(int currRolloutSubstep,
-                                           int bStart,
-                                           int bEnd) {
-  const Robot* robot = robot_;
-  esp::physics::BulletArticulatedObject* artObj = artObj_;
-  auto* mb = artObj->btMultiBody_.get();
-  RolloutRecord& rollouts = *rollouts_;
-
-  int numPosVars = robot->numPosVars;
-  int numEnvs = numEnvs_;
-  int numLinks = robot->artObj->getNumLinks();
-
-  const float* yaws = &rollouts.yaws_[currRolloutSubstep * numEnvs];
-  const Mn::Vector2* positions =
-      &rollouts.positions_[currRolloutSubstep * numEnvs];
-  const float* jointPositions =
-      &rollouts.jointPositions_[currRolloutSubstep * numEnvs * numPosVars];
-  const Mn::Matrix4* rootTransforms =
-      &rollouts_->rootTransforms_[currRolloutSubstep * numEnvs];
-
-  float* rewards = &rollouts.rewards_[currRolloutSubstep * numEnvs];
-
-  int posCount = bStart * numPosVars;
-
-  for (int b = bStart; b < bEnd; b++) {
-    // this should already be computed
-    // rootTransforms[b] =
-    //     Mn::Matrix4::translation(Mn::Vector3(positions[b].x(), 0.f,
-    //     positions[b].y())) * Mn::Matrix4::rotation(Mn::Rad(yaws[b]),
-    //                           {0.f, 1.f, 0.f}) *
-    //     Mn::Matrix4::rotation(Mn::Deg(-90.f), {1.f, 0.f, 0.f});
-
-    btTransform tr{rootTransforms[b]};
-    mb->setBaseWorldTransform(tr);
-
-    for (int i = 0; i < numLinks; ++i) {
-      auto& link = mb->getLink(i);
-      // optimization todo: find correct subset of links
-      if (link.m_posVarCount > 0) {
-        mb->setJointPosMultiDof(i,
-                                const_cast<float*>(&jointPositions[posCount]));
-        posCount += link.m_posVarCount;
-      }
-    }
-
-    //// copied from BulletArticulatedObject::updateKinematicState ////
-    mb->forwardKinematics(scratch_q_, scratch_m_);
-    mb->updateCollisionObjectWorldTransforms(scratch_q_, scratch_m_);
-    artObj->updateAabbs();
-
-    bool isContact = artObj->contactTest();
-    // if (isContact) {
-    //   ESP_WARNING() << "collision, step " << currRolloutSubstep << ", env " <<
-    //   b;
-    // }
-
-    rewards[b] = isContact ? -1.f : 1.f;
-  }
-}
-
-const std::vector<float>& BatchedSimulator::getRewards() {
-  return robots_.hackRewards_;
-}
-
-const std::vector<bool>& BatchedSimulator::getDones() {
-  return hackDones_;
-}
-
-void BatchedSimulator::calcRewards() {
-
-  BATCHED_SIM_ASSERT(robots_.areCollisionResultsValid_);
-
-  // update rewards on main thread
-  const int numEnvs = config_.numEnvs;
-  for (int b = 0; b < numEnvs; b++) {
-    robots_.hackRewards_[b] = robots_.collisionResults_[b] ? -1.f : 0.f;
-  }
-
-  // int numEnvs = bpsWrapper_->envs_.size();
-  // rewardContext_.calcRewards(currRolloutSubstep_, 0, numEnvs);
-}
 
 RolloutRecord::RolloutRecord(int numRolloutSubsteps,
                              int numEnvs,
@@ -1888,8 +1730,6 @@ RolloutRecord::RolloutRecord(int numRolloutSubsteps,
   positions_.resize(numRolloutSubsteps * numEnvs, nanVec);
   rootTransforms_.resize(numRolloutSubsteps * numEnvs, nanMat);
   nodeTransforms_.resize(numRolloutSubsteps * numEnvs * numNodes, nanMat);
-
-  rewards_.resize(numRolloutSubsteps * numEnvs, NAN);
 }
 
 void BatchedSimulator::deleteDebugInstances() {
@@ -1985,11 +1825,6 @@ void BatchedSimulator::waitAsyncStepPhysics() {
     reset();
   } else {
     updatePythonEnvironmentState();
-  }
-
-  // sloppy: don't calc rewards if we just did a reset
-  if (currRolloutSubstep_ != 0) {
-    calcRewards();
   }
 }
 
