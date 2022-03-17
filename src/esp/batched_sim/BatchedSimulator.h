@@ -44,6 +44,25 @@ struct BatchedSimulatorConfig {
   ESP_SMART_POINTERS(BatchedSimulatorConfig);
 };
 
+
+struct PythonEnvironmentState {
+  // prev episode result
+  bool did_finish_episode_and_reset = false;
+  bool finished_episode_success = false;
+  // curr episode
+  int target_obj_idx;
+  Magnum::Vector3 goal_pos;
+  int episode_step_idx;
+  // robot state
+  Magnum::Vector3 robot_position;
+  float robot_yaw;
+  Magnum::Vector3 ee_pos;
+  bool did_collide = false;
+  // other env state
+  std::vector<Magnum::Vector3> obj_positions;
+  ESP_SMART_POINTERS(PythonEnvironmentState);
+};
+
 struct BpsWrapper {
   BpsWrapper(int gpuId, int numEnvs, bool includeDepth, bool includeColor, const CameraSensorConfig& sensor0);
   ~BpsWrapper();
@@ -175,11 +194,12 @@ class BatchedSimulator {
   void close();
 
   void startRender();
-  void waitForFrame();
+  void waitForRender();
 
-  void setActions(std::vector<float>&& actions);
-  void autoResetOrStepPhysics();
-  void autoResetOrStartAsyncStepPhysics();
+  // todo: thread-safe access to PythonEnvironmentState
+  void reset();
+  const std::vector<PythonEnvironmentState>& getEnvironmentStates() const;
+  void startAsyncStepPhysics(std::vector<float>&& actions);
   void waitAsyncStepPhysics();
 
   // for interactive debugging; works a bit like undo, but doesn't undo grabs/drops
@@ -227,7 +247,7 @@ class BatchedSimulator {
     int numFailedDrops_ = 0;
   };
 
-  void reset();
+  void setActions(std::vector<float>&& actions);
   void stepPhysics();
   void substepPhysics();
   void updateCollision();
@@ -237,6 +257,7 @@ class BatchedSimulator {
   void updateRenderInstances(bool forceUpdate);
   void reverseActionsForEnvironment(int b);
   void updateGripping();
+  void updatePythonEnvironmentState();
 
   // uses episode spawn location
   void spawnFreeObject(int b, int freeObjectIndex, bool reinsert);
@@ -280,6 +301,7 @@ class BatchedSimulator {
   int maxRolloutSubsteps_ = -1;
   RewardCalculationContext rewardContext_;
   std::vector<bool> hackDones_;
+  std::vector<PythonEnvironmentState> pythonEnvStates_;
 
   EpisodeSet episodeSet_;
   EpisodeInstanceSet episodeInstanceSet_;

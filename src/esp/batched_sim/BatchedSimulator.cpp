@@ -366,6 +366,10 @@ void RobotInstanceSet::updateLinkTransforms(int currRolloutSubstep, bool updateF
         // tmp[3] = Mn::Vector4(vec.xyz() * scale, 1.f);
         mat = mat * tmp;
 
+        if (robot_->gripperLink_ == i) {
+          robotInstance.cachedGripperLinkMat_ = mat;
+        }
+
         if (updateForPhysics) {
           // perf todo: loop through collision spheres (and look up link id), instead of this sparse way here
           // compute collision sphere transforms
@@ -373,10 +377,6 @@ void RobotInstanceSet::updateLinkTransforms(int currRolloutSubstep, bool updateF
             const auto& sphere = safeVectorGet(robot_->collisionSpheres_, localSphereIdx);
             collisionSphereWorldOrigins_[baseSphereIndex + localSphereIdx] = 
               mat.transformPoint(sphere.origin);
-          }
-
-          if (robot_->gripperLink_ == i) {
-            robotInstance.cachedGripperLinkMat_ = mat;
           }
         }
 
@@ -415,6 +415,35 @@ void RobotInstanceSet::updateLinkTransforms(int currRolloutSubstep, bool updateF
   }
 #endif
 
+}
+
+
+void BatchedSimulator::updatePythonEnvironmentState() {
+
+  const auto currEpisodeStep = currRolloutSubstep_ / config_.numSubsteps;
+
+  const int numEnvs = config_.numEnvs;
+  const Mn::Vector2* positions = &safeVectorGet(rollouts_.positions_, currRolloutSubstep_ * numEnvs);
+  const float* yaws = &safeVectorGet(rollouts_.yaws_, currRolloutSubstep_ * numEnvs);
+
+  for (int b = 0; b < config_.numEnvs; b++) {
+
+    const auto& robotInstance = safeVectorGet(robots_.robotInstances_, b);
+    auto& envState = safeVectorGet(pythonEnvStates_, b);
+
+    envState.ee_pos = robotInstance.cachedGripperLinkMat_.translation();
+    envState.did_finish_episode_and_reset = (currEpisodeStep == 0);
+    envState.finished_episode_success = false; // temp hardcoded
+    envState.episode_step_idx = currEpisodeStep;
+    // todo: do logical or over all substeps
+    envState.did_collide = robots_.collisionResults_[b];
+    // temp hardcoded episode goal data
+    envState.goal_pos = Mn::Vector3(0.f, 0.f, 0.f); // todo: only update this on episode change
+    envState.target_obj_idx = 0; // todo: only update this on episode change
+    // envState.obj_positions // this is updated incrementally
+    envState.robot_position = Mn::Vector3(positions[b].x(), 0.f, positions[b].y());
+    envState.robot_yaw = yaws[b];
+  }
 }
 
 void BatchedSimulator::addSphereDebugInstance(const std::string& name, int b, const Magnum::Vector3& spherePos, float radius) {
@@ -1181,6 +1210,7 @@ BatchedSimulator::BatchedSimulator(const BatchedSimulatorConfig& config) {
   rewardContext_ = RewardCalculationContext(&robot_, numEnvs, &rollouts_);
   robots_.hackRewards_.resize(numEnvs, 0.f);
   hackDones_.resize(numEnvs, false);
+  pythonEnvStates_.resize(numEnvs);
 
   currRolloutSubstep_ =
       -1;  // trigger auto-reset on first call to autoResetOrStepPhysics
@@ -1469,7 +1499,12 @@ void BatchedSimulator::setActions(std::vector<float>&& actions) {
 void BatchedSimulator::reset() {
   ProfilingScope scope("reset episodes");
 
-  BATCHED_SIM_ASSERT(!isPhysicsThreadActive());
+  // we shouldn't be in the middle of rendering or stepping physics
+  ESP_CHECK(!isPhysicsThreadActive(), "Don't call reset during async physics step");
+  ESP_CHECK(!isRenderStarted_, "Don't call reset during async render");
+
+  // all episodes are done; set done flag and reset
+  std::fill(hackDones_.begin(), hackDones_.end(), true);
 
   int numEnvs = bpsWrapper_->envs_.size();
 
@@ -1483,11 +1518,14 @@ void BatchedSimulator::reset() {
   }
   updateRenderInstances(/*forceUpdate*/true);
 
+  updatePythonEnvironmentState();
+
   isOkToRender_ = true;
   isOkToStep_ = true;
   recentStats_.numEpisodes_ += numEnvs;
 }
 
+#if 0
 void BatchedSimulator::autoResetOrStepPhysics() {
   // ProfilingScope scope("BSim autoResetOrStepPhysics");
 
@@ -1497,7 +1535,6 @@ void BatchedSimulator::autoResetOrStepPhysics() {
 
   if (currRolloutSubstep_ == -1 || currRolloutSubstep_ == maxRolloutSubsteps_ - 1) {
     // all episodes are done; set done flag and reset
-    std::fill(hackDones_.begin(), hackDones_.end(), true);
     reset();
   } else {
     if (currRolloutSubstep_ == 0) {
@@ -1510,29 +1547,30 @@ void BatchedSimulator::autoResetOrStepPhysics() {
     updateRenderInstances(/*forceUpdate*/false);
   }
 }
+#endif
 
-void BatchedSimulator::autoResetOrStartAsyncStepPhysics() {
-  ProfilingScope scope("auto-reset or start async physics");
+
+
+void BatchedSimulator::startAsyncStepPhysics(std::vector<float>&& actions) {
+  ProfilingScope scope("start async physics");
 
   BATCHED_SIM_ASSERT(!isPhysicsThreadActive());
   BATCHED_SIM_ASSERT(config_.doAsyncPhysicsStep);
+  BATCHED_SIM_ASSERT(currRolloutSubstep_ != -1);
+  BATCHED_SIM_ASSERT(currRolloutSubstep_ < maxRolloutSubsteps_ - 1);
+
+  setActions(std::move(actions));
 
   deleteDebugInstances();
 
-  if (currRolloutSubstep_ == -1 || currRolloutSubstep_ == maxRolloutSubsteps_ - 1) {
-    // all episodes are done; set done flag and reset
-    std::fill(hackDones_.begin(), hackDones_.end(), true);
-    reset();
+  if (currRolloutSubstep_ == 0) {
+    std::fill(hackDones_.begin(), hackDones_.end(), false);
   } else {
-    if (currRolloutSubstep_ == 0) {
-      std::fill(hackDones_.begin(), hackDones_.end(), false);
-    } else {
-      BATCHED_SIM_ASSERT(!hackDones_[0]);
-    }
-
-    // send message to physicsThread_
-    signalStepPhysics();
+    BATCHED_SIM_ASSERT(!hackDones_[0]);
   }
+
+  // send message to physicsThread_
+  signalStepPhysics();
 }
 
 void BatchedSimulator::stepPhysics() {
@@ -1719,7 +1757,7 @@ void BatchedSimulator::startRender() {
   isRenderStarted_ = true;
 }
 
-void BatchedSimulator::waitForFrame() {
+void BatchedSimulator::waitForRender() {
   ProfilingScope scope("wait for GPU render");
   BATCHED_SIM_ASSERT(isRenderStarted_);
   bpsWrapper_->renderer_->waitForFrame();
@@ -1928,12 +1966,25 @@ void BatchedSimulator::signalKillPhysicsThread() {
 }
 
 
+const std::vector<PythonEnvironmentState>& BatchedSimulator::getEnvironmentStates() const {
+  ESP_CHECK(!isPhysicsThreadActive(), "Don't call getEnvironmentStates during async physics step");
+  ESP_CHECK(isRenderStarted_, "For best runtime perf, call getEnvironmentStates *after* startRender");  
+  return pythonEnvStates_;  
+}
+
 void BatchedSimulator::waitAsyncStepPhysics() {
   //ProfilingScope scope("BSim waitAsyncStepPhysics");
 
   {
     std::unique_lock<std::mutex> lck(physicsMutex_);
     physicsCondVar_.wait(lck, [&]{ return isAsyncStepPhysicsFinished_; });
+  }
+
+  // perf todo: do this reset on the physics thread
+  if (currRolloutSubstep_ == maxRolloutSubsteps_ - 1) {
+    reset();
+  } else {
+    updatePythonEnvironmentState();
   }
 
   // sloppy: don't calc rewards if we just did a reset

@@ -48,19 +48,32 @@ void initBatchedSimBindings(py::module& m) {
       .def_readwrite("max_episode_length", &BatchedSimulatorConfig::maxEpisodeLength, R"(Todo)");
       
     
+  py::class_<PythonEnvironmentState, PythonEnvironmentState::ptr>(
+      m, "EnvironmentState")
+      .def(py::init(&PythonEnvironmentState::create<>))
+      .def_readwrite("did_finish_episode_and_reset", &PythonEnvironmentState::did_finish_episode_and_reset, R"(Todo)")
+      .def_readwrite("finished_episode_success", &PythonEnvironmentState::finished_episode_success, R"(Todo)")
+      .def_readwrite("target_obj_idx", &PythonEnvironmentState::target_obj_idx, R"(Todo)")
+      .def_readwrite("goal_pos", &PythonEnvironmentState::goal_pos, R"(Todo)")
+      .def_readwrite("episode_step_idx", &PythonEnvironmentState::episode_step_idx, R"(Todo)")
+      .def_readwrite("robot_position", &PythonEnvironmentState::robot_position, R"(Todo)")
+      .def_readwrite("robot_yaw", &PythonEnvironmentState::robot_yaw, R"(Todo)")
+      .def_readwrite("ee_pos", &PythonEnvironmentState::ee_pos, R"(Todo)")
+      .def_readwrite("did_collide", &PythonEnvironmentState::did_collide, R"(Todo)")
+      .def_readwrite("obj_positions", &PythonEnvironmentState::obj_positions, R"(Todo)");
+
+
   py::class_<BatchedSimulator, BatchedSimulator::ptr>(m, "BatchedSimulator")
       .def(py::init(&BatchedSimulator::create<const BatchedSimulatorConfig&>))
-      .def("set_actions", &BatchedSimulator::setActions, R"(todo)")
-      .def("auto_reset_or_step_physics",
-           &BatchedSimulator::autoResetOrStepPhysics, R"(todo)")
-      .def("auto_reset_or_start_async_step_physics",
-           &BatchedSimulator::autoResetOrStartAsyncStepPhysics, R"(todo)")
-      .def("wait_for_frame", &BatchedSimulator::waitForFrame, R"(todo)")
+      .def("reset",
+           &BatchedSimulator::reset, R"(todo)")
+      .def("get_environment_states",
+           &BatchedSimulator::getEnvironmentStates, R"(todo)")
+      .def("start_async_step_physics",
+           &BatchedSimulator::startAsyncStepPhysics, R"(todo)")
       .def("wait_async_step_physics", &BatchedSimulator::waitAsyncStepPhysics, R"(todo)")
-      .def("get_rewards", &BatchedSimulator::getRewards, R"(todo)")
-      .def("get_dones", &BatchedSimulator::getDones, R"(todo)")
       .def("start_render", &BatchedSimulator::startRender, R"(todo)")
-      .def("wait_for_frame", &BatchedSimulator::waitForFrame, R"(todo)")
+      .def("wait_for_frame", &BatchedSimulator::waitForRender, R"(todo)")
       .def("close", &BatchedSimulator::close, R"(todo)")
       // .def("reset", &BatchedSimulator::reset, R"(todo)")
       .def(

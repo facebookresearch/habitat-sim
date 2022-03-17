@@ -206,7 +206,7 @@ TEST_F(BatchedSimulatorTest, basic) {
       .includeColor = includeColor,
       .sensor0 = {.width = 768, .height = 768, .hfov = 70},
       .forceRandomActions = forceRandomActions,
-      .doAsyncPhysicsStep = doOverlapPhysics,
+      .doAsyncPhysicsStep = true,
       .maxEpisodeLength = 500,
       .numSubsteps = 1,
       .doPairedDebugEnvs = doPairedDebugEnvs
@@ -276,10 +276,10 @@ TEST_F(BatchedSimulatorTest, basic) {
 
   bool doAdvanceSim = false;
 
+  bsim.reset();
+
   if (doOverlapPhysics) {
-    bsim.autoResetOrStartAsyncStepPhysics();
-  } else {
-    bsim.autoResetOrStepPhysics();
+    bsim.startAsyncStepPhysics(std::vector<float>(actions));
   }
 
   int frameIdx = 0;
@@ -292,19 +292,18 @@ TEST_F(BatchedSimulatorTest, basic) {
       bsim.waitAsyncStepPhysics();
       bsim.startRender();
       if (doAdvanceSim) {
-        bsim.setActions(std::vector<float>(actions));
-        bsim.autoResetOrStartAsyncStepPhysics();
+        bsim.startAsyncStepPhysics(std::vector<float>(actions));
         doAdvanceSim = false;
       }
-      bsim.waitForFrame();
+      bsim.waitForRender();
     } else {
       if (doAdvanceSim) {
-        bsim.setActions(std::vector<float>(actions));
-        bsim.autoResetOrStepPhysics();
+        bsim.startAsyncStepPhysics(std::vector<float>(actions));
+        bsim.waitAsyncStepPhysics();        
         doAdvanceSim = false;
       }
       bsim.startRender();
-      bsim.waitForFrame();
+      bsim.waitForRender();
     }
 
     uint8_t* base_color_ptr = bsim.getBpsRenderer().getColorPointer();
