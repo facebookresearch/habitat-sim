@@ -549,7 +549,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
 
   ArticulatedObject& getArticulatedObject(int objectId) {
     auto existAOIter = getArticulatedObjIteratorOrAssert(objectId);
-    return *existAOIter->second.get();
+    return *existAOIter->second;
   }
 
   //============ Simulator functions =============

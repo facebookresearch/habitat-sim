@@ -401,7 +401,7 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
 
     auto linkIter = links_.find(id);
     CORRADE_INTERNAL_ASSERT(linkIter != links_.end());
-    return *linkIter->second.get();
+    return *linkIter->second;
   }
 
   /**
