@@ -414,6 +414,10 @@ def make_cfg(settings):
     sim_cfg.gpu_device_id = 0
     sim_cfg.scene_id = settings["scene"]
     sim_cfg.enable_physics = settings["enable_physics"]
+    # Optional; Specify the location of an existing scene dataset configuration
+    # that describes the locations and configurations of all the assets to be used
+    if "scene_dataset_config" in settings:
+        sim_cfg.scene_dataset_config_file = settings["scene_dataset_config"]
 
     # Note: all sensors must have the same resolution
     sensor_specs = []
