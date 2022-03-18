@@ -2913,8 +2913,6 @@ std::unique_ptr<MeshData> ResourceManager::createJoinedCollisionMesh(
     const std::string& filename) const {
   std::unique_ptr<MeshData> mesh = std::make_unique<MeshData>();
 
-  CORRADE_INTERNAL_ASSERT(resourceDict_.count(filename) > 0);
-
   const MeshMetaData& metaData = getMeshMetaData(filename);
 
   Mn::Matrix4 identity;
