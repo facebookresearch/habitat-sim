@@ -389,7 +389,7 @@ void BulletArticulatedObject::setJointForces(const std::vector<float>& forces) {
     btMultibodyLink& link = btMultiBody_->getLink(i);
     for (int dof = 0; dof < link.m_dofCount; ++dof) {
       link.m_jointTorque[dof] = forces[dofCount];
-      dofCount++;
+      ++dofCount;
     }
   }
 }
@@ -406,7 +406,7 @@ void BulletArticulatedObject::addJointForces(const std::vector<float>& forces) {
     btMultibodyLink& link = btMultiBody_->getLink(i);
     for (int dof = 0; dof < link.m_dofCount; ++dof) {
       link.m_jointTorque[dof] += forces[dofCount];
-      dofCount++;
+      ++dofCount;
     }
   }
 }
@@ -418,7 +418,7 @@ std::vector<float> BulletArticulatedObject::getJointForces() {
     btScalar* dofForces = btMultiBody_->getJointTorqueMultiDof(i);
     for (int dof = 0; dof < btMultiBody_->getLink(i).m_dofCount; ++dof) {
       forces[dofCount] = dofForces[dof];
-      dofCount++;
+      ++dofCount;
     }
   }
   return forces;
@@ -450,7 +450,7 @@ std::vector<float> BulletArticulatedObject::getJointVelocities() {
     btScalar* dofVels = btMultiBody_->getJointVelMultiDof(i);
     for (int dof = 0; dof < btMultiBody_->getLink(i).m_dofCount; ++dof) {
       vels[dofCount] = dofVels[dof];
-      dofCount++;
+      ++dofCount;
     }
   }
   return vels;
@@ -485,7 +485,7 @@ std::vector<float> BulletArticulatedObject::getJointPositions() {
     btScalar* linkPos = btMultiBody_->getJointPosMultiDof(i);
     for (int pos = 0; pos < btMultiBody_->getLink(i).m_posVarCount; ++pos) {
       positions[posCount] = linkPos[pos];
-      posCount++;
+      ++posCount;
     }
   }
   return positions;
@@ -524,7 +524,7 @@ BulletArticulatedObject::getJointPositionLimits() {
       auto& jlc = jointLimitConstraints.at(i);
       lowerLimits[posCount] = jlc.lowerLimit;
       upperLimits[posCount] = jlc.upperLimit;
-      posCount++;
+      ++posCount;
     } else {
       posCount += btMultiBody_->getLink(i).m_posVarCount;
     }
@@ -659,7 +659,7 @@ void BulletArticulatedObject::clampJointLimits() {
 
     // continue incrementing the dof counter
     for (int dof = 0; dof < btMultiBody_->getLink(i).m_dofCount; ++dof) {
-      dofCount++;
+      ++dofCount;
     }
   }
 

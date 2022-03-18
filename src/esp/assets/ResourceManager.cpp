@@ -1991,7 +1991,7 @@ int ResourceManager::loadNavMeshVisualization(esp::nav::PathFinder& pathFinder,
 
   // add the vertices
   positions.resize(navMeshData->vbo.size());
-  for (size_t vix = 0; vix < navMeshData->vbo.size(); vix++) {
+  for (size_t vix = 0; vix < navMeshData->vbo.size(); ++vix) {
     positions[vix] = Mn::Vector3{navMeshData->vbo[vix]};
   }
 
@@ -3024,7 +3024,7 @@ void ResourceManager::createConvexHullDecomposition(
 
     // add the vertices
     positions.resize(ch.m_nPoints);
-    for (size_t vix = 0; vix < ch.m_nPoints; vix++) {
+    for (size_t vix = 0; vix < ch.m_nPoints; ++vix) {
       positions[vix] =
           Mn::Vector3(ch.m_points[vix * 3], ch.m_points[vix * 3 + 1],
                       ch.m_points[vix * 3 + 2]);

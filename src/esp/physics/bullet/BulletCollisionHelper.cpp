@@ -37,7 +37,7 @@ int BulletCollisionHelper::getNumActiveOverlappingPairs(
     btMultiBodyDynamicsWorld* bWorld) {
   int count = 0;
   auto func = [&](const btCollisionObject*, const btCollisionObject*,
-                  const btPersistentManifold*) { count++; };
+                  const btPersistentManifold*) { ++count; };
 
   processActiveManifolds(bWorld, func);
 
@@ -49,7 +49,7 @@ void BulletCollisionHelper::processActiveManifolds(
     btMultiBodyDynamicsWorld* bWorld,
     Func func) {
   auto* dispatcher = bWorld->getDispatcher();
-  for (int i = 0; i < dispatcher->getNumManifolds(); i++) {
+  for (int i = 0; i < dispatcher->getNumManifolds(); ++i) {
     auto* manifold = dispatcher->getManifoldByIndexInternal(i);
     const btCollisionObject* colObj0 =
         static_cast<const btCollisionObject*>(manifold->getBody0());

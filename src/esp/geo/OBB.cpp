@@ -33,7 +33,7 @@ static const vec3f kCorners[8] = {
 
 box3f OBB::toAABB() const {
   box3f bbox;
-  for (int i = 0; i < 8; i++) {
+  for (int i = 0; i < 8; ++i) {
     const vec3f worldPoint =
         center_ + (rotation_ * kCorners[i].cwiseProduct(halfExtents_));
     bbox.extend(worldPoint);
@@ -53,13 +53,13 @@ void OBB::recomputeTransforms() {
   // TODO(MS): these can be composed more efficiently and directly
   const mat3f R = rotation_.matrix();
   // Local-to-world transform
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < 3; ++i) {
     localToWorld_.linear().col(i) = R.col(i) * halfExtents_[i];
   }
   localToWorld_.translation() = center_;
 
   // World-to-local transform. Points within OBB are in [0,1]^3
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < 3; ++i) {
     worldToLocal_.linear().row(i) = R.col(i) * (1.0f / halfExtents_[i]);
   }
   worldToLocal_.translation() = -worldToLocal_.linear() * center_;
@@ -68,7 +68,7 @@ void OBB::recomputeTransforms() {
 bool OBB::contains(const vec3f& p, float eps /* = 1e-6f */) const {
   const vec3f pLocal = worldToLocal() * p;
   const float bound = 1.0f + eps;
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < 3; ++i) {
     if (std::abs(pLocal[i]) > bound) {
       return false;
     }
@@ -88,7 +88,7 @@ vec3f OBB::closestPoint(const vec3f& p) const {
   const vec3f d = p - center_;
   vec3f closest = center_;
   const mat3f R = rotation_.matrix();
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < 3; ++i) {
     closest +=
         clamp(R.col(i).dot(d), -halfExtents_[i], halfExtents_[i]) * R.col(i);
   }

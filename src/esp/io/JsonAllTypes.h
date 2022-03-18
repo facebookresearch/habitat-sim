@@ -41,7 +41,7 @@ inline JsonGenericValue toJsonArrayHelper(const T* objects,
                                           int count,
                                           JsonAllocator& allocator) {
   JsonGenericValue arr(rapidjson::kArrayType);
-  for (int i = 0; i < count; i++) {
+  for (int i = 0; i < count; ++i) {
     arr.PushBack(toJsonValue(objects[i], allocator), allocator);
   }
   return arr;

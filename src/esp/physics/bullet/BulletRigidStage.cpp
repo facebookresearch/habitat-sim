@@ -164,14 +164,14 @@ void BulletRigidStage::constructBulletSceneFromMeshes(
 
 void BulletRigidStage::setFrictionCoefficient(
     const double frictionCoefficient) {
-  for (std::size_t i = 0; i < bStaticCollisionObjects_.size(); i++) {
+  for (std::size_t i = 0; i < bStaticCollisionObjects_.size(); ++i) {
     bStaticCollisionObjects_[i]->setFriction(frictionCoefficient);
   }
 }
 
 void BulletRigidStage::setRestitutionCoefficient(
     const double restitutionCoefficient) {
-  for (std::size_t i = 0; i < bStaticCollisionObjects_.size(); i++) {
+  for (std::size_t i = 0; i < bStaticCollisionObjects_.size(); ++i) {
     bStaticCollisionObjects_[i]->setRestitution(restitutionCoefficient);
   }
 }

@@ -176,7 +176,7 @@ void BulletURDFImporter::computeTotalNumberOfJoints(int linkIndex) {
   std::vector<int> childIndices;
   getLinkChildIndices(linkIndex, childIndices);
   cache->m_totalNumJoints1 += childIndices.size();
-  for (size_t i = 0; i < childIndices.size(); i++) {
+  for (size_t i = 0; i < childIndices.size(); ++i) {
     int childIndex = childIndices[i];
     computeTotalNumberOfJoints(childIndex);
   }
@@ -200,7 +200,7 @@ void BulletURDFImporter::getAllIndices(
   std::vector<int> urdfChildIndices;
   getLinkChildIndices(urdfLinkIndex, urdfChildIndices);
   int numChildren = urdfChildIndices.size();
-  for (int i = 0; i < numChildren; i++) {
+  for (int i = 0; i < numChildren; ++i) {
     int urdfChildLinkIndex = urdfChildIndices[i];
     getAllIndices(urdfChildLinkIndex, urdfLinkIndex, allIndices);
   }
@@ -215,7 +215,7 @@ void BulletURDFImporter::computeParentIndices(URDF2BulletCached& bulletCache,
 
   std::vector<int> childIndices;
   getLinkChildIndices(urdfLinkIndex, childIndices);
-  for (size_t i = 0; i < childIndices.size(); i++) {
+  for (size_t i = 0; i < childIndices.size(); ++i) {
     computeParentIndices(bulletCache, childIndices[i], urdfLinkIndex);
   }
 }
@@ -245,7 +245,7 @@ void BulletURDFImporter::initURDF2BulletCache() {
 
       computeParentIndices(cache2, rootLinkIndex, -2);
 
-      for (int j = 0; j < numTotalLinksIncludingBase; j++) {
+      for (int j = 0; j < numTotalLinksIncludingBase; ++j) {
         cache->m_urdfLinkParentIndices[j] = cache2.m_urdfLinkParentIndices[j];
         cache->m_urdfLinkIndices2BulletLinkIndices[j] = j - 1;
       }
@@ -642,7 +642,7 @@ Mn::Matrix4 BulletURDFImporter::convertURDF2BulletInternal(
 
     int numChildren = urdfChildIndices.size();
 
-    for (int i = 0; i < numChildren; i++) {
+    for (int i = 0; i < numChildren; ++i) {
       int urdfChildLinkIndex = urdfChildIndices[i];
 
       convertURDF2BulletInternal(urdfChildLinkIndex, linkTransformInWorldSpace,

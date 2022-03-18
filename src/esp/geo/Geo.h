@@ -233,7 +233,7 @@ void conditionalDFS(const std::vector<std::set<uint32_t>>& adjList,
   setOfVerts.insert(vIDX);
   visited[vIDX] = true;
   // for every adjacent vertex
-  for (auto it = adjList[vIDX].begin(); it != adjList[vIDX].end(); it++) {
+  for (auto it = adjList[vIDX].begin(); it != adjList[vIDX].end(); ++it) {
     // make sure not visited and color matches
     if ((!visited[*it]) && (clrVec[*it] == clr)) {
       conditionalDFS(adjList, clrVec, *it, visited, clr, setOfVerts);

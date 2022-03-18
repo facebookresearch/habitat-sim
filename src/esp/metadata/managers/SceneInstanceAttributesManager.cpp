@@ -70,7 +70,7 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
   if (jsonConfig.HasMember("object_instances")) {
     if (jsonConfig["object_instances"].IsArray()) {
       const auto& objectArray = jsonConfig["object_instances"];
-      for (rapidjson::SizeType i = 0; i < objectArray.Size(); i++) {
+      for (rapidjson::SizeType i = 0; i < objectArray.Size(); ++i) {
         const auto& objCell = objectArray[i];
         if (objCell.IsObject()) {
           attribs->addObjectInstance(createInstanceAttributesFromJSON(objCell));
@@ -90,7 +90,7 @@ void SceneInstanceAttributesManager::setValsFromJSONDoc(
       (jsonConfig["articulated_object_instances"].IsArray())) {
     const auto& articulatedObjArray =
         jsonConfig["articulated_object_instances"];
-    for (rapidjson::SizeType i = 0; i < articulatedObjArray.Size(); i++) {
+    for (rapidjson::SizeType i = 0; i < articulatedObjArray.Size(); ++i) {
       const auto& artObjCell = articulatedObjArray[i];
 
       if (artObjCell.IsObject()) {

@@ -71,7 +71,7 @@ void URDFImporter::getLinkChildIndices(
   auto link = activeModel_->getLink(linkIndex);
 
   if (link != nullptr) {
-    for (size_t i = 0; i < link->m_childLinks.size(); i++) {
+    for (size_t i = 0; i < link->m_childLinks.size(); ++i) {
       int childIndex = link->m_childLinks[i].lock()->m_linkIndex;
       childLinkIndices.push_back(childIndex);
     }

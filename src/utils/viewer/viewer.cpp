@@ -1757,7 +1757,7 @@ void Viewer::dispMetadataInfo() {  // display info report
 }
 
 void Viewer::moveAndLook(int repetitions) {
-  for (int i = 0; i < repetitions; i++) {
+  for (int i = 0; i < repetitions; ++i) {
     if (keysPressed[KeyEvent::Key::Left]) {
       defaultAgent_->act("turnLeft");
     }
@@ -2426,7 +2426,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       iterateAndDisplaySignedDistanceField();
       // Increase the distance visualized for next time (Pressing L
       // repeatedly will visualize different distances)
-      voxelDistance++;
+      ++voxelDistance;
       break;
     }
     case KeyEvent::Key::G: {

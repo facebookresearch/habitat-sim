@@ -305,7 +305,7 @@ void BulletRigidObject::shiftOrigin(const Magnum::Vector3& shift) {
 void BulletRigidObject::shiftObjectCollisionShape(
     const Magnum::Vector3& shift) {
   // shift all children of the parent collision shape
-  for (int i = 0; i < bObjectShape_->getNumChildShapes(); i++) {
+  for (int i = 0; i < bObjectShape_->getNumChildShapes(); ++i) {
     btTransform cT = bObjectShape_->getChildTransform(i);
     cT.setOrigin(cT.getOrigin() + btVector3(shift));
     bObjectShape_->updateChildTransform(i, cT, false);

@@ -313,8 +313,8 @@ class VoxelGrid {
     Corrade::Containers::StridedArrayView3D<T> grid = getGrid<T>(gridName);
 
     // iterate through each voxel grid cell
-    for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
-      for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
+    for (int j = 0; j < m_voxelGridDimensions[1]; ++j) {
+      for (int k = 0; k < m_voxelGridDimensions[2]; ++k) {
         T val = clamp(grid[ind][j][k], minVal, maxVal);
         val -= minVal;
         float colorVal = float(val) / float(maxVal - minVal);

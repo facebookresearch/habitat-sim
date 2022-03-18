@@ -60,7 +60,7 @@ int getNumberOfChildrenOfRoot(esp::scene::SceneNode& rootNode) {
     CORRADE_VERIFY(lastRootChild);
     while (lastRootChild->nextSibling()) {
       lastRootChild = lastRootChild->nextSibling();
-      numberOfChildrenOfRoot++;
+      ++numberOfChildrenOfRoot;
     }
   }
   return numberOfChildrenOfRoot;
@@ -307,7 +307,7 @@ void GfxReplayTest::testPlayer() {
                 // applied to a sibling of the lastRootChild
         // get the lastRootChild before the stateUpdate
         const auto* rootChild = rootNode.children().first();
-        for (int i = 1; i < numberOfChildren; i++) {
+        for (int i = 1; i < numberOfChildren; ++i) {
           CORRADE_VERIFY(rootChild);
           rootChild = rootChild->nextSibling();
         }

@@ -85,9 +85,9 @@ void generateScalarGradientField(
   std::vector<Mn::Vector3i> neighbors{
       Mn::Vector3i(1, 0, 0),  Mn::Vector3i(-1, 0, 0), Mn::Vector3i(0, 1, 0),
       Mn::Vector3i(0, -1, 0), Mn::Vector3i(0, 0, 1),  Mn::Vector3i(0, 0, -1)};
-  for (int i = 0; i < m_voxelGridDimensions[0]; i++) {
-    for (int j = 0; j < m_voxelGridDimensions[1]; j++) {
-      for (int k = 0; k < m_voxelGridDimensions[2]; k++) {
+  for (int i = 0; i < m_voxelGridDimensions[0]; ++i) {
+    for (int j = 0; j < m_voxelGridDimensions[1]; ++j) {
+      for (int k = 0; k < m_voxelGridDimensions[2]; ++k) {
         Mn::Vector3i index = Mn::Vector3i(i, j, k);
         Mn::Vector3 result(0, 0, 0);
         int validVectors = 0;

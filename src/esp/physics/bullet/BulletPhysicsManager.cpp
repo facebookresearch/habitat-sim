@@ -575,7 +575,7 @@ std::vector<ContactPointData> BulletPhysicsManager::getContactPoints() const {
   auto* dispatcher = bWorld_->getDispatcher();
   int numContactManifolds = dispatcher->getNumManifolds();
   contactPoints.reserve(numContactManifolds * 4);
-  for (int i = 0; i < numContactManifolds; i++) {
+  for (int i = 0; i < numContactManifolds; ++i) {
     const btPersistentManifold* manifold =
         dispatcher->getInternalManifoldPointer()[i];
 
@@ -597,7 +597,7 @@ std::vector<ContactPointData> BulletPhysicsManager::getContactPoints() const {
                      (((colObj1) != nullptr) &&
                       colObj1->getActivationState() != ISLAND_SLEEPING));
 
-    for (int p = 0; p < manifold->getNumContacts(); p++) {
+    for (int p = 0; p < manifold->getNumContacts(); ++p) {
       ContactPointData pt;
       pt.objectIdA = objectIdA;
       pt.objectIdB = objectIdB;

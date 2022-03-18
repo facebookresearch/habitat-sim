@@ -66,7 +66,7 @@ bool readMember(const JsonGenericValue& value,
       return false;
     }
     vec.reserve(arr.Size());
-    for (size_t i = 0; i < arr.Size(); i++) {
+    for (size_t i = 0; i < arr.Size(); ++i) {
       const auto& itemObj = arr[i];
       T item;
       if (!fromJsonValue(itemObj, item)) {
