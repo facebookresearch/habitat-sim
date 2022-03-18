@@ -46,8 +46,13 @@ HM3D_DEST_DIR = "/home/john/Facebook/habitat-sim/data/scene_datasets/HM3D"
 # HM3D_ANNOTATION_SRC_DIR = "/home/john/Datasets In Progress/HM3D_Semantic/Appen_Scenes"
 
 # The scenes used for the challenge (151)
+# HM3D_ANNOTATION_SRC_DIR = (
+#     "/home/john/Datasets In Progress/HM3D_Semantic/Appen_Scenes_Challenge"
+# )
+
+# Custom subset of scenes to check
 HM3D_ANNOTATION_SRC_DIR = (
-    "/home/john/Datasets In Progress/HM3D_Semantic/Appen_Scenes_Challenge"
+    "/home/john/Datasets In Progress/HM3D_Semantic/Appen_Redos_Mar_17"
 )
 #
 # Appen annotation source scene directory regex.
@@ -70,7 +75,7 @@ COUNT_SEMANTIC_COLORS_PER_SCENE = False
 #
 # Prefix for config - leave empty string for none. Use this to build configs on a
 # subset of scenes for testing without having to view all scenes
-CONFIG_PREFIX = ""
+CONFIG_PREFIX = "Mar_17"
 
 ##############################################################################
 ## You should not need to modify anything below here
@@ -156,6 +161,7 @@ def buildFileListing():
     dir_listing = ut.get_directories_matching_regex(
         HM3D_ANNOTATION_SRC_DIR, annotation_dir_pattern
     )
+    print(f"Size of dir_listing : {len(dir_listing)}")
     # destination directory will be based on numeric field, if available
     file_names_and_paths = {}
     for src_dir, dirname_full in dir_listing:
@@ -249,7 +255,14 @@ def build_annotation_configs(part_file_list_dict: Dict, output_files: List):
     ):
         # replace existing list of paths in paths dict with rel_file_names list
         tmp_paths = []
+        # glob_file_ext = path_glob_file.split("*.")[-1]
         for file_path in rel_file_dirs:
+            # tmp_paths.append(
+            #     os_join(
+            #         file_path,
+            #         f"{file_path.split('/')[0].split('-')[-1]}.{glob_file_ext}",
+            #     )
+            # )
             tmp_paths.append(os_join(file_path, path_glob_file))
         paths[file_ext_key] = tmp_paths
 
@@ -379,6 +392,7 @@ def save_annotated_file_lists(output_files: List):
     # all partition files should have hm3d-<partition>-habitat as the lowest
     # relative directory
     for filename in sorted(output_files):
+        print(f"filename : {filename}")
         fileparts = filename.split(os_sep)
         if len(fileparts) < 2:
             # filename is root level and not part of a partition
@@ -472,6 +486,9 @@ def main():
                 ssd_success = verify_file(dest_ssd_filename, src_dir, "SSD", failures)
                 if ssd_success:
                     output_files.append(data_dict["dest_subdir_ssdfile"])
+                    # part_file_list_dict[partition_tag].append(
+                    #     data_dict["dest_subdir_ssdfile"].replace(partition_tag, "*", 1)
+                    # )
                     part_file_list_dict[partition_tag].append(
                         data_dict["dest_subdir_ssdfile"]
                     )
@@ -482,8 +499,14 @@ def main():
                 glb_success = verify_file(dest_glb_filename, src_dir, "GLB", failures)
                 if glb_success:
                     output_files.append(data_dict["dest_subdir_glbfile"])
+                    # part_file_list_dict[partition_tag].append(
+                    #     data_dict["dest_subdir_glbfile"].replace(partition_tag, "*", 1)
+                    # )
                     part_file_list_dict[partition_tag].append(
                         data_dict["dest_subdir_glbfile"]
+                    )
+                    print(
+                        f'dest_subdir_glbfile : {data_dict["dest_subdir_glbfile"]} : old : {data_dict["dest_subdir_glbfile"].replace(partition_tag, "*", 1)}'
                     )
 
         print(
