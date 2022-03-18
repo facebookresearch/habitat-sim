@@ -328,8 +328,9 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
       // base link
       return baseLink_->node();
     }
-    CORRADE_INTERNAL_ASSERT(links_.count(linkId));
-    return links_.at(linkId)->node();
+    auto linkIter = links_.find(linkId);
+    CORRADE_INTERNAL_ASSERT(linkIter != links_.end());
+    return linkIter->second->node();
   }
 
   /**
@@ -343,8 +344,9 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
       // base link
       return baseLink_->visualNodes_;
     }
-    CORRADE_INTERNAL_ASSERT(links_.count(linkId));
-    return links_.at(linkId)->visualNodes_;
+    auto linkIter = links_.find(linkId);
+    CORRADE_INTERNAL_ASSERT(linkIter != links_.end());
+    return linkIter->second->visualNodes_;
   }
 
   /**
@@ -396,8 +398,10 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
     if (id == -1) {
       return *baseLink_.get();
     }
-    CORRADE_INTERNAL_ASSERT(links_.count(id));
-    return *links_.at(id).get();
+
+    auto linkIter = links_.find(id);
+    CORRADE_INTERNAL_ASSERT(linkIter != links_.end());
+    return *linkIter->second.get();
   }
 
   /**
@@ -597,10 +601,11 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * @return The link's parent joint's name.
    */
   virtual std::string getLinkJointName(CORRADE_UNUSED int linkId) const {
-    ESP_CHECK(links_.count(linkId) != 0,
+    auto linkIter = links_.find(linkId);
+    ESP_CHECK(linkIter != links_.end(),
               "ArticulatedObject::getLinkJointName - no link with linkId ="
                   << linkId);
-    return links_.at(linkId)->linkJointName;
+    return linkIter->second->linkJointName;
   }
 
   /**
@@ -613,10 +618,12 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
     if (linkId == -1) {
       return baseLink_->linkName;
     }
+
+    auto linkIter = links_.find(linkId);
     ESP_CHECK(
-        links_.count(linkId) != 0,
+        linkIter != links_.end(),
         "ArticulatedObject::getLinkName - no link with linkId =" << linkId);
-    return links_.at(linkId)->linkName;
+    return linkIter->second->linkName;
   }
 
   /**
@@ -714,22 +721,24 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    * @brief Remove and destroy a joint motor.
    */
   virtual void removeJointMotor(const int motorId) {
+    auto jointMotorIter = jointMotors_.find(motorId);
     ESP_CHECK(
-        jointMotors_.count(motorId) > 0,
+        jointMotorIter != jointMotors_.end(),
         "ArticulatedObject::removeJointMotor - No motor exists with motorId ="
             << motorId);
-    jointMotors_.erase(motorId);
+    jointMotors_.erase(jointMotorIter);
   }
 
   /**
    * @brief Get a copy of the JointMotorSettings for an existing motor.
    */
   virtual JointMotorSettings getJointMotorSettings(const int motorId) {
-    ESP_CHECK(jointMotors_.count(motorId) > 0,
+    auto jointMotorIter = jointMotors_.find(motorId);
+    ESP_CHECK(jointMotorIter != jointMotors_.end(),
               "ArticulatedObject::getJointMotorSettings - No motor exists with "
               "motorId ="
                   << motorId);
-    return jointMotors_.at(motorId)->settings;
+    return jointMotorIter->second->settings;
   }
 
   /**
@@ -737,15 +746,16 @@ class ArticulatedObject : public esp::physics::PhysicsObjectBase {
    */
   virtual void updateJointMotor(const int motorId,
                                 const JointMotorSettings& settings) {
+    auto jointMotorIter = jointMotors_.find(motorId);
     ESP_CHECK(
-        jointMotors_.count(motorId) > 0,
+        jointMotorIter != jointMotors_.end(),
         "ArticulatedObject::updateJointMotor - No motor exists with motorId ="
             << motorId);
     ESP_CHECK(
-        jointMotors_.at(motorId)->settings.motorType == settings.motorType,
+        jointMotorIter->second->settings.motorType == settings.motorType,
         "ArticulatedObject::updateJointMotor - JointMotorSettings.motorType "
         "does not match joint type.");
-    jointMotors_.at(motorId)->settings = settings;
+    jointMotorIter->second->settings = settings;
   }
 
   /**

@@ -19,7 +19,9 @@ bool URDFImporter::loadURDF(const std::string& filename,
                             float globalScale,
                             float massScale,
                             bool forceReload) {
-  if ((modelCache_.count(filename) == 0u) || forceReload) {
+  auto modelCacheIter = modelCache_.find(filename);
+  // if map not found or forcing reload
+  if ((modelCacheIter == modelCache_.end()) || forceReload) {
     if (!Corrade::Utility::Directory::exists(filename) ||
         Corrade::Utility::Directory::isDirectory(filename)) {
       ESP_DEBUG() << "File does not exist:" << filename
@@ -40,15 +42,15 @@ bool URDFImporter::loadURDF(const std::string& filename,
       urdfModel->printKinematicChain();
     }
 
-    // if reloading, clear the old model
-    if (modelCache_.count(filename) != 0u) {
-      modelCache_.erase(filename);
+    // if reloading, clear the old model if exists
+    if (modelCacheIter != modelCache_.end()) {
+      modelCache_.erase(modelCacheIter);
     }
 
-    // register the new model
-    modelCache_.emplace(filename, urdfModel);
+    // register the new model and set to iterator
+    modelCacheIter = modelCache_.emplace(filename, urdfModel).first;
   }
-  activeModel_ = modelCache_.at(filename);
+  activeModel_ = modelCacheIter->second;
 
   // re-scale the cached model
   activeModel_->setGlobalScaling(globalScale);

@@ -415,11 +415,11 @@ void PhysicsManager::removeObject(const int objectId,
     // aquire context if available
     simulator_->getRenderGLContext();
   }
-  assertRigidIdValidity(objectId);
-  scene::SceneNode* objectNode = &existingObjects_.at(objectId)->node();
-  scene::SceneNode* visualNode = existingObjects_.at(objectId)->visualNode_;
-  std::string objName = existingObjects_.at(objectId)->getObjectName();
-  existingObjects_.erase(objectId);
+  auto existingObjIter = getRigidObjIteratorOrAssert(objectId);
+  scene::SceneNode* objectNode = &existingObjIter->second->node();
+  scene::SceneNode* visualNode = existingObjIter->second->visualNode_;
+  std::string objName = existingObjIter->second->getObjectName();
+  existingObjects_.erase(existingObjIter);
   deallocateObjectID(objectId);
   if (deleteObjectNode) {
     delete objectNode;
@@ -431,9 +431,10 @@ void PhysicsManager::removeObject(const int objectId,
     rigidObjectManager_->removeObjectByID(objectId);
   }
   // remove trajvis
-  if (trajVisNameByID.count(objectId) > 0) {
+  auto trajVisIter = trajVisNameByID.find(objectId);
+  if (trajVisIter != trajVisNameByID.end()) {
     std::string trajVisAssetName = trajVisNameByID[objectId];
-    trajVisNameByID.erase(objectId);
+    trajVisNameByID.erase(trajVisIter);
     trajVisIDByName.erase(trajVisAssetName);
     // TODO : if object is trajectory visualization, remove its assets as
     // well once this is supported.
@@ -446,16 +447,13 @@ void PhysicsManager::removeArticulatedObject(int objectId) {
     // aquire context if available
     simulator_->getRenderGLContext();
   }
-  CORRADE_INTERNAL_ASSERT(existingArticulatedObjects_.count(objectId));
-  scene::SceneNode* objectNode =
-      &existingArticulatedObjects_.at(objectId)->node();
-  for (auto linkObjId :
-       existingArticulatedObjects_.at(objectId)->objectIdToLinkId_) {
+  auto existingAOIter = getArticulatedObjIteratorOrAssert(objectId);
+  scene::SceneNode* objectNode = &existingAOIter->second->node();
+  for (auto linkObjId : existingAOIter->second->objectIdToLinkId_) {
     deallocateObjectID(linkObjId.first);
   }
-  std::string artObjName =
-      existingArticulatedObjects_.at(objectId)->getObjectName();
-  existingArticulatedObjects_.erase(objectId);
+  std::string artObjName = existingAOIter->second->getObjectName();
+  existingArticulatedObjects_.erase(existingAOIter);
   deallocateObjectID(objectId);
   delete objectNode;
   // remove wrapper if one is present
@@ -583,9 +581,8 @@ int PhysicsManager::checkActiveObjects() {
 #ifdef ESP_BUILD_WITH_VHACD
 void PhysicsManager::generateVoxelization(const int physObjectID,
                                           const int resolution) {
-  assertRigidIdValidity(physObjectID);
-  existingObjects_.at(physObjectID)
-      ->generateVoxelization(resourceManager_, resolution);
+  auto objIter = getRigidObjIteratorOrAssert(physObjectID);
+  objIter->second->generateVoxelization(resourceManager_, resolution);
 }
 
 void PhysicsManager::generateStageVoxelization(const int resolution) {
@@ -595,8 +592,8 @@ void PhysicsManager::generateStageVoxelization(const int resolution) {
 
 std::shared_ptr<esp::geo::VoxelWrapper> PhysicsManager::getObjectVoxelization(
     const int physObjectID) const {
-  assertRigidIdValidity(physObjectID);
-  return existingObjects_.at(physObjectID)->getVoxelization();
+  auto objIter = getConstRigidObjIteratorOrAssert(physObjectID);
+  return objIter->second->getVoxelization();
 }
 
 std::shared_ptr<esp::geo::VoxelWrapper> PhysicsManager::getStageVoxelization()
@@ -607,27 +604,23 @@ std::shared_ptr<esp::geo::VoxelWrapper> PhysicsManager::getStageVoxelization()
 void PhysicsManager::setObjectBBDraw(int physObjectID,
                                      DrawableGroup* drawables,
                                      bool drawBB) {
-  assertRigidIdValidity(physObjectID);
-  if (existingObjects_.at(physObjectID)->BBNode_ && !drawBB) {
+  auto objIter = getRigidObjIteratorOrAssert(physObjectID);
+  if (objIter->second->BBNode_ && !drawBB) {
     // destroy the node
-    delete existingObjects_.at(physObjectID)->BBNode_;
-    existingObjects_.at(physObjectID)->BBNode_ = nullptr;
-  } else if (drawBB && existingObjects_.at(physObjectID)->visualNode_) {
+    delete objIter->second->BBNode_;
+    objIter->second->BBNode_ = nullptr;
+  } else if (drawBB && objIter->second->visualNode_) {
     // add a new BBNode
-    Magnum::Vector3 scale = existingObjects_.at(physObjectID)
-                                ->visualNode_->getCumulativeBB()
-                                .size() /
-                            2.0;
-    existingObjects_.at(physObjectID)->BBNode_ =
-        &existingObjects_.at(physObjectID)->visualNode_->createChild();
-    existingObjects_.at(physObjectID)->BBNode_->MagnumObject::setScaling(scale);
-    existingObjects_.at(physObjectID)
-        ->BBNode_->MagnumObject::setTranslation(
-            existingObjects_[physObjectID]
-                ->visualNode_->getCumulativeBB()
-                .center());
-    resourceManager_.addPrimitiveToDrawables(
-        0, *existingObjects_.at(physObjectID)->BBNode_, drawables);
+    Magnum::Vector3 scale =
+        objIter->second->visualNode_->getCumulativeBB().size() / 2.0;
+    objIter->second->BBNode_ = &objIter->second->visualNode_->createChild();
+    objIter->second->BBNode_->MagnumObject::setScaling(scale);
+    objIter->second->BBNode_->MagnumObject::setTranslation(
+        existingObjects_[physObjectID]
+            ->visualNode_->getCumulativeBB()
+            .center());
+    resourceManager_.addPrimitiveToDrawables(0, *objIter->second->BBNode_,
+                                             drawables);
   }
 }
 
@@ -635,11 +628,10 @@ void PhysicsManager::setObjectVoxelizationDraw(int physObjectID,
                                                const std::string& gridName,
                                                DrawableGroup* drawables,
                                                bool drawVoxelization) {
-  assertRigidIdValidity(physObjectID);
-  setVoxelizationDraw(gridName,
-                      static_cast<esp::physics::RigidBase*>(
-                          existingObjects_.at(physObjectID).get()),
-                      drawables, drawVoxelization);
+  auto objIter = getRigidObjIteratorOrAssert(physObjectID);
+  setVoxelizationDraw(
+      gridName, static_cast<esp::physics::RigidBase*>(objIter->second.get()),
+      drawables, drawVoxelization);
 }
 
 void PhysicsManager::setStageVoxelizationDraw(const std::string& gridName,

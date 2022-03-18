@@ -67,9 +67,11 @@ void BulletCollisionHelper::processActiveManifolds(
 
 std::string BulletCollisionHelper::getDebugStringForCollisionObject(
     const btCollisionObject* colObj) {
-  std::string name = (collisionObjectToDebugName_.count(colObj) != 0u)
-                         ? collisionObjectToDebugName_[colObj]
-                         : "unknown";
+  std::string name = "unknown";
+  auto colObjToNameIter = collisionObjectToDebugName_.find(colObj);
+  if (colObjToNameIter != collisionObjectToDebugName_.end()) {
+    name = colObjToNameIter->second;
+  }
 
   // reference code to shorten names
   // const int maxLen = 60;

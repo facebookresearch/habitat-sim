@@ -423,9 +423,10 @@ bool ResourceManager::loadStage(
   // set equal to current Simulator::activeSemanticSceneID_ value
   int activeSemanticSceneID = activeSceneIDs[0];
   // if semantic scene load is requested and possible
-  if (assetInfoMap.count("semantic") != 0u) {
+  auto semanticInfoIter = assetInfoMap.find("semantic");
+  if (semanticInfoIter != assetInfoMap.end()) {
     // check if file names exist
-    AssetInfo semanticInfo = assetInfoMap.at("semantic");
+    AssetInfo semanticInfo = semanticInfoIter->second;
     auto semanticStageFilename = semanticInfo.filepath;
     if (Cr::Utility::Directory::exists(semanticStageFilename)) {
       ESP_DEBUG() << "Loading Semantic Stage mesh :" << semanticStageFilename;
@@ -518,8 +519,9 @@ bool ResourceManager::loadStage(
   // declare mesh group variable
   std::vector<CollisionMeshData> meshGroup;
   AssetInfo& infoToUse = renderInfo;
-  if (assetInfoMap.count("collision") != 0u) {
-    AssetInfo colInfo = assetInfoMap.at("collision");
+  auto colInfoIter = assetInfoMap.find("collision");
+  if (colInfoIter != assetInfoMap.end()) {
+    AssetInfo colInfo = colInfoIter->second;
     if (resourceDict_.count(colInfo.filepath) == 0) {
       ESP_DEBUG() << "Start load collision asset" << colInfo.filepath << ".";
       // will not reload if already present
@@ -568,7 +570,8 @@ bool ResourceManager::loadStage(
 bool ResourceManager::buildMeshGroups(
     const AssetInfo& info,
     std::vector<CollisionMeshData>& meshGroup) {
-  if (collisionMeshGroups_.count(info.filepath) == 0) {
+  auto colMeshGroupIter = collisionMeshGroups_.find(info.filepath);
+  if (colMeshGroupIter == collisionMeshGroups_.end()) {
     //! Collect collision mesh group
     bool colMeshGroupSuccess = false;
     if ((info.type == AssetType::INSTANCE_MESH) && !info.hasSemanticTextures) {
@@ -602,7 +605,7 @@ bool ResourceManager::buildMeshGroups(
     collisionMeshGroups_.emplace(info.filepath, meshGroup);
   } else {
     // collision meshGroup already exists from prior load
-    meshGroup = collisionMeshGroups_.at(info.filepath);
+    meshGroup = colMeshGroupIter->second;
   }
   return true;
 }  // ResourceManager::buildMeshGroups
@@ -920,10 +923,11 @@ scene::SceneNode* ResourceManager::createRenderAssetInstance(
     scene::SceneNode* parent,
     DrawableGroup* drawables,
     std::vector<scene::SceneNode*>* visNodeCache) {
-  CORRADE_ASSERT(resourceDict_.count(creation.filepath), "asset is not loaded",
+  auto resourceDictIter = resourceDict_.find(creation.filepath);
+  CORRADE_ASSERT(resourceDictIter != resourceDict_.end(), "asset is not loaded",
                  nullptr);
 
-  const LoadedAssetData& loadedAssetData = resourceDict_.at(creation.filepath);
+  const LoadedAssetData& loadedAssetData = resourceDictIter->second;
   if (!isLightSetupCompatible(loadedAssetData, creation.lightSetupKey)) {
     ESP_WARNING()
         << "Instantiating render asset" << creation.filepath
@@ -1346,7 +1350,9 @@ scene::SceneNode* ResourceManager::createRenderAssetInstancePTex(
                                           // lighting
 
   const std::string& filename = creation.filepath;
-  const LoadedAssetData& loadedAssetData = resourceDict_.at(creation.filepath);
+  auto resDictIter = resourceDict_.find(filename);
+  CORRADE_INTERNAL_ASSERT(resDictIter != resourceDict_.end());
+  const LoadedAssetData& loadedAssetData = resDictIter->second;
   const MeshMetaData& metaData = getMeshMetaData(filename);
   const auto& info = loadedAssetData.assetInfo;
   auto indexPair = metaData.meshIndex;
@@ -1834,8 +1840,9 @@ scene::SceneNode* ResourceManager::createRenderAssetInstanceGeneralPrimitive(
   CORRADE_INTERNAL_ASSERT(parent);
   CORRADE_INTERNAL_ASSERT(drawables);
 
-  CORRADE_INTERNAL_ASSERT(resourceDict_.count(creation.filepath));
-  const LoadedAssetData& loadedAssetData = resourceDict_.at(creation.filepath);
+  auto resourceDictIter = resourceDict_.find(creation.filepath);
+  CORRADE_INTERNAL_ASSERT(resourceDictIter != resourceDict_.end());
+  const LoadedAssetData& loadedAssetData = resourceDictIter->second;
 
   std::vector<scene::SceneNode*> dummyVisNodeCache;
   auto& visNodeCache = userVisNodeCache ? *userVisNodeCache : dummyVisNodeCache;
@@ -2473,9 +2480,9 @@ void ResourceManager::loadTextures(Importer& importer,
 
     for (int iTexture = 0; iTexture < importer.textureCount(); ++iTexture) {
       auto currentTextureID = textureStart + iTexture;
-      textures_.emplace(currentTextureID,
-                        std::make_shared<Mn::GL::Texture2D>());
-      auto& currentTexture = textures_.at(currentTextureID);
+      auto txtrIter = textures_.emplace(currentTextureID,
+                                        std::make_shared<Mn::GL::Texture2D>());
+      auto& currentTexture = txtrIter.first->second;
 
       auto textureData = importer.texture(iTexture);
       if (!textureData ||
@@ -2509,9 +2516,9 @@ void ResourceManager::loadTextures(Importer& importer,
   } else {
     for (int iTexture = 0; iTexture < importer.textureCount(); ++iTexture) {
       auto currentTextureID = textureStart + iTexture;
-      textures_.emplace(currentTextureID,
-                        std::make_shared<Mn::GL::Texture2D>());
-      auto& currentTexture = textures_.at(currentTextureID);
+      auto txtrIter = textures_.emplace(currentTextureID,
+                                        std::make_shared<Mn::GL::Texture2D>());
+      auto& currentTexture = txtrIter.first->second;
 
       auto textureData = importer.texture(iTexture);
       if (!textureData ||
@@ -2782,23 +2789,25 @@ void ResourceManager::addComponent(
 void ResourceManager::addPrimitiveToDrawables(int primitiveID,
                                               scene::SceneNode& node,
                                               DrawableGroup* drawables) {
-  CORRADE_INTERNAL_ASSERT(primitive_meshes_.count(primitiveID));
+  auto primMeshIter = primitive_meshes_.find(primitiveID);
+  CORRADE_INTERNAL_ASSERT(primMeshIter != primitive_meshes_.end());
   // TODO:
   // currently we assume the primitives does not have normal texture
   // so do not need to worry about the tangent or bitangent.
   // it might be changed in the future.
   gfx::Drawable::Flags meshAttributeFlags{};
-  createDrawable(primitive_meshes_.at(primitiveID).get(),  // render mesh
-                 meshAttributeFlags,                       // meshAttributeFlags
-                 node,                                     // scene node
-                 NO_LIGHT_KEY,                             // lightSetup key
-                 WHITE_MATERIAL_KEY,                       // material key
-                 drawables);                               // drawable group
+  createDrawable(primMeshIter->second.get(),  // render mesh
+                 meshAttributeFlags,          // meshAttributeFlags
+                 node,                        // scene node
+                 NO_LIGHT_KEY,                // lightSetup key
+                 WHITE_MATERIAL_KEY,          // material key
+                 drawables);                  // drawable group
 }
 
 void ResourceManager::removePrimitiveMesh(int primitiveID) {
-  CORRADE_INTERNAL_ASSERT(primitive_meshes_.count(primitiveID));
-  primitive_meshes_.erase(primitiveID);
+  auto primMeshIter = primitive_meshes_.find(primitiveID);
+  CORRADE_INTERNAL_ASSERT(primMeshIter != primitive_meshes_.end());
+  primitive_meshes_.erase(primMeshIter);
 }
 
 void ResourceManager::createDrawable(Mn::GL::Mesh* mesh,

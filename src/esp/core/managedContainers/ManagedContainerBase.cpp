@@ -22,8 +22,8 @@ bool ManagedContainerBase::setLock(const std::string& objectHandle, bool lock) {
   // if setting lock else clearing lock
   if (lock) {
     userLockedObjectNames_.insert(objectHandle);
-  } else if (userLockedObjectNames_.count(objectHandle) > 0) {
-    // if clearing, verify exists
+  } else {
+    // if clearing, attempt to erase
     userLockedObjectNames_.erase(objectHandle);
   }
   return true;

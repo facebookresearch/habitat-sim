@@ -654,19 +654,20 @@ bool Parser::parseVisual(const std::shared_ptr<Model>& model,
             visual.m_geometry.m_localMaterial;
         visual.m_geometry.m_hasLocalMaterial = true;
       }
-    } else if (model->m_materials.count(visual.m_materialName) > 0) {
-      // need this to handle possible overwriting of this material name in a
-      // later call.
-      visual.m_geometry.m_localMaterial =
-          model->m_materials.at(visual.m_materialName);
-      visual.m_geometry.m_hasLocalMaterial = true;
     } else {
-      ESP_VERY_VERBOSE() << "Warning: visual element \"" << visual.m_name
-                         << "\" specified un-defined material name \""
-                         << visual.m_materialName << "\".";
+      auto matIter = model->m_materials.find(visual.m_materialName);
+      if (matIter != model->m_materials.end()) {
+        // need this to handle possible overwriting of this material name in a
+        // later call.
+        visual.m_geometry.m_localMaterial = matIter->second;
+        visual.m_geometry.m_hasLocalMaterial = true;
+      } else {
+        ESP_VERY_VERBOSE() << "Warning: visual element \"" << visual.m_name
+                           << "\" specified un-defined material name \""
+                           << visual.m_materialName << "\".";
+      }
     }
   }
-
   return true;
 }
 
