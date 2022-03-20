@@ -30,7 +30,7 @@ class FetchRobot(MobileManipulator):
                     @ mn.Matrix4.rotation_z(mn.Deg(90)),
                 ),
                 "robot_head": RobotCameraParams(
-                    cam_offset_pos=mn.Vector3(0.17, 1.2, 0.0),
+                    cam_offset_pos=mn.Vector3(0.25, 1.2, 0.0),
                     cam_look_at_pos=mn.Vector3(0.75, 1.0, 0.0),
                     attached_link_id=-1,
                 ),
