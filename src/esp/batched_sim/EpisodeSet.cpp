@@ -108,15 +108,20 @@ void addEpisode(EpisodeSet& set, const serialize::Collection& collection, int st
 
   std::array<int, 6> selectedFreeObjectIndices = {1, 2, 3, 4, 5, 8};
 
-  int numSpawnAttempts = 1000;
+  episode.targetObjIndex_ = 0; // arbitrary
+  int numSpawnAttempts = 2000;
+  bool success = false;
   for (int i = 0; i < numSpawnAttempts; i++) {
 
-    if (episode.numFreeObjectSpawns_ == targetNumSpawns) {
-      break;
-    }
+    // After finding all object spawns, do a search for the target object's goal 
+    // position. This logic is mostly identical to finding an object spawn.
+    bool isGoalPositionAttempt = (episode.numFreeObjectSpawns_ == targetNumSpawns);
 
     FreeObjectSpawn spawn;
-    spawn.freeObjIndex_ = selectedFreeObjectIndices[random.uniform_int(0, selectedFreeObjectIndices.size())];
+    // for the goal position, use the free object correspnding to targetObjIdx
+    spawn.freeObjIndex_ = isGoalPositionAttempt
+      ? set.freeObjectSpawns_[episode.targetObjIndex_].freeObjIndex_
+      : selectedFreeObjectIndices[random.uniform_int(0, selectedFreeObjectIndices.size())];
     const auto& freeObject = safeVectorGet(set.freeObjects_, spawn.freeObjIndex_);
     spawn.startRotationIndex_ = random.uniform_int(0, freeObject.startRotations_.size());
 
@@ -144,15 +149,25 @@ void addEpisode(EpisodeSet& set, const serialize::Collection& collection, int st
         continue;
       }
       spawn.startPos_ = mat.translation();
-      set.freeObjectSpawns_.emplace_back(std::move(spawn));
-      episode.numFreeObjectSpawns_++;
 
-      // add to colGrid so future spawns don't intersect this one
-      colGrid.insertObstacle(spawn.startPos_, Mn::Quaternion::fromMatrix(rotation), &freeObject.aabb_);
+      if (isGoalPositionAttempt) {
+        episode.targetObjGoalPos_ = spawn.startPos_;
+        success = true;
+        break;
+      } else {
+        set.freeObjectSpawns_.emplace_back(std::move(spawn));
+        episode.numFreeObjectSpawns_++;
+
+        // add to colGrid so future spawns don't intersect this one
+        colGrid.insertObstacle(spawn.startPos_, Mn::Quaternion::fromMatrix(rotation), &freeObject.aabb_);
+      }
     }
   }
+  constexpr int numGoalPositions = 1;
+  ESP_CHECK(success, "episode-generation failed; couldn't find " 
+    << (targetNumSpawns + numGoalPositions) << " collision-free spawn locations");
 
-  set.maxFreeObjects_ = Mn::Math::max(set.maxFreeObjects_, episode.numFreeObjectSpawns_);
+  set.maxFreeObjects_ = Mn::Math::max(set.maxFreeObjects_, (int32_t)episode.numFreeObjectSpawns_);
 
   set.episodes_.emplace_back(std::move(episode));
 }

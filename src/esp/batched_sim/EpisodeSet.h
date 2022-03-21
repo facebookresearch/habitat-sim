@@ -55,8 +55,10 @@ class FreeObjectSpawn {
 class Episode {
  public:
   int32_t stageFixedObjIndex = -1; // todo: array of fixed objects
-  int32_t numFreeObjectSpawns_ = 0;
+  int16_t numFreeObjectSpawns_ = 0;
+  int16_t targetObjIndex_ = -1; // 0..numFreeObjectSpawns - 1, see also freeObjectIndex
   int32_t firstFreeObjectSpawnIndex_ = -1; // index into EpisodeSet::freeObjectSpawns_
+  Mn::Vector3 targetObjGoalPos_;
 };
 
 class EpisodeSet {

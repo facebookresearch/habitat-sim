@@ -30,6 +30,8 @@ namespace {
 
 static const char* serializeCollectionFilepath_ = "../data/replicacad_composite.collection.json";
 
+static Mn::Vector3 INVALID_VEC3 = Mn::Vector3(NAN, NAN, NAN);
+
 static constexpr glm::mat4x3 identityGlMat_ = glm::mat4x3(
   1.f, 0.f, 0.f,
   0.f, 1.f, 0.f,
@@ -403,13 +405,42 @@ void BatchedSimulator::updatePythonEnvironmentState() {
     envState.episode_step_idx = currEpisodeStep;
     // todo: do logical or over all substeps
     envState.did_collide = robots_.collisionResults_[b];
-    // temp hardcoded episode goal data
-    envState.goal_pos = Mn::Vector3(0.f, 0.f, 0.f); // todo: only update this on episode change
-    envState.target_obj_idx = 0; // todo: only update this on episode change
     // envState.obj_positions // this is updated incrementally
     envState.robot_position = Mn::Vector3(positions[b].x(), 0.f, positions[b].y());
     envState.robot_yaw = yaws[b];
+
+    // perf todo: set this just once at episode reset
+    const auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
+    const auto& episode = safeVectorGet(episodeSet_.episodes_, episodeInstance.episodeIndex_);
+    envState.target_obj_idx = episode.targetObjIndex_;
+    envState.goal_pos = episode.targetObjGoalPos_;
   }
+
+#if 0 // reference code to visualize pythonEnvironmentState
+#ifdef ENABLE_DEBUG_INSTANCES
+  const auto& aabb = Magnum::Range3D(-Mn::Vector3(0.05, 0.05, 0.05), Mn::Vector3(0.05, 0.05, 0.05));
+  for (int b = 0; b < config_.numEnvs; b++) {
+    
+    const auto& envState = safeVectorGet(pythonEnvStates_, b);
+    // robot
+    addBoxDebugInstance(
+      "cube_gray_shaded",
+      b, envState.robot_position, Magnum::Quaternion(Mn::Math::IdentityInit), aabb , 0.0);
+
+    for (int i = 0; i < envState.obj_positions.size(); i++) {
+      const auto& objPos = envState.obj_positions[i];
+      bool isTargetObj = (i == envState.target_obj_idx);
+      addBoxDebugInstance(
+        (isTargetObj ? "cube_green" : "cube_gray_shaded"),
+        b, objPos, Magnum::Quaternion(Mn::Math::IdentityInit), aabb , 0.0);
+    }
+
+    addBoxDebugInstance(
+      "cube_pink",
+      b, envState.goal_pos, Magnum::Quaternion(Mn::Math::IdentityInit), aabb , 0.0);
+  }
+#endif
+#endif
 }
 
 void BatchedSimulator::addSphereDebugInstance(const std::string& name, int b, const Magnum::Vector3& spherePos, float radius) {
@@ -853,6 +884,9 @@ void BatchedSimulator::updateRenderInstances(bool forceUpdate) {
         glm::mat4x3 glMat = toGlmMat4x3(mat); 
         int instanceId = getFreeObjectBpsInstanceId(b, freeObjectIndex);
         env.updateInstanceTransform(instanceId, glMat);
+
+        auto& envState = safeVectorGet(pythonEnvStates_, b);
+        safeVectorGet(envState.obj_positions, freeObjectIndex) = mat.translation();
       }
     }
   }
@@ -1125,6 +1159,7 @@ BpsWrapper::~BpsWrapper() {
 
 BatchedSimulator::BatchedSimulator(const BatchedSimulatorConfig& config) {
   config_ = config;
+  const int numEnvs = config_.numEnvs;
 
   sceneMapping_ = BpsSceneMapping::loadFromFile(
       "../data/bps_data/replicacad_composite/replicacad_composite.bps.mapping.json");
@@ -1137,6 +1172,7 @@ BatchedSimulator::BatchedSimulator(const BatchedSimulatorConfig& config) {
 #ifdef ENABLE_DEBUG_INSTANCES
   debugInstancesByEnv_.resize(config_.numEnvs);
 #endif
+  pythonEnvStates_.resize(numEnvs);
 
   initEpisodeSet();
 
@@ -1154,7 +1190,6 @@ BatchedSimulator::BatchedSimulator(const BatchedSimulatorConfig& config) {
   int numLinks = robot_.artObj->getNumLinks();
   int numNodes = numLinks + 1;  // include base
 
-  const int numEnvs = config_.numEnvs;
   robots_ = RobotInstanceSet(&robot_, &config_, &bpsWrapper_->envs_, &rollouts_);
 
   // see also python/rl/agent.py
@@ -1172,8 +1207,6 @@ BatchedSimulator::BatchedSimulator(const BatchedSimulatorConfig& config) {
   maxRolloutSubsteps_ = (config_.maxEpisodeLength - 1) * config_.numSubsteps + 1;
   rollouts_ =
       RolloutRecord(maxRolloutSubsteps_, numEnvs, robot_.numPosVars, numNodes);
-
-  pythonEnvStates_.resize(numEnvs);
 
   currRolloutSubstep_ =
       -1;  // trigger auto-reset on first call to autoResetOrStepPhysics
@@ -1274,6 +1307,9 @@ void BatchedSimulator::instantiateEpisode(int b, int episodeIndex) {
       stageBlueprint.meshIdx_, stageBlueprint.mtrlIdx_, identityGlMat_);
   }
 
+  auto& envState = safeVectorGet(pythonEnvStates_, b);
+  envState.obj_positions.resize(episode.numFreeObjectSpawns_);    
+
   {
     const auto& stageFixedObject = safeVectorGet(episodeSet_.fixedObjects_, episode.stageFixedObjIndex);
     const auto& columnGrid = stageFixedObject.columnGridSet_.getColumnGrid(0);
@@ -1341,6 +1377,9 @@ void BatchedSimulator::resetEpisodeInstance(int b) {
 
   BATCHED_SIM_ASSERT(episodeInstance.debugNumColGridObstacleInstances_ == 
     episodeInstance.colGrid_.getNumObstacleInstances());
+
+  auto& envState = safeVectorGet(pythonEnvStates_, b);
+  envState.obj_positions.resize(episode.numFreeObjectSpawns_);    
 }
 
 
@@ -1379,6 +1418,8 @@ void BatchedSimulator::spawnFreeObject(int b, int freeObjectIndex, bool reinsert
     int16_t obsIndex = episodeInstance.colGrid_.insertObstacle(
       freeObjectSpawn.startPos_, rotationQuat, &freeObject.aabb_);
     BATCHED_SIM_ASSERT(obsIndex == freeObjectIndex);
+    auto& envState = safeVectorGet(pythonEnvStates_, b);
+    safeVectorGet(envState.obj_positions, freeObjectIndex) = freeObjectSpawn.startPos_;
   } else {
     reinsertFreeObject(b, freeObjectIndex, freeObjectSpawn.startPos_, rotationQuat);
   }
@@ -1388,6 +1429,10 @@ void BatchedSimulator::removeFreeObjectFromCollisionGrid(int b, int freeObjectIn
 
   auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
   episodeInstance.colGrid_.disableObstacle(freeObjectIndex);
+
+  // perf todo: remove this
+  auto& envState = safeVectorGet(pythonEnvStates_, b);
+  safeVectorGet(envState.obj_positions, freeObjectIndex) = INVALID_VEC3;
 }
 
 int BatchedSimulator::getFreeObjectBpsInstanceId(int b, int freeObjectIndex) const {
@@ -1411,6 +1456,9 @@ void BatchedSimulator::reinsertFreeObject(int b, int freeObjectIndex,
     int instanceId = getFreeObjectBpsInstanceId(b, freeObjectIndex);
     env.updateInstanceTransform(instanceId, glMat);
   }
+
+  auto& envState = safeVectorGet(pythonEnvStates_, b);
+  safeVectorGet(envState.obj_positions, freeObjectIndex) = pos;
 }
 
 void BatchedSimulator::initEpisodeSet() {
