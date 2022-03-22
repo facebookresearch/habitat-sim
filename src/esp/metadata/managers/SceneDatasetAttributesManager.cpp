@@ -354,7 +354,7 @@ void SceneDatasetAttributesManager::readDatasetJSONCell(
                            "as an array to determine search paths so skipping.";
         } else {
           const auto& configsAra = jCell["configs"];
-          for (rapidjson::SizeType i = 0; i < configsAra.Size(); i++) {
+          for (rapidjson::SizeType i = 0; i < configsAra.Size(); ++i) {
             const auto& configCell = configsAra[i];
             readDatasetConfigsJSONCell(dsDir, tag, configCell, attrMgr);
           }  // for each cell in configs array

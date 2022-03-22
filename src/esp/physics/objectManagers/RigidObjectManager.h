@@ -150,6 +150,7 @@ class RigidObjectManager
       int objectID,
       CORRADE_UNUSED const std::string& objectHandle) override {
     if (auto physMgr = this->getPhysicsManager()) {
+      // don't try to double remove or will throw an exception
       if (physMgr->isValidRigidObjectId(objectID)) {
         physMgr->removeObject(objectID);
       }

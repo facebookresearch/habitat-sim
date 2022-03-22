@@ -211,7 +211,7 @@ void PhysicsTest::testJoinCompound() {
     ObjectAttributes::ptr objectTemplate =
         objectAttributesManager->getObjectCopyByHandle(objectFile);
 
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 2; ++i) {
       // mark the object not joined
       if (i == 0) {
         objectTemplate->setJoinCollisionMeshes(false);
@@ -223,7 +223,7 @@ void PhysicsTest::testJoinCompound() {
 
       // add and simulate objects
       int num_objects = 7;
-      for (int o = 0; o < num_objects; o++) {
+      for (int o = 0; o < num_objects; ++o) {
         auto objWrapper = rigidObjectManager_->addObjectByHandle(objectFile);
 
         esp::scene::SceneNode* node = objWrapper->getSceneNode();
@@ -289,7 +289,7 @@ void PhysicsTest::testCollisionBoundingBox() {
     ObjectAttributes::ptr objectTemplate =
         objectAttributesManager->getObjectCopyByHandle(objectFile);
 
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 2; ++i) {
       if (i == 0) {
         objectTemplate->setBoundingBoxCollisions(false);
       } else {
@@ -551,7 +551,7 @@ void PhysicsTest::testConfigurableScaling() {
   }
 
   // check that scales are stored and queried correctly
-  for (size_t ix = 0; ix < objectIDs.size(); ix++) {
+  for (size_t ix = 0; ix < objectIDs.size(); ++ix) {
     CORRADE_COMPARE(
         rigidObjectManager_->getObjectCopyByID(objectIDs[ix])->getScale(),
         testScales[ix]);
@@ -800,7 +800,7 @@ void PhysicsTest::testMotionTypes() {
 
     float stageCollisionMargin = 0.04;
 
-    for (int testId = 0; testId < 3; testId++) {
+    for (int testId = 0; testId < 3; ++testId) {
       auto objWrapper0 =
           makeObjectGetWrapper(objTemplate->getHandle(), &drawables);
       auto objWrapper1 =

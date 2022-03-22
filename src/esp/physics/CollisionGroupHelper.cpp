@@ -92,9 +92,10 @@ void CollisionGroupHelper::setMaskForGroup(CollisionGroup group,
 }
 
 CollisionGroup CollisionGroupHelper::getGroup(const std::string& groupName) {
-  ESP_CHECK(collisionGroupNames.count(groupName) != 0,
+  auto colGroupNamesIter = collisionGroupNames.find(groupName);
+  ESP_CHECK(colGroupNamesIter != collisionGroupNames.end(),
             "Invalid groupName provided. Matches no CollisionGroup.");
-  return collisionGroupNames.at(groupName);
+  return colGroupNamesIter->second;
 }
 
 std::string CollisionGroupHelper::getGroupName(CollisionGroup group) {

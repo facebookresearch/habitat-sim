@@ -247,7 +247,7 @@ void DebugLineRender::drawCircle(const Magnum::Vector3& pos,
                 Mn::Matrix4::scaling(Mn::Vector3(radius, radius, 0.f)));
 
   Mn::Vector3 prevPt;
-  for (int seg = 0; seg <= numSegments; seg++) {
+  for (int seg = 0; seg <= numSegments; ++seg) {
     Mn::Deg angle = Mn::Deg(360.f * float(seg) / numSegments);
     Mn::Vector3 pt(Mn::Math::cos(angle), Mn::Math::sin(angle), 0.f);
     if (seg > 0) {
@@ -275,7 +275,7 @@ void DebugLineRender::drawPathWithEndpointCircles(
   drawCircle(end1, radius, color, numSegments, normal);
 
   Mn::Vector3 prevPos;
-  for (int i = 0; i < points.size(); i++) {
+  for (int i = 0; i < points.size(); ++i) {
     const auto& pos = points[i];
     if (i > 0) {
       if ((prevPos - end0).length() > radius &&

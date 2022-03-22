@@ -47,7 +47,7 @@ void NavTest::PathFinderLoadTest() {
   esp::nav::PathFinder pf;
   pf.loadNavMesh(Cr::Utility::Directory::join(
       SCENE_DATASETS, "habitat-test-scenes/skokloster-castle.navmesh"));
-  for (int i = 0; i < 100000; i++) {
+  for (int i = 0; i < 100000; ++i) {
     esp::nav::ShortestPath path;
     path.requestedStart = pf.getRandomNavigablePoint();
     path.requestedEnd = pf.getRandomNavigablePoint();
@@ -55,7 +55,7 @@ void NavTest::PathFinderLoadTest() {
     if (foundPath) {
       const float islandSize = pf.islandRadius(path.requestedStart);
       CORRADE_COMPARE_AS(islandSize, 0.0, Cr::TestSuite::Compare::Greater);
-      for (int j = 0; j < path.points.size(); j++) {
+      for (int j = 0; j < path.points.size(); ++j) {
         printPathPoint(i, j, path.points[j], path.geodesicDistance);
         CORRADE_COMPARE(pf.islandRadius(path.points[j]), islandSize);
       }
@@ -78,7 +78,7 @@ void printRandomizedPathSet(esp::nav::PathFinder& pf) {
   path.requestedStart = pf.getRandomNavigablePoint();
   path.requestedEnd = pf.getRandomNavigablePoint();
   ESP_VERY_VERBOSE() << "run,step,x,y,z,geodesicDistance";
-  for (int i = 0; i < 100; i++) {
+  for (int i = 0; i < 100; ++i) {
     const float r = 0.1;
     esp::vec3f rv(random.uniform_float(-r, r), 0, random.uniform_float(-r, r));
     esp::vec3f rv2(random.uniform_float(-r, r), 0, random.uniform_float(-r, r));
@@ -88,7 +88,7 @@ void printRandomizedPathSet(esp::nav::PathFinder& pf) {
 
     if (foundPath) {
       printPathPoint(i, 0, path.requestedStart, path.geodesicDistance);
-      for (int j = 0; j < path.points.size(); j++) {
+      for (int j = 0; j < path.points.size(); ++j) {
         printPathPoint(i, j + 1, path.points[j], path.geodesicDistance);
       }
       printPathPoint(i, path.points.size() + 1, path.requestedEnd,

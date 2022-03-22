@@ -292,15 +292,26 @@ class ManagedFileBasedContainer : public ManagedContainer<T, Access> {
     auto configJson = managedObject->writeToJsonObject(allocator);
     // move constructed config into doc
     doc.Swap(configJson);
-    // save to file
-    bool success = io::writeJsonToFile(doc, fullFilename, true, 7);
+    if (!doc.ObjectEmpty()) {
+      // save to file if doc exists
+      bool success = io::writeJsonToFile(doc, fullFilename, true, 7);
 
-    ESP_DEBUG(Mn::Debug::Flag::NoSpace)
-        << "<" << this->objectType_
-        << "> : Attempt to save to Filename: " << fullFilename << " : "
-        << (success ? "Successful." : "Failed.");
+      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+          << "<" << this->objectType_
+          << "> : Attempt to save to Filename: " << fullFilename << " : "
+          << (success ? "Successful." : "Failed.");
 
-    return success;
+      return success;
+
+    } else {
+      ESP_DEBUG(Mn::Debug::Flag::NoSpace)
+          << "<" << this->objectType_
+          << "> : Attempt to save to Filename: " << fullFilename
+          << " Failed due to derived document being empty.";
+
+      // don't save an empty file/
+      return false;
+    }
   }
 
   /**

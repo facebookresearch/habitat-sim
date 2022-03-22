@@ -200,13 +200,14 @@ class ManagedContainerBase {
    * objectLibrary_, or nullptr if does not exist.
    */
   std::string getObjectHandleByID(const int objectID) const {
-    if (objectLibKeyByID_.count(objectID) == 0) {
+    auto objKeyByIDIter = objectLibKeyByID_.find(objectID);
+    if (objKeyByIDIter == objectLibKeyByID_.end()) {
       ESP_ERROR() << "Unknown" << objectType_
                   << "managed object ID:" << objectID << ". Aborting";
       // never will have registered object with registration handle == ""
       return "";
     }
-    return objectLibKeyByID_.at(objectID);
+    return objKeyByIDIter->second;
   }  // ManagedContainerBase::getObjectHandleByID
 
   /**

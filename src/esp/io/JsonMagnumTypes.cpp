@@ -13,7 +13,7 @@ JsonGenericValue toJsonValue(const Magnum::Quaternion& quat,
   JsonGenericValue arr(rapidjson::kArrayType);
   // note squashing
   arr.PushBack(squashTinyDecimals(quat.scalar()), allocator);
-  for (int i = 0; i < 3; i++) {
+  for (int i = 0; i < 3; ++i) {
     arr.PushBack(squashTinyDecimals(quat.vector()[i]), allocator);
   }
   return arr;

@@ -80,8 +80,9 @@ class SemanticScene {
   //! convert semantic mesh mask index to object index or ID_UNDEFINED if
   //! not mapped
   inline int semanticIndexToObjectIndex(int maskIndex) const {
-    if (segmentToObjectIndex_.count(maskIndex) > 0) {
-      return segmentToObjectIndex_.at(maskIndex);
+    auto segmentToObjIdxIter = segmentToObjectIndex_.find(maskIndex);
+    if (segmentToObjIdxIter != segmentToObjectIndex_.end()) {
+      return segmentToObjIdxIter->second;
     } else {
       return ID_UNDEFINED;
     }

@@ -482,9 +482,8 @@ double BulletPhysicsManager::getStageRestitutionCoefficient() const {
 
 Magnum::Range3D BulletPhysicsManager::getCollisionShapeAabb(
     const int physObjectID) const {
-  assertRigidIdValidity(physObjectID);
-  return static_cast<BulletRigidObject*>(
-             existingObjects_.at(physObjectID).get())
+  auto objIter = getConstRigidObjIteratorOrAssert(physObjectID);
+  return static_cast<BulletRigidObject*>(objIter->second.get())
       ->getCollisionShapeAabb();
 }
 
@@ -527,9 +526,10 @@ RaycastResults BulletPhysicsManager::castRay(const esp::geo::Ray& ray,
     // default to -1 for "scene collision" if we don't know which object was
     // involved
     hit.objectId = -1;
-    if (collisionObjToObjIds_->count(allResults.m_collisionObjects[i]) > 0) {
-      hit.objectId =
-          collisionObjToObjIds_->at(allResults.m_collisionObjects[i]);
+    auto rawColObjIdIter =
+        collisionObjToObjIds_->find(allResults.m_collisionObjects[i]);
+    if (rawColObjIdIter != collisionObjToObjIds_->end()) {
+      hit.objectId = rawColObjIdIter->second;
     }
     results.hits.push_back(hit);
   }
@@ -547,9 +547,9 @@ void BulletPhysicsManager::lookUpObjectIdAndLinkId(
   *linkId = -1;
   // If the lookup fails, default to the stage. TODO: better error-handling.
   *objectId = -1;
-
-  if (collisionObjToObjIds_->count(colObj) != 0u) {
-    int rawObjectId = collisionObjToObjIds_->at(colObj);
+  auto rawColObjIdIter = collisionObjToObjIds_->find(colObj);
+  if (rawColObjIdIter != collisionObjToObjIds_->end()) {
+    int rawObjectId = rawColObjIdIter->second;
     if (existingObjects_.count(rawObjectId) != 0u ||
         existingArticulatedObjects_.count(rawObjectId) != 0u) {
       *objectId = rawObjectId;
@@ -557,9 +557,10 @@ void BulletPhysicsManager::lookUpObjectIdAndLinkId(
     } else {
       // search articulated objects to see if this is a link
       for (const auto& pair : existingArticulatedObjects_) {
-        if (pair.second->objectIdToLinkId_.count(rawObjectId) != 0u) {
+        auto objIdToLinkIter = pair.second->objectIdToLinkId_.find(rawObjectId);
+        if (objIdToLinkIter != pair.second->objectIdToLinkId_.end()) {
           *objectId = pair.first;
-          *linkId = pair.second->objectIdToLinkId_.at(rawObjectId);
+          *linkId = objIdToLinkIter->second;
           return;
         }
       }
@@ -575,7 +576,7 @@ std::vector<ContactPointData> BulletPhysicsManager::getContactPoints() const {
   auto* dispatcher = bWorld_->getDispatcher();
   int numContactManifolds = dispatcher->getNumManifolds();
   contactPoints.reserve(numContactManifolds * 4);
-  for (int i = 0; i < numContactManifolds; i++) {
+  for (int i = 0; i < numContactManifolds; ++i) {
     const btPersistentManifold* manifold =
         dispatcher->getInternalManifoldPointer()[i];
 
@@ -597,7 +598,7 @@ std::vector<ContactPointData> BulletPhysicsManager::getContactPoints() const {
                      (((colObj1) != nullptr) &&
                       colObj1->getActivationState() != ISLAND_SLEEPING));
 
-    for (int p = 0; p < manifold->getNumContacts(); p++) {
+    for (int p = 0; p < manifold->getNumContacts(); ++p) {
       ContactPointData pt;
       pt.objectIdA = objectIdA;
       pt.objectIdB = objectIdB;
@@ -634,8 +635,17 @@ std::vector<ContactPointData> BulletPhysicsManager::getContactPoints() const {
 
 int BulletPhysicsManager::createRigidConstraint(
     const RigidConstraintSettings& settings) {
-  ESP_CHECK(isValidArticulatedObjectId(settings.objectIdA) ||
-                isValidRigidObjectId(settings.objectIdA),
+  auto rigidObjAIter = existingObjects_.find(settings.objectIdA);
+  bool objAIsRigid = rigidObjAIter != existingObjects_.end();
+  auto artObjAIter = existingArticulatedObjects_.find(settings.objectIdA);
+  bool objAIsArticulate = artObjAIter != existingArticulatedObjects_.end();
+
+  auto rigidObjBIter = existingObjects_.find(settings.objectIdB);
+  bool objBIsRigid = rigidObjBIter != existingObjects_.end();
+  auto artObjBIter = existingArticulatedObjects_.find(settings.objectIdB);
+  bool objBIsArticulate = artObjBIter != existingArticulatedObjects_.end();
+
+  ESP_CHECK(objAIsRigid || objAIsArticulate,
             "::createRigidConstraint - Must provide a valid id for objectA");
 
   // cache the settings
@@ -643,18 +653,16 @@ int BulletPhysicsManager::createRigidConstraint(
 
   // setup body B in advance of bifurcation if necessary
   btRigidBody* rbB = nullptr;
-  if (isValidRigidObjectId(settings.objectIdB)) {
-    rbB = static_cast<BulletRigidObject*>(
-              existingObjects_.at(settings.objectIdB).get())
+  if (objBIsRigid) {
+    rbB = static_cast<BulletRigidObject*>(rigidObjBIter->second.get())
               ->bObjectRigidBody_.get();
     rbB->setActivationState(DISABLE_DEACTIVATION);
   }
 
   // construct the constraints
-  if (isValidArticulatedObjectId(settings.objectIdA)) {
+  if (objAIsArticulate) {
     btMultiBody* mbA =
-        static_cast<BulletArticulatedObject*>(
-            existingArticulatedObjects_.at(settings.objectIdA).get())
+        static_cast<BulletArticulatedObject*>(artObjAIter->second.get())
             ->btMultiBody_.get();
     ESP_CHECK(mbA->getNumLinks() > settings.linkIdA,
               "::createRigidConstraint - linkA("
@@ -663,9 +671,8 @@ int BulletPhysicsManager::createRigidConstraint(
                   << mbA->getNumLinks() << " links.");
 
     btMultiBody* mbB = nullptr;
-    if (isValidArticulatedObjectId(settings.objectIdB)) {
-      mbB = static_cast<BulletArticulatedObject*>(
-                existingArticulatedObjects_.at(settings.objectIdB).get())
+    if (objBIsArticulate) {
+      mbB = static_cast<BulletArticulatedObject*>(artObjBIter->second.get())
                 ->btMultiBody_.get();
       ESP_CHECK(mbA->getNumLinks() > settings.linkIdA,
                 "::createRigidConstraint - linkB("
@@ -715,7 +722,7 @@ int BulletPhysicsManager::createRigidConstraint(
     }
   } else {
     ESP_CHECK(
-        !isValidArticulatedObjectId(settings.objectIdB),
+        !objBIsArticulate,
         "::createRigidConstraint - objectA must be the ArticulatedObject for "
         "mixed typed constraints. Switch your Ids to resolve this issue.");
     btRigidBody* rbA = static_cast<BulletRigidObject*>(
@@ -772,10 +779,11 @@ void BulletPhysicsManager::updateRigidConstraint(
     int constraintId,
     const RigidConstraintSettings& settings) {
   // validate that object and link ids are unchanged for update.
-  ESP_CHECK(rigidConstraintSettings_.count(constraintId) > 0,
+  auto rigidConstraintCacheIter = rigidConstraintSettings_.find(constraintId);
+  ESP_CHECK(rigidConstraintCacheIter != rigidConstraintSettings_.end(),
             "::updateRigidConstraint - Provided invalid constraintId ="
                 << constraintId);
-  auto& cachedSettings = rigidConstraintSettings_.at(constraintId);
+  auto& cachedSettings = rigidConstraintCacheIter->second;
   ESP_CHECK(cachedSettings.objectIdA == settings.objectIdA,
             "::updateRigidConstraint - RigidConstraintSettings::objectIdA must "
             "match existing settings ("
@@ -800,7 +808,10 @@ void BulletPhysicsManager::updateRigidConstraint(
                 << int(settings.constraintType) << " vs."
                 << int(cachedSettings.constraintType) << ")");
 
-  if (articulatedP2PConstraints_.count(constraintId) > 0) {
+  auto articulatedP2PConstraintIter =
+      articulatedP2PConstraints_.find(constraintId);
+
+  if (articulatedP2PConstraintIter != articulatedP2PConstraints_.end()) {
     // NOTE: oddly, pivotA cannot be set through the API for this constraint
     // type.
     ESP_CHECK(cachedSettings.pivotA == settings.pivotA,
@@ -809,65 +820,92 @@ void BulletPhysicsManager::updateRigidConstraint(
               "remove and create to update this parameter. ("
                   << settings.pivotA << " vs." << cachedSettings.pivotA << ")");
     // TODO: Either fix the Bullet API or do the add/remove for the user here.
-    articulatedP2PConstraints_.at(constraintId)
-        ->setPivotInB(btVector3(settings.pivotB));
-    articulatedP2PConstraints_.at(constraintId)
-        ->setMaxAppliedImpulse(settings.maxImpulse);
-  } else if (rigidP2PConstraints_.count(constraintId) > 0) {
-    rigidP2PConstraints_.at(constraintId)->m_setting.m_impulseClamp =
-        settings.maxImpulse;
-    rigidP2PConstraints_.at(constraintId)
-        ->setPivotA(btVector3(settings.pivotA));
-    rigidP2PConstraints_.at(constraintId)
-        ->setPivotB(btVector3(settings.pivotB));
-  } else if (articulatedFixedConstraints_.count(constraintId) > 0) {
-    articulatedFixedConstraints_.at(constraintId)
-        ->setPivotInA(btVector3(settings.pivotA));
-    articulatedFixedConstraints_.at(constraintId)
-        ->setPivotInB(btVector3(settings.pivotB));
-    articulatedFixedConstraints_.at(constraintId)
-        ->setFrameInA(btMatrix3x3(settings.frameA));
-    articulatedFixedConstraints_.at(constraintId)
-        ->setFrameInB(btMatrix3x3(settings.frameB));
-    articulatedFixedConstraints_.at(constraintId)
-        ->setMaxAppliedImpulse(settings.maxImpulse);
-  } else if (rigidFixedConstraints_.count(constraintId) > 0) {
-    rigidFixedConstraints_.at(constraintId)
-        ->setFrames(btTransform(btMatrix3x3(settings.frameA),
-                                btVector3(settings.pivotA)),
-                    btTransform(btMatrix3x3(settings.frameB),
-                                btVector3(settings.pivotB)));
-    // NOTE: impulse is interpreted as force for this constraint.
-    for (int i = 0; i < 6; ++i) {
-      rigidFixedConstraints_.at(constraintId)
-          ->setMaxMotorForce(i, settings.maxImpulse);
-    }
+    articulatedP2PConstraintIter->second->setPivotInB(
+        btVector3(settings.pivotB));
+    articulatedP2PConstraintIter->second->setMaxAppliedImpulse(
+        settings.maxImpulse);
   } else {
-    // one of the maps should have the id if it passed the checks
-    CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+    auto rigidP2PConstraintIter = rigidP2PConstraints_.find(constraintId);
+
+    if (rigidP2PConstraintIter != rigidP2PConstraints_.end()) {
+      rigidP2PConstraintIter->second->m_setting.m_impulseClamp =
+          settings.maxImpulse;
+      rigidP2PConstraintIter->second->setPivotA(btVector3(settings.pivotA));
+      rigidP2PConstraintIter->second->setPivotB(btVector3(settings.pivotB));
+    } else {
+      auto articulatedFixedConstraintIter =
+          articulatedFixedConstraints_.find(constraintId);
+
+      if (articulatedFixedConstraintIter !=
+          articulatedFixedConstraints_.end()) {
+        articulatedFixedConstraintIter->second->setPivotInA(
+            btVector3(settings.pivotA));
+        articulatedFixedConstraintIter->second->setPivotInB(
+            btVector3(settings.pivotB));
+        articulatedFixedConstraintIter->second->setFrameInA(
+            btMatrix3x3(settings.frameA));
+        articulatedFixedConstraintIter->second->setFrameInB(
+            btMatrix3x3(settings.frameB));
+        articulatedFixedConstraintIter->second->setMaxAppliedImpulse(
+            settings.maxImpulse);
+      } else {
+        auto rigidFixedConstraintIter =
+            rigidFixedConstraints_.find(constraintId);
+        if (rigidFixedConstraintIter != rigidFixedConstraints_.end()) {
+          rigidFixedConstraintIter->second->setFrames(
+              btTransform(btMatrix3x3(settings.frameA),
+                          btVector3(settings.pivotA)),
+              btTransform(btMatrix3x3(settings.frameB),
+                          btVector3(settings.pivotB)));
+          // NOTE: impulse is interpreted as force for this constraint.
+          for (int i = 0; i < 6; ++i) {
+            rigidFixedConstraintIter->second->setMaxMotorForce(
+                i, settings.maxImpulse);
+          }
+
+        } else {
+          // one of the maps should have the id if it passed the checks
+          CORRADE_INTERNAL_ASSERT_UNREACHABLE();
+        }
+      }
+    }
   }
   // cache the new settings
   rigidConstraintSettings_[constraintId] = settings;
 }
 
 void BulletPhysicsManager::removeRigidConstraint(int constraintId) {
-  if (articulatedP2PConstraints_.count(constraintId) != 0u) {
+  auto articulatedP2PConstraintIter =
+      articulatedP2PConstraints_.find(constraintId);
+  if (articulatedP2PConstraintIter != articulatedP2PConstraints_.end()) {
     bWorld_->removeMultiBodyConstraint(
-        articulatedP2PConstraints_.at(constraintId).get());
-    articulatedP2PConstraints_.erase(constraintId);
-  } else if (rigidP2PConstraints_.count(constraintId) != 0u) {
-    bWorld_->removeConstraint(rigidP2PConstraints_.at(constraintId).get());
-    rigidP2PConstraints_.erase(constraintId);
-  } else if (articulatedFixedConstraints_.count(constraintId) != 0u) {
-    bWorld_->removeMultiBodyConstraint(
-        articulatedFixedConstraints_.at(constraintId).get());
-    articulatedFixedConstraints_.erase(constraintId);
-  } else if (rigidFixedConstraints_.count(constraintId) != 0u) {
-    bWorld_->removeConstraint(rigidFixedConstraints_.at(constraintId).get());
-    rigidFixedConstraints_.erase(constraintId);
+        articulatedP2PConstraintIter->second.get());
+    articulatedP2PConstraints_.erase(articulatedP2PConstraintIter);
   } else {
-    ESP_ERROR() << "No constraint with constraintId =" << constraintId;
-    return;
+    auto rigidP2PConstraintIter = rigidP2PConstraints_.find(constraintId);
+    if (rigidP2PConstraintIter != rigidP2PConstraints_.end()) {
+      bWorld_->removeConstraint(rigidP2PConstraintIter->second.get());
+      rigidP2PConstraints_.erase(rigidP2PConstraintIter);
+    } else {
+      auto articulatedFixedConstraintIter =
+          articulatedFixedConstraints_.find(constraintId);
+      if (articulatedFixedConstraintIter !=
+          articulatedFixedConstraints_.end()) {
+        bWorld_->removeMultiBodyConstraint(
+            articulatedFixedConstraintIter->second.get());
+        articulatedFixedConstraints_.erase(articulatedFixedConstraintIter);
+      } else {
+        auto rigidFixedConstraintIter =
+            rigidFixedConstraints_.find(constraintId);
+        if (rigidFixedConstraintIter != rigidFixedConstraints_.end()) {
+          bWorld_->removeConstraint(rigidFixedConstraintIter->second.get());
+          rigidFixedConstraints_.erase(rigidFixedConstraintIter);
+        } else {
+          ESP_ERROR() << "No constraint with constraintId =" << constraintId;
+          return;
+        }
+      }
+    }
   }
   rigidConstraintSettings_.erase(constraintId);
   // remove the constraint from any referencing object maps
@@ -878,17 +916,21 @@ void BulletPhysicsManager::removeRigidConstraint(int constraintId) {
       itr.second.erase(conIdItr);
       // when no constraints active for the object, allow it to sleep again
       if (itr.second.empty()) {
-        if (existingArticulatedObjects_.count(itr.first) > 0) {
-          btMultiBody* mb = static_cast<BulletArticulatedObject*>(
-                                existingArticulatedObjects_.at(itr.first).get())
-                                ->btMultiBody_.get();
+        auto artObjIter = existingArticulatedObjects_.find(itr.first);
+        if (artObjIter != existingArticulatedObjects_.end()) {
+          btMultiBody* mb =
+              static_cast<BulletArticulatedObject*>(artObjIter->second.get())
+                  ->btMultiBody_.get();
           mb->setCanSleep(true);
-        } else if (existingObjects_.count(itr.first) > 0) {
-          btRigidBody* rb = static_cast<BulletRigidObject*>(
-                                existingObjects_.at(itr.first).get())
-                                ->bObjectRigidBody_.get();
-          rb->forceActivationState(ACTIVE_TAG);
-          rb->activate(true);
+        } else {
+          auto rigidObjIter = existingObjects_.find(itr.first);
+          if (rigidObjIter != existingObjects_.end()) {
+            btRigidBody* rb =
+                static_cast<BulletRigidObject*>(rigidObjIter->second.get())
+                    ->bObjectRigidBody_.get();
+            rb->forceActivationState(ACTIVE_TAG);
+            rb->activate(true);
+          }
         }
       }
     }

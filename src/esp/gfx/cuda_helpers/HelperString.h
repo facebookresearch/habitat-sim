@@ -116,7 +116,7 @@ inline bool checkCmdLineFlag(const int argc,
   bool bFound = false;
 
   if (argc >= 1) {
-    for (int i = 1; i < argc; i++) {
+    for (int i = 1; i < argc; ++i) {
       int string_start = stringRemoveDelimiter('-', argv[i]);
       const char* string_argv = &argv[i][string_start];
 
@@ -146,7 +146,7 @@ inline bool getCmdLineArgumentValue(const int argc,
   bool bFound = false;
 
   if (argc >= 1) {
-    for (int i = 1; i < argc; i++) {
+    for (int i = 1; i < argc; ++i) {
       int string_start = stringRemoveDelimiter('-', argv[i]);
       const char* string_argv = &argv[i][string_start];
       int length = (int)strlen(string_ref);
@@ -173,7 +173,7 @@ inline int getCmdLineArgumentInt(const int argc,
   int value = -1;
 
   if (argc >= 1) {
-    for (int i = 1; i < argc; i++) {
+    for (int i = 1; i < argc; ++i) {
       int string_start = stringRemoveDelimiter('-', argv[i]);
       const char* string_argv = &argv[i][string_start];
       int length = (int)strlen(string_ref);
@@ -206,7 +206,7 @@ inline float getCmdLineArgumentFloat(const int argc,
   float value = -1;
 
   if (argc >= 1) {
-    for (int i = 1; i < argc; i++) {
+    for (int i = 1; i < argc; ++i) {
       int string_start = stringRemoveDelimiter('-', argv[i]);
       const char* string_argv = &argv[i][string_start];
       int length = (int)strlen(string_ref);
@@ -239,7 +239,7 @@ inline bool getCmdLineArgumentString(const int argc,
   bool bFound = false;
 
   if (argc >= 1) {
-    for (int i = 1; i < argc; i++) {
+    for (int i = 1; i < argc; ++i) {
       int string_start = stringRemoveDelimiter('-', argv[i]);
       char* string_argv = (char*)&argv[i][string_start];
       int length = (int)strlen(string_ref);

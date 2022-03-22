@@ -996,7 +996,7 @@ std::string Simulator::convexHullDecomposition(
     // Iterate until a unique filename is found.
     while (resourceManager_->isAssetDataRegistered(
         chdFilename + std::to_string(nameAttempt))) {
-      nameAttempt++;
+      ++nameAttempt;
     }
     chdFilename += std::to_string(nameAttempt);
   }

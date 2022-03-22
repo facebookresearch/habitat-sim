@@ -684,14 +684,14 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
   vec3f bmin(mf, mf, mf);
   vec3f bmax(-mf, -mf, -mf);
 
-  for (int i = 0; i < numVerts; i++) {
+  for (int i = 0; i < numVerts; ++i) {
     const vec3f& p = mesh.vbo[i];
     bmin = bmin.cwiseMin(p);
     bmax = bmax.cwiseMax(p);
   }
 
   int* indices = new int[numIndices];
-  for (int i = 0; i < numIndices; i++) {
+  for (int i = 0; i < numIndices; ++i) {
     indices[i] = static_cast<int>(mesh.ibo[i]);
   }
 
@@ -897,7 +897,7 @@ bool PathFinder::Impl::saveNavMesh(const std::string& path) {
     const dtMeshTile* tile = navMesh->getTile(i);
     if (!tile || !tile->header || (tile->dataSize == 0))
       continue;
-    header.numTiles++;
+    ++header.numTiles;
   }
   memcpy(&header.params, navMesh->getParams(), sizeof(dtNavMeshParams));
   fwrite(&header, sizeof(NavMeshSetHeader), 1, fp);
@@ -1319,8 +1319,8 @@ PathFinder::Impl::getTopDownView(const float metersPerPixel,
 
   float curz = startz;
   float curx = startx;
-  for (int h = 0; h < zResolution; h++) {
-    for (int w = 0; w < xResolution; w++) {
+  for (int h = 0; h < zResolution; ++h) {
+    for (int w = 0; w < xResolution; ++w) {
       vec3f point = vec3f(curx, height, curz);
       topdownMap(h, w) = isNavigable(point, 0.5);
       curx = curx + metersPerPixel;

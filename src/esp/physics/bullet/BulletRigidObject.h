@@ -400,7 +400,7 @@ class BulletRigidObject : public BulletBase,
    * @param margin The new scalar collision margin of the object.
    */
   void setMargin(const double margin) override {
-    for (std::size_t i = 0; i < bObjectConvexShapes_.size(); i++) {
+    for (std::size_t i = 0; i < bObjectConvexShapes_.size(); ++i) {
       bObjectConvexShapes_[i]->setMargin(margin);
     }
     bObjectShape_->setMargin(margin);

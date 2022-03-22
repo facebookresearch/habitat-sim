@@ -98,10 +98,11 @@ void SensorSuite::remove(const std::string& uuid) {
 }
 
 sensor::Sensor& SensorSuite::get(const std::string& uuid) const {
+  auto sensorIter = sensors_.find(uuid);
   ESP_CHECK(
-      sensors_.count(uuid),
+      sensorIter != sensors_.end(),
       "SensorSuite::get(): SensorSuite does not contain key:" << uuid.c_str());
-  return sensors_.at(uuid).get();
+  return sensorIter->second.get();
 }
 
 void SensorSuite::clear() {

@@ -110,7 +110,7 @@ void toVector(const GV& arr,
               const std::function<T(const GV&)>& conv) {
   const unsigned n = arr.Size();
   vec->resize(n);
-  for (unsigned i = 0; i < n; i++) {
+  for (unsigned i = 0; i < n; ++i) {
     (*vec)[i] = conv(arr[i]);
   }
 }

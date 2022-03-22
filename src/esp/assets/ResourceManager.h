@@ -296,9 +296,9 @@ class ResourceManager {
    */
   const std::vector<assets::CollisionMeshData>& getCollisionMesh(
       const std::string& collisionAssetHandle) const {
-    CORRADE_INTERNAL_ASSERT(collisionMeshGroups_.count(collisionAssetHandle) >
-                            0);
-    return collisionMeshGroups_.at(collisionAssetHandle);
+    auto colMeshGroupIter = collisionMeshGroups_.find(collisionAssetHandle);
+    CORRADE_INTERNAL_ASSERT(colMeshGroupIter != collisionMeshGroups_.end());
+    return colMeshGroupIter->second;
   }
 
   /**
@@ -359,8 +359,9 @@ class ResourceManager {
    * @return The asset's @ref MeshMetaData object.
    */
   const MeshMetaData& getMeshMetaData(const std::string& metaDataName) const {
-    CORRADE_INTERNAL_ASSERT(resourceDict_.count(metaDataName) > 0);
-    return resourceDict_.at(metaDataName).meshMetaData;
+    auto resDictMDIter = resourceDict_.find(metaDataName);
+    CORRADE_INTERNAL_ASSERT(resDictMDIter != resourceDict_.end());
+    return resDictMDIter->second.meshMetaData;
   }
 
   /**
@@ -382,8 +383,9 @@ class ResourceManager {
    */
   std::shared_ptr<esp::geo::VoxelGrid> getVoxelGrid(
       const std::string& voxelGridName) const {
-    CORRADE_INTERNAL_ASSERT(voxelGridDict_.count(voxelGridName) > 0);
-    return voxelGridDict_.at(voxelGridName);
+    auto voxGridIter = voxelGridDict_.find(voxelGridName);
+    CORRADE_INTERNAL_ASSERT(voxGridIter != voxelGridDict_.end());
+    return voxGridIter->second;
   }
 
   /**
@@ -396,12 +398,10 @@ class ResourceManager {
   bool registerVoxelGrid(
       const std::string& voxelGridHandle,
       const std::shared_ptr<esp::geo::VoxelGrid>& VoxelGridPtr) {
-    if (voxelGridDict_.count(voxelGridHandle) > 0)
-      return false;
-    else {
-      voxelGridDict_.emplace(voxelGridHandle, VoxelGridPtr);
-      return true;
-    }
+    auto voxGridEmplaceIter =
+        voxelGridDict_.emplace(voxelGridHandle, VoxelGridPtr);
+    // return whether placed or not;
+    return voxGridEmplaceIter.second;
   }
 
   /**

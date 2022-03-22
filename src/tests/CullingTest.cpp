@@ -259,7 +259,7 @@ void CullingTest::frustumCulling() {
         CORRADE_VERIFY(q.result<bool>());
 
         if (q.result<bool>()) {
-          numVisibleObjectsGroundTruth++;
+          ++numVisibleObjectsGroundTruth;
         }
       };
   for_each(drawableTransforms.begin(), newEndIter, renderOneDrawable);

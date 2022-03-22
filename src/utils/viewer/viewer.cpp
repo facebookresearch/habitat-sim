@@ -1757,7 +1757,7 @@ void Viewer::dispMetadataInfo() {  // display info report
 }
 
 void Viewer::moveAndLook(int repetitions) {
-  for (int i = 0; i < repetitions; i++) {
+  for (int i = 0; i < repetitions; ++i) {
     if (keysPressed[KeyEvent::Key::Left]) {
       defaultAgent_->act("turnLeft");
     }
@@ -2055,9 +2055,10 @@ void Viewer::mousePressEvent(MouseEvent& event) {
             for (auto aoHandle : aoMngr->getObjectHandlesBySubstring()) {
               auto ao = aoMngr->getObjectByHandle(aoHandle);
               auto linkToObjIds = ao->getLinkObjectIds();
-              if (linkToObjIds.count(hitInfo.objectId) > 0) {
+              const auto aoLinkIter = linkToObjIds.find(hitInfo.objectId);
+              if (aoLinkIter != linkToObjIds.end()) {
                 // got a link
-                aoLink = linkToObjIds.at(hitInfo.objectId);
+                aoLink = aoLinkIter->second;
                 objectPivot = ao->getLinkSceneNode(aoLink)
                                   ->transformation()
                                   .inverted()
@@ -2426,7 +2427,7 @@ void Viewer::keyPressEvent(KeyEvent& event) {
       iterateAndDisplaySignedDistanceField();
       // Increase the distance visualized for next time (Pressing L
       // repeatedly will visualize different distances)
-      voxelDistance++;
+      ++voxelDistance;
       break;
     }
     case KeyEvent::Key::G: {
@@ -2439,8 +2440,9 @@ void Viewer::keyPressEvent(KeyEvent& event) {
   }
 
   // Update map of moving/looking keys which are currently pressed
-  if (keysPressed.count(key) > 0) {
-    keysPressed[key] = true;
+  auto keyPressedIter = keysPressed.find(key);
+  if (keyPressedIter != keysPressed.end()) {
+    keyPressedIter->second = true;
   }
   redraw();
 }
@@ -2448,8 +2450,9 @@ void Viewer::keyPressEvent(KeyEvent& event) {
 void Viewer::keyReleaseEvent(KeyEvent& event) {
   // Update map of moving/looking keys which are currently pressed
   const auto key = event.key();
-  if (keysPressed.count(key) > 0) {
-    keysPressed[key] = false;
+  auto keyPressedIter = keysPressed.find(key);
+  if (keyPressedIter != keysPressed.end()) {
+    keyPressedIter->second = false;
   }
   redraw();
 }

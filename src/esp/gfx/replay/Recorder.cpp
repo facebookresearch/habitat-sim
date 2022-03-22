@@ -88,7 +88,7 @@ void Recorder::addLoadsCreationsDeletions(KeyframeIterator begin,
                                           KeyframeIterator end,
                                           Keyframe* dest) {
   CORRADE_INTERNAL_ASSERT(dest);
-  for (KeyframeIterator curr = begin; curr != end; curr++) {
+  for (KeyframeIterator curr = begin; curr != end; ++curr) {
     const auto& keyframe = *curr;
     dest->loads.insert(dest->loads.end(), keyframe.loads.begin(),
                        keyframe.loads.end());

@@ -101,13 +101,15 @@ class PhysicsObjectBaseManager
       const std::string& objectTypeName,
       CORRADE_UNUSED bool builtFromConfig) override {
     // construct a new wrapper based on the passed object
-    if (managedObjTypeConstructorMap_.count(objectTypeName) == 0) {
+    auto mgdObjTypeCtorMapIter =
+        managedObjTypeConstructorMap_.find(objectTypeName);
+    if (mgdObjTypeCtorMapIter == managedObjTypeConstructorMap_.end()) {
       ESP_ERROR(Mn::Debug::Flag::NoSpace)
           << "<" << this->objectType_ << "> Unknown constructor type"
           << objectTypeName << ".  Aborting.";
       return nullptr;
     }
-    auto newWrapper = (*this.*managedObjTypeConstructorMap_[objectTypeName])();
+    auto newWrapper = (*this.*(mgdObjTypeCtorMapIter->second))();
 
     return newWrapper;
   }  // RigidObjectManager::initNewObjectInternal(

@@ -6,8 +6,8 @@
 #define ESP_PHYSICS_PHYSICSMANAGER_H_
 
 /** @file
- * @brief Class @ref esp::physics::PhysicsManager, enum @ref
- * esp::physics::PhysicsManager::PhysicsSimulationLibrary
+ * @brief Class @ref PhysicsManager, enum @ref
+ * PhysicsManager::PhysicsSimulationLibrary
  */
 
 #include <map>
@@ -191,8 +191,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
 
     /**
      * The default implemenation of kineamtics through the base @ref
-     * PhysicsManager class. Supports @ref esp::physics::MotionType::STATIC and
-     * @ref esp::physics::MotionType::KINEMATIC objects of base class @ref
+     * PhysicsManager class. Supports @ref MotionType::STATIC and
+     * @ref MotionType::KINEMATIC objects of base class @ref
      * RigidObject. If the derived @ref PhysicsManager class for a desired @ref
      * PhysicsSimulationLibrary fails to initialize, it will default to @ref
      * PhysicsSimulationLibrary::NoPhysics.
@@ -201,9 +201,9 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
 
     /**
      * An implemenation of dynamics through the Bullet Physics library.
-     * Supports @ref esp::physics::MotionType::STATIC, @ref
-     * esp::physics::MotionType::KINEMATIC, and @ref
-     * esp::physics::MotionType::DYNAMIC objects of @ref RigidObject derived
+     * Supports @ref MotionType::STATIC, @ref
+     * MotionType::KINEMATIC, and @ref
+     * MotionType::DYNAMIC objects of @ref RigidObject derived
      * class @ref BulletRigidObject. Suggests the use of @ref PhysicsManager
      * derived class
      * @ref BulletPhysicsManager
@@ -391,14 +391,13 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @brief Create an object wrapper appropriate for this physics manager.
    * Overridden if called by dynamics-library-enabled PhysicsManager
    */
-  virtual esp::physics::ManagedRigidObject::ptr getRigidObjectWrapper();
+  virtual ManagedRigidObject::ptr getRigidObjectWrapper();
 
   /**
    * @brief Create an articulated object wrapper appropriate for this physics
    * manager. Overridden if called by dynamics-library-enabled PhysicsManager
    */
-  virtual esp::physics::ManagedArticulatedObject::ptr
-  getArticulatedObjectWrapper();
+  virtual ManagedArticulatedObject::ptr getArticulatedObjectWrapper();
 
   /** @brief Remove an object instance from the pysical scene by ID, destroying
    * its scene graph node and removing it from @ref
@@ -549,8 +548,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
   int getNumArticulatedObjects() { return existingArticulatedObjects_.size(); }
 
   ArticulatedObject& getArticulatedObject(int objectId) {
-    CORRADE_INTERNAL_ASSERT(existingArticulatedObjects_.count(objectId));
-    return *existingArticulatedObjects_.at(objectId).get();
+    auto existAOIter = getArticulatedObjIteratorOrAssert(objectId);
+    return *existAOIter->second;
   }
 
   //============ Simulator functions =============
@@ -718,8 +717,8 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @return The visual root node.
    */
   const scene::SceneNode& getObjectVisualSceneNode(int physObjectID) const {
-    assertRigidIdValidity(physObjectID);
-    return *existingObjects_.at(physObjectID)->visualNode_;
+    auto objIter = getConstRigidObjIteratorOrAssert(physObjectID);
+    return *objIter->second->visualNode_;
   }
 
   /** @brief Render any debugging visualizations provided by the underlying
@@ -741,13 +740,17 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * enabled objects.
    */
   virtual bool contactTest(const int physObjectID) {
+    const auto existingObjsIter = existingObjects_.find(physObjectID);
+    bool existingObjFound = (existingObjsIter != existingObjects_.end());
+    const auto existingArtObjsIter =
+        existingArticulatedObjects_.find(physObjectID);
     CORRADE_INTERNAL_ASSERT(
-        (existingObjects_.count(physObjectID) > 0) ||
-        (existingArticulatedObjects_.count(physObjectID) > 0));
-    if (existingObjects_.count(physObjectID) > 0) {
-      return existingObjects_.at(physObjectID)->contactTest();
+        existingObjFound ||
+        (existingArtObjsIter != existingArticulatedObjects_.end()));
+    if (existingObjFound) {
+      return existingObjsIter->second->contactTest();
     } else {
-      return existingArticulatedObjects_.at(physObjectID)->contactTest();
+      return existingArtObjsIter->second->contactTest();
     }
     return false;
   }
@@ -942,9 +945,10 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @return The settings of the constraint.
    */
   RigidConstraintSettings getRigidConstraintSettings(int constraintId) const {
-    ESP_CHECK(rigidConstraintSettings_.count(constraintId) > 0,
+    auto rigidCnstrntSettingsIter = rigidConstraintSettings_.find(constraintId);
+    ESP_CHECK(rigidCnstrntSettingsIter != rigidConstraintSettings_.end(),
               "No RigidConstraint exists with constraintId =" << constraintId);
-    return rigidConstraintSettings_.at(constraintId);
+    return rigidCnstrntSettingsIter->second;
   }
   /**
    * @brief This will populate the passed @p sceneInstanceAttrs with the current
@@ -985,13 +989,13 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @return whether successful or not.
    */
   bool removeTrajVisByName(const std::string& trajVisName) {
-    if (trajVisIDByName.count(trajVisName) == 0) {
+    auto trajVisIter = trajVisIDByName.find(trajVisName);
+    if (trajVisIter == trajVisIDByName.end()) {
       ESP_DEBUG() << "No trajectory named" << trajVisName
                   << "exists.  Ignoring.";
       return false;
     }
-    return removeTrajVisObjectAndAssets(trajVisIDByName.at(trajVisName),
-                                        trajVisName);
+    return removeTrajVisObjectAndAssets(trajVisIter->second, trajVisName);
   }
 
   /**
@@ -1001,13 +1005,13 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * @return whether successful or not.
    */
   bool removeTrajVisByID(int trajVisObjID) {
-    if (trajVisNameByID.count(trajVisObjID) == 0) {
+    auto trajVisIter = trajVisNameByID.find(trajVisObjID);
+    if (trajVisIter == trajVisNameByID.end()) {
       ESP_DEBUG() << "No trajectory object with ID:" << trajVisObjID
                   << "exists.  Ignoring.";
       return false;
     }
-    return removeTrajVisObjectAndAssets(trajVisObjID,
-                                        trajVisNameByID.at(trajVisObjID));
+    return removeTrajVisObjectAndAssets(trajVisObjID, trajVisIter->second);
   }
 
  protected:
@@ -1029,14 +1033,60 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
     return true;
   }
 
-  /** @brief Check that a given object ID is valid (i.e. it refers to an
-   * existing rigid object). Terminate the program and report an error if not.
-   * This function is intended to unify object ID checking for @ref
-   * PhysicsManager functions.
+  /** @brief Retrieve an iterator to a given object ID's value if it is valid
+   * (i.e. it refers to an existing rigid object). Terminate the program and
+   * report an error if not. This function is intended to unify object ID
+   * checking for @ref PhysicsManager functions.
    * @param physObjectID The object ID to validate.
+   * @return iterator to map entry or to end of map if DNE
    */
-  virtual void assertRigidIdValidity(const int physObjectID) const {
-    CORRADE_INTERNAL_ASSERT(isValidRigidObjectId(physObjectID));
+  std::map<int, RigidObject::ptr>::iterator getRigidObjIteratorOrAssert(
+      const int physObjectID) {
+    auto objIter = existingObjects_.find(physObjectID);
+    CORRADE_INTERNAL_ASSERT(objIter != existingObjects_.end());
+    return objIter;
+  }
+
+  /** @brief Retrieve an iterator to a given articulated object ID's value if it
+   * is valid (i.e. it refers to an existing articulated object). Terminate the
+   * program and report an error if not. This function is intended to unify
+   * object ID checking for @ref PhysicsManager functions.
+   * @param physObjectID The articulated object ID to validate.
+   * @return iterator to map entry or to end of map if DNE
+   */
+  std::map<int, ArticulatedObject::ptr>::iterator
+  getArticulatedObjIteratorOrAssert(const int physObjectID) {
+    auto aObjIter = existingArticulatedObjects_.find(physObjectID);
+    CORRADE_INTERNAL_ASSERT(aObjIter != existingArticulatedObjects_.end());
+    return aObjIter;
+  }
+
+  /** @brief Retrieve an iterator to a given object ID's value if it is valid
+   * (i.e. it refers to an existing rigid object). Terminate the program and
+   * report an error if not. This function is intended to unify object ID
+   * checking for @ref PhysicsManager functions.
+   * @param physObjectID The object ID to validate.
+   * @return iterator to map entry or to end of map if DNE
+   */
+  std::map<int, RigidObject::ptr>::const_iterator
+  getConstRigidObjIteratorOrAssert(const int physObjectID) const {
+    auto objIter = existingObjects_.find(physObjectID);
+    CORRADE_INTERNAL_ASSERT(objIter != existingObjects_.end());
+    return objIter;
+  }
+
+  /** @brief Retrieve an iterator to a given articulated object ID's value if it
+   * is valid (i.e. it refers to an existing articulated object). Terminate the
+   * program and report an error if not. This function is intended to unify
+   * object ID checking for @ref PhysicsManager functions.
+   * @param physObjectID The articulated object ID to validate.
+   * @return iterator to map entry or to end of map if DNE
+   */
+  std::map<int, ArticulatedObject::ptr>::const_iterator
+  getConstArticulatedObjIteratorOrAssert(const int physObjectID) const {
+    auto aObjIter = existingArticulatedObjects_.find(physObjectID);
+    CORRADE_INTERNAL_ASSERT(aObjIter != existingArticulatedObjects_.end());
+    return aObjIter;
   }
 
   /** @brief Check if a particular mesh can be used as a collision mesh for
@@ -1104,7 +1154,7 @@ class PhysicsManager : public std::enable_shared_from_this<PhysicsManager> {
    * false.
    */
   void setVoxelizationDraw(const std::string& gridName,
-                           esp::physics::RigidBase* rigidBase,
+                           RigidBase* rigidBase,
                            DrawableGroup* drawables,
                            bool drawVoxelization);
 

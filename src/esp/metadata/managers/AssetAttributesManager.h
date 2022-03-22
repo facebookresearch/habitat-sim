@@ -492,13 +492,14 @@ class AssetAttributesManager
   attributes::AbstractPrimitiveAttributes::ptr initNewObjectInternal(
       const std::string& primClassName,
       CORRADE_UNUSED bool builtFromConfig) override {
-    if (primTypeConstructorMap_.count(primClassName) == 0) {
+    auto primTypeCtorIter = primTypeConstructorMap_.find(primClassName);
+    if (primTypeCtorIter == primTypeConstructorMap_.end()) {
       ESP_ERROR() << "No primitive class" << primClassName
                   << "exists in Magnum::Primitives. Aborting.";
       return nullptr;
     }
     // these attributes ignore any default setttings.
-    auto newAttributes = (*this.*primTypeConstructorMap_[primClassName])();
+    auto newAttributes = (*this.*primTypeCtorIter->second)();
     return newAttributes;
   }
 

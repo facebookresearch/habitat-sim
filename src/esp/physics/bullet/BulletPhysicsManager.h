@@ -460,8 +460,9 @@ class BulletPhysicsManager : public PhysicsManager {
    * @param objectId The unique id for the rigid or articulated object.
    */
   void removeObjectRigidConstraints(int objectId) {
-    if (objectConstraints_.count(objectId) > 0) {
-      for (auto c_id : objectConstraints_.at(objectId)) {
+    auto objConstraintIter = objectConstraints_.find(objectId);
+    if (objConstraintIter != objectConstraints_.end()) {
+      for (auto c_id : objConstraintIter->second) {
         removeRigidConstraint(c_id);
       }
       objectConstraints_.erase(objectId);

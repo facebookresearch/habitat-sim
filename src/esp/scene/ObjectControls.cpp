@@ -89,18 +89,19 @@ ObjectControls& ObjectControls::action(SceneNode& object,
                                        const std::string& actName,
                                        float distance,
                                        bool applyFilter /* = true */) {
-  if (moveFuncMap_.count(actName) != 0u) {
+  auto moveFuncMapIter = moveFuncMap_.find(actName);
+  if (moveFuncMapIter != moveFuncMap_.end()) {
     if (applyFilter) {
       // TODO: use magnum math for the filter func as well?
       const auto startPosition =
           cast<vec3f>(object.absoluteTransformation().translation());
-      moveFuncMap_[actName](object, distance);
+      moveFuncMapIter->second(object, distance);
       const auto endPos =
           cast<vec3f>(object.absoluteTransformation().translation());
       const vec3f filteredEndPosition = moveFilterFunc_(startPosition, endPos);
       object.translate(Magnum::Vector3(vec3f(filteredEndPosition - endPos)));
     } else {
-      moveFuncMap_[actName](object, distance);
+      moveFuncMapIter->second(object, distance);
     }
   } else {
     ESP_ERROR() << "Tried to perform unknown action with name" << actName;

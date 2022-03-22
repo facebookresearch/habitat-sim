@@ -389,7 +389,7 @@ void BulletArticulatedObject::setJointForces(const std::vector<float>& forces) {
     btMultibodyLink& link = btMultiBody_->getLink(i);
     for (int dof = 0; dof < link.m_dofCount; ++dof) {
       link.m_jointTorque[dof] = forces[dofCount];
-      dofCount++;
+      ++dofCount;
     }
   }
 }
@@ -406,7 +406,7 @@ void BulletArticulatedObject::addJointForces(const std::vector<float>& forces) {
     btMultibodyLink& link = btMultiBody_->getLink(i);
     for (int dof = 0; dof < link.m_dofCount; ++dof) {
       link.m_jointTorque[dof] += forces[dofCount];
-      dofCount++;
+      ++dofCount;
     }
   }
 }
@@ -418,7 +418,7 @@ std::vector<float> BulletArticulatedObject::getJointForces() {
     btScalar* dofForces = btMultiBody_->getJointTorqueMultiDof(i);
     for (int dof = 0; dof < btMultiBody_->getLink(i).m_dofCount; ++dof) {
       forces[dofCount] = dofForces[dof];
-      dofCount++;
+      ++dofCount;
     }
   }
   return forces;
@@ -450,7 +450,7 @@ std::vector<float> BulletArticulatedObject::getJointVelocities() {
     btScalar* dofVels = btMultiBody_->getJointVelMultiDof(i);
     for (int dof = 0; dof < btMultiBody_->getLink(i).m_dofCount; ++dof) {
       vels[dofCount] = dofVels[dof];
-      dofCount++;
+      ++dofCount;
     }
   }
   return vels;
@@ -485,7 +485,7 @@ std::vector<float> BulletArticulatedObject::getJointPositions() {
     btScalar* linkPos = btMultiBody_->getJointPosMultiDof(i);
     for (int pos = 0; pos < btMultiBody_->getLink(i).m_posVarCount; ++pos) {
       positions[posCount] = linkPos[pos];
-      posCount++;
+      ++posCount;
     }
   }
   return positions;
@@ -519,12 +519,12 @@ BulletArticulatedObject::getJointPositionLimits() {
 
   int posCount = 0;
   for (int i = 0; i < btMultiBody_->getNumLinks(); ++i) {
-    if (jointLimitConstraints.count(i) > 0) {
+    auto jntLimitCnstrntIter = jointLimitConstraints.find(i);
+    if (jntLimitCnstrntIter != jointLimitConstraints.end()) {
       // a joint limit constraint exists for this link's parent joint
-      auto& jlc = jointLimitConstraints.at(i);
-      lowerLimits[posCount] = jlc.lowerLimit;
-      upperLimits[posCount] = jlc.upperLimit;
-      posCount++;
+      lowerLimits[posCount] = jntLimitCnstrntIter->second.lowerLimit;
+      upperLimits[posCount] = jntLimitCnstrntIter->second.upperLimit;
+      ++posCount;
     } else {
       posCount += btMultiBody_->getLink(i).m_posVarCount;
     }
@@ -643,23 +643,24 @@ void BulletArticulatedObject::clampJointLimits() {
 
   int dofCount = 0;
   for (int i = 0; i < btMultiBody_->getNumLinks(); ++i) {
-    if (jointLimitConstraints.count(i) > 0) {
+    auto jntLimitCnstrntIter = jointLimitConstraints.find(i);
+    if (jntLimitCnstrntIter != jointLimitConstraints.end()) {
       // a joint limit constraint exists for this link
-      auto& jlc = jointLimitConstraints.at(i);
-
       // position clamping:
-      if (pose[dofCount] < jlc.lowerLimit - corrective_eps) {
+      if (pose[dofCount] <
+          jntLimitCnstrntIter->second.lowerLimit - corrective_eps) {
         poseModified = true;
-        pose[dofCount] = jlc.lowerLimit;
-      } else if (pose[dofCount] > jlc.upperLimit + corrective_eps) {
+        pose[dofCount] = jntLimitCnstrntIter->second.lowerLimit;
+      } else if (pose[dofCount] >
+                 jntLimitCnstrntIter->second.upperLimit + corrective_eps) {
         poseModified = true;
-        pose[dofCount] = jlc.upperLimit;
+        pose[dofCount] = jntLimitCnstrntIter->second.upperLimit;
       }
     }
 
     // continue incrementing the dof counter
     for (int dof = 0; dof < btMultiBody_->getLink(i).m_dofCount; ++dof) {
-      dofCount++;
+      ++dofCount;
     }
   }
 
@@ -893,23 +894,27 @@ int BulletArticulatedObject::createJointMotor(
 }  // BulletArticulatedObject::createJointMotor
 
 void BulletArticulatedObject::removeJointMotor(const int motorId) {
-  ESP_CHECK(jointMotors_.count(motorId) > 0,
+  auto jointMotorIter = jointMotors_.find(motorId);
+  ESP_CHECK(jointMotorIter != jointMotors_.end(),
             "BulletArticulatedObject::removeJointMotor - No motor exists with "
             "motorId ="
                 << motorId);
-  if (articulatedJointMotors.count(motorId) != 0u) {
-    bWorld_->removeMultiBodyConstraint(
-        articulatedJointMotors.at(motorId).get());
-    articulatedJointMotors.erase(motorId);
-  } else if (articulatedSphericalJointMotors.count(motorId) != 0u) {
-    bWorld_->removeMultiBodyConstraint(
-        articulatedSphericalJointMotors.at(motorId).get());
-    articulatedSphericalJointMotors.erase(motorId);
+  auto aoJointMoterIter = articulatedJointMotors.find(motorId);
+  if (aoJointMoterIter != articulatedJointMotors.end()) {
+    bWorld_->removeMultiBodyConstraint(aoJointMoterIter->second.get());
+    articulatedJointMotors.erase(aoJointMoterIter);
   } else {
-    ESP_ERROR() << "Cannot remove JointMotor: invalid ID (" << motorId << ").";
-    return;
+    auto aoSphrJointMoterIter = articulatedSphericalJointMotors.find(motorId);
+    if (aoSphrJointMoterIter != articulatedSphericalJointMotors.end()) {
+      bWorld_->removeMultiBodyConstraint(aoSphrJointMoterIter->second.get());
+      articulatedSphericalJointMotors.erase(aoSphrJointMoterIter);
+    } else {
+      ESP_ERROR() << "Cannot remove JointMotor: invalid ID (" << motorId
+                  << ").";
+      return;
+    }
   }
-  jointMotors_.erase(motorId);
+  jointMotors_.erase(jointMotorIter);
   // force activation if motors are updated
   btMultiBody_->wakeUp();
 }
@@ -917,29 +922,37 @@ void BulletArticulatedObject::removeJointMotor(const int motorId) {
 void BulletArticulatedObject::updateJointMotor(
     const int motorId,
     const JointMotorSettings& settings) {
-  ESP_CHECK(jointMotors_.count(motorId) > 0,
+  auto jointMotorIter = jointMotors_.find(motorId);
+  ESP_CHECK(jointMotorIter != jointMotors_.end(),
             "BulletArticulatedObject::updateJointMotor - No motor exists with "
             "motorId ="
                 << motorId);
-  ESP_CHECK(jointMotors_.at(motorId)->settings.motorType == settings.motorType,
+  ESP_CHECK(jointMotorIter->second->settings.motorType == settings.motorType,
             "BulletArticulatedObject::updateJointMotor - "
             "JointMotorSettings.motorType does not match joint type.");
-  jointMotors_.at(motorId)->settings = settings;
-  if (articulatedJointMotors.count(motorId) != 0u) {
-    auto& motor = articulatedJointMotors.at(motorId);
-    motor->setPositionTarget(settings.positionTarget, settings.positionGain);
-    motor->setVelocityTarget(settings.velocityTarget, settings.velocityGain);
-    motor->setMaxAppliedImpulse(settings.maxImpulse);
-  } else if (articulatedSphericalJointMotors.count(motorId) != 0u) {
-    auto& motor = articulatedSphericalJointMotors.at(motorId);
-    motor->setPositionTarget(btQuaternion(settings.sphericalPositionTarget),
-                             settings.positionGain);
-    motor->setVelocityTarget(btVector3(settings.sphericalVelocityTarget),
-                             settings.velocityGain);
-    motor->setMaxAppliedImpulse(settings.maxImpulse);
+  jointMotorIter->second->settings = settings;
+
+  auto aoJointMoterIter = articulatedJointMotors.find(motorId);
+  if (aoJointMoterIter != articulatedJointMotors.end()) {
+    aoJointMoterIter->second->setPositionTarget(settings.positionTarget,
+                                                settings.positionGain);
+    aoJointMoterIter->second->setVelocityTarget(settings.velocityTarget,
+                                                settings.velocityGain);
+    aoJointMoterIter->second->setMaxAppliedImpulse(settings.maxImpulse);
   } else {
-    ESP_ERROR() << "Cannot update JointMotor. Invalid ID (" << motorId << ").";
-    return;
+    auto aoSphrJointMoterIter = articulatedSphericalJointMotors.find(motorId);
+    if (aoSphrJointMoterIter != articulatedSphericalJointMotors.end()) {
+      aoSphrJointMoterIter->second->setPositionTarget(
+          btQuaternion(settings.sphericalPositionTarget),
+          settings.positionGain);
+      aoSphrJointMoterIter->second->setVelocityTarget(
+          btVector3(settings.sphericalVelocityTarget), settings.velocityGain);
+      aoSphrJointMoterIter->second->setMaxAppliedImpulse(settings.maxImpulse);
+    } else {
+      ESP_ERROR() << "Cannot update JointMotor. Invalid ID (" << motorId
+                  << ").";
+      return;
+    }
   }
   // force activation if motors are updated
   setActive(true);
