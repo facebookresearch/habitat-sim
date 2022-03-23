@@ -13,8 +13,8 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
-import numpy as np
 import magnum as mn
+import numpy as np
 from magnum.platform.glfw import Application
 
 import habitat_sim
@@ -277,7 +277,7 @@ class HabitatSimInteractiveViewer(Application):
 
         shift_pressed = bool(event.modifiers & mod.SHIFT)
         alt_pressed = bool(event.modifiers & mod.ALT)
-        #warning: ctrl doesn't always pass through with other key-presses
+        # warning: ctrl doesn't always pass through with other key-presses
 
         if key == pressed.ESC:
             event.accepted = True
@@ -377,15 +377,18 @@ class HabitatSimInteractiveViewer(Application):
                 logger.info("Command: resample agent state from navmesh")
                 if self.sim.pathfinder.is_loaded:
                     new_agent_state = habitat_sim.AgentState()
-                    new_agent_state.position = self.sim.pathfinder.get_random_navigable_point()
+                    new_agent_state.position = (
+                        self.sim.pathfinder.get_random_navigable_point()
+                    )
                     new_agent_state.rotation = quat_from_angle_axis(
-                        self.sim.random.uniform_float(0, 2.0 * np.pi), np.array([0, 1, 0])
+                        self.sim.random.uniform_float(0, 2.0 * np.pi),
+                        np.array([0, 1, 0]),
                     )
                     self.default_agent.set_state(new_agent_state)
                 else:
                     logger.warning(
-                            f"NavMesh is not initialized. Cannot sample new agent state."
-                        )
+                        "NavMesh is not initialized. Cannot sample new agent state."
+                    )
             elif shift_pressed:
                 logger.info("Command: recompute navmesh")
                 self.navmesh_config_and_recompute()
