@@ -109,16 +109,16 @@ def initialize_test_data_sources(data_path):
             "version": "1.0",
         },
         "replica_cad_dataset": {
-            "source": "https://dl.fbaipublicfiles.com/habitat/ReplicaCAD/ReplicaCAD_dataset_v1.4.zip",
-            "package_name": "ReplicaCAD_dataset_v1.4.zip",
+            "source": "https://dl.fbaipublicfiles.com/habitat/ReplicaCAD/ReplicaCAD_dataset_v1.3.zip",
+            "package_name": "ReplicaCAD_dataset_v1.3.zip",
             "link": data_path + "replica_cad",
-            "version": "1.4",
+            "version": "1.3",
         },
         "replica_cad_baked_lighting": {
-            "source": "https://dl.fbaipublicfiles.com/habitat/ReplicaCAD/ReplicaCAD_baked_lighting_v1.4.zip",
-            "package_name": "ReplicaCAD_baked_lighting_v1.4.zip",
+            "source": "https://dl.fbaipublicfiles.com/habitat/ReplicaCAD/ReplicaCAD_baked_lighting_v1.3.zip",
+            "package_name": "ReplicaCAD_baked_lighting_v1.3.zip",
             "link": data_path + "replica_cad_baked_lighting",
-            "version": "1.4",
+            "version": "1.3",
         },
         "ycb": {
             "source": "https://dl.fbaipublicfiles.com/habitat/ycb/hab_ycb_v1.1.zip",
