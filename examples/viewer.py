@@ -13,6 +13,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 flags = sys.getdlopenflags()
 sys.setdlopenflags(flags | ctypes.RTLD_GLOBAL)
 
+import numpy as np
 import magnum as mn
 from magnum.platform.glfw import Application
 
@@ -20,6 +21,7 @@ import habitat_sim
 from examples.settings import default_sim_settings, make_cfg
 from habitat_sim import physics
 from habitat_sim.logging import LoggingContext, logger
+from habitat_sim.utils.common import quat_from_angle_axis
 
 
 class HabitatSimInteractiveViewer(Application):
@@ -275,6 +277,7 @@ class HabitatSimInteractiveViewer(Application):
 
         shift_pressed = bool(event.modifiers & mod.SHIFT)
         alt_pressed = bool(event.modifiers & mod.ALT)
+        #warning: ctrl doesn't always pass through with other key-presses
 
         if key == pressed.ESC:
             event.accepted = True
@@ -367,7 +370,23 @@ class HabitatSimInteractiveViewer(Application):
             logger.info("Command: gravity inverted")
 
         elif key == pressed.N:
-            if shift_pressed:
+            # (default) - toggle navmesh visualization
+            # NOTE: (+ALT) - re-sample the agent position on the NavMesh
+            # NOTE: (+SHIFT) - re-compute the NavMesh
+            if alt_pressed:
+                logger.info("Command: resample agent state from navmesh")
+                if self.sim.pathfinder.is_loaded:
+                    new_agent_state = habitat_sim.AgentState()
+                    new_agent_state.position = self.sim.pathfinder.get_random_navigable_point()
+                    new_agent_state.rotation = quat_from_angle_axis(
+                        self.sim.random.uniform_float(0, 2.0 * np.pi), np.array([0, 1, 0])
+                    )
+                    self.default_agent.set_state(new_agent_state)
+                else:
+                    logger.warning(
+                            f"NavMesh is not initialized. Cannot sample new agent state."
+                        )
+            elif shift_pressed:
                 logger.info("Command: recompute navmesh")
                 self.navmesh_config_and_recompute()
             else:
@@ -694,6 +713,7 @@ Key Commands:
     'r':        Reset the simulator with the most recently loaded scene.
     'n':        Show/hide NavMesh wireframe.
                 (+SHIFT) Recompute NavMesh with default settings.
+                (+ALT) Re-sample the agent(camera)'s position and orientation from the NavMesh.
     ',':        Render a Bullet collision shape debug wireframe overlay (white=active, green=sleeping, blue=wants sleeping, red=can't sleep)
 
     Object Interactions:
