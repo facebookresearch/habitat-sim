@@ -187,6 +187,18 @@ class MobileManipulator(RobotInterface):
                 self.sim_obj.update_joint_motor(self.joint_motors[i][0], jms)
         self._update_motor_settings_cache()
 
+        if self.params.gripper_joints is not None:
+            jms = JointMotorSettings(
+                0,  # position_target
+                self.params.arm_mtr_pos_gain,  # position_gain
+                0,  # velocity_target
+                self.params.arm_mtr_vel_gain,  # velocity_gain
+                self.params.arm_mtr_max_impulse,  # max_impulse
+            )
+            for i in self.params.gripper_joints:
+                self.sim_obj.update_joint_motor(self.joint_motors[i][0], jms)
+        self._update_motor_settings_cache()
+
         # set correct gains for wheels
         if self.params.wheel_joints is not None:
             jms = JointMotorSettings(
