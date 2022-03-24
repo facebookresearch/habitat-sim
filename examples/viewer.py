@@ -108,7 +108,7 @@ class HabitatSimInteractiveViewer(Application):
         self.sim.get_debug_line_render().set_line_width(1.5)
         camera_position = self.render_camera.render_camera.node.absolute_translation
         # only showing active contacts
-        active_contacts = [x for x in cps if x.is_active]
+        active_contacts = (x for x in cps if x.is_active)
         for cp in active_contacts:
             # red shows the contact distance
             self.sim.get_debug_line_render().draw_transformed_line(
