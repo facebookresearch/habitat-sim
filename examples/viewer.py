@@ -88,7 +88,7 @@ class HabitatSimInteractiveViewer(Application):
         self.reconfigure_sim()
 
         # compute NavMesh if not already loaded by the scene.
-        if not self.sim.pathfinder.is_loaded:
+        if not self.sim.pathfinder.is_loaded and self.cfg.sim_cfg.scene_id != "NONE":
             self.navmesh_config_and_recompute()
 
         self.time_since_last_simulation = 0.0
@@ -659,7 +659,7 @@ class HabitatSimInteractiveViewer(Application):
         self.sim.recompute_navmesh(
             self.sim.pathfinder,
             self.navmesh_settings,
-            include_static_objects=False,
+            include_static_objects=True,
         )
 
     def exit_event(self, event: Application.ExitEvent):
