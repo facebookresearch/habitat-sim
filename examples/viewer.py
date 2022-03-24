@@ -102,7 +102,7 @@ class HabitatSimInteractiveViewer(Application):
         This method is called to render a debug line overlay displaying active contact points and normals.
         Yellow lines show the contact distance along the normal and red lines show the contact normal at a fixed length.
         """
-        yellow = mn.Color4(1.0, 1.0, 0.0, 1.0)
+        yellow = mn.Color4.yellow()
         red = mn.Color4(1.0, 0.0, 0.0, 1.0)
         cps = self.sim.get_physics_contact_points()
         self.sim.get_debug_line_render().set_line_width(1.5)
