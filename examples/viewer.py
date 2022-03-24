@@ -103,7 +103,7 @@ class HabitatSimInteractiveViewer(Application):
         Yellow lines show the contact distance along the normal and red lines show the contact normal at a fixed length.
         """
         yellow = mn.Color4.yellow()
-        red = mn.Color4(1.0, 0.0, 0.0, 1.0)
+        red = mn.Color4.red()
         cps = self.sim.get_physics_contact_points()
         self.sim.get_debug_line_render().set_line_width(1.5)
         camera_position = self.render_camera.render_camera.node.absolute_translation
