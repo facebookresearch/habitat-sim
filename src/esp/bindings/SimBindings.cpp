@@ -110,7 +110,9 @@ void initSimBindings(py::module& m) {
       .def(
           "close", &Simulator::close, "destroy"_a = true,
           R"(Free all loaded assets and GPU contexts. Use destroy=true except where noted in tutorials/async_rendering.py.)")
-      .def("debug_draw", &Simulator::physicsDebugDraw, "projMat"_a)
+      .def(
+          "physics_debug_draw", &Simulator::physicsDebugDraw, "projMat"_a,
+          R"(Render any debugging visualizations provided by the underlying physics simulator implementation given the composed projection and transformation matrix for the render camera.)")
       .def_property("pathfinder", &Simulator::getPathFinder,
                     &Simulator::setPathFinder)
       .def_property(

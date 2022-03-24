@@ -103,7 +103,7 @@ class HabitatSimInteractiveViewer(Application):
         if self.debug_bullet_draw:
             render_cam = self.render_camera.render_camera
             proj_mat = render_cam.projection_matrix.__matmul__(render_cam.camera_matrix)
-            self.sim.debug_draw(proj_mat)
+            self.sim.physics_debug_draw(proj_mat)
 
     def draw_event(
         self,
