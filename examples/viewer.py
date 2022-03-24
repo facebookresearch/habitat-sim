@@ -29,7 +29,10 @@ class HabitatSimInteractiveViewer(Application):
         Application.__init__(self, configuration)
         self.sim_settings: Dict[str:Any] = sim_settings
         self.fps: float = 60.0
+        # draw Bullet debug line visualizations (e.g. collision meshes)
         self.debug_bullet_draw = False
+        # draw active contact point debug line visualizations
+        self.contact_debug_draw = False
         # cache most recently loaded URDF file for quick-reload
         self.cached_urdf = ""
 
@@ -94,6 +97,40 @@ class HabitatSimInteractiveViewer(Application):
         logger.setLevel("INFO")
         self.print_help_text()
 
+    def draw_contact_debug(self):
+        """
+        This method is called to render a debug line overlay displaying active contact points and normals.
+        Yellow lines show the contact distance along the normal and red lines show the contact normal at a fixed length.
+        """
+        yellow = mn.Color4(1.0, 1.0, 0.0, 1.0)
+        red = mn.Color4(1.0, 0.0, 0.0, 1.0)
+        cps = self.sim.get_physics_contact_points()
+        self.sim.get_debug_line_render().set_line_width(1.5)
+        camera_position = self.render_camera.render_camera.node.absolute_translation
+        # only showing active contacts
+        active_contacts = [x for x in cps if x.is_active]
+        for cp in active_contacts:
+            # red shows the contact distance
+            self.sim.get_debug_line_render().draw_transformed_line(
+                cp.position_on_b_in_ws,
+                cp.position_on_b_in_ws
+                + cp.contact_normal_on_b_in_ws * -cp.contact_distance,
+                red,
+            )
+            # yellow shows the contact normal at a fixed length for visualization
+            self.sim.get_debug_line_render().draw_transformed_line(
+                cp.position_on_b_in_ws,
+                # + cp.contact_normal_on_b_in_ws * cp.contact_distance,
+                cp.position_on_b_in_ws + cp.contact_normal_on_b_in_ws * 0.1,
+                yellow,
+            )
+            self.sim.get_debug_line_render().draw_circle(
+                translation=cp.position_on_b_in_ws,
+                radius=0.005,
+                color=yellow,
+                normal=camera_position - cp.position_on_b_in_ws,
+            )
+
     def debug_draw(self):
         """
         Additional draw commands to be called during draw_event.
@@ -102,6 +139,8 @@ class HabitatSimInteractiveViewer(Application):
             render_cam = self.render_camera.render_camera
             proj_mat = render_cam.projection_matrix.__matmul__(render_cam.camera_matrix)
             self.sim.debug_draw(proj_mat)
+        if self.contact_debug_draw:
+            self.draw_contact_debug()
 
     def draw_event(
         self,
@@ -332,6 +371,21 @@ class HabitatSimInteractiveViewer(Application):
         elif key == pressed.COMMA:
             self.debug_bullet_draw = not self.debug_bullet_draw
             logger.info(f"Command: toggle Bullet debug draw: {self.debug_bullet_draw}")
+
+        elif key == pressed.C:
+            if shift_pressed:
+                self.contact_debug_draw = not self.contact_debug_draw
+                logger.info(
+                    f"Command: toggle contact debug draw: {self.contact_debug_draw}"
+                )
+            else:
+                # perform a discrete collision detection pass and enable contact debug drawing to visualize the results
+                logger.info(
+                    "Command: perform discrete collision detection and visualize active contacts."
+                )
+                self.sim.perform_discrete_collision_detection()
+                self.contact_debug_draw = True
+                # TODO: add a nice log message with concise contact pair naming.
 
         elif key == pressed.T:
             # load URDF
@@ -694,7 +748,9 @@ Key Commands:
     'r':        Reset the simulator with the most recently loaded scene.
     'n':        Show/hide NavMesh wireframe.
                 (+SHIFT) Recompute NavMesh with default settings.
-    ',':        Render a Bullet collision shape debug wireframe overlay (white=active, green=sleeping, blue=wants sleeping, red=can't sleep)
+    ',':        Render a Bullet collision shape debug wireframe overlay (white=active, green=sleeping, blue=wants sleeping, red=can't sleep).
+    'c':        Run a discrete collision detection pass and render a debug wireframe overlay showing active contact points and normals (yellow=fixed length normals, red=collision distances).
+                (+SHIFT) Toggle the contact point debug render overlay on/off.
 
     Object Interactions:
     SPACE:      Toggle physics simulation on/off.
