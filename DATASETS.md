@@ -55,8 +55,11 @@ TEEsavR23oF.semantic.glb    TEEsavR23oF.semantic.txt
 ```
 Note that there may be more files in `<PATH TO HM3D>/minival/00800-TEEsavR23oF/` if the full HM3D dataset is downloaded. Most importantly, ensure that the `hm3d_annotated_*`, `*.semantic.glb`, and `*.semantic.txt` files are present.
 
-To load semantic annotations in habitat-sim, enable the semantic sensor and set the configuration variable `scene_dataset_config_file` as shown below:
+To load semantic annotations in habitat-sim: 
+* Enable the semantic sensor
+* Set the `scene_dataset_config_file` configuration variable 
 
+A simple example below:
 ```
 import habitat_sim
 
@@ -74,6 +77,12 @@ agent_cfg.sensor_specifications = [sem_cfg]
 sim_cfg = habitat_sim.Configuration(backend_cfg, [agent_cfg])
 sim = habitat_sim.Simulator(sim_cfg)
 ```
+
+To view the semantic annotations in the C++ viewer, install the latest `main` branch of habitat-sim and run the following command:
+```
+./build/viewer --dataset '<PATH TO HM3D>/hm3d_annotated_basis.scene_dataset_config.json' TEEsavR23oF
+```
+
 
 To load semantic annotations in habitat-lab:
 
