@@ -31,6 +31,66 @@ By default, downloading the data for train/val/example scenes also pulls in the 
 
 By default the download script will only download what is needed for habitat-sim.  You can add `_full` to the uid to download the raw glbs and the obj+mtl's in addition to what is needed for use with habitat-sim.
 
+### Loading semantics for HM3D
+
+First, ensure that the corresponding file structure exists (minival example below):
+
+```
+> ls <PATH TO HM3D>
+hm3d_annotated_basis.scene_dataset_config.json    train/
+hm3d_basis.scene_dataset_config.json              val/
+minival/
+
+> ls <PATH TO HM3D>/minival
+00800-TEEsavR23oF/    00806-tQ5s4ShP627/
+00801-HaxA7YrQdEC/    00807-rsggHU7g7dh/
+00802-wcojb4TFT35/    00808-y9hTuugGdiq/
+00803-k1cupFYWXJ6/    00809-Qpor2mEya8F/
+00804-BHXhpBwSMLh/    hm3d_annotated_minival_basis.scene_dataset_config.json
+00805-SUHsP6z2gcJ/    hm3d_minival_basis.scene_dataset_config.json
+
+> ls <PATH TO HM3D>/minival/00800-TEEsavR23oF/
+TEEsavR23oF.basis.glb       TEEsavR23oF.basis.navmesh
+TEEsavR23oF.semantic.glb    TEEsavR23oF.semantic.txt
+```
+Note that there may be more files in `<PATH TO HM3D>/minival/00800-TEEsavR23oF/` if the full HM3D dataset is downloaded. Most importantly, ensure that the `hm3d_annotated_*`, `*.semantic.glb`, and `*.semantic.txt` files are present.
+
+To load semantic annotations in habitat-sim, enable the semantic sensor and set the configuration variable `scene_dataset_config_file` as shown below:
+
+```
+import habitat_sim
+
+backend_cfg = habitat_sim.SimulatorConfiguration()
+backend_cfg.scene_id = "<PATH TO HM3D>/minival/00800-TEEsavR23oF/TEEsavR23oF.basis.glb"
+backend_cfg.scene_dataset_config_file = "<PATH TO HM3D>/hm3d_annotated_basis.scene_dataset_config.json"
+
+sem_cfg = habitat_sim.CameraSensorSpec()
+sem_cfg.uuid = "semantic"
+sem_cfg.sensor_type = habitat_sim.SensorType.SEMANTIC
+
+agent_cfg = habitat_sim.agent.AgentConfiguration()
+agent_cfg.sensor_specifications = [sem_cfg]
+
+sim_cfg = habitat_sim.Configuration(backend_cfg, [agent_cfg])
+sim = habitat_sim.Simulator(sim_cfg)
+```
+
+To load semantic annotations in habitat-lab:
+
+* Add the semantic sensor to the list of agent sensors: 
+
+	```
+	SIMULATOR.AGENT_0.SENSORS = ["RGB_SENSOR", "SEMANTIC_SENSOR"]
+	```
+* Set the `SIMULATOR.SCENE_DATASET` configuration variable: 
+
+	```
+	SIMULATOR.SCENE_DATASET = "<PATH TO HM3D>/hm3d_annotated_basis.scene_dataset_config.json"
+	```
+
+Note that if you are using the RL environment from habitat-lab, `SIMULATOR.SCENE_DATASET` is overridden by the episode dataset (see [here](https://github.com/facebookresearch/habitat-lab/blob/e934b15c35233457cc3cb9c90ba0e207610dbd19/habitat/core/env.py#L94-L96)). Each episode in the episode dataset must point to the annotation config file (as done in the HM3D ObjectNav dataset [here](https://github.com/facebookresearch/habitat-lab)). 
+
+
 ## Matterport3D (MP3D) dataset
 
 Details: [https://niessner.github.io/Matterport/](https://niessner.github.io/Matterport/).
