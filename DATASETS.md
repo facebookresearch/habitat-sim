@@ -80,7 +80,8 @@ sim = habitat_sim.Simulator(sim_cfg)
 
 To view the semantic annotations in the C++ viewer, install the latest `main` branch of habitat-sim and run the following command:
 ```
-./build/viewer --dataset '<PATH TO HM3D>/hm3d_annotated_basis.scene_dataset_config.json' TEEsavR23oF
+# ./build/viewer if compiled locally
+habitat-viewer --dataset '<PATH TO HM3D>/hm3d_annotated_basis.scene_dataset_config.json' TEEsavR23oF
 ```
 
 
