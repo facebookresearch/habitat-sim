@@ -22,67 +22,21 @@
 namespace esp {
 namespace io {
 
-inline JsonGenericValue toJsonValue(const Magnum::Vector3& vec,
-                                    JsonAllocator& allocator) {
-  return toJsonArrayHelper(vec.data(), 3, allocator);
-}
+JsonGenericValue toJsonValue(const Magnum::Vector3& vec,
+                                    JsonAllocator& allocator);
 
-/**
- * @brief Specialization to handle Magnum::Vector3 values. Populate passed @p
- * val with value. Returns whether successfully populated, or not. Logs an error
- * if inappropriate type.
- *
- * @param obj json value to parse
- * @param val destination value to be populated
- * @return whether successful or not
- */
-inline bool fromJsonValue(const JsonGenericValue& obj, Magnum::Vector3& val) {
-  if (obj.IsArray() && obj.Size() == 3) {
-    for (rapidjson::SizeType i = 0; i < 3; ++i) {
-      if (obj[i].IsNumber()) {
-        val[i] = obj[i].GetDouble();
-      } else {
-        ESP_ERROR() << "Invalid numeric value specified in JSON Vec3, index :"
-                    << i;
-        return false;
-      }
-    }
-    return true;
-  }
-  return false;
-}
+bool fromJsonValue(const JsonGenericValue& obj, Magnum::Vector3& val);
 
-inline JsonGenericValue toJsonValue(const Magnum::Color4& color,
-                                    JsonAllocator& allocator) {
-  return toJsonArrayHelper(color.data(), 4, allocator);
-}
+JsonGenericValue toJsonValue(const Magnum::Vector2& vec,
+                                    JsonAllocator& allocator);
 
-/**
- * @brief Specialization to handle Magnum::Color4 values. Populate passed @p
- * val with value. Returns whether successfully populated, or not. Logs an error
- * if inappropriate type.
- *
- * @param obj json value to parse
- * @param val destination value to be populated
- * @return whether successful or not
- */
-inline bool fromJsonValue(const JsonGenericValue& obj, Magnum::Color4& val) {
-  if (obj.IsArray() && obj.Size() == 4) {
-    Magnum::Vector4 vec4;
-    for (rapidjson::SizeType i = 0; i < 4; ++i) {
-      if (obj[i].IsNumber()) {
-        vec4[i] = obj[i].GetDouble();
-      } else {
-        ESP_ERROR() << "Invalid numeric value specified in JSON Color4, index :"
-                    << i;
-        return false;
-      }
-    }
-    val = Magnum::Color4(vec4);
-    return true;
-  }
-  return false;
-}
+bool fromJsonValue(const JsonGenericValue& obj, Magnum::Vector2& val);
+
+
+JsonGenericValue toJsonValue(const Magnum::Color4& color,
+                                    JsonAllocator& allocator);
+
+bool fromJsonValue(const JsonGenericValue& obj, Magnum::Color4& val);
 
 JsonGenericValue toJsonValue(const Magnum::Quaternion& quat,
                              JsonAllocator& allocator);
@@ -141,6 +95,17 @@ inline bool fromJsonValue(const JsonGenericValue& obj, Magnum::Rad& val) {
   ESP_ERROR() << "Invalid double value";
   return true;
 }
+
+
+bool fromJsonValue(const JsonGenericValue& obj, Magnum::Matrix3x3& val);
+
+JsonGenericValue toJsonValue(const Magnum::Matrix3x3& mat, 
+    JsonAllocator& allocator);
+
+bool fromJsonValue(const JsonGenericValue& obj, Magnum::Range3D& val);
+
+JsonGenericValue toJsonValue(const Magnum::Range3D& val, 
+    JsonAllocator& allocator);
 
 }  // namespace io
 }  // namespace esp

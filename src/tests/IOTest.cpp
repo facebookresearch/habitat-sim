@@ -5,6 +5,7 @@
 #include <Corrade/Utility/DebugStl.h>
 #include <Corrade/Utility/Directory.h>
 #include <gtest/gtest.h>
+#include "Magnum/Math/Matrix3.h"
 #include "esp/assets/RenderAssetInstanceCreationInfo.h"
 #include "esp/core/esp.h"
 #include "esp/io/JsonAllTypes.h"
@@ -364,6 +365,18 @@ TEST(IOTest, JsonMagnumTypesTest) {
   Magnum::Quaternion quat2;
   EXPECT_TRUE(readMember(d, "myquat", quat2));
   EXPECT_EQ(quat2, quat);
+
+  Magnum::Matrix3x3 mat33{Magnum::Vector3(1, 2, 3), Magnum::Vector3(4, 5, 6), Magnum::Vector3(7, 8, 9)};
+  addMember(d, "mymat33", mat33, allocator);
+  Magnum::Matrix3x3 mat332;
+  EXPECT_TRUE(readMember(d, "mymat33", mat332));
+  EXPECT_EQ(mat33, mat332);
+
+  Magnum::Range3D range3{Magnum::Vector3(1, 2, 3), Magnum::Vector3(4, 5, 6)};
+  addMember(d, "myrange3", range3, allocator);
+  Magnum::Range3D range32;
+  EXPECT_TRUE(readMember(d, "myrange3", range32));
+  EXPECT_EQ(range3, range32);
 
   // test reading the wrong type (wrong number of fields)
   Magnum::Quaternion quat3;
