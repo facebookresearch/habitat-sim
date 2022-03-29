@@ -42,18 +42,20 @@ HM3D_DEST_DIR = "/home/john/Facebook/habitat-sim/data/scene_datasets/HM3D"
 #        colors to labels and regions
 #   .glb is the mesh file for the scene holding both vertex-color-based and texture-based
 #        semantic annotations.
-# All the scenes from Appen
-# HM3D_ANNOTATION_SRC_DIR = "/home/john/Datasets In Progress/HM3D_Semantic/Appen_Scenes"
 
-# The scenes used for the challenge (151)
+# #All the scenes from Appen - put redone scenes in here only when they have been vetted and found
+# #to be better than the existing alternatives.
+HM3D_ANNOTATION_SRC_DIR = "/home/john/Datasets In Progress/HM3D_Semantic/Appen_Scenes"
+
+# #The scenes used for the challenge (151)
 # HM3D_ANNOTATION_SRC_DIR = (
 #     "/home/john/Datasets In Progress/HM3D_Semantic/Appen_Scenes_Challenge"
 # )
 
-# Custom subset of scenes to check
-HM3D_ANNOTATION_SRC_DIR = (
-    "/home/john/Datasets In Progress/HM3D_Semantic/Appen_Redos_Mar_17"
-)
+# # Custom subset of scenes to check
+# HM3D_ANNOTATION_SRC_DIR = (
+#     "/home/john/Datasets In Progress/HM3D_Semantic/Appen_Redos_Mar_17"
+# )
 #
 # Appen annotation source scene directory regex.
 # This regex describes the format of the per-scene directories in the Appen work,
@@ -74,8 +76,9 @@ COUNT_SEMANTIC_COLORS_PER_SCENE = False
 
 #
 # Prefix for config - leave empty string for none. Use this to build configs on a
-# subset of scenes for testing without having to view all scenes
-CONFIG_PREFIX = "Mar_17"
+# subset of scenes for testing without having to view all scenes.
+# Make this an empty string if building for entire dataset.
+CONFIG_PREFIX = ""
 
 ##############################################################################
 ## You should not need to modify anything below here
@@ -434,7 +437,7 @@ def count_SSD_colors(ssd_filename):
 
 def main():
     # build dictionary of src and dest file names and paths
-    file_names_and_paths = buildFileListing()
+    file_names_and_paths = sorted(buildFileListing())
 
     # dictionary keyed by partition valued by list of partition subdir and filename of written file
     part_file_list_dict = {}

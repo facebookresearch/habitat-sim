@@ -973,7 +973,7 @@ def main():
         add_navmesh_scene_dataset_config(decon_configs, navmesh_name_to_path)
 
     # Go through every scene glb file
-    for path_file_tuple in file_list:
+    for path_file_tuple in sorted(file_list):
         scene_name = path_file_tuple[-1]
         # test this scene
         # scene_name = "FloorPlan320_physics.glb"
