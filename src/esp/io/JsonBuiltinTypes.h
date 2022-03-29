@@ -78,6 +78,14 @@ inline JsonGenericValue toJsonValue(bool x, JsonAllocator&) {
   return JsonGenericValue(x, nullptr);
 }
 
+inline JsonGenericValue toJsonValue(int16_t x, JsonAllocator&) {
+  return JsonGenericValue(x);
+}
+
+inline JsonGenericValue toJsonValue(uint16_t x, JsonAllocator&) {
+  return JsonGenericValue(x);
+}
+
 inline JsonGenericValue toJsonValue(int x, JsonAllocator&) {
   return JsonGenericValue(x);
 }
@@ -118,6 +126,34 @@ inline bool fromJsonValue(const JsonGenericValue& obj, bool& val) {
     return true;
   }
   ESP_ERROR() << "Invalid boolean value";
+  return false;
+}
+
+inline bool fromJsonValue(const JsonGenericValue& obj, int16_t& val) {
+  if (obj.IsNumber()) {
+    int valAsInt = obj.Get<int>();
+    if (valAsInt < std::numeric_limits<int16_t>::min() || valAsInt > std::numeric_limits<int16_t>::max()) {
+      ESP_ERROR() << "Value " << valAsInt << " is out of range for int16_t";
+      return false;
+    }
+    val = valAsInt;
+    return true;
+  }
+  ESP_ERROR() << "Invalid int16_t value";
+  return false;
+}
+
+inline bool fromJsonValue(const JsonGenericValue& obj, uint16_t& val) {
+  if (obj.IsNumber()) {
+    int valAsInt = obj.Get<int>();
+    if (valAsInt < std::numeric_limits<uint16_t>::min() || valAsInt > std::numeric_limits<uint16_t>::max()) {
+      ESP_ERROR() << "Value " << valAsInt << " is out of range for uint16_t";
+      return false;
+    }
+    val = valAsInt;
+    return true;
+  }
+  ESP_ERROR() << "Invalid uint16_t value";
   return false;
 }
 
