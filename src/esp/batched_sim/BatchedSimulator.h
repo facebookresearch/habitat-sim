@@ -41,6 +41,9 @@ struct BatchedSimulatorConfig {
   // if enabled, for every odd env, we don't render any visuals except debug stuff, 
   // e.g. collision visualization. We should keep even and odd envs in sync (e.g. same actions).
   bool doPairedDebugEnvs = false;
+  bool doProceduralEpisodeSet = true;
+  // only set this for doProceduralEpisodeSet==false (it is otherwise ignored)
+  std::string episodeSetFilepath;
   ESP_SMART_POINTERS(BatchedSimulatorConfig);
 };
 
@@ -242,8 +245,6 @@ class BatchedSimulator {
   void removeFreeObjectFromCollisionGrid(int b, int freeObjectIndex);
   void reinsertFreeObject(int b, int freeObjectIndex,
     const Magnum::Vector3& pos, const Magnum::Quaternion& rotation);
-
-  void randomizeRobotsForCurrentStep();
 
   void initEpisodeSet();
   void instantiateEpisode(int b, int episodeIndex);

@@ -109,53 +109,6 @@ constexpr bool disableStageVisualsForEnv(const BatchedSimulatorConfig&, int) {
 
 }  // namespace
 
-void BatchedSimulator::randomizeRobotsForCurrentStep() {
-  BATCHED_SIM_ASSERT(currRolloutSubstep_ >= 0);
-  int numEnvs = bpsWrapper_->envs_.size();
-  int numPosVars = robot_.numPosVars;
-
-  float* yaws = &safeVectorGet(rollouts_.yaws_, currRolloutSubstep_ * numEnvs);
-  Mn::Vector2* positions = &safeVectorGet(rollouts_.positions_,currRolloutSubstep_ * numEnvs);
-  float* jointPositions =
-      &safeVectorGet(rollouts_.jointPositions_,currRolloutSubstep_ * numEnvs * numPosVars);
-
-  auto random = core::Random(/*seed*/ 3);
-
-  for (int b = 0; b < numEnvs; b++) {
-    // hand-authored start location and yaw range that works for stages 0-12
-    positions[b] = Mn::Vector2(2.59f, 0.f);
-    yaws[b] = random.uniform_float(-float(Mn::Rad(Mn::Deg(135.f))), -float(Mn::Rad(Mn::Deg(45.f))));
-        
-    // temp move robot out of scene (hide/disable robot)
-    // positions[b].y() -= 1000.f;
-
-    for (int j = 0; j < robot_.numPosVars; j++) {
-      auto& pos = jointPositions[b * robot_.numPosVars + j];
-      pos = 0.f;
-      pos = Mn::Math::clamp(pos, robot_.jointPositionLimits.first[j],
-                            robot_.jointPositionLimits.second[j]);
-    }
-
-    // 7 shoulder, + is down
-    // 8 twist, + is twist to right
-    // 9 elbow, + is down
-    // 10 elbow twist, + is twst to right
-    // 11 wrist, + is down
-    jointPositions[b * robot_.numPosVars + 9] = float(Mn::Rad(Mn::Deg(90.f)));
-  }
-
-  if (config_.doPairedDebugEnvs) {
-    for (int b = 1; b < numEnvs; b += 2) {
-      BATCHED_SIM_ASSERT(isPairedDebugEnv(config_, b));
-      positions[b] = positions[b - 1];
-      yaws[b] = yaws[b - 1];
-      for (int j = 0; j < robot_.numPosVars; j++) {
-        auto& pos = jointPositions[b * robot_.numPosVars + j];
-        pos = jointPositions[(b - 1) * robot_.numPosVars + j];
-      }   
-    }   
-  }
-}
 
 RobotInstanceSet::RobotInstanceSet(Robot* robot,
                                    const BatchedSimulatorConfig* config,
@@ -801,7 +754,10 @@ void BatchedSimulator::updateCollision() {
 
     if (robots_.collisionResults_[b]) {
       // todo: more robust handling of this, maybe at episode-load time
-      ESP_CHECK(currRolloutSubstep_ > 1, "For env " << b << ", the robot is in collision on the first step of the episode.");
+      const auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
+      ESP_CHECK(currRolloutSubstep_ > 1, "For episode " << episodeInstance.episodeIndex_
+        << ", the robot is in collision after the first step of the episode. In your "
+        << "episode set, revise agentStartPos/agentStartYaw or rearrange the scene.");
       recentStats_.numStepsInCollision_++;
     }
   }
@@ -1352,6 +1308,34 @@ void BatchedSimulator::resetEpisodeInstance(int b) {
 
   const auto& episode = safeVectorGet(episodeSet_.episodes_, episodeInstance.episodeIndex_);
 
+  // init robot agent
+  {
+    const int numEnvs = bpsWrapper_->envs_.size();
+    const int numPosVars = robot_.numPosVars;
+    float* yaws = &safeVectorGet(rollouts_.yaws_, currRolloutSubstep_ * numEnvs);
+    Mn::Vector2* positions = &safeVectorGet(rollouts_.positions_,currRolloutSubstep_ * numEnvs);
+    float* jointPositions =
+        &safeVectorGet(rollouts_.jointPositions_,currRolloutSubstep_ * numEnvs * numPosVars);
+
+    constexpr float groundY = 0.f;
+    positions[b] = episode.agentStartPos_;
+    yaws[b] = episode.agentStartYaw_;
+
+    for (int j = 0; j < robot_.numPosVars; j++) {
+      auto& pos = jointPositions[b * robot_.numPosVars + j];
+      pos = 0.f;
+      pos = Mn::Math::clamp(pos, robot_.jointPositionLimits.first[j],
+                            robot_.jointPositionLimits.second[j]);
+    }
+
+    // 7 shoulder, + is down
+    // 8 twist, + is twist to right
+    // 9 elbow, + is down
+    // 10 elbow twist, + is twst to right
+    // 11 wrist, + is down
+    jointPositions[b * robot_.numPosVars + 9] = float(Mn::Rad(Mn::Deg(90.f)));
+  }
+
   for (int i = 0; i < episodeInstance.movedFreeObjectIndexes_.size(); i++) {
 
     int freeObjectIndex = episodeInstance.movedFreeObjectIndexes_[i];
@@ -1465,14 +1449,26 @@ void BatchedSimulator::initEpisodeSet() {
 
   const int numEnvs = config_.numEnvs;
 
-  // generate exactly as many episodes as envs (this is not required)
-  episodeSet_ = generateBenchmarkEpisodeSet(numEnvs, sceneMapping_, serializeCollection_);
+  if (config_.doProceduralEpisodeSet) {
+    ESP_CHECK(config_.episodeSetFilepath.empty(), 
+      "For BatchedSimulatorConfig::doProceduralEpisodeSet==true, don't specify episodeSetFilepath");
+
+    // generate exactly as many episodes as envs (this is not required)
+    episodeSet_ = generateBenchmarkEpisodeSet(numEnvs, sceneMapping_, serializeCollection_);
+    episodeSet_.saveToFile("generated.episode_set.json");
+  } else {
+    ESP_CHECK(!config_.episodeSetFilepath.empty(), 
+      "For BatchedSimulatorConfig::doProceduralEpisodeSet==false, you must specify episodeSetFilepath");
+    episodeSet_ = EpisodeSet::loadFromFile(config_.episodeSetFilepath);
+    postLoadFixup(episodeSet_, sceneMapping_, serializeCollection_);
+  }
 
   episodeInstanceSet_.episodeInstanceByEnv_.resize(numEnvs);
   for (int b = 0; b < numEnvs; b++) {
-    auto episodeIndex = b * episodeSet_.episodes_.size() / numEnvs; // distribute episodes across instances
-    if (config_.doPairedDebugEnvs) {
-      episodeIndex /= 2;
+    // temp: statically assigned episodes to envs
+    auto episodeIndex = b * episodeSet_.episodes_.size() / numEnvs;
+    if (config_.doPairedDebugEnvs && (b % 2 == 1)) {
+      episodeIndex = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b - 1).episodeIndex_;
     }
     instantiateEpisode(b, episodeIndex);
   }
@@ -1518,11 +1514,10 @@ void BatchedSimulator::reset() {
 
   currRolloutSubstep_ = 0;
   prevRolloutSubstep_ = -1;
-  randomizeRobotsForCurrentStep();
-  robots_.updateLinkTransforms(currRolloutSubstep_, /*updateforPhysics*/ false, /*updateForRender*/ true);
   for (int b = 0; b < numEnvs; b++) {
     resetEpisodeInstance(b);
   }
+  robots_.updateLinkTransforms(currRolloutSubstep_, /*updateforPhysics*/ false, /*updateForRender*/ true);
   updateRenderInstances(/*forceUpdate*/true);
 
   updatePythonEnvironmentState();

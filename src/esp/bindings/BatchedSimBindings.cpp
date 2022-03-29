@@ -45,8 +45,9 @@ void initBatchedSimBindings(py::module& m) {
       .def_readwrite("force_random_actions", &BatchedSimulatorConfig::forceRandomActions, R"(Todo)")
       .def_readwrite("do_async_physics_step", &BatchedSimulatorConfig::doAsyncPhysicsStep, R"(Todo)")
       .def_readwrite("num_physics_substeps", &BatchedSimulatorConfig::numSubsteps, R"(Todo)")
-      .def_readwrite("max_episode_length", &BatchedSimulatorConfig::maxEpisodeLength, R"(Todo)");
-      
+      .def_readwrite("max_episode_length", &BatchedSimulatorConfig::maxEpisodeLength, R"(Todo)")
+      .def_readwrite("do_procedural_episode_set", &BatchedSimulatorConfig::doProceduralEpisodeSet, R"(Todo)")
+      .def_readwrite("episode_set_filepath", &BatchedSimulatorConfig::episodeSetFilepath, R"(Todo)");
     
   py::class_<PythonEnvironmentState, PythonEnvironmentState::ptr>(
       m, "EnvironmentState")

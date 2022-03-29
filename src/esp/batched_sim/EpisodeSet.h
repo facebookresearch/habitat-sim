@@ -36,11 +36,13 @@ class FreeObject {
   std::vector<Magnum::Matrix3x3> startRotations_;
   int heldRotationIndex_; // index into startRotations_
   std::vector<CollisionSphere> collisionSpheres_;
+  bool needsPostLoadFixup_ = true;
 };
 
 class FixedObject {
  public:
   std::string name_;
+  bool needsPostLoadFixup_ = true;
   BpsSceneMapping::InstanceBlueprint instanceBlueprint_;
   esp::batched_sim::ColumnGridSet columnGridSet_;
 };
@@ -58,7 +60,11 @@ class Episode {
   int16_t numFreeObjectSpawns_ = 0;
   int16_t targetObjIndex_ = -1; // 0..numFreeObjectSpawns - 1, see also freeObjectIndex
   int32_t firstFreeObjectSpawnIndex_ = -1; // index into EpisodeSet::freeObjectSpawns_
-  Mn::Vector3 targetObjGoalPos_;
+  Mn::Vector2 agentStartPos_;
+  float agentStartYaw_ = 0.f; // radians
+
+  // task-specific
+  Magnum::Vector3 targetObjGoalPos_;
 };
 
 class EpisodeSet {
@@ -67,7 +73,11 @@ class EpisodeSet {
   std::vector<FixedObject> fixedObjects_; // ~100, max 32K
   std::vector<FreeObjectSpawn> freeObjectSpawns_; // num episodes * num-spawns-per-episode, ~5,000,000
   std::vector<FreeObject> freeObjects_; // ~100, max 32K
-  int maxFreeObjects_ = 0;
+  int maxFreeObjects_ = -1;
+  bool needsPostLoadFixup_ = true;
+
+  static EpisodeSet loadFromFile(const std::string& filepath);
+  void saveToFile(const std::string& filepath) const;
 };
 
 class EpisodeInstance {
@@ -94,6 +104,9 @@ void updateFromSerializeCollection(EpisodeSet& set, const serialize::Collection&
 // todo: move to separate file
 EpisodeSet generateBenchmarkEpisodeSet(int numEpisodes, 
   const BpsSceneMapping& sceneMapping, const serialize::Collection& collection);
+
+void postLoadFixup(EpisodeSet& set, const BpsSceneMapping& sceneMapping, 
+  const serialize::Collection& collection);
 
 }  // namespace batched_sim
 }  // namespace esp

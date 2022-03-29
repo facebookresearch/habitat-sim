@@ -8,6 +8,9 @@
 
 #include "esp/core/random.h"
 #include "esp/core/Check.h"
+#include "esp/io/json.h"
+
+#include <Corrade/Utility/Directory.h>
 
 namespace Cr = Corrade;
 namespace Mn = Magnum;
@@ -75,6 +78,10 @@ void addEpisode(EpisodeSet& set, const serialize::Collection& collection, int st
   Episode episode;
   episode.stageFixedObjIndex = stageFixedObjectIndex;
   episode.firstFreeObjectSpawnIndex_ = set.freeObjectSpawns_.size();
+
+  // place robot agent
+  episode.agentStartPos_ = Mn::Vector2(2.59f, 0.f);
+  episode.agentStartYaw_ = random.uniform_float(-float(Mn::Rad(Mn::Deg(135.f))), -float(Mn::Rad(Mn::Deg(45.f))));
 
   // keep object count close to 28 (from Hab 2.0 benchmark), but include variation
   int targetNumSpawns = random.uniform_int(28, 33);
@@ -344,6 +351,200 @@ void updateFromSerializeCollection(EpisodeSet& set, const serialize::Collection&
       freeObject.collisionSpheres_.push_back({serSphere.origin, radiusIdx});
     }
   }
+}
+
+void postLoadFixup(EpisodeSet& set, const BpsSceneMapping& sceneMapping, const serialize::Collection& collection) {
+
+  for (auto& freeObj : set.freeObjects_) {
+    freeObj.instanceBlueprint_ = sceneMapping.findInstanceBlueprint(freeObj.name_);
+    freeObj.needsPostLoadFixup_ = false;    
+  }
+  
+  for (auto& fixedObj : set.fixedObjects_) {
+    fixedObj.instanceBlueprint_ = sceneMapping.findInstanceBlueprint(fixedObj.name_);
+
+    // sloppy: copy-pasted from addStageFixedObject
+    std::string columnGridFilepathBase = "../data/columngrids/" + fixedObj.name_ + "_stage_only";
+    fixedObj.columnGridSet_.load(columnGridFilepathBase);
+
+    ESP_CHECK(fixedObj.columnGridSet_.getSphereRadii() == collection.collisionRadiusWorkingSet,
+      "ColumnGridSet " << fixedObj.name_ << " with radii " << fixedObj.columnGridSet_.getSphereRadii()
+      << " doesn't match collection collision radius working set " 
+      << collection.collisionRadiusWorkingSet);
+
+    fixedObj.needsPostLoadFixup_ = false;    
+  }
+
+  set.maxFreeObjects_ = 0;
+  for (const auto& episode : set.episodes_) {
+    set.maxFreeObjects_ = Mn::Math::max(set.maxFreeObjects_, (int32_t)episode.numFreeObjectSpawns_);
+  }
+  set.needsPostLoadFixup_ = false;
+
+  updateFromSerializeCollection(set, collection);
+}
+
+
+bool fromJsonValue(const esp::io::JsonGenericValue& obj,
+                   FreeObject& val) {
+  // sloppy: some fields here are populated by updateFromSerializeCollection so they
+  // shouldn't be saved/loaded
+  esp::io::readMember(obj, "name", val.name_);
+  // esp::io::readMember(obj, "aabb", val.aabb_);
+  esp::io::readMember(obj, "startRotations", val.startRotations_);
+  // esp::io::readMember(obj, "heldRotationIndex", val.heldRotationIndex_);
+  // esp::io::readMember(obj, "collisionSpheres", val.collisionSpheres_);
+
+  // for instanceBlueprint_, aabb_, heldRotationIndex_, collisionSpheres_
+  val.needsPostLoadFixup_ = true;
+
+  return true;
+}
+
+esp::io::JsonGenericValue toJsonValue(const FreeObject& x,
+                             esp::io::JsonAllocator& allocator) {
+  // sloppy: some fields here are populated by updateFromSerializeCollection so they
+  // shouldn't be saved/loaded
+  esp::io::JsonGenericValue obj(rapidjson::kObjectType);
+  esp::io::addMember(obj, "name", x.name_, allocator);
+  //esp::io::addMember(obj, "aabb", x.aabb_, allocator);
+  esp::io::addMember(obj, "startRotations", x.startRotations_, allocator);
+  //esp::io::addMember(obj, "heldRotationIndex", x.heldRotationIndex_, allocator);
+  //esp::io::addMember(obj, "collisionSpheres", x.collisionSpheres_, allocator);
+
+  return obj;
+}
+
+bool fromJsonValue(const esp::io::JsonGenericValue& obj,
+                   CollisionSphere& val) {
+  esp::io::readMember(obj, "origin", val.origin);
+  esp::io::readMember(obj, "radiusIdx", val.radiusIdx);
+
+  return true;
+}
+
+esp::io::JsonGenericValue toJsonValue(const CollisionSphere& x,
+                             esp::io::JsonAllocator& allocator) {
+  esp::io::JsonGenericValue obj(rapidjson::kObjectType);
+  esp::io::addMember(obj, "origin", x.origin, allocator);
+  esp::io::addMember(obj, "radiusIdx", x.radiusIdx, allocator);
+
+  return obj;
+}
+
+bool fromJsonValue(const esp::io::JsonGenericValue& obj,
+                   FixedObject& val) {
+  esp::io::readMember(obj, "name", val.name_);
+
+  // for instanceBlueprint_ and columnGridSet_
+  val.needsPostLoadFixup_ = true;
+
+  return true;
+}
+
+esp::io::JsonGenericValue toJsonValue(const FixedObject& x,
+                             esp::io::JsonAllocator& allocator) {
+  esp::io::JsonGenericValue obj(rapidjson::kObjectType);
+  esp::io::addMember(obj, "name", x.name_, allocator);
+  return obj;
+}
+
+bool fromJsonValue(const esp::io::JsonGenericValue& obj,
+                   FreeObjectSpawn& val) {
+  esp::io::readMember(obj, "freeObjIndex", val.freeObjIndex_);
+  esp::io::readMember(obj, "startRotationIndex", val.startRotationIndex_);
+  esp::io::readMember(obj, "startPos", val.startPos_);
+
+  return true;
+}
+
+esp::io::JsonGenericValue toJsonValue(const FreeObjectSpawn& x,
+                             esp::io::JsonAllocator& allocator) {
+  esp::io::JsonGenericValue obj(rapidjson::kObjectType);
+  esp::io::addMember(obj, "freeObjIndex", x.freeObjIndex_, allocator);
+  esp::io::addMember(obj, "startRotationIndex", x.startRotationIndex_, allocator);
+  esp::io::addMember(obj, "startPos", x.startPos_, allocator);
+
+  return obj;
+}
+
+bool fromJsonValue(const esp::io::JsonGenericValue& obj,
+                   Episode& val) {
+  esp::io::readMember(obj, "stageFixedObjIndex", val.stageFixedObjIndex);
+  esp::io::readMember(obj, "numFreeObjectSpawns", val.numFreeObjectSpawns_);
+  esp::io::readMember(obj, "targetObjIndex", val.targetObjIndex_);
+  esp::io::readMember(obj, "firstFreeObjectSpawnIndex", val.firstFreeObjectSpawnIndex_);
+  esp::io::readMember(obj, "agentStartPos", val.agentStartPos_);
+  esp::io::readMember(obj, "agentStartYaw", val.agentStartYaw_);
+  esp::io::readMember(obj, "targetObjGoalPos", val.targetObjGoalPos_);
+
+  return true;
+}
+
+esp::io::JsonGenericValue toJsonValue(const Episode& x,
+                             esp::io::JsonAllocator& allocator) {
+  esp::io::JsonGenericValue obj(rapidjson::kObjectType);
+  esp::io::addMember(obj, "stageFixedObjIndex", x.stageFixedObjIndex, allocator);
+  esp::io::addMember(obj, "numFreeObjectSpawns", x.numFreeObjectSpawns_, allocator);
+  esp::io::addMember(obj, "targetObjIndex", x.targetObjIndex_, allocator);
+  esp::io::addMember(obj, "firstFreeObjectSpawnIndex", x.firstFreeObjectSpawnIndex_, allocator);
+  esp::io::addMember(obj, "agentStartPos", x.agentStartPos_, allocator);
+  esp::io::addMember(obj, "agentStartYaw", x.agentStartYaw_, allocator);
+  esp::io::addMember(obj, "targetObjGoalPos", x.targetObjGoalPos_, allocator);
+
+  return obj;
+}
+
+
+bool fromJsonValue(const esp::io::JsonGenericValue& obj,
+                   EpisodeSet& val) {
+  esp::io::readMember(obj, "episodes", val.episodes_);
+  esp::io::readMember(obj, "fixedObjects", val.fixedObjects_);
+  esp::io::readMember(obj, "freeObjectSpawns", val.freeObjectSpawns_);
+  esp::io::readMember(obj, "freeObjects", val.freeObjects_);
+
+  // for maxFreeObjects_
+  val.needsPostLoadFixup_ = true;
+  val.maxFreeObjects_ = -1;
+
+  return true;
+}
+
+
+esp::io::JsonGenericValue toJsonValue(const EpisodeSet& x,
+                             esp::io::JsonAllocator& allocator) {
+  esp::io::JsonGenericValue obj(rapidjson::kObjectType);
+  esp::io::addMember(obj, "episodes", x.episodes_, allocator);
+  esp::io::addMember(obj, "fixedObjects", x.fixedObjects_, allocator);
+  esp::io::addMember(obj, "freeObjectSpawns", x.freeObjectSpawns_, allocator);
+  esp::io::addMember(obj, "freeObjects", x.freeObjects_, allocator);
+  // don't write maxFreeObjects_
+
+  return obj;
+}
+
+EpisodeSet EpisodeSet::loadFromFile(const std::string& filepath) {
+  EpisodeSet episodeSet;
+  ESP_CHECK(Cr::Utility::Directory::exists(filepath), "couldn't find EpisodeSet file " << filepath);
+  auto newDoc = esp::io::parseJsonFile(filepath);
+  esp::io::readMember(newDoc, "episodeSet", episodeSet);
+
+  return episodeSet;
+}
+
+
+void EpisodeSet::saveToFile(const std::string& filepath)const {
+
+  rapidjson::Document document(rapidjson::kObjectType);
+  rapidjson::Document::AllocatorType& allocator = document.GetAllocator();
+  esp::io::addMember(document, "episodeSet", *this, allocator);
+    
+  // EpisodeSet use floats (not doubles) so this is plenty of precision
+  const float maxDecimalPlaces = 7;
+  constexpr bool usePrettyWriter = false;
+  bool success = esp::io::writeJsonToFile(document, filepath, usePrettyWriter,
+                           maxDecimalPlaces);
+  ESP_CHECK(success, "failed to save EpisodeSet to " << filepath);
 }
 
 }  // namespace batched_sim

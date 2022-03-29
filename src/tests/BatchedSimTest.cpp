@@ -209,7 +209,9 @@ TEST_F(BatchedSimulatorTest, basic) {
       .doAsyncPhysicsStep = true,
       .maxEpisodeLength = 500,
       .numSubsteps = 1,
-      .doPairedDebugEnvs = doPairedDebugEnvs
+      .doPairedDebugEnvs = doPairedDebugEnvs,
+      .doProceduralEpisodeSet = true,
+      //.episodeSetFilepath = "test.episode_set.json"
       };
   BatchedSimulator bsim(config);
 
