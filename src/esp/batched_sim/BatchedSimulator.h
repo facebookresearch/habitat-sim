@@ -36,7 +36,6 @@ struct BatchedSimulatorConfig {
   CameraSensorConfig sensor0;
   bool forceRandomActions = false;
   bool doAsyncPhysicsStep = false;
-  int maxEpisodeLength = 50;
   int numSubsteps = 1;
   // if enabled, for every odd env, we don't render any visuals except debug stuff, 
   // e.g. collision visualization. We should keep even and odd envs in sync (e.g. same actions).
@@ -49,16 +48,14 @@ struct BatchedSimulatorConfig {
 
 
 struct PythonEnvironmentState {
-  // prev episode result
-  bool did_finish_episode_and_reset = false;
-  bool finished_episode_success = false;
   // curr episode
-  int target_obj_idx;
+  int episode_idx = -1;
+  int episode_step_idx = -1; // will be zero if just reset
+  int target_obj_idx = -1;
   Magnum::Vector3 goal_pos;
-  int episode_step_idx;
   // robot state
   Magnum::Vector3 robot_position;
-  float robot_yaw;
+  float robot_yaw = 0.f;
   Magnum::Vector3 ee_pos;
   bool did_collide = false;
   // other env state
@@ -104,6 +101,8 @@ struct Robot {
   Magnum::Matrix4 cameraAttachTransform_;
 };
 
+// This is misnamed and isn't actually used to store entire rollouts. It contains
+// some env state. See also RobotInstance and RobotInstanceSet.
 struct RolloutRecord {
   RolloutRecord() = default;
   RolloutRecord(int numRolloutSubsteps,
@@ -141,7 +140,6 @@ class RobotInstanceSet {
                    std::vector<bps3D::Environment>* envs,
                    RolloutRecord* rollouts);
 
-  void updateLinkTransforms(int currRolloutSubstep, bool updateforPhysics, bool updateForRender);
   void applyActionPenalties(const std::vector<float>& actions);
 
   Robot* robot_ = nullptr;
@@ -177,16 +175,13 @@ class BatchedSimulator {
   void close();
 
   void startRender();
-  void waitForRender();
+  void waitRender();
 
   // todo: thread-safe access to PythonEnvironmentState
   void reset();
   const std::vector<PythonEnvironmentState>& getEnvironmentStates() const;
-  void startAsyncStepPhysics(std::vector<float>&& actions);
-  void waitAsyncStepPhysics();
-
-  // for interactive debugging; works a bit like undo, but doesn't undo grabs/drops
-  void reverseRobotMovementActions();
+  void startStepPhysicsOrReset(std::vector<float>&& actions, std::vector<int>&& resets);
+  void waitStepPhysicsOrReset();
 
   bps3D::Renderer& getBpsRenderer();
 
@@ -227,9 +222,10 @@ class BatchedSimulator {
     int numFailedDrops_ = 0;
   };
 
-  void setActions(std::vector<float>&& actions);
+  void setActionsResets(std::vector<float>&& actions, std::vector<int>&& resets);
   void stepPhysics();
   void substepPhysics();
+  void updateLinkTransforms(int currRolloutSubstep, bool updateforPhysics, bool updateForRender, bool includeResettingEnvs);
   void updateCollision();
   // for each robot, undo action if collision
   void postCollisionUpdate();
@@ -237,6 +233,7 @@ class BatchedSimulator {
   void updateRenderInstances(bool forceUpdate);
   void reverseActionsForEnvironment(int b);
   void updateGripping();
+  void resetHelper();
   void updatePythonEnvironmentState();
 
   // uses episode spawn location
@@ -251,6 +248,7 @@ class BatchedSimulator {
   // We don't yet support changing the episode for an env. You can only reset to the
   // same episode.
   void resetEpisodeInstance(int b);
+  bool isEnvResetting(int b) const;
 
   void physicsThreadFunc(int startEnvIndex, int numEnvs);
   void signalStepPhysics();
@@ -268,14 +266,16 @@ class BatchedSimulator {
   bool isRenderStarted_ = false;
   Robot robot_;
   RobotInstanceSet robots_;
-  int currRolloutSubstep_ = -1;
-  int prevRolloutSubstep_ = -1;
+  int currStorageStep_ = -1;
+  int prevStorageStep_ = -1;
+  int substep_ = -1;
   RolloutRecord rollouts_;
   std::unique_ptr<esp::sim::Simulator> legacySim_;
   std::unique_ptr<BpsWrapper> bpsWrapper_;
   int actionDim_ = -1;
   std::vector<float> actions_;
-  int maxRolloutSubsteps_ = -1;
+  std::vector<int> resets_; // episode index, or -1 if not resetting
+  int maxStorageSteps_ = -1;
   std::vector<PythonEnvironmentState> pythonEnvStates_;
 
   EpisodeSet episodeSet_;
@@ -291,7 +291,7 @@ class BatchedSimulator {
   std::condition_variable physicsCondVar_; 
   bool signalStepPhysics_ = false;
   bool signalKillPhysicsThread_ = false;
-  bool isAsyncStepPhysicsFinished_ = true;
+  bool isStepPhysicsOrResetFinished_ = true;
   bool areRenderInstancesUpdated_ = false;
 
   ESP_SMART_POINTERS(BatchedSimulator)

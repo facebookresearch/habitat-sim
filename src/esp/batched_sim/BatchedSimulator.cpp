@@ -175,21 +175,21 @@ RobotInstanceSet::RobotInstanceSet(Robot* robot,
 }
 
 void BatchedSimulator::reverseActionsForEnvironment(int b) {
-  BATCHED_SIM_ASSERT(prevRolloutSubstep_ != -1);
+  BATCHED_SIM_ASSERT(prevStorageStep_ != -1);
   const int numEnvs = config_.numEnvs;
   const int numPosVars = robot_.numPosVars;
 
-  const float* prevYaws = &rollouts_.yaws_[prevRolloutSubstep_ * numEnvs];
-  float* yaws = &rollouts_.yaws_[currRolloutSubstep_ * numEnvs];
+  const float* prevYaws = &rollouts_.yaws_[prevStorageStep_ * numEnvs];
+  float* yaws = &rollouts_.yaws_[currStorageStep_ * numEnvs];
   const Mn::Vector2* prevPositions =
-      &rollouts_.positions_[prevRolloutSubstep_ * numEnvs];
-  Mn::Vector2* positions = &rollouts_.positions_[currRolloutSubstep_ * numEnvs];
+      &rollouts_.positions_[prevStorageStep_ * numEnvs];
+  Mn::Vector2* positions = &rollouts_.positions_[currStorageStep_ * numEnvs];
   Mn::Matrix4* rootTransforms =
-      &rollouts_.rootTransforms_[currRolloutSubstep_ * numEnvs];
+      &rollouts_.rootTransforms_[currStorageStep_ * numEnvs];
   const float* prevJointPositions =
-      &rollouts_.jointPositions_[prevRolloutSubstep_ * numEnvs * numPosVars];
+      &rollouts_.jointPositions_[prevStorageStep_ * numEnvs * numPosVars];
   float* jointPositions =
-      &rollouts_.jointPositions_[currRolloutSubstep_ * numEnvs * numPosVars];
+      &rollouts_.jointPositions_[currStorageStep_ * numEnvs * numPosVars];
 
   yaws[b] = prevYaws[b];
   positions[b] = prevPositions[b];
@@ -201,35 +201,40 @@ void BatchedSimulator::reverseActionsForEnvironment(int b) {
   }
 }
 
-void RobotInstanceSet::updateLinkTransforms(int currRolloutSubstep, bool updateForPhysics, bool updateForRender) {
+void BatchedSimulator::updateLinkTransforms(int currRolloutSubstep, bool updateForPhysics, bool updateForRender, bool includeResettingEnvs) {
   //ProfilingScope scope("BSim updateLinkTransforms");
 
   BATCHED_SIM_ASSERT(updateForPhysics || updateForRender);
   
   // esp::gfx::replay::Keyframe debugKeyframe;
-  int numLinks = robot_->artObj->getNumLinks();
+  int numLinks = robots_.robot_->artObj->getNumLinks();
   int numNodes = numLinks + 1;
-  int numEnvs = config_->numEnvs;
-  int numPosVars = robot_->numPosVars;
+  int numEnvs = config_.numEnvs;
+  int numPosVars = robots_.robot_->numPosVars;
 
   if (updateForPhysics) {
-    areCollisionResultsValid_ = false;
+    robots_.areCollisionResultsValid_ = false;
   }
 
-  auto* mb = robot_->artObj->btMultiBody_.get();
+  auto* mb = robots_.robot_->artObj->btMultiBody_.get();
   int posCount = 0;
 
-  const float* yaws = &rollouts_->yaws_[currRolloutSubstep * numEnvs];
+  const float* yaws = &robots_.rollouts_->yaws_[currRolloutSubstep * numEnvs];
   const Mn::Vector2* positions =
-      &rollouts_->positions_[currRolloutSubstep * numEnvs];
+      &robots_.rollouts_->positions_[currRolloutSubstep * numEnvs];
   const float* jointPositions =
-      &rollouts_->jointPositions_[currRolloutSubstep * numEnvs * numPosVars];
+      &robots_.rollouts_->jointPositions_[currRolloutSubstep * numEnvs * numPosVars];
   Mn::Matrix4* rootTransforms =
-      &rollouts_->rootTransforms_[currRolloutSubstep * numEnvs];
+      &robots_.rollouts_->rootTransforms_[currRolloutSubstep * numEnvs];
 
-  for (int b = 0; b < config_->numEnvs; b++) {
+  for (int b = 0; b < config_.numEnvs; b++) {
 
-    auto& robotInstance = robotInstances_[b];
+    if (!includeResettingEnvs && isEnvResetting(b)) {
+      posCount += numPosVars;
+      continue;
+    }
+
+    auto& robotInstance = robots_.robotInstances_[b];
     // perf todo: simplify this
     rootTransforms[b] =
         Mn::Matrix4::translation(
@@ -250,11 +255,11 @@ void RobotInstanceSet::updateLinkTransforms(int currRolloutSubstep, bool updateF
       }
     }
 
-    mb->forwardKinematics(scratch_q_, scratch_m_);
+    mb->forwardKinematics(robots_.scratch_q_, robots_.scratch_m_);
 
-    auto& env = (*envs_)[b];
+    auto& env = bpsWrapper_->envs_[b];
     int baseInstanceIndex = b * numNodes;
-    const int baseSphereIndex = b * robot_->numCollisionSpheres_;
+    const int baseSphereIndex = b * robots_.robot_->numCollisionSpheres_;
 
     // extract link transforms
     // todo: update base node
@@ -263,15 +268,15 @@ void RobotInstanceSet::updateLinkTransforms(int currRolloutSubstep, bool updateF
         const auto nodeIndex = i + 1;  // 0 is base
         const auto instanceIndex = baseInstanceIndex + nodeIndex;
 
-        int instanceId = nodeInstanceIds_[instanceIndex];
+        int instanceId = robots_.nodeInstanceIds_[instanceIndex];
         if (instanceId == -1) {
           // todo: avoid every calculating this link transform
           continue;
         }
 
         if (!updateForRender) {
-          if (robot_->collisionSpheresByNode_[nodeIndex].empty()
-            && robot_->gripperLink_ != i) {
+          if (robots_.robot_->collisionSpheresByNode_[nodeIndex].empty()
+            && robots_.robot_->gripperLink_ != i) {
             continue;
           }
         }
@@ -281,31 +286,31 @@ void RobotInstanceSet::updateLinkTransforms(int currRolloutSubstep, bool updateF
                                      : mb->getLink(i).m_cachedWorldTransform;
         Mn::Matrix4 mat = toMagnumMatrix4(btTrans);
 
-        auto tmp = robot_->nodeTransformFixups[nodeIndex];
+        auto tmp = robots_.robot_->nodeTransformFixups[nodeIndex];
         // auto vec = tmp[3];
         // const float scale = (float)b / (numEnvs_ - 1);
         // tmp[3] = Mn::Vector4(vec.xyz() * scale, 1.f);
         mat = mat * tmp;
 
-        if (robot_->gripperLink_ == i) {
+        if (robots_.robot_->gripperLink_ == i) {
           robotInstance.cachedGripperLinkMat_ = mat;
         }
 
         if (updateForPhysics) {
           // perf todo: loop through collision spheres (and look up link id), instead of this sparse way here
           // compute collision sphere transforms
-          for (const auto& localSphereIdx : robot_->collisionSpheresByNode_[nodeIndex]) {
-            const auto& sphere = safeVectorGet(robot_->collisionSpheres_, localSphereIdx);
-            collisionSphereWorldOrigins_[baseSphereIndex + localSphereIdx] = 
+          for (const auto& localSphereIdx : robots_.robot_->collisionSpheresByNode_[nodeIndex]) {
+            const auto& sphere = safeVectorGet(robots_.robot_->collisionSpheres_, localSphereIdx);
+            robots_.collisionSphereWorldOrigins_[baseSphereIndex + localSphereIdx] = 
               mat.transformPoint(sphere.origin);
           }
         }
 
         if (updateForRender) {
-          BATCHED_SIM_ASSERT(instanceIndex < nodeNewTransforms_.size());
-          nodeNewTransforms_[instanceIndex] = toGlmMat4x3(mat);
+          BATCHED_SIM_ASSERT(instanceIndex < robots_.nodeNewTransforms_.size());
+          robots_.nodeNewTransforms_[instanceIndex] = toGlmMat4x3(mat);
 
-          if (robot_->cameraAttachNode_ == nodeIndex) {
+          if (robots_.robot_->cameraAttachNode_ == nodeIndex) {
             robotInstance.cameraAttachNodeTransform_ = mat;
           }
         }
@@ -341,11 +346,9 @@ void RobotInstanceSet::updateLinkTransforms(int currRolloutSubstep, bool updateF
 
 void BatchedSimulator::updatePythonEnvironmentState() {
 
-  const auto currEpisodeStep = currRolloutSubstep_ / config_.numSubsteps;
-
   const int numEnvs = config_.numEnvs;
-  const Mn::Vector2* positions = &safeVectorGet(rollouts_.positions_, currRolloutSubstep_ * numEnvs);
-  const float* yaws = &safeVectorGet(rollouts_.yaws_, currRolloutSubstep_ * numEnvs);
+  const Mn::Vector2* positions = &safeVectorGet(rollouts_.positions_, currStorageStep_ * numEnvs);
+  const float* yaws = &safeVectorGet(rollouts_.yaws_, currStorageStep_ * numEnvs);
 
   for (int b = 0; b < config_.numEnvs; b++) {
 
@@ -353,9 +356,7 @@ void BatchedSimulator::updatePythonEnvironmentState() {
     auto& envState = safeVectorGet(pythonEnvStates_, b);
 
     envState.ee_pos = robotInstance.cachedGripperLinkMat_.translation();
-    envState.did_finish_episode_and_reset = (currEpisodeStep == 0);
-    envState.finished_episode_success = false; // temp hardcoded
-    envState.episode_step_idx = currEpisodeStep;
+    // envState.episode_step_idx updated incrementally
     // todo: do logical or over all substeps
     envState.did_collide = robots_.collisionResults_[b];
     // envState.obj_positions // this is updated incrementally
@@ -365,6 +366,7 @@ void BatchedSimulator::updatePythonEnvironmentState() {
     // perf todo: set this just once at episode reset
     const auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
     const auto& episode = safeVectorGet(episodeSet_.episodes_, episodeInstance.episodeIndex_);
+    envState.episode_idx = episodeInstance.episodeIndex_;
     envState.target_obj_idx = episode.targetObjIndex_;
     envState.goal_pos = episode.targetObjGoalPos_;
   }
@@ -423,10 +425,14 @@ void BatchedSimulator::updateGripping() {
 
   for (int b = 0; b < numEnvs; b++) {
   
+    if (isEnvResetting(b)) {
+      continue;
+    }
+
     auto& env = bpsWrapper_->envs_[b];
     auto& robotInstance = robots_.robotInstances_[b];
 
-    if (shouldDrawDebugForEnv(config_, b, currRolloutSubstep_)) {
+    if (shouldDrawDebugForEnv(config_, b, substep_)) {
 
       const auto& gripperMat = robotInstance.cachedGripperLinkMat_;
       auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
@@ -567,6 +573,10 @@ void BatchedSimulator::updateCollision() {
 
   for (int b = 0; b < numEnvs; b++) {
 
+    if (isEnvResetting(b)) {
+      continue;
+    }
+
     const auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
     const auto& episode = safeVectorGet(episodeSet_.episodes_, episodeInstance.episodeIndex_);
     const auto& stageFixedObject = safeVectorGet(episodeSet_.fixedObjects_, episode.stageFixedObjIndex);
@@ -592,7 +602,7 @@ void BatchedSimulator::updateCollision() {
       // spheres in collision)
       if (thisSphereHit) {
         hit = true;
-        if (shouldDrawDebugForEnv(config_, b, currRolloutSubstep_)) {
+        if (shouldDrawDebugForEnv(config_, b, substep_)) {
           sphereHits[baseSphereIndex + s] = thisSphereHit;
         } else {
           break;
@@ -613,7 +623,7 @@ void BatchedSimulator::updateCollision() {
         // todo: proper debug-drawing of hits for held object spheres
         if (thisSphereHit) {
           hit = true;
-          if (shouldDrawDebugForEnv(config_, b, currRolloutSubstep_)) {
+          if (shouldDrawDebugForEnv(config_, b, substep_)) {
             heldObjectHits[b] = thisSphereHit;
           } else {
             break;
@@ -628,7 +638,11 @@ void BatchedSimulator::updateCollision() {
   // test against free objects
   for (int b = 0; b < numEnvs; b++) {
 
-    if (robots_.collisionResults_[b] && !shouldDrawDebugForEnv(config_, b, currRolloutSubstep_)) {
+    if (isEnvResetting(b)) {
+      continue;
+    }
+
+    if (robots_.collisionResults_[b] && !shouldDrawDebugForEnv(config_, b, substep_)) {
       // already had a hit against column grid so don't test free objects
       continue;
     }
@@ -650,7 +664,7 @@ void BatchedSimulator::updateCollision() {
       int hitFreeObjectIndex = episodeInstance.colGrid_.contactTest(spherePos, sphereRadius);
       if (hitFreeObjectIndex != -1) {
         hit = true;
-        if (shouldDrawDebugForEnv(config_, b, currRolloutSubstep_)) {
+        if (shouldDrawDebugForEnv(config_, b, substep_)) {
           sphereHits[baseSphereIndex + s] = true;
           freeObjectHits[hitFreeObjectIndex] = true;
         } else {
@@ -673,7 +687,7 @@ void BatchedSimulator::updateCollision() {
         int hitFreeObjectIndex = episodeInstance.colGrid_.contactTest(sphereWorldOrigin, sphereRadius);
         if (hitFreeObjectIndex != -1) {
           hit = true;
-          if (shouldDrawDebugForEnv(config_, b, currRolloutSubstep_)) {
+          if (shouldDrawDebugForEnv(config_, b, substep_)) {
             heldObjectHits[b] = true;
             freeObjectHits[hitFreeObjectIndex] = true;
           } else {
@@ -684,7 +698,7 @@ void BatchedSimulator::updateCollision() {
     }    
 
     // render free objects to debug env, colored by collision result
-    if (shouldDrawDebugForEnv(config_, b, currRolloutSubstep_)) {
+    if (shouldDrawDebugForEnv(config_, b, substep_)) {
       for (int freeObjectIndex = 0; freeObjectIndex < episode.numFreeObjectSpawns_; freeObjectIndex++) {
         if (episodeInstance.colGrid_.isObstacleDisabled(freeObjectIndex)) {
           continue;
@@ -718,8 +732,13 @@ void BatchedSimulator::updateCollision() {
   }
 
   for (int b = 0; b < numEnvs; b++) {
+
+    if (isEnvResetting(b)) {
+      continue;
+    }
+
     // render collision spheres for debug env, colored by collision result
-    if (shouldDrawDebugForEnv(config_, b, currRolloutSubstep_)) {
+    if (shouldDrawDebugForEnv(config_, b, substep_)) {
       const auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
       const auto& episode = safeVectorGet(episodeSet_.episodes_, episodeInstance.episodeIndex_);
       const auto& robotInstance = robots_.robotInstances_[b];
@@ -755,8 +774,9 @@ void BatchedSimulator::updateCollision() {
     if (robots_.collisionResults_[b]) {
       // todo: more robust handling of this, maybe at episode-load time
       const auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
-      ESP_CHECK(currRolloutSubstep_ > 1, "For episode " << episodeInstance.episodeIndex_
-        << ", the robot is in collision after the first step of the episode. In your "
+      const auto& envState = safeVectorGet(pythonEnvStates_, b);
+      ESP_CHECK(envState.episode_step_idx > 0, "For episode " << episodeInstance.episodeIndex_
+        << ", the robot is in collision on the first step of the episode. In your "
         << "episode set, revise agentStartPos/agentStartYaw or rearrange the scene.");
       recentStats_.numStepsInCollision_++;
     }
@@ -773,6 +793,11 @@ void BatchedSimulator::postCollisionUpdate() {
   BATCHED_SIM_ASSERT(robots_.areCollisionResultsValid_);
 
   for (int b = 0; b < numEnvs; b++) {
+
+    if (isEnvResetting(b)) {
+      continue;
+    }
+
     if (robots_.collisionResults_[b]) {
       reverseActionsForEnvironment(b);
     } else {
@@ -800,7 +825,8 @@ void BatchedSimulator::updateRenderInstances(bool forceUpdate) {
     // temp hack: we don't currently have bookeeping to know if a robot moved over
     // several substeps, so we assume it did here. perf todo: fix this
     bool didRobotMove = forceUpdate || 
-      (!robots_.collisionResults_[b] || config_.numSubsteps > 1);
+      (!robots_.collisionResults_[b] || config_.numSubsteps > 1) ||
+      isEnvResetting(b);
 
     // update robot links and camera
     if (didRobotMove) {
@@ -1156,17 +1182,15 @@ BatchedSimulator::BatchedSimulator(const BatchedSimulatorConfig& config) {
 
   int batchNumActions = (actionDim_) * numEnvs;
   actions_.resize(batchNumActions, 0.f);
+  resets_.resize(numEnvs, -1);
 
-  ESP_CHECK(config_.maxEpisodeLength > 1, "BatchedSimulatorConfig::maxEpisodeLength must be > 1");
-  // For an episode length of 2, we produce an observation immediately after resetting,
-  // then we take one step (config_.numSubsteps substeps), and we produce one more observation.
-  maxRolloutSubsteps_ = (config_.maxEpisodeLength - 1) * config_.numSubsteps + 1;
+  maxStorageSteps_ = 3; // todo: get rid of storage steps nonsense
   rollouts_ =
-      RolloutRecord(maxRolloutSubsteps_, numEnvs, robot_.numPosVars, numNodes);
+      RolloutRecord(maxStorageSteps_, numEnvs, robot_.numPosVars, numNodes);
 
-  currRolloutSubstep_ =
+  currStorageStep_ =
       -1;  // trigger auto-reset on first call to autoResetOrStepPhysics
-  prevRolloutSubstep_ = -1;
+  prevStorageStep_ = -1;
   isOkToRender_ = false;
   isOkToStep_ = false;
   isRenderStarted_ = false;
@@ -1197,7 +1221,7 @@ BatchedSimulator::BatchedSimulator(const BatchedSimulatorConfig& config) {
 void BatchedSimulator::close() {
   if (config_.doAsyncPhysicsStep) {
     if (physicsThread_.joinable()) {
-      waitAsyncStepPhysics();
+      waitStepPhysicsOrReset();
       signalKillPhysicsThread();
       physicsThread_.join();
     }
@@ -1306,16 +1330,20 @@ void BatchedSimulator::resetEpisodeInstance(int b) {
   auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
   auto& robotInstance = robots_.robotInstances_[b];
 
+  BATCHED_SIM_ASSERT(isEnvResetting(b));
+  ESP_CHECK(resets_[b] == episodeInstance.episodeIndex_, "resetEpisodeInstance: you can"
+    " only reset an environment to the same episode index (this is a temporary restriction)");
+
   const auto& episode = safeVectorGet(episodeSet_.episodes_, episodeInstance.episodeIndex_);
 
   // init robot agent
   {
     const int numEnvs = bpsWrapper_->envs_.size();
     const int numPosVars = robot_.numPosVars;
-    float* yaws = &safeVectorGet(rollouts_.yaws_, currRolloutSubstep_ * numEnvs);
-    Mn::Vector2* positions = &safeVectorGet(rollouts_.positions_,currRolloutSubstep_ * numEnvs);
+    float* yaws = &safeVectorGet(rollouts_.yaws_, currStorageStep_ * numEnvs);
+    Mn::Vector2* positions = &safeVectorGet(rollouts_.positions_,currStorageStep_ * numEnvs);
     float* jointPositions =
-        &safeVectorGet(rollouts_.jointPositions_,currRolloutSubstep_ * numEnvs * numPosVars);
+        &safeVectorGet(rollouts_.jointPositions_,currStorageStep_ * numEnvs * numPosVars);
 
     constexpr float groundY = 0.f;
     positions[b] = episode.agentStartPos_;
@@ -1334,6 +1362,12 @@ void BatchedSimulator::resetEpisodeInstance(int b) {
     // 10 elbow twist, + is twst to right
     // 11 wrist, + is down
     jointPositions[b * robot_.numPosVars + 9] = float(Mn::Rad(Mn::Deg(90.f)));
+  }
+
+  // some cached robot state computed during a step
+  {
+    // assume robot is not in collision on reset
+    robots_.collisionResults_[b] = false;
   }
 
   for (int i = 0; i < episodeInstance.movedFreeObjectIndexes_.size(); i++) {
@@ -1363,9 +1397,13 @@ void BatchedSimulator::resetEpisodeInstance(int b) {
     episodeInstance.colGrid_.getNumObstacleInstances());
 
   auto& envState = safeVectorGet(pythonEnvStates_, b);
-  envState.obj_positions.resize(episode.numFreeObjectSpawns_);    
+  envState.obj_positions.resize(episode.numFreeObjectSpawns_);
+  envState.episode_step_idx = 0;    
 }
 
+bool BatchedSimulator::isEnvResetting(int b) const {
+  return safeVectorGet(resets_, b) != -1;
+}
 
 
 
@@ -1474,13 +1512,17 @@ void BatchedSimulator::initEpisodeSet() {
   }
 }
 
-void BatchedSimulator::setActions(std::vector<float>&& actions) {
+void BatchedSimulator::setActionsResets(std::vector<float>&& actions, std::vector<int>&& resets) {
   //ProfilingScope scope("BSim setActions");
 
   ESP_CHECK(actions.size() == actions_.size(),
-            "BatchedSimulator::setActions: input dimension should be " +
+            "BatchedSimulator::setActionsResets: input dimension should be " +
                 std::to_string(actions_.size()) + ", not " +
                 std::to_string(actions.size()));
+  ESP_CHECK(resets.size() == resets_.size(),
+            "BatchedSimulator::setActionsResets: input dimension should be " +
+                std::to_string(resets_.size()) + ", not " +
+                std::to_string(resets.size()));                
   const int numEnvs = config_.numEnvs;
 
   if (config_.forceRandomActions) {
@@ -1491,6 +1533,8 @@ void BatchedSimulator::setActions(std::vector<float>&& actions) {
     actions_ = std::move(actions);
   }
 
+  resets_ = std::move(resets);
+
   if (config_.doPairedDebugEnvs) {
     // copy actions from non-debug env to its paired debug env
     // every other env, see isPairedDebugEnv
@@ -1499,6 +1543,7 @@ void BatchedSimulator::setActions(std::vector<float>&& actions) {
       for (int actionIdx = 0; actionIdx < actionDim_; actionIdx++) {
         actions_[b * actionDim_ + actionIdx] = actions_[(b - 1) * actionDim_ + actionIdx];
       }
+      resets_[b] = resets_[b - 1];
     }
   }
 }
@@ -1512,12 +1557,17 @@ void BatchedSimulator::reset() {
 
   int numEnvs = bpsWrapper_->envs_.size();
 
-  currRolloutSubstep_ = 0;
-  prevRolloutSubstep_ = -1;
+  currStorageStep_ = 0;
+  prevStorageStep_ = -1;
+
   for (int b = 0; b < numEnvs; b++) {
+    // temp populate resets_ here to avoid confusion later
+    const auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
+    safeVectorGet(resets_, b) = episodeInstance.episodeIndex_;
+
     resetEpisodeInstance(b);
   }
-  robots_.updateLinkTransforms(currRolloutSubstep_, /*updateforPhysics*/ false, /*updateForRender*/ true);
+  updateLinkTransforms(currStorageStep_, /*updateforPhysics*/ false, /*updateForRender*/ true, /*includeResettingEnvs*/true);
   updateRenderInstances(/*forceUpdate*/true);
 
   updatePythonEnvironmentState();
@@ -1525,6 +1575,24 @@ void BatchedSimulator::reset() {
   isOkToRender_ = true;
   isOkToStep_ = true;
   recentStats_.numEpisodes_ += numEnvs;
+}
+
+void BatchedSimulator::resetHelper() {
+
+  const int numEnvs = bpsWrapper_->envs_.size();
+
+  for (int b = 0; b < numEnvs; b++) {
+
+    if (!isEnvResetting(b)) {
+      continue;
+    }
+
+    resetEpisodeInstance(b);
+
+    recentStats_.numEpisodes_++;
+
+    // note link transforms and render instances are now outdated
+  }
 }
 
 #if 0
@@ -1535,7 +1603,7 @@ void BatchedSimulator::autoResetOrStepPhysics() {
 
   deleteDebugInstances();
 
-  if (currRolloutSubstep_ == -1 || currRolloutSubstep_ == maxRolloutSubsteps_ - 1) {
+  if (currStorageStep_ == -1 || currStorageStep_ == maxStorageSteps_ - 1) {
     // all episodes are done; set done flag and reset
     reset();
   } else {
@@ -1547,15 +1615,14 @@ void BatchedSimulator::autoResetOrStepPhysics() {
 
 
 
-void BatchedSimulator::startAsyncStepPhysics(std::vector<float>&& actions) {
+void BatchedSimulator::startStepPhysicsOrReset(std::vector<float>&& actions, std::vector<int>&& resets) {
   ProfilingScope scope("start async physics");
 
   BATCHED_SIM_ASSERT(!isPhysicsThreadActive());
   BATCHED_SIM_ASSERT(config_.doAsyncPhysicsStep);
-  BATCHED_SIM_ASSERT(currRolloutSubstep_ != -1);
-  BATCHED_SIM_ASSERT(currRolloutSubstep_ < maxRolloutSubsteps_ - 1);
+  BATCHED_SIM_ASSERT(currStorageStep_ != -1);
 
-  setActions(std::move(actions));
+  setActionsResets(std::move(actions), std::move(resets));
 
   deleteDebugInstances();
 
@@ -1565,13 +1632,24 @@ void BatchedSimulator::startAsyncStepPhysics(std::vector<float>&& actions) {
 
 void BatchedSimulator::stepPhysics() {
   ProfilingScope scope("step physics");
+  const int numEnvs = bpsWrapper_->envs_.size();
 
   BATCHED_SIM_ASSERT(config_.numSubsteps > 0);
-  for (int i = 0; i < config_.numSubsteps; i++) {
+  for (substep_ = 0; substep_ < config_.numSubsteps; substep_++) {
     substepPhysics();
   }
+  substep_ = -1;
 
-  robots_.updateLinkTransforms(currRolloutSubstep_, /*updateforPhysics*/ false, /*updateForRender*/ true);
+  for (int b = 0; b < numEnvs; b++) {
+    if (!isEnvResetting(b)) {
+      auto& envState = safeVectorGet(pythonEnvStates_, b);
+      envState.episode_step_idx++;
+    }
+  }
+
+  resetHelper();
+
+  updateLinkTransforms(currStorageStep_, /*updateforPhysics*/ false, /*updateForRender*/ true, /*includeResettingEnvs*/true);
 }
 
 void BatchedSimulator::substepPhysics() {
@@ -1585,9 +1663,8 @@ void BatchedSimulator::substepPhysics() {
   constexpr float maxAbsYawAngle = float(Mn::Rad(Mn::Deg(5.f)));
   constexpr float maxAbsJointAngle = float(Mn::Rad(Mn::Deg(5.f)));
 
-  BATCHED_SIM_ASSERT(currRolloutSubstep_ < maxRolloutSubsteps_ - 1);
-  prevRolloutSubstep_ = currRolloutSubstep_;
-  currRolloutSubstep_++;
+  prevStorageStep_ = currStorageStep_;
+  currStorageStep_ = (currStorageStep_ + 1) % maxStorageSteps_;
 
   int numEnvs = bpsWrapper_->envs_.size();
   int numPosVars = robot_.numPosVars;
@@ -1596,20 +1673,26 @@ void BatchedSimulator::substepPhysics() {
 
   int actionIndex = 0;
 
-  const float* prevYaws = &rollouts_.yaws_[prevRolloutSubstep_ * numEnvs];
-  float* yaws = &rollouts_.yaws_[currRolloutSubstep_ * numEnvs];
+  const float* prevYaws = &rollouts_.yaws_[prevStorageStep_ * numEnvs];
+  float* yaws = &rollouts_.yaws_[currStorageStep_ * numEnvs];
   const Mn::Vector2* prevPositions =
-      &rollouts_.positions_[prevRolloutSubstep_ * numEnvs];
-  Mn::Vector2* positions = &rollouts_.positions_[currRolloutSubstep_ * numEnvs];
+      &rollouts_.positions_[prevStorageStep_ * numEnvs];
+  Mn::Vector2* positions = &rollouts_.positions_[currStorageStep_ * numEnvs];
   Mn::Matrix4* rootTransforms =
-      &rollouts_.rootTransforms_[currRolloutSubstep_ * numEnvs];
+      &rollouts_.rootTransforms_[currStorageStep_ * numEnvs];
   const float* prevJointPositions =
-      &rollouts_.jointPositions_[prevRolloutSubstep_ * numEnvs * numPosVars];
+      &rollouts_.jointPositions_[prevStorageStep_ * numEnvs * numPosVars];
   float* jointPositions =
-      &rollouts_.jointPositions_[currRolloutSubstep_ * numEnvs * numPosVars];
+      &rollouts_.jointPositions_[currStorageStep_ * numEnvs * numPosVars];
 
   // stepping code
   for (int b = 0; b < numEnvs; b++) {
+
+    if (isEnvResetting(b)) {
+      actionIndex += actionDim_;
+      continue;
+    }
+
     auto& robotInstance = robots_.robotInstances_[b];
     const float grabDropAction = actions_[actionIndex++];
 
@@ -1646,7 +1729,7 @@ void BatchedSimulator::substepPhysics() {
   }
   BATCHED_SIM_ASSERT(actionIndex == actions_.size());
 
-  robots_.updateLinkTransforms(currRolloutSubstep_, /*updateforPhysics*/ true, /*updateForRender*/ false);
+  updateLinkTransforms(currStorageStep_, /*updateforPhysics*/ true, /*updateForRender*/ false, /*includeResettingEnvs*/false);
 
   updateCollision();
 
@@ -1655,33 +1738,6 @@ void BatchedSimulator::substepPhysics() {
   postCollisionUpdate();
 
   // robots_.applyActionPenalties(actions_);
-}
-
-void BatchedSimulator::reverseRobotMovementActions() {
-
-  if (prevRolloutSubstep_ == -1) {
-    return;
-  }
-
-  BATCHED_SIM_ASSERT(!config_.doAsyncPhysicsStep);
-
-  int numEnvs = bpsWrapper_->envs_.size();
-
-  for (int b = 0; b < numEnvs; b++) {
-
-    reverseActionsForEnvironment(b);
-
-    auto& robotInstance = robots_.robotInstances_[b];
-    robotInstance.doAttemptDrop_ = false;
-    robotInstance.doAttemptGrip_ = false;
-  }
-
-  currRolloutSubstep_--;
-  prevRolloutSubstep_--;
-
-  robots_.updateLinkTransforms(currRolloutSubstep_, /*updateforPhysics*/ false, /*updateForRender*/ true);
-  // updateGripping();
-  updateRenderInstances(true);
 }
 
 
@@ -1734,7 +1790,7 @@ void BatchedSimulator::stepPhysicsWithReferenceActions() {
 
 bool BatchedSimulator::isPhysicsThreadActive() const {
   return config_.doAsyncPhysicsStep &&
-    (!isAsyncStepPhysicsFinished_ || signalStepPhysics_);
+    (!isStepPhysicsOrResetFinished_ || signalStepPhysics_);
 }
 
 void BatchedSimulator::startRender() {
@@ -1746,7 +1802,7 @@ void BatchedSimulator::startRender() {
   isRenderStarted_ = true;
 }
 
-void BatchedSimulator::waitForRender() {
+void BatchedSimulator::waitRender() {
   ProfilingScope scope("wait for GPU render");
   BATCHED_SIM_ASSERT(isRenderStarted_);
   bpsWrapper_->renderer_->waitForFrame();
@@ -1837,7 +1893,7 @@ void BatchedSimulator::signalStepPhysics() {
   
   std::lock_guard<std::mutex> lck(physicsMutex_);
   signalStepPhysics_ = true;
-  isAsyncStepPhysicsFinished_ = false;
+  isStepPhysicsOrResetFinished_ = false;
   areRenderInstancesUpdated_ = false;
   physicsCondVar_.notify_one(); // notify_all?
 }
@@ -1855,19 +1911,12 @@ const std::vector<PythonEnvironmentState>& BatchedSimulator::getEnvironmentState
   return pythonEnvStates_;  
 }
 
-void BatchedSimulator::waitAsyncStepPhysics() {
-  //ProfilingScope scope("BSim waitAsyncStepPhysics");
+void BatchedSimulator::waitStepPhysicsOrReset() {
+  //ProfilingScope scope("BSim waitStepPhysicsOrReset");
 
   {
     std::unique_lock<std::mutex> lck(physicsMutex_);
-    physicsCondVar_.wait(lck, [&]{ return isAsyncStepPhysicsFinished_; });
-  }
-
-  // perf todo: do this reset on the physics thread
-  if (currRolloutSubstep_ == maxRolloutSubsteps_ - 1) {
-    reset();
-  } else {
-    updatePythonEnvironmentState();
+    physicsCondVar_.wait(lck, [&]{ return isStepPhysicsOrResetFinished_; });
   }
 }
 
@@ -1894,10 +1943,12 @@ void BatchedSimulator::physicsThreadFunc(int startEnvIndex, int numEnvs) {
 
     updateRenderInstances(/*forceUpdate*/false);
 
+    updatePythonEnvironmentState();
+
     {
       // ProfilingScope scope("physicsThreadFunc notify after step");
       std::lock_guard<std::mutex> lck(physicsMutex_);
-      isAsyncStepPhysicsFinished_ = true;
+      isStepPhysicsOrResetFinished_ = true;
       signalStepPhysics_ = false;
       physicsCondVar_.notify_one(); // notify_all?
     }

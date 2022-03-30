@@ -207,7 +207,6 @@ TEST_F(BatchedSimulatorTest, basic) {
       .sensor0 = {.width = 768, .height = 768, .hfov = 70},
       .forceRandomActions = forceRandomActions,
       .doAsyncPhysicsStep = true,
-      .maxEpisodeLength = 500,
       .numSubsteps = 1,
       .doPairedDebugEnvs = doPairedDebugEnvs,
       .doProceduralEpisodeSet = true,
@@ -276,12 +275,16 @@ TEST_F(BatchedSimulatorTest, basic) {
     }
   }
 
+  std::vector<int> resets(config.numEnvs, -1);
+
   bool doAdvanceSim = false;
 
   bsim.reset();
 
+  std::vector<PythonEnvironmentState> envStates;
+
   if (doOverlapPhysics) {
-    bsim.startAsyncStepPhysics(std::vector<float>(actions));
+    bsim.startStepPhysicsOrReset(std::vector<float>(actions), std::vector<int>(resets));
   }
 
   int frameIdx = 0;
@@ -291,21 +294,25 @@ TEST_F(BatchedSimulatorTest, basic) {
   while (true) {
 
     if (doOverlapPhysics) {
-      bsim.waitAsyncStepPhysics();
+      bsim.waitStepPhysicsOrReset();
       bsim.startRender();
+      // make a copy of envStates
+      envStates = bsim.getEnvironmentStates();
       if (doAdvanceSim) {
-        bsim.startAsyncStepPhysics(std::vector<float>(actions));
+        bsim.startStepPhysicsOrReset(std::vector<float>(actions), std::vector<int>(resets));
         doAdvanceSim = false;
       }
-      bsim.waitForRender();
+      bsim.waitRender();
     } else {
       if (doAdvanceSim) {
-        bsim.startAsyncStepPhysics(std::vector<float>(actions));
-        bsim.waitAsyncStepPhysics();        
+        bsim.startStepPhysicsOrReset(std::vector<float>(actions), std::vector<int>(resets));
+        bsim.waitStepPhysicsOrReset(); 
         doAdvanceSim = false;
       }
       bsim.startRender();
-      bsim.waitForRender();
+      // make a copy of envStates
+      envStates = bsim.getEnvironmentStates();       
+      bsim.waitRender();
     }
 
     uint8_t* base_color_ptr = bsim.getBpsRenderer().getColorPointer();
@@ -385,11 +392,6 @@ TEST_F(BatchedSimulatorTest, basic) {
         doTuneRobotCam = !doTuneRobotCam;
       } else if (key == 'r') {
         bsim.reloadSerializeCollection();
-      } else if (key == 'u') {
-        if (frameIdx > 0) {
-          bsim.reverseRobotMovementActions();
-          frameIdx -= 2; // undoing two keypresses (the last one, and this 'u')
-        }
       }
 
       for (int b = 0; b < config.numEnvs; b++) {
@@ -456,11 +458,6 @@ TEST_F(BatchedSimulatorTest, basic) {
         doAdvanceSim = true;
       } else if (key == 't') {
         doStartAnimation = true;
-      } else if (key == 'u') {
-        if (frameIdx > 0) {
-          bsim.reverseRobotMovementActions();
-          frameIdx -= 2; // undoing two keypresses (the last one, and this 'u')
-        }
       } else if (key == 'c') {
         doTuneRobotCam = !doTuneRobotCam;
       } else if (key == 'r') {
@@ -496,6 +493,18 @@ TEST_F(BatchedSimulatorTest, basic) {
         isAutoplay = false;
       }
     }
+
+    #if 0
+    // temp end episode on collision
+    for (int b = 0; b < config.numEnvs; b++) {
+      int resetPeriodForEnv = b + 1;
+      if (envStates[b].did_collide) {
+        resets[b] = envStates[b].episode_idx;
+      } else {
+        resets[b] = -1;
+      }
+    }
+    #endif
 
     #if 0 // test columnGrid collision
     {
