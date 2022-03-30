@@ -147,7 +147,6 @@ repos:
     -   id: shellcheck
 
 -   repo: https://github.com/AleksaC/circleci-cli-py
-    rev: v0.1.16947
+    rev: v0.1.16737
     hooks:
     -   id: circle-ci-validator
-        args: [--ignore-deprecated-images]
