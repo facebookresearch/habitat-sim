@@ -29,13 +29,13 @@ repos:
 
     # Changes tabs to spaces
 -   repo: https://github.com/Lucas-C/pre-commit-hooks
-    rev: v1.1.12
+    rev: v1.1.13
     hooks:
     -   id: remove-tabs
         exclude: "(^(.git|setup.cfg))|(.(json|scn)$)"
 
 -   repo: https://github.com/macisamuele/language-formatters-pre-commit-hooks
-    rev: v2.2.0
+    rev: v2.3.0
     hooks:
     -   id: pretty-format-ini
         args: [--autofix]
@@ -55,7 +55,7 @@ repos:
         exclude: docs/
 
 -   repo: https://github.com/ambv/black
-    rev: 22.1.0
+    rev: 22.3.0
     hooks:
     -   id: black
         exclude: ^examples/tutorials/(nb_python|colabs)
@@ -86,7 +86,7 @@ repos:
         additional_dependencies: *flake8_dependencies
 
 -   repo: https://github.com/pre-commit/mirrors-mypy
-    rev: 'v0.931'
+    rev: 'v0.942'
     hooks:
     -   id: mypy
         pass_filenames: false
@@ -116,7 +116,7 @@ repos:
             - isort
 
 -   repo: https://github.com/pre-commit/mirrors-clang-format
-    rev: v13.0.0
+    rev: v13.0.1
     hooks:
     -   id: clang-format
         types_or: [c++, c, c#, cuda] # also run on CUDA
@@ -130,7 +130,7 @@ repos:
         exclude: (^src/(cmake/Find|deps)|configure\.h\.cmake$)
 
 -   repo: https://github.com/pre-commit/mirrors-eslint
-    rev: v8.9.0
+    rev: v8.12.0
     hooks:
     -   id: eslint
         args: [--fix, --ext .html,.js]
@@ -147,6 +147,7 @@ repos:
     -   id: shellcheck
 
 -   repo: https://github.com/AleksaC/circleci-cli-py
-    rev: v0.1.16737
+    rev: v0.1.16947
     hooks:
     -   id: circle-ci-validator
+        args: [--ignore-deprecated-images]
