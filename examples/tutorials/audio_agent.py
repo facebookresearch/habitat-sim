@@ -49,7 +49,10 @@ def main():
     )
     channel_layout.channelCount = 2
 
-    # create the Audio sensor specs
+    # create the Audio sensor specs, assign the acoustics_config and the channel_layout.
+    # note that the outputDirectory should already exist for each iteration step.
+    # for the example below, folders /home/AudioSimulation0, /home/AudioSimulation1 ... should
+    # exist based on the number of iterations
     audio_sensor_spec = habitat_sim.AudioSensorSpec()
     audio_sensor_spec.uuid = "audio_sensor"
     audio_sensor_spec.outputDirectory = "/home/sangarg/AudioSimulation"
@@ -65,14 +68,14 @@ def main():
     # set audio source location, no need to set the agent location, will be set implicitly
     audio_sensor.setAudioSourceTransform(np.array([3.1035, 1.57245, -4.15972]))
 
-    # run the simulation
+    # run the simulation, currently only 1 iteration is run
     for i in range(1):
         print(i)
         print("Start Time : ")
         printTime()
         obs = sim.get_sensor_observations()["audio_sensor"]
 
-        # print the audio observations
+        # optionally print the audio observations
         # print(obs)
 
         # write the observations to a file
