@@ -347,8 +347,11 @@ void BatchedSimulator::updateLinkTransforms(int currRolloutSubstep, bool updateF
 void BatchedSimulator::updatePythonEnvironmentState() {
 
   const int numEnvs = config_.numEnvs;
+  const int numPosVars = robot_.numPosVars;
   const Mn::Vector2* positions = &safeVectorGet(rollouts_.positions_, currStorageStep_ * numEnvs);
   const float* yaws = &safeVectorGet(rollouts_.yaws_, currStorageStep_ * numEnvs);
+  const float* jointPositions =
+      &safeVectorGet(rollouts_.jointPositions_, currStorageStep_ * numEnvs * numPosVars);
 
   for (int b = 0; b < config_.numEnvs; b++) {
 
@@ -357,11 +360,17 @@ void BatchedSimulator::updatePythonEnvironmentState() {
 
     envState.ee_pos = robotInstance.cachedGripperLinkMat_.translation();
     // envState.episode_step_idx updated incrementally
-    // todo: do logical or over all substeps
+    // todo: do logical "or" over all substeps
     envState.did_collide = robots_.collisionResults_[b];
     // envState.obj_positions // this is updated incrementally
     envState.robot_position = Mn::Vector3(positions[b].x(), 0.f, positions[b].y());
     envState.robot_yaw = yaws[b];
+    envState.robot_joint_positions.resize(numPosVars);
+    int baseJointIndex = b * robot_.numPosVars;
+    for (int j = 0; j < numPosVars; j++) {
+      const auto& pos = jointPositions[baseJointIndex + j];
+      safeVectorGet(envState.robot_joint_positions, j) = pos;
+    }
 
     // perf todo: set this just once at episode reset
     const auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
@@ -1687,6 +1696,9 @@ void BatchedSimulator::substepPhysics() {
 
   // stepping code
   for (int b = 0; b < numEnvs; b++) {
+
+    // perf todo: if collision occurs on a substep, don't try stepping again for the
+    // remaining substeps (not until the action changes on the next step)
 
     if (isEnvResetting(b)) {
       actionIndex += actionDim_;

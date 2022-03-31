@@ -56,6 +56,7 @@ struct PythonEnvironmentState {
   // robot state
   Magnum::Vector3 robot_position;
   float robot_yaw = 0.f;
+  std::vector<float> robot_joint_positions;
   Magnum::Vector3 ee_pos;
   bool did_collide = false;
   // other env state
