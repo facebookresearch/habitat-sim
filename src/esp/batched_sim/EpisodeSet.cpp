@@ -20,20 +20,11 @@ namespace batched_sim {
 
 namespace {
 
-void addStageFixedObject(EpisodeSet& set, const std::string& name, 
-  const BpsSceneMapping& sceneMapping, const serialize::Collection& collection) {
+void addStageFixedObject(EpisodeSet& set, const std::string& name) {
 
   FixedObject fixedObj;
   fixedObj.name_ = name;
-  fixedObj.instanceBlueprint_ = sceneMapping.findInstanceBlueprint(name);
-
-  std::string columnGridFilepathBase = "../data/columngrids/" + name + "_stage_only";
-  fixedObj.columnGridSet_.load(columnGridFilepathBase);
-
-  ESP_CHECK(fixedObj.columnGridSet_.getSphereRadii() == collection.collisionRadiusWorkingSet,
-    "ColumnGridSet " << name << " with radii " << fixedObj.columnGridSet_.getSphereRadii()
-    << " doesn't match collection collision radius working set " 
-    << collection.collisionRadiusWorkingSet);
+  fixedObj.needsPostLoadFixup_ = true;
 
   set.fixedObjects_.push_back(std::move(fixedObj));
 }
@@ -45,21 +36,11 @@ float getOriginBoundingSphereRadiusSquaredForAABB(const Magnum::Range3D& aabb) {
   return maxCorner.dot();
 }
 
-void addFreeObject(EpisodeSet& set, const std::string& name, const BpsSceneMapping& sceneMapping) {
+void addFreeObject(EpisodeSet& set, const std::string& name) {
 
   FreeObject freeObj;
   freeObj.name_ = name;
-  freeObj.instanceBlueprint_ = sceneMapping.findInstanceBlueprint(name);
-
-#if 0
-  freeObj.aabb_ = aabb;
- //  freeObj.boundingSphereRadiusSq_ = getOriginBoundingSphereRadiusSquaredForAABB(aabb);
-
-  // add one collision sphere at base of aabb
-  constexpr float sphereRadius = 0.1f; // temp
-  freeObj.collisionSphereLocalOrigins_.push_back(
-    {aabb.center().x(), aabb.center().y(), aabb.min().z() + sphereRadius});
-#endif
+  freeObj.needsPostLoadFixup_ = true;
 
   // all YCB objects needs this to be upright
   const auto baseRot = Mn::Quaternion::rotation(Mn::Deg(-90), Mn::Vector3(1.f, 0.f, 0.f));
@@ -190,8 +171,6 @@ EpisodeSet generateBenchmarkEpisodeSet(int numEpisodes,
 
   EpisodeSet set;
 
-  set.maxFreeObjects_ = 0;
-  
   std::vector<std::string> replicaCadBakedStages = {
     "Baked_sc0_staging_00",
     "Baked_sc0_staging_01",
@@ -209,20 +188,24 @@ EpisodeSet generateBenchmarkEpisodeSet(int numEpisodes,
   };
 
   for (const auto& stageName : replicaCadBakedStages) {
-    addStageFixedObject(set, stageName, sceneMapping, collection);
+    addStageFixedObject(set, stageName);
   }
 
   for (const auto& serFreeObject : collection.freeObjects) {
-    addFreeObject(set, serFreeObject.name, sceneMapping);
+    addFreeObject(set, serFreeObject.name);
   }
 
-  updateFromSerializeCollection(set, collection);
+  // sloppy: call postLoadFixup before adding episodes; this means that
+  // set.maxFreeObjects_ gets computed incorrectly in here (but it will get computed
+  // correctly, incrementally, in addEpisode).
+  postLoadFixup(set, sceneMapping, collection);
 
   // distribute stages across episodes
   for (int i = 0; i < numEpisodes; i++) {
     int stageIndex = i * set.fixedObjects_.size() / numEpisodes;
     addEpisode(set, collection, stageIndex, random);
   }
+  BATCHED_SIM_ASSERT(set.maxFreeObjects_ > 0);
 
   return set;
 }
@@ -360,6 +343,8 @@ void postLoadFixup(EpisodeSet& set, const BpsSceneMapping& sceneMapping, const s
     freeObj.needsPostLoadFixup_ = false;    
   }
   
+  set.allEpisodesAABB_ = Mn::Range3D(Mn::Math::ZeroInit);
+  bool isFirstFixedObj = true;
   for (auto& fixedObj : set.fixedObjects_) {
     fixedObj.instanceBlueprint_ = sceneMapping.findInstanceBlueprint(fixedObj.name_);
 
@@ -372,7 +357,30 @@ void postLoadFixup(EpisodeSet& set, const BpsSceneMapping& sceneMapping, const s
       << " doesn't match collection collision radius working set " 
       << collection.collisionRadiusWorkingSet);
 
-    fixedObj.needsPostLoadFixup_ = false;    
+    fixedObj.needsPostLoadFixup_ = false;
+
+    // update set.allEpisodesAABB_
+    {
+      const auto& columnGrid = fixedObj.columnGridSet_.getColumnGrid(0);
+      constexpr float dummyMinY = -1e7f;
+      constexpr float dummyMaxY = 1e7f;
+      Mn::Vector3 cgMin(
+        columnGrid.minX,
+        dummyMinY,
+        columnGrid.minZ);
+      Mn::Vector3 cgMax(
+        columnGrid.getMaxX(),
+        dummyMaxY,
+        columnGrid.getMaxZ());
+
+      if (isFirstFixedObj) {
+        set.allEpisodesAABB_ = Mn::Range3D(cgMin, cgMax);
+        isFirstFixedObj = false;
+      } else {
+        set.allEpisodesAABB_.min() = Mn::Math::min(set.allEpisodesAABB_.min(), cgMin);
+        set.allEpisodesAABB_.max() = Mn::Math::max(set.allEpisodesAABB_.max(), cgMax);
+      }
+    }
   }
 
   set.maxFreeObjects_ = 0;
@@ -503,7 +511,7 @@ bool fromJsonValue(const esp::io::JsonGenericValue& obj,
   esp::io::readMember(obj, "freeObjectSpawns", val.freeObjectSpawns_);
   esp::io::readMember(obj, "freeObjects", val.freeObjects_);
 
-  // for maxFreeObjects_
+  // for maxFreeObjects_ and allEpisodesAABB_
   val.needsPostLoadFixup_ = true;
   val.maxFreeObjects_ = -1;
 

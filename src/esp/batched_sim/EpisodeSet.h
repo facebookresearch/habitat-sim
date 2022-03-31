@@ -51,7 +51,7 @@ class FreeObjectSpawn {
  public:
   int16_t freeObjIndex_;
   int16_t startRotationIndex_;
-  Mn::Vector3 startPos_; // discretize?
+  Magnum::Vector3 startPos_; // discretize?
 };
 
 class Episode {
@@ -60,7 +60,7 @@ class Episode {
   int16_t numFreeObjectSpawns_ = 0;
   int16_t targetObjIndex_ = -1; // 0..numFreeObjectSpawns - 1, see also freeObjectIndex
   int32_t firstFreeObjectSpawnIndex_ = -1; // index into EpisodeSet::freeObjectSpawns_
-  Mn::Vector2 agentStartPos_;
+  Magnum::Vector2 agentStartPos_;
   float agentStartYaw_ = 0.f; // radians
 
   // task-specific
@@ -74,6 +74,7 @@ class EpisodeSet {
   std::vector<FreeObjectSpawn> freeObjectSpawns_; // num episodes * num-spawns-per-episode, ~5,000,000
   std::vector<FreeObject> freeObjects_; // ~100, max 32K
   int maxFreeObjects_ = -1;
+  Magnum::Range3D allEpisodesAABB_;
   bool needsPostLoadFixup_ = true;
 
   static EpisodeSet loadFromFile(const std::string& filepath);
