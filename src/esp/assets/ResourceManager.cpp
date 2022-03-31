@@ -398,8 +398,6 @@ bool ResourceManager::loadStage(
     esp::scene::SceneManager* sceneManagerPtr,
     std::vector<int>& activeSceneIDs) {
   // If the semantic mesh should be created, based on SimulatorConfiguration
-  // todo sangarg : Fix this, the config.json file seems to be incorrect
-  //    the semantic mesh is not working if this is false
   const bool createSemanticMesh =
       metadataMediator_->getSimulatorConfiguration().loadSemanticMesh;
 

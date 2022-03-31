@@ -55,7 +55,7 @@ def main():
     # exist based on the number of iterations
     audio_sensor_spec = habitat_sim.AudioSensorSpec()
     audio_sensor_spec.uuid = "audio_sensor"
-    audio_sensor_spec.outputDirectory = "/home/sangarg/AudioSimulation"
+    audio_sensor_spec.outputDirectory = "/tmp/AudioSimulation"
     audio_sensor_spec.acousticsConfig = acoustics_config
     audio_sensor_spec.channelLayout = channel_layout
 

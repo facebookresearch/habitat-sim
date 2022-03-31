@@ -796,7 +796,7 @@ void addSensors(esp::agent::AgentConfiguration& agentConfig, bool isOrtho) {
 
     // Set the audio sensor configs
     spec->acousticsConfig_.dumpWaveFiles = true;
-    spec->acousticsConfig_.enableMaterials = false;
+    spec->acousticsConfig_.enableMaterials = true;
     spec->acousticsConfig_.writeIrToFile = true;
     // Set the output directory
     spec->outputDirectory_ = "/tmp/AudioSimulation";

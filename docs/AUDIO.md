@@ -1,9 +1,8 @@
 # Audio Sensor
 
-The C++ Audio sensor class uses the [RLRAudioPropagation](https://github.com/facebookresearch/rlr-audio-propagation) library. This is a bi-directional ray tracer based audio simulator. Given a source location, listener location, mesh, audio materials and some parameters will simulate how audio waves travel from the source to the listener. The output of the library is an impulse response for the given setup. 
+The C++ Audio sensor class uses the [RLRAudioPropagation](https://github.com/facebookresearch/rlr-audio-propagation) library. This is a bi-directional ray tracer based audio simulator. Given a source location, listener location, scene geometry (3D mesh), audio materials, and some parameters (described below) it will simulate how audio waves travel from the source to arrive at the listener. The output of this simulation is an impulse response for the listener.
 
-The C++ implementation is exposed for python user via py-bindings. This document explains the various python apis, structs and enums.
-
+The C++ implementation is exposed for python users via pybind11. This document explains the various python APIs, structs, and enums. Also see the relevant [Habitat-sim python API](https://aihabitat.org/docs/habitat-sim/classes.html) doc pages.
 
 
 ## List of sections
@@ -17,31 +16,31 @@ The C++ implementation is exposed for python user via py-bindings. This document
 
 ### - Acoustics configuration
 
-The RLRAudioPropagationConfiguration() exposes various audio configuration that can be used to modify the audio simulation. This section lists all the available configs, their data type, default values and explains what the config does
+The RLRAudioPropagationConfiguration() exposes various configuration options that can be used to customize the audio simulation. This section describes the available config settings including data types and default values.
 
 
 |Config name|Data Type|Default Value|Usage|
 |-----------|---------|-------------|-----|
 | sampleRate | int | 44100 | Sample rate for the simulated audio |
-| frequencyBands | int |  4 | Number of frequency bands in the simulated audio simulation |
-| directSHOrder | int | 3 | todo sangarg : Talk to Carl |
-| indirectSHOrder | int | 1 |  todo sangarg : Talk to Carl  |
-| threadCount | int | 1 | Number of thread the audio simulation will use |
-| updateDt | float | 0.02f | Simulation time step the audio simulation will use |
-| irTime | float | 4.f | Total render time for the audio simulation |
-| unitScale | float | 1.f | Unit scale for the scene, mesh and positions are multiplied by this factor |
+| frequencyBands | int |  4 | Number of frequency bands in the audio simulation |
+| directSHOrder | int | 3 | The spherical harmonic order used for calculating direct sound spatialization for non-point sources (those with non-zero radii). It is not recommended to go above order 9. |
+| indirectSHOrder | int | 1 |  The spherical harmonic order used for calculating the spatialization of indirect sound (reflections, reverb). It is not recommended to go above order 5. Increasing this value requires more rays to be traced for the results to converge properly, and uses substantially more memory (scales quadratically).  |
+| threadCount | int | 1 | Number of CPU thread the simulation will use |
+| updateDt | float | 0.02f | Simulation time step |
+| irTime | float | 4.f | Maximum render time budget for the audio simulation |
+| unitScale | float | 1.f | Unit scale for the scene. Mesh and positions are multiplied by this factor |
 | globalVolume | float | 4.f | Total initial pressure value |
 | indirectRayCount | int | 5000 | Number of indirect rays that the ray tracer will use |
-| indirectRayDepth | int | 200 | Depth of each indirect ray that the ray tracer will use |
-| sourceRayCount | int | 200 |  Number of direct rays that the ray tracer will use |
-| sourceRayDepth | int | 10 |  Depth of each direct ray that the ray tracer will use |
-| maxDiffractionOrder | int | 10 | todo sagnarg : Talk to Carl |
+| indirectRayDepth | int | 200 | Maximum depth of each indirect ray cast by the ray tracer |
+| sourceRayCount | int | 200 | Number of direct rays that the ray tracer will use |
+| sourceRayDepth | int | 10 | Maximum depth of direct rays cast by the ray tracer |
+| maxDiffractionOrder | int | 10 | The maximum number of edge diffraction events that can occur between a source and listener. This value cannot exceed 10 (compile-time limit). |
 | direct | bool | true | Enable contribution from the direct rays |
 | indirect | bool | true | Enable contribution from the indirect rays |
 | diffraction | bool | true | Enable diffraction for the simulation |
 | transmission | bool | false | Enable transmission of rays |
-| meshSimplification | bool | false | Simplify mesh before running the audio simulation. todo sangarg : Add which simplification algo is used|
-| temporalCoherence | bool | false | todo sangarg : Talk to Carl |
+| meshSimplification | bool | false | Uses a series of mesh simplification operations to reduce the mesh complexity for ray tracing. Vertex welding is applied, followed by simplification using the edge collapse algorithm. |
+| temporalCoherence | bool | false | Turn on/off temporal smoothing of the impulse response. This uses the impulse response from the previous simulation time step as a starting point for the next time step. This reduces the number of rays required by about a factor of 10, resulting in faster simulations, but should not be used if the motion of sources/listeners is not continuous. |
 | dumpWaveFiles | bool | false | Write the wave files for different bands. Will be writted to the AudioSensorSpec's outputDirectory |
 | enableMaterials | bool | true | Enable audio materials |
 | writeIrToFile | bool | false | Write the final impulse response to a file |
@@ -50,7 +49,7 @@ The RLRAudioPropagationConfiguration() exposes various audio configuration that 
 
 ### - Channel layout
 
-This section talks about the channel layout struct. The channel layout defines what the output will look like.
+This section describes the channel layout struct, which defines what the output will look like.
 
 |Config name|Data Type|Default Value|Usage|
 |-----------|---------|-------------|-----|
@@ -61,7 +60,7 @@ This section talks about the channel layout struct. The channel layout defines w
 
 - ##### RLRAudioPropagationChannelLayoutType
 
-Lets look at the available values for RLRAudioPropagationChannelLayoutType
+The channel layout describes how the audio output will be experienced by the listener. Lets look at channel layout types that are currently supported.
 
 |Enum|Usage|
 |-----------|---------|
@@ -79,7 +78,7 @@ Ambisonics | Channel layout that encodes fully spherical spatial audio as a set 
 
 |Config name|Data Type|Default Value|Usage|
 |-----------|---------|-------------|-----|
-|uuid|string|""|uuid to identify the sensor object|
+|uuid|string|""|unique identifier string to name and refer to this sensor object|
 | outputDirectory | string | "" | Output directory prefix for the simulation. Folders with outputDirectory + i should be created if you want to dump the wave files. (i = 0 indexed simulation iteration |
 | acousticsConfig | [RLRAudioPropagationConfiguration()](#acoustics-configuration) |  Defined in the relevant section | Acoustic configuration struct that defines simulation parameters |
 | channelLayout | [RLRAudioPropagationChannelLayout()](#channel-layout) |  Defined in the relevant section | Channel layout for simulated output audio |
@@ -88,8 +87,7 @@ Ambisonics | Channel layout that encodes fully spherical spatial audio as a set 
 
 ### - APIs
 
-The audio sensor is build in C++ and exposed on pythom via py-bindings. Import the following to get access to the audio sensor
-
+The audio sensor is implemented in C++ and exposed to python via pybind11. Import the following to get access to the audio sensor:
 
 |python imports|
 |------|
@@ -114,17 +112,17 @@ The acoustic sensor spec is part of habitat_sim
 |habitat_sim.AudioSensorSpec() | acoustic sensor spec |
 
 
-To call apis on the audio sensor, get access to the audio sensor object using the uuid.
+To call APIs on the audio sensor, get access to the audio sensor object using the uuid.
 
-|apis for audio_sensor|notes|
+|APIs for audio_sensor|notes|
 |------|-----|
 |audio_sensor = sim.get_agent(0)._sensors["audio_sensor"]| get the audio sensor object from the habitat sim object|
 | audio_sensor.setAudioSourceTransform(np.array([x, y, z])) | set the audio source location where x,y,z are floats|
-|audio_sensor.reset() | User can reset the simulation object and start fresh. This is same as deleting the audio sensor.|
+|audio_sensor.reset() | Reset the simulation object to restart from a fresh context. This is the same as deleting the audio sensor and re-creating it.|
 
-Relevant apis on the sim object
+Relevant APIs on the Simulator object
 
-|apis for the habitat sim object|notes|
+|APIs for the Habitat Simulator object|notes|
 |------|-----|
 | sim.add_sensor(audio_sensor_spec)| Add the audio sensor. This is similar to adding any other sensors|
 |obs = sim.get_sensor_observations()["audio_sensor"]|Get the impulse response. obs is a n-d array where n = channel count|
@@ -133,7 +131,7 @@ Relevant apis on the sim object
 
 ### - Steps to run audio simulation in python
 
-Please see the [audio_agent.py](https://github.com/facebookresearch/habitat-sim/tree/main/examples/tutorials/audio_agent.py) for a sample script on how to use the python audio sensor. Follow the steps and refer to the python script for the code.
+Please see the [audio_agent.py](https://github.com/facebookresearch/habitat-sim/tree/main/examples/tutorials/audio_agent.py) for an example of how to use the python audio sensor. Follow these steps and refer to the python script for the code.
 
 1. Create the habitat sim object and configuration.
 1. Create the Acoustic configuration ([RLRAudioPropagationConfiguration](#acoustics-configuration)) object. Set the various simulation parameters.

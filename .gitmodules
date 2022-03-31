@@ -49,7 +49,6 @@
 [submodule "src/deps/openexr"]
 	path = src/deps/openexr
 	url = https://github.com/AcademySoftwareFoundation/openexr
-# todo sangarg : Add git repo here
-# [submodule "src/deps/audio"]
-# 	path = src/deps/audio
-# 	url = https://github.com/facebookresearch/habitat-acoustics
+[submodule "src/deps/audio"]
+	path = src/deps/audio
+	url = https://github.com/facebookresearch/rlr-audio-propagation
