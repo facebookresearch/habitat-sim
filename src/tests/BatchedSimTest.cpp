@@ -201,12 +201,12 @@ TEST_F(BatchedSimulatorTest, basic) {
 
   BatchedSimulatorConfig config{
       // for video: 2048 x 1024, fov 80
-      .numEnvs = 2, .gpuId = 0, 
+      .numEnvs = 16, .gpuId = 0, 
       .includeDepth = includeDepth,
       .includeColor = includeColor,
       .sensor0 = {.width = 768, .height = 768, .hfov = 70},
       .forceRandomActions = forceRandomActions,
-      .doAsyncPhysicsStep = true,
+      .doAsyncPhysicsStep = doOverlapPhysics,
       .numSubsteps = 1,
       .doPairedDebugEnvs = doPairedDebugEnvs,
       .doProceduralEpisodeSet = true,
@@ -275,11 +275,24 @@ TEST_F(BatchedSimulatorTest, basic) {
     }
   }
 
+  int nextEpisode = 0;
+  const int numEpisodes = bsim.getNumEpisodes();
+  auto getNextEpisode = [&]() {
+    auto retVal = nextEpisode;
+    nextEpisode = (nextEpisode + 1) % numEpisodes;
+    return retVal;
+  };
+
   std::vector<int> resets(config.numEnvs, -1);
+  for (int b = 0; b < config.numEnvs; b++) {
+    resets[b] = getNextEpisode();
+  }
 
   bool doAdvanceSim = false;
 
-  bsim.reset();
+  bsim.reset(std::vector<int>(resets));
+
+  std::fill(resets.begin(), resets.end(), -1);
 
   std::vector<PythonEnvironmentState> envStates;
 
@@ -494,12 +507,12 @@ TEST_F(BatchedSimulatorTest, basic) {
       }
     }
 
-    #if 0
+    #if 1
     // temp end episode on collision
     for (int b = 0; b < config.numEnvs; b++) {
       int resetPeriodForEnv = b + 1;
       if (envStates[b].did_collide) {
-        resets[b] = envStates[b].episode_idx;
+        resets[b] = getNextEpisode();
       } else {
         resets[b] = -1;
       }

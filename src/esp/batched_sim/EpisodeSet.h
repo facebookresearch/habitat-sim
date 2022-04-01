@@ -87,12 +87,14 @@ class EpisodeInstance {
   int32_t stageFixedObjectInstanceId_ = -1;
   // free obj instance ids stored in freeObjectInstanceIds_
   CollisionBroadphaseGrid colGrid_;
-  int debugNumColGridObstacleInstances_ = 0;
   // todo: more robust storage for moved free objects
   static constexpr int MAX_MOVED_FREE_OBJECTS = 6;
   // todo: better memory management
   std::vector<int16_t> movedFreeObjectIndexes_;
   int firstFreeObjectInstanceId_ = -1;
+  #ifndef NDEBUG // todo: hook up to a well-named preproc var
+  std::vector<int> persistentDebugInstanceIds_;
+  #endif
 };
 
 class EpisodeInstanceSet {

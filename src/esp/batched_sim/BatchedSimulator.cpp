@@ -176,6 +176,7 @@ RobotInstanceSet::RobotInstanceSet(Robot* robot,
 
 void BatchedSimulator::reverseActionsForEnvironment(int b) {
   BATCHED_SIM_ASSERT(prevStorageStep_ != -1);
+  BATCHED_SIM_ASSERT(!isEnvResetting(b));
   const int numEnvs = config_.numEnvs;
   const int numPosVars = robot_.numPosVars;
 
@@ -364,7 +365,7 @@ void BatchedSimulator::updatePythonEnvironmentState() {
     envState.did_collide = robots_.collisionResults_[b];
     // envState.obj_positions // this is updated incrementally
     envState.robot_position = Mn::Vector3(positions[b].x(), 0.f, positions[b].y());
-    envState.robot_yaw = yaws[b];
+    //envState.robot_yaw = yaws[b];
     envState.robot_joint_positions.resize(numPosVars);
     int baseJointIndex = b * robot_.numPosVars;
     for (int j = 0; j < numPosVars; j++) {
@@ -916,8 +917,6 @@ void BatchedSimulator::updateRenderInstances(bool forceUpdate) {
     }
   }
   #endif
-
-  areRenderInstancesUpdated_ = true;
 }
 
 
@@ -1197,11 +1196,13 @@ BatchedSimulator::BatchedSimulator(const BatchedSimulatorConfig& config) {
   rollouts_ =
       RolloutRecord(maxStorageSteps_, numEnvs, robot_.numPosVars, numNodes);
 
-  currStorageStep_ =
-      -1;  // trigger auto-reset on first call to autoResetOrStepPhysics
+  currStorageStep_ = 0;
   prevStorageStep_ = -1;
+
+  initEpisodeInstances();
+
   isOkToRender_ = false;
-  isOkToStep_ = false;
+  isOkToStep_ = true;
   isRenderStarted_ = false;
 
   // default camera
@@ -1215,15 +1216,6 @@ BatchedSimulator::BatchedSimulator(const BatchedSimulatorConfig& config) {
 
   if (config_.doAsyncPhysicsStep) {
     physicsThread_ = std::thread(&BatchedSimulator::physicsThreadFunc, this, 0, config_.numEnvs);
-    areRenderInstancesUpdated_ = false;
-  }
-
-  if (config_.doPairedDebugEnvs) {
-    for (int b = 0; b < numEnvs; b++) {
-      if (shouldAddColumnGridDebugVisualsForEnv(config_, b)) {
-        debugRenderColumnGrids(b);
-      }
-    }
   }
 }
 
@@ -1236,6 +1228,15 @@ void BatchedSimulator::close() {
     }
   }
   // todo: more close stuff?
+}
+
+BatchedSimulator::~BatchedSimulator() {
+  close();
+}
+
+
+int BatchedSimulator::getNumEpisodes() const {
+  return episodeSet_.episodes_.size();
 }
 
 
@@ -1280,57 +1281,147 @@ bps3D::Environment& BatchedSimulator::getBpsEnvironment(int envIndex) {
   return bpsWrapper_->envs_[envIndex];
 }
 
-void BatchedSimulator::instantiateEpisode(int b, int episodeIndex) {
+// one-time init for envs
+void BatchedSimulator::initEpisodeInstances() {
+
+  const int numEnvs = config_.numEnvs;
+
+  // we expect all the episode instances to get default-constructed in here
+  BATCHED_SIM_ASSERT(episodeInstanceSet_.episodeInstanceByEnv_.empty());
+
+  episodeInstanceSet_.episodeInstanceByEnv_.resize(numEnvs);
+
+  for (int b = 0; b < numEnvs; b++) {
+    auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
+
+    constexpr int maxBytes = 1000 * 1024;
+    // this is tuned assuming a building-scale simulation with household-object-scale obstacles
+    constexpr float maxGridSpacing = 0.5f;
+    episodeInstance.colGrid_ = CollisionBroadphaseGrid(getMaxCollisionRadius(serializeCollection_), 
+      episodeSet_.allEpisodesAABB_.min().x(), episodeSet_.allEpisodesAABB_.min().z(),
+      episodeSet_.allEpisodesAABB_.max().x(), episodeSet_.allEpisodesAABB_.max().z(),
+      maxBytes, maxGridSpacing);
+  }
+}
+
+
+void BatchedSimulator::clearEpisodeInstance(int b) {
 
   auto& env = getBpsEnvironment(b);
   auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
 
-  BATCHED_SIM_ASSERT(episodeInstance.episodeIndex_ == -1);
-  episodeInstance.episodeIndex_ = episodeIndex;
+  if (episodeInstance.episodeIndex_ == -1) {
+    return; // nothing to do
+  }
 
-  const auto& episode = safeVectorGet(episodeSet_.episodes_, episodeIndex);
-  const auto& stageBlueprint = 
-    safeVectorGet(episodeSet_.fixedObjects_, episode.stageFixedObjIndex).instanceBlueprint_;
+#ifdef ENABLE_DEBUG_INSTANCES
+  for (auto& instanceId : episodeInstance.persistentDebugInstanceIds_) {
+    env.deleteInstance(instanceId);
+  }
+  episodeInstance.persistentDebugInstanceIds_.clear();
+#endif
+
+  if (!disableFreeObjectVisualsForEnv(config_, b)) {
+    // Remove free object bps instances **in reverse order**. This is so bps3D will later
+    // allocate us new instance IDs (from its free list) in ascending order (see assert
+    // in spawnFreeObject).
+    const auto& episode = safeVectorGet(episodeSet_.episodes_, episodeInstance.episodeIndex_);
+    for (int freeObjectIndex = episode.numFreeObjectSpawns_ - 1; freeObjectIndex >= 0; freeObjectIndex--) {
+      int instanceId = getFreeObjectBpsInstanceId(b, freeObjectIndex);
+      env.deleteInstance(instanceId);
+    }
+  }
+    
+  episodeInstance.firstFreeObjectInstanceId_ = -1;
+
   if (!disableStageVisualsForEnv(config_, b)) {
-    episodeInstance.stageFixedObjectInstanceId_ = env.addInstance(
-      stageBlueprint.meshIdx_, stageBlueprint.mtrlIdx_, identityGlMat_);
+    // remove stage bps instance
+    env.deleteInstance(episodeInstance.stageFixedObjectInstanceId_);
+  }
+  
+  // remove all free objects from collision grid
+  episodeInstance.colGrid_.removeAllObstacles();
+}
+
+void BatchedSimulator::resetEpisodeInstance(int b) {
+  //ProfilingScope scope("BSim resetEpisodeInstance");
+
+  auto& env = getBpsEnvironment(b);
+
+  clearEpisodeInstance(b);
+
+  auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
+  BATCHED_SIM_ASSERT(episodeInstance.colGrid_.getNumObstacleInstances() == 0);
+
+  BATCHED_SIM_ASSERT(isEnvResetting(b));
+
+  episodeInstance.episodeIndex_ = resets_[b];
+
+  const auto& episode = safeVectorGet(episodeSet_.episodes_, episodeInstance.episodeIndex_);
+
+  // add stage
+  {
+    const auto& stageBlueprint = 
+      safeVectorGet(episodeSet_.fixedObjects_, episode.stageFixedObjIndex).instanceBlueprint_;
+    if (!disableStageVisualsForEnv(config_, b)) {
+      episodeInstance.stageFixedObjectInstanceId_ = env.addInstance(
+        stageBlueprint.meshIdx_, stageBlueprint.mtrlIdx_, identityGlMat_);
+    }
   }
 
   auto& envState = safeVectorGet(pythonEnvStates_, b);
   envState.obj_positions.resize(episode.numFreeObjectSpawns_);    
 
-  {
-    const auto& stageFixedObject = safeVectorGet(episodeSet_.fixedObjects_, episode.stageFixedObjIndex);
-    const auto& columnGrid = stageFixedObject.columnGridSet_.getColumnGrid(0);
-
-    // todo: find extents for entire EpisodeSet, not just this specific columnGrid
-    constexpr int maxBytes = 1000 * 1024;
-    // this is tuned assuming a building-scale simulation with household-object-scale obstacles
-    constexpr float maxGridSpacing = 0.5f;
-    episodeInstance.colGrid_ = CollisionBroadphaseGrid(getMaxCollisionRadius(serializeCollection_), 
-      columnGrid.minX, columnGrid.minZ,
-      columnGrid.getMaxX(), columnGrid.getMaxZ(),
-      maxBytes, maxGridSpacing);
-  }
-
   for (int freeObjectIndex = 0; freeObjectIndex < episode.numFreeObjectSpawns_; freeObjectIndex++) {
-
-    int globalFreeObjectIndex = b * episodeSet_.maxFreeObjects_ + freeObjectIndex;
-
-    const auto& freeObjectSpawn = safeVectorGet(episodeSet_.freeObjectSpawns_, 
-      episode.firstFreeObjectSpawnIndex_ + freeObjectIndex);
-    const auto& freeObject = safeVectorGet(episodeSet_.freeObjects_, freeObjectSpawn.freeObjIndex_);
-    const auto& blueprint = freeObject.instanceBlueprint_;
-    const auto& rotation = safeVectorGet(freeObject.startRotations_, freeObjectSpawn.startRotationIndex_);
-
     spawnFreeObject(b, freeObjectIndex, /*reinsert*/false);
   }
 
-  episodeInstance.debugNumColGridObstacleInstances_ = episodeInstance.colGrid_.getNumObstacleInstances();
+  // reset robot (note that robot's bps instances are not re-created here)
+  {
+    auto& robotInstance = robots_.robotInstances_[b];
 
+    const int numEnvs = bpsWrapper_->envs_.size();
+    const int numPosVars = robot_.numPosVars;
+    float* yaws = &safeVectorGet(rollouts_.yaws_, currStorageStep_ * numEnvs);
+    Mn::Vector2* positions = &safeVectorGet(rollouts_.positions_,currStorageStep_ * numEnvs);
+    float* jointPositions =
+        &safeVectorGet(rollouts_.jointPositions_,currStorageStep_ * numEnvs * numPosVars);
+
+    constexpr float groundY = 0.f;
+    positions[b] = episode.agentStartPos_;
+    yaws[b] = episode.agentStartYaw_;
+
+    for (int j = 0; j < robot_.numPosVars; j++) {
+      auto& pos = jointPositions[b * robot_.numPosVars + j];
+      pos = 0.f;
+      pos = Mn::Math::clamp(pos, robot_.jointPositionLimits.first[j],
+                            robot_.jointPositionLimits.second[j]);
+    }
+
+    // 7 shoulder, + is down
+    // 8 twist, + is twist to right
+    // 9 elbow, + is down
+    // 10 elbow twist, + is twst to right
+    // 11 wrist, + is down
+    jointPositions[b * robot_.numPosVars + 9] = float(Mn::Rad(Mn::Deg(90.f)));
+
+    // assume robot is not in collision on reset
+    robots_.collisionResults_[b] = false;
+
+    robotInstance.grippedFreeObjectIndex_ = -1;
+    robotInstance.doAttemptDrop_ = false;
+    robotInstance.doAttemptGrip_ = false;
+  }
+
+  envState.episode_step_idx = 0;
+
+  if (shouldAddColumnGridDebugVisualsForEnv(config_, b)) {
+    debugRenderColumnGrids(b);
+  }
 }
 
-
+// incremental reset of same episode index to same env
+#if 0
 void BatchedSimulator::resetEpisodeInstance(int b) {
   //ProfilingScope scope("BSim resetEpisodeInstance");
 
@@ -1400,15 +1491,11 @@ void BatchedSimulator::resetEpisodeInstance(int b) {
   robotInstance.doAttemptDrop_ = false;
   robotInstance.doAttemptGrip_ = false;
 
-  // todo: ensure spawnFreeObject also updates bps instance
-
-  BATCHED_SIM_ASSERT(episodeInstance.debugNumColGridObstacleInstances_ == 
-    episodeInstance.colGrid_.getNumObstacleInstances());
-
   auto& envState = safeVectorGet(pythonEnvStates_, b);
   envState.obj_positions.resize(episode.numFreeObjectSpawns_);
   envState.episode_step_idx = 0;    
 }
+#endif
 
 bool BatchedSimulator::isEnvResetting(int b) const {
   return safeVectorGet(resets_, b) != -1;
@@ -1437,9 +1524,10 @@ void BatchedSimulator::spawnFreeObject(int b, int freeObjectIndex, bool reinsert
       int instanceId = env.addInstance(blueprint.meshIdx_, blueprint.mtrlIdx_, glMat);
       // store the first free object's bps instanceId and assume the rest will be contiguous
       if (freeObjectIndex == 0) {
+        BATCHED_SIM_ASSERT(episodeInstance.firstFreeObjectInstanceId_ == -1);
         episodeInstance.firstFreeObjectInstanceId_ = instanceId;
       }
-      BATCHED_SIM_ASSERT(instanceId = getFreeObjectBpsInstanceId(b, freeObjectIndex));
+      BATCHED_SIM_ASSERT(instanceId == getFreeObjectBpsInstanceId(b, freeObjectIndex));
     }
   }
 
@@ -1469,6 +1557,7 @@ void BatchedSimulator::removeFreeObjectFromCollisionGrid(int b, int freeObjectIn
 int BatchedSimulator::getFreeObjectBpsInstanceId(int b, int freeObjectIndex) const {
 
   auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
+  BATCHED_SIM_ASSERT(episodeInstance.firstFreeObjectInstanceId_ != -1);
   return episodeInstance.firstFreeObjectInstanceId_ + freeObjectIndex;
 }
 
@@ -1500,8 +1589,8 @@ void BatchedSimulator::initEpisodeSet() {
     ESP_CHECK(config_.episodeSetFilepath.empty(), 
       "For BatchedSimulatorConfig::doProceduralEpisodeSet==true, don't specify episodeSetFilepath");
 
-    // generate exactly as many episodes as envs (this is not required)
-    episodeSet_ = generateBenchmarkEpisodeSet(numEnvs, sceneMapping_, serializeCollection_);
+    constexpr int numEpisodesToGenerate = 100; // arbitrary
+    episodeSet_ = generateBenchmarkEpisodeSet(numEpisodesToGenerate, sceneMapping_, serializeCollection_);
     episodeSet_.saveToFile("generated.episode_set.json");
   } else {
     ESP_CHECK(!config_.episodeSetFilepath.empty(), 
@@ -1509,29 +1598,20 @@ void BatchedSimulator::initEpisodeSet() {
     episodeSet_ = EpisodeSet::loadFromFile(config_.episodeSetFilepath);
     postLoadFixup(episodeSet_, sceneMapping_, serializeCollection_);
   }
-
-  episodeInstanceSet_.episodeInstanceByEnv_.resize(numEnvs);
-  for (int b = 0; b < numEnvs; b++) {
-    // temp: statically assigned episodes to envs
-    auto episodeIndex = b * episodeSet_.episodes_.size() / numEnvs;
-    if (config_.doPairedDebugEnvs && (b % 2 == 1)) {
-      episodeIndex = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b - 1).episodeIndex_;
-    }
-    instantiateEpisode(b, episodeIndex);
-  }
 }
 
 void BatchedSimulator::setActionsResets(std::vector<float>&& actions, std::vector<int>&& resets) {
   //ProfilingScope scope("BSim setActions");
 
-  ESP_CHECK(actions.size() == actions_.size(),
-            "BatchedSimulator::setActionsResets: input dimension should be " +
-                std::to_string(actions_.size()) + ", not " +
-                std::to_string(actions.size()));
-  ESP_CHECK(resets.size() == resets_.size(),
-            "BatchedSimulator::setActionsResets: input dimension should be " +
-                std::to_string(resets_.size()) + ", not " +
-                std::to_string(resets.size()));                
+  // note we allow empty actions OR empty resets
+  ESP_CHECK(actions.empty() || actions.size() == actions_.size(),
+            "BatchedSimulator::setActionsResets: actions length should be " <<
+                actions_.size() << ", not " << actions.size());
+  ESP_CHECK(resets.empty() || resets.size() == resets_.size(),
+            "BatchedSimulator::setActionsResets: resets length should be " <<
+                resets_.size() << ", not " << resets.size());  
+  ESP_CHECK(!actions.empty() || !resets.empty(), "BatchedSimulator::setActionsResets: "
+    << "at least one of actions or resets must be length " << actions_.size());              
   const int numEnvs = config_.numEnvs;
 
   if (config_.forceRandomActions) {
@@ -1539,10 +1619,18 @@ void BatchedSimulator::setActionsResets(std::vector<float>&& actions, std::vecto
       action = random_.uniform_float(-1.f, 1.f);
     }
   } else {
-    actions_ = std::move(actions);
+    if (!actions.empty()) {
+      actions_ = std::move(actions);
+    } else {
+      std::fill(actions_.begin(), actions_.end(), 0.f);
+    }
   }
 
-  resets_ = std::move(resets);
+  if (!resets.empty()) {
+    resets_ = std::move(resets);
+  } else {
+    std::fill(resets_.begin(), resets_.end(), -1);
+  }
 
   if (config_.doPairedDebugEnvs) {
     // copy actions from non-debug env to its paired debug env
@@ -1557,35 +1645,20 @@ void BatchedSimulator::setActionsResets(std::vector<float>&& actions, std::vecto
   }
 }
 
-void BatchedSimulator::reset() {
+void BatchedSimulator::reset(std::vector<int>&& resets) {
   ProfilingScope scope("reset episodes");
 
   // we shouldn't be in the middle of rendering or stepping physics
   ESP_CHECK(!isPhysicsThreadActive(), "Don't call reset during async physics step");
   ESP_CHECK(!isRenderStarted_, "Don't call reset during async render");
 
-  int numEnvs = bpsWrapper_->envs_.size();
-
-  currStorageStep_ = 0;
-  prevStorageStep_ = -1;
-
-  for (int b = 0; b < numEnvs; b++) {
-    // temp populate resets_ here to avoid confusion later
-    const auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
-    safeVectorGet(resets_, b) = episodeInstance.episodeIndex_;
-
-    resetEpisodeInstance(b);
-  }
-  updateLinkTransforms(currStorageStep_, /*updateforPhysics*/ false, /*updateForRender*/ true, /*includeResettingEnvs*/true);
-  updateRenderInstances(/*forceUpdate*/true);
-
-  updatePythonEnvironmentState();
+  startStepPhysicsOrReset(std::vector<float>(), std::move(resets));
+  waitStepPhysicsOrReset();
 
   isOkToRender_ = true;
-  isOkToStep_ = true;
-  recentStats_.numEpisodes_ += numEnvs;
 }
 
+// called within step to reset whatever envs are requested to reset
 void BatchedSimulator::resetHelper() {
 
   const int numEnvs = bpsWrapper_->envs_.size();
@@ -1604,39 +1677,23 @@ void BatchedSimulator::resetHelper() {
   }
 }
 
-#if 0
-void BatchedSimulator::autoResetOrStepPhysics() {
-  // ProfilingScope scope("BSim autoResetOrStepPhysics");
-
-  BATCHED_SIM_ASSERT(!config_.doAsyncPhysicsStep);
-
-  deleteDebugInstances();
-
-  if (currStorageStep_ == -1 || currStorageStep_ == maxStorageSteps_ - 1) {
-    // all episodes are done; set done flag and reset
-    reset();
-  } else {
-    stepPhysics();
-    updateRenderInstances(/*forceUpdate*/false);
-  }
-}
-#endif
-
-
 
 void BatchedSimulator::startStepPhysicsOrReset(std::vector<float>&& actions, std::vector<int>&& resets) {
   ProfilingScope scope("start async physics");
 
   BATCHED_SIM_ASSERT(!isPhysicsThreadActive());
-  BATCHED_SIM_ASSERT(config_.doAsyncPhysicsStep);
   BATCHED_SIM_ASSERT(currStorageStep_ != -1);
 
   setActionsResets(std::move(actions), std::move(resets));
 
   deleteDebugInstances();
 
-  // send message to physicsThread_
-  signalStepPhysics();
+  if (config_.doAsyncPhysicsStep) {
+    // send message to physicsThread_
+    signalStepPhysics();
+  } else {
+    stepPhysics();
+  }
 }
 
 void BatchedSimulator::stepPhysics() {
@@ -1659,6 +1716,10 @@ void BatchedSimulator::stepPhysics() {
   resetHelper();
 
   updateLinkTransforms(currStorageStep_, /*updateforPhysics*/ false, /*updateForRender*/ true, /*includeResettingEnvs*/true);
+
+  updateRenderInstances(/*forceUpdate*/false);
+
+  updatePythonEnvironmentState();
 }
 
 void BatchedSimulator::substepPhysics() {
@@ -1903,15 +1964,18 @@ std::string BatchedSimulator::getRecentStatsAndReset() const {
 void BatchedSimulator::signalStepPhysics() {
   //ProfilingScope scope("BSim signalStepPhysics");
   
-  std::lock_guard<std::mutex> lck(physicsMutex_);
-  signalStepPhysics_ = true;
+  BATCHED_SIM_ASSERT(config_.doAsyncPhysicsStep);
+  BATCHED_SIM_ASSERT(isStepPhysicsOrResetFinished_);
+  BATCHED_SIM_ASSERT(!signalStepPhysics_);
   isStepPhysicsOrResetFinished_ = false;
-  areRenderInstancesUpdated_ = false;
+
+  std::lock_guard<std::mutex> lck(physicsSignalMutex_);
+  signalStepPhysics_ = true;
   physicsCondVar_.notify_one(); // notify_all?
 }
 
 void BatchedSimulator::signalKillPhysicsThread() {
-  std::lock_guard<std::mutex> lck(physicsMutex_);
+  std::lock_guard<std::mutex> lck(physicsSignalMutex_);
   signalKillPhysicsThread_ = true;
   physicsCondVar_.notify_one(); // notify_all?
 }
@@ -1925,9 +1989,8 @@ const std::vector<PythonEnvironmentState>& BatchedSimulator::getEnvironmentState
 
 void BatchedSimulator::waitStepPhysicsOrReset() {
   //ProfilingScope scope("BSim waitStepPhysicsOrReset");
-
-  {
-    std::unique_lock<std::mutex> lck(physicsMutex_);
+  if (config_.doAsyncPhysicsStep) {
+    std::unique_lock<std::mutex> lck(physicsFinishMutex_);
     physicsCondVar_.wait(lck, [&]{ return isStepPhysicsOrResetFinished_; });
   }
 }
@@ -1936,44 +1999,43 @@ void BatchedSimulator::physicsThreadFunc(int startEnvIndex, int numEnvs) {
   ProfilingScope scope("physics background thread");
 
   while (true) {
+    bool didSignalStepPhysics = false;
+    bool didSignalKillPhysicsThread = false;
     {
       ProfilingScope scope("wait for main thread");
-      std::unique_lock<std::mutex> lck(physicsMutex_);
+      std::unique_lock<std::mutex> lck(physicsSignalMutex_);
       physicsCondVar_.wait(lck, [&]{ return signalStepPhysics_ || signalKillPhysicsThread_; });
+      didSignalStepPhysics = signalStepPhysics_;
+      didSignalKillPhysicsThread = signalKillPhysicsThread_;
+      signalStepPhysics_ = false;
+      signalKillPhysicsThread_ = false;
     }
 
-    if (signalKillPhysicsThread_) {
+    if (didSignalKillPhysicsThread) {
       break;
     }
 
     BATCHED_SIM_ASSERT(startEnvIndex == 0 && numEnvs == config_.numEnvs);
-    // BATCHED_SIM_ASSERT(startEnvIndex >= 0 && startEnvIndex);
-    // BATCHED_SIM_ASSERT(numEnvs > 0);
-    // BATCHED_SIM_ASSERT(startEnvIndex + numEnvs <= config_.numEnvs);
+    BATCHED_SIM_ASSERT(!isStepPhysicsOrResetFinished_);
 
     stepPhysics();
 
-    updateRenderInstances(/*forceUpdate*/false);
-
-    updatePythonEnvironmentState();
-
     {
       // ProfilingScope scope("physicsThreadFunc notify after step");
-      std::lock_guard<std::mutex> lck(physicsMutex_);
+      std::lock_guard<std::mutex> lck(physicsFinishMutex_);
       isStepPhysicsOrResetFinished_ = true;
-      signalStepPhysics_ = false;
       physicsCondVar_.notify_one(); // notify_all?
     }
   }
 }
 
 
-void BatchedSimulator::debugRenderColumnGrids(int b, int minProgress, int maxProgress) const {
+void BatchedSimulator::debugRenderColumnGrids(int b, int minProgress, int maxProgress) {
 #ifdef ENABLE_DEBUG_INSTANCES
 
   auto& env = safeVectorGet(bpsWrapper_->envs_, b);
-  const auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
-  const auto& episode = safeVectorGet(episodeSet_.episodes_, episodeInstance.episodeIndex_);
+  auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
+  auto& episode = safeVectorGet(episodeSet_.episodes_, episodeInstance.episodeIndex_);
   const auto& stageFixedObject = safeVectorGet(episodeSet_.fixedObjects_, episode.stageFixedObjIndex);
   const auto& source = stageFixedObject.columnGridSet_.getColumnGrid(0);
 
@@ -2020,6 +2082,7 @@ void BatchedSimulator::debugRenderColumnGrids(int b, int minProgress, int maxPro
 
         glm::mat4x3 glMat = toGlmMat4x3(localToBox);
         int instanceId = env.addInstance(blueprint.meshIdx_, blueprint.mtrlIdx_, glMat);
+        episodeInstance.persistentDebugInstanceIds_.push_back(instanceId);
       }
     }
   }

@@ -79,6 +79,8 @@ class CollisionBroadphaseGrid {
 
   const Obstacle& getObstacle(int obsIndex) const;
 
+  void removeAllObstacles();
+
   //// private API exposed only for testing ////
  public:
 

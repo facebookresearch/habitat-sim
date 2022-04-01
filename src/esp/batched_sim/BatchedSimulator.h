@@ -55,7 +55,6 @@ struct PythonEnvironmentState {
   Magnum::Vector3 goal_pos;
   // robot state
   Magnum::Vector3 robot_position;
-  float robot_yaw = 0.f;
   std::vector<float> robot_joint_positions;
   Magnum::Vector3 ee_pos;
   bool did_collide = false;
@@ -173,13 +172,17 @@ class RobotInstanceSet {
 class BatchedSimulator {
  public:
   BatchedSimulator(const BatchedSimulatorConfig& config);
+  ~BatchedSimulator();
   void close();
+
+
+  int getNumEpisodes() const;
 
   void startRender();
   void waitRender();
 
   // todo: thread-safe access to PythonEnvironmentState
-  void reset();
+  void reset(std::vector<int>&& resets);
   const std::vector<PythonEnvironmentState>& getEnvironmentStates() const;
   void startStepPhysicsOrReset(std::vector<float>&& actions, std::vector<int>&& resets);
   void waitStepPhysicsOrReset();
@@ -207,7 +210,7 @@ class BatchedSimulator {
 
   std::string getRecentStatsAndReset() const; // todo: threadsafe
 
-  void debugRenderColumnGrids(int b, int minProgress=0, int maxProgress=-1) const;
+  void debugRenderColumnGrids(int b, int minProgress=0, int maxProgress=-1);
 
   void reloadSerializeCollection();
 
@@ -245,10 +248,9 @@ class BatchedSimulator {
     const Magnum::Vector3& pos, const Magnum::Quaternion& rotation);
 
   void initEpisodeSet();
-  void instantiateEpisode(int b, int episodeIndex);
-  // We don't yet support changing the episode for an env. You can only reset to the
-  // same episode.
-  void resetEpisodeInstance(int b);
+  void initEpisodeInstances();
+  void clearEpisodeInstance(int b);
+  void resetEpisodeInstance(int b); // uses resets_[b]
   bool isEnvResetting(int b) const;
 
   void physicsThreadFunc(int startEnvIndex, int numEnvs);
@@ -288,7 +290,8 @@ class BatchedSimulator {
   esp::core::Random random_{0};
 
   std::thread physicsThread_;
-  std::mutex physicsMutex_;
+  std::mutex physicsSignalMutex_;
+  std::mutex physicsFinishMutex_;
   std::condition_variable physicsCondVar_; 
   bool signalStepPhysics_ = false;
   bool signalKillPhysicsThread_ = false;

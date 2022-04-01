@@ -427,6 +427,18 @@ void ColumnGridTest::testCollisionBroadphaseGrid() {
 
     CORRADE_COMPARE(cgrid2.contactTest({0.f, 1.f, 0.25f - eps}, sphereRadius), 1); // hit box 1
     CORRADE_COMPARE(cgrid2.contactTest({0.f, 1.f, 0.25f + eps}, sphereRadius), -1);
+
+    cgrid2.removeAllObstacles();
+    CORRADE_COMPARE(cgrid2.contactTest({0.f, 1.f, 0.25f - eps}, sphereRadius), -1);
+    CORRADE_COMPARE(cgrid2.getNumObstacleInstances(), 0);
+
+    // insert again and remove again
+    boxId0 = cgrid2.insertObstacle({0.f, 0.f, 0.f}, Mn::Quaternion(Mn::Math::IdentityInit), &aabb);
+    CORRADE_COMPARE(boxId0, 0);
+    boxId1 = cgrid2.insertObstacle({0.f, 1.f, 0.f}, Mn::Quaternion(Mn::Math::IdentityInit), &aabb);
+    CORRADE_COMPARE(boxId1, 1);
+    cgrid2.removeAllObstacles();
+    CORRADE_COMPARE(cgrid2.getNumObstacleInstances(), 0);
   }
 
   {

@@ -302,6 +302,19 @@ void CollisionBroadphaseGrid::insertRemoveObstacleHelper(int16_t obsIndex, bool 
 
 }
 
+void CollisionBroadphaseGrid::removeAllObstacles() {
+  
+  for (auto& grid : grids_) {
+    for (auto& cell : grid.cells) {
+      cell.numObstacles = 0;
+      // cell.obstacles array doesn't need to be touched
+    }
+  }
+  numObstacleInstances_ = 0;
+  obstacles_.clear();
+}
+
+
 int CollisionBroadphaseGrid::contactTest(const Magnum::Vector3& spherePos, float sphereRadius) const {
 
   BATCHED_SIM_ASSERT(sphereRadius <= maxSphereRadius_);
