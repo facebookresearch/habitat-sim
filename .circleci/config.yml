@@ -654,14 +654,14 @@ jobs:
 
               #docker build -t hsim_condabuild_dcontainer -f Dockerfile .
               #docker run -it --ipc=host --rm -v $(pwd)/../../:/remote \
-                  <<^ parameters.CI_TEST >> --env << parameters.AIHABITAT_CONDA_CHN_PWD_VAR >> <</ parameters.CI_TEST >> \
-                  hsim_condabuild_dcontainer \
-                  /bin/bash -c "source ~/.bashrc && conda activate py37 \
-                                && cd /remote/habitat-sim/conda-build \
-                                <<^ parameters.CI_TEST >> && yes | anaconda login --username << parameters.AIHABITAT_CONDA_CHN >> --password \${<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >>} <</ parameters.CI_TEST >> --hostname "aihabitat-conda-ci-builder-linux" \
-                                && python matrix_builder.py \
-                                  <<# parameters.CI_TEST >> --ci_test <</ parameters.CI_TEST>> \
-                                  <<^ parameters.CI_TEST >> --conda_upload << parameters.NIGHTLY_FLAG >> <</ parameters.CI_TEST >>"
+              # <<^ parameters.CI_TEST >> --env << parameters.AIHABITAT_CONDA_CHN_PWD_VAR >> <</ parameters.CI_TEST >> \
+              # hsim_condabuild_dcontainer \
+              # /bin/bash -c "source ~/.bashrc && conda activate py37 \
+              #               && cd /remote/habitat-sim/conda-build \
+              #               <<^ parameters.CI_TEST >> && yes | anaconda login --username << parameters.AIHABITAT_CONDA_CHN >> --password \${<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >>} <</ parameters.CI_TEST >> --hostname "aihabitat-conda-ci-builder-linux" \
+              #               && python matrix_builder.py \
+              #                 <<# parameters.CI_TEST >> --ci_test <</ parameters.CI_TEST>> \
+              #                 <<^ parameters.CI_TEST >> --conda_upload << parameters.NIGHTLY_FLAG >> <</ parameters.CI_TEST >>"
 
   update_docs:
     docker:
