@@ -315,7 +315,7 @@ jobs:
             conda install -y anaconda-client ccache cmake git ninja conda-build pip
             echo $(which -a python)
             pip install gitpython
-            <<^ parameters.CI_TEST>> yes | anaconda login --username << parameters.AIHABITAT_CONDA_CHN >>  --password $<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >> --hostname "aihabitat-conda-ci-builder-macos"
+            <<^ parameters.CI_TEST>>yes | anaconda login --username << parameters.AIHABITAT_CONDA_CHN >>  --password $<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >> --hostname "aihabitat-conda-ci-builder-macos"
             conda config --set anaconda_upload yes <</ parameters.CI_TEST>>
             cd habitat-sim/conda-build
             git submodule update --init --recursive --jobs 8
@@ -643,17 +643,17 @@ jobs:
               export PATH=$HOME/anaconda/bin:$PATH
 
               # Delete old nightly builds
-              python common/delete_old_night_packages.py --username << parameters.AIHABITAT_CONDA_CHN >>  --password $<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >> << parameters.NIGHTLY_FLAG >> <</ parameters.CI_TEST >>
+              #python common/delete_old_night_packages.py --username << parameters.AIHABITAT_CONDA_CHN >>  --password $<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >> << parameters.NIGHTLY_FLAG >> <</ parameters.CI_TEST >>
 
               # install Docker
-              curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-              sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-              sudo apt-get update
-              apt-cache policy docker-ce
-              sudo apt-get install -y docker-ce
+              #curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+              #sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+              #sudo apt-get update
+              #apt-cache policy docker-ce
+              #sudo apt-get install -y docker-ce
 
-              docker build -t hsim_condabuild_dcontainer -f Dockerfile .
-              docker run -it --ipc=host --rm -v $(pwd)/../../:/remote \
+              #docker build -t hsim_condabuild_dcontainer -f Dockerfile .
+              #docker run -it --ipc=host --rm -v $(pwd)/../../:/remote \
                   <<^ parameters.CI_TEST >> --env << parameters.AIHABITAT_CONDA_CHN_PWD_VAR >> <</ parameters.CI_TEST >> \
                   hsim_condabuild_dcontainer \
                   /bin/bash -c "source ~/.bashrc && conda activate py37 \
