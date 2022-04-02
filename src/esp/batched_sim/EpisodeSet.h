@@ -33,7 +33,7 @@ class FreeObject {
   std::string name_;
   BpsSceneMapping::InstanceBlueprint instanceBlueprint_;
   Magnum::Range3D aabb_;
-  std::vector<Magnum::Matrix3x3> startRotations_;
+  std::vector<Magnum::Quaternion> startRotations_;
   int heldRotationIndex_; // index into startRotations_
   std::vector<CollisionSphere> collisionSpheres_;
   bool needsPostLoadFixup_ = true;
@@ -60,11 +60,12 @@ class Episode {
   int16_t numFreeObjectSpawns_ = 0;
   int16_t targetObjIndex_ = -1; // 0..numFreeObjectSpawns - 1, see also freeObjectIndex
   int32_t firstFreeObjectSpawnIndex_ = -1; // index into EpisodeSet::freeObjectSpawns_
-  Magnum::Vector2 agentStartPos_;
+  Magnum::Vector2 agentStartPos_ = Magnum::Vector2(Magnum::Math::ZeroInit);
   float agentStartYaw_ = 0.f; // radians
 
   // task-specific
-  Magnum::Vector3 targetObjGoalPos_;
+  Magnum::Vector3 targetObjGoalPos_ = Magnum::Vector3(Magnum::Math::ZeroInit);
+  Magnum::Quaternion targetObjGoalRotation_ = Magnum::Quaternion(Magnum::Math::IdentityInit);
 };
 
 class EpisodeSet {

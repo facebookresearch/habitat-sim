@@ -52,6 +52,16 @@ Mn::Matrix4 toMagnumMatrix4(const btTransform& btTrans) {
   return tmp2;
 }
 
+Mn::Quaternion yawToRotation(float yawRadians) {
+  constexpr Mn::Vector3 upAxis(0.f, 1.f, 0.f);
+  return Mn::Quaternion::rotation(Mn::Rad(yawRadians), upAxis);
+}
+
+Mn::Vector3 groundPositionToVector3(const Mn::Vector2& src) {
+  constexpr float groundY = 0.f;
+  return Mn::Vector3(src.x(), groundY, src.y());
+}
+
 std::string getMeshNameFromURDFVisualFilepath(const std::string& filepath) {
   // "../meshes/base_link.dae" => "base_link"
   auto index0 = filepath.rfind('/');
@@ -359,26 +369,38 @@ void BatchedSimulator::updatePythonEnvironmentState() {
     const auto& robotInstance = safeVectorGet(robots_.robotInstances_, b);
     auto& envState = safeVectorGet(pythonEnvStates_, b);
 
-    envState.ee_pos = robotInstance.cachedGripperLinkMat_.translation();
-    // envState.episode_step_idx updated incrementally
-    // todo: do logical "or" over all substeps
-    envState.did_collide = robots_.collisionResults_[b];
-    // envState.obj_positions // this is updated incrementally
-    envState.robot_position = Mn::Vector3(positions[b].x(), 0.f, positions[b].y());
-    //envState.robot_yaw = yaws[b];
+/*
+  // robot state
+  Magnum::Vector3 robot_pos;
+  Magnum::Quaternion robot_rotation;
+  std::vector<float> robot_joint_positions;
+  Magnum::Vector3 ee_pos;
+  Magnum::Quaternion ee_rotation;
+  bool did_collide = false;
+
+  // other env state
+  std::vector<Magnum::Vector3> obj_positions;
+  std::vector<Magnum::Quaternion> obj_rotations;
+  */
+
+    envState.robot_pos = Mn::Vector3(positions[b].x(), 0.f, positions[b].y());
+    envState.robot_rotation = yawToRotation(yaws[b]);
     envState.robot_joint_positions.resize(numPosVars);
     int baseJointIndex = b * robot_.numPosVars;
     for (int j = 0; j < numPosVars; j++) {
       const auto& pos = jointPositions[baseJointIndex + j];
       safeVectorGet(envState.robot_joint_positions, j) = pos;
     }
-
-    // perf todo: set this just once at episode reset
-    const auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
-    const auto& episode = safeVectorGet(episodeSet_.episodes_, episodeInstance.episodeIndex_);
-    envState.episode_idx = episodeInstance.episodeIndex_;
-    envState.target_obj_idx = episode.targetObjIndex_;
-    envState.goal_pos = episode.targetObjGoalPos_;
+    envState.ee_pos = robotInstance.cachedGripperLinkMat_.translation();
+    envState.ee_rotation = Mn::Quaternion::fromMatrix(
+      robotInstance.cachedGripperLinkMat_.rotation());
+    // todo: do logical "or" over all substeps
+    envState.did_collide = robots_.collisionResults_[b];
+    // envState.obj_positions // this is updated incrementally
+    // envSTate.obj_rotations // this is updated incrementally
+    envState.held_obj_idx = robotInstance.grippedFreeObjectIndex_;
+    // did_grasp updated incrementally
+    // did_drop updated incrementally
   }
 
 #if 0 // reference code to visualize pythonEnvironmentState
@@ -441,6 +463,11 @@ void BatchedSimulator::updateGripping() {
 
     auto& env = bpsWrapper_->envs_[b];
     auto& robotInstance = robots_.robotInstances_[b];
+    auto& envState = safeVectorGet(pythonEnvStates_, b);
+
+    // this is wrong for the case of multiple substeps
+    envState.did_drop = false;
+    envState.did_grasp = false;
 
     if (shouldDrawDebugForEnv(config_, b, substep_)) {
 
@@ -505,6 +532,8 @@ void BatchedSimulator::updateGripping() {
         episodeInstance.movedFreeObjectIndexes_.push_back(grippedFreeObjectIndex);
 
         recentStats_.numGrips_++;
+
+        envState.did_grasp = true;
       }
 
       recentStats_.numGripAttempts_++;
@@ -554,6 +583,8 @@ void BatchedSimulator::updateGripping() {
       }
       robotInstance.grippedFreeObjectIndex_ = -1;
       robotInstance.doAttemptDrop_ = false;
+
+      envState.did_drop = true;
 
       recentStats_.numDrops_++;
     }
@@ -879,6 +910,7 @@ void BatchedSimulator::updateRenderInstances(bool forceUpdate) {
 
         auto& envState = safeVectorGet(pythonEnvStates_, b);
         safeVectorGet(envState.obj_positions, freeObjectIndex) = mat.translation();
+        safeVectorGet(envState.obj_rotations, freeObjectIndex) = Mn::Quaternion::fromMatrix(mat.rotation());
       }
     }
   }
@@ -939,7 +971,7 @@ Mn::Matrix4 BatchedSimulator::getHeldObjectTransform(int b) const {
   const auto& rotation = safeVectorGet(freeObject.startRotations_, startRotationIndex);
 
   Mn::Matrix4 linkToGripper = Mn::Matrix4::translation(robot_.gripperQueryOffset_);
-  Mn::Matrix4 toOrientedObject = Mn::Matrix4::from(rotation, Mn::Vector3(Mn::Math::ZeroInit));
+  Mn::Matrix4 toOrientedObject = Mn::Matrix4::from(rotation.toMatrix(), Mn::Vector3(Mn::Math::ZeroInit));
   // todo: offset to a few centimeters from the edge, instead of the center
   Mn::Matrix4 toObjectCenter = Mn::Matrix4::translation(-freeObject.aabb_.center());
 
@@ -1370,7 +1402,8 @@ void BatchedSimulator::resetEpisodeInstance(int b) {
   }
 
   auto& envState = safeVectorGet(pythonEnvStates_, b);
-  envState.obj_positions.resize(episode.numFreeObjectSpawns_);    
+  envState.obj_positions.resize(episode.numFreeObjectSpawns_); 
+  envState.obj_rotations.resize(episode.numFreeObjectSpawns_); 
 
   for (int freeObjectIndex = 0; freeObjectIndex < episode.numFreeObjectSpawns_; freeObjectIndex++) {
     spawnFreeObject(b, freeObjectIndex, /*reinsert*/false);
@@ -1387,7 +1420,6 @@ void BatchedSimulator::resetEpisodeInstance(int b) {
     float* jointPositions =
         &safeVectorGet(rollouts_.jointPositions_,currStorageStep_ * numEnvs * numPosVars);
 
-    constexpr float groundY = 0.f;
     positions[b] = episode.agentStartPos_;
     yaws[b] = episode.agentStartYaw_;
 
@@ -1413,7 +1445,39 @@ void BatchedSimulator::resetEpisodeInstance(int b) {
     robotInstance.doAttemptGrip_ = false;
   }
 
-  envState.episode_step_idx = 0;
+  {
+    // // curr episode
+    // int episode_idx = -1; // 0..len(episodes)-1
+    // int episode_step_idx = -1; // will be zero if this env was just reset
+    // int target_obj_idx = -1; // see obj_positions, obj_rotations
+    // // all positions/rotations are relative to the mesh, i.e. some arbitrary coordinate frame
+    // Magnum::Vector3 target_obj_start_pos;
+    // Magnum::Quaternion target_obj_start_rotation;
+    // Magnum::Vector3 robot_start_pos;
+    // Magnum::Quaternion robot_start_rotation;
+    // Magnum::Vector3 goal_pos;
+    // Magnum::Quaternion goal_rotation;
+
+    envState.episode_idx = episodeInstance.episodeIndex_;
+    envState.episode_step_idx = 0;
+    envState.target_obj_idx = episode.targetObjIndex_;
+    envState.goal_pos = episode.targetObjGoalPos_;
+    envState.goal_rotation = episode.targetObjGoalRotation_;
+    envState.robot_start_pos = groundPositionToVector3(episode.agentStartPos_);
+    envState.robot_start_rotation = yawToRotation(episode.agentStartYaw_);
+
+    const int freeObjectIndex = episode.targetObjIndex_;
+    const auto& freeObjectSpawn = safeVectorGet(episodeSet_.freeObjectSpawns_, 
+      episode.firstFreeObjectSpawnIndex_ + freeObjectIndex);
+    const auto& freeObject = safeVectorGet(episodeSet_.freeObjects_, freeObjectSpawn.freeObjIndex_);
+    const auto& rotation = safeVectorGet(freeObject.startRotations_, freeObjectSpawn.startRotationIndex_);
+
+    envState.target_obj_start_pos = freeObjectSpawn.startPos_;
+    envState.target_obj_start_rotation = rotation;
+
+    envState.did_drop = false;
+    envState.did_grasp = false;
+  }
 
   if (shouldAddColumnGridDebugVisualsForEnv(config_, b)) {
     debugRenderColumnGrids(b);
@@ -1518,7 +1582,7 @@ void BatchedSimulator::spawnFreeObject(int b, int freeObjectIndex, bool reinsert
   if (!reinsert) {
     // sloppy: this matrix gets created differently on episode reset
     Mn::Matrix4 mat = Mn::Matrix4::from(
-        rotation, freeObjectSpawn.startPos_);
+        rotation.toMatrix(), freeObjectSpawn.startPos_);
     glm::mat4x3 glMat = toGlmMat4x3(mat); 
     if (!disableFreeObjectVisualsForEnv(config_, b)) {
       int instanceId = env.addInstance(blueprint.meshIdx_, blueprint.mtrlIdx_, glMat);
@@ -1531,16 +1595,15 @@ void BatchedSimulator::spawnFreeObject(int b, int freeObjectIndex, bool reinsert
     }
   }
 
-  // temp sloppy convert to quat here
-  const auto rotationQuat = Mn::Quaternion::fromMatrix(rotation);
   if (!reinsert) {
     int16_t obsIndex = episodeInstance.colGrid_.insertObstacle(
-      freeObjectSpawn.startPos_, rotationQuat, &freeObject.aabb_);
+      freeObjectSpawn.startPos_, rotation, &freeObject.aabb_);
     BATCHED_SIM_ASSERT(obsIndex == freeObjectIndex);
     auto& envState = safeVectorGet(pythonEnvStates_, b);
     safeVectorGet(envState.obj_positions, freeObjectIndex) = freeObjectSpawn.startPos_;
+    safeVectorGet(envState.obj_rotations, freeObjectIndex) = rotation;
   } else {
-    reinsertFreeObject(b, freeObjectIndex, freeObjectSpawn.startPos_, rotationQuat);
+    reinsertFreeObject(b, freeObjectIndex, freeObjectSpawn.startPos_, rotation);
   }
 }
 
@@ -1579,6 +1642,8 @@ void BatchedSimulator::reinsertFreeObject(int b, int freeObjectIndex,
 
   auto& envState = safeVectorGet(pythonEnvStates_, b);
   safeVectorGet(envState.obj_positions, freeObjectIndex) = pos;
+  safeVectorGet(envState.obj_rotations, freeObjectIndex) = rotation;
+
 }
 
 void BatchedSimulator::initEpisodeSet() {
@@ -1591,7 +1656,7 @@ void BatchedSimulator::initEpisodeSet() {
 
     constexpr int numEpisodesToGenerate = 100; // arbitrary
     episodeSet_ = generateBenchmarkEpisodeSet(numEpisodesToGenerate, sceneMapping_, serializeCollection_);
-    episodeSet_.saveToFile("generated.episode_set.json");
+    episodeSet_.saveToFile("../data/generated.episode_set.json");
   } else {
     ESP_CHECK(!config_.episodeSetFilepath.empty(), 
       "For BatchedSimulatorConfig::doProceduralEpisodeSet==false, you must specify episodeSetFilepath");
@@ -1623,6 +1688,14 @@ void BatchedSimulator::setActionsResets(std::vector<float>&& actions, std::vecto
       actions_ = std::move(actions);
     } else {
       std::fill(actions_.begin(), actions_.end(), 0.f);
+    }
+  }
+
+  for (int b = 0; b < numEnvs; b++) {
+    // force zero actions on first step of episode
+    const auto& envState = safeVectorGet(pythonEnvStates_, b);
+    if (envState.episode_step_idx == 0) {
+      std::fill(&actions_[b * actionDim_], &actions_[(b + 1) * actionDim_], 0.f);
     }
   }
 

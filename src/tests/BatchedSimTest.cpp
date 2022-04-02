@@ -210,7 +210,8 @@ TEST_F(BatchedSimulatorTest, basic) {
       .numSubsteps = 1,
       .doPairedDebugEnvs = doPairedDebugEnvs,
       .doProceduralEpisodeSet = true,
-      //.episodeSetFilepath = "test.episode_set.json"
+      //.doProceduralEpisodeSet = false,
+      //.episodeSetFilepath = "generated.episode_set.json"
       };
   BatchedSimulator bsim(config);
 
@@ -260,7 +261,7 @@ TEST_F(BatchedSimulatorTest, basic) {
   if (doFreeCam || doTuneRobotCam) {
     std::cout << "Camera controls: press WASDQE/arrow keys to move/look, +/- to adjust speed, or ESC to quit." << std::endl;
   } else {
-    std::cout << "Robot controls: press WASD/arrow keys to move, E to grab/drop, +/- to adjust speed, or ESC to quit." << std::endl;
+    std::cout << "Robot controls: press WASD/arrow keys to move, G to grab/drop, +/- to adjust speed, or ESC to quit." << std::endl;
   }
 
   constexpr int actionDim = 18;

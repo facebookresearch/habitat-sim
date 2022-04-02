@@ -49,7 +49,7 @@ void addFreeObject(EpisodeSet& set, const std::string& name) {
   for (int i = 0; i < numRotationsAboutUpAxis; i++) {
     const auto angle = Mn::Deg((float)i * 360.f / numRotationsAboutUpAxis);
     const auto rotAboutUpAxis = Mn::Quaternion::rotation(angle, Mn::Vector3(0.f, 1.f, 0.f));
-    freeObj.startRotations_.push_back((rotAboutUpAxis * baseRot).toMatrix());
+    freeObj.startRotations_.push_back((rotAboutUpAxis * baseRot));
   }
 
   set.freeObjects_.emplace_back(std::move(freeObj));  
@@ -130,7 +130,7 @@ void addEpisode(EpisodeSet& set, const serialize::Collection& collection, int st
 
     const auto rotation = freeObject.startRotations_[spawn.startRotationIndex_];
     Mn::Matrix4 mat = Mn::Matrix4::from(
-        rotation, randomPos);
+        rotation.toMatrix(), randomPos);
 
     if (placementHelper.place(mat, freeObject)) {
       if (!spawnRange.contains(mat.translation())) {
@@ -140,6 +140,7 @@ void addEpisode(EpisodeSet& set, const serialize::Collection& collection, int st
 
       if (isGoalPositionAttempt) {
         episode.targetObjGoalPos_ = spawn.startPos_;
+        episode.targetObjGoalRotation_ = rotation;
         success = true;
         break;
       } else {
@@ -147,7 +148,7 @@ void addEpisode(EpisodeSet& set, const serialize::Collection& collection, int st
         episode.numFreeObjectSpawns_++;
 
         // add to colGrid so future spawns don't intersect this one
-        colGrid.insertObstacle(spawn.startPos_, Mn::Quaternion::fromMatrix(rotation), &freeObject.aabb_);
+        colGrid.insertObstacle(spawn.startPos_, rotation, &freeObject.aabb_);
       }
     }
   }
@@ -224,6 +225,12 @@ void updateFromSerializeCollection(EpisodeSet& set, const serialize::Collection&
     auto& freeObject = *it;
     freeObject.aabb_ = Mn::Range3D(serFreeObject.collisionBox.min, serFreeObject.collisionBox.max);
     freeObject.heldRotationIndex_ = serFreeObject.heldRotationIndex;
+    ESP_CHECK(freeObject.heldRotationIndex_ >= 0 
+      && freeObject.heldRotationIndex_ < freeObject.startRotations_.size(),
+      "updateFromSerializeCollection: heldRotationIndex " << serFreeObject.heldRotationIndex 
+      << " is out-of-range for FreeObject "
+      << freeObject.name_ << " with startRotations.size() == " << freeObject.startRotations_.size());
+
     freeObject.collisionSpheres_.clear();
     std::vector<serialize::Sphere> generatedSpheres;
     const std::vector<serialize::Sphere>* serializeCollisionSpheres = nullptr;
@@ -341,6 +348,9 @@ void postLoadFixup(EpisodeSet& set, const BpsSceneMapping& sceneMapping, const s
   for (auto& freeObj : set.freeObjects_) {
     freeObj.instanceBlueprint_ = sceneMapping.findInstanceBlueprint(freeObj.name_);
     freeObj.needsPostLoadFixup_ = false;    
+    for (const auto& rot : freeObj.startRotations_) {
+      ESP_CHECK(rot.isNormalized(), "postLoadFixup: FreeObject " << freeObj.name_ << " rotation " << rot << " isn't normalized");
+    }
   }
   
   set.allEpisodesAABB_ = Mn::Range3D(Mn::Math::ZeroInit);
@@ -384,8 +394,19 @@ void postLoadFixup(EpisodeSet& set, const BpsSceneMapping& sceneMapping, const s
   }
 
   set.maxFreeObjects_ = 0;
-  for (const auto& episode : set.episodes_) {
+  for (int i = 0; i < set.episodes_.size(); i++) {
+    const auto& episode = safeVectorGet(set.episodes_, i);
     set.maxFreeObjects_ = Mn::Math::max(set.maxFreeObjects_, (int32_t)episode.numFreeObjectSpawns_);
+
+    ESP_CHECK(episode.targetObjGoalRotation_.isNormalized(), 
+      "postLoadFixup: episode " << i << " targetObjGoalRotation " 
+      << episode.targetObjGoalRotation_ << " isn't normalized");
+    ESP_CHECK(episode.numFreeObjectSpawns_ > 0,
+      "postLoadFixup: episode " << i << " has invalid numFreeObjectSpawns_=" << episode.numFreeObjectSpawns_);
+    ESP_CHECK(episode.stageFixedObjIndex >= 0 && episode.stageFixedObjIndex < set.fixedObjects_.size(),
+      "postLoadFixup: episode " << i << " has invalid stageFixedObjIndex=" << episode.stageFixedObjIndex);
+    ESP_CHECK(episode.targetObjIndex_ >= 0 && episode.targetObjIndex_ < episode.numFreeObjectSpawns_,
+      "postLoadFixup: episode " << i << " has invalid targetObjIndex_=" << episode.targetObjIndex_);
   }
   set.needsPostLoadFixup_ = false;
 
@@ -400,6 +421,7 @@ bool fromJsonValue(const esp::io::JsonGenericValue& obj,
   esp::io::readMember(obj, "name", val.name_);
   // esp::io::readMember(obj, "aabb", val.aabb_);
   esp::io::readMember(obj, "startRotations", val.startRotations_);
+  ESP_CHECK(!val.startRotations_.empty(), "FreeObject " << val.name_ << " has empty startRotations");
   // esp::io::readMember(obj, "heldRotationIndex", val.heldRotationIndex_);
   // esp::io::readMember(obj, "collisionSpheres", val.collisionSpheres_);
 
@@ -485,6 +507,7 @@ bool fromJsonValue(const esp::io::JsonGenericValue& obj,
   esp::io::readMember(obj, "agentStartPos", val.agentStartPos_);
   esp::io::readMember(obj, "agentStartYaw", val.agentStartYaw_);
   esp::io::readMember(obj, "targetObjGoalPos", val.targetObjGoalPos_);
+  esp::io::readMember(obj, "targetObjGoalRotation", val.targetObjGoalRotation_);
 
   return true;
 }
@@ -499,6 +522,7 @@ esp::io::JsonGenericValue toJsonValue(const Episode& x,
   esp::io::addMember(obj, "agentStartPos", x.agentStartPos_, allocator);
   esp::io::addMember(obj, "agentStartYaw", x.agentStartYaw_, allocator);
   esp::io::addMember(obj, "targetObjGoalPos", x.targetObjGoalPos_, allocator);
+  esp::io::addMember(obj, "targetObjGoalRotation", x.targetObjGoalRotation_, allocator);
 
   return obj;
 }

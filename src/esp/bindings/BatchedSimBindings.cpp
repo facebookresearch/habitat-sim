@@ -51,16 +51,25 @@ void initBatchedSimBindings(py::module& m) {
   py::class_<PythonEnvironmentState, PythonEnvironmentState::ptr>(
       m, "EnvironmentState")
       .def(py::init(&PythonEnvironmentState::create<>))
-      .def_readwrite("target_obj_idx", &PythonEnvironmentState::target_obj_idx, R"(Todo)")
-      .def_readwrite("goal_pos", &PythonEnvironmentState::goal_pos, R"(Todo)")
       .def_readwrite("episode_idx", &PythonEnvironmentState::episode_idx, R"(Todo)")
       .def_readwrite("episode_step_idx", &PythonEnvironmentState::episode_step_idx, R"(Todo)")
-      .def_readwrite("robot_position", &PythonEnvironmentState::robot_position, R"(Todo)")
+      .def_readwrite("target_obj_idx", &PythonEnvironmentState::target_obj_idx, R"(Todo)")
+      .def_readwrite("target_obj_start_pos", &PythonEnvironmentState::target_obj_start_pos, R"(Todo)")
+      .def_readwrite("robot_start_pos", &PythonEnvironmentState::robot_start_pos, R"(Todo)")
+      .def_readwrite("robot_start_rotation", &PythonEnvironmentState::robot_start_rotation, R"(Todo)")
+      .def_readwrite("goal_pos", &PythonEnvironmentState::goal_pos, R"(Todo)")
+      .def_readwrite("goal_rotation", &PythonEnvironmentState::goal_rotation, R"(Todo)")
+      .def_readwrite("robot_pos", &PythonEnvironmentState::robot_pos, R"(Todo)")
+      .def_readwrite("robot_rotation", &PythonEnvironmentState::robot_rotation, R"(Todo)")
       .def_readwrite("robot_joint_positions", &PythonEnvironmentState::robot_joint_positions, R"(Todo)")
       .def_readwrite("ee_pos", &PythonEnvironmentState::ee_pos, R"(Todo)")
+      .def_readwrite("ee_rotation", &PythonEnvironmentState::ee_rotation, R"(Todo)")
       .def_readwrite("did_collide", &PythonEnvironmentState::did_collide, R"(Todo)")
-      .def_readwrite("obj_positions", &PythonEnvironmentState::obj_positions, R"(Todo)");
-
+      .def_readwrite("held_obj_idx", &PythonEnvironmentState::held_obj_idx, R"(Todo)")
+      .def_readwrite("did_grasp", &PythonEnvironmentState::did_grasp, R"(Todo)")
+      .def_readwrite("did_drop", &PythonEnvironmentState::did_drop, R"(Todo)")
+      .def_readwrite("obj_positions", &PythonEnvironmentState::obj_positions, R"(Todo)")
+      .def_readwrite("obj_rotations", &PythonEnvironmentState::obj_rotations, R"(Todo)");
 
   py::class_<BatchedSimulator, BatchedSimulator::ptr>(m, "BatchedSimulator")
       .def(py::init(&BatchedSimulator::create<const BatchedSimulatorConfig&>))

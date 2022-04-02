@@ -5,6 +5,7 @@
 #include "BpsSceneMapping.h"
 
 #include "esp/io/json.h"
+#include "esp/core/Check.h"
 
 namespace esp {
 namespace batched_sim {
@@ -31,13 +32,19 @@ bool fromJsonValue(const esp::io::JsonGenericValue& obj, BpsSceneMapping& x) {
 BpsSceneMapping::InstanceBlueprint BpsSceneMapping::findInstanceBlueprint(
     const std::string& nodeName) const {
   
-  for (const auto& meshMapping : meshMappings) {
+  ESP_CHECK(!nodeName.empty(), "findInstanceBlueprint: empty input name. Check your episode data."); 
 
+  for (const auto& meshMapping : meshMappings) {
     if (meshMapping.name == nodeName) {
       constexpr float scale = 1.f;
       return InstanceBlueprint{meshMapping.meshIdx, meshMapping.mtrlIdx};
     }
   }
+
+  ESP_CHECK(false, "findInstanceBlueprint: no mapping found for render asset "
+    << nodeName << ". For every free object and stage, we expect to find a "
+    << "corresponding render asset with the same name. See meshMappings names in your "
+    << ".bps.mapping.json file for valid render asset names.");
 
   CORRADE_INTERNAL_ASSERT_UNREACHABLE();
 }

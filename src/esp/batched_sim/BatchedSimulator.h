@@ -49,17 +49,32 @@ struct BatchedSimulatorConfig {
 
 struct PythonEnvironmentState {
   // curr episode
-  int episode_idx = -1;
-  int episode_step_idx = -1; // will be zero if just reset
-  int target_obj_idx = -1;
+  int episode_idx = -1; // 0..len(episodes)-1
+  int episode_step_idx = -1; // will be zero if this env was just reset
+  int target_obj_idx = -1; // see obj_positions, obj_rotations
+  // all positions/rotations are relative to the mesh, i.e. some arbitrary coordinate frame
+  Magnum::Vector3 target_obj_start_pos;
+  Magnum::Quaternion target_obj_start_rotation;
+  Magnum::Vector3 robot_start_pos;
+  Magnum::Quaternion robot_start_rotation;
   Magnum::Vector3 goal_pos;
+  Magnum::Quaternion goal_rotation;
+
   // robot state
-  Magnum::Vector3 robot_position;
+  Magnum::Vector3 robot_pos;
+  Magnum::Quaternion robot_rotation;
   std::vector<float> robot_joint_positions;
   Magnum::Vector3 ee_pos;
+  Magnum::Quaternion ee_rotation;
   bool did_collide = false;
+  int held_obj_idx = -1;
+  bool did_grasp = false;
+  bool did_drop = false;
+
   // other env state
   std::vector<Magnum::Vector3> obj_positions;
+  std::vector<Magnum::Quaternion> obj_rotations;
+
   ESP_SMART_POINTERS(PythonEnvironmentState);
 };
 
