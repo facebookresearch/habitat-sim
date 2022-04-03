@@ -93,6 +93,14 @@ PYBIND11_MODULE(habitat_sim_bindings, m) {
       false;
 #endif
 
+  // todo: base this on CMake build_type instead of NDEBUG
+  m.attr("build_type") =
+#ifdef NDEBUG
+      "release";
+#else
+      "debug";
+#endif
+
   /* This function pointer is used by ESP_CHECK(). If it's null, it
      std::abort()s, if not, it calls it to cause a Python AssertionError */
   esp::core::throwInPython = [](const char* const message) {

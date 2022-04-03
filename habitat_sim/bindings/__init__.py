@@ -39,6 +39,7 @@ from habitat_sim._ext.habitat_sim_bindings import (
     SimulatorConfiguration,
     VisualSensorSpec,
     built_with_bullet,
+    build_type,
     cuda_enabled,
     vhacd_enabled,
 )
