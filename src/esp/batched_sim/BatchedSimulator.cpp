@@ -116,6 +116,22 @@ constexpr bool disableStageVisualsForEnv(const BatchedSimulatorConfig&, int) {
 }
 #endif
 
+void checkActionMap(const ActionMap& actionMap, int numRobotJointDegrees) {
+  ESP_CHECK(actionMap.numActions > 0, "checkActionMap: numActions must be > 0");
+  ESP_CHECK(actionMap.baseMove >= 0 && actionMap.baseMove < actionMap.numActions, 
+    "checkActionMap: invalid baseMove=" << actionMap.baseMove);
+  ESP_CHECK(actionMap.baseRotate >= 0 && actionMap.baseRotate < actionMap.numActions, 
+    "checkActionMap: invalid baseRotate=" << actionMap.baseRotate);
+  for (const auto& pair : actionMap.actionJointDegreePairs) {
+    int actionIdx = pair.first;
+    int jointIdx = pair.second;
+    ESP_CHECK(actionIdx >= 0 && actionIdx < actionMap.numActions, 
+      "checkActionMap: invalid actionToJoint pair.first=" << pair.first);
+    ESP_CHECK(jointIdx >= 0 && jointIdx < numRobotJointDegrees, 
+      "checkActionMap: invalid actionToJoint pair.second=" << pair.second 
+      << " for robot with " << numRobotJointDegrees << " joint degrees of freedom");
+  }
+}
 
 }  // namespace
 
@@ -312,8 +328,9 @@ void BatchedSimulator::updateLinkTransforms(int currRolloutSubstep, bool updateF
           // compute collision sphere transforms
           for (const auto& localSphereIdx : robots_.robot_->collisionSpheresByNode_[nodeIndex]) {
             const auto& sphere = safeVectorGet(robots_.robot_->collisionSpheres_, localSphereIdx);
-            robots_.collisionSphereWorldOrigins_[baseSphereIndex + localSphereIdx] = 
-              mat.transformPoint(sphere.origin);
+            auto& worldSphere = robots_.collisionSphereWorldOrigins_[baseSphereIndex + localSphereIdx];
+            worldSphere = mat.transformPoint(sphere.origin);
+            BATCHED_SIM_ASSERT(!std::isnan(worldSphere.x()));
           }
         }
 
@@ -1214,11 +1231,8 @@ BatchedSimulator::BatchedSimulator(const BatchedSimulatorConfig& config) {
 
   robots_ = RobotInstanceSet(&robot_, &config_, &bpsWrapper_->envs_, &rollouts_);
 
-  // see also python/rl/agent.py
-  const int numOtherActions = 1; // doAttemptGrip/doAttemptDrop
-  const int numJointDegrees = robot_.numPosVars;
-  const int numBaseDegrees = 2;  // rotate and move-forward/back
-  actionDim_ = numOtherActions + numJointDegrees + numBaseDegrees;
+  checkActionMap(config_.actionMap, robot_.numPosVars);
+  actionDim_ = config_.actionMap.numActions;
 
   int batchNumActions = (actionDim_) * numEnvs;
   actions_.resize(batchNumActions, 0.f);
@@ -1814,8 +1828,6 @@ void BatchedSimulator::substepPhysics() {
 
   auto& robots = robots_;
 
-  int actionIndex = 0;
-
   const float* prevYaws = &rollouts_.yaws_[prevStorageStep_ * numEnvs];
   float* yaws = &rollouts_.yaws_[currStorageStep_ * numEnvs];
   const Mn::Vector2* prevPositions =
@@ -1835,12 +1847,16 @@ void BatchedSimulator::substepPhysics() {
     // remaining substeps (not until the action changes on the next step)
 
     if (isEnvResetting(b)) {
-      actionIndex += actionDim_;
       continue;
     }
 
+    const int baseActionIndex = b * actionDim_;
+
+    const float baseMoveAction = actions_[baseActionIndex + config_.actionMap.baseMove];
+    const float baseRotateAction = actions_[baseActionIndex + config_.actionMap.baseRotate];
+    const float grabDropAction  = actions_[baseActionIndex + config_.actionMap.graspRelease];
+
     auto& robotInstance = robots_.robotInstances_[b];
-    const float grabDropAction = actions_[actionIndex++];
 
     // sticky grip behavior
     if (robotInstance.grippedFreeObjectIndex_ == -1) {
@@ -1853,27 +1869,35 @@ void BatchedSimulator::substepPhysics() {
       robotInstance.doAttemptDrop_ = (grabDropAction < -stickyGrabDropThreshold);
     }
 
-    const float clampedBaseYawAction = Mn::Math::clamp(actions_[actionIndex++], -maxAbsYawAngle, maxAbsYawAngle);
+    const float clampedBaseYawAction = Mn::Math::clamp(baseRotateAction, -maxAbsYawAngle, maxAbsYawAngle);
     yaws[b] = prevYaws[b] + clampedBaseYawAction; // todo: wrap angle to 360 degrees
-    float clampedBaseMovementAction = Mn::Math::clamp(actions_[actionIndex++], minBaseMovement, maxBaseMovement);
+    float clampedBaseMovementAction = Mn::Math::clamp(baseMoveAction, minBaseMovement, maxBaseMovement);
     positions[b] =
         prevPositions[b] + 
         Mn::Vector2(Mn::Math::cos(Mn::Math::Rad(yaws[b])), -Mn::Math::sin(Mn::Math::Rad(yaws[b]))) 
         * clampedBaseMovementAction;
 
+    // sloppy: copy over all jointPositions, then process actionJointDegreePairs
     int baseJointIndex = b * robot_.numPosVars;
     for (int j = 0; j < robot_.numPosVars; j++) {
       auto& pos = jointPositions[baseJointIndex + j];
       const auto& prevPos = prevJointPositions[baseJointIndex + j];
-      const float clampedJointMovementAction = Mn::Math::clamp(actions_[actionIndex++], 
+      pos = prevPos;
+    }
+
+    for (const auto& pair : config_.actionMap.actionJointDegreePairs) {
+      int j = pair.second;
+      const float jointMovementAction = actions_[baseActionIndex + pair.first];
+      BATCHED_SIM_ASSERT(j >= 0 && j < robot_.numPosVars);
+      auto& pos = jointPositions[baseJointIndex + j];
+      const auto& prevPos = prevJointPositions[baseJointIndex + j];
+      const float clampedJointMovementAction = Mn::Math::clamp(jointMovementAction, 
         -maxAbsJointAngle, maxAbsJointAngle);
       pos = prevPos + clampedJointMovementAction;
       pos = Mn::Math::clamp(pos, robot_.jointPositionLimits.first[j],
                             robot_.jointPositionLimits.second[j]);
-
     }
   }
-  BATCHED_SIM_ASSERT(actionIndex == actions_.size());
 
   updateLinkTransforms(currStorageStep_, /*updateforPhysics*/ true, /*updateForRender*/ false, /*includeResettingEnvs*/false);
 

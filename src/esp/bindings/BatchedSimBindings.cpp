@@ -34,6 +34,14 @@ void initBatchedSimBindings(py::module& m) {
       .def_readwrite("height", &CameraSensorConfig::height, R"(Todo)")
       .def_readwrite("hfov", &CameraSensorConfig::hfov, R"(Todo)");
 
+  py::class_<ActionMap, ActionMap::ptr>(m, "ActionMap")
+      .def(py::init(&ActionMap::create<>))
+      .def_readwrite("num_actions", &ActionMap::numActions, R"(Todo)")
+      .def_readwrite("base_move", &ActionMap::baseMove, R"(Todo)")
+      .def_readwrite("base_rotate", &ActionMap::baseRotate, R"(Todo)")
+      .def_readwrite("grasp_release", &ActionMap::graspRelease, R"(Todo)")
+      .def_readwrite("action_joint_degree_pairs", &ActionMap::actionJointDegreePairs, R"(Todo)");
+
   py::class_<BatchedSimulatorConfig, BatchedSimulatorConfig::ptr>(
       m, "BatchedSimulatorConfig")
       .def(py::init(&BatchedSimulatorConfig::create<>))
@@ -46,7 +54,8 @@ void initBatchedSimBindings(py::module& m) {
       .def_readwrite("do_async_physics_step", &BatchedSimulatorConfig::doAsyncPhysicsStep, R"(Todo)")
       .def_readwrite("num_physics_substeps", &BatchedSimulatorConfig::numSubsteps, R"(Todo)")
       .def_readwrite("do_procedural_episode_set", &BatchedSimulatorConfig::doProceduralEpisodeSet, R"(Todo)")
-      .def_readwrite("episode_set_filepath", &BatchedSimulatorConfig::episodeSetFilepath, R"(Todo)");
+      .def_readwrite("episode_set_filepath", &BatchedSimulatorConfig::episodeSetFilepath, R"(Todo)")
+      .def_readwrite("action_map", &BatchedSimulatorConfig::actionMap, R"(Todo)");
     
   py::class_<PythonEnvironmentState, PythonEnvironmentState::ptr>(
       m, "EnvironmentState")

@@ -181,6 +181,21 @@ int key_press() { // not working: ¹ (251), num lock (-144), caps lock (-20), wi
     }
 }
 
+ActionMap createActionMap() {
+  ActionMap map;
+  map.graspRelease = 0;
+  map.baseRotate = 1;
+  map.baseMove = 2;
+  const int numJointDegrees = 15;
+  for (int i = 0; i < numJointDegrees; i++) {
+    map.actionJointDegreePairs.push_back(std::make_pair(i + 3, i));
+  }
+
+  map.numActions = 18;
+
+  return map;
+}
+
 }  // namespace
 
 class BatchedSimulatorTest : public ::testing::Test {};
@@ -211,7 +226,8 @@ TEST_F(BatchedSimulatorTest, basic) {
       .doPairedDebugEnvs = doPairedDebugEnvs,
       .doProceduralEpisodeSet = true,
       //.doProceduralEpisodeSet = false,
-      //.episodeSetFilepath = "generated.episode_set.json"
+      //.episodeSetFilepath = "generated.episode_set.json",
+      .actionMap = createActionMap()
       };
   BatchedSimulator bsim(config);
 
@@ -264,7 +280,7 @@ TEST_F(BatchedSimulatorTest, basic) {
     std::cout << "Robot controls: press WASD/arrow keys to move, G to grab/drop, +/- to adjust speed, or ESC to quit." << std::endl;
   }
 
-  constexpr int actionDim = 18;
+  const int actionDim = config.actionMap.numActions;
   std::vector<float> actions(actionDim * config.numEnvs, 0.f);
   if (doFreeCam) {
     for (int b = 0; b < config.numEnvs; b++) {
@@ -415,9 +431,9 @@ TEST_F(BatchedSimulatorTest, basic) {
           actionsForEnv[j] = 0.f;
         }
 
-        actionsForEnv[0] = doHold ? 1.f : -1.f;
-        actionsForEnv[1] = baseYaw * moveSpeed;
-        actionsForEnv[2] = baseForward * moveSpeed;
+        actionsForEnv[config.actionMap.graspRelease] = doHold ? 1.f : -1.f;
+        actionsForEnv[config.actionMap.baseRotate] = baseYaw * moveSpeed;
+        actionsForEnv[config.actionMap.baseMove] = baseForward * moveSpeed;
 
         // 2 is torso up/down
         // 7 shoulder, + is down
