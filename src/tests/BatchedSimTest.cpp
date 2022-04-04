@@ -298,8 +298,6 @@ TEST_F(BatchedSimulatorTest, basic) {
 
     if (doOverlapPhysics) {
       bsim.startRender();
-      // make a copy of envStates
-      envStates = bsim.getEnvironmentStates();
       if (doAdvanceSim) {
         bsim.startStepPhysicsOrReset(std::vector<float>(actions), std::vector<int>(resets));
         doAdvanceSim = false;
@@ -313,10 +311,11 @@ TEST_F(BatchedSimulatorTest, basic) {
         doAdvanceSim = false;
       }
       bsim.startRender();
-      // make a copy of envStates
-      envStates = bsim.getEnvironmentStates();       
       bsim.waitRender();
     }
+
+    // make a copy of envStates
+    envStates = bsim.getEnvironmentStates();
 
     uint8_t* base_color_ptr = bsim.getBpsRenderer().getColorPointer();
     float* base_depth_ptr = bsim.getBpsRenderer().getDepthPointer();
@@ -351,7 +350,7 @@ TEST_F(BatchedSimulatorTest, basic) {
     
     if (!(doFreeCam || doTuneRobotCam)) {
       
-      static bool doHold = false;
+      bool doGrapRelease = false;
       float targetUpDown = 0.f;
       float targetLeftRight = 0.f;
       float baseYaw = 0.f;
@@ -391,7 +390,7 @@ TEST_F(BatchedSimulatorTest, basic) {
       } else if (key == '-') {
         moveSpeed = moveSpeed * 0.5f;
       } else if (key == 'g') {
-        doHold = !doHold;
+        doGrapRelease = true;
       } else if (key == 'c') {
         doTuneRobotCam = !doTuneRobotCam;
       } else if (key == -116) {  // F5
@@ -407,10 +406,18 @@ TEST_F(BatchedSimulatorTest, basic) {
           actionsForEnv[j] = 0.f;
         }
 
+        const auto& envState = envStates[b];
+
         constexpr float eps = 0.01;
-        actionsForEnv[actionMap.graspRelease.actionIdx] = doHold 
-          ? actionMap.graspRelease.thresholds[1] + eps
-          : actionMap.graspRelease.thresholds[0] - eps;
+        if (doGrapRelease) {
+          bool isHolding = (envState.held_obj_idx != -1);
+          actionsForEnv[actionMap.graspRelease.actionIdx] = !isHolding 
+            ? actionMap.graspRelease.thresholds[1] + eps
+            : actionMap.graspRelease.thresholds[0] - eps;
+        } else {
+          // do nothing
+          actionsForEnv[actionMap.graspRelease.actionIdx] = actionMap.graspRelease.thresholds[0] + eps;
+        }
         actionsForEnv[actionMap.baseRotate.actionIdx] = baseYaw * moveSpeed;
         actionsForEnv[actionMap.baseMove.actionIdx] = baseForward * moveSpeed;
 
@@ -422,13 +429,17 @@ TEST_F(BatchedSimulatorTest, basic) {
             : -jointPlusMinus * jointActionSetup.second.stepMin * moveSpeed;
         }
 
+        // 0-1 I don't know these
         // 2 is torso up/down
+        // 3-6 I don't know these
         // 7 shoulder, + is down
-        // 8 twist, + is twist to right
+        // 8 shoulder twist, + is twist to right
         // 9 elbow, + is down
         // 10 elbow twist, + is twst to right
         // 11 wrist, + is down
-        // 12 wrist twise, + is right
+        // 12 wrist twist, + is right
+        // 13 gripper finger 1
+        // 14 gripper finger 2
         //actionsForEnv[3 + 8] = -targetLeftRight * rotSpeed;
         // actionsForEnv[3 + 2] = baseUpDown * moveSpeed;
         // actionsForEnv[3 + 11] = -targetUpDown * moveSpeed;
@@ -507,10 +518,10 @@ TEST_F(BatchedSimulatorTest, basic) {
     }
 
     #if 1
-    // temp end episode on collision
     for (int b = 0; b < config.numEnvs; b++) {
-      int resetPeriodForEnv = b + 1;
-      if (envStates[b].did_collide || doReloadAll) {
+      // end episode on collision?
+      if (/*envStates[b].did_collide */ false
+          || doReloadAll) {
         resets[b] = getNextEpisode();
       } else {
         resets[b] = -1;

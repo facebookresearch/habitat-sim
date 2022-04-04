@@ -513,10 +513,7 @@ void BatchedSimulator::updateGripping() {
     }
 
     if (robotInstance.doAttemptGrip_) {
-      // sloppy: doing this gripping logic here since it's the only time we have access to
-      // the link transform as a Matrix4.
 
-      // todo: assert this is valid
       BATCHED_SIM_ASSERT(robotInstance.grippedFreeObjectIndex_ == -1);
       const auto& gripperMat = robotInstance.cachedGripperLinkMat_;
       auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
@@ -526,14 +523,63 @@ void BatchedSimulator::updateGripping() {
       int grippedFreeObjectIndex = episodeInstance.colGrid_.contactTest(
         gripperQueryWorldOrigin, gripperQueryRadius);
       if (grippedFreeObjectIndex != -1) {
+
+        // store copy of obstacle in case we need to reinsert on failed grab
+        const auto obsCopy = episodeInstance.colGrid_.getObstacle(grippedFreeObjectIndex);
+
+        // remove object before doing collision test
+        // perf todo: only do this after we pass the columnGridSet collision test below
         removeFreeObjectFromCollisionGrid(b, grippedFreeObjectIndex);
         robotInstance.grippedFreeObjectIndex_ = grippedFreeObjectIndex;
+
+        // check if object will be collision-free in gripper
+        bool hit = false;
+        {
+          // sloppy: code copy-pasted from updateCollision()
+
+          const auto& episode = safeVectorGet(episodeSet_.episodes_, episodeInstance.episodeIndex_);
+          const auto& stageFixedObject = safeVectorGet(episodeSet_.fixedObjects_, episode.stageFixedObjIndex);
+          const auto& columnGridSet = stageFixedObject.columnGridSet_;
+
+          // note we must assign this now so that getHeldObjectTransform works
+          robotInstance.grippedFreeObjectIndex_ = grippedFreeObjectIndex;
+
+          ColumnGridSource::QueryCacheValue grippedObjectQueryCache = 0;
+          auto mat = getHeldObjectTransform(b);
+          const auto& freeObjectSpawn = safeVectorGet(episodeSet_.freeObjectSpawns_, 
+            episode.firstFreeObjectSpawnIndex_ + robotInstance.grippedFreeObjectIndex_);
+          const auto& freeObject = safeVectorGet(episodeSet_.freeObjects_, freeObjectSpawn.freeObjIndex_);
+          for (const auto& sphere : freeObject.collisionSpheres_) {
+            const auto& sphereLocalOrigin = sphere.origin;
+            auto sphereWorldOrigin = mat.transformPoint(sphereLocalOrigin);
+            bool thisSphereHit = columnGridSet.contactTest(sphere.radiusIdx, sphereWorldOrigin, &grippedObjectQueryCache);
+            // todo: proper debug-drawing of hits for held object spheres
+            if (thisSphereHit) {
+              hit = true;
+              break;
+            }
+
+            const auto sphereRadius = getCollisionRadius(serializeCollection_, sphere.radiusIdx);
+            int hitFreeObjectIndex = episodeInstance.colGrid_.contactTest(sphereWorldOrigin, sphereRadius);
+            if (hitFreeObjectIndex != -1) {
+              hit = true;
+              break;
+            }
+          }
+        }
+
+        if (!hit) {
+          recentStats_.numGrips_++;
+          envState.did_grasp = true;
+        } else {
+          // reinsert at old pose
+          reinsertFreeObject(b, grippedFreeObjectIndex, obsCopy.pos,
+            obsCopy.invRotation.invertedNormalized());
+          robotInstance.grippedFreeObjectIndex_ = -1;  // undo assignment
+        }
+
         robotInstance.doAttemptGrip_ = false;
-        episodeInstance.movedFreeObjectIndexes_.push_back(grippedFreeObjectIndex);
 
-        recentStats_.numGrips_++;
-
-        envState.did_grasp = true;
       }
 
       recentStats_.numGripAttempts_++;
@@ -2093,7 +2139,9 @@ void BatchedSimulator::signalKillPhysicsThread() {
 
 const std::vector<PythonEnvironmentState>& BatchedSimulator::getEnvironmentStates() const {
   ESP_CHECK(!isPhysicsThreadActive(), "Don't call getEnvironmentStates during async physics step");
-  ESP_CHECK(isRenderStarted_, "For best runtime perf, call getEnvironmentStates *after* startRender");  
+#ifdef NDEBUG
+  ESP_CHECK(isRenderStarted_, "For best runtime perf, call getEnvironmentStates *after* startRender");
+#endif
   return pythonEnvStates_;  
 }
 
