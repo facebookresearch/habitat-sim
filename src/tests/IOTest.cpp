@@ -328,6 +328,12 @@ TEST(IOTest, JsonStlTypesTest) {
   EXPECT_TRUE(readMember(d, "s", s2));
   EXPECT_EQ(s2, s);
 
+  std::pair<float, std::string> pair(1.5f, "second");
+  addMember(d, "pair", pair, allocator);
+  std::pair<float, std::string> pair2;
+  EXPECT_TRUE(readMember(d, "pair", pair2));
+  EXPECT_EQ(pair2, pair);
+
   // test a vector of ints
   std::vector<int> vec{3, 4, 5, 6};
   addMember(d, "vec", vec, allocator);
