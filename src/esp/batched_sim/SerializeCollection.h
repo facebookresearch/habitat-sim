@@ -39,6 +39,25 @@ struct FreeObject {
   std::string generateCollisionSpheresTechnique = ""; // "uprightCylinder", "box"
 };
 
+struct ContinuousActionSetup {
+  int actionIdx = -1;
+  float stepMin = -1.f;
+  float stepMax = 1.f;
+};
+
+struct DiscreteActionSetup {
+  int actionIdx = -1;
+  std::vector<float> thresholds;
+};
+
+struct ActionMap {
+  int numActions = -1;
+  ContinuousActionSetup baseMove;
+  ContinuousActionSetup baseRotate;
+  DiscreteActionSetup graspRelease;
+  std::vector<std::pair<int,ContinuousActionSetup>> joints;
+};
+
 struct RobotGripper {
   std::string attachLinkName;
   Magnum::Vector3 offset{Magnum::Math::ZeroInit};
@@ -52,8 +71,10 @@ struct RobotLink {
 
 struct Robot {
   std::string urdfFilepath;
+  std::vector<float> startJointPositions;
   RobotGripper gripper;
-  std::vector<RobotLink> links;  
+  std::vector<RobotLink> links;
+  ActionMap actionMap;
 };
 
 struct Collection {

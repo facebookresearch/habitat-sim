@@ -116,23 +116,6 @@ constexpr bool disableStageVisualsForEnv(const BatchedSimulatorConfig&, int) {
 }
 #endif
 
-void checkActionMap(const ActionMap& actionMap, int numRobotJointDegrees) {
-  ESP_CHECK(actionMap.numActions > 0, "checkActionMap: numActions must be > 0");
-  ESP_CHECK(actionMap.baseMove >= 0 && actionMap.baseMove < actionMap.numActions, 
-    "checkActionMap: invalid baseMove=" << actionMap.baseMove);
-  ESP_CHECK(actionMap.baseRotate >= 0 && actionMap.baseRotate < actionMap.numActions, 
-    "checkActionMap: invalid baseRotate=" << actionMap.baseRotate);
-  for (const auto& pair : actionMap.actionJointDegreePairs) {
-    int actionIdx = pair.first;
-    int jointIdx = pair.second;
-    ESP_CHECK(actionIdx >= 0 && actionIdx < actionMap.numActions, 
-      "checkActionMap: invalid actionToJoint pair.first=" << pair.first);
-    ESP_CHECK(jointIdx >= 0 && jointIdx < numRobotJointDegrees, 
-      "checkActionMap: invalid actionToJoint pair.second=" << pair.second 
-      << " for robot with " << numRobotJointDegrees << " joint degrees of freedom");
-  }
-}
-
 }  // namespace
 
 
@@ -1057,11 +1040,34 @@ Robot::Robot(const serialize::Collection& serializeCollection, esp::sim::Simulat
 
 void Robot::updateFromSerializeCollection(const serialize::Collection& serializeCollection) {
 
+  ESP_CHECK(serializeCollection.robots.size() == 1, "updateFromSerializeCollection: expected 1 robot");
+
   const auto& serializeRobot = serializeCollection.robots.front();
 
   ESP_CHECK(linkIndexByName_.count(serializeRobot.gripper.attachLinkName), 
-    "gripper attach link " << serializeRobot.gripper.attachLinkName 
-    << " from collection.json not found in robot URDF");
+    "updateFromSerializeCollection: gripper attach link " << serializeRobot.gripper.attachLinkName 
+    << " not found in robot URDF");
+
+  ESP_CHECK(serializeRobot.startJointPositions.size() == numPosVars,
+    "updateFromSerializeCollection: expected " << numPosVars << " joint positions");
+
+  const auto& serActionMap = serializeRobot.actionMap;
+  ESP_CHECK(serActionMap.numActions >= 3, "updateFromSerializeCollection: expected numActions >= 3");
+  ESP_CHECK(serActionMap.graspRelease.thresholds.size() == 2, 
+    "updateFromSerializeCollection: for graspRelease, expected 2 thresholds");
+  ESP_CHECK(serActionMap.baseMove.actionIdx >= 0 && serActionMap.baseMove.actionIdx < serActionMap.numActions,
+    "updateFromSerializeCollection: invalid baseMove actionIdx=" << serActionMap.baseMove.actionIdx);
+  ESP_CHECK(serActionMap.baseMove.actionIdx >= 0 && serActionMap.baseMove.actionIdx < serActionMap.numActions,
+    "updateFromSerializeCollection: invalid baseRotate actionIdx=" << serActionMap.baseRotate.actionIdx);
+  ESP_CHECK(serActionMap.baseMove.actionIdx >= 0 && serActionMap.baseMove.actionIdx < serActionMap.numActions,
+    "updateFromSerializeCollection: invalid graspRelease actionIdx=" << serActionMap.graspRelease.actionIdx);
+  for (const auto& pair : serActionMap.joints) {
+    ESP_CHECK(pair.first >= 0 && pair.first < numPosVars,
+      "updateFromSerializeCollection: invalid actionMap joint index=" << pair.first
+      << " for robot with " << numPosVars << " degrees of freedom");
+    ESP_CHECK(pair.second.actionIdx >= 0 && pair.second.actionIdx < serActionMap.numActions,
+      "updateFromSerializeCollection: invalid joint actionIdx=" << pair.second.actionIdx);
+  }
 
   gripperLink_ = linkIndexByName_.at(serializeRobot.gripper.attachLinkName);
   gripperQueryOffset_ = serializeRobot.gripper.offset;
@@ -1231,8 +1237,7 @@ BatchedSimulator::BatchedSimulator(const BatchedSimulatorConfig& config) {
 
   robots_ = RobotInstanceSet(&robot_, &config_, &bpsWrapper_->envs_, &rollouts_);
 
-  checkActionMap(config_.actionMap, robot_.numPosVars);
-  actionDim_ = config_.actionMap.numActions;
+  actionDim_ = getNumActions();
 
   int batchNumActions = (actionDim_) * numEnvs;
   actions_.resize(batchNumActions, 0.f);
@@ -1283,6 +1288,11 @@ BatchedSimulator::~BatchedSimulator() {
 
 int BatchedSimulator::getNumEpisodes() const {
   return episodeSet_.episodes_.size();
+}
+
+int BatchedSimulator::getNumActions() const {
+  BATCHED_SIM_ASSERT(!serializeCollection_.robots.empty());
+  return serializeCollection_.robots[0].actionMap.numActions;
 }
 
 
@@ -1439,7 +1449,7 @@ void BatchedSimulator::resetEpisodeInstance(int b) {
 
     for (int j = 0; j < robot_.numPosVars; j++) {
       auto& pos = jointPositions[b * robot_.numPosVars + j];
-      pos = 0.f;
+      pos = serializeCollection_.robots[0].startJointPositions[j];
       pos = Mn::Math::clamp(pos, robot_.jointPositionLimits.first[j],
                             robot_.jointPositionLimits.second[j]);
     }
@@ -1449,7 +1459,7 @@ void BatchedSimulator::resetEpisodeInstance(int b) {
     // 9 elbow, + is down
     // 10 elbow twist, + is twst to right
     // 11 wrist, + is down
-    jointPositions[b * robot_.numPosVars + 9] = float(Mn::Rad(Mn::Deg(90.f)));
+    //jointPositions[b * robot_.numPosVars + 9] = float(Mn::Rad(Mn::Deg(90.f)));
 
     // assume robot is not in collision on reset
     robots_.collisionResults_[b] = false;
@@ -1813,12 +1823,6 @@ void BatchedSimulator::substepPhysics() {
   ProfilingScope scope("substep");
   BATCHED_SIM_ASSERT(isOkToStep_);
 
-  constexpr float stickyGrabDropThreshold = 0.85f;
-  constexpr float minBaseMovement = -0.05f;
-  constexpr float maxBaseMovement = 0.1f;
-  // beware not all joints are angular
-  constexpr float maxAbsYawAngle = float(Mn::Rad(Mn::Deg(5.f)));
-  constexpr float maxAbsJointAngle = float(Mn::Rad(Mn::Deg(5.f)));
 
   prevStorageStep_ = currStorageStep_;
   currStorageStep_ = (currStorageStep_ + 1) % maxStorageSteps_;
@@ -1851,27 +1855,35 @@ void BatchedSimulator::substepPhysics() {
     }
 
     const int baseActionIndex = b * actionDim_;
+    const auto& actionMap = serializeCollection_.robots[0].actionMap;
 
-    const float baseMoveAction = actions_[baseActionIndex + config_.actionMap.baseMove];
-    const float baseRotateAction = actions_[baseActionIndex + config_.actionMap.baseRotate];
-    const float grabDropAction  = actions_[baseActionIndex + config_.actionMap.graspRelease];
+    const auto& baseMoveSetup = actionMap.baseMove;
+    const auto& baseRotateSetup = actionMap.baseRotate;
+    const auto& graspReleaseSetup = actionMap.graspRelease;
+
+    const float baseMoveAction = actions_[baseActionIndex + baseMoveSetup.actionIdx];
+    const float baseRotateAction = actions_[baseActionIndex + baseRotateSetup.actionIdx];
+    const float graspReleaseAction  = actions_[baseActionIndex + graspReleaseSetup.actionIdx];
 
     auto& robotInstance = robots_.robotInstances_[b];
 
-    // sticky grip behavior
+    // sticky grasp/release behavior
+    BATCHED_SIM_ASSERT(graspReleaseSetup.thresholds.size() == 2);
+    BATCHED_SIM_ASSERT(graspReleaseSetup.thresholds[0] <= graspReleaseSetup.thresholds[1]);
     if (robotInstance.grippedFreeObjectIndex_ == -1) {
-      if (robotInstance.doAttemptGrip_ && grabDropAction < -stickyGrabDropThreshold) {
-        robotInstance.doAttemptGrip_ = false;
-      } else if (!robotInstance.doAttemptGrip_ && grabDropAction > stickyGrabDropThreshold) {
-        robotInstance.doAttemptGrip_ = true;
-      }
+      // only a very large action value triggers a grasp
+      robotInstance.doAttemptGrip_ = graspReleaseAction >= graspReleaseSetup.thresholds[1];
+      robotInstance.doAttemptDrop_ = false;
     } else {
-      robotInstance.doAttemptDrop_ = (grabDropAction < -stickyGrabDropThreshold);
+      // only a very small action value triggers a release
+      robotInstance.doAttemptGrip_ = false;
+      robotInstance.doAttemptDrop_ = graspReleaseAction < graspReleaseSetup.thresholds[0];
     }
 
-    const float clampedBaseYawAction = Mn::Math::clamp(baseRotateAction, -maxAbsYawAngle, maxAbsYawAngle);
+    const float clampedBaseYawAction = Mn::Math::clamp(baseRotateAction, baseRotateSetup.stepMin, baseRotateSetup.stepMax);
     yaws[b] = prevYaws[b] + clampedBaseYawAction; // todo: wrap angle to 360 degrees
-    float clampedBaseMovementAction = Mn::Math::clamp(baseMoveAction, minBaseMovement, maxBaseMovement);
+
+    float clampedBaseMovementAction = Mn::Math::clamp(baseMoveAction, baseMoveSetup.stepMin, baseMoveSetup.stepMax);
     positions[b] =
         prevPositions[b] + 
         Mn::Vector2(Mn::Math::cos(Mn::Math::Rad(yaws[b])), -Mn::Math::sin(Mn::Math::Rad(yaws[b]))) 
@@ -1885,17 +1897,18 @@ void BatchedSimulator::substepPhysics() {
       pos = prevPos;
     }
 
-    for (const auto& pair : config_.actionMap.actionJointDegreePairs) {
-      int j = pair.second;
-      const float jointMovementAction = actions_[baseActionIndex + pair.first];
+    for (const auto& pair : actionMap.joints) {
+      int j = pair.first;
+      const auto& actionSetup = pair.second;
+      const float jointMovementAction = actions_[baseActionIndex + actionSetup.actionIdx];
       BATCHED_SIM_ASSERT(j >= 0 && j < robot_.numPosVars);
       auto& pos = jointPositions[baseJointIndex + j];
       const auto& prevPos = prevJointPositions[baseJointIndex + j];
       const float clampedJointMovementAction = Mn::Math::clamp(jointMovementAction, 
-        -maxAbsJointAngle, maxAbsJointAngle);
+        actionSetup.stepMin, actionSetup.stepMax);
       pos = prevPos + clampedJointMovementAction;
       pos = Mn::Math::clamp(pos, robot_.jointPositionLimits.first[j],
-                            robot_.jointPositionLimits.second[j]);
+                            robot_.jointPositionLimits.second[j]);      
     }
   }
 

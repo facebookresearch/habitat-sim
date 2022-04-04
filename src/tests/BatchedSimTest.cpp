@@ -181,20 +181,6 @@ int key_press() { // not working: ¹ (251), num lock (-144), caps lock (-20), wi
     }
 }
 
-ActionMap createActionMap() {
-  ActionMap map;
-  map.graspRelease = 0;
-  map.baseRotate = 1;
-  map.baseMove = 2;
-  const int numJointDegrees = 15;
-  for (int i = 0; i < numJointDegrees; i++) {
-    map.actionJointDegreePairs.push_back(std::make_pair(i + 3, i));
-  }
-
-  map.numActions = 18;
-
-  return map;
-}
 
 }  // namespace
 
@@ -227,7 +213,6 @@ TEST_F(BatchedSimulatorTest, basic) {
       .doProceduralEpisodeSet = true,
       //.doProceduralEpisodeSet = false,
       //.episodeSetFilepath = "generated.episode_set.json",
-      .actionMap = createActionMap()
       };
   BatchedSimulator bsim(config);
 
@@ -280,17 +265,9 @@ TEST_F(BatchedSimulatorTest, basic) {
     std::cout << "Robot controls: press WASD/arrow keys to move, G to grab/drop, +/- to adjust speed, or ESC to quit." << std::endl;
   }
 
-  const int actionDim = config.actionMap.numActions;
+  const auto& actionMap = bsim.getSerializeCollection().robots[0].actionMap;
+  const int actionDim = actionMap.numActions;
   std::vector<float> actions(actionDim * config.numEnvs, 0.f);
-  if (doFreeCam) {
-    for (int b = 0; b < config.numEnvs; b++) {
-      actions[b * actionDim + 0] = 1.f; // attempt grip
-      //actions[b * actionDim + 1] = (b % 2 == 0) ? 0.1f : -0.1f; // base rotate
-      actions[b * actionDim + 2] = 0.05f; // base forward
-      int jointForThisEnv = ((b / 2) % 15);
-      actions[b * actionDim + 3 + jointForThisEnv] = (b % 2 == 0) ? 0.03f : -0.03f;
-    }
-  }
 
   int nextEpisode = 0;
   const int numEpisodes = bsim.getNumEpisodes();
@@ -313,10 +290,6 @@ TEST_F(BatchedSimulatorTest, basic) {
 
   std::vector<PythonEnvironmentState> envStates;
 
-  if (doOverlapPhysics) {
-    bsim.startStepPhysicsOrReset(std::vector<float>(actions), std::vector<int>(resets));
-  }
-
   int frameIdx = 0;
   bool isAutoplay = false;
   int autoplayProgress = -1;
@@ -324,7 +297,6 @@ TEST_F(BatchedSimulatorTest, basic) {
   while (true) {
 
     if (doOverlapPhysics) {
-      bsim.waitStepPhysicsOrReset();
       bsim.startRender();
       // make a copy of envStates
       envStates = bsim.getEnvironmentStates();
@@ -333,6 +305,7 @@ TEST_F(BatchedSimulatorTest, basic) {
         doAdvanceSim = false;
       }
       bsim.waitRender();
+      bsim.waitStepPhysicsOrReset();
     } else {
       if (doAdvanceSim) {
         bsim.startStepPhysicsOrReset(std::vector<float>(actions), std::vector<int>(resets));
@@ -367,6 +340,7 @@ TEST_F(BatchedSimulatorTest, basic) {
 
     int key = 0;
     bool doStartAnimation = false;
+    bool doReloadAll = false;
     if (!isAutoplay) {
       key = key_press();
     }
@@ -398,30 +372,32 @@ TEST_F(BatchedSimulatorTest, basic) {
         targetLeftRight -= 1.f;
       } else if (key >= '1' && key <= '8') {
         int keyIdx = key - '1';
-        jointPosIdx = 7 + keyIdx / 2;
+        jointPosIdx = 0 + keyIdx / 2;
         jointPlusMinus = (keyIdx % 2 == 1) ? -1.f : 1.f;
       } else if (key == 'w') {
-        baseForward += 1.f;
+        baseForward += actionMap.baseRotate.stepMax;
       } else if (key == 's') {
-        baseForward -= 1.f;
+        baseForward += actionMap.baseRotate.stepMin;
       } else if (key == 'a') {
-        baseYaw += float(Mn::Rad(Mn::Deg(15.f)));
+        baseYaw += actionMap.baseRotate.stepMax;
       } else if (key == 'd') {
-        baseYaw -= float(Mn::Rad(Mn::Deg(15.f)));
+        baseYaw += actionMap.baseRotate.stepMin;
       } else if (key == 'e') {
         baseUpDown = 0.1f;
       } else if (key == 'q') {
         baseUpDown = -0.1f;
       }else if (key == '=') { // +
-        moveSpeed *= 1.5f;
+        moveSpeed = Mn::Math::min(moveSpeed * 2.f, 1.f);
       } else if (key == '-') {
-        moveSpeed /= 1.5f;
+        moveSpeed = moveSpeed * 0.5f;
       } else if (key == 'g') {
         doHold = !doHold;
       } else if (key == 'c') {
         doTuneRobotCam = !doTuneRobotCam;
-      } else if (key == 'r') {
+      } else if (key == -116) {  // F5
         bsim.reloadSerializeCollection();
+      } else if (key == 'r') {
+        doReloadAll = true;
       }
 
       for (int b = 0; b < config.numEnvs; b++) {
@@ -431,9 +407,20 @@ TEST_F(BatchedSimulatorTest, basic) {
           actionsForEnv[j] = 0.f;
         }
 
-        actionsForEnv[config.actionMap.graspRelease] = doHold ? 1.f : -1.f;
-        actionsForEnv[config.actionMap.baseRotate] = baseYaw * moveSpeed;
-        actionsForEnv[config.actionMap.baseMove] = baseForward * moveSpeed;
+        constexpr float eps = 0.01;
+        actionsForEnv[actionMap.graspRelease.actionIdx] = doHold 
+          ? actionMap.graspRelease.thresholds[1] + eps
+          : actionMap.graspRelease.thresholds[0] - eps;
+        actionsForEnv[actionMap.baseRotate.actionIdx] = baseYaw * moveSpeed;
+        actionsForEnv[actionMap.baseMove.actionIdx] = baseForward * moveSpeed;
+
+        if (jointPosIdx != -1) {
+          BATCHED_SIM_ASSERT(jointPosIdx < actionMap.joints.size());
+          const auto& jointActionSetup = actionMap.joints[jointPosIdx];
+          actionsForEnv[jointActionSetup.second.actionIdx] = jointPlusMinus > 0.f
+            ? jointPlusMinus * jointActionSetup.second.stepMax * moveSpeed
+            : -jointPlusMinus * jointActionSetup.second.stepMin * moveSpeed;
+        }
 
         // 2 is torso up/down
         // 7 shoulder, + is down
@@ -443,17 +430,12 @@ TEST_F(BatchedSimulatorTest, basic) {
         // 11 wrist, + is down
         // 12 wrist twise, + is right
         //actionsForEnv[3 + 8] = -targetLeftRight * rotSpeed;
-        actionsForEnv[3 + 2] = baseUpDown * moveSpeed;
-        actionsForEnv[3 + 11] = -targetUpDown * moveSpeed;
-        actionsForEnv[3 + 12] = -targetLeftRight * moveSpeed;
-
-        if (jointPosIdx != -1) {
-          actionsForEnv[3 + jointPosIdx] = jointPlusMinus;
-        }
-
-        // always have grippers open
-        actionsForEnv[3 + 13] = 1.f;
-        actionsForEnv[3 + 14] = 1.f;
+        // actionsForEnv[3 + 2] = baseUpDown * moveSpeed;
+        // actionsForEnv[3 + 11] = -targetUpDown * moveSpeed;
+        // actionsForEnv[3 + 12] = -targetLeftRight * moveSpeed;
+        // // always have grippers open
+        // actionsForEnv[3 + 13] = 1.f;
+        // actionsForEnv[3 + 14] = 1.f;
       }
 
     } else {
@@ -528,7 +510,7 @@ TEST_F(BatchedSimulatorTest, basic) {
     // temp end episode on collision
     for (int b = 0; b < config.numEnvs; b++) {
       int resetPeriodForEnv = b + 1;
-      if (envStates[b].did_collide) {
+      if (envStates[b].did_collide || doReloadAll) {
         resets[b] = getNextEpisode();
       } else {
         resets[b] = -1;

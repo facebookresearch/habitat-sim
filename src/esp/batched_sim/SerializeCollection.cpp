@@ -66,10 +66,37 @@ bool fromJsonValue(const esp::io::JsonGenericValue& obj,
 }
 
 bool fromJsonValue(const esp::io::JsonGenericValue& obj,
+                   ContinuousActionSetup& val) {
+  readMember(obj, "actionIdx", val.actionIdx);
+  readMember(obj, "stepMin", val.stepMin);
+  readMember(obj, "stepMax", val.stepMax);
+  return true;
+}
+
+bool fromJsonValue(const esp::io::JsonGenericValue& obj,
+                   DiscreteActionSetup& val) {
+  readMember(obj, "actionIdx", val.actionIdx);
+  readMember(obj, "thresholds", val.thresholds);
+  return true;
+}
+
+bool fromJsonValue(const esp::io::JsonGenericValue& obj,
+                   ActionMap& val) {
+  readMember(obj, "numActions", val.numActions);
+  readMember(obj, "baseMove", val.baseMove);
+  readMember(obj, "baseRotate", val.baseRotate);
+  readMember(obj, "graspRelease", val.graspRelease);
+  readMember(obj, "joints", val.joints);
+  return true;
+}
+
+bool fromJsonValue(const esp::io::JsonGenericValue& obj,
                    Robot& val) {
   readMember(obj, "urdfFilepath", val.urdfFilepath);
+  readMember(obj, "startJointPositions", val.startJointPositions);
   readMember(obj, "gripper", val.gripper);
   readMember(obj, "links", val.links);
+  readMember(obj, "actionMap", val.actionMap);
   return true;
 }
 

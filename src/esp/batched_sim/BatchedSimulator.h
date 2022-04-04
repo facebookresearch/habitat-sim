@@ -28,16 +28,6 @@ struct CameraSensorConfig {
   float hfov = -1.f;
 };
 
-struct ActionMap {
-  int numActions = -1;
-  int baseMove = -1;
-  int baseRotate = -1;
-  int graspRelease = -1;
-  std::vector<std::pair<int,int>> actionJointDegreePairs;
-  ESP_SMART_POINTERS(ActionMap);
-};
-
-
 struct BatchedSimulatorConfig {
   int numEnvs = -1;
   int gpuId = -1;
@@ -53,7 +43,6 @@ struct BatchedSimulatorConfig {
   bool doProceduralEpisodeSet = true;
   // only set this for doProceduralEpisodeSet==false (it is otherwise ignored)
   std::string episodeSetFilepath;
-  ActionMap actionMap;
   ESP_SMART_POINTERS(BatchedSimulatorConfig);
 };
 
@@ -202,6 +191,10 @@ class BatchedSimulator {
   void close();
 
   int getNumEpisodes() const;
+  int getNumActions() const;
+  const serialize::Collection& getSerializeCollection() const {
+    return serializeCollection_;
+  }
 
   void startRender();
   void waitRender();
