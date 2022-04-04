@@ -39,6 +39,7 @@ void addMember(JsonGenericValue& value,
 template <typename T>
 bool readMember(const JsonGenericValue& value, const char* name, T& x);
 
+#if 0 // temp disable so we get compile errors
 /**
  * @brief Fallback implementation for fromJsonValue to produce a runtime error
  * for types that haven't implemented fromJsonValue.
@@ -70,6 +71,7 @@ JsonGenericValue toJsonValue(const T&, JsonAllocator&) {
       << typeid(T).name() << ".";
   return JsonGenericValue(rapidjson::kObjectType);
 }
+#endif
 
 // toJsonValue wrappers for the 7 rapidjson builtin types. A JsonGenericValue
 // can be directly constructed from the builtin types.
