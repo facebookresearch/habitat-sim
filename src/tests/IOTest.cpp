@@ -262,6 +262,12 @@ void IOTest::testJsonStlTypes() {
   std::string s{"hello world"};
   _testJsonReadWrite(s, "s", d);
 
+  std::pair<float, std::string> pair(1.5f, "second");
+  esp::io::addMember(d, "pair", pair, allocator);
+  std::pair<float, std::string> pair2;
+  CORRADE_VERIFY(esp::io::readMember(d, "pair", pair2));
+  CORRADE_COMPARE(pair2, pair);
+
   // test a vector of ints
   std::vector<int> vec{3, 4, 5, 6};
   _testJsonReadWrite(vec, "vec", d);
