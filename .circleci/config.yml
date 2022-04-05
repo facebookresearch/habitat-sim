@@ -315,12 +315,17 @@ jobs:
             conda install -y anaconda-client ccache cmake git ninja conda-build pip
             echo $(which -a python)
             pip install gitpython
-            <<^ parameters.CI_TEST>>
             yes | anaconda login --username << parameters.AIHABITAT_CONDA_CHN >>  --password $<< parameters.AIHABITAT_CONDA_CHN_PWD_VAR >> --hostname "aihabitat-conda-ci-builder-macos"
+            echo "here0"
+            <<^ parameters.CI_TEST >>
             conda config --set anaconda_upload yes <</ parameters.CI_TEST>>
+            echo "here1"
             cd habitat-sim/conda-build
+            echo "here2"
             git submodule update --init --recursive --jobs 8
+            echo "here3"
             export PYTHONIOENCODING="utf-8"
+            echo "here4"
             python matrix_builder.py <<# parameters.CI_TEST>> --ci_test <</ parameters.CI_TEST>>  <<^ parameters.CI_TEST >> --conda_upload <<# parameters.nightly>> --nightly <</ parameters.nightly>> <</ parameters.CI_TEST >>
 
   clang_tidy:
