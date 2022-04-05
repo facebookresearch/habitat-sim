@@ -467,6 +467,7 @@ void BatchedSimulator::updateGripping() {
 
     // this is wrong for the case of multiple substeps
     envState.did_drop = false;
+    envState.drop_height = NAN;
     envState.did_grasp = false;
 
     if (shouldDrawDebugForEnv(config_, b, substep_)) {
@@ -531,6 +532,7 @@ void BatchedSimulator::updateGripping() {
         // perf todo: only do this after we pass the columnGridSet collision test below
         removeFreeObjectFromCollisionGrid(b, grippedFreeObjectIndex);
         robotInstance.grippedFreeObjectIndex_ = grippedFreeObjectIndex;
+        robotInstance.grippedFreeObjectPreviousPos_ = Cr::Containers::NullOpt;
 
         // check if object will be collision-free in gripper
         bool hit = false;
@@ -540,9 +542,6 @@ void BatchedSimulator::updateGripping() {
           const auto& episode = safeVectorGet(episodeSet_.episodes_, episodeInstance.episodeIndex_);
           const auto& stageFixedObject = safeVectorGet(episodeSet_.fixedObjects_, episode.stageFixedObjIndex);
           const auto& columnGridSet = stageFixedObject.columnGridSet_;
-
-          // note we must assign this now so that getHeldObjectTransform works
-          robotInstance.grippedFreeObjectIndex_ = grippedFreeObjectIndex;
 
           ColumnGridSource::QueryCacheValue grippedObjectQueryCache = 0;
           auto mat = getHeldObjectTransform(b);
@@ -571,6 +570,7 @@ void BatchedSimulator::updateGripping() {
         if (!hit) {
           recentStats_.numGrips_++;
           envState.did_grasp = true;
+          robotInstance.grippedFreeObjectPreviousPos_ = obsCopy.pos;
         } else {
           // reinsert at old pose
           reinsertFreeObject(b, grippedFreeObjectIndex, obsCopy.pos,
@@ -609,28 +609,38 @@ void BatchedSimulator::updateGripping() {
         episode.firstFreeObjectSpawnIndex_ + freeObjectIndex);
       const auto& freeObject = safeVectorGet(episodeSet_.freeObjects_, freeObjectSpawn.freeObjIndex_);
 
-      constexpr int maxFailedPlacements = 3;
+      constexpr int maxFailedPlacements = 6;
       PlacementHelper placementHelper(columnGridSet, episodeInstance.colGrid_, 
         serializeCollection_, random_, maxFailedPlacements);
-      bool success = placementHelper.place(heldObjMat, freeObject);
+      BATCHED_SIM_ASSERT(robotInstance.grippedFreeObjectPreviousPos_);
+      const Mn::Vector3 fallbackPos = *robotInstance.grippedFreeObjectPreviousPos_;
+      // Provide a fallback pos so that the place() always succeeds. The fallback is
+      // the previous pos of this object (before grasping it).
+      float dropY = heldObjMat.translation().y();
+      bool success = placementHelper.place(heldObjMat, freeObject, &fallbackPos);
+      BATCHED_SIM_ASSERT(success);
 
-      if (success) {
-        const auto rotationQuat = Mn::Quaternion::fromMatrix(heldObjMat.rotation());
-        reinsertFreeObject(b, freeObjectIndex, heldObjMat.translation(), rotationQuat);
-      } else {
-        if (!disableFreeObjectVisualsForEnv(config_, b)) {
-          // hack: remove object from scene visually
-          const auto glMat = toGlmMat4x3(Mn::Matrix4::translation({0.f, -10000.f, 0.f})); 
-          int instanceId = getFreeObjectBpsInstanceId(b, freeObjectIndex);
-          env.updateInstanceTransform(instanceId, glMat);
-        }
+      const auto rotationQuat = Mn::Quaternion::fromMatrix(heldObjMat.rotation());
+      reinsertFreeObject(b, freeObjectIndex, heldObjMat.translation(), rotationQuat);
 
-        recentStats_.numFailedDrops_++;
-      }
+      // Reference code for handling a failed drop by removing object. This isn't a
+      // good solution because PythonEnvironmentState doesn't have a way to indicate
+      // that an object has been removed from the scene.
+      // {
+      //   if (!disableFreeObjectVisualsForEnv(config_, b)) {
+      //     // hack: remove object from scene visually
+      //     const auto glMat = toGlmMat4x3(Mn::Matrix4::translation({0.f, -10000.f, 0.f})); 
+      //     int instanceId = getFreeObjectBpsInstanceId(b, freeObjectIndex);
+      //     env.updateInstanceTransform(instanceId, glMat);
+      //   }
+      //   recentStats_.numFailedDrops_++;
+      // }
+
       robotInstance.grippedFreeObjectIndex_ = -1;
       robotInstance.doAttemptDrop_ = false;
 
       envState.did_drop = true;
+      envState.drop_height = dropY - heldObjMat.translation().y();
 
       recentStats_.numDrops_++;
     }
@@ -1546,6 +1556,7 @@ void BatchedSimulator::resetEpisodeInstance(int b) {
     envState.target_obj_start_rotation = rotation;
 
     envState.did_drop = false;
+    envState.drop_height = NAN;
     envState.did_grasp = false;
   }
 

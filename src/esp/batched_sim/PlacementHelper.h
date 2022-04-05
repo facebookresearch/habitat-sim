@@ -19,7 +19,7 @@ public:
   PlacementHelper(const ColumnGridSet& columnGridSet, const CollisionBroadphaseGrid& colGrid,
     const serialize::Collection& collection, esp::core::Random& random, int maxFailedPlacements);
 
-  bool place(Magnum::Matrix4& heldObjMat, const FreeObject& freeObject) const;
+  bool place(Magnum::Matrix4& heldObjMat, const FreeObject& freeObject, const Mn::Vector3* fallbackPos=nullptr) const;
 
 private:
   const ColumnGridSet& columnGridSet_;

@@ -21,9 +21,11 @@ PlacementHelper::PlacementHelper(const ColumnGridSet& columnGridSet,
   , random_(random)
   , maxFailedPlacements_(maxFailedPlacements)
 {
+  BATCHED_SIM_ASSERT(maxFailedPlacements > 0);
 }
 
-bool PlacementHelper::place(Magnum::Matrix4& heldObjMat, const FreeObject& freeObject) const {
+bool PlacementHelper::place(Magnum::Matrix4& heldObjMat, const FreeObject& freeObject, 
+    const Mn::Vector3* fallbackPos) const {
 
   BATCHED_SIM_ASSERT(freeObject.collisionSpheres_.size());
 
@@ -39,7 +41,7 @@ bool PlacementHelper::place(Magnum::Matrix4& heldObjMat, const FreeObject& freeO
     // cast a single small sphere down to find a resting position candidate
     {
       // todo: find a sphere near the center of mass, at the base of the object in its
-      // current rotation. We can use its rotated box to find this.
+      // current (or resting) rotation. We can use its rotated box to find this.
       const float sphereRadius = 0.015f; // temp hack
       const auto sphereLocalOrigin = Mn::Vector3(
         freeObject.aabb_.center().x(),
@@ -74,8 +76,14 @@ bool PlacementHelper::place(Magnum::Matrix4& heldObjMat, const FreeObject& freeO
           break;
         }
 
+        // The intention of this test is to catch when an object has been dropped near
+        // a wall or other part of the static scene, such that it's partially 
+        // interpenetrating.
+        // todo: consider vertical fixup here
         float castDownResult = columnGridSet_.castDownTest(sphere.radiusIdx, sphereWorldOrigin, &queryCache);
-        constexpr float pad = 0.01f;
+        // sloppy: this is needed because we currently drop tilted objects, and we
+        // don't use a sphere at the true base of the object in the earlier castDownTest.
+        constexpr float pad = 0.05f;
         const float maxPenetrationDist = sphereRadius + pad;
         if (castDownResult <= -maxPenetrationDist) {
           didHitColumnGrid = true;
@@ -90,7 +98,7 @@ bool PlacementHelper::place(Magnum::Matrix4& heldObjMat, const FreeObject& freeO
 
       heldObjMat.translation().y() += minCastDownDist; // restore to drop height
 
-      if (hitFreeObjectIndex != -1) {
+      if (hitFreeObjectIndex != -1 && numFailedPlacements < maxFailedPlacements_ - 1) {
         const auto& hitObs = colGrid_.getObstacle(hitFreeObjectIndex);
         auto delta = heldObjMat.translation() - hitObs.pos;
         delta.y() = 0.f;
@@ -102,7 +110,7 @@ bool PlacementHelper::place(Magnum::Matrix4& heldObjMat, const FreeObject& freeO
     }
 
     numFailedPlacements++;
-    if (numFailedPlacements == maxFailedPlacements_) {
+    if (numFailedPlacements >= maxFailedPlacements_) {
       break;
     }
 
@@ -117,6 +125,11 @@ bool PlacementHelper::place(Magnum::Matrix4& heldObjMat, const FreeObject& freeO
     
     heldObjMat.translation() += Mn::Vector3(
       Mn::Math::cos(*hintAngle), 0.f, Mn::Math::sin(*hintAngle)) * bumpDist;        
+  }
+
+  if (!success && fallbackPos) {
+    heldObjMat.translation() = *fallbackPos;
+    success = true;
   }
 
   return success;

@@ -70,6 +70,7 @@ struct PythonEnvironmentState {
   int held_obj_idx = -1;
   bool did_grasp = false;
   bool did_drop = false;
+  float drop_height = NAN;
 
   // other env state
   std::vector<Magnum::Vector3> obj_positions;
@@ -143,6 +144,7 @@ class RobotInstance {
   // std::vector<Magnum::Vector3> grippedObjCollisionSphereWorldOrigins_;
   Magnum::Matrix4 cachedGripperLinkMat_; // sloppy: also in newNodeTransforms at glMat
   int grippedFreeObjectIndex_ = -1;
+  Corrade::Containers::Optional<Mn::Vector3> grippedFreeObjectPreviousPos_;
   // glm::mat4 cameraNewInvTransform_;
   Magnum::Matrix4 cameraAttachNodeTransform_;
 };
