@@ -14,6 +14,10 @@ import magnum as mn
 import numpy as np
 import quaternion as qt
 
+from habitat_sim._ext.habitat_sim_bindings.core import (  # noqa: F401
+    orthonormalize_rotation_shear,
+)
+
 
 def quat_from_coeffs(coeffs: Union[Sequence[float], np.ndarray]) -> qt.quaternion:
     r"""Creates a quaternion from the coeffs returned by the simulator backend

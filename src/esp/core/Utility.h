@@ -8,6 +8,8 @@
 /** @file */
 
 #include <Magnum/Magnum.h>
+#include <Magnum/Math/Algorithms/GramSchmidt.h>
+#include <Magnum/Math/Matrix4.h>
 #include <Magnum/Math/Quaternion.h>
 #include <Magnum/Math/Vector3.h>
 #include <cmath>
@@ -20,7 +22,7 @@ namespace core {
  *
  * @return a unit quternion
  */
-Magnum::Quaternion randomRotation() {
+inline Magnum::Quaternion randomRotation() {
   // generate random rotation using:
   // http://planning.cs.uiuc.edu/node198.html
   double u1 = (rand() % 1000) / 1000.0;
@@ -32,6 +34,17 @@ Magnum::Quaternion randomRotation() {
                         sqrt(u1) * cos(2 * M_PI * u3));
 
   return Magnum::Quaternion(qAxis, sqrt(1 - u1) * sin(2 * M_PI * u2));
+}
+
+template <typename T>
+Magnum::Math::Matrix4<T> orthonormalizeRotationShear(
+    const Magnum::Math::Matrix4<T>& transformation) {
+  Magnum::Math::Matrix3<T> rotation = transformation.rotationShear();
+  Magnum::Math::Algorithms::gramSchmidtOrthonormalizeInPlace(rotation);
+
+  return Magnum::Math::Matrix4<T>::from(rotation,
+                                        transformation.translation()) *
+         Magnum::Math::Matrix4<T>::scaling(transformation.scaling());
 }
 }  // namespace core
 }  // namespace esp

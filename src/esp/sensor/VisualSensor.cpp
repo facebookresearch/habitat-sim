@@ -9,6 +9,7 @@
 
 #include <utility>
 
+#include "esp/core/Utility.h"
 #include "esp/gfx/RenderTarget.h"
 #include "esp/sim/Simulator.h"
 
@@ -173,8 +174,10 @@ VisualSensor::MoveSemanticSensorNodeHelper::MoveSemanticSensorNodeHelper(
   CORRADE_INTERNAL_ASSERT(relativeTransformBackup_ == Cr::Containers::NullOpt);
 
   // back up the data
-  relativeTransformBackup_ = node.transformation();
-  Mn::Matrix4 absTransform = node.absoluteTransformation();
+  relativeTransformBackup_ =
+      core::orthonormalizeRotationShear(node.transformation());
+  Mn::Matrix4 absTransform =
+      core::orthonormalizeRotationShear(node.absoluteTransformation());
   semanticSensorParentNodeBackup_ =
       static_cast<scene::SceneNode*>(node.parent());
 

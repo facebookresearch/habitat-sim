@@ -8,6 +8,7 @@ import numpy as np
 from habitat_sim.physics import JointMotorSettings
 from habitat_sim.robots.robot_interface import RobotInterface
 from habitat_sim.simulator import Simulator
+from habitat_sim.utils.common import orthonormalize_rotation_shear
 
 
 @attr.s(auto_attribs=True, slots=True)
@@ -245,7 +246,9 @@ class MobileManipulator(RobotInterface):
                 cam_transform = link_trans @ cam_transform @ cam_info.relative_transform
                 cam_transform = inv_T @ cam_transform
 
-                sens_obj.node.transformation = cam_transform
+                sens_obj.node.transformation = orthonormalize_rotation_shear(
+                    cam_transform
+                )
         if self._fix_joint_values is not None:
             self.arm_joint_pos = self._fix_joint_values
 
