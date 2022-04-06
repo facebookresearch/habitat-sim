@@ -58,6 +58,6 @@ if(BUILD_WITH_CUDA)
 endif()
 
 if(BUILD_WITH_AUDIO)
-  include_directories(${DEPS_DIR}/audio/RLRAudioPropagationPkg/headers)
+  include_directories(${DEPS_DIR}/rlr-audio-propagation/RLRAudioPropagationPkg/headers)
   target_link_libraries(sensor PUBLIC ${RLRAudioPropagation_LIBRARY})
 endif()

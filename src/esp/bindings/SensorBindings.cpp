@@ -28,7 +28,7 @@
 
 #ifdef ESP_BUILD_WITH_AUDIO
 #include "esp/sensor/AudioSensor.h"
-#endif // ESP_BUILD_WITH_AUDIO
+#endif  // ESP_BUILD_WITH_AUDIO
 
 namespace py = pybind11;
 using py::literals::operator""_a;
@@ -290,12 +290,13 @@ void initSensorBindings(py::module& m) {
       });
 #endif
 
-  #ifdef ESP_BUILD_WITH_AUDIO
+#ifdef ESP_BUILD_WITH_AUDIO
   // ==== RLRAudioPropagation::Config ====
-  py::class_<RLRAudioPropagation::Configuration>(m,
-                                              "RLRAudioPropagationConfiguration")
+  py::class_<RLRAudioPropagation::Configuration>(
+      m, "RLRAudioPropagationConfiguration")
       .def(py::init<>())
-      .def_readwrite("sampleRate", &RLRAudioPropagation::Configuration::sampleRate)
+      .def_readwrite("sampleRate",
+                     &RLRAudioPropagation::Configuration::sampleRate)
       .def_readwrite("frequencyBands",
                      &RLRAudioPropagation::Configuration::frequencyBands)
       .def_readwrite("directSHOrder",
@@ -306,7 +307,8 @@ void initSensorBindings(py::module& m) {
                      &RLRAudioPropagation::Configuration::threadCount)
       .def_readwrite("updateDt", &RLRAudioPropagation::Configuration::updateDt)
       .def_readwrite("irTime", &RLRAudioPropagation::Configuration::irTime)
-      .def_readwrite("unitScale", &RLRAudioPropagation::Configuration::unitScale)
+      .def_readwrite("unitScale",
+                     &RLRAudioPropagation::Configuration::unitScale)
       .def_readwrite("globalVolume",
                      &RLRAudioPropagation::Configuration::globalVolume)
       .def_readwrite("indirectRayCount",
@@ -343,13 +345,15 @@ void initSensorBindings(py::module& m) {
       .value("Stereo", RLRAudioPropagation::ChannelLayoutType::Stereo)
       .value("Binaural", RLRAudioPropagation::ChannelLayoutType::Binaural)
       .value("Quad", RLRAudioPropagation::ChannelLayoutType::Quad)
-      .value("Surround_5_1", RLRAudioPropagation::ChannelLayoutType::Surround_5_1)
-      .value("Surround_7_1", RLRAudioPropagation::ChannelLayoutType::Surround_7_1)
+      .value("Surround_5_1",
+             RLRAudioPropagation::ChannelLayoutType::Surround_5_1)
+      .value("Surround_7_1",
+             RLRAudioPropagation::ChannelLayoutType::Surround_7_1)
       .value("Ambisonics", RLRAudioPropagation::ChannelLayoutType::Ambisonics);
 
   // ==== RLRAudioPropagation::ChannelLayout ====
-  py::class_<RLRAudioPropagation::ChannelLayout>(m,
-                                              "RLRAudioPropagationChannelLayout")
+  py::class_<RLRAudioPropagation::ChannelLayout>(
+      m, "RLRAudioPropagationChannelLayout")
       .def(py::init<>())
       .def_readwrite("channelType",
                      &RLRAudioPropagation::ChannelLayout::channelType)
@@ -374,7 +378,7 @@ void initSensorBindings(py::module& m) {
       .def("runSimulation", &AudioSensor::runSimulation)
       .def("getIR", &AudioSensor::getIR)
       .def("reset", &AudioSensor::reset);
-  #endif // ESP_BUILD_WITH_AUDIO
+#endif  // ESP_BUILD_WITH_AUDIO
 }
 
 }  // namespace sensor

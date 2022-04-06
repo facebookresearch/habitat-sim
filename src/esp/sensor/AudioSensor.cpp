@@ -88,7 +88,7 @@ void AudioSensor::setAudioListenerTransform(const vec3f& agentPos,
     audioSimulator_->AddListener(
         RLRAudioPropagation::Vector3f{agentPos(0), agentPos(1), agentPos(2)},
         RLRAudioPropagation::Quaternion{agentRotQuat(0), agentRotQuat(1),
-                                     agentRotQuat(2), agentRotQuat(3)},
+                                        agentRotQuat(2), agentRotQuat(3)},
         audioSensorSpec_->channelLayout_);
   }
 }

@@ -94,7 +94,7 @@ endif()
 if(BUILD_WITH_AUDIO)
   find_library(
     RLRAudioPropagation_LIBRARY RLRAudioPropagation
-    PATHS ${DEPS_DIR}/audio/RLRAudioPropagationPkg/libs/linux/x64
+    PATHS ${DEPS_DIR}/rlr-audio-propagation/RLRAudioPropagationPkg/libs/linux/x64
   )
 endif()
 

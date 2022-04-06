@@ -12,7 +12,7 @@
 #include "esp/scene/SemanticScene.h"
 #include "esp/sensor/Sensor.h"
 
-#include "audio/RLRAudioPropagationPkg/headers/RLRAudioPropagation.h"
+#include "rlr-audio-propagation/RLRAudioPropagationPkg/headers/RLRAudioPropagation.h"
 
 #ifndef ESP_SENSOR_AUDIOSENSOR_H_
 #define ESP_SENSOR_AUDIOSENSOR_H_
@@ -73,8 +73,8 @@ class AudioSensor : public Sensor {
                                  const vec4f& agentRotQuat);
 
   /**
-   * @brief Run the audio simulation. This will run the RLRAudioPropagation code to
-   * get the impulse response
+   * @brief Run the audio simulation. This will run the RLRAudioPropagation code
+   * to get the impulse response
    * */
   void runSimulation(sim::Simulator& sim);
 

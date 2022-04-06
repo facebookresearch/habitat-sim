@@ -137,8 +137,7 @@ Please see the [audio_agent.py](https://github.com/facebookresearch/habitat-sim/
 1. Create the Acoustic configuration ([RLRAudioPropagationConfiguration](#acoustics-configuration)) object. Set the various simulation parameters.
 1. Create the channel layout ([RLRAudioPropagationChannelLayout](#channel-layout)) object. Set the channel layout
 1. Create the [AudioSensorSpec()](#audio-sensor-specs). Assign the acoustic configuration and the channel layout.
-1. Add the audio sensor spec to the simulation. This will create th e C++ AudioSensor object. 
+1. Add the audio sensor spec to the simulation. This will create the C++ AudioSensor object.
 1. Get the audio_sensor object from the list of sensors on the agent. (see examples/tutorials/audio_agent.py script). The identifier is set under AudioSensorSpec -> uuid config.
 1. Set the location of the audio source by calling audio_sensor.setAudioSourceTransform
 1. Run the simulation step and get the audio sensor output sim.get_sensor_observations()["audio_sensor"]. Use the uuid defined. The output is a n-d array of floats where n is the channel count defined in RLRAudioPropagationChannelLayout
-

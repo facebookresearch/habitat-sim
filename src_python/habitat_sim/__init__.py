@@ -60,6 +60,7 @@ if not getattr(builtins, "__HSIM_SETUP__", False):
         SceneNode,
         SceneNodeType,
         SimulatorConfiguration,
+        audio_enabled,
         built_with_bullet,
         cuda_enabled,
         vhacd_enabled,

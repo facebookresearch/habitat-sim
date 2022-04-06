@@ -305,7 +305,7 @@ class ImageExtractor:
             audio_sensor_spec.uuid = "audio_sensor"
             audio_sensor_spec.sensor_type = habitat_sim.SensorType.AUDIO
             audio_sensor_spec.position = [0.0, settings["sensor_height"], 0.0]
-            audio_specs.append(audio_sensor_spec)
+            sensor_specs.append(audio_sensor_spec)
 
         # create agent specifications
         agent_cfg = AgentConfiguration()

@@ -2942,7 +2942,8 @@ void ResourceManager::joinSemanticHierarchy(
       return;
     }
 
-    const std::vector<Mn::Vector3>& vertices = meshData->getVertexBufferObjectCPU();
+    const std::vector<Mn::Vector3>& vertices =
+        meshData->getVertexBufferObjectCPU();
     const std::vector<uint32_t>& indices = meshData->getIndexBufferObjectCPU();
     const std::vector<uint16_t>& objectIds =
         meshData->getObjectIdsBufferObjectCPU();
