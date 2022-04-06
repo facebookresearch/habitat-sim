@@ -1937,10 +1937,10 @@ void BatchedSimulator::substepPhysics() {
       robotInstance.doAttemptDrop_ = graspReleaseAction < graspReleaseSetup.thresholds[0];
     }
 
-    const float clampedBaseYawAction = Mn::Math::clamp(baseRotateAction, baseRotateSetup.stepMin, baseRotateSetup.stepMax);
+    const float clampedBaseYawAction = Mn::Math::clamp(baseRotateAction * (baseRotateSetup.stepMax - baseRotateSetup.stepMin) + baseRotateSetup.stepMin, baseRotateSetup.stepMin, baseRotateSetup.stepMax);
     yaws[b] = prevYaws[b] + clampedBaseYawAction; // todo: wrap angle to 360 degrees
 
-    float clampedBaseMovementAction = Mn::Math::clamp(baseMoveAction, baseMoveSetup.stepMin, baseMoveSetup.stepMax);
+    float clampedBaseMovementAction = Mn::Math::clamp(baseMoveAction * (baseMoveSetup.stepMax - baseMoveSetup.stepMin) + baseMoveSetup.stepMin, baseMoveSetup.stepMin, baseMoveSetup.stepMax);
     positions[b] =
         prevPositions[b] + 
         Mn::Vector2(Mn::Math::cos(Mn::Math::Rad(yaws[b])), -Mn::Math::sin(Mn::Math::Rad(yaws[b]))) 
@@ -1961,7 +1961,7 @@ void BatchedSimulator::substepPhysics() {
       BATCHED_SIM_ASSERT(j >= 0 && j < robot_.numPosVars);
       auto& pos = jointPositions[baseJointIndex + j];
       const auto& prevPos = prevJointPositions[baseJointIndex + j];
-      const float clampedJointMovementAction = Mn::Math::clamp(jointMovementAction, 
+      const float clampedJointMovementAction = Mn::Math::clamp(jointMovementAction * (actionSetup.stepMax - actionSetup.stepMin) + actionSetup.stepMin, 
         actionSetup.stepMin, actionSetup.stepMax);
       pos = prevPos + clampedJointMovementAction;
       pos = Mn::Math::clamp(pos, robot_.jointPositionLimits.first[j],
