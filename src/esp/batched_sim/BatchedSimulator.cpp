@@ -319,11 +319,7 @@ void BatchedSimulator::updateLinkTransforms(int currRolloutSubstep, bool updateF
 
         if (updateForRender) {
           BATCHED_SIM_ASSERT(instanceIndex < robots_.nodeNewTransforms_.size());
-          robots_.nodeNewTransforms_[instanceIndex] = toGlmMat4x3(mat);
-
-          if (robots_.robot_->cameraAttachNode_ == nodeIndex) {
-            robotInstance.cameraAttachNodeTransform_ = mat;
-          }
+          robots_.nodeNewTransforms_[instanceIndex] = mat;
         }
 #if 0
         esp::gfx::replay::Transform absTransform{
@@ -941,16 +937,9 @@ void BatchedSimulator::updateRenderInstances(bool forceUpdate) {
         }
 
         if (!disableRobotVisualsForEnv(config_, b)) {
-          const auto& glMat = robots_.nodeNewTransforms_[instanceIndex];
+          const auto glMat = toGlmMat4x3(safeVectorGet(robots_.nodeNewTransforms_, instanceIndex));
           env.updateInstanceTransform(instanceId, glMat);
         }
-      }
-
-      // todo: cleaner handling of camera update that doesn't depend on attachment or collision
-      if (robot_.cameraAttachNode_ != -1) {
-        auto cameraTransform = robotInstance.cameraAttachNodeTransform_ * robot_.cameraAttachTransform_;
-        auto glCameraNewInvTransform = glm::inverse(toGlmMat4(cameraTransform));
-        env.setCameraView(glCameraNewInvTransform);
       }
     }
 
@@ -1241,11 +1230,14 @@ BpsWrapper::BpsWrapper(int gpuId, int numEnvs, bool includeDepth, bool includeCo
   const Mn::Vector3 camPos(Mn::Math::ZeroInit);
   const Mn::Quaternion camRot(Mn::Math::IdentityInit);
   glm::mat4 world_to_camera(glm::inverse(toGlmMat4(camPos, camRot)));
+  float aspectRatio = float(sensor0.width) / float(sensor0.height);
 
   for (int b = 0; b < numEnvs; b++) {
     glm::mat4 view = world_to_camera;
-    auto env = renderer_->makeEnvironment(scene_, view, sensor0.hfov, 0.f, 0.01,
-                                          1000.f);
+    constexpr float near = 0.01;
+    constexpr float far = 1000.f;
+    constexpr float hfov = 60.f; // arbitrary; will be reset later
+    auto env = renderer_->makeEnvironment(scene_, view, hfov, aspectRatio, near, far);
     envs_.emplace_back(std::move(env));
   }
 }
@@ -1317,8 +1309,7 @@ BatchedSimulator::BatchedSimulator(const BatchedSimulatorConfig& config) {
     std::string cameraAttachLinkName = "torso_lift_link";
     Mn::Vector3 camPos = {-0.536559, 1.16173, 0.568379};
     Mn::Quaternion camRot = {{-0.26714, -0.541109, -0.186449}, 0.775289};
-    const auto cameraMat = Mn::Matrix4::from(camRot.toMatrix(), camPos);
-    attachCameraToLink(cameraAttachLinkName, cameraMat);
+    setRobotCamera(cameraAttachLinkName, camPos, camRot, /*hfov*/60.f);
   }
 
   if (config_.doAsyncPhysicsStep) {
@@ -1350,43 +1341,6 @@ int BatchedSimulator::getNumActions() const {
   BATCHED_SIM_ASSERT(!serializeCollection_.robots.empty());
   return serializeCollection_.robots[0].actionMap.numActions;
 }
-
-
-void BatchedSimulator::setCamera(const Mn::Vector3& camPos, const Mn::Quaternion& camRot) {
-
-  const int numEnvs = config_.numEnvs;
-
-  robot_.cameraAttachNode_ = -1; // unattach camera
-
-  glm::mat4 world_to_camera(glm::inverse(toGlmMat4(camPos, camRot)));
-
-  for (int b = 0; b < numEnvs; b++) {
-    auto& env = bpsWrapper_->envs_[b];
-    env.setCameraView(world_to_camera);
-  }
-}
-
-void BatchedSimulator::attachCameraToLink(const std::string& linkName, const Magnum::Matrix4& mat) {
-  
-  const int numEnvs = config_.numEnvs;
-  
-  BATCHED_SIM_ASSERT(robot_.linkIndexByName_.count(linkName));
-
-  int linkIndex = robot_.linkIndexByName_[linkName];
-
-  robot_.cameraAttachNode_ = linkIndex + 1;
-  robot_.cameraAttachTransform_ = mat;
-
-  // todo: threadsafe
-  for (int b = 0; b < numEnvs; b++) {
-    auto& env = bpsWrapper_->envs_[b];
-    auto& robotInstance = robots_.robotInstances_[b];
-    auto cameraTransform = robotInstance.cameraAttachNodeTransform_ * robot_.cameraAttachTransform_;
-    auto glCameraNewInvTransform = glm::inverse(toGlmMat4(cameraTransform));
-    env.setCameraView(glCameraNewInvTransform);
-  }
-}
-
 
 bps3D::Environment& BatchedSimulator::getBpsEnvironment(int envIndex) {
   BATCHED_SIM_ASSERT(envIndex < config_.numEnvs);
@@ -2033,10 +1987,74 @@ bool BatchedSimulator::isPhysicsThreadActive() const {
     (!isStepPhysicsOrResetFinished_ || signalStepPhysics_);
 }
 
+
+void BatchedSimulator::setRobotCamera(const std::string& linkName, const Mn::Vector3& pos, const Mn::Quaternion& rotation, float hfov) {
+
+  BATCHED_SIM_ASSERT(robot_.linkIndexByName_.count(linkName));
+  int linkIndex = robot_.linkIndexByName_[linkName];
+  robot_.cameraAttachNode_ = linkIndex + 1;
+  robot_.cameraAttachTransform_ = Mn::Matrix4::from(rotation.toMatrix(), pos);
+  cameraHfov_ = hfov;
+
+  freeCameraTransform_ = Cr::Containers::NullOpt;
+}
+
+void BatchedSimulator::setFreeCamera(const Mn::Vector3& pos, const Mn::Quaternion& rotation, float hfov) {
+  robot_.cameraAttachNode_ = -1;
+  freeCameraTransform_ = Mn::Matrix4::from(rotation.toMatrix(), pos);
+  cameraHfov_ = hfov;
+}
+
+
+void BatchedSimulator::setBpsCameraHelper(int b, const glm::mat4& glCameraInvTransform, float hfov) {
+  float aspectRatio = float(config_.sensor0.width) / float(config_.sensor0.height);
+  BATCHED_SIM_ASSERT(hfov > 0.f && hfov < 180.f);
+  constexpr float near = 0.01;
+  constexpr float far = 1000.f;
+  auto& env = safeVectorGet(bpsWrapper_->envs_, b);
+  env.setCamera(glCameraInvTransform, hfov, aspectRatio, near, far);
+
+}
+
+void BatchedSimulator::updateBpsCameras() {
+
+  if (robot_.cameraAttachNode_ == -1) {
+
+    BATCHED_SIM_ASSERT(freeCameraTransform_);
+    glm::mat4 world_to_camera(glm::inverse(toGlmMat4(*freeCameraTransform_)));
+
+    for (int b = 0; b < config_.numEnvs; b++) {
+      setBpsCameraHelper(b, world_to_camera, cameraHfov_);
+    }
+  } else {
+
+    const int numLinks = robots_.robot_->artObj->getNumLinks();
+    const int numNodes = numLinks + 1;
+
+    const auto& cameraAttachTransform = robot_.cameraAttachTransform_;
+    const int cameraAttachNode = robot_.cameraAttachNode_;
+
+    for (int b = 0; b < config_.numEnvs; b++) {
+
+      const int baseInstanceIndex = b * numNodes;
+      const auto instanceIndex = baseInstanceIndex + cameraAttachNode;
+      const auto& cameraAttachNodeTransform = safeVectorGet(robots_.nodeNewTransforms_, instanceIndex);
+
+      auto cameraTransform = cameraAttachNodeTransform * cameraAttachTransform;
+      auto glCameraNewInvTransform = glm::inverse(toGlmMat4(cameraTransform));
+
+      setBpsCameraHelper(b, glCameraNewInvTransform, cameraHfov_);
+    }
+  }
+}
+
 void BatchedSimulator::startRender() {
   BATCHED_SIM_ASSERT(!isPhysicsThreadActive());
   ProfilingScope scope("start render");
   BATCHED_SIM_ASSERT(isOkToRender_);
+
+  updateBpsCameras();
+
   bpsWrapper_->renderer_->render(bpsWrapper_->envs_.data());
   isOkToRender_ = false;
   isRenderStarted_ = true;

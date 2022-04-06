@@ -25,7 +25,6 @@ namespace batched_sim {
 struct CameraSensorConfig {
   int width = -1;
   int height = -1;
-  float hfov = -1.f;
 };
 
 struct BatchedSimulatorConfig {
@@ -172,7 +171,8 @@ class RobotInstanceSet {
   // don't try to pack this with other structs anywhere because it's int8
   std::vector<esp::batched_sim::ColumnGridSource::QueryCacheValue> collisionSphereQueryCaches_;
   // size = num robot instances * robot num instances
-  std::vector<glm::mat4x3> nodeNewTransforms_;
+  // perf todo: avoid wasted storage? store as 4x3
+  std::vector<Magnum::Matrix4> nodeNewTransforms_;
   // size = num robot instances
   std::vector<bool> collisionResults_;
   bool areCollisionResultsValid_ = false;
@@ -198,6 +198,9 @@ class BatchedSimulator {
     return serializeCollection_;
   }
 
+  void setRobotCamera(const std::string& linkName, const Mn::Vector3& pos, const Mn::Quaternion& rotation, float hfov);
+  void setFreeCamera(const Magnum::Vector3& pos, const Magnum::Quaternion& rotation, float hfov);
+
   void startRender();
   void waitRender();
 
@@ -208,11 +211,6 @@ class BatchedSimulator {
   void waitStepPhysicsOrReset();
 
   bps3D::Renderer& getBpsRenderer();
-
-  // For debugging. Sets camera for all envs.
-  // todo: threadsafe or guard
-  void setCamera(const Mn::Vector3& camPos, const Mn::Quaternion& camRot);
-  void attachCameraToLink(const std::string& linkName, const Magnum::Matrix4& mat);
 
   bps3D::Environment& getBpsEnvironment(int envIndex);
 
@@ -259,6 +257,8 @@ class BatchedSimulator {
   void updateGripping();
   void resetHelper();
   void updatePythonEnvironmentState();
+  void updateBpsCameras();
+  void setBpsCameraHelper(int b, const glm::mat4& glCameraInvTransform, float hfov);
 
   // uses episode spawn location
   void spawnFreeObject(int b, int freeObjectIndex, bool reinsert);
@@ -300,6 +300,8 @@ class BatchedSimulator {
   std::vector<int> resets_; // episode index, or -1 if not resetting
   int maxStorageSteps_ = -1;
   std::vector<PythonEnvironmentState> pythonEnvStates_;
+  Corrade::Containers::Optional<Magnum::Matrix4> freeCameraTransform_;
+  float cameraHfov_ = -1.f;
 
   EpisodeSet episodeSet_;
   EpisodeInstanceSet episodeInstanceSet_;

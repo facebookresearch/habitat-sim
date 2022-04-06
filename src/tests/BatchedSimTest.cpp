@@ -191,21 +191,21 @@ TEST_F(BatchedSimulatorTest, basic) {
   esp::logging::LoggingContext loggingContext;
 
   constexpr bool doOverlapPhysics = false;
-  constexpr bool doFreeCam = false;
+  constexpr bool doFreeCam = true;
   bool doTuneRobotCam = false;
   constexpr bool doSaveAllFramesForVideo = false; // see make_video_from_image_files.py
   constexpr bool doPairedDebugEnvs = true;
   constexpr bool includeDepth = false;
   constexpr bool includeColor = true;
+  constexpr float cameraHfov = 70.f;
 
   const bool forceRandomActions = doFreeCam || doTuneRobotCam;
 
   BatchedSimulatorConfig config{
-      // for video: 2048 x 1024, fov 80
       .numEnvs = 16, .gpuId = 0, 
       .includeDepth = includeDepth,
       .includeColor = includeColor,
-      .sensor0 = {.width = 768, .height = 768, .hfov = 70},
+      .sensor0 = {.width = 768, .height = 768},
       .forceRandomActions = forceRandomActions,
       .doAsyncPhysicsStep = doOverlapPhysics,
       .numSubsteps = 1,
@@ -230,20 +230,18 @@ TEST_F(BatchedSimulatorTest, basic) {
     cameraAttachLinkName = "torso_lift_link";
     camPos = {-0.536559, 1.16173, 0.568379};
     camRot = {{-0.26714, -0.541109, -0.186449}, 0.775289};
-
-    const auto cameraMat = Mn::Matrix4::from(camRot.toMatrix(), camPos);
-    bsim.attachCameraToLink(cameraAttachLinkName, cameraMat);
+    bsim.setRobotCamera(cameraAttachLinkName, camPos, camRot, cameraHfov);
   } else {
-    if (config.sensor0.hfov == 70.f) {
+    if (cameraHfov == 70.f) {
       camPos = {-1.61004, 1.5, 3.5455};
       camRot = {{0, -0.529178, 0}, 0.848511};
-    } else if (config.sensor0.hfov == 25.f) {
+    } else if (cameraHfov == 25.f) {
       camRot = {{-0.339537084, -0.484963357, -0.211753935}, 0.777615011};
       camPos = {-4.61396408, 9.11192417, 4.26546907};
     } else {
       CORRADE_INTERNAL_ASSERT_UNREACHABLE();
     }
-    bsim.setCamera(camPos, camRot);    
+    bsim.setFreeCamera(camPos, camRot, cameraHfov);    
   }
 
   float moveSpeed = 1.f;
@@ -488,11 +486,11 @@ TEST_F(BatchedSimulatorTest, basic) {
       }
 
       if (doFreeCam) {
-        bsim.setCamera(camPos, camRot);
+        bsim.setFreeCamera(camPos, camRot, cameraHfov);
       } else {
         const auto cameraMat = Mn::Matrix4::from(camRot.toMatrix(), camPos);
         ESP_DEBUG() << "camPos: " << camPos << ", camRot: " << camRot;
-        bsim.attachCameraToLink(cameraAttachLinkName, cameraMat);
+        bsim.setRobotCamera(cameraAttachLinkName, camPos, camRot, cameraHfov);
       }
     }
 
@@ -510,7 +508,7 @@ TEST_F(BatchedSimulatorTest, basic) {
 
       // move camera slightly
       camPos.y() -= 0.01f;
-      bsim.setCamera(camPos, camRot);
+      bsim.setFreeCamera(camPos, camRot, cameraHfov);
 
       if (autoplayProgress >= animDuration) {
         isAutoplay = false;

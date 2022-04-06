@@ -31,8 +31,7 @@ py::capsule getDepthMemory(BatchedSimulator& bsim, const uint32_t groupIdx)
 void initBatchedSimBindings(py::module& m) {
   py::class_<CameraSensorConfig>(m, "CameraSensorConfig")
       .def_readwrite("width", &CameraSensorConfig::width, R"(Todo)")
-      .def_readwrite("height", &CameraSensorConfig::height, R"(Todo)")
-      .def_readwrite("hfov", &CameraSensorConfig::hfov, R"(Todo)");
+      .def_readwrite("height", &CameraSensorConfig::height, R"(Todo)");
 
   py::class_<BatchedSimulatorConfig, BatchedSimulatorConfig::ptr>(
       m, "BatchedSimulatorConfig")
@@ -78,6 +77,10 @@ void initBatchedSimBindings(py::module& m) {
            &BatchedSimulator::getNumEpisodes, R"(todo)")
       .def("get_num_actions",
            &BatchedSimulator::getNumActions, R"(todo)")
+      .def("set_robot_camera",
+           &BatchedSimulator::setRobotCamera, R"(todo)")
+      .def("set_free_camera",
+           &BatchedSimulator::setFreeCamera, R"(todo)")
       .def("reset",
            &BatchedSimulator::reset, R"(todo)")
       .def("get_environment_states",
