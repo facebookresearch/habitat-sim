@@ -168,6 +168,14 @@ if(BUILD_WITH_BULLET AND NOT USE_SYSTEM_BULLET)
     # shared libs)
     set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
   endif()
+  ## Bullet Optimisation Bug
+  # We need to define this macro for bullet to bypass an early-out optimisation that
+  # was added to bullet via this PR https://github.com/bulletphysics/bullet3/pull/4190 ,
+  # specifically here :
+  #      https://github.com/erwincoumans/bullet3/blob/28b951c128b53e1dcf26271dd47b88776148a940/src/BulletCollision/CollisionDispatch/btConvexConcaveCollisionAlgorithm.cpp#L106
+  # that causes rigid objects to never come to rest.
+  # This needs to be further examined on bullet side
+  add_definitions(-DBT_DISABLE_CONVEX_CONCAVE_EARLY_OUT=1)
   add_subdirectory(${DEPS_DIR}/bullet3 EXCLUDE_FROM_ALL)
   set(CMAKE_CXX_FLAGS ${_PREV_CMAKE_CXX_FLAGS})
 endif()
