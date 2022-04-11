@@ -32,7 +32,7 @@ def is_notebook() -> bool:
         return True
 
 
-def get_fast_video_writer(video_file: str, fps: int = 60):
+def get_fast_video_writer(video_file: str, fps: int = 60, include_frame_number = False):
     if (
         "google.colab" in sys.modules
         and os.path.splitext(video_file)[-1] == ".mp4"
@@ -51,7 +51,11 @@ def get_fast_video_writer(video_file: str, fps: int = 60):
         )
     else:
         # Use software encoding
-        writer = imageio.get_writer(video_file, fps=fps)
+        output_params = [
+                "-vf", 
+                "drawtext=fontfile=Arial.ttf: text='%{frame_num}': start_number=0: x=0: y=2: fontcolor=black: fontsize=10: box=1: boxcolor=white: boxborderw=1"
+                ] if include_frame_number else None
+        writer = imageio.get_writer(video_file, fps=fps, output_params=output_params)
     return writer
 
 
@@ -210,6 +214,7 @@ def make_video(
     overlay_settings: Optional[List[Dict[str, Any]]] = None,
     depth_clip: Optional[float] = 10.0,
     observation_to_image=observation_to_image,
+    include_frame_number = False,
 ):
     """Build a video from a passed observations array, with some images optionally overlayed.
     :param observations: List of observations from which the video should be constructed.
@@ -233,7 +238,7 @@ def make_video(
     if not video_file.endswith(".mp4"):
         video_file = video_file + ".mp4"
     print("Encoding the video: %s " % video_file)
-    writer = get_fast_video_writer(video_file, fps=fps)
+    writer = get_fast_video_writer(video_file, fps=fps, include_frame_number=include_frame_number)
     observation_to_image = partial(observation_to_image, depth_clip=depth_clip)
 
     for ob in observations:
