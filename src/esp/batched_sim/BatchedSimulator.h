@@ -63,6 +63,7 @@ struct PythonEnvironmentState {
   Magnum::Vector3 robot_pos;
   Magnum::Quaternion robot_rotation;
   std::vector<float> robot_joint_positions;
+  std::vector<float> robot_joint_positions_normalized;
   Magnum::Vector3 ee_pos;
   Magnum::Quaternion ee_rotation;
   bool did_collide = false;

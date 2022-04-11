@@ -61,6 +61,7 @@ void initBatchedSimBindings(py::module& m) {
       .def_readwrite("robot_pos", &PythonEnvironmentState::robot_pos, R"(Todo)")
       .def_readwrite("robot_rotation", &PythonEnvironmentState::robot_rotation, R"(Todo)")
       .def_readwrite("robot_joint_positions", &PythonEnvironmentState::robot_joint_positions, R"(Todo)")
+      .def_readwrite("robot_joint_positions_normalized", &PythonEnvironmentState::robot_joint_positions_normalized, R"(Todo)")
       .def_readwrite("ee_pos", &PythonEnvironmentState::ee_pos, R"(Todo)")
       .def_readwrite("ee_rotation", &PythonEnvironmentState::ee_rotation, R"(Todo)")
       .def_readwrite("did_collide", &PythonEnvironmentState::did_collide, R"(Todo)")

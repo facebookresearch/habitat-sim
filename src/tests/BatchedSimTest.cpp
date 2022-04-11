@@ -181,6 +181,10 @@ int key_press() { // not working: ¹ (251), num lock (-144), caps lock (-20), wi
     }
 }
 
+float calcLerpFraction(float x, float src0, float src1) {
+  BATCHED_SIM_ASSERT(src0 < src1);
+  return (x - src0) / (src1 - src0);
+}
 
 }  // namespace
 
@@ -191,7 +195,7 @@ TEST_F(BatchedSimulatorTest, basic) {
   esp::logging::LoggingContext loggingContext;
 
   constexpr bool doOverlapPhysics = false;
-  constexpr bool doFreeCam = true;
+  constexpr bool doFreeCam = false;
   bool doTuneRobotCam = false;
   constexpr bool doSaveAllFramesForVideo = false; // see make_video_from_image_files.py
   constexpr bool doPairedDebugEnvs = true;
@@ -202,7 +206,7 @@ TEST_F(BatchedSimulatorTest, basic) {
   const bool forceRandomActions = doFreeCam || doTuneRobotCam;
 
   BatchedSimulatorConfig config{
-      .numEnvs = 16, .gpuId = 0, 
+      .numEnvs = 1, .gpuId = 0, 
       .includeDepth = includeDepth,
       .includeColor = includeColor,
       .sensor0 = {.width = 768, .height = 768},
@@ -372,13 +376,13 @@ TEST_F(BatchedSimulatorTest, basic) {
         jointPosIdx = 0 + keyIdx / 2;
         jointPlusMinus = (keyIdx % 2 == 1) ? -1.f : 1.f;
       } else if (key == 'w') {
-        baseForward += actionMap.baseRotate.stepMax;
+        baseForward += 1.f;
       } else if (key == 's') {
-        baseForward += actionMap.baseRotate.stepMin;
+        baseForward += -1.f;
       } else if (key == 'a') {
-        baseYaw += actionMap.baseRotate.stepMax;
+        baseYaw += 1.f;
       } else if (key == 'd') {
-        baseYaw += actionMap.baseRotate.stepMin;
+        baseYaw += -1.f;
       } else if (key == 'e') {
         baseUpDown = 0.1f;
       } else if (key == 'q') {
@@ -401,7 +405,7 @@ TEST_F(BatchedSimulatorTest, basic) {
         float* actionsForEnv = &actions[b * actionDim];
 
         for (int j = 0; j < actionDim; j++) {
-          actionsForEnv[j] = 0.f;
+          actionsForEnv[j] = 0.5f;
         }
 
         const auto& envState = envStates[b];
@@ -416,16 +420,18 @@ TEST_F(BatchedSimulatorTest, basic) {
           // do nothing
           actionsForEnv[actionMap.graspRelease.actionIdx] = actionMap.graspRelease.thresholds[0] + eps;
         }
-        actionsForEnv[actionMap.baseRotate.actionIdx] = baseYaw * moveSpeed;
-        actionsForEnv[actionMap.baseMove.actionIdx] = baseForward * moveSpeed;
+        actionsForEnv[actionMap.baseRotate.actionIdx] = calcLerpFraction(baseYaw * moveSpeed, -1.f, 1.f);
+        actionsForEnv[actionMap.baseMove.actionIdx] = calcLerpFraction(baseForward * moveSpeed, -1.f, 1.f);
 
         if (jointPosIdx != -1) {
           BATCHED_SIM_ASSERT(jointPosIdx < actionMap.joints.size());
           const auto& jointActionSetup = actionMap.joints[jointPosIdx];
-          actionsForEnv[jointActionSetup.second.actionIdx] = jointPlusMinus > 0.f
-            ? jointPlusMinus * jointActionSetup.second.stepMax * moveSpeed
-            : -jointPlusMinus * jointActionSetup.second.stepMin * moveSpeed;
+          // actionsForEnv[jointActionSetup.second.actionIdx] = jointPlusMinus > 0.f
+          //   ? jointPlusMinus * jointActionSetup.second.stepMax * moveSpeed
+          //   : -jointPlusMinus * jointActionSetup.second.stepMin * moveSpeed;
+          actionsForEnv[jointActionSetup.second.actionIdx]  = calcLerpFraction(jointPlusMinus * moveSpeed, -1.f, 1.f);
         }
+        
 
         // 0-1 I don't know these
         // 2 is torso up/down

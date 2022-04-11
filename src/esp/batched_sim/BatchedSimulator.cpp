@@ -382,10 +382,31 @@ void BatchedSimulator::updatePythonEnvironmentState() {
     envState.robot_pos = Mn::Vector3(positions[b].x(), 0.f, positions[b].y());
     envState.robot_rotation = yawToRotation(yaws[b]);
     envState.robot_joint_positions.resize(numPosVars);
+    envState.robot_joint_positions_normalized.resize(numPosVars);
     int baseJointIndex = b * robot_.numPosVars;
     for (int j = 0; j < numPosVars; j++) {
       const auto& pos = jointPositions[baseJointIndex + j];
       safeVectorGet(envState.robot_joint_positions, j) = pos;
+
+      float normalizedPos = 0.f;
+      if (robot_.jointPositionLimits.first[j] == -INFINITY) {
+        // if limits are +/- infinity, we assume this is an angular joint. We normalize
+        // it by wrapping into range (-2*PI, 2*PI) radians.
+        BATCHED_SIM_ASSERT(robot_.jointPositionLimits.second[j] == INFINITY);
+        normalizedPos = pos;
+        while (normalizedPos > float(Mn::Rad(Mn::Deg(180.f)))) {
+          normalizedPos -= float(Mn::Rad(Mn::Deg(360.f)));
+        }
+        while (normalizedPos <= -float(Mn::Rad(Mn::Deg(180.f)))) {
+          normalizedPos += float(Mn::Rad(Mn::Deg(360.f)));
+        }
+      } else {
+        BATCHED_SIM_ASSERT(robot_.jointPositionLimits.second[j] != INFINITY);
+        BATCHED_SIM_ASSERT(robot_.jointPositionLimits.first[j] < robot_.jointPositionLimits.second[j]);
+        normalizedPos = (pos - robot_.jointPositionLimits.first[j]) 
+          / (robot_.jointPositionLimits.second[j] - robot_.jointPositionLimits.first[j]);
+      }
+      safeVectorGet(envState.robot_joint_positions_normalized, j) = normalizedPos;
     }
     envState.ee_pos = robotInstance.cachedGripperLinkMat_.translation();
     envState.ee_rotation = Mn::Quaternion::fromMatrix(
@@ -1714,23 +1735,25 @@ void BatchedSimulator::setActionsResets(std::vector<float>&& actions, std::vecto
     << "at least one of actions or resets must be length " << actions_.size());              
   const int numEnvs = config_.numEnvs;
 
+    constexpr float defaultAction = 0.5f; // actions are normalized 0..1
+
   if (config_.forceRandomActions) {
     for (auto& action : actions_) {
-      action = random_.uniform_float(-1.f, 1.f);
+      action = random_.uniform_float(0.f, 1.f);
     }
   } else {
     if (!actions.empty()) {
       actions_ = std::move(actions);
     } else {
-      std::fill(actions_.begin(), actions_.end(), 0.f);
+      std::fill(actions_.begin(), actions_.end(), 0.5f);
     }
   }
 
   for (int b = 0; b < numEnvs; b++) {
-    // force zero actions on first step of episode
+    // force default actions on first step of episode
     const auto& envState = safeVectorGet(pythonEnvStates_, b);
     if (envState.episode_step_idx == 0) {
-      std::fill(&actions_[b * actionDim_], &actions_[(b + 1) * actionDim_], 0.f);
+      std::fill(&actions_[b * actionDim_], &actions_[(b + 1) * actionDim_], defaultAction);
     }
   }
 
