@@ -53,7 +53,7 @@ def get_fast_video_writer(video_file: str, fps: int = 60, include_frame_number =
         # Use software encoding
         output_params = [
                 "-vf", 
-                "drawtext=fontfile=Arial.ttf: text='%{frame_num}': start_number=0: x=0: y=2: fontcolor=black: fontsize=10: box=1: boxcolor=white: boxborderw=1"
+                "drawtext=fontfile=Arial.ttf: text='%{frame_num}': start_number=0: x=0: y=1: fontcolor=black: fontsize=10: box=1: boxcolor=white: boxborderw=1"
                 ] if include_frame_number else None
         writer = imageio.get_writer(video_file, fps=fps, output_params=output_params)
     return writer
