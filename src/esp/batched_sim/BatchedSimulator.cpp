@@ -38,6 +38,12 @@ static constexpr glm::mat4x3 identityGlMat_ = glm::mat4x3(
   0.f, 0.f, 1.f, 
   0.f, 0.f, 0.f);
 
+float remapAction(float action, float stepMin, float stepMax) {
+  // map (-1..+1) to (stepMin..stepMax) and clamp
+  float clampedNormalizedAction = (Mn::Math::clamp(action, -1.f, 1.f) + 1.f) * 0.5f;
+  return Mn::Math::lerp(stepMin, stepMax, clampedNormalizedAction);
+}
+
 Mn::Vector3 toMagnumVector3(const btVector3& src) {
   return {src.x(), src.y(), src.z()};
 }
@@ -1735,17 +1741,17 @@ void BatchedSimulator::setActionsResets(std::vector<float>&& actions, std::vecto
     << "at least one of actions or resets must be length " << actions_.size());              
   const int numEnvs = config_.numEnvs;
 
-    constexpr float defaultAction = 0.5f; // actions are normalized 0..1
+    constexpr float defaultAction = 0.0f; // actions are normalized -1..1
 
   if (config_.forceRandomActions) {
     for (auto& action : actions_) {
-      action = random_.uniform_float(0.f, 1.f);
+      action = random_.uniform_float(-1.f, 1.f);
     }
   } else {
     if (!actions.empty()) {
       actions_ = std::move(actions);
     } else {
-      std::fill(actions_.begin(), actions_.end(), 0.5f);
+      std::fill(actions_.begin(), actions_.end(), defaultAction);
     }
   }
 
@@ -1914,14 +1920,14 @@ void BatchedSimulator::substepPhysics() {
       robotInstance.doAttemptDrop_ = graspReleaseAction < graspReleaseSetup.thresholds[0];
     }
 
-    const float clampedBaseYawAction = Mn::Math::clamp(baseRotateAction * (baseRotateSetup.stepMax - baseRotateSetup.stepMin) + baseRotateSetup.stepMin, baseRotateSetup.stepMin, baseRotateSetup.stepMax);
-    yaws[b] = prevYaws[b] + clampedBaseYawAction; // todo: wrap angle to 360 degrees
+    const float remappedBaseYawAction = remapAction(baseRotateAction, baseRotateSetup.stepMin, baseRotateSetup.stepMax);
+    yaws[b] = prevYaws[b] + remappedBaseYawAction;
 
-    float clampedBaseMovementAction = Mn::Math::clamp(baseMoveAction * (baseMoveSetup.stepMax - baseMoveSetup.stepMin) + baseMoveSetup.stepMin, baseMoveSetup.stepMin, baseMoveSetup.stepMax);
+    float remappedBaseMovementAction = remapAction(baseMoveAction, baseMoveSetup.stepMin, baseMoveSetup.stepMax);
     positions[b] =
         prevPositions[b] + 
         Mn::Vector2(Mn::Math::cos(Mn::Math::Rad(yaws[b])), -Mn::Math::sin(Mn::Math::Rad(yaws[b]))) 
-        * clampedBaseMovementAction;
+        * remappedBaseMovementAction;
 
     // sloppy: copy over all jointPositions, then process actionJointDegreePairs
     int baseJointIndex = b * robot_.numPosVars;
@@ -1938,9 +1944,8 @@ void BatchedSimulator::substepPhysics() {
       BATCHED_SIM_ASSERT(j >= 0 && j < robot_.numPosVars);
       auto& pos = jointPositions[baseJointIndex + j];
       const auto& prevPos = prevJointPositions[baseJointIndex + j];
-      const float clampedJointMovementAction = Mn::Math::clamp(jointMovementAction * (actionSetup.stepMax - actionSetup.stepMin) + actionSetup.stepMin, 
-        actionSetup.stepMin, actionSetup.stepMax);
-      pos = prevPos + clampedJointMovementAction;
+      const float remappedJointMovementAction = remapAction(jointMovementAction, actionSetup.stepMin, actionSetup.stepMax);
+      pos = prevPos + remappedJointMovementAction;
       pos = Mn::Math::clamp(pos, robot_.jointPositionLimits.first[j],
                             robot_.jointPositionLimits.second[j]);      
     }

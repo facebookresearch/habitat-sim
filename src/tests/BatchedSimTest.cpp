@@ -404,8 +404,9 @@ TEST_F(BatchedSimulatorTest, basic) {
       for (int b = 0; b < config.numEnvs; b++) {
         float* actionsForEnv = &actions[b * actionDim];
 
+        constexpr float defaultAction = 0.f;
         for (int j = 0; j < actionDim; j++) {
-          actionsForEnv[j] = 0.5f;
+          actionsForEnv[j] = defaultAction;
         }
 
         const auto& envState = envStates[b];
@@ -420,8 +421,8 @@ TEST_F(BatchedSimulatorTest, basic) {
           // do nothing
           actionsForEnv[actionMap.graspRelease.actionIdx] = actionMap.graspRelease.thresholds[0] + eps;
         }
-        actionsForEnv[actionMap.baseRotate.actionIdx] = calcLerpFraction(baseYaw * moveSpeed, -1.f, 1.f);
-        actionsForEnv[actionMap.baseMove.actionIdx] = calcLerpFraction(baseForward * moveSpeed, -1.f, 1.f);
+        actionsForEnv[actionMap.baseRotate.actionIdx] = baseYaw * moveSpeed;
+        actionsForEnv[actionMap.baseMove.actionIdx] = baseForward * moveSpeed;
 
         if (jointPosIdx != -1) {
           BATCHED_SIM_ASSERT(jointPosIdx < actionMap.joints.size());
@@ -429,7 +430,7 @@ TEST_F(BatchedSimulatorTest, basic) {
           // actionsForEnv[jointActionSetup.second.actionIdx] = jointPlusMinus > 0.f
           //   ? jointPlusMinus * jointActionSetup.second.stepMax * moveSpeed
           //   : -jointPlusMinus * jointActionSetup.second.stepMin * moveSpeed;
-          actionsForEnv[jointActionSetup.second.actionIdx]  = calcLerpFraction(jointPlusMinus * moveSpeed, -1.f, 1.f);
+          actionsForEnv[jointActionSetup.second.actionIdx]  = jointPlusMinus * moveSpeed;
         }
         
 
