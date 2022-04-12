@@ -81,47 +81,6 @@ std::string getMeshNameFromURDFVisualFilepath(const std::string& filepath) {
   return retval;
 }
 
-#ifdef ENABLE_DEBUG_INSTANCES
-bool isPairedDebugEnv(const BatchedSimulatorConfig& config, int b) {
-  return config.doPairedDebugEnvs && (b % 2 == 1);
-}
-
-bool shouldDrawDebugForEnv(const BatchedSimulatorConfig& config, int b, int substep) {
-  return isPairedDebugEnv(config, b) && (substep % config.numSubsteps == 0);
-}
-bool shouldAddColumnGridDebugVisualsForEnv(const BatchedSimulatorConfig& config, int b) {
-  return isPairedDebugEnv(config, b);
-}
-bool disableRobotVisualsForEnv(const BatchedSimulatorConfig& config, int b) {
-  return isPairedDebugEnv(config, b);
-}
-bool disableFreeObjectVisualsForEnv(const BatchedSimulatorConfig& config, int b) {
-  return isPairedDebugEnv(config, b);
-}
-bool disableStageVisualsForEnv(const BatchedSimulatorConfig& config, int b) {
-  return isPairedDebugEnv(config, b);
-}
-#else
-constexpr bool isPairedDebugEnv(const BatchedSimulatorConfig&, int) {
-  return false;
-}
-constexpr bool shouldDrawDebugForEnv(const BatchedSimulatorConfig&, int, int) {
-  return false;
-}
-constexpr bool shouldAddColumnGridDebugVisualsForEnv(const BatchedSimulatorConfig&, int) {
-  return false;
-}
-constexpr bool disableRobotVisualsForEnv(const BatchedSimulatorConfig&, int) {
-  return false;
-}
-constexpr bool disableFreeObjectVisualsForEnv(const BatchedSimulatorConfig&, int) {
-  return false;
-}
-constexpr bool disableStageVisualsForEnv(const BatchedSimulatorConfig&, int) {
-  return false; // false;
-}
-#endif
-
 }  // namespace
 
 
@@ -163,13 +122,8 @@ RobotInstanceSet::RobotInstanceSet(Robot* robot,
         auto instanceBlueprint =
             robot_->sceneMapping_->findInstanceBlueprint(nodeName);
 
-        if (!disableRobotVisualsForEnv(*config_, b)) {
-          instanceId = env.addInstance(instanceBlueprint.meshIdx_, 
-            instanceBlueprint.mtrlIdx_, identityGlMat_);
-        } else {
-          // sloppy; avoid leaving as -1 because that indicates no visual model attached to this link
-          instanceId = -2;
-        }
+        instanceId = env.addInstance(instanceBlueprint.meshIdx_, 
+          instanceBlueprint.mtrlIdx_, identityGlMat_);
       } else {
         // these are camera links
         // sloppy: we should avoid having these items in the nodeInstanceIds_
@@ -222,7 +176,6 @@ void BatchedSimulator::updateLinkTransforms(int currRolloutSubstep, bool updateF
 
   BATCHED_SIM_ASSERT(updateForPhysics || updateForRender);
   
-  // esp::gfx::replay::Keyframe debugKeyframe;
   int numLinks = robots_.robot_->artObj->getNumLinks();
   int numNodes = numLinks + 1;
   int numEnvs = config_.numEnvs;
@@ -493,7 +446,7 @@ void BatchedSimulator::updateGripping() {
     envState.drop_height = NAN;
     envState.did_grasp = false;
 
-    if (shouldDrawDebugForEnv(config_, b, substep_)) {
+    if (b < config_.numDebugEnvs) {
 
       const auto& gripperMat = robotInstance.cachedGripperLinkMat_;
       auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
@@ -681,15 +634,14 @@ void BatchedSimulator::updateCollision() {
 
   robots_.areCollisionResultsValid_ = true;
 
-#ifdef ENABLE_DEBUG_INSTANCES
-  std::vector<bool> sphereHits(robot_.numCollisionSpheres_ * numEnvs, false);
-  std::vector<bool> heldObjectHits(numEnvs, false);
-  std::vector<bool> freeObjectHits(episodeSet_.maxFreeObjects_, false);
-#else
   std::vector<bool> sphereHits;
   std::vector<bool> heldObjectHits;
   std::vector<bool> freeObjectHits;
-#endif
+  if (config_.numDebugEnvs > 0) {
+    sphereHits.resize(robot_.numCollisionSpheres_ * config_.numDebugEnvs, false);
+    heldObjectHits.resize(config_.numDebugEnvs, false);
+    freeObjectHits.resize(episodeSet_.maxFreeObjects_, false);
+  }
 
   for (int b = 0; b < numEnvs; b++) {
 
@@ -715,18 +667,12 @@ void BatchedSimulator::updateCollision() {
 
       bool thisSphereHit = columnGridSet.contactTest(radiusIdx, spherePos, &queryCache);
 
-      // If pairedDebugEnv, we want to visualize all collision sphere hits, not just the 
-      // first one. This is misleading debug visualization, since we actually early-out
-      // after the first hit.
-      // (my reasoning is that it will be confusing to casual viewers to see *any* green 
-      // spheres in collision)
       if (thisSphereHit) {
         hit = true;
-        if (shouldDrawDebugForEnv(config_, b, substep_)) {
+        if (b < config_.numDebugEnvs) {
           sphereHits[baseSphereIndex + s] = thisSphereHit;
-        } else {
-          break;
         }
+        break;
       }
     }
 
@@ -743,11 +689,10 @@ void BatchedSimulator::updateCollision() {
         // todo: proper debug-drawing of hits for held object spheres
         if (thisSphereHit) {
           hit = true;
-          if (shouldDrawDebugForEnv(config_, b, substep_)) {
+          if (b < config_.numDebugEnvs) {          
             heldObjectHits[b] = thisSphereHit;
-          } else {
-            break;
           }
+          break;
         }
       }
     }    
@@ -762,7 +707,7 @@ void BatchedSimulator::updateCollision() {
       continue;
     }
 
-    if (robots_.collisionResults_[b] && !shouldDrawDebugForEnv(config_, b, substep_)) {
+    if (robots_.collisionResults_[b]) {
       // already had a hit against column grid so don't test free objects
       continue;
     }
@@ -784,12 +729,11 @@ void BatchedSimulator::updateCollision() {
       int hitFreeObjectIndex = episodeInstance.colGrid_.contactTest(spherePos, sphereRadius);
       if (hitFreeObjectIndex != -1) {
         hit = true;
-        if (shouldDrawDebugForEnv(config_, b, substep_)) {
+        if (b < config_.numDebugEnvs) {
           sphereHits[baseSphereIndex + s] = true;
           freeObjectHits[hitFreeObjectIndex] = true;
-        } else {
-          break;
         }
+        break;
       }
     }
 
@@ -807,18 +751,17 @@ void BatchedSimulator::updateCollision() {
         int hitFreeObjectIndex = episodeInstance.colGrid_.contactTest(sphereWorldOrigin, sphereRadius);
         if (hitFreeObjectIndex != -1) {
           hit = true;
-          if (shouldDrawDebugForEnv(config_, b, substep_)) {
+          if (b < config_.numDebugEnvs) {
             heldObjectHits[b] = true;
             freeObjectHits[hitFreeObjectIndex] = true;
-          } else {
-            break;
           }
+          break;
         }       
       } 
     }    
 
     // render free objects to debug env, colored by collision result
-    if (shouldDrawDebugForEnv(config_, b, substep_)) {
+    if (b < config_.numDebugEnvs) {
       for (int freeObjectIndex = 0; freeObjectIndex < episode.numFreeObjectSpawns_; freeObjectIndex++) {
         if (episodeInstance.colGrid_.isObstacleDisabled(freeObjectIndex)) {
           continue;
@@ -842,7 +785,6 @@ void BatchedSimulator::updateCollision() {
           addSphereDebugInstance("sphere_blue_wireframe", b, sphereWorldOrigin, sphereRadius);
         }
         #endif
-        
 
         freeObjectHits[freeObjectIndex] = false; // clear for next env
       }
@@ -858,7 +800,7 @@ void BatchedSimulator::updateCollision() {
     }
 
     // render collision spheres for debug env, colored by collision result
-    if (shouldDrawDebugForEnv(config_, b, substep_)) {
+    if (b < config_.numDebugEnvs) {
       const auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
       const auto& episode = safeVectorGet(episodeSet_.episodes_, episodeInstance.episodeIndex_);
       const auto& robotInstance = robots_.robotInstances_[b];
@@ -963,27 +905,23 @@ void BatchedSimulator::updateRenderInstances(bool forceUpdate) {
           continue;
         }
 
-        if (!disableRobotVisualsForEnv(config_, b)) {
-          const auto glMat = toGlmMat4x3(safeVectorGet(robots_.nodeNewTransforms_, instanceIndex));
-          env.updateInstanceTransform(instanceId, glMat);
-        }
+        const auto glMat = toGlmMat4x3(safeVectorGet(robots_.nodeNewTransforms_, instanceIndex));
+        env.updateInstanceTransform(instanceId, glMat);
       }
     }
 
     // update gripped free object
     if (didRobotMove && robotInstance.grippedFreeObjectIndex_ != -1) {
 
-      if (!disableFreeObjectVisualsForEnv(config_, b)) {
-        int freeObjectIndex = robotInstance.grippedFreeObjectIndex_;
-        auto mat = getHeldObjectTransform(b);
-        glm::mat4x3 glMat = toGlmMat4x3(mat); 
-        int instanceId = getFreeObjectBpsInstanceId(b, freeObjectIndex);
-        env.updateInstanceTransform(instanceId, glMat);
+      int freeObjectIndex = robotInstance.grippedFreeObjectIndex_;
+      auto mat = getHeldObjectTransform(b);
+      glm::mat4x3 glMat = toGlmMat4x3(mat); 
+      int instanceId = getFreeObjectBpsInstanceId(b, freeObjectIndex);
+      env.updateInstanceTransform(instanceId, glMat);
 
-        auto& envState = safeVectorGet(pythonEnvStates_, b);
-        safeVectorGet(envState.obj_positions, freeObjectIndex) = mat.translation();
-        safeVectorGet(envState.obj_rotations, freeObjectIndex) = Mn::Quaternion::fromMatrix(mat.rotation());
-      }
+      auto& envState = safeVectorGet(pythonEnvStates_, b);
+      safeVectorGet(envState.obj_positions, freeObjectIndex) = mat.translation();
+      safeVectorGet(envState.obj_rotations, freeObjectIndex) = Mn::Quaternion::fromMatrix(mat.rotation());
     }
   }
 
@@ -1232,10 +1170,9 @@ void Robot::updateFromSerializeCollection(const serialize::Collection& serialize
 }
 
 BpsWrapper::BpsWrapper(int gpuId, int numEnvs, bool includeDepth, bool includeColor, 
-  const CameraSensorConfig& sensor0) {
-  glm::u32vec2 out_dim(
-      sensor0.width,
-      sensor0.height);  // see also rollout_test.py, python/rl/agent.py
+  const CameraSensorConfig& sensor) {
+  ESP_CHECK(sensor.width > 0 && sensor.height > 0, "BpsWrapper: invalid sensor width="
+    << sensor.width << " or height=" << sensor.height);
   BATCHED_SIM_ASSERT(gpuId != -1);
 
   bps3D::RenderMode mode {};
@@ -1247,7 +1184,7 @@ BpsWrapper::BpsWrapper(int gpuId, int numEnvs, bool includeDepth, bool includeCo
   }
 
   renderer_ = std::make_unique<bps3D::Renderer>(bps3D::RenderConfig{
-      gpuId, 1, uint32_t(numEnvs), out_dim.x, out_dim.y, false, mode});
+      gpuId, 1, uint32_t(numEnvs), (unsigned int)sensor.width, (unsigned int)sensor.height, false, mode});
 
   loader_ = std::make_unique<bps3D::AssetLoader>(renderer_->makeLoader());
   const std::string filepath =
@@ -1257,7 +1194,7 @@ BpsWrapper::BpsWrapper(int gpuId, int numEnvs, bool includeDepth, bool includeCo
   const Mn::Vector3 camPos(Mn::Math::ZeroInit);
   const Mn::Quaternion camRot(Mn::Math::IdentityInit);
   glm::mat4 world_to_camera(glm::inverse(toGlmMat4(camPos, camRot)));
-  float aspectRatio = float(sensor0.width) / float(sensor0.height);
+  float aspectRatio = float(sensor.width) / float(sensor.height);
 
   for (int b = 0; b < numEnvs; b++) {
     glm::mat4 view = world_to_camera;
@@ -1278,6 +1215,9 @@ BpsWrapper::~BpsWrapper() {
 }
 
 BatchedSimulator::BatchedSimulator(const BatchedSimulatorConfig& config) {
+
+  ESP_CHECK(config.numDebugEnvs <= config.numEnvs, "BatchedSimulator: numDebugEnvs must be <= numEnvs");
+
   config_ = config;
   const int numEnvs = config_.numEnvs;
 
@@ -1288,10 +1228,14 @@ BatchedSimulator::BatchedSimulator(const BatchedSimulatorConfig& config) {
 
   bpsWrapper_ = std::make_unique<BpsWrapper>(config_.gpuId, config_.numEnvs, 
     config_.includeDepth, config_.includeColor, config_.sensor0);
+  if (config_.numDebugEnvs > 0) {
+    debugBpsWrapper_ = std::make_unique<BpsWrapper>(config_.gpuId, config_.numDebugEnvs, 
+      /*includeDepth*/false, /*includeColor*/true, config_.debugSensor);
+  }
 
-#ifdef ENABLE_DEBUG_INSTANCES
-  debugInstancesByEnv_.resize(config_.numEnvs);
-#endif
+  if (config_.numDebugEnvs > 0) {
+    debugInstancesByEnv_.resize(config_.numDebugEnvs);
+  }
   pythonEnvStates_.resize(numEnvs);
 
   initEpisodeSet();
@@ -1336,7 +1280,7 @@ BatchedSimulator::BatchedSimulator(const BatchedSimulatorConfig& config) {
     std::string cameraAttachLinkName = "torso_lift_link";
     Mn::Vector3 camPos = {-0.536559, 1.16173, 0.568379};
     Mn::Quaternion camRot = {{-0.26714, -0.541109, -0.186449}, 0.775289};
-    setRobotCamera(cameraAttachLinkName, camPos, camRot, /*hfov*/60.f);
+    setCamera("sensor0", camPos, camRot, /*hfov*/60.f, cameraAttachLinkName);
   }
 
   if (config_.doAsyncPhysicsStep) {
@@ -1374,6 +1318,12 @@ bps3D::Environment& BatchedSimulator::getBpsEnvironment(int envIndex) {
   return bpsWrapper_->envs_[envIndex];
 }
 
+bps3D::Environment& BatchedSimulator::getDebugBpsEnvironment(int envIndex) {
+  BATCHED_SIM_ASSERT(config_.numDebugEnvs > 0);
+  BATCHED_SIM_ASSERT(envIndex < config_.numDebugEnvs);
+  return debugBpsWrapper_->envs_[envIndex];
+}
+
 // one-time init for envs
 void BatchedSimulator::initEpisodeInstances() {
 
@@ -1407,30 +1357,27 @@ void BatchedSimulator::clearEpisodeInstance(int b) {
     return; // nothing to do
   }
 
-#ifdef ENABLE_DEBUG_INSTANCES
-  for (auto& instanceId : episodeInstance.persistentDebugInstanceIds_) {
-    env.deleteInstance(instanceId);
-  }
-  episodeInstance.persistentDebugInstanceIds_.clear();
-#endif
-
-  if (!disableFreeObjectVisualsForEnv(config_, b)) {
-    // Remove free object bps instances **in reverse order**. This is so bps3D will later
-    // allocate us new instance IDs (from its free list) in ascending order (see assert
-    // in spawnFreeObject).
-    const auto& episode = safeVectorGet(episodeSet_.episodes_, episodeInstance.episodeIndex_);
-    for (int freeObjectIndex = episode.numFreeObjectSpawns_ - 1; freeObjectIndex >= 0; freeObjectIndex--) {
-      int instanceId = getFreeObjectBpsInstanceId(b, freeObjectIndex);
+  if (b < config_.numDebugEnvs) {
+    for (auto& instanceId : episodeInstance.persistentDebugInstanceIds_) {
+      auto& env = getDebugBpsEnvironment(b);
       env.deleteInstance(instanceId);
     }
+    episodeInstance.persistentDebugInstanceIds_.clear();
+  }
+
+  // Remove free object bps instances **in reverse order**. This is so bps3D will later
+  // allocate us new instance IDs (from its free list) in ascending order (see assert
+  // in spawnFreeObject).
+  const auto& episode = safeVectorGet(episodeSet_.episodes_, episodeInstance.episodeIndex_);
+  for (int freeObjectIndex = episode.numFreeObjectSpawns_ - 1; freeObjectIndex >= 0; freeObjectIndex--) {
+    int instanceId = getFreeObjectBpsInstanceId(b, freeObjectIndex);
+    env.deleteInstance(instanceId);
   }
     
   episodeInstance.firstFreeObjectInstanceId_ = -1;
 
-  if (!disableStageVisualsForEnv(config_, b)) {
-    // remove stage bps instance
-    env.deleteInstance(episodeInstance.stageFixedObjectInstanceId_);
-  }
+  // remove stage bps instance
+  env.deleteInstance(episodeInstance.stageFixedObjectInstanceId_);
   
   // remove all free objects from collision grid
   episodeInstance.colGrid_.removeAllObstacles();
@@ -1438,6 +1385,8 @@ void BatchedSimulator::clearEpisodeInstance(int b) {
 
 void BatchedSimulator::resetEpisodeInstance(int b) {
   //ProfilingScope scope("BSim resetEpisodeInstance");
+  ESP_CHECK(resets_[b] >= 0 && resets_[b] < getNumEpisodes(), "resetEpisodeInstance: episode_idx=" 
+    << resets_[b] << " is invalid for getNumEpisodes()=" << getNumEpisodes());
 
   auto& env = getBpsEnvironment(b);
 
@@ -1456,10 +1405,8 @@ void BatchedSimulator::resetEpisodeInstance(int b) {
   {
     const auto& stageBlueprint = 
       safeVectorGet(episodeSet_.fixedObjects_, episode.stageFixedObjIndex).instanceBlueprint_;
-    if (!disableStageVisualsForEnv(config_, b)) {
-      episodeInstance.stageFixedObjectInstanceId_ = env.addInstance(
-        stageBlueprint.meshIdx_, stageBlueprint.mtrlIdx_, identityGlMat_);
-    }
+    episodeInstance.stageFixedObjectInstanceId_ = env.addInstance(
+      stageBlueprint.meshIdx_, stageBlueprint.mtrlIdx_, identityGlMat_);
   }
 
   auto& envState = safeVectorGet(pythonEnvStates_, b);
@@ -1541,7 +1488,7 @@ void BatchedSimulator::resetEpisodeInstance(int b) {
     envState.did_grasp = false;
   }
 
-  if (shouldAddColumnGridDebugVisualsForEnv(config_, b)) {
+  if (b < config_.numDebugEnvs) {
     debugRenderColumnGrids(b);
   }
 }
@@ -1646,15 +1593,13 @@ void BatchedSimulator::spawnFreeObject(int b, int freeObjectIndex, bool reinsert
     Mn::Matrix4 mat = Mn::Matrix4::from(
         rotation.toMatrix(), freeObjectSpawn.startPos_);
     glm::mat4x3 glMat = toGlmMat4x3(mat); 
-    if (!disableFreeObjectVisualsForEnv(config_, b)) {
-      int instanceId = env.addInstance(blueprint.meshIdx_, blueprint.mtrlIdx_, glMat);
-      // store the first free object's bps instanceId and assume the rest will be contiguous
-      if (freeObjectIndex == 0) {
-        BATCHED_SIM_ASSERT(episodeInstance.firstFreeObjectInstanceId_ == -1);
-        episodeInstance.firstFreeObjectInstanceId_ = instanceId;
-      }
-      BATCHED_SIM_ASSERT(instanceId == getFreeObjectBpsInstanceId(b, freeObjectIndex));
+    int instanceId = env.addInstance(blueprint.meshIdx_, blueprint.mtrlIdx_, glMat);
+    // store the first free object's bps instanceId and assume the rest will be contiguous
+    if (freeObjectIndex == 0) {
+      BATCHED_SIM_ASSERT(episodeInstance.firstFreeObjectInstanceId_ == -1);
+      episodeInstance.firstFreeObjectInstanceId_ = instanceId;
     }
+    BATCHED_SIM_ASSERT(instanceId == getFreeObjectBpsInstanceId(b, freeObjectIndex));
   }
 
   if (!reinsert) {
@@ -1693,14 +1638,12 @@ void BatchedSimulator::reinsertFreeObject(int b, int freeObjectIndex,
   auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
   episodeInstance.colGrid_.reinsertObstacle(freeObjectIndex, pos, rotation);
 
-  if (!disableFreeObjectVisualsForEnv(config_, b)) {
-    // sloppy quat to Matrix3x3
-    Mn::Matrix4 mat = Mn::Matrix4::from(
-        rotation.toMatrix(), pos);
-    glm::mat4x3 glMat = toGlmMat4x3(mat); 
-    int instanceId = getFreeObjectBpsInstanceId(b, freeObjectIndex);
-    env.updateInstanceTransform(instanceId, glMat);
-  }
+  // sloppy quat to Matrix3x3
+  Mn::Matrix4 mat = Mn::Matrix4::from(
+      rotation.toMatrix(), pos);
+  glm::mat4x3 glMat = toGlmMat4x3(mat); 
+  int instanceId = getFreeObjectBpsInstanceId(b, freeObjectIndex);
+  env.updateInstanceTransform(instanceId, glMat);
 
   auto& envState = safeVectorGet(pythonEnvStates_, b);
   safeVectorGet(envState.obj_positions, freeObjectIndex) = pos;
@@ -1767,18 +1710,6 @@ void BatchedSimulator::setActionsResets(std::vector<float>&& actions, std::vecto
     resets_ = std::move(resets);
   } else {
     std::fill(resets_.begin(), resets_.end(), -1);
-  }
-
-  if (config_.doPairedDebugEnvs) {
-    // copy actions from non-debug env to its paired debug env
-    // every other env, see isPairedDebugEnv
-    for (int b = 1; b < numEnvs; b += 2) {
-      BATCHED_SIM_ASSERT(isPairedDebugEnv(config_, b));
-      for (int actionIdx = 0; actionIdx < actionDim_; actionIdx++) {
-        actions_[b * actionDim_ + actionIdx] = actions_[(b - 1) * actionDim_ + actionIdx];
-      }
-      resets_[b] = resets_[b - 1];
-    }
   }
 }
 
@@ -2016,6 +1947,40 @@ bool BatchedSimulator::isPhysicsThreadActive() const {
 }
 
 
+void BatchedSimulator::enableDebugSensor(bool enable) {
+  BATCHED_SIM_ASSERT(!isRenderStarted_);
+  enableDebugSensor_ = enable;
+}
+
+void BatchedSimulator::setCamera(const std::string& sensorName, const Mn::Vector3& pos, 
+  const Mn::Quaternion& rotation, float hfov, const std::string& attachLinkName) {
+
+  ESP_CHECK(sensorName == "sensor0" || sensorName == "debug", 
+    "setCamera: sensorName must be \"sensor0\" or \"debug\"");
+  if (!config_.numDebugEnvs > 0) {
+    ESP_CHECK(sensorName != "debug", "setCamera: you must set BatchedSimulatorConfig::numDebugEnvs > 0 in order to set the debug camera");
+  }
+
+  int nodeIndex = -1;
+  if (!attachLinkName.empty()) {
+    ESP_CHECK(robot_.linkIndexByName_.count(attachLinkName), 
+      "setCamera: invalid attachLinkName=" << attachLinkName 
+      << ". Check your robot URDF for valid link names.");
+    int linkIndex = robot_.linkIndexByName_[attachLinkName];
+    nodeIndex = linkIndex + 1;
+  }
+
+  const bool isDebug = sensorName == "debug";
+  Camera& cam = isDebug ? debugCam_ : mainCam_;
+
+  cam = Camera{
+    .attachNodeIndex = nodeIndex,
+    .transform = Mn::Matrix4::from(rotation.toMatrix(), pos),
+    .hfov = hfov
+  };
+};
+
+#if 0
 void BatchedSimulator::setRobotCamera(const std::string& linkName, const Mn::Vector3& pos, const Mn::Quaternion& rotation, float hfov) {
 
   BATCHED_SIM_ASSERT(robot_.linkIndexByName_.count(linkName));
@@ -2032,37 +1997,44 @@ void BatchedSimulator::setFreeCamera(const Mn::Vector3& pos, const Mn::Quaternio
   freeCameraTransform_ = Mn::Matrix4::from(rotation.toMatrix(), pos);
   cameraHfov_ = hfov;
 }
+#endif
 
 
-void BatchedSimulator::setBpsCameraHelper(int b, const glm::mat4& glCameraInvTransform, float hfov) {
-  float aspectRatio = float(config_.sensor0.width) / float(config_.sensor0.height);
+void BatchedSimulator::setBpsCameraHelper(bool isDebug, int b, const glm::mat4& glCameraInvTransform, float hfov) {
+  
+  const CameraSensorConfig& sensor = isDebug ? config_.debugSensor : config_.sensor0;
+  float aspectRatio = float(sensor.width) / float(sensor.height);
   BATCHED_SIM_ASSERT(hfov > 0.f && hfov < 180.f);
   constexpr float near = 0.01;
   constexpr float far = 1000.f;
-  auto& env = safeVectorGet(bpsWrapper_->envs_, b);
+  auto& env = isDebug
+    ? getDebugBpsEnvironment(b)
+    : getBpsEnvironment(b);
   env.setCamera(glCameraInvTransform, hfov, aspectRatio, near, far);
 
 }
 
-void BatchedSimulator::updateBpsCameras() {
+void BatchedSimulator::updateBpsCameras(bool isDebug) {
 
-  if (robot_.cameraAttachNode_ == -1) {
+  const Camera& cam = isDebug ? debugCam_ : mainCam_;
+  const int numEnvs = isDebug ? config_.numDebugEnvs : config_.numEnvs;
 
-    BATCHED_SIM_ASSERT(freeCameraTransform_);
-    glm::mat4 world_to_camera(glm::inverse(toGlmMat4(*freeCameraTransform_)));
+  if (cam.attachNodeIndex == -1) {
 
-    for (int b = 0; b < config_.numEnvs; b++) {
-      setBpsCameraHelper(b, world_to_camera, cameraHfov_);
+    glm::mat4 world_to_camera(glm::inverse(toGlmMat4(cam.transform)));
+
+    for (int b = 0; b < numEnvs; b++) {
+      setBpsCameraHelper(isDebug, b, world_to_camera, cam.hfov);
     }
   } else {
 
     const int numLinks = robots_.robot_->artObj->getNumLinks();
     const int numNodes = numLinks + 1;
 
-    const auto& cameraAttachTransform = robot_.cameraAttachTransform_;
-    const int cameraAttachNode = robot_.cameraAttachNode_;
+    const auto& cameraAttachTransform = cam.transform;
+    const int cameraAttachNode = cam.attachNodeIndex;
 
-    for (int b = 0; b < config_.numEnvs; b++) {
+    for (int b = 0; b < numEnvs; b++) {
 
       const int baseInstanceIndex = b * numNodes;
       const auto instanceIndex = baseInstanceIndex + cameraAttachNode;
@@ -2071,7 +2043,7 @@ void BatchedSimulator::updateBpsCameras() {
       auto cameraTransform = cameraAttachNodeTransform * cameraAttachTransform;
       auto glCameraNewInvTransform = glm::inverse(toGlmMat4(cameraTransform));
 
-      setBpsCameraHelper(b, glCameraNewInvTransform, cameraHfov_);
+      setBpsCameraHelper(isDebug, b, glCameraNewInvTransform, cam.hfov);
     }
   }
 }
@@ -2081,9 +2053,14 @@ void BatchedSimulator::startRender() {
   ProfilingScope scope("start render");
   BATCHED_SIM_ASSERT(isOkToRender_);
 
-  updateBpsCameras();
-
+  updateBpsCameras(/*isDebug*/false);
   bpsWrapper_->renderer_->render(bpsWrapper_->envs_.data());
+
+  if (config_.numDebugEnvs > 0 && enableDebugSensor_) {
+    updateBpsCameras(/*isDebug*/true);
+    debugBpsWrapper_->renderer_->render(debugBpsWrapper_->envs_.data());
+  }
+
   isOkToRender_ = false;
   isRenderStarted_ = true;
 }
@@ -2092,6 +2069,9 @@ void BatchedSimulator::waitRender() {
   ProfilingScope scope("wait for GPU render");
   BATCHED_SIM_ASSERT(isRenderStarted_);
   bpsWrapper_->renderer_->waitForFrame();
+  if (config_.numDebugEnvs > 0 && enableDebugSensor_) {
+    debugBpsWrapper_->renderer_->waitForFrame();
+  }
   isRenderStarted_ = false;
   isOkToRender_ = true;
 }
@@ -2101,6 +2081,11 @@ bps3D::Renderer& BatchedSimulator::getBpsRenderer() {
   return *bpsWrapper_->renderer_.get();
 }
 
+bps3D::Renderer& BatchedSimulator::getDebugBpsRenderer() {
+  BATCHED_SIM_ASSERT(config_.numDebugEnvs > 0);
+  BATCHED_SIM_ASSERT(debugBpsWrapper_->renderer_.get());
+  return *debugBpsWrapper_->renderer_.get();
+}
 
 RolloutRecord::RolloutRecord(int numRolloutSubsteps,
                              int numEnvs,
@@ -2118,36 +2103,34 @@ RolloutRecord::RolloutRecord(int numRolloutSubsteps,
 }
 
 void BatchedSimulator::deleteDebugInstances() {
-#ifdef ENABLE_DEBUG_INSTANCES
-  const int numEnvs = config_.numEnvs;
-  for (int b = 0; b < numEnvs; b++) {
+  if (config_.numDebugEnvs > 0) {
+    const int numEnvs = config_.numDebugEnvs;
+    for (int b = 0; b < numEnvs; b++) {
 
-    auto& env = bpsWrapper_->envs_[b];
-    for (int instanceId : debugInstancesByEnv_[b]) {
+      auto& env = getDebugBpsEnvironment(b);
+      for (int instanceId : safeVectorGet(debugInstancesByEnv_, b)) {
 
-      env.deleteInstance(instanceId);
+        env.deleteInstance(instanceId);
+      }
+
+      safeVectorGet(debugInstancesByEnv_, b).clear();
     }
-
-    debugInstancesByEnv_[b].clear();
   }
-#endif
 }
 
 int BatchedSimulator::addDebugInstance(const std::string& name, int envIndex, 
   const Magnum::Matrix4& transform, bool persistent) {
-#ifdef ENABLE_DEBUG_INSTANCES
+  BATCHED_SIM_ASSERT(config_.numDebugEnvs > 0);
+    
   glm::mat4x3 glMat = toGlmMat4x3(transform);
   const auto& blueprint = sceneMapping_.findInstanceBlueprint(name);
   BATCHED_SIM_ASSERT(envIndex < config_.numEnvs);
-  auto& env = getBpsEnvironment(envIndex);
+  auto& env = getDebugBpsEnvironment(envIndex);
   int instanceId = env.addInstance(blueprint.meshIdx_, blueprint.mtrlIdx_, glMat);
   if (!persistent) {
-    debugInstancesByEnv_[envIndex].push_back(instanceId);
+    safeVectorGet(debugInstancesByEnv_, envIndex).push_back(instanceId);
   }
   return instanceId;
-#else
-  return -1;
-#endif
 }
 
 std::string BatchedSimulator::getRecentStatsAndReset() const {
@@ -2246,9 +2229,9 @@ void BatchedSimulator::physicsThreadFunc(int startEnvIndex, int numEnvs) {
 
 
 void BatchedSimulator::debugRenderColumnGrids(int b, int minProgress, int maxProgress) {
-#ifdef ENABLE_DEBUG_INSTANCES
+  BATCHED_SIM_ASSERT(b < config_.numDebugEnvs);
 
-  auto& env = safeVectorGet(bpsWrapper_->envs_, b);
+  auto& env = getDebugBpsEnvironment(b);
   auto& episodeInstance = safeVectorGet(episodeInstanceSet_.episodeInstanceByEnv_, b);
   auto& episode = safeVectorGet(episodeSet_.episodes_, episodeInstance.episodeIndex_);
   const auto& stageFixedObject = safeVectorGet(episodeSet_.fixedObjects_, episode.stageFixedObjIndex);
@@ -2301,7 +2284,6 @@ void BatchedSimulator::debugRenderColumnGrids(int b, int minProgress, int maxPro
       }
     }
   }
-#endif
 }
 
 void BatchedSimulator::reloadSerializeCollection() {

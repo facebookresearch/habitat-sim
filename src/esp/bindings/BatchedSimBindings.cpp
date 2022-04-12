@@ -21,6 +21,10 @@ py::capsule getColorMemory(BatchedSimulator& bsim, const uint32_t groupIdx) {
   return py::capsule(bsim.getBpsRenderer().getColorPointer(groupIdx));
 }
 
+py::capsule getDebugColorMemory(BatchedSimulator& bsim, const uint32_t groupIdx) {
+  return py::capsule(bsim.getDebugBpsRenderer().getColorPointer(groupIdx));
+}
+
 py::capsule getDepthMemory(BatchedSimulator& bsim, const uint32_t groupIdx)
 {
     return py::capsule(bsim.getBpsRenderer().getDepthPointer(groupIdx));
@@ -41,6 +45,8 @@ void initBatchedSimBindings(py::module& m) {
       .def_readwrite("include_depth", &BatchedSimulatorConfig::includeDepth, R"(Todo)")
       .def_readwrite("include_color", &BatchedSimulatorConfig::includeColor, R"(Todo)")
       .def_readwrite("sensor0", &BatchedSimulatorConfig::sensor0, R"(Todo)")
+      .def_readwrite("num_debug_envs", &BatchedSimulatorConfig::numDebugEnvs, R"(Todo)")
+      .def_readwrite("debug_sensor", &BatchedSimulatorConfig::debugSensor, R"(Todo)")
       .def_readwrite("force_random_actions", &BatchedSimulatorConfig::forceRandomActions, R"(Todo)")
       .def_readwrite("do_async_physics_step", &BatchedSimulatorConfig::doAsyncPhysicsStep, R"(Todo)")
       .def_readwrite("num_physics_substeps", &BatchedSimulatorConfig::numSubsteps, R"(Todo)")
@@ -78,10 +84,10 @@ void initBatchedSimBindings(py::module& m) {
            &BatchedSimulator::getNumEpisodes, R"(todo)")
       .def("get_num_actions",
            &BatchedSimulator::getNumActions, R"(todo)")
-      .def("set_robot_camera",
-           &BatchedSimulator::setRobotCamera, R"(todo)")
-      .def("set_free_camera",
-           &BatchedSimulator::setFreeCamera, R"(todo)")
+      .def("set_camera",
+           &BatchedSimulator::setCamera, R"(todo)")
+      .def("enable_debug_sensor",
+           &BatchedSimulator::enableDebugSensor, R"(todo)")
       .def("reset",
            &BatchedSimulator::reset, R"(todo)")
       .def("get_environment_states",
@@ -103,6 +109,12 @@ void initBatchedSimBindings(py::module& m) {
           "depth",
           [](BatchedSimulator& self, const uint32_t groupIdx) {
             return getDepthMemory(self, groupIdx);
+          },
+          R"(todo)")
+      .def(
+          "debug_rgba",
+          [](BatchedSimulator& self, const uint32_t groupIdx) {
+            return getDebugColorMemory(self, groupIdx);
           },
           R"(todo)")
       .def("get_recent_stats_and_reset", &BatchedSimulator::getRecentStatsAndReset, R"(todo)");

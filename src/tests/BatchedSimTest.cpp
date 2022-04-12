@@ -198,7 +198,7 @@ TEST_F(BatchedSimulatorTest, basic) {
   constexpr bool doFreeCam = false;
   bool doTuneRobotCam = false;
   constexpr bool doSaveAllFramesForVideo = false; // see make_video_from_image_files.py
-  constexpr bool doPairedDebugEnvs = true;
+  constexpr bool includeDebugSensor = true;
   constexpr bool includeDepth = false;
   constexpr bool includeColor = true;
   constexpr float cameraHfov = 70.f;
@@ -206,14 +206,15 @@ TEST_F(BatchedSimulatorTest, basic) {
   const bool forceRandomActions = doFreeCam || doTuneRobotCam;
 
   BatchedSimulatorConfig config{
-      .numEnvs = 1, .gpuId = 0, 
+      .numEnvs = 2, .gpuId = 0, 
       .includeDepth = includeDepth,
       .includeColor = includeColor,
       .sensor0 = {.width = 768, .height = 768},
+      .numDebugEnvs = 1,
+      .debugSensor {.width = 512, .height = 512},
       .forceRandomActions = forceRandomActions,
       .doAsyncPhysicsStep = doOverlapPhysics,
       .numSubsteps = 1,
-      .doPairedDebugEnvs = doPairedDebugEnvs,
       .doProceduralEpisodeSet = true,
       //.doProceduralEpisodeSet = false,
       //.episodeSetFilepath = "generated.episode_set.json",
@@ -223,6 +224,8 @@ TEST_F(BatchedSimulatorTest, basic) {
   Mn::Vector3 camPos;
   Mn::Quaternion camRot;
   std::string cameraAttachLinkName;
+
+  bsim.enableDebugSensor(true);
 
   if (!doFreeCam) {
     // over-the-shoulder cam
@@ -234,7 +237,8 @@ TEST_F(BatchedSimulatorTest, basic) {
     cameraAttachLinkName = "torso_lift_link";
     camPos = {-0.536559, 1.16173, 0.568379};
     camRot = {{-0.26714, -0.541109, -0.186449}, 0.775289};
-    bsim.setRobotCamera(cameraAttachLinkName, camPos, camRot, cameraHfov);
+    bsim.setCamera("sensor0", camPos, camRot, cameraHfov, cameraAttachLinkName);
+    bsim.setCamera("debug", camPos, camRot, cameraHfov, cameraAttachLinkName);
   } else {
     if (cameraHfov == 70.f) {
       camPos = {-1.61004, 1.5, 3.5455};
@@ -245,7 +249,8 @@ TEST_F(BatchedSimulatorTest, basic) {
     } else {
       CORRADE_INTERNAL_ASSERT_UNREACHABLE();
     }
-    bsim.setFreeCamera(camPos, camRot, cameraHfov);    
+    bsim.setCamera("sensor0", camPos, camRot, cameraHfov, "");
+    bsim.setCamera("debug", camPos, camRot, cameraHfov, "");
   }
 
   float moveSpeed = 1.f;
@@ -319,24 +324,39 @@ TEST_F(BatchedSimulatorTest, basic) {
     // make a copy of envStates
     envStates = bsim.getEnvironmentStates();
 
-    uint8_t* base_color_ptr = bsim.getBpsRenderer().getColorPointer();
-    float* base_depth_ptr = bsim.getBpsRenderer().getDepthPointer();
+    for (bool isDebug : {false, true}) {
+        
+      if (isDebug && !includeDebugSensor) {
+        continue;
+      }
 
-    // temp hack copied from BpsWrapper internals
-    glm::u32vec2 out_dim(config.sensor0.width, config.sensor0.height);
+      uint8_t* base_color_ptr = isDebug
+        ? bsim.getDebugBpsRenderer().getColorPointer()
+        : bsim.getBpsRenderer().getColorPointer();
+      // float* base_depth_ptr = isDebug
+      //   ? nullptr
+      //   : bsim.getBpsRenderer().getDepthPointer();
+      glm::u32vec2 out_dim = isDebug
+        ? glm::u32vec2(config.debugSensor.width, config.debugSensor.height)
+        : glm::u32vec2(config.sensor0.width, config.sensor0.height);
 
-    for (int b = 0; b < config.numEnvs; b++) {
-      std::stringstream ss;
-      ss << "./env" << b << "_frame"
-        << std::setfill('0') << std::setw(4) << frameIdx << ".bmp";
+      const int numEnvs = isDebug ? config.numDebugEnvs : config.numEnvs;
 
-      saveFrame(doSaveAllFramesForVideo ? ss.str().c_str() : nullptr,
-                ("./latest_env" + std::to_string(b) + ".bmp").c_str(),
-                base_color_ptr + b * out_dim.x * out_dim.y * 4, out_dim.x,
-                out_dim.y, 4);
-      // saveFrame(("./out_depth_" + std::to_string(b) + ".bmp").c_str(),
-      //           base_depth_ptr + b * out_dim.x * out_dim.y, out_dim.x, out_dim.y,
-      //           1);
+      for (int b = 0; b < numEnvs; b++) {
+        std::stringstream ss;
+        ss << (isDebug ? "./debugenv" : "./env")
+          << b << "_frame"
+          << std::setfill('0') << std::setw(4) << frameIdx << ".bmp";
+
+        saveFrame(doSaveAllFramesForVideo ? ss.str().c_str() : nullptr,
+                  ((isDebug ? "./latest_debugenv" : "./latest_env")
+                  + std::to_string(b) + ".bmp").c_str(),
+                  base_color_ptr + b * out_dim.x * out_dim.y * 4, out_dim.x,
+                  out_dim.y, 4);
+        // saveFrame(("./out_depth_" + std::to_string(b) + ".bmp").c_str(),
+        //           base_depth_ptr + b * out_dim.x * out_dim.y, out_dim.x, out_dim.y,
+        //           1);
+      }
     }
 
     int key = 0;
@@ -493,11 +513,13 @@ TEST_F(BatchedSimulatorTest, basic) {
       }
 
       if (doFreeCam) {
-        bsim.setFreeCamera(camPos, camRot, cameraHfov);
+        bsim.setCamera("sensor0", camPos, camRot, cameraHfov, "");
+        bsim.setCamera("debug", camPos, camRot, cameraHfov, "");
       } else {
         const auto cameraMat = Mn::Matrix4::from(camRot.toMatrix(), camPos);
         ESP_DEBUG() << "camPos: " << camPos << ", camRot: " << camRot;
-        bsim.setRobotCamera(cameraAttachLinkName, camPos, camRot, cameraHfov);
+        bsim.setCamera("sensor0", camPos, camRot, cameraHfov, cameraAttachLinkName);
+        bsim.setCamera("debug", camPos, camRot, cameraHfov, cameraAttachLinkName);
       }
     }
 
@@ -515,7 +537,8 @@ TEST_F(BatchedSimulatorTest, basic) {
 
       // move camera slightly
       camPos.y() -= 0.01f;
-      bsim.setFreeCamera(camPos, camRot, cameraHfov);
+      bsim.setCamera("sensor0", camPos, camRot, cameraHfov, "");
+      bsim.setCamera("debug", camPos, camRot, cameraHfov, "");
 
       if (autoplayProgress >= animDuration) {
         isAutoplay = false;

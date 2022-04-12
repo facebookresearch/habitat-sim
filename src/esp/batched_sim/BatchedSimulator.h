@@ -27,18 +27,25 @@ struct CameraSensorConfig {
   int height = -1;
 };
 
+struct Camera {
+  int attachNodeIndex = -1; // -1 indicates free camera (not parented to node)
+  Magnum::Matrix4 transform = Magnum::Matrix4(Magnum::Math::IdentityInit);
+  float hfov = -1.f; // degrees
+};
+
 struct BatchedSimulatorConfig {
   int numEnvs = -1;
   int gpuId = -1;
   bool includeDepth = true;
   bool includeColor = true;
   CameraSensorConfig sensor0;
+  int numDebugEnvs = 0;
+  CameraSensorConfig debugSensor;
   bool forceRandomActions = false;
   bool doAsyncPhysicsStep = false;
   int numSubsteps = 1;
   // if enabled, for every odd env, we don't render any visuals except debug stuff, 
   // e.g. collision visualization. We should keep even and odd envs in sync (e.g. same actions).
-  bool doPairedDebugEnvs = false;
   bool doProceduralEpisodeSet = true;
   // only set this for doProceduralEpisodeSet==false (it is otherwise ignored)
   std::string episodeSetFilepath;
@@ -113,8 +120,6 @@ struct Robot {
   float gripperQueryRadius_ = 0.f;
 
   std::unordered_map<std::string, int> linkIndexByName_;
-  int cameraAttachNode_ = -1; // beware off-by-one with links
-  Magnum::Matrix4 cameraAttachTransform_;
 };
 
 // This is misnamed and isn't actually used to store entire rollouts. It contains
@@ -199,8 +204,12 @@ class BatchedSimulator {
     return serializeCollection_;
   }
 
-  void setRobotCamera(const std::string& linkName, const Mn::Vector3& pos, const Mn::Quaternion& rotation, float hfov);
-  void setFreeCamera(const Magnum::Vector3& pos, const Magnum::Quaternion& rotation, float hfov);
+  void enableDebugSensor(bool enable);
+  
+  // void setRobotCamera(const std::string& linkName, const Mn::Vector3& pos, const Mn::Quaternion& rotation, float hfov);
+  // void setFreeCamera(const Magnum::Vector3& pos, const Magnum::Quaternion& rotation, float hfov);
+  void setCamera(const std::string& sensorName, const Mn::Vector3& pos, 
+    const Mn::Quaternion& rotation, float hfov, const std::string& attachLinkName);
 
   void startRender();
   void waitRender();
@@ -212,8 +221,10 @@ class BatchedSimulator {
   void waitStepPhysicsOrReset();
 
   bps3D::Renderer& getBpsRenderer();
+  bps3D::Renderer& getDebugBpsRenderer();
 
   bps3D::Environment& getBpsEnvironment(int envIndex);
+  bps3D::Environment& getDebugBpsEnvironment(int envIndex);
 
   void deleteDebugInstances(); // probably call at start of frame render
   // probably add these every frame ("immediate mode", not persistent)
@@ -258,8 +269,8 @@ class BatchedSimulator {
   void updateGripping();
   void resetHelper();
   void updatePythonEnvironmentState();
-  void updateBpsCameras();
-  void setBpsCameraHelper(int b, const glm::mat4& glCameraInvTransform, float hfov);
+  void updateBpsCameras(bool isDebug);
+  void setBpsCameraHelper(bool isDebug, int b, const glm::mat4& glCameraInvTransform, float hfov);
 
   // uses episode spawn location
   void spawnFreeObject(int b, int freeObjectIndex, bool reinsert);
@@ -285,6 +296,7 @@ class BatchedSimulator {
 
   BatchedSimulatorConfig config_;
   serialize::Collection serializeCollection_;
+  bool enableDebugSensor_ = false;
   bool isOkToRender_ = false;
   bool isOkToStep_ = false;
   bool isRenderStarted_ = false;
@@ -296,13 +308,14 @@ class BatchedSimulator {
   RolloutRecord rollouts_;
   std::unique_ptr<esp::sim::Simulator> legacySim_;
   std::unique_ptr<BpsWrapper> bpsWrapper_;
+  std::unique_ptr<BpsWrapper> debugBpsWrapper_;
   int actionDim_ = -1;
   std::vector<float> actions_;
   std::vector<int> resets_; // episode index, or -1 if not resetting
   int maxStorageSteps_ = -1;
   std::vector<PythonEnvironmentState> pythonEnvStates_;
-  Corrade::Containers::Optional<Magnum::Matrix4> freeCameraTransform_;
-  float cameraHfov_ = -1.f;
+  Camera mainCam_;
+  Camera debugCam_;
 
   EpisodeSet episodeSet_;
   EpisodeInstanceSet episodeInstanceSet_;
