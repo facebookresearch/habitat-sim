@@ -1659,8 +1659,7 @@ void BatchedSimulator::initEpisodeSet() {
     ESP_CHECK(config_.episodeSetFilepath.empty(), 
       "For BatchedSimulatorConfig::doProceduralEpisodeSet==true, don't specify episodeSetFilepath");
 
-    constexpr int numEpisodesToGenerate = 100; // arbitrary
-    episodeSet_ = generateBenchmarkEpisodeSet(numEpisodesToGenerate, sceneMapping_, serializeCollection_);
+    episodeSet_ = generateBenchmarkEpisodeSet(config_.numProceduralEpisodes, sceneMapping_, serializeCollection_);
     episodeSet_.saveToFile("../data/generated.episode_set.json");
   } else {
     ESP_CHECK(!config_.episodeSetFilepath.empty(), 

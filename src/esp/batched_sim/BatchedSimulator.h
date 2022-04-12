@@ -47,6 +47,7 @@ struct BatchedSimulatorConfig {
   // if enabled, for every odd env, we don't render any visuals except debug stuff, 
   // e.g. collision visualization. We should keep even and odd envs in sync (e.g. same actions).
   bool doProceduralEpisodeSet = true;
+  int numProceduralEpisodes = 100;
   // only set this for doProceduralEpisodeSet==false (it is otherwise ignored)
   std::string episodeSetFilepath;
   ESP_SMART_POINTERS(BatchedSimulatorConfig);
