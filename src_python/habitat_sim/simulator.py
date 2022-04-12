@@ -92,7 +92,7 @@ class Simulator(SimulatorBackend):
         config.sim_cfg.create_renderer = any(
             (len(cfg.sensor_specifications) > 0 for cfg in config.agents)
         )
-        config.sim_cfg.load_semantic_mesh = any(
+        config.sim_cfg.load_semantic_mesh |= any(
             (
                 any(
                     sens_spec.sensor_type == SensorType.SEMANTIC

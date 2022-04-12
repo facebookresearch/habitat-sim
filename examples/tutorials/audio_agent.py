@@ -28,6 +28,7 @@ def main():
     backend_cfg.scene_dataset_config_file = (
         "data/scene_datasets/mp3d_example/mp3d.scene_dataset_config.json"
     )
+    backend_cfg.load_semantic_mesh = True
     backend_cfg.enable_physics = False
 
     agent_config = habitat_sim.AgentConfiguration()
@@ -75,21 +76,21 @@ def main():
         printTime()
         obs = sim.get_sensor_observations()["audio_sensor"]
 
-        # optionally print the audio observations
-        # print(obs)
+        # optionally print the audio observations or write them to the desired location
+        print(obs)
 
-        # write the observations to a file
-        p = audio_sensor_spec.outputDirectory + str(i) + "/ir"
+        # write the observations to a file, make sure the folder path p (below) exists
+        # p = audio_sensor_spec.outputDirectory + str(i) + "/ir"
 
-        for channelIndex in range(0, len(obs)):
-            filePath = p + str(channelIndex) + ".txt"
-            f = open(filePath, "w")
-            print("Writing file : ", filePath)
-            for sampleIndex in range(0, len(obs[channelIndex])):
-                f.write(
-                    str(sampleIndex) + "\t" + str(obs[channelIndex][sampleIndex]) + "\n"
-                )
-            f.close()
+        # for channelIndex in range(0, len(obs)):
+        #     filePath = p + str(channelIndex) + ".txt"
+        #     f = open(filePath, "w")
+        #     print("Writing file : ", filePath)
+        #     for sampleIndex in range(0, len(obs[channelIndex])):
+        #         f.write(
+        #             str(sampleIndex) + "\t" + str(obs[channelIndex][sampleIndex]) + "\n"
+        #         )
+        #     f.close()
 
         print("End Time : ")
         printTime()
