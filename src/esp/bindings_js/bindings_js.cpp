@@ -377,9 +377,7 @@ EMSCRIPTEN_BINDINGS(habitat_sim_bindings_js) {
       .property("sceneDatasetConfigFile",
                 &SimulatorConfiguration::sceneDatasetConfigFile)
       .property("defaultAgentId", &SimulatorConfiguration::defaultAgentId)
-      .property("defaultCameraUuid", &SimulatorConfiguration::defaultCameraUuid)
       .property("gpuDeviceId", &SimulatorConfiguration::gpuDeviceId)
-      .property("compressTextures", &SimulatorConfiguration::compressTextures)
       .property("enablePhysics", &SimulatorConfiguration::enablePhysics)
       .property("physicsConfigFile", &SimulatorConfiguration::physicsConfigFile)
       .property("createRenderer", &SimulatorConfiguration::createRenderer)

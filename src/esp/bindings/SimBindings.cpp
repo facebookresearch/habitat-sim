@@ -38,20 +38,33 @@ void initSimBindings(py::module& m) {
           "scene_id", &SimulatorConfiguration::activeSceneName,
           R"(Either the name of a stage asset or configuration file, or else the name of a scene
           instance configuration, used to initialize the simulator world.)")
-      .def_readwrite("random_seed", &SimulatorConfiguration::randomSeed)
-      .def_readwrite("default_agent_id",
-                     &SimulatorConfiguration::defaultAgentId)
-      .def_readwrite("default_camera_uuid",
-                     &SimulatorConfiguration::defaultCameraUuid)
-      .def_readwrite("gpu_device_id", &SimulatorConfiguration::gpuDeviceId)
-      .def_readwrite("allow_sliding", &SimulatorConfiguration::allowSliding)
-      .def_readwrite("create_renderer", &SimulatorConfiguration::createRenderer)
+      .def_readwrite(
+          "random_seed", &SimulatorConfiguration::randomSeed,
+          R"(The Simulator and Pathfinder random seed. Set during scene initialization.)")
+      .def_readwrite(
+          "default_agent_id", &SimulatorConfiguration::defaultAgentId,
+          R"(The default agent id used during initialization and functionally whenever alternative agent ids are not provided.)")
+      .def_readwrite("gpu_device_id", &SimulatorConfiguration::gpuDeviceId,
+                     R"(The system GPU device to use for rendering.)")
+      .def_readwrite(
+          "allow_sliding", &SimulatorConfiguration::allowSliding,
+          R"(Whether or not the agent can slide on NavMesh collisions.)")
+      .def_readwrite(
+          "recompute_navmesh_on_agent_params",
+          &SimulatorConfiguration::recomputeNavMeshOnAgentParams,
+          R"(If true(default), changing default agent radius or height will trigger automatic NavMesh recomputation in python reconfigure.)")
+      .def_readwrite(
+          "create_renderer", &SimulatorConfiguration::createRenderer,
+          R"(Optimisation for non-visual simulation. If false, no renderer will be created and no materials or textures loaded.)")
       .def_readwrite(
           "leave_context_with_background_renderer",
           &SimulatorConfiguration::leaveContextWithBackgroundRenderer,
           R"(See tutorials/async_rendering.py)")
-      .def_readwrite("frustum_culling", &SimulatorConfiguration::frustumCulling)
-      .def_readwrite("enable_physics", &SimulatorConfiguration::enablePhysics)
+      .def_readwrite("frustum_culling", &SimulatorConfiguration::frustumCulling,
+                     R"(Enable or disable the frustum culling optimisation.)")
+      .def_readwrite(
+          "enable_physics", &SimulatorConfiguration::enablePhysics,
+          R"(Specifies whether or not dynamics is supported by the simulation if a suitable library (i.e. Bullet) has been installed. Install with --bullet to enable.)")
       .def_readwrite(
           "use_semantic_textures",
           &SimulatorConfiguration::useSemanticTexturesIfFound,
@@ -62,22 +75,26 @@ void initSimBindings(py::module& m) {
           &SimulatorConfiguration::enableGfxReplaySave,
           R"(Enable replay recording. See sim.gfx_replay.save_keyframe.)")
       .def_readwrite("physics_config_file",
-                     &SimulatorConfiguration::physicsConfigFile)
+                     &SimulatorConfiguration::physicsConfigFile,
+                     R"(Path to the physics parameter config file.)")
       .def_readwrite(
           "override_scene_light_defaults",
           &SimulatorConfiguration::overrideSceneLightDefaults,
           R"(Override scene lighting setup to use with value specified below.)")
       .def_readwrite("scene_light_setup",
-                     &SimulatorConfiguration::sceneLightSetupKey)
+                     &SimulatorConfiguration::sceneLightSetupKey,
+                     R"(Light setup key for the scene.)")
       .def_readwrite("load_semantic_mesh",
-                     &SimulatorConfiguration::loadSemanticMesh)
+                     &SimulatorConfiguration::loadSemanticMesh,
+                     R"(Whether or not to load the semantic mesh.)")
       .def_readwrite(
           "force_separate_semantic_scene_graph",
           &SimulatorConfiguration::forceSeparateSemanticSceneGraph,
           R"(Required to support playback of any gfx replay that includes a
           stage with a semantic mesh. Set to false otherwise.)")
-      .def_readwrite("requires_textures",
-                     &SimulatorConfiguration::requiresTextures)
+      .def_readwrite(
+          "requires_textures", &SimulatorConfiguration::requiresTextures,
+          R"(Whether or not to load textures for the meshes. This MUST be true for RGB rendering.)")
       .def(py::self == py::self)
       .def(py::self != py::self);
 
