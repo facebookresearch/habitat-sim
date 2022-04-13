@@ -255,6 +255,8 @@ bool Simulator::createSceneInstance(const std::string& activeSceneName) {
   // We need to make a design decision here:
   // when instancing a new scene, shall we delete all of the previous scene
   // graphs?
+  physicsManager_ = nullptr;
+  sceneManager_->clearSceneGraphs();
   activeSceneID_ = sceneManager_->initSceneGraph();
   sceneID_.push_back(activeSceneID_);
 

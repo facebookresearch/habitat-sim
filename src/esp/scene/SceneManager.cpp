@@ -14,6 +14,10 @@ int SceneManager::initSceneGraph() {
   return index;
 }
 
+void SceneManager::clearSceneGraphs() {
+  sceneGraphs_.clear();
+}
+
 SceneGraph& SceneManager::getSceneGraph(int sceneID) {
   CORRADE_INTERNAL_ASSERT(sceneID >= 0 && sceneID < sceneGraphs_.size());
   return (*(sceneGraphs_[sceneID].get()));

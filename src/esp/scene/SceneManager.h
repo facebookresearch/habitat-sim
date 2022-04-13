@@ -27,6 +27,9 @@ class SceneManager {
   // returns the scene ID
   int initSceneGraph();
 
+  //! clears all existing scene graph memory
+  void clearSceneGraphs();
+
   // returns the scene graph
   SceneGraph& getSceneGraph(int sceneID);
   const SceneGraph& getSceneGraph(int sceneID) const;

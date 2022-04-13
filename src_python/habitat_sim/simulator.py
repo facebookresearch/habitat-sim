@@ -236,6 +236,9 @@ class Simulator(SimulatorBackend):
                 f"Recomputing navmesh for agent's height {default_agent_config.height} and radius"
                 f" {default_agent_config.radius}."
             )
+            print(
+                f"Legacy radius={agent_legacy_config.radius}, height={agent_legacy_config.height} vs default_agent radius={default_agent_config.radius}, height={default_agent_config.height}"
+            )
             navmesh_settings = NavMeshSettings()
             navmesh_settings.set_defaults()
             navmesh_settings.agent_radius = default_agent_config.radius

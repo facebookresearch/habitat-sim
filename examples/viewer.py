@@ -304,6 +304,33 @@ class HabitatSimInteractiveViewer(Application):
         gravity: mn.Vector3 = self.sim.get_gravity() * -1
         self.sim.set_gravity(gravity)
 
+    def add_object(self) -> physics.ManagedBulletRigidObject:
+        """
+        Add a random object to the scene and return it's wrapper object.
+        """
+        rom = self.sim.get_rigid_object_manager()
+        object_handle = (
+            self.sim.get_object_template_manager().get_random_file_template_handle()
+        )
+        # print(f"adding {object_handle}")
+        ro = rom.add_object_by_template_handle(object_handle)
+        return ro
+
+    def remove_object(self, ro):
+        rom = self.sim.get_rigid_object_manager()
+        rom.remove_object_by_id(ro.object_id)
+
+    def test_object_memory(self):
+        count = 0
+        while True:
+            ro = self.add_object()
+            obj_id = ro.object_id
+            while True:
+                ro = self.sim.get_rigid_object_manager().get_object_by_id(obj_id)
+            self.remove_object(ro)
+            print(count)
+            count += 1
+
     def key_press_event(self, event: Application.KeyEvent) -> None:
         """
         Handles `Application.KeyEvent` on a key press by performing the corresponding functions.
@@ -389,6 +416,9 @@ class HabitatSimInteractiveViewer(Application):
                 self.sim.perform_discrete_collision_detection()
                 self.contact_debug_draw = True
                 # TODO: add a nice log message with concise contact pair naming.
+
+        elif key == pressed.O:
+            self.test_object_memory()
 
         elif key == pressed.T:
             # load URDF
