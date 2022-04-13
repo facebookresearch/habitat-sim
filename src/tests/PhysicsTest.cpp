@@ -177,14 +177,18 @@ const struct {
 
 PhysicsTest::PhysicsTest() {
   addInstancedTests(
-      {&PhysicsTest::testJoinCompound, &PhysicsTest::testCollisionBoundingBox,
-       &PhysicsTest::testDiscreteContactTest, &PhysicsTest::testAddObjectMemory,
-       &PhysicsTest::testBulletCompoundShapeMargins,
+      {&PhysicsTest::testJoinCompound, &PhysicsTest::testAddObjectMemory,
        &PhysicsTest::testConfigurableScaling, &PhysicsTest::testVelocityControl,
        &PhysicsTest::testSceneNodeAttachment, &PhysicsTest::testMotionTypes,
        &PhysicsTest::testNumActiveContactPoints,
        &PhysicsTest::testRemoveSleepingSupport},
       Cr::Containers::arraySize(RendererEnabledData));
+
+#ifdef ESP_BUILD_WITH_BULLET
+  addInstancedTests(&PhysicsTest::testCollisionBoundingBox,
+                    &PhysicsTest::testDiscreteContactTest,
+                    &PhysicsTest::testBulletCompoundShapeMargins, )
+#endif
 }
 
 void PhysicsTest::testJoinCompound() {
@@ -260,6 +264,33 @@ void PhysicsTest::testJoinCompound() {
     }
   }
 }  // PhysicsTest::testJoinCompound
+
+void PhysicsTest::testAddObjectMemory() {
+  std::string stageFile =
+      Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
+  std::string objectFile = Cr::Utility::Directory::join(
+      dataDir, "test_assets/objects/transform_box.glb");
+
+  resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
+  initStage(stageFile);
+
+  ObjectAttributes::ptr ObjectAttributes = ObjectAttributes::create();
+  ObjectAttributes->setRenderAssetHandle(objectFile);
+  ObjectAttributes->setMargin(0.0);
+  auto objectAttributesManager =
+      metadataMediator_->getObjectAttributesManager();
+  objectAttributesManager->registerObject(ObjectAttributes, objectFile);
+
+  // add and immediately remove object in a loop
+  int count = 0;
+  while (true) {
+    auto objWrapper0 = rigidObjectManager_->addObjectByHandle(objectFile);
+    rigidObjectManager_->removeAllObjects();
+    count++;
+    Magnum::Debug{} << count;
+  }
+
+}  // PhysicsTest::testAddObjectMemory
 
 #ifdef ESP_BUILD_WITH_BULLET
 void PhysicsTest::testCollisionBoundingBox() {
@@ -422,35 +453,6 @@ void PhysicsTest::testDiscreteContactTest() {
     CORRADE_VERIFY(!objWrapper1->contactTest());
   }
 }  // PhysicsTest::testDiscreteContactTest
-
-void PhysicsTest::testAddObjectMemory() {
-  std::string stageFile =
-      Cr::Utility::Directory::join(dataDir, "test_assets/scenes/plane.glb");
-  std::string objectFile = Cr::Utility::Directory::join(
-      dataDir, "test_assets/objects/transform_box.glb");
-
-  resetCreateRendererFlag(RendererEnabledData[testCaseInstanceId()].enabled);
-  initStage(stageFile);
-
-  if (physicsManager_->getPhysicsSimulationLibrary() !=
-      PhysicsManager::PhysicsSimulationLibrary::NoPhysics) {
-    ObjectAttributes::ptr ObjectAttributes = ObjectAttributes::create();
-    ObjectAttributes->setRenderAssetHandle(objectFile);
-    ObjectAttributes->setMargin(0.0);
-    auto objectAttributesManager =
-        metadataMediator_->getObjectAttributesManager();
-    objectAttributesManager->registerObject(ObjectAttributes, objectFile);
-
-    // add and immediately remove object in a loop
-    int count = 0;
-    while (true) {
-      auto objWrapper0 = rigidObjectManager_->addObjectByHandle(objectFile);
-      rigidObjectManager_->removeAllObjects();
-      count++;
-      Magnum::Debug{} << count;
-    }
-  }
-}  // PhysicsTest::testAddObjectMemory
 
 void PhysicsTest::testBulletCompoundShapeMargins() {
   // test that all different construction methods for a simple shape result in
