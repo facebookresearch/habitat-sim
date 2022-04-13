@@ -227,20 +227,26 @@ class Simulator(SimulatorBackend):
             self.pathfinder.load_nav_mesh(navmesh_filenname)
             logger.info(f"Loaded navmesh {navmesh_filenname}")
 
-        agent_legacy_config = AgentConfiguration()
-        default_agent_config = config.agents[config.sim_cfg.default_agent_id]
-        if not np.isclose(
-            agent_legacy_config.radius, default_agent_config.radius
-        ) or not np.isclose(agent_legacy_config.height, default_agent_config.height):
-            logger.info(
-                f"Recomputing navmesh for agent's height {default_agent_config.height} and radius"
-                f" {default_agent_config.radius}."
-            )
-            navmesh_settings = NavMeshSettings()
-            navmesh_settings.set_defaults()
-            navmesh_settings.agent_radius = default_agent_config.radius
-            navmesh_settings.agent_height = default_agent_config.height
-            self.recompute_navmesh(self.pathfinder, navmesh_settings)
+        if config.sim_cfg.recompute_navmesh_on_agent_params:
+            # Typically, Habitat provided NavMesh assets are built with default agent parameters.
+            # If the default_agent_config has been modified, recompute the NavMesh with the new parameters.
+            # NOTE: this recomputed NavMesh does not include STATIC objects.
+            agent_legacy_config = AgentConfiguration()
+            default_agent_config = config.agents[config.sim_cfg.default_agent_id]
+            if not np.isclose(
+                agent_legacy_config.radius, default_agent_config.radius
+            ) or not np.isclose(
+                agent_legacy_config.height, default_agent_config.height
+            ):
+                logger.info(
+                    f"Recomputing navmesh for agent's height {default_agent_config.height} and radius"
+                    f" {default_agent_config.radius}."
+                )
+                navmesh_settings = NavMeshSettings()
+                navmesh_settings.set_defaults()
+                navmesh_settings.agent_radius = default_agent_config.radius
+                navmesh_settings.agent_height = default_agent_config.height
+                self.recompute_navmesh(self.pathfinder, navmesh_settings)
 
         self.pathfinder.seed(config.sim_cfg.random_seed)
 
