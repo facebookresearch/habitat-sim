@@ -437,8 +437,7 @@ def count_SSD_colors(ssd_filename):
 
 def main():
     # build dictionary of src and dest file names and paths
-    file_names_and_paths = sorted(buildFileListing())
-
+    file_names_and_paths = buildFileListing()
     # dictionary keyed by partition valued by list of partition subdir and filename of written file
     part_file_list_dict = {}
     for key in HM3D_DATA_PARTITIONS:
@@ -447,7 +446,7 @@ def main():
     if COUNT_SEMANTIC_COLORS_PER_SCENE:
         # go through every semantic annotation file and perform a count of each color present.
         per_scene_counts = {}
-        for _, data_dict_list in file_names_and_paths.items():
+        for _, data_dict_list in sorted(file_names_and_paths.items()):
             for data_dict in data_dict_list:
                 ssd_filename = data_dict["src_path_ssdfile"]
                 print(f"{ssd_filename}")
@@ -475,7 +474,7 @@ def main():
         # fully qualified paths to all output files
         output_files = []
         # move semantic glbs and scene descriptor text files
-        for src_dir, data_dict_list in file_names_and_paths.items():
+        for src_dir, data_dict_list in sorted(file_names_and_paths.items()):
             # print(f"Src : {src_dir} : # of data_dicts : {len(data_dict_list)} ", end="")
             for data_dict in data_dict_list:
                 partition_tag = data_dict["dest_part_tag"]
