@@ -172,3 +172,27 @@ def test_navmesh_area(test_scene):
             assert math.isclose(recomputedNavMeshArea1, 565.1781616210938)
         elif test_scene.endswith("van-gogh-room.glb"):
             assert math.isclose(recomputedNavMeshArea1, 9.17772102355957)
+
+
+@pytest.mark.parametrize("agent_radius_mul", [0.5, 1.0, 2.0])
+def test_save_navmesh_settings(agent_radius_mul, tmpdir):
+    test_scene = osp.join(
+        base_dir, "data/scene_datasets/habitat-test-scenes/skokloster-castle.glb"
+    )
+    if not osp.exists(test_scene):
+        pytest.skip(f"{test_scene} not found")
+
+    cfg_settings = examples.settings.default_sim_settings.copy()
+    cfg_settings["scene"] = test_scene
+    hab_cfg = examples.settings.make_cfg(cfg_settings)
+    agent_config = hab_cfg.agents[hab_cfg.sim_cfg.default_agent_id]
+    agent_config.radius *= agent_radius_mul
+
+    with habitat_sim.Simulator(hab_cfg) as sim:
+        assert sim.pathfinder.is_loaded
+        sim.pathfinder.save_nav_mesh(osp.join(tmpdir, "out.navmesh"))
+        pathfinder = habitat_sim.PathFinder()
+        assert pathfinder.nav_mesh_settings is None
+        pathfinder.load_nav_mesh(osp.join(tmpdir, "out.navmesh"))
+        assert pathfinder.is_loaded
+        assert sim.pathfinder.nav_mesh_settings == pathfinder.nav_mesh_settings

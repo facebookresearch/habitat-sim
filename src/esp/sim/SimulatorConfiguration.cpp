@@ -13,7 +13,6 @@ bool operator==(const SimulatorConfiguration& a,
          a.gpuDeviceId == b.gpuDeviceId && a.randomSeed == b.randomSeed &&
          a.createRenderer == b.createRenderer &&
          a.allowSliding == b.allowSliding &&
-         a.recomputeNavMeshOnAgentParams == b.recomputeNavMeshOnAgentParams &&
          a.frustumCulling == b.frustumCulling &&
          a.enablePhysics == b.enablePhysics &&
          a.enableGfxReplaySave == b.enableGfxReplaySave &&

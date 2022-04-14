@@ -37,6 +37,25 @@ namespace Cr = Corrade;
 namespace esp {
 namespace nav {
 
+bool operator==(const NavMeshSettings& a, const NavMeshSettings& b) {
+#define CLOSE(name) ((a.name - b.name) < 1e-5)
+#define EQ(name) (a.name == b.name)
+
+  return CLOSE(cellSize) && CLOSE(cellHeight) && CLOSE(agentHeight) &&
+         CLOSE(agentRadius) && CLOSE(agentMaxClimb) && CLOSE(agentMaxSlope) &&
+         CLOSE(regionMinSize) && CLOSE(regionMinSize) && CLOSE(edgeMaxLen) &&
+         CLOSE(edgeMaxError) && CLOSE(vertsPerPoly) &&
+         CLOSE(detailSampleDist) && CLOSE(detailSampleMaxError) &&
+         EQ(filterLowHangingObstacles) && EQ(filterLedgeSpans) &&
+         EQ(filterWalkableLowHeightSpans);
+
+#undef CLOSE
+#undef EQ
+}
+
+bool operator!=(const NavMeshSettings& a, const NavMeshSettings& b) {
+  return !(a == b);
+}
 struct MultiGoalShortestPath::Impl {
   std::vector<vec3f> requestedEnds;
 
@@ -268,6 +287,10 @@ struct PathFinder::Impl {
 
   assets::MeshData::ptr getNavMeshData();
 
+  Cr::Containers::Optional<NavMeshSettings> getNavMeshSettings() const {
+    return navMeshSettings_;
+  }
+
  private:
   struct NavMeshDeleter {
     void operator()(dtNavMesh* mesh) { dtFreeNavMesh(mesh); }
@@ -284,6 +307,7 @@ struct PathFinder::Impl {
   //! Holds triangulated geom/topo. Generated when queried. Reset with
   //! navQuery_.
   assets::MeshData::ptr meshData_ = nullptr;
+  Cr::Containers::Optional<NavMeshSettings> navMeshSettings_;
 
   //! Sum of all NavMesh polygons. Computed on NavMesh load/recompute. See
   //! removeZeroAreaPolys.
@@ -646,6 +670,7 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
     if (!initNavQuery()) {
       return false;
     }
+    navMeshSettings_ = {bs};
   }
 
   bounds_ = std::make_pair(vec3f(bmin), vec3f(bmax));
@@ -703,7 +728,7 @@ bool PathFinder::Impl::build(const NavMeshSettings& bs,
 
 namespace {
 const int NAVMESHSET_MAGIC = 'M' << 24 | 'S' << 16 | 'E' << 8 | 'T';  //'MSET';
-const int NAVMESHSET_VERSION = 1;
+const int NAVMESHSET_VERSION = 2;
 
 struct NavMeshSetHeader {
   int magic;
@@ -815,9 +840,14 @@ bool PathFinder::Impl::loadNavMesh(const std::string& path) {
     fclose(fp);
     return false;
   }
-  if (header.version != NAVMESHSET_VERSION) {
+  if (header.version < 1 || header.version > NAVMESHSET_VERSION) {
     fclose(fp);
     return false;
+  }
+
+  navMeshSettings_ = {NavMeshSettings{}};
+  if (header.version >= 2) {
+    fread(&(*navMeshSettings_), sizeof(NavMeshSettings), 1, fp);
   }
 
   vec3f bmin, bmax;
@@ -901,6 +931,12 @@ bool PathFinder::Impl::saveNavMesh(const std::string& path) {
   }
   memcpy(&header.params, navMesh->getParams(), sizeof(dtNavMeshParams));
   fwrite(&header, sizeof(NavMeshSetHeader), 1, fp);
+  if (!navMeshSettings_) {
+    ESP_ERROR() << "NavMeshSettings weren't set. Either build or load a "
+                   "navmesh before saving";
+    return false;
+  }
+  fwrite(&(*navMeshSettings_), sizeof(NavMeshSettings), 1, fp);
 
   // Store tiles.
   for (int i = 0; i < navMesh->getMaxTiles(); ++i) {
@@ -1483,6 +1519,11 @@ Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic> PathFinder::getTopDownView(
 
 assets::MeshData::ptr PathFinder::getNavMeshData() {
   return pimpl_->getNavMeshData();
+}
+
+Cr::Containers::Optional<NavMeshSettings> PathFinder::getNavMeshSettings()
+    const {
+  return pimpl_->getNavMeshSettings();
 }
 
 }  // namespace nav

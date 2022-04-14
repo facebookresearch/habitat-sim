@@ -28,9 +28,6 @@ struct SimulatorConfiguration {
   bool createRenderer = true;
   //! Whether or not the agent can slide on NavMesh collisions.
   bool allowSliding = true;
-  //! If true, changing default agent radius or height will trigger automatic
-  //! NavMesh recomputation in python reconfigure
-  bool recomputeNavMeshOnAgentParams = true;
   //! Enable or disable the frustum culling optimisation
   bool frustumCulling = true;
   /**

@@ -8,6 +8,7 @@
 #include <pybind11/functional.h>
 #include <pybind11/stl.h>
 
+#include <Corrade/Containers/OptionalPythonBindings.h>
 #include <Magnum/Math/Vector3.h>
 
 #include "esp/assets/MeshData.h"
@@ -69,7 +70,9 @@ void initShortestPathBindings(py::module& m) {
       .def_readwrite("filter_ledge_spans", &NavMeshSettings::filterLedgeSpans)
       .def_readwrite("filter_walkable_low_height_spans",
                      &NavMeshSettings::filterWalkableLowHeightSpans)
-      .def("set_defaults", &NavMeshSettings::setDefaults);
+      .def("set_defaults", &NavMeshSettings::setDefaults)
+      .def(py::self == py::self)
+      .def(py::self != py::self);
 
   py::class_<PathFinder, PathFinder::ptr>(m, "PathFinder")
       .def(py::init(&PathFinder::create<>))
@@ -117,7 +120,10 @@ void initShortestPathBindings(py::module& m) {
            "pt"_a, "max_search_radius"_a = 2.0)
       .def("is_navigable", &PathFinder::isNavigable,
            R"(Checks to see if the agent can stand at the specified point.)",
-           "pt"_a, "max_y_delta"_a = 0.5);
+           "pt"_a, "max_y_delta"_a = 0.5)
+      .def_property_readonly("nav_mesh_settings",
+                             &PathFinder::getNavMeshSettings,
+                             R"(The settings for the current nav mesh)");
 
   // this enum is used by GreedyGeodesicFollowerImpl so it needs to be defined
   // before it

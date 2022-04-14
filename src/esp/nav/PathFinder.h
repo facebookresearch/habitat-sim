@@ -5,6 +5,7 @@
 #ifndef ESP_NAV_PATHFINDER_H_
 #define ESP_NAV_PATHFINDER_H_
 
+#include <Corrade/Containers/Optional.h>
 #include <string>
 #include <vector>
 
@@ -126,9 +127,6 @@ struct NavMeshSettings {
   float detailSampleDist{};
   //! Detail sample max error in voxel heights.
   float detailSampleMaxError{};
-  //! Bounds of the area to mesh
-  vec3f navMeshBMin;
-  vec3f navMeshBMax;
 
   bool filterLowHangingObstacles{};
   bool filterLedgeSpans{};
@@ -157,6 +155,9 @@ struct NavMeshSettings {
 
   ESP_SMART_POINTERS(NavMeshSettings)
 };
+
+bool operator==(const NavMeshSettings& a, const NavMeshSettings& b);
+bool operator!=(const NavMeshSettings& a, const NavMeshSettings& b);
 
 /** Loads and/or builds a navigation mesh and then performs path
  * finding and collision queries on that navmesh
@@ -353,6 +354,11 @@ class PathFinder {
    * @return The object containing triangulated NavMesh polys.
    */
   std::shared_ptr<assets::MeshData> getNavMeshData();
+
+  /**
+   * @brief Return the settings for the current NavMesh.
+   */
+  Corrade::Containers::Optional<NavMeshSettings> getNavMeshSettings() const;
 
   ESP_SMART_POINTERS_WITH_UNIQUE_PIMPL(PathFinder)
 };
